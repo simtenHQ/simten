@@ -59,6 +59,8 @@ export function projectToNodes(ir: IRState, metadata: MetadataState): Node<NodeD
         outputCount: spec.outputCount,
       },
       selected: componentMetadata.selected,
+      selectable: true,
+      deletable: true,
     });
   }
 
