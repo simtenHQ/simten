@@ -12,6 +12,8 @@ import { ReactFlowProvider } from '@xyflow/react';
 import { Canvas } from './Canvas';
 import { ComponentPalette } from './ComponentPalette';
 import { SimulationControls } from './SimulationControls';
+import { TestPanel } from './TestPanel';
+import { TestCaseEditor } from './TestCaseEditor';
 
 export function VisualEditor() {
   return (
@@ -29,7 +31,13 @@ export function VisualEditor() {
           <div className="flex-1">
             <Canvas />
           </div>
+
+          {/* Right: Test Panel */}
+          <TestPanel />
         </div>
+
+        {/* Test Case Editor Modal */}
+        <TestCaseEditor />
       </div>
     </ReactFlowProvider>
   );
