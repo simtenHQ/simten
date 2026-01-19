@@ -13,7 +13,7 @@ import type {
   ComponentType,
   Connection,
 } from '../types';
-import { COMPONENT_SPECS, WIRE_COLORS } from '../types';
+import { getComponentSpec, WIRE_COLORS } from '../types';
 
 /**
  * Port position calculation
@@ -24,8 +24,8 @@ function getPortPosition(
   portIndex: number,
   componentType: ComponentType
 ): { x: number; y: number } {
-  const specs = COMPONENT_SPECS[componentType];
-  const portCount = portType === 'input' ? specs.inputCount : specs.outputCount;
+  const specs = getComponentSpec(componentType);
+  const portCount = portType === 'input' ? (specs?.inputCount ?? 0) : (specs?.outputCount ?? 0);
 
   if (portCount === 0) return { x: 0, y: 0 };
 
@@ -80,7 +80,8 @@ function connectionToEdge(
   if (sourceComponent) {
     // For switches, use the value directly
     if (sourceComponent.type === 'SWITCH') {
-      color = sourceComponent.value ? WIRE_COLORS.TRUE : WIRE_COLORS.FALSE;
+      const value = 'value' in sourceComponent ? sourceComponent.value : false;
+      color = value ? WIRE_COLORS.TRUE : WIRE_COLORS.FALSE;
     }
     // For gates, we'll need to evaluate them (done by simulator)
     // For now, default to undefined
@@ -142,13 +143,13 @@ export function projectToReactFlow(
  * Useful for programmatic port access
  */
 export function getComponentPortHandles(componentId: string, componentType: ComponentType) {
-  const specs = COMPONENT_SPECS[componentType];
+  const specs = getComponentSpec(componentType);
 
-  const inputs = Array.from({ length: specs.inputCount }, (_, i) =>
+  const inputs = Array.from({ length: specs?.inputCount ?? 0 }, (_, i) =>
     getHandleId(componentId, 'input', i)
   );
 
-  const outputs = Array.from({ length: specs.outputCount }, (_, i) =>
+  const outputs = Array.from({ length: specs?.outputCount ?? 0 }, (_, i) =>
     getHandleId(componentId, 'output', i)
   );
 

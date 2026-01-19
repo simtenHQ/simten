@@ -7,7 +7,11 @@
 
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
+import { enableMapSet } from 'immer';
 import type { Circuit } from '../types/ir-v0.1';
+
+// Enable Immer's MapSet plugin for Map/Set support
+enableMapSet();
 
 /**
  * Component library structure

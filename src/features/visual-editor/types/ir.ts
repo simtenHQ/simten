@@ -9,7 +9,8 @@
 // Component Type Definitions
 // ===========================
 
-export type ComponentType =
+// Primitive component types (built-in)
+export type PrimitiveComponentType =
   | 'SWITCH'
   | 'LED'
   | 'AND_GATE'
@@ -20,6 +21,9 @@ export type ComponentType =
   | 'XOR_GATE'
   | 'XNOR_GATE'
   | 'BUFFER';
+
+// ComponentType can be primitive or user-defined (string)
+export type ComponentType = PrimitiveComponentType | string;
 
 export interface ComponentBase {
   id: string;
@@ -72,6 +76,12 @@ export interface BufferComponent extends ComponentBase {
   type: 'BUFFER';
 }
 
+// USER-DEFINED components (composite/custom)
+export interface UserDefinedComponent extends ComponentBase {
+  type: string; // Component name from library (e.g., 'MyAndGate', 'HalfAdder')
+  // User components are resolved from the component library at runtime
+}
+
 export type Component =
   | SwitchComponent
   | LEDComponent
@@ -82,7 +92,8 @@ export type Component =
   | NorGateComponent
   | XorGateComponent
   | XnorGateComponent
-  | BufferComponent;
+  | BufferComponent
+  | UserDefinedComponent;
 
 // ===========================
 // Port Definitions
@@ -122,7 +133,8 @@ export interface ComponentSpec {
   evaluate?: (inputs: boolean[]) => boolean[]; // Logic function
 }
 
-export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
+// Primitive component specifications
+export const PRIMITIVE_COMPONENT_SPECS: Record<PrimitiveComponentType, ComponentSpec> = {
   SWITCH: {
     type: 'SWITCH',
     inputCount: 0,
@@ -216,6 +228,23 @@ export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
     },
   },
 };
+
+// Backward compatibility alias
+export const COMPONENT_SPECS = PRIMITIVE_COMPONENT_SPECS;
+
+// Helper function to check if a component type is primitive
+export function isPrimitiveComponentType(type: ComponentType): type is PrimitiveComponentType {
+  return type in PRIMITIVE_COMPONENT_SPECS;
+}
+
+// Helper function to safely get component specs
+export function getComponentSpec(type: ComponentType): ComponentSpec | undefined {
+  if (isPrimitiveComponentType(type)) {
+    return PRIMITIVE_COMPONENT_SPECS[type];
+  }
+  // TODO: For user-defined components, resolve from component library
+  return undefined;
+}
 
 // ===========================
 // IR State
