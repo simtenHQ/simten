@@ -8,7 +8,8 @@
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 import { nanoid } from 'nanoid';
-import type { Component, Connection, IRState, ComponentType } from '../types';
+import type { Component, Connection, IRState, ComponentType, PrimitiveComponentType } from '../types';
+import { useComponentLibraryStore } from './component-library-store';
 
 interface IRActions {
   // Component operations
@@ -47,7 +48,17 @@ export const useIRStore = create<IRStore>()(
       const id = nanoid();
       set((state) => {
         const component: Component = (() => {
-          switch (type) {
+          // First check if this is a user-defined component in the library
+          const componentLibrary = useComponentLibraryStore.getState();
+          const userComponent = componentLibrary.resolveComponent(type);
+
+          if (userComponent) {
+            // User-defined component found in library
+            return { id, type };
+          }
+
+          // Fall back to primitive component switch statement
+          switch (type as PrimitiveComponentType) {
             case 'SWITCH':
               return { id, type: 'SWITCH', value: initialValue };
             case 'LED':
@@ -69,7 +80,7 @@ export const useIRStore = create<IRStore>()(
             case 'BUFFER':
               return { id, type: 'BUFFER' };
             default:
-              throw new Error(`Unknown component type: ${type}`);
+              throw new Error(`Unknown component type: ${type}. Component not found in library or primitives.`);
           }
         })();
         state.components[id] = component;

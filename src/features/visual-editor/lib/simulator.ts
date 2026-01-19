@@ -6,7 +6,7 @@
  */
 
 import type { Component, Connection, ComponentType } from '../types';
-import { COMPONENT_SPECS } from '../types';
+import { getComponentSpec } from '../types';
 
 /**
  * Port value map: componentId.portType.portIndex -> value
@@ -100,11 +100,15 @@ function evaluateComponent(
   inputValues: boolean[],
   componentType: ComponentType
 ): boolean[] {
-  const specs = COMPONENT_SPECS[componentType];
+  const specs = getComponentSpec(componentType);
 
   // SWITCH: output is component's current value (user-controlled)
   if (component.type === 'SWITCH') {
-    return [component.value];
+    // Type guard: SWITCH components have a value property
+    if ('value' in component) {
+      return [component.value];
+    }
+    return [false];
   }
 
   // LED: pass through input value (no transformation)
@@ -113,7 +117,7 @@ function evaluateComponent(
   }
 
   // LOGIC GATES: use evaluate function from spec
-  if (specs.evaluate) {
+  if (specs?.evaluate) {
     return specs.evaluate(inputValues);
   }
 
@@ -129,8 +133,8 @@ function getComponentInputs(
   connections: Record<string, Connection>,
   portValues: PortValueMap
 ): boolean[] {
-  const specs = COMPONENT_SPECS[componentType];
-  const inputs: boolean[] = new Array(specs.inputCount).fill(false);
+  const specs = getComponentSpec(componentType);
+  const inputs: boolean[] = new Array(specs?.inputCount ?? 0).fill(false);
 
   // Find all connections targeting this component's inputs
   for (const conn of Object.values(connections)) {
@@ -228,8 +232,11 @@ export function updateComponentStates(
   for (const component of Object.values(components)) {
     // Update LED values based on their input
     if (component.type === 'LED') {
-      const inputs = getComponentInputs(component.id, component.type, connections, portValues);
-      component.value = inputs[0] ?? false;
+      // Type guard: LED components have a value property
+      if ('value' in component) {
+        const inputs = getComponentInputs(component.id, component.type, connections, portValues);
+        component.value = inputs[0] ?? false;
+      }
     }
   }
 }

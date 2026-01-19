@@ -16,12 +16,14 @@
 		"cf-typegen": "wrangler types --env-interface CloudflareEnv ./cloudflare-env.d.ts"
 	},
 	"dependencies": {
+		"@monaco-editor/react": "^4.7.0",
 		"@opennextjs/cloudflare": "^1.14.4",
 		"@xyflow/react": "^12.10.0",
 		"class-variance-authority": "^0.7.1",
 		"clsx": "^2.1.1",
 		"immer": "^11.1.3",
 		"lucide-react": "^0.562.0",
+		"monaco-editor": "^0.55.1",
 		"nanoid": "^5.1.6",
 		"next": "15.5.9",
 		"react": "19.1.4",

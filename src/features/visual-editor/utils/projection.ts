@@ -12,7 +12,8 @@ import type {
   MetadataState,
   ComponentType,
 } from '../types';
-import { COMPONENT_SPECS, WIRE_COLORS } from '../types';
+import { getComponentSpec, WIRE_COLORS } from '../types';
+import type { ComponentLibrary } from '../stores/component-library-store';
 
 // Custom data structure for our ReactFlow nodes
 export interface NodeData extends Record<string, unknown> {
@@ -25,9 +26,50 @@ export interface NodeData extends Record<string, unknown> {
 }
 
 /**
+ * Helper: Get port counts for a component type.
+ * Looks up primitive specs or resolves from component library for user-defined components.
+ */
+function getPortCounts(
+  componentType: ComponentType,
+  library?: ComponentLibrary
+): { inputCount: number; outputCount: number } {
+  // Try primitive specs first
+  const spec = getComponentSpec(componentType);
+  if (spec) {
+    return {
+      inputCount: spec.inputCount,
+      outputCount: spec.outputCount,
+    };
+  }
+
+  // For user-defined components, look up in library
+  if (library) {
+    const circuit =
+      library.primitives.get(componentType) ||
+      library.standard.get(componentType) ||
+      library.user.get(componentType);
+
+    if (circuit) {
+      return {
+        inputCount: circuit.inputs.length,
+        outputCount: circuit.outputs.length,
+      };
+    }
+  }
+
+  // Fallback: no ports if component not found
+  console.warn(`Component type '${componentType}' not found in specs or library`);
+  return { inputCount: 0, outputCount: 0 };
+}
+
+/**
  * Projects the IR and Metadata into ReactFlow nodes
  */
-export function projectToNodes(ir: IRState, metadata: MetadataState): Node<NodeData>[] {
+export function projectToNodes(
+  ir: IRState,
+  metadata: MetadataState,
+  library?: ComponentLibrary
+): Node<NodeData>[] {
   const nodes: Node<NodeData>[] = [];
 
   for (const [id, component] of Object.entries(ir.components)) {
@@ -38,13 +80,17 @@ export function projectToNodes(ir: IRState, metadata: MetadataState): Node<NodeD
       continue;
     }
 
-    const spec = COMPONENT_SPECS[component.type];
+    // Get port counts (primitive or user-defined)
+    const { inputCount, outputCount } = getPortCounts(component.type, library);
 
-    // Determine node type for custom rendering
-    const nodeType = getNodeTypeForComponent(component.type);
+    // Determine node type for custom rendering (needs port counts for user-defined components)
+    const nodeType = getNodeTypeForComponent(component.type, inputCount, outputCount);
 
-    // Extract value based on component type
-    const value = 'value' in component ? component.value : undefined;
+    // Extract value based on component type (with proper type guard)
+    let value: boolean | undefined = undefined;
+    if (component.type === 'SWITCH' || component.type === 'LED') {
+      value = 'value' in component ? component.value : undefined;
+    }
 
     nodes.push({
       id,
@@ -55,8 +101,8 @@ export function projectToNodes(ir: IRState, metadata: MetadataState): Node<NodeD
         componentType: component.type,
         label: component.label,
         value,
-        inputCount: spec.inputCount,
-        outputCount: spec.outputCount,
+        inputCount,
+        outputCount,
       },
       selected: componentMetadata.selected,
       selectable: true,
@@ -118,17 +164,26 @@ export function projectToEdges(ir: IRState, metadata: MetadataState): Edge[] {
 /**
  * Main projection function that combines nodes and edges
  */
-export function projectToReactFlow(ir: IRState, metadata: MetadataState) {
+export function projectToReactFlow(
+  ir: IRState,
+  metadata: MetadataState,
+  library?: ComponentLibrary
+) {
   return {
-    nodes: projectToNodes(ir, metadata),
+    nodes: projectToNodes(ir, metadata, library),
     edges: projectToEdges(ir, metadata),
   };
 }
 
 /**
- * Helper: Determine the ReactFlow node type based on component type
+ * Helper: Determine the ReactFlow node type based on component type and port counts
  */
-function getNodeTypeForComponent(componentType: ComponentType): string {
+function getNodeTypeForComponent(
+  componentType: ComponentType,
+  inputCount: number,
+  outputCount: number
+): string {
+  // Check primitive types first
   switch (componentType) {
     case 'SWITCH':
       return 'inputNode';
@@ -143,9 +198,19 @@ function getNodeTypeForComponent(componentType: ComponentType): string {
     case 'XNOR_GATE':
     case 'BUFFER':
       return 'logicGateNode';
-    default:
-      return 'default';
   }
+
+  // For user-defined components, classify based on port counts
+  if (inputCount === 0 && outputCount > 0) {
+    return 'inputNode'; // Source components (like SWITCH)
+  } else if (inputCount > 0 && outputCount === 0) {
+    return 'outputNode'; // Sink components (like LED)
+  } else if (inputCount > 0 && outputCount > 0) {
+    return 'logicGateNode'; // Processing components (like gates)
+  }
+
+  // Fallback for components with no ports
+  return 'default';
 }
 
 /**
@@ -154,7 +219,11 @@ function getNodeTypeForComponent(componentType: ComponentType): string {
 function getOutputValue(component: Component, portIndex: number, ir: IRState): boolean | undefined {
   switch (component.type) {
     case 'SWITCH':
-      return component.value;
+      // Type guard: SWITCH components have a value property
+      if ('value' in component) {
+        return component.value;
+      }
+      return undefined;
 
     // All logic gates follow the same pattern
     case 'AND_GATE':
@@ -166,8 +235,8 @@ function getOutputValue(component: Component, portIndex: number, ir: IRState): b
     case 'XNOR_GATE':
     case 'BUFFER': {
       // For logic gates, we need to evaluate based on inputs
-      const spec = COMPONENT_SPECS[component.type];
-      if (!spec.evaluate) return undefined;
+      const spec = getComponentSpec(component.type);
+      if (!spec?.evaluate) return undefined;
 
       // Get all connections to this gate's inputs
       const inputValues: boolean[] = [];
