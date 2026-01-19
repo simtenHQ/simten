@@ -4,6 +4,14 @@
  * Custom edge component that renders orthogonal (step/Manhattan) routing with
  * draggable waypoints and draggable segments. Waypoints are stored in the metadata
  * store for persistence.
+ *
+ * Interaction modes:
+ * - Click edge: Select edge (shows blue highlight)
+ * - Alt+Click edge: Add waypoint at click position
+ * - Drag segment: Move segment perpendicular to its orientation
+ * - Drag waypoint: Move waypoint freely
+ * - Right-click waypoint: Delete waypoint
+ * - Delete key (waypoint selected): Delete waypoint
  */
 
 'use client';
@@ -245,7 +253,16 @@ export function OrthogonalEdge({
 
   // Ensure id is a string and style is properly typed
   const edgeId = String(id);
-  const edgeStyle = (style as React.CSSProperties | undefined) || {};
+  const baseStyle = (style as React.CSSProperties | undefined) || {};
+
+  // Apply selection styling
+  const edgeStyle = selected
+    ? {
+        ...baseStyle,
+        stroke: '#3b82f6', // Blue color when selected
+        strokeWidth: 3, // Thicker when selected
+      }
+    : baseStyle;
 
   // Get waypoints from metadata
   const waypoints = useMemo(() => {
@@ -316,9 +333,14 @@ export function OrthogonalEdge({
     [waypoints, edgeId, updateConnectionMetadata, getConnectionMetadata]
   );
 
-  // Handle single click on edge to add waypoint
+  // Handle single click on edge to add waypoint (only when Alt key is held)
   const handleEdgeClick = useCallback(
     (event: React.MouseEvent<SVGLineElement>) => {
+      // Only add waypoint if Alt/Option key is held, otherwise allow normal selection
+      if (!event.altKey) {
+        return; // Let React Flow handle the click for selection
+      }
+
       event.stopPropagation();
       event.preventDefault();
 
@@ -624,7 +646,7 @@ export function OrthogonalEdge({
               style={{
                 cursor: isHovered
                   ? (isHorizontal ? 'ns-resize' : 'ew-resize')
-                  : 'crosshair',
+                  : 'pointer', // Changed from 'crosshair' to 'pointer' for selection
               }}
             />
           </g>
