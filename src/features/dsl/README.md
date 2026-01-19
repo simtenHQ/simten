@@ -1,10 +1,10 @@
 # DSL Module
 
-Complete DSL parser and compiler pipeline for the Turing Incomplete circuit simulator.
+Complete DSL parser and compiler pipeline for the Turing Incomplete component simulator.
 
 ## Overview
 
-This module provides a complete implementation of the Turing Incomplete Domain-Specific Language (DSL) v0.1, enabling human-friendly and LLM-friendly circuit descriptions that compile to executable IR.
+This module provides a complete implementation of the Turing Incomplete Domain-Specific Language (DSL) v0.1, enabling human-friendly and LLM-friendly component descriptions that compile to executable IR.
 
 **Pipeline:** `DSL Text → Tokens → AST → Validated AST → IR → Simulation`
 
@@ -14,7 +14,7 @@ This module provides a complete implementation of the Turing Incomplete Domain-S
 import { compileDSL, ComponentLibrary } from '@/features/dsl';
 
 const source = `
-  circuit HalfAdder {
+  component HalfAdder {
     input a: Bit
     input b: Bit
     output sum: Bit
@@ -74,7 +74,7 @@ Converts raw text into tokens with source location tracking.
 ```typescript
 import { tokenize } from '@/features/dsl';
 
-const tokens = tokenize('circuit And { ... }');
+const tokens = tokenize('component And { ... }');
 // Returns: Token[]
 ```
 
@@ -228,7 +228,7 @@ class MyLibrary implements ComponentLibrary {
 ### Circuit Definition
 
 ```
-circuit <name> [(<parameters>)] {
+component <name> [(<parameters>)] {
   input <name>: <type>
   output <name>: <type>
   clock <name>
@@ -250,7 +250,7 @@ circuit <name> [(<parameters>)] {
 ### Parameters
 
 ```
-circuit Adder(width: int = 8) {
+component Adder(width: int = 8) {
   input a: Bus[width]
   input b: Bus[width]
   output sum: Bus[width]
@@ -272,7 +272,7 @@ See `examples.test.ts` for complete working examples:
 - Composite circuits (HalfAdder, FullAdder)
 - Hierarchical circuits (multi-level composition)
 - Error handling
-- Multi-circuit programs
+- Multi-component programs
 
 ## Testing
 
@@ -294,7 +294,7 @@ The DSL provides detailed error messages with source locations:
 
 ```
 Error: Undefined component: 'Xorr'
-  at circuit HalfAdder, line 8, column 18
+  at component HalfAdder, line 8, column 18
 
   Suggestions:
   - Did you mean 'Xor'?
@@ -313,7 +313,7 @@ This module integrates with:
 
 - **Phase 1 IR:** Generates IR v0.1 compatible with simulator-v0.1
 - **Component Library:** Uses existing component-library-store
-- **Visual Editor:** (Phase 3) Will sync with visual circuit editor
+- **Visual Editor:** (Phase 3) Will sync with visual component editor
 
 ## Documentation
 

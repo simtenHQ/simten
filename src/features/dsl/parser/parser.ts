@@ -6,7 +6,7 @@
  * Grammar (simplified):
  *
  * program          → circuit_def*
- * circuit_def      → 'circuit' IDENTIFIER parameters? '{' circuit_body '}'
+ * circuit_def      → 'component' IDENTIFIER parameters? '{' circuit_body '}'
  * parameters       → '(' param_decl (',' param_decl)* ')'
  * param_decl       → IDENTIFIER ':' param_type ('=' literal)?
  * circuit_body     → (port_decl | state_decl | impl_block)*
@@ -432,7 +432,7 @@ export class Parser {
     const start = this.previous(); // 'node' already consumed
     const instanceName = this.consume(TokenType.IDENTIFIER, 'Expected node instance name').value;
     this.consume(TokenType.COLON, "Expected ':'");
-    const componentType = this.consume(TokenType.IDENTIFIER, 'Expected component type').value;
+    const componentType = this.consume(TokenType.IDENTIFIER, 'Expected circuit type').value;
 
     const args = this.match(TokenType.LPAREN) ? this.parseArguments() : [];
 

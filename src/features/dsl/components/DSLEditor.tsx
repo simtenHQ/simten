@@ -16,23 +16,37 @@ import { CompileButton } from './CompileButton';
 import { ErrorDisplay, CompilationError } from './ErrorDisplay';
 import type { Circuit } from '@/features/visual-editor/types/ir-v0.1';
 
-const DEFAULT_CODE = `// Example: AND gate
-component AND {
-  input a: bit
-  input b: bit
-  output out: bit
+const DEFAULT_CODE = `// Example: Simple Buffer
+circuit Buffer {
+  input a: Bit
+  output out: Bit
 
-  gate and(a, b) -> out
+  impl {
+    node buf: Buffer
+    connect a -> buf.a
+    connect buf.out -> out
+  }
 }
 
-// Example: 2-bit adder
-component Adder2 {
-  input a: bus<2>
-  input b: bus<2>
-  output sum: bus<2>
-  output carry: bit
+// Example: Half Adder
+circuit HalfAdder {
+  input a: Bit
+  input b: Bit
+  output sum: Bit
+  output carry: Bit
 
-  // Your implementation here
+  impl {
+    node xor1: Xor
+    node and1: And
+
+    connect a -> xor1.a
+    connect b -> xor1.b
+    connect xor1.out -> sum
+
+    connect a -> and1.a
+    connect b -> and1.b
+    connect and1.out -> carry
+  }
 }
 `;
 
@@ -76,17 +90,16 @@ export function DSLEditor({ onCompileSuccess }: DSLEditorProps) {
     // Set syntax highlighting
     monaco.languages.setMonarchTokensProvider('dsl', {
       keywords: [
-        'component', 'input', 'output', 'clock', 'state',
-        'bit', 'bus', 'memory', 'gate', 'instance', 'connect',
-        'on', 'rising', 'falling'
+        'circuit', 'input', 'output', 'clock', 'state', 'impl',
+        'node', 'connect', 'on', 'rising', 'falling'
       ],
 
       tokenizer: {
         root: [
           [/\/\/.*/, 'comment'],
-          [/\b(component|input|output|clock|state)\b/, 'keyword'],
-          [/\b(bit|bus|memory)\b/, 'type'],
-          [/\b(gate|instance|connect|on)\b/, 'keyword'],
+          [/\b(circuit|input|output|clock|state|impl)\b/, 'keyword'],
+          [/\b(Bit|Bus|Word|Array)\b/, 'type'],
+          [/\b(node|connect|on)\b/, 'keyword'],
           [/\b(rising|falling)\b/, 'constant'],
           [/[a-zA-Z_]\w*/, 'identifier'],
           [/\d+/, 'number'],
