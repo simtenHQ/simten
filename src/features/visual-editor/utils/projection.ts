@@ -103,6 +103,9 @@ export function projectToEdges(ir: IRState, metadata: MetadataState): Edge[] {
         strokeWidth: 2,
       },
       animated: connectionMetadata?.animated || false,
+      selected: connectionMetadata?.selected,
+      selectable: true,
+      deletable: true,
       data: {
         waypoints: connectionMetadata?.waypoints || [],
       },

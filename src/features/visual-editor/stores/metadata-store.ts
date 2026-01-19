@@ -18,6 +18,7 @@ interface MetadataActions {
 
   // Connection metadata operations
   setConnectionMetadata: (id: string, metadata: ConnectionMetadata) => void;
+  setConnectionSelected: (id: string, selected: boolean) => void;
   updateConnectionColor: (id: string, color: string) => void;
   updateConnectionWaypoints: (id: string, waypoints: Position[]) => void;
   addConnectionWaypoint: (id: string, waypoint: Position) => void;
@@ -72,6 +73,17 @@ export const useMetadataStore = create<MetadataStore>()(
     setConnectionMetadata: (id, metadata) => {
       set((state) => {
         state.connections[id] = metadata;
+      });
+    },
+
+    setConnectionSelected: (id, selected) => {
+      set((state) => {
+        if (state.connections[id]) {
+          state.connections[id].selected = selected;
+        } else {
+          // Create connection metadata if it doesn't exist
+          state.connections[id] = { id, selected };
+        }
       });
     },
 
