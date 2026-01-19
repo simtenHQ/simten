@@ -22,12 +22,17 @@ describe('DSL Editor Integration', () => {
 
   it('should compile a simple AND gate and register it', () => {
     const dslCode = `
-      component MyAnd {
-        input a: bit
-        input b: bit
-        output out: bit
+      circuit MyAnd {
+        input a: Bit
+        input b: Bit
+        output out: Bit
 
-        gate And(a, b) -> out
+        impl {
+          node and1: And
+          connect a -> and1.a
+          connect b -> and1.b
+          connect and1.out -> out
+        }
       }
     `;
 
@@ -60,14 +65,22 @@ describe('DSL Editor Integration', () => {
 
   it('should compile a composite component using primitives', () => {
     const dslCode = `
-      component HalfAdder {
-        input a: bit
-        input b: bit
-        output sum: bit
-        output carry: bit
+      circuit HalfAdder {
+        input a: Bit
+        input b: Bit
+        output sum: Bit
+        output carry: Bit
 
-        gate Xor(a, b) -> sum
-        gate And(a, b) -> carry
+        impl {
+          node xor1: Xor
+          node and1: And
+          connect a -> xor1.a
+          connect b -> xor1.b
+          connect xor1.out -> sum
+          connect a -> and1.a
+          connect b -> and1.b
+          connect and1.out -> carry
+        }
       }
     `;
 
@@ -86,16 +99,20 @@ describe('DSL Editor Integration', () => {
     const circuit = result.circuits[0];
     expect(circuit.name).toBe('HalfAdder');
     expect(circuit.nodes).toHaveLength(2); // Two gate instances
-    expect(circuit.connections).toHaveLength(4); // 2 inputs to each gate
+    expect(circuit.connections).toHaveLength(6); // 2 inputs to each gate + 2 outputs
   });
 
   it('should detect errors in invalid DSL code', () => {
     const dslCode = `
-      component Invalid {
-        input a: bit
-        output out: bit
+      circuit Invalid {
+        input a: Bit
+        output out: Bit
 
-        gate NonExistentGate(a) -> out
+        impl {
+          node ng1: NonExistentGate
+          connect a -> ng1.a
+          connect ng1.out -> out
+        }
       }
     `;
 
@@ -115,16 +132,24 @@ describe('DSL Editor Integration', () => {
 
   it('should handle multiple components in one DSL file', () => {
     const dslCode = `
-      component FirstComponent {
-        input a: bit
-        output out: bit
-        gate Buffer(a) -> out
+      circuit FirstComponent {
+        input a: Bit
+        output out: Bit
+        impl {
+          node buf1: Buffer
+          connect a -> buf1.a
+          connect buf1.out -> out
+        }
       }
 
-      component SecondComponent {
-        input x: bit
-        output y: bit
-        gate Not(x) -> y
+      circuit SecondComponent {
+        input x: Bit
+        output y: Bit
+        impl {
+          node not1: Not
+          connect x -> not1.a
+          connect not1.out -> y
+        }
       }
     `;
 
@@ -152,13 +177,21 @@ describe('DSL Editor Integration', () => {
 
     // First, define and register a half adder
     const halfAdderCode = `
-      component HalfAdder {
-        input a: bit
-        input b: bit
-        output sum: bit
-        output carry: bit
-        gate Xor(a, b) -> sum
-        gate And(a, b) -> carry
+      circuit HalfAdder {
+        input a: Bit
+        input b: Bit
+        output sum: Bit
+        output carry: Bit
+        impl {
+          node xor1: Xor
+          node and1: And
+          connect a -> xor1.a
+          connect b -> xor1.b
+          connect xor1.out -> sum
+          connect a -> and1.a
+          connect b -> and1.b
+          connect and1.out -> carry
+        }
       }
     `;
 
@@ -173,25 +206,27 @@ describe('DSL Editor Integration', () => {
 
     // Now use HalfAdder in a FullAdder
     const fullAdderCode = `
-      component FullAdder {
-        input a: bit
-        input b: bit
-        input cin: bit
-        output sum: bit
-        output cout: bit
+      circuit FullAdder {
+        input a: Bit
+        input b: Bit
+        input cin: Bit
+        output sum: Bit
+        output cout: Bit
 
-        instance HalfAdder ha1
-        instance HalfAdder ha2
-        instance Or orGate
+        impl {
+          node ha1: HalfAdder
+          node ha2: HalfAdder
+          node orGate: Or
 
-        connect a -> ha1.a
-        connect b -> ha1.b
-        connect ha1.sum -> ha2.a
-        connect cin -> ha2.b
-        connect ha2.sum -> sum
-        connect ha1.carry -> orGate.a
-        connect ha2.carry -> orGate.b
-        connect orGate.out -> cout
+          connect a -> ha1.a
+          connect b -> ha1.b
+          connect ha1.sum -> ha2.a
+          connect cin -> ha2.b
+          connect ha2.sum -> sum
+          connect ha1.carry -> orGate.a
+          connect ha2.carry -> orGate.b
+          connect orGate.out -> cout
+        }
       }
     `;
 

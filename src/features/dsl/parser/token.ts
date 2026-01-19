@@ -115,10 +115,15 @@ export const KEYWORDS: Record<string, TokenType> = {
   falling: TokenType.FALLING,
   if: TokenType.IF,
   else: TokenType.ELSE,
+  // Type keywords (case-insensitive for LLM-friendliness)
   Bit: TokenType.BIT,
+  bit: TokenType.BIT,
   Bus: TokenType.BUS,
+  bus: TokenType.BUS,
   Word: TokenType.WORD,
+  word: TokenType.WORD,
   Array: TokenType.ARRAY,
+  array: TokenType.ARRAY,
   true: TokenType.TRUE,
   false: TokenType.FALSE,
 };

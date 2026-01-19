@@ -59,7 +59,7 @@ describe('DSL Integration Tests', () => {
   });
 
   describe('Complete Pipeline', () => {
-    it('should compile simple circuit from DSL text to IR', () => {
+    it('should compile simple component from DSL text to IR', () => {
       const source = `
         circuit Buffer {
           input a: Bit

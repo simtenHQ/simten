@@ -27,7 +27,7 @@ describe('Parser', () => {
       expect(program.circuits[0].outputs).toHaveLength(0);
     });
 
-    it('should parse circuit with ports', () => {
+    it('should parse component with ports', () => {
       const source = `
         circuit Buffer {
           input a: Bit
@@ -48,7 +48,7 @@ describe('Parser', () => {
       expect(circuit.outputs[0].portType.kind).toBe('bit');
     });
 
-    it('should parse circuit with bus types', () => {
+    it('should parse component with bus types', () => {
       const source = `
         circuit Register8 {
           input d: Bus[8]
@@ -69,7 +69,7 @@ describe('Parser', () => {
       }
     });
 
-    it('should parse circuit with clock', () => {
+    it('should parse component with clock', () => {
       const source = `
         circuit Register {
           input d: Bit
@@ -85,7 +85,7 @@ describe('Parser', () => {
       expect(circuit.clocks[0].name).toBe('clk');
     });
 
-    it('should parse circuit with state', () => {
+    it('should parse component with state', () => {
       const source = `
         circuit Counter {
           clock clk
@@ -201,7 +201,7 @@ describe('Parser', () => {
       expect(circuit.impl!.connections).toHaveLength(3);
 
       const conn1 = circuit.impl!.connections[0];
-      expect(conn1.source.nodeId).toBeNull(); // circuit port
+      expect(conn1.source.nodeId).toBeNull(); // component port
       expect(conn1.source.portName).toBe('a');
       expect(conn1.target.nodeId).toBe('x1');
       expect(conn1.target.portName).toBe('a');
@@ -316,7 +316,7 @@ describe('Parser', () => {
   });
 
   describe('Multiple Circuits', () => {
-    it('should parse multiple circuit definitions', () => {
+    it('should parse multiple component definitions', () => {
       const source = `
         circuit And {
           input a: Bit
@@ -345,18 +345,18 @@ describe('Parser', () => {
   });
 
   describe('Error Handling', () => {
-    it('should error on missing circuit name', () => {
-      const source = 'circuit { }';
+    it('should error on missing component name', () => {
+      const source = 'component { }';
       expect(() => parseSource(source)).toThrow(ParseError);
     });
 
     it('should error on missing opening brace', () => {
-      const source = 'circuit Foo }';
+      const source = 'component Foo }';
       expect(() => parseSource(source)).toThrow(ParseError);
     });
 
     it('should error on missing closing brace', () => {
-      const source = 'circuit Foo {';
+      const source = 'component Foo {';
       expect(() => parseSource(source)).toThrow(ParseError);
     });
 
