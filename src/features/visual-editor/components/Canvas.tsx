@@ -34,6 +34,7 @@ import {
 import '@xyflow/react/dist/style.css';
 
 import { useIRStore, useMetadataStore } from '../stores';
+import { useComponentLibraryStore, type ComponentLibraryStore } from '../stores/component-library-store';
 import { projectToReactFlow } from '../utils/projection';
 import { InputNode, OutputNode, LogicGateNode } from './nodes';
 import { OrthogonalEdge } from './edges';
@@ -140,6 +141,7 @@ export function Canvas() {
   const irConnections = useIRStore((state) => state.connections);
   const metadataComponents = useMetadataStore((state) => state.components);
   const metadataConnections = useMetadataStore((state) => state.connections);
+  const componentLibrary = useComponentLibraryStore((state: ComponentLibraryStore) => state.library);
   const updateComponentPosition = useMetadataStore((state) => state.updateComponentPosition);
   const setComponentSelected = useMetadataStore((state) => state.setComponentSelected);
   const setConnectionSelected = useMetadataStore((state) => state.setConnectionSelected);
@@ -196,8 +198,8 @@ export function Canvas() {
   const { nodes, edges } = useMemo(() => {
     const irState = { components: irComponents, connections: irConnections };
     const metadataState = { components: metadataComponents, connections: metadataConnections };
-    return projectToReactFlow(irState, metadataState);
-  }, [irComponents, irConnections, metadataComponents, metadataConnections]);
+    return projectToReactFlow(irState, metadataState, componentLibrary);
+  }, [irComponents, irConnections, metadataComponents, metadataConnections, componentLibrary]);
 
   // Handle node position changes (drag), selection, and deletion
   const onNodesChange: OnNodesChange = useCallback(

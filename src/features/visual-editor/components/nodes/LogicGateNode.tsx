@@ -57,13 +57,19 @@ export function LogicGateNode({ data, selected }: LogicGateNodeProps) {
         case 'BUFFER':
           return '▷';
         default:
-          return '?';
+          // For user-defined components, show the component type name
+          return data.componentType;
       }
     };
 
+    const symbol = getSymbol();
+    const isUserDefined = !['AND_GATE', 'OR_GATE', 'NOT_GATE', 'NAND_GATE', 'NOR_GATE', 'XOR_GATE', 'XNOR_GATE', 'BUFFER'].includes(data.componentType);
+
     return (
-      <div className="flex h-12 w-12 items-center justify-center rounded-md bg-gray-100 text-2xl font-bold text-gray-700">
-        {getSymbol()}
+      <div className={`flex items-center justify-center rounded-md bg-gray-100 text-gray-700 ${
+        isUserDefined ? 'h-auto w-auto px-3 py-2 text-xs font-semibold' : 'h-12 w-12 text-2xl font-bold'
+      }`}>
+        {symbol}
       </div>
     );
   };

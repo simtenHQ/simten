@@ -11,6 +11,7 @@
 import React, { useCallback, useState, useEffect, useRef, useMemo } from 'react';
 import { cn } from '@/lib/utils';
 import { useIRStore, useMetadataStore } from '../stores';
+import { useComponentLibraryStore } from '../stores/component-library-store';
 import type { ComponentType } from '../types';
 import { ComponentTooltip, PortInfo } from './ComponentTooltip';
 
@@ -369,12 +370,54 @@ function ComponentGroup({
 export function ComponentPalette() {
   const addComponent = useIRStore((state) => state.addComponent);
   const setComponentMetadata = useMetadataStore((state) => state.setComponentMetadata);
+  const { library } = useComponentLibraryStore();
 
   // Search state
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const debouncedQuery = useDebounce(searchQuery, 200);
   const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // Build user components category dynamically
+  const userComponentsCategory: ComponentCategory | null = useMemo(() => {
+    const userComponents = Array.from(library.user.values());
+
+    if (userComponents.length === 0) {
+      return null;
+    }
+
+    return {
+      id: 'user-components',
+      label: 'User Components',
+      icon: '🔧',
+      description: 'Components compiled from DSL',
+      items: userComponents.map((circuit) => {
+        // Extract port information from circuit
+        const inputs: PortInfo[] = circuit.inputs
+          .map((port, index) => ({
+            index,
+            label: port.name,
+            value: undefined,
+          }));
+
+        const outputs: PortInfo[] = circuit.outputs
+          .map((port, index) => ({
+            index,
+            label: port.name,
+            value: undefined,
+          }));
+
+        return {
+          type: circuit.name as ComponentType,
+          label: circuit.name,
+          description: `User-defined component (${inputs.length}i / ${outputs.length}o)`,
+          icon: '⚙️',
+          inputs: inputs.length > 0 ? inputs : undefined,
+          outputs: outputs.length > 0 ? outputs : undefined,
+        };
+      }),
+    };
+  }, [library.user]);
 
   const onDragStart = useCallback((event: React.DragEvent, componentType: ComponentType) => {
     event.dataTransfer.effectAllowed = 'move';
@@ -395,13 +438,23 @@ export function ComponentPalette() {
     [addComponent, setComponentMetadata]
   );
 
+  // Combine built-in and user categories
+  const allCategories = useMemo(() => {
+    const categories = [...COMPONENT_CATEGORIES];
+    if (userComponentsCategory) {
+      // Add user components at the beginning
+      categories.unshift(userComponentsCategory);
+    }
+    return categories;
+  }, [userComponentsCategory]);
+
   // Filter categories and items based on search query
   const filteredCategories = useMemo(() => {
     if (!debouncedQuery) {
-      return COMPONENT_CATEGORIES;
+      return allCategories;
     }
 
-    return COMPONENT_CATEGORIES.map((category) => ({
+    return allCategories.map((category) => ({
       ...category,
       items: category.items.filter(
         (item) =>
@@ -410,7 +463,7 @@ export function ComponentPalette() {
           fuzzyMatch(item.type, debouncedQuery)
       ),
     })).filter((category) => category.items.length > 0);
-  }, [debouncedQuery]);
+  }, [debouncedQuery, allCategories]);
 
   // Calculate total results count
   const totalResults = useMemo(() => {
