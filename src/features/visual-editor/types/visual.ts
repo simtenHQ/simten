@@ -49,6 +49,7 @@ export interface ConnectionMetadata {
   animated?: boolean; // For visual effects
   color?: string; // Wire color based on signal state
   waypoints?: Position[]; // Custom routing waypoints for orthogonal edges
+  selected?: boolean; // Selection state for deletion and visual feedback
 }
 
 // ===========================

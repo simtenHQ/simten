@@ -142,6 +142,7 @@ export function Canvas() {
   const metadataConnections = useMetadataStore((state) => state.connections);
   const updateComponentPosition = useMetadataStore((state) => state.updateComponentPosition);
   const setComponentSelected = useMetadataStore((state) => state.setComponentSelected);
+  const setConnectionSelected = useMetadataStore((state) => state.setConnectionSelected);
   const updateComponent = useIRStore((state) => state.updateComponent);
   const addConnection = useIRStore((state) => state.addConnection);
   const removeConnection = useIRStore((state) => state.removeConnection);
@@ -224,16 +225,20 @@ export function Canvas() {
     setSelectedNodeCount(count);
   }, [nodes]);
 
-  // Handle edge changes (deletion)
+  // Handle edge changes (selection and deletion)
   const onEdgesChange: OnEdgesChange = useCallback(
     (changes) => {
       changes.forEach((change) => {
-        if (change.type === 'remove') {
+        if (change.type === 'select') {
+          // Update selection state in metadata store
+          setConnectionSelected(change.id, change.selected);
+        } else if (change.type === 'remove') {
+          // Remove connection from IR store (metadata will be cleaned up separately)
           removeConnection(change.id);
         }
       });
     },
-    [removeConnection]
+    [setConnectionSelected, removeConnection]
   );
 
   // Handle new connections
