@@ -315,7 +315,7 @@ describe('DSL Examples', () => {
       expect(parseErrors).toHaveLength(0);
       expect(ast.circuits).toHaveLength(3);
 
-      // Compile each circuit and add to library
+      // Compile each component and add to library
       for (const circuitDef of ast.circuits) {
         const { circuits, errors } = compileDSL(
           `circuit ${circuitDef.name} {}`,
