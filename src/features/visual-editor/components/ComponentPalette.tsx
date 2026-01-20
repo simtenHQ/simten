@@ -13,7 +13,13 @@ import { cn } from '@/lib/utils';
 import { useIRStore, useMetadataStore } from '../stores';
 import { useComponentLibraryStore } from '../stores/component-library-store';
 import type { ComponentType } from '../types';
+import type { Circuit } from '../types/ir-v0.1';
 import { ComponentTooltip, PortInfo } from './ComponentTooltip';
+import {
+  PRIMITIVE_CATEGORIES,
+  CATEGORY_INFO,
+  getPrimitiveMetadata,
+} from '../lib/primitive-metadata';
 
 interface PaletteItem {
   type: ComponentType;
@@ -112,129 +118,85 @@ function HighlightedText({ text, query }: HighlightedTextProps) {
   return <>{result}</>;
 }
 
-// Component definitions organized by category
-const COMPONENT_CATEGORIES: ComponentCategory[] = [
-  {
-    id: 'input-output',
-    label: 'Input/Output',
-    icon: '⚡',
-    description: 'User controls and visual indicators',
-    items: [
-      {
-        type: 'SWITCH',
-        label: 'Switch',
-        description: 'User-controlled input that can be toggled ON or OFF',
-        icon: '⚡',
-        outputs: [{ index: 0, label: 'Output', value: undefined }],
-      },
-      {
-        type: 'LED',
-        label: 'LED',
-        description: 'Visual indicator that lights up when input signal is ON',
-        icon: '💡',
-        inputs: [{ index: 0, label: 'Input', value: undefined }],
-      },
-    ],
-  },
-  {
-    id: 'basic-gates',
-    label: 'Basic Gates',
-    icon: '&',
-    description: 'Fundamental logic operations',
-    items: [
-      {
-        type: 'AND_GATE',
-        label: 'AND Gate',
-        description: 'Output is ON when both inputs are ON',
-        icon: '&',
-        inputs: [
-          { index: 0, label: 'A', value: undefined },
-          { index: 1, label: 'B', value: undefined },
-        ],
-        outputs: [{ index: 0, label: 'Output', value: undefined }],
-      },
-      {
-        type: 'OR_GATE',
-        label: 'OR Gate',
-        description: 'Output is ON when at least one input is ON',
-        icon: '≥1',
-        inputs: [
-          { index: 0, label: 'A', value: undefined },
-          { index: 1, label: 'B', value: undefined },
-        ],
-        outputs: [{ index: 0, label: 'Output', value: undefined }],
-      },
-      {
-        type: 'NOT_GATE',
-        label: 'NOT Gate',
-        description: 'Output is the inverse of the input',
-        icon: '¬',
-        inputs: [{ index: 0, label: 'Input', value: undefined }],
-        outputs: [{ index: 0, label: 'Output', value: undefined }],
-      },
-      {
-        type: 'BUFFER',
-        label: 'Buffer',
-        description: 'Passes input to output unchanged',
-        icon: '▷',
-        inputs: [{ index: 0, label: 'Input', value: undefined }],
-        outputs: [{ index: 0, label: 'Output', value: undefined }],
-      },
-    ],
-  },
-  {
-    id: 'advanced-gates',
-    label: 'Advanced Gates',
-    icon: '⊕',
-    description: 'Complex logic operations',
-    items: [
-      {
-        type: 'NAND_GATE',
-        label: 'NAND Gate',
-        description: 'Output is OFF only when both inputs are ON',
-        icon: '⊼',
-        inputs: [
-          { index: 0, label: 'A', value: undefined },
-          { index: 1, label: 'B', value: undefined },
-        ],
-        outputs: [{ index: 0, label: 'Output', value: undefined }],
-      },
-      {
-        type: 'NOR_GATE',
-        label: 'NOR Gate',
-        description: 'Output is ON only when both inputs are OFF',
-        icon: '⊽',
-        inputs: [
-          { index: 0, label: 'A', value: undefined },
-          { index: 1, label: 'B', value: undefined },
-        ],
-        outputs: [{ index: 0, label: 'Output', value: undefined }],
-      },
-      {
-        type: 'XOR_GATE',
-        label: 'XOR Gate',
-        description: 'Output is ON when inputs are different',
-        icon: '⊕',
-        inputs: [
-          { index: 0, label: 'A', value: undefined },
-          { index: 1, label: 'B', value: undefined },
-        ],
-        outputs: [{ index: 0, label: 'Output', value: undefined }],
-      },
-      {
-        type: 'XNOR_GATE',
-        label: 'XNOR Gate',
-        description: 'Output is ON when inputs are the same',
-        icon: '⊙',
-        inputs: [
-          { index: 0, label: 'A', value: undefined },
-          { index: 1, label: 'B', value: undefined },
-        ],
-        outputs: [{ index: 0, label: 'Output', value: undefined }],
-      },
-    ],
-  },
-];
+/**
+ * Helper function to convert Circuit port definitions to PortInfo format
+ */
+function circuitPortsToPortInfo(
+  ports: Circuit['inputs'] | Circuit['outputs']
+): PortInfo[] | undefined {
+  if (ports.length === 0) return undefined;
+
+  return ports.map((port, index) => ({
+    index,
+    label: port.name,
+    value: undefined,
+  }));
+}
+
+/**
+ * Generate component categories from primitives store
+ */
+function generatePrimitiveCategories(
+  primitives: Map<string, Circuit>
+): ComponentCategory[] {
+  // Group primitives by category
+  const categoryMap = new Map<string, PaletteItem[]>();
+
+  for (const [primitiveName, circuit] of primitives.entries()) {
+    const metadata = getPrimitiveMetadata(primitiveName);
+    if (!metadata) {
+      console.warn(`No metadata found for primitive: ${primitiveName}`);
+      continue;
+    }
+
+    const category = metadata.category;
+    if (!categoryMap.has(category)) {
+      categoryMap.set(category, []);
+    }
+
+    const item: PaletteItem = {
+      type: metadata.componentType,
+      label: circuit.name,
+      description: circuit.metadata?.description ?? `${circuit.name} component`,
+      icon: metadata.icon,
+      inputs: circuitPortsToPortInfo(circuit.inputs),
+      outputs: circuitPortsToPortInfo(circuit.outputs),
+    };
+
+    categoryMap.get(category)!.push(item);
+  }
+
+  // Convert to ComponentCategory array, sorted by a predefined order
+  const categoryOrder = [
+    PRIMITIVE_CATEGORIES.IO,
+    PRIMITIVE_CATEGORIES.LOGIC_GATES,
+    PRIMITIVE_CATEGORIES.ARITHMETIC,
+    PRIMITIVE_CATEGORIES.PLEXERS,
+    PRIMITIVE_CATEGORIES.SEQUENTIAL,
+    PRIMITIVE_CATEGORIES.MEMORY,
+    PRIMITIVE_CATEGORIES.BUS_OPS,
+    PRIMITIVE_CATEGORIES.UTILITIES,
+    PRIMITIVE_CATEGORIES.DISPLAY,
+  ];
+
+  const categories: ComponentCategory[] = [];
+
+  for (const categoryId of categoryOrder) {
+    const items = categoryMap.get(categoryId);
+    if (items && items.length > 0) {
+      const categoryInfo = CATEGORY_INFO[categoryId];
+      categories.push({
+        id: categoryId,
+        label: categoryInfo.label,
+        icon: categoryInfo.icon,
+        description: categoryInfo.description,
+        items,
+      });
+    }
+  }
+
+  return categories;
+}
 
 interface ComponentGroupProps {
   category: ComponentCategory;
@@ -378,6 +340,11 @@ export function ComponentPalette() {
   const debouncedQuery = useDebounce(searchQuery, 200);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
+  // Generate primitive component categories from store
+  const primitiveCategories = useMemo(() => {
+    return generatePrimitiveCategories(library.primitives);
+  }, [library.primitives]);
+
   // Build user components category dynamically
   const userComponentsCategory: ComponentCategory | null = useMemo(() => {
     const userComponents = Array.from(library.user.values());
@@ -393,27 +360,16 @@ export function ComponentPalette() {
       description: 'Components compiled from DSL',
       items: userComponents.map((circuit) => {
         // Extract port information from circuit
-        const inputs: PortInfo[] = circuit.inputs
-          .map((port, index) => ({
-            index,
-            label: port.name,
-            value: undefined,
-          }));
-
-        const outputs: PortInfo[] = circuit.outputs
-          .map((port, index) => ({
-            index,
-            label: port.name,
-            value: undefined,
-          }));
+        const inputs = circuitPortsToPortInfo(circuit.inputs);
+        const outputs = circuitPortsToPortInfo(circuit.outputs);
 
         return {
           type: circuit.name as ComponentType,
           label: circuit.name,
-          description: `User-defined component (${inputs.length}i / ${outputs.length}o)`,
+          description: circuit.metadata?.description ?? `User-defined component (${circuit.inputs.length}i / ${circuit.outputs.length}o)`,
           icon: '⚙️',
-          inputs: inputs.length > 0 ? inputs : undefined,
-          outputs: outputs.length > 0 ? outputs : undefined,
+          inputs,
+          outputs,
         };
       }),
     };
@@ -438,15 +394,15 @@ export function ComponentPalette() {
     [addComponent, setComponentMetadata]
   );
 
-  // Combine built-in and user categories
+  // Combine primitive and user categories
   const allCategories = useMemo(() => {
-    const categories = [...COMPONENT_CATEGORIES];
+    const categories = [...primitiveCategories];
     if (userComponentsCategory) {
       // Add user components at the beginning
       categories.unshift(userComponentsCategory);
     }
     return categories;
-  }, [userComponentsCategory]);
+  }, [primitiveCategories, userComponentsCategory]);
 
   // Filter categories and items based on search query
   const filteredCategories = useMemo(() => {

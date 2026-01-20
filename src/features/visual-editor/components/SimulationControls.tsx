@@ -13,6 +13,7 @@ import { useIRStore, useMetadataStore, useUIStore } from '../stores';
 import { runSimulationStep } from '../utils/simulator';
 import { performHierarchicalLayout, centerLayout } from '../utils/auto-layout';
 import { cn } from '@/lib/utils';
+import { ClockControls } from './ClockControls';
 
 export function SimulationControls() {
   // Select values separately to avoid creating new objects on every render
@@ -130,7 +131,10 @@ export function SimulationControls() {
 
       {/* Right: Controls */}
       <div className="flex items-center gap-3">
-        {/* Run Button */}
+        {/* Clock Controls (for sequential circuits) */}
+        <ClockControls />
+
+        {/* Run Button (for combinational circuits) */}
         <Button
           onClick={handleRun}
           disabled={simulationStatus === 'running' || componentCount === 0}

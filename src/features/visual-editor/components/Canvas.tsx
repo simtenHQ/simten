@@ -37,12 +37,15 @@ import { useIRStore, useMetadataStore } from '../stores';
 import { useComponentLibraryStore, type ComponentLibraryStore } from '../stores/component-library-store';
 import { projectToReactFlow } from '../utils/projection';
 import { InputNode, OutputNode, LogicGateNode } from './nodes';
+import { NumericInputNode } from './nodes/NumericInputNode';
 import { OrthogonalEdge } from './edges';
-import { runSimulationStep } from '../utils/simulator';
+import { runSimulation, getLEDUpdates, getDisplayUpdates } from '../lib/simulator';
+import { hasSequentialComponents } from '../lib/component-utils';
 
 // Define custom node types
 const nodeTypes = {
   inputNode: InputNode,
+  numericInputNode: NumericInputNode,
   outputNode: OutputNode,
   logicGateNode: LogicGateNode,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -145,54 +148,83 @@ export function Canvas() {
   const updateComponentPosition = useMetadataStore((state) => state.updateComponentPosition);
   const setComponentSelected = useMetadataStore((state) => state.setComponentSelected);
   const setConnectionSelected = useMetadataStore((state) => state.setConnectionSelected);
-  const updateComponent = useIRStore((state) => state.updateComponent);
   const addConnection = useIRStore((state) => state.addConnection);
   const removeConnection = useIRStore((state) => state.removeConnection);
   const addComponent = useIRStore((state) => state.addComponent);
   const removeComponent = useIRStore((state) => state.removeComponent);
   const setComponentMetadata = useMetadataStore((state) => state.setComponentMetadata);
   const removeComponentMetadata = useMetadataStore((state) => state.removeComponentMetadata);
+  const resolveComponent = useComponentLibraryStore((state) => state.resolveComponent);
 
-  // Track switch values to only run simulation when inputs change
-  const switchValuesKey = useMemo(() => {
-    const switches = Object.entries(irComponents)
-      .filter(([_, comp]) => comp.type === 'SWITCH')
-      .map(([id, comp]) => `${id}:${'value' in comp ? comp.value : false}`)
+  // NOTE: For sequential circuits, simulation is controlled by ClockControls (Step/Run buttons).
+  // For combinational circuits, we auto-run simulation when inputs change for immediate feedback.
+
+  // Track input component values to detect when simulation should run
+  const inputValuesKey = useMemo(() => {
+    const inputs = Object.entries(irComponents)
+      .filter(([, comp]) => comp.type === 'SWITCH' || comp.type === 'INPUT')
+      .map(([id, comp]) => {
+        if (comp.type === 'SWITCH' && 'value' in comp) {
+          return `${id}:${comp.value}`;
+        } else if (comp.type === 'INPUT' && 'value' in comp) {
+          return `${id}:${comp.value}`;
+        }
+        return `${id}:undefined`;
+      })
       .sort()
       .join(',');
-    return switches;
+    return inputs;
   }, [irComponents]);
 
   const connectionsKey = useMemo(() => {
     return Object.keys(irConnections).sort().join(',');
   }, [irConnections]);
 
-  // Auto-run simulation whenever switches or connections change
+  // Auto-run simulation for purely combinational circuits
+  // Sequential circuits require manual step/run controls
   useEffect(() => {
     if (Object.keys(irComponents).length === 0) return;
 
-    // Run simulation step
-    const updatedIR = runSimulationStep({ components: irComponents, connections: irConnections });
+    // Check if circuit has sequential components
+    const hasSequential = hasSequentialComponents(irComponents, resolveComponent);
 
-    // Update component values in the store (batch updates)
-    const updates: Array<{ id: string; value: boolean }> = [];
-    Object.entries(updatedIR.components).forEach(([id, component]) => {
-      if ('value' in component) {
-        const currentComponent = irComponents[id];
-        const currentValue = currentComponent && 'value' in currentComponent ? currentComponent.value : undefined;
+    if (hasSequential) {
+      // Sequential circuit - simulation controlled by ClockControls
+      return;
+    }
 
-        // Only update if value changed
-        if (currentValue !== component.value) {
-          updates.push({ id, value: component.value });
-        }
+    // Purely combinational circuit - run simulation automatically
+    const result = runSimulation(irComponents, irConnections);
+
+    if (result.error) {
+      console.error('Simulation error:', result.error);
+      return;
+    }
+
+    // Get LED updates from simulation results
+    const ledUpdates = getLEDUpdates(irComponents, irConnections, result.portValues);
+
+    // Get display component updates (HexDisplay, SevenSegment)
+    const displayUpdates = getDisplayUpdates(irComponents, irConnections, result.portValues);
+
+    // Apply LED updates to the store
+    // Use getState() to avoid dependency on updateComponent function reference
+    const irStore = useIRStore.getState();
+    ledUpdates.forEach((value, componentId) => {
+      const currentComponent = irComponents[componentId];
+      if (currentComponent && 'value' in currentComponent && currentComponent.value !== value) {
+        irStore.updateComponent(componentId, { value });
       }
     });
 
-    // Apply all updates
-    updates.forEach(({ id, value }) => {
-      updateComponent(id, { value });
+    // Apply display component updates to the store
+    displayUpdates.forEach((value, componentId) => {
+      const currentComponent = irComponents[componentId];
+      if (currentComponent && 'value' in currentComponent && currentComponent.value !== value) {
+        irStore.updateComponent(componentId, { value });
+      }
     });
-  }, [switchValuesKey, connectionsKey]); // Only depend on switches and connections, not all components
+  }, [inputValuesKey, connectionsKey, irComponents, irConnections, resolveComponent]);
 
   // Project IR + Metadata to ReactFlow nodes and edges
   const { nodes, edges } = useMemo(() => {

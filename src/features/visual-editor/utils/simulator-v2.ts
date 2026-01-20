@@ -143,7 +143,7 @@ export class CircuitSimulator {
     }
 
     // Evaluate
-    const outputValues = evaluator(inputValues);
+    const outputValues = evaluator.evaluate(inputValues);
 
     // Write output values
     for (const outputPort of node.outputs) {
