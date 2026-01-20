@@ -21,6 +21,8 @@ export interface NodeData extends Record<string, unknown> {
   componentType: ComponentType;
   label?: string;
   value?: boolean;
+  numericValue?: number;
+  width?: number;
   inputCount: number;
   outputCount: number;
 }
@@ -88,8 +90,17 @@ export function projectToNodes(
 
     // Extract value based on component type (with proper type guard)
     let value: boolean | undefined = undefined;
+    let numericValue: number | undefined = undefined;
+    let width: number | undefined = undefined;
+
     if (component.type === 'SWITCH' || component.type === 'LED') {
       value = 'value' in component ? component.value : undefined;
+    } else if (component.type === 'INPUT') {
+      numericValue = 'value' in component ? (component.value as number) : undefined;
+      width = 'width' in component ? (component.width as number) : undefined;
+    } else if (component.type === 'HexDisplay' || component.type === 'SevenSegment') {
+      // Display components: extract numeric input value
+      numericValue = 'value' in component ? (component.value as number) : undefined;
     }
 
     nodes.push({
@@ -101,6 +112,8 @@ export function projectToNodes(
         componentType: component.type,
         label: component.label,
         value,
+        numericValue,
+        width,
         inputCount,
         outputCount,
       },
@@ -187,6 +200,8 @@ function getNodeTypeForComponent(
   switch (componentType) {
     case 'SWITCH':
       return 'inputNode';
+    case 'INPUT':
+      return 'numericInputNode';
     case 'LED':
       return 'outputNode';
     case 'AND_GATE':
@@ -216,10 +231,17 @@ function getNodeTypeForComponent(
 /**
  * Helper: Get the output value of a component's specific port
  */
-function getOutputValue(component: Component, portIndex: number, ir: IRState): boolean | undefined {
+function getOutputValue(component: Component, portIndex: number, ir: IRState): boolean | number | undefined {
   switch (component.type) {
     case 'SWITCH':
       // Type guard: SWITCH components have a value property
+      if ('value' in component) {
+        return component.value;
+      }
+      return undefined;
+
+    case 'INPUT':
+      // Type guard: INPUT components have a value property
       if ('value' in component) {
         return component.value;
       }
@@ -239,7 +261,7 @@ function getOutputValue(component: Component, portIndex: number, ir: IRState): b
       if (!spec?.evaluate) return undefined;
 
       // Get all connections to this gate's inputs
-      const inputValues: boolean[] = [];
+      const inputValues: (boolean | number)[] = [];
       const connections = Object.values(ir.connections).filter(
         (conn) => conn.targetComponentId === component.id
       );
@@ -277,7 +299,7 @@ function getOutputValue(component: Component, portIndex: number, ir: IRState): b
 /**
  * Helper: Get the input value of a component's specific port
  */
-export function getInputValue(componentId: string, portIndex: number, ir: IRState): boolean | undefined {
+export function getInputValue(componentId: string, portIndex: number, ir: IRState): boolean | number | undefined {
   // Find the connection to this input port
   const connection = Object.values(ir.connections).find(
     (conn) => conn.targetComponentId === componentId && conn.targetPortIndex === portIndex

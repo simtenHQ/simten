@@ -1,10 +1,50 @@
 # Implementation Roadmap: From Current State to Full DSL/IR System
 
+**Last Updated**: January 20, 2026
+**Status**: Phases 1-3 COMPLETE ✅ | Ready for Phase 4 (Canvas as DSL)
+
+## Implementation Status
+
+### ✅ Phase 1: COMPLETE (January 19, 2026)
+- IR v0.1 core infrastructure
+- Component library with three-tier resolution
+- Recursive composite simulator
+- 73 tests passing
+- See: [Phase 1 Completion Summary](./PHASE_1_COMPLETION_SUMMARY.md)
+
+### ✅ Phase 2: COMPLETE (January 19, 2026)
+- Complete DSL parser pipeline (lexer, parser, validator)
+- AST → IR v0.1 compiler
+- 59 tests passing
+- HalfAdder, FullAdder, 4-bit Adder working
+- See: [Phase 2 Completion Summary](./PHASE_2_COMPLETION_SUMMARY.md)
+
+### ✅ Phase 3: COMPLETE (January 19-20, 2026)
+- DSL editor with Monaco-based syntax highlighting
+- Real-time DSL compilation to IR v0.1
+- Component library UI (primitives/standard/user tabs)
+- Sequential circuit support (clocks, D flip-flops, registers, RAM)
+- Clock controls UI (Step/Run/Pause/Reset)
+- IR flattening for composite sequential circuits
+- See: [Phase 3 Architecture](./phase3-architecture.md)
+
+### 🚧 Phase 4: READY TO START (Canvas as DSL)
+**Goal**: Make visual canvas generate DSL, establishing DSL as single source of truth
+- Visual → DSL serialization
+- Bidirectional sync (DSL ↔ Canvas)
+- Deprecate legacy IR entirely
+- Visual composite component creation
+- See: [Current Architecture](./CURRENT_ARCHITECTURE.md) for detailed plan
+
+---
+
 ## Executive Summary
 
-This document provides a clear implementation path from your current working visual editor to a complete DSL-driven system with composite components.
+This document provides a clear implementation path from the initial working visual editor to a complete DSL-driven system with composite components.
 
-## Current State Assessment
+**THIS ROADMAP IS NOW HISTORICAL.** Phases 1-3 are complete. Refer to [CURRENT_ARCHITECTURE.md](./CURRENT_ARCHITECTURE.md) for current state and Phase 4 plans.
+
+## Original Current State Assessment (Pre-Phase 1)
 
 ### What You Have Working ✅
 

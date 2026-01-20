@@ -90,13 +90,14 @@ export function runSimulationStep(ir: IRState, recursionDepth: number = 0): IRSt
 
 /**
  * Evaluates a single component and returns its output value(s)
+ * Returns boolean for single-bit outputs, number for multi-bit buses
  */
 function evaluateComponent(
   component: Component,
   components: Record<string, Component>,
   ir: IRState,
   recursionDepth: number = 0
-): boolean | undefined {
+): boolean | number | undefined {
   const spec = getComponentSpec(component.type);
 
   // Check if this is a primitive component
@@ -104,9 +105,10 @@ function evaluateComponent(
     switch (component.type) {
       case 'SWITCH':
         // Switch value is user-controlled, not evaluated
-        // Type guard: SWITCH components have a value property
+        // Type guard: SWITCH components have a boolean value property
         if ('value' in component) {
-          return component.value;
+          const value = component.value as boolean;
+          return value;
         }
         return undefined;
 
@@ -150,6 +152,7 @@ function evaluateComponent(
 
 /**
  * Evaluates a user-defined composite component by recursively simulating its internal circuit
+ * Returns boolean for single-bit outputs, number for multi-bit buses
  */
 function evaluateCompositeComponent(
   component: Component,
@@ -157,7 +160,7 @@ function evaluateCompositeComponent(
   ir: IRState,
   portIndex: number = 0,
   recursionDepth: number = 0
-): boolean | undefined {
+): boolean | number | undefined {
   // Get the component library store (we need to access it without React hooks context)
   const library = useComponentLibraryStore.getState().library;
 
@@ -240,7 +243,7 @@ function evaluateCompositeComponent(
  */
 function buildInternalIRFromCircuit(
   circuit: Circuit,
-  inputValues: boolean[]
+  inputValues: (boolean | number)[]
 ): IRState {
   const internalComponents: Record<string, Component> = {};
   const internalConnections: Record<string, Connection> = {};
@@ -374,7 +377,7 @@ function getComponentInputValue(
   portIndex: number,
   components: Record<string, Component>,
   ir: IRState
-): boolean | undefined {
+): boolean | number | undefined {
   // Find the connection to this input port
   const connection = Object.values(ir.connections).find(
     (conn) => conn.targetComponentId === componentId && conn.targetPortIndex === portIndex
@@ -395,14 +398,15 @@ function getComponentInputValue(
 
 /**
  * Gets all input values for a component
+ * Returns array of boolean/number values for single-bit/multi-bit ports
  */
 function getComponentInputValues(
   componentId: string,
   inputCount: number,
   components: Record<string, Component>,
   ir: IRState
-): boolean[] {
-  const values: boolean[] = [];
+): (boolean | number)[] {
+  const values: (boolean | number)[] = [];
 
   for (let i = 0; i < inputCount; i++) {
     const value = getComponentInputValue(componentId, i, components, ir);
@@ -414,6 +418,7 @@ function getComponentInputValues(
 
 /**
  * Gets the output value for a specific port of a component
+ * Returns boolean for single-bit outputs, number for multi-bit buses
  */
 function getComponentOutputValue(
   component: Component,
@@ -421,14 +426,15 @@ function getComponentOutputValue(
   components: Record<string, Component>,
   ir: IRState,
   recursionDepth: number = 0
-): boolean | undefined {
+): boolean | number | undefined {
   // Check if this is a primitive component
   if (isPrimitiveComponentType(component.type)) {
     switch (component.type) {
       case 'SWITCH':
-        // Type guard: SWITCH components have a value property
+        // Type guard: SWITCH components have a boolean value property
         if ('value' in component) {
-          return component.value;
+          const value = component.value as boolean;
+          return value;
         }
         return undefined;
 
