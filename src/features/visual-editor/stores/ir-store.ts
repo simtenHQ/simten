@@ -8,8 +8,9 @@
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 import { nanoid } from 'nanoid';
-import type { Component, Connection, IRState, ComponentType, PrimitiveComponentType } from '../types';
+import type { Component, Connection, IRState, ComponentType } from '../types';
 import { useComponentLibraryStore } from './component-library-store';
+import { createPrimitiveComponent } from '../lib/primitives';
 
 interface IRActions {
   // Component operations
@@ -48,40 +49,35 @@ export const useIRStore = create<IRStore>()(
       const id = nanoid();
       set((state) => {
         const component: Component = (() => {
-          // First check if this is a user-defined component in the library
+          // Strategy: Try multiple resolution strategies in order:
+          // 1. User-defined components from library
+          // 2. Primitives from primitives.ts (handles all 31+ primitive types)
+          // 3. Error if not found
+
+          // 1. Check if this is a user-defined component in the library
           const componentLibrary = useComponentLibraryStore.getState();
           const userComponent = componentLibrary.resolveComponent(type);
-
           if (userComponent) {
-            // User-defined component found in library
             return { id, type };
           }
 
-          // Fall back to primitive component switch statement
-          switch (type as PrimitiveComponentType) {
-            case 'SWITCH':
-              return { id, type: 'SWITCH', value: initialValue };
-            case 'LED':
-              return { id, type: 'LED', value: false };
-            case 'AND_GATE':
-              return { id, type: 'AND_GATE' };
-            case 'OR_GATE':
-              return { id, type: 'OR_GATE' };
-            case 'NOT_GATE':
-              return { id, type: 'NOT_GATE' };
-            case 'NAND_GATE':
-              return { id, type: 'NAND_GATE' };
-            case 'NOR_GATE':
-              return { id, type: 'NOR_GATE' };
-            case 'XOR_GATE':
-              return { id, type: 'XOR_GATE' };
-            case 'XNOR_GATE':
-              return { id, type: 'XNOR_GATE' };
-            case 'BUFFER':
-              return { id, type: 'BUFFER' };
-            default:
-              throw new Error(`Unknown component type: ${type}. Component not found in library or primitives.`);
+          // 2. Try to create a primitive component using dynamic lookup
+          //    This handles ALL primitives defined in primitives.ts including:
+          //    - Logic gates (And, Or, Not, etc.)
+          //    - I/O (Switch, Led, Button, Input)
+          //    - Display (HexDisplay, SevenSegment)
+          //    - Arithmetic (Adder, Multiplier, Comparator)
+          //    - Sequential (DFlipFlop, Register, RAM, ROM)
+          //    - Utility (Splitter, Splitter8to8, Constant, Probe, etc.)
+          const primitiveComponent = createPrimitiveComponent(id, type, initialValue);
+          if (primitiveComponent) {
+            return primitiveComponent as Component;
           }
+
+          // 3. Component not found in either library or primitives
+          throw new Error(
+            `Unknown component type: ${type}. Component not found in library or primitives.`
+          );
         })();
         state.components[id] = component;
       });

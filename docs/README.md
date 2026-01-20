@@ -228,33 +228,64 @@ Standard Library
 
 ## Implementation Status
 
-### Phase 1: Core Specification ✅
-- [x] IR type definitions (TypeScript)
-- [x] DSL syntax specification
-- [x] Component library model
-- [x] Execution semantics documentation
-- [x] Linking and resolution specification
-- [x] Complete examples
+### Phase 1: IR v0.1 Core Infrastructure ✅ COMPLETE
+- [x] IR v0.1 type definitions (`/src/features/visual-editor/types/ir-v0.1.ts`)
+- [x] Component library store with three-tier resolution (primitives/standard/user)
+- [x] Recursive composite simulator (`simulator-v0.1.ts`)
+- [x] 31+ primitive components with evaluators
+- [x] Comprehensive test coverage (73 tests passing)
+- [x] Documentation complete
 
-### Phase 2: Implementation (In Progress)
-- [ ] DSL parser
-- [ ] Symbol table builder
-- [ ] Name resolver and type checker
-- [ ] IR generator
-- [ ] Simulator engine
-- [ ] Component library (primitives)
+**Status**: All success criteria met. See [Phase 1 Completion Summary](./PHASE_1_COMPLETION_SUMMARY.md)
 
-### Phase 3: Standard Library
-- [ ] Basic gates (And, Or, Xor, etc.)
-- [ ] Arithmetic components (Adder, ALU)
-- [ ] Memory components (Register, RAM)
-- [ ] Multiplexers and decoders
+### Phase 2: DSL Parser Pipeline ✅ COMPLETE
+- [x] Complete DSL lexer (tokenizer) with source location tracking
+- [x] Recursive descent parser for full v0.1 DSL syntax
+- [x] AST type definitions (`/src/features/dsl/types/ast.ts`)
+- [x] Semantic validator (duplicate detection, name resolution)
+- [x] IR compiler (AST → IR v0.1)
+- [x] Comprehensive test coverage (59 tests passing)
+- [x] HalfAdder, FullAdder, 4-bit Adder examples working
 
-### Phase 4: Tooling
-- [ ] Syntax highlighting
-- [ ] Error diagnostics
-- [ ] Debugger
-- [ ] Test framework
+**Status**: All success criteria met. See [Phase 2 Completion Summary](./PHASE_2_COMPLETION_SUMMARY.md)
+
+### Phase 3: DSL Editor Integration ✅ COMPLETE
+- [x] Monaco-based DSL code editor with syntax highlighting
+- [x] Real-time DSL compilation to IR v0.1
+- [x] Component library UI (primitives/standard/user tabs)
+- [x] Visual editor ↔ DSL bidirectional workflow
+- [x] Error reporting with line/column information
+- [x] Sequential circuit support (clocks, registers, RAM, D flip-flops)
+- [x] Clock controls UI (Step/Run/Pause/Reset)
+- [x] IR flattening for composite components
+
+**Status**: All success criteria met. See [Phase 3 Architecture](./phase3-architecture.md)
+
+### Phase 4: Canvas as DSL (Ready for MVP Work)
+**Goal**: Make the visual canvas generate DSL, making DSL the single source of truth
+
+Current capabilities:
+- Users can write DSL → compile to IR → simulate
+- Users can drag primitives onto canvas → simulate (legacy IR)
+- **Gap**: Canvas doesn't generate DSL from visual layout
+
+Next steps:
+- Implement visual → DSL serialization
+- Make canvas edit DSL under the hood
+- Deprecate legacy IR, migrate fully to IR v0.1
+- Enable visual creation of composite components
+
+### Current Architecture (Phases 1-3 Complete)
+
+**Single IR System**: The codebase uses IR v0.1 as the canonical format:
+- `/src/features/visual-editor/types/ir-v0.1.ts` - **Canonical IR specification**
+- `/src/features/visual-editor/types/ir.ts` - **Legacy compatibility shims only**
+- DSL compiler outputs IR v0.1
+- Simulator v0.1 consumes IR v0.1
+- Component library uses IR v0.1 throughout
+- Visual editor still uses legacy IR (to be migrated in Phase 4)
+
+**There is NO "two IR problem"** - only one canonical IR with legacy compatibility layer.
 
 ## Getting Involved
 

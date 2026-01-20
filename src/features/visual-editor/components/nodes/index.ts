@@ -4,6 +4,7 @@
 
 export { BaseNode } from './BaseNode';
 export { InputNode } from './InputNode';
+export { NumericInputNode } from './NumericInputNode';
 export { OutputNode } from './OutputNode';
 export { LogicGateNode } from './LogicGateNode';
 

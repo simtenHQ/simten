@@ -9,10 +9,17 @@
 // Component Type Definitions
 // ===========================
 
-// Primitive component types (built-in)
-export type PrimitiveComponentType =
+/**
+ * Legacy primitive component types (for backward compatibility)
+ * These use SCREAMING_SNAKE_CASE naming convention
+ *
+ * NOTE: This enum is deprecated. New code should use the dynamic primitive
+ * lookup from primitives.ts PRIMITIVES array, which uses PascalCase naming.
+ */
+export type LegacyPrimitiveComponentType =
   | 'SWITCH'
   | 'LED'
+  | 'INPUT'
   | 'AND_GATE'
   | 'OR_GATE'
   | 'NOT_GATE'
@@ -20,7 +27,26 @@ export type PrimitiveComponentType =
   | 'NOR_GATE'
   | 'XOR_GATE'
   | 'XNOR_GATE'
-  | 'BUFFER';
+  | 'BUFFER'
+  | 'D_FLIP_FLOP'
+  | 'REGISTER'
+  | 'RAM';
+
+/**
+ * All primitive component type names from primitives.ts
+ * This type is derived from the PRIMITIVES array at runtime.
+ *
+ * Includes all 31+ primitive components like:
+ * - Logic gates: And, Or, Not, Nand, Nor, Xor, Xnor, Buffer
+ * - I/O: Switch, Led, Button, Input
+ * - Arithmetic: Adder, Multiplier, Comparator
+ * - Plexers: Mux, Decoder
+ * - Sequential: DFlipFlop, Register, RAM, ROM
+ * - Display: SevenSegment, HexDisplay
+ * - Utility: Splitter, Splitter8to8, Constant, Probe
+ * - Bus operations: BusAnd, BusOr, BusNot, BusXor
+ */
+export type PrimitiveComponentType = string;
 
 // ComponentType can be primitive or user-defined (string)
 export type ComponentType = PrimitiveComponentType | string;
@@ -37,10 +63,27 @@ export interface SwitchComponent extends ComponentBase {
   value: boolean; // Current state of the switch
 }
 
+export interface InputComponent extends ComponentBase {
+  type: 'INPUT';
+  value: number; // Current numeric value
+  width: number; // Bit width (default: 8)
+}
+
 // OUTPUT components (display-only)
 export interface LEDComponent extends ComponentBase {
   type: 'LED';
   value: boolean; // Current state (on/off)
+}
+
+export interface HexDisplayComponent extends ComponentBase {
+  type: 'HexDisplay';
+  value: number; // Current numeric value to display
+  width: number; // Bit width (default: 8)
+}
+
+export interface SevenSegmentComponent extends ComponentBase {
+  type: 'SevenSegment';
+  value: number; // Current numeric value to display (0-15)
 }
 
 // LOGIC components
@@ -76,6 +119,25 @@ export interface BufferComponent extends ComponentBase {
   type: 'BUFFER';
 }
 
+// SEQUENTIAL components (stateful)
+export interface DFlipFlopComponent extends ComponentBase {
+  type: 'D_FLIP_FLOP';
+  state: boolean; // Current stored value (Q output)
+}
+
+export interface RegisterComponent extends ComponentBase {
+  type: 'REGISTER';
+  width: number; // Number of bits (default: 8)
+  state: number; // Current stored value
+}
+
+export interface RAMComponent extends ComponentBase {
+  type: 'RAM';
+  addressWidth: number; // Number of address bits (default: 8)
+  dataWidth: number; // Number of data bits (default: 8)
+  memory: Map<number, number>; // Sparse memory storage
+}
+
 // USER-DEFINED components (composite/custom)
 export interface UserDefinedComponent extends ComponentBase {
   type: string; // Component name from library (e.g., 'MyAndGate', 'HalfAdder')
@@ -84,7 +146,10 @@ export interface UserDefinedComponent extends ComponentBase {
 
 export type Component =
   | SwitchComponent
+  | InputComponent
   | LEDComponent
+  | HexDisplayComponent
+  | SevenSegmentComponent
   | AndGateComponent
   | OrGateComponent
   | NotGateComponent
@@ -93,6 +158,9 @@ export type Component =
   | XorGateComponent
   | XnorGateComponent
   | BufferComponent
+  | DFlipFlopComponent
+  | RegisterComponent
+  | RAMComponent
   | UserDefinedComponent;
 
 // ===========================
@@ -130,30 +198,39 @@ export interface ComponentSpec {
   type: ComponentType;
   inputCount: number;
   outputCount: number;
-  evaluate?: (inputs: boolean[]) => boolean[]; // Logic function
+  evaluate?: (inputs: (boolean | number)[]) => (boolean | number)[]; // Logic function
 }
 
-// Primitive component specifications
-export const PRIMITIVE_COMPONENT_SPECS: Record<PrimitiveComponentType, ComponentSpec> = {
+/**
+ * Legacy primitive component specifications (SCREAMING_SNAKE_CASE naming)
+ *
+ * DEPRECATED: This is kept only for backward compatibility.
+ * New code should use the primitives.ts PRIMITIVES array with PascalCase naming.
+ *
+ * These specs use the old evaluate() signature which will be removed in the future.
+ */
+export const LEGACY_PRIMITIVE_SPECS: Record<LegacyPrimitiveComponentType, ComponentSpec> = {
   SWITCH: {
     type: 'SWITCH',
     inputCount: 0,
     outputCount: 1,
-    // Switch output is controlled by user, not evaluated
+  },
+  INPUT: {
+    type: 'INPUT',
+    inputCount: 0,
+    outputCount: 1,
   },
   LED: {
     type: 'LED',
     inputCount: 1,
     outputCount: 0,
-    // LED is an output component, no evaluation
   },
   AND_GATE: {
     type: 'AND_GATE',
     inputCount: 2,
     outputCount: 1,
-    evaluate: (inputs: boolean[]) => {
-      // AND gate: output is true only if all inputs are true
-      const result = inputs.length === 2 ? inputs[0] && inputs[1] : false;
+    evaluate: (inputs: (boolean | number)[]) => {
+      const result = inputs.length === 2 ? Boolean(inputs[0]) && Boolean(inputs[1]) : false;
       return [result];
     },
   },
@@ -161,9 +238,8 @@ export const PRIMITIVE_COMPONENT_SPECS: Record<PrimitiveComponentType, Component
     type: 'OR_GATE',
     inputCount: 2,
     outputCount: 1,
-    evaluate: (inputs: boolean[]) => {
-      // OR gate: output is true if ANY input is true
-      const result = inputs.length === 2 ? (inputs[0] || inputs[1]) : false;
+    evaluate: (inputs: (boolean | number)[]) => {
+      const result = inputs.length === 2 ? (Boolean(inputs[0]) || Boolean(inputs[1])) : false;
       return [result];
     },
   },
@@ -171,9 +247,8 @@ export const PRIMITIVE_COMPONENT_SPECS: Record<PrimitiveComponentType, Component
     type: 'NOT_GATE',
     inputCount: 1,
     outputCount: 1,
-    evaluate: (inputs: boolean[]) => {
-      // NOT gate: output is inverse of input
-      const result = inputs.length === 1 ? !inputs[0] : false;
+    evaluate: (inputs: (boolean | number)[]) => {
+      const result = inputs.length === 1 ? !Boolean(inputs[0]) : false;
       return [result];
     },
   },
@@ -181,9 +256,8 @@ export const PRIMITIVE_COMPONENT_SPECS: Record<PrimitiveComponentType, Component
     type: 'NAND_GATE',
     inputCount: 2,
     outputCount: 1,
-    evaluate: (inputs: boolean[]) => {
-      // NAND gate: output is false only when ALL inputs are true
-      const result = inputs.length === 2 ? !(inputs[0] && inputs[1]) : true;
+    evaluate: (inputs: (boolean | number)[]) => {
+      const result = inputs.length === 2 ? !(Boolean(inputs[0]) && Boolean(inputs[1])) : true;
       return [result];
     },
   },
@@ -191,9 +265,8 @@ export const PRIMITIVE_COMPONENT_SPECS: Record<PrimitiveComponentType, Component
     type: 'NOR_GATE',
     inputCount: 2,
     outputCount: 1,
-    evaluate: (inputs: boolean[]) => {
-      // NOR gate: output is true only when ALL inputs are false
-      const result = inputs.length === 2 ? !(inputs[0] || inputs[1]) : true;
+    evaluate: (inputs: (boolean | number)[]) => {
+      const result = inputs.length === 2 ? !(Boolean(inputs[0]) || Boolean(inputs[1])) : true;
       return [result];
     },
   },
@@ -201,9 +274,8 @@ export const PRIMITIVE_COMPONENT_SPECS: Record<PrimitiveComponentType, Component
     type: 'XOR_GATE',
     inputCount: 2,
     outputCount: 1,
-    evaluate: (inputs: boolean[]) => {
-      // XOR gate: output is true when inputs are different
-      const result = inputs.length === 2 ? (inputs[0] !== inputs[1]) : false;
+    evaluate: (inputs: (boolean | number)[]) => {
+      const result = inputs.length === 2 ? (Boolean(inputs[0]) !== Boolean(inputs[1])) : false;
       return [result];
     },
   },
@@ -211,9 +283,8 @@ export const PRIMITIVE_COMPONENT_SPECS: Record<PrimitiveComponentType, Component
     type: 'XNOR_GATE',
     inputCount: 2,
     outputCount: 1,
-    evaluate: (inputs: boolean[]) => {
-      // XNOR gate: output is true when inputs are the same
-      const result = inputs.length === 2 ? (inputs[0] === inputs[1]) : false;
+    evaluate: (inputs: (boolean | number)[]) => {
+      const result = inputs.length === 2 ? (Boolean(inputs[0]) === Boolean(inputs[1])) : false;
       return [result];
     },
   },
@@ -221,27 +292,80 @@ export const PRIMITIVE_COMPONENT_SPECS: Record<PrimitiveComponentType, Component
     type: 'BUFFER',
     inputCount: 1,
     outputCount: 1,
-    evaluate: (inputs: boolean[]) => {
-      // BUFFER: output equals input
-      const result = inputs.length === 1 ? inputs[0] : false;
+    evaluate: (inputs: (boolean | number)[]) => {
+      const result = inputs.length === 1 ? Boolean(inputs[0]) : false;
       return [result];
     },
   },
+  D_FLIP_FLOP: {
+    type: 'D_FLIP_FLOP',
+    inputCount: 2, // D (data), CLK (clock)
+    outputCount: 2, // Q, Q_BAR (inverse)
+  },
+  REGISTER: {
+    type: 'REGISTER',
+    inputCount: 2, // DATA (bus), WE (write enable)
+    outputCount: 1, // Q (bus)
+  },
+  RAM: {
+    type: 'RAM',
+    inputCount: 4, // ADDR (bus), DATA_IN (bus), WE (write enable), CLK (clock)
+    outputCount: 1, // DATA_OUT (bus)
+  },
 };
 
-// Backward compatibility alias
-export const COMPONENT_SPECS = PRIMITIVE_COMPONENT_SPECS;
+// Backward compatibility aliases
+export const PRIMITIVE_COMPONENT_SPECS = LEGACY_PRIMITIVE_SPECS;
+export const COMPONENT_SPECS = LEGACY_PRIMITIVE_SPECS;
 
-// Helper function to check if a component type is primitive
+/**
+ * Check if a component type is a primitive (from either old or new system)
+ *
+ * This uses dynamic lookup from primitives.ts as the source of truth.
+ * Falls back to legacy specs for backward compatibility.
+ */
 export function isPrimitiveComponentType(type: ComponentType): type is PrimitiveComponentType {
-  return type in PRIMITIVE_COMPONENT_SPECS;
+  // Try new-style primitives first (PascalCase from primitives.ts)
+  try {
+    const { isPrimitive } = require('../lib/primitives');
+    if (isPrimitive(type)) {
+      return true;
+    }
+  } catch (e) {
+    // If primitives.ts is not available, fall through to legacy check
+  }
+
+  // Fall back to legacy primitives (SCREAMING_SNAKE_CASE)
+  return type in LEGACY_PRIMITIVE_SPECS;
 }
 
-// Helper function to safely get component specs
+/**
+ * Get component specification for any component type
+ *
+ * This function provides a unified interface for getting component specs
+ * from either the new primitives.ts system or the legacy system.
+ */
 export function getComponentSpec(type: ComponentType): ComponentSpec | undefined {
-  if (isPrimitiveComponentType(type)) {
-    return PRIMITIVE_COMPONENT_SPECS[type];
+  // Try new-style primitives first (from primitives.ts PRIMITIVES array)
+  try {
+    const { PRIMITIVES } = require('../lib/primitives');
+    const primitive = PRIMITIVES.find((p: any) => p.name === type);
+    if (primitive) {
+      return {
+        type,
+        inputCount: primitive.inputs.length,
+        outputCount: primitive.outputs.length,
+      };
+    }
+  } catch (e) {
+    // If primitives.ts is not available (e.g., during initial load), fall through
   }
+
+  // Fall back to legacy primitives
+  if (type in LEGACY_PRIMITIVE_SPECS) {
+    return LEGACY_PRIMITIVE_SPECS[type as LegacyPrimitiveComponentType];
+  }
+
   // TODO: For user-defined components, resolve from component library
   return undefined;
 }
@@ -253,4 +377,52 @@ export function getComponentSpec(type: ComponentType): ComponentSpec | undefined
 export interface IRState {
   components: Record<string, Component>;
   connections: Record<string, Connection>;
+}
+
+// ===========================
+// Sequential Simulation State
+// ===========================
+
+/**
+ * Clock signal state
+ */
+export interface ClockSignal {
+  previousValue: boolean;
+  currentValue: boolean;
+}
+
+/**
+ * Sequential simulation state management
+ * Uses double buffering to prevent race conditions
+ */
+export interface SequentialState {
+  // Clock signals
+  clocks: Map<string, ClockSignal>;
+
+  // Component state (double buffered)
+  // Includes undefined to match PrimitiveState type from primitive-interface.ts
+  currentState: Map<string, boolean | number | Map<number, number> | undefined>;
+  nextState: Map<string, boolean | number | Map<number, number> | undefined>;
+
+  // Simulation cycle counter
+  cycleCount: number;
+}
+
+/**
+ * Helper function to check if a component is sequential (has state)
+ */
+export function isSequentialComponent(type: ComponentType): boolean {
+  return type === 'D_FLIP_FLOP' || type === 'REGISTER' || type === 'RAM';
+}
+
+/**
+ * Helper function to detect clock edge
+ */
+export function detectClockEdge(clock: ClockSignal): 'rising' | 'falling' | 'none' {
+  if (!clock.previousValue && clock.currentValue) {
+    return 'rising';
+  } else if (clock.previousValue && !clock.currentValue) {
+    return 'falling';
+  }
+  return 'none';
 }

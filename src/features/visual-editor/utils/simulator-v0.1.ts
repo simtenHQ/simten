@@ -300,7 +300,7 @@ function evaluatePrimitive(
     throw new Error(`No evaluator found for primitive: ${componentDef.name}`);
   }
 
-  return evaluator(inputValues);
+  return evaluator.evaluate(inputValues);
 }
 
 /**

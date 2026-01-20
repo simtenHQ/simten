@@ -4,7 +4,8 @@
       "Bash(find:*)",
       "Bash(npx eslint:*)",
       "Bash(pnpm test:*)",
-      "Bash(xargs sed:*)"
+      "Bash(xargs sed:*)",
+      "Bash(pnpm eslint:*)"
     ]
   }
 }
