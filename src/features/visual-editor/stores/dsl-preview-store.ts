@@ -51,6 +51,9 @@ interface DSLPreviewActions {
 
   // Canvas → DSL sync
   updateDSLFromCanvas: (circuit: Circuit, dslCode: string) => void;
+
+  // Metadata persistence
+  saveCurrentPositions: () => void;
 }
 
 interface DSLPreviewState {
@@ -132,6 +135,17 @@ export const useDSLPreviewStore = create<DSLPreviewStore>()(
       const selectedCircuit = compiledCircuits[selectedCircuitIndex];
       console.log('[DSLPreviewStore] Applying circuit:', selectedCircuit.name, selectedCircuit.nodes.length, 'nodes');
 
+      // Clean up old circuit metadata from localStorage (keep only current circuit)
+      if (typeof window !== 'undefined') {
+        const currentKey = `dsl-metadata-${selectedCircuit.name}`;
+        Object.keys(localStorage)
+          .filter(key => key.startsWith('dsl-metadata-') && key !== currentKey)
+          .forEach(key => {
+            localStorage.removeItem(key);
+            console.log('[DSLPreviewStore] Cleaned up old metadata:', key);
+          });
+      }
+
       // CRITICAL: Calculate and populate metadata BEFORE setting circuit
       // This prevents race condition where Canvas renders before metadata is ready
 
@@ -155,7 +169,13 @@ export const useDSLPreviewStore = create<DSLPreviewStore>()(
       }
 
       // Build positions keyed by node ID (for MetadataStore)
-      if (Object.keys(savedPositionsByLabel).length === selectedCircuit.nodes.length) {
+      // Check if ALL nodes have saved positions (not just if count matches)
+      const allNodesHaveSavedPositions = selectedCircuit.nodes.every(node => {
+        const label = node.label || node.id;
+        return savedPositionsByLabel[label] !== undefined;
+      });
+
+      if (allNodesHaveSavedPositions && Object.keys(savedPositionsByLabel).length > 0) {
         // Use saved positions, map labels to current node IDs
         console.log('[DSLPreviewStore] Using saved positions (mapped to current IDs)');
         positions = {};
@@ -271,6 +291,33 @@ export const useDSLPreviewStore = create<DSLPreviewStore>()(
         state.dslVersion = hash;
         state.lastSyncedVersion = hash;
       });
+    },
+
+    saveCurrentPositions: () => {
+      const { compiledCircuits, selectedCircuitIndex } = get();
+
+      if (selectedCircuitIndex < 0 || selectedCircuitIndex >= compiledCircuits.length) {
+        return; // No circuit selected
+      }
+
+      const selectedCircuit = compiledCircuits[selectedCircuitIndex];
+      const metadataStore = useMetadataStore.getState();
+
+      // Convert node IDs to labels and collect positions
+      const positionsByLabel: Record<string, { x: number; y: number }> = {};
+
+      selectedCircuit.nodes.forEach(node => {
+        const label = node.label || node.id;
+        const metadata = metadataStore.components[node.id];
+
+        if (metadata && metadata.position) {
+          positionsByLabel[label] = metadata.position;
+        }
+      });
+
+      // Save to localStorage
+      saveCircuitMetadata(selectedCircuit.name, positionsByLabel);
+      console.log('[DSLPreviewStore] Saved positions for', selectedCircuit.name, ':', Object.keys(positionsByLabel).length, 'nodes');
     },
   }))
 );
