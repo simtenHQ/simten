@@ -619,40 +619,87 @@ export const PRIMITIVES: Circuit[] = [
   // Sequential Components (Stateful)
   // ============================================================================
 
-  createPrimitiveCircuit(
-    'DFlipFlop',
-    [
-      { name: 'd', portType: bitType() },
-      { name: 'clk', portType: bitType() },
-    ],
-    [
+  // DFlipFlop - manually defined to include clocks and state
+  {
+    id: 'primitive:DFlipFlop',
+    name: 'DFlipFlop',
+    parameters: [],
+    inputs: [{ name: 'd', portType: bitType() }],
+    outputs: [
       { name: 'q', portType: bitType() },
       { name: 'q_bar', portType: bitType() },
     ],
-    'D Flip-Flop - stores 1 bit of state, updates on rising clock edge'
-  ),
+    clocks: [{ name: 'clk' }],
+    state: [
+      {
+        id: 'dff-state',
+        name: 'value',
+        stateType: bitType(),
+        initialValue: false,
+      },
+    ],
+    nodes: [],
+    connections: [],
+    implementation: { kind: 'primitive' },
+    metadata: {
+      description: 'D Flip-Flop - stores 1 bit of state, updates on rising clock edge',
+    },
+  },
 
-  createPrimitiveCircuit(
-    'Register',
-    [
+  // Register - manually defined to include clocks and state
+  {
+    id: 'primitive:Register',
+    name: 'Register',
+    parameters: [],
+    inputs: [
       { name: 'data', portType: busType(8) },
       { name: 'we', portType: bitType() },
     ],
-    [{ name: 'q', portType: busType(8) }],
-    '8-bit Register - stores data when write enable is high'
-  ),
+    outputs: [{ name: 'q', portType: busType(8) }],
+    clocks: [{ name: 'clk' }],
+    state: [
+      {
+        id: 'reg-state',
+        name: 'value',
+        stateType: busType(8),
+        initialValue: 0,
+      },
+    ],
+    nodes: [],
+    connections: [],
+    implementation: { kind: 'primitive' },
+    metadata: {
+      description: '8-bit Register - stores data when write enable is high',
+    },
+  },
 
-  createPrimitiveCircuit(
-    'RAM',
-    [
+  // RAM - manually defined to include clocks and state
+  {
+    id: 'primitive:RAM',
+    name: 'RAM',
+    parameters: [],
+    inputs: [
       { name: 'addr', portType: busType(8) },
       { name: 'data_in', portType: busType(8) },
       { name: 'we', portType: bitType() },
-      { name: 'clk', portType: bitType() },
     ],
-    [{ name: 'data_out', portType: busType(8) }],
-    '256x8 RAM - reads are combinational, writes occur on rising clock edge with write enable'
-  ),
+    outputs: [{ name: 'data_out', portType: busType(8) }],
+    clocks: [{ name: 'clk' }],
+    state: [
+      {
+        id: 'ram-state',
+        name: 'memory',
+        stateType: { kind: 'memory', addressWidth: 8, dataWidth: 8 },
+        initialValue: { data: new Map(), addressWidth: 8, dataWidth: 8 },
+      },
+    ],
+    nodes: [],
+    connections: [],
+    implementation: { kind: 'primitive' },
+    metadata: {
+      description: '256x8 RAM - reads are combinational, writes occur on rising clock edge with write enable',
+    },
+  },
 
   // ============================================================================
   // Arithmetic Operations

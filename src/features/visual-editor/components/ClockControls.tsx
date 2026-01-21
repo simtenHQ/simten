@@ -1,11 +1,17 @@
 /**
- * ClockControls Component
+ * ClockControls Component (IR v0.1)
  *
  * Provides UI controls for sequential circuit simulation:
  * - Step: Execute one clock tick
  * - Run: Continuously execute clock ticks
  * - Pause: Pause continuous execution
  * - Reset: Reset all sequential state
+ *
+ * Updated for IR v0.1:
+ * - Uses CircuitStore instead of useIRStore
+ * - Uses simulator-v0.1.ts functions
+ * - Works with Circuit.nodes instead of components
+ * - Simplified to support top-level sequential components only (no composites for now)
  */
 
 'use client';
@@ -13,87 +19,98 @@
 import React, { useCallback, useState, useEffect, useRef } from 'react';
 import { SkipForward, Play, Pause, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useIRStore, useUIStore, useComponentLibraryStore } from '../stores';
-import { initializeSequentialState, runSimulationTick, getLEDUpdates } from '../lib/simulator';
-import { hasSequentialComponents } from '../lib/component-utils';
-import { flattenIR, type FlattenedIR } from '../lib/ir-flattener';
-import type { SequentialState } from '../types';
+import { useCircuitStore } from '../stores/circuit-store';
+import { useUIStore, useComponentLibraryStore } from '../stores';
+import { initializeSequentialState, runSimulationTick, type SequentialState } from '../lib/simulator-v0.1';
+import type { Circuit } from '../types/ir-v0.1';
+
+/**
+ * Check if circuit has sequential components at the top level
+ * (Simplified version - doesn't check nested composites)
+ */
+function hasSequentialComponents(circuit: Circuit | null, resolveComponent: (name: string) => Circuit | undefined): boolean {
+  if (!circuit) return false;
+
+  for (const node of circuit.nodes) {
+    const componentDef = resolveComponent(node.componentRef);
+    if (!componentDef) continue;
+
+    // Check if component has clocks or state (sequential indicators)
+    if (componentDef.clocks.length > 0 || componentDef.state.length > 0) {
+      return true;
+    }
+  }
+  return false;
+}
 
 export function ClockControls() {
-  const components = useIRStore((state) => state.components);
-  const connections = useIRStore((state) => state.connections);
-  const updateComponent = useIRStore((state) => state.updateComponent);
+  const circuit = useCircuitStore((state) => state.circuit);
   const simulationStatus = useUIStore((state) => state.simulation.status);
   const setSimulationStatus = useUIStore((state) => state.setSimulationStatus);
   const resolveComponent = useComponentLibraryStore((state) => state.resolveComponent);
 
   // Sequential state (persisted in component state)
   const [seqState, setSeqState] = useState<SequentialState | null>(null);
-  const [flatIR, setFlatIR] = useState<FlattenedIR | null>(null);
   const [isRunning, setIsRunning] = useState(false);
   const runIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Track component structure (IDs and types) to detect structural changes
-  const prevComponentStructureRef = useRef<string>('');
+  // Track circuit structure (IDs and types) to detect structural changes
+  const prevCircuitStructureRef = useRef<string>('');
 
-  // Flatten IR and initialize sequential state when STRUCTURE changes
-  // (not when component VALUES change, like switch toggles)
+  // Initialize sequential state when STRUCTURE changes
+  // (not when node VALUES change, like switch toggles)
   useEffect(() => {
-    const hasSequential = hasSequentialComponents(components, resolveComponent);
+    if (!circuit) {
+      setSeqState(null);
+      prevCircuitStructureRef.current = '';
+      return;
+    }
 
-    // Create a stable signature of the component structure (IDs + types + connections)
-    // This changes only when components are added/removed/reconnected, NOT when values change
-    const componentStructure = JSON.stringify({
-      componentIds: Object.keys(components).sort(),
-      componentTypes: Object.fromEntries(
-        Object.entries(components).map(([id, comp]) => [id, comp.type])
-      ),
-      connections: Object.values(connections).map((conn) => ({
-        from: `${conn.sourceComponentId}.${conn.sourcePortIndex}`,
-        to: `${conn.targetComponentId}.${conn.targetPortIndex}`
+    const hasSequential = hasSequentialComponents(circuit, resolveComponent);
+
+    // Create a stable signature of the circuit structure (node IDs + types + connections)
+    // This changes only when nodes are added/removed/reconnected, NOT when values change
+    const circuitStructure = JSON.stringify({
+      nodeIds: circuit.nodes.map(n => n.id).sort(),
+      nodeTypes: circuit.nodes.map(n => ({ id: n.id, type: n.componentRef })).sort((a, b) => a.id.localeCompare(b.id)),
+      connections: circuit.connections.map(conn => ({
+        from: `${conn.source.nodeId}.${conn.source.portName}`,
+        to: `${conn.target.nodeId}.${conn.target.portName}`
       })).sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b)))
     });
 
     // Only re-initialize if structure actually changed
-    const structureChanged = componentStructure !== prevComponentStructureRef.current;
+    const structureChanged = circuitStructure !== prevCircuitStructureRef.current;
 
     if (hasSequential) {
-      // Always re-flatten IR (needed for simulation)
-      const flattened = flattenIR(components, connections, resolveComponent);
-      setFlatIR(flattened);
-
       // Only re-initialize sequential state if structure changed
       if (structureChanged || !seqState) {
-        console.log('[ClockControls] Component structure changed, re-initializing seqState');
-        console.log('[ClockControls] Old structure:', prevComponentStructureRef.current);
-        console.log('[ClockControls] New structure:', componentStructure);
-        setSeqState(initializeSequentialState(flattened.components));
-        prevComponentStructureRef.current = componentStructure;
+        console.log('[ClockControls] Circuit structure changed, re-initializing seqState');
+        setSeqState(initializeSequentialState(circuit));
+        prevCircuitStructureRef.current = circuitStructure;
       } else {
-        console.log('[ClockControls] Only component values changed, preserving seqState');
+        console.log('[ClockControls] Only node values changed, preserving seqState');
       }
     } else {
-      setFlatIR(null);
       setSeqState(null);
-      prevComponentStructureRef.current = '';
+      prevCircuitStructureRef.current = '';
     }
-  }, [components, connections, resolveComponent, seqState]);
+  }, [circuit, resolveComponent, seqState]);
 
   // Handle single clock step
   const handleStep = useCallback(() => {
-    if (!seqState || !flatIR) return;
+    if (!seqState || !circuit) return;
 
     console.log('========== STEP BUTTON PRESSED ==========');
-    console.log('[STEP] flatIR.components:', Object.keys(flatIR.components));
+    console.log('[STEP] circuit.nodes:', circuit.nodes.map(n => n.id));
     console.log('[STEP] seqState.currentState:', Array.from(seqState.currentState.entries()));
 
     setSimulationStatus('running');
 
-    // Execute one clock tick using flattened IR
-    const result = runSimulationTick(flatIR.components, flatIR.connections, seqState);
+    // Execute one clock tick
+    const result = runSimulationTick(circuit, seqState);
 
     console.log('[STEP] After simulation - portValues:', Array.from(result.portValues.entries()));
-    console.log('[STEP] After simulation - componentOutputs:', Array.from(result.componentOutputs.entries()));
 
     if (result.error) {
       console.error('Simulation error:', result.error);
@@ -101,64 +118,19 @@ export function ClockControls() {
       return;
     }
 
-    // Get LED value updates based on simulation results
-    const ledUpdates = getLEDUpdates(flatIR.components, flatIR.connections, result.portValues);
-    console.log('[STEP] LED updates:', Array.from(ledUpdates.entries()));
-
-    // Update component states in the IR store
-    // IMPORTANT: We need to update based on the FLATTENED IR, not the top-level components
-    // because sequential components might be inside composite components
-
-    // First, update all LED components (these exist in both top-level and flattened IR)
-    for (const [flatCompId, flatComponent] of Object.entries(flatIR.components)) {
-      if (flatComponent.type === 'LED') {
-        // Find the corresponding top-level LED (might be the same ID if it's a top-level LED)
-        // For LEDs inside composite components, we need to trace back through the mapping
-        // For now, if the LED exists in the top-level components, update it
-        if (components[flatCompId]) {
-          const newValue = ledUpdates.get(flatCompId);
-          if (newValue !== undefined) {
-            console.log(`[STEP] Updating LED ${flatCompId} value to ${newValue}`);
-            updateComponent(flatCompId, { value: newValue });
-          }
-        }
-      }
+    // Update the sequential state from simulation result
+    if (result.sequentialState) {
+      setSeqState(result.sequentialState);
     }
 
-    // Second, update all sequential components from the flattened IR
-    // For top-level primitive sequential components, the ID is the same
-    // For sequential components inside composites, we don't need to update the top-level IR
-    // (the internal state is managed by seqState)
-    for (const [flatCompId, flatComponent] of Object.entries(flatIR.components)) {
-      if (flatComponent.type === 'D_FLIP_FLOP') {
-        // Check if this is a top-level component (exists in components with same ID)
-        if (components[flatCompId] && components[flatCompId].type === 'D_FLIP_FLOP') {
-          const newState = seqState.currentState.get(flatCompId) as boolean;
-          console.log(`[STEP] Updating top-level D_FLIP_FLOP ${flatCompId} state to ${newState}`);
-          updateComponent(flatCompId, { state: newState });
-        } else {
-          console.log(`[STEP] Skipping internal D_FLIP_FLOP ${flatCompId} (inside composite)`);
-        }
-      } else if (flatComponent.type === 'REGISTER') {
-        if (components[flatCompId] && components[flatCompId].type === 'REGISTER') {
-          const newState = seqState.currentState.get(flatCompId) as number;
-          updateComponent(flatCompId, { state: newState });
-        }
-      } else if (flatComponent.type === 'RAM') {
-        if (components[flatCompId] && components[flatCompId].type === 'RAM') {
-          const newMemory = seqState.currentState.get(flatCompId) as Map<number, number>;
-          updateComponent(flatCompId, { memory: newMemory });
-        }
-      }
-    }
-
-    // Force a re-render by updating the state object
-    setSeqState({ ...seqState });
+    // Note: We don't need to manually update node values for LEDs/outputs here
+    // because the Canvas component will automatically re-run combinational simulation
+    // which will pick up the new sequential state and update all port values
 
     setTimeout(() => {
       setSimulationStatus('idle');
     }, 50);
-  }, [seqState, flatIR, components, updateComponent, setSimulationStatus]);
+  }, [seqState, circuit, setSimulationStatus]);
 
   // Handle run (continuous ticking)
   const handleRun = useCallback(() => {
@@ -183,23 +155,16 @@ export function ClockControls() {
   const handleReset = useCallback(() => {
     handlePause();
 
-    if (!flatIR) return;
+    if (!circuit) return;
 
-    // Reinitialize sequential state using flattened IR
-    const newSeqState = initializeSequentialState(flatIR.components);
+    // Reinitialize sequential state
+    const newSeqState = initializeSequentialState(circuit);
     setSeqState(newSeqState);
 
-    // Reset component states in IR store
-    for (const [compId, component] of Object.entries(components)) {
-      if (component.type === 'D_FLIP_FLOP') {
-        updateComponent(compId, { state: false });
-      } else if (component.type === 'REGISTER') {
-        updateComponent(compId, { state: 0 });
-      } else if (component.type === 'RAM') {
-        updateComponent(compId, { memory: new Map() });
-      }
-    }
-  }, [flatIR, components, updateComponent, handlePause]);
+    // Note: We don't need to manually reset node arguments here
+    // because the sequential state reset will be picked up by the
+    // next simulation run automatically
+  }, [circuit, handlePause]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -210,9 +175,7 @@ export function ClockControls() {
     };
   }, []);
 
-  const hasSequential = hasSequentialComponents(components, resolveComponent);
-
-  if (!hasSequential) {
+  if (!hasSequentialComponents(circuit, resolveComponent)) {
     return null; // Don't show clock controls for purely combinational circuits
   }
 

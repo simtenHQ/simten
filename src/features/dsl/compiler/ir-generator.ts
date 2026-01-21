@@ -213,7 +213,7 @@ export class IRGenerator {
       const width = this.evaluateWidth(typeExpr.width, circuitDef);
       return busType(width);
     }
-    throw new CompilerError(`Unknown port type: ${(typeExpr as any).kind}`);
+    throw new CompilerError(`Unknown port type: ${(typeExpr as { kind: string }).kind}`);
   }
 
   private evaluateWidth(
@@ -288,7 +288,7 @@ export class IRGenerator {
           : this.evaluateWidth(typeExpr.dataWidth, circuitDef);
       return memoryType(addressWidth, dataWidth);
     }
-    throw new CompilerError(`Unknown state type: ${(typeExpr as any).kind}`);
+    throw new CompilerError(`Unknown state type: ${(typeExpr as { kind: string }).kind}`);
   }
 
   private getInitialValue(stateDef: StateDecl, stateType: StateType): StateValue {

@@ -8,6 +8,7 @@
 import React from 'react';
 import { BaseNode, PortConfig } from './BaseNode';
 import type { NodeData } from '../../utils/projection';
+import { getPrimitiveMetadata, PRIMITIVE_CATEGORIES } from '../../lib/primitive-metadata';
 
 interface LogicGateNodeProps {
   data: NodeData;
@@ -17,57 +18,63 @@ interface LogicGateNodeProps {
 export function LogicGateNode({ data, selected }: LogicGateNodeProps) {
   const value = data.value ?? false;
 
-  // Configure input ports
-  const inputPorts: PortConfig[] = [];
-  for (let i = 0; i < data.inputCount; i++) {
-    inputPorts.push({
-      index: i,
-      type: 'input',
-    });
-  }
+  // Configure input ports using port names
+  const inputPorts: PortConfig[] = data.inputNames.map((name, index) => ({
+    name,
+    index,
+    type: 'input',
+  }));
 
-  // Configure output ports
-  const outputPorts: PortConfig[] = [];
-  for (let i = 0; i < data.outputCount; i++) {
-    outputPorts.push({
-      index: i,
-      type: 'output',
-      value,
-    });
-  }
+  // Configure output ports using port names
+  const outputPorts: PortConfig[] = data.outputNames.map((name, index) => ({
+    name,
+    index,
+    type: 'output',
+    value,
+  }));
 
-  // Render gate-specific symbol
+  // Render gate-specific symbol (now using componentRef from IR v0.1)
   const renderGateSymbol = () => {
     const getSymbol = () => {
-      switch (data.componentType) {
-        case 'AND_GATE':
+      switch (data.componentRef) {
+        case 'And':
           return '&';
-        case 'OR_GATE':
+        case 'Or':
           return '≥1';
-        case 'NOT_GATE':
+        case 'Not':
           return '¬';
-        case 'NAND_GATE':
+        case 'Nand':
           return '⊼';
-        case 'NOR_GATE':
+        case 'Nor':
           return '⊽';
-        case 'XOR_GATE':
+        case 'Xor':
           return '⊕';
-        case 'XNOR_GATE':
+        case 'Xnor':
           return '⊙';
-        case 'BUFFER':
+        case 'Buffer':
           return '▷';
+        case 'DFlipFlop':
+          return 'D';
+        case 'Register':
+          return 'REG';
+        case 'RAM':
+          return 'RAM';
         default:
-          // For user-defined components, show the component type name
-          return data.componentType;
+          // For user-defined components, show the component ref name
+          return data.componentRef;
       }
     };
 
     const symbol = getSymbol();
-    const isUserDefined = !['AND_GATE', 'OR_GATE', 'NOT_GATE', 'NAND_GATE', 'NOR_GATE', 'XOR_GATE', 'XNOR_GATE', 'BUFFER'].includes(data.componentType);
+
+    // Check if this is a simple logic gate (should render as small symbol)
+    // Uses metadata as single source of truth instead of hardcoded list
+    const metadata = getPrimitiveMetadata(data.componentRef);
+    const isSimpleGate = metadata?.category === PRIMITIVE_CATEGORIES.LOGIC_GATES;
 
     return (
       <div className={`flex items-center justify-center rounded-md bg-gray-100 text-gray-700 ${
-        isUserDefined ? 'h-auto w-auto px-3 py-2 text-xs font-semibold' : 'h-12 w-12 text-2xl font-bold'
+        isSimpleGate ? 'h-12 w-12 text-2xl font-bold' : 'h-auto w-auto px-3 py-2 text-xs font-semibold'
       }`}>
         {symbol}
       </div>
@@ -79,7 +86,7 @@ export function LogicGateNode({ data, selected }: LogicGateNodeProps) {
       <div className="flex flex-col items-center gap-2">
         {/* Component Label */}
         <div className="text-xs font-medium text-gray-600">
-          {data.label || data.componentType.replace('_', ' ')}
+          {data.label || data.componentRef}
         </div>
 
         {/* Gate Symbol */}

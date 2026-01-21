@@ -1,15 +1,21 @@
 /**
- * InputNode Component
+ * InputNode Component (IR v0.1)
  *
  * Renders input components like switches.
  * User-controllable components that generate signals.
+ *
+ * Updated for IR v0.1:
+ * - Uses CircuitStore instead of useIRStore
+ * - Uses name-based ports instead of index-based
+ * - Uses data.nodeId instead of data.componentId
+ * - Uses data.componentRef instead of data.componentType
  */
 
 'use client';
 
 import React, { useCallback, useState } from 'react';
 import { BaseNode, PortConfig } from './BaseNode';
-import { useIRStore } from '../../stores';
+import { useCircuitStore } from '../../stores/circuit-store';
 import type { NodeData } from '../../utils/projection';
 import { cn } from '@/lib/utils';
 import { LabelEditor } from '../LabelEditor';
@@ -20,15 +26,21 @@ interface InputNodeProps {
 }
 
 export function InputNode({ data, selected }: InputNodeProps) {
-  const updateComponent = useIRStore((state) => state.updateComponent);
+  const updateNode = useCircuitStore((state) => state.updateNode);
   const value = data.value ?? false;
   const [isEditingLabel, setIsEditingLabel] = useState(false);
   const [labelPosition, setLabelPosition] = useState({ x: 0, y: 0 });
 
   const handleToggle = useCallback((e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent node selection when clicking the switch
-    updateComponent(data.componentId, { value: !value });
-  }, [data.componentId, value, updateComponent]);
+    // Update the node's arguments.value
+    const currentNode = useCircuitStore.getState().getNode(data.nodeId);
+    if (currentNode) {
+      updateNode(data.nodeId, {
+        arguments: { ...currentNode.arguments, value: !value },
+      });
+    }
+  }, [data.nodeId, value, updateNode]);
 
   const handleLabelDoubleClick = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
@@ -39,29 +51,24 @@ export function InputNode({ data, selected }: InputNodeProps) {
       y: rect.top,
     });
     setIsEditingLabel(true);
-    console.log('Label double-clicked, editing:', true);
   }, []);
 
   const handleLabelSave = useCallback((newLabel: string) => {
-    console.log('Saving label:', newLabel);
-    updateComponent(data.componentId, { label: newLabel || undefined });
+    updateNode(data.nodeId, { label: newLabel || undefined });
     setIsEditingLabel(false);
-  }, [data.componentId, updateComponent]);
+  }, [data.nodeId, updateNode]);
 
   const handleLabelCancel = useCallback(() => {
-    console.log('Canceling label edit');
     setIsEditingLabel(false);
   }, []);
 
-  // Configure output port
-  const outputPorts: PortConfig[] = [];
-  for (let i = 0; i < data.outputCount; i++) {
-    outputPorts.push({
-      index: i,
-      type: 'output',
-      value,
-    });
-  }
+  // Configure output ports using port names
+  const outputPorts: PortConfig[] = data.outputNames.map((name, index) => ({
+    name,
+    index,
+    type: 'output',
+    value,
+  }));
 
   return (
     <>
@@ -81,7 +88,7 @@ export function InputNode({ data, selected }: InputNodeProps) {
             onDoubleClick={handleLabelDoubleClick}
             title="Double-click to edit label"
           >
-            {data.label || data.componentType}
+            {data.label || data.componentRef}
           </div>
 
           {/* Switch Toggle */}

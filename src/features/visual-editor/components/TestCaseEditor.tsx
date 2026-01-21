@@ -1,7 +1,12 @@
 /**
- * TestCaseEditor Component
+ * TestCaseEditor Component (IR v0.1)
  *
  * Modal for creating and editing test cases.
+ *
+ * Updated for IR v0.1:
+ * - Uses CircuitStore instead of useIRStore
+ * - Uses Circuit instead of components/connections
+ * - Uses getLabeledSwitches/getLabeledLEDs with Circuit
  */
 
 'use client';
@@ -9,7 +14,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { useTestStore } from '../stores/test-store';
-import { useIRStore } from '../stores';
+import { useCircuitStore } from '../stores/circuit-store';
 import { getLabeledSwitches, getLabeledLEDs } from '../lib/test-runner';
 import type { TestValue } from '../types/testing';
 
@@ -19,8 +24,7 @@ export function TestCaseEditor() {
   const addTestCase = useTestStore((state) => state.addTestCase);
   const updateTestCase = useTestStore((state) => state.updateTestCase);
   const setEditingTestId = useTestStore((state) => state.setEditingTestId);
-  const components = useIRStore((state) => state.components);
-  const connections = useIRStore((state) => state.connections);
+  const circuit = useCircuitStore((state) => state.circuit);
 
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -33,23 +37,23 @@ export function TestCaseEditor() {
 
   // Initialize form when opening
   useEffect(() => {
-    if (!isOpen) {
+    if (!isOpen || !circuit) {
       return;
     }
 
     if (isNewTest) {
       // New test - auto-populate from labeled components
-      const labeledSwitches = getLabeledSwitches({ components, connections });
-      const labeledLEDs = getLabeledLEDs({ components, connections });
+      const labeledSwitches = getLabeledSwitches(circuit);
+      const labeledLEDs = getLabeledLEDs(circuit);
 
       setName('');
       setDescription('');
       setInputs(labeledSwitches.map(sw => ({
-        label: sw.label!,
+        label: sw.label,
         value: false,
       })));
       setOutputs(labeledLEDs.map(led => ({
-        label: led.label!,
+        label: led.label,
         value: false,
       })));
     } else if (editingTest) {
@@ -59,7 +63,7 @@ export function TestCaseEditor() {
       setInputs([...editingTest.inputs]);
       setOutputs([...editingTest.outputs]);
     }
-  }, [isOpen, isNewTest, editingTest, components, connections]);
+  }, [isOpen, isNewTest, editingTest, circuit]);
 
   const handleClose = useCallback(() => {
     setEditingTestId(null);

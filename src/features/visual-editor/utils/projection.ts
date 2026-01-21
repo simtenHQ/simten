@@ -1,162 +1,220 @@
 /**
- * Projection Utilities
+ * Projection Utilities (IR v0.1)
  *
- * Converts IR + Metadata into ReactFlow nodes and edges.
- * This is the bridge between our logical representation and the visual canvas.
+ * Converts Circuit + Metadata into ReactFlow nodes and edges.
+ * This is the bridge between our logical representation (IR v0.1) and the visual canvas.
+ *
+ * Key changes from legacy projection:
+ * - Works with Circuit/Node instead of IRState/Component
+ * - Uses name-based port handles ("out-portName") instead of index-based ("out-0")
+ * - Cleaner component type resolution via ComponentLibrary
  */
 
-import type { Node, Edge } from '@xyflow/react';
-import type {
-  Component,
-  IRState,
-  MetadataState,
-  ComponentType,
-} from '../types';
-import { getComponentSpec, WIRE_COLORS } from '../types';
-import type { ComponentLibrary } from '../stores/component-library-store';
+import type { Node as ReactFlowNode, Edge } from '@xyflow/react';
+import type { Circuit, Node, Connection, PortPath } from '../types/ir-v0.1';
+import type { MetadataState } from '../types';
+import { WIRE_COLORS } from '../types';
+import { useComponentLibraryStore } from '../stores/component-library-store';
+import type { PortValueMap } from '../lib/simulator-v0.1';
 
 // Custom data structure for our ReactFlow nodes
 export interface NodeData extends Record<string, unknown> {
-  componentId: string;
-  componentType: ComponentType;
+  nodeId: string;
+  componentRef: string;
   label?: string;
   value?: boolean;
   numericValue?: number;
   width?: number;
   inputCount: number;
   outputCount: number;
+  inputNames: string[];
+  outputNames: string[];
 }
 
 /**
- * Helper: Get port counts for a component type.
- * Looks up primitive specs or resolves from component library for user-defined components.
+ * Create port path key for value lookup
  */
-function getPortCounts(
-  componentType: ComponentType,
-  library?: ComponentLibrary
-): { inputCount: number; outputCount: number } {
-  // Try primitive specs first
-  const spec = getComponentSpec(componentType);
-  if (spec) {
-    return {
-      inputCount: spec.inputCount,
-      outputCount: spec.outputCount,
-    };
-  }
-
-  // For user-defined components, look up in library
-  if (library) {
-    const circuit =
-      library.primitives.get(componentType) ||
-      library.standard.get(componentType) ||
-      library.user.get(componentType);
-
-    if (circuit) {
-      return {
-        inputCount: circuit.inputs.length,
-        outputCount: circuit.outputs.length,
-      };
-    }
-  }
-
-  // Fallback: no ports if component not found
-  console.warn(`Component type '${componentType}' not found in specs or library`);
-  return { inputCount: 0, outputCount: 0 };
+function portPathKey(path: PortPath): string {
+  return path.nodeId === '' ? `.${path.portName}` : `${path.nodeId}.${path.portName}`;
 }
 
 /**
- * Projects the IR and Metadata into ReactFlow nodes
+ * Get node type for ReactFlow rendering based on component type
  */
-export function projectToNodes(
-  ir: IRState,
+function getNodeTypeForComponent(componentRef: string, inputCount: number, outputCount: number): string {
+  // Primitive type mapping
+  const typeMap: Record<string, string> = {
+    Switch: 'inputNode',
+    Input: 'numericInputNode',
+    Led: 'outputNode',
+    And: 'logicGateNode',
+    Or: 'logicGateNode',
+    Not: 'logicGateNode',
+    Nand: 'logicGateNode',
+    Nor: 'logicGateNode',
+    Xor: 'logicGateNode',
+    Xnor: 'logicGateNode',
+    Buffer: 'logicGateNode',
+    DFlipFlop: 'logicGateNode',
+    Register: 'logicGateNode',
+    RAM: 'logicGateNode',
+    HexDisplay: 'outputNode',
+    SevenSegment: 'outputNode',
+  };
+
+  if (typeMap[componentRef]) {
+    return typeMap[componentRef];
+  }
+
+  // For user-defined components, classify based on port counts
+  if (inputCount === 0 && outputCount > 0) {
+    return 'inputNode'; // Source components
+  } else if (inputCount > 0 && outputCount === 0) {
+    return 'outputNode'; // Sink components
+  } else if (inputCount > 0 && outputCount > 0) {
+    return 'logicGateNode'; // Processing components
+  }
+
+  return 'default';
+}
+
+/**
+ * Project Circuit nodes to ReactFlow nodes
+ */
+export function projectCircuitToNodes(
+  circuit: Circuit,
   metadata: MetadataState,
-  library?: ComponentLibrary
-): Node<NodeData>[] {
-  const nodes: Node<NodeData>[] = [];
+  portValues?: PortValueMap
+): ReactFlowNode<NodeData>[] {
+  const reactFlowNodes: ReactFlowNode<NodeData>[] = [];
+  const library = useComponentLibraryStore.getState();
 
-  for (const [id, component] of Object.entries(ir.components)) {
-    const componentMetadata = metadata.components[id];
+  for (const node of circuit.nodes) {
+    const nodeMetadata = metadata.components[node.id];
 
-    if (!componentMetadata) {
-      console.warn(`Missing metadata for component ${id}`);
+    if (!nodeMetadata) {
+      console.warn(`Missing metadata for node ${node.id}`);
       continue;
     }
 
-    // Get port counts (primitive or user-defined)
-    const { inputCount, outputCount } = getPortCounts(component.type, library);
+    // Get component definition from library
+    const componentDef = library.resolveComponent(node.componentRef);
+    if (!componentDef) {
+      console.warn(`Component not found in library: ${node.componentRef}`);
+      continue;
+    }
 
-    // Determine node type for custom rendering (needs port counts for user-defined components)
-    const nodeType = getNodeTypeForComponent(component.type, inputCount, outputCount);
+    // Extract port information
+    const inputCount = node.inputs.length;
+    const outputCount = node.outputs.length;
+    const inputNames = node.inputs.map((p) => p.name);
+    const outputNames = node.outputs.map((p) => p.name);
 
-    // Extract value based on component type (with proper type guard)
+    // Determine ReactFlow node type
+    const nodeType = getNodeTypeForComponent(node.componentRef, inputCount, outputCount);
+
+    // Extract component-specific values
     let value: boolean | undefined = undefined;
     let numericValue: number | undefined = undefined;
     let width: number | undefined = undefined;
 
-    if (component.type === 'SWITCH' || component.type === 'LED') {
-      value = 'value' in component ? component.value : undefined;
-    } else if (component.type === 'INPUT') {
-      numericValue = 'value' in component ? (component.value as number) : undefined;
-      width = 'width' in component ? (component.width as number) : undefined;
-    } else if (component.type === 'HexDisplay' || component.type === 'SevenSegment') {
-      // Display components: extract numeric input value
-      numericValue = 'value' in component ? (component.value as number) : undefined;
+    if (node.componentRef === 'Switch' || node.componentRef === 'Led') {
+      // For Switch/Led, check if there's a value in arguments or port values
+      if ('value' in node.arguments) {
+        value = Boolean(node.arguments.value);
+      } else if (portValues) {
+        // Try to get from port values (for Led, this is the input value)
+        if (node.componentRef === 'Led' && node.inputs.length > 0) {
+          const inputKey = portPathKey({ nodeId: node.id, portName: node.inputs[0].name });
+          const portValue = portValues.get(inputKey);
+          value = Boolean(portValue);
+        } else if (node.componentRef === 'Switch' && node.outputs.length > 0) {
+          const outputKey = portPathKey({ nodeId: node.id, portName: node.outputs[0].name });
+          const portValue = portValues.get(outputKey);
+          value = Boolean(portValue);
+        }
+      }
+    } else if (node.componentRef === 'Input') {
+      numericValue = typeof node.arguments.value === 'number' ? node.arguments.value : 0;
+      width = typeof node.arguments.width === 'number' ? node.arguments.width : 8;
+    } else if (node.componentRef === 'HexDisplay' || node.componentRef === 'SevenSegment') {
+      // Get display value from port values
+      if (portValues && node.inputs.length > 0) {
+        const inputKey = portPathKey({ nodeId: node.id, portName: node.inputs[0].name });
+        const portValue = portValues.get(inputKey);
+        numericValue = typeof portValue === 'number' ? portValue : 0;
+      }
     }
 
-    nodes.push({
-      id,
+    reactFlowNodes.push({
+      id: node.id,
       type: nodeType,
-      position: componentMetadata.position,
+      position: nodeMetadata.position,
       data: {
-        componentId: id,
-        componentType: component.type,
-        label: component.label,
+        nodeId: node.id,
+        componentRef: node.componentRef,
+        label: node.label,
         value,
         numericValue,
         width,
         inputCount,
         outputCount,
+        inputNames,
+        outputNames,
       },
-      selected: componentMetadata.selected,
+      selected: nodeMetadata.selected,
       selectable: true,
       deletable: true,
     });
   }
 
-  return nodes;
+  return reactFlowNodes;
 }
 
 /**
- * Projects the IR and Metadata into ReactFlow edges
+ * Project Circuit connections to ReactFlow edges
  */
-export function projectToEdges(ir: IRState, metadata: MetadataState): Edge[] {
+export function projectCircuitToEdges(
+  circuit: Circuit,
+  metadata: MetadataState,
+  portValues?: PortValueMap
+): Edge[] {
   const edges: Edge[] = [];
 
-  for (const [id, connection] of Object.entries(ir.connections)) {
-    const connectionMetadata = metadata.connections[id];
+  for (const connection of circuit.connections) {
+    const connectionMetadata = metadata.connections[connection.id];
 
-    // Get the source component to determine output value
-    const sourceComponent = ir.components[connection.sourceComponentId];
+    // Determine wire color based on signal value
     let edgeColor = WIRE_COLORS.UNDEFINED;
 
-    if (sourceComponent) {
-      // Determine wire color based on signal value
-      const value = getOutputValue(sourceComponent, connection.sourcePortIndex, ir);
+    if (portValues) {
+      const sourceKey = portPathKey(connection.source);
+      const value = portValues.get(sourceKey);
+
       if (value !== undefined) {
-        edgeColor = value ? WIRE_COLORS.TRUE : WIRE_COLORS.FALSE;
+        if (typeof value === 'boolean') {
+          edgeColor = value ? WIRE_COLORS.TRUE : WIRE_COLORS.FALSE;
+        } else {
+          // For bus values, use TRUE color if non-zero
+          edgeColor = value !== 0 ? WIRE_COLORS.TRUE : WIRE_COLORS.FALSE;
+        }
       }
     }
 
-    // Use metadata color if provided, otherwise use computed color
+    // Use metadata color if provided
     const finalColor = connectionMetadata?.color || edgeColor;
 
+    // Create handle IDs using port names (not indices!)
+    const sourceHandle = `out-${connection.source.portName}`;
+    const targetHandle = `in-${connection.target.portName}`;
+
     edges.push({
-      id,
-      type: 'orthogonal', // Use custom orthogonal edge type
-      source: connection.sourceComponentId,
-      target: connection.targetComponentId,
-      sourceHandle: `out-${connection.sourcePortIndex}`,
-      targetHandle: `in-${connection.targetPortIndex}`,
+      id: connection.id,
+      type: 'orthogonal',
+      source: connection.source.nodeId,
+      target: connection.target.nodeId,
+      sourceHandle,
+      targetHandle,
       style: {
         stroke: finalColor,
         strokeWidth: 2,
@@ -175,144 +233,19 @@ export function projectToEdges(ir: IRState, metadata: MetadataState): Edge[] {
 }
 
 /**
- * Main projection function that combines nodes and edges
+ * Main projection function
  */
-export function projectToReactFlow(
-  ir: IRState,
+export function projectCircuitToReactFlow(
+  circuit: Circuit | null,
   metadata: MetadataState,
-  library?: ComponentLibrary
+  portValues?: PortValueMap
 ) {
+  if (!circuit) {
+    return { nodes: [], edges: [] };
+  }
+
   return {
-    nodes: projectToNodes(ir, metadata, library),
-    edges: projectToEdges(ir, metadata),
+    nodes: projectCircuitToNodes(circuit, metadata, portValues),
+    edges: projectCircuitToEdges(circuit, metadata, portValues),
   };
-}
-
-/**
- * Helper: Determine the ReactFlow node type based on component type and port counts
- */
-function getNodeTypeForComponent(
-  componentType: ComponentType,
-  inputCount: number,
-  outputCount: number
-): string {
-  // Check primitive types first
-  switch (componentType) {
-    case 'SWITCH':
-      return 'inputNode';
-    case 'INPUT':
-      return 'numericInputNode';
-    case 'LED':
-      return 'outputNode';
-    case 'AND_GATE':
-    case 'OR_GATE':
-    case 'NOT_GATE':
-    case 'NAND_GATE':
-    case 'NOR_GATE':
-    case 'XOR_GATE':
-    case 'XNOR_GATE':
-    case 'BUFFER':
-      return 'logicGateNode';
-  }
-
-  // For user-defined components, classify based on port counts
-  if (inputCount === 0 && outputCount > 0) {
-    return 'inputNode'; // Source components (like SWITCH)
-  } else if (inputCount > 0 && outputCount === 0) {
-    return 'outputNode'; // Sink components (like LED)
-  } else if (inputCount > 0 && outputCount > 0) {
-    return 'logicGateNode'; // Processing components (like gates)
-  }
-
-  // Fallback for components with no ports
-  return 'default';
-}
-
-/**
- * Helper: Get the output value of a component's specific port
- */
-function getOutputValue(component: Component, portIndex: number, ir: IRState): boolean | number | undefined {
-  switch (component.type) {
-    case 'SWITCH':
-      // Type guard: SWITCH components have a value property
-      if ('value' in component) {
-        return component.value;
-      }
-      return undefined;
-
-    case 'INPUT':
-      // Type guard: INPUT components have a value property
-      if ('value' in component) {
-        return component.value;
-      }
-      return undefined;
-
-    // All logic gates follow the same pattern
-    case 'AND_GATE':
-    case 'OR_GATE':
-    case 'NOT_GATE':
-    case 'NAND_GATE':
-    case 'NOR_GATE':
-    case 'XOR_GATE':
-    case 'XNOR_GATE':
-    case 'BUFFER': {
-      // For logic gates, we need to evaluate based on inputs
-      const spec = getComponentSpec(component.type);
-      if (!spec?.evaluate) return undefined;
-
-      // Get all connections to this gate's inputs
-      const inputValues: (boolean | number)[] = [];
-      const connections = Object.values(ir.connections).filter(
-        (conn) => conn.targetComponentId === component.id
-      );
-
-      // Build input array
-      for (let i = 0; i < spec.inputCount; i++) {
-        const inputConnection = connections.find((conn) => conn.targetPortIndex === i);
-        if (inputConnection) {
-          const sourceComponent = ir.components[inputConnection.sourceComponentId];
-          if (sourceComponent) {
-            const value = getOutputValue(sourceComponent, inputConnection.sourcePortIndex, ir);
-            inputValues[i] = value ?? false;
-          } else {
-            inputValues[i] = false;
-          }
-        } else {
-          inputValues[i] = false; // Unconnected input defaults to false
-        }
-      }
-
-      // Evaluate the gate
-      const outputs = spec.evaluate(inputValues);
-      return outputs[portIndex];
-    }
-
-    case 'LED':
-      // LEDs don't have outputs
-      return undefined;
-
-    default:
-      return undefined;
-  }
-}
-
-/**
- * Helper: Get the input value of a component's specific port
- */
-export function getInputValue(componentId: string, portIndex: number, ir: IRState): boolean | number | undefined {
-  // Find the connection to this input port
-  const connection = Object.values(ir.connections).find(
-    (conn) => conn.targetComponentId === componentId && conn.targetPortIndex === portIndex
-  );
-
-  if (!connection) {
-    return undefined; // Unconnected
-  }
-
-  const sourceComponent = ir.components[connection.sourceComponentId];
-  if (!sourceComponent) {
-    return undefined;
-  }
-
-  return getOutputValue(sourceComponent, connection.sourcePortIndex, ir);
 }
