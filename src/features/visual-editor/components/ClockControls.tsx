@@ -26,8 +26,7 @@ import { initializeSequentialState, runSimulationTick, type SequentialState } fr
 import type { Circuit } from '../types/ir-v0.1';
 
 /**
- * Check if circuit has sequential components at the top level
- * (Simplified version - doesn't check nested composites)
+ * Check if circuit has sequential components (recursive - checks nested composites too)
  */
 function hasSequentialComponents(circuit: Circuit | null, resolveComponent: (name: string) => Circuit | undefined): boolean {
   if (!circuit) return false;
@@ -39,6 +38,13 @@ function hasSequentialComponents(circuit: Circuit | null, resolveComponent: (nam
     // Check if component has clocks or state (sequential indicators)
     if (componentDef.clocks.length > 0 || componentDef.state.length > 0) {
       return true;
+    }
+
+    // If this is a composite, recursively check inside it
+    if (componentDef.implementation.kind === 'composite') {
+      if (hasSequentialComponents(componentDef, resolveComponent)) {
+        return true;
+      }
     }
   }
   return false;
