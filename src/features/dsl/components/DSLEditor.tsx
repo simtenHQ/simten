@@ -10,7 +10,7 @@
 import React, { useState, useCallback, useRef } from 'react';
 import Editor, { OnMount } from '@monaco-editor/react';
 import type { editor } from 'monaco-editor';
-import { parseDSL, compileCircuitToIR, type ValidationError } from '../index';
+import { parseDSL, compileCircuitToIR, type ValidationError, CompilerError, ParseError } from '../index';
 import { useComponentLibraryStore } from '@/features/visual-editor/stores/component-library-store';
 import { CompileButton } from './CompileButton';
 import { ErrorDisplay, CompilationError } from './ErrorDisplay';
@@ -70,7 +70,7 @@ export function DSLEditor({ onCompileSuccess }: DSLEditorProps) {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
 
-  const { registerUser, resolveComponent } = useComponentLibraryStore();
+  const { registerUser, resolveComponent, getAllComponentNames } = useComponentLibraryStore();
 
   // Save code to localStorage whenever it changes
   const handleCodeChange = useCallback((value: string | undefined) => {
@@ -142,6 +142,7 @@ export function DSLEditor({ onCompileSuccess }: DSLEditorProps) {
             message: e.message,
             line: e.location.start.line,
             column: e.location.start.column,
+            suggestions: e.suggestions,
           })));
           setIsCompiling(false);
           return;
@@ -166,6 +167,12 @@ export function DSLEditor({ onCompileSuccess }: DSLEditorProps) {
               return compiledCircuits.some(c => c.name === name) ||
                      resolveComponent(name) !== undefined;
             },
+            getAllComponentNames: (): string[] => {
+              // Include both existing library components and just-compiled circuits
+              const existing = getAllComponentNames();
+              const justCompiled = compiledCircuits.map(c => c.name);
+              return [...existing, ...justCompiled];
+            },
           };
 
           // Compile this single circuit
@@ -174,11 +181,20 @@ export function DSLEditor({ onCompileSuccess }: DSLEditorProps) {
             compiledCircuits.push(circuit);
             registerUser(circuit); // Register immediately so next circuit can use it
           } catch (error) {
-            setErrors([{
-              message: error instanceof Error ? error.message : String(error),
-              line: 0,
-              column: 0,
-            }]);
+            // Extract location info from CompilerError if available
+            const compilationError: CompilationError = error instanceof CompilerError && error.location
+              ? {
+                  message: error.message,
+                  line: error.location.line,
+                  column: error.location.column,
+                }
+              : {
+                  message: error instanceof Error ? error.message : String(error),
+                  line: 0,
+                  column: 0,
+                };
+
+            setErrors([compilationError]);
             setIsCompiling(false);
             return;
           }
@@ -196,16 +212,38 @@ export function DSLEditor({ onCompileSuccess }: DSLEditorProps) {
         // Clear success message after 5 seconds
         setTimeout(() => setSuccessMessage(null), 5000);
       } catch (error) {
-        setErrors([{
-          message: error instanceof Error ? error.message : String(error),
-          line: 0,
-          column: 0,
-        }]);
+        // Extract location info from ParseError or CompilerError if available
+        let compilationError: CompilationError;
+
+        if (error instanceof ParseError) {
+          // ParseError has token.location structure
+          compilationError = {
+            message: error.message,
+            line: error.token.location.start.line,
+            column: error.token.location.start.column,
+          };
+        } else if (error instanceof CompilerError && error.location) {
+          // CompilerError has direct location property
+          compilationError = {
+            message: error.message,
+            line: error.location.line,
+            column: error.location.column,
+          };
+        } else {
+          // Fallback for unknown error types
+          compilationError = {
+            message: error instanceof Error ? error.message : String(error),
+            line: 0,
+            column: 0,
+          };
+        }
+
+        setErrors([compilationError]);
       } finally {
         setIsCompiling(false);
       }
     }, 0);
-  }, [code, registerUser, resolveComponent, onCompileSuccess]);
+  }, [code, registerUser, resolveComponent, getAllComponentNames, onCompileSuccess]);
 
   const handleClearErrors = useCallback(() => {
     setErrors([]);
