@@ -44,6 +44,7 @@ import { useCircuitStore } from '../stores/circuit-store';
 import { useMetadataStore } from '../stores';
 import { useComponentLibraryStore } from '../stores/component-library-store';
 import { useSequentialStateStore } from '../stores/sequential-state-store';
+import { useDSLPreviewStore } from '../stores/dsl-preview-store';
 import { projectCircuitToReactFlow } from '../utils/projection';
 import { InputNode, OutputNode, LogicGateNode } from './nodes';
 import { NumericInputNode } from './nodes/NumericInputNode';
@@ -167,7 +168,8 @@ export function Canvas() {
   const setComponentMetadata = useMetadataStore((state) => state.setComponentMetadata);
   const removeComponentMetadata = useMetadataStore((state) => state.removeComponentMetadata);
   const resolveComponent = useComponentLibraryStore((state) => state.resolveComponent);
-  const seqState = useSequentialStateStore((state) => state.seqState);
+  const seqState = useSequentialStateStore ((state) => state.seqState);
+  const saveCurrentPositions = useDSLPreviewStore((state) => state.saveCurrentPositions);
 
   // Separate effects for combinational vs sequential circuits
 
@@ -371,6 +373,11 @@ export function Canvas() {
     event.dataTransfer.dropEffect = 'move';
   }, []);
 
+  // Save positions to localStorage when dragging stops
+  const onNodeDragStop = useCallback(() => {
+    saveCurrentPositions();
+  }, [saveCurrentPositions]);
+
   return (
     <div className="relative h-full w-full" onDrop={onDrop} onDragOver={onDragOver}>
       <ReactFlow
@@ -379,6 +386,7 @@ export function Canvas() {
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
+        onNodeDragStop={onNodeDragStop}
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
         fitView
