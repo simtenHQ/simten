@@ -63,7 +63,7 @@ function portPathKey(path: PortPath): string {
 }
 
 /**
- * Initialize sequential state for all stateful nodes
+ * Initialize sequential state for all stateful nodes (recursive for composites)
  */
 export function initializeSequentialState(circuit: Circuit): SequentialState {
   const currentState = new Map<string, PrimitiveState>();
@@ -72,39 +72,57 @@ export function initializeSequentialState(circuit: Circuit): SequentialState {
 
   const library = useComponentLibraryStore.getState();
 
-  for (const node of circuit.nodes) {
-    const componentDef = library.resolveComponent(node.componentRef);
-    if (!componentDef) continue;
+  /**
+   * Recursively initialize state for a circuit and all its nested composites
+   * @param nodeIdPrefix - Prefix for node IDs (e.g., "toggler1." for nodes inside toggler1)
+   */
+  function initCircuit(circuit: Circuit, nodeIdPrefix: string = '') {
+    for (const node of circuit.nodes) {
+      const componentDef = library.resolveComponent(node.componentRef);
+      if (!componentDef) continue;
 
-    // Initialize state for nodes with state blocks
-    if (componentDef.state.length > 0) {
-      // Use first state block's initial value (most components have only one state block)
-      const stateBlock = componentDef.state[0];
-      const initialValue = stateBlock.initialValue;
+      // Full node ID including prefix (e.g., "toggler1.ff" for ff inside toggler1)
+      const fullNodeId = nodeIdPrefix + node.id;
 
-      // Convert StateValue to PrimitiveState
-      let primitiveState: PrimitiveState;
-      if (typeof initialValue === 'object' && 'data' in initialValue) {
-        // MemoryValue -> Map<number, number>
-        primitiveState = initialValue.data;
-      } else {
-        // BitValue or BusValue
-        primitiveState = initialValue as BitValue | BusValue;
+      // Check if this is a primitive with state
+      if (componentDef.implementation.kind === 'primitive' && componentDef.state.length > 0) {
+        // Initialize state for primitive sequential components
+        const stateBlock = componentDef.state[0];
+        const initialValue = stateBlock.initialValue;
+
+        // Convert StateValue to PrimitiveState
+        let primitiveState: PrimitiveState;
+        if (typeof initialValue === 'object' && 'data' in initialValue) {
+          // MemoryValue -> Map<number, number>
+          primitiveState = initialValue.data;
+        } else {
+          // BitValue or BusValue
+          primitiveState = initialValue as BitValue | BusValue;
+        }
+
+        currentState.set(fullNodeId, primitiveState);
+        nextState.set(fullNodeId, primitiveState);
       }
 
-      currentState.set(node.id, primitiveState);
-      nextState.set(node.id, primitiveState);
-    }
+      // Check if this is a composite - recurse into it
+      if (componentDef.implementation.kind === 'composite') {
+        // Recursively initialize state for nodes inside this composite
+        initCircuit(componentDef, fullNodeId + '.');
+      }
 
-    // Initialize clocks for nodes with clock inputs
-    for (const clock of node.clocks) {
-      const clockKey = `${node.id}.${clock.name}`;
-      clocks.set(clockKey, {
-        value: false,
-        edge: 'none',
-      });
+      // Initialize clocks for nodes with clock inputs
+      for (const clock of node.clocks) {
+        const clockKey = `${fullNodeId}.${clock.name}`;
+        clocks.set(clockKey, {
+          value: false,
+          edge: 'none',
+        });
+      }
     }
   }
+
+  // Start recursion from top-level circuit
+  initCircuit(circuit);
 
   return {
     currentState,
@@ -245,7 +263,8 @@ function getNodeInputs(
 function evaluateNode(
   node: Node,
   inputs: Map<string, BitValue | BusValue>,
-  seqState?: SequentialState
+  seqState?: SequentialState,
+  nodeIdPrefix: string = ''
 ): Map<string, BitValue | BusValue> {
   // Special handling for source components (Switch, Input, Button)
   // These read their values from node.arguments, not from inputs
@@ -268,7 +287,8 @@ function evaluateNode(
 
     if (componentDef && componentDef.implementation.kind === 'composite') {
       // Evaluate composite component by simulating its internal circuit
-      return evaluateComposite(componentDef, inputs, seqState);
+      // Pass the node ID as prefix so internal nodes can find their state
+      return evaluateComposite(componentDef, inputs, seqState, nodeIdPrefix + node.id);
     }
 
     console.warn(`No evaluator found for component: ${node.componentRef}`);
@@ -281,7 +301,9 @@ function evaluateNode(
   }
 
   // Get current state for sequential components
-  const currentState = seqState?.currentState.get(node.id);
+  // Use prefixed node ID to look up state
+  const fullNodeId = nodeIdPrefix + node.id;
+  const currentState = seqState?.currentState.get(fullNodeId);
 
   // Evaluate
   return evaluator.evaluate(inputs, currentState);
@@ -289,11 +311,13 @@ function evaluateNode(
 
 /**
  * Evaluate a composite component by simulating its internal circuit
+ * @param parentNodeId - The ID of the parent node (e.g., "toggler1") used to scope internal state
  */
 function evaluateComposite(
   componentDef: Circuit,
   inputs: Map<string, BitValue | BusValue>,
-  seqState?: SequentialState
+  seqState?: SequentialState,
+  parentNodeId?: string
 ): Map<string, BitValue | BusValue> {
   // Create initial port values with circuit-level inputs
   const initialPortValues: PortValueMap = new Map();
@@ -304,8 +328,41 @@ function evaluateComposite(
     initialPortValues.set(inputKey, inputValue);
   }
 
-  // Simulate the internal circuit with initial input values
-  const result = runCombinationalSimulation(componentDef, seqState, initialPortValues);
+  // Create scoped sequential state for this composite instance
+  // Maps internal node IDs (e.g., "ff") to prefixed keys in global state (e.g., "toggler1.ff")
+  let scopedSeqState: SequentialState | undefined = undefined;
+  if (seqState && parentNodeId) {
+    const prefix = parentNodeId + '.';
+    scopedSeqState = {
+      currentState: new Map(),
+      nextState: new Map(),
+      clocks: new Map(),
+      cycleCount: seqState.cycleCount,
+    };
+
+    // Remap state keys: "toggler1.ff" -> "ff" for internal circuit evaluation
+    for (const [fullKey, value] of seqState.currentState.entries()) {
+      if (fullKey.startsWith(prefix)) {
+        const localKey = fullKey.slice(prefix.length);
+        scopedSeqState.currentState.set(localKey, value);
+      }
+    }
+    for (const [fullKey, value] of seqState.nextState.entries()) {
+      if (fullKey.startsWith(prefix)) {
+        const localKey = fullKey.slice(prefix.length);
+        scopedSeqState.nextState.set(localKey, value);
+      }
+    }
+    for (const [fullKey, value] of seqState.clocks.entries()) {
+      if (fullKey.startsWith(prefix)) {
+        const localKey = fullKey.slice(prefix.length);
+        scopedSeqState.clocks.set(localKey, value);
+      }
+    }
+  }
+
+  // Simulate the internal circuit with initial input values and scoped state
+  const result = runCombinationalSimulation(componentDef, scopedSeqState, initialPortValues);
 
   if (result.error) {
     console.error(`Error simulating composite ${componentDef.name}:`, result.error);
@@ -332,10 +389,7 @@ function evaluateComposite(
 }
 
 /**
- * Update clock states and detect edges
- */
-/**
- * Update clock states using GLOBAL CLOCK approach.
+ * Update clock states using GLOBAL CLOCK approach (recursive for composites).
  * Each call to runSimulationTick represents one clock cycle,
  * so all clocks get a rising edge on each tick.
  *
@@ -346,24 +400,41 @@ function updateClockStates(
   circuit: Circuit,
   seqState: SequentialState
 ): void {
-  // Global clock: ALWAYS produce a rising edge on each tick
-  // This means each call to runSimulationTick = one clock pulse
-  for (const node of circuit.nodes) {
-    for (const clockPort of node.clocks) {
-      const clockKey = `${node.id}.${clockPort.name}`;
-      const clockState = seqState.clocks.get(clockKey);
-      if (!clockState) continue;
+  const library = useComponentLibraryStore.getState();
 
-      // Always set rising edge on every tick
-      // (The value doesn't matter for a global clock, only the edge matters)
-      clockState.edge = 'rising';
-      clockState.value = true; // Keep it high (doesn't affect behavior)
+  /**
+   * Recursively update clocks for circuit and nested composites
+   */
+  function updateCircuitClocks(circuit: Circuit, nodeIdPrefix: string = '') {
+    for (const node of circuit.nodes) {
+      const fullNodeId = nodeIdPrefix + node.id;
+
+      // Update clocks for this node
+      for (const clockPort of node.clocks) {
+        const clockKey = `${fullNodeId}.${clockPort.name}`;
+        const clockState = seqState.clocks.get(clockKey);
+        if (!clockState) continue;
+
+        // Always set rising edge on every tick
+        // (The value doesn't matter for a global clock, only the edge matters)
+        clockState.edge = 'rising';
+        clockState.value = true; // Keep it high (doesn't affect behavior)
+      }
+
+      // If this is a composite, recurse into it
+      const componentDef = library.resolveComponent(node.componentRef);
+      if (componentDef && componentDef.implementation.kind === 'composite') {
+        updateCircuitClocks(componentDef, fullNodeId + '.');
+      }
     }
   }
+
+  // Start recursion from top-level circuit
+  updateCircuitClocks(circuit);
 }
 
 /**
- * Update sequential node states based on inputs and clock edges
+ * Update sequential node states based on inputs and clock edges (recursive for composites)
  */
 function updateSequentialStates(
   circuit: Circuit,
@@ -372,31 +443,96 @@ function updateSequentialStates(
 ): void {
   const library = useComponentLibraryStore.getState();
 
-  for (const node of circuit.nodes) {
-    const componentDef = library.resolveComponent(node.componentRef);
-    if (!componentDef || componentDef.state.length === 0) continue;
+  /**
+   * Recursively update state for circuit and nested composites
+   * @param nodeIdPrefix - Prefix for node IDs (e.g., "toggler1." for nodes inside toggler1)
+   */
+  function updateCircuitStates(circuit: Circuit, portValues: PortValueMap, nodeIdPrefix: string = '') {
+    for (const node of circuit.nodes) {
+      const componentDef = library.resolveComponent(node.componentRef);
+      if (!componentDef) continue;
 
-    const evaluator = getPrimitiveEvaluator(node.componentRef);
-    if (!evaluator || !evaluator.updateState) continue;
+      const fullNodeId = nodeIdPrefix + node.id;
 
-    // Get node inputs
-    const inputs = getNodeInputs(node, circuit.connections, portValues);
+      // Check if this is a primitive with state
+      if (componentDef.implementation.kind === 'primitive' && componentDef.state.length > 0) {
+        const evaluator = getPrimitiveEvaluator(node.componentRef);
+        if (!evaluator || !evaluator.updateState) continue;
 
-    // Build clock edges map
-    const clockEdges: ClockEdges = {};
-    for (const clockPort of node.clocks) {
-      const clockKey = `${node.id}.${clockPort.name}`;
-      const clockState = seqState.clocks.get(clockKey);
-      if (clockState) {
-        clockEdges[clockPort.name] = clockState.edge;
+        // Get node inputs
+        const inputs = getNodeInputs(node, circuit.connections, portValues);
+
+        // Build clock edges map
+        const clockEdges: ClockEdges = {};
+        for (const clockPort of node.clocks) {
+          const clockKey = `${fullNodeId}.${clockPort.name}`;
+          const clockState = seqState.clocks.get(clockKey);
+          if (clockState) {
+            clockEdges[clockPort.name] = clockState.edge;
+          }
+        }
+
+        // Update state using full node ID
+        const currentState = seqState.currentState.get(fullNodeId);
+        const nextState = evaluator.updateState(inputs, currentState, clockEdges);
+        seqState.nextState.set(fullNodeId, nextState);
+      }
+
+      // Check if this is a composite - recurse into it
+      if (componentDef.implementation.kind === 'composite') {
+        // Get inputs for this composite node
+        const compositeInputs = getNodeInputs(node, circuit.connections, portValues);
+
+        // Create scoped port values for internal circuit evaluation
+        const internalPortValues: PortValueMap = new Map();
+
+        // Map composite inputs to internal circuit-level inputs
+        for (const [inputName, inputValue] of compositeInputs.entries()) {
+          const inputKey = portPathKey({ nodeId: '', portName: inputName });
+          internalPortValues.set(inputKey, inputValue);
+        }
+
+        // Create scoped sequential state for this composite instance
+        const prefix = fullNodeId + '.';
+        const scopedSeqState: SequentialState = {
+          currentState: new Map(),
+          nextState: new Map(),
+          clocks: new Map(),
+          cycleCount: seqState.cycleCount,
+        };
+
+        // Remap state keys: "toggler1.ff" -> "ff" for internal circuit evaluation
+        for (const [fullKey, value] of seqState.currentState.entries()) {
+          if (fullKey.startsWith(prefix)) {
+            const localKey = fullKey.slice(prefix.length);
+            scopedSeqState.currentState.set(localKey, value);
+          }
+        }
+        for (const [fullKey, value] of seqState.nextState.entries()) {
+          if (fullKey.startsWith(prefix)) {
+            const localKey = fullKey.slice(prefix.length);
+            scopedSeqState.nextState.set(localKey, value);
+          }
+        }
+        for (const [fullKey, value] of seqState.clocks.entries()) {
+          if (fullKey.startsWith(prefix)) {
+            const localKey = fullKey.slice(prefix.length);
+            scopedSeqState.clocks.set(localKey, value);
+          }
+        }
+
+        // Simulate internal circuit to get port values for sequential state updates
+        // Pass scoped state so internal sequential nodes can access their current state
+        const internalResult = runCombinationalSimulation(componentDef, scopedSeqState, internalPortValues);
+
+        // Recursively update state for nodes inside this composite
+        updateCircuitStates(componentDef, internalResult.portValues, fullNodeId + '.');
       }
     }
-
-    // Update state
-    const currentState = seqState.currentState.get(node.id);
-    const nextState = evaluator.updateState(inputs, currentState, clockEdges);
-    seqState.nextState.set(node.id, nextState);
   }
+
+  // Start recursion from top-level circuit
+  updateCircuitStates(circuit, portValues);
 }
 
 /**
@@ -471,7 +607,10 @@ export function runCombinationalSimulation(
     }
 
     // Evaluate node
-    const outputs = evaluateNode(node, inputs, seqState);
+    // Note: nodeIdPrefix defaults to '' which is correct here since:
+    // - For top-level circuits, nodes have direct IDs
+    // - For composites, seqState is already scoped with local keys
+    const outputs = evaluateNode(node, inputs, seqState, '');
 
     // Store output values
     for (const [portName, value] of outputs.entries()) {
