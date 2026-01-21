@@ -7,7 +7,7 @@
 
 'use client';
 
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import Editor, { OnMount } from '@monaco-editor/react';
 import type { editor } from 'monaco-editor';
 import { parseDSL, compileCircuitToIR, type ValidationError, CompilerError, ParseError } from '../index';
@@ -16,15 +16,16 @@ import { CompileButton } from './CompileButton';
 import { ErrorDisplay, CompilationError } from './ErrorDisplay';
 import type { Circuit } from '@/features/visual-editor/types/ir-v0.1';
 
-const DEFAULT_CODE = `// Example: Simple Buffer
-circuit Buffer {
+const DEFAULT_CODE = `// Example: NOT Gate (Inverter)
+circuit Inverter {
   input a: Bit
   output out: Bit
 
   impl {
-    node buf: Buffer
-    connect a -> buf.a
-    connect buf.out -> out
+    node nand1: Nand
+    connect a -> nand1.a
+    connect a -> nand1.b
+    connect nand1.out -> out
   }
 }
 
@@ -51,12 +52,13 @@ circuit HalfAdder {
 `;
 
 interface DSLEditorProps {
-  onCompileSuccess?: (circuits: Circuit[]) => void;
+  onCompileSuccess?: (circuits: Circuit[], dslCode: string) => void;
+  autoCompileEnabled?: boolean;
 }
 
 const STORAGE_KEY = 'turing-incomplete-dsl-code';
 
-export function DSLEditor({ onCompileSuccess }: DSLEditorProps) {
+export function DSLEditor({ onCompileSuccess, autoCompileEnabled = false }: DSLEditorProps) {
   // Load code from localStorage on mount, fallback to default
   const [code, setCode] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -69,6 +71,7 @@ export function DSLEditor({ onCompileSuccess }: DSLEditorProps) {
   const [isCompiling, setIsCompiling] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
+  const autoCompileTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const { registerUser, resolveComponent, getAllComponentNames } = useComponentLibraryStore();
 
@@ -206,8 +209,8 @@ export function DSLEditor({ onCompileSuccess }: DSLEditorProps) {
           `Successfully compiled ${compiledCircuits.length} component(s): ${componentNames}`
         );
 
-        // Notify parent
-        onCompileSuccess?.(compiledCircuits);
+        // Notify parent (pass DSL code for version tracking)
+        onCompileSuccess?.(compiledCircuits, code);
 
         // Clear success message after 5 seconds
         setTimeout(() => setSuccessMessage(null), 5000);
@@ -248,6 +251,31 @@ export function DSLEditor({ onCompileSuccess }: DSLEditorProps) {
   const handleClearErrors = useCallback(() => {
     setErrors([]);
   }, []);
+
+  // Auto-compile effect (debounced)
+  // Triggers on mount and whenever code changes
+  useEffect(() => {
+    if (!autoCompileEnabled) return;
+
+    // Clear any existing timer
+    if (autoCompileTimerRef.current) {
+      clearTimeout(autoCompileTimerRef.current);
+    }
+
+    // Set new timer for auto-compile (immediate on mount, debounced on changes)
+    const delay = 100; // Short delay to let component stabilize
+    autoCompileTimerRef.current = setTimeout(() => {
+      handleCompile();
+    }, delay);
+
+    // Cleanup
+    return () => {
+      if (autoCompileTimerRef.current) {
+        clearTimeout(autoCompileTimerRef.current);
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [code, autoCompileEnabled]); // Don't include handleCompile - causes infinite recompilation!
 
   return (
     <div className="flex flex-col h-full bg-white">
