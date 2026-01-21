@@ -10,7 +10,8 @@ import { Handle, Position } from '@xyflow/react';
 import { cn } from '@/lib/utils';
 
 export interface PortConfig {
-  index: number;
+  name: string; // Port name (e.g., "a", "b", "out", "clk")
+  index: number; // Port position for layout (0, 1, 2, ...)
   type: 'input' | 'output';
   connected?: boolean;
   value?: boolean;
@@ -36,10 +37,10 @@ export function BaseNode({ children, inputPorts = [], outputPorts = [], selected
       {/* Input Ports (Left Side) */}
       {inputPorts.map((port) => (
         <Handle
-          key={`in-${port.index}`}
+          key={`in-${port.name}`}
           type="target"
           position={Position.Left}
-          id={`in-${port.index}`}
+          id={`in-${port.name}`}
           className={cn(
             'h-3 w-3 rounded-full border-2 transition-colors',
             port.connected ? 'bg-blue-500 border-blue-600' : 'bg-white border-gray-400',
@@ -58,10 +59,10 @@ export function BaseNode({ children, inputPorts = [], outputPorts = [], selected
       {/* Output Ports (Right Side) */}
       {outputPorts.map((port) => (
         <Handle
-          key={`out-${port.index}`}
+          key={`out-${port.name}`}
           type="source"
           position={Position.Right}
-          id={`out-${port.index}`}
+          id={`out-${port.name}`}
           className={cn(
             'h-3 w-3 rounded-full border-2 transition-colors',
             port.connected ? 'bg-green-500 border-green-600' : 'bg-white border-gray-400',

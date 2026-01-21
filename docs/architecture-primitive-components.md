@@ -142,9 +142,10 @@ export type LegacyPrimitiveComponentType =
 // Modern type (allows all primitives)
 export type PrimitiveComponentType = string;
 
-// Dynamic lookup from primitives.ts
+// Dynamic lookup from primitives.ts (ES6 import)
+import { isPrimitive } from '../lib/primitives';
+
 export function isPrimitiveComponentType(type: ComponentType): boolean {
-  const { isPrimitive } = require('../lib/primitives');
   return isPrimitive(type); // Checks PRIMITIVES array
 }
 

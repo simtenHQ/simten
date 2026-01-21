@@ -1,18 +1,23 @@
 /**
- * ComponentPalette Component
+ * ComponentPalette Component (IR v0.1)
  *
  * Displays available components that can be dragged onto the canvas.
  * Components are organized into collapsible groups that expand on hover.
  * Features a fuzzy search with keyboard shortcuts and highlighting.
+ *
+ * Updated for IR v0.1:
+ * - Uses CircuitStore instead of useIRStore
+ * - Uses componentRef (string) instead of ComponentType
+ * - Uses addNode instead of addComponent
  */
 
 'use client';
 
 import React, { useCallback, useState, useEffect, useRef, useMemo } from 'react';
 import { cn } from '@/lib/utils';
-import { useIRStore, useMetadataStore } from '../stores';
+import { useCircuitStore } from '../stores/circuit-store';
+import { useMetadataStore } from '../stores';
 import { useComponentLibraryStore } from '../stores/component-library-store';
-import type { ComponentType } from '../types';
 import type { Circuit } from '../types/ir-v0.1';
 import { ComponentTooltip, PortInfo } from './ComponentTooltip';
 import {
@@ -22,7 +27,7 @@ import {
 } from '../lib/primitive-metadata';
 
 interface PaletteItem {
-  type: ComponentType;
+  componentRef: string; // Component name (e.g., "And", "Or", "HalfAdder")
   label: string;
   description: string;
   icon: string;
@@ -155,7 +160,7 @@ function generatePrimitiveCategories(
     }
 
     const item: PaletteItem = {
-      type: metadata.componentType,
+      componentRef: circuit.name, // Use circuit name as component ref (e.g., "And", "Or")
       label: circuit.name,
       description: circuit.metadata?.description ?? `${circuit.name} component`,
       icon: metadata.icon,
@@ -200,8 +205,8 @@ function generatePrimitiveCategories(
 
 interface ComponentGroupProps {
   category: ComponentCategory;
-  onDragStart: (event: React.DragEvent, componentType: ComponentType) => void;
-  onComponentClick: (componentType: ComponentType) => void;
+  onDragStart: (event: React.DragEvent, componentRef: string) => void;
+  onComponentClick: (componentRef: string) => void;
   isSearchActive: boolean;
   highlightTerm: string;
 }
@@ -226,9 +231,9 @@ function ComponentGroup({
     }
   };
 
-  const handleDragStart = (e: React.DragEvent, componentType: ComponentType) => {
+  const handleDragStart = (e: React.DragEvent, componentRef: string) => {
     setIsDragging(true);
-    onDragStart(e, componentType);
+    onDragStart(e, componentRef);
   };
 
   const handleDragEnd = () => {
@@ -284,7 +289,7 @@ function ComponentGroup({
       >
         {category.items.map((item, index) => (
           <ComponentTooltip
-            key={item.type}
+            key={item.componentRef}
             title={item.label.toUpperCase()}
             description={item.description}
             inputs={item.inputs}
@@ -293,9 +298,9 @@ function ComponentGroup({
           >
             <div
               draggable
-              onDragStart={(e) => handleDragStart(e, item.type)}
+              onDragStart={(e) => handleDragStart(e, item.componentRef)}
               onDragEnd={handleDragEnd}
-              onClick={() => onComponentClick(item.type)}
+              onClick={() => onComponentClick(item.componentRef)}
               className={cn(
                 'cursor-move rounded-lg border-2 border-gray-200 bg-white p-2.5 shadow-sm transition-all',
                 'hover:border-blue-400 hover:shadow-md active:scale-95',
@@ -330,7 +335,7 @@ function ComponentGroup({
 }
 
 export function ComponentPalette() {
-  const addComponent = useIRStore((state) => state.addComponent);
+  const addNode = useCircuitStore((state) => state.addNode);
   const setComponentMetadata = useMetadataStore((state) => state.setComponentMetadata);
   const { library } = useComponentLibraryStore();
 
@@ -364,7 +369,7 @@ export function ComponentPalette() {
         const outputs = circuitPortsToPortInfo(circuit.outputs);
 
         return {
-          type: circuit.name as ComponentType,
+          componentRef: circuit.name, // Use circuit name as component ref
           label: circuit.name,
           description: circuit.metadata?.description ?? `User-defined component (${circuit.inputs.length}i / ${circuit.outputs.length}o)`,
           icon: '⚙️',
@@ -375,23 +380,23 @@ export function ComponentPalette() {
     };
   }, [library.user]);
 
-  const onDragStart = useCallback((event: React.DragEvent, componentType: ComponentType) => {
+  const onDragStart = useCallback((event: React.DragEvent, componentRef: string) => {
     event.dataTransfer.effectAllowed = 'move';
-    event.dataTransfer.setData('application/reactflow', componentType);
+    event.dataTransfer.setData('application/reactflow', componentRef);
   }, []);
 
   const handleClick = useCallback(
-    (componentType: ComponentType) => {
-      // Add component to IR
-      const componentId = addComponent(componentType);
+    (componentRef: string) => {
+      // Add node to circuit
+      const nodeId = addNode(componentRef, {});
 
       // Add metadata with default position (center of canvas)
-      setComponentMetadata(componentId, {
-        id: componentId,
+      setComponentMetadata(nodeId, {
+        id: nodeId,
         position: { x: 250, y: 250 }, // Default position
       });
     },
-    [addComponent, setComponentMetadata]
+    [addNode, setComponentMetadata]
   );
 
   // Combine primitive and user categories
@@ -416,7 +421,7 @@ export function ComponentPalette() {
         (item) =>
           fuzzyMatch(item.label, debouncedQuery) ||
           fuzzyMatch(item.description, debouncedQuery) ||
-          fuzzyMatch(item.type, debouncedQuery)
+          fuzzyMatch(item.componentRef, debouncedQuery)
       ),
     })).filter((category) => category.items.length > 0);
   }, [debouncedQuery, allCategories]);
