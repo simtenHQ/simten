@@ -71,6 +71,18 @@ export const PRIMITIVE_EVALUATORS: Record<string, PrimitiveEvaluatorInterface> =
   }),
 
   // ============================================================================
+  // Arithmetic Components
+  // ============================================================================
+
+  Incrementer: createCombinationalEvaluator((inputs) => {
+    const value = inputs.get('in') as number;
+    const width = 8; // Default to 8-bit, will be parameterized later
+    const maxValue = (1 << width) - 1;
+    const result = (value + 1) & maxValue; // Wrap around on overflow
+    return new Map([['out', result]]);
+  }),
+
+  // ============================================================================
   // I/O Components
   // ============================================================================
 
@@ -554,6 +566,17 @@ export const PRIMITIVES: Circuit[] = [
     [{ name: 'in', portType: bitType() }],
     [{ name: 'out', portType: bitType() }],
     'Buffer - passes the input through unchanged'
+  ),
+
+  // ============================================================================
+  // Arithmetic Components
+  // ============================================================================
+
+  createPrimitiveCircuit(
+    'Incrementer',
+    [{ name: 'in', portType: busType(8) }],
+    [{ name: 'out', portType: busType(8) }],
+    'Incrementer - adds 1 to the input (wraps around at 255)'
   ),
 
   // ============================================================================

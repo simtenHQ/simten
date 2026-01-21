@@ -24,6 +24,7 @@
 'use client';
 
 import React, { useCallback, useMemo, useEffect, useState } from 'react';
+import type { Circuit } from '../types/ir-v0.1';
 import {
   ReactFlow,
   Background,
@@ -177,11 +178,28 @@ export function Canvas() {
       return;
     }
 
-    // Check if circuit has sequential components
-    const hasSequential = circuit.nodes.some((node) => {
-      const componentDef = resolveComponent(node.componentRef);
-      return componentDef && componentDef.state.length > 0;
-    });
+    // Check if circuit has sequential components (recursively check composites too)
+    const hasSequential = (() => {
+      function checkSequential(c: Circuit): boolean {
+        return c.nodes.some((node) => {
+          const componentDef = resolveComponent(node.componentRef);
+          if (!componentDef) return false;
+
+          // Check if this node is sequential
+          if (componentDef.state.length > 0 || componentDef.clocks.length > 0) {
+            return true;
+          }
+
+          // If composite, recursively check inside
+          if (componentDef.implementation.kind === 'composite') {
+            return checkSequential(componentDef);
+          }
+
+          return false;
+        });
+      }
+      return checkSequential(circuit);
+    })();
 
     // Only run this effect for purely combinational circuits
     if (hasSequential) {
@@ -209,11 +227,28 @@ export function Canvas() {
       return;
     }
 
-    // Check if circuit has sequential components
-    const hasSequential = circuit.nodes.some((node) => {
-      const componentDef = resolveComponent(node.componentRef);
-      return componentDef && componentDef.state.length > 0;
-    });
+    // Check if circuit has sequential components (recursively check composites too)
+    const hasSequential = (() => {
+      function checkSequential(c: Circuit): boolean {
+        return c.nodes.some((node) => {
+          const componentDef = resolveComponent(node.componentRef);
+          if (!componentDef) return false;
+
+          // Check if this node is sequential
+          if (componentDef.state.length > 0 || componentDef.clocks.length > 0) {
+            return true;
+          }
+
+          // If composite, recursively check inside
+          if (componentDef.implementation.kind === 'composite') {
+            return checkSequential(componentDef);
+          }
+
+          return false;
+        });
+      }
+      return checkSequential(circuit);
+    })();
 
     // Only run this effect for sequential circuits
     if (!hasSequential) {
