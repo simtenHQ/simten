@@ -12,6 +12,7 @@ export interface CompilationError {
   message: string;
   line: number;
   column: number;
+  suggestions?: string[];
 }
 
 interface ErrorDisplayProps {
@@ -40,16 +41,31 @@ export function ErrorDisplay({ errors, onClose }: ErrorDisplayProps) {
           </button>
         )}
       </div>
-      <div className="space-y-2 max-h-40 overflow-y-auto">
+      <div className="space-y-2 max-h-60 overflow-y-auto">
         {errors.map((error, index) => (
           <div
             key={index}
-            className="flex items-start gap-2 text-sm text-red-700 bg-white p-2 rounded border border-red-200"
+            className="bg-white p-3 rounded border border-red-200 shadow-sm"
           >
-            <span className="font-mono text-red-600 shrink-0">
-              {error.line > 0 ? `${error.line}:${error.column}` : 'Error'}
-            </span>
-            <span className="flex-1">{error.message}</span>
+            <div className="flex items-start gap-2 text-sm text-red-700">
+              <span className="font-mono text-red-600 shrink-0 font-semibold">
+                {error.line > 0 ? `Line ${error.line}:${error.column}` : 'Error'}
+              </span>
+              <span className="flex-1 font-medium">{error.message}</span>
+            </div>
+            {error.suggestions && error.suggestions.length > 0 && (
+              <div className="mt-2 pl-2 border-l-2 border-blue-300 ml-2">
+                <div className="text-xs font-semibold text-blue-700 mb-1">💡 Suggestions:</div>
+                <ul className="text-xs text-blue-600 space-y-1">
+                  {error.suggestions.map((suggestion, idx) => (
+                    <li key={idx} className="flex items-start gap-1">
+                      <span className="text-blue-400">•</span>
+                      <span>{suggestion}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
         ))}
       </div>
