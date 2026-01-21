@@ -7,24 +7,36 @@
 
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { ReactFlowProvider } from '@xyflow/react';
 import { Canvas } from './Canvas';
 import { ComponentPalette } from './ComponentPalette';
 import { SimulationControls } from './SimulationControls';
 import { TestPanel } from './TestPanel';
 import { TestCaseEditor } from './TestCaseEditor';
+import { CircuitSelector } from './CircuitSelector';
 import { DSLEditor } from '@/features/dsl/components/DSLEditor';
 import { ComponentLibrary } from '@/features/dsl/components/ComponentLibrary';
 import { usePrimitivesInit } from '../hooks/usePrimitivesInit';
+import { useDSLPreviewStore } from '../stores/dsl-preview-store';
+import type { Circuit } from '../types/ir-v0.1';
 
-type TabType = 'visual' | 'dsl';
+type TabType = 'visual' | 'dsl' | 'split';
 
 export function VisualEditor() {
   const [activeTab, setActiveTab] = useState<TabType>('visual');
+  const setCompiledCircuits = useDSLPreviewStore((state) => state.setCompiledCircuits);
 
   // Initialize primitive components library
   usePrimitivesInit();
+
+  // Handle DSL compilation in split mode
+  const handleDSLCompile = useCallback(
+    (circuits: Circuit[], dslCode: string) => {
+      setCompiledCircuits(circuits, dslCode);
+    },
+    [setCompiledCircuits]
+  );
 
   return (
     <ReactFlowProvider>
@@ -53,15 +65,25 @@ export function VisualEditor() {
             >
               DSL Editor
             </button>
+            <button
+              onClick={() => setActiveTab('split')}
+              className={`px-4 py-2 text-sm font-medium rounded-t-lg transition-colors ${
+                activeTab === 'split'
+                  ? 'bg-gray-50 text-blue-600 border-t-2 border-x-2 border-blue-600'
+                  : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'
+              }`}
+            >
+              Split Mode
+            </button>
           </div>
 
-          {/* Simulation Controls (only in visual mode) */}
-          {activeTab === 'visual' && <SimulationControls />}
+          {/* Simulation Controls (in visual and split modes) */}
+          {(activeTab === 'visual' || activeTab === 'split') && <SimulationControls />}
         </div>
 
         {/* Main Content Area */}
         <div className="flex flex-1 overflow-hidden">
-          {activeTab === 'visual' ? (
+          {activeTab === 'visual' && (
             <>
               {/* Left: Component Palette */}
               <ComponentPalette />
@@ -74,7 +96,9 @@ export function VisualEditor() {
               {/* Right: Test Panel */}
               <TestPanel />
             </>
-          ) : (
+          )}
+
+          {activeTab === 'dsl' && (
             <>
               {/* Left: DSL Editor */}
               <div className="flex-1">
@@ -84,6 +108,23 @@ export function VisualEditor() {
               {/* Right: Component Library */}
               <div className="w-80">
                 <ComponentLibrary />
+              </div>
+            </>
+          )}
+
+          {activeTab === 'split' && (
+            <>
+              {/* Left: DSL Editor (with auto-compile) */}
+              <div className="flex-1 border-r border-gray-200">
+                <DSLEditor autoCompileEnabled={true} onCompileSuccess={handleDSLCompile} />
+              </div>
+
+              {/* Right: Canvas with CircuitSelector */}
+              <div className="flex-1 flex flex-col">
+                <CircuitSelector />
+                <div className="flex-1">
+                  <Canvas />
+                </div>
               </div>
             </>
           )}

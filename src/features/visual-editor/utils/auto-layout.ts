@@ -34,14 +34,41 @@ export function performHierarchicalLayout(
   const logicGates: string[] = [];
 
   circuit.nodes.forEach((node) => {
-    if (node.componentRef === 'Switch') {
+    // Input-like components
+    if (node.componentRef === 'Switch' || node.componentRef === 'Input' || node.componentRef === 'Button') {
       inputs.push(node.id);
-    } else if (node.componentRef === 'Led') {
+    }
+    // Output-like components
+    else if (node.componentRef === 'Led' || node.componentRef === 'HexDisplay' || node.componentRef === 'SevenSegment') {
       outputs.push(node.id);
-    } else {
+    }
+    // Everything else is a logic gate
+    else {
       logicGates.push(node.id);
     }
   });
+
+  // If all nodes are logic gates (no explicit inputs/outputs), use BFS from nodes with no inputs
+  if (inputs.length === 0 && logicGates.length > 0) {
+    // Find nodes that are not targets of any connections (these are "input" nodes)
+    const targetNodeIds = new Set(
+      circuit.connections.map(conn => conn.target.nodeId).filter(id => id !== '')
+    );
+
+    logicGates.forEach((id) => {
+      if (!targetNodeIds.has(id)) {
+        inputs.push(id);
+      }
+    });
+
+    // Remove these from logicGates
+    inputs.forEach(id => {
+      const index = logicGates.indexOf(id);
+      if (index > -1) {
+        logicGates.splice(index, 1);
+      }
+    });
+  }
 
   // Calculate levels for logic gates based on dependencies
   const levels = calculateLevels(circuit, inputs);
