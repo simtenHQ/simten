@@ -21,6 +21,7 @@ import { SkipForward, Play, Pause, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useCircuitStore } from '../stores/circuit-store';
 import { useUIStore, useComponentLibraryStore } from '../stores';
+import { useSequentialStateStore } from '../stores/sequential-state-store';
 import { initializeSequentialState, runSimulationTick, type SequentialState } from '../lib/simulator-v0.1';
 import type { Circuit } from '../types/ir-v0.1';
 
@@ -49,8 +50,9 @@ export function ClockControls() {
   const setSimulationStatus = useUIStore((state) => state.setSimulationStatus);
   const resolveComponent = useComponentLibraryStore((state) => state.resolveComponent);
 
-  // Sequential state (persisted in component state)
-  const [seqState, setSeqState] = useState<SequentialState | null>(null);
+  // Sequential state (shared via store so Canvas can access it)
+  const seqState = useSequentialStateStore((state) => state.seqState);
+  const setSeqState = useSequentialStateStore((state) => state.setSeqState);
   const [isRunning, setIsRunning] = useState(false);
   const runIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -85,11 +87,8 @@ export function ClockControls() {
     if (hasSequential) {
       // Only re-initialize sequential state if structure changed
       if (structureChanged || !seqState) {
-        console.log('[ClockControls] Circuit structure changed, re-initializing seqState');
         setSeqState(initializeSequentialState(circuit));
         prevCircuitStructureRef.current = circuitStructure;
-      } else {
-        console.log('[ClockControls] Only node values changed, preserving seqState');
       }
     } else {
       setSeqState(null);
@@ -101,16 +100,10 @@ export function ClockControls() {
   const handleStep = useCallback(() => {
     if (!seqState || !circuit) return;
 
-    console.log('========== STEP BUTTON PRESSED ==========');
-    console.log('[STEP] circuit.nodes:', circuit.nodes.map(n => n.id));
-    console.log('[STEP] seqState.currentState:', Array.from(seqState.currentState.entries()));
-
     setSimulationStatus('running');
 
     // Execute one clock tick
     const result = runSimulationTick(circuit, seqState);
-
-    console.log('[STEP] After simulation - portValues:', Array.from(result.portValues.entries()));
 
     if (result.error) {
       console.error('Simulation error:', result.error);
@@ -119,8 +112,17 @@ export function ClockControls() {
     }
 
     // Update the sequential state from simulation result
+    // IMPORTANT: Create a NEW object so Zustand detects the change (reference equality)
     if (result.sequentialState) {
-      setSeqState(result.sequentialState);
+      // Clone the sequential state to create a new reference
+      const newSeqState: SequentialState = {
+        currentState: new Map(result.sequentialState.currentState),
+        nextState: new Map(result.sequentialState.nextState),
+        clocks: new Map(result.sequentialState.clocks),
+        cycleCount: result.sequentialState.cycleCount,
+      };
+
+      setSeqState(newSeqState);
     }
 
     // Note: We don't need to manually update node values for LEDs/outputs here
