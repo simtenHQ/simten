@@ -75,6 +75,7 @@ export class CompilerError extends Error {
 export interface ComponentLibrary {
   getCircuit(name: string): Circuit | undefined;
   hasCircuit(name: string): boolean;
+  getAllComponentNames?(): string[]; // Optional for backward compatibility
 }
 
 // ============================================================================
@@ -227,8 +228,23 @@ export class IRGenerator {
     // Parameter reference - look up default value
     const param = circuitDef.parameters.find((p) => p.name === width.name);
     if (!param) {
+      let errorMsg = `Undefined parameter reference: '${width.name}'`;
+
+      // Suggest similar parameter names
+      const paramNames = circuitDef.parameters.map((p) => p.name);
+      if (paramNames.length > 0) {
+        const similar = this.findSimilarNames(width.name, paramNames);
+        if (similar.length > 0) {
+          errorMsg += `\n\nDid you mean: ${similar.join(', ')}?`;
+        } else {
+          errorMsg += `\n\nAvailable parameters: ${paramNames.join(', ')}`;
+        }
+      } else {
+        errorMsg += `\n\nNo parameters defined for this circuit. Add parameters to the circuit signature.`;
+      }
+
       throw new CompilerError(
-        `Undefined parameter reference: '${width.name}'`,
+        errorMsg,
         circuitDef.name,
         { line: width.location.start.line, column: width.location.start.column }
       );
@@ -236,7 +252,7 @@ export class IRGenerator {
 
     if (param.defaultValue === undefined) {
       throw new CompilerError(
-        `Parameter '${width.name}' has no default value`,
+        `Parameter '${width.name}' has no default value\n\nAdd a default value in the circuit signature, e.g., circuit ${circuitDef.name}<${width.name}: 8>`,
         circuitDef.name,
         { line: width.location.start.line, column: width.location.start.column }
       );
@@ -244,7 +260,7 @@ export class IRGenerator {
 
     if (typeof param.defaultValue !== 'number') {
       throw new CompilerError(
-        `Parameter '${width.name}' must be a number for width`,
+        `Parameter '${width.name}' must be a number for width, but got ${typeof param.defaultValue}\n\nWidth parameters must be numeric values.`,
         circuitDef.name,
         { line: width.location.start.line, column: width.location.start.column }
       );
@@ -343,8 +359,21 @@ export class IRGenerator {
     // Resolve component reference
     const componentCircuit = this.library.getCircuit(nodeDef.componentType);
     if (!componentCircuit) {
+      // Build helpful error message with suggestions
+      let errorMsg = `Cannot resolve component: '${nodeDef.componentType}'`;
+
+      // Check for common typos/similar names
+      const availableComponents = this.getAvailableComponentNames();
+      const similar = this.findSimilarNames(nodeDef.componentType, availableComponents);
+
+      if (similar.length > 0) {
+        errorMsg += `\n\nDid you mean: ${similar.join(', ')}?`;
+      } else if (availableComponents.length > 0) {
+        errorMsg += `\n\nAvailable components: ${availableComponents.slice(0, 10).join(', ')}${availableComponents.length > 10 ? '...' : ''}`;
+      }
+
       throw new CompilerError(
-        `Cannot resolve component: '${nodeDef.componentType}'`,
+        errorMsg,
         circuitDef.name,
         { line: nodeDef.location.start.line, column: nodeDef.location.start.column }
       );
@@ -471,8 +500,24 @@ export class IRGenerator {
       // Node port
       const node = nodes.find((n) => n.label === portRef.nodeId);
       if (!node) {
+        const nodeId = portRef.nodeId!; // Safe because we're in else branch of isCircuitPort
+        let errorMsg = `Cannot find node: '${nodeId}'`;
+
+        // Suggest similar node names
+        const nodeNames = nodes.map((n) => n.label).filter((label): label is string => label !== undefined);
+        if (nodeNames.length > 0) {
+          const similar = this.findSimilarNames(nodeId, nodeNames);
+          if (similar.length > 0) {
+            errorMsg += `\n\nDid you mean: ${similar.join(', ')}?`;
+          } else {
+            errorMsg += `\n\nAvailable nodes: ${nodeNames.join(', ')}`;
+          }
+        } else {
+          errorMsg += `\n\nNo nodes defined in this circuit. Add node declarations in the impl block.`;
+        }
+
         throw new CompilerError(
-          `Cannot find node: '${portRef.nodeId}'`,
+          errorMsg,
           circuitDef.name,
           { line: portRef.location.start.line, column: portRef.location.start.column }
         );
@@ -499,8 +544,38 @@ export class IRGenerator {
         return this.compilePortType(output.portType, circuitDef);
       }
 
+      // Build helpful error message
+      let errorMsg = `Cannot find circuit port: '${portRef.portName}'`;
+
+      const inputNames = circuitDef.inputs.map((i) => i.name);
+      const outputNames = circuitDef.outputs.map((o) => o.name);
+      const clockNames = circuitDef.clocks.map((c) => c.name);
+      const allPortNames = [...inputNames, ...outputNames, ...clockNames];
+
+      // Check for similar port names
+      if (allPortNames.length > 0) {
+        const similar = this.findSimilarNames(portRef.portName, allPortNames);
+        if (similar.length > 0) {
+          errorMsg += `\n\nDid you mean: ${similar.join(', ')}?`;
+        }
+
+        // Show available ports
+        errorMsg += `\n\nAvailable ports:`;
+        if (inputNames.length > 0) {
+          errorMsg += `\n  Inputs: ${inputNames.join(', ')}`;
+        }
+        if (outputNames.length > 0) {
+          errorMsg += `\n  Outputs: ${outputNames.join(', ')}`;
+        }
+        if (clockNames.length > 0) {
+          errorMsg += `\n  Clocks: ${clockNames.join(', ')}`;
+        }
+      } else {
+        errorMsg += `\n\nNo ports defined for this circuit. Add port declarations to the circuit signature.`;
+      }
+
       throw new CompilerError(
-        `Cannot find port: '${portRef.portName}'`,
+        errorMsg,
         circuitDef.name,
         { line: portRef.location.start.line, column: portRef.location.start.column }
       );
@@ -508,8 +583,24 @@ export class IRGenerator {
       // Node port
       const node = nodes.find((n) => n.label === portRef.nodeId);
       if (!node) {
+        const nodeId = portRef.nodeId!; // Safe because we're in else branch of isCircuitPort
+        let errorMsg = `Cannot find node: '${nodeId}'`;
+
+        // Suggest similar node names
+        const nodeNames = nodes.map((n) => n.label).filter((label): label is string => label !== undefined);
+        if (nodeNames.length > 0) {
+          const similar = this.findSimilarNames(nodeId, nodeNames);
+          if (similar.length > 0) {
+            errorMsg += `\n\nDid you mean: ${similar.join(', ')}?`;
+          } else {
+            errorMsg += `\n\nAvailable nodes: ${nodeNames.join(', ')}`;
+          }
+        } else {
+          errorMsg += `\n\nNo nodes defined in this circuit. Add node declarations in the impl block.`;
+        }
+
         throw new CompilerError(
-          `Cannot find node: '${portRef.nodeId}'`,
+          errorMsg,
           circuitDef.name,
           { line: portRef.location.start.line, column: portRef.location.start.column }
         );
@@ -517,8 +608,31 @@ export class IRGenerator {
 
       const port = [...node.inputs, ...node.outputs].find((p) => p.name === portRef.portName);
       if (!port) {
+        // Build helpful error message with available ports
+        const allPorts = [...node.inputs, ...node.outputs];
+        const portNames = allPorts.map((p) => p.name);
+        const inputNames = node.inputs.map((p) => p.name);
+        const outputNames = node.outputs.map((p) => p.name);
+
+        let errorMsg = `Cannot find port '${portRef.portName}' on node '${portRef.nodeId}' (type: ${node.componentRef})`;
+
+        // Check for similar port names
+        const similar = this.findSimilarNames(portRef.portName, portNames);
+        if (similar.length > 0) {
+          errorMsg += `\n\nDid you mean: ${similar.join(', ')}?`;
+        }
+
+        // Show available ports
+        errorMsg += `\n\nAvailable ports:`;
+        if (inputNames.length > 0) {
+          errorMsg += `\n  Inputs: ${inputNames.join(', ')}`;
+        }
+        if (outputNames.length > 0) {
+          errorMsg += `\n  Outputs: ${outputNames.join(', ')}`;
+        }
+
         throw new CompilerError(
-          `Cannot find port '${portRef.portName}' on node '${portRef.nodeId}'`,
+          errorMsg,
           circuitDef.name,
           { line: portRef.location.start.line, column: portRef.location.start.column }
         );
@@ -535,6 +649,73 @@ export class IRGenerator {
   private generateId(base: string): string {
     // Simple ID generation (in production, use UUIDs or proper unique IDs)
     return `${base}_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
+  }
+
+  /**
+   * Get list of available component names from the library
+   * Note: This is a best-effort method - ComponentLibrary interface doesn't expose a list method,
+   * so we can't reliably get all available components. Return empty array for now.
+   */
+  private getAvailableComponentNames(): string[] {
+    // Use getAllComponentNames if available (provided by the library store)
+    if (this.library.getAllComponentNames) {
+      return this.library.getAllComponentNames();
+    }
+    // Fallback to empty array if not available (backward compatibility)
+    return [];
+  }
+
+  /**
+   * Find similar names using Levenshtein distance
+   */
+  private findSimilarNames(target: string, candidates: string[], threshold: number = 3): string[] {
+    const similar: Array<{ name: string; distance: number }> = [];
+
+    for (const candidate of candidates) {
+      const distance = this.levenshteinDistance(target.toLowerCase(), candidate.toLowerCase());
+      if (distance <= threshold) {
+        similar.push({ name: candidate, distance });
+      }
+    }
+
+    // Sort by distance (closest first) and return names
+    return similar
+      .sort((a, b) => a.distance - b.distance)
+      .slice(0, 3)
+      .map((s) => s.name);
+  }
+
+  /**
+   * Calculate Levenshtein distance between two strings
+   */
+  private levenshteinDistance(str1: string, str2: string): number {
+    const len1 = str1.length;
+    const len2 = str2.length;
+    const matrix: number[][] = [];
+
+    for (let i = 0; i <= len1; i++) {
+      matrix[i] = [i];
+    }
+
+    for (let j = 0; j <= len2; j++) {
+      matrix[0][j] = j;
+    }
+
+    for (let i = 1; i <= len1; i++) {
+      for (let j = 1; j <= len2; j++) {
+        if (str1[i - 1] === str2[j - 1]) {
+          matrix[i][j] = matrix[i - 1][j - 1];
+        } else {
+          matrix[i][j] = Math.min(
+            matrix[i - 1][j - 1] + 1, // substitution
+            matrix[i][j - 1] + 1,     // insertion
+            matrix[i - 1][j] + 1      // deletion
+          );
+        }
+      }
+    }
+
+    return matrix[len1][len2];
   }
 }
 
