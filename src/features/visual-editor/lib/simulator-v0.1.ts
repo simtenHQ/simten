@@ -118,40 +118,47 @@ export function initializeSequentialState(circuit: Circuit): SequentialState {
  * Topological sort to determine evaluation order
  * Returns node IDs in dependency order, or null if cycle detected
  *
- * Sequential nodes are evaluated FIRST because their outputs come from
- * stored state, not computed from inputs.
+ * Sequential nodes with state-only outputs (DFlipFlop, Register) are evaluated FIRST
+ * because their outputs come from stored state, not computed from inputs.
+ *
+ * Sequential nodes with input-dependent outputs (RAM) are evaluated in dependency order
+ * because their outputs depend on their inputs (e.g., RAM read is combinational).
  */
 function topologicalSort(circuit: Circuit): string[] | null {
   const library = useComponentLibraryStore.getState();
 
-  const sequentialNodes: string[] = [];
-  const combinationalNodes: string[] = [];
+  const stateOnlyNodes: string[] = []; // DFlipFlop, Register - outputs from state only
+  const dependentNodes: string[] = []; // All other nodes (including RAM)
 
-  // Separate sequential and combinational nodes
+  // Separate nodes into state-only and input-dependent
   for (const node of circuit.nodes) {
     const componentDef = library.resolveComponent(node.componentRef);
     if (!componentDef) continue;
 
-    if (componentDef.state.length > 0) {
-      sequentialNodes.push(node.id);
+    // Check if this is a state-only node (DFlipFlop, Register)
+    // These nodes' outputs come purely from state, not from inputs
+    const isStateOnly = componentDef.state.length > 0 &&
+                       (node.componentRef === 'DFlipFlop' || node.componentRef === 'Register');
+
+    if (isStateOnly) {
+      stateOnlyNodes.push(node.id);
     } else {
-      combinationalNodes.push(node.id);
+      dependentNodes.push(node.id);
     }
   }
 
-  // Build dependency graph for combinational nodes only
+  // Build dependency graph for all dependent nodes (combinational + RAM)
   const graph = new Map<string, Set<string>>();
   const inDegree = new Map<string, number>();
 
   // Initialize graph
-  for (const nodeId of combinationalNodes) {
+  for (const nodeId of dependentNodes) {
     graph.set(nodeId, new Set());
     inDegree.set(nodeId, 0);
   }
 
   // Build edges: for each connection, source -> target
-  // Skip connections involving sequential nodes
-  const nodeSet = new Set(combinationalNodes);
+  const nodeSet = new Set(dependentNodes);
 
   for (const conn of circuit.connections) {
     const source = conn.source.nodeId;
@@ -160,7 +167,7 @@ function topologicalSort(circuit: Circuit): string[] | null {
     // Skip circuit-level ports (empty nodeId)
     if (source === '' || target === '') continue;
 
-    // Only consider combinational nodes
+    // Only consider dependent nodes (not state-only nodes)
     if (!nodeSet.has(source) || !nodeSet.has(target)) continue;
 
     if (!graph.get(source)?.has(target)) {
@@ -195,12 +202,12 @@ function topologicalSort(circuit: Circuit): string[] | null {
   }
 
   // Check for cycles
-  if (result.length !== combinationalNodes.length) {
+  if (result.length !== dependentNodes.length) {
     return null; // Cycle detected
   }
 
-  // Return sequential nodes FIRST, then combinational nodes
-  return [...sequentialNodes, ...result];
+  // Return state-only nodes FIRST, then dependent nodes in topological order
+  return [...stateOnlyNodes, ...result];
 }
 
 /**

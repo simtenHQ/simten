@@ -94,7 +94,8 @@ export function ClockControls() {
       setSeqState(null);
       prevCircuitStructureRef.current = '';
     }
-  }, [circuit, resolveComponent, seqState]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [circuit, resolveComponent]);
 
   // Handle single clock step
   const handleStep = useCallback(() => {
