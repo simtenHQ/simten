@@ -1,8 +1,14 @@
 /**
- * Canvas Component
+ * Canvas Component (IR v0.1)
  *
- * Main ReactFlow canvas for the visual editor.
+ * Main ReactFlow canvas for the visual editor using Circuit (IR v0.1) format.
  * Handles node/edge rendering, drag-and-drop, connections, and interactions.
+ *
+ * Key changes from legacy Canvas:
+ * - Uses CircuitStore instead of IRStore
+ * - Uses name-based ports (PortPath) instead of index-based ports
+ * - Cleaner component resolution via ComponentLibrary
+ * - New simulator (simulator-v0.1.ts) for Circuit format
  *
  * Features:
  * - Single-click to select individual nodes
@@ -33,14 +39,14 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 
-import { useIRStore, useMetadataStore } from '../stores';
-import { useComponentLibraryStore, type ComponentLibraryStore } from '../stores/component-library-store';
-import { projectToReactFlow } from '../utils/projection';
+import { useCircuitStore } from '../stores/circuit-store';
+import { useMetadataStore } from '../stores';
+import { useComponentLibraryStore } from '../stores/component-library-store';
+import { projectCircuitToReactFlow } from '../utils/projection';
 import { InputNode, OutputNode, LogicGateNode } from './nodes';
 import { NumericInputNode } from './nodes/NumericInputNode';
 import { OrthogonalEdge } from './edges';
-import { runSimulation, getLEDUpdates, getDisplayUpdates } from '../lib/simulator';
-import { hasSequentialComponents } from '../lib/component-utils';
+import { runCombinationalSimulation, initializeSequentialState } from '../lib/simulator-v0.1';
 
 // Define custom node types
 const nodeTypes = {
@@ -129,109 +135,82 @@ function KeyboardShortcutsInfo({ show }: { show: boolean }) {
             </span>
             <span className="text-gray-400">Delete selected</span>
           </div>
+          <div className="flex items-center justify-between gap-4">
+            <span>Hover node</span>
+            <span className="text-gray-400">Show dependencies</span>
+          </div>
         </div>
       </div>
     </div>
   );
 }
 
+
 export function Canvas() {
   const { screenToFlowPosition } = useReactFlow();
   const [selectedNodeCount, setSelectedNodeCount] = useState(0);
+  const [portValues, setPortValues] = useState(new Map());
 
-  // Subscribe to stores - select values separately to avoid creating new objects on every render
-  const irComponents = useIRStore((state) => state.components);
-  const irConnections = useIRStore((state) => state.connections);
+  // Subscribe to stores
+  const circuit = useCircuitStore((state) => state.circuit);
   const metadataComponents = useMetadataStore((state) => state.components);
   const metadataConnections = useMetadataStore((state) => state.connections);
-  const componentLibrary = useComponentLibraryStore((state: ComponentLibraryStore) => state.library);
   const updateComponentPosition = useMetadataStore((state) => state.updateComponentPosition);
   const setComponentSelected = useMetadataStore((state) => state.setComponentSelected);
   const setConnectionSelected = useMetadataStore((state) => state.setConnectionSelected);
-  const addConnection = useIRStore((state) => state.addConnection);
-  const removeConnection = useIRStore((state) => state.removeConnection);
-  const addComponent = useIRStore((state) => state.addComponent);
-  const removeComponent = useIRStore((state) => state.removeComponent);
+  const addConnection = useCircuitStore((state) => state.addConnection);
+  const removeConnection = useCircuitStore((state) => state.removeConnection);
+  const addNode = useCircuitStore((state) => state.addNode);
+  const removeNode = useCircuitStore((state) => state.removeNode);
   const setComponentMetadata = useMetadataStore((state) => state.setComponentMetadata);
   const removeComponentMetadata = useMetadataStore((state) => state.removeComponentMetadata);
   const resolveComponent = useComponentLibraryStore((state) => state.resolveComponent);
 
-  // NOTE: For sequential circuits, simulation is controlled by ClockControls (Step/Run buttons).
-  // For combinational circuits, we auto-run simulation when inputs change for immediate feedback.
-
-  // Track input component values to detect when simulation should run
-  const inputValuesKey = useMemo(() => {
-    const inputs = Object.entries(irComponents)
-      .filter(([, comp]) => comp.type === 'SWITCH' || comp.type === 'INPUT')
-      .map(([id, comp]) => {
-        if (comp.type === 'SWITCH' && 'value' in comp) {
-          return `${id}:${comp.value}`;
-        } else if (comp.type === 'INPUT' && 'value' in comp) {
-          return `${id}:${comp.value}`;
-        }
-        return `${id}:undefined`;
-      })
-      .sort()
-      .join(',');
-    return inputs;
-  }, [irComponents]);
-
-  const connectionsKey = useMemo(() => {
-    return Object.keys(irConnections).sort().join(',');
-  }, [irConnections]);
-
-  // Auto-run simulation for purely combinational circuits
-  // Sequential circuits require manual step/run controls
+  // Auto-run simulation for combinational circuits (back to simple approach)
   useEffect(() => {
-    if (Object.keys(irComponents).length === 0) return;
+    if (!circuit || circuit.nodes.length === 0) {
+      setPortValues(new Map());
+      return;
+    }
 
     // Check if circuit has sequential components
-    const hasSequential = hasSequentialComponents(irComponents, resolveComponent);
+    const hasSequential = circuit.nodes.some((node) => {
+      const componentDef = resolveComponent(node.componentRef);
+      return componentDef && componentDef.state.length > 0;
+    });
 
     if (hasSequential) {
       // Sequential circuit - simulation controlled by ClockControls
+      const seqState = initializeSequentialState(circuit);
+      const result = runCombinationalSimulation(circuit, seqState);
+      if (!result.error) {
+        setPortValues(result.portValues);
+      }
       return;
     }
 
     // Purely combinational circuit - run simulation automatically
-    const result = runSimulation(irComponents, irConnections);
+    const result = runCombinationalSimulation(circuit);
 
     if (result.error) {
-      console.error('Simulation error:', result.error);
+      console.error('[Canvas] Simulation error:', result.error);
+      setPortValues(new Map());
       return;
     }
 
-    // Get LED updates from simulation results
-    const ledUpdates = getLEDUpdates(irComponents, irConnections, result.portValues);
+    setPortValues(result.portValues);
+  }, [circuit, resolveComponent]);
 
-    // Get display component updates (HexDisplay, SevenSegment)
-    const displayUpdates = getDisplayUpdates(irComponents, irConnections, result.portValues);
+  // Re-simulate when switch/input values change (NOT when circuit structure changes)
+  // This is intentionally left out to prevent infinite loops
+  // Switches/inputs trigger updates through their onClick handlers instead
 
-    // Apply LED updates to the store
-    // Use getState() to avoid dependency on updateComponent function reference
-    const irStore = useIRStore.getState();
-    ledUpdates.forEach((value, componentId) => {
-      const currentComponent = irComponents[componentId];
-      if (currentComponent && 'value' in currentComponent && currentComponent.value !== value) {
-        irStore.updateComponent(componentId, { value });
-      }
-    });
 
-    // Apply display component updates to the store
-    displayUpdates.forEach((value, componentId) => {
-      const currentComponent = irComponents[componentId];
-      if (currentComponent && 'value' in currentComponent && currentComponent.value !== value) {
-        irStore.updateComponent(componentId, { value });
-      }
-    });
-  }, [inputValuesKey, connectionsKey, irComponents, irConnections, resolveComponent]);
-
-  // Project IR + Metadata to ReactFlow nodes and edges
-  const { nodes, edges } = useMemo(() => {
-    const irState = { components: irComponents, connections: irConnections };
+  // Project Circuit + Metadata + Port Values to ReactFlow nodes and edges
+  const { nodes, edges} = useMemo(() => {
     const metadataState = { components: metadataComponents, connections: metadataConnections };
-    return projectToReactFlow(irState, metadataState, componentLibrary);
-  }, [irComponents, irConnections, metadataComponents, metadataConnections, componentLibrary]);
+    return projectCircuitToReactFlow(circuit, metadataState, portValues);
+  }, [circuit, metadataComponents, metadataConnections, portValues]);
 
   // Handle node position changes (drag), selection, and deletion
   const onNodesChange: OnNodesChange = useCallback(
@@ -244,13 +223,13 @@ export function Canvas() {
           // Update selection state in metadata store
           setComponentSelected(change.id, change.selected);
         } else if (change.type === 'remove') {
-          // Remove component from both stores
-          removeComponent(change.id);
+          // Remove node from both stores
+          removeNode(change.id);
           removeComponentMetadata(change.id);
         }
       });
     },
-    [updateComponentPosition, setComponentSelected, removeComponent, removeComponentMetadata]
+    [updateComponentPosition, setComponentSelected, removeNode, removeComponentMetadata]
   );
 
   // Update selection count whenever nodes change
@@ -267,7 +246,7 @@ export function Canvas() {
           // Update selection state in metadata store
           setConnectionSelected(change.id, change.selected);
         } else if (change.type === 'remove') {
-          // Remove connection from IR store (metadata will be cleaned up separately)
+          // Remove connection from CircuitStore
           removeConnection(change.id);
         }
       });
@@ -282,12 +261,16 @@ export function Canvas() {
         return;
       }
 
-      // Parse port indices from handle IDs
-      const sourcePortIndex = parseInt(connection.sourceHandle.replace('out-', ''));
-      const targetPortIndex = parseInt(connection.targetHandle.replace('in-', ''));
+      // Parse port names from handle IDs (format: "out-portName", "in-portName")
+      const sourcePortName = connection.sourceHandle.replace('out-', '');
+      const targetPortName = connection.targetHandle.replace('in-', '');
 
-      // Add connection to IR store
-      addConnection(connection.source, sourcePortIndex, connection.target, targetPortIndex);
+      // Create PortPath objects
+      const source = { nodeId: connection.source, portName: sourcePortName };
+      const target = { nodeId: connection.target, portName: targetPortName };
+
+      // Add connection to CircuitStore
+      addConnection(source, target);
     },
     [addConnection]
   );
@@ -306,17 +289,16 @@ export function Canvas() {
         y: event.clientY,
       });
 
-      // Add component to IR
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const componentId = addComponent(componentType as any);
+      // Add node to CircuitStore
+      const nodeId = addNode(componentType);
 
       // Add metadata with drop position
-      setComponentMetadata(componentId, {
-        id: componentId,
+      setComponentMetadata(nodeId, {
+        id: nodeId,
         position,
       });
     },
-    [screenToFlowPosition, addComponent, setComponentMetadata]
+    [screenToFlowPosition, addNode, setComponentMetadata]
   );
 
   const onDragOver = useCallback((event: React.DragEvent) => {

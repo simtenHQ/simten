@@ -639,7 +639,7 @@ export class Parser {
       const right = this.parseBinaryExpression(precedence + 1);
 
       left = {
-        operator: operator as any,
+        operator: operator as '+' | '-' | '*' | '/' | '&' | '|' | '^' | '==' | '!=' | '<' | '>' | '<=' | '>=',
         left,
         right,
         location: createRange(left.location.start, right.location.end),
@@ -661,7 +661,7 @@ export class Parser {
       const operand = this.parseUnaryExpression();
 
       return {
-        operator: operator as any,
+        operator: operator as '!' | '-' | '~',
         operand,
         location: createRange(start.location.start, operand.location.end),
       };

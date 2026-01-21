@@ -5,6 +5,8 @@
  * This is the "source of truth" for what components exist and how they're connected.
  */
 
+import { isPrimitive, PRIMITIVES } from '../lib/primitives';
+
 // ===========================
 // Component Type Definitions
 // ===========================
@@ -325,14 +327,9 @@ export const COMPONENT_SPECS = LEGACY_PRIMITIVE_SPECS;
  * Falls back to legacy specs for backward compatibility.
  */
 export function isPrimitiveComponentType(type: ComponentType): type is PrimitiveComponentType {
-  // Try new-style primitives first (PascalCase from primitives.ts)
-  try {
-    const { isPrimitive } = require('../lib/primitives');
-    if (isPrimitive(type)) {
-      return true;
-    }
-  } catch (e) {
-    // If primitives.ts is not available, fall through to legacy check
+  // Check new-style primitives first (PascalCase from primitives.ts)
+  if (isPrimitive(type)) {
+    return true;
   }
 
   // Fall back to legacy primitives (SCREAMING_SNAKE_CASE)
@@ -347,18 +344,13 @@ export function isPrimitiveComponentType(type: ComponentType): type is Primitive
  */
 export function getComponentSpec(type: ComponentType): ComponentSpec | undefined {
   // Try new-style primitives first (from primitives.ts PRIMITIVES array)
-  try {
-    const { PRIMITIVES } = require('../lib/primitives');
-    const primitive = PRIMITIVES.find((p: any) => p.name === type);
-    if (primitive) {
-      return {
-        type,
-        inputCount: primitive.inputs.length,
-        outputCount: primitive.outputs.length,
-      };
-    }
-  } catch (e) {
-    // If primitives.ts is not available (e.g., during initial load), fall through
+  const primitive = PRIMITIVES.find((p) => p.name === type);
+  if (primitive) {
+    return {
+      type,
+      inputCount: primitive.inputs.length,
+      outputCount: primitive.outputs.length,
+    };
   }
 
   // Fall back to legacy primitives

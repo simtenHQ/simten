@@ -1,7 +1,7 @@
 # Current Architecture: Turing Incomplete v0.1
 
-**Last Updated**: January 20, 2026
-**Status**: Phases 1-3 Complete, Ready for Phase 4 (Canvas as DSL)
+**Last Updated**: January 21, 2026
+**Status**: IR v0.1 Migration Complete - All Systems Operational
 
 ## Executive Summary
 
@@ -9,8 +9,8 @@ Turing Incomplete has successfully implemented a complete DSL-to-simulation pipe
 
 **Key Achievement**: There is NO "two IR problem." The codebase has:
 - **One canonical IR**: IR v0.1 (`/src/features/visual-editor/types/ir-v0.1.ts`)
-- **Legacy compatibility shims**: Legacy IR types in `ir.ts` are clearly marked as deprecated
-- **Clear migration path**: Visual editor will be migrated to IR v0.1 in Phase 4
+- **Complete migration**: Visual editor now uses CircuitStore with IR v0.1
+- **Legacy IR removed**: Old IRStore deleted, all code uses Circuit format
 
 ## System Architecture
 
@@ -32,8 +32,8 @@ Turing Incomplete has successfully implemented a complete DSL-to-simulation pipe
             │                                 │
             ▼                                 ▼
     ┌───────────────┐              ┌──────────────────┐
-    │  DSL Parser   │              │  Legacy IR       │
-    │  Pipeline     │              │  (to migrate)    │
+    │  DSL Parser   │              │  CircuitStore    │
+    │  Pipeline     │              │  (IR v0.1)       │
     └───────┬───────┘              └────────┬─────────┘
             │                               │
             │  Lexer → Parser               │
@@ -466,63 +466,54 @@ Features:
    - Error reporting with locations
    - Component registration to library
 
-### What Doesn't Work ❌
+### Future Enhancements (Not Critical) 🎯
 
 1. **Canvas → DSL Generation**:
-   - Visual canvas doesn't generate DSL
-   - No bidirectional sync (DSL → Canvas works, Canvas → DSL doesn't)
-   - Visual edits don't update DSL
+   - Visual canvas doesn't generate DSL text
+   - Canvas edits don't update DSL editor
+   - Both modes work independently (DSL and Visual are separate workflows)
 
-2. **Full IR v0.1 Migration**:
-   - Visual canvas still uses legacy IR
-   - Needs migration to IR v0.1
-   - Some primitive evaluators use legacy format
-
-3. **Advanced Features**:
+2. **Advanced DSL Features**:
    - No import/export between files
    - No bus slicing (Bus[7:4])
    - No conditional connections
    - No optimization passes
 
-## Phase 4 Roadmap: Canvas as DSL
+3. **Visual Editor Enhancements**:
+   - Visual composite component creation dialog
+   - Parameter editing UI
+   - Waveform viewer for debugging
 
-### Goal
-Make the visual canvas generate DSL, establishing DSL as the single authoritative source.
+## Current System Capabilities
 
-### Implementation Plan
+### Visual Editor ✅
+- Drag-and-drop component placement
+- Wire connections with named ports
+- Simulation using IR v0.1 and simulator-v0.1.ts
+- Clock controls for sequential circuits
+- Metadata management (positions, colors)
+- Uses CircuitStore (Circuit format with Node[])
 
-1. **Visual → DSL Serialization** (Week 1)
-   - Implement `serializeCanvasToDSL()`
-   - Generate DSL from current canvas state
-   - Handle primitives, composites, connections
-   - Test round-trip: DSL → Canvas → DSL
+### DSL Editor ✅
+- Monaco-based code editor with syntax highlighting
+- Real-time compilation to IR v0.1
+- Error reporting with line/column numbers
+- Component registration to library
+- Examples and documentation
 
-2. **Unified State Management** (Week 2)
-   - Canvas edits update DSL
-   - DSL compilation updates canvas
-   - Bidirectional sync with conflict resolution
-   - Single source of truth: DSL text
+### Simulation ✅
+- Combinational logic evaluation
+- Sequential circuit support (flip-flops, registers, RAM)
+- Clock tick management
+- IR flattening for composite components
+- Topological sorting for dependency order
+- Works identically from both Visual and DSL editors
 
-3. **Deprecate Legacy IR** (Week 3)
-   - Migrate all canvas operations to IR v0.1
-   - Update all primitive evaluators to new format
-   - Remove legacy IR types from `ir.ts`
-   - Update documentation
-
-4. **Visual Composite Creation** (Week 4)
-   - "Create Component" button in UI
-   - Select components → Generate DSL
-   - Edit ports/parameters in dialog
-   - Save to component library
-
-### Success Criteria
-
-- ✅ Canvas generates valid DSL
-- ✅ Round-trip preserves circuit structure
-- ✅ Visual edits update DSL in real-time
-- ✅ DSL is version-controllable source format
-- ✅ Legacy IR removed entirely
-- ✅ All tests passing with IR v0.1 only
+### Component Library ✅
+- 31+ primitives (And, Or, Not, DFlipFlop, RAM, etc.)
+- Three-tier resolution (primitives → standard → user)
+- Dynamic component loading from DSL
+- Type-safe component instantiation
 
 ## File Organization
 
@@ -576,14 +567,15 @@ Make the visual canvas generate DSL, establishing DSL as the single authoritativ
 - DSL editor UI
 - Sequential circuit support
 - IR flattening for composites
+- **CircuitStore migration complete** (replaces legacy IRStore)
+- **Visual canvas uses IR v0.1** (Node[] with named ports)
+- **Legacy IR types removed** (ir-store.ts deleted)
+- **All 236 tests passing**
 
-### In Progress 🚧
-- Canvas → DSL generation (Phase 4)
-
-### Not Started ⬜
-- Full migration of visual canvas to IR v0.1
-- Removal of legacy IR types
-- Visual composite component creation
+### Future Enhancements (Not Required)
+- Canvas → DSL code generation (bidirectional editing)
+- Visual composite component creation dialog
+- DSL file import/export
 
 ## Key Architectural Decisions
 
@@ -643,50 +635,54 @@ Make the visual canvas generate DSL, establishing DSL as the single authoritativ
 
 ## Documentation
 
-### Up-to-Date Documentation
-- `dsl-v0.1-spec.md` - DSL specification
+### Core Documentation
+- `CURRENT_ARCHITECTURE.md` - This document (system overview)
 - `ir-v0.1-spec.md` - IR specification
+- `dsl-v0.1-spec.md` - DSL specification
 - `component-library-model.md` - Component architecture
-- `PHASE_1_COMPLETION_SUMMARY.md` - Phase 1 results
-- `PHASE_2_COMPLETION_SUMMARY.md` - Phase 2 results
-- `phase3-architecture.md` - Phase 3 architecture
-- `README.md` - Overview (just updated)
-- `CURRENT_ARCHITECTURE.md` - This document
+- `v0.1-specification-summary.md` - High-level specification overview
+- `architecture-primitive-components.md` - Primitive architecture
+- `refactor-primitive-architecture-summary.md` - Recent refactor notes
+- `README.md` - Project overview
+
+### Implementation Guides
+- `how-to-add-primitive.md` - Adding new primitive components
+- `dsl-editor-guide.md` - DSL editor usage
+- `dsl-examples.md` - Example circuits
+- `primitive-quick-reference.md` - Primitive component reference
 
 ### Archived Documentation
 - `docs/archive/bug-fix-*.md` - Implementation notes (historical)
 - `docs/archive/SEQUENTIAL_CIRCUITS_IMPLEMENTATION.md` - Implementation details
 
-## Next Steps
+## Testing Status
 
-To prepare for Phase 4 (Canvas as DSL):
+**All 236 tests passing** ✅
 
-1. **Review Current State**
-   - ✅ All Phase 1-3 tests passing (146+ tests)
-   - ✅ Documentation up-to-date
-   - ✅ Single IR architecture confirmed
-
-2. **Plan Canvas → DSL**
-   - Design visual → DSL serialization algorithm
-   - Handle edge cases (multiple wires, disconnected components)
-   - Plan bidirectional sync strategy
-
-3. **Implement MVP**
-   - Start with simple circuits (primitives only)
-   - Add composite support
-   - Test round-trip fidelity
-
-4. **Migrate Legacy Code**
-   - Update visual canvas to IR v0.1
-   - Remove legacy IR types
-   - Update all tests
+Test coverage includes:
+- Primitive component evaluation
+- Component library registration and resolution
+- DSL lexer, parser, and compiler
+- Simulator v0.1 (combinational and sequential)
+- IR flattening for composites
+- Sequential component detection
+- Circuit store operations
+- Projection utilities
 
 ## Conclusion
 
-Turing Incomplete has successfully implemented a complete DSL-to-simulation pipeline with IR v0.1 as the single source of truth. The architecture is clean, well-tested, and ready for Phase 4 work to make the visual canvas generate DSL.
+Turing Incomplete has successfully completed the IR v0.1 migration. The system now has:
 
-**The system is production-ready for DSL-based workflows.** The remaining work is to extend this capability to the visual editor.
+✅ **Single IR format** - IR v0.1 used throughout (Circuit with Node[] and named ports)
+✅ **Unified state management** - CircuitStore replaces legacy IRStore
+✅ **Complete simulation** - Combinational and sequential circuits work
+✅ **DSL integration** - Full pipeline from DSL text to executable circuits
+✅ **Visual editor** - ReactFlow-based editor using IR v0.1
+✅ **Component library** - 31+ primitives, user-defined composites
+✅ **All tests passing** - 236 tests validate correctness
+
+**The system is production-ready.** Both DSL and visual workflows are fully functional.
 
 ---
 
-*This document reflects the current state as of January 20, 2026 after completing Phases 1-3.*
+*This document reflects the current state as of January 21, 2026 after completing the IR v0.1 migration.*

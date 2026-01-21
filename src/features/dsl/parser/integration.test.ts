@@ -302,7 +302,7 @@ describe('DSL Integration Tests', () => {
 
       // Inputs should use the default width
       expect(register.inputs[0].portType.kind).toBe('bus');
-      expect((register.inputs[0].portType as any).width).toBe(8);
+      expect((register.inputs[0].portType as { kind: 'bus'; width: number }).width).toBe(8);
     });
   });
 
