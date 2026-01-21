@@ -327,42 +327,30 @@ function evaluateComposite(
 /**
  * Update clock states and detect edges
  */
+/**
+ * Update clock states using GLOBAL CLOCK approach.
+ * Each call to runSimulationTick represents one clock cycle,
+ * so all clocks get a rising edge on each tick.
+ *
+ * This matches the behavior of Turing Complete and Logisim - users don't
+ * wire clocks manually. The Step/Run/Pause buttons control the global clock.
+ */
 function updateClockStates(
   circuit: Circuit,
-  portValues: PortValueMap,
   seqState: SequentialState
 ): void {
+  // Global clock: ALWAYS produce a rising edge on each tick
+  // This means each call to runSimulationTick = one clock pulse
   for (const node of circuit.nodes) {
     for (const clockPort of node.clocks) {
       const clockKey = `${node.id}.${clockPort.name}`;
       const clockState = seqState.clocks.get(clockKey);
       if (!clockState) continue;
 
-      // Get clock signal value from connections
-      let clockValue = false;
-      for (const conn of circuit.connections) {
-        if (conn.target.nodeId === node.id && conn.target.portName === clockPort.name) {
-          const sourceKey = portPathKey(conn.source);
-          const value = portValues.get(sourceKey);
-          clockValue = Boolean(value);
-          break;
-        }
-      }
-
-      // Detect edge
-      const previousValue = clockState.value;
-      const currentValue = clockValue;
-
-      let edge: 'rising' | 'falling' | 'none' = 'none';
-      if (!previousValue && currentValue) {
-        edge = 'rising';
-      } else if (previousValue && !currentValue) {
-        edge = 'falling';
-      }
-
-      // Update clock state
-      clockState.value = currentValue;
-      clockState.edge = edge;
+      // Always set rising edge on every tick
+      // (The value doesn't matter for a global clock, only the edge matters)
+      clockState.edge = 'rising';
+      clockState.value = true; // Keep it high (doesn't affect behavior)
     }
   }
 }
@@ -516,8 +504,8 @@ export function runSimulationTick(circuit: Circuit, seqState: SequentialState): 
     return combResult;
   }
 
-  // Phase 2: Update clock states
-  updateClockStates(circuit, combResult.portValues, seqState);
+  // Phase 2: Update clock states (global clock - all clocks pulse on each tick)
+  updateClockStates(circuit, seqState);
 
   // Phase 3: Sequential state update (computes next state)
   updateSequentialStates(circuit, combResult.portValues, seqState);
