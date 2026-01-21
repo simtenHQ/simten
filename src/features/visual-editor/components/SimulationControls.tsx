@@ -1,52 +1,55 @@
 /**
- * SimulationControls Component
+ * SimulationControls Component (IR v0.1)
  *
  * Control panel for running simulations and managing circuit state.
+ *
+ * Updated for IR v0.1:
+ * - Uses CircuitStore instead of useIRStore
+ * - Uses runCombinationalSimulation from simulator-v0.1.ts
+ * - Works with Circuit.nodes instead of components
  */
 
 'use client';
 
-import React, { useCallback, useState } from 'react';
+import React, { useCallback } from 'react';
 import { Play, Square, Trash2, Sparkles, LayoutGrid } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useIRStore, useMetadataStore, useUIStore } from '../stores';
-import { runSimulationStep } from '../utils/simulator';
+import { useCircuitStore } from '../stores/circuit-store';
+import { useMetadataStore, useUIStore } from '../stores';
+import { runCombinationalSimulation } from '../lib/simulator-v0.1';
 import { performHierarchicalLayout, centerLayout } from '../utils/auto-layout';
 import { cn } from '@/lib/utils';
 import { ClockControls } from './ClockControls';
 
 export function SimulationControls() {
   // Select values separately to avoid creating new objects on every render
-  const components = useIRStore((state) => state.components);
-  const connections = useIRStore((state) => state.connections);
+  const circuit = useCircuitStore((state) => state.circuit);
   const simulationStatus = useUIStore((state) => state.simulation.status);
   const setSimulationStatus = useUIStore((state) => state.setSimulationStatus);
   const resetSimulation = useUIStore((state) => state.resetSimulation);
-  const clearAllIR = useIRStore((state) => state.clearAll);
+  const clearCircuit = useCircuitStore((state) => state.clearCircuit);
   const clearAllMetadata = useMetadataStore((state) => state.clearAll);
 
   // Get component counts
-  const componentCount = Object.keys(components).length;
-  const connectionCount = Object.keys(connections).length;
+  const componentCount = circuit?.nodes.length ?? 0;
+  const connectionCount = circuit?.connections.length ?? 0;
 
   const handleRun = useCallback(() => {
+    if (!circuit) return;
+
     setSimulationStatus('running');
 
     // Run simulation step
-    const updatedIR = runSimulationStep({ components, connections });
+    runCombinationalSimulation(circuit);
 
-    // Update IR store with new values
-    Object.entries(updatedIR.components).forEach(([id, component]) => {
-      if ('value' in component) {
-        useIRStore.getState().updateComponent(id, { value: component.value });
-      }
-    });
+    // Note: Simulation now happens automatically in Canvas.tsx via useEffect
+    // This button is mainly for manual re-triggering if needed
 
     // Reset status after simulation completes
     setTimeout(() => {
       setSimulationStatus('idle');
     }, 100);
-  }, [components, connections, setSimulationStatus]);
+  }, [circuit, setSimulationStatus]);
 
   const handleStop = useCallback(() => {
     setSimulationStatus('idle');
@@ -55,64 +58,66 @@ export function SimulationControls() {
 
   const handleClear = useCallback(() => {
     if (confirm('Clear all components and connections?')) {
-      clearAllIR();
+      clearCircuit();
       clearAllMetadata();
       resetSimulation();
     }
-  }, [clearAllIR, clearAllMetadata, resetSimulation]);
+  }, [clearCircuit, clearAllMetadata, resetSimulation]);
 
   const handleCleanup = useCallback(() => {
+    if (!circuit) return;
+
     // Get all connection metadata
     const metadataState = useMetadataStore.getState();
 
     // Clear all waypoints from all connections for clean orthogonal routing
-    Object.keys(connections).forEach((connectionId) => {
-      const metadata = metadataState.connections[connectionId];
+    circuit.connections.forEach((connection) => {
+      const metadata = metadataState.connections[connection.id];
       if (metadata?.waypoints && metadata.waypoints.length > 0) {
         // Clear waypoints to get default orthogonal routing
-        metadataState.updateConnectionWaypoints(connectionId, []);
+        metadataState.updateConnectionWaypoints(connection.id, []);
       }
     });
 
     // Snap all components to grid for cleaner alignment
     const GRID_SIZE = 20; // Grid spacing in pixels
-    Object.entries(metadataState.components).forEach(([componentId, metadata]) => {
+    Object.entries(metadataState.components).forEach(([nodeId, metadata]) => {
       if (metadata.position) {
         const snappedX = Math.round(metadata.position.x / GRID_SIZE) * GRID_SIZE;
         const snappedY = Math.round(metadata.position.y / GRID_SIZE) * GRID_SIZE;
 
         // Only update if position changed
         if (snappedX !== metadata.position.x || snappedY !== metadata.position.y) {
-          metadataState.updateComponentPosition(componentId, {
+          metadataState.updateComponentPosition(nodeId, {
             x: snappedX,
             y: snappedY,
           });
         }
       }
     });
-  }, [connections]);
+  }, [circuit]);
 
   const handleAutoLayout = useCallback(() => {
+    if (!circuit) return;
+
     const metadataState = useMetadataStore.getState();
 
     // Clear all waypoints first
-    Object.keys(connections).forEach((connectionId) => {
-      metadataState.updateConnectionWaypoints(connectionId, []);
+    circuit.connections.forEach((connection) => {
+      metadataState.updateConnectionWaypoints(connection.id, []);
     });
 
-    // Perform hierarchical layout
-    const newPositions = performHierarchicalLayout(
-      { components, connections }
-    );
+    // Perform hierarchical layout directly on Circuit
+    const newPositions = performHierarchicalLayout(circuit);
 
     // Center the layout
     const centeredPositions = centerLayout(newPositions);
 
     // Apply new positions
-    Object.entries(centeredPositions).forEach(([componentId, position]) => {
-      metadataState.updateComponentPosition(componentId, position);
+    Object.entries(centeredPositions).forEach(([nodeId, position]) => {
+      metadataState.updateComponentPosition(nodeId, position);
     });
-  }, [components, connections]);
+  }, [circuit]);
 
   return (
     <div className="flex h-16 items-center justify-between border-b border-gray-200 bg-white px-6 shadow-sm">

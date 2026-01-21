@@ -1,7 +1,11 @@
 /**
- * TestPanel Component
+ * TestPanel Component (IR v0.1)
  *
  * Right sidebar for managing and running test cases.
+ *
+ * Updated for IR v0.1:
+ * - Uses CircuitStore instead of useIRStore
+ * - Uses Circuit instead of components/connections
  */
 
 'use client';
@@ -9,7 +13,7 @@
 import React, { useCallback } from 'react';
 import { cn } from '@/lib/utils';
 import { useTestStore } from '../stores/test-store';
-import { useIRStore } from '../stores';
+import { useCircuitStore } from '../stores/circuit-store';
 import { runAllTests } from '../lib/test-runner';
 import { TestResultDisplay } from './TestResultDisplay';
 
@@ -21,8 +25,7 @@ export function TestPanel() {
   const setTestResult = useTestStore((state) => state.setTestResult);
   const setEditingTestId = useTestStore((state) => state.setEditingTestId);
   const clearResults = useTestStore((state) => state.clearResults);
-  const components = useIRStore((state) => state.components);
-  const connections = useIRStore((state) => state.connections);
+  const circuit = useCircuitStore((state) => state.circuit);
 
   const testCasesList = Object.values(testCases);
   const enabledTests = testCasesList.filter(tc => tc.enabled);
@@ -34,7 +37,7 @@ export function TestPanel() {
   const errorTests = Object.values(results).filter(r => r.status === 'error').length;
 
   const handleRunTests = useCallback(async () => {
-    if (isRunning) return;
+    if (isRunning || !circuit) return;
 
     setIsRunning(true);
     clearResults();
@@ -43,7 +46,7 @@ export function TestPanel() {
     await new Promise(resolve => setTimeout(resolve, 100));
 
     try {
-      const testResults = runAllTests(testCasesList, { components, connections });
+      const testResults = runAllTests(testCasesList, circuit);
 
       // Update results in store
       for (const result of testResults) {
@@ -52,7 +55,7 @@ export function TestPanel() {
     } finally {
       setIsRunning(false);
     }
-  }, [isRunning, testCasesList, components, connections, setIsRunning, clearResults, setTestResult]);
+  }, [isRunning, testCasesList, circuit, setIsRunning, clearResults, setTestResult]);
 
   const handleNewTest = useCallback(() => {
     setEditingTestId('new');

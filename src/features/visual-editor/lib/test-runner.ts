@@ -1,41 +1,59 @@
 /**
- * Test Runner - Executes test cases against circuits
+ * Test Runner - Executes test cases against circuits (IR v0.1)
+ *
+ * Updated for IR v0.1:
+ * - Works with Circuit instead of IRState
+ * - Uses Node instead of Component
+ * - Uses componentRef instead of type
+ * - Reads values from simulation results instead of node.value
  */
 
-import type { IRState, Component, SwitchComponent, LEDComponent } from '../types';
+import type { Circuit, Node } from '../types/ir-v0.1';
 import type { TestCase, TestResult, OutputComparison } from '../types/testing';
-import { runSimulationStep } from '../utils/simulator';
+import { runCombinationalSimulation } from './simulator-v0.1';
+
+interface LabeledSwitch {
+  nodeId: string;
+  label: string;
+}
+
+interface LabeledLED {
+  nodeId: string;
+  label: string;
+}
 
 /**
- * Find a component by its label
+ * Find a node by its label
  */
-export function findComponentByLabel(
-  ir: IRState,
+export function findNodeByLabel(
+  circuit: Circuit,
   label: string
-): Component | undefined {
-  return Object.values(ir.components).find(
-    (comp) => comp.label === label
-  );
+): Node | undefined {
+  return circuit.nodes.find((node) => node.label === label);
 }
 
 /**
  * Get all labeled switches (potential test inputs)
  */
-export function getLabeledSwitches(ir: IRState): SwitchComponent[] {
-  return Object.values(ir.components).filter(
-    (comp): comp is SwitchComponent =>
-      comp.type === 'SWITCH' && !!comp.label
-  );
+export function getLabeledSwitches(circuit: Circuit): LabeledSwitch[] {
+  return circuit.nodes
+    .filter((node) => node.componentRef === 'Switch' && !!node.label)
+    .map((node) => ({
+      nodeId: node.id,
+      label: node.label!,
+    }));
 }
 
 /**
  * Get all labeled LEDs (potential test outputs)
  */
-export function getLabeledLEDs(ir: IRState): LEDComponent[] {
-  return Object.values(ir.components).filter(
-    (comp): comp is LEDComponent =>
-      comp.type === 'LED' && !!comp.label
-  );
+export function getLabeledLEDs(circuit: Circuit): LabeledLED[] {
+  return circuit.nodes
+    .filter((node) => node.componentRef === 'LED' && !!node.label)
+    .map((node) => ({
+      nodeId: node.id,
+      label: node.label!,
+    }));
 }
 
 /**
@@ -44,31 +62,31 @@ export function getLabeledLEDs(ir: IRState): LEDComponent[] {
  */
 export function validateTestCase(
   testCase: TestCase,
-  ir: IRState
+  circuit: Circuit
 ): string | undefined {
   // Check all input labels exist and are switches
   for (const input of testCase.inputs) {
-    const component = findComponentByLabel(ir, input.label);
+    const node = findNodeByLabel(circuit, input.label);
 
-    if (!component) {
+    if (!node) {
       return `Input component with label "${input.label}" not found`;
     }
 
-    if (component.type !== 'SWITCH') {
-      return `Input component "${input.label}" is not a switch (found ${component.type})`;
+    if (node.componentRef !== 'Switch') {
+      return `Input component "${input.label}" is not a switch (found ${node.componentRef})`;
     }
   }
 
   // Check all output labels exist and are LEDs
   for (const output of testCase.outputs) {
-    const component = findComponentByLabel(ir, output.label);
+    const node = findNodeByLabel(circuit, output.label);
 
-    if (!component) {
+    if (!node) {
       return `Output component with label "${output.label}" not found`;
     }
 
-    if (component.type !== 'LED') {
-      return `Output component "${output.label}" is not an LED (found ${component.type})`;
+    if (node.componentRef !== 'LED') {
+      return `Output component "${output.label}" is not an LED (found ${node.componentRef})`;
     }
   }
 
@@ -80,13 +98,13 @@ export function validateTestCase(
  */
 export function runTestCase(
   testCase: TestCase,
-  ir: IRState
+  circuit: Circuit
 ): TestResult {
   const startTime = performance.now();
 
   try {
     // Validate test case
-    const validationError = validateTestCase(testCase, ir);
+    const validationError = validateTestCase(testCase, circuit);
     if (validationError) {
       return {
         testCaseId: testCase.id,
@@ -97,37 +115,43 @@ export function runTestCase(
       };
     }
 
-    // Clone IR state to avoid mutating original
-    const testIR: IRState = {
-      components: {},
-      connections: { ...ir.connections },
+    // Clone circuit to avoid mutating original
+    const testCircuit: Circuit = {
+      ...circuit,
+      nodes: circuit.nodes.map((node) => ({
+        ...node,
+        arguments: { ...node.arguments },
+        inputs: [...node.inputs],
+        outputs: [...node.outputs],
+        clocks: [...node.clocks],
+      })),
+      connections: [...circuit.connections],
     };
-
-    // Deep clone components
-    for (const [id, component] of Object.entries(ir.components)) {
-      testIR.components[id] = { ...component } as Component;
-    }
 
     // Set input values (switches)
     for (const input of testCase.inputs) {
-      const component = findComponentByLabel(testIR, input.label);
-      if (component && component.type === 'SWITCH') {
-        (component as SwitchComponent).value = input.value;
+      const node = findNodeByLabel(testCircuit, input.label);
+      if (node && node.componentRef === 'Switch') {
+        // Update the switch's value argument
+        node.arguments.value = input.value;
       }
     }
 
     // Run simulation to propagate values
-    const simulatedIR = runSimulationStep(testIR);
+    const simulationResult = runCombinationalSimulation(testCircuit);
 
     // Compare output values (LEDs)
     const comparisons: OutputComparison[] = [];
     let allPassed = true;
 
     for (const expectedOutput of testCase.outputs) {
-      const component = findComponentByLabel(simulatedIR, expectedOutput.label);
+      const node = findNodeByLabel(testCircuit, expectedOutput.label);
 
-      if (component && component.type === 'LED') {
-        const actualValue = (component as LEDComponent).value;
+      if (node && node.componentRef === 'LED') {
+        // Read LED value from simulation portValues
+        // LED has one input port named 'in'
+        const ledInputPortKey = `${node.id}.in`;
+        const actualValue = Boolean(simulationResult.portValues.get(ledInputPortKey) ?? false);
         const passed = actualValue === expectedOutput.value;
 
         comparisons.push({
@@ -167,8 +191,8 @@ export function runTestCase(
  */
 export function runAllTests(
   testCases: TestCase[],
-  ir: IRState
+  circuit: Circuit
 ): TestResult[] {
   const enabledTests = testCases.filter(tc => tc.enabled);
-  return enabledTests.map(tc => runTestCase(tc, ir));
+  return enabledTests.map(tc => runTestCase(tc, circuit));
 }

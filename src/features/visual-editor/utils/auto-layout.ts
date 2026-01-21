@@ -5,7 +5,8 @@
  * Creates professional-looking layouts with minimal wire crossings.
  */
 
-import type { IRState, Position } from '../types';
+import type { Circuit } from '../types/ir-v0.1';
+import type { Position } from '../types';
 
 const GRID_SIZE = 20;
 const HORIZONTAL_SPACING = 200;
@@ -23,7 +24,7 @@ function snapToGrid(value: number): number {
  * Places inputs on the left, outputs on the right, and logic gates in the middle
  */
 export function performHierarchicalLayout(
-  ir: IRState
+  circuit: Circuit
 ): Record<string, Position> {
   const newPositions: Record<string, Position> = {};
 
@@ -32,18 +33,18 @@ export function performHierarchicalLayout(
   const outputs: string[] = [];
   const logicGates: string[] = [];
 
-  Object.entries(ir.components).forEach(([id, component]) => {
-    if (component.type === 'SWITCH') {
-      inputs.push(id);
-    } else if (component.type === 'LED') {
-      outputs.push(id);
+  circuit.nodes.forEach((node) => {
+    if (node.componentRef === 'Switch') {
+      inputs.push(node.id);
+    } else if (node.componentRef === 'Led') {
+      outputs.push(node.id);
     } else {
-      logicGates.push(id);
+      logicGates.push(node.id);
     }
   });
 
   // Calculate levels for logic gates based on dependencies
-  const levels = calculateLevels(ir, inputs);
+  const levels = calculateLevels(circuit, inputs);
 
   // Group logic gates by level
   const gatesByLevel: Record<number, string[]> = {};
@@ -95,7 +96,7 @@ export function performHierarchicalLayout(
  * Level 1 = connected to level 0 outputs
  * etc.
  */
-function calculateLevels(ir: IRState, inputs: string[]): Record<string, number> {
+function calculateLevels(circuit: Circuit, inputs: string[]): Record<string, number> {
   const levels: Record<string, number> = {};
 
   // Inputs are at level -1 (before level 0)
@@ -103,13 +104,16 @@ function calculateLevels(ir: IRState, inputs: string[]): Record<string, number> 
     levels[id] = -1;
   });
 
-  // Build adjacency list (component -> components it feeds into)
+  // Build adjacency list (node -> nodes it feeds into)
   const graph: Record<string, string[]> = {};
-  Object.values(ir.connections).forEach((conn) => {
-    if (!graph[conn.sourceComponentId]) {
-      graph[conn.sourceComponentId] = [];
+  circuit.connections.forEach((conn) => {
+    const sourceNodeId = conn.source.nodeId;
+    const targetNodeId = conn.target.nodeId;
+
+    if (!graph[sourceNodeId]) {
+      graph[sourceNodeId] = [];
     }
-    graph[conn.sourceComponentId].push(conn.targetComponentId);
+    graph[sourceNodeId].push(targetNodeId);
   });
 
   // BFS to assign levels
@@ -142,14 +146,14 @@ function calculateLevels(ir: IRState, inputs: string[]): Record<string, number> 
  * Arranges components in a grid pattern
  */
 export function performGridLayout(
-  ir: IRState
+  circuit: Circuit
 ): Record<string, Position> {
   const newPositions: Record<string, Position> = {};
-  const componentIds = Object.keys(ir.components);
+  const nodeIds = circuit.nodes.map((n) => n.id);
 
-  const cols = Math.ceil(Math.sqrt(componentIds.length));
+  const cols = Math.ceil(Math.sqrt(nodeIds.length));
 
-  componentIds.forEach((id, index) => {
+  nodeIds.forEach((id, index) => {
     const col = index % cols;
     const row = Math.floor(index / cols);
 

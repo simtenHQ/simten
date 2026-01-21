@@ -3,4 +3,3 @@
  */
 
 export * from './projection';
-export * from './simulator';

@@ -1,15 +1,21 @@
 /**
- * OutputNode Component
+ * OutputNode Component (IR v0.1)
  *
- * Renders output components like LEDs.
+ * Renders output components like LEDs and displays.
  * Display-only components that visualize signals.
+ *
+ * Updated for IR v0.1:
+ * - Uses CircuitStore instead of useIRStore
+ * - Uses name-based ports instead of index-based
+ * - Uses data.nodeId instead of data.componentId
+ * - Uses data.componentRef instead of data.componentType
  */
 
 'use client';
 
 import React, { useCallback, useState } from 'react';
 import { BaseNode, PortConfig } from './BaseNode';
-import { useIRStore } from '../../stores';
+import { useCircuitStore } from '../../stores/circuit-store';
 import type { NodeData } from '../../utils/projection';
 import { cn } from '@/lib/utils';
 import { LabelEditor } from '../LabelEditor';
@@ -20,7 +26,7 @@ interface OutputNodeProps {
 }
 
 export function OutputNode({ data, selected }: OutputNodeProps) {
-  const updateComponent = useIRStore((state) => state.updateComponent);
+  const updateNode = useCircuitStore((state) => state.updateNode);
   const value = data.value ?? false;
   const numericValue = data.numericValue ?? 0;
   const [isEditingLabel, setIsEditingLabel] = useState(false);
@@ -35,28 +41,23 @@ export function OutputNode({ data, selected }: OutputNodeProps) {
       y: rect.top,
     });
     setIsEditingLabel(true);
-    console.log('LED Label double-clicked, editing:', true);
   }, []);
 
   const handleLabelSave = useCallback((newLabel: string) => {
-    console.log('Saving LED label:', newLabel);
-    updateComponent(data.componentId, { label: newLabel || undefined });
+    updateNode(data.nodeId, { label: newLabel || undefined });
     setIsEditingLabel(false);
-  }, [data.componentId, updateComponent]);
+  }, [data.nodeId, updateNode]);
 
   const handleLabelCancel = useCallback(() => {
-    console.log('Canceling LED label edit');
     setIsEditingLabel(false);
   }, []);
 
-  // Configure input port
-  const inputPorts: PortConfig[] = [];
-  for (let i = 0; i < data.inputCount; i++) {
-    inputPorts.push({
-      index: i,
-      type: 'input',
-    });
-  }
+  // Configure input ports using port names
+  const inputPorts: PortConfig[] = data.inputNames.map((name, index) => ({
+    name,
+    index,
+    type: 'input',
+  }));
 
   // Helper function to convert number to hex string
   const toHexString = (num: number): string => {
@@ -65,7 +66,7 @@ export function OutputNode({ data, selected }: OutputNodeProps) {
 
   // Render different display based on component type
   const renderDisplay = () => {
-    if (data.componentType === 'HexDisplay') {
+    if (data.componentRef === 'HexDisplay') {
       const hexValue = toHexString(numericValue);
       return (
         <div className="flex flex-col items-center gap-2">
@@ -75,7 +76,7 @@ export function OutputNode({ data, selected }: OutputNodeProps) {
             onDoubleClick={handleLabelDoubleClick}
             title="Double-click to edit label"
           >
-            {data.label || data.componentType}
+            {data.label || data.componentRef}
           </div>
 
           {/* Hex Display */}
@@ -89,7 +90,7 @@ export function OutputNode({ data, selected }: OutputNodeProps) {
           </div>
         </div>
       );
-    } else if (data.componentType === 'SevenSegment') {
+    } else if (data.componentRef === 'SevenSegment') {
       const hexDigit = (numericValue & 0xF).toString(16).toUpperCase();
       return (
         <div className="flex flex-col items-center gap-2">
@@ -99,7 +100,7 @@ export function OutputNode({ data, selected }: OutputNodeProps) {
             onDoubleClick={handleLabelDoubleClick}
             title="Double-click to edit label"
           >
-            {data.label || data.componentType}
+            {data.label || data.componentRef}
           </div>
 
           {/* Seven Segment Display (simplified - just show hex digit) */}
@@ -123,7 +124,7 @@ export function OutputNode({ data, selected }: OutputNodeProps) {
             onDoubleClick={handleLabelDoubleClick}
             title="Double-click to edit label"
           >
-            {data.label || data.componentType}
+            {data.label || data.componentRef}
           </div>
 
           {/* LED Circle */}

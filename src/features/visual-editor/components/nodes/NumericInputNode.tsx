@@ -1,17 +1,22 @@
 /**
- * NumericInputNode Component
+ * NumericInputNode Component (IR v0.1)
  *
  * Renders multi-bit numeric input components.
  * User-controllable component for testing circuits with numeric values.
+ *
+ * Updated for IR v0.1:
+ * - Uses CircuitStore instead of useIRStore
+ * - Uses name-based ports instead of index-based
+ * - Uses data.nodeId instead of data.componentId
+ * - Uses data.componentRef instead of data.componentType
  */
 
 'use client';
 
 import React, { useCallback, useState } from 'react';
 import { BaseNode, PortConfig } from './BaseNode';
-import { useIRStore } from '../../stores';
+import { useCircuitStore } from '../../stores/circuit-store';
 import type { NodeData } from '../../utils/projection';
-import { cn } from '@/lib/utils';
 import { LabelEditor } from '../LabelEditor';
 
 interface NumericInputNodeProps {
@@ -20,7 +25,7 @@ interface NumericInputNodeProps {
 }
 
 export function NumericInputNode({ data, selected }: NumericInputNodeProps) {
-  const updateComponent = useIRStore((state) => state.updateComponent);
+  const updateNode = useCircuitStore((state) => state.updateNode);
   const value = data.numericValue ?? 0;
   const width = data.width ?? 8;
   const maxValue = (1 << width) - 1;
@@ -63,14 +68,20 @@ export function NumericInputNode({ data, selected }: NumericInputNodeProps) {
         parsedValue = Math.max(0, Math.min(maxValue, parsedValue));
       }
 
-      updateComponent(data.componentId, { value: parsedValue });
+      // Update the node's arguments.value
+      const currentNode = useCircuitStore.getState().getNode(data.nodeId);
+      if (currentNode) {
+        updateNode(data.nodeId, {
+          arguments: { ...currentNode.arguments, value: parsedValue },
+        });
+      }
       setIsEditingValue(false);
     } else if (e.key === 'Escape') {
       e.preventDefault();
       e.stopPropagation();
       setIsEditingValue(false);
     }
-  }, [editValue, maxValue, data.componentId, updateComponent]);
+  }, [editValue, maxValue, data.nodeId, updateNode]);
 
   const handleValueBlur = useCallback(() => {
     setIsEditingValue(false);
@@ -88,9 +99,9 @@ export function NumericInputNode({ data, selected }: NumericInputNodeProps) {
   }, []);
 
   const handleLabelSave = useCallback((newLabel: string) => {
-    updateComponent(data.componentId, { label: newLabel || undefined });
+    updateNode(data.nodeId, { label: newLabel || undefined });
     setIsEditingLabel(false);
-  }, [data.componentId, updateComponent]);
+  }, [data.nodeId, updateNode]);
 
   const handleLabelCancel = useCallback(() => {
     setIsEditingLabel(false);
@@ -101,15 +112,13 @@ export function NumericInputNode({ data, selected }: NumericInputNodeProps) {
     setDisplayMode((mode) => (mode === 'dec' ? 'hex' : 'dec'));
   }, []);
 
-  // Configure output port
-  const outputPorts: PortConfig[] = [];
-  for (let i = 0; i < data.outputCount; i++) {
-    outputPorts.push({
-      index: i,
-      type: 'output',
-      value: true, // Bus signals are always "active"
-    });
-  }
+  // Configure output ports using port names
+  const outputPorts: PortConfig[] = data.outputNames.map((name, index) => ({
+    name,
+    index,
+    type: 'output',
+    value: true, // Bus signals are always "active"
+  }));
 
   // Format value for display
   const displayValue = displayMode === 'hex'
@@ -126,7 +135,7 @@ export function NumericInputNode({ data, selected }: NumericInputNodeProps) {
           position={labelPosition}
         />
       )}
-      <BaseNode outputPorts={outputPorts} selected={selected} className="min-w-[120px]">
+      <BaseNode outputPorts={outputPorts} selected={selected} className="min-w-[100px]">
         <div className="flex flex-col items-center gap-2">
           {/* Component Label */}
           <div
@@ -134,10 +143,10 @@ export function NumericInputNode({ data, selected }: NumericInputNodeProps) {
             onDoubleClick={handleLabelDoubleClick}
             title="Double-click to edit label"
           >
-            {data.label || 'Input'}
+            {data.label || data.componentRef}
           </div>
 
-          {/* Value Display/Edit */}
+          {/* Value Display/Editor */}
           <div className="flex flex-col items-center gap-1">
             {isEditingValue ? (
               <input
@@ -146,50 +155,32 @@ export function NumericInputNode({ data, selected }: NumericInputNodeProps) {
                 onChange={handleValueChange}
                 onKeyDown={handleValueKeyDown}
                 onBlur={handleValueBlur}
+                className="w-24 px-2 py-1 text-center font-mono text-sm border-2 border-blue-500 rounded focus:outline-none"
                 autoFocus
-                className="w-24 px-2 py-1 text-sm text-center border-2 border-blue-500 rounded focus:outline-none focus:ring-2 focus:ring-blue-300"
-                placeholder="Enter value"
+                onClick={(e) => e.stopPropagation()}
               />
             ) : (
               <div
                 onClick={handleValueClick}
-                className="group relative px-3 py-2 bg-gradient-to-br from-slate-50 to-slate-100 border-2 border-slate-300 rounded-lg cursor-pointer hover:border-blue-400 hover:shadow-md transition-all"
+                className="px-3 py-1 bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded cursor-pointer hover:shadow-md transition-all font-mono text-sm"
                 title="Click to edit value"
               >
-                <div className="flex items-center gap-2">
-                  <span className="text-lg font-mono font-semibold text-slate-700 group-hover:text-blue-600 transition-colors">
-                    {displayValue}
-                  </span>
-                </div>
-
-                {/* Edit indicator on hover */}
-                <div className="absolute -top-1 -right-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <div className="w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
-                    <span className="text-white text-xs">✎</span>
-                  </div>
-                </div>
+                {displayValue}
               </div>
             )}
-          </div>
 
-          {/* Display Mode Toggle and Bit Width Info */}
-          <div className="flex items-center gap-2 text-xs">
+            {/* Display mode toggle */}
             <button
               onClick={toggleDisplayMode}
-              className="px-2 py-0.5 bg-slate-200 hover:bg-slate-300 rounded text-slate-600 hover:text-slate-800 transition-colors font-medium"
-              title="Toggle between decimal and hexadecimal"
+              className="text-xs text-gray-500 hover:text-gray-700 transition-colors"
+              title="Toggle decimal/hex display"
             >
               {displayMode === 'dec' ? 'DEC' : 'HEX'}
             </button>
-            <span className="text-slate-500 font-mono">
-              {width}-bit
-            </span>
           </div>
 
-          {/* Value Range Info */}
-          <div className="text-xs text-slate-400 font-mono">
-            0-{maxValue}
-          </div>
+          {/* Bit width indicator */}
+          <div className="text-xs text-gray-400">{width}-bit</div>
         </div>
       </BaseNode>
     </>

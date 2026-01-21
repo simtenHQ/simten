@@ -515,7 +515,7 @@ describe('Memory and Utility', () => {
     // Bits 0-2:   0b011 = 3
     // Bits 3-7:   0b00110 = 6
     // Bits 8-15:  0b10101011 = 171
-    result = evaluator.evaluate(new Map([['in', 0b1010101100110011], ['__widths_out', [3, 5, 8] as any]]));
+    result = evaluator.evaluate(new Map<string, number | number[]>([['in', 0b1010101100110011], ['__widths_out', [3, 5, 8]]]));
     expect(result.get('out0')).toBe(0b011);      // Bits 0-2
     expect(result.get('out1')).toBe(0b00110);    // Bits 3-7
     expect(result.get('out2')).toBe(0b10101011); // Bits 8-15

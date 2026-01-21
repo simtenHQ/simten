@@ -1,7 +1,7 @@
 # Implementation Roadmap: From Current State to Full DSL/IR System
 
-**Last Updated**: January 20, 2026
-**Status**: Phases 1-3 COMPLETE ✅ | Ready for Phase 4 (Canvas as DSL)
+**Last Updated**: January 21, 2026
+**Status**: All Phases COMPLETE ✅ | IR v0.1 Migration Finished
 
 ## Implementation Status
 
@@ -9,15 +9,12 @@
 - IR v0.1 core infrastructure
 - Component library with three-tier resolution
 - Recursive composite simulator
-- 73 tests passing
-- See: [Phase 1 Completion Summary](./PHASE_1_COMPLETION_SUMMARY.md)
+- Primitive components and evaluators
 
 ### ✅ Phase 2: COMPLETE (January 19, 2026)
 - Complete DSL parser pipeline (lexer, parser, validator)
 - AST → IR v0.1 compiler
-- 59 tests passing
 - HalfAdder, FullAdder, 4-bit Adder working
-- See: [Phase 2 Completion Summary](./PHASE_2_COMPLETION_SUMMARY.md)
 
 ### ✅ Phase 3: COMPLETE (January 19-20, 2026)
 - DSL editor with Monaco-based syntax highlighting
@@ -26,15 +23,16 @@
 - Sequential circuit support (clocks, D flip-flops, registers, RAM)
 - Clock controls UI (Step/Run/Pause/Reset)
 - IR flattening for composite sequential circuits
-- See: [Phase 3 Architecture](./phase3-architecture.md)
 
-### 🚧 Phase 4: READY TO START (Canvas as DSL)
-**Goal**: Make visual canvas generate DSL, establishing DSL as single source of truth
-- Visual → DSL serialization
-- Bidirectional sync (DSL ↔ Canvas)
-- Deprecate legacy IR entirely
-- Visual composite component creation
-- See: [Current Architecture](./CURRENT_ARCHITECTURE.md) for detailed plan
+### ✅ Phase 4: COMPLETE (January 21, 2026)
+**Goal**: Migrate visual canvas to IR v0.1
+- CircuitStore replaces legacy IRStore
+- Visual canvas uses IR v0.1 (Node[] with named ports)
+- simulator-v0.1.ts operational
+- Legacy IR types removed (ir-store.ts deleted)
+- All 236 tests passing
+
+**Current Status**: System fully operational with IR v0.1 throughout. See [Current Architecture](./CURRENT_ARCHITECTURE.md) for details.
 
 ---
 
@@ -42,7 +40,7 @@
 
 This document provides a clear implementation path from the initial working visual editor to a complete DSL-driven system with composite components.
 
-**THIS ROADMAP IS NOW HISTORICAL.** Phases 1-3 are complete. Refer to [CURRENT_ARCHITECTURE.md](./CURRENT_ARCHITECTURE.md) for current state and Phase 4 plans.
+**THIS ROADMAP IS NOW HISTORICAL.** All phases are complete. Refer to [CURRENT_ARCHITECTURE.md](./CURRENT_ARCHITECTURE.md) for current system state.
 
 ## Original Current State Assessment (Pre-Phase 1)
 
