@@ -111,6 +111,7 @@ export const PRIMITIVE_METADATA: Record<string, PrimitiveMetadata> = {
   Adder: { category: PRIMITIVE_CATEGORIES.ARITHMETIC, icon: '➕', componentType: 'Adder' },
   Multiplier: { category: PRIMITIVE_CATEGORIES.ARITHMETIC, icon: '✖️', componentType: 'Multiplier' },
   Comparator: { category: PRIMITIVE_CATEGORIES.ARITHMETIC, icon: '⚖️', componentType: 'Comparator' },
+  Incrementer: { category: PRIMITIVE_CATEGORIES.ARITHMETIC, icon: '+1', componentType: 'Incrementer' },
 
   // Plexers (using primitive names as ComponentType)
   Mux: { category: PRIMITIVE_CATEGORIES.PLEXERS, icon: '⊓', componentType: 'Mux' },
@@ -122,6 +123,7 @@ export const PRIMITIVE_METADATA: Record<string, PrimitiveMetadata> = {
 
   // Memory
   RAM: { category: PRIMITIVE_CATEGORIES.MEMORY, icon: '💾', componentType: 'RAM' },
+  DualPortRAM: { category: PRIMITIVE_CATEGORIES.MEMORY, icon: '💾²', componentType: 'DualPortRAM' },
   ROM: { category: PRIMITIVE_CATEGORIES.MEMORY, icon: '📀', componentType: 'ROM' },
 
   // Utilities (using primitive names as ComponentType)
@@ -133,6 +135,7 @@ export const PRIMITIVE_METADATA: Record<string, PrimitiveMetadata> = {
   // Display Components (using primitive names as ComponentType)
   SevenSegment: { category: PRIMITIVE_CATEGORIES.DISPLAY, icon: '8.', componentType: 'SevenSegment' },
   HexDisplay: { category: PRIMITIVE_CATEGORIES.DISPLAY, icon: '0xFF', componentType: 'HexDisplay' },
+  Screen: { category: PRIMITIVE_CATEGORIES.DISPLAY, icon: '🖥️', componentType: 'Screen' },
 };
 
 /**

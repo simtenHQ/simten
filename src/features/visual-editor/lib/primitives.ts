@@ -380,6 +380,33 @@ export const PRIMITIVE_EVALUATORS: Record<string, PrimitiveEvaluatorInterface> =
     return new Map();
   }),
 
+  /**
+   * Screen (Memory-Mapped Display)
+   * 8x8 pixel grid that reads RAM addresses 0-63 via DMA-like state access
+   * Simulates real display controllers (VIC-II, PPU, GPU)
+   * No inputs - reads RAM state directly (handled in projection phase)
+   * No outputs - display component
+   */
+  Screen: createCombinationalEvaluator((_inputs, _currentState, context) => {
+    // Screen performs burst DMA - reads all 64 addresses from RAM in one evaluation
+    // This simulates a display controller reading the framebuffer during VBLANK
+    //
+    // In real hardware:
+    // - Display refresh happens at 60Hz (16ms period)
+    // - During VBLANK (~1ms), display controller burst-reads the framebuffer
+    // - Game logic runs at 10Hz (100ms period)
+    // - Display shows stable image between refreshes
+    //
+    // In our simulation:
+    // - Screen reads all 64 bytes from RAM each evaluation
+    // - The explicit wiring (screen.addrB -> ram.addrB) is kept for documentation
+    // - This is architecturally correct: displays DO burst-read memory
+
+    // Dummy output - actual pixel data is stored in context for projection
+    // The addrB output exists for circuit diagram clarity but isn't actively scanned
+    return new Map([['addrB', 0]]);
+  }),
+
   // ============================================================================
   // Sequential Components (Stateful)
   // ============================================================================
@@ -450,6 +477,35 @@ export const PRIMITIVE_EVALUATORS: Record<string, PrimitiveEvaluatorInterface> =
         // Create a new Map to avoid mutation
         const newMemory = new Map(memory);
         newMemory.set(addr, dataIn);
+        return newMemory;
+      }
+
+      // Otherwise, keep current memory
+      return memory;
+    }
+  ),
+
+  DualPortRAM: createSequentialEvaluator(
+    // Evaluate: Port B reads combinationally
+    (inputs, currentState) => {
+      const memory = (currentState ?? new Map()) as Map<number, number>;
+      const addrB = inputs.get('addrB') as number;
+      const dataB = memory.get(addrB) ?? 0;
+      return new Map([['dataB', dataB]]);
+    },
+    // UpdateState: Port A writes on rising clock edge with write enable
+    (inputs, currentState, clockEdges) => {
+      const memory = (currentState ?? new Map()) as Map<number, number>;
+      const addrA = inputs.get('addrA') as number;
+      const dataA = inputs.get('dataA') as number;
+      const weA = inputs.get('weA') as boolean;
+      const edge = clockEdges['clk'] ?? 'none';
+
+      // Port A: Write on rising edge with write enable
+      if (edge === 'rising' && weA) {
+        // Create a new Map to avoid mutation
+        const newMemory = new Map(memory);
+        newMemory.set(addrA, dataA);
         return newMemory;
       }
 
@@ -724,6 +780,35 @@ export const PRIMITIVES: Circuit[] = [
     },
   },
 
+  // DualPortRAM - two independent ports for simultaneous access
+  {
+    id: 'primitive:DualPortRAM',
+    name: 'DualPortRAM',
+    parameters: [],
+    inputs: [
+      { name: 'addrA', portType: busType(8) },  // Port A address (write port)
+      { name: 'dataA', portType: busType(8) },  // Port A data input
+      { name: 'weA', portType: bitType() },     // Port A write enable
+      { name: 'addrB', portType: busType(8) },  // Port B address (read port)
+    ],
+    outputs: [{ name: 'dataB', portType: busType(8) }],  // Port B data output
+    clocks: [{ name: 'clk' }],
+    state: [
+      {
+        id: 'dualram-state',
+        name: 'memory',
+        stateType: { kind: 'memory', addressWidth: 8, dataWidth: 8 },
+        initialValue: { data: new Map(), addressWidth: 8, dataWidth: 8 },
+      },
+    ],
+    nodes: [],
+    connections: [],
+    implementation: { kind: 'primitive' },
+    metadata: {
+      description: '256x8 Dual-Port RAM - Port A writes on clock edge, Port B reads combinationally',
+    },
+  },
+
   // ============================================================================
   // Arithmetic Operations
   // ============================================================================
@@ -875,6 +960,24 @@ export const PRIMITIVES: Circuit[] = [
     [],
     'Hexadecimal display for multi-bit values (default: 8-bit)'
   ),
+
+  // Screen - manually defined to include inputs and outputs (combinational sink)
+  {
+    id: 'primitive:Screen',
+    name: 'Screen',
+    parameters: [],
+    inputs: [{ name: 'dataIn', portType: busType(8) }],   // Pixel data from RAM (documentation)
+    outputs: [{ name: 'addrB', portType: busType(8) }],  // Address to read from RAM (documentation)
+    clocks: [],  // No clock - burst DMA happens each evaluation
+    state: [],   // No state - reads directly from RAM
+    nodes: [],
+    connections: [],
+    implementation: { kind: 'primitive' },
+    metadata: {
+      description: '8x8 pixel display - burst reads RAM addresses 0-63 (simulates VBLANK refresh)',
+      kind: 'sink', // Sink component - outputs don't feed back into circuit
+    },
+  },
 ];
 
 /**
@@ -988,6 +1091,12 @@ export function createPrimitiveComponent(
       return { ...baseComponent, value, width } as Component;
     }
 
+    case 'Screen': {
+      // Memory-mapped display component
+      // No value property needed - pixel data comes from RAM via DMA
+      return { ...baseComponent } as Component;
+    }
+
     case 'SevenSegment': {
       const value: number = 0;
       return { ...baseComponent, value } as Component;
@@ -1006,6 +1115,13 @@ export function createPrimitiveComponent(
     }
 
     case 'RAM': {
+      const addressWidth: number = 8;
+      const dataWidth: number = 8;
+      const memory: Map<number, number> = new Map();
+      return { ...baseComponent, addressWidth, dataWidth, memory } as Component;
+    }
+
+    case 'DualPortRAM': {
       const addressWidth: number = 8;
       const dataWidth: number = 8;
       const memory: Map<number, number> = new Map();

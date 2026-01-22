@@ -1061,4 +1061,36 @@ describe('createPrimitiveComponent', () => {
       expect(successCount).toBe(primitiveNames.length);
     });
   });
+
+  describe('Screen Component', () => {
+    it('should have Screen evaluator', () => {
+      const evaluator = PRIMITIVE_EVALUATORS.Screen;
+      expect(evaluator).toBeDefined();
+    });
+
+    it('should return empty Map (no outputs)', () => {
+      const evaluator = PRIMITIVE_EVALUATORS.Screen;
+      const result = evaluator.evaluate(new Map());
+
+      expect(result).toEqual(new Map());
+    });
+
+    it('should be a combinational component', () => {
+      const evaluator = PRIMITIVE_EVALUATORS.Screen;
+      expect(evaluator.isSequential()).toBe(false);
+    });
+
+    it('should have Screen in primitives list', () => {
+      const screenPrimitive = PRIMITIVES.find(p => p.name === 'Screen');
+      expect(screenPrimitive).toBeDefined();
+      expect(screenPrimitive?.inputs).toEqual([]);
+      expect(screenPrimitive?.outputs).toEqual([]);
+    });
+
+    it('should be creatable via createPrimitiveComponent', () => {
+      const component = createPrimitiveComponent('screen1', 'Screen');
+      expect(component).not.toBeNull();
+      expect(component?.type).toBe('Screen');
+    });
+  });
 });
