@@ -805,7 +805,8 @@ export const PRIMITIVES: Circuit[] = [
     connections: [],
     implementation: { kind: 'primitive' },
     metadata: {
-      description: '256x8 Dual-Port RAM - Port A writes on clock edge, Port B reads combinationally',
+      description: '256x8 Dual-Port RAM - Port A writes on clock edge, Port B reads combinationally, provides framebuffer snapshots',
+      provides: ['FrameSnapshotSource'], // Implements burst DMA snapshot interface
     },
   },
 
@@ -969,13 +970,14 @@ export const PRIMITIVES: Circuit[] = [
     inputs: [{ name: 'dataIn', portType: busType(8) }],   // Pixel data from RAM (documentation)
     outputs: [{ name: 'addrB', portType: busType(8) }],  // Address to read from RAM (documentation)
     clocks: [],  // No clock - burst DMA happens each evaluation
-    state: [],   // No state - reads directly from RAM
+    state: [],   // No state - reads directly from RAM via snapshot
     nodes: [],
     connections: [],
     implementation: { kind: 'primitive' },
     metadata: {
-      description: '8x8 pixel display - burst reads RAM addresses 0-63 (simulates VBLANK refresh)',
+      description: '8x8 pixel display - consumes framebuffer via FrameSnapshotSource (simulates VBLANK burst DMA)',
       kind: 'sink', // Sink component - outputs don't feed back into circuit
+      consumes: ['FrameSnapshotSource'], // Requires exactly one connected snapshot provider
     },
   },
 ];
