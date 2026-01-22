@@ -149,27 +149,37 @@ export function projectCircuitToNodes(
         numericValue = typeof portValue === 'number' ? portValue : 0;
       }
     } else if (node.componentRef === 'Screen') {
-      // Memory-mapped display - burst DMA read from RAM
-      // Screen reads all 64 addresses from RAM in one evaluation (simulates VBLANK)
+      // Memory-mapped display - burst DMA read via FrameSnapshotSource
+      // Screen consumes framebuffer snapshot (simulates VBLANK refresh)
       pixels = new Array(64).fill(0);
 
       if (seqState) {
-        // Find DualPortRAM or RAM in circuit
-        let ramNodeId: string | undefined;
+        const library = useComponentLibraryStore.getState();
+
+        // Find all components that provide FrameSnapshotSource capability
+        const providers: { nodeId: string; componentRef: string }[] = [];
 
         for (const n of circuit.nodes) {
-          if (n.componentRef === 'DualPortRAM' || n.componentRef === 'RAM') {
-            ramNodeId = n.id;
-            break;
+          const componentDef = library.resolveComponent(n.componentRef);
+          if (componentDef?.metadata?.provides?.includes('FrameSnapshotSource')) {
+            providers.push({ nodeId: n.id, componentRef: n.componentRef });
           }
         }
 
-        if (ramNodeId) {
-          const ramState = seqState.currentState.get(ramNodeId);
+        // Validate exactly one provider (enforces hardware constraint)
+        if (providers.length !== 1) {
+          console.error(
+            `[Screen] ${node.id} requires exactly one FrameSnapshotSource, found ${providers.length}`
+          );
+          // Fall back to black screen
+        } else {
+          // Get snapshot from the provider
+          const provider = providers[0];
+          const providerState = seqState.currentState.get(provider.nodeId);
 
-          if (ramState instanceof Map) {
-            const memory = ramState as Map<number, number>;
-            // Burst read all 64 addresses (framebuffer)
+          if (providerState instanceof Map) {
+            const memory = providerState as Map<number, number>;
+            // Burst read framebuffer snapshot (addresses 0-63)
             for (let addr = 0; addr < 64; addr++) {
               pixels[addr] = memory.get(addr) ?? 0;
             }
