@@ -46,7 +46,7 @@ import { useComponentLibraryStore } from '../stores/component-library-store';
 import { useSequentialStateStore } from '../stores/sequential-state-store';
 import { useDSLPreviewStore } from '../stores/dsl-preview-store';
 import { projectCircuitToReactFlow } from '../utils/projection';
-import { InputNode, OutputNode, LogicGateNode } from './nodes';
+import { InputNode, OutputNode, LogicGateNode, ScreenNode } from './nodes';
 import { NumericInputNode } from './nodes/NumericInputNode';
 import { OrthogonalEdge } from './edges';
 import { runCombinationalSimulation } from '../lib/simulator-v0.1';
@@ -57,6 +57,7 @@ const nodeTypes = {
   numericInputNode: NumericInputNode,
   outputNode: OutputNode,
   logicGateNode: LogicGateNode,
+  screenNode: ScreenNode,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
 } as any as NodeTypes;
 
@@ -276,8 +277,8 @@ export function Canvas() {
   // Project Circuit + Metadata + Port Values to ReactFlow nodes and edges
   const { nodes, edges} = useMemo(() => {
     const metadataState = { components: metadataComponents, connections: metadataConnections };
-    return projectCircuitToReactFlow(circuit, metadataState, portValues);
-  }, [circuit, metadataComponents, metadataConnections, portValues]);
+    return projectCircuitToReactFlow(circuit, metadataState, portValues, seqState ?? undefined);
+  }, [circuit, metadataComponents, metadataConnections, portValues, seqState]);
 
   // Handle node position changes (drag), selection, and deletion
   const onNodesChange: OnNodesChange = useCallback(
@@ -304,6 +305,82 @@ export function Canvas() {
     const count = nodes.filter((node) => node.selected).length;
     setSelectedNodeCount(count);
   }, [nodes]);
+
+  // Keyboard input handling - Memory-Mapped I/O
+  // Models a hardware keyboard controller that writes scan codes to an input register
+  // Input nodes labeled "keyboard" act as memory-mapped keyboard state registers
+  // Behavior: Latching - value persists until a new key is pressed (like a keyboard buffer)
+  useEffect(() => {
+    if (!circuit) return;
+
+    // Virtual keyboard scan codes (single-byte, memory-mapped state register)
+    // Based on PC/AT scan codes but simplified to single-byte values
+    // Value = last pressed key scan code (persists until overwritten)
+    const SCAN_CODES: Record<string, number> = {
+      // Arrow keys (extended keys in real hardware, simplified here)
+      ArrowUp: 0x48,
+      ArrowDown: 0x50,
+      ArrowLeft: 0x4B,
+      ArrowRight: 0x4D,
+
+      // Common keys
+      Space: 0x39,
+      Enter: 0x1C,
+      Escape: 0x01,
+
+      // Letters (physical key positions)
+      KeyA: 0x1E, KeyB: 0x30, KeyC: 0x2E, KeyD: 0x20, KeyE: 0x12, KeyF: 0x21,
+      KeyG: 0x22, KeyH: 0x23, KeyI: 0x17, KeyJ: 0x24, KeyK: 0x25, KeyL: 0x26,
+      KeyM: 0x32, KeyN: 0x31, KeyO: 0x18, KeyP: 0x19, KeyQ: 0x10, KeyR: 0x13,
+      KeyS: 0x1F, KeyT: 0x14, KeyU: 0x16, KeyV: 0x2F, KeyW: 0x11, KeyX: 0x2D,
+      KeyY: 0x15, KeyZ: 0x2C,
+
+      // Numbers (top row)
+      Digit0: 0x0B, Digit1: 0x02, Digit2: 0x03, Digit3: 0x04, Digit4: 0x05,
+      Digit5: 0x06, Digit6: 0x07, Digit7: 0x08, Digit8: 0x09, Digit9: 0x0A,
+    };
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Only process if not typing in text fields
+      const activeElement = document.activeElement;
+      if (activeElement?.tagName === 'INPUT' || activeElement?.tagName === 'TEXTAREA') {
+        return;
+      }
+
+      // Get scan code for the pressed key (using e.code for physical position)
+      const scanCode = SCAN_CODES[e.code];
+      if (scanCode == null) return; // Unknown key
+
+      // Find Input nodes that are keyboard registers
+      // Convention: label contains "keyboard" (case insensitive)
+      const keyboardNodes = circuit.nodes.filter(
+        node => node.componentRef === 'Input' &&
+                node.label?.toLowerCase().includes('keyboard')
+      );
+
+      // Update all keyboard Input nodes with the scan code
+      // This is an imperative device write (like real hardware updating a register)
+      keyboardNodes.forEach(node => {
+        const currentNode = useCircuitStore.getState().getNode(node.id);
+        if (currentNode) {
+          useCircuitStore.getState().updateNode(node.id, {
+            arguments: { ...currentNode.arguments, value: scanCode },
+          });
+        }
+      });
+
+      // Prevent default browser behavior for arrow keys (scrolling)
+      if (e.code.startsWith('Arrow')) {
+        e.preventDefault();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [circuit]);
 
   // Handle edge changes (selection and deletion)
   const onEdgesChange: OnEdgesChange = useCallback(

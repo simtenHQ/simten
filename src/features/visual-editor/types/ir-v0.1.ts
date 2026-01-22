@@ -170,6 +170,15 @@ export interface TestCase {
   expectedOutputs: Record<string, BitValue | BusValue>;
 }
 
+/**
+ * Component Kind - determines evaluation order and cycle detection
+ *
+ * - combinational: Pure logic, no state, must be acyclic
+ * - sequential: Has state (registers, RAM), updates on clock edges
+ * - sink: Consumes signals but outputs don't feed back (Screen, audio, UART)
+ */
+export type ComponentKind = 'combinational' | 'sequential' | 'sink';
+
 export interface CircuitMetadata {
   source?: {
     filename?: string;
@@ -180,6 +189,7 @@ export interface CircuitMetadata {
   version?: string;
   testCases?: TestCase[];
   tags?: string[];
+  kind?: ComponentKind; // Component classification for evaluation
 }
 
 // ============================================================================

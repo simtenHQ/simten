@@ -65,6 +65,15 @@ export function ClockControls() {
   // Track circuit structure (IDs and types) to detect structural changes
   const prevCircuitStructureRef = useRef<string>('');
 
+  // Keep a ref to the latest circuit so the interval can access it
+  const circuitRef = useRef<Circuit | null>(circuit);
+  const seqStateRef = useRef<SequentialState | null>(seqState);
+
+  useEffect(() => {
+    circuitRef.current = circuit;
+    seqStateRef.current = seqState;
+  }, [circuit, seqState]);
+
   // Initialize sequential state when STRUCTURE changes
   // (not when node VALUES change, like switch toggles)
   useEffect(() => {
@@ -147,9 +156,41 @@ export function ClockControls() {
 
     setIsRunning(true);
     runIntervalRef.current = setInterval(() => {
-      handleStep();
+      // Use refs to get the latest circuit and state
+      // This allows keyboard input updates to be picked up during the run loop
+      const currentCircuit = circuitRef.current;
+      const currentSeqState = seqStateRef.current;
+
+      if (!currentSeqState || !currentCircuit) return;
+
+      setSimulationStatus('running');
+
+      // Execute one clock tick
+      const result = runSimulationTick(currentCircuit, currentSeqState);
+
+      if (result.error) {
+        console.error('Simulation error:', result.error);
+        setSimulationStatus('error');
+        return;
+      }
+
+      // Update the sequential state from simulation result
+      if (result.sequentialState) {
+        const newSeqState: SequentialState = {
+          currentState: new Map(result.sequentialState.currentState),
+          nextState: new Map(result.sequentialState.nextState),
+          clocks: new Map(result.sequentialState.clocks),
+          cycleCount: result.sequentialState.cycleCount,
+        };
+
+        setSeqState(newSeqState);
+      }
+
+      setTimeout(() => {
+        setSimulationStatus('idle');
+      }, 50);
     }, 100); // 10 Hz clock
-  }, [isRunning, handleStep]);
+  }, [isRunning, setSimulationStatus, setSeqState]);
 
   // Handle pause
   const handlePause = useCallback(() => {

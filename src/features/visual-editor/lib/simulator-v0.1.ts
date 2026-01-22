@@ -20,7 +20,7 @@ import type {
   BusValue,
   ClockState,
 } from '../types/ir-v0.1';
-import type { ClockEdges, PrimitiveState } from './primitive-interface';
+import type { ClockEdges, PrimitiveState, EvaluationContext } from './primitive-interface';
 import { getPrimitiveEvaluator } from './primitives';
 import { useComponentLibraryStore } from '../stores/component-library-store';
 
@@ -146,19 +146,26 @@ function topologicalSort(circuit: Circuit): string[] | null {
   const library = useComponentLibraryStore.getState();
 
   const stateOnlyNodes: string[] = []; // DFlipFlop, Register - outputs from state only
+  const sinkNodes: string[] = [];      // Screen, audio, UART - consume but don't feed back
   const dependentNodes: string[] = []; // All other nodes (including RAM)
 
-  // Separate nodes into state-only and input-dependent
+  // Separate nodes into state-only, sink, and input-dependent
   for (const node of circuit.nodes) {
     const componentDef = library.resolveComponent(node.componentRef);
     if (!componentDef) continue;
+
+    // Check if this is a sink node (Screen, audio devices, etc.)
+    // Sink nodes' outputs don't participate in combinational feedback
+    const isSink = componentDef.metadata?.kind === 'sink';
 
     // Check if this is a state-only node (DFlipFlop, Register)
     // These nodes' outputs come purely from state, not from inputs
     const isStateOnly = componentDef.state.length > 0 &&
                        (node.componentRef === 'DFlipFlop' || node.componentRef === 'Register');
 
-    if (isStateOnly) {
+    if (isSink) {
+      sinkNodes.push(node.id);
+    } else if (isStateOnly) {
       stateOnlyNodes.push(node.id);
     } else {
       dependentNodes.push(node.id);
@@ -177,6 +184,7 @@ function topologicalSort(circuit: Circuit): string[] | null {
 
   // Build edges: for each connection, source -> target
   const nodeSet = new Set(dependentNodes);
+  const sinkSet = new Set(sinkNodes);
 
   for (const conn of circuit.connections) {
     const source = conn.source.nodeId;
@@ -185,7 +193,10 @@ function topologicalSort(circuit: Circuit): string[] | null {
     // Skip circuit-level ports (empty nodeId)
     if (source === '' || target === '') continue;
 
-    // Only consider dependent nodes (not state-only nodes)
+    // Skip connections FROM sink nodes (their outputs don't feed back)
+    if (sinkSet.has(source)) continue;
+
+    // Only consider dependent nodes (not state-only or sink nodes)
     if (!nodeSet.has(source) || !nodeSet.has(target)) continue;
 
     if (!graph.get(source)?.has(target)) {
@@ -224,8 +235,11 @@ function topologicalSort(circuit: Circuit): string[] | null {
     return null; // Cycle detected
   }
 
-  // Return state-only nodes FIRST, then dependent nodes in topological order
-  return [...stateOnlyNodes, ...result];
+  // Return evaluation order:
+  // 1. State-only nodes (DFlipFlop, Register) - outputs from state
+  // 2. Dependent nodes (combinational + RAM) - in topological order
+  // 3. Sink nodes (Screen, audio, UART) - evaluated last, outputs don't feed back
+  return [...stateOnlyNodes, ...result, ...sinkNodes];
 }
 
 /**
@@ -305,8 +319,14 @@ function evaluateNode(
   const fullNodeId = nodeIdPrefix + node.id;
   const currentState = seqState?.currentState.get(fullNodeId);
 
+  // Create evaluation context for DMA-like state access
+  const context: EvaluationContext = {
+    seqState,
+    nodeId: fullNodeId,
+  };
+
   // Evaluate
-  return evaluator.evaluate(inputs, currentState);
+  return evaluator.evaluate(inputs, currentState, context);
 }
 
 /**
