@@ -306,16 +306,25 @@ export function Canvas() {
     setSelectedNodeCount(count);
   }, [nodes]);
 
-  // Keyboard input handling - Memory-Mapped I/O
-  // Models a hardware keyboard controller that writes scan codes to an input register
-  // Input nodes labeled "keyboard" act as memory-mapped keyboard state registers
-  // Behavior: Latching - value persists until a new key is pressed (like a keyboard buffer)
+  // Keyboard input handling - Latching Scan Code Register
+  // Models a hardware keyboard buffer register (like 8042 keyboard controller output buffer)
+  //
+  // Hardware behavior:
+  // - Controller generates scan code on key press
+  // - Scan code written to memory-mapped register (Input node)
+  // - Register latches value until next key press (no automatic clear)
+  // - CPU polls register to read current scan code
+  //
+  // This is architecturally honest because:
+  // - Real keyboard controllers store last scan code in buffer
+  // - No magic state tracking - just write-on-press
+  // - Circuit reads scan code via Input node (memory-mapped I/O)
+  // - Example: IBM PC/AT 8042 controller, C64 keyboard buffer
   useEffect(() => {
     if (!circuit) return;
 
-    // Virtual keyboard scan codes (single-byte, memory-mapped state register)
-    // Based on PC/AT scan codes but simplified to single-byte values
-    // Value = last pressed key scan code (persists until overwritten)
+    // Virtual keyboard scan codes (single-byte values)
+    // Based on PC/AT scan codes but simplified
     const SCAN_CODES: Record<string, number> = {
       // Arrow keys (extended keys in real hardware, simplified here)
       ArrowUp: 0x48,
@@ -352,14 +361,16 @@ export function Canvas() {
       if (scanCode == null) return; // Unknown key
 
       // Find Input nodes that are keyboard registers
-      // Convention: label contains "keyboard" (case insensitive)
+      // Convention: label or ID contains "keyboard" (case insensitive)
       const keyboardNodes = circuit.nodes.filter(
         node => node.componentRef === 'Input' &&
-                node.label?.toLowerCase().includes('keyboard')
+                (node.label?.toLowerCase().includes('keyboard') ||
+                 node.id.toLowerCase().includes('keyboard'))
       );
 
-      // Update all keyboard Input nodes with the scan code
-      // This is an imperative device write (like real hardware updating a register)
+      // Write scan code to all keyboard registers (latching behavior)
+      // Like a hardware write to memory-mapped I/O port
+      // Value persists until next key press (no automatic clear on key up)
       keyboardNodes.forEach(node => {
         const currentNode = useCircuitStore.getState().getNode(node.id);
         if (currentNode) {
@@ -374,6 +385,9 @@ export function Canvas() {
         e.preventDefault();
       }
     };
+
+    // Note: No keyup handler - register latches value until overwritten
+    // This models real keyboard buffer behavior (IBM PC, C64, etc.)
 
     window.addEventListener('keydown', handleKeyDown);
 
