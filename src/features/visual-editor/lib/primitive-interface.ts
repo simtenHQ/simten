@@ -65,6 +65,35 @@ export interface ClockEdges {
 }
 
 /**
+ * Sequential state container
+ *
+ * This interface represents the global sequential state during simulation,
+ * allowing components to access the state of other components (e.g., for DMA).
+ */
+export interface SequentialState {
+  currentState: Map<string, PrimitiveState>;
+  nextState: Map<string, PrimitiveState>;
+}
+
+/**
+ * Evaluation context for cross-component state access
+ *
+ * Provides additional context during evaluation, such as access to
+ * the global sequential state. This enables DMA-like behavior where
+ * components can read the internal state of other components.
+ *
+ * Example: Screen component reads RAM's memory Map directly, simulating
+ * real display controller hardware (VIC-II, PPU, GPU) that accesses
+ * video RAM via DMA.
+ */
+export interface EvaluationContext {
+  /** Global sequential state (all component states) */
+  seqState?: SequentialState;
+  /** Current node's ID */
+  nodeId?: string;
+}
+
+/**
  * Unified primitive evaluator interface
  *
  * All primitive components implement this interface, providing:
@@ -99,6 +128,7 @@ export interface PrimitiveEvaluator {
    *
    * @param inputs - Map of input port names to values (including "__"-prefixed parameters)
    * @param currentState - Current state value (for sequential components)
+   * @param context - Optional evaluation context for cross-component access (e.g., DMA)
    * @returns Map of output port names to values
    *
    * Examples:
@@ -106,10 +136,12 @@ export interface PrimitiveEvaluator {
    * - D Flip-Flop: Returns {q: currentState, q_bar: !currentState}
    * - Switch: Returns {out: false} (value is externally controlled)
    * - Splitter: Uses inputs.__widths_out parameter to split the bus
+   * - Screen: Uses context.seqState to read RAM's memory Map (DMA-like behavior)
    */
   evaluate(
     inputs: Map<string, InputValue>,
-    currentState?: PrimitiveState
+    currentState?: PrimitiveState,
+    context?: EvaluationContext
   ): Map<string, BitValue | BusValue>;
 
   /**
@@ -157,11 +189,15 @@ export interface PrimitiveEvaluator {
  *
  * Most logic gates are combinational, so this helper reduces boilerplate.
  *
- * @param evaluateFn - Function that computes outputs from inputs
+ * @param evaluateFn - Function that computes outputs from inputs (can optionally use context)
  * @returns PrimitiveEvaluator implementation
  */
 export function createCombinationalEvaluator(
-  evaluateFn: (inputs: Map<string, InputValue>) => Map<string, BitValue | BusValue>
+  evaluateFn: (
+    inputs: Map<string, InputValue>,
+    currentState?: PrimitiveState,
+    context?: EvaluationContext
+  ) => Map<string, BitValue | BusValue>
 ): PrimitiveEvaluator {
   return {
     evaluate: evaluateFn,

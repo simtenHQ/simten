@@ -15,7 +15,7 @@ import type { Circuit, Node, Connection, PortPath } from '../types/ir-v0.1';
 import type { MetadataState } from '../types';
 import { WIRE_COLORS } from '../types';
 import { useComponentLibraryStore } from '../stores/component-library-store';
-import type { PortValueMap } from '../lib/simulator-v0.1';
+import type { PortValueMap, SequentialState } from '../lib/simulator-v0.1';
 
 // Custom data structure for our ReactFlow nodes
 export interface NodeData extends Record<string, unknown> {
@@ -29,6 +29,7 @@ export interface NodeData extends Record<string, unknown> {
   outputCount: number;
   inputNames: string[];
   outputNames: string[];
+  __pixels?: number[]; // For Screen component - pixel data from RAM
 }
 
 /**
@@ -60,6 +61,7 @@ function getNodeTypeForComponent(componentRef: string, inputCount: number, outpu
     RAM: 'logicGateNode',
     HexDisplay: 'outputNode',
     SevenSegment: 'outputNode',
+    Screen: 'screenNode',
   };
 
   if (typeMap[componentRef]) {
@@ -84,7 +86,8 @@ function getNodeTypeForComponent(componentRef: string, inputCount: number, outpu
 export function projectCircuitToNodes(
   circuit: Circuit,
   metadata: MetadataState,
-  portValues?: PortValueMap
+  portValues?: PortValueMap,
+  seqState?: SequentialState
 ): ReactFlowNode<NodeData>[] {
   const reactFlowNodes: ReactFlowNode<NodeData>[] = [];
   const library = useComponentLibraryStore.getState();
@@ -117,6 +120,7 @@ export function projectCircuitToNodes(
     let value: boolean | undefined = undefined;
     let numericValue: number | undefined = undefined;
     let width: number | undefined = undefined;
+    let pixels: number[] | undefined = undefined;
 
     if (node.componentRef === 'Switch' || node.componentRef === 'Led') {
       // For Switch/Led, check if there's a value in arguments or port values
@@ -144,6 +148,34 @@ export function projectCircuitToNodes(
         const portValue = portValues.get(inputKey);
         numericValue = typeof portValue === 'number' ? portValue : 0;
       }
+    } else if (node.componentRef === 'Screen') {
+      // Memory-mapped display - burst DMA read from RAM
+      // Screen reads all 64 addresses from RAM in one evaluation (simulates VBLANK)
+      pixels = new Array(64).fill(0);
+
+      if (seqState) {
+        // Find DualPortRAM or RAM in circuit
+        let ramNodeId: string | undefined;
+
+        for (const n of circuit.nodes) {
+          if (n.componentRef === 'DualPortRAM' || n.componentRef === 'RAM') {
+            ramNodeId = n.id;
+            break;
+          }
+        }
+
+        if (ramNodeId) {
+          const ramState = seqState.currentState.get(ramNodeId);
+
+          if (ramState instanceof Map) {
+            const memory = ramState as Map<number, number>;
+            // Burst read all 64 addresses (framebuffer)
+            for (let addr = 0; addr < 64; addr++) {
+              pixels[addr] = memory.get(addr) ?? 0;
+            }
+          }
+        }
+      }
     }
 
     reactFlowNodes.push({
@@ -161,6 +193,7 @@ export function projectCircuitToNodes(
         outputCount,
         inputNames,
         outputNames,
+        __pixels: pixels,
       },
       selected: nodeMetadata.selected,
       selectable: true,
@@ -238,14 +271,15 @@ export function projectCircuitToEdges(
 export function projectCircuitToReactFlow(
   circuit: Circuit | null,
   metadata: MetadataState,
-  portValues?: PortValueMap
+  portValues?: PortValueMap,
+  seqState?: SequentialState
 ) {
   if (!circuit) {
     return { nodes: [], edges: [] };
   }
 
   return {
-    nodes: projectCircuitToNodes(circuit, metadata, portValues),
+    nodes: projectCircuitToNodes(circuit, metadata, portValues, seqState),
     edges: projectCircuitToEdges(circuit, metadata, portValues),
   };
 }
