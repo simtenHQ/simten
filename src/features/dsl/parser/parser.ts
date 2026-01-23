@@ -41,6 +41,8 @@ import {
   BusTypeExpr,
   Argument,
   ArgumentValue,
+  ArrayLiteral,
+  ObjectLiteral,
   ParameterRef,
   OnClockStmt,
   ClockEdge,
@@ -460,31 +462,107 @@ export class Parser {
     const name = this.consume(TokenType.IDENTIFIER, 'Expected argument name').value;
     this.consume(TokenType.ASSIGN, "Expected '='");
 
-    let value: ArgumentValue;
-    const valueToken = this.advance();
-
-    if (valueToken.type === TokenType.NUMBER) {
-      value = valueToken.numberValue!;
-    } else if (valueToken.type === TokenType.STRING) {
-      value = valueToken.stringValue!;
-    } else if (valueToken.type === TokenType.TRUE) {
-      value = true;
-    } else if (valueToken.type === TokenType.FALSE) {
-      value = false;
-    } else if (valueToken.type === TokenType.IDENTIFIER) {
-      // Parameter reference
-      value = {
-        name: valueToken.value,
-        location: valueToken.location,
-      };
-    } else {
-      throw new ParseError('Expected argument value (number, string, bool, or parameter)', valueToken);
-    }
+    const value = this.parseArgumentValue();
 
     return {
       name,
       value,
       location: createRange(start.location.start, this.previous().location.end),
+    };
+  }
+
+  private parseArgumentValue(): ArgumentValue {
+    const token = this.peek();
+
+    // Array literal: [1, 2, 3]
+    if (token.type === TokenType.LBRACKET) {
+      return this.parseArrayLiteral();
+    }
+
+    // Object literal: {64: 3, 65: 4}
+    if (token.type === TokenType.LBRACE) {
+      return this.parseObjectLiteral();
+    }
+
+    // Simple values
+    const valueToken = this.advance();
+
+    if (valueToken.type === TokenType.NUMBER) {
+      return valueToken.numberValue!;
+    } else if (valueToken.type === TokenType.STRING) {
+      return valueToken.stringValue!;
+    } else if (valueToken.type === TokenType.TRUE) {
+      return true;
+    } else if (valueToken.type === TokenType.FALSE) {
+      return false;
+    } else if (valueToken.type === TokenType.IDENTIFIER) {
+      // Parameter reference
+      return {
+        name: valueToken.value,
+        location: valueToken.location,
+      };
+    } else {
+      throw new ParseError('Expected argument value (number, string, bool, array, object, or parameter)', valueToken);
+    }
+  }
+
+  private parseArrayLiteral(): ArgumentValue {
+    const start = this.consume(TokenType.LBRACKET, "Expected '['");
+    const elements: ArgumentValue[] = [];
+
+    // Handle empty array
+    if (this.check(TokenType.RBRACKET)) {
+      const end = this.advance();
+      return {
+        kind: 'array',
+        elements,
+        location: createRange(start.location.start, end.location.end),
+      };
+    }
+
+    // Parse elements
+    do {
+      elements.push(this.parseArgumentValue());
+    } while (this.match(TokenType.COMMA));
+
+    const end = this.consume(TokenType.RBRACKET, "Expected ']'");
+
+    return {
+      kind: 'array',
+      elements,
+      location: createRange(start.location.start, end.location.end),
+    };
+  }
+
+  private parseObjectLiteral(): ArgumentValue {
+    const start = this.consume(TokenType.LBRACE, "Expected '{'");
+    const entries: Array<{ key: number; value: ArgumentValue }> = [];
+
+    // Handle empty object
+    if (this.check(TokenType.RBRACE)) {
+      const end = this.advance();
+      return {
+        kind: 'object',
+        entries,
+        location: createRange(start.location.start, end.location.end),
+      };
+    }
+
+    // Parse entries (key: value pairs)
+    do {
+      const keyToken = this.consume(TokenType.NUMBER, 'Expected number key for object literal');
+      const key = keyToken.numberValue!;
+      this.consume(TokenType.COLON, "Expected ':'");
+      const value = this.parseArgumentValue();
+      entries.push({ key, value });
+    } while (this.match(TokenType.COMMA));
+
+    const end = this.consume(TokenType.RBRACE, "Expected '}'");
+
+    return {
+      kind: 'object',
+      entries,
+      location: createRange(start.location.start, end.location.end),
     };
   }
 

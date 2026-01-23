@@ -25,6 +25,8 @@ import {
   ParameterRef,
   Argument,
   ArgumentValue,
+  ArrayLiteral,
+  ObjectLiteral,
   StateTypeExpr,
   isCircuitPort,
   formatPortRef,
@@ -414,8 +416,8 @@ export class IRGenerator {
   private compileArguments(
     args: Argument[],
     circuitDef: CircuitDef
-  ): Record<string, number | string | boolean> {
-    const result: Record<string, number | string | boolean> = {};
+  ): Record<string, any> {
+    const result: Record<string, any> = {};
 
     for (const arg of args) {
       const value = this.evaluateArgument(arg.value, circuitDef);
@@ -428,22 +430,42 @@ export class IRGenerator {
   private evaluateArgument(
     value: ArgumentValue,
     circuitDef: CircuitDef
-  ): number | string | boolean {
+  ): any {
     if (typeof value === 'number' || typeof value === 'string' || typeof value === 'boolean') {
       return value;
     }
 
-    // Parameter reference
-    const param = circuitDef.parameters.find((p) => p.name === value.name);
-    if (!param || param.defaultValue === undefined) {
-      throw new CompilerError(
-        `Cannot resolve parameter: '${value.name}'`,
-        circuitDef.name,
-        { line: value.location.start.line, column: value.location.start.column }
-      );
+    // Array literal: [1, 2, 3]
+    if (typeof value === 'object' && 'kind' in value && value.kind === 'array') {
+      return value.elements.map((elem) => this.evaluateArgument(elem, circuitDef));
     }
 
-    return param.defaultValue;
+    // Object literal: {64: 3, 65: 4}
+    if (typeof value === 'object' && 'kind' in value && value.kind === 'object') {
+      const result: Record<number, any> = {};
+      for (const entry of value.entries) {
+        result[entry.key] = this.evaluateArgument(entry.value, circuitDef);
+      }
+      return result;
+    }
+
+    // Parameter reference
+    if (typeof value === 'object' && 'name' in value) {
+      const param = circuitDef.parameters.find((p) => p.name === value.name);
+      if (!param || param.defaultValue === undefined) {
+        throw new CompilerError(
+          `Cannot resolve parameter: '${value.name}'`,
+          circuitDef.name,
+          { line: value.location.start.line, column: value.location.start.column }
+        );
+      }
+      return param.defaultValue;
+    }
+
+    throw new CompilerError(
+      `Unknown argument value type: ${JSON.stringify(value)}`,
+      circuitDef.name
+    );
   }
 
   private instantiatePortType(

@@ -46,7 +46,7 @@ import { useComponentLibraryStore } from '../stores/component-library-store';
 import { useSequentialStateStore } from '../stores/sequential-state-store';
 import { useDSLPreviewStore } from '../stores/dsl-preview-store';
 import { projectCircuitToReactFlow } from '../utils/projection';
-import { InputNode, OutputNode, LogicGateNode, ScreenNode } from './nodes';
+import { InputNode, OutputNode, LogicGateNode, ScreenNode, RegisterNode, RAMNode } from './nodes';
 import { NumericInputNode } from './nodes/NumericInputNode';
 import { OrthogonalEdge } from './edges';
 import { runCombinationalSimulation } from '../lib/simulator-v0.1';
@@ -58,6 +58,8 @@ const nodeTypes = {
   outputNode: OutputNode,
   logicGateNode: LogicGateNode,
   screenNode: ScreenNode,
+  registerNode: RegisterNode,
+  ramNode: RAMNode,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
 } as any as NodeTypes;
 

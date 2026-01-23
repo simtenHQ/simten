@@ -8,5 +8,7 @@ export { NumericInputNode } from './NumericInputNode';
 export { OutputNode } from './OutputNode';
 export { LogicGateNode } from './LogicGateNode';
 export { ScreenNode } from './ScreenNode';
+export { RegisterNode } from './RegisterNode';
+export { RAMNode } from './RAMNode';
 
 export type { BaseNodeProps, PortConfig } from './BaseNode';
