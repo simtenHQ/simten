@@ -24,6 +24,11 @@ circuit SnakeAdvanced {
     // Keyboard input
     node keyboard: Input
 
+    // Food position
+    node foodX: Register(initial=6)
+    node foodY: Register(initial=3)
+    node foodNeedsDrawing: Register(initial=1)  // Draw initial food on first cycle
+
     // Snake circular buffer pointers
     node headPtr: Register(initial=3)      // Head index in buffer (0-63)
     node tailPtr: Register(initial=0)      // Tail index in buffer (0-63)
@@ -159,6 +164,33 @@ circuit SnakeAdvanced {
     connect nextHeadY8.sum -> nextPixelAddr.a
     connect nextHeadX.out -> nextPixelAddr.b
 
+    // Calculate food pixel address: foodY * 8 + foodX
+    node foodY2: Adder
+    node foodY4: Adder
+    node foodY8: Adder
+    connect foodY.q -> foodY2.a
+    connect foodY.q -> foodY2.b
+    connect foodY2.sum -> foodY4.a
+    connect foodY2.sum -> foodY4.b
+    connect foodY4.sum -> foodY8.a
+    connect foodY4.sum -> foodY8.b
+
+    node foodPixelAddr: Adder
+    connect foodY8.sum -> foodPixelAddr.a
+    connect foodX.q -> foodPixelAddr.b
+
+    // Collision detection: nextHead position == food position
+    node nextHeadAtFoodX: Comparator
+    node nextHeadAtFoodY: Comparator
+    connect nextHeadX.out -> nextHeadAtFoodX.a
+    connect foodX.q -> nextHeadAtFoodX.b
+    connect nextHeadY.out -> nextHeadAtFoodY.a
+    connect foodY.q -> nextHeadAtFoodY.b
+
+    node willEatFood: And
+    connect nextHeadAtFoodX.eq -> willEatFood.a
+    connect nextHeadAtFoodY.eq -> willEatFood.b
+
     // Latch next head pixel address in phase 1 (two phases before drawing)
     // This ensures phase 2 writes the correct value to body, and phase 3 draws it
     connect nextPixelAddr.sum -> nextHeadPixelAddr.data
@@ -185,42 +217,20 @@ circuit SnakeAdvanced {
     connect bodyBase.out -> tailBodyAddr.b
 
     // RAM Port A address multiplexing
-    // Phase 0: tailBodyAddr (read tail pixel address)
-    // Phase 1: tailPixelAddr (clear tail pixel in framebuffer)
-    // Phase 2: headBodyAddr (write head pixel address to body) OR nextHeadPixelAddr (draw head)
-    //   - First write to headBodyAddr, then write to nextHeadPixelAddr
-    //   - Since we can only do 1 write per phase, we'll need to pick one
-    //   - Actually, let's do headBodyAddr write, then phase 3 for drawing
-
-    // Wait, I said 3 phases but I need 4 operations:
-    // 1. Read tail address (phase 0)
-    // 2. Clear tail pixel (phase 1)
-    // 3. Write head address to body (phase 2)
-    // 4. Draw head pixel (phase 3... but that's 4 phases!)
-
-    // OK so actually we need 4 phases if we do 1 operation per phase.
-    // OR we can combine writes in phase 2 - but that requires phase-internal sequencing
-
-    // Let me just do 4 phases - it's cleaner:
-    // Phase 0: Calculate next head, latch. Read tail address from body
+    // Phase 0: Draw food (if foodNeedsDrawing) OR read tail address
     // Phase 1: Clear tail pixel
     // Phase 2: Write head address to body
-    // Phase 3: Draw head pixel, update pointers, back to 0
+    // Phase 3: Draw head pixel, update pointers
 
-    // Actually, the issue is that phase 2 needs to do BOTH body write and framebuffer write
-    // These are different addresses, so we can't do both in one cycle with single-port RAM
-
-    // The only way to do 3 phases is to combine operations that don't conflict:
-    // Phase 0: Read tail address (read from body RAM)
-    // Phase 1: Clear tail pixel (write to framebuffer) + Write head address to body (write to body RAM)
-    //   - These are at different addresses, so conflicts!
-    // Phase 2: Draw head pixel (write to framebuffer)
-
-    // Nope, can't do it. Need 4 phases minimum.
+    // Phase 0: Food drawing OR tail reading
+    node phase0Addr: Mux
+    connect tailBodyAddr.sum -> phase0Addr.in0       // Normal: read tail
+    connect foodPixelAddr.sum -> phase0Addr.in1      // Food mode: draw food
+    connect foodNeedsDrawing.q -> phase0Addr.sel
 
     // RAM address selection
     node addrMux0: Mux
-    connect tailBodyAddr.sum -> addrMux0.in0
+    connect phase0Addr.out -> addrMux0.in0
     connect tailPixelAddr.q -> addrMux0.in1
     connect isPhase1.eq -> addrMux0.sel
 
@@ -237,6 +247,7 @@ circuit SnakeAdvanced {
     connect ramAddr.out -> ram.addrA
 
     // RAM data selection
+    // Phase 0: 1 (draw food pixel) - only when foodNeedsDrawing
     // Phase 1: 0 (clear tail pixel)
     // Phase 2: nextHeadPixelAddr (write head address to body)
     // Phase 3: 1 (draw head pixel)
@@ -246,10 +257,15 @@ circuit SnakeAdvanced {
     connect nextHeadPixelAddr.q -> dataMux0.in1
     connect isPhase2.eq -> dataMux0.sel
 
+    node dataMux1: Mux
+    connect dataMux0.out -> dataMux1.in0
+    connect one.out -> dataMux1.in1
+    connect isPhase3.eq -> dataMux1.sel
+
     node ramData: Mux
-    connect dataMux0.out -> ramData.in0
+    connect dataMux1.out -> ramData.in0
     connect one.out -> ramData.in1
-    connect isPhase3.eq -> ramData.sel
+    connect foodNeedsDrawing.q -> ramData.sel
 
     connect ramData.out -> ram.dataA
 
@@ -278,18 +294,31 @@ circuit SnakeAdvanced {
     connect bothDeltasZero.out -> isMoving.in
 
     // RAM write enable
-    // Phase 1: Clear tail (if moving AND shouldMoveTail AND buffer not empty)
+    // Phase 0: Draw food (if foodNeedsDrawing)
+    // Phase 1: Clear tail (if moving AND shouldMoveTail AND buffer not empty AND not eating food)
     // Phase 2: Write head address to body (ONLY when moving)
     // Phase 3: Draw head pixel (ONLY when moving)
 
     node shouldMoveTail: Switch
 
+    // Prevent tail clearing when about to eat food (makes snake grow!)
+    node shouldMoveTailActual: And
+    node notEatingFood: Not
+    connect shouldMoveTail.out -> shouldMoveTailActual.a
+    connect willEatFood.out -> notEatingFood.in
+    connect notEatingFood.out -> shouldMoveTailActual.b
+
     node shouldClearTail: And
     node shouldClearTailMoving: And
-    connect shouldMoveTail.out -> shouldClearTail.a
+    connect shouldMoveTailActual.out -> shouldClearTail.a
     connect isMoving.out -> shouldClearTail.b
     connect shouldClearTail.out -> shouldClearTailMoving.a
     connect bufferNotEmpty.out -> shouldClearTailMoving.b
+
+    // Phase 0: Draw food
+    node writePhase0: And
+    connect isPhase0.eq -> writePhase0.a
+    connect foodNeedsDrawing.q -> writePhase0.b
 
     node writePhase1: And
     connect isPhase1.eq -> writePhase1.a
@@ -304,12 +333,16 @@ circuit SnakeAdvanced {
     connect isPhase3.eq -> writePhase3.a
     connect isMoving.out -> writePhase3.b
 
+    node writePhase01: Or
+    connect writePhase0.out -> writePhase01.a
+    connect writePhase1.out -> writePhase01.b
+
     node writePhase2or3: Or
     connect writePhase2.out -> writePhase2or3.a
     connect writePhase3.out -> writePhase2or3.b
 
     node writeAny: Or
-    connect writePhase1.out -> writeAny.a
+    connect writePhase01.out -> writeAny.a
     connect writePhase2or3.out -> writeAny.b
 
     node writeEnable: Switch
@@ -321,14 +354,71 @@ circuit SnakeAdvanced {
     // Register updates
 
     // tailPixelAddr: Latch in phase 0 (read from RAM port A)
+    // But ONLY if not drawing food (foodNeedsDrawing would prevent read)
     connect ram.dataA -> tailPixelAddr.data
     node latchTail: And
     node latchTailFinal: And
+    node latchTailNotFood: And
     connect phaseEnable.out -> latchTail.a
     connect isPhase0.eq -> latchTail.b
     connect latchTail.out -> latchTailFinal.a
     connect bufferNotEmpty.out -> latchTailFinal.b
-    connect latchTailFinal.out -> tailPixelAddr.we
+    connect latchTailFinal.out -> latchTailNotFood.a
+    node notDrawingFood: Not
+    connect foodNeedsDrawing.q -> notDrawingFood.in
+    connect notDrawingFood.out -> latchTailNotFood.b
+    connect latchTailNotFood.out -> tailPixelAddr.we
+
+    // Clear foodNeedsDrawing flag after food is drawn (in phase 0)
+    node clearFoodFlag: And
+    connect phaseEnable.out -> clearFoodFlag.a
+    connect isPhase0.eq -> clearFoodFlag.b
+    node clearFoodFlagFinal: And
+    connect clearFoodFlag.out -> clearFoodFlagFinal.a
+    connect foodNeedsDrawing.q -> clearFoodFlagFinal.b
+
+    // Food respawn: When snake eats food in phase 3
+    node ateFood: And
+    node ateFoodFinal: And
+    connect phaseEnable.out -> ateFood.a
+    connect isPhase3.eq -> ateFood.b
+    connect ateFood.out -> ateFoodFinal.a
+    connect willEatFood.out -> ateFoodFinal.b
+
+    // foodNeedsDrawing write enable: set (1) when eaten, clear (0) when drawn
+    node foodFlagWriteEnable: Or
+    connect ateFoodFinal.out -> foodFlagWriteEnable.a
+    connect clearFoodFlagFinal.out -> foodFlagWriteEnable.b
+    connect foodFlagWriteEnable.out -> foodNeedsDrawing.we
+
+    // foodNeedsDrawing data: 1 when eaten, 0 when cleared
+    node foodFlagData: Mux
+    connect zero.out -> foodFlagData.in0
+    connect one.out -> foodFlagData.in1
+    connect ateFoodFinal.out -> foodFlagData.sel
+    connect foodFlagData.out -> foodNeedsDrawing.data
+
+    // Food respawn to new position (simple pseudo-random: +3 X, +5 Y)
+    node foodXNext: Adder
+    connect foodX.q -> foodXNext.a
+    connect three.out -> foodXNext.b
+
+    node foodXWrap: BitSlice(low=0, high=2)
+    connect foodXNext.sum -> foodXWrap.in
+
+    node foodYNext: Adder
+    connect foodY.q -> foodYNext.a
+    node five: Constant(value=5)
+    connect five.out -> foodYNext.b
+
+    node foodYWrap: BitSlice(low=0, high=2)
+    connect foodYNext.sum -> foodYWrap.in
+
+    // Update food position when eaten
+    connect foodXWrap.out -> foodX.data
+    connect foodYWrap.out -> foodY.data
+    connect ateFoodFinal.out -> foodX.we
+    connect ateFoodFinal.out -> foodY.we
 
     // headX, headY: Update in phase 3 with nextHeadX/Y (NOT the pixel address!)
     // ONLY update when actually moving to prevent duplicate body buffer entries
