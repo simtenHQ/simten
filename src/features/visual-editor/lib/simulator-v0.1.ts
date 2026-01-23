@@ -88,7 +88,40 @@ export function initializeSequentialState(circuit: Circuit): SequentialState {
       if (componentDef.implementation.kind === 'primitive' && componentDef.state.length > 0) {
         // Initialize state for primitive sequential components
         const stateBlock = componentDef.state[0];
-        const initialValue = stateBlock.initialValue;
+
+        // Check for instance-specific initial value in node.arguments
+        // For Register: node myReg: Register(initial=4)
+        // For RAM: node ram: RAM(init=[3,4,5]) or RAM(init={64:3, 65:4})
+        let initialValue = stateBlock.initialValue;
+
+        if ('initial' in node.arguments && node.arguments.initial !== undefined) {
+          // Register/DFlipFlop initial value
+          initialValue = node.arguments.initial as number | boolean;
+        } else if ('init' in node.arguments && node.arguments.init !== undefined) {
+          // RAM initial values (array or object)
+          const initData = node.arguments.init;
+          const memory = new Map<number, number>();
+
+          if (Array.isArray(initData)) {
+            // Array format: [val0, val1, val2, ...]
+            initData.forEach((value, index) => {
+              if (typeof value === 'number') {
+                memory.set(index, value);
+              }
+            });
+          } else if (typeof initData === 'object') {
+            // Object format: {addr0: val0, addr1: val1, ...}
+            for (const [key, value] of Object.entries(initData)) {
+              const addr = parseInt(key, 10);
+              if (!isNaN(addr) && typeof value === 'number') {
+                memory.set(addr, value);
+              }
+            }
+          }
+
+          // Create MemoryValue structure
+          initialValue = { data: memory, addressWidth: 8, dataWidth: 8 };
+        }
 
         // Convert StateValue to PrimitiveState
         let primitiveState: PrimitiveState;
@@ -280,7 +313,7 @@ function evaluateNode(
   seqState?: SequentialState,
   nodeIdPrefix: string = ''
 ): Map<string, BitValue | BusValue> {
-  // Special handling for source components (Switch, Input, Button)
+  // Special handling for source components (Switch, Input, Button, Constant)
   // These read their values from node.arguments, not from inputs
   if (node.componentRef === 'Switch' || node.componentRef === 'Button') {
     const value = Boolean(node.arguments.value ?? false);
@@ -290,6 +323,22 @@ function evaluateNode(
   if (node.componentRef === 'Input') {
     const value = typeof node.arguments.value === 'number' ? node.arguments.value : 0;
     return new Map([['out', value]]);
+  }
+
+  if (node.componentRef === 'Constant') {
+    const value = node.arguments.value ?? 0;
+    return new Map([['out', value]]);
+  }
+
+  // Special handling for BitSlice: pass parameters as special inputs
+  if (node.componentRef === 'BitSlice') {
+    const low = (node.arguments.low as number) ?? 0;
+    const high = (node.arguments.high as number) ?? 2;
+    // Add parameters to inputs map
+    const extendedInputs = new Map(inputs);
+    extendedInputs.set('__low', low);
+    extendedInputs.set('__high', high);
+    inputs = extendedInputs;
   }
 
   const evaluator = getPrimitiveEvaluator(node.componentRef);

@@ -242,6 +242,117 @@ describe('Parser', () => {
       expect(node.arguments[1].name).toBe('data_width');
       expect(node.arguments[1].value).toBe(16);
     });
+
+    it('should parse node with array literal argument', () => {
+      const source = `
+        circuit Example {
+          impl {
+            node ram1: RAM(init=[10, 20, 30, 40])
+          }
+        }
+      `;
+
+      const program = parseSource(source);
+      const node = program.circuits[0].impl!.nodes[0];
+
+      expect(node.arguments).toHaveLength(1);
+      expect(node.arguments[0].name).toBe('init');
+
+      const value = node.arguments[0].value;
+      expect(typeof value).toBe('object');
+      expect(value).toHaveProperty('kind', 'array');
+
+      if (typeof value === 'object' && 'kind' in value && value.kind === 'array') {
+        expect(value.elements).toHaveLength(4);
+        expect(value.elements[0]).toBe(10);
+        expect(value.elements[1]).toBe(20);
+        expect(value.elements[2]).toBe(30);
+        expect(value.elements[3]).toBe(40);
+      }
+    });
+
+    it('should parse node with object literal argument', () => {
+      const source = `
+        circuit Example {
+          impl {
+            node ram1: RAM(init={64: 3, 65: 4, 66: 5})
+          }
+        }
+      `;
+
+      const program = parseSource(source);
+      const node = program.circuits[0].impl!.nodes[0];
+
+      expect(node.arguments).toHaveLength(1);
+      expect(node.arguments[0].name).toBe('init');
+
+      const value = node.arguments[0].value;
+      expect(typeof value).toBe('object');
+      expect(value).toHaveProperty('kind', 'object');
+
+      if (typeof value === 'object' && 'kind' in value && value.kind === 'object') {
+        expect(value.entries).toHaveLength(3);
+        expect(value.entries[0].key).toBe(64);
+        expect(value.entries[0].value).toBe(3);
+        expect(value.entries[1].key).toBe(65);
+        expect(value.entries[1].value).toBe(4);
+        expect(value.entries[2].key).toBe(66);
+        expect(value.entries[2].value).toBe(5);
+      }
+    });
+
+    it('should parse node with Register initial argument', () => {
+      const source = `
+        circuit Example {
+          impl {
+            node reg1: Register(initial=42)
+          }
+        }
+      `;
+
+      const program = parseSource(source);
+      const node = program.circuits[0].impl!.nodes[0];
+
+      expect(node.arguments).toHaveLength(1);
+      expect(node.arguments[0].name).toBe('initial');
+      expect(node.arguments[0].value).toBe(42);
+    });
+
+    it('should parse empty array literal', () => {
+      const source = `
+        circuit Example {
+          impl {
+            node ram1: RAM(init=[])
+          }
+        }
+      `;
+
+      const program = parseSource(source);
+      const node = program.circuits[0].impl!.nodes[0];
+      const value = node.arguments[0].value;
+
+      if (typeof value === 'object' && 'kind' in value && value.kind === 'array') {
+        expect(value.elements).toHaveLength(0);
+      }
+    });
+
+    it('should parse empty object literal', () => {
+      const source = `
+        circuit Example {
+          impl {
+            node ram1: RAM(init={})
+          }
+        }
+      `;
+
+      const program = parseSource(source);
+      const node = program.circuits[0].impl!.nodes[0];
+      const value = node.arguments[0].value;
+
+      if (typeof value === 'object' && 'kind' in value && value.kind === 'object') {
+        expect(value.entries).toHaveLength(0);
+      }
+    });
   });
 
   describe('Complete Examples', () => {

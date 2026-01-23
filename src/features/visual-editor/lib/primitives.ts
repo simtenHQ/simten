@@ -515,12 +515,17 @@ export const PRIMITIVE_EVALUATORS: Record<string, PrimitiveEvaluatorInterface> =
   ),
 
   DualPortRAM: createSequentialEvaluator(
-    // Evaluate: Port B reads combinationally
+    // Evaluate: Both ports read combinationally
     (inputs, currentState) => {
       const memory = (currentState ?? new Map()) as Map<number, number>;
+      const addrA = inputs.get('addrA') as number;
       const addrB = inputs.get('addrB') as number;
+      const dataA = memory.get(addrA) ?? 0;
       const dataB = memory.get(addrB) ?? 0;
-      return new Map([['dataB', dataB]]);
+      return new Map([
+        ['dataA', dataA],
+        ['dataB', dataB],
+      ]);
     },
     // UpdateState: Port A writes on rising clock edge with write enable
     (inputs, currentState, clockEdges) => {
@@ -815,12 +820,15 @@ export const PRIMITIVES: Circuit[] = [
     name: 'DualPortRAM',
     parameters: [],
     inputs: [
-      { name: 'addrA', portType: busType(8) },  // Port A address (write port)
-      { name: 'dataA', portType: busType(8) },  // Port A data input
+      { name: 'addrA', portType: busType(8) },  // Port A address (write/read port)
+      { name: 'dataA', portType: busType(8) },  // Port A data input (for writes)
       { name: 'weA', portType: bitType() },     // Port A write enable
       { name: 'addrB', portType: busType(8) },  // Port B address (read port)
     ],
-    outputs: [{ name: 'dataB', portType: busType(8) }],  // Port B data output
+    outputs: [
+      { name: 'dataA', portType: busType(8) },  // Port A data output (for reads)
+      { name: 'dataB', portType: busType(8) },  // Port B data output
+    ],
     clocks: [{ name: 'clk' }],
     state: [
       {
@@ -834,7 +842,7 @@ export const PRIMITIVES: Circuit[] = [
     connections: [],
     implementation: { kind: 'primitive' },
     metadata: {
-      description: '256x8 Dual-Port RAM - Port A writes on clock edge, Port B reads combinationally, provides framebuffer snapshots',
+      description: '256x8 Dual-Port RAM - Both ports read combinationally. Port A writes on clock edge with write enable. Port B is read-only. Provides framebuffer snapshots.',
       provides: ['FrameSnapshotSource'], // Implements burst DMA snapshot interface
     },
   },
