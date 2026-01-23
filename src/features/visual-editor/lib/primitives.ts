@@ -158,6 +158,35 @@ export const PRIMITIVE_EVALUATORS: Record<string, PrimitiveEvaluatorInterface> =
   }),
 
   /**
+   * Bit slice extraction (wire routing + masking)
+   * Extracts bits [low..high] from input, zero-extends to 8 bits
+   * Hardware: Just wire routing, no logic gates
+   * Inputs: in (8-bit)
+   * Parameters: low (bit index), high (bit index)
+   * Outputs: out (8-bit, zero-padded)
+   *
+   * Example: BitSlice with low=0, high=2 extracts bits 0-2 (range 0-7)
+   * Used for: Power-of-2 modulo, register field extraction, bit masking
+   *
+   * For non-power-of-2 bounds (e.g., 0-9), use Comparator + Adder + Mux:
+   *   if (x >= 10) x -= 10
+   *   if (x < 0)   x += 10
+   */
+  BitSlice: createCombinationalEvaluator((inputs) => {
+    const value = inputs.get('in') as number;
+    // Parameters would come from node.arguments, but for now use defaults
+    const low = (inputs.get('__low') as number) ?? 0;
+    const high = (inputs.get('__high') as number) ?? 2;
+
+    // Extract bits [low..high]
+    const numBits = high - low + 1;
+    const mask = (1 << numBits) - 1;
+    const result = (value >> low) & mask;
+
+    return new Map([['out', result]]);
+  }),
+
+  /**
    * Parameterized n×n bit multiplier
    * Parameters: width (default: 8)
    * Inputs: a (n-bit), b (n-bit)
@@ -836,6 +865,13 @@ export const PRIMITIVES: Circuit[] = [
     ],
     [{ name: 'product', portType: busType(16) }],
     'Parameterized n×n bit multiplier, outputs 2n-bit product (default: 8×8=16-bit)'
+  ),
+
+  createPrimitiveCircuit(
+    'BitSlice',
+    [{ name: 'in', portType: busType(8) }],
+    [{ name: 'out', portType: busType(8) }],
+    'Extract bits [low..high] from input (wire routing, zero logic cost). Default: bits 0-2 for modulo-8. For non-power-of-2 bounds, use Comparator+Adder+Mux.'
   ),
 
   createPrimitiveCircuit(
