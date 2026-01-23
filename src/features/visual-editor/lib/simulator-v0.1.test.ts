@@ -1114,4 +1114,240 @@ describe('Simulator v0.1 (lib)', () => {
       expect(result.portValues.get('led1.in')).toBe(true);
     });
   });
+
+  describe('Initialization Support', () => {
+    it('should initialize Register with custom initial value', () => {
+      const circuit: Circuit = {
+        id: 'test',
+        name: 'RegisterInitTest',
+        parameters: [],
+        inputs: [],
+        outputs: [],
+        clocks: [],
+        state: [],
+        nodes: [
+          {
+            id: 'reg1',
+            label: 'Register',
+            componentRef: 'Register',
+            arguments: { initial: 42 }, // Custom initial value
+            inputs: [
+              { id: 'reg1.d', name: 'd', portType: busType(8) },
+              { id: 'reg1.we', name: 'we', portType: bitType() },
+            ],
+            outputs: [{ id: 'reg1.q', name: 'q', portType: busType(8) }],
+            clocks: [{ id: 'reg1.clk', name: 'clk' }],
+          },
+          {
+            id: 'input1',
+            label: 'Input',
+            componentRef: 'Input',
+            arguments: { value: 0 },
+            inputs: [],
+            outputs: [{ id: 'input1.out', name: 'out', portType: busType(8) }],
+            clocks: [],
+          },
+        ],
+        connections: [
+          {
+            id: 'conn1',
+            source: { nodeId: 'input1', portName: 'out' },
+            target: { nodeId: 'reg1', portName: 'd' },
+            portType: busType(8),
+          },
+        ],
+        implementation: { kind: 'composite' },
+      };
+
+      const seqState = initializeSequentialState(circuit);
+
+      // Should initialize with custom value
+      expect(seqState.currentState.has('reg1')).toBe(true);
+      expect(seqState.currentState.get('reg1')).toBe(42);
+
+      // Run simulation - should output initial value before any clock tick
+      const result = runCombinationalSimulation(circuit, seqState);
+      expect(result.portValues.get('reg1.q')).toBe(42);
+    });
+
+    it('should initialize RAM with object-based init data', () => {
+      const circuit: Circuit = {
+        id: 'test',
+        name: 'RAMInitTest',
+        parameters: [],
+        inputs: [],
+        outputs: [],
+        clocks: [],
+        state: [],
+        nodes: [
+          {
+            id: 'ram1',
+            label: 'RAM',
+            componentRef: 'RAM',
+            arguments: {
+              init: { 64: 3, 65: 4, 66: 5 }, // Initialize specific addresses
+            },
+            inputs: [
+              { id: 'ram1.addr', name: 'addr', portType: busType(8) },
+              { id: 'ram1.data_in', name: 'data_in', portType: busType(8) },
+              { id: 'ram1.we', name: 'we', portType: bitType() },
+            ],
+            outputs: [{ id: 'ram1.data_out', name: 'data_out', portType: busType(8) }],
+            clocks: [{ id: 'ram1.clk', name: 'clk' }],
+          },
+          {
+            id: 'addr_input',
+            label: 'Address',
+            componentRef: 'Input',
+            arguments: { value: 64 }, // Read address 64
+            inputs: [],
+            outputs: [{ id: 'addr_input.out', name: 'out', portType: busType(8) }],
+            clocks: [],
+          },
+        ],
+        connections: [
+          {
+            id: 'conn1',
+            source: { nodeId: 'addr_input', portName: 'out' },
+            target: { nodeId: 'ram1', portName: 'addr' },
+            portType: busType(8),
+          },
+        ],
+        implementation: { kind: 'composite' },
+      };
+
+      const seqState = initializeSequentialState(circuit);
+
+      // Should initialize with Map containing the init data
+      expect(seqState.currentState.has('ram1')).toBe(true);
+      const ramState = seqState.currentState.get('ram1');
+      expect(ramState).toBeInstanceOf(Map);
+      expect((ramState as Map<number, number>).get(64)).toBe(3);
+      expect((ramState as Map<number, number>).get(65)).toBe(4);
+      expect((ramState as Map<number, number>).get(66)).toBe(5);
+
+      // Run simulation - should read initialized value at address 64
+      const result = runCombinationalSimulation(circuit, seqState);
+      expect(result.portValues.get('ram1.data_out')).toBe(3);
+    });
+
+    it('should initialize RAM with array-based init data', () => {
+      const circuit: Circuit = {
+        id: 'test',
+        name: 'RAMInitArrayTest',
+        parameters: [],
+        inputs: [],
+        outputs: [],
+        clocks: [],
+        state: [],
+        nodes: [
+          {
+            id: 'ram1',
+            label: 'RAM',
+            componentRef: 'RAM',
+            arguments: {
+              init: [10, 20, 30, 40], // Initialize addresses 0-3
+            },
+            inputs: [
+              { id: 'ram1.addr', name: 'addr', portType: busType(8) },
+              { id: 'ram1.data_in', name: 'data_in', portType: busType(8) },
+              { id: 'ram1.we', name: 'we', portType: bitType() },
+            ],
+            outputs: [{ id: 'ram1.data_out', name: 'data_out', portType: busType(8) }],
+            clocks: [{ id: 'ram1.clk', name: 'clk' }],
+          },
+          {
+            id: 'addr_input',
+            label: 'Address',
+            componentRef: 'Input',
+            arguments: { value: 2 }, // Read address 2
+            inputs: [],
+            outputs: [{ id: 'addr_input.out', name: 'out', portType: busType(8) }],
+            clocks: [],
+          },
+        ],
+        connections: [
+          {
+            id: 'conn1',
+            source: { nodeId: 'addr_input', portName: 'out' },
+            target: { nodeId: 'ram1', portName: 'addr' },
+            portType: busType(8),
+          },
+        ],
+        implementation: { kind: 'composite' },
+      };
+
+      const seqState = initializeSequentialState(circuit);
+
+      // Should initialize with Map containing the array data
+      expect(seqState.currentState.has('ram1')).toBe(true);
+      const ramState = seqState.currentState.get('ram1');
+      expect(ramState).toBeInstanceOf(Map);
+      expect((ramState as Map<number, number>).get(0)).toBe(10);
+      expect((ramState as Map<number, number>).get(1)).toBe(20);
+      expect((ramState as Map<number, number>).get(2)).toBe(30);
+      expect((ramState as Map<number, number>).get(3)).toBe(40);
+
+      // Run simulation - should read initialized value at address 2
+      const result = runCombinationalSimulation(circuit, seqState);
+      expect(result.portValues.get('ram1.data_out')).toBe(30);
+    });
+
+    it('should use default initialization when no init argument provided', () => {
+      const circuit: Circuit = {
+        id: 'test',
+        name: 'RAMDefaultInitTest',
+        parameters: [],
+        inputs: [],
+        outputs: [],
+        clocks: [],
+        state: [],
+        nodes: [
+          {
+            id: 'ram1',
+            label: 'RAM',
+            componentRef: 'RAM',
+            arguments: {}, // No init argument - should use default
+            inputs: [
+              { id: 'ram1.addr', name: 'addr', portType: busType(8) },
+              { id: 'ram1.data_in', name: 'data_in', portType: busType(8) },
+              { id: 'ram1.we', name: 'we', portType: bitType() },
+            ],
+            outputs: [{ id: 'ram1.data_out', name: 'data_out', portType: busType(8) }],
+            clocks: [{ id: 'ram1.clk', name: 'clk' }],
+          },
+          {
+            id: 'addr_input',
+            label: 'Address',
+            componentRef: 'Input',
+            arguments: { value: 10 },
+            inputs: [],
+            outputs: [{ id: 'addr_input.out', name: 'out', portType: busType(8) }],
+            clocks: [],
+          },
+        ],
+        connections: [
+          {
+            id: 'conn1',
+            source: { nodeId: 'addr_input', portName: 'out' },
+            target: { nodeId: 'ram1', portName: 'addr' },
+            portType: busType(8),
+          },
+        ],
+        implementation: { kind: 'composite' },
+      };
+
+      const seqState = initializeSequentialState(circuit);
+
+      // Should initialize with empty Map
+      expect(seqState.currentState.has('ram1')).toBe(true);
+      const ramState = seqState.currentState.get('ram1');
+      expect(ramState).toBeInstanceOf(Map);
+      expect((ramState as Map<number, number>).size).toBe(0);
+
+      // Run simulation - uninitialized addresses should return 0
+      const result = runCombinationalSimulation(circuit, seqState);
+      expect(result.portValues.get('ram1.data_out')).toBe(0);
+    });
+  });
 });

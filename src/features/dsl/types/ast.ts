@@ -71,7 +71,19 @@ export interface ParameterRef extends ASTNode {
 // Arguments (for node instantiation)
 // ============================================================================
 
-export type ArgumentValue = number | string | boolean | ParameterRef;
+// Array literal: [1, 2, 3]
+export interface ArrayLiteral extends ASTNode {
+  kind: 'array';
+  elements: ArgumentValue[];
+}
+
+// Object literal: {64: 3, 65: 4}
+export interface ObjectLiteral extends ASTNode {
+  kind: 'object';
+  entries: Array<{ key: number; value: ArgumentValue }>;
+}
+
+export type ArgumentValue = number | string | boolean | ParameterRef | ArrayLiteral | ObjectLiteral;
 
 export interface Argument extends ASTNode {
   name: string;
