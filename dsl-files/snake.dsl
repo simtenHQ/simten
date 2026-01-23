@@ -51,7 +51,7 @@ circuit Snake4PixelsExplicit {
   // Constants
   node zero: Input        // 0
   node one: Input         // 1
-  node minus1: Input      // 255
+  node minus1: Input      // 255 (for moving left/up with wraparound)
 
   // Calculate deltaX and deltaY
   node deltaXTemp: Mux
@@ -80,14 +80,24 @@ circuit Snake4PixelsExplicit {
   connect pos0Y.q -> newHeadY.a
   connect deltaY.out -> newHeadY.b
 
-  // Mux between tail (to clear) and new head (to draw)
+  // Wrap coordinates to 0-7 range using bit slicing (modulo 8 for power-of-2)
+  // BitSlice extracts bits 0-2, giving range 0-7 automatically
+  // Hardware: Just wire routing, zero logic gates!
+  // This handles both underflow (255 & 0b111 = 7) and overflow (8 & 0b111 = 0)
+  node wrapX: BitSlice
+  node wrapY: BitSlice
+  connect newHeadX.sum -> wrapX.in
+  connect newHeadY.sum -> wrapY.in
+
+  // Mux between tail (to clear) and wrapped new head (to draw)
+  // wrapX.out and wrapY.out are guaranteed to be 0-7 (bits 0-2 only)
   node useX: Mux
   node useY: Mux
-  connect pos3X.q -> useX.in0      // Phase 0: tail position
-  connect newHeadX.sum -> useX.in1 // Phase 1: new head position
+  connect pos3X.q -> useX.in0           // Phase 0: tail position
+  connect wrapX.out -> useX.in1         // Phase 1: wrapped new head (0-7)
   connect phase.q -> useX.sel
   connect pos3Y.q -> useY.in0
-  connect newHeadY.sum -> useY.in1
+  connect wrapY.out -> useY.in1
   connect phase.q -> useY.sel
 
   // Calculate RAM address: Y * 8 + X
@@ -121,9 +131,9 @@ circuit Snake4PixelsExplicit {
   connect regEnable.out -> shiftEnable.a
   connect phase.q -> shiftEnable.b
 
-  // Connect data inputs for shifting
-  connect newHeadX.sum -> pos0X.data
-  connect newHeadY.sum -> pos0Y.data
+  // Connect data inputs for shifting (use wrapped coordinates)
+  connect wrapX.out -> pos0X.data
+  connect wrapY.out -> pos0Y.data
   connect pos0X.q -> pos1X.data
   connect pos0Y.q -> pos1Y.data
   connect pos1X.q -> pos2X.data
