@@ -2,11 +2,15 @@
  * Primitive Component Metadata
  *
  * Provides UI metadata (icons, categories) for primitive components.
- * This is separate from the primitive definitions to maintain clean separation
- * between structural definitions (primitives.ts) and UI presentation.
+ *
+ * This file now exports metadata auto-generated from primitives.ts.
+ * All metadata is defined alongside the primitives in a single source of truth.
+ *
+ * @see primitives.ts - The single source of truth for all primitives
  */
 
 import type { ComponentType } from '../types';
+import { PRIMITIVE_DEFINITIONS, generateMetadata } from './primitives';
 
 export interface PrimitiveMetadata {
   category: string;
@@ -81,62 +85,13 @@ export const CATEGORY_INFO: Record<string, { label: string; icon: string; descri
 };
 
 /**
- * Metadata mapping for all primitive components
- * Maps primitive name (from primitives.ts) to UI metadata and ComponentType
+ * Metadata mapping for all primitive components (auto-generated)
+ *
+ * This mapping is automatically generated from PRIMITIVE_DEFINITIONS.
+ * To add or modify primitive metadata, edit primitives.ts.
  */
-export const PRIMITIVE_METADATA: Record<string, PrimitiveMetadata> = {
-  // Logic Gates
-  And: { category: PRIMITIVE_CATEGORIES.LOGIC_GATES, icon: '&', componentType: 'AND_GATE' },
-  Or: { category: PRIMITIVE_CATEGORIES.LOGIC_GATES, icon: '≥1', componentType: 'OR_GATE' },
-  Not: { category: PRIMITIVE_CATEGORIES.LOGIC_GATES, icon: '¬', componentType: 'NOT_GATE' },
-  Nand: { category: PRIMITIVE_CATEGORIES.LOGIC_GATES, icon: '⊼', componentType: 'NAND_GATE' },
-  Nor: { category: PRIMITIVE_CATEGORIES.LOGIC_GATES, icon: '⊽', componentType: 'NOR_GATE' },
-  Xor: { category: PRIMITIVE_CATEGORIES.LOGIC_GATES, icon: '⊕', componentType: 'XOR_GATE' },
-  Xnor: { category: PRIMITIVE_CATEGORIES.LOGIC_GATES, icon: '⊙', componentType: 'XNOR_GATE' },
-  Buffer: { category: PRIMITIVE_CATEGORIES.LOGIC_GATES, icon: '▷', componentType: 'BUFFER' },
-
-  // I/O Components
-  Switch: { category: PRIMITIVE_CATEGORIES.IO, icon: '⚡', componentType: 'SWITCH' },
-  Led: { category: PRIMITIVE_CATEGORIES.IO, icon: '💡', componentType: 'LED' },
-  Button: { category: PRIMITIVE_CATEGORIES.IO, icon: '🔘', componentType: 'Button' },
-  Input: { category: PRIMITIVE_CATEGORIES.IO, icon: '🔢', componentType: 'INPUT' },
-
-  // Bus Operations (these use primitive names as ComponentType since they're not in PrimitiveComponentType enum)
-  BusAnd: { category: PRIMITIVE_CATEGORIES.BUS_OPS, icon: '&8', componentType: 'BusAnd' },
-  BusOr: { category: PRIMITIVE_CATEGORIES.BUS_OPS, icon: '|8', componentType: 'BusOr' },
-  BusNot: { category: PRIMITIVE_CATEGORIES.BUS_OPS, icon: '¬8', componentType: 'BusNot' },
-  BusXor: { category: PRIMITIVE_CATEGORIES.BUS_OPS, icon: '⊕8', componentType: 'BusXor' },
-
-  // Arithmetic (using primitive names as ComponentType)
-  Adder: { category: PRIMITIVE_CATEGORIES.ARITHMETIC, icon: '➕', componentType: 'Adder' },
-  Multiplier: { category: PRIMITIVE_CATEGORIES.ARITHMETIC, icon: '✖️', componentType: 'Multiplier' },
-  Comparator: { category: PRIMITIVE_CATEGORIES.ARITHMETIC, icon: '⚖️', componentType: 'Comparator' },
-  Incrementer: { category: PRIMITIVE_CATEGORIES.ARITHMETIC, icon: '+1', componentType: 'Incrementer' },
-
-  // Plexers (using primitive names as ComponentType)
-  Mux: { category: PRIMITIVE_CATEGORIES.PLEXERS, icon: '⊓', componentType: 'Mux' },
-  Decoder: { category: PRIMITIVE_CATEGORIES.PLEXERS, icon: '⊔', componentType: 'Decoder' },
-
-  // Sequential Components
-  DFlipFlop: { category: PRIMITIVE_CATEGORIES.SEQUENTIAL, icon: 'D', componentType: 'D_FLIP_FLOP' },
-  Register: { category: PRIMITIVE_CATEGORIES.SEQUENTIAL, icon: 'REG', componentType: 'REGISTER' },
-
-  // Memory
-  RAM: { category: PRIMITIVE_CATEGORIES.MEMORY, icon: '💾', componentType: 'RAM' },
-  DualPortRAM: { category: PRIMITIVE_CATEGORIES.MEMORY, icon: '💾²', componentType: 'DualPortRAM' },
-  ROM: { category: PRIMITIVE_CATEGORIES.MEMORY, icon: '📀', componentType: 'ROM' },
-
-  // Utilities (using primitive names as ComponentType)
-  Constant: { category: PRIMITIVE_CATEGORIES.UTILITIES, icon: 'K', componentType: 'Constant' },
-  Splitter: { category: PRIMITIVE_CATEGORIES.UTILITIES, icon: '⊢', componentType: 'Splitter' },
-  Splitter8to8: { category: PRIMITIVE_CATEGORIES.UTILITIES, icon: '⊢8', componentType: 'Splitter8to8' },
-  Probe: { category: PRIMITIVE_CATEGORIES.UTILITIES, icon: '🔍', componentType: 'Probe' },
-
-  // Display Components (using primitive names as ComponentType)
-  SevenSegment: { category: PRIMITIVE_CATEGORIES.DISPLAY, icon: '8.', componentType: 'SevenSegment' },
-  HexDisplay: { category: PRIMITIVE_CATEGORIES.DISPLAY, icon: '0xFF', componentType: 'HexDisplay' },
-  Screen: { category: PRIMITIVE_CATEGORIES.DISPLAY, icon: '🖥️', componentType: 'Screen' },
-};
+export const PRIMITIVE_METADATA: Record<string, PrimitiveMetadata> =
+  generateMetadata(PRIMITIVE_DEFINITIONS);
 
 /**
  * Get metadata for a primitive component
