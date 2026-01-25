@@ -1068,11 +1068,11 @@ describe('createPrimitiveComponent', () => {
       expect(evaluator).toBeDefined();
     });
 
-    it('should return empty Map (no outputs)', () => {
+    it('should return addrB output', () => {
       const evaluator = PRIMITIVE_EVALUATORS.Screen;
       const result = evaluator.evaluate(new Map());
 
-      expect(result).toEqual(new Map());
+      expect(result).toEqual(new Map([['addrB', 0]]));
     });
 
     it('should be a combinational component', () => {
@@ -1083,8 +1083,8 @@ describe('createPrimitiveComponent', () => {
     it('should have Screen in primitives list', () => {
       const screenPrimitive = PRIMITIVES.find(p => p.name === 'Screen');
       expect(screenPrimitive).toBeDefined();
-      expect(screenPrimitive?.inputs).toEqual([]);
-      expect(screenPrimitive?.outputs).toEqual([]);
+      expect(screenPrimitive?.inputs).toEqual([{ name: 'dataIn', portType: { kind: 'bus', width: 8 } }]);
+      expect(screenPrimitive?.outputs).toEqual([{ name: 'addrB', portType: { kind: 'bus', width: 8 } }]);
     });
 
     it('should be creatable via createPrimitiveComponent', () => {

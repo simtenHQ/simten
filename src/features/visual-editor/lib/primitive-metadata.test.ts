@@ -27,9 +27,17 @@ describe('Primitive Metadata', () => {
     }
   });
 
-  it('should have exactly 33 primitives with metadata', () => {
+  it('should have metadata for exactly the same number of primitives as defined', () => {
+    const primitives = getPrimitives();
     const metadataKeys = Object.keys(PRIMITIVE_METADATA);
-    expect(metadataKeys).toHaveLength(33);
+
+    // Metadata count should match primitive count
+    expect(metadataKeys).toHaveLength(primitives.length);
+
+    // Every primitive should have metadata
+    for (const primitive of primitives) {
+      expect(metadataKeys).toContain(primitive.name);
+    }
   });
 
   it('should categorize all primitives correctly', () => {
@@ -53,8 +61,8 @@ describe('Primitive Metadata', () => {
     expect(categorized.get(PRIMITIVE_CATEGORIES.ARITHMETIC)?.length).toBe(4); // Adder, Multiplier, Comparator, Incrementer
     expect(categorized.get(PRIMITIVE_CATEGORIES.PLEXERS)?.length).toBe(2); // Mux, Decoder
     expect(categorized.get(PRIMITIVE_CATEGORIES.SEQUENTIAL)?.length).toBe(2); // DFlipFlop, Register
-    expect(categorized.get(PRIMITIVE_CATEGORIES.MEMORY)?.length).toBe(2); // RAM, ROM
-    expect(categorized.get(PRIMITIVE_CATEGORIES.UTILITIES)?.length).toBe(4); // Constant, Splitter, Splitter8to8, Probe
+    expect(categorized.get(PRIMITIVE_CATEGORIES.MEMORY)?.length).toBe(3); // RAM, ROM, DualPortRAM
+    expect(categorized.get(PRIMITIVE_CATEGORIES.UTILITIES)?.length).toBe(5); // Constant, Splitter, Splitter8to8, Probe, BitSlice
     expect(categorized.get(PRIMITIVE_CATEGORIES.DISPLAY)?.length).toBe(3); // SevenSegment, HexDisplay, Screen
   });
 
