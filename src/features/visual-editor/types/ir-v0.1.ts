@@ -115,7 +115,12 @@ export interface Connection {
 // Nodes (Component Instances)
 // ============================================================================
 
-export type ArgumentValue = number | string | boolean;
+export type ArgumentValue =
+  | number
+  | string
+  | boolean
+  | number[] // For array initialization (ROM data, RAM init)
+  | Record<number, number>; // For sparse initialization (ROM data, RAM init)
 
 export interface Node {
   id: string;
@@ -205,6 +210,13 @@ export interface CircuitMetadata {
   testCases?: TestCase[];
   tags?: string[];
   kind?: ComponentKind; // Component classification for evaluation
+  /**
+   * For sequential components: how outputs are computed
+   * - 'state-only': Outputs come purely from state (DFlipFlop, Register, RasterDisplay)
+   * - 'input-dependent': Outputs depend on current inputs (RAM - read is combinational)
+   * Used for topological sorting to prevent false cycle detection.
+   */
+  outputDependency?: 'state-only' | 'input-dependent';
   consumes?: string[]; // Capabilities this component requires (e.g., ['FrameSnapshotSource'])
   provides?: string[]; // Capabilities this component implements (e.g., ['FrameSnapshotSource'])
 }

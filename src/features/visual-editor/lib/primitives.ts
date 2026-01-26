@@ -172,6 +172,13 @@ export interface PrimitiveDefinition {
   // ===== Special Metadata =====
   /** Optional metadata for special component types (sinks, DMA providers, etc.) */
   metadata?: PrimitiveSpecialMetadata;
+  /**
+   * Output dependency mode (for sequential components):
+   * - 'state-only': Outputs come purely from state (DFlipFlop, Register, RasterDisplay)
+   * - 'input-dependent': Outputs depend on current inputs (RAM - read is combinational)
+   * Used for topological sorting to prevent false cycle detection.
+   */
+  outputDependency?: 'state-only' | 'input-dependent';
 }
 
 // ============================================================================
@@ -265,6 +272,15 @@ export function defineSequential(config: {
   ) => Map<string, BitValue | BusValue>;
   updateState: (inputs: Map<string, InputValue>, currentState: PrimitiveState, clockEdges: ClockEdges) => PrimitiveState;
   createComponent: (id: string, initialValue?: boolean | number) => Component;
+  /**
+   * Output dependency mode:
+   * - 'state-only': Outputs come purely from state (DFlipFlop, Register, RasterDisplay)
+   * - 'input-dependent': Outputs depend on current inputs (RAM read is combinational)
+   *
+   * This affects evaluation order to prevent false cycle detection.
+   * Default: 'input-dependent'
+   */
+  outputDependency?: 'state-only' | 'input-dependent';
   metadata?: PrimitiveSpecialMetadata;
 }): PrimitiveDefinition {
   return definePrimitive({
@@ -281,6 +297,7 @@ export function defineSequential(config: {
     evaluator: createSequentialEvaluator(config.evaluate, config.updateState),
     createComponent: config.createComponent,
     metadata: config.metadata,
+    outputDependency: config.outputDependency,
   });
 }
 
@@ -969,6 +986,110 @@ export const PRIMITIVE_DEFINITIONS: Record<string, PrimitiveDefinition> = {
     },
   }),
 
+  RasterDisplay: defineSequential({
+    name: 'RasterDisplay',
+    description: 'Hardware-accurate 8×8 raster display with scan counters and sync signals',
+    category: 'display',
+    icon: '📺',
+    componentType: 'RasterDisplay',
+    inputs: [{ name: 'dataIn', portType: busType(8) }],
+    outputs: [
+      { name: 'addrB', portType: busType(8) },
+      { name: 'scanX', portType: busType(4) },
+      { name: 'scanY', portType: busType(4) },
+      { name: 'hblank', portType: bitType() },
+      { name: 'vblank', portType: bitType() },
+    ],
+    clocks: [{ name: 'clk' }],
+    state: [
+      {
+        id: 'raster-state',
+        name: 'rasterState',
+        stateType: { kind: 'memory', addressWidth: 8, dataWidth: 8 },
+        initialValue: (() => {
+          const initialMap = new Map<number, number>();
+          initialMap.set(-1, 0); // scanX = 0
+          initialMap.set(-2, 0); // scanY = 0
+          return { data: initialMap, addressWidth: 8, dataWidth: 8 };
+        })(),
+      },
+    ],
+    evaluate: (inputs, currentState) => {
+      // State is stored as Map<number, number>:
+      // - Key -1: scanX position (0-9)
+      // - Key -2: scanY position (0-9)
+      // - Keys 0-63: pixel data
+      const state = (currentState ?? new Map()) as Map<number, number>;
+      const scanX = state.get(-1) ?? 0;
+      const scanY = state.get(-2) ?? 0;
+
+      // Calculate outputs
+      const addr = scanY < 8 && scanX < 8 ? scanY * 8 + scanX : 0;
+      const hblank = scanX >= 8;
+      const vblank = scanY >= 8;
+
+      return new Map<string, boolean | number>([
+        ['addrB', addr],
+        ['scanX', scanX],
+        ['scanY', scanY],
+        ['hblank', hblank],
+        ['vblank', vblank],
+      ]);
+    },
+    updateState: (inputs, currentState, clockEdges) => {
+      if (clockEdges['clk'] !== 'rising') {
+        return currentState;
+      }
+
+      // Extract current state from Map
+      const state = (currentState ?? new Map()) as Map<number, number>;
+      let scanX = state.get(-1) ?? 0;
+      let scanY = state.get(-2) ?? 0;
+
+      // Capture pixel data during active scan
+      const dataIn = (inputs.get('dataIn') as number) ?? 0;
+      const newState = new Map(state); // Clone to avoid mutation
+
+      if (scanX < 8 && scanY < 8) {
+        const addr = scanY * 8 + scanX;
+        newState.set(addr, dataIn);
+      }
+
+      // Increment scan position
+      scanX++;
+      if (scanX >= 10) {
+        // 8 visible + 2 HBLANK
+        scanX = 0;
+        scanY++;
+        if (scanY >= 10) {
+          // 8 visible + 2 VBLANK
+          scanY = 0; // Frame wrap
+        }
+      }
+
+      // Store scan position in special keys
+      newState.set(-1, scanX);
+      newState.set(-2, scanY);
+
+      return newState;
+    },
+    createComponent: (id) => {
+      const addressWidth: number = 8;
+      const dataWidth: number = 8;
+      const memory = new Map<number, number>();
+      memory.set(-1, 0); // scanX = 0
+      memory.set(-2, 0); // scanY = 0
+      return {
+        id,
+        type: 'RasterDisplay',
+        addressWidth,
+        dataWidth,
+        memory,
+      } as Component;
+    },
+    outputDependency: 'state-only', // Outputs (addrB, scanX, scanY) come from state, not inputs
+  }),
+
   // ============================================================================
   // Sequential Components (Stateful)
   // ============================================================================
@@ -1016,6 +1137,7 @@ export const PRIMITIVE_DEFINITIONS: Record<string, PrimitiveDefinition> = {
       const state: boolean = typeof initialValue === 'boolean' ? initialValue : false;
       return { id, type: 'DFlipFlop', state } as Component;
     },
+    outputDependency: 'state-only', // Q outputs come from stored state, not D input
   }),
 
   Register: defineSequential({
@@ -1059,6 +1181,7 @@ export const PRIMITIVE_DEFINITIONS: Record<string, PrimitiveDefinition> = {
       const state: number = typeof initialValue === 'number' ? initialValue : 0;
       return { id, type: 'Register', width, state } as Component;
     },
+    outputDependency: 'state-only', // Q output comes from stored state, not data input
   }),
 
   // ============================================================================
@@ -1067,7 +1190,7 @@ export const PRIMITIVE_DEFINITIONS: Record<string, PrimitiveDefinition> = {
 
   ROM: defineSequential({
     name: 'ROM',
-    description: 'Read-only memory with initialization (default: 256×8)',
+    description: 'Read-only memory with data initialization (default: 256×8). Use data=[...] for dense or data={addr: val, ...} for sparse initialization.',
     category: 'memory',
     icon: '📀',
     componentType: 'ROM',
@@ -1250,6 +1373,7 @@ export function generatePrimitives(defs: Record<string, PrimitiveDefinition>): C
     metadata: {
       description: def.description,
       ...def.metadata,
+      outputDependency: def.outputDependency,
     },
   }));
 }
