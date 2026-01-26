@@ -8,6 +8,7 @@ export { NumericInputNode } from './NumericInputNode';
 export { OutputNode } from './OutputNode';
 export { LogicGateNode } from './LogicGateNode';
 export { ScreenNode } from './ScreenNode';
+export { RasterDisplayNode } from './RasterDisplayNode';
 export { RegisterNode } from './RegisterNode';
 export { RAMNode } from './RAMNode';
 
