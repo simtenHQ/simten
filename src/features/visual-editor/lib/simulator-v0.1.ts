@@ -121,6 +121,93 @@ export function initializeSequentialState(circuit: Circuit): SequentialState {
 
           // Create MemoryValue structure
           initialValue = { data: memory, addressWidth: 8, dataWidth: 8 };
+        } else if ('data' in node.arguments && node.arguments.data !== undefined) {
+          // ROM initialization from 'data' argument
+          const romData = node.arguments.data;
+          console.log(`[ROM Init] Node ${node.label}: data argument found, length=${Array.isArray(romData) ? romData.length : 'not array'}`);
+          const memory = new Map<number, number>();
+          const maxAddress = 255; // ROM is 256 addresses (0-255)
+          const maxValue = 255; // 8-bit data (0-255)
+
+          if (Array.isArray(romData)) {
+            console.log(`[ROM Init] ${node.label}: Initializing array with ${romData.length} values`);
+            console.log(`[ROM Init] ${node.label}: First 10 values:`, romData.slice(0, 10));
+            // Dense initialization: [val0, val1, val2, ...]
+            if (romData.length > 256) {
+              throw new Error(
+                `ROM '${node.label}' data array exceeds 256 bytes (got ${romData.length}). ` +
+                  `ROM size is fixed at 256 addresses. Consider splitting data or using RAM.`
+              );
+            }
+
+            romData.forEach((value, index) => {
+              if (typeof value !== 'number') {
+                throw new Error(
+                  `ROM '${node.label}' data at index ${index} must be a number (got ${typeof value})`
+                );
+              }
+              if (value < 0) {
+                throw new Error(
+                  `ROM '${node.label}' data value at index ${index} is negative (got ${value}). ` +
+                    `Values must be 0-255.`
+                );
+              }
+              if (value > maxValue) {
+                throw new Error(
+                  `ROM '${node.label}' data value at index ${index} exceeds 8-bit range ` +
+                    `(got ${value}, max ${maxValue}). Truncate value or use larger data width.`
+                );
+              }
+              memory.set(index, Math.floor(value)); // Ensure integer
+            });
+            console.log(`[ROM Init] ${node.label}: Memory populated with ${memory.size} entries`);
+            console.log(`[ROM Init] ${node.label}: Sample values - addr[0]=${memory.get(0)}, addr[32]=${memory.get(32)}, addr[63]=${memory.get(63)}`);
+          } else if (typeof romData === 'object' && !Array.isArray(romData)) {
+            // Sparse initialization: {addr: value, ...}
+            Object.entries(romData).forEach(([addrStr, value]) => {
+              const addr = Number(addrStr);
+
+              if (!Number.isInteger(addr) || addr < 0) {
+                throw new Error(
+                  `ROM '${node.label}' data address ${addrStr} is invalid. ` +
+                    `Addresses must be non-negative integers.`
+                );
+              }
+              if (addr > maxAddress) {
+                throw new Error(
+                  `ROM '${node.label}' data address ${addr} exceeds address range ` +
+                    `(max ${maxAddress}). ROM is 256 addresses (0-255).`
+                );
+              }
+              if (typeof value !== 'number') {
+                throw new Error(
+                  `ROM '${node.label}' data value at address ${addr} must be a number ` +
+                    `(got ${typeof value})`
+                );
+              }
+              if (value < 0) {
+                throw new Error(
+                  `ROM '${node.label}' data value at address ${addr} is negative (got ${value}). ` +
+                    `Values must be 0-255.`
+                );
+              }
+              if (value > maxValue) {
+                throw new Error(
+                  `ROM '${node.label}' data value at address ${addr} exceeds 8-bit range ` +
+                    `(got ${value}, max ${maxValue}).`
+                );
+              }
+              memory.set(addr, Math.floor(value as number));
+            });
+          } else {
+            throw new Error(
+              `ROM '${node.label}' data argument must be an array [0, 1, 2, ...] ` +
+                `or object {0: 1, 64: 2, ...} (got ${typeof romData})`
+            );
+          }
+
+          // Create MemoryValue structure
+          initialValue = { data: memory, addressWidth: 8, dataWidth: 8 };
         }
 
         // Convert StateValue to PrimitiveState
@@ -191,10 +278,9 @@ function topologicalSort(circuit: Circuit): string[] | null {
     // Sink nodes' outputs don't participate in combinational feedback
     const isSink = componentDef.metadata?.kind === 'sink';
 
-    // Check if this is a state-only node (DFlipFlop, Register)
-    // These nodes' outputs come purely from state, not from inputs
-    const isStateOnly = componentDef.state.length > 0 &&
-                       (node.componentRef === 'DFlipFlop' || node.componentRef === 'Register');
+    // Check if this is a state-only node (outputs come from state, not inputs)
+    // These nodes' outputs are state-dependent, so they don't create combinational cycles
+    const isStateOnly = componentDef.metadata?.outputDependency === 'state-only';
 
     if (isSink) {
       sinkNodes.push(node.id);
@@ -326,7 +412,7 @@ function evaluateNode(
   }
 
   if (node.componentRef === 'Constant') {
-    const value = node.arguments.value ?? 0;
+    const value = typeof node.arguments.value === 'number' ? node.arguments.value : 0;
     return new Map([['out', value]]);
   }
 

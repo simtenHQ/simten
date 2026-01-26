@@ -60,6 +60,7 @@ export function ClockControls() {
   const seqState = useSequentialStateStore((state) => state.seqState);
   const setSeqState = useSequentialStateStore((state) => state.setSeqState);
   const [isRunning, setIsRunning] = useState(false);
+  const [clockSpeed, setClockSpeed] = useState(10); // Hz
   const runIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // Track circuit structure (IDs and types) to detect structural changes
@@ -152,45 +153,8 @@ export function ClockControls() {
 
   // Handle run (continuous ticking)
   const handleRun = useCallback(() => {
-    if (isRunning) return;
-
     setIsRunning(true);
-    runIntervalRef.current = setInterval(() => {
-      // Use refs to get the latest circuit and state
-      // This allows keyboard input updates to be picked up during the run loop
-      const currentCircuit = circuitRef.current;
-      const currentSeqState = seqStateRef.current;
-
-      if (!currentSeqState || !currentCircuit) return;
-
-      setSimulationStatus('running');
-
-      // Execute one clock tick
-      const result = runSimulationTick(currentCircuit, currentSeqState);
-
-      if (result.error) {
-        console.error('Simulation error:', result.error);
-        setSimulationStatus('error');
-        return;
-      }
-
-      // Update the sequential state from simulation result
-      if (result.sequentialState) {
-        const newSeqState: SequentialState = {
-          currentState: new Map(result.sequentialState.currentState),
-          nextState: new Map(result.sequentialState.nextState),
-          clocks: new Map(result.sequentialState.clocks),
-          cycleCount: result.sequentialState.cycleCount,
-        };
-
-        setSeqState(newSeqState);
-      }
-
-      setTimeout(() => {
-        setSimulationStatus('idle');
-      }, 50);
-    }, 100); // 10 Hz clock
-  }, [isRunning, setSimulationStatus, setSeqState]);
+  }, []);
 
   // Handle pause
   const handlePause = useCallback(() => {
@@ -216,14 +180,60 @@ export function ClockControls() {
     // next simulation run automatically
   }, [circuit, handlePause]);
 
-  // Cleanup on unmount
+  // Manage run interval - updates when isRunning or clockSpeed changes
   useEffect(() => {
+    // Clear any existing interval
+    if (runIntervalRef.current) {
+      clearInterval(runIntervalRef.current);
+      runIntervalRef.current = null;
+    }
+
+    // Start interval if running
+    if (isRunning) {
+      runIntervalRef.current = setInterval(() => {
+        // Use refs to get the latest circuit and state
+        const currentCircuit = circuitRef.current;
+        const currentSeqState = seqStateRef.current;
+
+        if (!currentSeqState || !currentCircuit) return;
+
+        setSimulationStatus('running');
+
+        // Execute one clock tick
+        const result = runSimulationTick(currentCircuit, currentSeqState);
+
+        if (result.error) {
+          console.error('Simulation error:', result.error);
+          setSimulationStatus('error');
+          return;
+        }
+
+        // Update the sequential state from simulation result
+        if (result.sequentialState) {
+          const newSeqState: SequentialState = {
+            currentState: new Map(result.sequentialState.currentState),
+            nextState: new Map(result.sequentialState.nextState),
+            clocks: new Map(result.sequentialState.clocks),
+            cycleCount: result.sequentialState.cycleCount,
+          };
+
+          setSeqState(newSeqState);
+        }
+
+        setTimeout(() => {
+          setSimulationStatus('idle');
+        }, 50);
+      }, 1000 / clockSpeed); // Clock speed in Hz
+    }
+
+    // Cleanup on change or unmount
     return () => {
       if (runIntervalRef.current) {
         clearInterval(runIntervalRef.current);
+        runIntervalRef.current = null;
       }
     };
-  }, []);
+  }, [isRunning, clockSpeed, setSimulationStatus, setSeqState]);
 
   if (!hasSequentialComponents(circuit, resolveComponent)) {
     return null; // Don't show clock controls for purely combinational circuits
@@ -290,6 +300,23 @@ export function ClockControls() {
           Cycle: <strong>{seqState.cycleCount}</strong>
         </span>
       )}
+
+      {/* Speed Control */}
+      <div className="flex items-center gap-2 ml-4 border-l border-gray-200 pl-4">
+        <span className="text-sm text-gray-600">Speed:</span>
+        <input
+          type="range"
+          min="1"
+          max="100"
+          value={clockSpeed}
+          onChange={(e) => setClockSpeed(Number(e.target.value))}
+          className="w-24"
+          title={`Clock speed: ${clockSpeed} Hz`}
+        />
+        <span className="text-sm text-gray-600 font-medium w-12">
+          {clockSpeed} Hz
+        </span>
+      </div>
     </div>
   );
 }

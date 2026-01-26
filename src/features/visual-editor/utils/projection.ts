@@ -62,6 +62,7 @@ function getNodeTypeForComponent(componentRef: string, inputCount: number, outpu
     HexDisplay: 'outputNode',
     SevenSegment: 'outputNode',
     Screen: 'screenNode',
+    RasterDisplay: 'rasterDisplayNode',
   };
 
   if (typeMap[componentRef]) {
@@ -183,6 +184,22 @@ export function projectCircuitToNodes(
             for (let addr = 0; addr < 64; addr++) {
               pixels[addr] = memory.get(addr) ?? 0;
             }
+          }
+        }
+      }
+    } else if (node.componentRef === 'RasterDisplay') {
+      // Hardware-accurate raster display - reads pixels from internal state
+      // RasterDisplay stores pixels directly in its state Map (keys 0-63)
+      pixels = new Array(64).fill(0);
+
+      if (seqState) {
+        const displayState = seqState.currentState.get(node.id);
+
+        if (displayState instanceof Map) {
+          const state = displayState as Map<number, number>;
+          // Read pixel data (keys 0-63, excluding -1/-2 which are scanX/scanY)
+          for (let addr = 0; addr < 64; addr++) {
+            pixels[addr] = state.get(addr) ?? 0;
           }
         }
       }

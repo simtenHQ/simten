@@ -88,6 +88,13 @@ export interface SevenSegmentComponent extends ComponentBase {
   value: number; // Current numeric value to display (0-15)
 }
 
+export interface RasterDisplayComponent extends ComponentBase {
+  type: 'RasterDisplay';
+  addressWidth: number;
+  dataWidth: number;
+  memory: Map<number, number>; // Scan position and pixel data (keys: -1=scanX, -2=scanY, 0-63=pixels)
+}
+
 // LOGIC components
 export interface AndGateComponent extends ComponentBase {
   type: 'AND_GATE';
@@ -152,6 +159,7 @@ export type Component =
   | LEDComponent
   | HexDisplayComponent
   | SevenSegmentComponent
+  | RasterDisplayComponent
   | AndGateComponent
   | OrGateComponent
   | NotGateComponent
