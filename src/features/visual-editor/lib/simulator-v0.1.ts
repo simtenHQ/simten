@@ -427,6 +427,17 @@ function evaluateNode(
     inputs = extendedInputs;
   }
 
+  // General mechanism: pass all node arguments to evaluate function with __ prefix
+  // This allows primitives to access parameterization (e.g., width, value, etc.)
+  if (node.arguments && Object.keys(node.arguments).length > 0) {
+    const extendedInputs = new Map(inputs);
+    for (const [key, value] of Object.entries(node.arguments)) {
+      // Pass arguments as-is - primitives will handle type checking
+      extendedInputs.set(`__${key}`, value as any);
+    }
+    inputs = extendedInputs;
+  }
+
   const evaluator = getPrimitiveEvaluator(node.componentRef);
 
   if (!evaluator) {

@@ -77,6 +77,7 @@ export class CompilerError extends Error {
 export interface ComponentLibrary {
   getCircuit(name: string): Circuit | undefined;
   hasCircuit(name: string): boolean;
+  addCircuit?(circuit: Circuit): void; // Optional for backward compatibility
   getAllComponentNames?(): string[]; // Optional for backward compatibility
 }
 
@@ -94,13 +95,20 @@ export class IRGenerator {
 
   /**
    * Compile a program (multiple circuits) into IR circuits
+   * Automatically registers each circuit in the library as it's compiled,
+   * allowing later circuits to reference earlier ones (if library supports addCircuit).
    */
   public compileProgram(program: Program): Circuit[] {
     const circuits: Circuit[] = [];
 
     for (const circuitDef of program.circuits) {
       try {
-        circuits.push(this.compileCircuit(circuitDef));
+        const circuit = this.compileCircuit(circuitDef);
+        circuits.push(circuit);
+
+        // Register this circuit so subsequent circuits can use it
+        // (only if the library supports addCircuit)
+        this.library.addCircuit?.(circuit);
       } catch (error) {
         if (error instanceof CompilerError) {
           throw error;
@@ -499,14 +507,26 @@ export class IRGenerator {
     const source = this.compilePortPath(circuitDef, conn.source, nodes);
     const target = this.compilePortPath(circuitDef, conn.target, nodes);
 
-    // Get port type from source (for now, assume compatible)
-    const portType = this.getPortType(circuitDef, conn.source, nodes);
+    // Get port types for both source and target
+    const sourceType = this.getPortType(circuitDef, conn.source, nodes);
+    const targetType = this.getPortType(circuitDef, conn.target, nodes);
+
+    // Warn on bus width mismatches (like Verilog warnings)
+    if (sourceType.kind === 'bus' && targetType.kind === 'bus') {
+      if (sourceType.width !== targetType.width) {
+        console.warn(
+          `[${circuitDef.name}] Width mismatch: ` +
+          `${formatPortRef(conn.source)} (${sourceType.width}-bit) -> ` +
+          `${formatPortRef(conn.target)} (${targetType.width}-bit)`
+        );
+      }
+    }
 
     return {
       id: this.generateId(`conn_${formatPortRef(conn.source)}_${formatPortRef(conn.target)}`),
       source,
       target,
-      portType,
+      portType: sourceType,
     };
   }
 
@@ -564,6 +584,12 @@ export class IRGenerator {
       const output = circuitDef.outputs.find((o) => o.name === portRef.portName);
       if (output) {
         return this.compilePortType(output.portType, circuitDef);
+      }
+
+      // Check if it's a clock (clocks are just bit-type signals)
+      const clock = circuitDef.clocks.find((c) => c.name === portRef.portName);
+      if (clock) {
+        return bitType();
       }
 
       // Build helpful error message
@@ -630,16 +656,23 @@ export class IRGenerator {
 
       const port = [...node.inputs, ...node.outputs].find((p) => p.name === portRef.portName);
       if (!port) {
+        // Check if it's a clock port (clocks are bit-type signals)
+        const clock = node.clocks.find((c) => c.name === portRef.portName);
+        if (clock) {
+          return bitType();
+        }
+
         // Build helpful error message with available ports
         const allPorts = [...node.inputs, ...node.outputs];
         const portNames = allPorts.map((p) => p.name);
         const inputNames = node.inputs.map((p) => p.name);
         const outputNames = node.outputs.map((p) => p.name);
+        const clockNames = node.clocks.map((c) => c.name);
 
         let errorMsg = `Cannot find port '${portRef.portName}' on node '${portRef.nodeId}' (type: ${node.componentRef})`;
 
         // Check for similar port names
-        const similar = this.findSimilarNames(portRef.portName, portNames);
+        const similar = this.findSimilarNames(portRef.portName, [...portNames, ...clockNames]);
         if (similar.length > 0) {
           errorMsg += `\n\nDid you mean: ${similar.join(', ')}?`;
         }
@@ -651,6 +684,9 @@ export class IRGenerator {
         }
         if (outputNames.length > 0) {
           errorMsg += `\n  Outputs: ${outputNames.join(', ')}`;
+        }
+        if (clockNames.length > 0) {
+          errorMsg += `\n  Clocks: ${clockNames.join(', ')}`;
         }
 
         throw new CompilerError(

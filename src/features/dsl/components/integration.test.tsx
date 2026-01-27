@@ -137,7 +137,7 @@ describe('DSL Editor Integration', () => {
         output out: Bit
         impl {
           node buf1: Buffer
-          connect a -> buf1.a
+          connect a -> buf1.in
           connect buf1.out -> out
         }
       }
@@ -147,7 +147,7 @@ describe('DSL Editor Integration', () => {
         output y: Bit
         impl {
           node not1: Not
-          connect x -> not1.a
+          connect x -> not1.in
           connect not1.out -> y
         }
       }
