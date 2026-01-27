@@ -63,7 +63,7 @@ describe('Primitive Metadata', () => {
     expect(categorized.get(PRIMITIVE_CATEGORIES.SEQUENTIAL)?.length).toBe(2); // DFlipFlop, Register
     expect(categorized.get(PRIMITIVE_CATEGORIES.MEMORY)?.length).toBe(3); // RAM, ROM, DualPortRAM
     expect(categorized.get(PRIMITIVE_CATEGORIES.UTILITIES)?.length).toBe(5); // Constant, Splitter, Splitter8to8, Probe, BitSlice
-    expect(categorized.get(PRIMITIVE_CATEGORIES.DISPLAY)?.length).toBe(3); // SevenSegment, HexDisplay, Screen
+    expect(categorized.get(PRIMITIVE_CATEGORIES.DISPLAY)?.length).toBe(4); // SevenSegment, HexDisplay, Screen, RasterDisplay
   });
 
   it('should have category info for all categories', () => {
