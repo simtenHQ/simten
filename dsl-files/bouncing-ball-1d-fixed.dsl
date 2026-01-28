@@ -1,4 +1,6 @@
 circuit BouncingBall1D {
+  clock clk
+
   impl {
     // Position state (8-bit, but we only use lower 2 bits)
     node position: Register
@@ -76,6 +78,10 @@ circuit BouncingBall1D {
 
     // Save the new direction for next cycle
     connect flipDir.out -> direction.d
+
+    // Clock connections for sequential components
+    connect clk -> position.clk
+    connect clk -> direction.clk
 
     // Display
     connect pos2bit.out -> decoder.in
