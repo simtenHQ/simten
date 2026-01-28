@@ -150,39 +150,57 @@ export function projectCircuitToNodes(
         numericValue = typeof portValue === 'number' ? portValue : 0;
       }
     } else if (node.componentRef === 'Screen') {
-      // Memory-mapped display - burst DMA read via FrameSnapshotSource
-      // Screen consumes framebuffer snapshot (simulates VBLANK refresh)
+      // Screen reads from dataIn port (explicit wiring)
+      // The typical wiring: Screen.addrB -> RAM.addrB, RAM.dataB -> Screen.dataIn
       pixels = new Array(64).fill(0);
 
-      if (seqState) {
-        const library = useComponentLibraryStore.getState();
+      if (seqState && portValues) {
+        // Read pixels by tracing the dataIn connection
+        // Supports direct RAM connection or mux-based double buffering
 
-        // Find all components that provide FrameSnapshotSource capability
-        const providers: { nodeId: string; componentRef: string }[] = [];
+        // Find what's providing data to Screen.dataIn by tracing connections
+        const dataInConnection = Array.from(circuit.connections).find(
+          conn => conn.target.nodeId === node.id && conn.target.portName === 'dataIn'
+        );
 
-        for (const n of circuit.nodes) {
-          const componentDef = library.resolveComponent(n.componentRef);
-          if (componentDef?.metadata?.provides?.includes('FrameSnapshotSource')) {
-            providers.push({ nodeId: n.id, componentRef: n.componentRef });
-          }
-        }
+        if (dataInConnection) {
+          const sourceNodeId = dataInConnection.source.nodeId;
+          const sourceNode = circuit.nodes.find(n => n.id === sourceNodeId);
 
-        // Validate exactly one provider (enforces hardware constraint)
-        if (providers.length !== 1) {
-          console.error(
-            `[Screen] ${node.id} requires exactly one FrameSnapshotSource, found ${providers.length}`
-          );
-          // Fall back to black screen
-        } else {
-          // Get snapshot from the provider
-          const provider = providers[0];
-          const providerState = seqState.currentState.get(provider.nodeId);
+          // If connected directly to a RAM, read from it
+          if (sourceNode?.componentRef === 'DualPortRAM') {
+            const ramState = seqState.currentState.get(sourceNode.id);
+            if (ramState instanceof Map) {
+              for (let addr = 0; addr < 64; addr++) {
+                pixels[addr] = ramState.get(addr) ?? 0;
+              }
+            }
+          } else if (sourceNode?.componentRef === 'Mux') {
+            // Connected through a mux (double buffering case)
+            // Determine which input is selected and read from that RAM
+            const selKey = portPathKey({ nodeId: sourceNode.id, portName: 'sel' });
+            const selValue = portValues.get(selKey);
 
-          if (providerState instanceof Map) {
-            const memory = providerState as Map<number, number>;
-            // Burst read framebuffer snapshot (addresses 0-63)
-            for (let addr = 0; addr < 64; addr++) {
-              pixels[addr] = memory.get(addr) ?? 0;
+            // Find which input is selected (0 or 1)
+            const selectedInputPort = selValue === 0 ? 'in0' : 'in1';
+
+            // Find connection to that input
+            const muxInputConnection = Array.from(circuit.connections).find(
+              conn =>
+                conn.target.nodeId === sourceNode.id &&
+                conn.target.portName === selectedInputPort
+            );
+
+            if (muxInputConnection) {
+              const ramNode = circuit.nodes.find(n => n.id === muxInputConnection.source.nodeId);
+              if (ramNode?.componentRef === 'DualPortRAM') {
+                const ramState = seqState.currentState.get(ramNode.id);
+                if (ramState instanceof Map) {
+                  for (let addr = 0; addr < 64; addr++) {
+                    pixels[addr] = ramState.get(addr) ?? 0;
+                  }
+                }
+              }
             }
           }
         }
