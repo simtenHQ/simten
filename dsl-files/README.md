@@ -68,7 +68,13 @@ Load, press START, clock 9-11 times, verify done LED and HexDisplay outputs.
 
 - **`bouncing-ball-1d-fixed.dsl`** - 1D bouncing ball (fixed-point math)
 - **`bouncing-ball-2d.dsl`** - 2D bouncing ball with gravity
-- **`bouncing-ball-damped.dsl`** - Damped bouncing ball
+- **`bouncing-ball-damped.dsl`** - Damped bouncing ball (single buffer, has flicker)
+- **`bouncing-ball-damped-double-buffered.dsl`** - Damped bouncing ball with double buffering ⭐
+  - **No flicker!** Uses VSYNC-style buffer swapping
+  - Two DualPortRAMs (front + back buffer)
+  - Screen always reads from complete frame
+  - Standard technique used in NES, SNES, modern GPUs
+  - +1 frame latency (imperceptible at normal speeds)
 
 ---
 
