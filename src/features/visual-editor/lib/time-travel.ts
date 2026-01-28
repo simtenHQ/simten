@@ -103,9 +103,14 @@ export function createSnapshot(sequentialState: SequentialState, circuit: Circui
   const clonedSeqState: SequentialState = {
     currentState: new Map(),
     nextState: new Map(),
-    clocks: new Map(sequentialState.clocks),
+    clocks: new Map(),
     cycleCount: sequentialState.cycleCount,
   };
+
+  // Deep clone clock states
+  for (const [clockId, clockState] of sequentialState.clocks.entries()) {
+    clonedSeqState.clocks.set(clockId, structuredClone(clockState));
+  }
 
   // Deep copy Maps for memory components (RAM, etc.)
   for (const [nodeId, value] of sequentialState.currentState.entries()) {
