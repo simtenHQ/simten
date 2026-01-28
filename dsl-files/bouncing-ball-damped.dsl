@@ -1,4 +1,6 @@
 circuit BouncingBallDamped {
+  clock clk
+
   impl {
     // Ball position - X fixed at center, Y bounces
     node ballX: Register(initial=3)  // Fixed at column 3
@@ -159,5 +161,14 @@ circuit BouncingBallDamped {
     // ==== Screen Display ====
     connect display.addrB -> fb.addrB
     connect fb.dataB -> display.dataIn
+
+    // ==== Clock connections for sequential components ====
+    connect clk -> ballX.clk
+    connect clk -> ballY.clk
+    connect clk -> prevX.clk
+    connect clk -> prevY.clk
+    connect clk -> dirY.clk
+    connect clk -> maxReach.clk
+    connect clk -> framePhase.clk
   }
 }

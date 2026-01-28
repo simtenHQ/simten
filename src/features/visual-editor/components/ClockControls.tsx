@@ -17,13 +17,14 @@
 'use client';
 
 import React, { useCallback, useState, useEffect, useRef } from 'react';
-import { SkipForward, Play, Pause, RotateCcw } from 'lucide-react';
+import { SkipForward, Play, Pause, RotateCcw, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useCircuitStore } from '../stores/circuit-store';
 import { useUIStore, useComponentLibraryStore } from '../stores';
 import { useSequentialStateStore } from '../stores/sequential-state-store';
 import { initializeSequentialState, runSimulationTick, type SequentialState } from '../lib/simulator-v0.1';
 import type { Circuit } from '../types/ir-v0.1';
+import { createSnapshot, restoreEnvironmentalState } from '../lib/time-travel';
 
 /**
  * Check if circuit has sequential components (recursive - checks nested composites too)
@@ -52,6 +53,7 @@ function hasSequentialComponents(circuit: Circuit | null, resolveComponent: (nam
 
 export function ClockControls() {
   const circuit = useCircuitStore((state) => state.circuit);
+  const updateNode = useCircuitStore((state) => state.updateNode);
   const simulationStatus = useUIStore((state) => state.simulation.status);
   const setSimulationStatus = useUIStore((state) => state.setSimulationStatus);
   const resolveComponent = useComponentLibraryStore((state) => state.resolveComponent);
@@ -59,6 +61,14 @@ export function ClockControls() {
   // Sequential state (shared via store so Canvas can access it)
   const seqState = useSequentialStateStore((state) => state.seqState);
   const setSeqState = useSequentialStateStore((state) => state.setSeqState);
+  const history = useSequentialStateStore((state) => state.history);
+  const currentHistoryIndex = useSequentialStateStore((state) => state.currentHistoryIndex);
+  const isViewingPast = useSequentialStateStore((state) => state.isViewingPast);
+  const saveSnapshot = useSequentialStateStore((state) => state.saveSnapshot);
+  const stepBack = useSequentialStateStore((state) => state.stepBack);
+  const stepForward = useSequentialStateStore((state) => state.stepForward);
+  const jumpToCycle = useSequentialStateStore((state) => state.jumpToCycle);
+  const clearHistory = useSequentialStateStore((state) => state.clearHistory);
   const [isRunning, setIsRunning] = useState(false);
   const [clockSpeed, setClockSpeed] = useState(10); // Hz
   const runIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -119,7 +129,12 @@ export function ClockControls() {
 
     setSimulationStatus('running');
 
-    // Execute one clock tick
+    // STEP 1: Create snapshot BEFORE tick
+    // This captures: sequential state + environmental state at cycle start
+    const snapshot = createSnapshot(seqState, circuit);
+    saveSnapshot(snapshot);
+
+    // STEP 2: Run simulation tick (existing code)
     const result = runSimulationTick(circuit, seqState);
 
     if (result.error) {
@@ -128,8 +143,7 @@ export function ClockControls() {
       return;
     }
 
-    // Update the sequential state from simulation result
-    // IMPORTANT: Create a NEW object so Zustand detects the change (reference equality)
+    // STEP 3: Update state (existing pattern)
     if (result.sequentialState) {
       // Clone the sequential state to create a new reference
       const newSeqState: SequentialState = {
@@ -149,7 +163,7 @@ export function ClockControls() {
     setTimeout(() => {
       setSimulationStatus('idle');
     }, 50);
-  }, [seqState, circuit, setSimulationStatus]);
+  }, [seqState, circuit, setSimulationStatus, setSeqState, saveSnapshot]);
 
   // Handle run (continuous ticking)
   const handleRun = useCallback(() => {
@@ -175,10 +189,50 @@ export function ClockControls() {
     const newSeqState = initializeSequentialState(circuit);
     setSeqState(newSeqState);
 
+    // Clear history
+    clearHistory();
+
     // Note: We don't need to manually reset node arguments here
     // because the sequential state reset will be picked up by the
     // next simulation run automatically
-  }, [circuit, handlePause]);
+  }, [circuit, handlePause, setSeqState, clearHistory]);
+
+  // Time-travel navigation handlers
+  const handleStepBack = useCallback(() => {
+    if (!circuit) return;
+
+    const snapshot = stepBack();
+    if (snapshot) {
+      // Restore environmental state to circuit via updateNode
+      restoreEnvironmentalState(circuit, snapshot.environmentalState, updateNode);
+      // Sequential state already updated by stepBack()
+    }
+  }, [circuit, stepBack, updateNode]);
+
+  const handleStepForward = useCallback(() => {
+    if (!circuit) return;
+
+    const snapshot = stepForward();
+    if (snapshot) {
+      // Restore environmental state to circuit via updateNode
+      restoreEnvironmentalState(circuit, snapshot.environmentalState, updateNode);
+      // Sequential state already updated by stepForward()
+    }
+  }, [circuit, stepForward, updateNode]);
+
+  const handleJumpToCycle = useCallback(
+    (cycleNumber: number) => {
+      if (!circuit) return;
+
+      const snapshot = jumpToCycle(cycleNumber);
+      if (snapshot) {
+        // Restore environmental state to circuit via updateNode
+        restoreEnvironmentalState(circuit, snapshot.environmentalState, updateNode);
+        // Sequential state already updated by jumpToCycle()
+      }
+    },
+    [circuit, jumpToCycle, updateNode]
+  );
 
   // Manage run interval - updates when isRunning or clockSpeed changes
   useEffect(() => {
@@ -199,7 +253,11 @@ export function ClockControls() {
 
         setSimulationStatus('running');
 
-        // Execute one clock tick
+        // STEP 1: Create snapshot BEFORE tick
+        const snapshot = createSnapshot(currentSeqState, currentCircuit);
+        saveSnapshot(snapshot);
+
+        // STEP 2: Execute one clock tick
         const result = runSimulationTick(currentCircuit, currentSeqState);
 
         if (result.error) {
@@ -208,7 +266,7 @@ export function ClockControls() {
           return;
         }
 
-        // Update the sequential state from simulation result
+        // STEP 3: Update the sequential state from simulation result
         if (result.sequentialState) {
           const newSeqState: SequentialState = {
             currentState: new Map(result.sequentialState.currentState),
@@ -233,7 +291,7 @@ export function ClockControls() {
         runIntervalRef.current = null;
       }
     };
-  }, [isRunning, clockSpeed, setSimulationStatus, setSeqState]);
+  }, [isRunning, clockSpeed, setSimulationStatus, setSeqState, saveSnapshot]);
 
   if (!hasSequentialComponents(circuit, resolveComponent)) {
     return null; // Don't show clock controls for purely combinational circuits
@@ -242,6 +300,33 @@ export function ClockControls() {
   return (
     <div className="flex items-center gap-2 border-l border-gray-200 pl-4">
       <span className="text-sm text-gray-600 font-medium">Clock:</span>
+
+      {/* Time-travel controls (Back/Forward) */}
+      <div className="flex items-center gap-1">
+        <Button
+          onClick={handleStepBack}
+          disabled={currentHistoryIndex <= 0 || isRunning}
+          variant="outline"
+          size="sm"
+          className="gap-1 px-2"
+          title="Step backward one cycle"
+        >
+          <ChevronLeft className="h-4 w-4" />
+          Back
+        </Button>
+
+        <Button
+          onClick={handleStepForward}
+          disabled={currentHistoryIndex >= history.length - 1 || isRunning}
+          variant="outline"
+          size="sm"
+          className="gap-1 px-2"
+          title="Step forward one cycle"
+        >
+          Forward
+          <ChevronRight className="h-4 w-4" />
+        </Button>
+      </div>
 
       {/* Step Button */}
       <Button
@@ -298,7 +383,34 @@ export function ClockControls() {
       {seqState && (
         <span className="text-sm text-gray-600 ml-2">
           Cycle: <strong>{seqState.cycleCount}</strong>
+          {isViewingPast && <span className="text-orange-600 ml-1">(viewing past)</span>}
         </span>
+      )}
+
+      {/* Timeline scrubber */}
+      {history.length > 0 && (
+        <div className="flex items-center gap-2 ml-4 border-l border-gray-200 pl-4">
+          <span className="text-sm text-gray-600">Timeline:</span>
+          <input
+            type="range"
+            min={0}
+            max={history.length - 1}
+            value={currentHistoryIndex}
+            onChange={(e) => {
+              const index = parseInt(e.target.value);
+              const targetCycle = history[index]?.cycleNumber;
+              if (targetCycle !== undefined) {
+                handleJumpToCycle(targetCycle);
+              }
+            }}
+            className="w-32"
+            disabled={isRunning}
+            title={`Navigate through ${history.length} snapshots`}
+          />
+          <span className="text-xs text-gray-500">
+            {currentHistoryIndex + 1} / {history.length}
+          </span>
+        </div>
       )}
 
       {/* Speed Control */}

@@ -86,6 +86,7 @@ import type {
   ClockDescriptor,
   StateBlock,
   Parameter,
+  Node,
 } from '../types/ir-v0.1';
 import { bitType, busType } from '../types/ir-v0.1';
 import type { Component } from '../types/ir';
@@ -99,6 +100,7 @@ import {
   type ClockEdges,
   type EvaluationContext,
 } from './primitive-interface';
+import type { EnvironmentalStateValue } from '../types/simulation-snapshot';
 
 // ============================================================================
 // Type Definitions
@@ -179,6 +181,25 @@ export interface PrimitiveDefinition {
    * Used for topological sorting to prevent false cycle detection.
    */
   outputDependency?: 'state-only' | 'input-dependent';
+
+  // ===== Environmental State (Time-Travel Debugging) =====
+  /**
+   * Does this component have environmental state?
+   * Environmental state = values from outside the circuit (user inputs, sensors, RNG)
+   */
+  hasEnvironmentalState?: boolean;
+
+  /**
+   * Capture environmental state from a node
+   * Must return a cloneable, deterministic, replay-safe value
+   */
+  captureEnvironmentalState?: (node: Node) => EnvironmentalStateValue;
+
+  /**
+   * Restore environmental state to a node
+   * Must be idempotent (can be called multiple times safely)
+   */
+  restoreEnvironmentalState?: (node: Node, state: EnvironmentalStateValue) => void;
 }
 
 // ============================================================================
@@ -227,6 +248,9 @@ export function defineCombinational(config: {
   ) => Map<string, BitValue | BusValue>;
   createComponent?: (id: string, initialValue?: boolean | number) => Component;
   metadata?: PrimitiveSpecialMetadata;
+  hasEnvironmentalState?: boolean;
+  captureEnvironmentalState?: (node: Node) => EnvironmentalStateValue;
+  restoreEnvironmentalState?: (node: Node, state: EnvironmentalStateValue) => void;
 }): PrimitiveDefinition {
   return definePrimitive({
     name: config.name,
@@ -240,6 +264,9 @@ export function defineCombinational(config: {
     evaluator: createCombinationalEvaluator(config.evaluate),
     createComponent: config.createComponent ?? ((id) => ({ id, type: config.name } as Component)),
     metadata: config.metadata,
+    hasEnvironmentalState: config.hasEnvironmentalState,
+    captureEnvironmentalState: config.captureEnvironmentalState,
+    restoreEnvironmentalState: config.restoreEnvironmentalState,
   });
 }
 
@@ -476,6 +503,19 @@ export const PRIMITIVE_DEFINITIONS: Record<string, PrimitiveDefinition> = {
       const value: boolean = typeof initialValue === 'boolean' ? initialValue : false;
       return { id, type: 'Switch', value } as Component;
     },
+
+    // Environmental state hooks for time-travel debugging
+    hasEnvironmentalState: true,
+
+    captureEnvironmentalState: (node: Node): EnvironmentalStateValue => {
+      // Switch state is stored in node.arguments.value (boolean)
+      return node.arguments.value as boolean;
+    },
+
+    restoreEnvironmentalState: (node: Node, state: EnvironmentalStateValue) => {
+      // Restore switch position (must be boolean)
+      node.arguments.value = state as boolean;
+    },
   }),
 
   Led: defineCombinational({
@@ -513,6 +553,17 @@ export const PRIMITIVE_DEFINITIONS: Record<string, PrimitiveDefinition> = {
       const value: boolean = typeof initialValue === 'boolean' ? initialValue : false;
       return { id, type: 'Button', value } as Component;
     },
+
+    // Environmental state hooks for time-travel debugging
+    hasEnvironmentalState: true,
+
+    captureEnvironmentalState: (node: Node): EnvironmentalStateValue => {
+      return node.arguments.value as boolean;
+    },
+
+    restoreEnvironmentalState: (node: Node, state: EnvironmentalStateValue) => {
+      node.arguments.value = state as boolean;
+    },
   }),
 
   Input: defineCombinational({
@@ -533,6 +584,17 @@ export const PRIMITIVE_DEFINITIONS: Record<string, PrimitiveDefinition> = {
       const value: number = typeof initialValue === 'number' ? initialValue : 0;
       const width: number = 8; // Default width
       return { id, type: 'Input', value, width } as Component;
+    },
+
+    // Environmental state hooks for time-travel debugging
+    hasEnvironmentalState: true,
+
+    captureEnvironmentalState: (node: Node): EnvironmentalStateValue => {
+      return node.arguments.value as number;
+    },
+
+    restoreEnvironmentalState: (node: Node, state: EnvironmentalStateValue) => {
+      node.arguments.value = state as number;
     },
   }),
 

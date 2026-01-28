@@ -1,4 +1,6 @@
 circuit BouncingBall2D {
+  clock clk
+
   impl {
     // Ball position (3 bits each for 0-7 range)
     // Start at (1, 1) instead of (0, 0)
@@ -190,5 +192,14 @@ circuit BouncingBall2D {
     // ==== Screen Display (Port B) ====
     connect display.addrB -> fb.addrB
     connect fb.dataB -> display.dataIn
+
+    // ==== Clock connections for sequential components ====
+    connect clk -> ballX.clk
+    connect clk -> ballY.clk
+    connect clk -> prevX.clk
+    connect clk -> prevY.clk
+    connect clk -> dirX.clk
+    connect clk -> dirY.clk
+    connect clk -> framePhase.clk
   }
 }
