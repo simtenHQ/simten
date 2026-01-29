@@ -1,397 +1,271 @@
-# Turing Incomplete DSL and IR Documentation
+# Turing Incomplete Documentation
 
-## Overview
+Welcome to the Turing Incomplete documentation. This guide helps you navigate the documentation based on your role and goals.
 
-This directory contains the complete v0.1 specification for the Turing Incomplete domain-specific language (DSL) and intermediate representation (IR). These specifications define how digital circuits are described, compiled, and simulated in the browser.
+## Quick Start Paths
 
-## Quick Start
+### 🆕 New Users
 
-**New to the project?** Start here:
+**Start here:**
+1. [Getting Started](./getting-started.md) - Complete onboarding tutorial
+2. [Component Model](./SPECIFICATIONS/component-model.md) - Understand the architecture
+3. [Visual Editor Guide](./GUIDES/visual-editor-guide.md) - Learn the visual interface
 
-1. Read [Implementation FAQ](./FAQ_IMPLEMENTATION.md) - **Quick answers to common questions**
-2. Read [Implementation Roadmap](./IMPLEMENTATION_ROADMAP.md) - **Step-by-step implementation guide**
-3. Read [v0.1 Specification Summary](./v0.1-specification-summary.md) - High-level overview
-4. Browse [Workflow Examples](./WORKFLOW_EXAMPLES.md) - How users create composite components
-5. Browse [DSL Examples](./dsl-examples.md) - Concrete circuit examples
-6. Study [Reference Implementations](./reference-implementations.md) - Complete DSL/IR/execution traces
+### 👨‍💻 Developers
 
-**Implementing the system?** Follow this order:
+**Start here:**
+1. [Component Model](./SPECIFICATIONS/component-model.md) - Fundamental principles
+2. [DSL and IR Specification](./SPECIFICATIONS/DSL-and-IR-specification.md) - Language and data structures
+3. [Architecture Overview](./ARCHITECTURE/system-architecture.md) - System design
+4. [How to Add a Primitive](./how-to-add-primitive.md) - Extend the system
 
-1. [Implementation Roadmap](./IMPLEMENTATION_ROADMAP.md) - **Essential reading** - Phased implementation plan
-2. [Workflow Examples](./WORKFLOW_EXAMPLES.md) - User workflows and UI mockups
-3. [DSL v0.1 Specification](./dsl-v0.1-spec.md) - Language syntax
-4. [Linking and Resolution](./linking-and-resolution.md) - Name resolution pipeline
-5. [IR v0.1 Specification](./ir-v0.1-spec.md) - Target representation
+### 🎓 Educators
 
-**Implementing the DSL compiler?** Read these in order:
+**Start here:**
+1. [Getting Started](./getting-started.md) - Student onboarding path
+2. [Component Model](./SPECIFICATIONS/component-model.md) - Core concepts to teach
+3. [Example Circuits](./dsl-examples.md) - Teaching materials
 
-1. [DSL v0.1 Specification](./dsl-v0.1-spec.md) - Language syntax
-2. [Linking and Resolution](./linking-and-resolution.md) - Name resolution pipeline
-3. [IR v0.1 Specification](./ir-v0.1-spec.md) - Target representation
+---
 
-**Implementing the simulator?** Read these in order:
+## Documentation Structure
 
-1. [IR v0.1 Specification](./ir-v0.1-spec.md) - Data structures
-2. [Component Library Model](./component-library-model.md) - Component types
-3. [Execution Semantics](./execution-semantics.md) - How to simulate
+### 📋 Entry Points
 
-## Document Index
+| Document | Description | Audience |
+|----------|-------------|----------|
+| [Getting Started](./getting-started.md) | Complete onboarding guide | All users |
+| [README](./README.md) | This navigation guide | Everyone |
 
-### Core Specifications
+### 📐 SPECIFICATIONS/
 
-| Document | Purpose | Audience |
-|----------|---------|----------|
-| [v0.1 Specification Summary](./v0.1-specification-summary.md) | High-level overview and design decisions | Everyone |
-| [DSL v0.1 Specification](./dsl-v0.1-spec.md) | Complete language syntax and semantics | DSL users, compiler developers |
-| [IR v0.1 Specification](./ir-v0.1-spec.md) | Formal IR type definitions (JSON schema) | Compiler and simulator developers |
-
-### Implementation Guides
-
-| Document | Purpose | Audience |
-|----------|---------|----------|
-| [Implementation FAQ](./FAQ_IMPLEMENTATION.md) | **Quick answers to common implementation questions** | **All developers - READ FIRST** |
-| [Implementation Roadmap](./IMPLEMENTATION_ROADMAP.md) | **Step-by-step implementation plan from current state to MVP** | **All developers - ESSENTIAL** |
-| [Workflow Examples](./WORKFLOW_EXAMPLES.md) | User workflows, UI mockups, data flow diagrams | All developers, UX designers |
-| [Component Library Model](./component-library-model.md) | How components are organized and resolved | All developers |
-| [Linking and Resolution](./linking-and-resolution.md) | Name resolution and type checking pipeline | Compiler developers |
-| [Execution Semantics](./execution-semantics.md) | Detailed simulation algorithms | Simulator developers |
-
-### Examples and Reference
-
-| Document | Purpose | Audience |
-|----------|---------|----------|
-| [DSL Examples](./dsl-examples.md) | Circuit examples from simple to complex | DSL users, LLM training |
-| [Reference Implementations](./reference-implementations.md) | Complete DSL/IR/execution for key circuits | All developers |
-
-## Key Design Principles
-
-### 1. Clear Separation of Concerns
-
-```
-DSL (what to build) ≠ UI (how to render) ≠ IR (how to execute)
-```
-
-- **DSL** describes circuit structure and behavior
-- **UI** adds visual metadata (positions, colors)
-- **IR** is the executable representation
-
-### 2. Components Are Not Keywords
-
-```
-DSL Text → AST (names) → Linker (resolve) → IR (definitions)
-```
-
-Components like `And`, `Xor`, `Register` are library definitions, not language keywords. This enables:
-- User-defined components
-- Standard library extensibility
-- Future compatibility
-
-### 3. Three Types of Components
-
-| Type | Implementation | Purpose | Examples |
-|------|---------------|---------|----------|
-| **Primitive** | Simulator kernel | Fast core operations | And, Or, Register, RAM |
-| **Composite** | Built from other components | User extensibility | HalfAdder, FullAdder, ALU |
-| **Intrinsic** | Special simulator logic | UI/debugging | Display, Input, Probe |
-
-### 4. Type Safety
-
-All ports have explicit types:
-- `Bit` - Single binary value
-- `Bus[N]` - N-bit wide signal
-
-All connections are type-checked at compile time.
-
-### 5. Deterministic Execution
-
-- Combinational circuits: Topological evaluation
-- Sequential circuits: Clock-driven state updates
-- No race conditions, no undefined behavior
-
-### 6. LLM-Friendly Syntax
-
-- Consistent structure (all circuits follow same pattern)
-- Predictable naming (PascalCase types, snake_case ports)
-- Self-documenting (explicit types, clear connections)
-- Forgiving (whitespace-insensitive, helpful errors)
-
-## Architecture Diagram
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                         Frontend                            │
-├─────────────────────────────────────────────────────────────┤
-│                                                             │
-│  ┌───────────┐    ┌──────────┐    ┌─────────────┐         │
-│  │    DSL    │───▶│  Parser  │───▶│     AST     │         │
-│  │  (Text)   │    └──────────┘    └─────────────┘         │
-│  └───────────┘                            │                │
-│       ▲                                   │                │
-│       │                                   ▼                │
-│   Human/LLM                      ┌─────────────────┐       │
-│    writes                        │ Symbol Table    │       │
-│                                  │    Builder      │       │
-│                                  └────────┬────────┘       │
-│                                           │                │
-│                                           ▼                │
-│                                  ┌─────────────────┐       │
-│                                  │  Name Resolver  │       │
-│                                  └────────┬────────┘       │
-│                                           │                │
-│                                           ▼                │
-│                                  ┌─────────────────┐       │
-│                                  │  Type Checker   │       │
-│                                  └────────┬────────┘       │
-│                                           │                │
-│                                           ▼                │
-│                                  ┌─────────────────┐       │
-│                                  │  IR Generator   │       │
-│                                  └────────┬────────┘       │
-│                                           │                │
-└───────────────────────────────────────────┼────────────────┘
-                                            │
-                                            ▼
-┌─────────────────────────────────────────────────────────────┐
-│                      IR (JSON)                              │
-│  - Circuit structure (nodes, connections)                   │
-│  - Port types and directions                                │
-│  - State blocks and clocking                                │
-│  - Metadata (tests, docs)                                   │
-└───────────────────────────────┬─────────────────────────────┘
-                                │
-                ┌───────────────┴────────────────┐
-                │                                │
-                ▼                                ▼
-┌──────────────────────────┐      ┌──────────────────────────┐
-│      Simulator           │      │      UI Projection       │
-├──────────────────────────┤      ├──────────────────────────┤
-│                          │      │                          │
-│  ┌────────────────────┐  │      │  ┌────────────────────┐  │
-│  │ Component Library  │  │      │  │  Visual Editor     │  │
-│  │ - Primitives       │  │      │  │  - ReactFlow       │  │
-│  │ - Standard lib     │  │      │  │  - Node rendering  │  │
-│  └────────────────────┘  │      │  │  - Connection UI   │  │
-│                          │      │  └────────────────────┘  │
-│  ┌────────────────────┐  │      │                          │
-│  │ Evaluator          │  │      │  ┌────────────────────┐  │
-│  │ - Topological sort │  │      │  │  UI Metadata       │  │
-│  │ - Combinational    │  │      │  │  - Positions       │  │
-│  │ - Sequential       │  │      │  │  - Colors          │  │
-│  └────────────────────┘  │      │  │  - Labels          │  │
-│                          │      │  └────────────────────┘  │
-│  ┌────────────────────┐  │      │                          │
-│  │ State Manager      │  │      └──────────────────────────┘
-│  │ - Registers        │  │
-│  │ - Memory           │  │
-│  │ - Clock tracking   │  │
-│  └────────────────────┘  │
-│                          │
-└──────────────────────────┘
-```
-
-## Component Library Structure
-
-```
-Standard Library
-├── primitives/ (Simulator Kernel)
-│   ├── gates/
-│   │   ├── And, Or, Xor, Not
-│   │   └── Nand, Nor, Xnor, Buffer
-│   ├── state/
-│   │   ├── Register, RegisterN
-│   │   └── DFF (D Flip-Flop)
-│   ├── memory/
-│   │   ├── RAM
-│   │   └── ROM
-│   └── arithmetic/
-│       ├── Add, Subtract
-│       └── Multiply
-│
-├── composite/ (Standard Library)
-│   ├── arithmetic/
-│   │   ├── HalfAdder
-│   │   ├── FullAdder
-│   │   ├── RippleCarryAdder(width)
-│   │   └── ALU(width)
-│   ├── memory/
-│   │   ├── RegisterFile(size, width)
-│   │   └── Stack(depth, width)
-│   └── mux/
-│       ├── Mux2to1, Mux4to1
-│       └── Decoder2to4
-│
-└── intrinsic/ (Special Behavior)
-    ├── Display (UI widget)
-    ├── Input (UI widget)
-    └── DebugProbe (debugger)
-```
-
-## Implementation Status
-
-### Phase 1: IR v0.1 Core Infrastructure ✅ COMPLETE
-- [x] IR v0.1 type definitions (`/src/features/visual-editor/types/ir-v0.1.ts`)
-- [x] Component library store with three-tier resolution (primitives/standard/user)
-- [x] Recursive composite simulator (`simulator-v0.1.ts`)
-- [x] 31+ primitive components with evaluators
-- [x] Comprehensive test coverage (73 tests passing)
-- [x] Documentation complete
-
-**Status**: All success criteria met - IR v0.1 complete with 236 tests passing
-
-### Phase 2: DSL Parser Pipeline ✅ COMPLETE
-- [x] Complete DSL lexer (tokenizer) with source location tracking
-- [x] Recursive descent parser for full v0.1 DSL syntax
-- [x] AST type definitions (`/src/features/dsl/types/ast.ts`)
-- [x] Semantic validator (duplicate detection, name resolution)
-- [x] IR compiler (AST → IR v0.1)
-- [x] Comprehensive test coverage (59 tests passing)
-- [x] HalfAdder, FullAdder, 4-bit Adder examples working
-
-**Status**: All success criteria met - DSL parser complete with full IR v0.1 compilation
-
-### Phase 3: DSL Editor Integration ✅ COMPLETE
-- [x] Monaco-based DSL code editor with syntax highlighting
-- [x] Real-time DSL compilation to IR v0.1
-- [x] Component library UI (primitives/standard/user tabs)
-- [x] Visual editor ↔ DSL bidirectional workflow
-- [x] Error reporting with line/column information
-- [x] Sequential circuit support (clocks, registers, RAM, D flip-flops)
-- [x] Clock controls UI (Step/Run/Pause/Reset)
-- [x] IR flattening for composite components
-
-**Status**: All success criteria met. See [Phase 3 Architecture](./phase3-architecture.md)
-
-### Phase 4: IR v0.1 Migration ✅ COMPLETE
-- [x] CircuitStore replaces legacy IRStore
-- [x] Visual canvas uses IR v0.1 (Node[] with named ports)
-- [x] simulator-v0.1.ts operational
-- [x] Legacy IR types removed
-- [x] All 236 tests passing
-
-**Status**: Migration complete - entire codebase uses IR v0.1
-
-### Current Architecture (All Phases Complete)
-
-**Single IR System**: The codebase uses IR v0.1 throughout:
-- `/src/features/visual-editor/types/ir-v0.1.ts` - **Canonical IR specification**
-- `/src/features/visual-editor/stores/circuit-store.ts` - **Circuit state management**
-- `/src/features/visual-editor/lib/simulator-v0.1.ts` - **Simulation engine**
-- DSL compiler outputs IR v0.1
-- Visual editor uses IR v0.1 (CircuitStore)
-- Component library uses IR v0.1 throughout
-
-**There is NO "two IR problem"** - one canonical IR used everywhere.
-
-## Getting Involved
-
-### For DSL Users
-
-1. Study the [DSL Examples](./dsl-examples.md)
-2. Try writing simple circuits
-3. Provide feedback on syntax clarity
-4. Report confusing error messages
-
-### For Compiler Developers
-
-1. Read the [DSL Specification](./dsl-v0.1-spec.md)
-2. Study the [Linking and Resolution](./linking-and-resolution.md) pipeline
-3. Implement parser and linker
-4. Generate IR following [IR Specification](./ir-v0.1-spec.md)
-
-### For Simulator Developers
-
-1. Read the [IR Specification](./ir-v0.1-spec.md)
-2. Understand [Component Library Model](./component-library-model.md)
-3. Implement [Execution Semantics](./execution-semantics.md)
-4. Test with [Reference Implementations](./reference-implementations.md)
-
-### For UI Developers
-
-1. IR is read-only source of truth
-2. UI adds visual metadata (positions, colors)
-3. UI updates do not modify IR semantics
-4. Synchronize with IR changes via projection
-
-## Design Rationale
-
-### Why DSL + IR?
-
-**DSL** provides human/LLM-friendly syntax:
-- Clear, readable
-- Forgiving of variations
-- Self-documenting
-
-**IR** provides machine-executable representation:
-- Unambiguous semantics
-- Efficient evaluation
-- Optimizable
-
-Separation allows evolution of DSL syntax without breaking IR consumers.
-
-### Why Three Component Types?
-
-**Primitives** - Performance-critical operations
-**Composites** - User extensibility and reusability
-**Intrinsics** - UI/debugging without polluting core model
-
-### Why Explicit Types?
-
-Type safety catches errors early:
-- Prevent connecting Bus[8] to Bit
-- Detect multiple drivers
-- Enable optimization
-
-### Why Deterministic Execution?
-
-Predictable behavior:
-- Same inputs → same outputs
-- Reproducible tests
-- No race conditions
-
-## Common Questions
-
-**Q: Can I define custom primitives?**
-A: No. Primitives are part of the simulator kernel. Use composite components instead.
-
-**Q: Can I redefine standard library components?**
-A: Yes, through shadowing. But you cannot shadow primitives.
-
-**Q: How do I create reusable components?**
-A: Define circuits with clear inputs/outputs. Use parameters for genericity.
-
-**Q: Can circuits have side effects?**
-A: Only intrinsic components (Display, Input) have side effects. Pure logic has no side effects.
-
-**Q: How do I debug circuits?**
-A: Use DebugProbe intrinsic, test cases in metadata, and step-by-step simulation.
-
-**Q: Can I import components from other files?**
-A: Not in v0.1. Planned for future version.
-
-## Resources
-
-- **TypeScript IR Types**: `/src/features/visual-editor/types/ir-v0.1.ts`
-- **Examples**: All documents in this directory
-- **Discussion**: GitHub Issues
-
-## Version History
-
-- **v0.1** (2026-01-19) - Initial specification incorporating senior engineering feedback
-
-## License
-
-See project root LICENSE file.
-
-## Contributing
-
-Contributions welcome! Please:
-
-1. Read the specifications thoroughly
-2. Discuss significant changes via GitHub Issues
-3. Provide concrete examples and rationale
-4. Maintain consistency with existing design principles
-5. Update documentation with your changes
-
-## Contact
-
-Questions? Open a GitHub Issue with the `documentation` or `specification` label.
+**Canonical specifications for the system:**
+
+| Document | Description |
+|----------|-------------|
+| [Component Model](./SPECIFICATIONS/component-model.md) | **The fundamental architectural invariant - primitives vs composites** |
+| [DSL and IR Specification](./SPECIFICATIONS/DSL-and-IR-specification.md) | **Language syntax and data structures** |
+
+### 🏗️ ARCHITECTURE/
+
+**System design and implementation:**
+
+| Document | Description |
+|----------|-------------|
+| [System Architecture](./ARCHITECTURE/system-architecture.md) | Overall system design |
+| [Primitive Components](./ARCHITECTURE/architecture-primitive-components.md) | Generator pattern architecture |
+
+### 📖 GUIDES/
+
+**How-to guides and tutorials:**
+
+| Document | Description |
+|----------|-------------|
+| [Visual Editor Guide](./GUIDES/visual-editor-guide.md) | UI usage and API reference |
+| [DSL Editor Guide](./GUIDES/dsl-editor-guide.md) | DSL syntax and Monaco editor |
+| [How to Add a Primitive](./how-to-add-primitive.md) | Extend with new components |
+
+### 🎯 FEATURES/
+
+**Implemented and proposed features:**
+
+| Document | Status | Description |
+|----------|--------|-------------|
+| [Time-Travel Debugging](./FEATURES/time-travel-debugging.md) | ✅ Implemented | Bidirectional simulation navigation |
+| [Systolic Array Architecture](./FEATURES/systolic-array-architecture.md) | ✅ Implemented | Systolic array support |
+| [Parameter UI](./FEATURES/parameter-ui-implementation-plan.md) | 🚧 Planned | Component parameterization UI |
+| [Hierarchy Navigation](./FEATURES/hierarchy-navigation-proposal.md) | 🚧 Proposal | Drill-down into composites |
+
+### 📚 REFERENCE/
+
+**Quick reference materials:**
+
+| Document | Description |
+|----------|-------------|
+| [Primitive Quick Reference](./REFERENCE/primitive-quick-reference.md) | All primitive components |
+| [Linking and Resolution](./REFERENCE/linking-and-resolution.md) | Component resolution |
+| [Reference Implementations](./REFERENCE/reference-implementations.md) | Complete examples |
+
+### 📝 Examples and Tutorials
+
+| Document | Description |
+|----------|-------------|
+| [DSL Examples](./dsl-examples.md) | Circuit examples |
+| [Workflow Examples](./WORKFLOW_EXAMPLES.md) | User workflows |
+
+
+---
+
+## Core Principles
+
+### The Fundamental Architectural Invariant
+
+**Only primitive components contain executable behavior. Composite components are structural descriptions that expand into primitives.**
+
+This is the most important principle in the entire system. See [Component Model](./SPECIFICATIONS/component-model.md) for the complete explanation.
+
+### Key Implications
+
+1. **Primitives** (And, Or, Register, RAM) have hardcoded behavior in TypeScript
+2. **Composites** (HalfAdder, FullAdder, ALU) are purely structural (describe connections)
+3. **All execution** ultimately reduces to primitive operations
+4. **No magic** - you can always expand composites to see what's happening
+
+---
+
+## Learning Paths
+
+### Path 1: Build Your First Circuit (1 hour)
+
+1. [Getting Started](./getting-started.md) - Follow "Your First Circuit"
+2. Build a half adder (visual editor)
+3. Define it in DSL
+4. Test with different inputs
+5. Try building a full adder
+
+### Path 2: Understand the Architecture (2 hours)
+
+1. [Component Model](./SPECIFICATIONS/component-model.md) - Read carefully
+2. [DSL and IR Specification](./SPECIFICATIONS/DSL-and-IR-specification.md) - Skim syntax
+3. [How to Add a Primitive](./how-to-add-primitive.md) - See implementation
+4. [Primitive Components Architecture](./ARCHITECTURE/architecture-primitive-components.md) - Understand generators
+
+### Path 3: Master the DSL (3 hours)
+
+1. [DSL and IR Specification](./SPECIFICATIONS/DSL-and-IR-specification.md) - Full read
+2. [DSL Examples](./dsl-examples.md) - Study examples
+3. [Workflow Examples](./WORKFLOW_EXAMPLES.md) - See user workflows
+4. Build progressively complex circuits
+5. [Reference Implementations](./reference-implementations.md) - See complete traces
+
+### Path 4: Contribute to the Project (5+ hours)
+
+1. Complete Path 2 (Architecture)
+2. [How to Add a Primitive](./how-to-add-primitive.md) - Implementation guide
+3. [Primitive Components Architecture](./ARCHITECTURE/architecture-primitive-components.md) - Generator pattern
+4. Study existing primitives in `/src/features/visual-editor/lib/primitives.ts`
+5. Add your primitive component
+6. Write tests
+7. Submit PR
+
+---
+
+## Document Status Legend
+
+- ✅ **Complete** - Fully implemented and documented
+- 🚧 **Proposal** - Planned feature, not yet implemented
+- 🏛️ **Historical** - Completed planning, preserved for context
+- 📦 **Archived** - Superseded by consolidated document
+
+---
+
+## Finding What You Need
+
+### "How do I..."
+
+- **"...create a circuit?"** → [Getting Started](./getting-started.md)
+- **"...use the visual editor?"** → [Visual Editor Guide](./GUIDES/visual-editor-guide.md)
+- **"...write DSL?"** → [DSL and IR Specification](./SPECIFICATIONS/DSL-and-IR-specification.md)
+- **"...add a new primitive?"** → [How to Add a Primitive](./how-to-add-primitive.md)
+- **"...debug circuits?"** → [Time-Travel Debugging](./FEATURES/time-travel-debugging.md)
+- **"...understand the architecture?"** → [Component Model](./SPECIFICATIONS/component-model.md)
+
+### "What is..."
+
+- **"...a primitive?"** → [Component Model](./SPECIFICATIONS/component-model.md)
+- **"...a composite?"** → [Component Model](./SPECIFICATIONS/component-model.md)
+- **"...the DSL?"** → [DSL and IR Specification](./SPECIFICATIONS/DSL-and-IR-specification.md)
+- **"...the IR?"** → [DSL and IR Specification](./SPECIFICATIONS/DSL-and-IR-specification.md)
+- **"...time-travel debugging?"** → [Time-Travel Debugging](./FEATURES/time-travel-debugging.md)
+
+### "Why does..."
+
+- **"...the system use primitives and composites?"** → [Component Model](./SPECIFICATIONS/component-model.md) (Design Rationale)
+- **"...DSL separate from IR?"** → [DSL and IR Specification](./SPECIFICATIONS/DSL-and-IR-specification.md) (Overview)
+- **"...primitive definition work this way?"** → [Primitive Components Architecture](./ARCHITECTURE/architecture-primitive-components.md)
+
+---
+
+## Recent Changes
+
+### Documentation Consolidation (2026-01-28)
+
+**Reduced documentation from 45+ files to ~15 core files:**
+
+- **Created consolidated specifications:**
+  - [Component Model](./SPECIFICATIONS/component-model.md) - Merged 6 files
+  - [DSL and IR Specification](./SPECIFICATIONS/DSL-and-IR-specification.md) - Merged 2 files
+
+- **Created feature documentation:**
+  - [Time-Travel Debugging](./FEATURES/time-travel-debugging.md) - Merged 4 files
+  - [Visual Editor Guide](./GUIDES/visual-editor-guide.md) - Merged 2 files
+  - [Hierarchy Navigation Proposal](./FEATURES/hierarchy-navigation-proposal.md) - Merged 4 files
+
+- **Updated guides:**
+  - [How to Add a Primitive](./how-to-add-primitive.md) - Fixed critical accuracy issues
+  - [Primitive Components Architecture](./ARCHITECTURE/architecture-primitive-components.md) - Added generator pattern
+
+- **Created new entry points:**
+  - [Getting Started](./getting-started.md) - User onboarding
+  - [README](./README.md) - This navigation guide
+
+**Benefits:**
+- Single source of truth for core concepts
+- 50% fewer files to maintain
+- No duplicated content
+- Clear documentation hierarchy
+
+---
+
+## Contributing to Documentation
+
+### Documentation Standards
+
+1. **Single source of truth** - No duplication of concepts
+2. **Clear audience** - Specify who should read this
+3. **Examples** - Show, don't just tell
+4. **Cross-references** - Link to related documents
+5. **Keep updated** - Update docs with code changes
+
+### Adding New Documentation
+
+**For new features:**
+- Add to `/FEATURES/` with implementation status
+- Update this master index
+- Link from relevant guides
+
+**For new specifications:**
+- Add to `/SPECIFICATIONS/`
+- Reference from Component Model if applicable
+- Update architecture docs
+
+**For new guides:**
+- Add to `/GUIDES/`
+- Link from Getting Started if applicable
+- Provide clear examples
+
+### Updating Existing Documentation
+
+1. Check if document is canonical (not archived)
+2. Maintain existing structure
+3. Add examples where helpful
+4. Update cross-references
+5. Update this master index if structure changes
+
+---
+
+## Getting Help
+
+- **Questions about documentation:** [GitHub Issues](https://github.com/yourusername/turing-incomplete/issues) with `documentation` label
+- **Questions about usage:** Start with [Getting Started](./getting-started.md)
+- **Questions about architecture:** Read [Component Model](./SPECIFICATIONS/component-model.md) first
+
+---
+
+## Version Information
+
+**Documentation Version:** 1.0.0 (2026-01-28)
+**System Version:** 0.1.0
+**Last Major Update:** Documentation consolidation project
+
+Historical versions of consolidated documentation are preserved in git history.
