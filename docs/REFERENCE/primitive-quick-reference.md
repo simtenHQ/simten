@@ -383,7 +383,7 @@ case 'MyComponent':
 
 ## Resources
 
-- [Full Architecture Documentation](./architecture-primitive-components.md)
+- [Full Architecture Documentation](../ARCHITECTURE/architecture-primitive-components.md)
 - [Refactor Summary](./refactor-primitive-architecture-summary.md)
 - [Verification Checklist](./primitive-refactor-checklist.md)
 - [Primitive Interface](../src/features/visual-editor/lib/primitive-interface.ts)

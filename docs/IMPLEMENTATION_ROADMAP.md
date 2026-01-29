@@ -1,7 +1,11 @@
 # Implementation Roadmap: From Current State to Full DSL/IR System
 
+**🏛️ HISTORICAL DOCUMENT - COMPLETED ✅**
+
 **Last Updated**: January 21, 2026
 **Status**: All Phases COMPLETE ✅ | IR v0.1 Migration Finished
+
+**NOTE:** This roadmap tracked the initial implementation of Turing Incomplete. All phases have been completed as of January 21, 2026. This document is preserved for historical reference and to document the development journey. For current development priorities, see active project planning documents.
 
 ## Implementation Status
 
@@ -32,7 +36,7 @@
 - Legacy IR types removed (ir-store.ts deleted)
 - All 236 tests passing
 
-**Current Status**: System fully operational with IR v0.1 throughout. See [Current Architecture](./CURRENT_ARCHITECTURE.md) for details.
+**Current Status**: System fully operational with IR v0.1 throughout. See [System Architecture](./ARCHITECTURE/system-architecture.md) for details.
 
 ---
 
@@ -40,7 +44,7 @@
 
 This document provides a clear implementation path from the initial working visual editor to a complete DSL-driven system with composite components.
 
-**THIS ROADMAP IS NOW HISTORICAL.** All phases are complete. Refer to [CURRENT_ARCHITECTURE.md](./CURRENT_ARCHITECTURE.md) for current system state.
+**THIS ROADMAP IS NOW HISTORICAL.** All phases are complete. Refer to [System Architecture](./ARCHITECTURE/system-architecture.md) for current system state.
 
 ## Original Current State Assessment (Pre-Phase 1)
 
