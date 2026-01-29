@@ -58,7 +58,7 @@ describe('Primitive Metadata', () => {
     expect(categorized.get(PRIMITIVE_CATEGORIES.LOGIC_GATES)?.length).toBe(8); // And, Or, Not, Nand, Nor, Xor, Xnor, Buffer
     expect(categorized.get(PRIMITIVE_CATEGORIES.IO)?.length).toBe(4); // Switch, Led, Button, Input
     expect(categorized.get(PRIMITIVE_CATEGORIES.BUS_OPS)?.length).toBe(4); // BusAnd, BusOr, BusNot, BusXor
-    expect(categorized.get(PRIMITIVE_CATEGORIES.ARITHMETIC)?.length).toBe(4); // Adder, Multiplier, Comparator, Incrementer
+    expect(categorized.get(PRIMITIVE_CATEGORIES.ARITHMETIC)?.length).toBe(10); // Adder, Multiplier, Comparator, Incrementer, LeftShifter, RightShifter, Subtractor, SignedAdder, SignedComparator, SignedMultiplier
     expect(categorized.get(PRIMITIVE_CATEGORIES.PLEXERS)?.length).toBe(2); // Mux, Decoder
     expect(categorized.get(PRIMITIVE_CATEGORIES.SEQUENTIAL)?.length).toBe(2); // DFlipFlop, Register
     expect(categorized.get(PRIMITIVE_CATEGORIES.MEMORY)?.length).toBe(3); // RAM, ROM, DualPortRAM
