@@ -910,6 +910,216 @@ export const PRIMITIVE_DEFINITIONS: Record<string, PrimitiveDefinition> = {
     },
   }),
 
+  LeftShifter: defineCombinational({
+    name: 'LeftShifter',
+    description: 'Logical left bit shift (value << n) with zero fill',
+    category: 'arithmetic',
+    icon: '<<',
+    componentType: 'LeftShifter',
+    inputs: [
+      { name: 'value', portType: busType(8) },
+      { name: 'shift', portType: busType(8) },
+    ],
+    outputs: [{ name: 'result', portType: busType(8) }],
+    evaluate: (inputs) => {
+      const value = inputs.get('value') as number;
+      const shift = inputs.get('shift') as number;
+      const width = (inputs.get('__width') as number) ?? 8;
+
+      // Mask for the output width
+      const mask = (1 << width) - 1;
+
+      // If shift is >= width, result is 0
+      const result = shift >= width ? 0 : (value << shift) & mask;
+
+      return new Map([['result', result]]);
+    },
+  }),
+
+  RightShifter: defineCombinational({
+    name: 'RightShifter',
+    description: 'Logical right bit shift (value >> n) with zero fill',
+    category: 'arithmetic',
+    icon: '>>',
+    componentType: 'RightShifter',
+    inputs: [
+      { name: 'value', portType: busType(8) },
+      { name: 'shift', portType: busType(8) },
+    ],
+    outputs: [{ name: 'result', portType: busType(8) }],
+    evaluate: (inputs) => {
+      const value = inputs.get('value') as number;
+      const shift = inputs.get('shift') as number;
+      const width = (inputs.get('__width') as number) ?? 8;
+
+      // If shift is >= width, result is 0
+      const result = shift >= width ? 0 : value >>> shift;
+
+      return new Map([['result', result]]);
+    },
+  }),
+
+  Subtractor: defineCombinational({
+    name: 'Subtractor',
+    description: 'Parameterized n-bit subtractor with borrow in/out (default: 8-bit)',
+    category: 'arithmetic',
+    icon: '➖',
+    componentType: 'Subtractor',
+    inputs: [
+      { name: 'a', portType: busType(8) },
+      { name: 'b', portType: busType(8) },
+      { name: 'borrow_in', portType: bitType() },
+    ],
+    outputs: [
+      { name: 'difference', portType: busType(8) },
+      { name: 'borrow_out', portType: bitType() },
+    ],
+    evaluate: (inputs) => {
+      const a = inputs.get('a') as number;
+      const b = inputs.get('b') as number;
+      const borrowIn = (inputs.get('borrow_in') as boolean) ?? false ? 1 : 0;
+
+      const width = (inputs.get('__width') as number) ?? 8;
+      const mask = (1 << width) - 1;
+
+      // Calculate result: a - b - borrow_in
+      const result = a - b - borrowIn;
+      const difference = result & mask;
+      const borrowOut = result < 0;
+
+      return new Map<string, boolean | number>([
+        ['difference', difference],
+        ['borrow_out', borrowOut],
+      ]);
+    },
+  }),
+
+  SignedAdder: defineCombinational({
+    name: 'SignedAdder',
+    description: 'Signed n-bit adder with overflow detection (default: 8-bit)',
+    category: 'arithmetic',
+    icon: '±',
+    componentType: 'SignedAdder',
+    inputs: [
+      { name: 'a', portType: busType(8) },
+      { name: 'b', portType: busType(8) },
+      { name: 'carry_in', portType: bitType() },
+    ],
+    outputs: [
+      { name: 'sum', portType: busType(8) },
+      { name: 'overflow', portType: bitType() },
+      { name: 'carry_out', portType: bitType() },
+    ],
+    evaluate: (inputs) => {
+      const a = inputs.get('a') as number;
+      const b = inputs.get('b') as number;
+      const carryIn = (inputs.get('carry_in') as boolean) ?? false ? 1 : 0;
+
+      const width = (inputs.get('__width') as number) ?? 8;
+      const mask = (1 << width) - 1;
+      const signBit = 1 << (width - 1);
+
+      // Calculate sum
+      const result = a + b + carryIn;
+      const sum = result & mask;
+      const carryOut = (result >> width) !== 0;
+
+      // Detect signed overflow: overflow when operands have same sign but result has different sign
+      const aSign = (a & signBit) !== 0;
+      const bSign = (b & signBit) !== 0;
+      const sumSign = (sum & signBit) !== 0;
+      const overflow = aSign === bSign && aSign !== sumSign;
+
+      return new Map<string, boolean | number>([
+        ['sum', sum],
+        ['overflow', overflow],
+        ['carry_out', carryOut],
+      ]);
+    },
+  }),
+
+  SignedComparator: defineCombinational({
+    name: 'SignedComparator',
+    description: 'Signed n-bit comparator with all comparison flags (default: 8-bit)',
+    category: 'arithmetic',
+    icon: '⚖',
+    componentType: 'SignedComparator',
+    inputs: [
+      { name: 'a', portType: busType(8) },
+      { name: 'b', portType: busType(8) },
+    ],
+    outputs: [
+      { name: 'eq', portType: bitType() },
+      { name: 'lt', portType: bitType() },
+      { name: 'gt', portType: bitType() },
+      { name: 'lte', portType: bitType() },
+      { name: 'gte', portType: bitType() },
+    ],
+    evaluate: (inputs) => {
+      const a = inputs.get('a') as number;
+      const b = inputs.get('b') as number;
+
+      const width = (inputs.get('__width') as number) ?? 8;
+      const signBit = 1 << (width - 1);
+      const maxValue = 1 << width;
+
+      // Convert to signed integers (two's complement)
+      const aSigned = (a & signBit) ? a - maxValue : a;
+      const bSigned = (b & signBit) ? b - maxValue : b;
+
+      // Perform signed comparisons
+      const eq = aSigned === bSigned;
+      const lt = aSigned < bSigned;
+      const gt = aSigned > bSigned;
+      const lte = aSigned <= bSigned;
+      const gte = aSigned >= bSigned;
+
+      return new Map([
+        ['eq', eq],
+        ['lt', lt],
+        ['gt', gt],
+        ['lte', lte],
+        ['gte', gte],
+      ]);
+    },
+  }),
+
+  SignedMultiplier: defineCombinational({
+    name: 'SignedMultiplier',
+    description: 'Signed n×n bit multiplier, outputs 2n-bit product (default: 8×8=16-bit)',
+    category: 'arithmetic',
+    icon: '×',
+    componentType: 'SignedMultiplier',
+    inputs: [
+      { name: 'a', portType: busType(8) },
+      { name: 'b', portType: busType(8) },
+    ],
+    outputs: [{ name: 'product', portType: busType(16) }],
+    evaluate: (inputs) => {
+      const a = inputs.get('a') as number;
+      const b = inputs.get('b') as number;
+
+      const width = (inputs.get('__width') as number) ?? 8;
+      const signBit = 1 << (width - 1);
+      const maxValue = 1 << width;
+      const outputMask = (1 << (width * 2)) - 1;
+
+      // Convert to signed integers (two's complement)
+      const aSigned = (a & signBit) ? a - maxValue : a;
+      const bSigned = (b & signBit) ? b - maxValue : b;
+
+      // Multiply as signed integers
+      const productSigned = aSigned * bSigned;
+
+      // Convert back to unsigned representation (handle negative results)
+      const product = productSigned >= 0
+        ? productSigned
+        : (productSigned + (1 << (width * 2))) & outputMask;
+
+      return new Map([['product', product]]);
+    },
+  }),
+
   // ============================================================================
   // Plexers (Multiplexers and Decoders)
   // ============================================================================

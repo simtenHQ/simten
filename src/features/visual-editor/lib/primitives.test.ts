@@ -363,6 +363,452 @@ describe('Arithmetic Operations', () => {
   });
 });
 
+describe('New Arithmetic Primitives', () => {
+  describe('LeftShifter', () => {
+    it('should evaluate basic left shift correctly', () => {
+      const evaluator = PRIMITIVE_EVALUATORS.LeftShifter;
+      const result = evaluator.evaluate(new Map([
+        ['value', 15],
+        ['shift', 2],
+        ['__width', 8],
+      ]));
+      expect(result.get('result')).toBe(60); // 15 << 2 = 60
+    });
+
+    it('should handle shift by zero', () => {
+      const evaluator = PRIMITIVE_EVALUATORS.LeftShifter;
+      const result = evaluator.evaluate(new Map([
+        ['value', 42],
+        ['shift', 0],
+        ['__width', 8],
+      ]));
+      expect(result.get('result')).toBe(42);
+    });
+
+    it('should handle overflow with masking', () => {
+      const evaluator = PRIMITIVE_EVALUATORS.LeftShifter;
+      const result = evaluator.evaluate(new Map([
+        ['value', 255],
+        ['shift', 1],
+        ['__width', 8],
+      ]));
+      expect(result.get('result')).toBe(254); // (255 << 1) & 0xFF = 254
+    });
+
+    it('should handle large shift values', () => {
+      const evaluator = PRIMITIVE_EVALUATORS.LeftShifter;
+      const result = evaluator.evaluate(new Map([
+        ['value', 1],
+        ['shift', 7],
+        ['__width', 8],
+      ]));
+      expect(result.get('result')).toBe(128); // 1 << 7 = 128
+    });
+
+    it('should return zero for shift beyond width', () => {
+      const evaluator = PRIMITIVE_EVALUATORS.LeftShifter;
+      const result = evaluator.evaluate(new Map([
+        ['value', 255],
+        ['shift', 8],
+        ['__width', 8],
+      ]));
+      expect(result.get('result')).toBe(0);
+    });
+
+    it('should return zero for very large shift', () => {
+      const evaluator = PRIMITIVE_EVALUATORS.LeftShifter;
+      const result = evaluator.evaluate(new Map([
+        ['value', 255],
+        ['shift', 100],
+        ['__width', 8],
+      ]));
+      expect(result.get('result')).toBe(0);
+    });
+  });
+
+  describe('RightShifter', () => {
+    it('should evaluate basic right shift correctly', () => {
+      const evaluator = PRIMITIVE_EVALUATORS.RightShifter;
+      const result = evaluator.evaluate(new Map([
+        ['value', 240],
+        ['shift', 2],
+        ['__width', 8],
+      ]));
+      expect(result.get('result')).toBe(60); // 240 >> 2 = 60
+    });
+
+    it('should handle shift by zero', () => {
+      const evaluator = PRIMITIVE_EVALUATORS.RightShifter;
+      const result = evaluator.evaluate(new Map([
+        ['value', 42],
+        ['shift', 0],
+        ['__width', 8],
+      ]));
+      expect(result.get('result')).toBe(42);
+    });
+
+    it('should handle single bit shift', () => {
+      const evaluator = PRIMITIVE_EVALUATORS.RightShifter;
+      const result = evaluator.evaluate(new Map([
+        ['value', 255],
+        ['shift', 1],
+        ['__width', 8],
+      ]));
+      expect(result.get('result')).toBe(127); // 255 >> 1 = 127
+    });
+
+    it('should isolate MSB', () => {
+      const evaluator = PRIMITIVE_EVALUATORS.RightShifter;
+      const result = evaluator.evaluate(new Map([
+        ['value', 128],
+        ['shift', 7],
+        ['__width', 8],
+      ]));
+      expect(result.get('result')).toBe(1); // 128 >> 7 = 1
+    });
+
+    it('should return zero for shift beyond width', () => {
+      const evaluator = PRIMITIVE_EVALUATORS.RightShifter;
+      const result = evaluator.evaluate(new Map([
+        ['value', 255],
+        ['shift', 8],
+        ['__width', 8],
+      ]));
+      expect(result.get('result')).toBe(0);
+    });
+
+    it('should return zero for very large shift', () => {
+      const evaluator = PRIMITIVE_EVALUATORS.RightShifter;
+      const result = evaluator.evaluate(new Map([
+        ['value', 255],
+        ['shift', 100],
+        ['__width', 8],
+      ]));
+      expect(result.get('result')).toBe(0);
+    });
+  });
+
+  describe('Subtractor', () => {
+    it('should evaluate basic subtraction correctly', () => {
+      const evaluator = PRIMITIVE_EVALUATORS.Subtractor;
+      const result = evaluator.evaluate(new Map<string, boolean | number>([
+        ['a', 10],
+        ['b', 5],
+        ['borrow_in', false],
+        ['__width', 8],
+      ]));
+      expect(result.get('difference')).toBe(5);
+      expect(result.get('borrow_out')).toBe(false);
+    });
+
+    it('should handle underflow with borrow', () => {
+      const evaluator = PRIMITIVE_EVALUATORS.Subtractor;
+      const result = evaluator.evaluate(new Map<string, boolean | number>([
+        ['a', 5],
+        ['b', 10],
+        ['borrow_in', false],
+        ['__width', 8],
+      ]));
+      expect(result.get('difference')).toBe(251); // (5 - 10) & 0xFF = 251
+      expect(result.get('borrow_out')).toBe(true);
+    });
+
+    it('should handle borrow_in correctly', () => {
+      const evaluator = PRIMITIVE_EVALUATORS.Subtractor;
+      const result = evaluator.evaluate(new Map<string, boolean | number>([
+        ['a', 10],
+        ['b', 5],
+        ['borrow_in', true],
+        ['__width', 8],
+      ]));
+      expect(result.get('difference')).toBe(4); // 10 - 5 - 1 = 4
+      expect(result.get('borrow_out')).toBe(false);
+    });
+
+    it('should handle zero boundary', () => {
+      const evaluator = PRIMITIVE_EVALUATORS.Subtractor;
+      const result = evaluator.evaluate(new Map<string, boolean | number>([
+        ['a', 0],
+        ['b', 1],
+        ['borrow_in', false],
+        ['__width', 8],
+      ]));
+      expect(result.get('difference')).toBe(255); // (0 - 1) & 0xFF = 255
+      expect(result.get('borrow_out')).toBe(true);
+    });
+
+    it('should handle self subtraction', () => {
+      const evaluator = PRIMITIVE_EVALUATORS.Subtractor;
+      const result = evaluator.evaluate(new Map<string, boolean | number>([
+        ['a', 42],
+        ['b', 42],
+        ['borrow_in', false],
+        ['__width', 8],
+      ]));
+      expect(result.get('difference')).toBe(0);
+      expect(result.get('borrow_out')).toBe(false);
+    });
+
+    it('should handle maximum values', () => {
+      const evaluator = PRIMITIVE_EVALUATORS.Subtractor;
+      const result = evaluator.evaluate(new Map<string, boolean | number>([
+        ['a', 255],
+        ['b', 0],
+        ['borrow_in', false],
+        ['__width', 8],
+      ]));
+      expect(result.get('difference')).toBe(255);
+      expect(result.get('borrow_out')).toBe(false);
+    });
+  });
+
+  describe('SignedAdder', () => {
+    it('should evaluate normal addition correctly', () => {
+      const evaluator = PRIMITIVE_EVALUATORS.SignedAdder;
+      const result = evaluator.evaluate(new Map<string, boolean | number>([
+        ['a', 5],
+        ['b', 3],
+        ['carry_in', false],
+        ['__width', 8],
+      ]));
+      expect(result.get('sum')).toBe(8);
+      expect(result.get('overflow')).toBe(false);
+      expect(result.get('carry_out')).toBe(false);
+    });
+
+    it('should detect positive overflow', () => {
+      const evaluator = PRIMITIVE_EVALUATORS.SignedAdder;
+      const result = evaluator.evaluate(new Map<string, boolean | number>([
+        ['a', 127], // Max positive 8-bit signed
+        ['b', 1],
+        ['carry_in', false],
+        ['__width', 8],
+      ]));
+      expect(result.get('sum')).toBe(128); // Wraps to -128 in signed
+      expect(result.get('overflow')).toBe(true);
+      expect(result.get('carry_out')).toBe(false);
+    });
+
+    it('should detect negative overflow', () => {
+      const evaluator = PRIMITIVE_EVALUATORS.SignedAdder;
+      const result = evaluator.evaluate(new Map<string, boolean | number>([
+        ['a', 128], // -128 in signed 8-bit
+        ['b', 255], // -1 in signed 8-bit
+        ['carry_in', false],
+        ['__width', 8],
+      ]));
+      expect(result.get('sum')).toBe(127); // Wraps to +127
+      expect(result.get('overflow')).toBe(true);
+    });
+
+    it('should not overflow when crossing zero', () => {
+      const evaluator = PRIMITIVE_EVALUATORS.SignedAdder;
+      const result = evaluator.evaluate(new Map<string, boolean | number>([
+        ['a', 255], // -1 in signed
+        ['b', 2],
+        ['carry_in', false],
+        ['__width', 8],
+      ]));
+      expect(result.get('sum')).toBe(1);
+      expect(result.get('overflow')).toBe(false);
+      expect(result.get('carry_out')).toBe(true); // But there is unsigned carry
+    });
+
+    it('should handle carry_in correctly', () => {
+      const evaluator = PRIMITIVE_EVALUATORS.SignedAdder;
+      const result = evaluator.evaluate(new Map<string, boolean | number>([
+        ['a', 10],
+        ['b', 20],
+        ['carry_in', true],
+        ['__width', 8],
+      ]));
+      expect(result.get('sum')).toBe(31);
+      expect(result.get('overflow')).toBe(false);
+      expect(result.get('carry_out')).toBe(false);
+    });
+
+    it('should handle zero values', () => {
+      const evaluator = PRIMITIVE_EVALUATORS.SignedAdder;
+      const result = evaluator.evaluate(new Map<string, boolean | number>([
+        ['a', 0],
+        ['b', 0],
+        ['carry_in', false],
+        ['__width', 8],
+      ]));
+      expect(result.get('sum')).toBe(0);
+      expect(result.get('overflow')).toBe(false);
+      expect(result.get('carry_out')).toBe(false);
+    });
+  });
+
+  describe('SignedComparator', () => {
+    it('should detect equality', () => {
+      const evaluator = PRIMITIVE_EVALUATORS.SignedComparator;
+      const result = evaluator.evaluate(new Map([
+        ['a', 42],
+        ['b', 42],
+        ['__width', 8],
+      ]));
+      expect(result.get('eq')).toBe(true);
+      expect(result.get('lt')).toBe(false);
+      expect(result.get('gt')).toBe(false);
+      expect(result.get('lte')).toBe(true);
+      expect(result.get('gte')).toBe(true);
+    });
+
+    it('should compare positive numbers', () => {
+      const evaluator = PRIMITIVE_EVALUATORS.SignedComparator;
+      const result = evaluator.evaluate(new Map([
+        ['a', 10],
+        ['b', 20],
+        ['__width', 8],
+      ]));
+      expect(result.get('eq')).toBe(false);
+      expect(result.get('lt')).toBe(true);
+      expect(result.get('gt')).toBe(false);
+      expect(result.get('lte')).toBe(true);
+      expect(result.get('gte')).toBe(false);
+    });
+
+    it('should compare negative numbers correctly', () => {
+      const evaluator = PRIMITIVE_EVALUATORS.SignedComparator;
+      // -10 (246) vs -5 (251) in 8-bit signed
+      const result = evaluator.evaluate(new Map([
+        ['a', 246], // -10
+        ['b', 251], // -5
+        ['__width', 8],
+      ]));
+      expect(result.get('eq')).toBe(false);
+      expect(result.get('lt')).toBe(true); // -10 < -5
+      expect(result.get('gt')).toBe(false);
+      expect(result.get('lte')).toBe(true);
+      expect(result.get('gte')).toBe(false);
+    });
+
+    it('should compare across zero boundary', () => {
+      const evaluator = PRIMITIVE_EVALUATORS.SignedComparator;
+      const result = evaluator.evaluate(new Map([
+        ['a', 255], // -1 in signed
+        ['b', 1],
+        ['__width', 8],
+      ]));
+      expect(result.get('eq')).toBe(false);
+      expect(result.get('lt')).toBe(true); // -1 < 1
+      expect(result.get('gt')).toBe(false);
+      expect(result.get('lte')).toBe(true);
+      expect(result.get('gte')).toBe(false);
+    });
+
+    it('should compare most negative vs most positive', () => {
+      const evaluator = PRIMITIVE_EVALUATORS.SignedComparator;
+      const result = evaluator.evaluate(new Map([
+        ['a', 128], // -128 (most negative)
+        ['b', 127], // 127 (most positive)
+        ['__width', 8],
+      ]));
+      expect(result.get('eq')).toBe(false);
+      expect(result.get('lt')).toBe(true); // -128 < 127
+      expect(result.get('gt')).toBe(false);
+      expect(result.get('lte')).toBe(true);
+      expect(result.get('gte')).toBe(false);
+    });
+
+    it('should handle zero comparisons', () => {
+      const evaluator = PRIMITIVE_EVALUATORS.SignedComparator;
+      const result = evaluator.evaluate(new Map([
+        ['a', 0],
+        ['b', 0],
+        ['__width', 8],
+      ]));
+      expect(result.get('eq')).toBe(true);
+      expect(result.get('lt')).toBe(false);
+      expect(result.get('gt')).toBe(false);
+      expect(result.get('lte')).toBe(true);
+      expect(result.get('gte')).toBe(true);
+    });
+  });
+
+  describe('SignedMultiplier', () => {
+    it('should multiply positive numbers correctly', () => {
+      const evaluator = PRIMITIVE_EVALUATORS.SignedMultiplier;
+      const result = evaluator.evaluate(new Map([
+        ['a', 5],
+        ['b', 3],
+        ['__width', 8],
+      ]));
+      expect(result.get('product')).toBe(15);
+    });
+
+    it('should multiply negative by positive', () => {
+      const evaluator = PRIMITIVE_EVALUATORS.SignedMultiplier;
+      // -5 (251) × 3 = -15
+      const result = evaluator.evaluate(new Map([
+        ['a', 251], // -5 in 8-bit signed
+        ['b', 3],
+        ['__width', 8],
+      ]));
+      // -15 in 16-bit signed = 65536 - 15 = 65521
+      expect(result.get('product')).toBe(65521);
+    });
+
+    it('should multiply negative by negative', () => {
+      const evaluator = PRIMITIVE_EVALUATORS.SignedMultiplier;
+      // -5 (251) × -3 (253) = 15
+      const result = evaluator.evaluate(new Map([
+        ['a', 251], // -5
+        ['b', 253], // -3
+        ['__width', 8],
+      ]));
+      expect(result.get('product')).toBe(15);
+    });
+
+    it('should handle multiplication by zero', () => {
+      const evaluator = PRIMITIVE_EVALUATORS.SignedMultiplier;
+      const result = evaluator.evaluate(new Map([
+        ['a', 100],
+        ['b', 0],
+        ['__width', 8],
+      ]));
+      expect(result.get('product')).toBe(0);
+    });
+
+    it('should handle most negative value', () => {
+      const evaluator = PRIMITIVE_EVALUATORS.SignedMultiplier;
+      // -128 × 2 = -256
+      const result = evaluator.evaluate(new Map([
+        ['a', 128], // -128
+        ['b', 2],
+        ['__width', 8],
+      ]));
+      // -256 in 16-bit signed = 65536 - 256 = 65280
+      expect(result.get('product')).toBe(65280);
+    });
+
+    it('should handle multiplication by one', () => {
+      const evaluator = PRIMITIVE_EVALUATORS.SignedMultiplier;
+      const result = evaluator.evaluate(new Map([
+        ['a', 251], // -5
+        ['b', 1],
+        ['__width', 8],
+      ]));
+      // -5 in 16-bit = 65536 - 5 = 65531
+      expect(result.get('product')).toBe(65531);
+    });
+
+    it('should handle multiplication by negative one', () => {
+      const evaluator = PRIMITIVE_EVALUATORS.SignedMultiplier;
+      // 5 × -1 = -5
+      const result = evaluator.evaluate(new Map([
+        ['a', 5],
+        ['b', 255], // -1 in 8-bit
+        ['__width', 8],
+      ]));
+      // -5 in 16-bit = 65536 - 5 = 65531
+      expect(result.get('product')).toBe(65531);
+    });
+  });
+});
+
 describe('Plexers', () => {
   it('should evaluate 2-input Mux correctly', () => {
     const evaluator = PRIMITIVE_EVALUATORS.Mux;
