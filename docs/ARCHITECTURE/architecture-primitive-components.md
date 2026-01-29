@@ -20,46 +20,65 @@ This created:
 
 ## Solution Architecture
 
-### Single Source of Truth: `primitives.ts`
+### Single Source of Truth: `PRIMITIVE_DEFINITIONS`
 
-All primitive components are now defined in a single place:
-
-```typescript
-// primitives.ts
-export const PRIMITIVES: Circuit[] = [
-  createPrimitiveCircuit('And', [...], [...], 'Logical AND gate'),
-  createPrimitiveCircuit('HexDisplay', [...], [...], 'Hex display'),
-  // ... all 31+ primitives
-];
-```
-
-### Dynamic Component Creation
-
-The `createPrimitiveComponent()` function handles **all** primitive types:
+All primitive components are defined in a unified registry:
 
 ```typescript
 // primitives.ts
-export function createPrimitiveComponent(
-  id: string,
-  type: string,
-  initialValue?: boolean | number
-): Record<string, any> | null {
-  // Verify this is a primitive
-  const primitive = getPrimitiveCircuit(type);
-  if (!primitive) return null;
+export const PRIMITIVE_DEFINITIONS: Record<string, PrimitiveDefinition> = {
+  And: defineCombinational({
+    name: 'And',
+    description: 'Logical AND gate',
+    category: 'logic-gates',
+    icon: '&',
+    componentType: 'AND_GATE',
+    inputs: [...],
+    outputs: [...],
+    evaluate: (inputs) => { /* logic */ },
+  }),
 
-  // Create component with proper initial state
-  const component: Record<string, any> = { id, type };
+  HexDisplay: defineCombinational({
+    name: 'HexDisplay',
+    description: 'Hexadecimal display',
+    category: 'display',
+    icon: '0xFF',
+    componentType: 'HexDisplay',
+    inputs: [...],
+    outputs: [],
+    evaluate: (inputs) => { /* logic */ },
+    createComponent: (id) => ({ id, type: 'HexDisplay', value: 0, width: 8 }),
+  }),
 
-  switch (type) {
-    case 'Switch': component.value = initialValue ?? false; break;
-    case 'HexDisplay': component.value = 0; component.width = 8; break;
-    // ... other stateful/parameterized components
-  }
-
-  return component;
-}
+  // ... all 35+ primitives
+};
 ```
+
+Each definition includes:
+- Circuit structure (inputs, outputs, clocks, state)
+- Behavior (evaluator function)
+- UI metadata (category, icon)
+- Component creation logic (initial state)
+
+### Auto-Generated Exports
+
+From `PRIMITIVE_DEFINITIONS`, the system **automatically generates**:
+
+```typescript
+// primitives.ts
+
+// Circuit IR definitions (for simulator)
+export const PRIMITIVES: Circuit[] = generatePrimitives(PRIMITIVE_DEFINITIONS);
+
+// Evaluator registry (for execution)
+export const PRIMITIVE_EVALUATORS: Record<string, PrimitiveEvaluator> =
+  generateEvaluators(PRIMITIVE_DEFINITIONS);
+
+// Component creator (for IR construction)
+export const createPrimitiveComponent = generateCreator(PRIMITIVE_DEFINITIONS);
+```
+
+**No manual switch statements!** Each primitive's `createComponent` function handles its own initialization.
 
 ### Component Resolution Flow
 
@@ -161,53 +180,51 @@ throw new Error(`Unknown component type: ${type}`);
 
 To add a new primitive component:
 
-### 1. Define in `primitives.ts`
+### 1. Add ONE definition to `PRIMITIVE_DEFINITIONS`
 
 ```typescript
-// Add evaluator
-export const PRIMITIVE_EVALUATORS = {
-  MyNewComponent: createCombinationalEvaluator((inputs) => {
-    // evaluation logic
-  }),
-};
+// In primitives.ts, add to PRIMITIVE_DEFINITIONS object:
+export const PRIMITIVE_DEFINITIONS: Record<string, PrimitiveDefinition> = {
+  // ... existing primitives ...
 
-// Add to PRIMITIVES array
-export const PRIMITIVES: Circuit[] = [
-  // ...
-  createPrimitiveCircuit(
-    'MyNewComponent',
-    [{ name: 'in', portType: bitType() }],
-    [{ name: 'out', portType: bitType() }],
-    'Description of my component'
-  ),
-];
-
-// If it needs initial state, add to createPrimitiveComponent():
-export function createPrimitiveComponent(id, type, initialValue) {
-  // ...
-  switch (type) {
-    // ...
-    case 'MyNewComponent':
-      component.value = initialValue ?? 0;
-      break;
-  }
-}
-```
-
-### 2. Add metadata in `primitive-metadata.ts`
-
-```typescript
-export const PRIMITIVE_METADATA = {
-  // ...
-  MyNewComponent: {
-    category: PRIMITIVE_CATEGORIES.UTILITIES,
+  MyNewComponent: defineCombinational({
+    name: 'MyNewComponent',
+    description: 'Description of my component',
+    category: 'utilities',
     icon: '🆕',
     componentType: 'MyNewComponent',
-  },
+    inputs: [{ name: 'in', portType: bitType() }],
+    outputs: [{ name: 'out', portType: bitType() }],
+    evaluate: (inputs) => {
+      const input = inputs.get('in') as boolean;
+      return new Map([['out', !input]]);
+    },
+    // If component needs special initialization:
+    createComponent: (id, initialValue) => ({
+      id,
+      type: 'MyNewComponent',
+      value: initialValue ?? 0,
+    }),
+  }),
 };
+```
+
+### 2. Add ComponentType enum value
+
+```typescript
+// In types/index.ts:
+export type ComponentType =
+  // ... existing types ...
+  | 'MyNewComponent';
 ```
 
 ### 3. That's it!
+
+Everything else is **automatically generated**:
+- Circuit IR definition (added to `PRIMITIVES` array)
+- Evaluator registration (added to `PRIMITIVE_EVALUATORS` object)
+- Component creator (integrated into `createPrimitiveComponent` function)
+- Palette metadata (category, icon, componentType)
 
 The component will automatically:
 - Be available in the component palette
@@ -215,6 +232,40 @@ The component will automatically:
 - Have proper port specifications
 - Be recognized as a primitive
 - Evaluate correctly in simulation
+
+## The Generator Pattern
+
+The key architectural innovation is the **generator pattern**:
+
+### Definition Phase
+You write a single `PrimitiveDefinition` with all component information co-located:
+- Identity (name, description)
+- Circuit structure (inputs, outputs, clocks, state)
+- Behavior (evaluator functions)
+- UI metadata (category, icon)
+- Initialization logic (createComponent function)
+
+### Generation Phase
+Generator functions transform definitions into runtime structures:
+
+```typescript
+// primitives.ts
+export const PRIMITIVES = generatePrimitives(PRIMITIVE_DEFINITIONS);
+export const PRIMITIVE_EVALUATORS = generateEvaluators(PRIMITIVE_DEFINITIONS);
+export const createPrimitiveComponent = generateCreator(PRIMITIVE_DEFINITIONS);
+```
+
+Each generator extracts what it needs:
+- `generatePrimitives()` → Circuit IR (inputs, outputs, clocks, state, metadata)
+- `generateEvaluators()` → Name-to-evaluator mapping
+- `generateCreator()` → Unified creation function that delegates to each definition's `createComponent`
+
+### Benefits
+1. **Single source of truth**: All information about a primitive lives in one definition
+2. **No manual synchronization**: Adding a field to definitions updates all generated structures
+3. **Type safety**: TypeScript ensures definitions are complete and consistent
+4. **No boilerplate**: No switch statements, no manual registry management
+5. **Easy refactoring**: Change generation logic once, affects all primitives
 
 ## Files and Responsibilities
 
@@ -246,29 +297,45 @@ The system is designed for gradual migration:
 
 ## Benefits
 
-### Before
+### Before (Manual Switch Statements)
 - Adding HexDisplay required changes in 3+ files
-- Type checking was scattered across codebase
-- Easy to miss a case and get runtime errors
+- Manual switch statement in `createPrimitiveComponent()` with 35+ cases
+- Manual entry in `PRIMITIVES` array
+- Manual entry in `PRIMITIVE_EVALUATORS` object
+- Easy to forget one and get runtime errors
 - No clear source of truth
 
-### After
-- Adding a primitive requires changes in 2 files (primitives.ts + metadata.ts)
-- Type checking centralized in `primitives.ts`
-- Dynamic lookup prevents missed cases
-- Clear architectural boundaries
+### After (Generator Pattern)
+- Adding a primitive requires ONE definition in `PRIMITIVE_DEFINITIONS`
+- Plus ONE ComponentType enum entry (for UI compatibility)
+- Everything else auto-generated
+- Impossible to forget a case - TypeScript enforces completeness
+- Single source of truth per primitive
+- Clear separation between definition (data) and generation (transformation)
 
 ## Testing Strategy
 
 All primitive components should be tested through:
 
-1. **Unit tests**: `createPrimitiveComponent()` returns correct initial state
-2. **Integration tests**: Components work in IR store and simulator
-3. **Type tests**: TypeScript catches invalid component types at compile time
+1. **Evaluator tests**: Test behavior logic in isolation (see `primitives.test.ts`)
+2. **Component creation tests**: Verify initial state is correct
+3. **Integration tests**: Components work in IR store and simulator
+4. **Generator tests**: Verify auto-generation produces expected structures
 
-Example test:
+Example tests:
 
 ```typescript
+// Test evaluator behavior
+describe('HexDisplay primitive', () => {
+  it('evaluates correctly', () => {
+    const evaluator = PRIMITIVE_EVALUATORS.HexDisplay;
+    const inputs = new Map([['in', 42]]);
+    const outputs = evaluator.evaluate(inputs);
+    expect(outputs).toEqual(new Map()); // Display has no outputs
+  });
+});
+
+// Test component creation
 describe('createPrimitiveComponent', () => {
   it('creates HexDisplay with correct initial state', () => {
     const component = createPrimitiveComponent('test-id', 'HexDisplay');
@@ -283,6 +350,17 @@ describe('createPrimitiveComponent', () => {
   it('returns null for unknown types', () => {
     const component = createPrimitiveComponent('test-id', 'UnknownType');
     expect(component).toBeNull();
+  });
+});
+
+// Test auto-generation
+describe('generatePrimitives', () => {
+  it('generates Circuit IR for all definitions', () => {
+    const circuits = generatePrimitives(PRIMITIVE_DEFINITIONS);
+    expect(circuits.length).toBeGreaterThan(30); // 35+ primitives
+    expect(circuits[0]).toHaveProperty('inputs');
+    expect(circuits[0]).toHaveProperty('outputs');
+    expect(circuits[0]).toHaveProperty('implementation');
   });
 });
 ```

@@ -6,7 +6,8 @@
       "Bash(pnpm test:*)",
       "Bash(xargs sed:*)",
       "Bash(pnpm eslint:*)",
-      "Bash(git checkout:*)"
+      "Bash(git checkout:*)",
+      "Bash(wc:*)"
     ]
   }
 }

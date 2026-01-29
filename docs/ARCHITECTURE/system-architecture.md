@@ -636,7 +636,7 @@ Features:
 ## Documentation
 
 ### Core Documentation
-- `CURRENT_ARCHITECTURE.md` - This document (system overview)
+- `system-architecture.md` - This document (system overview)
 - `ir-v0.1-spec.md` - IR specification
 - `dsl-v0.1-spec.md` - DSL specification
 - `component-library-model.md` - Component architecture
@@ -652,8 +652,6 @@ Features:
 - `primitive-quick-reference.md` - Primitive component reference
 
 ### Archived Documentation
-- `docs/archive/bug-fix-*.md` - Implementation notes (historical)
-- `docs/archive/SEQUENTIAL_CIRCUITS_IMPLEMENTATION.md` - Implementation details
 
 ## Testing Status
 
