@@ -113,8 +113,14 @@ export function ClockControls() {
     if (hasSequential) {
       // Only re-initialize sequential state if structure changed
       if (structureChanged || !seqState) {
-        setSeqState(initializeSequentialState(circuit));
+        const initialState = initializeSequentialState(circuit);
+        setSeqState(initialState);
         prevCircuitStructureRef.current = circuitStructure;
+
+        // Save initial snapshot (t=0, before any ticks)
+        // This ensures history always starts with a known initial state
+        const initialSnapshot = createSnapshot(initialState, circuit);
+        saveSnapshot(initialSnapshot);
       }
     } else {
       setSeqState(null);
@@ -129,12 +135,7 @@ export function ClockControls() {
 
     setSimulationStatus('running');
 
-    // STEP 1: Create snapshot BEFORE tick
-    // This captures: sequential state + environmental state at cycle start
-    const snapshot = createSnapshot(seqState, circuit);
-    saveSnapshot(snapshot);
-
-    // STEP 2: Run simulation tick (existing code)
+    // STEP 1: Run simulation tick
     const result = runSimulationTick(circuit, seqState);
 
     if (result.error) {
@@ -143,7 +144,7 @@ export function ClockControls() {
       return;
     }
 
-    // STEP 3: Update state (existing pattern)
+    // STEP 2: Update state
     if (result.sequentialState) {
       // Clone the sequential state to create a new reference
       const newSeqState: SequentialState = {
@@ -154,6 +155,12 @@ export function ClockControls() {
       };
 
       setSeqState(newSeqState);
+
+      // STEP 3: Create snapshot AFTER tick
+      // Snapshots represent completed clock edges (post-tick states)
+      // history[n] = state after n clock ticks
+      const snapshot = createSnapshot(newSeqState, circuit);
+      saveSnapshot(snapshot);
     }
 
     // Note: We don't need to manually update node values for LEDs/outputs here
@@ -189,13 +196,15 @@ export function ClockControls() {
     const newSeqState = initializeSequentialState(circuit);
     setSeqState(newSeqState);
 
-    // Clear history
+    // Clear history and save initial snapshot (t=0)
     clearHistory();
+    const initialSnapshot = createSnapshot(newSeqState, circuit);
+    saveSnapshot(initialSnapshot);
 
     // Note: We don't need to manually reset node arguments here
     // because the sequential state reset will be picked up by the
     // next simulation run automatically
-  }, [circuit, handlePause, setSeqState, clearHistory]);
+  }, [circuit, handlePause, setSeqState, clearHistory, saveSnapshot]);
 
   // Time-travel navigation handlers
   const handleStepBack = useCallback(() => {
@@ -253,11 +262,7 @@ export function ClockControls() {
 
         setSimulationStatus('running');
 
-        // STEP 1: Create snapshot BEFORE tick
-        const snapshot = createSnapshot(currentSeqState, currentCircuit);
-        saveSnapshot(snapshot);
-
-        // STEP 2: Execute one clock tick
+        // STEP 1: Execute one clock tick
         const result = runSimulationTick(currentCircuit, currentSeqState);
 
         if (result.error) {
@@ -266,7 +271,7 @@ export function ClockControls() {
           return;
         }
 
-        // STEP 3: Update the sequential state from simulation result
+        // STEP 2: Update the sequential state from simulation result
         if (result.sequentialState) {
           const newSeqState: SequentialState = {
             currentState: new Map(result.sequentialState.currentState),
@@ -276,6 +281,11 @@ export function ClockControls() {
           };
 
           setSeqState(newSeqState);
+
+          // STEP 3: Create snapshot AFTER tick
+          // Snapshots represent completed clock edges (post-tick states)
+          const snapshot = createSnapshot(newSeqState, currentCircuit);
+          saveSnapshot(snapshot);
         }
 
         setTimeout(() => {

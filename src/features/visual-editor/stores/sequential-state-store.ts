@@ -9,6 +9,12 @@
  * - History array with ring buffer (configurable max size)
  * - Sparse checkpoints for efficient long-range jumps
  * - Navigation: stepBack, stepForward, jumpToCycle
+ *
+ * Snapshot Policy:
+ * - Simulation history contains only POST-TICK states (completed clock edges)
+ * - history[n] = state after n clock ticks have executed
+ * - history[0] = initial state (t=0, before any ticks)
+ * - This ensures time travel shows actual visible states, not intermediate states
  */
 
 import { create } from 'zustand';
@@ -146,10 +152,30 @@ export const useSequentialStateStore = create<SequentialStateStore>((set, get) =
       const newIndex = currentHistoryIndex - 1;
       const snapshot = history[newIndex];
 
+      // Clone the sequential state to prevent mutation of snapshot
+      const clonedSeqState = {
+        currentState: new Map(snapshot.sequentialState.currentState),
+        nextState: new Map(snapshot.sequentialState.nextState),
+        clocks: new Map(snapshot.sequentialState.clocks),
+        cycleCount: snapshot.sequentialState.cycleCount,
+      };
+
+      // Deep clone RAM states (Map values)
+      for (const [nodeId, value] of snapshot.sequentialState.currentState.entries()) {
+        if (value instanceof Map) {
+          clonedSeqState.currentState.set(nodeId, new Map(value));
+        }
+      }
+      for (const [nodeId, value] of snapshot.sequentialState.nextState.entries()) {
+        if (value instanceof Map) {
+          clonedSeqState.nextState.set(nodeId, new Map(value));
+        }
+      }
+
       set({
         currentHistoryIndex: newIndex,
         isViewingPast: true,
-        seqState: snapshot.sequentialState,
+        seqState: clonedSeqState,
       });
 
       return snapshot;
@@ -165,10 +191,30 @@ export const useSequentialStateStore = create<SequentialStateStore>((set, get) =
       const newIndex = currentHistoryIndex + 1;
       const snapshot = history[newIndex];
 
+      // Clone the sequential state to prevent mutation of snapshot
+      const clonedSeqState = {
+        currentState: new Map(snapshot.sequentialState.currentState),
+        nextState: new Map(snapshot.sequentialState.nextState),
+        clocks: new Map(snapshot.sequentialState.clocks),
+        cycleCount: snapshot.sequentialState.cycleCount,
+      };
+
+      // Deep clone RAM states (Map values)
+      for (const [nodeId, value] of snapshot.sequentialState.currentState.entries()) {
+        if (value instanceof Map) {
+          clonedSeqState.currentState.set(nodeId, new Map(value));
+        }
+      }
+      for (const [nodeId, value] of snapshot.sequentialState.nextState.entries()) {
+        if (value instanceof Map) {
+          clonedSeqState.nextState.set(nodeId, new Map(value));
+        }
+      }
+
       set({
         currentHistoryIndex: newIndex,
         isViewingPast: newIndex < history.length - 1,
-        seqState: snapshot.sequentialState,
+        seqState: clonedSeqState,
       });
 
       return snapshot;
@@ -184,10 +230,30 @@ export const useSequentialStateStore = create<SequentialStateStore>((set, get) =
     if (targetIndex !== -1) {
       const snapshot = history[targetIndex];
 
+      // Clone the sequential state to prevent mutation of snapshot
+      const clonedSeqState = {
+        currentState: new Map(snapshot.sequentialState.currentState),
+        nextState: new Map(snapshot.sequentialState.nextState),
+        clocks: new Map(snapshot.sequentialState.clocks),
+        cycleCount: snapshot.sequentialState.cycleCount,
+      };
+
+      // Deep clone RAM states (Map values)
+      for (const [nodeId, value] of snapshot.sequentialState.currentState.entries()) {
+        if (value instanceof Map) {
+          clonedSeqState.currentState.set(nodeId, new Map(value));
+        }
+      }
+      for (const [nodeId, value] of snapshot.sequentialState.nextState.entries()) {
+        if (value instanceof Map) {
+          clonedSeqState.nextState.set(nodeId, new Map(value));
+        }
+      }
+
       set({
         currentHistoryIndex: targetIndex,
         isViewingPast: targetIndex < history.length - 1,
-        seqState: snapshot.sequentialState,
+        seqState: clonedSeqState,
       });
 
       return snapshot;
