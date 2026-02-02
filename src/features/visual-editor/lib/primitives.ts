@@ -1414,7 +1414,7 @@ export const PRIMITIVE_DEFINITIONS: Record<string, PrimitiveDefinition> = {
 
   Register: defineSequential({
     name: 'Register',
-    description: '8-bit Register - stores data when write enable is high',
+    description: '8-bit Register - stores data on rising clock edge when write enable is high',
     category: 'sequential',
     icon: 'REG',
     componentType: 'REGISTER',
@@ -1436,12 +1436,13 @@ export const PRIMITIVE_DEFINITIONS: Record<string, PrimitiveDefinition> = {
       const state = (currentState ?? 0) as number;
       return new Map([['q', state]]);
     },
-    updateState: (inputs, currentState, _clockEdges) => {
+    updateState: (inputs, currentState, clockEdges) => {
       const data = inputs.get('data') as number;
       const we = inputs.get('we') as boolean;
+      const edge = clockEdges['clk'] ?? 'none';
 
-      // Update state when write enable is high
-      if (we) {
+      // Update state on rising edge when write enable is high
+      if (edge === 'rising' && we) {
         return data;
       }
 

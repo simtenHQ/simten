@@ -85,16 +85,17 @@ export function restoreEnvironmentalState(
 /**
  * Creates a complete simulation snapshot
  *
- * CRITICAL: Call this BEFORE runSimulationTick
- * - Captures state at START of cycle
- * - This state determines the tick result (determinism)
+ * USAGE: Call this AFTER runSimulationTick (or for initial state at t=0)
+ * - Captures completed state (post-tick)
+ * - Represents the actual visible state users see
+ * - history[n] = state after n ticks have executed
  *
  * The snapshot includes:
  * 1. Sequential state (registers, RAM, counters)
  * 2. Environmental state (user inputs, external sources)
  * 3. Metadata (cycle number, timestamp)
  *
- * @param sequentialState - Current sequential state
+ * @param sequentialState - Sequential state to snapshot (post-tick or initial)
  * @param circuit - The circuit to capture environmental state from
  * @returns Complete simulation snapshot
  */
