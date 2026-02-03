@@ -12,3 +12,12 @@ export {
 } from './ir-generator';
 
 export type { ComponentLibrary } from './ir-generator';
+
+export {
+  compileTestbenchToIR,
+  validateTestbenchAgainstDUT,
+  TestbenchCompilerError,
+  ComponentNotFoundError,
+} from './testbench-compiler';
+
+export type { ComponentLibraryInterface } from './testbench-compiler';

@@ -254,6 +254,7 @@ export interface CircuitDef extends ASTNode {
 
 export interface Program extends ASTNode {
   circuits: CircuitDef[];
+  testbenches?: import('./testbench-ast').TestbenchDef[]; // Optional testbenches
   comments?: Comment[];
 }
 
