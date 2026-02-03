@@ -58,6 +58,25 @@ import {
   StateTypeExpr,
   MemoryTypeExpr,
 } from '../types/ast';
+import {
+  TestbenchDef,
+  CircuitRef,
+  TestInputDecl,
+  TestOutputDecl,
+  TestClockDecl,
+  TestImplBlock,
+  TestNodeDecl,
+  TestConnectionStmt,
+  StimulusBlock,
+  StimulusEvent,
+  StimulusTiming,
+  SingleCycleTiming,
+  RangeTiming,
+  SteppedTiming,
+  StimulusAssignment,
+  CaptureBlock,
+  FrequencyExpr,
+} from '../types/testbench-ast';
 import { Token, TokenType, isBinaryOperator, isUnaryOperator, getOperatorPrecedence, tokenTypeToOperator } from './token';
 
 // ============================================================================
@@ -91,13 +110,24 @@ export class Parser {
    */
   public parse(): Program {
     const circuits: CircuitDef[] = [];
+    const testbenches: TestbenchDef[] = [];
 
     while (!this.isAtEnd()) {
-      circuits.push(this.parseCircuitDef());
+      if (this.check(TokenType.CIRCUIT)) {
+        circuits.push(this.parseCircuitDef());
+      } else if (this.check(TokenType.TESTBENCH)) {
+        testbenches.push(this.parseTestbenchDef());
+      } else {
+        throw new ParseError(
+          `Expected 'circuit' or 'testbench', got ${this.peek().type}`,
+          this.peek()
+        );
+      }
     }
 
     return {
       circuits,
+      testbenches: testbenches.length > 0 ? testbenches : undefined,
       location: this.createProgramRange(),
     };
   }
@@ -585,11 +615,11 @@ export class Parser {
 
   private parsePortRef(): PortRef {
     const start = this.peek();
-    const firstIdent = this.consume(TokenType.IDENTIFIER, 'Expected port reference').value;
+    const firstIdent = this.consumeIdentifier('Expected port reference');
 
     if (this.match(TokenType.DOT)) {
       // Node port: node.port
-      const portName = this.consume(TokenType.IDENTIFIER, 'Expected port name').value;
+      const portName = this.consumeIdentifier('Expected port name');
       return {
         nodeId: firstIdent,
         portName,
@@ -792,8 +822,440 @@ export class Parser {
   }
 
   // ==========================================================================
+  // Testbench Definition (Phase 1)
+  // ==========================================================================
+
+  private parseTestbenchDef(): TestbenchDef {
+    const start = this.peek();
+    this.consume(TokenType.TESTBENCH, "Expected 'testbench'");
+    const name = this.consume(TokenType.IDENTIFIER, 'Expected testbench name').value;
+
+    this.consume(TokenType.LBRACE, "Expected '{'");
+
+    // Parse circuit reference: use circuit MiniSwitch2Port as dut
+    let circuitRef: CircuitRef | undefined = undefined;
+    if (this.match(TokenType.USE)) {
+      circuitRef = this.parseCircuitRef();
+    }
+
+    if (!circuitRef) {
+      throw new ParseError('Testbench must have "use circuit ... as ..." declaration', this.peek());
+    }
+
+    const inputs: TestInputDecl[] = [];
+    const outputs: TestOutputDecl[] = [];
+    const clocks: TestClockDecl[] = [];
+    let impl: TestImplBlock | undefined = undefined;
+
+    while (!this.check(TokenType.RBRACE) && !this.isAtEnd()) {
+      if (this.match(TokenType.INPUT)) {
+        inputs.push(this.parseTestInputDecl());
+      } else if (this.match(TokenType.OUTPUT)) {
+        outputs.push(this.parseTestOutputDecl());
+      } else if (this.match(TokenType.CLOCK)) {
+        clocks.push(this.parseTestClockDecl());
+      } else if (this.check(TokenType.IMPL)) {
+        if (impl !== undefined) {
+          throw new ParseError('Multiple impl blocks not allowed', this.peek());
+        }
+        impl = this.parseTestImplBlock();
+      } else {
+        throw new ParseError(
+          `Unexpected token in testbench body: ${this.peek().type}`,
+          this.peek()
+        );
+      }
+    }
+
+    const end = this.consume(TokenType.RBRACE, "Expected '}'");
+
+    return {
+      name,
+      circuitRef,
+      inputs,
+      outputs,
+      clocks,
+      impl,
+      location: createRange(start.location.start, end.location.end),
+    };
+  }
+
+  private parseCircuitRef(): CircuitRef {
+    const start = this.peek();
+    this.consume(TokenType.CIRCUIT, "Expected 'circuit'");
+    const circuitName = this.consume(TokenType.IDENTIFIER, 'Expected circuit name').value;
+    this.consume(TokenType.AS, "Expected 'as'");
+    const instanceName = this.consume(TokenType.IDENTIFIER, 'Expected instance name').value;
+
+    return {
+      circuitName,
+      instanceName,
+      location: createRange(start.location.start, this.previous().location.end),
+    };
+  }
+
+  private parseTestInputDecl(): TestInputDecl {
+    const start = this.previous(); // INPUT token already consumed
+    const name = this.consume(TokenType.IDENTIFIER, 'Expected input name').value;
+    this.consume(TokenType.COLON, "Expected ':'");
+
+    const typeToken = this.advance();
+    let portType: 'Bit' | 'Bus';
+    let width: number | undefined;
+
+    if (typeToken.type === TokenType.BIT) {
+      portType = 'Bit';
+    } else if (typeToken.type === TokenType.BUS) {
+      portType = 'Bus';
+      this.consume(TokenType.LBRACKET, "Expected '['");
+      const widthToken = this.consume(TokenType.NUMBER, 'Expected bus width');
+      width = widthToken.numberValue!;
+      this.consume(TokenType.RBRACKET, "Expected ']'");
+    } else {
+      throw new ParseError('Expected Bit or Bus type', typeToken);
+    }
+
+    return {
+      name,
+      portType,
+      width,
+      location: createRange(start.location.start, this.previous().location.end),
+    };
+  }
+
+  private parseTestOutputDecl(): TestOutputDecl {
+    const start = this.previous(); // OUTPUT token already consumed
+    const name = this.consume(TokenType.IDENTIFIER, 'Expected output name').value;
+    this.consume(TokenType.COLON, "Expected ':'");
+
+    const typeToken = this.advance();
+    let portType: 'Bit' | 'Bus';
+    let width: number | undefined;
+
+    if (typeToken.type === TokenType.BIT) {
+      portType = 'Bit';
+    } else if (typeToken.type === TokenType.BUS) {
+      portType = 'Bus';
+      this.consume(TokenType.LBRACKET, "Expected '['");
+      const widthToken = this.consume(TokenType.NUMBER, 'Expected bus width');
+      width = widthToken.numberValue!;
+      this.consume(TokenType.RBRACKET, "Expected ']'");
+    } else {
+      throw new ParseError('Expected Bit or Bus type', typeToken);
+    }
+
+    return {
+      name,
+      portType,
+      width,
+      location: createRange(start.location.start, this.previous().location.end),
+    };
+  }
+
+  private parseTestClockDecl(): TestClockDecl {
+    const start = this.previous(); // CLOCK token already consumed
+    const name = this.consume(TokenType.IDENTIFIER, 'Expected clock name').value;
+
+    // Phase 4: Parse optional frequency
+    let frequency: FrequencyExpr | undefined;
+    if (this.match(TokenType.AT_SIGN)) {
+      frequency = this.parseFrequencyExpr();
+    }
+
+    return {
+      name,
+      frequency,
+      location: createRange(start.location.start, this.previous().location.end),
+    };
+  }
+
+  private parseFrequencyExpr(): FrequencyExpr {
+    const start = this.peek();
+    const valueToken = this.consume(TokenType.NUMBER, 'Expected frequency value');
+    const value = valueToken.numberValue!;
+
+    const unitToken = this.consume(TokenType.IDENTIFIER, 'Expected frequency unit (Hz, kHz, MHz, GHz)');
+    const unitStr = unitToken.value.toLowerCase();
+
+    let unit: 'Hz' | 'kHz' | 'MHz' | 'GHz';
+    if (unitStr === 'hz') {
+      unit = 'Hz';
+    } else if (unitStr === 'khz') {
+      unit = 'kHz';
+    } else if (unitStr === 'mhz') {
+      unit = 'MHz';
+    } else if (unitStr === 'ghz') {
+      unit = 'GHz';
+    } else {
+      throw new ParseError(`Invalid frequency unit: ${unitStr}. Expected Hz, kHz, MHz, or GHz`, unitToken);
+    }
+
+    return {
+      value,
+      unit,
+      location: createRange(start.location.start, this.previous().location.end),
+    };
+  }
+
+  private parseTestImplBlock(): TestImplBlock {
+    const start = this.peek();
+    this.consume(TokenType.IMPL, "Expected 'impl'");
+    this.consume(TokenType.LBRACE, "Expected '{'");
+
+    const nodes: TestNodeDecl[] = [];
+    const connections: TestConnectionStmt[] = [];
+    const stimulus: StimulusBlock[] = [];
+    let capture: CaptureBlock | undefined;
+
+    while (!this.check(TokenType.RBRACE) && !this.isAtEnd()) {
+      if (this.match(TokenType.NODE)) {
+        nodes.push(this.parseTestNodeDecl());
+      } else if (this.match(TokenType.CONNECT)) {
+        connections.push(this.parseTestConnectionStmt());
+      } else if (this.match(TokenType.STIMULUS)) {
+        stimulus.push(this.parseStimulusBlock());
+      } else if (this.match(TokenType.CAPTURE)) {
+        if (capture !== undefined) {
+          throw new ParseError('Multiple capture blocks not allowed', this.peek());
+        }
+        capture = this.parseCaptureBlock();
+      } else {
+        throw new ParseError(
+          `Unexpected token in testbench impl: ${this.peek().type}`,
+          this.peek()
+        );
+      }
+    }
+
+    const end = this.consume(TokenType.RBRACE, "Expected '}'");
+
+    return {
+      nodes,
+      connections,
+      stimulus: stimulus.length > 0 ? stimulus : undefined,
+      capture,
+      location: createRange(start.location.start, end.location.end),
+    };
+  }
+
+  private parseTestNodeDecl(): TestNodeDecl {
+    const start = this.previous(); // NODE token already consumed
+    const instanceName = this.consume(TokenType.IDENTIFIER, 'Expected node instance name').value;
+    this.consume(TokenType.COLON, "Expected ':'");
+    const componentType = this.consume(TokenType.IDENTIFIER, 'Expected component type').value;
+
+    return {
+      instanceName,
+      componentType,
+      location: createRange(start.location.start, this.previous().location.end),
+    };
+  }
+
+  private parseTestConnectionStmt(): TestConnectionStmt {
+    const start = this.previous(); // CONNECT token already consumed
+    const source = this.parsePortRef();
+    this.consume(TokenType.ARROW, "Expected '->'");
+    const target = this.parsePortRef();
+
+    return {
+      source,
+      target,
+      location: createRange(start.location.start, this.previous().location.end),
+    };
+  }
+
+  private parseStimulusBlock(): StimulusBlock {
+    const start = this.previous(); // STIMULUS token already consumed
+    this.consume(TokenType.ON, "Expected 'on'");
+    const clockRef = this.consume(TokenType.IDENTIFIER, 'Expected clock name').value;
+    this.consume(TokenType.LBRACE, "Expected '{'");
+
+    const events: StimulusEvent[] = [];
+
+    while (!this.check(TokenType.RBRACE) && !this.isAtEnd()) {
+      events.push(this.parseStimulusEvent());
+    }
+
+    const end = this.consume(TokenType.RBRACE, "Expected '}'");
+
+    return {
+      clockRef,
+      events,
+      location: createRange(start.location.start, end.location.end),
+    };
+  }
+
+  private parseStimulusEvent(): StimulusEvent {
+    const start = this.peek();
+    this.consume(TokenType.AT, "Expected 'at'");
+
+    const timing = this.parseStimulusTiming();
+    this.consume(TokenType.COLON, "Expected ':'");
+
+    const assignments: StimulusAssignment[] = [];
+
+    do {
+      assignments.push(this.parseStimulusAssignment());
+    } while (this.match(TokenType.COMMA));
+
+    return {
+      timing,
+      assignments,
+      location: createRange(start.location.start, this.previous().location.end),
+    };
+  }
+
+  private parseStimulusTiming(): StimulusTiming {
+    const start = this.peek();
+    const startCycle = this.parseExpression();
+
+    // Check for range (..)
+    if (this.match(TokenType.DOTDOT)) {
+      const endCycle = this.parseExpression();
+
+      // Check for step
+      if (this.match(TokenType.STEP)) {
+        const stepToken = this.consume(TokenType.NUMBER, 'Expected step value');
+        const step = stepToken.numberValue!;
+
+        return {
+          kind: 'stepped',
+          start: startCycle,
+          end: endCycle,
+          step,
+          location: createRange(start.location.start, this.previous().location.end),
+        } as SteppedTiming;
+      }
+
+      return {
+        kind: 'range',
+        start: startCycle,
+        end: endCycle,
+        location: createRange(start.location.start, this.previous().location.end),
+      } as RangeTiming;
+    }
+
+    // Single cycle
+    return {
+      kind: 'single',
+      cycle: startCycle,
+      location: createRange(start.location.start, this.previous().location.end),
+    } as SingleCycleTiming;
+  }
+
+  private parseStimulusAssignment(): StimulusAssignment {
+    const start = this.peek();
+    const signal = this.consume(TokenType.IDENTIFIER, 'Expected signal name').value;
+    this.consume(TokenType.ASSIGN, "Expected '='");
+    const value = this.parseExpression();
+
+    return {
+      signal,
+      value,
+      location: createRange(start.location.start, this.previous().location.end),
+    };
+  }
+
+  private parseCaptureBlock(): CaptureBlock {
+    const start = this.previous(); // CAPTURE token already consumed
+    this.consume(TokenType.LBRACE, "Expected '{'");
+
+    let signals: string[] = [];
+    let format: 'vcd' = 'vcd';
+    let filename = '';
+
+    while (!this.check(TokenType.RBRACE) && !this.isAtEnd()) {
+      if (this.match(TokenType.SIGNALS)) {
+        this.consume(TokenType.COLON, "Expected ':'");
+        signals = this.parseSignalList();
+      } else if (this.match(TokenType.FORMAT)) {
+        this.consume(TokenType.COLON, "Expected ':'");
+        const formatToken = this.consume(TokenType.IDENTIFIER, 'Expected format (vcd)');
+        if (formatToken.value !== 'vcd') {
+          throw new ParseError(`Unsupported format: ${formatToken.value}. Only 'vcd' is supported`, formatToken);
+        }
+        format = 'vcd';
+      } else if (this.match(TokenType.FILENAME)) {
+        this.consume(TokenType.COLON, "Expected ':'");
+        const filenameToken = this.consume(TokenType.STRING, 'Expected filename string');
+        filename = filenameToken.stringValue!;
+      } else {
+        throw new ParseError(
+          `Unexpected token in capture block: ${this.peek().type}`,
+          this.peek()
+        );
+      }
+    }
+
+    const end = this.consume(TokenType.RBRACE, "Expected '}'");
+
+    if (signals.length === 0) {
+      throw new ParseError('Capture block must specify signals', start);
+    }
+
+    if (filename === '') {
+      throw new ParseError('Capture block must specify filename', start);
+    }
+
+    return {
+      signals,
+      format,
+      filename,
+      location: createRange(start.location.start, end.location.end),
+    };
+  }
+
+  private parseSignalList(): string[] {
+    this.consume(TokenType.LBRACKET, "Expected '['");
+
+    const signals: string[] = [];
+
+    if (!this.check(TokenType.RBRACKET)) {
+      do {
+        const signal = this.consume(TokenType.IDENTIFIER, 'Expected signal name').value;
+        signals.push(signal);
+      } while (this.match(TokenType.COMMA));
+    }
+
+    this.consume(TokenType.RBRACKET, "Expected ']'");
+    return signals;
+  }
+
+  // ==========================================================================
   // Utility Methods
   // ==========================================================================
+
+  /**
+   * Consume an identifier, but allow certain keywords to be used as identifiers
+   * (e.g., 'in' and 'out' as port names)
+   */
+  private consumeIdentifier(message: string): string {
+    const token = this.peek();
+
+    // Allow IDENTIFIER
+    if (token.type === TokenType.IDENTIFIER) {
+      this.advance();
+      return token.value;
+    }
+
+    // Allow certain keywords to be used as identifiers (common port names)
+    const allowedKeywords = [
+      TokenType.IN,
+      TokenType.ON,
+      TokenType.INPUT,
+      TokenType.OUTPUT,
+      TokenType.CLOCK,
+      TokenType.STATE,
+      TokenType.NODE,
+    ];
+
+    if (allowedKeywords.includes(token.type)) {
+      this.advance();
+      return token.value;
+    }
+
+    throw new ParseError(message, token);
+  }
 
   private match(...types: TokenType[]): boolean {
     for (const type of types) {

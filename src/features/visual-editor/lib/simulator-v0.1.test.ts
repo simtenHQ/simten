@@ -1350,4 +1350,475 @@ describe('Simulator v0.1 (lib)', () => {
       expect(result.portValues.get('ram1.data_out')).toBe(0);
     });
   });
+
+  describe('Hierarchical Cycle Detection', () => {
+    it('should not detect false cycle in composite with internal register', () => {
+      // Create a Toggler composite: has internal register and feedback loop
+      // Structure: input → register.data, register.q → Not → output
+      // The register breaks the combinational path
+      const toggler: Circuit = {
+        id: 'toggler',
+        name: 'Toggler',
+        parameters: [],
+        inputs: [{ name: 'in', portType: bitType() }],
+        outputs: [{ name: 'out', portType: bitType() }],
+        clocks: [{ name: 'clk' }],
+        state: [],
+        nodes: [
+          {
+            id: 'reg',
+            label: 'Register',
+            componentRef: 'Register',
+            arguments: { initial: 0 },
+            inputs: [
+              { id: 'reg.data', name: 'data', portType: busType(8) },
+              { id: 'reg.we', name: 'we', portType: bitType() },
+            ],
+            outputs: [{ id: 'reg.q', name: 'q', portType: busType(8) }],
+            clocks: [{ id: 'reg.clk', name: 'clk' }],
+          },
+          {
+            id: 'const1',
+            label: 'One',
+            componentRef: 'Constant',
+            arguments: { value: 1 },
+            inputs: [],
+            outputs: [{ id: 'const1.out', name: 'out', portType: busType(8) }],
+            clocks: [],
+          },
+          {
+            id: 'const_we',
+            label: 'Write Enable',
+            componentRef: 'Constant',
+            arguments: { value: 1 }, // Always write
+            inputs: [],
+            outputs: [{ id: 'const_we.out', name: 'out', portType: busType(8) }],
+            clocks: [],
+          },
+          {
+            id: 'add',
+            label: 'Adder',
+            componentRef: 'Add',
+            arguments: {},
+            inputs: [
+              { id: 'add.a', name: 'a', portType: busType(8) },
+              { id: 'add.b', name: 'b', portType: busType(8) },
+            ],
+            outputs: [{ id: 'add.out', name: 'out', portType: busType(8) }],
+            clocks: [],
+          },
+        ],
+        connections: [
+          // Register output → Adder
+          {
+            id: 'c1',
+            source: { nodeId: 'reg', portName: 'q' },
+            target: { nodeId: 'add', portName: 'a' },
+            portType: busType(8),
+          },
+          // Constant 1 → Adder
+          {
+            id: 'c2',
+            source: { nodeId: 'const1', portName: 'out' },
+            target: { nodeId: 'add', portName: 'b' },
+            portType: busType(8),
+          },
+          // Adder → Register input (feedback through register!)
+          {
+            id: 'c3',
+            source: { nodeId: 'add', portName: 'out' },
+            target: { nodeId: 'reg', portName: 'data' },
+            portType: busType(8),
+          },
+          // Write enable
+          {
+            id: 'c4',
+            source: { nodeId: 'const_we', portName: 'out' },
+            target: { nodeId: 'reg', portName: 'we' },
+            portType: busType(8),
+          },
+          // Register output → Circuit output
+          {
+            id: 'c5',
+            source: { nodeId: 'reg', portName: 'q' },
+            target: { nodeId: '', portName: 'out' },
+            portType: busType(8),
+          },
+        ],
+        implementation: { kind: 'composite' },
+      };
+
+      library.registerUser(toggler);
+
+      // Now create a circuit that uses the Toggler
+      const circuit: Circuit = {
+        id: 'test',
+        name: 'TogglerTest',
+        parameters: [],
+        inputs: [],
+        outputs: [],
+        clocks: [],
+        state: [],
+        nodes: [
+          {
+            id: 'tog1',
+            label: 'Toggler1',
+            componentRef: 'Toggler',
+            arguments: {},
+            inputs: [{ id: 'tog1.in', name: 'in', portType: bitType() }],
+            outputs: [{ id: 'tog1.out', name: 'out', portType: bitType() }],
+            clocks: [{ id: 'tog1.clk', name: 'clk' }],
+          },
+        ],
+        connections: [],
+        implementation: { kind: 'composite' },
+      };
+
+      // Should NOT detect a cycle because the register breaks the combinational path
+      const result = runCombinationalSimulation(circuit);
+      expect(result.error).toBeUndefined();
+    });
+
+    it('should not detect false cycle with nested composites containing registers', () => {
+      // Create a Counter (contains Register)
+      const counter: Circuit = {
+        id: 'counter',
+        name: 'Counter',
+        parameters: [],
+        inputs: [],
+        outputs: [{ name: 'count', portType: busType(8) }],
+        clocks: [{ name: 'clk' }],
+        state: [],
+        nodes: [
+          {
+            id: 'reg',
+            label: 'Register',
+            componentRef: 'Register',
+            arguments: { initial: 0 },
+            inputs: [
+              { id: 'reg.data', name: 'data', portType: busType(8) },
+              { id: 'reg.we', name: 'we', portType: bitType() },
+            ],
+            outputs: [{ id: 'reg.q', name: 'q', portType: busType(8) }],
+            clocks: [{ id: 'reg.clk', name: 'clk' }],
+          },
+          {
+            id: 'const1',
+            label: 'One',
+            componentRef: 'Constant',
+            arguments: { value: 1 },
+            inputs: [],
+            outputs: [{ id: 'const1.out', name: 'out', portType: busType(8) }],
+            clocks: [],
+          },
+          {
+            id: 'add',
+            label: 'Adder',
+            componentRef: 'Add',
+            arguments: {},
+            inputs: [
+              { id: 'add.a', name: 'a', portType: busType(8) },
+              { id: 'add.b', name: 'b', portType: busType(8) },
+            ],
+            outputs: [{ id: 'add.out', name: 'out', portType: busType(8) }],
+            clocks: [],
+          },
+          {
+            id: 'const_we',
+            label: 'WE',
+            componentRef: 'Constant',
+            arguments: { value: 1 },
+            inputs: [],
+            outputs: [{ id: 'const_we.out', name: 'out', portType: busType(8) }],
+            clocks: [],
+          },
+        ],
+        connections: [
+          {
+            id: 'c1',
+            source: { nodeId: 'reg', portName: 'q' },
+            target: { nodeId: 'add', portName: 'a' },
+            portType: busType(8),
+          },
+          {
+            id: 'c2',
+            source: { nodeId: 'const1', portName: 'out' },
+            target: { nodeId: 'add', portName: 'b' },
+            portType: busType(8),
+          },
+          {
+            id: 'c3',
+            source: { nodeId: 'add', portName: 'out' },
+            target: { nodeId: 'reg', portName: 'data' },
+            portType: busType(8),
+          },
+          {
+            id: 'c4',
+            source: { nodeId: 'const_we', portName: 'out' },
+            target: { nodeId: 'reg', portName: 'we' },
+            portType: busType(8),
+          },
+          {
+            id: 'c5',
+            source: { nodeId: 'reg', portName: 'q' },
+            target: { nodeId: '', portName: 'count' },
+            portType: busType(8),
+          },
+        ],
+        implementation: { kind: 'composite' },
+      };
+
+      library.registerUser(counter);
+
+      // Create StateMachine (contains Counter which contains Register)
+      const stateMachine: Circuit = {
+        id: 'sm',
+        name: 'StateMachine',
+        parameters: [],
+        inputs: [],
+        outputs: [{ name: 'state', portType: busType(8) }],
+        clocks: [{ name: 'clk' }],
+        state: [],
+        nodes: [
+          {
+            id: 'counter1',
+            label: 'Counter',
+            componentRef: 'Counter',
+            arguments: {},
+            inputs: [],
+            outputs: [{ id: 'counter1.count', name: 'count', portType: busType(8) }],
+            clocks: [{ id: 'counter1.clk', name: 'clk' }],
+          },
+        ],
+        connections: [
+          {
+            id: 'c1',
+            source: { nodeId: 'counter1', portName: 'count' },
+            target: { nodeId: '', portName: 'state' },
+            portType: busType(8),
+          },
+        ],
+        implementation: { kind: 'composite' },
+      };
+
+      library.registerUser(stateMachine);
+
+      // Create top-level circuit with StateMachine
+      const circuit: Circuit = {
+        id: 'test',
+        name: 'NestedTest',
+        parameters: [],
+        inputs: [],
+        outputs: [],
+        clocks: [],
+        state: [],
+        nodes: [
+          {
+            id: 'sm1',
+            label: 'SM',
+            componentRef: 'StateMachine',
+            arguments: {},
+            inputs: [],
+            outputs: [{ id: 'sm1.state', name: 'state', portType: busType(8) }],
+            clocks: [{ id: 'sm1.clk', name: 'clk' }],
+          },
+        ],
+        connections: [],
+        implementation: { kind: 'composite' },
+      };
+
+      // Should NOT detect a cycle - register is deeply nested but still breaks the path
+      const result = runCombinationalSimulation(circuit);
+      expect(result.error).toBeUndefined();
+    });
+
+    it('should detect true combinational cycle in composite', () => {
+      // Create a composite with a true combinational cycle (no register)
+      const badComposite: Circuit = {
+        id: 'bad',
+        name: 'BadComposite',
+        parameters: [],
+        inputs: [{ name: 'in', portType: bitType() }],
+        outputs: [{ name: 'out', portType: bitType() }],
+        clocks: [],
+        state: [],
+        nodes: [
+          {
+            id: 'and1',
+            label: 'And1',
+            componentRef: 'And',
+            arguments: {},
+            inputs: [
+              { id: 'and1.a', name: 'a', portType: bitType() },
+              { id: 'and1.b', name: 'b', portType: bitType() },
+            ],
+            outputs: [{ id: 'and1.out', name: 'out', portType: bitType() }],
+            clocks: [],
+          },
+          {
+            id: 'or1',
+            label: 'Or1',
+            componentRef: 'Or',
+            arguments: {},
+            inputs: [
+              { id: 'or1.a', name: 'a', portType: bitType() },
+              { id: 'or1.b', name: 'b', portType: bitType() },
+            ],
+            outputs: [{ id: 'or1.out', name: 'out', portType: bitType() }],
+            clocks: [],
+          },
+        ],
+        connections: [
+          // Create cycle: And → Or → And
+          {
+            id: 'c1',
+            source: { nodeId: 'and1', portName: 'out' },
+            target: { nodeId: 'or1', portName: 'a' },
+            portType: bitType(),
+          },
+          {
+            id: 'c2',
+            source: { nodeId: 'or1', portName: 'out' },
+            target: { nodeId: 'and1', portName: 'a' },
+            portType: bitType(),
+          },
+          // Circuit input
+          {
+            id: 'c3',
+            source: { nodeId: '', portName: 'in' },
+            target: { nodeId: 'and1', portName: 'b' },
+            portType: bitType(),
+          },
+          // Circuit output
+          {
+            id: 'c4',
+            source: { nodeId: 'or1', portName: 'out' },
+            target: { nodeId: '', portName: 'out' },
+            portType: bitType(),
+          },
+        ],
+        implementation: { kind: 'composite' },
+      };
+
+      library.registerUser(badComposite);
+
+      const circuit: Circuit = {
+        id: 'test',
+        name: 'BadTest',
+        parameters: [],
+        inputs: [],
+        outputs: [],
+        clocks: [],
+        state: [],
+        nodes: [
+          {
+            id: 'bad1',
+            label: 'Bad',
+            componentRef: 'BadComposite',
+            arguments: {},
+            inputs: [{ id: 'bad1.in', name: 'in', portType: bitType() }],
+            outputs: [{ id: 'bad1.out', name: 'out', portType: bitType() }],
+            clocks: [],
+          },
+        ],
+        connections: [],
+        implementation: { kind: 'composite' },
+      };
+
+      // Should detect cycle
+      const result = runCombinationalSimulation(circuit);
+      expect(result.error).toContain('Cycle detected');
+    });
+
+    it('should handle composite with DFlipFlop (state-only node)', () => {
+      // DFlipFlop has outputDependency === 'state-only'
+      const flipflopCircuit: Circuit = {
+        id: 'ff-comp',
+        name: 'FFComposite',
+        parameters: [],
+        inputs: [{ name: 'd', portType: bitType() }],
+        outputs: [{ name: 'q', portType: bitType() }],
+        clocks: [{ name: 'clk' }],
+        state: [],
+        nodes: [
+          {
+            id: 'ff',
+            label: 'FF',
+            componentRef: 'DFlipFlop',
+            arguments: { initial: false },
+            inputs: [{ id: 'ff.d', name: 'd', portType: bitType() }],
+            outputs: [{ id: 'ff.q', name: 'q', portType: bitType() }],
+            clocks: [{ id: 'ff.clk', name: 'clk' }],
+          },
+        ],
+        connections: [
+          {
+            id: 'c1',
+            source: { nodeId: '', portName: 'd' },
+            target: { nodeId: 'ff', portName: 'd' },
+            portType: bitType(),
+          },
+          {
+            id: 'c2',
+            source: { nodeId: 'ff', portName: 'q' },
+            target: { nodeId: '', portName: 'q' },
+            portType: bitType(),
+          },
+        ],
+        implementation: { kind: 'composite' },
+      };
+
+      library.registerUser(flipflopCircuit);
+
+      const circuit: Circuit = {
+        id: 'test',
+        name: 'FFTest',
+        parameters: [],
+        inputs: [],
+        outputs: [],
+        clocks: [],
+        state: [],
+        nodes: [
+          {
+            id: 'ff1',
+            label: 'FF1',
+            componentRef: 'FFComposite',
+            arguments: {},
+            inputs: [{ id: 'ff1.d', name: 'd', portType: bitType() }],
+            outputs: [{ id: 'ff1.q', name: 'q', portType: bitType() }],
+            clocks: [{ id: 'ff1.clk', name: 'clk' }],
+          },
+          {
+            id: 'not1',
+            label: 'Not',
+            componentRef: 'Not',
+            arguments: {},
+            inputs: [{ id: 'not1.in', name: 'in', portType: bitType() }],
+            outputs: [{ id: 'not1.out', name: 'out', portType: bitType() }],
+            clocks: [],
+          },
+        ],
+        connections: [
+          // Create feedback: FF.q → Not → FF.d
+          {
+            id: 'c1',
+            source: { nodeId: 'ff1', portName: 'q' },
+            target: { nodeId: 'not1', portName: 'in' },
+            portType: bitType(),
+          },
+          {
+            id: 'c2',
+            source: { nodeId: 'not1', portName: 'out' },
+            target: { nodeId: 'ff1', portName: 'd' },
+            portType: bitType(),
+          },
+        ],
+        implementation: { kind: 'composite' },
+      };
+
+      // Should NOT detect cycle - DFlipFlop breaks the path
+      const result = runCombinationalSimulation(circuit);
+      expect(result.error).toBeUndefined();
+    });
+  });
 });

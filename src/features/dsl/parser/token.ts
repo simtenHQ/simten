@@ -27,6 +27,24 @@ export enum TokenType {
   IF = 'IF',
   ELSE = 'ELSE',
 
+  // Testbench Keywords
+  TESTBENCH = 'TESTBENCH',
+  USE = 'USE',
+  AS = 'AS',
+  STIMULUS = 'STIMULUS',
+  CAPTURE = 'CAPTURE',
+  ASSERT = 'ASSERT',
+  AT = 'AT',
+  STEP = 'STEP',
+  HELPERS = 'HELPERS',
+  FUNCTION = 'FUNCTION',
+  TICK = 'TICK',
+  FOR = 'FOR',
+  IN = 'IN',
+  SIGNALS = 'SIGNALS',
+  FORMAT = 'FORMAT',
+  FILENAME = 'FILENAME',
+
   // Built-in types
   BIT = 'BIT',
   BUS = 'BUS',
@@ -63,6 +81,8 @@ export enum TokenType {
   COLON = 'COLON', // :
   SEMICOLON = 'SEMICOLON', // ;
   DOT = 'DOT', // .
+  DOTDOT = 'DOTDOT', // .. (range operator)
+  AT_SIGN = 'AT_SIGN', // @ (frequency operator)
 
   // Literals
   NUMBER = 'NUMBER', // 123, 0x1A, 0b1010
@@ -115,6 +135,23 @@ export const KEYWORDS: Record<string, TokenType> = {
   falling: TokenType.FALLING,
   if: TokenType.IF,
   else: TokenType.ELSE,
+  // Testbench keywords
+  testbench: TokenType.TESTBENCH,
+  use: TokenType.USE,
+  as: TokenType.AS,
+  stimulus: TokenType.STIMULUS,
+  capture: TokenType.CAPTURE,
+  assert: TokenType.ASSERT,
+  at: TokenType.AT,
+  step: TokenType.STEP,
+  helpers: TokenType.HELPERS,
+  function: TokenType.FUNCTION,
+  tick: TokenType.TICK,
+  for: TokenType.FOR,
+  in: TokenType.IN,
+  signals: TokenType.SIGNALS,
+  format: TokenType.FORMAT,
+  filename: TokenType.FILENAME,
   // Type keywords (case-insensitive for LLM-friendliness)
   Bit: TokenType.BIT,
   bit: TokenType.BIT,
