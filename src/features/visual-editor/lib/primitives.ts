@@ -1139,15 +1139,19 @@ export const PRIMITIVE_DEFINITIONS: Record<string, PrimitiveDefinition> = {
     evaluate: (inputs) => {
       const inputCount = (inputs.get('__input_count') as number) ?? 2;
       const width = (inputs.get('__width') as number) ?? 1;
-      const sel = inputs.get('sel') as number;
+      const sel = typeof inputs.get('sel') === 'number' ? inputs.get('sel') as number : 0;
 
       // Clamp selector to valid range
-      const actualSel = Math.min(sel, inputCount - 1);
+      const actualSel = Math.max(0, Math.min(Math.floor(sel), inputCount - 1));
 
       // Get the selected input (type assertion needed because Map values include parameters)
       const value = inputs.get(`in${actualSel}`) as BitValue | BusValue | undefined;
 
-      return new Map([['out', value ?? (width === 1 ? false : 0)]]);
+      // Ensure correct type for fallback: Bit=false, Bus=0
+      const fallback = (width === 1) ? false : 0;
+      const output = value !== undefined ? value : fallback;
+
+      return new Map([['out', output]]);
     },
   }),
 
@@ -1433,12 +1437,13 @@ export const PRIMITIVE_DEFINITIONS: Record<string, PrimitiveDefinition> = {
       },
     ],
     evaluate: (_inputs, currentState) => {
-      const state = (currentState ?? 0) as number;
+      // Ensure state is always a number (defensive against type corruption)
+      const state = typeof currentState === 'number' ? currentState : 0;
       return new Map([['q', state]]);
     },
     updateState: (inputs, currentState, clockEdges) => {
-      const data = inputs.get('data') as number;
-      const we = inputs.get('we') as boolean;
+      const data = typeof inputs.get('data') === 'number' ? inputs.get('data') as number : 0;
+      const we = inputs.get('we'); // Truthy check works for both boolean and number
       const edge = clockEdges['clk'] ?? 'none';
 
       // Update state on rising edge when write enable is high
@@ -1446,8 +1451,8 @@ export const PRIMITIVE_DEFINITIONS: Record<string, PrimitiveDefinition> = {
         return data;
       }
 
-      // Otherwise, keep current state
-      return currentState;
+      // Otherwise, keep current state (ensure it's a number)
+      return typeof currentState === 'number' ? currentState : 0;
     },
     createComponent: (id, initialValue) => {
       const width: number = 8; // Default width

@@ -327,6 +327,10 @@ export class Lexer {
       case ';':
         return createToken(TokenType.SEMICOLON, char, this.createRange(start, this.currentLocation()));
       case '.':
+        if (this.peek() === '.') {
+          this.advance();
+          return createToken(TokenType.DOTDOT, '..', this.createRange(start, this.currentLocation()));
+        }
         return createToken(TokenType.DOT, char, this.createRange(start, this.currentLocation()));
       case '+':
         return createToken(TokenType.PLUS, char, this.createRange(start, this.currentLocation()));
@@ -377,6 +381,9 @@ export class Lexer {
           return createToken(TokenType.GE, '>=', this.createRange(start, this.currentLocation()));
         }
         return createToken(TokenType.GT, char, this.createRange(start, this.currentLocation()));
+
+      case '@':
+        return createToken(TokenType.AT_SIGN, char, this.createRange(start, this.currentLocation()));
 
       default:
         throw new LexerError(`Unexpected character: '${char}'`, start, this.source);

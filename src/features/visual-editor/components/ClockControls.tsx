@@ -22,6 +22,7 @@ import { Button } from '@/components/ui/button';
 import { useCircuitStore } from '../stores/circuit-store';
 import { useUIStore, useComponentLibraryStore } from '../stores';
 import { useSequentialStateStore } from '../stores/sequential-state-store';
+import { useTestbenchStore } from '../stores/testbench-store';
 import { initializeSequentialState, runSimulationTick, type SequentialState } from '../lib/simulator-v0.1';
 import type { Circuit } from '../types/ir-v0.1';
 import { createSnapshot, restoreEnvironmentalState } from '../lib/time-travel';
@@ -57,6 +58,13 @@ export function ClockControls() {
   const simulationStatus = useUIStore((state) => state.simulation.status);
   const setSimulationStatus = useUIStore((state) => state.setSimulationStatus);
   const resolveComponent = useComponentLibraryStore((state) => state.resolveComponent);
+
+  // Testbench integration
+  const testbench = useTestbenchStore((state) => state.testbench);
+  const getCurrentStimulus = useTestbenchStore((state) => state.getCurrentStimulus);
+  const advanceCycle = useTestbenchStore((state) => state.advanceCycle);
+  const executionState = useTestbenchStore((state) => state.executionState);
+  const setCaptureData = useTestbenchStore((state) => state.setCaptureData);
 
   // Sequential state (shared via store so Canvas can access it)
   const seqState = useSequentialStateStore((state) => state.seqState);
@@ -129,14 +137,169 @@ export function ClockControls() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [circuit, resolveComponent]);
 
+  // Capture waveform data after simulation tick
+  // Takes simulation result portValues for accurate value reading
+  const captureWaveform = useCallback((simPortValues?: Map<string, number | boolean>) => {
+    if (!testbench || !circuit || !testbench.capture || !executionState) return;
+
+    const currentCycle = executionState.cycle;
+
+    // Get or initialize capture data
+    let captureData = executionState.captureData;
+
+    if (!captureData) {
+      // Initialize new capture data
+      captureData = {
+        config: testbench.capture,
+        traces: new Map(),
+      };
+
+      // Initialize traces for each signal
+      for (const signal of testbench.capture.signals) {
+        const traceKey = signal.nodeId === '' ? signal.portName : `${signal.nodeId}.${signal.portName}`;
+        captureData.traces.set(traceKey, {
+          signal,
+          values: [],
+          changes: [],
+        });
+      }
+    }
+
+    // Create a new capture data object to avoid mutation issues
+    const newCaptureData = {
+      config: captureData.config,
+      traces: new Map(captureData.traces),
+    };
+
+    // Capture current values for each signal
+    for (const signal of testbench.capture.signals) {
+      const traceKey = signal.nodeId === '' ? signal.portName : `${signal.nodeId}.${signal.portName}`;
+      const existingTrace = newCaptureData.traces.get(traceKey);
+
+      if (!existingTrace) {
+        console.warn(`Trace not found for signal: ${traceKey}`);
+        continue;
+      }
+
+      // Find the port value - prefer simulation result portValues for accuracy
+      let value: number | boolean | undefined;
+
+      if (simPortValues) {
+        // Try to get value from simulation result portValues
+        // Format: "nodeId.portName" or ".portName" for circuit-level
+        if (signal.nodeId === '') {
+          // For circuit-level ports, look up by label (Input/Output node names)
+          // The testbench creates nodes with labels matching port names
+          const node = circuit.nodes.find(n => n.label === signal.portName);
+          if (node) {
+            // Check componentRef directly (more reliable than resolveComponent)
+            if (node.componentRef === 'Input') {
+              // For Input, read from arguments (stimulus value)
+              value = node.arguments.value as number | boolean;
+              // Also check portValues
+              const pvKey = `${node.id}.out`;
+              if (simPortValues.has(pvKey)) {
+                value = simPortValues.get(pvKey);
+              }
+            } else if (node.componentRef === 'Output') {
+              // For Output, read its input from portValues
+              const pvKey = `${node.id}.in`;
+              value = simPortValues.get(pvKey);
+            }
+          }
+        } else {
+          // Node port - direct lookup
+          const pvKey = `${signal.nodeId}.${signal.portName}`;
+          value = simPortValues.get(pvKey);
+        }
+      }
+
+      // Fallback to reading from circuit if not found in portValues
+      if (value === undefined) {
+        if (signal.nodeId === '') {
+          const node = circuit.nodes.find(n => n.label === signal.portName);
+          if (node) {
+            const comp = resolveComponent(node.componentRef);
+            if (comp?.name === 'Input') {
+              value = node.arguments.value as number | boolean;
+            } else if (comp?.name === 'Output') {
+              value = node.inputs[0]?.value;
+            }
+          }
+        } else {
+          const node = circuit.nodes.find(n => n.id === signal.nodeId);
+          const output = node?.outputs.find(o => o.name === signal.portName);
+          value = output?.value;
+        }
+      }
+
+      // Default to 0 if still undefined
+      if (value === undefined) {
+        value = 0;
+      }
+
+      // Create new trace with updated values
+      const newValues = [...existingTrace.values, value];
+      const newChanges = [...existingTrace.changes];
+
+      // Track changes for efficient VCD
+      if (newValues.length === 1 || newValues[newValues.length - 2] !== value) {
+        newChanges.push({ cycle: currentCycle, value });
+      }
+
+      newCaptureData.traces.set(traceKey, {
+        signal: existingTrace.signal,
+        values: newValues,
+        changes: newChanges,
+      });
+    }
+
+    // Update capture data in store
+    setCaptureData(newCaptureData);
+  }, [testbench, circuit, executionState, setCaptureData, resolveComponent]);
+
+  // Apply testbench stimulus before simulation tick
+  // Returns the updated circuit (since store updates are synchronous with immer)
+  const applyStimulus = useCallback((): Circuit | null => {
+    if (!testbench || !circuit) return circuit;
+
+    const stimulus = getCurrentStimulus();
+
+    // Apply each stimulus action
+    for (const action of stimulus) {
+      // Find the Input node by label (testbench compiler creates nodes with matching labels)
+      const node = circuit.nodes.find(n => n.label === action.portName);
+
+      if (node) {
+        updateNode(node.id, {
+          arguments: { ...node.arguments, value: action.value }
+        });
+      }
+
+      // Also set tb_input_* node if it exists (testbench creates these)
+      const tbInputNode = circuit.nodes.find(n => n.id === `tb_input_${action.portName}`);
+      if (tbInputNode) {
+        updateNode(tbInputNode.id, {
+          arguments: { ...tbInputNode.arguments, value: action.value }
+        });
+      }
+    }
+
+    // Return the updated circuit from store (immer updates are synchronous)
+    return useCircuitStore.getState().circuit;
+  }, [testbench, circuit, getCurrentStimulus, updateNode]);
+
   // Handle single clock step
   const handleStep = useCallback(() => {
     if (!seqState || !circuit) return;
 
     setSimulationStatus('running');
 
-    // STEP 1: Run simulation tick
-    const result = runSimulationTick(circuit, seqState);
+    // TESTBENCH: Apply stimulus before tick (returns fresh circuit from store)
+    const updatedCircuit = applyStimulus() ?? circuit;
+
+    // STEP 1: Run simulation tick with updated circuit
+    const result = runSimulationTick(updatedCircuit, seqState);
 
     if (result.error) {
       console.error('Simulation error:', result.error);
@@ -161,6 +324,12 @@ export function ClockControls() {
       // history[n] = state after n clock ticks
       const snapshot = createSnapshot(newSeqState, circuit);
       saveSnapshot(snapshot);
+
+      // TESTBENCH: Capture waveform and advance cycle counter
+      if (testbench) {
+        captureWaveform(result.portValues);
+        advanceCycle();
+      }
     }
 
     // Note: We don't need to manually update node values for LEDs/outputs here
@@ -170,7 +339,7 @@ export function ClockControls() {
     setTimeout(() => {
       setSimulationStatus('idle');
     }, 50);
-  }, [seqState, circuit, setSimulationStatus, setSeqState, saveSnapshot]);
+  }, [seqState, circuit, setSimulationStatus, setSeqState, saveSnapshot, testbench, advanceCycle, applyStimulus, captureWaveform]);
 
   // Handle run (continuous ticking)
   const handleRun = useCallback(() => {
@@ -262,8 +431,11 @@ export function ClockControls() {
 
         setSimulationStatus('running');
 
-        // STEP 1: Execute one clock tick
-        const result = runSimulationTick(currentCircuit, currentSeqState);
+        // TESTBENCH: Apply stimulus before tick (returns fresh circuit from store)
+        const updatedCircuit = applyStimulus() ?? currentCircuit;
+
+        // STEP 1: Execute one clock tick with updated circuit
+        const result = runSimulationTick(updatedCircuit, currentSeqState);
 
         if (result.error) {
           console.error('Simulation error:', result.error);
@@ -286,6 +458,12 @@ export function ClockControls() {
           // Snapshots represent completed clock edges (post-tick states)
           const snapshot = createSnapshot(newSeqState, currentCircuit);
           saveSnapshot(snapshot);
+
+          // TESTBENCH: Capture waveform and advance cycle counter
+          if (testbench) {
+            captureWaveform(result.portValues);
+            advanceCycle();
+          }
         }
 
         setTimeout(() => {
@@ -301,7 +479,7 @@ export function ClockControls() {
         runIntervalRef.current = null;
       }
     };
-  }, [isRunning, clockSpeed, setSimulationStatus, setSeqState, saveSnapshot]);
+  }, [isRunning, clockSpeed, setSimulationStatus, setSeqState, saveSnapshot, testbench, advanceCycle, applyStimulus, captureWaveform]);
 
   if (!hasSequentialComponents(circuit, resolveComponent)) {
     return null; // Don't show clock controls for purely combinational circuits

@@ -124,14 +124,11 @@ export function initializeSequentialState(circuit: Circuit): SequentialState {
         } else if ('data' in node.arguments && node.arguments.data !== undefined) {
           // ROM initialization from 'data' argument
           const romData = node.arguments.data;
-          console.log(`[ROM Init] Node ${node.label}: data argument found, length=${Array.isArray(romData) ? romData.length : 'not array'}`);
           const memory = new Map<number, number>();
           const maxAddress = 255; // ROM is 256 addresses (0-255)
           const maxValue = 255; // 8-bit data (0-255)
 
           if (Array.isArray(romData)) {
-            console.log(`[ROM Init] ${node.label}: Initializing array with ${romData.length} values`);
-            console.log(`[ROM Init] ${node.label}: First 10 values:`, romData.slice(0, 10));
             // Dense initialization: [val0, val1, val2, ...]
             if (romData.length > 256) {
               throw new Error(
@@ -160,8 +157,6 @@ export function initializeSequentialState(circuit: Circuit): SequentialState {
               }
               memory.set(index, Math.floor(value)); // Ensure integer
             });
-            console.log(`[ROM Init] ${node.label}: Memory populated with ${memory.size} entries`);
-            console.log(`[ROM Init] ${node.label}: Sample values - addr[0]=${memory.get(0)}, addr[32]=${memory.get(32)}, addr[63]=${memory.get(63)}`);
           } else if (typeof romData === 'object' && !Array.isArray(romData)) {
             // Sparse initialization: {addr: value, ...}
             Object.entries(romData).forEach(([addrStr, value]) => {
@@ -381,6 +376,7 @@ function getNodeInputs(
     if (conn.target.nodeId === node.id) {
       const sourceKey = portPathKey(conn.source);
       const value = portValues.get(sourceKey);
+
       if (value !== undefined) {
         inputs.set(conn.target.portName, value);
       }

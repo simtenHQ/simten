@@ -12,13 +12,14 @@ import { ReactFlowProvider } from '@xyflow/react';
 import { Canvas } from './Canvas';
 import { ComponentPalette } from './ComponentPalette';
 import { SimulationControls } from './SimulationControls';
-import { TestPanel } from './TestPanel';
+import { RightSidebar } from './RightSidebar';
 import { TestCaseEditor } from './TestCaseEditor';
 import { CircuitSelector } from './CircuitSelector';
 import { DSLEditor } from '@/features/dsl/components/DSLEditor';
 import { ComponentLibrary } from '@/features/dsl/components/ComponentLibrary';
 import { usePrimitivesInit } from '../hooks/usePrimitivesInit';
 import { useDSLPreviewStore } from '../stores/dsl-preview-store';
+import { useComponentLibraryStore } from '../stores/component-library-store';
 import type { Circuit } from '../types/ir-v0.1';
 
 type TabType = 'visual' | 'dsl' | 'split';
@@ -26,6 +27,7 @@ type TabType = 'visual' | 'dsl' | 'split';
 export function VisualEditor() {
   const [activeTab, setActiveTab] = useState<TabType>('visual');
   const setCompiledCircuits = useDSLPreviewStore((state) => state.setCompiledCircuits);
+  const registerUser = useComponentLibraryStore((state) => state.registerUser);
 
   // Initialize primitive components library
   usePrimitivesInit();
@@ -33,9 +35,16 @@ export function VisualEditor() {
   // Handle DSL compilation in split mode
   const handleDSLCompile = useCallback(
     (circuits: Circuit[], dslCode: string) => {
+      // Register all compiled circuits in the component library
+      // so they can be referenced by testbenches and other circuits
+      circuits.forEach((circuit) => {
+        console.log('[VisualEditor] Registering circuit in library:', circuit.name, 'nodes:', circuit.nodes.length);
+        registerUser(circuit);
+      });
+
       setCompiledCircuits(circuits, dslCode);
     },
-    [setCompiledCircuits]
+    [setCompiledCircuits, registerUser]
   );
 
   return (
@@ -93,8 +102,8 @@ export function VisualEditor() {
                 <Canvas />
               </div>
 
-              {/* Right: Test Panel */}
-              <TestPanel />
+              {/* Right: Sidebar (Tests + Testbench) */}
+              <RightSidebar />
             </>
           )}
 
