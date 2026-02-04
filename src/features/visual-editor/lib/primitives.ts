@@ -1139,7 +1139,8 @@ export const PRIMITIVE_DEFINITIONS: Record<string, PrimitiveDefinition> = {
     evaluate: (inputs) => {
       const inputCount = (inputs.get('__input_count') as number) ?? 2;
       const width = (inputs.get('__width') as number) ?? 1;
-      const sel = typeof inputs.get('sel') === 'number' ? inputs.get('sel') as number : 0;
+      const selValue = inputs.get('sel');
+      const sel = typeof selValue === 'boolean' ? (selValue ? 1 : 0) : (typeof selValue === 'number' ? selValue : 0);
 
       // Clamp selector to valid range
       const actualSel = Math.max(0, Math.min(Math.floor(sel), inputCount - 1));

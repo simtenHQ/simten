@@ -291,7 +291,17 @@ export function ClockControls() {
 
   // Handle single clock step
   const handleStep = useCallback(() => {
-    if (!seqState || !circuit) return;
+    console.log('[handleStep] Called');
+    console.log('[handleStep] seqState:', seqState ? 'exists' : 'null');
+    console.log('[handleStep] circuit:', circuit ? circuit.name : 'null');
+
+    if (!seqState || !circuit) {
+      console.log('[handleStep] Exiting - missing seqState or circuit');
+      return;
+    }
+
+    console.log('[handleStep] Sequential state keys:', Array.from(seqState.currentState.keys()));
+    console.log('[handleStep] Cycle count:', seqState.cycleCount);
 
     setSimulationStatus('running');
 
@@ -299,7 +309,13 @@ export function ClockControls() {
     const updatedCircuit = applyStimulus() ?? circuit;
 
     // STEP 1: Run simulation tick with updated circuit
+    console.log('[handleStep] Running simulation tick...');
     const result = runSimulationTick(updatedCircuit, seqState);
+    console.log('[handleStep] Tick result:', {
+      hasError: !!result.error,
+      hasSeqState: !!result.sequentialState,
+      portValuesCount: result.portValues.size,
+    });
 
     if (result.error) {
       console.error('Simulation error:', result.error);
@@ -309,6 +325,9 @@ export function ClockControls() {
 
     // STEP 2: Update state
     if (result.sequentialState) {
+      console.log('[handleStep] New sequential state keys:', Array.from(result.sequentialState.currentState.keys()));
+      console.log('[handleStep] New cycle count:', result.sequentialState.cycleCount);
+
       // Clone the sequential state to create a new reference
       const newSeqState: SequentialState = {
         currentState: new Map(result.sequentialState.currentState),
@@ -318,6 +337,10 @@ export function ClockControls() {
       };
 
       setSeqState(newSeqState);
+      console.log('[handleStep] Sequential state updated');
+
+      // Log sequential state values to see actual register values
+      console.log('[handleStep] Sequential state values:', Object.fromEntries(newSeqState.currentState));
 
       // STEP 3: Create snapshot AFTER tick
       // Snapshots represent completed clock edges (post-tick states)
@@ -330,6 +353,24 @@ export function ClockControls() {
         captureWaveform(result.portValues);
         advanceCycle();
       }
+
+      // Log ALL port value keys to see what's available
+      console.log('[handleStep] ALL port value keys:', Array.from(result.portValues.keys()));
+
+      // Find the counter.count value
+      const counterKey = Array.from(result.portValues.keys()).find(k => k.includes('counter') && k.includes('.count'));
+      const enableKey = Array.from(result.portValues.keys()).find(k => k.includes('enable_btn') && k.includes('.out'));
+      const resetKey = Array.from(result.portValues.keys()).find(k => k.includes('reset_btn') && k.includes('.out'));
+      const led0Key = Array.from(result.portValues.keys()).find(k => k.includes('led0') && k.includes('.in'));
+
+      console.log('[handleStep] Port values:', {
+        counterCount: counterKey ? result.portValues.get(counterKey) : 'not found',
+        enable: enableKey ? result.portValues.get(enableKey) : 'not found',
+        reset: resetKey ? result.portValues.get(resetKey) : 'not found',
+        led0: led0Key ? result.portValues.get(led0Key) : 'not found',
+      });
+    } else {
+      console.log('[handleStep] No sequential state in result!');
     }
 
     // Note: We don't need to manually update node values for LEDs/outputs here
