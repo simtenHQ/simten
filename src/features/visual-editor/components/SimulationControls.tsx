@@ -1,60 +1,31 @@
 /**
  * SimulationControls Component (IR v0.1)
  *
- * Control panel for running simulations and managing circuit state.
+ * Top toolbar for the visual editor, displaying circuit statistics and controls.
  *
- * Updated for IR v0.1:
- * - Uses CircuitStore instead of useIRStore
- * - Uses runCombinationalSimulation from simulator-v0.1.ts
- * - Works with Circuit.nodes instead of components
+ * Components:
+ * - Title and component/connection counts
+ * - ClockControls for sequential circuit simulation
+ * - Layout tools (Clean, Auto Layout, Clear)
  */
 
 'use client';
 
 import React, { useCallback } from 'react';
-import { Play, Square, Trash2, Sparkles, LayoutGrid } from 'lucide-react';
+import { Trash2, Sparkles, LayoutGrid } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useCircuitStore } from '../stores/circuit-store';
 import { useMetadataStore, useUIStore } from '../stores';
-import { runCombinationalSimulation } from '../lib/simulator-v0.1';
 import { performHierarchicalLayout, centerLayout } from '../utils/auto-layout';
-import { cn } from '@/lib/utils';
-import { ClockControls } from './ClockControls';
 
 export function SimulationControls() {
-  // Select values separately to avoid creating new objects on every render
   const circuit = useCircuitStore((state) => state.circuit);
-  const simulationStatus = useUIStore((state) => state.simulation.status);
-  const setSimulationStatus = useUIStore((state) => state.setSimulationStatus);
-  const resetSimulation = useUIStore((state) => state.resetSimulation);
   const clearCircuit = useCircuitStore((state) => state.clearCircuit);
   const clearAllMetadata = useMetadataStore((state) => state.clearAll);
+  const resetSimulation = useUIStore((state) => state.resetSimulation);
 
-  // Get component counts
+  // Get component counts for button disabled state only
   const componentCount = circuit?.nodes.length ?? 0;
-  const connectionCount = circuit?.connections.length ?? 0;
-
-  const handleRun = useCallback(() => {
-    if (!circuit) return;
-
-    setSimulationStatus('running');
-
-    // Run simulation step
-    runCombinationalSimulation(circuit);
-
-    // Note: Simulation now happens automatically in Canvas.tsx via useEffect
-    // This button is mainly for manual re-triggering if needed
-
-    // Reset status after simulation completes
-    setTimeout(() => {
-      setSimulationStatus('idle');
-    }, 100);
-  }, [circuit, setSimulationStatus]);
-
-  const handleStop = useCallback(() => {
-    setSimulationStatus('idle');
-    resetSimulation();
-  }, [setSimulationStatus, resetSimulation]);
 
   const handleClear = useCallback(() => {
     if (confirm('Clear all components and connections?')) {
@@ -120,82 +91,42 @@ export function SimulationControls() {
   }, [circuit]);
 
   return (
-    <div className="flex h-16 items-center justify-between border-b border-gray-200 bg-white px-6 shadow-sm">
-      {/* Left: Title and Stats */}
-      <div className="flex items-center gap-6">
-        <h1 className="text-xl font-bold text-gray-900">System Simulator</h1>
-        <div className="flex items-center gap-4 text-sm text-gray-600">
-          <span>
-            <strong>{componentCount}</strong> components
-          </span>
-          <span>
-            <strong>{connectionCount}</strong> connections
-          </span>
-        </div>
-      </div>
+    <div className="flex items-center gap-2">
+      <Button
+        onClick={handleCleanup}
+        variant="outline"
+        size="sm"
+        disabled={componentCount === 0}
+        className="gap-2"
+        title="Clear waypoints and snap to grid"
+      >
+        <Sparkles className="h-4 w-4" />
+        Clean
+      </Button>
 
-      {/* Right: Controls */}
-      <div className="flex items-center gap-3">
-        {/* Clock Controls (for sequential circuits) */}
-        <ClockControls />
+      <Button
+        onClick={handleAutoLayout}
+        variant="outline"
+        size="sm"
+        disabled={componentCount === 0}
+        className="gap-2"
+        title="Auto-organize components"
+      >
+        <LayoutGrid className="h-4 w-4" />
+        Layout
+      </Button>
 
-        {/* Run Button (for combinational circuits) */}
-        <Button
-          onClick={handleRun}
-          disabled={simulationStatus === 'running' || componentCount === 0}
-          className={cn(
-            'gap-2',
-            simulationStatus === 'running' && 'cursor-not-allowed opacity-50'
-          )}
-        >
-          <Play className="h-4 w-4" />
-          {simulationStatus === 'running' ? 'Running...' : 'Run'}
-        </Button>
-
-        {/* Stop Button */}
-        <Button
-          onClick={handleStop}
-          variant="outline"
-          disabled={simulationStatus !== 'running'}
-        >
-          <Square className="h-4 w-4" />
-        </Button>
-
-        {/* Clean Up Wiring Button */}
-        <Button
-          onClick={handleCleanup}
-          variant="outline"
-          disabled={componentCount === 0}
-          className="gap-2"
-          title="Clear waypoints and snap to grid (preserves positions)"
-        >
-          <Sparkles className="h-4 w-4" />
-          Clean Wiring
-        </Button>
-
-        {/* Auto Layout Button */}
-        <Button
-          onClick={handleAutoLayout}
-          variant="outline"
-          disabled={componentCount === 0}
-          className="gap-2"
-          title="Automatically organize components in hierarchical layout"
-        >
-          <LayoutGrid className="h-4 w-4" />
-          Auto Layout
-        </Button>
-
-        {/* Clear Button */}
-        <Button
-          onClick={handleClear}
-          variant="destructive"
-          disabled={componentCount === 0}
-          className="gap-2"
-        >
-          <Trash2 className="h-4 w-4" />
-          Clear
-        </Button>
-      </div>
+      <Button
+        onClick={handleClear}
+        variant="outline"
+        size="sm"
+        disabled={componentCount === 0}
+        className="gap-2 text-red-600 hover:text-red-700 hover:bg-red-50"
+        title="Clear all components"
+      >
+        <Trash2 className="h-4 w-4" />
+        Clear
+      </Button>
     </div>
   );
 }
