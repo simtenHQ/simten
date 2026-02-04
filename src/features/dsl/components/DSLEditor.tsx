@@ -54,11 +54,12 @@ circuit HalfAdder {
 interface DSLEditorProps {
   onCompileSuccess?: (circuits: Circuit[], dslCode: string) => void;
   autoCompileEnabled?: boolean;
+  showHeader?: boolean;
 }
 
 const STORAGE_KEY = 'turing-incomplete-dsl-code';
 
-export function DSLEditor({ onCompileSuccess, autoCompileEnabled = false }: DSLEditorProps) {
+export function DSLEditor({ onCompileSuccess, autoCompileEnabled = false, showHeader = true }: DSLEditorProps) {
   // Load code from localStorage on mount, fallback to default
   const [code, setCode] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -279,17 +280,19 @@ export function DSLEditor({ onCompileSuccess, autoCompileEnabled = false }: DSLE
 
   return (
     <div className="flex flex-col h-full bg-white">
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 py-2 border-b bg-gray-50">
-        <h2 className="text-lg font-semibold text-gray-800">DSL Editor</h2>
-        <div className="flex items-center gap-2">
-          <CompileButton
-            onClick={handleCompile}
-            isCompiling={isCompiling}
-            disabled={!code.trim()}
-          />
+      {/* Header (optional) */}
+      {showHeader && (
+        <div className="flex items-center justify-between px-4 py-2 border-b bg-gray-50">
+          <h2 className="text-lg font-semibold text-gray-800">DSL Editor</h2>
+          <div className="flex items-center gap-2">
+            <CompileButton
+              onClick={handleCompile}
+              isCompiling={isCompiling}
+              disabled={!code.trim()}
+            />
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Success Message */}
       {successMessage && (
