@@ -7,30 +7,81 @@
 
 'use client';
 
-import React, { useState, useCallback } from 'react';
+import React, { useCallback, useState, useEffect } from 'react';
 import { ReactFlowProvider } from '@xyflow/react';
 import { Canvas } from './Canvas';
 import { ComponentPalette } from './ComponentPalette';
 import { SimulationControls } from './SimulationControls';
 import { RightSidebar } from './RightSidebar';
 import { TestCaseEditor } from './TestCaseEditor';
-import { CircuitSelector } from './CircuitSelector';
+import { ClockControls } from './ClockControls';
 import { DSLEditor } from '@/features/dsl/components/DSLEditor';
-import { ComponentLibrary } from '@/features/dsl/components/ComponentLibrary';
+import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
+import { Menu, TestTube } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { useCircuitStore } from '../stores/circuit-store';
 import { usePrimitivesInit } from '../hooks/usePrimitivesInit';
 import { useDSLPreviewStore } from '../stores/dsl-preview-store';
 import { useComponentLibraryStore } from '../stores/component-library-store';
 import type { Circuit } from '../types/ir-v0.1';
 
-type TabType = 'visual' | 'dsl' | 'split';
+// Helper to check if circuit has sequential components
+function hasSequentialComponents(circuit: Circuit | null, resolveComponent: (name: string) => Circuit | undefined): boolean {
+  if (!circuit) return false;
+
+  for (const node of circuit.nodes) {
+    const componentDef = resolveComponent(node.componentRef);
+    if (!componentDef) continue;
+
+    // Check if component has clocks or state (sequential indicators)
+    if (componentDef.clocks.length > 0 || componentDef.state.length > 0) {
+      return true;
+    }
+
+    // If this is a composite, recursively check inside it
+    if (componentDef.implementation.kind === 'composite') {
+      if (hasSequentialComponents(componentDef, resolveComponent)) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
 
 export function VisualEditor() {
-  const [activeTab, setActiveTab] = useState<TabType>('visual');
   const setCompiledCircuits = useDSLPreviewStore((state) => state.setCompiledCircuits);
   const registerUser = useComponentLibraryStore((state) => state.registerUser);
+  const circuit = useCircuitStore((state) => state.circuit);
+  const resolveComponent = useComponentLibraryStore((state) => state.resolveComponent);
+
+  // Drawer state
+  const [componentPaletteOpen, setComponentPaletteOpen] = useState(false);
+  const [testsPanelOpen, setTestsPanelOpen] = useState(false);
+
+  // Check if we need to show clock controls
+  const showClockControls = hasSequentialComponents(circuit, resolveComponent);
 
   // Initialize primitive components library
   usePrimitivesInit();
+
+  // Keyboard shortcuts for drawer toggles
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Cmd+P / Ctrl+P - Toggle component palette
+      if ((e.metaKey || e.ctrlKey) && e.key === 'p') {
+        e.preventDefault();
+        setComponentPaletteOpen((prev) => !prev);
+      }
+      // Cmd+T / Ctrl+T - Toggle tests panel
+      if ((e.metaKey || e.ctrlKey) && e.key === 't') {
+        e.preventDefault();
+        setTestsPanelOpen((prev) => !prev);
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   // Handle DSL compilation in split mode
   const handleDSLCompile = useCallback(
@@ -50,94 +101,80 @@ export function VisualEditor() {
   return (
     <ReactFlowProvider>
       <div className="flex h-screen w-screen flex-col overflow-hidden bg-gray-50">
-        {/* Top Control Bar with Tabs */}
-        <div className="flex flex-col border-b border-gray-200 bg-white">
-          {/* Tab Buttons */}
-          <div className="flex items-center gap-4 px-4 pt-4">
-            <button
-              onClick={() => setActiveTab('visual')}
-              className={`px-4 py-2 text-sm font-medium rounded-t-lg transition-colors ${
-                activeTab === 'visual'
-                  ? 'bg-gray-50 text-blue-600 border-t-2 border-x-2 border-blue-600'
-                  : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'
-              }`}
-            >
-              Visual Editor
-            </button>
-            <button
-              onClick={() => setActiveTab('dsl')}
-              className={`px-4 py-2 text-sm font-medium rounded-t-lg transition-colors ${
-                activeTab === 'dsl'
-                  ? 'bg-gray-50 text-blue-600 border-t-2 border-x-2 border-blue-600'
-                  : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'
-              }`}
-            >
-              DSL Editor
-            </button>
-            <button
-              onClick={() => setActiveTab('split')}
-              className={`px-4 py-2 text-sm font-medium rounded-t-lg transition-colors ${
-                activeTab === 'split'
-                  ? 'bg-gray-50 text-blue-600 border-t-2 border-x-2 border-blue-600'
-                  : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'
-              }`}
-            >
-              Split Mode
-            </button>
+        {/* Top Control Bar with Drawer Toggle Buttons */}
+        <div className="flex items-center gap-3 border-b border-gray-200 bg-white px-6 py-2 shadow-sm">
+          {/* Left: Drawer Toggle Buttons */}
+          <Button
+            onClick={() => setComponentPaletteOpen(true)}
+            variant="outline"
+            size="sm"
+            className="gap-2"
+            title="Open Component Palette (Cmd+P)"
+          >
+            <Menu className="h-4 w-4" />
+          </Button>
+
+          <Button
+            onClick={() => setTestsPanelOpen(true)}
+            variant="outline"
+            size="sm"
+            className="gap-2"
+            title="Open Tests Panel (Cmd+T)"
+          >
+            <TestTube className="h-4 w-4" />
+          </Button>
+
+          <div className="border-l border-gray-200 h-8"></div>
+
+          {/* App Title */}
+          <h1 className="text-lg font-bold text-gray-900">Turing Incomplete</h1>
+
+          {/* Spacer */}
+          <div className="flex-1"></div>
+
+          {/* Main Controls from SimulationControls (inline) */}
+          <SimulationControls />
+        </div>
+
+        {/* Main Content Area - Unified Workspace */}
+        <div className="flex flex-1 overflow-hidden">
+          {/* Left: DSL Editor (40%) - Full Height */}
+          <div className="w-[40%] border-r border-gray-200">
+            <DSLEditor
+              autoCompileEnabled={true}
+              onCompileSuccess={handleDSLCompile}
+              showHeader={false}
+            />
           </div>
 
-          {/* Simulation Controls (in visual and split modes) */}
-          {(activeTab === 'visual' || activeTab === 'split') && <SimulationControls />}
+          {/* Right: Canvas (60%) - Full Height */}
+          <div className="flex-1">
+            <Canvas />
+          </div>
         </div>
 
-        {/* Main Content Area */}
-        <div className="flex flex-1 overflow-hidden">
-          {activeTab === 'visual' && (
-            <>
-              {/* Left: Component Palette */}
-              <ComponentPalette />
+        {/* Left Drawer: Component Palette */}
+        <Sheet open={componentPaletteOpen} onOpenChange={setComponentPaletteOpen}>
+          <SheetContent side="left" className="w-80 p-0">
+            <SheetTitle className="sr-only">Component Palette</SheetTitle>
+            <ComponentPalette />
+          </SheetContent>
+        </Sheet>
 
-              {/* Center: Canvas */}
-              <div className="flex-1">
-                <Canvas />
-              </div>
+        {/* Right Drawer: Tests + Testbench */}
+        <Sheet open={testsPanelOpen} onOpenChange={setTestsPanelOpen}>
+          <SheetContent side="right" className="w-96 p-0">
+            <SheetTitle className="sr-only">Tests and Testbench</SheetTitle>
+            <RightSidebar />
+          </SheetContent>
+        </Sheet>
 
-              {/* Right: Sidebar (Tests + Testbench) */}
-              <RightSidebar />
-            </>
-          )}
-
-          {activeTab === 'dsl' && (
-            <>
-              {/* Left: DSL Editor */}
-              <div className="flex-1">
-                <DSLEditor />
-              </div>
-
-              {/* Right: Component Library */}
-              <div className="w-80">
-                <ComponentLibrary />
-              </div>
-            </>
-          )}
-
-          {activeTab === 'split' && (
-            <>
-              {/* Left: DSL Editor (with auto-compile) */}
-              <div className="flex-1 border-r border-gray-200">
-                <DSLEditor autoCompileEnabled={true} onCompileSuccess={handleDSLCompile} />
-              </div>
-
-              {/* Right: Canvas with CircuitSelector */}
-              <div className="flex-1 flex flex-col">
-                <CircuitSelector />
-                <div className="flex-1">
-                  <Canvas />
-                </div>
-              </div>
-            </>
-          )}
-        </div>
+        {/* Conditional Bottom Bar: Clock Controls (only for sequential circuits) */}
+        {showClockControls && (
+          <div className="border-t border-gray-200 bg-white px-6 py-3 shadow-sm">
+            <ClockControls />
+          </div>
+        )}
 
         {/* Test Case Editor Modal */}
         <TestCaseEditor />
