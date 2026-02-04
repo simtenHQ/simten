@@ -377,17 +377,6 @@ function getNodeInputs(
       const sourceKey = portPathKey(conn.source);
       const value = portValues.get(sourceKey);
 
-      // DEBUG: Log when reading reset/enable for muxes in Counter
-      if (node.id.includes('mux') && (conn.target.portName === 'sel' || conn.target.portName === 'in0' || conn.target.portName === 'in1')) {
-        console.log('[getNodeInputs] Mux connection:', {
-          nodeId: node.id,
-          targetPort: conn.target.portName,
-          sourceKey,
-          value,
-          availableKeys: Array.from(portValues.keys()).filter(k => k.includes('reset') || k.includes('enable') || k === sourceKey),
-        });
-      }
-
       if (value !== undefined) {
         inputs.set(conn.target.portName, value);
       }
@@ -495,20 +484,10 @@ function evaluateComposite(
   // Create initial port values with circuit-level inputs
   const initialPortValues: PortValueMap = new Map();
 
-  // DEBUG: Log Counter composite inputs
-  if (componentDef.name === 'Counter') {
-    console.log('[evaluateComposite] Counter inputs:', Object.fromEntries(inputs));
-  }
-
   // Map node inputs to circuit-level input ports
   for (const [inputName, inputValue] of inputs.entries()) {
     const inputKey = portPathKey({ nodeId: '', portName: inputName });
     initialPortValues.set(inputKey, inputValue);
-  }
-
-  // DEBUG: Log Counter initial port values
-  if (componentDef.name === 'Counter') {
-    console.log('[evaluateComposite] Counter initialPortValues:', Object.fromEntries(initialPortValues));
   }
 
   // Create scoped sequential state for this composite instance
@@ -657,27 +636,7 @@ function updateSequentialStates(
 
         // Update state using full node ID
         const currentState = seqState.currentState.get(fullNodeId);
-
-        // DEBUG: Log Register updateState calls
-        if (node.componentRef === 'Register') {
-          console.log('[updateSequentialState] Register updateState:', {
-            nodeId: fullNodeId,
-            inputs: Object.fromEntries(inputs),
-            currentState,
-            clockEdges,
-          });
-        }
-
         const nextState = evaluator.updateState(inputs, currentState, clockEdges);
-
-        // DEBUG: Log Register next state
-        if (node.componentRef === 'Register') {
-          console.log('[updateSequentialState] Register nextState:', {
-            nodeId: fullNodeId,
-            nextState,
-          });
-        }
-
         seqState.nextState.set(fullNodeId, nextState);
       }
 
@@ -819,19 +778,6 @@ export function runCombinationalSimulation(
     for (const [portName, value] of outputs.entries()) {
       const portKey = portPathKey({ nodeId, portName });
       portValues.set(portKey, value);
-    }
-  }
-
-  // Propagate values FROM circuit-level inputs TO internal nodes
-  // (needed for composite component evaluation - inputs are mapped to nodeId: '')
-  for (const conn of circuit.connections) {
-    if (conn.source.nodeId === '' && conn.target.nodeId !== '') {
-      const sourceKey = portPathKey(conn.source);
-      const targetKey = portPathKey(conn.target);
-      const sourceValue = portValues.get(sourceKey);
-      if (sourceValue !== undefined) {
-        portValues.set(targetKey, sourceValue);
-      }
     }
   }
 
