@@ -21,15 +21,14 @@
  * - Drag selected nodes to move them together
  */
 
-'use client';
+"use client";
 
-import React, { useCallback, useMemo, useEffect, useState } from 'react';
-import type { Circuit } from '../types/ir-v0.1';
+import React, { useCallback, useMemo, useEffect, useState } from "react";
+import type { Circuit } from "../types/ir-v0.1";
 import {
   ReactFlow,
   Background,
   Controls,
-  MiniMap,
   useReactFlow,
   OnConnect,
   OnNodesChange,
@@ -37,19 +36,27 @@ import {
   Connection,
   NodeTypes,
   SelectionMode,
-} from '@xyflow/react';
-import '@xyflow/react/dist/style.css';
+} from "@xyflow/react";
+import "@xyflow/react/dist/style.css";
 
-import { useCircuitStore } from '../stores/circuit-store';
-import { useMetadataStore } from '../stores';
-import { useComponentLibraryStore } from '../stores/component-library-store';
-import { useSequentialStateStore } from '../stores/sequential-state-store';
-import { useDSLPreviewStore } from '../stores/dsl-preview-store';
-import { projectCircuitToReactFlow } from '../utils/projection';
-import { InputNode, OutputNode, LogicGateNode, ScreenNode, RasterDisplayNode, RegisterNode, RAMNode } from './nodes';
-import { NumericInputNode } from './nodes/NumericInputNode';
-import { OrthogonalEdge } from './edges';
-import { runCombinationalSimulation } from '../lib/simulator-v0.1';
+import { useCircuitStore } from "../stores/circuit-store";
+import { useMetadataStore } from "../stores";
+import { useComponentLibraryStore } from "../stores/component-library-store";
+import { useSequentialStateStore } from "../stores/sequential-state-store";
+import { useDSLPreviewStore } from "../stores/dsl-preview-store";
+import { projectCircuitToReactFlow } from "../utils/projection";
+import {
+  InputNode,
+  OutputNode,
+  LogicGateNode,
+  ScreenNode,
+  RasterDisplayNode,
+  RegisterNode,
+  RAMNode,
+} from "./nodes";
+import { NumericInputNode } from "./nodes/NumericInputNode";
+import { OrthogonalEdge } from "./edges";
+import { runCombinationalSimulation } from "../lib/simulator-v0.1";
 
 // Define custom node types
 const nodeTypes = {
@@ -85,11 +92,18 @@ function SelectionInfo({ selectedCount }: { selectedCount: number }) {
           </div>
           <div className="flex-1">
             <div className="text-sm font-semibold text-gray-900">
-              {selectedCount} component{selectedCount !== 1 ? 's' : ''} selected
+              {selectedCount} component{selectedCount !== 1 ? "s" : ""} selected
             </div>
             <div className="text-xs text-gray-600">
-              Press <kbd className="px-1.5 py-0.5 bg-gray-100 border border-gray-300 rounded text-xs font-mono">Delete</kbd> or{' '}
-              <kbd className="px-1.5 py-0.5 bg-gray-100 border border-gray-300 rounded text-xs font-mono">⌫</kbd> to remove
+              Press{" "}
+              <kbd className="px-1.5 py-0.5 bg-gray-100 border border-gray-300 rounded text-xs font-mono">
+                Delete
+              </kbd>{" "}
+              or{" "}
+              <kbd className="px-1.5 py-0.5 bg-gray-100 border border-gray-300 rounded text-xs font-mono">
+                ⌫
+              </kbd>{" "}
+              to remove
             </div>
           </div>
         </div>
@@ -111,7 +125,9 @@ function KeyboardShortcutsInfo({ show }: { show: boolean }) {
     <div className="absolute top-6 right-6 z-10">
       <div className="bg-white border-2 border-gray-300 rounded-lg shadow-lg p-4 max-w-xs">
         <div className="flex items-start justify-between mb-2">
-          <div className="text-sm font-semibold text-gray-900">Keyboard Shortcuts</div>
+          <div className="text-sm font-semibold text-gray-900">
+            Keyboard Shortcuts
+          </div>
           <button
             onClick={() => setIsVisible(false)}
             className="text-gray-400 hover:text-gray-600 transition-colors"
@@ -127,7 +143,10 @@ function KeyboardShortcutsInfo({ show }: { show: boolean }) {
           </div>
           <div className="flex items-center justify-between gap-4">
             <span>
-              <kbd className="px-1 py-0.5 bg-gray-100 border border-gray-300 rounded font-mono text-[10px]">Shift</kbd> + Click
+              <kbd className="px-1 py-0.5 bg-gray-100 border border-gray-300 rounded font-mono text-[10px]">
+                Shift
+              </kbd>{" "}
+              + Click
             </span>
             <span className="text-gray-400">Multi-select</span>
           </div>
@@ -137,8 +156,13 @@ function KeyboardShortcutsInfo({ show }: { show: boolean }) {
           </div>
           <div className="flex items-center justify-between gap-4">
             <span>
-              <kbd className="px-1 py-0.5 bg-gray-100 border border-gray-300 rounded font-mono text-[10px]">Delete</kbd> /{' '}
-              <kbd className="px-1 py-0.5 bg-gray-100 border border-gray-300 rounded font-mono text-[10px]">⌫</kbd>
+              <kbd className="px-1 py-0.5 bg-gray-100 border border-gray-300 rounded font-mono text-[10px]">
+                Delete
+              </kbd>{" "}
+              /{" "}
+              <kbd className="px-1 py-0.5 bg-gray-100 border border-gray-300 rounded font-mono text-[10px]">
+                ⌫
+              </kbd>
             </span>
             <span className="text-gray-400">Delete selected</span>
           </div>
@@ -152,7 +176,6 @@ function KeyboardShortcutsInfo({ show }: { show: boolean }) {
   );
 }
 
-
 export function Canvas() {
   const { screenToFlowPosition } = useReactFlow();
   const [selectedNodeCount, setSelectedNodeCount] = useState(0);
@@ -162,18 +185,32 @@ export function Canvas() {
   const circuit = useCircuitStore((state) => state.circuit);
   const metadataComponents = useMetadataStore((state) => state.components);
   const metadataConnections = useMetadataStore((state) => state.connections);
-  const updateComponentPosition = useMetadataStore((state) => state.updateComponentPosition);
-  const setComponentSelected = useMetadataStore((state) => state.setComponentSelected);
-  const setConnectionSelected = useMetadataStore((state) => state.setConnectionSelected);
+  const updateComponentPosition = useMetadataStore(
+    (state) => state.updateComponentPosition,
+  );
+  const setComponentSelected = useMetadataStore(
+    (state) => state.setComponentSelected,
+  );
+  const setConnectionSelected = useMetadataStore(
+    (state) => state.setConnectionSelected,
+  );
   const addConnection = useCircuitStore((state) => state.addConnection);
   const removeConnection = useCircuitStore((state) => state.removeConnection);
   const addNode = useCircuitStore((state) => state.addNode);
   const removeNode = useCircuitStore((state) => state.removeNode);
-  const setComponentMetadata = useMetadataStore((state) => state.setComponentMetadata);
-  const removeComponentMetadata = useMetadataStore((state) => state.removeComponentMetadata);
-  const resolveComponent = useComponentLibraryStore((state) => state.resolveComponent);
-  const seqState = useSequentialStateStore ((state) => state.seqState);
-  const saveCurrentPositions = useDSLPreviewStore((state) => state.saveCurrentPositions);
+  const setComponentMetadata = useMetadataStore(
+    (state) => state.setComponentMetadata,
+  );
+  const removeComponentMetadata = useMetadataStore(
+    (state) => state.removeComponentMetadata,
+  );
+  const resolveComponent = useComponentLibraryStore(
+    (state) => state.resolveComponent,
+  );
+  const seqState = useSequentialStateStore((state) => state.seqState);
+  const saveCurrentPositions = useDSLPreviewStore(
+    (state) => state.saveCurrentPositions,
+  );
 
   // Separate effects for combinational vs sequential circuits
 
@@ -197,7 +234,7 @@ export function Canvas() {
           }
 
           // If composite, recursively check inside
-          if (componentDef.implementation.kind === 'composite') {
+          if (componentDef.implementation.kind === "composite") {
             return checkSequential(componentDef);
           }
 
@@ -216,7 +253,7 @@ export function Canvas() {
     const result = runCombinationalSimulation(circuit);
 
     if (result.error) {
-      console.error('[Canvas] Simulation error:', result.error);
+      console.error("[Canvas] Simulation error:", result.error);
       setPortValues(new Map());
       return;
     }
@@ -246,7 +283,7 @@ export function Canvas() {
           }
 
           // If composite, recursively check inside
-          if (componentDef.implementation.kind === 'composite') {
+          if (componentDef.implementation.kind === "composite") {
             return checkSequential(componentDef);
           }
 
@@ -276,31 +313,43 @@ export function Canvas() {
   // This is intentionally left out to prevent infinite loops
   // Switches/inputs trigger updates through their onClick handlers instead
 
-
   // Project Circuit + Metadata + Port Values to ReactFlow nodes and edges
-  const { nodes, edges} = useMemo(() => {
-    const metadataState = { components: metadataComponents, connections: metadataConnections };
-    return projectCircuitToReactFlow(circuit, metadataState, portValues, seqState ?? undefined);
+  const { nodes, edges } = useMemo(() => {
+    const metadataState = {
+      components: metadataComponents,
+      connections: metadataConnections,
+    };
+    return projectCircuitToReactFlow(
+      circuit,
+      metadataState,
+      portValues,
+      seqState ?? undefined,
+    );
   }, [circuit, metadataComponents, metadataConnections, portValues, seqState]);
 
   // Handle node position changes (drag), selection, and deletion
   const onNodesChange: OnNodesChange = useCallback(
     (changes) => {
       changes.forEach((change) => {
-        if (change.type === 'position' && change.position) {
+        if (change.type === "position" && change.position) {
           // Update position during drag for smooth visual feedback
           updateComponentPosition(change.id, change.position);
-        } else if (change.type === 'select') {
+        } else if (change.type === "select") {
           // Update selection state in metadata store
           setComponentSelected(change.id, change.selected);
-        } else if (change.type === 'remove') {
+        } else if (change.type === "remove") {
           // Remove node from both stores
           removeNode(change.id);
           removeComponentMetadata(change.id);
         }
       });
     },
-    [updateComponentPosition, setComponentSelected, removeNode, removeComponentMetadata]
+    [
+      updateComponentPosition,
+      setComponentSelected,
+      removeNode,
+      removeComponentMetadata,
+    ],
   );
 
   // Update selection count whenever nodes change
@@ -332,30 +381,62 @@ export function Canvas() {
       // Arrow keys (extended keys in real hardware, simplified here)
       ArrowUp: 0x48,
       ArrowDown: 0x50,
-      ArrowLeft: 0x4B,
-      ArrowRight: 0x4D,
+      ArrowLeft: 0x4b,
+      ArrowRight: 0x4d,
 
       // Common keys
       Space: 0x39,
-      Enter: 0x1C,
+      Enter: 0x1c,
       Escape: 0x01,
 
       // Letters (physical key positions)
-      KeyA: 0x1E, KeyB: 0x30, KeyC: 0x2E, KeyD: 0x20, KeyE: 0x12, KeyF: 0x21,
-      KeyG: 0x22, KeyH: 0x23, KeyI: 0x17, KeyJ: 0x24, KeyK: 0x25, KeyL: 0x26,
-      KeyM: 0x32, KeyN: 0x31, KeyO: 0x18, KeyP: 0x19, KeyQ: 0x10, KeyR: 0x13,
-      KeyS: 0x1F, KeyT: 0x14, KeyU: 0x16, KeyV: 0x2F, KeyW: 0x11, KeyX: 0x2D,
-      KeyY: 0x15, KeyZ: 0x2C,
+      KeyA: 0x1e,
+      KeyB: 0x30,
+      KeyC: 0x2e,
+      KeyD: 0x20,
+      KeyE: 0x12,
+      KeyF: 0x21,
+      KeyG: 0x22,
+      KeyH: 0x23,
+      KeyI: 0x17,
+      KeyJ: 0x24,
+      KeyK: 0x25,
+      KeyL: 0x26,
+      KeyM: 0x32,
+      KeyN: 0x31,
+      KeyO: 0x18,
+      KeyP: 0x19,
+      KeyQ: 0x10,
+      KeyR: 0x13,
+      KeyS: 0x1f,
+      KeyT: 0x14,
+      KeyU: 0x16,
+      KeyV: 0x2f,
+      KeyW: 0x11,
+      KeyX: 0x2d,
+      KeyY: 0x15,
+      KeyZ: 0x2c,
 
       // Numbers (top row)
-      Digit0: 0x0B, Digit1: 0x02, Digit2: 0x03, Digit3: 0x04, Digit4: 0x05,
-      Digit5: 0x06, Digit6: 0x07, Digit7: 0x08, Digit8: 0x09, Digit9: 0x0A,
+      Digit0: 0x0b,
+      Digit1: 0x02,
+      Digit2: 0x03,
+      Digit3: 0x04,
+      Digit4: 0x05,
+      Digit5: 0x06,
+      Digit6: 0x07,
+      Digit7: 0x08,
+      Digit8: 0x09,
+      Digit9: 0x0a,
     };
 
     const handleKeyDown = (e: KeyboardEvent) => {
       // Only process if not typing in text fields
       const activeElement = document.activeElement;
-      if (activeElement?.tagName === 'INPUT' || activeElement?.tagName === 'TEXTAREA') {
+      if (
+        activeElement?.tagName === "INPUT" ||
+        activeElement?.tagName === "TEXTAREA"
+      ) {
         return;
       }
 
@@ -366,15 +447,16 @@ export function Canvas() {
       // Find Input nodes that are keyboard registers
       // Convention: label or ID contains "keyboard" (case insensitive)
       const keyboardNodes = circuit.nodes.filter(
-        node => node.componentRef === 'Input' &&
-                (node.label?.toLowerCase().includes('keyboard') ||
-                 node.id.toLowerCase().includes('keyboard'))
+        (node) =>
+          node.componentRef === "Input" &&
+          (node.label?.toLowerCase().includes("keyboard") ||
+            node.id.toLowerCase().includes("keyboard")),
       );
 
       // Write scan code to all keyboard registers (latching behavior)
       // Like a hardware write to memory-mapped I/O port
       // Value persists until next key press (no automatic clear on key up)
-      keyboardNodes.forEach(node => {
+      keyboardNodes.forEach((node) => {
         const currentNode = useCircuitStore.getState().getNode(node.id);
         if (currentNode) {
           useCircuitStore.getState().updateNode(node.id, {
@@ -384,7 +466,7 @@ export function Canvas() {
       });
 
       // Prevent default browser behavior for arrow keys (scrolling)
-      if (e.code.startsWith('Arrow')) {
+      if (e.code.startsWith("Arrow")) {
         e.preventDefault();
       }
     };
@@ -392,10 +474,10 @@ export function Canvas() {
     // Note: No keyup handler - register latches value until overwritten
     // This models real keyboard buffer behavior (IBM PC, C64, etc.)
 
-    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener("keydown", handleKeyDown);
 
     return () => {
-      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener("keydown", handleKeyDown);
     };
   }, [circuit]);
 
@@ -403,28 +485,33 @@ export function Canvas() {
   const onEdgesChange: OnEdgesChange = useCallback(
     (changes) => {
       changes.forEach((change) => {
-        if (change.type === 'select') {
+        if (change.type === "select") {
           // Update selection state in metadata store
           setConnectionSelected(change.id, change.selected);
-        } else if (change.type === 'remove') {
+        } else if (change.type === "remove") {
           // Remove connection from CircuitStore
           removeConnection(change.id);
         }
       });
     },
-    [setConnectionSelected, removeConnection]
+    [setConnectionSelected, removeConnection],
   );
 
   // Handle new connections
   const onConnect: OnConnect = useCallback(
     (connection: Connection) => {
-      if (!connection.source || !connection.target || !connection.sourceHandle || !connection.targetHandle) {
+      if (
+        !connection.source ||
+        !connection.target ||
+        !connection.sourceHandle ||
+        !connection.targetHandle
+      ) {
         return;
       }
 
       // Parse port names from handle IDs (format: "out-portName", "in-portName")
-      const sourcePortName = connection.sourceHandle.replace('out-', '');
-      const targetPortName = connection.targetHandle.replace('in-', '');
+      const sourcePortName = connection.sourceHandle.replace("out-", "");
+      const targetPortName = connection.targetHandle.replace("in-", "");
 
       // Create PortPath objects
       const source = { nodeId: connection.source, portName: sourcePortName };
@@ -433,7 +520,7 @@ export function Canvas() {
       // Add connection to CircuitStore
       addConnection(source, target);
     },
-    [addConnection]
+    [addConnection],
   );
 
   // Handle canvas drop for new components
@@ -441,7 +528,7 @@ export function Canvas() {
     (event: React.DragEvent) => {
       event.preventDefault();
 
-      const componentType = event.dataTransfer.getData('application/reactflow');
+      const componentType = event.dataTransfer.getData("application/reactflow");
       if (!componentType) return;
 
       // Convert screen position to flow position
@@ -459,12 +546,12 @@ export function Canvas() {
         position,
       });
     },
-    [screenToFlowPosition, addNode, setComponentMetadata]
+    [screenToFlowPosition, addNode, setComponentMetadata],
   );
 
   const onDragOver = useCallback((event: React.DragEvent) => {
     event.preventDefault();
-    event.dataTransfer.dropEffect = 'move';
+    event.dataTransfer.dropEffect = "move";
   }, []);
 
   // Save positions to localStorage when dragging stops
@@ -473,7 +560,11 @@ export function Canvas() {
   }, [saveCurrentPositions]);
 
   return (
-    <div className="relative h-full w-full" onDrop={onDrop} onDragOver={onDragOver}>
+    <div
+      className="relative h-full w-full"
+      onDrop={onDrop}
+      onDragOver={onDragOver}
+    >
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -486,39 +577,29 @@ export function Canvas() {
         fitView
         fitViewOptions={{ padding: 0.2 }}
         // Selection and deletion settings
-        deleteKeyCode={['Delete', 'Backspace']}
+        deleteKeyCode={["Delete", "Backspace"]}
         multiSelectionKeyCode="Shift"
         selectionOnDrag={true}
         panOnDrag={[1, 2]} // Pan with middle and right mouse button
         selectionMode={SelectionMode.Partial} // Select nodes when selection box partially overlaps
         // Interaction settings
         selectNodesOnDrag={false}
+        // Hide React Flow attribution
+        // proOptions={{ hideAttribution: true }}
         // Styling
         className="bg-gray-50"
       >
         <Background />
         <Controls />
-        <MiniMap
-          nodeColor={(node) => {
-            switch (node.type) {
-              case 'inputNode':
-                return '#22c55e'; // green
-              case 'outputNode':
-                return '#3b82f6'; // blue
-              case 'logicGateNode':
-                return '#f59e0b'; // amber
-              default:
-                return '#6b7280'; // gray
-            }
-          }}
-        />
       </ReactFlow>
 
       {/* Selection Info Panel - shown when nodes are selected */}
       <SelectionInfo selectedCount={selectedNodeCount} />
 
       {/* Keyboard Shortcuts Info - shown when canvas has components but none selected */}
-      <KeyboardShortcutsInfo show={nodes.length > 0 && selectedNodeCount === 0} />
+      <KeyboardShortcutsInfo
+        show={nodes.length > 0 && selectedNodeCount === 0}
+      />
     </div>
   );
 }
