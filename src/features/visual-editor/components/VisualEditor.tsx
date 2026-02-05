@@ -153,8 +153,8 @@ export function VisualEditor() {
           </div>
         </div>
 
-        {/* Left Drawer: Component Palette */}
-        <Sheet open={componentPaletteOpen} onOpenChange={setComponentPaletteOpen}>
+        {/* Left Drawer: Component Palette (non-modal for drag-and-drop) */}
+        <Sheet modal={false} open={componentPaletteOpen} onOpenChange={setComponentPaletteOpen}>
           <SheetContent side="left" className="w-80 p-0">
             <SheetTitle className="sr-only">Component Palette</SheetTitle>
             <ComponentPalette />
