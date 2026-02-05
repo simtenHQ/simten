@@ -248,11 +248,40 @@ export function initializeSequentialState(circuit: Circuit): SequentialState {
 }
 
 /**
+ * Infer whether a circuit is combinational or sequential
+ *
+ * Like SystemVerilog's always_ff vs always_comb distinction:
+ * - Sequential circuits contain state that breaks combinational paths
+ * - Combinational circuits are pure logic with no state
+ *
+ * Explicit metadata always wins; inference is only a fallback for legacy circuits.
+ */
+function inferCircuitKind(circuit: Circuit): 'combinational' | 'sequential' {
+  // 1. Explicit metadata ALWAYS wins
+  if (circuit.metadata?.kind === 'sequential' || circuit.metadata?.kind === 'combinational') {
+    return circuit.metadata.kind;
+  }
+
+  // 2. Fallback inference (for legacy/untagged circuits only)
+  const hasClock = circuit.clocks.length > 0;
+  const hasLocalState =
+    circuit.state.length > 0 ||
+    circuit.nodes.some(node =>
+      node.componentRef === 'Register' ||
+      node.componentRef === 'DFlipFlop'
+    );
+
+  // Conservative: both clock AND local state required
+  return (hasClock && hasLocalState) ? 'sequential' : 'combinational';
+}
+
+/**
  * Topological sort to determine evaluation order
  * Returns node IDs in dependency order, or null if cycle detected
  *
- * Sequential nodes with state-only outputs (DFlipFlop, Register) are evaluated FIRST
+ * State-breaking nodes (DFlipFlop, Register, sequential composites) are evaluated FIRST
  * because their outputs come from stored state, not computed from inputs.
+ * These nodes break combinational paths and don't participate in cycle detection.
  *
  * Sequential nodes with input-dependent outputs (RAM) are evaluated in dependency order
  * because their outputs depend on their inputs (e.g., RAM read is combinational).
@@ -260,11 +289,11 @@ export function initializeSequentialState(circuit: Circuit): SequentialState {
 function topologicalSort(circuit: Circuit): string[] | null {
   const library = useComponentLibraryStore.getState();
 
-  const stateOnlyNodes: string[] = []; // DFlipFlop, Register - outputs from state only
-  const sinkNodes: string[] = [];      // Screen, audio, UART - consume but don't feed back
-  const dependentNodes: string[] = []; // All other nodes (including RAM)
+  const stateBreakingNodes: string[] = []; // DFlipFlop, Register, sequential composites - break combinational paths
+  const sinkNodes: string[] = [];          // Screen, audio, UART - consume but don't feed back
+  const dependentNodes: string[] = [];     // All other nodes (including RAM)
 
-  // Separate nodes into state-only, sink, and input-dependent
+  // Separate nodes into state-breaking, sink, and input-dependent
   for (const node of circuit.nodes) {
     const componentDef = library.resolveComponent(node.componentRef);
     if (!componentDef) continue;
@@ -277,10 +306,16 @@ function topologicalSort(circuit: Circuit): string[] | null {
     // These nodes' outputs are state-dependent, so they don't create combinational cycles
     const isStateOnly = componentDef.metadata?.outputDependency === 'state-only';
 
+    // Check if this is a sequential composite (contains registers that break paths)
+    // Like SystemVerilog's always_ff blocks, these break combinational cycles
+    const isSequential =
+      componentDef.implementation.kind === 'composite' &&
+      inferCircuitKind(componentDef) === 'sequential';
+
     if (isSink) {
       sinkNodes.push(node.id);
-    } else if (isStateOnly) {
-      stateOnlyNodes.push(node.id);
+    } else if (isStateOnly || isSequential) {
+      stateBreakingNodes.push(node.id);
     } else {
       dependentNodes.push(node.id);
     }
@@ -299,6 +334,7 @@ function topologicalSort(circuit: Circuit): string[] | null {
   // Build edges: for each connection, source -> target
   const nodeSet = new Set(dependentNodes);
   const sinkSet = new Set(sinkNodes);
+  const stateBreakingSet = new Set(stateBreakingNodes);
 
   for (const conn of circuit.connections) {
     const source = conn.source.nodeId;
@@ -310,7 +346,10 @@ function topologicalSort(circuit: Circuit): string[] | null {
     // Skip connections FROM sink nodes (their outputs don't feed back)
     if (sinkSet.has(source)) continue;
 
-    // Only consider dependent nodes (not state-only or sink nodes)
+    // Skip connections FROM state-breaking nodes (they don't create combinational cycles)
+    if (stateBreakingSet.has(source)) continue;
+
+    // Only consider dependent nodes (not state-breaking or sink nodes)
     if (!nodeSet.has(source) || !nodeSet.has(target)) continue;
 
     if (!graph.get(source)?.has(target)) {
@@ -350,10 +389,10 @@ function topologicalSort(circuit: Circuit): string[] | null {
   }
 
   // Return evaluation order:
-  // 1. State-only nodes (DFlipFlop, Register) - outputs from state
+  // 1. State-breaking nodes (DFlipFlop, Register, sequential composites) - outputs from state
   // 2. Dependent nodes (combinational + RAM) - in topological order
   // 3. Sink nodes (Screen, audio, UART) - evaluated last, outputs don't feed back
-  return [...stateOnlyNodes, ...result, ...sinkNodes];
+  return [...stateBreakingNodes, ...result, ...sinkNodes];
 }
 
 /**
