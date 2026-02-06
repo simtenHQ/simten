@@ -23,6 +23,7 @@ import { useCircuitStore } from '../stores/circuit-store';
 import { usePrimitivesInit } from '../hooks/usePrimitivesInit';
 import { useDSLPreviewStore } from '../stores/dsl-preview-store';
 import { useComponentLibraryStore } from '../stores/component-library-store';
+import { useSimulationController } from '../simulation/use-simulation-controller';
 import type { Circuit } from '../types/ir-v0.1';
 
 // Helper to check if circuit has sequential components
@@ -63,6 +64,9 @@ export function VisualEditor() {
 
   // Initialize primitive components library
   usePrimitivesInit();
+
+  // Initialize simulation controller (THE ONLY PLACE THAT RUNS SIMULATION)
+  useSimulationController();
 
   // Keyboard shortcuts for drawer toggles
   useEffect(() => {

@@ -41,8 +41,8 @@ import "@xyflow/react/dist/style.css";
 
 import { useCircuitStore } from "../stores/circuit-store";
 import { useMetadataStore } from "../stores";
-import { useComponentLibraryStore } from "../stores/component-library-store";
 import { useSequentialStateStore } from "../stores/sequential-state-store";
+import { usePortValuesStore } from "../stores/port-values-store";
 import { useDSLPreviewStore } from "../stores/dsl-preview-store";
 import { projectCircuitToReactFlow } from "../utils/projection";
 import {
@@ -56,7 +56,6 @@ import {
 } from "./nodes";
 import { NumericInputNode } from "./nodes/NumericInputNode";
 import { OrthogonalEdge } from "./edges";
-import { runCombinationalSimulation } from "../lib/simulator-v0.1";
 
 // Define custom node types
 const nodeTypes = {
@@ -179,7 +178,6 @@ function KeyboardShortcutsInfo({ show }: { show: boolean }) {
 export function Canvas() {
   const { screenToFlowPosition } = useReactFlow();
   const [selectedNodeCount, setSelectedNodeCount] = useState(0);
-  const [portValues, setPortValues] = useState(new Map());
 
   // Subscribe to stores
   const circuit = useCircuitStore((state) => state.circuit);
@@ -204,114 +202,28 @@ export function Canvas() {
   const removeComponentMetadata = useMetadataStore(
     (state) => state.removeComponentMetadata,
   );
-  const resolveComponent = useComponentLibraryStore(
-    (state) => state.resolveComponent,
-  );
+
+  // Get simulation state from stores (updated by controller)
   const seqState = useSequentialStateStore((state) => state.seqState);
+  const portValues = usePortValuesStore((state) => state.portValues);
+
   const saveCurrentPositions = useDSLPreviewStore(
     (state) => state.saveCurrentPositions,
   );
 
-  // Separate effects for combinational vs sequential circuits
-
-  // Effect 1: Run simulation for COMBINATIONAL circuits (auto-update on any change)
-  useEffect(() => {
-    if (!circuit || circuit.nodes.length === 0) {
-      setPortValues(new Map());
-      return;
-    }
-
-    // Check if circuit has sequential components (recursively check composites too)
-    const hasSequential = (() => {
-      function checkSequential(c: Circuit): boolean {
-        return c.nodes.some((node) => {
-          const componentDef = resolveComponent(node.componentRef);
-          if (!componentDef) return false;
-
-          // Check if this node is sequential
-          if (componentDef.state.length > 0 || componentDef.clocks.length > 0) {
-            return true;
-          }
-
-          // If composite, recursively check inside
-          if (componentDef.implementation.kind === "composite") {
-            return checkSequential(componentDef);
-          }
-
-          return false;
-        });
-      }
-      return checkSequential(circuit);
-    })();
-
-    // Only run this effect for purely combinational circuits
-    if (hasSequential) {
-      return;
-    }
-
-    // Purely combinational circuit - run simulation automatically
-    const result = runCombinationalSimulation(circuit);
-
-    if (result.error) {
-      console.error("[Canvas] Simulation error:", result.error);
-      setPortValues(new Map());
-      return;
-    }
-
-    setPortValues(result.portValues);
-  }, [circuit, resolveComponent]);
-
-  // Effect 2: Run simulation for SEQUENTIAL circuits
-  // Re-simulate when circuit OR seqState changes
-  // - Circuit changes (switch toggles) → update wires/combinational paths
-  // - SeqState changes (Step button) → flip-flops latch new values
-  useEffect(() => {
-    if (!circuit || circuit.nodes.length === 0) {
-      return;
-    }
-
-    // Check if circuit has sequential components (recursively check composites too)
-    const hasSequential = (() => {
-      function checkSequential(c: Circuit): boolean {
-        return c.nodes.some((node) => {
-          const componentDef = resolveComponent(node.componentRef);
-          if (!componentDef) return false;
-
-          // Check if this node is sequential
-          if (componentDef.state.length > 0 || componentDef.clocks.length > 0) {
-            return true;
-          }
-
-          // If composite, recursively check inside
-          if (componentDef.implementation.kind === "composite") {
-            return checkSequential(componentDef);
-          }
-
-          return false;
-        });
-      }
-      return checkSequential(circuit);
-    })();
-
-    // Only run this effect for sequential circuits
-    if (!hasSequential) {
-      return;
-    }
-
-    // Sequential circuit - simulate with current sequential state
-    // The flip-flop evaluator returns Q based on stored state, not D input
-    // So toggling switches updates wires but not flip-flop outputs
-    if (seqState) {
-      const result = runCombinationalSimulation(circuit, seqState);
-      if (!result.error) {
-        setPortValues(result.portValues);
-      }
-    }
-  }, [circuit, seqState, resolveComponent]);
-
-  // Re-simulate when switch/input values change (NOT when circuit structure changes)
-  // This is intentionally left out to prevent infinite loops
-  // Switches/inputs trigger updates through their onClick handlers instead
+  /**
+   * ARCHITECTURE: Canvas is a VIEWER, not a SIMULATOR
+   *
+   * Canvas NEVER runs simulation. It only reads results from stores:
+   * - usePortValuesStore: Wire values computed by orchestrator
+   * - useSequentialStateStore: Register/RAM state computed by orchestrator
+   *
+   * The orchestrator (simulation/orchestrator.ts) is the ONLY place that executes simulation.
+   *
+   * This matches how real HDL simulators work:
+   * - ModelSim/Verilator: Compute signals once
+   * - GTKWave/Canvas: Read signals, never recompute
+   */
 
   // Project Circuit + Metadata + Port Values to ReactFlow nodes and edges
   const { nodes, edges } = useMemo(() => {

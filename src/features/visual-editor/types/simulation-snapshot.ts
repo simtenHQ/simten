@@ -5,7 +5,7 @@
  * The core principle: "Sequential state is deterministic given (previous sequential state + environmental state)"
  */
 
-import type { SequentialState } from '../lib/simulator-v0.1';
+import type { FlatSequentialState } from '../lib/flat-simulator';
 
 /**
  * Contract for environmental state values
@@ -52,7 +52,7 @@ export type EnvironmentalStateValue =
  */
 export interface SimulationSnapshot {
   // Sequential state (registers, RAM, counters)
-  sequentialState: SequentialState;
+  sequentialState: FlatSequentialState;
 
   // Environmental state (user inputs, external sources)
   // Using Map for consistency with SequentialState and performance at scale
