@@ -15,7 +15,8 @@ import type { Circuit, Node, Connection, PortPath } from '../types/ir-v0.1';
 import type { MetadataState } from '../types';
 import { WIRE_COLORS } from '../types';
 import { useComponentLibraryStore } from '../stores/component-library-store';
-import type { PortValueMap, SequentialState } from '../lib/simulator-v0.1';
+import type { PortValueMap } from '../lib/simulator-v0.1';
+import type { FlatSequentialState } from '../lib/flat-simulator';
 
 // Custom data structure for our ReactFlow nodes
 export interface NodeData extends Record<string, unknown> {
@@ -88,7 +89,7 @@ export function projectCircuitToNodes(
   circuit: Circuit,
   metadata: MetadataState,
   portValues?: PortValueMap,
-  seqState?: SequentialState
+  seqState?: FlatSequentialState
 ): ReactFlowNode<NodeData>[] {
   const reactFlowNodes: ReactFlowNode<NodeData>[] = [];
   const library = useComponentLibraryStore.getState();
@@ -317,7 +318,7 @@ export function projectCircuitToReactFlow(
   circuit: Circuit | null,
   metadata: MetadataState,
   portValues?: PortValueMap,
-  seqState?: SequentialState
+  seqState?: FlatSequentialState
 ) {
   if (!circuit) {
     return { nodes: [], edges: [] };

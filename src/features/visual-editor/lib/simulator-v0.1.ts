@@ -9,6 +9,10 @@
  * - Uses name-based ports (PortPath) instead of index-based ports
  * - Cleaner port lookup (no index mapping needed)
  * - Direct integration with ComponentLibrary for resolving component specs
+ *
+ * Note: This is the hierarchical simulator. For better performance, use:
+ * - elaborate() from './elaboration' to flatten the circuit
+ * - runFlatSimulationTick() from './flat-simulator' to simulate
  */
 
 import type {

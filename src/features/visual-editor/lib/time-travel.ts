@@ -12,7 +12,7 @@
  */
 
 import type { Circuit, Node, ArgumentValue } from '../types/ir-v0.1';
-import type { SequentialState } from './simulator-v0.1';
+import type { FlatSequentialState } from './flat-simulator';
 import type { SimulationSnapshot, EnvironmentalStateValue } from '../types/simulation-snapshot';
 import { PRIMITIVE_DEFINITIONS } from './primitives';
 
@@ -99,9 +99,9 @@ export function restoreEnvironmentalState(
  * @param circuit - The circuit to capture environmental state from
  * @returns Complete simulation snapshot
  */
-export function createSnapshot(sequentialState: SequentialState, circuit: Circuit): SimulationSnapshot {
+export function createSnapshot(sequentialState: FlatSequentialState, circuit: Circuit): SimulationSnapshot {
   // Clone sequential state (reuse existing pattern from ClockControls)
-  const clonedSeqState: SequentialState = {
+  const clonedSeqState: FlatSequentialState = {
     currentState: new Map(),
     nextState: new Map(),
     clocks: new Map(),
@@ -160,7 +160,7 @@ export function restoreSnapshot(
   snapshot: SimulationSnapshot,
   circuit: Circuit,
   updateNode: (nodeId: string, updates: Partial<Node>) => void
-): SequentialState {
+): FlatSequentialState {
   // Restore environmental state to circuit nodes
   restoreEnvironmentalState(circuit, snapshot.environmentalState, updateNode);
 
