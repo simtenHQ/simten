@@ -320,7 +320,8 @@ describe('Lexer', () => {
     });
 
     it('should error on invalid characters', () => {
-      const input = 'foo @ bar';
+      // Note: @ is now a valid token (AT_SIGN), so use backtick instead
+      const input = 'foo ` bar';
       expect(() => tokenize(input)).toThrow(LexerError);
     });
   });
