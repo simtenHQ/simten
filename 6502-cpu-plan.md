@@ -1,6 +1,6 @@
 # 6502 CPU Implementation Plan
 
-**Status:** Stage 3 COMPLETE ✅ | Stage 4+ Ready to start
+**Status:** Stage 4 COMPLETE ✅ | Stage 5 Ready to start
 
 **Philosophy:** Prove each stage works before moving to the next. Start simple, validate thoroughly, then scale up.
 
@@ -34,6 +34,16 @@
 - Working files: `15-stage3-complete.dsl`
 - Test program: `LDA #$42, STA $0010, LDA $0010, TAX, INX` → A=0x42, X=0x43 ✅
 - Documentation: `STAGE3-PLAN.md`, `STAGE3-TEST-SPEC.md`
+
+### Stage 4: ✅ COMPLETE
+- Stack Pointer (8-bit, initialized to 0xFF)
+- Stack Memory (16 cells at $F0-$FF)
+- PHA/PLA - Push/Pull Accumulator
+- JSR/RTS - Subroutine call/return with correct return address (PC-1 pushed)
+- ~600-700 components cumulative
+- Working files: `16-stage4-memory.dsl`, `17-stage4-stack-ops.dsl`, `18-stage4-subroutines.dsl`, `19-stage4-complete.dsl`
+- Test program: `LDA #$00, JSR $10, STA $20` with subroutine `LDA #$42, RTS` → A=0x42, Memory[$20]=0x42 ✅
+- Tests: `test/stage4.test.ts` (14 tests passing)
 
 ### Key Achievement: Flat Simulator Migration
 - Elaboration architecture implemented (compile-time circuit flattening)
@@ -172,7 +182,7 @@
 - ✅ Stage 1: ALU performs all operations, registers hold state
 - ✅ Stage 2: Fetch-decode-execute cycle works, 3+ instructions execute
 - ✅ Stage 3: Memory operations work, X register works (TAX, INX)
-- ⏸ Stage 4: Stack operations work, JSR/RTS work
+- ✅ Stage 4: Stack operations work, JSR/RTS work
 - ⏸ Stage 5: All branches work based on flags
 - ⏸ Stage 6: Klaus 6502 functional test passes (full ISA validation)
 - ⏸ Stage 7: cc65 compiled C programs execute, printf works
@@ -214,32 +224,43 @@
 
 ---
 
-## Next Steps (Stage 4: Stack & Subroutines)
+## Next Steps (Stage 5: Branches & Flags)
 
-1. **Add Stack Pointer Register (8-bit)**
-   - Starts at 0xFF (stack grows downward)
-   - Increment/decrement logic
-   - Stack is at page 1 (0x0100-0x01FF)
+1. **Add Flag Register**
+   - N (Negative) - Set if result bit 7 is set
+   - Z (Zero) - Set if result is zero
+   - C (Carry) - Set on unsigned overflow/borrow
+   - V (Overflow) - Set on signed overflow
 
-2. **Add Stack Instructions**
-   - PHA - Push accumulator to stack
-   - PLA - Pull accumulator from stack
-   - PHP - Push processor status
-   - PLP - Pull processor status
+2. **Update ALU/Instructions to Set Flags**
+   - LDA, LDX, LDY → Set N, Z
+   - ADC, SBC → Set N, Z, C, V
+   - CMP, CPX, CPY → Set N, Z, C
+   - INX, DEX, INY, DEY → Set N, Z
 
-3. **Add Subroutine Instructions**
-   - JSR abs - Jump to subroutine (push return address)
-   - RTS - Return from subroutine (pull return address)
+3. **Add Comparison Instructions**
+   - CMP - Compare A with memory
+   - CPX - Compare X with memory
+   - CPY - Compare Y with memory
 
-4. **Test Program**
+4. **Add Branch Instructions**
+   - BEQ - Branch if Z=1 (equal)
+   - BNE - Branch if Z=0 (not equal)
+   - BCC - Branch if C=0 (carry clear)
+   - BCS - Branch if C=1 (carry set)
+   - BMI - Branch if N=1 (minus/negative)
+   - BPL - Branch if N=0 (plus/positive)
+   - BVC - Branch if V=0 (overflow clear)
+   - BVS - Branch if V=1 (overflow set)
+
+5. **Test Program**
    ```asm
-   ; Main program
-   JSR $0020    ; Call subroutine
-   BRK          ; Halt
-
-   ; Subroutine at $0020
-   LDA #$42
-   RTS          ; Return
+   LDA #$05     ; A = 5
+   CMP #$05     ; Compare with 5, sets Z=1
+   BEQ equal    ; Branch if equal
+   LDA #$FF     ; Should skip this
+   equal:
+   STA $10      ; Store result
    ```
 
 ---

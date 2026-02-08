@@ -452,6 +452,8 @@ function stitchCompositeConnections(
  *
  * For each circuit-level port of a composite, find where it actually connects inside.
  * Handles fan-out: one input port can connect to multiple internal nodes.
+ * Also handles fan-out THROUGH nested composites (e.g., clk -> nestedComp.clk where
+ * nestedComp has clk -> [reg1.clk, reg2.clk]).
  */
 function traceCompositePorts(
   composite: Circuit,
@@ -466,19 +468,22 @@ function traceCompositePorts(
     // Forwarding: compositePath.inputPort → [compositePath.internalNode1.port, ...]
     if (conn.source.nodeId === '' && conn.target.nodeId !== '') {
       const compositeInputKey = `${compositePath}.${conn.source.portName}`;
-      const internalTarget = resolveInternalPort(
+      // Use resolveInternalPorts to get ALL targets (handles fan-out through nested composites)
+      const internalTargets = resolveInternalPorts(
         compositePath,
         conn.target,
         composite,
         library
       );
-      // Append to existing array (handles fan-out)
+      // Append all targets to existing array (handles fan-out)
       if (!portForwarding.has(compositeInputKey)) {
         portForwarding.set(compositeInputKey, []);
       }
-      portForwarding.get(compositeInputKey)!.push(internalTarget);
-      if (debug) {
-        console.log(`  INPUT: ${conn.source.portName} -> ${internalTarget.nodeId}.${internalTarget.portName}`);
+      for (const internalTarget of internalTargets) {
+        portForwarding.get(compositeInputKey)!.push(internalTarget);
+        if (debug) {
+          console.log(`  INPUT: ${conn.source.portName} -> ${internalTarget.nodeId}.${internalTarget.portName}`);
+        }
       }
     }
 
@@ -487,7 +492,8 @@ function traceCompositePorts(
     // (Usually just one source for outputs, but use array for consistency)
     if (conn.source.nodeId !== '' && conn.target.nodeId === '') {
       const compositeOutputKey = `${compositePath}.${conn.target.portName}`;
-      const internalSource = resolveInternalPort(
+      // Use resolveInternalPorts for consistency (outputs typically have one source)
+      const internalSources = resolveInternalPorts(
         compositePath,
         conn.source,
         composite,
@@ -497,9 +503,11 @@ function traceCompositePorts(
       if (!portForwarding.has(compositeOutputKey)) {
         portForwarding.set(compositeOutputKey, []);
       }
-      portForwarding.get(compositeOutputKey)!.push(internalSource);
-      if (debug) {
-        console.log(`  OUTPUT: ${conn.target.portName} <- ${internalSource.nodeId}.${internalSource.portName}`);
+      for (const internalSource of internalSources) {
+        portForwarding.get(compositeOutputKey)!.push(internalSource);
+        if (debug) {
+          console.log(`  OUTPUT: ${conn.target.portName} <- ${internalSource.nodeId}.${internalSource.portName}`);
+        }
       }
     }
 
@@ -516,49 +524,59 @@ function traceCompositePorts(
 }
 
 /**
- * Resolve an internal port reference to its ultimate primitive.
+ * Resolve an internal port reference to its ultimate primitive(s).
  *
  * If the port belongs to another composite, recursively trace through it.
+ * Returns an ARRAY of PortPaths to handle fan-out through nested composites.
+ * For example, if composite A has clk -> B.clk, and B has clk -> [reg1.clk, reg2.clk],
+ * this returns [A.B.reg1.clk, A.B.reg2.clk].
  */
-function resolveInternalPort(
+function resolveInternalPorts(
   compositePath: string,
   portRef: PortPath,
   composite: Circuit,
   library: ComponentLibraryStore
-): PortPath {
+): PortPath[] {
   const fullPath = compositePath + '.' + portRef.nodeId;
 
   // Find the referenced node
   const node = composite.nodes.find(n => n.id === portRef.nodeId);
   if (!node) {
     // Node not found, return as-is
-    return { nodeId: fullPath, portName: portRef.portName };
+    return [{ nodeId: fullPath, portName: portRef.portName }];
   }
 
   const component = library.resolveComponent(node.componentRef);
   if (!component || component.implementation.kind !== 'composite') {
     // It's a primitive, return the full path
-    return { nodeId: fullPath, portName: portRef.portName };
+    return [{ nodeId: fullPath, portName: portRef.portName }];
   }
 
   // It's a composite - need to trace through it
-  // Look for where this port connects inside the nested composite
+  // Look for ALL connections matching this port (handles fan-out in nested composites)
+  const results: PortPath[] = [];
+
   for (const conn of component.connections) {
     // If this is an output port, find what internal node connects to it
     if (conn.target.nodeId === '' && conn.target.portName === portRef.portName) {
-      // Recursively resolve the internal source
-      return resolveInternalPort(fullPath, conn.source, component, library);
+      // Recursively resolve the internal source(s)
+      const resolved = resolveInternalPorts(fullPath, conn.source, component, library);
+      results.push(...resolved);
     }
 
     // If this is an input port, find what internal node it connects to
     if (conn.source.nodeId === '' && conn.source.portName === portRef.portName) {
-      // Recursively resolve the internal target
-      return resolveInternalPort(fullPath, conn.target, component, library);
+      // Recursively resolve the internal target(s)
+      const resolved = resolveInternalPorts(fullPath, conn.target, component, library);
+      results.push(...resolved);
     }
   }
 
-  // If we can't trace it, return the composite node path
-  return { nodeId: fullPath, portName: portRef.portName };
+  // If we found any matches, return them; otherwise return the composite node path
+  if (results.length > 0) {
+    return results;
+  }
+  return [{ nodeId: fullPath, portName: portRef.portName }];
 }
 
 /**
