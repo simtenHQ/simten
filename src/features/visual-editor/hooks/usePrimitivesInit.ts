@@ -18,10 +18,11 @@ export function usePrimitivesInit() {
   const { registerPrimitives, getAllPrimitiveNames } = useComponentLibraryStore();
 
   useEffect(() => {
-    // Only initialize if primitives haven't been registered yet
+    const primitives = getPrimitives();
     const existingPrimitives = getAllPrimitiveNames();
-    if (existingPrimitives.length === 0) {
-      const primitives = getPrimitives();
+
+    // Always register primitives if count differs (handles added/removed primitives)
+    if (existingPrimitives.length !== primitives.length) {
       registerPrimitives(primitives);
       console.log(`Initialized ${primitives.length} primitive components`);
     }

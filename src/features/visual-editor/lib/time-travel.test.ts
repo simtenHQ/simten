@@ -5,7 +5,7 @@ import {
   createSnapshot,
 } from './time-travel';
 import type { Node } from '../types/ir-v0.1';
-import type { SequentialState } from './simulator-v0.1';
+import type { FlatSequentialState as SequentialState } from './flat-simulator';
 import type { EnvironmentalStateValue } from '../types/simulation-snapshot';
 
 describe('time-travel', () => {

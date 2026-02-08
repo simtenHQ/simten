@@ -387,13 +387,18 @@ export class SimulationController {
 
   /**
    * Set input value (for Input/Switch/Button nodes)
+   * Updates the flat circuit directly (which we own, not frozen by Immer)
    */
   setInput(nodeId: string, value: number): void {
-    if (!this.circuit) return;
+    if (!this.flatCircuit) return;
 
-    const node = this.circuit.nodes.find((n) => n.id === nodeId);
-    if (node) {
-      node.arguments = { ...node.arguments, value };
+    // Find the node in the flat circuit (may have same ID or be prefixed)
+    const flatNode = this.flatCircuit.nodes.find(
+      (n) => n.id === nodeId || n.id.endsWith('.' + nodeId)
+    );
+
+    if (flatNode) {
+      flatNode.arguments = { ...flatNode.arguments, value };
 
       // Re-simulate if combinational
       if (!this.isSequential) {

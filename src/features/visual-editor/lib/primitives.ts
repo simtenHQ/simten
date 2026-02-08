@@ -537,6 +537,23 @@ export const PRIMITIVE_DEFINITIONS: Record<string, PrimitiveDefinition> = {
     },
   }),
 
+  Output: defineCombinational({
+    name: 'Output',
+    description: 'Multi-bit output sink (for testbenches)',
+    category: 'input-output',
+    icon: '📤',
+    componentType: 'OUTPUT',
+    inputs: [{ name: 'in', portType: busType(8) }],
+    outputs: [],
+    evaluate: (_inputs) => {
+      // Output is a sink component, no outputs
+      return new Map();
+    },
+    createComponent: (id) => {
+      return { id, type: 'Output', value: 0 } as Component;
+    },
+  }),
+
   Button: defineCombinational({
     name: 'Button',
     description: 'Push button input (momentary, user-controlled)',
