@@ -8,7 +8,7 @@
  * - Uses CircuitStore instead of IRStore
  * - Uses name-based ports (PortPath) instead of index-based ports
  * - Cleaner component resolution via ComponentLibrary
- * - New simulator (simulator-v0.1.ts) for Circuit format
+ * - Flat simulator (elaboration.ts + flat-simulator.ts) for Circuit format
  *
  * Features:
  * - Single-click to select individual nodes

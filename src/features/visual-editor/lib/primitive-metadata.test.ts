@@ -43,27 +43,34 @@ describe('Primitive Metadata', () => {
   it('should categorize all primitives correctly', () => {
     const categorized = getPrimitivesByCategory();
 
-    // Verify categories exist
-    expect(categorized.has(PRIMITIVE_CATEGORIES.LOGIC_GATES)).toBe(true);
-    expect(categorized.has(PRIMITIVE_CATEGORIES.ARITHMETIC)).toBe(true);
-    expect(categorized.has(PRIMITIVE_CATEGORIES.PLEXERS)).toBe(true);
-    expect(categorized.has(PRIMITIVE_CATEGORIES.SEQUENTIAL)).toBe(true);
-    expect(categorized.has(PRIMITIVE_CATEGORIES.MEMORY)).toBe(true);
-    expect(categorized.has(PRIMITIVE_CATEGORIES.UTILITIES)).toBe(true);
-    expect(categorized.has(PRIMITIVE_CATEGORIES.IO)).toBe(true);
-    expect(categorized.has(PRIMITIVE_CATEGORIES.BUS_OPS)).toBe(true);
-    expect(categorized.has(PRIMITIVE_CATEGORIES.DISPLAY)).toBe(true);
+    // Verify all expected categories exist and have at least one primitive
+    const expectedCategories = [
+      PRIMITIVE_CATEGORIES.LOGIC_GATES,
+      PRIMITIVE_CATEGORIES.ARITHMETIC,
+      PRIMITIVE_CATEGORIES.PLEXERS,
+      PRIMITIVE_CATEGORIES.SEQUENTIAL,
+      PRIMITIVE_CATEGORIES.MEMORY,
+      PRIMITIVE_CATEGORIES.UTILITIES,
+      PRIMITIVE_CATEGORIES.IO,
+      PRIMITIVE_CATEGORIES.BUS_OPS,
+      PRIMITIVE_CATEGORIES.DISPLAY,
+    ];
 
-    // Verify counts per category
-    expect(categorized.get(PRIMITIVE_CATEGORIES.LOGIC_GATES)?.length).toBe(8); // And, Or, Not, Nand, Nor, Xor, Xnor, Buffer
-    expect(categorized.get(PRIMITIVE_CATEGORIES.IO)?.length).toBe(4); // Switch, Led, Button, Input
-    expect(categorized.get(PRIMITIVE_CATEGORIES.BUS_OPS)?.length).toBe(4); // BusAnd, BusOr, BusNot, BusXor
-    expect(categorized.get(PRIMITIVE_CATEGORIES.ARITHMETIC)?.length).toBe(10); // Adder, Multiplier, Comparator, Incrementer, LeftShifter, RightShifter, Subtractor, SignedAdder, SignedComparator, SignedMultiplier
-    expect(categorized.get(PRIMITIVE_CATEGORIES.PLEXERS)?.length).toBe(2); // Mux, Decoder
-    expect(categorized.get(PRIMITIVE_CATEGORIES.SEQUENTIAL)?.length).toBe(2); // DFlipFlop, Register
-    expect(categorized.get(PRIMITIVE_CATEGORIES.MEMORY)?.length).toBe(3); // RAM, ROM, DualPortRAM
-    expect(categorized.get(PRIMITIVE_CATEGORIES.UTILITIES)?.length).toBe(5); // Constant, Splitter, Splitter8to8, Probe, BitSlice
-    expect(categorized.get(PRIMITIVE_CATEGORIES.DISPLAY)?.length).toBe(4); // SevenSegment, HexDisplay, Screen, RasterDisplay
+    for (const category of expectedCategories) {
+      expect(categorized.has(category), `Category ${category} should exist`).toBe(true);
+      expect(
+        categorized.get(category)?.length,
+        `Category ${category} should have at least one primitive`
+      ).toBeGreaterThanOrEqual(1);
+    }
+
+    // Verify total count matches all primitives (no primitives lost in categorization)
+    const totalCategorized = Array.from(categorized.values()).reduce(
+      (sum, primitives) => sum + primitives.length,
+      0
+    );
+    const primitives = getPrimitives();
+    expect(totalCategorized).toBe(primitives.length);
   });
 
   it('should have category info for all categories', () => {

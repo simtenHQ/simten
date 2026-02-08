@@ -1,16 +1,18 @@
 /**
  * Test Runner - Executes test cases against circuits (IR v0.1)
  *
- * Updated for IR v0.1:
+ * Updated for flat simulator:
  * - Works with Circuit instead of IRState
  * - Uses Node instead of Component
  * - Uses componentRef instead of type
- * - Reads values from simulation results instead of node.value
+ * - Elaborates circuit and uses flat simulator
  */
 
 import type { Circuit, Node } from '../types/ir-v0.1';
 import type { TestCase, TestResult, OutputComparison } from '../types/testing';
-import { runCombinationalSimulation } from './simulator-v0.1';
+import { elaborate } from './elaboration';
+import { runFlatCombinationalSimulation } from './flat-simulator';
+import { useComponentLibraryStore } from '../stores/component-library-store';
 
 interface LabeledSwitch {
   nodeId: string;
@@ -137,8 +139,10 @@ export function runTestCase(
       }
     }
 
-    // Run simulation to propagate values
-    const simulationResult = runCombinationalSimulation(testCircuit);
+    // Elaborate and run flat simulation to propagate values
+    const library = useComponentLibraryStore.getState();
+    const flatCircuit = elaborate(testCircuit, library);
+    const simulationResult = runFlatCombinationalSimulation(flatCircuit);
 
     // Compare output values (LEDs)
     const comparisons: OutputComparison[] = [];

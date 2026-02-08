@@ -1,10 +1,10 @@
 # 6502 CPU Implementation Plan
 
-**Status:** Stage 1 COMPLETE ✅ | Stage 2+ PAUSED (waiting for elaboration architecture)
+**Status:** Stage 3 COMPLETE ✅ | Stage 4+ Ready to start
 
 **Philosophy:** Prove each stage works before moving to the next. Start simple, validate thoroughly, then scale up.
 
-**Note:** This plan will resume after the circuit elaboration architecture is complete.
+**Last Updated:** 2026-02-08
 
 ---
 
@@ -17,10 +17,29 @@
 - ~150 components total
 - Working files: `01-alu-combined.dsl`, `02-register-file.dsl`, `04-stage1-flat.dsl`
 
-### Key Achievement: Fixed Simulator Bug
-- Sequential composites (like RegisterFile) caused false "Cycle detected" errors
-- Modified `simulator-v0.1.ts` with `inferCircuitKind()` to classify circuits
-- Sequential composites now treated as "state-breaking"
+### Stage 2: ✅ COMPLETE
+- Program Counter (16-bit with increment/load)
+- Instruction Decoder (LDA, ADC, STA, JMP, BRK)
+- Control FSM (FETCH, DECODE, EXECUTE states)
+- ~250-300 components cumulative
+- Working files: `05-program-counter.dsl`, `06-instruction-decoder.dsl`, `07-control-fsm.dsl`, `08-cpu-stage2.dsl`
+- Documentation: `STAGE2-COMPLETE.md`
+
+### Stage 3: ✅ COMPLETE
+- Proper instruction execution (LDA loads, ADC adds)
+- Memory operations working (STA, LDA from memory)
+- X register with TAX, INX instructions
+- Memory controller with RAM
+- ~400-500 components cumulative
+- Working files: `15-stage3-complete.dsl`
+- Test program: `LDA #$42, STA $0010, LDA $0010, TAX, INX` → A=0x42, X=0x43 ✅
+- Documentation: `STAGE3-PLAN.md`, `STAGE3-TEST-SPEC.md`
+
+### Key Achievement: Flat Simulator Migration
+- Elaboration architecture implemented (compile-time circuit flattening)
+- Fixed value propagation bugs that were blocking Stage 3
+- Old hierarchical simulator deleted
+- All 533 tests passing
 
 ---
 
@@ -151,8 +170,8 @@
 
 ### Technical Milestones
 - ✅ Stage 1: ALU performs all operations, registers hold state
-- ⏸ Stage 2: Fetch-decode-execute cycle works, 3+ instructions execute
-- ⏸ Stage 3: All addressing modes work, memory operations correct
+- ✅ Stage 2: Fetch-decode-execute cycle works, 3+ instructions execute
+- ✅ Stage 3: Memory operations work, X register works (TAX, INX)
 - ⏸ Stage 4: Stack operations work, JSR/RTS work
 - ⏸ Stage 5: All branches work based on flags
 - ⏸ Stage 6: Klaus 6502 functional test passes (full ISA validation)
@@ -195,30 +214,36 @@
 
 ---
 
-## Next Steps (After Elaboration)
+## Next Steps (Stage 4: Stack & Subroutines)
 
-1. **Build Program Counter (16-bit)**
-   - Two 8-bit registers (low/high bytes)
-   - Increment logic with carry propagation
-   - Load capability for jumps
+1. **Add Stack Pointer Register (8-bit)**
+   - Starts at 0xFF (stack grows downward)
+   - Increment/decrement logic
+   - Stack is at page 1 (0x0100-0x01FF)
 
-2. **Build Instruction Decoder**
-   - Start with 5 instructions: LDA #imm, ADC #imm, STA abs, JMP abs, BRK
-   - Comparators for each opcode
-   - Output: instruction flags, addressing mode, cycle count
+2. **Add Stack Instructions**
+   - PHA - Push accumulator to stack
+   - PLA - Pull accumulator from stack
+   - PHP - Push processor status
+   - PLP - Pull processor status
 
-3. **Build Control FSM**
-   - 4 states: FETCH, DECODE, EXECUTE, WRITEBACK
-   - Cycle counter for multi-cycle instructions
-   - Control signals: pc_increment, mem_read, mem_write, alu_enable
+3. **Add Subroutine Instructions**
+   - JSR abs - Jump to subroutine (push return address)
+   - RTS - Return from subroutine (pull return address)
 
-4. **Integrate Stage 2 CPU**
-   - Wire together: PC, decoder, FSM, ALU, registers
-   - Add ROM component
-   - Test with simple 3-instruction program
+4. **Test Program**
+   ```asm
+   ; Main program
+   JSR $0020    ; Call subroutine
+   BRK          ; Halt
+
+   ; Subroutine at $0020
+   LDA #$42
+   RTS          ; Return
+   ```
 
 ---
 
 *Plan Created: 2026-02-05*
+*Last Updated: 2026-02-08*
 *Approach: Staged implementation, test-driven, prove at each step*
-*Resume after: Circuit elaboration architecture is complete*

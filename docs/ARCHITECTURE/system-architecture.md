@@ -1,7 +1,7 @@
 # Current Architecture: Turing Incomplete v0.1
 
-**Last Updated**: January 21, 2026
-**Status**: IR v0.1 Migration Complete - All Systems Operational
+**Last Updated**: February 8, 2026
+**Status**: Flat Simulator Architecture Complete - All Systems Operational
 
 ## Executive Summary
 
@@ -68,15 +68,15 @@ Turing Incomplete has successfully implemented a complete DSL-to-simulation pipe
             │                              │
             ▼                              ▼
 ┌───────────────────────┐      ┌──────────────────────┐
-│  Component Library    │      │   Simulator v0.1     │
+│  Component Library    │      │   Flat Simulator     │
 │  (Zustand Store)      │      │                      │
 ├───────────────────────┤      ├──────────────────────┤
 │                       │      │                      │
-│ primitives: Map<>     │      │ - IR Flattener       │
-│ standard: Map<>       │      │ - Topological Sort   │
-│ user: Map<>           │      │ - Combinational Eval │
-│                       │      │ - Sequential Eval    │
-│ Resolution order:     │      │ - Clock Management   │
+│ primitives: Map<>     │      │ - elaborate()        │
+│ standard: Map<>       │      │   (compile-time)     │
+│ user: Map<>           │      │ - Topological Sort   │
+│                       │      │ - Combinational Eval │
+│ Resolution order:     │      │ - Sequential Eval    │
 │ prim → std → user     │      │ - State Management   │
 │                       │      │                      │
 └───────────────────────┘      └──────────────────────┘
@@ -489,7 +489,7 @@ Features:
 ### Visual Editor ✅
 - Drag-and-drop component placement
 - Wire connections with named ports
-- Simulation using IR v0.1 and simulator-v0.1.ts
+- Simulation using flat simulator (elaborate + simulate)
 - Clock controls for sequential circuits
 - Metadata management (positions, colors)
 - Uses CircuitStore (Circuit format with Node[])
@@ -502,11 +502,11 @@ Features:
 - Examples and documentation
 
 ### Simulation ✅
-- Combinational logic evaluation
+- **Compile-time elaboration**: Circuits flattened to primitives once before simulation
+- Combinational logic evaluation (topological order)
 - Sequential circuit support (flip-flops, registers, RAM)
-- Clock tick management
-- IR flattening for composite components
-- Topological sorting for dependency order
+- Clock tick management via SimulationController
+- No runtime composite recursion (flat graph only)
 - Works identically from both Visual and DSL editors
 
 ### Component Library ✅
@@ -538,14 +538,13 @@ Features:
     │   └── ir.ts                 # Legacy compatibility (to remove)
     ├── lib/
     │   ├── primitives.ts         # 31+ primitive definitions
-    │   ├── primitives.test.ts    # 31 tests
-    │   ├── simulator-v0.1.ts     # Simulator (Phase 1)
-    │   ├── simulator-v0.1.test.ts # 14 tests
-    │   ├── simulator.ts          # Legacy simulator (to migrate)
-    │   ├── ir-flattener.ts       # Composite → primitive flattening
-    │   ├── ir-flattener.test.ts  # 3 tests
+    │   ├── primitives.test.ts    # Tests
+    │   ├── elaboration.ts        # Compile-time circuit flattening
+    │   ├── flat-simulator.ts     # Flat simulator (primitives only)
     │   ├── component-utils.ts    # Sequential detection utils
-    │   └── component-utils.test.ts # 11 tests
+    │   └── component-utils.test.ts # Tests
+    ├── simulation/
+    │   └── simulation-controller.ts # Main simulation API
     ├── stores/
     │   ├── component-library-store.ts  # Component library (Phase 1)
     │   ├── component-library-store.test.ts # 28 tests
@@ -562,15 +561,15 @@ Features:
 ### Completed ✅
 - IR v0.1 type definitions
 - Component library with IR v0.1
-- Simulator v0.1 with IR v0.1
+- **Flat simulator architecture** (compile-time elaboration)
 - DSL parser → IR v0.1 compiler
 - DSL editor UI
 - Sequential circuit support
-- IR flattening for composites
+- **Circuit elaboration** (composites → primitives at compile-time)
 - **CircuitStore migration complete** (replaces legacy IRStore)
 - **Visual canvas uses IR v0.1** (Node[] with named ports)
-- **Legacy IR types removed** (ir-store.ts deleted)
-- **All 236 tests passing**
+- **Legacy hierarchical simulator removed** (deleted simulator-v0.1.ts)
+- **All 533 tests passing**
 
 ### Future Enhancements (Not Required)
 - Canvas → DSL code generation (bidirectional editing)

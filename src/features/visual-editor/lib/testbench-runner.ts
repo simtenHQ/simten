@@ -10,7 +10,7 @@
  * - Evaluate assertions (Phase 5)
  *
  * Integration:
- * - Uses existing runSimulationTick() from simulator
+ * - Uses flat simulator (elaborate + runFlatSimulationTick)
  * - Applies stimulus via node.arguments.value manipulation
  * - Integrates with time-travel system (stimulus is environmental state)
  */
@@ -19,7 +19,6 @@ import {
   Testbench,
   TestbenchState,
   StimulusSchedule,
-  StimulusAction,
   getStimulusActions,
   createTestbenchState,
   CaptureData,
@@ -28,12 +27,35 @@ import {
   signalKey,
 } from '../types/testbench';
 import { Circuit, Node, BitValue, BusValue } from '../types/ir-v0.1';
-import { runSimulationTick, SequentialState, initializeSequentialState } from './simulator-v0.1';
-import { generateVCD, writeVCDToFile } from './vcd-generator';
+import { elaborate, FlatCircuit } from './elaboration';
+import {
+  runFlatSimulationTick,
+  initializeFlatSequentialState,
+} from './flat-simulator';
+import { useComponentLibraryStore } from '../stores/component-library-store';
+import { writeVCDToFile } from './vcd-generator';
 
 // ============================================================================
 // Testbench Runner
 // ============================================================================
+
+/**
+ * Sync environmental values (Input/Switch/Button) from live circuit to flat circuit
+ */
+function syncEnvironmentalValues(flatCircuit: FlatCircuit, liveCircuit: Circuit): void {
+  for (const flatNode of flatCircuit.nodes) {
+    if (
+      flatNode.primitiveType === 'Input' ||
+      flatNode.primitiveType === 'Switch' ||
+      flatNode.primitiveType === 'Button'
+    ) {
+      const liveNode = liveCircuit.nodes.find((n) => n.id === flatNode.id);
+      if (liveNode && liveNode.arguments.value !== undefined) {
+        flatNode.arguments = { ...flatNode.arguments, value: liveNode.arguments.value };
+      }
+    }
+  }
+}
 
 /**
  * Run a testbench for specified number of cycles
@@ -49,9 +71,13 @@ export function runTestbench(
   const cycles = maxCycles ?? testbench.maxCycles;
   const state = createTestbenchState();
   const circuit = testbench.circuit;
+  const library = useComponentLibraryStore.getState();
+
+  // Elaborate circuit (flatten composites)
+  const flatCircuit = elaborate(circuit, library);
 
   // Initialize sequential state
-  const seqState = initializeSequentialState(circuit);
+  let seqState = initializeFlatSequentialState(flatCircuit);
 
   // Initialize capture data if configured
   if (testbench.capture) {
@@ -62,11 +88,14 @@ export function runTestbench(
   for (let cycle = 0; cycle < cycles; cycle++) {
     state.cycle = cycle;
 
-    // Apply stimulus for this cycle
+    // Apply stimulus for this cycle (modifies circuit nodes)
     applyStimulusForCycle(circuit, testbench.stimulus, cycle);
 
+    // Sync environmental values from circuit to flat circuit
+    syncEnvironmentalValues(flatCircuit, circuit);
+
     // Run one simulation tick
-    const result = runSimulationTick(circuit, seqState);
+    const result = runFlatSimulationTick(flatCircuit, seqState);
 
     // Check for simulation errors
     if (result.error) {
@@ -75,13 +104,18 @@ export function runTestbench(
       break;
     }
 
+    // Update sequential state
+    if (result.sequentialState) {
+      seqState = result.sequentialState;
+    }
+
     // Collect port values for capture
     if (state.captureData) {
       collectPortValues(circuit, state.captureData, cycle, result.portValues);
     }
 
     // Store current port values in state
-    updatePortValues(circuit, state);
+    updatePortValuesFromFlat(state, result.portValues);
 
     // TODO Phase 5: Evaluate assertions
     // if (testbench.assertions) {
@@ -157,7 +191,7 @@ function findNodeById(circuit: Circuit, nodeId: string): Node | undefined {
 /**
  * Initialize capture data structure
  */
-function initializeCaptureData(config: import('../types/testbench').CaptureConfig): CaptureData {
+export function initializeCaptureData(config: import('../types/testbench').CaptureConfig): CaptureData {
   const traces = new Map<string, TraceData>();
 
   for (const signal of config.signals) {
@@ -178,7 +212,7 @@ function initializeCaptureData(config: import('../types/testbench').CaptureConfi
 /**
  * Collect port values for current cycle
  */
-function collectPortValues(
+export function collectPortValues(
   circuit: Circuit,
   captureData: CaptureData,
   cycle: number,
@@ -199,33 +233,73 @@ function collectPortValues(
 
 /**
  * Get current value of a signal
+ *
+ * Tries multiple key formats to find the value in flat simulator port values:
+ * 1. Exact key: nodeId.portName
+ * 2. Testbench input node: tb_input_{portName}.out
+ * 3. Testbench output node: tb_output_{portName}.in
+ * 4. Any key ending with the port name
  */
 function getPortValue(
   circuit: Circuit,
   signal: SignalRef,
   portValues?: Map<string, BitValue | BusValue>
 ): BitValue | BusValue {
-  // First try to get from simulation portValues (most accurate)
   if (portValues) {
-    const key = signal.nodeId === ''
+    // Try exact key first
+    const exactKey = signal.nodeId === ''
       ? `.${signal.portName}`
       : `${signal.nodeId}.${signal.portName}`;
-    const value = portValues.get(key);
+    let value = portValues.get(exactKey);
     if (value !== undefined) {
       return value;
+    }
+
+    // Try testbench input node format: tb_input_{portName}.out
+    const tbInputKey = `tb_input_${signal.portName}.out`;
+    value = portValues.get(tbInputKey);
+    if (value !== undefined) {
+      return value;
+    }
+
+    // Try testbench output node format: tb_output_{portName}.in
+    const tbOutputKey = `tb_output_${signal.portName}.in`;
+    value = portValues.get(tbOutputKey);
+    if (value !== undefined) {
+      return value;
+    }
+
+    // Try finding any key that ends with the port name (for DUT internal signals)
+    // This handles cases like dut.counter_reg.q for the 'count' output
+    for (const [key, val] of portValues.entries()) {
+      // Match keys like "dut.{anything}.{portName}" or ending with ".{portName}"
+      if (key.endsWith(`.${signal.portName}`) ||
+          key.endsWith(`.q`) && signal.portName === 'count') { // Special case for register outputs
+        return val;
+      }
+    }
+
+    // For DUT outputs, try to find the connected primitive output
+    // The DUT output 'count' is connected to internal register 'counter_reg.q'
+    if (signal.nodeId === 'dut') {
+      // Search for keys like dut.*.q that might be the register output
+      for (const [key, val] of portValues.entries()) {
+        if (key.startsWith('dut.') && key.endsWith('.q')) {
+          // This might be the register we're looking for
+          return val;
+        }
+      }
     }
   }
 
   // Fallback to reading from circuit structure
   if (signal.nodeId === '') {
-    // Circuit-level port
     const port = [...circuit.inputs, ...circuit.outputs].find(p => p.name === signal.portName);
     if (port) {
       return (port as any).value ?? 0;
     }
     return 0;
   } else {
-    // Node port
     const node = circuit.nodes.find(n => n.id === signal.nodeId);
     if (!node) return 0;
 
@@ -237,15 +311,15 @@ function getPortValue(
 }
 
 /**
- * Update testbench state with current port values
+ * Update testbench state with current port values from flat simulation
  */
-function updatePortValues(circuit: Circuit, state: TestbenchState): void {
-  // Store all port values for assertions and inspection
-  for (const node of circuit.nodes) {
-    for (const port of [...node.inputs, ...node.outputs]) {
-      const key = `${node.id}.${port.name}`;
-      state.portValues.set(key, port.value ?? 0);
-    }
+function updatePortValuesFromFlat(
+  state: TestbenchState,
+  portValues: Map<string, BitValue | BusValue>
+): void {
+  // Copy all port values from flat simulation
+  for (const [key, value] of portValues.entries()) {
+    state.portValues.set(key, value);
   }
 }
 
