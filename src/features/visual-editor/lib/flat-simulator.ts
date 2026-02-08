@@ -144,6 +144,7 @@ export function initializeFlatSequentialState(
         edge: 'none'
       });
     }
+
   }
 
   return {

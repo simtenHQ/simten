@@ -1460,7 +1460,9 @@ export const PRIMITIVE_DEFINITIONS: Record<string, PrimitiveDefinition> = {
       return new Map([['q', state]]);
     },
     updateState: (inputs, currentState, clockEdges) => {
-      const data = typeof inputs.get('data') === 'number' ? inputs.get('data') as number : 0;
+      // Handle both number and boolean data values (for Bit vs Bus ports)
+      const rawData = inputs.get('data');
+      const data = typeof rawData === 'number' ? rawData : (rawData ? 1 : 0);
       const we = inputs.get('we'); // Truthy check works for both boolean and number
       const edge = clockEdges['clk'] ?? 'none';
 
