@@ -5,29 +5,32 @@
  * Combines ComponentPalette, Canvas, SimulationControls, and DSL Editor.
  */
 
-'use client';
+"use client";
 
-import React, { useCallback, useState, useEffect } from 'react';
-import { ReactFlowProvider } from '@xyflow/react';
-import { Canvas } from './Canvas';
-import { ComponentPalette } from './ComponentPalette';
-import { SimulationControls } from './SimulationControls';
-import { RightSidebar } from './RightSidebar';
-import { TestCaseEditor } from './TestCaseEditor';
-import { ClockControls } from './ClockControls';
-import { DSLEditor } from '@/features/dsl/components/DSLEditor';
-import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
-import { Menu, TestTube } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { useCircuitStore } from '../stores/circuit-store';
-import { usePrimitivesInit } from '../hooks/usePrimitivesInit';
-import { useDSLPreviewStore } from '../stores/dsl-preview-store';
-import { useComponentLibraryStore } from '../stores/component-library-store';
-import { useSimulationController } from '../simulation/use-simulation-controller';
-import type { Circuit } from '../types/ir-v0.1';
+import React, { useCallback, useState, useEffect } from "react";
+import { ReactFlowProvider } from "@xyflow/react";
+import { Canvas } from "./Canvas";
+import { ComponentPalette } from "./ComponentPalette";
+import { SimulationControls } from "./SimulationControls";
+import { RightSidebar } from "./RightSidebar";
+import { TestCaseEditor } from "./TestCaseEditor";
+import { ClockControls } from "./ClockControls";
+import { DSLEditor } from "@/features/dsl/components/DSLEditor";
+import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
+import { Menu, TestTube } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useCircuitStore } from "../stores/circuit-store";
+import { usePrimitivesInit } from "../hooks/usePrimitivesInit";
+import { useDSLPreviewStore } from "../stores/dsl-preview-store";
+import { useComponentLibraryStore } from "../stores/component-library-store";
+import { useSimulationController } from "../simulation/use-simulation-controller";
+import type { Circuit } from "../types/ir-v0.1";
 
 // Helper to check if circuit has sequential components
-function hasSequentialComponents(circuit: Circuit | null, resolveComponent: (name: string) => Circuit | undefined): boolean {
+function hasSequentialComponents(
+  circuit: Circuit | null,
+  resolveComponent: (name: string) => Circuit | undefined,
+): boolean {
   if (!circuit) return false;
 
   for (const node of circuit.nodes) {
@@ -40,7 +43,7 @@ function hasSequentialComponents(circuit: Circuit | null, resolveComponent: (nam
     }
 
     // If this is a composite, recursively check inside it
-    if (componentDef.implementation.kind === 'composite') {
+    if (componentDef.implementation.kind === "composite") {
       if (hasSequentialComponents(componentDef, resolveComponent)) {
         return true;
       }
@@ -50,10 +53,14 @@ function hasSequentialComponents(circuit: Circuit | null, resolveComponent: (nam
 }
 
 export function VisualEditor() {
-  const setCompiledCircuits = useDSLPreviewStore((state) => state.setCompiledCircuits);
+  const setCompiledCircuits = useDSLPreviewStore(
+    (state) => state.setCompiledCircuits,
+  );
   const registerUser = useComponentLibraryStore((state) => state.registerUser);
   const circuit = useCircuitStore((state) => state.circuit);
-  const resolveComponent = useComponentLibraryStore((state) => state.resolveComponent);
+  const resolveComponent = useComponentLibraryStore(
+    (state) => state.resolveComponent,
+  );
 
   // Drawer state
   const [componentPaletteOpen, setComponentPaletteOpen] = useState(false);
@@ -72,19 +79,19 @@ export function VisualEditor() {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Cmd+P / Ctrl+P - Toggle component palette
-      if ((e.metaKey || e.ctrlKey) && e.key === 'p') {
+      if ((e.metaKey || e.ctrlKey) && e.key === "p") {
         e.preventDefault();
         setComponentPaletteOpen((prev) => !prev);
       }
       // Cmd+T / Ctrl+T - Toggle tests panel
-      if ((e.metaKey || e.ctrlKey) && e.key === 't') {
+      if ((e.metaKey || e.ctrlKey) && e.key === "t") {
         e.preventDefault();
         setTestsPanelOpen((prev) => !prev);
       }
     };
 
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
   }, []);
 
   // Handle DSL compilation in split mode
@@ -93,13 +100,18 @@ export function VisualEditor() {
       // Register all compiled circuits in the component library
       // so they can be referenced by testbenches and other circuits
       circuits.forEach((circuit) => {
-        console.log('[VisualEditor] Registering circuit in library:', circuit.name, 'nodes:', circuit.nodes.length);
+        console.log(
+          "[VisualEditor] Registering circuit in library:",
+          circuit.name,
+          "nodes:",
+          circuit.nodes.length,
+        );
         registerUser(circuit);
       });
 
       setCompiledCircuits(circuits, dslCode);
     },
-    [setCompiledCircuits, registerUser]
+    [setCompiledCircuits, registerUser],
   );
 
   return (
@@ -158,7 +170,11 @@ export function VisualEditor() {
         </div>
 
         {/* Left Drawer: Component Palette (non-modal for drag-and-drop) */}
-        <Sheet modal={false} open={componentPaletteOpen} onOpenChange={setComponentPaletteOpen}>
+        <Sheet
+          modal={false}
+          open={componentPaletteOpen}
+          onOpenChange={setComponentPaletteOpen}
+        >
           <SheetContent side="left" className="w-80 p-0">
             <SheetTitle className="sr-only">Component Palette</SheetTitle>
             <ComponentPalette />

@@ -15,8 +15,10 @@ import type { Circuit, Node, Connection, PortPath } from '../types/ir-v0.1';
 import type { MetadataState } from '../types';
 import { WIRE_COLORS } from '../types';
 import { useComponentLibraryStore } from '../stores/component-library-store';
-import type { PortValueMap } from '../lib/simulator-v0.1';
-import type { FlatSequentialState } from '../lib/flat-simulator';
+import type { FlatPortValueMap, FlatSequentialState } from '../lib/flat-simulator';
+
+// Alias for backward compatibility
+type PortValueMap = FlatPortValueMap;
 
 // Custom data structure for our ReactFlow nodes
 export interface NodeData extends Record<string, unknown> {
