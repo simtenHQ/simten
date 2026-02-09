@@ -706,6 +706,38 @@ export const PRIMITIVE_DEFINITIONS: Record<string, PrimitiveDefinition> = {
     },
   }),
 
+  Combiner8to8: defineCombinational({
+    name: 'Combiner8to8',
+    description: 'Combines 8 individual bit inputs into an 8-bit bus (bit0=LSB, bit7=MSB)',
+    category: 'utilities',
+    icon: '⊣8',
+    componentType: 'Combiner8to8',
+    inputs: [
+      { name: 'bit0', portType: bitType() },
+      { name: 'bit1', portType: bitType() },
+      { name: 'bit2', portType: bitType() },
+      { name: 'bit3', portType: bitType() },
+      { name: 'bit4', portType: bitType() },
+      { name: 'bit5', portType: bitType() },
+      { name: 'bit6', portType: bitType() },
+      { name: 'bit7', portType: bitType() },
+    ],
+    outputs: [{ name: 'out', portType: busType(8) }],
+    evaluate: (inputs) => {
+      let result = 0;
+
+      // Combine each bit (bit0 is LSB, bit7 is MSB)
+      for (let i = 0; i < 8; i++) {
+        const bitValue = inputs.get(`bit${i}`) as boolean | number | undefined;
+        if (bitValue) {
+          result |= 1 << i;
+        }
+      }
+
+      return new Map([['out', result]]);
+    },
+  }),
+
   Probe: defineCombinational({
     name: 'Probe',
     description: 'Debug observation point - passes signal through unchanged',
@@ -742,6 +774,25 @@ export const PRIMITIVE_DEFINITIONS: Record<string, PrimitiveDefinition> = {
       const result = (value >> low) & mask;
 
       return new Map([['out', result]]);
+    },
+  }),
+
+  AddressCombiner: defineCombinational({
+    name: 'AddressCombiner',
+    description: 'Combines two 8-bit buses into one 16-bit bus (hi << 8 | lo)',
+    category: 'utilities',
+    icon: '⊕16',
+    componentType: 'AddressCombiner',
+    inputs: [
+      { name: 'lo', portType: busType(8) },
+      { name: 'hi', portType: busType(8) },
+    ],
+    outputs: [{ name: 'out', portType: busType(16) }],
+    evaluate: (inputs) => {
+      const lo = (inputs.get('lo') as number) ?? 0;
+      const hi = (inputs.get('hi') as number) ?? 0;
+      // Mask inputs to 8-bit to prevent issues if wider bus is accidentally connected
+      return new Map([['out', ((hi & 0xff) << 8) | (lo & 0xff)]]);
     },
   }),
 
@@ -1488,19 +1539,19 @@ export const PRIMITIVE_DEFINITIONS: Record<string, PrimitiveDefinition> = {
 
   ROM: defineSequential({
     name: 'ROM',
-    description: 'Read-only memory with data initialization (default: 256×8). Use data=[...] for dense or data={addr: val, ...} for sparse initialization.',
+    description: 'Read-only memory with data initialization (default: 64K×8, 16-bit addressing). Use data=[...] for dense or data={addr: val, ...} for sparse initialization.',
     category: 'memory',
     icon: '📀',
     componentType: 'ROM',
-    inputs: [{ name: 'addr', portType: busType(8) }],
+    inputs: [{ name: 'addr', portType: busType(16) }],
     outputs: [{ name: 'data_out', portType: busType(8) }],
     clocks: [],
     state: [
       {
         id: 'rom-state',
         name: 'memory',
-        stateType: { kind: 'memory', addressWidth: 8, dataWidth: 8 },
-        initialValue: { data: new Map(), addressWidth: 8, dataWidth: 8 },
+        stateType: { kind: 'memory', addressWidth: 16, dataWidth: 8 },
+        initialValue: { data: new Map(), addressWidth: 16, dataWidth: 8 },
       },
     ],
     evaluate: (inputs, currentState) => {
@@ -1515,7 +1566,7 @@ export const PRIMITIVE_DEFINITIONS: Record<string, PrimitiveDefinition> = {
       return currentState;
     },
     createComponent: (id) => {
-      const addressWidth: number = 8;
+      const addressWidth: number = 16;
       const dataWidth: number = 8;
       const memory: Map<number, number> = new Map();
       return { id, type: 'ROM', addressWidth, dataWidth, memory } as Component;
@@ -1525,7 +1576,7 @@ export const PRIMITIVE_DEFINITIONS: Record<string, PrimitiveDefinition> = {
   RAM: defineSequential({
     name: 'RAM',
     description:
-      '256x8 RAM - reads are combinational, writes occur on rising clock edge with write enable',
+      '256x8 RAM - reads are combinational (addr->data_out), writes occur on rising clock edge with write enable',
     category: 'memory',
     icon: '💾',
     componentType: 'RAM',
@@ -1536,6 +1587,10 @@ export const PRIMITIVE_DEFINITIONS: Record<string, PrimitiveDefinition> = {
     ],
     outputs: [{ name: 'data_out', portType: busType(8) }],
     clocks: [{ name: 'clk' }],
+    // Mark as state-only for cycle detection purposes.
+    // data_out depends on addr + state, but NOT on data_in/we.
+    // This prevents false cycle detection when data_in comes from a feedback path.
+    outputDependency: 'state-only',
     state: [
       {
         id: 'ram-state',
