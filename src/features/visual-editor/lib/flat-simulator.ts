@@ -104,17 +104,32 @@ export function initializeFlatSequentialState(
 
         initialValue = { data: memory, addressWidth: 8, dataWidth: 8 };
       } else if (node.primitiveType === 'ROM') {
-        // ROM initialization - get runtime-loaded data from memory store
-        const loadedData = useMemoryDataStore.getState().getDataForNode(node.id);
+        // ROM initialization - check for DSL-embedded data first, then runtime-loaded data
+        const memory = new Map<number, number>();
 
+        // 1. Check for DSL-embedded data (node.arguments.data)
+        if ('data' in node.arguments && node.arguments.data) {
+          const dslData = node.arguments.data as Record<string, number>;
+          for (const [key, value] of Object.entries(dslData)) {
+            const addr = parseInt(key, 10);
+            if (!isNaN(addr) && typeof value === 'number') {
+              memory.set(addr, value);
+            }
+          }
+        }
+
+        // 2. Check for runtime-loaded data from memory store
+        // Runtime data takes precedence (allows patching DSL-embedded ROMs)
+        const loadedData = useMemoryDataStore.getState().getDataForNode(node.id);
         if (loadedData) {
           // Runtime data is at internal addresses (0, 1, 2, ...)
-          // The ROM's baseAddress parameter handles address decoding during reads
-          initialValue = { data: loadedData, addressWidth: 16, dataWidth: 8 };
-        } else {
-          // No data loaded - ROM is empty
-          initialValue = { data: new Map(), addressWidth: 16, dataWidth: 8 };
+          // Merge into memory (overwrites DSL data for same addresses)
+          for (const [addr, value] of loadedData.entries()) {
+            memory.set(addr, value);
+          }
         }
+
+        initialValue = { data: memory, addressWidth: 16, dataWidth: 8 };
       }
 
       // Convert StateValue to PrimitiveState
@@ -157,7 +172,7 @@ function getNodeInputsFlat(
   node: FlatNode,
   connections: FlatConnection[],
   portValues: FlatPortValueMap,
-  library: ComponentLibraryStore
+  _library: ComponentLibraryStore
 ): Map<string, BitValue | BusValue> {
   const inputs = new Map<string, BitValue | BusValue>();
 
