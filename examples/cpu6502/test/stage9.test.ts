@@ -12,6 +12,7 @@ import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import { compileDSL, ComponentLibrary } from '../../../src/features/dsl/index';
 import { useComponentLibraryStore } from '../../../src/features/visual-editor/stores/component-library-store';
+import { useMemoryDataStore } from '../../../src/features/visual-editor/stores/memory-data-store';
 import { getPrimitives } from '../../../src/features/visual-editor/lib/primitives';
 import type { Circuit } from '../../../src/features/dsl/types';
 import { elaborate } from '../../../src/features/visual-editor/lib/elaboration';
@@ -45,6 +46,9 @@ describe('6502 CPU Stage 9: C Code Integration', () => {
     store.clearAll();
     store.registerPrimitives(getPrimitives());
     library = new ComponentLibraryAdapter(store);
+
+    // Clear runtime-loaded memory data between tests
+    useMemoryDataStore.getState().clearAll();
   });
 
   function loadAndCompileDSL(filename: string) {
@@ -390,6 +394,11 @@ describe('6502 CPU Stage 9: C Code Integration', () => {
         return;
       }
 
+      // Load the simple.bin ROM data via memory store (runtime loading, not DSL-embedded)
+      const binPath = resolve(__dirname, '../cc65/simple.bin');
+      const binData = new Uint8Array(readFileSync(binPath));
+      useMemoryDataStore.getState().loadData('rom', binData, 'simple.bin', 0);
+
       const flatCircuit = elaborate(testCircuit, store);
       let seqState = initializeFlatSequentialState(flatCircuit);
 
@@ -409,8 +418,10 @@ describe('6502 CPU Stage 9: C Code Integration', () => {
         seqState = simResult.sequentialState!;
 
         // Debug: log key info at certain cycles
-        if (cycle < 20 || cycle % 20 === 0) {
-          let pc = 0, ir = 0, addrHi = 0, addrLo = 0;
+        if (cycle < 20) {
+          let pc = 0, ir = 0, romData = 0, currentState = 0, subcycle = 0;
+          // Find the actual ROM address input to the ROM primitive
+          let romAddrIn = 0;
           for (const [key, value] of simResult.portValues.entries()) {
             if (key.includes('pc_lo') && key.endsWith('.q') && !key.includes('temp')) {
               pc = typeof value === 'number' ? value : 0;
@@ -418,14 +429,25 @@ describe('6502 CPU Stage 9: C Code Integration', () => {
             if (key.includes('ir_') && key.endsWith('.q')) {
               ir = typeof value === 'number' ? value : 0;
             }
-            if (key.includes('final_addr_hi') && key.endsWith('.out')) {
-              addrHi = typeof value === 'number' ? value : 0;
+            // Find the ROM input address (the key ending in .addr for ROM node)
+            if (key.includes('_rom_') && key.endsWith('.addr')) {
+              romAddrIn = typeof value === 'number' ? value : 0;
             }
-            if (key.includes('final_addr_lo') && key.endsWith('.out')) {
-              addrLo = typeof value === 'number' ? value : 0;
+            // Find the ROM data output
+            if (key.includes('_rom_') && key.endsWith('.data_out')) {
+              romData = typeof value === 'number' ? value : 0;
+            }
+            // Find current_state from control unit state_reg
+            if (key.includes('state_reg') && key.endsWith('.q')) {
+              currentState = typeof value === 'number' ? value : 0;
+            }
+            // Find subcycle_reg
+            if (key.includes('subcycle_reg') && key.endsWith('.q')) {
+              subcycle = typeof value === 'number' ? value : 0;
             }
           }
-          console.log(`Cycle ${cycle}: PC=$${pc.toString(16).padStart(2,'0')} IR=$${ir.toString(16).padStart(2,'0')} ADDR=$${addrHi.toString(16).padStart(2,'0')}${addrLo.toString(16).padStart(2,'0')}`);
+          const stateName = currentState === 0 ? 'FETCH' : currentState === 1 ? 'DECODE' : currentState === 2 ? 'EXECUTE' : currentState === 253 ? 'RESET_LO' : currentState === 254 ? 'RESET_HI' : `S${currentState}`;
+          console.log(`Cycle ${cycle}: PC=$${pc.toString(16).padStart(2,'0')} IR=$${ir.toString(16).padStart(2,'0')} State=${stateName}(${currentState}) Sub=${subcycle} ROM.addr=$${romAddrIn.toString(16).padStart(4,'0')} ROM.data_out=$${romData.toString(16).padStart(2,'0')}`);
         }
       }
 

@@ -57,9 +57,11 @@ circuit RAM2K {
 circuit ROM16K {
   input addr_lo: Bus[8]
   input addr_hi: Bus[8]
+  input rom_data: Bus[8]      // Data from external ROM
 
   output data_out: Bus[8]
   output responds: Bit
+  output addr_out: Bus[16]    // Address for external ROM lookup
 
   impl {
     // ROM responds to $C000-$EFFF and $F100-$FFFF
@@ -88,60 +90,14 @@ circuit ROM16K {
     connect not_io.out -> rom_responds.b
     connect rom_responds.out -> responds
 
-    // Combine address for 16-bit ROM lookup
+    // Combine address for 16-bit ROM lookup and export
     node addr_combine: AddressCombiner
     connect addr_lo -> addr_combine.lo
     connect addr_hi -> addr_combine.hi
+    connect addr_combine.out -> addr_out
 
-    // ROM with simple.c program (writes "Hi Naz!\n" to console)
-    // Compiled from cc65/simple.c (uses fall-through to main)
-    node rom: ROM(data={
-      // Reset vector points to $C000
-      0xFFFD: 0xC0,
-
-      // Program: simple.c compiled output
-      // Writes: H, i, ' ', N, a, z, !, \n
-      0xC000: 0xA2,  // LDX #$FF
-      0xC001: 0xFF,
-      0xC002: 0x9A,  // TXS
-      0xC003: 0xA9,  // LDA #$48 ('H')
-      0xC004: 0x48,
-      0xC005: 0x8D,  // STA $F000
-      0xC007: 0xF0,
-      0xC008: 0xA9,  // LDA #$69 ('i')
-      0xC009: 0x69,
-      0xC00A: 0x8D,  // STA $F000
-      0xC00C: 0xF0,
-      0xC00D: 0xA9,  // LDA #$20 (' ')
-      0xC00E: 0x20,
-      0xC00F: 0x8D,  // STA $F000
-      0xC011: 0xF0,
-      0xC012: 0xA9,  // LDA #$4E ('N')
-      0xC013: 0x4E,
-      0xC014: 0x8D,  // STA $F000
-      0xC016: 0xF0,
-      0xC017: 0xA9,  // LDA #$61 ('a')
-      0xC018: 0x61,
-      0xC019: 0x8D,  // STA $F000
-      0xC01B: 0xF0,
-      0xC01C: 0xA9,  // LDA #$7A ('z')
-      0xC01D: 0x7A,
-      0xC01E: 0x8D,  // STA $F000
-      0xC020: 0xF0,
-      0xC021: 0xA9,  // LDA #$21 ('!')
-      0xC022: 0x21,
-      0xC023: 0x8D,  // STA $F000
-      0xC025: 0xF0,
-      0xC026: 0xA9,  // LDA #$0A ('\n')
-      0xC027: 0x0A,
-      0xC028: 0x8D,  // STA $F000
-      0xC02A: 0xF0,
-      0xC02B: 0x4C,  // JMP $C02B (infinite loop)
-      0xC02C: 0x2B,
-      0xC02D: 0xC0
-    })
-    connect addr_combine.out -> rom.addr
-    connect rom.data_out -> data_out
+    // Pass through external ROM data
+    connect rom_data -> data_out
   }
 }
 
@@ -202,8 +158,10 @@ circuit MemoryBus {
   input addr_hi: Bus[8]
   input data_in: Bus[8]
   input rw: Bit
+  input rom_data: Bus[8]      // Data from external ROM
 
   output data_out: Bus[8]
+  output rom_addr: Bus[16]    // Address for external ROM lookup
 
   clock clk
 
@@ -220,6 +178,8 @@ circuit MemoryBus {
 
     connect addr_lo -> rom.addr_lo
     connect addr_hi -> rom.addr_hi
+    connect rom_data -> rom.rom_data
+    connect rom.addr_out -> rom_addr
 
     // Connect console
     connect clk -> console.clk
@@ -289,8 +249,18 @@ circuit MemoryBusTest {
   clock clk
 
   impl {
+    // Test ROM (minimal for memory bus testing)
+    node rom: ROM(baseAddress=0xC000, data={
+      0xC000: 0xAB,
+      0xFFFD: 0xC0
+    })
+
     node mem_bus: MemoryBus
     connect clk -> mem_bus.clk
+
+    // Wire ROM to memory bus
+    connect mem_bus.rom_addr -> rom.addr
+    connect rom.data_out -> mem_bus.rom_data
 
     // Input controls
     node addr_lo_in: Input
@@ -517,9 +487,10 @@ circuit Stage6Control {
   output stack_write: Bit
   output use_stack_data: Bit
 
-  // JSR/RTS control
+  // JSR/RTS/JMP control
   output jsr_load_pc: Bit
   output rts_load_pc: Bit
+  output jmp_abs_load_pc: Bit  // JMP absolute (0x4C)
   output push_pc_hi: Bit
   output push_pc_lo: Bit
   output pull_pc_lo: Bit
@@ -548,6 +519,7 @@ circuit Stage6Control {
   output is_pla: Bit
   output is_jsr: Bit
   output is_rts: Bit
+  output is_jmp_abs: Bit  // JMP absolute (0x4C)
   output is_cmp_imm: Bit
   output is_beq: Bit
   output is_bne: Bit
@@ -805,6 +777,7 @@ circuit Stage6Control {
     node PLA: Constant(value=104)
     node JSR: Constant(value=32)
     node RTS: Constant(value=96)
+    node JMP_ABS: Constant(value=76)  // 0x4C - Jump absolute
     node CMP_IMM: Constant(value=201)
     node BEQ: Constant(value=240)
     node BNE: Constant(value=208)
@@ -1028,6 +1001,11 @@ circuit Stage6Control {
     connect current_opcode -> cmp_rts.a
     connect RTS.out -> cmp_rts.b
     connect cmp_rts.eq -> is_rts
+
+    node cmp_jmp_abs: Comparator
+    connect current_opcode -> cmp_jmp_abs.a
+    connect JMP_ABS.out -> cmp_jmp_abs.b
+    connect cmp_jmp_abs.eq -> is_jmp_abs
 
     node cmp_cmp_imm: Comparator
     connect current_opcode -> cmp_cmp_imm.a
@@ -2402,6 +2380,11 @@ circuit Stage6Control {
     connect exec_sub5.out -> done_rts.a
     connect cmp_rts.eq -> done_rts.b
 
+    // JMP absolute completes at sub1 (after reading both address bytes)
+    node done_jmp_abs: And
+    connect exec_sub1.out -> done_jmp_abs.a
+    connect cmp_jmp_abs.eq -> done_jmp_abs.b
+
     // Part 13: Indirect,X completes at sub5
     node done_ind_x: And
     connect exec_sub5.out -> done_ind_x.a
@@ -2475,9 +2458,14 @@ circuit Stage6Control {
     connect exec_done_temp13.out -> exec_done_temp14.a
     connect done_jmp_ind.out -> exec_done_temp14.b
 
+    node exec_done_temp15: Or
+    connect exec_done_temp14.out -> exec_done_temp15.a
+    connect done_rti.out -> exec_done_temp15.b
+
+    // JMP absolute
     node exec_done: Or
-    connect exec_done_temp14.out -> exec_done.a
-    connect done_rti.out -> exec_done.b
+    connect exec_done_temp15.out -> exec_done.a
+    connect done_jmp_abs.out -> exec_done.b
 
     node next_from_execute: Mux
     connect exec_done.out -> next_from_execute.sel
@@ -2548,9 +2536,14 @@ circuit Stage6Control {
     connect needs_operand_temp4.out -> needs_operand_temp5.a
     connect is_ind_y_final.out -> needs_operand_temp5.b
 
+    // JMP absolute needs to fetch the 2-byte target address
+    node needs_operand_temp6: Or
+    connect needs_operand_temp5.out -> needs_operand_temp6.a
+    connect cmp_jmp_abs.eq -> needs_operand_temp6.b
+
     // Part 17: JMP indirect needs to fetch the 2-byte pointer address
     node needs_operand: Or
-    connect needs_operand_temp5.out -> needs_operand.a
+    connect needs_operand_temp6.out -> needs_operand.a
     connect cmp_jmp_ind.eq -> needs_operand.b
 
     node pc_inc_exec_sub0: And
@@ -2561,9 +2554,14 @@ circuit Stage6Control {
     connect is_abs_final.out -> needs_2nd_byte_temp.a
     connect cmp_jsr.eq -> needs_2nd_byte_temp.b
 
+    // JMP absolute needs 2nd byte for target address
+    node needs_2nd_byte_temp2: Or
+    connect needs_2nd_byte_temp.out -> needs_2nd_byte_temp2.a
+    connect cmp_jmp_abs.eq -> needs_2nd_byte_temp2.b
+
     // Part 17: JMP indirect needs 2nd byte for pointer address
     node needs_2nd_byte: Or
-    connect needs_2nd_byte_temp.out -> needs_2nd_byte.a
+    connect needs_2nd_byte_temp2.out -> needs_2nd_byte.a
     connect cmp_jmp_ind.eq -> needs_2nd_byte.b
 
     node pc_inc_exec_sub1: And
@@ -2903,6 +2901,12 @@ circuit Stage6Control {
     connect exec_sub2.out -> update_flags_plp_signal.a
     connect cmp_plp.eq -> update_flags_plp_signal.b
     connect update_flags_plp_signal.out -> update_flags_plp
+
+    // JMP absolute loads PC from operand at sub1 (after both bytes read)
+    node jmp_abs_load_pc_signal: And
+    connect exec_sub1.out -> jmp_abs_load_pc_signal.a
+    connect cmp_jmp_abs.eq -> jmp_abs_load_pc_signal.b
+    connect jmp_abs_load_pc_signal.out -> jmp_abs_load_pc
 
     // JSR/RTS PC control
     node jsr_load_pc_signal: And
@@ -5104,10 +5108,16 @@ circuit CPU6502Core {
     connect pc_lo_after_rts.out -> pc_lo_after_jsr.in0
     connect addr_lo_reg.q -> pc_lo_after_jsr.in1
 
+    // JMP absolute loads PC from operand (same regs as JSR)
+    node pc_lo_after_jmp_abs: Mux
+    connect control.jmp_abs_load_pc -> pc_lo_after_jmp_abs.sel
+    connect pc_lo_after_jsr.out -> pc_lo_after_jmp_abs.in0
+    connect addr_lo_reg.q -> pc_lo_after_jmp_abs.in1
+
     // JMP indirect loads PC from pointer
     node pc_lo_after_jmp_ind: Mux
     connect control.jmp_ind_load_pc -> pc_lo_after_jmp_ind.sel
-    connect pc_lo_after_jsr.out -> pc_lo_after_jmp_ind.in0
+    connect pc_lo_after_jmp_abs.out -> pc_lo_after_jmp_ind.in0
     connect ptr_lo_reg.q -> pc_lo_after_jmp_ind.in1
 
     // RTI loads PC from stack (no +1 unlike RTS)
@@ -5154,10 +5164,19 @@ circuit CPU6502Core {
     connect pc_hi_after_rts.out -> pc_hi_after_jsr.in0
     connect addr_hi_reg.q -> pc_hi_after_jsr.in1
 
+    // JMP absolute loads PC high from data_in directly (not addr_hi_reg.q)
+    // This is necessary because addr_hi_reg is being loaded at the same clock edge,
+    // so addr_hi_reg.q still has the old value when we read it.
+    // (Same timing issue as reset vector - see comment at pc_hi_after_reset)
+    node pc_hi_after_jmp_abs: Mux
+    connect control.jmp_abs_load_pc -> pc_hi_after_jmp_abs.sel
+    connect pc_hi_after_jsr.out -> pc_hi_after_jmp_abs.in0
+    connect data_in -> pc_hi_after_jmp_abs.in1
+
     // JMP indirect loads PC high from ptr_hi_reg
     node pc_hi_after_jmp_ind: Mux
     connect control.jmp_ind_load_pc -> pc_hi_after_jmp_ind.sel
-    connect pc_hi_after_jsr.out -> pc_hi_after_jmp_ind.in0
+    connect pc_hi_after_jmp_abs.out -> pc_hi_after_jmp_ind.in0
     connect ptr_hi_reg.q -> pc_hi_after_jmp_ind.in1
 
     // RTI loads PC high from stack
@@ -5364,6 +5383,7 @@ circuit CPU6502CoreTest {
 // === System6502: Complete 6502 system ===
 circuit System6502 {
   input reset: Bit
+  input rom_data: Bus[8]      // Data from external ROM
 
   // Debug outputs from CPU
   output pc: Bus[8]          // PC low byte (backward compatible)
@@ -5385,6 +5405,7 @@ circuit System6502 {
   output addr_hi: Bus[8]
   output data_bus: Bus[8]
   output rw: Bit
+  output rom_addr: Bus[16]    // Address for external ROM lookup
 
   clock clk
 
@@ -5401,6 +5422,10 @@ circuit System6502 {
     connect cpu.addr_hi -> mem_bus.addr_hi
     connect cpu.data_out -> mem_bus.data_in
     connect cpu.rw -> mem_bus.rw
+
+    // ROM interface passthrough
+    connect rom_data -> mem_bus.rom_data
+    connect mem_bus.rom_addr -> rom_addr
 
     // Bus -> CPU
     connect mem_bus.data_out -> cpu.data_in
@@ -5429,12 +5454,21 @@ circuit System6502 {
 }
 
 // === Stage7Test: Test circuit with displays ===
+// ROM data is loaded at runtime via the memory data store (drag-drop .bin file)
 circuit Stage7Test {
   clock clk
 
   impl {
+    // ROM mapped at $C000-$FFFF - data loaded at runtime, not embedded in DSL
+    // baseAddress tells ROM where it's mapped (subtracts from CPU address like real hardware)
+    node rom: ROM(baseAddress=0xC000)
+
     node system: System6502
     connect clk -> system.clk
+
+    // Wire ROM to system
+    connect system.rom_addr -> rom.addr
+    connect rom.data_out -> system.rom_data
 
     node reset_input: Input
     connect reset_input.out -> system.reset

@@ -63,6 +63,7 @@ function getNodeTypeForComponent(componentRef: string, inputCount: number, outpu
     DFlipFlop: 'logicGateNode',
     Register: 'registerNode',
     RAM: 'ramNode',
+    ROM: 'romNode',
     HexDisplay: 'outputNode',
     SevenSegment: 'outputNode',
     Screen: 'screenNode',

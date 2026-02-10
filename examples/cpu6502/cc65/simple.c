@@ -7,11 +7,15 @@
 #define CONSOLE (*(volatile unsigned char*)0xF000)
 
 void main(void) {
-    /* Write "Hi Naz!" directly to console */
+    /* Write "Hello Chaz!" directly to console */
     CONSOLE = 'H';
-    CONSOLE = 'i';
+    CONSOLE = 'e';
+    CONSOLE = 'l';
+    CONSOLE = 'l';
+    CONSOLE = 'o';
     CONSOLE = ' ';
-    CONSOLE = 'N';
+    CONSOLE = 'C';
+    CONSOLE = 'h';
     CONSOLE = 'a';
     CONSOLE = 'z';
     CONSOLE = '!';
