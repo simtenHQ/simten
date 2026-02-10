@@ -37,6 +37,7 @@ import type { SimulationSnapshot } from '../types/simulation-snapshot';
 import type { ComponentLibraryStore } from '../stores/component-library-store';
 import { usePortValuesStore } from '../stores/port-values-store';
 import { useSequentialStateStore } from '../stores/sequential-state-store';
+import { useMemoryDataStore } from '../stores/memory-data-store';
 
 /**
  * Check if circuit has sequential components
@@ -104,6 +105,9 @@ export class SimulationController {
   private currentHistoryIndex = -1;
   private maxHistorySize = 1000;
 
+  // Memory data generation tracking (for auto-reset on ROM swap)
+  private lastMemoryGeneration = 0;
+
   // Listeners for state changes (React integration)
   private listeners: Set<() => void> = new Set();
 
@@ -124,6 +128,9 @@ export class SimulationController {
     this.circuit = circuit;
     this.library = library;
     this.isSequential = hasSequentialComponents(circuit, library);
+
+    // Record current memory generation (so we detect future changes)
+    this.lastMemoryGeneration = useMemoryDataStore.getState().generation;
 
     // Clear history on structure change
     this.clearHistory();
@@ -190,9 +197,32 @@ export class SimulationController {
   // ============================================================================
 
   /**
+   * Check if memory data has changed (e.g., ROM file dropped).
+   * If so, trigger a reset - like swapping a ROM chip requires power cycle.
+   * Returns true if reset was triggered.
+   */
+  private checkMemoryDataChanged(): boolean {
+    const currentGeneration = useMemoryDataStore.getState().generation;
+    if (currentGeneration !== this.lastMemoryGeneration) {
+      console.log('[Controller] Memory data changed (generation', this.lastMemoryGeneration, '->', currentGeneration, '), triggering reset');
+      this.lastMemoryGeneration = currentGeneration;
+      if (this.circuit && this.library) {
+        this.initialize(this.circuit, this.library);
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /**
    * Execute one simulation step (for sequential circuits)
    */
   step(): void {
+    // Check if ROM data was swapped - if so, reset (like hardware power cycle)
+    if (this.checkMemoryDataChanged()) {
+      return; // Reset already happened, don't double-step
+    }
+
     if (!this.flatCircuit || !this.circuit || !this.library) {
       console.error('[SimulationController] Cannot step: not initialized');
       return;

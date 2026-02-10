@@ -11,6 +11,7 @@ export { ScreenNode } from './ScreenNode';
 export { RasterDisplayNode } from './RasterDisplayNode';
 export { RegisterNode } from './RegisterNode';
 export { RAMNode } from './RAMNode';
+export { ROMNode } from './ROMNode';
 export { ConsoleNode } from './ConsoleNode';
 
 export type { BaseNodeProps, PortConfig } from './BaseNode';

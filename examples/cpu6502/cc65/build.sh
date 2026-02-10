@@ -80,6 +80,10 @@ $LD65 -C "$SCRIPT_DIR/sim6502.cfg" -o "$NAME.bin" \
 echo "  Converting to DSL..."
 node "$SCRIPT_DIR/bin2dsl.js" "$NAME.bin" > "$NAME.rom.dsl"
 
+# Patch the system DSL file with new ROM data
+echo "  Patching system DSL..."
+node "$SCRIPT_DIR/patch-rom.js" "$NAME.bin"
+
 # Clean up intermediate files
 rm -f "$NAME.s" "$NAME.o" "$SCRIPT_DIR/crt0-simple.o"
 
@@ -87,3 +91,4 @@ echo ""
 echo "Built successfully:"
 echo "  $NAME.bin ($(wc -c < "$NAME.bin" | tr -d ' ') bytes)"
 echo "  $NAME.rom.dsl"
+echo "  ../cpu6502-system.dsl (updated)"
