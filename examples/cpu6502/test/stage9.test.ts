@@ -394,8 +394,8 @@ describe('6502 CPU Stage 9: C Code Integration', () => {
         return;
       }
 
-      // Load the simple.bin ROM data via memory store (runtime loading, not DSL-embedded)
-      const binPath = resolve(__dirname, '../cc65/simple.bin');
+      // Load the call-test.bin ROM data via memory store (runtime loading, not DSL-embedded)
+      const binPath = resolve(__dirname, '../cc65/call-test.bin');
       const binData = new Uint8Array(readFileSync(binPath));
       useMemoryDataStore.getState().loadData('rom', binData, 'simple.bin', 0);
 
@@ -410,45 +410,13 @@ describe('6502 CPU Stage 9: C Code Integration', () => {
         return undefined;
       };
 
-      // Run simulation for enough cycles to execute simple.c
-      // simple.c writes 'H', 'i', '!', '\n' to $F000
+      // Run simulation for enough cycles to execute the program
+      // Program completes "Hi!\n" output by ~100 cycles, then enters infinite loop
       for (let cycle = 0; cycle < 100; cycle++) {
         const simResult = runFlatSimulationTick(flatCircuit, seqState);
         expect(simResult.error).toBeUndefined();
         seqState = simResult.sequentialState!;
 
-        // Debug: log key info at certain cycles
-        if (cycle < 20) {
-          let pc = 0, ir = 0, romData = 0, currentState = 0, subcycle = 0;
-          // Find the actual ROM address input to the ROM primitive
-          let romAddrIn = 0;
-          for (const [key, value] of simResult.portValues.entries()) {
-            if (key.includes('pc_lo') && key.endsWith('.q') && !key.includes('temp')) {
-              pc = typeof value === 'number' ? value : 0;
-            }
-            if (key.includes('ir_') && key.endsWith('.q')) {
-              ir = typeof value === 'number' ? value : 0;
-            }
-            // Find the ROM input address (the key ending in .addr for ROM node)
-            if (key.includes('_rom_') && key.endsWith('.addr')) {
-              romAddrIn = typeof value === 'number' ? value : 0;
-            }
-            // Find the ROM data output
-            if (key.includes('_rom_') && key.endsWith('.data_out')) {
-              romData = typeof value === 'number' ? value : 0;
-            }
-            // Find current_state from control unit state_reg
-            if (key.includes('state_reg') && key.endsWith('.q')) {
-              currentState = typeof value === 'number' ? value : 0;
-            }
-            // Find subcycle_reg
-            if (key.includes('subcycle_reg') && key.endsWith('.q')) {
-              subcycle = typeof value === 'number' ? value : 0;
-            }
-          }
-          const stateName = currentState === 0 ? 'FETCH' : currentState === 1 ? 'DECODE' : currentState === 2 ? 'EXECUTE' : currentState === 253 ? 'RESET_LO' : currentState === 254 ? 'RESET_HI' : `S${currentState}`;
-          console.log(`Cycle ${cycle}: PC=$${pc.toString(16).padStart(2,'0')} IR=$${ir.toString(16).padStart(2,'0')} State=${stateName}(${currentState}) Sub=${subcycle} ROM.addr=$${romAddrIn.toString(16).padStart(4,'0')} ROM.data_out=$${romData.toString(16).padStart(2,'0')}`);
-        }
       }
 
       // Check console output

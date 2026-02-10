@@ -780,9 +780,22 @@ export function topologicalSortFlat(
   connections: FlatConnection[],
   library: ComponentLibraryStore
 ): string[] | null {
-  // Identify state-breaking nodes (outputs from state, not inputs)
-  // These nodes break combinational cycles
-  const stateBreakingNodes = new Set<string>();
+  // Categorize nodes into evaluation phases:
+  //
+  // Phase 1: state-output nodes (registers) - outputs depend only on state
+  //   These must run first so combinational logic can use their .q values
+  //
+  // Phase 2: combinational + state-read nodes - topologically sorted
+  //   This includes pure combinational nodes AND state+inputs nodes (RAM/ROM)
+  //   State+inputs nodes break WRITE feedback (data_in/we -> data_out) but
+  //   participate normally in READ paths (addr -> data_out -> downstream)
+  //
+  // Phase 3: sink nodes (displays, LEDs)
+  //
+  // This mirrors real hardware: registers present .q, then all combinational
+  // logic (including memory reads) evaluates, then results display.
+  const stateOutputNodes = new Set<string>();  // state-only: run first
+  const stateReadNodes = new Set<string>();    // state+inputs: tracked for edge filtering
   const sinkNodes = new Set<string>();
   const dependentNodes: string[] = [];
 
@@ -792,20 +805,27 @@ export function topologicalSortFlat(
 
     // Check metadata for node category
     const isSink = component.metadata?.kind === 'sink';
-    const isStateOnly = component.metadata?.outputDependency === 'state-only';
+    const outputDep = component.metadata?.outputDependency;
     const isSequential = component.metadata?.kind === 'sequential';
 
     if (isSink) {
       sinkNodes.add(node.id);
-    } else if (isStateOnly || isSequential) {
-      stateBreakingNodes.add(node.id);
+    } else if (outputDep === 'state+inputs') {
+      // RAM/ROM: outputs depend on state AND inputs (address)
+      // Include in combinational sort, but track for write-feedback filtering
+      stateReadNodes.add(node.id);
+      dependentNodes.push(node.id);
+    } else if (outputDep === 'state-only' || isSequential) {
+      // Registers: outputs depend only on state
+      // Must run first so combinational logic can use their .q values
+      stateOutputNodes.add(node.id);
     } else {
       dependentNodes.push(node.id);
     }
   }
 
   // Build dependency graph for dependent nodes only
-  // Exclude edges FROM state-breaking and sink nodes (they don't create combinational cycles)
+  // Exclude edges FROM state nodes and sink nodes (they don't create combinational cycles)
   const graph = new Map<string, Set<string>>();
   const inDegree = new Map<string, number>();
 
@@ -818,6 +838,9 @@ export function topologicalSortFlat(
   // Build edges (source -> target)
   const dependentSet = new Set(dependentNodes);
 
+  // Define write ports for state+inputs nodes (these create write-feedback cycles)
+  const writePortNames = new Set(['data_in', 'we', 'data', 'dataA', 'weA']);
+
   for (const conn of connections) {
     const source = conn.source.nodeId;
     const target = conn.target.nodeId;
@@ -826,8 +849,15 @@ export function topologicalSortFlat(
     if (source === TOP_LEVEL_NODE || target === TOP_LEVEL_NODE) continue;
     if (source === '' || target === '') continue;
 
-    // Skip connections FROM state-breaking or sink nodes
-    if (stateBreakingNodes.has(source) || sinkNodes.has(source)) continue;
+    // Skip connections FROM state-output nodes or sink nodes
+    // State-output (registers): outputs don't depend on inputs, no combinational path
+    // Sink nodes: outputs don't feed back into the circuit
+    if (stateOutputNodes.has(source) || sinkNodes.has(source)) continue;
+
+    // Skip write-feedback edges TO state+inputs nodes
+    // These are edges to write ports (data_in, we) that create feedback cycles.
+    // Keep edges to read ports (addr) - those are valid combinational dependencies.
+    if (stateReadNodes.has(target) && writePortNames.has(conn.target.portName)) continue;
 
     // Only consider edges between dependent nodes
     if (!dependentSet.has(source) || !dependentSet.has(target)) continue;
@@ -868,12 +898,13 @@ export function topologicalSortFlat(
     return null; // Cycle detected
   }
 
-  // Return evaluation order:
-  // 1. State-breaking nodes first (outputs from state)
-  // 2. Dependent nodes in topological order
-  // 3. Sink nodes last (outputs don't feed back)
+  // Return evaluation order matching real hardware timing:
+  // 1. State-output nodes (registers output .q)
+  // 2. Combinational + state-read nodes in topological order
+  //    (address computation -> RAM read -> downstream muxes)
+  // 3. Sink nodes (displays, LEDs)
   return [
-    ...Array.from(stateBreakingNodes),
+    ...Array.from(stateOutputNodes),
     ...result,
     ...Array.from(sinkNodes)
   ];

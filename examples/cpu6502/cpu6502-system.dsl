@@ -2890,10 +2890,63 @@ circuit Stage6Control {
     connect stack_write_php.out -> stack_write_signal.b
     connect stack_write_signal.out -> stack_write
 
-    // Use stack data for A
-    node use_stack_signal: And
-    connect exec_sub2.out -> use_stack_signal.a
-    connect cmp_pla.eq -> use_stack_signal.b
+    // Use stack data - need stack address for all stack READ operations
+    // PLA: sub2 reads A from stack
+    node use_stack_pla: And
+    connect exec_sub2.out -> use_stack_pla.a
+    connect cmp_pla.eq -> use_stack_pla.b
+
+    // PLP: sub2 reads flags from stack
+    node use_stack_plp: And
+    connect exec_sub2.out -> use_stack_plp.a
+    connect cmp_plp.eq -> use_stack_plp.b
+
+    // RTS: sub1 reads PC_lo, sub3 reads PC_hi
+    node use_stack_rts_lo: And
+    connect exec_sub1.out -> use_stack_rts_lo.a
+    connect cmp_rts.eq -> use_stack_rts_lo.b
+
+    node use_stack_rts_hi: And
+    connect exec_sub3.out -> use_stack_rts_hi.a
+    connect cmp_rts.eq -> use_stack_rts_hi.b
+
+    // RTI: sub1 reads flags, sub3 reads PC_lo, sub5 reads PC_hi
+    node use_stack_rti_flags: And
+    connect exec_sub1.out -> use_stack_rti_flags.a
+    connect cmp_rti.eq -> use_stack_rti_flags.b
+
+    node use_stack_rti_lo: And
+    connect exec_sub3.out -> use_stack_rti_lo.a
+    connect cmp_rti.eq -> use_stack_rti_lo.b
+
+    node use_stack_rti_hi: And
+    connect exec_sub5.out -> use_stack_rti_hi.a
+    connect cmp_rti.eq -> use_stack_rti_hi.b
+
+    // Combine all stack read signals
+    node use_stack_temp1: Or
+    connect use_stack_pla.out -> use_stack_temp1.a
+    connect use_stack_plp.out -> use_stack_temp1.b
+
+    node use_stack_temp2: Or
+    connect use_stack_temp1.out -> use_stack_temp2.a
+    connect use_stack_rts_lo.out -> use_stack_temp2.b
+
+    node use_stack_temp3: Or
+    connect use_stack_temp2.out -> use_stack_temp3.a
+    connect use_stack_rts_hi.out -> use_stack_temp3.b
+
+    node use_stack_temp4: Or
+    connect use_stack_temp3.out -> use_stack_temp4.a
+    connect use_stack_rti_flags.out -> use_stack_temp4.b
+
+    node use_stack_temp5: Or
+    connect use_stack_temp4.out -> use_stack_temp5.a
+    connect use_stack_rti_lo.out -> use_stack_temp5.b
+
+    node use_stack_signal: Or
+    connect use_stack_temp5.out -> use_stack_signal.a
+    connect use_stack_rti_hi.out -> use_stack_signal.b
     connect use_stack_signal.out -> use_stack_data
 
     // Part 16: PLP updates all flags at sub2 (when stack data is available)
@@ -5159,6 +5212,9 @@ circuit CPU6502Core {
     connect pc_hi_after_branch.out -> pc_hi_after_rts.in0
     connect rts_pc_hi_final.out -> pc_hi_after_rts.in1
 
+    // JSR loads PC high from addr_hi_reg.q (unlike JMP which uses data_in)
+    // JSR has time: sub1 loads addr_hi_reg, sub2-3 push to stack, sub4 loads PC
+    // So addr_hi_reg.q has the correct value by the time jsr_load_pc fires
     node pc_hi_after_jsr: Mux
     connect control.jsr_load_pc -> pc_hi_after_jsr.sel
     connect pc_hi_after_rts.out -> pc_hi_after_jsr.in0
