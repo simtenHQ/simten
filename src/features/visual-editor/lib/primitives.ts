@@ -177,10 +177,16 @@ export interface PrimitiveDefinition {
   /**
    * Output dependency mode (for sequential components):
    * - 'state-only': Outputs come purely from state (DFlipFlop, Register, RasterDisplay)
-   * - 'input-dependent': Outputs depend on current inputs (RAM - read is combinational)
-   * Used for topological sorting to prevent false cycle detection.
+   * - 'state+inputs': Outputs depend on state AND combinational inputs (RAM/ROM - address-based read)
+   * - 'input-dependent': Outputs depend only on current inputs (pure combinational)
+   *
+   * Used for topological sorting. Evaluation order:
+   * 1. state-only nodes (registers output .q)
+   * 2. combinational logic (address calc, muxes, ALU)
+   * 3. state+inputs nodes (RAM/ROM read using computed address)
+   * 4. sinks
    */
-  outputDependency?: 'state-only' | 'input-dependent';
+  outputDependency?: 'state-only' | 'state+inputs' | 'input-dependent';
 
   // ===== Environmental State (Time-Travel Debugging) =====
   /**
@@ -307,7 +313,7 @@ export function defineSequential(config: {
    * This affects evaluation order to prevent false cycle detection.
    * Default: 'input-dependent'
    */
-  outputDependency?: 'state-only' | 'input-dependent';
+  outputDependency?: 'state-only' | 'state+inputs' | 'input-dependent';
   metadata?: PrimitiveSpecialMetadata;
 }): PrimitiveDefinition {
   return definePrimitive({
@@ -1546,6 +1552,8 @@ export const PRIMITIVE_DEFINITIONS: Record<string, PrimitiveDefinition> = {
     inputs: [{ name: 'addr', portType: busType(16) }],
     outputs: [{ name: 'data_out', portType: busType(8) }],
     clocks: [],
+    // ROM output depends on state AND addr input - must run after address computation
+    outputDependency: 'state+inputs',
     state: [
       {
         id: 'rom-state',
@@ -1593,10 +1601,11 @@ export const PRIMITIVE_DEFINITIONS: Record<string, PrimitiveDefinition> = {
     ],
     outputs: [{ name: 'data_out', portType: busType(8) }],
     clocks: [{ name: 'clk' }],
-    // Mark as state-only for cycle detection purposes.
-    // data_out depends on addr + state, but NOT on data_in/we.
-    // This prevents false cycle detection when data_in comes from a feedback path.
-    outputDependency: 'state-only',
+    // RAM output depends on both state AND the addr input.
+    // This is distinct from registers (state-only) because RAM needs the
+    // computed address before it can read. Write feedback cycles are still
+    // broken because data_out doesn't depend on data_in/we.
+    outputDependency: 'state+inputs',
     state: [
       {
         id: 'ram-state',

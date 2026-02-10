@@ -192,14 +192,16 @@ describe('Runtime ROM Loading', () => {
     const romState = seqState.currentState.get(romNode.id) as Map<number, number>;
     console.log('ROM state after init:', romState ? `Map with ${romState.size} entries` : 'NONE');
 
-    // Verify critical bytes are present (JMP at internal addr 3, operands at 4-5)
-    console.log('Internal addr 3 (JMP):', romState?.get(3)?.toString(16));  // Should be $4C
-    console.log('Internal addr 4 (low):', romState?.get(4)?.toString(16));  // Should be $06
-    console.log('Internal addr 5 (hi):', romState?.get(5)?.toString(16));   // Should be $C0
+    // Verify critical bytes are present from simple.bin
+    // simple.bin starts with: A2 FF 9A A9 48 8D 00 F0 ...
+    // A2 FF = LDX #$FF, 9A = TXS, A9 48 = LDA #$48 ('H'), 8D 00 F0 = STA $F000
+    console.log('Internal addr 0 (LDX):', romState?.get(0)?.toString(16));  // Should be $A2
+    console.log('Internal addr 3 (LDA):', romState?.get(3)?.toString(16));  // Should be $A9
+    console.log('Internal addr 4 (H):', romState?.get(4)?.toString(16));    // Should be $48
 
-    expect(romState?.get(3)).toBe(0x4C);  // JMP opcode
-    expect(romState?.get(4)).toBe(0x06);  // Low byte of target
-    expect(romState?.get(5)).toBe(0xC0);  // High byte of target
+    expect(romState?.get(0)).toBe(0xA2);  // LDX opcode
+    expect(romState?.get(3)).toBe(0xA9);  // LDA opcode
+    expect(romState?.get(4)).toBe(0x48);  // 'H' character
 
     // Also check reset vector at internal addresses $3FFC/$3FFD
     // These are $FFFC-$C000 = $3FFC and $FFFD-$C000 = $3FFD

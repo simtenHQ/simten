@@ -212,11 +212,17 @@ export interface CircuitMetadata {
   kind?: ComponentKind; // Component classification for evaluation
   /**
    * For sequential components: how outputs are computed
-   * - 'state-only': Outputs come purely from state (DFlipFlop, Register, RasterDisplay)
-   * - 'input-dependent': Outputs depend on current inputs (RAM - read is combinational)
-   * Used for topological sorting to prevent false cycle detection.
+   * - 'state-only': Outputs come purely from state (DFlipFlop, Register)
+   * - 'state+inputs': Outputs depend on state AND combinational inputs (RAM/ROM - address-based read)
+   * - 'input-dependent': Outputs depend only on current inputs (pure combinational)
+   *
+   * Used for topological sorting. Evaluation order:
+   * 1. state-only nodes (registers output .q)
+   * 2. combinational logic (address calc, muxes, ALU)
+   * 3. state+inputs nodes (RAM/ROM read using computed address)
+   * 4. sinks
    */
-  outputDependency?: 'state-only' | 'input-dependent';
+  outputDependency?: 'state-only' | 'state+inputs' | 'input-dependent';
   consumes?: string[]; // Capabilities this component requires (e.g., ['FrameSnapshotSource'])
   provides?: string[]; // Capabilities this component implements (e.g., ['FrameSnapshotSource'])
 }
