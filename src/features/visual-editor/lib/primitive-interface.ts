@@ -48,9 +48,10 @@ export type InputValue = BitValue | BusValue | ParameterValue;
  * - BitValue (boolean): For single-bit state (D Flip-Flop)
  * - BusValue (number): For multi-bit state (Register)
  * - Map<number, number>: For memory storage (RAM)
+ * - string: For text accumulation (Console)
  * - undefined: For combinational components (no state)
  */
-export type PrimitiveState = BitValue | BusValue | Map<number, number> | undefined;
+export type PrimitiveState = BitValue | BusValue | Map<number, number> | string | undefined;
 
 /**
  * Clock edge detection result
