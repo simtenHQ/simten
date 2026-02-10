@@ -1,10 +1,10 @@
 # 6502 CPU Implementation Plan
 
-**Status:** Stage 8A COMPLETE ✅ | Stage 8B NEXT: Full Memory Infrastructure
+**Status:** Stage 8B COMPLETE ✅ | Stage 9 NEXT: C Code Integration (cc65)
 
 **Philosophy:** Prove each stage works before moving to the next. Start simple, validate thoroughly, then scale up.
 
-**Last Updated:** 2026-02-09 (Stage 8A Complete - 16-bit PC, 194 tests passing)
+**Last Updated:** 2026-02-09 (Stage 8B Complete - Full memory infrastructure, reset vector fetch, 201 tests passing)
 
 ---
 
@@ -107,7 +107,28 @@
 
 **Stage 8A enables:** PC can now address full 64KB space. JMP/JSR/RTS/branches work across page boundaries.
 
-**Remaining (Stage 8B):** ROM primitive still 8-bit, need ROM16K at $C000, RAM2K at $0000, reset vector fetch.
+### Stage 8B: ✅ COMPLETE (Full Memory Infrastructure)
+- Updated ROM primitive to 16-bit addressing (`primitives.ts`)
+- Added AddressCombiner primitive for combining 8-bit buses into 16-bit
+- Created RAM2K circuit at $0000-$07FF (256 bytes due to RAM primitive limitation)
+- Created ROM16K circuit at $C000-$FFFF with test program and reset vector
+- Reset vector at $FFFC/$FFFD points to $C000
+- Implemented reset vector fetch in CPU:
+  - State register initializes to STATE_RESET_LO (253)
+  - STATE_RESET_LO: outputs addr=$FFFC, loads low byte to pc_lo_temp
+  - STATE_RESET_HI: outputs addr=$FFFD, loads high byte directly to pc_hi
+  - Transitions to FETCH with PC loaded from reset vector
+- Updated MemoryBus with proper address decode (RAM < $0800, ROM >= $C000)
+- Open bus behavior for unmapped addresses ($0800-$BFFF)
+- Working files:
+  - `src/features/visual-editor/lib/primitives.ts` - ROM 16-bit, AddressCombiner
+  - `32-memory-bus.dsl` - RAM2K, ROM16K, updated MemoryBus
+  - `33-cpu-core.dsl` - Reset vector fetch states in FSM
+  - `stage7-combined.dsl` - Regenerated with all changes
+- Tests: `test/stage8b.test.ts` (7 tests passing)
+- Total tests: 201 tests passing across all stage test files
+
+**Stage 8B enables:** Full 64KB memory map, CPU starts execution from reset vector address ($C000).
 
 ### Key Achievement: Elaboration Fan-Out Fix
 - Fixed clock fan-out through nested composites (resolveInternalPorts now returns array)
@@ -118,25 +139,29 @@
 
 ## Architecture Overview
 
-### Current (Stage 7 - Bus Architecture ✅ IMPLEMENTED)
+### Current (Stage 8B - Full Memory Infrastructure ✅ IMPLEMENTED)
 ```
 ┌─────────────────┐     ┌─────────────────┐
 │  CPU6502Core    │────▶│   MemoryBus     │
-│  (pure logic)   │◀────│ (device router) │
-└─────────────────┘     └────────┬────────┘
-                                 │
+│  (16-bit PC,    │◀────│ (address decode)│
+│   reset vector) │     └────────┬────────┘
+└─────────────────┘              │
                     ┌────────────┼────────────┐
                     ▼            ▼            ▼
               ┌─────────┐  ┌─────────┐  ┌─────────┐
-              │ RAM256  │  │   IO    │  │ ROM256  │
-              │$0000-FF │  │ (later) │  │$0000-FF │
-              │+ stack  │  └─────────┘  │(overlay)│
-              │$0100-FF │               └─────────┘
-              └─────────┘
+              │  RAM2K  │  │Open Bus │  │ ROM16K  │
+              │$0000-07FF│  │$0800-   │  │$C000-   │
+              │(256 bytes│  │ $BFFF   │  │ $FFFF   │
+              │ actual)  │  │(unmapped)│  │         │
+              └─────────┘  └─────────┘  └─────────┘
 
-Note: ROM overlays RAM at $00XX for reads (ROM priority)
-      Stack at $01XX uses same RAM (256 bytes total)
-      8-bit PC limits ROM to 256 bytes
+Memory Map:
+  $0000-$07FF: RAM (256 bytes due to primitive limitation)
+  $0800-$BFFF: Unmapped (open bus - returns last read value)
+  $C000-$FFFF: ROM (test program at $C000)
+  $FFFC-$FFFD: Reset vector (points to $C000)
+
+CPU starts by fetching reset vector, then executes from $C000.
 ```
 
 ### Target (Stage 8 - Full 16-bit Addressing)
@@ -338,11 +363,11 @@ circuit System6502 {
 - [x] Add stage7.test.ts (17 tests)
 - [x] Verify execution: all register values correct
 
-**Current limitations (for Stage 8B):**
-- ROM primitive still 8-bit addressing
-- ROM program hardcoded in DSL (not loadable)
-- No reset vector fetch
-- No IO devices yet
+**Limitations addressed in Stage 8B:**
+- ✅ ROM primitive now 16-bit addressing
+- ✅ Reset vector fetch implemented
+- ROM program still hardcoded in DSL (loadable binaries for Stage 9)
+- No IO devices yet (for Stage 9)
 
 ---
 
@@ -362,15 +387,15 @@ circuit System6502 {
 - [x] Create `test/stage8a.test.ts` (9 tests)
 - [x] Full regression (194 tests passing)
 
-#### Phase B: Full Memory Infrastructure 🔧 NEXT
-- [ ] Update ROM primitive to 16-bit addressing (`primitives.ts`)
-- [ ] Create ROM16K at $C000-$FFFF (`32-memory-bus.dsl`)
-- [ ] Create RAM2K at $0000-$07FF (`32-memory-bus.dsl`)
-- [ ] Add reset vector fetch from $FFFC/$FFFD (`33-cpu-core.dsl`)
-- [ ] Update MemoryBus address decode for new memory map
-- [ ] Create `test/stage8b.test.ts`
-
-**Estimated:** Medium effort - ROM primitive change, memory map refactor
+#### Phase B: Full Memory Infrastructure ✅ COMPLETE
+- [x] Update ROM primitive to 16-bit addressing (`primitives.ts`)
+- [x] Add AddressCombiner primitive (`primitives.ts`)
+- [x] Create ROM16K at $C000-$FFFF (`32-memory-bus.dsl`)
+- [x] Create RAM2K at $0000-$07FF (`32-memory-bus.dsl`)
+- [x] Add reset vector fetch from $FFFC/$FFFD (`33-cpu-core.dsl`)
+- [x] Update MemoryBus address decode for new memory map
+- [x] Create `test/stage8b.test.ts` (7 tests)
+- [x] Full regression (201 tests passing)
 
 ---
 
@@ -383,6 +408,9 @@ circuit System6502 {
 - UI console component
 
 **Test:** Fibonacci program in C
+
+**Cleanup TODO:**
+- Remove dead `SimulationState` interface from `ir-v0.1.ts` (lines 287-302) - legacy type not used by flat simulator
 
 ### Stage 10: NES PPU Integration (Optional)
 **Goal:** Add NES Picture Processing Unit for running NES games.
@@ -403,8 +431,8 @@ circuit System6502 {
 | Stage 6 | ✅ Done | ✅ Done | All 111 instructions + V flag |
 | Stage 7 | ✅ Done | ✅ Done | Bus architecture, CPU separated from memory |
 | Stage 8A | ✅ Done | ✅ Done | 16-bit PC, page boundary crossing |
-| Stage 8B | 🔧 NEXT | — | ROM/RAM expansion, reset vector |
-| Stage 9 | — | — | C programs run (cc65) |
+| Stage 8B | ✅ Done | ✅ Done | ROM/RAM expansion, reset vector fetch |
+| Stage 9 | 🔧 NEXT | — | C programs run (cc65) |
 | Stage 10 | — | — | NES games run (PPU) |
 
 ---
@@ -420,8 +448,8 @@ circuit System6502 {
 - ✅ Stage 6: All 111 instructions work, V flag correct for ADC/SBC
 - ✅ Stage 7: CPU separated from memory, bus architecture works, stack at $01XX
 - ✅ Stage 8A: 16-bit PC works, JMP/JSR/RTS/branches cross page boundaries
-- 🔧 Stage 8B: Full 64KB addressing, ROM at $C000, reset vector fetch
-- ⏸ Stage 9: cc65 compiled C programs execute, printf works
+- ✅ Stage 8B: Full 64KB addressing, ROM at $C000, reset vector fetch from $FFFC/$FFFD
+- 🔧 Stage 9: cc65 compiled C programs execute, printf works
 - ⏸ Stage 10: NES ROM loads and runs
 
 ### Quality Criteria
@@ -455,12 +483,18 @@ circuit System6502 {
 - `examples/cpu6502/stage7-combined.dsl` - All-in-one for UI loading
 - `examples/cpu6502/test/stage7.test.ts` - Bus architecture tests (17 tests)
 
-### Stage 8A (16-bit PC - current)
+### Stage 8A (16-bit PC)
 - `examples/cpu6502/33-cpu-core.dsl` - Updated with 16-bit PC (pc_lo/pc_hi split)
 - `examples/cpu6502/34-system.dsl` - Updated with pc_hi output
-- `examples/cpu6502/stage7-combined.dsl` - Regenerated with 16-bit PC
 - `examples/cpu6502/test/stage8a.test.ts` - 16-bit PC tests (9 tests)
-- Total: 194 tests passing across all test files
+
+### Stage 8B (Full Memory Infrastructure - current)
+- `src/features/visual-editor/lib/primitives.ts` - ROM 16-bit addressing, AddressCombiner primitive
+- `examples/cpu6502/32-memory-bus.dsl` - RAM2K, ROM16K, updated MemoryBus with address decode
+- `examples/cpu6502/33-cpu-core.dsl` - Reset vector fetch (STATE_RESET_LO/HI states)
+- `examples/cpu6502/stage7-combined.dsl` - Regenerated with all Stage 8B changes
+- `examples/cpu6502/test/stage8b.test.ts` - Reset vector fetch tests (7 tests)
+- Total: 201 tests passing across all test files
 
 ### Earlier Stages (reference)
 - `examples/cpu6502/01-alu-combined.dsl` - ALU with manual test
@@ -675,6 +709,6 @@ Each "Part" should have:
 ---
 
 *Plan Created: 2026-02-05*
-*Last Updated: 2026-02-09 (Stage 8A Complete - 16-bit PC, 194 tests passing)*
+*Last Updated: 2026-02-09 (Stage 8B Complete - Full memory infrastructure, reset vector fetch, 201 tests passing)*
 *Approach: Staged implementation, test-driven, prove at each step*
 *Target: Klaus Dormann 6502 Functional Test*

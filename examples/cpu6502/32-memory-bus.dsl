@@ -1,10 +1,14 @@
-// Stage 8B: Memory Bus Architecture
+// Stage 9: Memory Bus Architecture with I/O
 // Full 64KB address space with proper memory map
 //
 // Memory Map:
 //   $0000-$07FF: RAM (2KB - currently 256 bytes due to primitive limitation)
 //   $0800-$BFFF: Unmapped (open bus)
-//   $C000-$FFFF: ROM (16KB)
+//   $C000-$EFFF: ROM (12KB program code)
+//   $F000-$F0FF: I/O Region
+//     $F000:     Console Output (write-only)
+//     $F001-$F0FF: Reserved for future I/O
+//   $F100-$FFFF: ROM (continued, ~4KB + vectors)
 //   $FFFC-$FFFD: Reset Vector
 
 // === RAM2K: RAM at $0000-$07FF ===
@@ -47,8 +51,9 @@ circuit RAM2K {
   }
 }
 
-// === ROM16K: ROM at $C000-$FFFF ===
+// === ROM16K: ROM at $C000-$EFFF and $F100-$FFFF ===
 // 16KB ROM with reset vector and test program
+// Excludes I/O region at $F0xx
 circuit ROM16K {
   input addr_lo: Bus[8]
   input addr_hi: Bus[8]
@@ -57,16 +62,31 @@ circuit ROM16K {
   output responds: Bit
 
   impl {
-    // ROM responds to $C000-$FFFF (addr_hi >= 0xC0)
+    // ROM responds to $C000-$EFFF and $F100-$FFFF
+    // This is: (addr_hi >= 0xC0) AND (addr_hi != 0xF0)
     node c0: Constant(value=192)
+    node f0: Constant(value=240)
+
     node addr_hi_cmp: Comparator
     connect addr_hi -> addr_hi_cmp.a
     connect c0.out -> addr_hi_cmp.b
 
-    // responds = NOT(lt) = (addr_hi >= 0xC0)
-    node not_lt: Not
-    connect addr_hi_cmp.lt -> not_lt.in
-    connect not_lt.out -> responds
+    // Check if addr_hi == 0xF0 (I/O region)
+    node io_cmp: Comparator
+    connect addr_hi -> io_cmp.a
+    connect f0.out -> io_cmp.b
+
+    // responds = (addr_hi >= 0xC0) AND NOT(addr_hi == 0xF0)
+    node ge_c0: Not
+    connect addr_hi_cmp.lt -> ge_c0.in
+
+    node not_io: Not
+    connect io_cmp.eq -> not_io.in
+
+    node rom_responds: And
+    connect ge_c0.out -> rom_responds.a
+    connect not_io.out -> rom_responds.b
+    connect rom_responds.out -> responds
 
     // Combine address for 16-bit ROM lookup
     node addr_combine: AddressCombiner
@@ -133,6 +153,7 @@ circuit MemoryBus {
     // Memory devices
     node ram: RAM2K
     node rom: ROM16K
+    node console: ConsoleOutput
 
     connect clk -> ram.clk
     connect addr_lo -> ram.addr_lo
@@ -141,6 +162,12 @@ circuit MemoryBus {
 
     connect addr_lo -> rom.addr_lo
     connect addr_hi -> rom.addr_hi
+
+    // Console connections
+    connect clk -> console.clk
+    connect addr_lo -> console.addr_lo
+    connect addr_hi -> console.addr_hi
+    connect data_in -> console.data_in
 
     // RAM write enable: ram.responds AND NOT(rw)
     node not_rw: Not
@@ -151,28 +178,43 @@ circuit MemoryBus {
     connect not_rw.out -> ram_we.b
     connect ram_we.out -> ram.we
 
+    // Console write enable: console.responds AND NOT(rw)
+    node console_we: And
+    connect console.responds -> console_we.a
+    connect not_rw.out -> console_we.b
+    connect console_we.out -> console.we
+
     // Open bus register (latches last read value)
     node open_bus: Register
     connect clk -> open_bus.clk
 
-    // Data output mux chain: open_bus -> RAM -> ROM
-    // Priority: ROM > RAM > open_bus
+    // Data output mux chain: open_bus -> RAM -> Console -> ROM
+    // Priority: ROM > Console > RAM > open_bus
     node data_mux_ram: Mux
     connect ram.responds -> data_mux_ram.sel
     connect open_bus.q -> data_mux_ram.in0
     connect ram.data_out -> data_mux_ram.in1
 
+    node data_mux_console: Mux
+    connect console.responds -> data_mux_console.sel
+    connect data_mux_ram.out -> data_mux_console.in0
+    connect console.data_out -> data_mux_console.in1
+
     node data_mux_rom: Mux
     connect rom.responds -> data_mux_rom.sel
-    connect data_mux_ram.out -> data_mux_rom.in0
+    connect data_mux_console.out -> data_mux_rom.in0
     connect rom.data_out -> data_mux_rom.in1
 
     connect data_mux_rom.out -> data_out
 
     // Update open bus on reads only (rw=1 means read)
     // Latch data when any device is selected and we're reading
+    node any_device_1: Or
+    connect ram.responds -> any_device_1.a
+    connect console.responds -> any_device_1.b
+
     node any_device: Or
-    connect ram.responds -> any_device.a
+    connect any_device_1.out -> any_device.a
     connect rom.responds -> any_device.b
 
     node open_bus_we: And

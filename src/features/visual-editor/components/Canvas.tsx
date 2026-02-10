@@ -53,6 +53,7 @@ import {
   RasterDisplayNode,
   RegisterNode,
   RAMNode,
+  ConsoleNode,
 } from "./nodes";
 import { NumericInputNode } from "./nodes/NumericInputNode";
 import { OrthogonalEdge } from "./edges";
@@ -67,6 +68,7 @@ const nodeTypes = {
   rasterDisplayNode: RasterDisplayNode,
   registerNode: RegisterNode,
   ramNode: RAMNode,
+  consoleNode: ConsoleNode,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
 } as any as NodeTypes;
 

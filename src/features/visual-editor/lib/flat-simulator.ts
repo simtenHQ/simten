@@ -129,6 +129,9 @@ export function initializeFlatSequentialState(
       let primitiveState: PrimitiveState;
       if (typeof initialValue === 'object' && 'data' in initialValue) {
         primitiveState = initialValue.data;
+      } else if (typeof initialValue === 'string') {
+        // Console state is a string
+        primitiveState = initialValue;
       } else {
         primitiveState = initialValue as BitValue | BusValue;
       }

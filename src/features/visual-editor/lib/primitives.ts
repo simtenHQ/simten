@@ -1696,6 +1696,68 @@ export const PRIMITIVE_DEFINITIONS: Record<string, PrimitiveDefinition> = {
       provides: ['FrameSnapshotSource'], // Implements burst DMA snapshot interface
     },
   }),
+
+  // ============================================================================
+  // I/O Devices
+  // ============================================================================
+
+  Console: defineSequential({
+    name: 'Console',
+    description: 'Memory-mapped console output device. Characters written accumulate in buffer.',
+    category: 'io',
+    icon: '📺',
+    componentType: 'Console',
+    inputs: [
+      { name: 'data', portType: busType(8) },
+      { name: 'we', portType: bitType() },
+    ],
+    outputs: [
+      { name: 'text', portType: { kind: 'bus', width: 8 } }, // Dummy output for circuit wiring
+    ],
+    clocks: [{ name: 'clk' }],
+    state: [
+      {
+        id: 'console-state',
+        name: 'text',
+        stateType: { kind: 'bus', width: 8 }, // State is actually a string, but using bus for IR compat
+        initialValue: '',
+      },
+    ],
+    evaluate: (_inputs, currentState) => {
+      // Console text is accessed via state, not outputs
+      // The output is a dummy to satisfy IR requirements
+      return new Map([['text', 0]]);
+    },
+    updateState: (inputs, currentState, clockEdges) => {
+      if (clockEdges['clk'] !== 'rising') {
+        return currentState;
+      }
+
+      const we = inputs.get('we') as boolean;
+      if (!we) {
+        return currentState;
+      }
+
+      const data = (inputs.get('data') as number) ?? 0;
+      const currentText = (typeof currentState === 'string' ? currentState : '') as string;
+
+      // Append character (mask to 8-bit ASCII range)
+      const char = String.fromCharCode(data & 0xFF);
+      let newText = currentText + char;
+
+      // Overflow handling: truncate from start when buffer exceeds 4096 chars
+      const MAX_LENGTH = 4096;
+      if (newText.length > MAX_LENGTH) {
+        newText = newText.slice(-MAX_LENGTH);
+      }
+
+      return newText;
+    },
+    createComponent: (id) => {
+      return { id, type: 'Console', text: '' } as Component;
+    },
+    outputDependency: 'state-only', // Text output comes from state
+  }),
 };
 
 // ============================================================================

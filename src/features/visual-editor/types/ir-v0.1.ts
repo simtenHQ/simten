@@ -83,7 +83,7 @@ export interface MemoryValue {
   dataWidth: number;
 }
 
-export type StateValue = BitValue | BusValue | MemoryValue;
+export type StateValue = BitValue | BusValue | MemoryValue | string;
 
 export interface StateBlock {
   id: string;
