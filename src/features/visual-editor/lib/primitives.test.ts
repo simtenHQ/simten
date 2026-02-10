@@ -1839,7 +1839,8 @@ describe("createPrimitiveComponent", () => {
       expect(component?.type).toBe("ROM");
       // Type guard: ROM components have addressWidth, dataWidth, and memory properties
       if (component && "addressWidth" in component) {
-        expect(component.addressWidth).toBe(8);
+        // ROM uses 16-bit addresses to support full 64KB address space (e.g., 6502)
+        expect(component.addressWidth).toBe(16);
         expect(component.dataWidth).toBe(8);
         expect(component.memory).toBeInstanceOf(Map);
       } else {

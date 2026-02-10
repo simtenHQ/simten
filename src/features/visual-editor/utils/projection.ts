@@ -33,6 +33,7 @@ export interface NodeData extends Record<string, unknown> {
   inputNames: string[];
   outputNames: string[];
   __pixels?: number[]; // For Screen component - pixel data from RAM
+  __consoleText?: string; // For Console component - accumulated text
 }
 
 /**
@@ -66,6 +67,7 @@ function getNodeTypeForComponent(componentRef: string, inputCount: number, outpu
     SevenSegment: 'outputNode',
     Screen: 'screenNode',
     RasterDisplay: 'rasterDisplayNode',
+    Console: 'consoleNode',
   };
 
   if (typeMap[componentRef]) {
@@ -125,6 +127,7 @@ export function projectCircuitToNodes(
     let numericValue: number | undefined = undefined;
     let width: number | undefined = undefined;
     let pixels: number[] | undefined = undefined;
+    let consoleText: string | undefined = undefined;
 
     if (node.componentRef === 'Switch' || node.componentRef === 'Led') {
       // For Switch/Led, check if there's a value in arguments or port values
@@ -224,6 +227,15 @@ export function projectCircuitToNodes(
           }
         }
       }
+    } else if (node.componentRef === 'Console') {
+      // Console accumulates written characters as text
+      // State is stored as a string directly
+      if (seqState) {
+        const consoleState = seqState.currentState.get(node.id);
+        if (typeof consoleState === 'string') {
+          consoleText = consoleState;
+        }
+      }
     }
 
     reactFlowNodes.push({
@@ -242,11 +254,61 @@ export function projectCircuitToNodes(
         inputNames,
         outputNames,
         __pixels: pixels,
+        __consoleText: consoleText,
       },
       selected: nodeMetadata.selected,
       selectable: true,
       deletable: true,
     });
+  }
+
+  // Look for Console primitives in flattened state that aren't already projected
+  // This handles consoles that are nested deep inside subcircuits
+  if (seqState) {
+    const existingNodeIds = new Set(reactFlowNodes.map(n => n.id));
+    let consoleIndex = 0;
+
+    for (const [nodeId, state] of seqState.currentState.entries()) {
+      // Skip if already projected
+      if (existingNodeIds.has(nodeId)) continue;
+
+      // Check if this looks like a Console state (string type)
+      if (typeof state === 'string') {
+        // Extract a readable label from the node ID
+        const pathParts = nodeId.split('.');
+        const shortLabel = pathParts.length > 1
+          ? pathParts.slice(-2).join('.')
+          : nodeId;
+
+        // Create a virtual ConsoleNode for this nested console
+        reactFlowNodes.push({
+          id: `__virtual_console_${consoleIndex}`,
+          type: 'consoleNode',
+          position: {
+            x: 600,
+            y: 50 + (consoleIndex * 250)
+          },
+          data: {
+            nodeId: nodeId,
+            componentRef: 'Console',
+            label: `Console (${shortLabel})`,
+            value: undefined,
+            numericValue: undefined,
+            width: undefined,
+            inputCount: 2,
+            outputCount: 1,
+            inputNames: ['data', 'we'],
+            outputNames: ['text'],
+            __pixels: undefined,
+            __consoleText: state,
+          },
+          selected: false,
+          selectable: false,
+          deletable: false,
+        });
+        consoleIndex++;
+      }
+    }
   }
 
   return reactFlowNodes;

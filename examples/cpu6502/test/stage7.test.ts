@@ -50,6 +50,20 @@ describe('6502 CPU Stage 7: Bus Architecture', () => {
     return compileDSL(source, library);
   }
 
+  /**
+   * Load memory bus file with console dependency.
+   * The MemoryBus now requires ConsoleOutput circuit.
+   */
+  function loadMemoryBusWithDependencies() {
+    // Load Console first (required by MemoryBus)
+    const consoleResult = loadAndCompileDSL('35-console.dsl');
+    for (const circuit of consoleResult.circuits) {
+      library.addCircuit(circuit);
+    }
+    // Now load memory bus
+    return loadAndCompileDSL('32-memory-bus.dsl');
+  }
+
   function busToNumber(value: any): number {
     if (typeof value === 'number') return value;
     if (typeof value === 'boolean') return value ? 1 : 0;
@@ -65,7 +79,7 @@ describe('6502 CPU Stage 7: Bus Architecture', () => {
 
   describe('Memory Bus (32-memory-bus.dsl)', () => {
     it('should compile without errors', () => {
-      const result = loadAndCompileDSL('32-memory-bus.dsl');
+      const result = loadMemoryBusWithDependencies();
       if (result.errors.length > 0) {
         console.log('Memory Bus compilation errors:', result.errors.slice(0, 10));
       }
@@ -79,7 +93,7 @@ describe('6502 CPU Stage 7: Bus Architecture', () => {
     });
 
     it('should have correct MemoryBus interface', () => {
-      const result = loadAndCompileDSL('32-memory-bus.dsl');
+      const result = loadMemoryBusWithDependencies();
       expect(result.errors).toHaveLength(0);
 
       const bus = result.circuits.find(c => c.name === 'MemoryBus');
@@ -96,7 +110,7 @@ describe('6502 CPU Stage 7: Bus Architecture', () => {
     });
 
     it('should have ROM16K with test program data', () => {
-      const result = loadAndCompileDSL('32-memory-bus.dsl');
+      const result = loadMemoryBusWithDependencies();
       expect(result.errors).toHaveLength(0);
 
       const rom = result.circuits.find(c => c.name === 'ROM16K');
@@ -181,7 +195,7 @@ describe('6502 CPU Stage 7: Bus Architecture', () => {
 
   describe('Memory Bus Simulation', () => {
     it('should elaborate MemoryBusTest without errors', () => {
-      const result = loadAndCompileDSL('32-memory-bus.dsl');
+      const result = loadMemoryBusWithDependencies();
       expect(result.errors).toHaveLength(0);
 
       for (const circuit of result.circuits) {
@@ -225,7 +239,13 @@ describe('6502 CPU Stage 7: Bus Architecture', () => {
 
   describe('System Integration (34-system.dsl)', () => {
     it('should compile without errors', () => {
-      // First load the dependencies
+      // First load the dependencies - Console required by MemoryBus
+      const consoleResult = loadAndCompileDSL('35-console.dsl');
+      expect(consoleResult.errors).toHaveLength(0);
+      for (const circuit of consoleResult.circuits) {
+        library.addCircuit(circuit);
+      }
+
       const memBusResult = loadAndCompileDSL('32-memory-bus.dsl');
       expect(memBusResult.errors).toHaveLength(0);
       for (const circuit of memBusResult.circuits) {
@@ -251,7 +271,12 @@ describe('6502 CPU Stage 7: Bus Architecture', () => {
     });
 
     it('should have correct System6502 interface', () => {
-      // Load dependencies
+      // Load dependencies - Console required by MemoryBus
+      const consoleResult = loadAndCompileDSL('35-console.dsl');
+      for (const circuit of consoleResult.circuits) {
+        library.addCircuit(circuit);
+      }
+
       const memBusResult = loadAndCompileDSL('32-memory-bus.dsl');
       for (const circuit of memBusResult.circuits) {
         library.addCircuit(circuit);
@@ -286,7 +311,12 @@ describe('6502 CPU Stage 7: Bus Architecture', () => {
     });
 
     it('should elaborate Stage7Test without errors', () => {
-      // Load dependencies
+      // Load dependencies - Console required by MemoryBus
+      const consoleResult = loadAndCompileDSL('35-console.dsl');
+      for (const circuit of consoleResult.circuits) {
+        library.addCircuit(circuit);
+      }
+
       const memBusResult = loadAndCompileDSL('32-memory-bus.dsl');
       for (const circuit of memBusResult.circuits) {
         library.addCircuit(circuit);
@@ -321,7 +351,12 @@ describe('6502 CPU Stage 7: Bus Architecture', () => {
     });
 
     it('should simulate Stage7Test without cycle errors', () => {
-      // Load dependencies
+      // Load dependencies - Console required by MemoryBus
+      const consoleResult = loadAndCompileDSL('35-console.dsl');
+      for (const circuit of consoleResult.circuits) {
+        library.addCircuit(circuit);
+      }
+
       const memBusResult = loadAndCompileDSL('32-memory-bus.dsl');
       for (const circuit of memBusResult.circuits) {
         library.addCircuit(circuit);
@@ -409,7 +444,12 @@ describe('6502 CPU Stage 7: Bus Architecture', () => {
     });
 
     it('should trace the cycle in Stage7', () => {
-      // Load Stage7
+      // Load Stage7 - Console required by MemoryBus
+      const consoleResult = loadAndCompileDSL('35-console.dsl');
+      for (const circuit of consoleResult.circuits) {
+        library.addCircuit(circuit);
+      }
+
       const memBusResult = loadAndCompileDSL('32-memory-bus.dsl');
       for (const circuit of memBusResult.circuits) {
         library.addCircuit(circuit);

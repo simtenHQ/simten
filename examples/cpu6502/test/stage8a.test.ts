@@ -81,7 +81,10 @@ describe('6502 CPU Stage 8A: 16-bit PC', () => {
     });
 
     it('should compile System6502 with 16-bit PC outputs', () => {
-      // Load dependencies
+      // Load dependencies - Console first (required by MemoryBus)
+      const consoleResult = loadAndCompileDSL('35-console.dsl');
+      consoleResult.circuits.forEach(circuit => library.addCircuit(circuit));
+
       const memBusResult = loadAndCompileDSL('32-memory-bus.dsl');
       memBusResult.circuits.forEach(circuit => library.addCircuit(circuit));
 
