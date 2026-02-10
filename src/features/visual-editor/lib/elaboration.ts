@@ -318,30 +318,64 @@ function stitchCompositeConnections(
     const isInternalConnection = sourceIsComposite && targetIsComposite &&
                                  conn.source.nodeId === conn.target.nodeId;
 
-    // Get all source forwarding targets (usually just one for outputs)
+    // Helper: Check if a port is a primitive (not a composite)
+    const isPrimitive = (port: PortPath): boolean =>
+      port.nodeId === TOP_LEVEL_NODE || flatNodes.some(n => n.id === port.nodeId);
+
+    // Helper: Follow forwarding chain until we hit primitives or can't forward anymore
+    // This handles passthroughs where composites forward to other composite ports
+    const resolveToEndpoints = (start: PortPath): PortPath[] => {
+      const results: PortPath[] = [];
+      const visited = new Set<string>();
+      const queue: PortPath[] = [start];
+
+      while (queue.length > 0) {
+        const current = queue.shift()!;
+        const key = `${current.nodeId}.${current.portName}`;
+
+        // Avoid infinite loops
+        if (visited.has(key)) continue;
+        visited.add(key);
+
+        // If it's a primitive, we're done with this path
+        if (isPrimitive(current)) {
+          results.push(current);
+          continue;
+        }
+
+        // If it's a composite, try to forward
+        if (compositeInstances.has(current.nodeId) && portForwarding.has(key)) {
+          const forwards = portForwarding.get(key)!;
+          for (const fwd of forwards) {
+            queue.push(fwd);
+          }
+        } else {
+          // Can't forward further, keep as-is (will be filtered later)
+          results.push(current);
+        }
+      }
+
+      return results.length > 0 ? results : [start];
+    };
+
+    // Get all source forwarding targets, following the chain to primitives
     let sources: PortPath[] = [conn.source];
     if (sourceIsComposite && !isInternalConnection) {
-      const sourceKey = `${conn.source.nodeId}.${conn.source.portName}`;
-      if (portForwarding.has(sourceKey)) {
-        sources = portForwarding.get(sourceKey)!;
-        if (debug) {
-          for (const src of sources) {
-            console.log(`  FORWARD SOURCE: ${sourceKey} -> ${src.nodeId}.${src.portName}`);
-          }
+      sources = resolveToEndpoints(conn.source);
+      if (debug && sources.length > 0) {
+        for (const src of sources) {
+          console.log(`  FORWARD SOURCE: ${conn.source.nodeId}.${conn.source.portName} -> ${src.nodeId}.${src.portName}`);
         }
       }
     }
 
-    // Get all target forwarding targets (can be multiple for fan-out inputs)
+    // Get all target forwarding targets, following the chain to primitives
     let targets: PortPath[] = [conn.target];
     if (targetIsComposite && !isInternalConnection) {
-      const targetKey = `${conn.target.nodeId}.${conn.target.portName}`;
-      if (portForwarding.has(targetKey)) {
-        targets = portForwarding.get(targetKey)!;
-        if (debug) {
-          for (const tgt of targets) {
-            console.log(`  FORWARD TARGET: ${targetKey} -> ${tgt.nodeId}.${tgt.portName}`);
-          }
+      targets = resolveToEndpoints(conn.target);
+      if (debug && targets.length > 0) {
+        for (const tgt of targets) {
+          console.log(`  FORWARD TARGET: ${conn.target.nodeId}.${conn.target.portName} -> ${tgt.nodeId}.${tgt.portName}`);
         }
       }
     }
@@ -349,27 +383,17 @@ function stitchCompositeConnections(
     // Create connections for all source-target pairs (handles fan-out)
     for (const finalSource of sources) {
       for (const finalTarget of targets) {
-        // Keep connections where both endpoints are primitives or top-level
-        // (Composite instance ports should have been forwarded or skipped)
-        const sourceIsPrimitive = finalSource.nodeId === TOP_LEVEL_NODE ||
-                                  flatNodes.some(n => n.id === finalSource.nodeId);
-        const targetIsPrimitive = finalTarget.nodeId === TOP_LEVEL_NODE ||
-                                  flatNodes.some(n => n.id === finalTarget.nodeId);
-
         // Skip self-loops (node connecting to itself on same port)
         const isSelfLoop = finalSource.nodeId === finalTarget.nodeId &&
                           finalSource.portName === finalTarget.portName;
 
-        if (sourceIsPrimitive && targetIsPrimitive && !isSelfLoop) {
+        if (!isSelfLoop) {
           stitchedConnections.push({
             id: `${finalSource.nodeId}.${finalSource.portName}->${finalTarget.nodeId}.${finalTarget.portName}`,
             source: finalSource,
             target: finalTarget,
             portType: conn.portType
           });
-        } else if (debug && !isSelfLoop) {
-          console.log(`  FILTERED: ${finalSource.nodeId}.${finalSource.portName} -> ${finalTarget.nodeId}.${finalTarget.portName}`);
-          console.log(`    sourceIsPrimitive: ${sourceIsPrimitive}, targetIsPrimitive: ${targetIsPrimitive}`);
         }
       }
     }
@@ -441,10 +465,130 @@ function stitchCompositeConnections(
       }
     }
 
-    return finalConnections;
+    return resolveThroughComposites(finalConnections, flatNodes, compositeInstances, debug);
   }
 
-  return stitchedConnections;
+  return resolveThroughComposites(stitchedConnections, flatNodes, compositeInstances, debug);
+}
+
+/**
+ * Resolve connections through composite ports via transitive closure.
+ *
+ * When we have:
+ *   A -> composite.port (A is primitive, composite.port is composite)
+ *   composite.port -> B (composite.port is composite, B is primitive)
+ *
+ * We create:
+ *   A -> B (direct connection between primitives)
+ *
+ * This handles passthrough composites that have no primitives on certain paths.
+ */
+function resolveThroughComposites(
+  connections: FlatConnection[],
+  flatNodes: FlatNode[],
+  _compositeInstances: Set<string>,  // Reserved for future use
+  debug: boolean
+): FlatConnection[] {
+  // Helper to check if a port is on a primitive
+  const isPrimitive = (port: PortPath): boolean =>
+    port.nodeId === TOP_LEVEL_NODE || flatNodes.some(n => n.id === port.nodeId);
+
+  // Build maps for quick lookups
+  // Map from "nodeId.portName" -> connections where this is the target
+  const connectionsToPort = new Map<string, FlatConnection[]>();
+  // Map from "nodeId.portName" -> connections where this is the source
+  const connectionsFromPort = new Map<string, FlatConnection[]>();
+
+  for (const conn of connections) {
+    const targetKey = `${conn.target.nodeId}.${conn.target.portName}`;
+    if (!connectionsToPort.has(targetKey)) {
+      connectionsToPort.set(targetKey, []);
+    }
+    connectionsToPort.get(targetKey)!.push(conn);
+
+    const sourceKey = `${conn.source.nodeId}.${conn.source.portName}`;
+    if (!connectionsFromPort.has(sourceKey)) {
+      connectionsFromPort.set(sourceKey, []);
+    }
+    connectionsFromPort.get(sourceKey)!.push(conn);
+  }
+
+  // Find all connections that need transitive resolution
+  // These are connections where target is a composite port
+  const result: FlatConnection[] = [];
+  const processed = new Set<string>();
+
+  for (const conn of connections) {
+    // If both endpoints are primitives, keep as-is
+    if (isPrimitive(conn.source) && isPrimitive(conn.target)) {
+      result.push(conn);
+      continue;
+    }
+
+    // If target is a composite, find where it connects to next
+    if (!isPrimitive(conn.target)) {
+      const targetKey = `${conn.target.nodeId}.${conn.target.portName}`;
+
+      // Find connections FROM this composite port
+      const outgoing = connectionsFromPort.get(targetKey) || [];
+
+      for (const nextConn of outgoing) {
+        // Create a transitive connection
+        const transitiveConn: FlatConnection = {
+          id: `${conn.source.nodeId}.${conn.source.portName}->${nextConn.target.nodeId}.${nextConn.target.portName}`,
+          source: conn.source,
+          target: nextConn.target,
+          portType: conn.portType
+        };
+
+        // Only add if this creates a connection between primitives (or is closer to it)
+        if (!processed.has(transitiveConn.id)) {
+          processed.add(transitiveConn.id);
+
+          if (isPrimitive(transitiveConn.source) && isPrimitive(transitiveConn.target)) {
+            if (debug) {
+              console.log(`  TRANSITIVE: ${transitiveConn.source.nodeId}.${transitiveConn.source.portName} -> ${transitiveConn.target.nodeId}.${transitiveConn.target.portName}`);
+            }
+            result.push(transitiveConn);
+          } else {
+            // Still has composite endpoints, add back to process again
+            // But prevent infinite loops by tracking what we've processed
+          }
+        }
+      }
+    }
+    // Note: If source is composite but target is primitive, we still keep it
+    // because we need to find what connects TO that source
+    else if (!isPrimitive(conn.source)) {
+      const sourceKey = `${conn.source.nodeId}.${conn.source.portName}`;
+
+      // Find connections TO this composite port
+      const incoming = connectionsToPort.get(sourceKey) || [];
+
+      for (const prevConn of incoming) {
+        // Create a transitive connection
+        const transitiveConn: FlatConnection = {
+          id: `${prevConn.source.nodeId}.${prevConn.source.portName}->${conn.target.nodeId}.${conn.target.portName}`,
+          source: prevConn.source,
+          target: conn.target,
+          portType: conn.portType
+        };
+
+        if (!processed.has(transitiveConn.id)) {
+          processed.add(transitiveConn.id);
+
+          if (isPrimitive(transitiveConn.source) && isPrimitive(transitiveConn.target)) {
+            if (debug) {
+              console.log(`  TRANSITIVE: ${transitiveConn.source.nodeId}.${transitiveConn.source.portName} -> ${transitiveConn.target.nodeId}.${transitiveConn.target.portName}`);
+            }
+            result.push(transitiveConn);
+          }
+        }
+      }
+    }
+  }
+
+  return result;
 }
 
 /**
@@ -512,13 +656,24 @@ function traceCompositePorts(
     }
 
     // Case 3: Input connects directly to output (passthrough)
-    // Track these for post-processing - we'll eliminate them later
+    // Add ONLY forward direction: input -> output
+    // The output will be resolved by the parent's connections
     if (conn.source.nodeId === '' && conn.target.nodeId === '') {
       if (debug) {
         console.log(`  PASSTHROUGH: ${conn.source.portName} -> ${conn.target.portName}`);
       }
-      // Don't create forwarding rules - we'll handle passthrough specially
-      continue;
+      // Only add forward direction (input -> output)
+      // Don't add backward direction (output -> input) as it creates cycles
+      const inputKey = `${compositePath}.${conn.source.portName}`;
+
+      if (!portForwarding.has(inputKey)) {
+        portForwarding.set(inputKey, []);
+      }
+      portForwarding.get(inputKey)!.push({ nodeId: compositePath, portName: conn.target.portName });
+
+      if (debug) {
+        console.log(`    -> Added passthrough forwarding: ${inputKey} -> ${compositePath}.${conn.target.portName}`);
+      }
     }
   }
 }
@@ -537,6 +692,15 @@ function resolveInternalPorts(
   composite: Circuit,
   library: ComponentLibraryStore
 ): PortPath[] {
+  // Handle circuit-level port references (passthrough endpoints)
+  // When portRef.nodeId is empty, it's referring to the composite's own port,
+  // not an internal node. This happens when tracing through a passthrough connection.
+  if (portRef.nodeId === '') {
+    // Return the composite's port - it will be looked up in the forwarding map
+    // during stitching, or handled as a passthrough.
+    return [{ nodeId: compositePath, portName: portRef.portName }];
+  }
+
   const fullPath = compositePath + '.' + portRef.nodeId;
 
   // Find the referenced node

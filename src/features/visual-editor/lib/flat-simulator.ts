@@ -15,6 +15,7 @@ import type { FlatCircuit, FlatNode, FlatConnection } from './elaboration';
 import { getPrimitiveEvaluator, PRIMITIVE_DEFINITIONS } from './primitives';
 import { topologicalSortFlat, TOP_LEVEL_NODE } from './elaboration';
 import { useComponentLibraryStore, type ComponentLibraryStore } from '../stores/component-library-store';
+import { useMemoryDataStore } from '../stores/memory-data-store';
 
 /**
  * Port value storage using full paths
@@ -102,27 +103,18 @@ export function initializeFlatSequentialState(
         }
 
         initialValue = { data: memory, addressWidth: 8, dataWidth: 8 };
-      } else if ('data' in node.arguments && node.arguments.data !== undefined) {
-        // ROM initialization
-        const romData = node.arguments.data;
-        const memory = new Map<number, number>();
+      } else if (node.primitiveType === 'ROM') {
+        // ROM initialization - get runtime-loaded data from memory store
+        const loadedData = useMemoryDataStore.getState().getDataForNode(node.id);
 
-        if (Array.isArray(romData)) {
-          romData.forEach((value, index) => {
-            if (typeof value === 'number') {
-              memory.set(index, Math.floor(value));
-            }
-          });
-        } else if (typeof romData === 'object' && !Array.isArray(romData)) {
-          Object.entries(romData).forEach(([addrStr, value]) => {
-            const addr = Number(addrStr);
-            if (Number.isInteger(addr) && typeof value === 'number') {
-              memory.set(addr, Math.floor(value as number));
-            }
-          });
+        if (loadedData) {
+          // Runtime data is at internal addresses (0, 1, 2, ...)
+          // The ROM's baseAddress parameter handles address decoding during reads
+          initialValue = { data: loadedData, addressWidth: 16, dataWidth: 8 };
+        } else {
+          // No data loaded - ROM is empty
+          initialValue = { data: new Map(), addressWidth: 16, dataWidth: 8 };
         }
-
-        initialValue = { data: memory, addressWidth: 8, dataWidth: 8 };
       }
 
       // Convert StateValue to PrimitiveState

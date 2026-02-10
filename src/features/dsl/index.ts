@@ -24,6 +24,14 @@ export { TokenType } from './parser';
 export { compileToIR, compileCircuitToIR, CompilerError } from './compiler';
 export type { ComponentLibrary } from './compiler';
 
+// Preprocessor
+export {
+  preprocessDSL,
+  createMapFileResolver,
+  createNodeFileResolver,
+} from './preprocessor';
+export type { FileResolver, PreprocessResult } from './preprocessor';
+
 // Types
 export * from './types';
 

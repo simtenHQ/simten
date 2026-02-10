@@ -53,6 +53,7 @@ import {
   RasterDisplayNode,
   RegisterNode,
   RAMNode,
+  ROMNode,
   ConsoleNode,
 } from "./nodes";
 import { NumericInputNode } from "./nodes/NumericInputNode";
@@ -68,6 +69,7 @@ const nodeTypes = {
   rasterDisplayNode: RasterDisplayNode,
   registerNode: RegisterNode,
   ramNode: RAMNode,
+  romNode: ROMNode,
   consoleNode: ConsoleNode,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
 } as any as NodeTypes;

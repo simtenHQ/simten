@@ -1539,7 +1539,7 @@ export const PRIMITIVE_DEFINITIONS: Record<string, PrimitiveDefinition> = {
 
   ROM: defineSequential({
     name: 'ROM',
-    description: 'Read-only memory with data initialization (default: 64K×8, 16-bit addressing). Use data=[...] for dense or data={addr: val, ...} for sparse initialization.',
+    description: 'Read-only memory with address decoding. Use baseAddress parameter to set memory mapping (e.g., baseAddress=0xC000). ROM subtracts baseAddress from input address, like real hardware address decoding.',
     category: 'memory',
     icon: '📀',
     componentType: 'ROM',
@@ -1557,7 +1557,13 @@ export const PRIMITIVE_DEFINITIONS: Record<string, PrimitiveDefinition> = {
     evaluate: (inputs, currentState) => {
       const memory = (currentState ?? new Map()) as Map<number, number>;
       const addr = inputs.get('addr') as number;
-      const data = memory.get(addr) ?? 0;
+
+      // Get baseAddress from arguments (passed via __baseAddress)
+      // This mimics hardware address decoding: ROM sees (cpuAddr - baseAddress)
+      const baseAddress = (inputs.get('__baseAddress') as number) ?? 0;
+      const internalAddr = (addr - baseAddress) & 0xFFFF; // Wrap to 16-bit
+
+      const data = memory.get(internalAddr) ?? 0;
 
       return new Map([['data_out', data]]);
     },
