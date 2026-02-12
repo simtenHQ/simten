@@ -3,6 +3,12 @@
 import { useState } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { useCircuitSimulator } from "../splash2/useCircuitSimulator";
 import { MiniCanvas } from "./MiniCanvas";
 
@@ -208,17 +214,42 @@ function CircuitDemo({ circuitKey }: { circuitKey: CircuitKey }) {
 
   return (
     <motion.div
-      className="flex gap-4 h-[400px]"
+      className="flex flex-col md:flex-row gap-4 md:h-[400px]"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.2 }}
     >
-      {/* Left side: DSL Code */}
-      <div className="w-1/3 flex flex-col">
+      {/* Circuit Canvas - shows first on mobile (top) */}
+      <div className="flex flex-col order-1 md:order-2 md:flex-1">
+        <div className="text-xs text-gray-500 mb-2">CIRCUIT</div>
+        <div className="h-[250px] md:h-[370px]">
+          <MiniCanvas
+            circuit={sim.circuit}
+            portValues={sim.portValues}
+            sequentialState={sim.sequentialState}
+            inputValues={sim.inputs}
+            onToggleInput={sim.toggleInput}
+          />
+        </div>
+      </div>
+
+      {/* DSL Code - shows second on mobile (bottom) */}
+      <div className="md:w-1/3 flex flex-col order-2 md:order-1">
         <div className="text-xs text-gray-500 mb-2">DSL CODE</div>
-        <pre className="flex-1 p-3 bg-gray-950 rounded-lg text-xs font-mono text-gray-400 overflow-auto border border-gray-800">
-          {circuit.dsl.trim()}
-        </pre>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Link href="/" className="flex-1 block">
+                <pre className="h-full max-h-[200px] md:max-h-none p-3 bg-gray-950 rounded-lg text-xs font-mono text-gray-400 overflow-auto border border-gray-800 hover:border-green-500/50 transition-colors cursor-pointer">
+                  {circuit.dsl.trim()}
+                </pre>
+              </Link>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Want to edit? Open in full editor</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
 
         {/* Clock controls for sequential circuits */}
         {sim.isSequential && (
@@ -242,21 +273,6 @@ function CircuitDemo({ circuitKey }: { circuitKey: CircuitKey }) {
             </div>
           </div>
         )}
-      </div>
-
-      {/* Right side: Circuit Canvas */}
-      <div className="flex-1 flex flex-col">
-        <div className="text-xs text-gray-500 mb-2">CIRCUIT</div>
-        <div className="flex-1">
-          <MiniCanvas
-            circuit={sim.circuit}
-            portValues={sim.portValues}
-            sequentialState={sim.sequentialState}
-            inputValues={sim.inputs}
-            onToggleInput={sim.toggleInput}
-            height={370}
-          />
-        </div>
       </div>
     </motion.div>
   );
