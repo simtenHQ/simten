@@ -34,6 +34,7 @@ export interface NodeData extends Record<string, unknown> {
   outputNames: string[];
   __pixels?: number[]; // For Screen component - pixel data from RAM
   __consoleText?: string; // For Console component - accumulated text
+  onToggle?: () => void; // Optional callback for input toggle (used by MiniCanvas)
 }
 
 /**
