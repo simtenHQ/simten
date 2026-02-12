@@ -128,6 +128,143 @@ export function DSLEditor({ onCompileSuccess, autoCompileEnabled = false, showHe
     });
 
     monaco.editor.setTheme('dsl-theme');
+
+    // Register autocomplete provider
+    monaco.languages.registerCompletionItemProvider('dsl', {
+      triggerCharacters: ['.', ':', ' '],
+      provideCompletionItems: (model: editor.ITextModel, position: { lineNumber: number; column: number }) => {
+        const textUntilPosition = model.getValueInRange({
+          startLineNumber: position.lineNumber,
+          startColumn: 1,
+          endLineNumber: position.lineNumber,
+          endColumn: position.column,
+        });
+        const fullText = model.getValue();
+
+        // Get all available components (primitives + user-defined)
+        const allComponents = getAllComponentNames();
+
+        // After "node name: " -> suggest component types
+        if (textUntilPosition.match(/node\s+\w+:\s*\w*$/)) {
+          return {
+            suggestions: allComponents.map(name => {
+              const circuit = resolveComponent(name);
+              return {
+                label: name,
+                kind: monaco.languages.CompletionItemKind.Class,
+                insertText: name,
+                documentation: circuit?.metadata?.description || `Component: ${name}`,
+                detail: circuit ? `inputs: ${circuit.inputs.map(i => i.name).join(', ')}` : undefined,
+              };
+            }),
+          };
+        }
+
+        // After "connect nodeName." -> suggest output ports
+        const connectMatch = textUntilPosition.match(/connect\s+(\w+)\.(\w*)$/);
+        if (connectMatch) {
+          const nodeName = connectMatch[1];
+          const nodeType = findNodeTypeInText(fullText, nodeName);
+          if (nodeType) {
+            const circuit = resolveComponent(nodeType);
+            if (circuit) {
+              return {
+                suggestions: circuit.outputs.map(output => ({
+                  label: output.name,
+                  kind: monaco.languages.CompletionItemKind.Field,
+                  insertText: output.name,
+                  detail: `output: ${output.portType.kind}`,
+                })),
+              };
+            }
+          }
+        }
+
+        // After "-> nodeName." -> suggest input ports
+        const arrowMatch = textUntilPosition.match(/->\s*(\w+)\.(\w*)$/);
+        if (arrowMatch) {
+          const nodeName = arrowMatch[1];
+          const nodeType = findNodeTypeInText(fullText, nodeName);
+          if (nodeType) {
+            const circuit = resolveComponent(nodeType);
+            if (circuit) {
+              // Include both inputs and clocks
+              const inputSuggestions = circuit.inputs.map(input => ({
+                label: input.name,
+                kind: monaco.languages.CompletionItemKind.Field,
+                insertText: input.name,
+                detail: `input: ${input.portType.kind}`,
+              }));
+              const clockSuggestions = (circuit.clocks || []).map(clock => ({
+                label: clock.name,
+                kind: monaco.languages.CompletionItemKind.Event,
+                insertText: clock.name,
+                detail: 'clock',
+              }));
+              return { suggestions: [...inputSuggestions, ...clockSuggestions] };
+            }
+          }
+        }
+
+        // DSL keywords
+        const keywords = ['circuit', 'input', 'output', 'clock', 'impl', 'node', 'connect'];
+        if (textUntilPosition.match(/^\s*\w*$/) || textUntilPosition.match(/\{\s*\w*$/)) {
+          return {
+            suggestions: keywords.map(kw => ({
+              label: kw,
+              kind: monaco.languages.CompletionItemKind.Keyword,
+              insertText: kw,
+            })),
+          };
+        }
+
+        return { suggestions: [] };
+      },
+    });
+
+    // Helper: find what type a node is by parsing the text
+    function findNodeTypeInText(text: string, nodeName: string): string | null {
+      // Match "node nodeName: TypeName" or "node nodeName: TypeName(...)"
+      const regex = new RegExp(`node\\s+${nodeName}:\\s*(\\w+)`, 'm');
+      const match = text.match(regex);
+      return match ? match[1] : null;
+    }
+
+    // Register hover provider for documentation
+    monaco.languages.registerHoverProvider('dsl', {
+      provideHover: (model: editor.ITextModel, position: { lineNumber: number; column: number }) => {
+        const word = model.getWordAtPosition(position);
+        if (!word) return null;
+
+        const circuit = resolveComponent(word.word);
+        if (circuit) {
+          const inputs = circuit.inputs.map(i => `  ${i.name}: ${i.portType.kind}`).join('\n');
+          const outputs = circuit.outputs.map(o => `  ${o.name}: ${o.portType.kind}`).join('\n');
+          const clocks = (circuit.clocks || []).map(c => `  ${c.name}`).join('\n');
+
+          let content = `**${circuit.name}**\n\n`;
+          if (circuit.metadata?.description) {
+            content += `${circuit.metadata.description}\n\n`;
+          }
+          content += `**Inputs:**\n\`\`\`\n${inputs || '  (none)'}\n\`\`\`\n`;
+          content += `**Outputs:**\n\`\`\`\n${outputs || '  (none)'}\n\`\`\``;
+          if (clocks) {
+            content += `\n**Clocks:**\n\`\`\`\n${clocks}\n\`\`\``;
+          }
+
+          return {
+            range: {
+              startLineNumber: position.lineNumber,
+              endLineNumber: position.lineNumber,
+              startColumn: word.startColumn,
+              endColumn: word.endColumn,
+            },
+            contents: [{ value: content }],
+          };
+        }
+        return null;
+      },
+    });
   };
 
   const handleCompile = useCallback(() => {
