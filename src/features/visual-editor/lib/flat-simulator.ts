@@ -438,13 +438,18 @@ function commitFlatSequentialState(seqState: FlatSequentialState): void {
 
 /**
  * Run full flat simulation tick (combinational + sequential phases)
+ *
+ * @param flatCircuit - The flattened circuit to simulate
+ * @param seqState - Sequential state (registers, etc.)
+ * @param inputValues - Optional map of input values to inject (key: "__top__.inputName")
  */
 export function runFlatSimulationTick(
   flatCircuit: FlatCircuit,
-  seqState: FlatSequentialState
+  seqState: FlatSequentialState,
+  inputValues?: FlatPortValueMap
 ): FlatSimulationResult {
   // Phase 1: Combinational evaluation (reads current state)
-  const combResult = runFlatCombinationalSimulation(flatCircuit, seqState);
+  const combResult = runFlatCombinationalSimulation(flatCircuit, seqState, inputValues);
 
   if (combResult.error) {
     return combResult;
@@ -459,8 +464,8 @@ export function runFlatSimulationTick(
   // Phase 4: Commit state
   commitFlatSequentialState(seqState);
 
-  // Phase 5: Re-evaluate with new state
-  const finalResult = runFlatCombinationalSimulation(flatCircuit, seqState);
+  // Phase 5: Re-evaluate with new state (inputs persist from combResult)
+  const finalResult = runFlatCombinationalSimulation(flatCircuit, seqState, inputValues);
 
   return finalResult;
 }

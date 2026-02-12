@@ -33,14 +33,21 @@ export function InputNode({ data, selected }: InputNodeProps) {
 
   const handleToggle = useCallback((e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent node selection when clicking the switch
-    // Update the node's arguments.value
+
+    // Use custom onToggle callback if provided (e.g., from MiniCanvas)
+    if (data.onToggle) {
+      data.onToggle();
+      return;
+    }
+
+    // Otherwise update the node's arguments.value via circuit store
     const currentNode = useCircuitStore.getState().getNode(data.nodeId);
     if (currentNode) {
       updateNode(data.nodeId, {
         arguments: { ...currentNode.arguments, value: !value },
       });
     }
-  }, [data.nodeId, value, updateNode]);
+  }, [data.nodeId, data.onToggle, value, updateNode]);
 
   const handleLabelDoubleClick = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
