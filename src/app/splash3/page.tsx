@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { motion, AnimatePresence } from "framer-motion";
 import { useCircuitSimulator } from "../splash2/useCircuitSimulator";
 import { MiniCanvas } from "./MiniCanvas";
 
@@ -148,7 +149,7 @@ circuit Mux {
     node and_a: And
     node and_b: And
     node or_out: Or
-    connect sel -> not_sel.a
+    connect sel -> not_sel.in
     connect a -> and_a.a
     connect not_sel.out -> and_a.b
     connect b -> and_b.a
@@ -159,45 +160,24 @@ circuit Mux {
   }
 }`,
   },
-  dFlipFlop: {
-    name: "D Flip-Flop",
-    description: "Stores 1 bit - captures D on clock tick",
+  delayLine: {
+    name: "2-Cycle Delay",
+    description: "Data takes 2 clock ticks to reach output",
     dsl: `
-circuit Demo {
-  input d: Bit
-  clock clk
-  output q: Bit
-  impl {
-    node dff: DFlipFlop
-    connect clk -> dff.clk
-    connect d -> dff.d
-    connect dff.q -> q
-  }
-}`,
-  },
-  shiftRegister: {
-    name: "Shift Register",
-    description: "3-stage pipeline - data shifts through on each tick",
-    dsl: `
-circuit ShiftRegister {
+circuit DelayLine {
   input d: Bit
   clock clk
   output q1: Bit
   output q2: Bit
-  output q3: Bit
   impl {
     node dff1: DFlipFlop
     node dff2: DFlipFlop
-    node dff3: DFlipFlop
     connect clk -> dff1.clk
     connect clk -> dff2.clk
-    connect clk -> dff3.clk
     connect d -> dff1.d
     connect dff1.q -> dff2.d
-    connect dff2.q -> dff3.d
     connect dff1.q -> q1
     connect dff2.q -> q2
-    connect dff3.q -> q3
   }
 }`,
   },
@@ -220,14 +200,19 @@ function CircuitDemo({ circuitKey }: { circuitKey: CircuitKey }) {
 
   if (!sim.ready) {
     return (
-      <div className="p-4 bg-gray-800 rounded-lg animate-pulse">
+      <div className="flex gap-4 h-[400px] items-center justify-center">
         <div className="text-gray-500">Compiling...</div>
       </div>
     );
   }
 
   return (
-    <div className="flex gap-4 h-[400px]">
+    <motion.div
+      className="flex gap-4 h-[400px]"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.2 }}
+    >
       {/* Left side: DSL Code */}
       <div className="w-1/3 flex flex-col">
         <div className="text-xs text-gray-500 mb-2">DSL CODE</div>
@@ -273,7 +258,7 @@ function CircuitDemo({ circuitKey }: { circuitKey: CircuitKey }) {
           />
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 }
 
@@ -283,7 +268,7 @@ export default function Splash3Page() {
   const allCircuits: CircuitKey[] = [
     "inverter", "and", "or", "xor",
     "halfAdder", "fullAdder", "mux",
-    "dFlipFlop", "shiftRegister"
+    "delayLine"
   ];
 
   return (
@@ -333,22 +318,30 @@ export default function Splash3Page() {
           </button>
 
           {/* Card */}
-          <div className="flex-1 bg-gray-900 rounded-xl border border-gray-800 p-5">
-            <div className="flex items-center justify-between mb-3">
-              <div>
-                <h2 className="text-lg font-semibold">
-                  {CIRCUITS[activeCircuit].name}
-                </h2>
-                <p className="text-xs text-gray-400">
-                  {CIRCUITS[activeCircuit].description}
-                </p>
-              </div>
-              <div className="text-xs text-gray-500">
-                {allCircuits.indexOf(activeCircuit) + 1} / {allCircuits.length}
-              </div>
-            </div>
+          <div className="flex-1 bg-gray-900 rounded-xl border border-gray-800 p-5 overflow-hidden">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={activeCircuit}
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                transition={{ duration: 0.2 }}
+              >
+                <div className="text-center mb-3">
+                  <h2 className="text-lg font-semibold">
+                    {CIRCUITS[activeCircuit].name}
+                  </h2>
+                  <p className="text-xs text-gray-400">
+                    {CIRCUITS[activeCircuit].description}
+                    <span className="text-gray-600 ml-2">
+                      ({allCircuits.indexOf(activeCircuit) + 1}/{allCircuits.length})
+                    </span>
+                  </p>
+                </div>
 
-            <CircuitDemo key={activeCircuit} circuitKey={activeCircuit} />
+                <CircuitDemo circuitKey={activeCircuit} />
+              </motion.div>
+            </AnimatePresence>
           </div>
 
           {/* Right arrow */}
