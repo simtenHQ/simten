@@ -5,16 +5,22 @@
  * Includes compilation, error display, and integration with component library.
  */
 
-'use client';
+"use client";
 
-import React, { useState, useCallback, useRef, useEffect } from 'react';
-import Editor, { OnMount } from '@monaco-editor/react';
-import type { editor } from 'monaco-editor';
-import { parseDSL, compileCircuitToIR, type ValidationError, CompilerError, ParseError } from '../index';
-import { useComponentLibraryStore } from '@/features/visual-editor/stores/component-library-store';
-import { CompileButton } from './CompileButton';
-import { ErrorDisplay, CompilationError } from './ErrorDisplay';
-import type { Circuit } from '@/features/visual-editor/types/ir-v0.1';
+import React, { useState, useCallback, useRef, useEffect } from "react";
+import Editor, { OnMount } from "@monaco-editor/react";
+import type { editor } from "monaco-editor";
+import {
+  parseDSL,
+  compileCircuitToIR,
+  type ValidationError,
+  CompilerError,
+  ParseError,
+} from "../index";
+import { useComponentLibraryStore } from "@/features/visual-editor/stores/component-library-store";
+import { CompileButton } from "./CompileButton";
+import { ErrorDisplay, CompilationError } from "./ErrorDisplay";
+import type { Circuit } from "@/features/visual-editor/types/ir-v0.1";
 
 const DEFAULT_CODE = `// Example: NOT Gate (Inverter)
 circuit Inverter {
@@ -57,12 +63,16 @@ interface DSLEditorProps {
   showHeader?: boolean;
 }
 
-const STORAGE_KEY = 'turing-incomplete-dsl-code';
+const STORAGE_KEY = "turing-incomplete-dsl-code";
 
-export function DSLEditor({ onCompileSuccess, autoCompileEnabled = false, showHeader = true }: DSLEditorProps) {
+export function DSLEditor({
+  onCompileSuccess,
+  autoCompileEnabled = false,
+  showHeader = true,
+}: DSLEditorProps) {
   // Load code from localStorage on mount, fallback to default
   const [code, setCode] = useState(() => {
-    if (typeof window !== 'undefined') {
+    if (typeof window !== "undefined") {
       const saved = localStorage.getItem(STORAGE_KEY);
       return saved || DEFAULT_CODE;
     }
@@ -74,13 +84,14 @@ export function DSLEditor({ onCompileSuccess, autoCompileEnabled = false, showHe
   const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
   const autoCompileTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  const { registerUser, resolveComponent, getAllComponentNames } = useComponentLibraryStore();
+  const { registerUser, resolveComponent, getAllComponentNames } =
+    useComponentLibraryStore();
 
   // Save code to localStorage whenever it changes
   const handleCodeChange = useCallback((value: string | undefined) => {
-    const newCode = value || '';
+    const newCode = value || "";
     setCode(newCode);
-    if (typeof window !== 'undefined') {
+    if (typeof window !== "undefined") {
       localStorage.setItem(STORAGE_KEY, newCode);
     }
   }, []);
@@ -89,50 +100,62 @@ export function DSLEditor({ onCompileSuccess, autoCompileEnabled = false, showHe
     editorRef.current = editor;
 
     // Configure Monaco for DSL
-    monaco.languages.register({ id: 'dsl' });
+    monaco.languages.register({ id: "dsl" });
 
     // Set syntax highlighting
-    monaco.languages.setMonarchTokensProvider('dsl', {
+    monaco.languages.setMonarchTokensProvider("dsl", {
       keywords: [
-        'circuit', 'input', 'output', 'clock', 'state', 'impl',
-        'node', 'connect', 'on', 'rising', 'falling'
+        "circuit",
+        "input",
+        "output",
+        "clock",
+        "state",
+        "impl",
+        "node",
+        "connect",
+        "on",
+        "rising",
+        "falling",
       ],
 
       tokenizer: {
         root: [
-          [/\/\/.*/, 'comment'],
-          [/\b(circuit|input|output|clock|state|impl)\b/, 'keyword'],
-          [/\b(Bit|Bus|Word|Array)\b/, 'type'],
-          [/\b(node|connect|on)\b/, 'keyword'],
-          [/\b(rising|falling)\b/, 'constant'],
-          [/[a-zA-Z_]\w*/, 'identifier'],
-          [/\d+/, 'number'],
-          [/<|>|:|\(|\)|\{|\}|,|->/, 'delimiter'],
+          [/\/\/.*/, "comment"],
+          [/\b(circuit|input|output|clock|state|impl)\b/, "keyword"],
+          [/\b(Bit|Bus|Word|Array)\b/, "type"],
+          [/\b(node|connect|on)\b/, "keyword"],
+          [/\b(rising|falling)\b/, "constant"],
+          [/[a-zA-Z_]\w*/, "identifier"],
+          [/\d+/, "number"],
+          [/<|>|:|\(|\)|\{|\}|,|->/, "delimiter"],
         ],
       },
     });
 
     // Set theme
-    monaco.editor.defineTheme('dsl-theme', {
-      base: 'vs',
+    monaco.editor.defineTheme("dsl-theme", {
+      base: "vs",
       inherit: true,
       rules: [
-        { token: 'comment', foreground: '6a9955', fontStyle: 'italic' },
-        { token: 'keyword', foreground: '0000ff', fontStyle: 'bold' },
-        { token: 'type', foreground: '267f99' },
-        { token: 'constant', foreground: 'a31515' },
-        { token: 'identifier', foreground: '001080' },
-        { token: 'number', foreground: '098658' },
+        { token: "comment", foreground: "6a9955", fontStyle: "italic" },
+        { token: "keyword", foreground: "0000ff", fontStyle: "bold" },
+        { token: "type", foreground: "267f99" },
+        { token: "constant", foreground: "a31515" },
+        { token: "identifier", foreground: "001080" },
+        { token: "number", foreground: "098658" },
       ],
       colors: {},
     });
 
-    monaco.editor.setTheme('dsl-theme');
+    monaco.editor.setTheme("dsl-theme");
 
     // Register autocomplete provider
-    monaco.languages.registerCompletionItemProvider('dsl', {
-      triggerCharacters: ['.', ':', ' '],
-      provideCompletionItems: (model: editor.ITextModel, position: { lineNumber: number; column: number }) => {
+    monaco.languages.registerCompletionItemProvider("dsl", {
+      triggerCharacters: [".", ":"],
+      provideCompletionItems: (
+        model: editor.ITextModel,
+        position: { lineNumber: number; column: number },
+      ) => {
         const textUntilPosition = model.getValueInRange({
           startLineNumber: position.lineNumber,
           startColumn: 1,
@@ -147,14 +170,17 @@ export function DSLEditor({ onCompileSuccess, autoCompileEnabled = false, showHe
         // After "node name: " -> suggest component types
         if (textUntilPosition.match(/node\s+\w+:\s*\w*$/)) {
           return {
-            suggestions: allComponents.map(name => {
+            suggestions: allComponents.map((name) => {
               const circuit = resolveComponent(name);
               return {
                 label: name,
                 kind: monaco.languages.CompletionItemKind.Class,
                 insertText: name,
-                documentation: circuit?.metadata?.description || `Component: ${name}`,
-                detail: circuit ? `inputs: ${circuit.inputs.map(i => i.name).join(', ')}` : undefined,
+                documentation:
+                  circuit?.metadata?.description || `Component: ${name}`,
+                detail: circuit
+                  ? `inputs: ${circuit.inputs.map((i) => i.name).join(", ")}`
+                  : undefined,
               };
             }),
           };
@@ -169,7 +195,7 @@ export function DSLEditor({ onCompileSuccess, autoCompileEnabled = false, showHe
             const circuit = resolveComponent(nodeType);
             if (circuit) {
               return {
-                suggestions: circuit.outputs.map(output => ({
+                suggestions: circuit.outputs.map((output) => ({
                   label: output.name,
                   kind: monaco.languages.CompletionItemKind.Field,
                   insertText: output.name,
@@ -189,28 +215,41 @@ export function DSLEditor({ onCompileSuccess, autoCompileEnabled = false, showHe
             const circuit = resolveComponent(nodeType);
             if (circuit) {
               // Include both inputs and clocks
-              const inputSuggestions = circuit.inputs.map(input => ({
+              const inputSuggestions = circuit.inputs.map((input) => ({
                 label: input.name,
                 kind: monaco.languages.CompletionItemKind.Field,
                 insertText: input.name,
                 detail: `input: ${input.portType.kind}`,
               }));
-              const clockSuggestions = (circuit.clocks || []).map(clock => ({
+              const clockSuggestions = (circuit.clocks || []).map((clock) => ({
                 label: clock.name,
                 kind: monaco.languages.CompletionItemKind.Event,
                 insertText: clock.name,
-                detail: 'clock',
+                detail: "clock",
               }));
-              return { suggestions: [...inputSuggestions, ...clockSuggestions] };
+              return {
+                suggestions: [...inputSuggestions, ...clockSuggestions],
+              };
             }
           }
         }
 
         // DSL keywords
-        const keywords = ['circuit', 'input', 'output', 'clock', 'impl', 'node', 'connect'];
-        if (textUntilPosition.match(/^\s*\w*$/) || textUntilPosition.match(/\{\s*\w*$/)) {
+        const keywords = [
+          "circuit",
+          "input",
+          "output",
+          "clock",
+          "impl",
+          "node",
+          "connect",
+        ];
+        if (
+          textUntilPosition.match(/^\s*\w*$/) ||
+          textUntilPosition.match(/\{\s*\w*$/)
+        ) {
           return {
-            suggestions: keywords.map(kw => ({
+            suggestions: keywords.map((kw) => ({
               label: kw,
               kind: monaco.languages.CompletionItemKind.Keyword,
               insertText: kw,
@@ -225,29 +264,38 @@ export function DSLEditor({ onCompileSuccess, autoCompileEnabled = false, showHe
     // Helper: find what type a node is by parsing the text
     function findNodeTypeInText(text: string, nodeName: string): string | null {
       // Match "node nodeName: TypeName" or "node nodeName: TypeName(...)"
-      const regex = new RegExp(`node\\s+${nodeName}:\\s*(\\w+)`, 'm');
+      const regex = new RegExp(`node\\s+${nodeName}:\\s*(\\w+)`, "m");
       const match = text.match(regex);
       return match ? match[1] : null;
     }
 
     // Register hover provider for documentation
-    monaco.languages.registerHoverProvider('dsl', {
-      provideHover: (model: editor.ITextModel, position: { lineNumber: number; column: number }) => {
+    monaco.languages.registerHoverProvider("dsl", {
+      provideHover: (
+        model: editor.ITextModel,
+        position: { lineNumber: number; column: number },
+      ) => {
         const word = model.getWordAtPosition(position);
         if (!word) return null;
 
         const circuit = resolveComponent(word.word);
         if (circuit) {
-          const inputs = circuit.inputs.map(i => `  ${i.name}: ${i.portType.kind}`).join('\n');
-          const outputs = circuit.outputs.map(o => `  ${o.name}: ${o.portType.kind}`).join('\n');
-          const clocks = (circuit.clocks || []).map(c => `  ${c.name}`).join('\n');
+          const inputs = circuit.inputs
+            .map((i) => `  ${i.name}: ${i.portType.kind}`)
+            .join("\n");
+          const outputs = circuit.outputs
+            .map((o) => `  ${o.name}: ${o.portType.kind}`)
+            .join("\n");
+          const clocks = (circuit.clocks || [])
+            .map((c) => `  ${c.name}`)
+            .join("\n");
 
           let content = `**${circuit.name}**\n\n`;
           if (circuit.metadata?.description) {
             content += `${circuit.metadata.description}\n\n`;
           }
-          content += `**Inputs:**\n\`\`\`\n${inputs || '  (none)'}\n\`\`\`\n`;
-          content += `**Outputs:**\n\`\`\`\n${outputs || '  (none)'}\n\`\`\``;
+          content += `**Inputs:**\n\`\`\`\n${inputs || "  (none)"}\n\`\`\`\n`;
+          content += `**Outputs:**\n\`\`\`\n${outputs || "  (none)"}\n\`\`\``;
           if (clocks) {
             content += `\n**Clocks:**\n\`\`\`\n${clocks}\n\`\`\``;
           }
@@ -276,15 +324,17 @@ export function DSLEditor({ onCompileSuccess, autoCompileEnabled = false, showHe
     setTimeout(() => {
       try {
         // Parse the DSL to get all circuit definitions
-        const { ast, errors: parseErrors } = parseDSL(code, 'editor.dsl');
+        const { ast, errors: parseErrors } = parseDSL(code, "editor.dsl");
 
         if (parseErrors.length > 0) {
-          setErrors(parseErrors.map((e: ValidationError) => ({
-            message: e.message,
-            line: e.location.start.line,
-            column: e.location.start.column,
-            suggestions: e.suggestions,
-          })));
+          setErrors(
+            parseErrors.map((e: ValidationError) => ({
+              message: e.message,
+              line: e.location.start.line,
+              column: e.location.start.column,
+              suggestions: e.suggestions,
+            })),
+          );
           setIsCompiling(false);
           return;
         }
@@ -298,20 +348,22 @@ export function DSLEditor({ onCompileSuccess, autoCompileEnabled = false, showHe
           const library = {
             getCircuit: (name: string): Circuit | undefined => {
               // Check already compiled circuits from this session first
-              const compiled = compiledCircuits.find(c => c.name === name);
+              const compiled = compiledCircuits.find((c) => c.name === name);
               if (compiled) return compiled;
 
               // Then check existing library
               return resolveComponent(name);
             },
             hasCircuit: (name: string): boolean => {
-              return compiledCircuits.some(c => c.name === name) ||
-                     resolveComponent(name) !== undefined;
+              return (
+                compiledCircuits.some((c) => c.name === name) ||
+                resolveComponent(name) !== undefined
+              );
             },
             getAllComponentNames: (): string[] => {
               // Include both existing library components and just-compiled circuits
               const existing = getAllComponentNames();
-              const justCompiled = compiledCircuits.map(c => c.name);
+              const justCompiled = compiledCircuits.map((c) => c.name);
               return [...existing, ...justCompiled];
             },
           };
@@ -323,17 +375,19 @@ export function DSLEditor({ onCompileSuccess, autoCompileEnabled = false, showHe
             registerUser(circuit); // Register immediately so next circuit can use it
           } catch (error) {
             // Extract location info from CompilerError if available
-            const compilationError: CompilationError = error instanceof CompilerError && error.location
-              ? {
-                  message: error.message,
-                  line: error.location.line,
-                  column: error.location.column,
-                }
-              : {
-                  message: error instanceof Error ? error.message : String(error),
-                  line: 0,
-                  column: 0,
-                };
+            const compilationError: CompilationError =
+              error instanceof CompilerError && error.location
+                ? {
+                    message: error.message,
+                    line: error.location.line,
+                    column: error.location.column,
+                  }
+                : {
+                    message:
+                      error instanceof Error ? error.message : String(error),
+                    line: 0,
+                    column: 0,
+                  };
 
             setErrors([compilationError]);
             setIsCompiling(false);
@@ -342,9 +396,9 @@ export function DSLEditor({ onCompileSuccess, autoCompileEnabled = false, showHe
         }
 
         // Success!
-        const componentNames = compiledCircuits.map(c => c.name).join(', ');
+        const componentNames = compiledCircuits.map((c) => c.name).join(", ");
         setSuccessMessage(
-          `Successfully compiled ${compiledCircuits.length} component(s): ${componentNames}`
+          `Successfully compiled ${compiledCircuits.length} component(s): ${componentNames}`,
         );
 
         // Notify parent (pass DSL code for version tracking)
@@ -384,7 +438,13 @@ export function DSLEditor({ onCompileSuccess, autoCompileEnabled = false, showHe
         setIsCompiling(false);
       }
     }, 0);
-  }, [code, registerUser, resolveComponent, getAllComponentNames, onCompileSuccess]);
+  }, [
+    code,
+    registerUser,
+    resolveComponent,
+    getAllComponentNames,
+    onCompileSuccess,
+  ]);
 
   const handleClearErrors = useCallback(() => {
     setErrors([]);
@@ -458,11 +518,12 @@ export function DSLEditor({ onCompileSuccess, autoCompileEnabled = false, showHe
           options={{
             minimap: { enabled: false },
             fontSize: 14,
-            lineNumbers: 'on',
+            lineNumbers: "on",
             scrollBeyondLastLine: false,
             automaticLayout: true,
             tabSize: 2,
-            wordWrap: 'on',
+            wordWrap: "on",
+            acceptSuggestionOnCommitCharacter: false,
           }}
         />
       </div>
