@@ -50,3 +50,18 @@ next-env.d.ts
 
 
 !.dev.vars.example
+
+# cc65 build artifacts (6502 examples)
+examples/cpu6502/cc65/*.bin
+examples/cpu6502/cc65/*.o
+examples/cpu6502/cc65/*.out
+examples/cpu6502/cc65/*.rom.dsl
+examples/cpu6502/cc65/a.out
+
+# Generated assembly (keep source: crt0*.s, putchar.s)
+examples/cpu6502/cc65/*.s
+!examples/cpu6502/cc65/crt0*.s
+!examples/cpu6502/cc65/putchar.s
+
+# Mac-compiled executables (no extension)
+examples/cpu6502/cc65/*-mac

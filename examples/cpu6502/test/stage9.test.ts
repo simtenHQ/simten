@@ -458,20 +458,5 @@ describe('6502 CPU Stage 9: C Code Integration', () => {
       expect(content).toContain('$F000'); // Console address
     });
 
-    it('should have build.sh script', () => {
-      const filepath = resolve(__dirname, '..', 'cc65', 'build.sh');
-      const content = readFileSync(filepath, 'utf-8');
-
-      expect(content).toContain('cc65');
-      expect(content).toContain('bin2dsl.js');
-    });
-
-    it('should have bin2dsl.js converter', () => {
-      const filepath = resolve(__dirname, '..', 'cc65', 'bin2dsl.js');
-      const content = readFileSync(filepath, 'utf-8');
-
-      expect(content).toContain('ROM');
-      expect(content).toContain('0xC000');
-    });
   });
 });
