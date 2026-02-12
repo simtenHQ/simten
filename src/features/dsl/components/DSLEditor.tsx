@@ -99,6 +99,47 @@ export function DSLEditor({
   const handleEditorDidMount: OnMount = (editor, monaco) => {
     editorRef.current = editor;
 
+    // Auto-insert " -> " when pressing space after "connect <source>"
+    editor.onKeyDown((e) => {
+      if (e.code === "Space") {
+        const position = editor.getPosition();
+        const model = editor.getModel();
+        if (!position || !model) return;
+
+        const lineContent = model.getLineContent(position.lineNumber);
+        const textBeforeCursor = lineContent.substring(0, position.column - 1);
+
+        // Only trigger on connect lines: "connect source" or "connect node.port"
+        // Must not already have an arrow
+        if (
+          textBeforeCursor.match(/^\s*connect\s+[\w.]+$/) &&
+          !textBeforeCursor.includes("->")
+        ) {
+          e.preventDefault();
+          e.stopPropagation();
+
+          // Insert " -> " instead of just space
+          editor.executeEdits("auto-arrow", [
+            {
+              range: {
+                startLineNumber: position.lineNumber,
+                startColumn: position.column,
+                endLineNumber: position.lineNumber,
+                endColumn: position.column,
+              },
+              text: " -> ",
+            },
+          ]);
+
+          // Move cursor to end of inserted text
+          editor.setPosition({
+            lineNumber: position.lineNumber,
+            column: position.column + 4,
+          });
+        }
+      }
+    });
+
     // Configure Monaco for DSL
     monaco.languages.register({ id: "dsl" });
 
