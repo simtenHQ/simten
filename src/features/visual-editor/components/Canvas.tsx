@@ -497,6 +497,7 @@ export function Canvas() {
         multiSelectionKeyCode="Shift"
         selectionOnDrag={true}
         panOnDrag={[1, 2]} // Pan with middle and right mouse button
+        panActivationKeyCode={null} // Disable Space for pan (interferes with text input)
         selectionMode={SelectionMode.Partial} // Select nodes when selection box partially overlaps
         // Interaction settings
         selectNodesOnDrag={false}
