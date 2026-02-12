@@ -68,7 +68,7 @@ interface MiniCanvasProps {
   sequentialState?: FlatSequentialState | null;
   inputValues?: Record<string, boolean | number>; // Current input values from simulator
   onToggleInput?: (inputName: string) => void; // Callback when switch is clicked
-  height?: number;
+  height?: number | string;
 }
 
 /**
@@ -259,7 +259,7 @@ export function MiniCanvas({
   sequentialState,
   inputValues,
   onToggleInput,
-  height = 200,
+  height = "100%",
 }: MiniCanvasProps) {
   // Augment circuit with explicit input/output port nodes
   const augmentedCircuit = useMemo(() => {
