@@ -5,7 +5,10 @@ import {
   ReactFlow,
   Background,
   BackgroundVariant,
+  Panel,
   applyNodeChanges,
+  useReactFlow,
+  ReactFlowProvider,
   type NodeTypes,
   type Node,
   type OnNodesChange,
@@ -42,6 +45,22 @@ const nodeTypes: NodeTypes = {
   consoleNode: LogicGateNode,
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 } as any;
+
+// Fit view button component (must be inside ReactFlow)
+function FitViewButton() {
+  const { fitView } = useReactFlow();
+  return (
+    <button
+      onClick={() => fitView({ padding: 0.3 })}
+      className="bg-gray-800 hover:bg-gray-700 text-gray-300 p-1.5 rounded border border-gray-600 transition-colors"
+      title="Fit view"
+    >
+      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15" />
+      </svg>
+    </button>
+  );
+}
 
 interface MiniCanvasProps {
   circuit: Circuit | null;
@@ -324,30 +343,35 @@ export function MiniCanvas({
 
   return (
     <div className="bg-gray-900 rounded-lg overflow-hidden" style={{ height }}>
-      <ReactFlow
-        nodes={nodes}
-        edges={edges}
-        nodeTypes={nodeTypes}
-        onNodesChange={onNodesChange}
-        fitView
-        fitViewOptions={{ padding: 0.3 }}
-        nodesDraggable={true}
-        nodesConnectable={false}
-        elementsSelectable={true}
-        panOnDrag={[1, 2]}
-        zoomOnScroll={true}
-        zoomOnPinch={true}
-        zoomOnDoubleClick={false}
-        preventScrolling={true}
-        proOptions={{ hideAttribution: true }}
-      >
-        <Background
-          variant={BackgroundVariant.Dots}
-          gap={20}
-          size={1}
-          color="#374151"
-        />
-      </ReactFlow>
+      <ReactFlowProvider>
+        <ReactFlow
+          nodes={nodes}
+          edges={edges}
+          nodeTypes={nodeTypes}
+          onNodesChange={onNodesChange}
+          fitView
+          fitViewOptions={{ padding: 0.3 }}
+          nodesDraggable={true}
+          nodesConnectable={false}
+          elementsSelectable={true}
+          panOnDrag={[1, 2]}
+          zoomOnScroll={true}
+          zoomOnPinch={true}
+          zoomOnDoubleClick={false}
+          preventScrolling={true}
+          proOptions={{ hideAttribution: true }}
+        >
+          <Background
+            variant={BackgroundVariant.Dots}
+            gap={20}
+            size={1}
+            color="#374151"
+          />
+          <Panel position="bottom-left">
+            <FitViewButton />
+          </Panel>
+        </ReactFlow>
+      </ReactFlowProvider>
     </div>
   );
 }
