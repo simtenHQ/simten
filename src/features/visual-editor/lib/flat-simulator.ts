@@ -305,7 +305,8 @@ function valuesEqual(
 
 /**
  * Seed the event queue with initial nodes for full evaluation.
- * Includes source nodes (no inputs) and state-output nodes.
+ * Includes source nodes (no inputs), state-output nodes, and nodes
+ * that have inputs from top-level (circuit inputs).
  */
 function seedInitialQueue(
   flatCircuit: FlatCircuit,
@@ -315,6 +316,16 @@ function seedInitialQueue(
   for (const node of flatCircuit.nodes) {
     if (isSourceNode(node) || isStateOutputNode(node, library)) {
       eventQueue.enqueue(node.id);
+      continue;
+    }
+
+    // Also seed nodes that have top-level inputs
+    // (these are circuit inputs, not Switch nodes)
+    for (const src of node.inputSources) {
+      if (src.sourceNodeId === TOP_LEVEL_NODE) {
+        eventQueue.enqueue(node.id);
+        break;
+      }
     }
   }
 }
