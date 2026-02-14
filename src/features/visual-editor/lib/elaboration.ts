@@ -797,8 +797,9 @@ function buildDependencyGraph(flatCircuit: FlatCircuit): void {
     const sourceId = conn.source.nodeId;
     const targetId = conn.target.nodeId;
 
-    // Skip circuit-level ports (handled separately)
-    if (sourceId === TOP_LEVEL_NODE || targetId === TOP_LEVEL_NODE) continue;
+    // Skip connections TO circuit outputs (handled separately in propagateToTopLevelOutputs)
+    // But allow connections FROM circuit inputs so inputSources gets populated
+    if (targetId === TOP_LEVEL_NODE) continue;
 
     // Forward edge: source's dependents list
     const sourceNode = flatCircuit.nodeMap.get(sourceId);
