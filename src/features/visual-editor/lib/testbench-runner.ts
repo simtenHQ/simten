@@ -31,6 +31,7 @@ import { elaborate, FlatCircuit } from './elaboration';
 import {
   runFlatSimulationTick,
   initializeFlatSequentialState,
+  type FlatPortValueMap,
 } from './flat-simulator';
 import { useComponentLibraryStore } from '../stores/component-library-store';
 import { writeVCDToFile } from './vcd-generator';
@@ -79,6 +80,9 @@ export function runTestbench(
   // Initialize sequential state
   let seqState = initializeFlatSequentialState(flatCircuit);
 
+  // Track port values between ticks for O(K) change detection
+  let previousPortValues: FlatPortValueMap | undefined;
+
   // Initialize capture data if configured
   if (testbench.capture) {
     state.captureData = initializeCaptureData(testbench.capture);
@@ -94,8 +98,8 @@ export function runTestbench(
     // Sync environmental values from circuit to flat circuit
     syncEnvironmentalValues(flatCircuit, circuit);
 
-    // Run one simulation tick
-    const result = runFlatSimulationTick(flatCircuit, seqState);
+    // Run one simulation tick with previous port values for O(K) change detection
+    const result = runFlatSimulationTick(flatCircuit, seqState, previousPortValues);
 
     // Check for simulation errors
     if (result.error) {
@@ -104,10 +108,11 @@ export function runTestbench(
       break;
     }
 
-    // Update sequential state
+    // Update sequential state and port values for next tick
     if (result.sequentialState) {
       seqState = result.sequentialState;
     }
+    previousPortValues = result.portValues;
 
     // Collect port values for capture
     if (state.captureData) {

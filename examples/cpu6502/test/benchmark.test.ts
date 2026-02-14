@@ -14,6 +14,7 @@ import { elaborate } from '../../../src/features/visual-editor/lib/elaboration';
 import {
   initializeFlatSequentialState,
   runFlatSimulationTick,
+  type FlatPortValueMap,
 } from '../../../src/features/visual-editor/lib/flat-simulator';
 
 class ComponentLibraryAdapter implements ComponentLibrary {
@@ -73,18 +74,21 @@ describe('Simulator Performance', () => {
       .slice(0, 10)
       .forEach(([t, c]) => console.log(`  ${t}: ${c}`));
 
-    // Warmup
+    // Warmup (with previousPortValues tracking)
+    let previousPortValues: FlatPortValueMap | undefined;
     for (let i = 0; i < 10; i++) {
-      const r = runFlatSimulationTick(flatCircuit, seqState);
+      const r = runFlatSimulationTick(flatCircuit, seqState, previousPortValues);
       seqState = r.sequentialState!;
+      previousPortValues = r.portValues;
     }
 
-    // Benchmark
+    // Benchmark (with previousPortValues for O(K) change detection)
     const CYCLES = 100;
     const start = performance.now();
     for (let i = 0; i < CYCLES; i++) {
-      const r = runFlatSimulationTick(flatCircuit, seqState);
+      const r = runFlatSimulationTick(flatCircuit, seqState, previousPortValues);
       seqState = r.sequentialState!;
+      previousPortValues = r.portValues;
     }
     const elapsed = performance.now() - start;
 

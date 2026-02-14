@@ -92,6 +92,7 @@ export function useCircuitSimulator(dslCode: string): SimulatorState & Simulator
   const flatCircuitRef = useRef<FlatCircuit | null>(null);
   const seqStateRef = useRef<FlatSequentialState | null>(null);
   const compiledCircuitRef = useRef<Circuit | null>(null);
+  const portValuesRef = useRef<FlatPortValueMap | null>(null);
 
   // React state for UI
   const [outputs, setOutputs] = useState<Record<string, boolean | number>>({});
@@ -202,6 +203,7 @@ export function useCircuitSimulator(dslCode: string): SimulatorState & Simulator
 
     setOutputs(newOutputs);
     setPortValues(simResult.portValues);
+    portValuesRef.current = simResult.portValues;
   }, []);
 
   // Run combinational-only simulation (for input changes - no state update)
@@ -232,9 +234,11 @@ export function useCircuitSimulator(dslCode: string): SimulatorState & Simulator
     const inputValues = buildInputValues(currentInputs);
 
     // Run full tick including sequential state update
+    // Pass previous port values for O(K) change detection
     const simResult = runFlatSimulationTick(
       flatCircuitRef.current,
       seqStateRef.current,
+      portValuesRef.current ?? undefined,
       inputValues
     );
 

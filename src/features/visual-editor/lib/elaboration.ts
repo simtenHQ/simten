@@ -33,6 +33,16 @@ import { ComponentLibraryStore } from '../stores/component-library-store';
 export const TOP_LEVEL_NODE = '__top__';
 
 /**
+ * Precomputed input source for O(1) lookup.
+ * Instead of scanning all connections, each node knows exactly where its inputs come from.
+ */
+export interface InputSource {
+  portName: string;        // Target port name on this node
+  sourceNodeId: string;    // Node that provides the value
+  sourcePortName: string;  // Port on source node
+}
+
+/**
  * A flattened node - always a primitive, never a composite.
  * ID includes full hierarchical path (e.g., "cpu.alu.adder1")
  */
@@ -43,6 +53,9 @@ export interface FlatNode {
   inputs: PortInstance[];               // With full path IDs
   outputs: PortInstance[];
   clocks: ClockInstance[];
+  // Precomputed graph edges (populated by buildDependencyGraph)
+  dependents: string[];                 // Node IDs that read from this node's outputs
+  inputSources: InputSource[];          // Where each input comes from (O(inputs) lookup)
 }
 
 /**
@@ -76,6 +89,7 @@ export interface FlatCircuit {
   hierarchy: HierarchyNode;  // For visualization
   topLevelInputs: PortDescriptor[];   // Circuit-level inputs
   topLevelOutputs: PortDescriptor[];  // Circuit-level outputs
+  nodeMap: Map<string, FlatNode>;     // Quick lookup by ID (populated by buildDependencyGraph)
 }
 
 // ============================================================================
@@ -136,7 +150,9 @@ export function elaborate(
           arguments: node.arguments,
           inputs: node.inputs.map(p => ({...p, nodeId: fullPath})),
           outputs: node.outputs.map(p => ({...p, nodeId: fullPath})),
-          clocks: node.clocks.map(c => ({...c, nodeId: fullPath}))
+          clocks: node.clocks.map(c => ({...c, nodeId: fullPath})),
+          dependents: [],      // Populated by buildDependencyGraph
+          inputSources: [],    // Populated by buildDependencyGraph
         });
         parentHierarchy.primitives.push(fullPath);
 
@@ -165,7 +181,9 @@ export function elaborate(
           arguments: node.arguments,
           inputs: node.inputs.map(p => ({...p, nodeId: fullPath})),
           outputs: node.outputs.map(p => ({...p, nodeId: fullPath})),
-          clocks: node.clocks.map(c => ({...c, nodeId: fullPath}))
+          clocks: node.clocks.map(c => ({...c, nodeId: fullPath})),
+          dependents: [],      // Populated by buildDependencyGraph
+          inputSources: [],    // Populated by buildDependencyGraph
         });
         parentHierarchy.primitives.push(fullPath);
       }
@@ -210,13 +228,20 @@ export function elaborate(
     debug
   );
 
-  return {
+  // Build the flat circuit
+  const flatCircuit: FlatCircuit = {
     nodes,
     connections: stitchedConnections,
     hierarchy,
     topLevelInputs: circuit.inputs,
-    topLevelOutputs: circuit.outputs
+    topLevelOutputs: circuit.outputs,
+    nodeMap: new Map(), // Populated by buildDependencyGraph
   };
+
+  // Build dependency graph for event-driven simulation
+  buildDependencyGraph(flatCircuit);
+
+  return flatCircuit;
 }
 
 /**
@@ -741,6 +766,70 @@ function resolveInternalPorts(
     return results;
   }
   return [{ nodeId: fullPath, portName: portRef.portName }];
+}
+
+// ============================================================================
+// Dependency Graph Building (for Event-Driven Simulation)
+// ============================================================================
+
+/**
+ * Build dependency graph for event-driven simulation.
+ * Populates:
+ * - nodeMap: O(1) lookup of nodes by ID
+ * - dependents: For each node, which nodes read from its outputs
+ * - inputSources: For each node, where each input comes from (O(inputs) lookup)
+ *
+ * This enables O(K) event-driven propagation instead of O(N) full evaluation,
+ * where K is the number of nodes that actually change.
+ */
+function buildDependencyGraph(flatCircuit: FlatCircuit): void {
+  // Build nodeMap for O(1) lookup
+  flatCircuit.nodeMap = new Map(flatCircuit.nodes.map(n => [n.id, n]));
+
+  // Initialize arrays (in case they weren't already)
+  for (const node of flatCircuit.nodes) {
+    node.dependents = [];
+    node.inputSources = [];
+  }
+
+  // Build both forward (dependents) and reverse (inputSources) edges
+  for (const conn of flatCircuit.connections) {
+    const sourceId = conn.source.nodeId;
+    const targetId = conn.target.nodeId;
+
+    // Skip circuit-level ports (handled separately)
+    if (sourceId === TOP_LEVEL_NODE || targetId === TOP_LEVEL_NODE) continue;
+
+    // Forward edge: source's dependents list
+    const sourceNode = flatCircuit.nodeMap.get(sourceId);
+    if (sourceNode && !sourceNode.dependents.includes(targetId)) {
+      sourceNode.dependents.push(targetId);
+    }
+
+    // Reverse edge: target's inputSources (for O(inputs) lookup during evaluation)
+    const targetNode = flatCircuit.nodeMap.get(targetId);
+    if (targetNode) {
+      targetNode.inputSources.push({
+        portName: conn.target.portName,
+        sourceNodeId: sourceId,
+        sourcePortName: conn.source.portName,
+      });
+    }
+  }
+
+  // Assertion: verify all nodes have inputSources populated
+  if (process.env.NODE_ENV !== 'production') {
+    for (const node of flatCircuit.nodes) {
+      console.assert(
+        Array.isArray(node.inputSources),
+        `inputSources not set for ${node.id}`
+      );
+      console.assert(
+        Array.isArray(node.dependents),
+        `dependents not set for ${node.id}`
+      );
+    }
+  }
 }
 
 /**

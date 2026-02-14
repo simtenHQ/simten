@@ -11,11 +11,12 @@
 
 import type { BitValue, BusValue } from '../types/ir-v0.1';
 import type { PrimitiveState, ClockEdges } from './primitive-interface';
-import type { FlatCircuit, FlatNode, FlatConnection } from './elaboration';
+import type { FlatCircuit, FlatNode } from './elaboration';
 import { getPrimitiveEvaluator, PRIMITIVE_DEFINITIONS } from './primitives';
-import { topologicalSortFlat, TOP_LEVEL_NODE } from './elaboration';
+import { TOP_LEVEL_NODE } from './elaboration';
 import { useComponentLibraryStore, type ComponentLibraryStore } from '../stores/component-library-store';
 import { useMemoryDataStore } from '../stores/memory-data-store';
+import { EventQueue } from './event-queue';
 
 /**
  * Port value storage using full paths
@@ -166,28 +167,21 @@ export function initializeFlatSequentialState(
 }
 
 /**
- * Get input values for a flat node from port values
+ * Get input values for a flat node using precomputed inputSources.
+ * O(inputs) instead of O(connections) - much faster for large circuits.
  */
-function getNodeInputsFlat(
+function getNodeInputsFast(
   node: FlatNode,
-  connections: FlatConnection[],
-  portValues: FlatPortValueMap,
-  _library: ComponentLibraryStore
+  portValues: FlatPortValueMap
 ): Map<string, BitValue | BusValue> {
   const inputs = new Map<string, BitValue | BusValue>();
 
-  // NO SILENT DEFAULTS! Unconnected inputs will be undefined.
-  // This makes wiring bugs loud and obvious during elaboration.
-
-  // Fill in actual values from connections
-  for (const conn of connections) {
-    if (conn.target.nodeId === node.id) {
-      const sourceKey = portKey(conn.source.nodeId, conn.source.portName);
-      const value = portValues.get(sourceKey);
-
-      if (value !== undefined) {
-        inputs.set(conn.target.portName, value);
-      }
+  // O(inputSources) - typically 1-4 per node
+  for (const src of node.inputSources) {
+    const key = portKey(src.sourceNodeId, src.sourcePortName);
+    const value = portValues.get(key);
+    if (value !== undefined) {
+      inputs.set(src.portName, value);
     }
   }
 
@@ -210,6 +204,155 @@ function getNodeInputsFlat(
   }
 
   return inputs;
+}
+
+/**
+ * Check if a node is a "state-output" node (outputs depend only on state, not inputs).
+ * Examples: DFlipFlop, Register - their Q output reflects current state.
+ */
+function isStateOutputNode(node: FlatNode, library: ComponentLibraryStore): boolean {
+  const component = library.resolveComponent(node.primitiveType);
+  if (!component) return false;
+  return component.metadata?.outputDependency === 'state-only';
+}
+
+/**
+ * Check if a node is a "source" node (no input ports, only outputs).
+ * Examples: Constant, Switch, Button, Input.
+ */
+function isSourceNode(node: FlatNode): boolean {
+  return node.inputs.length === 0;
+}
+
+/**
+ * Maximum iterations before assuming a feedback loop is unstable.
+ */
+const MAX_PROPAGATION_ITERATIONS = 10000;
+
+/**
+ * Propagate value changes through the circuit using event-driven approach.
+ * Only evaluates nodes that are in the queue (nodes whose inputs may have changed).
+ *
+ * Returns the number of node evaluations performed (for performance monitoring).
+ */
+function propagate(
+  flatCircuit: FlatCircuit,
+  eventQueue: EventQueue,
+  portValues: FlatPortValueMap,
+  seqState: FlatSequentialState | undefined,
+  _library: ComponentLibraryStore
+): number {
+  let evaluationCount = 0;
+
+  while (!eventQueue.isEmpty()) {
+    if (++evaluationCount > MAX_PROPAGATION_ITERATIONS) {
+      throw new Error(
+        `Propagation did not stabilize after ${MAX_PROPAGATION_ITERATIONS} iterations. ` +
+        `Possible unstable feedback loop in circuit.`
+      );
+    }
+
+    const nodeId = eventQueue.dequeue()!;
+    const node = flatCircuit.nodeMap.get(nodeId);
+    if (!node) continue;
+
+    // O(inputs) lookup using precomputed inputSources
+    const inputs = getNodeInputsFast(node, portValues);
+
+    // Store input values in portValues (for debugging/visualization)
+    for (const [portName, value] of inputs.entries()) {
+      portValues.set(portKey(nodeId, portName), value);
+    }
+
+    // Evaluate node
+    const newOutputs = evaluateFlatNode(node, inputs, seqState);
+
+    // Check for changes and propagate to dependents
+    let anyChanged = false;
+    for (const [portName, newValue] of newOutputs.entries()) {
+      const key = portKey(nodeId, portName);
+      const oldValue = portValues.get(key);
+
+      // Compare values - handle both primitive and complex values
+      if (!valuesEqual(oldValue, newValue)) {
+        portValues.set(key, newValue);
+        anyChanged = true;
+      }
+    }
+
+    // If any output changed, enqueue all dependent nodes
+    if (anyChanged) {
+      eventQueue.enqueueAll(node.dependents);
+    }
+  }
+
+  return evaluationCount;
+}
+
+/**
+ * Compare two values for equality.
+ * Handles BitValue (boolean), BusValue (number), and undefined.
+ */
+function valuesEqual(
+  a: BitValue | BusValue | undefined,
+  b: BitValue | BusValue | undefined
+): boolean {
+  if (a === b) return true;
+  if (a === undefined || b === undefined) return false;
+  // Both are defined and not strictly equal
+  return false;
+}
+
+/**
+ * Seed the event queue with initial nodes for full evaluation.
+ * Includes source nodes (no inputs) and state-output nodes.
+ */
+function seedInitialQueue(
+  flatCircuit: FlatCircuit,
+  eventQueue: EventQueue,
+  library: ComponentLibraryStore
+): void {
+  for (const node of flatCircuit.nodes) {
+    if (isSourceNode(node) || isStateOutputNode(node, library)) {
+      eventQueue.enqueue(node.id);
+    }
+  }
+}
+
+/**
+ * Seed the event queue with state-output nodes only.
+ * Used after state commit to propagate new register values.
+ */
+function seedStateOutputNodes(
+  flatCircuit: FlatCircuit,
+  eventQueue: EventQueue,
+  library: ComponentLibraryStore
+): void {
+  for (const node of flatCircuit.nodes) {
+    if (isStateOutputNode(node, library)) {
+      eventQueue.enqueue(node.id);
+    }
+  }
+}
+
+/**
+ * Propagate values to top-level outputs.
+ * Finds connections targeting TOP_LEVEL_NODE and copies values.
+ */
+function propagateToTopLevelOutputs(
+  flatCircuit: FlatCircuit,
+  portValues: FlatPortValueMap
+): void {
+  for (const conn of flatCircuit.connections) {
+    if (conn.target.nodeId === TOP_LEVEL_NODE || conn.target.nodeId === '') {
+      const sourceKey = portKey(conn.source.nodeId, conn.source.portName);
+      const targetKey = portKey(conn.target.nodeId || TOP_LEVEL_NODE, conn.target.portName);
+      const sourceValue = portValues.get(sourceKey);
+      if (sourceValue !== undefined) {
+        portValues.set(targetKey, sourceValue);
+      }
+    }
+  }
 }
 
 /**
@@ -266,15 +409,23 @@ function evaluateFlatNode(
 }
 
 /**
- * Run flat combinational simulation
- * MUCH simpler than hierarchical version - no recursion, no scope remapping!
+ * Run flat combinational simulation using event-driven propagation.
+ * O(K) where K = nodes that actually change, instead of O(N) for all nodes.
+ *
+ * @param flatCircuit - The flattened circuit to simulate
+ * @param seqState - Optional sequential state for stateful components
+ * @param initialPortValues - Optional initial port values (e.g., from previous simulation)
+ * @param changedNodeIds - Optional list of nodes that changed (for incremental updates)
  */
 export function runFlatCombinationalSimulation(
   flatCircuit: FlatCircuit,
   seqState?: FlatSequentialState,
-  initialPortValues?: FlatPortValueMap
+  initialPortValues?: FlatPortValueMap,
+  changedNodeIds?: string[]
 ): FlatSimulationResult {
   const portValues: FlatPortValueMap = new Map();
+  const library = useComponentLibraryStore.getState();
+  const eventQueue = new EventQueue();
 
   // Copy initial port values (for top-level inputs)
   if (initialPortValues) {
@@ -292,56 +443,28 @@ export function runFlatCombinationalSimulation(
     }
   }
 
-  const library = useComponentLibraryStore.getState();
+  // Seed the event queue
+  if (changedNodeIds && changedNodeIds.length > 0) {
+    // Incremental update: only propagate from changed nodes
+    eventQueue.enqueueAll(changedNodeIds);
+  } else {
+    // Full evaluation: seed with source nodes and state-output nodes
+    seedInitialQueue(flatCircuit, eventQueue, library);
+  }
 
-  // Get evaluation order using flat topological sort
-  const evalOrder = topologicalSortFlat(flatCircuit.nodes, flatCircuit.connections, library);
-
-  if (!evalOrder) {
+  // Event-driven propagation
+  try {
+    propagate(flatCircuit, eventQueue, portValues, seqState, library);
+  } catch (e) {
     return {
       portValues,
       sequentialState: seqState,
-      error: 'Cycle detected in circuit'
+      error: e instanceof Error ? e.message : 'Unknown propagation error'
     };
   }
 
-  // Build node lookup map
-  const nodeMap = new Map(flatCircuit.nodes.map(n => [n.id, n]));
-
-  // Evaluate each primitive in order
-  for (const nodeId of evalOrder) {
-    const node = nodeMap.get(nodeId);
-    if (!node) continue;
-
-    // Get input values
-    const inputs = getNodeInputsFlat(node, flatCircuit.connections, portValues, library);
-
-    // Store input values
-    for (const [portName, value] of inputs.entries()) {
-      portValues.set(portKey(nodeId, portName), value);
-    }
-
-    // Evaluate primitive (no composite recursion!)
-    const outputs = evaluateFlatNode(node, inputs, seqState);
-
-    // Store output values
-    for (const [portName, value] of outputs.entries()) {
-      portValues.set(portKey(nodeId, portName), value);
-    }
-
-  }
-
   // Propagate to top-level outputs
-  for (const conn of flatCircuit.connections) {
-    if (conn.target.nodeId === TOP_LEVEL_NODE || conn.target.nodeId === '') {
-      const sourceKey = portKey(conn.source.nodeId, conn.source.portName);
-      const targetKey = portKey(conn.target.nodeId, conn.target.portName);
-      const sourceValue = portValues.get(sourceKey);
-      if (sourceValue !== undefined) {
-        portValues.set(targetKey, sourceValue);
-      }
-    }
-  }
+  propagateToTopLevelOutputs(flatCircuit, portValues);
 
   return {
     portValues,
@@ -372,7 +495,7 @@ function updateFlatClockStates(
 
 /**
  * Update sequential states for flat circuit
- * MUCH simpler - no recursion, no scope remapping!
+ * Uses O(inputs) lookup via precomputed inputSources.
  */
 function updateFlatSequentialStates(
   flatCircuit: FlatCircuit,
@@ -390,8 +513,8 @@ function updateFlatSequentialStates(
       const evaluator = getPrimitiveEvaluator(node.primitiveType);
       if (!evaluator || !evaluator.updateState) continue;
 
-      // Get node inputs
-      const inputs = getNodeInputsFlat(node, flatCircuit.connections, portValues, library);
+      // Get node inputs using fast O(inputs) lookup
+      const inputs = getNodeInputsFast(node, portValues);
 
       // Build clock edges map
       const clockEdges: ClockEdges = {};
@@ -438,34 +561,85 @@ function commitFlatSequentialState(seqState: FlatSequentialState): void {
 
 /**
  * Run full flat simulation tick (combinational + sequential phases)
+ * Uses event-driven propagation for O(K) performance.
+ *
+ * Tick structure:
+ * 1. Seed queue with source nodes and state-output nodes
+ * 2. Propagate until stable (reads current register values)
+ * 3. Clock HIGH - capture sequential inputs
+ * 4. Commit state (nextState -> currentState)
+ * 5. Seed queue with state-output nodes only
+ * 6. Propagate again (registers output new values)
  *
  * @param flatCircuit - The flattened circuit to simulate
  * @param seqState - Sequential state (registers, etc.)
+ * @param previousPortValues - Previous tick's port values (enables O(K) change detection)
  * @param inputValues - Optional map of input values to inject (key: "__top__.inputName")
  */
 export function runFlatSimulationTick(
   flatCircuit: FlatCircuit,
   seqState: FlatSequentialState,
+  previousPortValues?: FlatPortValueMap,
   inputValues?: FlatPortValueMap
 ): FlatSimulationResult {
-  // Phase 1: Combinational evaluation (reads current state)
-  const combResult = runFlatCombinationalSimulation(flatCircuit, seqState, inputValues);
+  const library = useComponentLibraryStore.getState();
+  const eventQueue = new EventQueue();
 
-  if (combResult.error) {
-    return combResult;
+  // Use previous port values if provided (enables inter-tick change detection)
+  // Otherwise start fresh (first tick or reset)
+  const portValues: FlatPortValueMap = previousPortValues
+    ? new Map(previousPortValues)
+    : new Map(inputValues ?? []);
+
+  // Initialize top-level inputs with default values if not provided
+  for (const input of flatCircuit.topLevelInputs) {
+    const inputKey = portKey(TOP_LEVEL_NODE, input.name);
+    if (!portValues.has(inputKey)) {
+      const defaultValue = input.portType.kind === 'bit' ? false : 0;
+      portValues.set(inputKey, defaultValue);
+    }
   }
 
-  // Phase 2: Update clock states
+  // Phase 1: Seed with state-output nodes and source nodes
+  seedInitialQueue(flatCircuit, eventQueue, library);
+
+  try {
+    propagate(flatCircuit, eventQueue, portValues, seqState, library);
+  } catch (e) {
+    return {
+      portValues,
+      sequentialState: seqState,
+      error: e instanceof Error ? e.message : 'Unknown propagation error'
+    };
+  }
+
+  // Phase 2: Clock HIGH
   updateFlatClockStates(flatCircuit, seqState);
 
-  // Phase 3: Sequential state update
-  updateFlatSequentialStates(flatCircuit, combResult.portValues, seqState);
+  // Phase 3: Capture sequential inputs and compute next state
+  updateFlatSequentialStates(flatCircuit, portValues, seqState);
 
   // Phase 4: Commit state
   commitFlatSequentialState(seqState);
 
-  // Phase 5: Re-evaluate with new state (inputs persist from combResult)
-  const finalResult = runFlatCombinationalSimulation(flatCircuit, seqState, inputValues);
+  // Phase 5: Propagate new state values (only from state-output nodes)
+  seedStateOutputNodes(flatCircuit, eventQueue, library);
 
-  return finalResult;
+  try {
+    propagate(flatCircuit, eventQueue, portValues, seqState, library);
+  } catch (e) {
+    return {
+      portValues,
+      sequentialState: seqState,
+      error: e instanceof Error ? e.message : 'Unknown propagation error'
+    };
+  }
+
+  // Phase 6: Top-level outputs
+  propagateToTopLevelOutputs(flatCircuit, portValues);
+
+  return {
+    portValues,
+    sequentialState: seqState
+  };
 }
