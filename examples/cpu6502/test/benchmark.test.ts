@@ -74,32 +74,45 @@ describe('Simulator Performance', () => {
       .slice(0, 10)
       .forEach(([t, c]) => console.log(`  ${t}: ${c}`));
 
-    // Warmup (with previousPortValues tracking)
+    const CYCLES = 100;
+
+    // Benchmark WITHOUT previousPortValues (fresh each tick)
     let previousPortValues: FlatPortValueMap | undefined;
+    for (let i = 0; i < 10; i++) {
+      const r = runFlatSimulationTick(flatCircuit, seqState);
+      seqState = r.sequentialState!;
+    }
+
+    const start1 = performance.now();
+    for (let i = 0; i < CYCLES; i++) {
+      const r = runFlatSimulationTick(flatCircuit, seqState, undefined); // No previous!
+      seqState = r.sequentialState!;
+    }
+    const elapsed1 = performance.now() - start1;
+    const hz1 = (CYCLES / elapsed1) * 1000;
+
+    // Reset and warmup WITH previousPortValues
+    seqState = initializeFlatSequentialState(flatCircuit);
+    previousPortValues = undefined;
     for (let i = 0; i < 10; i++) {
       const r = runFlatSimulationTick(flatCircuit, seqState, previousPortValues);
       seqState = r.sequentialState!;
       previousPortValues = r.portValues;
     }
 
-    // Benchmark (with previousPortValues for O(K) change detection)
-    const CYCLES = 100;
-    const start = performance.now();
+    // Benchmark WITH previousPortValues (O(K) change detection)
+    const start2 = performance.now();
     for (let i = 0; i < CYCLES; i++) {
       const r = runFlatSimulationTick(flatCircuit, seqState, previousPortValues);
       seqState = r.sequentialState!;
       previousPortValues = r.portValues;
     }
-    const elapsed = performance.now() - start;
+    const elapsed2 = performance.now() - start2;
+    const hz2 = (CYCLES / elapsed2) * 1000;
 
-    const cyclesPerSec = (CYCLES / elapsed) * 1000;
-    const khz = cyclesPerSec / 1000;
-
-    console.log(`\n=== Benchmark ===`);
-    console.log(`${CYCLES} cycles in ${elapsed.toFixed(1)}ms`);
-    console.log(`${cyclesPerSec.toFixed(0)} cycles/sec`);
-    console.log(`${khz.toFixed(2)} kHz`);
-    console.log(`${(1000 / khz).toFixed(0)}x slower than 1 MHz`);
-    console.log(`${(elapsed / CYCLES).toFixed(1)}ms per cycle`);
+    console.log('\n=== Benchmark (6502 CPU, ' + flatCircuit.nodes.length + ' nodes) ===');
+    console.log('WITHOUT previousPortValues: ' + hz1.toFixed(0) + ' Hz (' + (elapsed1/CYCLES).toFixed(1) + 'ms/tick)');
+    console.log('WITH previousPortValues:    ' + hz2.toFixed(0) + ' Hz (' + (elapsed2/CYCLES).toFixed(1) + 'ms/tick)');
+    console.log('Speedup: ' + (hz2 / hz1).toFixed(1) + 'x');
   });
 });
