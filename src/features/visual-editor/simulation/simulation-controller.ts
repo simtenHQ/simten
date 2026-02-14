@@ -248,8 +248,8 @@ export class SimulationController {
     // Sync environmental values
     syncEnvironmentalValues(this.flatCircuit, this.circuit);
 
-    // Execute simulation tick
-    const result = runFlatSimulationTick(this.flatCircuit, this.seqState);
+    // Execute simulation tick, passing previous port values for change detection
+    const result = runFlatSimulationTick(this.flatCircuit, this.seqState, this.portValues);
 
     if (result.error) {
       console.error('[SimulationController] Simulation error:', result.error);
@@ -418,6 +418,7 @@ export class SimulationController {
   /**
    * Set input value (for Input/Switch/Button nodes)
    * Updates the flat circuit directly (which we own, not frozen by Immer)
+   * Uses incremental propagation for O(K) performance.
    */
   setInput(nodeId: string, value: number): void {
     if (!this.flatCircuit) return;
@@ -430,9 +431,18 @@ export class SimulationController {
     if (flatNode) {
       flatNode.arguments = { ...flatNode.arguments, value };
 
-      // Re-simulate if combinational
+      // Re-simulate if combinational using incremental propagation
       if (!this.isSequential) {
-        this.simulate();
+        // Incremental: only propagate from the changed input node
+        const result = runFlatCombinationalSimulation(
+          this.flatCircuit,
+          this.seqState ?? undefined,
+          this.portValues,
+          [flatNode.id]  // Seed with just this node
+        );
+        if (!result.error) {
+          this.portValues = result.portValues;
+        }
       }
 
       this.notifyListeners();
