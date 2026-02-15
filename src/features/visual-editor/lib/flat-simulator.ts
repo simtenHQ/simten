@@ -2,8 +2,7 @@
  * Flat Circuit Simulator
  *
  * This module provides backwards-compatible exports for the flat simulator.
- * The actual implementation has been moved to src/core/simulator for
- * environment-agnostic execution.
+ * The actual implementation uses the fast numeric simulator from src/core/simulator.
  *
  * UI code should continue to import from this file. The exports here
  * automatically adapt the core simulator to work with Zustand stores.
@@ -23,8 +22,7 @@ import type { FlatCircuit } from './elaboration';
 import type { FlatPortValueMap, FlatSequentialState, FlatSimulationResult, ComponentLibrary } from '@/core/simulator';
 import {
   initializeFlatSequentialState as coreInitState,
-  runFlatCombinationalSimulation as coreCombSim,
-  runFlatSimulationTick as coreTick,
+  createSimulator,
 } from '@/core/simulator';
 
 /**
@@ -36,6 +34,24 @@ function adaptStore(): ComponentLibrary {
     resolveComponent: (name: string) => store.resolveComponent(name),
     getAllPrimitiveNames: () => store.getAllPrimitiveNames(),
   };
+}
+
+/**
+ * Cache simulators per circuit to avoid recreating on every tick.
+ * WeakMap ensures simulators are garbage collected when circuits are.
+ */
+const simulatorCache = new WeakMap<FlatCircuit, ReturnType<typeof createSimulator>>();
+
+function getOrCreateSimulator(flatCircuit: FlatCircuit): ReturnType<typeof createSimulator> {
+  let sim = simulatorCache.get(flatCircuit);
+  if (!sim) {
+    sim = createSimulator(flatCircuit, {
+      componentLibrary: adaptStore(),
+      initialMemory: getMemoryData(),
+    });
+    simulatorCache.set(flatCircuit, sim);
+  }
+  return sim;
 }
 
 /**
@@ -62,51 +78,71 @@ export function initializeFlatSequentialState(
 }
 
 /**
- * Run flat combinational simulation using event-driven propagation.
- * O(K) where K = nodes that actually change, instead of O(N) for all nodes.
+ * Run flat combinational simulation using the fast simulator.
  *
  * @param flatCircuit - The flattened circuit to simulate
  * @param seqState - Optional sequential state for stateful components
- * @param initialPortValues - Optional initial port values (e.g., from previous simulation)
- * @param changedNodeIds - Optional list of nodes that changed (for incremental updates)
  */
 export function runFlatCombinationalSimulation(
   flatCircuit: FlatCircuit,
-  seqState?: FlatSequentialState,
-  initialPortValues?: FlatPortValueMap,
-  changedNodeIds?: string[]
+  seqState?: FlatSequentialState
 ): FlatSimulationResult {
-  return coreCombSim(flatCircuit, adaptStore(), seqState, initialPortValues, changedNodeIds);
+  const sim = createSimulator(flatCircuit, {
+    componentLibrary: adaptStore(),
+    initialMemory: getMemoryData(),
+  });
+
+  const result = sim.runCombinational();
+  return {
+    portValues: result.portValues as FlatPortValueMap,
+    sequentialState: seqState,
+    error: result.error,
+  };
 }
 
 /**
- * Run full flat simulation tick (combinational + sequential phases)
- * Uses event-driven propagation for O(K) performance.
- *
- * Tick structure:
- * 1. Seed queue with source nodes and state-output nodes
- * 2. Propagate until stable (reads current register values)
- * 3. Clock HIGH - capture sequential inputs
- * 4. Commit state (nextState -> currentState)
- * 5. Seed queue with state-output nodes only
- * 6. Propagate again (registers output new values)
+ * Run full flat simulation tick using the fast simulator.
  *
  * @param flatCircuit - The flattened circuit to simulate
- * @param seqState - Sequential state (registers, etc.)
- * @param previousPortValues - Previous tick's port values (enables O(K) change detection)
- * @param inputValues - Optional map of input values to inject (key: "__top__.inputName")
+ * @param seqState - Sequential state (registers, etc.) - MUTATED in place for backwards compatibility
+ * @param previousPortValues - Previous tick's port values (unused, kept for API compat)
  */
 export function runFlatSimulationTick(
   flatCircuit: FlatCircuit,
   seqState: FlatSequentialState,
-  previousPortValues?: FlatPortValueMap,
-  inputValues?: FlatPortValueMap
+  previousPortValues?: FlatPortValueMap
 ): FlatSimulationResult {
-  const result = coreTick(flatCircuit, seqState, adaptStore(), previousPortValues, inputValues);
-  // Return without the metrics to maintain backwards compatibility with FlatSimulationResult type
+  // Use cached simulator - don't create a new one every tick!
+  const sim = getOrCreateSimulator(flatCircuit);
+
+  const result = sim.tick();
+
+  // Update the passed-in seqState in place for backwards compatibility
+  // (old API expected seqState to be mutated)
+  // NOTE: result.sequentialState maps might be the same reference as seqState maps
+  // (due to how createNumericSequentialState and toFlatSequentialState work),
+  // so we need to copy values first before clearing to avoid clearing the source.
+  const newCurrentState = new Map(result.sequentialState.currentState);
+  const newNextState = new Map(result.sequentialState.nextState);
+  const newClocks = new Map(result.sequentialState.clocks);
+
+  seqState.currentState.clear();
+  for (const [k, v] of newCurrentState) {
+    seqState.currentState.set(k, v);
+  }
+  seqState.nextState.clear();
+  for (const [k, v] of newNextState) {
+    seqState.nextState.set(k, v);
+  }
+  seqState.clocks.clear();
+  for (const [k, v] of newClocks) {
+    seqState.clocks.set(k, v);
+  }
+  seqState.cycleCount = result.sequentialState.cycleCount;
+
   return {
-    portValues: result.portValues,
-    sequentialState: result.sequentialState,
-    error: result.error
+    portValues: result.portValues as FlatPortValueMap,
+    sequentialState: seqState,
+    error: undefined,
   };
 }

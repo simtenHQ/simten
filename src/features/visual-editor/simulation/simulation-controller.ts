@@ -24,13 +24,7 @@
  */
 
 import { elaborate, type FlatCircuit } from '../lib/elaboration';
-import {
-  initializeFlatSequentialState,
-  runFlatSimulationTick,
-  runFlatCombinationalSimulation,
-  type FlatSequentialState,
-  type FlatPortValueMap,
-} from '../lib/flat-simulator';
+import type { FlatSequentialState, FlatPortValueMap } from '../lib/flat-simulator';
 import { createSnapshot } from '../lib/time-travel';
 import type { Circuit } from '../types/ir-v0.1';
 import type { SimulationSnapshot } from '../types/simulation-snapshot';
@@ -38,6 +32,36 @@ import type { ComponentLibraryStore } from '../stores/component-library-store';
 import { usePortValuesStore } from '../stores/port-values-store';
 import { useSequentialStateStore } from '../stores/sequential-state-store';
 import { useMemoryDataStore } from '../stores/memory-data-store';
+
+// Import fast simulator from core (decoupled, no UI deps)
+import {
+  createSimulator,
+  type SimulatorEngine,
+  type ComponentLibrary,
+} from '@/core/simulator';
+
+/**
+ * Adapt Zustand store to pure ComponentLibrary interface.
+ * This keeps the core simulator decoupled from UI state management.
+ */
+function adaptComponentLibrary(store: ComponentLibraryStore): ComponentLibrary {
+  return {
+    resolveComponent: (name: string) => store.resolveComponent(name),
+    getAllPrimitiveNames: () => store.getAllPrimitiveNames(),
+  };
+}
+
+/**
+ * Get memory data from Zustand store as pure Map.
+ */
+function getMemoryData(): Map<string, Map<number, number>> {
+  const storeState = useMemoryDataStore.getState();
+  const result = new Map<string, Map<number, number>>();
+  for (const [pattern, entry] of storeState.loadedData) {
+    result.set(pattern, entry.data);
+  }
+  return result;
+}
 
 /**
  * Check if circuit has sequential components
@@ -96,9 +120,10 @@ export class SimulationController {
   private circuit: Circuit | null = null;
   private library: ComponentLibraryStore | null = null;
   private flatCircuit: FlatCircuit | null = null;
-  private seqState: FlatSequentialState | null = null;
-  private portValues: FlatPortValueMap = new Map();
   private isSequential = false;
+
+  // Fast simulator engine (from core - decoupled, no UI deps)
+  private simulator: SimulatorEngine | null = null;
 
   // Time-travel state
   private history: SimulationSnapshot[] = [];
@@ -110,6 +135,15 @@ export class SimulationController {
 
   // Listeners for state changes (React integration)
   private listeners: Set<() => void> = new Set();
+
+  // Convenience getters that delegate to simulator
+  private get seqState(): FlatSequentialState | null {
+    return this.simulator?.getState() ?? null;
+  }
+
+  private get portValues(): FlatPortValueMap {
+    return this.simulator?.getPortValues() as FlatPortValueMap ?? new Map();
+  }
 
   /**
    * Update circuit reference (for environmental value changes)
@@ -139,31 +173,25 @@ export class SimulationController {
     console.log('[Controller] Elaborating circuit...');
     this.flatCircuit = elaborate(circuit, library);
     console.log('[Controller] Elaborated to', this.flatCircuit.nodes.length, 'primitive nodes');
-    console.log('[Controller] Flat circuit has', this.flatCircuit.connections.length, 'connections:');
-    for (const conn of this.flatCircuit.connections.slice(0, 10)) {
-      console.log(`  ${conn.source.nodeId}.${conn.source.portName} -> ${conn.target.nodeId}.${conn.target.portName}`);
-    }
 
     // Sync environmental values
     syncEnvironmentalValues(this.flatCircuit, circuit);
 
+    // Create fast simulator (decoupled core engine)
+    const componentLibrary = adaptComponentLibrary(library);
+    const memoryData = getMemoryData();
+    this.simulator = createSimulator(this.flatCircuit, {
+      componentLibrary,
+      initialMemory: memoryData,
+    });
+
     if (this.isSequential) {
-      // Initialize sequential state (cycle 0)
-      this.seqState = initializeFlatSequentialState(this.flatCircuit);
-
-      // Compute initial wire values (combinational only, don't tick clock)
-      const result = runFlatCombinationalSimulation(this.flatCircuit);
-      if (!result.error) {
-        this.portValues = result.portValues;
-      }
-
       // Save initial snapshot (cycle 0)
-      const initialSnapshot = createSnapshot(this.seqState, circuit);
+      const initialSnapshot = createSnapshot(this.seqState!, circuit);
       this.saveSnapshot(initialSnapshot);
     } else {
-      // Combinational circuit
-      this.seqState = null;
-      this.simulate();
+      // Combinational circuit - run initial simulation
+      this.simulator.runCombinational();
     }
 
     this.notifyListeners();
@@ -176,20 +204,9 @@ export class SimulationController {
   reelaborate(): void {
     if (!this.circuit || !this.library) return;
 
-    this.flatCircuit = elaborate(this.circuit, this.library);
-    syncEnvironmentalValues(this.flatCircuit, this.circuit);
-
-    // Re-run simulation with current state
-    if (this.isSequential && this.seqState) {
-      const result = runFlatSimulationTick(this.flatCircuit, this.seqState);
-      if (!result.error) {
-        this.portValues = result.portValues;
-      }
-    } else {
-      this.simulate();
-    }
-
-    this.notifyListeners();
+    // For now, just re-initialize (keeps things simple)
+    // TODO: Could preserve state across re-elaboration if needed
+    this.initialize(this.circuit, this.library);
   }
 
   // ============================================================================
@@ -223,7 +240,7 @@ export class SimulationController {
       return; // Reset already happened, don't double-step
     }
 
-    if (!this.flatCircuit || !this.circuit || !this.library) {
+    if (!this.flatCircuit || !this.circuit || !this.simulator) {
       console.error('[SimulationController] Cannot step: not initialized');
       return;
     }
@@ -233,42 +250,37 @@ export class SimulationController {
       return;
     }
 
-    if (!this.seqState) {
-      console.error('[SimulationController] Cannot step: no sequential state');
-      return;
-    }
-
-    // If viewing past, return to present before stepping
+    // If viewing past, restore to that state before stepping
     if (this.isViewingPast()) {
       this.currentHistoryIndex = this.history.length - 1;
       const snapshot = this.history[this.currentHistoryIndex];
-      this.seqState = this.cloneSeqState(snapshot.sequentialState);
+      this.simulator.restore({
+        portValues: new Map(),
+        sequentialState: this.cloneSeqState(snapshot.sequentialState),
+        cycleCount: snapshot.cycleNumber,
+      });
     }
 
-    // Sync environmental values
+    // Sync environmental values to flat circuit
     syncEnvironmentalValues(this.flatCircuit, this.circuit);
 
-    // Execute simulation tick, passing previous port values for change detection
-    const result = runFlatSimulationTick(this.flatCircuit, this.seqState, this.portValues);
-
-    if (result.error) {
-      console.error('[SimulationController] Simulation error:', result.error);
-      return;
+    // Sync input values to simulator
+    for (const node of this.flatCircuit.nodes) {
+      if (node.primitiveType === 'Input' || node.primitiveType === 'Switch' || node.primitiveType === 'Button') {
+        const value = node.arguments.value;
+        if (typeof value === 'number' || typeof value === 'boolean') {
+          this.simulator.setInput(node.id, 'out', value);
+        }
+      }
     }
 
-    // Store results
-    this.portValues = result.portValues;
+    // Execute simulation tick using fast simulator
+    const result = this.simulator.tick();
 
-    if (result.sequentialState) {
-      this.seqState = {
-        currentState: new Map(result.sequentialState.currentState),
-        nextState: new Map(result.sequentialState.nextState),
-        clocks: new Map(result.sequentialState.clocks),
-        cycleCount: result.sequentialState.cycleCount,
-      };
-
-      // Save snapshot
-      const snapshot = createSnapshot(this.seqState, this.circuit);
+    // Save snapshot
+    const seqState = this.simulator.getState();
+    if (seqState) {
+      const snapshot = createSnapshot(seqState, this.circuit);
       this.saveSnapshot(snapshot);
     }
 
@@ -280,36 +292,35 @@ export class SimulationController {
    * Called automatically on input changes for combinational circuits
    */
   simulate(): void {
-    console.log('[Controller] simulate() called');
-    if (!this.flatCircuit || !this.circuit) {
-      console.log('[Controller] No flatCircuit or circuit, skipping simulation');
+    if (!this.flatCircuit || !this.circuit || !this.simulator) {
       return;
     }
 
     if (this.isSequential) {
       // Sequential circuits use step() instead
-      console.log('[Controller] Sequential circuit, use step() instead');
       return;
     }
 
-    console.log('[Controller] Running combinational simulation...');
+    // Sync environmental values
     syncEnvironmentalValues(this.flatCircuit, this.circuit);
 
-    const result = runFlatCombinationalSimulation(this.flatCircuit);
+    // Sync input values to simulator
+    for (const node of this.flatCircuit.nodes) {
+      if (node.primitiveType === 'Input' || node.primitiveType === 'Switch' || node.primitiveType === 'Button') {
+        const value = node.arguments.value;
+        if (typeof value === 'number' || typeof value === 'boolean') {
+          this.simulator.setInput(node.id, 'out', value);
+        }
+      }
+    }
+
+    // Run combinational simulation
+    const result = this.simulator.runCombinational();
 
     if (result.error) {
       console.error('[SimulationController] Simulation error:', result.error);
-      this.portValues = new Map();
-      return;
     }
 
-    console.log('[Controller] Simulation complete,', result.portValues.size, 'port values');
-    // Debug: log all port values
-    console.log('[Controller] Port values:');
-    for (const [key, value] of result.portValues.entries()) {
-      console.log(`  ${key} = ${value}`);
-    }
-    this.portValues = result.portValues;
     this.notifyListeners();
   }
 
@@ -328,23 +339,21 @@ export class SimulationController {
    * Returns the snapshot so caller can restore environmental state
    */
   stepBack(): SimulationSnapshot | null {
-    if (!this.circuit) return null;
+    if (!this.circuit || !this.simulator) return null;
 
     if (this.currentHistoryIndex > 0) {
       this.currentHistoryIndex--;
       const snapshot = this.history[this.currentHistoryIndex];
 
-      // Restore state
-      this.seqState = this.cloneSeqState(snapshot.sequentialState);
+      // Restore state via simulator
+      this.simulator.restore({
+        portValues: new Map(),
+        sequentialState: this.cloneSeqState(snapshot.sequentialState),
+        cycleCount: snapshot.cycleNumber,
+      });
 
       // Recompute wire values based on restored state
-      // Use combinational simulation to avoid mutating/incrementing cycle
-      if (this.flatCircuit) {
-        const result = runFlatCombinationalSimulation(this.flatCircuit, this.seqState);
-        if (!result.error) {
-          this.portValues = result.portValues;
-        }
-      }
+      this.simulator.runCombinational();
 
       this.notifyListeners();
       return snapshot;
@@ -358,23 +367,21 @@ export class SimulationController {
    * Returns the snapshot so caller can restore environmental state
    */
   stepForward(): SimulationSnapshot | null {
-    if (!this.circuit) return null;
+    if (!this.circuit || !this.simulator) return null;
 
     if (this.currentHistoryIndex < this.history.length - 1) {
       this.currentHistoryIndex++;
       const snapshot = this.history[this.currentHistoryIndex];
 
-      // Restore state
-      this.seqState = this.cloneSeqState(snapshot.sequentialState);
+      // Restore state via simulator
+      this.simulator.restore({
+        portValues: new Map(),
+        sequentialState: this.cloneSeqState(snapshot.sequentialState),
+        cycleCount: snapshot.cycleNumber,
+      });
 
       // Recompute wire values based on restored state
-      // Use combinational simulation to avoid mutating/incrementing cycle
-      if (this.flatCircuit) {
-        const result = runFlatCombinationalSimulation(this.flatCircuit, this.seqState);
-        if (!result.error) {
-          this.portValues = result.portValues;
-        }
-      }
+      this.simulator.runCombinational();
 
       this.notifyListeners();
       return snapshot;
@@ -388,7 +395,7 @@ export class SimulationController {
    * Returns the snapshot so caller can restore environmental state
    */
   seek(cycleNumber: number): SimulationSnapshot | null {
-    if (!this.circuit) return null;
+    if (!this.circuit || !this.simulator) return null;
 
     const targetIndex = this.history.findIndex((s) => s.cycleNumber === cycleNumber);
 
@@ -396,17 +403,15 @@ export class SimulationController {
       this.currentHistoryIndex = targetIndex;
       const snapshot = this.history[targetIndex];
 
-      // Restore state
-      this.seqState = this.cloneSeqState(snapshot.sequentialState);
+      // Restore state via simulator
+      this.simulator.restore({
+        portValues: new Map(),
+        sequentialState: this.cloneSeqState(snapshot.sequentialState),
+        cycleCount: snapshot.cycleNumber,
+      });
 
       // Recompute wire values based on restored state
-      // Use combinational simulation to avoid mutating/incrementing cycle
-      if (this.flatCircuit) {
-        const result = runFlatCombinationalSimulation(this.flatCircuit, this.seqState);
-        if (!result.error) {
-          this.portValues = result.portValues;
-        }
-      }
+      this.simulator.runCombinational();
 
       this.notifyListeners();
       return snapshot;
@@ -417,11 +422,10 @@ export class SimulationController {
 
   /**
    * Set input value (for Input/Switch/Button nodes)
-   * Updates the flat circuit directly (which we own, not frozen by Immer)
-   * Uses incremental propagation for O(K) performance.
+   * Updates both the flat circuit and the simulator.
    */
-  setInput(nodeId: string, value: number): void {
-    if (!this.flatCircuit) return;
+  setInput(nodeId: string, value: number | boolean): void {
+    if (!this.flatCircuit || !this.simulator) return;
 
     // Find the node in the flat circuit (may have same ID or be prefixed)
     const flatNode = this.flatCircuit.nodes.find(
@@ -429,20 +433,15 @@ export class SimulationController {
     );
 
     if (flatNode) {
+      // Update flat circuit (for snapshot/restore consistency)
       flatNode.arguments = { ...flatNode.arguments, value };
 
-      // Re-simulate if combinational using incremental propagation
+      // Update simulator
+      this.simulator.setInput(flatNode.id, 'out', value);
+
+      // Re-simulate if combinational
       if (!this.isSequential) {
-        // Incremental: only propagate from the changed input node
-        const result = runFlatCombinationalSimulation(
-          this.flatCircuit,
-          this.seqState ?? undefined,
-          this.portValues,
-          [flatNode.id]  // Seed with just this node
-        );
-        if (!result.error) {
-          this.portValues = result.portValues;
-        }
+        this.simulator.runCombinational();
       }
 
       this.notifyListeners();
