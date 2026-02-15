@@ -20,6 +20,7 @@ describe('Counter VCD Output', () => {
     // Create a simple library adapter for the compiler
     const compilerLibrary = {
       getCircuit: (name: string) => library.resolveComponent(name),
+      hasCircuit: (name: string) => library.resolveComponent(name) !== undefined,
     };
 
     // Load Counter circuit

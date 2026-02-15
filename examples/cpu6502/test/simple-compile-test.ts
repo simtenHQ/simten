@@ -4,7 +4,7 @@
 
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
-import { compileDSL } from '../../../src/features/dsl/index';
+import { compileDSL, adaptStoreToCompilerLibrary } from '../../../src/features/dsl/index';
 import { useComponentLibraryStore } from '../../../src/features/visual-editor/stores/component-library-store';
 import { getPrimitives } from '../../../src/features/visual-editor/lib/primitives';
 
@@ -17,7 +17,7 @@ const filepath = resolve(__dirname, '..', '05-program-counter.dsl');
 const source = readFileSync(filepath, 'utf-8');
 
 console.log('Compiling Program Counter...');
-const result = compileDSL(source, library);
+const result = compileDSL(source, adaptStoreToCompilerLibrary(library));
 
 if (result.errors.length > 0) {
   console.error('Compilation errors:');
