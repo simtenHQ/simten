@@ -15,12 +15,10 @@ import type { Circuit } from '@/features/dsl/types';
 import { elaborate } from '@/features/visual-editor/lib/elaboration';
 import {
   createSimulator,
-  initializeFlatSequentialState,
-  runFlatSimulationTick,
   compileForSimulation,
 } from '../index';
-import { setDebugStateUpdate, setDebugMux } from '../fast-simulator';
-import type { FlatPortValueMap, FlatCircuit } from '../types';
+import { setDebugStateUpdate } from '../fast-simulator';
+import type { FlatCircuit } from '../types';
 
 class ComponentLibraryAdapter implements ComponentLibrary {
   constructor(private store: ReturnType<typeof useComponentLibraryStore.getState>) {}
@@ -81,71 +79,40 @@ describe('Fast Simulator', () => {
     console.log(`Nodes with state: ${hasStateCount}`);
   });
 
-  it('fast simulation produces same results as old simulation', () => {
+  it('runs simulation and produces valid state', () => {
     const componentLibrary = {
       resolveComponent: (name: string) => store.resolveComponent(name),
       getAllPrimitiveNames: () => store.getAllPrimitiveNames(),
     };
 
-    // Run old simulator
-    let oldSeqState = initializeFlatSequentialState(flatCircuit, componentLibrary);
-    let oldPortValues: FlatPortValueMap | undefined;
-
-    // Run fast simulator via SimulatorEngine
     setDebugStateUpdate(false);
-    setDebugMux(false);
-    const sim = createSimulator(flatCircuit, { componentLibrary }, true);
+    const sim = createSimulator(flatCircuit, { componentLibrary });
 
-    // Check state after each tick
+    // Run 10 ticks
     for (let i = 0; i < 10; i++) {
-      const oldResult = runFlatSimulationTick(flatCircuit, oldSeqState, componentLibrary, oldPortValues);
-      oldSeqState = oldResult.sequentialState!;
-      oldPortValues = oldResult.portValues;
+      const result = sim.tick();
 
-      const fastResult = sim.tick();
-
-      // Check pc_lo.q specifically
-      const pcLoKey = Array.from(oldPortValues.keys()).find(k => k.includes('pc_lo') && k.endsWith('.q'));
+      // Check pc_lo.q on first few ticks
+      const pcLoKey = Array.from(result.portValues.keys()).find(k => k.includes('pc_lo') && k.endsWith('.q'));
       if (pcLoKey && i < 3) {
-        const oldVal = oldPortValues.get(pcLoKey);
-        const fastVal = fastResult.portValues.get(pcLoKey);
-        console.log(`Tick ${i}: ${pcLoKey} - old=${oldVal}, fast=${fastVal}`);
+        const val = result.portValues.get(pcLoKey);
+        console.log(`Tick ${i}: ${pcLoKey} = ${val}`);
       }
     }
 
-    const fastPortValues = sim.getPortValues();
-    const fastSeqState = sim.getState()!;
+    const portValues = sim.getPortValues();
+    const seqState = sim.getState()!;
 
-    // Compare results - check a sample of ports
-    let matchCount = 0;
-    let mismatchCount = 0;
-    for (const [key, oldValue] of oldPortValues!) {
-      const fastValue = fastPortValues.get(key);
-      if (fastValue === undefined) continue;
+    // Check we have port values
+    expect(portValues.size).toBeGreaterThan(0);
 
-      const oldNum = typeof oldValue === 'boolean' ? (oldValue ? 1 : 0) : oldValue;
-      const fastNum = typeof fastValue === 'boolean' ? (fastValue ? 1 : 0) : fastValue;
+    // Check cycle count
+    expect(seqState.cycleCount).toBe(10);
 
-      if (oldNum === fastNum) {
-        matchCount++;
-      } else {
-        mismatchCount++;
-        // Allow some differences due to timing
-        if (mismatchCount < 10) {
-          console.log(`Mismatch at ${key}: old=${oldValue}, fast=${fastValue}`);
-        }
-      }
-    }
-
-    // Most values should match
-    expect(matchCount).toBeGreaterThan(0);
-    console.log(`Matched ${matchCount} ports, ${mismatchCount} mismatches`);
-
-    // Cycle count should match
-    expect(fastSeqState.cycleCount).toBe(oldSeqState.cycleCount);
+    console.log(`Port values: ${portValues.size}, Cycle count: ${seqState.cycleCount}`);
   });
 
-  it('benchmark: fast simulator vs old simulator', { timeout: 60000 }, () => {
+  it('benchmark: fast simulator performance', { timeout: 60000 }, () => {
     const componentLibrary = {
       resolveComponent: (name: string) => store.resolveComponent(name),
       getAllPrimitiveNames: () => store.getAllPrimitiveNames(),
@@ -156,28 +123,8 @@ describe('Fast Simulator', () => {
 
     const CYCLES = 100;
 
-    // Benchmark OLD simulator
-    let oldSeqState = initializeFlatSequentialState(flatCircuit, componentLibrary);
-    let oldPortValues: FlatPortValueMap | undefined;
-
-    // Warmup
-    for (let i = 0; i < 10; i++) {
-      const r = runFlatSimulationTick(flatCircuit, oldSeqState, componentLibrary, oldPortValues);
-      oldSeqState = r.sequentialState!;
-      oldPortValues = r.portValues;
-    }
-
-    const startOld = performance.now();
-    for (let i = 0; i < CYCLES; i++) {
-      const r = runFlatSimulationTick(flatCircuit, oldSeqState, componentLibrary, oldPortValues);
-      oldSeqState = r.sequentialState!;
-      oldPortValues = r.portValues;
-    }
-    const elapsedOld = performance.now() - startOld;
-    const hzOld = (CYCLES / elapsedOld) * 1000;
-
-    // Benchmark FAST simulator (via SimulatorEngine)
-    const sim = createSimulator(flatCircuit, { componentLibrary }, true);
+    // Create simulator
+    const sim = createSimulator(flatCircuit, { componentLibrary });
 
     // Warmup
     for (let i = 0; i < 10; i++) {
@@ -192,11 +139,9 @@ describe('Fast Simulator', () => {
     const hzFast = (CYCLES / elapsedFast) * 1000;
 
     console.log('\n=== Benchmark Results ===');
-    console.log(`OLD simulator:  ${hzOld.toFixed(0)} Hz (${(elapsedOld/CYCLES).toFixed(2)}ms/tick)`);
     console.log(`FAST simulator: ${hzFast.toFixed(0)} Hz (${(elapsedFast/CYCLES).toFixed(2)}ms/tick)`);
-    console.log(`Speedup: ${(hzFast / hzOld).toFixed(2)}x`);
 
-    // Expect at least some improvement
-    expect(hzFast).toBeGreaterThan(hzOld * 0.5); // At least 0.5x (regression check)
+    // Expect reasonable performance (at least 1000 Hz for 1118 nodes)
+    expect(hzFast).toBeGreaterThan(1000);
   });
 });

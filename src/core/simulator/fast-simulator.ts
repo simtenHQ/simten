@@ -2,293 +2,28 @@
  * Fast Simulation Engine
  *
  * High-performance simulation using numeric circuits and typed arrays.
- * Hot path with minimal string operations and no allocations.
+ * Hot path uses evaluator table lookup - no switch statements or Map allocations.
  */
 
 import type { BitValue, BusValue, FlatPortValueMap, PrimitiveState } from './types';
 import { TOP_LEVEL_NODE } from './types';
 import type { NumericCircuit, NumericSequentialState } from './numeric-types';
-import { PRIMITIVE_TYPE_INDICES } from './numeric-types';
 import type { NumericPortValues } from './numeric-values';
+import { UNINITIALIZED_VALUE } from './numeric-values';
 import { NumericEventQueue } from './numeric-event-queue';
 import { getPrimitiveEvaluator } from './primitives';
 import type { ClockEdges } from './primitive-interface';
+import { EVALUATORS, type EvalContext } from './evaluators';
 
 /** Maximum iterations before assuming unstable feedback loop */
 const MAX_PROPAGATION_ITERATIONS = 10000;
 
-/**
- * Evaluate a single node and store outputs in the numeric values array.
- * Uses the existing Map-based evaluators with a thin wrapper.
- */
-function evaluateNode(
-  circuit: NumericCircuit,
-  nodeIndex: number,
-  values: NumericPortValues,
-  seqState: NumericSequentialState | undefined,
-  topLevelInputs: FlatPortValueMap | undefined
-): void {
-  const node = circuit.flatCircuit.nodes[nodeIndex];
-  const portStart = circuit.nodePortStart[nodeIndex];
-  const inputCount = circuit.nodeInputCount[nodeIndex];
-  const outputCount = circuit.nodeOutputCount[nodeIndex];
-  const primitiveType = node.primitiveType;
-
-  // ============================================================================
-  // Fast path for common primitives (inline evaluation, no Map creation)
-  // ============================================================================
-
-  const typeIdx = circuit.primitiveTypeIndex[nodeIndex];
-  const outputStart = portStart + inputCount;
-
-  switch (typeIdx) {
-    // Logic Gates - inline for maximum speed
-    case PRIMITIVE_TYPE_INDICES.And: {
-      const aPortIdx = circuit.inputSourcePort[portStart];
-      const bPortIdx = circuit.inputSourcePort[portStart + 1];
-      const a = aPortIdx >= 0 ? values.values[aPortIdx] : 0;
-      const b = bPortIdx >= 0 ? values.values[bPortIdx] : 0;
-      values.values[outputStart] = (a && b) ? 1 : 0;
-      return;
-    }
-
-    case PRIMITIVE_TYPE_INDICES.Or: {
-      const aPortIdx = circuit.inputSourcePort[portStart];
-      const bPortIdx = circuit.inputSourcePort[portStart + 1];
-      const a = aPortIdx >= 0 ? values.values[aPortIdx] : 0;
-      const b = bPortIdx >= 0 ? values.values[bPortIdx] : 0;
-      values.values[outputStart] = (a || b) ? 1 : 0;
-      return;
-    }
-
-    case PRIMITIVE_TYPE_INDICES.Not: {
-      const inPortIdx = circuit.inputSourcePort[portStart];
-      const inVal = inPortIdx >= 0 ? values.values[inPortIdx] : 0;
-      values.values[outputStart] = inVal ? 0 : 1;
-      return;
-    }
-
-    case PRIMITIVE_TYPE_INDICES.Nand: {
-      const aPortIdx = circuit.inputSourcePort[portStart];
-      const bPortIdx = circuit.inputSourcePort[portStart + 1];
-      const a = aPortIdx >= 0 ? values.values[aPortIdx] : 0;
-      const b = bPortIdx >= 0 ? values.values[bPortIdx] : 0;
-      values.values[outputStart] = (a && b) ? 0 : 1;
-      return;
-    }
-
-    case PRIMITIVE_TYPE_INDICES.Nor: {
-      const aPortIdx = circuit.inputSourcePort[portStart];
-      const bPortIdx = circuit.inputSourcePort[portStart + 1];
-      const a = aPortIdx >= 0 ? values.values[aPortIdx] : 0;
-      const b = bPortIdx >= 0 ? values.values[bPortIdx] : 0;
-      values.values[outputStart] = (a || b) ? 0 : 1;
-      return;
-    }
-
-    case PRIMITIVE_TYPE_INDICES.Xor: {
-      const aPortIdx = circuit.inputSourcePort[portStart];
-      const bPortIdx = circuit.inputSourcePort[portStart + 1];
-      const a = aPortIdx >= 0 ? values.values[aPortIdx] : 0;
-      const b = bPortIdx >= 0 ? values.values[bPortIdx] : 0;
-      values.values[outputStart] = (a !== b) ? 1 : 0;
-      return;
-    }
-
-    case PRIMITIVE_TYPE_INDICES.Xnor: {
-      const aPortIdx = circuit.inputSourcePort[portStart];
-      const bPortIdx = circuit.inputSourcePort[portStart + 1];
-      const a = aPortIdx >= 0 ? values.values[aPortIdx] : 0;
-      const b = bPortIdx >= 0 ? values.values[bPortIdx] : 0;
-      values.values[outputStart] = (a === b) ? 1 : 0;
-      return;
-    }
-
-    case PRIMITIVE_TYPE_INDICES.Buffer: {
-      const inPortIdx = circuit.inputSourcePort[portStart];
-      const inVal = inPortIdx >= 0 ? values.values[inPortIdx] : 0;
-      values.values[outputStart] = inVal;
-      return;
-    }
-
-    // I/O Components
-    case PRIMITIVE_TYPE_INDICES.Switch:
-    case PRIMITIVE_TYPE_INDICES.Button: {
-      const val = Boolean(node.arguments.value ?? false);
-      values.values[outputStart] = val ? 1 : 0;
-      return;
-    }
-
-    case PRIMITIVE_TYPE_INDICES.Input:
-    case PRIMITIVE_TYPE_INDICES.Constant: {
-      const val = typeof node.arguments.value === 'number' ? node.arguments.value : 0;
-      values.values[outputStart] = val;
-      return;
-    }
-
-    case PRIMITIVE_TYPE_INDICES.Led:
-    case PRIMITIVE_TYPE_INDICES.Output:
-    case PRIMITIVE_TYPE_INDICES.SevenSegment:
-    case PRIMITIVE_TYPE_INDICES.HexDisplay:
-      // Sinks - no outputs
-      return;
-
-    // Bus operations - fast path
-    case PRIMITIVE_TYPE_INDICES.BusAnd: {
-      const aPortIdx = circuit.inputSourcePort[portStart];
-      const bPortIdx = circuit.inputSourcePort[portStart + 1];
-      const a = aPortIdx >= 0 ? values.values[aPortIdx] : 0;
-      const b = bPortIdx >= 0 ? values.values[bPortIdx] : 0;
-      values.values[outputStart] = a & b;
-      return;
-    }
-
-    case PRIMITIVE_TYPE_INDICES.BusOr: {
-      const aPortIdx = circuit.inputSourcePort[portStart];
-      const bPortIdx = circuit.inputSourcePort[portStart + 1];
-      const a = aPortIdx >= 0 ? values.values[aPortIdx] : 0;
-      const b = bPortIdx >= 0 ? values.values[bPortIdx] : 0;
-      values.values[outputStart] = a | b;
-      return;
-    }
-
-    case PRIMITIVE_TYPE_INDICES.BusNot: {
-      const inPortIdx = circuit.inputSourcePort[portStart];
-      const inVal = inPortIdx >= 0 ? values.values[inPortIdx] : 0;
-      values.values[outputStart] = ~inVal;
-      return;
-    }
-
-    case PRIMITIVE_TYPE_INDICES.BusXor: {
-      const aPortIdx = circuit.inputSourcePort[portStart];
-      const bPortIdx = circuit.inputSourcePort[portStart + 1];
-      const a = aPortIdx >= 0 ? values.values[aPortIdx] : 0;
-      const b = bPortIdx >= 0 ? values.values[bPortIdx] : 0;
-      values.values[outputStart] = a ^ b;
-      return;
-    }
-
-    case PRIMITIVE_TYPE_INDICES.Incrementer: {
-      const inPortIdx = circuit.inputSourcePort[portStart];
-      const inVal = inPortIdx >= 0 ? values.values[inPortIdx] : 0;
-      values.values[outputStart] = (inVal + 1) & 0xFF;
-      return;
-    }
-
-    case PRIMITIVE_TYPE_INDICES.Probe: {
-      const inPortIdx = circuit.inputSourcePort[portStart];
-      const inVal = inPortIdx >= 0 ? values.values[inPortIdx] : 0;
-      values.values[outputStart] = inVal;
-      return;
-    }
-
-    case PRIMITIVE_TYPE_INDICES.AddressCombiner: {
-      const loPortIdx = circuit.inputSourcePort[portStart];
-      const hiPortIdx = circuit.inputSourcePort[portStart + 1];
-      const lo = loPortIdx >= 0 ? values.values[loPortIdx] : 0;
-      const hi = hiPortIdx >= 0 ? values.values[hiPortIdx] : 0;
-      values.values[outputStart] = ((hi & 0xFF) << 8) | (lo & 0xFF);
-      return;
-    }
-  }
-
-  // ============================================================================
-  // Fallback: Use existing evaluator with Map conversion
-  // ============================================================================
-
-  const inputs = new Map<string, BitValue | BusValue>();
-
-  // Gather inputs from numeric arrays
-  for (let i = 0; i < inputCount; i++) {
-    const portIdx = portStart + i;
-    const srcNodeIdx = circuit.inputSourceNode[portIdx];
-    const srcPortIdx = circuit.inputSourcePort[portIdx];
-    const portName = circuit.inputPortNames[portIdx];
-
-    if (srcNodeIdx === -1) {
-      // Top-level input
-      if (topLevelInputs && srcPortIdx >= 0) {
-        const topKey = circuit.indexToPortKey[srcPortIdx];
-        const val = topLevelInputs.get(topKey);
-        if (val !== undefined) {
-          inputs.set(portName, val);
-        }
-      }
-    } else if (srcPortIdx >= 0) {
-      // Regular input from another node
-      // Always pass numbers - evaluators handle truthy/falsy for booleans
-      const value = values.values[srcPortIdx];
-      inputs.set(portName, value);
-    }
-  }
-
-  // Provide default values for unconnected inputs (always 0)
-  for (let i = 0; i < inputCount; i++) {
-    const portIdx = portStart + i;
-    const portName = circuit.inputPortNames[portIdx];
-    if (!inputs.has(portName)) {
-      inputs.set(portName, 0);
-    }
-  }
-
-  // Add arguments with __ prefix
-  if (node.arguments && Object.keys(node.arguments).length > 0) {
-    for (const [key, value] of Object.entries(node.arguments)) {
-      inputs.set(`__${key}`, value as BitValue | BusValue);
-    }
-  }
-
-  // Get evaluator and current state
-  const evaluator = getPrimitiveEvaluator(primitiveType);
-  if (!evaluator) {
-    // Set default outputs
-    for (let i = 0; i < outputCount; i++) {
-      values.values[outputStart + i] = 0;
-    }
-    return;
-  }
-
-  const currentState = seqState?.currentState[nodeIndex];
-
-  // Debug Mux evaluation
-  if (DEBUG_MUX && primitiveType === 'Mux' && node.id.includes('pc_lo_after_reset')) {
-    console.log(`[Mux] ${node.id}`);
-    console.log(`  inputs: ${JSON.stringify(Array.from(inputs.entries()))}`);
-    console.log(`  node.inputs: ${node.inputs.map(i => i.name).join(', ')}`);
-    // Show where inputs come from
-    for (let i = 0; i < inputCount; i++) {
-      const srcNodeIdx = circuit.inputSourceNode[portStart + i];
-      const srcPortIdx = circuit.inputSourcePort[portStart + i];
-      const portName = circuit.inputPortNames[portStart + i];
-      if (srcPortIdx >= 0) {
-        const srcKey = circuit.indexToPortKey[srcPortIdx];
-        const value = values.values[srcPortIdx];
-        // Extract just the node name and port
-        const parts = srcKey.split('.');
-        const nodeName = parts[parts.length - 2]?.substring(0, 30) || '';
-        const portNm = parts[parts.length - 1] || '';
-        console.log(`  ${portName}: srcPortIdx=${srcPortIdx}, src=${nodeName}.${portNm}, value=${value}`);
-      }
-    }
-  }
-
-  const outputsMap = evaluator.evaluate(inputs, currentState);
-
-  // Write outputs back to numeric array
-  let outIdx = 0;
-  for (const output of node.outputs) {
-    const outputVal = outputsMap.get(output.name);
-    if (outputVal !== undefined) {
-      const numVal = typeof outputVal === 'boolean' ? (outputVal ? 1 : 0) : outputVal;
-      values.values[outputStart + outIdx] = numVal;
-    }
-    outIdx++;
-  }
-}
+/** Scratch buffer for old output values (reused to avoid allocation) */
+const oldValuesScratch = new Int32Array(64);
 
 /**
- * Fast propagation using numeric circuit.
- * No string operations or allocations in the hot path.
+ * Fast propagation using numeric circuit with evaluator table.
+ * No string operations or Map allocations in the hot path.
  *
  * @returns Number of node evaluations performed
  */
@@ -302,6 +37,18 @@ export function fastPropagate(
   let evalCount = 0;
   let changedCount = 0;
 
+  // Create evaluation context (reused for all evaluations)
+  const ctx: EvalContext = {
+    circuit,
+    values,
+    state: seqState,
+    queue,
+    nodeIndex: 0,
+    portStart: 0,
+    inputCount: 0,
+    outputCount: 0,
+  };
+
   while (!queue.isEmpty()) {
     if (++evalCount > MAX_PROPAGATION_ITERATIONS) {
       throw new Error(
@@ -312,20 +59,35 @@ export function fastPropagate(
 
     const nodeIndex = queue.dequeue();
 
-    // Store old output values for change detection
+    // Set per-node context fields
     const portStart = circuit.nodePortStart[nodeIndex];
     const inputCount = circuit.nodeInputCount[nodeIndex];
     const outputCount = circuit.nodeOutputCount[nodeIndex];
     const outputStart = portStart + inputCount;
 
-    // Capture old values (inline for speed)
-    const oldValues = new Int32Array(outputCount);
+    ctx.nodeIndex = nodeIndex;
+    ctx.portStart = portStart;
+    ctx.inputCount = inputCount;
+    ctx.outputCount = outputCount;
+
+    // Capture old output values for change detection
+    // Use scratch buffer if possible, otherwise allocate
+    const oldValues = outputCount <= 64 ? oldValuesScratch : new Int32Array(outputCount);
     for (let i = 0; i < outputCount; i++) {
       oldValues[i] = values.values[outputStart + i];
     }
 
-    // Evaluate node
-    evaluateNode(circuit, nodeIndex, values, seqState, topLevelInputs);
+    // Get evaluator from table
+    const typeIdx = circuit.primitiveTypeIndex[nodeIndex];
+    const evaluator = EVALUATORS[typeIdx];
+
+    if (evaluator) {
+      // Fast path: use evaluator table (no Map allocation)
+      evaluator(ctx);
+    } else {
+      // Fallback for unknown primitives (should not happen)
+      evaluateNodeFallback(circuit, nodeIndex, values, seqState, topLevelInputs);
+    }
 
     // Check for changes and enqueue dependents
     let anyChanged = false;
@@ -347,6 +109,87 @@ export function fastPropagate(
   }
 
   return evalCount;
+}
+
+/**
+ * Fallback evaluation using Map-based evaluator.
+ * Only called for unknown primitives (should not happen in practice).
+ */
+function evaluateNodeFallback(
+  circuit: NumericCircuit,
+  nodeIndex: number,
+  values: NumericPortValues,
+  seqState: NumericSequentialState | undefined,
+  topLevelInputs: FlatPortValueMap | undefined
+): void {
+  const node = circuit.flatCircuit.nodes[nodeIndex];
+  const portStart = circuit.nodePortStart[nodeIndex];
+  const inputCount = circuit.nodeInputCount[nodeIndex];
+  const outputCount = circuit.nodeOutputCount[nodeIndex];
+  const outputStart = portStart + inputCount;
+  const primitiveType = node.primitiveType;
+
+  // Build inputs Map
+  const inputs = new Map<string, BitValue | BusValue>();
+
+  for (let i = 0; i < inputCount; i++) {
+    const portIdx = portStart + i;
+    const srcNodeIdx = circuit.inputSourceNode[portIdx];
+    const srcPortIdx = circuit.inputSourcePort[portIdx];
+    const portName = circuit.inputPortNames[portIdx];
+
+    if (srcNodeIdx === -1) {
+      if (topLevelInputs && srcPortIdx >= 0) {
+        const topKey = circuit.indexToPortKey[srcPortIdx];
+        const val = topLevelInputs.get(topKey);
+        if (val !== undefined) {
+          inputs.set(portName, val);
+        }
+      }
+    } else if (srcPortIdx >= 0) {
+      const value = values.values[srcPortIdx];
+      inputs.set(portName, value);
+    }
+  }
+
+  // Provide default values for unconnected inputs
+  for (let i = 0; i < inputCount; i++) {
+    const portIdx = portStart + i;
+    const portName = circuit.inputPortNames[portIdx];
+    if (!inputs.has(portName)) {
+      inputs.set(portName, 0);
+    }
+  }
+
+  // Add arguments with __ prefix
+  if (node.arguments && Object.keys(node.arguments).length > 0) {
+    for (const [key, value] of Object.entries(node.arguments)) {
+      inputs.set(`__${key}`, value as BitValue | BusValue);
+    }
+  }
+
+  // Get evaluator and current state
+  const evaluator = getPrimitiveEvaluator(primitiveType);
+  if (!evaluator) {
+    for (let i = 0; i < outputCount; i++) {
+      values.values[outputStart + i] = 0;
+    }
+    return;
+  }
+
+  const currentState = seqState?.currentState[nodeIndex];
+  const outputsMap = evaluator.evaluate(inputs, currentState);
+
+  // Write outputs back to numeric array
+  let outIdx = 0;
+  for (const output of node.outputs) {
+    const outputVal = outputsMap.get(output.name);
+    if (outputVal !== undefined) {
+      const numVal = typeof outputVal === 'boolean' ? (outputVal ? 1 : 0) : outputVal;
+      values.values[outputStart + outIdx] = numVal;
+    }
+    outIdx++;
+  }
 }
 
 /**
@@ -399,12 +242,8 @@ export function updateClockStates(
 
 // Debug flag - set to true to enable state update logging
 let DEBUG_STATE_UPDATE = false;
-let DEBUG_MUX = false;
 export function setDebugStateUpdate(enabled: boolean) {
   DEBUG_STATE_UPDATE = enabled;
-}
-export function setDebugMux(enabled: boolean) {
-  DEBUG_MUX = enabled;
 }
 
 /**
@@ -443,8 +282,6 @@ export function updateSequentialStates(
           }
         }
       } else if (srcPortIdx >= 0) {
-        // Always pass numbers - evaluators handle truthy/falsy for booleans
-        // This avoids issues with parameterized-width primitives (Mux, Constant, etc.)
         const value = values.values[srcPortIdx];
         inputs.set(portName, value);
 
@@ -477,12 +314,19 @@ export function updateSequentialStates(
     const currentState = seqState.currentState[nodeIdx];
     const nextState = evaluator.updateState(inputs, currentState as PrimitiveState, clockEdges);
 
-    // Debug logging for Register nodes
-    if (DEBUG_STATE_UPDATE && node.primitiveType === 'Register' && node.id.includes('pc_lo')) {
-      console.log(`[updateSequentialStates] ${node.id}:`);
-      console.log(`  inputs: data=${inputs.get('data')}, we=${inputs.get('we')}`);
-      console.log(`  clockEdges: ${JSON.stringify(clockEdges)}`);
-      console.log(`  currentState=${currentState}, nextState=${nextState}`);
+    // Debug logging for sequential nodes
+    if (DEBUG_STATE_UPDATE) {
+      if (node.primitiveType === 'Register' && node.id.includes('pc_lo')) {
+        console.log(`[updateSequentialStates] ${node.id}:`);
+        console.log(`  inputs: data=${inputs.get('data')}, we=${inputs.get('we')}`);
+        console.log(`  clockEdges: ${JSON.stringify(clockEdges)}`);
+        console.log(`  currentState=${currentState}, nextState=${nextState}`);
+      } else if (node.primitiveType === 'DFlipFlop') {
+        console.log(`[updateSequentialStates] ${node.id}:`);
+        console.log(`  inputs: d=${inputs.get('d')}`);
+        console.log(`  clockEdges: ${JSON.stringify(clockEdges)}`);
+        console.log(`  currentState=${currentState}, nextState=${nextState}`);
+      }
     }
 
     seqState.nextState[nodeIdx] = nextState;
@@ -529,9 +373,32 @@ export function toFlatPortValueMap(
   // Return booleans for bit ports to maintain API compatibility
   for (let i = 0; i < circuit.portCount; i++) {
     const key = circuit.indexToPortKey[i];
-    const numVal = values.values[i];
+    const isOutput = circuit.portIsOutput[i] === 1;
     const isBit = circuit.portIsBus[i] === 0;
-    result.set(key, isBit ? (numVal !== 0) : numVal);
+
+    let numVal: number;
+    if (isOutput) {
+      // Output port - read directly from values array
+      numVal = values.values[i];
+    } else {
+      // Input port - look up from source output port
+      const srcPortIdx = circuit.inputSourcePort[i];
+      if (srcPortIdx >= 0) {
+        numVal = values.values[srcPortIdx];
+      } else {
+        numVal = 0; // Unconnected input defaults to 0
+      }
+    }
+
+    // Safety: treat uninitialized as 0
+    if (numVal === UNINITIALIZED_VALUE) {
+      numVal = 0;
+    }
+
+    // Return boolean for true 1-bit values, number for multi-bit values
+    // If value > 1 or < 0, it needs more than 1 bit, so return as number
+    const needsMultiBit = numVal > 1 || numVal < 0;
+    result.set(key, (isBit && !needsMultiBit) ? (numVal !== 0) : numVal);
   }
 
   return result;
