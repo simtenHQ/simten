@@ -951,7 +951,8 @@ export const PRIMITIVE_DEFINITIONS: Record<string, CorePrimitiveDefinition> = {
       ]);
     },
     updateState: (inputs, currentState, clockEdges) => {
-      const d = inputs.get('d') as boolean;
+      // Convert to boolean - fast simulator passes numbers (0/1)
+      const d = Boolean(inputs.get('d'));
       const edge = clockEdges['clk'] ?? 'none';
 
       if (edge === 'rising') {

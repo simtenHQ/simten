@@ -123,8 +123,6 @@ export {
 
 export {
   initializeFlatSequentialState,
-  runFlatCombinationalSimulation,
-  runFlatSimulationTick,
 } from './flat-simulator';
 
 // ============================================================================
@@ -178,8 +176,6 @@ import { TOP_LEVEL_NODE } from './types';
 
 import {
   initializeFlatSequentialState,
-  runFlatCombinationalSimulation,
-  runFlatSimulationTick,
 } from './flat-simulator';
 
 import { elaborate } from './elaboration';
@@ -201,190 +197,6 @@ import {
   fromFlatPortValueMap,
   propagateToTopLevelOutputs,
 } from './fast-simulator';
-
-/**
- * Default simulator engine implementation.
- *
- * This is a pure implementation with no browser dependencies.
- * It can be used in Node.js, Web Workers, or browsers.
- */
-class SimulatorEngineImpl implements SimulatorEngine {
-  private flatCircuit: FlatCircuit | null = null;
-  private options: InitOptions | null = null;
-  private seqState: FlatSequentialState | null = null;
-  private portValues: FlatPortValueMap = new Map();
-
-  // Metrics
-  private totalTicks = 0;
-  private totalEvaluations = 0;
-
-  initialize(circuit: FlatCircuit, options: InitOptions): void {
-    this.flatCircuit = circuit;
-    this.options = options;
-
-    // Initialize sequential state
-    this.seqState = initializeFlatSequentialState(
-      circuit,
-      options.componentLibrary,
-      options.initialMemory
-    );
-
-    // Run initial combinational simulation
-    const result = runFlatCombinationalSimulation(
-      circuit,
-      options.componentLibrary,
-      this.seqState
-    );
-
-    this.portValues = result.portValues;
-    this.totalTicks = 0;
-    this.totalEvaluations = 0;
-  }
-
-  setInput(nodeId: string, portName: string, value: BitValue | BusValue): void {
-    if (!this.flatCircuit) return;
-
-    // Find the node and update its arguments
-    const node = this.flatCircuit.nodes.find(
-      n => n.id === nodeId || n.id.endsWith('.' + nodeId)
-    );
-
-    if (node) {
-      node.arguments = { ...node.arguments, value };
-
-      // Re-run combinational simulation if no sequential state
-      if (!this.seqState && this.options) {
-        const result = runFlatCombinationalSimulation(
-          this.flatCircuit,
-          this.options.componentLibrary,
-          undefined,
-          this.portValues,
-          [node.id]
-        );
-        this.portValues = result.portValues;
-      }
-    }
-  }
-
-  setInputs(values: Map<string, BitValue | BusValue>): void {
-    for (const [key, value] of values) {
-      const [nodeId, portName] = key.split('.');
-      this.setInput(nodeId, portName, value);
-    }
-  }
-
-  tick(): TickResult {
-    if (!this.flatCircuit || !this.options || !this.seqState) {
-      throw new Error('Simulator not initialized');
-    }
-
-    const result = runFlatSimulationTick(
-      this.flatCircuit,
-      this.seqState,
-      this.options.componentLibrary,
-      this.portValues
-    );
-
-    this.portValues = result.portValues;
-    this.seqState = result.sequentialState!;
-    this.totalTicks++;
-    this.totalEvaluations += result.metrics.totalEvals;
-
-    return {
-      portValues: result.portValues,
-      sequentialState: this.seqState,
-      metrics: result.metrics
-    };
-  }
-
-  runCombinational(): CombinationalResult {
-    if (!this.flatCircuit || !this.options) {
-      throw new Error('Simulator not initialized');
-    }
-
-    const result = runFlatCombinationalSimulation(
-      this.flatCircuit,
-      this.options.componentLibrary,
-      this.seqState ?? undefined
-    );
-
-    this.portValues = result.portValues;
-
-    return {
-      portValues: result.portValues,
-      metrics: { totalEvals: 0 }, // Not tracked for combinational
-      error: result.error
-    };
-  }
-
-  getOutput(nodeId: string, portName: string): BitValue | BusValue | undefined {
-    return this.portValues.get(`${nodeId}.${portName}`);
-  }
-
-  getPortValues(): ReadonlyMap<string, BitValue | BusValue> {
-    return this.portValues;
-  }
-
-  getState(): FlatSequentialState | null {
-    return this.seqState;
-  }
-
-  snapshot(): SimulatorSnapshot {
-    if (!this.seqState) {
-      throw new Error('No sequential state to snapshot');
-    }
-
-    return {
-      portValues: new Map(this.portValues),
-      sequentialState: {
-        currentState: new Map(this.seqState.currentState),
-        nextState: new Map(this.seqState.nextState),
-        clocks: new Map(this.seqState.clocks),
-        cycleCount: this.seqState.cycleCount
-      },
-      cycleCount: this.seqState.cycleCount
-    };
-  }
-
-  restore(snapshot: SimulatorSnapshot): void {
-    this.portValues = new Map(snapshot.portValues);
-    this.seqState = {
-      currentState: new Map(snapshot.sequentialState.currentState),
-      nextState: new Map(snapshot.sequentialState.nextState),
-      clocks: new Map(snapshot.sequentialState.clocks),
-      cycleCount: snapshot.cycleCount
-    };
-  }
-
-  reset(): void {
-    if (!this.flatCircuit || !this.options) return;
-
-    this.seqState = initializeFlatSequentialState(
-      this.flatCircuit,
-      this.options.componentLibrary,
-      this.options.initialMemory
-    );
-
-    const result = runFlatCombinationalSimulation(
-      this.flatCircuit,
-      this.options.componentLibrary,
-      this.seqState
-    );
-
-    this.portValues = result.portValues;
-    this.totalTicks = 0;
-    this.totalEvaluations = 0;
-  }
-
-  getMetrics(): SimulatorMetrics {
-    return {
-      totalTicks: this.totalTicks,
-      totalEvaluations: this.totalEvaluations,
-      avgEvalsPerTick: this.totalTicks > 0 ? this.totalEvaluations / this.totalTicks : 0,
-      nodeCount: this.flatCircuit?.nodes.length ?? 0
-    };
-  }
-}
 
 /**
  * Fast simulator engine implementation using numeric circuits.
@@ -691,17 +503,17 @@ class FastSimulatorEngineImpl implements SimulatorEngine {
 /**
  * Create a new simulator engine instance.
  *
+ * Uses the fast numeric simulator with typed arrays for optimal performance.
+ *
  * @param circuit - The flattened circuit to simulate
  * @param options - Initialization options
- * @param useFastSimulator - Use the fast numeric simulator (default: true)
  * @returns A new simulator engine instance
  */
 export function createSimulator(
   circuit: FlatCircuit,
-  options: InitOptions,
-  useFastSimulator: boolean = true
+  options: InitOptions
 ): SimulatorEngine {
-  const engine = useFastSimulator ? new FastSimulatorEngineImpl() : new SimulatorEngineImpl();
+  const engine = new FastSimulatorEngineImpl();
   engine.initialize(circuit, options);
   return engine;
 }

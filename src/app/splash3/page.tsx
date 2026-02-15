@@ -9,7 +9,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { useCircuitSimulator } from "../splash2/useCircuitSimulator";
+import { useCircuitSimulator } from "./useCircuitSimulator";
 import { MiniCanvas } from "./MiniCanvas";
 
 // Pure DSL templates - the simulator figures out inputs/outputs automatically!

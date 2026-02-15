@@ -1,0 +1,139 @@
+/**
+ * Detailed trace of STA followed by LDA to the same address
+ */
+
+import { describe, it, expect, beforeEach } from 'vitest';
+import { readFileSync } from 'fs';
+import { resolve } from 'path';
+import { compileDSL, ComponentLibrary as DSLComponentLibrary } from '../../../src/features/dsl/index';
+import { useComponentLibraryStore } from '../../../src/features/visual-editor/stores/component-library-store';
+import { getPrimitives } from '../../../src/features/visual-editor/lib/primitives';
+import type { Circuit } from '../../../src/features/dsl/types';
+import { createSimulatorFromCircuit, type ComponentLibrary } from '@/core/simulator';
+
+class ComponentLibraryAdapter implements DSLComponentLibrary {
+  constructor(private store: ReturnType<typeof useComponentLibraryStore.getState>) {}
+
+  getCircuit(name: string): Circuit | undefined {
+    return this.store.resolveComponent(name);
+  }
+
+  hasCircuit(name: string): boolean {
+    return this.store.resolveComponent(name) !== undefined;
+  }
+
+  addCircuit(circuit: Circuit): void {
+    this.store.registerUser(circuit);
+  }
+}
+
+function getSimLibrary(): ComponentLibrary {
+  const store = useComponentLibraryStore.getState();
+  return {
+    resolveComponent: (name) => store.resolveComponent(name),
+    getAllPrimitiveNames: () => store.getAllPrimitiveNames(),
+  };
+}
+
+describe('STA then LDA Trace', () => {
+  let store: ReturnType<typeof useComponentLibraryStore.getState>;
+  let library: DSLComponentLibrary;
+
+  beforeEach(() => {
+    store = useComponentLibraryStore.getState();
+    store.clearAll();
+    store.registerPrimitives(getPrimitives());
+    library = new ComponentLibraryAdapter(store);
+  });
+
+  function busToNumber(value: any): number {
+    if (typeof value === 'number') return value;
+    if (typeof value === 'boolean') return value ? 1 : 0;
+    if (Array.isArray(value)) {
+      let result = 0;
+      for (let i = 0; i < value.length; i++) {
+        if (value[i]) result |= (1 << i);
+      }
+      return result;
+    }
+    return 0;
+  }
+
+  it('should trace STA $0010 then LDA $0010', () => {
+    const result = compileDSL(readFileSync(resolve(__dirname, '..', '15-stage3-complete.dsl'), 'utf-8'), library);
+    expect(result.errors).toHaveLength(0);
+
+    for (const circuit of result.circuits) {
+      library.addCircuit(circuit);
+    }
+
+    const testCircuit = result.circuits.find(c => c.name === 'CompleteCPU');
+    expect(testCircuit).toBeDefined();
+    if (!testCircuit) return;
+
+    const sim = createSimulatorFromCircuit(testCircuit, getSimLibrary());
+
+    console.log('\n=== STA then LDA Trace ===');
+    console.log('Program: A9 42 8D 10 00 AD 10 00 (LDA #$42, STA $0010, LDA $0010)');
+    console.log('Focus: Address calculation and memory access\n');
+
+    // Find nodes
+    const addrLoNode = testCircuit.nodes.find(n => n.id.includes('addr_lo_reg'));
+    const addrHiNode = testCircuit.nodes.find(n => n.id.includes('addr_hi_reg'));
+    const controlNode = testCircuit.nodes.find(n => n.componentRef === 'CompleteControl');
+
+    // Run 20 cycles
+    for (let cycle = 0; cycle < 20; cycle++) {
+      const simResult = sim.tick();
+
+      const pc = busToNumber(simResult.portValues.get('.pc'));
+      const instruction = busToNumber(simResult.portValues.get('.instruction'));
+      const state = busToNumber(simResult.portValues.get('.current_state'));
+      const subcycle = busToNumber(simResult.portValues.get('.subcycle'));
+      const a = busToNumber(simResult.portValues.get('.reg_a'));
+      const mem_data = busToNumber(simResult.portValues.get('.mem_data'));
+      const address = busToNumber(simResult.portValues.get('.address'));
+
+      let addrLo = 0;
+      let addrHi = 0;
+      let memWrite = false;
+      let writeA = false;
+      let mem10Value = 0;
+      let effAddrValue = 0;
+      let memAddrValue = 0;
+
+      if (addrLoNode) {
+        addrLo = busToNumber(simResult.portValues.get(`${addrLoNode.id}.q`));
+      }
+      if (addrHiNode) {
+        addrHi = busToNumber(simResult.portValues.get(`${addrHiNode.id}.q`));
+      }
+      if (controlNode) {
+        memWrite = busToNumber(simResult.portValues.get(`${controlNode.id}.mem_write`)) !== 0;
+        writeA = busToNumber(simResult.portValues.get(`${controlNode.id}.write_a`)) !== 0;
+      }
+
+      // Check effective address mux output
+      const effAddrNode = testCircuit.nodes.find(n => n.id.includes('effective_addr_final'));
+      if (effAddrNode) {
+        effAddrValue = busToNumber(simResult.portValues.get(`${effAddrNode.id}.out`));
+      }
+
+      // Check what memory is actually receiving
+      const memNode = testCircuit.nodes.find(n => n.id.includes('memory') && n.componentRef === 'SimpleMemory');
+      if (memNode) {
+        memAddrValue = busToNumber(simResult.portValues.get(`${memNode.id}.addr`));
+
+        const mem10Node = testCircuit.nodes.find(n => n.id.includes('mem_10'));
+        if (mem10Node) {
+          mem10Value = busToNumber(simResult.portValues.get(`${mem10Node.id}.q`));
+        }
+      }
+
+      const stateNames = ['FETCH', 'DECODE', 'EXEC'];
+      const stateName = stateNames[state] || `S${state}`;
+
+      console.log(`C${cycle.toString().padStart(2)}: ${stateName.padEnd(6)} Sub=${subcycle} PC=${pc.toString(16).padStart(2, '0')} IR=${instruction.toString(16).padStart(2, '0')} A=${a.toString(16).padStart(2, '0')} AddrLo=${addrLo.toString(16).padStart(2, '0')} EffAddr=${effAddrValue.toString(16).padStart(2, '0')} CpuAddr=${address.toString(16).padStart(2, '0')} MemAddr=${memAddrValue.toString(16).padStart(2, '0')} WrMem=${memWrite ? '1' : '0'}`);
+    }
+  });
+});
