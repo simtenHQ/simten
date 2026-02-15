@@ -22,7 +22,7 @@ import {
   StimulusAction,
   createTestbenchState,
 } from '../types/testbench';
-import { writeVCDToFile } from '../lib/vcd-generator';
+import { writeVCDToFile } from '../lib/visualization/vcd-generator';
 
 // ============================================================================
 // Store State

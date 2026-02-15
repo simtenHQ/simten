@@ -14,8 +14,8 @@
  * - GTKWave documentation
  */
 
-import { CaptureData, TraceData, SignalRef } from '../types/testbench';
-import { BitValue, BusValue } from '../types/ir-v0.1';
+import { CaptureData, TraceData, SignalRef } from '../../types/testbench';
+import { BitValue, BusValue } from '../../types/ir-v0.1';
 
 // ============================================================================
 // VCD Generator

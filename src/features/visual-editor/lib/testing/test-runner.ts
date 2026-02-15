@@ -8,11 +8,11 @@
  * - Elaborates circuit and uses flat simulator
  */
 
-import type { Circuit, Node } from '../types/ir-v0.1';
-import type { TestCase, TestResult, OutputComparison } from '../types/testing';
-import { elaborate } from './elaboration';
-import { runFlatCombinationalSimulation } from './flat-simulator';
-import { useComponentLibraryStore } from '../stores/component-library-store';
+import type { Circuit, Node } from '../../types/ir-v0.1';
+import type { TestCase, TestResult, OutputComparison } from '../../types/testing';
+import { elaborate } from '../elaboration';
+import { runFlatCombinationalSimulation } from '../flat-simulator';
+import { useComponentLibraryStore } from '../../stores/component-library-store';
 
 interface LabeledSwitch {
   nodeId: string;

@@ -15,7 +15,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { useTestStore } from '../stores/test-store';
 import { useCircuitStore } from '../stores/circuit-store';
-import { getLabeledSwitches, getLabeledLEDs } from '../lib/test-runner';
+import { getLabeledSwitches, getLabeledLEDs } from '../lib/testing/test-runner';
 import type { TestValue } from '../types/testing';
 
 export function TestCaseEditor() {

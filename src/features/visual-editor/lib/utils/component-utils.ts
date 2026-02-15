@@ -4,9 +4,9 @@
  * Helper functions for analyzing component structure and properties.
  */
 
-import type { Component } from '../types';
-import type { Circuit } from '../types/ir-v0.1';
-import { isSequentialComponent } from '../types';
+import type { Component } from '../../types';
+import type { Circuit } from '../../types/ir-v0.1';
+import { isSequentialComponent } from '../../types';
 
 /**
  * Check if a component type is sequential, handling both old and new naming conventions.

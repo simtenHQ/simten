@@ -10,8 +10,8 @@ import {
   parseVCDHeader,
   getVCDStats,
   formatVCDStats,
-} from './vcd-generator';
-import { CaptureData, TraceData, SignalRef } from '../types/testbench';
+} from '../visualization/vcd-generator';
+import { CaptureData, TraceData, SignalRef } from '../../types/testbench';
 
 describe('VCD Generator', () => {
   describe('Basic VCD Generation', () => {

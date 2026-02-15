@@ -15,7 +15,7 @@ import { SimulationControls } from "./SimulationControls";
 import { RightSidebar } from "./RightSidebar";
 import { TestCaseEditor } from "./TestCaseEditor";
 import { ClockControls } from "./ClockControls";
-import { DSLEditor } from "@/features/dsl/components/DSLEditor";
+import { DSLEditor } from "@/features/dsl/ui/DSLEditor";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { Menu, TestTube } from "lucide-react";
 import { Button } from "@/components/ui/button";

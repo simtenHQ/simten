@@ -25,16 +25,16 @@ import {
   TraceData,
   SignalRef,
   signalKey,
-} from '../types/testbench';
-import { Circuit, Node, BitValue, BusValue } from '../types/ir-v0.1';
-import { elaborate, FlatCircuit } from './elaboration';
+} from '../../types/testbench';
+import { Circuit, Node, BitValue, BusValue } from '../../types/ir-v0.1';
+import { elaborate, FlatCircuit } from '../elaboration';
 import {
   runFlatSimulationTick,
   initializeFlatSequentialState,
   type FlatPortValueMap,
-} from './flat-simulator';
-import { useComponentLibraryStore } from '../stores/component-library-store';
-import { writeVCDToFile } from './vcd-generator';
+} from '../flat-simulator';
+import { useComponentLibraryStore } from '../../stores/component-library-store';
+import { writeVCDToFile } from '../visualization/vcd-generator';
 
 // ============================================================================
 // Testbench Runner
@@ -196,7 +196,7 @@ function findNodeById(circuit: Circuit, nodeId: string): Node | undefined {
 /**
  * Initialize capture data structure
  */
-export function initializeCaptureData(config: import('../types/testbench').CaptureConfig): CaptureData {
+export function initializeCaptureData(config: import('../../types/testbench').CaptureConfig): CaptureData {
   const traces = new Map<string, TraceData>();
 
   for (const signal of config.signals) {

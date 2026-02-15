@@ -12,8 +12,8 @@
  * - Compatible with IR v0.1 Circuit/Node format
  */
 
-import type { Circuit, Node, Connection, PortPath } from '../types/ir-v0.1';
-import { useComponentLibraryStore } from '../stores/component-library-store';
+import type { Circuit, Node, Connection, PortPath } from '../../types/ir-v0.1';
+import { useComponentLibraryStore } from '../../stores/component-library-store';
 import { nanoid } from 'nanoid';
 
 /**

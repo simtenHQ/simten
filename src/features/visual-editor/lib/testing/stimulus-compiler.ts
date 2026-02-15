@@ -21,14 +21,14 @@ import {
   RangeTiming,
   SteppedTiming,
   StimulusAssignment,
-} from '../../dsl/types/testbench-ast';
-import { Expr, LiteralExpr, VariableExpr, BinaryExpr, UnaryExpr } from '../../dsl/types/ast';
+} from '@/features/dsl/types/testbench-ast';
+import { Expr, LiteralExpr, VariableExpr, BinaryExpr, UnaryExpr } from '@/features/dsl/types/ast';
 import {
   StimulusSchedule,
   StimulusAction,
   createStimulusSchedule,
   addStimulusAction,
-} from '../types/testbench';
+} from '../../types/testbench';
 
 // ============================================================================
 // Compiler Error
