@@ -40,6 +40,9 @@ class MockComponentLibrary implements ComponentLibrary {
       inputs,
       outputs,
       clocks: [],
+      state: [],
+      nodes: [],
+      connections: [],
       implementation: { kind: 'primitive' },
     };
     this.circuits.set(name, circuit);
@@ -47,6 +50,10 @@ class MockComponentLibrary implements ComponentLibrary {
 
   getCircuit(name: string): Circuit | undefined {
     return this.circuits.get(name);
+  }
+
+  hasCircuit(name: string): boolean {
+    return this.circuits.has(name);
   }
 
   addCircuit(circuit: Circuit): void {

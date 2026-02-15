@@ -545,7 +545,7 @@ describe('Circuit Flattener (IR v0.1)', () => {
             { id: 'reg.q', name: 'q', portType: bitType() },
           ],
           clocks: [
-            { name: 'clk' },
+            { id: 'reg.clk', name: 'clk' },
           ],
         },
       ],
@@ -581,7 +581,7 @@ describe('Circuit Flattener (IR v0.1)', () => {
             { id: 'counter1.count', name: 'count', portType: bitType() },
           ],
           clocks: [
-            { name: 'clk' },
+            { id: 'counter1.clk', name: 'clk' },
           ],
         },
         {
@@ -593,7 +593,7 @@ describe('Circuit Flattener (IR v0.1)', () => {
             { id: 'counter2.count', name: 'count', portType: bitType() },
           ],
           clocks: [
-            { name: 'clk' },
+            { id: 'counter2.clk', name: 'clk' },
           ],
         },
       ],
