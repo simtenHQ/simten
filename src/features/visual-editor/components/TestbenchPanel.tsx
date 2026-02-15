@@ -30,7 +30,7 @@ import { Button } from '@/components/ui/button';
 import { useTestbenchStore } from '../stores/testbench-store';
 import { useSimulationController } from '../simulation/use-simulation-controller';
 import { simulationController } from '../simulation/simulation-controller';
-import { initializeCaptureData, collectPortValues } from '../lib/testbench-runner';
+import { initializeCaptureData, collectPortValues } from '../lib/testing/testbench-runner';
 import { useCircuitStore } from '../stores/circuit-store';
 
 export function TestbenchPanel() {

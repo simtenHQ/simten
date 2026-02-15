@@ -9,8 +9,8 @@
  * @see primitives.ts - The single source of truth for all primitives
  */
 
-import type { ComponentType } from '../types';
-import { PRIMITIVE_DEFINITIONS, generateMetadata } from './primitives';
+import type { ComponentType } from '../../types';
+import { PRIMITIVE_DEFINITIONS, generateMetadata } from '../primitives';
 
 export interface PrimitiveMetadata {
   category: string;

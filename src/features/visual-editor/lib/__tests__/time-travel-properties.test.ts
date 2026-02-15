@@ -7,7 +7,7 @@
 
 import { describe, it, expect } from 'vitest';
 import * as fc from 'fast-check';
-import { PRIMITIVE_EVALUATORS } from './primitives';
+import { PRIMITIVE_EVALUATORS } from '../primitives';
 
 // ============================================================================
 // Time Travel State Consistency Tests

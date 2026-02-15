@@ -14,7 +14,7 @@ import React, { useCallback } from 'react';
 import { cn } from '@/lib/utils';
 import { useTestStore } from '../stores/test-store';
 import { useCircuitStore } from '../stores/circuit-store';
-import { runAllTests } from '../lib/test-runner';
+import { runAllTests } from '../lib/testing/test-runner';
 import { TestResultDisplay } from './TestResultDisplay';
 
 export function TestPanel() {

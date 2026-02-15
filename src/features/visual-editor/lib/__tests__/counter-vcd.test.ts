@@ -1,12 +1,12 @@
 import { describe, it, expect } from 'vitest';
-import { compileTestbenchToIR } from '../../dsl/compiler/testbench-compiler';
-import { runTestbench } from './testbench-runner';
-import { useComponentLibraryStore } from '../stores/component-library-store';
-import { compileCircuitToIR } from '../../dsl/compiler';
-import { tokenize } from '../../dsl/parser/lexer';
-import { parse } from '../../dsl/parser/parser';
-import { PRIMITIVES } from './primitives';
-import { generateVCD } from './vcd-generator';
+import { compileTestbenchToIR } from '@/features/dsl/compiler/testbench-compiler';
+import { runTestbench } from '../testing/testbench-runner';
+import { useComponentLibraryStore } from '../../stores/component-library-store';
+import { compileCircuitToIR } from '@/features/dsl/compiler';
+import { tokenize } from '@/features/dsl/parser/lexer';
+import { parse } from '@/features/dsl/parser/parser';
+import { PRIMITIVES } from '../primitives';
+import { generateVCD } from '../visualization/vcd-generator';
 import * as fs from 'fs';
 
 describe('Counter VCD Output', () => {

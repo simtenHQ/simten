@@ -29,7 +29,7 @@ import {
   Node as IRNode,
   Connection as IRConnection,
 } from '../../visual-editor/types/ir-v0.1';
-import { compileStimulus, validateStimulus } from '../../visual-editor/lib/stimulus-compiler';
+import { compileStimulus, validateStimulus } from '../../visual-editor/lib/testing/stimulus-compiler';
 import { getMaxStimulusCycle } from '../../visual-editor/types/testbench';
 
 // ============================================================================

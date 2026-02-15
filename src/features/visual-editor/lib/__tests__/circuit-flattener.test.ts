@@ -3,10 +3,10 @@
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';
-import { flattenCircuit, hasCompositeComponents } from './circuit-flattener';
-import { useComponentLibraryStore } from '../stores/component-library-store';
-import type { Circuit } from '../types/ir-v0.1';
-import { bitType } from '../types/ir-v0.1';
+import { flattenCircuit, hasCompositeComponents } from '../utils/circuit-flattener';
+import { useComponentLibraryStore } from '../../stores/component-library-store';
+import type { Circuit } from '../../types/ir-v0.1';
+import { bitType } from '../../types/ir-v0.1';
 
 describe('Circuit Flattener (IR v0.1)', () => {
   beforeEach(() => {

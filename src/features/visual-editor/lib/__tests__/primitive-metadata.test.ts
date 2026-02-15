@@ -9,8 +9,8 @@ import {
   CATEGORY_INFO,
   getPrimitiveMetadata,
   getPrimitivesByCategory,
-} from './primitive-metadata';
-import { getPrimitives } from './primitives';
+} from '../simulation/primitive-metadata';
+import { getPrimitives } from '../primitives';
 
 describe('Primitive Metadata', () => {
   it('should have metadata for all primitives', () => {
