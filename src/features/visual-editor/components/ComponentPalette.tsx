@@ -24,7 +24,7 @@ import {
   PRIMITIVE_CATEGORIES,
   CATEGORY_INFO,
   getPrimitiveMetadata,
-} from '../lib/primitive-metadata';
+} from '../lib/simulation/primitive-metadata';
 
 interface PaletteItem {
   componentRef: string; // Component name (e.g., "And", "Or", "HalfAdder")

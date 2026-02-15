@@ -8,9 +8,9 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { tokenize } from '../../dsl/parser/lexer';
-import { parse } from '../../dsl/parser/parser';
-import { compileStimulus, validateStimulus, formatStimulusSchedule } from './stimulus-compiler';
+import { tokenize } from '@/features/dsl/parser/lexer';
+import { parse } from '@/features/dsl/parser/parser';
+import { compileStimulus, validateStimulus, formatStimulusSchedule } from '../testing/stimulus-compiler';
 
 describe('Testbench Integration', () => {
   describe('Basic Parsing', () => {

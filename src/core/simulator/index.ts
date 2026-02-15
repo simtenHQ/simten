@@ -123,7 +123,7 @@ export {
 
 export {
   initializeFlatSequentialState,
-} from './flat-simulator';
+} from './sequential-init';
 
 // ============================================================================
 // Event Queue Export
@@ -176,7 +176,7 @@ import { TOP_LEVEL_NODE } from './types';
 
 import {
   initializeFlatSequentialState,
-} from './flat-simulator';
+} from './sequential-init';
 
 import { elaborate } from './elaboration';
 

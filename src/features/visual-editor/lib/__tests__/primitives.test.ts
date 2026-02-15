@@ -13,9 +13,9 @@ import {
   getPrimitiveEvaluator,
   isPrimitive,
   createPrimitiveComponent,
-} from "./primitives";
-import type { InputValue } from "./primitive-interface";
-import { bitType, busType } from "../types/ir-v0.1";
+} from "../primitives";
+import type { InputValue } from "../simulation/primitive-interface";
+import { bitType, busType } from "../../types/ir-v0.1";
 import {
   uint8,
   adderInputs,
@@ -33,7 +33,7 @@ import {
   arithmeticRightShifterInputs,
   toSigned,
   threeValues,
-} from "./test-arbitraries";
+} from "../testing/test-arbitraries";
 
 describe("Primitive Evaluators", () => {
   describe("Basic Logic Gates", () => {

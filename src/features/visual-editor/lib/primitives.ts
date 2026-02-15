@@ -99,7 +99,7 @@ import {
   type PrimitiveState,
   type ClockEdges,
   type EvaluationContext,
-} from './primitive-interface';
+} from './simulation/primitive-interface';
 import type { EnvironmentalStateValue } from '../types/simulation-snapshot';
 
 // ============================================================================

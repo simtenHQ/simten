@@ -16,7 +16,7 @@
  * 5. Performance: Efficient evaluation for thousands of nodes
  */
 
-import type { BitValue, BusValue } from '../types/ir-v0.1';
+import type { BitValue, BusValue } from '../../types/ir-v0.1';
 
 /**
  * Parameter value types for component configuration

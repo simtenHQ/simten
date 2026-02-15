@@ -8,11 +8,11 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { tokenize } from '../../dsl/parser/lexer';
-import { parse } from '../../dsl/parser/parser';
-import { compileStimulus } from './stimulus-compiler';
-import { generateVCD, parseVCDHeader } from './vcd-generator';
-import { CaptureData } from '../types/testbench';
+import { tokenize } from '@/features/dsl/parser/lexer';
+import { parse } from '@/features/dsl/parser/parser';
+import { compileStimulus } from '../testing/stimulus-compiler';
+import { generateVCD, parseVCDHeader } from '../visualization/vcd-generator';
+import { CaptureData } from '../../types/testbench';
 
 describe('End-to-End Testbench', () => {
   it('should parse testbench and generate VCD', () => {

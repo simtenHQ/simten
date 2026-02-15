@@ -8,7 +8,7 @@
 import React from 'react';
 import { BaseNode, PortConfig } from './BaseNode';
 import type { NodeData } from '../../utils/projection';
-import { getPrimitiveMetadata, PRIMITIVE_CATEGORIES } from '../../lib/primitive-metadata';
+import { getPrimitiveMetadata, PRIMITIVE_CATEGORIES } from '../../lib/simulation/primitive-metadata';
 
 interface LogicGateNodeProps {
   data: NodeData;

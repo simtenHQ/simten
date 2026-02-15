@@ -3,10 +3,10 @@ import {
   captureEnvironmentalState,
   restoreEnvironmentalState,
   createSnapshot,
-} from './time-travel';
-import type { Node } from '../types/ir-v0.1';
-import type { FlatSequentialState as SequentialState } from './flat-simulator';
-import type { EnvironmentalStateValue } from '../types/simulation-snapshot';
+} from '../time-travel';
+import type { Node } from '../../types/ir-v0.1';
+import type { FlatSequentialState as SequentialState } from '../flat-simulator';
+import type { EnvironmentalStateValue } from '../../types/simulation-snapshot';
 
 describe('time-travel', () => {
   // Helper to create minimal test circuits (bypasses full type checking for testing)
