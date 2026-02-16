@@ -9,7 +9,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { createSimulatorFromCircuit, type ComponentLibrary } from '@/core/simulator';
 import { useComponentLibraryStore } from '../../stores/component-library-store';
 import { getPrimitives } from '../primitives';
-import { bitType, busType, type Circuit } from '../../types/ir-v0.1';
+import { bitType, busType, type Circuit } from '../../types/circuit';
 
 function getLibrary(): ComponentLibrary {
   const store = useComponentLibraryStore.getState();

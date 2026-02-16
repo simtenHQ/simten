@@ -7,8 +7,8 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { useCircuitStore } from './circuit-store';
 import { useComponentLibraryStore } from './component-library-store';
-import type { Circuit } from '../types/ir-v0.1';
-import { bitType, busType } from '../types/ir-v0.1';
+import type { Circuit } from '../types/circuit';
+import { bitType, busType } from '../types/circuit';
 
 describe('CircuitStore', () => {
   beforeEach(() => {

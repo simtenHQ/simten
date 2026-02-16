@@ -2,7 +2,7 @@
  * Intermediate Representation (IR) v0.1 - TypeScript Type Definitions
  *
  * This is the formal IR specification in TypeScript.
- * See /docs/ir-v0.1-spec.md for detailed documentation.
+ * See /docs/circuit-spec.md for detailed documentation.
  */
 
 // ============================================================================

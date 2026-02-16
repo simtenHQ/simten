@@ -11,7 +11,7 @@
  */
 
 import type { Node as ReactFlowNode, Edge } from '@xyflow/react';
-import type { Circuit, Node, Connection, PortPath } from '../types/ir-v0.1';
+import type { Circuit, Node, Connection, PortPath } from '../types/circuit';
 import type { MetadataState } from '../types';
 import { WIRE_COLORS } from '../types';
 import { useComponentLibraryStore } from '../stores/component-library-store';

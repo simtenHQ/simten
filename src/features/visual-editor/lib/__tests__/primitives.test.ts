@@ -14,8 +14,8 @@ import {
   isPrimitive,
   createPrimitiveComponent,
 } from "../primitives";
-import type { InputValue } from "../simulation/primitive-interface";
-import { bitType, busType } from "../../types/ir-v0.1";
+import type { InputValue } from "@/core/simulator";
+import { bitType, busType } from "../../types/circuit";
 import {
   uint8,
   adderInputs,

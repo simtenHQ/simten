@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect, beforeAll } from 'vitest';
-import { busType, type Circuit } from '../../../src/features/visual-editor/types/ir-v0.1';
+import { busType, type Circuit } from '../../../src/features/visual-editor/types/circuit';
 import { createSimulatorFromCircuit, type ComponentLibrary } from '@/core/simulator';
 import { useComponentLibraryStore } from '../../../src/features/visual-editor/stores/component-library-store';
 import { getPrimitives } from '../../../src/features/visual-editor/lib/primitives';

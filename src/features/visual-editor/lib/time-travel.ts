@@ -11,7 +11,7 @@
  * - Metadata-driven discovery (no hardcoded component lists)
  */
 
-import type { Circuit, Node, ArgumentValue } from '../types/ir-v0.1';
+import type { Circuit, Node, ArgumentValue } from '../types/circuit';
 import type { FlatSequentialState } from './flat-simulator';
 import type { SimulationSnapshot, EnvironmentalStateValue } from '../types/simulation-snapshot';
 import { PRIMITIVE_DEFINITIONS } from './primitives';

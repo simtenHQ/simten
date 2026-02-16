@@ -10,7 +10,7 @@
  * - Future-proof for multi-clock and assertions
  */
 
-import { BitValue, BusValue, Circuit } from './ir-v0.1';
+import { BitValue, BusValue, Circuit } from './circuit';
 
 // ============================================================================
 // Testbench (Top Level)

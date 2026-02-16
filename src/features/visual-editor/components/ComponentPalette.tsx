@@ -18,7 +18,7 @@ import { cn } from '@/lib/utils';
 import { useCircuitStore } from '../stores/circuit-store';
 import { useMetadataStore } from '../stores';
 import { useComponentLibraryStore } from '../stores/component-library-store';
-import type { Circuit } from '../types/ir-v0.1';
+import type { Circuit } from '../types/circuit';
 import { ComponentTooltip, PortInfo } from './ComponentTooltip';
 import {
   PRIMITIVE_CATEGORIES,

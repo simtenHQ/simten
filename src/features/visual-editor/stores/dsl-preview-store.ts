@@ -13,7 +13,7 @@
 
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
-import type { Circuit } from '../types/ir-v0.1';
+import type { Circuit } from '../types/circuit';
 import { useCircuitStore } from './circuit-store';
 import { useMetadataStore } from './metadata-store';
 import { performHierarchicalLayout, centerLayout } from '../utils/auto-layout';

@@ -126,13 +126,7 @@ export {
 } from './sequential-init';
 
 // ============================================================================
-// Event Queue Export
-// ============================================================================
-
-export { EventQueue } from './event-queue';
-
-// ============================================================================
-// Numeric Simulator Exports (Phase 3 Performance Optimization)
+// Numeric Simulator Exports (Performance Optimized)
 // ============================================================================
 
 export type { NumericCircuit, NumericSequentialState } from './numeric-types';
@@ -275,12 +269,20 @@ class FastSimulatorEngineImpl implements SimulatorEngine {
     this.cacheValid = false;
   }
 
-  setInput(nodeId: string, portName: string, value: BitValue | BusValue): void {
+  setInput(name: string, value: BitValue | BusValue): void {
     if (!this.flatCircuit || !this.numericCircuit) return;
 
-    // Find the node and update its arguments
+    // First, check if this is a top-level input
+    const topLevelKey = `${TOP_LEVEL_NODE}.${name}`;
+    if (this.topLevelInputs.has(topLevelKey)) {
+      this.topLevelInputs.set(topLevelKey, value);
+      this.cacheValid = false;
+      return;
+    }
+
+    // Otherwise, find a Switch/Input/Button node by name
     const node = this.flatCircuit.nodes.find(
-      n => n.id === nodeId || n.id.endsWith('.' + nodeId)
+      n => n.id === name || n.id.endsWith('.' + name)
     );
 
     if (node) {
@@ -290,9 +292,8 @@ class FastSimulatorEngineImpl implements SimulatorEngine {
   }
 
   setInputs(values: Map<string, BitValue | BusValue>): void {
-    for (const [key, value] of values) {
-      const [nodeId, portName] = key.split('.');
-      this.setInput(nodeId, portName, value);
+    for (const [name, value] of values) {
+      this.setInput(name, value);
     }
   }
 

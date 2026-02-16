@@ -5,7 +5,7 @@
  */
 
 import type { Component } from '../../types';
-import type { Circuit } from '../../types/ir-v0.1';
+import type { Circuit } from '../../types/circuit';
 import { isSequentialComponent } from '../../types';
 
 /**

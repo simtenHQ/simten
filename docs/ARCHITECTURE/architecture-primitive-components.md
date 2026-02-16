@@ -367,6 +367,6 @@ describe('generatePrimitives', () => {
 
 ## Related Documents
 
-- [IR v0.1 Specification](./ir-v0.1-spec.md)
+- [IR v0.1 Specification](./circuit-spec.md)
 - [Primitive Interface](../src/features/visual-editor/lib/primitive-interface.ts)
 - [Sequential Circuits Implementation](./SEQUENTIAL_CIRCUITS_IMPLEMENTATION.md)

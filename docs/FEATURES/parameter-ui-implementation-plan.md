@@ -32,7 +32,7 @@ This document outlines the complete implementation plan for adding parameter edi
 **Goal**: Establish the foundation for parameters in the type system and IR.
 
 #### 1.1 Type System Updates
-**File**: `/Users/charlesharris/Documents/Personal/turing-incomplete/src/features/visual-editor/types/ir-v0.1.ts`
+**File**: `/Users/charlesharris/Documents/Personal/turing-incomplete/src/features/visual-editor/types/circuit.ts`
 
 Add parameter type definitions:
 ```typescript
@@ -55,7 +55,7 @@ export interface ParameterDefinition {
 - [ ] Update `ComponentInstance` to include `parameterValues: Record<string, unknown>`
 - [ ] Write tests for type definitions
 
-**Test File**: `src/features/visual-editor/types/ir-v0.1.test.ts`
+**Test File**: `src/features/visual-editor/types/circuit.test.ts`
 
 #### 1.2 Primitive Parameter Definitions
 **File**: `/Users/charlesharris/Documents/Personal/turing-incomplete/src/features/visual-editor/lib/primitives.ts`
@@ -464,7 +464,7 @@ src/features/visual-editor/
 │   ├── circuit-serializer.ts        (Phase 5)
 │   └── circuit-serializer.test.ts   (Phase 5)
 └── types/
-    └── ir-v0.1.test.ts              (Phase 1)
+    └── circuit.test.ts              (Phase 1)
 
 docs/
 ├── user-guide/
@@ -483,7 +483,7 @@ examples/
 ```
 src/features/visual-editor/
 ├── types/
-│   └── ir-v0.1.ts                   (Phase 1)
+│   └── circuit.ts                   (Phase 1)
 ├── lib/
 │   ├── primitives.ts                (Phase 1)
 │   ├── primitives.test.ts           (Phase 1)
@@ -640,7 +640,7 @@ const ENABLE_PARAMETER_EDITING = true; // Toggle during development
 
 1. **Review and approve this plan**
 2. **Start Phase 1: Core Parameter Infrastructure**
-   - Begin with type system updates in `ir-v0.1.ts`
+   - Begin with type system updates in `circuit.ts`
    - Add parameter definitions to Splitter primitive
    - Implement basic validation for number and widthArray types
 3. **Set up tracking**

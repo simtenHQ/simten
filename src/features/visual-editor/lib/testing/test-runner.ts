@@ -8,7 +8,7 @@
  * - Elaborates circuit and uses flat simulator
  */
 
-import type { Circuit, Node } from '../../types/ir-v0.1';
+import type { Circuit, Node } from '../../types/circuit';
 import type { TestCase, TestResult, OutputComparison } from '../../types/testing';
 import { elaborate } from '../elaboration';
 import { runFlatCombinationalSimulation } from '../flat-simulator';

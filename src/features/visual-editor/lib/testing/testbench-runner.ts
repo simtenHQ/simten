@@ -26,7 +26,7 @@ import {
   SignalRef,
   signalKey,
 } from '../../types/testbench';
-import { Circuit, Node, BitValue, BusValue } from '../../types/ir-v0.1';
+import { Circuit, Node, BitValue, BusValue } from '../../types/circuit';
 import { elaborate, FlatCircuit } from '../elaboration';
 import {
   runFlatSimulationTick,

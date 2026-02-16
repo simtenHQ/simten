@@ -20,7 +20,7 @@ import {
 import { useComponentLibraryStore } from "@/features/visual-editor/stores/component-library-store";
 import { CompileButton } from "./CompileButton";
 import { ErrorDisplay, CompilationError } from "./ErrorDisplay";
-import type { Circuit } from "@/features/visual-editor/types/ir-v0.1";
+import type { Circuit } from "@/features/visual-editor/types/circuit";
 
 const DEFAULT_CODE = `// Example: NOT Gate (Inverter)
 circuit Inverter {

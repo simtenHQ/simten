@@ -8,7 +8,7 @@
 Turing Incomplete has successfully implemented a complete DSL-to-simulation pipeline with IR v0.1 as the single source of truth. The system can parse human-written DSL, compile it to executable IR, and simulate both combinational and sequential circuits in the browser.
 
 **Key Achievement**: There is NO "two IR problem." The codebase has:
-- **One canonical IR**: IR v0.1 (`/src/features/visual-editor/types/ir-v0.1.ts`)
+- **One canonical IR**: IR v0.1 (`/src/features/visual-editor/types/circuit.ts`)
 - **Complete migration**: Visual editor now uses CircuitStore with IR v0.1
 - **Legacy IR removed**: Old IRStore deleted, all code uses Circuit format
 
@@ -220,7 +220,7 @@ type Implementation =
 
 ### File Locations
 
-- **Canonical IR**: `/src/features/visual-editor/types/ir-v0.1.ts`
+- **Canonical IR**: `/src/features/visual-editor/types/circuit.ts`
 - **Legacy IR**: `/src/features/visual-editor/types/ir.ts` (compatibility shims)
 - **AST Types**: `/src/features/dsl/types/ast.ts`
 
@@ -534,7 +534,7 @@ Features:
 │
 └── visual-editor/                # Visual editor & simulation
     ├── types/
-    │   ├── ir-v0.1.ts            # ⭐ CANONICAL IR SPEC
+    │   ├── circuit.ts            # ⭐ CANONICAL IR SPEC
     │   └── ir.ts                 # Legacy compatibility (to remove)
     ├── lib/
     │   ├── primitives.ts         # 31+ primitive definitions
@@ -636,7 +636,7 @@ Features:
 
 ### Core Documentation
 - `system-architecture.md` - This document (system overview)
-- `ir-v0.1-spec.md` - IR specification
+- `circuit-spec.md` - IR specification
 - `dsl-v0.1-spec.md` - DSL specification
 - `component-library-model.md` - Component architecture
 - `v0.1-specification-summary.md` - High-level specification overview

@@ -6,7 +6,7 @@
  */
 
 import { describe, it, expect, beforeAll } from 'vitest';
-import { Circuit, bitType, busType } from '../../types/ir-v0.1';
+import { Circuit, bitType, busType } from '../../types/circuit';
 import { createSimulatorFromCircuit, type ComponentLibrary } from '@/core/simulator';
 import { useComponentLibraryStore } from '../../stores/component-library-store';
 import { getPrimitives } from '../primitives';

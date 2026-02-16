@@ -17,7 +17,7 @@ import {
   type ComponentLibrary,
   type FlatSequentialState,
 } from '@/core/simulator';
-import type { Circuit } from '../../src/features/visual-editor/types/ir-v0.1';
+import type { Circuit } from '../../src/features/visual-editor/types/circuit';
 
 function getSimLibrary(): ComponentLibrary {
   const store = useComponentLibraryStore.getState();

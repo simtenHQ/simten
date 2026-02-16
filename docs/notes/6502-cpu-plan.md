@@ -410,7 +410,7 @@ circuit System6502 {
 **Test:** Fibonacci program in C
 
 **Cleanup TODO:**
-- Remove dead `SimulationState` interface from `ir-v0.1.ts` (lines 287-302) - legacy type not used by flat simulator
+- Remove dead `SimulationState` interface from `circuit.ts` (lines 287-302) - legacy type not used by flat simulator
 
 ### Stage 10: NES PPU Integration (Optional)
 **Goal:** Add NES Picture Processing Unit for running NES games.

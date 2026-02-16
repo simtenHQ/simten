@@ -15,7 +15,7 @@ import {
 } from '../flat-simulator';
 import { useComponentLibraryStore } from '../../stores/component-library-store';
 import { getPrimitives } from '../primitives';
-import type { Circuit } from '../../types/ir-v0.1';
+import type { Circuit } from '../../types/circuit';
 
 describe('Value Propagation Through Composites', () => {
   beforeEach(() => {

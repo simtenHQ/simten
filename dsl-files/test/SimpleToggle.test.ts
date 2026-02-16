@@ -6,7 +6,7 @@ import { useComponentLibraryStore } from '../../src/features/visual-editor/store
 import { getPrimitives } from '../../src/features/visual-editor/lib/primitives';
 import { elaborate } from '../../src/features/visual-editor/lib/elaboration';
 import { initializeFlatSequentialState, runFlatSimulationTick } from '../../src/features/visual-editor/lib/flat-simulator';
-import type { Circuit } from '../../src/features/visual-editor/types/ir-v0.1';
+import type { Circuit } from '../../src/features/visual-editor/types/circuit';
 
 // Adapter to make ComponentLibraryStore compatible with ComponentLibrary interface
 class ComponentLibraryAdapter implements ComponentLibrary {

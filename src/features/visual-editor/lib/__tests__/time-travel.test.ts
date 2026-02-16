@@ -4,7 +4,7 @@ import {
   restoreEnvironmentalState,
   createSnapshot,
 } from '../time-travel';
-import type { Node } from '../../types/ir-v0.1';
+import type { Node } from '../../types/circuit';
 import type { FlatSequentialState as SequentialState } from '../flat-simulator';
 import type { EnvironmentalStateValue } from '../../types/simulation-snapshot';
 

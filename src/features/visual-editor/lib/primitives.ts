@@ -87,19 +87,18 @@ import type {
   StateBlock,
   Parameter,
   Node,
-} from '../types/ir-v0.1';
-import { bitType, busType } from '../types/ir-v0.1';
-import type { Component } from '../types/ir';
-import type { ComponentType } from '../types';
+} from '../types/circuit';
+import { bitType, busType } from '../types/circuit';
+import type { Component, ComponentType } from '../types';
 import {
   createCombinationalEvaluator,
   createSequentialEvaluator,
   type PrimitiveEvaluator,
   type InputValue,
-  type PrimitiveState,
   type ClockEdges,
   type EvaluationContext,
-} from './simulation/primitive-interface';
+} from '@/core/simulator';
+import type { PrimitiveState } from '@/core/simulator/types';
 import type { EnvironmentalStateValue } from '../types/simulation-snapshot';
 
 // ============================================================================
