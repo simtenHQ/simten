@@ -10,7 +10,7 @@ import { ComponentLibrary as DSLComponentLibrary, Circuit as DslCircuit } from '
 import { useComponentLibraryStore } from '../../src/features/visual-editor/stores/component-library-store';
 import { getPrimitives } from '../../src/features/visual-editor/lib/primitives';
 import { createSimulatorFromCircuit, type ComponentLibrary, type SimulatorEngine } from '@/core/simulator';
-import type { Circuit } from '../../src/features/visual-editor/types/ir-v0.1';
+import type { Circuit } from '../../src/features/visual-editor/types/circuit';
 
 function getSimLibrary(): ComponentLibrary {
   const store = useComponentLibraryStore.getState();

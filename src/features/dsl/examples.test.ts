@@ -8,7 +8,7 @@
 import { describe, it, expect } from 'vitest';
 import { parseDSL, compileDSL } from './index';
 import { ComponentLibrary, Circuit } from './types';
-import { bitType } from '../visual-editor/types/ir-v0.1';
+import { bitType } from '../visual-editor/types/circuit';
 
 // Simple component library for examples
 class ExampleLibrary implements ComponentLibrary {

@@ -18,7 +18,7 @@ import type {
   PortPath,
   PortDescriptor,
   ArgumentValue,
-} from '../types/ir-v0.1';
+} from '../types/circuit';
 import { useComponentLibraryStore } from './component-library-store';
 
 interface CircuitActions {

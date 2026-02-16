@@ -6,7 +6,7 @@
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import { useComponentLibraryStore } from './component-library-store';
-import { bitType, busType, type Circuit } from '../types/ir-v0.1';
+import { bitType, busType, type Circuit } from '../types/circuit';
 
 // Helper to create test circuits
 function createTestCircuit(name: string, isPrimitive = false): Circuit {

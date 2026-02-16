@@ -3,19 +3,18 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { compileDSL, type ComponentLibrary } from "@/features/dsl";
 import { elaborate, type FlatCircuit } from "@/features/visual-editor/lib/elaboration";
-import type { FlatSequentialState, FlatPortValueMap } from "@/features/visual-editor/lib/flat-simulator";
+import type { FlatPortValueMap, FlatSequentialState } from "@/features/visual-editor/lib/flat-simulator";
 import { useComponentLibraryStore } from "@/features/visual-editor/stores/component-library-store";
 import { getPrimitives } from "@/features/visual-editor/lib/primitives";
 import type { Circuit } from "@/features/dsl";
 
-// Fast simulator from core (decoupled, 2.7x faster)
+// Fast simulator from core
 import {
   createSimulator,
   type SimulatorEngine,
   type ComponentLibrary as CoreComponentLibrary,
 } from "@/core/simulator";
 
-// Top-level node ID used by the simulator for circuit inputs/outputs
 const TOP_LEVEL_NODE = "__top__";
 
 /**
@@ -48,53 +47,33 @@ function adaptComponentLibrary(store: ReturnType<typeof useComponentLibraryStore
 }
 
 export interface SimulatorState {
-  // Port values from the simulation (e.g., "out" -> true)
   outputs: Record<string, boolean | number>;
-  // Current input values
   inputs: Record<string, boolean | number>;
-  // Cycle count
   cycleCount: number;
-  // Is the circuit compiled and ready?
   ready: boolean;
-  // Any compilation errors
   error: string | null;
-  // Is this a sequential circuit (has clocks)?
   isSequential: boolean;
-  // The compiled circuit (for visualization)
   circuit: Circuit | null;
-  // Port values map (for visualization)
   portValues: FlatPortValueMap | null;
-  // Sequential state (for visualization)
   sequentialState: FlatSequentialState | null;
 }
 
 export interface SimulatorActions {
-  // Set an input value
   setInput: (name: string, value: boolean | number) => void;
-  // Toggle an input value (for boolean inputs)
   toggleInput: (name: string) => void;
-  // Run one clock tick (for sequential circuits)
+  toggleNode: (nodeId: string) => void;
   tick: () => void;
-  // Reset to initial state
   reset: () => void;
 }
 
 /**
- * Hook to simulate a circuit from DSL code using the fast simulator.
- *
- * Simply provide the DSL code - inputs and outputs are detected automatically
- * from the circuit definition. No Switch nodes needed!
- *
- * Uses the fast numeric simulator for 2.7x better performance.
+ * Hook to simulate a circuit from DSL code.
  */
 export function useCircuitSimulator(dslCode: string): SimulatorState & SimulatorActions {
-  // Refs for simulation state (to avoid re-renders during tick)
   const flatCircuitRef = useRef<FlatCircuit | null>(null);
   const compiledCircuitRef = useRef<Circuit | null>(null);
   const simulatorRef = useRef<SimulatorEngine | null>(null);
-  const storeRef = useRef<ReturnType<typeof useComponentLibraryStore.getState> | null>(null);
 
-  // React state for UI
   const [outputs, setOutputs] = useState<Record<string, boolean | number>>({});
   const [inputs, setInputs] = useState<Record<string, boolean | number>>({});
   const [cycleCount, setCycleCount] = useState(0);
@@ -105,28 +84,22 @@ export function useCircuitSimulator(dslCode: string): SimulatorState & Simulator
   const [portValues, setPortValues] = useState<FlatPortValueMap | null>(null);
   const [sequentialState, setSequentialState] = useState<FlatSequentialState | null>(null);
 
-  // Initialize primitives and compile on mount or when DSL changes
+  // Initialize and compile on mount or when DSL changes
   useEffect(() => {
-    // Reset state
     setReady(false);
     setError(null);
     setCycleCount(0);
     flatCircuitRef.current = null;
     simulatorRef.current = null;
 
-    // Get store state directly (stable reference)
     const store = useComponentLibraryStore.getState();
-    storeRef.current = store;
 
     // Initialize primitives if needed
     if (store.getAllPrimitiveNames().length === 0) {
       store.registerPrimitives(getPrimitives());
     }
 
-    // Create library adapter
     const library = new ComponentLibraryAdapter(store);
-
-    // Compile the DSL
     const result = compileDSL(dslCode, library, "splash-demo.dsl");
 
     if (result.errors.length > 0) {
@@ -144,15 +117,13 @@ export function useCircuitSimulator(dslCode: string): SimulatorState & Simulator
       store.registerUser(circuit);
     }
 
-    // Get the last circuit (main one)
     const mainCircuit = result.circuits[result.circuits.length - 1];
     compiledCircuitRef.current = mainCircuit;
 
-    // Check if sequential (has clocks)
     const hasClocks = mainCircuit.clocks && mainCircuit.clocks.length > 0;
     setIsSequential(hasClocks);
 
-    // Initialize inputs from circuit definition
+    // Initialize inputs
     const initialInputs: Record<string, boolean | number> = {};
     for (const input of mainCircuit.inputs) {
       initialInputs[input.name] = input.portType.kind === 'bit' ? false : 0;
@@ -160,26 +131,21 @@ export function useCircuitSimulator(dslCode: string): SimulatorState & Simulator
     setInputs(initialInputs);
 
     try {
-      // Elaborate the circuit
-      const flatCircuit = elaborate(mainCircuit, store);
-      flatCircuitRef.current = flatCircuit;
+      const elaboratedCircuit = elaborate(mainCircuit, store);
+      flatCircuitRef.current = elaboratedCircuit;
 
-      // Create fast simulator
       const componentLibrary = adaptComponentLibrary(store);
-      const simulator = createSimulator(flatCircuit, { componentLibrary });
+      const simulator = createSimulator(elaboratedCircuit, { componentLibrary });
       simulatorRef.current = simulator;
 
-      // Expose circuit for visualization
       setCircuit(mainCircuit);
       setSequentialState(simulator.getState());
-
       setReady(true);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     }
-  }, [dslCode]); // Only re-run when DSL code changes
+  }, [dslCode]);
 
-  // Extract outputs from simulation result
   const extractOutputs = useCallback((simPortValues: ReadonlyMap<string, boolean | number>) => {
     const newOutputs: Record<string, boolean | number> = {};
     const circuit = compiledCircuitRef.current;
@@ -198,28 +164,15 @@ export function useCircuitSimulator(dslCode: string): SimulatorState & Simulator
     setPortValues(simPortValues as FlatPortValueMap);
   }, []);
 
-  // Sync inputs to simulator and run combinational
   const syncInputsAndRun = useCallback((currentInputs: Record<string, boolean | number>) => {
     const simulator = simulatorRef.current;
     const flatCircuit = flatCircuitRef.current;
     if (!simulator || !flatCircuit) return;
 
-    // Sync input values to simulator
-    for (const node of flatCircuit.nodes) {
-      if (node.primitiveType === 'Input' || node.primitiveType === 'Switch' || node.primitiveType === 'Button') {
-        // Find which top-level input this node corresponds to
-        for (const [inputName, value] of Object.entries(currentInputs)) {
-          if (node.id.includes(inputName)) {
-            node.arguments = { ...node.arguments, value };
-            if (typeof value === 'number' || typeof value === 'boolean') {
-              simulator.setInput(node.id, 'out', value);
-            }
-          }
-        }
-      }
+    for (const [inputName, value] of Object.entries(currentInputs)) {
+      simulator.setInput(inputName, value);
     }
 
-    // Run combinational simulation
     const result = simulator.runCombinational();
     if (result.error) {
       setError(result.error);
@@ -229,7 +182,6 @@ export function useCircuitSimulator(dslCode: string): SimulatorState & Simulator
     extractOutputs(simulator.getPortValues());
   }, [extractOutputs]);
 
-  // Run combinational simulation when inputs change
   useEffect(() => {
     if (ready) {
       syncInputsAndRun(inputs);
@@ -246,9 +198,30 @@ export function useCircuitSimulator(dslCode: string): SimulatorState & Simulator
       if (typeof current === 'boolean') {
         return { ...prev, [name]: !current };
       }
-      // For numeric inputs, toggle between 0 and 1
       return { ...prev, [name]: current === 0 ? 1 : 0 };
     });
+  }, []);
+
+  const toggleNode = useCallback((nodeId: string) => {
+    const simulator = simulatorRef.current;
+    const flatCircuit = flatCircuitRef.current;
+    if (!simulator || !flatCircuit) return;
+
+    const node = flatCircuit.nodes.find(n => n.id === nodeId);
+    if (!node) return;
+
+    const currentValue = node.arguments?.value;
+    const newValue = typeof currentValue === 'boolean' ? !currentValue : (currentValue === 1 ? 0 : 1);
+
+    simulator.setInput(nodeId, newValue);
+
+    const result = simulator.runCombinational();
+    if (result.error) {
+      setError(result.error);
+      return;
+    }
+
+    setPortValues(simulator.getPortValues() as FlatPortValueMap);
   }, []);
 
   const tick = useCallback(() => {
@@ -256,24 +229,12 @@ export function useCircuitSimulator(dslCode: string): SimulatorState & Simulator
     const flatCircuit = flatCircuitRef.current;
     if (!ready || !simulator || !flatCircuit) return;
 
-    // Sync inputs before tick
-    for (const node of flatCircuit.nodes) {
-      if (node.primitiveType === 'Input' || node.primitiveType === 'Switch' || node.primitiveType === 'Button') {
-        for (const [inputName, value] of Object.entries(inputs)) {
-          if (node.id.includes(inputName)) {
-            node.arguments = { ...node.arguments, value };
-            if (typeof value === 'number' || typeof value === 'boolean') {
-              simulator.setInput(node.id, 'out', value);
-            }
-          }
-        }
-      }
+    for (const [inputName, value] of Object.entries(inputs)) {
+      simulator.setInput(inputName, value);
     }
 
-    // Run tick
     const result = simulator.tick();
 
-    // Update state
     const seqState = simulator.getState();
     if (seqState) {
       setCycleCount(seqState.cycleCount);
@@ -287,12 +248,10 @@ export function useCircuitSimulator(dslCode: string): SimulatorState & Simulator
     const simulator = simulatorRef.current;
     if (!simulator || !compiledCircuitRef.current) return;
 
-    // Reset simulator
     simulator.reset();
     setCycleCount(0);
     setSequentialState(simulator.getState());
 
-    // Reset inputs to defaults
     const initialInputs: Record<string, boolean | number> = {};
     for (const input of compiledCircuitRef.current.inputs) {
       initialInputs[input.name] = input.portType.kind === 'bit' ? false : 0;
@@ -312,6 +271,7 @@ export function useCircuitSimulator(dslCode: string): SimulatorState & Simulator
     sequentialState,
     setInput,
     toggleInput,
+    toggleNode,
     tick,
     reset,
   };

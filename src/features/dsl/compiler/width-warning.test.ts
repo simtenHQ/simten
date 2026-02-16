@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { tokenize } from '../parser/lexer';
 import { parse } from '../parser/parser';
 import { compileToIR, ComponentLibrary } from './ir-generator';
-import { Circuit, bitType, busType } from '../../visual-editor/types/ir-v0.1';
+import { Circuit, bitType, busType } from '../../visual-editor/types/circuit';
 
 // Mock component library for testing
 class MockComponentLibrary implements ComponentLibrary {

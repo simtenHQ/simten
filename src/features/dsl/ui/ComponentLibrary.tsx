@@ -11,7 +11,7 @@
 
 import React, { useState } from 'react';
 import { useComponentLibraryStore } from '@/features/visual-editor/stores/component-library-store';
-import type { Circuit } from '@/features/visual-editor/types/ir-v0.1';
+import type { Circuit } from '@/features/visual-editor/types/circuit';
 
 type TabType = 'primitives' | 'standard' | 'user';
 

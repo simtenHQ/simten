@@ -9,7 +9,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { generateDSL, generateDSLMultiple } from './dsl-generator';
 import { compileDSL } from '../index';
 import { ComponentLibrary, Circuit } from '../types';
-import { bitType, type Parameter } from '../../visual-editor/types/ir-v0.1';
+import { bitType, type Parameter } from '../../visual-editor/types/circuit';
 
 // Test component library
 class TestLibrary implements ComponentLibrary {

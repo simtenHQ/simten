@@ -5,7 +5,7 @@
  * This state is ephemeral and not persisted.
  */
 
-import type { ComponentType } from './ir';
+import type { ComponentType } from './ui-model';
 
 // ===========================
 // Interaction State

@@ -8,7 +8,7 @@ import { resolve } from 'path';
 import { compileDSL, ComponentLibrary } from '../../../src/features/dsl/index';
 import { useComponentLibraryStore } from '../../../src/features/visual-editor/stores/component-library-store';
 import { getPrimitives } from '../../../src/features/visual-editor/lib/primitives';
-import type { Circuit } from '../../../src/features/visual-editor/types/ir-v0.1';
+import type { Circuit } from '../../../src/features/visual-editor/types/circuit';
 
 // Adapter to make ComponentLibraryStore compatible with ComponentLibrary interface
 class ComponentLibraryAdapter implements ComponentLibrary {

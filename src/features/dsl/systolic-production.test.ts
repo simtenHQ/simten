@@ -20,7 +20,7 @@ import { compileDSL } from './index';
 import { ComponentLibrary, Circuit as DslCircuit } from './types';
 import { useComponentLibraryStore } from '../visual-editor/stores/component-library-store';
 import { getPrimitives } from '../visual-editor/lib/primitives';
-import type { Circuit } from '../visual-editor/types/ir-v0.1';
+import type { Circuit } from '../visual-editor/types/circuit';
 
 describe('Systolic Array - Production Implementations', () => {
   let library: ReturnType<typeof useComponentLibraryStore.getState>;

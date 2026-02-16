@@ -11,190 +11,15 @@ import {
 } from "@/components/ui/tooltip";
 import { useCircuitSimulator } from "./useCircuitSimulator";
 import { MiniCanvas } from "./MiniCanvas";
+import { CIRCUITS, CIRCUIT_KEYS } from "./circuits";
 
-// Pure DSL templates - the simulator figures out inputs/outputs automatically!
-const CIRCUITS = {
-  inverter: {
-    name: "NOT Gate",
-    description: "Inverts the input signal",
-    dsl: `
-circuit Not {
-  input a: Bit
-  output out: Bit
-  impl {
-    node nand1: Nand
-    connect a -> nand1.a
-    connect a -> nand1.b
-    connect nand1.out -> out
-  }
-}`,
-  },
-  and: {
-    name: "AND Gate",
-    description: "Output is 1 only when both inputs are 1",
-    dsl: `
-circuit And {
-  input a: Bit
-  input b: Bit
-  output out: Bit
-  impl {
-    node nand1: Nand
-    node nand2: Nand
-    connect a -> nand1.a
-    connect b -> nand1.b
-    connect nand1.out -> nand2.a
-    connect nand1.out -> nand2.b
-    connect nand2.out -> out
-  }
-}`,
-  },
-  or: {
-    name: "OR Gate",
-    description: "Output is 1 when either input is 1",
-    dsl: `
-circuit Or {
-  input a: Bit
-  input b: Bit
-  output out: Bit
-  impl {
-    node not_a: Nand
-    node not_b: Nand
-    node or_out: Nand
-    connect a -> not_a.a
-    connect a -> not_a.b
-    connect b -> not_b.a
-    connect b -> not_b.b
-    connect not_a.out -> or_out.a
-    connect not_b.out -> or_out.b
-    connect or_out.out -> out
-  }
-}`,
-  },
-  xor: {
-    name: "XOR Gate",
-    description: "Output is 1 when inputs are different",
-    dsl: `
-circuit Xor {
-  input a: Bit
-  input b: Bit
-  output out: Bit
-  impl {
-    node nand1: Nand
-    node nand2: Nand
-    node nand3: Nand
-    node nand4: Nand
-    connect a -> nand1.a
-    connect b -> nand1.b
-    connect a -> nand2.a
-    connect nand1.out -> nand2.b
-    connect nand1.out -> nand3.a
-    connect b -> nand3.b
-    connect nand2.out -> nand4.a
-    connect nand3.out -> nand4.b
-    connect nand4.out -> out
-  }
-}`,
-  },
-  halfAdder: {
-    name: "Half Adder",
-    description: "Adds two bits, outputs sum and carry",
-    dsl: `
-circuit HalfAdder {
-  input a: Bit
-  input b: Bit
-  output sum: Bit
-  output carry: Bit
-  impl {
-    node xor1: Xor
-    node and1: And
-    connect a -> xor1.a
-    connect b -> xor1.b
-    connect xor1.out -> sum
-    connect a -> and1.a
-    connect b -> and1.b
-    connect and1.out -> carry
-  }
-}`,
-  },
-  fullAdder: {
-    name: "Full Adder",
-    description: "Adds three bits (a, b, carry-in)",
-    dsl: `
-circuit FullAdder {
-  input a: Bit
-  input b: Bit
-  input cin: Bit
-  output sum: Bit
-  output cout: Bit
-  impl {
-    node ha1: HalfAdder
-    node ha2: HalfAdder
-    node or1: Or
-    connect a -> ha1.a
-    connect b -> ha1.b
-    connect ha1.sum -> ha2.a
-    connect cin -> ha2.b
-    connect ha2.sum -> sum
-    connect ha1.carry -> or1.a
-    connect ha2.carry -> or1.b
-    connect or1.out -> cout
-  }
-}`,
-  },
-  mux: {
-    name: "Multiplexer",
-    description: "sel=0 picks a, sel=1 picks b",
-    dsl: `
-circuit Mux {
-  input a: Bit
-  input b: Bit
-  input sel: Bit
-  output out: Bit
-  impl {
-    node not_sel: Not
-    node and_a: And
-    node and_b: And
-    node or_out: Or
-    connect sel -> not_sel.in
-    connect a -> and_a.a
-    connect not_sel.out -> and_a.b
-    connect b -> and_b.a
-    connect sel -> and_b.b
-    connect and_a.out -> or_out.a
-    connect and_b.out -> or_out.b
-    connect or_out.out -> out
-  }
-}`,
-  },
-  delayLine: {
-    name: "2-Cycle Delay",
-    description: "Data takes 2 clock ticks to reach output",
-    dsl: `
-circuit DelayLine {
-  input d: Bit
-  clock clk
-  output q1: Bit
-  output q2: Bit
-  impl {
-    node dff1: DFlipFlop
-    node dff2: DFlipFlop
-    connect clk -> dff1.clk
-    connect clk -> dff2.clk
-    connect d -> dff1.d
-    connect dff1.q -> dff2.d
-    connect dff1.q -> q1
-    connect dff2.q -> q2
-  }
-}`,
-  },
-};
-
-type CircuitKey = keyof typeof CIRCUITS;
+type CircuitKey = (typeof CIRCUIT_KEYS)[number];
 
 // Interactive circuit demo component
 function CircuitDemo({ circuitKey }: { circuitKey: CircuitKey }) {
-  const circuit = CIRCUITS[circuitKey];
-  const sim = useCircuitSimulator(circuit.dsl);
+  const circuitDef = CIRCUITS[circuitKey];
+  // Simulate the full DSL (includes wrapper circuit with Switch/LED nodes)
+  const sim = useCircuitSimulator(circuitDef.dsl);
 
   if (sim.error) {
     return (
@@ -227,8 +52,7 @@ function CircuitDemo({ circuitKey }: { circuitKey: CircuitKey }) {
             circuit={sim.circuit}
             portValues={sim.portValues}
             sequentialState={sim.sequentialState}
-            inputValues={sim.inputs}
-            onToggleInput={sim.toggleInput}
+            onToggleNode={sim.toggleNode}
           />
         </div>
       </div>
@@ -241,7 +65,7 @@ function CircuitDemo({ circuitKey }: { circuitKey: CircuitKey }) {
             <TooltipTrigger asChild>
               <Link href="/" className="flex-1 block">
                 <pre className="h-full max-h-[200px] md:max-h-none p-3 bg-gray-950 rounded-lg text-xs font-mono text-gray-400 overflow-auto border border-gray-800 hover:border-green-500/50 transition-colors cursor-pointer">
-                  {circuit.dsl.trim()}
+                  {circuitDef.displayDsl.trim()}
                 </pre>
               </Link>
             </TooltipTrigger>
@@ -281,12 +105,6 @@ function CircuitDemo({ circuitKey }: { circuitKey: CircuitKey }) {
 export default function Splash3Page() {
   const [activeCircuit, setActiveCircuit] = useState<CircuitKey>("inverter");
 
-  const allCircuits: CircuitKey[] = [
-    "inverter", "and", "or", "xor",
-    "halfAdder", "fullAdder", "mux",
-    "delayLine"
-  ];
-
   return (
     <div className="min-h-screen bg-gray-950 text-white">
       {/* Nav */}
@@ -322,14 +140,24 @@ export default function Splash3Page() {
           {/* Left arrow */}
           <button
             onClick={() => {
-              const idx = allCircuits.indexOf(activeCircuit);
-              const prev = idx === 0 ? allCircuits.length - 1 : idx - 1;
-              setActiveCircuit(allCircuits[prev]);
+              const idx = CIRCUIT_KEYS.indexOf(activeCircuit);
+              const prev = idx === 0 ? CIRCUIT_KEYS.length - 1 : idx - 1;
+              setActiveCircuit(CIRCUIT_KEYS[prev]);
             }}
             className="p-3 text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors flex-shrink-0"
           >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            <svg
+              className="w-6 h-6"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M15 19l-7-7 7-7"
+              />
             </svg>
           </button>
 
@@ -350,11 +178,11 @@ export default function Splash3Page() {
                   <p className="text-xs text-gray-400">
                     {CIRCUITS[activeCircuit].description}
                     <span className="text-gray-600 ml-2">
-                      ({allCircuits.indexOf(activeCircuit) + 1}/{allCircuits.length})
+                      ({CIRCUIT_KEYS.indexOf(activeCircuit) + 1}/
+                      {CIRCUIT_KEYS.length})
                     </span>
                   </p>
                 </div>
-
                 <CircuitDemo circuitKey={activeCircuit} />
               </motion.div>
             </AnimatePresence>
@@ -363,14 +191,24 @@ export default function Splash3Page() {
           {/* Right arrow */}
           <button
             onClick={() => {
-              const idx = allCircuits.indexOf(activeCircuit);
-              const next = idx === allCircuits.length - 1 ? 0 : idx + 1;
-              setActiveCircuit(allCircuits[next]);
+              const idx = CIRCUIT_KEYS.indexOf(activeCircuit);
+              const next = idx === CIRCUIT_KEYS.length - 1 ? 0 : idx + 1;
+              setActiveCircuit(CIRCUIT_KEYS[next]);
             }}
             className="p-3 text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors flex-shrink-0"
           >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            <svg
+              className="w-6 h-6"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 5l7 7-7 7"
+              />
             </svg>
           </button>
         </div>

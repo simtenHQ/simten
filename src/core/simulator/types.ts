@@ -370,7 +370,7 @@ export interface SimulatorEngine {
   initialize(circuit: FlatCircuit, options: InitOptions): void;
 
   // Input control
-  setInput(nodeId: string, portName: string, value: BitValue | BusValue): void;
+  setInput(name: string, value: BitValue | BusValue): void;
   setInputs(values: Map<string, BitValue | BusValue>): void;
 
   // Simulation

@@ -5,7 +5,7 @@
  * Creates professional-looking layouts with minimal wire crossings.
  */
 
-import type { Circuit } from '../types/ir-v0.1';
+import type { Circuit } from '../types/circuit';
 import type { Position } from '../types';
 
 const GRID_SIZE = 20;

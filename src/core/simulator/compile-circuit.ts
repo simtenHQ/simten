@@ -247,7 +247,7 @@ export function compileForSimulation(
 
   return {
     nodeCount,
-    portCount: totalPorts,
+    portCount: totalPortsWithTopLevel,
     nodeIdToIndex,
     indexToNodeId,
     portKeyToIndex,

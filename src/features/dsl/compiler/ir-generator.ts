@@ -50,7 +50,7 @@ import {
   busType,
   memoryType,
   createPortPath,
-} from '../../visual-editor/types/ir-v0.1';
+} from '../../visual-editor/types/circuit';
 
 // ============================================================================
 // Compiler Error

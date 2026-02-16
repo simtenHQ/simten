@@ -252,7 +252,7 @@ case 'MyParameterized':
 ## Port Types
 
 ```typescript
-import { bitType, busType } from '../types/ir-v0.1';
+import { bitType, busType } from '../types/circuit';
 
 // Single bit (boolean)
 { name: 'enable', portType: bitType() }

@@ -7,7 +7,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { elaborate, topologicalSortFlat, TOP_LEVEL_NODE } from '../elaboration';
 import { useComponentLibraryStore } from '../../stores/component-library-store';
-import type { Circuit } from '../../types/ir-v0.1';
+import type { Circuit } from '../../types/circuit';
 
 describe('Circuit Elaboration', () => {
   beforeEach(() => {

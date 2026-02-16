@@ -15,7 +15,7 @@
  */
 
 import { CaptureData, TraceData, SignalRef } from '../../types/testbench';
-import { BitValue, BusValue } from '../../types/ir-v0.1';
+import { BitValue, BusValue } from '../../types/circuit';
 
 // ============================================================================
 // VCD Generator
