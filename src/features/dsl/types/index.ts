@@ -21,7 +21,7 @@ export type {
   BitValue,
   BusValue,
   StateValue,
-} from '../../visual-editor/types/ir-v0.1';
+} from '../../visual-editor/types/circuit';
 
 // Re-export ComponentLibrary from compiler
 export type { ComponentLibrary } from '../compiler/ir-generator';

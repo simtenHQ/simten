@@ -37,6 +37,17 @@ export function fastPropagate(
   let evalCount = 0;
   let changedCount = 0;
 
+  // Sync top-level inputs into numeric values array
+  // This is required for readInput() to see the current input values
+  if (topLevelInputs) {
+    for (const [key, value] of topLevelInputs) {
+      const portIdx = circuit.portKeyToIndex.get(key);
+      if (portIdx !== undefined) {
+        values.values[portIdx] = typeof value === 'boolean' ? (value ? 1 : 0) : value;
+      }
+    }
+  }
+
   // Create evaluation context (reused for all evaluations)
   const ctx: EvalContext = {
     circuit,

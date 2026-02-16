@@ -10,7 +10,7 @@
  * - Parameter values from circuit.arguments
  */
 
-import type { Circuit, PortType, PortPath } from '../../visual-editor/types/ir-v0.1';
+import type { Circuit, PortType, PortPath } from '../../visual-editor/types/circuit';
 
 /**
  * Convert PortType to DSL type string

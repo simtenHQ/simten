@@ -21,7 +21,7 @@ export type {
 export { TOP_LEVEL_NODE, isFlatCircuit } from '@/core/simulator';
 
 // Import for adaptation
-import type { Circuit } from '../types/ir-v0.1';
+import type { Circuit } from '../types/circuit';
 import type { ComponentLibraryStore } from '../stores/component-library-store';
 import type { FlatCircuit, FlatNode, FlatConnection, ComponentLibrary } from '@/core/simulator';
 import {

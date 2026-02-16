@@ -8,7 +8,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { elaborate } from '../elaboration';
 import { useComponentLibraryStore } from '../../stores/component-library-store';
 import { getPrimitives } from '../primitives';
-import type { Circuit } from '../../types/ir-v0.1';
+import type { Circuit } from '../../types/circuit';
 
 describe('Elaboration Bug - Composite Connections Disappearing', () => {
   let store: ReturnType<typeof useComponentLibraryStore.getState>;

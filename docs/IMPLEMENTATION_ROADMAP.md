@@ -54,7 +54,7 @@ This document provides a clear implementation path from the initial working visu
 2. **IR Store** - Basic component and connection management (Zustand + Immer)
 3. **Simulator** - Combinational circuit evaluation
 4. **Component Types** - Primitives: SWITCH, LED, logic gates (AND, OR, NOT, etc.)
-5. **Type Definitions** - v0.1 IR spec in TypeScript (`ir-v0.1.ts`)
+5. **Type Definitions** - v0.1 IR spec in TypeScript (`circuit.ts`)
 
 ### What's Missing ⬜
 
@@ -155,7 +155,7 @@ node my_adder: HalfAdder
 4. Write tests for composite evaluation
 
 **Files to modify:**
-- `/src/features/visual-editor/types/ir.ts` - Use v0.1 types from `ir-v0.1.ts`
+- `/src/features/visual-editor/types/ir.ts` - Use v0.1 types from `circuit.ts`
 - `/src/features/visual-editor/stores/ir-store.ts` - Add circuit definitions
 - `/src/features/visual-editor/utils/simulator.ts` - Add composite evaluation
 
@@ -750,7 +750,7 @@ Simulator maintains state map per component instance.
 
 ### Immediate (This Week)
 1. Read through Phase 1 tasks in detail
-2. Study `ir-v0.1.ts` type definitions
+2. Study `circuit.ts` type definitions
 3. Plan IR store extensions
 4. Set up test environment
 

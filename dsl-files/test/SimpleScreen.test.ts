@@ -7,7 +7,7 @@ import { getPrimitives } from '../../src/features/visual-editor/lib/primitives';
 import { elaborate } from '../../src/features/visual-editor/lib/elaboration';
 import { initializeFlatSequentialState, runFlatSimulationTick } from '../../src/features/visual-editor/lib/flat-simulator';
 import { projectCircuitToNodes } from '../../src/features/visual-editor/utils/projection';
-import type { Circuit } from '../../src/features/visual-editor/types/ir-v0.1';
+import type { Circuit } from '../../src/features/visual-editor/types/circuit';
 
 class ComponentLibraryAdapter implements ComponentLibrary {
   constructor(private store: ReturnType<typeof useComponentLibraryStore.getState>) {}

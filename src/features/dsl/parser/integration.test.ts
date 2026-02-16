@@ -7,7 +7,7 @@ import { tokenize } from './lexer';
 import { parse } from './parser';
 import { validate } from './validator';
 import { compileToIR, ComponentLibrary } from '../compiler/ir-generator';
-import { Circuit, bitType, busType } from '../../visual-editor/types/ir-v0.1';
+import { Circuit, bitType, busType } from '../../visual-editor/types/circuit';
 
 // Mock component library for testing
 class MockComponentLibrary implements ComponentLibrary {

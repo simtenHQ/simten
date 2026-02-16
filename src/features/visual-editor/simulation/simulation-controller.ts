@@ -26,7 +26,7 @@
 import { elaborate, type FlatCircuit } from '../lib/elaboration';
 import type { FlatSequentialState, FlatPortValueMap } from '../lib/flat-simulator';
 import { createSnapshot } from '../lib/time-travel';
-import type { Circuit } from '../types/ir-v0.1';
+import type { Circuit } from '../types/circuit';
 import type { SimulationSnapshot } from '../types/simulation-snapshot';
 import type { ComponentLibraryStore } from '../stores/component-library-store';
 import { usePortValuesStore } from '../stores/port-values-store';
@@ -269,7 +269,7 @@ export class SimulationController {
       if (node.primitiveType === 'Input' || node.primitiveType === 'Switch' || node.primitiveType === 'Button') {
         const value = node.arguments.value;
         if (typeof value === 'number' || typeof value === 'boolean') {
-          this.simulator.setInput(node.id, 'out', value);
+          this.simulator.setInput(node.id, value);
         }
       }
     }
@@ -309,7 +309,7 @@ export class SimulationController {
       if (node.primitiveType === 'Input' || node.primitiveType === 'Switch' || node.primitiveType === 'Button') {
         const value = node.arguments.value;
         if (typeof value === 'number' || typeof value === 'boolean') {
-          this.simulator.setInput(node.id, 'out', value);
+          this.simulator.setInput(node.id, value);
         }
       }
     }
@@ -437,7 +437,7 @@ export class SimulationController {
       flatNode.arguments = { ...flatNode.arguments, value };
 
       // Update simulator
-      this.simulator.setInput(flatNode.id, 'out', value);
+      this.simulator.setInput(flatNode.id, value);
 
       // Re-simulate if combinational
       if (!this.isSequential) {

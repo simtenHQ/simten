@@ -11,7 +11,7 @@ import type {
   PortInstance,
   ClockInstance,
   ArgumentValue,
-} from '../types/ir-v0.1';
+} from '../types/circuit';
 import type { ComponentLibrary } from '../stores/component-library-store';
 
 /**

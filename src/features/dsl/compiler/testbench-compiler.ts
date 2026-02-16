@@ -28,7 +28,7 @@ import {
   Circuit,
   Node as IRNode,
   Connection as IRConnection,
-} from '../../visual-editor/types/ir-v0.1';
+} from '../../visual-editor/types/circuit';
 import { compileStimulus, validateStimulus } from '../../visual-editor/lib/testing/stimulus-compiler';
 import { getMaxStimulusCycle } from '../../visual-editor/types/testbench';
 

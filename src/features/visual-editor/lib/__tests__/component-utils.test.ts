@@ -5,7 +5,7 @@
 import { describe, it, expect } from 'vitest';
 import { containsSequentialComponent, hasSequentialComponents } from '../utils/component-utils';
 import type { Component } from '../../types';
-import type { Circuit } from '../../types/ir-v0.1';
+import type { Circuit } from '../../types/circuit';
 
 describe('containsSequentialComponent', () => {
   const mockResolveComponent = (name: string): Circuit | undefined => {
