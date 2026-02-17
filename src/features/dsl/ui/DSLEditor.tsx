@@ -8,14 +8,13 @@
 "use client";
 
 import React, { useState, useCallback, useRef, useEffect } from "react";
-import Editor, { OnMount } from "@monaco-editor/react";
+import Editor, { OnMount, Monaco } from "@monaco-editor/react";
 import type { editor } from "monaco-editor";
 import {
   parseDSL,
   compileCircuitToIR,
   type ValidationError,
   CompilerError,
-  ParseError,
 } from "../index";
 import { useComponentLibraryStore } from "@/features/visual-editor/stores/component-library-store";
 import { CompileButton } from "./CompileButton";
@@ -82,7 +81,45 @@ export function DSLEditor({
   const [isCompiling, setIsCompiling] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
+  const monacoRef = useRef<Monaco | null>(null);
   const autoCompileTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Update Monaco markers when errors change
+  useEffect(() => {
+    const editor = editorRef.current;
+    const monaco = monacoRef.current;
+    const model = editor?.getModel();
+
+    if (!monaco || !model) return;
+
+    const markers = errors
+      .filter(e => e.line > 0)
+      .map(error => {
+        // Try to find a reasonable end column
+        const lineContent = model.getLineContent(error.line);
+        const startCol = Math.min(error.column, lineContent.length);
+        // Find the end of the word/token at the error position
+        let endCol = startCol;
+        while (endCol < lineContent.length && /\w/.test(lineContent[endCol])) {
+          endCol++;
+        }
+        // If we didn't find a word, highlight at least a few characters
+        if (endCol === startCol) {
+          endCol = Math.min(startCol + 8, lineContent.length + 1);
+        }
+
+        return {
+          severity: monaco.MarkerSeverity.Error,
+          message: error.message,
+          startLineNumber: error.line,
+          startColumn: startCol,
+          endLineNumber: error.line,
+          endColumn: endCol + 1,
+        };
+      });
+
+    monaco.editor.setModelMarkers(model, 'dsl', markers);
+  }, [errors]);
 
   const { registerUser, resolveComponent, getAllComponentNames } =
     useComponentLibraryStore();
@@ -98,6 +135,7 @@ export function DSLEditor({
 
   const handleEditorDidMount: OnMount = (editor, monaco) => {
     editorRef.current = editor;
+    monacoRef.current = monaco;
 
     // Auto-insert " -> " when pressing space after "connect <source>"
     editor.onKeyDown((e) => {
@@ -364,8 +402,19 @@ export function DSLEditor({
     // Use setTimeout to ensure UI updates before heavy computation
     setTimeout(() => {
       try {
+        // Create a ComponentLibrary adapter for IDE-grade diagnostics
+        // This enables "unknown component" errors at parse time
+        const componentLibrary = {
+          resolveComponent,
+          getAllPrimitiveNames: getAllComponentNames,
+        };
+
         // Parse the DSL to get all circuit definitions
-        const { ast, errors: parseErrors } = parseDSL(code, "editor.dsl");
+        // Pass componentLibrary for IDE-grade component validation
+        const { ast, errors: parseErrors } = parseDSL(code, {
+          sourceName: "editor.dsl",
+          componentLibrary,
+        });
 
         if (parseErrors.length > 0) {
           setErrors(
@@ -448,31 +497,19 @@ export function DSLEditor({
         // Clear success message after 5 seconds
         setTimeout(() => setSuccessMessage(null), 5000);
       } catch (error) {
-        // Extract location info from ParseError or CompilerError if available
-        let compilationError: CompilationError;
-
-        if (error instanceof ParseError) {
-          // ParseError has token.location structure
-          compilationError = {
-            message: error.message,
-            line: error.token.location.start.line,
-            column: error.token.location.start.column,
-          };
-        } else if (error instanceof CompilerError && error.location) {
-          // CompilerError has direct location property
-          compilationError = {
-            message: error.message,
-            line: error.location.line,
-            column: error.location.column,
-          };
-        } else {
-          // Fallback for unknown error types
-          compilationError = {
-            message: error instanceof Error ? error.message : String(error),
-            line: 0,
-            column: 0,
-          };
-        }
+        // Extract location info from CompilerError if available
+        const compilationError: CompilationError =
+          error instanceof CompilerError && error.location
+            ? {
+                message: error.message,
+                line: error.location.line,
+                column: error.location.column,
+              }
+            : {
+                message: error instanceof Error ? error.message : String(error),
+                line: 0,
+                column: 0,
+              };
 
         setErrors([compilationError]);
       } finally {
@@ -487,9 +524,6 @@ export function DSLEditor({
     onCompileSuccess,
   ]);
 
-  const handleClearErrors = useCallback(() => {
-    setErrors([]);
-  }, []);
 
   // Auto-compile effect (debounced)
   // Triggers on mount and whenever code changes
@@ -565,12 +599,13 @@ export function DSLEditor({
             tabSize: 2,
             wordWrap: "on",
             acceptSuggestionOnCommitCharacter: false,
+            fixedOverflowWidgets: true,  // Render hovers outside clipped container
           }}
         />
       </div>
 
       {/* Error Display */}
-      <ErrorDisplay errors={errors} onClose={handleClearErrors} />
+      <ErrorDisplay errors={errors} />
     </div>
   );
 }
