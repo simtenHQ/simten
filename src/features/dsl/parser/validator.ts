@@ -11,9 +11,8 @@
  * 5. Multiple drivers on a single input
  * 6. Circular dependencies (will be checked during topological sort)
  *
- * NOTE: Component resolution (e.g., checking if "Xor" exists) is NOT done here.
- * That's a link-time operation done by the IR compiler when it has access to
- * the component library.
+ * For IDE use, the validator can optionally accept a ComponentLibrary to also
+ * check component existence at validation time (normally a link-time check).
  */
 
 import {
@@ -42,15 +41,25 @@ import {
   IndexExpr,
 } from '../types/ast';
 import { SourceRange } from '../types/ast';
+import type { ComponentLibrary } from '../../../core/simulator/types';
 
 // ============================================================================
-// Validation Error
+// Diagnostic Types
 // ============================================================================
+
+/**
+ * Diagnostic categories for error classification:
+ * - syntax: Chevrotain parse errors (missing tokens, unexpected tokens)
+ * - structure: AST building issues (missing child nodes, recovery artifacts)
+ * - semantic: Validation errors (undefined refs, duplicate names, type mismatches)
+ */
+export type DiagnosticCategory = 'syntax' | 'structure' | 'semantic';
 
 export interface ValidationError {
   message: string;
   location: SourceRange;
   severity: 'error' | 'warning';
+  category?: DiagnosticCategory;
   suggestions?: string[];
 }
 
@@ -65,17 +74,40 @@ export class ValidationException extends Error {
 }
 
 // ============================================================================
+// Validation Options
+// ============================================================================
+
+/**
+ * Options for validation.
+ * For IDE use, pass componentLibrary to enable component existence checking.
+ */
+export interface ValidateOptions {
+  /**
+   * Optional component library for checking component existence.
+   * When provided, validates that node component types exist.
+   * This is normally a link-time check, but useful for IDE diagnostics.
+   */
+  componentLibrary?: ComponentLibrary;
+}
+
+// ============================================================================
 // Validator
 // ============================================================================
 
 export class Validator {
   private errors: ValidationError[] = [];
+  private options: ValidateOptions = {};
+  private circuitNames: Set<string> = new Set();
 
   /**
    * Validate a program
    */
-  public validate(program: Program): ValidationError[] {
+  public validate(program: Program, options: ValidateOptions = {}): ValidationError[] {
     this.errors = [];
+    this.options = options;
+
+    // Collect circuit names defined in this program (for cross-circuit references)
+    this.circuitNames = new Set(program.circuits.map(c => c.name));
 
     // Check for duplicate circuit names
     this.checkDuplicateCircuitNames(program);
@@ -111,23 +143,30 @@ export class Validator {
   // ==========================================================================
 
   private validateCircuit(circuit: CircuitDef): void {
-    // Check for duplicate parameter names
+    // Skip validation for incomplete circuits
+    if (circuit.isIncomplete) return;
+
+    // Check for duplicate parameter names (filter incomplete params)
     this.checkDuplicateNames(
-      circuit.parameters.map((p) => ({ name: p.name, location: p.location })),
+      circuit.parameters
+        .filter((p) => !p.isIncomplete && p.name)
+        .map((p) => ({ name: p.name, location: p.location })),
       'parameter'
     );
 
-    // Check for duplicate port names
+    // Check for duplicate port names (filter incomplete ports)
     const portNames = [
-      ...circuit.inputs.map((p) => ({ name: p.name, location: p.location })),
-      ...circuit.outputs.map((p) => ({ name: p.name, location: p.location })),
-      ...circuit.clocks.map((p) => ({ name: p.name, location: p.location })),
+      ...circuit.inputs.filter((p) => !p.isIncomplete && p.name).map((p) => ({ name: p.name, location: p.location })),
+      ...circuit.outputs.filter((p) => !p.isIncomplete && p.name).map((p) => ({ name: p.name, location: p.location })),
+      ...circuit.clocks.filter((p) => !p.isIncomplete && p.name).map((p) => ({ name: p.name, location: p.location })),
     ];
     this.checkDuplicateNames(portNames, 'port');
 
-    // Check for duplicate state variable names
+    // Check for duplicate state variable names (filter incomplete state)
     this.checkDuplicateNames(
-      circuit.state.map((s) => ({ name: s.name, location: s.location })),
+      circuit.state
+        .filter((s) => !s.isIncomplete && s.name)
+        .map((s) => ({ name: s.name, location: s.location })),
       'state variable'
     );
 
@@ -138,7 +177,7 @@ export class Validator {
     this.validateStateTypes(circuit);
 
     // Validate implementation block
-    if (circuit.impl) {
+    if (circuit.impl && !circuit.impl.isIncomplete) {
       this.validateImplBlock(circuit, circuit.impl);
     }
   }
@@ -147,13 +186,17 @@ export class Validator {
     const paramNames = new Set(circuit.parameters.map((p) => p.name));
 
     for (const input of circuit.inputs) {
-      if (input.portType.kind === 'bus') {
+      // Skip incomplete inputs
+      if (input.isIncomplete || !input.portType) continue;
+      if (input.portType.kind === 'bus' && !input.portType.isIncomplete) {
         this.validateWidthParameter(input.portType, paramNames, input.location);
       }
     }
 
     for (const output of circuit.outputs) {
-      if (output.portType.kind === 'bus') {
+      // Skip incomplete outputs
+      if (output.isIncomplete || !output.portType) continue;
+      if (output.portType.kind === 'bus' && !output.portType.isIncomplete) {
         this.validateWidthParameter(output.portType, paramNames, output.location);
       }
     }
@@ -163,6 +206,10 @@ export class Validator {
     const paramNames = new Set(circuit.parameters.map((p) => p.name));
 
     for (const state of circuit.state) {
+      // Skip incomplete state declarations
+      if (state.isIncomplete || !state.stateType) continue;
+      if (state.stateType.isIncomplete) continue;
+
       if (state.stateType.kind === 'bus') {
         this.validateWidthParameter(state.stateType, paramNames, state.location);
       } else if (state.stateType.kind === 'memory') {
@@ -206,23 +253,55 @@ export class Validator {
   // ==========================================================================
 
   private validateImplBlock(circuit: CircuitDef, impl: ImplBlock): void {
-    // Check for duplicate node instance names
+    // Check for duplicate node instance names (filter incomplete nodes)
     this.checkDuplicateNames(
-      impl.nodes.map((n) => ({ name: n.instanceName, location: n.location })),
+      impl.nodes
+        .filter((n) => !n.isIncomplete && n.instanceName)
+        .map((n) => ({ name: n.instanceName, location: n.location })),
       'node instance'
     );
 
-    // Validate connections
+    // Validate node declarations (component existence if library provided)
+    for (const node of impl.nodes) {
+      if (node.isIncomplete) continue;
+      this.validateNodeDecl(node);
+    }
+
+    // Validate connections (skip incomplete ones)
     for (const connection of impl.connections) {
+      if (connection.isIncomplete) continue;
       this.validateConnection(circuit, impl, connection);
     }
 
     // Check for multiple drivers on the same port
     this.checkMultipleDrivers(impl);
 
-    // Validate behavioral statements
+    // Validate behavioral statements (skip incomplete ones)
     for (const stmt of impl.statements) {
+      if ('isIncomplete' in stmt && stmt.isIncomplete) continue;
       this.validateStatement(circuit, impl, stmt);
+    }
+  }
+
+  private validateNodeDecl(node: NodeDecl): void {
+    // Skip if no component type specified
+    if (!node.componentType) return;
+
+    // Check if component exists (only if library provided)
+    if (this.options.componentLibrary) {
+      const component = this.options.componentLibrary.resolveComponent(node.componentType);
+
+      // Also check if it's a circuit defined in this program
+      const isLocalCircuit = this.circuitNames.has(node.componentType);
+
+      if (!component && !isLocalCircuit) {
+        const allPrimitives = this.options.componentLibrary.getAllPrimitiveNames();
+        this.addError(
+          `Unknown component: '${node.componentType}'`,
+          node.location,
+          this.suggestSimilar(node.componentType, [...allPrimitives, ...this.circuitNames])
+        );
+      }
     }
   }
 
@@ -231,20 +310,22 @@ export class Validator {
     impl: ImplBlock,
     connection: ConnectionStmt
   ): void {
+    // Skip if source or target port refs are incomplete
+    if (!connection.source || !connection.target) return;
+    if (connection.source.portName === '' || connection.target.portName === '') return;
+
     // Validate source exists
-    const sourceValid = this.validatePortRefExists(
+    this.validatePortRefExists(
       circuit,
       impl,
-      connection.source,
-      'source'
+      connection.source
     );
 
     // Validate target exists
-    const targetValid = this.validatePortRefExists(
+    this.validatePortRefExists(
       circuit,
       impl,
-      connection.target,
-      'target'
+      connection.target
     );
 
     // TODO: Type checking would go here (requires component library access)
@@ -254,8 +335,7 @@ export class Validator {
   private validatePortRefExists(
     circuit: CircuitDef,
     impl: ImplBlock,
-    portRef: PortRef,
-    role: 'source' | 'target'
+    portRef: PortRef
   ): boolean {
     if (isCircuitPort(portRef)) {
       // Circuit-level port
@@ -344,6 +424,9 @@ export class Validator {
     impl: ImplBlock,
     stmt: OnClockStmt
   ): void {
+    // Skip validation if incomplete or missing clock edge
+    if (stmt.isIncomplete || !stmt.clockEdge || !stmt.clockEdge.clockRef) return;
+
     // Check that clock exists
     const clockNames = circuit.clocks.map((c) => c.name);
     if (!clockNames.includes(stmt.clockEdge.clockRef)) {
@@ -356,6 +439,7 @@ export class Validator {
 
     // Validate body statements
     for (const bodyStmt of stmt.body) {
+      if ('isIncomplete' in bodyStmt && bodyStmt.isIncomplete) continue;
       this.validateStatement(circuit, impl, bodyStmt);
     }
   }
@@ -365,6 +449,9 @@ export class Validator {
     impl: ImplBlock,
     stmt: Assignment
   ): void {
+    // Skip validation if incomplete or missing target
+    if (stmt.isIncomplete || !stmt.target) return;
+
     // Check that target variable exists (state or output)
     const stateNames = circuit.state.map((s) => s.name);
     const outputNames = circuit.outputs.map((o) => o.name);
@@ -379,7 +466,9 @@ export class Validator {
     }
 
     // Validate expression
-    this.validateExpression(circuit, impl, stmt.value);
+    if (stmt.value) {
+      this.validateExpression(circuit, impl, stmt.value);
+    }
   }
 
   private validateConditionalStmt(
@@ -387,17 +476,24 @@ export class Validator {
     impl: ImplBlock,
     stmt: ConditionalStmt
   ): void {
+    // Skip validation if incomplete
+    if (stmt.isIncomplete) return;
+
     // Validate condition
-    this.validateExpression(circuit, impl, stmt.condition);
+    if (stmt.condition) {
+      this.validateExpression(circuit, impl, stmt.condition);
+    }
 
     // Validate then body
     for (const bodyStmt of stmt.thenBody) {
+      if ('isIncomplete' in bodyStmt && bodyStmt.isIncomplete) continue;
       this.validateStatement(circuit, impl, bodyStmt);
     }
 
     // Validate else body
     if (stmt.elseBody) {
       for (const bodyStmt of stmt.elseBody) {
+        if ('isIncomplete' in bodyStmt && bodyStmt.isIncomplete) continue;
         this.validateStatement(circuit, impl, bodyStmt);
       }
     }
@@ -426,9 +522,12 @@ export class Validator {
 
   private validateVariableExpr(
     circuit: CircuitDef,
-    impl: ImplBlock,
+    _impl: ImplBlock,
     expr: VariableExpr
   ): void {
+    // Skip validation if variable name is empty (from incomplete node)
+    if (!expr.name) return;
+
     // Check that variable exists (input, output, state, or clock)
     const inputNames = circuit.inputs.map((i) => i.name);
     const outputNames = circuit.outputs.map((o) => o.name);
@@ -501,6 +600,7 @@ export class Validator {
       message,
       location,
       severity: 'error',
+      category: 'semantic',
       suggestions,
     });
   }
@@ -514,6 +614,7 @@ export class Validator {
       message,
       location,
       severity: 'warning',
+      category: 'semantic',
       suggestions,
     });
   }
@@ -574,17 +675,20 @@ export class Validator {
 
 /**
  * Validate a DSL program
+ *
+ * @param program - The parsed AST
+ * @param options - Optional validation options (e.g., componentLibrary for IDE use)
  */
-export function validate(program: Program): ValidationError[] {
+export function validate(program: Program, options?: ValidateOptions): ValidationError[] {
   const validator = new Validator();
-  return validator.validate(program);
+  return validator.validate(program, options);
 }
 
 /**
  * Validate and throw if there are errors
  */
-export function validateOrThrow(program: Program): void {
-  const errors = validate(program);
+export function validateOrThrow(program: Program, options?: ValidateOptions): void {
+  const errors = validate(program, options);
   if (errors.length > 0) {
     const errorMessages = errors
       .map(

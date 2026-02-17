@@ -8,8 +8,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { tokenize } from '@/features/dsl/parser/lexer';
-import { parse } from '@/features/dsl/parser/parser';
+import { parseDSLOrThrow } from '@/features/dsl/parser';
 import { compileStimulus } from '../testing/stimulus-compiler';
 import { generateVCD, parseVCDHeader } from '../visualization/vcd-generator';
 import { CaptureData } from '../../types/testbench';
@@ -48,8 +47,7 @@ describe('End-to-End Testbench', () => {
     `;
 
     // Step 1: Parse
-    const tokens = tokenize(dslCode);
-    const ast = parse(tokens);
+    const ast = parseDSLOrThrow(dslCode);
 
     expect(ast.testbenches).toBeDefined();
     const testbench = ast.testbenches![0];
@@ -121,8 +119,7 @@ describe('End-to-End Testbench', () => {
       }
     `;
 
-    const tokens = tokenize(dslCode);
-    const ast = parse(tokens);
+    const ast = parseDSLOrThrow(dslCode);
     const testbench = ast.testbenches![0];
 
     const stimulus = testbench.impl!.stimulus![0];
@@ -174,8 +171,7 @@ describe('End-to-End Testbench', () => {
       }
     `;
 
-    const tokens = tokenize(dslCode);
-    const ast = parse(tokens);
+    const ast = parseDSLOrThrow(dslCode);
     const testbench = ast.testbenches![0];
 
     const stimulus = testbench.impl!.stimulus![0];

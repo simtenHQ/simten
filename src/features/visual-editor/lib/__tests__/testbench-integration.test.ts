@@ -8,8 +8,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { tokenize } from '@/features/dsl/parser/lexer';
-import { parse } from '@/features/dsl/parser/parser';
+import { parseDSL, parseDSLOrThrow } from '@/features/dsl/parser';
 import { compileStimulus, validateStimulus, formatStimulusSchedule } from '../testing/stimulus-compiler';
 
 describe('Testbench Integration', () => {
@@ -47,8 +46,7 @@ describe('Testbench Integration', () => {
         }
       `;
 
-      const tokens = tokenize(dslCode);
-      const ast = parse(tokens);
+      const ast = parseDSLOrThrow(dslCode);
 
       expect(ast.testbenches).toBeDefined();
       expect(ast.testbenches!.length).toBe(1);
@@ -88,8 +86,7 @@ describe('Testbench Integration', () => {
         }
       `;
 
-      const tokens = tokenize(dslCode);
-      const ast = parse(tokens);
+      const ast = parseDSLOrThrow(dslCode);
 
       expect(ast.testbenches).toBeDefined();
       const testbench = ast.testbenches![0];
@@ -115,8 +112,7 @@ describe('Testbench Integration', () => {
         }
       `;
 
-      const tokens = tokenize(dslCode);
-      const ast = parse(tokens);
+      const ast = parseDSLOrThrow(dslCode);
       const stimulus = ast.testbenches![0].impl!.stimulus![0];
 
       const schedule = compileStimulus(stimulus);
@@ -144,8 +140,7 @@ describe('Testbench Integration', () => {
         }
       `;
 
-      const tokens = tokenize(dslCode);
-      const ast = parse(tokens);
+      const ast = parseDSLOrThrow(dslCode);
       const stimulus = ast.testbenches![0].impl!.stimulus![0];
 
       const schedule = compileStimulus(stimulus);
@@ -172,8 +167,7 @@ describe('Testbench Integration', () => {
         }
       `;
 
-      const tokens = tokenize(dslCode);
-      const ast = parse(tokens);
+      const ast = parseDSLOrThrow(dslCode);
       const stimulus = ast.testbenches![0].impl!.stimulus![0];
 
       const schedule = compileStimulus(stimulus);
@@ -202,8 +196,7 @@ describe('Testbench Integration', () => {
         }
       `;
 
-      const tokens = tokenize(dslCode);
-      const ast = parse(tokens);
+      const ast = parseDSLOrThrow(dslCode);
       const stimulus = ast.testbenches![0].impl!.stimulus![0];
 
       const schedule = compileStimulus(stimulus);
@@ -231,8 +224,7 @@ describe('Testbench Integration', () => {
         }
       `;
 
-      const tokens = tokenize(dslCode);
-      const ast = parse(tokens);
+      const ast = parseDSLOrThrow(dslCode);
       const stimulus = ast.testbenches![0].impl!.stimulus![0];
 
       const schedule = compileStimulus(stimulus);
@@ -259,8 +251,7 @@ describe('Testbench Integration', () => {
         }
       `;
 
-      const tokens = tokenize(dslCode);
-      const ast = parse(tokens);
+      const ast = parseDSLOrThrow(dslCode);
       const stimulus = ast.testbenches![0].impl!.stimulus![0];
 
       const schedule = compileStimulus(stimulus);
@@ -281,8 +272,7 @@ describe('Testbench Integration', () => {
         }
       `;
 
-      const tokens = tokenize(dslCode);
-      expect(() => parse(tokens)).toThrow();
+      expect(() => parseDSLOrThrow(dslCode)).toThrow();
     });
 
     it('should reject invalid range (start > end)', () => {
@@ -299,8 +289,7 @@ describe('Testbench Integration', () => {
         }
       `;
 
-      const tokens = tokenize(dslCode);
-      const ast = parse(tokens);
+      const ast = parseDSLOrThrow(dslCode);
       const stimulus = ast.testbenches![0].impl!.stimulus![0];
 
       expect(() => compileStimulus(stimulus)).toThrow(/Invalid range/);
@@ -320,8 +309,7 @@ describe('Testbench Integration', () => {
         }
       `;
 
-      const tokens = tokenize(dslCode);
-      const ast = parse(tokens);
+      const ast = parseDSLOrThrow(dslCode);
       const stimulus = ast.testbenches![0].impl!.stimulus![0];
 
       expect(() => compileStimulus(stimulus)).toThrow(/Invalid step/);

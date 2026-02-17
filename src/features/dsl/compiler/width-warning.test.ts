@@ -1,6 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { tokenize } from '../parser/lexer';
-import { parse } from '../parser/parser';
+import { parseDSLOrThrow } from '../parser';
 import { compileToIR, ComponentLibrary } from './ir-generator';
 import { Circuit, bitType, busType } from '../../visual-editor/types/circuit';
 
@@ -83,7 +82,7 @@ describe('Width Mismatch Warnings', () => {
     // Spy on console.warn
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
-    const ast = parse(tokenize(source));
+    const ast = parseDSLOrThrow(source);
     const library = new MockComponentLibrary();
     compileToIR(ast, library);
 
@@ -114,7 +113,7 @@ describe('Width Mismatch Warnings', () => {
 
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
-    const ast = parse(tokenize(source));
+    const ast = parseDSLOrThrow(source);
     const library = new MockComponentLibrary();
     compileToIR(ast, library);
 
