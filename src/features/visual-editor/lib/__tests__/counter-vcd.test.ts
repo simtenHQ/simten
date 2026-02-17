@@ -3,8 +3,7 @@ import { compileTestbenchToIR } from '@/features/dsl/compiler/testbench-compiler
 import { runTestbench } from '../testing/testbench-runner';
 import { useComponentLibraryStore } from '../../stores/component-library-store';
 import { compileCircuitToIR } from '@/features/dsl/compiler';
-import { tokenize } from '@/features/dsl/parser/lexer';
-import { parse } from '@/features/dsl/parser/parser';
+import { parseDSLOrThrow } from '@/features/dsl/parser';
 import { PRIMITIVES } from '../primitives';
 import { generateVCD } from '../visualization/vcd-generator';
 import * as fs from 'fs';
@@ -25,8 +24,7 @@ describe('Counter VCD Output', () => {
 
     // Load Counter circuit
     const counterDsl = fs.readFileSync('./dsl-files/Counter.dsl', 'utf-8');
-    const counterTokens = tokenize(counterDsl);
-    const counterAst = parse(counterTokens);
+    const counterAst = parseDSLOrThrow(counterDsl);
     const counterCircuit = compileCircuitToIR(counterAst.circuits[0], compilerLibrary);
 
     // Add to library
@@ -34,8 +32,7 @@ describe('Counter VCD Output', () => {
 
     // Load testbench
     const tbDsl = fs.readFileSync('./dsl-files/SimpleCounter.tb.dsl', 'utf-8');
-    const tbTokens = tokenize(tbDsl);
-    const tbAst = parse(tbTokens);
+    const tbAst = parseDSLOrThrow(tbDsl);
     const testbench = compileTestbenchToIR(tbAst.testbenches![0], library);
 
     // Modify the capture config to not write to file (just keep the data)

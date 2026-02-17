@@ -54,53 +54,42 @@ src/features/dsl/
 │   ├── ast.ts              # AST type definitions
 │   └── index.ts
 ├── parser/
-│   ├── token.ts            # Token types and utilities
-│   ├── lexer.ts            # Lexical analyzer (Text → Tokens)
-│   ├── parser.ts           # Syntax analyzer (Tokens → AST)
+│   ├── chevrotain/         # Chevrotain-based parser
+│   │   ├── tokens.ts       # Lexer token definitions
+│   │   ├── parser.ts       # CstParser implementation
+│   │   ├── visitor.ts      # CST → AST conversion
+│   │   └── index.ts
 │   ├── validator.ts        # Semantic analyzer
 │   └── index.ts
 ├── compiler/
 │   ├── ir-generator.ts     # AST → IR compiler
 │   └── index.ts
+├── grammar.ebnf            # Canonical grammar specification
 └── index.ts                # Main entry point
 ```
 
 ## Components
 
-### Lexer (Tokenizer)
+### Parser (Chevrotain)
 
-Converts raw text into tokens with source location tracking.
+Uses the Chevrotain parser library for robust parsing with multi-error recovery.
 
 ```typescript
-import { tokenize } from '@/features/dsl';
+import { parseDSL, parseDSLOrThrow } from '@/features/dsl';
 
-const tokens = tokenize('component And { ... }');
-// Returns: Token[]
+// Parse with error collection
+const { ast, errors } = parseDSL(source);
+
+// Or parse and throw on errors
+const ast = parseDSLOrThrow(source);
 ```
 
 **Features:**
-- Recognizes all DSL keywords, operators, and literals
-- Supports decimal, hex (0xFF), and binary (0b1010) numbers
-- Handles single-line (//) and multi-line (/* */) comments
-- Tracks precise source location for error reporting
-
-### Parser
-
-Converts tokens into an Abstract Syntax Tree (AST).
-
-```typescript
-import { parse, tokenize } from '@/features/dsl';
-
-const tokens = tokenize(source);
-const ast = parse(tokens);
-// Returns: Program (contains CircuitDef[])
-```
-
-**Features:**
-- Complete recursive descent parser
-- Supports all DSL constructs (circuits, ports, nodes, connections)
+- Multi-error recovery: reports multiple syntax errors in a single pass
+- Supports all DSL constructs (circuits, ports, nodes, connections, testbenches)
 - Handles parameterized circuits
-- Clear error messages with token locations
+- Clear error messages with source locations
+- Canonical grammar defined in `grammar.ebnf`
 
 ### Validator
 
@@ -276,17 +265,13 @@ See `examples.test.ts` for complete working examples:
 
 ## Testing
 
-**Total:** 67 tests, all passing ✅
-
 ```bash
 pnpm test src/features/dsl/
 ```
 
 **Test Files:**
-- `lexer.test.ts` - 26 tests (tokenization)
-- `parser.test.ts` - 23 tests (parsing)
-- `integration.test.ts` - 10 tests (end-to-end pipeline)
-- `examples.test.ts` - 8 tests (real-world usage)
+- `chevrotain.test.ts` - Chevrotain parser tests (lexer, parser, multi-error recovery)
+- `examples.test.ts` - Real-world usage examples
 
 ## Error Handling
 

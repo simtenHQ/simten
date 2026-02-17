@@ -6,19 +6,18 @@
 
 // Parser pipeline (Text → AST)
 export {
-  tokenize,
   parse,
+  parseOrThrow,
   validate,
   validateOrThrow,
   parseDSL,
   parseDSLOrThrow,
-  LexerError,
-  ParseError,
   ValidationException,
+  DSLLexer,
+  DSLParser,
 } from './parser';
 
-export type { Token, ValidationError } from './parser';
-export { TokenType } from './parser';
+export type { ParseError, ValidationError, ChevrotainParseResult } from './parser';
 
 // Compiler (AST → IR)
 export { compileToIR, compileCircuitToIR, CompilerError } from './compiler';

@@ -34,6 +34,11 @@ export interface SourceRange {
 
 export interface ASTNode {
   location: SourceRange;
+  /**
+   * Marks nodes that are incomplete due to parse errors.
+   * Validators should skip validation for incomplete nodes.
+   */
+  isIncomplete?: boolean;
 }
 
 // ============================================================================
