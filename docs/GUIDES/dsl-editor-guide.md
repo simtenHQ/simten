@@ -12,77 +12,132 @@ The DSL Editor allows you to define custom circuit components using a text-based
    - **Left Panel**: Monaco text editor with syntax highlighting
    - **Right Panel**: Component Library browser
 
-## Writing Your First Component
+## Writing Your First Circuit
 
 ### Basic Structure
 
-Every component definition follows this structure:
+Every circuit definition follows this structure:
 
 ```dsl
-component ComponentName {
+circuit CircuitName {
   // Input ports
-  input portName: type
+  input portName: Type
 
   // Output ports
-  output portName: type
+  output portName: Type
 
-  // Circuit implementation
-  gate GateName(inputs...) -> output
+  // Implementation (for composite circuits)
+  impl {
+    node instanceName: ComponentType
+    connect source -> target
+  }
 }
 ```
 
-### Example: Simple AND Gate
+### Example: Half Adder
 
 ```dsl
-component MyAnd {
-  input a: bit
-  input b: bit
-  output out: bit
+circuit HalfAdder {
+  input a: Bit
+  input b: Bit
+  output sum: Bit
+  output carry: Bit
 
-  gate And(a, b) -> out
+  impl {
+    node xor1: Xor
+    node and1: And
+
+    connect a -> xor1.a
+    connect b -> xor1.b
+    connect xor1.out -> sum
+
+    connect a -> and1.a
+    connect b -> and1.b
+    connect and1.out -> carry
+  }
 }
 ```
 
 ### Port Types
 
-- **`bit`**: Single binary signal (0 or 1)
-- **`bus<N>`**: Multi-bit signal with N bits (e.g., `bus<8>` for 8 bits)
+- **`Bit`**: Single binary signal (0 or 1)
+- **`Bus[N]`**: Multi-bit signal with N bits (e.g., `Bus[8]` for 8 bits)
 
-### Using Primitive Gates
+### Using Primitive Components
 
-Available primitive gates:
-- `And`, `Or`, `Not`, `Xor`
-- `Nand`, `Nor`, `Xnor`
-- `Buffer`
+Available primitive components:
+- Logic gates: `And`, `Or`, `Not`, `Xor`, `Nand`, `Nor`, `Xnor`
+- Utility: `Buffer`, `Splitter`, `Merger`
+- Sequential: `Register`, `RAM`, `ROM`
+- I/O: `Switch`, `Led`
 
-Example with multiple gates:
+Example with multiple components:
 
 ```dsl
-component HalfAdder {
-  input a: bit
-  input b: bit
-  output sum: bit
-  output carry: bit
+circuit FullAdder {
+  input a: Bit
+  input b: Bit
+  input cin: Bit
+  output sum: Bit
+  output cout: Bit
 
-  gate Xor(a, b) -> sum
-  gate And(a, b) -> carry
+  impl {
+    node ha1: HalfAdder
+    node ha2: HalfAdder
+    node or1: Or
+
+    connect a -> ha1.a
+    connect b -> ha1.b
+    connect ha1.sum -> ha2.a
+    connect cin -> ha2.b
+    connect ha2.sum -> sum
+    connect ha1.carry -> or1.a
+    connect ha2.carry -> or1.b
+    connect or1.out -> cout
+  }
 }
 ```
 
-## Compiling Your Component
+## IDE Features
+
+### Real-Time Error Reporting
+
+The editor provides IDE-grade diagnostics that show **all errors at once**:
+
+- **Syntax errors**: Missing colons, invalid keywords, etc.
+- **Semantic errors**: Duplicate names, undefined references, unknown components
+
+Errors appear as red underlines in the editor with hover tooltips showing details.
+
+### Error Categories
+
+1. **Syntax errors** - Parser-level issues (missing tokens, unexpected characters)
+2. **Semantic errors** - Validation issues (undefined references, duplicates)
+
+The editor filters semantic errors on lines that have syntax errors to prevent "error storms".
+
+### Syntax Highlighting
+
+The editor provides automatic syntax highlighting:
+- **Blue**: Keywords (`circuit`, `input`, `output`, `impl`, `node`, `connect`)
+- **Teal**: Types (`Bit`, `Bus`)
+- **Green**: Comments
+- **Purple**: Numbers
+
+## Compiling Your Circuit
 
 1. Write your DSL code in the editor
 2. Click the **Compile** button (lightning bolt icon)
 3. Watch for:
-   - **Success**: Green banner showing "Successfully compiled N component(s)"
+   - **Success**: Green banner showing "Successfully compiled N circuit(s)"
    - **Errors**: Red panel at bottom with line:column and error messages
 
 ### Compilation Success
 
 When compilation succeeds:
-- Your component is added to the Component Library
+- Your circuit is added to the Component Library
 - It appears in the **User** tab of the library browser
-- You can now use it in other components
+- You can now use it in other circuits
 - Success message auto-dismisses after 5 seconds
 
 ### Handling Errors
@@ -90,51 +145,39 @@ When compilation succeeds:
 If compilation fails:
 - Error panel shows at the bottom
 - Each error shows line number and column
-- Click the ✕ to dismiss errors
+- Click the X to dismiss errors
 - Fix the errors and click Compile again
 
 Common errors:
-- **Unknown component**: Referenced gate/component doesn't exist
-- **Type mismatch**: Connecting incompatible port types
-- **Missing connection**: Unconnected required ports
-- **Syntax error**: Invalid DSL syntax
+- **Unknown component**: Referenced component doesn't exist (check spelling)
+- **Duplicate name**: Two ports or nodes with the same name
+- **Undefined reference**: Connection references non-existent port or node
+- **Syntax error**: Invalid DSL syntax (missing colon, brace, etc.)
 
-## Component Instances
+## Node Instantiation
 
-For more complex circuits, create instances of other components:
+Create instances of components inside `impl` blocks:
 
 ```dsl
-component FullAdder {
-  input a: bit
-  input b: bit
-  input cin: bit
-  output sum: bit
-  output cout: bit
-
-  // Create component instances
-  instance HalfAdder ha1
-  instance HalfAdder ha2
-  instance Or orGate
-
-  // Connect them together
-  connect a -> ha1.a
-  connect b -> ha1.b
-  connect ha1.sum -> ha2.a
-  connect cin -> ha2.b
-  connect ha2.sum -> sum
-  connect ha1.carry -> orGate.a
-  connect ha2.carry -> orGate.b
-  connect orGate.out -> cout
+impl {
+  node instanceName: ComponentType
+  node adder: FullAdder
+  node reg: Register(width = 8)
 }
 ```
 
-### Instance Syntax
+### With Parameters
+
+Some components accept parameters:
 
 ```dsl
-instance ComponentType instanceName
+node adder: RippleCarryAdder(width = 16)
+node ram: RAM(addrWidth = 10, dataWidth = 8)
 ```
 
-### Connection Syntax
+## Connections
+
+Wire ports together with the `connect` statement:
 
 ```dsl
 connect source -> target
@@ -143,217 +186,145 @@ connect source -> target
 Sources and targets can be:
 - Circuit input: `inputName`
 - Circuit output: `outputName`
-- Instance port: `instanceName.portName`
+- Node port: `nodeName.portName`
+
+Examples:
+```dsl
+connect a -> xor1.a           // Circuit input to node input
+connect xor1.out -> sum       // Node output to circuit output
+connect ha1.carry -> or1.a    // Node output to node input
+```
 
 ## Working with Buses
 
-For multi-bit operations:
+For multi-bit signals:
 
 ```dsl
-component BusAdder {
-  input a: bus<8>
-  input b: bus<8>
-  output sum: bus<8>
+circuit BusExample {
+  input data: Bus[8]
+  output result: Bus[8]
 
-  gate BusAnd(a, b) -> sum
+  impl {
+    node reg: Register(width = 8)
+
+    connect data -> reg.d
+    connect reg.q -> result
+  }
 }
 ```
 
-Available bus operations:
-- `BusAnd`, `BusOr`, `BusXor`, `BusNot`
-
-## Viewing Your Components
+## Viewing Your Circuits
 
 ### Component Library Panel
 
-The right panel shows all available components in three tabs:
+The right panel shows all available components in tabs:
 
 #### User Tab
-- Shows components you've compiled
+- Shows circuits you've compiled
 - Click component name to expand details
 - See inputs, outputs, and descriptions
-- Click **Remove** button to delete a component
-
-#### Standard Tab
-- Pre-built composite components (future)
-- Reusable building blocks
+- Click **Remove** button to delete a circuit
 
 #### Primitives Tab
-- Built-in gates provided by the simulator
-- And, Or, Not, Xor, Nand, Nor, Xnor, Buffer
-- Switch, Led (I/O components)
-- BusAnd, BusOr, BusXor, BusNot (bus operations)
+- Built-in components provided by the simulator
+- Logic gates, registers, memory, I/O components
 
 ### Component Details
 
 When you expand a component, you see:
-- **Inputs**: Port names and types (e.g., `a: bit`)
+- **Inputs**: Port names and types (e.g., `a: Bit`)
 - **Outputs**: Port names and types
 - **Clocks**: Clock signal names (if any)
-- **Description**: Component purpose
+- **Parameters**: Configurable values
 
-## Multiple Components in One File
+## Multiple Circuits in One File
 
-You can define multiple components in a single DSL file:
+You can define multiple circuits in a single DSL file:
 
 ```dsl
-component HalfAdder {
-  input a: bit
-  input b: bit
-  output sum: bit
-  output carry: bit
+circuit HalfAdder {
+  input a: Bit
+  input b: Bit
+  output sum: Bit
+  output carry: Bit
 
-  gate Xor(a, b) -> sum
-  gate And(a, b) -> carry
+  impl {
+    node xor1: Xor
+    node and1: And
+
+    connect a -> xor1.a
+    connect b -> xor1.b
+    connect xor1.out -> sum
+    connect a -> and1.a
+    connect b -> and1.b
+    connect and1.out -> carry
+  }
 }
 
-component FullAdder {
-  input a: bit
-  input b: bit
-  input cin: bit
-  output sum: bit
-  output cout: bit
+circuit FullAdder {
+  input a: Bit
+  input b: Bit
+  input cin: Bit
+  output sum: Bit
+  output cout: Bit
 
-  instance HalfAdder ha1
-  instance HalfAdder ha2
-  instance Or orGate
+  impl {
+    node ha1: HalfAdder
+    node ha2: HalfAdder
+    node or1: Or
 
-  connect a -> ha1.a
-  connect b -> ha1.b
-  connect ha1.sum -> ha2.a
-  connect cin -> ha2.b
-  connect ha2.sum -> sum
-  connect ha1.carry -> orGate.a
-  connect ha2.carry -> orGate.b
-  connect orGate.out -> cout
+    connect a -> ha1.a
+    connect b -> ha1.b
+    connect ha1.sum -> ha2.a
+    connect cin -> ha2.b
+    connect ha2.sum -> sum
+    connect ha1.carry -> or1.a
+    connect ha2.carry -> or1.b
+    connect or1.out -> cout
+  }
 }
 ```
 
-Both components will be compiled and registered.
-
-## Component Composition
-
-You can use your own compiled components in new components:
-
-1. Define and compile `ComponentA`
-2. Write `ComponentB` that uses `ComponentA`
-3. Compile `ComponentB`
-4. Both are now in your library
-
-Example workflow:
-
-**Step 1**: Compile HalfAdder
-```dsl
-component HalfAdder {
-  input a: bit
-  input b: bit
-  output sum: bit
-  output carry: bit
-  gate Xor(a, b) -> sum
-  gate And(a, b) -> carry
-}
-```
-
-**Step 2**: Use HalfAdder in FullAdder
-```dsl
-component FullAdder {
-  input a: bit
-  input b: bit
-  input cin: bit
-  output sum: bit
-  output cout: bit
-
-  instance HalfAdder ha1
-  instance HalfAdder ha2
-  // ... connections
-}
-```
-
-## Syntax Highlighting
-
-The editor provides automatic syntax highlighting:
-- **Blue**: Keywords (component, input, output)
-- **Teal**: Types (bit, bus, memory)
-- **Green**: Comments
-- **Purple**: Numbers
+Both circuits will be compiled and registered. Order matters - define dependencies first.
 
 ## Keyboard Shortcuts
 
-- **Ctrl/Cmd + S**: Format document (future)
 - **Ctrl/Cmd + F**: Find in document
 - **Ctrl/Cmd + /**: Toggle line comment
+- **Ctrl/Cmd + Z**: Undo
+- **Ctrl/Cmd + Shift + Z**: Redo
 
 ## Tips and Best Practices
 
 ### 1. Start Simple
-Begin with basic gates, then build up to complex components.
+Begin with basic logic gates, then build up to complex circuits.
 
 ### 2. Use Comments
 ```dsl
-// This is a comment explaining the component
-component MyComponent {
+// This is a comment explaining the circuit
+circuit MyCircuit {
   // Document each port
-  input data: bit  // Data input signal
-  output result: bit
+  input data: Bit  // Data input signal
+  output result: Bit
 }
 ```
 
 ### 3. Descriptive Names
 Use clear, descriptive names:
-- ✅ `halfAdder`, `carryOut`, `enableSignal`
-- ❌ `ha`, `c`, `e`
+- Good: `halfAdder`, `carryOut`, `enableSignal`
+- Avoid: `ha`, `c`, `e`
 
-### 4. Test After Each Compile
-Compile frequently to catch errors early.
+### 4. Build Incrementally
+Compile frequently to catch errors early. Define simpler circuits first, then use them in more complex ones.
 
-### 5. Build Component Libraries
-Create reusable components like:
-- Adders (half, full, ripple-carry)
-- Multiplexers
-- Decoders
-- Registers
-
-### 6. Check Component Library
-Before writing a component, check if it already exists in the library.
-
-## Advanced Features
-
-### Clock Signals (Future)
-
-For sequential circuits:
-```dsl
-component Register {
-  clock clk
-  input d: bit
-  output q: bit
-
-  state reg: bit
-
-  on clk rising {
-    reg <= d
-  }
-}
-```
-
-### Memory (Future)
-
-For memory arrays:
-```dsl
-component RAM {
-  input addr: bus<8>
-  input data: bus<8>
-  input write: bit
-  output out: bus<8>
-
-  state mem: memory<8, 8>
-}
-```
+### 5. Check Component Library
+Before writing a circuit, check if it already exists in the library.
 
 ## Troubleshooting
 
-### Component Not Showing in Library
+### Circuit Not Showing in Library
 
-**Problem**: Compiled but don't see component in User tab
+**Problem**: Compiled but don't see circuit in User tab
 
 **Solutions**:
 - Check for compilation errors
@@ -365,104 +336,28 @@ component RAM {
 **Problem**: Compiler says component doesn't exist
 
 **Solutions**:
-- Check spelling of component name
-- Ensure referenced component was compiled first
+- Check spelling of component name (case-sensitive)
+- Ensure referenced circuit was compiled first
 - Check if component is in Primitives tab
-
-### Type Mismatch Error
-
-**Problem**: "Cannot connect bit to bus<8>"
-
-**Solutions**:
-- Verify port types match
-- Use bit-to-bus converters (future)
-- Check component definitions
 
 ### Syntax Error
 
-**Problem**: Unexpected token or missing semicolon
+**Problem**: Unexpected token or missing element
 
 **Solutions**:
-- Check DSL syntax guide
-- Ensure proper braces and keywords
-- Look at example code
-
-## Example Projects
-
-### 4-bit Ripple Carry Adder
-
-```dsl
-component FullAdder {
-  input a: bit
-  input b: bit
-  input cin: bit
-  output sum: bit
-  output cout: bit
-
-  instance HalfAdder ha1
-  instance HalfAdder ha2
-  instance Or orGate
-
-  connect a -> ha1.a
-  connect b -> ha1.b
-  connect ha1.sum -> ha2.a
-  connect cin -> ha2.b
-  connect ha2.sum -> sum
-  connect ha1.carry -> orGate.a
-  connect ha2.carry -> orGate.b
-  connect orGate.out -> cout
-}
-
-component Adder4 {
-  input a: bus<4>
-  input b: bus<4>
-  input cin: bit
-  output sum: bus<4>
-  output cout: bit
-
-  // TODO: Implement bit slicing and concatenation
-  // This is a simplified example
-}
-```
-
-### 2-to-1 Multiplexer
-
-```dsl
-component Mux2to1 {
-  input a: bit
-  input b: bit
-  input sel: bit
-  output out: bit
-
-  instance Not notSel
-  instance And and1
-  instance And and2
-  instance Or orGate
-
-  connect sel -> notSel.in
-  connect a -> and1.a
-  connect notSel.out -> and1.b
-  connect b -> and2.a
-  connect sel -> and2.b
-  connect and1.out -> orGate.a
-  connect and2.out -> orGate.b
-  connect orGate.out -> out
-}
-```
+- Check for missing colons after port names (e.g., `input a: Bit`)
+- Ensure proper braces `{` `}` are matched
+- Look at example code for correct syntax
 
 ## Next Steps
 
-1. **Practice**: Try building simple components first
+1. **Practice**: Try building simple circuits first
 2. **Explore**: Look at primitives in the library
-3. **Compose**: Build complex components from simple ones
-4. **Experiment**: Test different gate combinations
-5. **Document**: Add comments to your components
+3. **Compose**: Build complex circuits from simple ones
+4. **Experiment**: Test different component combinations
 
-## Getting Help
+## Related Documentation
 
-- Check the DSL syntax reference
-- Review example components
-- Look at error messages carefully
-- Start with simpler components and build up
-
-Happy circuit designing!
+- [DSL and IR Specification](/docs/SPECIFICATIONS/DSL-and-IR-specification.md) - Complete syntax reference
+- [DSL Examples](/docs/dsl-examples.md) - Example circuits from simple to complex
+- [Component Model](/docs/SPECIFICATIONS/component-model.md) - Understanding primitives vs composites
