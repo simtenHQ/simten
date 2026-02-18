@@ -28,6 +28,8 @@ export interface PortDescriptor {
   name: string;
   portType: PortType;
   description?: string;
+  /** Default value for unconnected inputs. If specified, port is optional. */
+  defaultValue?: BitValue | BusValue;
 }
 
 // ============================================================================

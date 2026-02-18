@@ -905,7 +905,7 @@ export const PRIMITIVE_DEFINITIONS: Record<string, PrimitiveDefinition> = {
     inputs: [
       { name: 'a', portType: busType(8) },
       { name: 'b', portType: busType(8) },
-      { name: 'carry_in', portType: bitType() },
+      { name: 'carry_in', portType: bitType(), defaultValue: false },
     ],
     outputs: [
       { name: 'sum', portType: busType(8) },
@@ -1041,7 +1041,7 @@ export const PRIMITIVE_DEFINITIONS: Record<string, PrimitiveDefinition> = {
     inputs: [
       { name: 'a', portType: busType(8) },
       { name: 'b', portType: busType(8) },
-      { name: 'borrow_in', portType: bitType() },
+      { name: 'borrow_in', portType: bitType(), defaultValue: false },
     ],
     outputs: [
       { name: 'difference', portType: busType(8) },
@@ -1076,7 +1076,7 @@ export const PRIMITIVE_DEFINITIONS: Record<string, PrimitiveDefinition> = {
     inputs: [
       { name: 'a', portType: busType(8) },
       { name: 'b', portType: busType(8) },
-      { name: 'carry_in', portType: bitType() },
+      { name: 'carry_in', portType: bitType(), defaultValue: false },
     ],
     outputs: [
       { name: 'sum', portType: busType(8) },

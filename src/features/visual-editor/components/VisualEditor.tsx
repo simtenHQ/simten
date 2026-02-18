@@ -7,7 +7,7 @@
 
 "use client";
 
-import React, { useCallback, useState, useEffect } from "react";
+import React, { useCallback, useState, useEffect, useRef } from "react";
 import { ReactFlowProvider } from "@xyflow/react";
 import { Canvas } from "./Canvas";
 import { ComponentPalette } from "./ComponentPalette";
@@ -15,15 +15,16 @@ import { SimulationControls } from "./SimulationControls";
 import { RightSidebar } from "./RightSidebar";
 import { TestCaseEditor } from "./TestCaseEditor";
 import { ClockControls } from "./ClockControls";
-import { DSLEditor } from "@/features/dsl/ui/DSLEditor";
+import { DSLEditor, type DSLEditorRef } from "@/features/dsl/ui/DSLEditor";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
-import { Menu, TestTube } from "lucide-react";
+import { Menu, TestTube, Bot } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCircuitStore } from "../stores/circuit-store";
 import { usePrimitivesInit } from "../hooks/usePrimitivesInit";
 import { useDSLPreviewStore } from "../stores/dsl-preview-store";
 import { useComponentLibraryStore } from "../stores/component-library-store";
 import { useSimulationController } from "../simulation/use-simulation-controller";
+import { ChatPanel, useChatStore, useNarrativeContext } from "@/features/chat";
 import type { Circuit } from "../types/circuit";
 
 // Helper to check if circuit has sequential components
@@ -66,6 +67,12 @@ export function VisualEditor() {
   const [componentPaletteOpen, setComponentPaletteOpen] = useState(false);
   const [testsPanelOpen, setTestsPanelOpen] = useState(false);
 
+  // DSL Editor ref for ChatPanel integration
+  const dslEditorRef = useRef<DSLEditorRef>(null);
+
+  // Chat store
+  const { setOpen: setChatOpen, toggle: toggleChat } = useChatStore();
+
   // Check if we need to show clock controls
   const showClockControls = hasSequentialComponents(circuit, resolveComponent);
 
@@ -73,7 +80,11 @@ export function VisualEditor() {
   usePrimitivesInit();
 
   // Initialize simulation controller (THE ONLY PLACE THAT RUNS SIMULATION)
-  useSimulationController();
+  const simulationController = useSimulationController();
+
+  // Narrative context for chat
+  const dslCode = dslEditorRef.current?.getCode() ?? "";
+  const narrativeContext = useNarrativeContext(dslCode);
 
   // Keyboard shortcuts for drawer toggles
   useEffect(() => {
@@ -88,11 +99,16 @@ export function VisualEditor() {
         e.preventDefault();
         setTestsPanelOpen((prev) => !prev);
       }
+      // Cmd+K / Ctrl+K - Toggle chat panel
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+        e.preventDefault();
+        toggleChat();
+      }
     };
 
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, []);
+  }, [toggleChat]);
 
   // Handle DSL compilation in split mode
   const handleDSLCompile = useCallback(
@@ -140,6 +156,16 @@ export function VisualEditor() {
             <TestTube className="h-4 w-4" />
           </Button>
 
+          <Button
+            onClick={() => setChatOpen(true)}
+            variant="outline"
+            size="sm"
+            className="gap-2"
+            title="Open AI Assistant (Cmd+K)"
+          >
+            <Bot className="h-4 w-4" />
+          </Button>
+
           <div className="border-l border-gray-200 h-8"></div>
 
           {/* App Title */}
@@ -157,6 +183,7 @@ export function VisualEditor() {
           {/* Left: DSL Editor (40%) - Full Height */}
           <div className="w-[40%] border-r border-gray-200">
             <DSLEditor
+              ref={dslEditorRef}
               autoCompileEnabled={true}
               onCompileSuccess={handleDSLCompile}
               showHeader={false}
@@ -198,6 +225,32 @@ export function VisualEditor() {
 
         {/* Test Case Editor Modal */}
         <TestCaseEditor />
+
+        {/* AI Chat Panel */}
+        <ChatPanel
+          getCurrentCode={() => dslEditorRef.current?.getCode() ?? ""}
+          setCode={(code) => {
+            dslEditorRef.current?.setCode(code);
+            // Trigger recompile after setting code
+            setTimeout(() => dslEditorRef.current?.compile(), 100);
+          }}
+          setInput={(nodeName, value) => {
+            // Set input value and propagate (for combinational, this is instant)
+            simulationController.setInput(nodeName, value);
+          }}
+          runSimulation={async (cycles) => {
+            // Run simulation for specified cycles
+            for (let i = 0; i < cycles; i++) {
+              simulationController.step();
+            }
+          }}
+          insertNode={(componentRef, label) => {
+            // TODO: Implement node insertion via circuit store
+            console.log("[Chat] Insert node:", componentRef, label);
+          }}
+          narrativeContext={narrativeContext.narrative}
+          sourceCodeHash={narrativeContext.sourceCodeHash}
+        />
       </div>
     </ReactFlowProvider>
   );

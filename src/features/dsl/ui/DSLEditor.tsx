@@ -7,7 +7,7 @@
 
 "use client";
 
-import React, { useState, useCallback, useRef, useEffect } from "react";
+import React, { useState, useCallback, useRef, useEffect, useImperativeHandle, forwardRef } from "react";
 import Editor, { OnMount, Monaco } from "@monaco-editor/react";
 import type { editor } from "monaco-editor";
 import {
@@ -15,8 +15,12 @@ import {
   compileCircuitToIR,
   type ValidationError,
   CompilerError,
+  validateCircuit,
+  analyzeCircuit,
 } from "../index";
+import { elaborate } from "@/core/simulator/elaboration";
 import { useComponentLibraryStore } from "@/features/visual-editor/stores/component-library-store";
+import { useAnalysisStore } from "@/features/visual-editor/stores/analysis-store";
 import { CompileButton } from "./CompileButton";
 import { ErrorDisplay, CompilationError } from "./ErrorDisplay";
 import type { Circuit } from "@/features/visual-editor/types/circuit";
@@ -56,6 +60,15 @@ circuit HalfAdder {
 }
 `;
 
+export interface DSLEditorRef {
+  /** Get the current code in the editor */
+  getCode: () => string;
+  /** Set the code in the editor */
+  setCode: (code: string) => void;
+  /** Trigger a compile */
+  compile: () => void;
+}
+
 interface DSLEditorProps {
   onCompileSuccess?: (circuits: Circuit[], dslCode: string) => void;
   autoCompileEnabled?: boolean;
@@ -64,11 +77,11 @@ interface DSLEditorProps {
 
 const STORAGE_KEY = "turing-incomplete-dsl-code";
 
-export function DSLEditor({
+export const DSLEditor = forwardRef<DSLEditorRef, DSLEditorProps>(function DSLEditor({
   onCompileSuccess,
   autoCompileEnabled = false,
   showHeader = true,
-}: DSLEditorProps) {
+}, ref) {
   // Load code from localStorage on mount, fallback to default
   const [code, setCode] = useState(() => {
     if (typeof window !== "undefined") {
@@ -121,8 +134,10 @@ export function DSLEditor({
     monaco.editor.setModelMarkers(model, 'dsl', markers);
   }, [errors]);
 
-  const { registerUser, resolveComponent, getAllComponentNames } =
+  const { registerUser, resolveComponent, getAllComponentNames, getAllPrimitiveNames } =
     useComponentLibraryStore();
+  const { setValidationResult, setMetrics } =
+    useAnalysisStore();
 
   // Save code to localStorage whenever it changes
   const handleCodeChange = useCallback((value: string | undefined) => {
@@ -494,6 +509,36 @@ export function DSLEditor({
         // Notify parent (pass DSL code for version tracking)
         onCompileSuccess?.(compiledCircuits, code);
 
+        // Run validation and analysis pipeline
+        try {
+          // Create a ComponentLibrary adapter for the simulator
+          const library = {
+            resolveComponent,
+            getAllPrimitiveNames,
+          };
+
+          const validationResult = validateCircuit(code, {
+            componentLibrary: library,
+          });
+          setValidationResult(validationResult);
+
+          // If validation passed, try to compute metrics for the last circuit
+          if (validationResult.canSimulate && compiledCircuits.length > 0) {
+            const lastCircuit = compiledCircuits[compiledCircuits.length - 1];
+            try {
+              const flat = elaborate(lastCircuit, library);
+              const metrics = analyzeCircuit({ circuit: lastCircuit, flat, library });
+              setMetrics(metrics);
+            } catch (metricsError) {
+              // Metrics are optional - don't fail if they can't be computed
+              console.warn('Could not compute metrics:', metricsError);
+              setMetrics(null);
+            }
+          }
+        } catch (analysisError) {
+          console.warn('Analysis failed:', analysisError);
+        }
+
         // Clear success message after 5 seconds
         setTimeout(() => setSuccessMessage(null), 5000);
       } catch (error) {
@@ -524,6 +569,19 @@ export function DSLEditor({
     onCompileSuccess,
   ]);
 
+  // Expose ref methods for external access (e.g., from ChatPanel)
+  useImperativeHandle(ref, () => ({
+    getCode: () => code,
+    setCode: (newCode: string) => {
+      setCode(newCode);
+      if (typeof window !== "undefined") {
+        localStorage.setItem(STORAGE_KEY, newCode);
+      }
+    },
+    compile: () => {
+      handleCompile();
+    },
+  }), [code, handleCompile]);
 
   // Auto-compile effect (debounced)
   // Triggers on mount and whenever code changes
@@ -608,4 +666,4 @@ export function DSLEditor({
       <ErrorDisplay errors={errors} />
     </div>
   );
-}
+});
