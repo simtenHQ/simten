@@ -8,13 +8,22 @@ This module provides a complete implementation of the Turing Incomplete Domain-S
 
 **Pipeline:** `DSL Text → Tokens → AST → Validated AST → IR → Simulation`
 
+### IDE-Grade Diagnostics
+
+The parser implements an IDE-grade diagnostics pipeline that reports **all errors at once**:
+
+- **Syntax errors** from Chevrotain parser (missing tokens, unexpected tokens)
+- **Semantic errors** from validator (duplicate names, undefined references, unknown components)
+
+The parser produces a best-effort AST even when syntax errors exist, marking incomplete nodes with `isIncomplete: true`. The validator defensively skips broken nodes, preventing error storms.
+
 ## Quick Start
 
 ```typescript
 import { compileDSL, ComponentLibrary } from '@/features/dsl';
 
 const source = `
-  component HalfAdder {
+  circuit HalfAdder {
     input a: Bit
     input b: Bit
     output sum: Bit
@@ -77,8 +86,17 @@ Uses the Chevrotain parser library for robust parsing with multi-error recovery.
 ```typescript
 import { parseDSL, parseDSLOrThrow } from '@/features/dsl';
 
-// Parse with error collection
+// Parse with error collection (IDE mode)
 const { ast, errors } = parseDSL(source);
+
+// Parse with component library for unknown component errors
+const { ast, errors } = parseDSL(source, {
+  sourceName: 'editor.dsl',
+  componentLibrary: {
+    resolveComponent: (name) => library.get(name),
+    getAllPrimitiveNames: () => ['And', 'Or', 'Xor', 'Not', ...],
+  }
+});
 
 // Or parse and throw on errors
 const ast = parseDSLOrThrow(source);
@@ -86,6 +104,9 @@ const ast = parseDSLOrThrow(source);
 
 **Features:**
 - Multi-error recovery: reports multiple syntax errors in a single pass
+- IDE-grade diagnostics: returns ALL errors (syntax + semantic) at once
+- Best-effort AST: produces AST even with syntax errors (incomplete nodes marked)
+- Optional component library integration for "unknown component" errors
 - Supports all DSL constructs (circuits, ports, nodes, connections, testbenches)
 - Handles parameterized circuits
 - Clear error messages with source locations
@@ -93,24 +114,34 @@ const ast = parseDSLOrThrow(source);
 
 ### Validator
 
-Performs semantic analysis on the AST.
+Performs semantic analysis on the AST. Designed to work with incomplete ASTs from error recovery.
 
 ```typescript
 import { validate } from '@/features/dsl';
 
+// Basic validation
 const errors = validate(ast);
-if (errors.length > 0) {
-  errors.forEach(err => {
-    console.log(`${err.message} at line ${err.location.start.line}`);
-  });
-}
+
+// With component library for unknown component checks
+const errors = validate(ast, {
+  componentLibrary: {
+    resolveComponent: (name) => library.get(name),
+    getAllPrimitiveNames: () => [...primitiveNames],
+  }
+});
 ```
+
+**Error Categories:**
+- `'syntax'` - Parse errors (from Chevrotain)
+- `'structure'` - AST building issues
+- `'semantic'` - Validation errors
 
 **Checks:**
 - Duplicate names (circuits, ports, nodes, parameters)
 - Undefined references (ports, nodes, parameters)
 - Multiple drivers on single input
 - Invalid parameter references
+- Unknown components (when componentLibrary provided)
 
 ### IR Compiler
 
@@ -217,14 +248,14 @@ class MyLibrary implements ComponentLibrary {
 ### Circuit Definition
 
 ```
-component <name> [(<parameters>)] {
+circuit <name> [(<parameters>)] {
   input <name>: <type>
   output <name>: <type>
   clock <name>
   state <name>: <type> [= <initial_value>]
 
   impl {
-    node <instance>: <component>[(<arguments>)]
+    node <instance>: <ComponentType>[(<arguments>)]
     connect <source> -> <target>
   }
 }
@@ -239,7 +270,7 @@ component <name> [(<parameters>)] {
 ### Parameters
 
 ```
-component Adder(width: int = 8) {
+circuit Adder(width: int = 8) {
   input a: Bus[width]
   input b: Bus[width]
   output sum: Bus[width]
@@ -303,10 +334,6 @@ This module integrates with:
 ## Documentation
 
 For complete DSL specification and design rationale:
-- `/docs/dsl-v0.1-spec.md` - DSL syntax and semantics
-- `/docs/PHASE_2_COMPLETION_SUMMARY.md` - Implementation details
+- `/docs/SPECIFICATIONS/DSL-and-IR-specification.md` - DSL syntax and semantics
 - `/docs/dsl-examples.md` - Example circuits
-
-## License
-
-Part of the Turing Incomplete project.
+- `/docs/GUIDES/dsl-editor-guide.md` - Editor usage guide
