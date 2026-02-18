@@ -188,6 +188,19 @@ This is the most important principle in the entire system. See [Component Model]
 
 ## Recent Changes
 
+### IDE-Grade Diagnostics & DSL Guide Update (2026-02-17)
+
+**DSL Parser Improvements:**
+- IDE-grade diagnostics pipeline: shows all errors at once (syntax + semantic)
+- Best-effort AST parsing with incomplete node marking
+- Defensive validation that skips broken nodes
+- Optional component library integration for "unknown component" errors
+- Error categories: `syntax`, `structure`, `semantic`
+
+**Documentation Updates:**
+- [DSL Editor Guide](./GUIDES/dsl-editor-guide.md) - Complete rewrite with correct syntax
+- [DSL README](../src/features/dsl/README.md) - Updated with IDE diagnostics docs
+
 ### Documentation Consolidation (2026-01-28)
 
 **Reduced documentation from 45+ files to ~15 core files:**
@@ -264,8 +277,8 @@ This is the most important principle in the entire system. See [Component Model]
 
 ## Version Information
 
-**Documentation Version:** 1.0.0 (2026-01-28)
+**Documentation Version:** 1.1.0 (2026-02-17)
 **System Version:** 0.1.0
-**Last Major Update:** Documentation consolidation project
+**Last Major Update:** IDE-grade diagnostics pipeline, DSL editor guide rewrite
 
 Historical versions of consolidated documentation are preserved in git history.
