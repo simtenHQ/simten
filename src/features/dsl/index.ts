@@ -1,10 +1,17 @@
 /**
  * DSL Module - Main Entry Point
  *
+ * LLM-native hardware design environment with:
+ * - Validation Pipeline: Static correctness (syntax → semantic → type → structural)
+ * - Analysis Pipeline: Hardware metrics, simulation traces, design deltas
+ *
  * Complete DSL pipeline: Text → Tokens → AST → Validated AST → IR
  */
 
-// Parser pipeline (Text → AST)
+// ============================================================================
+// Parser Pipeline (Text → AST)
+// ============================================================================
+
 export {
   parse,
   parseOrThrow,
@@ -19,11 +26,17 @@ export {
 
 export type { ParseError, ValidationError, ChevrotainParseResult } from './parser';
 
+// ============================================================================
 // Compiler (AST → IR)
+// ============================================================================
+
 export { compileToIR, compileCircuitToIR, CompilerError } from './compiler';
 export type { ComponentLibrary } from './compiler';
 
+// ============================================================================
 // Preprocessor
+// ============================================================================
+
 export {
   preprocessDSL,
   createMapFileResolver,
@@ -31,8 +44,151 @@ export {
 } from './preprocessor';
 export type { FileResolver, PreprocessResult } from './preprocessor';
 
+// ============================================================================
 // Types
+// ============================================================================
+
 export * from './types';
+
+// ============================================================================
+// Validation Pipeline (Static Correctness)
+// ============================================================================
+
+export {
+  // Main API
+  validateCircuit,
+  isValid,
+  canSimulate,
+  validateOrThrow as validateCircuitOrThrow,
+  buildComponentCatalog,
+  // Structural checks
+  checkCycles,
+  checkFloatingInputs,
+  checkFloatingOutputs,
+  runStructuralChecks,
+  buildCombinationalGraph,
+  hasCycle,
+  getNodesInCycles,
+  assertAcyclic,
+  // Component catalog
+  getComponentCatalog,
+  searchComponents,
+  getComponentsByKind,
+  getGrammarSummary,
+  getLLMContext,
+  getComponentDetails,
+  formatComponentDetails,
+  // Formatters
+  formatForMonaco,
+  formatForCLI,
+  formatForLLM,
+  buildLLMSystemPrompt,
+  formatAsJSON,
+  // Utilities
+  isBlocking,
+  createDefaultValidationContext,
+  formatPortType,
+} from './validation';
+
+export type {
+  // Core types
+  ValidationPhase,
+  DiagnosticCode,
+  Diagnostic,
+  ValidationResult,
+  ValidationContext,
+  ValidationSummary,
+  AnalysisContext,
+  ComponentInterface,
+  CycleCheckResult,
+  StructuralCheckResult,
+  // Catalog types
+  ComponentCatalog,
+  // Formatter types
+  MonacoMarker,
+  CLIFormatOptions,
+  LLMFormatOptions,
+  LLMContext,
+  LLMDiagnostic,
+  LLMStatus,
+} from './validation';
+
+// ============================================================================
+// Analysis Pipeline (Hardware Intelligence)
+// ============================================================================
+
+export {
+  // Metrics
+  analyzeCircuit,
+  countSequentialNodes,
+  computeCriticalPath,
+  computeFanMetrics,
+  getNodeFanOut,
+  getNodeFanIn,
+  computeComponentBreakdown,
+  generateStructuralDiagnostics,
+  hasSequentialElements,
+  getSequentialNodeIds,
+  // Simulation
+  simulateCircuit,
+  extractBehavioralDiagnostics,
+  getValueAtCycle,
+  getSignalValues,
+  findTransitions,
+  signalEverEquals,
+  compressTrace,
+  // Delta analysis
+  compareCircuits,
+  findAddedNodes,
+  findRemovedNodes,
+  findAddedConnections,
+  findRemovedConnections,
+  summarizeDelta,
+  generateDeltaSuggestion,
+  compareCircuitsDetailed,
+  // Envelope
+  ENVELOPE_VERSION,
+  buildEnvelope,
+  isEnvelopeValid,
+  canEnvelopeSimulate,
+  getAllDiagnostics,
+  hasErrors,
+  hasWarnings,
+  serializeEnvelope,
+  parseEnvelope,
+  buildMinimalEnvelope,
+  buildFullEnvelope,
+  buildSimulationEnvelope,
+  buildComparisonEnvelope,
+  getEnvelopeStatus,
+  getEnvelopeStatusCode,
+  // Constants
+  MAX_SIMULATION_CYCLES,
+  MAX_OBSERVED_SIGNALS,
+  ANALYSIS_THRESHOLDS,
+  emptyMetrics,
+  emptyTrace,
+  emptyDelta,
+} from './analysis';
+
+export type {
+  // Core types
+  ElaboratedContext,
+  CircuitMetrics,
+  SimulationTrace,
+  SimulateOptions,
+  Stimuli,
+  CircuitDelta,
+  BehavioralDiagnostic,
+  BehavioralDiagnosticCode,
+  AnalysisResult,
+  DetailedDelta,
+  // Envelope types
+  HardwareLLMEnvelope,
+  EnvelopeValidation,
+  EnvelopeDiagnostic,
+  BuildEnvelopeOptions,
+} from './analysis';
 
 // Convenience: Complete pipeline function
 import { parseDSL } from './parser';
