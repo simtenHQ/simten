@@ -127,7 +127,7 @@ The editor provides automatic syntax highlighting:
 ## Compiling Your Circuit
 
 1. Write your DSL code in the editor
-2. Click the **Compile** button (lightning bolt icon)
+2. Click the **Compile** button (lightning bolt icon) or press **Cmd/Ctrl + Enter**
 3. Watch for:
    - **Success**: Green banner showing "Successfully compiled N circuit(s)"
    - **Errors**: Red panel at bottom with line:column and error messages
@@ -139,6 +139,7 @@ When compilation succeeds:
 - It appears in the **User** tab of the library browser
 - You can now use it in other circuits
 - Success message auto-dismisses after 5 seconds
+- **Diagnostics panel** updates with validation results and metrics
 
 ### Handling Errors
 
@@ -153,6 +154,61 @@ Common errors:
 - **Duplicate name**: Two ports or nodes with the same name
 - **Undefined reference**: Connection references non-existent port or node
 - **Syntax error**: Invalid DSL syntax (missing colon, brace, etc.)
+
+## Diagnostics Panel
+
+The **Diagnostics** tab in the right sidebar provides detailed analysis of your circuit after compilation.
+
+### Status Banner
+
+Shows overall validation status:
+- **Green checkmark**: Circuit is valid and ready for simulation
+- **Red X**: Validation failed with errors
+
+### Circuit Metrics
+
+When compilation succeeds, you'll see hardware metrics:
+
+| Metric | Description |
+|--------|-------------|
+| **Nodes** | Total number of component instances |
+| **Registers** | Count of sequential elements (Register, DFlipFlop) |
+| **Critical Path** | Longest combinational path (gate levels) |
+| **Max Fan-out** | Highest number of connections from a single output |
+
+These metrics help you understand your circuit's complexity:
+- High **critical path** suggests the circuit may need pipelining for higher clock speeds
+- High **fan-out** (>8) may indicate timing issues; consider adding buffers
+
+### Analysis Summary
+
+Shows what the compiler found:
+- **Circuits defined**: Names of all circuits in your DSL
+- **Components used**: Which primitives/composites are referenced
+- **Unresolved references**: Components that couldn't be found (errors)
+
+### Diagnostics List
+
+Detailed list of all issues found, grouped by severity:
+
+1. **Errors** (red): Must be fixed before simulation
+   - `UNKNOWN_COMPONENT`: Referenced component doesn't exist
+   - `DUPLICATE_NAME`: Two items share the same name
+   - `COMBINATIONAL_CYCLE`: Illegal feedback loop detected
+   - `FLOATING_INPUT`: Input port not connected
+   - `WIDTH_MISMATCH`: Bus width incompatibility
+
+2. **Warnings** (yellow): Circuit will work but may have issues
+   - `FLOATING_OUTPUT`: Output port not driven
+
+3. **Info** (blue): Suggestions for improvement
+
+Each diagnostic includes:
+- **Error code**: Machine-readable identifier
+- **Phase**: When the error was detected (syntax, semantic, type, structural)
+- **Message**: Human-readable description
+- **Location**: Line and column number
+- **Suggestions**: How to fix the issue
 
 ## Node Instantiation
 

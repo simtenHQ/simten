@@ -71,6 +71,7 @@ Welcome to the Turing Incomplete documentation. This guide helps you navigate th
 
 | Document | Status | Description |
 |----------|--------|-------------|
+| [Validation & Analysis Pipeline](./FEATURES/validation-analysis-pipeline.md) | ✅ Implemented | LLM-native hardware design environment |
 | [Time-Travel Debugging](./FEATURES/time-travel-debugging.md) | ✅ Implemented | Bidirectional simulation navigation |
 | [Systolic Array Architecture](./FEATURES/systolic-array-architecture.md) | ✅ Implemented | Systolic array support |
 | [Parameter UI](./FEATURES/parameter-ui-implementation-plan.md) | 🚧 Planned | Component parameterization UI |
@@ -169,6 +170,8 @@ This is the most important principle in the entire system. See [Component Model]
 - **"...add a new primitive?"** → [How to Add a Primitive](./how-to-add-primitive.md)
 - **"...debug circuits?"** → [Time-Travel Debugging](./FEATURES/time-travel-debugging.md)
 - **"...understand the architecture?"** → [Component Model](./SPECIFICATIONS/component-model.md)
+- **"...validate my circuit?"** → [Validation & Analysis Pipeline](./FEATURES/validation-analysis-pipeline.md)
+- **"...see circuit metrics?"** → [DSL Editor Guide](./GUIDES/dsl-editor-guide.md) (Diagnostics Panel)
 
 ### "What is..."
 
@@ -177,6 +180,8 @@ This is the most important principle in the entire system. See [Component Model]
 - **"...the DSL?"** → [DSL and IR Specification](./SPECIFICATIONS/DSL-and-IR-specification.md)
 - **"...the IR?"** → [DSL and IR Specification](./SPECIFICATIONS/DSL-and-IR-specification.md)
 - **"...time-travel debugging?"** → [Time-Travel Debugging](./FEATURES/time-travel-debugging.md)
+- **"...the validation pipeline?"** → [Validation & Analysis Pipeline](./FEATURES/validation-analysis-pipeline.md)
+- **"...the HardwareLLMEnvelope?"** → [Validation & Analysis Pipeline](./FEATURES/validation-analysis-pipeline.md#hardware-llm-envelope)
 
 ### "Why does..."
 
@@ -187,6 +192,25 @@ This is the most important principle in the entire system. See [Component Model]
 ---
 
 ## Recent Changes
+
+### Validation & Analysis Pipeline (2026-02-18)
+
+**New LLM-Native Hardware Design Environment:**
+- **Validation Pipeline**: 4-phase static correctness checking (syntax → semantic → type → structural)
+- **Analysis Pipeline**: Hardware metrics extraction (node count, registers, critical path, fan-out)
+- **Diagnostics Panel**: New UI tab showing validation results and circuit metrics
+- **Cycle Detection**: Tarjan's SCC algorithm for combinational cycle detection
+- **Floating Port Detection**: Identifies unconnected inputs and undriven outputs
+
+**New Features:**
+- `validateCircuit()` - Comprehensive validation with typed diagnostics
+- `analyzeCircuit()` - Extract hardware metrics from elaborated circuits
+- `formatForLLM()` - Structured output for AI consumption
+- `HardwareLLMEnvelope` - Canonical response contract for LLM interactions
+
+**Documentation:**
+- [Validation & Analysis Pipeline](./FEATURES/validation-analysis-pipeline.md) - Complete API reference
+- [DSL Editor Guide](./GUIDES/dsl-editor-guide.md) - Updated with Diagnostics panel
 
 ### IDE-Grade Diagnostics & DSL Guide Update (2026-02-17)
 
@@ -277,8 +301,8 @@ This is the most important principle in the entire system. See [Component Model]
 
 ## Version Information
 
-**Documentation Version:** 1.1.0 (2026-02-17)
+**Documentation Version:** 1.2.0 (2026-02-18)
 **System Version:** 0.1.0
-**Last Major Update:** IDE-grade diagnostics pipeline, DSL editor guide rewrite
+**Last Major Update:** Validation & Analysis Pipeline, Diagnostics Panel
 
 Historical versions of consolidated documentation are preserved in git history.
