@@ -188,9 +188,11 @@ export function getComponentsByKind(
 
 /**
  * Generate a concise grammar summary for LLM context.
+ * Includes both template and concrete example for clarity.
  */
 export function getGrammarSummary(): string {
-  return `circuit <Name> {
+  return `// Template syntax:
+circuit <Name> {
   input <name>: Bit | Bus[N]
   output <name>: Bit | Bus[N]
   clock <name>
@@ -198,7 +200,20 @@ export function getGrammarSummary(): string {
     node <instance>: <ComponentType>
     connect <source> -> <target>
   }
-}`;
+}
+
+// Concrete example:
+circuit SwitchToLed {
+  impl {
+    node sw: Switch
+    node led: Led
+    connect sw.out -> led.in
+  }
+}
+
+// WRONG: Do NOT use this syntax:
+// Switch sw;        <- WRONG (not valid DSL)
+// sw.out -> led.in; <- WRONG (not valid DSL)`;
 }
 
 /**

@@ -15,6 +15,7 @@ import type {
   EnvelopeDiagnostic,
   CircuitMetrics,
   SimulationTrace,
+  ComponentInterface,
 } from '@/features/dsl';
 import type { BitValue, BusValue } from '@/features/visual-editor/types/circuit';
 
@@ -68,9 +69,30 @@ function formatCycleCompact(
 /**
  * Build a semantic narrative summary from HardwareLLMEnvelope.
  * This is NOT JSON - it's prose optimized for LLM reasoning.
+ *
+ * IMPORTANT: Grammar and component catalog are placed FIRST because
+ * token budget enforcement truncates from the end. These sections
+ * are critical for correct DSL code generation.
  */
 export function buildNarrativeSummary(envelope: HardwareLLMEnvelope): string {
   const lines: string[] = [];
+
+  // DSL Grammar FIRST (critical for code generation - survives truncation)
+  if (envelope.grammarSummary) {
+    lines.push(`## DSL Grammar (REQUIRED SYNTAX)`);
+    lines.push('```');
+    lines.push(envelope.grammarSummary);
+    lines.push('```');
+    lines.push('IMPORTANT: Use "node <name>: <Type>" syntax, NOT "<Type> <name>;"');
+    lines.push('IMPORTANT: Use "connect <src> -> <dst>" syntax, NOT "<src> -> <dst>;"');
+    lines.push('');
+  }
+
+  // Component catalog with port signatures SECOND (critical for correct port names)
+  if (envelope.components && envelope.components.length > 0) {
+    lines.push(...formatComponentCatalog(envelope.components));
+    lines.push('');
+  }
 
   // Validation status
   lines.push(`## Circuit Status`);
@@ -154,7 +176,71 @@ export function buildNarrativeSummary(envelope: HardwareLLMEnvelope): string {
     lines.push('');
   }
 
+  // Grammar and component catalog are at the START of the narrative
+  // (they survive truncation, unlike content placed here at the end)
+
   return lines.join('\n');
+}
+
+/**
+ * Format component catalog as narrative.
+ * Groups by kind and shows port signatures.
+ */
+function formatComponentCatalog(components: ComponentInterface[]): string[] {
+  const lines: string[] = [];
+  lines.push(`## Available Components`);
+
+  // Group by kind
+  const combinational = components.filter((c) => c.kind === 'combinational' || !c.kind);
+  const sequential = components.filter((c) => c.kind === 'sequential');
+  const sinks = components.filter((c) => c.kind === 'sink');
+
+  if (combinational.length > 0) {
+    lines.push('');
+    lines.push('### Combinational');
+    for (const c of combinational.slice(0, 20)) {
+      lines.push(`- ${formatComponentSignature(c)}`);
+    }
+    if (combinational.length > 20) {
+      lines.push(`  (+${combinational.length - 20} more)`);
+    }
+  }
+
+  if (sequential.length > 0) {
+    lines.push('');
+    lines.push('### Sequential');
+    for (const c of sequential) {
+      lines.push(`- ${formatComponentSignature(c)}`);
+    }
+  }
+
+  if (sinks.length > 0) {
+    lines.push('');
+    lines.push('### Sinks (display/output)');
+    for (const c of sinks) {
+      lines.push(`- ${formatComponentSignature(c)}`);
+    }
+  }
+
+  return lines;
+}
+
+/**
+ * Format a component signature showing ports.
+ */
+function formatComponentSignature(component: ComponentInterface): string {
+  const inputs = component.inputs.map((p) => `${p.name}: ${p.type}`).join(', ');
+  const outputs = component.outputs.map((p) => `${p.name}: ${p.type}`).join(', ');
+
+  let sig = `**${component.name}**`;
+  sig += ` (${inputs || 'none'})`;
+  sig += ` -> (${outputs || 'none'})`;
+
+  if (component.clocks.length > 0) {
+    sig += ` [clk: ${component.clocks.map((c) => c.name).join(', ')}]`;
+  }
+
+  return sig;
 }
 
 /**
