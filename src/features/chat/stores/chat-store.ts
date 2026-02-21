@@ -14,6 +14,7 @@ import type {
   StreamingState,
   ActionExecutionStatus,
 } from '../types';
+import type { AgentState, GoalState, AgentTurn } from '../agent/types';
 import { GUARDRAILS } from '../constants';
 
 // ============================================================================
@@ -33,6 +34,12 @@ interface ChatState {
   actionStatus: Map<string, ActionExecutionStatus>;
   /** Executed action IDs for idempotency */
   executedActions: Set<string>;
+  /** Whether agent mode is enabled */
+  isAgentMode: boolean;
+  /** Current agent state (when in agent mode) */
+  agentState: AgentState | null;
+  /** Whether an agent loop is currently running */
+  isAgentRunning: boolean;
 }
 
 // ============================================================================
@@ -74,6 +81,14 @@ interface ChatActions {
   // Session management
   resetSession: () => void;
   getConversationHistory: () => string[];
+
+  // Agent mode
+  setAgentMode: (enabled: boolean) => void;
+  startAgentLoop: (goalState: GoalState) => void;
+  updateAgentState: (state: AgentState) => void;
+  addAgentTurn: (turn: AgentTurn) => void;
+  finishAgentLoop: (state: AgentState) => void;
+  cancelAgentLoop: () => void;
 }
 
 // ============================================================================
@@ -95,6 +110,9 @@ function createInitialState(): ChatState {
     sessionId: nanoid(),
     actionStatus: new Map(),
     executedActions: new Set(),
+    isAgentMode: false,
+    agentState: null,
+    isAgentRunning: false,
   };
 }
 
@@ -279,6 +297,69 @@ export const useChatStore = create<ChatStore>()(
         .filter((m) => m.role !== 'system')
         .slice(-GUARDRAILS.MAX_CONVERSATION_HISTORY)
         .map((m) => `${m.role}: ${m.content}`);
+    },
+
+    // Agent mode
+    setAgentMode: (enabled) => {
+      set((state) => {
+        state.isAgentMode = enabled;
+        if (!enabled) {
+          state.agentState = null;
+          state.isAgentRunning = false;
+        }
+      });
+    },
+
+    startAgentLoop: (goalState) => {
+      set((state) => {
+        state.isAgentRunning = true;
+        state.agentState = {
+          turns: [],
+          totalTokensUsed: 0,
+          status: 'running',
+          goalState,
+        };
+      });
+    },
+
+    updateAgentState: (agentState) => {
+      set((state) => {
+        state.agentState = agentState;
+      });
+    },
+
+    addAgentTurn: (turn) => {
+      set((state) => {
+        if (state.agentState) {
+          state.agentState.turns.push(turn);
+        }
+        // Add message with action for user to execute
+        // In agent mode, we show actions and wait for user to execute them
+        // This gives the user control while still being agentic
+        state.messages.push({
+          id: nanoid(),
+          role: 'assistant',
+          content: turn.response.message,
+          timestamp: Date.now(),
+          actions: turn.response.action ? [turn.response.action] : undefined,
+        });
+      });
+    },
+
+    finishAgentLoop: (agentState) => {
+      set((state) => {
+        state.agentState = agentState;
+        state.isAgentRunning = false;
+      });
+    },
+
+    cancelAgentLoop: () => {
+      set((state) => {
+        if (state.agentState) {
+          state.agentState.status = 'cancelled';
+        }
+        state.isAgentRunning = false;
+      });
     },
   }))
 );

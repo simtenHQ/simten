@@ -48,6 +48,7 @@ function HardwareAssistant(userMessage: string, dslCode: string, compactContext:
        - Use ONLY for circuits with clocks/registers/flip-flops
        - Use when user asks "step the clock", "run 10 cycles", "advance time"
        - Do NOT use for purely combinational circuits - use SET_INPUT instead
+       - IMPORTANT: If the user asks "what are the values?", READ them from "Current Signal Values" section - don't run more simulation cycles just to "refresh" data
 
     3. **SHOW_DIFF**: Suggest code changes (user reviews and applies in UI)
        - Use when fixing bugs, optimizing, or refactoring
