@@ -29,13 +29,17 @@ export const GUARDRAILS = {
 
 export const DIFF_GUARDRAILS = {
   /** Maximum number of changed lines in a diff */
-  MAX_CHANGED_LINES: 50,
-  /** Maximum diff size in bytes */
-  MAX_DIFF_SIZE_BYTES: 5000,
+  MAX_CHANGED_LINES: 200,
+  /** Maximum diff size in bytes (15KB allows complex circuits like CORDIC) */
+  MAX_DIFF_SIZE_BYTES: 15000,
   /** Require non-empty explanation */
   REQUIRE_EXPLANATION: true,
-  /** Require suggested code to parse without errors */
-  REQUIRE_VALID_SYNTAX: true,
+  /**
+   * Require suggested code to parse without errors.
+   * Disabled: Let the Monaco editor show errors on apply instead.
+   * This allows partial diffs and is how most code assistants work.
+   */
+  REQUIRE_VALID_SYNTAX: false,
 } as const;
 
 // ============================================================================
@@ -108,4 +112,22 @@ export const CHAT_UI = {
   MODIFIER_KEY: 'meta', // Cmd on Mac, Ctrl on Windows
   /** Default panel width */
   PANEL_WIDTH: 420,
+} as const;
+
+// ============================================================================
+// Agent Mode Constants
+// ============================================================================
+
+/**
+ * Guardrails for agent mode execution.
+ */
+export const AGENT_MODE = {
+  /** Maximum turns before stopping */
+  MAX_TURNS: 10,
+  /** Maximum tokens per turn */
+  MAX_TOKENS_PER_TURN: 2000,
+  /** Total token budget across all turns */
+  TOTAL_TOKEN_BUDGET: 20000,
+  /** Whether to auto-apply diffs in agent mode */
+  AUTO_APPLY_DIFFS: true,
 } as const;

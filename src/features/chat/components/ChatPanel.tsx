@@ -7,22 +7,25 @@
 
 'use client';
 
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useMemo } from 'react';
 import {
   Sheet,
   SheetContent,
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet';
-import { Bot, X } from 'lucide-react';
+import { Bot, X, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { MessageList } from './MessageList';
 import { ChatInput } from './ChatInput';
 import { CodeDiffView } from './CodeDiffView';
 import { ConfirmationModal } from './ConfirmationModal';
+import { AgentProgress } from './AgentProgress';
+import { AgentStatusLine } from './AgentStatusLine';
 import { useChatStore } from '../stores/chat-store';
 import { sendMessage } from '../streaming';
 import { executeAction, applyDiff, buildConfirmationRequest, type ActionExecutionContext } from '../actions';
+import { useAgentLoop } from '../hooks/useAgentLoop';
 import type { AssistantAction } from '../types';
 import type { ShowDiffAction } from '@/lib/baml_client/baml_client';
 import type { ConfirmationRequest } from '../actions/confirmation-flow';
@@ -77,9 +80,55 @@ export function ChatPanel({
   const [confirmationRequest, setConfirmationRequest] = useState<ConfirmationRequest | null>(null);
   const confirmationResolveRef = useRef<((confirmed: boolean) => void) | null>(null);
 
+  // Build execution context for agent loop
+  const executionContext: ActionExecutionContext = useMemo(() => ({
+    sessionId,
+    getCurrentCode,
+    sourceCodeHash,
+    setCode,
+    setInput,
+    runSimulation,
+    insertNode,
+    onStatusChange: setActionStatus,
+    requestConfirmation: async (confirmAction: AssistantAction) => {
+      return new Promise((resolve) => {
+        const request = buildConfirmationRequest(confirmAction);
+        setConfirmationRequest(request);
+        confirmationResolveRef.current = resolve;
+      });
+    },
+  }), [sessionId, getCurrentCode, sourceCodeHash, setCode, setInput, runSimulation, insertNode, setActionStatus]);
+
+  // Create getter for narrative context (called fresh each turn)
+  // Uses a ref to always get the latest prop value without stale closures
+  const narrativeContextRef = useRef(narrativeContext);
+  narrativeContextRef.current = narrativeContext;
+  const getNarrativeContext = useCallback(() => narrativeContextRef.current, []);
+
+  // Agent loop hook
+  const {
+    startLoop,
+    cancelLoop,
+    isRunning: isAgentRunning,
+    agentState,
+    isAgentMode,
+    setAgentMode,
+  } = useAgentLoop({
+    executionContext,
+    getNarrativeContext,
+    sourceCodeHash,
+  });
+
   // Handle sending a message
   const handleSend = useCallback(
     async (content: string) => {
+      // If agent mode is enabled, use the agent loop
+      if (isAgentMode) {
+        await startLoop(content);
+        return;
+      }
+
+      // Standard one-shot mode
       // Add user message
       addUserMessage(content);
 
@@ -121,6 +170,8 @@ export function ChatPanel({
       );
     },
     [
+      isAgentMode,
+      startLoop,
       addUserMessage,
       startStreaming,
       updateStreamingMessage,
@@ -154,6 +205,14 @@ export function ChatPanel({
       };
 
       await executeAction(action, context);
+
+      // Auto-continue agent loop if waiting for user
+      if (agentState?.status === 'waiting_for_user') {
+        // Small delay to let the action effects propagate
+        setTimeout(() => {
+          startLoop('continue');
+        }, 200);
+      }
     },
     [
       sessionId,
@@ -164,6 +223,8 @@ export function ChatPanel({
       runSimulation,
       insertNode,
       setActionStatus,
+      agentState,
+      startLoop,
     ]
   );
 
@@ -177,10 +238,18 @@ export function ChatPanel({
   // Handle applying diff
   const handleApplyDiff = useCallback(() => {
     if (showDiffAction) {
-      applyDiff(showDiffAction, setCode);
+      applyDiff(showDiffAction, setCode, getCurrentCode);
       setShowDiffAction(null);
+
+      // Auto-continue agent loop if waiting for user
+      if (agentState?.status === 'waiting_for_user') {
+        // Small delay to let the code change propagate
+        setTimeout(() => {
+          startLoop('continue');
+        }, 200);
+      }
     }
-  }, [showDiffAction, setCode]);
+  }, [showDiffAction, setCode, getCurrentCode, agentState, startLoop]);
 
   // Handle confirmation response
   const handleConfirm = useCallback(() => {
@@ -218,15 +287,37 @@ export function ChatPanel({
               <Bot className="h-5 w-5 text-blue-600" />
               <SheetTitle>Hardware Assistant</SheetTitle>
             </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8"
-              onClick={() => setOpen(false)}
-            >
-              <X className="h-4 w-4" />
-            </Button>
+            <div className="flex items-center gap-2">
+              {/* Agent Mode Toggle */}
+              <Button
+                variant={isAgentMode ? 'default' : 'outline'}
+                size="sm"
+                className="h-7 text-xs gap-1"
+                onClick={() => setAgentMode(!isAgentMode)}
+                disabled={isAgentRunning}
+              >
+                <Zap className={`h-3 w-3 ${isAgentMode ? 'text-yellow-300' : ''}`} />
+                Agent
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                onClick={() => setOpen(false)}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
           </SheetHeader>
+
+          {/* Agent Status Line (compact Claude Code-style indicator) */}
+          {agentState && (isAgentRunning || agentState.status === 'waiting_for_user') && (
+            <AgentStatusLine
+              state={agentState}
+              isRunning={isAgentRunning}
+              onCancel={cancelLoop}
+            />
+          )}
 
           {/* Messages */}
           <MessageList
@@ -240,7 +331,8 @@ export function ChatPanel({
           {/* Input */}
           <ChatInput
             onSend={handleSend}
-            disabled={streaming.isStreaming}
+            disabled={streaming.isStreaming || isAgentRunning}
+            placeholder={isAgentMode ? 'Describe your goal (agent will iterate)...' : undefined}
           />
         </SheetContent>
       </Sheet>

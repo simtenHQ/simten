@@ -12,3 +12,5 @@ export { ActionCard } from './ActionCard';
 export { CodeDiffView } from './CodeDiffView';
 export { ConfirmationModal } from './ConfirmationModal';
 export { StaleActionNotice } from './StaleActionNotice';
+export { AgentProgress } from './AgentProgress';
+export { GoalStateView, GoalBadge } from './GoalStateView';

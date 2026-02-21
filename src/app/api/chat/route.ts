@@ -133,6 +133,10 @@ export async function POST(request: NextRequest) {
                   console.warn(
                     `[Chat] Diff validation failed: ${diffValidation.reason}`
                   );
+                  // Log detailed parse errors if available
+                  if (diffValidation.errors) {
+                    console.warn('[Chat] Parse errors:', diffValidation.errors);
+                  }
                   return false;
                 }
               }

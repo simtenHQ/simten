@@ -7,6 +7,7 @@
 export {
   buildNarrativeSummary,
   buildMinimalNarrative,
+  formatCurrentPortValues,
 } from './narrative-builder';
 
 export {
@@ -16,3 +17,10 @@ export {
   enforceTokenBudget,
   truncateConversationHistory,
 } from './token-counter';
+
+export {
+  formatGoalState,
+  formatGoalStateCompact,
+  formatStatusChange,
+  getRecentChanges,
+} from './goal-formatter';
