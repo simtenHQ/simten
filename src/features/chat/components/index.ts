@@ -13,4 +13,7 @@ export { CodeDiffView } from './CodeDiffView';
 export { ConfirmationModal } from './ConfirmationModal';
 export { StaleActionNotice } from './StaleActionNotice';
 export { AgentProgress } from './AgentProgress';
+export { AgentStatusLine } from './AgentStatusLine';
 export { GoalStateView, GoalBadge } from './GoalStateView';
+export { AssertionResultsCard } from './AssertionResultsCard';
+export { SignalTraceView } from './SignalTraceView';

@@ -10,7 +10,10 @@
       "Bash(wc:*)",
       "Bash(pnpm test:run:*)",
       "Bash(git -C /Users/charlesharris/Documents/Personal/turing-incomplete show --stat d7008d8)",
-      "Bash(git -C /Users/charlesharris/Documents/Personal/turing-incomplete log --oneline --all)"
+      "Bash(git -C /Users/charlesharris/Documents/Personal/turing-incomplete log --oneline --all)",
+      "Bash(find /Users/charlesharris/Documents/Personal/turing-incomplete -maxdepth 1 -type f -name \"tsconfig.json\" -o -name \"tailwind.config.*\" -o -name \"postcss.config.*\" | xargs ls -la 2>/dev/null)",
+      "Bash(grep:*)",
+      "Bash(head:*)"
     ]
   }
 }

@@ -14,11 +14,14 @@ import type {
   GoalState,
   ActionObservation,
   BehavioralExpectation,
+  ValidationSnapshot,
+  ObservationRequest,
 } from './types';
 import type { ActionExecutionContext } from '../actions/action-executor';
-import { parseGoalFromMessage, updateGoalState, allCriteriaSatisfied, allBehavioralChecksPassed, getPendingBehavioralExpectations } from './goal-state';
+import { parseGoalFromMessage, updateGoalState, allCriteriaSatisfied, allBehavioralChecksPassed, getPendingBehavioralExpectations, hasBehavioralCriteria } from './goal-state';
 import { generateExpectationsFromGoal } from './expectation-generator';
-import { computeSemanticSignals, createDefaultSignals } from './semantic-signals';
+import { computeSemanticSignals, computeBehavioralSignal, createDefaultSignals } from './semantic-signals';
+import { verifyBehavior, portValuesToSimResult } from './behavioral-verification';
 import { buildTurnContext } from './turn-context';
 
 // ============================================================================
@@ -87,6 +90,13 @@ export async function runAgentLoop(
   const goalState = parseGoalFromMessage(userMessage);
   const expectations = generateExpectationsFromGoal(goalState);
 
+  // Raise turn limit for verification tasks (behavioral or assertion criteria)
+  const hasVerificationGoals = hasBehavioralCriteria(goalState) ||
+    goalState.successCriteria.some(c => c.id === 'assertion-coverage');
+  const effectiveGuardrails = hasVerificationGoals
+    ? { ...guardrails, MAX_TURNS: Math.max(guardrails.MAX_TURNS, 15) }
+    : guardrails;
+
   const state: AgentState = {
     turns: [],
     totalTokensUsed: 0,
@@ -101,7 +111,7 @@ export async function runAgentLoop(
   // Main loop
   while (state.status === 'running') {
     // Guard: max turns
-    if (state.turns.length >= guardrails.MAX_TURNS) {
+    if (state.turns.length >= effectiveGuardrails.MAX_TURNS) {
       state.status = 'max_turns_reached';
       break;
     }
@@ -162,6 +172,14 @@ export async function runAgentLoop(
       currentNarrative = buildRefreshedNarrative(executionContext);
     }
 
+    // Handle observation request (gathers data without consuming an action)
+    if (response.observationRequest) {
+      const obsResult = await fulfillObservationRequest(response.observationRequest, executionContext);
+      if (obsResult) {
+        currentNarrative = (currentNarrative ? currentNarrative + '\n\n' : '') + obsResult;
+      }
+    }
+
     // Update plan from response
     if (response.plan) {
       state.currentPlan = response.plan;
@@ -189,7 +207,7 @@ export async function runAgentLoop(
     }
 
     // Check token budget
-    if (state.totalTokensUsed >= guardrails.TOTAL_TOKEN_BUDGET) {
+    if (state.totalTokensUsed >= effectiveGuardrails.TOTAL_TOKEN_BUDGET) {
       state.status = 'max_turns_reached';
       break;
     }
@@ -247,23 +265,38 @@ async function executeAndObserve(
     appliedCode: action.type === 'SHOW_DIFF' ? context.getCurrentCode() : undefined,
   };
 
+  // For VERIFY_ASSERTION, the result.reason contains the formatted summary
+  // Parse it to populate structured assertion results on the observation
+  if (action.type === 'VERIFY_ASSERTION' && result.success && result.reason) {
+    // The reason string is from formatAssertionSummary — extract pass/fail counts
+    const passMatch = result.reason.match(/(\d+)\/(\d+) passed/);
+    if (passMatch) {
+      const passed = parseInt(passMatch[1], 10);
+      const total = parseInt(passMatch[2], 10);
+      observation.assertionResults = {
+        total,
+        passed,
+        failed: total - passed,
+        allPassed: passed === total,
+        results: [],
+      };
+    }
+  }
+
   // For RUN_SIMULATION, run behavioral verification
   if (action.type === 'RUN_SIMULATION' && result.success) {
     const pendingExpectations = getPendingBehavioralExpectations(goalState, expectations);
 
-    if (pendingExpectations.length > 0) {
-      // Note: In a full implementation, we'd capture actual simulation outputs
-      // For now, we'll create a placeholder - the real verification would
-      // require integration with the simulation engine
-      observation.verificationResults = [];
+    if (pendingExpectations.length > 0 && context.getPortValues) {
+      const portValues = context.getPortValues();
+      const simResult = portValuesToSimResult(portValues, 1);
 
-      // Update behavioral signal
-      observation.signals.behavioral = {
-        verificationsRun: pendingExpectations.length,
-        passed: 0,
-        failed: pendingExpectations.length,
-        mismatches: [],
-      };
+      const verificationResults = pendingExpectations.map(exp =>
+        verifyBehavior(exp, simResult)
+      );
+
+      observation.verificationResults = verificationResults;
+      observation.signals.behavioral = computeBehavioralSignal(verificationResults);
     }
   }
 
@@ -273,28 +306,76 @@ async function executeAndObserve(
 /**
  * Capture current validation state from context.
  */
-function captureValidationState(_context: ActionExecutionContext): {
-  errors: number;
-  warnings: number;
-  canSimulate: boolean;
-} {
-  // This would integrate with the actual validation system
-  // For now, return a placeholder
-  return {
-    errors: 0,
-    warnings: 0,
-    canSimulate: true,
-  };
+function captureValidationState(context: ActionExecutionContext): ValidationSnapshot {
+  if (context.getValidationSnapshot) {
+    return context.getValidationSnapshot();
+  }
+  // Fallback if callback not wired
+  return { errors: 0, warnings: 0, canSimulate: true };
 }
 
 /**
  * Build refreshed narrative context after an action.
  */
-function buildRefreshedNarrative(_context: ActionExecutionContext): string {
-  // This would call the narrative builder with fresh validation state
-  // For now, return empty - the actual implementation would integrate
-  // with the useNarrativeContext hook or buildNarrativeContext function
+function buildRefreshedNarrative(context: ActionExecutionContext): string {
+  if (context.getNarrativeContext) {
+    return context.getNarrativeContext();
+  }
   return '';
+}
+
+// ============================================================================
+// Observation Request Fulfillment
+// ============================================================================
+
+/**
+ * Fulfill an observation request from the agent.
+ * Returns a string to inject into the narrative context for the next turn.
+ */
+async function fulfillObservationRequest(
+  request: ObservationRequest,
+  context: ActionExecutionContext
+): Promise<string | null> {
+  switch (request.type) {
+    case 'validate': {
+      const snapshot = captureValidationState(context);
+      return `[Observation: Validation] Errors: ${snapshot.errors}, Warnings: ${snapshot.warnings}, Can simulate: ${snapshot.canSimulate}`;
+    }
+
+    case 'simulate': {
+      // Run a quick simulation and report port values
+      const cycles = request.cycles ?? 1;
+      try {
+        const result = await executeAction(
+          { type: 'RUN_SIMULATION', cycles } as AssistantAction,
+          context
+        );
+        if (result.success && context.getPortValues) {
+          const portValues = context.getPortValues();
+          const entries = Array.from(portValues.entries())
+            .map(([k, v]) => `${k}=${v}`)
+            .join(', ');
+          return `[Observation: Simulation ${cycles} cycles] Port values: ${entries}`;
+        }
+        return `[Observation: Simulation failed] ${result.reason ?? 'Unknown error'}`;
+      } catch {
+        return '[Observation: Simulation error]';
+      }
+    }
+
+    case 'inspect_signal': {
+      if (!request.signalName || !context.getPortValues) return null;
+      const portValues = context.getPortValues();
+      const value = portValues.get(request.signalName);
+      if (value !== undefined) {
+        return `[Observation: Signal ${request.signalName}] Current value: ${value}`;
+      }
+      return `[Observation: Signal ${request.signalName}] Not found in current port values`;
+    }
+
+    default:
+      return null;
+  }
 }
 
 // ============================================================================

@@ -52,23 +52,34 @@ export enum ActionType {
   RUN_SIMULATION = "RUN_SIMULATION",
   SHOW_DIFF = "SHOW_DIFF",
   INSERT_NODE = "INSERT_NODE",
+  GENERATE_HARNESS = "GENERATE_HARNESS",
+  VERIFY_ASSERTION = "VERIFY_ASSERTION",
 }
 
 export interface AgentResponse {
   schemaVersion: "1.0"
   message: string
-  action?: SetInputAction | RunSimulationAction | ShowDiffAction | InsertNodeAction | null
+  action?: SetInputAction | RunSimulationAction | ShowDiffAction | InsertNodeAction | GenerateHarnessAction | VerifyAssertionAction | null
   done: boolean
   plan?: string[] | null
   reasoning?: string | null
+  observationRequest?: ObservationRequest | null
   
 }
 
 export interface AssistantResponse {
   schemaVersion: "1.0"
   message: string
-  actions: (SetInputAction | RunSimulationAction | ShowDiffAction | InsertNodeAction)[]
+  actions: (SetInputAction | RunSimulationAction | ShowDiffAction | InsertNodeAction | GenerateHarnessAction)[]
   suggestedFollowUps?: string[] | null
+  shouldContinue: boolean
+  
+}
+
+export interface GenerateHarnessAction {
+  actionId?: string | null
+  type: "GENERATE_HARNESS"
+  circuitName?: string | null
   
 }
 
@@ -79,6 +90,13 @@ export interface InsertNodeAction {
   suggestedLabel?: string | null
   connectFrom?: string | null
   connectTo?: string | null
+  
+}
+
+export interface ObservationRequest {
+  type: "simulate" | "validate" | "inspect_signal"
+  signalName?: string | null
+  cycles?: number | null
   
 }
 
@@ -104,5 +122,13 @@ export interface ShowDiffAction {
   originalCode: string
   suggestedCode: string
   explanation: string
+  
+}
+
+export interface VerifyAssertionAction {
+  actionId?: string | null
+  type: "VERIFY_ASSERTION"
+  targetCircuit?: string | null
+  maxCycles?: number | null
   
 }

@@ -19,6 +19,7 @@ export interface StreamChunk {
     message: string;
     actions: AssistantAction[];
     suggestedFollowUps?: string[] | null;
+    shouldContinue?: boolean;
   };
   error?: string;
 }
@@ -27,6 +28,7 @@ export interface StreamResult {
   message: string;
   actions: AssistantAction[];
   suggestedFollowUps?: string[];
+  shouldContinue?: boolean;
   streamingError: boolean;
   error?: string;
 }
@@ -105,6 +107,7 @@ export async function processStream(
                   message: chunk.response.message,
                   actions: chunk.response.actions as AssistantAction[],
                   suggestedFollowUps: chunk.response.suggestedFollowUps ?? undefined,
+                  shouldContinue: chunk.response.shouldContinue ?? false,
                   streamingError: false,
                 });
               }
@@ -155,6 +158,7 @@ function processRemainingBuffer(
         message: chunk.response.message,
         actions: chunk.response.actions as AssistantAction[],
         suggestedFollowUps: chunk.response.suggestedFollowUps ?? undefined,
+        shouldContinue: chunk.response.shouldContinue ?? false,
         streamingError: false,
       });
       return;

@@ -15,7 +15,9 @@ export type { ComponentLibrary } from './ir-generator';
 
 export {
   compileTestbenchToIR,
+  compileAssertions,
   validateTestbenchAgainstDUT,
+  validateAssertionSignals,
   TestbenchCompilerError,
   ComponentNotFoundError,
 } from './testbench-compiler';

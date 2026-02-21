@@ -22,7 +22,7 @@ import type { BamlRuntime, BamlCtxManager, Image, Audio, Pdf, Video } from "@bou
 import { toBamlError, HTTPRequest, ClientRegistry } from "@boundaryml/baml"
 import type { Checked, Check } from "./types"
 import type * as types from "./types"
-import type {ActionType, AgentResponse, AssistantResponse, InsertNodeAction, RunSimulationAction, SetInputAction, ShowDiffAction} from "./types"
+import type {ActionType, AgentResponse, AssistantResponse, GenerateHarnessAction, InsertNodeAction, ObservationRequest, RunSimulationAction, SetInputAction, ShowDiffAction, VerifyAssertionAction} from "./types"
 import type TypeBuilder from "./type_builder"
 import type * as events from "./events"
 

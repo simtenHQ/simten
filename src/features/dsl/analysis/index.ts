@@ -27,6 +27,7 @@ export type {
   BehavioralDiagnostic,
   BehavioralDiagnosticCode,
   AnalysisResult,
+  SignalMetrics,
 } from './types';
 
 export {
@@ -67,6 +68,9 @@ export {
   findTransitions,
   signalEverEquals,
   compressTrace,
+  detectSteadyState,
+  computeAllSignalMetrics,
+  extractCausalityChains,
 } from './simulate';
 
 // ============================================================================

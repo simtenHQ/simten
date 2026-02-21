@@ -96,6 +96,20 @@ export interface Stimuli {
 }
 
 /**
+ * Per-signal metrics computed from simulation trace.
+ * Captures activity statistics for each observed signal.
+ */
+export interface SignalMetrics {
+  /** Number of times the signal changed value across all sampled cycles */
+  transitions: number;
+  /**
+   * For Bit (boolean) signals: fraction of sampled cycles the signal was true.
+   * Undefined for Bus (numeric) signals.
+   */
+  dutyCycle?: number;
+}
+
+/**
  * Simulation trace - temporal behavior captured over cycles.
  */
 export interface SimulationTrace {
@@ -109,6 +123,17 @@ export interface SimulationTrace {
   sampleRate: number;
   /** Cycle numbers that were sampled */
   sampledCycles: number[];
+  /**
+   * Sampled cycle index at which all observed signals became constant and
+   * remained so for the rest of the simulation window.
+   * Undefined if the circuit never reached steady state within the window.
+   */
+  steadyStateAt?: number;
+  /**
+   * Per-signal activity metrics (signal/register name -> metrics).
+   * Computed after simulation completes.
+   */
+  signalMetrics?: Record<string, SignalMetrics>;
 }
 
 // ============================================================================
@@ -154,7 +179,8 @@ export type BehavioralDiagnosticCode =
   | 'REDUNDANT_LOGIC'
   | 'HIGH_TOGGLE_RATE'
   | 'LONG_COMBINATIONAL_PATH'
-  | 'LOW_ACTIVITY';
+  | 'LOW_ACTIVITY'
+  | 'STATE_TRANSITION_EXPLAINED';
 
 /**
  * Behavioral diagnostic - design insight, not error.

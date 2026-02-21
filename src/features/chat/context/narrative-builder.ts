@@ -17,6 +17,7 @@ import type {
   SimulationTrace,
   ComponentInterface,
 } from '@/features/dsl';
+import { analyzeForHarness } from '@/features/dsl';
 import type { BitValue, BusValue } from '@/features/visual-editor/types/circuit';
 import type { FlatPortValueMap } from '@/core/simulator';
 
@@ -145,10 +146,24 @@ export function buildNarrativeSummary(envelope: HardwareLLMEnvelope): string {
     lines.push('');
   }
 
-  // Simulation timeline (last N cycles)
+  // Simulation timeline (last N cycles) + enriched observations
   if (envelope.simulation && envelope.simulation.cycles > 0) {
     lines.push(...formatSimulationNarrative(envelope.simulation));
     lines.push('');
+
+    // Steady-state detection
+    const steadyStateLines = formatSteadyStateNarrative(envelope.simulation);
+    if (steadyStateLines.length > 0) {
+      lines.push(...steadyStateLines);
+      lines.push('');
+    }
+
+    // Signal transition summary
+    const metricsLines = formatSignalMetricsNarrative(envelope.simulation);
+    if (metricsLines.length > 0) {
+      lines.push(...metricsLines);
+      lines.push('');
+    }
   }
 
   // Components in use
@@ -310,6 +325,103 @@ function formatSimulationNarrative(trace: SimulationTrace): string[] {
 }
 
 /**
+ * Format steady-state detection info as a narrative section.
+ * Returns an empty array when no steady-state data is present.
+ */
+function formatSteadyStateNarrative(trace: SimulationTrace): string[] {
+  if (trace.steadyStateAt === undefined) {
+    // Only emit a note for sequential circuits that ran long enough to matter
+    // (at least 5 cycles without reaching steady state). For purely
+    // combinational circuits or very short runs we stay silent.
+    if (trace.cycles >= 5 && Object.keys(trace.registers).length > 0) {
+      return [
+        `## Steady-State Analysis`,
+        `Circuit did not reach steady state within the ${trace.cycles}-cycle simulation window.`,
+        `Consider running more cycles or inspecting oscillating signals.`,
+      ];
+    }
+    return [];
+  }
+
+  return [
+    `## Steady-State Analysis`,
+    `Circuit reached steady state at cycle ${trace.steadyStateAt} (all signals became constant and remained so).`,
+  ];
+}
+
+/**
+ * Format per-signal metrics as a narrative section.
+ * Shows the top signals by transition count and their duty cycles where relevant.
+ * Returns an empty array when no metrics data is present.
+ */
+function formatSignalMetricsNarrative(trace: SimulationTrace): string[] {
+  const metricsMap = trace.signalMetrics;
+  if (!metricsMap || Object.keys(metricsMap).length === 0) {
+    return [];
+  }
+
+  const lines: string[] = [];
+  lines.push(`## Signal Activity`);
+
+  // Sort signals by descending transition count so the most active ones come first
+  const entries = Object.entries(metricsMap).sort(
+    ([, a], [, b]) => b.transitions - a.transitions
+  );
+
+  // Limit output to keep the narrative concise
+  const MAX_SIGNALS_IN_NARRATIVE = 10;
+  const toShow = entries.slice(0, MAX_SIGNALS_IN_NARRATIVE);
+
+  for (const [name, m] of toShow) {
+    let line = `- ${name}: ${m.transitions} transition${m.transitions !== 1 ? 's' : ''}`;
+    if (m.dutyCycle !== undefined) {
+      const pct = (m.dutyCycle * 100).toFixed(1);
+      line += `, duty cycle ${pct}%`;
+    }
+    lines.push(line);
+  }
+
+  if (entries.length > MAX_SIGNALS_IN_NARRATIVE) {
+    lines.push(`  (+${entries.length - MAX_SIGNALS_IN_NARRATIVE} more signals)`);
+  }
+
+  return lines;
+}
+
+/**
+ * Format assertion results for LLM context.
+ * Used after VERIFY_ASSERTION action completes.
+ */
+export function formatAssertionResultsNarrative(results: {
+  total: number;
+  passed: number;
+  failed: number;
+  allPassed: boolean;
+  results: Array<{ assertionId: string; cycle: number; passed: boolean; message: string }>;
+}): string {
+  const lines: string[] = [];
+  lines.push('## Assertion Verification Results');
+
+  if (results.allPassed) {
+    lines.push(`ALL PASSED: ${results.passed}/${results.total} assertions passed`);
+  } else {
+    lines.push(`FAILED: ${results.passed}/${results.total} passed, ${results.failed} failed`);
+    lines.push('');
+    lines.push('Failed assertions:');
+    for (const r of results.results.filter(r => !r.passed).slice(0, 5)) {
+      lines.push(`  - cycle ${r.cycle}: ${r.message}`);
+    }
+    if (results.failed > 5) {
+      lines.push(`  (+${results.failed - 5} more failures)`);
+    }
+    lines.push('');
+    lines.push('Action needed: Fix circuit logic and re-verify');
+  }
+
+  return lines.join('\n');
+}
+
+/**
  * Build a minimal narrative for quick responses.
  * Use when full context is not needed.
  */
@@ -403,6 +515,52 @@ export function formatCurrentPortValues(portValues: FlatPortValueMap): string {
   if (sortedNodes.length > 30) {
     lines.push(`  (+${sortedNodes.length - 30} more nodes)`);
   }
+
+  return lines.join('\n');
+}
+
+// ============================================================================
+// Harness Suggestion
+// ============================================================================
+
+/**
+ * Analyze DSL code and format harness suggestion if needed.
+ * Returns null if no harness is needed.
+ */
+export function formatHarnessSuggestion(dslCode: string): string | null {
+  const analysis = analyzeForHarness(dslCode);
+
+  if (!analysis.needsHarness || !analysis.interface) {
+    return null;
+  }
+
+  const lines: string[] = [];
+  lines.push('## Harness Suggestion');
+  lines.push('');
+  lines.push(`The circuit "${analysis.interface.name}" has interface ports but no interactive controls.`);
+  lines.push('');
+  lines.push('**Interface:**');
+
+  if (analysis.interface.inputs.length > 0) {
+    const inputs = analysis.interface.inputs
+      .map((p) => `${p.name}: ${p.type}${p.width ? `[${p.width}]` : ''}`)
+      .join(', ');
+    lines.push(`- Inputs: ${inputs}`);
+  }
+
+  if (analysis.interface.outputs.length > 0) {
+    const outputs = analysis.interface.outputs
+      .map((p) => `${p.name}: ${p.type}${p.width ? `[${p.width}]` : ''}`)
+      .join(', ');
+    lines.push(`- Outputs: ${outputs}`);
+  }
+
+  if (analysis.interface.clocks.length > 0) {
+    lines.push(`- Clocks: ${analysis.interface.clocks.join(', ')}`);
+  }
+
+  lines.push('');
+  lines.push('**Suggestion:** Use GENERATE_HARNESS action to create an interactive wrapper with Switch/Input controls for inputs and LED/Display for outputs.');
 
   return lines.join('\n');
 }

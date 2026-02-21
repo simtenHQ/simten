@@ -24,7 +24,6 @@
 "use client";
 
 import React, { useCallback, useMemo, useEffect, useState } from "react";
-import type { Circuit } from "../types/circuit";
 import {
   ReactFlow,
   Background,
@@ -44,7 +43,9 @@ import { useMetadataStore } from "../stores";
 import { useSequentialStateStore } from "../stores/sequential-state-store";
 import { usePortValuesStore } from "../stores/port-values-store";
 import { useDSLPreviewStore } from "../stores/dsl-preview-store";
-import { projectCircuitToReactFlow } from "../utils/projection";
+import { useInspectorStore } from "../stores/expansion-store";
+import { useComponentLibraryStore } from "../stores/component-library-store";
+import { projectCircuitToReactFlow, type NodeData } from "../utils/projection";
 import {
   InputNode,
   OutputNode,
@@ -209,11 +210,13 @@ export function Canvas() {
 
   // Get simulation state from stores (updated by controller)
   const seqState = useSequentialStateStore((state) => state.seqState);
-  const portValues = usePortValuesStore((state) => state.portValues);
+  const rawPortValues = usePortValuesStore((state) => state.portValues);
 
   const saveCurrentPositions = useDSLPreviewStore(
     (state) => state.saveCurrentPositions,
   );
+
+  const portValues = rawPortValues;
 
   /**
    * ARCHITECTURE: Canvas is a VIEWER, not a SIMULATOR
@@ -475,6 +478,30 @@ export function Canvas() {
     saveCurrentPositions();
   }, [saveCurrentPositions]);
 
+  // Open inspector dialog when double-clicking a composite node
+  const openInspector = useInspectorStore((state) => state.open);
+  const resolveComponent = useComponentLibraryStore((state) => state.resolveComponent);
+
+  const onNodeDoubleClick = useCallback(
+    (_event: React.MouseEvent, node: { id: string; data: NodeData }) => {
+      const data = node.data;
+      if (!data.isComposite) return;
+
+      const componentDef = resolveComponent(data.componentRef);
+      if (!componentDef || componentDef.implementation.kind !== "composite") return;
+
+      // Capture the node's screen rect for the expand-from-origin animation
+      const domNode = document.querySelector(`[data-id="${node.id}"]`);
+      const rect = domNode?.getBoundingClientRect();
+      const originRect = rect
+        ? { x: rect.x, y: rect.y, width: rect.width, height: rect.height }
+        : undefined;
+
+      openInspector(data.componentRef, componentDef, data.label || data.componentRef, originRect);
+    },
+    [resolveComponent, openInspector],
+  );
+
   return (
     <div
       className="relative h-full w-full"
@@ -488,6 +515,7 @@ export function Canvas() {
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
         onNodeDragStop={onNodeDragStop}
+        onNodeDoubleClick={onNodeDoubleClick}
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
         fitView
@@ -499,6 +527,7 @@ export function Canvas() {
         panOnDrag={[1, 2]} // Pan with middle and right mouse button
         panActivationKeyCode={null} // Disable Space for pan (interferes with text input)
         selectionMode={SelectionMode.Partial} // Select nodes when selection box partially overlaps
+        nodesConnectable={true}
         // Interaction settings
         selectNodesOnDrag={false}
         // Hide React Flow attribution

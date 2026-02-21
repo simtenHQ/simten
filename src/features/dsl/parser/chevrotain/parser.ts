@@ -31,6 +31,7 @@ import {
   As,
   Stimulus,
   Capture,
+  Assert,
   At,
   Step,
   Signals,
@@ -653,6 +654,7 @@ export class DSLParser extends CstParser {
       { ALT: () => this.SUBRULE(this.testConnectStatement) },
       { ALT: () => this.SUBRULE(this.stimulusBlock) },
       { ALT: () => this.SUBRULE(this.captureBlock) },
+      { ALT: () => this.SUBRULE(this.assertBlock) },
     ]);
   });
 
@@ -759,6 +761,32 @@ export class DSLParser extends CstParser {
     this.CONSUME(Filename);
     this.CONSUME(Colon);
     this.CONSUME(StringLiteral);
+  });
+
+  // ==========================================================================
+  // Assert Block
+  // ==========================================================================
+
+  private assertBlock = this.RULE('assertBlock', () => {
+    this.CONSUME(Assert);
+    this.CONSUME(On);
+    this.CONSUME(Identifier, { LABEL: 'clockRef' });
+    this.CONSUME(LBrace);
+    this.MANY(() => {
+      this.SUBRULE(this.assertionItem);
+    });
+    this.CONSUME(RBrace);
+  });
+
+  private assertionItem = this.RULE('assertionItem', () => {
+    this.CONSUME(At);
+    this.SUBRULE(this.stimulusTiming);
+    this.CONSUME(Colon);
+    this.SUBRULE(this.expression, { LABEL: 'condition' });
+    this.OPTION(() => {
+      this.CONSUME(Comma);
+      this.CONSUME(StringLiteral, { LABEL: 'message' });
+    });
   });
 }
 

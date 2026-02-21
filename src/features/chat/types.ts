@@ -12,6 +12,7 @@ export type {
   RunSimulationAction,
   ShowDiffAction,
   InsertNodeAction,
+  GenerateHarnessAction,
   ActionType,
 } from '@/lib/baml_client/baml_client';
 
@@ -45,13 +46,17 @@ import type {
   RunSimulationAction as BAMLRunSimAction,
   ShowDiffAction as BAMLShowDiffAction,
   InsertNodeAction as BAMLInsertNodeAction,
+  GenerateHarnessAction as BAMLGenerateHarnessAction,
+  VerifyAssertionAction as BAMLVerifyAssertionAction,
 } from '@/lib/baml_client/baml_client';
 
 export type AssistantAction =
   | BAMLSetInputAction
   | BAMLRunSimAction
   | BAMLShowDiffAction
-  | BAMLInsertNodeAction;
+  | BAMLInsertNodeAction
+  | BAMLGenerateHarnessAction
+  | BAMLVerifyAssertionAction;
 
 // ============================================================================
 // Action Safety Levels
@@ -113,6 +118,22 @@ export interface ValidationResult {
   valid: boolean;
   reason?: string;
   errors?: Array<{ message: string; line?: number }>;
+}
+
+// ============================================================================
+// Validation State Types
+// ============================================================================
+
+/**
+ * Snapshot of validation state.
+ */
+export interface ValidationSnapshot {
+  /** Number of errors */
+  errors: number;
+  /** Number of warnings */
+  warnings: number;
+  /** Whether simulation is possible */
+  canSimulate: boolean;
 }
 
 // ============================================================================

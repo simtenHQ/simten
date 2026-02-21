@@ -56,6 +56,8 @@ export const ACTION_SAFETY: Record<string, ActionSafety> = {
   RUN_SIMULATION: 'preview',
   SHOW_DIFF: 'preview',
   INSERT_NODE: 'confirm',
+  GENERATE_HARNESS: 'preview', // Shows as diff, user clicks Apply
+  VERIFY_ASSERTION: 'preview', // Read-only verification, auto-execute
 } as const;
 
 // ============================================================================
@@ -71,8 +73,7 @@ export const PROTOCOL_VERSION = '1.0' as const;
  * - Major versions can have breaking changes
  */
 export const SCHEMA_COMPAT: Record<string, string[]> = {
-  '1.0': ['SET_INPUT', 'RUN_SIMULATION', 'SHOW_DIFF', 'INSERT_NODE'],
-  // Future: '1.1': [...SCHEMA_COMPAT['1.0'], 'ANALYZE_CRITICAL_PATH'],
+  '1.0': ['SET_INPUT', 'RUN_SIMULATION', 'SHOW_DIFF', 'INSERT_NODE', 'GENERATE_HARNESS', 'VERIFY_ASSERTION'],
 } as const;
 
 // ============================================================================
@@ -122,8 +123,10 @@ export const CHAT_UI = {
  * Guardrails for agent mode execution.
  */
 export const AGENT_MODE = {
-  /** Maximum turns before stopping */
+  /** Maximum turns before stopping (standard tasks) */
   MAX_TURNS: 10,
+  /** Maximum turns for verification tasks (build + assert + verify + fix + re-verify) */
+  MAX_TURNS_VERIFICATION: 15,
   /** Maximum tokens per turn */
   MAX_TOKENS_PER_TURN: 2000,
   /** Total token budget across all turns */
