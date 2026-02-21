@@ -27,11 +27,15 @@ export { FieldType, EnumBuilder, ClassBuilder }
 export default class TypeBuilder {
     private tb: _TypeBuilder;
     
-    AgentResponse: ClassViewer<'AgentResponse', "schemaVersion" | "message" | "action" | "done" | "plan" | "reasoning">;
+    AgentResponse: ClassViewer<'AgentResponse', "schemaVersion" | "message" | "action" | "done" | "plan" | "reasoning" | "observationRequest">;
     
-    AssistantResponse: ClassViewer<'AssistantResponse', "schemaVersion" | "message" | "actions" | "suggestedFollowUps">;
+    AssistantResponse: ClassViewer<'AssistantResponse', "schemaVersion" | "message" | "actions" | "suggestedFollowUps" | "shouldContinue">;
+    
+    GenerateHarnessAction: ClassViewer<'GenerateHarnessAction', "actionId" | "type" | "circuitName">;
     
     InsertNodeAction: ClassViewer<'InsertNodeAction', "actionId" | "type" | "componentRef" | "suggestedLabel" | "connectFrom" | "connectTo">;
+    
+    ObservationRequest: ClassViewer<'ObservationRequest', "type" | "signalName" | "cycles">;
     
     RunSimulationAction: ClassViewer<'RunSimulationAction', "actionId" | "type" | "cycles" | "stimuli">;
     
@@ -39,14 +43,16 @@ export default class TypeBuilder {
     
     ShowDiffAction: ClassViewer<'ShowDiffAction', "actionId" | "type" | "originalCode" | "suggestedCode" | "explanation">;
     
+    VerifyAssertionAction: ClassViewer<'VerifyAssertionAction', "actionId" | "type" | "targetCircuit" | "maxCycles">;
     
-    ActionType: EnumViewer<'ActionType', "SET_INPUT" | "RUN_SIMULATION" | "SHOW_DIFF" | "INSERT_NODE">;
+    
+    ActionType: EnumViewer<'ActionType', "SET_INPUT" | "RUN_SIMULATION" | "SHOW_DIFF" | "INSERT_NODE" | "GENERATE_HARNESS" | "VERIFY_ASSERTION">;
     
 
     constructor() {
         this.tb = new _TypeBuilder({
           classes: new Set([
-            "AgentResponse","AssistantResponse","InsertNodeAction","RunSimulationAction","SetInputAction","ShowDiffAction",
+            "AgentResponse","AssistantResponse","GenerateHarnessAction","InsertNodeAction","ObservationRequest","RunSimulationAction","SetInputAction","ShowDiffAction","VerifyAssertionAction",
           ]),
           enums: new Set([
             "ActionType",
@@ -55,15 +61,23 @@ export default class TypeBuilder {
         });
         
         this.AgentResponse = this.tb.classViewer("AgentResponse", [
-          "schemaVersion","message","action","done","plan","reasoning",
+          "schemaVersion","message","action","done","plan","reasoning","observationRequest",
         ]);
         
         this.AssistantResponse = this.tb.classViewer("AssistantResponse", [
-          "schemaVersion","message","actions","suggestedFollowUps",
+          "schemaVersion","message","actions","suggestedFollowUps","shouldContinue",
+        ]);
+        
+        this.GenerateHarnessAction = this.tb.classViewer("GenerateHarnessAction", [
+          "actionId","type","circuitName",
         ]);
         
         this.InsertNodeAction = this.tb.classViewer("InsertNodeAction", [
           "actionId","type","componentRef","suggestedLabel","connectFrom","connectTo",
+        ]);
+        
+        this.ObservationRequest = this.tb.classViewer("ObservationRequest", [
+          "type","signalName","cycles",
         ]);
         
         this.RunSimulationAction = this.tb.classViewer("RunSimulationAction", [
@@ -78,9 +92,13 @@ export default class TypeBuilder {
           "actionId","type","originalCode","suggestedCode","explanation",
         ]);
         
+        this.VerifyAssertionAction = this.tb.classViewer("VerifyAssertionAction", [
+          "actionId","type","targetCircuit","maxCycles",
+        ]);
+        
         
         this.ActionType = this.tb.enumViewer("ActionType", [
-          "SET_INPUT","RUN_SIMULATION","SHOW_DIFF","INSERT_NODE",
+          "SET_INPUT","RUN_SIMULATION","SHOW_DIFF","INSERT_NODE","GENERATE_HARNESS","VERIFY_ASSERTION",
         ]);
         
     }

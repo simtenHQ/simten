@@ -6,6 +6,8 @@ enum ActionType {
   RUN_SIMULATION
   SHOW_DIFF
   INSERT_NODE
+  GENERATE_HARNESS
+  VERIFY_ASSERTION
 }
 
 class SetInputAction {
@@ -37,4 +39,17 @@ class InsertNodeAction {
   suggestedLabel string? @description("Suggested instance label (e.g., 'reg1')")
   connectFrom string? @description("Optional: source port to connect from (e.g., 'xor1.out')")
   connectTo string? @description("Optional: target port to connect to (e.g., 'out')")
+}
+
+class GenerateHarnessAction {
+  actionId string? @description("Optional - server normalizes with nanoid if missing/invalid")
+  type "GENERATE_HARNESS"
+  circuitName string? @description("Optional circuit name. If not provided, uses the first circuit with interface ports.")
+}
+
+class VerifyAssertionAction {
+  actionId string? @description("Optional - server normalizes with nanoid if missing/invalid")
+  type "VERIFY_ASSERTION"
+  targetCircuit string? @description("Which circuit's testbench assertions to verify. If omitted, uses the first testbench found.")
+  maxCycles int? @description("Override default max cycles for assertion evaluation")
 }

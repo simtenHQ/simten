@@ -25,6 +25,7 @@ import { useDSLPreviewStore } from "../stores/dsl-preview-store";
 import { useComponentLibraryStore } from "../stores/component-library-store";
 import { useSimulationController } from "../simulation/use-simulation-controller";
 import { ChatPanel, useChatStore, useNarrativeContext } from "@/features/chat";
+import { CompositeInspectorDialog } from "./CompositeInspectorDialog";
 import type { Circuit } from "../types/circuit";
 
 // Helper to check if circuit has sequential components
@@ -192,8 +193,10 @@ export function VisualEditor() {
           </div>
 
           {/* Right: Canvas (60%) - Full Height */}
-          <div className="flex-1">
-            <Canvas />
+          <div className="flex flex-1 flex-col">
+            <div className="flex-1">
+              <Canvas />
+            </div>
           </div>
         </div>
 
@@ -226,6 +229,9 @@ export function VisualEditor() {
 
         {/* Test Case Editor Modal */}
         <TestCaseEditor />
+
+        {/* Composite Inspector Dialog */}
+        <CompositeInspectorDialog />
 
         {/* AI Chat Panel */}
         <ChatPanel

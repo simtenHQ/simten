@@ -16,6 +16,7 @@ import {
 import {
   buildNarrativeSummary,
   formatCurrentPortValues,
+  formatHarnessSuggestion,
   enforceTokenBudget,
 } from '../context';
 import { hashSourceCode } from '../actions/action-normalizer';
@@ -94,6 +95,12 @@ export function useNarrativeContext(dslCode: string): NarrativeContextResult {
       if (inputSettings) {
         narrative += '\n' + inputSettings;
       }
+    }
+
+    // Add harness suggestion if circuit needs one
+    const harnessSuggestion = formatHarnessSuggestion(dslCode);
+    if (harnessSuggestion) {
+      narrative += '\n\n' + harnessSuggestion;
     }
 
     // Add current port values if available (live simulation state)

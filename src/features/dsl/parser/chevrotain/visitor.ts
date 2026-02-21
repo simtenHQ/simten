@@ -52,6 +52,8 @@ import {
   StimulusAssignment,
   CaptureBlock,
   FrequencyExpr,
+  AssertBlock,
+  Assertion,
 } from '../../types/testbench-ast';
 import { parseNumberLiteral, parseStringLiteral, tokenTypeToOperator } from './tokens';
 
@@ -1173,6 +1175,7 @@ export class CstToAstVisitor {
     const nodes: TestNodeDecl[] = [];
     const connections: TestConnectionStmt[] = [];
     const stimulus: StimulusBlock[] = [];
+    const assertions: AssertBlock[] = [];
     let capture: CaptureBlock | undefined;
 
     for (const itemNode of getAllNodes(children, 'testImplItem')) {
@@ -1197,6 +1200,11 @@ export class CstToAstVisitor {
         capture = this.visitCaptureBlock(captureBlock);
         continue;
       }
+      const assertBlock = getNode(itemChildren, 'assertBlock');
+      if (assertBlock) {
+        assertions.push(this.visitAssertBlock(assertBlock));
+        continue;
+      }
     }
 
     return {
@@ -1204,6 +1212,7 @@ export class CstToAstVisitor {
       connections,
       stimulus: stimulus.length > 0 ? stimulus : undefined,
       capture,
+      assertions: assertions.length > 0 ? assertions : undefined,
       location: nodeLocation(ctx),
     };
   }
@@ -1367,6 +1376,40 @@ export class CstToAstVisitor {
       signals.push(token.image);
     }
     return signals;
+  }
+
+  // ==========================================================================
+  // Assert Block
+  // ==========================================================================
+
+  visitAssertBlock(ctx: CstNode): AssertBlock {
+    const children = getChildren(ctx);
+    const clockRefToken = getToken(children, 'clockRef')!;
+    const assertions: Assertion[] = [];
+
+    for (const itemNode of getAllNodes(children, 'assertionItem')) {
+      assertions.push(this.visitAssertionItem(itemNode));
+    }
+
+    return {
+      clockRef: clockRefToken.image,
+      assertions,
+      location: nodeLocation(ctx),
+    };
+  }
+
+  visitAssertionItem(ctx: CstNode): Assertion {
+    const children = getChildren(ctx);
+    const timingNode = getNode(children, 'stimulusTiming')!;
+    const conditionNode = getNode(children, 'condition')!;
+    const messageToken = getToken(children, 'message');
+
+    return {
+      timing: this.visitStimulusTiming(timingNode),
+      condition: this.visitExpression(conditionNode),
+      message: messageToken ? parseStringLiteral(messageToken.image) : undefined,
+      location: nodeLocation(ctx),
+    };
   }
 }
 

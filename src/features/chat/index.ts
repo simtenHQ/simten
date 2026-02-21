@@ -1,7 +1,7 @@
 /**
  * Chat Feature Module
  *
- * LLM-powered hardware design assistant.
+ * LLM-powered hardware tutor.
  * Domain-only protocol - UI gestures inferred from message text.
  */
 
@@ -15,6 +15,7 @@ export type {
   StreamingState,
   StreamingPolicy,
   ValidationResult,
+  ValidationSnapshot,
   ChatContext,
   ChatSession,
 } from './types';
@@ -41,7 +42,7 @@ export { ChatPanel, ChatInput, MessageList, MessageBubble, ActionCard, CodeDiffV
 export { executeAction, applyDiff, validateAction, validateShowDiff, normalizeAction, type ActionExecutionContext } from './actions';
 
 // Hooks
-export { useNarrativeContext, buildNarrativeContext, useAgentLoop, type NarrativeContextResult, type UseAgentLoopOptions, type UseAgentLoopResult } from './hooks';
+export { useNarrativeContext, buildNarrativeContext, useAgentLoop, useTutorFlow, type NarrativeContextResult, type UseAgentLoopOptions, type UseAgentLoopResult, type UseTutorFlowResult } from './hooks';
 
 // Context
 export { buildNarrativeSummary, buildMinimalNarrative, enforceTokenBudget, countTokens } from './context';
@@ -55,5 +56,5 @@ export { extractNodeReferences, highlightNodesFromMessage, createCircuitChecker 
 // Versioning
 export { isVersionSupported, getSupportedActions, getCurrentVersion, isKnownActionType } from './versioning/schema-compat';
 
-// Agent
+// Agent (legacy — unused but preserved)
 export * from './agent';

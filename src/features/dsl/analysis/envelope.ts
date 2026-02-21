@@ -15,6 +15,7 @@ import type { ComponentLibrary } from '../../../core/simulator/types';
 
 import type { ValidationResult, ComponentInterface } from '../validation/types';
 import type {
+  ElaboratedContext,
   CircuitMetrics,
   SimulationTrace,
   CircuitDelta,
@@ -123,6 +124,13 @@ export interface BuildEnvelopeOptions {
   delta?: CircuitDelta;
   /** Component library for catalog */
   library: ComponentLibrary;
+  /**
+   * Elaborated circuit context.
+   * When provided, causality chain diagnostics are included in
+   * behavioralDiagnostics by tracing register updates back through
+   * the connection graph.
+   */
+  elaboratedContext?: ElaboratedContext;
 }
 
 /**
@@ -134,7 +142,7 @@ export interface BuildEnvelopeOptions {
  * - Never conditionally omit fields
  */
 export function buildEnvelope(options: BuildEnvelopeOptions): HardwareLLMEnvelope {
-  const { validation, metrics, simulation, delta, library } = options;
+  const { validation, metrics, simulation, delta, library, elaboratedContext } = options;
 
   // Convert validation to envelope format
   const envelopeValidation: EnvelopeValidation = {
@@ -158,9 +166,11 @@ export function buildEnvelope(options: BuildEnvelopeOptions): HardwareLLMEnvelop
     },
   };
 
-  // Extract behavioral diagnostics if simulation was run
+  // Extract behavioral diagnostics if simulation was run.
+  // Pass elaboratedContext when available so causality chain diagnostics
+  // can be produced by tracing register updates through the connection graph.
   const behavioralDiagnostics = simulation
-    ? extractBehavioralDiagnostics(simulation)
+    ? extractBehavioralDiagnostics(simulation, elaboratedContext)
     : [];
 
   // Build component catalog
@@ -288,18 +298,26 @@ export function buildFullEnvelope(
 /**
  * Build an envelope with simulation results.
  * Use after running simulation.
+ *
+ * @param validation - Validation result
+ * @param metrics - Structural metrics
+ * @param simulation - Simulation trace (carries steadyStateAt and signalMetrics)
+ * @param library - Component library
+ * @param elaboratedContext - Optional elaborated context for causality chain diagnostics
  */
 export function buildSimulationEnvelope(
   validation: ValidationResult,
   metrics: CircuitMetrics,
   simulation: SimulationTrace,
-  library: ComponentLibrary
+  library: ComponentLibrary,
+  elaboratedContext?: ElaboratedContext
 ): HardwareLLMEnvelope {
   return buildEnvelope({
     validation,
     metrics,
     simulation,
     library,
+    elaboratedContext,
   });
 }
 

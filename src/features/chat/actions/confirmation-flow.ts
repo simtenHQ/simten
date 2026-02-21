@@ -88,6 +88,12 @@ export function getActionPreview(action: AssistantAction): string {
       return parts.join(' ');
     }
 
+    case 'GENERATE_HARNESS':
+      return `Generate test harness${action.circuitName ? ` for ${action.circuitName}` : ''}`;
+
+    case 'VERIFY_ASSERTION':
+      return `Verify assertions${action.targetCircuit ? ` on ${action.targetCircuit}` : ''}`;
+
     default: {
       // Exhaustive check - this handles any future action types
       const _exhaustiveCheck: never = action;

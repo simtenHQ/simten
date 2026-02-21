@@ -31,6 +31,7 @@ const GOAL_PATTERNS = {
   optimize: /\b(optimize|improve|speed|faster|reduce)\b/i,
   invert: /\b(invert|opposite|negate|flip)\b/i,
   behavior: /\b(should|when|if|toggle|output)\b.*\b(show|display|be|equal|invert)\b/i,
+  verify: /\b(verify|test|assert|prove|check|count|counter)\b/i,
 };
 
 /**
@@ -77,6 +78,16 @@ export function parseGoalFromMessage(userMessage: string): GoalState {
     criteria.push({
       id: 'behavior-verified',
       description: 'Behavioral expectations pass',
+      type: 'behavioral',
+      verifiable: true,
+    });
+  }
+
+  // Detect verification/assertion patterns
+  if (GOAL_PATTERNS.verify.test(lowerMessage)) {
+    criteria.push({
+      id: 'assertion-coverage',
+      description: 'All testbench assertions pass',
       type: 'behavioral',
       verifiable: true,
     });
@@ -161,6 +172,63 @@ export function updateGoalState(
       lastChecked: turnNumber,
     });
   }
+
+  // Update assertion-coverage criterion from VERIFY_ASSERTION results
+  if (observation.assertionResults) {
+    const { allPassed, passed, total } = observation.assertionResults;
+    updateCriterion(goalState, 'assertion-coverage', {
+      satisfied: allPassed,
+      evidence: allPassed
+        ? `All ${total} assertions pass`
+        : `${passed}/${total} assertions pass`,
+      lastChecked: turnNumber,
+    });
+  }
+
+  // Update structural criteria from applied code (after SHOW_DIFF / INSERT_NODE)
+  const code = observation.appliedCode;
+  if (code) {
+    // has-component: check if the expected component type exists in code
+    const hasComponentCriterion = goalState.successCriteria.find(c => c.id === 'has-component');
+    if (hasComponentCriterion) {
+      // Extract component name from description (e.g., "Circuit contains inverter")
+      const descMatch = hasComponentCriterion.description.match(/contains?\s+(.+)/i);
+      const componentName = descMatch?.[1]?.trim() ?? '';
+      // Check for the component in DSL code (component instantiation or type reference)
+      const nameVariants = [componentName, componentName.toUpperCase(), componentName.charAt(0).toUpperCase() + componentName.slice(1)];
+      const found = nameVariants.some(name => code.includes(name));
+      updateCriterion(goalState, 'has-component', {
+        satisfied: found,
+        evidence: found ? `Code contains ${componentName}` : `${componentName} not found in code`,
+        lastChecked: turnNumber,
+      });
+    }
+
+    // inverter-connected: check for connection statements involving NOT/inverter
+    const inverterCriterion = goalState.successCriteria.find(c => c.id === 'inverter-connected');
+    if (inverterCriterion) {
+      // Look for NOT/Inverter component AND a connection wiring it
+      const hasInverter = /\bNot\b|\bNOT\b|\binverter\b/i.test(code);
+      const hasConnection = /->/.test(code);
+      const connected = hasInverter && hasConnection;
+      updateCriterion(goalState, 'inverter-connected', {
+        satisfied: connected,
+        evidence: connected ? 'Inverter is wired in the circuit' : 'Inverter not yet connected',
+        lastChecked: turnNumber,
+      });
+    }
+
+    // connection-made: check for any connection statements
+    const connectionCriterion = goalState.successCriteria.find(c => c.id === 'connection-made');
+    if (connectionCriterion) {
+      const hasConnections = /->/.test(code);
+      updateCriterion(goalState, 'connection-made', {
+        satisfied: hasConnections,
+        evidence: hasConnections ? 'Connections found in code' : 'No connections in code',
+        lastChecked: turnNumber,
+      });
+    }
+  }
 }
 
 /**
@@ -231,16 +299,16 @@ export function allStructuralCriteriaSatisfied(goalState: GoalState): boolean {
  * Check if all behavioral checks have passed.
  */
 export function allBehavioralChecksPassed(goalState: GoalState): boolean {
-  const behavioralStatus = goalState.currentStatus.find(
-    (s) => s.criterionId === 'behavior-verified'
+  const behavioralCriteria = goalState.currentStatus.filter(
+    (s) => s.criterionId === 'behavior-verified' || s.criterionId === 'assertion-coverage'
   );
 
-  // If no behavioral criterion exists, consider it passed
-  if (!behavioralStatus) {
+  // If no behavioral criteria exist, consider them passed
+  if (behavioralCriteria.length === 0) {
     return true;
   }
 
-  return behavioralStatus.satisfied;
+  return behavioralCriteria.every((s) => s.satisfied);
 }
 
 /**

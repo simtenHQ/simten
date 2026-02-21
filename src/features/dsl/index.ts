@@ -137,6 +137,9 @@ export {
   findTransitions,
   signalEverEquals,
   compressTrace,
+  detectSteadyState,
+  computeAllSignalMetrics,
+  extractCausalityChains,
   // Delta analysis
   compareCircuits,
   findAddedNodes,
@@ -182,6 +185,7 @@ export type {
   BehavioralDiagnostic,
   BehavioralDiagnosticCode,
   AnalysisResult,
+  SignalMetrics,
   DetailedDelta,
   // Envelope types
   HardwareLLMEnvelope,
@@ -189,6 +193,33 @@ export type {
   EnvelopeDiagnostic,
   BuildEnvelopeOptions,
 } from './analysis';
+
+// ============================================================================
+// Harness Generator (Deterministic Test Wrappers)
+// ============================================================================
+
+export {
+  generateHarness,
+  generateHarnessDSL,
+  generateHarnessAppended,
+  analyzeForHarness,
+  extractCircuitInterface,
+  isHarnessName,
+  // Assertion evaluator
+  evaluateAssertions,
+  formatAssertionSummary,
+  allAssertionsPassed,
+  getFailedResults,
+} from './harness';
+
+export type {
+  CircuitInterface,
+  PortInfo,
+  HarnessAnalysis,
+  // Assertion evaluator types
+  AssertionEvalResult,
+  AssertionSummary,
+} from './harness';
 
 // Convenience: Complete pipeline function
 import { parseDSL } from './parser';

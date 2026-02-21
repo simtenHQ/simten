@@ -17,12 +17,15 @@
  * - Component library is source of truth
  */
 
-import { TestbenchDef, StimulusBlock, CaptureBlock } from '../types/testbench-ast';
+import { TestbenchDef, StimulusBlock, CaptureBlock, AssertBlock, Assertion } from '../types/testbench-ast';
 import {
   Testbench,
   StimulusSchedule,
   CaptureConfig,
   SignalRef,
+  AssertionSchedule,
+  CompiledAssertion,
+  TestbenchState,
 } from '../../visual-editor/types/testbench';
 import {
   Circuit,
@@ -31,6 +34,7 @@ import {
 } from '../../visual-editor/types/circuit';
 import { compileStimulus, validateStimulus } from '../../visual-editor/lib/testing/stimulus-compiler';
 import { getMaxStimulusCycle } from '../../visual-editor/types/testbench';
+import { Expr, LiteralExpr, VariableExpr, BinaryExpr, UnaryExpr } from '../types/ast';
 
 // ============================================================================
 // Compiler Errors
@@ -156,10 +160,16 @@ export function compileTestbenchToIR(
     ? compileCaptureConfig(testbenchAst.impl.capture, dut)
     : undefined;
 
-  // 6. Calculate max cycles
+  // 6. Compile assertion schedule
+  const assertions =
+    testbenchAst.impl?.assertions && testbenchAst.impl.assertions.length > 0
+      ? compileAssertions(testbenchAst.impl.assertions)
+      : undefined;
+
+  // 7. Calculate max cycles
   const maxCycles = getMaxStimulusCycle(stimulus) || 100; // Default to 100 if no stimulus
 
-  // 7. Build testbench IR
+  // 8. Build testbench IR
   const testbench: Testbench = {
     name: testbenchAst.name,
     circuitRef: testbenchAst.circuitRef.circuitName,
@@ -167,6 +177,7 @@ export function compileTestbenchToIR(
     circuit: testCircuit,
     stimulus,
     capture,
+    assertions,
     maxCycles,
   };
 
@@ -418,8 +429,337 @@ function compileCaptureConfig(
 }
 
 // ============================================================================
-// Validation
+// Assertion Compilation
 // ============================================================================
+
+/**
+ * Compile assertion blocks into an executable AssertionSchedule.
+ *
+ * Each Assertion expands its timing (single / range / stepped) to produce
+ * one CompiledAssertion per cycle.  The condition is compiled to a closure
+ * that reads signal values from the live TestbenchState at runtime.
+ */
+export function compileAssertions(assertBlocks: AssertBlock[]): AssertionSchedule {
+  // All assert blocks must share the same clock reference.
+  // Use the first block's clockRef as canonical (validation can enforce parity).
+  const clockRef = assertBlocks[0].clockRef;
+
+  const assertionMap = new Map<number, CompiledAssertion[]>();
+
+  let assertionCounter = 0;
+
+  for (const block of assertBlocks) {
+    for (const assertion of block.assertions) {
+      const cycles = expandAssertionTiming(assertion);
+      const compiledCondition = compileConditionExpr(assertion.condition);
+      const message =
+        assertion.message ??
+        `Assertion failed at cycle {cycle}`;
+
+      for (const cycle of cycles) {
+        const id = `assert_${assertionCounter++}_cycle_${cycle}`;
+        const compiledAssertion: CompiledAssertion = {
+          id,
+          // The condition receives the live TestbenchState and resolves
+          // signal values from portValues.  The cycle variable is
+          // substituted at compile time for this specific expansion.
+          condition: (state: TestbenchState) =>
+            evaluateCondition(compiledCondition, state, cycle),
+          message: message.replace('{cycle}', String(cycle)),
+        };
+
+        if (!assertionMap.has(cycle)) {
+          assertionMap.set(cycle, []);
+        }
+        assertionMap.get(cycle)!.push(compiledAssertion);
+      }
+    }
+  }
+
+  return { clockRef, assertions: assertionMap };
+}
+
+/**
+ * Expand assertion timing to an array of cycle numbers.
+ * Reuses the same timing kinds as stimulus: single / range / stepped.
+ */
+function expandAssertionTiming(assertion: Assertion): number[] {
+  const timing = assertion.timing;
+
+  switch (timing.kind) {
+    case 'single': {
+      const cycle = evaluateStaticExpr(timing.cycle);
+      return [cycle];
+    }
+    case 'range': {
+      const start = evaluateStaticExpr(timing.start);
+      const end = evaluateStaticExpr(timing.end);
+      if (start > end) {
+        throw new TestbenchCompilerError(
+          `Invalid assertion range: start (${start}) > end (${end})`
+        );
+      }
+      const cycles: number[] = [];
+      for (let i = start; i <= end; i++) {
+        cycles.push(i);
+      }
+      return cycles;
+    }
+    case 'stepped': {
+      const start = evaluateStaticExpr(timing.start);
+      const end = evaluateStaticExpr(timing.end);
+      const step = timing.step;
+      if (start > end) {
+        throw new TestbenchCompilerError(
+          `Invalid assertion range: start (${start}) > end (${end})`
+        );
+      }
+      if (step <= 0) {
+        throw new TestbenchCompilerError(
+          `Invalid assertion step: ${step} (must be positive)`
+        );
+      }
+      const cycles: number[] = [];
+      for (let i = start; i <= end; i += step) {
+        cycles.push(i);
+      }
+      return cycles;
+    }
+  }
+}
+
+/**
+ * Evaluate a static expression (no signal references) to a number.
+ * Used for timing expansions where only literal values are valid.
+ */
+function evaluateStaticExpr(expr: number | Expr): number {
+  if (typeof expr === 'number') {
+    return expr;
+  }
+  const result = evaluateConditionAtCycle(expr, new Map(), 0);
+  if (typeof result !== 'number') {
+    throw new TestbenchCompilerError(
+      'Assertion timing expression must evaluate to a number'
+    );
+  }
+  return result;
+}
+
+// ============================================================================
+// Condition Expression Compiler
+// ============================================================================
+
+/**
+ * Intermediate compiled condition — an Expr tree annotated for fast evaluation.
+ * We keep the original Expr tree and evaluate it directly at runtime.
+ */
+type CompiledConditionExpr = Expr;
+
+/**
+ * "Compile" a condition expression.  For now this is identity — the Expr tree
+ * is already structured for evaluation.  A future pass could pre-compute
+ * constant sub-expressions here.
+ */
+function compileConditionExpr(expr: Expr): CompiledConditionExpr {
+  return expr;
+}
+
+/**
+ * Evaluate a compiled condition against live testbench state.
+ *
+ * Signal names in the expression map to portValues in TestbenchState.
+ * The `cycle` variable resolves to the current cycle number.
+ */
+function evaluateCondition(
+  expr: CompiledConditionExpr,
+  state: TestbenchState,
+  cycle: number
+): boolean {
+  const result = evaluateConditionAtCycle(expr, state.portValues, cycle);
+  // Truthy check: numbers ≠ 0 are true, booleans pass through
+  return typeof result === 'boolean' ? result : result !== 0;
+}
+
+/**
+ * Recursive expression evaluator for assertion conditions.
+ *
+ * Supports:
+ * - Numeric literals and boolean literals
+ * - Variable references (resolved from portValues or `cycle` keyword)
+ * - Binary operators: arithmetic, bitwise, comparison
+ * - Unary operators: !, ~, -
+ */
+function evaluateConditionAtCycle(
+  expr: Expr,
+  portValues: Map<string, number | boolean>,
+  cycle: number
+): number | boolean {
+  // Literal expression: { value: number | boolean | string }
+  if ('value' in expr) {
+    const literal = expr as LiteralExpr;
+    if (typeof literal.value === 'number') return literal.value;
+    if (typeof literal.value === 'boolean') return literal.value;
+    // String literals are not valid in conditions
+    throw new TestbenchCompilerError(
+      `String literals are not valid in assertion conditions: "${literal.value}"`
+    );
+  }
+
+  // Variable expression: { name: string }
+  if ('name' in expr) {
+    const variable = expr as VariableExpr;
+    if (variable.name === 'cycle') {
+      return cycle;
+    }
+    // Look up in port values
+    const portValue = portValues.get(variable.name);
+    if (portValue !== undefined) {
+      return portValue;
+    }
+    // Unknown variable — treat as 0 rather than throwing, for robustness
+    // during harness generation before wiring is complete
+    return 0;
+  }
+
+  // Binary expression: { operator, left, right }
+  if ('operator' in expr && 'left' in expr && 'right' in expr) {
+    const binary = expr as BinaryExpr;
+    const left = evaluateConditionAtCycle(binary.left, portValues, cycle);
+    const right = evaluateConditionAtCycle(binary.right, portValues, cycle);
+
+    if (typeof left === 'number' && typeof right === 'number') {
+      switch (binary.operator) {
+        case '+': return left + right;
+        case '-': return left - right;
+        case '*': return left * right;
+        case '/': return Math.floor(left / right);
+        case '&': return left & right;
+        case '|': return left | right;
+        case '^': return left ^ right;
+        case '==': return left === right;
+        case '!=': return left !== right;
+        case '<': return left < right;
+        case '>': return left > right;
+        case '<=': return left <= right;
+        case '>=': return left >= right;
+        default:
+          throw new TestbenchCompilerError(`Unknown binary operator: ${binary.operator}`);
+      }
+    }
+
+    if (typeof left === 'boolean' && typeof right === 'boolean') {
+      switch (binary.operator) {
+        case '==': return left === right;
+        case '!=': return left !== right;
+        default:
+          throw new TestbenchCompilerError(
+            `Operator '${binary.operator}' is not valid for boolean operands`
+          );
+      }
+    }
+
+    // Mixed number/boolean: coerce boolean to number
+    const leftNum = typeof left === 'boolean' ? (left ? 1 : 0) : left;
+    const rightNum = typeof right === 'boolean' ? (right ? 1 : 0) : right;
+    switch (binary.operator) {
+      case '==': return leftNum === rightNum;
+      case '!=': return leftNum !== rightNum;
+      default:
+        throw new TestbenchCompilerError(
+          `Type mismatch in assertion binary expression for operator '${binary.operator}'`
+        );
+    }
+  }
+
+  // Unary expression: { operator, operand }
+  if ('operator' in expr && 'operand' in expr) {
+    const unary = expr as UnaryExpr;
+    const operand = evaluateConditionAtCycle(unary.operand, portValues, cycle);
+
+    if (typeof operand === 'number') {
+      switch (unary.operator) {
+        case '-': return -operand;
+        case '~': return ~operand;
+        case '!': return operand === 0;
+        default:
+          throw new TestbenchCompilerError(`Unknown unary operator: ${unary.operator}`);
+      }
+    }
+
+    if (typeof operand === 'boolean') {
+      switch (unary.operator) {
+        case '!': return !operand;
+        default:
+          throw new TestbenchCompilerError(
+            `Unary operator '${unary.operator}' is not valid for boolean operands`
+          );
+      }
+    }
+  }
+
+  throw new TestbenchCompilerError('Unrecognized expression shape in assertion condition');
+}
+
+// ============================================================================
+// Assertion Validation
+// ============================================================================
+
+/**
+ * Validate assertion signal references against DUT circuit ports.
+ *
+ * Checks that every variable name used in an assertion condition
+ * exists as an input or output port of the DUT.
+ */
+export function validateAssertionSignals(
+  assertBlocks: AssertBlock[],
+  dut: { inputs: Array<{ name: string }>; outputs: Array<{ name: string }>; name: string }
+): void {
+  const allPortNames = new Set([
+    ...dut.inputs.map(p => p.name),
+    ...dut.outputs.map(p => p.name),
+  ]);
+
+  for (const block of assertBlocks) {
+    for (const assertion of block.assertions) {
+      collectSignalRefs(assertion.condition).forEach(signalName => {
+        if (signalName === 'cycle') return; // Built-in variable
+        if (!allPortNames.has(signalName)) {
+          throw new TestbenchCompilerError(
+            `Assertion references unknown signal '${signalName}' in circuit '${dut.name}'.` +
+            `\n\nAvailable ports: ${Array.from(allPortNames).join(', ')}`
+          );
+        }
+      });
+    }
+  }
+}
+
+/**
+ * Collect all variable (signal) names referenced in an expression.
+ */
+function collectSignalRefs(expr: Expr): Set<string> {
+  const names = new Set<string>();
+  walkExpr(expr, names);
+  return names;
+}
+
+function walkExpr(expr: Expr, names: Set<string>): void {
+  if ('name' in expr) {
+    names.add((expr as VariableExpr).name);
+    return;
+  }
+  if ('left' in expr && 'right' in expr) {
+    const binary = expr as BinaryExpr;
+    walkExpr(binary.left, names);
+    walkExpr(binary.right, names);
+    return;
+  }
+  if ('operand' in expr) {
+    walkExpr((expr as UnaryExpr).operand, names);
+    return;
+  }
+  // Literal expressions have no variable refs
+}
 
 /**
  * Validate testbench against DUT circuit

@@ -2,7 +2,8 @@
  * LogicGateNode Component
  *
  * Renders logic gate components (AND, OR, NOT, etc.).
- * Processes input signals and produces output signals.
+ * Composite components show a badge; double-clicking opens the inspector dialog
+ * (handled at the Canvas/ReactFlow level via onNodeDoubleClick).
  */
 
 import React from 'react';
@@ -81,9 +82,17 @@ export function LogicGateNode({ data, selected }: LogicGateNodeProps) {
     );
   };
 
+  // Always render collapsed node (inspector dialog handles expansion)
   return (
     <BaseNode inputPorts={inputPorts} outputPorts={outputPorts} selected={selected} className="min-w-[100px]">
-      <div className="flex flex-col items-center gap-2">
+      <div className="relative flex flex-col items-center gap-2">
+        {/* Composite badge */}
+        {data.isComposite && (
+          <div className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded bg-blue-500 text-[8px] text-white" title="Double-click to inspect">
+            &#x229E;
+          </div>
+        )}
+
         {/* Component Label */}
         <div className="text-xs font-medium text-gray-600">
           {data.label || data.componentRef}
@@ -91,6 +100,11 @@ export function LogicGateNode({ data, selected }: LogicGateNodeProps) {
 
         {/* Gate Symbol */}
         <div className="flex items-center justify-center">{renderGateSymbol()}</div>
+
+        {/* Inspect hint for composites */}
+        {data.isComposite && (
+          <div className="text-[9px] text-gray-400">double-click to inspect</div>
+        )}
       </div>
     </BaseNode>
   );
