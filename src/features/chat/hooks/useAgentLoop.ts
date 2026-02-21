@@ -8,8 +8,9 @@
 import { useCallback, useRef } from 'react';
 import { useChatStore } from '../stores/chat-store';
 import type { ActionExecutionContext } from '../actions/action-executor';
-import type { AgentState, AgentTurn, GoalState } from '../agent/types';
+import type { AgentState, AgentTurn, GoalState, ValidationSnapshot } from '../agent/types';
 import { parseGoalFromMessage } from '../agent/goal-state';
+import { computeSemanticSignals } from '../agent/semantic-signals';
 
 // ============================================================================
 // Hook Interface
@@ -244,16 +245,33 @@ async function runAgentLoopClient(
     // - Code-modifying actions (SHOW_DIFF, INSERT_NODE): wait for user approval
     if (agentResponse.action) {
       const actionType = agentResponse.action.type;
-      const isSafeAction = actionType === 'RUN_SIMULATION' || actionType === 'SET_INPUT';
+      const isSafeAction = actionType === 'RUN_SIMULATION' || actionType === 'SET_INPUT' || actionType === 'VERIFY_ASSERTION';
 
       if (isSafeAction) {
         // Auto-execute safe actions
         // IMPORTANT: Don't pass sourceCodeHash - it becomes stale after SHOW_DIFF
         // In agent mode, code changes are intentional, so bypass staleness check
         try {
+          // Capture validation state before execution
+          const validationBefore: ValidationSnapshot = executionContext.getValidationSnapshot?.()
+            ?? { errors: 0, warnings: 0, canSimulate: true };
+
           const { executeAction } = await import('../actions/action-executor');
           const agentContext = { ...executionContext, sourceCodeHash: undefined };
           const result = await executeAction(agentResponse.action, agentContext);
+
+          // Wait for React to update stores
+          await new Promise(resolve => setTimeout(resolve, 150));
+
+          // Capture validation state after execution
+          const validationAfter: ValidationSnapshot = executionContext.getValidationSnapshot?.()
+            ?? { errors: 0, warnings: 0, canSimulate: true };
+
+          // Compute real semantic signals
+          const signals = computeSemanticSignals({
+            before: validationBefore,
+            after: validationAfter,
+          });
 
           lastActionSuccess = result.success;
           lastActionType = actionType;
@@ -262,33 +280,22 @@ async function runAgentLoopClient(
             action: agentResponse.action,
             success: result.success,
             error: result.reason,
-            validationBefore: { errors: 0, warnings: 0, canSimulate: true },
-            validationAfter: { errors: 0, warnings: 0, canSimulate: true },
-            signals: {
-              regression: { isRegression: false, errorDelta: 0, blockingStatusChanged: false, severity: 'improvement' },
-              structural: { changeType: 'minor', nodeCountDelta: 0, depthChange: 0, registersAdded: 0 },
-              complexity: { score: 0, rating: 'simple' },
-              behavioral: { verificationsRun: 0, passed: 0, failed: 0, mismatches: [] },
-            },
+            validationBefore,
+            validationAfter,
+            signals,
           };
-
-          // Wait for React to update
-          await new Promise(resolve => setTimeout(resolve, 150));
         } catch (error) {
           lastActionSuccess = false;
           lastActionType = actionType;
+
+          const fallbackSnapshot: ValidationSnapshot = { errors: 0, warnings: 0, canSimulate: true };
           turn.observation = {
             action: agentResponse.action,
             success: false,
             error: error instanceof Error ? error.message : String(error),
-            validationBefore: { errors: 0, warnings: 0, canSimulate: true },
-            validationAfter: { errors: 0, warnings: 0, canSimulate: true },
-            signals: {
-              regression: { isRegression: false, errorDelta: 0, blockingStatusChanged: false, severity: 'improvement' },
-              structural: { changeType: 'minor', nodeCountDelta: 0, depthChange: 0, registersAdded: 0 },
-              complexity: { score: 0, rating: 'simple' },
-              behavioral: { verificationsRun: 0, passed: 0, failed: 0, mismatches: [] },
-            },
+            validationBefore: fallbackSnapshot,
+            validationAfter: fallbackSnapshot,
+            signals: computeSemanticSignals({ before: fallbackSnapshot, after: fallbackSnapshot }),
           };
         }
       } else {

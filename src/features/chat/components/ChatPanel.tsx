@@ -2,7 +2,7 @@
  * ChatPanel Component
  *
  * Main chat container with Sheet integration.
- * Orchestrates chat flow: messages, streaming, actions.
+ * Orchestrates tutor flow: messages, streaming, actions, auto-continuation.
  */
 
 'use client';
@@ -14,20 +14,18 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet';
-import { Bot, X, Zap } from 'lucide-react';
+import { Bot, X, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { MessageList } from './MessageList';
 import { ChatInput } from './ChatInput';
 import { CodeDiffView } from './CodeDiffView';
 import { ConfirmationModal } from './ConfirmationModal';
-import { AgentProgress } from './AgentProgress';
-import { AgentStatusLine } from './AgentStatusLine';
 import { useChatStore } from '../stores/chat-store';
-import { sendMessage } from '../streaming';
 import { executeAction, applyDiff, buildConfirmationRequest, type ActionExecutionContext } from '../actions';
-import { useAgentLoop } from '../hooks/useAgentLoop';
+import { useTutorFlow } from '../hooks/useTutorFlow';
+import { generateHarnessAppended } from '@/features/dsl';
 import type { AssistantAction } from '../types';
-import type { ShowDiffAction } from '@/lib/baml_client/baml_client';
+import type { ShowDiffAction, GenerateHarnessAction } from '@/lib/baml_client/baml_client';
 import type { ConfirmationRequest } from '../actions/confirmation-flow';
 
 interface ChatPanelProps {
@@ -66,11 +64,6 @@ export function ChatPanel({
     streaming,
     sessionId,
     actionStatus,
-    addUserMessage,
-    startStreaming,
-    updateStreamingMessage,
-    finishStreaming,
-    setStreamingError,
     setActionStatus,
     getConversationHistory,
   } = useChatStore();
@@ -80,7 +73,13 @@ export function ChatPanel({
   const [confirmationRequest, setConfirmationRequest] = useState<ConfirmationRequest | null>(null);
   const confirmationResolveRef = useRef<((confirmed: boolean) => void) | null>(null);
 
-  // Build execution context for agent loop
+  // Create getter for narrative context (called fresh each turn)
+  // Uses a ref to always get the latest prop value without stale closures
+  const narrativeContextRef = useRef(narrativeContext);
+  narrativeContextRef.current = narrativeContext;
+  const getNarrativeContext = useCallback(() => narrativeContextRef.current, []);
+
+  // Build execution context for tutor flow
   const executionContext: ActionExecutionContext = useMemo(() => ({
     sessionId,
     getCurrentCode,
@@ -99,91 +98,29 @@ export function ChatPanel({
     },
   }), [sessionId, getCurrentCode, sourceCodeHash, setCode, setInput, runSimulation, insertNode, setActionStatus]);
 
-  // Create getter for narrative context (called fresh each turn)
-  // Uses a ref to always get the latest prop value without stale closures
-  const narrativeContextRef = useRef(narrativeContext);
-  narrativeContextRef.current = narrativeContext;
-  const getNarrativeContext = useCallback(() => narrativeContextRef.current, []);
-
-  // Agent loop hook
+  // Tutor flow hook
   const {
-    startLoop,
-    cancelLoop,
-    isRunning: isAgentRunning,
-    agentState,
-    isAgentMode,
-    setAgentMode,
-  } = useAgentLoop({
+    sendMessage: tutorSendMessage,
+    cancelContinuation,
+    onDiffApplied,
+    isContinuing,
+    continuationCount,
+  } = useTutorFlow({
     executionContext,
     getNarrativeContext,
-    sourceCodeHash,
+    getCurrentCode,
+    getConversationHistory,
   });
 
   // Handle sending a message
   const handleSend = useCallback(
     async (content: string) => {
-      // If agent mode is enabled, use the agent loop
-      if (isAgentMode) {
-        await startLoop(content);
-        return;
-      }
-
-      // Standard one-shot mode
-      // Add user message
-      addUserMessage(content);
-
-      // Start streaming assistant response
-      const messageId = `msg-${Date.now()}`;
-      startStreaming(messageId);
-
-      // Get current context
-      const dslCode = getCurrentCode();
-      const history = getConversationHistory();
-
-      // Send to API
-      await sendMessage(
-        {
-          userMessage: content,
-          dslCode,
-          compactContext: narrativeContext,
-          conversationHistory: history,
-        },
-        {
-          onMessageUpdate: (partial) => {
-            updateStreamingMessage(partial);
-          },
-          onComplete: (result) => {
-            finishStreaming(
-              result.message,
-              result.actions,
-              result.suggestedFollowUps
-            );
-
-            if (result.streamingError && result.error) {
-              console.warn('[Chat] Streaming completed with error:', result.error);
-            }
-          },
-          onError: (error) => {
-            setStreamingError(error);
-          },
-        }
-      );
+      await tutorSendMessage(content);
     },
-    [
-      isAgentMode,
-      startLoop,
-      addUserMessage,
-      startStreaming,
-      updateStreamingMessage,
-      finishStreaming,
-      setStreamingError,
-      getCurrentCode,
-      getConversationHistory,
-      narrativeContext,
-    ]
+    [tutorSendMessage]
   );
 
-  // Handle action execution
+  // Handle action execution (manual click from ActionCard)
   const handleExecuteAction = useCallback(
     async (action: AssistantAction) => {
       const context: ActionExecutionContext = {
@@ -205,14 +142,6 @@ export function ChatPanel({
       };
 
       await executeAction(action, context);
-
-      // Auto-continue agent loop if waiting for user
-      if (agentState?.status === 'waiting_for_user') {
-        // Small delay to let the action effects propagate
-        setTimeout(() => {
-          startLoop('continue');
-        }, 200);
-      }
     },
     [
       sessionId,
@@ -223,17 +152,35 @@ export function ChatPanel({
       runSimulation,
       insertNode,
       setActionStatus,
-      agentState,
-      startLoop,
     ]
   );
 
-  // Handle showing diff
+  // Handle showing diff (also handles GENERATE_HARNESS)
   const handleShowDiff = useCallback((action: AssistantAction) => {
     if (action.type === 'SHOW_DIFF') {
       setShowDiffAction(action);
+    } else if (action.type === 'GENERATE_HARNESS') {
+      // Generate harness deterministically and show as diff
+      const currentCode = getCurrentCode();
+      const combinedCode = generateHarnessAppended(currentCode);
+
+      if (combinedCode === currentCode) {
+        console.warn('[ChatPanel] No harness generated - circuit may already have interactive components');
+        return;
+      }
+
+      // Create a synthetic SHOW_DIFF action
+      const syntheticDiff: ShowDiffAction = {
+        type: 'SHOW_DIFF',
+        actionId: action.actionId ?? `harness-${Date.now()}`,
+        originalCode: currentCode,
+        suggestedCode: combinedCode,
+        explanation: `Generated test harness for ${(action as GenerateHarnessAction).circuitName ?? 'circuit'}. Adds interactive controls (Switch/Input) for inputs and displays (LED/Display) for outputs.`,
+      };
+
+      setShowDiffAction(syntheticDiff);
     }
-  }, []);
+  }, [getCurrentCode]);
 
   // Handle applying diff
   const handleApplyDiff = useCallback(() => {
@@ -241,15 +188,10 @@ export function ChatPanel({
       applyDiff(showDiffAction, setCode, getCurrentCode);
       setShowDiffAction(null);
 
-      // Auto-continue agent loop if waiting for user
-      if (agentState?.status === 'waiting_for_user') {
-        // Small delay to let the code change propagate
-        setTimeout(() => {
-          startLoop('continue');
-        }, 200);
-      }
+      // Signal the tutor flow that a diff was applied
+      onDiffApplied();
     }
-  }, [showDiffAction, setCode, getCurrentCode, agentState, startLoop]);
+  }, [showDiffAction, setCode, getCurrentCode, onDiffApplied]);
 
   // Handle confirmation response
   const handleConfirm = useCallback(() => {
@@ -285,20 +227,9 @@ export function ChatPanel({
           <SheetHeader className="px-4 py-3 border-b flex-row items-center justify-between space-y-0">
             <div className="flex items-center gap-2">
               <Bot className="h-5 w-5 text-blue-600" />
-              <SheetTitle>Hardware Assistant</SheetTitle>
+              <SheetTitle>Hardware Tutor</SheetTitle>
             </div>
             <div className="flex items-center gap-2">
-              {/* Agent Mode Toggle */}
-              <Button
-                variant={isAgentMode ? 'default' : 'outline'}
-                size="sm"
-                className="h-7 text-xs gap-1"
-                onClick={() => setAgentMode(!isAgentMode)}
-                disabled={isAgentRunning}
-              >
-                <Zap className={`h-3 w-3 ${isAgentMode ? 'text-yellow-300' : ''}`} />
-                Agent
-              </Button>
               <Button
                 variant="ghost"
                 size="icon"
@@ -310,13 +241,22 @@ export function ChatPanel({
             </div>
           </SheetHeader>
 
-          {/* Agent Status Line (compact Claude Code-style indicator) */}
-          {agentState && (isAgentRunning || agentState.status === 'waiting_for_user') && (
-            <AgentStatusLine
-              state={agentState}
-              isRunning={isAgentRunning}
-              onCancel={cancelLoop}
-            />
+          {/* Continuation indicator */}
+          {isContinuing && (
+            <div className="px-4 py-2 border-b border-border/50 flex items-center justify-between bg-muted/30">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Loader2 className="h-3 w-3 animate-spin" />
+                <span>Continuing... ({continuationCount}/3)</span>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 text-xs"
+                onClick={cancelContinuation}
+              >
+                Stop
+              </Button>
+            </div>
           )}
 
           {/* Messages */}
@@ -331,8 +271,7 @@ export function ChatPanel({
           {/* Input */}
           <ChatInput
             onSend={handleSend}
-            disabled={streaming.isStreaming || isAgentRunning}
-            placeholder={isAgentMode ? 'Describe your goal (agent will iterate)...' : undefined}
+            disabled={streaming.isStreaming || isContinuing}
           />
         </SheetContent>
       </Sheet>

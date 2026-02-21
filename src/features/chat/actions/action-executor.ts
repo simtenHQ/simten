@@ -14,7 +14,10 @@ import { createActionLogger, logActionSkip, logActionValidationFailed } from './
 import { getIdempotencyTracker } from './idempotency-tracker';
 import { checkStaleness, createStaleResult, createCannotSimulateResult } from './staleness-checker';
 import { getSimulationThrottle, type SimulationContext } from './simulation-throttle';
-import type { SetInputAction, RunSimulationAction, ShowDiffAction, InsertNodeAction } from '@/lib/baml_client/baml_client';
+import type { SetInputAction, RunSimulationAction, ShowDiffAction, InsertNodeAction, GenerateHarnessAction, VerifyAssertionAction } from '@/lib/baml_client/baml_client';
+import { generateHarness, parseDSL } from '@/features/dsl';
+import { formatAssertionSummary, evaluateAssertions } from '@/features/dsl/harness/assertion-evaluator';
+import type { ValidationSnapshot } from '../types';
 
 // ============================================================================
 // Execution Context
@@ -49,6 +52,12 @@ export interface ActionExecutionContext {
     resolveComponent: (name: string) => unknown;
     getAllPrimitiveNames: () => string[];
   };
+  /** Get current validation state (errors, warnings, canSimulate) */
+  getValidationSnapshot?: () => ValidationSnapshot;
+  /** Get fresh narrative context string for LLM */
+  getNarrativeContext?: () => string;
+  /** Get current port values from simulation */
+  getPortValues?: () => Map<string, number | boolean>;
 }
 
 // ============================================================================
@@ -199,6 +208,12 @@ async function executeActionByType(
     case 'INSERT_NODE':
       return executeInsertNode(action, context);
 
+    case 'GENERATE_HARNESS':
+      return executeGenerateHarness(action, context);
+
+    case 'VERIFY_ASSERTION':
+      return executeVerifyAssertion(action, context);
+
     default: {
       // Exhaustive check - this should never happen
       const exhaustiveCheck: never = action;
@@ -300,6 +315,139 @@ async function executeInsertNode(
       success: true,
       actionId: action.actionId,
       type: action.type,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      actionId: action.actionId,
+      type: action.type,
+      reason: error instanceof Error ? error.message : String(error),
+    };
+  }
+}
+
+/**
+ * Execute GENERATE_HARNESS action.
+ * Deterministically generates a test harness for a circuit.
+ * Returns the harness code as a diff for the user to apply.
+ */
+async function executeGenerateHarness(
+  action: GenerateHarnessAction & { actionId: string },
+  context: ActionExecutionContext
+): Promise<ActionResult> {
+  try {
+    const currentCode = context.getCurrentCode();
+    const harnessDSL = generateHarness(currentCode);
+
+    if (!harnessDSL) {
+      return {
+        success: false,
+        actionId: action.actionId,
+        type: action.type,
+        reason: 'Circuit does not need a harness (no interface ports or already has interactive components)',
+      };
+    }
+
+    // The harness is appended to the current code
+    // We present it as a SHOW_DIFF action so the user can review
+    const suggestedCode = `${currentCode.trim()}\n\n${harnessDSL}`;
+
+    // Store the generated harness for the UI to display
+    // The UI will show this as a diff when the action card is rendered
+    (action as GenerateHarnessAction & { actionId: string; _generatedCode?: string })._generatedCode = suggestedCode;
+
+    return {
+      success: true,
+      actionId: action.actionId,
+      type: action.type,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      actionId: action.actionId,
+      type: action.type,
+      reason: error instanceof Error ? error.message : String(error),
+    };
+  }
+}
+
+/**
+ * Execute VERIFY_ASSERTION action.
+ * Parses the current DSL, finds testbench assertions, compiles and evaluates them.
+ */
+async function executeVerifyAssertion(
+  action: VerifyAssertionAction & { actionId: string },
+  context: ActionExecutionContext
+): Promise<ActionResult> {
+  try {
+    const currentCode = context.getCurrentCode();
+
+    // Parse DSL to get AST (including testbenches)
+    const { ast, errors } = parseDSL(currentCode);
+    if (errors.some(e => e.severity === 'error')) {
+      return {
+        success: false,
+        actionId: action.actionId,
+        type: action.type,
+        reason: `Cannot verify assertions: DSL has ${errors.filter(e => e.severity === 'error').length} error(s)`,
+      };
+    }
+
+    // Find testbench definitions
+    const testbenches = ast.testbenches ?? [];
+    if (testbenches.length === 0) {
+      return {
+        success: false,
+        actionId: action.actionId,
+        type: action.type,
+        reason: 'No testbench found in current code. Write a testbench with assert blocks first.',
+      };
+    }
+
+    // Find testbench (optionally matching target circuit)
+    const targetTb = action.targetCircuit
+      ? testbenches.find(tb => tb.circuitRef.circuitName === action.targetCircuit)
+      : testbenches[0];
+
+    if (!targetTb) {
+      return {
+        success: false,
+        actionId: action.actionId,
+        type: action.type,
+        reason: `Testbench for '${action.targetCircuit}' not found`,
+      };
+    }
+
+    // Check if testbench has assertions
+    if (!targetTb.impl?.assertions || targetTb.impl.assertions.length === 0) {
+      return {
+        success: false,
+        actionId: action.actionId,
+        type: action.type,
+        reason: 'Testbench has no assert blocks. Add assert blocks to verify behavior.',
+      };
+    }
+
+    // Compile the testbench using the component library store
+    const { compileTestbenchToIR } = await import('@/features/dsl/compiler/testbench-compiler');
+    const { useComponentLibraryStore } = await import('@/features/visual-editor/stores/component-library-store');
+    const library = useComponentLibraryStore.getState();
+
+    const compiledTestbench = compileTestbenchToIR(targetTb, library);
+
+    // Run testbench, collecting a per-cycle trace for accurate assertion evaluation
+    const { runTestbenchWithTrace } = await import('@/features/visual-editor/lib/testing/testbench-runner');
+    const maxCycles = action.maxCycles ?? compiledTestbench.maxCycles;
+    const { trace } = runTestbenchWithTrace(compiledTestbench, maxCycles);
+
+    // Evaluate assertions against per-cycle signal values from the trace
+    const summary = evaluateAssertions(compiledTestbench, trace);
+
+    return {
+      success: true,
+      actionId: action.actionId,
+      type: action.type,
+      reason: formatAssertionSummary(summary),
     };
   } catch (error) {
     return {

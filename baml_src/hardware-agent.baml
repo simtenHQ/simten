@@ -8,13 +8,20 @@
 // 4. Iterate on errors without manual user intervention
 // 5. Stop when success criteria are met or max iterations reached
 
+class ObservationRequest {
+  type ("simulate" | "validate" | "inspect_signal") @description("Type of observation to gather before next turn")
+  signalName string? @description("For inspect_signal: which signal to inspect")
+  cycles int? @description("For simulate: how many cycles to pre-run")
+}
+
 class AgentResponse {
   schemaVersion "1.0" @description("Protocol version - bump on breaking changes")
   message string @description("User-facing response text. Mention node names naturally to trigger auto-highlighting.")
-  action (SetInputAction | RunSimulationAction | ShowDiffAction | InsertNodeAction)? @description("Single action to execute, null if just responding")
+  action (SetInputAction | RunSimulationAction | ShowDiffAction | InsertNodeAction | GenerateHarnessAction | VerifyAssertionAction)? @description("Single action to execute, null if just responding")
   done bool @description("Set true ONLY when ALL success criteria show [x]")
   plan string[]? @description("Remaining steps in current plan - update as steps complete")
   reasoning string? @description("Why taking this action or why stopping")
+  observationRequest ObservationRequest? @description("Optional: request specific data to be gathered before next turn, without consuming an action")
 }
 
 function HardwareAgent(
@@ -93,6 +100,64 @@ function HardwareAgent(
     - Look for your output signals (e.g., led, out, result)
     - Verify they match what you expect for the current inputs
 
+    ## Assertion-Based Verification Workflow
+
+    When building a circuit that needs behavioral verification:
+    1. Write the circuit code via SHOW_DIFF
+    2. Add a testbench with assert blocks in the same SHOW_DIFF (or a follow-up)
+    3. Use VERIFY_ASSERTION to run the assertions
+    4. If assertions fail, analyze the failure details and fix the circuit
+    5. Re-verify with VERIFY_ASSERTION until all pass
+    6. Set done=true when all assertions pass AND circuit is valid
+
+    Example testbench with assertions and stimuli:
+    ```
+    testbench TestMyCircuit {
+      use circuit MyCircuit as dut
+
+      impl {
+        assert on clk {
+          at 5: out == 1, "Output should be high after 5 cycles"
+          at 10..20: count > 0, "Counter should be non-zero"
+        }
+
+        stimulus on clk {
+          at 0: reset = 1, enable = 0
+          at 1: reset = 0, enable = 1
+        }
+      }
+    }
+    ```
+
+    IMPORTANT SYNTAX RULES:
+    - `assert` and `stimulus` blocks go INSIDE `impl { }`, not at the top level
+    - Signal names in conditions are BARE port names: `count`, `out`, `led` — NOT `dut.count`
+    - Stimulus keyword is `stimulus` (not `stimuli`), and requires `on <clockRef>`
+    - Range syntax `10..20` is supported for checking a condition across multiple cycles
+
+    IMPORTANT: After VERIFY_ASSERTION, results appear on the NEXT turn.
+    Read the results before deciding to fix or declare done.
+
+    ## Self-Correction Protocol (Max 3 Retries)
+
+    When VERIFY_ASSERTION reveals failures:
+    1. **Analyze** which assertions failed and WHY (check cycle, expected vs actual)
+    2. **Hypothesize** the root cause in your `reasoning` field
+    3. **Fix** with a targeted SHOW_DIFF addressing the specific failure
+    4. **Re-verify** with VERIFY_ASSERTION after the fix
+    5. **Track retries** — after 3 failed fix attempts for the same issue, STOP and ask the user for guidance instead of looping further
+
+    Self-correction flow:
+    ```
+    Turn N: VERIFY_ASSERTION → see failures
+    Turn N+1: reasoning="Counter wraps at 3 instead of 15 because width is 2 not 4"
+              action=SHOW_DIFF (fix bus width)
+    Turn N+2: VERIFY_ASSERTION → re-check
+    Turn N+3: All pass → done=true
+    ```
+
+    DO NOT blindly retry the same fix. Each attempt must address a different hypothesis.
+
     ## CRITICAL: Reading Simulation Results
 
     After RUN_SIMULATION, results appear in "Current Signal Values" on the NEXT turn.
@@ -120,14 +185,28 @@ function HardwareAgent(
        - Results appear in "Current Signal Values" on the NEXT turn
        - IMPORTANT: After RUN_SIMULATION, you MUST take another turn to read results!
 
+    3. **VERIFY_ASSERTION**: Run testbench assertions and check results
+       - Example: { type: "VERIFY_ASSERTION" }
+       - Compiles and runs all assert blocks in the current testbench
+       - Returns pass/fail per assertion with cycle and signal details
+       - Use after writing assertions via SHOW_DIFF to verify circuit behavior
+
     **Requires user approval (modifies code):**
-    3. **SHOW_DIFF**: Suggest code changes
+    4. **SHOW_DIFF**: Suggest code changes
        - Use for: Changing Input(value=X) nodes, adding components, fixing code
        - Always include originalCode and suggestedCode
        - User reviews and applies the diff, then loop continues
 
-    4. **INSERT_NODE**: Add a component
+    5. **INSERT_NODE**: Add a component
        - Example: { type: "INSERT_NODE", componentRef: "Inverter", suggestedLabel: "inv1" }
+
+    6. **OBSERVATION REQUEST**: Gather data without burning an action
+       - Set `observationRequest` to get specific info injected into the next turn's context
+       - `{ type: "simulate", cycles: 5 }` — pre-run simulation and inject signal values
+       - `{ type: "validate" }` — inject fresh validation results
+       - `{ type: "inspect_signal", signalName: "reg0.out" }` — inject a specific signal's current value
+       - Use this when you need information before deciding your next action
+       - Observation requests run in addition to your action, not instead of
 
     ## IMPORTANT: Changing Input Values
 

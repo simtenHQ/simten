@@ -35,6 +35,7 @@ import {
 } from '../flat-simulator';
 import { useComponentLibraryStore } from '../../stores/component-library-store';
 import { writeVCDToFile } from '../visualization/vcd-generator';
+import type { SimulationTrace } from '../../../dsl/analysis/types';
 
 // ============================================================================
 // Testbench Runner
@@ -141,6 +142,135 @@ export function runTestbench(
   }
 
   return state;
+}
+
+/**
+ * Run a testbench and accumulate a per-cycle SimulationTrace for assertion evaluation.
+ *
+ * Unlike runTestbench(), which overwrites portValues each cycle (leaving only the
+ * final cycle's values), this function collects every cycle's port values into
+ * per-signal arrays.  The resulting SimulationTrace can be passed to
+ * evaluateAssertions() so that cycle-indexed assertions are checked against the
+ * correct cycle's data rather than the final state.
+ *
+ * Bare-name aliases are populated alongside the raw flat-simulator keys so that
+ * assertion conditions written as `count == 2` resolve correctly even though the
+ * flat simulator keys signals as `tb_input_reset.out`, `dut.count`, etc.
+ */
+export function runTestbenchWithTrace(
+  testbench: Testbench,
+  maxCycles?: number
+): { state: TestbenchState; trace: SimulationTrace } {
+  const cycles = maxCycles ?? testbench.maxCycles;
+  const state = createTestbenchState();
+  const circuit = testbench.circuit;
+  const library = useComponentLibraryStore.getState();
+
+  const flatCircuit = elaborate(circuit, library);
+  let seqState = initializeFlatSequentialState(flatCircuit);
+  let previousPortValues: FlatPortValueMap | undefined;
+
+  // Per-signal value arrays: key -> value per sampled cycle.
+  // Both the raw flat-simulator key and any bare-name aliases are stored here.
+  const signalArrays: Record<string, (BitValue | BusValue)[]> = {};
+  const sampledCycles: number[] = [];
+  let actualCycles = 0;
+
+  for (let cycle = 0; cycle < cycles; cycle++) {
+    state.cycle = cycle;
+    applyStimulusForCycle(circuit, testbench.stimulus, cycle);
+    syncEnvironmentalValues(flatCircuit, circuit);
+
+    const result = runFlatSimulationTick(flatCircuit, seqState, previousPortValues);
+
+    if (result.error) {
+      state.status = 'failed';
+      state.failureReason = result.error;
+      break;
+    }
+
+    if (result.sequentialState) {
+      seqState = result.sequentialState;
+    }
+    previousPortValues = result.portValues;
+    updatePortValuesFromFlat(state, result.portValues);
+
+    // Accumulate per-cycle values for the trace.
+    // For each flat-simulator key, also record under any bare-name alias so
+    // that assertion conditions can reference signals by their port name alone.
+    sampledCycles.push(cycle);
+    actualCycles = cycle + 1;
+
+    for (const [key, value] of result.portValues.entries()) {
+      // Raw key
+      if (!signalArrays[key]) signalArrays[key] = [];
+      signalArrays[key].push(value);
+
+      // Bare-name aliases
+      const bareNames = extractBareNames(key);
+      for (const bareName of bareNames) {
+        if (!signalArrays[bareName]) signalArrays[bareName] = [];
+        signalArrays[bareName].push(value);
+      }
+    }
+  }
+
+  if (!testbench.assertions || state.assertionResults.every(r => r.passed)) {
+    state.status = 'passed';
+  } else {
+    state.status = 'failed';
+  }
+
+  const trace: SimulationTrace = {
+    cycles: actualCycles,
+    signals: signalArrays,
+    registers: {},
+    sampleRate: 1,
+    sampledCycles,
+  };
+
+  return { state, trace };
+}
+
+/**
+ * Given a flat-simulator port key, return any bare signal names it implies.
+ *
+ * Examples:
+ *   "tb_input_reset.out"  -> ["reset"]
+ *   "tb_output_led.in"   -> ["led"]
+ *   "dut.count"          -> ["count"]
+ *   "dut.sub.q"          -> ["q", "sub.q"]
+ *   "and1.out"           -> []  (primitive internal, no useful alias)
+ */
+function extractBareNames(key: string): string[] {
+  const names: string[] = [];
+
+  // tb_input_<signal>.out  -> <signal>
+  const tbInputMatch = key.match(/^tb_input_(.+)\.out$/);
+  if (tbInputMatch) {
+    names.push(tbInputMatch[1]);
+    return names;
+  }
+
+  // tb_output_<signal>.in  -> <signal>
+  const tbOutputMatch = key.match(/^tb_output_(.+)\.in$/);
+  if (tbOutputMatch) {
+    names.push(tbOutputMatch[1]);
+    return names;
+  }
+
+  // dut.<portName>  -> <portName>
+  // dut.<inner>.<portName>  -> <portName> and <inner>.<portName>
+  if (key.startsWith('dut.')) {
+    const rest = key.slice('dut.'.length); // e.g. "count" or "sub.q"
+    names.push(rest); // always add the full suffix
+    const lastDot = rest.lastIndexOf('.');
+    if (lastDot !== -1) {
+      names.push(rest.slice(lastDot + 1)); // also add just the final segment
+    }
+  }
+
+  return names;
 }
 
 /**

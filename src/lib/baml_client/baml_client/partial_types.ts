@@ -20,7 +20,7 @@ $ pnpm add @boundaryml/baml
 
 import type { Image, Audio, Pdf, Video } from "@boundaryml/baml"
 import type { Checked, Check } from "./types"
-import type {  ActionType,  AgentResponse,  AssistantResponse,  InsertNodeAction,  RunSimulationAction,  SetInputAction,  ShowDiffAction } from "./types"
+import type {  ActionType,  AgentResponse,  AssistantResponse,  GenerateHarnessAction,  InsertNodeAction,  ObservationRequest,  RunSimulationAction,  SetInputAction,  ShowDiffAction,  VerifyAssertionAction } from "./types"
 import type * as types from "./types"
 
 /******************************************************************************
@@ -39,16 +39,23 @@ export namespace partial_types {
     export interface AgentResponse {
       schemaVersion?: "1.0" | null
       message?: string | null
-      action?: SetInputAction | RunSimulationAction | ShowDiffAction | InsertNodeAction | null
+      action?: SetInputAction | RunSimulationAction | ShowDiffAction | InsertNodeAction | GenerateHarnessAction | VerifyAssertionAction | null
       done?: boolean | null
       plan?: string[] | null
       reasoning?: string | null
+      observationRequest?: ObservationRequest | null
     }
     export interface AssistantResponse {
       schemaVersion?: "1.0" | null
       message?: string | null
-      actions: (SetInputAction | RunSimulationAction | ShowDiffAction | InsertNodeAction)[]
+      actions: (SetInputAction | RunSimulationAction | ShowDiffAction | InsertNodeAction | GenerateHarnessAction)[]
       suggestedFollowUps?: string[] | null
+      shouldContinue?: boolean | null
+    }
+    export interface GenerateHarnessAction {
+      actionId?: string | null
+      type?: "GENERATE_HARNESS" | null
+      circuitName?: string | null
     }
     export interface InsertNodeAction {
       actionId?: string | null
@@ -57,6 +64,11 @@ export namespace partial_types {
       suggestedLabel?: string | null
       connectFrom?: string | null
       connectTo?: string | null
+    }
+    export interface ObservationRequest {
+      type?: "simulate" | "validate" | "inspect_signal" | null
+      signalName?: string | null
+      cycles?: number | null
     }
     export interface RunSimulationAction {
       actionId?: string | null
@@ -76,5 +88,11 @@ export namespace partial_types {
       originalCode?: string | null
       suggestedCode?: string | null
       explanation?: string | null
+    }
+    export interface VerifyAssertionAction {
+      actionId?: string | null
+      type?: "VERIFY_ASSERTION" | null
+      targetCircuit?: string | null
+      maxCycles?: number | null
     }
 }

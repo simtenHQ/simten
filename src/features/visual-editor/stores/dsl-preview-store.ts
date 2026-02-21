@@ -16,8 +16,10 @@ import { immer } from 'zustand/middleware/immer';
 import type { Circuit } from '../types/circuit';
 import { useCircuitStore } from './circuit-store';
 import { useMetadataStore } from './metadata-store';
+import { useComponentLibraryStore } from './component-library-store';
 import { performHierarchicalLayout, centerLayout } from '../utils/auto-layout';
 import { loadCircuitMetadata, saveCircuitMetadata } from '../utils/metadata-persistence';
+import { createDrillDownViewCircuit } from '../utils/drill-down-view';
 
 /**
  * Hash function for DSL version tracking
@@ -32,6 +34,17 @@ function hashDSLCode(code: string): string {
     // Fallback for invalid characters
     return code.length.toString(16);
   }
+}
+
+/**
+ * A single frame on the drill-down navigation stack.
+ * Each frame represents one level of composite hierarchy.
+ */
+export interface DrillDownFrame {
+  nodeId: string;        // Instance node ID in the parent circuit (e.g., "ha1_abc")
+  nodeLabel: string;     // Human-readable label (e.g., "ha1")
+  componentName: string; // Component type name (e.g., "HalfAdder")
+  circuit: Circuit;      // The view circuit (with boundary nodes) for this level
 }
 
 interface DSLPreviewActions {
@@ -54,6 +67,13 @@ interface DSLPreviewActions {
 
   // Metadata persistence
   saveCurrentPositions: () => void;
+
+  // Drill-down navigation
+  drillInto: (nodeId: string) => void;
+  drillUp: () => void;
+  navigateTo: (depth: number) => void;
+  isDrilledIn: () => boolean;
+  getPortValuePrefix: () => string;
 }
 
 interface DSLPreviewState {
@@ -64,6 +84,9 @@ interface DSLPreviewState {
   // Version tracking for conflict detection
   dslVersion: string; // Hash of current DSL code
   lastSyncedVersion: string; // Hash when canvas last synced from DSL
+
+  // Drill-down navigation stack (empty = top-level view)
+  drillDownStack: DrillDownFrame[];
 }
 
 export interface DSLPreviewStore extends DSLPreviewState, DSLPreviewActions {}
@@ -74,6 +97,7 @@ const initialState: DSLPreviewState = {
   autoCompileEnabled: true,
   dslVersion: '',
   lastSyncedVersion: '',
+  drillDownStack: [],
 };
 
 export const useDSLPreviewStore = create<DSLPreviewStore>()(
@@ -90,6 +114,7 @@ export const useDSLPreviewStore = create<DSLPreviewStore>()(
         state.compiledCircuits = circuits;
         state.dslVersion = hash;
         state.lastSyncedVersion = hash; // DSL is source of truth at compile time
+        state.drillDownStack = []; // Clear drill-down on recompile
 
         // Auto-select last circuit (most recently written)
         if (circuits.length > 0) {
@@ -113,6 +138,7 @@ export const useDSLPreviewStore = create<DSLPreviewStore>()(
 
       set((state) => {
         state.selectedCircuitIndex = index;
+        state.drillDownStack = []; // Clear drill-down on circuit switch
       });
 
       // Apply selected circuit to canvas
@@ -318,6 +344,148 @@ export const useDSLPreviewStore = create<DSLPreviewStore>()(
       // Save to localStorage
       saveCircuitMetadata(selectedCircuit.name, positionsByLabel);
       console.log('[DSLPreviewStore] Saved positions for', selectedCircuit.name, ':', Object.keys(positionsByLabel).length, 'nodes');
+    },
+
+    // ── Drill-down navigation ──
+
+    drillInto: (nodeId: string) => {
+      // Determine the currently active circuit (either drilled-in view or top-level)
+      const { drillDownStack, compiledCircuits, selectedCircuitIndex } = get();
+
+      let activeCircuit: Circuit | null;
+      if (drillDownStack.length > 0) {
+        // Currently inside a drill-down; look for the node in the current view
+        activeCircuit = drillDownStack[drillDownStack.length - 1].circuit;
+      } else {
+        activeCircuit = selectedCircuitIndex >= 0 ? compiledCircuits[selectedCircuitIndex] : null;
+      }
+
+      if (!activeCircuit) {
+        console.warn('[DSLPreviewStore] drillInto: no active circuit');
+        return;
+      }
+
+      // Find the node
+      const node = activeCircuit.nodes.find(n => n.id === nodeId);
+      if (!node) {
+        console.warn('[DSLPreviewStore] drillInto: node not found:', nodeId);
+        return;
+      }
+
+      // Resolve the component definition
+      const componentDef = useComponentLibraryStore.getState().resolveComponent(node.componentRef);
+      if (!componentDef || componentDef.implementation.kind !== 'composite') {
+        console.warn('[DSLPreviewStore] drillInto: not a composite component:', node.componentRef);
+        return;
+      }
+
+      // Build the view circuit with boundary nodes
+      const viewCircuit = createDrillDownViewCircuit(componentDef);
+
+      // Push frame onto stack
+      const frame: DrillDownFrame = {
+        nodeId,
+        nodeLabel: node.label || node.id,
+        componentName: node.componentRef,
+        circuit: viewCircuit,
+      };
+
+      set((state) => {
+        state.drillDownStack.push(frame);
+      });
+
+      // Apply the view circuit to canvas with auto-layout
+      const layoutPositions = performHierarchicalLayout(viewCircuit);
+      const positions = centerLayout(layoutPositions);
+
+      const metadataStore = useMetadataStore.getState();
+      metadataStore.clearAll();
+
+      Object.entries(positions).forEach(([id, position]) => {
+        metadataStore.setComponentMetadata(id, {
+          id,
+          position,
+          selected: false,
+        });
+      });
+
+      viewCircuit.connections.forEach((conn) => {
+        metadataStore.setConnectionMetadata(conn.id, {
+          id: conn.id,
+          selected: false,
+        });
+      });
+
+      useCircuitStore.getState().setCircuit(viewCircuit);
+      console.log('[DSLPreviewStore] Drilled into', node.componentRef, 'via node', nodeId);
+    },
+
+    drillUp: () => {
+      const { drillDownStack } = get();
+      if (drillDownStack.length === 0) return;
+
+      get().navigateTo(drillDownStack.length - 1);
+    },
+
+    navigateTo: (depth: number) => {
+      const { drillDownStack } = get();
+
+      if (depth === 0) {
+        // Return to top-level
+        set((state) => {
+          state.drillDownStack = [];
+        });
+        get().applyToCanvas();
+        return;
+      }
+
+      if (depth >= drillDownStack.length) {
+        // Already at or beyond target depth — no-op
+        return;
+      }
+
+      // Pop stack to target depth and apply that level's circuit
+      const targetFrame = drillDownStack[depth - 1];
+      set((state) => {
+        state.drillDownStack = state.drillDownStack.slice(0, depth);
+      });
+
+      // Apply the target frame's circuit
+      const viewCircuit = targetFrame.circuit;
+      const layoutPositions = performHierarchicalLayout(viewCircuit);
+      const positions = centerLayout(layoutPositions);
+
+      const metadataStore = useMetadataStore.getState();
+      metadataStore.clearAll();
+
+      Object.entries(positions).forEach(([id, position]) => {
+        metadataStore.setComponentMetadata(id, {
+          id,
+          position,
+          selected: false,
+        });
+      });
+
+      viewCircuit.connections.forEach((conn) => {
+        metadataStore.setConnectionMetadata(conn.id, {
+          id: conn.id,
+          selected: false,
+        });
+      });
+
+      useCircuitStore.getState().setCircuit(viewCircuit);
+    },
+
+    isDrilledIn: () => {
+      return get().drillDownStack.length > 0;
+    },
+
+    getPortValuePrefix: () => {
+      const { drillDownStack } = get();
+      if (drillDownStack.length === 0) return '';
+
+      // Build prefix by concatenating all frame node IDs with dots
+      return drillDownStack.map(f => f.nodeId).join('.') + '.';
     },
   }))
 );

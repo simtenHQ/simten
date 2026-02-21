@@ -222,11 +222,36 @@ export interface ActionObservation {
   parseErrors?: string[];
   /** For RUN_SIMULATION: behavioral verification results */
   verificationResults?: VerificationResult[];
+  /** For VERIFY_ASSERTION: assertion evaluation results */
+  assertionResults?: {
+    total: number;
+    passed: number;
+    failed: number;
+    allPassed: boolean;
+    results: Array<{
+      assertionId: string;
+      cycle: number;
+      passed: boolean;
+      message: string;
+    }>;
+  };
 }
 
 // ============================================================================
 // Agent Turn Types
 // ============================================================================
+
+/**
+ * An observation request from the agent — gathers data without using an action.
+ */
+export interface ObservationRequest {
+  /** Type of observation to gather */
+  type: 'simulate' | 'validate' | 'inspect_signal';
+  /** For inspect_signal: which signal to inspect */
+  signalName?: string;
+  /** For simulate: how many cycles to pre-run */
+  cycles?: number;
+}
 
 /**
  * The LLM's response for a single turn.
@@ -244,6 +269,8 @@ export interface AgentResponse {
   plan?: string[];
   /** Reasoning for why this action was chosen */
   reasoning?: string;
+  /** Optional observation request to gather data before the next turn */
+  observationRequest?: ObservationRequest;
 }
 
 /**

@@ -26,6 +26,7 @@ import type {
   SimulateOptions,
   Stimuli,
   BehavioralDiagnostic,
+  SignalMetrics,
 } from './types';
 import {
   MAX_SIMULATION_CYCLES,
@@ -126,13 +127,19 @@ export function simulateCircuit(
     }
   }
 
-  return {
+  const baseTrace: SimulationTrace = {
     cycles,
     signals,
     registers,
     sampleRate,
     sampledCycles,
   };
+
+  // Compute post-simulation enrichments
+  baseTrace.steadyStateAt = detectSteadyState(baseTrace);
+  baseTrace.signalMetrics = computeAllSignalMetrics(baseTrace);
+
+  return baseTrace;
 }
 
 /**
@@ -205,9 +212,14 @@ function stateToValue(state: unknown): BitValue | BusValue {
 /**
  * Extract behavioral diagnostics from a simulation trace.
  * These are design insights, NOT errors.
+ *
+ * @param trace - The simulation trace to analyze
+ * @param ctx - Optional elaborated context; when provided, causality chain
+ *   diagnostics are added for register state transitions.
  */
 export function extractBehavioralDiagnostics(
-  trace: SimulationTrace
+  trace: SimulationTrace,
+  ctx?: ElaboratedContext
 ): BehavioralDiagnostic[] {
   const diagnostics: BehavioralDiagnostic[] = [];
 
@@ -267,6 +279,12 @@ export function extractBehavioralDiagnostics(
         });
       }
     }
+  }
+
+  // Causality chain diagnostics (requires elaborated context for topology)
+  if (ctx) {
+    const causalityDiagnostics = extractCausalityChains(trace, ctx);
+    diagnostics.push(...causalityDiagnostics);
   }
 
   // Sort diagnostics for deterministic output
@@ -418,4 +436,266 @@ function compressRuns<T>(values: T[]): Array<{ value: T; count: number }> {
 
   runs.push(currentRun);
   return runs;
+}
+
+// ============================================================================
+// Steady-State Detection
+// ============================================================================
+
+/**
+ * Number of trailing constant cycles required to declare steady state.
+ * A window of 5 ensures transient settling is complete before we report.
+ */
+const STEADY_STATE_WINDOW = 5;
+
+/**
+ * Detect the earliest sampled cycle index at which all observed signals
+ * (both combinational outputs and register outputs) became constant and
+ * remained so for at least STEADY_STATE_WINDOW consecutive samples.
+ *
+ * Returns the cycle NUMBER (from sampledCycles) of that first stable sample,
+ * or undefined if the circuit never stabilised within the simulation window.
+ *
+ * Implementation note: we scan from the END of the trace backward to find the
+ * earliest point where the trailing STEADY_STATE_WINDOW samples are all equal,
+ * then continue scanning forward until we find the first run that is long enough.
+ */
+export function detectSteadyState(trace: SimulationTrace): number | undefined {
+  // Collect all value arrays (signals + registers)
+  const allSeries = [
+    ...Object.values(trace.signals),
+    ...Object.values(trace.registers),
+  ];
+
+  // Need at least STEADY_STATE_WINDOW samples to make a meaningful judgment
+  const totalSamples = trace.sampledCycles.length;
+  if (totalSamples < STEADY_STATE_WINDOW) {
+    return undefined;
+  }
+
+  // For each candidate start index (from 0 to totalSamples - STEADY_STATE_WINDOW)
+  // check whether all series are constant from that index to the end of the trace.
+  // We want the *earliest* such index.
+  for (let startIdx = 0; startIdx <= totalSamples - STEADY_STATE_WINDOW; startIdx++) {
+    let allConstantFromHere = true;
+
+    for (const series of allSeries) {
+      if (series.length === 0) continue;
+
+      // The reference value is the value at startIdx
+      const referenceValue = series[startIdx];
+
+      // Check that every subsequent sample equals the reference
+      for (let i = startIdx + 1; i < series.length; i++) {
+        if (series[i] !== referenceValue) {
+          allConstantFromHere = false;
+          break;
+        }
+      }
+
+      if (!allConstantFromHere) break;
+    }
+
+    if (allConstantFromHere) {
+      // Return the actual cycle number, not the sample index
+      return trace.sampledCycles[startIdx];
+    }
+  }
+
+  return undefined;
+}
+
+// ============================================================================
+// Signal Metrics
+// ============================================================================
+
+/**
+ * Compute activity metrics for a single value series.
+ *
+ * @param values - Sampled values for the signal
+ * @returns SignalMetrics with transition count and optional duty cycle
+ */
+function computeSeriesMetrics(values: (BitValue | BusValue)[]): SignalMetrics {
+  if (values.length === 0) {
+    return { transitions: 0 };
+  }
+
+  let transitions = 0;
+  for (let i = 1; i < values.length; i++) {
+    if (values[i] !== values[i - 1]) {
+      transitions++;
+    }
+  }
+
+  // Compute duty cycle only for boolean (Bit) signals
+  const isBitSignal = values.every(v => typeof v === 'boolean');
+  let dutyCycle: number | undefined;
+  if (isBitSignal && values.length > 0) {
+    const trueCount = values.filter(v => v === true).length;
+    dutyCycle = trueCount / values.length;
+  }
+
+  return { transitions, dutyCycle };
+}
+
+/**
+ * Compute per-signal metrics for all signals and registers in a trace.
+ *
+ * @param trace - The simulation trace
+ * @returns Map of signal/register name to its metrics
+ */
+export function computeAllSignalMetrics(
+  trace: SimulationTrace
+): Record<string, SignalMetrics> {
+  const metrics: Record<string, SignalMetrics> = {};
+
+  for (const [name, values] of Object.entries(trace.signals)) {
+    metrics[name] = computeSeriesMetrics(values);
+  }
+
+  for (const [name, values] of Object.entries(trace.registers)) {
+    metrics[name] = computeSeriesMetrics(values);
+  }
+
+  return metrics;
+}
+
+// ============================================================================
+// Causality Chain Diagnostics
+// ============================================================================
+
+/**
+ * Trace the upstream source for a given node's input port through the
+ * connection graph of the flat circuit.
+ *
+ * Returns a human-readable description such as:
+ *   "adder0.out (computed from a.out + b.out)"
+ * or simply the source port path if no further elaboration is available.
+ */
+function traceInputSource(
+  nodeId: string,
+  portName: string,
+  ctx: ElaboratedContext
+): string {
+  const { flat } = ctx;
+  const targetKey = `${nodeId}.${portName}`;
+
+  // Find the connection whose target matches this node/port
+  const conn = flat.connections.find(
+    (c) => c.target.nodeId === nodeId && c.target.portName === portName
+  );
+
+  if (!conn) {
+    return targetKey;
+  }
+
+  const srcNodeId = conn.source.nodeId;
+  const srcPortName = conn.source.portName;
+
+  // If the source is the top-level node, name it clearly
+  if (srcNodeId === '__top__') {
+    return `circuit input '${srcPortName}'`;
+  }
+
+  const srcNode = flat.nodeMap.get(srcNodeId);
+  if (!srcNode) {
+    return `${srcNodeId}.${srcPortName}`;
+  }
+
+  // Describe the source node's inputs to explain what it computed
+  const inputDescriptions = srcNode.inputSources
+    .slice(0, 3) // Keep description concise
+    .map((is) => {
+      if (is.sourceNodeId === '__top__') {
+        return `input '${is.sourcePortName}'`;
+      }
+      return `${is.sourceNodeId}.${is.sourcePortName}`;
+    });
+
+  const computedFrom =
+    inputDescriptions.length > 0
+      ? ` (computed from ${inputDescriptions.join(', ')})`
+      : '';
+
+  return `${srcNodeId}.${srcPortName}${computedFrom}`;
+}
+
+/**
+ * Extract causality chain diagnostics for all registers that changed value
+ * during the simulation.
+ *
+ * For each register update, we emit a STATE_TRANSITION_EXPLAINED diagnostic
+ * that describes what value the register captured and where that value came from.
+ * This helps the LLM agent understand the data-flow reason behind state changes.
+ *
+ * @param trace - The simulation trace
+ * @param ctx - Elaborated context providing the flat circuit topology
+ * @returns Array of causality-chain behavioral diagnostics
+ */
+export function extractCausalityChains(
+  trace: SimulationTrace,
+  ctx: ElaboratedContext
+): BehavioralDiagnostic[] {
+  const diagnostics: BehavioralDiagnostic[] = [];
+  const { flat, library } = ctx;
+
+  for (const [regId, values] of Object.entries(trace.registers)) {
+    if (values.length < 2) continue;
+
+    // Collect the first few state transitions for this register
+    const transitionCycles: Array<{
+      cycle: number;
+      fromValue: BitValue | BusValue;
+      toValue: BitValue | BusValue;
+    }> = [];
+
+    for (let i = 1; i < values.length; i++) {
+      if (values[i] !== values[i - 1]) {
+        transitionCycles.push({
+          cycle: trace.sampledCycles[i],
+          fromValue: values[i - 1],
+          toValue: values[i],
+        });
+        // Limit to first 3 transitions per register to keep output manageable
+        if (transitionCycles.length >= 3) break;
+      }
+    }
+
+    if (transitionCycles.length === 0) continue;
+
+    // Find the flat node for this register
+    const regNode = flat.nodeMap.get(regId);
+    if (!regNode) continue;
+
+    // Verify it is actually a sequential node
+    const component = library.resolveComponent(regNode.primitiveType);
+    if (component?.metadata?.kind !== 'sequential') continue;
+
+    // Find the data input port (conventionally named 'd' or 'in' or 'data';
+    // fall back to the first input port if none of the canonical names match)
+    const dataPort =
+      regNode.inputs.find((p) =>
+        ['d', 'in', 'data', 'value'].includes(p.name.toLowerCase())
+      ) ?? regNode.inputs[0];
+
+    // Describe the data source
+    const sourceDescription = dataPort
+      ? traceInputSource(regId, dataPort.name, ctx)
+      : 'unknown source';
+
+    // Build a transition summary string
+    const transitionSummary = transitionCycles
+      .map((t) => `${formatValue(t.fromValue)} -> ${formatValue(t.toValue)} at cycle ${t.cycle}`)
+      .join('; ');
+
+    diagnostics.push({
+      code: 'STATE_TRANSITION_EXPLAINED',
+      severity: 'info',
+      message: `Register '${regId}' updated: ${transitionSummary}. Data captured from ${sourceDescription}.`,
+      node: regId,
+      suggestion: undefined,
+    });
+  }
+
+  return diagnostics;
 }

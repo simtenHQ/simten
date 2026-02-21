@@ -32,6 +32,7 @@ interface StreamChunk {
     message: string;
     actions: unknown[];
     suggestedFollowUps?: string[] | null;
+    shouldContinue?: boolean;
   };
   error?: string;
 }
@@ -154,6 +155,7 @@ export async function POST(request: NextRequest) {
                     message: finalResponse.message,
                     actions: validActions,
                     suggestedFollowUps: finalResponse.suggestedFollowUps,
+                    shouldContinue: finalResponse.shouldContinue,
                   },
                 })
               )

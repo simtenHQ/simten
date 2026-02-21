@@ -220,7 +220,7 @@ test_impl_block =
   "impl" "{" { test_impl_item } "}" ;
 
 test_impl_item =
-  test_node_declaration | test_connect_statement | stimulus_block | capture_block ;
+  test_node_declaration | test_connect_statement | stimulus_block | capture_block | assert_block ;
 
 test_node_declaration =
   "node" IDENTIFIER ":" IDENTIFIER ;
@@ -262,6 +262,16 @@ format_declaration =
 
 filename_declaration =
   "filename" ":" STRING ;
+
+(* ============================================================================
+   Assert Block
+   ============================================================================ *)
+
+assert_block =
+  "assert" "on" IDENTIFIER "{" { assertion_item } "}" ;
+
+assertion_item =
+  "at" stimulus_timing ":" expression [ "," STRING ] ;
 
 (* ============================================================================
    Lexical Tokens

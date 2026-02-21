@@ -32,6 +32,7 @@ export interface NodeData extends Record<string, unknown> {
   outputCount: number;
   inputNames: string[];
   outputNames: string[];
+  isComposite?: boolean; // True if this node is a composite component (drillable)
   __pixels?: number[]; // For Screen component - pixel data from RAM
   __consoleText?: string; // For Console component - accumulated text
   onToggle?: () => void; // Optional callback for input toggle (used by MiniCanvas)
@@ -132,20 +133,32 @@ export function projectCircuitToNodes(
     let consoleText: string | undefined = undefined;
 
     if (node.componentRef === 'Switch' || node.componentRef === 'Led') {
-      // For Switch/Led, check if there's a value in arguments or port values
-      if ('value' in node.arguments) {
-        value = Boolean(node.arguments.value);
-      } else if (portValues) {
-        // Try to get from port values (for Led, this is the input value)
+      // For Switch/Led, prefer port values (reflects actual simulation state)
+      // then fall back to arguments (initial/configured value).
+      // This is important for the inspector dialog where the simulator updates
+      // port values but the circuit node arguments stay at their initial values.
+      let resolved = false;
+
+      if (portValues) {
         if (node.componentRef === 'Led' && node.inputs.length > 0) {
           const inputKey = portPathKey({ nodeId: node.id, portName: node.inputs[0].name });
           const portValue = portValues.get(inputKey);
-          value = Boolean(portValue);
+          if (portValue !== undefined) {
+            value = Boolean(portValue);
+            resolved = true;
+          }
         } else if (node.componentRef === 'Switch' && node.outputs.length > 0) {
           const outputKey = portPathKey({ nodeId: node.id, portName: node.outputs[0].name });
           const portValue = portValues.get(outputKey);
-          value = Boolean(portValue);
+          if (portValue !== undefined) {
+            value = Boolean(portValue);
+            resolved = true;
+          }
         }
+      }
+
+      if (!resolved && 'value' in node.arguments) {
+        value = Boolean(node.arguments.value);
       }
     } else if (node.componentRef === 'Input') {
       numericValue = typeof node.arguments.value === 'number' ? node.arguments.value : 0;
@@ -240,6 +253,9 @@ export function projectCircuitToNodes(
       }
     }
 
+    // Detect composite components (user can drill into these)
+    const isComposite = componentDef.implementation.kind === 'composite';
+
     reactFlowNodes.push({
       id: node.id,
       type: nodeType,
@@ -255,6 +271,7 @@ export function projectCircuitToNodes(
         outputCount,
         inputNames,
         outputNames,
+        isComposite,
         __pixels: pixels,
         __consoleText: consoleText,
       },

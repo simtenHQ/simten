@@ -8,7 +8,7 @@
 'use client';
 
 import React from 'react';
-import { Play, FileCode, Plus, Loader2, ToggleRight } from 'lucide-react';
+import { Play, FileCode, Plus, Loader2, ToggleRight, TestTube2, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import type { AssistantAction, ActionExecutionStatus } from '../types';
@@ -27,6 +27,8 @@ const ACTION_ICONS = {
   RUN_SIMULATION: Play,
   SHOW_DIFF: FileCode,
   INSERT_NODE: Plus,
+  GENERATE_HARNESS: TestTube2,
+  VERIFY_ASSERTION: ShieldCheck,
 } as const;
 
 const ACTION_COLORS = {
@@ -34,6 +36,8 @@ const ACTION_COLORS = {
   RUN_SIMULATION: 'bg-green-50 border-green-200 hover:border-green-400',
   SHOW_DIFF: 'bg-blue-50 border-blue-200 hover:border-blue-400',
   INSERT_NODE: 'bg-purple-50 border-purple-200 hover:border-purple-400',
+  GENERATE_HARNESS: 'bg-teal-50 border-teal-200 hover:border-teal-400',
+  VERIFY_ASSERTION: 'bg-emerald-50 border-emerald-200 hover:border-emerald-400',
 } as const;
 
 export function ActionCard({
@@ -54,6 +58,9 @@ export function ActionCard({
 
   const handleClick = () => {
     if (action.type === 'SHOW_DIFF' && onShowDiff) {
+      onShowDiff(action);
+    } else if (action.type === 'GENERATE_HARNESS' && onShowDiff) {
+      // GENERATE_HARNESS is handled like SHOW_DIFF - generates code then shows diff
       onShowDiff(action);
     } else {
       onExecute(action);
@@ -77,7 +84,8 @@ export function ActionCard({
             action.type === 'SET_INPUT' && 'bg-amber-100 text-amber-600',
             action.type === 'RUN_SIMULATION' && 'bg-green-100 text-green-600',
             action.type === 'SHOW_DIFF' && 'bg-blue-100 text-blue-600',
-            action.type === 'INSERT_NODE' && 'bg-purple-100 text-purple-600'
+            action.type === 'INSERT_NODE' && 'bg-purple-100 text-purple-600',
+            action.type === 'GENERATE_HARNESS' && 'bg-teal-100 text-teal-600'
           )}
         >
           {isExecuting ? (
@@ -125,12 +133,16 @@ export function ActionCard({
         {!isCompleted && !isSkipped && (
           <Button
             size="sm"
-            variant={action.type === 'SHOW_DIFF' ? 'outline' : 'default'}
+            variant={action.type === 'SHOW_DIFF' || action.type === 'GENERATE_HARNESS' ? 'outline' : 'default'}
             onClick={handleClick}
             disabled={isExecuting || isStale}
             className="shrink-0"
           >
-            {action.type === 'SHOW_DIFF' ? 'View Diff' : 'Execute'}
+            {action.type === 'SHOW_DIFF'
+              ? 'View Diff'
+              : action.type === 'GENERATE_HARNESS'
+              ? 'Generate'
+              : 'Execute'}
           </Button>
         )}
       </div>

@@ -8,6 +8,7 @@ export {
   buildNarrativeSummary,
   buildMinimalNarrative,
   formatCurrentPortValues,
+  formatHarnessSuggestion,
 } from './narrative-builder';
 
 export {
