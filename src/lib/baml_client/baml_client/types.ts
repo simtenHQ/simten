@@ -54,6 +54,16 @@ export enum ActionType {
   INSERT_NODE = "INSERT_NODE",
 }
 
+export interface AgentResponse {
+  schemaVersion: "1.0"
+  message: string
+  action?: SetInputAction | RunSimulationAction | ShowDiffAction | InsertNodeAction | null
+  done: boolean
+  plan?: string[] | null
+  reasoning?: string | null
+  
+}
+
 export interface AssistantResponse {
   schemaVersion: "1.0"
   message: string

@@ -123,3 +123,23 @@
     @apply bg-background text-foreground;
 	}
 }
+
+/* Agent status shimmer animation */
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.animate-shimmer {
+  background: linear-gradient(
+    90deg,
+    oklch(0.6 0.2 250) 0%,
+    oklch(0.7 0.25 280) 50%,
+    oklch(0.6 0.2 250) 100%
+  );
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: shimmer 2s ease-in-out infinite;
+}

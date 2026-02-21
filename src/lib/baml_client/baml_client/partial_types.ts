@@ -20,7 +20,7 @@ $ pnpm add @boundaryml/baml
 
 import type { Image, Audio, Pdf, Video } from "@boundaryml/baml"
 import type { Checked, Check } from "./types"
-import type {  ActionType,  AssistantResponse,  InsertNodeAction,  RunSimulationAction,  SetInputAction,  ShowDiffAction } from "./types"
+import type {  ActionType,  AgentResponse,  AssistantResponse,  InsertNodeAction,  RunSimulationAction,  SetInputAction,  ShowDiffAction } from "./types"
 import type * as types from "./types"
 
 /******************************************************************************
@@ -36,6 +36,14 @@ export interface StreamState<T> {
 }
 
 export namespace partial_types {
+    export interface AgentResponse {
+      schemaVersion?: "1.0" | null
+      message?: string | null
+      action?: SetInputAction | RunSimulationAction | ShowDiffAction | InsertNodeAction | null
+      done?: boolean | null
+      plan?: string[] | null
+      reasoning?: string | null
+    }
     export interface AssistantResponse {
       schemaVersion?: "1.0" | null
       message?: string | null

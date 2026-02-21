@@ -59,6 +59,7 @@ export function VisualEditor() {
   );
   const registerUser = useComponentLibraryStore((state) => state.registerUser);
   const circuit = useCircuitStore((state) => state.circuit);
+  const updateNode = useCircuitStore((state) => state.updateNode);
   const resolveComponent = useComponentLibraryStore(
     (state) => state.resolveComponent,
   );
@@ -235,8 +236,24 @@ export function VisualEditor() {
             setTimeout(() => dslEditorRef.current?.compile(), 100);
           }}
           setInput={(nodeName, value) => {
-            // Set input value and propagate (for combinational, this is instant)
-            simulationController.setInput(nodeName, value);
+            // Update circuit-store (source of truth for input configuration)
+            // The simulation controller will pick this up via syncEnvironmentalValues
+            if (circuit) {
+              // Node IDs are prefixed: "CircuitName_label_timestamp_uniqueId"
+              // Match by the DSL label (the part after circuit name prefix)
+              const node = circuit.nodes.find(n =>
+                n.id === nodeName ||
+                n.id.includes(`_${nodeName}_`) ||
+                n.id.endsWith(`_${nodeName}`)
+              );
+              if (node) {
+                updateNode(node.id, { arguments: { ...node.arguments, value } });
+                // Also update simulator directly for immediate effect (using actual node ID)
+                simulationController.setInput(node.id, value);
+              } else {
+                console.warn('[setInput] Node not found:', nodeName, 'in circuit with', circuit.nodes.length, 'nodes');
+              }
+            }
           }}
           runSimulation={async (cycles) => {
             // Run simulation for specified cycles

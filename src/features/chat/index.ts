@@ -35,13 +35,13 @@ export {
 export { useChatStore, selectIsStreaming, selectMessages, selectIsOpen, selectLastMessage } from './stores/chat-store';
 
 // Components
-export { ChatPanel, ChatInput, MessageList, MessageBubble, ActionCard, CodeDiffView, ConfirmationModal, StaleActionNotice } from './components';
+export { ChatPanel, ChatInput, MessageList, MessageBubble, ActionCard, CodeDiffView, ConfirmationModal, StaleActionNotice, AgentProgress, GoalStateView, GoalBadge } from './components';
 
 // Actions
 export { executeAction, applyDiff, validateAction, validateShowDiff, normalizeAction, type ActionExecutionContext } from './actions';
 
 // Hooks
-export { useNarrativeContext, buildNarrativeContext, type NarrativeContextResult } from './hooks';
+export { useNarrativeContext, buildNarrativeContext, useAgentLoop, type NarrativeContextResult, type UseAgentLoopOptions, type UseAgentLoopResult } from './hooks';
 
 // Context
 export { buildNarrativeSummary, buildMinimalNarrative, enforceTokenBudget, countTokens } from './context';
@@ -54,3 +54,6 @@ export { extractNodeReferences, highlightNodesFromMessage, createCircuitChecker 
 
 // Versioning
 export { isVersionSupported, getSupportedActions, getCurrentVersion, isKnownActionType } from './versioning/schema-compat';
+
+// Agent
+export * from './agent';

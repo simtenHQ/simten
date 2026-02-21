@@ -27,6 +27,8 @@ export { FieldType, EnumBuilder, ClassBuilder }
 export default class TypeBuilder {
     private tb: _TypeBuilder;
     
+    AgentResponse: ClassViewer<'AgentResponse', "schemaVersion" | "message" | "action" | "done" | "plan" | "reasoning">;
+    
     AssistantResponse: ClassViewer<'AssistantResponse', "schemaVersion" | "message" | "actions" | "suggestedFollowUps">;
     
     InsertNodeAction: ClassViewer<'InsertNodeAction', "actionId" | "type" | "componentRef" | "suggestedLabel" | "connectFrom" | "connectTo">;
@@ -44,13 +46,17 @@ export default class TypeBuilder {
     constructor() {
         this.tb = new _TypeBuilder({
           classes: new Set([
-            "AssistantResponse","InsertNodeAction","RunSimulationAction","SetInputAction","ShowDiffAction",
+            "AgentResponse","AssistantResponse","InsertNodeAction","RunSimulationAction","SetInputAction","ShowDiffAction",
           ]),
           enums: new Set([
             "ActionType",
           ]),
           runtime: DO_NOT_USE_DIRECTLY_UNLESS_YOU_KNOW_WHAT_YOURE_DOING_RUNTIME
         });
+        
+        this.AgentResponse = this.tb.classViewer("AgentResponse", [
+          "schemaVersion","message","action","done","plan","reasoning",
+        ]);
         
         this.AssistantResponse = this.tb.classViewer("AssistantResponse", [
           "schemaVersion","message","actions","suggestedFollowUps",

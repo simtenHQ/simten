@@ -18,6 +18,7 @@ import type {
   ComponentInterface,
 } from '@/features/dsl';
 import type { BitValue, BusValue } from '@/features/visual-editor/types/circuit';
+import type { FlatPortValueMap } from '@/core/simulator';
 
 // ============================================================================
 // Severity Ordering
@@ -328,6 +329,79 @@ export function buildMinimalNarrative(envelope: HardwareLLMEnvelope): string {
     if (topError) {
       lines.push(`First error: ${topError.message}`);
     }
+  }
+
+  return lines.join('\n');
+}
+
+// ============================================================================
+// Current Port Values (Live Simulation State)
+// ============================================================================
+
+/**
+ * Format current port values from the simulator for LLM context.
+ * This shows the LIVE state of all signals in the circuit.
+ */
+export function formatCurrentPortValues(portValues: FlatPortValueMap): string {
+  if (portValues.size === 0) {
+    return '';
+  }
+
+  const lines: string[] = [];
+  lines.push('## Current Signal Values (Live State)');
+  lines.push('');
+
+  // Group by node for readability
+  const byNode = new Map<string, Map<string, number | boolean>>();
+
+  for (const [key, value] of portValues) {
+    // Key format is "nodeId.portName" e.g., "alu.result.out"
+    const lastDot = key.lastIndexOf('.');
+    if (lastDot === -1) continue;
+
+    const nodePath = key.substring(0, lastDot);
+    const portName = key.substring(lastDot + 1);
+
+    if (!byNode.has(nodePath)) {
+      byNode.set(nodePath, new Map());
+    }
+    byNode.get(nodePath)!.set(portName, value);
+  }
+
+  // Sort nodes: prioritize Display/Output nodes first, then alphabetically
+  const sortedNodes = [...byNode.keys()].sort((a, b) => {
+    const aIsDisplay = a.toLowerCase().includes('display') || a.toLowerCase().includes('output');
+    const bIsDisplay = b.toLowerCase().includes('display') || b.toLowerCase().includes('output');
+    if (aIsDisplay && !bIsDisplay) return -1;
+    if (!aIsDisplay && bIsDisplay) return 1;
+    return a.localeCompare(b);
+  });
+
+  // Limit to first 50 nodes (increased from 30, prioritizing displays)
+  const nodesToShow = sortedNodes.slice(0, 50);
+
+  for (const nodePath of nodesToShow) {
+    const ports = byNode.get(nodePath)!;
+    const portStrs: string[] = [];
+
+    for (const [portName, value] of ports) {
+      // Format value: boolean as 0/1, numbers as-is (hex for large values)
+      let valueStr: string;
+      if (typeof value === 'boolean') {
+        valueStr = value ? '1' : '0';
+      } else if (value > 255) {
+        valueStr = `0x${value.toString(16).toUpperCase()}`;
+      } else {
+        valueStr = String(value);
+      }
+      portStrs.push(`${portName}=${valueStr}`);
+    }
+
+    lines.push(`- **${nodePath}**: ${portStrs.join(', ')}`);
+  }
+
+  if (sortedNodes.length > 30) {
+    lines.push(`  (+${sortedNodes.length - 30} more nodes)`);
   }
 
   return lines.join('\n');

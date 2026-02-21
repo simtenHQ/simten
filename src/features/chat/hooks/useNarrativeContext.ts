@@ -7,15 +7,19 @@
 import { useMemo } from 'react';
 import { useAnalysisStore } from '@/features/visual-editor/stores/analysis-store';
 import { useComponentLibraryStore } from '@/features/visual-editor/stores/component-library-store';
+import { usePortValuesStore } from '@/features/visual-editor/stores/port-values-store';
+import { useCircuitStore } from '@/features/visual-editor/stores/circuit-store';
 import {
   buildEnvelope,
   type HardwareLLMEnvelope,
 } from '@/features/dsl';
 import {
   buildNarrativeSummary,
+  formatCurrentPortValues,
   enforceTokenBudget,
 } from '../context';
 import { hashSourceCode } from '../actions/action-normalizer';
+import type { Circuit } from '@/features/visual-editor/types/circuit';
 
 // ============================================================================
 // Hook Interface
@@ -53,6 +57,8 @@ export function useNarrativeContext(dslCode: string): NarrativeContextResult {
   const getAllPrimitiveNames = useComponentLibraryStore(
     (state) => state.getAllPrimitiveNames
   );
+  const portValues = usePortValuesStore((state) => state.portValues);
+  const circuit = useCircuitStore((state) => state.circuit);
 
   return useMemo(() => {
     // If no validation result, return minimal context
@@ -82,6 +88,19 @@ export function useNarrativeContext(dslCode: string): NarrativeContextResult {
     // Build narrative summary
     let narrative = buildNarrativeSummary(envelope);
 
+    // Add current INPUT node settings (Switch, Button, Input values)
+    if (circuit) {
+      const inputSettings = formatInputSettings(circuit);
+      if (inputSettings) {
+        narrative += '\n' + inputSettings;
+      }
+    }
+
+    // Add current port values if available (live simulation state)
+    if (portValues.size > 0) {
+      narrative += '\n' + formatCurrentPortValues(portValues);
+    }
+
     // Enforce token budget
     narrative = enforceTokenBudget(narrative);
 
@@ -98,6 +117,8 @@ export function useNarrativeContext(dslCode: string): NarrativeContextResult {
     metrics,
     resolveComponent,
     getAllPrimitiveNames,
+    portValues,
+    circuit,
   ]);
 }
 
@@ -132,4 +153,35 @@ export function buildNarrativeContext(
     canSimulate: validationResult.canSimulate,
     envelope,
   };
+}
+
+/**
+ * Format current input node settings (Switch, Button, Input values).
+ * This shows the CONFIGURED values, not simulation outputs.
+ */
+function formatInputSettings(circuit: Circuit): string | null {
+  const inputNodes = circuit.nodes.filter(node => {
+    // Match input-type components by their componentRef
+    const ref = node.componentRef.toLowerCase();
+    return ref === 'input' || ref === 'switch' || ref === 'button';
+  });
+
+  if (inputNodes.length === 0) {
+    return null;
+  }
+
+  const lines: string[] = [];
+  lines.push('## Current Input Settings');
+  lines.push('These are the current values of input nodes. Do NOT use SET_INPUT if the value is already correct.');
+  lines.push('');
+
+  for (const node of inputNodes) {
+    // Extract short label from full ID (e.g., "SnakeAdvanced_keyboard_123_abc" -> "keyboard")
+    const parts = node.id.split('_');
+    const label = parts.length >= 2 ? parts[1] : node.id;
+    const value = node.arguments?.value ?? 0;
+    lines.push(`- **${label}** (${node.componentRef}): value = ${value}`);
+  }
+
+  return lines.join('\n');
 }

@@ -318,10 +318,47 @@ async function executeInsertNode(
 /**
  * Apply a SHOW_DIFF action to the editor.
  * Called when user clicks "Apply" button.
+ *
+ * This does actual patching:
+ * 1. Finds where originalCode appears in current code
+ * 2. Replaces just that section with suggestedCode
+ * 3. Falls back to full replacement if originalCode not found
  */
 export function applyDiff(
   action: ShowDiffAction,
-  setCode: (code: string) => void
+  setCode: (code: string) => void,
+  getCurrentCode?: () => string
 ): void {
+  // If we can get current code, try to patch instead of replace
+  if (getCurrentCode) {
+    const currentCode = getCurrentCode();
+    const { originalCode, suggestedCode } = action;
+
+    // Normalize whitespace for matching (trim trailing whitespace per line)
+    const normalizeForMatch = (s: string) =>
+      s.split('\n').map(line => line.trimEnd()).join('\n');
+
+    const normalizedCurrent = normalizeForMatch(currentCode);
+    const normalizedOriginal = normalizeForMatch(originalCode);
+
+    // Find where originalCode appears in currentCode
+    const matchIndex = normalizedCurrent.indexOf(normalizedOriginal);
+
+    if (matchIndex !== -1) {
+      // Found it - do a surgical replace
+      const patchedCode =
+        normalizedCurrent.substring(0, matchIndex) +
+        suggestedCode +
+        normalizedCurrent.substring(matchIndex + normalizedOriginal.length);
+
+      console.log('[applyDiff] Patched code at position', matchIndex);
+      setCode(patchedCode);
+      return;
+    } else {
+      console.warn('[applyDiff] originalCode not found in current code, falling back to full replace');
+    }
+  }
+
+  // Fallback: full replacement
   setCode(action.suggestedCode);
 }
