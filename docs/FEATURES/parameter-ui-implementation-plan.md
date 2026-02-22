@@ -58,7 +58,7 @@ export interface ParameterDefinition {
 **Test File**: `src/features/visual-editor/types/circuit.test.ts`
 
 #### 1.2 Primitive Parameter Definitions
-**File**: `/Users/charlesharris/Documents/Personal/turing-incomplete/src/features/visual-editor/lib/primitives.ts`
+**File**: `/Users/charlesharris/Documents/Personal/turing-incomplete/src/features/visual-editor/lib/primitive-registry.ts`
 
 Update primitives to declare their parameters:
 ```typescript
@@ -88,7 +88,7 @@ createPrimitiveCircuit(
 - [ ] Add parameter definitions to Constant (value parameter)
 - [ ] Write tests verifying parameter definitions
 
-**Test File**: `src/features/visual-editor/lib/primitives.test.ts`
+**Test File**: `src/features/visual-editor/lib/primitive-registry.test.ts`
 
 #### 1.3 Parameter Validation Library
 **File**: `/Users/charlesharris/Documents/Personal/turing-incomplete/src/features/visual-editor/lib/parameter-validator.ts`

@@ -22,6 +22,21 @@ const CounterSection = lazy(() =>
     default: m.CounterSection,
   }))
 );
+const AdderSection = lazy(() =>
+  import("./sections/AdderSection").then((m) => ({
+    default: m.AdderSection,
+  }))
+);
+const ALUSection = lazy(() =>
+  import("./sections/ALUSection").then((m) => ({
+    default: m.ALUSection,
+  }))
+);
+const RAMSection = lazy(() =>
+  import("./sections/RAMSection").then((m) => ({
+    default: m.RAMSection,
+  }))
+);
 const CPU6502Section = lazy(() =>
   import("./sections/CPU6502Section").then((m) => ({
     default: m.CPU6502Section,
@@ -97,6 +112,30 @@ export default function BuildingACPUPage() {
           <ErrorBoundary>
             <Suspense fallback={<SectionSkeleton />}>
               <CounterSection />
+            </Suspense>
+          </ErrorBoundary>
+
+          <hr className="border-gray-800" />
+
+          <ErrorBoundary>
+            <Suspense fallback={<SectionSkeleton />}>
+              <AdderSection />
+            </Suspense>
+          </ErrorBoundary>
+
+          <hr className="border-gray-800" />
+
+          <ErrorBoundary>
+            <Suspense fallback={<SectionSkeleton />}>
+              <ALUSection />
+            </Suspense>
+          </ErrorBoundary>
+
+          <hr className="border-gray-800" />
+
+          <ErrorBoundary>
+            <Suspense fallback={<SectionSkeleton />}>
+              <RAMSection />
             </Suspense>
           </ErrorBoundary>
 

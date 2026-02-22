@@ -13,7 +13,7 @@ import {
   getPrimitiveEvaluator,
   isPrimitive,
   createPrimitiveComponent,
-} from "../primitives";
+} from "../primitive-registry";
 import type { InputValue } from "@/core/simulator";
 import { bitType, busType } from "../../types/circuit";
 import {
@@ -494,10 +494,14 @@ describe("Primitive Circuit Structure", () => {
     expect(uniqueIds.size).toBe(ids.length);
   });
 
-  it("should have no parameters", () => {
-    // Primitives typically don't have parameters
+  it("should have parameters only on parameterized primitives", () => {
+    const PARAMETERIZED = new Set(['Switch', 'Input', 'Constant']);
     for (const primitive of PRIMITIVES) {
-      expect(primitive.parameters).toEqual([]);
+      if (PARAMETERIZED.has(primitive.name)) {
+        expect(primitive.parameters.length).toBeGreaterThan(0);
+      } else {
+        expect(primitive.parameters).toEqual([]);
+      }
     }
   });
 

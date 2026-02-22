@@ -26,6 +26,7 @@ import { useComponentLibraryStore } from "../stores/component-library-store";
 import { useSimulationController } from "../simulation/use-simulation-controller";
 import { ChatPanel, useChatStore, useNarrativeContext } from "@/features/chat";
 import { CompositeInspectorDialog } from "./CompositeInspectorDialog";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import type { Circuit } from "../types/circuit";
 
 // Helper to check if circuit has sequential components
@@ -134,6 +135,7 @@ export function VisualEditor() {
 
   return (
     <ReactFlowProvider>
+      <TooltipProvider delayDuration={300}>
       <div className="flex h-screen w-screen flex-col overflow-hidden bg-gray-50">
         {/* Top Control Bar with Drawer Toggle Buttons */}
         <div className="flex items-center gap-3 border-b border-gray-200 bg-white px-6 py-2 shadow-sm">
@@ -275,6 +277,7 @@ export function VisualEditor() {
           sourceCodeHash={narrativeContext.sourceCodeHash}
         />
       </div>
+      </TooltipProvider>
     </ReactFlowProvider>
   );
 }

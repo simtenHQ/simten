@@ -146,7 +146,7 @@ export function restoreSnapshot(
 
 ### Files Modified
 
-#### 1. `src/features/visual-editor/lib/primitives.ts`
+#### 1. `src/features/visual-editor/lib/primitive-registry.ts`
 
 Added environmental state hooks to `PrimitiveDefinition`:
 

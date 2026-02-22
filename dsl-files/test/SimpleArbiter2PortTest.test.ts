@@ -10,7 +10,7 @@ import { resolve } from 'path';
 import { compileDSL } from '../../src/features/dsl/index';
 import { ComponentLibrary, Circuit as DslCircuit } from '../../src/features/dsl/types';
 import { useComponentLibraryStore } from '../../src/features/visual-editor/stores/component-library-store';
-import { getPrimitives } from '../../src/features/visual-editor/lib/primitives';
+import { getPrimitives } from '../../src/features/visual-editor/lib/primitive-registry';
 import type { Circuit } from '../../src/features/visual-editor/types/circuit';
 
 describe('SimpleArbiter2Port', () => {

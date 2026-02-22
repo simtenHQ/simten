@@ -144,7 +144,7 @@ This is the most important principle in the entire system. See [Component Model]
 1. Complete Path 2 (Architecture)
 2. [How to Add a Primitive](./how-to-add-primitive.md) - Implementation guide
 3. [Primitive Components Architecture](./ARCHITECTURE/architecture-primitive-components.md) - Generator pattern
-4. Study existing primitives in `/src/features/visual-editor/lib/primitives.ts`
+4. Study existing primitives in `/src/features/visual-editor/lib/primitive-registry.ts`
 5. Add your primitive component
 6. Write tests
 7. Submit PR

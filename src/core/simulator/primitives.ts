@@ -1,11 +1,11 @@
 /**
  * Core Primitive Component Definitions
  *
- * Pure primitive evaluators for the simulator engine.
- * This module provides evaluation logic without UI dependencies.
+ * SINGLE SOURCE OF TRUTH for all primitive circuit structure and evaluators.
+ * This module owns: ports, parameters, descriptions, evaluator logic, state.
  *
- * For full primitive definitions including UI metadata, see:
- * src/features/visual-editor/lib/primitives.ts
+ * UI metadata (icons, categories, component creation) is layered on top
+ * by visual-editor/lib/primitive-registry.ts which extends CorePrimitiveDefinition.
  */
 
 import type {
@@ -228,9 +228,10 @@ export const PRIMITIVE_DEFINITIONS: Record<string, CorePrimitiveDefinition> = {
 
   Switch: defineCombinational({
     name: 'Switch',
-    description: 'User-controllable input switch',
+    description: 'User-controllable 1-bit toggle. Use for enable signals (write-enable, reset, etc.)',
     inputs: [],
     outputs: [{ name: 'out', portType: bitType() }],
+    parameters: [{ name: 'value', paramType: 'int', defaultValue: 0 }],
     evaluate: (_inputs) => {
       return new Map([['out', false]]);
     },
@@ -268,9 +269,10 @@ export const PRIMITIVE_DEFINITIONS: Record<string, CorePrimitiveDefinition> = {
 
   Input: defineCombinational({
     name: 'Input',
-    description: 'Multi-bit numeric input (runtime editable, default: 8-bit)',
+    description: 'Multi-bit numeric input (runtime editable). Use for bus values the student can change.',
     inputs: [],
     outputs: [{ name: 'out', portType: busType(8) }],
+    parameters: [{ name: 'value', paramType: 'int', defaultValue: 0 }],
     evaluate: (inputs) => {
       const value = (inputs.get('__value') as number) ?? 0;
       return new Map([['out', value]]);
@@ -283,9 +285,10 @@ export const PRIMITIVE_DEFINITIONS: Record<string, CorePrimitiveDefinition> = {
 
   Constant: defineCombinational({
     name: 'Constant',
-    description: 'Constant value source (parameterized by value)',
+    description: 'Fixed value source. Always specify value parameter — bare Constant defaults to 0.',
     inputs: [],
     outputs: [{ name: 'out', portType: bitType() }],
+    parameters: [{ name: 'value', paramType: 'int', defaultValue: 0 }],
     evaluate: (inputs) => {
       const value = inputs.get('__value') as BitValue | BusValue | undefined;
       return new Map([['out', value ?? 0]]);
@@ -294,7 +297,7 @@ export const PRIMITIVE_DEFINITIONS: Record<string, CorePrimitiveDefinition> = {
 
   Splitter: defineCombinational({
     name: 'Splitter',
-    description: 'Bus splitter - splits a bus into smaller buses',
+    description: 'Bus splitter - splits a bus into smaller buses (default: 8-bit to 2x4-bit)',
     inputs: [{ name: 'in', portType: busType(8) }],
     outputs: [
       { name: 'out0', portType: busType(4) },
@@ -328,7 +331,7 @@ export const PRIMITIVE_DEFINITIONS: Record<string, CorePrimitiveDefinition> = {
 
   Splitter8to8: defineCombinational({
     name: 'Splitter8to8',
-    description: 'Splits an 8-bit bus into 8 individual bit outputs',
+    description: 'Splits an 8-bit bus into 8 individual bit outputs (bit0=LSB, bit7=MSB)',
     inputs: [{ name: 'in', portType: busType(8) }],
     outputs: [
       { name: 'bit0', portType: bitType() },
@@ -355,7 +358,7 @@ export const PRIMITIVE_DEFINITIONS: Record<string, CorePrimitiveDefinition> = {
 
   Combiner8to8: defineCombinational({
     name: 'Combiner8to8',
-    description: 'Combines 8 individual bit inputs into an 8-bit bus',
+    description: 'Combines 8 individual bit inputs into an 8-bit bus (bit0=LSB, bit7=MSB)',
     inputs: [
       { name: 'bit0', portType: bitType() },
       { name: 'bit1', portType: bitType() },
@@ -394,7 +397,7 @@ export const PRIMITIVE_DEFINITIONS: Record<string, CorePrimitiveDefinition> = {
 
   BitSlice: defineCombinational({
     name: 'BitSlice',
-    description: 'Extract bits [low..high] from input',
+    description: 'Extract bits [low..high] from input (wire routing, zero logic cost)',
     inputs: [{ name: 'in', portType: busType(8) }],
     outputs: [{ name: 'out', portType: busType(8) }],
     evaluate: (inputs) => {
@@ -505,11 +508,11 @@ export const PRIMITIVE_DEFINITIONS: Record<string, CorePrimitiveDefinition> = {
 
   Adder: defineCombinational({
     name: 'Adder',
-    description: 'Parameterized n-bit adder with carry in/out',
+    description: 'Parameterized n-bit adder with carry in/out (default: 8-bit)',
     inputs: [
       { name: 'a', portType: busType(8) },
       { name: 'b', portType: busType(8) },
-      { name: 'carry_in', portType: bitType() },
+      { name: 'carry_in', portType: bitType(), defaultValue: false },
     ],
     outputs: [
       { name: 'sum', portType: busType(8) },
@@ -536,7 +539,7 @@ export const PRIMITIVE_DEFINITIONS: Record<string, CorePrimitiveDefinition> = {
 
   Multiplier: defineCombinational({
     name: 'Multiplier',
-    description: 'Parameterized n×n bit multiplier',
+    description: 'Parameterized n×n bit multiplier, outputs 2n-bit product (default: 8×8=16-bit)',
     inputs: [
       { name: 'a', portType: busType(8) },
       { name: 'b', portType: busType(8) },
@@ -557,7 +560,7 @@ export const PRIMITIVE_DEFINITIONS: Record<string, CorePrimitiveDefinition> = {
 
   Comparator: defineCombinational({
     name: 'Comparator',
-    description: 'Parameterized n-bit comparator',
+    description: 'Parameterized n-bit comparator (default: 8-bit)',
     inputs: [
       { name: 'a', portType: busType(8) },
       { name: 'b', portType: busType(8) },
@@ -581,7 +584,7 @@ export const PRIMITIVE_DEFINITIONS: Record<string, CorePrimitiveDefinition> = {
 
   LeftShifter: defineCombinational({
     name: 'LeftShifter',
-    description: 'Logical left bit shift (value << n)',
+    description: 'Logical left bit shift (value << n) with zero fill',
     inputs: [
       { name: 'value', portType: busType(8) },
       { name: 'shift', portType: busType(8) },
@@ -601,7 +604,7 @@ export const PRIMITIVE_DEFINITIONS: Record<string, CorePrimitiveDefinition> = {
 
   RightShifter: defineCombinational({
     name: 'RightShifter',
-    description: 'Logical right bit shift (value >> n)',
+    description: 'Logical right bit shift (value >> n) with zero fill',
     inputs: [
       { name: 'value', portType: busType(8) },
       { name: 'shift', portType: busType(8) },
@@ -620,11 +623,11 @@ export const PRIMITIVE_DEFINITIONS: Record<string, CorePrimitiveDefinition> = {
 
   Subtractor: defineCombinational({
     name: 'Subtractor',
-    description: 'Parameterized n-bit subtractor with borrow in/out',
+    description: 'Parameterized n-bit subtractor with borrow in/out (default: 8-bit)',
     inputs: [
       { name: 'a', portType: busType(8) },
       { name: 'b', portType: busType(8) },
-      { name: 'borrow_in', portType: bitType() },
+      { name: 'borrow_in', portType: bitType(), defaultValue: false },
     ],
     outputs: [
       { name: 'difference', portType: busType(8) },
@@ -651,11 +654,11 @@ export const PRIMITIVE_DEFINITIONS: Record<string, CorePrimitiveDefinition> = {
 
   SignedAdder: defineCombinational({
     name: 'SignedAdder',
-    description: 'Signed n-bit adder with overflow detection',
+    description: 'Signed n-bit adder with overflow detection (default: 8-bit)',
     inputs: [
       { name: 'a', portType: busType(8) },
       { name: 'b', portType: busType(8) },
-      { name: 'carry_in', portType: bitType() },
+      { name: 'carry_in', portType: bitType(), defaultValue: false },
     ],
     outputs: [
       { name: 'sum', portType: busType(8) },
@@ -690,7 +693,7 @@ export const PRIMITIVE_DEFINITIONS: Record<string, CorePrimitiveDefinition> = {
 
   SignedComparator: defineCombinational({
     name: 'SignedComparator',
-    description: 'Signed n-bit comparator with all comparison flags',
+    description: 'Signed n-bit comparator with all comparison flags (default: 8-bit)',
     inputs: [
       { name: 'a', portType: busType(8) },
       { name: 'b', portType: busType(8) },
@@ -731,7 +734,7 @@ export const PRIMITIVE_DEFINITIONS: Record<string, CorePrimitiveDefinition> = {
 
   SignedMultiplier: defineCombinational({
     name: 'SignedMultiplier',
-    description: 'Signed n×n bit multiplier',
+    description: 'Signed n×n bit multiplier, outputs 2n-bit product (default: 8×8=16-bit)',
     inputs: [
       { name: 'a', portType: busType(8) },
       { name: 'b', portType: busType(8) },
@@ -765,7 +768,7 @@ export const PRIMITIVE_DEFINITIONS: Record<string, CorePrimitiveDefinition> = {
 
   Mux: defineCombinational({
     name: 'Mux',
-    description: 'Parameterized multiplexer',
+    description: 'Parameterized multiplexer (default: 2-input, 1-bit)',
     inputs: [
       { name: 'in0', portType: bitType() },
       { name: 'in1', portType: bitType() },
@@ -790,7 +793,7 @@ export const PRIMITIVE_DEFINITIONS: Record<string, CorePrimitiveDefinition> = {
 
   Decoder: defineCombinational({
     name: 'Decoder',
-    description: 'Parameterized n-to-2^n decoder',
+    description: 'Parameterized n-to-2^n decoder (default: 2-to-4)',
     inputs: [{ name: 'in', portType: busType(2) }],
     outputs: [
       { name: 'out0', portType: bitType() },
@@ -818,7 +821,7 @@ export const PRIMITIVE_DEFINITIONS: Record<string, CorePrimitiveDefinition> = {
 
   SevenSegment: defineCombinational({
     name: 'SevenSegment',
-    description: '7-segment display for hexadecimal digits',
+    description: '7-segment display for hexadecimal digits (0-F)',
     inputs: [{ name: 'in', portType: busType(4) }],
     outputs: [],
     evaluate: (_inputs) => {
@@ -828,7 +831,7 @@ export const PRIMITIVE_DEFINITIONS: Record<string, CorePrimitiveDefinition> = {
 
   HexDisplay: defineCombinational({
     name: 'HexDisplay',
-    description: 'Hexadecimal display for multi-bit values',
+    description: 'Hexadecimal display for multi-bit values (default: 8-bit)',
     inputs: [{ name: 'in', portType: busType(8) }],
     outputs: [],
     evaluate: (_inputs) => {
@@ -848,7 +851,7 @@ export const PRIMITIVE_DEFINITIONS: Record<string, CorePrimitiveDefinition> = {
 
   RasterDisplay: defineSequential({
     name: 'RasterDisplay',
-    description: 'Hardware-accurate 8×8 raster display with scan counters',
+    description: 'Hardware-accurate 8×8 raster display with scan counters and sync signals',
     inputs: [{ name: 'dataIn', portType: busType(8) }],
     outputs: [
       { name: 'addrB', portType: busType(8) },
@@ -928,7 +931,7 @@ export const PRIMITIVE_DEFINITIONS: Record<string, CorePrimitiveDefinition> = {
 
   DFlipFlop: defineSequential({
     name: 'DFlipFlop',
-    description: 'D Flip-Flop - stores 1 bit of state',
+    description: 'D Flip-Flop - stores 1 bit of state, updates on rising clock edge',
     inputs: [{ name: 'd', portType: bitType() }],
     outputs: [
       { name: 'q', portType: bitType() },
@@ -966,7 +969,7 @@ export const PRIMITIVE_DEFINITIONS: Record<string, CorePrimitiveDefinition> = {
 
   Register: defineSequential({
     name: 'Register',
-    description: '8-bit Register - stores data on rising clock edge',
+    description: '8-bit Register - stores data on rising clock edge when write enable is high',
     inputs: [
       { name: 'data', portType: busType(8) },
       { name: 'we', portType: bitType() },
@@ -1006,7 +1009,7 @@ export const PRIMITIVE_DEFINITIONS: Record<string, CorePrimitiveDefinition> = {
 
   ROM: defineSequential({
     name: 'ROM',
-    description: 'Read-only memory with address decoding',
+    description: 'Read-only memory with address decoding. Use baseAddress parameter to set memory mapping.',
     inputs: [{ name: 'addr', portType: busType(16) }],
     outputs: [{ name: 'data_out', portType: busType(8) }],
     clocks: [],
@@ -1037,7 +1040,7 @@ export const PRIMITIVE_DEFINITIONS: Record<string, CorePrimitiveDefinition> = {
 
   RAM: defineSequential({
     name: 'RAM',
-    description: '256x8 RAM - reads are combinational, writes occur on rising clock',
+    description: '256x8 RAM - reads are combinational (addr->data_out), writes occur on rising clock edge with write enable',
     inputs: [
       { name: 'addr', portType: busType(8) },
       { name: 'data_in', portType: busType(8) },
@@ -1133,7 +1136,7 @@ export const PRIMITIVE_DEFINITIONS: Record<string, CorePrimitiveDefinition> = {
 
   Console: defineSequential({
     name: 'Console',
-    description: 'Memory-mapped console output device',
+    description: 'Memory-mapped console output device. Characters written accumulate in buffer.',
     inputs: [
       { name: 'data', portType: busType(8) },
       { name: 'we', portType: bitType() },

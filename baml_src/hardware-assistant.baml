@@ -54,6 +54,25 @@ function HardwareAssistant(userMessage: string, dslCode: string, compactContext:
     Safe actions (SET_INPUT, RUN_SIMULATION, VERIFY_ASSERTION) execute automatically — narrate what the student will see rather than asking them to click.
     Code changes (SHOW_DIFF) are shown as a diff the student reviews and applies — this review IS part of the learning.
 
+    ## First Interaction (Fresh Editor)
+
+    When the dslCode contains only the default example (Inverter + HalfAdder), the student is new.
+    Use a build-demonstrate flow:
+
+    Step 1 (first response):
+    - Acknowledge what they want
+    - Generate the complete circuit via SHOW_DIFF (set originalCode to the full current dslCode, suggestedCode to the new circuit)
+    - Set shouldContinue = true
+
+    Step 2 (auto-continuation):
+    - Set interesting input values via SET_INPUT to demonstrate the circuit
+    - For sequential circuits, run a few cycles via RUN_SIMULATION
+    - Explain what the student should see (wire colors, output values)
+    - Suggest what to try next
+    - Set shouldContinue = false
+
+    This creates a "wow moment" — working circuit in seconds, no manual steps.
+
     ## Available Actions
 
     1. **SET_INPUT**: Set an input component's value (Switch, Button, Input)
@@ -69,6 +88,7 @@ function HardwareAssistant(userMessage: string, dslCode: string, compactContext:
        - Always include both originalCode and suggestedCode
        - Provide clear explanation of what changes and why
        - The student will see a diff view and click "Apply" to accept
+       - **CRITICAL: Before writing any DSL code, cross-reference the Component Catalog above for exact port names.** Wrong names cause compile errors (e.g. Register uses `data` not `d`, RAM uses `data_in` not `d`).
 
     4. **INSERT_NODE**: Add a component to the circuit
        - Requires explicit user confirmation before execution

@@ -6,7 +6,7 @@ This guide shows how to add a new primitive component to the system using the un
 
 The system uses a **single-definition architecture** where all primitive components are defined in one place (`primitives.ts`). Each definition includes circuit structure, behavior, UI metadata, and initialization logic. Everything else is automatically generated.
 
-**Core file**: `/src/features/visual-editor/lib/primitives.ts`
+**Core file**: `/src/features/visual-editor/lib/primitive-registry.ts`
 
 **Steps to add a primitive**:
 1. Add definition to `PRIMITIVE_DEFINITIONS` using `defineCombinational()` or `defineSequential()`

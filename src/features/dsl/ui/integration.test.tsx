@@ -7,7 +7,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { useComponentLibraryStore } from '@/features/visual-editor/stores/component-library-store';
 import { compileDSL } from '../index';
-import { getPrimitives } from '@/features/visual-editor/lib/primitives';
+import { getPrimitives } from '@/features/visual-editor/lib/primitive-registry';
 
 describe('DSL Editor Integration', () => {
   beforeEach(() => {

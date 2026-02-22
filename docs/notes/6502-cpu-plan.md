@@ -121,7 +121,7 @@
 - Updated MemoryBus with proper address decode (RAM < $0800, ROM >= $C000)
 - Open bus behavior for unmapped addresses ($0800-$BFFF)
 - Working files:
-  - `src/features/visual-editor/lib/primitives.ts` - ROM 16-bit, AddressCombiner
+  - `src/features/visual-editor/lib/primitive-registry.ts` - ROM 16-bit, AddressCombiner
   - `32-memory-bus.dsl` - RAM2K, ROM16K, updated MemoryBus
   - `33-cpu-core.dsl` - Reset vector fetch states in FSM
   - `stage7-combined.dsl` - Regenerated with all changes
@@ -489,7 +489,7 @@ circuit System6502 {
 - `examples/cpu6502/test/stage8a.test.ts` - 16-bit PC tests (9 tests)
 
 ### Stage 8B (Full Memory Infrastructure - current)
-- `src/features/visual-editor/lib/primitives.ts` - ROM 16-bit addressing, AddressCombiner primitive
+- `src/features/visual-editor/lib/primitive-registry.ts` - ROM 16-bit addressing, AddressCombiner primitive
 - `examples/cpu6502/32-memory-bus.dsl` - RAM2K, ROM16K, updated MemoryBus with address decode
 - `examples/cpu6502/33-cpu-core.dsl` - Reset vector fetch (STATE_RESET_LO/HI states)
 - `examples/cpu6502/stage7-combined.dsl` - Regenerated with all Stage 8B changes

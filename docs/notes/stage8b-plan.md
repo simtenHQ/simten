@@ -40,7 +40,7 @@ $C000-$FFFF  ROM (16KB)
 
 ### Task 1: Update ROM Primitive to 16-bit Addressing
 
-**File:** `src/features/visual-editor/lib/primitives.ts`
+**File:** `src/features/visual-editor/lib/primitive-registry.ts`
 
 **Current (line ~1527):**
 ```typescript
@@ -80,7 +80,7 @@ ROM: defineSequential({
 
 ### Task 2: Create AddressCombiner Primitive
 
-**File:** `src/features/visual-editor/lib/primitives.ts`
+**File:** `src/features/visual-editor/lib/primitive-registry.ts`
 
 Need a way to combine `addr_hi` (8-bit) and `addr_lo` (8-bit) into a 16-bit address for ROM.
 

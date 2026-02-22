@@ -21,7 +21,7 @@ import {
 } from '../index';
 import type { Diagnostic } from '../types';
 import { createComponentLibrary } from '../../../../core/simulator';
-import { PRIMITIVES } from '../../../visual-editor/lib/primitives';
+import { PRIMITIVES } from '../../../visual-editor/lib/primitive-registry';
 
 describe('Validation Pipeline', () => {
   let library: ReturnType<typeof createComponentLibrary>;

@@ -4,7 +4,7 @@ import { runTestbench } from '../testing/testbench-runner';
 import { useComponentLibraryStore } from '../../stores/component-library-store';
 import { compileCircuitToIR } from '@/features/dsl/compiler';
 import { parseDSLOrThrow } from '@/features/dsl/parser';
-import { PRIMITIVES } from '../primitives';
+import { PRIMITIVES } from '../primitive-registry';
 import { generateVCD } from '../visualization/vcd-generator';
 import * as fs from 'fs';
 
