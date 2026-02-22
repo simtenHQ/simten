@@ -12,9 +12,10 @@ export function CounterSection() {
       <div className="prose-invert space-y-6">
         <p className="text-gray-300 leading-relaxed">
           Now we combine everything. A <strong className="text-white">counter</strong>
-          {" "}chains toggle flip-flops together &mdash; each one divides the
-          clock frequency by two. The result is a binary counter that increments
-          on every clock tick.
+          {" "}uses flip-flops, NOT gates, XOR gates, and AND gates working
+          together. Bit 0 always toggles. Bit 1 toggles when bit 0 is 1. Bit 2
+          toggles when bits 0 <em>and</em> 1 are both 1. The AND gates form a
+          carry chain &mdash; the same idea as addition.
         </p>
         <p className="text-gray-300 leading-relaxed">
           Click <strong>Tick</strong> repeatedly or hit <strong>Auto</strong>

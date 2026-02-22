@@ -59,6 +59,9 @@ import {
 } from "./nodes";
 import { NumericInputNode } from "./nodes/NumericInputNode";
 import { OrthogonalEdge } from "./edges";
+import { useChatStore } from "@/features/chat";
+import { Bot } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 // Define custom node types
 const nodeTypes = {
@@ -180,9 +183,40 @@ function KeyboardShortcutsInfo({ show }: { show: boolean }) {
   );
 }
 
+/**
+ * WelcomeCTA Component
+ * Invites new users to interact with the AI chat assistant
+ */
+function WelcomeCTA({ onOpenChat }: { onOpenChat: () => void }) {
+  return (
+    <div className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none">
+      <div className="pointer-events-auto flex flex-col items-center gap-4 rounded-xl border border-gray-200 bg-white p-8 shadow-lg max-w-sm text-center">
+        <Bot className="h-12 w-12 text-blue-500" />
+        <div>
+          <h2 className="text-lg font-semibold text-gray-900">Build circuits with AI</h2>
+          <p className="mt-1 text-sm text-gray-500">
+            Describe what you want and watch it appear on canvas
+          </p>
+        </div>
+        <Button onClick={onOpenChat} className="gap-2">
+          <Bot className="h-4 w-4" />
+          Start building with AI
+        </Button>
+        <p className="text-xs text-gray-400">
+          or press{' '}
+          <kbd className="rounded border border-gray-300 bg-gray-100 px-1.5 py-0.5 font-mono text-[10px]">
+            ⌘K
+          </kbd>
+        </p>
+      </div>
+    </div>
+  );
+}
+
 export function Canvas() {
   const { screenToFlowPosition } = useReactFlow();
   const [selectedNodeCount, setSelectedNodeCount] = useState(0);
+  const setChatOpen = useChatStore((state) => state.setOpen);
 
   // Subscribe to stores
   const circuit = useCircuitStore((state) => state.circuit);
@@ -538,6 +572,11 @@ export function Canvas() {
         <Background />
         <Controls />
       </ReactFlow>
+
+      {/* Welcome CTA - shown when canvas is empty */}
+      {nodes.length === 0 && (
+        <WelcomeCTA onOpenChat={() => setChatOpen(true)} />
+      )}
 
       {/* Selection Info Panel - shown when nodes are selected */}
       <SelectionInfo selectedCount={selectedNodeCount} />

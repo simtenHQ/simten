@@ -68,7 +68,10 @@ interface EmbedCanvasProps {
   portValues?: FlatPortValueMap | null;
   sequentialState?: FlatSequentialState | null;
   onToggleNode?: (nodeId: string) => void;
+  onSetNodeValue?: (nodeId: string, value: number) => void;
   height?: number | string;
+  /** Override positions by node label (cleaned). Unmatched nodes fall back to auto-layout. */
+  nodePositions?: Record<string, { x: number; y: number }>;
 }
 
 /**
@@ -176,18 +179,32 @@ export function EmbedCanvas({
   portValues,
   sequentialState,
   onToggleNode,
+  onSetNodeValue,
   height = "100%",
+  nodePositions,
 }: EmbedCanvasProps) {
   // Clean up labels for display
   const cleanedCircuit = useMemo(() => {
     return circuit ? cleanCircuitLabels(circuit) : null;
   }, [circuit]);
 
-  // Auto-generate layout
+  // Auto-generate layout, then apply any position overrides by label
   const metadata = useMemo(() => {
     if (!cleanedCircuit) return { components: {}, connections: {} };
-    return autoLayoutCircuit(cleanedCircuit);
-  }, [cleanedCircuit]);
+    const base = autoLayoutCircuit(cleanedCircuit);
+    if (!nodePositions) return base;
+    // Apply overrides: match node label to nodePositions keys
+    for (const node of cleanedCircuit.nodes) {
+      const label = node.label || node.id;
+      if (nodePositions[label]) {
+        base.components[node.id] = {
+          id: node.id,
+          position: nodePositions[label],
+        };
+      }
+    }
+    return base;
+  }, [cleanedCircuit, nodePositions]);
 
   // Project to React Flow format
   const { projectedNodes, edges } = useMemo(() => {
@@ -199,10 +216,19 @@ export function EmbedCanvas({
       sequentialState ?? undefined
     );
 
-    // Add onToggle callback to Switch nodes
+    // Add callbacks to interactive nodes
     const nodesWithHandlers = projected.nodes.map((node) => {
       const componentRef = node.data?.componentRef;
-      if (onToggleNode && (componentRef === 'Switch' || componentRef === 'Input' || componentRef === 'Button')) {
+      if (componentRef === 'Input' && onSetNodeValue) {
+        return {
+          ...node,
+          data: {
+            ...node.data,
+            onValueChange: (value: number) => onSetNodeValue(node.id, value),
+          },
+        };
+      }
+      if (onToggleNode && (componentRef === 'Switch' || componentRef === 'Button')) {
         return {
           ...node,
           data: {

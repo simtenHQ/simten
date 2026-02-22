@@ -8,7 +8,7 @@
 
 import { useEffect } from 'react';
 import { useComponentLibraryStore } from '../stores/component-library-store';
-import { getPrimitives } from '../lib/primitives';
+import { getPrimitives } from '../lib/primitive-registry';
 
 /**
  * Hook to initialize the component library with primitives

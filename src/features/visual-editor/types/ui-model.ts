@@ -7,7 +7,7 @@
  * For circuit/simulation types (the actual IR), use @/core/simulator.
  */
 
-import { isPrimitive, PRIMITIVES } from '../lib/primitives';
+import { isPrimitive, PRIMITIVES } from '../lib/primitive-registry';
 
 // ===========================
 // Component Type Definitions

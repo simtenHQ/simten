@@ -149,7 +149,7 @@ Turing Incomplete has successfully implemented a complete DSL-to-simulation pipe
 1. **Primitive Components** (31+ implemented)
    - **Definition**: Hardcoded in simulator with TypeScript evaluators
    - **Examples**: `And`, `Or`, `Not`, `DFlipFlop`, `RAM`
-   - **Location**: `/src/features/visual-editor/lib/primitives.ts`
+   - **Location**: `/src/features/visual-editor/lib/primitive-registry.ts`
    - **Behavior**: Direct evaluation via `PRIMITIVE_EVALUATORS` map
    - **Expandable**: No (atomic execution units)
 

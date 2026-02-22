@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useCircuitSimulator, type UseCircuitSimulatorOptions } from "./useCircuitSimulator";
 import { EmbedCanvas } from "./EmbedCanvas";
+import { TooltipProvider } from "@/components/ui/tooltip";
 
 interface CircuitEmbedProps {
   dsl: string;
@@ -80,7 +81,8 @@ export function CircuitEmbed({
   }
 
   return (
-    <div className="rounded-xl border border-gray-700/50 bg-gray-900/80 overflow-hidden">
+    <TooltipProvider delayDuration={300}>
+      <div className="rounded-xl border border-gray-700/50 bg-gray-900/80 overflow-hidden">
       {/* Header */}
       {(title || description) && (
         <div className="px-4 py-3 border-b border-gray-700/50">
@@ -99,6 +101,7 @@ export function CircuitEmbed({
         portValues={sim.portValues}
         sequentialState={sim.sequentialState}
         onToggleNode={sim.toggleNode}
+        onSetNodeValue={sim.setNodeValue}
         height={height}
       />
 
@@ -168,6 +171,7 @@ export function CircuitEmbed({
           )}
         </div>
       )}
-    </div>
+      </div>
+    </TooltipProvider>
   );
 }

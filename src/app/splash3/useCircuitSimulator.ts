@@ -5,7 +5,7 @@ import { compileDSL, type ComponentLibrary } from "@/features/dsl";
 import { elaborate, type FlatCircuit } from "@/features/visual-editor/lib/elaboration";
 import type { FlatPortValueMap, FlatSequentialState } from "@/features/visual-editor/lib/flat-simulator";
 import { useComponentLibraryStore } from "@/features/visual-editor/stores/component-library-store";
-import { getPrimitives } from "@/features/visual-editor/lib/primitives";
+import { getPrimitives } from "@/features/visual-editor/lib/primitive-registry";
 import type { Circuit } from "@/features/dsl";
 
 // Fast simulator from core

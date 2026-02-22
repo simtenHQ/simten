@@ -68,7 +68,7 @@ circuit SnakeAdvanced {
     connect phaseInc.sum -> phaseWrap.in
 
     connect phaseWrap.out -> phase.data
-    node phaseEnable: Switch
+    node phaseEnable: Switch(value=1)
     connect phaseEnable.out -> phase.we
 
     // Phase detection
@@ -299,7 +299,7 @@ circuit SnakeAdvanced {
     // Phase 2: Write head address to body (ONLY when moving)
     // Phase 3: Draw head pixel (ONLY when moving)
 
-    node shouldMoveTail: Switch
+    node shouldMoveTail: Switch(value=1)
 
     // Prevent tail clearing when about to eat food (makes snake grow!)
     node shouldMoveTailActual: And
@@ -345,7 +345,7 @@ circuit SnakeAdvanced {
     connect writePhase01.out -> writeAny.a
     connect writePhase2or3.out -> writeAny.b
 
-    node writeEnable: Switch
+    node writeEnable: Switch(value=1)
     node finalWriteEnable: And
     connect writeEnable.out -> finalWriteEnable.a
     connect writeAny.out -> finalWriteEnable.b

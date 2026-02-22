@@ -7,7 +7,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { elaborate } from '../elaboration';
 import { useComponentLibraryStore } from '../../stores/component-library-store';
-import { getPrimitives } from '../primitives';
+import { getPrimitives } from '../primitive-registry';
 import type { Circuit } from '../../types/circuit';
 
 describe('Elaboration Bug - Composite Connections Disappearing', () => {

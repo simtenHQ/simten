@@ -7,9 +7,16 @@
 'use client';
 
 import React, { useRef, useEffect } from 'react';
+import { Bot } from 'lucide-react';
 import { MessageBubble } from './MessageBubble';
 import { ActionCard } from './ActionCard';
 import type { ChatMessage, AssistantAction, ActionExecutionStatus } from '../types';
+
+const STARTER_PROMPTS = [
+  'Build me a 4-bit counter',
+  'Create an SR latch and show me how it works',
+  'Make a 2-to-1 multiplexer',
+];
 
 interface MessageListProps {
   messages: ChatMessage[];
@@ -17,6 +24,7 @@ interface MessageListProps {
   onExecuteAction: (action: AssistantAction) => void;
   onShowDiff: (action: AssistantAction) => void;
   onNodeMention?: (nodeIds: string[]) => void;
+  onSendStarter?: (message: string) => void;
 }
 
 export function MessageList({
@@ -25,6 +33,7 @@ export function MessageList({
   onExecuteAction,
   onShowDiff,
   onNodeMention,
+  onSendStarter,
 }: MessageListProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -37,8 +46,23 @@ export function MessageList({
 
   if (messages.length === 0) {
     return (
-      <div className="flex-1 flex items-center justify-center p-4 text-gray-400 text-sm">
-        Ask a question about your circuit
+      <div className="flex-1 flex flex-col items-center justify-center p-6 gap-4">
+        <Bot className="h-10 w-10 text-blue-500" />
+        <div className="text-center">
+          <p className="text-sm font-medium text-gray-700">Describe a circuit and I&apos;ll build it</p>
+          <p className="text-xs text-gray-400 mt-1">Or try one of these:</p>
+        </div>
+        <div className="flex flex-col gap-2 w-full max-w-[280px]">
+          {STARTER_PROMPTS.map((prompt) => (
+            <button
+              key={prompt}
+              onClick={() => onSendStarter?.(prompt)}
+              className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:border-blue-300 transition-colors text-left"
+            >
+              {prompt}
+            </button>
+          ))}
+        </div>
       </div>
     );
   }

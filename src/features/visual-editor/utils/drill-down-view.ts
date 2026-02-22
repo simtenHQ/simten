@@ -48,13 +48,15 @@ export function createDrillDownViewCircuit(composite: Circuit): Circuit {
   }
 
   // Create boundary output nodes (one per composite output port)
+  // Bus outputs use HexDisplay (shows numeric value), bit outputs use Led (shows on/off)
   for (const port of composite.outputs) {
     const boundaryId = `${BOUNDARY_OUT_PREFIX}${port.name}`;
+    const isBus = port.portType.kind === 'bus';
 
     boundaryNodes.push({
       id: boundaryId,
       label: port.name,
-      componentRef: 'Led',
+      componentRef: isBus ? 'HexDisplay' : 'Led',
       arguments: {},
       inputs: [{
         id: `${boundaryId}_in`,

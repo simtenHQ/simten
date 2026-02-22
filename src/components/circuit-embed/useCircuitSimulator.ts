@@ -5,7 +5,7 @@ import { compileDSL, type ComponentLibrary } from "@/features/dsl";
 import { elaborate, type FlatCircuit } from "@/features/visual-editor/lib/elaboration";
 import type { FlatPortValueMap, FlatSequentialState } from "@/features/visual-editor/lib/flat-simulator";
 import { useComponentLibraryStore } from "@/features/visual-editor/stores/component-library-store";
-import { getPrimitives } from "@/features/visual-editor/lib/primitives";
+import { getPrimitives } from "@/features/visual-editor/lib/primitive-registry";
 import type { Circuit } from "@/features/dsl";
 
 // Fast simulator from core
@@ -62,6 +62,7 @@ export interface SimulatorActions {
   setInput: (name: string, value: boolean | number) => void;
   toggleInput: (name: string) => void;
   toggleNode: (nodeId: string) => void;
+  setNodeValue: (nodeId: string, value: number) => void;
   tick: () => void;
   reset: () => void;
 }
@@ -260,6 +261,22 @@ export function useCircuitSimulator(
     setPortValues(simulator.getPortValues() as FlatPortValueMap);
   }, []);
 
+  const setNodeValue = useCallback((nodeId: string, value: number) => {
+    const simulator = simulatorRef.current;
+    const flatCircuit = flatCircuitRef.current;
+    if (!simulator || !flatCircuit) return;
+
+    simulator.setInput(nodeId, value);
+
+    const result = simulator.runCombinational();
+    if (result.error) {
+      setError(result.error);
+      return;
+    }
+
+    setPortValues(simulator.getPortValues() as FlatPortValueMap);
+  }, []);
+
   const tick = useCallback(() => {
     const simulator = simulatorRef.current;
     const flatCircuit = flatCircuitRef.current;
@@ -308,6 +325,7 @@ export function useCircuitSimulator(
     setInput,
     toggleInput,
     toggleNode,
+    setNodeValue,
     tick,
     reset,
   };

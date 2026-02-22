@@ -68,12 +68,17 @@ export function NumericInputNode({ data, selected }: NumericInputNodeProps) {
         parsedValue = Math.max(0, Math.min(maxValue, parsedValue));
       }
 
-      // Update the node's arguments.value
-      const currentNode = useCircuitStore.getState().getNode(data.nodeId);
-      if (currentNode) {
-        updateNode(data.nodeId, {
-          arguments: { ...currentNode.arguments, value: parsedValue },
-        });
+      // Use custom callback if provided (e.g., from Inspector dialog)
+      if (data.onValueChange) {
+        data.onValueChange(parsedValue);
+      } else {
+        // Otherwise update the node's arguments.value via circuit store
+        const currentNode = useCircuitStore.getState().getNode(data.nodeId);
+        if (currentNode) {
+          updateNode(data.nodeId, {
+            arguments: { ...currentNode.arguments, value: parsedValue },
+          });
+        }
       }
       setIsEditingValue(false);
     } else if (e.key === 'Escape') {

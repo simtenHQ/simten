@@ -23,10 +23,13 @@ export function CPU6502Section() {
       <div className="prose-invert space-y-6">
         <p className="text-gray-300 leading-relaxed">
           Everything we&rsquo;ve built &mdash; gates, adders, registers,
-          counters &mdash; are the building blocks of a real processor. The{" "}
+          counters, and an ALU &mdash; are the building blocks of a real
+          processor. The{" "}
           <strong className="text-white">MOS 6502</strong> (1975) powered the
           Apple II, Commodore 64, and NES. It has just 3,510 transistors and
-          an elegant instruction set.
+          an elegant instruction set. Its ALU is wider (8 bits), its program
+          counter longer (16 bits), and it has a control unit that decodes
+          56&nbsp;instructions &mdash; but the pieces are the same.
         </p>
         <p className="text-gray-300 leading-relaxed">
           Below is a complete 6502 system simulated at the gate level &mdash;
