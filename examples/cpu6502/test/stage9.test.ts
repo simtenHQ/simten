@@ -13,7 +13,7 @@ import { resolve } from 'path';
 import { compileDSL, ComponentLibrary } from '../../../src/features/dsl/index';
 import { useComponentLibraryStore } from '../../../src/features/visual-editor/stores/component-library-store';
 import { useMemoryDataStore } from '../../../src/features/visual-editor/stores/memory-data-store';
-import { getPrimitives } from '../../../src/features/visual-editor/lib/primitives';
+import { getPrimitives } from '../../../src/features/visual-editor/lib/primitive-registry';
 import type { Circuit } from '../../../src/features/dsl/types';
 import { elaborate } from '../../../src/features/visual-editor/lib/elaboration';
 import {

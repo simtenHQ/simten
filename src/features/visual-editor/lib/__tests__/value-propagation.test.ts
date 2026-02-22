@@ -14,7 +14,7 @@ import {
   initializeFlatSequentialState
 } from '../flat-simulator';
 import { useComponentLibraryStore } from '../../stores/component-library-store';
-import { getPrimitives } from '../primitives';
+import { getPrimitives } from '../primitive-registry';
 import type { Circuit } from '../../types/circuit';
 
 describe('Value Propagation Through Composites', () => {

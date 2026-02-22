@@ -19,7 +19,7 @@ import { resolve } from 'path';
 import { compileDSL } from './index';
 import { ComponentLibrary, Circuit as DslCircuit } from './types';
 import { useComponentLibraryStore } from '../visual-editor/stores/component-library-store';
-import { getPrimitives } from '../visual-editor/lib/primitives';
+import { getPrimitives } from '../visual-editor/lib/primitive-registry';
 import type { Circuit } from '../visual-editor/types/circuit';
 
 describe('Systolic Array - Production Implementations', () => {

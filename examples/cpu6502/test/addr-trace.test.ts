@@ -7,7 +7,7 @@ import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import { compileDSL, ComponentLibrary as DSLComponentLibrary } from '../../../src/features/dsl/index';
 import { useComponentLibraryStore } from '../../../src/features/visual-editor/stores/component-library-store';
-import { getPrimitives } from '../../../src/features/visual-editor/lib/primitives';
+import { getPrimitives } from '../../../src/features/visual-editor/lib/primitive-registry';
 import type { Circuit } from '../../../src/features/dsl/types';
 import { createSimulatorFromCircuit, type ComponentLibrary } from '@/core/simulator';
 

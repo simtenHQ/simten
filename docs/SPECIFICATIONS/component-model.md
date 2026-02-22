@@ -101,7 +101,7 @@ Output: ha.sum = ha_xor.out, ha.carry = ha_and.out
 **Primitives are the ONLY components with inherent behavior.**
 
 **Characteristics:**
-- Implemented in TypeScript/JavaScript (see `/src/features/visual-editor/lib/primitives.ts`)
+- Implemented in TypeScript/JavaScript (see `/src/features/visual-editor/lib/primitive-registry.ts`)
 - Have hardcoded `evaluate()` functions
 - Optimized for performance
 - Cannot be redefined by users

@@ -14,7 +14,7 @@
 import type { Circuit, Node, ArgumentValue } from '../types/circuit';
 import type { FlatSequentialState } from './flat-simulator';
 import type { SimulationSnapshot, EnvironmentalStateValue } from '../types/simulation-snapshot';
-import { PRIMITIVE_DEFINITIONS } from './primitives';
+import { PRIMITIVE_DEFINITIONS } from './primitive-registry';
 
 /**
  * Captures environmental state from all nodes with environmental state

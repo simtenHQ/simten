@@ -10,7 +10,7 @@ import { parseDSL } from '@/features/dsl/parser';
 import { compileToIR, type ComponentLibrary as DSLComponentLibrary } from '@/features/dsl/compiler/ir-generator';
 import { createSimulatorFromCircuit, type ComponentLibrary, type FlatSequentialState } from '@/core/simulator';
 import { useComponentLibraryStore } from '../../stores/component-library-store';
-import { getPrimitives } from '../primitives';
+import { getPrimitives } from '../primitive-registry';
 import * as fs from 'fs';
 import * as path from 'path';
 import type { Circuit } from '../../types/circuit';

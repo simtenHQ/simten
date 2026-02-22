@@ -16,7 +16,7 @@ import { hasCycle } from '../../validation/structural';
 import type { ElaboratedContext } from '../types';
 import { elaborate } from '../../../../core/simulator/elaboration';
 import { createComponentLibrary } from '../../../../core/simulator';
-import { PRIMITIVES } from '../../../visual-editor/lib/primitives';
+import { PRIMITIVES } from '../../../visual-editor/lib/primitive-registry';
 import { compileToIR } from '../../compiler';
 import { parseDSL } from '../../parser';
 

@@ -6,7 +6,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { compileDSL, ComponentLibrary } from '../../../src/features/dsl/index';
 import { useComponentLibraryStore } from '../../../src/features/visual-editor/stores/component-library-store';
-import { getPrimitives } from '../../../src/features/visual-editor/lib/primitives';
+import { getPrimitives } from '../../../src/features/visual-editor/lib/primitive-registry';
 import type { Circuit } from '../../../src/features/dsl/types';
 import { elaborate, TOP_LEVEL_NODE } from '../../../src/features/visual-editor/lib/elaboration';
 import {

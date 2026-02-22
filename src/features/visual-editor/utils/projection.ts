@@ -35,7 +35,8 @@ export interface NodeData extends Record<string, unknown> {
   isComposite?: boolean; // True if this node is a composite component (drillable)
   __pixels?: number[]; // For Screen component - pixel data from RAM
   __consoleText?: string; // For Console component - accumulated text
-  onToggle?: () => void; // Optional callback for input toggle (used by MiniCanvas)
+  onToggle?: () => void; // Optional callback for input toggle (used by MiniCanvas/Inspector)
+  onValueChange?: (value: number) => void; // Optional callback for numeric input change (used by Inspector)
 }
 
 /**
@@ -161,8 +162,21 @@ export function projectCircuitToNodes(
         value = Boolean(node.arguments.value);
       }
     } else if (node.componentRef === 'Input') {
-      numericValue = typeof node.arguments.value === 'number' ? node.arguments.value : 0;
       width = typeof node.arguments.width === 'number' ? node.arguments.width : 8;
+
+      // Prefer port values (reflects simulator state) over arguments (initial value)
+      let numResolved = false;
+      if (portValues && node.outputs.length > 0) {
+        const outputKey = portPathKey({ nodeId: node.id, portName: node.outputs[0].name });
+        const portValue = portValues.get(outputKey);
+        if (portValue !== undefined && typeof portValue === 'number') {
+          numericValue = portValue;
+          numResolved = true;
+        }
+      }
+      if (!numResolved) {
+        numericValue = typeof node.arguments.value === 'number' ? node.arguments.value : 0;
+      }
     } else if (node.componentRef === 'HexDisplay' || node.componentRef === 'SevenSegment') {
       // Get display value from port values
       if (portValues && node.inputs.length > 0) {

@@ -10,7 +10,7 @@
  */
 
 import type { ComponentType } from '../../types';
-import { PRIMITIVE_DEFINITIONS, generateMetadata } from '../primitives';
+import { PRIMITIVE_DEFINITIONS, generateMetadata } from '../primitive-registry';
 
 export interface PrimitiveMetadata {
   category: string;

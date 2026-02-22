@@ -10,6 +10,7 @@ import React from 'react';
 import { BaseNode, PortConfig } from './BaseNode';
 import type { NodeData } from '../../utils/projection';
 import { getPrimitiveMetadata, PRIMITIVE_CATEGORIES } from '../../lib/simulation/primitive-metadata';
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 
 interface LogicGateNodeProps {
   data: NodeData;
@@ -88,9 +89,16 @@ export function LogicGateNode({ data, selected }: LogicGateNodeProps) {
       <div className="relative flex flex-col items-center gap-2">
         {/* Composite badge */}
         {data.isComposite && (
-          <div className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded bg-blue-500 text-[8px] text-white" title="Double-click to inspect">
-            &#x229E;
-          </div>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded bg-blue-500 text-[8px] text-white">
+                &#x229E;
+              </div>
+            </TooltipTrigger>
+            <TooltipContent side="top" sideOffset={4}>
+              <p className="text-xs">Double-click to inspect internals</p>
+            </TooltipContent>
+          </Tooltip>
         )}
 
         {/* Component Label */}

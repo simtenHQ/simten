@@ -214,11 +214,8 @@ function formatComponentCatalog(components: ComponentInterface[]): string[] {
   if (combinational.length > 0) {
     lines.push('');
     lines.push('### Combinational');
-    for (const c of combinational.slice(0, 20)) {
+    for (const c of combinational) {
       lines.push(`- ${formatComponentSignature(c)}`);
-    }
-    if (combinational.length > 20) {
-      lines.push(`  (+${combinational.length - 20} more)`);
     }
   }
 
@@ -254,6 +251,17 @@ function formatComponentSignature(component: ComponentInterface): string {
 
   if (component.clocks.length > 0) {
     sig += ` [clk: ${component.clocks.map((c) => c.name).join(', ')}]`;
+  }
+
+  if (component.parameters && component.parameters.length > 0) {
+    const params = component.parameters
+      .map((p) => `${p.name}: ${p.type}${p.defaultValue != null ? ` = ${p.defaultValue}` : ''}`)
+      .join(', ');
+    sig += ` {${params}}`;
+  }
+
+  if (component.description) {
+    sig += ` — ${component.description}`;
   }
 
   return sig;

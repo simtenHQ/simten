@@ -26,6 +26,13 @@ const MAX_CONTINUATIONS = 3;
 // Safe actions that auto-execute without student intervention
 const SAFE_ACTIONS = new Set(['SET_INPUT', 'RUN_SIMULATION', 'VERIFY_ASSERTION']);
 
+/** Check if the editor has only the default example or is empty */
+function isFreshEditor(code: string): boolean {
+  const trimmed = code.trim();
+  if (!trimmed) return true;
+  return trimmed.startsWith('// Example: NOT Gate');
+}
+
 // ============================================================================
 // Types
 // ============================================================================
@@ -101,13 +108,20 @@ export function useTutorFlow(options: UseTutorFlowOptions): UseTutorFlowResult {
           // Small delay to let React propagate state changes
           await new Promise((r) => setTimeout(r, 150));
         } else if (action.type === 'SHOW_DIFF' || action.type === 'GENERATE_HARNESS') {
-          hasDiff = true;
+          if (action.type === 'SHOW_DIFF' && isFreshEditor(getCurrentCode())) {
+            // Auto-apply: skip diff review for fresh/default editor
+            const showDiff = action as { suggestedCode: string };
+            executionContext.setCode(showDiff.suggestedCode);
+            await new Promise((r) => setTimeout(r, 300)); // Let compile propagate
+          } else {
+            hasDiff = true;
+          }
         }
       }
 
       return hasDiff;
     },
-    [executionContext]
+    [executionContext, getCurrentCode]
   );
 
   /**

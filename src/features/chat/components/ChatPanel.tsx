@@ -266,6 +266,7 @@ export function ChatPanel({
             onExecuteAction={handleExecuteAction}
             onShowDiff={handleShowDiff}
             onNodeMention={handleNodeMention}
+            onSendStarter={handleSend}
           />
 
           {/* Input */}
