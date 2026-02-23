@@ -1,0 +1,53 @@
+{
+  "name": "@turing-incomplete/core",
+  "version": "0.1.0",
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./simulator": {
+      "types": "./dist/simulator/index.d.ts",
+      "import": "./dist/simulator/index.js"
+    },
+    "./dsl": {
+      "types": "./dist/dsl/index.d.ts",
+      "import": "./dist/dsl/index.js"
+    },
+    "./dsl/parser": {
+      "types": "./dist/dsl/parser/index.d.ts",
+      "import": "./dist/dsl/parser/index.js"
+    },
+    "./dsl/validation": {
+      "types": "./dist/dsl/validation/index.d.ts",
+      "import": "./dist/dsl/validation/index.js"
+    },
+    "./dsl/analysis": {
+      "types": "./dist/dsl/analysis/index.d.ts",
+      "import": "./dist/dsl/analysis/index.js"
+    },
+    "./dsl/harness": {
+      "types": "./dist/dsl/harness/index.d.ts",
+      "import": "./dist/dsl/harness/index.js"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc -b",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "chevrotain": "^11.1.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "typescript": "^5",
+    "vitest": "^4.0.17"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
