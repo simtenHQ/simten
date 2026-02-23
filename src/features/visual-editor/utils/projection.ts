@@ -15,6 +15,7 @@ import type { Circuit, Node, Connection, PortPath } from '../types/circuit';
 import type { MetadataState } from '../types';
 import { WIRE_COLORS } from '../types';
 import { useComponentLibraryStore } from '../stores/component-library-store';
+import { getReferenceCircuit } from '@/core/simulator';
 import type { FlatPortValueMap, FlatSequentialState } from '../lib/flat-simulator';
 
 // Alias for backward compatibility
@@ -268,7 +269,10 @@ export function projectCircuitToNodes(
     }
 
     // Detect composite components (user can drill into these)
-    const isComposite = componentDef.implementation.kind === 'composite';
+    // Also includes primitives with reference circuits (educational drill-down)
+    const hasReferenceCircuit = componentDef.implementation.kind === 'primitive'
+      && getReferenceCircuit(node.componentRef) !== undefined;
+    const isComposite = componentDef.implementation.kind === 'composite' || hasReferenceCircuit;
 
     reactFlowNodes.push({
       id: node.id,

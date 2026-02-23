@@ -93,13 +93,28 @@ export function evalBitSlice(ctx: EvalContext): void {
 
   const node = ctx.circuit.flatCircuit.nodes[ctx.nodeIndex];
   const low = (node.arguments.low as number) ?? 0;
-  const high = (node.arguments.high as number) ?? 2;
+  const high = (node.arguments.high as number) ?? 7;
 
   const numBits = high - low + 1;
-  const mask = (1 << numBits) - 1;
+  const mask = numBits >= 32 ? 0xFFFFFFFF : (1 << numBits) - 1;
   const result = (value >> low) & mask;
 
   writeOutput(ctx, 0, result);
+}
+
+/**
+ * Concat: Concatenate two buses (out = high << lowWidth | low)
+ * Inputs: high, low
+ * Outputs: out
+ */
+export function evalConcat(ctx: EvalContext): void {
+  const high = readInput(ctx, 0);
+  const low = readInput(ctx, 1);
+
+  const node = ctx.circuit.flatCircuit.nodes[ctx.nodeIndex];
+  const lowWidth = (node.arguments.lowWidth as number) ?? 4;
+
+  writeOutput(ctx, 0, (high << lowWidth) | low);
 }
 
 /**

@@ -45,6 +45,7 @@ export const Node = createToken({ name: 'Node', pattern: /node(?![a-zA-Z0-9_])/ 
 export const Connect = createToken({ name: 'Connect', pattern: /connect(?![a-zA-Z0-9_])/ });
 export const State = createToken({ name: 'State', pattern: /state(?![a-zA-Z0-9_])/ });
 export const Impl = createToken({ name: 'Impl', pattern: /impl(?![a-zA-Z0-9_])/ });
+export const Description = createToken({ name: 'Description', pattern: /description(?![a-zA-Z0-9_])/ });
 export const On = createToken({ name: 'On', pattern: /on(?![a-zA-Z0-9_])/ });
 export const Rising = createToken({ name: 'Rising', pattern: /rising(?![a-zA-Z0-9_])/ });
 export const Falling = createToken({ name: 'Falling', pattern: /falling(?![a-zA-Z0-9_])/ });
@@ -176,6 +177,7 @@ export const allTokens = [
   Connect,
   State,
   Impl,
+  Description,
   On,
   Rising,
   Falling,

@@ -21,6 +21,7 @@ import {
   Connect,
   State,
   Impl,
+  Description,
   On,
   Rising,
   Falling,
@@ -141,6 +142,10 @@ export class DSLParser extends CstParser {
       this.SUBRULE(this.parameters);
     });
     this.CONSUME(LBrace);
+    this.OPTION2(() => {
+      this.CONSUME(Description);
+      this.CONSUME(StringLiteral, { LABEL: 'descriptionText' });
+    });
     this.MANY(() => {
       this.OR([
         { ALT: () => this.SUBRULE(this.inputDeclaration) },
@@ -149,7 +154,7 @@ export class DSLParser extends CstParser {
         { ALT: () => this.SUBRULE(this.stateDeclaration) },
       ]);
     });
-    this.OPTION2(() => {
+    this.OPTION3(() => {
       this.SUBRULE(this.implBlock);
     });
     this.CONSUME(RBrace);
