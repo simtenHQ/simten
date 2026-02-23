@@ -121,6 +121,7 @@ const UI_EXTENSIONS: Record<string, PrimitiveUIExtension> = {
   Probe: { category: 'utilities', icon: '🔍', componentType: 'Probe', createComponent: (id) => ({ id, type: 'Probe' } as Component) },
   BitSlice: { category: 'utilities', icon: '[]', componentType: 'BitSlice', createComponent: (id) => ({ id, type: 'BitSlice' } as Component) },
   AddressCombiner: { category: 'utilities', icon: '⊕16', componentType: 'AddressCombiner', createComponent: (id) => ({ id, type: 'AddressCombiner' } as Component) },
+  Concat: { category: 'utilities', icon: '||', componentType: 'Concat', createComponent: (id) => ({ id, type: 'Concat' } as Component) },
 
   // === Bus Operations ===
   BusAnd: { category: 'bus-operations', icon: '&8', componentType: 'BusAnd', createComponent: (id) => ({ id, type: 'BusAnd' } as Component) },

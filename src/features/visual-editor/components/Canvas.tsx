@@ -46,6 +46,7 @@ import { useDSLPreviewStore } from "../stores/dsl-preview-store";
 import { useInspectorStore } from "../stores/expansion-store";
 import { useComponentLibraryStore } from "../stores/component-library-store";
 import { projectCircuitToReactFlow, type NodeData } from "../utils/projection";
+import { getCompiledReferenceCircuit } from "../utils/reference-circuit-cache";
 import {
   InputNode,
   OutputNode,
@@ -522,7 +523,7 @@ export function Canvas() {
       if (!data.isComposite) return;
 
       const componentDef = resolveComponent(data.componentRef);
-      if (!componentDef || componentDef.implementation.kind !== "composite") return;
+      if (!componentDef) return;
 
       // Capture the node's screen rect for the expand-from-origin animation
       const domNode = document.querySelector(`[data-id="${node.id}"]`);
@@ -531,7 +532,16 @@ export function Canvas() {
         ? { x: rect.x, y: rect.y, width: rect.width, height: rect.height }
         : undefined;
 
-      openInspector(data.componentRef, componentDef, data.label || data.componentRef, originRect);
+      if (componentDef.implementation.kind === "composite") {
+        openInspector(data.componentRef, componentDef, data.label || data.componentRef, originRect);
+      } else {
+        // Primitive with reference circuit — compile on demand
+        const store = useComponentLibraryStore.getState();
+        const refCircuit = getCompiledReferenceCircuit(data.componentRef, store);
+        if (refCircuit) {
+          openInspector(data.componentRef, refCircuit, data.label || data.componentRef, originRect);
+        }
+      }
     },
     [resolveComponent, openInspector],
   );

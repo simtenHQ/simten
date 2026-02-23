@@ -28,6 +28,7 @@ import {
   evalSplitter,
   evalSplitter8to8,
   evalBitSlice,
+  evalConcat,
   evalCombiner8to8,
 } from './routing';
 
@@ -208,6 +209,7 @@ EVALUATORS[PRIMITIVE_TYPE_INDICES.Combiner8to8] = evalCombiner8to8;
 EVALUATORS[PRIMITIVE_TYPE_INDICES.Probe] = evalProbe;
 EVALUATORS[PRIMITIVE_TYPE_INDICES.BitSlice] = evalBitSlice;
 EVALUATORS[PRIMITIVE_TYPE_INDICES.AddressCombiner] = evalAddressCombiner;
+EVALUATORS[PRIMITIVE_TYPE_INDICES.Concat] = evalConcat;
 
 // Bus operations
 EVALUATORS[PRIMITIVE_TYPE_INDICES.BusAnd] = evalBusAnd;

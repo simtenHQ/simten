@@ -101,6 +101,7 @@ export {
   getPrimitiveEvaluator,
   isPrimitive,
   getPrimitiveCircuit,
+  getReferenceCircuit,
   generatePrimitives,
   generateEvaluators,
 } from './primitives';

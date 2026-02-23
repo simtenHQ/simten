@@ -31,7 +31,8 @@ import { useComponentLibraryStore } from "../stores/component-library-store";
 import { createDrillDownViewCircuit, BOUNDARY_IN_PREFIX } from "../utils/drill-down-view";
 import { performHierarchicalLayout, centerLayout } from "../utils/auto-layout";
 import { projectCircuitToReactFlow, type NodeData } from "../utils/projection";
-import { createSimulatorFromCircuit } from "@/core/simulator";
+import { getCompiledReferenceCircuit } from "../utils/reference-circuit-cache";
+import { createSimulatorFromCircuit, PRIMITIVE_DEFINITIONS } from "@/core/simulator";
 import type { FlatPortValueMap, FlatSequentialState, SimulatorSnapshot } from "@/core/simulator/types";
 import type { Circuit } from "../types/circuit";
 import {
@@ -446,9 +447,18 @@ function InspectorCanvas({ frame }: InspectorCanvasProps) {
       if (!data.isComposite) return;
 
       const componentDef = resolveComponent(data.componentRef);
-      if (!componentDef || componentDef.implementation.kind !== "composite") return;
+      if (!componentDef) return;
 
-      pushLevel(data.componentRef, componentDef, data.label || data.componentRef);
+      if (componentDef.implementation.kind === "composite") {
+        pushLevel(data.componentRef, componentDef, data.label || data.componentRef);
+      } else {
+        // Primitive with reference circuit — compile on demand
+        const store = useComponentLibraryStore.getState();
+        const refCircuit = getCompiledReferenceCircuit(data.componentRef, store);
+        if (refCircuit) {
+          pushLevel(data.componentRef, refCircuit, data.label || data.componentRef);
+        }
+      }
     },
     [resolveComponent, pushLevel],
   );
@@ -539,25 +549,34 @@ interface BreadcrumbProps {
 }
 
 function InspectorBreadcrumb({ stack, onNavigate }: BreadcrumbProps) {
+  const topFrame = stack[stack.length - 1];
+  const description = topFrame?.componentDef.metadata?.description
+    ?? PRIMITIVE_DEFINITIONS[topFrame?.componentName]?.referenceCircuit?.description;
   return (
-    <div className="flex items-center gap-1 text-sm">
+    <div className="flex items-center gap-1 text-sm min-w-0">
       {stack.map((frame, index) => (
         <React.Fragment key={index}>
-          {index > 0 && <span className="text-gray-400">&gt;</span>}
+          {index > 0 && <span className="text-gray-400 shrink-0">&gt;</span>}
           {index < stack.length - 1 ? (
             <button
               onClick={() => onNavigate(index)}
-              className="text-blue-600 hover:text-blue-800 hover:underline font-medium"
+              className="text-blue-600 hover:text-blue-800 hover:underline font-medium shrink-0"
             >
               {frame.nodeLabel} ({frame.componentName})
             </button>
           ) : (
-            <span className="font-semibold text-gray-900">
+            <span className="font-semibold text-gray-900 shrink-0">
               {frame.nodeLabel} ({frame.componentName})
             </span>
           )}
         </React.Fragment>
       ))}
+      {description && (
+        <>
+          <span className="text-gray-300 shrink-0">—</span>
+          <span className="text-gray-500 text-xs italic truncate">{description}</span>
+        </>
+      )}
     </div>
   );
 }
