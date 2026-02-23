@@ -27,11 +27,11 @@ export function SystolicSection() {
       <div className="prose-invert space-y-6">
         <p className="text-gray-300 leading-relaxed">
           Everything we&rsquo;ve built &mdash; MAC units, weight loading,
-          horizontal data flow, vertical weight distribution, and wavefront
+          horizontal data flow, vertical partial-sum accumulation, and cycle
           control &mdash; comes together here. Four processing elements are
-          arranged in a 2&times;2 grid. Weights flow down the columns. Data
-          flows across the rows. The wavefront controller orchestrates the
-          entire computation.
+          arranged in a 2&times;2 grid. Each PE stores one weight from
+          matrix&nbsp;B. Activations from matrix&nbsp;A flow left to right.
+          Partial sums flow top to bottom through each column.
         </p>
         <p className="text-gray-300 leading-relaxed">
           The circuit computes C = A &times; B where A&nbsp;=&nbsp;
@@ -39,17 +39,18 @@ export function SystolicSection() {
           <code className="text-blue-300">[[5,6],[7,8]]</code>. The expected
           result is C&nbsp;=&nbsp;
           <code className="text-blue-300">[[19,22],[43,50]]</code>. Click{" "}
-          <strong>Start</strong> to toggle the start signal and begin
-          auto-running. Watch the wavefront propagate through the phases:
-          reset, load first weights + stream first activations, load second
-          weights + stream second activations, done.
+          <strong>Start</strong> to begin. Cycle&nbsp;0 loads all four weights.
+          Then over just <strong className="text-white">3 cycles</strong> of
+          pipelined data flow, activation values ripple rightward through the
+          rows while partial sums accumulate downward through the columns.
+          After 4 total ticks the done signal fires.
         </p>
         <p className="text-gray-300 leading-relaxed">
           This is the same fundamental architecture that powers Google&rsquo;s
           TPU. A real TPUv1 has a 256&times;256 systolic array &mdash; 65,536
           processing elements performing 92 trillion 8-bit operations per
-          second. The principles are identical: data flows right, weights flow
-          down, and every PE computes a MAC on every clock cycle.
+          second. The principles are identical: data flows right, partial sums
+          flow down, and every PE computes a multiply-add on every clock cycle.
         </p>
       </div>
 
@@ -62,9 +63,10 @@ export function SystolicSection() {
           What you just watched is the same process that happens inside every
           TPU inference. Matrix A holds activations from the previous layer.
           Matrix B holds the model&rsquo;s trained weights. The systolic array
-          computes the matrix product in a carefully choreographed wavefront,
-          and the result feeds into the next layer. Repeat for every layer in
-          the network.
+          computes the matrix product in a pipelined wavefront &mdash; weights
+          are loaded once, then activations stream through at full speed. The
+          result feeds into the next layer. Repeat for every layer in the
+          network.
         </p>
         <p className="text-gray-300 leading-relaxed">
           The systolic design is powerful because it maximizes data reuse. Each

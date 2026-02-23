@@ -11,29 +11,29 @@ export function PhaseSection() {
       </h2>
       <div className="prose-invert space-y-6">
         <p className="text-gray-300 leading-relaxed">
-          A 2&times;2 matrix multiplication C = A &times; B requires multiple
-          steps: reset the accumulators, load the first column of weights,
-          stream the first set of activations, load the second column of
-          weights, stream the second set of activations, and finally signal
-          completion. These steps are organized into{" "}
-          <strong className="text-white">phases</strong> driven by a wavefront
-          controller.
+          A systolic array needs a{" "}
+          <strong className="text-white">cycle counter</strong> to orchestrate
+          the computation. In our 2&times;2 array, the entire matrix multiply
+          takes just <strong className="text-white">4 clock cycles</strong>:
+          one cycle to load weights, then three cycles of pipelined data flow
+          (the formula is 2N&minus;1 for an N&times;N array).
         </p>
         <p className="text-gray-300 leading-relaxed">
           The controller is built around a{" "}
           <strong className="text-white">phase register</strong> and a set of{" "}
           <strong className="text-white">comparators</strong>. The register
-          holds the current phase number. Each comparator checks whether the
-          phase matches a specific value and drives an LED. When the enable
-          switch is toggled, an incrementer advances the phase on each clock
+          holds the current cycle number. Each comparator checks whether the
+          cycle matches a specific value and drives an LED. When the enable
+          switch is toggled, an incrementer advances the cycle on each clock
           tick.
         </p>
         <p className="text-gray-300 leading-relaxed">
-          In the full systolic array, each phase (reset, k=0, k=1, done)
-          controls which weights are loaded, which data rows are injected, and
-          when the done signal fires. Toggle the{" "}
+          In the full systolic array, cycle&nbsp;0 loads all weights into the
+          PEs. Cycles&nbsp;1&ndash;2 inject activation data into the rows.
+          By cycle&nbsp;3, the last result emerges from the pipeline, and
+          cycle&nbsp;4 signals done. Toggle the{" "}
           <code className="text-blue-300">enable</code> switch and tick to
-          watch the phase advance and the LEDs cycle through the four states.
+          watch the cycle advance and the LEDs light up in sequence.
         </p>
       </div>
 
