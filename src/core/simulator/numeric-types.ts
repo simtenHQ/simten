@@ -41,6 +41,7 @@ export const PRIMITIVE_TYPE_INDICES: Record<string, number> = {
   Probe: 23,
   BitSlice: 24,
   AddressCombiner: 25,
+  Concat: 26,
 
   // Bus Operations (40-49)
   BusAnd: 40,

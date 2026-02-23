@@ -45,6 +45,10 @@ export interface CorePrimitiveDefinition {
   parameters?: Parameter[];
   evaluator: PrimitiveEvaluator;
   outputDependency?: 'state-only' | 'state+inputs' | 'input-dependent';
+  referenceCircuit?: {
+    source: string;
+    description?: string;
+  };
 }
 
 // ============================================================================
@@ -402,13 +406,17 @@ export const PRIMITIVE_DEFINITIONS: Record<string, CorePrimitiveDefinition> = {
     description: 'Extract bits [low..high] from input (wire routing, zero logic cost)',
     inputs: [{ name: 'in', portType: busType(8) }],
     outputs: [{ name: 'out', portType: busType(8) }],
+    parameters: [
+      { name: 'high', paramType: 'int', defaultValue: 7 },
+      { name: 'low', paramType: 'int', defaultValue: 0 },
+    ],
     evaluate: (inputs) => {
       const value = inputs.get('in') as number;
       const low = (inputs.get('__low') as number) ?? 0;
-      const high = (inputs.get('__high') as number) ?? 2;
+      const high = (inputs.get('__high') as number) ?? 7;
 
       const numBits = high - low + 1;
-      const mask = (1 << numBits) - 1;
+      const mask = numBits >= 32 ? 0xFFFFFFFF : (1 << numBits) - 1;
       const result = (value >> low) & mask;
 
       return new Map([['out', result]]);
@@ -427,6 +435,23 @@ export const PRIMITIVE_DEFINITIONS: Record<string, CorePrimitiveDefinition> = {
       const lo = (inputs.get('lo') as number) ?? 0;
       const hi = (inputs.get('hi') as number) ?? 0;
       return new Map([['out', ((hi & 0xff) << 8) | (lo & 0xff)]]);
+    },
+  }),
+
+  Concat: defineCombinational({
+    name: 'Concat',
+    description: 'Concatenate two buses into a wider bus (out = high << lowWidth | low)',
+    inputs: [
+      { name: 'high', portType: busType(4) },
+      { name: 'low', portType: busType(4) },
+    ],
+    outputs: [{ name: 'out', portType: busType(8) }],
+    parameters: [{ name: 'lowWidth', paramType: 'int', defaultValue: 4 }],
+    evaluate: (inputs) => {
+      const high = (inputs.get('high') as number) ?? 0;
+      const low = (inputs.get('low') as number) ?? 0;
+      const lowWidth = (inputs.get('__lowWidth') as number) ?? 4;
+      return new Map([['out', (high << lowWidth) | low]]);
     },
   }),
 
@@ -494,50 +519,188 @@ export const PRIMITIVE_DEFINITIONS: Record<string, CorePrimitiveDefinition> = {
   // Arithmetic Operations
   // ============================================================================
 
-  Incrementer: defineCombinational({
-    name: 'Incrementer',
-    description: 'Incrementer - adds 1 to the input (wraps around at 255)',
-    inputs: [{ name: 'in', portType: busType(8) }],
-    outputs: [{ name: 'out', portType: busType(8) }],
-    evaluate: (inputs) => {
-      const value = inputs.get('in') as number;
-      const width = 8;
-      const maxValue = (1 << width) - 1;
-      const result = (value + 1) & maxValue;
-      return new Map([['out', result]]);
+  Incrementer: {
+    ...defineCombinational({
+      name: 'Incrementer',
+      description: 'Incrementer - adds 1 to the input (wraps around at 255)',
+      inputs: [{ name: 'in', portType: busType(8) }],
+      outputs: [{ name: 'out', portType: busType(8) }],
+      evaluate: (inputs) => {
+        const value = inputs.get('in') as number;
+        const width = 8;
+        const maxValue = (1 << width) - 1;
+        const result = (value + 1) & maxValue;
+        return new Map([['out', result]]);
+      },
+    }),
+    referenceCircuit: {
+      source: `circuit Incrementer {
+  input data: Bus[8]
+  output result: Bus[8]
+
+  impl {
+    node one: Constant(value=1)
+    node add: Adder
+
+    connect data -> add.a
+    connect one.out -> add.b
+    connect add.sum -> result
+  }
+}`,
+      description: 'Incrementer built from Adder + Constant(1)',
     },
-  }),
+  },
 
-  Adder: defineCombinational({
-    name: 'Adder',
-    description: 'Parameterized n-bit adder with carry in/out (default: 8-bit)',
-    inputs: [
-      { name: 'a', portType: busType(8) },
-      { name: 'b', portType: busType(8) },
-      { name: 'carry_in', portType: bitType(), defaultValue: false },
-    ],
-    outputs: [
-      { name: 'sum', portType: busType(8) },
-      { name: 'carry_out', portType: bitType() },
-    ],
-    evaluate: (inputs) => {
-      const a = inputs.get('a') as number;
-      const b = inputs.get('b') as number;
-      const carryIn = (inputs.get('carry_in') as boolean) ?? false ? 1 : 0;
+  Adder: {
+    ...defineCombinational({
+      name: 'Adder',
+      description: 'Parameterized n-bit adder with carry in/out (default: 8-bit)',
+      inputs: [
+        { name: 'a', portType: busType(8) },
+        { name: 'b', portType: busType(8) },
+        { name: 'carry_in', portType: bitType(), defaultValue: false },
+      ],
+      outputs: [
+        { name: 'sum', portType: busType(8) },
+        { name: 'carry_out', portType: bitType() },
+      ],
+      evaluate: (inputs) => {
+        const a = inputs.get('a') as number;
+        const b = inputs.get('b') as number;
+        const carryIn = (inputs.get('carry_in') as boolean) ?? false ? 1 : 0;
 
-      const width = (inputs.get('__width') as number) ?? 8;
-      const mask = (1 << width) - 1;
+        const width = (inputs.get('__width') as number) ?? 8;
+        const mask = (1 << width) - 1;
 
-      const result = a + b + carryIn;
-      const sum = result & mask;
-      const carryOut = (result >> width) !== 0;
+        const result = a + b + carryIn;
+        const sum = result & mask;
+        const carryOut = (result >> width) !== 0;
 
-      return new Map<string, boolean | number>([
-        ['sum', sum],
-        ['carry_out', carryOut],
-      ]);
+        return new Map<string, boolean | number>([
+          ['sum', sum],
+          ['carry_out', carryOut],
+        ]);
+      },
+    }),
+    referenceCircuit: {
+      source: `// Half adder: single-bit add without carry input
+circuit HalfAdder {
+  input a: Bit
+  input b: Bit
+  output sum: Bit
+  output carry: Bit
+
+  impl {
+    node xor1: Xor
+    node and1: And
+
+    connect a -> xor1.a
+    connect b -> xor1.b
+    connect xor1.out -> sum
+
+    connect a -> and1.a
+    connect b -> and1.b
+    connect and1.out -> carry
+  }
+}
+
+// Full adder: single-bit add with carry input, built from two half adders
+circuit FullAdder {
+  input a: Bit
+  input b: Bit
+  input cin: Bit
+  output sum: Bit
+  output cout: Bit
+
+  impl {
+    node ha1: HalfAdder
+    node ha2: HalfAdder
+    node or1: Or
+
+    connect a -> ha1.a
+    connect b -> ha1.b
+    connect ha1.sum -> ha2.a
+    connect cin -> ha2.b
+    connect ha2.sum -> sum
+
+    connect ha1.carry -> or1.a
+    connect ha2.carry -> or1.b
+    connect or1.out -> cout
+  }
+}
+
+// 8-bit ripple-carry adder: chain of 8 full adders
+circuit Adder {
+  input a: Bus[8]
+  input b: Bus[8]
+  input carry_in: Bit
+  output sum: Bus[8]
+  output carry_out: Bit
+
+  impl {
+    node splitA: Splitter8to8
+    node splitB: Splitter8to8
+    connect a -> splitA.in
+    connect b -> splitB.in
+
+    node fa0: FullAdder
+    node fa1: FullAdder
+    node fa2: FullAdder
+    node fa3: FullAdder
+    node fa4: FullAdder
+    node fa5: FullAdder
+    node fa6: FullAdder
+    node fa7: FullAdder
+
+    connect splitA.bit0 -> fa0.a
+    connect splitB.bit0 -> fa0.b
+    connect carry_in -> fa0.cin
+
+    connect splitA.bit1 -> fa1.a
+    connect splitB.bit1 -> fa1.b
+    connect fa0.cout -> fa1.cin
+
+    connect splitA.bit2 -> fa2.a
+    connect splitB.bit2 -> fa2.b
+    connect fa1.cout -> fa2.cin
+
+    connect splitA.bit3 -> fa3.a
+    connect splitB.bit3 -> fa3.b
+    connect fa2.cout -> fa3.cin
+
+    connect splitA.bit4 -> fa4.a
+    connect splitB.bit4 -> fa4.b
+    connect fa3.cout -> fa4.cin
+
+    connect splitA.bit5 -> fa5.a
+    connect splitB.bit5 -> fa5.b
+    connect fa4.cout -> fa5.cin
+
+    connect splitA.bit6 -> fa6.a
+    connect splitB.bit6 -> fa6.b
+    connect fa5.cout -> fa6.cin
+
+    connect splitA.bit7 -> fa7.a
+    connect splitB.bit7 -> fa7.b
+    connect fa6.cout -> fa7.cin
+
+    node combine: Combiner8to8
+    connect fa0.sum -> combine.bit0
+    connect fa1.sum -> combine.bit1
+    connect fa2.sum -> combine.bit2
+    connect fa3.sum -> combine.bit3
+    connect fa4.sum -> combine.bit4
+    connect fa5.sum -> combine.bit5
+    connect fa6.sum -> combine.bit6
+    connect fa7.sum -> combine.bit7
+
+    connect combine.out -> sum
+    connect fa7.cout -> carry_out
+  }
+}`,
+      description: '8-bit ripple-carry adder from HalfAdders and FullAdders',
     },
-  }),
+  },
 
   Multiplier: defineCombinational({
     name: 'Multiplier',
@@ -560,29 +723,96 @@ export const PRIMITIVE_DEFINITIONS: Record<string, CorePrimitiveDefinition> = {
     },
   }),
 
-  Comparator: defineCombinational({
-    name: 'Comparator',
-    description: 'Parameterized n-bit comparator (default: 8-bit)',
-    inputs: [
-      { name: 'a', portType: busType(8) },
-      { name: 'b', portType: busType(8) },
-    ],
-    outputs: [
-      { name: 'eq', portType: bitType() },
-      { name: 'lt', portType: bitType() },
-      { name: 'gt', portType: bitType() },
-    ],
-    evaluate: (inputs) => {
-      const a = inputs.get('a') as number;
-      const b = inputs.get('b') as number;
+  Comparator: {
+    ...defineCombinational({
+      name: 'Comparator',
+      description: 'Parameterized n-bit comparator (default: 8-bit)',
+      inputs: [
+        { name: 'a', portType: busType(8) },
+        { name: 'b', portType: busType(8) },
+      ],
+      outputs: [
+        { name: 'eq', portType: bitType() },
+        { name: 'lt', portType: bitType() },
+        { name: 'gt', portType: bitType() },
+      ],
+      evaluate: (inputs) => {
+        const a = inputs.get('a') as number;
+        const b = inputs.get('b') as number;
 
-      return new Map([
-        ['eq', a === b],
-        ['lt', a < b],
-        ['gt', a > b],
-      ]);
+        return new Map([
+          ['eq', a === b],
+          ['lt', a < b],
+          ['gt', a > b],
+        ]);
+      },
+    }),
+    referenceCircuit: {
+      source: `// 8-bit comparator from subtractor + zero detection
+circuit Comparator {
+  input a: Bus[8]
+  input b: Bus[8]
+  output eq: Bit
+  output lt: Bit
+  output gt: Bit
+
+  impl {
+    // Subtract a - b: borrow_out means a < b
+    node sub: Subtractor
+
+    connect a -> sub.a
+    connect b -> sub.b
+
+    // lt = borrow_out (unsigned a < b)
+    connect sub.borrow_out -> lt
+
+    // Zero detection on difference: eq = (difference == 0)
+    // Split difference into bits, OR-tree, invert
+    node split: Splitter8to8
+    connect sub.difference -> split.in
+
+    node or01: Or
+    node or23: Or
+    node or45: Or
+    node or67: Or
+    connect split.bit0 -> or01.a
+    connect split.bit1 -> or01.b
+    connect split.bit2 -> or23.a
+    connect split.bit3 -> or23.b
+    connect split.bit4 -> or45.a
+    connect split.bit5 -> or45.b
+    connect split.bit6 -> or67.a
+    connect split.bit7 -> or67.b
+
+    node or_lo: Or
+    node or_hi: Or
+    connect or01.out -> or_lo.a
+    connect or23.out -> or_lo.b
+    connect or45.out -> or_hi.a
+    connect or67.out -> or_hi.b
+
+    node or_all: Or
+    connect or_lo.out -> or_all.a
+    connect or_hi.out -> or_all.b
+
+    // eq = NOT(any bit set)
+    node not_eq: Not
+    connect or_all.out -> not_eq.in
+    connect not_eq.out -> eq
+
+    // gt = NOT(eq OR lt)
+    node eq_or_lt: Or
+    connect not_eq.out -> eq_or_lt.a
+    connect sub.borrow_out -> eq_or_lt.b
+
+    node not_gt: Not
+    connect eq_or_lt.out -> not_gt.in
+    connect not_gt.out -> gt
+  }
+}`,
+      description: '8-bit comparator from Subtractor + OR-tree zero detection',
     },
-  }),
+  },
 
   LeftShifter: defineCombinational({
     name: 'LeftShifter',
@@ -768,30 +998,57 @@ export const PRIMITIVE_DEFINITIONS: Record<string, CorePrimitiveDefinition> = {
   // Plexers
   // ============================================================================
 
-  Mux: defineCombinational({
-    name: 'Mux',
-    description: 'Parameterized multiplexer (default: 2-input, 1-bit)',
-    inputs: [
-      { name: 'in0', portType: bitType() },
-      { name: 'in1', portType: bitType() },
-      { name: 'sel', portType: bitType() },
-    ],
-    outputs: [{ name: 'out', portType: bitType() }],
-    evaluate: (inputs) => {
-      const inputCount = (inputs.get('__input_count') as number) ?? 2;
-      const width = (inputs.get('__width') as number) ?? 1;
-      const selValue = inputs.get('sel');
-      const sel = typeof selValue === 'boolean' ? (selValue ? 1 : 0) : (typeof selValue === 'number' ? selValue : 0);
+  Mux: {
+    ...defineCombinational({
+      name: 'Mux',
+      description: 'Parameterized multiplexer (default: 2-input, 1-bit)',
+      inputs: [
+        { name: 'in0', portType: bitType() },
+        { name: 'in1', portType: bitType() },
+        { name: 'sel', portType: bitType() },
+      ],
+      outputs: [{ name: 'out', portType: bitType() }],
+      evaluate: (inputs) => {
+        const inputCount = (inputs.get('__input_count') as number) ?? 2;
+        const width = (inputs.get('__width') as number) ?? 1;
+        const selValue = inputs.get('sel');
+        const sel = typeof selValue === 'boolean' ? (selValue ? 1 : 0) : (typeof selValue === 'number' ? selValue : 0);
 
-      const actualSel = Math.max(0, Math.min(Math.floor(sel), inputCount - 1));
-      const value = inputs.get(`in${actualSel}`) as BitValue | BusValue | undefined;
+        const actualSel = Math.max(0, Math.min(Math.floor(sel), inputCount - 1));
+        const value = inputs.get(`in${actualSel}`) as BitValue | BusValue | undefined;
 
-      const fallback = (width === 1) ? false : 0;
-      const output = value !== undefined ? value : fallback;
+        const fallback = (width === 1) ? false : 0;
+        const output = value !== undefined ? value : fallback;
 
-      return new Map([['out', output]]);
+        return new Map([['out', output]]);
+      },
+    }),
+    referenceCircuit: {
+      source: `circuit Mux {
+  input in0: Bit
+  input in1: Bit
+  input sel: Bit
+  output out: Bit
+
+  impl {
+    node not_sel: Not
+    node and0: And
+    node and1: And
+    node or1: Or
+
+    connect sel -> not_sel.in
+    connect not_sel.out -> and0.a
+    connect in0 -> and0.b
+    connect sel -> and1.a
+    connect in1 -> and1.b
+    connect and0.out -> or1.a
+    connect and1.out -> or1.b
+    connect or1.out -> out
+  }
+}`,
+      description: '2:1 mux from And, Or, Not gates: out = (sel AND in1) OR (NOT sel AND in0)',
     },
-  }),
+  },
 
   Decoder: defineCombinational({
     name: 'Decoder',
@@ -1259,4 +1516,11 @@ export function isPrimitive(name: string): boolean {
  */
 export function getPrimitiveCircuit(name: string): Circuit | undefined {
   return PRIMITIVES.find((p) => p.name === name);
+}
+
+/**
+ * Get the reference circuit DSL source for a primitive, if it has one.
+ */
+export function getReferenceCircuit(name: string): string | undefined {
+  return PRIMITIVE_DEFINITIONS[name]?.referenceCircuit?.source;
 }

@@ -211,6 +211,9 @@ export class CstToAstVisitor {
     const implBlockNode = getNode(children, 'implBlock');
     const impl = implBlockNode ? this.visitImplBlock(implBlockNode) : undefined;
 
+    const descToken = getToken(children, 'descriptionText');
+    const description = descToken ? parseStringLiteral(descToken.image) : undefined;
+
     return {
       name,
       parameters,
@@ -219,6 +222,7 @@ export class CstToAstVisitor {
       clocks,
       state,
       impl,
+      description,
       location: nodeLocation(ctx),
     };
   }

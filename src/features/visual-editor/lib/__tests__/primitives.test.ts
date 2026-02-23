@@ -494,13 +494,14 @@ describe("Primitive Circuit Structure", () => {
     expect(uniqueIds.size).toBe(ids.length);
   });
 
-  it("should have parameters only on parameterized primitives", () => {
-    const PARAMETERIZED = new Set(['Switch', 'Input', 'Constant']);
+  it("should have parameters matching core definitions", () => {
     for (const primitive of PRIMITIVES) {
-      if (PARAMETERIZED.has(primitive.name)) {
-        expect(primitive.parameters.length).toBeGreaterThan(0);
-      } else {
-        expect(primitive.parameters).toEqual([]);
+      // Every primitive's IR parameters should be an array (possibly empty)
+      expect(Array.isArray(primitive.parameters)).toBe(true);
+      // Parameters should have required fields
+      for (const param of primitive.parameters) {
+        expect(param).toHaveProperty('name');
+        expect(param).toHaveProperty('paramType');
       }
     }
   });

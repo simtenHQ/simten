@@ -9,6 +9,7 @@ import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 import { enableMapSet } from 'immer';
 import type { Circuit } from '../types/circuit';
+import { clearReferenceCircuitCache } from '../utils/reference-circuit-cache';
 
 // Enable Immer's MapSet plugin for Map/Set support
 enableMapSet();
@@ -104,6 +105,7 @@ export const useComponentLibraryStore = create<ComponentLibraryStore>()(
       set((state) => {
         state.library.user.set(circuit.name, circuit);
       });
+      clearReferenceCircuitCache();
     },
 
     removeUser: (name) => {
@@ -172,6 +174,7 @@ export const useComponentLibraryStore = create<ComponentLibraryStore>()(
       set((state) => {
         state.library.user.clear();
       });
+      clearReferenceCircuitCache();
     },
 
     clearAll: () => {
