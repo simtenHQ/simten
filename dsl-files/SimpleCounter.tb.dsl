@@ -40,5 +40,11 @@ testbench CounterTest {
       format: vcd
       filename: "counter_test.vcd"
     }
+
+    // Assertions: verify count values at known cycles
+    assert on clk {
+      at 0: count == 0, "count should be 0 during reset"
+      at 4: count == 3, "count should be 3 after 3 enabled ticks"
+    }
   }
 }
