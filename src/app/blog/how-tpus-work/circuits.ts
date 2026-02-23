@@ -525,61 +525,50 @@ circuit WavefrontController {
   },
 };
 
-/** Full systolic DSL including PE definition + Systolic2x2_Wavefront + TestWavefront */
+/**
+ * Full systolic DSL: PE_Systolic + Systolic2x2 + TestWavefront
+ *
+ * Architecture: weight-stationary with combinational partial-sum flow.
+ * - Cycle 0: load all weights into PEs
+ * - Cycles 1–3: pipelined data flow (activations right, partial sums down)
+ * - Cycle 4: counter reaches 4, done fires
+ *
+ * Total: 4 ticks (1 weight load + 3 data flow = 2N−1 for N=2).
+ */
 export const SYSTOLIC_DSL = `
-circuit ProcessingElement_VerticalWeight {
+circuit PE_Systolic {
   input dataIn: Bus[8]
   input weightIn: Bus[8]
   input partialSumIn: Bus[16]
   input weightValid: Bit
-  input resetAccum: Bit
   clock clk
   output dataOut: Bus[8]
-  output weightOut: Bus[8]
-  output weightValidOut: Bit
-  output result: Bus[16]
+  output partialSumOut: Bus[16]
 
   impl {
     node weightReg: Register
-    node weightPipe: Register
-    node validPipe: DFlipFlop
     node mult: Multiplier
     node adder: Adder(width=16)
-    node accum: Register
     node dataPipe: Register
-    node accum_mux: Mux
     node one: Constant(value=1)
     node zero: Constant(value=0)
-    node zero16: Constant(value=0)
 
+    // Weight register: latches weight when weightValid is high
     connect weightIn -> weightReg.data
     connect weightValid -> weightReg.we
     connect clk -> weightReg.clk
 
-    connect weightIn -> weightPipe.data
-    connect one.out -> weightPipe.we
-    connect clk -> weightPipe.clk
-    connect weightPipe.q -> weightOut
-
-    connect weightValid -> validPipe.d
-    connect clk -> validPipe.clk
-    connect validPipe.q -> weightValidOut
-
+    // Multiply: dataIn * stored weight
     connect dataIn -> mult.a
     connect weightReg.q -> mult.b
-    connect mult.product -> adder.a
-    connect accum.q -> adder.b
+
+    // Add: incoming partial sum + local product (COMBINATIONAL output)
+    connect partialSumIn -> adder.a
+    connect mult.product -> adder.b
     connect zero.out -> adder.carry_in
+    connect adder.sum -> partialSumOut
 
-    connect resetAccum -> accum_mux.sel
-    connect adder.sum -> accum_mux.in0
-    connect zero16.out -> accum_mux.in1
-
-    connect accum_mux.out -> accum.data
-    connect one.out -> accum.we
-    connect clk -> accum.clk
-    connect accum.q -> result
-
+    // Data pipeline: 1-cycle delay for horizontal flow
     connect dataIn -> dataPipe.data
     connect one.out -> dataPipe.we
     connect clk -> dataPipe.clk
@@ -587,7 +576,7 @@ circuit ProcessingElement_VerticalWeight {
   }
 }
 
-circuit Systolic2x2_Wavefront {
+circuit Systolic2x2 {
   input a00: Bus[8]
   input a01: Bus[8]
   input a10: Bus[8]
@@ -596,10 +585,8 @@ circuit Systolic2x2_Wavefront {
   input b01: Bus[8]
   input b10: Bus[8]
   input b11: Bus[8]
-
   input start: Bit
   clock clk
-
   output c00: Bus[16]
   output c01: Bus[16]
   output c10: Bus[16]
@@ -607,302 +594,145 @@ circuit Systolic2x2_Wavefront {
   output done: Bit
 
   impl {
-    node pe00: ProcessingElement_VerticalWeight
-    node pe01: ProcessingElement_VerticalWeight
-    node pe10: ProcessingElement_VerticalWeight
-    node pe11: ProcessingElement_VerticalWeight
-
-    node reg_a00: Register
-    node reg_a01: Register
-    node reg_a10: Register
-    node reg_a11: Register
-    node reg_b00: Register
-    node reg_b01: Register
-    node reg_b10: Register
-    node reg_b11: Register
-
-    node phase: Register
-    node phase_inc: Incrementer
-    node phase_mux: Mux
-
-    node is_phase_0: Comparator
-    node is_phase_1: Comparator
-    node is_phase_2: Comparator
-    node is_phase_3: Comparator
-
-    node running: DFlipFlop
-    node start_or_running: Or
-
-    node k0_enable: Register
-    node k0_enable_inc: Incrementer
-    node k0_enable_mux: Mux
-    node k0_step_0: Comparator
-    node k0_step_1: Comparator
-    node k0_step_2: Comparator
-    node k0_step_3: Comparator
-    node k0_step_4: Comparator
-    node k0_step_5: Comparator
-
-    node k1_enable: Register
-    node k1_enable_inc: Incrementer
-    node k1_enable_mux: Mux
-    node k1_step_0: Comparator
-    node k1_step_1: Comparator
-    node k1_step_2: Comparator
-    node k1_step_3: Comparator
-    node k1_step_4: Comparator
-    node k1_step_5: Comparator
-
-    node advance_from_reset: DFlipFlop
-    node advance_to_k1: DFlipFlop
-    node advance_to_done: DFlipFlop
-    node reset_to_k0: And
-    node k0_to_k1: And
-    node k1_to_done: And
-    node transition_or_1: Or
-    node any_phase_transition: Or
-
-    node a_row0_mux: Mux
-    node a_row1_mux: Mux
-    node b_col0_mux: Mux
-    node b_col1_mux: Mux
-
-    node a_row0_inject: Or
-    node a_row1_inject: Or
-    node a_row0_gate: Mux
-    node a_row1_gate: Mux
-
-    node weightValid: Or
-
-    node done_latch: DFlipFlop
-    node done_hold: Or
-
-    node zero8: Constant(value=0)
-    node zero16: Constant(value=0)
-    node one: Constant(value=1)
-    node zero: Constant(value=0)
-    node const_0: Constant(value=0)
-    node const_1: Constant(value=1)
-    node const_2: Constant(value=2)
-    node const_3: Constant(value=3)
-    node const_4: Constant(value=4)
-    node const_5: Constant(value=5)
-
-    connect a00 -> reg_a00.data
-    connect a01 -> reg_a01.data
-    connect a10 -> reg_a10.data
-    connect a11 -> reg_a11.data
-    connect b00 -> reg_b00.data
-    connect b01 -> reg_b01.data
-    connect b10 -> reg_b10.data
-    connect b11 -> reg_b11.data
-
-    connect start -> reg_a00.we
-    connect start -> reg_a01.we
-    connect start -> reg_a10.we
-    connect start -> reg_a11.we
-    connect start -> reg_b00.we
-    connect start -> reg_b01.we
-    connect start -> reg_b10.we
-    connect start -> reg_b11.we
-
-    connect clk -> reg_a00.clk
-    connect clk -> reg_a01.clk
-    connect clk -> reg_a10.clk
-    connect clk -> reg_a11.clk
-    connect clk -> reg_b00.clk
-    connect clk -> reg_b01.clk
-    connect clk -> reg_b10.clk
-    connect clk -> reg_b11.clk
-
-    connect start -> start_or_running.a
-    connect running.q -> start_or_running.b
-    connect start_or_running.out -> running.d
-    connect clk -> running.clk
-
-    connect phase.q -> phase_inc.in
-
-    connect reset_to_k0.out -> transition_or_1.a
-    connect k0_to_k1.out -> transition_or_1.b
-
-    connect transition_or_1.out -> any_phase_transition.a
-    connect k1_to_done.out -> any_phase_transition.b
-
-    connect any_phase_transition.out -> phase_mux.sel
-    connect phase_inc.out -> phase_mux.in1
-    connect phase.q -> phase_mux.in0
-
-    connect phase_mux.out -> phase.data
-    connect start_or_running.out -> phase.we
-    connect clk -> phase.clk
-
-    connect phase.q -> is_phase_0.a
-    connect const_0.out -> is_phase_0.b
-
-    connect phase.q -> is_phase_1.a
-    connect const_1.out -> is_phase_1.b
-
-    connect phase.q -> is_phase_2.a
-    connect const_2.out -> is_phase_2.b
-
-    connect phase.q -> is_phase_3.a
-    connect const_3.out -> is_phase_3.b
-
-    connect k0_enable.q -> k0_enable_inc.in
-    connect is_phase_1.eq -> k0_enable_mux.sel
-    connect zero.out -> k0_enable_mux.in0
-    connect k0_enable_inc.out -> k0_enable_mux.in1
-
-    connect k0_enable_mux.out -> k0_enable.data
-    connect start_or_running.out -> k0_enable.we
-    connect clk -> k0_enable.clk
-
-    connect k0_enable.q -> k0_step_0.a
-    connect const_0.out -> k0_step_0.b
-
-    connect k0_enable.q -> k0_step_1.a
-    connect const_1.out -> k0_step_1.b
-
-    connect k0_enable.q -> k0_step_2.a
-    connect const_2.out -> k0_step_2.b
-
-    connect k0_enable.q -> k0_step_3.a
-    connect const_3.out -> k0_step_3.b
-
-    connect k0_enable.q -> k0_step_4.a
-    connect const_4.out -> k0_step_4.b
-
-    connect k0_enable.q -> k0_step_5.a
-    connect const_5.out -> k0_step_5.b
-
-    connect k1_enable.q -> k1_enable_inc.in
-    connect is_phase_2.eq -> k1_enable_mux.sel
-    connect zero.out -> k1_enable_mux.in0
-    connect k1_enable_inc.out -> k1_enable_mux.in1
-
-    connect k1_enable_mux.out -> k1_enable.data
-    connect start_or_running.out -> k1_enable.we
-    connect clk -> k1_enable.clk
-
-    connect k1_enable.q -> k1_step_0.a
-    connect const_0.out -> k1_step_0.b
-
-    connect k1_enable.q -> k1_step_1.a
-    connect const_1.out -> k1_step_1.b
-
-    connect k1_enable.q -> k1_step_2.a
-    connect const_2.out -> k1_step_2.b
-
-    connect k1_enable.q -> k1_step_3.a
-    connect const_3.out -> k1_step_3.b
-
-    connect k1_enable.q -> k1_step_4.a
-    connect const_4.out -> k1_step_4.b
-
-    connect k1_enable.q -> k1_step_5.a
-    connect const_5.out -> k1_step_5.b
-
-    connect is_phase_0.eq -> advance_from_reset.d
-    connect clk -> advance_from_reset.clk
-
-    connect advance_from_reset.q -> reset_to_k0.a
-    connect is_phase_0.eq -> reset_to_k0.b
-
-    connect k0_step_5.eq -> advance_to_k1.d
-    connect clk -> advance_to_k1.clk
-
-    connect advance_to_k1.q -> k0_to_k1.a
-    connect is_phase_1.eq -> k0_to_k1.b
-
-    connect k1_step_5.eq -> advance_to_done.d
-    connect clk -> advance_to_done.clk
-
-    connect advance_to_done.q -> k1_to_done.a
-    connect is_phase_2.eq -> k1_to_done.b
-
-    connect k0_step_0.eq -> weightValid.a
-    connect k1_step_0.eq -> weightValid.b
-
-    connect k0_step_2.eq -> a_row0_inject.a
-    connect k1_step_2.eq -> a_row0_inject.b
-
-    connect k0_step_3.eq -> a_row1_inject.a
-    connect k1_step_3.eq -> a_row1_inject.b
-
-    connect is_phase_2.eq -> a_row0_mux.sel
-    connect reg_a00.q -> a_row0_mux.in0
-    connect reg_a01.q -> a_row0_mux.in1
-
-    connect is_phase_2.eq -> a_row1_mux.sel
-    connect reg_a10.q -> a_row1_mux.in0
-    connect reg_a11.q -> a_row1_mux.in1
-
-    connect a_row0_inject.out -> a_row0_gate.sel
-    connect zero8.out -> a_row0_gate.in0
-    connect a_row0_mux.out -> a_row0_gate.in1
-
-    connect a_row1_inject.out -> a_row1_gate.sel
-    connect zero8.out -> a_row1_gate.in0
-    connect a_row1_mux.out -> a_row1_gate.in1
-
-    connect is_phase_2.eq -> b_col0_mux.sel
-    connect reg_b00.q -> b_col0_mux.in0
-    connect reg_b10.q -> b_col0_mux.in1
-
-    connect is_phase_2.eq -> b_col1_mux.sel
-    connect reg_b01.q -> b_col1_mux.in0
-    connect reg_b11.q -> b_col1_mux.in1
-
-    connect b_col0_mux.out -> pe00.weightIn
-    connect pe00.weightOut -> pe10.weightIn
-
-    connect b_col1_mux.out -> pe01.weightIn
-    connect pe01.weightOut -> pe11.weightIn
-
-    connect weightValid.out -> pe00.weightValid
-    connect pe00.weightValidOut -> pe10.weightValid
-
-    connect weightValid.out -> pe01.weightValid
-    connect pe01.weightValidOut -> pe11.weightValid
-
-    connect is_phase_0.eq -> pe00.resetAccum
-    connect is_phase_0.eq -> pe01.resetAccum
-    connect is_phase_0.eq -> pe10.resetAccum
-    connect is_phase_0.eq -> pe11.resetAccum
-
-    connect a_row0_gate.out -> pe00.dataIn
-    connect pe00.dataOut -> pe01.dataIn
-    connect a_row1_gate.out -> pe10.dataIn
-    connect pe10.dataOut -> pe11.dataIn
-
-    connect zero16.out -> pe00.partialSumIn
-    connect zero16.out -> pe01.partialSumIn
-    connect zero16.out -> pe10.partialSumIn
-    connect zero16.out -> pe11.partialSumIn
-
+    // ===== Processing Elements (2x2 grid) =====
+    node pe00: PE_Systolic
+    node pe01: PE_Systolic
+    node pe10: PE_Systolic
+    node pe11: PE_Systolic
     connect clk -> pe00.clk
     connect clk -> pe01.clk
     connect clk -> pe10.clk
     connect clk -> pe11.clk
 
-    connect is_phase_3.eq -> done_hold.a
-    connect done_latch.q -> done_hold.b
-    connect done_hold.out -> done_latch.d
-    connect clk -> done_latch.clk
+    // ===== Constants =====
+    node zero: Constant(value=0)
+    node one: Constant(value=1)
+    node two: Constant(value=2)
+    node three: Constant(value=3)
+    node four: Constant(value=4)
 
-    connect pe00.result -> c00
-    connect pe01.result -> c01
-    connect pe10.result -> c10
-    connect pe11.result -> c11
-    connect done_latch.q -> done
+    // ===== Cycle Counter (0 -> 1 -> 2 -> 3 -> 4, stops at 4) =====
+    node counter: Register(initial=0)
+    node counterInc: Incrementer
+    node counterMux: Mux
+    node notDone: Comparator
+    node shouldAdvance: And
+
+    connect counter.q -> counterInc.in
+    connect counter.q -> notDone.a
+    connect four.out -> notDone.b
+    connect start -> shouldAdvance.a
+    connect notDone.lt -> shouldAdvance.b
+    connect shouldAdvance.out -> counterMux.sel
+    connect counter.q -> counterMux.in0
+    connect counterInc.out -> counterMux.in1
+    connect counterMux.out -> counter.data
+    connect one.out -> counter.we
+    connect clk -> counter.clk
+
+    // ===== Cycle Decoder =====
+    node isCycle0: Comparator
+    node isCycle1: Comparator
+    node isCycle2: Comparator
+    node isCycle3: Comparator
+    connect counter.q -> isCycle0.a
+    connect zero.out -> isCycle0.b
+    connect counter.q -> isCycle1.a
+    connect one.out -> isCycle1.b
+    connect counter.q -> isCycle2.a
+    connect two.out -> isCycle2.b
+    connect counter.q -> isCycle3.a
+    connect three.out -> isCycle3.b
+
+    // ===== Weight Loading (cycle 0 only) =====
+    node loadWeights: And
+    connect isCycle0.eq -> loadWeights.a
+    connect start -> loadWeights.b
+    connect b00 -> pe00.weightIn
+    connect b01 -> pe01.weightIn
+    connect b10 -> pe10.weightIn
+    connect b11 -> pe11.weightIn
+    connect loadWeights.out -> pe00.weightValid
+    connect loadWeights.out -> pe01.weightValid
+    connect loadWeights.out -> pe10.weightValid
+    connect loadWeights.out -> pe11.weightValid
+
+    // ===== Data Injection =====
+    // Row 0: cycle 1 -> A[0][0], cycle 2 -> A[1][0], else 0
+    node muxR0a: Mux
+    node muxR0b: Mux
+    connect isCycle1.eq -> muxR0a.sel
+    connect zero.out -> muxR0a.in0
+    connect a00 -> muxR0a.in1
+    connect isCycle2.eq -> muxR0b.sel
+    connect muxR0a.out -> muxR0b.in0
+    connect a10 -> muxR0b.in1
+
+    // Row 1: cycle 1 -> A[0][1], cycle 2 -> A[1][1], else 0
+    node muxR1a: Mux
+    node muxR1b: Mux
+    connect isCycle1.eq -> muxR1a.sel
+    connect zero.out -> muxR1a.in0
+    connect a01 -> muxR1a.in1
+    connect isCycle2.eq -> muxR1b.sel
+    connect muxR1a.out -> muxR1b.in0
+    connect a11 -> muxR1b.in1
+
+    // ===== Horizontal Data Flow (left -> right) =====
+    connect muxR0b.out -> pe00.dataIn
+    connect pe00.dataOut -> pe01.dataIn
+    connect muxR1b.out -> pe10.dataIn
+    connect pe10.dataOut -> pe11.dataIn
+
+    // ===== Vertical Partial-Sum Flow (top -> bottom) =====
+    connect zero.out -> pe00.partialSumIn
+    connect zero.out -> pe01.partialSumIn
+    connect pe00.partialSumOut -> pe10.partialSumIn
+    connect pe01.partialSumOut -> pe11.partialSumIn
+
+    // ===== Result Registers =====
+    // C[0][0] emerges at PE(1,0) during cycle 1
+    node result_c00: Register
+    connect pe10.partialSumOut -> result_c00.data
+    connect isCycle1.eq -> result_c00.we
+    connect clk -> result_c00.clk
+
+    // C[1][0] emerges at PE(1,0) during cycle 2
+    node result_c10: Register
+    connect pe10.partialSumOut -> result_c10.data
+    connect isCycle2.eq -> result_c10.we
+    connect clk -> result_c10.clk
+
+    // C[0][1] emerges at PE(1,1) during cycle 2
+    node result_c01: Register
+    connect pe11.partialSumOut -> result_c01.data
+    connect isCycle2.eq -> result_c01.we
+    connect clk -> result_c01.clk
+
+    // C[1][1] emerges at PE(1,1) during cycle 3
+    node result_c11: Register
+    connect pe11.partialSumOut -> result_c11.data
+    connect isCycle3.eq -> result_c11.we
+    connect clk -> result_c11.clk
+
+    // ===== Outputs =====
+    connect result_c00.q -> c00
+    connect result_c01.q -> c01
+    connect result_c10.q -> c10
+    connect result_c11.q -> c11
+
+    // Done = counter reached 4
+    node isDone: Comparator
+    connect counter.q -> isDone.a
+    connect four.out -> isDone.b
+    connect isDone.eq -> done
   }
 }
 
 circuit TestWavefront {
   clock clk
-
   impl {
-    node sys: Systolic2x2_Wavefront
+    node sys: Systolic2x2
 
     node a00: Input(value=1)
     node a01: Input(value=2)
