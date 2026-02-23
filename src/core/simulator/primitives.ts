@@ -232,8 +232,9 @@ export const PRIMITIVE_DEFINITIONS: Record<string, CorePrimitiveDefinition> = {
     inputs: [],
     outputs: [{ name: 'out', portType: bitType() }],
     parameters: [{ name: 'value', paramType: 'int', defaultValue: 0 }],
-    evaluate: (_inputs) => {
-      return new Map([['out', false]]);
+    evaluate: (inputs) => {
+      const value = inputs.get('__value') as boolean | undefined;
+      return new Map([['out', Boolean(value ?? false)]]);
     },
   }),
 
@@ -262,8 +263,9 @@ export const PRIMITIVE_DEFINITIONS: Record<string, CorePrimitiveDefinition> = {
     description: 'Push button input (momentary, user-controlled)',
     inputs: [],
     outputs: [{ name: 'out', portType: bitType() }],
-    evaluate: (_inputs) => {
-      return new Map([['out', false]]);
+    evaluate: (inputs) => {
+      const value = inputs.get('__value') as boolean | undefined;
+      return new Map([['out', Boolean(value ?? false)]]);
     },
   }),
 
