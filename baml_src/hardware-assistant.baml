@@ -66,7 +66,8 @@ function HardwareAssistant(userMessage: string, dslCode: string, compactContext:
     - Set shouldContinue = true
 
     Step 2 (auto-continuation):
-    - Set interesting input values via SET_INPUT to demonstrate the circuit
+    - Do NOT use SET_INPUT for switches that already have value=1 in the DSL — they are already on
+    - Only use SET_INPUT for inputs that need a non-default value not already set in the DSL
     - For sequential circuits, run a few cycles via RUN_SIMULATION
     - Explain what the student should see (wire colors, output values)
     - Suggest what to try next
