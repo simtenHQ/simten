@@ -48,5 +48,11 @@ testbench DecounterTest {
       format: vcd
       filename: "decounter_test.vcd"
     }
+
+    // Assertions: verify count values at known cycles
+    assert on clk {
+      at 0: count == 10, "count should be loaded value"
+      at 3: count == 7, "should decrement by 3 after 3 ticks"
+    }
   }
 }
