@@ -62,6 +62,7 @@ function HardwareAssistant(userMessage: string, dslCode: string, compactContext:
     Step 1 (first response):
     - Acknowledge what they want
     - Generate the complete circuit via SHOW_DIFF (set originalCode to the full current dslCode, suggestedCode to the new circuit)
+    - For enable/write-enable switches, default them ON in the DSL: `node enable: Switch(value=1)` — this makes the circuit work immediately without needing a separate SET_INPUT step
     - Set shouldContinue = true
 
     Step 2 (auto-continuation):

@@ -422,7 +422,7 @@ export class SimulationController {
 
   /**
    * Set input value (for Input/Switch/Button nodes)
-   * Updates both the flat circuit and the simulator.
+   * Updates the IR circuit, flat circuit, and simulator.
    */
   setInput(nodeId: string, value: number | boolean): void {
     if (!this.flatCircuit || !this.simulator) return;
@@ -435,6 +435,16 @@ export class SimulationController {
     if (flatNode) {
       // Update flat circuit (for snapshot/restore consistency)
       flatNode.arguments = { ...flatNode.arguments, value };
+
+      // Update IR circuit too (keeps syncEnvironmentalValues consistent on next step)
+      if (this.circuit) {
+        const irNode = this.circuit.nodes.find(
+          (n) => n.id === nodeId || n.id.endsWith('.' + nodeId)
+        );
+        if (irNode) {
+          irNode.arguments = { ...irNode.arguments, value };
+        }
+      }
 
       // Update simulator
       this.simulator.setInput(flatNode.id, value);
