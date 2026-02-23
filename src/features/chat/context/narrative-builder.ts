@@ -246,8 +246,8 @@ function formatComponentSignature(component: ComponentInterface): string {
   const outputs = component.outputs.map((p) => `${p.name}: ${p.type}`).join(', ');
 
   let sig = `**${component.name}**`;
-  sig += ` (${inputs || 'none'})`;
-  sig += ` -> (${outputs || 'none'})`;
+  sig += ` inputs(${inputs || 'none'})`;
+  sig += ` -> outputs(${outputs || 'none'})`;
 
   if (component.clocks.length > 0) {
     sig += ` [clk: ${component.clocks.map((c) => c.name).join(', ')}]`;
@@ -255,13 +255,18 @@ function formatComponentSignature(component: ComponentInterface): string {
 
   if (component.parameters && component.parameters.length > 0) {
     const params = component.parameters
-      .map((p) => `${p.name}: ${p.type}${p.defaultValue != null ? ` = ${p.defaultValue}` : ''}`)
+      .map((p) => `${p.name}=${p.defaultValue ?? '?'}`)
       .join(', ');
-    sig += ` {${params}}`;
+    sig += ` — params: \`${component.name}(${params})\``;
   }
 
   if (component.description) {
     sig += ` — ${component.description}`;
+  }
+
+  // Clarify: input ports must be driven by connect statements, not params
+  if (component.inputs.length > 0 && (!component.parameters || component.parameters.length === 0)) {
+    sig += ` (all ports wired via connect)`;
   }
 
   return sig;

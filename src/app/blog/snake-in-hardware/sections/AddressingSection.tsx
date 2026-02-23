@@ -15,16 +15,16 @@ export function AddressingSection() {
           64 bytes. We need to convert{" "}
           <strong className="text-white">(X,&nbsp;Y)</strong> coordinates into a
           linear address. The formula is simple:{" "}
-          <code className="text-blue-300">address = Y &times; 8 + X</code>.
+          <code className="text-blue-300">address = (Y &laquo; 3) + X</code>.
         </p>
         <p className="text-gray-300 leading-relaxed">
-          But we don&rsquo;t have a multiplier &mdash; just adders. No problem:
-          multiplying by 8 is the same as doubling three times. We chain three{" "}
-          <strong className="text-white">Adder</strong> nodes:{" "}
-          <code className="text-blue-300">Y+Y=2Y</code>, then{" "}
-          <code className="text-blue-300">2Y+2Y=4Y</code>, then{" "}
-          <code className="text-blue-300">4Y+4Y=8Y</code>. Finally, one more
-          adder adds X to get the pixel address.
+          Multiplying by 8 is the same as shifting left by 3 bits, and in real
+          hardware a left shift by a constant costs{" "}
+          <strong className="text-white">zero gates</strong> &mdash; it&rsquo;s
+          just wiring. Each bit of Y connects to a position three places higher,
+          with the low three bits tied to zero. The only actual logic gate is the
+          final{" "}
+          <strong className="text-white">Adder</strong> that adds X.
         </p>
         <p className="text-gray-300 leading-relaxed">
           Change the X and Y inputs below to see how the address changes. For
@@ -40,7 +40,7 @@ export function AddressingSection() {
           height={350}
           showControls
           title="Coordinate to Pixel Address"
-          description="Y*8+X computed with chained adders — change X and Y to see the address"
+          description="(Y << 3) + X — the shift is just wiring, only the final add is a real gate"
         />
       </div>
     </section>

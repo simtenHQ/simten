@@ -93,21 +93,21 @@ describe('Narrative Component Catalog', () => {
       }
     `;
 
-    it('Switch shows value parameter and description', () => {
+    it('Switch shows params syntax', () => {
       const narrative = buildNarrative(DEFAULT_CODE);
-      expect(narrative).toMatch(/Switch.*value.*int.*=.*0/);
+      expect(narrative).toMatch(/params:.*Switch\(value=0\)/);
       expect(narrative).toMatch(/Switch.*toggle/i);
     });
 
-    it('Constant shows value parameter and warns about default', () => {
+    it('Constant shows params syntax and warns about default', () => {
       const narrative = buildNarrative(DEFAULT_CODE);
-      expect(narrative).toMatch(/Constant.*value.*int.*=.*0/);
+      expect(narrative).toMatch(/params:.*Constant\(value=0\)/);
       expect(narrative).toMatch(/Constant.*defaults to 0/i);
     });
 
-    it('Input shows value parameter', () => {
+    it('Input shows params syntax', () => {
       const narrative = buildNarrative(DEFAULT_CODE);
-      expect(narrative).toMatch(/Input.*value.*int.*=.*0/);
+      expect(narrative).toMatch(/params:.*Input\(value=0\)/);
     });
   });
 

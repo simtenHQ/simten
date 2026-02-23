@@ -59,6 +59,12 @@ export interface UseTutorFlowResult {
 export function useTutorFlow(options: UseTutorFlowOptions): UseTutorFlowResult {
   const { executionContext, getNarrativeContext, getCurrentCode, getConversationHistory } = options;
 
+  // Use a ref for executionContext to avoid stale closures in async flows.
+  // Without this, when SHOW_DIFF auto-applies and triggers recompile, the running
+  // async send() still captures the OLD executionContext (with the old circuit).
+  const executionContextRef = useRef(executionContext);
+  executionContextRef.current = executionContext;
+
   const [isContinuing, setIsContinuing] = useState(false);
   const [continuationCount, setContinuationCount] = useState(0);
 
@@ -104,14 +110,15 @@ export function useTutorFlow(options: UseTutorFlowOptions): UseTutorFlowResult {
 
       for (const action of actions) {
         if (SAFE_ACTIONS.has(action.type)) {
-          await executeAction(action, { ...executionContext, sourceCodeHash: undefined });
+          // Always read latest context from ref (avoids stale closure after SHOW_DIFF recompile)
+          await executeAction(action, { ...executionContextRef.current, sourceCodeHash: undefined });
           // Small delay to let React propagate state changes
           await new Promise((r) => setTimeout(r, 150));
         } else if (action.type === 'SHOW_DIFF' || action.type === 'GENERATE_HARNESS') {
           if (action.type === 'SHOW_DIFF' && isFreshEditor(getCurrentCode())) {
             // Auto-apply: skip diff review for fresh/default editor
             const showDiff = action as { suggestedCode: string };
-            executionContext.setCode(showDiff.suggestedCode);
+            executionContextRef.current.setCode(showDiff.suggestedCode);
             await new Promise((r) => setTimeout(r, 300)); // Let compile propagate
           } else {
             hasDiff = true;
@@ -121,7 +128,7 @@ export function useTutorFlow(options: UseTutorFlowOptions): UseTutorFlowResult {
 
       return hasDiff;
     },
-    [executionContext, getCurrentCode]
+    [getCurrentCode]
   );
 
   /**

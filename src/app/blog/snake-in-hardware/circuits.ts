@@ -82,26 +82,19 @@ circuit SimpleFramebuffer {
   coordToPixel: {
     name: "Coordinate to Pixel Address",
     description:
-      "Converts (X, Y) coordinates to a linear pixel address using Y*8+X, implemented with chained adders.",
+      "Converts (X, Y) coordinates to a linear pixel address using (Y << 3) + X. A left shift by 3 is just wiring in real hardware — zero gates.",
     displayDsl: `circuit CoordToPixel {
   impl {
     node x: Input(value=3)
     node y: Input(value=2)
+    node three: Input(value=3)
 
-    node y2: Adder
-    connect y.out -> y2.a
-    connect y.out -> y2.b
-
-    node y4: Adder
-    connect y2.sum -> y4.a
-    connect y2.sum -> y4.b
-
-    node y8: Adder
-    connect y4.sum -> y8.a
-    connect y4.sum -> y8.b
+    node y8: LeftShifter
+    connect y.out -> y8.value
+    connect three.out -> y8.shift
 
     node addr: Adder
-    connect y8.sum -> addr.a
+    connect y8.result -> addr.a
     connect x.out -> addr.b
 
     node result: HexDisplay
@@ -113,21 +106,14 @@ circuit CoordToPixel {
   impl {
     node x: Input(value=3)
     node y: Input(value=2)
+    node three: Input(value=3)
 
-    node y2: Adder
-    connect y.out -> y2.a
-    connect y.out -> y2.b
-
-    node y4: Adder
-    connect y2.sum -> y4.a
-    connect y2.sum -> y4.b
-
-    node y8: Adder
-    connect y4.sum -> y8.a
-    connect y4.sum -> y8.b
+    node y8: LeftShifter
+    connect y.out -> y8.value
+    connect three.out -> y8.shift
 
     node addr: Adder
-    connect y8.sum -> addr.a
+    connect y8.result -> addr.a
     connect x.out -> addr.b
 
     node result: HexDisplay
@@ -323,19 +309,14 @@ circuit DirectionDecoder {
     connect enable.out -> headX.we
     connect enable.out -> headY.we
 
-    // Compute pixel address: Y*8+X
-    node y2: Adder
-    node y4: Adder
-    node y8: Adder
-    connect wrapY.out -> y2.a
-    connect wrapY.out -> y2.b
-    connect y2.sum -> y4.a
-    connect y2.sum -> y4.b
-    connect y4.sum -> y8.a
-    connect y4.sum -> y8.b
+    // Compute pixel address: (Y << 3) + X
+    node shiftAmt: Constant(value=3)
+    node y8: LeftShifter
+    connect wrapY.out -> y8.value
+    connect shiftAmt.out -> y8.shift
 
     node pixelAddr: Adder
-    connect y8.sum -> pixelAddr.a
+    connect y8.result -> pixelAddr.a
     connect wrapX.out -> pixelAddr.b
 
     connect pixelAddr.sum -> ram.addrA
@@ -424,18 +405,13 @@ circuit PixelMover {
     connect enable.out -> headX.we
     connect enable.out -> headY.we
 
-    node y2: Adder
-    node y4: Adder
-    node y8: Adder
-    connect wrapY.out -> y2.a
-    connect wrapY.out -> y2.b
-    connect y2.sum -> y4.a
-    connect y2.sum -> y4.b
-    connect y4.sum -> y8.a
-    connect y4.sum -> y8.b
+    node shiftAmt: Constant(value=3)
+    node y8: LeftShifter
+    connect wrapY.out -> y8.value
+    connect shiftAmt.out -> y8.shift
 
     node pixelAddr: Adder
-    connect y8.sum -> pixelAddr.a
+    connect y8.result -> pixelAddr.a
     connect wrapX.out -> pixelAddr.b
 
     connect pixelAddr.sum -> ram.addrA
@@ -789,34 +765,23 @@ circuit SnakeAdvanced {
     connect nextHeadXCalc.sum -> nextHeadX.in
     connect nextHeadYCalc.sum -> nextHeadY.in
 
-    // Convert (nextHeadX, nextHeadY) to pixel address: Y * 8 + X
-    node nextHeadY2: Adder
-    node nextHeadY4: Adder
-    node nextHeadY8: Adder
-    connect nextHeadY.out -> nextHeadY2.a
-    connect nextHeadY.out -> nextHeadY2.b
-    connect nextHeadY2.sum -> nextHeadY4.a
-    connect nextHeadY2.sum -> nextHeadY4.b
-    connect nextHeadY4.sum -> nextHeadY8.a
-    connect nextHeadY4.sum -> nextHeadY8.b
+    // Convert (nextHeadX, nextHeadY) to pixel address: (Y << 3) + X
+    node shiftAmt: Constant(value=3)
+    node nextHeadY8: LeftShifter
+    connect nextHeadY.out -> nextHeadY8.value
+    connect shiftAmt.out -> nextHeadY8.shift
 
     node nextPixelAddr: Adder
-    connect nextHeadY8.sum -> nextPixelAddr.a
+    connect nextHeadY8.result -> nextPixelAddr.a
     connect nextHeadX.out -> nextPixelAddr.b
 
-    // Calculate food pixel address: foodY * 8 + foodX
-    node foodY2: Adder
-    node foodY4: Adder
-    node foodY8: Adder
-    connect foodY.q -> foodY2.a
-    connect foodY.q -> foodY2.b
-    connect foodY2.sum -> foodY4.a
-    connect foodY2.sum -> foodY4.b
-    connect foodY4.sum -> foodY8.a
-    connect foodY4.sum -> foodY8.b
+    // Calculate food pixel address: (foodY << 3) + foodX
+    node foodY8: LeftShifter
+    connect foodY.q -> foodY8.value
+    connect shiftAmt.out -> foodY8.shift
 
     node foodPixelAddr: Adder
-    connect foodY8.sum -> foodPixelAddr.a
+    connect foodY8.result -> foodPixelAddr.a
     connect foodX.q -> foodPixelAddr.b
 
     // Collision detection: nextHead position == food position

@@ -61,7 +61,6 @@ export function VisualEditor() {
   );
   const registerUser = useComponentLibraryStore((state) => state.registerUser);
   const circuit = useCircuitStore((state) => state.circuit);
-  const updateNode = useCircuitStore((state) => state.updateNode);
   const resolveComponent = useComponentLibraryStore(
     (state) => state.resolveComponent,
   );
@@ -244,22 +243,24 @@ export function VisualEditor() {
             setTimeout(() => dslEditorRef.current?.compile(), 100);
           }}
           setInput={(nodeName, value) => {
-            // Update circuit-store (source of truth for input configuration)
-            // The simulation controller will pick this up via syncEnvironmentalValues
-            if (circuit) {
+            // Read circuit from store at call time to avoid stale closures.
+            // This callback may be invoked from an async continuation where the
+            // captured `circuit` variable still references the pre-SHOW_DIFF circuit.
+            const currentCircuit = useCircuitStore.getState().circuit;
+            if (currentCircuit) {
               // Node IDs are prefixed: "CircuitName_label_timestamp_uniqueId"
               // Match by the DSL label (the part after circuit name prefix)
-              const node = circuit.nodes.find(n =>
+              const node = currentCircuit.nodes.find(n =>
                 n.id === nodeName ||
                 n.id.includes(`_${nodeName}_`) ||
                 n.id.endsWith(`_${nodeName}`)
               );
               if (node) {
-                updateNode(node.id, { arguments: { ...node.arguments, value } });
+                useCircuitStore.getState().updateNode(node.id, { arguments: { ...node.arguments, value } });
                 // Also update simulator directly for immediate effect (using actual node ID)
                 simulationController.setInput(node.id, value);
               } else {
-                console.warn('[setInput] Node not found:', nodeName, 'in circuit with', circuit.nodes.length, 'nodes');
+                console.warn('[setInput] Node not found:', nodeName, 'in circuit with', currentCircuit.nodes.length, 'nodes');
               }
             }
           }}
