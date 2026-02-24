@@ -8,6 +8,10 @@ export default defineConfig({
     include: ['**/*.{test,spec}.{ts,tsx}'],
     exclude: ['node_modules', '.next', 'dist'],
     setupFiles: ['./vitest.setup.ts'],
+    css: false,
+  },
+  css: {
+    postcss: {},
   },
   resolve: {
     alias: {

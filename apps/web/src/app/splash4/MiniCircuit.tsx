@@ -15,22 +15,24 @@ import {
 import "@xyflow/react/dist/style.css";
 
 import { compileDSL, type ComponentLibrary, type Circuit } from "@/features/dsl";
-import { elaborate, type FlatCircuit } from "@/features/visual-editor/lib/elaboration";
-import type { FlatPortValueMap, FlatSequentialState } from "@/features/visual-editor/lib/flat-simulator";
-import { useComponentLibraryStore } from "@/features/visual-editor/stores/component-library-store";
-import { getPrimitives } from "@/features/visual-editor/lib/primitive-registry";
-import { projectCircuitToReactFlow } from "@/features/visual-editor/utils/projection";
-import type { MetadataState } from "@/features/visual-editor/types";
+import {
+  elaborate,
+  type FlatCircuit,
+  type FlatPortValueMap,
+  type FlatSequentialState,
+  useComponentLibraryStore,
+  getPrimitives,
+  projectCircuitToReactFlow,
+  type MetadataState,
+  InputNode,
+  OutputNode,
+  LogicGateNode,
+} from "@turing-incomplete/ui/editor";
 import {
   createSimulator,
   type SimulatorEngine,
   type ComponentLibrary as CoreComponentLibrary,
-} from "@/core/simulator";
-
-// Import node components
-import { InputNode } from "@/features/visual-editor/components/nodes/InputNode";
-import { OutputNode } from "@/features/visual-editor/components/nodes/OutputNode";
-import { LogicGateNode } from "@/features/visual-editor/components/nodes/LogicGateNode";
+} from "@turing-incomplete/ui/simulator";
 
 const nodeTypes: NodeTypes = {
   inputNode: InputNode,

@@ -2,18 +2,20 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { compileDSL, type ComponentLibrary } from "@/features/dsl";
-import { elaborate, type FlatCircuit } from "@/features/visual-editor/lib/elaboration";
-import type { FlatPortValueMap, FlatSequentialState } from "@/features/visual-editor/lib/flat-simulator";
-import { useComponentLibraryStore } from "@/features/visual-editor/stores/component-library-store";
-import { getPrimitives } from "@/features/visual-editor/lib/primitive-registry";
+import {
+  elaborate,
+  type FlatCircuit,
+  type FlatPortValueMap,
+  type FlatSequentialState,
+  useComponentLibraryStore,
+  getPrimitives,
+} from "@turing-incomplete/ui/editor";
 import type { Circuit } from "@/features/dsl";
-
-// Fast simulator from core
 import {
   createSimulator,
   type SimulatorEngine,
   type ComponentLibrary as CoreComponentLibrary,
-} from "@/core/simulator";
+} from "@turing-incomplete/ui/simulator";
 
 const TOP_LEVEL_NODE = "__top__";
 

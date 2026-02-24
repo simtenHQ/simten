@@ -3,31 +3,35 @@
  *
  * Main component that integrates all parts of the visual editor.
  * Combines ComponentPalette, Canvas, SimulationControls, and DSL Editor.
+ *
+ * This is a thin shell — all editor components come from @turing-incomplete/ui.
  */
 
 "use client";
 
 import React, { useCallback, useState, useEffect, useRef } from "react";
 import { ReactFlowProvider } from "@xyflow/react";
-import { Canvas } from "./Canvas";
-import { ComponentPalette } from "./ComponentPalette";
-import { SimulationControls } from "./SimulationControls";
-import { RightSidebar } from "./RightSidebar";
-import { TestCaseEditor } from "./TestCaseEditor";
-import { ClockControls } from "./ClockControls";
+import {
+  Canvas,
+  ComponentPalette,
+  SimulationControls,
+  RightSidebar,
+  TestCaseEditor,
+  ClockControls,
+  CompositeInspectorDialog,
+  useCircuitStore,
+  usePrimitivesInit,
+  useDSLPreviewStore,
+  useComponentLibraryStore,
+  useSimulationController,
+} from "@turing-incomplete/ui/editor";
+import { Sheet, SheetContent, SheetTitle } from "@turing-incomplete/ui/primitives";
+import { Button } from "@turing-incomplete/ui/primitives";
+import { TooltipProvider } from "@turing-incomplete/ui/primitives";
 import { DSLEditor, type DSLEditorRef } from "@/features/dsl/ui/DSLEditor";
-import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { Menu, TestTube, Bot } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { useCircuitStore } from "../stores/circuit-store";
-import { usePrimitivesInit } from "../hooks/usePrimitivesInit";
-import { useDSLPreviewStore } from "../stores/dsl-preview-store";
-import { useComponentLibraryStore } from "../stores/component-library-store";
-import { useSimulationController } from "../simulation/use-simulation-controller";
 import { ChatPanel, useChatStore, useNarrativeContext } from "@/features/chat";
-import { CompositeInspectorDialog } from "./CompositeInspectorDialog";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import type { Circuit } from "../types/circuit";
+import type { Circuit } from "@turing-incomplete/ui/editor";
 
 // Helper to check if circuit has sequential components
 function hasSequentialComponents(
@@ -132,6 +136,31 @@ export function VisualEditor() {
     [setCompiledCircuits, registerUser],
   );
 
+  // Empty state with chat CTA
+  const renderEmptyState = useCallback(() => (
+    <div className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none">
+      <div className="pointer-events-auto flex flex-col items-center gap-4 rounded-xl border border-gray-200 bg-white p-8 shadow-lg max-w-sm text-center">
+        <Bot className="h-12 w-12 text-blue-500" />
+        <div>
+          <h2 className="text-lg font-semibold text-gray-900">Build circuits with AI</h2>
+          <p className="mt-1 text-sm text-gray-500">
+            Describe what you want and watch it appear on canvas
+          </p>
+        </div>
+        <Button onClick={() => setChatOpen(true)} className="gap-2">
+          <Bot className="h-4 w-4" />
+          Start building with AI
+        </Button>
+        <p className="text-xs text-gray-400">
+          or press{' '}
+          <kbd className="rounded border border-gray-300 bg-gray-100 px-1.5 py-0.5 font-mono text-[10px]">
+            ⌘K
+          </kbd>
+        </p>
+      </div>
+    </div>
+  ), [setChatOpen]);
+
   return (
     <ReactFlowProvider>
       <TooltipProvider delayDuration={300}>
@@ -196,7 +225,7 @@ export function VisualEditor() {
           {/* Right: Canvas (60%) - Full Height */}
           <div className="flex flex-1 flex-col">
             <div className="flex-1">
-              <Canvas />
+              <Canvas renderEmptyState={renderEmptyState} />
             </div>
           </div>
         </div>
@@ -244,12 +273,8 @@ export function VisualEditor() {
           }}
           setInput={(nodeName, value) => {
             // Read circuit from store at call time to avoid stale closures.
-            // This callback may be invoked from an async continuation where the
-            // captured `circuit` variable still references the pre-SHOW_DIFF circuit.
             const currentCircuit = useCircuitStore.getState().circuit;
             if (currentCircuit) {
-              // Node IDs are prefixed: "CircuitName_label_timestamp_uniqueId"
-              // Match by the DSL label (the part after circuit name prefix)
               const node = currentCircuit.nodes.find(n =>
                 n.id === nodeName ||
                 n.id.includes(`_${nodeName}_`) ||
@@ -257,7 +282,6 @@ export function VisualEditor() {
               );
               if (node) {
                 useCircuitStore.getState().updateNode(node.id, { arguments: { ...node.arguments, value } });
-                // Also update simulator directly for immediate effect (using actual node ID)
                 simulationController.setInput(node.id, value);
               } else {
                 console.warn('[setInput] Node not found:', nodeName, 'in circuit with', currentCircuit.nodes.length, 'nodes');
@@ -265,13 +289,11 @@ export function VisualEditor() {
             }
           }}
           runSimulation={async (cycles) => {
-            // Run simulation for specified cycles
             for (let i = 0; i < cycles; i++) {
               simulationController.step();
             }
           }}
           insertNode={(componentRef, label) => {
-            // TODO: Implement node insertion via circuit store
             console.log("[Chat] Insert node:", componentRef, label);
           }}
           narrativeContext={narrativeContext.narrative}

@@ -5,10 +5,13 @@
  */
 
 import { useMemo } from 'react';
-import { useAnalysisStore } from '@/features/visual-editor/stores/analysis-store';
-import { useComponentLibraryStore } from '@/features/visual-editor/stores/component-library-store';
-import { usePortValuesStore } from '@/features/visual-editor/stores/port-values-store';
-import { useCircuitStore } from '@/features/visual-editor/stores/circuit-store';
+import {
+  useAnalysisStore,
+  useComponentLibraryStore,
+  usePortValuesStore,
+  useCircuitStore,
+} from '@turing-incomplete/ui/editor';
+import type { Circuit } from '@turing-incomplete/ui/editor';
 import {
   buildEnvelope,
   type HardwareLLMEnvelope,
@@ -20,7 +23,6 @@ import {
   enforceTokenBudget,
 } from '../context';
 import { hashSourceCode } from '../actions/action-normalizer';
-import type { Circuit } from '@/features/visual-editor/types/circuit';
 
 // ============================================================================
 // Hook Interface
