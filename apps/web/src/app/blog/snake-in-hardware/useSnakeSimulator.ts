@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { useCircuitSimulator } from "@/components/circuit-embed";
+import { useCircuitSimulator } from "@turing-incomplete/ui/embed";
 import { SNAKE_ADVANCED_DSL } from "./circuits";
 
 export function useSnakeSimulator() {

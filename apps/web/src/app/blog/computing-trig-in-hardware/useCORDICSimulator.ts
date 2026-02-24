@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useCircuitSimulator } from "@/components/circuit-embed";
+import { useCircuitSimulator } from "@turing-incomplete/ui/embed";
 import { CORDIC_DSL } from "./circuits";
 
 export function useCORDICSimulator() {

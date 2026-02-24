@@ -18,12 +18,11 @@ import {
   validateCircuit,
   analyzeCircuit,
 } from "../index";
-import { elaborate } from "@/core/simulator/elaboration";
-import { useComponentLibraryStore } from "@/features/visual-editor/stores/component-library-store";
-import { useAnalysisStore } from "@/features/visual-editor/stores/analysis-store";
+import { elaborate } from "@turing-incomplete/ui/simulator";
+import { useComponentLibraryStore, useAnalysisStore } from "@turing-incomplete/ui/editor";
+import type { Circuit } from "@turing-incomplete/ui/editor";
 import { CompileButton } from "./CompileButton";
 import { ErrorDisplay, CompilationError } from "./ErrorDisplay";
-import type { Circuit } from "@/features/visual-editor/types/circuit";
 
 const DEFAULT_CODE = `// Example: NOT Gate (Inverter)
 circuit Inverter {

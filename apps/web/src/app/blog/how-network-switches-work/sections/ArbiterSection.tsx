@@ -1,6 +1,6 @@
 "use client";
 
-import { CircuitEmbed } from "@/components/circuit-embed";
+import { CircuitEmbed } from "@turing-incomplete/ui/embed";
 import { SWITCH_CIRCUITS } from "../circuits";
 
 export function ArbiterSection() {

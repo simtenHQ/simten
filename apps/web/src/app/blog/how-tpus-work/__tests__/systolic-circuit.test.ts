@@ -12,10 +12,8 @@ import { parseDSL, compileToIR, type ComponentLibrary as DSLComponentLibrary } f
 import {
   createSimulatorFromCircuit,
   type ComponentLibrary,
-} from "@/core/simulator";
-import { useComponentLibraryStore } from "@/features/visual-editor/stores/component-library-store";
-import { getPrimitives } from "@/features/visual-editor/lib/primitive-registry";
-import type { Circuit } from "@/features/visual-editor/types/circuit";
+} from "@turing-incomplete/ui/simulator";
+import { useComponentLibraryStore, getPrimitives, type Circuit } from "@turing-incomplete/ui/editor";
 import { SYSTOLIC_DSL } from "../circuits";
 
 class ComponentLibraryAdapter implements DSLComponentLibrary {
