@@ -94,9 +94,6 @@ export {
   parseDSLOrThrow,
   compileDSL,
   compileToIR,
-  preprocessDSL,
-  createMapFileResolver,
-  createNodeFileResolver,
   validateCircuit,
   isValid,
   canSimulate,
@@ -106,3 +103,10 @@ export {
   generateHarness,
   evaluateAssertions,
 } from './dsl/index.js';
+
+// Preprocessor (Node.js only)
+export {
+  preprocessDSL,
+  createMapFileResolver,
+  createNodeFileResolver,
+} from './dsl/preprocessor-entry.js';

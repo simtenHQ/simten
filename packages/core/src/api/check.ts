@@ -9,8 +9,8 @@ import {
   validateCircuit,
   createDefaultValidationContext,
   formatForLLM,
-} from '@turing-incomplete/core/dsl';
-import type { ComponentLibrary } from '@turing-incomplete/core';
+} from '../dsl/index.js';
+import type { ComponentLibrary } from '../types/circuit.js';
 
 export interface CheckResult {
   valid: boolean;

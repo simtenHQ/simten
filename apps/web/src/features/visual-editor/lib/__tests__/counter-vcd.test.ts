@@ -1,9 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { compileTestbenchToIR } from '@/features/dsl/compiler/testbench-compiler';
+import { compileTestbenchToIR, compileCircuitToIR, parseDSLOrThrow } from '@/features/dsl';
 import { runTestbench } from '../testing/testbench-runner';
 import { useComponentLibraryStore } from '../../stores/component-library-store';
-import { compileCircuitToIR } from '@/features/dsl/compiler';
-import { parseDSLOrThrow } from '@/features/dsl/parser';
 import { PRIMITIVES } from '../primitive-registry';
 import { generateVCD } from '../visualization/vcd-generator';
 import * as fs from 'fs';

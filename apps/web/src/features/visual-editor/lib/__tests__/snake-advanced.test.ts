@@ -6,8 +6,7 @@
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';
-import { parseDSL } from '@/features/dsl/parser';
-import { compileToIR, type ComponentLibrary as DSLComponentLibrary } from '@/features/dsl/compiler/ir-generator';
+import { parseDSL, compileToIR, type ComponentLibrary as DSLComponentLibrary } from '@/features/dsl';
 import { createSimulatorFromCircuit, type ComponentLibrary, type FlatSequentialState } from '@/core/simulator';
 import { useComponentLibraryStore } from '../../stores/component-library-store';
 import { getPrimitives } from '../primitive-registry';

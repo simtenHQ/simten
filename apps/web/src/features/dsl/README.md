@@ -73,7 +73,7 @@ src/features/dsl/
 ├── compiler/
 │   ├── ir-generator.ts     # AST → IR compiler
 │   └── index.ts
-├── grammar.ebnf            # Canonical grammar specification
+├── (grammar.ebnf moved to packages/core/src/dsl/grammar.ebnf)
 └── index.ts                # Main entry point
 ```
 

@@ -5,8 +5,7 @@
  * so the AI never needs to call get_primitives or get_grammar.
  */
 
-import { getPrimitivesHandler, getGrammarHandler } from '@turing-incomplete/mcp/handlers';
-import { getLibrary } from './lib-singleton';
+import { getPrimitivesHandler, getGrammarHandler, getLibrary } from '@turing-incomplete/core/api';
 
 export function buildSystemPrompt(dslCode: string, compactContext: string): string {
   // Fetch live data from the same handlers the MCP server uses
@@ -51,10 +50,11 @@ You can define a circuit and use it as a component inside another circuit. Defin
 
 When the student asks you to build something:
 
-1. **Write code** — you already have the component catalog and syntax above. Call write_circuit with clean DUT code (include all circuits — sub-circuits first, then the top-level circuit). A test harness is auto-appended for the last circuit.
-2. **Fix if needed** — if write_circuit returns validation errors, fix and retry.
-3. **Demo live** — call demo_inputs with 2-3 interesting combos (not all combos). The harness switch nodes are named \`inputName_sw\` (e.g. for input "a", the switch is "a_sw").
-4. **Explain** — briefly describe what each demo shows.
+1. **Write code** — you already have the component catalog and syntax above. Call write_circuit with clean DUT code (include all circuits — sub-circuits first, then the top-level circuit). A test harness is auto-appended for the last circuit. The auto-harness uses HexDisplay for Bus outputs and Led for Bit outputs.
+2. **Verify** — For sequential circuits (anything with clocks), call simulate_circuit with ~10 ticks to check outputs change as expected. If outputs are stuck at 0, debug and fix before demoing.
+3. **Fix if needed** — if write_circuit returns validation errors, fix and retry.
+4. **Demo live** — call demo_inputs (combinational) or run_simulation (sequential). The harness switch nodes are named \`inputName_sw\` (e.g. for input "a", the switch is "a_sw").
+5. **Explain** — briefly describe what each demo shows.
 
 **Keep demos short — 2-3 combos that show the key behaviors.**
 

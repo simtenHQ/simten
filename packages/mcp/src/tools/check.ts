@@ -4,8 +4,7 @@
 
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
-import { checkCircuit } from '../handlers/check.js';
-import { getLibrary } from '../lib/shared-library.js';
+import { checkCircuit, getLibrary } from '@turing-incomplete/core/api';
 import { readDSLSource } from '../lib/file-reader.js';
 
 export function registerCheckTool(server: McpServer): void {

@@ -4,7 +4,7 @@
 
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
-import { runTestbenchHandler } from '../handlers/test.js';
+import { runTestbenchHandler } from '@turing-incomplete/core/api';
 import { readDSLSource } from '../lib/file-reader.js';
 
 export function registerTestTool(server: McpServer): void {

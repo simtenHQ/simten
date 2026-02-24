@@ -11,8 +11,8 @@ import {
   checkCircuit,
   simulateCircuit,
   runTestbenchHandler,
-} from '@turing-incomplete/mcp/handlers';
-import { getLibrary } from './lib-singleton';
+  getLibrary,
+} from '@turing-incomplete/core/api';
 import { EDITOR_TOOL_NAMES, editorToolToActions } from './editor-tools';
 import {
   generateHarnessAppended,

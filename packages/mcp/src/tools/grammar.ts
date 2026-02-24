@@ -3,7 +3,7 @@
  */
 
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { getGrammarHandler } from '../handlers/grammar.js';
+import { getGrammarHandler } from '@turing-incomplete/core/api';
 
 export function registerGrammarTool(server: McpServer): void {
   server.tool(
