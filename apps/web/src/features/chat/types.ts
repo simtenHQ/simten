@@ -5,16 +5,86 @@
  * Domain-only actions - NO UI gestures in the protocol.
  */
 
-// Re-export BAML generated types
-export type {
-  AssistantResponse,
-  SetInputAction,
-  RunSimulationAction,
-  ShowDiffAction,
-  InsertNodeAction,
-  GenerateHarnessAction,
-  ActionType,
-} from '@/lib/baml_client/baml_client';
+// ============================================================================
+// Action Type Enum
+// ============================================================================
+
+export enum ActionType {
+  SET_INPUT = 'SET_INPUT',
+  RUN_SIMULATION = 'RUN_SIMULATION',
+  SHOW_DIFF = 'SHOW_DIFF',
+  WRITE_CIRCUIT = 'WRITE_CIRCUIT',
+  INSERT_NODE = 'INSERT_NODE',
+  GENERATE_HARNESS = 'GENERATE_HARNESS',
+  VERIFY_ASSERTION = 'VERIFY_ASSERTION',
+}
+
+// ============================================================================
+// Action Interfaces
+// ============================================================================
+
+export interface SetInputAction {
+  actionId?: string | null;
+  type: 'SET_INPUT';
+  node: string;
+  value: number;
+}
+
+export interface RunSimulationAction {
+  actionId?: string | null;
+  type: 'RUN_SIMULATION';
+  cycles: number;
+  stimuli?: Record<string, number> | null;
+}
+
+export interface ShowDiffAction {
+  actionId?: string | null;
+  type: 'SHOW_DIFF';
+  originalCode: string;
+  suggestedCode: string;
+  explanation: string;
+}
+
+export interface WriteCircuitAction {
+  actionId?: string | null;
+  type: 'WRITE_CIRCUIT';
+  code: string;
+  explanation: string;
+}
+
+export interface InsertNodeAction {
+  actionId?: string | null;
+  type: 'INSERT_NODE';
+  componentRef: string;
+  suggestedLabel?: string | null;
+  connectFrom?: string | null;
+  connectTo?: string | null;
+}
+
+export interface GenerateHarnessAction {
+  actionId?: string | null;
+  type: 'GENERATE_HARNESS';
+  circuitName?: string | null;
+}
+
+export interface VerifyAssertionAction {
+  actionId?: string | null;
+  type: 'VERIFY_ASSERTION';
+  targetCircuit?: string | null;
+  maxCycles?: number | null;
+}
+
+// ============================================================================
+// Response Types
+// ============================================================================
+
+export interface AssistantResponse {
+  schemaVersion: '1.0';
+  message: string;
+  actions: (SetInputAction | RunSimulationAction | ShowDiffAction | InsertNodeAction | GenerateHarnessAction)[];
+  suggestedFollowUps?: string[] | null;
+  shouldContinue: boolean;
+}
 
 // ============================================================================
 // Chat Message Types
@@ -35,28 +105,40 @@ export interface ChatMessage {
   isStreaming?: boolean;
   /** Error that occurred during processing */
   error?: string;
+  /** Tool calls made during this message (for display) */
+  toolCalls?: ToolCallInfo[];
+  /** Token usage for this message */
+  usage?: UsageInfo;
+}
+
+/** Info about a tool call for UI rendering */
+export interface ToolCallInfo {
+  id: string;
+  name: string;
+  input: Record<string, unknown>;
+  status: 'running' | 'done' | 'error';
+  result?: string;
+}
+
+/** Token usage info for a message */
+export interface UsageInfo {
+  inputTokens: number;
+  outputTokens: number;
+  estimatedCost: number;
 }
 
 // ============================================================================
 // Action Types (Union)
 // ============================================================================
 
-import type {
-  SetInputAction as BAMLSetInputAction,
-  RunSimulationAction as BAMLRunSimAction,
-  ShowDiffAction as BAMLShowDiffAction,
-  InsertNodeAction as BAMLInsertNodeAction,
-  GenerateHarnessAction as BAMLGenerateHarnessAction,
-  VerifyAssertionAction as BAMLVerifyAssertionAction,
-} from '@/lib/baml_client/baml_client';
-
 export type AssistantAction =
-  | BAMLSetInputAction
-  | BAMLRunSimAction
-  | BAMLShowDiffAction
-  | BAMLInsertNodeAction
-  | BAMLGenerateHarnessAction
-  | BAMLVerifyAssertionAction;
+  | SetInputAction
+  | RunSimulationAction
+  | ShowDiffAction
+  | WriteCircuitAction
+  | InsertNodeAction
+  | GenerateHarnessAction
+  | VerifyAssertionAction;
 
 // ============================================================================
 // Action Safety Levels

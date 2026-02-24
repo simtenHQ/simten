@@ -14,7 +14,9 @@
       "Bash(find /Users/charlesharris/Documents/Personal/turing-incomplete -maxdepth 1 -type f -name \"tsconfig.json\" -o -name \"tailwind.config.*\" -o -name \"postcss.config.*\" | xargs ls -la 2>/dev/null)",
       "Bash(grep:*)",
       "Bash(head:*)",
-      "Bash(tail:*)"
+      "Bash(tail:*)",
+      "mcp__turing-incomplete__get_primitives",
+      "mcp__turing-incomplete__simulate_circuit"
     ]
   }
 }

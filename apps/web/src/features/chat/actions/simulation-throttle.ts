@@ -7,7 +7,7 @@
 
 import { GUARDRAILS } from '../constants';
 import type { ActionResult } from '../types';
-import type { RunSimulationAction } from '@/lib/baml_client/baml_client';
+import type { RunSimulationAction } from '../types';
 
 // ============================================================================
 // Types

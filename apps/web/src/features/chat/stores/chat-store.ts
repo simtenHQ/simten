@@ -13,6 +13,8 @@ import type {
   AssistantAction,
   StreamingState,
   ActionExecutionStatus,
+  ToolCallInfo,
+  UsageInfo,
 } from '../types';
 import type { AgentState, GoalState, AgentTurn } from '../agent/types';
 import { GUARDRAILS } from '../constants';
@@ -40,6 +42,8 @@ interface ChatState {
   agentState: AgentState | null;
   /** Whether an agent loop is currently running */
   isAgentRunning: boolean;
+  /** Session-level token usage totals */
+  sessionUsage: { inputTokens: number; outputTokens: number; estimatedCost: number };
 }
 
 // ============================================================================
@@ -66,10 +70,13 @@ interface ChatActions {
   // Streaming
   startStreaming: (messageId: string) => void;
   updateStreamingMessage: (content: string) => void;
+  addToolCall: (messageId: string, toolCall: ToolCallInfo) => void;
   finishStreaming: (
     content: string,
     actions?: AssistantAction[],
-    suggestedFollowUps?: string[]
+    suggestedFollowUps?: string[],
+    toolCalls?: ToolCallInfo[],
+    usage?: UsageInfo
   ) => void;
   setStreamingError: (error: string) => void;
 
@@ -80,7 +87,7 @@ interface ChatActions {
 
   // Session management
   resetSession: () => void;
-  getConversationHistory: () => string[];
+  getConversationHistory: () => Array<{ role: 'user' | 'assistant'; content: string }>;
 
   // Agent mode
   setAgentMode: (enabled: boolean) => void;
@@ -113,6 +120,7 @@ function createInitialState(): ChatState {
     isAgentMode: false,
     agentState: null,
     isAgentRunning: false,
+    sessionUsage: { inputTokens: 0, outputTokens: 0, estimatedCost: 0 },
   };
 }
 
@@ -239,7 +247,17 @@ export const useChatStore = create<ChatStore>()(
       });
     },
 
-    finishStreaming: (content, actions, suggestedFollowUps) => {
+    addToolCall: (messageId, toolCall) => {
+      set((state) => {
+        const message = state.messages.find((m) => m.id === messageId);
+        if (message) {
+          if (!message.toolCalls) message.toolCalls = [];
+          message.toolCalls.push(toolCall);
+        }
+      });
+    },
+
+    finishStreaming: (content, actions, suggestedFollowUps, toolCalls, usage) => {
       set((state) => {
         const message = state.messages.find(
           (m) => m.id === state.streaming.currentMessageId
@@ -248,7 +266,15 @@ export const useChatStore = create<ChatStore>()(
           message.content = content;
           message.actions = actions;
           message.suggestedFollowUps = suggestedFollowUps;
+          if (toolCalls) message.toolCalls = toolCalls;
+          if (usage) message.usage = usage;
           message.isStreaming = false;
+        }
+        // Accumulate session usage
+        if (usage) {
+          state.sessionUsage.inputTokens += usage.inputTokens;
+          state.sessionUsage.outputTokens += usage.outputTokens;
+          state.sessionUsage.estimatedCost += usage.estimatedCost;
         }
         state.streaming = initialStreamingState;
       });
@@ -293,10 +319,14 @@ export const useChatStore = create<ChatStore>()(
 
     getConversationHistory: () => {
       const messages = get().messages;
-      return messages
-        .filter((m) => m.role !== 'system')
-        .slice(-GUARDRAILS.MAX_CONVERSATION_HISTORY)
-        .map((m) => `${m.role}: ${m.content}`);
+      const result: Array<{ role: 'user' | 'assistant'; content: string }> = [];
+      const filtered = messages.filter((m) => m.role !== 'system').slice(-GUARDRAILS.MAX_CONVERSATION_HISTORY);
+      for (const m of filtered) {
+        if (m.role === 'user' || m.role === 'assistant') {
+          result.push({ role: m.role, content: m.content });
+        }
+      }
+      return result;
     },
 
     // Agent mode

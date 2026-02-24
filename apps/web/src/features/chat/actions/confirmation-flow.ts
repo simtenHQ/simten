@@ -74,6 +74,9 @@ export function getActionPreview(action: AssistantAction): string {
     case 'SHOW_DIFF':
       return `Apply code changes: ${action.explanation}`;
 
+    case 'WRITE_CIRCUIT':
+      return `Write circuit: ${action.explanation}`;
+
     case 'INSERT_NODE': {
       const parts = [`Insert ${action.componentRef}`];
       if (action.suggestedLabel) {

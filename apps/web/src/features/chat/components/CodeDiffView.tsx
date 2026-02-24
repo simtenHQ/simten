@@ -11,7 +11,7 @@ import React, { useMemo } from 'react';
 import { Check, X, FileCode } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import type { ShowDiffAction } from '@/lib/baml_client/baml_client';
+import type { ShowDiffAction } from '../types';
 import { getDiffSummary } from '../actions/diff-validator';
 
 interface CodeDiffViewProps {

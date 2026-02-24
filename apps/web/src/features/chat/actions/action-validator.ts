@@ -31,6 +31,8 @@ export function validateAction(action: AssistantAction): ValidationResult {
       return validateRunSimulation(action);
     case 'SHOW_DIFF':
       return validateShowDiff(action);
+    case 'WRITE_CIRCUIT':
+      return validateWriteCircuit(action);
     case 'INSERT_NODE':
       return validateInsertNode(action);
     default:
@@ -156,6 +158,30 @@ function validateShowDiff(
     return {
       valid: false,
       reason: 'SHOW_DIFF requires explanation string',
+    };
+  }
+
+  return { valid: true };
+}
+
+// ============================================================================
+// WRITE_CIRCUIT Validation
+// ============================================================================
+
+function validateWriteCircuit(
+  action: AssistantAction & { type: 'WRITE_CIRCUIT' }
+): ValidationResult {
+  if (typeof action.code !== 'string' || !action.code.trim()) {
+    return {
+      valid: false,
+      reason: 'WRITE_CIRCUIT requires non-empty code string',
+    };
+  }
+
+  if (typeof action.explanation !== 'string') {
+    return {
+      valid: false,
+      reason: 'WRITE_CIRCUIT requires explanation string',
     };
   }
 
