@@ -5,9 +5,8 @@
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';
-import { useComponentLibraryStore } from '@/features/visual-editor/stores/component-library-store';
+import { useComponentLibraryStore, getPrimitives } from '@turing-incomplete/ui/editor';
 import { compileDSL } from '../index';
-import { getPrimitives } from '@/features/visual-editor/lib/primitive-registry';
 
 describe('DSL Editor Integration', () => {
   beforeEach(() => {

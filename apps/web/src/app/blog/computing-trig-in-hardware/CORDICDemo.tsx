@@ -1,6 +1,6 @@
 "use client";
 import { useCORDICSimulator } from "./useCORDICSimulator";
-import { EmbedCanvas } from "@/components/circuit-embed";
+import { EmbedCanvas } from "@turing-incomplete/ui/embed";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 const CORDIC_LAYOUT: Record<string, { x: number; y: number }> = {

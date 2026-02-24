@@ -1,8 +1,8 @@
 /**
  * Visual Editor Feature Exports
+ *
+ * The thin VisualEditor shell. All other editor components, stores, hooks,
+ * and types are available via `@turing-incomplete/ui/editor`.
  */
 
-export * from './components';
-export * from './stores';
-export * from './types';
-export * from './utils';
+export { VisualEditor } from './components/VisualEditor';

@@ -1,6 +1,6 @@
 "use client";
 
-import { CircuitEmbed } from "@/components/circuit-embed";
+import { CircuitEmbed } from "@turing-incomplete/ui/embed";
 import { BLOG_CIRCUITS } from "../circuits";
 
 export function CounterSection() {

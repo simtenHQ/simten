@@ -10,8 +10,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useComponentLibraryStore } from '@/features/visual-editor/stores/component-library-store';
-import type { Circuit } from '@/features/visual-editor/types/circuit';
+import { useComponentLibraryStore } from '@turing-incomplete/ui/editor';
+import type { Circuit } from '@turing-incomplete/ui/editor';
 
 type TabType = 'primitives' | 'standard' | 'user';
 

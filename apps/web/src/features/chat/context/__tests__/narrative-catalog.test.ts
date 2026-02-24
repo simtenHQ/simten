@@ -9,8 +9,8 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { buildNarrativeSummary } from '../narrative-builder';
 import { enforceTokenBudget } from '../token-counter';
 import { buildEnvelope, validateCircuit } from '@/features/dsl';
-import { PRIMITIVES } from '@/features/visual-editor/lib/primitive-registry';
-import { createComponentLibrary } from '@/core/simulator';
+import { PRIMITIVES } from '@turing-incomplete/ui/editor';
+import { createComponentLibrary } from '@turing-incomplete/ui/simulator';
 
 describe('Narrative Component Catalog', () => {
   let library: ReturnType<typeof createComponentLibrary>;

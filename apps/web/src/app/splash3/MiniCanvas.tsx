@@ -16,17 +16,15 @@ import {
 import "@xyflow/react/dist/style.css";
 
 import type { Circuit } from "@/features/dsl";
-import type {
-  FlatPortValueMap,
-  FlatSequentialState,
-} from "@/features/visual-editor/lib/flat-simulator";
-import { projectCircuitToReactFlow } from "@/features/visual-editor/utils/projection";
-import type { MetadataState } from "@/features/visual-editor/types";
-
-// Import node components
-import { InputNode } from "@/features/visual-editor/components/nodes/InputNode";
-import { OutputNode } from "@/features/visual-editor/components/nodes/OutputNode";
-import { LogicGateNode } from "@/features/visual-editor/components/nodes/LogicGateNode";
+import {
+  type FlatPortValueMap,
+  type FlatSequentialState,
+  projectCircuitToReactFlow,
+  type MetadataState,
+  InputNode,
+  OutputNode,
+  LogicGateNode,
+} from "@turing-incomplete/ui/editor";
 
 // Define node types for this mini canvas
 const nodeTypes: NodeTypes = {
