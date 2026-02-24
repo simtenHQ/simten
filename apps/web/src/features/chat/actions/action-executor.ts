@@ -14,7 +14,7 @@ import { createActionLogger, logActionSkip, logActionValidationFailed } from './
 import { getIdempotencyTracker } from './idempotency-tracker';
 import { checkStaleness, createStaleResult, createCannotSimulateResult } from './staleness-checker';
 import { getSimulationThrottle, type SimulationContext } from './simulation-throttle';
-import type { SetInputAction, RunSimulationAction, ShowDiffAction, InsertNodeAction, GenerateHarnessAction, VerifyAssertionAction } from '@/lib/baml_client/baml_client';
+import type { SetInputAction, RunSimulationAction, ShowDiffAction, WriteCircuitAction, InsertNodeAction, GenerateHarnessAction, VerifyAssertionAction } from '../types';
 import { generateHarness, parseDSL } from '@/features/dsl';
 import { formatAssertionSummary, evaluateAssertions } from '@/features/dsl/harness/assertion-evaluator';
 import type { ValidationSnapshot } from '../types';
@@ -205,6 +205,9 @@ async function executeActionByType(
     case 'SHOW_DIFF':
       return executeShowDiff(action, context);
 
+    case 'WRITE_CIRCUIT':
+      return executeWriteCircuit(action, context);
+
     case 'INSERT_NODE':
       return executeInsertNode(action, context);
 
@@ -294,6 +297,32 @@ async function executeShowDiff(
     actionId: action.actionId,
     type: action.type,
   };
+}
+
+/**
+ * Execute WRITE_CIRCUIT action.
+ * Sets the editor code directly. The server has already validated and appended the harness.
+ */
+async function executeWriteCircuit(
+  action: WriteCircuitAction & { actionId: string },
+  context: ActionExecutionContext
+): Promise<ActionResult> {
+  try {
+    context.setCode(action.code);
+
+    return {
+      success: true,
+      actionId: action.actionId,
+      type: action.type,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      actionId: action.actionId,
+      type: action.type,
+      reason: error instanceof Error ? error.message : String(error),
+    };
+  }
 }
 
 /**

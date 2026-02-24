@@ -8,7 +8,7 @@
 'use client';
 
 import React from 'react';
-import { Play, FileCode, Plus, Loader2, ToggleRight, TestTube2, ShieldCheck } from 'lucide-react';
+import { Play, FileCode, Plus, Loader2, ToggleRight, TestTube2, ShieldCheck, Code2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import type { AssistantAction, ActionExecutionStatus } from '../types';
@@ -26,6 +26,7 @@ const ACTION_ICONS = {
   SET_INPUT: ToggleRight,
   RUN_SIMULATION: Play,
   SHOW_DIFF: FileCode,
+  WRITE_CIRCUIT: Code2,
   INSERT_NODE: Plus,
   GENERATE_HARNESS: TestTube2,
   VERIFY_ASSERTION: ShieldCheck,
@@ -35,6 +36,7 @@ const ACTION_COLORS = {
   SET_INPUT: 'bg-amber-50 border-amber-200 hover:border-amber-400',
   RUN_SIMULATION: 'bg-green-50 border-green-200 hover:border-green-400',
   SHOW_DIFF: 'bg-blue-50 border-blue-200 hover:border-blue-400',
+  WRITE_CIRCUIT: 'bg-blue-50 border-blue-200 hover:border-blue-400',
   INSERT_NODE: 'bg-purple-50 border-purple-200 hover:border-purple-400',
   GENERATE_HARNESS: 'bg-teal-50 border-teal-200 hover:border-teal-400',
   VERIFY_ASSERTION: 'bg-emerald-50 border-emerald-200 hover:border-emerald-400',
@@ -83,7 +85,7 @@ export function ActionCard({
             'flex h-8 w-8 shrink-0 items-center justify-center rounded-full',
             action.type === 'SET_INPUT' && 'bg-amber-100 text-amber-600',
             action.type === 'RUN_SIMULATION' && 'bg-green-100 text-green-600',
-            action.type === 'SHOW_DIFF' && 'bg-blue-100 text-blue-600',
+            (action.type === 'SHOW_DIFF' || action.type === 'WRITE_CIRCUIT') && 'bg-blue-100 text-blue-600',
             action.type === 'INSERT_NODE' && 'bg-purple-100 text-purple-600',
             action.type === 'GENERATE_HARNESS' && 'bg-teal-100 text-teal-600'
           )}

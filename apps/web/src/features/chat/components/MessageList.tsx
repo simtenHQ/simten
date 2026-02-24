@@ -1,7 +1,7 @@
 /**
  * MessageList Component
  *
- * Scrollable list of chat messages with actions.
+ * Scrollable list of chat messages with actions and tool call cards.
  */
 
 'use client';
@@ -10,6 +10,7 @@ import React, { useRef, useEffect } from 'react';
 import { Bot } from 'lucide-react';
 import { MessageBubble } from './MessageBubble';
 import { ActionCard } from './ActionCard';
+import { ToolCallCard } from './ToolCallCard';
 import type { ChatMessage, AssistantAction, ActionExecutionStatus } from '../types';
 
 const STARTER_PROMPTS = [
@@ -73,6 +74,17 @@ export function MessageList({
         <div key={message.id} className="space-y-3">
           {/* Message bubble */}
           <MessageBubble message={message} onNodeMention={onNodeMention} />
+
+          {/* Tool calls (only for assistant messages) */}
+          {message.role === 'assistant' &&
+            message.toolCalls &&
+            message.toolCalls.length > 0 && (
+              <div className="ml-0 space-y-1">
+                {message.toolCalls.map((tc) => (
+                  <ToolCallCard key={tc.id} toolCall={tc} />
+                ))}
+              </div>
+            )}
 
           {/* Actions (only for assistant messages) */}
           {message.role === 'assistant' &&

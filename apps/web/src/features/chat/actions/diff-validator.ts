@@ -9,7 +9,7 @@
 
 import { DIFF_GUARDRAILS } from '../constants';
 import type { ValidationResult } from '../types';
-import type { ShowDiffAction } from '@/lib/baml_client/baml_client';
+import type { ShowDiffAction } from '../types';
 import { parseDSL } from '@/features/dsl';
 
 // ============================================================================

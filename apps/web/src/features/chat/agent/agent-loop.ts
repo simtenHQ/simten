@@ -222,7 +222,7 @@ export async function runAgentLoop(
 
 import { executeAction, applyDiff } from '../actions/action-executor';
 import type { AssistantAction } from '../types';
-import type { ShowDiffAction } from '@/lib/baml_client/baml_client';
+import type { ShowDiffAction } from '../types';
 
 /**
  * Execute an action and capture observations.

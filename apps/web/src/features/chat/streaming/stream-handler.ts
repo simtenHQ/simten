@@ -3,24 +3,31 @@
  *
  * Client-side streaming response handler.
  * Processes NDJSON stream from the API.
+ * Handles tool_call, message, done, and error chunks.
  */
 
-import type { AssistantAction } from '../types';
+import type { AssistantAction, ToolCallInfo } from '../types';
 
 // ============================================================================
 // Types
 // ============================================================================
 
+export interface UsageInfo {
+  inputTokens: number;
+  outputTokens: number;
+  estimatedCost: number;
+}
+
 export interface StreamChunk {
-  type: 'message' | 'done' | 'error';
+  type: 'tool_call' | 'message' | 'done' | 'error';
   content?: string;
+  toolCall?: { name: string; input: Record<string, unknown> };
   response?: {
-    schemaVersion: string;
     message: string;
     actions: AssistantAction[];
     suggestedFollowUps?: string[] | null;
-    shouldContinue?: boolean;
   };
+  usage?: UsageInfo;
   error?: string;
 }
 
@@ -28,13 +35,15 @@ export interface StreamResult {
   message: string;
   actions: AssistantAction[];
   suggestedFollowUps?: string[];
-  shouldContinue?: boolean;
+  toolCalls: ToolCallInfo[];
+  usage?: UsageInfo;
   streamingError: boolean;
   error?: string;
 }
 
 export interface StreamCallbacks {
   onMessageUpdate: (message: string) => void;
+  onToolCall: (toolCall: ToolCallInfo) => void;
   onComplete: (result: StreamResult) => void;
   onError: (error: string) => void;
 }
@@ -60,10 +69,10 @@ export async function processStream(
   const decoder = new TextDecoder();
   let buffer = '';
   let lastMessage = '';
+  const toolCalls: ToolCallInfo[] = [];
 
   try {
     while (true) {
-      // Check for abort
       if (signal?.aborted) {
         reader.cancel();
         callbacks.onError('Request aborted');
@@ -73,19 +82,16 @@ export async function processStream(
       const { done, value } = await reader.read();
 
       if (done) {
-        // Stream ended without done chunk - treat as partial success
         if (buffer.trim()) {
-          processRemainingBuffer(buffer, callbacks, lastMessage);
+          processRemainingBuffer(buffer, callbacks, lastMessage, toolCalls);
         }
         break;
       }
 
-      // Decode and add to buffer
       buffer += decoder.decode(value, { stream: true });
 
-      // Process complete lines (NDJSON)
       const lines = buffer.split('\n');
-      buffer = lines.pop() || ''; // Keep incomplete line in buffer
+      buffer = lines.pop() || '';
 
       for (const line of lines) {
         if (!line.trim()) continue;
@@ -101,13 +107,27 @@ export async function processStream(
               }
               break;
 
+            case 'tool_call':
+              if (chunk.toolCall) {
+                const tc: ToolCallInfo = {
+                  id: `tc-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+                  name: chunk.toolCall.name,
+                  input: chunk.toolCall.input,
+                  status: 'done',
+                };
+                toolCalls.push(tc);
+                callbacks.onToolCall(tc);
+              }
+              break;
+
             case 'done':
               if (chunk.response) {
                 callbacks.onComplete({
                   message: chunk.response.message,
                   actions: chunk.response.actions as AssistantAction[],
                   suggestedFollowUps: chunk.response.suggestedFollowUps ?? undefined,
-                  shouldContinue: chunk.response.shouldContinue ?? false,
+                  toolCalls,
+                  usage: chunk.usage,
                   streamingError: false,
                 });
               }
@@ -119,7 +139,6 @@ export async function processStream(
           }
         } catch (parseError) {
           console.warn('[Stream] Failed to parse chunk:', line, parseError);
-          // Continue processing other chunks
         }
       }
     }
@@ -127,11 +146,11 @@ export async function processStream(
     const errorMessage = error instanceof Error ? error.message : String(error);
     console.error('[Stream] Error:', errorMessage);
 
-    // Graceful degradation: return partial message with no actions
     if (lastMessage) {
       callbacks.onComplete({
         message: lastMessage,
         actions: [],
+        toolCalls,
         streamingError: true,
         error: errorMessage,
       });
@@ -149,7 +168,8 @@ export async function processStream(
 function processRemainingBuffer(
   buffer: string,
   callbacks: StreamCallbacks,
-  lastMessage: string
+  lastMessage: string,
+  toolCalls: ToolCallInfo[]
 ): void {
   try {
     const chunk = JSON.parse(buffer.trim()) as StreamChunk;
@@ -158,20 +178,20 @@ function processRemainingBuffer(
         message: chunk.response.message,
         actions: chunk.response.actions as AssistantAction[],
         suggestedFollowUps: chunk.response.suggestedFollowUps ?? undefined,
-        shouldContinue: chunk.response.shouldContinue ?? false,
+        toolCalls,
         streamingError: false,
       });
       return;
     }
   } catch {
-    // Not valid JSON - ignore
+    // Not valid JSON
   }
 
-  // Fallback: return partial message
   if (lastMessage) {
     callbacks.onComplete({
       message: lastMessage,
       actions: [],
+      toolCalls,
       streamingError: true,
       error: 'Stream ended unexpectedly',
     });
@@ -186,7 +206,7 @@ export interface SendMessageOptions {
   userMessage: string;
   dslCode: string;
   compactContext: string;
-  conversationHistory: string[];
+  conversationHistory: Array<{ role: 'user' | 'assistant'; content: string }>;
   signal?: AbortSignal;
 }
 
@@ -203,9 +223,7 @@ export async function sendMessage(
   try {
     const response = await fetch('/api/chat', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         userMessage,
         dslCode,
