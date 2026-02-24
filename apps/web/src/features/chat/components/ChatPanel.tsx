@@ -25,7 +25,7 @@ import { executeAction, applyDiff, buildConfirmationRequest, type ActionExecutio
 import { useTutorFlow } from '../hooks/useTutorFlow';
 import { generateHarnessAppended } from '@/features/dsl';
 import type { AssistantAction } from '../types';
-import type { ShowDiffAction, GenerateHarnessAction } from '@/lib/baml_client/baml_client';
+import type { ShowDiffAction, GenerateHarnessAction } from '../types';
 import type { ConfirmationRequest } from '../actions/confirmation-flow';
 
 interface ChatPanelProps {
@@ -66,6 +66,7 @@ export function ChatPanel({
     actionStatus,
     setActionStatus,
     getConversationHistory,
+    sessionUsage,
   } = useChatStore();
 
   // Local state
@@ -268,6 +269,16 @@ export function ChatPanel({
             onNodeMention={handleNodeMention}
             onSendStarter={handleSend}
           />
+
+          {/* Usage bar */}
+          {sessionUsage.inputTokens > 0 && (
+            <div className="px-4 py-1.5 border-t border-border/50 bg-muted/20 flex items-center justify-between text-[10px] text-muted-foreground">
+              <span>
+                {(sessionUsage.inputTokens + sessionUsage.outputTokens).toLocaleString()} tokens
+              </span>
+              <span>~${sessionUsage.estimatedCost.toFixed(4)}</span>
+            </div>
+          )}
 
           {/* Input */}
           <ChatInput

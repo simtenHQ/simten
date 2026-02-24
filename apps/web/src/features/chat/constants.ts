@@ -52,13 +52,21 @@ export const DIFF_GUARDRAILS = {
  * - confirm: Show modal, require explicit confirmation
  */
 export const ACTION_SAFETY: Record<string, ActionSafety> = {
-  SET_INPUT: 'preview',      // Immediate, harmless, reversible
+  SET_INPUT: 'preview',
   RUN_SIMULATION: 'preview',
   SHOW_DIFF: 'preview',
+  WRITE_CIRCUIT: 'preview',
   INSERT_NODE: 'confirm',
-  GENERATE_HARNESS: 'preview', // Shows as diff, user clicks Apply
-  VERIFY_ASSERTION: 'preview', // Read-only verification, auto-execute
+  GENERATE_HARNESS: 'preview',
+  VERIFY_ASSERTION: 'preview',
 } as const;
+
+/** Actions that auto-execute without student intervention. Derived from ACTION_SAFETY. */
+export const SAFE_ACTION_TYPES = new Set(
+  Object.entries(ACTION_SAFETY)
+    .filter(([, level]) => level === 'preview')
+    .map(([type]) => type)
+);
 
 // ============================================================================
 // Protocol Versioning
@@ -73,7 +81,7 @@ export const PROTOCOL_VERSION = '1.0' as const;
  * - Major versions can have breaking changes
  */
 export const SCHEMA_COMPAT: Record<string, string[]> = {
-  '1.0': ['SET_INPUT', 'RUN_SIMULATION', 'SHOW_DIFF', 'INSERT_NODE', 'GENERATE_HARNESS', 'VERIFY_ASSERTION'],
+  '1.0': ['SET_INPUT', 'RUN_SIMULATION', 'SHOW_DIFF', 'WRITE_CIRCUIT', 'INSERT_NODE', 'GENERATE_HARNESS', 'VERIFY_ASSERTION'],
 } as const;
 
 // ============================================================================

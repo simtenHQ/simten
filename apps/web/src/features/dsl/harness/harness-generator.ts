@@ -34,20 +34,68 @@ export interface HarnessAnalysis {
 
 /**
  * Extract circuit interface from DSL code.
- * Returns the first circuit found that has interface ports.
+ * Returns the last circuit found that has interface ports (the top-level DUT).
+ * In multi-circuit files, sub-circuits are defined first and the main circuit last.
  */
 export function extractCircuitInterface(dslCode: string): CircuitInterface | null {
-  // Match circuit declaration: circuit Name { ... }
-  const circuitMatch = dslCode.match(/circuit\s+(\w+)\s*\{/);
-  if (!circuitMatch) return null;
+  // Find all circuit blocks with their body text
+  const circuits = extractCircuitBlocks(dslCode);
+  if (circuits.length === 0) return null;
 
-  const name = circuitMatch[1];
+  // Work backwards to find the last circuit with interface ports
+  for (let i = circuits.length - 1; i >= 0; i--) {
+    const iface = parseCircuitInterface(circuits[i].name, circuits[i].body);
+    if (iface.inputs.length > 0 || iface.outputs.length > 0) {
+      return iface;
+    }
+  }
 
-  // Extract inputs: input name: Type or input name: Bus[N]
+  // Fallback: return the last circuit even if it has no ports
+  const last = circuits[circuits.length - 1];
+  return parseCircuitInterface(last.name, last.body);
+}
+
+/**
+ * Extract all circuit blocks (name + body text) from DSL code.
+ * Uses brace counting to correctly delimit each circuit body.
+ */
+function extractCircuitBlocks(dslCode: string): Array<{ name: string; body: string }> {
+  const blocks: Array<{ name: string; body: string }> = [];
+  const circuitStartRegex = /circuit\s+(\w+)\s*\{/g;
+  let startMatch;
+
+  while ((startMatch = circuitStartRegex.exec(dslCode)) !== null) {
+    const name = startMatch[1];
+    const openBraceIndex = startMatch.index + startMatch[0].length - 1;
+
+    // Count braces to find matching close
+    let depth = 1;
+    let pos = openBraceIndex + 1;
+    while (pos < dslCode.length && depth > 0) {
+      if (dslCode[pos] === '{') depth++;
+      else if (dslCode[pos] === '}') depth--;
+      pos++;
+    }
+
+    if (depth === 0) {
+      blocks.push({ name, body: dslCode.substring(openBraceIndex + 1, pos - 1) });
+    }
+  }
+
+  return blocks;
+}
+
+/**
+ * Parse interface ports from a single circuit's body text.
+ */
+function parseCircuitInterface(name: string, body: string): CircuitInterface {
   const inputs: PortInfo[] = [];
+  const outputs: PortInfo[] = [];
+  const clocks: string[] = [];
+
   const inputRegex = /input\s+(\w+)\s*:\s*(Bit|Bus(?:\[(\d+)\])?)/g;
   let match;
-  while ((match = inputRegex.exec(dslCode)) !== null) {
+  while ((match = inputRegex.exec(body)) !== null) {
     inputs.push({
       name: match[1],
       type: match[2].startsWith('Bus') ? 'Bus' : 'Bit',
@@ -55,10 +103,8 @@ export function extractCircuitInterface(dslCode: string): CircuitInterface | nul
     });
   }
 
-  // Extract outputs: output name: Type or output name: Bus[N]
-  const outputs: PortInfo[] = [];
   const outputRegex = /output\s+(\w+)\s*:\s*(Bit|Bus(?:\[(\d+)\])?)/g;
-  while ((match = outputRegex.exec(dslCode)) !== null) {
+  while ((match = outputRegex.exec(body)) !== null) {
     outputs.push({
       name: match[1],
       type: match[2].startsWith('Bus') ? 'Bus' : 'Bit',
@@ -66,10 +112,8 @@ export function extractCircuitInterface(dslCode: string): CircuitInterface | nul
     });
   }
 
-  // Extract clocks: clock name
-  const clocks: string[] = [];
   const clockRegex = /clock\s+(\w+)/g;
-  while ((match = clockRegex.exec(dslCode)) !== null) {
+  while ((match = clockRegex.exec(body)) !== null) {
     clocks.push(match[1]);
   }
 
@@ -183,7 +227,7 @@ export function generateHarnessDSL(iface: CircuitInterface): string {
   if (outputs.length > 0) {
     lines.push('    // === Output Displays ===');
     for (const output of outputs) {
-      const component = output.type === 'Bus' ? 'Display' : 'LED';
+      const component = output.type === 'Bus' ? 'Display' : 'Led';
       lines.push(`    node ${output.name}_out: ${component}`);
     }
     lines.push('');

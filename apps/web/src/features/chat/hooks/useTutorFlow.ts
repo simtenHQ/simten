@@ -1,37 +1,19 @@
 /**
  * useTutorFlow Hook
  *
- * Lightweight continuation hook for the tutor interaction model.
- * Wraps sendMessage with auto-continuation: after each LLM response,
- * safe actions auto-execute, and if shouldContinue is true (up to 3 times),
- * a follow-up message is sent automatically.
- *
- * NOT an agent loop. No goal state, no semantic signals, no plan tracking.
+ * Wraps sendMessage with auto-execution of safe actions from tool_use responses.
+ * The server-side tool_use loop handles multi-turn analysis (check, simulate, etc.).
+ * Client-side we just execute the deferred editor actions.
  */
 
 import { useCallback, useRef, useState } from 'react';
 import { useChatStore } from '../stores/chat-store';
 import { sendMessage } from '../streaming';
 import { executeAction } from '../actions/action-executor';
+import { SAFE_ACTION_TYPES } from '../constants';
 import type { ActionExecutionContext } from '../actions/action-executor';
-import type { AssistantAction } from '../types';
+import type { AssistantAction, ToolCallInfo } from '../types';
 import type { StreamResult } from '../streaming';
-
-// ============================================================================
-// Constants
-// ============================================================================
-
-const MAX_CONTINUATIONS = 3;
-
-// Safe actions that auto-execute without student intervention
-const SAFE_ACTIONS = new Set(['SET_INPUT', 'RUN_SIMULATION', 'VERIFY_ASSERTION']);
-
-/** Check if the editor has only the default example or is empty */
-function isFreshEditor(code: string): boolean {
-  const trimmed = code.trim();
-  if (!trimmed) return true;
-  return trimmed.startsWith('// Example: NOT Gate');
-}
 
 // ============================================================================
 // Types
@@ -41,7 +23,7 @@ export interface UseTutorFlowOptions {
   executionContext: ActionExecutionContext;
   getNarrativeContext: () => string;
   getCurrentCode: () => string;
-  getConversationHistory: () => string[];
+  getConversationHistory: () => Array<{ role: 'user' | 'assistant'; content: string }>;
 }
 
 export interface UseTutorFlowResult {
@@ -59,14 +41,11 @@ export interface UseTutorFlowResult {
 export function useTutorFlow(options: UseTutorFlowOptions): UseTutorFlowResult {
   const { executionContext, getNarrativeContext, getCurrentCode, getConversationHistory } = options;
 
-  // Use a ref for executionContext to avoid stale closures in async flows.
-  // Without this, when SHOW_DIFF auto-applies and triggers recompile, the running
-  // async send() still captures the OLD executionContext (with the old circuit).
   const executionContextRef = useRef(executionContext);
   executionContextRef.current = executionContext;
 
   const [isContinuing, setIsContinuing] = useState(false);
-  const [continuationCount, setContinuationCount] = useState(0);
+  const [continuationCount] = useState(0);
 
   const cancelledRef = useRef(false);
   const diffAppliedResolverRef = useRef<(() => void) | null>(null);
@@ -77,17 +56,8 @@ export function useTutorFlow(options: UseTutorFlowOptions): UseTutorFlowResult {
     updateStreamingMessage,
     finishStreaming,
     setStreamingError,
+    addToolCall,
   } = useChatStore();
-
-  /**
-   * Wait for the student to apply a pending SHOW_DIFF.
-   * Returns a promise that resolves when onDiffApplied() is called.
-   */
-  const waitForDiffApplied = useCallback((): Promise<void> => {
-    return new Promise((resolve) => {
-      diffAppliedResolverRef.current = resolve;
-    });
-  }, []);
 
   /**
    * Called by ChatPanel when the student clicks Apply on a diff.
@@ -101,32 +71,16 @@ export function useTutorFlow(options: UseTutorFlowOptions): UseTutorFlowResult {
   }, []);
 
   /**
-   * Execute safe actions from a response. Returns true if any SHOW_DIFF
-   * was present (meaning we need to wait for student to apply it).
+   * Execute deferred editor actions from the server response.
    */
-  const executeSafeActions = useCallback(
-    async (actions: AssistantAction[]): Promise<boolean> => {
-      let hasDiff = false;
-
+  const executeEditorActions = useCallback(
+    async (actions: AssistantAction[]): Promise<void> => {
       for (const action of actions) {
-        if (SAFE_ACTIONS.has(action.type)) {
-          // Always read latest context from ref (avoids stale closure after SHOW_DIFF recompile)
+        if (SAFE_ACTION_TYPES.has(action.type)) {
           await executeAction(action, { ...executionContextRef.current, sourceCodeHash: undefined });
-          // Small delay to let React propagate state changes
           await new Promise((r) => setTimeout(r, 150));
-        } else if (action.type === 'SHOW_DIFF' || action.type === 'GENERATE_HARNESS') {
-          if (action.type === 'SHOW_DIFF' && isFreshEditor(getCurrentCode())) {
-            // Auto-apply: skip diff review for fresh/default editor
-            const showDiff = action as { suggestedCode: string };
-            executionContextRef.current.setCode(showDiff.suggestedCode);
-            await new Promise((r) => setTimeout(r, 300)); // Let compile propagate
-          } else {
-            hasDiff = true;
-          }
         }
       }
-
-      return hasDiff;
     },
     [getCurrentCode]
   );
@@ -151,8 +105,11 @@ export function useTutorFlow(options: UseTutorFlowOptions): UseTutorFlowResult {
             onMessageUpdate: (partial) => {
               updateStreamingMessage(partial);
             },
+            onToolCall: (toolCall: ToolCallInfo) => {
+              addToolCall(messageId, toolCall);
+            },
             onComplete: (result) => {
-              finishStreaming(result.message, result.actions, result.suggestedFollowUps);
+              finishStreaming(result.message, result.actions, result.suggestedFollowUps, result.toolCalls, result.usage);
               resolve(result);
             },
             onError: (error) => {
@@ -163,21 +120,18 @@ export function useTutorFlow(options: UseTutorFlowOptions): UseTutorFlowResult {
         );
       });
     },
-    [startStreaming, updateStreamingMessage, finishStreaming, setStreamingError, getCurrentCode, getNarrativeContext, getConversationHistory]
+    [startStreaming, updateStreamingMessage, finishStreaming, setStreamingError, addToolCall, getCurrentCode, getNarrativeContext, getConversationHistory]
   );
 
   /**
-   * Main entry point: send a student message and handle auto-continuation.
+   * Main entry point: send a student message.
    */
   const send = useCallback(
     async (content: string) => {
       cancelledRef.current = false;
-      setContinuationCount(0);
 
-      // Add the student's message
       addUserMessage(content);
 
-      // First LLM call
       let result: StreamResult;
       try {
         result = await callLLM(content);
@@ -185,60 +139,17 @@ export function useTutorFlow(options: UseTutorFlowOptions): UseTutorFlowResult {
         return;
       }
 
-      // Auto-execute safe actions
-      const hasDiff = await executeSafeActions(result.actions);
-
-      // Continuation loop
-      let count = 0;
-      while (
-        result.shouldContinue &&
-        count < MAX_CONTINUATIONS &&
-        !cancelledRef.current
-      ) {
-        // If there's a diff, wait for student to apply it before continuing
-        if (hasDiff) {
-          setIsContinuing(true);
-          await waitForDiffApplied();
-          if (cancelledRef.current) break;
-          // Small delay for code to propagate after apply
-          await new Promise((r) => setTimeout(r, 200));
-        }
-
-        count++;
-        setContinuationCount(count);
-        setIsContinuing(true);
-
-        // Follow-up LLM call with continuation context
-        try {
-          result = await callLLM('(auto-continue)');
-        } catch {
-          break;
-        }
-
-        // Auto-execute safe actions from continuation
-        const contHasDiff = await executeSafeActions(result.actions);
-
-        // If this continuation has a diff and we want to continue further,
-        // we'll wait at the top of the next iteration
-        if (contHasDiff && result.shouldContinue && count < MAX_CONTINUATIONS) {
-          setIsContinuing(true);
-          await waitForDiffApplied();
-          if (cancelledRef.current) break;
-          await new Promise((r) => setTimeout(r, 200));
-        }
-      }
+      // Execute deferred editor actions from the server
+      await executeEditorActions(result.actions);
 
       setIsContinuing(false);
-      setContinuationCount(0);
     },
-    [addUserMessage, callLLM, executeSafeActions, waitForDiffApplied]
+    [addUserMessage, callLLM, executeEditorActions]
   );
 
   const cancelContinuation = useCallback(() => {
     cancelledRef.current = true;
     setIsContinuing(false);
-    setContinuationCount(0);
-    // Resolve any pending diff wait so the loop exits
     const resolver = diffAppliedResolverRef.current;
     if (resolver) {
       diffAppliedResolverRef.current = null;

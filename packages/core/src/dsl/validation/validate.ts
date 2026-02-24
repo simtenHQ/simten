@@ -320,15 +320,36 @@ function circuitToComponentInterface(circuit: Circuit): ComponentInterface {
 // Library Adapter
 // ============================================================================
 
+interface AdaptedLibrary extends CompilerLibrary {
+  /** Get a ComponentLibrary view that includes locally compiled circuits */
+  asComponentLibrary(): ComponentLibrary;
+}
+
 /**
  * Adapt a ComponentLibrary to the compiler's interface.
+ * Maintains a local registry so circuits compiled earlier in the file
+ * can be referenced by later circuits (composite component support).
  */
-function adaptLibraryForCompiler(library: ComponentLibrary): CompilerLibrary {
+function adaptLibraryForCompiler(library: ComponentLibrary): AdaptedLibrary {
+  const localCircuits = new Map<string, Circuit>();
+
+  const resolve = (name: string) => localCircuits.get(name) ?? library.resolveComponent(name);
+
   return {
-    getCircuit: (name: string) => library.resolveComponent(name),
-    hasCircuit: (name: string) => library.resolveComponent(name) !== undefined,
-    addCircuit: () => {}, // No-op for validation
-    getAllComponentNames: () => library.getAllPrimitiveNames?.() ?? [],
+    getCircuit: resolve,
+    hasCircuit: (name: string) => localCircuits.has(name) || library.resolveComponent(name) !== undefined,
+    addCircuit: (circuit: Circuit) => { localCircuits.set(circuit.name, circuit); },
+    getAllComponentNames: () => [
+      ...(library.getAllPrimitiveNames?.() ?? []),
+      ...localCircuits.keys(),
+    ],
+    asComponentLibrary: () => ({
+      resolveComponent: resolve,
+      getAllPrimitiveNames: () => [
+        ...(library.getAllPrimitiveNames?.() ?? []),
+        ...localCircuits.keys(),
+      ],
+    }),
   };
 }
 
@@ -371,9 +392,12 @@ export function validateCircuit(
   const hasBlockingAfterParse = diagnostics.some(isBlocking);
 
   // ========== Phase 3: IR Compilation (Type Checking) ==========
+  // Create a library adapter that registers compiled circuits so later circuits
+  // can reference earlier ones (composite component support).
+  const compilerLibrary = adaptLibraryForCompiler(ctx.componentLibrary);
+
   if (ctx.phases?.type !== false && !hasBlockingAfterParse && ast) {
     try {
-      const compilerLibrary = adaptLibraryForCompiler(ctx.componentLibrary);
       circuits = compileToIR(ast, compilerLibrary);
     } catch (e) {
       diagnostics.push(compilerErrorToDiagnostic(e as Error));
@@ -388,17 +412,19 @@ export function validateCircuit(
   // Guard by blocking errors, not just "circuits exist"
   // IMPORTANT: Iterate circuits in definition order (AST order), not Object.values()
   // This ensures deterministic diagnostic ordering across runs
+  // Use compilerLibrary.asComponentLibrary() so elaboration can resolve composites
   if (
     ctx.phases?.structural !== false &&
     !hasBlockingAfterType &&
     circuits &&
     circuits.length > 0
   ) {
+    const elaborationLibrary = compilerLibrary.asComponentLibrary();
     for (const circuit of circuits) {
       // CRITICAL: Isolate per-circuit - one broken circuit must not block others
       try {
-        const flat = elaborate(circuit, ctx.componentLibrary);
-        const structural = runStructuralChecks(flat, ctx.componentLibrary);
+        const flat = elaborate(circuit, elaborationLibrary);
+        const structural = runStructuralChecks(flat, elaborationLibrary);
         diagnostics.push(...structural.diagnostics);
       } catch (e) {
         diagnostics.push(elaborationErrorToDiagnostic(circuit.name, e as Error));

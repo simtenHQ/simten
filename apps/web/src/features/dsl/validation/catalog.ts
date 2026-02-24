@@ -211,6 +211,46 @@ circuit SwitchToLed {
   }
 }
 
+// Composite: define a circuit, then use it as a component in another.
+// Circuits defined earlier in the file can be referenced by later circuits.
+circuit HalfAdder {
+  input a: Bit
+  input b: Bit
+  output sum: Bit
+  output carry: Bit
+  impl {
+    node xor1: Xor
+    node and1: And
+    connect a -> xor1.a
+    connect b -> xor1.b
+    connect a -> and1.a
+    connect b -> and1.b
+    connect xor1.out -> sum
+    connect and1.out -> carry
+  }
+}
+
+circuit FullAdder {
+  input a: Bit
+  input b: Bit
+  input cin: Bit
+  output sum: Bit
+  output cout: Bit
+  impl {
+    node ha1: HalfAdder
+    node ha2: HalfAdder
+    node or1: Or
+    connect a -> ha1.a
+    connect b -> ha1.b
+    connect ha1.sum -> ha2.a
+    connect cin -> ha2.b
+    connect ha2.sum -> sum
+    connect ha1.carry -> or1.a
+    connect ha2.carry -> or1.b
+    connect or1.out -> cout
+  }
+}
+
 // WRONG: Do NOT use this syntax:
 // Switch sw;        <- WRONG (not valid DSL)
 // sw.out -> led.in; <- WRONG (not valid DSL)`;
