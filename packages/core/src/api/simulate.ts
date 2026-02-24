@@ -5,14 +5,14 @@
  * Accepts already-resolved source string, returns typed result.
  */
 
-import { parseDSL, compileToIR } from '@turing-incomplete/core/dsl';
+import { parseDSL, compileToIR } from '../dsl/index.js';
 import {
   createSimulatorFromCircuit,
   createComponentLibrary,
   TOP_LEVEL_NODE,
-} from '@turing-incomplete/core/simulator';
-import type { Circuit, BitValue, BusValue } from '@turing-incomplete/core';
-import { createMutableLibrary } from '../lib/shared-library.js';
+} from '../simulator/index.js';
+import type { BitValue, BusValue } from '../types/circuit.js';
+import { createMutableLibrary } from './lib.js';
 
 export interface SimulateResult {
   circuit: string;
@@ -50,7 +50,7 @@ export function simulateCircuit(
   // Compile
   const { library: mutableLibrary, circuits: allCircuits } = createMutableLibrary();
 
-  let compiledCircuits: Circuit[];
+  let compiledCircuits: typeof allCircuits;
   try {
     compiledCircuits = compileToIR(ast, mutableLibrary);
     allCircuits.push(...compiledCircuits);

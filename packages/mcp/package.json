@@ -7,7 +7,6 @@
   },
   "exports": {
     ".": "./dist/index.js",
-    "./handlers": "./dist/handlers/index.js",
     "./schemas": "./dist/schemas/index.js"
   },
   "files": ["dist", "bin"],

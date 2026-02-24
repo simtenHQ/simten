@@ -19,6 +19,7 @@ import { useCircuitStore } from '../../stores/circuit-store';
 import type { NodeData } from '../../utils/projection';
 import { cn } from '@/lib/utils';
 import { LabelEditor } from '../LabelEditor';
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 
 interface OutputNodeProps {
   data: NodeData;
@@ -162,7 +163,22 @@ export function OutputNode({ data, selected }: OutputNodeProps) {
         />
       )}
       <BaseNode inputPorts={inputPorts} selected={selected} className="min-w-[80px]">
-        {renderDisplay()}
+        <div className="relative">
+          {/* Composite badge */}
+          {data.isComposite && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded bg-blue-500 text-[8px] text-white">
+                  &#x229E;
+                </div>
+              </TooltipTrigger>
+              <TooltipContent side="top" sideOffset={4}>
+                <p className="text-xs">Double-click to inspect internals</p>
+              </TooltipContent>
+            </Tooltip>
+          )}
+          {renderDisplay()}
+        </div>
       </BaseNode>
     </>
   );

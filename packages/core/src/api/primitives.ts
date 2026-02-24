@@ -8,8 +8,8 @@ import {
   getComponentCatalog,
   getComponentsByKind,
   formatComponentDetails,
-} from '@turing-incomplete/core/dsl';
-import type { ComponentLibrary } from '@turing-incomplete/core';
+} from '../dsl/index.js';
+import type { ComponentLibrary } from '../types/circuit.js';
 
 export function getPrimitivesHandler(
   params: { kind?: 'combinational' | 'sequential' | 'sink' },

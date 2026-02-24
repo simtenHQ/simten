@@ -20,6 +20,7 @@ import { useCircuitStore } from '../../stores/circuit-store';
 import type { NodeData } from '../../utils/projection';
 import { cn } from '@/lib/utils';
 import { LabelEditor } from '../LabelEditor';
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 
 interface InputNodeProps {
   data: NodeData;
@@ -185,7 +186,21 @@ export function InputNode({ data, selected }: InputNodeProps) {
         />
       )}
       <BaseNode outputPorts={outputPorts} selected={selected} className="min-w-[80px]">
-        <div className="flex flex-col items-center gap-2">
+        <div className="relative flex flex-col items-center gap-2">
+          {/* Composite badge */}
+          {data.isComposite && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded bg-blue-500 text-[8px] text-white">
+                  &#x229E;
+                </div>
+              </TooltipTrigger>
+              <TooltipContent side="top" sideOffset={4}>
+                <p className="text-xs">Double-click to inspect internals</p>
+              </TooltipContent>
+            </Tooltip>
+          )}
+
           {/* Component Label */}
           <div
             className="px-2 py-1 rounded text-xs font-medium text-gray-700 cursor-pointer hover:bg-blue-50 hover:text-blue-700 border border-transparent hover:border-blue-300 transition-colors"

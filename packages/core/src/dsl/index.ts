@@ -31,17 +31,13 @@ export type { ParseError, ValidationError, ChevrotainParseResult } from './parse
 // ============================================================================
 
 export { compileToIR, compileCircuitToIR, CompilerError } from './compiler/index.js';
-export type { ComponentLibrary as DSLComponentLibrary } from './compiler/index.js';
 
 // ============================================================================
-// Preprocessor
+// Preprocessor (Node.js only — use @turing-incomplete/core/dsl/preprocessor)
 // ============================================================================
+// Preprocessor uses node:path/node:fs, so it's NOT re-exported here.
+// Import from '@turing-incomplete/core/dsl/preprocessor' instead.
 
-export {
-  preprocessDSL,
-  createMapFileResolver,
-  createNodeFileResolver,
-} from './preprocessor.js';
 export type { FileResolver, PreprocessResult } from './preprocessor.js';
 
 // ============================================================================

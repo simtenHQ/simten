@@ -5,6 +5,9 @@
 // AST types
 export * from './ast.js';
 
+// Testbench AST types
+export * from './testbench-ast.js';
+
 // Re-export IR types (they live in visual-editor for now)
 export type {
   Circuit,

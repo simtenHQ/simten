@@ -18,9 +18,7 @@ import { Button } from '@/components/ui/button';
 import { useTestbenchStore } from '../stores/testbench-store';
 import { useComponentLibraryStore } from '../stores';
 import { useCircuitStore } from '../stores/circuit-store';
-import { parseDSL } from '../../dsl/parser';
-import { compileTestbenchToIR, ComponentNotFoundError } from '../../dsl/compiler';
-import type { TestbenchDef } from '../../dsl/types/testbench-ast';
+import { parseDSL, compileTestbenchToIR, ComponentNotFoundError, type TestbenchDef } from '@/features/dsl';
 
 export function TestbenchLoader() {
   const [dslInput, setDslInput] = useState('');

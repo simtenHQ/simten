@@ -35,7 +35,7 @@ import {
 } from '../flat-simulator';
 import { useComponentLibraryStore } from '../../stores/component-library-store';
 import { writeVCDToFile } from '../visualization/vcd-generator';
-import type { SimulationTrace } from '../../../dsl/analysis/types';
+import type { SimulationTrace } from '@/features/dsl';
 
 // ============================================================================
 // Testbench Runner
