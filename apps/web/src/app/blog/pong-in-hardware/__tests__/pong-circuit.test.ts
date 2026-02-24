@@ -6,11 +6,7 @@
  */
 
 import { describe, it, expect, beforeEach } from "vitest";
-import { parseDSL } from "@/features/dsl/parser";
-import {
-  compileToIR,
-  type ComponentLibrary as DSLComponentLibrary,
-} from "@/features/dsl/compiler/ir-generator";
+import { parseDSL, compileToIR, type ComponentLibrary as DSLComponentLibrary } from "@/features/dsl";
 import {
   createSimulatorFromCircuit,
   type ComponentLibrary,

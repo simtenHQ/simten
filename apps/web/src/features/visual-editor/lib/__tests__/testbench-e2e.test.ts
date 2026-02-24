@@ -8,7 +8,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { parseDSLOrThrow } from '@/features/dsl/parser';
+import { parseDSLOrThrow } from '@/features/dsl';
 import { compileStimulus } from '../testing/stimulus-compiler';
 import { generateVCD, parseVCDHeader } from '../visualization/vcd-generator';
 import { CaptureData } from '../../types/testbench';

@@ -9,13 +9,13 @@ import {
   parseDSL,
   compileToIR,
   runTestbench,
-} from '@turing-incomplete/core/dsl';
-import type { DSLComponentLibrary } from '@turing-incomplete/core/dsl';
+} from '../dsl/index.js';
+import type { ComponentLibrary } from '../dsl/index.js';
 import {
   createComponentLibrary,
   getPrimitives,
-} from '@turing-incomplete/core/simulator';
-import type { Circuit, BitValue, BusValue } from '@turing-incomplete/core';
+} from '../simulator/index.js';
+import type { Circuit, BitValue, BusValue } from '../types/circuit.js';
 
 export interface TestbenchResult {
   name: string;
@@ -47,7 +47,7 @@ export function runTestbenchHandler(
 ): TestbenchResult[] | TestError {
   // Build shared mutable library
   const allCircuits: Circuit[] = [...getPrimitives()];
-  const mutableLibrary: DSLComponentLibrary = {
+  const mutableLibrary: ComponentLibrary = {
     resolveComponent: (name: string) =>
       allCircuits.find((c) => c.name === name),
     getAllPrimitiveNames: () => getPrimitives().map((c) => c.name),

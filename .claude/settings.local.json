@@ -16,7 +16,9 @@
       "Bash(head:*)",
       "Bash(tail:*)",
       "mcp__turing-incomplete__get_primitives",
-      "mcp__turing-incomplete__simulate_circuit"
+      "mcp__turing-incomplete__simulate_circuit",
+      "Bash(cd:*)",
+      "Bash(pnpm:*)"
     ]
   }
 }

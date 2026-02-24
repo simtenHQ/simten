@@ -35,9 +35,6 @@ importers:
       '@turing-incomplete/core':
         specifier: workspace:*
         version: link:../../packages/core
-      '@turing-incomplete/mcp':
-        specifier: workspace:*
-        version: link:../../packages/mcp
       '@xyflow/react':
         specifier: ^12.10.0
         version: 12.10.1(@types/react@19.2.14)(immer@11.1.4)(react-dom@19.1.4)(react@19.1.4)

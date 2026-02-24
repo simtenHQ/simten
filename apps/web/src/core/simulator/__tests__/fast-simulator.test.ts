@@ -7,11 +7,10 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
-import { compileDSL, type ComponentLibrary } from '@/features/dsl/index';
+import { compileDSL, type ComponentLibrary, type Circuit } from '@/features/dsl';
 import { useComponentLibraryStore } from '@/features/visual-editor/stores/component-library-store';
 import { useMemoryDataStore } from '@/features/visual-editor/stores/memory-data-store';
 import { getPrimitives } from '@/features/visual-editor/lib/primitive-registry';
-import type { Circuit } from '@/features/dsl/types';
 import { elaborate } from '@/features/visual-editor/lib/elaboration';
 import {
   createSimulator,

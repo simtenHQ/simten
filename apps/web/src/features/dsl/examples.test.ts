@@ -6,8 +6,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { parseDSL, compileDSL } from './index';
-import { ComponentLibrary, Circuit } from './types';
+import { parseDSL, compileDSL, type ComponentLibrary, type Circuit } from './index';
 import { bitType } from '../visual-editor/types/circuit';
 
 // Simple component library for examples

@@ -10,7 +10,7 @@ import { resolve, dirname } from 'node:path';
 import {
   preprocessDSL,
   createNodeFileResolver,
-} from '@turing-incomplete/core/dsl';
+} from '@turing-incomplete/core/dsl/preprocessor';
 
 export interface ReadResult {
   source: string;

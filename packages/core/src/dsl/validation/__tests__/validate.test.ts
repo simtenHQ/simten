@@ -376,4 +376,69 @@ describe('Formatters', () => {
       expect(formatForLLM(errorResult).status).toBe('errors');
     });
   });
+
+  describe('composite resolution', () => {
+    it('resolves same-file composites through the full pipeline', () => {
+      const source = `
+        circuit Inner {
+          input a: Bit
+          output out: Bit
+          impl {
+            node buf: Buffer
+            connect a -> buf.in
+            connect buf.out -> out
+          }
+        }
+
+        circuit Outer {
+          input x: Bit
+          output y: Bit
+          impl {
+            node inner: Inner
+            connect x -> inner.a
+            connect inner.out -> y
+          }
+        }
+      `;
+
+      const result = validateCircuit(source, { componentLibrary: library });
+
+      expect(result.valid).toBe(true);
+      expect(result.canSimulate).toBe(true);
+      expect(result.circuits?.map(c => c.name)).toEqual(['Inner', 'Outer']);
+    });
+
+    it('resolves clock-driven composite with harness pattern', () => {
+      const source = `
+        circuit Counter {
+          clock clk
+          output count: Bus[8]
+          impl {
+            node reg: Register
+            node adder: Adder
+            node one: Constant(value=1)
+            node we_on: Constant(value=1)
+            connect reg.q -> adder.a
+            connect one.out -> adder.b
+            connect adder.sum -> reg.data
+            connect we_on.out -> reg.we
+            connect reg.q -> count
+          }
+        }
+
+        circuit CounterHarness {
+          impl {
+            node dut: Counter
+            node count_out: HexDisplay
+            connect dut.count -> count_out.in
+          }
+        }
+      `;
+
+      const result = validateCircuit(source, { componentLibrary: library });
+
+      expect(result.valid).toBe(true);
+      expect(result.circuits?.map(c => c.name)).toEqual(['Counter', 'CounterHarness']);
+    });
+  });
 });

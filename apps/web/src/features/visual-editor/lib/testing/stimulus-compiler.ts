@@ -13,7 +13,7 @@
  * the testbench runner uses to apply stimulus during simulation.
  */
 
-import {
+import type {
   StimulusBlock,
   StimulusEvent,
   StimulusTiming,
@@ -21,8 +21,12 @@ import {
   RangeTiming,
   SteppedTiming,
   StimulusAssignment,
-} from '@/features/dsl/types/testbench-ast';
-import { Expr, LiteralExpr, VariableExpr, BinaryExpr, UnaryExpr } from '@/features/dsl/types/ast';
+  Expr,
+  LiteralExpr,
+  VariableExpr,
+  BinaryExpr,
+  UnaryExpr,
+} from '@/features/dsl';
 import {
   StimulusSchedule,
   StimulusAction,

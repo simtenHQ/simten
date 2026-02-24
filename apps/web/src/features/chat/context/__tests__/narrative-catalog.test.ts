@@ -8,8 +8,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { buildNarrativeSummary } from '../narrative-builder';
 import { enforceTokenBudget } from '../token-counter';
-import { buildEnvelope } from '@/features/dsl';
-import { validateCircuit } from '@/features/dsl/validation';
+import { buildEnvelope, validateCircuit } from '@/features/dsl';
 import { PRIMITIVES } from '@/features/visual-editor/lib/primitive-registry';
 import { createComponentLibrary } from '@/core/simulator';
 

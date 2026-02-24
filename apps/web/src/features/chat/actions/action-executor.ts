@@ -15,8 +15,7 @@ import { getIdempotencyTracker } from './idempotency-tracker';
 import { checkStaleness, createStaleResult, createCannotSimulateResult } from './staleness-checker';
 import { getSimulationThrottle, type SimulationContext } from './simulation-throttle';
 import type { SetInputAction, RunSimulationAction, ShowDiffAction, WriteCircuitAction, InsertNodeAction, GenerateHarnessAction, VerifyAssertionAction } from '../types';
-import { generateHarness, parseDSL } from '@/features/dsl';
-import { formatAssertionSummary, evaluateAssertions } from '@/features/dsl/harness/assertion-evaluator';
+import { generateHarness, parseDSL, formatAssertionSummary, evaluateAssertions } from '@/features/dsl';
 import type { ValidationSnapshot } from '../types';
 
 // ============================================================================
@@ -458,7 +457,7 @@ async function executeVerifyAssertion(
     }
 
     // Compile the testbench using the component library store
-    const { compileTestbenchToIR } = await import('@/features/dsl/compiler/testbench-compiler');
+    const { compileTestbenchToIR } = await import('@/features/dsl');
     const { useComponentLibraryStore } = await import('@/features/visual-editor/stores/component-library-store');
     const library = useComponentLibraryStore.getState();
 

@@ -2,15 +2,15 @@
  * Shared Component Library
  *
  * Builds a reusable ComponentLibrary from primitives.
- * Shared across all MCP tool handlers.
+ * Shared across all API handlers.
  */
 
 import {
   getPrimitives,
   createComponentLibrary,
-} from '@turing-incomplete/core/simulator';
-import type { Circuit, ComponentLibrary } from '@turing-incomplete/core';
-import type { DSLComponentLibrary } from '@turing-incomplete/core/dsl';
+} from '../simulator/index.js';
+import type { Circuit, ComponentLibrary } from '../types/circuit.js';
+import type { ComponentLibrary as DSLComponentLibrary } from '../dsl/index.js';
 
 let _library: ComponentLibrary | undefined;
 
@@ -26,7 +26,7 @@ export function getLibrary(): ComponentLibrary {
 
 /**
  * Create a mutable library that can accumulate compiled circuits.
- * Used by simulate and test tools that need to compile user circuits
+ * Used by simulate and test handlers that need to compile user circuits
  * into the same namespace as primitives.
  *
  * Returns the compiler-compatible library interface and the backing array.

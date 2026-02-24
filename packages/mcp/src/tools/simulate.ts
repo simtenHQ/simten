@@ -4,7 +4,7 @@
 
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
-import { simulateCircuit } from '../handlers/simulate.js';
+import { simulateCircuit } from '@turing-incomplete/core/api';
 import { readDSLSource } from '../lib/file-reader.js';
 
 export function registerSimulateTool(server: McpServer): void {

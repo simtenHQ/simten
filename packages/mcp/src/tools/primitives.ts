@@ -4,8 +4,7 @@
 
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
-import { getPrimitivesHandler } from '../handlers/primitives.js';
-import { getLibrary } from '../lib/shared-library.js';
+import { getPrimitivesHandler, getLibrary } from '@turing-incomplete/core/api';
 
 export function registerPrimitivesTool(server: McpServer): void {
   server.tool(

@@ -8,7 +8,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { parseDSL, parseDSLOrThrow } from '@/features/dsl/parser';
+import { parseDSL, parseDSLOrThrow } from '@/features/dsl';
 import { compileStimulus, validateStimulus, formatStimulusSchedule } from '../testing/stimulus-compiler';
 
 describe('Testbench Integration', () => {
