@@ -458,13 +458,13 @@ async function executeVerifyAssertion(
 
     // Compile the testbench using the component library store
     const { compileTestbenchToIR } = await import('@/features/dsl');
-    const { useComponentLibraryStore } = await import('@turing-incomplete/ui/editor');
+    const { useComponentLibraryStore } = await import('@turing-incomplete/ui/editor/stores');
     const library = useComponentLibraryStore.getState();
 
     const compiledTestbench = compileTestbenchToIR(targetTb, library);
 
     // Run testbench, collecting a per-cycle trace for accurate assertion evaluation
-    const { runTestbenchWithTrace } = await import('@turing-incomplete/ui/editor');
+    const { runTestbenchWithTrace } = await import('@turing-incomplete/ui/editor/lib');
     const maxCycles = action.maxCycles ?? compiledTestbench.maxCycles;
     const { trace } = runTestbenchWithTrace(compiledTestbench, maxCycles);
 

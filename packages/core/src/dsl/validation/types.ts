@@ -169,7 +169,7 @@ export interface ComponentInterface {
   /** Clock signals */
   clocks: Array<{ name: string }>;
   /** Optional parameters */
-  parameters?: Array<{ name: string; type: string; defaultValue?: string }>;
+  parameters?: Array<{ name: string; type: string; defaultValue?: string; options?: (number | string | boolean)[] }>;
   /** Component kind (combinational, sequential, sink) */
   kind?: 'combinational' | 'sequential' | 'sink';
   /** Optional description */

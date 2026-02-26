@@ -32,7 +32,7 @@ import {
   createSimulator,
   type SimulatorEngine,
   type ComponentLibrary as CoreComponentLibrary,
-} from "@turing-incomplete/ui/simulator";
+} from "@turing-incomplete/core/simulator";
 
 const nodeTypes: NodeTypes = {
   inputNode: InputNode,

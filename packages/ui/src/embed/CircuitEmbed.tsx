@@ -15,6 +15,8 @@ interface CircuitEmbedProps {
   autoRunSpeed?: number; // ms between ticks when auto-running
   title?: string;
   description?: string;
+  /** Show only specific nodes at full opacity; others are dimmed. Simulation still runs on the full circuit. */
+  focus?: string | string[];
 }
 
 /**
@@ -31,6 +33,7 @@ export function CircuitEmbed({
   autoRunSpeed = 500,
   title,
   description,
+  focus,
 }: CircuitEmbedProps) {
   const options: UseCircuitSimulatorOptions | undefined = initialMemory
     ? { initialMemory }
@@ -103,6 +106,7 @@ export function CircuitEmbed({
         onToggleNode={sim.toggleNode}
         onSetNodeValue={sim.setNodeValue}
         height={height}
+        focus={focus}
       />
 
       {/* Controls bar */}

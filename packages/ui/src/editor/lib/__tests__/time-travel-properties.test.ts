@@ -58,7 +58,7 @@ describe('Time Travel - State Consistency Properties', () => {
             const clockEdges = { clk: 'rising' as const };
 
             // Update register state
-            registerState = PRIMITIVE_EVALUATORS.Register.updateState(
+            registerState = PRIMITIVE_EVALUATORS.Register.updateState!(
               inputs,
               registerState,
               clockEdges
@@ -136,7 +136,7 @@ describe('Time Travel - State Consistency Properties', () => {
               ['data', writeValue],
               ['we', false],
             ]);
-            registerState = PRIMITIVE_EVALUATORS.Register.updateState(
+            registerState = PRIMITIVE_EVALUATORS.Register.updateState!(
               inputs,
               registerState,
               { clk: 'rising' }
@@ -155,7 +155,7 @@ describe('Time Travel - State Consistency Properties', () => {
             ['data', writeValue],
             ['we', true],
           ]);
-          registerState = PRIMITIVE_EVALUATORS.Register.updateState(
+          registerState = PRIMITIVE_EVALUATORS.Register.updateState!(
             writeInputs,
             registerState,
             { clk: 'rising' }
@@ -229,7 +229,7 @@ describe('Time Travel - State Consistency Properties', () => {
               ['we', true], // Always write
             ]);
 
-            registerState = PRIMITIVE_EVALUATORS.Register.updateState(
+            registerState = PRIMITIVE_EVALUATORS.Register.updateState!(
               inputs,
               registerState,
               { clk: 'rising' }
@@ -288,7 +288,7 @@ describe('Time Travel - Metamorphic Properties', () => {
                 ['data', value],
                 ['we', i === 5],
               ]);
-              state = PRIMITIVE_EVALUATORS.Register.updateState(
+              state = PRIMITIVE_EVALUATORS.Register.updateState!(
                 inputs,
                 state,
                 { clk: 'rising' }
@@ -324,7 +324,7 @@ describe('Time Travel - Metamorphic Properties', () => {
               ['data', value],
               ['we', i === 5],
             ]);
-            state = PRIMITIVE_EVALUATORS.Register.updateState(
+            state = PRIMITIVE_EVALUATORS.Register.updateState!(
               inputs,
               state,
               { clk: 'rising' }

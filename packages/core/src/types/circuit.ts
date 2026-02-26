@@ -65,6 +65,10 @@ export interface PortDescriptor {
   description?: string;
   /** Default value for unconnected inputs. If specified, port is optional. */
   defaultValue?: BitValue | BusValue;
+  /** Port width comes from this component argument (e.g. 'width') */
+  widthParam?: string;
+  /** Multiply the param value to get actual width (e.g. 2 for Multiplier output) */
+  widthMultiplier?: number;
 }
 
 // ============================================================================
@@ -197,6 +201,8 @@ export interface Parameter {
   name: string;
   paramType: ParameterType;
   defaultValue?: number | string | boolean;
+  /** Valid choices for this parameter (UI can show a dropdown) */
+  options?: (number | string | boolean)[];
 }
 
 // ============================================================================

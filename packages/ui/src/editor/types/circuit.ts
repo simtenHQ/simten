@@ -30,6 +30,8 @@ export interface PortDescriptor {
   description?: string;
   /** Default value for unconnected inputs. If specified, port is optional. */
   defaultValue?: BitValue | BusValue;
+  widthParam?: string;
+  widthMultiplier?: number;
 }
 
 // ============================================================================
@@ -165,6 +167,7 @@ export interface Parameter {
   name: string;
   paramType: ParameterType;
   defaultValue?: number | string | boolean;
+  options?: (number | string | boolean)[];
 }
 
 // ============================================================================

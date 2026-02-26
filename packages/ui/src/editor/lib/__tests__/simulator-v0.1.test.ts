@@ -6,7 +6,7 @@
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';
-import { createSimulatorFromCircuit, type ComponentLibrary } from '../../../simulator';
+import { createSimulatorFromCircuit, type ComponentLibrary } from '@turing-incomplete/core/simulator';
 import { useComponentLibraryStore } from '../../stores/component-library-store';
 import { getPrimitives } from '../primitive-registry';
 import { bitType, busType, type Circuit } from '../../types/circuit';

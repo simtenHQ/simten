@@ -18,9 +18,9 @@ import {
   validateCircuit,
   analyzeCircuit,
 } from "../index";
-import { elaborate } from "@turing-incomplete/ui/simulator";
-import { useComponentLibraryStore, useAnalysisStore } from "@turing-incomplete/ui/editor";
-import type { Circuit } from "@turing-incomplete/ui/editor";
+import { elaborate } from "@turing-incomplete/core/simulator";
+import { useComponentLibraryStore, useAnalysisStore } from "@turing-incomplete/ui/editor/stores";
+import type { Circuit } from "@turing-incomplete/ui/editor/types";
 import { CompileButton } from "./CompileButton";
 import { ErrorDisplay, CompilationError } from "./ErrorDisplay";
 

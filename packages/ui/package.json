@@ -6,9 +6,12 @@
   "exports": {
     ".": { "types": "./src/index.ts", "default": "./src/index.ts" },
     "./editor": { "types": "./src/editor/index.ts", "default": "./src/editor/index.ts" },
-    "./embed": { "types": "./src/embed/index.ts", "default": "./src/embed/index.ts" },
-    "./simulator": { "types": "./src/simulator/index.ts", "default": "./src/simulator/index.ts" },
-    "./primitives": { "types": "./src/primitives/index.ts", "default": "./src/primitives/index.ts" }
+    "./editor/stores": { "types": "./src/editor/stores/index.ts", "default": "./src/editor/stores/index.ts" },
+    "./editor/types": { "types": "./src/editor/types/index.ts", "default": "./src/editor/types/index.ts" },
+    "./editor/lib": { "types": "./src/editor/lib/index.ts", "default": "./src/editor/lib/index.ts" },
+    "./editor/components": { "types": "./src/editor/components/index.ts", "default": "./src/editor/components/index.ts" },
+    "./editor/hooks": { "types": "./src/editor/hooks/index.ts", "default": "./src/editor/hooks/index.ts" },
+    "./embed": { "types": "./src/embed/index.ts", "default": "./src/embed/index.ts" }
   },
   "files": ["src"],
   "scripts": {

@@ -14,7 +14,7 @@ import {
   isPrimitive,
   createPrimitiveComponent,
 } from "../primitive-registry";
-import type { InputValue } from "../../../simulator";
+import type { InputValue } from "@turing-incomplete/core/simulator";
 import { bitType, busType } from "../../types/circuit";
 import {
   uint8,
@@ -1831,7 +1831,7 @@ describe("createPrimitiveComponent", () => {
         expect(component.addressWidth).toBe(8);
         expect(component.dataWidth).toBe(8);
         expect(component.memory).toBeInstanceOf(Map);
-        expect(component.memory.size).toBe(0);
+        expect((component.memory as Map<number, number>).size).toBe(0);
       } else {
         throw new Error("RAM component missing required properties");
       }

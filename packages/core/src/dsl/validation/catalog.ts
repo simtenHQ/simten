@@ -66,6 +66,19 @@ export function getComponentCatalog(library: ComponentLibrary): ComponentCatalog
 }
 
 /**
+ * Format a port type, showing parameterized widths (e.g. "Bus[width]", "Bus[width*2]").
+ */
+function formatParametricPortType(port: { portType: { kind: string; width?: number }; widthParam?: string; widthMultiplier?: number }): string {
+  if (port.widthParam) {
+    const multiplier = port.widthMultiplier && port.widthMultiplier !== 1
+      ? `${port.widthParam}*${port.widthMultiplier}`
+      : port.widthParam;
+    return `Bus[${multiplier}]`;
+  }
+  return formatPortType(port.portType);
+}
+
+/**
  * Convert a Circuit to a ComponentInterface.
  */
 function circuitToInterface(circuit: Circuit): ComponentInterface {
@@ -73,11 +86,11 @@ function circuitToInterface(circuit: Circuit): ComponentInterface {
     name: circuit.name,
     inputs: circuit.inputs.map((p) => ({
       name: p.name,
-      type: formatPortType(p.portType),
+      type: formatParametricPortType(p),
     })),
     outputs: circuit.outputs.map((p) => ({
       name: p.name,
-      type: formatPortType(p.portType),
+      type: formatParametricPortType(p),
     })),
     clocks: circuit.clocks.map((c) => ({ name: c.name })),
     parameters: circuit.parameters.length > 0
@@ -85,6 +98,7 @@ function circuitToInterface(circuit: Circuit): ComponentInterface {
           name: p.name,
           type: p.paramType,
           defaultValue: p.defaultValue?.toString(),
+          options: p.options,
         }))
       : undefined,
     kind: circuit.metadata?.kind,
@@ -386,7 +400,8 @@ export function formatComponentDetails(component: ComponentInterface): string {
     lines.push('Parameters:');
     for (const param of component.parameters) {
       const defaultStr = param.defaultValue ? ` (default: ${param.defaultValue})` : '';
-      lines.push(`  ${param.name}: ${param.type}${defaultStr}`);
+      const optionsStr = param.options ? ` [${param.options.join(', ')}]` : '';
+      lines.push(`  ${param.name}: ${param.type}${defaultStr}${optionsStr}`);
     }
   }
 

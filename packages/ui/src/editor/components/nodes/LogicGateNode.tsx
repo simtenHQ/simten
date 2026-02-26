@@ -12,6 +12,15 @@ import type { NodeData } from '../../utils/projection';
 import { getPrimitiveMetadata, PRIMITIVE_CATEGORIES } from '../../lib/simulation/primitive-metadata';
 import { Tooltip, TooltipTrigger, TooltipContent } from '../../../primitives/tooltip';
 
+/** Format component name with key parameters, e.g. "Adder(16)" */
+function formatComponentLabel(componentRef: string, args?: Record<string, unknown>): string {
+  if (!args || Object.keys(args).length === 0) return componentRef;
+  // Show width param inline if present (most common case)
+  const width = args.width ?? args.input_count;
+  if (width !== undefined) return `${componentRef}(${width})`;
+  return componentRef;
+}
+
 interface LogicGateNodeProps {
   data: NodeData;
   selected?: boolean;
@@ -62,8 +71,8 @@ export function LogicGateNode({ data, selected }: LogicGateNodeProps) {
         case 'RAM':
           return 'RAM';
         default:
-          // For user-defined components, show the component ref name
-          return data.componentRef;
+          // For user-defined components, show the component ref name with params
+          return formatComponentLabel(data.componentRef, data.arguments);
       }
     };
 

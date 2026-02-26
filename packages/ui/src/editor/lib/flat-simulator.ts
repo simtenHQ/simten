@@ -13,17 +13,17 @@ export type {
   FlatPortValueMap,
   FlatSequentialState,
   FlatSimulationResult,
-} from '../../simulator';
+} from '@turing-incomplete/core/simulator';
 
 // Import adapters and stores
 import { useComponentLibraryStore } from '../stores/component-library-store';
 import { useMemoryDataStore } from '../stores/memory-data-store';
 import type { FlatCircuit } from './elaboration';
-import type { FlatPortValueMap, FlatSequentialState, FlatSimulationResult, ComponentLibrary } from '../../simulator';
+import type { FlatPortValueMap, FlatSequentialState, FlatSimulationResult, ComponentLibrary } from '@turing-incomplete/core/simulator';
 import {
   initializeFlatSequentialState as coreInitState,
   createSimulator,
-} from '../../simulator';
+} from '@turing-incomplete/core/simulator';
 
 /**
  * Adapt a ComponentLibraryStore to the pure ComponentLibrary interface.

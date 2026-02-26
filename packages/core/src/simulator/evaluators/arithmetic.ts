@@ -6,7 +6,7 @@
  */
 
 import type { EvalContext } from './types.js';
-import { readInput, writeOutput } from './types.js';
+import { readInput, writeOutput, bitMask } from './types.js';
 
 /**
  * Adder: n-bit adder with carry in/out
@@ -14,18 +14,18 @@ import { readInput, writeOutput } from './types.js';
  * Outputs: sum, carry_out
  */
 export function evalAdder(ctx: EvalContext): void {
-  const a = readInput(ctx, 0);
-  const b = readInput(ctx, 1);
+  // Use >>> 0 to interpret Int32Array values as unsigned for correct carry detection
+  const a = readInput(ctx, 0) >>> 0;
+  const b = readInput(ctx, 1) >>> 0;
   const carryIn = readInput(ctx, 2) ? 1 : 0;
 
-  // Get width from node arguments
   const node = ctx.circuit.flatCircuit.nodes[ctx.nodeIndex];
   const width = (node.arguments.width as number) ?? 8;
-  const mask = (1 << width) - 1;
+  const mask = bitMask(width);
 
   const result = a + b + carryIn;
   const sum = result & mask;
-  const carryOut = (result >> width) !== 0 ? 1 : 0;
+  const carryOut = result > mask ? 1 : 0;
 
   writeOutput(ctx, 0, sum);
   writeOutput(ctx, 1, carryOut);
@@ -37,13 +37,13 @@ export function evalAdder(ctx: EvalContext): void {
  * Outputs: difference, borrow_out
  */
 export function evalSubtractor(ctx: EvalContext): void {
-  const a = readInput(ctx, 0);
-  const b = readInput(ctx, 1);
+  const a = readInput(ctx, 0) >>> 0;
+  const b = readInput(ctx, 1) >>> 0;
   const borrowIn = readInput(ctx, 2) ? 1 : 0;
 
   const node = ctx.circuit.flatCircuit.nodes[ctx.nodeIndex];
   const width = (node.arguments.width as number) ?? 8;
-  const mask = (1 << width) - 1;
+  const mask = bitMask(width);
 
   const result = a - b - borrowIn;
   const difference = result & mask;
@@ -59,14 +59,14 @@ export function evalSubtractor(ctx: EvalContext): void {
  * Outputs: product
  */
 export function evalMultiplier(ctx: EvalContext): void {
-  const a = readInput(ctx, 0);
-  const b = readInput(ctx, 1);
+  const a = readInput(ctx, 0) >>> 0;
+  const b = readInput(ctx, 1) >>> 0;
 
   const node = ctx.circuit.flatCircuit.nodes[ctx.nodeIndex];
   const width = (node.arguments.width as number) ?? 8;
-  const mask = (1 << (width * 2)) - 1;
+  const outputMask = bitMask(width * 2);
 
-  const product = (a * b) & mask;
+  const product = (a * b) & outputMask;
 
   writeOutput(ctx, 0, product);
 }
@@ -77,22 +77,23 @@ export function evalMultiplier(ctx: EvalContext): void {
  * Outputs: sum, overflow, carry_out
  */
 export function evalSignedAdder(ctx: EvalContext): void {
-  const a = readInput(ctx, 0);
-  const b = readInput(ctx, 1);
+  const aRaw = readInput(ctx, 0);
+  const bRaw = readInput(ctx, 1);
   const carryIn = readInput(ctx, 2) ? 1 : 0;
 
   const node = ctx.circuit.flatCircuit.nodes[ctx.nodeIndex];
   const width = (node.arguments.width as number) ?? 8;
-  const mask = (1 << width) - 1;
+  const mask = bitMask(width);
   const signBit = 1 << (width - 1);
 
-  const result = a + b + carryIn;
+  // Unsigned for carry detection
+  const result = (aRaw >>> 0) + (bRaw >>> 0) + carryIn;
   const sum = result & mask;
-  const carryOut = (result >> width) !== 0 ? 1 : 0;
+  const carryOut = result > mask ? 1 : 0;
 
-  // Overflow: both inputs have same sign, but result has different sign
-  const aSign = (a & signBit) !== 0;
-  const bSign = (b & signBit) !== 0;
+  // Overflow uses sign bits from original values
+  const aSign = (aRaw & signBit) !== 0;
+  const bSign = (bRaw & signBit) !== 0;
   const sumSign = (sum & signBit) !== 0;
   const overflow = aSign === bSign && aSign !== sumSign ? 1 : 0;
 
@@ -114,7 +115,7 @@ export function evalSignedMultiplier(ctx: EvalContext): void {
   const width = (node.arguments.width as number) ?? 8;
   const signBit = 1 << (width - 1);
   const maxValue = 1 << width;
-  const outputMask = (1 << (width * 2)) - 1;
+  const outputMask = bitMask(width * 2);
 
   // Convert to signed
   const aSigned = (a & signBit) ? a - maxValue : a;
@@ -136,8 +137,8 @@ export function evalSignedMultiplier(ctx: EvalContext): void {
  * Outputs: eq, lt, gt
  */
 export function evalComparator(ctx: EvalContext): void {
-  const a = readInput(ctx, 0);
-  const b = readInput(ctx, 1);
+  const a = readInput(ctx, 0) >>> 0;
+  const b = readInput(ctx, 1) >>> 0;
 
   writeOutput(ctx, 0, a === b ? 1 : 0);  // eq
   writeOutput(ctx, 1, a < b ? 1 : 0);    // lt
@@ -180,7 +181,7 @@ export function evalLeftShifter(ctx: EvalContext): void {
 
   const node = ctx.circuit.flatCircuit.nodes[ctx.nodeIndex];
   const width = (node.arguments.width as number) ?? 8;
-  const mask = (1 << width) - 1;
+  const mask = bitMask(width);
 
   const result = shift >= width ? 0 : (value << shift) & mask;
 

@@ -10,8 +10,8 @@ import {
   useComponentLibraryStore,
   usePortValuesStore,
   useCircuitStore,
-} from '@turing-incomplete/ui/editor';
-import type { Circuit } from '@turing-incomplete/ui/editor';
+} from '@turing-incomplete/ui/editor/stores';
+import type { Circuit } from '@turing-incomplete/ui/editor/types';
 import {
   buildEnvelope,
   type HardwareLLMEnvelope,

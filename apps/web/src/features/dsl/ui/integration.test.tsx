@@ -5,7 +5,8 @@
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';
-import { useComponentLibraryStore, getPrimitives } from '@turing-incomplete/ui/editor';
+import { useComponentLibraryStore } from '@turing-incomplete/ui/editor/stores';
+import { getPrimitives } from '@turing-incomplete/ui/editor/lib';
 import { compileDSL } from '../index';
 
 describe('DSL Editor Integration', () => {
