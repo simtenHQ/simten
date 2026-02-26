@@ -16,6 +16,7 @@ import { registerGrammarTool } from './tools/grammar.js';
 import { registerCheckTool } from './tools/check.js';
 import { registerSimulateTool } from './tools/simulate.js';
 import { registerTestTool } from './tools/test.js';
+import { registerShowTools } from './tools/show.js';
 
 const server = new McpServer({
   name: 'turing-incomplete',
@@ -28,6 +29,7 @@ registerGrammarTool(server);
 registerCheckTool(server);
 registerSimulateTool(server);
 registerTestTool(server);
+registerShowTools(server);
 
 // Connect via stdio transport
 const transport = new StdioServerTransport();

@@ -18,8 +18,8 @@ import type {
   ComponentInterface,
 } from '@/features/dsl';
 import { analyzeForHarness } from '@/features/dsl';
-import type { BitValue, BusValue } from '@turing-incomplete/ui/editor';
-import type { FlatPortValueMap } from '@turing-incomplete/ui/simulator';
+import type { BitValue, BusValue } from '@turing-incomplete/ui/editor/types';
+import type { FlatPortValueMap } from '@turing-incomplete/core/simulator';
 
 // ============================================================================
 // Severity Ordering

@@ -15,7 +15,7 @@ import type { Circuit, Node, Connection, PortPath } from '../types/circuit';
 import type { MetadataState } from '../types';
 import { WIRE_COLORS } from '../types';
 import { useComponentLibraryStore } from '../stores/component-library-store';
-import { getReferenceCircuit } from '../../simulator';
+import { getReferenceCircuit } from '@turing-incomplete/core/simulator';
 import type { FlatPortValueMap, FlatSequentialState } from '../lib/flat-simulator';
 
 // Alias for backward compatibility
@@ -34,6 +34,7 @@ export interface NodeData extends Record<string, unknown> {
   inputNames: string[];
   outputNames: string[];
   isComposite?: boolean; // True if this node is a composite component (drillable)
+  arguments?: Record<string, unknown>; // Primitive arguments (e.g., { width: 16 })
   __pixels?: number[]; // For Screen component - pixel data from RAM
   __consoleText?: string; // For Console component - accumulated text
   onToggle?: () => void; // Optional callback for input toggle (used by MiniCanvas/Inspector)
@@ -290,6 +291,7 @@ export function projectCircuitToNodes(
         inputNames,
         outputNames,
         isComposite,
+        arguments: node.arguments,
         __pixels: pixels,
         __consoleText: consoleText,
       },

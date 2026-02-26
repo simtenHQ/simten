@@ -32,8 +32,8 @@ import { createDrillDownViewCircuit, BOUNDARY_IN_PREFIX } from "../utils/drill-d
 import { performHierarchicalLayout, centerLayout } from "../utils/auto-layout";
 import { projectCircuitToReactFlow, type NodeData } from "../utils/projection";
 import { getCompiledReferenceCircuit } from "../utils/reference-circuit-cache";
-import { createSimulatorFromCircuit, PRIMITIVE_DEFINITIONS } from "../../simulator";
-import type { FlatPortValueMap, FlatSequentialState, SimulatorSnapshot } from "../../simulator/types";
+import { createSimulatorFromCircuit, PRIMITIVE_DEFINITIONS } from "@turing-incomplete/core/simulator";
+import type { FlatPortValueMap, FlatSequentialState, SimulatorSnapshot } from "@turing-incomplete/core/simulator";
 import type { Circuit } from "../types/circuit";
 import {
   SkipForward,
@@ -454,7 +454,7 @@ function InspectorCanvas({ frame }: InspectorCanvasProps) {
       } else {
         // Primitive with reference circuit — compile on demand
         const store = useComponentLibraryStore.getState();
-        const refCircuit = getCompiledReferenceCircuit(data.componentRef, store);
+        const refCircuit = getCompiledReferenceCircuit(data.componentRef, store, data.arguments as Record<string, number> | undefined);
         if (refCircuit) {
           pushLevel(data.componentRef, refCircuit, data.label || data.componentRef);
         }

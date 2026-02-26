@@ -73,6 +73,13 @@ export function writeOutput(ctx: EvalContext, outputIndex: number, value: number
 }
 
 /**
+ * Create a bitmask for the given width. Handles width=32 where (1 << 32) === 0 in JS.
+ */
+export function bitMask(width: number): number {
+  return width >= 32 ? 0xFFFFFFFF : (1 << width) - 1;
+}
+
+/**
  * Structured args per primitive type (discriminated union).
  * Used for primitives that need compile-time parameters.
  */

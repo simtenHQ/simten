@@ -63,14 +63,20 @@ describe('Reference Circuit Divergence', () => {
     if (!def.referenceCircuit) continue;
 
     it(`${name}: reference circuit compiles without errors`, () => {
-      const { circuits, errors } = compileDSL(def.referenceCircuit!.source, dslLibrary);
+      const source = typeof def.referenceCircuit!.source === 'function'
+        ? def.referenceCircuit!.source({})
+        : def.referenceCircuit!.source;
+      const { circuits, errors } = compileDSL(source, dslLibrary);
       expect(errors).toEqual([]);
       expect(circuits.length).toBeGreaterThan(0);
     });
 
     it(`${name}: reference circuit matches behavioral evaluator`, () => {
       // Compile the reference circuit
-      const { circuits, errors } = compileDSL(def.referenceCircuit!.source, dslLibrary);
+      const source = typeof def.referenceCircuit!.source === 'function'
+        ? def.referenceCircuit!.source({})
+        : def.referenceCircuit!.source;
+      const { circuits, errors } = compileDSL(source, dslLibrary);
       if (errors.length > 0) {
         throw new Error(`Compilation failed: ${errors.map(e => e.message).join(', ')}`);
       }

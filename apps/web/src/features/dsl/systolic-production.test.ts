@@ -17,7 +17,9 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import { compileDSL, type ComponentLibrary, type Circuit as DslCircuit } from './index';
-import { useComponentLibraryStore, getPrimitives, type Circuit } from '@turing-incomplete/ui/editor';
+import { useComponentLibraryStore } from '@turing-incomplete/ui/editor/stores';
+import { getPrimitives } from '@turing-incomplete/ui/editor/lib';
+import type { Circuit } from '@turing-incomplete/ui/editor/types';
 
 describe('Systolic Array - Production Implementations', () => {
   let library: ReturnType<typeof useComponentLibraryStore.getState>;

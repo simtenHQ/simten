@@ -10,8 +10,8 @@
 "use client";
 
 import React, { useCallback, useState, useEffect, useRef } from "react";
-import { ReactFlowProvider } from "@xyflow/react";
 import {
+  ReactFlowProvider,
   Canvas,
   ComponentPalette,
   SimulationControls,
@@ -19,19 +19,17 @@ import {
   TestCaseEditor,
   ClockControls,
   CompositeInspectorDialog,
-  useCircuitStore,
-  usePrimitivesInit,
-  useDSLPreviewStore,
-  useComponentLibraryStore,
-  useSimulationController,
-} from "@turing-incomplete/ui/editor";
-import { Sheet, SheetContent, SheetTitle } from "@turing-incomplete/ui/primitives";
-import { Button } from "@turing-incomplete/ui/primitives";
-import { TooltipProvider } from "@turing-incomplete/ui/primitives";
+} from "@turing-incomplete/ui/editor/components";
+import { useCircuitStore, useDSLPreviewStore, useComponentLibraryStore } from "@turing-incomplete/ui/editor/stores";
+import { usePrimitivesInit } from "@turing-incomplete/ui/editor/hooks";
+import { useSimulationController } from "@turing-incomplete/ui/editor";
+import type { Circuit } from "@turing-incomplete/ui/editor/types";
+import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
+import { Button } from "@/components/ui/button";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { DSLEditor, type DSLEditorRef } from "@/features/dsl/ui/DSLEditor";
 import { Menu, TestTube, Bot } from "lucide-react";
 import { ChatPanel, useChatStore, useNarrativeContext } from "@/features/chat";
-import type { Circuit } from "@turing-incomplete/ui/editor";
 
 // Helper to check if circuit has sequential components
 function hasSequentialComponents(

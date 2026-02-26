@@ -16,18 +16,18 @@ export type {
   FlatConnection,
   HierarchyNode,
   InputSource,
-} from '../../simulator';
+} from '@turing-incomplete/core/simulator';
 
-export { TOP_LEVEL_NODE, isFlatCircuit } from '../../simulator';
+export { TOP_LEVEL_NODE, isFlatCircuit } from '@turing-incomplete/core/simulator';
 
 // Import for adaptation
 import type { Circuit } from '../types/circuit';
 import type { ComponentLibraryStore } from '../stores/component-library-store';
-import type { FlatCircuit, FlatNode, FlatConnection, ComponentLibrary } from '../../simulator';
+import type { FlatCircuit, FlatNode, FlatConnection, ComponentLibrary } from '@turing-incomplete/core/simulator';
 import {
   elaborate as coreElaborate,
   topologicalSortFlat as coreTopoSort,
-} from '../../simulator';
+} from '@turing-incomplete/core/simulator';
 
 /**
  * Adapt a ComponentLibraryStore to the pure ComponentLibrary interface.
