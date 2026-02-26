@@ -497,11 +497,16 @@ export class IRGenerator {
     portDesc: PortDescriptor,
     args: Record<string, number | string | boolean>
   ): PortType {
-    if (portDesc.widthParam && portDesc.portType.kind === 'bus') {
+    if (portDesc.widthParam) {
       const width = args[portDesc.widthParam];
       const multiplier = portDesc.widthMultiplier ?? 1;
       if (typeof width === 'number') {
-        return busType(width * multiplier);
+        const effectiveWidth = width * multiplier;
+        // Bit ports stay Bit when width=1, otherwise become Bus
+        if (effectiveWidth === 1 && portDesc.portType.kind === 'bit') {
+          return bitType();
+        }
+        return busType(effectiveWidth);
       }
     }
     return portDesc.portType;
