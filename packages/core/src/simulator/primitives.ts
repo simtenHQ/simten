@@ -1033,13 +1033,14 @@ circuit Comparator {
   Mux: {
     ...defineCombinational({
       name: 'Mux',
-      description: 'Parameterized multiplexer (default: 2-input, 1-bit)',
+      description: 'Parameterized multiplexer (default: 2-input, 1-bit). Use width for bus muxing.',
       inputs: [
-        { name: 'in0', portType: bitType() },
-        { name: 'in1', portType: bitType() },
+        { name: 'in0', portType: bitType(), widthParam: 'width' },
+        { name: 'in1', portType: bitType(), widthParam: 'width' },
         { name: 'sel', portType: bitType() },
       ],
-      outputs: [{ name: 'out', portType: bitType() }],
+      outputs: [{ name: 'out', portType: bitType(), widthParam: 'width' }],
+      parameters: [{ name: 'width', paramType: 'int', defaultValue: 1, options: [1, 4, 8, 16, 32] }],
       evaluate: (inputs) => {
         const inputCount = (inputs.get('__input_count') as number) ?? 2;
         const width = (inputs.get('__width') as number) ?? 1;
