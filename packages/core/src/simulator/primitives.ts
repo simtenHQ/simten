@@ -1480,6 +1480,10 @@ circuit Comparator {
 // Auto-Generated Exports
 // ============================================================================
 
+const SINK_NAMES = new Set([
+  'Led', 'Output', 'SevenSegment', 'HexDisplay', 'Screen', 'RasterDisplay', 'Console',
+]);
+
 /**
  * Generate Circuit IR definitions from primitive definitions
  */
@@ -1498,6 +1502,11 @@ export function generatePrimitives(defs: Record<string, CorePrimitiveDefinition>
     metadata: {
       description: def.description,
       outputDependency: def.outputDependency,
+      kind: SINK_NAMES.has(def.name)
+        ? 'sink' as const
+        : ((def.clocks && def.clocks.length > 0) || def.outputDependency === 'state-only' || def.outputDependency === 'state+inputs')
+          ? 'sequential' as const
+          : 'combinational' as const,
     },
   }));
 }

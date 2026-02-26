@@ -50,6 +50,7 @@ export {
   getLLMContext,
   getComponentDetails,
   formatComponentDetails,
+  formatComponentCompact,
 } from './catalog.js';
 
 export type { ComponentCatalog } from './catalog.js';

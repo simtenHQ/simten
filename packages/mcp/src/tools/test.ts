@@ -10,7 +10,7 @@ import { readDSLSource } from '../lib/file-reader.js';
 export function registerTestTool(server: McpServer): void {
   server.tool(
     'run_testbench',
-    'Run a testbench against a circuit. The circuit and testbench can be provided as inline source or file paths. Returns test status, cycle count, assertion results, and signal traces.',
+    'Run a testbench against a circuit. The circuit and testbench can be provided as inline source or file paths. Returns test status, cycle count, and only failing assertions. Signal traces are included only on failure (RLE-compressed).',
     {
       circuitSource: z
         .string()
