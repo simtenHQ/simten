@@ -6,7 +6,7 @@
  * that show how the primitive could be built from lower-level components.
  */
 
-import { getReferenceCircuit } from '../../simulator';
+import { getReferenceCircuit } from '@turing-incomplete/core/simulator';
 import { compileDSL } from '@turing-incomplete/core/dsl';
 import type { ComponentLibrary as DSLComponentLibrary } from '@turing-incomplete/core/dsl';
 import type { Circuit } from '../types/circuit';
@@ -29,10 +29,14 @@ const cache = new Map<string, Circuit>();
 export function getCompiledReferenceCircuit(
   primitiveName: string,
   store: ComponentLibraryStore,
+  params?: Record<string, number>,
 ): Circuit | undefined {
-  if (cache.has(primitiveName)) return cache.get(primitiveName);
+  const cacheKey = params && Object.keys(params).length > 0
+    ? `${primitiveName}:${JSON.stringify(params)}`
+    : primitiveName;
+  if (cache.has(cacheKey)) return cache.get(cacheKey);
 
-  const dsl = getReferenceCircuit(primitiveName);
+  const dsl = getReferenceCircuit(primitiveName, params);
   if (!dsl) return undefined;
 
   try {
@@ -52,7 +56,7 @@ export function getCompiledReferenceCircuit(
     const compiled = circuits[circuits.length - 1];
     if (!compiled) return undefined;
 
-    cache.set(primitiveName, compiled);
+    cache.set(cacheKey, compiled);
     return compiled;
   } catch (e) {
     console.warn(`Failed to compile reference circuit for ${primitiveName}:`, e);

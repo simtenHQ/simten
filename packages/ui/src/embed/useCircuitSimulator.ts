@@ -13,7 +13,7 @@ import {
   createSimulator,
   type SimulatorEngine,
   type ComponentLibrary as CoreComponentLibrary,
-} from "../simulator";
+} from "@turing-incomplete/core/simulator";
 
 const TOP_LEVEL_NODE = "__top__";
 
@@ -135,7 +135,17 @@ export function useCircuitSimulator(
     const mainCircuit = result.circuits[result.circuits.length - 1];
     compiledCircuitRef.current = mainCircuit;
 
-    const hasClocks = mainCircuit.clocks && mainCircuit.clocks.length > 0;
+    // Detect sequential: top-level clocks OR any node that references a clocked component
+    let hasClocks = mainCircuit.clocks && mainCircuit.clocks.length > 0;
+    if (!hasClocks) {
+      for (const node of mainCircuit.nodes) {
+        const def = store.resolveComponent(node.componentRef);
+        if (def && def.clocks && def.clocks.length > 0) {
+          hasClocks = true;
+          break;
+        }
+      }
+    }
     setIsSequential(hasClocks);
 
     // Initialize inputs

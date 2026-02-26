@@ -7,7 +7,7 @@
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import { parseDSL, compileToIR, type ComponentLibrary as DSLComponentLibrary } from '@turing-incomplete/core/dsl';
-import { createSimulatorFromCircuit, type ComponentLibrary, type FlatSequentialState } from '../../../simulator';
+import { createSimulatorFromCircuit, type ComponentLibrary, type FlatSequentialState } from '@turing-incomplete/core/simulator';
 import { useComponentLibraryStore } from '../../stores/component-library-store';
 import { getPrimitives } from '../primitive-registry';
 import * as fs from 'fs';

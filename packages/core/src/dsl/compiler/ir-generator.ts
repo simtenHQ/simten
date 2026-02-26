@@ -413,13 +413,13 @@ export class IRGenerator {
     const inputs = componentCircuit.inputs.map((portDesc) => ({
       id: this.generateId(`${nodeDef.instanceName}_${portDesc.name}`),
       name: portDesc.name,
-      portType: this.instantiatePortType(portDesc.portType, args),
+      portType: this.instantiatePortType(portDesc, args),
     }));
 
     const outputs = componentCircuit.outputs.map((portDesc) => ({
       id: this.generateId(`${nodeDef.instanceName}_${portDesc.name}`),
       name: portDesc.name,
-      portType: this.instantiatePortType(portDesc.portType, args),
+      portType: this.instantiatePortType(portDesc, args),
     }));
 
     const clockInstances = componentCircuit.clocks.map((clockDesc) => ({
@@ -494,12 +494,17 @@ export class IRGenerator {
   }
 
   private instantiatePortType(
-    portType: PortType,
-    _args: Record<string, number | string | boolean>
+    portDesc: PortDescriptor,
+    args: Record<string, number | string | boolean>
   ): PortType {
-    // TODO: Handle parameterized port types
-    // For now, just return the port type as-is
-    return portType;
+    if (portDesc.widthParam && portDesc.portType.kind === 'bus') {
+      const width = args[portDesc.widthParam];
+      const multiplier = portDesc.widthMultiplier ?? 1;
+      if (typeof width === 'number') {
+        return busType(width * multiplier);
+      }
+    }
+    return portDesc.portType;
   }
 
   // ==========================================================================

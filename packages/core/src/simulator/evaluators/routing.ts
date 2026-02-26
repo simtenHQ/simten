@@ -62,7 +62,7 @@ export function evalSplitter(ctx: EvalContext): void {
   let bitOffset = 0;
   for (let i = 0; i < widthsOut.length; i++) {
     const width = widthsOut[i];
-    const mask = (1 << width) - 1;
+    const mask = width >= 32 ? 0xFFFFFFFF : (1 << width) - 1;
     const value = (inputValue >> bitOffset) & mask;
     writeOutput(ctx, i, value);
     bitOffset += width;

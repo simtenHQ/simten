@@ -38,7 +38,7 @@ import {
   createSimulator,
   type SimulatorEngine,
   type ComponentLibrary,
-} from '../../simulator';
+} from '@turing-incomplete/core/simulator';
 
 /**
  * Adapt Zustand store to pure ComponentLibrary interface.

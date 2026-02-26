@@ -54,7 +54,7 @@ describe('DFlipFlop - Stateful Property Tests', () => {
             // Update real implementation
             const inputs = new Map<string, boolean>([['d', op.d]]);
             const clockEdges = { clk: op.edge };
-            currentState = PRIMITIVE_EVALUATORS.DFlipFlop.updateState(
+            currentState = PRIMITIVE_EVALUATORS.DFlipFlop.updateState!(
               inputs,
               currentState,
               clockEdges
@@ -82,7 +82,7 @@ describe('DFlipFlop - Stateful Property Tests', () => {
 
         // Falling edge should not update
         const inputs1 = new Map<string, boolean>([['d', newValue]]);
-        state = PRIMITIVE_EVALUATORS.DFlipFlop.updateState(
+        state = PRIMITIVE_EVALUATORS.DFlipFlop.updateState!(
           inputs1,
           state,
           { clk: 'falling' }
@@ -91,7 +91,7 @@ describe('DFlipFlop - Stateful Property Tests', () => {
         if (state !== initial) return false;
 
         // No edge should not update
-        state = PRIMITIVE_EVALUATORS.DFlipFlop.updateState(
+        state = PRIMITIVE_EVALUATORS.DFlipFlop.updateState!(
           inputs1,
           state,
           { clk: 'none' }
@@ -100,7 +100,7 @@ describe('DFlipFlop - Stateful Property Tests', () => {
         if (state !== initial) return false;
 
         // Rising edge should update
-        state = PRIMITIVE_EVALUATORS.DFlipFlop.updateState(
+        state = PRIMITIVE_EVALUATORS.DFlipFlop.updateState!(
           inputs1,
           state,
           { clk: 'rising' }
@@ -162,7 +162,7 @@ describe('Register - Stateful Property Tests', () => {
               ['we', op.we],
             ]);
             const clockEdges = { clk: op.edge };
-            currentState = PRIMITIVE_EVALUATORS.Register.updateState(
+            currentState = PRIMITIVE_EVALUATORS.Register.updateState!(
               inputs,
               currentState,
               clockEdges
@@ -195,7 +195,7 @@ describe('Register - Stateful Property Tests', () => {
             ['data', newValue],
             ['we', false],
           ]);
-          state = PRIMITIVE_EVALUATORS.Register.updateState(
+          state = PRIMITIVE_EVALUATORS.Register.updateState!(
             inputs1,
             state,
             { clk: 'rising' }
@@ -208,7 +208,7 @@ describe('Register - Stateful Property Tests', () => {
             ['data', newValue],
             ['we', true],
           ]);
-          state = PRIMITIVE_EVALUATORS.Register.updateState(
+          state = PRIMITIVE_EVALUATORS.Register.updateState!(
             inputs2,
             state,
             { clk: 'falling' }
@@ -217,7 +217,7 @@ describe('Register - Stateful Property Tests', () => {
           if (state !== initial) return false;
 
           // Write with WE=true on rising edge should update
-          state = PRIMITIVE_EVALUATORS.Register.updateState(
+          state = PRIMITIVE_EVALUATORS.Register.updateState!(
             inputs2,
             state,
             { clk: 'rising' }
@@ -239,7 +239,7 @@ describe('Register - Stateful Property Tests', () => {
           ['data', value],
           ['we', true],
         ]);
-        state = PRIMITIVE_EVALUATORS.Register.updateState(
+        state = PRIMITIVE_EVALUATORS.Register.updateState!(
           writeInputs,
           state,
           { clk: 'rising' }
@@ -314,7 +314,7 @@ describe('RAM - Stateful Property Tests', () => {
               ['we', op.we],
             ]);
             const clockEdges = { clk: op.edge };
-            currentState = PRIMITIVE_EVALUATORS.RAM.updateState(
+            currentState = PRIMITIVE_EVALUATORS.RAM.updateState!(
               inputs,
               currentState,
               clockEdges
@@ -353,7 +353,7 @@ describe('RAM - Stateful Property Tests', () => {
             ['data_in', value1],
             ['we', true],
           ]);
-          state = PRIMITIVE_EVALUATORS.RAM.updateState(
+          state = PRIMITIVE_EVALUATORS.RAM.updateState!(
             write1,
             state,
             { clk: 'rising' }
@@ -365,7 +365,7 @@ describe('RAM - Stateful Property Tests', () => {
             ['data_in', value2],
             ['we', true],
           ]);
-          state = PRIMITIVE_EVALUATORS.RAM.updateState(
+          state = PRIMITIVE_EVALUATORS.RAM.updateState!(
             write2,
             state,
             { clk: 'rising' }
@@ -426,7 +426,7 @@ describe('RAM - Stateful Property Tests', () => {
             ['data_in', value1],
             ['we', true],
           ]);
-          state = PRIMITIVE_EVALUATORS.RAM.updateState(
+          state = PRIMITIVE_EVALUATORS.RAM.updateState!(
             write1,
             state,
             { clk: 'rising' }
@@ -438,7 +438,7 @@ describe('RAM - Stateful Property Tests', () => {
             ['data_in', value2],
             ['we', true],
           ]);
-          state = PRIMITIVE_EVALUATORS.RAM.updateState(
+          state = PRIMITIVE_EVALUATORS.RAM.updateState!(
             write2,
             state,
             { clk: 'rising' }

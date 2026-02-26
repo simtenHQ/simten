@@ -21,7 +21,7 @@ import {
   type PrimitiveEvaluator,
   generatePrimitives as coreGeneratePrimitives,
   generateEvaluators as coreGenerateEvaluators,
-} from '../../simulator';
+} from '@turing-incomplete/core/simulator';
 import type { EnvironmentalStateValue } from '../types/simulation-snapshot';
 
 // ============================================================================
@@ -281,7 +281,7 @@ export const createPrimitiveComponent = (
 // Helper Functions (re-export core helpers for backward compatibility)
 // ============================================================================
 
-export { generatePrimitives } from '../../simulator';
+export { generatePrimitives } from '@turing-incomplete/core/simulator';
 
 /** Get all primitive circuits */
 export function getPrimitives(): Circuit[] {

@@ -20,8 +20,12 @@ import type {
   FlatPortValueMap,
   FlatSequentialState,
 } from "../editor/lib/flat-simulator";
-import { projectCircuitToReactFlow } from "../editor/utils/projection";
+import { projectCircuitToReactFlow, type NodeData } from "../editor/utils/projection";
 import type { MetadataState } from "../editor/types";
+import { useInspectorStore } from "../editor/stores/expansion-store";
+import { useComponentLibraryStore } from "../editor/stores/component-library-store";
+import { getCompiledReferenceCircuit } from "../editor/utils/reference-circuit-cache";
+import { CompositeInspectorDialog } from "../editor/components/CompositeInspectorDialog";
 
 // Import node components
 import { InputNode } from "../editor/components/nodes/InputNode";
@@ -72,6 +76,8 @@ interface EmbedCanvasProps {
   height?: number | string;
   /** Override positions by node label (cleaned). Unmatched nodes fall back to auto-layout. */
   nodePositions?: Record<string, { x: number; y: number }>;
+  /** Show only specific nodes at full opacity; others are dimmed. Simulation still runs on the full circuit. */
+  focus?: string | string[];
 }
 
 /**
@@ -182,7 +188,15 @@ export function EmbedCanvas({
   onSetNodeValue,
   height = "100%",
   nodePositions,
+  focus,
 }: EmbedCanvasProps) {
+  // Normalize focus to a Set of labels
+  const focusLabels = useMemo(() => {
+    if (!focus) return null;
+    const arr = Array.isArray(focus) ? focus : [focus];
+    return new Set(arr);
+  }, [focus]);
+
   // Clean up labels for display
   const cleanedCircuit = useMemo(() => {
     return circuit ? cleanCircuitLabels(circuit) : null;
@@ -240,8 +254,48 @@ export function EmbedCanvas({
       return node;
     });
 
+    // Apply focus dimming
+    if (focusLabels) {
+      const focusedNodeIds = new Set<string>();
+      for (const node of nodesWithHandlers) {
+        const label = node.data?.label ?? node.id;
+        if (focusLabels.has(label)) {
+          focusedNodeIds.add(node.id);
+        }
+      }
+
+      const dimmedNodes = nodesWithHandlers.map((node) => {
+        const label = node.data?.label ?? node.id;
+        const isFocused = focusLabels.has(label);
+        return {
+          ...node,
+          style: {
+            ...node.style,
+            opacity: isFocused ? 1 : 0.15,
+            transition: 'opacity 0.2s',
+          },
+        };
+      });
+
+      const dimmedEdges = projected.edges.map((edge) => {
+        const sourceFocused = focusedNodeIds.has(edge.source);
+        const targetFocused = focusedNodeIds.has(edge.target);
+        const edgeFocused = sourceFocused || targetFocused;
+        return {
+          ...edge,
+          style: {
+            ...edge.style,
+            opacity: edgeFocused ? 1 : 0.15,
+            transition: 'opacity 0.2s',
+          },
+        };
+      });
+
+      return { projectedNodes: dimmedNodes, edges: dimmedEdges };
+    }
+
     return { projectedNodes: nodesWithHandlers, edges: projected.edges };
-  }, [cleanedCircuit, metadata, portValues, sequentialState, onToggleNode]);
+  }, [cleanedCircuit, metadata, portValues, sequentialState, onToggleNode, focusLabels]);
 
   // Store node positions for dragging
   const [nodes, setNodes] = useState<Node[]>([]);
@@ -261,6 +315,37 @@ export function EmbedCanvas({
     []
   );
 
+  // Composite inspection on double-click
+  const openInspector = useInspectorStore((state) => state.open);
+  const resolveComponent = useComponentLibraryStore((state) => state.resolveComponent);
+
+  const onNodeDoubleClick = useCallback(
+    (_event: React.MouseEvent, node: Node) => {
+      const data = node.data as NodeData;
+      if (!data.isComposite) return;
+
+      const componentDef = resolveComponent(data.componentRef);
+      if (!componentDef) return;
+
+      const domNode = document.querySelector(`[data-id="${node.id}"]`);
+      const rect = domNode?.getBoundingClientRect();
+      const originRect = rect
+        ? { x: rect.x, y: rect.y, width: rect.width, height: rect.height }
+        : undefined;
+
+      if (componentDef.implementation.kind === "composite") {
+        openInspector(data.componentRef, componentDef, data.label || data.componentRef, originRect);
+      } else {
+        const store = useComponentLibraryStore.getState();
+        const refCircuit = getCompiledReferenceCircuit(data.componentRef, store, data.arguments as Record<string, number> | undefined);
+        if (refCircuit) {
+          openInspector(data.componentRef, refCircuit, data.label || data.componentRef, originRect);
+        }
+      }
+    },
+    [resolveComponent, openInspector],
+  );
+
   if (!circuit) {
     return (
       <div className="bg-gray-900 rounded-lg flex items-center justify-center text-gray-500" style={{ height }}>
@@ -277,8 +362,17 @@ export function EmbedCanvas({
           edges={edges}
           nodeTypes={nodeTypes}
           onNodesChange={onNodesChange}
+          onNodeDoubleClick={onNodeDoubleClick}
           fitView
-          fitViewOptions={{ padding: 0.3 }}
+          fitViewOptions={{
+            padding: 0.3,
+            ...(focusLabels && {
+              nodes: nodes.filter((n) => {
+                const label = n.data?.label ?? n.id;
+                return focusLabels.has(label as string);
+              }),
+            }),
+          }}
           nodesDraggable={true}
           nodesConnectable={false}
           elementsSelectable={true}
@@ -295,6 +389,7 @@ export function EmbedCanvas({
           </Panel>
         </ReactFlow>
       </ReactFlowProvider>
+      <CompositeInspectorDialog />
     </div>
   );
 }

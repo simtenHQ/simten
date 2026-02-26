@@ -507,7 +507,7 @@ export function Canvas({ renderEmptyState }: CanvasProps) {
       } else {
         // Primitive with reference circuit — compile on demand
         const store = useComponentLibraryStore.getState();
-        const refCircuit = getCompiledReferenceCircuit(data.componentRef, store);
+        const refCircuit = getCompiledReferenceCircuit(data.componentRef, store, data.arguments as Record<string, number> | undefined);
         if (refCircuit) {
           openInspector(data.componentRef, refCircuit, data.label || data.componentRef, originRect);
         }

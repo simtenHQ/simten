@@ -46,7 +46,7 @@ export interface CorePrimitiveDefinition {
   evaluator: PrimitiveEvaluator;
   outputDependency?: 'state-only' | 'state+inputs' | 'input-dependent';
   referenceCircuit?: {
-    source: string;
+    source: string | ((params: Record<string, number>) => string);
     description?: string;
   };
 }
@@ -104,6 +104,10 @@ function defineSequential(config: {
     outputDependency: config.outputDependency,
   };
 }
+
+// ============================================================================
+// Reference Circuit Constants
+// ============================================================================
 
 // ============================================================================
 // Primitive Definitions
@@ -319,7 +323,7 @@ export const PRIMITIVE_DEFINITIONS: Record<string, CorePrimitiveDefinition> = {
 
       for (let i = 0; i < widthsOut.length; i++) {
         const width = widthsOut[i];
-        const mask = (1 << width) - 1;
+        const mask = width >= 32 ? 0xFFFFFFFF : (1 << width) - 1;
         const value = (inputValue >> bitOffset) & mask;
 
         if (width === 1) {
@@ -463,10 +467,11 @@ export const PRIMITIVE_DEFINITIONS: Record<string, CorePrimitiveDefinition> = {
     name: 'BusAnd',
     description: 'Bitwise AND operation on 8-bit buses',
     inputs: [
-      { name: 'a', portType: busType(8) },
-      { name: 'b', portType: busType(8) },
+      { name: 'a', portType: busType(8), widthParam: 'width' },
+      { name: 'b', portType: busType(8), widthParam: 'width' },
     ],
-    outputs: [{ name: 'out', portType: busType(8) }],
+    outputs: [{ name: 'out', portType: busType(8), widthParam: 'width' }],
+    parameters: [{ name: 'width', paramType: 'int', defaultValue: 8, options: [4, 8, 16, 32] }],
     evaluate: (inputs) => {
       const a = inputs.get('a') as number;
       const b = inputs.get('b') as number;
@@ -478,10 +483,11 @@ export const PRIMITIVE_DEFINITIONS: Record<string, CorePrimitiveDefinition> = {
     name: 'BusOr',
     description: 'Bitwise OR operation on 8-bit buses',
     inputs: [
-      { name: 'a', portType: busType(8) },
-      { name: 'b', portType: busType(8) },
+      { name: 'a', portType: busType(8), widthParam: 'width' },
+      { name: 'b', portType: busType(8), widthParam: 'width' },
     ],
-    outputs: [{ name: 'out', portType: busType(8) }],
+    outputs: [{ name: 'out', portType: busType(8), widthParam: 'width' }],
+    parameters: [{ name: 'width', paramType: 'int', defaultValue: 8, options: [4, 8, 16, 32] }],
     evaluate: (inputs) => {
       const a = inputs.get('a') as number;
       const b = inputs.get('b') as number;
@@ -492,8 +498,9 @@ export const PRIMITIVE_DEFINITIONS: Record<string, CorePrimitiveDefinition> = {
   BusNot: defineCombinational({
     name: 'BusNot',
     description: 'Bitwise NOT operation on 8-bit bus',
-    inputs: [{ name: 'in', portType: busType(8) }],
-    outputs: [{ name: 'out', portType: busType(8) }],
+    inputs: [{ name: 'in', portType: busType(8), widthParam: 'width' }],
+    outputs: [{ name: 'out', portType: busType(8), widthParam: 'width' }],
+    parameters: [{ name: 'width', paramType: 'int', defaultValue: 8, options: [4, 8, 16, 32] }],
     evaluate: (inputs) => {
       const a = inputs.get('in') as number;
       return new Map([['out', ~a]]);
@@ -504,10 +511,11 @@ export const PRIMITIVE_DEFINITIONS: Record<string, CorePrimitiveDefinition> = {
     name: 'BusXor',
     description: 'Bitwise XOR operation on 8-bit buses',
     inputs: [
-      { name: 'a', portType: busType(8) },
-      { name: 'b', portType: busType(8) },
+      { name: 'a', portType: busType(8), widthParam: 'width' },
+      { name: 'b', portType: busType(8), widthParam: 'width' },
     ],
-    outputs: [{ name: 'out', portType: busType(8) }],
+    outputs: [{ name: 'out', portType: busType(8), widthParam: 'width' }],
+    parameters: [{ name: 'width', paramType: 'int', defaultValue: 8, options: [4, 8, 16, 32] }],
     evaluate: (inputs) => {
       const a = inputs.get('a') as number;
       const b = inputs.get('b') as number;
@@ -522,13 +530,14 @@ export const PRIMITIVE_DEFINITIONS: Record<string, CorePrimitiveDefinition> = {
   Incrementer: {
     ...defineCombinational({
       name: 'Incrementer',
-      description: 'Incrementer - adds 1 to the input (wraps around at 255)',
-      inputs: [{ name: 'in', portType: busType(8) }],
-      outputs: [{ name: 'out', portType: busType(8) }],
+      description: 'Incrementer - adds 1 to the input (wraps around at max value)',
+      inputs: [{ name: 'in', portType: busType(8), widthParam: 'width' }],
+      outputs: [{ name: 'out', portType: busType(8), widthParam: 'width' }],
+      parameters: [{ name: 'width', paramType: 'int', defaultValue: 8, options: [4, 8, 16, 32] }],
       evaluate: (inputs) => {
         const value = inputs.get('in') as number;
-        const width = 8;
-        const maxValue = (1 << width) - 1;
+        const width = (inputs.get('__width') as number) ?? 8;
+        const maxValue = width >= 32 ? 0xFFFFFFFF : (1 << width) - 1;
         const result = (value + 1) & maxValue;
         return new Map([['out', result]]);
       },
@@ -556,25 +565,26 @@ export const PRIMITIVE_DEFINITIONS: Record<string, CorePrimitiveDefinition> = {
       name: 'Adder',
       description: 'Parameterized n-bit adder with carry in/out (default: 8-bit)',
       inputs: [
-        { name: 'a', portType: busType(8) },
-        { name: 'b', portType: busType(8) },
+        { name: 'a', portType: busType(8), widthParam: 'width' },
+        { name: 'b', portType: busType(8), widthParam: 'width' },
         { name: 'carry_in', portType: bitType(), defaultValue: false },
       ],
       outputs: [
-        { name: 'sum', portType: busType(8) },
+        { name: 'sum', portType: busType(8), widthParam: 'width' },
         { name: 'carry_out', portType: bitType() },
       ],
+      parameters: [{ name: 'width', paramType: 'int', defaultValue: 8, options: [4, 8, 16, 32] }],
       evaluate: (inputs) => {
-        const a = inputs.get('a') as number;
-        const b = inputs.get('b') as number;
+        const a = (inputs.get('a') as number) >>> 0;
+        const b = (inputs.get('b') as number) >>> 0;
         const carryIn = (inputs.get('carry_in') as boolean) ?? false ? 1 : 0;
 
         const width = (inputs.get('__width') as number) ?? 8;
-        const mask = (1 << width) - 1;
+        const mask = width >= 32 ? 0xFFFFFFFF : (1 << width) - 1;
 
         const result = a + b + carryIn;
         const sum = result & mask;
-        const carryOut = (result >> width) !== 0;
+        const carryOut = result > mask;
 
         return new Map<string, boolean | number>([
           ['sum', sum],
@@ -583,66 +593,55 @@ export const PRIMITIVE_DEFINITIONS: Record<string, CorePrimitiveDefinition> = {
       },
     }),
     referenceCircuit: {
-      source: `// Half adder: single-bit add without carry input
-circuit HalfAdder {
+      source: (params) => {
+        const w = params.width ?? 8;
+        if (w <= 8) return `circuit HalfAdder {
   input a: Bit
   input b: Bit
   output sum: Bit
   output carry: Bit
-
   impl {
     node xor1: Xor
     node and1: And
-
     connect a -> xor1.a
     connect b -> xor1.b
     connect xor1.out -> sum
-
     connect a -> and1.a
     connect b -> and1.b
     connect and1.out -> carry
   }
 }
-
-// Full adder: single-bit add with carry input, built from two half adders
 circuit FullAdder {
   input a: Bit
   input b: Bit
   input cin: Bit
   output sum: Bit
   output cout: Bit
-
   impl {
     node ha1: HalfAdder
     node ha2: HalfAdder
     node or1: Or
-
     connect a -> ha1.a
     connect b -> ha1.b
     connect ha1.sum -> ha2.a
     connect cin -> ha2.b
     connect ha2.sum -> sum
-
     connect ha1.carry -> or1.a
     connect ha2.carry -> or1.b
     connect or1.out -> cout
   }
 }
-
-// 8-bit ripple-carry adder: chain of 8 full adders
 circuit Adder {
   input a: Bus[8]
   input b: Bus[8]
   input carry_in: Bit
   output sum: Bus[8]
   output carry_out: Bit
-
   impl {
     node splitA: Splitter8to8
     node splitB: Splitter8to8
     connect a -> splitA.in
     connect b -> splitB.in
-
     node fa0: FullAdder
     node fa1: FullAdder
     node fa2: FullAdder
@@ -651,39 +650,30 @@ circuit Adder {
     node fa5: FullAdder
     node fa6: FullAdder
     node fa7: FullAdder
-
     connect splitA.bit0 -> fa0.a
     connect splitB.bit0 -> fa0.b
     connect carry_in -> fa0.cin
-
     connect splitA.bit1 -> fa1.a
     connect splitB.bit1 -> fa1.b
     connect fa0.cout -> fa1.cin
-
     connect splitA.bit2 -> fa2.a
     connect splitB.bit2 -> fa2.b
     connect fa1.cout -> fa2.cin
-
     connect splitA.bit3 -> fa3.a
     connect splitB.bit3 -> fa3.b
     connect fa2.cout -> fa3.cin
-
     connect splitA.bit4 -> fa4.a
     connect splitB.bit4 -> fa4.b
     connect fa3.cout -> fa4.cin
-
     connect splitA.bit5 -> fa5.a
     connect splitB.bit5 -> fa5.b
     connect fa4.cout -> fa5.cin
-
     connect splitA.bit6 -> fa6.a
     connect splitB.bit6 -> fa6.b
     connect fa5.cout -> fa6.cin
-
     connect splitA.bit7 -> fa7.a
     connect splitB.bit7 -> fa7.b
     connect fa6.cout -> fa7.cin
-
     node combine: Combiner8to8
     connect fa0.sum -> combine.bit0
     connect fa1.sum -> combine.bit1
@@ -693,12 +683,45 @@ circuit Adder {
     connect fa5.sum -> combine.bit5
     connect fa6.sum -> combine.bit6
     connect fa7.sum -> combine.bit7
-
     connect combine.out -> sum
     connect fa7.cout -> carry_out
   }
-}`,
-      description: '8-bit ripple-carry adder from HalfAdders and FullAdders',
+}`;
+        const half = w / 2;
+        const lo = half - 1;
+        const hi = w - 1;
+        return `circuit Adder {
+  input a: Bus[${w}]
+  input b: Bus[${w}]
+  input carry_in: Bit
+  output sum: Bus[${w}]
+  output carry_out: Bit
+  impl {
+    node sliceA_lo: BitSlice(low=0, high=${lo})
+    node sliceA_hi: BitSlice(low=${half}, high=${hi})
+    node sliceB_lo: BitSlice(low=0, high=${lo})
+    node sliceB_hi: BitSlice(low=${half}, high=${hi})
+    connect a -> sliceA_lo.in
+    connect a -> sliceA_hi.in
+    connect b -> sliceB_lo.in
+    connect b -> sliceB_hi.in
+    node lo: Adder(width=${half})
+    node hi: Adder(width=${half})
+    connect sliceA_lo.out -> lo.a
+    connect sliceB_lo.out -> lo.b
+    connect carry_in -> lo.carry_in
+    connect sliceA_hi.out -> hi.a
+    connect sliceB_hi.out -> hi.b
+    connect lo.carry_out -> hi.carry_in
+    node combine: Concat(lowWidth=${half})
+    connect lo.sum -> combine.low
+    connect hi.sum -> combine.high
+    connect combine.out -> sum
+    connect hi.carry_out -> carry_out
+  }
+}`;
+      },
+      description: 'Ripple-carry adder (8-bit: full adders, wider: recursive half-width split)',
     },
   },
 
@@ -706,16 +729,17 @@ circuit Adder {
     name: 'Multiplier',
     description: 'Parameterized n×n bit multiplier, outputs 2n-bit product (default: 8×8=16-bit)',
     inputs: [
-      { name: 'a', portType: busType(8) },
-      { name: 'b', portType: busType(8) },
+      { name: 'a', portType: busType(8), widthParam: 'width' },
+      { name: 'b', portType: busType(8), widthParam: 'width' },
     ],
-    outputs: [{ name: 'product', portType: busType(16) }],
+    outputs: [{ name: 'product', portType: busType(16), widthParam: 'width', widthMultiplier: 2 }],
+    parameters: [{ name: 'width', paramType: 'int', defaultValue: 8, options: [4, 8, 16] }],
     evaluate: (inputs) => {
-      const a = inputs.get('a') as number;
-      const b = inputs.get('b') as number;
+      const a = (inputs.get('a') as number) >>> 0;
+      const b = (inputs.get('b') as number) >>> 0;
 
       const width = (inputs.get('__width') as number) ?? 8;
-      const mask = (1 << (width * 2)) - 1;
+      const mask = (width * 2) >= 32 ? 0xFFFFFFFF : (1 << (width * 2)) - 1;
 
       const product = (a * b) & mask;
 
@@ -728,17 +752,18 @@ circuit Adder {
       name: 'Comparator',
       description: 'Parameterized n-bit comparator (default: 8-bit)',
       inputs: [
-        { name: 'a', portType: busType(8) },
-        { name: 'b', portType: busType(8) },
+        { name: 'a', portType: busType(8), widthParam: 'width' },
+        { name: 'b', portType: busType(8), widthParam: 'width' },
       ],
+      parameters: [{ name: 'width', paramType: 'int', defaultValue: 8, options: [4, 8, 16, 32] }],
       outputs: [
         { name: 'eq', portType: bitType() },
         { name: 'lt', portType: bitType() },
         { name: 'gt', portType: bitType() },
       ],
       evaluate: (inputs) => {
-        const a = inputs.get('a') as number;
-        const b = inputs.get('b') as number;
+        const a = (inputs.get('a') as number) >>> 0;
+        const b = (inputs.get('b') as number) >>> 0;
 
         return new Map([
           ['eq', a === b],
@@ -818,16 +843,17 @@ circuit Comparator {
     name: 'LeftShifter',
     description: 'Logical left bit shift (value << n) with zero fill',
     inputs: [
-      { name: 'value', portType: busType(8) },
-      { name: 'shift', portType: busType(8) },
+      { name: 'value', portType: busType(8), widthParam: 'width' },
+      { name: 'shift', portType: busType(8), widthParam: 'width' },
     ],
-    outputs: [{ name: 'result', portType: busType(8) }],
+    outputs: [{ name: 'result', portType: busType(8), widthParam: 'width' }],
+    parameters: [{ name: 'width', paramType: 'int', defaultValue: 8, options: [4, 8, 16, 32] }],
     evaluate: (inputs) => {
       const value = inputs.get('value') as number;
       const shift = inputs.get('shift') as number;
       const width = (inputs.get('__width') as number) ?? 8;
 
-      const mask = (1 << width) - 1;
+      const mask = width >= 32 ? 0xFFFFFFFF : (1 << width) - 1;
       const result = shift >= width ? 0 : (value << shift) & mask;
 
       return new Map([['result', result]]);
@@ -838,10 +864,11 @@ circuit Comparator {
     name: 'RightShifter',
     description: 'Logical right bit shift (value >> n) with zero fill',
     inputs: [
-      { name: 'value', portType: busType(8) },
-      { name: 'shift', portType: busType(8) },
+      { name: 'value', portType: busType(8), widthParam: 'width' },
+      { name: 'shift', portType: busType(8), widthParam: 'width' },
     ],
-    outputs: [{ name: 'result', portType: busType(8) }],
+    outputs: [{ name: 'result', portType: busType(8), widthParam: 'width' }],
+    parameters: [{ name: 'width', paramType: 'int', defaultValue: 8, options: [4, 8, 16, 32] }],
     evaluate: (inputs) => {
       const value = inputs.get('value') as number;
       const shift = inputs.get('shift') as number;
@@ -857,21 +884,22 @@ circuit Comparator {
     name: 'Subtractor',
     description: 'Parameterized n-bit subtractor with borrow in/out (default: 8-bit)',
     inputs: [
-      { name: 'a', portType: busType(8) },
-      { name: 'b', portType: busType(8) },
+      { name: 'a', portType: busType(8), widthParam: 'width' },
+      { name: 'b', portType: busType(8), widthParam: 'width' },
       { name: 'borrow_in', portType: bitType(), defaultValue: false },
     ],
     outputs: [
-      { name: 'difference', portType: busType(8) },
+      { name: 'difference', portType: busType(8), widthParam: 'width' },
       { name: 'borrow_out', portType: bitType() },
     ],
+    parameters: [{ name: 'width', paramType: 'int', defaultValue: 8, options: [4, 8, 16, 32] }],
     evaluate: (inputs) => {
-      const a = inputs.get('a') as number;
-      const b = inputs.get('b') as number;
+      const a = (inputs.get('a') as number) >>> 0;
+      const b = (inputs.get('b') as number) >>> 0;
       const borrowIn = (inputs.get('borrow_in') as boolean) ?? false ? 1 : 0;
 
       const width = (inputs.get('__width') as number) ?? 8;
-      const mask = (1 << width) - 1;
+      const mask = width >= 32 ? 0xFFFFFFFF : (1 << width) - 1;
 
       const result = a - b - borrowIn;
       const difference = result & mask;
@@ -888,30 +916,31 @@ circuit Comparator {
     name: 'SignedAdder',
     description: 'Signed n-bit adder with overflow detection (default: 8-bit)',
     inputs: [
-      { name: 'a', portType: busType(8) },
-      { name: 'b', portType: busType(8) },
+      { name: 'a', portType: busType(8), widthParam: 'width' },
+      { name: 'b', portType: busType(8), widthParam: 'width' },
       { name: 'carry_in', portType: bitType(), defaultValue: false },
     ],
     outputs: [
-      { name: 'sum', portType: busType(8) },
+      { name: 'sum', portType: busType(8), widthParam: 'width' },
       { name: 'overflow', portType: bitType() },
       { name: 'carry_out', portType: bitType() },
     ],
+    parameters: [{ name: 'width', paramType: 'int', defaultValue: 8, options: [4, 8, 16, 32] }],
     evaluate: (inputs) => {
-      const a = inputs.get('a') as number;
-      const b = inputs.get('b') as number;
+      const aRaw = inputs.get('a') as number;
+      const bRaw = inputs.get('b') as number;
       const carryIn = (inputs.get('carry_in') as boolean) ?? false ? 1 : 0;
 
       const width = (inputs.get('__width') as number) ?? 8;
-      const mask = (1 << width) - 1;
-      const signBit = 1 << (width - 1);
+      const mask = width >= 32 ? 0xFFFFFFFF : (1 << width) - 1;
+      const signBit = width >= 32 ? 0x80000000 : 1 << (width - 1);
 
-      const result = a + b + carryIn;
+      const result = (aRaw >>> 0) + (bRaw >>> 0) + carryIn;
       const sum = result & mask;
-      const carryOut = (result >> width) !== 0;
+      const carryOut = result > mask;
 
-      const aSign = (a & signBit) !== 0;
-      const bSign = (b & signBit) !== 0;
+      const aSign = (aRaw & signBit) !== 0;
+      const bSign = (bRaw & signBit) !== 0;
       const sumSign = (sum & signBit) !== 0;
       const overflow = aSign === bSign && aSign !== sumSign;
 
@@ -927,9 +956,10 @@ circuit Comparator {
     name: 'SignedComparator',
     description: 'Signed n-bit comparator with all comparison flags (default: 8-bit)',
     inputs: [
-      { name: 'a', portType: busType(8) },
-      { name: 'b', portType: busType(8) },
+      { name: 'a', portType: busType(8), widthParam: 'width' },
+      { name: 'b', portType: busType(8), widthParam: 'width' },
     ],
+    parameters: [{ name: 'width', paramType: 'int', defaultValue: 8, options: [4, 8, 16, 32] }],
     outputs: [
       { name: 'eq', portType: bitType() },
       { name: 'lt', portType: bitType() },
@@ -942,8 +972,8 @@ circuit Comparator {
       const b = inputs.get('b') as number;
 
       const width = (inputs.get('__width') as number) ?? 8;
-      const signBit = 1 << (width - 1);
-      const maxValue = 1 << width;
+      const signBit = width >= 32 ? 0x80000000 : 1 << (width - 1);
+      const maxValue = width >= 32 ? 0x100000000 : 1 << width;
 
       const aSigned = (a & signBit) ? a - maxValue : a;
       const bSigned = (b & signBit) ? b - maxValue : b;
@@ -968,27 +998,29 @@ circuit Comparator {
     name: 'SignedMultiplier',
     description: 'Signed n×n bit multiplier, outputs 2n-bit product (default: 8×8=16-bit)',
     inputs: [
-      { name: 'a', portType: busType(8) },
-      { name: 'b', portType: busType(8) },
+      { name: 'a', portType: busType(8), widthParam: 'width' },
+      { name: 'b', portType: busType(8), widthParam: 'width' },
     ],
-    outputs: [{ name: 'product', portType: busType(16) }],
+    outputs: [{ name: 'product', portType: busType(16), widthParam: 'width', widthMultiplier: 2 }],
+    parameters: [{ name: 'width', paramType: 'int', defaultValue: 8, options: [4, 8, 16] }],
     evaluate: (inputs) => {
       const a = inputs.get('a') as number;
       const b = inputs.get('b') as number;
 
       const width = (inputs.get('__width') as number) ?? 8;
-      const signBit = 1 << (width - 1);
-      const maxValue = 1 << width;
-      const outputMask = (1 << (width * 2)) - 1;
+      const signBit = width >= 32 ? 0x80000000 : 1 << (width - 1);
+      const maxValue = width >= 32 ? 0x100000000 : 1 << width;
+      const outputMask = (width * 2) >= 32 ? 0xFFFFFFFF : (1 << (width * 2)) - 1;
 
       const aSigned = (a & signBit) ? a - maxValue : a;
       const bSigned = (b & signBit) ? b - maxValue : b;
 
       const productSigned = aSigned * bSigned;
+      const outputModulus = (width * 2) >= 32 ? 0x100000000 : (1 << (width * 2));
 
       const product = productSigned >= 0
         ? productSigned
-        : (productSigned + (1 << (width * 2))) & outputMask;
+        : (productSigned + outputModulus) & outputMask;
 
       return new Map([['product', product]]);
     },
@@ -1228,12 +1260,13 @@ circuit Comparator {
 
   Register: defineSequential({
     name: 'Register',
-    description: '8-bit Register - stores data on rising clock edge when write enable is high',
+    description: 'Parameterized n-bit register - stores data on rising clock edge when write enable is high (default: 8-bit)',
     inputs: [
-      { name: 'data', portType: busType(8) },
+      { name: 'data', portType: busType(8), widthParam: 'width' },
       { name: 'we', portType: bitType() },
     ],
-    outputs: [{ name: 'q', portType: busType(8) }],
+    outputs: [{ name: 'q', portType: busType(8), widthParam: 'width' }],
+    parameters: [{ name: 'width', paramType: 'int', defaultValue: 8, options: [4, 8, 16, 32] }],
     clocks: [{ name: 'clk' }],
     state: [
       {
@@ -1520,7 +1553,13 @@ export function getPrimitiveCircuit(name: string): Circuit | undefined {
 
 /**
  * Get the reference circuit DSL source for a primitive, if it has one.
+ * Pass params to resolve function-based generators (e.g. width-aware circuits).
  */
-export function getReferenceCircuit(name: string): string | undefined {
-  return PRIMITIVE_DEFINITIONS[name]?.referenceCircuit?.source;
+export function getReferenceCircuit(name: string, params?: Record<string, number>): string | undefined {
+  const ref = PRIMITIVE_DEFINITIONS[name]?.referenceCircuit;
+  if (!ref) return undefined;
+  if (typeof ref.source === 'function') {
+    return ref.source(params ?? {});
+  }
+  return ref.source;
 }

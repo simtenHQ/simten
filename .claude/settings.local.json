@@ -19,7 +19,9 @@
       "mcp__turing-incomplete__simulate_circuit",
       "Bash(cd:*)",
       "Bash(pnpm:*)",
-      "Bash(cp:*)"
+      "Bash(cp:*)",
+      "mcp__turing-incomplete__show_circuit",
+      "Bash(node:*)"
     ]
   }
 }

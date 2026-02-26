@@ -7,7 +7,7 @@
 
 import { describe, it, expect } from 'vitest';
 import { parseDSL, compileDSL, type ComponentLibrary, type Circuit } from './index';
-import { bitType } from '@turing-incomplete/ui/editor';
+import { bitType } from '@turing-incomplete/ui/editor/types';
 
 // Simple component library for examples
 class ExampleLibrary implements ComponentLibrary {
