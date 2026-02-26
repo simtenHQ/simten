@@ -74,6 +74,7 @@ export {
   getLLMContext,
   getComponentDetails,
   formatComponentDetails,
+  formatComponentCompact,
   // Formatters
   formatForMonaco,
   formatForCLI,

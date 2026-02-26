@@ -289,7 +289,55 @@ circuit FullAdder {
 
 // WRONG: Do NOT use this syntax:
 // Switch sw;        <- WRONG (not valid DSL)
-// sw.out -> led.in; <- WRONG (not valid DSL)`;
+// sw.out -> led.in; <- WRONG (not valid DSL)
+
+// ============================================================
+// Testbench syntax (for run_testbench)
+// ============================================================
+
+// Testbench template:
+testbench <Name> {
+  use circuit <CircuitName> as dut
+  input <name>: Bit | Bus[N]    // must match DUT ports
+  output <name>: Bit | Bus[N]
+  clock <name>                  // required for stimulus/assert
+  impl {
+    node <instance>: <CircuitName>
+    connect <input> -> <instance>.<port>
+    connect <instance>.<port> -> <output>
+
+    stimulus on <clock> {
+      at <cycle>: <port> = <value>             // single cycle
+      at <start>..<end>: <port> = <value>      // cycle range
+      at <cycle>: <portA> = <val>, <portB> = <val>  // multiple ports
+    }
+
+    assert on <clock> {
+      at <cycle>: <signal> == <expected>, "<message>"
+    }
+  }
+}
+
+// Concrete testbench example:
+testbench InverterTest {
+  use circuit Inverter as dut
+  input a: Bit
+  output out: Bit
+  clock clk
+  impl {
+    node inv: Inverter
+    connect a -> inv.a
+    connect inv.out -> out
+    stimulus on clk {
+      at 0: a = 0
+      at 1: a = 1
+    }
+    assert on clk {
+      at 0: out == 1, "NOT 0 should be 1"
+      at 1: out == 0, "NOT 1 should be 0"
+    }
+  }
+}`;
 }
 
 /**
@@ -378,6 +426,42 @@ export function getComponentDetails(
   const circuit = library.resolveComponent(componentName);
   if (!circuit) return undefined;
   return circuitToInterface(circuit);
+}
+
+/**
+ * Format a component as a compact one-liner for LLM efficiency.
+ * Example: And(a:Bit, b:Bit) -> (out:Bit) [combinational] // Logical AND gate
+ */
+export function formatComponentCompact(component: ComponentInterface): string {
+  let sig = component.name;
+
+  // Add parameters if any
+  if (component.parameters && component.parameters.length > 0) {
+    const params = component.parameters
+      .map((p) => `${p.name}=${p.defaultValue ?? '?'}`)
+      .join(', ');
+    sig += `<${params}>`;
+  }
+
+  const inputs = component.inputs.map((p) => `${p.name}:${p.type}`).join(', ');
+  sig += `(${inputs})`;
+
+  const outputs = component.outputs.map((p) => `${p.name}:${p.type}`).join(', ');
+  sig += ` -> (${outputs})`;
+
+  if (component.clocks.length > 0) {
+    sig += ` [clk:${component.clocks.map((c) => c.name).join(',')}]`;
+  }
+
+  if (component.kind) {
+    sig += ` [${component.kind}]`;
+  }
+
+  if (component.description) {
+    sig += ` // ${component.description}`;
+  }
+
+  return sig;
 }
 
 /**
