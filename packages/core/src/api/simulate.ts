@@ -5,7 +5,8 @@
  * Accepts already-resolved source string, returns typed result.
  */
 
-import { parseDSL, compileToIR } from '../dsl/index.js';
+import { parseDSL, compileToIR, compressTrace, detectSteadyState } from '../dsl/index.js';
+import type { SimulationTrace } from '../dsl/index.js';
 import {
   createSimulatorFromCircuit,
   createComponentLibrary,
@@ -14,12 +15,15 @@ import {
 import type { BitValue, BusValue } from '../types/circuit.js';
 import { createMutableLibrary } from './lib.js';
 
+export type RLEValue = { value: BitValue | BusValue; count: number };
+
 export interface SimulateResult {
   circuit: string;
   ticks: number;
   inputs: string[];
   outputs: string[];
-  signals: Record<string, (BitValue | BusValue)[]>;
+  signals: Record<string, RLEValue[]>;
+  steadyStateAt?: number;
 }
 
 export interface SimulateError {
@@ -105,11 +109,24 @@ export function simulateCircuit(
     }
   }
 
+  // Wrap raw signals into a SimulationTrace for compression
+  const trace: SimulationTrace = {
+    cycles: ticks,
+    signals,
+    registers: {},
+    sampleRate: 1,
+    sampledCycles: Array.from({ length: ticks }, (_, i) => i),
+  };
+
+  const compressed = compressTrace(trace);
+  const steadyStateAt = detectSteadyState(trace);
+
   return {
     circuit: target.name,
     ticks,
     inputs: inputNames,
     outputs: outputNames,
-    signals,
+    signals: compressed,
+    ...(steadyStateAt !== undefined ? { steadyStateAt } : {}),
   };
 }

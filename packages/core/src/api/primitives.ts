@@ -10,6 +10,7 @@ import {
   getComponentsByKind,
   getComponentDetails,
   formatComponentDetails,
+  formatComponentCompact,
   parseDSL,
   compileToIR,
 } from '../dsl/index.js';
@@ -21,18 +22,23 @@ export function getPrimitivesHandler(
     kind?: 'combinational' | 'sequential' | 'sink';
     source?: string;
     sourceName?: string;
+    compact?: boolean;
   },
   library: ComponentLibrary
 ): string {
+  const compact = params.compact ?? true;
   const catalog = getComponentCatalog(library);
 
   const components = params.kind
     ? getComponentsByKind(catalog, params.kind)
     : catalog.components;
 
+  const formatter = compact ? formatComponentCompact : formatComponentDetails;
+  const separator = compact ? '\n' : '\n\n---\n\n';
+
   let output = components
-    .map((c) => formatComponentDetails(c))
-    .join('\n\n---\n\n') || 'No components found.';
+    .map((c) => formatter(c))
+    .join(separator) || 'No components found.';
 
   // If source provided, parse and append user-defined circuits
   if (params.source) {
@@ -64,13 +70,13 @@ export function getPrimitivesHandler(
         const userDetails = compiledCircuits
           .map((c) => {
             const detail = getComponentDetails(combinedLibrary, c.name);
-            return detail ? formatComponentDetails(detail) : null;
+            return detail ? formatter(detail) : null;
           })
           .filter(Boolean);
 
         if (userDetails.length > 0) {
           output += `\n\n--- Circuits defined in ${sourceName} ---\n\n`;
-          output += userDetails.join('\n\n---\n\n');
+          output += userDetails.join(separator);
         }
       }
     } catch (e) {

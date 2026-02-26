@@ -10,7 +10,7 @@ import { readDSLSource } from '../lib/file-reader.js';
 export function registerPrimitivesTool(server: McpServer): void {
   server.tool(
     'get_primitives',
-    'Browse all available primitive components. Returns name, inputs, outputs, clocks, parameters, and description for each component. Optionally filter by kind. When source or filePath is provided, also includes user-defined composite circuits.',
+    'Browse all available primitive components. Returns compact one-liner signatures by default. Optionally filter by kind. When source or filePath is provided, also includes user-defined composite circuits.',
     {
       kind: z
         .enum(['combinational', 'sequential', 'sink'])
@@ -18,8 +18,13 @@ export function registerPrimitivesTool(server: McpServer): void {
         .describe('Filter components by kind'),
       source: z.string().optional().describe('DSL source code as a string'),
       filePath: z.string().optional().describe('Path to a .dsl file'),
+      compact: z
+        .boolean()
+        .optional()
+        .default(true)
+        .describe('Use compact one-liner format (default: true). Set false for verbose details.'),
     },
-    async ({ kind, source, filePath }) => {
+    async ({ kind, source, filePath, compact }) => {
       const library = getLibrary();
 
       // Resolve source from inline or file
@@ -39,7 +44,7 @@ export function registerPrimitivesTool(server: McpServer): void {
       }
 
       const text = getPrimitivesHandler(
-        { kind, source: resolvedSource, sourceName },
+        { kind, source: resolvedSource, sourceName, compact },
         library
       );
       return {

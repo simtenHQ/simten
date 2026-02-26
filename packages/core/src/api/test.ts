@@ -9,13 +9,15 @@ import {
   parseDSL,
   compileToIR,
   runTestbench,
+  compressTrace,
 } from '../dsl/index.js';
-import type { ComponentLibrary } from '../dsl/index.js';
+import type { ComponentLibrary, SimulationTrace } from '../dsl/index.js';
 import {
   createComponentLibrary,
   getPrimitives,
 } from '../simulator/index.js';
-import type { Circuit, BitValue, BusValue } from '../types/circuit.js';
+import type { Circuit } from '../types/circuit.js';
+import type { RLEValue } from './simulate.js';
 
 export interface TestbenchResult {
   name: string;
@@ -27,10 +29,9 @@ export interface TestbenchResult {
     total: number;
     passed: number;
     failed: number;
-    allPassed: boolean;
     results: Array<{ cycle: number; passed: boolean; message: string }>;
   };
-  signals: Record<string, (BitValue | BusValue)[]>;
+  signals?: Record<string, RLEValue[]>;
 }
 
 export interface TestError {
@@ -123,33 +124,51 @@ export function runTestbenchHandler(
         status: 'failed' as const,
         failureReason: `DUT "${dutName}" not found`,
         cycles: 0,
-        signals: {},
       });
       continue;
     }
 
     try {
       const result = runTestbench(tb, dut, library);
+      const failed = result.status === 'failed';
+
+      // Compress signals only on failure; omit entirely on pass
+      let compressedSignals: Record<string, RLEValue[]> | undefined;
+      if (failed && result.signals && Object.keys(result.signals).length > 0) {
+        const trace: SimulationTrace = {
+          cycles: result.cycles,
+          signals: result.signals,
+          registers: {},
+          sampleRate: 1,
+          sampledCycles: Array.from({ length: result.cycles }, (_, i) => i),
+        };
+        compressedSignals = compressTrace(trace);
+      }
+
+      // Filter assertion results to only failing ones
+      const assertionSummary = result.assertionSummary
+        ? {
+            total: result.assertionSummary.total,
+            passed: result.assertionSummary.passed,
+            failed: result.assertionSummary.failed,
+            results: result.assertionSummary.results
+              .filter((r) => !r.passed)
+              .map((r) => ({
+                cycle: r.cycle,
+                passed: r.passed,
+                message: r.message,
+              })),
+          }
+        : undefined;
+
       results.push({
         name: result.name,
         dutName: result.dutName,
         status: result.status,
         cycles: result.cycles,
         failureReason: result.failureReason,
-        assertionSummary: result.assertionSummary
-          ? {
-              total: result.assertionSummary.total,
-              passed: result.assertionSummary.passed,
-              failed: result.assertionSummary.failed,
-              allPassed: result.assertionSummary.allPassed,
-              results: result.assertionSummary.results.map((r) => ({
-                cycle: r.cycle,
-                passed: r.passed,
-                message: r.message,
-              })),
-            }
-          : undefined,
-        signals: result.signals,
+        assertionSummary,
+        ...(compressedSignals ? { signals: compressedSignals } : {}),
       });
     } catch (e) {
       results.push({
@@ -157,7 +176,6 @@ export function runTestbenchHandler(
         status: 'failed' as const,
         failureReason: e instanceof Error ? e.message : String(e),
         cycles: 0,
-        signals: {},
       });
     }
   }

@@ -25,7 +25,6 @@ export interface CheckResult {
     suggestions?: string[];
     involvedNodes?: string[];
   }>;
-  circuits: string[];
   analysis: {
     circuitsDefined: string[];
     componentsUsed: string[];
@@ -49,7 +48,6 @@ export function checkCircuit(
     valid: result.valid,
     canSimulate: result.canSimulate,
     diagnostics: llm.diagnostics,
-    circuits: result.circuits?.map((c) => c.name) ?? [],
     analysis: llm.analysis,
   };
 }

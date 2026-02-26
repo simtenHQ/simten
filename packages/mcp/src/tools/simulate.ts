@@ -10,7 +10,7 @@ import { readDSLSource } from '../lib/file-reader.js';
 export function registerSimulateTool(server: McpServer): void {
   server.tool(
     'simulate_circuit',
-    'Compile and simulate a circuit. Returns per-cycle signal traces for all inputs and outputs. Optionally set initial input values and number of ticks.',
+    'Compile and simulate a circuit. Returns RLE-compressed signal traces and optional steadyStateAt cycle. Optionally set initial input values and number of ticks.',
     {
       source: z.string().optional().describe('DSL source code as a string'),
       filePath: z.string().optional().describe('Path to a .dsl file'),
