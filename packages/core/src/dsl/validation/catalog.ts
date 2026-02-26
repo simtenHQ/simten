@@ -210,6 +210,7 @@ circuit <Name> {
   clock <name>
   impl {
     node <instance>: <ComponentType>
+    node <instance>: <ComponentType>(<param>=<value>, ...)
     connect <source> -> <target>
   }
 }
@@ -221,6 +222,26 @@ circuit SwitchToLed {
     node sw: Switch
     node led: Led
     connect sw.out -> led.in
+  }
+}
+
+// Parametric example: pass parameters to configure component width, initial value, etc.
+circuit Counter16 {
+  description "16-bit counter with enable"
+  input enable: Bit
+  output count: Bus[16]
+  clock clk
+  impl {
+    node reg: Register(width=16)
+    node adder: Adder(width=16)
+    node one: Constant(value=1)
+    node zero: Constant(value=0)
+    connect reg.q -> adder.a
+    connect one.out -> adder.b
+    connect zero.out -> adder.carry_in
+    connect adder.sum -> reg.data
+    connect enable -> reg.we
+    connect reg.q -> count
   }
 }
 

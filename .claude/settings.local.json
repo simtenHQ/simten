@@ -21,7 +21,8 @@
       "Bash(pnpm:*)",
       "Bash(cp:*)",
       "mcp__turing-incomplete__show_circuit",
-      "Bash(node:*)"
+      "Bash(node:*)",
+      "mcp__turing-incomplete__check_circuit"
     ]
   }
 }
