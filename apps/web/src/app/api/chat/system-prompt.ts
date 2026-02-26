@@ -41,6 +41,27 @@ ${grammar}
 
 You can define a circuit and use it as a component inside another circuit. Define the sub-circuit first, then reference it by name with \`node\`. The grammar example above shows HalfAdder used inside FullAdder — this is the standard pattern. Always prefer composites when the student asks for modular or hierarchical designs.
 
+## Testbench Syntax
+
+testbench <Name> {
+  use circuit <DUT> as dut
+  input <name>: Bit | Bus[N]
+  output <name>: Bit | Bus[N]
+  clock clk
+  impl {
+    node <instance>: <DUT>
+    connect <input> -> <instance>.<port>
+    connect <instance>.<port> -> <output>
+    stimulus on clk {
+      at <cycle>: <signal> = <value>
+      at <start>..<end>: <signal> = <value>
+    }
+    assert on clk {
+      at <cycle>: <condition>, "message"
+    }
+  }
+}
+
 ## Combinational vs Sequential
 
 - **Combinational** (AND, OR, XOR, MUX, adders, decoders): no clocks. Demo with **demo_inputs**.
@@ -51,7 +72,7 @@ You can define a circuit and use it as a component inside another circuit. Defin
 When the student asks you to build something:
 
 1. **Write code** — you already have the component catalog and syntax above. Call write_circuit with clean DUT code (include all circuits — sub-circuits first, then the top-level circuit). A test harness is auto-appended for the last circuit. The auto-harness uses HexDisplay for Bus outputs and Led for Bit outputs.
-2. **Verify** — For sequential circuits (anything with clocks), call simulate_circuit with ~10 ticks to check outputs change as expected. If outputs are stuck at 0, debug and fix before demoing.
+2. **Verify** — For complex circuits (ALUs, multi-operation designs, state machines), write a testbench with stimulus + assertions and call run_testbench to verify correctness before demoing. For simple circuits, simulate_circuit with a few ticks is sufficient. Use your judgment — don't force testbenches on trivial circuits.
 3. **Fix if needed** — if write_circuit returns validation errors, fix and retry.
 4. **Demo live** — call demo_inputs (combinational) or run_simulation (sequential). The harness switch nodes are named \`inputName_sw\` (e.g. for input "a", the switch is "a_sw").
 5. **Explain** — briefly describe what each demo shows.
