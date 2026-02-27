@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useCircuitSimulator, type UseCircuitSimulatorOptions } from "./useCircuitSimulator";
-import { EmbedCanvas } from "./EmbedCanvas";
+import { CircuitCanvas } from "../shared/CircuitCanvas";
 import { TooltipProvider } from "../primitives/tooltip";
 
 interface CircuitEmbedProps {
@@ -99,7 +99,7 @@ export function CircuitEmbed({
       )}
 
       {/* Canvas */}
-      <EmbedCanvas
+      <CircuitCanvas
         circuit={sim.circuit}
         portValues={sim.portValues}
         sequentialState={sim.sequentialState}

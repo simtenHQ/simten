@@ -22,7 +22,8 @@
       "Bash(cp:*)",
       "mcp__turing-incomplete__show_circuit",
       "Bash(node:*)",
-      "mcp__turing-incomplete__check_circuit"
+      "mcp__turing-incomplete__check_circuit",
+      "mcp__turing-incomplete__get_grammar"
     ]
   }
 }

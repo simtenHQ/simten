@@ -1,7 +1,7 @@
 "use client";
 import { useMemo } from "react";
 import { useSystolicSimulator } from "./useSystolicSimulator";
-import { EmbedCanvas } from "@turing-incomplete/ui/embed";
+import { CircuitCanvas } from "@turing-incomplete/ui/embed";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 /**
@@ -157,7 +157,7 @@ export function SystolicDemo() {
       </div>
 
       {/* Circuit canvas */}
-      <EmbedCanvas
+      <CircuitCanvas
         circuit={sim.circuit}
         portValues={sim.portValues}
         sequentialState={sim.sequentialState}
@@ -165,6 +165,7 @@ export function SystolicDemo() {
         onSetNodeValue={sim.setNodeValue}
         height={400}
         nodePositions={SYSTOLIC_LAYOUT}
+        autoLayout={false}
       />
 
       {/* Controls bar */}

@@ -9,8 +9,8 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { useCircuitSimulator } from "./useCircuitSimulator";
-import { MiniCanvas } from "./MiniCanvas";
+import { useCircuitSimulator } from "@turing-incomplete/ui/embed";
+import { CircuitCanvas } from "@turing-incomplete/ui/shared";
 import { CIRCUITS, CIRCUIT_KEYS } from "./circuits";
 
 type CircuitKey = (typeof CIRCUIT_KEYS)[number];
@@ -48,11 +48,12 @@ function CircuitDemo({ circuitKey }: { circuitKey: CircuitKey }) {
       <div className="flex flex-col order-1 md:order-2 md:flex-1">
         <div className="text-xs text-gray-500 mb-2">CIRCUIT</div>
         <div className="h-[250px] md:h-[370px]">
-          <MiniCanvas
+          <CircuitCanvas
             circuit={sim.circuit}
             portValues={sim.portValues}
             sequentialState={sim.sequentialState}
             onToggleNode={sim.toggleNode}
+            drillDown={false}
           />
         </div>
       </div>
