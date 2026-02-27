@@ -6,7 +6,7 @@
  */
 
 import type { EvalContext, NumericEvaluator } from './types.js';
-import { readInput, writeOutput } from './types.js';
+import { readInput, writeOutput, bitMask } from './types.js';
 import { PRIMITIVE_TYPE_INDICES } from '../numeric-types.js';
 
 // Import evaluators from modules
@@ -151,7 +151,10 @@ function evalBusOr(ctx: EvalContext): void {
 
 function evalBusNot(ctx: EvalContext): void {
   const a = readInput(ctx, 0);
-  writeOutput(ctx, 0, ~a);
+  const node = ctx.circuit.flatCircuit.nodes[ctx.nodeIndex];
+  const width = (node.arguments.width as number) ?? 8;
+  const mask = bitMask(width);
+  writeOutput(ctx, 0, (~a) & mask);
 }
 
 function evalBusXor(ctx: EvalContext): void {
