@@ -1,6 +1,6 @@
 "use client";
 import { useCORDICSimulator } from "./useCORDICSimulator";
-import { EmbedCanvas } from "@turing-incomplete/ui/embed";
+import { CircuitCanvas } from "@turing-incomplete/ui/embed";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 const CORDIC_LAYOUT: Record<string, { x: number; y: number }> = {
@@ -88,7 +88,7 @@ export function CORDICDemo() {
       </div>
 
       {/* Circuit canvas */}
-      <EmbedCanvas
+      <CircuitCanvas
         circuit={sim.circuit}
         portValues={sim.portValues}
         sequentialState={sim.sequentialState}
@@ -96,6 +96,7 @@ export function CORDICDemo() {
         onSetNodeValue={sim.setNodeValue}
         height={400}
         nodePositions={CORDIC_LAYOUT}
+        autoLayout={false}
       />
 
       {/* Controls bar */}

@@ -13,14 +13,7 @@
 
 import React, { useMemo, useState, useCallback, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  ReactFlow,
-  ReactFlowProvider,
-  Background,
-  Controls,
-  NodeTypes,
-} from "@xyflow/react";
-import "@xyflow/react/dist/style.css";
+import { SmoothStepEdge, type NodeTypes } from "@xyflow/react";
 
 import {
   useInspectorStore,
@@ -28,10 +21,7 @@ import {
   type OriginRect,
 } from "../stores/expansion-store";
 import { useComponentLibraryStore } from "../stores/component-library-store";
-import { createDrillDownViewCircuit, BOUNDARY_IN_PREFIX } from "../utils/drill-down-view";
-import { performHierarchicalLayout, centerLayout } from "../utils/auto-layout";
-import { projectCircuitToReactFlow, type NodeData } from "../utils/projection";
-import { getCompiledReferenceCircuit } from "../utils/reference-circuit-cache";
+import { createDrillDownViewCircuit } from "../utils/drill-down-view";
 import { createSimulatorFromCircuit, PRIMITIVE_DEFINITIONS } from "@turing-incomplete/core/simulator";
 import type { FlatPortValueMap, FlatSequentialState, SimulatorSnapshot } from "@turing-incomplete/core/simulator";
 import type { Circuit } from "../types/circuit";
@@ -43,6 +33,8 @@ import {
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
+
+import { CircuitCanvas } from "../../shared/CircuitCanvas";
 
 import {
   InputNode,
@@ -56,11 +48,9 @@ import {
   ConsoleNode,
 } from "./nodes";
 import { NumericInputNode } from "./nodes/NumericInputNode";
-import { OrthogonalEdge } from "./edges";
+// ── Full node/edge type registrations (rich Screen, RAM, etc.) ──
 
-// ── Node/edge type registrations (mirrors Canvas.tsx) ──
-
-const dialogNodeTypes = {
+const FULL_NODE_TYPES = {
   inputNode: InputNode,
   numericInputNode: NumericInputNode,
   outputNode: OutputNode,
@@ -74,8 +64,8 @@ const dialogNodeTypes = {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
 } as any as NodeTypes;
 
-const dialogEdgeTypes = {
-  orthogonal: OrthogonalEdge,
+const FULL_EDGE_TYPES = {
+  orthogonal: SmoothStepEdge,
 };
 
 // ── Animation helpers ──
@@ -84,8 +74,6 @@ const dialogEdgeTypes = {
 function getOriginTransform(origin: OriginRect | null) {
   if (!origin) return {};
 
-  // Dialog final position: centered, with p-8 (32px) padding on each side
-  // and max-w-5xl (1024px), h-[80vh]
   const vw = window.innerWidth;
   const vh = window.innerHeight;
   const dialogW = Math.min(1024, vw - 64);
@@ -93,11 +81,9 @@ function getOriginTransform(origin: OriginRect | null) {
   const dialogX = (vw - dialogW) / 2;
   const dialogY = (vh - dialogH) / 2;
 
-  // Scale: how much smaller the origin is relative to the dialog
   const scaleX = origin.width / dialogW;
   const scaleY = origin.height / dialogH;
 
-  // Translate: offset from dialog center to origin center
   const originCenterX = origin.x + origin.width / 2;
   const originCenterY = origin.y + origin.height / 2;
   const dialogCenterX = dialogX + dialogW / 2;
@@ -252,7 +238,6 @@ interface InspectorCanvasProps {
 function InspectorCanvas({ frame }: InspectorCanvasProps) {
   const resolveComponent = useComponentLibraryStore((s) => s.resolveComponent);
   const getAllPrimitiveNames = useComponentLibraryStore((s) => s.getAllPrimitiveNames);
-  const pushLevel = useInspectorStore((s) => s.pushLevel);
 
   // Build the view circuit (boundary Switch/Led nodes for composite ports)
   const viewCircuit = useMemo(
@@ -265,26 +250,6 @@ function InspectorCanvas({ frame }: InspectorCanvasProps) {
     () => hasSequentialComponents(viewCircuit, resolveComponent),
     [viewCircuit, resolveComponent],
   );
-
-  // Layout
-  const { metadata } = useMemo(() => {
-    const rawPositions = performHierarchicalLayout(viewCircuit);
-    const centeredPositions = centerLayout(rawPositions);
-
-    const components: Record<string, { id: string; position: { x: number; y: number }; selected: boolean }> = {};
-    const connections: Record<string, { id: string; selected: boolean }> = {};
-
-    for (const [id, position] of Object.entries(centeredPositions)) {
-      components[id] = { id, position, selected: false };
-    }
-    for (const conn of viewCircuit.connections) {
-      connections[conn.id] = { id: conn.id, selected: false };
-    }
-
-    return {
-      metadata: { components, connections },
-    };
-  }, [viewCircuit]);
 
   // Build a ComponentLibrary adapter for the simulator
   const library = useMemo(() => ({
@@ -440,67 +405,6 @@ function InspectorCanvas({ frame }: InspectorCanvasProps) {
     };
   }, [isRunning, isSequential, handleStep]);
 
-  // Handle double-click on composite node inside the dialog
-  const handleNodeDoubleClick = useCallback(
-    (_event: React.MouseEvent, node: { data: NodeData }) => {
-      const data = node.data;
-      if (!data.isComposite) return;
-
-      const componentDef = resolveComponent(data.componentRef);
-      if (!componentDef) return;
-
-      if (componentDef.implementation.kind === "composite") {
-        pushLevel(data.componentRef, componentDef, data.label || data.componentRef);
-      } else {
-        // Primitive with reference circuit — compile on demand
-        const store = useComponentLibraryStore.getState();
-        const refCircuit = getCompiledReferenceCircuit(data.componentRef, store, data.arguments as Record<string, number> | undefined);
-        if (refCircuit) {
-          pushLevel(data.componentRef, refCircuit, data.label || data.componentRef);
-        }
-      }
-    },
-    [resolveComponent, pushLevel],
-  );
-
-  // Project to ReactFlow nodes/edges
-  const { nodes, edges } = useMemo(() => {
-    const result = projectCircuitToReactFlow(viewCircuit, metadata, portValues, seqState ?? undefined);
-
-    // Attach callbacks to boundary input nodes
-    result.nodes = result.nodes.map((n) => {
-      if (n.id.startsWith(BOUNDARY_IN_PREFIX) && n.type === "inputNode") {
-        return {
-          ...n,
-          data: {
-            ...n.data,
-            onToggle: () => handleToggle(n.id),
-          },
-          deletable: false,
-        };
-      }
-      if (n.id.startsWith(BOUNDARY_IN_PREFIX) && n.type === "numericInputNode") {
-        return {
-          ...n,
-          data: {
-            ...n.data,
-            onValueChange: (value: number) => handleNumericChange(n.id, value),
-          },
-          deletable: false,
-        };
-      }
-      return { ...n, deletable: false };
-    });
-
-    result.edges = result.edges.map((e) => ({
-      ...e,
-      deletable: false,
-      selectable: false,
-    }));
-
-    return result;
-  }, [viewCircuit, metadata, portValues, seqState, handleToggle, handleNumericChange]);
-
   return (
     <div className="relative h-full w-full">
       {/* Sequential clock controls — floating above canvas */}
@@ -520,23 +424,19 @@ function InspectorCanvas({ frame }: InspectorCanvasProps) {
         />
       )}
 
-      <ReactFlowProvider>
-        <ReactFlow
-          nodes={nodes}
-          edges={edges}
-          nodeTypes={dialogNodeTypes}
-          edgeTypes={dialogEdgeTypes}
-          onNodeDoubleClick={handleNodeDoubleClick}
-          fitView
-          fitViewOptions={{ padding: 0.2 }}
-          nodesConnectable={false}
-          deleteKeyCode={null}
-          className="bg-gray-50"
-        >
-          <Background />
-          <Controls />
-        </ReactFlow>
-      </ReactFlowProvider>
+      <CircuitCanvas
+        circuit={viewCircuit}
+        portValues={portValues}
+        sequentialState={seqState}
+        onToggleNode={handleToggle}
+        onSetNodeValue={handleNumericChange}
+        nodeTypes={FULL_NODE_TYPES}
+        edgeTypes={FULL_EDGE_TYPES}
+        theme="light"
+        showControls
+        drillDown
+        height="100%"
+      />
     </div>
   );
 }
