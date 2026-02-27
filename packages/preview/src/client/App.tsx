@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useCircuitSimulator, EmbedCanvas } from "@turing-incomplete/ui/embed";
+import { useCircuitSimulator, CircuitCanvas } from "@turing-incomplete/ui/embed";
 import { Tooltip } from "radix-ui";
 const TooltipProvider = Tooltip.Provider;
 
@@ -173,7 +173,7 @@ function CircuitArea({
     <TooltipProvider delayDuration={300}>
       {/* Canvas — fills remaining space */}
       <div style={{ flex: 1, minHeight: 0 }}>
-        <EmbedCanvas
+        <CircuitCanvas
           circuit={sim.circuit}
           portValues={sim.portValues}
           sequentialState={sim.sequentialState}

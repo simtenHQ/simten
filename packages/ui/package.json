@@ -11,7 +11,8 @@
     "./editor/lib": { "types": "./src/editor/lib/index.ts", "default": "./src/editor/lib/index.ts" },
     "./editor/components": { "types": "./src/editor/components/index.ts", "default": "./src/editor/components/index.ts" },
     "./editor/hooks": { "types": "./src/editor/hooks/index.ts", "default": "./src/editor/hooks/index.ts" },
-    "./embed": { "types": "./src/embed/index.ts", "default": "./src/embed/index.ts" }
+    "./embed": { "types": "./src/embed/index.ts", "default": "./src/embed/index.ts" },
+    "./shared": { "types": "./src/shared/index.ts", "default": "./src/shared/index.ts" }
   },
   "files": ["src"],
   "scripts": {
@@ -24,6 +25,7 @@
     "@xyflow/react": "^12.10.0",
     "@radix-ui/react-dialog": "^1.1.15",
     "class-variance-authority": "^0.7.1",
+    "elkjs": "^0.9.3",
     "clsx": "^2.1.1",
     "immer": "^11.1.3",
     "lucide-react": "^0.562.0",

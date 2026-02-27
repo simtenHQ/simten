@@ -1,7 +1,8 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { MiniCircuit } from "./MiniCircuit";
+import { useCircuitSimulator } from "@turing-incomplete/ui/embed";
+import { CircuitCanvas } from "@turing-incomplete/ui/shared";
 import type { SectionDef } from "./sections";
 
 interface CircuitSectionProps {
@@ -12,6 +13,7 @@ interface CircuitSectionProps {
 
 export function CircuitSection({ section, index }: CircuitSectionProps) {
   const isLeft = section.align === "left";
+  const sim = useCircuitSimulator(section.dsl);
 
   return (
     <section className="min-h-screen flex items-center relative px-6 py-20">
@@ -55,8 +57,44 @@ export function CircuitSection({ section, index }: CircuitSectionProps) {
                 </div>
               )}
               <div className="h-[280px] md:h-[320px]">
-                <MiniCircuit dsl={section.dsl} sectionId={section.id} />
+                {sim.error ? (
+                  <div className="h-full flex items-center justify-center text-red-400 text-sm p-4 text-center">
+                    {sim.error}
+                  </div>
+                ) : !sim.ready ? (
+                  <div className="h-full flex items-center justify-center text-gray-500">
+                    Loading...
+                  </div>
+                ) : (
+                  <CircuitCanvas
+                    circuit={sim.circuit}
+                    portValues={sim.portValues}
+                    sequentialState={sim.sequentialState}
+                    onToggleNode={sim.toggleNode}
+                    drillDown={false}
+                  />
+                )}
               </div>
+              {/* Clock controls for sequential circuits */}
+              {sim.ready && sim.isSequential && (
+                <div className="flex items-center gap-2 mt-2 pt-2 border-t border-gray-800">
+                  <button
+                    onClick={sim.tick}
+                    className="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded text-xs font-medium transition-colors"
+                  >
+                    Tick
+                  </button>
+                  <button
+                    onClick={sim.reset}
+                    className="px-2 py-1.5 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded text-xs transition-colors"
+                  >
+                    Reset
+                  </button>
+                  <span className="text-gray-500 text-xs ml-auto">
+                    #{sim.cycleCount}
+                  </span>
+                </div>
+              )}
             </div>
           </motion.div>
         </div>
