@@ -503,7 +503,9 @@ export const PRIMITIVE_DEFINITIONS: Record<string, CorePrimitiveDefinition> = {
     parameters: [{ name: 'width', paramType: 'int', defaultValue: 8, options: [4, 8, 16, 32] }],
     evaluate: (inputs) => {
       const a = inputs.get('in') as number;
-      return new Map([['out', ~a]]);
+      const width = (inputs.get('__width') as number) ?? 8;
+      const mask = width >= 32 ? 0xFFFFFFFF : (1 << width) - 1;
+      return new Map([['out', (~a) & mask]]);
     },
   }),
 
