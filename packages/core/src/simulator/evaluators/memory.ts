@@ -48,7 +48,7 @@ export function evalRAM(ctx: EvalContext): void {
 /**
  * DualPortRAM: Dual-port RAM with separate read/write ports
  * Inputs: addrA, dataA, weA, addrB
- * Outputs: dataA (read from A), dataB (read from B)
+ * Outputs: outA (read from A), outB (read from B)
  */
 export function evalDualPortRAM(ctx: EvalContext): void {
   const addrA = readInput(ctx, 0);

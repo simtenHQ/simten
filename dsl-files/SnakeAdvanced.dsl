@@ -15,7 +15,7 @@ circuit SnakeAdvanced {
     })
     node screen: Screen
     connect screen.addrB -> ram.addrB
-    connect ram.dataB -> screen.dataIn
+    connect ram.outB -> screen.dataIn
 
     // RAM Layout:
     // 0-63:   Screen framebuffer (8x8 pixels)
@@ -355,7 +355,7 @@ circuit SnakeAdvanced {
 
     // tailPixelAddr: Latch in phase 0 (read from RAM port A)
     // But ONLY if not drawing food (foodNeedsDrawing would prevent read)
-    connect ram.dataA -> tailPixelAddr.data
+    connect ram.outA -> tailPixelAddr.data
     node latchTail: And
     node latchTailFinal: And
     node latchTailNotFood: And

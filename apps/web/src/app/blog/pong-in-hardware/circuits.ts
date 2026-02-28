@@ -416,7 +416,7 @@ circuit PongSimple {
     node ram: DualPortRAM
     node screen: Screen
     connect screen.addrB -> ram.addrB
-    connect ram.dataB -> screen.dataIn
+    connect ram.outB -> screen.dataIn
 
     // ===== KEYBOARD (two registers for multi-key polling) =====
     node keyboard0: Input

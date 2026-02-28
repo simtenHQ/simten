@@ -188,7 +188,7 @@ export function projectCircuitToNodes(
       }
     } else if (node.componentRef === 'Screen') {
       // Screen reads from dataIn port (explicit wiring)
-      // The typical wiring: Screen.addrB -> RAM.addrB, RAM.dataB -> Screen.dataIn
+      // The typical wiring: Screen.addrB -> RAM.addrB, RAM.outB -> Screen.dataIn
       pixels = new Array(64).fill(0);
 
       if (seqState && portValues) {

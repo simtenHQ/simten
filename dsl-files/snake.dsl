@@ -6,7 +6,7 @@ circuit Snake4PixelsExplicit {
 
   // *** NEW: EXPLICIT BUS WIRING ***
   connect screen.addrB -> ram.addrB    // Screen drives RAM read address
-  connect ram.dataB -> screen.dataIn   // RAM returns pixel data
+  connect ram.outB -> screen.dataIn   // RAM returns pixel data
 
   // Keyboard input
   node keyboard: Input
