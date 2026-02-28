@@ -196,7 +196,7 @@ circuit FrameDetector {
     connect readAddr.out -> ram.addrB
 
     node readback: HexDisplay
-    connect ram.dataB -> readback.in
+    connect ram.outB -> readback.in
 
     node ptrDisplay: HexDisplay
     connect writePtr.q -> ptrDisplay.in
@@ -231,7 +231,7 @@ circuit PacketBuffer {
     connect readAddr.out -> ram.addrB
 
     node readback: HexDisplay
-    connect ram.dataB -> readback.in
+    connect ram.outB -> readback.in
 
     node ptrDisplay: HexDisplay
     connect writePtr.q -> ptrDisplay.in
@@ -452,7 +452,7 @@ circuit CrossbarRouter {
     connect readPtr.q -> ram.addrB
 
     node dataOut: HexDisplay
-    connect ram.dataB -> dataOut.in
+    connect ram.outB -> dataOut.in
 
     node ptrDisplay: HexDisplay
     connect readPtr.q -> ptrDisplay.in
@@ -491,7 +491,7 @@ circuit PacketSerializer {
     connect readPtr.q -> ram.addrB
 
     node dataOut: HexDisplay
-    connect ram.dataB -> dataOut.in
+    connect ram.outB -> dataOut.in
 
     node ptrDisplay: HexDisplay
     connect readPtr.q -> ptrDisplay.in
@@ -1283,8 +1283,8 @@ circuit MiniSwitch2Port {
     connect forwarder.ingress_addr -> ram_ingress0.addrB
     connect forwarder.ingress_addr -> ram_ingress1.addrB
     node ingress_data_mux: Mux
-    connect ram_ingress1.dataB -> ingress_data_mux.in0
-    connect ram_ingress0.dataB -> ingress_data_mux.in1
+    connect ram_ingress1.outB -> ingress_data_mux.in0
+    connect ram_ingress0.outB -> ingress_data_mux.in1
     connect grant_is_port0.eq -> ingress_data_mux.sel
     connect forwarder.egress_addr -> ram_egress0.addrA
     connect forwarder.egress_addr -> ram_egress1.addrA
@@ -1318,7 +1318,7 @@ circuit MiniSwitch2Port {
     connect egress0.egress_addr -> ram_egress0.addrB
     connect egress1.egress_addr -> ram_egress1.addrB
     node p0_out: HexDisplay
-    connect ram_egress0.dataB -> p0_out.in
+    connect ram_egress0.outB -> p0_out.in
     node p0_valid_out: Led
     connect egress0.data_valid -> p0_valid_out.in
     node p0_sof: Led
@@ -1326,7 +1326,7 @@ circuit MiniSwitch2Port {
     node p0_eof: Led
     connect egress0.eof -> p0_eof.in
     node p1_out: HexDisplay
-    connect ram_egress1.dataB -> p1_out.in
+    connect ram_egress1.outB -> p1_out.in
     node p1_valid_out: Led
     connect egress1.data_valid -> p1_valid_out.in
     node p1_sof: Led

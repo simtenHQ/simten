@@ -3,7 +3,7 @@ circuit PongSimple {
     node ram: DualPortRAM
     node screen: Screen
     connect screen.addrB -> ram.addrB
-    connect ram.dataB -> screen.dataIn
+    connect ram.outB -> screen.dataIn
 
     // Multi-register keyboard controller (2 independent scan code registers)
     // Hardware distributes pressed keys in sorted order: keyboard0 gets lowest scan code, keyboard1 gets next

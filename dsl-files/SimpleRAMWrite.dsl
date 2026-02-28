@@ -24,6 +24,6 @@ circuit SimpleRAMWrite {
     // Screen
     node screen: Screen
     connect screen.addrB -> ram.addrB
-    connect ram.dataB -> screen.dataIn
+    connect ram.outB -> screen.dataIn
   }
 }

@@ -138,8 +138,8 @@ circuit MiniSwitch2Port {
 
     // Mux RAM data outputs based on which port was granted
     node ingress_data_mux: Mux
-    connect ram_ingress1.dataB -> ingress_data_mux.in0
-    connect ram_ingress0.dataB -> ingress_data_mux.in1
+    connect ram_ingress1.outB -> ingress_data_mux.in0
+    connect ram_ingress0.outB -> ingress_data_mux.in1
     connect grant_is_port0.eq -> ingress_data_mux.sel
 
     // Note: ingress_data_mux.out will be used for egress RAM writes
@@ -210,7 +210,7 @@ circuit MiniSwitch2Port {
     // ========================================================================
 
     node p0_out: HexDisplay
-    connect ram_egress0.dataB -> p0_out.in
+    connect ram_egress0.outB -> p0_out.in
 
     node p0_valid_out: Led
     connect egress0.data_valid -> p0_valid_out.in
@@ -222,7 +222,7 @@ circuit MiniSwitch2Port {
     connect egress0.eof -> p0_eof.in
 
     node p1_out: HexDisplay
-    connect ram_egress1.dataB -> p1_out.in
+    connect ram_egress1.outB -> p1_out.in
 
     node p1_valid_out: Led
     connect egress1.data_valid -> p1_valid_out.in
