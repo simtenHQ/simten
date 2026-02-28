@@ -110,6 +110,6 @@ circuit ScrollingHello {
 
     // ==== Display ====
     connect display.addrB -> fb.addrB
-    connect fb.dataB -> display.dataIn
+    connect fb.outB -> display.dataIn
   }
 }

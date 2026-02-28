@@ -16,8 +16,8 @@
 
 import { parseDSL } from '../parser/index.js';
 import type { ValidationError as ParserValidationError } from '../parser/index.js';
-import { compileToIR, CompilerError } from '../compiler/index.js';
-import type { ComponentLibrary as CompilerLibrary } from '../compiler/index.js';
+import { IRGenerator, CompilerError } from '../compiler/index.js';
+import type { ComponentLibrary as CompilerLibrary, CompilerWarning } from '../compiler/index.js';
 import { elaborate } from '../../simulator/elaboration.js';
 import type {
   Circuit,
@@ -91,6 +91,7 @@ function inferDiagnosticCode(message: string, phase: ValidationPhase): Diagnosti
   if (lowerMessage.includes('multiple drivers')) return 'MULTIPLE_DRIVERS';
 
   // Type errors
+  if (lowerMessage.includes('invalid bus width') || lowerMessage.includes('invalid width')) return 'INVALID_WIDTH';
   if (lowerMessage.includes('width mismatch')) return 'WIDTH_MISMATCH';
   if (lowerMessage.includes('type mismatch')) return 'TYPE_MISMATCH';
 
@@ -135,6 +136,22 @@ function compilerErrorToDiagnostic(error: Error): Diagnostic {
     suggestions: compilerError?.circuitName
       ? [`Error in circuit '${compilerError.circuitName}'`]
       : undefined,
+  };
+}
+
+/**
+ * Convert a compiler warning to a Diagnostic.
+ */
+function compilerWarningToDiagnostic(warning: CompilerWarning): Diagnostic {
+  return {
+    phase: 'type',
+    code: 'WIDTH_MISMATCH',
+    severity: 'warning',
+    message: `[${warning.circuitName}] ${warning.message}`,
+    suggestions: [
+      'Bus widths should match on both sides of a connection',
+      'Signals will be truncated or zero-extended implicitly',
+    ],
   };
 }
 
@@ -338,7 +355,15 @@ function adaptLibraryForCompiler(library: ComponentLibrary): AdaptedLibrary {
   return {
     getCircuit: resolve,
     hasCircuit: (name: string) => localCircuits.has(name) || library.resolveComponent(name) !== undefined,
-    addCircuit: (circuit: Circuit) => { localCircuits.set(circuit.name, circuit); },
+    addCircuit: (circuit: Circuit) => {
+      if (library.resolveComponent(circuit.name) !== undefined) {
+        throw new CompilerError(
+          `Circuit name '${circuit.name}' shadows a built-in primitive`,
+          circuit.name
+        );
+      }
+      localCircuits.set(circuit.name, circuit);
+    },
     getAllComponentNames: () => [
       ...(library.getAllPrimitiveNames?.() ?? []),
       ...localCircuits.keys(),
@@ -398,7 +423,12 @@ export function validateCircuit(
 
   if (ctx.phases?.type !== false && !hasBlockingAfterParse && ast) {
     try {
-      circuits = compileToIR(ast, compilerLibrary);
+      const generator = new IRGenerator(compilerLibrary);
+      circuits = generator.compileProgram(ast);
+      // Collect width mismatch warnings as diagnostics
+      for (const warning of generator.warnings) {
+        diagnostics.push(compilerWarningToDiagnostic(warning));
+      }
     } catch (e) {
       diagnostics.push(compilerErrorToDiagnostic(e as Error));
     }

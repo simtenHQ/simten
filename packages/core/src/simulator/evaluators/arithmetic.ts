@@ -66,7 +66,10 @@ export function evalMultiplier(ctx: EvalContext): void {
   const width = (node.arguments.width as number) ?? 8;
   const outputMask = bitMask(width * 2);
 
-  const product = (a * b) & outputMask;
+  // Use modular arithmetic instead of bitwise AND for wide outputs
+  // (bitwise AND coerces to Int32, turning large unsigned products negative)
+  const raw = a * b;
+  const product = width * 2 >= 32 ? (raw >>> 0) : (raw & outputMask);
 
   writeOutput(ctx, 0, product);
 }
@@ -113,9 +116,9 @@ export function evalSignedMultiplier(ctx: EvalContext): void {
 
   const node = ctx.circuit.flatCircuit.nodes[ctx.nodeIndex];
   const width = (node.arguments.width as number) ?? 8;
-  const signBit = 1 << (width - 1);
-  const maxValue = 1 << width;
-  const outputMask = bitMask(width * 2);
+  // Use 2** instead of 1<< to avoid JS shift mod-32 bug at width=16
+  const signBit = width >= 32 ? 0x80000000 : (1 << (width - 1));
+  const maxValue = 2 ** width;
 
   // Convert to signed
   const aSigned = (a & signBit) ? a - maxValue : a;
@@ -124,9 +127,11 @@ export function evalSignedMultiplier(ctx: EvalContext): void {
   const productSigned = aSigned * bSigned;
 
   // Convert back to unsigned representation
+  // Use 2** for outputRange to avoid 1 << 32 === 1 bug
+  const outputRange = 2 ** (width * 2);
   const product = productSigned >= 0
-    ? productSigned
-    : (productSigned + (1 << (width * 2))) & outputMask;
+    ? (width * 2 >= 32 ? (productSigned >>> 0) : productSigned)
+    : ((productSigned + outputRange) >>> 0);
 
   writeOutput(ctx, 0, product);
 }

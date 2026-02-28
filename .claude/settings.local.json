@@ -23,7 +23,10 @@
       "mcp__turing-incomplete__show_circuit",
       "Bash(node:*)",
       "mcp__turing-incomplete__check_circuit",
-      "mcp__turing-incomplete__get_grammar"
+      "mcp__turing-incomplete__get_grammar",
+      "mcp__turing-incomplete__run_testbench",
+      "Bash(npx tsx -e \":*)",
+      "Bash(npx vitest run --reporter=verbose)"
     ]
   }
 }

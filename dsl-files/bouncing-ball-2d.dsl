@@ -191,7 +191,7 @@ circuit BouncingBall2D {
 
     // ==== Screen Display (Port B) ====
     connect display.addrB -> fb.addrB
-    connect fb.dataB -> display.dataIn
+    connect fb.outB -> display.dataIn
 
     // ==== Clock connections for sequential components ====
     connect clk -> ballX.clk

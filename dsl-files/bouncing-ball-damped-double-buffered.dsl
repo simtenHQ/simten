@@ -204,8 +204,8 @@ circuit BouncingBallDampedDoubleBuffered {
     // bufferSelect=0: read from fb1 (front)
     // bufferSelect=1: read from fb2 (front)
     connect bufferSelect.q -> readDataMux.sel
-    connect fb1.dataB -> readDataMux.in0
-    connect fb2.dataB -> readDataMux.in1
+    connect fb1.outB -> readDataMux.in0
+    connect fb2.outB -> readDataMux.in1
     connect readDataMux.out -> display.dataIn
 
     // ==== Clock connections for sequential components ====

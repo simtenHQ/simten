@@ -741,9 +741,8 @@ circuit Adder {
       const b = (inputs.get('b') as number) >>> 0;
 
       const width = (inputs.get('__width') as number) ?? 8;
-      const mask = (width * 2) >= 32 ? 0xFFFFFFFF : (1 << (width * 2)) - 1;
-
-      const product = (a * b) & mask;
+      const raw = a * b;
+      const product = width * 2 >= 32 ? (raw >>> 0) : (raw & ((1 << (width * 2)) - 1));
 
       return new Map([['product', product]]);
     },
@@ -1010,19 +1009,18 @@ circuit Comparator {
       const b = inputs.get('b') as number;
 
       const width = (inputs.get('__width') as number) ?? 8;
-      const signBit = width >= 32 ? 0x80000000 : 1 << (width - 1);
-      const maxValue = width >= 32 ? 0x100000000 : 1 << width;
-      const outputMask = (width * 2) >= 32 ? 0xFFFFFFFF : (1 << (width * 2)) - 1;
+      const signBit = width >= 32 ? 0x80000000 : (1 << (width - 1));
+      const maxValue = 2 ** width;
 
       const aSigned = (a & signBit) ? a - maxValue : a;
       const bSigned = (b & signBit) ? b - maxValue : b;
 
       const productSigned = aSigned * bSigned;
-      const outputModulus = (width * 2) >= 32 ? 0x100000000 : (1 << (width * 2));
+      const outputRange = 2 ** (width * 2);
 
       const product = productSigned >= 0
-        ? productSigned
-        : (productSigned + outputModulus) & outputMask;
+        ? (width * 2 >= 32 ? (productSigned >>> 0) : productSigned)
+        : ((productSigned + outputRange) >>> 0);
 
       return new Map([['product', product]]);
     },
@@ -1385,8 +1383,8 @@ circuit Comparator {
       { name: 'addrB', portType: busType(8) },
     ],
     outputs: [
-      { name: 'dataA', portType: busType(8) },
-      { name: 'dataB', portType: busType(8) },
+      { name: 'outA', portType: busType(8) },
+      { name: 'outB', portType: busType(8) },
     ],
     clocks: [{ name: 'clk' }],
     state: [
@@ -1401,11 +1399,11 @@ circuit Comparator {
       const memory = (currentState ?? new Map()) as Map<number, number>;
       const addrA = inputs.get('addrA') as number;
       const addrB = inputs.get('addrB') as number;
-      const dataA = memory.get(addrA) ?? 0;
-      const dataB = memory.get(addrB) ?? 0;
+      const outA = memory.get(addrA) ?? 0;
+      const outB = memory.get(addrB) ?? 0;
       return new Map([
-        ['dataA', dataA],
-        ['dataB', dataB],
+        ['outA', outA],
+        ['outB', outB],
       ]);
     },
     updateState: (inputs, currentState, clockEdges) => {

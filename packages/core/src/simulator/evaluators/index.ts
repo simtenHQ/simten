@@ -165,7 +165,10 @@ function evalBusXor(ctx: EvalContext): void {
 
 function evalIncrementer(ctx: EvalContext): void {
   const a = readInput(ctx, 0);
-  writeOutput(ctx, 0, (a + 1) & 0xFF);
+  const node = ctx.circuit.flatCircuit.nodes[ctx.nodeIndex];
+  const width = (node.arguments.width as number) ?? 8;
+  const mask = bitMask(width);
+  writeOutput(ctx, 0, (a + 1) & mask);
 }
 
 function evalProbe(ctx: EvalContext): void {

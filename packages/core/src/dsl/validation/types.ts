@@ -53,6 +53,7 @@ export type DiagnosticCode =
   | 'WIDTH_MISMATCH'
   | 'TYPE_MISMATCH'
   | 'PARAMETER_TYPE_ERROR'
+  | 'INVALID_WIDTH'
   // Structural errors (Phase 4)
   | 'COMBINATIONAL_CYCLE'
   | 'FLOATING_INPUT'
@@ -127,6 +128,7 @@ const DIAGNOSTIC_META: Partial<Record<DiagnosticCode, DiagnosticMeta>> = {
   WIDTH_MISMATCH: { blocking: true },
   TYPE_MISMATCH: { blocking: true },
   PARAMETER_TYPE_ERROR: { blocking: true },
+  INVALID_WIDTH: { blocking: true },
 
   // Structural errors
   COMBINATIONAL_CYCLE: { blocking: true },

@@ -102,9 +102,15 @@ function resolveFromLibrary(library: ComponentLibrary, name: string): Circuit | 
 // IR Generator
 // ============================================================================
 
+export interface CompilerWarning {
+  circuitName: string;
+  message: string;
+}
+
 export class IRGenerator {
   private library: ComponentLibrary;
   private currentCircuit?: CircuitDef;
+  public readonly warnings: CompilerWarning[] = [];
 
   constructor(library: ComponentLibrary) {
     this.library = library;
@@ -538,15 +544,26 @@ export class IRGenerator {
     const sourceType = this.getPortType(circuitDef, conn.source, nodes);
     const targetType = this.getPortType(circuitDef, conn.target, nodes);
 
-    // Warn on bus width mismatches (like Verilog warnings)
+    // Collect width mismatches as warnings (like Verilog warnings)
     if (sourceType.kind === 'bus' && targetType.kind === 'bus') {
       if (sourceType.width !== targetType.width) {
-        console.warn(
-          `[${circuitDef.name}] Width mismatch: ` +
-          `${formatPortRef(conn.source)} (${sourceType.width}-bit) -> ` +
-          `${formatPortRef(conn.target)} (${targetType.width}-bit)`
-        );
+        this.warnings.push({
+          circuitName: circuitDef.name,
+          message: `Width mismatch: ` +
+            `${formatPortRef(conn.source)} (${sourceType.width}-bit) -> ` +
+            `${formatPortRef(conn.target)} (${targetType.width}-bit)`,
+        });
       }
+    } else if (
+      (sourceType.kind === 'bit' && targetType.kind === 'bus') ||
+      (sourceType.kind === 'bus' && targetType.kind === 'bit')
+    ) {
+      this.warnings.push({
+        circuitName: circuitDef.name,
+        message: `Width mismatch: ` +
+          `${formatPortRef(conn.source)} (${sourceType.kind === 'bus' ? sourceType.width + '-bit' : 'Bit'}) -> ` +
+          `${formatPortRef(conn.target)} (${targetType.kind === 'bus' ? targetType.width + '-bit' : 'Bit'})`,
+      });
     }
 
     return {

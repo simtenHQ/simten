@@ -325,8 +325,14 @@ export function hasCycle(graph: CombinationalGraph): boolean {
  */
 function findCycles(graph: CombinationalGraph): string[][] {
   const sccs = tarjanSCC(graph);
-  // Filter to non-trivial SCCs (size > 1 = cycle)
-  return sccs.filter(scc => scc.length > 1);
+  const multiNodeCycles = sccs.filter(scc => scc.length > 1);
+
+  // Also detect self-loops (single node with edge to itself)
+  const selfLoops = [...graph.entries()]
+    .filter(([node, successors]) => successors.has(node))
+    .map(([node]) => [node]);
+
+  return [...multiNodeCycles, ...selfLoops];
 }
 
 /**

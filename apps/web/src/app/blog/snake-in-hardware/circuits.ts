@@ -33,7 +33,7 @@ export const SNAKE_CIRCUITS: Record<string, BlogCircuit> = {
     })
     node screen: Screen
     connect screen.addrB -> ram.addrB
-    connect ram.dataB -> screen.dataIn
+    connect ram.outB -> screen.dataIn
 
     node addr: Input
     node data_in: Input
@@ -44,7 +44,7 @@ export const SNAKE_CIRCUITS: Record<string, BlogCircuit> = {
     connect data_in.out -> ram.dataA
     connect we.out -> ram.weA
     connect clk -> ram.clk
-    connect ram.dataA -> readback.in
+    connect ram.outA -> readback.in
   }
 }`,
     dsl: `
@@ -63,7 +63,7 @@ circuit SimpleFramebuffer {
     })
     node screen: Screen
     connect screen.addrB -> ram.addrB
-    connect ram.dataB -> screen.dataIn
+    connect ram.outB -> screen.dataIn
 
     node addr: Input
     node data_in: Input
@@ -74,7 +74,7 @@ circuit SimpleFramebuffer {
     connect data_in.out -> ram.dataA
     connect we.out -> ram.weA
     connect clk -> ram.clk
-    connect ram.dataA -> readback.in
+    connect ram.outA -> readback.in
   }
 }`,
   },
@@ -239,7 +239,7 @@ circuit DirectionDecoder {
     node ram: DualPortRAM
     node screen: Screen
     connect screen.addrB -> ram.addrB
-    connect ram.dataB -> screen.dataIn
+    connect ram.outB -> screen.dataIn
 
     node keyboard: Input
 
@@ -337,7 +337,7 @@ circuit PixelMover {
     node ram: DualPortRAM
     node screen: Screen
     connect screen.addrB -> ram.addrB
-    connect ram.dataB -> screen.dataIn
+    connect ram.outB -> screen.dataIn
 
     node keyboard: Input
 
@@ -632,7 +632,7 @@ circuit SnakeAdvanced {
     })
     node screen: Screen
     connect screen.addrB -> ram.addrB
-    connect ram.dataB -> screen.dataIn
+    connect ram.outB -> screen.dataIn
 
     // RAM Layout:
     // 0-63:   Screen framebuffer (8x8 pixels)
@@ -934,7 +934,7 @@ circuit SnakeAdvanced {
     connect finalWriteEnable.out -> ram.weA
 
     // Register updates
-    connect ram.dataA -> tailPixelAddr.data
+    connect ram.outA -> tailPixelAddr.data
     node latchTail: And
     node latchTailFinal: And
     node latchTailNotFood: And

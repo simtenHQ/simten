@@ -229,7 +229,15 @@ export class Validator {
     paramNames: Set<string>,
     location: SourceRange
   ): void {
-    if (typeof busType.width !== 'number') {
+    if (typeof busType.width === 'number') {
+      if (busType.width < 1 || busType.width > 53) {
+        this.addError(
+          `Invalid bus width: ${busType.width}. Width must be between 1 and 53.`,
+          location,
+          ['Bus width must be a positive integer between 1 and 53']
+        );
+      }
+    } else {
       this.validateParameterRef(busType.width, paramNames, location);
     }
   }

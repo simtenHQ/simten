@@ -11,7 +11,7 @@ export {
   CompilerError,
 } from './ir-generator.js';
 
-export type { ComponentLibrary } from './ir-generator.js';
+export type { ComponentLibrary, CompilerWarning } from './ir-generator.js';
 
 export {
   compileTestbenchToIR,
