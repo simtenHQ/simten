@@ -281,8 +281,11 @@ export const PRIMITIVE_DEFINITIONS: Record<string, CorePrimitiveDefinition> = {
     name: 'Input',
     description: 'Multi-bit numeric input (runtime editable). Use for bus values the student can change.',
     inputs: [],
-    outputs: [{ name: 'out', portType: busType(8) }],
-    parameters: [{ name: 'value', paramType: 'int', defaultValue: 0 }],
+    outputs: [{ name: 'out', portType: busType(8), widthParam: 'width' }],
+    parameters: [
+      { name: 'value', paramType: 'int', defaultValue: 0 },
+      { name: 'width', paramType: 'int', defaultValue: 8, options: [4, 8, 16, 32] },
+    ],
     evaluate: (inputs) => {
       const value = (inputs.get('__value') as number) ?? 0;
       return new Map([['out', value]]);
@@ -1124,8 +1127,9 @@ circuit Comparator {
   HexDisplay: defineCombinational({
     name: 'HexDisplay',
     description: 'Hexadecimal display for multi-bit values (default: 8-bit)',
-    inputs: [{ name: 'in', portType: busType(8) }],
+    inputs: [{ name: 'in', portType: busType(8), widthParam: 'width' }],
     outputs: [],
+    parameters: [{ name: 'width', paramType: 'int', defaultValue: 8, options: [4, 8, 16, 32] }],
     evaluate: (_inputs) => {
       return new Map();
     },

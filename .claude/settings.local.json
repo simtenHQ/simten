@@ -26,7 +26,8 @@
       "mcp__turing-incomplete__get_grammar",
       "mcp__turing-incomplete__run_testbench",
       "Bash(npx tsx -e \":*)",
-      "Bash(npx vitest run --reporter=verbose)"
+      "Bash(npx vitest run --reporter=verbose)",
+      "mcp__turing-incomplete__show_traces"
     ]
   }
 }
