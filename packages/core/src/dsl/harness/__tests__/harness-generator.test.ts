@@ -50,10 +50,10 @@ describe('harness-generator', () => {
         clocks: [],
       });
 
-      expect(harness).toContain('node a_sw: Input(value=0)');
-      expect(harness).toContain('node b_sw: Input(value=0)');
+      expect(harness).toContain('node a_sw: Input(value=0, width=8)');
+      expect(harness).toContain('node b_sw: Input(value=0, width=8)');
       expect(harness).toContain('node cin_sw: Switch(value=0)');
-      expect(harness).toContain('node sum_out: HexDisplay');
+      expect(harness).toContain('node sum_out: HexDisplay(width=8)');
       expect(harness).toContain('node cout_out: Led');
     });
   });

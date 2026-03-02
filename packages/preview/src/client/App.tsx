@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useCircuitSimulator, CircuitCanvas } from "@turing-incomplete/ui/embed";
+import { WaveformViewer, TestResultsPanel } from "@turing-incomplete/ui/shared";
+import type { TracesPayload, TestResult } from "@turing-incomplete/ui/shared";
 import { Tooltip } from "radix-ui";
 const TooltipProvider = Tooltip.Provider;
 
@@ -10,6 +12,8 @@ export function App() {
   const [error, setError] = useState<string | null>(null);
   const [status, setStatus] = useState<ConnectionStatus>("connecting");
   const [isAutoRunning, setIsAutoRunning] = useState(false);
+  const [traces, setTraces] = useState<TracesPayload | null>(null);
+  const [testResults, setTestResults] = useState<TestResult[] | null>(null);
   const retryDelay = useRef(1000);
   const eventSourceRef = useRef<EventSource | null>(null);
 
@@ -38,6 +42,10 @@ export function App() {
         } else if (data.type === "file-deleted") {
           setError("Watched file was deleted");
           setDsl(null);
+        } else if (data.type === "traces") {
+          setTraces(data.data);
+        } else if (data.type === "test-results") {
+          setTestResults(data.data.results);
         }
       } catch {
         // non-JSON message, ignore
@@ -103,7 +111,13 @@ export function App() {
 
       {/* Circuit area */}
       {dsl ? (
-        <CircuitArea dsl={dsl} isAutoRunning={isAutoRunning} setIsAutoRunning={setIsAutoRunning} />
+        <CircuitArea
+          dsl={dsl}
+          isAutoRunning={isAutoRunning}
+          setIsAutoRunning={setIsAutoRunning}
+          traces={traces}
+          testResults={testResults}
+        />
       ) : (
         <div
           style={{
@@ -126,13 +140,35 @@ function CircuitArea({
   dsl,
   isAutoRunning,
   setIsAutoRunning,
+  traces,
+  testResults,
 }: {
   dsl: string;
   isAutoRunning: boolean;
   setIsAutoRunning: (v: boolean) => void;
+  traces: TracesPayload | null;
+  testResults: TestResult[] | null;
 }) {
   const sim = useCircuitSimulator(dsl);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Report state to server for MCP readback
+  useEffect(() => {
+    if (!sim.ready) return;
+    const body = JSON.stringify({
+      cycleCount: sim.cycleCount,
+      inputs: sim.inputs,
+      outputs: sim.outputs,
+      isSequential: sim.isSequential,
+      circuitName: sim.circuit?.name ?? null,
+      timestamp: Date.now(),
+    });
+    fetch("/api/state", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body,
+    }).catch(() => {/* fire-and-forget */});
+  }, [sim.ready, sim.cycleCount, sim.inputs, sim.outputs, sim.isSequential, sim.circuit]);
 
   useEffect(() => {
     if (isAutoRunning && sim.ready && sim.isSequential) {
@@ -182,6 +218,27 @@ function CircuitArea({
           height="100%"
         />
       </div>
+
+      {/* Waveform panel */}
+      {traces && (
+        <div style={{ flexShrink: 0, maxHeight: "35vh", overflow: "auto" }}>
+          <WaveformViewer
+            signals={traces.signals}
+            inputs={traces.inputs}
+            outputs={traces.outputs}
+            ticks={traces.ticks}
+            circuit={traces.circuit}
+            steadyStateAt={traces.steadyStateAt}
+          />
+        </div>
+      )}
+
+      {/* Test results panel */}
+      {testResults && (
+        <div style={{ flexShrink: 0, maxHeight: "30vh", overflow: "auto" }}>
+          <TestResultsPanel results={testResults} />
+        </div>
+      )}
 
       {/* Controls bar — fixed at bottom */}
       {sim.isSequential && (

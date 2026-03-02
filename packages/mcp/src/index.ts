@@ -17,6 +17,9 @@ import { registerCheckTool } from './tools/check.js';
 import { registerSimulateTool } from './tools/simulate.js';
 import { registerTestTool } from './tools/test.js';
 import { registerShowTools } from './tools/show.js';
+import { registerStateTool } from './tools/state.js';
+import { registerTracesTool } from './tools/traces.js';
+import { registerTestResultsTool } from './tools/test-results.js';
 
 const server = new McpServer({
   name: 'turing-incomplete',
@@ -30,6 +33,9 @@ registerCheckTool(server);
 registerSimulateTool(server);
 registerTestTool(server);
 registerShowTools(server);
+registerStateTool(server);
+registerTracesTool(server);
+registerTestResultsTool(server);
 
 // Connect via stdio transport
 const transport = new StdioServerTransport();

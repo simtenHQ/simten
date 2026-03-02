@@ -8,59 +8,21 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import { exec } from 'node:child_process';
-import { resolve, join } from 'node:path';
+import { resolve } from 'node:path';
 import { readDSLSource } from '../lib/file-reader.js';
-
-// Lazy import type — actual import happens at runtime
-type PreviewServer = {
-  port: number;
-  updateDSL(dsl: string): void;
-  watchFile(filePath: string): void;
-  close(): void;
-};
-
-type CreatePreviewServer = (options?: {
-  port?: number;
-  clientDir?: string;
-}) => Promise<PreviewServer>;
-
-// Module-level singleton
-let previewServer: PreviewServer | null = null;
-let browserOpened = false;
-
-// Register cleanup
-let cleanupRegistered = false;
-function ensureCleanup() {
-  if (cleanupRegistered) return;
-  cleanupRegistered = true;
-  const cleanup = () => {
-    previewServer?.close();
-    previewServer = null;
-  };
-  process.on('exit', cleanup);
-  process.on('SIGTERM', cleanup);
-  process.on('SIGINT', cleanup);
-}
-
-async function getOrCreateServer(): Promise<PreviewServer> {
-  if (previewServer) return previewServer;
-
-  // Import the preview server from the bundled dist
-  // At build time, copy-preview.js copies the server code next to our dist
-  const serverPath = join(import.meta.dirname, '../preview-server/index.js');
-  const mod = await import(serverPath) as { createPreviewServer: CreatePreviewServer };
-
-  const clientDir = join(import.meta.dirname, '../preview-client');
-
-  previewServer = await mod.createPreviewServer({ clientDir });
-  ensureCleanup();
-
-  return previewServer;
-}
+import { checkCircuit, getLibrary } from '@turing-incomplete/core/api';
+import { generateHarnessAppended } from '@turing-incomplete/core/dsl';
+import {
+  getOrCreateServer,
+  getPreviewServer,
+  setPreviewServer,
+  getBrowserOpened,
+  setBrowserOpened,
+} from '../lib/preview-singleton.js';
 
 function openBrowser(url: string) {
-  if (browserOpened) return;
-  browserOpened = true;
+  if (getBrowserOpened()) return;
+  setBrowserOpened(true);
 
   // Cross-platform open
   const cmd =
@@ -85,14 +47,15 @@ export function registerShowTools(server: McpServer): void {
     'Close the live circuit preview and stop the server.',
     {},
     async () => {
-      if (!previewServer) {
+      const preview = getPreviewServer();
+      if (!preview) {
         return {
           content: [{ type: 'text' as const, text: 'No preview is running.' }],
         };
       }
-      previewServer.close();
-      previewServer = null;
-      browserOpened = false;
+      preview.close();
+      setPreviewServer(null);
+      setBrowserOpened(false);
       return {
         content: [{ type: 'text' as const, text: 'Preview closed.' }],
       };
@@ -120,8 +83,28 @@ export function registerShowTools(server: McpServer): void {
         };
       }
 
-      // 2. Start or get existing preview server
-      let preview: PreviewServer;
+      // 2. Validate DSL before pushing to browser
+      const library = getLibrary();
+      const check = checkCircuit(
+        { source: read.source, sourceName: read.sourceName },
+        library
+      );
+      if (!check.valid) {
+        const msgs = check.diagnostics
+          .filter((d) => d.severity === 'error')
+          .map((d) => d.message)
+          .join('\n');
+        return {
+          content: [{ type: 'text' as const, text: `DSL validation failed:\n${msgs}` }],
+          isError: true,
+        };
+      }
+
+      // 3. Auto-generate interactive harness (Switch/Led/HexDisplay) if needed
+      const dslToShow = generateHarnessAppended(read.source);
+
+      // 4. Start or get existing preview server
+      let preview;
       try {
         preview = await getOrCreateServer();
       } catch (err) {
@@ -139,18 +122,18 @@ export function registerShowTools(server: McpServer): void {
 
       const url = `http://localhost:${preview.port}`;
 
-      // 3. Push DSL to all connected clients
-      preview.updateDSL(read.source);
+      // 5. Push DSL (with harness) to all connected clients
+      preview.updateDSL(dslToShow);
 
-      // 4. Watch file for changes if path provided
+      // 6. Watch file for changes if path provided
       if (filePath) {
         preview.watchFile(resolve(filePath));
       }
 
-      // 5. Open browser on first call
+      // 7. Open browser on first call
       openBrowser(url);
 
-      // 6. Return confirmation
+      // 8. Return confirmation
       const watchingNote = filePath
         ? ` Watching ${resolve(filePath)} for changes.`
         : '';

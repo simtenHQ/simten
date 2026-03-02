@@ -203,7 +203,9 @@ export function generateHarnessDSL(iface: CircuitInterface): string {
   if (inputs.length > 0) {
     lines.push('    // === Input Controls ===');
     for (const input of inputs) {
-      const component = input.type === 'Bus' ? 'Input(value=0)' : 'Switch(value=0)';
+      const component = input.type === 'Bus'
+        ? `Input(value=0, width=${input.width ?? 8})`
+        : 'Switch(value=0)';
       lines.push(`    node ${input.name}_sw: ${component}`);
     }
     lines.push('');
@@ -227,7 +229,9 @@ export function generateHarnessDSL(iface: CircuitInterface): string {
   if (outputs.length > 0) {
     lines.push('    // === Output Displays ===');
     for (const output of outputs) {
-      const component = output.type === 'Bus' ? 'HexDisplay' : 'Led';
+      const component = output.type === 'Bus'
+        ? `HexDisplay(width=${output.width ?? 8})`
+        : 'Led';
       lines.push(`    node ${output.name}_out: ${component}`);
     }
     lines.push('');

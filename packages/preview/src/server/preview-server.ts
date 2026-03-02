@@ -1,6 +1,7 @@
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import { readFileSync, watchFile as fsWatchFile, unwatchFile, existsSync, statSync } from "node:fs";
-import { join, extname, resolve, dirname } from "node:path";
+import { join, extname, resolve } from "node:path";
+import type { CircuitState, TracesPayload, TestResultsPayload } from "./types.js";
 
 export interface PreviewServerOptions {
   port?: number; // Default: 0 (auto-assign)
@@ -11,6 +12,9 @@ export interface PreviewServer {
   port: number;
   updateDSL(dsl: string): void;
   watchFile(filePath: string): void;
+  getState(): CircuitState | null;
+  pushTraces(data: TracesPayload): void;
+  pushTestResults(data: TestResultsPayload): void;
   close(): void;
 }
 
@@ -31,6 +35,7 @@ export async function createPreviewServer(
   const clientDir = options?.clientDir ?? join(import.meta.dirname, "../client");
 
   let currentDSL: string | null = null;
+  let cachedState: CircuitState | null = null;
   const sseClients = new Set<ServerResponse>();
   let watchedPath: string | null = null;
 
@@ -43,7 +48,7 @@ export async function createPreviewServer(
 
   function sendCORS(res: ServerResponse) {
     res.setHeader("Access-Control-Allow-Origin", "*");
-    res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
+    res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
     res.setHeader("Access-Control-Allow-Headers", "Content-Type");
   }
 
@@ -97,6 +102,29 @@ export async function createPreviewServer(
       sendCORS(res);
       res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
       res.end(JSON.stringify({ source: currentDSL }));
+      return;
+    }
+
+    if (url.pathname === "/api/state") {
+      sendCORS(res);
+      if (req.method === "POST") {
+        let body = "";
+        req.on("data", (chunk: Buffer) => { body += chunk.toString(); });
+        req.on("end", () => {
+          try {
+            cachedState = JSON.parse(body) as CircuitState;
+            res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
+            res.end(JSON.stringify({ ok: true }));
+          } catch {
+            res.writeHead(400, { "Content-Type": "application/json; charset=utf-8" });
+            res.end(JSON.stringify({ error: "Invalid JSON" }));
+          }
+        });
+        return;
+      }
+      // GET
+      res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
+      res.end(JSON.stringify({ state: cachedState }));
       return;
     }
 
@@ -194,10 +222,25 @@ export async function createPreviewServer(
     server.close();
   }
 
+  function getState(): CircuitState | null {
+    return cachedState;
+  }
+
+  function pushTraces(data: TracesPayload) {
+    broadcastSSE({ type: "traces", data });
+  }
+
+  function pushTestResults(data: TestResultsPayload) {
+    broadcastSSE({ type: "test-results", data });
+  }
+
   return {
     port: assignedPort,
     updateDSL,
     watchFile,
+    getState,
+    pushTraces,
+    pushTestResults,
     close,
   };
 }
