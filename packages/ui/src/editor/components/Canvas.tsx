@@ -1,90 +1,32 @@
 /**
- * Canvas Component (IR v0.1)
+ * Canvas Component
  *
- * Main ReactFlow canvas for the visual editor using Circuit (IR v0.1) format.
- * Handles node/edge rendering, drag-and-drop, connections, and interactions.
- *
- * Key changes from legacy Canvas:
- * - Uses CircuitStore instead of IRStore
- * - Uses name-based ports (PortPath) instead of index-based ports
- * - Cleaner component resolution via ComponentLibrary
- * - Flat simulator (elaboration.ts + flat-simulator.ts) for Circuit format
- *
- * Features:
- * - Single-click to select individual nodes
- * - Shift+click for multi-select
- * - Drag on canvas for box/area selection
- * - Delete/Backspace keys to remove selected nodes
- * - Visual feedback for selected nodes (blue border)
- * - Selection info panel showing count and shortcuts
- * - Keyboard shortcuts guide panel
- * - Drag selected nodes to move them together
+ * Thin wrapper around CircuitCanvas that wires editor stores to the shared canvas.
+ * All rendering, projection, and ReactFlow integration lives in CircuitCanvas.
+ * This component is responsible for:
+ * - Reading from editor stores (circuit, metadata, simulation state)
+ * - Wiring editing callbacks to store mutations
+ * - Keyboard scan code handling for Input nodes
+ * - Overlay UI (SelectionInfo, KeyboardShortcutsInfo)
  */
 
 "use client";
 
-import React, { useCallback, useMemo, useEffect, useState } from "react";
-import {
-  ReactFlow,
-  Background,
-  Controls,
-  useReactFlow,
-  OnConnect,
-  OnNodesChange,
-  OnEdgesChange,
-  Connection,
-  NodeTypes,
-  SelectionMode,
-} from "@xyflow/react";
-import "@xyflow/react/dist/style.css";
+import React, { useCallback, useMemo, useEffect } from "react";
 
 import { useCircuitStore } from "../stores/circuit-store";
 import { useMetadataStore } from "../stores";
 import { useSequentialStateStore } from "../stores/sequential-state-store";
 import { usePortValuesStore } from "../stores/port-values-store";
 import { useDSLPreviewStore } from "../stores/dsl-preview-store";
-import { useInspectorStore } from "../stores/expansion-store";
-import { useComponentLibraryStore } from "../stores/component-library-store";
-import { projectCircuitToReactFlow, type NodeData } from "../utils/projection";
-import { getCompiledReferenceCircuit } from "../utils/reference-circuit-cache";
-import {
-  InputNode,
-  OutputNode,
-  LogicGateNode,
-  ScreenNode,
-  RasterDisplayNode,
-  RegisterNode,
-  RAMNode,
-  ROMNode,
-  ConsoleNode,
-} from "./nodes";
-import { NumericInputNode } from "./nodes/NumericInputNode";
-import { OrthogonalEdge } from "./edges";
 
-// Define custom node types
-const nodeTypes = {
-  inputNode: InputNode,
-  numericInputNode: NumericInputNode,
-  outputNode: OutputNode,
-  logicGateNode: LogicGateNode,
-  screenNode: ScreenNode,
-  rasterDisplayNode: RasterDisplayNode,
-  registerNode: RegisterNode,
-  ramNode: RAMNode,
-  romNode: ROMNode,
-  consoleNode: ConsoleNode,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-} as any as NodeTypes;
+import { CircuitCanvas } from "../../shared/CircuitCanvas";
+import { FULL_NODE_TYPES, EDGE_TYPES } from "../../shared/node-types";
 
-// Define custom edge types
-const edgeTypes = {
-  orthogonal: OrthogonalEdge,
-};
+// ---------------------------------------------------------------------------
+// Overlay components
+// ---------------------------------------------------------------------------
 
-/**
- * SelectionInfo Component
- * Displays information about selected nodes and helpful shortcuts
- */
 function SelectionInfo({ selectedCount }: { selectedCount: number }) {
   if (selectedCount === 0) return null;
 
@@ -117,10 +59,6 @@ function SelectionInfo({ selectedCount }: { selectedCount: number }) {
   );
 }
 
-/**
- * KeyboardShortcutsInfo Component
- * Displays helpful keyboard shortcuts when no nodes are selected
- */
 function KeyboardShortcutsInfo({ show }: { show: boolean }) {
   const [isVisible, setIsVisible] = React.useState(true);
 
@@ -181,181 +119,102 @@ function KeyboardShortcutsInfo({ show }: { show: boolean }) {
   );
 }
 
+// ---------------------------------------------------------------------------
+// Canvas wrapper
+// ---------------------------------------------------------------------------
+
 interface CanvasProps {
   renderEmptyState?: () => React.ReactNode;
 }
 
 export function Canvas({ renderEmptyState }: CanvasProps) {
-  const { screenToFlowPosition } = useReactFlow();
-  const [selectedNodeCount, setSelectedNodeCount] = useState(0);
-
-  // Subscribe to stores
+  // --- Store reads ---
   const circuit = useCircuitStore((state) => state.circuit);
   const metadataComponents = useMetadataStore((state) => state.components);
   const metadataConnections = useMetadataStore((state) => state.connections);
-  const updateComponentPosition = useMetadataStore(
-    (state) => state.updateComponentPosition,
-  );
-  const setComponentSelected = useMetadataStore(
-    (state) => state.setComponentSelected,
-  );
-  const setConnectionSelected = useMetadataStore(
-    (state) => state.setConnectionSelected,
-  );
+  const seqState = useSequentialStateStore((state) => state.seqState);
+  const portValues = usePortValuesStore((state) => state.portValues);
+
+  // --- Store write actions ---
+  const updateComponentPosition = useMetadataStore((state) => state.updateComponentPosition);
+  const setComponentSelected = useMetadataStore((state) => state.setComponentSelected);
+  const setConnectionSelected = useMetadataStore((state) => state.setConnectionSelected);
   const addConnection = useCircuitStore((state) => state.addConnection);
   const removeConnection = useCircuitStore((state) => state.removeConnection);
   const addNode = useCircuitStore((state) => state.addNode);
   const removeNode = useCircuitStore((state) => state.removeNode);
-  const setComponentMetadata = useMetadataStore(
-    (state) => state.setComponentMetadata,
-  );
-  const removeComponentMetadata = useMetadataStore(
-    (state) => state.removeComponentMetadata,
-  );
+  const setComponentMetadata = useMetadataStore((state) => state.setComponentMetadata);
+  const removeComponentMetadata = useMetadataStore((state) => state.removeComponentMetadata);
+  const saveCurrentPositions = useDSLPreviewStore((state) => state.saveCurrentPositions);
 
-  // Get simulation state from stores (updated by controller)
-  const seqState = useSequentialStateStore((state) => state.seqState);
-  const rawPortValues = usePortValuesStore((state) => state.portValues);
+  // --- Derived state ---
+  const metadata = useMemo(() => ({
+    components: metadataComponents,
+    connections: metadataConnections,
+  }), [metadataComponents, metadataConnections]);
 
-  const saveCurrentPositions = useDSLPreviewStore(
-    (state) => state.saveCurrentPositions,
-  );
+  const hasNodes = (circuit?.nodes?.length ?? 0) > 0;
 
-  const portValues = rawPortValues;
+  // Track selected node count from metadata store
+  const selectedNodeCount = useMemo(() => {
+    return Object.values(metadataComponents).filter(c => c.selected).length;
+  }, [metadataComponents]);
 
-  /**
-   * ARCHITECTURE: Canvas is a VIEWER, not a SIMULATOR
-   *
-   * Canvas NEVER runs simulation. It only reads results from stores:
-   * - usePortValuesStore: Wire values computed by orchestrator
-   * - useSequentialStateStore: Register/RAM state computed by orchestrator
-   *
-   * The orchestrator (simulation/orchestrator.ts) is the ONLY place that executes simulation.
-   *
-   * This matches how real HDL simulators work:
-   * - ModelSim/Verilator: Compute signals once
-   * - GTKWave/Canvas: Read signals, never recompute
-   */
+  // --- Editing callbacks ---
 
-  // Project Circuit + Metadata + Port Values to ReactFlow nodes and edges
-  const { nodes, edges } = useMemo(() => {
-    const metadataState = {
-      components: metadataComponents,
-      connections: metadataConnections,
-    };
-    return projectCircuitToReactFlow(
-      circuit,
-      metadataState,
-      portValues,
-      seqState ?? undefined,
-    );
-  }, [circuit, metadataComponents, metadataConnections, portValues, seqState]);
-
-  // Handle node position changes (drag), selection, and deletion
-  const onNodesChange: OnNodesChange = useCallback(
-    (changes) => {
-      changes.forEach((change) => {
-        if (change.type === "position" && change.position) {
-          // Update position during drag for smooth visual feedback
-          updateComponentPosition(change.id, change.position);
-        } else if (change.type === "select") {
-          // Update selection state in metadata store
-          setComponentSelected(change.id, change.selected);
-        } else if (change.type === "remove") {
-          // Remove node from both stores
-          removeNode(change.id);
-          removeComponentMetadata(change.id);
-        }
-      });
+  const handleNodesDelete = useCallback(
+    (nodeIds: string[]) => {
+      for (const id of nodeIds) {
+        removeNode(id);
+        removeComponentMetadata(id);
+      }
     },
-    [
-      updateComponentPosition,
-      setComponentSelected,
-      removeNode,
-      removeComponentMetadata,
-    ],
+    [removeNode, removeComponentMetadata],
   );
 
-  // Update selection count whenever nodes change
-  useEffect(() => {
-    const count = nodes.filter((node) => node.selected).length;
-    setSelectedNodeCount(count);
-  }, [nodes]);
+  const handleEdgesDelete = useCallback(
+    (edgeIds: string[]) => {
+      for (const id of edgeIds) {
+        removeConnection(id);
+      }
+    },
+    [removeConnection],
+  );
 
-  // Keyboard input handling - Latching Scan Code Register
-  // Models a hardware keyboard buffer register (like 8042 keyboard controller output buffer)
-  //
-  // Hardware behavior:
-  // - Controller generates scan code on key press
-  // - Scan code written to memory-mapped register (Input node)
-  // - Register latches value until next key press (no automatic clear)
-  // - CPU polls register to read current scan code
-  //
-  // This is architecturally honest because:
-  // - Real keyboard controllers store last scan code in buffer
-  // - No magic state tracking - just write-on-press
-  // - Circuit reads scan code via Input node (memory-mapped I/O)
-  // - Example: IBM PC/AT 8042 controller, C64 keyboard buffer
+  const handleConnect = useCallback(
+    (source: { nodeId: string; portName: string }, target: { nodeId: string; portName: string }) => {
+      addConnection(source, target);
+    },
+    [addConnection],
+  );
+
+  const handleDrop = useCallback(
+    (componentType: string, position: { x: number; y: number }) => {
+      const nodeId = addNode(componentType);
+      setComponentMetadata(nodeId, { id: nodeId, position });
+    },
+    [addNode, setComponentMetadata],
+  );
+
+  // --- Keyboard scan code handler ---
   useEffect(() => {
     if (!circuit) return;
 
-    // Virtual keyboard scan codes (single-byte values)
-    // Based on PC/AT scan codes but simplified
     const SCAN_CODES: Record<string, number> = {
-      // Arrow keys (extended keys in real hardware, simplified here)
-      ArrowUp: 0x48,
-      ArrowDown: 0x50,
-      ArrowLeft: 0x4b,
-      ArrowRight: 0x4d,
-
-      // Common keys
-      Space: 0x39,
-      Enter: 0x1c,
-      Escape: 0x01,
-
-      // Letters (physical key positions)
-      KeyA: 0x1e,
-      KeyB: 0x30,
-      KeyC: 0x2e,
-      KeyD: 0x20,
-      KeyE: 0x12,
-      KeyF: 0x21,
-      KeyG: 0x22,
-      KeyH: 0x23,
-      KeyI: 0x17,
-      KeyJ: 0x24,
-      KeyK: 0x25,
-      KeyL: 0x26,
-      KeyM: 0x32,
-      KeyN: 0x31,
-      KeyO: 0x18,
-      KeyP: 0x19,
-      KeyQ: 0x10,
-      KeyR: 0x13,
-      KeyS: 0x1f,
-      KeyT: 0x14,
-      KeyU: 0x16,
-      KeyV: 0x2f,
-      KeyW: 0x11,
-      KeyX: 0x2d,
-      KeyY: 0x15,
+      ArrowUp: 0x48, ArrowDown: 0x50, ArrowLeft: 0x4b, ArrowRight: 0x4d,
+      Space: 0x39, Enter: 0x1c, Escape: 0x01,
+      KeyA: 0x1e, KeyB: 0x30, KeyC: 0x2e, KeyD: 0x20, KeyE: 0x12,
+      KeyF: 0x21, KeyG: 0x22, KeyH: 0x23, KeyI: 0x17, KeyJ: 0x24,
+      KeyK: 0x25, KeyL: 0x26, KeyM: 0x32, KeyN: 0x31, KeyO: 0x18,
+      KeyP: 0x19, KeyQ: 0x10, KeyR: 0x13, KeyS: 0x1f, KeyT: 0x14,
+      KeyU: 0x16, KeyV: 0x2f, KeyW: 0x11, KeyX: 0x2d, KeyY: 0x15,
       KeyZ: 0x2c,
-
-      // Numbers (top row)
-      Digit0: 0x0b,
-      Digit1: 0x02,
-      Digit2: 0x03,
-      Digit3: 0x04,
-      Digit4: 0x05,
-      Digit5: 0x06,
-      Digit6: 0x07,
-      Digit7: 0x08,
-      Digit8: 0x09,
-      Digit9: 0x0a,
+      Digit0: 0x0b, Digit1: 0x02, Digit2: 0x03, Digit3: 0x04,
+      Digit4: 0x05, Digit5: 0x06, Digit6: 0x07, Digit7: 0x08,
+      Digit8: 0x09, Digit9: 0x0a,
     };
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Only process if not typing in text fields
       const activeElement = document.activeElement;
       if (
         activeElement?.tagName === "INPUT" ||
@@ -364,12 +223,9 @@ export function Canvas({ renderEmptyState }: CanvasProps) {
         return;
       }
 
-      // Get scan code for the pressed key (using e.code for physical position)
       const scanCode = SCAN_CODES[e.code];
-      if (scanCode == null) return; // Unknown key
+      if (scanCode == null) return;
 
-      // Find Input nodes that are keyboard registers
-      // Convention: label or ID contains "keyboard" (case insensitive)
       const keyboardNodes = circuit.nodes.filter(
         (node) =>
           node.componentRef === "Input" &&
@@ -377,9 +233,6 @@ export function Canvas({ renderEmptyState }: CanvasProps) {
             node.id.toLowerCase().includes("keyboard")),
       );
 
-      // Write scan code to all keyboard registers (latching behavior)
-      // Like a hardware write to memory-mapped I/O port
-      // Value persists until next key press (no automatic clear on key up)
       keyboardNodes.forEach((node) => {
         const currentNode = useCircuitStore.getState().getNode(node.id);
         if (currentNode) {
@@ -389,180 +242,49 @@ export function Canvas({ renderEmptyState }: CanvasProps) {
         }
       });
 
-      // Prevent default browser behavior for arrow keys (scrolling)
       if (e.code.startsWith("Arrow")) {
         e.preventDefault();
       }
     };
 
-    // Note: No keyup handler - register latches value until overwritten
-    // This models real keyboard buffer behavior (IBM PC, C64, etc.)
-
     window.addEventListener("keydown", handleKeyDown);
-
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
   }, [circuit]);
 
-  // Handle edge changes (selection and deletion)
-  const onEdgesChange: OnEdgesChange = useCallback(
-    (changes) => {
-      changes.forEach((change) => {
-        if (change.type === "select") {
-          // Update selection state in metadata store
-          setConnectionSelected(change.id, change.selected);
-        } else if (change.type === "remove") {
-          // Remove connection from CircuitStore
-          removeConnection(change.id);
-        }
-      });
-    },
-    [setConnectionSelected, removeConnection],
-  );
-
-  // Handle new connections
-  const onConnect: OnConnect = useCallback(
-    (connection: Connection) => {
-      if (
-        !connection.source ||
-        !connection.target ||
-        !connection.sourceHandle ||
-        !connection.targetHandle
-      ) {
-        return;
-      }
-
-      // Parse port names from handle IDs (format: "out-portName", "in-portName")
-      const sourcePortName = connection.sourceHandle.replace("out-", "");
-      const targetPortName = connection.targetHandle.replace("in-", "");
-
-      // Create PortPath objects
-      const source = { nodeId: connection.source, portName: sourcePortName };
-      const target = { nodeId: connection.target, portName: targetPortName };
-
-      // Add connection to CircuitStore
-      addConnection(source, target);
-    },
-    [addConnection],
-  );
-
-  // Handle canvas drop for new components
-  const onDrop = useCallback(
-    (event: React.DragEvent) => {
-      event.preventDefault();
-
-      const componentType = event.dataTransfer.getData("application/reactflow");
-      if (!componentType) return;
-
-      // Convert screen position to flow position
-      const position = screenToFlowPosition({
-        x: event.clientX,
-        y: event.clientY,
-      });
-
-      // Add node to CircuitStore
-      const nodeId = addNode(componentType);
-
-      // Add metadata with drop position
-      setComponentMetadata(nodeId, {
-        id: nodeId,
-        position,
-      });
-    },
-    [screenToFlowPosition, addNode, setComponentMetadata],
-  );
-
-  const onDragOver = useCallback((event: React.DragEvent) => {
-    event.preventDefault();
-    event.dataTransfer.dropEffect = "move";
-  }, []);
-
-  // Save positions to localStorage when dragging stops
-  const onNodeDragStop = useCallback(() => {
-    saveCurrentPositions();
-  }, [saveCurrentPositions]);
-
-  // Open inspector dialog when double-clicking a composite node
-  const openInspector = useInspectorStore((state) => state.open);
-  const resolveComponent = useComponentLibraryStore((state) => state.resolveComponent);
-
-  const onNodeDoubleClick = useCallback(
-    (_event: React.MouseEvent, node: { id: string; data: NodeData }) => {
-      const data = node.data;
-      if (!data.isComposite) return;
-
-      const componentDef = resolveComponent(data.componentRef);
-      if (!componentDef) return;
-
-      // Capture the node's screen rect for the expand-from-origin animation
-      const domNode = document.querySelector(`[data-id="${node.id}"]`);
-      const rect = domNode?.getBoundingClientRect();
-      const originRect = rect
-        ? { x: rect.x, y: rect.y, width: rect.width, height: rect.height }
-        : undefined;
-
-      if (componentDef.implementation.kind === "composite") {
-        openInspector(data.componentRef, componentDef, data.label || data.componentRef, originRect);
-      } else {
-        // Primitive with reference circuit — compile on demand
-        const store = useComponentLibraryStore.getState();
-        const refCircuit = getCompiledReferenceCircuit(data.componentRef, store, data.arguments as Record<string, number> | undefined);
-        if (refCircuit) {
-          openInspector(data.componentRef, refCircuit, data.label || data.componentRef, originRect);
-        }
-      }
-    },
-    [resolveComponent, openInspector],
-  );
+  // --- Render ---
 
   return (
-    <div
-      className="relative h-full w-full"
-      onDrop={onDrop}
-      onDragOver={onDragOver}
-    >
-      <ReactFlow
-        nodes={nodes}
-        edges={edges}
-        onNodesChange={onNodesChange}
-        onEdgesChange={onEdgesChange}
-        onConnect={onConnect}
-        onNodeDragStop={onNodeDragStop}
-        onNodeDoubleClick={onNodeDoubleClick}
-        nodeTypes={nodeTypes}
-        edgeTypes={edgeTypes}
-        fitView
-        fitViewOptions={{ padding: 0.2 }}
-        // Selection and deletion settings
-        deleteKeyCode={["Delete", "Backspace"]}
-        multiSelectionKeyCode="Shift"
-        selectionOnDrag={true}
-        panOnDrag={[1, 2]} // Pan with middle and right mouse button
-        panActivationKeyCode={null} // Disable Space for pan (interferes with text input)
-        selectionMode={SelectionMode.Partial} // Select nodes when selection box partially overlaps
-        nodesConnectable={true}
-        // Interaction settings
-        selectNodesOnDrag={false}
-        // Hide React Flow attribution
-        // proOptions={{ hideAttribution: true }}
-        // Styling
-        className="bg-gray-50"
-      >
-        <Background />
-        <Controls />
-      </ReactFlow>
-
-      {/* Welcome CTA - shown when canvas is empty */}
-      {nodes.length === 0 && renderEmptyState?.()}
-
-      {/* Selection Info Panel - shown when nodes are selected */}
-      <SelectionInfo selectedCount={selectedNodeCount} />
-
-      {/* Keyboard Shortcuts Info - shown when canvas has components but none selected */}
-      <KeyboardShortcutsInfo
-        show={nodes.length > 0 && selectedNodeCount === 0}
-      />
-    </div>
+    <CircuitCanvas
+      circuit={circuit}
+      portValues={portValues}
+      sequentialState={seqState}
+      metadata={metadata}
+      autoLayout={false}
+      editable
+      nodeTypes={FULL_NODE_TYPES}
+      edgeTypes={EDGE_TYPES}
+      showControls
+      theme="light"
+      renderInspector={false}
+      onNodePositionChange={updateComponentPosition}
+      onNodeSelect={setComponentSelected}
+      onNodesDelete={handleNodesDelete}
+      onEdgeSelect={setConnectionSelected}
+      onEdgesDelete={handleEdgesDelete}
+      onConnect={handleConnect}
+      onDrop={handleDrop}
+      onNodeDragStop={saveCurrentPositions}
+      renderEmptyState={renderEmptyState}
+      renderOverlay={() => (
+        <>
+          <SelectionInfo selectedCount={selectedNodeCount} />
+          <KeyboardShortcutsInfo
+            show={hasNodes && selectedNodeCount === 0}
+          />
+        </>
+      )}
+    />
   );
 }

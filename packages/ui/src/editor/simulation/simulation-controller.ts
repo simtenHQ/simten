@@ -68,9 +68,12 @@ function getMemoryData(): Map<string, Map<number, number>> {
  */
 function hasSequentialComponents(
   circuit: Circuit | null,
-  library: ComponentLibraryStore
+  library: ComponentLibraryStore,
+  visited: Set<string> = new Set()
 ): boolean {
   if (!circuit) return false;
+  if (visited.has(circuit.name)) return false;
+  visited.add(circuit.name);
 
   for (const node of circuit.nodes) {
     const componentDef = library.resolveComponent(node.componentRef);
@@ -81,7 +84,7 @@ function hasSequentialComponents(
     }
 
     if (componentDef.implementation.kind === 'composite') {
-      if (hasSequentialComponents(componentDef, library)) {
+      if (hasSequentialComponents(componentDef, library, visited)) {
         return true;
       }
     }

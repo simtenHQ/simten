@@ -13,7 +13,6 @@
 
 import React, { useMemo, useState, useCallback, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { SmoothStepEdge, type NodeTypes } from "@xyflow/react";
 
 import {
   useInspectorStore,
@@ -35,38 +34,7 @@ import {
 } from "lucide-react";
 
 import { CircuitCanvas } from "../../shared/CircuitCanvas";
-
-import {
-  InputNode,
-  OutputNode,
-  LogicGateNode,
-  ScreenNode,
-  RasterDisplayNode,
-  RegisterNode,
-  RAMNode,
-  ROMNode,
-  ConsoleNode,
-} from "./nodes";
-import { NumericInputNode } from "./nodes/NumericInputNode";
-// ── Full node/edge type registrations (rich Screen, RAM, etc.) ──
-
-const FULL_NODE_TYPES = {
-  inputNode: InputNode,
-  numericInputNode: NumericInputNode,
-  outputNode: OutputNode,
-  logicGateNode: LogicGateNode,
-  screenNode: ScreenNode,
-  rasterDisplayNode: RasterDisplayNode,
-  registerNode: RegisterNode,
-  ramNode: RAMNode,
-  romNode: ROMNode,
-  consoleNode: ConsoleNode,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-} as any as NodeTypes;
-
-const FULL_EDGE_TYPES = {
-  orthogonal: SmoothStepEdge,
-};
+import { FULL_NODE_TYPES, EDGE_TYPES } from "../../shared/node-types";
 
 // ── Animation helpers ──
 
@@ -103,14 +71,17 @@ function getOriginTransform(origin: OriginRect | null) {
 function hasSequentialComponents(
   circuit: Circuit | null,
   resolveComponent: (name: string) => Circuit | undefined,
+  visited: Set<string> = new Set(),
 ): boolean {
   if (!circuit) return false;
+  if (visited.has(circuit.name)) return false;
+  visited.add(circuit.name);
   for (const node of circuit.nodes) {
     const componentDef = resolveComponent(node.componentRef);
     if (!componentDef) continue;
     if (componentDef.clocks.length > 0 || componentDef.state.length > 0) return true;
     if (componentDef.implementation.kind === "composite") {
-      if (hasSequentialComponents(componentDef, resolveComponent)) return true;
+      if (hasSequentialComponents(componentDef, resolveComponent, visited)) return true;
     }
   }
   return false;
@@ -431,10 +402,11 @@ function InspectorCanvas({ frame }: InspectorCanvasProps) {
         onToggleNode={handleToggle}
         onSetNodeValue={handleNumericChange}
         nodeTypes={FULL_NODE_TYPES}
-        edgeTypes={FULL_EDGE_TYPES}
+        edgeTypes={EDGE_TYPES}
         theme="light"
         showControls
         drillDown
+        renderInspector={false}
         height="100%"
       />
     </div>

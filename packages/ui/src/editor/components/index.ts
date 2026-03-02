@@ -22,4 +22,3 @@ export { TestCaseEditor } from './TestCaseEditor';
 export { TestPanel } from './TestPanel';
 export { TestResultDisplay } from './TestResultDisplay';
 export * from './nodes';
-export * from './edges';

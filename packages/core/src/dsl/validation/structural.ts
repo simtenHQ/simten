@@ -19,7 +19,7 @@ import type {
   FlatNode,
   ComponentLibrary,
 } from '../../types/simulator.js';
-import { TOP_LEVEL_NODE } from '../../types/simulator.js';
+import { TOP_LEVEL_NODE, SEQUENTIAL_INPUT_PORTS } from '../../types/simulator.js';
 import type {
   Diagnostic,
   CycleCheckResult,
@@ -173,18 +173,7 @@ function isSinkComponent(node: FlatNode, library: ComponentLibrary): boolean {
  * These ports break combinational cycles.
  */
 function isSequentialInputPort(portName: string): boolean {
-  // Common sequential input port names
-  const sequentialInputs = new Set([
-    'd',        // D flip-flop data input
-    'data',     // Generic data input
-    'data_in',  // RAM/ROM data input
-    'dataA',    // Dual-port memory
-    'dataB',
-    'we',       // Write enable
-    'weA',
-    'weB',
-  ]);
-  return sequentialInputs.has(portName);
+  return SEQUENTIAL_INPUT_PORTS.has(portName);
 }
 
 // ============================================================================

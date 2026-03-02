@@ -62,6 +62,8 @@ export type DiagnosticCode =
   // Runtime errors (Phase 5 - not implemented in validateCircuit)
   | 'CLOCK_UNDEFINED'
   | 'ASSERTION_FAILED'
+  // Unsupported features
+  | 'UNSUPPORTED_FEATURE'
   // Generic
   | 'INTERNAL_ERROR';
 
@@ -125,7 +127,7 @@ const DIAGNOSTIC_META: Partial<Record<DiagnosticCode, DiagnosticMeta>> = {
   MULTIPLE_DRIVERS: { blocking: true },
 
   // Type errors - blocking
-  WIDTH_MISMATCH: { blocking: true },
+  WIDTH_MISMATCH: { blocking: false },
   TYPE_MISMATCH: { blocking: true },
   PARAMETER_TYPE_ERROR: { blocking: true },
   INVALID_WIDTH: { blocking: true },
@@ -140,6 +142,9 @@ const DIAGNOSTIC_META: Partial<Record<DiagnosticCode, DiagnosticMeta>> = {
   // Runtime errors
   CLOCK_UNDEFINED: { blocking: true },
   ASSERTION_FAILED: { blocking: false },
+
+  // Unsupported features
+  UNSUPPORTED_FEATURE: { blocking: false },
 
   // Generic
   INTERNAL_ERROR: { blocking: true },
