@@ -143,15 +143,19 @@ function compilerErrorToDiagnostic(error: Error): Diagnostic {
  * Convert a compiler warning to a Diagnostic.
  */
 function compilerWarningToDiagnostic(warning: CompilerWarning): Diagnostic {
+  const code = (warning.code ?? 'WIDTH_MISMATCH') as DiagnosticCode;
+  const suggestions = code === 'UNSUPPORTED_FEATURE'
+    ? ['This feature is parsed and validated but not yet supported in simulation']
+    : [
+        'Bus widths should match on both sides of a connection',
+        'Signals will be truncated or zero-extended implicitly',
+      ];
   return {
     phase: 'type',
-    code: 'WIDTH_MISMATCH',
+    code,
     severity: 'warning',
     message: `[${warning.circuitName}] ${warning.message}`,
-    suggestions: [
-      'Bus widths should match on both sides of a connection',
-      'Signals will be truncated or zero-extended implicitly',
-    ],
+    suggestions,
   };
 }
 

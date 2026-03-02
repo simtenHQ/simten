@@ -7,6 +7,16 @@ import { LogicGateNode } from "../editor/components/nodes/LogicGateNode";
 import { EmbedConsoleNode } from "../embed/EmbedConsoleNode";
 import { EmbedScreenNode } from "../embed/EmbedScreenNode";
 
+// Full-weight node components (rich rendering for editor & inspector)
+import { NumericInputNode } from "../editor/components/nodes/NumericInputNode";
+import { ScreenNode } from "../editor/components/nodes/ScreenNode";
+import { RasterDisplayNode } from "../editor/components/nodes/RasterDisplayNode";
+import { RegisterNode } from "../editor/components/nodes/RegisterNode";
+import { RAMNode } from "../editor/components/nodes/RAMNode";
+import { ROMNode } from "../editor/components/nodes/ROMNode";
+import { ConsoleNode } from "../editor/components/nodes/ConsoleNode";
+
+
 /**
  * Node type map for embed / auto-layout contexts.
  * Maps RAM/ROM/Register to LogicGateNode fallbacks,
@@ -34,3 +44,21 @@ export const EMBED_NODE_TYPES: NodeTypes = {
 export const EDGE_TYPES: EdgeTypes = {
   orthogonal: SmoothStepEdge,
 };
+
+/**
+ * Full node type map for editor & inspector contexts.
+ * Uses rich node components (Screen, RAM, ROM, Register, NumericInput, Console).
+ */
+export const FULL_NODE_TYPES: NodeTypes = {
+  inputNode: InputNode,
+  numericInputNode: NumericInputNode,
+  outputNode: OutputNode,
+  logicGateNode: LogicGateNode,
+  screenNode: ScreenNode,
+  rasterDisplayNode: RasterDisplayNode,
+  registerNode: RegisterNode,
+  ramNode: RAMNode,
+  romNode: ROMNode,
+  consoleNode: ConsoleNode,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+} as any as NodeTypes;

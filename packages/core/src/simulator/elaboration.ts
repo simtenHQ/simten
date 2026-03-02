@@ -14,9 +14,6 @@
 import type {
   Circuit,
   PortPath,
-  PortType,
-  PortDescriptor,
-  ArgumentValue,
   ComponentLibrary,
 } from '../types/circuit.js';
 import type {
@@ -24,9 +21,8 @@ import type {
   FlatNode,
   FlatConnection,
   HierarchyNode,
-  InputSource,
 } from '../types/simulator.js';
-import { TOP_LEVEL_NODE } from '../types/simulator.js';
+import { TOP_LEVEL_NODE, SEQUENTIAL_INPUT_PORTS } from '../types/simulator.js';
 
 // ============================================================================
 // Elaboration Engine
@@ -63,7 +59,8 @@ export function elaborate(
   function flattenCircuit(
     circ: Circuit,
     pathPrefix: string,
-    parentHierarchy: HierarchyNode
+    parentHierarchy: HierarchyNode,
+    elaborationStack: Set<string> = new Set()
   ): void {
     for (const node of circ.nodes) {
       const fullPath = pathPrefix + node.id;
@@ -90,6 +87,14 @@ export function elaborate(
         parentHierarchy.primitives.push(fullPath);
 
       } else if (component.implementation.kind === 'composite') {
+        // Guard against recursive circuit definitions
+        if (elaborationStack.has(node.componentRef)) {
+          throw new Error(
+            `Recursive circuit definition detected: '${node.componentRef}' references itself ` +
+            `(cycle: ${[...elaborationStack, node.componentRef].join(' → ')})`
+          );
+        }
+
         // Create hierarchy node for this composite
         const childHierarchy: HierarchyNode = {
           path: fullPath,
@@ -100,7 +105,9 @@ export function elaborate(
         parentHierarchy.children.push(childHierarchy);
 
         // Recursively flatten the composite's internal circuit
-        flattenCircuit(component, fullPath + '.', childHierarchy);
+        const childStack = new Set(elaborationStack);
+        childStack.add(node.componentRef);
+        flattenCircuit(component, fullPath + '.', childHierarchy, childStack);
 
       } else {
         // Intrinsic components are treated like primitives
@@ -147,7 +154,7 @@ export function elaborate(
   }
 
   // Start elaboration from top level
-  flattenCircuit(circuit, '', hierarchy);
+  flattenCircuit(circuit, '', hierarchy, new Set([circuit.name]));
 
   // Post-process: Stitch connections through composite port boundaries
   const stitchedConnections = stitchCompositeConnections(
@@ -193,7 +200,7 @@ function stitchCompositeConnections(
   const compositeInstances = new Set<string>();
 
   // Build forwarding map for each composite instance
-  function buildForwardingMap(circ: Circuit, prefix: string): void {
+  function buildForwardingMap(circ: Circuit, prefix: string, elaborationStack: Set<string> = new Set()): void {
     for (const node of circ.nodes) {
       const fullPath = prefix + node.id;
       const component = library.resolveComponent(node.componentRef);
@@ -201,6 +208,8 @@ function stitchCompositeConnections(
       if (!component) continue;
 
       if (component.implementation.kind === 'composite') {
+        if (elaborationStack.has(node.componentRef)) continue; // Already guarded in flattenCircuit
+
         compositeInstances.add(fullPath);
 
         if (debug) {
@@ -208,12 +217,14 @@ function stitchCompositeConnections(
         }
         traceCompositePorts(component, fullPath, portForwarding, library, debug);
 
-        buildForwardingMap(component, fullPath + '.');
+        const childStack = new Set(elaborationStack);
+        childStack.add(node.componentRef);
+        buildForwardingMap(component, fullPath + '.', childStack);
       }
     }
   }
 
-  buildForwardingMap(circuit, pathPrefix);
+  buildForwardingMap(circuit, pathPrefix, new Set([circuit.name]));
 
   if (debug) {
     console.log(`\n=== Port Forwarding Map (${portForwarding.size} rules) ===`);
@@ -549,7 +560,8 @@ function resolveInternalPorts(
   compositePath: string,
   portRef: PortPath,
   composite: Circuit,
-  library: ComponentLibrary
+  library: ComponentLibrary,
+  visited: Set<string> = new Set()
 ): PortPath[] {
   if (portRef.nodeId === '') {
     return [{ nodeId: compositePath, portName: portRef.portName }];
@@ -567,17 +579,24 @@ function resolveInternalPorts(
     return [{ nodeId: fullPath, portName: portRef.portName }];
   }
 
+  // Guard against recursive resolution
+  if (visited.has(node.componentRef)) {
+    return [{ nodeId: fullPath, portName: portRef.portName }];
+  }
+  const childVisited = new Set(visited);
+  childVisited.add(node.componentRef);
+
   // It's a composite - need to trace through it
   const results: PortPath[] = [];
 
   for (const conn of component.connections) {
     if (conn.target.nodeId === '' && conn.target.portName === portRef.portName) {
-      const resolved = resolveInternalPorts(fullPath, conn.source, component, library);
+      const resolved = resolveInternalPorts(fullPath, conn.source, component, library, childVisited);
       results.push(...resolved);
     }
 
     if (conn.source.nodeId === '' && conn.source.portName === portRef.portName) {
-      const resolved = resolveInternalPorts(fullPath, conn.target, component, library);
+      const resolved = resolveInternalPorts(fullPath, conn.target, component, library, childVisited);
       results.push(...resolved);
     }
   }
@@ -686,7 +705,7 @@ export function topologicalSortFlat(
   }
 
   const dependentSet = new Set(dependentNodes);
-  const writePortNames = new Set(['data_in', 'we', 'data', 'dataA', 'weA']);
+  const writePortNames = SEQUENTIAL_INPUT_PORTS;
 
   for (const conn of connections) {
     const source = conn.source.nodeId;
