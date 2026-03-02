@@ -34,17 +34,16 @@ function portTypeToString(portType: PortType): string {
 function generateHeader(circuit: Circuit): string {
   let header = `circuit ${circuit.name}`;
 
-  // Add parameters if present
+  // Add parameters if present — use parenthesis syntax with types
   if (circuit.parameters.length > 0) {
     const params = circuit.parameters
       .map((p) => {
-        if (p.defaultValue !== undefined) {
-          return `${p.name}: ${p.defaultValue}`;
-        }
-        return p.name;
+        let s = `${p.name}: ${p.paramType}`;
+        if (p.defaultValue !== undefined) s += ` = ${p.defaultValue}`;
+        return s;
       })
       .join(', ');
-    header += `<${params}>`;
+    header += `(${params})`;
   }
 
   return header;
@@ -82,30 +81,26 @@ function generatePorts(circuit: Circuit): string[] {
 function generateState(circuit: Circuit): string[] {
   const lines: string[] = [];
 
-  if (circuit.state.length === 0) return lines;
-
-  lines.push('  state {');
-
-  circuit.state.forEach((stateBlock) => {
-    let stateLine = `    ${stateBlock.name}: `;
+  for (const stateBlock of circuit.state) {
+    let stateLine = `  state ${stateBlock.name}: `;
 
     if (stateBlock.stateType.kind === 'bit') {
       stateLine += 'Bit';
     } else if (stateBlock.stateType.kind === 'bus') {
       stateLine += `Bus[${stateBlock.stateType.width}]`;
     } else if (stateBlock.stateType.kind === 'memory') {
-      stateLine += `Memory[${stateBlock.stateType.addressWidth}, ${stateBlock.stateType.dataWidth}]`;
+      const arraySize = 2 ** stateBlock.stateType.addressWidth;
+      const elementType = stateBlock.stateType.dataWidth === 1
+        ? 'Bit' : `Bus[${stateBlock.stateType.dataWidth}]`;
+      stateLine += `Array[${arraySize}, ${elementType}]`;
     }
 
-    // Add initial value if present
     if (stateBlock.initialValue !== undefined) {
       stateLine += ` = ${stateBlock.initialValue}`;
     }
 
     lines.push(stateLine);
-  });
-
-  lines.push('  }');
+  }
 
   return lines;
 }

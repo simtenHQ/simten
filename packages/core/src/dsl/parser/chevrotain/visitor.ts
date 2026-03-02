@@ -263,12 +263,13 @@ export class CstToAstVisitor {
 
   visitParameterType(ctx: CstNode): ParameterType {
     const children = getChildren(ctx);
-    const typeToken = getToken(children, 'type')!;
+    const typeToken = getToken(children, 'type');
+    if (!typeToken) return 'int'; // Default for incomplete parse
     const typeStr = typeToken.image.toLowerCase();
     if (typeStr === 'int') return 'int';
     if (typeStr === 'string') return 'string';
     if (typeStr === 'bool') return 'bool';
-    throw new Error(`Invalid parameter type: ${typeToken.image}`);
+    return 'int'; // Default for unrecognized type; later validation will catch it
   }
 
   // ==========================================================================
@@ -445,14 +446,21 @@ export class CstToAstVisitor {
 
   visitMemoryType(ctx: CstNode): MemoryTypeExpr {
     const children = getChildren(ctx);
-    const sizeToken = getToken(children, 'size')!;
+    const loc = nodeLocation(ctx);
+    const sizeToken = getToken(children, 'size');
+    if (!sizeToken) {
+      return { kind: 'memory', addressWidth: 8, dataWidth: 8, location: loc, isIncomplete: true };
+    }
     const size = parseNumberLiteral(sizeToken.image);
     const addressWidth = Math.log2(size);
-    if (!Number.isInteger(addressWidth)) {
-      throw new Error('Array size must be a power of 2');
+    if (!Number.isInteger(addressWidth) || addressWidth < 0) {
+      return { kind: 'memory', addressWidth: 8, dataWidth: 8, location: loc, isIncomplete: true };
     }
 
-    const typeNode = getNode(children, 'typeExpr')!;
+    const typeNode = getNode(children, 'typeExpr');
+    if (!typeNode) {
+      return { kind: 'memory', addressWidth, dataWidth: 8, location: loc, isIncomplete: true };
+    }
     const elementType = this.visitTypeExpr(typeNode);
     let dataWidth: number;
     if (elementType.kind === 'bit') {
@@ -461,17 +469,17 @@ export class CstToAstVisitor {
       if (typeof elementType.width === 'number') {
         dataWidth = elementType.width;
       } else {
-        throw new Error('Memory data width must be a constant');
+        return { kind: 'memory', addressWidth, dataWidth: 8, location: loc, isIncomplete: true };
       }
     } else {
-      throw new Error('Invalid memory element type');
+      return { kind: 'memory', addressWidth, dataWidth: 8, location: loc, isIncomplete: true };
     }
 
     return {
       kind: 'memory',
       addressWidth,
       dataWidth,
-      location: nodeLocation(ctx),
+      location: loc,
     };
   }
 

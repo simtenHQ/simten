@@ -105,6 +105,7 @@ function resolveFromLibrary(library: ComponentLibrary, name: string): Circuit | 
 export interface CompilerWarning {
   circuitName: string;
   message: string;
+  code?: string;
 }
 
 export class IRGenerator {
@@ -176,6 +177,16 @@ export class IRGenerator {
     if (circuitDef.impl) {
       nodes = this.compileNodes(circuitDef, circuitDef.impl.nodes);
       connections = this.compileConnections(circuitDef, circuitDef.impl.connections, nodes);
+
+      // Warn if behavioral statements are present but will be ignored
+      if (circuitDef.impl.statements.length > 0) {
+        this.warnings.push({
+          circuitName: circuitDef.name,
+          message: `Behavioral statements (on_clock, assignments) are not yet compiled for user-defined circuits. ` +
+            `${circuitDef.impl.statements.length} statement(s) will be ignored during simulation.`,
+          code: 'UNSUPPORTED_FEATURE',
+        });
+      }
     }
 
     // Build metadata
@@ -414,6 +425,22 @@ export class IRGenerator {
 
     // Compile arguments
     const args = this.compileArguments(nodeDef.arguments, circuitDef);
+
+    // Warn if parametric user-defined circuit is instantiated with non-default values
+    if (componentCircuit.implementation.kind === 'composite' &&
+        componentCircuit.parameters.length > 0) {
+      for (const param of componentCircuit.parameters) {
+        const val = args[param.name];
+        if (val !== undefined && param.defaultValue !== undefined && val !== param.defaultValue) {
+          this.warnings.push({
+            circuitName: circuitDef.name,
+            message: `Parameter '${param.name}' on '${nodeDef.componentType}' is set to ${val} ` +
+              `but will use default value ${param.defaultValue}. Parametric instantiation of user-defined circuits is not yet supported.`,
+            code: 'UNSUPPORTED_FEATURE',
+          });
+        }
+      }
+    }
 
     // Create port instances from component definition
     const inputs = componentCircuit.inputs.map((portDesc) => ({

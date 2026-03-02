@@ -130,7 +130,8 @@ function expandCompositeNode(
   node: Node,
   componentDef: Circuit,
   resolveComponent: (name: string) => Circuit | undefined,
-  knownPrimitives: Set<string>
+  knownPrimitives: Set<string>,
+  visited: Set<string> = new Set()
 ): ExpansionResult {
   const nodes: Node[] = [];
   const connections: Connection[] = [];
@@ -164,12 +165,20 @@ function expandCompositeNode(
     const internalComponentDef = resolveComponent(internalNode.componentRef);
 
     if (internalComponentDef?.implementation.kind === 'composite') {
+      // Guard against recursive circuit definitions
+      if (visited.has(internalNode.componentRef)) {
+        console.warn(`[FLATTEN] Recursive circuit reference: ${internalNode.componentRef}, skipping`);
+        continue;
+      }
+      const childVisited = new Set(visited);
+      childVisited.add(internalNode.componentRef);
       // Recursively expand nested composite
       const nestedExpansion = expandCompositeNode(
         { ...internalNode, id: expandedId },
         internalComponentDef,
         resolveComponent,
-        knownPrimitives
+        knownPrimitives,
+        childVisited
       );
 
       nodes.push(...nestedExpansion.nodes);

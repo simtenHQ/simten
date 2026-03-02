@@ -1,19 +1,25 @@
 "use client";
 
-import { useMemo, useState, useCallback, useEffect, type ReactNode } from "react";
+import React, { useMemo, useState, useCallback, useEffect, type ReactNode } from "react";
 import {
   ReactFlow,
   Background,
   BackgroundVariant,
   Controls,
   Panel,
+  SelectionMode,
   applyNodeChanges,
+  applyEdgeChanges,
   useReactFlow,
   ReactFlowProvider,
   type Node,
+  type Edge,
   type NodeTypes,
   type EdgeTypes,
   type OnNodesChange,
+  type OnEdgesChange,
+  type OnConnect,
+  type Connection,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 
@@ -65,6 +71,8 @@ export interface CircuitCanvasProps {
   autoLayout?: boolean;
   /** Override positions by node label (cleaned). Unmatched nodes fall back to auto-layout. */
   nodePositions?: Record<string, { x: number; y: number }>;
+  /** Pre-computed metadata from the editor store. Skips ELK layout and nodePositions when provided. */
+  metadata?: MetadataState;
   onToggleNode?: (nodeId: string) => void;
   onSetNodeValue?: (nodeId: string, value: number) => void;
   height?: number | string;
@@ -73,12 +81,29 @@ export interface CircuitCanvasProps {
   theme?: "light" | "dark";
   className?: string;
   renderEmptyState?: () => ReactNode;
+  /** Render overlay content outside ReactFlow but inside the canvas container. */
+  renderOverlay?: () => ReactNode;
   /** Override node type map (defaults to EMBED_NODE_TYPES). */
   nodeTypes?: NodeTypes;
   /** Override edge type map (defaults to EDGE_TYPES). */
   edgeTypes?: EdgeTypes;
   /** Show ReactFlow Controls widget instead of minimal FitViewButton. */
   showControls?: boolean;
+  /** Render the CompositeInspectorDialog inside this canvas. Set to false when a parent already renders it. */
+  renderInspector?: boolean;
+
+  // --- Editing mode ---
+
+  /** Enable editing capabilities: connect, delete, selection tracking, drag-and-drop. */
+  editable?: boolean;
+  onNodePositionChange?: (nodeId: string, position: { x: number; y: number }) => void;
+  onNodeSelect?: (nodeId: string, selected: boolean) => void;
+  onNodesDelete?: (nodeIds: string[]) => void;
+  onEdgeSelect?: (edgeId: string, selected: boolean) => void;
+  onEdgesDelete?: (edgeIds: string[]) => void;
+  onConnect?: (source: { nodeId: string; portName: string }, target: { nodeId: string; portName: string }) => void;
+  onDrop?: (componentType: string, position: { x: number; y: number }) => void;
+  onNodeDragStop?: () => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -93,6 +118,7 @@ function CircuitCanvasInner({
   drillDown = true,
   autoLayout = true,
   nodePositions,
+  metadata: metadataProp,
   onToggleNode,
   onSetNodeValue,
   height = "100%",
@@ -100,12 +126,24 @@ function CircuitCanvasInner({
   theme = "dark",
   className,
   renderEmptyState,
+  renderOverlay,
   nodeTypes: nodeTypesOverride,
   edgeTypes: edgeTypesOverride,
   showControls = false,
+  editable = false,
+  onNodePositionChange,
+  onNodeSelect,
+  onNodesDelete,
+  onEdgeSelect,
+  onEdgesDelete,
+  onConnect: onConnectProp,
+  onDrop: onDropProp,
+  onNodeDragStop,
 }: CircuitCanvasProps) {
+  const { screenToFlowPosition } = useReactFlow();
   const resolvedNodeTypes = nodeTypesOverride ?? EMBED_NODE_TYPES;
   const resolvedEdgeTypes = edgeTypesOverride ?? EDGE_TYPES;
+
   // Normalize focus to a Set of labels
   const focusLabels = useMemo(() => {
     if (!focus) return null;
@@ -118,13 +156,16 @@ function CircuitCanvasInner({
     return circuit && autoLayout ? cleanCircuitLabels(circuit) : circuit ?? null;
   }, [circuit, autoLayout]);
 
-  // ELK auto-layout
+  // ELK auto-layout (skipped when metadata prop is provided)
   const { metadata: elkMetadata } = useElkLayout(
-    autoLayout ? cleanedCircuit : null,
+    autoLayout && !metadataProp ? cleanedCircuit : null,
   );
 
-  // Compute final metadata: ELK result (or empty) + position overrides
+  // Compute final metadata: prop > ELK + nodePositions > empty
   const metadata = useMemo(() => {
+    // When metadata prop is provided, use it directly (editor mode)
+    if (metadataProp) return metadataProp;
+
     if (!cleanedCircuit) return { components: {}, connections: {} } as MetadataState;
 
     const base = autoLayout ? elkMetadata : ({ components: {}, connections: {} } as MetadataState);
@@ -151,11 +192,11 @@ function CircuitCanvasInner({
     }
 
     return base;
-  }, [cleanedCircuit, autoLayout, elkMetadata, nodePositions]);
+  }, [cleanedCircuit, autoLayout, elkMetadata, nodePositions, metadataProp]);
 
   // Project to React Flow format
-  const { projectedNodes, edges } = useMemo(() => {
-    if (!cleanedCircuit) return { projectedNodes: [], edges: [] };
+  const { projectedNodes, projectedEdges } = useMemo(() => {
+    if (!cleanedCircuit) return { projectedNodes: [], projectedEdges: [] };
     const projected = projectCircuitToReactFlow(
       cleanedCircuit,
       metadata,
@@ -224,14 +265,16 @@ function CircuitCanvasInner({
         };
       });
 
-      return { projectedNodes: dimmedNodes, edges: dimmedEdges };
+      return { projectedNodes: dimmedNodes, projectedEdges: dimmedEdges };
     }
 
-    return { projectedNodes: nodesWithHandlers, edges: projected.edges };
+    return { projectedNodes: nodesWithHandlers, projectedEdges: projected.edges };
   }, [cleanedCircuit, metadata, portValues, sequentialState, onToggleNode, onSetNodeValue, focusLabels]);
 
-  // Store node positions for dragging
+  // Local node state for smooth drag feedback
   const [nodes, setNodes] = useState<Node[]>([]);
+  // Local edge state (needed for editable mode selection/deletion)
+  const [edges, setEdges] = useState<Edge[]>([]);
 
   useEffect(() => {
     setNodes((currentNodes) => {
@@ -243,13 +286,104 @@ function CircuitCanvasInner({
     });
   }, [projectedNodes]);
 
+  useEffect(() => {
+    setEdges(projectedEdges);
+  }, [projectedEdges]);
+
+  // Node changes: position, selection, removal
   const onNodesChange: OnNodesChange = useCallback(
-    (changes) => setNodes((nds) => applyNodeChanges(changes, nds)),
-    [],
+    (changes) => {
+      setNodes((nds) => applyNodeChanges(changes, nds));
+
+      if (editable) {
+        const removedIds: string[] = [];
+        for (const change of changes) {
+          if (change.type === "position" && change.position) {
+            onNodePositionChange?.(change.id, change.position);
+          } else if (change.type === "select") {
+            onNodeSelect?.(change.id, change.selected);
+          } else if (change.type === "remove") {
+            removedIds.push(change.id);
+          }
+        }
+        if (removedIds.length > 0) {
+          onNodesDelete?.(removedIds);
+        }
+      }
+    },
+    [editable, onNodePositionChange, onNodeSelect, onNodesDelete],
   );
 
+  // Edge changes: selection, removal (only in editable mode)
+  const onEdgesChange: OnEdgesChange = useCallback(
+    (changes) => {
+      if (!editable) return;
+      setEdges((eds) => applyEdgeChanges(changes, eds));
+
+      const removedIds: string[] = [];
+      for (const change of changes) {
+        if (change.type === "select") {
+          onEdgeSelect?.(change.id, change.selected);
+        } else if (change.type === "remove") {
+          removedIds.push(change.id);
+        }
+      }
+      if (removedIds.length > 0) {
+        onEdgesDelete?.(removedIds);
+      }
+    },
+    [editable, onEdgeSelect, onEdgesDelete],
+  );
+
+  // New connections (editable mode only)
+  const handleConnect: OnConnect = useCallback(
+    (connection: Connection) => {
+      if (
+        !onConnectProp ||
+        !connection.source ||
+        !connection.target ||
+        !connection.sourceHandle ||
+        !connection.targetHandle
+      ) {
+        return;
+      }
+      const sourcePortName = connection.sourceHandle.replace("out-", "");
+      const targetPortName = connection.targetHandle.replace("in-", "");
+      onConnectProp(
+        { nodeId: connection.source, portName: sourcePortName },
+        { nodeId: connection.target, portName: targetPortName },
+      );
+    },
+    [onConnectProp],
+  );
+
+  // Drag-and-drop from palette (editable mode only)
+  const handleDrop = useCallback(
+    (event: React.DragEvent) => {
+      if (!onDropProp) return;
+      event.preventDefault();
+      const componentType = event.dataTransfer.getData("application/reactflow");
+      if (!componentType) return;
+      const position = screenToFlowPosition({
+        x: event.clientX,
+        y: event.clientY,
+      });
+      onDropProp(componentType, position);
+    },
+    [onDropProp, screenToFlowPosition],
+  );
+
+  const handleDragOver = useCallback((event: React.DragEvent) => {
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "move";
+  }, []);
+
+  // Node drag stop
+  const handleNodeDragStop = useCallback(() => {
+    onNodeDragStop?.();
+  }, [onNodeDragStop]);
+
   // Composite inspection on double-click
-  // Auto-detects: if inspector is already open (stack > 0), pushLevel; otherwise open new dialog
   const inspectorStack = useInspectorStore((state) => state.stack);
   const openInspector = useInspectorStore((state) => state.open);
   const pushLevel = useInspectorStore((state) => state.pushLevel);
@@ -277,10 +411,8 @@ function CircuitCanvasInner({
       if (!circuitToInspect) return;
 
       if (inspectorStack.length > 0) {
-        // Already inside inspector dialog — push deeper
         pushLevel(data.componentRef, circuitToInspect, label);
       } else {
-        // Open new inspector dialog from parent canvas
         const domNode = document.querySelector(`[data-id="${node.id}"]`);
         const rect = domNode?.getBoundingClientRect();
         const originRect = rect
@@ -309,8 +441,10 @@ function CircuitCanvasInner({
 
   return (
     <div
-      className={`${isDark ? "bg-gray-900" : "bg-white"} rounded-lg overflow-hidden ${className ?? ""}`}
-      style={{ height }}
+      className={`${isDark ? "bg-gray-900" : "bg-white"} rounded-lg overflow-hidden ${editable ? "relative h-full w-full" : ""} ${className ?? ""}`}
+      style={editable ? undefined : { height }}
+      onDrop={editable ? handleDrop : undefined}
+      onDragOver={editable ? handleDragOver : undefined}
     >
       <ReactFlow
         nodes={nodes}
@@ -318,6 +452,9 @@ function CircuitCanvasInner({
         nodeTypes={resolvedNodeTypes}
         edgeTypes={resolvedEdgeTypes}
         onNodesChange={onNodesChange}
+        onEdgesChange={editable ? onEdgesChange : undefined}
+        onConnect={editable ? handleConnect : undefined}
+        onNodeDragStop={editable ? handleNodeDragStop : undefined}
         onNodeDoubleClick={onNodeDoubleClick}
         fitView
         fitViewOptions={{
@@ -330,15 +467,20 @@ function CircuitCanvasInner({
           }),
         }}
         nodesDraggable={draggable}
-        nodesConnectable={false}
+        nodesConnectable={editable}
         elementsSelectable={true}
         panOnDrag={[1, 2]}
         zoomOnScroll={true}
         zoomOnPinch={true}
         zoomOnDoubleClick={false}
-        preventScrolling={false}
+        preventScrolling={editable ? undefined : false}
         proOptions={{ hideAttribution: true }}
-        deleteKeyCode={null}
+        deleteKeyCode={editable ? ["Delete", "Backspace"] : null}
+        multiSelectionKeyCode={editable ? "Shift" : undefined}
+        selectionOnDrag={editable ? true : undefined}
+        selectionMode={editable ? SelectionMode.Partial : undefined}
+        selectNodesOnDrag={editable ? false : undefined}
+        panActivationKeyCode={editable ? null : undefined}
         className={isDark ? undefined : "bg-gray-50"}
       >
         {isDark ? (
@@ -354,6 +496,7 @@ function CircuitCanvasInner({
           </Panel>
         )}
       </ReactFlow>
+      {renderOverlay?.()}
     </div>
   );
 }
@@ -364,10 +507,11 @@ function CircuitCanvasInner({
 
 export function CircuitCanvas(props: CircuitCanvasProps) {
   const drillDown = props.drillDown ?? true;
+  const renderInspector = props.renderInspector ?? true;
   return (
     <ReactFlowProvider>
       <CircuitCanvasInner {...props} />
-      {drillDown && <CompositeInspectorDialog />}
+      {drillDown && renderInspector && <CompositeInspectorDialog />}
     </ReactFlowProvider>
   );
 }
