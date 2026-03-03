@@ -3,7 +3,7 @@
  * Run after tsc: "tsc -b && node scripts/copy-preview.js"
  */
 
-import { cpSync, existsSync, mkdirSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, rmSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -16,6 +16,7 @@ const clientSrc = join(previewDist, 'client');
 const clientDst = join(mcpDist, 'preview-client');
 
 if (existsSync(clientSrc)) {
+  if (existsSync(clientDst)) rmSync(clientDst, { recursive: true });
   mkdirSync(clientDst, { recursive: true });
   cpSync(clientSrc, clientDst, { recursive: true });
   console.log(`Copied preview client → ${clientDst}`);
@@ -29,6 +30,7 @@ const serverSrc = join(previewDist, 'server');
 const serverDst = join(mcpDist, 'preview-server');
 
 if (existsSync(serverSrc)) {
+  if (existsSync(serverDst)) rmSync(serverDst, { recursive: true });
   mkdirSync(serverDst, { recursive: true });
   cpSync(serverSrc, serverDst, { recursive: true });
   console.log(`Copied preview server → ${serverDst}`);
