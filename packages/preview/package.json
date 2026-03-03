@@ -11,7 +11,7 @@
     }
   },
   "scripts": {
-    "build": "vite build && tsc -p tsconfig.server.json",
+    "build": "rm -rf dist && vite build && tsc -b tsconfig.server.json --force",
     "build:client": "vite build",
     "build:server": "tsc -p tsconfig.server.json",
     "dev": "vite dev"
