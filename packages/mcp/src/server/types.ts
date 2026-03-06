@@ -20,7 +20,7 @@ export interface TestResultsPayload {
   results: Array<{
     name: string;
     dutName?: string;
-    status: "passed" | "failed";
+    status: 'passed' | 'failed';
     cycles: number;
     failureReason?: string;
     assertionSummary?: {

@@ -5,56 +5,9 @@
  * (state, traces, test-results) can access the running preview.
  */
 
-import { join } from 'node:path';
+import type { PreviewServer, CircuitState, TracesPayload, TestResultsPayload } from '../server/preview-server.js';
 
-export interface CircuitState {
-  cycleCount: number;
-  inputs: Record<string, boolean | number>;
-  outputs: Record<string, boolean | number>;
-  isSequential: boolean;
-  circuitName: string | null;
-  timestamp: number;
-}
-
-export interface TracesPayload {
-  circuit: string;
-  ticks: number;
-  inputs: string[];
-  outputs: string[];
-  signals: Record<string, Array<{ value: boolean | number; count: number }>>;
-  steadyStateAt?: number;
-}
-
-export interface TestResultsPayload {
-  results: Array<{
-    name: string;
-    dutName?: string;
-    status: 'passed' | 'failed';
-    cycles: number;
-    failureReason?: string;
-    assertionSummary?: {
-      total: number;
-      passed: number;
-      failed: number;
-      results: Array<{ cycle: number; passed: boolean; message: string }>;
-    };
-  }>;
-}
-
-export type PreviewServer = {
-  port: number;
-  updateDSL(dsl: string): void;
-  watchFile(filePath: string): void;
-  getState(): CircuitState | null;
-  pushTraces(data: TracesPayload): void;
-  pushTestResults(data: TestResultsPayload): void;
-  close(): void;
-};
-
-type CreatePreviewServer = (options?: {
-  port?: number;
-  clientDir?: string;
-}) => Promise<PreviewServer>;
+export type { PreviewServer, CircuitState, TracesPayload, TestResultsPayload };
 
 // Module-level singleton
 let previewServer: PreviewServer | null = null;
@@ -77,15 +30,9 @@ function ensureCleanup() {
 export async function getOrCreateServer(): Promise<PreviewServer> {
   if (previewServer) return previewServer;
 
-  // Import the preview server from the bundled dist
-  const serverPath = join(import.meta.dirname, '../preview-server/index.js');
-  const mod = (await import(serverPath)) as {
-    createPreviewServer: CreatePreviewServer;
-  };
+  const { createPreviewServer } = await import('../server/preview-server.js');
 
-  const clientDir = join(import.meta.dirname, '../preview-client');
-
-  previewServer = await mod.createPreviewServer({ clientDir });
+  previewServer = await createPreviewServer();
   ensureCleanup();
 
   return previewServer;

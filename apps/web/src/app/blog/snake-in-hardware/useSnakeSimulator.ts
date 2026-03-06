@@ -62,6 +62,13 @@ export function useSnakeSimulator() {
     sim.reset();
   }, [sim]);
 
+  const sendDirection = useCallback(
+    (code: number) => {
+      if (keyboardNodeId) sim.setNodeValue(keyboardNodeId, code);
+    },
+    [keyboardNodeId, sim.setNodeValue],
+  );
+
   return {
     sim,
     isRunning,
@@ -69,5 +76,6 @@ export function useSnakeSimulator() {
     speed,
     setSpeed,
     handleReset,
+    sendDirection,
   };
 }

@@ -16,7 +16,6 @@ import {
   ComponentPalette,
   SimulationControls,
   RightSidebar,
-  TestCaseEditor,
   ClockControls,
   CompositeInspectorDialog,
 } from "@turing-incomplete/ui/editor/components";
@@ -254,9 +253,6 @@ export function VisualEditor() {
             <ClockControls />
           </div>
         )}
-
-        {/* Test Case Editor Modal */}
-        <TestCaseEditor />
 
         {/* Composite Inspector Dialog */}
         <CompositeInspectorDialog />
