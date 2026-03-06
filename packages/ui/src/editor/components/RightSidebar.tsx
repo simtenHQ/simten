@@ -1,20 +1,19 @@
 /**
  * RightSidebar Component
  *
- * Combined sidebar with tabs for Tests, Testbench, and Diagnostics
+ * Combined sidebar with tabs for Testbench and Diagnostics
  */
 
 'use client';
 
 import React, { useState } from 'react';
-import { TestPanel } from './TestPanel';
 import { TestbenchPanel } from './TestbenchPanel';
 import { TestbenchLoader } from './TestbenchLoader';
 import { DiagnosticsPanel } from './DiagnosticsPanel';
 import { useTestbenchStore } from '../stores/testbench-store';
 import { useAnalysisStore } from '../stores/analysis-store';
 
-type SidebarTab = 'tests' | 'testbench' | 'diagnostics';
+type SidebarTab = 'testbench' | 'diagnostics';
 
 export function RightSidebar() {
   const [activeTab, setActiveTab] = useState<SidebarTab>('diagnostics');
@@ -49,16 +48,6 @@ export function RightSidebar() {
           )}
         </button>
         <button
-          onClick={() => setActiveTab('tests')}
-          className={`flex-1 px-3 py-3 text-sm font-medium transition-colors ${
-            activeTab === 'tests'
-              ? 'border-b-2 border-blue-600 text-blue-600 bg-blue-50'
-              : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
-          }`}
-        >
-          Tests
-        </button>
-        <button
           onClick={() => setActiveTab('testbench')}
           className={`flex-1 px-3 py-3 text-sm font-medium transition-colors ${
             activeTab === 'testbench'
@@ -76,13 +65,6 @@ export function RightSidebar() {
         {activeTab === 'diagnostics' && (
           <div className="h-full overflow-auto">
             <DiagnosticsPanel />
-          </div>
-        )}
-
-        {/* Tests Tab - Render TestPanel content directly */}
-        {activeTab === 'tests' && (
-          <div className="h-full overflow-auto">
-            <TestPanel />
           </div>
         )}
 

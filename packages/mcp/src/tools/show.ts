@@ -72,8 +72,12 @@ export function registerShowTools(server: McpServer): void {
         .string()
         .optional()
         .describe('Path to a .dsl file (will be watched for changes)'),
+      inputs: z
+        .record(z.union([z.number(), z.boolean()]))
+        .optional()
+        .describe('Initial input values as { portName: value }'),
     },
-    async ({ source, filePath }) => {
+    async ({ source, filePath, inputs }) => {
       // 1. Read DSL
       const read = readDSLSource({ source, filePath });
       if (read.error) {
@@ -101,7 +105,7 @@ export function registerShowTools(server: McpServer): void {
       }
 
       // 3. Auto-generate interactive harness (Switch/Led/HexDisplay) if needed
-      const dslToShow = generateHarnessAppended(read.source);
+      const dslToShow = generateHarnessAppended(read.source, inputs);
 
       // 4. Start or get existing preview server
       let preview;
@@ -120,7 +124,8 @@ export function registerShowTools(server: McpServer): void {
         };
       }
 
-      const url = `http://localhost:${preview.port}`;
+      const tiUrl = process.env.TI_URL ?? 'http://localhost:3001';
+      const studioUrl = `${tiUrl}/studio?port=${preview.port}`;
 
       // 5. Push DSL (with harness) to all connected clients
       preview.updateDSL(dslToShow);
@@ -131,7 +136,7 @@ export function registerShowTools(server: McpServer): void {
       }
 
       // 7. Open browser on first call
-      openBrowser(url);
+      openBrowser(studioUrl);
 
       // 8. Return confirmation
       const watchingNote = filePath
@@ -141,7 +146,7 @@ export function registerShowTools(server: McpServer): void {
         content: [
           {
             type: 'text' as const,
-            text: `Circuit preview running at ${url}.${watchingNote}`,
+            text: `Circuit preview running at ${studioUrl}.${watchingNote}`,
           },
         ],
       };

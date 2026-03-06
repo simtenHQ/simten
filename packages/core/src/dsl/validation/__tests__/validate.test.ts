@@ -195,10 +195,10 @@ describe('Validation Pipeline', () => {
 
     it('non-blocking warnings', () => {
       const warningDiagnostic: Diagnostic = {
-        phase: 'structural',
-        code: 'FLOATING_OUTPUT',
+        phase: 'type',
+        code: 'WIDTH_MISMATCH',
         severity: 'warning',
-        message: 'Floating output',
+        message: 'Width mismatch',
       };
 
       expect(isBlocking(warningDiagnostic)).toBe(false);

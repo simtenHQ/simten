@@ -488,7 +488,7 @@ export function checkFloatingOutputs(flat: FlatCircuit): Diagnostic[] {
       diagnostics.push({
         phase: 'structural',
         code: 'FLOATING_OUTPUT',
-        severity: 'warning', // Warning, not error - simulator defaults undriven to 0
+        severity: 'error',
         message: `Floating output: '${output.name}' is not driven by any signal`,
         suggestions: [
           `Connect an internal signal to output '${output.name}'`,

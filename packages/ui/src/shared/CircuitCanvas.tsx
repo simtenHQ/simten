@@ -24,6 +24,7 @@ import {
 import "@xyflow/react/dist/style.css";
 
 import type { Circuit } from "@turing-incomplete/core/dsl";
+import { TooltipProvider } from "../primitives/tooltip";
 import type {
   FlatPortValueMap,
   FlatSequentialState,
@@ -509,9 +510,11 @@ export function CircuitCanvas(props: CircuitCanvasProps) {
   const drillDown = props.drillDown ?? true;
   const renderInspector = props.renderInspector ?? true;
   return (
-    <ReactFlowProvider>
-      <CircuitCanvasInner {...props} />
-      {drillDown && renderInspector && <CompositeInspectorDialog />}
-    </ReactFlowProvider>
+    <TooltipProvider delayDuration={300}>
+      <ReactFlowProvider>
+        <CircuitCanvasInner {...props} />
+        {drillDown && renderInspector && <CompositeInspectorDialog />}
+      </ReactFlowProvider>
+    </TooltipProvider>
   );
 }

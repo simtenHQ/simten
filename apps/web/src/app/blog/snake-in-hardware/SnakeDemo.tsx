@@ -1,12 +1,48 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useCallback } from "react";
 import { useSnakeSimulator } from "./useSnakeSimulator";
 
 const GRID_SIZE = 8;
 const PIXEL_SIZE = 40;
 const PIXEL_GAP = 3;
 const TOTAL_SIZE = GRID_SIZE * PIXEL_SIZE + (GRID_SIZE - 1) * PIXEL_GAP;
+
+const DIRECTION_CODES = { up: 72, down: 80, left: 75, right: 77 } as const;
+
+function DPad({ onDirection }: { onDirection: (code: number) => void }) {
+  const press = useCallback(
+    (dir: keyof typeof DIRECTION_CODES) => {
+      onDirection(DIRECTION_CODES[dir]);
+    },
+    [onDirection],
+  );
+
+  const btn =
+    "flex items-center justify-center w-14 h-14 rounded-xl bg-gray-700 active:bg-gray-500 text-gray-200 text-xl select-none transition-colors touch-manipulation";
+
+  return (
+    <div className="grid grid-cols-3 gap-1.5 w-fit mx-auto" role="group" aria-label="Direction controls">
+      <div />
+      <button className={btn} onPointerDown={() => press("up")} aria-label="Up">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor"><path d="M10 4l6 8H4z" /></svg>
+      </button>
+      <div />
+      <button className={btn} onPointerDown={() => press("left")} aria-label="Left">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor"><path d="M4 10l8-6v12z" /></svg>
+      </button>
+      <div className="w-14 h-14" />
+      <button className={btn} onPointerDown={() => press("right")} aria-label="Right">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor"><path d="M16 10l-8 6V4z" /></svg>
+      </button>
+      <div />
+      <button className={btn} onPointerDown={() => press("down")} aria-label="Down">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor"><path d="M10 16l-6-8h12z" /></svg>
+      </button>
+      <div />
+    </div>
+  );
+}
 
 /**
  * Extract pixel data from the simulator's sequential state.
@@ -43,6 +79,7 @@ export function SnakeDemo() {
     speed,
     setSpeed,
     handleReset,
+    sendDirection,
   } = useSnakeSimulator();
 
   const pixels = usePixels(sim.sequentialState);
@@ -68,8 +105,8 @@ export function SnakeDemo() {
 
   return (
     <div className="rounded-xl border border-gray-700/50 bg-gray-900/80 overflow-hidden">
-      {/* Keyboard instructions */}
-      <div className="px-4 py-3 border-b border-gray-700/50 flex items-center gap-3">
+      {/* Keyboard instructions — hidden on mobile */}
+      <div className="hidden sm:flex px-4 py-3 border-b border-gray-700/50 items-center gap-3">
         <span className="text-xs font-medium text-gray-400 uppercase tracking-wider">
           Controls
         </span>
@@ -88,12 +125,11 @@ export function SnakeDemo() {
         </div>
       </div>
 
-      {/* Game screen — large centered 8×8 pixel grid */}
-      <div className="flex justify-center py-8 bg-gray-950">
+      {/* Game screen — responsive 8×8 pixel grid */}
+      <div className="flex justify-center py-6 sm:py-8 bg-gray-950">
         <svg
-          width={TOTAL_SIZE}
-          height={TOTAL_SIZE}
-          className="border-2 border-gray-700 rounded-lg bg-black"
+          viewBox={`0 0 ${TOTAL_SIZE} ${TOTAL_SIZE}`}
+          className="border-2 border-gray-700 rounded-lg bg-black w-[min(100%-2rem,355px)]"
           style={{ imageRendering: "pixelated" }}
         >
           {pixels.map((value, index) => {
@@ -112,6 +148,11 @@ export function SnakeDemo() {
             );
           })}
         </svg>
+      </div>
+
+      {/* Touch d-pad — mobile only */}
+      <div className="sm:hidden py-4 border-t border-gray-700/50 bg-gray-900/90">
+        <DPad onDirection={sendDirection} />
       </div>
 
       {/* Controls bar */}
