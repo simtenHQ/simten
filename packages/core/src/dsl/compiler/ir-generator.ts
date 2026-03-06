@@ -400,6 +400,15 @@ export class IRGenerator {
   }
 
   private compileNode(circuitDef: CircuitDef, nodeDef: NodeDecl): Node {
+    // Check for self-reference before resolution
+    if (nodeDef.componentType === circuitDef.name) {
+      throw new CompilerError(
+        `Circuit '${circuitDef.name}' cannot reference itself. Recursive circuits are not supported.`,
+        circuitDef.name,
+        { line: nodeDef.location.start.line, column: nodeDef.location.start.column }
+      );
+    }
+
     // Resolve component reference
     const componentCircuit = resolveFromLibrary(this.library, nodeDef.componentType);
     if (!componentCircuit) {

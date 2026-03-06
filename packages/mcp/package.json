@@ -11,7 +11,7 @@
   },
   "files": ["dist", "bin"],
   "scripts": {
-    "build": "tsc -b && node scripts/copy-preview.js",
+    "build": "tsc -b",
     "dev": "tsc -b --watch"
   },
   "dependencies": {
@@ -21,7 +21,6 @@
     "zod-to-json-schema": "^3.24.0"
   },
   "devDependencies": {
-    "@turing-incomplete/preview": "workspace:*",
     "@types/node": "^20",
     "typescript": "^5"
   },

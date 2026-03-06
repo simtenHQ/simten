@@ -80,7 +80,8 @@ function inferDiagnosticCode(message: string, phase: ValidationPhase): Diagnosti
   const lowerMessage = message.toLowerCase();
 
   // Semantic errors
-  if (lowerMessage.includes('unknown component')) return 'UNKNOWN_COMPONENT';
+  if (lowerMessage.includes('cannot reference itself')) return 'SELF_REFERENCE';
+  if (lowerMessage.includes('cannot resolve component') || lowerMessage.includes('unknown component')) return 'UNKNOWN_COMPONENT';
   if (lowerMessage.includes('duplicate')) return 'DUPLICATE_NAME';
   if (lowerMessage.includes('undefined port')) return 'UNDEFINED_PORT';
   if (lowerMessage.includes('undefined node')) return 'UNDEFINED_NODE';

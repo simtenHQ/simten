@@ -18,7 +18,4 @@ export { RightSidebar } from './RightSidebar';
 export { SimulationControls } from './SimulationControls';
 export { TestbenchLoader } from './TestbenchLoader';
 export { TestbenchPanel } from './TestbenchPanel';
-export { TestCaseEditor } from './TestCaseEditor';
-export { TestPanel } from './TestPanel';
-export { TestResultDisplay } from './TestResultDisplay';
 export * from './nodes';

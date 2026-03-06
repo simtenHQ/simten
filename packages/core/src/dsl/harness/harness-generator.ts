@@ -186,7 +186,10 @@ export function analyzeForHarness(dslCode: string): HarnessAnalysis {
 /**
  * Generate harness DSL code for a circuit interface.
  */
-export function generateHarnessDSL(iface: CircuitInterface): string {
+export function generateHarnessDSL(
+  iface: CircuitInterface,
+  initialInputs?: Record<string, number | boolean>,
+): string {
   const lines: string[] = [];
   const { name, inputs, outputs, clocks } = iface;
 
@@ -203,9 +206,11 @@ export function generateHarnessDSL(iface: CircuitInterface): string {
   if (inputs.length > 0) {
     lines.push('    // === Input Controls ===');
     for (const input of inputs) {
+      const initial = initialInputs?.[input.name];
+      const value = initial !== undefined ? Number(initial) : 0;
       const component = input.type === 'Bus'
-        ? `Input(value=0, width=${input.width ?? 8})`
-        : 'Switch(value=0)';
+        ? `Input(value=${value}, width=${input.width ?? 8})`
+        : `Switch(value=${value})`;
       lines.push(`    node ${input.name}_sw: ${component}`);
     }
     lines.push('');
@@ -258,22 +263,28 @@ export function generateHarnessDSL(iface: CircuitInterface): string {
  * Generate a complete harness from DSL code.
  * Returns null if no harness is needed.
  */
-export function generateHarness(dslCode: string): string | null {
+export function generateHarness(
+  dslCode: string,
+  initialInputs?: Record<string, number | boolean>,
+): string | null {
   const analysis = analyzeForHarness(dslCode);
 
   if (!analysis.needsHarness || !analysis.interface) {
     return null;
   }
 
-  return generateHarnessDSL(analysis.interface);
+  return generateHarnessDSL(analysis.interface, initialInputs);
 }
 
 /**
  * Generate harness and append to original DSL.
  * Returns the combined DSL code.
  */
-export function generateHarnessAppended(dslCode: string): string {
-  const harness = generateHarness(dslCode);
+export function generateHarnessAppended(
+  dslCode: string,
+  initialInputs?: Record<string, number | boolean>,
+): string {
+  const harness = generateHarness(dslCode, initialInputs);
 
   if (!harness) {
     return dslCode;

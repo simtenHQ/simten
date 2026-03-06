@@ -41,6 +41,7 @@ export type DiagnosticCode =
   | 'MISSING_TOKEN'
   // Semantic errors (Phase 2)
   | 'UNKNOWN_COMPONENT'
+  | 'SELF_REFERENCE'
   | 'DUPLICATE_NAME'
   | 'UNDEFINED_REFERENCE'
   | 'UNDEFINED_PORT'
@@ -135,8 +136,7 @@ const DIAGNOSTIC_META: Partial<Record<DiagnosticCode, DiagnosticMeta>> = {
   // Structural errors
   COMBINATIONAL_CYCLE: { blocking: true },
   FLOATING_INPUT: { blocking: true },
-  // AUDIT: verify simulator defaults undriven outputs to 0
-  FLOATING_OUTPUT: { blocking: false },
+  FLOATING_OUTPUT: { blocking: true },
   ELABORATION_ERROR: { blocking: true },
 
   // Runtime errors

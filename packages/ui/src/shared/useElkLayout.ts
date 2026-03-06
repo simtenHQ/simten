@@ -1,9 +1,17 @@
 import { useState, useEffect, useMemo } from "react";
-import ELK, { type ElkNode, type ElkExtendedEdge, type ElkPort } from "elkjs/lib/elk.bundled.js";
+import type { ElkNode, ElkExtendedEdge, ElkPort } from "elkjs/lib/elk.bundled.js";
 import type { Circuit } from "@turing-incomplete/core/dsl";
 import type { MetadataState } from "../editor/types";
 
-const elk = new ELK();
+// Lazy-load ELK to avoid instantiating Worker in non-browser runtimes (e.g. Cloudflare Workers SSR)
+let elkInstance: InstanceType<typeof import("elkjs/lib/elk.bundled.js").default> | null = null;
+async function getElk() {
+  if (!elkInstance) {
+    const { default: ELK } = await import("elkjs/lib/elk.bundled.js");
+    elkInstance = new ELK();
+  }
+  return elkInstance;
+}
 
 /** Node size constants by component type */
 const NODE_DIMENSIONS: Record<string, { width: number; height: number }> = {
@@ -162,6 +170,7 @@ export async function computeElkLayout(
     edges: elkEdges,
   };
 
+  const elk = await getElk();
   const laid = await elk.layout(graph);
 
   const metadata: MetadataState = { components: {}, connections: {} };
