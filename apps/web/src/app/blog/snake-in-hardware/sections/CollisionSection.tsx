@@ -37,6 +37,7 @@ export function CollisionSection() {
         <CircuitEmbed
           dsl={SNAKE_CIRCUITS.collisionDetector.dsl}
           displayDsl={SNAKE_CIRCUITS.collisionDetector.displayDsl}
+          nodePositions={SNAKE_CIRCUITS.collisionDetector.nodePositions}
           height={350}
           showControls
           title="Collision Detector"

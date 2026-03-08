@@ -41,6 +41,7 @@ export function PhaseSection() {
         <CircuitEmbed
           dsl={TPU_CIRCUITS.wavefrontController.dsl}
           displayDsl={TPU_CIRCUITS.wavefrontController.displayDsl}
+          nodePositions={TPU_CIRCUITS.wavefrontController.nodePositions}
           height={400}
           showControls
           autoRunSpeed={400}

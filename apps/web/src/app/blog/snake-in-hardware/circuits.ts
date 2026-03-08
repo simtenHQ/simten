@@ -11,6 +11,7 @@ export interface BlogCircuit {
   description: string;
   displayDsl: string;
   dsl: string;
+  nodePositions?: Record<string, { x: number; y: number }>;
 }
 
 export const SNAKE_CIRCUITS: Record<string, BlogCircuit> = {
@@ -77,6 +78,17 @@ circuit SimpleFramebuffer {
     connect ram.outA -> readback.in
   }
 }`,
+    nodePositions: {
+      // Inputs (left)
+      addr:     { x: 0,   y: 0 },
+      data_in:  { x: 0,   y: 120 },
+      we:       { x: 0,   y: 240 },
+      // RAM + Screen (center)
+      ram:      { x: 250, y: 60 },
+      screen:   { x: 500, y: 0 },
+      // Output (right)
+      readback: { x: 500, y: 180 },
+    },
   },
 
   coordToPixel: {
@@ -120,6 +132,14 @@ circuit CoordToPixel {
     connect addr.sum -> result.in
   }
 }`,
+    nodePositions: {
+      x:      { x: 0,   y: 0 },
+      y:      { x: 0,   y: 120 },
+      three:  { x: 0,   y: 240 },
+      y8:     { x: 200, y: 120 },
+      addr:   { x: 400, y: 60 },
+      result: { x: 600, y: 60 },
+    },
   },
 
   directionDecoder: {
@@ -227,6 +247,32 @@ circuit DirectionDecoder {
     connect deltaY.out -> displayDY.in
   }
 }`,
+    nodePositions: {
+      // Input (left)
+      keyCode:    { x: 0,   y: 140 },
+      // Constants (left column)
+      upCode:     { x: 0,   y: 0 },
+      downCode:   { x: 0,   y: 60 },
+      leftCode:   { x: 0,   y: 280 },
+      rightCode:  { x: 0,   y: 340 },
+      zero:       { x: 220, y: 280 },
+      one:        { x: 220, y: 340 },
+      minus1:     { x: 220, y: 400 },
+      // Comparators
+      isUp:       { x: 220, y: 0 },
+      isDown:     { x: 220, y: 60 },
+      isLeft:     { x: 220, y: 140 },
+      isRight:    { x: 220, y: 200 },
+      // Mux tree (X)
+      deltaXTemp: { x: 440, y: 160 },
+      deltaX:     { x: 620, y: 160 },
+      // Mux tree (Y)
+      deltaYTemp: { x: 440, y: 20 },
+      deltaY:     { x: 620, y: 20 },
+      // Displays (right)
+      displayDX:  { x: 800, y: 160 },
+      displayDY:  { x: 800, y: 20 },
+    },
   },
 
   pixelMover: {
@@ -425,6 +471,47 @@ circuit PixelMover {
     connect wrapY.out -> displayY.in
   }
 }`,
+    nodePositions: {
+      // Input
+      keyboard:   { x: 0,   y: 200 },
+      enable:     { x: 0,   y: 500 },
+      // Direction constants
+      upCode:     { x: 0,   y: 0 },
+      downCode:   { x: 0,   y: 60 },
+      leftCode:   { x: 0,   y: 340 },
+      rightCode:  { x: 0,   y: 400 },
+      zero:       { x: 180, y: 340 },
+      one:        { x: 180, y: 400 },
+      minus1:     { x: 180, y: 460 },
+      // Comparators
+      isUp:       { x: 180, y: 0 },
+      isDown:     { x: 180, y: 60 },
+      isLeft:     { x: 180, y: 140 },
+      isRight:    { x: 180, y: 200 },
+      // Delta muxes
+      deltaXTemp: { x: 380, y: 160 },
+      deltaX:     { x: 520, y: 160 },
+      deltaYTemp: { x: 380, y: 20 },
+      deltaY:     { x: 520, y: 20 },
+      // Position registers
+      headX:      { x: 520, y: 300 },
+      headY:      { x: 520, y: 400 },
+      // Next position
+      nextX:      { x: 680, y: 160 },
+      nextY:      { x: 680, y: 20 },
+      wrapX:      { x: 820, y: 160 },
+      wrapY:      { x: 820, y: 20 },
+      // Pixel address
+      shiftAmt:   { x: 820, y: 300 },
+      y8:         { x: 960, y: 20 },
+      pixelAddr:  { x: 960, y: 100 },
+      // RAM + Screen
+      ram:        { x: 1100, y: 60 },
+      screen:     { x: 1100, y: 250 },
+      // Displays
+      displayX:   { x: 960, y: 200 },
+      displayY:   { x: 960, y: 300 },
+    },
   },
 
   phaseDemo: {
@@ -534,6 +621,30 @@ circuit PhaseDemo {
     connect phase.q -> display.in
   }
 }`,
+    nodePositions: {
+      // Control (left)
+      enable:   { x: 0,   y: 100 },
+      one:      { x: 60,  y: 230 },
+      // Phase register + increment
+      phase:    { x: 200, y: 100 },
+      phaseInc: { x: 200, y: 0 },
+      phaseWrap:{ x: 200, y: 230 },
+      // Constants
+      zero:     { x: 420, y: 0 },
+      two:      { x: 420, y: 160 },
+      three:    { x: 420, y: 240 },
+      // Comparators
+      isPhase0: { x: 580, y: 0 },
+      isPhase1: { x: 580, y: 80 },
+      isPhase2: { x: 580, y: 160 },
+      isPhase3: { x: 580, y: 240 },
+      // LEDs (right)
+      led0:     { x: 760, y: 0 },
+      led1:     { x: 760, y: 80 },
+      led2:     { x: 760, y: 160 },
+      led3:     { x: 760, y: 240 },
+      display:  { x: 760, y: 340 },
+    },
   },
 
   collisionDetector: {
@@ -605,6 +716,24 @@ circuit CollisionDetector {
     connect growMux.out -> growDisplay.in
   }
 }`,
+    nodePositions: {
+      // Inputs (left, 2x2 grid)
+      headX:        { x: 0,   y: 0 },
+      headY:        { x: 0,   y: 120 },
+      foodX:        { x: 0,   y: 260 },
+      foodY:        { x: 0,   y: 380 },
+      // Comparators
+      matchX:       { x: 220, y: 60 },
+      matchY:       { x: 220, y: 300 },
+      // AND gate
+      collision:    { x: 420, y: 160 },
+      collisionLed: { x: 620, y: 100 },
+      // Grow mux
+      zero:         { x: 420, y: 300 },
+      one:          { x: 420, y: 380 },
+      growMux:       { x: 620, y: 300 },
+      growDisplay:  { x: 780, y: 300 },
+    },
   },
 };
 

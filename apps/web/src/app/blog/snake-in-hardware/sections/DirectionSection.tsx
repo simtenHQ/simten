@@ -38,6 +38,7 @@ export function DirectionSection() {
         <CircuitEmbed
           dsl={SNAKE_CIRCUITS.directionDecoder.dsl}
           displayDsl={SNAKE_CIRCUITS.directionDecoder.displayDsl}
+          nodePositions={SNAKE_CIRCUITS.directionDecoder.nodePositions}
           height={350}
           showControls
           title="Direction Decoder"

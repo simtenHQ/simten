@@ -11,6 +11,7 @@ export interface BlogCircuit {
   description: string;
   displayDsl: string;
   dsl: string;
+  nodePositions?: Record<string, { x: number; y: number }>;
 }
 
 export const PONG_CIRCUITS: Record<string, BlogCircuit> = {
@@ -18,6 +19,19 @@ export const PONG_CIRCUITS: Record<string, BlogCircuit> = {
     name: "Ball Position",
     description:
       "Two registers store the ball's X and Y coordinates. An adder moves the ball by adding a velocity delta each tick.",
+    nodePositions: {
+      dx: { x: 0, y: 50 },
+      dy: { x: 0, y: 200 },
+      enable: { x: 0, y: 370 },
+      nextX: { x: 200, y: 50 },
+      nextY: { x: 200, y: 200 },
+      wrapX: { x: 370, y: 50 },
+      wrapY: { x: 370, y: 200 },
+      ballX: { x: 540, y: 50 },
+      ballY: { x: 540, y: 200 },
+      displayX: { x: 710, y: 50 },
+      displayY: { x: 710, y: 200 },
+    },
     displayDsl: `circuit BallPosition {
   clock clk
   impl {
@@ -97,6 +111,19 @@ circuit BallPosition {
     name: "Bounce Detection",
     description:
       "Comparators check if the ball is at a screen edge (0 or 7), signaling when it needs to reverse direction.",
+    nodePositions: {
+      ballY: { x: 0, y: 120 },
+      zero: { x: 0, y: 0 },
+      seven: { x: 0, y: 240 },
+      atTop: { x: 200, y: 30 },
+      atBottom: { x: 200, y: 200 },
+      shouldBounce: { x: 380, y: 120 },
+      bounceLed: { x: 560, y: 120 },
+      one: { x: 200, y: 350 },
+      minus1: { x: 200, y: 450 },
+      newDY: { x: 380, y: 400 },
+      display: { x: 560, y: 400 },
+    },
     displayDsl: `circuit BounceDetection {
   impl {
     node ballY: Input(value=7)
@@ -168,6 +195,24 @@ circuit BounceDetection {
     name: "Paddle Movement",
     description:
       "Keyboard scan codes are compared to detect W/S key presses. A mux tree converts the result into a delta that moves the paddle register.",
+    nodePositions: {
+      keyboard: { x: 0, y: 100 },
+      keyW: { x: 0, y: 200 },
+      keyS: { x: 0, y: 300 },
+      zero: { x: 0, y: 400 },
+      minus1: { x: 0, y: 0 },
+      one: { x: 0, y: 500 },
+      isW: { x: 200, y: 100 },
+      isS: { x: 200, y: 300 },
+      upDelta: { x: 370, y: 100 },
+      delta: { x: 370, y: 300 },
+      paddleY: { x: 540, y: 200 },
+      newY: { x: 540, y: 370 },
+      wrapY: { x: 540, y: 500 },
+      enable: { x: 370, y: 500 },
+      display: { x: 720, y: 150 },
+      deltaDisplay: { x: 720, y: 330 },
+    },
     displayDsl: `circuit PaddleMovement {
   clock clk
   impl {
@@ -271,6 +316,20 @@ circuit PaddleMovement {
     name: "6-Phase Rendering Pipeline",
     description:
       "A counter cycles 0-5, orchestrating: clear old ball, clear old left paddle, clear old right paddle, draw new ball, draw new left paddle, draw new right paddle.",
+    nodePositions: {
+      enable: { x: 0, y: 100 },
+      one: { x: 0, y: 250 },
+      zero: { x: 200, y: 350 },
+      six: { x: 200, y: 250 },
+      phase: { x: 200, y: 100 },
+      phaseInc: { x: 370, y: 100 },
+      atSix: { x: 370, y: 250 },
+      nextPhase: { x: 530, y: 180 },
+      display: { x: 700, y: 100 },
+      two: { x: 370, y: 400 },
+      isDrawPhase: { x: 530, y: 400 },
+      drawLed: { x: 700, y: 400 },
+    },
     displayDsl: `circuit PhaseCounter6 {
   clock clk
   impl {
@@ -302,13 +361,13 @@ circuit PaddleMovement {
     node display: HexDisplay
     connect phase.q -> display.in
 
-    node three: Constant(value=3)
+    node two: Constant(value=2)
     node isDrawPhase: Comparator
     connect phase.q -> isDrawPhase.a
-    connect three.out -> isDrawPhase.b
+    connect two.out -> isDrawPhase.b
 
     node drawLed: Led
-    connect isDrawPhase.gte -> drawLed.in
+    connect isDrawPhase.gt -> drawLed.in
   }
 }`,
     dsl: `
@@ -343,13 +402,13 @@ circuit PhaseCounter6 {
     node display: HexDisplay
     connect phase.q -> display.in
 
-    node three: Constant(value=3)
+    node two: Constant(value=2)
     node isDrawPhase: Comparator
     connect phase.q -> isDrawPhase.a
-    connect three.out -> isDrawPhase.b
+    connect two.out -> isDrawPhase.b
 
     node drawLed: Led
-    connect isDrawPhase.gte -> drawLed.in
+    connect isDrawPhase.gt -> drawLed.in
   }
 }`,
   },
@@ -358,6 +417,14 @@ circuit PhaseCounter6 {
     name: "Pixel Address Calculation",
     description:
       "Converts (X, Y) coordinates to a linear framebuffer address using (Y << 3) + X. In real hardware a left shift by 3 is just wiring — each bit of Y connects to a position 3 places higher — so the only real gate is the final adder.",
+    nodePositions: {
+      x: { x: 0, y: 120 },
+      y: { x: 0, y: 0 },
+      three: { x: 0, y: 240 },
+      y8: { x: 220, y: 60 },
+      addr: { x: 420, y: 90 },
+      result: { x: 600, y: 90 },
+    },
     displayDsl: `circuit PixelAddress {
   impl {
     node x: Input(value=3)

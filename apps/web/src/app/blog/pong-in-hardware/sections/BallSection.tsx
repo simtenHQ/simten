@@ -33,6 +33,7 @@ export function BallSection() {
           height={280}
           showControls={true}
           displayDsl={circuit.displayDsl}
+          nodePositions={circuit.nodePositions}
           title={circuit.name}
           description={circuit.description}
         />

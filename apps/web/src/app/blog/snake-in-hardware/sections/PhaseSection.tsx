@@ -41,6 +41,7 @@ export function PhaseSection() {
         <CircuitEmbed
           dsl={SNAKE_CIRCUITS.phaseDemo.dsl}
           displayDsl={SNAKE_CIRCUITS.phaseDemo.displayDsl}
+          nodePositions={SNAKE_CIRCUITS.phaseDemo.nodePositions}
           height={350}
           showControls
           autoRunSpeed={400}
