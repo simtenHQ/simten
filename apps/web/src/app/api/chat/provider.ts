@@ -64,12 +64,17 @@ export interface Message {
 // Provider interface
 // ============================================================================
 
+export interface StreamCallbacks {
+  onText: (text: string) => void | Promise<void>;
+}
+
 export interface AIProvider {
   createCompletion(params: {
     system: string;
     messages: Message[];
     tools: ToolDef[];
     maxTokens: number;
+    stream?: StreamCallbacks;
   }): Promise<CompletionResult>;
 }
 
@@ -81,19 +86,17 @@ function createAnthropicProvider(apiKey: string, model: string): AIProvider {
   const client = new Anthropic({ apiKey });
 
   return {
-    async createCompletion({ system, messages, tools, maxTokens }) {
+    async createCompletion({ system, messages, tools, maxTokens, stream: streamCb }) {
       const anthropicMessages: Anthropic.MessageParam[] = messages.map((m) => {
         if (typeof m.content === 'string') {
           return { role: m.role, content: m.content };
         }
-        // Content blocks (assistant with tool_use) or tool results (user)
         return {
           role: m.role,
           content: m.content as Anthropic.ContentBlockParam[],
         };
       });
 
-      // Add cache_control to the last tool so the system prompt + all tools get cached
       const anthropicTools: Anthropic.Tool[] = tools.map((t, i) => ({
         name: t.name,
         description: t.description,
@@ -101,7 +104,7 @@ function createAnthropicProvider(apiKey: string, model: string): AIProvider {
         ...(i === tools.length - 1 ? { cache_control: { type: 'ephemeral' as const } } : {}),
       }));
 
-      const response = await client.messages.create({
+      const createParams = {
         model,
         max_tokens: maxTokens,
         system: [
@@ -113,7 +116,82 @@ function createAnthropicProvider(apiKey: string, model: string): AIProvider {
         ],
         messages: anthropicMessages,
         tools: anthropicTools,
-      });
+      };
+
+      // Use streaming when callbacks provided
+      if (streamCb) {
+        const content: ContentBlock[] = [];
+        let currentTextBlock = '';
+        let currentToolId = '';
+        let currentToolName = '';
+        let currentToolInput = '';
+
+        const stream = client.messages.stream(createParams);
+
+        for await (const event of stream) {
+          if (event.type === 'content_block_start') {
+            if (event.content_block.type === 'text') {
+              currentTextBlock = '';
+            } else if (event.content_block.type === 'tool_use') {
+              currentToolId = event.content_block.id;
+              currentToolName = event.content_block.name;
+              currentToolInput = '';
+            }
+          } else if (event.type === 'content_block_delta') {
+            if (event.delta.type === 'text_delta') {
+              currentTextBlock += event.delta.text;
+              await streamCb.onText(event.delta.text);
+            } else if (event.delta.type === 'input_json_delta') {
+              currentToolInput += event.delta.partial_json;
+            }
+          } else if (event.type === 'content_block_stop') {
+            if (currentTextBlock) {
+              content.push({ type: 'text', text: currentTextBlock });
+              currentTextBlock = '';
+            }
+            if (currentToolName) {
+              let input: Record<string, unknown> = {};
+              try {
+                input = currentToolInput ? JSON.parse(currentToolInput) : {};
+              } catch { /* empty */ }
+              content.push({
+                type: 'tool_use',
+                id: currentToolId,
+                name: currentToolName,
+                input,
+              });
+              currentToolName = '';
+              currentToolInput = '';
+              currentToolId = '';
+            }
+          }
+        }
+
+        const finalMessage = await stream.finalMessage();
+        const stopReason =
+          finalMessage.stop_reason === 'end_turn' ? 'end_turn'
+          : finalMessage.stop_reason === 'tool_use' ? 'tool_use'
+          : 'other';
+
+        const usage = finalMessage.usage as typeof finalMessage.usage & {
+          cache_read_input_tokens?: number;
+          cache_creation_input_tokens?: number;
+        };
+
+        return {
+          content,
+          stopReason,
+          usage: {
+            inputTokens: usage.input_tokens,
+            outputTokens: usage.output_tokens,
+            cacheReadTokens: usage.cache_read_input_tokens,
+            cacheCreationTokens: usage.cache_creation_input_tokens,
+          },
+        };
+      }
+
+      // Non-streaming path (unchanged)
+      const response = await client.messages.create(createParams);
 
       const content: ContentBlock[] = [];
       for (const block of response.content) {
@@ -127,15 +205,12 @@ function createAnthropicProvider(apiKey: string, model: string): AIProvider {
             input: block.input as Record<string, unknown>,
           });
         }
-        // Skip thinking blocks
       }
 
       const stopReason =
-        response.stop_reason === 'end_turn'
-          ? 'end_turn'
-          : response.stop_reason === 'tool_use'
-            ? 'tool_use'
-            : 'other';
+        response.stop_reason === 'end_turn' ? 'end_turn'
+        : response.stop_reason === 'tool_use' ? 'tool_use'
+        : 'other';
 
       const usage = response.usage as typeof response.usage & {
         cache_read_input_tokens?: number;
@@ -171,7 +246,7 @@ function createOpenAIProvider(
   });
 
   return {
-    async createCompletion({ system, messages, tools, maxTokens }) {
+    async createCompletion({ system, messages, tools, maxTokens, stream: streamCb }) {
       // Convert messages to OpenAI format
       const openaiMessages: OpenAI.ChatCompletionMessageParam[] = [
         { role: 'system', content: system },
@@ -226,12 +301,79 @@ function createOpenAIProvider(
         },
       }));
 
-      const response = await client.chat.completions.create({
+      const createParams = {
         model,
         max_tokens: maxTokens,
         messages: openaiMessages,
         tools: openaiTools.length > 0 ? openaiTools : undefined,
-      });
+      };
+
+      // Streaming path
+      if (streamCb) {
+        const content: ContentBlock[] = [];
+        let currentText = '';
+        const toolCalls = new Map<number, { id: string; name: string; args: string }>();
+
+        const stream = await client.chat.completions.create({
+          ...createParams,
+          stream: true,
+        });
+
+        for await (const chunk of stream) {
+          const delta = chunk.choices[0]?.delta;
+          if (!delta) continue;
+
+          if (delta.content) {
+            currentText += delta.content;
+            await streamCb.onText(delta.content);
+          }
+
+          if (delta.tool_calls) {
+            for (const tc of delta.tool_calls) {
+              const existing = toolCalls.get(tc.index);
+              if (!existing) {
+                toolCalls.set(tc.index, {
+                  id: tc.id || '',
+                  name: tc.function?.name || '',
+                  args: tc.function?.arguments || '',
+                });
+              } else {
+                if (tc.id) existing.id = tc.id;
+                if (tc.function?.name) existing.name += tc.function.name;
+                if (tc.function?.arguments) existing.args += tc.function.arguments;
+              }
+            }
+          }
+        }
+
+        if (currentText) {
+          content.push({ type: 'text', text: currentText });
+        }
+
+        for (const [, tc] of toolCalls) {
+          content.push({
+            type: 'tool_use',
+            id: tc.id,
+            name: tc.name,
+            input: tc.args ? JSON.parse(tc.args) : {},
+          });
+        }
+
+        const hasToolCalls = toolCalls.size > 0;
+        const stopReason = hasToolCalls ? 'tool_use' : 'end_turn';
+
+        return {
+          content,
+          stopReason: stopReason as CompletionResult['stopReason'],
+          usage: {
+            inputTokens: 0,
+            outputTokens: 0,
+          },
+        };
+      }
+
+      // Non-streaming path
+      const response = await client.chat.completions.create(createParams);
 
       const choice = response.choices[0];
       if (!choice) throw new Error('No response from model');

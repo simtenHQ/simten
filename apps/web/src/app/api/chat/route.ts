@@ -13,6 +13,9 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { buildSystemPrompt } from './system-prompt';
+
+// Edge runtime streams without buffering
+export const runtime = 'edge';
 import { executeTool } from './tool-executor';
 import {
   resolveProvider,
@@ -265,10 +268,9 @@ export async function POST(request: NextRequest) {
 
     const systemPrompt = buildSystemPrompt(dslCode || '', compactContext || '');
 
-    // Create streaming response
+    const encoder = new TextEncoder();
     const stream = new ReadableStream({
       async start(controller) {
-        const encoder = new TextEncoder();
         const deferredActions: Record<string, unknown>[] = [];
         let finalMessage = '';
         let totalInputTokens = 0;
@@ -281,11 +283,26 @@ export async function POST(request: NextRequest) {
           while (iterations < MAX_TOOL_ITERATIONS) {
             iterations++;
 
+            let streamedText = '';
+
             const response = await provider.createCompletion({
               system: systemPrompt,
               messages: currentMessages,
               tools: allTools,
               maxTokens: 4096,
+              stream: {
+                onText: async (delta) => {
+                  streamedText += delta;
+                  finalMessage = streamedText;
+                  controller.enqueue(
+                    encoder.encode(
+                      encodeChunk({ type: 'message', content: streamedText })
+                    )
+                  );
+                  // Yield to event loop so the stream flushes to the client
+                  await new Promise(resolve => setTimeout(resolve, 0));
+                },
+              },
             });
 
             totalInputTokens += response.usage.inputTokens;
@@ -298,11 +315,6 @@ export async function POST(request: NextRequest) {
             for (const block of response.content) {
               if (block.type === 'text') {
                 finalMessage = block.text;
-                controller.enqueue(
-                  encoder.encode(
-                    encodeChunk({ type: 'message', content: block.text })
-                  )
-                );
                 assistantContent.push(block);
               } else if (block.type === 'tool_use') {
                 hasToolUse = true;
@@ -390,9 +402,9 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    return new Response(stream, {
+    return new NextResponse(stream, {
       headers: {
-        'Content-Type': 'application/x-ndjson',
+        'Content-Type': 'text/event-stream',
         'Cache-Control': 'no-cache',
         Connection: 'keep-alive',
       },
