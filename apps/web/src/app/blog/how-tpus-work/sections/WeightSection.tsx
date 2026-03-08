@@ -37,6 +37,7 @@ export function WeightSection() {
         <CircuitEmbed
           dsl={TPU_CIRCUITS.weightLoader.dsl}
           displayDsl={TPU_CIRCUITS.weightLoader.displayDsl}
+          nodePositions={TPU_CIRCUITS.weightLoader.nodePositions}
           height={350}
           showControls
           autoRunSpeed={400}

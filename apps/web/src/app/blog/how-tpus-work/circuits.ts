@@ -10,6 +10,7 @@ export interface BlogCircuit {
   description: string;
   displayDsl: string;
   dsl: string;
+  nodePositions?: Record<string, { x: number; y: number }>;
 }
 
 /** The PE definition reused across multiple circuits */
@@ -145,6 +146,21 @@ circuit SimpleMACUnit {
     connect accum.q -> display.in
   }
 }`,
+    nodePositions: {
+      // Inputs (left)
+      a:           { x: 0,   y: 0 },
+      b:           { x: 0,   y: 120 },
+      resetSwitch: { x: 0,   y: 250 },
+      // Processing (center)
+      mult:        { x: 220, y: 40 },
+      zero:        { x: 220, y: 180 },
+      one:         { x: 220, y: 280 },
+      adder:       { x: 420, y: 40 },
+      accumMux:    { x: 420, y: 200 },
+      accum:       { x: 620, y: 120 },
+      // Output (right)
+      display:     { x: 820, y: 100 },
+    },
   },
 
   weightLoader: {
@@ -200,6 +216,18 @@ circuit WeightLoader {
     connect pipeReg.q -> passThrough.in
   }
 }`,
+    nodePositions: {
+      // Inputs (left)
+      weightIn:     { x: 0,   y: 40 },
+      weightValid:  { x: 0,   y: 180 },
+      // Registers (center)
+      weightReg:    { x: 250, y: 0 },
+      one:          { x: 250, y: 240 },
+      pipeReg:      { x: 250, y: 140 },
+      // Outputs (right)
+      storedWeight: { x: 480, y: 0 },
+      passThrough:  { x: 480, y: 140 },
+    },
   },
 
   processingElement: {
@@ -257,6 +285,19 @@ circuit TestPE {
     connect pe.dataOut -> dataOutDisplay.in
   }
 }`,
+    nodePositions: {
+      // Inputs (left)
+      dataIn:        { x: 0,   y: 0 },
+      weightIn:      { x: 0,   y: 120 },
+      weightValid:   { x: 0,   y: 240 },
+      resetAccum:    { x: 0,   y: 350 },
+      zero16:        { x: 200, y: 350 },
+      // PE (center)
+      pe:            { x: 280, y: 100 },
+      // Outputs (right)
+      resultDisplay:  { x: 520, y: 40 },
+      dataOutDisplay: { x: 520, y: 200 },
+    },
   },
 
   twoPERow: {
@@ -334,6 +375,22 @@ circuit TwoPERow {
     connect pe1.result -> result1.in
   }
 }`,
+    nodePositions: {
+      // Inputs (left)
+      data0:   { x: 0,   y: 0 },
+      weight0: { x: 0,   y: 120 },
+      weight1: { x: 0,   y: 240 },
+      valid0:  { x: 0,   y: 350 },
+      valid1:  { x: 0,   y: 450 },
+      reset:   { x: 0,   y: 550 },
+      zero16:  { x: 200, y: 550 },
+      // PEs (center)
+      pe0:     { x: 280, y: 80 },
+      pe1:     { x: 520, y: 80 },
+      // Outputs (right)
+      result0: { x: 760, y: 20 },
+      result1: { x: 760, y: 200 },
+    },
   },
 
   twoPEColumn: {
@@ -415,6 +472,22 @@ circuit TwoPEColumn {
     connect pe0.weightValidOut -> validLed.in
   }
 }`,
+    nodePositions: {
+      // Inputs (left)
+      dataTop:     { x: 0,   y: 0 },
+      dataBot:     { x: 0,   y: 280 },
+      weightIn:    { x: 0,   y: 140 },
+      weightValid: { x: 0,   y: 400 },
+      reset:       { x: 0,   y: 500 },
+      zero16:      { x: 200, y: 500 },
+      // PEs (center, stacked vertically)
+      pe0:         { x: 300, y: 20 },
+      pe1:         { x: 300, y: 280 },
+      // Outputs (right)
+      result0:     { x: 560, y: 20 },
+      result1:     { x: 560, y: 280 },
+      validLed:    { x: 560, y: 180 },
+    },
   },
 
   wavefrontController: {
@@ -522,6 +595,32 @@ circuit WavefrontController {
     connect phase.q -> display.in
   }
 }`,
+    nodePositions: {
+      // Control (left)
+      enable:   { x: 0,   y: 100 },
+      // Phase register + increment (center-left)
+      phase:    { x: 200, y: 100 },
+      inc:      { x: 200, y: 0 },
+      phaseMux: { x: 200, y: 230 },
+      one:      { x: 60,  y: 230 },
+      // Constants (center)
+      zero:     { x: 420, y: 0 },
+      const1:   { x: 420, y: 80 },
+      const2:   { x: 420, y: 160 },
+      const3:   { x: 420, y: 240 },
+      // Comparators (center-right)
+      isPhase0: { x: 580, y: 0 },
+      isPhase1: { x: 580, y: 80 },
+      isPhase2: { x: 580, y: 160 },
+      isPhase3: { x: 580, y: 240 },
+      // LEDs (right)
+      led0:     { x: 760, y: 0 },
+      led1:     { x: 760, y: 80 },
+      led2:     { x: 760, y: 160 },
+      led3:     { x: 760, y: 240 },
+      // Display (bottom-right)
+      display:  { x: 760, y: 340 },
+    },
   },
 };
 

@@ -43,6 +43,7 @@ export function DataFlowSection() {
         <CircuitEmbed
           dsl={TPU_CIRCUITS.twoPERow.dsl}
           displayDsl={TPU_CIRCUITS.twoPERow.displayDsl}
+          nodePositions={TPU_CIRCUITS.twoPERow.nodePositions}
           height={400}
           showControls
           autoRunSpeed={400}

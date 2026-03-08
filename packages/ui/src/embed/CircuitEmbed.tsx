@@ -17,6 +17,8 @@ interface CircuitEmbedProps {
   description?: string;
   /** Show only specific nodes at full opacity; others are dimmed. Simulation still runs on the full circuit. */
   focus?: string | string[];
+  /** Hand-tuned node positions by label. Disables ELK auto-layout when provided. */
+  nodePositions?: Record<string, { x: number; y: number }>;
 }
 
 /**
@@ -34,6 +36,7 @@ export function CircuitEmbed({
   title,
   description,
   focus,
+  nodePositions,
 }: CircuitEmbedProps) {
   const options: UseCircuitSimulatorOptions | undefined = initialMemory
     ? { initialMemory }
@@ -107,6 +110,7 @@ export function CircuitEmbed({
         onSetNodeValue={sim.setNodeValue}
         height={height}
         focus={focus}
+        {...(nodePositions ? { nodePositions, autoLayout: false } : {})}
       />
 
       {/* Controls bar */}

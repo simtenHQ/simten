@@ -37,6 +37,7 @@ export function AddressingSection() {
         <CircuitEmbed
           dsl={SNAKE_CIRCUITS.coordToPixel.dsl}
           displayDsl={SNAKE_CIRCUITS.coordToPixel.displayDsl}
+          nodePositions={SNAKE_CIRCUITS.coordToPixel.nodePositions}
           height={350}
           showControls
           title="Coordinate to Pixel Address"

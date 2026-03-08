@@ -39,6 +39,7 @@ export function PESection() {
         <CircuitEmbed
           dsl={TPU_CIRCUITS.processingElement.dsl}
           displayDsl={TPU_CIRCUITS.processingElement.displayDsl}
+          nodePositions={TPU_CIRCUITS.processingElement.nodePositions}
           height={400}
           showControls
           autoRunSpeed={400}

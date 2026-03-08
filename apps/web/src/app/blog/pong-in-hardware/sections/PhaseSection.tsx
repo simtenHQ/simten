@@ -34,6 +34,7 @@ export function PhaseSection() {
           height={260}
           showControls={true}
           displayDsl={circuit.displayDsl}
+          nodePositions={circuit.nodePositions}
           title={circuit.name}
           description={circuit.description}
         />
