@@ -1,6 +1,5 @@
 "use client";
 
-import { motion } from "framer-motion";
 import { useCircuitSimulator } from "@turing-incomplete/ui/embed";
 import { CircuitCanvas } from "@turing-incomplete/ui/shared";
 import type { SectionDef } from "./sections";
@@ -11,59 +10,47 @@ interface CircuitSectionProps {
   isLast: boolean;
 }
 
-export function CircuitSection({ section, index }: CircuitSectionProps) {
+export function CircuitSection({ section }: CircuitSectionProps) {
   const isLeft = section.align === "left";
   const sim = useCircuitSimulator(section.dsl);
 
   return (
-    <section className="min-h-screen flex items-center relative px-6 py-20">
+    <section className="px-6 py-16">
       <div className="max-w-6xl mx-auto w-full">
         <div
           className={`flex flex-col ${
             isLeft ? "lg:flex-row" : "lg:flex-row-reverse"
-          } items-center gap-12 lg:gap-16`}
+          } items-center gap-10 lg:gap-16`}
         >
-          {/* Text content */}
-          <motion.div
-            className="flex-1 max-w-xl"
-            initial={{ opacity: 0, x: isLeft ? -30 : 30 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true, margin: "-100px" }}
-            transition={{ duration: 0.6, delay: 0.1 }}
-          >
-            <div className="text-green-400 text-sm font-medium mb-2 tracking-wide uppercase">
+          {/* Text */}
+          <div className="flex-1 max-w-xl">
+            <div className="text-gray-500 text-xs font-medium mb-1.5 tracking-wide uppercase">
               {section.subtitle}
             </div>
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">
+            <h2 className="text-2xl md:text-3xl font-bold mb-3 tracking-tight">
               {section.title}
             </h2>
-            <p className="text-lg text-gray-400 leading-relaxed">
+            <p className="text-base text-gray-400 leading-relaxed">
               {section.description}
             </p>
-          </motion.div>
+          </div>
 
           {/* Circuit */}
-          <motion.div
-            className="flex-1 w-full max-w-lg"
-            initial={{ opacity: 0, x: isLeft ? 30 : -30 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true, margin: "-100px" }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-          >
-            <div className="bg-gray-900/80 backdrop-blur rounded-2xl border border-gray-800 p-4 shadow-2xl">
+          <div className="flex-1 w-full max-w-lg">
+            <div className="bg-gray-900/60 rounded-xl border border-gray-800 p-4">
               {section.hint && (
                 <div className="text-xs text-gray-500 mb-3 text-center">
                   {section.hint}
                 </div>
               )}
-              <div className="h-[280px] md:h-[320px]">
+              <div className="h-[260px] md:h-[300px]">
                 {sim.error ? (
                   <div className="h-full flex items-center justify-center text-red-400 text-sm p-4 text-center">
                     {sim.error}
                   </div>
                 ) : !sim.ready ? (
-                  <div className="h-full flex items-center justify-center text-gray-500">
-                    Loading...
+                  <div className="h-full flex items-center justify-center text-gray-600 text-sm">
+                    Compiling...
                   </div>
                 ) : (
                   <CircuitCanvas
@@ -75,7 +62,6 @@ export function CircuitSection({ section, index }: CircuitSectionProps) {
                   />
                 )}
               </div>
-              {/* Clock controls for sequential circuits */}
               {sim.ready && sim.isSequential && (
                 <div className="flex items-center gap-2 mt-2 pt-2 border-t border-gray-800">
                   <button
@@ -90,20 +76,13 @@ export function CircuitSection({ section, index }: CircuitSectionProps) {
                   >
                     Reset
                   </button>
-                  <span className="text-gray-500 text-xs ml-auto">
+                  <span className="text-gray-600 text-xs ml-auto font-mono tabular-nums">
                     #{sim.cycleCount}
                   </span>
                 </div>
               )}
             </div>
-          </motion.div>
-        </div>
-      </div>
-
-      {/* Section number indicator */}
-      <div className="absolute left-6 top-1/2 -translate-y-1/2 hidden xl:block">
-        <div className="text-gray-800 text-8xl font-bold">
-          {String(index + 1).padStart(2, "0")}
+          </div>
         </div>
       </div>
     </section>

@@ -45,11 +45,11 @@ circuit NandDemo {
     dsl: `
 circuit NotDemo {
   impl {
-    node input: Switch
+    node sw_in: Switch
     node gate: Nand
     node out: Led
-    connect input.out -> gate.a
-    connect input.out -> gate.b
+    connect sw_in.out -> gate.a
+    connect sw_in.out -> gate.b
     connect gate.out -> out.in
   }
 }`,
@@ -217,11 +217,11 @@ circuit FullAdderDemo {
 circuit MemoryDemo {
   clock clk
   impl {
-    node input: Switch
+    node sw_in: Switch
     node dff: DFlipFlop
     node stored: Led
     connect clk -> dff.clk
-    connect input.out -> dff.d
+    connect sw_in.out -> dff.d
     connect dff.q -> stored.in
   }
 }`,
