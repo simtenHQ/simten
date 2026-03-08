@@ -39,6 +39,7 @@ export function MovementSection() {
         <CircuitEmbed
           dsl={SNAKE_CIRCUITS.pixelMover.dsl}
           displayDsl={SNAKE_CIRCUITS.pixelMover.displayDsl}
+          nodePositions={SNAKE_CIRCUITS.pixelMover.nodePositions}
           height={400}
           showControls
           title="Pixel Mover"

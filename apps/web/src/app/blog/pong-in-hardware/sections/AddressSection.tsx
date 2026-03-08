@@ -35,6 +35,7 @@ export function AddressSection() {
           height={240}
           showControls={false}
           displayDsl={circuit.displayDsl}
+          nodePositions={circuit.nodePositions}
           title={circuit.name}
           description={circuit.description}
         />

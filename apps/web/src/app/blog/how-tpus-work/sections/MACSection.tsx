@@ -38,6 +38,7 @@ export function MACSection() {
         <CircuitEmbed
           dsl={TPU_CIRCUITS.simpleMACUnit.dsl}
           displayDsl={TPU_CIRCUITS.simpleMACUnit.displayDsl}
+          nodePositions={TPU_CIRCUITS.simpleMACUnit.nodePositions}
           height={350}
           showControls
           autoRunSpeed={400}

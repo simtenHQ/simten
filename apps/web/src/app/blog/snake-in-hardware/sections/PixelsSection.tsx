@@ -38,6 +38,7 @@ export function PixelsSection() {
         <CircuitEmbed
           dsl={SNAKE_CIRCUITS.simpleFramebuffer.dsl}
           displayDsl={SNAKE_CIRCUITS.simpleFramebuffer.displayDsl}
+          nodePositions={SNAKE_CIRCUITS.simpleFramebuffer.nodePositions}
           height={350}
           showControls
           title="Simple Framebuffer"

@@ -33,6 +33,7 @@ export function PaddleSection() {
           height={300}
           showControls={true}
           displayDsl={circuit.displayDsl}
+          nodePositions={circuit.nodePositions}
           title={circuit.name}
           description={circuit.description}
         />

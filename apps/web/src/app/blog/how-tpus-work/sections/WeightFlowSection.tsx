@@ -41,6 +41,7 @@ export function WeightFlowSection() {
         <CircuitEmbed
           dsl={TPU_CIRCUITS.twoPEColumn.dsl}
           displayDsl={TPU_CIRCUITS.twoPEColumn.displayDsl}
+          nodePositions={TPU_CIRCUITS.twoPEColumn.nodePositions}
           height={400}
           showControls
           autoRunSpeed={400}
