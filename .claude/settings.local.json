@@ -28,7 +28,11 @@
       "Bash(npx tsx -e \":*)",
       "Bash(npx vitest run --reporter=verbose)",
       "mcp__turing-incomplete__show_traces",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(ls:*)",
+      "WebFetch(domain:tscircuit.com)",
+      "WebFetch(domain:docs.tscircuit.com)",
+      "WebFetch(domain:www.calfus.com)"
     ]
   }
 }
