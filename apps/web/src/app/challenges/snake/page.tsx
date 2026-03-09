@@ -1,17 +1,50 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { SNAKE_STAGES } from "./steps";
 import { ChallengeWorkbench } from "../components/ChallengeWorkbench";
 
+const STORAGE_KEY = "ti:snake:completed";
+
 export default function SnakeChallengePage() {
   const [currentStage, setCurrentStage] = useState(0);
+  const [completedStages, setCompletedStages] = useState<Set<string>>(new Set());
   const stage = SNAKE_STAGES[currentStage];
+
+  // Hydrate from localStorage after mount
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) setCompletedStages(new Set(JSON.parse(saved)));
+    } catch { /* ignore */ }
+  }, []);
+
+  // Persist completed stages
+  useEffect(() => {
+    try {
+      if (completedStages.size > 0) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify([...completedStages]));
+      }
+    } catch { /* ignore */ }
+  }, [completedStages]);
 
   const handleNavigate = useCallback((stageId: string) => {
     const index = SNAKE_STAGES.findIndex((s) => s.id === stageId);
     if (index >= 0) setCurrentStage(index);
   }, []);
+
+  const handleStageComplete = useCallback((stageId: string) => {
+    setCompletedStages((prev) => {
+      if (prev.has(stageId)) return prev;
+      const next = new Set(prev);
+      next.add(stageId);
+      return next;
+    });
+  }, []);
+
+  const nextStageId = currentStage < SNAKE_STAGES.length - 1
+    ? SNAKE_STAGES[currentStage + 1].id
+    : null;
 
   return (
     <div className="min-h-screen bg-gray-950 text-gray-100">
@@ -45,10 +78,14 @@ export default function SnakeChallengePage() {
               className={`px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
                 i === currentStage
                   ? "bg-blue-600 text-white"
+                  : completedStages.has(s.id)
+                  ? "bg-green-900/30 text-green-400 hover:bg-green-900/50"
                   : "bg-gray-800 text-gray-400 hover:text-gray-200 hover:bg-gray-700"
               }`}
             >
-              <span className="text-xs opacity-60 mr-1.5">{i + 1}</span>
+              <span className="text-xs opacity-60 mr-1.5">
+                {completedStages.has(s.id) ? "✓" : i + 1}
+              </span>
               {s.title}
             </button>
           ))}
@@ -65,7 +102,13 @@ export default function SnakeChallengePage() {
             </p>
           </div>
 
-          <ChallengeWorkbench stage={stage} challengeId="snake" onNavigate={handleNavigate} />
+          <ChallengeWorkbench
+            stage={stage}
+            challengeId="snake"
+            onNavigate={handleNavigate}
+            nextStageId={nextStageId}
+            onStageComplete={handleStageComplete}
+          />
 
           {/* Stage navigation footer */}
           <div className="flex justify-between pt-8 border-t border-gray-800">

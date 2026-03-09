@@ -66,14 +66,26 @@ export const SNAKE_STAGES: ChallengeStage[] = [
       {
         description: "Writing to address 9 stores the value",
         node: "ram",
-        port: "outB",
+        port: "outA",
         expected: 1,
         inputs: [
           ["we", 1],
           ["addr", 9],
           ["data_in", 1],
         ],
-        ticks: 1,
+        ticks: 2,
+      },
+      {
+        description: "Screen reads data from RAM port B",
+        node: "ram",
+        port: "outB",
+        expected: 42,
+        inputs: [
+          ["we", 1],
+          ["addr", 0],
+          ["data_in", 42],
+        ],
+        ticks: 2,
       },
     ],
   },
