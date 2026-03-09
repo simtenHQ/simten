@@ -1,8 +1,6 @@
 import { NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
 
-export const runtime = 'edge';
-
 export async function GET() {
   const encoder = new TextEncoder();
   const apiKey = process.env.ANTHROPIC_API_KEY;
