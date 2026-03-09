@@ -7,7 +7,15 @@ import { useChallengeSync } from "../useChallengeSync";
 import { McpStatusBadge } from "@/features/mcp/McpStatusBadge";
 
 export function ChallengeWorkbench({ stage, challengeId, onNavigate }: { stage: ChallengeStage; challengeId: string; onNavigate: (stageId: string) => void }) {
-  const [steps, setSteps] = useState<string[]>([]);
+  const storageKey = `ti:${challengeId}:${stage.id}`;
+
+  const [steps, setSteps] = useState<string[]>(() => {
+    if (typeof window === "undefined") return [];
+    try {
+      const saved = localStorage.getItem(storageKey);
+      return saved ? JSON.parse(saved) : [];
+    } catch { return []; }
+  });
   const [inputValue, setInputValue] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [showHint, setShowHint] = useState(-1);
@@ -19,16 +27,30 @@ export function ChallengeWorkbench({ stage, challengeId, onNavigate }: { stage: 
   } | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  // Persist steps to localStorage
+  useEffect(() => {
+    try {
+      if (steps.length > 0) {
+        localStorage.setItem(storageKey, JSON.stringify(steps));
+      } else {
+        localStorage.removeItem(storageKey);
+      }
+    } catch { /* quota exceeded, etc */ }
+  }, [steps, storageKey]);
+
   // Reset state when stage changes
   useEffect(() => {
-    setSteps([]);
+    try {
+      const saved = localStorage.getItem(storageKey);
+      setSteps(saved ? JSON.parse(saved) : []);
+    } catch { setSteps([]); }
     setInputValue("");
     setError(null);
     setShowHint(-1);
     setShowSolution(false);
     setPortClickState(null);
     setJustAdded(false);
-  }, [stage.id]);
+  }, [stage.id, storageKey]);
 
   // Build full DSL from scaffold + user steps
   const fullDsl = buildDsl(stage.scaffold, steps);
@@ -38,14 +60,7 @@ export function ChallengeWorkbench({ stage, challengeId, onNavigate }: { stage: 
     setSteps((prev) => prev.includes(step) ? prev : [...prev, step]);
   }, []);
 
-  const handleRestore = useCallback((userSource: string) => {
-    const restored = extractSteps(stage.scaffold, userSource);
-    if (restored.length > 0) {
-      setSteps(restored);
-    }
-  }, [stage.scaffold]);
-
-  const mcpStatus = useChallengeSync(challengeId, stage.id, fullDsl, onNavigate, handleAddStep, handleRestore);
+  const mcpStatus = useChallengeSync(challengeId, stage.id, fullDsl, onNavigate, handleAddStep);
 
   // Count expected steps from solution
   const solutionStepCount = countSteps(stage.solution);
@@ -384,11 +399,3 @@ function countSteps(dsl: string): number {
   return dsl.split("\n").filter((l) => l.trim().startsWith("connect ")).length;
 }
 
-/** Extract user-added lines by diffing userSource against scaffold */
-function extractSteps(scaffold: string, userSource: string): string[] {
-  const scaffoldLines = new Set(scaffold.split("\n").map((l) => l.trim()).filter(Boolean));
-  return userSource
-    .split("\n")
-    .map((l) => l.trim())
-    .filter((l) => l && !scaffoldLines.has(l));
-}
