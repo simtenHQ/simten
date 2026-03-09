@@ -10,6 +10,7 @@ import { z } from 'zod';
 import { exec } from 'node:child_process';
 import { resolve } from 'node:path';
 import { readDSLSource } from '../lib/file-reader.js';
+import { TI_URL } from '../lib/config.js';
 import { checkCircuit, getLibrary } from '@turing-incomplete/core/api';
 import { generateHarnessAppended } from '@turing-incomplete/core/dsl';
 import {
@@ -124,7 +125,7 @@ export function registerShowTools(server: McpServer): void {
         };
       }
 
-      const tiUrl = process.env.TI_URL ?? 'http://localhost:3001';
+      const tiUrl = TI_URL;
       const studioUrl = `${tiUrl}/studio?port=${preview.port}`;
 
       // 5. Push DSL (with harness) to all connected clients

@@ -2,6 +2,7 @@ import { createServer, type IncomingMessage, type ServerResponse } from 'node:ht
 import { watchFile as fsWatchFile, unwatchFile, existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import type { CircuitState, ChallengeState, TracesPayload, TestResultsPayload } from './types.js';
+import { TI_URL } from '../lib/config.js';
 
 export type { CircuitState, ChallengeState, TracesPayload, TestResultsPayload };
 
@@ -11,8 +12,8 @@ export interface PreviewServer {
   watchFile(filePath: string): void;
   getState(): CircuitState | null;
   getChallengeState(): ChallengeState | null;
-  navigateChallenge(stepId: string): void;
-  addChallengeConnection(connection: string): void;
+  navigateChallenge(challengeId: string, stageId: string): void;
+  addChallengeStep(challengeId: string, stageId: string, step: string): void;
   pushTraces(data: TracesPayload): void;
   pushTestResults(data: TestResultsPayload): void;
   close(): void;
@@ -22,7 +23,7 @@ export async function createPreviewServer(
   options?: { port?: number }
 ): Promise<PreviewServer> {
   const port = options?.port ?? 0;
-  const allowedOrigin = process.env.TI_URL || '*';
+  const allowedOrigin = TI_URL;
 
   let currentDSL: string | null = null;
   let cachedState: CircuitState | null = null;
@@ -115,6 +116,7 @@ export async function createPreviewServer(
         'Cache-Control': 'no-cache',
         Connection: 'keep-alive',
       });
+      res.flushHeaders();
 
       // Send current state immediately so late-joining clients are caught up
       if (currentDSL) {
@@ -125,6 +127,9 @@ export async function createPreviewServer(
       }
       if (cachedTestResults) {
         res.write(`data: ${JSON.stringify({ type: 'test-results', data: cachedTestResults })}\n\n`);
+      }
+      if (cachedChallengeState) {
+        res.write(`data: ${JSON.stringify({ type: 'challenge-state', ...cachedChallengeState })}\n\n`);
       }
 
       sseClients.add(res);
@@ -214,12 +219,12 @@ export async function createPreviewServer(
     return cachedChallengeState;
   }
 
-  function navigateChallenge(stageId: string) {
-    broadcastSSE({ type: 'challenge-navigate', stageId });
+  function navigateChallenge(challengeId: string, stageId: string) {
+    broadcastSSE({ type: 'challenge-navigate', challengeId, stageId });
   }
 
-  function addChallengeConnection(connection: string) {
-    broadcastSSE({ type: 'challenge-add-connection', connection });
+  function addChallengeStep(challengeId: string, stageId: string, step: string) {
+    broadcastSSE({ type: 'challenge-add-step', challengeId, stageId, step });
   }
 
   function pushTraces(data: TracesPayload) {
@@ -239,7 +244,7 @@ export async function createPreviewServer(
     getState,
     getChallengeState,
     navigateChallenge,
-    addChallengeConnection,
+    addChallengeStep,
     pushTraces,
     pushTestResults,
     close,

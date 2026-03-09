@@ -14,8 +14,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { buildSystemPrompt } from './system-prompt';
 
-// Edge runtime streams without buffering
-export const runtime = 'edge';
 import { executeTool } from './tool-executor';
 import {
   resolveProvider,

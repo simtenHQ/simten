@@ -32,7 +32,8 @@ export async function getOrCreateServer(): Promise<PreviewServer> {
 
   const { createPreviewServer } = await import('../server/preview-server.js');
 
-  previewServer = await createPreviewServer();
+  const { DEFAULT_PORT } = await import('./config.js');
+  previewServer = await createPreviewServer({ port: DEFAULT_PORT });
   ensureCleanup();
 
   return previewServer;

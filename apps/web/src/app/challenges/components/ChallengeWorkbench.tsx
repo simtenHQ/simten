@@ -2,61 +2,69 @@
 
 import { useState, useCallback, useRef, useEffect } from "react";
 import { CircuitEmbed } from "@turing-incomplete/ui/embed";
-import type { ChallengeStage } from "../steps";
-import { useChallengeSync } from "../../useChallengeSync";
+import type { ChallengeStage } from "@turing-incomplete/challenges";
+import { useChallengeSync } from "../useChallengeSync";
+import { McpStatusBadge } from "@/features/mcp/McpStatusBadge";
 
 export function ChallengeWorkbench({ stage, challengeId, onNavigate }: { stage: ChallengeStage; challengeId: string; onNavigate: (stageId: string) => void }) {
-  const [connections, setConnections] = useState<string[]>([]);
+  const [steps, setSteps] = useState<string[]>([]);
   const [inputValue, setInputValue] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [showHint, setShowHint] = useState(-1);
   const [showSolution, setShowSolution] = useState(false);
-  const [justConnected, setJustConnected] = useState(false);
+  const [justAdded, setJustAdded] = useState(false);
   const [portClickState, setPortClickState] = useState<{
     nodeLabel: string;
     portName: string;
   } | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Reset state when step changes
+  // Reset state when stage changes
   useEffect(() => {
-    setConnections([]);
+    setSteps([]);
     setInputValue("");
     setError(null);
     setShowHint(-1);
     setShowSolution(false);
     setPortClickState(null);
-    setJustConnected(false);
+    setJustAdded(false);
   }, [stage.id]);
 
-  // Build full DSL from scaffold + user connections
-  const fullDsl = buildDsl(stage.scaffold, connections);
+  // Build full DSL from scaffold + user steps
+  const fullDsl = buildDsl(stage.scaffold, steps);
 
-  // Sync state to MCP preview server for check_challenge_progress
-  const handleAddConnection = useCallback((connection: string) => {
-    setConnections((prev) => prev.includes(connection) ? prev : [...prev, connection]);
+  // Sync state to MCP preview server
+  const handleAddStep = useCallback((step: string) => {
+    setSteps((prev) => prev.includes(step) ? prev : [...prev, step]);
   }, []);
-  useChallengeSync(challengeId, stage.id, fullDsl, onNavigate, handleAddConnection);
 
-  // Count connections
-  const solutionConnections = countConnections(stage.solution);
-  const isComplete = connections.length >= solutionConnections;
+  const handleRestore = useCallback((userSource: string) => {
+    const restored = extractSteps(stage.scaffold, userSource);
+    if (restored.length > 0) {
+      setSteps(restored);
+    }
+  }, [stage.scaffold]);
 
-  const addConnection = useCallback(
-    (conn: string) => {
-      if (connections.includes(conn)) {
-        setError("Already connected");
+  const mcpStatus = useChallengeSync(challengeId, stage.id, fullDsl, onNavigate, handleAddStep, handleRestore);
+
+  // Count expected steps from solution
+  const solutionStepCount = countSteps(stage.solution);
+  const isComplete = steps.length >= solutionStepCount;
+
+  const addStep = useCallback(
+    (step: string) => {
+      if (steps.includes(step)) {
+        setError("Already added");
         return;
       }
-      setConnections((prev) => [...prev, conn]);
+      setSteps((prev) => [...prev, step]);
       setInputValue("");
       setError(null);
       setPortClickState(null);
-      // Flash feedback
-      setJustConnected(true);
-      setTimeout(() => setJustConnected(false), 600);
+      setJustAdded(true);
+      setTimeout(() => setJustAdded(false), 600);
     },
-    [connections]
+    [steps]
   );
 
   const handleSubmit = useCallback(
@@ -73,9 +81,9 @@ export function ChallengeWorkbench({ stage, challengeId, onNavigate }: { stage: 
         return;
       }
 
-      addConnection(`connect ${match[1]} -> ${match[2]}`);
+      addStep(`connect ${match[1]} -> ${match[2]}`);
     },
-    [inputValue, addConnection]
+    [inputValue, addStep]
   );
 
   const handlePortClick = useCallback(
@@ -87,7 +95,7 @@ export function ChallengeWorkbench({ stage, challengeId, onNavigate }: { stage: 
         setInputValue(`connect ${qualified} -> `);
         inputRef.current?.focus();
       } else if (portType === "input" && portClickState) {
-        addConnection(
+        addStep(
           `connect ${portClickState.nodeLabel}.${portClickState.portName} -> ${qualified}`
         );
       } else if (portType === "output") {
@@ -101,16 +109,16 @@ export function ChallengeWorkbench({ stage, challengeId, onNavigate }: { stage: 
         });
       }
     },
-    [portClickState, addConnection]
+    [portClickState, addStep]
   );
 
   const handleUndo = useCallback(() => {
-    setConnections((prev) => prev.slice(0, -1));
+    setSteps((prev) => prev.slice(0, -1));
     setError(null);
   }, []);
 
   const handleReset = useCallback(() => {
-    setConnections([]);
+    setSteps([]);
     setInputValue("");
     setError(null);
     setPortClickState(null);
@@ -121,7 +129,7 @@ export function ChallengeWorkbench({ stage, challengeId, onNavigate }: { stage: 
       .split("\n")
       .map((l) => l.trim())
       .filter((l) => l.startsWith("connect "));
-    setConnections(lines);
+    setSteps(lines);
     setShowSolution(true);
   }, [stage.solution]);
 
@@ -133,16 +141,19 @@ export function ChallengeWorkbench({ stage, challengeId, onNavigate }: { stage: 
     <div className="space-y-4">
       {/* Objective card */}
       <div className="bg-blue-950/30 border border-blue-800/50 rounded-lg p-4">
-        <h4 className="text-blue-300 font-semibold text-sm uppercase tracking-wide mb-1">
-          Objective
-        </h4>
+        <div className="flex items-center justify-between mb-1">
+          <h4 className="text-blue-300 font-semibold text-sm uppercase tracking-wide">
+            Objective
+          </h4>
+          <McpStatusBadge status={mcpStatus} />
+        </div>
         <p className="text-gray-200 text-sm">{stage.objective}</p>
       </div>
 
       {/* Circuit preview with glowing ports */}
       <div
         className={`transition-all duration-300 rounded-xl ${
-          justConnected ? "ring-2 ring-blue-500/40" : ""
+          justAdded ? "ring-2 ring-blue-500/40" : ""
         }`}
       >
         <CircuitEmbed
@@ -202,28 +213,28 @@ export function ChallengeWorkbench({ stage, challengeId, onNavigate }: { stage: 
           </p>
         )}
 
-        {connections.length === 0 && !portClickState && (
+        {steps.length === 0 && !portClickState && (
           <p className="text-gray-500 text-xs pl-7">
             Click a glowing output port to start, or type a connection directly.
           </p>
         )}
       </div>
 
-      {/* Connection list */}
-      {connections.length > 0 && (
+      {/* Step list */}
+      {steps.length > 0 && (
         <div className="bg-gray-900/50 border border-gray-800 rounded-lg p-3">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-3">
               <span className="text-xs text-gray-400 font-medium">
-                Connections
+                Steps
               </span>
               {/* Mini progress bar */}
               <div className="flex gap-0.5">
-                {Array.from({ length: solutionConnections }).map((_, i) => (
+                {Array.from({ length: solutionStepCount }).map((_, i) => (
                   <div
                     key={i}
                     className={`h-2 w-4 rounded-sm transition-all duration-300 ${
-                      i < connections.length
+                      i < steps.length
                         ? "bg-green-500"
                         : "bg-gray-700"
                     }`}
@@ -231,13 +242,13 @@ export function ChallengeWorkbench({ stage, challengeId, onNavigate }: { stage: 
                 ))}
               </div>
               <span className="text-xs text-gray-500 tabular-nums">
-                {connections.length}/{solutionConnections}
+                {steps.length}/{solutionStepCount}
               </span>
             </div>
             <div className="flex gap-2">
               <button
                 onClick={handleUndo}
-                disabled={connections.length === 0}
+                disabled={steps.length === 0}
                 className="text-xs px-2 py-1 rounded bg-gray-800 text-gray-400 hover:text-gray-200 hover:bg-gray-700 transition-colors disabled:opacity-30"
               >
                 Undo
@@ -251,11 +262,11 @@ export function ChallengeWorkbench({ stage, challengeId, onNavigate }: { stage: 
             </div>
           </div>
           <ul className="space-y-0.5">
-            {connections.map((conn, i) => (
+            {steps.map((step, i) => (
               <li
                 key={i}
                 className={`text-xs font-mono flex items-center gap-2 ${
-                  i === connections.length - 1 && justConnected
+                  i === steps.length - 1 && justAdded
                     ? "text-blue-300"
                     : "text-green-400/70"
                 }`}
@@ -263,7 +274,7 @@ export function ChallengeWorkbench({ stage, challengeId, onNavigate }: { stage: 
                 <span className="text-gray-600 select-none w-4 text-right">
                   {i + 1}
                 </span>
-                {conn}
+                {step}
               </li>
             ))}
           </ul>
@@ -325,8 +336,9 @@ export function ChallengeWorkbench({ stage, challengeId, onNavigate }: { stage: 
   );
 }
 
-function buildDsl(scaffold: string, connections: string[]): string {
-  if (connections.length === 0) return scaffold;
+/** Insert user steps into the scaffold at the comment marker */
+function buildDsl(scaffold: string, steps: string[]): string {
+  if (steps.length === 0) return scaffold;
 
   const marker = "// YOUR CODE HERE";
   const markerLine = "// Connect";
@@ -334,7 +346,6 @@ function buildDsl(scaffold: string, connections: string[]): string {
   const lines = scaffold.split("\n");
   let insertIndex = -1;
 
-  // Find the comment block to insert after
   for (let i = 0; i < lines.length; i++) {
     const trimmed = lines[i].trim();
     if (
@@ -343,34 +354,41 @@ function buildDsl(scaffold: string, connections: string[]): string {
     ) {
       insertIndex = i;
     }
-    // Keep scanning to find the last comment line in the block
     if (insertIndex >= 0 && !trimmed.startsWith("//") && trimmed !== "") {
       break;
     }
   }
 
   if (insertIndex === -1) {
-    // Fallback: insert before the last two closing braces
     const lastBrace = scaffold.lastIndexOf("}");
     const secondLast = scaffold.lastIndexOf("}", lastBrace - 1);
     const at = secondLast > 0 ? secondLast : lastBrace;
     return (
       scaffold.slice(0, at) +
       "\n    " +
-      connections.join("\n    ") +
+      steps.join("\n    ") +
       "\n" +
       scaffold.slice(at)
     );
   }
 
-  // Insert after the comment block
   const before = lines.slice(0, insertIndex + 1);
   const after = lines.slice(insertIndex + 1);
-  const indented = connections.map((c) => "    " + c);
+  const indented = steps.map((s) => "    " + s);
 
   return [...before, ...indented, ...after].join("\n");
 }
 
-function countConnections(dsl: string): number {
+/** Count step lines (connect statements) in a DSL string */
+function countSteps(dsl: string): number {
   return dsl.split("\n").filter((l) => l.trim().startsWith("connect ")).length;
+}
+
+/** Extract user-added lines by diffing userSource against scaffold */
+function extractSteps(scaffold: string, userSource: string): string[] {
+  const scaffoldLines = new Set(scaffold.split("\n").map((l) => l.trim()).filter(Boolean));
+  return userSource
+    .split("\n")
+    .map((l) => l.trim())
+    .filter((l) => l && !scaffoldLines.has(l));
 }

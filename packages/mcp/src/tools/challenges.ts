@@ -16,6 +16,7 @@ import {
   getNextMissingConnection,
 } from '@turing-incomplete/challenges';
 import { getPreviewServer, getOrCreateServer } from '../lib/preview-singleton.js';
+import { TI_URL } from '../lib/config.js';
 
 function getNextStageId(challengeId: string, currentStageId: string): string | null {
   const stages = getChallengeStages(challengeId);
@@ -72,20 +73,15 @@ export function registerChallengeTools(server: McpServer): void {
       }
 
       // Ensure preview server is running so the browser can POST challenge state
-      let previewPort: number | null = null;
       try {
         const preview = await getOrCreateServer();
-        previewPort = preview.port;
         // Navigate browser to the requested stage if already connected
-        preview.navigateChallenge(stageId);
+        preview.navigateChallenge(challengeId, stageId);
       } catch {
         // Non-fatal — challenge info still works, just no auto-sync
       }
 
-      const tiUrl = process.env.TI_URL ?? 'http://localhost:3001';
-      const challengeUrl = previewPort
-        ? `${tiUrl}/challenges/${challengeId}?port=${previewPort}`
-        : `${tiUrl}/challenges/${challengeId}`;
+      const challengeUrl = `${TI_URL}/challenges/${challengeId}`;
 
       const result = {
         id: stage.id,
@@ -199,7 +195,7 @@ export function registerChallengeTools(server: McpServer): void {
       }
 
       // Push the connection to the browser
-      preview.addChallengeConnection(`connect ${connection}`);
+      preview.addChallengeStep(challengeId, stageId, `connect ${connection}`);
 
       return {
         content: [{ type: 'text' as const, text: `Added connection: connect ${connection}` }],
