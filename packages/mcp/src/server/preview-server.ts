@@ -128,10 +128,6 @@ export async function createPreviewServer(
       if (cachedTestResults) {
         res.write(`data: ${JSON.stringify({ type: 'test-results', data: cachedTestResults })}\n\n`);
       }
-      if (cachedChallengeState) {
-        res.write(`data: ${JSON.stringify({ type: 'challenge-state', ...cachedChallengeState })}\n\n`);
-      }
-
       sseClients.add(res);
 
       // Heartbeat every 30s
