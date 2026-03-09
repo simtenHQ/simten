@@ -1,17 +1,17 @@
-import type { ChallengeStep, ChallengeMetadata } from './types.js';
+import type { ChallengeStage, ChallengeMetadata } from './types.js';
 
 export const ALU_METADATA: ChallengeMetadata = {
   slug: 'build-an-alu',
   title: 'Build an ALU from Scratch',
   description:
-    'Start with a single AND gate. End with the arithmetic heart of a CPU — addition, subtraction, AND, OR, all selected by an opcode. Seven steps from nothing to a real ALU.',
-  steps: 7,
+    'Start with a single AND gate. End with the arithmetic heart of a CPU — addition, subtraction, AND, OR, all selected by an opcode. Seven stages from nothing to a real ALU.',
+  stages: 7,
   difficulty: 'Beginner',
   tag: 'Start here',
 };
 
-export const ALU_STEPS: ChallengeStep[] = [
-  // ── Step 1: Your First Gate ──────────────────────────────────────
+export const ALU_STAGES: ChallengeStage[] = [
+  // ── Stage 1: Your First Gate ──────────────────────────────────────
   {
     id: "and-gate",
     title: "Your First Gate",
@@ -56,7 +56,7 @@ export const ALU_STEPS: ChallengeStep[] = [
     height: 220,
   },
 
-  // ── Step 2: OR and NOT ───────────────────────────────────────────
+  // ── Stage 2: OR and NOT ───────────────────────────────────────────
   {
     id: "or-not",
     title: "OR and NOT",
@@ -115,7 +115,7 @@ export const ALU_STEPS: ChallengeStep[] = [
     height: 280,
   },
 
-  // ── Step 3: The Half Adder ───────────────────────────────────────
+  // ── Stage 3: The Half Adder ───────────────────────────────────────
   {
     id: "half-adder",
     title: "The Half Adder",
@@ -174,7 +174,7 @@ export const ALU_STEPS: ChallengeStep[] = [
     height: 250,
   },
 
-  // ── Step 4: The Full Adder ───────────────────────────────────────
+  // ── Stage 4: The Full Adder ───────────────────────────────────────
   {
     id: "full-adder",
     title: "The Full Adder",
@@ -252,7 +252,7 @@ export const ALU_STEPS: ChallengeStep[] = [
     height: 360,
   },
 
-  // ── Step 5: Multi-bit Addition ───────────────────────────────────
+  // ── Stage 5: Multi-bit Addition ───────────────────────────────────
   {
     id: "multi-bit-adder",
     title: "Multi-Bit Addition",
@@ -302,7 +302,7 @@ export const ALU_STEPS: ChallengeStep[] = [
     height: 230,
   },
 
-  // ── Step 6: Subtraction (same hardware!) ─────────────────────────
+  // ── Stage 6: Subtraction (same hardware!) ─────────────────────────
   {
     id: "subtraction",
     title: "Subtraction Is Free",
@@ -365,7 +365,7 @@ export const ALU_STEPS: ChallengeStep[] = [
     height: 280,
   },
 
-  // ── Step 7: The ALU ──────────────────────────────────────────────
+  // ── Stage 7: The ALU ──────────────────────────────────────────────
   {
     id: "alu",
     title: "The ALU",

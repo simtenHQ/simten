@@ -1,4 +1,4 @@
-export interface ChallengeStep {
+export interface ChallengeStage {
   id: string;
   title: string;
   concept: string;
@@ -27,7 +27,7 @@ export interface ChallengeMetadata {
   slug: string;
   title: string;
   description: string;
-  steps: number;
+  stages: number;
   difficulty: string;
   tag?: string;
 }

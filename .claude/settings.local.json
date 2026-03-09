@@ -32,7 +32,8 @@
       "Bash(ls:*)",
       "WebFetch(domain:tscircuit.com)",
       "WebFetch(domain:docs.tscircuit.com)",
-      "WebFetch(domain:www.calfus.com)"
+      "WebFetch(domain:www.calfus.com)",
+      "mcp__turing-incomplete__solve_next"
     ]
   }
 }

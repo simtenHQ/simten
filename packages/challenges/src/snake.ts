@@ -1,16 +1,16 @@
-import type { ChallengeStep, ChallengeMetadata } from './types.js';
+import type { ChallengeStage, ChallengeMetadata } from './types.js';
 
 export const SNAKE_METADATA: ChallengeMetadata = {
   slug: 'snake',
   title: 'Build Snake in Hardware',
   description:
-    'Wire up a complete Snake game step by step — framebuffers, direction decoding, movement, collision detection, and a phase pipeline. No CPU, no software.',
-  steps: 6,
+    'Wire up a complete Snake game stage by stage — framebuffers, direction decoding, movement, collision detection, and a phase pipeline. No CPU, no software.',
+  stages: 6,
   difficulty: 'Intermediate',
 };
 
-export const SNAKE_STEPS: ChallengeStep[] = [
-  // ── Step 1: Framebuffer ──────────────────────────────────────────
+export const SNAKE_STAGES: ChallengeStage[] = [
+  // ── Stage 1: Framebuffer ──────────────────────────────────────────
   {
     id: "framebuffer",
     title: "The Framebuffer",
@@ -78,7 +78,7 @@ export const SNAKE_STEPS: ChallengeStep[] = [
     ],
   },
 
-  // ── Step 2: Coordinate → Address ─────────────────────────────────
+  // ── Stage 2: Coordinate → Address ─────────────────────────────────
   {
     id: "coord-to-address",
     title: "Coordinate to Address",
@@ -170,7 +170,7 @@ export const SNAKE_STEPS: ChallengeStep[] = [
     ],
   },
 
-  // ── Step 3: Direction Decoder ────────────────────────────────────
+  // ── Stage 3: Direction Decoder ────────────────────────────────────
   {
     id: "direction-decoder",
     title: "Decoding Player Input",
@@ -324,7 +324,7 @@ export const SNAKE_STEPS: ChallengeStep[] = [
     ],
   },
 
-  // ── Step 4: Collision Detection ──────────────────────────────────
+  // ── Stage 4: Collision Detection ──────────────────────────────────
   {
     id: "collision",
     title: "Eating Food",
@@ -452,7 +452,7 @@ export const SNAKE_STEPS: ChallengeStep[] = [
     ],
   },
 
-  // ── Step 5: Phase Counter ────────────────────────────────────────
+  // ── Stage 5: Phase Counter ────────────────────────────────────────
   {
     id: "phase-counter",
     title: "Multi-Step Operations",
@@ -545,7 +545,7 @@ export const SNAKE_STEPS: ChallengeStep[] = [
     ],
   },
 
-  // ── Step 6: Moving a Pixel ───────────────────────────────────────
+  // ── Stage 6: Moving a Pixel ───────────────────────────────────────
   {
     id: "pixel-mover",
     title: "Moving a Pixel",
