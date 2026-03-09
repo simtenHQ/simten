@@ -105,6 +105,12 @@ export interface CircuitCanvasProps {
   onConnect?: (source: { nodeId: string; portName: string }, target: { nodeId: string; portName: string }) => void;
   onDrop?: (componentType: string, position: { x: number; y: number }) => void;
   onNodeDragStop?: () => void;
+  /** Show port name labels next to handles */
+  showPortLabels?: boolean;
+  /** Called when a port handle is clicked. Provides the node label, port name, and port type. */
+  onPortClick?: (nodeLabel: string, portName: string, portType: 'input' | 'output') => void;
+  /** Highlight unconnected ports with a pulsing glow */
+  glowUnconnected?: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -140,6 +146,9 @@ function CircuitCanvasInner({
   onConnect: onConnectProp,
   onDrop: onDropProp,
   onNodeDragStop,
+  showPortLabels,
+  onPortClick: onPortClickProp,
+  glowUnconnected,
 }: CircuitCanvasProps) {
   const { screenToFlowPosition } = useReactFlow();
   const resolvedNodeTypes = nodeTypesOverride ?? EMBED_NODE_TYPES;
@@ -207,26 +216,27 @@ function CircuitCanvasInner({
 
     // Add callbacks to interactive nodes
     const nodesWithHandlers = projected.nodes.map((node) => {
-      const componentRef = node.data?.componentRef;
+      const nodeData = node.data as NodeData;
+      const componentRef = nodeData?.componentRef;
+      let data = { ...node.data } as NodeData;
+
+      // Port labels, glow & click callbacks
+      if (showPortLabels) data.showPortLabels = true;
+      if (glowUnconnected) data.glowUnconnected = true;
+      if (onPortClickProp) {
+        const label = nodeData.label || nodeData.componentRef;
+        data.onPortClick = (portName: string, portType: 'input' | 'output') =>
+          onPortClickProp(label, portName, portType);
+      }
+
       if (componentRef === 'Input' && onSetNodeValue) {
-        return {
-          ...node,
-          data: {
-            ...node.data,
-            onValueChange: (value: number) => onSetNodeValue(node.id, value),
-          },
-        };
+        data.onValueChange = (value: number) => onSetNodeValue(node.id, value);
       }
       if (onToggleNode && (componentRef === 'Switch' || componentRef === 'Button')) {
-        return {
-          ...node,
-          data: {
-            ...node.data,
-            onToggle: () => onToggleNode(node.id),
-          },
-        };
+        data.onToggle = () => onToggleNode(node.id);
       }
-      return node;
+
+      return { ...node, data };
     });
 
     // Apply focus dimming
@@ -270,7 +280,7 @@ function CircuitCanvasInner({
     }
 
     return { projectedNodes: nodesWithHandlers, projectedEdges: projected.edges };
-  }, [cleanedCircuit, metadata, portValues, sequentialState, onToggleNode, onSetNodeValue, focusLabels]);
+  }, [cleanedCircuit, metadata, portValues, sequentialState, onToggleNode, onSetNodeValue, focusLabels, showPortLabels, onPortClickProp, glowUnconnected]);
 
   // Local node state for smooth drag feedback
   const [nodes, setNodes] = useState<Node[]>([]);

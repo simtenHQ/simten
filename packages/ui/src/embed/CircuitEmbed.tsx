@@ -19,6 +19,12 @@ interface CircuitEmbedProps {
   focus?: string | string[];
   /** Hand-tuned node positions by label. Disables ELK auto-layout when provided. */
   nodePositions?: Record<string, { x: number; y: number }>;
+  /** Show port name labels next to handles */
+  showPortLabels?: boolean;
+  /** Called when a port handle is clicked */
+  onPortClick?: (nodeLabel: string, portName: string, portType: 'input' | 'output') => void;
+  /** Highlight unconnected ports with a pulsing glow */
+  glowUnconnected?: boolean;
 }
 
 /**
@@ -37,6 +43,9 @@ export function CircuitEmbed({
   description,
   focus,
   nodePositions,
+  showPortLabels,
+  onPortClick,
+  glowUnconnected,
 }: CircuitEmbedProps) {
   const options: UseCircuitSimulatorOptions | undefined = initialMemory
     ? { initialMemory }
@@ -111,6 +120,9 @@ export function CircuitEmbed({
         height={height}
         focus={focus}
         {...(nodePositions ? { nodePositions, autoLayout: false } : {})}
+        showPortLabels={showPortLabels}
+        onPortClick={onPortClick}
+        glowUnconnected={glowUnconnected}
       />
 
       {/* Controls bar */}

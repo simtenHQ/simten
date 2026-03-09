@@ -32,6 +32,9 @@ importers:
       '@radix-ui/react-dialog':
         specifier: ^1.1.15
         version: 1.1.15(@types/react-dom@19.2.3)(@types/react@19.2.14)(react-dom@19.1.4)(react@19.1.4)
+      '@turing-incomplete/challenges':
+        specifier: workspace:*
+        version: link:../../packages/challenges
       '@turing-incomplete/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -127,6 +130,16 @@ importers:
         specifier: ^4.59.2
         version: 4.67.0
 
+  packages/challenges:
+    dependencies:
+      '@turing-incomplete/core':
+        specifier: workspace:*
+        version: link:../core
+    devDependencies:
+      typescript:
+        specifier: ^5
+        version: 5.9.3
+
   packages/cli:
     dependencies:
       '@turing-incomplete/core':
@@ -170,6 +183,9 @@ importers:
       '@modelcontextprotocol/sdk':
         specifier: ^1.12.0
         version: 1.26.0(zod@3.25.76)
+      '@turing-incomplete/challenges':
+        specifier: workspace:*
+        version: link:../challenges
       '@turing-incomplete/core':
         specifier: workspace:*
         version: link:../core

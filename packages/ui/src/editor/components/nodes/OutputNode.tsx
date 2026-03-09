@@ -162,7 +162,7 @@ export function OutputNode({ data, selected }: OutputNodeProps) {
           position={labelPosition}
         />
       )}
-      <BaseNode inputPorts={inputPorts} selected={selected} className="min-w-[80px]">
+      <BaseNode inputPorts={inputPorts} selected={selected} className="min-w-[80px]" showPortLabels={data.showPortLabels} onPortClick={data.onPortClick} glowUnconnected={data.glowUnconnected}>
         <div className="relative">
           {/* Composite badge */}
           {data.isComposite && (

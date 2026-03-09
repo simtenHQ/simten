@@ -12,11 +12,9 @@
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "isolatedModules": true,
-    "resolveJsonModule": true
+    "isolatedModules": true
   },
   "references": [
-    { "path": "../challenges" },
     { "path": "../core" }
   ],
   "include": ["src/**/*.ts"],
