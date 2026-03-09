@@ -72,7 +72,7 @@ export function useChallengeSync(
       try {
         const data = JSON.parse(event.data);
 
-        // Restore cached state on first connect (before we start POSTing)
+        // Restore cached state on first connect, then POST current state
         if (data.type === "challenge-state" && !restoredRef.current) {
           restoredRef.current = true;
           if (data.challengeId === challengeIdRef.current &&
@@ -80,6 +80,8 @@ export function useChallengeSync(
               data.userSource) {
             onRestoreRef.current?.(data.userSource);
           }
+          // POST after restore render so the server knows what page we're on
+          setTimeout(() => postState().catch(() => {}), 100);
           return;
         }
 
