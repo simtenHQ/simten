@@ -9,11 +9,11 @@ export type McpConnectionStatus = "idle" | "connecting" | "connected" | "disconn
 
 /**
  * Syncs challenge state to the MCP preview server and listens for
- * SSE events (navigation, add-step, state restore).
+ * SSE events (navigation, add-step).
  *
  * Polls /api/challenge every 5s when idle. Once the server responds,
- * opens an SSE connection. On connect, the server sends cached state
- * which is used to restore steps after a page refresh.
+ * opens an SSE connection. MCP is a communication channel only —
+ * persistence is handled by localStorage in the workbench.
  */
 export function useChallengeSync(
   challengeId: string,
@@ -21,14 +21,11 @@ export function useChallengeSync(
   userSource: string,
   onNavigate: (stageId: string) => void,
   onAddStep?: (step: string) => void,
-  onRestore?: (userSource: string) => void,
 ): McpConnectionStatus {
   const onNavigateRef = useRef(onNavigate);
   onNavigateRef.current = onNavigate;
   const onAddStepRef = useRef(onAddStep);
   onAddStepRef.current = onAddStep;
-  const onRestoreRef = useRef(onRestore);
-  onRestoreRef.current = onRestore;
   const challengeIdRef = useRef(challengeId);
   challengeIdRef.current = challengeId;
   const stageIdRef = useRef(stageId);
@@ -39,7 +36,6 @@ export function useChallengeSync(
   const [status, setStatus] = useState<McpConnectionStatus>("idle");
   const esRef = useRef<EventSource | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const restoredRef = useRef(false);
 
   const postState = useCallback(() => {
     return fetch(`http://127.0.0.1:${MCP_PORT}/api/challenge`, {
@@ -66,25 +62,13 @@ export function useChallengeSync(
         clearInterval(pollRef.current);
         pollRef.current = null;
       }
+      // POST current state so the server knows what page we're on
+      postState().catch(() => {});
     };
 
     es.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
-
-        // Restore cached state on first connect, then POST current state
-        if (data.type === "challenge-state" && !restoredRef.current) {
-          restoredRef.current = true;
-          if (data.challengeId === challengeIdRef.current &&
-              data.stageId === stageIdRef.current &&
-              data.userSource) {
-            onRestoreRef.current?.(data.userSource);
-          }
-          // POST after restore render so the server knows what page we're on
-          setTimeout(() => postState().catch(() => {}), 100);
-          return;
-        }
-
         if (data.challengeId && data.challengeId !== challengeIdRef.current) return;
 
         if (data.type === "challenge-navigate" && data.stageId) {
@@ -117,10 +101,9 @@ export function useChallengeSync(
     }, POLL_MS);
   }, [postState, connectSSE]);
 
-  // On mount: try immediately, then poll
+  // On mount: try immediately
   useEffect(() => {
     connectSSE();
-    // If SSE fails, polling starts from the onerror handler
 
     return () => {
       if (pollRef.current) clearInterval(pollRef.current);
@@ -129,9 +112,9 @@ export function useChallengeSync(
     };
   }, [connectSSE, startPolling]);
 
-  // POST state on every change (only after restore)
+  // POST state on every change
   useEffect(() => {
-    if (esRef.current && restoredRef.current) {
+    if (esRef.current) {
       postState().catch(() => {});
     }
   }, [challengeId, stageId, userSource, postState]);
