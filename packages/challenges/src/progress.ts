@@ -68,6 +68,22 @@ function extractNodes(source: string): Map<string, string> {
  * Check user's progress against a solution.
  * Feedback groups missing connections by target node — never reveals exact connections.
  */
+/**
+ * Get the first missing connection from the solution that the user hasn't made yet.
+ * Returns the connection in DSL format (e.g. "nodeA.port -> nodeB.port") or null if complete.
+ */
+export function getNextMissingConnection(
+  userSource: string,
+  solutionSource: string,
+): string | null {
+  const userConns = new Set(extractConnections(userSource));
+  const solutionConns = extractConnections(solutionSource);
+  for (const conn of solutionConns) {
+    if (!userConns.has(conn)) return conn;
+  }
+  return null;
+}
+
 export function checkProgress(userSource: string, solutionSource: string): ProgressResult {
   const userConns = new Set(extractConnections(userSource));
   const solutionConns = new Set(extractConnections(solutionSource));

@@ -1,23 +1,26 @@
 "use client";
 
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef } from "react";
 
 /**
  * Syncs challenge state to the MCP preview server and listens for
  * navigation commands via SSE.
  *
  * The preview server port comes from the `?port=` query param,
- * set by the MCP get_challenge_step tool when it opens the browser.
+ * set by the MCP get_challenge_stage tool when it opens the browser.
  */
 export function useChallengeSync(
   challengeId: string,
-  stepId: string,
+  stageId: string,
   userSource: string,
-  onNavigate: (stepId: string) => void,
+  onNavigate: (stageId: string) => void,
+  onAddConnection?: (connection: string) => void,
 ) {
   const portRef = useRef<string | null>(null);
   const onNavigateRef = useRef(onNavigate);
   onNavigateRef.current = onNavigate;
+  const onAddConnectionRef = useRef(onAddConnection);
+  onAddConnectionRef.current = onAddConnection;
 
   // Read port from URL on mount (avoids useSearchParams / Suspense requirement)
   useEffect(() => {
@@ -32,7 +35,7 @@ export function useChallengeSync(
 
     const body = JSON.stringify({
       challengeId,
-      stepId,
+      stageId,
       userSource,
       timestamp: Date.now(),
     });
@@ -44,7 +47,7 @@ export function useChallengeSync(
     }).catch(() => {
       // Preview server may have stopped — silently ignore
     });
-  }, [challengeId, stepId, userSource]);
+  }, [challengeId, stageId, userSource]);
 
   // Listen for SSE navigation commands
   useEffect(() => {
@@ -56,8 +59,11 @@ export function useChallengeSync(
     es.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
-        if (data.type === "challenge-navigate" && data.stepId) {
-          onNavigateRef.current(data.stepId);
+        if (data.type === "challenge-navigate" && data.stageId) {
+          onNavigateRef.current(data.stageId);
+        }
+        if (data.type === "challenge-add-connection" && data.connection) {
+          onAddConnectionRef.current?.(data.connection);
         }
       } catch {
         // Ignore malformed messages
