@@ -1,4 +1,4 @@
-const DEFAULT_TI_URL = 'https://turing-incomplete.charles-harris-de.workers.dev';
+const DEFAULT_TI_URL = 'http://localhost:3001';
 
 export const TI_URL = process.env.TI_URL || DEFAULT_TI_URL;
 

@@ -225,9 +225,9 @@ export function compileForSimulation(
     // Source node: no inputs
     isSourceNode[i] = node.inputs.length === 0 ? 1 : 0;
 
-    // State output node: outputs depend only on state
+    // State output node: outputs depend on state (re-evaluate after clock edge)
     const component = library.resolveComponent(node.primitiveType);
-    if (component?.metadata?.outputDependency === 'state-only') {
+    if (component?.metadata?.outputDependency === 'state-only' || component?.metadata?.outputDependency === 'state+inputs') {
       isStateOutputNode[i] = 1;
     }
 
