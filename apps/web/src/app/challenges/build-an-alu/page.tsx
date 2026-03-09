@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from "react";
 import { ALU_STAGES } from "./steps";
-import { ChallengeWorkbench } from "./components/ChallengeWorkbench";
+import { ChallengeWorkbench } from "../components/ChallengeWorkbench";
 
 export default function ALUChallengePage() {
   const [currentStage, setCurrentStage] = useState(0);

@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from "react";
 import { SNAKE_STAGES } from "./steps";
-import { ChallengeWorkbench } from "./components/ChallengeWorkbench";
+import { ChallengeWorkbench } from "../components/ChallengeWorkbench";
 
 export default function SnakeChallengePage() {
   const [currentStage, setCurrentStage] = useState(0);
