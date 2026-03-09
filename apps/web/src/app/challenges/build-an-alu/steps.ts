@@ -1,1 +1,1 @@
-export { type ChallengeStep, ALU_STEPS } from "@turing-incomplete/challenges";
+export { type ChallengeStage, ALU_STAGES } from "@turing-incomplete/challenges";

@@ -12,6 +12,7 @@ export interface PreviewServer {
   getState(): CircuitState | null;
   getChallengeState(): ChallengeState | null;
   navigateChallenge(stepId: string): void;
+  addChallengeConnection(connection: string): void;
   pushTraces(data: TracesPayload): void;
   pushTestResults(data: TestResultsPayload): void;
   close(): void;
@@ -213,8 +214,12 @@ export async function createPreviewServer(
     return cachedChallengeState;
   }
 
-  function navigateChallenge(stepId: string) {
-    broadcastSSE({ type: 'challenge-navigate', stepId });
+  function navigateChallenge(stageId: string) {
+    broadcastSSE({ type: 'challenge-navigate', stageId });
+  }
+
+  function addChallengeConnection(connection: string) {
+    broadcastSSE({ type: 'challenge-add-connection', connection });
   }
 
   function pushTraces(data: TracesPayload) {
@@ -234,6 +239,7 @@ export async function createPreviewServer(
     getState,
     getChallengeState,
     navigateChallenge,
+    addChallengeConnection,
     pushTraces,
     pushTestResults,
     close,

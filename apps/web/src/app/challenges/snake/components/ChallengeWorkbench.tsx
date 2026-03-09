@@ -2,10 +2,10 @@
 
 import { useState, useCallback, useRef, useEffect } from "react";
 import { CircuitEmbed } from "@turing-incomplete/ui/embed";
-import type { ChallengeStep } from "../steps";
+import type { ChallengeStage } from "../steps";
 import { useChallengeSync } from "../../useChallengeSync";
 
-export function ChallengeWorkbench({ step, challengeId, onNavigate }: { step: ChallengeStep; challengeId: string; onNavigate: (stepId: string) => void }) {
+export function ChallengeWorkbench({ stage, challengeId, onNavigate }: { stage: ChallengeStage; challengeId: string; onNavigate: (stageId: string) => void }) {
   const [connections, setConnections] = useState<string[]>([]);
   const [inputValue, setInputValue] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -25,16 +25,19 @@ export function ChallengeWorkbench({ step, challengeId, onNavigate }: { step: Ch
     setShowHint(-1);
     setShowSolution(false);
     setPortClickState(null);
-  }, [step.id]);
+  }, [stage.id]);
 
   // Build full DSL from scaffold + user connections
-  const fullDsl = buildDsl(step.scaffold, connections);
+  const fullDsl = buildDsl(stage.scaffold, connections);
 
   // Sync state to MCP preview server for check_challenge_progress
-  useChallengeSync(challengeId, step.id, fullDsl, onNavigate);
+  const handleAddConnection = useCallback((connection: string) => {
+    setConnections((prev) => prev.includes(connection) ? prev : [...prev, connection]);
+  }, []);
+  useChallengeSync(challengeId, stage.id, fullDsl, onNavigate, handleAddConnection);
 
   // Count how many connections the solution has vs user's current
-  const solutionConnections = countConnections(step.solution);
+  const solutionConnections = countConnections(stage.solution);
   const isComplete = connections.length >= solutionConnections;
 
   const handleSubmit = useCallback(
@@ -117,17 +120,17 @@ export function ChallengeWorkbench({ step, challengeId, onNavigate }: { step: Ch
 
   const handleShowSolution = useCallback(() => {
     // Extract connections from solution DSL
-    const lines = step.solution
+    const lines = stage.solution
       .split("\n")
       .map((l) => l.trim())
       .filter((l) => l.startsWith("connect "));
     setConnections(lines);
     setShowSolution(true);
-  }, [step.solution]);
+  }, [stage.solution]);
 
   const handleNextHint = useCallback(() => {
-    setShowHint((h) => Math.min(h + 1, step.hints.length - 1));
-  }, [step.hints.length]);
+    setShowHint((h) => Math.min(h + 1, stage.hints.length - 1));
+  }, [stage.hints.length]);
 
   return (
     <div className="space-y-4">
@@ -136,19 +139,19 @@ export function ChallengeWorkbench({ step, challengeId, onNavigate }: { step: Ch
         <h4 className="text-blue-300 font-semibold text-sm uppercase tracking-wide mb-1">
           Objective
         </h4>
-        <p className="text-gray-200 text-sm">{step.objective}</p>
+        <p className="text-gray-200 text-sm">{stage.objective}</p>
       </div>
 
       {/* Circuit preview */}
       <CircuitEmbed
         key={fullDsl}
         dsl={fullDsl}
-        height={step.height ?? 300}
+        height={stage.height ?? 300}
         showControls
-        nodePositions={step.nodePositions}
+        nodePositions={stage.nodePositions}
         showPortLabels
         onPortClick={handlePortClick}
-        title={step.title}
+        title={stage.title}
         description={
           portClickState
             ? `Click an input port to complete: ${portClickState.nodeLabel}.${portClickState.portName} → ?`
@@ -238,7 +241,7 @@ export function ChallengeWorkbench({ step, challengeId, onNavigate }: { step: Ch
       <div className="flex items-start gap-3">
         <button
           onClick={handleNextHint}
-          disabled={showHint >= step.hints.length - 1}
+          disabled={showHint >= stage.hints.length - 1}
           className="text-sm px-3 py-1.5 rounded bg-gray-800 text-gray-300 hover:text-yellow-300 hover:bg-gray-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
         >
           {showHint < 0 ? "Need a hint?" : "Next hint"}
@@ -251,7 +254,7 @@ export function ChallengeWorkbench({ step, challengeId, onNavigate }: { step: Ch
         </button>
         {showHint >= 0 && (
           <div className="text-sm text-yellow-200/80 bg-yellow-950/20 border border-yellow-800/30 rounded-lg p-3 flex-1">
-            {step.hints.slice(0, showHint + 1).map((hint, i) => (
+            {stage.hints.slice(0, showHint + 1).map((hint, i) => (
               <p key={i} className={i > 0 ? "mt-2" : ""}>
                 {hint}
               </p>
@@ -264,7 +267,7 @@ export function ChallengeWorkbench({ step, challengeId, onNavigate }: { step: Ch
       {isComplete && !showSolution && (
         <div className="bg-green-950/30 border border-green-700/50 rounded-lg p-4 text-center">
           <p className="text-green-300 text-lg font-semibold">
-            Circuit complete! Move on to the next step.
+            Circuit complete! Move on to the next stage.
           </p>
         </div>
       )}

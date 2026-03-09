@@ -18,7 +18,7 @@ export default function ChallengesPage() {
           </h1>
           <p className="mt-6 text-xl text-gray-400 leading-relaxed max-w-2xl">
             Learn digital logic by building real things. Each challenge walks
-            you through a project step by step — you write the connections, the
+            you through a project stage by stage — you write the connections, the
             simulator checks your work.
           </p>
         </section>
@@ -44,7 +44,7 @@ export default function ChallengesPage() {
                 </span>
               </div>
               <div className="mt-4 flex items-center gap-4 text-sm text-gray-500">
-                <span>{c.steps} steps</span>
+                <span>{c.stages} stages</span>
                 <span>{c.difficulty}</span>
                 {"tag" in c && c.tag && (
                   <span className="px-2 py-0.5 rounded-full bg-blue-900/50 text-blue-300 text-xs font-medium">
