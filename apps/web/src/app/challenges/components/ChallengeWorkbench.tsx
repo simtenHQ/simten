@@ -1,21 +1,25 @@
 "use client";
 
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import { CircuitEmbed } from "@turing-incomplete/ui/embed";
+import type { CircuitEmbedHandle, CheckResult } from "@turing-incomplete/ui/embed";
 import type { ChallengeStage } from "@turing-incomplete/challenges";
+import { checkProgress } from "@turing-incomplete/challenges";
 import { useChallengeSync } from "../useChallengeSync";
 import { McpStatusBadge } from "@/features/mcp/McpStatusBadge";
 
-export function ChallengeWorkbench({ stage, challengeId, onNavigate }: { stage: ChallengeStage; challengeId: string; onNavigate: (stageId: string) => void }) {
+interface ChallengeWorkbenchProps {
+  stage: ChallengeStage;
+  challengeId: string;
+  onNavigate: (stageId: string) => void;
+  nextStageId?: string | null;
+  onStageComplete?: (stageId: string) => void;
+}
+
+export function ChallengeWorkbench({ stage, challengeId, onNavigate, nextStageId, onStageComplete }: ChallengeWorkbenchProps) {
   const storageKey = `ti:${challengeId}:${stage.id}`;
 
-  const [steps, setSteps] = useState<string[]>(() => {
-    if (typeof window === "undefined") return [];
-    try {
-      const saved = localStorage.getItem(storageKey);
-      return saved ? JSON.parse(saved) : [];
-    } catch { return []; }
-  });
+  const [steps, setSteps] = useState<string[]>([]);
   const [inputValue, setInputValue] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [showHint, setShowHint] = useState(-1);
@@ -25,20 +29,14 @@ export function ChallengeWorkbench({ stage, challengeId, onNavigate }: { stage: 
     nodeLabel: string;
     portName: string;
   } | null>(null);
+  const [checkResults, setCheckResults] = useState<CheckResult[] | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const circuitRef = useRef<CircuitEmbedHandle>(null);
 
-  // Persist steps to localStorage
-  useEffect(() => {
-    try {
-      if (steps.length > 0) {
-        localStorage.setItem(storageKey, JSON.stringify(steps));
-      } else {
-        localStorage.removeItem(storageKey);
-      }
-    } catch { /* quota exceeded, etc */ }
-  }, [steps, storageKey]);
+  // Track whether we've hydrated from localStorage yet
+  const hydratedRef = useRef(false);
 
-  // Reset state when stage changes
+  // Hydrate steps from localStorage on mount / stage change
   useEffect(() => {
     try {
       const saved = localStorage.getItem(storageKey);
@@ -50,10 +48,40 @@ export function ChallengeWorkbench({ stage, challengeId, onNavigate }: { stage: 
     setShowSolution(false);
     setPortClickState(null);
     setJustAdded(false);
+    setCheckResults(null);
+    hydratedRef.current = true;
   }, [stage.id, storageKey]);
+
+  // Persist steps to localStorage (skip until hydrated)
+  useEffect(() => {
+    if (!hydratedRef.current) return;
+    try {
+      if (steps.length > 0) {
+        localStorage.setItem(storageKey, JSON.stringify(steps));
+      } else {
+        localStorage.removeItem(storageKey);
+      }
+    } catch { /* quota exceeded, etc */ }
+  }, [steps, storageKey]);
 
   // Build full DSL from scaffold + user steps
   const fullDsl = buildDsl(stage.scaffold, steps);
+
+  // Correctness-based completion (Phase 1)
+  const progress = useMemo(
+    () => checkProgress(fullDsl, stage.solution),
+    [fullDsl, stage.solution]
+  );
+  const isComplete = progress.complete;
+
+  // Fire completion callback when stage is completed
+  const prevCompleteRef = useRef(false);
+  useEffect(() => {
+    if (isComplete && !prevCompleteRef.current) {
+      onStageComplete?.(stage.id);
+    }
+    prevCompleteRef.current = isComplete;
+  }, [isComplete, stage.id, onStageComplete]);
 
   // Sync state to MCP preview server
   const handleAddStep = useCallback((step: string) => {
@@ -61,10 +89,6 @@ export function ChallengeWorkbench({ stage, challengeId, onNavigate }: { stage: 
   }, []);
 
   const mcpStatus = useChallengeSync(challengeId, stage.id, fullDsl, onNavigate, handleAddStep);
-
-  // Count expected steps from solution
-  const solutionStepCount = countSteps(stage.solution);
-  const isComplete = steps.length >= solutionStepCount;
 
   const addStep = useCallback(
     (step: string) => {
@@ -77,6 +101,7 @@ export function ChallengeWorkbench({ stage, challengeId, onNavigate }: { stage: 
       setError(null);
       setPortClickState(null);
       setJustAdded(true);
+      setCheckResults(null);
       setTimeout(() => setJustAdded(false), 600);
     },
     [steps]
@@ -130,6 +155,7 @@ export function ChallengeWorkbench({ stage, challengeId, onNavigate }: { stage: 
   const handleUndo = useCallback(() => {
     setSteps((prev) => prev.slice(0, -1));
     setError(null);
+    setCheckResults(null);
   }, []);
 
   const handleReset = useCallback(() => {
@@ -137,13 +163,14 @@ export function ChallengeWorkbench({ stage, challengeId, onNavigate }: { stage: 
     setInputValue("");
     setError(null);
     setPortClickState(null);
+    setCheckResults(null);
   }, []);
 
   const handleShowSolution = useCallback(() => {
     const lines = stage.solution
       .split("\n")
-      .map((l) => l.trim())
-      .filter((l) => l.startsWith("connect "));
+      .map((l: string) => l.trim())
+      .filter((l: string) => l.startsWith("connect "));
     setSteps(lines);
     setShowSolution(true);
   }, [stage.solution]);
@@ -151,6 +178,16 @@ export function ChallengeWorkbench({ stage, challengeId, onNavigate }: { stage: 
   const handleNextHint = useCallback(() => {
     setShowHint((h) => Math.min(h + 1, stage.hints.length - 1));
   }, [stage.hints.length]);
+
+  const handleRunChecks = useCallback(() => {
+    if (!circuitRef.current || !stage.checks) return;
+    const results = circuitRef.current.runChecks(stage.checks);
+    setCheckResults(results);
+  }, [stage.checks]);
+
+  const handleNextStage = useCallback(() => {
+    if (nextStageId) onNavigate(nextStageId);
+  }, [nextStageId, onNavigate]);
 
   return (
     <div className="space-y-4">
@@ -172,6 +209,7 @@ export function ChallengeWorkbench({ stage, challengeId, onNavigate }: { stage: 
         }`}
       >
         <CircuitEmbed
+          ref={circuitRef}
           key={fullDsl}
           dsl={fullDsl}
           height={stage.height ?? 300}
@@ -243,13 +281,13 @@ export function ChallengeWorkbench({ stage, challengeId, onNavigate }: { stage: 
               <span className="text-xs text-gray-400 font-medium">
                 Steps
               </span>
-              {/* Mini progress bar */}
+              {/* Mini progress bar — correctness-based */}
               <div className="flex gap-0.5">
-                {Array.from({ length: solutionStepCount }).map((_, i) => (
+                {Array.from({ length: progress.totalExpected }).map((_, i) => (
                   <div
                     key={i}
                     className={`h-2 w-4 rounded-sm transition-all duration-300 ${
-                      i < steps.length
+                      i < progress.correct
                         ? "bg-green-500"
                         : "bg-gray-700"
                     }`}
@@ -257,7 +295,7 @@ export function ChallengeWorkbench({ stage, challengeId, onNavigate }: { stage: 
                 ))}
               </div>
               <span className="text-xs text-gray-500 tabular-nums">
-                {steps.length}/{solutionStepCount}
+                {progress.correct}/{progress.totalExpected}
               </span>
             </div>
             <div className="flex gap-2">
@@ -296,6 +334,48 @@ export function ChallengeWorkbench({ stage, challengeId, onNavigate }: { stage: 
         </div>
       )}
 
+      {/* Test Circuit button (Phase 3) */}
+      {stage.checks && stage.checks.length > 0 && (
+        <div className="space-y-2">
+          <button
+            onClick={handleRunChecks}
+            className="text-sm px-4 py-2 rounded-lg bg-purple-600 hover:bg-purple-500 text-white font-medium transition-colors"
+          >
+            Test Circuit
+          </button>
+          {checkResults && (
+            <div className="bg-gray-900/50 border border-gray-800 rounded-lg p-3 space-y-1">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-xs font-medium text-gray-400">
+                  Test Results
+                </span>
+                <span className="text-xs tabular-nums text-gray-500">
+                  {checkResults.filter(r => r.passed).length}/{checkResults.length} passed
+                </span>
+              </div>
+              {checkResults.map((result, i) => (
+                <div
+                  key={i}
+                  className={`text-xs font-mono flex items-center gap-2 ${
+                    result.passed ? "text-green-400" : "text-red-400"
+                  }`}
+                >
+                  <span>{result.passed ? "PASS" : "FAIL"}</span>
+                  <span className="text-gray-400">
+                    {result.description ?? `Check ${i + 1}`}
+                  </span>
+                  {!result.passed && (
+                    <span className="text-red-400/70">
+                      (expected {result.expected}, got {String(result.actual)})
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Hints + solution row */}
       <div className="flex items-start gap-3 flex-wrap">
         <button
@@ -313,7 +393,7 @@ export function ChallengeWorkbench({ stage, challengeId, onNavigate }: { stage: 
         </button>
         {showHint >= 0 && (
           <div className="text-sm text-yellow-200/80 bg-yellow-950/20 border border-yellow-800/30 rounded-lg p-3 flex-1 min-w-[200px]">
-            {stage.hints.slice(0, showHint + 1).map((hint, i) => (
+            {stage.hints.slice(0, showHint + 1).map((hint: string, i: number) => (
               <p key={i} className={i > 0 ? "mt-2" : ""}>
                 {hint}
               </p>
@@ -344,6 +424,14 @@ export function ChallengeWorkbench({ stage, challengeId, onNavigate }: { stage: 
                 Toggle the inputs and see your circuit in action.
               </p>
             </>
+          )}
+          {nextStageId && !showSolution && (
+            <button
+              onClick={handleNextStage}
+              className="mt-4 px-6 py-2.5 rounded-lg bg-green-600 hover:bg-green-500 text-white font-medium transition-colors"
+            >
+              Next Stage →
+            </button>
           )}
         </div>
       )}
@@ -393,9 +481,3 @@ function buildDsl(scaffold: string, steps: string[]): string {
 
   return [...before, ...indented, ...after].join("\n");
 }
-
-/** Count step lines (connect statements) in a DSL string */
-function countSteps(dsl: string): number {
-  return dsl.split("\n").filter((l) => l.trim().startsWith("connect ")).length;
-}
-

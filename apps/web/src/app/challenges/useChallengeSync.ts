@@ -36,6 +36,8 @@ export function useChallengeSync(
   const [status, setStatus] = useState<McpConnectionStatus>("idle");
   const esRef = useRef<EventSource | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  // Only start reconnect polling after we've had at least one successful connection
+  const hadConnectionRef = useRef(false);
 
   const postState = useCallback(() => {
     return fetch(`http://127.0.0.1:${MCP_PORT}/api/challenge`, {
@@ -50,6 +52,24 @@ export function useChallengeSync(
     });
   }, []);
 
+  const startPolling = useCallback(() => {
+    if (pollRef.current) return;
+    pollRef.current = setInterval(() => {
+      if (esRef.current) return;
+      postState()
+        .then(() => {
+          // Server is back — reconnect SSE
+          if (pollRef.current) {
+            clearInterval(pollRef.current);
+            pollRef.current = null;
+          }
+          connectSSE();
+        })
+        .catch(() => {});
+    }, POLL_MS);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [postState]);
+
   const connectSSE = useCallback(() => {
     if (esRef.current) return;
 
@@ -57,12 +77,12 @@ export function useChallengeSync(
     esRef.current = es;
 
     es.onopen = () => {
+      hadConnectionRef.current = true;
       setStatus("connected");
       if (pollRef.current) {
         clearInterval(pollRef.current);
         pollRef.current = null;
       }
-      // POST current state so the server knows what page we're on
       postState().catch(() => {});
     };
 
@@ -87,21 +107,14 @@ export function useChallengeSync(
       es.close();
       esRef.current = null;
       setStatus("idle");
-      startPolling();
+      // Only poll for reconnection if we previously had a working connection
+      if (hadConnectionRef.current) {
+        startPolling();
+      }
     };
-  }, [postState]);
+  }, [postState, startPolling]);
 
-  const startPolling = useCallback(() => {
-    if (pollRef.current) return;
-    pollRef.current = setInterval(() => {
-      if (esRef.current) return;
-      postState()
-        .then(() => connectSSE())
-        .catch(() => {});
-    }, POLL_MS);
-  }, [postState, connectSSE]);
-
-  // On mount: try immediately
+  // On mount: try once
   useEffect(() => {
     connectSSE();
 
@@ -110,9 +123,9 @@ export function useChallengeSync(
       esRef.current?.close();
       esRef.current = null;
     };
-  }, [connectSSE, startPolling]);
+  }, [connectSSE]);
 
-  // POST state on every change
+  // POST state on every change (only if connected)
   useEffect(() => {
     if (esRef.current) {
       postState().catch(() => {});

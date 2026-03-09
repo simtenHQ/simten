@@ -1425,6 +1425,7 @@ circuit Comparator {
 
       return memory;
     },
+    outputDependency: 'state+inputs',
   }),
 
   // ============================================================================

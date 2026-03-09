@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, forwardRef, useImperativeHandle } from "react";
 import { useCircuitSimulator, type UseCircuitSimulatorOptions } from "./useCircuitSimulator";
 import { CircuitCanvas } from "../shared/CircuitCanvas";
 import { TooltipProvider } from "../primitives/tooltip";
 
-interface CircuitEmbedProps {
+export interface CircuitEmbedProps {
   dsl: string;
   initialMemory?: Map<string, Map<number, number>>;
   height?: number | string;
@@ -27,11 +27,31 @@ interface CircuitEmbedProps {
   glowUnconnected?: boolean;
 }
 
+export interface CheckSpec {
+  description?: string;
+  node: string;
+  port: string;
+  expected: number;
+  inputs?: [string, number][];
+  ticks?: number;
+}
+
+export interface CheckResult {
+  passed: boolean;
+  actual: number | boolean | undefined;
+  description?: string;
+  expected: number;
+}
+
+export interface CircuitEmbedHandle {
+  runChecks(checks: CheckSpec[]): CheckResult[];
+}
+
 /**
  * All-in-one embeddable circuit simulator.
  * Takes a DSL string, compiles and simulates it, renders interactive canvas with controls.
  */
-export function CircuitEmbed({
+export const CircuitEmbed = forwardRef<CircuitEmbedHandle, CircuitEmbedProps>(function CircuitEmbed({
   dsl,
   initialMemory,
   height = 300,
@@ -46,7 +66,7 @@ export function CircuitEmbed({
   showPortLabels,
   onPortClick,
   glowUnconnected,
-}: CircuitEmbedProps) {
+}, ref) {
   const options: UseCircuitSimulatorOptions | undefined = initialMemory
     ? { initialMemory }
     : undefined;
@@ -70,6 +90,64 @@ export function CircuitEmbed({
       }
     };
   }, [isAutoRunning, sim.ready, sim.isSequential, autoRunSpeed, sim.tick]);
+
+  // Expose imperative handle for running behavioral checks
+  useImperativeHandle(ref, () => ({
+    runChecks(checks: CheckSpec[]): CheckResult[] {
+      const simulator = sim.getSimulator();
+      if (!simulator) return checks.map(c => ({ passed: false, actual: undefined, description: c.description, expected: c.expected }));
+
+      const results: CheckResult[] = [];
+
+      for (const check of checks) {
+        simulator.reset();
+
+        // Set inputs — resolve mangled node IDs by label
+        if (check.inputs) {
+          const portValues = simulator.getPortValues();
+          for (const [name, value] of check.inputs) {
+            // Try direct first
+            simulator.setInput(name, value);
+            // If that didn't work (mangled IDs), find and set via port key
+            const segment = `_${name}_`;
+            for (const key of portValues.keys()) {
+              if (key.includes(segment) && key.endsWith('.out')) {
+                const nodeId = key.slice(0, key.lastIndexOf('.'));
+                simulator.setInput(nodeId, value);
+                break;
+              }
+            }
+          }
+        }
+
+        // Propagate inputs before clocking, then tick, then propagate outputs
+        simulator.runCombinational();
+        if (check.ticks && check.ticks > 0) {
+          for (let t = 0; t < check.ticks; t++) {
+            simulator.tick();
+          }
+          simulator.runCombinational();
+        }
+
+        // Flat circuit mangles node IDs (e.g. "Circuit_ram_123_abc.outB")
+        // Match by label segment and port name
+        const portSuffix = `.${check.port}`;
+        const labelSegment = `_${check.node}_`;
+        let actual: number | boolean | undefined;
+        for (const [key, val] of simulator.getPortValues()) {
+          if (key.endsWith(portSuffix) && key.includes(labelSegment)) {
+            actual = val;
+            break;
+          }
+        }
+        const passed = actual === check.expected;
+        results.push({ passed, actual, description: check.description, expected: check.expected });
+      }
+
+      simulator.reset();
+      return results;
+    }
+  }), [sim]);
 
   const handleReset = useCallback(() => {
     setIsAutoRunning(false);
@@ -194,4 +272,4 @@ export function CircuitEmbed({
       </div>
     </TooltipProvider>
   );
-}
+});

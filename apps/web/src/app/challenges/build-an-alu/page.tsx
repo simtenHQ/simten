@@ -1,17 +1,50 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { ALU_STAGES } from "./steps";
 import { ChallengeWorkbench } from "../components/ChallengeWorkbench";
 
+const STORAGE_KEY = "ti:build-an-alu:completed";
+
 export default function ALUChallengePage() {
   const [currentStage, setCurrentStage] = useState(0);
+  const [completedStages, setCompletedStages] = useState<Set<string>>(new Set());
   const stage = ALU_STAGES[currentStage];
+
+  // Hydrate from localStorage after mount
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) setCompletedStages(new Set(JSON.parse(saved)));
+    } catch { /* ignore */ }
+  }, []);
+
+  // Persist completed stages
+  useEffect(() => {
+    try {
+      if (completedStages.size > 0) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify([...completedStages]));
+      }
+    } catch { /* ignore */ }
+  }, [completedStages]);
 
   const handleNavigate = useCallback((stageId: string) => {
     const index = ALU_STAGES.findIndex((s) => s.id === stageId);
     if (index >= 0) setCurrentStage(index);
   }, []);
+
+  const handleStageComplete = useCallback((stageId: string) => {
+    setCompletedStages((prev) => {
+      if (prev.has(stageId)) return prev;
+      const next = new Set(prev);
+      next.add(stageId);
+      return next;
+    });
+  }, []);
+
+  const nextStageId = currentStage < ALU_STAGES.length - 1
+    ? ALU_STAGES[currentStage + 1].id
+    : null;
 
   return (
     <div className="min-h-screen bg-gray-950 text-gray-100">
@@ -38,11 +71,11 @@ export default function ALUChallengePage() {
         {/* Stage progress bar */}
         <div className="mb-8">
           <div className="flex gap-1 mb-2">
-            {ALU_STAGES.map((_, i) => (
+            {ALU_STAGES.map((s, i) => (
               <div
                 key={i}
                 className={`h-1.5 flex-1 rounded-full transition-colors ${
-                  i < currentStage
+                  completedStages.has(s.id)
                     ? "bg-green-500"
                     : i === currentStage
                     ? "bg-blue-500"
@@ -59,13 +92,13 @@ export default function ALUChallengePage() {
                 className={`px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
                   i === currentStage
                     ? "bg-blue-600 text-white"
-                    : i < currentStage
+                    : completedStages.has(s.id)
                     ? "bg-green-900/30 text-green-400 hover:bg-green-900/50"
                     : "bg-gray-800 text-gray-400 hover:text-gray-200 hover:bg-gray-700"
                 }`}
               >
                 <span className="text-xs opacity-60 mr-1.5">
-                  {i < currentStage ? "✓" : i + 1}
+                  {completedStages.has(s.id) ? "✓" : i + 1}
                 </span>
                 {s.title}
               </button>
@@ -84,7 +117,13 @@ export default function ALUChallengePage() {
             </p>
           </div>
 
-          <ChallengeWorkbench stage={stage} challengeId="build-an-alu" onNavigate={handleNavigate} />
+          <ChallengeWorkbench
+            stage={stage}
+            challengeId="build-an-alu"
+            onNavigate={handleNavigate}
+            nextStageId={nextStageId}
+            onStageComplete={handleStageComplete}
+          />
 
           {/* Stage navigation footer */}
           <div className="flex justify-between pt-8 border-t border-gray-800">
