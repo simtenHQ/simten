@@ -5,9 +5,9 @@
  * (state, traces, test-results) can access the running preview.
  */
 
-import type { PreviewServer, CircuitState, TracesPayload, TestResultsPayload } from '../server/preview-server.js';
+import type { PreviewServer, CircuitState, ChallengeState, TracesPayload, TestResultsPayload } from '../server/preview-server.js';
 
-export type { PreviewServer, CircuitState, TracesPayload, TestResultsPayload };
+export type { PreviewServer, CircuitState, ChallengeState, TracesPayload, TestResultsPayload };
 
 // Module-level singleton
 let previewServer: PreviewServer | null = null;

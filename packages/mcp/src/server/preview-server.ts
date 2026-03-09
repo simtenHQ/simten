@@ -1,15 +1,17 @@
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
 import { watchFile as fsWatchFile, unwatchFile, existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import type { CircuitState, TracesPayload, TestResultsPayload } from './types.js';
+import type { CircuitState, ChallengeState, TracesPayload, TestResultsPayload } from './types.js';
 
-export type { CircuitState, TracesPayload, TestResultsPayload };
+export type { CircuitState, ChallengeState, TracesPayload, TestResultsPayload };
 
 export interface PreviewServer {
   port: number;
   updateDSL(dsl: string): void;
   watchFile(filePath: string): void;
   getState(): CircuitState | null;
+  getChallengeState(): ChallengeState | null;
+  navigateChallenge(stepId: string): void;
   pushTraces(data: TracesPayload): void;
   pushTestResults(data: TestResultsPayload): void;
   close(): void;
@@ -23,6 +25,7 @@ export async function createPreviewServer(
 
   let currentDSL: string | null = null;
   let cachedState: CircuitState | null = null;
+  let cachedChallengeState: ChallengeState | null = null;
   let cachedTraces: TracesPayload | null = null;
   let cachedTestResults: TestResultsPayload | null = null;
   const sseClients = new Set<ServerResponse>();
@@ -78,6 +81,29 @@ export async function createPreviewServer(
       // GET
       res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
       res.end(JSON.stringify({ state: cachedState }));
+      return;
+    }
+
+    if (url.pathname === '/api/challenge') {
+      sendCORS(res);
+      if (req.method === 'POST') {
+        let body = '';
+        req.on('data', (chunk: Buffer) => { body += chunk.toString(); });
+        req.on('end', () => {
+          try {
+            cachedChallengeState = JSON.parse(body) as ChallengeState;
+            res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+            res.end(JSON.stringify({ ok: true }));
+          } catch {
+            res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
+            res.end(JSON.stringify({ error: 'Invalid JSON' }));
+          }
+        });
+        return;
+      }
+      // GET
+      res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ challenge: cachedChallengeState }));
       return;
     }
 
@@ -183,6 +209,14 @@ export async function createPreviewServer(
     return cachedState;
   }
 
+  function getChallengeState(): ChallengeState | null {
+    return cachedChallengeState;
+  }
+
+  function navigateChallenge(stepId: string) {
+    broadcastSSE({ type: 'challenge-navigate', stepId });
+  }
+
   function pushTraces(data: TracesPayload) {
     cachedTraces = data;
     broadcastSSE({ type: 'traces', data });
@@ -198,6 +232,8 @@ export async function createPreviewServer(
     updateDSL,
     watchFile,
     getState,
+    getChallengeState,
+    navigateChallenge,
     pushTraces,
     pushTestResults,
     close,

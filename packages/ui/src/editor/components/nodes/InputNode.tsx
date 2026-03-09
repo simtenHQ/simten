@@ -185,7 +185,7 @@ export function InputNode({ data, selected }: InputNodeProps) {
           position={labelPosition}
         />
       )}
-      <BaseNode outputPorts={outputPorts} selected={selected} className="min-w-[80px]">
+      <BaseNode outputPorts={outputPorts} selected={selected} className="min-w-[80px]" showPortLabels={data.showPortLabels} onPortClick={data.onPortClick} glowUnconnected={data.glowUnconnected}>
         <div className="relative flex flex-col items-center gap-2">
           {/* Composite badge */}
           {data.isComposite && (

@@ -39,6 +39,9 @@ export interface NodeData extends Record<string, unknown> {
   __consoleText?: string; // For Console component - accumulated text
   onToggle?: () => void; // Optional callback for input toggle (used by MiniCanvas/Inspector)
   onValueChange?: (value: number) => void; // Optional callback for numeric input change (used by Inspector)
+  showPortLabels?: boolean; // Show port name labels next to handles
+  onPortClick?: (portName: string, portType: 'input' | 'output') => void; // Port click callback
+  glowUnconnected?: boolean; // Pulse unconnected ports
 }
 
 /**

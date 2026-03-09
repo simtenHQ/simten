@@ -94,7 +94,7 @@ export function LogicGateNode({ data, selected }: LogicGateNodeProps) {
 
   // Always render collapsed node (inspector dialog handles expansion)
   return (
-    <BaseNode inputPorts={inputPorts} outputPorts={outputPorts} selected={selected} className="min-w-[100px]">
+    <BaseNode inputPorts={inputPorts} outputPorts={outputPorts} selected={selected} className="min-w-[100px]" showPortLabels={data.showPortLabels} onPortClick={data.onPortClick} glowUnconnected={data.glowUnconnected}>
       <div className="relative flex flex-col items-center gap-2">
         {/* Composite badge */}
         {data.isComposite && (
