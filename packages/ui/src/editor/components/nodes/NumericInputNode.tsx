@@ -144,7 +144,7 @@ export function NumericInputNode({ data, selected }: NumericInputNodeProps) {
         <div className="flex flex-col items-center gap-2">
           {/* Component Label */}
           <div
-            className="px-2 py-1 rounded text-xs font-medium text-gray-700 cursor-pointer hover:bg-blue-50 hover:text-blue-700 border border-transparent hover:border-blue-300 transition-colors"
+            className="px-2 py-1 rounded text-xs font-medium text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:text-blue-700 dark:hover:text-blue-400 border border-transparent hover:border-blue-300 dark:hover:border-blue-700 transition-colors"
             onDoubleClick={handleLabelDoubleClick}
             title="Double-click to edit label"
           >
@@ -177,7 +177,7 @@ export function NumericInputNode({ data, selected }: NumericInputNodeProps) {
             {/* Display mode toggle */}
             <button
               onClick={toggleDisplayMode}
-              className="text-xs text-gray-500 hover:text-gray-700 transition-colors"
+              className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
               title="Toggle decimal/hex display"
             >
               {displayMode === 'dec' ? 'DEC' : 'HEX'}
@@ -185,7 +185,7 @@ export function NumericInputNode({ data, selected }: NumericInputNodeProps) {
           </div>
 
           {/* Bit width indicator */}
-          <div className="text-xs text-gray-400">{width}-bit</div>
+          <div className="text-xs text-gray-400 dark:text-gray-500">{width}-bit</div>
         </div>
       </BaseNode>
     </>

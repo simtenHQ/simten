@@ -120,7 +120,7 @@ export function ClockControls() {
   const historySize = history.length;
 
   return (
-    <div className="flex items-center gap-2 rounded-lg border border-gray-200 bg-white p-2 shadow-sm">
+    <div className="flex items-center gap-2 rounded-lg border border-gray-200 dark:border-[#2a2a2e] bg-white dark:bg-[#1a1a1e] p-2 shadow-sm">
       {/* Simulation controls */}
       <div className="flex items-center gap-1">
         <Button
@@ -166,8 +166,8 @@ export function ClockControls() {
       </div>
 
       {/* Clock speed control */}
-      <div className="flex items-center gap-2 border-l border-gray-200 pl-2">
-        <label className="text-xs text-gray-600" htmlFor="clock-speed">
+      <div className="flex items-center gap-2 border-l border-gray-200 dark:border-[#2a2a2e] pl-2">
+        <label className="text-xs text-gray-600 dark:text-gray-400" htmlFor="clock-speed">
           Speed:
         </label>
         <input
@@ -180,18 +180,18 @@ export function ClockControls() {
           className="w-24"
           disabled={isViewingPast}
         />
-        <span className="min-w-[40px] text-xs text-gray-600">{clockSpeed} Hz</span>
+        <span className="min-w-[40px] text-xs text-gray-600 dark:text-gray-400">{clockSpeed} Hz</span>
       </div>
 
       {/* Cycle counter */}
-      <div className="border-l border-gray-200 pl-2">
-        <span className="text-xs text-gray-600">
+      <div className="border-l border-gray-200 dark:border-[#2a2a2e] pl-2">
+        <span className="text-xs text-gray-600 dark:text-gray-400">
           Cycle: <span className="font-mono font-semibold">{currentCycle}</span>
         </span>
       </div>
 
       {/* Time-travel controls */}
-      <div className="flex items-center gap-2 border-l border-gray-200 pl-2">
+      <div className="flex items-center gap-2 border-l border-gray-200 dark:border-[#2a2a2e] pl-2">
         <Button
           variant="ghost"
           size="sm"
@@ -202,9 +202,9 @@ export function ClockControls() {
           <ChevronLeft className="h-4 w-4" />
         </Button>
 
-        <span className="min-w-[80px] text-center text-xs text-gray-600">
+        <span className="min-w-[80px] text-center text-xs text-gray-600 dark:text-gray-400">
           {isViewingPast ? (
-            <span className="font-mono text-amber-600">
+            <span className="font-mono text-amber-600 dark:text-amber-400">
               {currentHistoryIndex + 1}/{historySize}
             </span>
           ) : (
@@ -239,7 +239,7 @@ export function ClockControls() {
                   seek(targetCycle);
                 }
               }}
-              className="w-32 h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+              className="w-32 h-1 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-600"
               disabled={isRunning}
               title="Scrub through history"
             />
