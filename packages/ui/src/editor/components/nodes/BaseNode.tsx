@@ -35,8 +35,8 @@ export function BaseNode({ children, inputPorts = [], outputPorts = [], selected
   return (
     <div
       className={cn(
-        'relative rounded-lg border-2 bg-white shadow-md transition-all',
-        selected ? 'border-blue-500 shadow-lg' : 'border-gray-300',
+        'relative rounded-lg border-2 bg-white dark:bg-[#1a1a1e] shadow-md transition-all',
+        selected ? 'border-blue-500 shadow-lg' : 'border-gray-300 dark:border-[#3a3a3e]',
         className
       )}
     >
@@ -64,7 +64,7 @@ export function BaseNode({ children, inputPorts = [], outputPorts = [], selected
               id={`in-${port.name}`}
               className={cn(
                 'h-3 w-3 rounded-full border-2 transition-all duration-200',
-                port.connected ? 'bg-blue-500 border-blue-600' : 'bg-white border-gray-400',
+                port.connected ? 'bg-blue-500 border-blue-600' : 'bg-white dark:bg-[#2a2a2e] border-gray-400 dark:border-gray-500',
                 unconnected && 'border-blue-400 shadow-[0_0_6px_rgba(96,165,250,0.6)]',
                 onPortClick && 'cursor-pointer hover:scale-150',
                 'hover:bg-blue-300 hover:border-blue-500'
@@ -111,7 +111,7 @@ export function BaseNode({ children, inputPorts = [], outputPorts = [], selected
               id={`out-${port.name}`}
               className={cn(
                 'h-3 w-3 rounded-full border-2 transition-all duration-200',
-                port.connected ? 'bg-green-500 border-green-600' : 'bg-white border-gray-400',
+                port.connected ? 'bg-green-500 border-green-600' : 'bg-white dark:bg-[#2a2a2e] border-gray-400 dark:border-gray-500',
                 port.value === true && 'bg-green-500 border-green-600',
                 port.value === false && 'bg-gray-300 border-gray-400',
                 unconnected && 'border-green-400 shadow-[0_0_6px_rgba(74,222,128,0.6)]',

@@ -32,22 +32,22 @@ function SelectionInfo({ selectedCount }: { selectedCount: number }) {
 
   return (
     <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-10 pointer-events-none">
-      <div className="bg-white border-2 border-blue-400 rounded-lg shadow-lg px-4 py-2.5 min-w-[280px]">
+      <div className="bg-white dark:bg-[#1a1a1e] border-2 border-blue-400 rounded-lg shadow-lg px-4 py-2.5 min-w-[280px]">
         <div className="flex items-center gap-3">
           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-500 text-white font-semibold text-sm">
             {selectedCount}
           </div>
           <div className="flex-1">
-            <div className="text-sm font-semibold text-gray-900">
+            <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">
               {selectedCount} component{selectedCount !== 1 ? "s" : ""} selected
             </div>
-            <div className="text-xs text-gray-600">
+            <div className="text-xs text-gray-600 dark:text-gray-400">
               Press{" "}
-              <kbd className="px-1.5 py-0.5 bg-gray-100 border border-gray-300 rounded text-xs font-mono">
+              <kbd className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded text-xs font-mono">
                 Delete
               </kbd>{" "}
               or{" "}
-              <kbd className="px-1.5 py-0.5 bg-gray-100 border border-gray-300 rounded text-xs font-mono">
+              <kbd className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded text-xs font-mono">
                 ⌫
               </kbd>{" "}
               to remove
@@ -66,27 +66,27 @@ function KeyboardShortcutsInfo({ show }: { show: boolean }) {
 
   return (
     <div className="absolute top-6 right-6 z-10">
-      <div className="bg-white border-2 border-gray-300 rounded-lg shadow-lg p-4 max-w-xs">
+      <div className="bg-white dark:bg-[#1a1a1e] border-2 border-gray-300 dark:border-[#2a2a2e] rounded-lg shadow-lg p-4 max-w-xs">
         <div className="flex items-start justify-between mb-2">
-          <div className="text-sm font-semibold text-gray-900">
+          <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">
             Keyboard Shortcuts
           </div>
           <button
             onClick={() => setIsVisible(false)}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
+            className="text-gray-400 hover:text-gray-300 transition-colors"
             aria-label="Close"
           >
             ×
           </button>
         </div>
-        <div className="space-y-1.5 text-xs text-gray-600">
+        <div className="space-y-1.5 text-xs text-gray-600 dark:text-gray-400">
           <div className="flex items-center justify-between gap-4">
             <span>Click node</span>
             <span className="text-gray-400">Select</span>
           </div>
           <div className="flex items-center justify-between gap-4">
             <span>
-              <kbd className="px-1 py-0.5 bg-gray-100 border border-gray-300 rounded font-mono text-[10px]">
+              <kbd className="px-1 py-0.5 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded font-mono text-[10px]">
                 Shift
               </kbd>{" "}
               + Click
@@ -99,11 +99,11 @@ function KeyboardShortcutsInfo({ show }: { show: boolean }) {
           </div>
           <div className="flex items-center justify-between gap-4">
             <span>
-              <kbd className="px-1 py-0.5 bg-gray-100 border border-gray-300 rounded font-mono text-[10px]">
+              <kbd className="px-1 py-0.5 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded font-mono text-[10px]">
                 Delete
               </kbd>{" "}
               /{" "}
-              <kbd className="px-1 py-0.5 bg-gray-100 border border-gray-300 rounded font-mono text-[10px]">
+              <kbd className="px-1 py-0.5 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded font-mono text-[10px]">
                 ⌫
               </kbd>
             </span>
@@ -125,9 +125,10 @@ function KeyboardShortcutsInfo({ show }: { show: boolean }) {
 
 interface CanvasProps {
   renderEmptyState?: () => React.ReactNode;
+  theme?: "light" | "dark";
 }
 
-export function Canvas({ renderEmptyState }: CanvasProps) {
+export function Canvas({ renderEmptyState, theme = "light" }: CanvasProps) {
   // --- Store reads ---
   const circuit = useCircuitStore((state) => state.circuit);
   const metadataComponents = useMetadataStore((state) => state.components);
@@ -266,7 +267,7 @@ export function Canvas({ renderEmptyState }: CanvasProps) {
       nodeTypes={FULL_NODE_TYPES}
       edgeTypes={EDGE_TYPES}
       showControls
-      theme="light"
+      theme={theme}
       renderInspector={false}
       onNodePositionChange={updateComponentPosition}
       onNodeSelect={setComponentSelected}

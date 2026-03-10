@@ -76,7 +76,7 @@ export function RasterDisplayNode({ data, selected }: RasterDisplayNodeProps) {
         <div className="flex flex-col items-center gap-2">
           {/* Component Label */}
           <div
-            className="px-2 py-1 rounded text-xs font-medium text-gray-700 cursor-pointer hover:bg-blue-50 hover:text-blue-700 border border-transparent hover:border-blue-300 transition-colors"
+            className="px-2 py-1 rounded text-xs font-medium text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:text-blue-700 dark:hover:text-blue-400 border border-transparent hover:border-blue-300 dark:hover:border-blue-700 transition-colors"
             onDoubleClick={handleLabelDoubleClick}
             title="Double-click to edit label"
           >
@@ -110,7 +110,7 @@ export function RasterDisplayNode({ data, selected }: RasterDisplayNodeProps) {
           </svg>
 
           {/* Info */}
-          <div className="text-xs text-gray-500">
+          <div className="text-xs text-gray-500 dark:text-gray-400">
             8×8 pixels (raster scan)
           </div>
         </div>

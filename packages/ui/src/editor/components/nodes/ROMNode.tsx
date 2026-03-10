@@ -145,7 +145,7 @@ export function ROMNode({ data, selected }: ROMNodeProps) {
         <div className="flex flex-col items-center gap-2">
           {/* Component Label */}
           <div
-            className="px-2 py-1 rounded text-xs font-medium text-gray-700 cursor-pointer hover:bg-blue-50 hover:text-blue-700 border border-transparent hover:border-blue-300 transition-colors"
+            className="px-2 py-1 rounded text-xs font-medium text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:text-blue-700 dark:hover:text-blue-400 border border-transparent hover:border-blue-300 dark:hover:border-blue-700 transition-colors"
             onDoubleClick={handleLabelDoubleClick}
             title="Double-click to edit label"
           >
@@ -153,7 +153,7 @@ export function ROMNode({ data, selected }: ROMNodeProps) {
           </div>
 
           {/* ROM Symbol */}
-          <div className="h-auto w-auto px-3 py-2 text-xs font-semibold rounded-md bg-amber-100 text-amber-700">
+          <div className="h-auto w-auto px-3 py-2 text-xs font-semibold rounded-md bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400">
             ROM
           </div>
 
@@ -162,10 +162,10 @@ export function ROMNode({ data, selected }: ROMNodeProps) {
             className={`
               flex flex-col items-center gap-1 p-2 rounded border-2 border-dashed cursor-pointer transition-all
               ${isDragOver
-                ? 'border-blue-500 bg-blue-50'
+                ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30'
                 : loadedInfo
-                  ? 'border-green-400 bg-green-50'
-                  : 'border-gray-300 hover:border-blue-400 hover:bg-blue-50'
+                  ? 'border-green-400 bg-green-50 dark:bg-green-900/20'
+                  : 'border-gray-300 dark:border-gray-600 hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20'
               }
             `}
             onDrop={handleDrop}
@@ -176,10 +176,10 @@ export function ROMNode({ data, selected }: ROMNodeProps) {
           >
             {loadedInfo ? (
               <>
-                <div className="text-xs text-green-700 font-medium truncate max-w-[100px]">
+                <div className="text-xs text-green-700 dark:text-green-400 font-medium truncate max-w-[100px]">
                   {loadedInfo.filename}
                 </div>
-                <div className="text-xs text-green-600">
+                <div className="text-xs text-green-600 dark:text-green-500">
                   {loadedInfo.data.size} bytes
                 </div>
                 <button
@@ -191,10 +191,10 @@ export function ROMNode({ data, selected }: ROMNodeProps) {
               </>
             ) : (
               <>
-                <div className="text-xs text-gray-500">
+                <div className="text-xs text-gray-500 dark:text-gray-400">
                   Drop .bin
                 </div>
-                <div className="text-xs text-gray-400">
+                <div className="text-xs text-gray-400 dark:text-gray-500">
                   or click
                 </div>
               </>

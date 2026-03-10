@@ -15,7 +15,6 @@ export { DiagnosticsPanel } from './DiagnosticsPanel';
 export { HierarchyBreadcrumb } from './HierarchyBreadcrumb';
 export { LabelEditor } from './LabelEditor';
 export { RightSidebar } from './RightSidebar';
-export { SimulationControls } from './SimulationControls';
 export { TestbenchLoader } from './TestbenchLoader';
 export { TestbenchPanel } from './TestbenchPanel';
 export * from './nodes';
