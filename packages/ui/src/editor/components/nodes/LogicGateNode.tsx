@@ -84,7 +84,7 @@ export function LogicGateNode({ data, selected }: LogicGateNodeProps) {
     const isSimpleGate = metadata?.category === PRIMITIVE_CATEGORIES.LOGIC_GATES;
 
     return (
-      <div className={`flex items-center justify-center rounded-md bg-gray-100 text-gray-700 ${
+      <div className={`flex items-center justify-center rounded-md bg-gray-100 dark:bg-[#2a2a2e] text-gray-700 dark:text-gray-300 ${
         isSimpleGate ? 'h-12 w-12 text-2xl font-bold' : 'h-auto w-auto px-3 py-2 text-xs font-semibold'
       }`}>
         {symbol}
@@ -111,7 +111,7 @@ export function LogicGateNode({ data, selected }: LogicGateNodeProps) {
         )}
 
         {/* Component Label */}
-        <div className="text-xs font-medium text-gray-600">
+        <div className="text-xs font-medium text-gray-600 dark:text-gray-400">
           {data.label || data.componentRef}
         </div>
 
@@ -120,7 +120,7 @@ export function LogicGateNode({ data, selected }: LogicGateNodeProps) {
 
         {/* Inspect hint for composites */}
         {data.isComposite && (
-          <div className="text-[9px] text-gray-400">double-click to inspect</div>
+          <div className="text-[9px] text-gray-400 dark:text-gray-500">double-click to inspect</div>
         )}
       </div>
     </BaseNode>

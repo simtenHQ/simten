@@ -42,7 +42,7 @@ export function EmbedConsoleNode({ data, selected }: EmbedConsoleNodeProps) {
       className="min-w-[200px]"
     >
       <div className="flex flex-col items-center gap-2">
-        <div className="px-2 py-1 rounded text-xs font-medium text-gray-700">
+        <div className="px-2 py-1 rounded text-xs font-medium text-gray-700 dark:text-gray-300">
           {data.label || "Console"}
         </div>
         <pre
@@ -56,7 +56,7 @@ export function EmbedConsoleNode({ data, selected }: EmbedConsoleNodeProps) {
             </span>
           )}
         </pre>
-        <div className="text-xs text-gray-500">
+        <div className="text-xs text-gray-500 dark:text-gray-400">
           {charCount} chars, {lineCount} lines
         </div>
       </div>

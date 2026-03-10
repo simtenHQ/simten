@@ -448,11 +448,11 @@ function CircuitCanvasInner({
   }
 
   const isDark = theme === "dark";
-  const bgColor = isDark ? "#374151" : "#d1d5db";
+  const bgColor = isDark ? "#2a2a2e" : "#d1d5db";
 
   return (
     <div
-      className={`${isDark ? "bg-gray-900" : "bg-white"} rounded-lg overflow-hidden ${editable ? "relative h-full w-full" : ""} ${className ?? ""}`}
+      className={`${isDark ? "bg-[#141418]" : "bg-white"} rounded-lg overflow-hidden ${editable ? "relative h-full w-full" : ""} ${className ?? ""}`}
       style={editable ? undefined : { height }}
       onDrop={editable ? handleDrop : undefined}
       onDragOver={editable ? handleDragOver : undefined}

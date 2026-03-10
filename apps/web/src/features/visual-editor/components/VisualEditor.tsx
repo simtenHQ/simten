@@ -2,7 +2,7 @@
  * VisualEditor Component
  *
  * Main component that integrates all parts of the visual editor.
- * Combines ComponentPalette, Canvas, SimulationControls, and DSL Editor.
+ * Combines ComponentPalette, Canvas, and DSL Editor.
  *
  * This is a thin shell — all editor components come from @turing-incomplete/ui.
  */
@@ -14,11 +14,11 @@ import {
   ReactFlowProvider,
   Canvas,
   ComponentPalette,
-  SimulationControls,
   RightSidebar,
   ClockControls,
   CompositeInspectorDialog,
 } from "@turing-incomplete/ui/editor/components";
+import { ThemeToggle } from "@/app/components/ThemeToggle";
 import { useCircuitStore, useDSLPreviewStore, useComponentLibraryStore } from "@turing-incomplete/ui/editor/stores";
 import { usePrimitivesInit } from "@turing-incomplete/ui/editor/hooks";
 import { useSimulationController } from "@turing-incomplete/ui/editor";
@@ -56,7 +56,11 @@ function hasSequentialComponents(
   return false;
 }
 
-export function VisualEditor() {
+interface VisualEditorProps {
+  theme?: "light" | "dark";
+}
+
+export function VisualEditor({ theme = "light" }: VisualEditorProps) {
   const setCompiledCircuits = useDSLPreviewStore(
     (state) => state.setCompiledCircuits,
   );
@@ -136,11 +140,11 @@ export function VisualEditor() {
   // Empty state with chat CTA
   const renderEmptyState = useCallback(() => (
     <div className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none">
-      <div className="pointer-events-auto flex flex-col items-center gap-4 rounded-xl border border-gray-200 bg-white p-8 shadow-lg max-w-sm text-center">
+      <div className="pointer-events-auto flex flex-col items-center gap-4 rounded-xl border border-gray-200 dark:border-[#2a2a2e] bg-white dark:bg-[#1a1a1e] p-8 shadow-lg max-w-sm text-center">
         <Bot className="h-12 w-12 text-blue-500" />
         <div>
-          <h2 className="text-lg font-semibold text-gray-900">Build circuits with AI</h2>
-          <p className="mt-1 text-sm text-gray-500">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Build circuits with AI</h2>
+          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
             Describe what you want and watch it appear on canvas
           </p>
         </div>
@@ -150,7 +154,7 @@ export function VisualEditor() {
         </Button>
         <p className="text-xs text-gray-400">
           or press{' '}
-          <kbd className="rounded border border-gray-300 bg-gray-100 px-1.5 py-0.5 font-mono text-[10px]">
+          <kbd className="rounded border border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 font-mono text-[10px]">
             ⌘K
           </kbd>
         </p>
@@ -161,9 +165,9 @@ export function VisualEditor() {
   return (
     <ReactFlowProvider>
       <TooltipProvider delayDuration={300}>
-      <div className="flex h-screen w-screen flex-col overflow-hidden bg-gray-50">
+      <div className="flex h-screen w-screen flex-col overflow-hidden bg-gray-50 dark:bg-[#111113]">
         {/* Top Control Bar with Drawer Toggle Buttons */}
-        <div className="flex items-center gap-3 border-b border-gray-200 bg-white px-6 py-2 shadow-sm">
+        <div className="flex items-center gap-3 border-b border-gray-200 dark:border-[#2a2a2e] bg-white dark:bg-[#1a1a1e] px-6 py-2 shadow-sm">
           {/* Left: Drawer Toggle Buttons */}
           <Button
             onClick={() => setComponentPaletteOpen(true)}
@@ -195,22 +199,22 @@ export function VisualEditor() {
             <Bot className="h-4 w-4" />
           </Button>
 
-          <div className="border-l border-gray-200 h-8"></div>
+          <div className="border-l border-gray-200 dark:border-[#2a2a2e] h-8"></div>
 
           {/* App Title */}
-          <h1 className="text-lg font-bold text-gray-900">Turing Incomplete</h1>
+          <h1 className="text-lg font-bold text-gray-900 dark:text-gray-100">Turing Incomplete</h1>
 
           {/* Spacer */}
           <div className="flex-1"></div>
 
-          {/* Main Controls from SimulationControls (inline) */}
-          <SimulationControls />
+          {/* Theme Toggle */}
+          <ThemeToggle />
         </div>
 
         {/* Main Content Area - Unified Workspace */}
         <div className="flex flex-1 overflow-hidden">
           {/* Left: DSL Editor (40%) - Full Height */}
-          <div className="w-[40%] border-r border-gray-200">
+          <div className="w-[40%] border-r border-gray-200 dark:border-[#2a2a2e]">
             <DSLEditor
               ref={dslEditorRef}
               autoCompileEnabled={true}
@@ -222,7 +226,7 @@ export function VisualEditor() {
           {/* Right: Canvas (60%) - Full Height */}
           <div className="flex flex-1 flex-col">
             <div className="flex-1">
-              <Canvas renderEmptyState={renderEmptyState} />
+              <Canvas theme={theme} renderEmptyState={renderEmptyState} />
             </div>
           </div>
         </div>
@@ -249,7 +253,7 @@ export function VisualEditor() {
 
         {/* Conditional Bottom Bar: Clock Controls (only for sequential circuits) */}
         {showClockControls && (
-          <div className="border-t border-gray-200 bg-white px-6 py-3 shadow-sm">
+          <div className="border-t border-gray-200 dark:border-[#2a2a2e] bg-white dark:bg-[#1a1a1e] px-6 py-3 shadow-sm">
             <ClockControls />
           </div>
         )}

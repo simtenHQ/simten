@@ -73,7 +73,7 @@ export function OutputNode({ data, selected }: OutputNodeProps) {
         <div className="flex flex-col items-center gap-2">
           {/* Component Label */}
           <div
-            className="px-2 py-1 rounded text-xs font-medium text-gray-700 cursor-pointer hover:bg-blue-50 hover:text-blue-700 border border-transparent hover:border-blue-300 transition-colors"
+            className="px-2 py-1 rounded text-xs font-medium text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:text-blue-700 dark:hover:text-blue-400 border border-transparent hover:border-blue-300 dark:hover:border-blue-700 transition-colors"
             onDoubleClick={handleLabelDoubleClick}
             title="Double-click to edit label"
           >
@@ -86,7 +86,7 @@ export function OutputNode({ data, selected }: OutputNodeProps) {
           </div>
 
           {/* Decimal Value */}
-          <div className="text-xs text-gray-500">
+          <div className="text-xs text-gray-500 dark:text-gray-400">
             Dec: {numericValue}
           </div>
         </div>
@@ -97,7 +97,7 @@ export function OutputNode({ data, selected }: OutputNodeProps) {
         <div className="flex flex-col items-center gap-2">
           {/* Component Label */}
           <div
-            className="px-2 py-1 rounded text-xs font-medium text-gray-700 cursor-pointer hover:bg-blue-50 hover:text-blue-700 border border-transparent hover:border-blue-300 transition-colors"
+            className="px-2 py-1 rounded text-xs font-medium text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:text-blue-700 dark:hover:text-blue-400 border border-transparent hover:border-blue-300 dark:hover:border-blue-700 transition-colors"
             onDoubleClick={handleLabelDoubleClick}
             title="Double-click to edit label"
           >
@@ -110,7 +110,7 @@ export function OutputNode({ data, selected }: OutputNodeProps) {
           </div>
 
           {/* Decimal Value */}
-          <div className="text-xs text-gray-500">
+          <div className="text-xs text-gray-500 dark:text-gray-400">
             Dec: {numericValue & 0xF}
           </div>
         </div>
@@ -121,7 +121,7 @@ export function OutputNode({ data, selected }: OutputNodeProps) {
         <div className="flex flex-col items-center gap-2">
           {/* Component Label */}
           <div
-            className="px-2 py-1 rounded text-xs font-medium text-gray-700 cursor-pointer hover:bg-blue-50 hover:text-blue-700 border border-transparent hover:border-blue-300 transition-colors"
+            className="px-2 py-1 rounded text-xs font-medium text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:text-blue-700 dark:hover:text-blue-400 border border-transparent hover:border-blue-300 dark:hover:border-blue-700 transition-colors"
             onDoubleClick={handleLabelDoubleClick}
             title="Double-click to edit label"
           >
@@ -134,7 +134,7 @@ export function OutputNode({ data, selected }: OutputNodeProps) {
               'h-10 w-10 rounded-full border-2 transition-all',
               value
                 ? 'border-green-600 bg-green-400 shadow-lg shadow-green-500/50'
-                : 'border-gray-400 bg-gray-200'
+                : 'border-gray-400 dark:border-gray-500 bg-gray-200 dark:bg-[#2a2a2e]'
             )}
           >
             {/* Glow effect when on */}
@@ -144,7 +144,7 @@ export function OutputNode({ data, selected }: OutputNodeProps) {
           </div>
 
           {/* Value Display */}
-          <div className={cn('text-xs font-semibold', value ? 'text-green-600' : 'text-gray-500')}>
+          <div className={cn('text-xs font-semibold', value ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-gray-400')}>
             {value ? 'ON' : 'OFF'}
           </div>
         </div>

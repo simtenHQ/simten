@@ -78,7 +78,7 @@ function NumericInputControl({ data }: { data: NodeData }) {
         {/* Decrement */}
         <button
           onClick={(e) => { e.stopPropagation(); setValue(currentValue - 1); }}
-          className="w-6 h-6 flex items-center justify-center rounded bg-gray-200 hover:bg-gray-300 text-gray-600 text-sm font-bold active:scale-90 transition-all"
+          className="w-6 h-6 flex items-center justify-center rounded bg-gray-200 dark:bg-[#2a2a2e] hover:bg-gray-300 dark:hover:bg-[#3a3a3e] text-gray-600 dark:text-gray-400 text-sm font-bold active:scale-90 transition-all"
         >
           -
         </button>
@@ -108,14 +108,14 @@ function NumericInputControl({ data }: { data: NodeData }) {
         {/* Increment */}
         <button
           onClick={(e) => { e.stopPropagation(); setValue(currentValue + 1); }}
-          className="w-6 h-6 flex items-center justify-center rounded bg-gray-200 hover:bg-gray-300 text-gray-600 text-sm font-bold active:scale-90 transition-all"
+          className="w-6 h-6 flex items-center justify-center rounded bg-gray-200 dark:bg-[#2a2a2e] hover:bg-gray-300 dark:hover:bg-[#3a3a3e] text-gray-600 dark:text-gray-400 text-sm font-bold active:scale-90 transition-all"
         >
           +
         </button>
       </div>
 
       {/* Decimal display */}
-      <div className="text-[10px] text-gray-500 font-mono">
+      <div className="text-[10px] text-gray-500 dark:text-gray-400 font-mono">
         = {currentValue}
       </div>
     </div>
@@ -203,7 +203,7 @@ export function InputNode({ data, selected }: InputNodeProps) {
 
           {/* Component Label */}
           <div
-            className="px-2 py-1 rounded text-xs font-medium text-gray-700 cursor-pointer hover:bg-blue-50 hover:text-blue-700 border border-transparent hover:border-blue-300 transition-colors"
+            className="px-2 py-1 rounded text-xs font-medium text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:text-blue-700 dark:hover:text-blue-400 border border-transparent hover:border-blue-300 dark:hover:border-blue-700 transition-colors"
             onDoubleClick={handleLabelDoubleClick}
             title="Double-click to edit label"
           >
@@ -268,7 +268,7 @@ export function InputNode({ data, selected }: InputNodeProps) {
               <div
                 className={cn(
                   'text-xs font-semibold tracking-wide transition-colors duration-300',
-                  value ? 'text-emerald-600' : 'text-gray-500'
+                  value ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-500 dark:text-gray-400'
                 )}
               >
                 {value ? 'ON' : 'OFF'}

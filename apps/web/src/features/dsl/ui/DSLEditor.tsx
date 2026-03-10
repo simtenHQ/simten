@@ -8,6 +8,7 @@
 "use client";
 
 import React, { useState, useCallback, useRef, useEffect, useImperativeHandle, forwardRef } from "react";
+import { useTheme } from "next-themes";
 import Editor, { OnMount, Monaco } from "@monaco-editor/react";
 import type { editor } from "monaco-editor";
 import {
@@ -95,6 +96,14 @@ export const DSLEditor = forwardRef<DSLEditorRef, DSLEditorProps>(function DSLEd
   const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
   const monacoRef = useRef<Monaco | null>(null);
   const autoCompileTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Switch Monaco theme reactively when system theme changes
+  const { resolvedTheme } = useTheme();
+  useEffect(() => {
+    const monaco = monacoRef.current;
+    if (!monaco) return;
+    monaco.editor.setTheme(resolvedTheme === "dark" ? "dsl-dark" : "dsl-light");
+  }, [resolvedTheme]);
 
   // Update Monaco markers when errors change
   useEffect(() => {
@@ -225,8 +234,8 @@ export const DSLEditor = forwardRef<DSLEditorRef, DSLEditorProps>(function DSLEd
       },
     });
 
-    // Set theme
-    monaco.editor.defineTheme("dsl-theme", {
+    // Define light and dark themes
+    monaco.editor.defineTheme("dsl-light", {
       base: "vs",
       inherit: true,
       rules: [
@@ -240,7 +249,25 @@ export const DSLEditor = forwardRef<DSLEditorRef, DSLEditorProps>(function DSLEd
       colors: {},
     });
 
-    monaco.editor.setTheme("dsl-theme");
+    monaco.editor.defineTheme("dsl-dark", {
+      base: "vs-dark",
+      inherit: true,
+      rules: [
+        { token: "comment", foreground: "6a9955", fontStyle: "italic" },
+        { token: "keyword", foreground: "569cd6", fontStyle: "bold" },
+        { token: "type", foreground: "4ec9b0" },
+        { token: "constant", foreground: "ce9178" },
+        { token: "identifier", foreground: "9cdcfe" },
+        { token: "number", foreground: "b5cea8" },
+      ],
+      colors: {
+        "editor.background": "#1e1e1e",
+      },
+    });
+
+    // Set initial theme based on current system preference
+    const isDark = document.documentElement.classList.contains("dark");
+    monaco.editor.setTheme(isDark ? "dsl-dark" : "dsl-light");
 
     // Register autocomplete provider
     monaco.languages.registerCompletionItemProvider("dsl", {
@@ -608,11 +635,11 @@ export const DSLEditor = forwardRef<DSLEditorRef, DSLEditorProps>(function DSLEd
   }, [code, autoCompileEnabled]); // Don't include handleCompile - causes infinite recompilation!
 
   return (
-    <div className="flex flex-col h-full bg-white">
+    <div className="flex flex-col h-full bg-white dark:bg-[#1e1e1e]">
       {/* Header (optional) */}
       {showHeader && (
-        <div className="flex items-center justify-between px-4 py-2 border-b bg-gray-50">
-          <h2 className="text-lg font-semibold text-gray-800">DSL Editor</h2>
+        <div className="flex items-center justify-between px-4 py-2 border-b bg-gray-50 dark:bg-[#1a1a1e] dark:border-[#2a2a2e]">
+          <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200">DSL Editor</h2>
           <div className="flex items-center gap-2">
             <CompileButton
               onClick={handleCompile}
@@ -625,7 +652,7 @@ export const DSLEditor = forwardRef<DSLEditorRef, DSLEditorProps>(function DSLEd
 
       {/* Success Message */}
       {successMessage && (
-        <div className="px-4 py-2 bg-green-50 border-b border-green-300">
+        <div className="px-4 py-2 bg-green-50 dark:bg-green-900/20 border-b border-green-300 dark:border-green-800">
           <div className="flex items-center gap-2 text-sm text-green-800">
             <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
               <path
