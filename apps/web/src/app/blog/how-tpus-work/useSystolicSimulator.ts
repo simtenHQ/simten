@@ -6,6 +6,7 @@ import { SYSTOLIC_3X3_DSL } from "./circuits";
 export function useSystolicSimulator() {
   const sim = useCircuitSimulator(SYSTOLIC_3X3_DSL);
   const [isRunning, setIsRunning] = useState(false);
+  const [hasStarted, setHasStarted] = useState(false);
   const [speed, setSpeed] = useState(100);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [isDone, setIsDone] = useState(false);
@@ -49,14 +50,24 @@ export function useSystolicSimulator() {
 
   const handleStart = useCallback(() => {
     if (startNodeId) {
-      sim.toggleNode(startNodeId);
+      sim.setNodeValue(startNodeId, 1);
     }
+    setHasStarted(true);
     setIsDone(false);
     setIsRunning(true);
   }, [startNodeId, sim]);
 
+  const handleStep = useCallback(() => {
+    if (!hasStarted && startNodeId) {
+      sim.setNodeValue(startNodeId, 1);
+      setHasStarted(true);
+    }
+    sim.tick();
+  }, [hasStarted, startNodeId, sim]);
+
   const handleReset = useCallback(() => {
     setIsRunning(false);
+    setHasStarted(false);
     setIsDone(false);
     sim.reset();
   }, [sim]);
@@ -65,10 +76,12 @@ export function useSystolicSimulator() {
     sim,
     isRunning,
     setIsRunning,
+    hasStarted,
     speed,
     setSpeed,
     isDone,
     handleStart,
+    handleStep,
     handleReset,
   };
 }

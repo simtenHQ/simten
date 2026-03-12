@@ -1,9 +1,10 @@
 /**
  * Systolic Array Circuit Tests
  *
- * Tests the redesigned weight-stationary systolic array:
- * - PE_Systolic with combinational partial-sum flow
- * - Systolic2x2 with 4-tick computation (1 weight load + 3 data flow)
+ * Tests the weight-stationary systolic array with registered partial sums:
+ * - PE_Systolic with registered partial-sum output
+ * - Systolic2x2 with 6-tick computation (3N for N=2)
+ * - Staggered data injection: row r starts at cycle 1+r
  * - Correct matrix multiplication: A×B = C
  */
 
@@ -125,22 +126,23 @@ describe("Systolic Array Circuit", () => {
   });
 
   describe("matrix multiplication A×B = C", () => {
-    it("should compute [[1,2],[3,4]] × [[5,6],[7,8]] = [[19,22],[43,50]] in 4 ticks", () => {
+    it("should compute [[1,2],[3,4]] × [[5,6],[7,8]] = [[19,22],[43,50]] in 6 ticks", () => {
       const { sim } = compileAndCreate(true);
 
       // Tick 1: cycle 0 → load weights
       sim.tick();
-
-      // Tick 2: cycle 1 → first data, C[0][0] computed
+      // Tick 2: cycle 1 → row 0 first data
       sim.tick();
-
-      // Tick 3: cycle 2 → second data, C[1][0] and C[0][1] computed
+      // Tick 3: cycle 2 → row 0 second data, row 1 first data
       sim.tick();
-
-      // Tick 4: cycle 3 → pipeline drain, C[1][1] computed, counter → 4
+      // Tick 4: cycle 3 → row 1 second data; C[0][0] captured
+      sim.tick();
+      // Tick 5: cycle 4 → C[1][0] and C[0][1] captured
+      sim.tick();
+      // Tick 6: cycle 5 → C[1][1] captured, counter → 6, done fires
       const result = sim.tick();
 
-      // After 4 ticks, done should be true and results correct
+      // After 6 ticks, done should be true and results correct
       expect(isDone(result.portValues)).toBe(true);
 
       // Read results from HexDisplay nodes
@@ -158,8 +160,8 @@ describe("Systolic Array Circuit", () => {
     it("should stay done and hold results after additional ticks", () => {
       const { sim } = compileAndCreate(true);
 
-      // Run 4 ticks to complete
-      for (let i = 0; i < 4; i++) sim.tick();
+      // Run 6 ticks to complete
+      for (let i = 0; i < 6; i++) sim.tick();
 
       // Run a few more ticks — results should hold
       const result = sim.tick();

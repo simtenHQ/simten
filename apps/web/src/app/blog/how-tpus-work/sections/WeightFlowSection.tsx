@@ -15,34 +15,31 @@ export function WeightFlowSection() {
           <strong className="text-white">vertically</strong>. Here we stack two
           PEs in a column. The top PE receives{" "}
           <code className="text-blue-300">partialSumIn = 0</code> and computes{" "}
-          <code className="text-blue-300">0 + data &times; weight0</code>. This
-          partial sum output feeds directly into the bottom PE&rsquo;s{" "}
-          <code className="text-blue-300">partialSumIn</code>. The bottom PE
-          computes{" "}
-          <code className="text-blue-300">
-            (data &times; weight0) + data &times; weight1
-          </code>{" "}
-          &mdash; the full dot product of the data value with both weights in
-          this column.
+          <code className="text-blue-300">0 + data &times; weight0</code>. That
+          result is registered &mdash; it appears at the top PE&rsquo;s{" "}
+          <code className="text-blue-300">partialSumOut</code> one cycle later.
+          The bottom PE then adds its own{" "}
+          <code className="text-blue-300">data &times; weight1</code> to
+          produce the full dot product, again registered one cycle later.
         </p>
         <p className="text-gray-300 leading-relaxed">
           This vertical flow is{" "}
-          <strong className="text-white">combinational</strong> &mdash; both PE
-          outputs settle in the same clock cycle. No extra register delay, no
-          extra latency. This is the key insight of the weight-stationary
-          systolic architecture: horizontal data flow is{" "}
-          <em>registered</em> (one cycle per PE), but vertical partial-sum flow
-          is <em>combinational</em> (an entire column settles in one cycle).
+          <strong className="text-white">registered</strong> &mdash; partial
+          sums move down one PE per clock cycle, just like data moves right one
+          PE per cycle. This symmetry is critical for timing in real hardware. A
+          256-deep combinational chain couldn&rsquo;t close timing at TPU clock
+          speeds. Instead, each PE latches its partial sum into a register,
+          giving the signal a full cycle to propagate to the next PE.
         </p>
         <p className="text-gray-300 leading-relaxed">
-          In a real TPUv1 with 256 rows, a single activation value entering a
-          column has its contribution added to the partial sum all the way down
-          in one cycle &mdash; 256 multiply-adds in a combinational cascade.
-          Load weights (toggle{" "}
+          To compensate for this vertical delay, the systolic array uses{" "}
+          <strong className="text-white">staggered data injection</strong>:
+          row&nbsp;0 receives data starting at cycle&nbsp;1, row&nbsp;1 at
+          cycle&nbsp;2, and so on. This keeps partial sums and activations
+          synchronized as they flow through the array. Load weights (toggle{" "}
           <code className="text-blue-300">weightValid</code> on, tick, toggle
-          off), then change{" "}
-          <code className="text-blue-300">dataIn</code> to see both results
-          update instantly.
+          off), then tick twice to see the top result, and a third time for the
+          bottom result.
         </p>
       </div>
 
@@ -55,7 +52,7 @@ export function WeightFlowSection() {
           showControls
           autoRunSpeed={400}
           title="Two-PE Column"
-          description="Partial sums cascade from top to bottom combinationally — no extra clock cycles."
+          description="Partial sums flow down through registers — one PE per clock cycle, matching real TPU hardware."
         />
       </div>
     </section>
