@@ -118,6 +118,7 @@ export default function ALUChallengePage() {
           </div>
 
           <ChallengeWorkbench
+            key={stage.id}
             stage={stage}
             challengeId="build-an-alu"
             onNavigate={handleNavigate}
