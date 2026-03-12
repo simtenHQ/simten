@@ -14,19 +14,13 @@ import { isPrimitive, PRIMITIVES } from '../lib/primitive-registry';
 // ===========================
 
 /**
- * Component type identifier.
- * Can be any string - primitive names (e.g., 'And', 'DFlipFlop') or user-defined.
- */
-export type ComponentType = string;
-
-/**
  * Generic component interface.
  * This flexible interface supports all component types through dynamic properties.
  * Specific component behavior is determined by primitives.ts metadata.
  */
 export interface Component {
   id: string;
-  type: ComponentType;
+  type: string;
   label?: string;
   // Dynamic properties for component-specific state
   [key: string]: unknown;
@@ -52,7 +46,7 @@ export interface Connection {
  * Defines the port configuration for each component type.
  */
 export interface ComponentSpec {
-  type: ComponentType;
+  type: string;
   inputCount: number;
   outputCount: number;
   evaluate?: (inputs: (boolean | number)[]) => (boolean | number)[]; // Legacy logic function
@@ -63,7 +57,7 @@ export interface ComponentSpec {
  *
  * Uses primitives.ts as the source of truth for primitive components.
  */
-export function getComponentSpec(type: ComponentType): ComponentSpec | undefined {
+export function getComponentSpec(type: string): ComponentSpec | undefined {
   const primitive = PRIMITIVES.find((p) => p.name === type);
   if (primitive) {
     return {
@@ -80,7 +74,7 @@ export function getComponentSpec(type: ComponentType): ComponentSpec | undefined
  *
  * Uses primitives.ts as the source of truth.
  */
-export function isPrimitiveComponentType(type: ComponentType): boolean {
+export function isPrimitiveComponentType(type: string): boolean {
   return isPrimitive(type);
 }
 
@@ -90,19 +84,11 @@ export function isPrimitiveComponentType(type: ComponentType): boolean {
 
 /**
  * Helper function to check if a component is sequential (has state).
- * Handles both legacy naming (D_FLIP_FLOP) and new naming (DFlipFlop).
+ * Data-driven: checks if the primitive has clock ports.
  */
-export function isSequentialComponent(type: ComponentType): boolean {
-  // Legacy names
-  if (type === 'D_FLIP_FLOP' || type === 'REGISTER' || type === 'RAM') {
-    return true;
-  }
-  // New names - check via primitives.ts metadata
+export function isSequentialComponent(type: string): boolean {
   const primitive = PRIMITIVES.find((p) => p.name === type);
-  if (primitive && primitive.clocks && primitive.clocks.length > 0) {
-    return true;
-  }
-  return false;
+  return !!(primitive && primitive.clocks && primitive.clocks.length > 0);
 }
 
 // ===========================

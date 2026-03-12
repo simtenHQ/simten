@@ -5,15 +5,13 @@
  * This state is ephemeral and not persisted.
  */
 
-import type { ComponentType } from './ui-model';
-
 // ===========================
 // Interaction State
 // ===========================
 
 export interface DragOperation {
   type: 'component' | 'connection';
-  componentType?: ComponentType; // For palette drags
+  componentRef?: string; // For palette drags
   active: boolean;
 }
 

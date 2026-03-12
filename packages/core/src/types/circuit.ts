@@ -248,8 +248,6 @@ export interface CircuitMetadata {
    * 4. sinks
    */
   outputDependency?: 'state-only' | 'state+inputs' | 'input-dependent';
-  consumes?: string[]; // Capabilities this component requires (e.g., ['FrameSnapshotSource'])
-  provides?: string[]; // Capabilities this component implements (e.g., ['FrameSnapshotSource'])
 }
 
 // ============================================================================

@@ -190,8 +190,8 @@ export function Canvas({ renderEmptyState, theme = "light" }: CanvasProps) {
   );
 
   const handleDrop = useCallback(
-    (componentType: string, position: { x: number; y: number }) => {
-      const nodeId = addNode(componentType);
+    (componentRef: string, position: { x: number; y: number }) => {
+      const nodeId = addNode(componentRef);
       setComponentMetadata(nodeId, { id: nodeId, position });
     },
     [addNode, setComponentMetadata],

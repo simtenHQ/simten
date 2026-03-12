@@ -189,21 +189,6 @@ export interface TestCase {
  */
 export type ComponentKind = 'combinational' | 'sequential' | 'sink';
 
-/**
- * FrameSnapshotSource - Capability interface for components that provide
- * burst-readable memory snapshots (framebuffers, audio buffers, etc.)
- *
- * This represents DMA-style burst reads that happen once per evaluation,
- * separate from combinational logic timing.
- */
-export interface FrameSnapshotSource {
-  /**
-   * Returns an immutable snapshot of the framebuffer/buffer contents.
-   * Called once per frame during projection phase.
-   */
-  snapshot(): Readonly<Uint8Array>;
-}
-
 export interface CircuitMetadata {
   source?: {
     filename?: string;
@@ -228,8 +213,6 @@ export interface CircuitMetadata {
    * 4. sinks
    */
   outputDependency?: 'state-only' | 'state+inputs' | 'input-dependent';
-  consumes?: string[]; // Capabilities this component requires (e.g., ['FrameSnapshotSource'])
-  provides?: string[]; // Capabilities this component implements (e.g., ['FrameSnapshotSource'])
 }
 
 // ============================================================================

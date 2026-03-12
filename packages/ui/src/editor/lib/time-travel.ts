@@ -18,7 +18,7 @@ import { PRIMITIVE_DEFINITIONS } from './primitive-registry';
 
 /**
  * Captures environmental state from all nodes with environmental state
- * Uses metadata-driven discovery (no hardcoded component lists)
+ * Uses metadata-driven discovery via `def.environmentalState` field
  *
  * Environmental state = values from outside the circuit (user inputs, sensors, RNG)
  * Examples: Switch positions, Button states, Input values
@@ -32,12 +32,12 @@ export function captureEnvironmentalState(circuit: Circuit): Map<string, Environ
   for (const node of circuit.nodes) {
     const primitiveDef = PRIMITIVE_DEFINITIONS[node.componentRef];
 
-    if (primitiveDef?.hasEnvironmentalState && primitiveDef.captureEnvironmentalState) {
-      const state = primitiveDef.captureEnvironmentalState(node);
+    if (primitiveDef?.environmentalState) {
+      const state = node.arguments[primitiveDef.environmentalState];
 
       // Clone if mutable (defensive copy)
       const clonedState = structuredClone(state);
-      environmentalState.set(node.id, clonedState);
+      environmentalState.set(node.id, clonedState as EnvironmentalStateValue);
     }
   }
 
@@ -65,16 +65,15 @@ export function restoreEnvironmentalState(
     if (state !== undefined) {
       const primitiveDef = PRIMITIVE_DEFINITIONS[node.componentRef];
 
-      if (primitiveDef?.hasEnvironmentalState) {
+      if (primitiveDef?.environmentalState) {
         // Clone before restoring (prevent snapshot mutation)
         const clonedState = structuredClone(state);
 
         // Update via circuit store to respect immutability
-        // Cast to ArgumentValue since we know environmental state values are compatible
         updateNode(node.id, {
           arguments: {
             ...node.arguments,
-            value: clonedState as ArgumentValue,
+            [primitiveDef.environmentalState]: clonedState as ArgumentValue,
           },
         });
       }

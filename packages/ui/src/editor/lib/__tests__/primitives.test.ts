@@ -1744,7 +1744,6 @@ describe("createPrimitiveComponent", () => {
       expect(component).toEqual({
         id: "test-id",
         type: "Led",
-        value: false,
       });
     });
 
@@ -1786,7 +1785,6 @@ describe("createPrimitiveComponent", () => {
       expect(component).toEqual({
         id: "test-id",
         type: "HexDisplay",
-        value: 0,
         width: 8,
       });
     });
@@ -1796,7 +1794,6 @@ describe("createPrimitiveComponent", () => {
       expect(component).toEqual({
         id: "test-id",
         type: "SevenSegment",
-        value: 0,
       });
     });
   });
@@ -1886,6 +1883,7 @@ describe("createPrimitiveComponent", () => {
       expect(component).toEqual({
         id: "test-id",
         type: "Adder",
+        width: 8,
       });
     });
 
@@ -1894,6 +1892,7 @@ describe("createPrimitiveComponent", () => {
       expect(component).toEqual({
         id: "test-id",
         type: "Multiplier",
+        width: 8,
       });
     });
 
@@ -1902,6 +1901,7 @@ describe("createPrimitiveComponent", () => {
       expect(component).toEqual({
         id: "test-id",
         type: "Comparator",
+        width: 8,
       });
     });
   });
@@ -1909,11 +1909,12 @@ describe("createPrimitiveComponent", () => {
   describe("Utility Components", () => {
     it("should create Constant with correct initial state", () => {
       const component = createPrimitiveComponent("test-id", "Constant", 42);
-      expect(component).toEqual({
-        id: "test-id",
-        type: "Constant",
-        value: 42,
-      });
+      // Constant has no environmentalState, so initialValue is ignored
+      // (it only applies to environmental or sequential components)
+      expect(component).not.toBeNull();
+      expect(component?.id).toBe("test-id");
+      expect(component?.type).toBe("Constant");
+      expect(component?.value).toBe(0); // Default from parameter
     });
 
     it("should create Splitter with minimal state", () => {
