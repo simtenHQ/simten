@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import { useCircuitSimulator } from "@turing-incomplete/ui/embed";
 import { CircuitCanvas } from "@turing-incomplete/ui/shared";
+import { Logo } from "@/components/Logo";
 
 // ============================================================================
 // Demo data
@@ -242,7 +243,7 @@ function TerminalWindow({
           <span className="w-3 h-3 rounded-full bg-[#febc2e]" />
           <span className="w-3 h-3 rounded-full bg-[#28c840]" />
         </div>
-        <span className="flex-1 text-center text-[12px] text-gray-500 font-mono">claude</span>
+        <span className="flex-1 text-center text-[12px] text-gray-500 font-mono">terminal</span>
         <div className="w-[52px]" />
       </div>
       <div className="flex-1 min-h-0 bg-[#0d1117]">{children}</div>
@@ -321,11 +322,16 @@ function DemoCircuit({
         portValues={sim.portValues}
         sequentialState={sim.sequentialState}
         onToggleNode={sim.toggleNode}
-        drillDown={false}
+        drillDown={true}
         height={height}
       />
       {sim.isSequential && (
         <div className="absolute bottom-3 right-3 flex items-center gap-2">
+          {tickCount > 0 && (
+            <span className="text-[11px] text-gray-600 font-mono tabular-nums">
+              cycle {tickCount}
+            </span>
+          )}
           <button
             onClick={handleTick}
             className={`px-3 py-1.5 text-[11px] font-medium rounded border transition-all ${
@@ -336,11 +342,6 @@ function DemoCircuit({
           >
             Tick
           </button>
-          {tickCount > 0 && (
-            <span className="text-[11px] text-gray-600 font-mono tabular-nums">
-              cycle {tickCount}
-            </span>
-          )}
         </div>
       )}
     </div>
@@ -523,7 +524,6 @@ export default function Splash5Page() {
   const [demoComplete, setDemoComplete] = useState(false);
   const [extraLines, setExtraLines] = useState<TermLine[]>([]);
   const [pickedPrompt, setPickedPrompt] = useState(false);
-  const [secondDemoComplete, setSecondDemoComplete] = useState(false);
   const [targetDsl, setTargetDsl] = useState(DEMO_DSL);
   const [targetHarness, setTargetHarness] = useState(DEMO_HARNESS);
 
@@ -552,12 +552,7 @@ export default function Splash5Page() {
   }, []);
 
   const handleDslStage = useCallback(() => setDslTyping(true), []);
-  const pickedPromptRef = useRef(false);
-  pickedPromptRef.current = pickedPrompt;
   const handleComplete = useCallback(() => {
-    if (pickedPromptRef.current) {
-      setSecondDemoComplete(true);
-    }
     setDemoComplete(true);
   }, []);
 
@@ -574,6 +569,12 @@ export default function Splash5Page() {
           claude mcp add turing-incomplete npx @turing-incomplete/mcp
         </div>
         <div className="flex gap-3">
+          <Link
+            href="/blog"
+            className="px-4 py-2 bg-[#161b22] border border-[#30363d] text-gray-300 rounded-md text-xs font-medium"
+          >
+            Blog
+          </Link>
           <Link
             href="/challenges"
             className="px-4 py-2 bg-[#161b22] border border-[#30363d] text-gray-300 rounded-md text-xs font-medium"
@@ -592,8 +593,16 @@ export default function Splash5Page() {
       {/* Desktop layout */}
       {/* Header — just the name, minimal */}
       <div className="hidden md:flex flex-shrink-0 px-6 pt-5 pb-3 items-center justify-between">
-        <div className="font-semibold text-[15px] tracking-tight text-gray-300">
-          Turing Incomplete
+        <div className="flex items-center gap-2.5">
+          <Logo size={28} className="text-gray-300 shrink-0" />
+          <div>
+            <div className="font-semibold text-[15px] tracking-tight text-gray-300">
+              Turing Incomplete
+            </div>
+            <div className="text-[11px] text-gray-600">
+              A live circuit simulator you talk to
+            </div>
+          </div>
         </div>
         <div className="flex items-center gap-3">
           <a
@@ -607,6 +616,12 @@ export default function Splash5Page() {
               <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z" />
             </svg>
           </a>
+          <Link
+            href="/blog"
+            className="text-gray-600 hover:text-gray-300 transition-colors text-xs"
+          >
+            Blog
+          </Link>
           <Link
             href="/challenges"
             className="text-gray-600 hover:text-gray-300 transition-colors text-xs"
@@ -625,7 +640,7 @@ export default function Splash5Page() {
       {/* Two windows */}
       <div className="hidden md:flex flex-1 gap-4 px-5 pb-5 min-h-0">
         {/* Left window: Terminal */}
-        <TerminalWindow className="w-[46%] flex-shrink-0">
+        <TerminalWindow className="w-[38%] flex-shrink-0">
           <div className="flex flex-col h-full">
             <div className="flex-1 overflow-y-auto px-5 py-4">
               <ScriptedTerminal
@@ -635,51 +650,36 @@ export default function Splash5Page() {
               />
             </div>
 
-            {/* Prompt suggestions after initial demo */}
-            {demoComplete && !pickedPrompt && (
-              <div className="flex-shrink-0 border-t border-[#30363d] px-5 py-3 space-y-2 animate-in fade-in duration-400">
-                <div className="flex items-center gap-2 font-mono text-[13px]">
-                  <span className="text-gray-200">&gt;</span>
-                  <span className="text-gray-600">Try another...</span>
-                </div>
-                <div className="flex flex-col gap-1.5 pl-5">
-                  {PROMPT_OPTIONS.map((option) => (
-                    <button
-                      key={option.label}
-                      onClick={() => handlePickPrompt(option)}
-                      className="text-left text-[13px] font-mono text-blue-400 hover:text-blue-300 hover:bg-[#161b22] rounded px-2 py-1.5 -mx-2 transition-colors"
-                    >
-                      {option.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* CTA after second demo (or below suggestions) */}
-            {secondDemoComplete && (
-              <div className="flex-shrink-0 border-t border-[#30363d] px-5 py-4 space-y-3 animate-in fade-in duration-400">
-                <p className="text-[13px] text-gray-400">
-                  Claude Code connects to turingincomplete.com via MCP — design, simulate, and debug circuits from your terminal.
+            {/* CTA + prompt suggestions after demo */}
+            {demoComplete && (
+              <div className="flex-shrink-0 border-t border-[#30363d] px-5 py-4 space-y-3 animate-in fade-in duration-500">
+                <p className="font-mono text-[13px] text-gray-300">
+                  Describe any circuit and it gets built, compiled, and
+                  simulated — live in your browser.
                 </p>
                 <div className="bg-[#161b22] rounded-md border border-[#30363d] px-3 py-2.5 font-mono text-xs text-gray-300 select-all cursor-pointer hover:border-gray-600 transition-colors">
                   <span className="text-gray-500 select-none">$ </span>
                   claude mcp add turing-incomplete npx @turing-incomplete/mcp
                 </div>
-                <div className="flex gap-2 pt-1">
-                  <Link
-                    href="/challenges"
-                    className="flex-1 text-center px-3 py-2 bg-[#161b22] border border-[#30363d] text-gray-300 rounded-md text-xs font-medium hover:border-gray-500 transition-colors"
-                  >
-                    Challenges
-                  </Link>
-                  <Link
-                    href="/"
-                    className="flex-1 text-center px-3 py-2 bg-white text-gray-950 rounded-md text-xs font-medium hover:bg-gray-200 transition-colors"
-                  >
-                    Open Editor
-                  </Link>
-                </div>
+                {!pickedPrompt && (
+                  <div className="pt-2 border-t border-[#30363d] mt-3 space-y-2">
+                    <div className="flex items-center gap-2 font-mono text-[13px]">
+                      <span className="text-gray-200">&gt;</span>
+                      <span className="text-gray-600">Or try another demo...</span>
+                    </div>
+                    <div className="flex flex-col gap-1.5 pl-5">
+                      {PROMPT_OPTIONS.map((option) => (
+                        <button
+                          key={option.label}
+                          onClick={() => handlePickPrompt(option)}
+                          className="text-left text-[13px] font-mono text-blue-400 hover:text-blue-300 hover:bg-[#161b22] rounded px-2 py-1.5 -mx-2 transition-colors"
+                        >
+                          {option.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -687,52 +687,52 @@ export default function Splash5Page() {
 
         {/* Right window: Browser */}
         <BrowserWindow className="flex-1" showMcp={dslTyping || !!activeDsl}>
-          <div className="flex flex-col h-full">
-            {/* DSL code area */}
-            <div className="flex-shrink-0 border-b border-[#30363d] max-h-[45%] overflow-auto">
-              <div className="px-5 py-4">
-                <pre className="text-[13px] font-mono text-gray-400 leading-relaxed whitespace-pre-wrap">
-                  {dslTyping ? (
-                    <>
-                      {dslTw.displayed}
-                      <span className="inline-block w-[2px] h-[14px] bg-green-500 ml-0.5 animate-pulse align-text-bottom" />
-                    </>
-                  ) : activeDslDisplay ? (
-                    activeDslDisplay
-                  ) : (
-                    <span className="text-gray-700 italic">
-                      Waiting for circuit...
-                    </span>
-                  )}
-                </pre>
-              </div>
+          <div className="flex h-full">
+            {/* DSL code strip — thin left panel */}
+            <div className="w-[240px] shrink-0 border-r border-[#30363d] overflow-y-auto">
+              <pre className="text-[11px] font-mono text-gray-500 leading-relaxed whitespace-pre-wrap p-3">
+                {dslTyping ? (
+                  <>
+                    {dslTw.displayed}
+                    <span className="inline-block w-[2px] h-[12px] bg-green-500 ml-0.5 animate-pulse align-text-bottom" />
+                  </>
+                ) : activeDslDisplay ? (
+                  activeDslDisplay
+                ) : (
+                  <span className="text-gray-700 italic text-[11px]">
+                    Waiting for circuit...
+                  </span>
+                )}
+              </pre>
             </div>
 
-            {/* Circuit canvas */}
-            <div className="flex-1 min-h-0 relative">
-              {activeDsl ? (
-                <DemoCircuit dsl={activeDsl} height="100%" />
-              ) : (
-                <div className="h-full flex items-center justify-center text-gray-700 text-sm font-mono">
-                  {dslTyping ? "Compiling..." : ""}
+            {/* Circuit canvas + footer */}
+            <div className="flex-1 flex flex-col min-w-0">
+              <div className="flex-1 min-h-0 relative">
+                {activeDsl ? (
+                  <DemoCircuit dsl={activeDsl} height="100%" />
+                ) : (
+                  <div className="h-full flex items-center justify-center text-gray-700 text-sm font-mono">
+                    {dslTyping ? "Compiling..." : ""}
+                  </div>
+                )}
+              </div>
+
+              {/* Footer */}
+              {activeDsl && (
+                <div className="flex-shrink-0 border-t border-[#30363d] px-4 py-2 flex items-center justify-between">
+                  <span className="text-[11px] text-gray-600">
+                    Click switches to interact
+                  </span>
+                  <Link
+                    href="/"
+                    className="text-[11px] text-gray-600 hover:text-gray-300 transition-colors"
+                  >
+                    Open in full editor
+                  </Link>
                 </div>
               )}
             </div>
-
-            {/* Footer */}
-            {activeDsl && (
-              <div className="flex-shrink-0 border-t border-[#30363d] px-4 py-2 flex items-center justify-between">
-                <span className="text-[11px] text-gray-600">
-                  Click switches to interact
-                </span>
-                <Link
-                  href="/"
-                  className="text-[11px] text-gray-600 hover:text-gray-300 transition-colors"
-                >
-                  Open in full editor
-                </Link>
-              </div>
-            )}
           </div>
         </BrowserWindow>
       </div>

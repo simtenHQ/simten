@@ -42,8 +42,7 @@ const SYSTOLIC_LAYOUT: Record<string, { x: number; y: number }> = {
   display_c20: { x: 780, y: 300 },
   display_c21: { x: 910, y: 300 },
   display_c22: { x: 1040, y: 300 },
-  // Controls (bottom)
-  start: { x: 520, y: 560 },
+  // Done LED (bottom) — start switch is hidden, controlled by UI button
   done_led: { x: 780, y: 560 },
 };
 
@@ -52,10 +51,12 @@ export function SystolicDemo() {
     sim,
     isRunning,
     setIsRunning,
+    hasStarted,
     speed,
     setSpeed,
     isDone,
     handleStart,
+    handleStep,
     handleReset,
   } = useSystolicSimulator();
 
@@ -191,26 +192,28 @@ export function SystolicDemo() {
 
       {/* Controls bar */}
       <div className="px-4 py-3 border-t border-gray-700/50 flex flex-wrap items-center gap-3 bg-gray-900/90">
+        {!hasStarted ? (
+          <button
+            onClick={handleStart}
+            className="px-4 py-2 text-sm font-medium rounded-md bg-blue-600 hover:bg-blue-500 text-white transition-colors"
+          >
+            Start
+          </button>
+        ) : (
+          <button
+            onClick={() => isRunning ? setIsRunning(false) : handleStart()}
+            disabled={isDone}
+            className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+              isRunning
+                ? "bg-amber-600 hover:bg-amber-500 text-white"
+                : "bg-blue-600 hover:bg-blue-500 text-white"
+            } disabled:opacity-40`}
+          >
+            {isRunning ? "Pause" : "Resume"}
+          </button>
+        )}
         <button
-          onClick={handleStart}
-          disabled={isRunning || isDone}
-          className="px-4 py-2 text-sm font-medium rounded-md bg-blue-600 hover:bg-blue-500 text-white transition-colors disabled:opacity-40"
-        >
-          Start
-        </button>
-        <button
-          onClick={() => setIsRunning(!isRunning)}
-          disabled={isDone}
-          className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-            isRunning
-              ? "bg-amber-600 hover:bg-amber-500 text-white"
-              : "bg-green-600 hover:bg-green-500 text-white"
-          } disabled:opacity-40`}
-        >
-          {isRunning ? "Pause" : "Run"}
-        </button>
-        <button
-          onClick={sim.tick}
+          onClick={handleStep}
           disabled={isRunning}
           className="px-3 py-2 text-sm font-medium rounded-md bg-gray-700 hover:bg-gray-600 text-gray-200 transition-colors disabled:opacity-40"
         >
@@ -218,7 +221,8 @@ export function SystolicDemo() {
         </button>
         <button
           onClick={handleReset}
-          className="px-3 py-2 text-sm font-medium rounded-md bg-gray-700 hover:bg-gray-600 text-gray-200 transition-colors"
+          disabled={!hasStarted}
+          className="px-3 py-2 text-sm font-medium rounded-md bg-gray-700 hover:bg-gray-600 text-gray-200 transition-colors disabled:opacity-40"
         >
           Reset
         </button>

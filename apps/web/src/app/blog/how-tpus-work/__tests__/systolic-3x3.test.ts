@@ -2,8 +2,9 @@
  * 3x3 Systolic Array Circuit Tests
  *
  * Tests the 3x3 weight-stationary systolic array:
- * - 9 PEs with combinational partial-sum flow
- * - 6-tick computation (1 weight load + 5 data flow = 2N-1 for N=3)
+ * - 9 PEs with registered partial-sum flow (1 cycle per PE vertically)
+ * - Staggered data injection: row r starts at cycle 1+r
+ * - 9-tick computation (3N for N=3)
  * - Correct matrix multiplication: A×B = C
  *
  * A = [[1,2,3],[4,5,6],[7,8,9]]
@@ -119,20 +120,26 @@ describe("3x3 Systolic Array", () => {
     expect(isDone(result.portValues)).toBe(false);
   });
 
-  it("should compute [[1,2,3],[4,5,6],[7,8,9]] × [[2,0,1],[0,2,0],[1,0,2]] = [[5,4,7],[14,10,16],[23,16,25]] in 6 ticks", () => {
+  it("should compute [[1,2,3],[4,5,6],[7,8,9]] × [[2,0,1],[0,2,0],[1,0,2]] = [[5,4,7],[14,10,16],[23,16,25]] in 9 ticks", () => {
     const { sim } = compileAndCreate(true);
 
     // Tick 1: cycle 0 → load weights
     sim.tick();
-    // Tick 2: cycle 1 → first data column
+    // Tick 2: cycle 1 → row 0 first data
     sim.tick();
-    // Tick 3: cycle 2 → second data column
+    // Tick 3: cycle 2 → row 0 second, row 1 first
     sim.tick();
-    // Tick 4: cycle 3 → third data column
+    // Tick 4: cycle 3 → row 0 third, row 1 second, row 2 first
     sim.tick();
-    // Tick 5: cycle 4 → pipeline drain
+    // Tick 5: cycle 4 → C[0][0] captured; row 1 third, row 2 second
     sim.tick();
-    // Tick 6: cycle 5 → last result, counter → 6
+    // Tick 6: cycle 5 → C[1][0], C[0][1] captured; row 2 third
+    sim.tick();
+    // Tick 7: cycle 6 → C[2][0], C[1][1], C[0][2] captured
+    sim.tick();
+    // Tick 8: cycle 7 → C[2][1], C[1][2] captured
+    sim.tick();
+    // Tick 9: cycle 8 → C[2][2] captured, counter → 9, done fires
     const result = sim.tick();
 
     expect(isDone(result.portValues)).toBe(true);
@@ -156,8 +163,8 @@ describe("3x3 Systolic Array", () => {
   it("should hold results after additional ticks", () => {
     const { sim } = compileAndCreate(true);
 
-    for (let i = 0; i < 6; i++) sim.tick();
-    const result = sim.tick(); // 7th tick
+    for (let i = 0; i < 9; i++) sim.tick();
+    const result = sim.tick(); // 10th tick
 
     expect(isDone(result.portValues)).toBe(true);
     expect(getPortValue(result.portValues, "display_c00")).toBe(5);
