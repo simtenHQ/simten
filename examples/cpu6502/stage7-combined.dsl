@@ -1,4 +1,4 @@
-// Stage 8B: Memory Bus Architecture
+// 6502 CPU System — Complete with Memory Bus Architecture
 // Full 64KB address space with proper memory map
 //
 // Memory Map:
@@ -75,7 +75,7 @@ circuit ROM16K {
 
     // ROM with reset vector and test program
     // Reset vector at $FFFC/$FFFD points to $C000
-    // Test program at $C000 (same as Stage 7 test)
+    // Test program at $C000
     node rom: ROM(data={
       // Reset vector points to $C000
       0xFFFC: 0x00,
@@ -208,14 +208,14 @@ circuit MemoryBusTest {
     connect mem_bus.data_out -> d_data_out.in
   }
 }
-// Stage 7: CPU6502Core - Pure CPU logic with bus interface
+// CPU6502Core - Pure CPU logic with bus interface
 //
-// This is the CPU core extracted from Stage6CPU with:
-// - Removed: Internal SimpleMemory, StackMemory, and ROM
+// This is the CPU core with:
+// - No internal memory — all access via bus interface
 // - Added: Bus interface (data_in input, addr_lo/addr_hi/data_out/rw outputs)
 // - Stack operations use addr_hi=1 to address stack page ($0100-$01FF)
 // - All memory reads come from data_in input
-// - Supports all Stage 6 instructions
+// - Supports all 111 official 6502 instructions
 
 // === Simple Memory Controller (REMOVED - now external via bus) ===
 // This circuit is kept as a comment for reference but not used
@@ -386,8 +386,8 @@ circuit FlagRegister {
   }
 }
 
-// === Complete Control FSM with Stage 6 Instructions ===
-circuit Stage6Control {
+// === Control FSM — Full 6502 Instruction Decode ===
+circuit ControlFSM {
   input reset: Bit
   input current_opcode: Bus[8]
 
@@ -458,7 +458,7 @@ circuit Stage6Control {
   output is_bvc: Bit
   output is_bvs: Bit
 
-  // Stage 6 instruction decode
+  // Instruction decode outputs
   output is_sec: Bit
   output is_clc: Bit
   output is_nop: Bit
@@ -691,7 +691,7 @@ circuit Stage6Control {
     connect state_reg.q -> is_reset_hi_cmp.a
     connect STATE_RESET_HI.out -> is_reset_hi_cmp.b
 
-    // Instruction decode - Stage 4/5 instructions
+    // Instruction decode - memory & stack instructions
     node LDA_IMM: Constant(value=169)
     node LDA_ZP: Constant(value=165)
     node LDA_ABS: Constant(value=173)
@@ -715,7 +715,7 @@ circuit Stage6Control {
     node BVC: Constant(value=80)
     node BVS: Constant(value=112)
 
-    // Stage 6 instruction opcodes
+    // Instruction opcodes
     node SEC: Constant(value=56)    // 0x38
     node CLC: Constant(value=24)    // 0x18
     node NOP: Constant(value=234)   // 0xEA
@@ -863,7 +863,7 @@ circuit Stage6Control {
     node STY_ZP_X: Constant(value=148) // 0x94 - STY zero-page,X
     node STY_ABS: Constant(value=140)  // 0x8C - STY absolute
 
-    // Comparators for Stage 4/5
+    // Comparators for memory & stack instructions
     node cmp_lda_imm: Comparator
     connect current_opcode -> cmp_lda_imm.a
     connect LDA_IMM.out -> cmp_lda_imm.b
@@ -974,7 +974,7 @@ circuit Stage6Control {
     connect BVS.out -> cmp_bvs.b
     connect cmp_bvs.eq -> is_bvs
 
-    // Stage 6 instruction comparators
+    // Instruction comparators
     node cmp_sec: Comparator
     connect current_opcode -> cmp_sec.a
     connect SEC.out -> cmp_sec.b
@@ -3665,7 +3665,7 @@ circuit CPU6502Core {
     node pc_hi_inc: Incrementer
     connect pc_hi.q -> pc_hi_inc.in
 
-    // ROM - Test program: Stage 6 test (includes PHP/PLP test)
+    // ROM - Test program (includes PHP/PLP test)
     // $00: SEC           (38)    - Set carry (C=1)
     // $01: SEI           (78)    - Set interrupt disable (I=1)
     // $02: PHP           (08)    - Push processor status to stack
@@ -3765,7 +3765,7 @@ circuit CPU6502Core {
     connect clk -> ptr_hi_reg.clk
 
     // Control FSM
-    node control: Stage6Control
+    node control: ControlFSM
     connect clk -> control.clk
     connect reset -> control.reset
     connect ir.q -> control.current_opcode
@@ -5253,7 +5253,7 @@ circuit CPU6502CoreTest {
     connect cpu.data_out -> d_data_out.in
   }
 }
-// Stage 7: System6502 - Full system integration
+// System6502 - Full system integration
 //
 // Connects CPU6502Core to MemoryBus for complete system
 // Memory map:
@@ -5267,7 +5267,7 @@ circuit System6502 {
 
   // Debug outputs from CPU
   output pc: Bus[8]          // PC low byte (backward compatible)
-  output pc_hi: Bus[8]       // PC high byte (Stage 8: 16-bit PC support)
+  output pc_hi: Bus[8]       // PC high byte (16-bit PC support)
   output instruction: Bus[8]
   output reg_a: Bus[8]
   output reg_x: Bus[8]
@@ -5328,8 +5328,8 @@ circuit System6502 {
   }
 }
 
-// === Stage7Test: Test circuit with displays ===
-circuit Stage7Test {
+// === CPU6502Test: Test circuit with displays ===
+circuit CPU6502Test {
   clock clk
 
   impl {
