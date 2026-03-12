@@ -103,7 +103,7 @@ export interface CircuitCanvasProps {
   onEdgeSelect?: (edgeId: string, selected: boolean) => void;
   onEdgesDelete?: (edgeIds: string[]) => void;
   onConnect?: (source: { nodeId: string; portName: string }, target: { nodeId: string; portName: string }) => void;
-  onDrop?: (componentType: string, position: { x: number; y: number }) => void;
+  onDrop?: (componentRef: string, position: { x: number; y: number }) => void;
   onNodeDragStop?: () => void;
   /** Show port name labels next to handles */
   showPortLabels?: boolean;
@@ -373,13 +373,13 @@ function CircuitCanvasInner({
     (event: React.DragEvent) => {
       if (!onDropProp) return;
       event.preventDefault();
-      const componentType = event.dataTransfer.getData("application/reactflow");
-      if (!componentType) return;
+      const componentRef = event.dataTransfer.getData("application/reactflow");
+      if (!componentRef) return;
       const position = screenToFlowPosition({
         x: event.clientX,
         y: event.clientY,
       });
-      onDropProp(componentType, position);
+      onDropProp(componentRef, position);
     },
     [onDropProp, screenToFlowPosition],
   );

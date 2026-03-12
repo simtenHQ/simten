@@ -49,6 +49,14 @@ export interface CorePrimitiveDefinition {
     source: string | ((params: Record<string, number>) => string);
     description?: string;
   };
+  /** Category for component palette organization */
+  category: string;
+  /** Display icon (emoji or unicode symbol) */
+  icon: string;
+  /** Namespace for grouping (e.g., 'core', 'rv32i') */
+  namespace?: string;
+  /** Name of the argument key that holds environmental state (e.g., 'value' for Switch/Button/Input) */
+  environmentalState?: string;
 }
 
 // ============================================================================
@@ -61,6 +69,10 @@ function defineCombinational(config: {
   inputs: PortDescriptor[];
   outputs: PortDescriptor[];
   parameters?: Parameter[];
+  category: string;
+  icon: string;
+  namespace?: string;
+  environmentalState?: string;
   evaluate: (
     inputs: Map<string, InputValue>,
     currentState?: PrimitiveState,
@@ -74,6 +86,10 @@ function defineCombinational(config: {
     outputs: config.outputs,
     parameters: config.parameters,
     evaluator: createCombinationalEvaluator(config.evaluate),
+    category: config.category,
+    icon: config.icon,
+    namespace: config.namespace,
+    environmentalState: config.environmentalState,
   };
 }
 
@@ -85,6 +101,10 @@ function defineSequential(config: {
   clocks: ClockDescriptor[];
   state: StateBlock[];
   parameters?: Parameter[];
+  category: string;
+  icon: string;
+  namespace?: string;
+  environmentalState?: string;
   evaluate: (
     inputs: Map<string, InputValue>,
     currentState?: PrimitiveState
@@ -102,6 +122,10 @@ function defineSequential(config: {
     parameters: config.parameters,
     evaluator: createSequentialEvaluator(config.evaluate, config.updateState),
     outputDependency: config.outputDependency,
+    category: config.category,
+    icon: config.icon,
+    namespace: config.namespace,
+    environmentalState: config.environmentalState,
   };
 }
 
@@ -121,6 +145,8 @@ export const PRIMITIVE_DEFINITIONS: Record<string, CorePrimitiveDefinition> = {
   And: defineCombinational({
     name: 'And',
     description: 'Logical AND gate - outputs true when both inputs are true',
+    category: 'logic-gates',
+    icon: '&',
     inputs: [
       { name: 'a', portType: bitType() },
       { name: 'b', portType: bitType() },
@@ -136,6 +162,8 @@ export const PRIMITIVE_DEFINITIONS: Record<string, CorePrimitiveDefinition> = {
   Or: defineCombinational({
     name: 'Or',
     description: 'Logical OR gate - outputs true when at least one input is true',
+    category: 'logic-gates',
+    icon: '≥1',
     inputs: [
       { name: 'a', portType: bitType() },
       { name: 'b', portType: bitType() },
@@ -151,6 +179,8 @@ export const PRIMITIVE_DEFINITIONS: Record<string, CorePrimitiveDefinition> = {
   Not: defineCombinational({
     name: 'Not',
     description: 'Logical NOT gate - inverts the input',
+    category: 'logic-gates',
+    icon: '¬',
     inputs: [{ name: 'in', portType: bitType() }],
     outputs: [{ name: 'out', portType: bitType() }],
     evaluate: (inputs) => {
@@ -162,6 +192,8 @@ export const PRIMITIVE_DEFINITIONS: Record<string, CorePrimitiveDefinition> = {
   Nand: defineCombinational({
     name: 'Nand',
     description: 'Logical NAND gate - outputs false only when both inputs are true',
+    category: 'logic-gates',
+    icon: '⊼',
     inputs: [
       { name: 'a', portType: bitType() },
       { name: 'b', portType: bitType() },
@@ -177,6 +209,8 @@ export const PRIMITIVE_DEFINITIONS: Record<string, CorePrimitiveDefinition> = {
   Nor: defineCombinational({
     name: 'Nor',
     description: 'Logical NOR gate - outputs true only when both inputs are false',
+    category: 'logic-gates',
+    icon: '⊽',
     inputs: [
       { name: 'a', portType: bitType() },
       { name: 'b', portType: bitType() },
@@ -192,6 +226,8 @@ export const PRIMITIVE_DEFINITIONS: Record<string, CorePrimitiveDefinition> = {
   Xor: defineCombinational({
     name: 'Xor',
     description: 'Logical XOR gate - outputs true when inputs are different',
+    category: 'logic-gates',
+    icon: '⊕',
     inputs: [
       { name: 'a', portType: bitType() },
       { name: 'b', portType: bitType() },
@@ -207,6 +243,8 @@ export const PRIMITIVE_DEFINITIONS: Record<string, CorePrimitiveDefinition> = {
   Xnor: defineCombinational({
     name: 'Xnor',
     description: 'Logical XNOR gate - outputs true when inputs are the same',
+    category: 'logic-gates',
+    icon: '⊙',
     inputs: [
       { name: 'a', portType: bitType() },
       { name: 'b', portType: bitType() },
@@ -222,6 +260,8 @@ export const PRIMITIVE_DEFINITIONS: Record<string, CorePrimitiveDefinition> = {
   Buffer: defineCombinational({
     name: 'Buffer',
     description: 'Buffer - passes the input through unchanged',
+    category: 'logic-gates',
+    icon: '▷',
     inputs: [{ name: 'in', portType: bitType() }],
     outputs: [{ name: 'out', portType: bitType() }],
     evaluate: (inputs) => {
@@ -237,6 +277,9 @@ export const PRIMITIVE_DEFINITIONS: Record<string, CorePrimitiveDefinition> = {
   Switch: defineCombinational({
     name: 'Switch',
     description: 'User-controllable 1-bit toggle. Use for enable signals (write-enable, reset, etc.)',
+    category: 'input-output',
+    icon: '⚡',
+    environmentalState: 'value',
     inputs: [],
     outputs: [{ name: 'out', portType: bitType() }],
     parameters: [{ name: 'value', paramType: 'int', defaultValue: 0 }],
@@ -249,6 +292,8 @@ export const PRIMITIVE_DEFINITIONS: Record<string, CorePrimitiveDefinition> = {
   Led: defineCombinational({
     name: 'Led',
     description: 'Visual output LED indicator',
+    category: 'input-output',
+    icon: '💡',
     inputs: [{ name: 'in', portType: bitType() }],
     outputs: [],
     evaluate: (_inputs) => {
@@ -259,6 +304,8 @@ export const PRIMITIVE_DEFINITIONS: Record<string, CorePrimitiveDefinition> = {
   Output: defineCombinational({
     name: 'Output',
     description: 'Multi-bit output sink (for testbenches)',
+    category: 'input-output',
+    icon: '📤',
     inputs: [{ name: 'in', portType: busType(8) }],
     outputs: [],
     evaluate: (_inputs) => {
@@ -269,6 +316,9 @@ export const PRIMITIVE_DEFINITIONS: Record<string, CorePrimitiveDefinition> = {
   Button: defineCombinational({
     name: 'Button',
     description: 'Push button input (momentary, user-controlled)',
+    category: 'input-output',
+    icon: '🔘',
+    environmentalState: 'value',
     inputs: [],
     outputs: [{ name: 'out', portType: bitType() }],
     evaluate: (inputs) => {
@@ -280,6 +330,9 @@ export const PRIMITIVE_DEFINITIONS: Record<string, CorePrimitiveDefinition> = {
   Input: defineCombinational({
     name: 'Input',
     description: 'Multi-bit numeric input (runtime editable). Use for bus values the student can change.',
+    category: 'input-output',
+    icon: '🔢',
+    environmentalState: 'value',
     inputs: [],
     outputs: [{ name: 'out', portType: busType(8), widthParam: 'width' }],
     parameters: [
@@ -299,6 +352,8 @@ export const PRIMITIVE_DEFINITIONS: Record<string, CorePrimitiveDefinition> = {
   Constant: defineCombinational({
     name: 'Constant',
     description: 'Fixed value source. Always specify value parameter — bare Constant defaults to 0.',
+    category: 'utilities',
+    icon: 'K',
     inputs: [],
     outputs: [{ name: 'out', portType: bitType() }],
     parameters: [{ name: 'value', paramType: 'int', defaultValue: 0 }],
@@ -311,6 +366,8 @@ export const PRIMITIVE_DEFINITIONS: Record<string, CorePrimitiveDefinition> = {
   Splitter: defineCombinational({
     name: 'Splitter',
     description: 'Bus splitter - splits a bus into smaller buses (default: 8-bit to 2x4-bit)',
+    category: 'utilities',
+    icon: '⊢',
     inputs: [{ name: 'in', portType: busType(8) }],
     outputs: [
       { name: 'out0', portType: busType(4) },
@@ -345,6 +402,8 @@ export const PRIMITIVE_DEFINITIONS: Record<string, CorePrimitiveDefinition> = {
   Splitter8to8: defineCombinational({
     name: 'Splitter8to8',
     description: 'Splits an 8-bit bus into 8 individual bit outputs (bit0=LSB, bit7=MSB)',
+    category: 'utilities',
+    icon: '⊢8',
     inputs: [{ name: 'in', portType: busType(8) }],
     outputs: [
       { name: 'bit0', portType: bitType() },
@@ -372,6 +431,8 @@ export const PRIMITIVE_DEFINITIONS: Record<string, CorePrimitiveDefinition> = {
   Combiner8to8: defineCombinational({
     name: 'Combiner8to8',
     description: 'Combines 8 individual bit inputs into an 8-bit bus (bit0=LSB, bit7=MSB)',
+    category: 'utilities',
+    icon: '⊣8',
     inputs: [
       { name: 'bit0', portType: bitType() },
       { name: 'bit1', portType: bitType() },
@@ -400,6 +461,8 @@ export const PRIMITIVE_DEFINITIONS: Record<string, CorePrimitiveDefinition> = {
   Probe: defineCombinational({
     name: 'Probe',
     description: 'Debug observation point - passes signal through unchanged',
+    category: 'utilities',
+    icon: '🔍',
     inputs: [{ name: 'in', portType: bitType() }],
     outputs: [{ name: 'out', portType: bitType() }],
     evaluate: (inputs) => {
@@ -411,6 +474,8 @@ export const PRIMITIVE_DEFINITIONS: Record<string, CorePrimitiveDefinition> = {
   BitSlice: defineCombinational({
     name: 'BitSlice',
     description: 'Extract bits [low..high] from input (wire routing, zero logic cost)',
+    category: 'utilities',
+    icon: '[]',
     inputs: [{ name: 'in', portType: busType(8) }],
     outputs: [{ name: 'out', portType: busType(8) }],
     parameters: [
@@ -433,6 +498,8 @@ export const PRIMITIVE_DEFINITIONS: Record<string, CorePrimitiveDefinition> = {
   AddressCombiner: defineCombinational({
     name: 'AddressCombiner',
     description: 'Combines two 8-bit buses into one 16-bit bus (hi << 8 | lo)',
+    category: 'utilities',
+    icon: '⊕16',
     inputs: [
       { name: 'lo', portType: busType(8) },
       { name: 'hi', portType: busType(8) },
@@ -448,6 +515,8 @@ export const PRIMITIVE_DEFINITIONS: Record<string, CorePrimitiveDefinition> = {
   Concat: defineCombinational({
     name: 'Concat',
     description: 'Concatenate two buses into a wider bus (out = high << lowWidth | low)',
+    category: 'utilities',
+    icon: '||',
     inputs: [
       { name: 'high', portType: busType(4) },
       { name: 'low', portType: busType(4) },
@@ -469,6 +538,8 @@ export const PRIMITIVE_DEFINITIONS: Record<string, CorePrimitiveDefinition> = {
   BusAnd: defineCombinational({
     name: 'BusAnd',
     description: 'Bitwise AND operation on 8-bit buses',
+    category: 'bus-operations',
+    icon: '&8',
     inputs: [
       { name: 'a', portType: busType(8), widthParam: 'width' },
       { name: 'b', portType: busType(8), widthParam: 'width' },
@@ -485,6 +556,8 @@ export const PRIMITIVE_DEFINITIONS: Record<string, CorePrimitiveDefinition> = {
   BusOr: defineCombinational({
     name: 'BusOr',
     description: 'Bitwise OR operation on 8-bit buses',
+    category: 'bus-operations',
+    icon: '|8',
     inputs: [
       { name: 'a', portType: busType(8), widthParam: 'width' },
       { name: 'b', portType: busType(8), widthParam: 'width' },
@@ -501,6 +574,8 @@ export const PRIMITIVE_DEFINITIONS: Record<string, CorePrimitiveDefinition> = {
   BusNot: defineCombinational({
     name: 'BusNot',
     description: 'Bitwise NOT operation on 8-bit bus',
+    category: 'bus-operations',
+    icon: '¬8',
     inputs: [{ name: 'in', portType: busType(8), widthParam: 'width' }],
     outputs: [{ name: 'out', portType: busType(8), widthParam: 'width' }],
     parameters: [{ name: 'width', paramType: 'int', defaultValue: 8, options: [4, 8, 16, 32] }],
@@ -515,6 +590,8 @@ export const PRIMITIVE_DEFINITIONS: Record<string, CorePrimitiveDefinition> = {
   BusXor: defineCombinational({
     name: 'BusXor',
     description: 'Bitwise XOR operation on 8-bit buses',
+    category: 'bus-operations',
+    icon: '⊕8',
     inputs: [
       { name: 'a', portType: busType(8), widthParam: 'width' },
       { name: 'b', portType: busType(8), widthParam: 'width' },
@@ -536,6 +613,8 @@ export const PRIMITIVE_DEFINITIONS: Record<string, CorePrimitiveDefinition> = {
     ...defineCombinational({
       name: 'Incrementer',
       description: 'Incrementer - adds 1 to the input (wraps around at max value)',
+      category: 'arithmetic',
+      icon: '+1',
       inputs: [{ name: 'in', portType: busType(8), widthParam: 'width' }],
       outputs: [{ name: 'out', portType: busType(8), widthParam: 'width' }],
       parameters: [{ name: 'width', paramType: 'int', defaultValue: 8, options: [4, 8, 16, 32] }],
@@ -569,6 +648,8 @@ export const PRIMITIVE_DEFINITIONS: Record<string, CorePrimitiveDefinition> = {
     ...defineCombinational({
       name: 'Adder',
       description: 'Parameterized n-bit adder with carry in/out (default: 8-bit)',
+      category: 'arithmetic',
+      icon: '➕',
       inputs: [
         { name: 'a', portType: busType(8), widthParam: 'width' },
         { name: 'b', portType: busType(8), widthParam: 'width' },
@@ -733,6 +814,8 @@ circuit Adder {
   Multiplier: defineCombinational({
     name: 'Multiplier',
     description: 'Parameterized n×n bit multiplier, outputs 2n-bit product (default: 8×8=16-bit)',
+    category: 'arithmetic',
+    icon: '✖️',
     inputs: [
       { name: 'a', portType: busType(8), widthParam: 'width' },
       { name: 'b', portType: busType(8), widthParam: 'width' },
@@ -755,6 +838,8 @@ circuit Adder {
     ...defineCombinational({
       name: 'Comparator',
       description: 'Parameterized n-bit comparator (default: 8-bit)',
+      category: 'arithmetic',
+      icon: '⚖️',
       inputs: [
         { name: 'a', portType: busType(8), widthParam: 'width' },
         { name: 'b', portType: busType(8), widthParam: 'width' },
@@ -846,6 +931,8 @@ circuit Comparator {
   LeftShifter: defineCombinational({
     name: 'LeftShifter',
     description: 'Logical left bit shift (value << n) with zero fill',
+    category: 'arithmetic',
+    icon: '<<',
     inputs: [
       { name: 'value', portType: busType(8), widthParam: 'width' },
       { name: 'shift', portType: busType(8), widthParam: 'width' },
@@ -867,6 +954,8 @@ circuit Comparator {
   RightShifter: defineCombinational({
     name: 'RightShifter',
     description: 'Logical right bit shift (value >> n) with zero fill',
+    category: 'arithmetic',
+    icon: '>>',
     inputs: [
       { name: 'value', portType: busType(8), widthParam: 'width' },
       { name: 'shift', portType: busType(8), widthParam: 'width' },
@@ -887,6 +976,8 @@ circuit Comparator {
   Subtractor: defineCombinational({
     name: 'Subtractor',
     description: 'Parameterized n-bit subtractor with borrow in/out (default: 8-bit)',
+    category: 'arithmetic',
+    icon: '➖',
     inputs: [
       { name: 'a', portType: busType(8), widthParam: 'width' },
       { name: 'b', portType: busType(8), widthParam: 'width' },
@@ -919,6 +1010,8 @@ circuit Comparator {
   SignedAdder: defineCombinational({
     name: 'SignedAdder',
     description: 'Signed n-bit adder with overflow detection (default: 8-bit)',
+    category: 'arithmetic',
+    icon: '±',
     inputs: [
       { name: 'a', portType: busType(8), widthParam: 'width' },
       { name: 'b', portType: busType(8), widthParam: 'width' },
@@ -959,6 +1052,8 @@ circuit Comparator {
   SignedComparator: defineCombinational({
     name: 'SignedComparator',
     description: 'Signed n-bit comparator with all comparison flags (default: 8-bit)',
+    category: 'arithmetic',
+    icon: '⚖',
     inputs: [
       { name: 'a', portType: busType(8), widthParam: 'width' },
       { name: 'b', portType: busType(8), widthParam: 'width' },
@@ -1001,6 +1096,8 @@ circuit Comparator {
   SignedMultiplier: defineCombinational({
     name: 'SignedMultiplier',
     description: 'Signed n×n bit multiplier, outputs 2n-bit product (default: 8×8=16-bit)',
+    category: 'arithmetic',
+    icon: '×',
     inputs: [
       { name: 'a', portType: busType(8), widthParam: 'width' },
       { name: 'b', portType: busType(8), widthParam: 'width' },
@@ -1037,6 +1134,8 @@ circuit Comparator {
     ...defineCombinational({
       name: 'Mux',
       description: 'Parameterized multiplexer (default: 2-input, 1-bit). Use width for bus muxing.',
+      category: 'plexers',
+      icon: '⊓',
       inputs: [
         { name: 'in0', portType: bitType(), widthParam: 'width' },
         { name: 'in1', portType: bitType(), widthParam: 'width' },
@@ -1089,6 +1188,8 @@ circuit Comparator {
   Decoder: defineCombinational({
     name: 'Decoder',
     description: 'Parameterized n-to-2^n decoder (default: 2-to-4)',
+    category: 'plexers',
+    icon: '⊔',
     inputs: [{ name: 'in', portType: busType(2) }],
     outputs: [
       { name: 'out0', portType: bitType() },
@@ -1117,6 +1218,8 @@ circuit Comparator {
   SevenSegment: defineCombinational({
     name: 'SevenSegment',
     description: '7-segment display for hexadecimal digits (0-F)',
+    category: 'display',
+    icon: '8.',
     inputs: [{ name: 'in', portType: busType(4) }],
     outputs: [],
     evaluate: (_inputs) => {
@@ -1127,6 +1230,8 @@ circuit Comparator {
   HexDisplay: defineCombinational({
     name: 'HexDisplay',
     description: 'Hexadecimal display for multi-bit values (default: 8-bit)',
+    category: 'display',
+    icon: '0xFF',
     inputs: [{ name: 'in', portType: busType(8), widthParam: 'width' }],
     outputs: [],
     parameters: [{ name: 'width', paramType: 'int', defaultValue: 8, options: [4, 8, 16, 32] }],
@@ -1138,6 +1243,8 @@ circuit Comparator {
   Screen: defineCombinational({
     name: 'Screen',
     description: '8x8 pixel display',
+    category: 'display',
+    icon: '🖥️',
     inputs: [{ name: 'dataIn', portType: busType(8) }],
     outputs: [{ name: 'addrB', portType: busType(8) }],
     evaluate: (_inputs, _currentState, _context) => {
@@ -1148,6 +1255,8 @@ circuit Comparator {
   RasterDisplay: defineSequential({
     name: 'RasterDisplay',
     description: 'Hardware-accurate 8×8 raster display with scan counters and sync signals',
+    category: 'display',
+    icon: '📺',
     inputs: [{ name: 'dataIn', portType: busType(8) }],
     outputs: [
       { name: 'addrB', portType: busType(8) },
@@ -1228,6 +1337,8 @@ circuit Comparator {
   DFlipFlop: defineSequential({
     name: 'DFlipFlop',
     description: 'D Flip-Flop - stores 1 bit of state, updates on rising clock edge',
+    category: 'sequential',
+    icon: 'D',
     inputs: [{ name: 'd', portType: bitType() }],
     outputs: [
       { name: 'q', portType: bitType() },
@@ -1266,6 +1377,8 @@ circuit Comparator {
   Register: defineSequential({
     name: 'Register',
     description: 'Parameterized n-bit register - stores data on rising clock edge when write enable is high (default: 8-bit)',
+    category: 'sequential',
+    icon: 'REG',
     inputs: [
       { name: 'data', portType: busType(8), widthParam: 'width' },
       { name: 'we', portType: bitType() },
@@ -1307,6 +1420,8 @@ circuit Comparator {
   ROM: defineSequential({
     name: 'ROM',
     description: 'Read-only memory with address decoding. Use baseAddress parameter to set memory mapping.',
+    category: 'memory',
+    icon: '📀',
     inputs: [{ name: 'addr', portType: busType(16) }],
     outputs: [{ name: 'data_out', portType: busType(8) }],
     clocks: [],
@@ -1338,6 +1453,8 @@ circuit Comparator {
   RAM: defineSequential({
     name: 'RAM',
     description: '256x8 RAM - reads are combinational (addr->data_out), writes occur on rising clock edge with write enable',
+    category: 'memory',
+    icon: '💾',
     inputs: [
       { name: 'addr', portType: busType(8) },
       { name: 'data_in', portType: busType(8) },
@@ -1380,6 +1497,8 @@ circuit Comparator {
   DualPortRAM: defineSequential({
     name: 'DualPortRAM',
     description: '256x8 Dual-Port RAM',
+    category: 'memory',
+    icon: '💾²',
     inputs: [
       { name: 'addrA', portType: busType(8) },
       { name: 'dataA', portType: busType(8) },
@@ -1435,6 +1554,8 @@ circuit Comparator {
   Console: defineSequential({
     name: 'Console',
     description: 'Memory-mapped console output device. Characters written accumulate in buffer.',
+    category: 'io',
+    icon: '📺',
     inputs: [
       { name: 'data', portType: busType(8) },
       { name: 'we', portType: bitType() },

@@ -9,19 +9,11 @@ import type { Circuit } from '../../types/circuit';
 import { isSequentialComponent } from '../../types';
 
 /**
- * Check if a component type is sequential, handling both old and new naming conventions.
- * Old IR: D_FLIP_FLOP, REGISTER, RAM
- * New IR v0.1: DFlipFlop, Register, RAM
+ * Check if a component type is sequential.
+ * Delegates entirely to isSequentialComponent (data-driven via clock ports).
  */
 function isSequentialPrimitive(componentType: string): boolean {
-  // Check old IR naming convention (D_FLIP_FLOP, REGISTER, RAM)
-  if (isSequentialComponent(componentType)) {
-    return true;
-  }
-
-  // Check new IR v0.1 naming convention (DFlipFlop, Register, RAM)
-  const sequentialPrimitives = ['DFlipFlop', 'Register', 'RAM'];
-  return sequentialPrimitives.includes(componentType);
+  return isSequentialComponent(componentType);
 }
 
 /**

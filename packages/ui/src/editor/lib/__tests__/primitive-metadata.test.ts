@@ -23,7 +23,6 @@ describe('Primitive Metadata', () => {
       expect(metadata, `Metadata missing for primitive: ${name}`).toBeDefined();
       expect(metadata?.category).toBeDefined();
       expect(metadata?.icon).toBeDefined();
-      expect(metadata?.componentType).toBeDefined();
     }
   });
 
@@ -84,25 +83,20 @@ describe('Primitive Metadata', () => {
     }
   });
 
-  it('should map primitive names to correct ComponentType values', () => {
-    // Test logic gates mapping
-    expect(PRIMITIVE_METADATA.And.componentType).toBe('AND_GATE');
-    expect(PRIMITIVE_METADATA.Or.componentType).toBe('OR_GATE');
-    expect(PRIMITIVE_METADATA.Not.componentType).toBe('NOT_GATE');
-    expect(PRIMITIVE_METADATA.Nand.componentType).toBe('NAND_GATE');
-    expect(PRIMITIVE_METADATA.Nor.componentType).toBe('NOR_GATE');
-    expect(PRIMITIVE_METADATA.Xor.componentType).toBe('XOR_GATE');
-    expect(PRIMITIVE_METADATA.Xnor.componentType).toBe('XNOR_GATE');
-    expect(PRIMITIVE_METADATA.Buffer.componentType).toBe('BUFFER');
+  it('should map primitive names to correct categories', () => {
+    // Test logic gates
+    expect(PRIMITIVE_METADATA.And.category).toBe('logic-gates');
+    expect(PRIMITIVE_METADATA.Or.category).toBe('logic-gates');
+    expect(PRIMITIVE_METADATA.Not.category).toBe('logic-gates');
 
-    // Test I/O mapping
-    expect(PRIMITIVE_METADATA.Switch.componentType).toBe('SWITCH');
-    expect(PRIMITIVE_METADATA.Led.componentType).toBe('LED');
+    // Test I/O
+    expect(PRIMITIVE_METADATA.Switch.category).toBe('input-output');
+    expect(PRIMITIVE_METADATA.Led.category).toBe('input-output');
 
-    // Test sequential mapping
-    expect(PRIMITIVE_METADATA.DFlipFlop.componentType).toBe('D_FLIP_FLOP');
-    expect(PRIMITIVE_METADATA.Register.componentType).toBe('REGISTER');
-    expect(PRIMITIVE_METADATA.RAM.componentType).toBe('RAM');
+    // Test sequential
+    expect(PRIMITIVE_METADATA.DFlipFlop.category).toBe('sequential');
+    expect(PRIMITIVE_METADATA.Register.category).toBe('sequential');
+    expect(PRIMITIVE_METADATA.RAM.category).toBe('memory');
   });
 
   it('should have unique icons per primitive', () => {
