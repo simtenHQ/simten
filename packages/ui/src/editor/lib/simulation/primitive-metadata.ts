@@ -9,13 +9,11 @@
  * @see primitives.ts - The single source of truth for all primitives
  */
 
-import type { ComponentType } from '../../types';
 import { PRIMITIVE_DEFINITIONS, generateMetadata } from '../primitive-registry';
 
 export interface PrimitiveMetadata {
   category: string;
   icon: string;
-  componentType: ComponentType; // Maps to the actual ComponentType enum value
 }
 
 /**
@@ -112,6 +110,50 @@ export function getPrimitivesByCategory(): Map<string, string[]> {
       grouped.set(category, []);
     }
     grouped.get(category)!.push(name);
+  }
+
+  return grouped;
+}
+
+// ============================================================================
+// Namespace Support
+// ============================================================================
+
+/**
+ * Known namespaces for primitive grouping in the palette.
+ */
+export const PRIMITIVE_NAMESPACES = {
+  CORE: 'core',
+} as const;
+
+/**
+ * Namespace display information
+ */
+export const NAMESPACE_INFO: Record<string, { label: string; description: string }> = {
+  [PRIMITIVE_NAMESPACES.CORE]: {
+    label: 'Core',
+    description: 'Built-in digital logic primitives',
+  },
+};
+
+/**
+ * Get all primitives grouped by namespace, then by category within each namespace.
+ */
+export function getPrimitivesByNamespace(): Map<string, Map<string, string[]>> {
+  const grouped = new Map<string, Map<string, string[]>>();
+
+  for (const [name, def] of Object.entries(PRIMITIVE_DEFINITIONS)) {
+    const ns = def.namespace ?? 'core';
+    const category = def.category;
+
+    if (!grouped.has(ns)) {
+      grouped.set(ns, new Map());
+    }
+    const nsMap = grouped.get(ns)!;
+    if (!nsMap.has(category)) {
+      nsMap.set(category, []);
+    }
+    nsMap.get(category)!.push(name);
   }
 
   return grouped;

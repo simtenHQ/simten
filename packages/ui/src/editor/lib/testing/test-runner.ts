@@ -51,7 +51,7 @@ export function getLabeledSwitches(circuit: Circuit): LabeledSwitch[] {
  */
 export function getLabeledLEDs(circuit: Circuit): LabeledLED[] {
   return circuit.nodes
-    .filter((node) => node.componentRef === 'LED' && !!node.label)
+    .filter((node) => node.componentRef === 'Led' && !!node.label)
     .map((node) => ({
       nodeId: node.id,
       label: node.label!,
@@ -87,7 +87,7 @@ export function validateTestCase(
       return `Output component with label "${output.label}" not found`;
     }
 
-    if (node.componentRef !== 'LED') {
+    if (node.componentRef !== 'Led') {
       return `Output component "${output.label}" is not an LED (found ${node.componentRef})`;
     }
   }
@@ -151,7 +151,7 @@ export function runTestCase(
     for (const expectedOutput of testCase.outputs) {
       const node = findNodeByLabel(testCircuit, expectedOutput.label);
 
-      if (node && node.componentRef === 'LED') {
+      if (node && node.componentRef === 'Led') {
         // Read LED value from simulation portValues
         // LED has one input port named 'in'
         const ledInputPortKey = `${node.id}.in`;

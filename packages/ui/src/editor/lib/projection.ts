@@ -10,10 +10,10 @@ import type {
   Component,
   ComponentMetadata,
   ConnectionMetadata,
-  ComponentType,
   Connection,
 } from '../types';
 import { getComponentSpec, WIRE_COLORS } from '../types';
+import { PRIMITIVE_DEFINITIONS } from './primitive-registry';
 
 /**
  * Port position calculation
@@ -22,7 +22,7 @@ import { getComponentSpec, WIRE_COLORS } from '../types';
 function getPortPosition(
   portType: 'input' | 'output',
   portIndex: number,
-  componentType: ComponentType
+  componentType: string
 ): { x: number; y: number } {
   const specs = getComponentSpec(componentType);
   const portCount = portType === 'input' ? (specs?.inputCount ?? 0) : (specs?.outputCount ?? 0);
@@ -78,8 +78,9 @@ function connectionToEdge(
   let color = WIRE_COLORS.UNDEFINED;
 
   if (sourceComponent) {
-    // For switches, use the value directly
-    if (sourceComponent.type === 'SWITCH') {
+    // For source-only components with user-controlled value (Switch, Button, Input)
+    const primDef = PRIMITIVE_DEFINITIONS[sourceComponent.type];
+    if (primDef?.environmentalState && primDef.inputs.length === 0) {
       const value = 'value' in sourceComponent ? sourceComponent.value : false;
       color = value ? WIRE_COLORS.TRUE : WIRE_COLORS.FALSE;
     }
@@ -142,7 +143,7 @@ export function projectToReactFlow(
  * Get port handle IDs for a component
  * Useful for programmatic port access
  */
-export function getComponentPortHandles(componentId: string, componentType: ComponentType) {
+export function getComponentPortHandles(componentId: string, componentType: string) {
   const specs = getComponentSpec(componentType);
 
   const inputs = Array.from({ length: specs?.inputCount ?? 0 }, (_, i) =>
