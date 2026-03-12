@@ -25,12 +25,14 @@ export function PESection() {
             <code className="text-blue-300">dataIn &times; storedWeight</code>.
           </li>
           <li>
-            A <strong className="text-white">combinational adder</strong> that
-            produces{" "}
+            A <strong className="text-white">registered adder</strong> that
+            computes{" "}
             <code className="text-blue-300">
-              partialSumIn + product = partialSumOut
+              partialSumIn + product
             </code>{" "}
-            &mdash; no register, the result appears instantly.
+            and latches the result into a register &mdash;{" "}
+            <code className="text-blue-300">partialSumOut</code> appears one
+            clock cycle later.
           </li>
           <li>
             A <strong className="text-white">data pipeline register</strong>{" "}
@@ -41,19 +43,19 @@ export function PESection() {
           </li>
         </ol>
         <p className="text-gray-300 leading-relaxed">
-          The key insight is that{" "}
-          <code className="text-blue-300">partialSumOut</code> is{" "}
-          <em>combinational</em> &mdash; it settles immediately, with no clock
-          delay. This is what allows partial sums to flow through an entire
-          column of PEs within a single clock cycle.
+          Both <code className="text-blue-300">partialSumOut</code> and{" "}
+          <code className="text-blue-300">dataOut</code> are{" "}
+          <em>registered</em> &mdash; each takes one clock cycle. Data moves
+          right one PE per cycle, and partial sums move down one PE per cycle.
+          This symmetry is what makes the systolic array&rsquo;s timing work:
+          both directions have the same latency per hop.
         </p>
         <p className="text-gray-300 leading-relaxed">
           Load a weight: toggle{" "}
           <code className="text-blue-300">weightValid</code> on and tick once.
-          Then turn valid off and start changing{" "}
-          <code className="text-blue-300">dataIn</code>. Watch{" "}
-          <code className="text-blue-300">partialSumOut</code> update instantly
-          as the multiplier and adder recompute. The{" "}
+          Then turn valid off and tick again. Watch{" "}
+          <code className="text-blue-300">partialSumOut</code> update after the
+          tick &mdash; it&rsquo;s registered, not instant. The{" "}
           <code className="text-blue-300">dataOut</code> display shows the data
           value delayed by one cycle, ready to feed the next PE.
         </p>
@@ -68,7 +70,7 @@ export function PESection() {
           showControls
           autoRunSpeed={400}
           title="Processing Element (PE_Systolic)"
-          description="Load a weight (set valid, tick), then change data to see combinational partial-sum output."
+          description="Load a weight (set valid, tick), then tick again to see registered partial-sum output."
         />
       </div>
     </section>

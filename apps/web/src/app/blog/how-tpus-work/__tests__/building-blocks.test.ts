@@ -133,17 +133,21 @@ describe("TPU Blog Building Blocks", () => {
       expect(sim).toBeDefined();
     });
 
-    it("should produce combinational partialSumOut after weight load", () => {
+    it("should produce registered partialSumOut one cycle after computation", () => {
       const { circuit, sim } = compileCircuit(TPU_CIRCUITS.processingElement.dsl);
       const validId = findNodeId(circuit, "weightValid");
 
       // Load weight: dataIn=3, weightIn=5, partialSumIn=0
       sim.setInput(validId, 1);
-      sim.tick();
+      sim.tick(); // tick 1: weight latches, psumReg latches 0+3*0=0
 
-      // Now valid off — partialSumOut should be 0 + 3*5 = 15
+      // Weight loaded, partialSumOut still 0 (registered, 1 cycle behind)
       sim.setInput(validId, 0);
       sim.runCombinational();
+      expect(getPortValue(sim.getPortValues(), "partialSumOut")).toBe(0);
+
+      // Tick again: psumReg latches 0 + 3*5 = 15
+      sim.tick();
       expect(getPortValue(sim.getPortValues(), "partialSumOut")).toBe(15);
     });
 
@@ -168,7 +172,7 @@ describe("TPU Blog Building Blocks", () => {
       expect(sim).toBeDefined();
     });
 
-    it("should show data pipeline delay: PE0 processes data immediately, PE1 one tick later", () => {
+    it("should show data pipeline and registered psum delays", () => {
       const { circuit, sim } = compileCircuit(TPU_CIRCUITS.twoPERow.dsl);
       const validId = findNodeId(circuit, "weightValid");
 
@@ -177,16 +181,22 @@ describe("TPU Blog Building Blocks", () => {
       expect(getPortValue(sim.getPortValues(), "result0")).toBe(0);
       expect(getPortValue(sim.getPortValues(), "result1")).toBe(0);
 
-      // Load weights (tick latches weight registers AND data pipeline)
+      // Tick 1: Load weights (also latches dataPipe and psumReg)
       sim.setInput(validId, 1);
       sim.tick();
       sim.setInput(validId, 0);
 
-      // After weight-load tick: PE0's dataPipe already latched data0=2,
-      // so pe0.dataOut=2 feeds pe1.dataIn. Both PEs now produce results:
-      // PE0: 0 + 2*3 = 6, PE1: 0 + 2*5 = 10
+      // After tick 1: psumReg has old value (0+2*0=0). No results yet.
       sim.runCombinational();
+      expect(getPortValue(sim.getPortValues(), "result0")).toBe(0);
+
+      // Tick 2: PE0 psumReg latches 0+2*3=6. PE1 psumReg latches 0+2*0=0
+      // (PE1 saw pe0.dataOut=2 and weight=5, but pe1 psumReg was 0 last tick)
+      sim.tick();
       expect(getPortValue(sim.getPortValues(), "result0")).toBe(6);
+
+      // Tick 3: PE1 psumReg latches 0+2*5=10 (data pipelined through)
+      sim.tick();
       expect(getPortValue(sim.getPortValues(), "result1")).toBe(10);
     });
   });
@@ -197,18 +207,27 @@ describe("TPU Blog Building Blocks", () => {
       expect(sim).toBeDefined();
     });
 
-    it("should cascade partial sums combinationally from top to bottom", () => {
+    it("should cascade partial sums through registers: one PE per cycle", () => {
       const { circuit, sim } = compileCircuit(TPU_CIRCUITS.twoPEColumn.dsl);
       const validId = findNodeId(circuit, "weightValid");
 
-      // Load weights: weight0=3, weight1=5
+      // Tick 1: Load weights (weight0=3, weight1=5)
+      // psumRegs latch: PE0=0+4*0=0, PE1=0+4*0=0 (weights not loaded yet)
       sim.setInput(validId, 1);
       sim.tick();
       sim.setInput(validId, 0);
+      expect(getPortValue(sim.getPortValues(), "topResult")).toBe(0);
+      expect(getPortValue(sim.getPortValues(), "bottomResult")).toBe(0);
 
-      // dataIn=4: PE0 outputs 0 + 4*3 = 12, PE1 outputs 12 + 4*5 = 32
-      // Both are combinational — happen in the same cycle
-      sim.runCombinational();
+      // Tick 2: PE0 psumReg latches 0+4*3=12. PE1 sees pe0.partialSumOut=0 (old).
+      // PE1 psumReg latches 0+4*5=20.
+      sim.tick();
+      expect(getPortValue(sim.getPortValues(), "topResult")).toBe(12);
+      expect(getPortValue(sim.getPortValues(), "bottomResult")).toBe(20);
+
+      // Tick 3: PE0 psumReg latches 12 again. PE1 sees pe0.partialSumOut=12.
+      // PE1 psumReg latches 12+4*5=32 — the full dot product.
+      sim.tick();
       expect(getPortValue(sim.getPortValues(), "topResult")).toBe(12);
       expect(getPortValue(sim.getPortValues(), "bottomResult")).toBe(32);
     });

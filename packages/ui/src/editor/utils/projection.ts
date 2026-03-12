@@ -77,6 +77,7 @@ function getNodeTypeForComponent(componentRef: string, inputCount: number, outpu
     Screen: 'screenNode',
     RasterDisplay: 'rasterDisplayNode',
     Console: 'consoleNode',
+    Constant: 'logicGateNode',
   };
 
   if (typeMap[componentRef]) {

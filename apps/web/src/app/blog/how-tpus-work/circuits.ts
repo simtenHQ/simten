@@ -1,15 +1,15 @@
 /**
  * Circuit definitions for the "How TPUs Do Calculations" blog post.
  *
- * Builds up from a simple multiply-add to a full 2x2 systolic array
+ * Builds up from a simple multiply-add to a full 3x3 systolic array
  * with wavefront control, all defined in circuit DSL.
  *
  * All building blocks use the same PE_Systolic architecture as the final array:
  *   - Weight register with valid-bit gating
  *   - Multiplier: dataIn × stored weight
- *   - Combinational adder: partialSumIn + product → partialSumOut
+ *   - Registered adder: partialSumIn + product → psumReg → partialSumOut
  *   - Data pipeline register: 1-cycle delay for horizontal flow
- *   - NO local accumulator — accumulation happens by chaining PEs vertically
+ *   - Both partial sums and data are registered (1 cycle per PE in each direction)
  */
 
 export interface BlogCircuit {
@@ -20,7 +20,7 @@ export interface BlogCircuit {
   nodePositions?: Record<string, { x: number; y: number }>;
 }
 
-/** The PE definition used by building-block circuits — same as in SYSTOLIC_DSL */
+/** The PE definition used by all circuits — registered partial-sum output */
 const PE_SYSTOLIC_DEFINITION = `circuit PE_Systolic {
   input dataIn: Bus[8]
   input weightIn: Bus[8]
@@ -34,22 +34,32 @@ const PE_SYSTOLIC_DEFINITION = `circuit PE_Systolic {
     node weightReg: Register
     node mult: Multiplier
     node adder: Adder(width=16)
+    node psumReg: Register
     node dataPipe: Register
     node one: Constant(value=1)
     node zero: Constant(value=0)
 
+    // Weight register: latches weight when weightValid is high
     connect weightIn -> weightReg.data
     connect weightValid -> weightReg.we
     connect clk -> weightReg.clk
 
+    // Multiply: dataIn × stored weight
     connect dataIn -> mult.a
     connect weightReg.q -> mult.b
 
+    // Add: incoming partial sum + local product
     connect partialSumIn -> adder.a
     connect mult.product -> adder.b
     connect zero.out -> adder.carry_in
-    connect adder.sum -> partialSumOut
 
+    // Registered partial-sum output (1-cycle delay, like real hardware)
+    connect adder.sum -> psumReg.data
+    connect one.out -> psumReg.we
+    connect clk -> psumReg.clk
+    connect psumReg.q -> partialSumOut
+
+    // Data pipeline: 1-cycle delay for horizontal flow
     connect dataIn -> dataPipe.data
     connect one.out -> dataPipe.we
     connect clk -> dataPipe.clk
@@ -195,12 +205,12 @@ circuit WeightRegister {
 
   /**
    * Section 3: The Processing Element — the actual PE_Systolic design.
-   * Weight register + multiplier + combinational partial-sum adder + data pipeline.
+   * Weight register + multiplier + registered partial-sum adder + data pipeline.
    */
   processingElement: {
     name: "Processing Element",
     description:
-      "A full PE with weight register, multiplier, combinational partial-sum adder, and data pipeline. The building block of the systolic array.",
+      "A full PE with weight register, multiplier, registered partial-sum adder, and data pipeline. The building block of the systolic array.",
     displayDsl: `circuit TestPE {
   clock clk
   impl {
@@ -352,14 +362,15 @@ circuit TwoPERow {
 
   /**
    * Section 5: Vertical Partial-Sum Flow — two PEs in a column.
-   * Partial sums flow top→bottom combinationally. Both PEs receive the same
-   * data value; PE0 computes data×weight0, PE1 adds data×weight1 on top.
-   * The bottom PE's output is the full dot product.
+   * Partial sums flow top→bottom through registers (1 cycle per PE).
+   * Both PEs receive the same data; PE0 computes data×weight0 (registered),
+   * PE1 adds data×weight1 to the delayed partial sum. The bottom PE's
+   * output is the full dot product, available one cycle after the top PE.
    */
   twoPEColumn: {
     name: "Two-PE Column",
     description:
-      "Two PEs stacked vertically. Partial sums cascade from top to bottom in one clock cycle.",
+      "Two PEs stacked vertically. Partial sums flow down through registers — one PE per clock cycle, just like real hardware.",
     displayDsl: `circuit TwoPEColumn {
   clock clk
   impl {
@@ -579,7 +590,12 @@ circuit WavefrontController {
 };
 
 /**
- * 2x2 systolic array (kept for existing tests).
+ * 2x2 systolic array with registered partial-sum flow.
+ *
+ * With registered psumOut, partial sums take 1 cycle per PE vertically.
+ * Data injection is staggered: row r starts at cycle 1+r.
+ * C[k][j] emerges at PE(N-1,j) on cycle k+j+N+1 (N=2).
+ * Total: 3N = 6 ticks for N=2.
  */
 export const SYSTOLIC_2X2_DSL = `
 ${PE_SYSTOLIC_DEFINITION}
@@ -618,8 +634,10 @@ circuit Systolic2x2 {
     node two: Constant(value=2)
     node three: Constant(value=3)
     node four: Constant(value=4)
+    node five: Constant(value=5)
+    node six: Constant(value=6)
 
-    // ===== Cycle Counter (0 -> 1 -> 2 -> 3 -> 4, stops at 4) =====
+    // ===== Cycle Counter (0..6, stops at 6) =====
     node counter: Register(initial=0)
     node counterInc: Incrementer
     node counterMux: Mux
@@ -628,7 +646,7 @@ circuit Systolic2x2 {
 
     connect counter.q -> counterInc.in
     connect counter.q -> notDone.a
-    connect four.out -> notDone.b
+    connect six.out -> notDone.b
     connect start -> shouldAdvance.a
     connect notDone.lt -> shouldAdvance.b
     connect shouldAdvance.out -> counterMux.sel
@@ -643,6 +661,8 @@ circuit Systolic2x2 {
     node isCycle1: Comparator
     node isCycle2: Comparator
     node isCycle3: Comparator
+    node isCycle4: Comparator
+    node isCycle5: Comparator
     connect counter.q -> isCycle0.a
     connect zero.out -> isCycle0.b
     connect counter.q -> isCycle1.a
@@ -651,6 +671,10 @@ circuit Systolic2x2 {
     connect two.out -> isCycle2.b
     connect counter.q -> isCycle3.a
     connect three.out -> isCycle3.b
+    connect counter.q -> isCycle4.a
+    connect four.out -> isCycle4.b
+    connect counter.q -> isCycle5.a
+    connect five.out -> isCycle5.b
 
     // ===== Weight Loading (cycle 0 only) =====
     node loadWeights: And
@@ -665,7 +689,7 @@ circuit Systolic2x2 {
     connect loadWeights.out -> pe10.weightValid
     connect loadWeights.out -> pe11.weightValid
 
-    // ===== Data Injection =====
+    // ===== Data Injection (staggered: row r starts at cycle 1+r) =====
     // Row 0: cycle 1 -> A[0][0], cycle 2 -> A[1][0], else 0
     node muxR0a: Mux
     node muxR0b: Mux
@@ -676,13 +700,13 @@ circuit Systolic2x2 {
     connect muxR0a.out -> muxR0b.in0
     connect a10 -> muxR0b.in1
 
-    // Row 1: cycle 1 -> A[0][1], cycle 2 -> A[1][1], else 0
+    // Row 1: cycle 2 -> A[0][1], cycle 3 -> A[1][1], else 0
     node muxR1a: Mux
     node muxR1b: Mux
-    connect isCycle1.eq -> muxR1a.sel
+    connect isCycle2.eq -> muxR1a.sel
     connect zero.out -> muxR1a.in0
     connect a01 -> muxR1a.in1
-    connect isCycle2.eq -> muxR1b.sel
+    connect isCycle3.eq -> muxR1b.sel
     connect muxR1a.out -> muxR1b.in0
     connect a11 -> muxR1b.in1
 
@@ -692,35 +716,37 @@ circuit Systolic2x2 {
     connect muxR1b.out -> pe10.dataIn
     connect pe10.dataOut -> pe11.dataIn
 
-    // ===== Vertical Partial-Sum Flow (top -> bottom) =====
+    // ===== Vertical Partial-Sum Flow (top -> bottom, registered) =====
     connect zero.out -> pe00.partialSumIn
     connect zero.out -> pe01.partialSumIn
     connect pe00.partialSumOut -> pe10.partialSumIn
     connect pe01.partialSumOut -> pe11.partialSumIn
 
     // ===== Result Registers =====
-    // C[0][0] emerges at PE(1,0) during cycle 1
+    // C[k][j] at PE(1,j) on cycle k+j+3
+
+    // C[0][0] at PE(1,0) cycle 3
     node result_c00: Register
     connect pe10.partialSumOut -> result_c00.data
-    connect isCycle1.eq -> result_c00.we
+    connect isCycle3.eq -> result_c00.we
     connect clk -> result_c00.clk
 
-    // C[1][0] emerges at PE(1,0) during cycle 2
+    // C[1][0] at PE(1,0) cycle 4
     node result_c10: Register
     connect pe10.partialSumOut -> result_c10.data
-    connect isCycle2.eq -> result_c10.we
+    connect isCycle4.eq -> result_c10.we
     connect clk -> result_c10.clk
 
-    // C[0][1] emerges at PE(1,1) during cycle 2
+    // C[0][1] at PE(1,1) cycle 4
     node result_c01: Register
     connect pe11.partialSumOut -> result_c01.data
-    connect isCycle2.eq -> result_c01.we
+    connect isCycle4.eq -> result_c01.we
     connect clk -> result_c01.clk
 
-    // C[1][1] emerges at PE(1,1) during cycle 3
+    // C[1][1] at PE(1,1) cycle 5
     node result_c11: Register
     connect pe11.partialSumOut -> result_c11.data
-    connect isCycle3.eq -> result_c11.we
+    connect isCycle5.eq -> result_c11.we
     connect clk -> result_c11.clk
 
     // ===== Outputs =====
@@ -729,10 +755,10 @@ circuit Systolic2x2 {
     connect result_c10.q -> c10
     connect result_c11.q -> c11
 
-    // Done = counter reached 4
+    // Done = counter reached 6 (one cycle after last result captured at cycle 5)
     node isDone: Comparator
     connect counter.q -> isDone.a
-    connect four.out -> isDone.b
+    connect six.out -> isDone.b
     connect isDone.eq -> done
   }
 }
@@ -786,12 +812,13 @@ export const SYSTOLIC_DSL = SYSTOLIC_2X2_DSL;
 /**
  * Full 3x3 systolic array: PE_Systolic + Systolic3x3 + TestSystolic3x3
  *
- * Architecture: weight-stationary with combinational partial-sum flow.
+ * Architecture: weight-stationary with registered partial-sum flow.
  * - Cycle 0: load all 9 weights into PEs
- * - Cycles 1-5: pipelined data flow (activations right, partial sums down)
- * - Cycle 6: counter reaches 6, done fires
+ * - Staggered data injection: row r starts at cycle 1+r
+ * - C[k][j] emerges at PE(2,j) on cycle k+j+N+1 (N=3) → k+j+4
+ * - Last result C[2][2] at cycle 8, done at cycle 9
  *
- * Total: 6 ticks (1 weight load + 2N-1 = 5 data flow for N=3).
+ * Total: 9 ticks = 3N for N=3.
  *
  * Test: A=[[1,2,3],[4,5,6],[7,8,9]] × B=[[2,0,1],[0,2,0],[1,0,2]]
  * Expected C = [[5,4,7],[14,10,16],[23,16,25]]
@@ -860,8 +887,11 @@ circuit Systolic3x3 {
     node four: Constant(value=4)
     node five: Constant(value=5)
     node six: Constant(value=6)
+    node seven: Constant(value=7)
+    node eight: Constant(value=8)
+    node nine: Constant(value=9)
 
-    // ===== Cycle Counter (0..6, stops at 6) =====
+    // ===== Cycle Counter (0..9, stops at 9) =====
     node counter: Register(initial=0)
     node counterInc: Incrementer
     node counterMux: Mux
@@ -870,7 +900,7 @@ circuit Systolic3x3 {
 
     connect counter.q -> counterInc.in
     connect counter.q -> notDone.a
-    connect six.out -> notDone.b
+    connect nine.out -> notDone.b
     connect start -> shouldAdvance.a
     connect notDone.lt -> shouldAdvance.b
     connect shouldAdvance.out -> counterMux.sel
@@ -887,6 +917,9 @@ circuit Systolic3x3 {
     node isCycle3: Comparator
     node isCycle4: Comparator
     node isCycle5: Comparator
+    node isCycle6: Comparator
+    node isCycle7: Comparator
+    node isCycle8: Comparator
     connect counter.q -> isCycle0.a
     connect zero.out -> isCycle0.b
     connect counter.q -> isCycle1.a
@@ -899,6 +932,12 @@ circuit Systolic3x3 {
     connect four.out -> isCycle4.b
     connect counter.q -> isCycle5.a
     connect five.out -> isCycle5.b
+    connect counter.q -> isCycle6.a
+    connect six.out -> isCycle6.b
+    connect counter.q -> isCycle7.a
+    connect seven.out -> isCycle7.b
+    connect counter.q -> isCycle8.a
+    connect eight.out -> isCycle8.b
 
     // ===== Weight Loading (cycle 0 only) =====
     node loadWeights: And
@@ -923,7 +962,7 @@ circuit Systolic3x3 {
     connect loadWeights.out -> pe21.weightValid
     connect loadWeights.out -> pe22.weightValid
 
-    // ===== Data Injection =====
+    // ===== Data Injection (staggered: row r starts at cycle 1+r) =====
     // Row 0: cycle 1 -> A[0][0], cycle 2 -> A[1][0], cycle 3 -> A[2][0]
     node muxR0a: Mux
     node muxR0b: Mux
@@ -938,31 +977,31 @@ circuit Systolic3x3 {
     connect muxR0b.out -> muxR0c.in0
     connect a20 -> muxR0c.in1
 
-    // Row 1: cycle 1 -> A[0][1], cycle 2 -> A[1][1], cycle 3 -> A[2][1]
+    // Row 1: cycle 2 -> A[0][1], cycle 3 -> A[1][1], cycle 4 -> A[2][1]
     node muxR1a: Mux
     node muxR1b: Mux
     node muxR1c: Mux
-    connect isCycle1.eq -> muxR1a.sel
+    connect isCycle2.eq -> muxR1a.sel
     connect zero.out -> muxR1a.in0
     connect a01 -> muxR1a.in1
-    connect isCycle2.eq -> muxR1b.sel
+    connect isCycle3.eq -> muxR1b.sel
     connect muxR1a.out -> muxR1b.in0
     connect a11 -> muxR1b.in1
-    connect isCycle3.eq -> muxR1c.sel
+    connect isCycle4.eq -> muxR1c.sel
     connect muxR1b.out -> muxR1c.in0
     connect a21 -> muxR1c.in1
 
-    // Row 2: cycle 1 -> A[0][2], cycle 2 -> A[1][2], cycle 3 -> A[2][2]
+    // Row 2: cycle 3 -> A[0][2], cycle 4 -> A[1][2], cycle 5 -> A[2][2]
     node muxR2a: Mux
     node muxR2b: Mux
     node muxR2c: Mux
-    connect isCycle1.eq -> muxR2a.sel
+    connect isCycle3.eq -> muxR2a.sel
     connect zero.out -> muxR2a.in0
     connect a02 -> muxR2a.in1
-    connect isCycle2.eq -> muxR2b.sel
+    connect isCycle4.eq -> muxR2b.sel
     connect muxR2a.out -> muxR2b.in0
     connect a12 -> muxR2b.in1
-    connect isCycle3.eq -> muxR2c.sel
+    connect isCycle5.eq -> muxR2c.sel
     connect muxR2b.out -> muxR2c.in0
     connect a22 -> muxR2c.in1
 
@@ -989,57 +1028,57 @@ circuit Systolic3x3 {
     connect pe12.partialSumOut -> pe22.partialSumIn
 
     // ===== Result Registers =====
-    // C[k][j] emerges at PE(2,j) on cycle k+j+1
+    // C[k][j] emerges at PE(2,j) on cycle k+j+4
 
     // Column 0: PE(2,0)
-    // C[0][0] on cycle 1
+    // C[0][0] on cycle 4
     node result_c00: Register
     connect pe20.partialSumOut -> result_c00.data
-    connect isCycle1.eq -> result_c00.we
+    connect isCycle4.eq -> result_c00.we
     connect clk -> result_c00.clk
-    // C[1][0] on cycle 2
+    // C[1][0] on cycle 5
     node result_c10: Register
     connect pe20.partialSumOut -> result_c10.data
-    connect isCycle2.eq -> result_c10.we
+    connect isCycle5.eq -> result_c10.we
     connect clk -> result_c10.clk
-    // C[2][0] on cycle 3
+    // C[2][0] on cycle 6
     node result_c20: Register
     connect pe20.partialSumOut -> result_c20.data
-    connect isCycle3.eq -> result_c20.we
+    connect isCycle6.eq -> result_c20.we
     connect clk -> result_c20.clk
 
     // Column 1: PE(2,1)
-    // C[0][1] on cycle 2
+    // C[0][1] on cycle 5
     node result_c01: Register
     connect pe21.partialSumOut -> result_c01.data
-    connect isCycle2.eq -> result_c01.we
+    connect isCycle5.eq -> result_c01.we
     connect clk -> result_c01.clk
-    // C[1][1] on cycle 3
+    // C[1][1] on cycle 6
     node result_c11: Register
     connect pe21.partialSumOut -> result_c11.data
-    connect isCycle3.eq -> result_c11.we
+    connect isCycle6.eq -> result_c11.we
     connect clk -> result_c11.clk
-    // C[2][1] on cycle 4
+    // C[2][1] on cycle 7
     node result_c21: Register
     connect pe21.partialSumOut -> result_c21.data
-    connect isCycle4.eq -> result_c21.we
+    connect isCycle7.eq -> result_c21.we
     connect clk -> result_c21.clk
 
     // Column 2: PE(2,2)
-    // C[0][2] on cycle 3
+    // C[0][2] on cycle 6
     node result_c02: Register
     connect pe22.partialSumOut -> result_c02.data
-    connect isCycle3.eq -> result_c02.we
+    connect isCycle6.eq -> result_c02.we
     connect clk -> result_c02.clk
-    // C[1][2] on cycle 4
+    // C[1][2] on cycle 7
     node result_c12: Register
     connect pe22.partialSumOut -> result_c12.data
-    connect isCycle4.eq -> result_c12.we
+    connect isCycle7.eq -> result_c12.we
     connect clk -> result_c12.clk
-    // C[2][2] on cycle 5
+    // C[2][2] on cycle 8
     node result_c22: Register
     connect pe22.partialSumOut -> result_c22.data
-    connect isCycle5.eq -> result_c22.we
+    connect isCycle8.eq -> result_c22.we
     connect clk -> result_c22.clk
 
     // ===== Outputs =====
@@ -1053,10 +1092,10 @@ circuit Systolic3x3 {
     connect result_c21.q -> c21
     connect result_c22.q -> c22
 
-    // Done = counter reached 6
+    // Done = counter reached 9 (one cycle after last result captured at cycle 8)
     node isDone: Comparator
     connect counter.q -> isDone.a
-    connect six.out -> isDone.b
+    connect nine.out -> isDone.b
     connect isDone.eq -> done
   }
 }
