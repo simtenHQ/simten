@@ -5,7 +5,6 @@ import { compileDSL, type ComponentLibrary } from "@turing-incomplete/core/dsl";
 import { elaborate, type FlatCircuit } from "../editor/lib/elaboration";
 import type { FlatPortValueMap, FlatSequentialState } from "../editor/lib/flat-simulator";
 import { useComponentLibraryStore } from "../editor/stores/component-library-store";
-import { getPrimitives } from "../editor/lib/primitive-registry";
 import type { Circuit } from "@turing-incomplete/core/dsl";
 
 // Fast simulator from core
@@ -109,11 +108,7 @@ export function useCircuitSimulator(
     if (!dslCode) return;
 
     const store = useComponentLibraryStore.getState();
-
-    // Initialize primitives if needed
-    if (store.getAllPrimitiveNames().length === 0) {
-      store.registerPrimitives(getPrimitives());
-    }
+    store.initializeLibrary();
 
     const library = new ComponentLibraryAdapter(store);
     const result = compileDSL(dslCode, library, "embed-demo.dsl");

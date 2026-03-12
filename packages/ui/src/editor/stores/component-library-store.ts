@@ -9,7 +9,9 @@ import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 import { enableMapSet } from 'immer';
 import type { Circuit } from '../types/circuit';
-import { clearReferenceCircuitCache } from '../utils/reference-circuit-cache';
+import { clearReferenceCircuitCache, getCompiledReferenceCircuit } from '../utils/reference-circuit-cache';
+import { getPrimitives } from '../lib/primitive-registry';
+import { PRIMITIVE_DEFINITIONS } from '@turing-incomplete/core/simulator';
 
 // Enable Immer's MapSet plugin for Map/Set support
 enableMapSet();
@@ -58,6 +60,9 @@ interface ComponentLibraryActions {
   getAllStandardNames: () => string[];
   getAllUserNames: () => string[];
   getAllComponentNames: () => string[];
+
+  // Initialization
+  initializeLibrary: () => void;
 
   // Clear operations
   clearUserComponents: () => void;
@@ -175,6 +180,23 @@ export const useComponentLibraryStore = create<ComponentLibraryStore>()(
         state.library.user.clear();
       });
       clearReferenceCircuitCache();
+    },
+
+    initializeLibrary: () => {
+      if (get().library.primitives.size > 0) return; // already initialized
+      const primitives = getPrimitives();
+      set((state) => {
+        for (const circuit of primitives) {
+          state.library.primitives.set(circuit.name, circuit);
+        }
+      });
+      // Pre-compile all composites (FullAdder, HalfAdder, etc.) as standard components
+      const store = get();
+      for (const [name, def] of Object.entries(PRIMITIVE_DEFINITIONS)) {
+        if (def.referenceCircuit) {
+          getCompiledReferenceCircuit(name, store);
+        }
+      }
     },
 
     clearAll: () => {

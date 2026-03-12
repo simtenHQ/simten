@@ -491,7 +491,7 @@ function CircuitCanvasInner({
         selectionOnDrag={editable ? true : undefined}
         selectionMode={editable ? SelectionMode.Partial : undefined}
         selectNodesOnDrag={editable ? false : undefined}
-        panActivationKeyCode={editable ? null : undefined}
+        panActivationKeyCode={null}
         className={isDark ? undefined : "bg-gray-50"}
       >
         {isDark ? (

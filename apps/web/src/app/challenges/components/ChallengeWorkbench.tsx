@@ -5,6 +5,7 @@ import { CircuitEmbed } from "@turing-incomplete/ui/embed";
 import type { CircuitEmbedHandle, CheckResult } from "@turing-incomplete/ui/embed";
 import type { ChallengeStage } from "@turing-incomplete/challenges";
 import { checkProgress } from "@turing-incomplete/challenges";
+import { DSLEditor, type DSLEditorRef } from "@/features/dsl/ui/DSLEditor";
 import { useChallengeSync } from "../useChallengeSync";
 import { McpStatusBadge } from "@/features/mcp/McpStatusBadge";
 
@@ -17,64 +18,45 @@ interface ChallengeWorkbenchProps {
 }
 
 export function ChallengeWorkbench({ stage, challengeId, onNavigate, nextStageId, onStageComplete }: ChallengeWorkbenchProps) {
-  const storageKey = `ti:${challengeId}:${stage.id}`;
-
-  const [steps, setSteps] = useState<string[]>([]);
-  const [inputValue, setInputValue] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [showHint, setShowHint] = useState(-1);
-  const [showSolution, setShowSolution] = useState(false);
-  const [justAdded, setJustAdded] = useState(false);
-  const [portClickState, setPortClickState] = useState<{
-    nodeLabel: string;
-    portName: string;
-  } | null>(null);
-  const [checkResults, setCheckResults] = useState<CheckResult[] | null>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const editorStorageKey = `ti:${challengeId}:${stage.id}:dsl`;
+  const editorRef = useRef<DSLEditorRef>(null);
   const circuitRef = useRef<CircuitEmbedHandle>(null);
 
-  // Track whether we've hydrated from localStorage yet
-  const hydratedRef = useRef(false);
+  // Track the current DSL code from the editor (for progress checking)
+  const [dslCode, setDslCode] = useState(stage.scaffold);
+  // Last successfully compiled DSL — fed to CircuitEmbed so circuit doesn't
+  // disappear while the user is mid-typing
+  const [lastGoodDsl, setLastGoodDsl] = useState(stage.scaffold);
+  const [showHint, setShowHint] = useState(-1);
+  const [showSolution, setShowSolution] = useState(false);
+  const [checkResults, setCheckResults] = useState<CheckResult[] | null>(null);
 
-  // Hydrate steps from localStorage on mount / stage change
+  // Reset state when stage changes
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem(storageKey);
-      setSteps(saved ? JSON.parse(saved) : []);
-    } catch { setSteps([]); }
-    setInputValue("");
-    setError(null);
     setShowHint(-1);
     setShowSolution(false);
-    setPortClickState(null);
-    setJustAdded(false);
     setCheckResults(null);
-    hydratedRef.current = true;
-  }, [stage.id, storageKey]);
+    // Load saved code or use scaffold
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem(editorStorageKey);
+      const code = saved || stage.scaffold;
+      setDslCode(code);
+      setLastGoodDsl(code);
+    } else {
+      setDslCode(stage.scaffold);
+      setLastGoodDsl(stage.scaffold);
+    }
+  }, [stage.id, editorStorageKey, stage.scaffold]);
 
-  // Persist steps to localStorage (skip until hydrated)
-  useEffect(() => {
-    if (!hydratedRef.current) return;
-    try {
-      if (steps.length > 0) {
-        localStorage.setItem(storageKey, JSON.stringify(steps));
-      } else {
-        localStorage.removeItem(storageKey);
-      }
-    } catch { /* quota exceeded, etc */ }
-  }, [steps, storageKey]);
-
-  // Build full DSL from scaffold + user steps
-  const fullDsl = buildDsl(stage.scaffold, steps);
-
-  // Correctness-based completion (Phase 1)
+  // Correctness-based completion — check against last good compile,
+  // not raw editor text, so progress doesn't drop while typing
   const progress = useMemo(
-    () => checkProgress(fullDsl, stage.solution),
-    [fullDsl, stage.solution]
+    () => checkProgress(lastGoodDsl, stage.solution),
+    [lastGoodDsl, stage.solution]
   );
   const isComplete = progress.complete;
 
-  // Fire completion callback when stage is completed
+  // Fire completion callback
   const prevCompleteRef = useRef(false);
   useEffect(() => {
     if (isComplete && !prevCompleteRef.current) {
@@ -83,107 +65,63 @@ export function ChallengeWorkbench({ stage, challengeId, onNavigate, nextStageId
     prevCompleteRef.current = isComplete;
   }, [isComplete, stage.id, onStageComplete]);
 
-  // Sync state to MCP preview server
+  // MCP sync — handle navigation and external step additions
   const handleAddStep = useCallback((step: string) => {
-    setSteps((prev) => prev.includes(step) ? prev : [...prev, step]);
+    // When MCP adds a connection, append it to the editor
+    const editor = editorRef.current;
+    if (!editor) return;
+    const currentCode = editor.getCode();
+    // Insert the connect line before the last closing braces
+    const lastBrace = currentCode.lastIndexOf("}");
+    const secondLast = currentCode.lastIndexOf("}", lastBrace - 1);
+    const insertAt = secondLast > 0 ? secondLast : lastBrace;
+    const newCode = currentCode.slice(0, insertAt) + "    " + step + "\n" + currentCode.slice(insertAt);
+    editor.setCode(newCode);
+    setDslCode(newCode);
   }, []);
 
-  const mcpStatus = useChallengeSync(challengeId, stage.id, fullDsl, onNavigate, handleAddStep);
+  const mcpStatus = useChallengeSync(challengeId, stage.id, dslCode, onNavigate, handleAddStep);
 
-  const addStep = useCallback(
-    (step: string) => {
-      if (steps.includes(step)) {
-        setError("Already added");
-        return;
-      }
-      setSteps((prev) => [...prev, step]);
-      setInputValue("");
-      setError(null);
-      setPortClickState(null);
-      setJustAdded(true);
-      setCheckResults(null);
-      setTimeout(() => setJustAdded(false), 600);
-    },
-    [steps]
-  );
-
-  const handleSubmit = useCallback(
-    (e: React.FormEvent) => {
-      e.preventDefault();
-      const trimmed = inputValue.trim();
-      if (!trimmed) return;
-
-      const match = trimmed.match(
-        /^connect\s+(\w+\.\w+)\s*->\s*(\w+\.\w+)$/
-      );
-      if (!match) {
-        setError("Format: connect source.port -> target.port");
-        return;
-      }
-
-      addStep(`connect ${match[1]} -> ${match[2]}`);
-    },
-    [inputValue, addStep]
-  );
-
-  const handlePortClick = useCallback(
-    (nodeLabel: string, portName: string, portType: "input" | "output") => {
-      const qualified = `${nodeLabel}.${portName}`;
-
-      if (portType === "output" && !portClickState) {
-        setPortClickState({ nodeLabel, portName });
-        setInputValue(`connect ${qualified} -> `);
-        inputRef.current?.focus();
-      } else if (portType === "input" && portClickState) {
-        addStep(
-          `connect ${portClickState.nodeLabel}.${portClickState.portName} -> ${qualified}`
-        );
-      } else if (portType === "output") {
-        setPortClickState({ nodeLabel, portName });
-        setInputValue(`connect ${qualified} -> `);
-        inputRef.current?.focus();
-      } else {
-        setInputValue((prev) => {
-          if (prev.includes("-> ")) return prev;
-          return prev + qualified;
-        });
-      }
-    },
-    [portClickState, addStep]
-  );
-
-  const handleUndo = useCallback(() => {
-    setSteps((prev) => prev.slice(0, -1));
-    setError(null);
+  const handleCodeChange = useCallback((code: string) => {
+    setDslCode(code);
     setCheckResults(null);
   }, []);
 
-  const handleReset = useCallback(() => {
-    setSteps([]);
-    setInputValue("");
-    setError(null);
-    setPortClickState(null);
-    setCheckResults(null);
+  const handleCompileSuccess = useCallback((_circuits: unknown, compiledDsl: string) => {
+    setLastGoodDsl(compiledDsl);
   }, []);
-
-  const handleShowSolution = useCallback(() => {
-    const lines = stage.solution
-      .split("\n")
-      .map((l: string) => l.trim())
-      .filter((l: string) => l.startsWith("connect "));
-    setSteps(lines);
-    setShowSolution(true);
-  }, [stage.solution]);
-
-  const handleNextHint = useCallback(() => {
-    setShowHint((h) => Math.min(h + 1, stage.hints.length - 1));
-  }, [stage.hints.length]);
 
   const handleRunChecks = useCallback(() => {
     if (!circuitRef.current || !stage.checks) return;
     const results = circuitRef.current.runChecks(stage.checks);
     setCheckResults(results);
   }, [stage.checks]);
+
+  const handleShowSolution = useCallback(() => {
+    const editor = editorRef.current;
+    if (!editor) return;
+    editor.setCode(stage.solution);
+    setDslCode(stage.solution);
+    setLastGoodDsl(stage.solution);
+    setShowSolution(true);
+  }, [stage.solution]);
+
+  const handleReset = useCallback(() => {
+    const editor = editorRef.current;
+    if (!editor) return;
+    editor.setCode(stage.scaffold);
+    setDslCode(stage.scaffold);
+    setLastGoodDsl(stage.scaffold);
+    setShowSolution(false);
+    setCheckResults(null);
+    if (typeof window !== "undefined") {
+      localStorage.removeItem(editorStorageKey);
+    }
+  }, [stage.scaffold, editorStorageKey]);
+
+  const handleNextHint = useCallback(() => {
+    setShowHint((h) => Math.min(h + 1, stage.hints.length - 1));
+  }, [stage.hints.length]);
 
   const handleNextStage = useCallback(() => {
     if (nextStageId) onNavigate(nextStageId);
@@ -202,139 +140,68 @@ export function ChallengeWorkbench({ stage, challengeId, onNavigate, nextStageId
         <p className="text-gray-200 text-sm">{stage.objective}</p>
       </div>
 
-      {/* Circuit preview with glowing ports */}
-      <div
-        className={`transition-all duration-300 rounded-xl ${
-          justAdded ? "ring-2 ring-blue-500/40" : ""
-        }`}
-      >
-        <CircuitEmbed
-          ref={circuitRef}
-          key={fullDsl}
-          dsl={fullDsl}
-          height={stage.height ?? 300}
-          showControls
-          nodePositions={stage.nodePositions}
-          showPortLabels
-          glowUnconnected
-          onPortClick={handlePortClick}
-          description={
-            portClickState
-              ? `Now click an input port → ${portClickState.nodeLabel}.${portClickState.portName} → ?`
-              : "Click an output port to start wiring"
-          }
-        />
+      {/* Side-by-side: Editor + Circuit */}
+      <div className="flex gap-4" style={{ height: stage.height ?? 400 }}>
+        {/* DSL Editor */}
+        <div className="w-1/2 rounded-lg overflow-hidden border border-gray-700">
+          <DSLEditor
+            key={stage.id}
+            ref={editorRef}
+            storageKey={editorStorageKey}
+            initialCode={stage.scaffold}
+            autoCompileEnabled
+            showHeader={false}
+            onCodeChange={handleCodeChange}
+            onCompileSuccess={handleCompileSuccess}
+            editorOptions={{
+              fontSize: 13,
+              lineNumbers: "on",
+            }}
+          />
+        </div>
+
+        {/* Circuit preview */}
+        <div className="w-1/2 min-h-0">
+          <CircuitEmbed
+            ref={circuitRef}
+            dsl={lastGoodDsl}
+            height={stage.height ?? 400}
+            showControls
+            nodePositions={stage.nodePositions}
+            showPortLabels
+          />
+        </div>
       </div>
 
-      {/* Connection REPL */}
-      <div className="space-y-2">
-        <form onSubmit={handleSubmit} className="flex gap-2">
-          <div className="relative flex-1">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 font-mono text-sm select-none">
-              &gt;
-            </span>
-            <input
-              ref={inputRef}
-              type="text"
-              value={inputValue}
-              onChange={(e) => {
-                setInputValue(e.target.value);
-                setError(null);
-              }}
-              onKeyDown={(e) => {
-                if (e.key === "Escape") {
-                  setInputValue("");
-                  setPortClickState(null);
-                }
-              }}
-              placeholder="connect source.port -> target.port"
-              spellCheck={false}
-              className="w-full bg-gray-950 border border-gray-700 rounded-lg pl-7 pr-4 py-2.5 font-mono text-sm text-gray-200 placeholder-gray-600 focus:outline-none focus:border-blue-500 transition-colors"
-            />
-          </div>
-          <button
-            type="submit"
-            className="px-4 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium transition-colors shrink-0"
-          >
-            Connect
-          </button>
-        </form>
-
-        {error && (
-          <p className="text-red-400 text-xs font-mono pl-7 animate-shake">
-            {error}
-          </p>
-        )}
-
-        {steps.length === 0 && !portClickState && (
-          <p className="text-gray-500 text-xs pl-7">
-            Click a glowing output port to start, or type a connection directly.
-          </p>
-        )}
-      </div>
-
-      {/* Step list */}
-      {steps.length > 0 && (
-        <div className="bg-gray-900/50 border border-gray-800 rounded-lg p-3">
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-3">
-              <span className="text-xs text-gray-400 font-medium">
-                Steps
-              </span>
-              {/* Mini progress bar — correctness-based */}
-              <div className="flex gap-0.5">
-                {Array.from({ length: progress.totalExpected }).map((_, i) => (
-                  <div
-                    key={i}
-                    className={`h-2 w-4 rounded-sm transition-all duration-300 ${
-                      i < progress.correct
-                        ? "bg-green-500"
-                        : "bg-gray-700"
-                    }`}
-                  />
-                ))}
-              </div>
-              <span className="text-xs text-gray-500 tabular-nums">
-                {progress.correct}/{progress.totalExpected}
-              </span>
-            </div>
-            <div className="flex gap-2">
-              <button
-                onClick={handleUndo}
-                disabled={steps.length === 0}
-                className="text-xs px-2 py-1 rounded bg-gray-800 text-gray-400 hover:text-gray-200 hover:bg-gray-700 transition-colors disabled:opacity-30"
-              >
-                Undo
-              </button>
-              <button
-                onClick={handleReset}
-                className="text-xs px-2 py-1 rounded bg-gray-800 text-gray-400 hover:text-gray-200 hover:bg-gray-700 transition-colors"
-              >
-                Clear
-              </button>
-            </div>
-          </div>
-          <ul className="space-y-0.5">
-            {steps.map((step, i) => (
-              <li
+      {/* Progress bar */}
+      {progress.totalExpected > 0 && (
+        <div className="flex items-center gap-3">
+          <span className="text-xs text-gray-400 font-medium">Progress</span>
+          <div className="flex gap-0.5">
+            {Array.from({ length: progress.totalExpected }).map((_, i) => (
+              <div
                 key={i}
-                className={`text-xs font-mono flex items-center gap-2 ${
-                  i === steps.length - 1 && justAdded
-                    ? "text-blue-300"
-                    : "text-green-400/70"
+                className={`h-2 w-4 rounded-sm transition-all duration-300 ${
+                  i < progress.correct ? "bg-green-500" : "bg-gray-700"
                 }`}
-              >
-                <span className="text-gray-600 select-none w-4 text-right">
-                  {i + 1}
-                </span>
-                {step}
-              </li>
+              />
             ))}
-          </ul>
+          </div>
+          <span className="text-xs text-gray-500 tabular-nums">
+            {progress.correct}/{progress.totalExpected}
+          </span>
+          <div className="flex gap-2 ml-auto">
+            <button
+              onClick={handleReset}
+              className="text-xs px-2 py-1 rounded bg-gray-800 text-gray-400 hover:text-gray-200 hover:bg-gray-700 transition-colors"
+            >
+              Reset
+            </button>
+          </div>
         </div>
       )}
 
-      {/* Test Circuit button (Phase 3) */}
+      {/* Test Circuit button */}
       {stage.checks && stage.checks.length > 0 && (
         <div className="space-y-2">
           <button
@@ -346,9 +213,7 @@ export function ChallengeWorkbench({ stage, challengeId, onNavigate, nextStageId
           {checkResults && (
             <div className="bg-gray-900/50 border border-gray-800 rounded-lg p-3 space-y-1">
               <div className="flex items-center gap-2 mb-2">
-                <span className="text-xs font-medium text-gray-400">
-                  Test Results
-                </span>
+                <span className="text-xs font-medium text-gray-400">Test Results</span>
                 <span className="text-xs tabular-nums text-gray-500">
                   {checkResults.filter(r => r.passed).length}/{checkResults.length} passed
                 </span>
@@ -437,47 +302,4 @@ export function ChallengeWorkbench({ stage, challengeId, onNavigate, nextStageId
       )}
     </div>
   );
-}
-
-/** Insert user steps into the scaffold at the comment marker */
-function buildDsl(scaffold: string, steps: string[]): string {
-  if (steps.length === 0) return scaffold;
-
-  const marker = "// YOUR CODE HERE";
-  const markerLine = "// Connect";
-
-  const lines = scaffold.split("\n");
-  let insertIndex = -1;
-
-  for (let i = 0; i < lines.length; i++) {
-    const trimmed = lines[i].trim();
-    if (
-      trimmed.includes(marker) ||
-      trimmed.startsWith(markerLine)
-    ) {
-      insertIndex = i;
-    }
-    if (insertIndex >= 0 && !trimmed.startsWith("//") && trimmed !== "") {
-      break;
-    }
-  }
-
-  if (insertIndex === -1) {
-    const lastBrace = scaffold.lastIndexOf("}");
-    const secondLast = scaffold.lastIndexOf("}", lastBrace - 1);
-    const at = secondLast > 0 ? secondLast : lastBrace;
-    return (
-      scaffold.slice(0, at) +
-      "\n    " +
-      steps.join("\n    ") +
-      "\n" +
-      scaffold.slice(at)
-    );
-  }
-
-  const before = lines.slice(0, insertIndex + 1);
-  const after = lines.slice(insertIndex + 1);
-  const indented = steps.map((s) => "    " + s);
-
-  return [...before, ...indented, ...after].join("\n");
 }

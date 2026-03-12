@@ -5,7 +5,7 @@ export const ALU_METADATA: ChallengeMetadata = {
   title: 'Build an ALU from Scratch',
   description:
     'Start with a single AND gate. End with the arithmetic heart of a CPU — addition, subtraction, AND, OR, all selected by an opcode. Seven stages from nothing to a real ALU.',
-  stages: 7,
+  stages: 8,
   difficulty: 'Beginner',
   tag: 'Start here',
 };
@@ -20,10 +20,8 @@ export const ALU_STAGES: ChallengeStage[] = [
     objective:
       "Connect the two switches to the AND gate's inputs, and connect its output to the LED.",
     hints: [
-      "Switch A has an output port called 'out'. The AND gate has input ports 'a' and 'b'.",
-      "Click switch A's output port (right side), then click the AND gate's 'a' port (left side).",
-      "Do the same for switch B → AND gate's 'b' input.",
-      "Finally connect the AND gate's 'out' port to the LED's 'in' port.",
+      "Uncomment the first connect line by removing the // at the start.",
+      "Add the other two connections the same way — the comments show you what to type.",
     ],
     scaffold: `circuit FirstGate {
   impl {
@@ -32,7 +30,10 @@ export const ALU_STAGES: ChallengeStage[] = [
     node gate: And
     node light: Led
 
-    // Connect A and B to the gate, then gate to the LED
+    // Uncomment these lines to wire the circuit:
+    // connect A.out -> gate.a
+    // connect B.out -> gate.b
+    // connect gate.out -> light.in
   }
 }`,
     solution: `circuit FirstGate {
@@ -81,7 +82,8 @@ export const ALU_STAGES: ChallengeStage[] = [
     node andGate: And
     node light: Led
 
-    // Wire: LED = (A OR B) AND (NOT enable)
+    // Uncomment and complete the connections:
+    // connect A.out -> orGate.a
   }
 }`,
     solution: `circuit OrNot {
@@ -140,8 +142,8 @@ export const ALU_STAGES: ChallengeStage[] = [
     node sumLed: Led
     node carryLed: Led
 
-    // Connect A and B to both gates
-    // Connect outputs to LEDs
+    // Uncomment and complete the connections:
+    // connect A.out -> sum.a
   }
 }`,
     solution: `circuit HalfAdder {
@@ -203,9 +205,9 @@ export const ALU_STAGES: ChallengeStage[] = [
     node sumLed: Led
     node coutLed: Led
 
-    // Wire the full adder logic
     // sum = A XOR B XOR Cin
     // cout = (A AND B) OR ((A XOR B) AND Cin)
+    // connect A.out -> xor1.a
   }
 }`,
     solution: `circuit FullAdder {
@@ -252,12 +254,81 @@ export const ALU_STAGES: ChallengeStage[] = [
     height: 360,
   },
 
-  // ── Stage 5: Multi-bit Addition ───────────────────────────────────
+  // ── Stage 5: Chain the Carry ─────────────────────────────────────
+  {
+    id: "carry-chain",
+    title: "Chain the Carry",
+    concept:
+      "One full adder handles one bit. To add bigger numbers, you chain them: the carry-out of bit 0 feeds the carry-in of bit 1. This is a ripple-carry adder — the simplest way to scale addition to any width. Every multi-bit adder in history started here.",
+    objective:
+      "Wire two FullAdders to add two 2-bit numbers (A1A0 + B1B0). Chain the carry from the first adder to the second.",
+    hints: [
+      "FullAdder has inputs a, b, cin and outputs sum, cout.",
+      "fa0 handles bit 0: connect A0 and B0. Leave cin unconnected (defaults to 0).",
+      "fa1 handles bit 1: connect A1, B1, and fa0's carry-out to fa1's cin.",
+      "Wire the three result LEDs: sum0, sum1, and carry-out.",
+    ],
+    scaffold: `circuit TwoBitAdder {
+  impl {
+    node A0: Switch
+    node A1: Switch
+    node B0: Switch
+    node B1: Switch
+
+    node fa0: FullAdder
+    node fa1: FullAdder
+
+    node sum0: Led
+    node sum1: Led
+    node cout: Led
+
+    // connect A0.out -> fa0.a
+  }
+}`,
+    solution: `circuit TwoBitAdder {
+  impl {
+    node A0: Switch
+    node A1: Switch
+    node B0: Switch
+    node B1: Switch
+
+    node fa0: FullAdder
+    node fa1: FullAdder
+
+    node sum0: Led
+    node sum1: Led
+    node cout: Led
+
+    connect A0.out -> fa0.a
+    connect B0.out -> fa0.b
+    connect A1.out -> fa1.a
+    connect B1.out -> fa1.b
+    connect fa0.cout -> fa1.cin
+    connect fa0.sum -> sum0.in
+    connect fa1.sum -> sum1.in
+    connect fa1.cout -> cout.in
+  }
+}`,
+    nodePositions: {
+      A0: { x: 0, y: 0 },
+      B0: { x: 0, y: 100 },
+      A1: { x: 0, y: 220 },
+      B1: { x: 0, y: 320 },
+      fa0: { x: 250, y: 30 },
+      fa1: { x: 250, y: 250 },
+      sum0: { x: 500, y: 0 },
+      sum1: { x: 500, y: 220 },
+      cout: { x: 500, y: 340 },
+    },
+    height: 400,
+  },
+
+  // ── Stage 6: Multi-bit Addition ───────────────────────────────────
   {
     id: "multi-bit-adder",
     title: "Multi-Bit Addition",
     concept:
-      "Now we jump from single bits to real numbers. An 8-bit Adder adds two numbers and produces a sum — it's just 8 full adders chained together internally, each carry feeding the next. Enter two numbers and see addition happen in hardware.",
+      "You just built a 2-bit adder by chaining FullAdders. An 8-bit Adder is the same idea — 8 FullAdders chained together. Now you can use it as a building block without thinking about the internals.",
     objective:
       "Connect the two inputs to the Adder and display the result. Try 3 + 5 — you should see 8.",
     hints: [
@@ -275,8 +346,7 @@ export const ALU_STAGES: ChallengeStage[] = [
 
     node result: HexDisplay
 
-    // Connect the inputs to the adder
-    // Connect the result to the display
+    // connect inputA.out -> adder.a
   }
 }`,
     solution: `circuit MultiBitAdder {
@@ -329,7 +399,7 @@ export const ALU_STAGES: ChallengeStage[] = [
 
     node result: HexDisplay
 
-    // Flip B, add A + ~B, then add 1
+    // connect inputB.out -> flipB.in
   }
 }`,
     solution: `circuit Subtract {
@@ -401,13 +471,7 @@ export const ALU_STAGES: ChallengeStage[] = [
 
     node result: HexDisplay
 
-    // 1. Connect inputs to all four operations
-    // 2. Build subtraction: NOT B, then A + ~B + 1
-    // 3. Wire the mux cascade:
-    //    mux1: AND vs OR (selected by op0)
-    //    mux2: ADD vs SUB (selected by op0)
-    //    muxFinal: mux1 vs mux2 (selected by op1)
-    // 4. Connect to display
+    // connect inputA.out -> andOp.a
   }
 }`,
     solution: `circuit ALU {
