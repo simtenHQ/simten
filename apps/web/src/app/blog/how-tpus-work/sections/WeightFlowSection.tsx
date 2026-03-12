@@ -7,33 +7,42 @@ export function WeightFlowSection() {
   return (
     <section className="py-12">
       <h2 className="text-3xl font-bold text-white mb-4">
-        Vertical Weight Flow
+        Vertical Partial-Sum Flow
       </h2>
       <div className="prose-invert space-y-6">
         <p className="text-gray-300 leading-relaxed">
-          Data flows horizontally, but weights flow{" "}
+          Data flows horizontally, but partial sums flow{" "}
           <strong className="text-white">vertically</strong>. Here we stack two
-          PEs in a column. A single weight value enters the top PE along with a
-          valid signal. The top PE captures the weight in its weight register and
-          simultaneously forwards the weight downward through its pipeline
-          register. One cycle later, the bottom PE sees the weight and the
-          delayed valid signal, and stores its own copy.
+          PEs in a column. The top PE receives{" "}
+          <code className="text-blue-300">partialSumIn = 0</code> and computes{" "}
+          <code className="text-blue-300">0 + data &times; weight0</code>. This
+          partial sum output feeds directly into the bottom PE&rsquo;s{" "}
+          <code className="text-blue-300">partialSumIn</code>. The bottom PE
+          computes{" "}
+          <code className="text-blue-300">
+            (data &times; weight0) + data &times; weight1
+          </code>{" "}
+          &mdash; the full dot product of the data value with both weights in
+          this column.
         </p>
         <p className="text-gray-300 leading-relaxed">
-          This cascading mechanism is elegant because it requires{" "}
-          <strong className="text-white">no central controller</strong> for
-          weight distribution. The valid bit{" "}
-          <em>is</em> the control signal &mdash; it propagates down the column
-          in lockstep with the weight data, telling each PE exactly when to
-          latch. In a real TPU with 256 rows, a weight entered at the top
-          ripples down to every PE in 256 clock cycles with no additional wiring.
+          This vertical flow is{" "}
+          <strong className="text-white">combinational</strong> &mdash; both PE
+          outputs settle in the same clock cycle. No extra register delay, no
+          extra latency. This is the key insight of the weight-stationary
+          systolic architecture: horizontal data flow is{" "}
+          <em>registered</em> (one cycle per PE), but vertical partial-sum flow
+          is <em>combinational</em> (an entire column settles in one cycle).
         </p>
         <p className="text-gray-300 leading-relaxed">
-          Toggle <code className="text-blue-300">weightValid</code> on and tick
-          once. The top PE latches the weight and the LED shows the valid signal
-          propagating. Tick again &mdash; the bottom PE receives and latches its
-          weight. Both PEs now have independent data inputs and accumulate
-          independently.
+          In a real TPUv1 with 256 rows, a single activation value entering a
+          column has its contribution added to the partial sum all the way down
+          in one cycle &mdash; 256 multiply-adds in a combinational cascade.
+          Load weights (toggle{" "}
+          <code className="text-blue-300">weightValid</code> on, tick, toggle
+          off), then change{" "}
+          <code className="text-blue-300">dataIn</code> to see both results
+          update instantly.
         </p>
       </div>
 
@@ -46,7 +55,7 @@ export function WeightFlowSection() {
           showControls
           autoRunSpeed={400}
           title="Two-PE Column"
-          description="Weight enters at top, propagates down with the valid signal."
+          description="Partial sums cascade from top to bottom combinationally — no extra clock cycles."
         />
       </div>
     </section>

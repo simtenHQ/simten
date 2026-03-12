@@ -5,31 +5,46 @@ import { CircuitCanvas } from "@turing-incomplete/ui/embed";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 /**
- * Custom layout for the TestWavefront circuit.
+ * Custom layout for the TestSystolic3x3 circuit.
  * Arranges nodes logically: A inputs top-left, B inputs bottom-left,
  * systolic array center, result displays right, controls at bottom.
  */
 const SYSTOLIC_LAYOUT: Record<string, { x: number; y: number }> = {
-  // Matrix A inputs (top-left, 2×2)
+  // Matrix A inputs (top-left, 3×3)
   a00: { x: 30, y: 30 },
-  a01: { x: 200, y: 30 },
-  a10: { x: 30, y: 150 },
-  a11: { x: 200, y: 150 },
-  // Matrix B inputs (below A, 2×2)
-  b00: { x: 30, y: 290 },
-  b01: { x: 200, y: 290 },
-  b10: { x: 30, y: 410 },
-  b11: { x: 200, y: 410 },
+  a01: { x: 170, y: 30 },
+  a02: { x: 310, y: 30 },
+  a10: { x: 30, y: 130 },
+  a11: { x: 170, y: 130 },
+  a12: { x: 310, y: 130 },
+  a20: { x: 30, y: 230 },
+  a21: { x: 170, y: 230 },
+  a22: { x: 310, y: 230 },
+  // Matrix B inputs (below A, 3×3)
+  b00: { x: 30, y: 350 },
+  b01: { x: 170, y: 350 },
+  b02: { x: 310, y: 350 },
+  b10: { x: 30, y: 450 },
+  b11: { x: 170, y: 450 },
+  b12: { x: 310, y: 450 },
+  b20: { x: 30, y: 550 },
+  b21: { x: 170, y: 550 },
+  b22: { x: 310, y: 550 },
   // Systolic array composite (center)
-  sys: { x: 460, y: 200 },
-  // Result displays (right, 2×2)
-  display_c00: { x: 740, y: 50 },
-  display_c01: { x: 880, y: 50 },
-  display_c10: { x: 740, y: 195 },
-  display_c11: { x: 880, y: 195 },
+  sys: { x: 520, y: 260 },
+  // Result displays (right, 3×3)
+  display_c00: { x: 780, y: 30 },
+  display_c01: { x: 910, y: 30 },
+  display_c02: { x: 1040, y: 30 },
+  display_c10: { x: 780, y: 165 },
+  display_c11: { x: 910, y: 165 },
+  display_c12: { x: 1040, y: 165 },
+  display_c20: { x: 780, y: 300 },
+  display_c21: { x: 910, y: 300 },
+  display_c22: { x: 1040, y: 300 },
   // Controls (bottom)
-  start: { x: 460, y: 480 },
-  done_led: { x: 740, y: 480 },
+  start: { x: 520, y: 560 },
+  done_led: { x: 780, y: 560 },
 };
 
 export function SystolicDemo() {
@@ -48,7 +63,10 @@ export function SystolicDemo() {
   const inputNodeIds = useMemo(() => {
     const map: Record<string, string> = {};
     if (!sim.circuit?.nodes) return map;
-    const names = ["a00", "a01", "a10", "a11", "b00", "b01", "b10", "b11"];
+    const names = [
+      "a00", "a01", "a02", "a10", "a11", "a12", "a20", "a21", "a22",
+      "b00", "b01", "b02", "b10", "b11", "b12", "b20", "b21", "b22",
+    ];
     for (const node of sim.circuit.nodes) {
       for (const name of names) {
         if (node.label === name || node.id === name) {
@@ -93,10 +111,8 @@ export function SystolicDemo() {
   const getInputValue = (name: string): number => {
     const nodeId = inputNodeIds[name];
     if (!nodeId || !sim.portValues) return 0;
-    // Try exact key first
     const exact = sim.portValues.get(`${nodeId}.out`);
     if (typeof exact === "number") return exact;
-    // Fallback: search by substring
     for (const [key, value] of sim.portValues) {
       if (key.includes(`_${name}_`) && key.endsWith(".out")) {
         return typeof value === "number" ? value : 0;
@@ -117,9 +133,10 @@ export function SystolicDemo() {
             <span className="text-xs font-medium text-gray-400 uppercase tracking-wider">
               Matrix A
             </span>
-            <div className="font-mono text-gray-300 mt-1">
-              <div>[{getInputValue("a00")}, {getInputValue("a01")}]</div>
-              <div>[{getInputValue("a10")}, {getInputValue("a11")}]</div>
+            <div className="font-mono text-gray-300 mt-1 text-xs">
+              <div>[{getInputValue("a00")}, {getInputValue("a01")}, {getInputValue("a02")}]</div>
+              <div>[{getInputValue("a10")}, {getInputValue("a11")}, {getInputValue("a12")}]</div>
+              <div>[{getInputValue("a20")}, {getInputValue("a21")}, {getInputValue("a22")}]</div>
             </div>
           </div>
           <span className="text-gray-500 text-lg">&times;</span>
@@ -127,9 +144,10 @@ export function SystolicDemo() {
             <span className="text-xs font-medium text-gray-400 uppercase tracking-wider">
               Matrix B
             </span>
-            <div className="font-mono text-gray-300 mt-1">
-              <div>[{getInputValue("b00")}, {getInputValue("b01")}]</div>
-              <div>[{getInputValue("b10")}, {getInputValue("b11")}]</div>
+            <div className="font-mono text-gray-300 mt-1 text-xs">
+              <div>[{getInputValue("b00")}, {getInputValue("b01")}, {getInputValue("b02")}]</div>
+              <div>[{getInputValue("b10")}, {getInputValue("b11")}, {getInputValue("b12")}]</div>
+              <div>[{getInputValue("b20")}, {getInputValue("b21")}, {getInputValue("b22")}]</div>
             </div>
           </div>
           <span className="text-gray-500 text-lg">=</span>
@@ -138,13 +156,16 @@ export function SystolicDemo() {
               Result C
             </span>
             <div
-              className={`font-mono mt-1 ${isDone ? "text-green-400" : "text-gray-500"}`}
+              className={`font-mono mt-1 text-xs ${isDone ? "text-green-400" : "text-gray-500"}`}
             >
               <div>
-                [{getResult("c00")}, {getResult("c01")}]
+                [{getResult("c00")}, {getResult("c01")}, {getResult("c02")}]
               </div>
               <div>
-                [{getResult("c10")}, {getResult("c11")}]
+                [{getResult("c10")}, {getResult("c11")}, {getResult("c12")}]
+              </div>
+              <div>
+                [{getResult("c20")}, {getResult("c21")}, {getResult("c22")}]
               </div>
             </div>
           </div>
@@ -163,7 +184,7 @@ export function SystolicDemo() {
         sequentialState={sim.sequentialState}
         onToggleNode={sim.toggleNode}
         onSetNodeValue={sim.setNodeValue}
-        height={400}
+        height={480}
         nodePositions={SYSTOLIC_LAYOUT}
         autoLayout={false}
       />

@@ -1,8 +1,15 @@
 /**
  * Circuit definitions for the "How TPUs Do Calculations" blog post.
  *
- * Builds up from a simple MAC unit to a full 2x2 systolic array
+ * Builds up from a simple multiply-add to a full 2x2 systolic array
  * with wavefront control, all defined in circuit DSL.
+ *
+ * All building blocks use the same PE_Systolic architecture as the final array:
+ *   - Weight register with valid-bit gating
+ *   - Multiplier: dataIn × stored weight
+ *   - Combinational adder: partialSumIn + product → partialSumOut
+ *   - Data pipeline register: 1-cycle delay for horizontal flow
+ *   - NO local accumulator — accumulation happens by chaining PEs vertically
  */
 
 export interface BlogCircuit {
@@ -13,59 +20,35 @@ export interface BlogCircuit {
   nodePositions?: Record<string, { x: number; y: number }>;
 }
 
-/** The PE definition reused across multiple circuits */
-const PE_DEFINITION = `circuit ProcessingElement_VerticalWeight {
+/** The PE definition used by building-block circuits — same as in SYSTOLIC_DSL */
+const PE_SYSTOLIC_DEFINITION = `circuit PE_Systolic {
   input dataIn: Bus[8]
   input weightIn: Bus[8]
   input partialSumIn: Bus[16]
   input weightValid: Bit
-  input resetAccum: Bit
   clock clk
   output dataOut: Bus[8]
-  output weightOut: Bus[8]
-  output weightValidOut: Bit
-  output result: Bus[16]
+  output partialSumOut: Bus[16]
 
   impl {
     node weightReg: Register
-    node weightPipe: Register
-    node validPipe: DFlipFlop
     node mult: Multiplier
     node adder: Adder(width=16)
-    node accum: Register
     node dataPipe: Register
-    node accum_mux: Mux
     node one: Constant(value=1)
     node zero: Constant(value=0)
-    node zero16: Constant(value=0)
 
     connect weightIn -> weightReg.data
     connect weightValid -> weightReg.we
     connect clk -> weightReg.clk
 
-    connect weightIn -> weightPipe.data
-    connect one.out -> weightPipe.we
-    connect clk -> weightPipe.clk
-    connect weightPipe.q -> weightOut
-
-    connect weightValid -> validPipe.d
-    connect clk -> validPipe.clk
-    connect validPipe.q -> weightValidOut
-
     connect dataIn -> mult.a
     connect weightReg.q -> mult.b
-    connect mult.product -> adder.a
-    connect accum.q -> adder.b
+
+    connect partialSumIn -> adder.a
+    connect mult.product -> adder.b
     connect zero.out -> adder.carry_in
-
-    connect resetAccum -> accum_mux.sel
-    connect adder.sum -> accum_mux.in0
-    connect zero16.out -> accum_mux.in1
-
-    connect accum_mux.out -> accum.data
-    connect one.out -> accum.we
-    connect clk -> accum.clk
-    connect accum.q -> result
+    connect adder.sum -> partialSumOut
 
     connect dataIn -> dataPipe.data
     connect one.out -> dataPipe.we
@@ -75,103 +58,85 @@ const PE_DEFINITION = `circuit ProcessingElement_VerticalWeight {
 }`;
 
 export const TPU_CIRCUITS: Record<string, BlogCircuit> = {
-  simpleMACUnit: {
-    name: "Simple MAC Unit",
+  /**
+   * Section 1: Multiply-Add — the fundamental operation.
+   * Purely combinational: partialSumIn + (data × weight) = result.
+   * No accumulator, no clock. This is what one PE computes in a single step.
+   */
+  multiplyAdd: {
+    name: "Multiply-Add Unit",
     description:
-      "Multiply two numbers and accumulate the result into a register. The fundamental operation of neural networks.",
-    displayDsl: `circuit SimpleMACUnit {
-  clock clk
+      "Multiply two numbers and add to a partial sum. The fundamental operation inside every PE.",
+    displayDsl: `circuit MultiplyAdd {
   impl {
-    node a: Input(value=3)
-    node b: Input(value=4)
+    node data: Input(value=3)
+    node weight: Input(value=5)
+    node partialSumIn: Input(value=10)
 
     node mult: Multiplier
-    connect a.out -> mult.a
-    connect b.out -> mult.b
+    connect data.out -> mult.a
+    connect weight.out -> mult.b
 
     node adder: Adder(width=16)
-    node accum: Register
     node zero: Constant(value=0)
-    node one: Constant(value=1)
-
-    connect mult.product -> adder.a
-    connect accum.q -> adder.b
+    connect partialSumIn.out -> adder.a
+    connect mult.product -> adder.b
     connect zero.out -> adder.carry_in
 
-    node resetSwitch: Switch
-    node accumMux: Mux
-    connect adder.sum -> accumMux.in0
-    connect zero.out -> accumMux.in1
-    connect resetSwitch.out -> accumMux.sel
-
-    connect accumMux.out -> accum.data
-    connect one.out -> accum.we
-    connect clk -> accum.clk
-
-    node display: HexDisplay
-    connect accum.q -> display.in
+    node result: HexDisplay
+    connect adder.sum -> result.in
   }
 }`,
     dsl: `
-circuit SimpleMACUnit {
-  clock clk
+circuit MultiplyAdd {
   impl {
-    node a: Input(value=3)
-    node b: Input(value=4)
+    node data: Input(value=3)
+    node weight: Input(value=5)
+    node partialSumIn: Input(value=10)
 
     node mult: Multiplier
-    connect a.out -> mult.a
-    connect b.out -> mult.b
+    connect data.out -> mult.a
+    connect weight.out -> mult.b
 
     node adder: Adder(width=16)
-    node accum: Register
     node zero: Constant(value=0)
-    node one: Constant(value=1)
-
-    connect mult.product -> adder.a
-    connect accum.q -> adder.b
+    connect partialSumIn.out -> adder.a
+    connect mult.product -> adder.b
     connect zero.out -> adder.carry_in
 
-    node resetSwitch: Switch
-    node accumMux: Mux
-    connect adder.sum -> accumMux.in0
-    connect zero.out -> accumMux.in1
-    connect resetSwitch.out -> accumMux.sel
-
-    connect accumMux.out -> accum.data
-    connect one.out -> accum.we
-    connect clk -> accum.clk
-
-    node display: HexDisplay
-    connect accum.q -> display.in
+    node result: HexDisplay
+    connect adder.sum -> result.in
   }
 }`,
     nodePositions: {
       // Inputs (left)
-      a:           { x: 0,   y: 0 },
-      b:           { x: 0,   y: 120 },
-      resetSwitch: { x: 0,   y: 250 },
+      data:          { x: 0,   y: 0 },
+      weight:        { x: 0,   y: 120 },
+      partialSumIn:  { x: 0,   y: 240 },
       // Processing (center)
-      mult:        { x: 220, y: 40 },
-      zero:        { x: 220, y: 180 },
-      one:         { x: 220, y: 280 },
-      adder:       { x: 420, y: 40 },
-      accumMux:    { x: 420, y: 200 },
-      accum:       { x: 620, y: 120 },
+      mult:          { x: 250, y: 40 },
+      zero:          { x: 250, y: 240 },
+      adder:         { x: 470, y: 100 },
       // Output (right)
-      display:     { x: 820, y: 100 },
+      result:        { x: 680, y: 100 },
     },
   },
 
-  weightLoader: {
-    name: "Weight Loader",
+  /**
+   * Section 2: Weight Register — latch once, hold fixed while data streams.
+   * Shows: weight register with valid-bit gating + multiplier preview.
+   * No pipeline register (that concept appears in the PE section).
+   */
+  weightRegister: {
+    name: "Weight Register",
     description:
-      "A register that stores a weight only when the valid signal is high. A pipeline register passes the weight through for vertical distribution.",
-    displayDsl: `circuit WeightLoader {
+      "A register that stores a weight only when the valid signal is high. The weight stays fixed while data streams through.",
+    displayDsl: `circuit WeightRegister {
   clock clk
   impl {
     node weightIn: Input(value=7)
     node weightValid: Switch
+    node dataIn: Input(value=3)
 
     node weightReg: Register
     connect weightIn.out -> weightReg.data
@@ -181,22 +146,21 @@ circuit SimpleMACUnit {
     node storedWeight: HexDisplay
     connect weightReg.q -> storedWeight.in
 
-    node one: Constant(value=1)
-    node pipeReg: Register
-    connect weightIn.out -> pipeReg.data
-    connect one.out -> pipeReg.we
-    connect clk -> pipeReg.clk
+    node mult: Multiplier
+    connect dataIn.out -> mult.a
+    connect weightReg.q -> mult.b
 
-    node passThrough: HexDisplay
-    connect pipeReg.q -> passThrough.in
+    node product: HexDisplay
+    connect mult.product -> product.in
   }
 }`,
     dsl: `
-circuit WeightLoader {
+circuit WeightRegister {
   clock clk
   impl {
     node weightIn: Input(value=7)
     node weightValid: Switch
+    node dataIn: Input(value=3)
 
     node weightReg: Register
     connect weightIn.out -> weightReg.data
@@ -206,83 +170,82 @@ circuit WeightLoader {
     node storedWeight: HexDisplay
     connect weightReg.q -> storedWeight.in
 
-    node one: Constant(value=1)
-    node pipeReg: Register
-    connect weightIn.out -> pipeReg.data
-    connect one.out -> pipeReg.we
-    connect clk -> pipeReg.clk
+    node mult: Multiplier
+    connect dataIn.out -> mult.a
+    connect weightReg.q -> mult.b
 
-    node passThrough: HexDisplay
-    connect pipeReg.q -> passThrough.in
+    node product: HexDisplay
+    connect mult.product -> product.in
   }
 }`,
     nodePositions: {
       // Inputs (left)
-      weightIn:     { x: 0,   y: 40 },
-      weightValid:  { x: 0,   y: 180 },
-      // Registers (center)
-      weightReg:    { x: 250, y: 0 },
-      one:          { x: 250, y: 240 },
-      pipeReg:      { x: 250, y: 140 },
+      weightIn:     { x: 0,   y: 0 },
+      weightValid:  { x: 0,   y: 140 },
+      dataIn:       { x: 0,   y: 280 },
+      // Register (center)
+      weightReg:    { x: 260, y: 40 },
+      // Multiplier (center-right)
+      mult:         { x: 260, y: 220 },
       // Outputs (right)
-      storedWeight: { x: 480, y: 0 },
-      passThrough:  { x: 480, y: 140 },
+      storedWeight: { x: 500, y: 40 },
+      product:      { x: 500, y: 220 },
     },
   },
 
+  /**
+   * Section 3: The Processing Element — the actual PE_Systolic design.
+   * Weight register + multiplier + combinational partial-sum adder + data pipeline.
+   */
   processingElement: {
     name: "Processing Element",
     description:
-      "A full PE with weight storage, data pipeline, and MAC accumulator. Load a weight, then stream data through.",
+      "A full PE with weight register, multiplier, combinational partial-sum adder, and data pipeline. The building block of the systolic array.",
     displayDsl: `circuit TestPE {
   clock clk
   impl {
-    node pe: ProcessingElement_VerticalWeight
+    node pe: PE_Systolic
     connect clk -> pe.clk
 
     node dataIn: Input(value=3)
     node weightIn: Input(value=5)
     node weightValid: Switch
-    node resetAccum: Switch
-    node zero16: Constant(value=0)
+    node partialSumIn: Input(value=0)
 
     connect dataIn.out -> pe.dataIn
     connect weightIn.out -> pe.weightIn
     connect weightValid.out -> pe.weightValid
-    connect resetAccum.out -> pe.resetAccum
-    connect zero16.out -> pe.partialSumIn
+    connect partialSumIn.out -> pe.partialSumIn
 
-    node resultDisplay: HexDisplay
-    node dataOutDisplay: HexDisplay
-    connect pe.result -> resultDisplay.in
-    connect pe.dataOut -> dataOutDisplay.in
+    node partialSumOut: HexDisplay
+    node dataOut: HexDisplay
+    connect pe.partialSumOut -> partialSumOut.in
+    connect pe.dataOut -> dataOut.in
   }
 }`,
     dsl: `
-${PE_DEFINITION}
+${PE_SYSTOLIC_DEFINITION}
 
 circuit TestPE {
   clock clk
   impl {
-    node pe: ProcessingElement_VerticalWeight
+    node pe: PE_Systolic
     connect clk -> pe.clk
 
     node dataIn: Input(value=3)
     node weightIn: Input(value=5)
     node weightValid: Switch
-    node resetAccum: Switch
-    node zero16: Constant(value=0)
+    node partialSumIn: Input(value=0)
 
     connect dataIn.out -> pe.dataIn
     connect weightIn.out -> pe.weightIn
     connect weightValid.out -> pe.weightValid
-    connect resetAccum.out -> pe.resetAccum
-    connect zero16.out -> pe.partialSumIn
+    connect partialSumIn.out -> pe.partialSumIn
 
-    node resultDisplay: HexDisplay
-    node dataOutDisplay: HexDisplay
-    connect pe.result -> resultDisplay.in
-    connect pe.dataOut -> dataOutDisplay.in
+    node partialSumOut: HexDisplay
+    node dataOut: HexDisplay
+    connect pe.partialSumOut -> partialSumOut.in
+    connect pe.dataOut -> dataOut.in
   }
 }`,
     nodePositions: {
@@ -290,16 +253,20 @@ circuit TestPE {
       dataIn:        { x: 0,   y: 0 },
       weightIn:      { x: 0,   y: 120 },
       weightValid:   { x: 0,   y: 240 },
-      resetAccum:    { x: 0,   y: 350 },
-      zero16:        { x: 200, y: 350 },
+      partialSumIn:  { x: 0,   y: 350 },
       // PE (center)
       pe:            { x: 280, y: 100 },
       // Outputs (right)
-      resultDisplay:  { x: 520, y: 40 },
-      dataOutDisplay: { x: 520, y: 200 },
+      partialSumOut: { x: 540, y: 40 },
+      dataOut:       { x: 540, y: 220 },
     },
   },
 
+  /**
+   * Section 4: Horizontal Data Flow — two PEs in a row.
+   * Data flows left→right via pipeline registers. Each PE has its own weight
+   * and computes partialSumIn + data×weight independently (partialSumIn=0 for each).
+   */
   twoPERow: {
     name: "Two-PE Row",
     description:
@@ -307,17 +274,15 @@ circuit TestPE {
     displayDsl: `circuit TwoPERow {
   clock clk
   impl {
-    node pe0: ProcessingElement_VerticalWeight
-    node pe1: ProcessingElement_VerticalWeight
+    node pe0: PE_Systolic
+    node pe1: PE_Systolic
     connect clk -> pe0.clk
     connect clk -> pe1.clk
 
     node data0: Input(value=2)
     node weight0: Input(value=3)
     node weight1: Input(value=5)
-    node valid0: Switch
-    node valid1: Switch
-    node reset: Switch
+    node weightValid: Switch
     node zero16: Constant(value=0)
 
     connect data0.out -> pe0.dataIn
@@ -325,36 +290,32 @@ circuit TestPE {
 
     connect weight0.out -> pe0.weightIn
     connect weight1.out -> pe1.weightIn
-    connect valid0.out -> pe0.weightValid
-    connect valid1.out -> pe1.weightValid
-    connect reset.out -> pe0.resetAccum
-    connect reset.out -> pe1.resetAccum
+    connect weightValid.out -> pe0.weightValid
+    connect weightValid.out -> pe1.weightValid
     connect zero16.out -> pe0.partialSumIn
     connect zero16.out -> pe1.partialSumIn
 
     node result0: HexDisplay
     node result1: HexDisplay
-    connect pe0.result -> result0.in
-    connect pe1.result -> result1.in
+    connect pe0.partialSumOut -> result0.in
+    connect pe1.partialSumOut -> result1.in
   }
 }`,
     dsl: `
-${PE_DEFINITION}
+${PE_SYSTOLIC_DEFINITION}
 
 circuit TwoPERow {
   clock clk
   impl {
-    node pe0: ProcessingElement_VerticalWeight
-    node pe1: ProcessingElement_VerticalWeight
+    node pe0: PE_Systolic
+    node pe1: PE_Systolic
     connect clk -> pe0.clk
     connect clk -> pe1.clk
 
     node data0: Input(value=2)
     node weight0: Input(value=3)
     node weight1: Input(value=5)
-    node valid0: Switch
-    node valid1: Switch
-    node reset: Switch
+    node weightValid: Switch
     node zero16: Constant(value=0)
 
     connect data0.out -> pe0.dataIn
@@ -362,134 +323,127 @@ circuit TwoPERow {
 
     connect weight0.out -> pe0.weightIn
     connect weight1.out -> pe1.weightIn
-    connect valid0.out -> pe0.weightValid
-    connect valid1.out -> pe1.weightValid
-    connect reset.out -> pe0.resetAccum
-    connect reset.out -> pe1.resetAccum
+    connect weightValid.out -> pe0.weightValid
+    connect weightValid.out -> pe1.weightValid
     connect zero16.out -> pe0.partialSumIn
     connect zero16.out -> pe1.partialSumIn
 
     node result0: HexDisplay
     node result1: HexDisplay
-    connect pe0.result -> result0.in
-    connect pe1.result -> result1.in
+    connect pe0.partialSumOut -> result0.in
+    connect pe1.partialSumOut -> result1.in
   }
 }`,
     nodePositions: {
       // Inputs (left)
-      data0:   { x: 0,   y: 0 },
-      weight0: { x: 0,   y: 120 },
-      weight1: { x: 0,   y: 240 },
-      valid0:  { x: 0,   y: 350 },
-      valid1:  { x: 0,   y: 450 },
-      reset:   { x: 0,   y: 550 },
-      zero16:  { x: 200, y: 550 },
+      data0:       { x: 0,   y: 0 },
+      weight0:     { x: 0,   y: 120 },
+      weight1:     { x: 0,   y: 240 },
+      weightValid: { x: 0,   y: 360 },
+      zero16:      { x: 200, y: 360 },
       // PEs (center)
-      pe0:     { x: 280, y: 80 },
-      pe1:     { x: 520, y: 80 },
+      pe0:         { x: 280, y: 60 },
+      pe1:         { x: 520, y: 60 },
       // Outputs (right)
-      result0: { x: 760, y: 20 },
-      result1: { x: 760, y: 200 },
+      result0:     { x: 760, y: 0 },
+      result1:     { x: 760, y: 160 },
     },
   },
 
+  /**
+   * Section 5: Vertical Partial-Sum Flow — two PEs in a column.
+   * Partial sums flow top→bottom combinationally. Both PEs receive the same
+   * data value; PE0 computes data×weight0, PE1 adds data×weight1 on top.
+   * The bottom PE's output is the full dot product.
+   */
   twoPEColumn: {
     name: "Two-PE Column",
     description:
-      "Two PEs stacked vertically. Weights propagate from top to bottom with the valid signal.",
+      "Two PEs stacked vertically. Partial sums cascade from top to bottom in one clock cycle.",
     displayDsl: `circuit TwoPEColumn {
   clock clk
   impl {
-    node pe0: ProcessingElement_VerticalWeight
-    node pe1: ProcessingElement_VerticalWeight
+    node pe0: PE_Systolic
+    node pe1: PE_Systolic
     connect clk -> pe0.clk
     connect clk -> pe1.clk
 
-    node dataTop: Input(value=4)
-    node dataBot: Input(value=6)
-    node weightIn: Input(value=3)
+    node dataIn: Input(value=4)
+    node weight0: Input(value=3)
+    node weight1: Input(value=5)
     node weightValid: Switch
-    node reset: Switch
     node zero16: Constant(value=0)
 
-    connect dataTop.out -> pe0.dataIn
-    connect dataBot.out -> pe1.dataIn
+    connect dataIn.out -> pe0.dataIn
+    connect dataIn.out -> pe1.dataIn
 
-    connect weightIn.out -> pe0.weightIn
-    connect pe0.weightOut -> pe1.weightIn
+    connect weight0.out -> pe0.weightIn
+    connect weight1.out -> pe1.weightIn
     connect weightValid.out -> pe0.weightValid
-    connect pe0.weightValidOut -> pe1.weightValid
+    connect weightValid.out -> pe1.weightValid
 
-    connect reset.out -> pe0.resetAccum
-    connect reset.out -> pe1.resetAccum
     connect zero16.out -> pe0.partialSumIn
-    connect zero16.out -> pe1.partialSumIn
+    connect pe0.partialSumOut -> pe1.partialSumIn
 
-    node result0: HexDisplay
-    node result1: HexDisplay
-    node validLed: Led
-    connect pe0.result -> result0.in
-    connect pe1.result -> result1.in
-    connect pe0.weightValidOut -> validLed.in
+    node topResult: HexDisplay
+    node bottomResult: HexDisplay
+    connect pe0.partialSumOut -> topResult.in
+    connect pe1.partialSumOut -> bottomResult.in
   }
 }`,
     dsl: `
-${PE_DEFINITION}
+${PE_SYSTOLIC_DEFINITION}
 
 circuit TwoPEColumn {
   clock clk
   impl {
-    node pe0: ProcessingElement_VerticalWeight
-    node pe1: ProcessingElement_VerticalWeight
+    node pe0: PE_Systolic
+    node pe1: PE_Systolic
     connect clk -> pe0.clk
     connect clk -> pe1.clk
 
-    node dataTop: Input(value=4)
-    node dataBot: Input(value=6)
-    node weightIn: Input(value=3)
+    node dataIn: Input(value=4)
+    node weight0: Input(value=3)
+    node weight1: Input(value=5)
     node weightValid: Switch
-    node reset: Switch
     node zero16: Constant(value=0)
 
-    connect dataTop.out -> pe0.dataIn
-    connect dataBot.out -> pe1.dataIn
+    connect dataIn.out -> pe0.dataIn
+    connect dataIn.out -> pe1.dataIn
 
-    connect weightIn.out -> pe0.weightIn
-    connect pe0.weightOut -> pe1.weightIn
+    connect weight0.out -> pe0.weightIn
+    connect weight1.out -> pe1.weightIn
     connect weightValid.out -> pe0.weightValid
-    connect pe0.weightValidOut -> pe1.weightValid
+    connect weightValid.out -> pe1.weightValid
 
-    connect reset.out -> pe0.resetAccum
-    connect reset.out -> pe1.resetAccum
     connect zero16.out -> pe0.partialSumIn
-    connect zero16.out -> pe1.partialSumIn
+    connect pe0.partialSumOut -> pe1.partialSumIn
 
-    node result0: HexDisplay
-    node result1: HexDisplay
-    node validLed: Led
-    connect pe0.result -> result0.in
-    connect pe1.result -> result1.in
-    connect pe0.weightValidOut -> validLed.in
+    node topResult: HexDisplay
+    node bottomResult: HexDisplay
+    connect pe0.partialSumOut -> topResult.in
+    connect pe1.partialSumOut -> bottomResult.in
   }
 }`,
     nodePositions: {
       // Inputs (left)
-      dataTop:     { x: 0,   y: 0 },
-      dataBot:     { x: 0,   y: 280 },
-      weightIn:    { x: 0,   y: 140 },
-      weightValid: { x: 0,   y: 400 },
-      reset:       { x: 0,   y: 500 },
-      zero16:      { x: 200, y: 500 },
+      dataIn:       { x: 0,   y: 120 },
+      weight0:      { x: 0,   y: 0 },
+      weight1:      { x: 0,   y: 280 },
+      weightValid:  { x: 0,   y: 400 },
+      zero16:       { x: 200, y: 400 },
       // PEs (center, stacked vertically)
-      pe0:         { x: 300, y: 20 },
-      pe1:         { x: 300, y: 280 },
+      pe0:          { x: 300, y: 20 },
+      pe1:          { x: 300, y: 260 },
       // Outputs (right)
-      result0:     { x: 560, y: 20 },
-      result1:     { x: 560, y: 280 },
-      validLed:    { x: 560, y: 180 },
+      topResult:    { x: 560, y: 20 },
+      bottomResult: { x: 560, y: 260 },
     },
   },
 
+  /**
+   * Section 6: Wavefront Controller — unchanged.
+   */
   wavefrontController: {
     name: "Wavefront Controller",
     description:
@@ -625,55 +579,10 @@ circuit WavefrontController {
 };
 
 /**
- * Full systolic DSL: PE_Systolic + Systolic2x2 + TestWavefront
- *
- * Architecture: weight-stationary with combinational partial-sum flow.
- * - Cycle 0: load all weights into PEs
- * - Cycles 1–3: pipelined data flow (activations right, partial sums down)
- * - Cycle 4: counter reaches 4, done fires
- *
- * Total: 4 ticks (1 weight load + 3 data flow = 2N−1 for N=2).
+ * 2x2 systolic array (kept for existing tests).
  */
-export const SYSTOLIC_DSL = `
-circuit PE_Systolic {
-  input dataIn: Bus[8]
-  input weightIn: Bus[8]
-  input partialSumIn: Bus[16]
-  input weightValid: Bit
-  clock clk
-  output dataOut: Bus[8]
-  output partialSumOut: Bus[16]
-
-  impl {
-    node weightReg: Register
-    node mult: Multiplier
-    node adder: Adder(width=16)
-    node dataPipe: Register
-    node one: Constant(value=1)
-    node zero: Constant(value=0)
-
-    // Weight register: latches weight when weightValid is high
-    connect weightIn -> weightReg.data
-    connect weightValid -> weightReg.we
-    connect clk -> weightReg.clk
-
-    // Multiply: dataIn * stored weight
-    connect dataIn -> mult.a
-    connect weightReg.q -> mult.b
-
-    // Add: incoming partial sum + local product (COMBINATIONAL output)
-    connect partialSumIn -> adder.a
-    connect mult.product -> adder.b
-    connect zero.out -> adder.carry_in
-    connect adder.sum -> partialSumOut
-
-    // Data pipeline: 1-cycle delay for horizontal flow
-    connect dataIn -> dataPipe.data
-    connect one.out -> dataPipe.we
-    connect clk -> dataPipe.clk
-    connect dataPipe.q -> dataOut
-  }
-}
+export const SYSTOLIC_2X2_DSL = `
+${PE_SYSTOLIC_DEFINITION}
 
 circuit Systolic2x2 {
   input a00: Bus[8]
@@ -866,6 +775,363 @@ circuit TestWavefront {
     connect sys.c01 -> display_c01.in
     connect sys.c10 -> display_c10.in
     connect sys.c11 -> display_c11.in
+    connect sys.done -> done_led.in
+  }
+}
+`;
+
+/** Backwards-compat alias */
+export const SYSTOLIC_DSL = SYSTOLIC_2X2_DSL;
+
+/**
+ * Full 3x3 systolic array: PE_Systolic + Systolic3x3 + TestSystolic3x3
+ *
+ * Architecture: weight-stationary with combinational partial-sum flow.
+ * - Cycle 0: load all 9 weights into PEs
+ * - Cycles 1-5: pipelined data flow (activations right, partial sums down)
+ * - Cycle 6: counter reaches 6, done fires
+ *
+ * Total: 6 ticks (1 weight load + 2N-1 = 5 data flow for N=3).
+ *
+ * Test: A=[[1,2,3],[4,5,6],[7,8,9]] × B=[[2,0,1],[0,2,0],[1,0,2]]
+ * Expected C = [[5,4,7],[14,10,16],[23,16,25]]
+ */
+export const SYSTOLIC_3X3_DSL = `
+${PE_SYSTOLIC_DEFINITION}
+
+circuit Systolic3x3 {
+  input a00: Bus[8]
+  input a01: Bus[8]
+  input a02: Bus[8]
+  input a10: Bus[8]
+  input a11: Bus[8]
+  input a12: Bus[8]
+  input a20: Bus[8]
+  input a21: Bus[8]
+  input a22: Bus[8]
+  input b00: Bus[8]
+  input b01: Bus[8]
+  input b02: Bus[8]
+  input b10: Bus[8]
+  input b11: Bus[8]
+  input b12: Bus[8]
+  input b20: Bus[8]
+  input b21: Bus[8]
+  input b22: Bus[8]
+  input start: Bit
+  clock clk
+  output c00: Bus[16]
+  output c01: Bus[16]
+  output c02: Bus[16]
+  output c10: Bus[16]
+  output c11: Bus[16]
+  output c12: Bus[16]
+  output c20: Bus[16]
+  output c21: Bus[16]
+  output c22: Bus[16]
+  output done: Bit
+
+  impl {
+    // ===== Processing Elements (3x3 grid) =====
+    node pe00: PE_Systolic
+    node pe01: PE_Systolic
+    node pe02: PE_Systolic
+    node pe10: PE_Systolic
+    node pe11: PE_Systolic
+    node pe12: PE_Systolic
+    node pe20: PE_Systolic
+    node pe21: PE_Systolic
+    node pe22: PE_Systolic
+    connect clk -> pe00.clk
+    connect clk -> pe01.clk
+    connect clk -> pe02.clk
+    connect clk -> pe10.clk
+    connect clk -> pe11.clk
+    connect clk -> pe12.clk
+    connect clk -> pe20.clk
+    connect clk -> pe21.clk
+    connect clk -> pe22.clk
+
+    // ===== Constants =====
+    node zero: Constant(value=0)
+    node one: Constant(value=1)
+    node two: Constant(value=2)
+    node three: Constant(value=3)
+    node four: Constant(value=4)
+    node five: Constant(value=5)
+    node six: Constant(value=6)
+
+    // ===== Cycle Counter (0..6, stops at 6) =====
+    node counter: Register(initial=0)
+    node counterInc: Incrementer
+    node counterMux: Mux
+    node notDone: Comparator
+    node shouldAdvance: And
+
+    connect counter.q -> counterInc.in
+    connect counter.q -> notDone.a
+    connect six.out -> notDone.b
+    connect start -> shouldAdvance.a
+    connect notDone.lt -> shouldAdvance.b
+    connect shouldAdvance.out -> counterMux.sel
+    connect counter.q -> counterMux.in0
+    connect counterInc.out -> counterMux.in1
+    connect counterMux.out -> counter.data
+    connect one.out -> counter.we
+    connect clk -> counter.clk
+
+    // ===== Cycle Decoder =====
+    node isCycle0: Comparator
+    node isCycle1: Comparator
+    node isCycle2: Comparator
+    node isCycle3: Comparator
+    node isCycle4: Comparator
+    node isCycle5: Comparator
+    connect counter.q -> isCycle0.a
+    connect zero.out -> isCycle0.b
+    connect counter.q -> isCycle1.a
+    connect one.out -> isCycle1.b
+    connect counter.q -> isCycle2.a
+    connect two.out -> isCycle2.b
+    connect counter.q -> isCycle3.a
+    connect three.out -> isCycle3.b
+    connect counter.q -> isCycle4.a
+    connect four.out -> isCycle4.b
+    connect counter.q -> isCycle5.a
+    connect five.out -> isCycle5.b
+
+    // ===== Weight Loading (cycle 0 only) =====
+    node loadWeights: And
+    connect isCycle0.eq -> loadWeights.a
+    connect start -> loadWeights.b
+    connect b00 -> pe00.weightIn
+    connect b01 -> pe01.weightIn
+    connect b02 -> pe02.weightIn
+    connect b10 -> pe10.weightIn
+    connect b11 -> pe11.weightIn
+    connect b12 -> pe12.weightIn
+    connect b20 -> pe20.weightIn
+    connect b21 -> pe21.weightIn
+    connect b22 -> pe22.weightIn
+    connect loadWeights.out -> pe00.weightValid
+    connect loadWeights.out -> pe01.weightValid
+    connect loadWeights.out -> pe02.weightValid
+    connect loadWeights.out -> pe10.weightValid
+    connect loadWeights.out -> pe11.weightValid
+    connect loadWeights.out -> pe12.weightValid
+    connect loadWeights.out -> pe20.weightValid
+    connect loadWeights.out -> pe21.weightValid
+    connect loadWeights.out -> pe22.weightValid
+
+    // ===== Data Injection =====
+    // Row 0: cycle 1 -> A[0][0], cycle 2 -> A[1][0], cycle 3 -> A[2][0]
+    node muxR0a: Mux
+    node muxR0b: Mux
+    node muxR0c: Mux
+    connect isCycle1.eq -> muxR0a.sel
+    connect zero.out -> muxR0a.in0
+    connect a00 -> muxR0a.in1
+    connect isCycle2.eq -> muxR0b.sel
+    connect muxR0a.out -> muxR0b.in0
+    connect a10 -> muxR0b.in1
+    connect isCycle3.eq -> muxR0c.sel
+    connect muxR0b.out -> muxR0c.in0
+    connect a20 -> muxR0c.in1
+
+    // Row 1: cycle 1 -> A[0][1], cycle 2 -> A[1][1], cycle 3 -> A[2][1]
+    node muxR1a: Mux
+    node muxR1b: Mux
+    node muxR1c: Mux
+    connect isCycle1.eq -> muxR1a.sel
+    connect zero.out -> muxR1a.in0
+    connect a01 -> muxR1a.in1
+    connect isCycle2.eq -> muxR1b.sel
+    connect muxR1a.out -> muxR1b.in0
+    connect a11 -> muxR1b.in1
+    connect isCycle3.eq -> muxR1c.sel
+    connect muxR1b.out -> muxR1c.in0
+    connect a21 -> muxR1c.in1
+
+    // Row 2: cycle 1 -> A[0][2], cycle 2 -> A[1][2], cycle 3 -> A[2][2]
+    node muxR2a: Mux
+    node muxR2b: Mux
+    node muxR2c: Mux
+    connect isCycle1.eq -> muxR2a.sel
+    connect zero.out -> muxR2a.in0
+    connect a02 -> muxR2a.in1
+    connect isCycle2.eq -> muxR2b.sel
+    connect muxR2a.out -> muxR2b.in0
+    connect a12 -> muxR2b.in1
+    connect isCycle3.eq -> muxR2c.sel
+    connect muxR2b.out -> muxR2c.in0
+    connect a22 -> muxR2c.in1
+
+    // ===== Horizontal Data Flow (left -> right) =====
+    connect muxR0c.out -> pe00.dataIn
+    connect pe00.dataOut -> pe01.dataIn
+    connect pe01.dataOut -> pe02.dataIn
+    connect muxR1c.out -> pe10.dataIn
+    connect pe10.dataOut -> pe11.dataIn
+    connect pe11.dataOut -> pe12.dataIn
+    connect muxR2c.out -> pe20.dataIn
+    connect pe20.dataOut -> pe21.dataIn
+    connect pe21.dataOut -> pe22.dataIn
+
+    // ===== Vertical Partial-Sum Flow (top -> bottom) =====
+    connect zero.out -> pe00.partialSumIn
+    connect zero.out -> pe01.partialSumIn
+    connect zero.out -> pe02.partialSumIn
+    connect pe00.partialSumOut -> pe10.partialSumIn
+    connect pe01.partialSumOut -> pe11.partialSumIn
+    connect pe02.partialSumOut -> pe12.partialSumIn
+    connect pe10.partialSumOut -> pe20.partialSumIn
+    connect pe11.partialSumOut -> pe21.partialSumIn
+    connect pe12.partialSumOut -> pe22.partialSumIn
+
+    // ===== Result Registers =====
+    // C[k][j] emerges at PE(2,j) on cycle k+j+1
+
+    // Column 0: PE(2,0)
+    // C[0][0] on cycle 1
+    node result_c00: Register
+    connect pe20.partialSumOut -> result_c00.data
+    connect isCycle1.eq -> result_c00.we
+    connect clk -> result_c00.clk
+    // C[1][0] on cycle 2
+    node result_c10: Register
+    connect pe20.partialSumOut -> result_c10.data
+    connect isCycle2.eq -> result_c10.we
+    connect clk -> result_c10.clk
+    // C[2][0] on cycle 3
+    node result_c20: Register
+    connect pe20.partialSumOut -> result_c20.data
+    connect isCycle3.eq -> result_c20.we
+    connect clk -> result_c20.clk
+
+    // Column 1: PE(2,1)
+    // C[0][1] on cycle 2
+    node result_c01: Register
+    connect pe21.partialSumOut -> result_c01.data
+    connect isCycle2.eq -> result_c01.we
+    connect clk -> result_c01.clk
+    // C[1][1] on cycle 3
+    node result_c11: Register
+    connect pe21.partialSumOut -> result_c11.data
+    connect isCycle3.eq -> result_c11.we
+    connect clk -> result_c11.clk
+    // C[2][1] on cycle 4
+    node result_c21: Register
+    connect pe21.partialSumOut -> result_c21.data
+    connect isCycle4.eq -> result_c21.we
+    connect clk -> result_c21.clk
+
+    // Column 2: PE(2,2)
+    // C[0][2] on cycle 3
+    node result_c02: Register
+    connect pe22.partialSumOut -> result_c02.data
+    connect isCycle3.eq -> result_c02.we
+    connect clk -> result_c02.clk
+    // C[1][2] on cycle 4
+    node result_c12: Register
+    connect pe22.partialSumOut -> result_c12.data
+    connect isCycle4.eq -> result_c12.we
+    connect clk -> result_c12.clk
+    // C[2][2] on cycle 5
+    node result_c22: Register
+    connect pe22.partialSumOut -> result_c22.data
+    connect isCycle5.eq -> result_c22.we
+    connect clk -> result_c22.clk
+
+    // ===== Outputs =====
+    connect result_c00.q -> c00
+    connect result_c01.q -> c01
+    connect result_c02.q -> c02
+    connect result_c10.q -> c10
+    connect result_c11.q -> c11
+    connect result_c12.q -> c12
+    connect result_c20.q -> c20
+    connect result_c21.q -> c21
+    connect result_c22.q -> c22
+
+    // Done = counter reached 6
+    node isDone: Comparator
+    connect counter.q -> isDone.a
+    connect six.out -> isDone.b
+    connect isDone.eq -> done
+  }
+}
+
+circuit TestSystolic3x3 {
+  clock clk
+  impl {
+    node sys: Systolic3x3
+
+    // Matrix A = [[1,2,3],[4,5,6],[7,8,9]]
+    node a00: Input(value=1)
+    node a01: Input(value=2)
+    node a02: Input(value=3)
+    node a10: Input(value=4)
+    node a11: Input(value=5)
+    node a12: Input(value=6)
+    node a20: Input(value=7)
+    node a21: Input(value=8)
+    node a22: Input(value=9)
+
+    // Matrix B = [[2,0,1],[0,2,0],[1,0,2]]
+    node b00: Input(value=2)
+    node b01: Input(value=0)
+    node b02: Input(value=1)
+    node b10: Input(value=0)
+    node b11: Input(value=2)
+    node b12: Input(value=0)
+    node b20: Input(value=1)
+    node b21: Input(value=0)
+    node b22: Input(value=2)
+
+    node start: Switch
+
+    connect a00.out -> sys.a00
+    connect a01.out -> sys.a01
+    connect a02.out -> sys.a02
+    connect a10.out -> sys.a10
+    connect a11.out -> sys.a11
+    connect a12.out -> sys.a12
+    connect a20.out -> sys.a20
+    connect a21.out -> sys.a21
+    connect a22.out -> sys.a22
+    connect b00.out -> sys.b00
+    connect b01.out -> sys.b01
+    connect b02.out -> sys.b02
+    connect b10.out -> sys.b10
+    connect b11.out -> sys.b11
+    connect b12.out -> sys.b12
+    connect b20.out -> sys.b20
+    connect b21.out -> sys.b21
+    connect b22.out -> sys.b22
+
+    connect start.out -> sys.start
+    connect clk -> sys.clk
+
+    node display_c00: HexDisplay
+    node display_c01: HexDisplay
+    node display_c02: HexDisplay
+    node display_c10: HexDisplay
+    node display_c11: HexDisplay
+    node display_c12: HexDisplay
+    node display_c20: HexDisplay
+    node display_c21: HexDisplay
+    node display_c22: HexDisplay
+    node done_led: Led
+
+    connect sys.c00 -> display_c00.in
+    connect sys.c01 -> display_c01.in
+    connect sys.c02 -> display_c02.in
+    connect sys.c10 -> display_c10.in
+    connect sys.c11 -> display_c11.in
+    connect sys.c12 -> display_c12.in
+    connect sys.c20 -> display_c20.in
+    connect sys.c21 -> display_c21.in
+    connect sys.c22 -> display_c22.in
     connect sys.done -> done_led.in
   }
 }
