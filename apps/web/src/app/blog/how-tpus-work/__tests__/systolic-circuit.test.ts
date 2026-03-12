@@ -16,7 +16,7 @@ import {
 import { useComponentLibraryStore } from "@turing-incomplete/ui/editor/stores";
 import { getPrimitives } from "@turing-incomplete/ui/editor/lib";
 import type { Circuit } from "@turing-incomplete/ui/editor/types";
-import { SYSTOLIC_DSL } from "../circuits";
+import { SYSTOLIC_2X2_DSL as SYSTOLIC_DSL } from "../circuits";
 
 class ComponentLibraryAdapter implements DSLComponentLibrary {
   constructor(

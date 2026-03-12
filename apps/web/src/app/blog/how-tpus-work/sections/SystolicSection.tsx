@@ -22,35 +22,41 @@ export function SystolicSection() {
   return (
     <section className="py-12">
       <h2 className="text-3xl font-bold text-white mb-4">
-        The Full 2&times;2 Systolic Array
+        The Full 3&times;3 Systolic Array
       </h2>
       <div className="prose-invert space-y-6">
         <p className="text-gray-300 leading-relaxed">
-          Everything we&rsquo;ve built &mdash; MAC units, weight loading,
-          horizontal data flow, vertical partial-sum accumulation, and cycle
-          control &mdash; comes together here. Four processing elements are
-          arranged in a 2&times;2 grid. Each PE stores one weight from
-          matrix&nbsp;B. Activations from matrix&nbsp;A flow left to right.
-          Partial sums flow top to bottom through each column.
+          Everything we&rsquo;ve built &mdash; multiply-add units, weight
+          registers, horizontal data pipelines, vertical partial-sum
+          accumulation, and cycle control &mdash; comes together here. Nine
+          processing elements are arranged in a 3&times;3 grid. Each PE stores
+          one weight from matrix&nbsp;B. Activations from matrix&nbsp;A flow
+          left to right through pipeline registers. Partial sums flow top to
+          bottom combinationally through each column.
         </p>
         <p className="text-gray-300 leading-relaxed">
           The circuit computes C = A &times; B where A&nbsp;=&nbsp;
-          <code className="text-blue-300">[[1,2],[3,4]]</code> and B&nbsp;=&nbsp;
-          <code className="text-blue-300">[[5,6],[7,8]]</code>. The expected
-          result is C&nbsp;=&nbsp;
-          <code className="text-blue-300">[[19,22],[43,50]]</code>. Click{" "}
-          <strong>Start</strong> to begin. Cycle&nbsp;0 loads all four weights.
-          Then over just <strong className="text-white">3 cycles</strong> of
-          pipelined data flow, activation values ripple rightward through the
-          rows while partial sums accumulate downward through the columns.
-          After 4 total ticks the done signal fires.
+          <code className="text-blue-300">[[1,2,3],[4,5,6],[7,8,9]]</code> and
+          B&nbsp;=&nbsp;
+          <code className="text-blue-300">[[2,0,1],[0,2,0],[1,0,2]]</code>. The
+          expected result is C&nbsp;=&nbsp;
+          <code className="text-blue-300">
+            [[5,4,7],[14,10,16],[23,16,25]]
+          </code>
+          . Click <strong>Start</strong> to begin. Cycle&nbsp;0 loads all nine
+          weights. Then over{" "}
+          <strong className="text-white">5 cycles</strong> of pipelined data
+          flow (2N&minus;1 for N=3), activation values ripple rightward through
+          the rows while partial sums accumulate downward through the columns.
+          After 6 total ticks the done signal fires.
         </p>
         <p className="text-gray-300 leading-relaxed">
           This is the same fundamental architecture that powers Google&rsquo;s
           TPU. A real TPUv1 has a 256&times;256 systolic array &mdash; 65,536
           processing elements performing 92 trillion 8-bit operations per
-          second. The principles are identical: data flows right, partial sums
-          flow down, and every PE computes a multiply-add on every clock cycle.
+          second. The principles are identical: weights are loaded once and held
+          stationary, activations flow right through pipeline registers, and
+          partial sums accumulate combinationally down each column.
         </p>
       </div>
 
@@ -70,8 +76,9 @@ export function SystolicSection() {
         </p>
         <p className="text-gray-300 leading-relaxed">
           The systolic design is powerful because it maximizes data reuse. Each
-          activation value is read once from memory and used by every PE in its
-          row. Each weight is read once and used by every PE in its column.
+          activation value is read once from memory and multiplied by every
+          weight in its row as it flows rightward. Each weight is loaded once
+          and used for every activation that passes through its PE over time.
           This dramatically reduces memory bandwidth &mdash; the bottleneck
           that limits GPU performance on large language models.
         </p>
