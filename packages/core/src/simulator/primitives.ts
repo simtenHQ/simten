@@ -1452,15 +1452,19 @@ circuit Comparator {
 
   RAM: defineSequential({
     name: 'RAM',
-    description: '256x8 RAM - reads are combinational (addr->data_out), writes occur on rising clock edge with write enable',
+    description: 'Parameterized SRAM - reads are combinational (addr->data_out), writes occur on rising clock edge with write enable',
     category: 'memory',
     icon: '💾',
     inputs: [
-      { name: 'addr', portType: busType(8) },
-      { name: 'data_in', portType: busType(8) },
+      { name: 'addr', portType: busType(8), widthParam: 'addressWidth' },
+      { name: 'data_in', portType: busType(8), widthParam: 'dataWidth' },
       { name: 'we', portType: bitType() },
     ],
-    outputs: [{ name: 'data_out', portType: busType(8) }],
+    outputs: [{ name: 'data_out', portType: busType(8), widthParam: 'dataWidth' }],
+    parameters: [
+      { name: 'addressWidth', paramType: 'int', defaultValue: 8, options: [5, 8, 10, 11, 13, 15, 16] },
+      { name: 'dataWidth', paramType: 'int', defaultValue: 8, options: [8, 16, 32] },
+    ],
     clocks: [{ name: 'clk' }],
     state: [
       {
@@ -1472,14 +1476,22 @@ circuit Comparator {
     ],
     evaluate: (inputs, currentState) => {
       const memory = (currentState ?? new Map()) as Map<number, number>;
-      const addr = inputs.get('addr') as number;
-      const data = memory.get(addr) ?? 0;
+      const addrWidth = (inputs.get('__addressWidth') as number) ?? 8;
+      const dataWidth = (inputs.get('__dataWidth') as number) ?? 8;
+      const addrMask = addrWidth >= 32 ? 0xFFFFFFFF : (1 << addrWidth) - 1;
+      const dataMask = dataWidth >= 32 ? 0xFFFFFFFF : (1 << dataWidth) - 1;
+      const addr = ((inputs.get('addr') as number) ?? 0) & addrMask;
+      const data = (memory.get(addr) ?? 0) & dataMask;
       return new Map([['data_out', data]]);
     },
     updateState: (inputs, currentState, clockEdges) => {
       const memory = (currentState ?? new Map()) as Map<number, number>;
-      const addr = inputs.get('addr') as number;
-      const dataIn = inputs.get('data_in') as number;
+      const addrWidth = (inputs.get('__addressWidth') as number) ?? 8;
+      const dataWidth = (inputs.get('__dataWidth') as number) ?? 8;
+      const addrMask = addrWidth >= 32 ? 0xFFFFFFFF : (1 << addrWidth) - 1;
+      const dataMask = dataWidth >= 32 ? 0xFFFFFFFF : (1 << dataWidth) - 1;
+      const addr = ((inputs.get('addr') as number) ?? 0) & addrMask;
+      const dataIn = ((inputs.get('data_in') as number) ?? 0) & dataMask;
       const we = inputs.get('we') as boolean;
       const edge = clockEdges['clk'] ?? 'none';
 
@@ -1496,18 +1508,22 @@ circuit Comparator {
 
   DualPortRAM: defineSequential({
     name: 'DualPortRAM',
-    description: '256x8 Dual-Port RAM',
+    description: 'Parameterized Dual-Port SRAM - port A reads/writes, port B read-only',
     category: 'memory',
     icon: '💾²',
     inputs: [
-      { name: 'addrA', portType: busType(8) },
-      { name: 'dataA', portType: busType(8) },
+      { name: 'addrA', portType: busType(8), widthParam: 'addressWidth' },
+      { name: 'dataA', portType: busType(8), widthParam: 'dataWidth' },
       { name: 'weA', portType: bitType() },
-      { name: 'addrB', portType: busType(8) },
+      { name: 'addrB', portType: busType(8), widthParam: 'addressWidth' },
     ],
     outputs: [
-      { name: 'outA', portType: busType(8) },
-      { name: 'outB', portType: busType(8) },
+      { name: 'outA', portType: busType(8), widthParam: 'dataWidth' },
+      { name: 'outB', portType: busType(8), widthParam: 'dataWidth' },
+    ],
+    parameters: [
+      { name: 'addressWidth', paramType: 'int', defaultValue: 8, options: [5, 8, 10, 11, 13, 15, 16] },
+      { name: 'dataWidth', paramType: 'int', defaultValue: 8, options: [8, 16, 32] },
     ],
     clocks: [{ name: 'clk' }],
     state: [
@@ -1520,10 +1536,14 @@ circuit Comparator {
     ],
     evaluate: (inputs, currentState) => {
       const memory = (currentState ?? new Map()) as Map<number, number>;
-      const addrA = inputs.get('addrA') as number;
-      const addrB = inputs.get('addrB') as number;
-      const outA = memory.get(addrA) ?? 0;
-      const outB = memory.get(addrB) ?? 0;
+      const addrWidth = (inputs.get('__addressWidth') as number) ?? 8;
+      const dataWidth = (inputs.get('__dataWidth') as number) ?? 8;
+      const addrMask = addrWidth >= 32 ? 0xFFFFFFFF : (1 << addrWidth) - 1;
+      const dataMask = dataWidth >= 32 ? 0xFFFFFFFF : (1 << dataWidth) - 1;
+      const addrA = ((inputs.get('addrA') as number) ?? 0) & addrMask;
+      const addrB = ((inputs.get('addrB') as number) ?? 0) & addrMask;
+      const outA = (memory.get(addrA) ?? 0) & dataMask;
+      const outB = (memory.get(addrB) ?? 0) & dataMask;
       return new Map([
         ['outA', outA],
         ['outB', outB],
@@ -1531,8 +1551,12 @@ circuit Comparator {
     },
     updateState: (inputs, currentState, clockEdges) => {
       const memory = (currentState ?? new Map()) as Map<number, number>;
-      const addrA = inputs.get('addrA') as number;
-      const dataA = inputs.get('dataA') as number;
+      const addrWidth = (inputs.get('__addressWidth') as number) ?? 8;
+      const dataWidth = (inputs.get('__dataWidth') as number) ?? 8;
+      const addrMask = addrWidth >= 32 ? 0xFFFFFFFF : (1 << addrWidth) - 1;
+      const dataMask = dataWidth >= 32 ? 0xFFFFFFFF : (1 << dataWidth) - 1;
+      const addrA = ((inputs.get('addrA') as number) ?? 0) & addrMask;
+      const dataA = ((inputs.get('dataA') as number) ?? 0) & dataMask;
       const weA = inputs.get('weA') as boolean;
       const edge = clockEdges['clk'] ?? 'none';
 
