@@ -103,6 +103,7 @@ export default function SnakeChallengePage() {
           </div>
 
           <ChallengeWorkbench
+            key={stage.id}
             stage={stage}
             challengeId="snake"
             onNavigate={handleNavigate}

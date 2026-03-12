@@ -73,26 +73,40 @@ interface DSLEditorProps {
   onCompileSuccess?: (circuits: Circuit[], dslCode: string) => void;
   autoCompileEnabled?: boolean;
   showHeader?: boolean;
+  /** Override localStorage key (default: "turing-incomplete-dsl-code"). Set to null to disable persistence. */
+  storageKey?: string | null;
+  /** Initial code to load (used instead of default example when provided). */
+  initialCode?: string;
+  /** Called whenever the editor content changes. */
+  onCodeChange?: (code: string) => void;
+  /** Monaco editor options overrides. */
+  editorOptions?: Record<string, unknown>;
 }
 
-const STORAGE_KEY = "turing-incomplete-dsl-code";
+const DEFAULT_storageKey = "turing-incomplete-dsl-code";
 
 export const DSLEditor = forwardRef<DSLEditorRef, DSLEditorProps>(function DSLEditor({
   onCompileSuccess,
   autoCompileEnabled = false,
   showHeader = true,
+  storageKey = DEFAULT_storageKey,
+  initialCode,
+  onCodeChange,
+  editorOptions,
 }, ref) {
-  // Load code from localStorage on mount, fallback to default
+  // Load code from localStorage on mount, fallback to initialCode or default
   const [code, setCode] = useState(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      return saved || DEFAULT_CODE;
+    if (storageKey && typeof window !== "undefined") {
+      const saved = localStorage.getItem(storageKey);
+      if (saved) return saved;
     }
-    return DEFAULT_CODE;
+    return initialCode ?? DEFAULT_CODE;
   });
   const [errors, setErrors] = useState<CompilationError[]>([]);
   const [isCompiling, setIsCompiling] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  // When true, errors show as Monaco squiggles only (no banner)
+  const [silentErrors, setSilentErrors] = useState(false);
   const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
   const monacoRef = useRef<Monaco | null>(null);
   const autoCompileTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -151,10 +165,11 @@ export const DSLEditor = forwardRef<DSLEditorRef, DSLEditorProps>(function DSLEd
   const handleCodeChange = useCallback((value: string | undefined) => {
     const newCode = value || "";
     setCode(newCode);
-    if (typeof window !== "undefined") {
-      localStorage.setItem(STORAGE_KEY, newCode);
+    onCodeChange?.(newCode);
+    if (storageKey && typeof window !== "undefined") {
+      localStorage.setItem(storageKey, newCode);
     }
-  }, []);
+  }, [storageKey, onCodeChange]);
 
   const handleEditorDidMount: OnMount = (editor, monaco) => {
     editorRef.current = editor;
@@ -433,11 +448,16 @@ export const DSLEditor = forwardRef<DSLEditorRef, DSLEditorProps>(function DSLEd
         return null;
       },
     });
+
+    // Ghost hint — faded text on a specific line, removed on first edit
   };
 
-  const handleCompile = useCallback(() => {
+
+  const handleCompile = useCallback((options?: { silent?: boolean }) => {
+    const silent = options?.silent ?? false;
+    setSilentErrors(silent);
     setIsCompiling(true);
-    setErrors([]);
+    if (!silent) setErrors([]);
     setSuccessMessage(null);
 
     // Use setTimeout to ensure UI updates before heavy computation
@@ -526,11 +546,14 @@ export const DSLEditor = forwardRef<DSLEditorRef, DSLEditorProps>(function DSLEd
           }
         }
 
-        // Success!
-        const componentNames = compiledCircuits.map((c) => c.name).join(", ");
-        setSuccessMessage(
-          `Successfully compiled ${compiledCircuits.length} component(s): ${componentNames}`,
-        );
+        // Success — always clear errors (clears Monaco squiggles)
+        setErrors([]);
+        if (!silent) {
+          const componentNames = compiledCircuits.map((c) => c.name).join(", ");
+          setSuccessMessage(
+            `Successfully compiled ${compiledCircuits.length} component(s): ${componentNames}`,
+          );
+        }
 
         // Notify parent (pass DSL code for version tracking)
         onCompileSuccess?.(compiledCircuits, code);
@@ -600,8 +623,8 @@ export const DSLEditor = forwardRef<DSLEditorRef, DSLEditorProps>(function DSLEd
     getCode: () => code,
     setCode: (newCode: string) => {
       setCode(newCode);
-      if (typeof window !== "undefined") {
-        localStorage.setItem(STORAGE_KEY, newCode);
+      if (storageKey && typeof window !== "undefined") {
+        localStorage.setItem(storageKey, newCode);
       }
     },
     compile: () => {
@@ -620,9 +643,9 @@ export const DSLEditor = forwardRef<DSLEditorRef, DSLEditorProps>(function DSLEd
     }
 
     // Set new timer for auto-compile (immediate on mount, debounced on changes)
-    const delay = 100; // Short delay to let component stabilize
+    const delay = 500; // Debounce to avoid compiling mid-keystroke
     autoCompileTimerRef.current = setTimeout(() => {
-      handleCompile();
+      handleCompile({ silent: true });
     }, delay);
 
     // Cleanup
@@ -684,12 +707,13 @@ export const DSLEditor = forwardRef<DSLEditorRef, DSLEditorProps>(function DSLEd
             wordWrap: "on",
             acceptSuggestionOnCommitCharacter: false,
             fixedOverflowWidgets: true,  // Render hovers outside clipped container
+            ...editorOptions,
           }}
         />
       </div>
 
-      {/* Error Display */}
-      <ErrorDisplay errors={errors} />
+      {/* Error Display — hidden during auto-compile (squiggles only) */}
+      {!silentErrors && <ErrorDisplay errors={errors} />}
     </div>
   );
 });
