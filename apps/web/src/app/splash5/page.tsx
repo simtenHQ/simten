@@ -200,6 +200,18 @@ function useTypewriter(
   const [displayed, setDisplayed] = useState("");
   const [done, setDone] = useState(false);
 
+  // Reset when text changes while inactive (prep for next activation)
+  const prevText = useRef(text);
+  useEffect(() => {
+    if (text !== prevText.current) {
+      prevText.current = text;
+      if (!active) {
+        setDisplayed("");
+        setDone(false);
+      }
+    }
+  }, [text, active]);
+
   useEffect(() => {
     if (!active) return;
     setDisplayed("");
@@ -527,7 +539,7 @@ export default function Splash5Page() {
   const [targetDsl, setTargetDsl] = useState(DEMO_DSL);
   const [targetHarness, setTargetHarness] = useState(DEMO_HARNESS);
 
-  const dslTw = useTypewriter(targetDsl, 8, 0, dslTyping);
+  const dslTw = useTypewriter(targetDsl, 12, 0, dslTyping);
 
   useEffect(() => {
     if (dslTyping && dslTw.done) {
@@ -654,8 +666,8 @@ export default function Splash5Page() {
             {demoComplete && (
               <div className="flex-shrink-0 border-t border-[#30363d] px-5 py-4 space-y-3 animate-in fade-in duration-500">
                 <p className="font-mono text-[13px] text-gray-300">
-                  Describe any circuit and it gets built, compiled, and
-                  simulated — live in your browser.
+                  Build circuits by describing them — compiled and
+                  simulated live in your browser.
                 </p>
                 <div className="bg-[#161b22] rounded-md border border-[#30363d] px-3 py-2.5 font-mono text-xs text-gray-300 select-all cursor-pointer hover:border-gray-600 transition-colors">
                   <span className="text-gray-500 select-none">$ </span>
@@ -689,8 +701,8 @@ export default function Splash5Page() {
         <BrowserWindow className="flex-1" showMcp={dslTyping || !!activeDsl}>
           <div className="flex h-full">
             {/* DSL code strip — thin left panel */}
-            <div className="w-[240px] shrink-0 border-r border-[#30363d] overflow-y-auto">
-              <pre className="text-[11px] font-mono text-gray-500 leading-relaxed whitespace-pre-wrap p-3">
+            <div className="w-[250px] shrink-0 border-r border-[#30363d] overflow-y-auto">
+              <pre className="text-[12px] font-mono text-gray-500 leading-relaxed whitespace-pre-wrap py-3 px-4 mx-auto">
                 {dslTyping ? (
                   <>
                     {dslTw.displayed}
