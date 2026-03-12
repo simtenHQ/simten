@@ -35,7 +35,11 @@
       "WebFetch(domain:www.calfus.com)",
       "mcp__turing-incomplete__solve_next",
       "mcp__turing-incomplete__check_challenge_progress",
-      "mcp__turing-incomplete__get_challenge_stage"
+      "mcp__turing-incomplete__get_challenge_stage",
+      "WebSearch",
+      "WebFetch(domain:www.builder.io)",
+      "WebFetch(domain:github.com)",
+      "Bash(npx vitest:*)"
     ]
   }
 }

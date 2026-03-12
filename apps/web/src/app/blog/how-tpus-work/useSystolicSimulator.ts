@@ -1,10 +1,10 @@
 "use client";
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useCircuitSimulator } from "@turing-incomplete/ui/embed";
-import { SYSTOLIC_DSL } from "./circuits";
+import { SYSTOLIC_3X3_DSL } from "./circuits";
 
 export function useSystolicSimulator() {
-  const sim = useCircuitSimulator(SYSTOLIC_DSL);
+  const sim = useCircuitSimulator(SYSTOLIC_3X3_DSL);
   const [isRunning, setIsRunning] = useState(false);
   const [speed, setSpeed] = useState(100);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);

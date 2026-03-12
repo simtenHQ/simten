@@ -7,7 +7,7 @@ export function DataFlowSection() {
   return (
     <section className="py-12">
       <h2 className="text-3xl font-bold text-white mb-4">
-        Systolic Data Flow
+        Horizontal Data Flow
       </h2>
       <div className="prose-invert space-y-6">
         <p className="text-gray-300 leading-relaxed">
@@ -21,19 +21,23 @@ export function DataFlowSection() {
           Here we connect two PEs{" "}
           <strong className="text-white">horizontally</strong>. Data enters
           PE0&rsquo;s <code className="text-blue-300">dataIn</code> from the
-          left. After one clock cycle, PE0 outputs the data from its pipeline
-          register, which feeds directly into PE1&rsquo;s{" "}
+          left. After one clock cycle, PE0&rsquo;s pipeline register outputs the
+          data, which feeds directly into PE1&rsquo;s{" "}
           <code className="text-blue-300">dataIn</code>. Each PE has its own
-          weight, so the same activation data gets multiplied by different
-          weights as it flows across the row.
+          stored weight, so the same activation value gets multiplied by
+          different weights as it flows across the row.
         </p>
         <p className="text-gray-300 leading-relaxed">
+          Both PEs have{" "}
+          <code className="text-blue-300">partialSumIn = 0</code> here because
+          vertical flow hasn&rsquo;t been introduced yet. Each PE independently
+          computes{" "}
+          <code className="text-blue-300">0 + data &times; weight</code>.
           Load weights into both PEs (toggle{" "}
-          <code className="text-blue-300">valid0</code> and{" "}
-          <code className="text-blue-300">valid1</code>, tick, then toggle off).
-          Now tick repeatedly to watch the data flow from left to right. PE0
-          accumulates <code className="text-blue-300">data &times; weight0</code>
-          , while PE1 accumulates{" "}
+          <code className="text-blue-300">weightValid</code> on, tick, then
+          toggle off). Now tick repeatedly to watch data flow from left to right.
+          PE0 shows <code className="text-blue-300">data &times; weight0</code>,
+          while PE1 shows{" "}
           <code className="text-blue-300">data &times; weight1</code> &mdash;
           one cycle behind.
         </p>
@@ -48,7 +52,7 @@ export function DataFlowSection() {
           showControls
           autoRunSpeed={400}
           title="Two-PE Row"
-          description="Data flows left to right. Each PE multiplies by its own stored weight."
+          description="Data flows left to right with a one-cycle delay. Each PE multiplies by its own weight."
         />
       </div>
     </section>

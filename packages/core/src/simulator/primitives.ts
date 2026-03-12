@@ -1584,9 +1584,7 @@ circuit Comparator {
       { name: 'data', portType: busType(8) },
       { name: 'we', portType: bitType() },
     ],
-    outputs: [
-      { name: 'text', portType: { kind: 'bus', width: 8 } },
-    ],
+    outputs: [],
     clocks: [{ name: 'clk' }],
     state: [
       {
@@ -1596,8 +1594,8 @@ circuit Comparator {
         initialValue: '',
       },
     ],
-    evaluate: (_inputs, currentState) => {
-      return new Map([['text', 0]]);
+    evaluate: () => {
+      return new Map();
     },
     updateState: (inputs, currentState, clockEdges) => {
       if (clockEdges['clk'] !== 'rising') {

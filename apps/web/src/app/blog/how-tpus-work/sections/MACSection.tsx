@@ -7,43 +7,48 @@ export function MACSection() {
   return (
     <section className="py-12">
       <h2 className="text-3xl font-bold text-white mb-4">
-        Multiply and Accumulate
+        Multiply and Add
       </h2>
       <div className="prose-invert space-y-6">
         <p className="text-gray-300 leading-relaxed">
           Every neural network inference boils down to one operation:{" "}
-          <strong className="text-white">multiply and accumulate</strong> (MAC).
-          Take two numbers, multiply them together, and add the product to a
-          running total. That&rsquo;s a dot product, one element at a time. Do it
-          across millions of weights and activations, and you get a matrix
+          <strong className="text-white">multiply and add</strong>. Take an
+          incoming partial sum, multiply a data value by a weight, and add the
+          product to the partial sum. That&rsquo;s one step of a dot product. Do
+          it across millions of weights and activations, and you get a matrix
           multiply &mdash; the heartbeat of deep learning.
         </p>
         <p className="text-gray-300 leading-relaxed">
-          The circuit below is the simplest possible MAC unit. Two inputs{" "}
-          <code className="text-blue-300">a</code> and{" "}
-          <code className="text-blue-300">b</code> feed a multiplier. The product
-          is added to an accumulator register that feeds back into the adder.
-          Each clock tick, the register grows by{" "}
-          <code className="text-blue-300">a &times; b</code>. Toggle the reset
-          switch to clear the accumulator back to zero.
+          The circuit below is purely combinational &mdash; no clock, no
+          registers, no state. Three inputs feed the calculation:{" "}
+          <code className="text-blue-300">data</code>,{" "}
+          <code className="text-blue-300">weight</code>, and{" "}
+          <code className="text-blue-300">partialSumIn</code>. The multiplier
+          computes <code className="text-blue-300">data &times; weight</code>,
+          and the adder produces{" "}
+          <code className="text-blue-300">
+            partialSumIn + data &times; weight
+          </code>
+          . The result appears instantly.
         </p>
         <p className="text-gray-300 leading-relaxed">
-          Try changing the input values, then click <strong>Tick</strong>{" "}
-          repeatedly to watch the accumulator grow. This single MAC unit is the
-          atom from which we&rsquo;ll build a full systolic array.
+          Try changing the input values and watch the result update. This single
+          multiply-add is the atom from which we&rsquo;ll build a full systolic
+          array. Accumulation doesn&rsquo;t happen inside a single unit &mdash;
+          it happens by <em>chaining</em> units together, passing each
+          one&rsquo;s partial sum output into the next one&rsquo;s input.
         </p>
       </div>
 
       <div className="mt-8">
         <CircuitEmbed
-          dsl={TPU_CIRCUITS.simpleMACUnit.dsl}
-          displayDsl={TPU_CIRCUITS.simpleMACUnit.displayDsl}
-          nodePositions={TPU_CIRCUITS.simpleMACUnit.nodePositions}
-          height={350}
+          dsl={TPU_CIRCUITS.multiplyAdd.dsl}
+          displayDsl={TPU_CIRCUITS.multiplyAdd.displayDsl}
+          nodePositions={TPU_CIRCUITS.multiplyAdd.nodePositions}
+          height={300}
           showControls
-          autoRunSpeed={400}
-          title="Simple MAC Unit"
-          description="Multiply a × b and accumulate into a register. Toggle reset to clear."
+          title="Multiply-Add Unit"
+          description="partialSumIn + (data × weight) = result. Purely combinational — no clock needed."
         />
       </div>
     </section>

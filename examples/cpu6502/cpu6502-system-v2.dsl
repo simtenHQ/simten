@@ -1,48 +1,42 @@
-// 6502 CPU System - Complete with Console I/O
-// Full 64KB address space with memory-mapped I/O
+// 6502 CPU System — Complete single-board computer
+//
+// Flat motherboard layout: all chips visible at the top level.
+// Drill into any chip to see its internals.
 //
 // Memory Map:
-//   $0000-$07FF: RAM (2KB SRAM chip, like a 6116)
+//   $0000-$07FF: RAM (2KB SRAM, like a 6116)
 //   $0800-$BFFF: Unmapped (open bus — returns last read value)
 //   $C000-$EFFF: ROM (12KB program code)
-//   $F000-$F0FF: I/O Region
-//     $F000:     Console Output (write-only, memory-mapped)
+//   $F000:       Console Output (write-only, memory-mapped UART)
 //   $F100-$FFFF: ROM (continued, ~4KB + vectors)
 //   $FFFC-$FFFD: Reset Vector
 //
-// Architecture: Address decoding lives in MemoryBus (like a real motherboard).
-// RAM and ROM are raw storage chips — they don't know their own address range.
-// The bus generates chip-select signals using comparators (like a 74LS138 decoder).
+// Chips: CPU6502Core, RAM, ROM, Console
+// Glue logic: AddressDecode (74LS138-style), DataMux (tri-state bus emulation)
 
-// === MemoryBus: Address decode + device routing ===
-// Like a real motherboard: discrete logic generates chip-select signals for
-// each device based on the address bus. Each device is just raw storage.
-circuit MemoryBus {
+// === AddressDecode: Glue logic that generates chip-select signals ===
+// Like a 74LS138 decoder + a few gates on a real motherboard.
+// Looks at the address bus and tells each chip whether it's being talked to.
+circuit AddressDecode {
   input addr_lo: Bus[8]
   input addr_hi: Bus[8]
-  input data_in: Bus[8]
   input rw: Bit
-  input rom_data: Bus[8]      // Data from external ROM primitive
 
-  output data_out: Bus[8]
-  output rom_addr: Bus[16]    // Address for external ROM lookup
-
-  clock clk
+  output ram_cs: Bit       // $0000-$07FF
+  output rom_cs: Bit       // $C000-$FFFF (excluding $F0xx)
+  output console_cs: Bit   // $F000 exactly
+  output ram_we: Bit       // RAM chip selected AND write
+  output console_we: Bit   // Console chip selected AND write
 
   impl {
-    // ----------------------------------------------------------------
-    // Address Decode Logic (like a 74LS138 on the motherboard)
-    // ----------------------------------------------------------------
-
-    // RAM chip select: $0000-$07FF (addr_hi < 8)
+    // RAM: $0000-$07FF (addr_hi < 8)
     node eight: Constant(value=8)
-    node ram_decode: Comparator
-    connect addr_hi -> ram_decode.a
-    connect eight.out -> ram_decode.b
-    // ram_decode.lt = 1 when addr_hi < 8 (address is in RAM range)
+    node ram_range: Comparator
+    connect addr_hi -> ram_range.a
+    connect eight.out -> ram_range.b
+    connect ram_range.lt -> ram_cs
 
-    // ROM chip select: $C000-$FFFF excluding I/O at $F0xx
-    // rom_cs = (addr_hi >= $C0) AND (addr_hi != $F0)
+    // ROM: $C000-$FFFF excluding I/O at $F0xx
     node c0: Constant(value=192)
     node f0: Constant(value=240)
 
@@ -60,142 +54,94 @@ circuit MemoryBus {
     node not_io_region: Not
     connect io_check.eq -> not_io_region.in
 
-    node rom_cs: And
-    connect rom_ge_c0.out -> rom_cs.a
-    connect not_io_region.out -> rom_cs.b
+    node rom_select: And
+    connect rom_ge_c0.out -> rom_select.a
+    connect not_io_region.out -> rom_select.b
+    connect rom_select.out -> rom_cs
 
-    // Console chip select: $F000 exactly (addr_hi == $F0 AND addr_lo == $00)
+    // Console: $F000 exactly (addr_hi == $F0 AND addr_lo == $00)
     node zero: Constant(value=0)
-
     node console_lo_check: Comparator
     connect addr_lo -> console_lo_check.a
     connect zero.out -> console_lo_check.b
 
-    node console_cs: And
-    connect io_check.eq -> console_cs.a
-    connect console_lo_check.eq -> console_cs.b
+    node console_select: And
+    connect io_check.eq -> console_select.a
+    connect console_lo_check.eq -> console_select.b
+    connect console_select.out -> console_cs
 
-    // Write strobe (active when rw=0, accent on the name: active-low like real /WE)
+    // Write strobe (active when rw=0)
     node not_rw: Not
     connect rw -> not_rw.in
 
-    // ----------------------------------------------------------------
-    // RAM: 2KB SRAM (like a 6116 chip)
-    // ----------------------------------------------------------------
-    // addr uses the full 11-bit range: {addr_hi[2:0], addr_lo[7:0]}
-    // We combine into an 11-bit address using AddressCombiner-like math,
-    // but since our RAM takes an 11-bit addr port, we use AddressCombiner.
-    node ram_addr: AddressCombiner
-    connect addr_lo -> ram_addr.lo
-    connect addr_hi -> ram_addr.hi
+    // Combined chip-select + write signals
+    node ram_write: And
+    connect ram_range.lt -> ram_write.a
+    connect not_rw.out -> ram_write.b
+    connect ram_write.out -> ram_we
 
-    node ram: RAM(addressWidth=11, dataWidth=8)
-    connect clk -> ram.clk
-    connect ram_addr.out -> ram.addr
-    connect data_in -> ram.data_in
+    node console_write: And
+    connect console_select.out -> console_write.a
+    connect not_rw.out -> console_write.b
+    connect console_write.out -> console_we
+  }
+}
 
-    // RAM write enable: chip selected AND write strobe
-    node ram_we: And
-    connect ram_decode.lt -> ram_we.a
-    connect not_rw.out -> ram_we.b
-    connect ram_we.out -> ram.we
+// === DataMux: Routes the correct chip's data onto the bus ===
+// In real hardware this would be tri-state buffers, but muxes work the same way.
+circuit DataMux {
+  input ram_data: Bus[8]
+  input rom_data: Bus[8]
+  input ram_cs: Bit
+  input rom_cs: Bit
+  input console_cs: Bit
+  input rw: Bit
 
-    // ----------------------------------------------------------------
-    // ROM: External ROM primitive (data loaded at runtime)
-    // ----------------------------------------------------------------
-    node rom_addr_combine: AddressCombiner
-    connect addr_lo -> rom_addr_combine.lo
-    connect addr_hi -> rom_addr_combine.hi
-    connect rom_addr_combine.out -> rom_addr
+  output data_out: Bus[8]
 
-    // ----------------------------------------------------------------
-    // Console: Memory-mapped I/O at $F000 (write-only)
-    // ----------------------------------------------------------------
-    node console_we: And
-    connect console_cs.out -> console_we.a
-    connect not_rw.out -> console_we.b
+  clock clk
 
-    node console: Console
-    connect clk -> console.clk
-    connect data_in -> console.data
-    connect console_we.out -> console.we
-
-    // ----------------------------------------------------------------
-    // Data Bus Mux (active device drives the bus)
-    // ----------------------------------------------------------------
+  impl {
     // Open bus register: latches last read value (real 6502 behavior)
     node open_bus: Register
     connect clk -> open_bus.clk
 
-    // Priority chain: ROM > Console > RAM > open_bus
-    node data_mux_ram: Mux
-    connect ram_decode.lt -> data_mux_ram.sel
-    connect open_bus.q -> data_mux_ram.in0
-    connect ram.data_out -> data_mux_ram.in1
+    // Priority chain: ROM > Console($00) > RAM > open_bus
+    node zero: Constant(value=0)
+
+    node mux_ram: Mux
+    connect ram_cs -> mux_ram.sel
+    connect open_bus.q -> mux_ram.in0
+    connect ram_data -> mux_ram.in1
 
     // Console reads return $00 (write-only device)
-    node data_mux_console: Mux
-    connect console_cs.out -> data_mux_console.sel
-    connect data_mux_ram.out -> data_mux_console.in0
-    connect zero.out -> data_mux_console.in1
+    node mux_console: Mux
+    connect console_cs -> mux_console.sel
+    connect mux_ram.out -> mux_console.in0
+    connect zero.out -> mux_console.in1
 
-    node data_mux_rom: Mux
-    connect rom_cs.out -> data_mux_rom.sel
-    connect data_mux_console.out -> data_mux_rom.in0
-    connect rom_data -> data_mux_rom.in1
+    node mux_rom: Mux
+    connect rom_cs -> mux_rom.sel
+    connect mux_console.out -> mux_rom.in0
+    connect rom_data -> mux_rom.in1
 
-    connect data_mux_rom.out -> data_out
+    connect mux_rom.out -> data_out
 
-    // Update open bus latch on reads when any device responds
+    // Update open bus latch when any device responds during a read
     node any_ram_rom: Or
-    connect ram_decode.lt -> any_ram_rom.a
-    connect rom_cs.out -> any_ram_rom.b
+    connect ram_cs -> any_ram_rom.a
+    connect rom_cs -> any_ram_rom.b
 
     node any_device: Or
     connect any_ram_rom.out -> any_device.a
-    connect console_cs.out -> any_device.b
+    connect console_cs -> any_device.b
 
     node open_bus_we: And
     connect any_device.out -> open_bus_we.a
     connect rw -> open_bus_we.b
 
     connect open_bus_we.out -> open_bus.we
-    connect data_mux_rom.out -> open_bus.data
-  }
-}
-
-// === MemoryBusTest: Test circuit for memory bus ===
-circuit MemoryBusTest {
-  clock clk
-
-  impl {
-    // Test ROM (minimal for memory bus testing)
-    node rom: ROM(baseAddress=0xC000, data={
-      0xC000: 0xAB,
-      0xFFFD: 0xC0
-    })
-
-    node mem_bus: MemoryBus
-    connect clk -> mem_bus.clk
-
-    // Wire ROM to memory bus
-    connect mem_bus.rom_addr -> rom.addr
-    connect rom.data_out -> mem_bus.rom_data
-
-    // Input controls
-    node addr_lo_in: Input
-    node addr_hi_in: Input
-    node data_in: Input
-    node rw_in: Input
-
-    connect addr_lo_in.out -> mem_bus.addr_lo
-    connect addr_hi_in.out -> mem_bus.addr_hi
-    connect data_in.out -> mem_bus.data_in
-    connect rw_in.out -> mem_bus.rw
-
-    // Output display
-    node d_data_out: HexDisplay
-    connect mem_bus.data_out -> d_data_out.in
+    connect mux_rom.out -> open_bus.data
   }
 }
 // CPU6502Core - Pure CPU logic with bus interface
@@ -5308,8 +5254,8 @@ circuit CPU6502Core {
 }
 
 // === CPU6502CoreTest: Test circuit for standalone CPU core ===
-// Note: This test circuit requires external memory bus to function
-// Use System6502 from 34-system.dsl for full system testing
+// Note: This test circuit requires external memory to function
+// Use CPU6502Test below for full system testing
 circuit CPU6502CoreTest {
   clock clk
 
@@ -5348,147 +5294,88 @@ circuit CPU6502CoreTest {
     connect cpu.data_out -> d_data_out.in
   }
 }
-// System6502 - Full system integration
+// CPU6502Test - Full system integration (motherboard layout)
 //
-// Connects CPU6502Core to MemoryBus for complete system
+// All chips wired at the top level with address decode glue logic.
 // Memory map:
-//   $0000-$00FF: RAM (zero page)
-//   $0100-$01FF: RAM (stack)
-//   $FF00-$FFFF: ROM (program)
+//   $0000-$07FF: RAM (2KB SRAM)
+//   $C000-$FFFF: ROM (program, excluding $F0xx)
+//   $F000:       Console (write-only UART)
 
-// === System6502: Complete 6502 system ===
-circuit System6502 {
-  input reset: Bit
-  input rom_data: Bus[8]      // Data from external ROM
-
-  // Debug outputs from CPU
-  output pc: Bus[8]          // PC low byte (backward compatible)
-  output pc_hi: Bus[8]       // PC high byte (16-bit PC support)
-  output instruction: Bus[8]
-  output reg_a: Bus[8]
-  output reg_x: Bus[8]
-  output reg_y: Bus[8]
-  output reg_sp: Bus[8]
-  output flag_n: Bit
-  output flag_z: Bit
-  output flag_c: Bit
-  output flag_v: Bit
-  output flag_d: Bit
-  output flag_i: Bit
-
-  // Bus debug outputs
-  output addr_lo: Bus[8]
-  output addr_hi: Bus[8]
-  output data_bus: Bus[8]
-  output rw: Bit
-  output rom_addr: Bus[16]    // Address for external ROM lookup
-
-  clock clk
-
-  impl {
-    node cpu: CPU6502Core
-    node mem_bus: MemoryBus
-
-    connect clk -> cpu.clk
-    connect clk -> mem_bus.clk
-    connect reset -> cpu.reset
-
-    // CPU -> Bus
-    connect cpu.addr_lo -> mem_bus.addr_lo
-    connect cpu.addr_hi -> mem_bus.addr_hi
-    connect cpu.data_out -> mem_bus.data_in
-    connect cpu.rw -> mem_bus.rw
-
-    // ROM interface passthrough
-    connect rom_data -> mem_bus.rom_data
-    connect mem_bus.rom_addr -> rom_addr
-
-    // Bus -> CPU
-    connect mem_bus.data_out -> cpu.data_in
-
-    // Forward debug outputs from CPU
-    connect cpu.pc -> pc
-    connect cpu.pc_hi_out -> pc_hi
-    connect cpu.instruction -> instruction
-    connect cpu.reg_a -> reg_a
-    connect cpu.reg_x -> reg_x
-    connect cpu.reg_y -> reg_y
-    connect cpu.reg_sp -> reg_sp
-    connect cpu.flag_n -> flag_n
-    connect cpu.flag_z -> flag_z
-    connect cpu.flag_c -> flag_c
-    connect cpu.flag_v -> flag_v
-    connect cpu.flag_d -> flag_d
-    connect cpu.flag_i -> flag_i
-
-    // Bus debug outputs
-    connect cpu.addr_lo -> addr_lo
-    connect cpu.addr_hi -> addr_hi
-    connect mem_bus.data_out -> data_bus
-    connect cpu.rw -> rw
-  }
-}
-
-// === CPU6502Test: Test circuit with displays ===
-// ROM data is loaded at runtime via the memory data store (drag-drop .bin file)
+// === CPU6502Test: Complete 6502 computer (motherboard layout) ===
+// All chips visible at the top level, just like a real PCB schematic.
+// Drill into any chip to see its internals.
 circuit CPU6502Test {
   clock clk
 
   impl {
-    // ROM mapped at $C000-$FFFF - data loaded at runtime, not embedded in DSL
-    // baseAddress tells ROM where it's mapped (subtracts from CPU address like real hardware)
+    // ================================================================
+    // Chips on the board
+    // ================================================================
+
+    // 6502 CPU
+    node cpu: CPU6502Core
+    connect clk -> cpu.clk
+
+    // 2KB SRAM (like a 6116 chip)
+    node ram: RAM(addressWidth=11, dataWidth=8)
+    connect clk -> ram.clk
+
+    // ROM (program code, loaded at runtime)
     node rom: ROM(baseAddress=0xC000)
 
-    node system: System6502
-    connect clk -> system.clk
+    // Console output (memory-mapped UART at $F000)
+    node console: Console
+    connect clk -> console.clk
 
-    // Wire ROM to system
-    connect system.rom_addr -> rom.addr
-    connect rom.data_out -> system.rom_data
+    // ================================================================
+    // Glue logic on the board
+    // ================================================================
 
+    // Address decode: generates chip-select signals from the address bus
+    node decode: AddressDecode
+    connect cpu.addr_lo -> decode.addr_lo
+    connect cpu.addr_hi -> decode.addr_hi
+    connect cpu.rw -> decode.rw
+
+    // Data mux: routes the selected chip's data back to the CPU
+    node data_mux: DataMux
+    connect clk -> data_mux.clk
+    connect ram.data_out -> data_mux.ram_data
+    connect rom.data_out -> data_mux.rom_data
+    connect decode.ram_cs -> data_mux.ram_cs
+    connect decode.rom_cs -> data_mux.rom_cs
+    connect decode.console_cs -> data_mux.console_cs
+    connect cpu.rw -> data_mux.rw
+
+    // ================================================================
+    // Bus wiring (shared traces on the PCB)
+    // ================================================================
+
+    // Address bus -> ROM
+    node addr_combine: AddressCombiner
+    connect cpu.addr_lo -> addr_combine.lo
+    connect cpu.addr_hi -> addr_combine.hi
+    connect addr_combine.out -> rom.addr
+
+    // Address bus -> RAM (11-bit, masked by RAM primitive)
+    connect addr_combine.out -> ram.addr
+
+    // Data bus -> RAM (CPU writes)
+    connect cpu.data_out -> ram.data_in
+    connect decode.ram_we -> ram.we
+
+    // Data bus -> Console (CPU writes to $F000)
+    connect cpu.data_out -> console.data
+    connect decode.console_we -> console.we
+
+    // Data bus -> CPU (reads from selected device)
+    connect data_mux.data_out -> cpu.data_in
+
+    // ================================================================
+    // Board controls
+    // ================================================================
     node reset_input: Input
-    connect reset_input.out -> system.reset
-
-    // Display CPU state
-    node d_pc_lo: HexDisplay
-    connect system.pc -> d_pc_lo.in
-
-    node d_pc_hi: HexDisplay
-    connect system.pc_hi -> d_pc_hi.in
-
-    node d_instruction: HexDisplay
-    connect system.instruction -> d_instruction.in
-
-    node d_a: HexDisplay
-    connect system.reg_a -> d_a.in
-
-    node d_x: HexDisplay
-    connect system.reg_x -> d_x.in
-
-    node d_y: HexDisplay
-    connect system.reg_y -> d_y.in
-
-    node d_sp: HexDisplay
-    connect system.reg_sp -> d_sp.in
-
-    // Display bus state
-    node d_addr_lo: HexDisplay
-    connect system.addr_lo -> d_addr_lo.in
-
-    node d_addr_hi: HexDisplay
-    connect system.addr_hi -> d_addr_hi.in
-
-    node d_data: HexDisplay
-    connect system.data_bus -> d_data.in
-
-    // Display flags
-    node d_c: HexDisplay
-    connect system.flag_c -> d_c.in
-
-    node d_z: HexDisplay
-    connect system.flag_z -> d_z.in
-
-    node d_n: HexDisplay
-    connect system.flag_n -> d_n.in
+    connect reset_input.out -> cpu.reset
   }
 }
