@@ -37,6 +37,7 @@ export function simulateCircuit(
     circuitName?: string;
     ticks?: number;
     inputs?: Record<string, number | boolean>;
+    memoryData?: Map<string, Map<number, number>>;
   },
 ): SimulateResult | SimulateError {
   const sourceName = params.sourceName ?? '<inline>';
@@ -80,7 +81,7 @@ export function simulateCircuit(
 
   // Create simulator
   const library = createComponentLibrary(allCircuits);
-  const simulator = createSimulatorFromCircuit(target, library);
+  const simulator = createSimulatorFromCircuit(target, library, params.memoryData);
 
   // Set inputs
   if (params.inputs) {

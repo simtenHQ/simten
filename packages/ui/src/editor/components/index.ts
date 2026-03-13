@@ -9,6 +9,7 @@ export { ComponentTooltip } from './ComponentTooltip';
 export { CircuitSelector } from './CircuitSelector';
 export { CircuitTabBar } from './CircuitTabBar';
 export { ClockControls } from './ClockControls';
+export { SignalOutputPanel } from './SignalOutputPanel';
 export { CompositeInspectorDialog } from './CompositeInspectorDialog';
 export { ConflictResolutionModal } from './ConflictResolutionModal';
 export { DiagnosticsPanel } from './DiagnosticsPanel';

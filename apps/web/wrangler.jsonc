@@ -30,6 +30,11 @@
 			// see https://opennext.js.org/cloudflare/caching
 			"binding": "WORKER_SELF_REFERENCE",
 			"service": "turing-incomplete"
+		},
+		{
+			// RISC-V cross-compiler service (Cloudflare Container)
+			"binding": "COMPILER",
+			"service": "compiler"
 		}
 	],
 	"observability": {

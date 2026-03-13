@@ -15,6 +15,7 @@ import { RegisterNode } from "../editor/components/nodes/RegisterNode";
 import { RAMNode } from "../editor/components/nodes/RAMNode";
 import { ROMNode } from "../editor/components/nodes/ROMNode";
 import { ConsoleNode } from "../editor/components/nodes/ConsoleNode";
+import { RV32IInstrMemNode } from "../editor/components/nodes/RV32IInstrMemNode";
 
 
 /**
@@ -30,6 +31,7 @@ export const EMBED_NODE_TYPES: NodeTypes = {
   registerNode: LogicGateNode,
   ramNode: LogicGateNode,
   romNode: LogicGateNode,
+  rv32iInstrMemNode: LogicGateNode,
   consoleNode: EmbedConsoleNode,
   screenNode: EmbedScreenNode,
   rasterDisplayNode: EmbedScreenNode,
@@ -59,6 +61,7 @@ export const FULL_NODE_TYPES: NodeTypes = {
   registerNode: RegisterNode,
   ramNode: RAMNode,
   romNode: ROMNode,
+  rv32iInstrMemNode: RV32IInstrMemNode,
   consoleNode: ConsoleNode,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
 } as any as NodeTypes;
