@@ -74,7 +74,7 @@ export function initializeFlatSequentialState(
         }
 
         initialValue = { data: memory, addressWidth: 8, dataWidth: 8 };
-      } else if (node.primitiveType === 'ROM') {
+      } else if (node.primitiveType === 'ROM' || node.primitiveType === 'RV32I_InstrMem') {
         // ROM initialization - check for DSL-embedded data first, then runtime-loaded data
         const memory = new Map<number, number>();
 
@@ -92,7 +92,7 @@ export function initializeFlatSequentialState(
         // 2. Check for runtime-loaded data from injected memoryData
         // Runtime data takes precedence (allows patching DSL-embedded ROMs)
         if (memoryData) {
-          const loadedData = getMemoryDataForNode(node.id, memoryData);
+          const loadedData = getMemoryDataForNode(node.id, memoryData, node.primitiveType);
           if (loadedData) {
             // Runtime data overwrites DSL data for same addresses
             for (const [addr, value] of loadedData.entries()) {
@@ -101,7 +101,12 @@ export function initializeFlatSequentialState(
           }
         }
 
-        initialValue = { data: memory, addressWidth: 16, dataWidth: 8 };
+        const stateType = stateBlock.stateType;
+        initialValue = {
+          data: memory,
+          addressWidth: stateType.kind === 'memory' ? stateType.addressWidth : 16,
+          dataWidth: stateType.kind === 'memory' ? stateType.dataWidth : 8,
+        };
       }
 
       // Convert StateValue to PrimitiveState
@@ -139,13 +144,19 @@ export function initializeFlatSequentialState(
 /**
  * Helper to get memory data for a node from the injected memory data map.
  * Pattern matching: "rom" matches nodes like "system.mem_bus.rom"
+ * Also checks primitive type, so "instrmem" matches any RV32I_InstrMem node.
  */
 function getMemoryDataForNode(
   nodeId: string,
-  memoryData: Map<string, Map<number, number>>
+  memoryData: Map<string, Map<number, number>>,
+  primitiveType?: string
 ): Map<number, number> | undefined {
   for (const [pattern, data] of memoryData) {
-    if (nodeId.toLowerCase().includes(pattern.toLowerCase())) {
+    const lowerPattern = pattern.toLowerCase();
+    if (nodeId.toLowerCase().includes(lowerPattern)) {
+      return data;
+    }
+    if (primitiveType && primitiveType.toLowerCase().includes(lowerPattern)) {
       return data;
     }
   }
