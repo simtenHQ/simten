@@ -78,6 +78,7 @@ function getNodeTypeForComponent(componentRef: string, inputCount: number, outpu
     RasterDisplay: 'rasterDisplayNode',
     Console: 'consoleNode',
     Constant: 'logicGateNode',
+    RV32I_InstrMem: 'rv32iInstrMemNode',
   };
 
   if (typeMap[componentRef]) {

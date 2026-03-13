@@ -16,6 +16,7 @@ import {
   ComponentPalette,
   RightSidebar,
   ClockControls,
+  SignalOutputPanel,
   CompositeInspectorDialog,
 } from "@turing-incomplete/ui/editor/components";
 import { ThemeToggle } from "@/app/components/ThemeToggle";
@@ -253,8 +254,10 @@ export function VisualEditor({ theme = "light" }: VisualEditorProps) {
 
         {/* Conditional Bottom Bar: Clock Controls (only for sequential circuits) */}
         {showClockControls && (
-          <div className="border-t border-gray-200 dark:border-[#2a2a2e] bg-white dark:bg-[#1a1a1e] px-6 py-3 shadow-sm">
+          <div className="flex items-center gap-4 border-t border-gray-200 dark:border-[#2a2a2e] bg-white dark:bg-[#1a1a1e] px-6 py-3 shadow-sm">
             <ClockControls />
+            <div className="border-l border-gray-200 dark:border-[#2a2a2e] h-8" />
+            <SignalOutputPanel />
           </div>
         )}
 

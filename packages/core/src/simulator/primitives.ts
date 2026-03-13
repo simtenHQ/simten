@@ -1622,6 +1622,479 @@ circuit Comparator {
     },
     outputDependency: 'state-only',
   }),
+
+  // ============================================================================
+  // RV32I CPU Primitives
+  // ============================================================================
+
+  RV32I_Decode: defineCombinational({
+    name: 'RV32I_Decode',
+    description: 'Instruction field extractor — splits a 32-bit RISC-V instruction into opcode, rd, funct3, rs1, rs2, funct7',
+    category: 'rv32i',
+    icon: 'DEC',
+    namespace: 'rv32i',
+    inputs: [{ name: 'instruction', portType: busType(32) }],
+    outputs: [
+      { name: 'opcode', portType: busType(7) },
+      { name: 'rd', portType: busType(5) },
+      { name: 'funct3', portType: busType(3) },
+      { name: 'rs1', portType: busType(5) },
+      { name: 'rs2', portType: busType(5) },
+      { name: 'funct7', portType: busType(7) },
+    ],
+    evaluate: (inputs) => {
+      const instr = (inputs.get('instruction') as number) >>> 0;
+      return new Map<string, BusValue>([
+        ['opcode', instr & 0x7F],
+        ['rd', (instr >>> 7) & 0x1F],
+        ['funct3', (instr >>> 12) & 0x7],
+        ['rs1', (instr >>> 15) & 0x1F],
+        ['rs2', (instr >>> 20) & 0x1F],
+        ['funct7', (instr >>> 25) & 0x7F],
+      ]);
+    },
+  }),
+
+  RV32I_ALU: defineCombinational({
+    name: 'RV32I_ALU',
+    description: 'RV32I arithmetic logic unit — supports ADD, SUB, AND, OR, XOR, SLL, SRL, SRA, SLT, SLTU',
+    category: 'rv32i',
+    icon: 'ALU',
+    namespace: 'rv32i',
+    inputs: [
+      { name: 'a', portType: busType(32) },
+      { name: 'b', portType: busType(32) },
+      { name: 'alu_op', portType: busType(4) },
+    ],
+    outputs: [
+      { name: 'result', portType: busType(32) },
+      { name: 'zero', portType: bitType() },
+    ],
+    evaluate: (inputs) => {
+      const a = (inputs.get('a') as number) >>> 0;
+      const b = (inputs.get('b') as number) >>> 0;
+      const op = (inputs.get('alu_op') as number) & 0xF;
+
+      let result: number;
+      switch (op) {
+        case 0: result = (a + b) >>> 0; break;           // ADD
+        case 1: result = (a - b) >>> 0; break;           // SUB
+        case 2: result = (a & b) >>> 0; break;           // AND
+        case 3: result = (a | b) >>> 0; break;           // OR
+        case 4: result = (a ^ b) >>> 0; break;           // XOR
+        case 5: result = (a << (b & 0x1F)) >>> 0; break; // SLL
+        case 6: result = a >>> (b & 0x1F); break;        // SRL
+        case 7: result = ((a | 0) >> (b & 0x1F)) >>> 0; break; // SRA
+        case 8: result = ((a | 0) < (b | 0)) ? 1 : 0; break;  // SLT (signed)
+        case 9: result = (a < b) ? 1 : 0; break;        // SLTU (unsigned)
+        default: result = 0; break;
+      }
+
+      const outputs = new Map<string, BitValue | BusValue>();
+      outputs.set('result', result);
+      outputs.set('zero', result === 0);
+      return outputs;
+    },
+  }),
+
+  RV32I_ImmGen: defineCombinational({
+    name: 'RV32I_ImmGen',
+    description: 'Immediate generator — extracts and sign-extends immediate values from RV32I instructions based on opcode format',
+    category: 'rv32i',
+    icon: 'IMM',
+    namespace: 'rv32i',
+    inputs: [{ name: 'instruction', portType: busType(32) }],
+    outputs: [{ name: 'immediate', portType: busType(32) }],
+    evaluate: (inputs) => {
+      const instr = (inputs.get('instruction') as number) >>> 0;
+      const opcode = instr & 0x7F;
+      let imm: number;
+
+      switch (opcode) {
+        // I-type: ADDI/ORI/..., loads, JALR
+        case 0x13: case 0x03: case 0x67:
+          imm = (instr >> 20) | 0; // sign-extended by >> (arithmetic shift)
+          break;
+        // S-type: stores
+        case 0x23:
+          imm = (((instr >> 25) << 5) | ((instr >>> 7) & 0x1F)) | 0;
+          imm = (imm << 20) >> 20; // sign-extend 12-bit
+          break;
+        // B-type: branches
+        case 0x63: {
+          const b12 = (instr >>> 31) & 1;
+          const b11 = (instr >>> 7) & 1;
+          const b10_5 = (instr >>> 25) & 0x3F;
+          const b4_1 = (instr >>> 8) & 0xF;
+          imm = (b12 << 12) | (b11 << 11) | (b10_5 << 5) | (b4_1 << 1);
+          imm = (imm << 19) >> 19; // sign-extend 13-bit
+          break;
+        }
+        // U-type: LUI, AUIPC
+        case 0x37: case 0x17:
+          imm = (instr & 0xFFFFF000) | 0;
+          break;
+        // J-type: JAL
+        case 0x6F: {
+          const j20 = (instr >>> 31) & 1;
+          const j19_12 = (instr >>> 12) & 0xFF;
+          const j11 = (instr >>> 20) & 1;
+          const j10_1 = (instr >>> 21) & 0x3FF;
+          imm = (j20 << 20) | (j19_12 << 12) | (j11 << 11) | (j10_1 << 1);
+          imm = (imm << 11) >> 11; // sign-extend 21-bit
+          break;
+        }
+        default:
+          imm = 0;
+          break;
+      }
+
+      return new Map([['immediate', imm >>> 0]]);
+    },
+  }),
+
+  RV32I_Control: defineCombinational({
+    name: 'RV32I_Control',
+    description: 'Control unit — decodes opcode/funct3/funct7 into ALU op and datapath control signals',
+    category: 'rv32i',
+    icon: 'CTL',
+    namespace: 'rv32i',
+    inputs: [
+      { name: 'opcode', portType: busType(7) },
+      { name: 'funct3', portType: busType(3) },
+      { name: 'funct7_bit', portType: bitType() },
+    ],
+    outputs: [
+      { name: 'alu_op', portType: busType(4) },
+      { name: 'alu_src', portType: bitType() },
+      { name: 'mem_read', portType: bitType() },
+      { name: 'mem_write', portType: bitType() },
+      { name: 'reg_write', portType: bitType() },
+      { name: 'mem_to_reg', portType: bitType() },
+      { name: 'branch', portType: bitType() },
+      { name: 'jump', portType: bitType() },
+      { name: 'lui', portType: bitType() },
+      { name: 'auipc', portType: bitType() },
+    ],
+    evaluate: (inputs) => {
+      const opcode = (inputs.get('opcode') as number) & 0x7F;
+      const funct3 = (inputs.get('funct3') as number) & 0x7;
+      const funct7_bit = inputs.get('funct7_bit') as boolean;
+
+      let alu_op = 0, alu_src = false, mem_read = false, mem_write = false;
+      let reg_write = false, mem_to_reg = false, branch = false, jump = false;
+      let lui = false, auipc = false;
+
+      switch (opcode) {
+        case 0x33: // R-type
+          reg_write = true;
+          switch (funct3) {
+            case 0: alu_op = funct7_bit ? 1 : 0; break; // ADD/SUB
+            case 1: alu_op = 5; break; // SLL
+            case 2: alu_op = 8; break; // SLT
+            case 3: alu_op = 9; break; // SLTU
+            case 4: alu_op = 4; break; // XOR
+            case 5: alu_op = funct7_bit ? 7 : 6; break; // SRA/SRL
+            case 6: alu_op = 3; break; // OR
+            case 7: alu_op = 2; break; // AND
+          }
+          break;
+        case 0x13: // I-type ALU
+          reg_write = true;
+          alu_src = true;
+          switch (funct3) {
+            case 0: alu_op = 0; break; // ADDI
+            case 1: alu_op = 5; break; // SLLI
+            case 2: alu_op = 8; break; // SLTI
+            case 3: alu_op = 9; break; // SLTIU
+            case 4: alu_op = 4; break; // XORI
+            case 5: alu_op = funct7_bit ? 7 : 6; break; // SRAI/SRLI
+            case 6: alu_op = 3; break; // ORI
+            case 7: alu_op = 2; break; // ANDI
+          }
+          break;
+        case 0x03: // Load
+          reg_write = true; alu_src = true; mem_read = true; mem_to_reg = true;
+          alu_op = 0; // ADD for address calc
+          break;
+        case 0x23: // Store
+          alu_src = true; mem_write = true;
+          alu_op = 0; // ADD for address calc
+          break;
+        case 0x63: // Branch
+          branch = true;
+          alu_op = 1; // SUB for comparison
+          break;
+        case 0x6F: // JAL
+          reg_write = true; jump = true;
+          break;
+        case 0x67: // JALR
+          reg_write = true; jump = true; alu_src = true;
+          alu_op = 0; // ADD for target calc
+          break;
+        case 0x37: // LUI
+          reg_write = true; lui = true;
+          break;
+        case 0x17: // AUIPC
+          reg_write = true; auipc = true;
+          break;
+      }
+
+      const outputs = new Map<string, BitValue | BusValue>();
+      outputs.set('alu_op', alu_op);
+      outputs.set('alu_src', alu_src);
+      outputs.set('mem_read', mem_read);
+      outputs.set('mem_write', mem_write);
+      outputs.set('reg_write', reg_write);
+      outputs.set('mem_to_reg', mem_to_reg);
+      outputs.set('branch', branch);
+      outputs.set('jump', jump);
+      outputs.set('lui', lui);
+      outputs.set('auipc', auipc);
+      return outputs;
+    },
+  }),
+
+  RV32I_BranchComp: defineCombinational({
+    name: 'RV32I_BranchComp',
+    description: 'Branch comparator — evaluates branch conditions (BEQ, BNE, BLT, BGE, BLTU, BGEU) based on funct3',
+    category: 'rv32i',
+    icon: 'CMP',
+    namespace: 'rv32i',
+    inputs: [
+      { name: 'a', portType: busType(32) },
+      { name: 'b', portType: busType(32) },
+      { name: 'funct3', portType: busType(3) },
+    ],
+    outputs: [{ name: 'take_branch', portType: bitType() }],
+    evaluate: (inputs) => {
+      const a = (inputs.get('a') as number) >>> 0;
+      const b = (inputs.get('b') as number) >>> 0;
+      const funct3 = (inputs.get('funct3') as number) & 0x7;
+
+      const sa = a | 0; // signed interpretation
+      const sb = b | 0;
+
+      let take = false;
+      switch (funct3) {
+        case 0: take = a === b; break;       // BEQ
+        case 1: take = a !== b; break;       // BNE
+        case 4: take = sa < sb; break;       // BLT
+        case 5: take = sa >= sb; break;      // BGE
+        case 6: take = a < b; break;         // BLTU
+        case 7: take = a >= b; break;        // BGEU
+        default: take = false; break;
+      }
+
+      return new Map([['take_branch', take]]);
+    },
+  }),
+
+  // --- Sequential RV32I primitives ---
+
+  RV32I_RegisterFile: defineSequential({
+    name: 'RV32I_RegisterFile',
+    description: 'RV32I register file — 32 × 32-bit registers, x0 hardwired to zero, dual read ports, single write port',
+    category: 'rv32i',
+    icon: 'RF',
+    namespace: 'rv32i',
+    inputs: [
+      { name: 'rs1', portType: busType(5) },
+      { name: 'rs2', portType: busType(5) },
+      { name: 'rd', portType: busType(5) },
+      { name: 'write_data', portType: busType(32) },
+      { name: 'we', portType: bitType() },
+    ],
+    outputs: [
+      { name: 'read1', portType: busType(32) },
+      { name: 'read2', portType: busType(32) },
+    ],
+    clocks: [{ name: 'clk' }],
+    state: [
+      {
+        id: 'regfile-state',
+        name: 'registers',
+        stateType: { kind: 'memory', addressWidth: 5, dataWidth: 32 },
+        initialValue: { data: new Map(), addressWidth: 5, dataWidth: 32 },
+      },
+    ],
+    evaluate: (inputs, currentState) => {
+      const regs = (currentState ?? new Map()) as Map<number, number>;
+      const rs1 = (inputs.get('rs1') as number) & 0x1F;
+      const rs2 = (inputs.get('rs2') as number) & 0x1F;
+
+      // x0 is always 0
+      const read1 = rs1 === 0 ? 0 : ((regs.get(rs1) ?? 0) >>> 0);
+      const read2 = rs2 === 0 ? 0 : ((regs.get(rs2) ?? 0) >>> 0);
+
+      return new Map([
+        ['read1', read1],
+        ['read2', read2],
+      ]);
+    },
+    updateState: (inputs, currentState, clockEdges) => {
+      const regs = (currentState ?? new Map()) as Map<number, number>;
+      const edge = clockEdges['clk'] ?? 'none';
+      const we = inputs.get('we') as boolean;
+      const rd = (inputs.get('rd') as number) & 0x1F;
+
+      if (edge === 'rising' && we && rd !== 0) {
+        const writeData = ((inputs.get('write_data') as number) ?? 0) >>> 0;
+        const newRegs = new Map(regs);
+        newRegs.set(rd, writeData);
+        return newRegs;
+      }
+
+      return regs;
+    },
+    outputDependency: 'state+inputs',
+  }),
+
+  RV32I_InstrMem: defineSequential({
+    name: 'RV32I_InstrMem',
+    description: 'Instruction memory (ROM) — byte-addressable, returns 32-bit little-endian instruction at given address',
+    category: 'rv32i',
+    icon: 'IM',
+    namespace: 'rv32i',
+    inputs: [{ name: 'addr', portType: busType(32) }],
+    outputs: [{ name: 'instruction', portType: busType(32) }],
+    clocks: [],
+    state: [
+      {
+        id: 'instrmem-state',
+        name: 'memory',
+        stateType: { kind: 'memory', addressWidth: 32, dataWidth: 8 },
+        initialValue: { data: new Map(), addressWidth: 32, dataWidth: 8 },
+      },
+    ],
+    evaluate: (inputs, currentState) => {
+      const memory = (currentState ?? new Map()) as Map<number, number>;
+      const addr = ((inputs.get('addr') as number) ?? 0) >>> 0;
+
+      // Read 4 bytes little-endian
+      const b0 = memory.get(addr) ?? 0;
+      const b1 = memory.get((addr + 1) >>> 0) ?? 0;
+      const b2 = memory.get((addr + 2) >>> 0) ?? 0;
+      const b3 = memory.get((addr + 3) >>> 0) ?? 0;
+      const instruction = ((b3 << 24) | (b2 << 16) | (b1 << 8) | b0) >>> 0;
+
+      return new Map([['instruction', instruction]]);
+    },
+    updateState: (_inputs, currentState, _clockEdges) => {
+      return currentState;
+    },
+    outputDependency: 'state+inputs',
+  }),
+
+  RV32I_DataMem: defineSequential({
+    name: 'RV32I_DataMem',
+    description: 'Data memory — byte-addressable, supports LB/LH/LW/LBU/LHU loads and SB/SH/SW stores based on funct3',
+    category: 'rv32i',
+    icon: 'DM',
+    namespace: 'rv32i',
+    inputs: [
+      { name: 'addr', portType: busType(32) },
+      { name: 'write_data', portType: busType(32) },
+      { name: 'mem_read', portType: bitType() },
+      { name: 'mem_write', portType: bitType() },
+      { name: 'funct3', portType: busType(3) },
+    ],
+    outputs: [{ name: 'read_data', portType: busType(32) }],
+    clocks: [{ name: 'clk' }],
+    state: [
+      {
+        id: 'datamem-state',
+        name: 'memory',
+        stateType: { kind: 'memory', addressWidth: 32, dataWidth: 8 },
+        initialValue: { data: new Map(), addressWidth: 32, dataWidth: 8 },
+      },
+    ],
+    evaluate: (inputs, currentState) => {
+      const memory = (currentState ?? new Map()) as Map<number, number>;
+      const memRead = inputs.get('mem_read') as boolean;
+
+      if (!memRead) {
+        return new Map([['read_data', 0]]);
+      }
+
+      const addr = ((inputs.get('addr') as number) ?? 0) >>> 0;
+      const funct3 = (inputs.get('funct3') as number) & 0x7;
+
+      let data: number;
+      switch (funct3) {
+        case 0: { // LB (sign-extend byte)
+          const b = memory.get(addr) ?? 0;
+          data = ((b << 24) >> 24) >>> 0;
+          break;
+        }
+        case 1: { // LH (sign-extend halfword)
+          const lo = memory.get(addr) ?? 0;
+          const hi = memory.get((addr + 1) >>> 0) ?? 0;
+          const hw = (hi << 8) | lo;
+          data = ((hw << 16) >> 16) >>> 0;
+          break;
+        }
+        case 2: { // LW (word)
+          const b0 = memory.get(addr) ?? 0;
+          const b1 = memory.get((addr + 1) >>> 0) ?? 0;
+          const b2 = memory.get((addr + 2) >>> 0) ?? 0;
+          const b3 = memory.get((addr + 3) >>> 0) ?? 0;
+          data = ((b3 << 24) | (b2 << 16) | (b1 << 8) | b0) >>> 0;
+          break;
+        }
+        case 4: { // LBU (zero-extend byte)
+          data = memory.get(addr) ?? 0;
+          break;
+        }
+        case 5: { // LHU (zero-extend halfword)
+          const lo = memory.get(addr) ?? 0;
+          const hi = memory.get((addr + 1) >>> 0) ?? 0;
+          data = ((hi << 8) | lo) >>> 0;
+          break;
+        }
+        default:
+          data = 0;
+          break;
+      }
+
+      return new Map([['read_data', data]]);
+    },
+    updateState: (inputs, currentState, clockEdges) => {
+      const memory = (currentState ?? new Map()) as Map<number, number>;
+      const edge = clockEdges['clk'] ?? 'none';
+      const memWrite = inputs.get('mem_write') as boolean;
+
+      if (edge !== 'rising' || !memWrite) {
+        return memory;
+      }
+
+      const addr = ((inputs.get('addr') as number) ?? 0) >>> 0;
+      const writeData = ((inputs.get('write_data') as number) ?? 0) >>> 0;
+      const funct3 = (inputs.get('funct3') as number) & 0x7;
+      const newMemory = new Map(memory);
+
+      switch (funct3) {
+        case 0: // SB (store byte)
+          newMemory.set(addr, writeData & 0xFF);
+          break;
+        case 1: // SH (store halfword)
+          newMemory.set(addr, writeData & 0xFF);
+          newMemory.set((addr + 1) >>> 0, (writeData >>> 8) & 0xFF);
+          break;
+        case 2: // SW (store word)
+          newMemory.set(addr, writeData & 0xFF);
+          newMemory.set((addr + 1) >>> 0, (writeData >>> 8) & 0xFF);
+          newMemory.set((addr + 2) >>> 0, (writeData >>> 16) & 0xFF);
+          newMemory.set((addr + 3) >>> 0, (writeData >>> 24) & 0xFF);
+          break;
+        default:
+          break;
+      }
+
+      return newMemory;
+    },
+    outputDependency: 'state+inputs',
+  }),
 };
 
 // ============================================================================
