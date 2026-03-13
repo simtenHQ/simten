@@ -1,7 +1,10 @@
 // Single-Cycle RV32I CPU
 //
-// Wires all 8 RV32I primitives + PC register + muxes + adder into a complete
-// single-cycle CPU. Each tick executes one instruction.
+// Wires all RV32I primitives + PC register into a complete single-cycle CPU.
+// Each tick executes one instruction.
+//
+// Uses RV32I_WritebackMux and RV32I_NextPCMux for clean datapath
+// (matches real RTL implementations with unified mux trees).
 //
 // Programs are loaded at runtime into InstrMem via the memory data store.
 // Use the InstrMem node's drag-drop zone or "Compile & Load" button.
@@ -21,13 +24,10 @@ circuit RV32I_CPU {
     node pc: Register(width=32)
     node pc_plus4: Adder(width=32)
     node pc_we: Constant(value=1, width=1)
-
-    // PC + 4
-    connect pc.q -> pc_plus4.a
     node four: Constant(value=4, width=32)
-    connect four.out -> pc_plus4.b
 
-    // PC always enabled
+    connect pc.q -> pc_plus4.a
+    connect four.out -> pc_plus4.b
     connect pc_we.out -> pc.we
 
     // ========================================================================
@@ -103,84 +103,48 @@ circuit RV32I_CPU {
     connect decode.funct3 -> dmem.funct3
 
     // ========================================================================
-    // Write-back Mux (ALU result or memory data)
+    // Writeback — unified mux (ALU / load / PC+4 / imm / PC+imm)
     // ========================================================================
-    node wb_mux: Mux(width=32)
-    connect alu.result -> wb_mux.in0
-    connect dmem.read_data -> wb_mux.in1
-    connect control.mem_to_reg -> wb_mux.sel
-
-    // ========================================================================
-    // LUI / AUIPC Mux
-    // ========================================================================
-    // For LUI: write immediate directly
-    // For AUIPC: write PC + immediate
-    // Otherwise: write wb_mux output
-    node lui_mux: Mux(width=32)
-    connect wb_mux.out -> lui_mux.in0
-    connect immgen.immediate -> lui_mux.in1
-    connect control.lui -> lui_mux.sel
-
     node pc_plus_imm: Adder(width=32)
     connect pc.q -> pc_plus_imm.a
     connect immgen.immediate -> pc_plus_imm.b
 
-    node auipc_mux: Mux(width=32)
-    connect lui_mux.out -> auipc_mux.in0
-    connect pc_plus_imm.sum -> auipc_mux.in1
-    connect control.auipc -> auipc_mux.sel
+    node wb_mux: RV32I_WritebackMux
+    connect alu.result -> wb_mux.alu_result
+    connect dmem.read_data -> wb_mux.load_data
+    connect pc_plus4.sum -> wb_mux.pc_plus4
+    connect immgen.immediate -> wb_mux.immediate
+    connect pc_plus_imm.sum -> wb_mux.pc_plus_imm
+    connect control.mem_to_reg -> wb_mux.mem_to_reg
+    connect control.lui -> wb_mux.lui
+    connect control.auipc -> wb_mux.auipc
+    connect control.jump -> wb_mux.jump
+
+    connect wb_mux.write_data -> regfile.write_data
 
     // ========================================================================
-    // JAL/JALR: write PC+4 to rd
-    // ========================================================================
-    node jump_wb_mux: Mux(width=32)
-    connect auipc_mux.out -> jump_wb_mux.in0
-    connect pc_plus4.sum -> jump_wb_mux.in1
-    connect control.jump -> jump_wb_mux.sel
-
-    connect jump_wb_mux.out -> regfile.write_data
-
-    // ========================================================================
-    // Branch/Jump target calculation
+    // Next PC — unified mux (PC+4 / branch / JAL / JALR)
     // ========================================================================
     node branch_target: Adder(width=32)
     connect pc.q -> branch_target.a
     connect immgen.immediate -> branch_target.b
 
-    // Branch taken?
-    node branch_and: And
-    connect control.branch -> branch_and.a
-    connect branch_comp.take_branch -> branch_and.b
-
-    // PC next mux: PC+4 or branch target
-    node branch_mux: Mux(width=32)
-    connect pc_plus4.sum -> branch_mux.in0
-    connect branch_target.sum -> branch_mux.in1
-    connect branch_and.out -> branch_mux.sel
-
-    // Jump mux: branch_mux result or jump target
-    // JAL: target = PC + imm (same as branch_target)
-    // JALR: target = (rs1 + imm) & ~1 = ALU result & ~1
     node jalr_target: BusAnd(width=32)
     connect alu.result -> jalr_target.a
     node jalr_mask: Constant(value=4294967294, width=32)
     connect jalr_mask.out -> jalr_target.b
 
-    // Choose between JAL target (PC+imm) and JALR target (ALU result)
-    // For simplicity, use opcode to distinguish: JALR = opcode 0x67
-    // We already have jump signal; use alu_src as proxy (JALR has alu_src=true, JAL doesn't)
-    node jal_target_mux: Mux(width=32)
-    connect branch_target.sum -> jal_target_mux.in0
-    connect jalr_target.out -> jal_target_mux.in1
-    connect control.alu_src -> jal_target_mux.sel
+    node next_pc: RV32I_NextPCMux
+    connect pc_plus4.sum -> next_pc.pc_plus4
+    connect branch_target.sum -> next_pc.branch_target
+    connect branch_target.sum -> next_pc.jal_target
+    connect jalr_target.out -> next_pc.jalr_target
+    connect control.branch -> next_pc.branch
+    connect branch_comp.take_branch -> next_pc.take_branch
+    connect control.jump -> next_pc.jump
+    connect control.is_jalr -> next_pc.is_jalr
 
-    node jump_mux: Mux(width=32)
-    connect branch_mux.out -> jump_mux.in0
-    connect jal_target_mux.out -> jump_mux.in1
-    connect control.jump -> jump_mux.sel
-
-    // Feed back to PC
-    connect jump_mux.out -> pc.data
+    connect next_pc.next_pc -> pc.data
 
     // Observable outputs
     connect pc.q -> pc_out

@@ -1775,6 +1775,7 @@ circuit Comparator {
       { name: 'jump', portType: bitType() },
       { name: 'lui', portType: bitType() },
       { name: 'auipc', portType: bitType() },
+      { name: 'is_jalr', portType: bitType() },
     ],
     evaluate: (inputs) => {
       const opcode = (inputs.get('opcode') as number) & 0x7F;
@@ -1783,7 +1784,7 @@ circuit Comparator {
 
       let alu_op = 0, alu_src = false, mem_read = false, mem_write = false;
       let reg_write = false, mem_to_reg = false, branch = false, jump = false;
-      let lui = false, auipc = false;
+      let lui = false, auipc = false, is_jalr = false;
 
       switch (opcode) {
         case 0x33: // R-type
@@ -1829,7 +1830,7 @@ circuit Comparator {
           reg_write = true; jump = true;
           break;
         case 0x67: // JALR
-          reg_write = true; jump = true; alu_src = true;
+          reg_write = true; jump = true; alu_src = true; is_jalr = true;
           alu_op = 0; // ADD for target calc
           break;
         case 0x37: // LUI
@@ -1851,6 +1852,7 @@ circuit Comparator {
       outputs.set('jump', jump);
       outputs.set('lui', lui);
       outputs.set('auipc', auipc);
+      outputs.set('is_jalr', is_jalr);
       return outputs;
     },
   }),
@@ -2094,6 +2096,199 @@ circuit Comparator {
       return newMemory;
     },
     outputDependency: 'state+inputs',
+  }),
+
+  // ==========================================================================
+  // RV32I Writeback Mux — collapses lui_mux → auipc_mux → jump_wb_mux chain
+  // ==========================================================================
+  RV32I_WritebackMux: defineCombinational({
+    name: 'RV32I_WritebackMux',
+    description: 'Unified writeback mux — selects ALU result, load data, PC+4, immediate, or PC+imm',
+    category: 'rv32i',
+    icon: 'WB',
+    namespace: 'rv32i',
+    inputs: [
+      { name: 'alu_result', portType: busType(32) },
+      { name: 'load_data', portType: busType(32) },
+      { name: 'pc_plus4', portType: busType(32) },
+      { name: 'immediate', portType: busType(32) },
+      { name: 'pc_plus_imm', portType: busType(32) },
+      { name: 'mem_to_reg', portType: bitType() },
+      { name: 'lui', portType: bitType() },
+      { name: 'auipc', portType: bitType() },
+      { name: 'jump', portType: bitType() },
+    ],
+    outputs: [
+      { name: 'write_data', portType: busType(32) },
+    ],
+    evaluate: (inputs) => {
+      const aluResult = (inputs.get('alu_result') as number) ?? 0;
+      const loadData = (inputs.get('load_data') as number) ?? 0;
+      const pcPlus4 = (inputs.get('pc_plus4') as number) ?? 0;
+      const immediate = (inputs.get('immediate') as number) ?? 0;
+      const pcPlusImm = (inputs.get('pc_plus_imm') as number) ?? 0;
+      const memToReg = inputs.get('mem_to_reg') as boolean;
+      const lui = inputs.get('lui') as boolean;
+      const auipc = inputs.get('auipc') as boolean;
+      const jump = inputs.get('jump') as boolean;
+
+      // Priority: jump > auipc > lui > mem_to_reg > alu_result
+      let writeData: number;
+      if (jump) {
+        writeData = pcPlus4;        // JAL/JALR: link register = PC+4
+      } else if (auipc) {
+        writeData = pcPlusImm;      // AUIPC: rd = PC + imm
+      } else if (lui) {
+        writeData = immediate;      // LUI: rd = immediate
+      } else if (memToReg) {
+        writeData = loadData;       // Load: rd = memory data
+      } else {
+        writeData = aluResult;      // R-type/I-type: rd = ALU result
+      }
+
+      return new Map([['write_data', (writeData | 0)]]);
+    },
+  }),
+
+  // ==========================================================================
+  // RV32I Next-PC Mux — collapses branch_mux → jal_target_mux → jump_mux chain
+  // ==========================================================================
+  RV32I_NextPCMux: defineCombinational({
+    name: 'RV32I_NextPCMux',
+    description: 'Unified next-PC mux — selects PC+4, branch target, JAL target, or JALR target',
+    category: 'rv32i',
+    icon: 'PC',
+    namespace: 'rv32i',
+    inputs: [
+      { name: 'pc_plus4', portType: busType(32) },
+      { name: 'branch_target', portType: busType(32) },
+      { name: 'jal_target', portType: busType(32) },
+      { name: 'jalr_target', portType: busType(32) },
+      { name: 'branch', portType: bitType() },
+      { name: 'take_branch', portType: bitType() },
+      { name: 'jump', portType: bitType() },
+      { name: 'is_jalr', portType: bitType() },
+    ],
+    outputs: [
+      { name: 'next_pc', portType: busType(32) },
+    ],
+    evaluate: (inputs) => {
+      const pcPlus4 = (inputs.get('pc_plus4') as number) ?? 0;
+      const branchTarget = (inputs.get('branch_target') as number) ?? 0;
+      const jalTarget = (inputs.get('jal_target') as number) ?? 0;
+      const jalrTarget = (inputs.get('jalr_target') as number) ?? 0;
+      const branch = inputs.get('branch') as boolean;
+      const takeBranch = inputs.get('take_branch') as boolean;
+      const jump = inputs.get('jump') as boolean;
+      const isJalr = inputs.get('is_jalr') as boolean;
+
+      let nextPC: number;
+      if (jump) {
+        nextPC = isJalr ? (jalrTarget & ~1) : jalTarget;
+      } else if (branch && takeBranch) {
+        nextPC = branchTarget;
+      } else {
+        nextPC = pcPlus4;
+      }
+
+      return new Map([['next_pc', (nextPC >>> 0)]]);
+    },
+  }),
+
+  // ==========================================================================
+  // RV32I Forwarding Unit — detects data hazards and selects forwarding paths
+  // ==========================================================================
+  RV32I_ForwardingUnit: defineCombinational({
+    name: 'RV32I_ForwardingUnit',
+    description: 'Forwarding unit — detects EX/MEM hazards and outputs forwarding mux selects',
+    category: 'rv32i',
+    icon: 'FWD',
+    namespace: 'rv32i',
+    inputs: [
+      { name: 'id_rs1', portType: busType(5) },
+      { name: 'id_rs2', portType: busType(5) },
+      { name: 'ex_rd', portType: busType(5) },
+      { name: 'ex_reg_write', portType: bitType() },
+      { name: 'mem_rd', portType: busType(5) },
+      { name: 'mem_reg_write', portType: bitType() },
+    ],
+    outputs: [
+      // 0 = no forwarding, 1 = forward from EX, 2 = forward from MEM
+      { name: 'forward_a', portType: busType(2) },
+      { name: 'forward_b', portType: busType(2) },
+    ],
+    evaluate: (inputs) => {
+      const rs1 = (inputs.get('id_rs1') as number) & 0x1F;
+      const rs2 = (inputs.get('id_rs2') as number) & 0x1F;
+      const exRd = (inputs.get('ex_rd') as number) & 0x1F;
+      const exRegWrite = inputs.get('ex_reg_write') as boolean;
+      const memRd = (inputs.get('mem_rd') as number) & 0x1F;
+      const memRegWrite = inputs.get('mem_reg_write') as boolean;
+
+      let forwardA = 0;
+      let forwardB = 0;
+
+      // EX hazard has priority over MEM hazard
+      if (exRegWrite && exRd !== 0 && exRd === rs1) {
+        forwardA = 1;
+      } else if (memRegWrite && memRd !== 0 && memRd === rs1) {
+        forwardA = 2;
+      }
+
+      if (exRegWrite && exRd !== 0 && exRd === rs2) {
+        forwardB = 1;
+      } else if (memRegWrite && memRd !== 0 && memRd === rs2) {
+        forwardB = 2;
+      }
+
+      return new Map([
+        ['forward_a', forwardA],
+        ['forward_b', forwardB],
+      ]);
+    },
+  }),
+
+  // ==========================================================================
+  // RV32I Hazard Detection Unit — stalls pipeline on load-use hazards
+  // ==========================================================================
+  RV32I_HazardUnit: defineCombinational({
+    name: 'RV32I_HazardUnit',
+    description: 'Hazard detection — stalls on load-use hazards, flushes on branches/jumps',
+    category: 'rv32i',
+    icon: 'HAZ',
+    namespace: 'rv32i',
+    inputs: [
+      { name: 'if_rs1', portType: busType(5) },
+      { name: 'if_rs2', portType: busType(5) },
+      { name: 'id_rd', portType: busType(5) },
+      { name: 'id_mem_read', portType: bitType() },
+      { name: 'branch_taken', portType: bitType() },
+      { name: 'jump', portType: bitType() },
+    ],
+    outputs: [
+      { name: 'stall', portType: bitType() },
+      { name: 'flush', portType: bitType() },
+    ],
+    evaluate: (inputs) => {
+      const ifRs1 = (inputs.get('if_rs1') as number) & 0x1F;
+      const ifRs2 = (inputs.get('if_rs2') as number) & 0x1F;
+      const idRd = (inputs.get('id_rd') as number) & 0x1F;
+      const idMemRead = inputs.get('id_mem_read') as boolean;
+      const branchTaken = inputs.get('branch_taken') as boolean;
+      const jump = inputs.get('jump') as boolean;
+
+      // Load-use hazard: instruction in ID is a load, and IF needs that register
+      const stall = idMemRead && idRd !== 0 &&
+        (idRd === ifRs1 || idRd === ifRs2);
+
+      // Flush on branch taken or jump (squash speculative fetch)
+      const flush = branchTaken || jump;
+
+      return new Map([
+        ['stall', stall],
+        ['flush', flush],
+      ]);
+    },
   }),
 };
 
