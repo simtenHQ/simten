@@ -125,6 +125,7 @@ export function getPrimitivesByCategory(): Map<string, string[]> {
 export const PRIMITIVE_NAMESPACES = {
   CORE: 'core',
   RV32I: 'rv32i',
+  ETHERNET: 'ethernet',
 } as const;
 
 /**
@@ -138,6 +139,10 @@ export const NAMESPACE_INFO: Record<string, { label: string; description: string
   [PRIMITIVE_NAMESPACES.RV32I]: {
     label: 'RISC-V (RV32I)',
     description: 'RV32I base integer instruction set components',
+  },
+  [PRIMITIVE_NAMESPACES.ETHERNET]: {
+    label: 'Ethernet (802.3)',
+    description: 'IEEE 802.3 Ethernet frame parser pipeline components',
   },
 };
 

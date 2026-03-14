@@ -16,6 +16,7 @@ import { RAMNode } from "../editor/components/nodes/RAMNode";
 import { ROMNode } from "../editor/components/nodes/ROMNode";
 import { ConsoleNode } from "../editor/components/nodes/ConsoleNode";
 import { RV32IInstrMemNode } from "../editor/components/nodes/RV32IInstrMemNode";
+import { EthFrameInputNode } from "../editor/components/nodes/EthFrameInputNode";
 
 
 /**
@@ -32,6 +33,7 @@ export const EMBED_NODE_TYPES: NodeTypes = {
   ramNode: LogicGateNode,
   romNode: LogicGateNode,
   rv32iInstrMemNode: LogicGateNode,
+  ethFrameInputNode: LogicGateNode,
   consoleNode: EmbedConsoleNode,
   screenNode: EmbedScreenNode,
   rasterDisplayNode: EmbedScreenNode,
@@ -62,6 +64,7 @@ export const FULL_NODE_TYPES: NodeTypes = {
   ramNode: RAMNode,
   romNode: ROMNode,
   rv32iInstrMemNode: RV32IInstrMemNode,
+  ethFrameInputNode: EthFrameInputNode,
   consoleNode: ConsoleNode,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
 } as any as NodeTypes;

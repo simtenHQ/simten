@@ -134,6 +134,22 @@ function defineSequential(config: {
 // ============================================================================
 
 // ============================================================================
+// IEEE 802.3 CRC-32 Lookup Table (reflected polynomial 0xEDB88320)
+// ============================================================================
+
+const ETH_CRC32_TABLE: number[] = (() => {
+  const table: number[] = new Array(256);
+  for (let i = 0; i < 256; i++) {
+    let crc = i;
+    for (let j = 0; j < 8; j++) {
+      crc = (crc & 1) ? ((crc >>> 1) ^ 0xEDB88320) >>> 0 : (crc >>> 1) >>> 0;
+    }
+    table[i] = crc >>> 0;
+  }
+  return table;
+})();
+
+// ============================================================================
 // Primitive Definitions
 // ============================================================================
 
@@ -2289,6 +2305,493 @@ circuit Comparator {
         ['flush', flush],
       ]);
     },
+  }),
+
+  // ==========================================================================
+  // IEEE 802.3 Ethernet Frame Parser Primitives
+  // ==========================================================================
+  //
+  // Models the receive path of a 1G Ethernet MAC + parser pipeline.
+  // 32-bit data bus (GMII), 4 bytes per clock cycle.
+  // AXI-Stream-like interface: tdata/tkeep/tvalid/tlast.
+  //
+  // PHY layer (preamble/SFD stripping) is below our abstraction boundary.
+  // Frame data starts at byte 0 of the destination MAC address.
+  // ==========================================================================
+
+  // --------------------------------------------------------------------------
+  // Eth_ProtocolDecoder — EtherType → protocol flags (combinational)
+  // --------------------------------------------------------------------------
+  Eth_ProtocolDecoder: defineCombinational({
+    name: 'Eth_ProtocolDecoder',
+    description: 'EtherType protocol decoder — identifies IPv4, IPv6, ARP, VLAN, MPLS',
+    category: 'ethernet',
+    icon: 'EP',
+    namespace: 'ethernet',
+    inputs: [
+      { name: 'ethertype', portType: busType(16) },
+    ],
+    outputs: [
+      { name: 'is_ipv4', portType: bitType() },
+      { name: 'is_ipv6', portType: bitType() },
+      { name: 'is_arp', portType: bitType() },
+      { name: 'is_vlan', portType: bitType() },
+      { name: 'is_mpls', portType: bitType() },
+    ],
+    evaluate: (inputs) => {
+      const ethertype = (inputs.get('ethertype') as number) & 0xFFFF;
+      return new Map<string, boolean>([
+        ['is_ipv4', ethertype === 0x0800],
+        ['is_ipv6', ethertype === 0x86DD],
+        ['is_arp',  ethertype === 0x0806],
+        ['is_vlan', ethertype === 0x8100],
+        ['is_mpls', ethertype === 0x8847],
+      ]);
+    },
+  }),
+
+  // --------------------------------------------------------------------------
+  // Eth_AddrClassifier — MAC address classification (combinational)
+  // --------------------------------------------------------------------------
+  Eth_AddrClassifier: defineCombinational({
+    name: 'Eth_AddrClassifier',
+    description: 'MAC address classifier — broadcast, multicast, unicast detection',
+    category: 'ethernet',
+    icon: 'EA',
+    namespace: 'ethernet',
+    inputs: [
+      { name: 'dst_mac_hi', portType: busType(16) },
+      { name: 'dst_mac_lo', portType: busType(32) },
+    ],
+    outputs: [
+      { name: 'is_broadcast', portType: bitType() },
+      { name: 'is_multicast', portType: bitType() },
+      { name: 'is_unicast', portType: bitType() },
+    ],
+    evaluate: (inputs) => {
+      const hi = (inputs.get('dst_mac_hi') as number) & 0xFFFF;
+      const lo = ((inputs.get('dst_mac_lo') as number) & 0xFFFFFFFF) >>> 0;
+
+      // Broadcast: FF:FF:FF:FF:FF:FF
+      const isBroadcast = hi === 0xFFFF && lo === (0xFFFFFFFF >>> 0);
+      // Multicast: bit 0 of first byte (I/G bit) — first byte is lo[31:24]
+      const isMulticast = !isBroadcast && ((lo >>> 24) & 1) === 1;
+      const isUnicast = !isBroadcast && !isMulticast;
+
+      return new Map<string, boolean>([
+        ['is_broadcast', isBroadcast],
+        ['is_multicast', isMulticast],
+        ['is_unicast', isUnicast],
+      ]);
+    },
+  }),
+
+  // --------------------------------------------------------------------------
+  // Eth_FrameInput — MAC receive interface (sequential, memory-backed)
+  // --------------------------------------------------------------------------
+  Eth_FrameInput: defineSequential({
+    name: 'Eth_FrameInput',
+    description: 'MAC RX interface — streams frame bytes as 32-bit AXI-Stream words',
+    category: 'ethernet',
+    icon: 'EI',
+    namespace: 'ethernet',
+    inputs: [
+      { name: 'enable', portType: bitType() },
+      { name: 'reset', portType: bitType() },
+    ],
+    outputs: [
+      { name: 'tdata', portType: busType(32) },
+      { name: 'tkeep', portType: busType(4) },
+      { name: 'tvalid', portType: bitType() },
+      { name: 'tlast', portType: bitType() },
+      { name: 'byte_offset', portType: busType(16) },
+    ],
+    clocks: [],
+    state: [
+      {
+        id: 'frameinput-state',
+        name: 'memory',
+        stateType: { kind: 'memory', addressWidth: 16, dataWidth: 8 },
+        initialValue: { data: new Map(), addressWidth: 16, dataWidth: 8 },
+      },
+    ],
+    evaluate: (_inputs, currentState) => {
+      const memory = (currentState ?? new Map()) as Map<number, number>;
+
+      // Output registers (stored by updateState, read by evaluate after commit)
+      const REG_OUT_TDATA = 0x10003;
+      const REG_OUT_TKEEP = 0x10004;
+      const REG_OUT_TVALID = 0x10005;
+      const REG_OUT_TLAST = 0x10006;
+      const REG_OUT_OFFSET = 0x10007;
+
+      const tdata = (memory.get(REG_OUT_TDATA) ?? 0) >>> 0;
+      const tkeep = (memory.get(REG_OUT_TKEEP) ?? 0) & 0xF;
+      const tvalid = (memory.get(REG_OUT_TVALID) ?? 0) !== 0;
+      const tlast = (memory.get(REG_OUT_TLAST) ?? 0) !== 0;
+      const byteOffset = (memory.get(REG_OUT_OFFSET) ?? 0) & 0xFFFF;
+
+      return new Map<string, number | boolean>([
+        ['tdata', tdata],
+        ['tkeep', tkeep],
+        ['tvalid', tvalid],
+        ['tlast', tlast],
+        ['byte_offset', byteOffset],
+      ]);
+    },
+    updateState: (inputs, currentState) => {
+      const memory = (currentState ?? new Map()) as Map<number, number>;
+      const enable = inputs.get('enable') as boolean;
+      const reset = inputs.get('reset') as boolean;
+
+      const REG_READ_PTR = 0x10000;
+      const REG_FRAME_LEN = 0x10001;
+      const REG_INITIALIZED = 0x10002;
+      const REG_OUT_TDATA = 0x10003;
+      const REG_OUT_TKEEP = 0x10004;
+      const REG_OUT_TVALID = 0x10005;
+      const REG_OUT_TLAST = 0x10006;
+      const REG_OUT_OFFSET = 0x10007;
+
+      if (reset) {
+        const newMem = new Map(memory);
+        newMem.set(REG_READ_PTR, 0);
+        newMem.set(REG_INITIALIZED, 0);
+        newMem.set(REG_OUT_TVALID, 0);
+        newMem.set(REG_OUT_TLAST, 0);
+        return newMem;
+      }
+
+      if (!enable) {
+        const newMem = new Map(memory);
+        newMem.set(REG_OUT_TVALID, 0);
+        return newMem;
+      }
+
+      const newMem = new Map(memory);
+
+      // Initialize frame length on first access
+      if (!(memory.get(REG_INITIALIZED) ?? 0)) {
+        let maxAddr = -1;
+        for (const addr of memory.keys()) {
+          if (addr < 0x10000 && addr > maxAddr) maxAddr = addr;
+        }
+        newMem.set(REG_FRAME_LEN, maxAddr + 1);
+        newMem.set(REG_INITIALIZED, 1);
+      }
+
+      const frameLength = newMem.get(REG_FRAME_LEN) ?? 0;
+      const readPtr = memory.get(REG_READ_PTR) ?? 0;
+
+      if (readPtr >= frameLength || frameLength === 0) {
+        // No more data
+        newMem.set(REG_OUT_TDATA, 0);
+        newMem.set(REG_OUT_TKEEP, 0);
+        newMem.set(REG_OUT_TVALID, 0);
+        newMem.set(REG_OUT_TLAST, 0);
+        newMem.set(REG_OUT_OFFSET, readPtr & 0xFFFF);
+        return newMem;
+      }
+
+      // Read up to 4 bytes big-endian (network byte order)
+      const remaining = frameLength - readPtr;
+      const bytesToRead = Math.min(4, remaining);
+      let tdata = 0;
+      let tkeep = 0;
+      for (let i = 0; i < bytesToRead; i++) {
+        const b = memory.get(readPtr + i) ?? 0;
+        tdata = (tdata | ((b & 0xFF) << (24 - i * 8))) >>> 0;
+        tkeep |= (1 << (3 - i));
+      }
+      const isLast = readPtr + bytesToRead >= frameLength;
+
+      newMem.set(REG_OUT_TDATA, tdata);
+      newMem.set(REG_OUT_TKEEP, tkeep);
+      newMem.set(REG_OUT_TVALID, 1);
+      newMem.set(REG_OUT_TLAST, isLast ? 1 : 0);
+      newMem.set(REG_OUT_OFFSET, readPtr & 0xFFFF);
+      newMem.set(REG_READ_PTR, readPtr + bytesToRead);
+
+      return newMem;
+    },
+    outputDependency: 'state+inputs',
+  }),
+
+  // --------------------------------------------------------------------------
+  // Eth_FrameParser — Main parse FSM (sequential, memory-backed)
+  // --------------------------------------------------------------------------
+  Eth_FrameParser: defineSequential({
+    name: 'Eth_FrameParser',
+    description: 'Ethernet frame parser FSM — extracts MAC addresses, EtherType, VLAN from AXI-Stream',
+    category: 'ethernet',
+    icon: 'EF',
+    namespace: 'ethernet',
+    inputs: [
+      { name: 'tdata', portType: busType(32) },
+      { name: 'tkeep', portType: busType(4) },
+      { name: 'tvalid', portType: bitType() },
+      { name: 'tlast', portType: bitType() },
+    ],
+    outputs: [
+      { name: 'dst_mac_hi', portType: busType(16) },
+      { name: 'dst_mac_lo', portType: busType(32) },
+      { name: 'dst_mac_valid', portType: bitType() },
+      { name: 'src_mac_hi', portType: busType(16) },
+      { name: 'src_mac_lo', portType: busType(32) },
+      { name: 'src_mac_valid', portType: bitType() },
+      { name: 'ethertype', portType: busType(16) },
+      { name: 'ethertype_valid', portType: bitType() },
+      { name: 'has_vlan', portType: bitType() },
+      { name: 'vlan_tci', portType: busType(16) },
+      { name: 'vlan_valid', portType: bitType() },
+      { name: 'payload_valid', portType: bitType() },
+      { name: 'frame_done', portType: bitType() },
+      { name: 'frame_length', portType: busType(16) },
+      { name: 'parse_state', portType: busType(4) },
+    ],
+    clocks: [],
+    state: [
+      {
+        id: 'frameparser-state',
+        name: 'registers',
+        stateType: { kind: 'memory', addressWidth: 8, dataWidth: 32 },
+        initialValue: { data: new Map(), addressWidth: 8, dataWidth: 32 },
+      },
+    ],
+    evaluate: (_inputs, currentState) => {
+      const regs = (currentState ?? new Map()) as Map<number, number>;
+
+      // Register addresses: 0=state, 1=dst_lo, 2=dst_hi, 3=src_lo, 4=src_hi,
+      //                     5=ethertype, 6=vlan_tci, 7=has_vlan, 8=byte_counter
+      // FSM states: IDLE=0, DST_MAC_LO=1, DST_MAC_HI_SRC=2, SRC_MAC=3,
+      //             ETHERTYPE=4, VLAN=5, PAYLOAD=6, DONE=7
+
+      const state = regs.get(0) ?? 0;
+      const dstMacLo = (regs.get(1) ?? 0) >>> 0;
+      const dstMacHi = (regs.get(2) ?? 0) & 0xFFFF;
+      const srcMacLo = (regs.get(3) ?? 0) >>> 0;
+      const srcMacHi = (regs.get(4) ?? 0) & 0xFFFF;
+      const ethertype = (regs.get(5) ?? 0) & 0xFFFF;
+      const vlanTci = (regs.get(6) ?? 0) & 0xFFFF;
+      const hasVlan = (regs.get(7) ?? 0) !== 0;
+      const byteCounter = (regs.get(8) ?? 0) & 0xFFFF;
+
+      // Validity signals based on state progression
+      const dstMacValid = state >= 2;   // DST_MAC_HI_SRC
+      const srcMacValid = state >= 4;   // ETHERTYPE
+      const ethertypeValid = state >= 6; // PAYLOAD
+      const vlanValid = hasVlan && state >= 6;
+      const payloadValid = state === 6 || state === 7;
+      const frameDone = state === 7;    // DONE
+
+      return new Map<string, number | boolean>([
+        ['dst_mac_hi', dstMacHi],
+        ['dst_mac_lo', dstMacLo],
+        ['dst_mac_valid', dstMacValid],
+        ['src_mac_hi', srcMacHi],
+        ['src_mac_lo', srcMacLo],
+        ['src_mac_valid', srcMacValid],
+        ['ethertype', ethertype],
+        ['ethertype_valid', ethertypeValid],
+        ['has_vlan', hasVlan],
+        ['vlan_tci', vlanTci],
+        ['vlan_valid', vlanValid],
+        ['payload_valid', payloadValid],
+        ['frame_done', frameDone],
+        ['frame_length', byteCounter],
+        ['parse_state', state],
+      ]);
+    },
+    updateState: (inputs, currentState) => {
+      const regs = (currentState ?? new Map()) as Map<number, number>;
+      const tdata = ((inputs.get('tdata') as number) ?? 0) >>> 0;
+      const tkeep = ((inputs.get('tkeep') as number) ?? 0) & 0xF;
+      const tvalid = inputs.get('tvalid') as boolean;
+      const tlast = inputs.get('tlast') as boolean;
+
+      if (!tvalid) return regs;
+
+      const R_STATE = 0;
+      const R_DST_MAC_LO = 1;
+      const R_DST_MAC_HI = 2;
+      const R_SRC_MAC_LO = 3;
+      const R_SRC_MAC_HI = 4;
+      const R_ETHERTYPE = 5;
+      const R_VLAN_TCI = 6;
+      const R_HAS_VLAN = 7;
+      const R_BYTE_COUNTER = 8;
+
+      const IDLE = 0, DST_MAC_LO = 1, DST_MAC_HI_SRC = 2, SRC_MAC = 3;
+      const ETHERTYPE = 4, VLAN = 5, PAYLOAD = 6, DONE = 7;
+
+      const newRegs = new Map(regs);
+      let state = regs.get(R_STATE) ?? IDLE;
+
+      // Count valid bytes: popcount(tkeep)
+      const byteCount = ((tkeep >> 3) & 1) + ((tkeep >> 2) & 1) + ((tkeep >> 1) & 1) + (tkeep & 1);
+      const prevByteCounter = regs.get(R_BYTE_COUNTER) ?? 0;
+      newRegs.set(R_BYTE_COUNTER, prevByteCounter + byteCount);
+
+      // Extract bytes from tdata (big-endian: byte0 = bits[31:24])
+      const b0 = (tdata >>> 24) & 0xFF;
+      const b1 = (tdata >>> 16) & 0xFF;
+      const b2 = (tdata >>> 8) & 0xFF;
+      const b3 = tdata & 0xFF;
+
+      switch (state) {
+        case IDLE:
+        case DST_MAC_LO: {
+          // Cycle 0: bytes [0:3] → dst_mac[0..3] → dst_mac_lo
+          newRegs.set(R_DST_MAC_LO, tdata);
+          newRegs.set(R_STATE, DST_MAC_HI_SRC);
+          break;
+        }
+        case DST_MAC_HI_SRC: {
+          // Cycle 1: bytes [4:7] → dst_mac[4..5]=tdata[31:16], src_mac[0..1]=tdata[15:0]
+          const dstHi = (b0 << 8) | b1;
+          newRegs.set(R_DST_MAC_HI, dstHi);
+          // src_mac_lo will accumulate: first 2 bytes in upper half
+          const srcPartial = ((b2 << 8) | b3) & 0xFFFF;
+          newRegs.set(R_SRC_MAC_LO, srcPartial); // temporary: upper 16 bits of what will become src info
+          newRegs.set(R_STATE, SRC_MAC);
+          break;
+        }
+        case SRC_MAC: {
+          // Cycle 2: bytes [8:11] → src_mac[2..5]
+          // src_mac = [src0, src1 (from prev cycle), src2, src3, src4, src5 (this cycle)]
+          const prevSrc01 = regs.get(R_SRC_MAC_LO) ?? 0;
+          const srcHi = prevSrc01 & 0xFFFF; // src[0], src[1]
+          newRegs.set(R_SRC_MAC_HI, srcHi);
+          newRegs.set(R_SRC_MAC_LO, tdata); // src[2], src[3], src[4], src[5]
+          newRegs.set(R_STATE, ETHERTYPE);
+          break;
+        }
+        case ETHERTYPE: {
+          // Cycle 3: bytes [12:15] → ethertype[0..1]=tdata[31:16], then 2 payload/vlan bytes
+          const etype = ((b0 << 8) | b1) & 0xFFFF;
+          if (etype === 0x8100) {
+            // 802.1Q VLAN tag: next 2 bytes are TCI
+            const vlanTci = ((b2 << 8) | b3) & 0xFFFF;
+            newRegs.set(R_VLAN_TCI, vlanTci);
+            newRegs.set(R_HAS_VLAN, 1);
+            newRegs.set(R_ETHERTYPE, etype); // temporarily store 0x8100
+            newRegs.set(R_STATE, VLAN);
+          } else {
+            newRegs.set(R_ETHERTYPE, etype);
+            newRegs.set(R_STATE, tlast ? DONE : PAYLOAD);
+          }
+          break;
+        }
+        case VLAN: {
+          // Cycle 4 (VLAN only): real ethertype in tdata[31:16]
+          const realEtype = ((b0 << 8) | b1) & 0xFFFF;
+          newRegs.set(R_ETHERTYPE, realEtype);
+          newRegs.set(R_STATE, tlast ? DONE : PAYLOAD);
+          break;
+        }
+        case PAYLOAD: {
+          if (tlast) {
+            newRegs.set(R_STATE, DONE);
+          }
+          break;
+        }
+        case DONE:
+          // Stay in done
+          break;
+      }
+
+      // On tlast, finalize frame length
+      if (tlast && state !== DONE) {
+        newRegs.set(R_BYTE_COUNTER, prevByteCounter + byteCount);
+      }
+
+      return newRegs;
+    },
+    outputDependency: 'state+inputs',
+  }),
+
+  // --------------------------------------------------------------------------
+  // Eth_CRC32 — IEEE 802.3 CRC-32 (sequential, table-driven)
+  // --------------------------------------------------------------------------
+  Eth_CRC32: defineSequential({
+    name: 'Eth_CRC32',
+    description: 'IEEE 802.3 CRC-32 checker — polynomial 0x04C11DB7, reflected algorithm',
+    category: 'ethernet',
+    icon: 'EC',
+    namespace: 'ethernet',
+    inputs: [
+      { name: 'data', portType: busType(32) },
+      { name: 'data_valid', portType: bitType() },
+      { name: 'tkeep', portType: busType(4) },
+      { name: 'tlast', portType: bitType() },
+      { name: 'reset', portType: bitType() },
+    ],
+    outputs: [
+      { name: 'crc', portType: busType(32) },
+      { name: 'crc_ok', portType: bitType() },
+    ],
+    clocks: [],
+    state: [
+      {
+        id: 'crc32-state',
+        name: 'crc_reg',
+        stateType: { kind: 'memory', addressWidth: 8, dataWidth: 32 },
+        initialValue: { data: new Map(), addressWidth: 8, dataWidth: 32 },
+      },
+    ],
+    evaluate: (_inputs, currentState) => {
+      const regs = (currentState ?? new Map()) as Map<number, number>;
+      const crcReg = (regs.get(0) ?? 0xFFFFFFFF) >>> 0;
+      const done = (regs.get(1) ?? 0) !== 0;
+
+      // Final CRC is bitwise complement
+      const finalCrc = (~crcReg) >>> 0;
+      // Valid frame residual check: CRC register after processing frame+FCS = 0xDEBB20E3
+      // (complement is the well-known magic value 0x2144DF1C)
+      const crcOk = done && crcReg === (0xDEBB20E3 >>> 0);
+
+      return new Map<string, number | boolean>([
+        ['crc', finalCrc],
+        ['crc_ok', crcOk],
+      ]);
+    },
+    updateState: (inputs, currentState) => {
+      const regs = (currentState ?? new Map()) as Map<number, number>;
+      const data = ((inputs.get('data') as number) ?? 0) >>> 0;
+      const dataValid = inputs.get('data_valid') as boolean;
+      const tkeep = ((inputs.get('tkeep') as number) ?? 0) & 0xF;
+      const tlast = inputs.get('tlast') as boolean;
+      const reset = inputs.get('reset') as boolean;
+
+      if (reset) {
+        const newRegs = new Map(regs);
+        newRegs.set(0, 0xFFFFFFFF);
+        newRegs.set(1, 0); // not done
+        return newRegs;
+      }
+
+      if (!dataValid) return regs;
+
+      let crc = (regs.get(0) ?? 0xFFFFFFFF) >>> 0;
+
+      // Process valid bytes MSB-first (matching AXI-Stream byte order)
+      // tkeep bit 3 = byte at tdata[31:24], bit 0 = byte at tdata[7:0]
+      for (let i = 3; i >= 0; i--) {
+        if ((tkeep >> i) & 1) {
+          const byteVal = (data >>> (i * 8)) & 0xFF;
+          const idx = (crc ^ byteVal) & 0xFF;
+          crc = (ETH_CRC32_TABLE[idx] ^ (crc >>> 8)) >>> 0;
+        }
+      }
+
+      const newRegs = new Map(regs);
+      newRegs.set(0, crc);
+      if (tlast) {
+        newRegs.set(1, 1); // done
+      }
+      return newRegs;
+    },
+    outputDependency: 'state+inputs',
   }),
 };
 
