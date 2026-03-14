@@ -74,7 +74,7 @@ export function initializeFlatSequentialState(
         }
 
         initialValue = { data: memory, addressWidth: 8, dataWidth: 8 };
-      } else if (node.primitiveType === 'ROM' || node.primitiveType === 'RV32I_InstrMem') {
+      } else if (node.primitiveType === 'ROM' || node.primitiveType === 'RV32I_InstrMem' || node.primitiveType === 'Eth_FrameInput') {
         // ROM initialization - check for DSL-embedded data first, then runtime-loaded data
         const memory = new Map<number, number>();
 

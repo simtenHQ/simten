@@ -79,6 +79,7 @@ function getNodeTypeForComponent(componentRef: string, inputCount: number, outpu
     Console: 'consoleNode',
     Constant: 'logicGateNode',
     RV32I_InstrMem: 'rv32iInstrMemNode',
+    Eth_FrameInput: 'ethFrameInputNode',
   };
 
   if (typeMap[componentRef]) {
