@@ -1,7 +1,5 @@
-"use client";
-
 import { useState, useEffect, useCallback, useRef } from "react";
-import Link from "next/link";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useCircuitSimulator } from "@turing-incomplete/ui/embed";
 import { CircuitCanvas } from "@turing-incomplete/ui/shared";
 import { Logo } from "@/components/Logo";
@@ -650,10 +648,14 @@ function ScriptedTerminal({
 }
 
 // ============================================================================
-// Page
+// Route + Page
 // ============================================================================
 
-export default function Splash5Page() {
+export const Route = createFileRoute("/splash5")({
+  component: Splash5Page,
+});
+
+function Splash5Page() {
   const [dslTyping, setDslTyping] = useState(false);
   const [activeDsl, setActiveDsl] = useState<string | null>(null);
   const [activeDslDisplay, setActiveDslDisplay] = useState<string | null>(null);
@@ -706,19 +708,19 @@ export default function Splash5Page() {
         </div>
         <div className="flex gap-3">
           <Link
-            href="/blog"
+            to="/blog"
             className="px-4 py-2 bg-[#161b22] border border-[#30363d] text-gray-300 rounded-md text-xs font-medium"
           >
             Blog
           </Link>
           <Link
-            href="/challenges"
+            to="/challenges"
             className="px-4 py-2 bg-[#161b22] border border-[#30363d] text-gray-300 rounded-md text-xs font-medium"
           >
             Challenges
           </Link>
           <Link
-            href="/"
+            to="/"
             className="px-4 py-2 bg-white text-gray-950 rounded-md text-xs font-medium"
           >
             Open Editor
@@ -753,19 +755,19 @@ export default function Splash5Page() {
             </svg>
           </a>
           <Link
-            href="/blog"
+            to="/blog"
             className="text-gray-600 hover:text-gray-300 transition-colors text-xs"
           >
             Blog
           </Link>
           <Link
-            href="/challenges"
+            to="/challenges"
             className="text-gray-600 hover:text-gray-300 transition-colors text-xs"
           >
             Challenges
           </Link>
           <Link
-            href="/"
+            to="/"
             className="text-gray-600 hover:text-gray-300 transition-colors text-xs"
           >
             Editor
@@ -861,7 +863,7 @@ export default function Splash5Page() {
                     Click switches to interact
                   </span>
                   <Link
-                    href="/"
+                    to="/"
                     className="text-[11px] text-gray-600 hover:text-gray-300 transition-colors"
                   >
                     Open in full editor
