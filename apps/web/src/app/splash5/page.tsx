@@ -74,6 +74,90 @@ circuit ToggleDemo {
   }
 }`;
 
+// --- Full Adder ---
+
+const FULL_ADDER_DSL = `circuit FullAdder {
+  input a: Bit
+  input b: Bit
+  input cin: Bit
+  output sum: Bit
+  output cout: Bit
+  impl {
+    node xor1: Xor
+    node xor2: Xor
+    node and1: And
+    node and2: And
+    node or1: Or
+    connect a -> xor1.a
+    connect b -> xor1.b
+    connect xor1.out -> xor2.a
+    connect cin -> xor2.b
+    connect xor2.out -> sum
+    connect a -> and1.a
+    connect b -> and1.b
+    connect xor1.out -> and2.a
+    connect cin -> and2.b
+    connect and1.out -> or1.a
+    connect and2.out -> or1.b
+    connect or1.out -> cout
+  }
+}`;
+
+const FULL_ADDER_HARNESS = `${FULL_ADDER_DSL}
+
+circuit FullAdderDemo {
+  impl {
+    node sw_a: Switch
+    node sw_b: Switch
+    node sw_cin: Switch
+    node dut: FullAdder
+    node led_sum: Led
+    node led_cout: Led
+    connect sw_a.out -> dut.a
+    connect sw_b.out -> dut.b
+    connect sw_cin.out -> dut.cin
+    connect dut.sum -> led_sum.in
+    connect dut.cout -> led_cout.in
+  }
+}`;
+
+// --- 2-bit Counter ---
+
+const COUNTER_DSL = `circuit Counter2Bit {
+  clock clk
+  output bit0: Bit
+  output bit1: Bit
+  impl {
+    node dff0: DFlipFlop
+    node dff1: DFlipFlop
+    node inv: Not
+    node xor1: Xor
+    connect dff0.q -> inv.in
+    connect inv.out -> dff0.d
+    connect clk -> dff0.clk
+    connect dff0.q -> bit0
+    connect dff1.q -> xor1.a
+    connect dff0.q -> xor1.b
+    connect xor1.out -> dff1.d
+    connect clk -> dff1.clk
+    connect dff1.q -> bit1
+  }
+}`;
+
+const COUNTER_HARNESS = `${COUNTER_DSL}
+
+circuit CounterDemo {
+  clock clk
+  impl {
+    node dut: Counter2Bit
+    node led0: Led
+    node led1: Led
+    connect clk -> dut.clk
+    connect dut.bit0 -> led0.in
+    connect dut.bit1 -> led1.in
+  }
+}`;
+
 // --- 2-to-1 Mux ---
 
 const MUX_DSL = `circuit Mux2to1 {
@@ -145,6 +229,46 @@ type PromptOption = {
 };
 
 const PROMPT_OPTIONS: PromptOption[] = [
+  {
+    label: "Build a full adder",
+    dsl: FULL_ADDER_DSL,
+    harness: FULL_ADDER_HARNESS,
+    dslDisplay: FULL_ADDER_DSL,
+    script: [
+      { type: "input", content: "Build a full adder", delay: 0, typewriter: true, typeSpeed: 30 },
+      { type: "blank", content: "", delay: 400 },
+      { type: "text", content: "A full adder adds three bits — a, b, and carry-in — producing sum and carry-out. Chain four of these and you have the ALU inside a CPU.", delay: 300, typewriter: true, typeSpeed: 12 },
+      { type: "blank", content: "", delay: 200 },
+      { type: "tool", content: "write_circuit (turing-incomplete)", delay: 100 },
+      { type: "result", content: "Writing FullAdder to turingincomplete.com...", delay: 400 },
+      { type: "result", content: "5 nodes, 10 connections, 0 errors", delay: 0 },
+      { type: "blank", content: "", delay: 200 },
+      { type: "tool", content: "simulate_circuit (turing-incomplete)", delay: 100 },
+      { type: "result", content: "Simulation ready", delay: 600 },
+      { type: "blank", content: "", delay: 200 },
+      { type: "text", content: "Your full adder is live. Toggle switches to try all eight input combinations — carry-out lights when two or more inputs are high.", delay: 300, typewriter: true, typeSpeed: 12 },
+    ],
+  },
+  {
+    label: "Make a 2-bit binary counter",
+    dsl: COUNTER_DSL,
+    harness: COUNTER_HARNESS,
+    dslDisplay: COUNTER_DSL,
+    script: [
+      { type: "input", content: "Make a 2-bit binary counter", delay: 0, typewriter: true, typeSpeed: 30 },
+      { type: "blank", content: "", delay: 400 },
+      { type: "text", content: "A synchronous 2-bit counter — two D flip-flops with toggle logic. Bit 0 flips every cycle, bit 1 flips when bit 0 is high. Counts 0, 1, 2, 3, repeat.", delay: 300, typewriter: true, typeSpeed: 12 },
+      { type: "blank", content: "", delay: 200 },
+      { type: "tool", content: "write_circuit (turing-incomplete)", delay: 100 },
+      { type: "result", content: "Writing Counter2Bit to turingincomplete.com...", delay: 400 },
+      { type: "result", content: "4 nodes, 8 connections, 0 errors", delay: 0 },
+      { type: "blank", content: "", delay: 200 },
+      { type: "tool", content: "simulate_circuit (turing-incomplete)", delay: 100 },
+      { type: "result", content: "Simulation ready", delay: 600 },
+      { type: "blank", content: "", delay: 200 },
+      { type: "text", content: "Your counter is live. Click Tick to advance — the LEDs count in binary: 00 → 01 → 10 → 11 → 00.", delay: 300, typewriter: true, typeSpeed: 12 },
+    ],
+  },
   {
     label: "Make a toggle flip-flop",
     dsl: TOGGLE_DSL,

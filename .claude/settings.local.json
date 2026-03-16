@@ -39,7 +39,11 @@
       "WebSearch",
       "WebFetch(domain:www.builder.io)",
       "WebFetch(domain:github.com)",
-      "Bash(npx vitest:*)"
+      "Bash(npx vitest:*)",
+      "Bash(cp -r /Users/charlesharris/Documents/Personal/turing-incomplete/apps/web/src/features/ /Users/charlesharris/Documents/Personal/turing-incomplete/apps/tanstack/src/features/)",
+      "WebFetch(domain:developers.cloudflare.com)",
+      "Bash(mkdir -p /Users/charlesharris/Documents/Personal/turing-incomplete/apps/tanstack/src/features/blog && cp -r /Users/charlesharris/Documents/Personal/turing-incomplete/apps/web/src/app/blog/building-a-cpu /Users/charlesharris/Documents/Personal/turing-incomplete/apps/tanstack/src/features/blog/ && cp -r /Users/charlesharris/Documents/Personal/turing-incomplete/apps/web/src/app/blog/computing-trig-in-hardware /Users/charlesharris/Documents/Personal/turing-incomplete/apps/tanstack/src/features/blog/ && cp -r /Users/charlesharris/Documents/Personal/turing-incomplete/apps/web/src/app/blog/how-network-switches-work /Users/charlesharris/Documents/Personal/turing-incomplete/apps/tanstack/src/features/blog/ && cp -r /Users/charlesharris/Documents/Personal/turing-incomplete/apps/web/src/app/blog/how-tpus-work /Users/charlesharris/Documents/Personal/turing-incomplete/apps/tanstack/src/features/blog/ && cp -r /Users/charlesharris/Documents/Personal/turing-incomplete/apps/web/src/app/blog/pong-in-hardware /Users/charlesharris/Documents/Personal/turing-incomplete/apps/tanstack/src/features/blog/ && cp -r /Users/charlesharris/Documents/Personal/turing-incomplete/apps/web/src/app/blog/snake-in-hardware /Users/charlesharris/Documents/Personal/turing-incomplete/apps/tanstack/src/features/blog/)",
+      "Bash(find /Users/charlesharris/Documents/Personal/turing-incomplete -type f \\\\\\( -name \"*SimulationController*\" -o -name \"*useSimulation*\" -o -name \"*ClockControls*\" \\\\\\) 2>/dev/null | head -20)"
     ]
   }
 }
