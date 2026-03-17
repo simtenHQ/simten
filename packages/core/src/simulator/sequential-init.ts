@@ -39,6 +39,10 @@ export function initializeFlatSequentialState(
   const nextState = new Map<string, PrimitiveState>();
   const clocks = new Map<string, { value: boolean; edge: 'rising' | 'falling' | 'none' }>();
 
+  if (memoryData) {
+    // memoryData patterns available for matching
+  }
+
   for (const node of flatCircuit.nodes) {
     const component = library.resolveComponent(node.primitiveType);
     if (!component) continue;
@@ -74,7 +78,7 @@ export function initializeFlatSequentialState(
         }
 
         initialValue = { data: memory, addressWidth: 8, dataWidth: 8 };
-      } else if (node.primitiveType === 'ROM' || node.primitiveType === 'RV32I_InstrMem' || node.primitiveType === 'Eth_FrameInput') {
+      } else if (node.primitiveType === 'ROM' || node.primitiveType === 'RV32I_InstrMem' || node.primitiveType === 'RV32I_DataMem' || node.primitiveType === 'Eth_FrameInput') {
         // ROM initialization - check for DSL-embedded data first, then runtime-loaded data
         const memory = new Map<number, number>();
 
@@ -142,8 +146,19 @@ export function initializeFlatSequentialState(
 }
 
 /**
+ * Convert a glob pattern (with * wildcards) to a RegExp.
+ * "cpu0*imem" → /cpu0.*imem/i
+ * Plain strings without * still work as substring matches.
+ */
+function globToRegex(pattern: string): RegExp {
+  const escaped = pattern.replace(/[.+^${}()|[\]\\]/g, '\\$&');
+  const withWildcards = escaped.replace(/\*/g, '.*');
+  return new RegExp(withWildcards, 'i');
+}
+
+/**
  * Helper to get memory data for a node from the injected memory data map.
- * Pattern matching: "rom" matches nodes like "system.mem_bus.rom"
+ * Glob matching: "cpu0*imem" matches "cpu0_abc.RV32I_CPU_imem_xyz"
  * Also checks primitive type, so "instrmem" matches any RV32I_InstrMem node.
  */
 function getMemoryDataForNode(
@@ -152,11 +167,11 @@ function getMemoryDataForNode(
   primitiveType?: string
 ): Map<number, number> | undefined {
   for (const [pattern, data] of memoryData) {
-    const lowerPattern = pattern.toLowerCase();
-    if (nodeId.toLowerCase().includes(lowerPattern)) {
+    const regex = globToRegex(pattern);
+    if (regex.test(nodeId)) {
       return data;
     }
-    if (primitiveType && primitiveType.toLowerCase().includes(lowerPattern)) {
+    if (primitiveType && regex.test(primitiveType)) {
       return data;
     }
   }

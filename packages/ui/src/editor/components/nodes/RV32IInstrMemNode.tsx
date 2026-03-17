@@ -14,7 +14,7 @@ import { useMemoryDataStore } from '../../stores/memory-data-store';
 import type { NodeData } from '../../utils/projection';
 import { LabelEditor } from '../LabelEditor';
 
-const MEMORY_PATTERN = 'instrmem';
+const DEFAULT_MEMORY_PATTERN = 'instrmem';
 
 const LANGUAGES = [
   { value: 'c', label: 'C' },
@@ -76,9 +76,14 @@ export function RV32IInstrMemNode({ data, selected }: RV32IInstrMemNodeProps) {
 
   const { loadedData, loadData, clearData } = useMemoryDataStore();
 
+  // Use the full nodeId as the memory pattern so each InstrMem gets its own data
+  // (important for dual-CPU circuits where multiple InstrMem nodes exist)
+  const memoryPattern = data.nodeId || DEFAULT_MEMORY_PATTERN;
+
   const getLoadedInfo = () => {
     for (const [pattern, entry] of loadedData) {
-      if (data.nodeId.toLowerCase().includes(pattern.toLowerCase())) {
+      if (data.nodeId.toLowerCase().includes(pattern.toLowerCase()) ||
+          pattern.toLowerCase().includes(data.nodeId.toLowerCase())) {
         return entry;
       }
     }
@@ -104,7 +109,7 @@ export function RV32IInstrMemNode({ data, selected }: RV32IInstrMemNodeProps) {
   }, []);
 
   const loadBinary = useCallback((binary: Uint8Array, filename: string) => {
-    loadData(MEMORY_PATTERN, binary, filename, 0);
+    loadData(memoryPattern, binary, filename, 0);
   }, [loadData]);
 
   const handleFileLoad = useCallback(async (file: File) => {
@@ -145,7 +150,7 @@ export function RV32IInstrMemNode({ data, selected }: RV32IInstrMemNodeProps) {
 
   const handleClear = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
-    clearData(MEMORY_PATTERN);
+    clearData(memoryPattern);
   }, [clearData]);
 
   const handleCompile = useCallback(async () => {

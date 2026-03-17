@@ -9,14 +9,19 @@
 
 'use client';
 
-import React, { useCallback, useState, useEffect, useRef } from 'react';
+import { useCallback, useState, useEffect, useRef } from 'react';
 import { SkipForward, Play, Pause, RotateCcw, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '../../primitives/button';
 import { useUIStore } from '../stores';
 import { useSimulationController } from '../simulation/use-simulation-controller';
 
 
-export function ClockControls() {
+export interface ClockControlsProps {
+  /** Maximum ticks per second the speed slider can reach (default: 100) */
+  maxSpeed?: number;
+}
+
+export function ClockControls({ maxSpeed = 100 }: ClockControlsProps = {}) {
   // Get simulation controller API
   const {
     step,
@@ -81,17 +86,23 @@ export function ClockControls() {
       return;
     }
 
-    // Start interval for continuous simulation steps
+    // Batch ticks at higher speeds to avoid DOM bottleneck
+    // UI updates at ~20fps max; extra speed = more ticks per frame
+    const UI_FPS = 20;
+    const msPerFrame = Math.max(1000 / Math.min(clockSpeed, UI_FPS), 50);
+    const ticksPerFrame = Math.max(1, Math.round(clockSpeed / UI_FPS));
+
     runIntervalRef.current = setInterval(() => {
       setSimulationStatus('running');
 
-      // Execute step via controller
-      step();
+      for (let i = 0; i < ticksPerFrame; i++) {
+        step();
+      }
 
       setTimeout(() => {
         setSimulationStatus('idle');
-      }, 50);
-    }, 1000 / clockSpeed);
+      }, 10);
+    }, msPerFrame);
 
     return () => {
       if (runIntervalRef.current) {
@@ -174,13 +185,13 @@ export function ClockControls() {
           id="clock-speed"
           type="range"
           min="1"
-          max="10"
+          max={maxSpeed}
           value={clockSpeed}
           onChange={(e) => setClockSpeed(Number(e.target.value))}
           className="w-24"
           disabled={isViewingPast}
         />
-        <span className="min-w-[40px] text-xs text-gray-600 dark:text-gray-400">{clockSpeed} Hz</span>
+        <span className="min-w-[55px] text-xs text-gray-600 dark:text-gray-400">{clockSpeed} t/s</span>
       </div>
 
       {/* Cycle counter */}

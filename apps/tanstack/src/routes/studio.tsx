@@ -44,6 +44,7 @@ function StudioPage() {
   const [isAutoRunning, setIsAutoRunning] = useState(false);
   const [traces, setTraces] = useState<TracesPayload | null>(null);
   const [testResults, setTestResults] = useState<TestResult[] | null>(null);
+  const [memoryData, setMemoryData] = useState<Map<string, Map<number, number>> | undefined>(undefined);
   const retryDelay = useRef(1000);
   const eventSourceRef = useRef<EventSource | null>(null);
 
@@ -80,6 +81,21 @@ function StudioPage() {
           setTraces(data.data);
         } else if (data.type === "test-results") {
           setTestResults(data.data.results);
+        } else if (data.type === "memory-data") {
+          // Convert JSON { pattern: { addr: value } } to Map<string, Map<number, number>>
+          const map = new Map<string, Map<number, number>>();
+          for (const [pattern, addrMap] of Object.entries(data.data as Record<string, Record<string, number>>)) {
+            const inner = new Map<number, number>();
+            for (const [addr, value] of Object.entries(addrMap)) {
+              inner.set(Number(addr), value);
+            }
+            map.set(pattern, inner);
+          }
+          console.log('[Studio] Received memory-data SSE event:', map.size, 'patterns');
+          for (const [p, m] of map) {
+            console.log(`  pattern="${p}" entries=${m.size} first=`, m.get(0));
+          }
+          setMemoryData(map);
         }
       } catch {
         // non-JSON message, ignore
@@ -137,6 +153,8 @@ function StudioPage() {
           setIsAutoRunning={setIsAutoRunning}
           traces={traces}
           testResults={testResults}
+          memoryData={memoryData}
+          setMemoryData={setMemoryData}
         />
       ) : (
         <div className="flex flex-1 items-center justify-center text-sm text-slate-500">
@@ -188,6 +206,8 @@ function CircuitArea({
   setIsAutoRunning,
   traces,
   testResults,
+  memoryData,
+  setMemoryData,
 }: {
   dsl: string;
   baseUrl: string;
@@ -195,9 +215,53 @@ function CircuitArea({
   setIsAutoRunning: (v: boolean) => void;
   traces: TracesPayload | null;
   testResults: TestResult[] | null;
+  memoryData?: Map<string, Map<number, number>>;
+  setMemoryData: (v: Map<string, Map<number, number>> | undefined) => void;
 }) {
-  const sim = useCircuitSimulator(dsl);
+  const sim = useCircuitSimulator(dsl, { initialMemory: memoryData });
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [speed, setSpeed] = useState(10); // ticks per second
+
+  const handleLoadProgram = useCallback(() => {
+    fileInputRef.current?.click();
+  }, []);
+
+  const handleFileSelected = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const buffer = await file.arrayBuffer();
+      const bytes = new Uint8Array(buffer);
+
+      // Parse the binary into address→word map
+      // Architecture-agnostic: loads raw bytes as 32-bit little-endian words
+      const addrMap = new Map<number, number>();
+      for (let i = 0; i < bytes.length; i += 4) {
+        const word =
+          (bytes[i] ?? 0) |
+          ((bytes[i + 1] ?? 0) << 8) |
+          ((bytes[i + 2] ?? 0) << 16) |
+          ((bytes[i + 3] ?? 0) << 24);
+        addrMap.set(i / 4, word >>> 0);
+      }
+
+      // Use filename (without extension) as the node pattern
+      // e.g. "imem.bin" → "imem" matches any node containing "imem"
+      const baseName = file.name.replace(/\.[^.]+$/, '');
+      const pattern = baseName;
+
+      const newMemory = new Map(memoryData ?? []);
+      newMemory.set(pattern, addrMap);
+      setMemoryData(newMemory);
+    } catch (err) {
+      console.error('Failed to load program:', err);
+    }
+
+    // Reset input so the same file can be re-selected
+    e.target.value = '';
+  }, [memoryData, setMemoryData]);
 
   // Report state to the local MCP server for get_circuit_state readback
   useEffect(() => {
@@ -219,7 +283,12 @@ function CircuitArea({
 
   useEffect(() => {
     if (isAutoRunning && sim.ready && sim.isSequential) {
-      intervalRef.current = setInterval(() => sim.tick(), 500);
+      const UI_FPS = 20;
+      const ticksPerFrame = Math.max(1, Math.round(speed / UI_FPS));
+      const msPerFrame = Math.max(1000 / Math.min(speed, UI_FPS), 50);
+      intervalRef.current = setInterval(() => {
+        for (let i = 0; i < ticksPerFrame; i++) sim.tick();
+      }, msPerFrame);
     }
     return () => {
       if (intervalRef.current) {
@@ -227,7 +296,7 @@ function CircuitArea({
         intervalRef.current = null;
       }
     };
-  }, [isAutoRunning, sim.ready, sim.isSequential, sim.tick]);
+  }, [isAutoRunning, sim.ready, sim.isSequential, sim.tick, speed]);
 
   const handleReset = useCallback(() => {
     setIsAutoRunning(false);
@@ -312,6 +381,37 @@ function CircuitArea({
           >
             Reset
           </button>
+
+          <div className="mx-1 h-4 w-px bg-slate-700" />
+
+          <label className="text-xs text-slate-400" htmlFor="studio-speed">Speed:</label>
+          <input
+            id="studio-speed"
+            type="range"
+            min="1"
+            max="200"
+            value={speed}
+            onChange={(e) => setSpeed(Number(e.target.value))}
+            className="w-24"
+          />
+          <span className="min-w-[45px] font-mono text-xs tabular-nums text-slate-500">{speed} t/s</span>
+
+          <div className="mx-1 h-4 w-px bg-slate-700" />
+
+          <button
+            onClick={handleLoadProgram}
+            className="rounded-md bg-emerald-700 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-600"
+          >
+            Load Program
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".bin,.hex,.raw"
+            onChange={handleFileSelected}
+            className="hidden"
+          />
+
           <span className="ml-auto font-mono text-xs tabular-nums text-slate-500">
             Cycle {sim.cycleCount}
           </span>

@@ -182,22 +182,25 @@ describe('Eth_FrameInput', () => {
     [0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF, 0x11, 0x22].forEach((b, i) => memory.set(i, b));
     const memoryData = new Map([['eth_frameinput', memory]]);
 
-    const out = simTicks(circuit, 3, {}, memoryData);
+    const out = simTicks(circuit, 4, {}, memoryData);
 
-    // Tick 0: first 4 bytes big-endian
-    expect((out.tdata[0] as number) >>> 0).toBe(0xAABBCCDD);
-    expect(out.tkeep[0]).toBe(0xF); // all 4 bytes valid
-    expect(out.tvalid[0]).toBe(true);
-    expect(out.tlast[0]).toBe(false);
+    // Tick 0: output registers not yet populated (pre-first clock edge)
+    expect(out.tvalid[0]).toBe(false);
 
-    // Tick 1: next 4 bytes, this is the last word
-    expect((out.tdata[1] as number) >>> 0).toBe(0xEEFF1122);
-    expect(out.tkeep[1]).toBe(0xF);
+    // Tick 1: first 4 bytes big-endian (after first clock edge)
+    expect((out.tdata[1] as number) >>> 0).toBe(0xAABBCCDD);
+    expect(out.tkeep[1]).toBe(0xF); // all 4 bytes valid
     expect(out.tvalid[1]).toBe(true);
-    expect(out.tlast[1]).toBe(true);
+    expect(out.tlast[1]).toBe(false);
 
-    // Tick 2: no more data
-    expect(out.tvalid[2]).toBe(false);
+    // Tick 2: next 4 bytes, this is the last word
+    expect((out.tdata[2] as number) >>> 0).toBe(0xEEFF1122);
+    expect(out.tkeep[2]).toBe(0xF);
+    expect(out.tvalid[2]).toBe(true);
+    expect(out.tlast[2]).toBe(true);
+
+    // Tick 3: no more data
+    expect(out.tvalid[3]).toBe(false);
   });
 
   it('handles partial last word (5 bytes = 1 full + 1 partial)', () => {
@@ -205,17 +208,20 @@ describe('Eth_FrameInput', () => {
     [0x01, 0x02, 0x03, 0x04, 0x05].forEach((b, i) => memory.set(i, b));
     const memoryData = new Map([['eth_frameinput', memory]]);
 
-    const out = simTicks(circuit, 3, {}, memoryData);
+    const out = simTicks(circuit, 4, {}, memoryData);
 
-    // Tick 0: first 4 bytes
-    expect((out.tdata[0] as number) >>> 0).toBe(0x01020304);
-    expect(out.tkeep[0]).toBe(0xF);
-    expect(out.tlast[0]).toBe(false);
+    // Tick 0: output registers not yet populated
+    expect(out.tvalid[0]).toBe(false);
 
-    // Tick 1: 1 remaining byte in MSB position
-    expect(out.tkeep[1]).toBe(0x8); // only bit 3 set (byte at tdata[31:24])
-    expect(out.tlast[1]).toBe(true);
-    expect(((out.tdata[1] as number) >>> 24) & 0xFF).toBe(0x05);
+    // Tick 1: first 4 bytes (after first clock edge)
+    expect((out.tdata[1] as number) >>> 0).toBe(0x01020304);
+    expect(out.tkeep[1]).toBe(0xF);
+    expect(out.tlast[1]).toBe(false);
+
+    // Tick 2: 1 remaining byte in MSB position
+    expect(out.tkeep[2]).toBe(0x8); // only bit 3 set (byte at tdata[31:24])
+    expect(out.tlast[2]).toBe(true);
+    expect(((out.tdata[2] as number) >>> 24) & 0xFF).toBe(0x05);
   });
 
   it('reports byte_offset correctly', () => {
@@ -223,10 +229,11 @@ describe('Eth_FrameInput', () => {
     for (let i = 0; i < 12; i++) memory.set(i, i);
     const memoryData = new Map([['eth_frameinput', memory]]);
 
-    const out = simTicks(circuit, 4, {}, memoryData);
-    expect(out.byte_offset[0]).toBe(0);
-    expect(out.byte_offset[1]).toBe(4);
-    expect(out.byte_offset[2]).toBe(8);
+    const out = simTicks(circuit, 5, {}, memoryData);
+    // Tick 0: pre-first-clock, tick 1+: output registers populated
+    expect(out.byte_offset[1]).toBe(0);
+    expect(out.byte_offset[2]).toBe(4);
+    expect(out.byte_offset[3]).toBe(8);
   });
 });
 
@@ -262,12 +269,12 @@ describe('Eth_CRC32', () => {
       tlast: true,
     });
 
-    // Tick 0: CRC processes data (Phase 3 updateState) and Phase 5 re-evaluates
-    // So tick 0 already shows the CRC after processing the first word
-    const crcVal = (out.crc[0] as number) >>> 0;
+    // Tick 0: pre-clock snapshot shows initial CRC (zero)
+    // Tick 1: CRC processes data from tick 0's clock edge, shows computed value
+    const crcVal = (out.crc[1] as number) >>> 0;
     expect(crcVal).not.toBe(0);
     // crc_ok should be false since we didn't feed a complete frame with valid FCS
-    expect(out.crc_ok[0]).toBe(false);
+    expect(out.crc_ok[1]).toBe(false);
   });
 });
 
@@ -320,24 +327,26 @@ describe('Eth_FrameParser', () => {
 
   it('advances FSM state on valid data', () => {
     // With constant tvalid=true input, each tick advances the FSM.
-    // The parser uses state-based output (Phase 5 re-evaluation), so:
-    // Tick 0: updateState processes first word → state becomes DST_MAC_HI_SRC(2)
-    //         Phase 5 evaluate reflects state 2
-    // Tick 1: updateState processes second word → state becomes SRC_MAC(3)
-    //         Phase 5 evaluate reflects state 3
+    // Trace snapshots are captured before the clock edge (Phase 1), so:
+    // Tick 0: initial state (IDLE=0), updateState processes first word
+    // Tick 1: shows state after first clock edge → DST_MAC_HI_SRC(2)
+    // Tick 2: shows state after second clock edge → SRC_MAC(3)
 
-    const out = simTicks(circuit, 2, {
+    const out = simTicks(circuit, 3, {
       tdata: 0xAABBCCDD,
       tkeep: 0xF,
       tvalid: true,
       tlast: false,
     });
 
-    // Tick 0: FSM processes first word, transitions IDLE→DST_MAC_HI_SRC
-    expect(out.parse_state[0]).toBe(2);
-    expect((out.dst_mac_lo[0] as number) >>> 0).toBe(0xAABBCCDD);
+    // Tick 0: initial state (IDLE)
+    expect(out.parse_state[0]).toBe(0);
 
-    // Tick 1: FSM processes second word, transitions to SRC_MAC(3)
-    expect(out.parse_state[1]).toBe(3);
+    // Tick 1: FSM processed first word, now in DST_MAC_HI_SRC
+    expect(out.parse_state[1]).toBe(2);
+    expect((out.dst_mac_lo[1] as number) >>> 0).toBe(0xAABBCCDD);
+
+    // Tick 2: FSM processed second word, now in SRC_MAC
+    expect(out.parse_state[2]).toBe(3);
   });
 });

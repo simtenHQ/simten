@@ -1941,9 +1941,8 @@ circuit Comparator {
       const rs1 = (inputs.get('rs1') as number) & 0x1F;
       const rs2 = (inputs.get('rs2') as number) & 0x1F;
 
-      // x0 is always 0
-      const read1 = rs1 === 0 ? 0 : ((regs.get(rs1) ?? 0) >>> 0);
-      const read2 = rs2 === 0 ? 0 : ((regs.get(rs2) ?? 0) >>> 0);
+      const read1 = rs1 === 0 ? 0 : (regs.get(rs1) ?? 0) >>> 0;
+      const read2 = rs2 === 0 ? 0 : (regs.get(rs2) ?? 0) >>> 0;
 
       return new Map([
         ['read1', read1],
@@ -2017,7 +2016,10 @@ circuit Comparator {
       { name: 'mem_write', portType: bitType() },
       { name: 'funct3', portType: busType(3) },
     ],
-    outputs: [{ name: 'read_data', portType: busType(32) }],
+    outputs: [
+      { name: 'read_data', portType: busType(32) },
+      { name: 'misalign', portType: bitType() },
+    ],
     clocks: [{ name: 'clk' }],
     state: [
       {
@@ -2030,13 +2032,26 @@ circuit Comparator {
     evaluate: (inputs, currentState) => {
       const memory = (currentState ?? new Map()) as Map<number, number>;
       const memRead = inputs.get('mem_read') as boolean;
+      const memWrite = inputs.get('mem_write') as boolean;
 
-      if (!memRead) {
-        return new Map([['read_data', 0]]);
+      if (!memRead && !memWrite) {
+        return new Map<string, number | boolean>([['read_data', 0], ['misalign', false]]);
       }
 
       const addr = ((inputs.get('addr') as number) ?? 0) >>> 0;
       const funct3 = (inputs.get('funct3') as number) & 0x7;
+
+      // Check alignment: LH/LHU/SH require 2-byte, LW/SW require 4-byte
+      let misalign = false;
+      if ((funct3 === 1 || funct3 === 5) && (addr & 1) !== 0) {
+        misalign = true; // halfword access at odd address
+      } else if (funct3 === 2 && (addr & 3) !== 0) {
+        misalign = true; // word access at non-4-byte boundary
+      }
+
+      if (!memRead) {
+        return new Map<string, number | boolean>([['read_data', 0], ['misalign', misalign]]);
+      }
 
       let data: number;
       switch (funct3) {
@@ -2075,7 +2090,7 @@ circuit Comparator {
           break;
       }
 
-      return new Map([['read_data', data]]);
+      return new Map<string, number | boolean>([['read_data', data], ['misalign', misalign]]);
     },
     updateState: (inputs, currentState, clockEdges) => {
       const memory = (currentState ?? new Map()) as Map<number, number>;
@@ -2162,7 +2177,7 @@ circuit Comparator {
         writeData = aluResult;      // R-type/I-type: rd = ALU result
       }
 
-      return new Map([['write_data', (writeData | 0)]]);
+      return new Map([['write_data', (writeData >>> 0)]]);
     },
   }),
 
@@ -2261,6 +2276,73 @@ circuit Comparator {
         ['forward_a', forwardA],
         ['forward_b', forwardB],
       ]);
+    },
+  }),
+
+  // ==========================================================================
+  // RV32I WB-to-ID Bypass — forwards WB write data when WB writes the same
+  // register that ID is reading, avoiding a 1-cycle stale read from the
+  // register file. Models real hardware's write-first-read-second clocking.
+  // ==========================================================================
+  RV32I_WBBypass: defineCombinational({
+    name: 'RV32I_WBBypass',
+    description: 'WB-to-ID bypass — forwards WB write data when it matches the register being read',
+    category: 'rv32i',
+    icon: 'BYP',
+    namespace: 'rv32i',
+    inputs: [
+      { name: 'rs_val', portType: busType(32) },
+      { name: 'rs_addr', portType: busType(5) },
+      { name: 'wb_val', portType: busType(32) },
+      { name: 'wb_rd', portType: busType(5) },
+      { name: 'wb_we', portType: bitType() },
+    ],
+    outputs: [
+      { name: 'out', portType: busType(32) },
+    ],
+    evaluate: (inputs) => {
+      const rsAddr = (inputs.get('rs_addr') as number) & 0x1F;
+      const wbRd = (inputs.get('wb_rd') as number) & 0x1F;
+      const wbWe = inputs.get('wb_we') as boolean;
+      const rsVal = ((inputs.get('rs_val') as number) ?? 0) >>> 0;
+      const wbVal = ((inputs.get('wb_val') as number) ?? 0) >>> 0;
+
+      const bypass = wbWe && wbRd !== 0 && wbRd === rsAddr;
+      return new Map([['out', bypass ? wbVal : rsVal]]);
+    },
+  }),
+
+  // ==========================================================================
+  // RV32I Load Alignment Unit — extracts byte/halfword from a 32-bit word
+  // based on funct3. Sits between memory and the pipeline's load data path.
+  // ==========================================================================
+  RV32I_LoadAlign: defineCombinational({
+    name: 'RV32I_LoadAlign',
+    description: 'Load alignment — extracts byte/halfword from 32-bit word based on funct3 (LB/LH/LW/LBU/LHU)',
+    category: 'rv32i',
+    icon: 'LA',
+    namespace: 'rv32i',
+    inputs: [
+      { name: 'data', portType: busType(32) },
+      { name: 'funct3', portType: busType(3) },
+    ],
+    outputs: [
+      { name: 'out', portType: busType(32) },
+    ],
+    evaluate: (inputs) => {
+      const raw = ((inputs.get('data') as number) ?? 0) >>> 0;
+      const funct3 = ((inputs.get('funct3') as number) ?? 2) & 0x7;
+
+      let out: number;
+      switch (funct3) {
+        case 0: { const b = raw & 0xFF; out = ((b << 24) >> 24) >>> 0; break; } // LB
+        case 1: { const hw = raw & 0xFFFF; out = ((hw << 16) >> 16) >>> 0; break; } // LH
+        case 4: out = raw & 0xFF; break; // LBU
+        case 5: out = raw & 0xFFFF; break; // LHU
+        default: out = raw; break; // LW (case 2)
+      }
+
+      return new Map([['out', out]]);
     },
   }),
 
@@ -2793,6 +2875,353 @@ circuit Comparator {
     },
     outputDependency: 'state+inputs',
   }),
+
+  // ============================================================================
+  // Networking Primitives (RV32I memory-bus peripherals)
+  // ============================================================================
+
+  MemBusMux: defineCombinational({
+    name: 'MemBusMux',
+    description: 'Address decoder + read-data mux. Routes CPU memory operations to peripherals based on address range.',
+    category: 'rv32i',
+    icon: 'BUS',
+    namespace: 'rv32i',
+    parameters: [
+      { name: 'base0', paramType: 'int', defaultValue: 0x00010000 },
+      { name: 'end0', paramType: 'int', defaultValue: 0x0001FFFF },
+      { name: 'base1', paramType: 'int', defaultValue: 0x80000000 },
+      { name: 'end1', paramType: 'int', defaultValue: 0x80000FFF },
+      { name: 'base2', paramType: 'int', defaultValue: 0x80001000 },
+      { name: 'end2', paramType: 'int', defaultValue: 0x80001FFF },
+      { name: 'base3', paramType: 'int', defaultValue: 0x80002000 },
+      { name: 'end3', paramType: 'int', defaultValue: 0x80002FFF },
+      { name: 'base4', paramType: 'int', defaultValue: 0x00000000 },
+      { name: 'end4', paramType: 'int', defaultValue: 0x0000FFFF },
+    ],
+    inputs: [
+      { name: 'addr', portType: busType(32) },
+      { name: 'write_data', portType: busType(32) },
+      { name: 'mem_read', portType: bitType() },
+      { name: 'mem_write', portType: bitType() },
+      { name: 'funct3', portType: busType(3) },
+      { name: 'read_data_0', portType: busType(32) },
+      { name: 'read_data_1', portType: busType(32) },
+      { name: 'read_data_2', portType: busType(32) },
+      { name: 'read_data_3', portType: busType(32) },
+      { name: 'read_data_4', portType: busType(32) },
+    ],
+    outputs: [
+      { name: 'local_addr', portType: busType(32) },
+      { name: 'write_data_out', portType: busType(32) },
+      { name: 'funct3_out', portType: busType(3) },
+      { name: 'read_data', portType: busType(32) },
+      { name: 'p0_read', portType: bitType() },
+      { name: 'p0_write', portType: bitType() },
+      { name: 'p1_read', portType: bitType() },
+      { name: 'p1_write', portType: bitType() },
+      { name: 'p2_read', portType: bitType() },
+      { name: 'p2_write', portType: bitType() },
+      { name: 'p3_read', portType: bitType() },
+      { name: 'p3_write', portType: bitType() },
+      { name: 'p4_read', portType: bitType() },
+      { name: 'p4_write', portType: bitType() },
+    ],
+    evaluate: (inputs) => {
+      const addr = ((inputs.get('addr') as number) ?? 0) >>> 0;
+      const writeData = ((inputs.get('write_data') as number) ?? 0) >>> 0;
+      const memRead = inputs.get('mem_read') as boolean;
+      const memWrite = inputs.get('mem_write') as boolean;
+      const funct3 = ((inputs.get('funct3') as number) ?? 0) & 0x7;
+
+      // Get range parameters (injected as __paramName by simulator)
+      const ranges = [
+        { base: (((inputs.get('__base0') as number) ?? 0x00010000) >>> 0), end: (((inputs.get('__end0') as number) ?? 0x0001FFFF) >>> 0) },
+        { base: (((inputs.get('__base1') as number) ?? 0x80000000) >>> 0), end: (((inputs.get('__end1') as number) ?? 0x80000FFF) >>> 0) },
+        { base: (((inputs.get('__base2') as number) ?? 0x80001000) >>> 0), end: (((inputs.get('__end2') as number) ?? 0x80001FFF) >>> 0) },
+        { base: (((inputs.get('__base3') as number) ?? 0x80002000) >>> 0), end: (((inputs.get('__end3') as number) ?? 0x80002FFF) >>> 0) },
+        { base: (((inputs.get('__base4') as number) ?? 0x00000000) >>> 0), end: (((inputs.get('__end4') as number) ?? 0x0000FFFF) >>> 0) },
+      ];
+
+      // Determine which peripheral matches
+      let match = -1;
+      for (let i = 0; i < 5; i++) {
+        if (addr >= ranges[i].base && addr <= ranges[i].end) {
+          match = i;
+          break;
+        }
+      }
+
+      const localAddr = match >= 0 ? ((addr - ranges[match].base) >>> 0) : 0;
+
+      // Mux read data from matching peripheral
+      const readDataInputs = [
+        ((inputs.get('read_data_0') as number) ?? 0) >>> 0,
+        ((inputs.get('read_data_1') as number) ?? 0) >>> 0,
+        ((inputs.get('read_data_2') as number) ?? 0) >>> 0,
+        ((inputs.get('read_data_3') as number) ?? 0) >>> 0,
+        ((inputs.get('read_data_4') as number) ?? 0) >>> 0,
+      ];
+      const readData = match >= 0 ? readDataInputs[match] : 0;
+
+      return new Map<string, BitValue | BusValue>([
+        ['local_addr', localAddr],
+        ['write_data_out', writeData],
+        ['funct3_out', funct3],
+        ['read_data', readData],
+        ['p0_read', match === 0 && memRead],
+        ['p0_write', match === 0 && memWrite],
+        ['p1_read', match === 1 && memRead],
+        ['p1_write', match === 1 && memWrite],
+        ['p2_read', match === 2 && memRead],
+        ['p2_write', match === 2 && memWrite],
+        ['p3_read', match === 3 && memRead],
+        ['p3_write', match === 3 && memWrite],
+        ['p4_read', match === 4 && memRead],
+        ['p4_write', match === 4 && memWrite],
+      ]);
+    },
+  }),
+
+  UART_TX: defineSequential({
+    name: 'UART_TX',
+    description: 'Memory-mapped UART transmit. Writes append characters to text buffer. Reads return tx_ready=1.',
+    category: 'rv32i',
+    icon: 'TX',
+    namespace: 'rv32i',
+    inputs: [
+      { name: 'addr', portType: busType(32) },
+      { name: 'write_data', portType: busType(32) },
+      { name: 'mem_read', portType: bitType() },
+      { name: 'mem_write', portType: bitType() },
+    ],
+    outputs: [
+      { name: 'read_data', portType: busType(32) },
+    ],
+    clocks: [{ name: 'clk' }],
+    state: [
+      {
+        id: 'uart-tx-state',
+        name: 'text',
+        stateType: { kind: 'bus', width: 8 },
+        initialValue: '',
+      },
+    ],
+    evaluate: (inputs) => {
+      const memRead = inputs.get('mem_read') as boolean;
+      // Always ready
+      return new Map([['read_data', memRead ? 1 : 0]]);
+    },
+    updateState: (inputs, currentState, clockEdges) => {
+      if (clockEdges['clk'] !== 'rising') {
+        return currentState;
+      }
+
+      const memWrite = inputs.get('mem_write') as boolean;
+      if (!memWrite) {
+        return currentState;
+      }
+
+      const addr = ((inputs.get('addr') as number) ?? 0) >>> 0;
+      if (addr !== 0) {
+        return currentState; // Only addr 0 is the data register
+      }
+
+      const writeData = ((inputs.get('write_data') as number) ?? 0) & 0xFF;
+      const currentText = (typeof currentState === 'string' ? currentState : '') as string;
+      const char = String.fromCharCode(writeData);
+      let newText = currentText + char;
+
+      const MAX_LENGTH = 4096;
+      if (newText.length > MAX_LENGTH) {
+        newText = newText.slice(-MAX_LENGTH);
+      }
+
+      return newText;
+    },
+    outputDependency: 'state-only',
+  }),
+
+  NIC_FIFO: defineSequential({
+    name: 'NIC_FIFO',
+    description: 'Network interface with TX/RX FIFOs. CPU writes frames to TX, reads frames from RX. Network side has data/valid/frame ports.',
+    category: 'rv32i',
+    icon: 'NIC',
+    namespace: 'rv32i',
+    inputs: [
+      // CPU TX side (from MemBusMux)
+      { name: 'tx_addr', portType: busType(32) },
+      { name: 'tx_write_data', portType: busType(32) },
+      { name: 'tx_mem_read', portType: bitType() },
+      { name: 'tx_mem_write', portType: bitType() },
+      // CPU RX side (from MemBusMux)
+      { name: 'rx_addr', portType: busType(32) },
+      { name: 'rx_mem_read', portType: bitType() },
+      { name: 'rx_mem_write', portType: bitType() },
+      // Network RX side (from other NIC's TX)
+      { name: 'net_rx_data', portType: busType(32) },
+      { name: 'net_rx_valid', portType: bitType() },
+      { name: 'net_rx_frame', portType: bitType() },
+    ],
+    outputs: [
+      // CPU TX side read data
+      { name: 'tx_read_data', portType: busType(32) },
+      // CPU RX side read data
+      { name: 'rx_read_data', portType: busType(32) },
+      // Network TX side (to other NIC's RX)
+      { name: 'net_tx_data', portType: busType(32) },
+      { name: 'net_tx_valid', portType: bitType() },
+      { name: 'net_tx_frame', portType: bitType() },
+    ],
+    clocks: [{ name: 'clk' }],
+    state: [
+      {
+        id: 'nic-fifo-state',
+        name: 'fifos',
+        stateType: { kind: 'memory', addressWidth: 32, dataWidth: 32 },
+        initialValue: { data: new Map(), addressWidth: 32, dataWidth: 32 },
+      },
+    ],
+    // State layout (Map<number, number>):
+    //   0x0000-0x03FF: TX FIFO data (up to 256 words)
+    //   0x1000-0x13FF: RX FIFO data (up to 256 words)
+    //   0x2000: TX write pointer
+    //   0x2001: TX read pointer
+    //   0x2002: TX frame-end flag (1 = frame complete, ready to drain)
+    //   0x2003: TX drain pointer (for network output)
+    //   0x2004: TX draining flag
+    //   0x2010: RX write pointer
+    //   0x2011: RX read pointer (CPU read position)
+    //   0x2012: RX word count (available for CPU to read)
+    evaluate: (inputs, currentState) => {
+      const state = (currentState ?? new Map()) as Map<number, number>;
+
+      // TX CPU read: addr 0x0 = nothing useful, addr 0x8 = tx count, addr 0xC = 0
+      const txMemRead = inputs.get('tx_mem_read') as boolean;
+      let txReadData = 0;
+      if (txMemRead) {
+        const txAddr = ((inputs.get('tx_addr') as number) ?? 0) >>> 0;
+        if (txAddr === 0x8) {
+          // TX count (words in FIFO)
+          const txWp = state.get(0x2000) ?? 0;
+          const txRp = state.get(0x2001) ?? 0;
+          txReadData = txWp - txRp;
+        }
+      }
+
+      // RX CPU read: addr 0x0 = front word, addr 0x8 = rx count
+      const rxMemRead = inputs.get('rx_mem_read') as boolean;
+      let rxReadData = 0;
+      if (rxMemRead) {
+        const rxAddr = ((inputs.get('rx_addr') as number) ?? 0) >>> 0;
+        if (rxAddr === 0x0) {
+          // Read front of RX FIFO (don't pop — that's a write to addr 0x4)
+          const rxRp = state.get(0x2011) ?? 0;
+          rxReadData = (state.get(0x1000 + rxRp) ?? 0) >>> 0;
+        } else if (rxAddr === 0x8) {
+          // RX word count
+          rxReadData = state.get(0x2012) ?? 0;
+        }
+      }
+
+      // Network TX output: drain TX FIFO one word per cycle when draining
+      const draining = state.get(0x2004) ?? 0;
+      const txDrainPtr = state.get(0x2003) ?? 0;
+      const txWp = state.get(0x2000) ?? 0;
+      let netTxData = 0;
+      let netTxValid = false;
+      let netTxFrame = false;
+
+      if (draining && txDrainPtr < txWp) {
+        netTxData = (state.get(0x0000 + txDrainPtr) ?? 0) >>> 0;
+        netTxValid = true;
+        // Last word in frame
+        netTxFrame = (txDrainPtr + 1) >= txWp;
+      }
+
+      return new Map<string, BitValue | BusValue>([
+        ['tx_read_data', txReadData],
+        ['rx_read_data', rxReadData],
+        ['net_tx_data', netTxData],
+        ['net_tx_valid', netTxValid],
+        ['net_tx_frame', netTxFrame],
+      ]);
+    },
+    updateState: (inputs, currentState, clockEdges) => {
+      if (clockEdges['clk'] !== 'rising') {
+        return currentState;
+      }
+
+      const state = (currentState ?? new Map()) as Map<number, number>;
+      const newState = new Map(state);
+
+      // --- TX CPU write ---
+      const txMemWrite = inputs.get('tx_mem_write') as boolean;
+      if (txMemWrite) {
+        const txAddr = ((inputs.get('tx_addr') as number) ?? 0) >>> 0;
+        const txData = ((inputs.get('tx_write_data') as number) ?? 0) >>> 0;
+
+        if (txAddr === 0x0) {
+          // Write word to TX FIFO
+          const txWp = newState.get(0x2000) ?? 0;
+          newState.set(0x0000 + txWp, txData);
+          newState.set(0x2000, txWp + 1);
+        } else if (txAddr === 0xC) {
+          // Mark frame-end → start draining
+          newState.set(0x2002, 1);
+          newState.set(0x2003, 0); // reset drain pointer
+          newState.set(0x2004, 1); // start draining
+        }
+      }
+
+      // --- TX drain: advance drain pointer ---
+      // Read from previous-cycle state (not newState) so the drain FSM
+      // doesn't advance on the same tick frame-end is written — matching
+      // real registered hardware where outputs change on the next clock edge.
+      const wasDraining = state.get(0x2004) ?? 0;
+      if (wasDraining) {
+        const txDrainPtr = newState.get(0x2003) ?? 0;
+        const txWp = newState.get(0x2000) ?? 0;
+        if (txDrainPtr < txWp) {
+          newState.set(0x2003, txDrainPtr + 1);
+          // If we just sent the last word, stop draining and reset FIFO
+          if ((txDrainPtr + 1) >= txWp) {
+            newState.set(0x2004, 0); // stop draining
+            newState.set(0x2000, 0); // reset write pointer
+            newState.set(0x2001, 0); // reset read pointer
+            newState.set(0x2002, 0); // clear frame-end
+          }
+        }
+      }
+
+      // --- RX from network ---
+      const netRxValid = inputs.get('net_rx_valid') as boolean;
+      if (netRxValid) {
+        const netRxData = ((inputs.get('net_rx_data') as number) ?? 0) >>> 0;
+        const rxWp = newState.get(0x2010) ?? 0;
+        newState.set(0x1000 + rxWp, netRxData);
+        newState.set(0x2010, rxWp + 1);
+        newState.set(0x2012, (newState.get(0x2012) ?? 0) + 1);
+      }
+
+      // --- RX CPU pop ---
+      const rxMemWrite = inputs.get('rx_mem_write') as boolean;
+      if (rxMemWrite) {
+        const rxAddr = ((inputs.get('rx_addr') as number) ?? 0) >>> 0;
+        if (rxAddr === 0x4) {
+          // Pop front of RX FIFO
+          const rxRp = newState.get(0x2011) ?? 0;
+          const rxCount = newState.get(0x2012) ?? 0;
+          if (rxCount > 0) {
+            newState.set(0x2011, rxRp + 1);
+            newState.set(0x2012, rxCount - 1);
+          }
+        }
+      }
+
+      return newState;
+    },
+    outputDependency: 'state+inputs',
+  }),
 };
 
 // ============================================================================
@@ -2800,7 +3229,7 @@ circuit Comparator {
 // ============================================================================
 
 const SINK_NAMES = new Set([
-  'Led', 'Output', 'SevenSegment', 'HexDisplay', 'Screen', 'RasterDisplay', 'Console',
+  'Led', 'Output', 'SevenSegment', 'HexDisplay', 'Screen', 'RasterDisplay', 'Console', 'UART_TX',
 ]);
 
 /**

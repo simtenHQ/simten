@@ -1,5 +1,8 @@
 /**
- * Compile API Handler — proxies to the CC65 compiler service binding.
+ * Compile API Handler — proxies to the compiler container.
+ *
+ * Production: uses Cloudflare service binding (private, no public access).
+ * Local dev:  falls back to Docker container on localhost:55000.
  */
 
 interface CompilerResponse {
@@ -27,17 +30,19 @@ export async function handleCompile(request: Request, env: Record<string, unknow
     return Response.json({ success: false, error: `Unsupported language: "${language}"` }, { status: 400 });
   }
 
-  try {
-    const compiler = env.COMPILER as { fetch: typeof fetch } | undefined;
-    if (!compiler) {
-      return Response.json({ success: false, error: 'Compiler service not available' }, { status: 503 });
-    }
+  const reqInit: RequestInit = {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ source: body.source, language }),
+  };
 
-    const resp = await compiler.fetch('https://compiler/compile', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ source: body.source, language }),
-    });
+  // Service binding (production) → local Docker fallback (dev)
+  const compiler = env.COMPILER as { fetch: typeof fetch } | undefined;
+
+  try {
+    const resp = compiler
+      ? await compiler.fetch('https://compiler/compile', reqInit)
+      : await fetch('http://localhost:55000/compile', reqInit);
 
     const result: CompilerResponse = await resp.json();
     return Response.json(result, { status: resp.status });
