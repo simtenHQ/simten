@@ -43,7 +43,10 @@
       "Bash(cp -r /Users/charlesharris/Documents/Personal/turing-incomplete/apps/web/src/features/ /Users/charlesharris/Documents/Personal/turing-incomplete/apps/tanstack/src/features/)",
       "WebFetch(domain:developers.cloudflare.com)",
       "Bash(mkdir -p /Users/charlesharris/Documents/Personal/turing-incomplete/apps/tanstack/src/features/blog && cp -r /Users/charlesharris/Documents/Personal/turing-incomplete/apps/web/src/app/blog/building-a-cpu /Users/charlesharris/Documents/Personal/turing-incomplete/apps/tanstack/src/features/blog/ && cp -r /Users/charlesharris/Documents/Personal/turing-incomplete/apps/web/src/app/blog/computing-trig-in-hardware /Users/charlesharris/Documents/Personal/turing-incomplete/apps/tanstack/src/features/blog/ && cp -r /Users/charlesharris/Documents/Personal/turing-incomplete/apps/web/src/app/blog/how-network-switches-work /Users/charlesharris/Documents/Personal/turing-incomplete/apps/tanstack/src/features/blog/ && cp -r /Users/charlesharris/Documents/Personal/turing-incomplete/apps/web/src/app/blog/how-tpus-work /Users/charlesharris/Documents/Personal/turing-incomplete/apps/tanstack/src/features/blog/ && cp -r /Users/charlesharris/Documents/Personal/turing-incomplete/apps/web/src/app/blog/pong-in-hardware /Users/charlesharris/Documents/Personal/turing-incomplete/apps/tanstack/src/features/blog/ && cp -r /Users/charlesharris/Documents/Personal/turing-incomplete/apps/web/src/app/blog/snake-in-hardware /Users/charlesharris/Documents/Personal/turing-incomplete/apps/tanstack/src/features/blog/)",
-      "Bash(find /Users/charlesharris/Documents/Personal/turing-incomplete -type f \\\\\\( -name \"*SimulationController*\" -o -name \"*useSimulation*\" -o -name \"*ClockControls*\" \\\\\\) 2>/dev/null | head -20)"
+      "Bash(find /Users/charlesharris/Documents/Personal/turing-incomplete -type f \\\\\\( -name \"*SimulationController*\" -o -name \"*useSimulation*\" -o -name \"*ClockControls*\" \\\\\\) 2>/dev/null | head -20)",
+      "Bash(/opt/homebrew/Cellar/llvm@19/19.1.7/bin/llvm-objdump -d --triple=riscv32 /tmp/fibonacci.elf 2>&1 | grep -n \".\" | wc -l)",
+      "Bash(/opt/homebrew/Cellar/llvm@19/19.1.7/bin/llvm-objdump -d --triple=riscv32 /tmp/fibonacci.elf)",
+      "Read(//tmp/**)"
     ]
   }
 }

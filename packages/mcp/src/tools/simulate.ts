@@ -30,8 +30,14 @@ export function registerSimulateTool(server: McpServer): void {
         .record(z.union([z.number(), z.boolean()]))
         .optional()
         .describe('Initial input values as { portName: value }'),
+      memoryData: z
+        .record(z.record(z.number()))
+        .optional()
+        .describe(
+          'Pre-load memory into sequential nodes. Keys are substring patterns matched against node IDs (e.g. "imem" matches any node containing "imem"). Values are { address: data } maps. Architecture-agnostic — works with any ROM/RAM primitive.'
+        ),
     },
-    async ({ source, filePath, circuitName, ticks, inputs }) => {
+    async ({ source, filePath, circuitName, ticks, inputs, memoryData: memoryDataJson }) => {
       const read = readDSLSource({ source, filePath });
       if (read.error) {
         return {
@@ -40,12 +46,26 @@ export function registerSimulateTool(server: McpServer): void {
         };
       }
 
+      // Convert JSON memoryData to Map<string, Map<number, number>>
+      let memoryData: Map<string, Map<number, number>> | undefined;
+      if (memoryDataJson) {
+        memoryData = new Map();
+        for (const [pattern, addrMap] of Object.entries(memoryDataJson)) {
+          const innerMap = new Map<number, number>();
+          for (const [addr, value] of Object.entries(addrMap)) {
+            innerMap.set(Number(addr), value);
+          }
+          memoryData.set(pattern, innerMap);
+        }
+      }
+
       const result = simulateCircuit({
         source: read.source,
         sourceName: read.sourceName,
         circuitName,
         ticks,
         inputs,
+        memoryData,
       });
 
       if ('error' in result) {

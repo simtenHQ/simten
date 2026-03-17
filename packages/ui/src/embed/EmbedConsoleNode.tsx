@@ -15,7 +15,7 @@ interface EmbedConsoleNodeProps {
  */
 export function EmbedConsoleNode({ data, selected }: EmbedConsoleNodeProps) {
   const textAreaRef = useRef<HTMLPreElement>(null);
-  const text = (data.__consoleText as string) ?? "";
+  const text = (data.__consoleText as string) ?? (data.__uartText as string) ?? "";
 
   useEffect(() => {
     if (textAreaRef.current) {

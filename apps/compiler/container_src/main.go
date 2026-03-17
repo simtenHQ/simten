@@ -23,8 +23,9 @@ const maxSourceSize = 50 * 1024
 const compileTimeout = 10 * time.Second
 
 type CompileRequest struct {
-	Source   string `json:"source"`
-	Language string `json:"language"` // "c", "cpp", "rust", "asm"
+	Source       string `json:"source"`
+	Language     string `json:"language"`                // "c", "cpp", "rust", "asm"
+	LinkerScript string `json:"linkerScript,omitempty"`  // Optional custom linker script; uses default if empty
 }
 
 type CompileResponse struct {
@@ -75,13 +76,19 @@ func compileHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Use custom linker script if provided, otherwise default
+	ls := linkerScript
+	if req.LinkerScript != "" {
+		ls = req.LinkerScript
+	}
+
 	switch req.Language {
 	case "c":
-		compileGCC(w, req.Source, "c")
+		compileGCC(w, req.Source, "c", ls)
 	case "cpp":
-		compileGCC(w, req.Source, "cpp")
+		compileGCC(w, req.Source, "cpp", ls)
 	case "rust":
-		compileRust(w, req.Source)
+		compileRust(w, req.Source, ls)
 	case "asm":
 		compileASM(w, req.Source)
 	default:
@@ -92,39 +99,44 @@ func compileHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// linkerScript is shared by C, C++, and Rust bare-metal builds
+// linkerScript is shared by C, C++, and Rust bare-metal builds.
+// Split IMEM/DMEM layout matching the RV32I_CPU MemBusMux:
+//   IMEM (code)  at 0x00000000 — read-only from CPU's perspective
+//   DMEM (data)  at 0x00010000 — read/write for stack, globals, heap
 const linkerScript = `
 OUTPUT_ARCH(riscv)
 ENTRY(_start)
 
 MEMORY {
-    RAM (rwx) : ORIGIN = 0x00000000, LENGTH = 64K
+    IMEM (rx)  : ORIGIN = 0x00000000, LENGTH = 64K
+    DMEM (rwx) : ORIGIN = 0x00010000, LENGTH = 64K
 }
 
 SECTIONS {
     .text : {
         *(.text._start)
         *(.text*)
-    } > RAM
+    } > IMEM
 
-    .rodata : { *(.rodata*) } > RAM
-    .data : { *(.data*) } > RAM
+    .rodata : { *(.rodata*) } > DMEM
+
+    .data : { *(.data*) } > DMEM
 
     .bss : {
         __bss_start = .;
         *(.bss*)
         *(COMMON)
         __bss_end = .;
-    } > RAM
+    } > DMEM
 
-    __stack_top = ORIGIN(RAM) + LENGTH(RAM);
+    __stack_top = ORIGIN(DMEM) + LENGTH(DMEM);
     __heap_start = __bss_end;
     __heap_end = __stack_top - 2048;
 }
 `
 
 // crt0Source is the minimal startup stub for C/C++/Rust programs.
-// Sets stack pointer, calls main, then halts in an infinite loop.
+// Sets stack pointer to top of DMEM, calls main, then halts in an infinite loop.
 const crt0Source = `.section .text._start
 .global _start
 _start:
@@ -157,7 +169,7 @@ func buildCrt0(ctx context.Context, dir string) (string, error) {
 }
 
 // compileGCC handles C and C++ via riscv-none-elf-gcc / g++
-func compileGCC(w http.ResponseWriter, source string, lang string) {
+func compileGCC(w http.ResponseWriter, source string, lang string, ls string) {
 	id := randomID()
 	dir := filepath.Join("/tmp/compile", id)
 	os.MkdirAll(dir, 0755)
@@ -183,7 +195,7 @@ func compileGCC(w http.ResponseWriter, source string, lang string) {
 		return
 	}
 
-	if err := os.WriteFile(linkerFile, []byte(linkerScript), 0644); err != nil {
+	if err := os.WriteFile(linkerFile, []byte(ls), 0644); err != nil {
 		writeJSON(w, http.StatusInternalServerError, CompileResponse{
 			Success: false,
 			Error:   "failed to write linker script",
@@ -212,6 +224,7 @@ func compileGCC(w http.ResponseWriter, source string, lang string) {
 		"-o", elfFile,
 		crt0Obj, // link startup stub
 		srcFile,
+		"-lgcc", // software division/modulo routines
 	}
 	// C++ extras: no exceptions or RTTI (bare metal)
 	if lang == "cpp" {
@@ -250,7 +263,7 @@ func compileGCC(w http.ResponseWriter, source string, lang string) {
 }
 
 // compileRust handles Rust via rustc targeting riscv32i
-func compileRust(w http.ResponseWriter, source string) {
+func compileRust(w http.ResponseWriter, source string, ls string) {
 	id := randomID()
 	dir := filepath.Join("/tmp/compile", id)
 	os.MkdirAll(dir, 0755)
@@ -269,7 +282,7 @@ func compileRust(w http.ResponseWriter, source string) {
 		return
 	}
 
-	if err := os.WriteFile(linkerFile, []byte(linkerScript), 0644); err != nil {
+	if err := os.WriteFile(linkerFile, []byte(ls), 0644); err != nil {
 		writeJSON(w, http.StatusInternalServerError, CompileResponse{
 			Success: false,
 			Error:   "failed to write linker script",

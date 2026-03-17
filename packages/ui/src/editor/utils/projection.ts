@@ -37,6 +37,8 @@ export interface NodeData extends Record<string, unknown> {
   arguments?: Record<string, unknown>; // Primitive arguments (e.g., { width: 16 })
   __pixels?: number[]; // For Screen component - pixel data from RAM
   __consoleText?: string; // For Console component - accumulated text
+  __uartText?: string; // For UART_TX component - accumulated text
+  __nicState?: { txCount: number; rxCount: number; draining: boolean }; // For NIC_FIFO component
   onToggle?: () => void; // Optional callback for input toggle (used by MiniCanvas/Inspector)
   onValueChange?: (value: number) => void; // Optional callback for numeric input change (used by Inspector)
   showPortLabels?: boolean; // Show port name labels next to handles
@@ -77,6 +79,8 @@ function getNodeTypeForComponent(componentRef: string, inputCount: number, outpu
     Screen: 'screenNode',
     RasterDisplay: 'rasterDisplayNode',
     Console: 'consoleNode',
+    UART_TX: 'uartTxNode',
+    NIC_FIFO: 'nicFifoNode',
     Constant: 'logicGateNode',
     RV32I_InstrMem: 'rv32iInstrMemNode',
     Eth_FrameInput: 'ethFrameInputNode',
@@ -140,6 +144,8 @@ export function projectCircuitToNodes(
     let width: number | undefined = undefined;
     let pixels: number[] | undefined = undefined;
     let consoleText: string | undefined = undefined;
+    let uartText: string | undefined = undefined;
+    let nicState: { txCount: number; rxCount: number; draining: boolean } | undefined = undefined;
 
     if (node.componentRef === 'Switch' || node.componentRef === 'Led') {
       // For Switch/Led, prefer port values (reflects actual simulation state)
@@ -273,6 +279,25 @@ export function projectCircuitToNodes(
           consoleText = consoleState;
         }
       }
+    } else if (node.componentRef === 'UART_TX') {
+      if (seqState) {
+        const uartState = seqState.currentState.get(node.id);
+        if (typeof uartState === 'string') {
+          uartText = uartState;
+        }
+      }
+    } else if (node.componentRef === 'NIC_FIFO') {
+      if (seqState) {
+        const state = seqState.currentState.get(node.id);
+        if (state instanceof Map) {
+          const s = state as Map<number, number>;
+          const txWp = s.get(0x2000) ?? 0;
+          const txRp = s.get(0x2001) ?? 0;
+          const rxCount = s.get(0x2012) ?? 0;
+          const draining = (s.get(0x2004) ?? 0) !== 0;
+          nicState = { txCount: txWp - txRp, rxCount, draining };
+        }
+      }
     }
 
     // Detect composite components (user can drill into these)
@@ -300,6 +325,8 @@ export function projectCircuitToNodes(
         arguments: node.arguments,
         __pixels: pixels,
         __consoleText: consoleText,
+        __uartText: uartText,
+        __nicState: nicState,
       },
       selected: nodeMetadata.selected,
       selectable: true,
@@ -317,41 +344,98 @@ export function projectCircuitToNodes(
       // Skip if already projected
       if (existingNodeIds.has(nodeId)) continue;
 
-      // Check if this looks like a Console state (string type)
+      // Check if this looks like a Console/UART_TX state (string type)
       if (typeof state === 'string') {
-        // Extract a readable label from the node ID
         const pathParts = nodeId.split('.');
         const shortLabel = pathParts.length > 1
           ? pathParts.slice(-2).join('.')
           : nodeId;
 
-        // Create a virtual ConsoleNode for this nested console
+        // Determine if this is a UART_TX or Console based on node ID
+        const isUart = nodeId.toLowerCase().includes('uart');
+        const nodeType = isUart ? 'uartTxNode' : 'consoleNode';
+        const componentRef = isUart ? 'UART_TX' : 'Console';
+        const label = isUart ? `UART (${shortLabel})` : `Console (${shortLabel})`;
+
         reactFlowNodes.push({
           id: `__virtual_console_${consoleIndex}`,
-          type: 'consoleNode',
+          type: nodeType,
           position: {
             x: 600,
             y: 50 + (consoleIndex * 250)
           },
           data: {
             nodeId: nodeId,
-            componentRef: 'Console',
-            label: `Console (${shortLabel})`,
+            componentRef,
+            label,
             value: undefined,
             numericValue: undefined,
             width: undefined,
-            inputCount: 2,
+            inputCount: isUart ? 4 : 2,
             outputCount: 1,
-            inputNames: ['data', 'we'],
-            outputNames: ['text'],
+            inputNames: isUart ? ['addr', 'write_data', 'mem_read', 'mem_write'] : ['data', 'we'],
+            outputNames: isUart ? ['read_data'] : ['text'],
             __pixels: undefined,
-            __consoleText: state,
+            __consoleText: isUart ? undefined : state,
+            __uartText: isUart ? state : undefined,
           },
           selected: false,
           selectable: false,
           deletable: false,
         });
         consoleIndex++;
+      }
+    }
+  }
+
+  // Look for RV32I_InstrMem primitives nested in subcircuits that aren't already projected
+  // This surfaces InstrMem nodes so users can load programs into sub-circuit CPUs
+  if (seqState) {
+    const existingNodeIds = new Set(reactFlowNodes.map(n => n.id));
+    let instrMemIndex = 0;
+
+    for (const [nodeId, state] of seqState.currentState.entries()) {
+      if (existingNodeIds.has(nodeId)) continue;
+
+      // InstrMem state is a Map (memory data) and the node ID contains 'imem' or 'instrmem'
+      const isInstrMem = state instanceof Map &&
+        (nodeId.toLowerCase().includes('imem') || nodeId.toLowerCase().includes('instrmem')) &&
+        !nodeId.toLowerCase().includes('imem_data'); // exclude the read-only data port copy
+
+      if (isInstrMem) {
+        const pathParts = nodeId.split('.');
+        // Build a short label like "cpu0.imem" from the long elaborated path
+        const shortLabel = pathParts.length > 1
+          ? pathParts.slice(-2).join('.')
+          : nodeId;
+        // Try to extract a friendly CPU name (e.g., "cpu0", "cpu1")
+        const cpuMatch = nodeId.match(/cpu(\d+)/i);
+        const label = cpuMatch ? `CPU${cpuMatch[1]} InstrMem` : `InstrMem (${shortLabel})`;
+
+        reactFlowNodes.push({
+          id: `__virtual_instrmem_${instrMemIndex}`,
+          type: 'rv32iInstrMemNode',
+          position: {
+            x: 600,
+            y: 500 + (instrMemIndex * 250)
+          },
+          data: {
+            nodeId: nodeId,
+            componentRef: 'RV32I_InstrMem',
+            label,
+            value: undefined,
+            numericValue: undefined,
+            width: undefined,
+            inputCount: 1,
+            outputCount: 1,
+            inputNames: ['addr'],
+            outputNames: ['instruction'],
+          },
+          selected: false,
+          selectable: false,
+          deletable: false,
+        });
+        instrMemIndex++;
       }
     }
   }

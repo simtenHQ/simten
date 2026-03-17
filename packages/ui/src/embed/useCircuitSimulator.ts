@@ -131,19 +131,6 @@ export function useCircuitSimulator(
     const mainCircuit = result.circuits[result.circuits.length - 1];
     compiledCircuitRef.current = mainCircuit;
 
-    // Detect sequential: top-level clocks OR any node that references a clocked component
-    let hasClocks = mainCircuit.clocks && mainCircuit.clocks.length > 0;
-    if (!hasClocks) {
-      for (const node of mainCircuit.nodes) {
-        const def = store.resolveComponent(node.componentRef);
-        if (def && def.clocks && def.clocks.length > 0) {
-          hasClocks = true;
-          break;
-        }
-      }
-    }
-    setIsSequential(hasClocks);
-
     // Initialize inputs
     const initialInputs: Record<string, boolean | number> = {};
     for (const input of mainCircuit.inputs) {
@@ -155,6 +142,22 @@ export function useCircuitSimulator(
       const elaboratedCircuit = elaborate(mainCircuit, store);
       flatCircuitRef.current = elaboratedCircuit;
       setCircuit(mainCircuit);
+
+      // Detect sequential after elaboration so nested clocked components are found.
+      // Check flattened nodes for any primitive with clocks.
+      let hasClocks = mainCircuit.clocks && mainCircuit.clocks.length > 0;
+      if (!hasClocks) {
+        for (const node of elaboratedCircuit.nodes) {
+          if (node.primitiveType) {
+            const def = store.resolveComponent(node.primitiveType);
+            if (def && def.clocks && def.clocks.length > 0) {
+              hasClocks = true;
+              break;
+            }
+          }
+        }
+      }
+      setIsSequential(hasClocks);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     }
@@ -167,6 +170,8 @@ export function useCircuitSimulator(
   useEffect(() => {
     const flatCircuit = flatCircuitRef.current;
     if (!flatCircuit) return;
+
+    console.log('[useCircuitSimulator] Creating simulator, initialMemory:', initialMemory ? `${initialMemory.size} patterns` : 'none');
 
     simulatorRef.current = null;
     setReady(false);
@@ -298,6 +303,15 @@ export function useCircuitSimulator(
     if (seqState) {
       setCycleCount(seqState.cycleCount);
       setSequentialState(seqState);
+
+      // Debug: check for UART text in sequential state
+      if (seqState.cycleCount <= 20 || seqState.cycleCount % 10 === 0) {
+        for (const [nodeId, state] of seqState.currentState.entries()) {
+          if (typeof state === 'string' && nodeId.toLowerCase().includes('uart')) {
+            console.log(`[tick ${seqState.cycleCount}] UART "${nodeId}" text="${state}" (${state.length} chars)`);
+          }
+        }
+      }
     }
 
     extractOutputs(result.portValues);

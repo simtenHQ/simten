@@ -1,18 +1,30 @@
-// 5-Stage Pipelined RV32I CPU
+// RV32I Dual CPU — two pipelined RISC-V CPUs cross-connected via NIC
 //
-// Classic 5-stage pipeline: IF → ID → EX → MEM → WB
-// with data forwarding and hazard detection.
+// Each CPU has its own InstrMem, DataMem, UART, and NIC.
+// NIC TX of one CPU connects to NIC RX of the other, enabling
+// inter-CPU communication via memory-mapped writes/reads.
 //
-// Pipeline registers between each stage latch values on rising clock edge.
-// Forwarding unit bypasses ALU/MEM results to avoid stalls.
-// Hazard unit stalls on load-use hazards (1-cycle bubble).
-// Branches resolved in EX stage (2-cycle penalty on taken branch/jump).
+// Memory map (per CPU):
+//   0x00000000 - 0x0000FFFF  InstrMem (ROM, 64KB)
+//   0x00010000 - 0x0001FFFF  DataMem  (RAM, 64KB)
+//   0x80000000              UART TX data (W: write byte, R: tx_ready)
+//   0x80001000              NIC TX data (W at +0), TX count (R at +8), TX frame-end (W at +C)
+//   0x80002000              NIC RX data (R at +0), RX pop (W at +4), RX count (R at +8)
 //
-// Programs are loaded at runtime into InstrMem via the memory data store.
+// 23 ticks for a full ping-pong round trip between the two CPUs.
 
-circuit RV32I_Pipelined_CPU {
+// ============================================================================
+// RV32I_CPU: 5-stage pipelined RISC-V CPU with memory-mapped peripherals
+// ============================================================================
+
+circuit RV32I_CPU {
+  input net_rx_data: Bus[32]
+  input net_rx_valid: Bit
+  input net_rx_frame: Bit
+  output net_tx_data: Bus[32]
+  output net_tx_valid: Bit
+  output net_tx_frame: Bit
   output pc_out: Bus[32]
-  output alu_result: Bus[32]
   impl {
 
     // ========================================================================
@@ -53,12 +65,8 @@ circuit RV32I_Pipelined_CPU {
     // ========================================================================
     // IF/ID Pipeline Register
     // ========================================================================
-    // On flush: load zeros (NOP). On stall: hold current value (we=0).
-    node ifid_flush_or_stall: Or
-    connect hazard.flush -> ifid_flush_or_stall.a
-    connect hazard.stall -> ifid_flush_or_stall.b
+    // On flush: zero IF/ID contents (NOP). On stall: hold IF/ID via we=stall_inv.
 
-    // Instruction register
     node ifid_instr_mux: Mux(width=32)
     connect imem.instruction -> ifid_instr_mux.in0
     connect zero32.out -> ifid_instr_mux.in1
@@ -68,7 +76,6 @@ circuit RV32I_Pipelined_CPU {
     connect ifid_instr_mux.out -> ifid_instr.data
     connect stall_inv.out -> ifid_instr.we
 
-    // PC register
     node ifid_pc_mux: Mux(width=32)
     connect pc.q -> ifid_pc_mux.in0
     connect zero32.out -> ifid_pc_mux.in1
@@ -78,7 +85,6 @@ circuit RV32I_Pipelined_CPU {
     connect ifid_pc_mux.out -> ifid_pc.data
     connect stall_inv.out -> ifid_pc.we
 
-    // PC+4 register
     node ifid_pc4_mux: Mux(width=32)
     connect pc_plus4.sum -> ifid_pc4_mux.in0
     connect zero32.out -> ifid_pc4_mux.in1
@@ -109,21 +115,20 @@ circuit RV32I_Pipelined_CPU {
     connect decode.rs1 -> regfile.rs1
     connect decode.rs2 -> regfile.rs2
 
-    // Wire hazard unit inputs (IF stage rs1/rs2 from the instruction in IF/ID)
+    // Wire hazard unit inputs — decode the ID stage instruction (ifid_instr.q)
+    // so the hazard unit compares the instruction in ID against the load in EX
     node ifid_decode_for_hazard: RV32I_Decode
-    connect imem.instruction -> ifid_decode_for_hazard.instruction
+    connect ifid_instr.q -> ifid_decode_for_hazard.instruction
     connect ifid_decode_for_hazard.rs1 -> hazard.if_rs1
     connect ifid_decode_for_hazard.rs2 -> hazard.if_rs2
 
     // ========================================================================
     // ID/EX Pipeline Register
     // ========================================================================
-    // On flush (branch/jump) or stall (load-use): insert NOP
     node idex_flush: Or
     connect hazard.flush -> idex_flush.a
     connect hazard.stall -> idex_flush.b
 
-    // -- Data values --
     node idex_pc: Register(width=32)
     connect ifid_pc.q -> idex_pc.data
     connect one1.out -> idex_pc.we
@@ -132,19 +137,35 @@ circuit RV32I_Pipelined_CPU {
     connect ifid_pc4.q -> idex_pc4.data
     connect one1.out -> idex_pc4.we
 
+    // WB-to-ID bypass: when WB writes the same register ID is reading,
+    // forward the WB value instead of the stale register file output.
+    // Models real hardware's write-first-read-second register file clocking.
+    node wb_bypass1: RV32I_WBBypass
+    connect regfile.read1 -> wb_bypass1.rs_val
+    connect decode.rs1 -> wb_bypass1.rs_addr
+    connect wb_mux.write_data -> wb_bypass1.wb_val
+    connect memwb_rd.q -> wb_bypass1.wb_rd
+    connect memwb_reg_write.q -> wb_bypass1.wb_we
+
+    node wb_bypass2: RV32I_WBBypass
+    connect regfile.read2 -> wb_bypass2.rs_val
+    connect decode.rs2 -> wb_bypass2.rs_addr
+    connect wb_mux.write_data -> wb_bypass2.wb_val
+    connect memwb_rd.q -> wb_bypass2.wb_rd
+    connect memwb_reg_write.q -> wb_bypass2.wb_we
+
     node idex_read1: Register(width=32)
-    connect regfile.read1 -> idex_read1.data
+    connect wb_bypass1.out -> idex_read1.data
     connect one1.out -> idex_read1.we
 
     node idex_read2: Register(width=32)
-    connect regfile.read2 -> idex_read2.data
+    connect wb_bypass2.out -> idex_read2.data
     connect one1.out -> idex_read2.we
 
     node idex_imm: Register(width=32)
     connect immgen.immediate -> idex_imm.data
     connect one1.out -> idex_imm.we
 
-    // -- Register addresses (for forwarding) --
     node idex_rs1_mux: Mux(width=5)
     connect decode.rs1 -> idex_rs1_mux.in0
     connect zero5.out -> idex_rs1_mux.in1
@@ -289,11 +310,8 @@ circuit RV32I_Pipelined_CPU {
     node forward: RV32I_ForwardingUnit
     connect idex_rs1.q -> forward.id_rs1
     connect idex_rs2.q -> forward.id_rs2
-    // EX hazard: from EX/MEM stage (wired after EX/MEM regs are declared)
-    // MEM hazard: from MEM/WB stage (wired after MEM/WB regs are declared)
 
     // -- Forwarding Mux A (ALU input A) --
-    // forward_a: 0=regfile, 1=EX/MEM forward, 2=MEM/WB forward
     node fwd_a_bit0: BitSlice(low=0, high=0)
     connect forward.forward_a -> fwd_a_bit0.in
     node fwd_a_bit1: BitSlice(low=1, high=1)
@@ -301,12 +319,10 @@ circuit RV32I_Pipelined_CPU {
 
     node fwd_a_mux1: Mux(width=32)
     connect idex_read1.q -> fwd_a_mux1.in0
-    // EX/MEM ALU result — wired after EX/MEM regs
     connect fwd_a_bit0.out -> fwd_a_mux1.sel
 
     node fwd_a_mux2: Mux(width=32)
     connect fwd_a_mux1.out -> fwd_a_mux2.in0
-    // MEM/WB write data — wired after WB stage
     connect fwd_a_bit1.out -> fwd_a_mux2.sel
 
     // -- Forwarding Mux B (ALU input B / store data) --
@@ -317,12 +333,10 @@ circuit RV32I_Pipelined_CPU {
 
     node fwd_b_mux1: Mux(width=32)
     connect idex_read2.q -> fwd_b_mux1.in0
-    // EX/MEM ALU result — wired after EX/MEM regs
     connect fwd_b_bit0.out -> fwd_b_mux1.sel
 
     node fwd_b_mux2: Mux(width=32)
     connect fwd_b_mux1.out -> fwd_b_mux2.in0
-    // MEM/WB write data — wired after WB stage
     connect fwd_b_bit1.out -> fwd_b_mux2.sel
 
     // -- ALU source mux (forwarded rs2 or immediate) --
@@ -359,8 +373,6 @@ circuit RV32I_Pipelined_CPU {
     connect idex_imm.q -> pc_plus_imm.b
 
     // -- EX-stage result (for forwarding) --
-    // Must compute the actual writeback value here, not just ALU result,
-    // so forwarding works correctly for AUIPC/LUI/JAL/JALR.
     node ex_result: RV32I_WritebackMux
     connect alu.result -> ex_result.alu_result
     connect zero32.out -> ex_result.load_data
@@ -377,7 +389,7 @@ circuit RV32I_Pipelined_CPU {
     connect idex_branch.q -> branch_and.a
     connect branch_comp.take_branch -> branch_and.b
 
-    // -- Next PC (resolved in EX stage) --
+    // -- Next PC --
     node next_pc: RV32I_NextPCMux
     connect idex_pc4.q -> next_pc.pc_plus4
     connect branch_target.sum -> next_pc.branch_target
@@ -388,9 +400,6 @@ circuit RV32I_Pipelined_CPU {
     connect idex_jump.q -> next_pc.jump
     connect idex_is_jalr.q -> next_pc.is_jalr
 
-    // Feed resolved PC back (overrides PC+4 when branch/jump taken)
-    // When no branch/jump, next_pc outputs PC+4 from the EX stage instruction.
-    // But we want the IF stage's PC+4 for sequential flow. Use a mux:
     node pc_src_taken: Or
     connect branch_and.out -> pc_src_taken.a
     connect idex_jump.q -> pc_src_taken.b
@@ -402,11 +411,9 @@ circuit RV32I_Pipelined_CPU {
 
     connect pc_next_mux.out -> pc.data
 
-    // Wire hazard unit flush/jump signals from EX stage
+    // Wire hazard unit
     connect branch_and.out -> hazard.branch_taken
     connect idex_jump.q -> hazard.jump
-
-    // Wire hazard unit stall detection from ID/EX stage
     connect idex_rd.q -> hazard.id_rd
     connect idex_mem_read.q -> hazard.id_mem_read
 
@@ -417,7 +424,6 @@ circuit RV32I_Pipelined_CPU {
     connect alu.result -> exmem_alu_result.data
     connect one1.out -> exmem_alu_result.we
 
-    // EX result = correct writeback value (for forwarding)
     node exmem_result: Register(width=32)
     connect ex_result.write_data -> exmem_result.data
     connect one1.out -> exmem_result.we
@@ -446,7 +452,6 @@ circuit RV32I_Pipelined_CPU {
     connect pc_plus_imm.sum -> exmem_pc_plus_imm.data
     connect one1.out -> exmem_pc_plus_imm.we
 
-    // Control signals
     node exmem_mem_read: Register(width=1)
     connect idex_mem_read.q -> exmem_mem_read.data
     connect one1.out -> exmem_mem_read.we
@@ -475,24 +480,70 @@ circuit RV32I_Pipelined_CPU {
     connect idex_jump.q -> exmem_jump.data
     connect one1.out -> exmem_jump.we
 
-    // -- Wire forwarding unit: EX hazard from EX/MEM --
+    // Wire forwarding unit: EX hazard from EX/MEM
     connect exmem_rd.q -> forward.ex_rd
     connect exmem_reg_write.q -> forward.ex_reg_write
-
-    // -- Wire forwarding mux: EX/MEM result (writeback value, not just ALU) --
     connect exmem_result.q -> fwd_a_mux1.in1
     connect exmem_result.q -> fwd_b_mux1.in1
 
     // ########################################################################
-    //  STAGE 4: MEMORY ACCESS (MEM)
+    //  STAGE 4: MEMORY ACCESS (MEM) — via MemBusMux
     // ########################################################################
 
+    // MemBusMux: routes memory operations to correct peripheral
+    node bus_mux: MemBusMux
+    connect exmem_alu_result.q -> bus_mux.addr
+    connect exmem_read2.q -> bus_mux.write_data
+    connect exmem_mem_read.q -> bus_mux.mem_read
+    connect exmem_mem_write.q -> bus_mux.mem_write
+    connect exmem_funct3.q -> bus_mux.funct3
+
+    // --- Peripheral 0: DataMem (0x00010000 - 0x0001FFFF) ---
     node dmem: RV32I_DataMem
-    connect exmem_alu_result.q -> dmem.addr
-    connect exmem_read2.q -> dmem.write_data
-    connect exmem_mem_read.q -> dmem.mem_read
-    connect exmem_mem_write.q -> dmem.mem_write
-    connect exmem_funct3.q -> dmem.funct3
+    connect bus_mux.local_addr -> dmem.addr
+    connect bus_mux.write_data_out -> dmem.write_data
+    connect bus_mux.p0_read -> dmem.mem_read
+    connect bus_mux.p0_write -> dmem.mem_write
+    connect bus_mux.funct3_out -> dmem.funct3
+    connect dmem.read_data -> bus_mux.read_data_0
+
+    // --- Peripheral 1: UART_TX (0x80000000) ---
+    node uart: UART_TX
+    connect bus_mux.local_addr -> uart.addr
+    connect bus_mux.write_data_out -> uart.write_data
+    connect bus_mux.p1_read -> uart.mem_read
+    connect bus_mux.p1_write -> uart.mem_write
+    connect uart.read_data -> bus_mux.read_data_1
+
+    // --- Peripheral 2 & 3: NIC_FIFO (TX: 0x80001000, RX: 0x80002000) ---
+    node nic: NIC_FIFO
+    connect bus_mux.local_addr -> nic.tx_addr
+    connect bus_mux.write_data_out -> nic.tx_write_data
+    connect bus_mux.p2_read -> nic.tx_mem_read
+    connect bus_mux.p2_write -> nic.tx_mem_write
+    connect nic.tx_read_data -> bus_mux.read_data_2
+
+    connect bus_mux.local_addr -> nic.rx_addr
+    connect bus_mux.p3_read -> nic.rx_mem_read
+    connect bus_mux.p3_write -> nic.rx_mem_write
+    connect nic.rx_read_data -> bus_mux.read_data_3
+
+    // --- Peripheral 4: InstrMem read port (0x00000000 - 0x0000FFFF) ---
+    // Allows CPU data loads (lbu/lw) to read from ROM (.rodata strings)
+    node imem_data: RV32I_InstrMem
+    connect bus_mux.local_addr -> imem_data.addr
+    node imem_load_align: RV32I_LoadAlign
+    connect imem_data.instruction -> imem_load_align.data
+    connect exmem_funct3.q -> imem_load_align.funct3
+    connect imem_load_align.out -> bus_mux.read_data_4
+
+    // Network I/O
+    connect net_rx_data -> nic.net_rx_data
+    connect net_rx_valid -> nic.net_rx_valid
+    connect net_rx_frame -> nic.net_rx_frame
+    connect nic.net_tx_data -> net_tx_data
+    connect nic.net_tx_valid -> net_tx_valid
+    connect nic.net_tx_frame -> net_tx_frame
 
     // ========================================================================
     // MEM/WB Pipeline Register
@@ -502,7 +553,7 @@ circuit RV32I_Pipelined_CPU {
     connect one1.out -> memwb_alu_result.we
 
     node memwb_load_data: Register(width=32)
-    connect dmem.read_data -> memwb_load_data.data
+    connect bus_mux.read_data -> memwb_load_data.data
     connect one1.out -> memwb_load_data.we
 
     node memwb_rd: Register(width=5)
@@ -542,7 +593,7 @@ circuit RV32I_Pipelined_CPU {
     connect exmem_jump.q -> memwb_jump.data
     connect one1.out -> memwb_jump.we
 
-    // -- Wire forwarding unit: MEM hazard from MEM/WB --
+    // Wire forwarding unit: MEM hazard from MEM/WB
     connect memwb_rd.q -> forward.mem_rd
     connect memwb_reg_write.q -> forward.mem_reg_write
 
@@ -566,7 +617,7 @@ circuit RV32I_Pipelined_CPU {
     connect memwb_reg_write.q -> regfile.we
     connect wb_mux.write_data -> regfile.write_data
 
-    // -- Wire forwarding mux: MEM/WB write data --
+    // Wire forwarding mux: MEM/WB write data
     connect wb_mux.write_data -> fwd_a_mux2.in1
     connect wb_mux.write_data -> fwd_b_mux2.in1
 
@@ -574,6 +625,30 @@ circuit RV32I_Pipelined_CPU {
     // Observable outputs
     // ========================================================================
     connect pc.q -> pc_out
-    connect alu.result -> alu_result
+  }
+}
+
+// ============================================================================
+// RV32I_DualCPU: Two CPUs cross-connected via NIC
+// ============================================================================
+
+circuit RV32I_DualCPU {
+  output cpu0_pc: Bus[32]
+  output cpu1_pc: Bus[32]
+  impl {
+    node cpu0: RV32I_CPU
+    node cpu1: RV32I_CPU
+
+    // Cross-connect NICs: cpu0 TX -> cpu1 RX, cpu1 TX -> cpu0 RX
+    connect cpu0.net_tx_data  -> cpu1.net_rx_data
+    connect cpu0.net_tx_valid -> cpu1.net_rx_valid
+    connect cpu0.net_tx_frame -> cpu1.net_rx_frame
+    connect cpu1.net_tx_data  -> cpu0.net_rx_data
+    connect cpu1.net_tx_valid -> cpu0.net_rx_valid
+    connect cpu1.net_tx_frame -> cpu0.net_rx_frame
+
+    // Observable outputs
+    connect cpu0.pc_out -> cpu0_pc
+    connect cpu1.pc_out -> cpu1_pc
   }
 }

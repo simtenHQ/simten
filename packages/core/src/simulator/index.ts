@@ -335,6 +335,13 @@ class FastSimulatorEngineImpl implements SimulatorEngine {
       this.topLevelInputs
     );
 
+    // Snapshot port values after Phase 1 — these reflect the current
+    // instruction's combinational computation (ALU result, decoder outputs,
+    // etc.) before the clock edge commits new state. This matches what you'd
+    // see on a real hardware oscilloscope mid-cycle.
+    const portValues = toFlatPortValueMap(this.numericCircuit, this.numericValues, this.topLevelInputs);
+    propagateToTopLevelOutputs(this.numericCircuit, this.numericValues, portValues);
+
     // Phase 2: Clock HIGH
     updateClockStates(this.numericCircuit, this.numericSeqState);
 
@@ -349,7 +356,9 @@ class FastSimulatorEngineImpl implements SimulatorEngine {
     // Phase 4: Commit state
     commitSequentialState(this.numericSeqState);
 
-    // Phase 5: Propagate new state values
+    // Phase 5: Full propagation with committed state (prepares circuit for
+    // the next tick's Phase 1). These values are internal — the returned
+    // portValues snapshot was captured above after Phase 1.
     this.eventQueue.clear();
     seedStateOutputNodes(this.numericCircuit, this.eventQueue);
 
@@ -365,10 +374,6 @@ class FastSimulatorEngineImpl implements SimulatorEngine {
     this.totalTicks++;
     this.totalEvaluations += totalEvals;
     this.cacheValid = false;
-
-    // Convert to flat representation for API compatibility
-    const portValues = toFlatPortValueMap(this.numericCircuit, this.numericValues, this.topLevelInputs);
-    propagateToTopLevelOutputs(this.numericCircuit, this.numericValues, portValues);
 
     const seqState = toFlatSequentialState(this.numericCircuit, this.numericSeqState);
 

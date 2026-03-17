@@ -15,6 +15,8 @@ import { RegisterNode } from "../editor/components/nodes/RegisterNode";
 import { RAMNode } from "../editor/components/nodes/RAMNode";
 import { ROMNode } from "../editor/components/nodes/ROMNode";
 import { ConsoleNode } from "../editor/components/nodes/ConsoleNode";
+import { UartTxNode } from "../editor/components/nodes/UartTxNode";
+import { NicFifoNode } from "../editor/components/nodes/NicFifoNode";
 import { RV32IInstrMemNode } from "../editor/components/nodes/RV32IInstrMemNode";
 import { EthFrameInputNode } from "../editor/components/nodes/EthFrameInputNode";
 
@@ -35,6 +37,8 @@ export const EMBED_NODE_TYPES: NodeTypes = {
   rv32iInstrMemNode: LogicGateNode,
   ethFrameInputNode: LogicGateNode,
   consoleNode: EmbedConsoleNode,
+  uartTxNode: EmbedConsoleNode,
+  nicFifoNode: LogicGateNode,
   screenNode: EmbedScreenNode,
   rasterDisplayNode: EmbedScreenNode,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -66,5 +70,7 @@ export const FULL_NODE_TYPES: NodeTypes = {
   rv32iInstrMemNode: RV32IInstrMemNode,
   ethFrameInputNode: EthFrameInputNode,
   consoleNode: ConsoleNode,
+  uartTxNode: UartTxNode,
+  nicFifoNode: NicFifoNode,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
 } as any as NodeTypes;
