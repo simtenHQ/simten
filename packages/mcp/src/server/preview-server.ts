@@ -6,6 +6,9 @@ import { TI_URL } from '../lib/config.js';
 
 export type { CircuitState, ChallengeState, TracesPayload, TestResultsPayload };
 
+/** JSON-serializable memory data: { nodePattern: { address: value } } */
+export type MemoryDataPayload = Record<string, Record<string, number>>;
+
 export interface PreviewServer {
   port: number;
   updateDSL(dsl: string): void;
@@ -16,6 +19,7 @@ export interface PreviewServer {
   addChallengeStep(challengeId: string, stageId: string, step: string): void;
   pushTraces(data: TracesPayload): void;
   pushTestResults(data: TestResultsPayload): void;
+  pushMemoryData(data: MemoryDataPayload): void;
   close(): void;
 }
 
@@ -30,6 +34,7 @@ export async function createPreviewServer(
   let cachedChallengeState: ChallengeState | null = null;
   let cachedTraces: TracesPayload | null = null;
   let cachedTestResults: TestResultsPayload | null = null;
+  let cachedMemoryData: MemoryDataPayload | null = null;
   const sseClients = new Set<ServerResponse>();
   let watchedPath: string | null = null;
 
@@ -127,6 +132,9 @@ export async function createPreviewServer(
       }
       if (cachedTestResults) {
         res.write(`data: ${JSON.stringify({ type: 'test-results', data: cachedTestResults })}\n\n`);
+      }
+      if (cachedMemoryData) {
+        res.write(`data: ${JSON.stringify({ type: 'memory-data', data: cachedMemoryData })}\n\n`);
       }
       sseClients.add(res);
 
@@ -233,6 +241,11 @@ export async function createPreviewServer(
     broadcastSSE({ type: 'test-results', data });
   }
 
+  function pushMemoryData(data: MemoryDataPayload) {
+    cachedMemoryData = data;
+    broadcastSSE({ type: 'memory-data', data });
+  }
+
   return {
     port: assignedPort,
     updateDSL,
@@ -243,6 +256,7 @@ export async function createPreviewServer(
     addChallengeStep,
     pushTraces,
     pushTestResults,
+    pushMemoryData,
     close,
   };
 }

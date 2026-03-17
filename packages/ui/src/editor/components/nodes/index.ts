@@ -13,5 +13,7 @@ export { RegisterNode } from './RegisterNode';
 export { RAMNode } from './RAMNode';
 export { ROMNode } from './ROMNode';
 export { ConsoleNode } from './ConsoleNode';
+export { UartTxNode } from './UartTxNode';
+export { NicFifoNode } from './NicFifoNode';
 
 export type { BaseNodeProps, PortConfig } from './BaseNode';

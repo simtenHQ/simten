@@ -77,8 +77,14 @@ export function registerShowTools(server: McpServer): void {
         .record(z.union([z.number(), z.boolean()]))
         .optional()
         .describe('Initial input values as { portName: value }'),
+      memoryData: z
+        .record(z.record(z.number()))
+        .optional()
+        .describe(
+          'Pre-load memory into sequential nodes. Keys are glob patterns matched against node IDs (e.g. "imem" matches any node containing "imem", "cpu0*imem" targets cpu0\'s imem only). Values are { address: data } maps. Architecture-agnostic.'
+        ),
     },
-    async ({ source, filePath, inputs }) => {
+    async ({ source, filePath, inputs, memoryData }) => {
       // 1. Read DSL
       const read = readDSLSource({ source, filePath });
       if (read.error) {
@@ -130,6 +136,11 @@ export function registerShowTools(server: McpServer): void {
 
       // 5. Push DSL (with harness) to all connected clients
       preview.updateDSL(dslToShow);
+
+      // 5b. Push memory data if provided
+      if (memoryData) {
+        preview.pushMemoryData(memoryData);
+      }
 
       // 6. Watch file for changes if path provided
       if (filePath) {
