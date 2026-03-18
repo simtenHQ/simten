@@ -14,11 +14,16 @@ import { Route as Splash5RouteImport } from './routes/splash5'
 import { Route as Splash4RouteImport } from './routes/splash4'
 import { Route as Splash3RouteImport } from './routes/splash3'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as LearnIndexRouteImport } from './routes/learn/index'
 import { Route as DocsIndexRouteImport } from './routes/docs/index'
 import { Route as ChallengesIndexRouteImport } from './routes/challenges/index'
 import { Route as BlogIndexRouteImport } from './routes/blog/index'
+import { Route as LearnProgramCounterRouteImport } from './routes/learn/program-counter'
+import { Route as LearnDualCpuRouteImport } from './routes/learn/dual-cpu'
+import { Route as LearnCpuRouteImport } from './routes/learn/cpu'
 import { Route as ChallengesSnakeRouteImport } from './routes/challenges/snake'
 import { Route as ChallengesBuildAnAluRouteImport } from './routes/challenges/build-an-alu'
+import { Route as ChallengesBuildACpuRouteImport } from './routes/challenges/build-a-cpu'
 import { Route as BlogSnakeInHardwareRouteImport } from './routes/blog/snake-in-hardware'
 import { Route as BlogPongInHardwareRouteImport } from './routes/blog/pong-in-hardware'
 import { Route as BlogHowTpusWorkRouteImport } from './routes/blog/how-tpus-work'
@@ -51,6 +56,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LearnIndexRoute = LearnIndexRouteImport.update({
+  id: '/learn/',
+  path: '/learn/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DocsIndexRoute = DocsIndexRouteImport.update({
   id: '/docs/',
   path: '/docs/',
@@ -66,6 +76,21 @@ const BlogIndexRoute = BlogIndexRouteImport.update({
   path: '/blog/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LearnProgramCounterRoute = LearnProgramCounterRouteImport.update({
+  id: '/learn/program-counter',
+  path: '/learn/program-counter',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LearnDualCpuRoute = LearnDualCpuRouteImport.update({
+  id: '/learn/dual-cpu',
+  path: '/learn/dual-cpu',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LearnCpuRoute = LearnCpuRouteImport.update({
+  id: '/learn/cpu',
+  path: '/learn/cpu',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ChallengesSnakeRoute = ChallengesSnakeRouteImport.update({
   id: '/challenges/snake',
   path: '/challenges/snake',
@@ -74,6 +99,11 @@ const ChallengesSnakeRoute = ChallengesSnakeRouteImport.update({
 const ChallengesBuildAnAluRoute = ChallengesBuildAnAluRouteImport.update({
   id: '/challenges/build-an-alu',
   path: '/challenges/build-an-alu',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ChallengesBuildACpuRoute = ChallengesBuildACpuRouteImport.update({
+  id: '/challenges/build-a-cpu',
+  path: '/challenges/build-a-cpu',
   getParentRoute: () => rootRouteImport,
 } as any)
 const BlogSnakeInHardwareRoute = BlogSnakeInHardwareRouteImport.update({
@@ -121,11 +151,16 @@ export interface FileRoutesByFullPath {
   '/blog/how-tpus-work': typeof BlogHowTpusWorkRoute
   '/blog/pong-in-hardware': typeof BlogPongInHardwareRoute
   '/blog/snake-in-hardware': typeof BlogSnakeInHardwareRoute
+  '/challenges/build-a-cpu': typeof ChallengesBuildACpuRoute
   '/challenges/build-an-alu': typeof ChallengesBuildAnAluRoute
   '/challenges/snake': typeof ChallengesSnakeRoute
+  '/learn/cpu': typeof LearnCpuRoute
+  '/learn/dual-cpu': typeof LearnDualCpuRoute
+  '/learn/program-counter': typeof LearnProgramCounterRoute
   '/blog/': typeof BlogIndexRoute
   '/challenges/': typeof ChallengesIndexRoute
   '/docs/': typeof DocsIndexRoute
+  '/learn/': typeof LearnIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -139,11 +174,16 @@ export interface FileRoutesByTo {
   '/blog/how-tpus-work': typeof BlogHowTpusWorkRoute
   '/blog/pong-in-hardware': typeof BlogPongInHardwareRoute
   '/blog/snake-in-hardware': typeof BlogSnakeInHardwareRoute
+  '/challenges/build-a-cpu': typeof ChallengesBuildACpuRoute
   '/challenges/build-an-alu': typeof ChallengesBuildAnAluRoute
   '/challenges/snake': typeof ChallengesSnakeRoute
+  '/learn/cpu': typeof LearnCpuRoute
+  '/learn/dual-cpu': typeof LearnDualCpuRoute
+  '/learn/program-counter': typeof LearnProgramCounterRoute
   '/blog': typeof BlogIndexRoute
   '/challenges': typeof ChallengesIndexRoute
   '/docs': typeof DocsIndexRoute
+  '/learn': typeof LearnIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -158,11 +198,16 @@ export interface FileRoutesById {
   '/blog/how-tpus-work': typeof BlogHowTpusWorkRoute
   '/blog/pong-in-hardware': typeof BlogPongInHardwareRoute
   '/blog/snake-in-hardware': typeof BlogSnakeInHardwareRoute
+  '/challenges/build-a-cpu': typeof ChallengesBuildACpuRoute
   '/challenges/build-an-alu': typeof ChallengesBuildAnAluRoute
   '/challenges/snake': typeof ChallengesSnakeRoute
+  '/learn/cpu': typeof LearnCpuRoute
+  '/learn/dual-cpu': typeof LearnDualCpuRoute
+  '/learn/program-counter': typeof LearnProgramCounterRoute
   '/blog/': typeof BlogIndexRoute
   '/challenges/': typeof ChallengesIndexRoute
   '/docs/': typeof DocsIndexRoute
+  '/learn/': typeof LearnIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -178,11 +223,16 @@ export interface FileRouteTypes {
     | '/blog/how-tpus-work'
     | '/blog/pong-in-hardware'
     | '/blog/snake-in-hardware'
+    | '/challenges/build-a-cpu'
     | '/challenges/build-an-alu'
     | '/challenges/snake'
+    | '/learn/cpu'
+    | '/learn/dual-cpu'
+    | '/learn/program-counter'
     | '/blog/'
     | '/challenges/'
     | '/docs/'
+    | '/learn/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -196,11 +246,16 @@ export interface FileRouteTypes {
     | '/blog/how-tpus-work'
     | '/blog/pong-in-hardware'
     | '/blog/snake-in-hardware'
+    | '/challenges/build-a-cpu'
     | '/challenges/build-an-alu'
     | '/challenges/snake'
+    | '/learn/cpu'
+    | '/learn/dual-cpu'
+    | '/learn/program-counter'
     | '/blog'
     | '/challenges'
     | '/docs'
+    | '/learn'
   id:
     | '__root__'
     | '/'
@@ -214,11 +269,16 @@ export interface FileRouteTypes {
     | '/blog/how-tpus-work'
     | '/blog/pong-in-hardware'
     | '/blog/snake-in-hardware'
+    | '/challenges/build-a-cpu'
     | '/challenges/build-an-alu'
     | '/challenges/snake'
+    | '/learn/cpu'
+    | '/learn/dual-cpu'
+    | '/learn/program-counter'
     | '/blog/'
     | '/challenges/'
     | '/docs/'
+    | '/learn/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -233,11 +293,16 @@ export interface RootRouteChildren {
   BlogHowTpusWorkRoute: typeof BlogHowTpusWorkRoute
   BlogPongInHardwareRoute: typeof BlogPongInHardwareRoute
   BlogSnakeInHardwareRoute: typeof BlogSnakeInHardwareRoute
+  ChallengesBuildACpuRoute: typeof ChallengesBuildACpuRoute
   ChallengesBuildAnAluRoute: typeof ChallengesBuildAnAluRoute
   ChallengesSnakeRoute: typeof ChallengesSnakeRoute
+  LearnCpuRoute: typeof LearnCpuRoute
+  LearnDualCpuRoute: typeof LearnDualCpuRoute
+  LearnProgramCounterRoute: typeof LearnProgramCounterRoute
   BlogIndexRoute: typeof BlogIndexRoute
   ChallengesIndexRoute: typeof ChallengesIndexRoute
   DocsIndexRoute: typeof DocsIndexRoute
+  LearnIndexRoute: typeof LearnIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -277,6 +342,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/learn/': {
+      id: '/learn/'
+      path: '/learn'
+      fullPath: '/learn/'
+      preLoaderRoute: typeof LearnIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/docs/': {
       id: '/docs/'
       path: '/docs'
@@ -298,6 +370,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BlogIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/learn/program-counter': {
+      id: '/learn/program-counter'
+      path: '/learn/program-counter'
+      fullPath: '/learn/program-counter'
+      preLoaderRoute: typeof LearnProgramCounterRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/learn/dual-cpu': {
+      id: '/learn/dual-cpu'
+      path: '/learn/dual-cpu'
+      fullPath: '/learn/dual-cpu'
+      preLoaderRoute: typeof LearnDualCpuRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/learn/cpu': {
+      id: '/learn/cpu'
+      path: '/learn/cpu'
+      fullPath: '/learn/cpu'
+      preLoaderRoute: typeof LearnCpuRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/challenges/snake': {
       id: '/challenges/snake'
       path: '/challenges/snake'
@@ -310,6 +403,13 @@ declare module '@tanstack/react-router' {
       path: '/challenges/build-an-alu'
       fullPath: '/challenges/build-an-alu'
       preLoaderRoute: typeof ChallengesBuildAnAluRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/challenges/build-a-cpu': {
+      id: '/challenges/build-a-cpu'
+      path: '/challenges/build-a-cpu'
+      fullPath: '/challenges/build-a-cpu'
+      preLoaderRoute: typeof ChallengesBuildACpuRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/blog/snake-in-hardware': {
@@ -369,11 +469,16 @@ const rootRouteChildren: RootRouteChildren = {
   BlogHowTpusWorkRoute: BlogHowTpusWorkRoute,
   BlogPongInHardwareRoute: BlogPongInHardwareRoute,
   BlogSnakeInHardwareRoute: BlogSnakeInHardwareRoute,
+  ChallengesBuildACpuRoute: ChallengesBuildACpuRoute,
   ChallengesBuildAnAluRoute: ChallengesBuildAnAluRoute,
   ChallengesSnakeRoute: ChallengesSnakeRoute,
+  LearnCpuRoute: LearnCpuRoute,
+  LearnDualCpuRoute: LearnDualCpuRoute,
+  LearnProgramCounterRoute: LearnProgramCounterRoute,
   BlogIndexRoute: BlogIndexRoute,
   ChallengesIndexRoute: ChallengesIndexRoute,
   DocsIndexRoute: DocsIndexRoute,
+  LearnIndexRoute: LearnIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

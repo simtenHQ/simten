@@ -24,16 +24,18 @@ const compileTimeout = 10 * time.Second
 
 type CompileRequest struct {
 	Source       string `json:"source"`
-	Language     string `json:"language"`                // "c", "cpp", "rust", "asm"
-	LinkerScript string `json:"linkerScript,omitempty"`  // Optional custom linker script; uses default if empty
+	Language     string `json:"language"`               // "c", "cpp", "rust", "asm"
+	LinkerScript string `json:"linkerScript,omitempty"` // Optional custom linker script; uses default if empty
+	Disassemble  bool   `json:"disassemble,omitempty"`  // If true, also return objdump disassembly
 }
 
 type CompileResponse struct {
-	Success bool   `json:"success"`
-	Binary  []byte `json:"binary,omitempty"`  // Raw ELF or flat binary
-	Stdout  string `json:"stdout,omitempty"`  // Compiler stdout
-	Stderr  string `json:"stderr,omitempty"`  // Compiler stderr
-	Error   string `json:"error,omitempty"`   // Server-level error
+	Success     bool   `json:"success"`
+	Binary      []byte `json:"binary,omitempty"`      // Flat binary (objcopy -O binary)
+	Disassembly string `json:"disassembly,omitempty"` // objdump -d output (only if disassemble=true)
+	Stdout      string `json:"stdout,omitempty"`      // Compiler stdout
+	Stderr      string `json:"stderr,omitempty"`      // Compiler stderr
+	Error       string `json:"error,omitempty"`       // Server-level error
 }
 
 func randomID() string {
@@ -84,13 +86,13 @@ func compileHandler(w http.ResponseWriter, r *http.Request) {
 
 	switch req.Language {
 	case "c":
-		compileGCC(w, req.Source, "c", ls)
+		compileGCC(w, req.Source, "c", ls, req.Disassemble)
 	case "cpp":
-		compileGCC(w, req.Source, "cpp", ls)
+		compileGCC(w, req.Source, "cpp", ls, req.Disassemble)
 	case "rust":
-		compileRust(w, req.Source, ls)
+		compileRust(w, req.Source, ls, req.Disassemble)
 	case "asm":
-		compileASM(w, req.Source)
+		compileASM(w, req.Source, req.Disassemble)
 	default:
 		writeJSON(w, http.StatusBadRequest, CompileResponse{
 			Success: false,
@@ -169,7 +171,7 @@ func buildCrt0(ctx context.Context, dir string) (string, error) {
 }
 
 // compileGCC handles C and C++ via riscv-none-elf-gcc / g++
-func compileGCC(w http.ResponseWriter, source string, lang string, ls string) {
+func compileGCC(w http.ResponseWriter, source string, lang string, ls string, disassemble bool) {
 	id := randomID()
 	dir := filepath.Join("/tmp/compile", id)
 	os.MkdirAll(dir, 0755)
@@ -255,15 +257,17 @@ func compileGCC(w http.ResponseWriter, source string, lang string, ls string) {
 		return
 	}
 
-	writeJSON(w, http.StatusOK, CompileResponse{
-		Success: true,
-		Binary:  binary,
-		Stdout:  string(compileOut),
-	})
+	resp := CompileResponse{Success: true, Binary: binary, Stdout: string(compileOut)}
+	if disassemble {
+		if asm, err := disassembleELF(ctx, elfFile); err == nil {
+			resp.Disassembly = asm
+		}
+	}
+	writeJSON(w, http.StatusOK, resp)
 }
 
 // compileRust handles Rust via rustc targeting riscv32i
-func compileRust(w http.ResponseWriter, source string, ls string) {
+func compileRust(w http.ResponseWriter, source string, ls string, disassemble bool) {
 	id := randomID()
 	dir := filepath.Join("/tmp/compile", id)
 	os.MkdirAll(dir, 0755)
@@ -340,11 +344,27 @@ func compileRust(w http.ResponseWriter, source string, ls string) {
 		return
 	}
 
-	writeJSON(w, http.StatusOK, CompileResponse{
-		Success: true,
-		Binary:  binary,
-		Stdout:  string(compileOut),
-	})
+	resp := CompileResponse{Success: true, Binary: binary, Stdout: string(compileOut)}
+	if disassemble {
+		if asm, err := disassembleELF(ctx, elfFile); err == nil {
+			resp.Disassembly = asm
+		}
+	}
+	writeJSON(w, http.StatusOK, resp)
+}
+
+// disassembleELF runs objdump -d on an ELF and returns the text output.
+func disassembleELF(ctx context.Context, elfFile string) (string, error) {
+	cmd := exec.CommandContext(ctx, "riscv-none-elf-objdump",
+		"-d",
+		"--no-show-raw-insn",
+		elfFile,
+	)
+	out, err := cmd.Output()
+	if err != nil {
+		return "", fmt.Errorf("objdump failed: %w", err)
+	}
+	return string(out), nil
 }
 
 // extractBinary runs objcopy to produce a flat binary from an ELF
@@ -382,7 +402,7 @@ func writeTimeoutOrError(w http.ResponseWriter, ctx context.Context, err error, 
 	}
 }
 
-func compileASM(w http.ResponseWriter, source string) {
+func compileASM(w http.ResponseWriter, source string, disassemble bool) {
 	id := randomID()
 	dir := filepath.Join("/tmp/compile", id)
 	os.MkdirAll(dir, 0755)
@@ -444,10 +464,13 @@ func compileASM(w http.ResponseWriter, source string) {
 		return
 	}
 
-	writeJSON(w, http.StatusOK, CompileResponse{
-		Success: true,
-		Binary:  binary,
-	})
+	resp := CompileResponse{Success: true, Binary: binary}
+	if disassemble {
+		if asm, err := disassembleELF(ctx, objFile); err == nil {
+			resp.Disassembly = asm
+		}
+	}
+	writeJSON(w, http.StatusOK, resp)
 }
 
 func healthHandler(w http.ResponseWriter, r *http.Request) {

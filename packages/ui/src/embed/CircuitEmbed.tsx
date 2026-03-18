@@ -173,12 +173,19 @@ export const CircuitEmbed = forwardRef<CircuitEmbedHandle, CircuitEmbedProps>(fu
     );
   }
 
+  // When height is a string (e.g. "100%"), apply it to the outer wrapper and use
+  // flexbox so the canvas fills remaining space after the header/controls bars.
+  const fillParent = typeof height === "string";
+
   return (
     <TooltipProvider delayDuration={300}>
-      <div className="rounded-xl border border-gray-700/50 bg-gray-900/80 overflow-hidden">
+      <div
+        className={`rounded-xl border border-gray-700/50 bg-gray-900/80 overflow-hidden${fillParent ? " flex flex-col" : ""}`}
+        style={fillParent ? { height } : undefined}
+      >
       {/* Header */}
       {(title || description) && (
-        <div className="px-4 py-3 border-b border-gray-700/50">
+        <div className="px-4 py-3 border-b border-gray-700/50 shrink-0">
           {title && (
             <h3 className="text-sm font-semibold text-gray-200">{title}</h3>
           )}
@@ -195,7 +202,8 @@ export const CircuitEmbed = forwardRef<CircuitEmbedHandle, CircuitEmbedProps>(fu
         sequentialState={sim.sequentialState}
         onToggleNode={sim.toggleNode}
         onSetNodeValue={sim.setNodeValue}
-        height={height}
+        height={fillParent ? "100%" : height}
+        className={fillParent ? "flex-1 min-h-0" : undefined}
         focus={focus}
         {...(nodePositions ? { nodePositions, autoLayout: false } : {})}
         showPortLabels={showPortLabels}

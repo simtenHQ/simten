@@ -4,7 +4,7 @@
 	"private": true,
 	"scripts": {
 		"build": "pnpm -r build",
-		"dev": "pnpm --filter @turing-incomplete/web dev",
+		"dev": "pnpm --filter tanstack dev",
 		"test": "pnpm -r test",
 		"lint": "pnpm -r lint",
 		"changeset": "changeset",

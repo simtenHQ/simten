@@ -1,15 +1,15 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute } from '@tanstack/react-router'
 import { useState, useCallback, useEffect } from "react";
-import { ALU_LEVELS } from "@/features/challenges/alu-steps";
+import { CPU_LEVELS } from "@/features/challenges/cpu-steps";
 import { ChallengeWorkbench } from "@/features/challenges/components/ChallengeWorkbench";
 
-const STORAGE_KEY = "ti:build-an-alu:completed";
+const STORAGE_KEY = "ti:build-a-cpu:completed";
 
-export const Route = createFileRoute("/challenges/build-an-alu")({
-  component: ALUChallengePage,
-});
+export const Route = createFileRoute('/challenges/build-a-cpu')({
+  component: CPUChallengePage,
+})
 
-function ALUChallengePage() {
+function CPUChallengePage() {
   const [currentLevel, setCurrentLevel] = useState(0);
   const [completedLevels, setCompletedLevels] = useState<Set<string>>(new Set());
 
@@ -29,7 +29,7 @@ function ALUChallengePage() {
   }, [completedLevels]);
 
   const handleNavigate = useCallback((levelId: string) => {
-    const index = ALU_LEVELS.findIndex((s) => s.id === levelId);
+    const index = CPU_LEVELS.findIndex((s) => s.id === levelId);
     if (index >= 0) setCurrentLevel(index);
   }, []);
 
@@ -42,20 +42,19 @@ function ALUChallengePage() {
     });
   }, []);
 
-  const nextLevelId =
-    currentLevel < ALU_LEVELS.length - 1
-      ? ALU_LEVELS[currentLevel + 1].id
-      : null;
+  const nextLevelId = currentLevel < CPU_LEVELS.length - 1
+    ? CPU_LEVELS[currentLevel + 1].id
+    : null;
 
   return (
     <ChallengeWorkbench
-      key={ALU_LEVELS[currentLevel].id}
-      level={ALU_LEVELS[currentLevel]}
-      challengeId="build-an-alu"
-      challengeTitle="Build an ALU from Scratch"
+      key={CPU_LEVELS[currentLevel].id}
+      level={CPU_LEVELS[currentLevel]}
+      challengeId="build-a-cpu"
+      challengeTitle="Build a CPU That Runs C"
       levelIndex={currentLevel}
       completedLevels={completedLevels}
-      levels={ALU_LEVELS}
+      levels={CPU_LEVELS}
       onNavigate={handleNavigate}
       onLevelSelect={setCurrentLevel}
       nextLevelId={nextLevelId}

@@ -12,7 +12,7 @@
 	},
 	"references": [
 		{ "path": "./packages/core" },
-		{ "path": "./apps/web" }
+		{ "path": "./apps/tanstack" }
 	],
 	"include": [],
 	"exclude": ["node_modules"]

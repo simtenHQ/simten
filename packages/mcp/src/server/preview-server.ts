@@ -15,8 +15,8 @@ export interface PreviewServer {
   watchFile(filePath: string): void;
   getState(): CircuitState | null;
   getChallengeState(): ChallengeState | null;
-  navigateChallenge(challengeId: string, stageId: string): void;
-  addChallengeStep(challengeId: string, stageId: string, step: string): void;
+  navigateChallenge(challengeId: string, levelId: string): void;
+  addChallengeStep(challengeId: string, levelId: string, step: string): void;
   pushTraces(data: TracesPayload): void;
   pushTestResults(data: TestResultsPayload): void;
   pushMemoryData(data: MemoryDataPayload): void;
@@ -223,12 +223,12 @@ export async function createPreviewServer(
     return cachedChallengeState;
   }
 
-  function navigateChallenge(challengeId: string, stageId: string) {
-    broadcastSSE({ type: 'challenge-navigate', challengeId, stageId });
+  function navigateChallenge(challengeId: string, levelId: string) {
+    broadcastSSE({ type: 'challenge-navigate', challengeId, levelId });
   }
 
-  function addChallengeStep(challengeId: string, stageId: string, step: string) {
-    broadcastSSE({ type: 'challenge-add-step', challengeId, stageId, step });
+  function addChallengeStep(challengeId: string, levelId: string, step: string) {
+    broadcastSSE({ type: 'challenge-add-step', challengeId, levelId, step });
   }
 
   function pushTraces(data: TracesPayload) {

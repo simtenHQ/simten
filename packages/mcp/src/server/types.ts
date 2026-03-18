@@ -18,7 +18,7 @@ export interface TracesPayload {
 
 export interface ChallengeState {
   challengeId: string;
-  stageId: string;
+  levelId: string;
   userSource: string;
   timestamp: number;
 }
