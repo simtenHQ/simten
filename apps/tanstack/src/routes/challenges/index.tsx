@@ -44,7 +44,7 @@ function ChallengesPage() {
                 </span>
               </div>
               <div className="mt-4 flex items-center gap-4 text-sm text-gray-500">
-                <span>{c.stages} stages</span>
+                <span>{c.levels} levels</span>
                 <span>{c.difficulty}</span>
                 {"tag" in c && c.tag && (
                   <span className="px-2 py-0.5 rounded-full bg-blue-900/50 text-blue-300 text-xs font-medium">

@@ -17,9 +17,9 @@ export type McpConnectionStatus = "idle" | "connecting" | "connected" | "disconn
  */
 export function useChallengeSync(
   challengeId: string,
-  stageId: string,
+  levelId: string,
   userSource: string,
-  onNavigate: (stageId: string) => void,
+  onNavigate: (levelId: string) => void,
   onAddStep?: (step: string) => void,
 ): McpConnectionStatus {
   const onNavigateRef = useRef(onNavigate);
@@ -28,8 +28,8 @@ export function useChallengeSync(
   onAddStepRef.current = onAddStep;
   const challengeIdRef = useRef(challengeId);
   challengeIdRef.current = challengeId;
-  const stageIdRef = useRef(stageId);
-  stageIdRef.current = stageId;
+  const levelIdRef = useRef(levelId);
+  levelIdRef.current = levelId;
   const userSourceRef = useRef(userSource);
   userSourceRef.current = userSource;
 
@@ -45,7 +45,7 @@ export function useChallengeSync(
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         challengeId: challengeIdRef.current,
-        stageId: stageIdRef.current,
+        levelId: levelIdRef.current,
         userSource: userSourceRef.current,
         timestamp: Date.now(),
       }),
@@ -91,11 +91,11 @@ export function useChallengeSync(
         const data = JSON.parse(event.data);
         if (data.challengeId && data.challengeId !== challengeIdRef.current) return;
 
-        if (data.type === "challenge-navigate" && data.stageId) {
-          onNavigateRef.current(data.stageId);
+        if (data.type === "challenge-navigate" && data.levelId) {
+          onNavigateRef.current(data.levelId);
         }
         if (data.type === "challenge-add-step" && data.step) {
-          if (data.stageId && data.stageId !== stageIdRef.current) return;
+          if (data.levelId && data.levelId !== levelIdRef.current) return;
           onAddStepRef.current?.(data.step);
         }
       } catch {
@@ -130,7 +130,7 @@ export function useChallengeSync(
     if (esRef.current) {
       postState().catch(() => {});
     }
-  }, [challengeId, stageId, userSource, postState]);
+  }, [challengeId, levelId, userSource, postState]);
 
   return status;
 }
