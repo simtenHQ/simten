@@ -1,4 +1,4 @@
-export interface ChallengeStage {
+export interface ChallengeLevel {
   id: string;
   title: string;
   concept: string;
@@ -6,6 +6,9 @@ export interface ChallengeStage {
   hints: string[];
   scaffold: string;
   solution: string;
+  /** DSL preamble: composite circuit definitions compiled & registered before user code.
+   *  Not shown in the editor — composites appear as single blocks in the canvas. */
+  preamble?: string;
   nodePositions?: Record<string, { x: number; y: number }>;
   height?: number;
   /** Restrict palette to these namespaces (e.g., ['core', 'rv32i']) */
@@ -31,7 +34,7 @@ export interface ChallengeMetadata {
   slug: string;
   title: string;
   description: string;
-  stages: number;
+  levels: number;
   difficulty: string;
   tag?: string;
 }

@@ -45,7 +45,7 @@ app.post("/compile", async (c) => {
 	}
 
 	// Parse and validate request
-	let body: { source?: string; language?: string; linkerScript?: string };
+	let body: { source?: string; language?: string; linkerScript?: string; disassemble?: boolean };
 	try {
 		body = await c.req.json();
 	} catch {
@@ -64,12 +64,11 @@ app.post("/compile", async (c) => {
 		);
 	}
 
-	// Forward to container (pass through optional linkerScript)
+	// Forward to container
 	const container = getContainer(c.env.COMPILER_CONTAINER);
-	const payload: Record<string, string> = { source: body.source, language };
-	if (body.linkerScript) {
-		payload.linkerScript = body.linkerScript;
-	}
+	const payload: Record<string, unknown> = { source: body.source, language };
+	if (body.linkerScript) payload.linkerScript = body.linkerScript;
+	if (body.disassemble) payload.disassemble = true;
 	const resp = await container.fetch("http://container/compile", {
 		method: "POST",
 		headers: { "Content-Type": "application/json" },

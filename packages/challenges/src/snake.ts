@@ -1,15 +1,15 @@
-import type { ChallengeStage, ChallengeMetadata } from './types.js';
+import type { ChallengeLevel, ChallengeMetadata } from './types.js';
 
 export const SNAKE_METADATA: ChallengeMetadata = {
   slug: 'snake',
   title: 'Build Snake in Hardware',
   description:
     'Wire up a complete Snake game stage by stage — framebuffers, direction decoding, movement, collision detection, and a phase pipeline. No CPU, no software.',
-  stages: 6,
+  levels: 6,
   difficulty: 'Intermediate',
 };
 
-export const SNAKE_STAGES: ChallengeStage[] = [
+export const SNAKE_LEVELS: ChallengeLevel[] = [
   // ── Stage 1: Framebuffer ──────────────────────────────────────────
   {
     id: "framebuffer",

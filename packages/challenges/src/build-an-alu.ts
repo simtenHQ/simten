@@ -1,16 +1,16 @@
-import type { ChallengeStage, ChallengeMetadata } from './types.js';
+import type { ChallengeLevel, ChallengeMetadata } from "./types.js";
 
 export const ALU_METADATA: ChallengeMetadata = {
-  slug: 'build-an-alu',
-  title: 'Build an ALU from Scratch',
+  slug: "build-an-alu",
+  title: "Build an ALU from Scratch",
   description:
-    'Start with a single AND gate. End with the arithmetic heart of a CPU — addition, subtraction, AND, OR, all selected by an opcode. Seven stages from nothing to a real ALU.',
-  stages: 8,
-  difficulty: 'Beginner',
-  tag: 'Start here',
+    "Start with a single AND gate. End with the arithmetic heart of a CPU — addition, subtraction, AND, OR, all selected by an opcode. Seven stages from nothing to a real ALU.",
+  levels: 8,
+  difficulty: "Beginner",
+  tag: "Start here",
 };
 
-export const ALU_STAGES: ChallengeStage[] = [
+export const ALU_LEVELS: ChallengeLevel[] = [
   // ── Stage 1: Your First Gate ──────────────────────────────────────
   {
     id: "and-gate",
