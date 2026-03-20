@@ -10,9 +10,9 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as StudioRouteImport } from './routes/studio'
-import { Route as Splash5RouteImport } from './routes/splash5'
 import { Route as Splash4RouteImport } from './routes/splash4'
 import { Route as Splash3RouteImport } from './routes/splash3'
+import { Route as EditorRouteImport } from './routes/editor'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as LearnIndexRouteImport } from './routes/learn/index'
 import { Route as DocsIndexRouteImport } from './routes/docs/index'
@@ -36,11 +36,6 @@ const StudioRoute = StudioRouteImport.update({
   path: '/studio',
   getParentRoute: () => rootRouteImport,
 } as any)
-const Splash5Route = Splash5RouteImport.update({
-  id: '/splash5',
-  path: '/splash5',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const Splash4Route = Splash4RouteImport.update({
   id: '/splash4',
   path: '/splash4',
@@ -49,6 +44,11 @@ const Splash4Route = Splash4RouteImport.update({
 const Splash3Route = Splash3RouteImport.update({
   id: '/splash3',
   path: '/splash3',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EditorRoute = EditorRouteImport.update({
+  id: '/editor',
+  path: '/editor',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -141,9 +141,9 @@ const BlogBuildingACpuRoute = BlogBuildingACpuRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/editor': typeof EditorRoute
   '/splash3': typeof Splash3Route
   '/splash4': typeof Splash4Route
-  '/splash5': typeof Splash5Route
   '/studio': typeof StudioRoute
   '/blog/building-a-cpu': typeof BlogBuildingACpuRoute
   '/blog/computing-trig-in-hardware': typeof BlogComputingTrigInHardwareRoute
@@ -164,9 +164,9 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/editor': typeof EditorRoute
   '/splash3': typeof Splash3Route
   '/splash4': typeof Splash4Route
-  '/splash5': typeof Splash5Route
   '/studio': typeof StudioRoute
   '/blog/building-a-cpu': typeof BlogBuildingACpuRoute
   '/blog/computing-trig-in-hardware': typeof BlogComputingTrigInHardwareRoute
@@ -188,9 +188,9 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/editor': typeof EditorRoute
   '/splash3': typeof Splash3Route
   '/splash4': typeof Splash4Route
-  '/splash5': typeof Splash5Route
   '/studio': typeof StudioRoute
   '/blog/building-a-cpu': typeof BlogBuildingACpuRoute
   '/blog/computing-trig-in-hardware': typeof BlogComputingTrigInHardwareRoute
@@ -213,9 +213,9 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/editor'
     | '/splash3'
     | '/splash4'
-    | '/splash5'
     | '/studio'
     | '/blog/building-a-cpu'
     | '/blog/computing-trig-in-hardware'
@@ -236,9 +236,9 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/editor'
     | '/splash3'
     | '/splash4'
-    | '/splash5'
     | '/studio'
     | '/blog/building-a-cpu'
     | '/blog/computing-trig-in-hardware'
@@ -259,9 +259,9 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/editor'
     | '/splash3'
     | '/splash4'
-    | '/splash5'
     | '/studio'
     | '/blog/building-a-cpu'
     | '/blog/computing-trig-in-hardware'
@@ -283,9 +283,9 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  EditorRoute: typeof EditorRoute
   Splash3Route: typeof Splash3Route
   Splash4Route: typeof Splash4Route
-  Splash5Route: typeof Splash5Route
   StudioRoute: typeof StudioRoute
   BlogBuildingACpuRoute: typeof BlogBuildingACpuRoute
   BlogComputingTrigInHardwareRoute: typeof BlogComputingTrigInHardwareRoute
@@ -314,13 +314,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StudioRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/splash5': {
-      id: '/splash5'
-      path: '/splash5'
-      fullPath: '/splash5'
-      preLoaderRoute: typeof Splash5RouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/splash4': {
       id: '/splash4'
       path: '/splash4'
@@ -333,6 +326,13 @@ declare module '@tanstack/react-router' {
       path: '/splash3'
       fullPath: '/splash3'
       preLoaderRoute: typeof Splash3RouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/editor': {
+      id: '/editor'
+      path: '/editor'
+      fullPath: '/editor'
+      preLoaderRoute: typeof EditorRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -459,9 +459,9 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  EditorRoute: EditorRoute,
   Splash3Route: Splash3Route,
   Splash4Route: Splash4Route,
-  Splash5Route: Splash5Route,
   StudioRoute: StudioRoute,
   BlogBuildingACpuRoute: BlogBuildingACpuRoute,
   BlogComputingTrigInHardwareRoute: BlogComputingTrigInHardwareRoute,

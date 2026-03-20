@@ -30,7 +30,7 @@ function DocsPage() {
         {/* Sidebar */}
         <nav className="hidden md:block w-48 shrink-0 sticky top-16 self-start">
           <Link
-            to="/splash5"
+            to="/"
             className="text-gray-600 hover:text-gray-300 transition-colors text-sm"
           >
             &larr; Home
@@ -56,7 +56,7 @@ function DocsPage() {
         <main className="min-w-0 flex-1 space-y-16">
           {sections.map((s) => (
             <section key={s.id} id={s.id} className="scroll-mt-8">
-              <div className="prose prose-invert prose-sm max-w-none prose-headings:font-semibold prose-h1:text-2xl prose-h2:text-xl prose-h3:text-lg prose-code:bg-gray-800 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:text-gray-300 prose-pre:bg-gray-900 prose-pre:border prose-pre:border-gray-800 prose-a:text-blue-400 prose-a:no-underline hover:prose-a:underline">
+              <div className="docs-content">
                 <ReactMarkdown remarkPlugins={[remarkGfm]}>
                   {s.content}
                 </ReactMarkdown>
