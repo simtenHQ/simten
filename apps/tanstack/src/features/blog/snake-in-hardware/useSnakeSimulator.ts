@@ -7,7 +7,7 @@ import { SNAKE_ADVANCED_DSL } from "./circuits";
 export function useSnakeSimulator() {
   const sim = useCircuitSimulator(SNAKE_ADVANCED_DSL);
   const [isRunning, setIsRunning] = useState(false);
-  const [speed, setSpeed] = useState(50);
+  const [speed, setSpeed] = useState(60);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Find the actual mangled node ID for "keyboard" from the compiled circuit.

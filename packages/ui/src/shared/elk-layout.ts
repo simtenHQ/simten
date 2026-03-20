@@ -19,23 +19,23 @@ async function getElk() {
 
 /** Node size constants by component type */
 export const NODE_DIMENSIONS: Record<string, { width: number; height: number }> = {
-  Switch:         { width: 80, height: 48 },
-  Button:         { width: 80, height: 48 },
-  Input:          { width: 100, height: 48 },
-  Led:            { width: 80, height: 48 },
-  Output:         { width: 80, height: 48 },
-  HexDisplay:     { width: 80, height: 60 },
-  SevenSegment:   { width: 80, height: 60 },
-  Screen:         { width: 180, height: 180 },
-  RasterDisplay:  { width: 180, height: 180 },
-  Console:        { width: 200, height: 160 },
-  Register:       { width: 100, height: 60 },
-  RAM:            { width: 100, height: 60 },
-  ROM:            { width: 100, height: 60 },
-  DualPortRAM:    { width: 120, height: 80 },
+  Switch:         { width: 140, height: 110 },
+  Button:         { width: 120, height: 80 },
+  Input:          { width: 140, height: 80 },
+  Led:            { width: 100, height: 110 },
+  Output:         { width: 100, height: 80 },
+  HexDisplay:     { width: 100, height: 80 },
+  SevenSegment:   { width: 100, height: 80 },
+  Screen:         { width: 200, height: 200 },
+  RasterDisplay:  { width: 200, height: 200 },
+  Console:        { width: 220, height: 180 },
+  Register:       { width: 120, height: 80 },
+  RAM:            { width: 120, height: 80 },
+  ROM:            { width: 120, height: 80 },
+  DualPortRAM:    { width: 140, height: 100 },
 };
 
-export const DEFAULT_DIMENSIONS = { width: 100, height: 60 };
+export const DEFAULT_DIMENSIONS = { width: 160, height: 80 };
 
 export function getDimensions(componentRef: string) {
   return NODE_DIMENSIONS[componentRef] ?? DEFAULT_DIMENSIONS;
@@ -59,7 +59,7 @@ export function fallbackLayout(circuit: Circuit): MetadataState {
 
   for (const node of circuit.nodes) {
     const ref = node.componentRef;
-    if (ref === 'Switch' || ref === 'Input' || ref === 'Button') {
+    if (ref === 'Switch' || ref === 'Input' || ref === 'Button' || ref === 'Clock') {
       inputNodes.push(node.id);
     } else if (ref === 'Led' || ref === 'Output') {
       outputNodes.push(node.id);
@@ -68,8 +68,8 @@ export function fallbackLayout(circuit: Circuit): MetadataState {
     }
   }
 
-  const SPACING_X = 160;
-  const SPACING_Y = 70;
+  const SPACING_X = 200;
+  const SPACING_Y = 130;
   const START_X = 30;
   const START_Y = 40;
 
@@ -109,7 +109,7 @@ export async function computeElkLayout(
   options?: ElkLayoutOptions,
 ): Promise<MetadataState> {
   const direction = options?.direction ?? "RIGHT";
-  const spacing = options?.spacing ?? 50;
+  const spacing = options?.spacing ?? 60;
 
   const nodeMap = new Map(circuit.nodes.map(n => [n.id, n]));
 
