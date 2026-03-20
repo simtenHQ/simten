@@ -1,16 +1,16 @@
 /**
- * Shared preview server singleton.
+ * Shared studio server singleton.
  *
- * Extracted from show.ts so that multiple MCP tools
- * (state, traces, test-results) can access the running preview.
+ * Provides a single WebSocket-based studio server shared across all MCP tools
+ * (show, state, traces, test-results, challenges).
  */
 
-import type { PreviewServer, CircuitState, ChallengeState, TracesPayload, TestResultsPayload } from '../server/preview-server.js';
+import type { StudioServer, CircuitState, ChallengeState, TracesPayload, TestResultsPayload } from '../server/ws-server.js';
 
-export type { PreviewServer, CircuitState, ChallengeState, TracesPayload, TestResultsPayload };
+export type { StudioServer, CircuitState, ChallengeState, TracesPayload, TestResultsPayload };
 
 // Module-level singleton
-let previewServer: PreviewServer | null = null;
+let studioServer: StudioServer | null = null;
 let browserOpened = false;
 
 // Register cleanup
@@ -19,32 +19,32 @@ function ensureCleanup() {
   if (cleanupRegistered) return;
   cleanupRegistered = true;
   const cleanup = () => {
-    previewServer?.close();
-    previewServer = null;
+    studioServer?.close();
+    studioServer = null;
   };
   process.on('exit', cleanup);
   process.on('SIGTERM', cleanup);
   process.on('SIGINT', cleanup);
 }
 
-export async function getOrCreateServer(): Promise<PreviewServer> {
-  if (previewServer) return previewServer;
+export async function getOrCreateServer(): Promise<StudioServer> {
+  if (studioServer) return studioServer;
 
-  const { createPreviewServer } = await import('../server/preview-server.js');
-
+  const { createStudioServer } = await import('../server/ws-server.js');
   const { DEFAULT_PORT } = await import('./config.js');
-  previewServer = await createPreviewServer({ port: DEFAULT_PORT });
+
+  studioServer = await createStudioServer({ port: DEFAULT_PORT });
   ensureCleanup();
 
-  return previewServer;
+  return studioServer;
 }
 
-export function getPreviewServer(): PreviewServer | null {
-  return previewServer;
+export function getPreviewServer(): StudioServer | null {
+  return studioServer;
 }
 
-export function setPreviewServer(server: PreviewServer | null): void {
-  previewServer = server;
+export function setPreviewServer(server: StudioServer | null): void {
+  studioServer = server;
 }
 
 export function getBrowserOpened(): boolean {

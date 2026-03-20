@@ -1,7 +1,7 @@
 /**
  * show_circuit tool — opens a live circuit preview in the browser.
  *
- * Starts a local HTTP server that serves a React SPA with SSE updates.
+ * Starts a WebSocket server and pushes DSL to the connected browser tab.
  * When a filePath is provided, watches the file for changes and pushes updates.
  */
 
@@ -63,10 +63,40 @@ export function registerShowTools(server: McpServer): void {
     }
   );
 
+  // list_sessions — show all connected browser tabs
+  server.tool(
+    'list_sessions',
+    'List all connected browser tabs with their session IDs, page URLs, and current circuit names. Use this to discover which tabs are available for show_circuit or get_circuit_state.',
+    {},
+    async () => {
+      const preview = getPreviewServer();
+      if (!preview) {
+        return {
+          content: [{ type: 'text' as const, text: 'No studio server is running. Call show_circuit to start one.' }],
+        };
+      }
+
+      const sessionList = Array.from(preview.sessions.values()).map(s => ({
+        id: s.id,
+        page: s.page,
+        circuitName: s.circuitName,
+      }));
+
+      return {
+        content: [{
+          type: 'text' as const,
+          text: sessionList.length > 0
+            ? JSON.stringify(sessionList, null, 2)
+            : 'No browser tabs are connected.',
+        }],
+      };
+    }
+  );
+
   // show_circuit — open or update the live preview
   server.tool(
     'show_circuit',
-    'Open a live circuit preview in the browser. Updates automatically when the file changes.',
+    'Open a live circuit preview in the browser. Updates automatically when the file changes. Optionally target a specific browser tab by session ID.',
     {
       source: z.string().optional().describe('DSL source code as a string'),
       filePath: z
@@ -83,8 +113,12 @@ export function registerShowTools(server: McpServer): void {
         .describe(
           'Pre-load memory into sequential nodes. Keys are glob patterns matched against node IDs (e.g. "imem" matches any node containing "imem", "cpu0*imem" targets cpu0\'s imem only). Values are { address: data } maps. Architecture-agnostic.'
         ),
+      session: z
+        .string()
+        .optional()
+        .describe('Target a specific browser tab by session ID. If omitted, uses the most recently active tab or opens a new one.'),
     },
-    async ({ source, filePath, inputs, memoryData }) => {
+    async ({ source, filePath, inputs, memoryData, session }) => {
       // 1. Read DSL
       const read = readDSLSource({ source, filePath });
       if (read.error) {
@@ -114,51 +148,50 @@ export function registerShowTools(server: McpServer): void {
       // 3. Auto-generate interactive harness (Switch/Led/HexDisplay) if needed
       const dslToShow = generateHarnessAppended(read.source, inputs);
 
-      // 4. Start or get existing preview server
-      let preview;
+      // 4. Start or get existing studio server
+      let studio;
       try {
-        preview = await getOrCreateServer();
+        studio = await getOrCreateServer();
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
         return {
           content: [
             {
               type: 'text' as const,
-              text: `Error starting preview server: ${message}`,
+              text: `Error starting studio server: ${message}`,
             },
           ],
           isError: true,
         };
       }
 
-      const tiUrl = TI_URL;
-      const studioUrl = `${tiUrl}/studio?port=${preview.port}`;
-
-      // 5. Push DSL (with harness) to all connected clients
-      preview.updateDSL(dslToShow);
+      // 5. Push DSL (with harness) to the target session
+      studio.updateDSL(dslToShow, session);
 
       // 5b. Push memory data if provided
       if (memoryData) {
-        preview.pushMemoryData(memoryData);
+        studio.pushMemoryData(memoryData, session);
       }
 
       // 6. Watch file for changes if path provided
       if (filePath) {
-        preview.watchFile(resolve(filePath));
+        studio.watchFile(resolve(filePath));
       }
 
-      // 7. Open browser on first call
-      openBrowser(studioUrl);
+      // 7. Open browser on first call (token passed via fragment — never sent to server)
+      const editorUrl = `${TI_URL}/editor#token=${studio.token}&port=${studio.port}`;
+      openBrowser(editorUrl);
 
       // 8. Return confirmation
       const watchingNote = filePath
         ? ` Watching ${resolve(filePath)} for changes.`
         : '';
+      const sessionNote = session ? ` (session: ${session})` : '';
       return {
         content: [
           {
             type: 'text' as const,
-            text: `Circuit preview running at ${studioUrl}.${watchingNote}`,
+            text: `Circuit preview running.${watchingNote}${sessionNote}`,
           },
         ],
       };

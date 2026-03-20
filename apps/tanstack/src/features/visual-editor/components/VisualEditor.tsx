@@ -30,6 +30,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { DSLEditor, type DSLEditorRef } from "@/features/dsl/ui/DSLEditor";
 import { Menu, TestTube, Bot } from "lucide-react";
 import { ChatPanel, useChatStore, useNarrativeContext } from "@/features/chat";
+import { useMCPConnection } from "@/hooks/useMCPConnection";
 
 // Helper to check if circuit has sequential components
 function hasSequentialComponents(
@@ -89,6 +90,30 @@ export function VisualEditor({ theme = "light" }: VisualEditorProps) {
 
   // Initialize simulation controller (THE ONLY PLACE THAT RUNS SIMULATION)
   const simulationController = useSimulationController();
+
+  // Keep simulation controller in a ref so studio callbacks read fresh values
+  const simRef = useRef(simulationController);
+  simRef.current = simulationController;
+
+  // Studio connection (WebSocket to MCP server)
+  const { status: mcpStatus } = useMCPConnection({
+    onDSL: useCallback((source: string) => {
+      dslEditorRef.current?.setCode(source);
+      setTimeout(() => dslEditorRef.current?.compile(), 100);
+    }, []),
+    getCircuitState: useCallback(() => {
+      const currentCircuit = useCircuitStore.getState().circuit;
+      const sim = simRef.current;
+      return {
+        cycleCount: sim.cycle,
+        inputs: {},
+        outputs: {},
+        isSequential: sim.isSequential,
+        circuitName: currentCircuit?.name ?? null,
+        timestamp: Date.now(),
+      };
+    }, []),
+  });
 
   // Narrative context for chat
   const dslCode = dslEditorRef.current?.getCode() ?? "";
@@ -207,6 +232,20 @@ export function VisualEditor({ theme = "light" }: VisualEditorProps) {
 
           {/* Spacer */}
           <div className="flex-1"></div>
+
+          {/* Studio Connection Status */}
+          {mcpStatus === 'connected' && (
+            <div className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
+              <div className="h-2 w-2 rounded-full bg-emerald-400" />
+              <span>Connected</span>
+            </div>
+          )}
+          {mcpStatus === 'reconnecting' && (
+            <div className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
+              <div className="h-2 w-2 rounded-full bg-amber-400" />
+              <span>Reconnecting...</span>
+            </div>
+          )}
 
           {/* Theme Toggle */}
           <ThemeToggle />

@@ -9,20 +9,25 @@
     ".": "./dist/index.js",
     "./schemas": "./dist/schemas/index.js"
   },
-  "files": ["dist", "bin"],
+  "files": [
+    "dist",
+    "bin"
+  ],
   "scripts": {
     "build": "tsc -b",
     "dev": "tsc -b --watch"
   },
   "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.0",
     "@turing-incomplete/challenges": "workspace:*",
     "@turing-incomplete/core": "workspace:*",
-    "@modelcontextprotocol/sdk": "^1.12.0",
+    "ws": "^8.19.0",
     "zod": "^3.24.0",
     "zod-to-json-schema": "^3.24.0"
   },
   "devDependencies": {
     "@types/node": "^20",
+    "@types/ws": "^8.18.1",
     "typescript": "^5"
   },
   "engines": {
