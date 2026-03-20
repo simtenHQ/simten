@@ -72,7 +72,7 @@ export function registerChallengeTools(server: McpServer): void {
         };
       }
 
-      // Ensure preview server is running so the browser can POST challenge state
+      // Ensure studio server is running so the browser can report challenge state
       try {
         const preview = await getOrCreateServer();
         // Navigate browser to the requested level if already connected
@@ -119,10 +119,10 @@ export function registerChallengeTools(server: McpServer): void {
             isError: true,
           };
         }
-        const state = preview.getChallengeState();
+        const state = await preview.getChallengeState();
         if (!state) {
           return {
-            content: [{ type: 'text' as const, text: 'No challenge state received from the browser yet. Make sure a challenge is open at /challenges/... and try again.' }],
+            content: [{ type: 'text' as const, text: 'No challenge state received from the browser. The tab may be closed or unresponsive. Make sure a challenge is open at /challenges/... and try again.' }],
             isError: true,
           };
         }
@@ -164,10 +164,10 @@ export function registerChallengeTools(server: McpServer): void {
         };
       }
 
-      const state = preview.getChallengeState();
+      const state = await preview.getChallengeState();
       if (!state) {
         return {
-          content: [{ type: 'text' as const, text: 'No challenge state received from the browser yet. Make sure a challenge is open and try again.' }],
+          content: [{ type: 'text' as const, text: 'No challenge state received from the browser. The tab may be closed or unresponsive. Make sure a challenge is open and try again.' }],
           isError: true,
         };
       }

@@ -9,7 +9,6 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as StudioRouteImport } from './routes/studio'
 import { Route as Splash4RouteImport } from './routes/splash4'
 import { Route as Splash3RouteImport } from './routes/splash3'
 import { Route as EditorRouteImport } from './routes/editor'
@@ -31,11 +30,6 @@ import { Route as BlogHowNetworkSwitchesWorkRouteImport } from './routes/blog/ho
 import { Route as BlogComputingTrigInHardwareRouteImport } from './routes/blog/computing-trig-in-hardware'
 import { Route as BlogBuildingACpuRouteImport } from './routes/blog/building-a-cpu'
 
-const StudioRoute = StudioRouteImport.update({
-  id: '/studio',
-  path: '/studio',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const Splash4Route = Splash4RouteImport.update({
   id: '/splash4',
   path: '/splash4',
@@ -144,7 +138,6 @@ export interface FileRoutesByFullPath {
   '/editor': typeof EditorRoute
   '/splash3': typeof Splash3Route
   '/splash4': typeof Splash4Route
-  '/studio': typeof StudioRoute
   '/blog/building-a-cpu': typeof BlogBuildingACpuRoute
   '/blog/computing-trig-in-hardware': typeof BlogComputingTrigInHardwareRoute
   '/blog/how-network-switches-work': typeof BlogHowNetworkSwitchesWorkRoute
@@ -167,7 +160,6 @@ export interface FileRoutesByTo {
   '/editor': typeof EditorRoute
   '/splash3': typeof Splash3Route
   '/splash4': typeof Splash4Route
-  '/studio': typeof StudioRoute
   '/blog/building-a-cpu': typeof BlogBuildingACpuRoute
   '/blog/computing-trig-in-hardware': typeof BlogComputingTrigInHardwareRoute
   '/blog/how-network-switches-work': typeof BlogHowNetworkSwitchesWorkRoute
@@ -191,7 +183,6 @@ export interface FileRoutesById {
   '/editor': typeof EditorRoute
   '/splash3': typeof Splash3Route
   '/splash4': typeof Splash4Route
-  '/studio': typeof StudioRoute
   '/blog/building-a-cpu': typeof BlogBuildingACpuRoute
   '/blog/computing-trig-in-hardware': typeof BlogComputingTrigInHardwareRoute
   '/blog/how-network-switches-work': typeof BlogHowNetworkSwitchesWorkRoute
@@ -216,7 +207,6 @@ export interface FileRouteTypes {
     | '/editor'
     | '/splash3'
     | '/splash4'
-    | '/studio'
     | '/blog/building-a-cpu'
     | '/blog/computing-trig-in-hardware'
     | '/blog/how-network-switches-work'
@@ -239,7 +229,6 @@ export interface FileRouteTypes {
     | '/editor'
     | '/splash3'
     | '/splash4'
-    | '/studio'
     | '/blog/building-a-cpu'
     | '/blog/computing-trig-in-hardware'
     | '/blog/how-network-switches-work'
@@ -262,7 +251,6 @@ export interface FileRouteTypes {
     | '/editor'
     | '/splash3'
     | '/splash4'
-    | '/studio'
     | '/blog/building-a-cpu'
     | '/blog/computing-trig-in-hardware'
     | '/blog/how-network-switches-work'
@@ -286,7 +274,6 @@ export interface RootRouteChildren {
   EditorRoute: typeof EditorRoute
   Splash3Route: typeof Splash3Route
   Splash4Route: typeof Splash4Route
-  StudioRoute: typeof StudioRoute
   BlogBuildingACpuRoute: typeof BlogBuildingACpuRoute
   BlogComputingTrigInHardwareRoute: typeof BlogComputingTrigInHardwareRoute
   BlogHowNetworkSwitchesWorkRoute: typeof BlogHowNetworkSwitchesWorkRoute
@@ -307,13 +294,6 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/studio': {
-      id: '/studio'
-      path: '/studio'
-      fullPath: '/studio'
-      preLoaderRoute: typeof StudioRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/splash4': {
       id: '/splash4'
       path: '/splash4'
@@ -462,7 +442,6 @@ const rootRouteChildren: RootRouteChildren = {
   EditorRoute: EditorRoute,
   Splash3Route: Splash3Route,
   Splash4Route: Splash4Route,
-  StudioRoute: StudioRoute,
   BlogBuildingACpuRoute: BlogBuildingACpuRoute,
   BlogComputingTrigInHardwareRoute: BlogComputingTrigInHardwareRoute,
   BlogHowNetworkSwitchesWorkRoute: BlogHowNetworkSwitchesWorkRoute,
