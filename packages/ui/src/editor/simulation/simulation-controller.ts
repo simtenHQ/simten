@@ -136,6 +136,9 @@ export class SimulationController {
   // Memory data generation tracking (for auto-reset on ROM swap)
   private lastMemoryGeneration = 0;
 
+  // Structure hash to deduplicate initialize() calls across remounts
+  private lastStructureHash = '';
+
   // Listeners for state changes (React integration)
   private listeners: Set<() => void> = new Set();
 
@@ -160,7 +163,18 @@ export class SimulationController {
    * Initialize/update circuit
    * Call this when circuit structure changes
    */
-  initialize(circuit: Circuit, library: ComponentLibraryStore): void {
+  initialize(circuit: Circuit, library: ComponentLibraryStore, structureHash?: string): void {
+    // Deduplicate: skip if the same structure was already initialized
+    // (handles React remounts that re-fire effects with the same circuit)
+    if (structureHash && structureHash === this.lastStructureHash && this.simulator) {
+      this.circuit = circuit;
+      this.library = library;
+      return;
+    }
+    if (structureHash) {
+      this.lastStructureHash = structureHash;
+    }
+
     console.log('[Controller] Initializing circuit:', circuit.name, 'nodes:', circuit.nodes.length);
     this.circuit = circuit;
     this.library = library;

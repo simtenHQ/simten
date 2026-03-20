@@ -4,7 +4,7 @@
  * Simple wrapper that subscribes to controller and triggers re-renders.
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { simulationController } from './simulation-controller';
 import { useCircuitStore } from '../stores/circuit-store';
 import { useComponentLibraryStore } from '../stores/component-library-store';
@@ -15,8 +15,11 @@ export function useSimulationController() {
   const updateNode = useCircuitStore((state) => state.updateNode);
   const library = useComponentLibraryStore();
 
-  // Track circuit structure (not environmental values)
-  const [prevStructure, setPrevStructure] = useState('');
+  // Track circuit structure with a ref (not state) to avoid re-triggering the effect
+  const prevStructureRef = useRef('');
+  // Keep library in a ref so the effect can read it without depending on it
+  const libraryRef = useRef(library);
+  libraryRef.current = library;
 
   // Force re-render when controller state changes
   const [, forceUpdate] = useState(0);
@@ -31,15 +34,17 @@ export function useSimulationController() {
       connections: circuit.connections,
     });
 
-    if (circuitStructure !== prevStructure) {
+    const isNewStructure = circuitStructure !== prevStructureRef.current;
+
+    if (isNewStructure) {
       // Structure changed - reinitialize
-      simulationController.initialize(circuit, library);
-      setPrevStructure(circuitStructure);
+      prevStructureRef.current = circuitStructure;
+      simulationController.initialize(circuit, libraryRef.current, circuitStructure);
     } else {
       // Structure same, but values might have changed (keyboard input, etc.)
       simulationController.updateCircuit(circuit);
     }
-  }, [circuit, library, prevStructure]);
+  }, [circuit]);
 
   // Re-simulate combinational circuits when inputs change
   useEffect(() => {
