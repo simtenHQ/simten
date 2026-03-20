@@ -608,9 +608,11 @@ function BrowserWindow({
 function DemoCircuit({
   dsl,
   height,
+  nodePositions,
 }: {
   dsl: string;
   height: number | string;
+  nodePositions?: Record<string, { x: number; y: number }>;
 }) {
   const sim = useCircuitSimulator(dsl);
   const [tickCount, setTickCount] = useState(0);
@@ -637,6 +639,7 @@ function DemoCircuit({
         onToggleNode={sim.toggleNode}
         drillDown={true}
         height={height}
+        nodePositions={nodePositions}
       />
       {sim.isSequential && (
         <div className="absolute bottom-3 right-3 flex items-center gap-2">
@@ -1212,6 +1215,7 @@ function DemoGallery() {
               <span className="inline-block w-[2px] h-[1em] bg-green-400 ml-0.5 align-middle animate-pulse" />
             </div>
           </h2>
+          <CopyCommand command="claude mcp add turing-incomplete npx @turing-incomplete/mcp" />
         </div>
 
         {/* Row 1: live circuits */}
@@ -1222,6 +1226,13 @@ function DemoGallery() {
             description="XOR for sum, AND for carry. The building block of every adder."
             harness={DEMO_HARNESS}
             href="/editor"
+            nodePositions={{
+              sw_a:     { x: 10,  y: 10 },
+              sw_b:     { x: 10,  y: 130 },
+              dut:      { x: 185, y: 70 },
+              led_sum:  { x: 360, y: 10 },
+              led_carry:{ x: 360, y: 130 },
+            }}
           />
           <LiveCircuitCard
             title="2-bit Counter"
@@ -1229,6 +1240,12 @@ function DemoGallery() {
             description="Two flip-flops with toggle logic. Counts 00 → 01 → 10 → 11 → repeat."
             harness={COUNTER_HARNESS}
             href="/editor"
+            nodePositions={{
+              clk:  { x: 10,  y: 70 },
+              dut:  { x: 190, y: 50 },
+              led0: { x: 375, y: 10 },
+              led1: { x: 375, y: 135 },
+            }}
           />
           <SnakeCard />
         </div>
@@ -1252,6 +1269,9 @@ function DemoGallery() {
             snippet={`circuit RV32I_DualCPU {\n  node cpu0: RV32I_CPU\n  node cpu1: RV32I_CPU\n  node nic0: NIC_FIFO\n  node nic1: NIC_FIFO\n  // cross-connect NICs:\n  // cpu0 TX → cpu1 RX\n  // cpu1 TX → cpu0 RX\n}`}
           />
         </div>
+
+        {/* Row 3: Ethernet parser — full width */}
+        <EthernetParserCard />
 
         <div className="mt-10 pt-8 border-t border-[#30363d] flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:justify-between">
           <p className="text-[13px] text-gray-600">
@@ -1419,6 +1439,305 @@ function SnakeCard() {
   );
 }
 
+// ============================================================================
+// Ethernet Parser Card
+// ============================================================================
+
+const CRC32_ETH = (() => {
+  const t = new Array(256);
+  for (let i = 0; i < 256; i++) {
+    let c = i;
+    for (let j = 0; j < 8; j++) c = (c & 1) ? ((c >>> 1) ^ 0xEDB88320) >>> 0 : (c >>> 1) >>> 0;
+    t[i] = c;
+  }
+  return t;
+})();
+
+function ethCRC32(data: number[]): number {
+  let crc = 0xFFFFFFFF;
+  for (const b of data) crc = (CRC32_ETH[(crc ^ b) & 0xFF] ^ (crc >>> 8)) >>> 0;
+  return (~crc) >>> 0;
+}
+
+function buildEthFrame(dst: number[], src: number[], ethertype: number): number[] {
+  const payload = Array(46).fill(0x42);
+  const frame = [...dst, ...src, (ethertype >> 8) & 0xFF, ethertype & 0xFF, ...payload];
+  const crc = ethCRC32(frame);
+  frame.push(crc & 0xFF, (crc >> 8) & 0xFF, (crc >> 16) & 0xFF, (crc >> 24) & 0xFF);
+  return frame;
+}
+
+function frameToMemory(bytes: number[]): Map<string, Map<number, number>> {
+  const m = new Map<number, number>();
+  bytes.forEach((b, i) => m.set(i, b));
+  return new Map([["eth_frameinput", m]]);
+}
+
+const ETH_FRAMES = [
+  { label: "IPv4 unicast",    dst: [0x00,0x1A,0x2B,0x3C,0x4D,0x5E], src: [0xDE,0xAD,0xBE,0xEF,0xCA,0xFE], ethertype: 0x0800 },
+  { label: "ARP broadcast",   dst: [0xFF,0xFF,0xFF,0xFF,0xFF,0xFF],   src: [0xAA,0xBB,0xCC,0xDD,0xEE,0xFF], ethertype: 0x0806 },
+  { label: "IPv6 multicast",  dst: [0x33,0x33,0x00,0x00,0x00,0x01],  src: [0xFE,0xDC,0xBA,0x98,0x76,0x54], ethertype: 0x86DD },
+] as const;
+
+const ETH_PARSER_DSL = `circuit Eth_802_3_Parser {
+  output dst_mac_hi: Bus[16]
+  output dst_mac_lo: Bus[32]
+  output src_mac_hi: Bus[16]
+  output src_mac_lo: Bus[32]
+  output ethertype: Bus[16]
+  output frame_done: Bit
+  output crc_ok: Bit
+  output is_broadcast: Bit
+  output is_ipv4: Bit
+  impl {
+    node frame_in: Eth_FrameInput
+    node enable: Constant(value=1, width=1)
+    connect enable.out -> frame_in.enable
+    node parser: Eth_FrameParser
+    connect frame_in.tdata -> parser.tdata
+    connect frame_in.tkeep -> parser.tkeep
+    connect frame_in.tvalid -> parser.tvalid
+    connect frame_in.tlast -> parser.tlast
+    node crc: Eth_CRC32
+    connect frame_in.tdata -> crc.data
+    connect frame_in.tvalid -> crc.data_valid
+    connect frame_in.tkeep -> crc.tkeep
+    connect frame_in.tlast -> crc.tlast
+    node proto: Eth_ProtocolDecoder
+    connect parser.ethertype -> proto.ethertype
+    node addr: Eth_AddrClassifier
+    connect parser.dst_mac_hi -> addr.dst_mac_hi
+    connect parser.dst_mac_lo -> addr.dst_mac_lo
+    connect parser.dst_mac_hi -> dst_mac_hi
+    connect parser.dst_mac_lo -> dst_mac_lo
+    connect parser.src_mac_hi -> src_mac_hi
+    connect parser.src_mac_lo -> src_mac_lo
+    connect parser.ethertype -> ethertype
+    connect parser.frame_done -> frame_done
+    connect crc.crc_ok -> crc_ok
+    connect addr.is_broadcast -> is_broadcast
+    connect proto.is_ipv4 -> is_ipv4
+  }
+}`;
+
+function readEthPort(
+  pv: ReadonlyMap<string, boolean | number> | null,
+  nodeLabel: string,
+  portName: string,
+): number | boolean | null {
+  if (!pv) return null;
+  const suffix = `.${portName}`;
+  for (const [key, val] of pv) {
+    if (key.endsWith(suffix) && key.includes(`_${nodeLabel}_`)) return val;
+  }
+  return null;
+}
+
+function formatMac(hi: number, lo: number): string {
+  return [
+    (lo >>> 24) & 0xFF, (lo >>> 16) & 0xFF, (lo >>> 8) & 0xFF, lo & 0xFF,
+    (hi >>> 8) & 0xFF, hi & 0xFF,
+  ].map(b => b.toString(16).padStart(2, "0")).join(":");
+}
+
+function useEthernetParser() {
+  const [frameIndex, setFrameIndex] = useState(0);
+  const frameDoneSeenRef = useRef(false);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const frame = ETH_FRAMES[frameIndex];
+  const frameBytes = useMemo(
+    () => buildEthFrame([...frame.dst], [...frame.src], frame.ethertype),
+    [frame],
+  );
+  const memory = useMemo(() => frameToMemory(frameBytes), [frameBytes]);
+  const sim = useCircuitSimulator(ETH_PARSER_DSL, { initialMemory: memory });
+
+  useEffect(() => {
+    if (!sim.ready) return;
+    intervalRef.current = setInterval(() => sim.tick(), 600);
+    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
+  }, [sim.ready, sim.tick]);
+
+  useEffect(() => {
+    if (!sim.portValues) return;
+    const done   = !!readEthPort(sim.portValues, "parser",   "frame_done");
+    const tvalid = !!readEthPort(sim.portValues, "frame_in", "tvalid");
+
+    // Reset guard once the new frame is actually streaming
+    if (tvalid && frameDoneSeenRef.current) {
+      frameDoneSeenRef.current = false;
+      return;
+    }
+
+    if (done && !tvalid && !frameDoneSeenRef.current) {
+      frameDoneSeenRef.current = true;
+      setTimeout(() => {
+        setFrameIndex(i => (i + 1) % ETH_FRAMES.length);
+      }, 3000);
+    }
+  }, [sim.cycleCount, sim.portValues]);
+
+  return { sim, frameIndex, frame, frameBytes };
+}
+
+function EthFrameRow({ label, bytes, color, active, valid }: {
+  label: string; bytes: string; color: string; active: boolean; valid: boolean;
+}) {
+  const palette: Record<string, { border: string; text: string }> = {
+    blue:   { border: "border-blue-500",   text: "text-blue-400"   },
+    violet: { border: "border-violet-500", text: "text-violet-400" },
+    amber:  { border: "border-amber-500",  text: "text-amber-400"  },
+    gray:   { border: "border-gray-600",   text: "text-gray-500"   },
+    green:  { border: "border-green-600",  text: "text-green-400"  },
+  };
+  const c = palette[color] ?? palette.gray;
+  return (
+    <div className={`flex items-center gap-2 py-0.5 border-l-2 pl-2 transition-all duration-150 ${active ? c.border : "border-transparent"}`}>
+      <span className={`w-14 text-[9px] uppercase tracking-wide shrink-0 transition-colors ${active ? c.text : "text-gray-700"}`}>
+        {label}
+      </span>
+      <span className={`font-mono text-[10px] transition-colors ${active ? "text-gray-200" : valid ? "text-gray-600" : "text-gray-800"}`}>
+        {bytes}
+      </span>
+    </div>
+  );
+}
+
+function EthParsedField({ label, value, tag, tagColor, valid }: {
+  label: string; value: string; tag?: string; tagColor?: string; valid: boolean;
+}) {
+  const tagCls: Record<string, string> = {
+    blue:    "text-blue-300 bg-blue-950/70",
+    orange:  "text-orange-300 bg-orange-950/70",
+    emerald: "text-emerald-300 bg-emerald-950/70",
+    violet:  "text-violet-300 bg-violet-950/70",
+  };
+  return (
+    <div className={`flex items-center gap-3 transition-opacity duration-300 ${valid ? "opacity-100" : "opacity-20"}`}>
+      <div className={`w-1.5 h-1.5 rounded-full shrink-0 transition-colors ${valid ? "bg-emerald-400" : "bg-gray-700"}`} />
+      <span className="text-[11px] text-gray-500 font-mono w-20 shrink-0">{label}</span>
+      <span className={`font-mono text-[11px] ${valid ? "text-gray-200" : "text-gray-700"}`}>{value}</span>
+      {tag && valid && (
+        <span className={`text-[9px] px-1.5 py-0.5 rounded font-semibold ${tagCls[tagColor ?? "blue"] ?? tagCls.blue}`}>
+          {tag}
+        </span>
+      )}
+    </div>
+  );
+}
+
+function EthernetParserCard() {
+  const { sim, frameIndex, frame, frameBytes } = useEthernetParser();
+  const pv = sim.portValues;
+
+  const byteOff   = ((readEthPort(pv, "frame_in", "byte_offset") as number) ?? 0);
+  const dstValid  = !!readEthPort(pv, "parser", "dst_mac_valid");
+  const srcValid  = !!readEthPort(pv, "parser", "src_mac_valid");
+  const typeValid = !!readEthPort(pv, "parser", "ethertype_valid");
+  const frameDone = !!readEthPort(pv, "parser", "frame_done");
+  const crcOk     = !!readEthPort(pv, "crc",    "crc_ok");
+  const isIpv4    = !!readEthPort(pv, "proto",  "is_ipv4");
+  const isArp     = !!readEthPort(pv, "proto",  "is_arp");
+  const isIpv6    = !!readEthPort(pv, "proto",  "is_ipv6");
+  const isBcast   = !!readEthPort(pv, "addr",   "is_broadcast");
+  const isUcast   = !!readEthPort(pv, "addr",   "is_unicast");
+
+  const dstHi  = ((readEthPort(pv, "parser", "dst_mac_hi") as number) ?? 0) >>> 0;
+  const dstLo  = ((readEthPort(pv, "parser", "dst_mac_lo") as number) ?? 0) >>> 0;
+  const srcHi  = ((readEthPort(pv, "parser", "src_mac_hi") as number) ?? 0) >>> 0;
+  const srcLo  = ((readEthPort(pv, "parser", "src_mac_lo") as number) ?? 0) >>> 0;
+  const etype  = ((readEthPort(pv, "parser", "ethertype")  as number) ?? 0) >>> 0;
+
+  const hex = (start: number, end: number) =>
+    frameBytes.slice(start, end).map(b => b.toString(16).padStart(2, "0")).join(" ");
+
+  const active =
+    byteOff < 6  ? "dst"     :
+    byteOff < 12 ? "src"     :
+    byteOff < 14 ? "type"    :
+    byteOff < 60 ? "payload" : "fcs";
+
+  const proto     = isIpv4 ? "IPv4" : isArp ? "ARP" : isIpv6 ? "IPv6" : "";
+  const addrClass = isBcast ? "BROADCAST" : isUcast ? "UNICAST" : "";
+  const addrColor = isBcast ? "orange" : "blue";
+  const progress  = Math.min((byteOff / 64) * 100, 100);
+
+  return (
+    <div className="rounded-lg border border-[#30363d] overflow-hidden bg-[#0d1117] mt-4">
+      <div className="flex flex-col sm:flex-row" style={{ minHeight: 200 }}>
+        {/* Left: raw frame bytes */}
+        <div className="sm:w-[42%] shrink-0 border-b sm:border-b-0 sm:border-r border-[#30363d] px-5 py-4 font-mono">
+          <div className="text-[9px] text-gray-600 uppercase tracking-widest mb-3 flex items-center gap-2">
+            <span>incoming frame</span>
+            <span className={`px-1.5 py-0.5 rounded text-[8px] font-semibold ${
+              frameIndex === 0 ? "bg-blue-950/60 text-blue-400" :
+              frameIndex === 1 ? "bg-orange-950/60 text-orange-400" :
+              "bg-violet-950/60 text-violet-400"
+            }`}>
+              {frame.label.toUpperCase()}
+            </span>
+          </div>
+          <EthFrameRow label="dst mac" bytes={hex(0, 6)}   color="blue"   active={active === "dst"}     valid={dstValid}  />
+          <EthFrameRow label="src mac" bytes={hex(6, 12)}  color="violet" active={active === "src"}     valid={srcValid}  />
+          <EthFrameRow label="etype"   bytes={hex(12, 14)} color="amber"  active={active === "type"}    valid={typeValid} />
+          <EthFrameRow label="payload" bytes={`${hex(14, 18)} …`} color="gray" active={active === "payload"} valid={false} />
+          <EthFrameRow label="fcs"     bytes={hex(60, 64)} color="green"  active={active === "fcs"}     valid={crcOk}     />
+          <div className="mt-4">
+            <div className="h-0.5 bg-gray-900 rounded-full overflow-hidden">
+              <div className="h-full bg-blue-600 transition-all duration-150" style={{ width: `${progress}%` }} />
+            </div>
+            <div className="flex justify-between mt-1 text-[9px] text-gray-700 font-mono">
+              <span>{byteOff} / 64 bytes</span>
+              <span>{sim.cycleCount} cycles</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Right: parsed output */}
+        <div className="flex-1 px-6 py-4 flex flex-col justify-center gap-3.5">
+          <EthParsedField
+            label="dst_mac"
+            value={dstValid ? formatMac(dstHi, dstLo) : "??:??:??:??:??:??"}
+            tag={addrClass} tagColor={addrColor}
+            valid={dstValid}
+          />
+          <EthParsedField
+            label="src_mac"
+            value={srcValid ? formatMac(srcHi, srcLo) : "??:??:??:??:??:??"}
+            valid={srcValid}
+          />
+          <EthParsedField
+            label="ethertype"
+            value={typeValid ? `0x${etype.toString(16).padStart(4, "0")}` : "0x????"}
+            tag={proto} tagColor="emerald"
+            valid={typeValid}
+          />
+          <EthParsedField
+            label="crc32"
+            value={frameDone ? (crcOk ? "valid" : "invalid") : "..."}
+            tag={crcOk ? "\u2713" : undefined} tagColor="emerald"
+            valid={crcOk}
+          />
+        </div>
+      </div>
+
+      {/* Info strip */}
+      <div className="border-t border-[#30363d] px-5 py-3 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <span className="text-[13px] font-semibold text-gray-200">Ethernet Parser</span>
+          <span className="text-[11px] text-gray-600 font-mono">MAC RX pipeline · Layer 2 · IEEE 802.3</span>
+        </div>
+        <div className="flex items-center gap-2">
+          {ETH_FRAMES.map((_, i) => (
+            <div key={i} className={`w-1.5 h-1.5 rounded-full transition-colors duration-300 ${i === frameIndex ? "bg-blue-400" : "bg-gray-700"}`} />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function LiveCircuitCard({
   title,
   subtitle,
@@ -1426,6 +1745,7 @@ function LiveCircuitCard({
   harness,
   href,
   height = 240,
+  nodePositions,
 }: {
   title: string;
   subtitle: string;
@@ -1433,11 +1753,12 @@ function LiveCircuitCard({
   harness: string;
   href: string;
   height?: number;
+  nodePositions?: Record<string, { x: number; y: number }>;
 }) {
   return (
     <div className="flex flex-col rounded-lg border border-[#30363d] overflow-hidden bg-[#0d1117]">
       <div style={{ height }}>
-        <DemoCircuit dsl={harness} height={height} />
+        <DemoCircuit dsl={harness} height={height} nodePositions={nodePositions} />
       </div>
       <div className="border-t border-[#30363d] px-4 py-3 flex items-end justify-between gap-4">
         <div>
