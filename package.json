@@ -8,7 +8,9 @@
 		"test": "pnpm -r test",
 		"lint": "pnpm -r lint",
 		"changeset": "changeset",
-		"release": "pnpm build && changeset publish"
+		"release": "pnpm build && changeset publish",
+		"sync-public": "rsync -av --delete --exclude='node_modules' --exclude='dist' --exclude='*.tsbuildinfo' --exclude='.turbo' ./packages/ /tmp/turing-complete-public/packages/ && rsync -av --delete --exclude='node_modules' --exclude='dist' --exclude='*.tsbuildinfo' --exclude='.turbo' ./examples/ /tmp/turing-complete-public/examples/",
+		"sync-public:push": "pnpm sync-public && cd /tmp/turing-complete-public && git add . && (git diff --cached --quiet || git commit -m \"sync $(date -u +%Y-%m-%dT%H:%M:%SZ)\" && git push)"
 	},
 	"devDependencies": {
 		"@changesets/cli": "^2.29.8",
