@@ -79,6 +79,18 @@ export class NumericEventQueue {
   }
 
   /**
+   * Return the current queue contents as a plain array.
+   * Only used for tracing/debugging — allocates a new array.
+   */
+  toArray(): number[] {
+    const result: number[] = [];
+    for (let i = this.head; i < this.tail; i++) {
+      result.push(this.queue[i % this.capacity]);
+    }
+    return result;
+  }
+
+  /**
    * Clear the queue and reset for next tick.
    * O(1) - just resets pointers, pending array cleared on dequeue.
    */

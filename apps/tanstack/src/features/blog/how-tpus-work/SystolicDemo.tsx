@@ -1,7 +1,7 @@
 "use client";
 import { useMemo } from "react";
 import { useSystolicSimulator } from "./useSystolicSimulator";
-import { CircuitCanvas } from "@turing-incomplete/ui/embed";
+import { CircuitCanvas } from "@turing-incomplete/ui/shared";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 /**

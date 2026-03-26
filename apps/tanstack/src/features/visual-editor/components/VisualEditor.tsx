@@ -31,6 +31,7 @@ import { DSLEditor, type DSLEditorRef } from "@/features/dsl/ui/DSLEditor";
 import { Menu, TestTube, Bot } from "lucide-react";
 import { ChatPanel, useChatStore, useNarrativeContext } from "@/features/chat";
 import { useMCPConnection } from "@/hooks/useMCPConnection";
+import { EXAMPLES, CATEGORY_COLORS, CATEGORY_LABELS, type Example } from "../examples";
 
 // Helper to check if circuit has sequential components
 function hasSequentialComponents(
@@ -79,6 +80,9 @@ export function VisualEditor({ theme = "light" }: VisualEditorProps) {
   // DSL Editor ref for ChatPanel integration
   const dslEditorRef = useRef<DSLEditorRef>(null);
 
+  // Track whether we've loaded content so we can skip the first MCP cache replay
+  const hasLoadedContentRef = useRef(false);
+
   // Chat store
   const { setOpen: setChatOpen, toggle: toggleChat } = useChatStore();
 
@@ -98,6 +102,11 @@ export function VisualEditor({ theme = "light" }: VisualEditorProps) {
   // Studio connection (WebSocket to MCP server)
   const { status: mcpStatus } = useMCPConnection({
     onDSL: useCallback((source: string) => {
+      // Skip the first DSL push (cache replay from MCP server)
+      if (!hasLoadedContentRef.current) {
+        hasLoadedContentRef.current = true;
+        return;
+      }
       dslEditorRef.current?.setCode(source);
       setTimeout(() => dslEditorRef.current?.compile(), 100);
     }, []),
@@ -163,30 +172,63 @@ export function VisualEditor({ theme = "light" }: VisualEditorProps) {
     [setCompiledCircuits, registerUser],
   );
 
-  // Empty state with chat CTA
+  // Load an example into the editor
+  const loadExample = useCallback((example: Example) => {
+    dslEditorRef.current?.setCode(example.dsl);
+    hasLoadedContentRef.current = true;
+    setTimeout(() => dslEditorRef.current?.compile(), 100);
+  }, []);
+
+  // Empty state with example picker
   const renderEmptyState = useCallback(() => (
     <div className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none">
-      <div className="pointer-events-auto flex flex-col items-center gap-4 rounded-xl border border-gray-200 dark:border-[#2a2a2e] bg-white dark:bg-[#1a1a1e] p-8 shadow-lg max-w-sm text-center">
-        <Bot className="h-12 w-12 text-blue-500" />
-        <div>
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Build circuits with AI</h2>
-          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            Describe what you want and watch it appear on canvas
-          </p>
-        </div>
-        <Button onClick={() => setChatOpen(true)} className="gap-2">
-          <Bot className="h-4 w-4" />
-          Start building with AI
-        </Button>
-        <p className="text-xs text-gray-400">
-          or press{' '}
-          <kbd className="rounded border border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 font-mono text-[10px]">
-            ⌘K
-          </kbd>
+      <div className="pointer-events-auto rounded-xl border border-gray-200 dark:border-[#2a2a2e] bg-white dark:bg-[#1a1a1e] p-6 shadow-lg max-w-md w-full">
+        <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-1">Load an example</h2>
+        <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">
+          Pick a circuit to explore, or write your own DSL on the left.
         </p>
+        <div className="space-y-1.5 max-h-[340px] overflow-y-auto">
+          {EXAMPLES.map((ex) => (
+            <button
+              key={ex.id}
+              onClick={() => loadExample(ex)}
+              className="w-full text-left rounded-lg border border-gray-200 dark:border-[#2a2a2e] hover:border-blue-400 dark:hover:border-blue-500 bg-gray-50 dark:bg-[#161618] hover:bg-blue-50 dark:hover:bg-blue-950/20 px-4 py-2.5 transition-colors group"
+            >
+              <div className="flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="text-sm font-medium text-gray-900 dark:text-gray-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                    {ex.title}
+                  </div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-1">
+                    {ex.description}
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <span className={`inline-flex items-center rounded-full border px-1.5 py-0.5 text-[10px] font-medium ${CATEGORY_COLORS[ex.category]}`}>
+                    {CATEGORY_LABELS[ex.category]}
+                  </span>
+                  <span className="text-[10px] text-gray-500 font-mono">{ex.nodes}</span>
+                </div>
+              </div>
+            </button>
+          ))}
+        </div>
+        <div className="mt-4 flex items-center justify-between">
+          <p className="text-xs text-gray-400">
+            or press{' '}
+            <kbd className="rounded border border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 font-mono text-[10px]">
+              ⌘K
+            </kbd>
+            {' '}to build with AI
+          </p>
+          <Button onClick={() => setChatOpen(true)} variant="outline" size="sm" className="gap-1.5 text-xs">
+            <Bot className="h-3.5 w-3.5" />
+            AI Chat
+          </Button>
+        </div>
       </div>
     </div>
-  ), [setChatOpen]);
+  ), [setChatOpen, loadExample]);
 
   return (
     <ReactFlowProvider>
@@ -257,6 +299,8 @@ export function VisualEditor({ theme = "light" }: VisualEditorProps) {
           <div className="w-[40%] border-r border-gray-200 dark:border-[#2a2a2e]">
             <DSLEditor
               ref={dslEditorRef}
+              storageKey={null}
+              initialCode=""
               autoCompileEnabled={true}
               onCompileSuccess={handleDSLCompile}
               showHeader={false}

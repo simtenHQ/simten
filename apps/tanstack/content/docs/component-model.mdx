@@ -1,0 +1,149 @@
+---
+title: Component Model
+description: Primitives, composites, and the full primitive reference
+---
+
+import { PrimitiveLink, PrimitiveExplorer } from '../../src/features/docs/PrimitivePlayground'
+
+## Try a Primitive
+
+Search for any primitive, see its ports and parameters, and interact with a live demo:
+
+<PrimitiveExplorer />
+
+---
+
+## The Core Invariant
+
+**Only primitive components have executable behavior. Composites are purely structural — they describe connections, not computations.**
+
+When you write a composite like `HalfAdder`, you're defining structure (connect Xor to And), not behavior. The behavior comes from the primitives at execution time. The simulator expands composites to primitives — this is called **elaboration**.
+
+## Component Resolution
+
+When the system encounters `node x: Foo`:
+1. Check primitives — if found, use primitive evaluator
+2. Check user-defined circuits — if found, expand composite
+3. Error — unknown component
+
+Primitives cannot be shadowed. User composites can shadow other user composites.
+
+---
+
+## Primitive Reference
+
+### Logic Gates
+
+| Primitive | Inputs | Outputs | Description |
+|-----------|--------|---------|-------------|
+| <PrimitiveLink name="And" /> | `a: Bit`, `b: Bit` | `out: Bit` | AND — true when both inputs are true |
+| <PrimitiveLink name="Or" /> | `a: Bit`, `b: Bit` | `out: Bit` | OR — true when at least one input is true |
+| <PrimitiveLink name="Not" /> | `in: Bit` | `out: Bit` | NOT — inverts the input |
+| <PrimitiveLink name="Nand" /> | `a: Bit`, `b: Bit` | `out: Bit` | NAND — false only when both inputs are true |
+| <PrimitiveLink name="Nor" /> | `a: Bit`, `b: Bit` | `out: Bit` | NOR — true only when both inputs are false |
+| <PrimitiveLink name="Xor" /> | `a: Bit`, `b: Bit` | `out: Bit` | XOR — true when inputs differ |
+| <PrimitiveLink name="Xnor" /> | `a: Bit`, `b: Bit` | `out: Bit` | XNOR — true when inputs match |
+| <PrimitiveLink name="Buffer" /> | `in: Bit` | `out: Bit` | Passes input through unchanged |
+
+### I/O
+
+| Primitive | Inputs | Outputs | Parameters | Description |
+|-----------|--------|---------|------------|-------------|
+| <PrimitiveLink name="Switch">Switch</PrimitiveLink> | — | `out: Bit` | `value` (default: 0) | Clickable 1-bit toggle |
+| <PrimitiveLink name="Button">Button</PrimitiveLink> | — | `out: Bit` | — | Momentary push button |
+| <PrimitiveLink name="Input">Input</PrimitiveLink> | — | `out: Bus[N]` | `value` (default: 0), `width` (default: 8) | Editable numeric input |
+| <PrimitiveLink name="Led">Led</PrimitiveLink> | `in: Bit` | — | — | Visual LED indicator |
+| `Output` | `in: Bus[8]` | — | — | Multi-bit output sink |
+| `Constant` | — | `out: Bit` | `value` (default: 0) | Fixed value source |
+| `Probe` | `in: Bit` | `out: Bit` | — | Debug passthrough |
+
+### Arithmetic
+
+All arithmetic primitives support a `width` parameter (default: 8, options: 4, 8, 16, 32).
+
+| Primitive | Inputs | Outputs | Description |
+|-----------|--------|---------|-------------|
+| <PrimitiveLink name="Adder" /> | `a`, `b`, `carry_in` | `sum`, `carry_out` | N-bit adder with carry |
+| <PrimitiveLink name="Subtractor" /> | `a`, `b`, `borrow_in` | `difference`, `borrow_out` | N-bit subtractor with borrow |
+| <PrimitiveLink name="Multiplier" /> | `a`, `b` | `product: Bus[2N]` | N×N → 2N-bit multiplier |
+| <PrimitiveLink name="Comparator" /> | `a`, `b` | `eq`, `lt`, `gt` | N-bit comparator |
+| <PrimitiveLink name="Incrementer" /> | `in` | `out` | Adds 1 (wraps at max) |
+| <PrimitiveLink name="LeftShifter" /> | `value`, `shift` | `result` | Logical left shift |
+| <PrimitiveLink name="RightShifter" /> | `value`, `shift` | `result` | Logical right shift |
+| <PrimitiveLink name="SignedAdder" /> | `a`, `b`, `carry_in` | `sum`, `overflow`, `carry_out` | Signed add with overflow |
+| <PrimitiveLink name="SignedComparator" /> | `a`, `b` | `eq`, `lt`, `gt`, `lte`, `gte` | Signed compare |
+| <PrimitiveLink name="SignedMultiplier" /> | `a`, `b` | `product: Bus[2N]` | Signed N×N multiplier |
+
+### Bus Operations
+
+All support `width` parameter (default: 8).
+
+| Primitive | Inputs | Outputs | Description |
+|-----------|--------|---------|-------------|
+| <PrimitiveLink name="BusAnd" /> | `a`, `b` | `out` | Bitwise AND |
+| <PrimitiveLink name="BusOr" /> | `a`, `b` | `out` | Bitwise OR |
+| <PrimitiveLink name="BusNot" /> | `in` | `out` | Bitwise NOT |
+| <PrimitiveLink name="BusXor" /> | `a`, `b` | `out` | Bitwise XOR |
+
+### Routing
+
+| Primitive | Inputs | Outputs | Parameters | Description |
+|-----------|--------|---------|------------|-------------|
+| <PrimitiveLink name="Mux" /> | `in0`, `in1`, `sel: Bit` | `out` | `width` (default: 1) | 2-to-1 multiplexer |
+| <PrimitiveLink name="Decoder" /> | `in: Bus[2]` | `out0`–`out3: Bit` | — | 2-to-4 decoder |
+| `Splitter` | `in: Bus[8]` | `out0`, `out1: Bus[4]` | — | Split bus in half |
+| `Splitter8to8` | `in: Bus[8]` | `bit0`–`bit7: Bit` | — | Split bus to individual bits |
+| `Combiner8to8` | `bit0`–`bit7: Bit` | `out: Bus[8]` | — | Combine bits to bus |
+| <PrimitiveLink name="BitSlice" /> | `in: Bus[8]` | `out: Bus[N]` | `low` (0), `high` (7) | Extract bit range [low..high] |
+| <PrimitiveLink name="Concat" /> | `high`, `low` | `out` | `lowWidth` (4) | Concatenate buses |
+| `AddressCombiner` | `lo: Bus[8]`, `hi: Bus[8]` | `out: Bus[16]` | — | Combine to 16-bit address |
+
+### Sequential
+
+These components have **clocked state** that updates on the rising edge of `clk`.
+
+| Primitive | Inputs | Outputs | Parameters | Description |
+|-----------|--------|---------|------------|-------------|
+| <PrimitiveLink name="DFlipFlop" /> | `d: Bit` | `q: Bit`, `q_bar: Bit` | — | 1-bit register, captures `d` on clock edge |
+| <PrimitiveLink name="Register" /> | `data: Bus[N]`, `we: Bit` | `q: Bus[N]` | `width` (8), `initial` (0) | N-bit register, writes when `we` is high |
+
+**Key difference:** DFlipFlop always captures its input on every clock edge. Register only writes when `we` (write enable) is high — this lets you hold a value across multiple cycles.
+
+### Memory
+
+| Primitive | Inputs | Outputs | Parameters | Description |
+|-----------|--------|---------|------------|-------------|
+| `ROM` | `addr: Bus[16]` | `data_out: Bus[8]` | `baseAddress` | Read-only, combinational read |
+| <PrimitiveLink name="RAM" /> | `addr`, `data_in`, `we: Bit` | `data_out` | `addressWidth` (8), `dataWidth` (8) | Single-port, combinational read, clocked write |
+| <PrimitiveLink name="DualPortRAM" /> | `addrA`, `dataA`, `weA: Bit`, `addrB` | `outA`, `outB` | `addressWidth` (8), `dataWidth` (8) | Port A reads/writes, port B read-only |
+
+Memory is initialized with the `init` parameter:
+
+```rust
+node ram: DualPortRAM(init={
+  0: 42,    // address 0 = 42
+  1: 100,   // address 1 = 100
+  64: 33,   // address 64 = 33
+})
+```
+
+Reads are **combinational** (address in → data out immediately). Writes happen on the **rising clock edge** when `we` is high.
+
+### Display
+
+| Primitive | Inputs | Outputs | Description |
+|-----------|--------|---------|-------------|
+| <PrimitiveLink name="SevenSegment" /> | `in: Bus[4]` | — | Hex digit display (0–F) |
+| <PrimitiveLink name="HexDisplay" /> | `in: Bus[N]` | — | Multi-digit hex display |
+| `Screen` | `dataIn: Bus[8]` | `addrB: Bus[8]` | 8×8 pixel framebuffer display |
+| `RasterDisplay` | `dataIn: Bus[8]` | `addrB`, `scanX`, `scanY`, `hblank`, `vblank` | Hardware-accurate raster with scan counters |
+
+The `Screen` primitive works with `DualPortRAM`: connect `screen.addrB → ram.addrB` and `ram.outB → screen.dataIn`. The screen scans through addresses 0–63 to read pixel data.
+
+### I/O Devices
+
+| Primitive | Inputs | Outputs | Description |
+|-----------|--------|---------|-------------|
+| `Console` | `data: Bus[8]`, `we: Bit` | — | Memory-mapped text output |
+| `UART_TX` | `addr`, `data_in`, `we`, `re` | `data_out` | Memory-mapped serial transmit |
+| `NIC_FIFO` | `addr`, `data_in`, `we`, `re` | `data_out`, `tx_data`, `tx_valid`, etc. | Network interface with TX/RX FIFOs |

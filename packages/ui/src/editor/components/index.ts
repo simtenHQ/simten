@@ -1,21 +1,12 @@
 /**
- * Component exports
+ * Editor component exports
  */
-
 export { ReactFlowProvider } from '@xyflow/react';
 export { Canvas } from './Canvas';
 export { ComponentPalette } from './ComponentPalette';
-export { ComponentTooltip } from './ComponentTooltip';
-export { CircuitSelector } from './CircuitSelector';
-export { CircuitTabBar } from './CircuitTabBar';
 export { ClockControls, type ClockControlsProps } from './ClockControls';
 export { SignalOutputPanel } from './SignalOutputPanel';
 export { CompositeInspectorDialog } from './CompositeInspectorDialog';
-export { ConflictResolutionModal } from './ConflictResolutionModal';
-export { DiagnosticsPanel } from './DiagnosticsPanel';
-export { HierarchyBreadcrumb } from './HierarchyBreadcrumb';
-export { LabelEditor } from './LabelEditor';
+export { CircuitSelector } from './CircuitSelector';
+export { CircuitTabBar } from './CircuitTabBar';
 export { RightSidebar } from './RightSidebar';
-export { TestbenchLoader } from './TestbenchLoader';
-export { TestbenchPanel } from './TestbenchPanel';
-export * from './nodes';

@@ -1307,7 +1307,7 @@ function DemoGallery() {
           <span className="text-[12px] text-gray-600">Turing Incomplete</span>
         </div>
         <div className="flex items-center gap-5">
-          <Link to="/docs" className="text-[12px] text-gray-600 hover:text-gray-300 transition-colors">Docs</Link>
+          <a href="/docs" className="text-[12px] text-gray-600 hover:text-gray-300 transition-colors">Docs</a>
           <Link to="/blog" className="text-[12px] text-gray-600 hover:text-gray-300 transition-colors">Blog</Link>
           <Link to="/learn" className="text-[12px] text-gray-600 hover:text-gray-300 transition-colors">Learn</Link>
           <a
