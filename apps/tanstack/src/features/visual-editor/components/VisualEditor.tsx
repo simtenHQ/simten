@@ -84,7 +84,10 @@ export function VisualEditor({ theme = "light" }: VisualEditorProps) {
   const hasLoadedContentRef = useRef(false);
 
   // Chat store
-  const { setOpen: setChatOpen, toggle: toggleChat } = useChatStore();
+  const { setOpen: setChatOpen, toggle: toggleChat, addAssistantMessage } = useChatStore();
+
+  // Channel thinking state (separate from the API streaming system)
+  const [channelThinking, setChannelThinking] = useState(false);
 
   // Check if we need to show clock controls
   const showClockControls = hasSequentialComponents(circuit, resolveComponent);
@@ -100,16 +103,16 @@ export function VisualEditor({ theme = "light" }: VisualEditorProps) {
   simRef.current = simulationController;
 
   // Studio connection (WebSocket to MCP server)
-  const { status: mcpStatus } = useMCPConnection({
+  const { status: mcpStatus, sendToClaudePrompt } = useMCPConnection({
     onDSL: useCallback((source: string) => {
-      // Skip the first DSL push (cache replay from MCP server)
-      if (!hasLoadedContentRef.current) {
-        hasLoadedContentRef.current = true;
-        return;
-      }
       dslEditorRef.current?.setCode(source);
       setTimeout(() => dslEditorRef.current?.compile(), 100);
     }, []),
+    onChatMessage: useCallback((text: string) => {
+      addAssistantMessage(text);
+      setChannelThinking(false);
+      setChatOpen(true);
+    }, [addAssistantMessage, setChatOpen]),
     getCircuitState: useCallback(() => {
       const currentCircuit = useCircuitStore.getState().circuit;
       const sim = simRef.current;
@@ -382,6 +385,9 @@ export function VisualEditor({ theme = "light" }: VisualEditorProps) {
           }}
           narrativeContext={narrativeContext.narrative}
           sourceCodeHash={narrativeContext.sourceCodeHash}
+          onSendToChannel={mcpStatus === 'connected' ? sendToClaudePrompt : undefined}
+          channelThinking={channelThinking}
+          setChannelThinking={setChannelThinking}
         />
       </div>
       </TooltipProvider>

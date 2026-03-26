@@ -38,6 +38,8 @@ export interface MCPCallbacks {
   onChallengeNavigate?: (challengeId: string, levelId: string) => void;
   /** Called when a challenge step should be added */
   onChallengeAddStep?: (challengeId: string, levelId: string, step: string) => void;
+  /** Called when Claude pushes a chat message via push_chat_response */
+  onChatMessage?: (text: string) => void;
   /** Called to get current circuit state for MCP server requests */
   getCircuitState?: () => unknown;
   /** Called to get current challenge state for MCP server requests */
@@ -45,11 +47,26 @@ export interface MCPCallbacks {
 }
 
 const RETRY_INTERVAL = 5000;
+const LS_KEY = 'turing-incomplete:mcp-connection';
+
+function saveConnectionParams(params: { token: string; port: number }) {
+  try { localStorage.setItem(LS_KEY, JSON.stringify(params)); } catch { /* ignore */ }
+}
+
+function loadConnectionParams(): { token: string; port: number } | null {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (parsed?.token && parsed?.port) return parsed;
+  } catch { /* ignore */ }
+  return null;
+}
 
 /**
  * Parse connection params from URL fragment.
  * Fragment format: #token=xxx&port=19847
- * Returns null if no fragment params are present.
+ * Persists to localStorage so subsequent page loads reconnect automatically.
  */
 function parseFragmentParams(): { token: string; port: number } | null {
   if (typeof window === 'undefined') return null;
@@ -64,7 +81,9 @@ function parseFragmentParams(): { token: string; port: number } | null {
   if (token && port) {
     // Clean the URL immediately — remove the fragment
     window.history.replaceState(null, '', window.location.pathname + window.location.search);
-    return { token, port: parseInt(port, 10) };
+    const parsed = { token, port: parseInt(port, 10) };
+    saveConnectionParams(parsed);
+    return parsed;
   }
 
   return null;
@@ -133,6 +152,9 @@ export function useMCPConnection(callbacks: MCPCallbacks) {
           case 'challenge-add-step':
             cb.onChallengeAddStep?.(msg.challengeId as string, msg.levelId as string, msg.step as string);
             break;
+          case 'chat-message':
+            cb.onChatMessage?.(msg.text as string);
+            break;
 
           // Pull model: MCP server is requesting state
           case 'request-state': {
@@ -159,8 +181,15 @@ export function useMCPConnection(callbacks: MCPCallbacks) {
       }
     };
 
-    ws.onclose = () => {
+    ws.onclose = (event) => {
       wsRef.current = null;
+      // 4001 = invalid token (stale localStorage) — clear and stop retrying
+      if (event.code === 4001) {
+        try { localStorage.removeItem(LS_KEY); } catch { /* ignore */ }
+        connectionRef.current = null;
+        setStatus('disconnected');
+        return;
+      }
       if (connectionRef.current) {
         // We had a valid connection — try to reconnect
         setStatus('reconnecting');
@@ -191,8 +220,8 @@ export function useMCPConnection(callbacks: MCPCallbacks) {
   }, []);
 
   useEffect(() => {
-    // Check for fragment params first (from show_circuit opening the browser)
-    const fragmentParams = parseFragmentParams();
+    // Fragment params take priority (from show_circuit), also persisted to localStorage
+    const fragmentParams = parseFragmentParams() ?? loadConnectionParams();
     if (fragmentParams) {
       connectionRef.current = fragmentParams;
       connect(fragmentParams.port, fragmentParams.token);
@@ -216,9 +245,16 @@ export function useMCPConnection(callbacks: MCPCallbacks) {
     };
   }, [connect, tryAutoDiscover]);
 
+  const sendToClaudePrompt = useCallback((text: string, meta?: Record<string, string>) => {
+    const ws = wsRef.current;
+    if (!ws || ws.readyState !== WebSocket.OPEN) return;
+    ws.send(JSON.stringify({ type: 'send-to-claude', content: text, meta: meta ?? {} }));
+  }, []);
+
   return {
     status,
     sessionId: sessionIdRef.current,
     isConnected: status === 'connected',
+    sendToClaudePrompt,
   };
 }

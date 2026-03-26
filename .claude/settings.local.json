@@ -49,7 +49,9 @@
       "Read(//tmp/**)",
       "Bash(sed -i '' 's/navigateChallenge\\(challengeId: string, stageId: string\\): void;/navigateChallenge\\(challengeId: string, levelId: string\\): void;/' packages/mcp/src/server/preview-server.ts && sed -i '' 's/addChallengeStep\\(challengeId: string, stageId: string, step: string\\): void;/addChallengeStep\\(challengeId: string, levelId: string, step: string\\): void;/' packages/mcp/src/server/preview-server.ts && sed -i '' 's/function navigateChallenge\\(challengeId: string, stageId: string\\)/function navigateChallenge\\(challengeId: string, levelId: string\\)/' packages/mcp/src/server/preview-server.ts && sed -i '' 's/broadcastSSE\\({ type: .challenge-navigate., challengeId, stageId }\\);/broadcastSSE\\({ type: '\\\\''challenge-navigate'\\\\'', challengeId, levelId }\\);/' packages/mcp/src/server/preview-server.ts && sed -i '' 's/function addChallengeStep\\(challengeId: string, stageId: string, step: string\\)/function addChallengeStep\\(challengeId: string, levelId: string, step: string\\)/' packages/mcp/src/server/preview-server.ts && sed -i '' 's/broadcastSSE\\({ type: .challenge-add-step., challengeId, stageId, step }\\);/broadcastSSE\\({ type: '\\\\''challenge-add-step'\\\\'', challengeId, levelId, step }\\);/' packages/mcp/src/server/preview-server.ts)",
       "Bash(sed -i '' 's/CPU_STAGES/CPU_LEVELS/g' apps/tanstack/src/routes/challenges/build-a-cpu.tsx && sed -i '' 's/ALU_STAGES/ALU_LEVELS/g' apps/tanstack/src/routes/challenges/build-an-alu.tsx && sed -i '' 's/SNAKE_STAGES/SNAKE_LEVELS/g' apps/tanstack/src/routes/challenges/snake.tsx)",
-      "Bash(mkdir -p /Users/charlesharris/Documents/Personal/turing-incomplete/apps/tanstack/src/features/learn/lessons && mkdir -p /Users/charlesharris/Documents/Personal/turing-incomplete/apps/tanstack/src/routes/learn)"
+      "Bash(mkdir -p /Users/charlesharris/Documents/Personal/turing-incomplete/apps/tanstack/src/features/learn/lessons && mkdir -p /Users/charlesharris/Documents/Personal/turing-incomplete/apps/tanstack/src/routes/learn)",
+      "WebFetch(domain:docs.anthropic.com)",
+      "mcp__turing-incomplete__push_chat_response"
     ]
   }
 }
