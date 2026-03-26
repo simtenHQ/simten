@@ -9,16 +9,20 @@ interface EmbedScreenNodeProps {
   selected?: boolean;
 }
 
-const GRID_SIZE = 8;
-const PIXEL_SIZE = 16;
-const PIXEL_GAP = 2;
-
 /**
  * Lightweight screen node for embeds - no useCircuitStore dependency.
  * Reads pixel data directly from data.__pixels.
+ * Supports configurable width/height via node arguments.
  */
 export function EmbedScreenNode({ data, selected }: EmbedScreenNodeProps) {
-  const pixels = (data.__pixels as number[]) ?? new Array(64).fill(0);
+  const GRID_W = (data.arguments?.width as number) ?? 8;
+  const GRID_H = (data.arguments?.height as number) ?? 8;
+  const TOTAL_PIXELS = GRID_W * GRID_H;
+
+  const pixels = (data.__pixels as number[]) ?? new Array(TOTAL_PIXELS).fill(0);
+
+  const PIXEL_SIZE = GRID_W <= 8 ? 16 : GRID_W <= 16 ? 8 : 4;
+  const PIXEL_GAP = GRID_W <= 8 ? 2 : GRID_W <= 16 ? 1 : 0;
 
   return (
     <BaseNode
@@ -40,14 +44,14 @@ export function EmbedScreenNode({ data, selected }: EmbedScreenNodeProps) {
           {data.label || "Screen"}
         </div>
         <svg
-          width={GRID_SIZE * PIXEL_SIZE + (GRID_SIZE - 1) * PIXEL_GAP}
-          height={GRID_SIZE * PIXEL_SIZE + (GRID_SIZE - 1) * PIXEL_GAP}
+          width={GRID_W * PIXEL_SIZE + (GRID_W - 1) * PIXEL_GAP}
+          height={GRID_H * PIXEL_SIZE + (GRID_H - 1) * PIXEL_GAP}
           className="border-2 border-gray-700 rounded bg-black"
           style={{ imageRendering: "pixelated" }}
         >
-          {pixels.map((value, index) => {
-            const x = index % GRID_SIZE;
-            const y = Math.floor(index / GRID_SIZE);
+          {pixels.slice(0, TOTAL_PIXELS).map((value, index) => {
+            const x = index % GRID_W;
+            const y = Math.floor(index / GRID_W);
             return (
               <rect
                 key={index}
@@ -56,12 +60,13 @@ export function EmbedScreenNode({ data, selected }: EmbedScreenNodeProps) {
                 width={PIXEL_SIZE}
                 height={PIXEL_SIZE}
                 fill={value !== 0 ? "#00ff00" : "#1a1a1a"}
-                className="transition-colors duration-100"
               />
             );
           })}
         </svg>
-        <div className="text-xs text-gray-500 dark:text-gray-400">8x8 pixels</div>
+        <div className="text-xs text-gray-500 dark:text-gray-400">
+          {GRID_W}×{GRID_H} pixels
+        </div>
       </div>
     </BaseNode>
   );

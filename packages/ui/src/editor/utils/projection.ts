@@ -201,7 +201,10 @@ export function projectCircuitToNodes(
     } else if (node.componentRef === 'Screen') {
       // Screen reads from dataIn port (explicit wiring)
       // The typical wiring: Screen.addrB -> RAM.addrB, RAM.outB -> Screen.dataIn
-      pixels = new Array(64).fill(0);
+      const screenW = (node.arguments.width as number) ?? 8;
+      const screenH = (node.arguments.height as number) ?? 8;
+      const totalPixels = screenW * screenH;
+      pixels = new Array(totalPixels).fill(0);
 
       if (seqState && portValues) {
         // Read pixels by tracing the dataIn connection
@@ -220,7 +223,7 @@ export function projectCircuitToNodes(
           if (sourceNode?.componentRef === 'DualPortRAM') {
             const ramState = seqState.currentState.get(sourceNode.id);
             if (ramState instanceof Map) {
-              for (let addr = 0; addr < 64; addr++) {
+              for (let addr = 0; addr < totalPixels; addr++) {
                 pixels[addr] = ramState.get(addr) ?? 0;
               }
             }
@@ -245,7 +248,7 @@ export function projectCircuitToNodes(
               if (ramNode?.componentRef === 'DualPortRAM') {
                 const ramState = seqState.currentState.get(ramNode.id);
                 if (ramState instanceof Map) {
-                  for (let addr = 0; addr < 64; addr++) {
+                  for (let addr = 0; addr < totalPixels; addr++) {
                     pixels[addr] = ramState.get(addr) ?? 0;
                   }
                 }
@@ -256,16 +259,18 @@ export function projectCircuitToNodes(
       }
     } else if (node.componentRef === 'RasterDisplay') {
       // Hardware-accurate raster display - reads pixels from internal state
-      // RasterDisplay stores pixels directly in its state Map (keys 0-63)
-      pixels = new Array(64).fill(0);
+      const rasterW = (node.arguments.width as number) ?? 8;
+      const rasterH = (node.arguments.height as number) ?? 8;
+      const rasterPixels = rasterW * rasterH;
+      pixels = new Array(rasterPixels).fill(0);
 
       if (seqState) {
         const displayState = seqState.currentState.get(node.id);
 
         if (displayState instanceof Map) {
           const state = displayState as Map<number, number>;
-          // Read pixel data (keys 0-63, excluding -1/-2 which are scanX/scanY)
-          for (let addr = 0; addr < 64; addr++) {
+          // Read pixel data (excluding -1/-2 which are scanX/scanY)
+          for (let addr = 0; addr < rasterPixels; addr++) {
             pixels[addr] = state.get(addr) ?? 0;
           }
         }

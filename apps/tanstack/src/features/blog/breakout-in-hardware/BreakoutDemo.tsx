@@ -49,7 +49,8 @@ function usePixels(sequentialState: unknown): number[] {
     if (!state?.currentState) return pixels;
 
     for (const [nodeId, nodeState] of state.currentState) {
-      if (nodeState instanceof Map && nodeId.toLowerCase().includes("ram")) {
+      // RasterDisplay stores pixels in its internal state map at addresses 0-63
+      if (nodeState instanceof Map && nodeId.toLowerCase().includes("display")) {
         const mem = nodeState as Map<number, number>;
         for (let addr = 0; addr < 64; addr++) {
           pixels[addr] = mem.get(addr) ?? 0;
@@ -185,10 +186,11 @@ export function BreakoutDemo() {
           <label className="text-xs text-gray-400">Speed</label>
           <input
             type="range"
-            min={1}
-            max={100}
-            value={101 - speed}
-            onChange={(e) => setSpeed(101 - Number(e.target.value))}
+            min={50}
+            max={500}
+            step={10}
+            value={550 - speed}
+            onChange={(e) => setSpeed(550 - Number(e.target.value))}
             className="w-20 accent-blue-500"
           />
         </div>
