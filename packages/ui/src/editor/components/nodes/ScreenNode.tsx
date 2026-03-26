@@ -26,12 +26,17 @@ export function ScreenNode({ data, selected }: ScreenNodeProps) {
   const [isEditingLabel, setIsEditingLabel] = useState(false);
   const [labelPosition, setLabelPosition] = useState({ x: 0, y: 0 });
 
-  // Extract pixel data (64 pixels for 8x8 grid)
-  const pixels = (data.__pixels as number[]) ?? new Array(64).fill(0);
+  // Read dimensions from node arguments (default 8x8)
+  const GRID_W = (data.arguments?.width as number) ?? 8;
+  const GRID_H = (data.arguments?.height as number) ?? 8;
+  const TOTAL_PIXELS = GRID_W * GRID_H;
 
-  const GRID_SIZE = 8;
-  const PIXEL_SIZE = 16; // SVG units per pixel
-  const PIXEL_GAP = 2;   // Gap between pixels
+  // Extract pixel data
+  const pixels = (data.__pixels as number[]) ?? new Array(TOTAL_PIXELS).fill(0);
+
+  // Scale pixel size down for larger displays so the node doesn't get huge
+  const PIXEL_SIZE = GRID_W <= 8 ? 16 : GRID_W <= 16 ? 8 : 4;
+  const PIXEL_GAP = GRID_W <= 8 ? 2 : GRID_W <= 16 ? 1 : 0;
 
   const handleLabelDoubleClick = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
@@ -79,16 +84,16 @@ export function ScreenNode({ data, selected }: ScreenNodeProps) {
             {data.label || 'Screen'}
           </div>
 
-          {/* 8x8 Pixel Grid */}
+          {/* Pixel Grid */}
           <svg
-            width={GRID_SIZE * PIXEL_SIZE + (GRID_SIZE - 1) * PIXEL_GAP}
-            height={GRID_SIZE * PIXEL_SIZE + (GRID_SIZE - 1) * PIXEL_GAP}
+            width={GRID_W * PIXEL_SIZE + (GRID_W - 1) * PIXEL_GAP}
+            height={GRID_H * PIXEL_SIZE + (GRID_H - 1) * PIXEL_GAP}
             className="border-2 border-gray-700 rounded bg-black"
             style={{ imageRendering: 'pixelated' }}
           >
-            {pixels.map((value, index) => {
-              const x = index % GRID_SIZE;
-              const y = Math.floor(index / GRID_SIZE);
+            {pixels.slice(0, TOTAL_PIXELS).map((value, index) => {
+              const x = index % GRID_W;
+              const y = Math.floor(index / GRID_W);
               const pixelOn = value !== 0;
 
               return (
@@ -99,7 +104,6 @@ export function ScreenNode({ data, selected }: ScreenNodeProps) {
                   width={PIXEL_SIZE}
                   height={PIXEL_SIZE}
                   fill={pixelOn ? '#00ff00' : '#1a1a1a'}
-                  className="transition-colors duration-100"
                 />
               );
             })}
@@ -107,7 +111,7 @@ export function ScreenNode({ data, selected }: ScreenNodeProps) {
 
           {/* Info */}
           <div className="text-xs text-gray-500 dark:text-gray-400">
-            8×8 pixels
+            {GRID_W}×{GRID_H} pixels
           </div>
         </div>
       </BaseNode>

@@ -51,7 +51,8 @@
       "Bash(sed -i '' 's/CPU_STAGES/CPU_LEVELS/g' apps/tanstack/src/routes/challenges/build-a-cpu.tsx && sed -i '' 's/ALU_STAGES/ALU_LEVELS/g' apps/tanstack/src/routes/challenges/build-an-alu.tsx && sed -i '' 's/SNAKE_STAGES/SNAKE_LEVELS/g' apps/tanstack/src/routes/challenges/snake.tsx)",
       "Bash(mkdir -p /Users/charlesharris/Documents/Personal/turing-incomplete/apps/tanstack/src/features/learn/lessons && mkdir -p /Users/charlesharris/Documents/Personal/turing-incomplete/apps/tanstack/src/routes/learn)",
       "WebFetch(domain:docs.anthropic.com)",
-      "mcp__turing-incomplete__push_chat_response"
+      "mcp__turing-incomplete__push_chat_response",
+      "Bash(apps/tanstack/src/features/blog/breakout-in-hardware/circuits.ts:*)"
     ]
   }
 }

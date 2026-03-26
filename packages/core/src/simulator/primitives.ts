@@ -1258,11 +1258,15 @@ circuit Comparator {
 
   Screen: defineCombinational({
     name: 'Screen',
-    description: '8x8 pixel display',
+    description: 'Pixel display (default 8x8, configurable with width/height parameters)',
     category: 'display',
     icon: '🖥️',
+    parameters: [
+      { name: 'width', paramType: 'int', defaultValue: 8, options: [8, 16, 32, 64] },
+      { name: 'height', paramType: 'int', defaultValue: 8, options: [8, 16, 32, 64] },
+    ],
     inputs: [{ name: 'dataIn', portType: busType(8) }],
-    outputs: [{ name: 'addrB', portType: busType(8) }],
+    outputs: [{ name: 'addrB', portType: busType(16), widthParam: undefined }],
     evaluate: (_inputs, _currentState, _context) => {
       return new Map([['addrB', 0]]);
     },
