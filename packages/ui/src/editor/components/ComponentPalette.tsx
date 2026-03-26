@@ -16,7 +16,6 @@
 import React, { useCallback, useState, useEffect, useRef, useMemo } from 'react';
 import { cn } from '../../lib/utils';
 import { useCircuitStore } from '../stores/circuit-store';
-import { useMetadataStore } from '../stores';
 import { useComponentLibraryStore } from '../stores/component-library-store';
 import type { Circuit } from '../types/circuit';
 import { ComponentTooltip, PortInfo } from './ComponentTooltip';
@@ -336,7 +335,6 @@ function ComponentGroup({
 
 export function ComponentPalette() {
   const addNode = useCircuitStore((state) => state.addNode);
-  const setComponentMetadata = useMetadataStore((state) => state.setComponentMetadata);
   const { library } = useComponentLibraryStore();
 
   // Search state
@@ -387,16 +385,9 @@ export function ComponentPalette() {
 
   const handleClick = useCallback(
     (componentRef: string) => {
-      // Add node to circuit
-      const nodeId = addNode(componentRef, {});
-
-      // Add metadata with default position (center of canvas)
-      setComponentMetadata(nodeId, {
-        id: nodeId,
-        position: { x: 250, y: 250 }, // Default position
-      });
+      addNode(componentRef, {});
     },
-    [addNode, setComponentMetadata]
+    [addNode]
   );
 
   // Combine primitive and user categories

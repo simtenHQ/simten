@@ -1,6 +1,7 @@
 import { HeadContent, Scripts, createRootRoute } from '@tanstack/react-router'
 import { Outlet } from '@tanstack/react-router'
 import { ThemeProvider } from '../components/ThemeProvider'
+import { RootProvider } from 'fumadocs-ui/provider/tanstack'
 
 import appCss from '../styles.css?url'
 
@@ -32,9 +33,11 @@ function RootComponent() {
         <HeadContent />
       </head>
       <body className="antialiased">
-        <ThemeProvider defaultTheme="dark">
-          <Outlet />
-        </ThemeProvider>
+        <RootProvider>
+          <ThemeProvider defaultTheme="dark">
+            <Outlet />
+          </ThemeProvider>
+        </RootProvider>
         <Scripts />
       </body>
     </html>

@@ -7,13 +7,14 @@ export const Route = createFileRoute('/blog/')({
   component: BlogIndex,
 })
 
-type PostCategory = 'game' | 'cpu' | 'accelerator' | 'networking'
+type PostCategory = 'game' | 'cpu' | 'accelerator' | 'networking' | 'architecture'
 
 const CATEGORY_COLORS: Record<PostCategory, string> = {
   game: 'bg-green-900/50 text-green-400 border-green-800/50',
   cpu: 'bg-blue-900/50 text-blue-400 border-blue-800/50',
   accelerator: 'bg-violet-900/50 text-violet-400 border-violet-800/50',
   networking: 'bg-amber-900/50 text-amber-400 border-amber-800/50',
+  architecture: 'bg-cyan-900/50 text-cyan-400 border-cyan-800/50',
 }
 
 const CATEGORY_LABELS: Record<PostCategory, string> = {
@@ -21,6 +22,7 @@ const CATEGORY_LABELS: Record<PostCategory, string> = {
   cpu: 'CPU',
   accelerator: 'Accelerator',
   networking: 'Networking',
+  architecture: 'Architecture',
 }
 
 const posts: { slug: string; title: string; description: string; category: PostCategory; nodes: string }[] = [
@@ -71,6 +73,22 @@ const posts: { slug: string; title: string; description: string; category: PostC
       "Packet buffering, MAC address lookup, and forwarding — built from the same primitives as everything else.",
     category: 'networking',
     nodes: '~50 nodes',
+  },
+  {
+    slug: "breakout-in-hardware",
+    title: "Breakout in Hardware",
+    description:
+      "A classic brick-breaking game built entirely from logic gates — ball physics, paddle control, brick collision detection, and score tracking, all without a CPU.",
+    category: 'game',
+    nodes: '~90 nodes',
+  },
+  {
+    slug: "mcp-bidirectional-bridge",
+    title: "MCP Bidirectional Bridge",
+    description:
+      "How the MCP WebSocket bridge connects AI models to live circuit simulations — bidirectional tool calls, state synchronization, and real-time collaboration.",
+    category: 'architecture',
+    nodes: 'N/A',
   },
 ]
 

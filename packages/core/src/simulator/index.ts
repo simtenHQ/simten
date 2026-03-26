@@ -166,6 +166,9 @@ export {
   propagateToTopLevelOutputs,
 } from './fast-simulator.js';
 
+export type { PropagationStep } from './trace.js';
+export { tracePropagation } from './trace.js';
+
 // ============================================================================
 // Simulator Engine Implementation
 // ============================================================================

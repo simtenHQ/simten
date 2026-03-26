@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback, forwardRef, useImperativeHandle } from "react";
+import { useState, useEffect, useRef, useCallback, forwardRef, useImperativeHandle, useMemo } from "react";
 import { useCircuitSimulator, type UseCircuitSimulatorOptions } from "./useCircuitSimulator";
 import { CircuitCanvas } from "../shared/CircuitCanvas";
 import { TooltipProvider } from "../primitives/tooltip";
+import { generateHarnessAppended } from "@turing-incomplete/core/dsl";
 
 export interface CircuitEmbedProps {
   dsl: string;
@@ -25,6 +26,8 @@ export interface CircuitEmbedProps {
   onPortClick?: (nodeLabel: string, portName: string, portType: 'input' | 'output') => void;
   /** Highlight unconnected ports with a pulsing glow */
   glowUnconnected?: boolean;
+  /** Automatically append test harness wiring */
+  autoHarness?: boolean;
 }
 
 export interface CheckSpec {
@@ -66,12 +69,18 @@ export const CircuitEmbed = forwardRef<CircuitEmbedHandle, CircuitEmbedProps>(fu
   showPortLabels,
   onPortClick,
   glowUnconnected,
+  autoHarness = false,
 }, ref) {
   const options: UseCircuitSimulatorOptions | undefined = initialMemory
     ? { initialMemory }
     : undefined;
 
-  const sim = useCircuitSimulator(dsl, options);
+  const effectiveDsl = useMemo(
+    () => autoHarness ? generateHarnessAppended(dsl) : dsl,
+    [dsl, autoHarness],
+  );
+
+  const sim = useCircuitSimulator(effectiveDsl, options);
   const [isAutoRunning, setIsAutoRunning] = useState(false);
   const [codeVisible, setCodeVisible] = useState(showCode);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
