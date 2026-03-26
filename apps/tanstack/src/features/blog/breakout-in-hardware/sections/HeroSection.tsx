@@ -25,6 +25,23 @@ export function HeroSection() {
             </a>
           </span>
         </div>
+
+        {/* Original Breakout — Wozniak's hardware implementation */}
+        <div className="mt-10">
+          <p className="text-sm text-gray-500 mb-3">
+            Steve Wozniak built the original Breakout in hardware for Atari in 1976 &mdash;
+            no CPU, just TTL chips. Here&rsquo;s what it looked like:
+          </p>
+          <div className="aspect-video rounded-xl overflow-hidden border border-gray-700/50">
+            <iframe
+              src="https://www.youtube.com/embed/17eUExffa5w"
+              title="Original Breakout — Atari 1976"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+              className="w-full h-full"
+            />
+          </div>
+        </div>
       </div>
     </section>
   );
