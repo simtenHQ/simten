@@ -7,7 +7,7 @@ import { BREAKOUT_DSL } from "./circuits";
 export function useBreakoutSimulator() {
   const sim = useCircuitSimulator(BREAKOUT_DSL);
   const [isRunning, setIsRunning] = useState(false);
-  const [speed, setSpeed] = useState(30);
+  const [speed, setSpeed] = useState(200);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Find the mangled node ID for "keyboard"
@@ -50,21 +50,32 @@ export function useBreakoutSimulator() {
     };
   }, [keyboardNodeId, sim.setNodeValue]);
 
-  // Auto-run interval
+  // Auto-run using requestAnimationFrame for smooth rendering
+  const rafRef = useRef<number | null>(null);
+  const lastFrameRef = useRef(0);
+
   useEffect(() => {
-    if (isRunning && sim.ready) {
-      intervalRef.current = setInterval(() => {
-        // Tick a full frame (10 phases) atomically so React only sees
-        // the completed frame, not intermediate clear/draw states
-        for (let i = 0; i < 10; i++) {
+    if (!isRunning || !sim.ready) return;
+
+    const loop = (timestamp: number) => {
+      const elapsed = timestamp - lastFrameRef.current;
+      if (elapsed >= speed) {
+        lastFrameRef.current = timestamp;
+        // Tick a full raster frame (100 ticks) atomically
+        for (let i = 0; i < 100; i++) {
           sim.tick();
         }
-      }, speed);
-    }
+      }
+      rafRef.current = requestAnimationFrame(loop);
+    };
+
+    lastFrameRef.current = performance.now();
+    rafRef.current = requestAnimationFrame(loop);
+
     return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
+      if (rafRef.current) {
+        cancelAnimationFrame(rafRef.current);
+        rafRef.current = null;
       }
     };
   }, [isRunning, sim.ready, speed, sim.tick]);
