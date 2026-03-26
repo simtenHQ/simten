@@ -66,3 +66,4 @@ examples/cpu6502/cc65/*.s
 
 # Mac-compiled executables (no extension)
 examples/cpu6502/cc65/*-mac
+.claude/worktrees/

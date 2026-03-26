@@ -26,6 +26,7 @@ interface MessageListProps {
   onShowDiff: (action: AssistantAction) => void;
   onNodeMention?: (nodeIds: string[]) => void;
   onSendStarter?: (message: string) => void;
+  channelThinking?: boolean;
 }
 
 export function MessageList({
@@ -35,15 +36,16 @@ export function MessageList({
   onShowDiff,
   onNodeMention,
   onSendStarter,
+  channelThinking,
 }: MessageListProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // Auto-scroll to bottom on new messages
+  // Auto-scroll to bottom on new messages or thinking state change
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [messages]);
+  }, [messages, channelThinking]);
 
   if (messages.length === 0) {
     return (
@@ -120,6 +122,22 @@ export function MessageList({
             )}
         </div>
       ))}
+
+      {/* Channel thinking indicator — inline after last message */}
+      {channelThinking && (
+        <div className="flex items-start gap-2">
+          <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-muted">
+            <Bot className="h-3.5 w-3.5 text-muted-foreground" />
+          </div>
+          <div className="rounded-lg bg-muted px-3 py-2">
+            <span className="inline-flex gap-1">
+              <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground animate-pulse" />
+              <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground animate-pulse" style={{ animationDelay: "0.2s" }} />
+              <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground animate-pulse" style={{ animationDelay: "0.4s" }} />
+            </span>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -41,6 +41,7 @@ export interface StudioServer {
   pushTraces(data: TracesPayload, sessionId?: string): void;
   pushTestResults(data: TestResultsPayload, sessionId?: string): void;
   pushMemoryData(data: MemoryDataPayload, sessionId?: string): void;
+  pushChatMessage(text: string, sessionId?: string): void;
   getActiveSession(): Session | null;
   close(): void;
 }
@@ -52,7 +53,7 @@ const STATE_REQUEST_TIMEOUT = 3000;
 const DEDUP_WINDOW_MS = 500;
 
 export async function createStudioServer(
-  options?: { port?: number }
+  options?: { port?: number; onSendToClaude?: (content: string, meta: Record<string, string>) => void }
 ): Promise<StudioServer> {
   const port = options?.port ?? 0;
   const token = randomUUID();
@@ -141,6 +142,12 @@ export async function createStudioServer(
             pendingRequests.delete(msg.requestId);
             pending.resolve(msg.state ?? null);
           }
+          return;
+        }
+
+        // Browser sends a message to Claude via channel notification
+        if (msg.type === 'send-to-claude' && options?.onSendToClaude) {
+          options.onSendToClaude(msg.content ?? '', msg.meta ?? {});
           return;
         }
 
@@ -299,6 +306,10 @@ export async function createStudioServer(
     broadcast({ type: 'memory-data', data }, sessionId);
   }
 
+  function pushChatMessage(text: string, sessionId?: string) {
+    broadcast({ type: 'chat-message', text }, sessionId);
+  }
+
   function getActiveSession(): Session | null {
     return getTargetSession();
   }
@@ -332,6 +343,7 @@ export async function createStudioServer(
     pushTraces,
     pushTestResults,
     pushMemoryData,
+    pushChatMessage,
     getActiveSession,
     close,
   };
