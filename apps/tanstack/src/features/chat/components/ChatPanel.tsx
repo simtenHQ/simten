@@ -45,6 +45,12 @@ interface ChatPanelProps {
   sourceCodeHash: string;
   /** Highlight nodes on canvas */
   highlightNodes?: (nodeIds: string[]) => void;
+  /** Send message via MCP channel instead of API route. When set, bypasses the API. */
+  onSendToChannel?: (text: string, meta?: Record<string, string>) => void;
+  /** Whether Claude is thinking (for channel mode) */
+  channelThinking?: boolean;
+  /** Set channel thinking state */
+  setChannelThinking?: (v: boolean) => void;
 }
 
 export function ChatPanel({
@@ -56,6 +62,9 @@ export function ChatPanel({
   narrativeContext,
   sourceCodeHash,
   highlightNodes,
+  onSendToChannel,
+  channelThinking,
+  setChannelThinking,
 }: ChatPanelProps) {
   const {
     isOpen,
@@ -113,12 +122,19 @@ export function ChatPanel({
     getConversationHistory,
   });
 
-  // Handle sending a message
+  // Handle sending a message — use MCP channel if connected, else API route
+  const { addUserMessage } = useChatStore();
   const handleSend = useCallback(
     async (content: string) => {
-      await tutorSendMessage(content);
+      if (onSendToChannel) {
+        addUserMessage(content);
+        setChannelThinking?.(true);
+        onSendToChannel(content);
+      } else {
+        await tutorSendMessage(content);
+      }
     },
-    [tutorSendMessage]
+    [tutorSendMessage, onSendToChannel, addUserMessage, setChannelThinking]
   );
 
   // Handle action execution (manual click from ActionCard)
@@ -268,6 +284,7 @@ export function ChatPanel({
             onShowDiff={handleShowDiff}
             onNodeMention={handleNodeMention}
             onSendStarter={handleSend}
+            channelThinking={channelThinking}
           />
 
           {/* Usage bar */}
@@ -283,7 +300,7 @@ export function ChatPanel({
           {/* Input */}
           <ChatInput
             onSend={handleSend}
-            disabled={streaming.isStreaming || isContinuing}
+            disabled={streaming.isStreaming || isContinuing || !!channelThinking}
           />
         </SheetContent>
       </Sheet>

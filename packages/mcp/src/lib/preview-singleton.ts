@@ -13,6 +13,13 @@ export type { StudioServer, CircuitState, ChallengeState, TracesPayload, TestRes
 let studioServer: StudioServer | null = null;
 let browserOpened = false;
 
+// Callback for browser → Claude channel notifications
+let onSendToClaudeCallback: ((content: string, meta: Record<string, string>) => void) | null = null;
+
+export function setOnSendToClaude(callback: (content: string, meta: Record<string, string>) => void) {
+  onSendToClaudeCallback = callback;
+}
+
 // Register cleanup
 let cleanupRegistered = false;
 function ensureCleanup() {
@@ -33,7 +40,12 @@ export async function getOrCreateServer(): Promise<StudioServer> {
   const { createStudioServer } = await import('../server/ws-server.js');
   const { DEFAULT_PORT } = await import('./config.js');
 
-  studioServer = await createStudioServer({ port: DEFAULT_PORT });
+  studioServer = await createStudioServer({
+    port: DEFAULT_PORT,
+    onSendToClaude: (content, meta) => {
+      onSendToClaudeCallback?.(content, meta);
+    },
+  });
   ensureCleanup();
 
   return studioServer;
