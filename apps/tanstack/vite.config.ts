@@ -7,17 +7,17 @@ import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import viteReact from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import { cloudflare } from "@cloudflare/vite-plugin";
+import fumadocsMdx from "fumadocs-mdx/vite";
+import * as MdxConfig from "./source.config";
 
 const config = defineConfig({
   plugins: [
     cloudflare({
       viteEnvironment: { name: "ssr" },
-      // auxiliaryWorkers: [
-      //   { configPath: '../compiler/wrangler.jsonc' },
-      // ],
     }),
     tsconfigPaths({ projects: ["./tsconfig.json"] }),
     tailwindcss(),
+    fumadocsMdx(MdxConfig),
     tanstackStart(),
     viteReact(),
   ],

@@ -4,21 +4,19 @@
  * Thin wrapper around CircuitCanvas that wires editor stores to the shared canvas.
  * All rendering, projection, and ReactFlow integration lives in CircuitCanvas.
  * This component is responsible for:
- * - Reading from editor stores (circuit, metadata, simulation state)
+ * - Reading from editor stores (circuit, simulation state)
  * - Wiring editing callbacks to store mutations
  * - Keyboard scan code handling for Input nodes
- * - Overlay UI (SelectionInfo, KeyboardShortcutsInfo)
+ * - Overlay UI (KeyboardShortcutsInfo)
  */
 
 "use client";
 
-import React, { useCallback, useMemo, useEffect } from "react";
+import React, { useCallback, useEffect } from "react";
 
 import { useCircuitStore } from "../stores/circuit-store";
-import { useMetadataStore } from "../stores";
 import { useSequentialStateStore } from "../stores/sequential-state-store";
 import { usePortValuesStore } from "../stores/port-values-store";
-import { useDSLPreviewStore } from "../stores/dsl-preview-store";
 
 import { CircuitCanvas } from "../../shared/CircuitCanvas";
 import { FULL_NODE_TYPES, EDGE_TYPES } from "../../shared/node-types";
@@ -26,38 +24,6 @@ import { FULL_NODE_TYPES, EDGE_TYPES } from "../../shared/node-types";
 // ---------------------------------------------------------------------------
 // Overlay components
 // ---------------------------------------------------------------------------
-
-function SelectionInfo({ selectedCount }: { selectedCount: number }) {
-  if (selectedCount === 0) return null;
-
-  return (
-    <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-10 pointer-events-none">
-      <div className="bg-white dark:bg-[#1a1a1e] border-2 border-blue-400 rounded-lg shadow-lg px-4 py-2.5 min-w-[280px]">
-        <div className="flex items-center gap-3">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-500 text-white font-semibold text-sm">
-            {selectedCount}
-          </div>
-          <div className="flex-1">
-            <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-              {selectedCount} component{selectedCount !== 1 ? "s" : ""} selected
-            </div>
-            <div className="text-xs text-gray-600 dark:text-gray-400">
-              Press{" "}
-              <kbd className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded text-xs font-mono">
-                Delete
-              </kbd>{" "}
-              or{" "}
-              <kbd className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded text-xs font-mono">
-                ⌫
-              </kbd>{" "}
-              to remove
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 function KeyboardShortcutsInfo({ show }: { show: boolean }) {
   const [isVisible, setIsVisible] = React.useState(true);
@@ -126,40 +92,22 @@ function KeyboardShortcutsInfo({ show }: { show: boolean }) {
 interface CanvasProps {
   renderEmptyState?: () => React.ReactNode;
   theme?: "light" | "dark";
+  nodePositions?: Record<string, { x: number; y: number }>;
 }
 
-export function Canvas({ renderEmptyState, theme = "light" }: CanvasProps) {
+export function Canvas({ renderEmptyState, theme = "light", nodePositions }: CanvasProps) {
   // --- Store reads ---
   const circuit = useCircuitStore((state) => state.circuit);
-  const metadataComponents = useMetadataStore((state) => state.components);
-  const metadataConnections = useMetadataStore((state) => state.connections);
   const seqState = useSequentialStateStore((state) => state.seqState);
   const portValues = usePortValuesStore((state) => state.portValues);
 
   // --- Store write actions ---
-  const updateComponentPosition = useMetadataStore((state) => state.updateComponentPosition);
-  const setComponentSelected = useMetadataStore((state) => state.setComponentSelected);
-  const setConnectionSelected = useMetadataStore((state) => state.setConnectionSelected);
   const addConnection = useCircuitStore((state) => state.addConnection);
   const removeConnection = useCircuitStore((state) => state.removeConnection);
-  const addNode = useCircuitStore((state) => state.addNode);
   const removeNode = useCircuitStore((state) => state.removeNode);
-  const setComponentMetadata = useMetadataStore((state) => state.setComponentMetadata);
-  const removeComponentMetadata = useMetadataStore((state) => state.removeComponentMetadata);
-  const saveCurrentPositions = useDSLPreviewStore((state) => state.saveCurrentPositions);
 
   // --- Derived state ---
-  const metadata = useMemo(() => ({
-    components: metadataComponents,
-    connections: metadataConnections,
-  }), [metadataComponents, metadataConnections]);
-
   const hasNodes = (circuit?.nodes?.length ?? 0) > 0;
-
-  // Track selected node count from metadata store
-  const selectedNodeCount = useMemo(() => {
-    return Object.values(metadataComponents).filter(c => c.selected).length;
-  }, [metadataComponents]);
 
   // --- Editing callbacks ---
 
@@ -167,10 +115,9 @@ export function Canvas({ renderEmptyState, theme = "light" }: CanvasProps) {
     (nodeIds: string[]) => {
       for (const id of nodeIds) {
         removeNode(id);
-        removeComponentMetadata(id);
       }
     },
-    [removeNode, removeComponentMetadata],
+    [removeNode],
   );
 
   const handleEdgesDelete = useCallback(
@@ -187,14 +134,6 @@ export function Canvas({ renderEmptyState, theme = "light" }: CanvasProps) {
       addConnection(source, target);
     },
     [addConnection],
-  );
-
-  const handleDrop = useCallback(
-    (componentRef: string, position: { x: number; y: number }) => {
-      const nodeId = addNode(componentRef);
-      setComponentMetadata(nodeId, { id: nodeId, position });
-    },
-    [addNode, setComponentMetadata],
   );
 
   // --- Keyboard scan code handler ---
@@ -261,28 +200,22 @@ export function Canvas({ renderEmptyState, theme = "light" }: CanvasProps) {
       circuit={circuit}
       portValues={portValues}
       sequentialState={seqState}
-      metadata={metadata}
-      autoLayout={false}
+      autoLayout={nodePositions ? false : true}
       editable
       nodeTypes={FULL_NODE_TYPES}
       edgeTypes={EDGE_TYPES}
       showControls
       theme={theme}
       renderInspector={false}
-      onNodePositionChange={updateComponentPosition}
-      onNodeSelect={setComponentSelected}
       onNodesDelete={handleNodesDelete}
-      onEdgeSelect={setConnectionSelected}
       onEdgesDelete={handleEdgesDelete}
       onConnect={handleConnect}
-      onDrop={handleDrop}
-      onNodeDragStop={saveCurrentPositions}
       renderEmptyState={renderEmptyState}
+      {...(nodePositions ? { nodePositions } : {})}
       renderOverlay={() => (
         <>
-          <SelectionInfo selectedCount={selectedNodeCount} />
           <KeyboardShortcutsInfo
-            show={hasNodes && selectedNodeCount === 0}
+            show={hasNodes}
           />
         </>
       )}

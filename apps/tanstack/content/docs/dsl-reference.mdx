@@ -1,0 +1,158 @@
+---
+title: DSL Reference
+description: Language syntax, types, parameters, and composition rules
+---
+
+## Circuit Definition
+
+```rust
+circuit <Name> {
+  description "optional description"
+
+  input <name>: <Type>
+  output <name>: <Type>
+  clock <name>
+
+  state <name>: <Type> [= <initial_value>]
+
+  impl {
+    node <id>: <ComponentType>[(<param> = <value>)]
+    connect <source> -> <target>
+  }
+}
+```
+
+## Types
+
+| Type | Description | Runtime representation |
+|------|-------------|----------------------|
+| `Bit` | Single binary value | `boolean` (0 or 1 internally) |
+| `Bus[N]` | N-bit wide bus | `number` (unsigned, max 32 bits) |
+
+## Port Paths
+
+| Path | Meaning |
+|------|---------|
+| `a` | Circuit-level port named `a` |
+| `node1.out` | Port `out` on node `node1` |
+
+## Connection Syntax
+
+```rust
+connect a -> xor1.a          // circuit input to node input
+connect xor1.out -> sum       // node output to circuit output
+connect ha1.carry -> or1.a    // node output to node input
+```
+
+Connections are directional: source (left) drives target (right). A port can drive multiple targets (fan-out), but each input can only have one driver.
+
+## Node Instantiation
+
+```rust
+node xor1: Xor                                    // no parameters
+node adder: Adder(width=8)                         // with parameter
+node ram: DualPortRAM(init={ 0: 42, 1: 100 })     // with memory init
+node reg: Register(initial=0)                      // with initial state
+```
+
+## Parameters
+
+| Parameter | Used by | Description |
+|-----------|---------|-------------|
+| `width` | Adder, Subtractor, Comparator, Mux, etc. | Bus width (default: 8) |
+| `value` | Constant, Input, Switch | Fixed or initial value |
+| `initial` | Register | Initial state value (default: 0) |
+| `init` | RAM, DualPortRAM | Memory initialization map `{ addr: value, ... }` |
+| `low`, `high` | BitSlice | Bit range to extract (inclusive) |
+| `baseAddress` | ROM | Memory-mapped base address |
+
+## State Declarations
+
+State is used for sequential circuits — values that persist across clock cycles:
+
+```rust
+circuit Counter {
+  clock clk
+  output count: Bus[8]
+  state value: Bus[8] = 0       // 8-bit state, starts at 0
+
+  impl { ... }
+}
+```
+
+State types follow the same rules as port types: `Bit` for single-bit, `Bus[N]` for multi-bit. The initial value is required. State variables can be read in `connect` statements like port names.
+
+## Description
+
+Circuits can include a description string. This is displayed in the component palette and used by Claude for context:
+
+```rust
+circuit HalfAdder {
+  description "Two bits in, sum and carry out"
+  input a: Bit
+  input b: Bit
+  output sum: Bit
+  output carry: Bit
+  impl { ... }
+}
+```
+
+## Comments
+
+```rust
+// single-line comment
+/* multi-line
+   comment */
+```
+
+## Number Literals
+
+```rust
+42        // decimal
+0xFF      // hexadecimal
+0b1010    // binary
+```
+
+## Keywords
+
+`circuit`, `input`, `output`, `clock`, `node`, `connect`, `impl`, `state`, `description`
+
+## Composition
+
+Circuits can instantiate other circuits as nodes. This is how you build complex designs from simple building blocks:
+
+```rust
+circuit FullAdder {
+  input a: Bit
+  input b: Bit
+  input cin: Bit
+  output sum: Bit
+  output cout: Bit
+
+  impl {
+    node ha1: HalfAdder
+    node ha2: HalfAdder
+    node or1: Or
+
+    connect a -> ha1.a
+    connect b -> ha1.b
+    connect ha1.sum -> ha2.a
+    connect cin -> ha2.b
+    connect ha2.sum -> sum
+    connect ha1.carry -> or1.a
+    connect ha2.carry -> or1.b
+    connect or1.out -> cout
+  }
+}
+```
+
+The simulator **elaborates** composites by recursively flattening them to primitives. A `FullAdder` node becomes two `Xor`, two `And`, and one `Or` node internally. This means composites have zero runtime overhead — they're a purely structural abstraction.
+
+## Type Rules
+
+- `Bit → Bit` — valid
+- `Bus[N] → Bus[N]` — valid (same width)
+- `Bit → Bus[N]` — invalid (needs explicit conversion)
+- `Bus[8] → Bus[16]` — invalid (width mismatch)
+
+Use `Splitter`, `BitSlice`, or `Concat` for type conversions.

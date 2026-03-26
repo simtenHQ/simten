@@ -1,0 +1,281 @@
+---
+title: Examples
+description: Interactive circuit examples from half adder to Fibonacci generator
+---
+
+import { CircuitEmbed } from '@turing-incomplete/ui/embed'
+
+## Half Adder
+
+Two bits → sum + carry. The simplest arithmetic circuit. Toggle the switches to see how AND computes carry and XOR computes sum.
+
+export const halfAdderDsl = `circuit HalfAdder {
+  input a: Bit
+  input b: Bit
+  output sum: Bit
+  output carry: Bit
+  impl {
+    node xor1: Xor
+    node and1: And
+    connect a -> xor1.a
+    connect b -> xor1.b
+    connect xor1.out -> sum
+    connect a -> and1.a
+    connect b -> and1.b
+    connect and1.out -> carry
+  }
+}
+
+circuit HalfAdderDemo {
+  impl {
+    node sw_a: Switch
+    node sw_b: Switch
+    node dut: HalfAdder
+    node led_sum: Led
+    node led_carry: Led
+    connect sw_a.out -> dut.a
+    connect sw_b.out -> dut.b
+    connect dut.sum -> led_sum.in
+    connect dut.carry -> led_carry.in
+  }
+}`
+
+export const halfAdderDisplay = `circuit HalfAdder {
+  input a: Bit
+  input b: Bit
+  output sum: Bit
+  output carry: Bit
+  impl {
+    node xor1: Xor
+    node and1: And
+    connect a -> xor1.a
+    connect b -> xor1.b
+    connect xor1.out -> sum
+    connect a -> and1.a
+    connect b -> and1.b
+    connect and1.out -> carry
+  }
+}`
+
+<CircuitEmbed
+  dsl={halfAdderDsl}
+  displayDsl={halfAdderDisplay}
+  height={250}
+  showControls
+  title="Half Adder"
+  description="Toggle the switches to see sum and carry"
+/>
+
+## Full Adder
+
+Three bits (a + b + carry in) → sum + carry out. Reuses HalfAdder as a composite — the simulator expands it to primitives automatically.
+
+export const fullAdderDsl = `circuit HalfAdder {
+  input a: Bit
+  input b: Bit
+  output sum: Bit
+  output carry: Bit
+  impl {
+    node xor1: Xor
+    node and1: And
+    connect a -> xor1.a
+    connect b -> xor1.b
+    connect xor1.out -> sum
+    connect a -> and1.a
+    connect b -> and1.b
+    connect and1.out -> carry
+  }
+}
+
+circuit FullAdder {
+  input a: Bit
+  input b: Bit
+  input cin: Bit
+  output sum: Bit
+  output cout: Bit
+  impl {
+    node ha1: HalfAdder
+    node ha2: HalfAdder
+    node or1: Or
+    connect a -> ha1.a
+    connect b -> ha1.b
+    connect ha1.sum -> ha2.a
+    connect cin -> ha2.b
+    connect ha2.sum -> sum
+    connect ha1.carry -> or1.a
+    connect ha2.carry -> or1.b
+    connect or1.out -> cout
+  }
+}
+
+circuit FullAdderDemo {
+  impl {
+    node sw_a: Switch
+    node sw_b: Switch
+    node sw_cin: Switch
+    node dut: FullAdder
+    node led_sum: Led
+    node led_cout: Led
+    connect sw_a.out -> dut.a
+    connect sw_b.out -> dut.b
+    connect sw_cin.out -> dut.cin
+    connect dut.sum -> led_sum.in
+    connect dut.cout -> led_cout.in
+  }
+}`
+
+export const fullAdderDisplay = `circuit FullAdder {
+  input a: Bit
+  input b: Bit
+  input cin: Bit
+  output sum: Bit
+  output cout: Bit
+  impl {
+    node ha1: HalfAdder
+    node ha2: HalfAdder
+    node or1: Or
+    connect a -> ha1.a
+    connect b -> ha1.b
+    connect ha1.sum -> ha2.a
+    connect cin -> ha2.b
+    connect ha2.sum -> sum
+    connect ha1.carry -> or1.a
+    connect ha2.carry -> or1.b
+    connect or1.out -> cout
+  }
+}`
+
+<CircuitEmbed
+  dsl={fullAdderDsl}
+  displayDsl={fullAdderDisplay}
+  height={280}
+  showControls
+  title="Full Adder"
+  description="Toggle switches — notice how carry-in affects the output"
+/>
+
+## Counter
+
+Increments on each clock cycle. A register feeds its output through an adder that adds 1, and the result loops back. Step the clock to watch it count.
+
+export const counterDsl = `circuit Counter {
+  clock clk
+  output count: Bus[8]
+  impl {
+    node reg: Register
+    node adder: Adder
+    node one: Constant(value=1)
+    connect reg.q -> adder.a
+    connect one.out -> adder.b
+    connect adder.sum -> reg.data
+    connect one.out -> reg.we
+    connect reg.q -> count
+  }
+}
+
+circuit CounterDemo {
+  clock clk
+  impl {
+    node counter: Counter
+    node display: HexDisplay
+    connect counter.count -> display.in
+  }
+}`
+
+export const counterDisplay = `circuit Counter {
+  clock clk
+  output count: Bus[8]
+  impl {
+    node reg: Register
+    node adder: Adder
+    node one: Constant(value=1)
+    connect reg.q -> adder.a
+    connect one.out -> adder.b
+    connect adder.sum -> reg.data
+    connect one.out -> reg.we
+    connect reg.q -> count
+  }
+}`
+
+<CircuitEmbed
+  dsl={counterDsl}
+  displayDsl={counterDisplay}
+  height={200}
+  showControls
+  title="8-Bit Counter"
+  description="Step the clock to watch it count up (wraps at 0xFF)"
+/>
+
+## Fibonacci Generator
+
+Two registers and one adder produce the Fibonacci sequence every clock tick. A DFlipFlop seed trick injects +1 on the first tick only.
+
+export const fibDsl = `circuit Fibonacci {
+  output fib: Bus[8]
+  clock clk
+  impl {
+    node reg_a: Register
+    node reg_b: Register
+    node adder: Adder
+    node one: Constant(value=1)
+    node init: DFlipFlop
+    connect one.out -> init.d
+    connect init.q_bar -> adder.carry_in
+    connect reg_a.q -> adder.a
+    connect reg_b.q -> adder.b
+    connect reg_b.q -> reg_a.data
+    connect one.out -> reg_a.we
+    connect adder.sum -> reg_b.data
+    connect one.out -> reg_b.we
+    connect reg_b.q -> fib
+  }
+}
+
+circuit FibonacciDemo {
+  clock clk
+  impl {
+    node fib: Fibonacci
+    node display: HexDisplay
+    connect fib.fib -> display.in
+  }
+}`
+
+export const fibDisplay = `circuit Fibonacci {
+  output fib: Bus[8]
+  clock clk
+  impl {
+    node reg_a: Register
+    node reg_b: Register
+    node adder: Adder
+    node one: Constant(value=1)
+    node init: DFlipFlop
+    connect one.out -> init.d
+    connect init.q_bar -> adder.carry_in
+    connect reg_a.q -> adder.a
+    connect reg_b.q -> adder.b
+    connect reg_b.q -> reg_a.data
+    connect one.out -> reg_a.we
+    connect adder.sum -> reg_b.data
+    connect one.out -> reg_b.we
+    connect reg_b.q -> fib
+  }
+}`
+
+<CircuitEmbed
+  dsl={fibDsl}
+  displayDsl={fibDisplay}
+  height={220}
+  showControls
+  title="Fibonacci Generator"
+  description="Step to see: 1, 1, 2, 3, 5, 8, 13, 21, 34, 55... (wraps at 8-bit)"
+/>
+
+## Design Patterns
+
+**Combinational** — no state, no clock. Outputs computed directly from inputs. Examples: gates, adders, muxes, ALUs.
+
+**Sequential** — has state and clock. State updates on rising clock edge, outputs reflect current state. Examples: counters, registers, shift registers.
+
+**Hierarchical composition** — build complex circuits from simpler ones. FullAdder from HalfAdder, ALU from Adder+Mux, CPU from ALU+RegisterFile+Memory.
+
+**Feedback loops** — connect a node's output back to its input through a register. The register breaks the combinational loop by introducing a one-cycle delay. This is how counters, state machines, and CPUs work.

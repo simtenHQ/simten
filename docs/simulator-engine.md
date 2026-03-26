@@ -1,0 +1,355 @@
+# Simulator Engine
+
+The simulator compiles circuits into a numeric representation optimized for cache-friendly,
+zero-allocation evaluation. This document covers the full pipeline from elaborated circuit
+to tick execution.
+
+## Compilation Pipeline
+
+```
+Circuit (IR)
+    ↓ elaborate()
+FlatCircuit (primitives only, all composites expanded)
+    ↓ compileForSimulation()
+NumericCircuit (typed arrays, evaluator dispatch table)
+    ↓ createSimulator()
+SimulatorEngine (tick/propagate/snapshot API)
+```
+
+### Elaboration
+
+`packages/core/src/simulator/elaboration.ts`
+
+Transforms hierarchical circuits into a flat list of primitives:
+
+1. **Flatten**: Recursively expand composite nodes. Each primitive gets a path-prefixed ID
+   (e.g., `cpu.alu.adder1` for a nested adder)
+2. **Stitch connections**: Build port forwarding map for composite boundaries, resolve
+   connections through nested composites via transitive closure
+3. **Build dependency graph**: For each connection, add target node to source node's
+   `dependents` list (used for event-driven propagation)
+4. **Detect recursion**: Guard against circuits that instantiate themselves
+
+Output: `FlatCircuit` with `nodes`, `connections`, `hierarchy` (for UI), `topLevelInputs/Outputs`.
+
+### Numeric Compilation
+
+`packages/core/src/simulator/compile-circuit.ts`
+
+Converts the FlatCircuit into typed arrays for O(1) access in the hot path:
+
+**Step 1 — Node indices**: Assign each node a numeric index (0 to nodeCount-1).
+`nodeIdToIndex: Map<string, number>` and `indexToNodeId: string[]`.
+
+**Step 2 — Port indices**: Count total ports, assign contiguous indices.
+Per-node metadata in typed arrays:
+```
+nodePortStart:   Uint32Array[nodeIdx]  → first port index for this node
+nodeInputCount:  Uint8Array[nodeIdx]   → number of input ports
+nodeOutputCount: Uint8Array[nodeIdx]   → number of output ports
+```
+
+Port layout per node: `[input0, input1, ..., output0, output1, ...]` starting at `nodePortStart[nodeIdx]`.
+
+**Step 3 — Port metadata**: For each port, store type information:
+```
+portIsOutput: Uint8Array[portIdx]  → 1 if output, 0 if input
+portIsBus:    Uint8Array[portIdx]  → 1 if bus, 0 if bit
+inputPortNames: string[portIdx]    → port name (for evaluator context)
+```
+
+**Step 4 — Evaluator dispatch**: Map each node to its evaluator function index:
+```
+primitiveTypeIndex: Uint8Array[nodeIdx] → index into EVALUATORS table
+```
+
+**Step 5 — Dependency graph**: Convert string-based dependents to numeric:
+```
+dependents: Uint32Array[]  → dependents[nodeIdx] = array of downstream node indices
+```
+
+**Step 6 — Input sources**: Pre-compute where each input port reads from:
+```
+inputSourceNode: Int32Array[portIdx]  → source node index (-1 for top-level)
+inputSourcePort: Int32Array[portIdx]  → source port index into values array
+```
+
+This eliminates all string concatenation and Map lookups from the hot path.
+Reading an input becomes: `values[inputSourcePort[portStart + inputIndex]]`.
+
+**Step 7 — Node classification**:
+```
+isSourceNode:       Uint8Array[nodeIdx]  → no inputs (Constant, Switch, Input)
+isStateOutputNode:  Uint8Array[nodeIdx]  → outputs depend on state (Register, DFlipFlop)
+hasState:           Uint8Array[nodeIdx]  → has sequential state
+readsTopLevelInput: Uint8Array[nodeIdx]  → reads from circuit boundary
+```
+
+## Port Values
+
+`packages/core/src/simulator/numeric-values.ts`
+
+All port values stored in a single `Int32Array`:
+
+```typescript
+interface NumericPortValues {
+  values: Int32Array;   // One entry per port (bits stored as 0/1, buses as numbers)
+  changed: Uint8Array;  // Change flags for optimization
+}
+```
+
+Initialized to `UNINITIALIZED_VALUE` (-2147483648) so the first evaluation always detects changes.
+
+## Event Queue
+
+`packages/core/src/simulator/numeric-event-queue.ts`
+
+Pre-allocated ring buffer with O(1) deduplication:
+
+```typescript
+class NumericEventQueue {
+  queue: Uint32Array;    // Ring buffer of node indices
+  pending: Uint8Array;   // pending[nodeIdx] = 1 if already in queue
+  head: number;
+  tail: number;
+}
+```
+
+- `enqueue(nodeIndex)`: O(1), skips if `pending[nodeIdx] === 1`
+- `dequeue()`: O(1), clears pending flag
+- `enqueueAll(Uint32Array)`: Bulk enqueue from pre-computed dependents array
+- No allocations during simulation
+
+## Evaluator System
+
+`packages/core/src/simulator/evaluators/`
+
+### Dispatch Table
+
+```typescript
+const EVALUATORS: (NumericEvaluator | null)[] = [];
+EVALUATORS[PRIMITIVE_TYPE_INDICES.And] = evalAnd;
+EVALUATORS[PRIMITIVE_TYPE_INDICES.Or] = evalOr;
+// ... one entry per primitive type
+```
+
+Hot path lookup: `EVALUATORS[primitiveTypeIndex[nodeIndex]](ctx)` — single array index, no branching.
+
+### Evaluation Context
+
+Passed to every evaluator, reused across all evaluations in a propagation pass:
+
+```typescript
+interface EvalContext {
+  circuit: NumericCircuit;
+  values: NumericPortValues;
+  state: NumericSequentialState | undefined;
+  queue: NumericEventQueue;
+  nodeIndex: number;      // Current node being evaluated
+  portStart: number;      // First port index for this node
+  inputCount: number;
+  outputCount: number;
+}
+```
+
+### Helper Functions
+
+```typescript
+// Read input port value (O(1) — no string ops)
+function readInput(ctx: EvalContext, inputIndex: number): number {
+  const sourcePortIdx = ctx.circuit.inputSourcePort[ctx.portStart + inputIndex];
+  return sourcePortIdx >= 0 ? ctx.values.values[sourcePortIdx] : 0;
+}
+
+// Write output port value (O(1))
+function writeOutput(ctx: EvalContext, outputIndex: number, value: number): void {
+  ctx.values.values[ctx.portStart + ctx.inputCount + outputIndex] = value;
+}
+```
+
+### Evaluator Categories
+
+| Module | Primitives | Notes |
+|--------|-----------|-------|
+| Inline (index.ts) | And, Or, Not, Nand, Nor, Xor, Xnor, Buffer, Switch, Led, Input, Constant, Probe | Simple enough to inline |
+| arithmetic.ts | Adder, Subtractor, Multiplier, Comparator, Shifters, Signed variants | Width-aware, carry/overflow detection |
+| routing.ts | Mux, Decoder, Splitter, BitSlice, Concat, Combiner8to8 | Pure wire routing, often zero logic cost |
+| sequential.ts | DFlipFlop, Register, Screen, RasterDisplay, Console | Read from `currentState[nodeIndex]` |
+| memory.ts | ROM, RAM, DualPortRAM | Sparse Map storage, combinational read path |
+
+Sequential evaluators only read state for their outputs — state updates happen in a separate phase.
+
+## Tick Cycle
+
+`packages/core/src/simulator/fast-simulator.ts`
+
+### Phase 1: Combinational Propagation
+
+```typescript
+seedInitialQueue(circuit, queue);
+fastPropagate(circuit, queue, values, seqState, topLevelInputs);
+```
+
+Seeds the queue with source nodes (no inputs), state-output nodes (Register, DFlipFlop),
+and nodes reading top-level inputs. Then propagates:
+
+```
+while queue is not empty:
+  node = dequeue()
+  capture old output values
+  evaluator = EVALUATORS[primitiveTypeIndex[node]]
+  evaluator(ctx)              // reads inputs, writes outputs
+  if any output changed:
+    enqueueAll(dependents[node])
+```
+
+Stabilizes when no more changes propagate. Throws after 10,000 iterations (unstable feedback loop).
+
+**Output snapshot captured here** — this is what the API returns. It reflects the combinational
+computation with current state, before the clock edge.
+
+### Phase 2: Clock Update
+
+```typescript
+updateClockStates(circuit, seqState);
+```
+
+Sets all clocks to rising edge. Currently all clocks tick simultaneously (single clock domain).
+
+### Phase 3: Sequential State Computation
+
+```typescript
+updateSequentialStates(circuit, values, seqState, topLevelInputs);
+```
+
+For each node with `hasState[nodeIdx]`:
+1. Build inputs Map from current port values
+2. Build clock edges from `seqState.clocks`
+3. Call `evaluator.updateState(inputs, currentState, clockEdges)`
+4. Store result in `seqState.nextState[nodeIdx]`
+
+**Note**: This phase still uses Map-based evaluators (not the numeric fast path).
+It runs once per tick per stateful node, so performance impact is proportional to the
+number of sequential components, not total node count.
+
+### Phase 4: State Commit
+
+```typescript
+commitSequentialState(seqState);
+```
+
+Atomically copies `nextState → currentState` for all nodes. Deep-copies Map-based state
+(RAM/ROM). Increments cycle count. This ensures all state updates appear to happen
+simultaneously, matching real hardware behavior.
+
+### Phase 5: Re-propagation
+
+```typescript
+seedStateOutputNodes(circuit, queue);
+fastPropagate(circuit, queue, values, seqState, topLevelInputs);
+```
+
+Propagates the committed state through combinational logic. Only seeds state-output nodes
+(not source nodes — they haven't changed). This prepares internal values for the next tick's
+Phase 1. Not returned to the API.
+
+## Memory Handling
+
+### Initialization
+
+`packages/core/src/simulator/sequential-init.ts`
+
+Memory primitives (ROM, RAM, DualPortRAM) are initialized from two sources:
+
+1. **DSL-embedded data**: `node ram: DualPortRAM(init={ 0: 42, 1: 100 })`
+2. **Injected memory data**: Runtime data passed via `initialMemory` option (e.g., compiled
+   RISC-V binaries loaded into instruction memory)
+
+Memory data uses glob-pattern matching for node identification:
+`"cpu0*imem"` matches `"cpu0_abc_RV32I_CPU_imem_xyz"`.
+
+Injected data overwrites DSL data for overlapping addresses.
+
+### Storage
+
+Memory uses `Map<number, number>` for sparse storage — only written addresses consume memory.
+A 64K address space with 100 written cells uses 100 Map entries, not 65536 array slots.
+
+State is stored in `seqState.currentState[nodeIndex]` and deep-copied on commit to prevent
+state sharing between cycles.
+
+## Simulator API
+
+`packages/core/src/simulator/index.ts`
+
+```typescript
+const engine = createSimulator(flatCircuit, {
+  componentLibrary,
+  initialMemory,   // Map<pattern, Map<address, value>>
+});
+
+// Combinational only
+engine.runCombinational();
+
+// Sequential tick
+const result = engine.tick();
+// result.portValues — all port values after combinational propagation
+// result.sequentialState — committed state after clock edge
+// result.metrics — { phase1Evals, phase2Evals, totalEvals }
+
+// Input control
+engine.setInput(nodeId, value);
+engine.setInputs(valuesMap);
+
+// State query
+engine.getPortValues();
+engine.getState();
+engine.getOutput(nodeId, portName);
+
+// Time-travel
+const snapshot = engine.snapshot();
+engine.restore(snapshot);
+engine.reset();
+```
+
+## Performance Characteristics
+
+### Hot Path (Zero Allocation)
+
+The propagation loop allocates nothing:
+- Event queue: pre-allocated ring buffer
+- Port values: pre-allocated Int32Array
+- Evaluator lookup: array index
+- Input reading: array index
+- Output writing: array index
+- Change detection: compare Int32 values
+- Dependent enqueue: iterate pre-computed Uint32Array
+
+### Complexity
+
+| Operation | Time | Space |
+|-----------|------|-------|
+| Compilation | O(nodes + connections) | O(nodes + ports) |
+| Single propagation | O(changed_nodes × avg_dependents) | O(1) amortized |
+| Tick (5 phases) | O(total_evals) | O(stateful_nodes) for Map building |
+| Memory read | O(1) Map lookup | — |
+| Memory write | O(1) Map set | O(written_cells) |
+
+### Typical Performance
+
+For a 114-node Snake circuit: ~50-100 evaluations per tick.
+For a 300-node CPU: ~200-400 evaluations per tick.
+The event-driven approach means only nodes whose inputs actually changed get re-evaluated.
+
+### Limitations
+
+- **Single clock domain**: All clocks tick simultaneously. Multi-clock-domain circuits are
+  not supported (no clock dividers, no async crossings).
+- **Combinational loop detection**: Throws after 10,000 iterations. Intentional latches
+  (transparent latches, async resets) are not supported.
+- **Sequential state update path**: Uses Map-based evaluators, not the numeric fast path.
+  Performance scales with the number of stateful nodes, not total nodes.
+- **32-bit value range**: All values stored as Int32. Bus widths up to 32 bits are supported.
+  Wider buses require splitting.
+- **No timing simulation**: All combinational logic evaluates in zero simulated time. There is
+  no gate delay model — this is a functional simulator, not a timing simulator.
