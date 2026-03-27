@@ -1274,14 +1274,18 @@ circuit Comparator {
 
   RasterDisplay: defineSequential({
     name: 'RasterDisplay',
-    description: 'Hardware-accurate 8×8 raster display with scan counters and sync signals',
+    description: 'Hardware-accurate raster display with scan counters and sync signals (default 8×8, configurable)',
     category: 'display',
     icon: '📺',
+    parameters: [
+      { name: 'width', paramType: 'int', defaultValue: 8, options: [8, 16, 32, 64] },
+      { name: 'height', paramType: 'int', defaultValue: 8, options: [8, 16, 32, 64] },
+    ],
     inputs: [{ name: 'dataIn', portType: busType(8) }],
     outputs: [
-      { name: 'addrB', portType: busType(8) },
-      { name: 'scanX', portType: busType(4) },
-      { name: 'scanY', portType: busType(4) },
+      { name: 'addrB', portType: busType(16) },
+      { name: 'scanX', portType: busType(8) },
+      { name: 'scanY', portType: busType(8) },
       { name: 'hblank', portType: bitType() },
       { name: 'vblank', portType: bitType() },
     ],
@@ -1290,23 +1294,25 @@ circuit Comparator {
       {
         id: 'raster-state',
         name: 'rasterState',
-        stateType: { kind: 'memory', addressWidth: 8, dataWidth: 8 },
+        stateType: { kind: 'memory', addressWidth: 16, dataWidth: 8 },
         initialValue: (() => {
           const initialMap = new Map<number, number>();
           initialMap.set(-1, 0);
           initialMap.set(-2, 0);
-          return { data: initialMap, addressWidth: 8, dataWidth: 8 };
+          return { data: initialMap, addressWidth: 16, dataWidth: 8 };
         })(),
       },
     ],
-    evaluate: (inputs, currentState) => {
+    evaluate: (_inputs, currentState) => {
       const state = (currentState ?? new Map()) as Map<number, number>;
       const scanX = state.get(-1) ?? 0;
       const scanY = state.get(-2) ?? 0;
+      const w = state.get(-3) ?? 8;
+      const h = state.get(-4) ?? 8;
 
-      const addr = scanY < 8 && scanX < 8 ? scanY * 8 + scanX : 0;
-      const hblank = scanX >= 8;
-      const vblank = scanY >= 8;
+      const addr = scanY < h && scanX < w ? scanY * w + scanX : 0;
+      const hblank = scanX >= w;
+      const vblank = scanY >= h;
 
       return new Map<string, boolean | number>([
         ['addrB', addr],
@@ -1321,6 +1327,11 @@ circuit Comparator {
         return currentState;
       }
 
+      const w = (inputs.get('__width') as number) ?? 8;
+      const h = (inputs.get('__height') as number) ?? 8;
+      const totalX = w + 2; // visible + blanking
+      const totalY = h + 2;
+
       const state = (currentState ?? new Map()) as Map<number, number>;
       let scanX = state.get(-1) ?? 0;
       let scanY = state.get(-2) ?? 0;
@@ -1328,22 +1339,24 @@ circuit Comparator {
       const dataIn = (inputs.get('dataIn') as number) ?? 0;
       const newState = new Map(state);
 
-      if (scanX < 8 && scanY < 8) {
-        const addr = scanY * 8 + scanX;
+      if (scanX < w && scanY < h) {
+        const addr = scanY * w + scanX;
         newState.set(addr, dataIn);
       }
 
       scanX++;
-      if (scanX >= 10) {
+      if (scanX >= totalX) {
         scanX = 0;
         scanY++;
-        if (scanY >= 10) {
+        if (scanY >= totalY) {
           scanY = 0;
         }
       }
 
       newState.set(-1, scanX);
       newState.set(-2, scanY);
+      newState.set(-3, w);
+      newState.set(-4, h);
 
       return newState;
     },

@@ -52,7 +52,13 @@
       "Bash(mkdir -p /Users/charlesharris/Documents/Personal/turing-incomplete/apps/tanstack/src/features/learn/lessons && mkdir -p /Users/charlesharris/Documents/Personal/turing-incomplete/apps/tanstack/src/routes/learn)",
       "WebFetch(domain:docs.anthropic.com)",
       "mcp__turing-incomplete__push_chat_response",
-      "Bash(apps/tanstack/src/features/blog/breakout-in-hardware/circuits.ts:*)"
+      "Bash(apps/tanstack/src/features/blog/breakout-in-hardware/circuits.ts:*)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:blog.cloudflare.com)",
+      "Bash(gh search:*)",
+      "Bash(python3 -m json.tool)",
+      "Bash(python3 -c \":*)",
+      "Bash(npx tsx:*)"
     ]
   }
 }

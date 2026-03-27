@@ -3,10 +3,12 @@
 import { useMemo, useCallback } from "react";
 import { useBreakoutSimulator } from "./useBreakoutSimulator";
 
-const GRID_SIZE = 8;
-const PIXEL_SIZE = 40;
-const PIXEL_GAP = 3;
-const TOTAL_SIZE = GRID_SIZE * PIXEL_SIZE + (GRID_SIZE - 1) * PIXEL_GAP;
+const GRID_W = 32;
+const GRID_H = 16;
+const PIXEL_SIZE = 12;
+const PIXEL_GAP = 1;
+const TOTAL_W = GRID_W * PIXEL_SIZE + (GRID_W - 1) * PIXEL_GAP;
+const TOTAL_H = GRID_H * PIXEL_SIZE + (GRID_H - 1) * PIXEL_GAP;
 
 function LRPad({ onDirection }: { onDirection: (code: number) => void }) {
   const btn =
@@ -41,18 +43,19 @@ function LRPad({ onDirection }: { onDirection: (code: number) => void }) {
  * Breakout stores framebuffer in DualPortRAM at addresses 0-63.
  */
 function usePixels(sequentialState: unknown): number[] {
+  const TOTAL_PIXELS = GRID_W * GRID_H;
   return useMemo(() => {
-    const pixels = new Array(64).fill(0);
+    const pixels = new Array(TOTAL_PIXELS).fill(0);
     const state = sequentialState as {
       currentState?: Map<string, unknown>;
     } | null;
     if (!state?.currentState) return pixels;
 
     for (const [nodeId, nodeState] of state.currentState) {
-      // RasterDisplay stores pixels in its internal state map at addresses 0-63
+      // RasterDisplay stores pixels in its internal state map
       if (nodeState instanceof Map && nodeId.toLowerCase().includes("display")) {
         const mem = nodeState as Map<number, number>;
-        for (let addr = 0; addr < 64; addr++) {
+        for (let addr = 0; addr < TOTAL_PIXELS; addr++) {
           pixels[addr] = mem.get(addr) ?? 0;
         }
         break;
@@ -67,9 +70,9 @@ function usePixels(sequentialState: unknown): number[] {
  */
 function pixelColor(value: number, index: number): string {
   if (value === 0) return "#1a1a2e";
-  const row = Math.floor(index / 8);
-  if (row <= 1) return "#f97316"; // bricks: orange
-  if (row === 7) return "#3b82f6"; // paddle: blue
+  const row = Math.floor(index / GRID_W);
+  if (row <= 3) return "#f97316"; // bricks: orange
+  if (row === 15) return "#3b82f6"; // paddle: blue
   return "#ffffff"; // ball: white
 }
 
@@ -78,8 +81,6 @@ export function BreakoutDemo() {
     sim,
     isRunning,
     setIsRunning,
-    speed,
-    setSpeed,
     handleReset,
     sendDirection,
   } = useBreakoutSimulator();
@@ -130,13 +131,13 @@ export function BreakoutDemo() {
       {/* Game screen */}
       <div className="flex justify-center py-6 sm:py-8 bg-gray-950">
         <svg
-          viewBox={`0 0 ${TOTAL_SIZE} ${TOTAL_SIZE}`}
-          className="border-2 border-gray-700 rounded-lg bg-black w-[min(100%-2rem,355px)]"
+          viewBox={`0 0 ${TOTAL_W} ${TOTAL_H}`}
+          className="border-2 border-gray-700 rounded-lg bg-black w-[min(100%-2rem,500px)]"
           style={{ imageRendering: "pixelated" }}
         >
           {pixels.map((value, index) => {
-            const x = index % GRID_SIZE;
-            const y = Math.floor(index / GRID_SIZE);
+            const x = index % GRID_W;
+            const y = Math.floor(index / GRID_W);
             return (
               <rect
                 key={index}
@@ -182,19 +183,7 @@ export function BreakoutDemo() {
         >
           Reset
         </button>
-        <div className="flex items-center gap-2 ml-auto">
-          <label className="text-xs text-gray-400">Speed</label>
-          <input
-            type="range"
-            min={50}
-            max={500}
-            step={10}
-            value={550 - speed}
-            onChange={(e) => setSpeed(550 - Number(e.target.value))}
-            className="w-20 accent-blue-500"
-          />
-        </div>
-        <span className="text-xs text-gray-400 font-mono tabular-nums">
+        <span className="ml-auto text-xs text-gray-400 font-mono tabular-nums">
           Cycle {sim.cycleCount.toLocaleString()}
         </span>
       </div>
