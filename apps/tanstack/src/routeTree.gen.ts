@@ -29,8 +29,10 @@ import { Route as BlogMcpBidirectionalBridgeRouteImport } from './routes/blog/mc
 import { Route as BlogHowTpusWorkRouteImport } from './routes/blog/how-tpus-work'
 import { Route as BlogHowNetworkSwitchesWorkRouteImport } from './routes/blog/how-network-switches-work'
 import { Route as BlogComputingTrigInHardwareRouteImport } from './routes/blog/computing-trig-in-hardware'
+import { Route as BlogChacha20InHardwareRouteImport } from './routes/blog/chacha20-in-hardware'
 import { Route as BlogBuildingACpuRouteImport } from './routes/blog/building-a-cpu'
 import { Route as BlogBreakoutInHardwareRouteImport } from './routes/blog/breakout-in-hardware'
+import { Route as BlogAesInHardwareRouteImport } from './routes/blog/aes-in-hardware'
 import { Route as ApiSearchRouteImport } from './routes/api/search'
 
 const Splash4Route = Splash4RouteImport.update({
@@ -136,6 +138,11 @@ const BlogComputingTrigInHardwareRoute =
     path: '/blog/computing-trig-in-hardware',
     getParentRoute: () => rootRouteImport,
   } as any)
+const BlogChacha20InHardwareRoute = BlogChacha20InHardwareRouteImport.update({
+  id: '/blog/chacha20-in-hardware',
+  path: '/blog/chacha20-in-hardware',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const BlogBuildingACpuRoute = BlogBuildingACpuRouteImport.update({
   id: '/blog/building-a-cpu',
   path: '/blog/building-a-cpu',
@@ -144,6 +151,11 @@ const BlogBuildingACpuRoute = BlogBuildingACpuRouteImport.update({
 const BlogBreakoutInHardwareRoute = BlogBreakoutInHardwareRouteImport.update({
   id: '/blog/breakout-in-hardware',
   path: '/blog/breakout-in-hardware',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BlogAesInHardwareRoute = BlogAesInHardwareRouteImport.update({
+  id: '/blog/aes-in-hardware',
+  path: '/blog/aes-in-hardware',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiSearchRoute = ApiSearchRouteImport.update({
@@ -158,8 +170,10 @@ export interface FileRoutesByFullPath {
   '/splash3': typeof Splash3Route
   '/splash4': typeof Splash4Route
   '/api/search': typeof ApiSearchRoute
+  '/blog/aes-in-hardware': typeof BlogAesInHardwareRoute
   '/blog/breakout-in-hardware': typeof BlogBreakoutInHardwareRoute
   '/blog/building-a-cpu': typeof BlogBuildingACpuRoute
+  '/blog/chacha20-in-hardware': typeof BlogChacha20InHardwareRoute
   '/blog/computing-trig-in-hardware': typeof BlogComputingTrigInHardwareRoute
   '/blog/how-network-switches-work': typeof BlogHowNetworkSwitchesWorkRoute
   '/blog/how-tpus-work': typeof BlogHowTpusWorkRoute
@@ -183,8 +197,10 @@ export interface FileRoutesByTo {
   '/splash3': typeof Splash3Route
   '/splash4': typeof Splash4Route
   '/api/search': typeof ApiSearchRoute
+  '/blog/aes-in-hardware': typeof BlogAesInHardwareRoute
   '/blog/breakout-in-hardware': typeof BlogBreakoutInHardwareRoute
   '/blog/building-a-cpu': typeof BlogBuildingACpuRoute
+  '/blog/chacha20-in-hardware': typeof BlogChacha20InHardwareRoute
   '/blog/computing-trig-in-hardware': typeof BlogComputingTrigInHardwareRoute
   '/blog/how-network-switches-work': typeof BlogHowNetworkSwitchesWorkRoute
   '/blog/how-tpus-work': typeof BlogHowTpusWorkRoute
@@ -209,8 +225,10 @@ export interface FileRoutesById {
   '/splash3': typeof Splash3Route
   '/splash4': typeof Splash4Route
   '/api/search': typeof ApiSearchRoute
+  '/blog/aes-in-hardware': typeof BlogAesInHardwareRoute
   '/blog/breakout-in-hardware': typeof BlogBreakoutInHardwareRoute
   '/blog/building-a-cpu': typeof BlogBuildingACpuRoute
+  '/blog/chacha20-in-hardware': typeof BlogChacha20InHardwareRoute
   '/blog/computing-trig-in-hardware': typeof BlogComputingTrigInHardwareRoute
   '/blog/how-network-switches-work': typeof BlogHowNetworkSwitchesWorkRoute
   '/blog/how-tpus-work': typeof BlogHowTpusWorkRoute
@@ -236,8 +254,10 @@ export interface FileRouteTypes {
     | '/splash3'
     | '/splash4'
     | '/api/search'
+    | '/blog/aes-in-hardware'
     | '/blog/breakout-in-hardware'
     | '/blog/building-a-cpu'
+    | '/blog/chacha20-in-hardware'
     | '/blog/computing-trig-in-hardware'
     | '/blog/how-network-switches-work'
     | '/blog/how-tpus-work'
@@ -261,8 +281,10 @@ export interface FileRouteTypes {
     | '/splash3'
     | '/splash4'
     | '/api/search'
+    | '/blog/aes-in-hardware'
     | '/blog/breakout-in-hardware'
     | '/blog/building-a-cpu'
+    | '/blog/chacha20-in-hardware'
     | '/blog/computing-trig-in-hardware'
     | '/blog/how-network-switches-work'
     | '/blog/how-tpus-work'
@@ -286,8 +308,10 @@ export interface FileRouteTypes {
     | '/splash3'
     | '/splash4'
     | '/api/search'
+    | '/blog/aes-in-hardware'
     | '/blog/breakout-in-hardware'
     | '/blog/building-a-cpu'
+    | '/blog/chacha20-in-hardware'
     | '/blog/computing-trig-in-hardware'
     | '/blog/how-network-switches-work'
     | '/blog/how-tpus-work'
@@ -312,8 +336,10 @@ export interface RootRouteChildren {
   Splash3Route: typeof Splash3Route
   Splash4Route: typeof Splash4Route
   ApiSearchRoute: typeof ApiSearchRoute
+  BlogAesInHardwareRoute: typeof BlogAesInHardwareRoute
   BlogBreakoutInHardwareRoute: typeof BlogBreakoutInHardwareRoute
   BlogBuildingACpuRoute: typeof BlogBuildingACpuRoute
+  BlogChacha20InHardwareRoute: typeof BlogChacha20InHardwareRoute
   BlogComputingTrigInHardwareRoute: typeof BlogComputingTrigInHardwareRoute
   BlogHowNetworkSwitchesWorkRoute: typeof BlogHowNetworkSwitchesWorkRoute
   BlogHowTpusWorkRoute: typeof BlogHowTpusWorkRoute
@@ -474,6 +500,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BlogComputingTrigInHardwareRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/blog/chacha20-in-hardware': {
+      id: '/blog/chacha20-in-hardware'
+      path: '/blog/chacha20-in-hardware'
+      fullPath: '/blog/chacha20-in-hardware'
+      preLoaderRoute: typeof BlogChacha20InHardwareRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/blog/building-a-cpu': {
       id: '/blog/building-a-cpu'
       path: '/blog/building-a-cpu'
@@ -486,6 +519,13 @@ declare module '@tanstack/react-router' {
       path: '/blog/breakout-in-hardware'
       fullPath: '/blog/breakout-in-hardware'
       preLoaderRoute: typeof BlogBreakoutInHardwareRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/blog/aes-in-hardware': {
+      id: '/blog/aes-in-hardware'
+      path: '/blog/aes-in-hardware'
+      fullPath: '/blog/aes-in-hardware'
+      preLoaderRoute: typeof BlogAesInHardwareRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/search': {
@@ -504,8 +544,10 @@ const rootRouteChildren: RootRouteChildren = {
   Splash3Route: Splash3Route,
   Splash4Route: Splash4Route,
   ApiSearchRoute: ApiSearchRoute,
+  BlogAesInHardwareRoute: BlogAesInHardwareRoute,
   BlogBreakoutInHardwareRoute: BlogBreakoutInHardwareRoute,
   BlogBuildingACpuRoute: BlogBuildingACpuRoute,
+  BlogChacha20InHardwareRoute: BlogChacha20InHardwareRoute,
   BlogComputingTrigInHardwareRoute: BlogComputingTrigInHardwareRoute,
   BlogHowNetworkSwitchesWorkRoute: BlogHowNetworkSwitchesWorkRoute,
   BlogHowTpusWorkRoute: BlogHowTpusWorkRoute,

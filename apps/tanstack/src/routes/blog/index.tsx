@@ -83,6 +83,22 @@ const posts: { slug: string; title: string; description: string; category: PostC
     nodes: '~90 nodes',
   },
   {
+    slug: "aes-in-hardware",
+    title: "AES in Hardware",
+    description:
+      "Why Intel built AES into the CPU. SubBytes, XTime, and MixColumns — the operations behind the world's most deployed cipher, verified against FIPS 197.",
+    category: 'accelerator',
+    nodes: '~60 nodes',
+  },
+  {
+    slug: "chacha20-in-hardware",
+    title: "ChaCha20 in Hardware",
+    description:
+      "The TLS cipher that encrypts most of the internet, built from logic gates. Explore the ADD-XOR-ROTATE quarter-round with live interactive circuits.",
+    category: 'networking',
+    nodes: '~50 nodes',
+  },
+  {
     slug: "mcp-bidirectional-bridge",
     title: "MCP Bidirectional Bridge",
     description:
