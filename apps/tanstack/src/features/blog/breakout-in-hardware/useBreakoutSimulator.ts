@@ -4,11 +4,13 @@ import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useCircuitSimulator } from "@turing-incomplete/ui/embed";
 import { BREAKOUT_DSL } from "./circuits";
 
+// One full raster frame for 32x16 display (34x18 grid with blanking)
+const TICKS_PER_FRAME = 612;
+
 export function useBreakoutSimulator() {
   const sim = useCircuitSimulator(BREAKOUT_DSL);
   const [isRunning, setIsRunning] = useState(false);
-  const [speed, setSpeed] = useState(200);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const rafRef = useRef<number | null>(null);
 
   // Find the mangled node ID for "keyboard"
   const keyboardNodeId = useMemo(() => {
@@ -50,26 +52,25 @@ export function useBreakoutSimulator() {
     };
   }, [keyboardNodeId, sim.setNodeValue]);
 
-  // Auto-run using requestAnimationFrame for smooth rendering
-  const rafRef = useRef<number | null>(null);
-  const lastFrameRef = useRef(0);
-
+  // Run continuously like real hardware: tick the engine directly (no React
+  // state updates per tick), then update React once per browser frame.
+  // This avoids 612 setState calls per frame — only 1 after the full raster scan.
   useEffect(() => {
     if (!isRunning || !sim.ready) return;
 
-    const loop = (timestamp: number) => {
-      const elapsed = timestamp - lastFrameRef.current;
-      if (elapsed >= speed) {
-        lastFrameRef.current = timestamp;
-        // Tick a full raster frame (100 ticks) atomically
-        for (let i = 0; i < 100; i++) {
-          sim.tick();
-        }
+    const engine = sim.getSimulator();
+    if (!engine) return;
+
+    const loop = () => {
+      // Tick most of the frame directly on the engine (no React overhead)
+      for (let i = 0; i < TICKS_PER_FRAME - 1; i++) {
+        engine.tick();
       }
+      // Final tick via sim.tick() triggers a single React state update
+      sim.tick();
       rafRef.current = requestAnimationFrame(loop);
     };
 
-    lastFrameRef.current = performance.now();
     rafRef.current = requestAnimationFrame(loop);
 
     return () => {
@@ -78,7 +79,7 @@ export function useBreakoutSimulator() {
         rafRef.current = null;
       }
     };
-  }, [isRunning, sim.ready, speed, sim.tick]);
+  }, [isRunning, sim.ready, sim.tick, sim.getSimulator]);
 
   const handleReset = useCallback(() => {
     setIsRunning(false);
@@ -96,8 +97,6 @@ export function useBreakoutSimulator() {
     sim,
     isRunning,
     setIsRunning,
-    speed,
-    setSpeed,
     handleReset,
     sendDirection,
   };
