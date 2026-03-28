@@ -58,7 +58,9 @@
       "Bash(gh search:*)",
       "Bash(python3 -m json.tool)",
       "Bash(python3 -c \":*)",
-      "Bash(npx tsx:*)"
+      "Bash(npx tsx:*)",
+      "Bash(ANALYZE=true pnpm build 2>&1)",
+      "Bash(npx playwright:*)"
     ]
   }
 }

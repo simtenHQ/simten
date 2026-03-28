@@ -899,7 +899,7 @@ function Splash5Page() {
         </div>
         <div className="px-5 pb-6 flex flex-col items-center text-center gap-4">
           <p className="text-sm text-gray-500 max-w-xs">
-            A circuit simulator you talk to with Claude Code.
+            Live hardware simulations you can explore, build, and embed.
           </p>
           <CopyCommand command="claude mcp add turing-incomplete npx @turing-incomplete/mcp" />
         </div>
@@ -917,7 +917,7 @@ function Splash5Page() {
                 Turing Incomplete
               </div>
               <div className="text-[11px] text-gray-600">
-                A live circuit simulator you talk to
+                Live hardware simulations you can explore, build, and embed
               </div>
             </div>
           </div>
@@ -976,10 +976,30 @@ function Splash5Page() {
               {/* CTA + prompt suggestions after demo */}
               {demoComplete && (
                 <div className="flex-shrink-0 border-t border-[#30363d] px-5 py-4 space-y-3 animate-in fade-in duration-500">
-                  <p className="font-mono text-[13px] text-gray-300">
-                    Build circuits by describing them — compiled and simulated
-                    live in your browser.
-                  </p>
+                  {/* Three paths */}
+                  <div className="grid grid-cols-3 gap-2 text-[11px]">
+                    <Link
+                      to="/blog"
+                      className="rounded-md border border-[#30363d] hover:border-blue-800 px-2.5 py-2 text-center transition-colors group"
+                    >
+                      <div className="text-gray-300 font-semibold group-hover:text-blue-300">Explore</div>
+                      <div className="text-gray-600 mt-0.5">Interactive articles</div>
+                    </Link>
+                    <Link
+                      to="/editor"
+                      className="rounded-md border border-[#30363d] hover:border-green-800 px-2.5 py-2 text-center transition-colors group"
+                    >
+                      <div className="text-gray-300 font-semibold group-hover:text-green-300">Build</div>
+                      <div className="text-gray-600 mt-0.5">Editor + AI</div>
+                    </Link>
+                    <a
+                      href="/docs/claude-code"
+                      className="rounded-md border border-[#30363d] hover:border-violet-800 px-2.5 py-2 text-center transition-colors group"
+                    >
+                      <div className="text-gray-300 font-semibold group-hover:text-violet-300">Embed</div>
+                      <div className="text-gray-600 mt-0.5">npm package</div>
+                    </a>
+                  </div>
                   <div className="bg-[#161b22] rounded-md border border-[#30363d] px-3 py-2.5 font-mono text-xs text-gray-300 select-all cursor-pointer hover:border-gray-600 transition-colors">
                     <span className="text-gray-500 select-none">$ </span>
                     claude mcp add turing-incomplete npx @turing-incomplete/mcp
@@ -1096,6 +1116,66 @@ function Splash5Page() {
 // Gallery
 // ============================================================================
 
+const PM_TABS = [
+  { label: "npm", command: (pkg: string) => `npm install ${pkg}` },
+  { label: "pnpm", command: (pkg: string) => `pnpm add ${pkg}` },
+  { label: "yarn", command: (pkg: string) => `yarn add ${pkg}` },
+  { label: "bun", command: (pkg: string) => `bun add ${pkg}` },
+] as const;
+
+function PackageManagerTabs({ package: pkg }: { package: string }) {
+  const [active, setActive] = useState(0);
+  const [copied, setCopied] = useState(false);
+  const cmd = PM_TABS[active].command(pkg);
+
+  const copy = useCallback(() => {
+    navigator.clipboard.writeText(cmd);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }, [cmd]);
+
+  return (
+    <div className="rounded-lg border border-[#30363d] bg-[#0d1117] overflow-hidden">
+      <div className="flex items-center border-b border-[#30363d]">
+        {PM_TABS.map((tab, i) => (
+          <button
+            key={tab.label}
+            onClick={() => setActive(i)}
+            className={`px-3 py-1.5 text-[11px] font-medium transition-colors ${
+              i === active
+                ? "text-gray-200 border-b-2 border-blue-500 -mb-px"
+                : "text-gray-600 hover:text-gray-400"
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+      <div className="flex items-center justify-between px-4 py-2.5">
+        <code className="text-[12px] font-mono text-gray-400">
+          <span className="text-gray-600 select-none">$ </span>
+          {cmd}
+        </code>
+        <button
+          onClick={copy}
+          className="text-gray-600 hover:text-gray-300 transition-colors shrink-0 ml-3"
+          aria-label="Copy to clipboard"
+        >
+          {copied ? (
+            <svg className="w-3.5 h-3.5 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+            </svg>
+          ) : (
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+            </svg>
+          )}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function CopyCommand({ command }: { command: string }) {
   const [copied, setCopied] = useState(false);
 
@@ -1206,7 +1286,7 @@ function DemoGallery() {
 
   return (
     <div className="px-4 py-10 md:py-20 md:animate-in md:fade-in md:duration-700">
-      <div className="max-w-5xl mx-auto">
+      <div className="max-w-7xl mx-auto">
         <div className="mb-12 text-center">
           <h2 className="text-2xl sm:text-3xl font-semibold text-gray-100 mb-6">
             <div>Ask Claude to build...</div>
@@ -1219,6 +1299,8 @@ function DemoGallery() {
         </div>
 
         {/* Row 1: live circuits */}
+        <h3 className="text-lg font-semibold text-gray-200 mb-1 mt-2">Build anything from gates to games</h3>
+        <p className="text-[13px] text-gray-600 mb-4">Interactive circuits you can click, toggle, and explore</p>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
           <LiveCircuitCard
             title="Half Adder"
@@ -1251,6 +1333,8 @@ function DemoGallery() {
         </div>
 
         {/* Row 2: complex demos */}
+        <h3 className="text-lg font-semibold text-gray-200 mb-1 mt-20">Scale to real-world complexity</h3>
+        <p className="text-[13px] text-gray-600 mb-4">Full CPUs, networked systems, hundreds of nodes</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <ComplexDemoCard
             title="RV32I CPU Debugger"
@@ -1271,10 +1355,12 @@ function DemoGallery() {
         </div>
 
         {/* Row 3: Ethernet parser — full width */}
+        <h3 className="text-lg font-semibold text-gray-200 mb-1 mt-20">Production-grade protocol simulation</h3>
+        <p className="text-[13px] text-gray-600 mb-4">IEEE 802.3 Ethernet — parsing real frames, cycle by cycle</p>
         <EthernetParserCard />
 
         {/* Row 4: Featured deep dives */}
-        <div className="mt-10 pt-8 border-t border-[#30363d]">
+        <div className="mt-40">
           <h3 className="text-lg font-semibold text-gray-200 mb-1">Interactive deep dives</h3>
           <p className="text-[13px] text-gray-600 mb-5">Not diagrams. Live circuits verified against real specifications.</p>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -1322,7 +1408,33 @@ function DemoGallery() {
           </div>
         </div>
 
-        <div className="mt-10 pt-8 border-t border-[#30363d] flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:justify-between">
+        {/* Row 5: Embed CTA */}
+        <div className="mt-40">
+          <h3 className="text-lg font-semibold text-gray-200 mb-1">Embed in your own site</h3>
+          <p className="text-[13px] text-gray-600 mb-5">One component. Your docs get live, interactive hardware simulations.</p>
+          <PackageManagerTabs package="@turing-incomplete/embed" />
+          <div className="rounded-lg border border-[#30363d] bg-[#0d1117] overflow-hidden mt-4">
+            <pre className="px-4 py-3 text-[12px] font-mono text-gray-400 leading-relaxed overflow-x-auto">
+              <span className="text-violet-400">{"import"}</span>{" { CircuitEmbed } "}
+              <span className="text-violet-400">{"from"}</span>{" "}
+              <span className="text-green-400">{"'@turing-incomplete/embed'"}</span>
+              {"\n\n"}
+              <span className="text-gray-500">{"// Compiles, simulates, and renders — in one component"}</span>
+              {"\n"}
+              {"<"}
+              <span className="text-blue-400">{"CircuitEmbed"}</span>
+              {"\n  "}
+              <span className="text-cyan-400">{"dsl"}</span>
+              {"={myCircuitDSL}"}
+              {"\n  "}
+              <span className="text-cyan-400">{"height"}</span>
+              {"={300}"}
+              {"\n/>"}
+            </pre>
+          </div>
+        </div>
+
+        <div className="mt-40 flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:justify-between">
           <p className="text-[13px] text-gray-600">
             Or build circuits yourself — no Claude needed.
           </p>
@@ -1350,7 +1462,7 @@ function DemoGallery() {
       </div>
 
       {/* Footer */}
-      <footer className="max-w-5xl mx-auto mt-16 pt-6 pb-10 border-t border-[#30363d] flex flex-col sm:flex-row items-center justify-between gap-4 px-4">
+      <footer className="max-w-7xl mx-auto mt-32 pt-10 pb-16 border-t border-[#30363d] flex flex-col sm:flex-row items-center justify-between gap-4 px-4">
         <div className="flex items-center gap-2.5">
           <Logo size={18} className="text-gray-600" />
           <span className="text-[12px] text-gray-600">Turing Incomplete</span>

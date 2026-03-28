@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Circuit Embed E2E Test</title>
+  <link rel="stylesheet" href="/styles.css">
+  <script src="/circuit-embed.js"></script>
+  <style>
+    body { background: #0a0a0a; color: white; font-family: sans-serif; padding: 20px; }
+    .test-section { margin-bottom: 40px; }
+    h2 { font-size: 14px; color: #888; margin-bottom: 8px; }
+  </style>
+</head>
+<body>
+  <!-- Test 1: Basic circuit-embed -->
+  <div class="test-section" id="test-basic">
+    <h2>Test: Basic Embed</h2>
+    <circuit-embed
+      dsl="circuit HalfAdder {
+        impl {
+          node A: Switch
+          node B: Switch
+          node gate: Xor
+          node light: Led
+          connect A.out -> gate.a
+          connect B.out -> gate.b
+          connect gate.out -> light.in
+        }
+      }"
+      height="250"
+      title="Half Adder Test"
+    ></circuit-embed>
+  </div>
+
+  <!-- Test 2: Invalid DSL (should show error) -->
+  <div class="test-section" id="test-error">
+    <h2>Test: Error Handling</h2>
+    <circuit-embed
+      dsl="circuit Broken { this is invalid }"
+      height="200"
+    ></circuit-embed>
+  </div>
+
+  <!-- Test 3: Second instance (isolation) -->
+  <div class="test-section" id="test-isolation">
+    <h2>Test: Multi-Instance Isolation</h2>
+    <circuit-embed
+      dsl="circuit Toggle {
+        impl {
+          node sw: Switch
+          node led: Led
+          connect sw.out -> led.in
+        }
+      }"
+      height="200"
+    ></circuit-embed>
+  </div>
+
+  <!-- Test 4: Circuit editor -->
+  <div class="test-section" id="test-editor">
+    <h2>Test: Circuit Editor</h2>
+    <circuit-editor
+      initial-dsl="circuit Simple {
+        impl {
+          node A: Switch
+          node light: Led
+          connect A.out -> light.in
+        }
+      }"
+      height="400"
+    ></circuit-editor>
+  </div>
+</body>
+</html>

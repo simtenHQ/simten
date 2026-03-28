@@ -1,0 +1,83 @@
+{
+  "name": "@turing-incomplete/embed",
+  "version": "0.1.0",
+  "description": "Embeddable interactive circuit simulator. Drop live hardware simulations into any React app or HTML page.",
+  "license": "BUSL-1.1",
+  "author": "Charles Harris",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/charlesharris/turing-incomplete.git",
+    "directory": "packages/embed"
+  },
+  "keywords": [
+    "circuit-simulator",
+    "hardware",
+    "embed",
+    "interactive",
+    "react",
+    "dsl",
+    "digital-logic"
+  ],
+  "type": "module",
+  "sideEffects": [
+    "./src/webcomponent/index.ts",
+    "*.css"
+  ],
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    },
+    "./canvas": {
+      "types": "./src/canvas/index.ts",
+      "default": "./src/canvas/index.ts"
+    },
+    "./editor": {
+      "types": "./src/editor/index.ts",
+      "default": "./src/editor/index.ts"
+    },
+    "./styles.css": "./dist/styles.css",
+    "./webcomponent": {
+      "types": "./src/webcomponent/index.ts",
+      "default": "./src/webcomponent/index.ts"
+    }
+  },
+  "files": [
+    "src",
+    "dist"
+  ],
+  "scripts": {
+    "build": "vite build",
+    "analyze": "ANALYZE=true vite build",
+    "lint": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "pnpm build && cp e2e/fixtures/*.html dist/ && playwright test",
+    "test:e2e:ui": "pnpm build && cp e2e/fixtures/*.html dist/ && playwright test --ui"
+  },
+  "dependencies": {
+    "@r2wc/react-to-web-component": "^2.1.1",
+    "@turing-incomplete/core": "workspace:*",
+    "@xyflow/react": "^12.10.0",
+    "clsx": "^2.1.1",
+    "elkjs": "^0.9.3",
+    "tailwind-merge": "^3.0.0"
+  },
+  "peerDependencies": {
+    "react": "^18 || ^19",
+    "react-dom": "^18 || ^19"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.58.2",
+    "@tailwindcss/cli": "^4",
+    "@tailwindcss/vite": "^4.1.18",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "@vitejs/plugin-react": "^5.0.4",
+    "rollup-plugin-visualizer": "^7.0.1",
+    "serve": "^14.2.6",
+    "tailwindcss": "^4",
+    "typescript": "^5",
+    "vite": "^7.1.7"
+  }
+}
