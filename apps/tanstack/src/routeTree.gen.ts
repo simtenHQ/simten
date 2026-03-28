@@ -21,11 +21,13 @@ import { Route as LearnDualCpuRouteImport } from './routes/learn/dual-cpu'
 import { Route as LearnCpuRouteImport } from './routes/learn/cpu'
 import { Route as DocsSplatRouteImport } from './routes/docs/$'
 import { Route as ChallengesSnakeRouteImport } from './routes/challenges/snake'
+import { Route as ChallengesNandToLogicRouteImport } from './routes/challenges/nand-to-logic'
 import { Route as ChallengesBuildAnAluRouteImport } from './routes/challenges/build-an-alu'
 import { Route as ChallengesBuildACpuRouteImport } from './routes/challenges/build-a-cpu'
 import { Route as BlogSnakeInHardwareRouteImport } from './routes/blog/snake-in-hardware'
 import { Route as BlogPongInHardwareRouteImport } from './routes/blog/pong-in-hardware'
 import { Route as BlogMcpBidirectionalBridgeRouteImport } from './routes/blog/mcp-bidirectional-bridge'
+import { Route as BlogLogicFromNothingRouteImport } from './routes/blog/logic-from-nothing'
 import { Route as BlogHowTpusWorkRouteImport } from './routes/blog/how-tpus-work'
 import { Route as BlogHowNetworkSwitchesWorkRouteImport } from './routes/blog/how-network-switches-work'
 import { Route as BlogComputingTrigInHardwareRouteImport } from './routes/blog/computing-trig-in-hardware'
@@ -95,6 +97,11 @@ const ChallengesSnakeRoute = ChallengesSnakeRouteImport.update({
   path: '/challenges/snake',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ChallengesNandToLogicRoute = ChallengesNandToLogicRouteImport.update({
+  id: '/challenges/nand-to-logic',
+  path: '/challenges/nand-to-logic',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ChallengesBuildAnAluRoute = ChallengesBuildAnAluRouteImport.update({
   id: '/challenges/build-an-alu',
   path: '/challenges/build-an-alu',
@@ -121,6 +128,11 @@ const BlogMcpBidirectionalBridgeRoute =
     path: '/blog/mcp-bidirectional-bridge',
     getParentRoute: () => rootRouteImport,
   } as any)
+const BlogLogicFromNothingRoute = BlogLogicFromNothingRouteImport.update({
+  id: '/blog/logic-from-nothing',
+  path: '/blog/logic-from-nothing',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const BlogHowTpusWorkRoute = BlogHowTpusWorkRouteImport.update({
   id: '/blog/how-tpus-work',
   path: '/blog/how-tpus-work',
@@ -177,11 +189,13 @@ export interface FileRoutesByFullPath {
   '/blog/computing-trig-in-hardware': typeof BlogComputingTrigInHardwareRoute
   '/blog/how-network-switches-work': typeof BlogHowNetworkSwitchesWorkRoute
   '/blog/how-tpus-work': typeof BlogHowTpusWorkRoute
+  '/blog/logic-from-nothing': typeof BlogLogicFromNothingRoute
   '/blog/mcp-bidirectional-bridge': typeof BlogMcpBidirectionalBridgeRoute
   '/blog/pong-in-hardware': typeof BlogPongInHardwareRoute
   '/blog/snake-in-hardware': typeof BlogSnakeInHardwareRoute
   '/challenges/build-a-cpu': typeof ChallengesBuildACpuRoute
   '/challenges/build-an-alu': typeof ChallengesBuildAnAluRoute
+  '/challenges/nand-to-logic': typeof ChallengesNandToLogicRoute
   '/challenges/snake': typeof ChallengesSnakeRoute
   '/docs/$': typeof DocsSplatRoute
   '/learn/cpu': typeof LearnCpuRoute
@@ -204,11 +218,13 @@ export interface FileRoutesByTo {
   '/blog/computing-trig-in-hardware': typeof BlogComputingTrigInHardwareRoute
   '/blog/how-network-switches-work': typeof BlogHowNetworkSwitchesWorkRoute
   '/blog/how-tpus-work': typeof BlogHowTpusWorkRoute
+  '/blog/logic-from-nothing': typeof BlogLogicFromNothingRoute
   '/blog/mcp-bidirectional-bridge': typeof BlogMcpBidirectionalBridgeRoute
   '/blog/pong-in-hardware': typeof BlogPongInHardwareRoute
   '/blog/snake-in-hardware': typeof BlogSnakeInHardwareRoute
   '/challenges/build-a-cpu': typeof ChallengesBuildACpuRoute
   '/challenges/build-an-alu': typeof ChallengesBuildAnAluRoute
+  '/challenges/nand-to-logic': typeof ChallengesNandToLogicRoute
   '/challenges/snake': typeof ChallengesSnakeRoute
   '/docs/$': typeof DocsSplatRoute
   '/learn/cpu': typeof LearnCpuRoute
@@ -232,11 +248,13 @@ export interface FileRoutesById {
   '/blog/computing-trig-in-hardware': typeof BlogComputingTrigInHardwareRoute
   '/blog/how-network-switches-work': typeof BlogHowNetworkSwitchesWorkRoute
   '/blog/how-tpus-work': typeof BlogHowTpusWorkRoute
+  '/blog/logic-from-nothing': typeof BlogLogicFromNothingRoute
   '/blog/mcp-bidirectional-bridge': typeof BlogMcpBidirectionalBridgeRoute
   '/blog/pong-in-hardware': typeof BlogPongInHardwareRoute
   '/blog/snake-in-hardware': typeof BlogSnakeInHardwareRoute
   '/challenges/build-a-cpu': typeof ChallengesBuildACpuRoute
   '/challenges/build-an-alu': typeof ChallengesBuildAnAluRoute
+  '/challenges/nand-to-logic': typeof ChallengesNandToLogicRoute
   '/challenges/snake': typeof ChallengesSnakeRoute
   '/docs/$': typeof DocsSplatRoute
   '/learn/cpu': typeof LearnCpuRoute
@@ -261,11 +279,13 @@ export interface FileRouteTypes {
     | '/blog/computing-trig-in-hardware'
     | '/blog/how-network-switches-work'
     | '/blog/how-tpus-work'
+    | '/blog/logic-from-nothing'
     | '/blog/mcp-bidirectional-bridge'
     | '/blog/pong-in-hardware'
     | '/blog/snake-in-hardware'
     | '/challenges/build-a-cpu'
     | '/challenges/build-an-alu'
+    | '/challenges/nand-to-logic'
     | '/challenges/snake'
     | '/docs/$'
     | '/learn/cpu'
@@ -288,11 +308,13 @@ export interface FileRouteTypes {
     | '/blog/computing-trig-in-hardware'
     | '/blog/how-network-switches-work'
     | '/blog/how-tpus-work'
+    | '/blog/logic-from-nothing'
     | '/blog/mcp-bidirectional-bridge'
     | '/blog/pong-in-hardware'
     | '/blog/snake-in-hardware'
     | '/challenges/build-a-cpu'
     | '/challenges/build-an-alu'
+    | '/challenges/nand-to-logic'
     | '/challenges/snake'
     | '/docs/$'
     | '/learn/cpu'
@@ -315,11 +337,13 @@ export interface FileRouteTypes {
     | '/blog/computing-trig-in-hardware'
     | '/blog/how-network-switches-work'
     | '/blog/how-tpus-work'
+    | '/blog/logic-from-nothing'
     | '/blog/mcp-bidirectional-bridge'
     | '/blog/pong-in-hardware'
     | '/blog/snake-in-hardware'
     | '/challenges/build-a-cpu'
     | '/challenges/build-an-alu'
+    | '/challenges/nand-to-logic'
     | '/challenges/snake'
     | '/docs/$'
     | '/learn/cpu'
@@ -343,11 +367,13 @@ export interface RootRouteChildren {
   BlogComputingTrigInHardwareRoute: typeof BlogComputingTrigInHardwareRoute
   BlogHowNetworkSwitchesWorkRoute: typeof BlogHowNetworkSwitchesWorkRoute
   BlogHowTpusWorkRoute: typeof BlogHowTpusWorkRoute
+  BlogLogicFromNothingRoute: typeof BlogLogicFromNothingRoute
   BlogMcpBidirectionalBridgeRoute: typeof BlogMcpBidirectionalBridgeRoute
   BlogPongInHardwareRoute: typeof BlogPongInHardwareRoute
   BlogSnakeInHardwareRoute: typeof BlogSnakeInHardwareRoute
   ChallengesBuildACpuRoute: typeof ChallengesBuildACpuRoute
   ChallengesBuildAnAluRoute: typeof ChallengesBuildAnAluRoute
+  ChallengesNandToLogicRoute: typeof ChallengesNandToLogicRoute
   ChallengesSnakeRoute: typeof ChallengesSnakeRoute
   DocsSplatRoute: typeof DocsSplatRoute
   LearnCpuRoute: typeof LearnCpuRoute
@@ -444,6 +470,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ChallengesSnakeRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/challenges/nand-to-logic': {
+      id: '/challenges/nand-to-logic'
+      path: '/challenges/nand-to-logic'
+      fullPath: '/challenges/nand-to-logic'
+      preLoaderRoute: typeof ChallengesNandToLogicRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/challenges/build-an-alu': {
       id: '/challenges/build-an-alu'
       path: '/challenges/build-an-alu'
@@ -477,6 +510,13 @@ declare module '@tanstack/react-router' {
       path: '/blog/mcp-bidirectional-bridge'
       fullPath: '/blog/mcp-bidirectional-bridge'
       preLoaderRoute: typeof BlogMcpBidirectionalBridgeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/blog/logic-from-nothing': {
+      id: '/blog/logic-from-nothing'
+      path: '/blog/logic-from-nothing'
+      fullPath: '/blog/logic-from-nothing'
+      preLoaderRoute: typeof BlogLogicFromNothingRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/blog/how-tpus-work': {
@@ -551,11 +591,13 @@ const rootRouteChildren: RootRouteChildren = {
   BlogComputingTrigInHardwareRoute: BlogComputingTrigInHardwareRoute,
   BlogHowNetworkSwitchesWorkRoute: BlogHowNetworkSwitchesWorkRoute,
   BlogHowTpusWorkRoute: BlogHowTpusWorkRoute,
+  BlogLogicFromNothingRoute: BlogLogicFromNothingRoute,
   BlogMcpBidirectionalBridgeRoute: BlogMcpBidirectionalBridgeRoute,
   BlogPongInHardwareRoute: BlogPongInHardwareRoute,
   BlogSnakeInHardwareRoute: BlogSnakeInHardwareRoute,
   ChallengesBuildACpuRoute: ChallengesBuildACpuRoute,
   ChallengesBuildAnAluRoute: ChallengesBuildAnAluRoute,
+  ChallengesNandToLogicRoute: ChallengesNandToLogicRoute,
   ChallengesSnakeRoute: ChallengesSnakeRoute,
   DocsSplatRoute: DocsSplatRoute,
   LearnCpuRoute: LearnCpuRoute,
