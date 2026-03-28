@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { Suspense, lazy } from "react";
 import { HeroSection } from "@/features/blog/how-tpus-work/sections/HeroSection";
+import { BlogFooter } from "@/features/blog/BlogFooter";
 import { ErrorBoundary } from "@/features/blog/building-a-cpu/ErrorBoundary";
 
 // Lazy-load heavier sections so the page renders fast
@@ -114,23 +115,7 @@ function HowTPUsWorkPage() {
           </ErrorBoundary>
         </div>
 
-        {/* Footer */}
-        <footer className="mt-16 pt-8 border-t border-gray-800 text-center">
-          <p className="text-sm text-gray-500">
-            Built with{" "}
-            <a
-              href="/"
-              className="text-blue-400 hover:text-blue-300 underline underline-offset-2"
-            >
-              Turing Incomplete
-            </a>
-            {" "}&mdash; a visual circuit simulator with an AI tutor.
-          </p>
-          <p className="text-xs text-gray-600 mt-2">
-            Every circuit on this page is simulated from logic gates in your
-            browser. No shortcuts, no abstractions, no cheating.
-          </p>
-        </footer>
+        <BlogFooter slug="how-tpus-work" />
       </main>
     </div>
   );

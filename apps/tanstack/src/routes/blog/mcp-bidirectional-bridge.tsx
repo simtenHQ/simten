@@ -1,6 +1,7 @@
-import { createFileRoute, Link } from '@tanstack/react-router'
+import { createFileRoute } from '@tanstack/react-router'
 import { Suspense, lazy } from "react";
 import { HeroSection } from "@/features/blog/mcp-bidirectional-bridge/sections/HeroSection";
+import { BlogFooter } from "@/features/blog/BlogFooter";
 import { ErrorBoundary } from "@/features/blog/building-a-cpu/ErrorBoundary";
 
 const ProblemSection = lazy(() =>
@@ -115,23 +116,7 @@ function MCPBridgePage() {
           </ErrorBoundary>
         </div>
 
-        <footer className="mt-16 pt-8 border-t border-gray-800 text-center">
-          <p className="text-sm text-gray-500">
-            Built with{" "}
-            <a
-              href="/"
-              className="text-blue-400 hover:text-blue-300 underline underline-offset-2"
-            >
-              Turing Incomplete
-            </a>
-            {" "}&mdash; a visual circuit simulator with an AI tutor.
-          </p>
-          <p className="text-xs text-gray-600 mt-2">
-            <Link to="/blog" className="hover:text-gray-400 transition-colors">
-              &larr; Back to blog
-            </Link>
-          </p>
-        </footer>
+        <BlogFooter slug="mcp-bidirectional-bridge" />
       </main>
     </div>
   )

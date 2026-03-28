@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { Suspense, lazy } from "react";
 import { HeroSection } from "@/features/blog/chacha20-in-hardware/sections/HeroSection";
+import { BlogFooter } from "@/features/blog/BlogFooter";
 import { ErrorBoundary } from "@/features/blog/building-a-cpu/ErrorBoundary";
 
 const ARXSection = lazy(() =>
@@ -86,27 +87,7 @@ function ChaCha20InHardwarePage() {
           </ErrorBoundary>
         </div>
 
-        <footer className="mt-16 pt-8 border-t border-gray-800 text-center">
-          <p className="text-sm text-gray-500">
-            Built with{" "}
-            <a
-              href="/"
-              className="text-blue-400 hover:text-blue-300 underline underline-offset-2"
-            >
-              Turing Incomplete
-            </a>
-            {" "}&mdash; a visual circuit simulator with an AI tutor.
-          </p>
-          <p className="text-xs text-gray-600 mt-2">
-            Every circuit on this page is simulated from logic gates in your
-            browser. No CPU, no software, no cheating.
-          </p>
-          <p className="text-xs text-gray-600 mt-2">
-            <a href="/blog" className="hover:text-gray-400 transition-colors">
-              &larr; Back to blog
-            </a>
-          </p>
-        </footer>
+        <BlogFooter slug="chacha20-in-hardware" />
       </main>
     </div>
   )

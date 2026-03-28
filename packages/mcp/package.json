@@ -1,6 +1,23 @@
 {
   "name": "@turing-incomplete/mcp",
   "version": "0.1.0",
+  "description": "MCP server for Turing Incomplete. Live circuit simulation with real-time browser push via WebSocket.",
+  "license": "BUSL-1.1",
+  "author": "Charles Harris",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/charlesharris/turing-incomplete.git",
+    "directory": "packages/mcp"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "circuit-simulator",
+    "hardware",
+    "dsl",
+    "websocket",
+    "interactive"
+  ],
   "type": "module",
   "bin": {
     "turing-mcp": "./bin/turing-mcp.js"
