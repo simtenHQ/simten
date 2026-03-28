@@ -1273,6 +1273,55 @@ function DemoGallery() {
         {/* Row 3: Ethernet parser — full width */}
         <EthernetParserCard />
 
+        {/* Row 4: Featured deep dives */}
+        <div className="mt-10 pt-8 border-t border-[#30363d]">
+          <h3 className="text-lg font-semibold text-gray-200 mb-1">Interactive deep dives</h3>
+          <p className="text-[13px] text-gray-600 mb-5">Not diagrams. Live circuits verified against real specifications.</p>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {[
+              {
+                slug: "aes-in-hardware",
+                title: "AES in Hardware",
+                hook: "Why Intel built AES-NI into the CPU",
+                accent: "violet",
+              },
+              {
+                slug: "chacha20-in-hardware",
+                title: "ChaCha20 in Hardware",
+                hook: "The cipher designed to avoid hardware — elegant in gates anyway",
+                accent: "amber",
+              },
+              {
+                slug: "building-a-cpu",
+                title: "Building a CPU",
+                hook: "From NAND gates to a working RISC-V processor",
+                accent: "blue",
+              },
+            ].map((post) => (
+              <Link
+                key={post.slug}
+                to={`/blog/${post.slug}` as string}
+                className="group rounded-lg border border-[#21262d] hover:border-[#30363d] bg-[#0d1117] hover:bg-[#161b22] transition-all px-4 py-3.5"
+              >
+                <h4 className="text-sm font-semibold text-gray-200 group-hover:text-white transition-colors">
+                  {post.title}
+                </h4>
+                <p className="text-xs text-gray-500 mt-1.5 leading-relaxed">
+                  {post.hook}
+                </p>
+                <span className="inline-block mt-2.5 text-[11px] text-blue-400 group-hover:text-blue-300 transition-colors">
+                  Read &rarr;
+                </span>
+              </Link>
+            ))}
+          </div>
+          <div className="mt-3 text-right">
+            <Link to="/blog" className="text-[12px] text-gray-600 hover:text-gray-300 transition-colors">
+              All articles &rarr;
+            </Link>
+          </div>
+        </div>
+
         <div className="mt-10 pt-8 border-t border-[#30363d] flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:justify-between">
           <p className="text-[13px] text-gray-600">
             Or build circuits yourself — no Claude needed.
