@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Turing Incomplete — Web Component Demo</title>
+  <link rel="stylesheet" href="dist/styles.css">
+  <script src="dist/circuit-embed.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #0a0a0f; color: #e0e0e0; font-family: -apple-system, system-ui, sans-serif; padding: 40px; }
+    h1 { font-size: 24px; margin-bottom: 8px; }
+    .subtitle { color: #666; font-size: 14px; margin-bottom: 48px; }
+    .demo { margin-bottom: 64px; }
+    .demo h2 { font-size: 16px; color: #888; margin-bottom: 12px; }
+    .demo p { font-size: 13px; color: #555; margin-bottom: 16px; }
+    code { background: #1a1a2e; padding: 2px 6px; border-radius: 4px; font-size: 12px; color: #8b8bff; }
+  </style>
+</head>
+<body>
+  <h1>Web Component Demo</h1>
+  <p class="subtitle">These are standard HTML custom elements — no React, no bundler, just a script tag.</p>
+
+  <div class="demo">
+    <h2>Half Adder</h2>
+    <p>Toggle the switches. XOR gives the sum, AND gives the carry. <code>&lt;circuit-embed&gt;</code></p>
+    <circuit-embed
+      dsl="circuit HalfAdder {
+        impl {
+          node A: Switch
+          node B: Switch
+          node xor1: Xor
+          node and1: And
+          node sumLed: Led
+          node carryLed: Led
+          connect A.out -> xor1.a
+          connect B.out -> xor1.b
+          connect xor1.out -> sumLed.in
+          connect A.out -> and1.a
+          connect B.out -> and1.b
+          connect and1.out -> carryLed.in
+        }
+      }"
+      height="280"
+      title="Half Adder"
+      description="sum = XOR(A,B), carry = AND(A,B)"
+    ></circuit-embed>
+  </div>
+
+  <div class="demo">
+    <h2>2-bit Counter (Sequential)</h2>
+    <p>Click Tick to advance. The LEDs count in binary: 00 → 01 → 10 → 11 → 00. <code>&lt;circuit-embed&gt;</code></p>
+    <circuit-embed
+      dsl="circuit Counter2Bit {
+        clock clk
+        impl {
+          node dff0: DFlipFlop
+          node dff1: DFlipFlop
+          node inv: Not
+          node xor1: Xor
+          connect dff0.q -> inv.in
+          connect inv.out -> dff0.d
+          connect clk -> dff0.clk
+          connect dff1.q -> xor1.a
+          connect dff0.q -> xor1.b
+          connect xor1.out -> dff1.d
+          connect clk -> dff1.clk
+          node led0: Led
+          node led1: Led
+          connect dff0.q -> led0.in
+          connect dff1.q -> led1.in
+        }
+      }"
+      height="300"
+      title="2-bit Counter"
+      description="Two flip-flops with toggle logic"
+    ></circuit-embed>
+  </div>
+
+  <div class="demo">
+    <h2>Editor Playground</h2>
+    <p>Edit the DSL on the left, click Run (or Ctrl+Enter). <code>&lt;circuit-editor&gt;</code></p>
+    <circuit-editor
+      initial-dsl="circuit MyCircuit {
+  impl {
+    node A: Switch
+    node B: Switch
+    node gate: And
+    node light: Led
+    connect A.out -> gate.a
+    connect B.out -> gate.b
+    connect gate.out -> light.in
+  }
+}"
+      height="450"
+      title="Playground"
+      description="Try changing And to Or or Xor"
+    ></circuit-editor>
+  </div>
+</body>
+</html>
