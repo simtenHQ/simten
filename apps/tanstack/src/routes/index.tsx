@@ -815,7 +815,7 @@ function ScriptedTerminal({
 
   const bottomRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
   }, [visibleCount]);
 
   return (
@@ -907,7 +907,7 @@ function Splash5Page() {
       </div>
 
       {/* Desktop layout — full screen first section */}
-      <div className="hidden md:flex h-screen flex-col overflow-hidden relative">
+      <div className="hidden md:flex h-[calc(100vh-140px)] flex-col overflow-hidden relative">
         {/* Header — just the name, minimal */}
         <div className="flex-shrink-0 px-6 pt-5 pb-3 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
@@ -976,40 +976,12 @@ function Splash5Page() {
               {/* CTA + prompt suggestions after demo */}
               {demoComplete && (
                 <div className="flex-shrink-0 border-t border-[#30363d] px-5 py-4 space-y-3 animate-in fade-in duration-500">
-                  {/* Three paths */}
-                  <div className="grid grid-cols-3 gap-2 text-[11px]">
-                    <Link
-                      to="/blog"
-                      className="rounded-md border border-[#30363d] hover:border-blue-800 px-2.5 py-2 text-center transition-colors group"
-                    >
-                      <div className="text-gray-300 font-semibold group-hover:text-blue-300">Explore</div>
-                      <div className="text-gray-600 mt-0.5">Interactive articles</div>
-                    </Link>
-                    <Link
-                      to="/editor"
-                      className="rounded-md border border-[#30363d] hover:border-green-800 px-2.5 py-2 text-center transition-colors group"
-                    >
-                      <div className="text-gray-300 font-semibold group-hover:text-green-300">Build</div>
-                      <div className="text-gray-600 mt-0.5">Editor + AI</div>
-                    </Link>
-                    <a
-                      href="/docs/claude-code"
-                      className="rounded-md border border-[#30363d] hover:border-violet-800 px-2.5 py-2 text-center transition-colors group"
-                    >
-                      <div className="text-gray-300 font-semibold group-hover:text-violet-300">Embed</div>
-                      <div className="text-gray-600 mt-0.5">npm package</div>
-                    </a>
-                  </div>
-                  <div className="bg-[#161b22] rounded-md border border-[#30363d] px-3 py-2.5 font-mono text-xs text-gray-300 select-all cursor-pointer hover:border-gray-600 transition-colors">
-                    <span className="text-gray-500 select-none">$ </span>
-                    claude mcp add turing-incomplete npx @turing-incomplete/mcp
-                  </div>
                   {!pickedPrompt && (
-                    <div className="pt-2 border-t border-[#30363d] mt-3 space-y-2">
+                    <div className="space-y-2">
                       <div className="flex items-center gap-2 font-mono text-[13px]">
                         <span className="text-gray-200">&gt;</span>
                         <span className="text-gray-600">
-                          Or try another demo...
+                          Try another demo...
                         </span>
                       </div>
                       <div className="flex flex-col gap-1.5 pl-5">
@@ -1082,32 +1054,13 @@ function Splash5Page() {
           </BrowserWindow>
         </div>
 
-        {/* Scroll hint */}
-        {demoComplete && (
-          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1 animate-in fade-in duration-1000">
-            <span className="text-[11px] text-gray-600 tracking-widest uppercase">
-              scroll
-            </span>
-            <svg
-              className="w-4 h-4 text-gray-600 animate-bounce"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M19 9l-7 7-7-7"
-              />
-            </svg>
-          </div>
-        )}
+        {/* Bottom gradient hint — fades into page background */}
+        <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-[#010409] via-[#010409]/80 to-transparent pointer-events-none" />
       </div>
       {/* end full-screen section */}
 
       {/* Gallery */}
-      {demoComplete && <DemoGallery />}
+      {demoComplete ? <DemoGallery /> : <div className="h-40 bg-[#010409]" />}
     </div>
   );
 }
@@ -1355,8 +1308,8 @@ function DemoGallery() {
         </div>
 
         {/* Row 3: Ethernet parser — full width */}
-        <h3 className="text-lg font-semibold text-gray-200 mb-1 mt-20">Production-grade protocol simulation</h3>
-        <p className="text-[13px] text-gray-600 mb-4">IEEE 802.3 Ethernet — parsing real frames, cycle by cycle</p>
+        <h3 className="text-lg font-semibold text-gray-200 mb-1 mt-20">Real protocols, simulated from gates</h3>
+        <p className="text-[13px] text-gray-600 mb-4">IEEE 802.3 Ethernet frame parsing — MAC addresses, EtherType, CRC-32, all running live</p>
         <EthernetParserCard />
 
         {/* Row 4: Featured deep dives */}
