@@ -19,6 +19,7 @@ import {
   CompilerError,
   validateCircuit,
   analyzeCircuit,
+  generateHarnessAppended,
 } from "../index";
 import { elaborate } from "@turing-incomplete/core/simulator";
 import { useComponentLibraryStore, useAnalysisStore } from "@turing-incomplete/ui/editor/stores";
@@ -601,6 +602,9 @@ export const DSLEditor = forwardRef<DSLEditorRef, DSLEditorProps>(function DSLEd
     // Use setTimeout to ensure UI updates before heavy computation
     setTimeout(() => {
       try {
+        // Auto-generate test harness if the circuit has interface ports
+        const compilableCode = generateHarnessAppended(code);
+
         // Create a ComponentLibrary adapter for IDE-grade diagnostics
         // This enables "unknown component" errors at parse time
         const componentLibrary = {
@@ -608,9 +612,9 @@ export const DSLEditor = forwardRef<DSLEditorRef, DSLEditorProps>(function DSLEd
           getAllPrimitiveNames: getAllComponentNames,
         };
 
-        // Parse the DSL to get all circuit definitions
+        // Parse the DSL to get all circuit definitions (including auto-harness)
         // Pass componentLibrary for IDE-grade component validation
-        const { ast, errors: parseErrors } = parseDSL(code, {
+        const { ast, errors: parseErrors } = parseDSL(compilableCode, {
           sourceName: "editor.dsl",
           componentLibrary,
         });
@@ -687,9 +691,12 @@ export const DSLEditor = forwardRef<DSLEditorRef, DSLEditorProps>(function DSLEd
         // Success — always clear errors (clears Monaco squiggles)
         setErrors([]);
         if (!silent) {
+          const hasAutoHarness = compilableCode !== code;
           const componentNames = compiledCircuits.map((c) => c.name).join(", ");
           setSuccessMessage(
-            `Successfully compiled ${compiledCircuits.length} component(s): ${componentNames}`,
+            hasAutoHarness
+              ? `Compiled ${componentNames} (auto-generated test harness)`
+              : `Successfully compiled ${compiledCircuits.length} component(s): ${componentNames}`,
           );
         }
 

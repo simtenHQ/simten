@@ -1,19 +1,23 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, lazy, Suspense } from "react";
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
 import { useRV32IDebugger, ABI_NAMES, type PipelineStages, type DisasmLine } from "./useRV32IDebugger";
 import { explainInstruction } from "./rv32i-explain";
 
+const MonacoEditor = lazy(() => import("@monaco-editor/react"));
+
 const LANGUAGES = [
-  { id: "c", label: "C" },
-  { id: "cpp", label: "C++" },
-  { id: "asm", label: "Assembly" },
-  { id: "rust", label: "Rust" },
+  { id: "c", label: "C", monaco: "c" },
+  { id: "cpp", label: "C++", monaco: "cpp" },
+  { id: "asm", label: "Assembly", monaco: "plaintext" },
+  { id: "rust", label: "Rust", monaco: "rust" },
 ] as const;
 
 const STARTER: Record<string, string> = {
-  c: `int main() {
+  c: `// Fibonacci sequence — computes the 10th number.
+// When done, register a0 = 55 (0x00000037).
+int main() {
     int a = 0;
     int b = 1;
     for (int i = 0; i < 10; i++) {
@@ -21,34 +25,39 @@ const STARTER: Record<string, string> = {
         a = b;
         b = tmp;
     }
-    return a;
+    return a; // a0 = 55 (0x37)
 }`,
-  cpp: `int main() {
+  cpp: `// Fibonacci sequence — computes the 10th number.
+// When done, register a0 = 55 (0x00000037).
+int main() {
     int a = 0, b = 1;
     for (int i = 0; i < 10; i++) {
         int tmp = a + b;
         a = b;
         b = tmp;
     }
-    return a;
+    return a; // a0 = 55 (0x37)
 }`,
-  asm: `.section .text
+  asm: `# Simple addition: 3 + 4 = 7
+# When done, register a0 = 7 (0x00000007).
+.section .text
 .global _start
 _start:
-    li a0, 3
-    li a1, 4
-    add a0, a0, a1
+    li a0, 3       # a0 = 3
+    li a1, 4       # a1 = 4
+    add a0, a0, a1 # a0 = a0 + a1 = 7 (0x07)
     li a7, 93
     ecall`,
-  rust: `#![no_std]
+  rust: `// Bare-metal Rust — no OS, no stdlib.
+// This runs directly on the CPU hardware.
+// When done, register a0 = 55 (0x00000037).
+#![no_std]
 #![no_main]
 
 use core::panic::PanicInfo;
 
 #[panic_handler]
-fn panic(_: &PanicInfo) -> ! {
-    loop {}
-}
+fn panic(_: &PanicInfo) -> ! { loop {} }
 
 #[no_mangle]
 pub extern "C" fn main() -> i32 {
@@ -59,7 +68,7 @@ pub extern "C" fn main() -> i32 {
         a = b;
         b = tmp;
     }
-    a
+    a // returned in a0 = 55 (0x37)
 }`,
 };
 
@@ -97,7 +106,7 @@ function PipelineBadge({
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <div className={`flex flex-col rounded-lg border px-3 py-2 cursor-help w-[160px] h-[88px] ${color}`}>
+        <div className={`flex flex-col rounded-lg border px-2 py-1.5 cursor-help min-w-0 flex-1 ${color}`}>
           <span className="text-[10px] font-bold uppercase tracking-widest opacity-70">{stage}</span>
           <span className="font-mono text-[10px] tabular-nums opacity-40">
             {pc != null ? hex(pc) : <span className="opacity-30">——</span>}
@@ -209,15 +218,15 @@ function RegisterFile({ registers, changed }: { registers: Map<number, number>; 
   const ordered = [0, ...PRIORITY, ...REST];
 
   return (
-    <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 font-mono text-xs">
+    <div className="grid grid-cols-1 xl:grid-cols-2 gap-x-3 gap-y-0.5 font-mono text-xs">
       {ordered.map((i) => {
         const val = i === 0 ? 0 : (registers.get(i) ?? 0);
         const nonzero = val !== 0;
         const isChanged = changed.has(i);
         return (
-          <div key={i} className={`flex items-center gap-2 py-0.5 rounded px-1 -mx-1 transition-colors ${isChanged ? "bg-green-500/10" : ""}`}>
-            <span className={`w-8 ${isChanged ? "text-green-400" : "text-gray-500"}`}>{ABI_NAMES[i]}</span>
-            <span className={`tabular-nums ${isChanged ? "text-green-300" : nonzero ? "text-gray-200" : "text-gray-700"}`}>
+          <div key={i} className={`flex items-center gap-1.5 py-0.5 rounded px-1 -mx-1 transition-colors ${isChanged ? "bg-green-500/10" : ""}`}>
+            <span className={`w-7 shrink-0 text-[11px] ${isChanged ? "text-green-400" : "text-gray-500"}`}>{ABI_NAMES[i]}</span>
+            <span className={`tabular-nums truncate ${isChanged ? "text-green-300" : nonzero ? "text-gray-200" : "text-gray-700"}`}>
               {hex(val)}
             </span>
           </div>
@@ -268,9 +277,9 @@ export function CPUDebugger() {
   const loading = !dslLoaded || (!!compiled && !sim.ready);
 
   return (
-    <div className="flex h-screen flex-col bg-gray-950 text-gray-100 overflow-hidden">
+    <div className="flex h-full flex-col bg-gray-950 text-gray-100 overflow-hidden">
       {/* Top bar */}
-      <div className="flex shrink-0 items-center gap-3 border-b border-gray-800 bg-gray-900 px-4 py-2">
+      <div className="flex shrink-0 items-center gap-2 flex-wrap border-b border-gray-800 bg-gray-900 px-3 py-2">
         <span className="text-sm font-semibold text-gray-200">RV32I CPU Debugger</span>
         <div className="h-4 w-px bg-gray-700" />
 
@@ -349,13 +358,39 @@ export function CPUDebugger() {
       {/* Main content */}
       <div className="flex flex-1 overflow-hidden">
         {/* Left: code editor */}
-        <div className="flex w-[45%] flex-col border-r border-gray-800">
-          <textarea
-            value={source}
-            onChange={(e) => setSource(e.target.value)}
-            spellCheck={false}
-            className="flex-1 resize-none bg-gray-950 font-mono text-xs text-gray-300 p-4 leading-relaxed focus:outline-none"
-          />
+        <div className="flex w-[35%] flex-col border-r border-gray-800">
+          <div className="flex-1 min-h-0">
+            <Suspense fallback={
+              <textarea
+                value={source}
+                onChange={(e) => setSource(e.target.value)}
+                spellCheck={false}
+                className="h-full w-full resize-none bg-gray-950 font-mono text-xs text-gray-300 p-4 leading-relaxed focus:outline-none"
+              />
+            }>
+              <MonacoEditor
+                height="100%"
+                language={LANGUAGES.find((l) => l.id === language)?.monaco ?? "c"}
+                value={source}
+                onChange={(v) => setSource(v ?? "")}
+                theme="vs-dark"
+                options={{
+                  fontSize: 13,
+                  minimap: { enabled: false },
+                  lineNumbers: "on",
+                  scrollBeyondLastLine: false,
+                  renderLineHighlight: "none",
+                  overviewRulerLanes: 0,
+                  hideCursorInOverviewRuler: true,
+                  scrollbar: { vertical: "hidden", horizontal: "hidden" },
+                  padding: { top: 12 },
+                  wordWrap: "on",
+                  tabSize: 4,
+                  automaticLayout: true,
+                }}
+              />
+            </Suspense>
+          </div>
           {compileError && (
             <div className="shrink-0 border-t border-red-800/50 bg-red-950/20 p-3">
               <pre className="font-mono text-xs text-red-400 whitespace-pre-wrap max-h-40 overflow-auto">
@@ -368,12 +403,12 @@ export function CPUDebugger() {
         {/* Right: CPU state */}
         <div className="flex flex-1 flex-col overflow-hidden">
           {/* Pipeline stages */}
-          <div className="shrink-0 border-b border-gray-800 px-4 py-3">
-            <div className="mb-2 text-[10px] font-semibold uppercase tracking-widest text-gray-600">
+          <div className="shrink-0 border-b border-gray-800 px-3 py-2">
+            <div className="mb-1.5 text-[10px] font-semibold uppercase tracking-widest text-gray-600">
               Pipeline
             </div>
             <TooltipProvider delayDuration={300}>
-              <div className="flex gap-2">
+              <div className="flex gap-1.5 overflow-x-auto">
                 {(["IF", "ID", "EX", "MEM", "WB"] as (keyof PipelineStages)[]).map((s) => {
                   const pc = pipelineStages[s];
                   const rawInstr = pc != null
@@ -390,7 +425,7 @@ export function CPUDebugger() {
           {/* Disassembly + registers split */}
           <div className="flex flex-1 overflow-hidden">
             {/* Disassembly */}
-            <div className="flex flex-[3] flex-col overflow-hidden border-r border-gray-800">
+            <div className="flex flex-[4] flex-col overflow-hidden border-r border-gray-800">
               <div className="shrink-0 border-b border-gray-800 px-4 py-1.5 text-[10px] font-semibold uppercase tracking-widest text-gray-600">
                 Disassembly
               </div>
@@ -398,7 +433,7 @@ export function CPUDebugger() {
             </div>
 
             {/* Register file */}
-            <div className="flex flex-[2] flex-col overflow-hidden">
+            <div className="flex flex-[3] flex-col overflow-hidden">
               <div className="shrink-0 border-b border-gray-800 px-4 py-1.5 text-[10px] font-semibold uppercase tracking-widest text-gray-600">
                 Registers
               </div>

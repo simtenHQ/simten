@@ -51,8 +51,8 @@ function SectionSkeleton() {
 
 function ComputingTrigPage() {
   return (
-    <div className="min-h-screen bg-gray-950 text-gray-100">
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pb-24">
+    <>
+
         <HeroSection />
 
         <div className="space-y-4">
@@ -106,8 +106,7 @@ function ComputingTrigPage() {
         </div>
 
         <BlogFooter slug="computing-trig-in-hardware" />
-      </main>
-    </div>
+    </>
   );
 }
 
