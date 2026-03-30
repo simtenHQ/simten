@@ -60,8 +60,8 @@ function SectionSkeleton() {
 
 function BuildingACPUPage() {
   return (
-    <div className="min-h-screen bg-gray-950 text-gray-100">
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pb-24">
+    <>
+
         <HeroSection />
 
         <div className="space-y-4">
@@ -131,8 +131,7 @@ function BuildingACPUPage() {
         </div>
 
         <BlogFooter slug="building-a-cpu" tagline="Every circuit on this page is simulated from NAND gates in your browser. No shortcuts, no abstractions, no cheating." />
-      </main>
-    </div>
+    </>
   );
 }
 

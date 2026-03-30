@@ -5,5 +5,9 @@ export const Route = createFileRoute("/learn/cpu")({
   head: () => ({
     meta: [{ title: "RV32I CPU Debugger | Turing Incomplete" }],
   }),
-  component: CPUDebugger,
+  component: () => (
+    <div className="h-screen">
+      <CPUDebugger />
+    </div>
+  ),
 });

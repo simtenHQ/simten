@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as Splash4RouteImport } from './routes/splash4'
 import { Route as Splash3RouteImport } from './routes/splash3'
 import { Route as EditorRouteImport } from './routes/editor'
+import { Route as BlogRouteImport } from './routes/blog'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as LearnIndexRouteImport } from './routes/learn/index'
 import { Route as ChallengesIndexRouteImport } from './routes/challenges/index'
@@ -25,6 +26,7 @@ import { Route as ChallengesNandToLogicRouteImport } from './routes/challenges/n
 import { Route as ChallengesBuildAnAluRouteImport } from './routes/challenges/build-an-alu'
 import { Route as ChallengesBuildACpuRouteImport } from './routes/challenges/build-a-cpu'
 import { Route as BlogSnakeInHardwareRouteImport } from './routes/blog/snake-in-hardware'
+import { Route as BlogRv32iCpuRouteImport } from './routes/blog/rv32i-cpu'
 import { Route as BlogPongInHardwareRouteImport } from './routes/blog/pong-in-hardware'
 import { Route as BlogMcpBidirectionalBridgeRouteImport } from './routes/blog/mcp-bidirectional-bridge'
 import { Route as BlogLogicFromNothingRouteImport } from './routes/blog/logic-from-nothing'
@@ -52,6 +54,11 @@ const EditorRoute = EditorRouteImport.update({
   path: '/editor',
   getParentRoute: () => rootRouteImport,
 } as any)
+const BlogRoute = BlogRouteImport.update({
+  id: '/blog',
+  path: '/blog',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -68,9 +75,9 @@ const ChallengesIndexRoute = ChallengesIndexRouteImport.update({
   getParentRoute: () => rootRouteImport,
 } as any)
 const BlogIndexRoute = BlogIndexRouteImport.update({
-  id: '/blog/',
-  path: '/blog/',
-  getParentRoute: () => rootRouteImport,
+  id: '/',
+  path: '/',
+  getParentRoute: () => BlogRoute,
 } as any)
 const LearnProgramCounterRoute = LearnProgramCounterRouteImport.update({
   id: '/learn/program-counter',
@@ -113,62 +120,67 @@ const ChallengesBuildACpuRoute = ChallengesBuildACpuRouteImport.update({
   getParentRoute: () => rootRouteImport,
 } as any)
 const BlogSnakeInHardwareRoute = BlogSnakeInHardwareRouteImport.update({
-  id: '/blog/snake-in-hardware',
-  path: '/blog/snake-in-hardware',
-  getParentRoute: () => rootRouteImport,
+  id: '/snake-in-hardware',
+  path: '/snake-in-hardware',
+  getParentRoute: () => BlogRoute,
+} as any)
+const BlogRv32iCpuRoute = BlogRv32iCpuRouteImport.update({
+  id: '/rv32i-cpu',
+  path: '/rv32i-cpu',
+  getParentRoute: () => BlogRoute,
 } as any)
 const BlogPongInHardwareRoute = BlogPongInHardwareRouteImport.update({
-  id: '/blog/pong-in-hardware',
-  path: '/blog/pong-in-hardware',
-  getParentRoute: () => rootRouteImport,
+  id: '/pong-in-hardware',
+  path: '/pong-in-hardware',
+  getParentRoute: () => BlogRoute,
 } as any)
 const BlogMcpBidirectionalBridgeRoute =
   BlogMcpBidirectionalBridgeRouteImport.update({
-    id: '/blog/mcp-bidirectional-bridge',
-    path: '/blog/mcp-bidirectional-bridge',
-    getParentRoute: () => rootRouteImport,
+    id: '/mcp-bidirectional-bridge',
+    path: '/mcp-bidirectional-bridge',
+    getParentRoute: () => BlogRoute,
   } as any)
 const BlogLogicFromNothingRoute = BlogLogicFromNothingRouteImport.update({
-  id: '/blog/logic-from-nothing',
-  path: '/blog/logic-from-nothing',
-  getParentRoute: () => rootRouteImport,
+  id: '/logic-from-nothing',
+  path: '/logic-from-nothing',
+  getParentRoute: () => BlogRoute,
 } as any)
 const BlogHowTpusWorkRoute = BlogHowTpusWorkRouteImport.update({
-  id: '/blog/how-tpus-work',
-  path: '/blog/how-tpus-work',
-  getParentRoute: () => rootRouteImport,
+  id: '/how-tpus-work',
+  path: '/how-tpus-work',
+  getParentRoute: () => BlogRoute,
 } as any)
 const BlogHowNetworkSwitchesWorkRoute =
   BlogHowNetworkSwitchesWorkRouteImport.update({
-    id: '/blog/how-network-switches-work',
-    path: '/blog/how-network-switches-work',
-    getParentRoute: () => rootRouteImport,
+    id: '/how-network-switches-work',
+    path: '/how-network-switches-work',
+    getParentRoute: () => BlogRoute,
   } as any)
 const BlogComputingTrigInHardwareRoute =
   BlogComputingTrigInHardwareRouteImport.update({
-    id: '/blog/computing-trig-in-hardware',
-    path: '/blog/computing-trig-in-hardware',
-    getParentRoute: () => rootRouteImport,
+    id: '/computing-trig-in-hardware',
+    path: '/computing-trig-in-hardware',
+    getParentRoute: () => BlogRoute,
   } as any)
 const BlogChacha20InHardwareRoute = BlogChacha20InHardwareRouteImport.update({
-  id: '/blog/chacha20-in-hardware',
-  path: '/blog/chacha20-in-hardware',
-  getParentRoute: () => rootRouteImport,
+  id: '/chacha20-in-hardware',
+  path: '/chacha20-in-hardware',
+  getParentRoute: () => BlogRoute,
 } as any)
 const BlogBuildingACpuRoute = BlogBuildingACpuRouteImport.update({
-  id: '/blog/building-a-cpu',
-  path: '/blog/building-a-cpu',
-  getParentRoute: () => rootRouteImport,
+  id: '/building-a-cpu',
+  path: '/building-a-cpu',
+  getParentRoute: () => BlogRoute,
 } as any)
 const BlogBreakoutInHardwareRoute = BlogBreakoutInHardwareRouteImport.update({
-  id: '/blog/breakout-in-hardware',
-  path: '/blog/breakout-in-hardware',
-  getParentRoute: () => rootRouteImport,
+  id: '/breakout-in-hardware',
+  path: '/breakout-in-hardware',
+  getParentRoute: () => BlogRoute,
 } as any)
 const BlogAesInHardwareRoute = BlogAesInHardwareRouteImport.update({
-  id: '/blog/aes-in-hardware',
-  path: '/blog/aes-in-hardware',
-  getParentRoute: () => rootRouteImport,
+  id: '/aes-in-hardware',
+  path: '/aes-in-hardware',
+  getParentRoute: () => BlogRoute,
 } as any)
 const ApiSearchRoute = ApiSearchRouteImport.update({
   id: '/api/search',
@@ -178,6 +190,7 @@ const ApiSearchRoute = ApiSearchRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/blog': typeof BlogRouteWithChildren
   '/editor': typeof EditorRoute
   '/splash3': typeof Splash3Route
   '/splash4': typeof Splash4Route
@@ -192,6 +205,7 @@ export interface FileRoutesByFullPath {
   '/blog/logic-from-nothing': typeof BlogLogicFromNothingRoute
   '/blog/mcp-bidirectional-bridge': typeof BlogMcpBidirectionalBridgeRoute
   '/blog/pong-in-hardware': typeof BlogPongInHardwareRoute
+  '/blog/rv32i-cpu': typeof BlogRv32iCpuRoute
   '/blog/snake-in-hardware': typeof BlogSnakeInHardwareRoute
   '/challenges/build-a-cpu': typeof ChallengesBuildACpuRoute
   '/challenges/build-an-alu': typeof ChallengesBuildAnAluRoute
@@ -221,6 +235,7 @@ export interface FileRoutesByTo {
   '/blog/logic-from-nothing': typeof BlogLogicFromNothingRoute
   '/blog/mcp-bidirectional-bridge': typeof BlogMcpBidirectionalBridgeRoute
   '/blog/pong-in-hardware': typeof BlogPongInHardwareRoute
+  '/blog/rv32i-cpu': typeof BlogRv32iCpuRoute
   '/blog/snake-in-hardware': typeof BlogSnakeInHardwareRoute
   '/challenges/build-a-cpu': typeof ChallengesBuildACpuRoute
   '/challenges/build-an-alu': typeof ChallengesBuildAnAluRoute
@@ -237,6 +252,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/blog': typeof BlogRouteWithChildren
   '/editor': typeof EditorRoute
   '/splash3': typeof Splash3Route
   '/splash4': typeof Splash4Route
@@ -251,6 +267,7 @@ export interface FileRoutesById {
   '/blog/logic-from-nothing': typeof BlogLogicFromNothingRoute
   '/blog/mcp-bidirectional-bridge': typeof BlogMcpBidirectionalBridgeRoute
   '/blog/pong-in-hardware': typeof BlogPongInHardwareRoute
+  '/blog/rv32i-cpu': typeof BlogRv32iCpuRoute
   '/blog/snake-in-hardware': typeof BlogSnakeInHardwareRoute
   '/challenges/build-a-cpu': typeof ChallengesBuildACpuRoute
   '/challenges/build-an-alu': typeof ChallengesBuildAnAluRoute
@@ -268,6 +285,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/blog'
     | '/editor'
     | '/splash3'
     | '/splash4'
@@ -282,6 +300,7 @@ export interface FileRouteTypes {
     | '/blog/logic-from-nothing'
     | '/blog/mcp-bidirectional-bridge'
     | '/blog/pong-in-hardware'
+    | '/blog/rv32i-cpu'
     | '/blog/snake-in-hardware'
     | '/challenges/build-a-cpu'
     | '/challenges/build-an-alu'
@@ -311,6 +330,7 @@ export interface FileRouteTypes {
     | '/blog/logic-from-nothing'
     | '/blog/mcp-bidirectional-bridge'
     | '/blog/pong-in-hardware'
+    | '/blog/rv32i-cpu'
     | '/blog/snake-in-hardware'
     | '/challenges/build-a-cpu'
     | '/challenges/build-an-alu'
@@ -326,6 +346,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/blog'
     | '/editor'
     | '/splash3'
     | '/splash4'
@@ -340,6 +361,7 @@ export interface FileRouteTypes {
     | '/blog/logic-from-nothing'
     | '/blog/mcp-bidirectional-bridge'
     | '/blog/pong-in-hardware'
+    | '/blog/rv32i-cpu'
     | '/blog/snake-in-hardware'
     | '/challenges/build-a-cpu'
     | '/challenges/build-an-alu'
@@ -356,21 +378,11 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  BlogRoute: typeof BlogRouteWithChildren
   EditorRoute: typeof EditorRoute
   Splash3Route: typeof Splash3Route
   Splash4Route: typeof Splash4Route
   ApiSearchRoute: typeof ApiSearchRoute
-  BlogAesInHardwareRoute: typeof BlogAesInHardwareRoute
-  BlogBreakoutInHardwareRoute: typeof BlogBreakoutInHardwareRoute
-  BlogBuildingACpuRoute: typeof BlogBuildingACpuRoute
-  BlogChacha20InHardwareRoute: typeof BlogChacha20InHardwareRoute
-  BlogComputingTrigInHardwareRoute: typeof BlogComputingTrigInHardwareRoute
-  BlogHowNetworkSwitchesWorkRoute: typeof BlogHowNetworkSwitchesWorkRoute
-  BlogHowTpusWorkRoute: typeof BlogHowTpusWorkRoute
-  BlogLogicFromNothingRoute: typeof BlogLogicFromNothingRoute
-  BlogMcpBidirectionalBridgeRoute: typeof BlogMcpBidirectionalBridgeRoute
-  BlogPongInHardwareRoute: typeof BlogPongInHardwareRoute
-  BlogSnakeInHardwareRoute: typeof BlogSnakeInHardwareRoute
   ChallengesBuildACpuRoute: typeof ChallengesBuildACpuRoute
   ChallengesBuildAnAluRoute: typeof ChallengesBuildAnAluRoute
   ChallengesNandToLogicRoute: typeof ChallengesNandToLogicRoute
@@ -379,7 +391,6 @@ export interface RootRouteChildren {
   LearnCpuRoute: typeof LearnCpuRoute
   LearnDualCpuRoute: typeof LearnDualCpuRoute
   LearnProgramCounterRoute: typeof LearnProgramCounterRoute
-  BlogIndexRoute: typeof BlogIndexRoute
   ChallengesIndexRoute: typeof ChallengesIndexRoute
   LearnIndexRoute: typeof LearnIndexRoute
 }
@@ -407,6 +418,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EditorRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/blog': {
+      id: '/blog'
+      path: '/blog'
+      fullPath: '/blog'
+      preLoaderRoute: typeof BlogRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -430,10 +448,10 @@ declare module '@tanstack/react-router' {
     }
     '/blog/': {
       id: '/blog/'
-      path: '/blog'
+      path: '/'
       fullPath: '/blog/'
       preLoaderRoute: typeof BlogIndexRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof BlogRoute
     }
     '/learn/program-counter': {
       id: '/learn/program-counter'
@@ -493,80 +511,87 @@ declare module '@tanstack/react-router' {
     }
     '/blog/snake-in-hardware': {
       id: '/blog/snake-in-hardware'
-      path: '/blog/snake-in-hardware'
+      path: '/snake-in-hardware'
       fullPath: '/blog/snake-in-hardware'
       preLoaderRoute: typeof BlogSnakeInHardwareRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof BlogRoute
+    }
+    '/blog/rv32i-cpu': {
+      id: '/blog/rv32i-cpu'
+      path: '/rv32i-cpu'
+      fullPath: '/blog/rv32i-cpu'
+      preLoaderRoute: typeof BlogRv32iCpuRouteImport
+      parentRoute: typeof BlogRoute
     }
     '/blog/pong-in-hardware': {
       id: '/blog/pong-in-hardware'
-      path: '/blog/pong-in-hardware'
+      path: '/pong-in-hardware'
       fullPath: '/blog/pong-in-hardware'
       preLoaderRoute: typeof BlogPongInHardwareRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof BlogRoute
     }
     '/blog/mcp-bidirectional-bridge': {
       id: '/blog/mcp-bidirectional-bridge'
-      path: '/blog/mcp-bidirectional-bridge'
+      path: '/mcp-bidirectional-bridge'
       fullPath: '/blog/mcp-bidirectional-bridge'
       preLoaderRoute: typeof BlogMcpBidirectionalBridgeRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof BlogRoute
     }
     '/blog/logic-from-nothing': {
       id: '/blog/logic-from-nothing'
-      path: '/blog/logic-from-nothing'
+      path: '/logic-from-nothing'
       fullPath: '/blog/logic-from-nothing'
       preLoaderRoute: typeof BlogLogicFromNothingRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof BlogRoute
     }
     '/blog/how-tpus-work': {
       id: '/blog/how-tpus-work'
-      path: '/blog/how-tpus-work'
+      path: '/how-tpus-work'
       fullPath: '/blog/how-tpus-work'
       preLoaderRoute: typeof BlogHowTpusWorkRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof BlogRoute
     }
     '/blog/how-network-switches-work': {
       id: '/blog/how-network-switches-work'
-      path: '/blog/how-network-switches-work'
+      path: '/how-network-switches-work'
       fullPath: '/blog/how-network-switches-work'
       preLoaderRoute: typeof BlogHowNetworkSwitchesWorkRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof BlogRoute
     }
     '/blog/computing-trig-in-hardware': {
       id: '/blog/computing-trig-in-hardware'
-      path: '/blog/computing-trig-in-hardware'
+      path: '/computing-trig-in-hardware'
       fullPath: '/blog/computing-trig-in-hardware'
       preLoaderRoute: typeof BlogComputingTrigInHardwareRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof BlogRoute
     }
     '/blog/chacha20-in-hardware': {
       id: '/blog/chacha20-in-hardware'
-      path: '/blog/chacha20-in-hardware'
+      path: '/chacha20-in-hardware'
       fullPath: '/blog/chacha20-in-hardware'
       preLoaderRoute: typeof BlogChacha20InHardwareRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof BlogRoute
     }
     '/blog/building-a-cpu': {
       id: '/blog/building-a-cpu'
-      path: '/blog/building-a-cpu'
+      path: '/building-a-cpu'
       fullPath: '/blog/building-a-cpu'
       preLoaderRoute: typeof BlogBuildingACpuRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof BlogRoute
     }
     '/blog/breakout-in-hardware': {
       id: '/blog/breakout-in-hardware'
-      path: '/blog/breakout-in-hardware'
+      path: '/breakout-in-hardware'
       fullPath: '/blog/breakout-in-hardware'
       preLoaderRoute: typeof BlogBreakoutInHardwareRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof BlogRoute
     }
     '/blog/aes-in-hardware': {
       id: '/blog/aes-in-hardware'
-      path: '/blog/aes-in-hardware'
+      path: '/aes-in-hardware'
       fullPath: '/blog/aes-in-hardware'
       preLoaderRoute: typeof BlogAesInHardwareRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof BlogRoute
     }
     '/api/search': {
       id: '/api/search'
@@ -578,12 +603,23 @@ declare module '@tanstack/react-router' {
   }
 }
 
-const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
-  EditorRoute: EditorRoute,
-  Splash3Route: Splash3Route,
-  Splash4Route: Splash4Route,
-  ApiSearchRoute: ApiSearchRoute,
+interface BlogRouteChildren {
+  BlogAesInHardwareRoute: typeof BlogAesInHardwareRoute
+  BlogBreakoutInHardwareRoute: typeof BlogBreakoutInHardwareRoute
+  BlogBuildingACpuRoute: typeof BlogBuildingACpuRoute
+  BlogChacha20InHardwareRoute: typeof BlogChacha20InHardwareRoute
+  BlogComputingTrigInHardwareRoute: typeof BlogComputingTrigInHardwareRoute
+  BlogHowNetworkSwitchesWorkRoute: typeof BlogHowNetworkSwitchesWorkRoute
+  BlogHowTpusWorkRoute: typeof BlogHowTpusWorkRoute
+  BlogLogicFromNothingRoute: typeof BlogLogicFromNothingRoute
+  BlogMcpBidirectionalBridgeRoute: typeof BlogMcpBidirectionalBridgeRoute
+  BlogPongInHardwareRoute: typeof BlogPongInHardwareRoute
+  BlogRv32iCpuRoute: typeof BlogRv32iCpuRoute
+  BlogSnakeInHardwareRoute: typeof BlogSnakeInHardwareRoute
+  BlogIndexRoute: typeof BlogIndexRoute
+}
+
+const BlogRouteChildren: BlogRouteChildren = {
   BlogAesInHardwareRoute: BlogAesInHardwareRoute,
   BlogBreakoutInHardwareRoute: BlogBreakoutInHardwareRoute,
   BlogBuildingACpuRoute: BlogBuildingACpuRoute,
@@ -594,7 +630,20 @@ const rootRouteChildren: RootRouteChildren = {
   BlogLogicFromNothingRoute: BlogLogicFromNothingRoute,
   BlogMcpBidirectionalBridgeRoute: BlogMcpBidirectionalBridgeRoute,
   BlogPongInHardwareRoute: BlogPongInHardwareRoute,
+  BlogRv32iCpuRoute: BlogRv32iCpuRoute,
   BlogSnakeInHardwareRoute: BlogSnakeInHardwareRoute,
+  BlogIndexRoute: BlogIndexRoute,
+}
+
+const BlogRouteWithChildren = BlogRoute._addFileChildren(BlogRouteChildren)
+
+const rootRouteChildren: RootRouteChildren = {
+  IndexRoute: IndexRoute,
+  BlogRoute: BlogRouteWithChildren,
+  EditorRoute: EditorRoute,
+  Splash3Route: Splash3Route,
+  Splash4Route: Splash4Route,
+  ApiSearchRoute: ApiSearchRoute,
   ChallengesBuildACpuRoute: ChallengesBuildACpuRoute,
   ChallengesBuildAnAluRoute: ChallengesBuildAnAluRoute,
   ChallengesNandToLogicRoute: ChallengesNandToLogicRoute,
@@ -603,7 +652,6 @@ const rootRouteChildren: RootRouteChildren = {
   LearnCpuRoute: LearnCpuRoute,
   LearnDualCpuRoute: LearnDualCpuRoute,
   LearnProgramCounterRoute: LearnProgramCounterRoute,
-  BlogIndexRoute: BlogIndexRoute,
   ChallengesIndexRoute: ChallengesIndexRoute,
   LearnIndexRoute: LearnIndexRoute,
 }

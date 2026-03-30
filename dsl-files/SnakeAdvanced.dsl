@@ -21,8 +21,8 @@ circuit SnakeAdvanced {
     // 0-63:   Screen framebuffer (8x8 pixels)
     // 64-127: Snake body storage (64 segments max, 1 byte each: pixel address)
 
-    // Keyboard input
-    node keyboard: Input
+    // Keyboard input (default: 77 = right, so snake starts moving immediately)
+    node keyboard: Input(value=77)
 
     // Food position
     node foodX: Register(initial=6)
