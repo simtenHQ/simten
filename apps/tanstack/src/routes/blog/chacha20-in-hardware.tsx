@@ -46,8 +46,8 @@ function SectionSkeleton() {
 
 function ChaCha20InHardwarePage() {
   return (
-    <div className="min-h-screen bg-gray-950 text-gray-100">
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pb-24">
+    <>
+
         <HeroSection />
 
         <div className="space-y-4">
@@ -88,7 +88,6 @@ function ChaCha20InHardwarePage() {
         </div>
 
         <BlogFooter slug="chacha20-in-hardware" />
-      </main>
-    </div>
+    </>
   )
 }

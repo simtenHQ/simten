@@ -30,6 +30,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { DSLEditor, type DSLEditorRef } from "@/features/dsl/ui/DSLEditor";
 import { Menu, TestTube, Bot, Download } from "lucide-react";
 import { exportVerilog } from "@turing-incomplete/core/verilog";
+import { isHarnessName } from "@turing-incomplete/core/dsl";
 import { ChatPanel, useChatStore, useNarrativeContext } from "@/features/chat";
 import { useMCPConnection } from "@/hooks/useMCPConnection";
 import { EXAMPLES, CATEGORY_COLORS, CATEGORY_LABELS, type Example } from "../examples";
@@ -98,10 +99,18 @@ export function VisualEditor({ theme = "light" }: VisualEditorProps) {
 
   // Export to Verilog
   const handleExportVerilog = useCallback(() => {
-    const currentCircuit = useCircuitStore.getState().circuit;
+    let currentCircuit = useCircuitStore.getState().circuit;
     if (!currentCircuit) return;
 
     const store = useComponentLibraryStore.getState();
+
+    // If this is an auto-generated harness, export the real circuit instead
+    if (isHarnessName(currentCircuit.name)) {
+      const baseName = currentCircuit.name.replace(/Harness$/, '');
+      const realCircuit = store.resolveComponent(baseName);
+      if (realCircuit) currentCircuit = realCircuit;
+    }
+
     const library = {
       resolveComponent: (name: string) => store.resolveComponent(name),
       getAllPrimitiveNames: () => store.getAllPrimitiveNames(),

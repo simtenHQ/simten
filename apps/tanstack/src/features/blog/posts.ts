@@ -90,6 +90,14 @@ export const posts: BlogPost[] = [
     nodes: '~50 nodes',
   },
   {
+    slug: "rv32i-cpu",
+    title: "A RISC-V CPU That Runs C",
+    description:
+      "A 5-stage pipelined RISC-V processor with data forwarding and hazard detection — write C, compile it, and step through execution cycle by cycle.",
+    category: 'cpu',
+    nodes: '~200 nodes',
+  },
+  {
     slug: "mcp-bidirectional-bridge",
     title: "MCP Bidirectional Bridge",
     description:

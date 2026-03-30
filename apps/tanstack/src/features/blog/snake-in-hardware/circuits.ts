@@ -287,7 +287,7 @@ circuit DirectionDecoder {
     connect screen.addrB -> ram.addrB
     connect ram.outB -> screen.dataIn
 
-    node keyboard: Input
+    node keyboard: Input(value=77)
 
     node headX: Register(initial=4)
     node headY: Register(initial=4)
@@ -385,7 +385,7 @@ circuit PixelMover {
     connect screen.addrB -> ram.addrB
     connect ram.outB -> screen.dataIn
 
-    node keyboard: Input
+    node keyboard: Input(value=77)
 
     node headX: Register(initial=4)
     node headY: Register(initial=4)
@@ -768,7 +768,7 @@ circuit SnakeAdvanced {
     // 64-127: Snake body storage (64 segments max, 1 byte each: pixel address)
 
     // Keyboard input
-    node keyboard: Input
+    node keyboard: Input(value=77)
 
     // Food position
     node foodX: Register(initial=6)

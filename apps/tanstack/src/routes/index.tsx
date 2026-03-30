@@ -3,6 +3,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useCircuitSimulator } from "@turing-incomplete/ui/embed";
 import { CircuitCanvas } from "@turing-incomplete/ui/shared";
 import { Logo } from "@/components/Logo";
+import { ClaudeCTA } from "@/features/splash/ClaudeCTA";
 import { useSnakeSimulator } from "@/features/blog/snake-in-hardware/useSnakeSimulator";
 
 // ============================================================================
@@ -917,7 +918,7 @@ function Splash5Page() {
                 Turing Incomplete
               </div>
               <div className="text-[11px] text-gray-600">
-                Live hardware simulations you can explore, build, and embed
+                Live hardware simulations you can explore, build, and export to Verilog
               </div>
             </div>
           </div>
@@ -1181,74 +1182,17 @@ function CopyCommand({ command }: { command: string }) {
   );
 }
 
-const CYCLING_PHRASES = [
-  "a half adder",
-  "a RISC-V CPU",
-  "Snake in hardware",
-  "a packet sniffer",
-  "a 4-bit ALU",
-];
-
-function useCyclingTypewriter(
-  phrases: string[],
-  typeSpeed = 60,
-  deleteSpeed = 30,
-  pauseMs = 1800,
-) {
-  const [displayed, setDisplayed] = useState("");
-  const [phraseIndex, setPhraseIndex] = useState(0);
-  const [phase, setPhase] = useState<"typing" | "pausing" | "deleting">(
-    "typing",
-  );
-
-  useEffect(() => {
-    const target = phrases[phraseIndex];
-    let timeout: ReturnType<typeof setTimeout>;
-
-    if (phase === "typing") {
-      if (displayed.length < target.length) {
-        timeout = setTimeout(
-          () => setDisplayed(target.slice(0, displayed.length + 1)),
-          typeSpeed,
-        );
-      } else {
-        timeout = setTimeout(() => setPhase("pausing"), pauseMs);
-      }
-    } else if (phase === "pausing") {
-      setPhase("deleting");
-    } else {
-      if (displayed.length > 0) {
-        timeout = setTimeout(
-          () => setDisplayed(displayed.slice(0, -1)),
-          deleteSpeed,
-        );
-      } else {
-        setPhraseIndex((i) => (i + 1) % phrases.length);
-        setPhase("typing");
-      }
-    }
-
-    return () => clearTimeout(timeout);
-  }, [displayed, phase, phraseIndex, phrases, typeSpeed, deleteSpeed, pauseMs]);
-
-  return displayed;
-}
-
 function DemoGallery() {
-  const cyclingText = useCyclingTypewriter(CYCLING_PHRASES);
-
   return (
     <div className="px-4 py-10 md:py-20 md:animate-in md:fade-in md:duration-700">
       <div className="max-w-7xl mx-auto">
         <div className="mb-12 text-center">
-          <h2 className="text-2xl sm:text-3xl font-semibold text-gray-100 mb-6">
-            <div>Ask Claude to build...</div>
-            <div className="text-green-400 font-mono mt-1">
-              {cyclingText}
-              <span className="inline-block w-[2px] h-[1em] bg-green-400 ml-0.5 align-middle animate-pulse" />
-            </div>
+          <h2 className="text-2xl sm:text-3xl font-semibold text-gray-100 mb-2">
+            Every circuit is live
           </h2>
-          <CopyCommand command="claude mcp add turing-incomplete npx @turing-incomplete/mcp" />
+          <p className="text-gray-500 text-[15px]">
+            Click switches, watch signals propagate, step through clock cycles — all simulated from logic gates in your browser.
+          </p>
         </div>
 
         {/* Row 1: live circuits */}
@@ -1385,6 +1329,64 @@ function DemoGallery() {
               {"\n/>"}
             </pre>
           </div>
+        </div>
+
+        {/* Row 6: Build with AI */}
+        <div className="mt-40">
+          <ClaudeCTA />
+        </div>
+
+        {/* Row 7: Verilog Export */}
+        <div className="mt-40">
+          <h3 className="text-lg font-semibold text-gray-200 mb-1">Export to Verilog</h3>
+          <p className="text-[13px] text-gray-600 mb-5">Design in DSL. Export synthesisable Verilog. Verified cycle-by-cycle against Icarus Verilog.</p>
+          <div className="grid grid-cols-2 gap-4">
+            {/* DSL side */}
+            <div className="rounded-lg border border-[#30363d] bg-[#0d1117] overflow-hidden">
+              <div className="px-3 py-1.5 border-b border-[#30363d] text-[10px] text-gray-500 font-mono">circuit.dsl</div>
+              <pre className="px-4 py-3 text-[11px] font-mono text-gray-400 leading-relaxed overflow-x-auto">
+<span className="text-violet-400">{"circuit"}</span>{" HalfAdder {\n"}
+{"  "}<span className="text-violet-400">{"input"}</span>{" a: Bit\n"}
+{"  "}<span className="text-violet-400">{"input"}</span>{" b: Bit\n"}
+{"  "}<span className="text-violet-400">{"output"}</span>{" sum: Bit\n"}
+{"  "}<span className="text-violet-400">{"output"}</span>{" carry: Bit\n"}
+{"  "}<span className="text-violet-400">{"impl"}</span>{" {\n"}
+{"    "}<span className="text-cyan-400">{"node"}</span>{" xor1: Xor\n"}
+{"    "}<span className="text-cyan-400">{"node"}</span>{" and1: And\n"}
+{"    "}<span className="text-green-400">{"connect"}</span>{" a -> xor1.a\n"}
+{"    "}<span className="text-green-400">{"connect"}</span>{" b -> xor1.b\n"}
+{"    "}<span className="text-green-400">{"connect"}</span>{" xor1.out -> sum\n"}
+{"    "}<span className="text-green-400">{"connect"}</span>{" a -> and1.a\n"}
+{"    "}<span className="text-green-400">{"connect"}</span>{" b -> and1.b\n"}
+{"    "}<span className="text-green-400">{"connect"}</span>{" and1.out -> carry\n"}
+{"  }\n}"}
+              </pre>
+            </div>
+            {/* Verilog side */}
+            <div className="rounded-lg border border-[#30363d] bg-[#0d1117] overflow-hidden">
+              <div className="px-3 py-1.5 border-b border-[#30363d] flex items-center justify-between">
+                <span className="text-[10px] text-gray-500 font-mono">HalfAdder.v</span>
+                <span className="text-[9px] text-emerald-500 font-medium">✓ verified against Icarus Verilog</span>
+              </div>
+              <pre className="px-4 py-3 text-[11px] font-mono text-gray-400 leading-relaxed overflow-x-auto">
+<span className="text-gray-600">{"`timescale 1ns / 1ps\n\n"}</span>
+<span className="text-violet-400">{"module"}</span>{" HalfAdder (\n"}
+{"  "}<span className="text-violet-400">{"input"}</span>{" a,\n"}
+{"  "}<span className="text-violet-400">{"input"}</span>{" b,\n"}
+{"  "}<span className="text-violet-400">{"output"}</span>{" sum,\n"}
+{"  "}<span className="text-violet-400">{"output"}</span>{" carry\n"}
+{");\n\n"}
+{"  "}<span className="text-violet-400">{"wire"}</span>{" w_xor1_out;\n"}
+{"  "}<span className="text-violet-400">{"wire"}</span>{" w_and1_out;\n\n"}
+{"  "}<span className="text-blue-400">{"assign"}</span>{" w_xor1_out = a ^ b;\n"}
+{"  "}<span className="text-blue-400">{"assign"}</span>{" w_and1_out = a & b;\n\n"}
+{"  "}<span className="text-blue-400">{"assign"}</span>{" sum = w_xor1_out;\n"}
+{"  "}<span className="text-blue-400">{"assign"}</span>{" carry = w_and1_out;\n\n"}
+<span className="text-violet-400">{"endmodule"}</span>
+              </pre>
+            </div>
+          </div>
+          <p className="text-[11px] text-gray-600 mt-3">A 5-stage pipelined RISC-V CPU exports as 94KB of synthesisable RTL — cycle-accurate with the DSL simulator.</p>
         </div>
 
         <div className="mt-40 flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:justify-between">
