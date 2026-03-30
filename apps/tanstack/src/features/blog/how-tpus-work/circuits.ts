@@ -26,16 +26,19 @@ const PE_SYSTOLIC_DEFINITION = `circuit PE_Systolic {
   input weightIn: Bus[8]
   input partialSumIn: Bus[16]
   input weightValid: Bit
+  input validIn: Bit
   clock clk
   output dataOut: Bus[8]
   output partialSumOut: Bus[16]
+  output validOut: Bit
 
   impl {
-    node weightReg: Register
+    node weightReg: Register(width=8)
     node mult: Multiplier
     node adder: Adder(width=16)
-    node psumReg: Register
-    node dataPipe: Register
+    node psumReg: Register(width=16)
+    node dataPipe: Register(width=8)
+    node validPipe: DFlipFlop
     node one: Constant(value=1)
     node zero: Constant(value=0)
 
@@ -64,6 +67,11 @@ const PE_SYSTOLIC_DEFINITION = `circuit PE_Systolic {
     connect one.out -> dataPipe.we
     connect clk -> dataPipe.clk
     connect dataPipe.q -> dataOut
+
+    // Valid pipeline: propagates valid signal with data (same latency)
+    connect validIn -> validPipe.d
+    connect clk -> validPipe.clk
+    connect validPipe.q -> validOut
   }
 }`;
 
@@ -815,10 +823,12 @@ export const SYSTOLIC_DSL = SYSTOLIC_2X2_DSL;
  * Architecture: weight-stationary with registered partial-sum flow.
  * - Cycle 0: load all 9 weights into PEs
  * - Staggered data injection: row r starts at cycle 1+r
- * - C[k][j] emerges at PE(2,j) on cycle k+j+N+1 (N=3) → k+j+4
- * - Last result C[2][2] at cycle 8, done at cycle 9
+ * - Valid signals propagate through PE pipeline alongside data
+ * - Result registers latch when valid arrives at bottom PE
+ * - Per-column valid counter distinguishes C[0][j] vs C[1][j] vs C[2][j]
+ * - No global cycle-number assumptions for result timing
  *
- * Total: 9 ticks = 3N for N=3.
+ * This design is correct for both DSL simulation and Verilog synthesis.
  *
  * Test: A=[[1,2,3],[4,5,6],[7,8,9]] × B=[[2,0,1],[0,2,0],[1,0,2]]
  * Expected C = [[5,4,7],[14,10,16],[23,16,25]]
@@ -880,16 +890,14 @@ circuit Systolic3x3 {
     connect clk -> pe22.clk
 
     // ===== Constants =====
-    node zero: Constant(value=0)
-    node one: Constant(value=1)
-    node two: Constant(value=2)
-    node three: Constant(value=3)
-    node four: Constant(value=4)
-    node five: Constant(value=5)
-    node six: Constant(value=6)
-    node seven: Constant(value=7)
-    node eight: Constant(value=8)
-    node nine: Constant(value=9)
+    // zero is 16-bit: feeds both 8-bit counter comparisons and 16-bit partialSumIn
+    node zero: Constant(value=0, width=16)
+    node one: Constant(value=1, width=8)
+    node two: Constant(value=2, width=8)
+    node three: Constant(value=3, width=8)
+    node four: Constant(value=4, width=8)
+    node five: Constant(value=5, width=8)
+    node nine: Constant(value=9, width=8)
 
     // ===== Cycle Counter (0..9, stops at 9) =====
     node counter: Register(initial=0)
@@ -898,6 +906,7 @@ circuit Systolic3x3 {
     node notDone: Comparator
     node shouldAdvance: And
 
+    // notDone uses counter.q (not counterMux.out) to avoid combinational loop
     connect counter.q -> counterInc.in
     connect counter.q -> notDone.a
     connect nine.out -> notDone.b
@@ -910,16 +919,11 @@ circuit Systolic3x3 {
     connect one.out -> counter.we
     connect clk -> counter.clk
 
-    // ===== Cycle Decoder =====
+    // ===== Cycle Decoder (all use counter.q) =====
     node isCycle0: Comparator
     node isCycle1: Comparator
     node isCycle2: Comparator
     node isCycle3: Comparator
-    node isCycle4: Comparator
-    node isCycle5: Comparator
-    node isCycle6: Comparator
-    node isCycle7: Comparator
-    node isCycle8: Comparator
     connect counter.q -> isCycle0.a
     connect zero.out -> isCycle0.b
     connect counter.q -> isCycle1.a
@@ -928,16 +932,6 @@ circuit Systolic3x3 {
     connect two.out -> isCycle2.b
     connect counter.q -> isCycle3.a
     connect three.out -> isCycle3.b
-    connect counter.q -> isCycle4.a
-    connect four.out -> isCycle4.b
-    connect counter.q -> isCycle5.a
-    connect five.out -> isCycle5.b
-    connect counter.q -> isCycle6.a
-    connect six.out -> isCycle6.b
-    connect counter.q -> isCycle7.a
-    connect seven.out -> isCycle7.b
-    connect counter.q -> isCycle8.a
-    connect eight.out -> isCycle8.b
 
     // ===== Weight Loading (cycle 0 only) =====
     node loadWeights: And
@@ -1005,6 +999,37 @@ circuit Systolic3x3 {
     connect muxR2b.out -> muxR2c.in0
     connect a22 -> muxR2c.in1
 
+    // ===== Valid Signal Injection (active when data is being injected) =====
+    // Row 0: valid during cycles 1, 2, 3
+    node r0validA: Or
+    node r0valid: Or
+    connect isCycle1.eq -> r0validA.a
+    connect isCycle2.eq -> r0validA.b
+    connect r0validA.out -> r0valid.a
+    connect isCycle3.eq -> r0valid.b
+
+    // Row 1: valid during cycles 2, 3, 4 (staggered by 1)
+    node isCycle4: Comparator
+    connect counter.q -> isCycle4.a
+    connect four.out -> isCycle4.b
+    node r1validA: Or
+    node r1valid: Or
+    connect isCycle2.eq -> r1validA.a
+    connect isCycle3.eq -> r1validA.b
+    connect r1validA.out -> r1valid.a
+    connect isCycle4.eq -> r1valid.b
+
+    // Row 2: valid during cycles 3, 4, 5 (staggered by 2)
+    node isCycle5: Comparator
+    connect counter.q -> isCycle5.a
+    connect five.out -> isCycle5.b
+    node r2validA: Or
+    node r2valid: Or
+    connect isCycle3.eq -> r2validA.a
+    connect isCycle4.eq -> r2validA.b
+    connect r2validA.out -> r2valid.a
+    connect isCycle5.eq -> r2valid.b
+
     // ===== Horizontal Data Flow (left -> right) =====
     connect muxR0c.out -> pe00.dataIn
     connect pe00.dataOut -> pe01.dataIn
@@ -1015,6 +1040,17 @@ circuit Systolic3x3 {
     connect muxR2c.out -> pe20.dataIn
     connect pe20.dataOut -> pe21.dataIn
     connect pe21.dataOut -> pe22.dataIn
+
+    // ===== Valid Signal Flow (left -> right, through PE pipeline) =====
+    connect r0valid.out -> pe00.validIn
+    connect pe00.validOut -> pe01.validIn
+    connect pe01.validOut -> pe02.validIn
+    connect r1valid.out -> pe10.validIn
+    connect pe10.validOut -> pe11.validIn
+    connect pe11.validOut -> pe12.validIn
+    connect r2valid.out -> pe20.validIn
+    connect pe20.validOut -> pe21.validIn
+    connect pe21.validOut -> pe22.validIn
 
     // ===== Vertical Partial-Sum Flow (top -> bottom) =====
     connect zero.out -> pe00.partialSumIn
@@ -1027,58 +1063,169 @@ circuit Systolic3x3 {
     connect pe11.partialSumOut -> pe21.partialSumIn
     connect pe12.partialSumOut -> pe22.partialSumIn
 
-    // ===== Result Registers =====
-    // C[k][j] emerges at PE(2,j) on cycle k+j+4
+    // ===== Result Capture (pipeline-aligned valid + counter) =====
+    // Key hardware rule: valid signals and counters must be in the same
+    // pipeline stage before they interact. We register both the valid
+    // and the partial sum from the bottom PE, so the control decision
+    // (valid_d AND counter comparison) uses values from the same snapshot.
+    //
+    // Pipeline: pe20.validOut → valid_d (registered) → c00we = valid_d AND (count == 0)
+    //           pe20.psumOut  → psum_d  (registered) → result_c00.data
+    //           col0count incremented by validOut (undelayed) on previous cycle
+    //
+    // This ensures both valid_d and col0count.q reflect the same clock domain.
 
-    // Column 0: PE(2,0)
-    // C[0][0] on cycle 4
+    // --- Column 0: PE(2,0) ---
+    // Register valid and psum to align pipeline stages
+    node col0validD: DFlipFlop
+    connect pe20.validOut -> col0validD.d
+    connect clk -> col0validD.clk
+    node col0psumD: Register
+    connect pe20.partialSumOut -> col0psumD.data
+    connect one.out -> col0psumD.we
+    connect clk -> col0psumD.clk
+
+    // Counter: incremented by UNDELAYED validOut (so count is ready next cycle)
+    node col0count: Register(initial=0)
+    node col0countInc: Incrementer
+    connect col0count.q -> col0countInc.in
+    connect col0countInc.out -> col0count.data
+    connect pe20.validOut -> col0count.we
+    connect clk -> col0count.clk
+
+    // Classify using DELAYED valid + CURRENT counter (same pipeline stage)
+    node col0is0: Comparator
+    node col0is1: Comparator
+    node col0is2: Comparator
+    connect col0count.q -> col0is0.a
+    connect one.out -> col0is0.b
+    connect col0count.q -> col0is1.a
+    connect two.out -> col0is1.b
+    connect col0count.q -> col0is2.a
+    connect three.out -> col0is2.b
+
+    node c00we: And
+    connect col0validD.q -> c00we.a
+    connect col0is0.eq -> c00we.b
     node result_c00: Register
-    connect pe20.partialSumOut -> result_c00.data
-    connect isCycle4.eq -> result_c00.we
+    connect col0psumD.q -> result_c00.data
+    connect c00we.out -> result_c00.we
     connect clk -> result_c00.clk
-    // C[1][0] on cycle 5
+
+    node c10we: And
+    connect col0validD.q -> c10we.a
+    connect col0is1.eq -> c10we.b
     node result_c10: Register
-    connect pe20.partialSumOut -> result_c10.data
-    connect isCycle5.eq -> result_c10.we
+    connect col0psumD.q -> result_c10.data
+    connect c10we.out -> result_c10.we
     connect clk -> result_c10.clk
-    // C[2][0] on cycle 6
+
+    node c20we: And
+    connect col0validD.q -> c20we.a
+    connect col0is2.eq -> c20we.b
     node result_c20: Register
-    connect pe20.partialSumOut -> result_c20.data
-    connect isCycle6.eq -> result_c20.we
+    connect col0psumD.q -> result_c20.data
+    connect c20we.out -> result_c20.we
     connect clk -> result_c20.clk
 
-    // Column 1: PE(2,1)
-    // C[0][1] on cycle 5
+    // --- Column 1: PE(2,1) ---
+    node col1validD: DFlipFlop
+    connect pe21.validOut -> col1validD.d
+    connect clk -> col1validD.clk
+    node col1psumD: Register
+    connect pe21.partialSumOut -> col1psumD.data
+    connect one.out -> col1psumD.we
+    connect clk -> col1psumD.clk
+
+    node col1count: Register(initial=0)
+    node col1countInc: Incrementer
+    connect col1count.q -> col1countInc.in
+    connect col1countInc.out -> col1count.data
+    connect pe21.validOut -> col1count.we
+    connect clk -> col1count.clk
+
+    node col1is0: Comparator
+    node col1is1: Comparator
+    node col1is2: Comparator
+    connect col1count.q -> col1is0.a
+    connect one.out -> col1is0.b
+    connect col1count.q -> col1is1.a
+    connect two.out -> col1is1.b
+    connect col1count.q -> col1is2.a
+    connect three.out -> col1is2.b
+
+    node c01we: And
+    connect col1validD.q -> c01we.a
+    connect col1is0.eq -> c01we.b
     node result_c01: Register
-    connect pe21.partialSumOut -> result_c01.data
-    connect isCycle5.eq -> result_c01.we
+    connect col1psumD.q -> result_c01.data
+    connect c01we.out -> result_c01.we
     connect clk -> result_c01.clk
-    // C[1][1] on cycle 6
+
+    node c11we: And
+    connect col1validD.q -> c11we.a
+    connect col1is1.eq -> c11we.b
     node result_c11: Register
-    connect pe21.partialSumOut -> result_c11.data
-    connect isCycle6.eq -> result_c11.we
+    connect col1psumD.q -> result_c11.data
+    connect c11we.out -> result_c11.we
     connect clk -> result_c11.clk
-    // C[2][1] on cycle 7
+
+    node c21we: And
+    connect col1validD.q -> c21we.a
+    connect col1is2.eq -> c21we.b
     node result_c21: Register
-    connect pe21.partialSumOut -> result_c21.data
-    connect isCycle7.eq -> result_c21.we
+    connect col1psumD.q -> result_c21.data
+    connect c21we.out -> result_c21.we
     connect clk -> result_c21.clk
 
-    // Column 2: PE(2,2)
-    // C[0][2] on cycle 6
+    // --- Column 2: PE(2,2) ---
+    node col2validD: DFlipFlop
+    connect pe22.validOut -> col2validD.d
+    connect clk -> col2validD.clk
+    node col2psumD: Register
+    connect pe22.partialSumOut -> col2psumD.data
+    connect one.out -> col2psumD.we
+    connect clk -> col2psumD.clk
+
+    node col2count: Register(initial=0)
+    node col2countInc: Incrementer
+    connect col2count.q -> col2countInc.in
+    connect col2countInc.out -> col2count.data
+    connect pe22.validOut -> col2count.we
+    connect clk -> col2count.clk
+
+    node col2is0: Comparator
+    node col2is1: Comparator
+    node col2is2: Comparator
+    connect col2count.q -> col2is0.a
+    connect one.out -> col2is0.b
+    connect col2count.q -> col2is1.a
+    connect two.out -> col2is1.b
+    connect col2count.q -> col2is2.a
+    connect three.out -> col2is2.b
+
+    node c02we: And
+    connect col2validD.q -> c02we.a
+    connect col2is0.eq -> c02we.b
     node result_c02: Register
-    connect pe22.partialSumOut -> result_c02.data
-    connect isCycle6.eq -> result_c02.we
+    connect col2psumD.q -> result_c02.data
+    connect c02we.out -> result_c02.we
     connect clk -> result_c02.clk
-    // C[1][2] on cycle 7
+
+    node c12we: And
+    connect col2validD.q -> c12we.a
+    connect col2is1.eq -> c12we.b
     node result_c12: Register
-    connect pe22.partialSumOut -> result_c12.data
-    connect isCycle7.eq -> result_c12.we
+    connect col2psumD.q -> result_c12.data
+    connect c12we.out -> result_c12.we
     connect clk -> result_c12.clk
-    // C[2][2] on cycle 8
+
+    node c22we: And
+    connect col2validD.q -> c22we.a
+    connect col2is2.eq -> c22we.b
     node result_c22: Register
-    connect pe22.partialSumOut -> result_c22.data
-    connect isCycle8.eq -> result_c22.we
+    connect col2psumD.q -> result_c22.data
+    connect c22we.out -> result_c22.we
     connect clk -> result_c22.clk
 
     // ===== Outputs =====
@@ -1092,11 +1239,29 @@ circuit Systolic3x3 {
     connect result_c21.q -> c21
     connect result_c22.q -> c22
 
-    // Done = counter reached 9 (one cycle after last result captured at cycle 8)
-    node isDone: Comparator
-    connect counter.q -> isDone.a
-    connect nine.out -> isDone.b
-    connect isDone.eq -> done
+    // Done: registered — fires one cycle AFTER all results are captured.
+    // This is standard hardware practice: status signals are registered
+    // so consumers are guaranteed all data outputs are stable when done=1.
+    node col0done: Comparator
+    node col1done: Comparator
+    node col2done: Comparator
+    connect col0count.q -> col0done.a
+    connect three.out -> col0done.b
+    connect col1count.q -> col1done.a
+    connect three.out -> col1done.b
+    connect col2count.q -> col2done.a
+    connect three.out -> col2done.b
+    node doneAnd1: And
+    node doneAnd2: And
+    connect col0done.eq -> doneAnd1.a
+    connect col1done.eq -> doneAnd1.b
+    connect doneAnd1.out -> doneAnd2.a
+    connect col2done.eq -> doneAnd2.b
+    // Register the done signal — guarantees all result registers are stable
+    node doneReg: DFlipFlop
+    connect doneAnd2.out -> doneReg.d
+    connect clk -> doneReg.clk
+    connect doneReg.q -> done
   }
 }
 

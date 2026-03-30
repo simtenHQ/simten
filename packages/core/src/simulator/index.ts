@@ -326,7 +326,7 @@ class FastSimulatorEngineImpl implements SimulatorEngine {
       throw new Error('Simulator not initialized');
     }
 
-    // Phase 1: Seed with source and state-output nodes
+    // Phase 1: Combinational evaluation from current (pre-edge) register state
     this.eventQueue.clear();
     seedInitialQueue(this.numericCircuit, this.eventQueue);
 
@@ -337,13 +337,6 @@ class FastSimulatorEngineImpl implements SimulatorEngine {
       this.numericSeqState,
       this.topLevelInputs
     );
-
-    // Snapshot port values after Phase 1 — these reflect the current
-    // instruction's combinational computation (ALU result, decoder outputs,
-    // etc.) before the clock edge commits new state. This matches what you'd
-    // see on a real hardware oscilloscope mid-cycle.
-    const portValues = toFlatPortValueMap(this.numericCircuit, this.numericValues, this.topLevelInputs);
-    propagateToTopLevelOutputs(this.numericCircuit, this.numericValues, portValues);
 
     // Phase 2: Clock HIGH
     updateClockStates(this.numericCircuit, this.numericSeqState);
@@ -356,12 +349,10 @@ class FastSimulatorEngineImpl implements SimulatorEngine {
       this.topLevelInputs
     );
 
-    // Phase 4: Commit state
+    // Phase 4: Commit state (registers update)
     commitSequentialState(this.numericSeqState);
 
-    // Phase 5: Full propagation with committed state (prepares circuit for
-    // the next tick's Phase 1). These values are internal — the returned
-    // portValues snapshot was captured above after Phase 1.
+    // Phase 5: Full propagation with committed (post-edge) state
     this.eventQueue.clear();
     seedStateOutputNodes(this.numericCircuit, this.eventQueue);
 
@@ -373,10 +364,29 @@ class FastSimulatorEngineImpl implements SimulatorEngine {
       this.topLevelInputs
     );
 
+    // ── Observable snapshot: post-commit (Phase 5) ──
+    //
+    // Each tick() = one completed clock cycle.
+    // Returned values reflect the settled state AFTER the clock edge,
+    // equivalent to Verilog: @(posedge clk); #1;
+    //
+    // This matches the intuitive "tick → see new value" mental model:
+    //   counter starts at 0 → tick() → counter is now 1
+    //
+    // For pre-edge inspection (pipeline timing analysis), a future
+    // tick({ phase: 1 }) option could expose the Phase 1 snapshot.
+    const portValues = toFlatPortValueMap(this.numericCircuit, this.numericValues, this.topLevelInputs);
+    propagateToTopLevelOutputs(this.numericCircuit, this.numericValues, portValues);
+
+    // Cache as the canonical observable state. getPortValues() and
+    // getOutput() read from this cache until the next tick() or setInput().
+    this.cachedPortValues = portValues;
+    this.cachedFlatSeqState = null; // Force recomputation on next getState()
+    this.cacheValid = true;
+
     const totalEvals = phase1Evals + phase2Evals;
     this.totalTicks++;
     this.totalEvaluations += totalEvals;
-    this.cacheValid = false;
 
     const seqState = toFlatSequentialState(this.numericCircuit, this.numericSeqState);
 
@@ -416,9 +426,12 @@ class FastSimulatorEngineImpl implements SimulatorEngine {
       };
     }
 
-    this.cacheValid = false;
     const portValues = toFlatPortValueMap(this.numericCircuit, this.numericValues, this.topLevelInputs);
     propagateToTopLevelOutputs(this.numericCircuit, this.numericValues, portValues);
+
+    // Cache the result so getPortValues() stays consistent
+    this.cachedPortValues = portValues;
+    this.cacheValid = true;
 
     return {
       portValues,
@@ -429,19 +442,20 @@ class FastSimulatorEngineImpl implements SimulatorEngine {
   getOutput(nodeId: string, portName: string): BitValue | BusValue | undefined {
     if (!this.numericCircuit || !this.numericValues) return undefined;
 
+    // Read from the cached post-commit snapshot for consistency
+    // with tick() and getPortValues().
+    const portValues = this.getPortValues();
     const portKey = `${nodeId}.${portName}`;
-    const portIdx = this.numericCircuit.portKeyToIndex.get(portKey);
-    if (portIdx === undefined) return undefined;
-
-    const isBit = this.numericCircuit.portIsBus[portIdx] === 0;
-    const numVal = this.numericValues.values[portIdx];
-    return isBit ? (numVal !== 0) : numVal;
+    return portValues.get(portKey);
   }
 
   getPortValues(): ReadonlyMap<string, BitValue | BusValue> {
     if (!this.numericCircuit || !this.numericValues) return new Map();
 
     if (!this.cacheValid) {
+      // No tick has run yet — compute from current (initial) state.
+      // After tick() runs, this branch is only hit if setInput()
+      // invalidated the cache.
       this.cachedPortValues = toFlatPortValueMap(this.numericCircuit, this.numericValues, this.topLevelInputs);
       propagateToTopLevelOutputs(this.numericCircuit, this.numericValues, this.cachedPortValues);
       this.cacheValid = true;
