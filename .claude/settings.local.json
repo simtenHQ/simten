@@ -60,7 +60,11 @@
       "Bash(python3 -c \":*)",
       "Bash(npx tsx:*)",
       "Bash(ANALYZE=true pnpm build 2>&1)",
-      "Bash(npx playwright:*)"
+      "Bash(npx playwright:*)",
+      "Bash(docker build:*)",
+      "Bash(docker run:*)",
+      "Bash(curl -s http://localhost:55002/health)",
+      "Bash(docker start:*)"
     ]
   }
 }

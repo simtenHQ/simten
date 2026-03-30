@@ -7,6 +7,7 @@
 
 import { handleChat } from './chat/handler';
 import { handleCompile } from './compile';
+import { handleVerify } from './verify';
 import { handleStreamTest } from './stream-test';
 
 export async function handleApiRoute(request: Request, env: Record<string, unknown>): Promise<Response | null> {
@@ -18,6 +19,10 @@ export async function handleApiRoute(request: Request, env: Record<string, unkno
 
   if (url.pathname === '/api/compile' && request.method === 'POST') {
     return handleCompile(request, env);
+  }
+
+  if (url.pathname === '/api/verify' && request.method === 'POST') {
+    return handleVerify(request, env);
   }
 
   if (url.pathname === '/api/stream-test' && request.method === 'GET') {
