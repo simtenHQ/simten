@@ -39,6 +39,10 @@
     "./api": {
       "types": "./dist/api/index.d.ts",
       "import": "./dist/api/index.js"
+    },
+    "./verilog": {
+      "types": "./dist/verilog/index.d.ts",
+      "import": "./dist/verilog/index.js"
     }
   },
   "files": ["dist"],
