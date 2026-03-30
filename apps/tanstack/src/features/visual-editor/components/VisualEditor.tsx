@@ -28,7 +28,8 @@ import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { DSLEditor, type DSLEditorRef } from "@/features/dsl/ui/DSLEditor";
-import { Menu, TestTube, Bot } from "lucide-react";
+import { Menu, TestTube, Bot, Download } from "lucide-react";
+import { exportVerilog } from "@turing-incomplete/core/verilog";
 import { ChatPanel, useChatStore, useNarrativeContext } from "@/features/chat";
 import { useMCPConnection } from "@/hooks/useMCPConnection";
 import { EXAMPLES, CATEGORY_COLORS, CATEGORY_LABELS, type Example } from "../examples";
@@ -94,6 +95,32 @@ export function VisualEditor({ theme = "light" }: VisualEditorProps) {
 
   // Initialize primitive components library
   usePrimitivesInit();
+
+  // Export to Verilog
+  const handleExportVerilog = useCallback(() => {
+    const currentCircuit = useCircuitStore.getState().circuit;
+    if (!currentCircuit) return;
+
+    const store = useComponentLibraryStore.getState();
+    const library = {
+      resolveComponent: (name: string) => store.resolveComponent(name),
+      getAllPrimitiveNames: () => store.getAllPrimitiveNames(),
+      addCircuit: (c: Circuit) => store.registerUser(c),
+    };
+
+    try {
+      const verilogCode = exportVerilog(currentCircuit, library);
+      const blob = new Blob([verilogCode], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${currentCircuit.name}.v`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      console.error('Verilog export failed:', e);
+    }
+  }, []);
 
   // Initialize simulation controller (THE ONLY PLACE THAT RUNS SIMULATION)
   const simulationController = useSimulationController();
@@ -268,6 +295,21 @@ export function VisualEditor({ theme = "light" }: VisualEditorProps) {
             title="Open AI Assistant (Cmd+K)"
           >
             <Bot className="h-4 w-4" />
+          </Button>
+
+          <div className="border-l border-gray-200 dark:border-[#2a2a2e] h-8"></div>
+
+          {/* Export Verilog */}
+          <Button
+            onClick={handleExportVerilog}
+            variant="outline"
+            size="sm"
+            className="gap-2"
+            title="Export circuit to Verilog (.v)"
+            disabled={!circuit}
+          >
+            <Download className="h-4 w-4" />
+            <span className="hidden sm:inline text-xs">Verilog</span>
           </Button>
 
           <div className="border-l border-gray-200 dark:border-[#2a2a2e] h-8"></div>
