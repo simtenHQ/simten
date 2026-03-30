@@ -52,7 +52,7 @@ export function exportVerilogFlat(
   options?: VerilogExportOptions,
 ): string {
   const opts = { ...DEFAULT_OPTIONS, ...options };
-  const flatCircuit = elaborate(circuit, library);
+  const flatCircuit = elaborate(circuit, library, false, { expandReferences: true });
   return emitFlatModule(circuit, flatCircuit, opts);
 }
 

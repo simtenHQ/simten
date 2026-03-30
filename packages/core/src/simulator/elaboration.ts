@@ -23,6 +23,16 @@ import type {
   HierarchyNode,
 } from '../types/simulator.js';
 import { TOP_LEVEL_NODE, SEQUENTIAL_INPUT_PORTS } from '../types/simulator.js';
+import { PRIMITIVE_DEFINITIONS } from './primitives.js';
+import { isBasePrimitive } from '../verilog/primitive-map.js';
+import { compileDSL } from '../dsl/index.js';
+
+export interface ElaborateOptions {
+  /** Expand primitives that have referenceCircuit definitions into base primitives.
+   *  Used by the Verilog exporter to produce fully synthesisable output.
+   *  Default: false (normal simulation uses fast JavaScript evaluators). */
+  expandReferences?: boolean;
+}
 
 // ============================================================================
 // Elaboration Engine
@@ -42,7 +52,8 @@ import { TOP_LEVEL_NODE, SEQUENTIAL_INPUT_PORTS } from '../types/simulator.js';
 export function elaborate(
   circuit: Circuit,
   library: ComponentLibrary,
-  debug: boolean = false
+  debug: boolean = false,
+  options?: ElaborateOptions,
 ): FlatCircuit {
   const nodes: FlatNode[] = [];
   const connections: FlatConnection[] = [];
@@ -73,7 +84,48 @@ export function elaborate(
       }
 
       if (component.implementation.kind === 'primitive') {
-        // Leaf primitive - add to flat list
+        // Check if we should expand via reference circuit (for Verilog export).
+        // Only expand non-base primitives — base primitives map directly to Verilog.
+        if (options?.expandReferences && !isBasePrimitive(node.componentRef)) {
+          const primDef = PRIMITIVE_DEFINITIONS[node.componentRef];
+          if (primDef?.referenceCircuit) {
+            // Compile reference circuit (with parameters if function-based)
+            const refSource = typeof primDef.referenceCircuit.source === 'function'
+              ? primDef.referenceCircuit.source(node.arguments as Record<string, number>)
+              : primDef.referenceCircuit.source;
+
+            const compiled = compileDSL(refSource, library, `ref:${node.componentRef}`);
+            if (compiled.errors.length > 0) {
+              throw new Error(
+                `Failed to compile reference circuit for ${node.componentRef}: ` +
+                compiled.errors.map(e => e.message).join('; ')
+              );
+            }
+
+            // Register any helper circuits (multi-circuit DSL like Adder's HalfAdder/FullAdder)
+            for (const c of compiled.circuits) {
+              if ('addCircuit' in library && typeof (library as any).addCircuit === 'function') {
+                (library as any).addCircuit(c);
+              }
+            }
+
+            const refCircuit = compiled.circuits[compiled.circuits.length - 1];
+            const childHierarchy: HierarchyNode = {
+              path: fullPath,
+              componentName: node.componentRef,
+              children: [],
+              primitives: []
+            };
+            parentHierarchy.children.push(childHierarchy);
+
+            const childStack = new Set(elaborationStack);
+            childStack.add(node.componentRef);
+            flattenCircuit(refCircuit, fullPath + '.', childHierarchy, childStack);
+            continue; // Skip adding as primitive node
+          }
+        }
+
+        // Standard path: leaf primitive - add to flat list
         nodes.push({
           id: fullPath,
           primitiveType: node.componentRef,

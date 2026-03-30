@@ -73,6 +73,10 @@ function defineCombinational(config: {
   icon: string;
   namespace?: string;
   environmentalState?: string;
+  referenceCircuit?: {
+    source: string | ((params: Record<string, number>) => string);
+    description?: string;
+  };
   evaluate: (
     inputs: Map<string, InputValue>,
     currentState?: PrimitiveState,
@@ -86,6 +90,7 @@ function defineCombinational(config: {
     outputs: config.outputs,
     parameters: config.parameters,
     evaluator: createCombinationalEvaluator(config.evaluate),
+    referenceCircuit: config.referenceCircuit,
     category: config.category,
     icon: config.icon,
     namespace: config.namespace,
@@ -2196,6 +2201,45 @@ circuit Comparator {
 
       return new Map([['write_data', (writeData >>> 0)]]);
     },
+    referenceCircuit: {
+      source: `circuit RV32I_WritebackMux {
+  input alu_result: Bus[32]
+  input load_data: Bus[32]
+  input pc_plus4: Bus[32]
+  input immediate: Bus[32]
+  input pc_plus_imm: Bus[32]
+  input mem_to_reg: Bit
+  input lui: Bit
+  input auipc: Bit
+  input jump: Bit
+  output write_data: Bus[32]
+  impl {
+    // Priority chain: jump > auipc > lui > mem_to_reg > alu_result
+    node mux1: Mux(width=32)
+    connect alu_result -> mux1.in0
+    connect load_data -> mux1.in1
+    connect mem_to_reg -> mux1.sel
+
+    node mux2: Mux(width=32)
+    connect mux1.out -> mux2.in0
+    connect immediate -> mux2.in1
+    connect lui -> mux2.sel
+
+    node mux3: Mux(width=32)
+    connect mux2.out -> mux3.in0
+    connect pc_plus_imm -> mux3.in1
+    connect auipc -> mux3.sel
+
+    node mux4: Mux(width=32)
+    connect mux3.out -> mux4.in0
+    connect pc_plus4 -> mux4.in1
+    connect jump -> mux4.sel
+
+    connect mux4.out -> write_data
+  }
+}`,
+      description: 'Writeback mux from priority Mux chain',
+    },
   }),
 
   // ==========================================================================
@@ -2240,6 +2284,46 @@ circuit Comparator {
       }
 
       return new Map([['next_pc', (nextPC >>> 0)]]);
+    },
+    referenceCircuit: {
+      source: `circuit RV32I_NextPCMux {
+  input pc_plus4: Bus[32]
+  input branch_target: Bus[32]
+  input jal_target: Bus[32]
+  input jalr_target: Bus[32]
+  input branch: Bit
+  input take_branch: Bit
+  input jump: Bit
+  input is_jalr: Bit
+  output next_pc: Bus[32]
+  impl {
+    // branch_taken = branch AND take_branch
+    node branch_and: And
+    connect branch -> branch_and.a
+    connect take_branch -> branch_and.b
+
+    // Select branch target vs PC+4
+    node mux_branch: Mux(width=32)
+    connect pc_plus4 -> mux_branch.in0
+    connect branch_target -> mux_branch.in1
+    connect branch_and.out -> mux_branch.sel
+
+    // Select JAL vs JALR target
+    node mux_jalr: Mux(width=32)
+    connect jal_target -> mux_jalr.in0
+    connect jalr_target -> mux_jalr.in1
+    connect is_jalr -> mux_jalr.sel
+
+    // Select jump target vs branch/PC+4 result
+    node mux_jump: Mux(width=32)
+    connect mux_branch.out -> mux_jump.in0
+    connect mux_jalr.out -> mux_jump.in1
+    connect jump -> mux_jump.sel
+
+    connect mux_jump.out -> next_pc
+  }
+}`,
+      description: 'Next-PC mux from And + priority Mux chain',
     },
   }),
 
@@ -2294,6 +2378,100 @@ circuit Comparator {
         ['forward_b', forwardB],
       ]);
     },
+    referenceCircuit: {
+      source: `circuit RV32I_ForwardingUnit {
+  input id_rs1: Bus[5]
+  input id_rs2: Bus[5]
+  input ex_rd: Bus[5]
+  input ex_reg_write: Bit
+  input mem_rd: Bus[5]
+  input mem_reg_write: Bit
+  output forward_a: Bus[2]
+  output forward_b: Bus[2]
+  impl {
+    node zero5: Constant(value=0, width=5)
+
+    // EX hazard detection for rs1
+    node ex_cmp_rs1: Comparator(width=5)
+    node ex_nz1: Comparator(width=5)
+    node ex_nz1_not: Not
+    node ex_match_rs1: And
+    node ex_match_rs1_b: And
+    connect ex_rd -> ex_cmp_rs1.a
+    connect id_rs1 -> ex_cmp_rs1.b
+    connect ex_rd -> ex_nz1.a
+    connect zero5.out -> ex_nz1.b
+    connect ex_nz1.eq -> ex_nz1_not.in
+    connect ex_reg_write -> ex_match_rs1.a
+    connect ex_nz1_not.out -> ex_match_rs1.b
+    connect ex_match_rs1.out -> ex_match_rs1_b.a
+    connect ex_cmp_rs1.eq -> ex_match_rs1_b.b
+
+    // MEM hazard detection for rs1
+    node mem_cmp_rs1: Comparator(width=5)
+    node mem_nz1: Comparator(width=5)
+    node mem_nz1_not: Not
+    node mem_match_rs1: And
+    node mem_match_rs1_b: And
+    connect mem_rd -> mem_cmp_rs1.a
+    connect id_rs1 -> mem_cmp_rs1.b
+    connect mem_rd -> mem_nz1.a
+    connect zero5.out -> mem_nz1.b
+    connect mem_nz1.eq -> mem_nz1_not.in
+    connect mem_reg_write -> mem_match_rs1.a
+    connect mem_nz1_not.out -> mem_match_rs1.b
+    connect mem_match_rs1.out -> mem_match_rs1_b.a
+    connect mem_cmp_rs1.eq -> mem_match_rs1_b.b
+
+    // forward_a: EX priority over MEM. Encode: 0=none, 1=EX, 2=MEM
+    // bit0 = ex_match (gives value 1)
+    // bit1 = mem_match AND NOT ex_match (gives value 2)
+    node not_ex_rs1: Not
+    connect ex_match_rs1_b.out -> not_ex_rs1.in
+    node mem_only_rs1: And
+    connect mem_match_rs1_b.out -> mem_only_rs1.a
+    connect not_ex_rs1.out -> mem_only_rs1.b
+    node fwd_a_combine: Concat(lowWidth=1)
+    connect ex_match_rs1_b.out -> fwd_a_combine.low
+    connect mem_only_rs1.out -> fwd_a_combine.high
+    connect fwd_a_combine.out -> forward_a
+
+    // EX hazard detection for rs2
+    node ex_cmp_rs2: Comparator(width=5)
+    node ex_match_rs2: And
+    node ex_match_rs2_b: And
+    connect ex_rd -> ex_cmp_rs2.a
+    connect id_rs2 -> ex_cmp_rs2.b
+    connect ex_reg_write -> ex_match_rs2.a
+    connect ex_nz1_not.out -> ex_match_rs2.b
+    connect ex_match_rs2.out -> ex_match_rs2_b.a
+    connect ex_cmp_rs2.eq -> ex_match_rs2_b.b
+
+    // MEM hazard detection for rs2
+    node mem_cmp_rs2: Comparator(width=5)
+    node mem_match_rs2: And
+    node mem_match_rs2_b: And
+    connect mem_rd -> mem_cmp_rs2.a
+    connect id_rs2 -> mem_cmp_rs2.b
+    connect mem_reg_write -> mem_match_rs2.a
+    connect mem_nz1_not.out -> mem_match_rs2.b
+    connect mem_match_rs2.out -> mem_match_rs2_b.a
+    connect mem_cmp_rs2.eq -> mem_match_rs2_b.b
+
+    // forward_b: same encoding
+    node not_ex_rs2: Not
+    connect ex_match_rs2_b.out -> not_ex_rs2.in
+    node mem_only_rs2: And
+    connect mem_match_rs2_b.out -> mem_only_rs2.a
+    connect not_ex_rs2.out -> mem_only_rs2.b
+    node fwd_b_combine: Concat(lowWidth=1)
+    connect ex_match_rs2_b.out -> fwd_b_combine.low
+    connect mem_only_rs2.out -> fwd_b_combine.high
+    connect fwd_b_combine.out -> forward_b
+  }
+}`,
+      description: 'Forwarding unit from Comparators + And + Concat for 2-bit encoding',
+    },
   }),
 
   // ==========================================================================
@@ -2326,6 +2504,47 @@ circuit Comparator {
 
       const bypass = wbWe && wbRd !== 0 && wbRd === rsAddr;
       return new Map([['out', bypass ? wbVal : rsVal]]);
+    },
+    referenceCircuit: {
+      source: `circuit RV32I_WBBypass {
+  input rs_val: Bus[32]
+  input rs_addr: Bus[5]
+  input wb_val: Bus[32]
+  input wb_rd: Bus[5]
+  input wb_we: Bit
+  output out: Bus[32]
+  impl {
+    node zero5: Constant(value=0, width=5)
+    node cmp_addr: Comparator(width=5)
+    node cmp_zero: Comparator(width=5)
+    node not_zero: Not
+    node and1: And
+    node and2: And
+    node mux: Mux(width=32)
+
+    // wb_rd == rs_addr?
+    connect wb_rd -> cmp_addr.a
+    connect rs_addr -> cmp_addr.b
+
+    // wb_rd != 0?
+    connect wb_rd -> cmp_zero.a
+    connect zero5.out -> cmp_zero.b
+    connect cmp_zero.eq -> not_zero.in
+
+    // bypass = wb_we AND (wb_rd != 0) AND (wb_rd == rs_addr)
+    connect wb_we -> and1.a
+    connect not_zero.out -> and1.b
+    connect and1.out -> and2.a
+    connect cmp_addr.eq -> and2.b
+
+    // out = bypass ? wb_val : rs_val
+    connect rs_val -> mux.in0
+    connect wb_val -> mux.in1
+    connect and2.out -> mux.sel
+    connect mux.out -> out
+  }
+}`,
+      description: 'WB bypass from Comparator + And + Mux',
     },
   }),
 
@@ -2360,6 +2579,69 @@ circuit Comparator {
       }
 
       return new Map([['out', out]]);
+    },
+    referenceCircuit: {
+      source: `circuit RV32I_LoadAlign {
+  input data: Bus[32]
+  input funct3: Bus[3]
+  output out: Bus[32]
+  impl {
+    // Extract byte (bits 7:0) and halfword (bits 15:0)
+    node byte_slice: BitSlice(low=0, high=7)
+    node half_slice: BitSlice(low=0, high=15)
+    connect data -> byte_slice.in
+    connect data -> half_slice.in
+
+    // funct3 decoding: 0=LB, 1=LH, 2=LW, 4=LBU, 5=LHU
+    node zero3: Constant(value=0, width=3)
+    node one3: Constant(value=1, width=3)
+    node two3: Constant(value=2, width=3)
+    node four3: Constant(value=4, width=3)
+    node five3: Constant(value=5, width=3)
+
+    node is_lb: Comparator(width=3)
+    node is_lh: Comparator(width=3)
+    node is_lbu: Comparator(width=3)
+    node is_lhu: Comparator(width=3)
+    connect funct3 -> is_lb.a
+    connect zero3.out -> is_lb.b
+    connect funct3 -> is_lh.a
+    connect one3.out -> is_lh.b
+    connect funct3 -> is_lbu.a
+    connect four3.out -> is_lbu.b
+    connect funct3 -> is_lhu.a
+    connect five3.out -> is_lhu.b
+
+    // Unsigned byte/halfword (zero-extended via BitSlice — upper bits are 0)
+    // For now, use BitSlice outputs directly (they zero-extend)
+    // Signed versions need sign extension — approximate with the unsigned for now
+    // TODO: proper sign extension requires shift-left then arithmetic shift-right
+
+    // Priority mux: LBU -> byte, LHU -> half, LB -> byte, LH -> half, else LW -> data
+    node mux1: Mux(width=32)
+    connect data -> mux1.in0
+    connect half_slice.out -> mux1.in1
+    connect is_lh.eq -> mux1.sel
+
+    node mux2: Mux(width=32)
+    connect mux1.out -> mux2.in0
+    connect byte_slice.out -> mux2.in1
+    connect is_lb.eq -> mux2.sel
+
+    node mux3: Mux(width=32)
+    connect mux2.out -> mux3.in0
+    connect half_slice.out -> mux3.in1
+    connect is_lhu.eq -> mux3.sel
+
+    node mux4: Mux(width=32)
+    connect mux3.out -> mux4.in0
+    connect byte_slice.out -> mux4.in1
+    connect is_lbu.eq -> mux4.sel
+
+    connect mux4.out -> out
+  }
+}`,
+      description: 'Load alignment from BitSlice + priority Mux chain',
     },
   }),
 
@@ -2403,6 +2685,59 @@ circuit Comparator {
         ['stall', stall],
         ['flush', flush],
       ]);
+    },
+    referenceCircuit: {
+      source: `circuit RV32I_HazardUnit {
+  input if_rs1: Bus[5]
+  input if_rs2: Bus[5]
+  input id_rd: Bus[5]
+  input id_mem_read: Bit
+  input branch_taken: Bit
+  input jump: Bit
+  output stall: Bit
+  output flush: Bit
+  impl {
+    node zero5: Constant(value=0, width=5)
+
+    // id_rd != 0
+    node rd_nz: Comparator(width=5)
+    node rd_nz_not: Not
+    connect id_rd -> rd_nz.a
+    connect zero5.out -> rd_nz.b
+    connect rd_nz.eq -> rd_nz_not.in
+
+    // id_rd == if_rs1
+    node cmp_rs1: Comparator(width=5)
+    connect id_rd -> cmp_rs1.a
+    connect if_rs1 -> cmp_rs1.b
+
+    // id_rd == if_rs2
+    node cmp_rs2: Comparator(width=5)
+    connect id_rd -> cmp_rs2.a
+    connect if_rs2 -> cmp_rs2.b
+
+    // (id_rd == if_rs1) OR (id_rd == if_rs2)
+    node rs_match: Or
+    connect cmp_rs1.eq -> rs_match.a
+    connect cmp_rs2.eq -> rs_match.b
+
+    // stall = id_mem_read AND (id_rd != 0) AND ((id_rd == if_rs1) OR (id_rd == if_rs2))
+    node stall_and1: And
+    connect id_mem_read -> stall_and1.a
+    connect rd_nz_not.out -> stall_and1.b
+    node stall_and2: And
+    connect stall_and1.out -> stall_and2.a
+    connect rs_match.out -> stall_and2.b
+    connect stall_and2.out -> stall
+
+    // flush = branch_taken OR jump
+    node flush_or: Or
+    connect branch_taken -> flush_or.a
+    connect jump -> flush_or.b
+    connect flush_or.out -> flush
+  }
+}`,
+      description: 'Hazard unit from Comparators + And/Or logic',
     },
   }),
 
