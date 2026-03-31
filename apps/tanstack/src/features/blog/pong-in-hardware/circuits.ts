@@ -836,14 +836,45 @@ circuit PongSimple {
     connect updateEnable.out -> shouldUpdate.a
     connect isP13.eq -> shouldUpdate.b
 
+    // ===== BALL SPEED DIVIDER (clock divider) =====
+    // Paddles move every game frame. Ball moves every 3rd frame.
+    // Same technique used in real hardware — a counter divides the clock.
+    node ballSpeedCounter: Register(width=2)
+    node ballSpeedInc: Adder(width=2)
+    connect ballSpeedCounter.q -> ballSpeedInc.a
+    node ballSpeedOne: Input(value=1, width=2)
+    connect ballSpeedOne.out -> ballSpeedInc.b
+
+    node ballSpeedLimit: Comparator(width=2)
+    node ballSpeedMax: Input(value=2, width=2)
+    connect ballSpeedCounter.q -> ballSpeedLimit.a
+    connect ballSpeedMax.out -> ballSpeedLimit.b
+
+    node ballSpeedNext: Mux(width=2)
+    connect ballSpeedInc.sum -> ballSpeedNext.in0
+    node ballSpeedZero: Input(value=0, width=2)
+    connect ballSpeedZero.out -> ballSpeedNext.in1
+    connect ballSpeedLimit.eq -> ballSpeedNext.sel
+
+    connect ballSpeedNext.out -> ballSpeedCounter.data
+    connect shouldUpdate.out -> ballSpeedCounter.we
+
+    node isBallTick: Comparator(width=2)
+    connect ballSpeedCounter.q -> isBallTick.a
+    connect ballSpeedZero.out -> isBallTick.b
+
+    node shouldUpdateBall: And
+    connect shouldUpdate.out -> shouldUpdateBall.a
+    connect isBallTick.eq -> shouldUpdateBall.b
+
     // Save old positions before update
     connect ballX.q -> oldBallX.data
     connect ballY.q -> oldBallY.data
     connect leftPaddleY.q -> oldLeftPaddleY.data
     connect rightPaddleY.q -> oldRightPaddleY.data
 
-    connect shouldUpdate.out -> oldBallX.we
-    connect shouldUpdate.out -> oldBallY.we
+    connect shouldUpdateBall.out -> oldBallX.we
+    connect shouldUpdateBall.out -> oldBallY.we
     connect shouldUpdate.out -> oldLeftPaddleY.we
     connect shouldUpdate.out -> oldRightPaddleY.we
 
@@ -901,10 +932,10 @@ circuit PongSimple {
 
     connect rightYClamped.out -> rightPaddleY.data
 
-    connect shouldUpdate.out -> ballX.we
-    connect shouldUpdate.out -> ballY.we
-    connect shouldUpdate.out -> ballDX.we
-    connect shouldUpdate.out -> ballDY.we
+    connect shouldUpdateBall.out -> ballX.we
+    connect shouldUpdateBall.out -> ballY.we
+    connect shouldUpdateBall.out -> ballDX.we
+    connect shouldUpdateBall.out -> ballDY.we
     connect shouldUpdate.out -> leftPaddleY.we
     connect shouldUpdate.out -> rightPaddleY.we
 

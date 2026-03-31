@@ -6,7 +6,7 @@ import { PONG_DSL } from "./circuits";
 export function usePongSimulator() {
   const sim = useCircuitSimulator(PONG_DSL);
   const [isRunning, setIsRunning] = useState(false);
-  const [speed, setSpeed] = useState(120);
+  const [speed, setSpeed] = useState(60);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const hasInitialized = useRef(false);
 
