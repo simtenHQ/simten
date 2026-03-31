@@ -8,7 +8,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useCircuitSimulator } from "@turing-incomplete/embed";
-import { CircuitCanvas } from "@turing-incomplete/ui/shared";
+import { CircuitCanvas } from "@turing-incomplete/ui/canvas";
 import { CIRCUITS, CIRCUIT_KEYS } from "@/features/splash/circuits";
 
 export const Route = createFileRoute("/splash3")({
@@ -52,10 +52,10 @@ function CircuitDemo({ circuitKey }: { circuitKey: CircuitKey }) {
         <div className="h-[250px] md:h-[370px]">
           <CircuitCanvas
             circuit={sim.circuit}
+        componentLibrary={sim.componentLibrary ?? undefined}
             portValues={sim.portValues}
             sequentialState={sim.sequentialState}
             onToggleNode={sim.toggleNode}
-            drillDown={false}
           />
         </div>
       </div>

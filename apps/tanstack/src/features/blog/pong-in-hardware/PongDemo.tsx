@@ -146,7 +146,7 @@ export function PongDemo() {
             max={100}
             value={101 - speed}
             onChange={(e) => setSpeed(101 - Number(e.target.value))}
-            className="w-20 accent-blue-500"
+            className="w-20 accent-blue-500 [&::-webkit-slider-runnable-track]:rounded-full [&::-webkit-slider-runnable-track]:bg-gray-300 dark:[&::-webkit-slider-runnable-track]:bg-gray-700"
           />
         </div>
         <span className="text-xs text-gray-500 dark:text-gray-400 font-mono tabular-nums">

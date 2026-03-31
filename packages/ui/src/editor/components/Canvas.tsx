@@ -1,11 +1,9 @@
 /**
  * Canvas Component
  *
- * Thin wrapper around CircuitCanvas that wires editor stores to the shared canvas.
- * All rendering, projection, and ReactFlow integration lives in CircuitCanvas.
- * This component is responsible for:
+ * Thin wrapper that reads from editor stores and passes props to the unified canvas.
+ * All rendering lives in CircuitCanvas. This component handles:
  * - Reading from editor stores (circuit, simulation state)
- * - Wiring editing callbacks to store mutations
  * - Keyboard scan code handling for Input nodes
  * - Overlay UI (KeyboardShortcutsInfo)
  */
@@ -17,9 +15,11 @@ import React, { useCallback, useEffect } from "react";
 import { useCircuitStore } from "../stores/circuit-store";
 import { useSequentialStateStore } from "../stores/sequential-state-store";
 import { usePortValuesStore } from "../stores/port-values-store";
+import { useComponentLibraryStore } from "../stores/component-library-store";
+import { useInspectorStore } from "../stores/expansion-store";
+import type { NodeData } from "../../nodes";
 
-import { CircuitCanvas } from "../../shared/CircuitCanvas";
-import { FULL_NODE_TYPES, EDGE_TYPES } from "../../shared/node-types";
+import { CircuitCanvas, NODE_TYPES, EDGE_TYPES } from "../../canvas";
 
 // ---------------------------------------------------------------------------
 // Overlay components
@@ -42,42 +42,21 @@ function KeyboardShortcutsInfo({ show }: { show: boolean }) {
             className="text-gray-400 hover:text-gray-300 transition-colors"
             aria-label="Close"
           >
-            ×
+            &times;
           </button>
         </div>
         <div className="space-y-1.5 text-xs text-gray-600 dark:text-gray-400">
           <div className="flex items-center justify-between gap-4">
-            <span>Click node</span>
-            <span className="text-gray-400">Select</span>
+            <span>Double-click composite</span>
+            <span className="text-gray-400">Inspect internals</span>
           </div>
           <div className="flex items-center justify-between gap-4">
-            <span>
-              <kbd className="px-1 py-0.5 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded font-mono text-[10px]">
-                Shift
-              </kbd>{" "}
-              + Click
-            </span>
-            <span className="text-gray-400">Multi-select</span>
+            <span>Drag node</span>
+            <span className="text-gray-400">Reposition</span>
           </div>
           <div className="flex items-center justify-between gap-4">
-            <span>Drag on canvas</span>
-            <span className="text-gray-400">Box select</span>
-          </div>
-          <div className="flex items-center justify-between gap-4">
-            <span>
-              <kbd className="px-1 py-0.5 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded font-mono text-[10px]">
-                Delete
-              </kbd>{" "}
-              /{" "}
-              <kbd className="px-1 py-0.5 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded font-mono text-[10px]">
-                ⌫
-              </kbd>
-            </span>
-            <span className="text-gray-400">Delete selected</span>
-          </div>
-          <div className="flex items-center justify-between gap-4">
-            <span>Hover node</span>
-            <span className="text-gray-400">Show dependencies</span>
+            <span>Scroll / pinch</span>
+            <span className="text-gray-400">Zoom</span>
           </div>
         </div>
       </div>
@@ -96,47 +75,49 @@ interface CanvasProps {
 }
 
 export function Canvas({ renderEmptyState, theme = "light", nodePositions }: CanvasProps) {
-  // --- Store reads ---
   const circuit = useCircuitStore((state) => state.circuit);
   const seqState = useSequentialStateStore((state) => state.seqState);
   const portValues = usePortValuesStore((state) => state.portValues);
 
-  // --- Store write actions ---
-  const addConnection = useCircuitStore((state) => state.addConnection);
-  const removeConnection = useCircuitStore((state) => state.removeConnection);
-  const removeNode = useCircuitStore((state) => state.removeNode);
-
-  // --- Derived state ---
   const hasNodes = (circuit?.nodes?.length ?? 0) > 0;
+  const resolveComponent = useComponentLibraryStore((s) => s.resolveComponent);
+  const getAllPrimitiveNames = useComponentLibraryStore((s) => s.getAllPrimitiveNames);
+  const openInspector = useInspectorStore((s) => s.open);
 
-  // --- Editing callbacks ---
+  // Adapt the store to the ComponentLibrary interface expected by the canvas
+  const componentLibrary = React.useMemo(() => ({
+    resolveComponent,
+    getAllPrimitiveNames,
+  }), [resolveComponent, getAllPrimitiveNames]);
 
-  const handleNodesDelete = useCallback(
-    (nodeIds: string[]) => {
-      for (const id of nodeIds) {
-        removeNode(id);
-      }
-    },
-    [removeNode],
-  );
+  const handleToggleNode = useCallback((nodeId: string) => {
+    const node = useCircuitStore.getState().getNode(nodeId);
+    if (node) {
+      const currentValue = node.arguments.value;
+      useCircuitStore.getState().updateNode(nodeId, {
+        arguments: { ...node.arguments, value: typeof currentValue === 'boolean' ? !currentValue : !currentValue },
+      });
+    }
+  }, []);
 
-  const handleEdgesDelete = useCallback(
-    (edgeIds: string[]) => {
-      for (const id of edgeIds) {
-        removeConnection(id);
-      }
-    },
-    [removeConnection],
-  );
+  const handleSetNodeValue = useCallback((nodeId: string, value: number) => {
+    const node = useCircuitStore.getState().getNode(nodeId);
+    if (node) {
+      useCircuitStore.getState().updateNode(nodeId, {
+        arguments: { ...node.arguments, value },
+      });
+    }
+  }, []);
 
-  const handleConnect = useCallback(
-    (source: { nodeId: string; portName: string }, target: { nodeId: string; portName: string }) => {
-      addConnection(source, target);
-    },
-    [addConnection],
-  );
+  const handleNodeDoubleClick = useCallback((nodeData: NodeData) => {
+    if (!nodeData.isComposite) return;
+    const componentDef = resolveComponent(nodeData.componentRef);
+    if (componentDef) {
+      openInspector(nodeData.componentRef, componentDef, nodeData.label ?? nodeData.componentRef);
+    }
+  }, [resolveComponent, openInspector]);
 
-  // --- Keyboard scan code handler ---
+  // Keyboard scan code handler for Input nodes
   useEffect(() => {
     if (!circuit) return;
 
@@ -156,12 +137,7 @@ export function Canvas({ renderEmptyState, theme = "light", nodePositions }: Can
 
     const handleKeyDown = (e: KeyboardEvent) => {
       const activeElement = document.activeElement;
-      if (
-        activeElement?.tagName === "INPUT" ||
-        activeElement?.tagName === "TEXTAREA"
-      ) {
-        return;
-      }
+      if (activeElement?.tagName === "INPUT" || activeElement?.tagName === "TEXTAREA") return;
 
       const scanCode = SCAN_CODES[e.code];
       if (scanCode == null) return;
@@ -182,42 +158,31 @@ export function Canvas({ renderEmptyState, theme = "light", nodePositions }: Can
         }
       });
 
-      if (e.code.startsWith("Arrow")) {
-        e.preventDefault();
-      }
+      if (e.code.startsWith("Arrow")) e.preventDefault();
     };
 
     window.addEventListener("keydown", handleKeyDown);
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-    };
+    return () => window.removeEventListener("keydown", handleKeyDown);
   }, [circuit]);
-
-  // --- Render ---
 
   return (
     <CircuitCanvas
       circuit={circuit}
+      componentLibrary={componentLibrary}
       portValues={portValues}
       sequentialState={seqState}
+      onToggleNode={handleToggleNode}
+      onSetNodeValue={handleSetNodeValue}
       autoLayout={nodePositions ? false : true}
-      editable
-      nodeTypes={FULL_NODE_TYPES}
+      nodeTypes={NODE_TYPES}
       edgeTypes={EDGE_TYPES}
       showControls
       theme={theme}
-      renderInspector={false}
-      onNodesDelete={handleNodesDelete}
-      onEdgesDelete={handleEdgesDelete}
-      onConnect={handleConnect}
+      onNodeDoubleClick={handleNodeDoubleClick}
       renderEmptyState={renderEmptyState}
       {...(nodePositions ? { nodePositions } : {})}
       renderOverlay={() => (
-        <>
-          <KeyboardShortcutsInfo
-            show={hasNodes}
-          />
-        </>
+        <KeyboardShortcutsInfo show={hasNodes} />
       )}
     />
   );

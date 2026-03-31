@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useCircuitSimulator } from "@turing-incomplete/embed";
-import { CircuitCanvas } from "@turing-incomplete/ui/shared";
+import { CircuitCanvas } from "@turing-incomplete/ui/canvas";
 import { Logo } from "@/components/Logo";
 import { ClaudeCTA } from "@/features/splash/ClaudeCTA";
 import { useSnakeSimulator } from "@/features/blog/snake-in-hardware/useSnakeSimulator";
@@ -635,10 +635,10 @@ function DemoCircuit({
     <div className="relative h-full">
       <CircuitCanvas
         circuit={sim.circuit}
+        componentLibrary={sim.componentLibrary ?? undefined}
         portValues={sim.portValues}
         sequentialState={sim.sequentialState}
         onToggleNode={sim.toggleNode}
-        drillDown={true}
         height={height}
         nodePositions={nodePositions}
       />
@@ -896,7 +896,7 @@ function Splash5Page() {
             <Link to="/blog" className="text-gray-600 hover:text-gray-300 transition-colors text-xs">Blog</Link>
             <Link to="/challenges" className="text-gray-600 hover:text-gray-300 transition-colors text-xs">Challenges</Link>
             <Link to="/editor" className="text-gray-600 hover:text-gray-300 transition-colors text-xs">Editor</Link>
-            <Link to="/docs" className="text-gray-600 hover:text-gray-300 transition-colors text-xs">Docs</Link>
+            <Link to="/docs/$" params={{ _splat: "" }} className="text-gray-600 hover:text-gray-300 transition-colors text-xs">Docs</Link>
           </div>
         </div>
         <div className="px-5 pb-6 flex flex-col items-center text-center gap-4">
@@ -960,7 +960,7 @@ function Splash5Page() {
               Editor
             </Link>
             <Link
-              to="/docs"
+              to="/docs/$" params={{ _splat: "" }}
               className="text-gray-600 hover:text-gray-300 transition-colors text-xs"
             >
               Docs

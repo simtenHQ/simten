@@ -15,13 +15,13 @@ export function BounceSection() {
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
           When the ball reaches the top or bottom edge of the screen, it needs
           to reverse direction. Two <code>Comparator</code> nodes check if the
-          ball&rsquo;s Y coordinate equals 0 (top wall) or 7 (bottom wall). An{" "}
+          ball&rsquo;s Y coordinate equals 0 (top wall) or 15 (bottom wall). An{" "}
           <code>Or</code> gate combines the results, and a <code>Mux</code>{" "}
-          selects the new direction: +1 if at the top, &minus;1 (255 in unsigned
-          8-bit) if at the bottom.
+          flips the velocity: moving down (+1) when bouncing off the top,
+          moving up (&minus;1) when bouncing off the bottom.
         </p>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
-          Change <strong>ballY</strong> to 0 or 7 and watch the bounce LED
+          Change <strong>ballY</strong> to 0 or 15 and watch the bounce LED
           light up.
         </p>
       </div>

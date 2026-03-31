@@ -21,7 +21,7 @@ export const posts: BlogPost[] = [
     slug: "pong-in-hardware",
     title: "Pong in Hardware",
     description:
-      "A complete Pong game built from logic gates, registers, and memory — two paddles, a bouncing ball, and a 6-phase rendering pipeline, all without a CPU.",
+      "A complete Pong game built from logic gates, registers, and memory — two paddles, a bouncing ball, and a 14-phase rendering pipeline, all without a CPU.",
     category: 'game',
     nodes: '~80 nodes',
   },

@@ -43,6 +43,12 @@ function PongInHardwarePage() {
 
         <HeroSection />
 
+        <ErrorBoundary>
+          <Suspense fallback={<SectionSkeleton />}>
+            <PongSection />
+          </Suspense>
+        </ErrorBoundary>
+
         <div className="space-y-4">
           <hr className="border-gray-200 dark:border-gray-800" />
           <ErrorBoundary>
@@ -78,13 +84,6 @@ function PongInHardwarePage() {
               <AddressSection />
             </Suspense>
           </ErrorBoundary>
-
-          <hr className="border-gray-200 dark:border-gray-800" />
-          <ErrorBoundary>
-            <Suspense fallback={<SectionSkeleton />}>
-              <PongSection />
-            </Suspense>
-          </ErrorBoundary>
         </div>
 
         <BlogFooter slug="pong-in-hardware" />
@@ -99,7 +98,7 @@ export const Route = createFileRoute('/blog/pong-in-hardware')({
       {
         name: 'description',
         content:
-          'A complete Pong game built from logic gates, registers, and memory — two paddles, a bouncing ball, and a 6-phase rendering pipeline, all without a CPU.',
+          'A complete Pong game built from logic gates, registers, and memory — two paddles, a bouncing ball, and a 14-phase rendering pipeline, all without a CPU.',
       },
     ],
   }),

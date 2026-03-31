@@ -33,8 +33,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 
-import { CircuitCanvas } from "../../shared/CircuitCanvas";
-import { FULL_NODE_TYPES, EDGE_TYPES } from "../../shared/node-types";
+import { CircuitCanvas, NODE_TYPES, EDGE_TYPES } from "../../canvas";
 
 // ── Animation helpers ──
 
@@ -401,12 +400,10 @@ function InspectorCanvas({ frame }: InspectorCanvasProps) {
         sequentialState={seqState}
         onToggleNode={handleToggle}
         onSetNodeValue={handleNumericChange}
-        nodeTypes={FULL_NODE_TYPES}
+        nodeTypes={NODE_TYPES}
         edgeTypes={EDGE_TYPES}
         theme="light"
         showControls
-        drillDown
-        renderInspector={false}
         height="100%"
       />
     </div>

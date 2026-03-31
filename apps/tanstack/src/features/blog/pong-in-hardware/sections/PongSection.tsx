@@ -19,25 +19,14 @@ function PongDemoLoader() {
 export function PongSection() {
   return (
     <section className="py-12">
-      <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
-        The Full Pong Game
-      </h2>
       <div className="prose-invert space-y-6">
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
-          Everything we&rsquo;ve built &mdash; ball position registers, bounce
-          detection, paddle controls, the 6-phase rendering pipeline, and pixel
-          addressing &mdash; comes together in one circuit. The full{" "}
-          <strong className="text-gray-900 dark:text-white">PongSimple</strong> circuit has over
-          50 components, all compiled and running in your browser.
-        </p>
-        <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
-          Click <strong>Run</strong> and use <kbd>W</kbd>/<kbd>S</kbd> for the
-          left paddle and <kbd>&uarr;</kbd>/<kbd>&darr;</kbd> for the right
-          paddle. The ball bounces off all four walls &mdash; comparators
-          detect when it reaches an edge, and mux logic flips the velocity
-          register between +1 and &minus;1. Each clock cycle executes one
-          phase of the render pipeline, so 6 ticks complete one full frame
-          update.
+          This is a complete Pong game running on a 16&times;16 screen &mdash;
+          no CPU, no software, just digital circuits. Click{" "}
+          <strong className="text-gray-900 dark:text-white">Run</strong> and
+          use <kbd>W</kbd>/<kbd>S</kbd> for the left paddle and{" "}
+          <kbd>&uarr;</kbd>/<kbd>&darr;</kbd> for the right. Scroll down to see
+          how each piece works.
         </p>
       </div>
 

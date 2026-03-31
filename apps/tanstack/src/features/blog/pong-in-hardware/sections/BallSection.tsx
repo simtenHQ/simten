@@ -16,8 +16,8 @@ export function BallSection() {
           The ball&rsquo;s position is stored in two <code>Register</code>
           {" "}components &mdash; one for X and one for Y. Each clock tick, an{" "}
           <code>Adder</code> adds a velocity delta (dx, dy) to the current
-          position. A <code>BitSlice</code> wraps the result to the 0&ndash;7
-          range so the ball stays on our 8&times;8 screen.
+          position. A <code>BitSlice</code> wraps the result to the 0&ndash;15
+          range so the ball stays on our 16&times;16 screen.
         </p>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
           Toggle the <strong>enable</strong> switch, then click{" "}
