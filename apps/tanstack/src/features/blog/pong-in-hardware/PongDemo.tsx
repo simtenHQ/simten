@@ -3,19 +3,19 @@
 import { useMemo } from "react";
 import { usePongSimulator } from "./usePongSimulator";
 
-const GRID_SIZE = 8;
-const PIXEL_SIZE = 40;
-const PIXEL_GAP = 3;
+const GRID_SIZE = 16;
+const PIXEL_SIZE = 24;
+const PIXEL_GAP = 2;
 const TOTAL_SIZE = GRID_SIZE * PIXEL_SIZE + (GRID_SIZE - 1) * PIXEL_GAP;
 
 /**
  * Extract pixel data from the simulator's sequential state.
  * The PongSimple circuit stores framebuffer pixels in DualPortRAM
- * at addresses 0-63 (8x8 grid).
+ * at addresses 0-255 (16x16 grid).
  */
 function usePixels(sequentialState: unknown): number[] {
   return useMemo(() => {
-    const pixels = new Array(64).fill(0);
+    const pixels = new Array(GRID_SIZE * GRID_SIZE).fill(0);
     const state = sequentialState as {
       currentState?: Map<string, unknown>;
     } | null;
@@ -24,7 +24,7 @@ function usePixels(sequentialState: unknown): number[] {
     for (const [nodeId, nodeState] of state.currentState) {
       if (nodeState instanceof Map && nodeId.toLowerCase().includes("ram")) {
         const mem = nodeState as Map<number, number>;
-        for (let addr = 0; addr < 64; addr++) {
+        for (let addr = 0; addr < GRID_SIZE * GRID_SIZE; addr++) {
           pixels[addr] = mem.get(addr) ?? 0;
         }
         break;

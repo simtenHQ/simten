@@ -6,7 +6,7 @@ import { PONG_DSL } from "./circuits";
 export function usePongSimulator() {
   const sim = useCircuitSimulator(PONG_DSL);
   const [isRunning, setIsRunning] = useState(false);
-  const [speed, setSpeed] = useState(50);
+  const [speed, setSpeed] = useState(120);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const hasInitialized = useRef(false);
 
@@ -87,12 +87,12 @@ export function usePongSimulator() {
     };
   }, [sim.ready, sim.setNodeValue, nodeIds]);
 
-  // Auto-run interval — tick a full 6-phase frame per interval so
-  // paddle movement feels instant (one game update per interval).
+  // Auto-run interval — run a complete 6-phase game frame each time.
+  // Speed controls how often frames run (higher = slower ball + paddles).
   useEffect(() => {
     if (isRunning && sim.ready) {
       intervalRef.current = setInterval(() => {
-        for (let i = 0; i < 6; i++) sim.tick();
+        for (let i = 0; i < 14; i++) sim.tick();
       }, speed);
     }
     return () => {
