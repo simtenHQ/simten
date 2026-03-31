@@ -51,11 +51,11 @@ export const BLOG_CIRCUITS: Record<string, BlogCircuit> = {
 
 circuit DemoProgramCounter {
   impl {
-    node sw_stall: Switch
+    node stall: Switch
     node pc: ProgramCounter
-    node led: Output(width=32)
-    connect sw_stall.out -> pc.stall
-    connect pc.pc_out -> led.in
+    node address: HexDisplay(width=32)
+    connect stall.out -> pc.stall
+    connect pc.pc_out -> address.in
   }
 }`,
   },
@@ -65,13 +65,13 @@ circuit DemoProgramCounter {
     description:
       "A register between pipeline stages. It latches data on each clock edge so each stage works on a different instruction.",
     displayDsl: `circuit PipelineReg {
-  input data_in: Bus[32]
+  input data_in: Bus[8]
   input flush: Bit
-  output data_out: Bus[32]
+  output data_out: Bus[8]
   impl {
-    node zero: Constant(value=0, width=32)
-    node mux: Mux(width=32)
-    node reg: Register(width=32)
+    node zero: Constant(value=0, width=8)
+    node mux: Mux(width=8)
+    node reg: Register(width=8)
     node one: Constant(value=1, width=1)
     connect data_in -> mux.in0
     connect zero.out -> mux.in1
@@ -82,13 +82,13 @@ circuit DemoProgramCounter {
   }
 }`,
     dsl: `circuit PipelineReg {
-  input data_in: Bus[32]
+  input data_in: Bus[8]
   input flush: Bit
-  output data_out: Bus[32]
+  output data_out: Bus[8]
   impl {
-    node zero: Constant(value=0, width=32)
-    node mux: Mux(width=32)
-    node reg: Register(width=32)
+    node zero: Constant(value=0, width=8)
+    node mux: Mux(width=8)
+    node reg: Register(width=8)
     node one: Constant(value=1, width=1)
     connect data_in -> mux.in0
     connect zero.out -> mux.in1
@@ -101,13 +101,13 @@ circuit DemoProgramCounter {
 
 circuit DemoPipelineReg {
   impl {
-    node input_val: Input(width=32)
-    node sw_flush: Switch
+    node data: Input(width=8)
+    node flush: Switch
     node pipe: PipelineReg
-    node led: Output(width=32)
-    connect input_val.out -> pipe.data_in
-    connect sw_flush.out -> pipe.flush
-    connect pipe.data_out -> led.in
+    node result: HexDisplay(width=8)
+    connect data.out -> pipe.data_in
+    connect flush.out -> pipe.flush
+    connect pipe.data_out -> result.in
   }
 }`,
   },
@@ -163,17 +163,17 @@ circuit DemoPipelineReg {
 
 circuit DemoForwardingMux {
   impl {
-    node reg: Input(width=32)
-    node ex: Input(width=32)
-    node mem: Input(width=32)
-    node sel: Input(width=2)
+    node reg_value: Input(width=32)
+    node ex_value: Input(width=32)
+    node mem_value: Input(width=32)
+    node select: Input(width=2)
     node fwd: ForwardingMux
-    node led: Output(width=32)
-    connect reg.out -> fwd.reg_val
-    connect ex.out -> fwd.ex_val
-    connect mem.out -> fwd.mem_val
-    connect sel.out -> fwd.sel
-    connect fwd.out -> led.in
+    node result: HexDisplay(width=32)
+    connect reg_value.out -> fwd.reg_val
+    connect ex_value.out -> fwd.ex_val
+    connect mem_value.out -> fwd.mem_val
+    connect select.out -> fwd.sel
+    connect fwd.out -> result.in
   }
 }`,
   },
@@ -263,11 +263,11 @@ circuit DemoALU {
     node b: Input(width=8)
     node op: Input(width=2)
     node alu: SimpleALU
-    node led: Output(width=8)
+    node result: HexDisplay(width=8)
     connect a.out -> alu.a
     connect b.out -> alu.b
     connect op.out -> alu.op
-    connect alu.result -> led.in
+    connect alu.result -> result.in
   }
 }`,
   },

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { useCircuitSimulator } from "@turing-incomplete/ui/embed";
+import { useCircuitSimulator } from "@turing-incomplete/embed";
 import { ABI_NAMES, parseDisassembly, type DisasmLine, type PipelineStages } from "../cpu-debugger/useRV32IDebugger";
 
 export { ABI_NAMES };

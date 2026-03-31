@@ -4,11 +4,11 @@ export function ProblemSection() {
   return (
     <section className="py-12 md:py-16">
       <div className="max-w-3xl">
-        <h2 className="text-2xl md:text-3xl font-bold text-white mb-6">
+        <h2 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-6">
           The Problem: AI That Can&rsquo;t See Your App
         </h2>
 
-        <div className="space-y-5 text-gray-300 leading-relaxed">
+        <div className="space-y-5 text-gray-500 dark:text-gray-300 leading-relaxed">
           <p>
             When you use Claude Code or Cursor to build a web app, the AI can
             read your files and run your tests. But it can&rsquo;t see
@@ -20,7 +20,7 @@ export function ProblemSection() {
 
           <p>
             For most development work, this is fine. But for{" "}
-            <strong className="text-white">
+            <strong className="text-gray-900 dark:text-white">
               interactive, AI-native applications
             </strong>{" "}
             &mdash; where the AI is a participant in the running app, not just

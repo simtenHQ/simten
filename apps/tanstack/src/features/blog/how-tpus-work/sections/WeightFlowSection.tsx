@@ -1,18 +1,18 @@
 "use client";
 
-import { CircuitEmbed } from "@turing-incomplete/ui/embed";
+import { ThemedCircuitEmbed as CircuitEmbed } from "@/features/blog/components/ThemedCircuitEmbed";
 import { TPU_CIRCUITS } from "../circuits";
 
 export function WeightFlowSection() {
   return (
     <section className="py-12">
-      <h2 className="text-3xl font-bold text-white mb-4">
+      <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
         Vertical Partial-Sum Flow
       </h2>
       <div className="prose-invert space-y-6">
-        <p className="text-gray-300 leading-relaxed">
+        <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
           Data flows horizontally, but partial sums flow{" "}
-          <strong className="text-white">vertically</strong>. Here we stack two
+          <strong className="text-gray-900 dark:text-white">vertically</strong>. Here we stack two
           PEs in a column. The top PE receives{" "}
           <code className="text-blue-300">partialSumIn = 0</code> and computes{" "}
           <code className="text-blue-300">0 + data &times; weight0</code>. That
@@ -22,18 +22,18 @@ export function WeightFlowSection() {
           <code className="text-blue-300">data &times; weight1</code> to
           produce the full dot product, again registered one cycle later.
         </p>
-        <p className="text-gray-300 leading-relaxed">
+        <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
           This vertical flow is{" "}
-          <strong className="text-white">registered</strong> &mdash; partial
+          <strong className="text-gray-900 dark:text-white">registered</strong> &mdash; partial
           sums move down one PE per clock cycle, just like data moves right one
           PE per cycle. This symmetry is critical for timing in real hardware. A
           256-deep combinational chain couldn&rsquo;t close timing at TPU clock
           speeds. Instead, each PE latches its partial sum into a register,
           giving the signal a full cycle to propagate to the next PE.
         </p>
-        <p className="text-gray-300 leading-relaxed">
+        <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
           To compensate for this vertical delay, the systolic array uses{" "}
-          <strong className="text-white">staggered data injection</strong>:
+          <strong className="text-gray-900 dark:text-white">staggered data injection</strong>:
           row&nbsp;0 receives data starting at cycle&nbsp;1, row&nbsp;1 at
           cycle&nbsp;2, and so on. This keeps partial sums and activations
           synchronized as they flow through the array. Load weights (toggle{" "}

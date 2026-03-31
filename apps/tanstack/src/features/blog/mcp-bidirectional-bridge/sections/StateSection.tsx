@@ -10,15 +10,15 @@ function CodeBlock({
   children: string;
 }) {
   return (
-    <div className="my-6 rounded-xl border border-gray-800 overflow-hidden">
-      <div className="flex items-center justify-between px-4 py-2 bg-[#161b22] border-b border-gray-800">
-        <span className="text-xs text-gray-400 font-mono">{title}</span>
-        <span className="text-[10px] text-gray-600 font-mono uppercase">
+    <div className="my-6 rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden">
+      <div className="flex items-center justify-between px-4 py-2 bg-[#161b22] border-b border-gray-200 dark:border-gray-800">
+        <span className="text-xs text-gray-500 dark:text-gray-400 font-mono">{title}</span>
+        <span className="text-[10px] text-gray-500 dark:text-gray-600 font-mono uppercase">
           {language}
         </span>
       </div>
       <pre className="p-4 bg-[#0d1117] overflow-x-auto">
-        <code className="text-sm font-mono text-gray-300 leading-relaxed">
+        <code className="text-sm font-mono text-gray-500 dark:text-gray-300 leading-relaxed">
           {children}
         </code>
       </pre>
@@ -30,11 +30,11 @@ export function StateSection() {
   return (
     <section className="py-12 md:py-16">
       <div className="max-w-3xl">
-        <h2 className="text-2xl md:text-3xl font-bold text-white mb-6">
+        <h2 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-6">
           Pull Model: Claude Reads Live App&nbsp;State
         </h2>
 
-        <div className="space-y-5 text-gray-300 leading-relaxed">
+        <div className="space-y-5 text-gray-500 dark:text-gray-300 leading-relaxed">
           <p>
             Pushing data <em>to</em> the browser is half the story. Claude also
             needs to <em>read</em> live state from the running application. We
@@ -101,7 +101,7 @@ if (msg.type === "request-challenge-state") {
             This is subtle but powerful. Claude doesn&rsquo;t need the user to
             copy-paste their code. It doesn&rsquo;t read files from disk. It
             pulls the{" "}
-            <strong className="text-white">live, in-memory state</strong> of the
+            <strong className="text-gray-900 dark:text-white">live, in-memory state</strong> of the
             running application &mdash; the exact DSL the user is editing right
             now, the exact values on the wires after the last simulation tick.
           </p>

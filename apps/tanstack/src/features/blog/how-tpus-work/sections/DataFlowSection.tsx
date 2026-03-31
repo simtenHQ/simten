@@ -1,25 +1,25 @@
 "use client";
 
-import { CircuitEmbed } from "@turing-incomplete/ui/embed";
+import { ThemedCircuitEmbed as CircuitEmbed } from "@/features/blog/components/ThemedCircuitEmbed";
 import { TPU_CIRCUITS } from "../circuits";
 
 export function DataFlowSection() {
   return (
     <section className="py-12">
-      <h2 className="text-3xl font-bold text-white mb-4">
+      <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
         Horizontal Data Flow
       </h2>
       <div className="prose-invert space-y-6">
-        <p className="text-gray-300 leading-relaxed">
+        <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
           The word &ldquo;systolic&rdquo; comes from the Greek word for the
           heart&rsquo;s rhythmic contraction. In a systolic array, data pulses
           through a grid of processing elements like blood through arteries
           &mdash; each element receives data, processes it, and passes it along
           in lockstep with the clock.
         </p>
-        <p className="text-gray-300 leading-relaxed">
+        <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
           Here we connect two PEs{" "}
-          <strong className="text-white">horizontally</strong>. Data enters
+          <strong className="text-gray-900 dark:text-white">horizontally</strong>. Data enters
           PE0&rsquo;s <code className="text-blue-300">dataIn</code> from the
           left. After one clock cycle, PE0&rsquo;s pipeline register outputs the
           data, which feeds directly into PE1&rsquo;s{" "}
@@ -27,7 +27,7 @@ export function DataFlowSection() {
           stored weight, so the same activation value gets multiplied by
           different weights as it flows across the row.
         </p>
-        <p className="text-gray-300 leading-relaxed">
+        <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
           Both PEs have{" "}
           <code className="text-blue-300">partialSumIn = 0</code> here because
           vertical flow hasn&rsquo;t been introduced yet. Each PE independently

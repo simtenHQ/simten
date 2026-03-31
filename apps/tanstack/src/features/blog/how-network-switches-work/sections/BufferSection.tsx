@@ -1,6 +1,6 @@
 "use client";
 
-import { CircuitEmbed } from "@turing-incomplete/ui/embed";
+import { ThemedCircuitEmbed as CircuitEmbed } from "@/features/blog/components/ThemedCircuitEmbed";
 import { SWITCH_CIRCUITS } from "../circuits";
 
 export function BufferSection() {
@@ -8,23 +8,23 @@ export function BufferSection() {
 
   return (
     <section className="py-12">
-      <h2 className="text-3xl font-bold text-white mb-4">
+      <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
         Buffering Incoming Packets
       </h2>
       <div className="prose-invert space-y-6">
-        <p className="text-gray-300 leading-relaxed">
+        <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
           Once the parser detects a frame, bytes need to go somewhere. The{" "}
-          <strong className="text-white">ingress buffer</strong> stores each
+          <strong className="text-gray-900 dark:text-white">ingress buffer</strong> stores each
           incoming byte in a <code>DualPortRAM</code>. A{" "}
-          <strong className="text-white">write pointer</strong> register tracks
+          <strong className="text-gray-900 dark:text-white">write pointer</strong> register tracks
           the next free address and increments after each write.
         </p>
-        <p className="text-gray-300 leading-relaxed">
+        <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
           Port A handles writes (the ingress side), while port B lets us read
           back any stored byte by address &mdash; this is how the forwarder will
           later fetch packet data for routing.
         </p>
-        <p className="text-gray-300 leading-relaxed">
+        <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
           Set <strong>dataIn</strong> to any value, toggle{" "}
           <strong>writeCmd</strong>, and tick. The byte is written at the current
           pointer address, and the pointer advances. Change{" "}

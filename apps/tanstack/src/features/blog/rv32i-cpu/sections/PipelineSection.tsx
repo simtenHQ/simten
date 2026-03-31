@@ -1,6 +1,6 @@
 "use client";
 
-import { CircuitEmbed } from "@turing-incomplete/ui/embed";
+import { ThemedCircuitEmbed as CircuitEmbed } from "@/features/blog/components/ThemedCircuitEmbed";
 import { BLOG_CIRCUITS } from "../circuits";
 
 const STAGES = [
@@ -70,26 +70,26 @@ const ABBR_COLORS: Record<string, string> = {
 export function PipelineSection() {
   return (
     <section className="py-12">
-      <h2 className="text-3xl font-bold text-white mb-4">
+      <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
         The 5-Stage Pipeline
       </h2>
       <div className="prose-invert space-y-6">
-        <p className="text-gray-300 leading-relaxed">
+        <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
           A single-cycle CPU executes one instruction per clock cycle &mdash;
           fetch, decode, execute, memory, writeback, all at once. Simple, but
           slow. The clock can only tick as fast as the{" "}
-          <strong className="text-white">slowest instruction</strong> allows.
+          <strong className="text-gray-900 dark:text-white">slowest instruction</strong> allows.
         </p>
-        <p className="text-gray-300 leading-relaxed">
+        <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
           A pipelined CPU splits execution into{" "}
-          <strong className="text-white">stages</strong>, separated by
+          <strong className="text-gray-900 dark:text-white">stages</strong>, separated by
           registers. Each stage does one piece of the work, then passes its
           result to the next stage on the clock edge. Like an assembly line:
           while one instruction is being executed, the next is being decoded,
           and the one after that is being fetched.
         </p>
-        <p className="text-gray-300 leading-relaxed">
-          The result: <strong className="text-white">5 instructions in flight at once</strong>.
+        <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
+          The result: <strong className="text-gray-900 dark:text-white">5 instructions in flight at once</strong>.
           The clock can tick as fast as the slowest <em>stage</em>, not the
           slowest instruction. In practice, this roughly quintuples throughput.
         </p>
@@ -108,14 +108,14 @@ export function PipelineSection() {
               >
                 {stage.abbr}
               </span>
-              <h3 className="text-lg font-semibold text-white">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
                 {stage.name}
               </h3>
             </div>
-            <p className="text-sm text-gray-300 leading-relaxed">
+            <p className="text-sm text-gray-500 dark:text-gray-300 leading-relaxed">
               {stage.description}
             </p>
-            <p className="text-sm text-gray-500 leading-relaxed mt-2">
+            <p className="text-sm text-gray-500 dark:text-gray-500 leading-relaxed mt-2">
               {stage.detail}
             </p>
           </div>
@@ -124,10 +124,10 @@ export function PipelineSection() {
 
       {/* Program Counter circuit */}
       <div className="mt-10">
-        <h3 className="text-lg font-semibold text-white mb-2">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
           The Program Counter
         </h3>
-        <p className="text-sm text-gray-400 mb-3">
+        <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
           The simplest piece of the pipeline: a register that counts up by 4
           each cycle. Toggle the stall switch to freeze it &mdash; that&rsquo;s
           what happens when a hazard is detected.
@@ -143,10 +143,10 @@ export function PipelineSection() {
 
       {/* Pipeline Register circuit */}
       <div className="mt-10">
-        <h3 className="text-lg font-semibold text-white mb-2">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
           Pipeline Registers
         </h3>
-        <p className="text-sm text-gray-400 mb-3">
+        <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
           Between every stage sits a pipeline register. It latches the
           output of one stage on the clock edge, holding it stable for the
           next stage to read. The flush input zeros the register &mdash;

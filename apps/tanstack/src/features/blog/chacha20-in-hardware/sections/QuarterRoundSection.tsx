@@ -1,6 +1,6 @@
 "use client";
 
-import { CircuitEmbed } from "@turing-incomplete/ui/embed";
+import { ThemedCircuitEmbed as CircuitEmbed } from "@/features/blog/components/ThemedCircuitEmbed";
 import { CHACHA20_CIRCUITS } from "../circuits";
 
 export function QuarterRoundSection() {
@@ -8,28 +8,28 @@ export function QuarterRoundSection() {
 
   return (
     <section className="py-12">
-      <h2 className="text-3xl font-bold text-white mb-4">
+      <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
         The Full Quarter-Round
       </h2>
       <div className="prose-invert space-y-6">
-        <p className="text-gray-300 leading-relaxed">
+        <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
           Now we chain four ARX steps together, each feeding into the next.
           The quarter-round takes four 32-bit words (a, b, c, d) and
           thoroughly mixes them:
         </p>
-        <pre className="bg-gray-900/80 border border-gray-700/50 rounded-lg p-4 text-sm font-mono text-gray-200 overflow-x-auto">
+        <pre className="bg-gray-100 dark:bg-gray-900/80 border border-gray-700/50 rounded-lg p-4 text-sm font-mono text-gray-200 overflow-x-auto">
 {`a += b;  d ^= a;  d <<<= 16;
 c += d;  b ^= c;  b <<<= 12;
 a += b;  d ^= a;  d <<<= 8;
 c += d;  b ^= c;  b <<<= 7;`}</pre>
-        <p className="text-gray-300 leading-relaxed">
+        <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
           Notice how each step feeds the next &mdash; step 1 modifies{" "}
           <code>a</code> and <code>d</code>, step 2 uses the new{" "}
           <code>d</code> to modify <code>c</code> and <code>b</code>,
           and so on. By the end, every input bit has influenced every
           output bit.
         </p>
-        <p className="text-gray-300 leading-relaxed">
+        <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
           The circuit below is loaded with the{" "}
           <a
             href="https://www.rfc-editor.org/rfc/rfc7539#section-2.1.1"

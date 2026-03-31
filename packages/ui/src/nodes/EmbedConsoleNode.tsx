@@ -38,21 +38,21 @@ export function EmbedConsoleNode({ data, selected }: EmbedConsoleNodeProps) {
       className="min-w-[200px]"
     >
       <div className="flex flex-col items-center gap-2">
-        <div className="px-2 py-1 rounded text-xs font-medium text-gray-300">
+        <div className="px-2 py-1 rounded text-xs font-medium text-[var(--embed-text-primary)]">
           {data.label || "Console"}
         </div>
         <pre
           ref={textAreaRef}
-          className="w-full h-32 overflow-auto rounded border-2 border-gray-700 bg-black text-green-400 font-mono text-xs p-2 whitespace-pre-wrap break-all"
+          className="w-full h-32 overflow-auto rounded border-2 border-[var(--embed-border-node)] bg-black text-green-400 font-mono text-xs p-2 whitespace-pre-wrap break-all"
           style={{ minWidth: "180px", maxHeight: "200px" }}
         >
           {text || (
-            <span className="text-gray-600">
+            <span className="text-[var(--embed-text-muted)]">
               {"// Console output will appear here"}
             </span>
           )}
         </pre>
-        <div className="text-xs text-gray-400">
+        <div className="text-xs text-[var(--embed-text-secondary)]">
           {charCount} chars, {lineCount} lines
         </div>
       </div>

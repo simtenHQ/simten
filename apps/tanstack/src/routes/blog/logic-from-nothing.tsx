@@ -31,10 +31,10 @@ export const Route = createFileRoute('/blog/logic-from-nothing')({
 function SectionSkeleton() {
   return (
     <div className="py-12 animate-pulse">
-      <div className="h-8 bg-gray-800 rounded w-64 mb-4" />
+      <div className="h-8 bg-gray-200 dark:bg-gray-800 rounded w-64 mb-4" />
       <div className="space-y-3">
-        <div className="h-4 bg-gray-800/50 rounded w-full" />
-        <div className="h-4 bg-gray-800/50 rounded w-5/6" />
+        <div className="h-4 bg-gray-200/50 dark:bg-gray-800/50 rounded w-full" />
+        <div className="h-4 bg-gray-200/50 dark:bg-gray-800/50 rounded w-5/6" />
       </div>
     </div>
   );
@@ -43,11 +43,11 @@ function SectionSkeleton() {
 function LockedSection({ label }: { label: string }) {
   return (
     <div className="py-12 text-center">
-      <div className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-900/50 border border-gray-800/50">
-        <svg className="w-4 h-4 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <div className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-100/50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-800/50">
+        <svg className="w-4 h-4 text-gray-500 dark:text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
         </svg>
-        <span className="text-sm text-gray-600">{label}</span>
+        <span className="text-sm text-gray-500 dark:text-gray-600">{label}</span>
       </div>
     </div>
   );
@@ -69,13 +69,13 @@ function LogicFromNothingPage() {
 
         <div className="space-y-4">
           {/* NAND intro — always visible */}
-          <hr className="border-gray-800" />
+          <hr className="border-gray-200 dark:border-gray-800" />
           <ErrorBoundary>
             <NandSection />
           </ErrorBoundary>
 
           {/* Challenge 1: NOT */}
-          <hr className="border-gray-800" />
+          <hr className="border-gray-200 dark:border-gray-800" />
           <ErrorBoundary>
             <Suspense fallback={<SectionSkeleton />}>
               <NotChallengeSection onPass={handleNotPass} />
@@ -83,7 +83,7 @@ function LogicFromNothingPage() {
           </ErrorBoundary>
 
           {/* Challenge 2: AND — unlocks after NOT */}
-          <hr className="border-gray-800" />
+          <hr className="border-gray-200 dark:border-gray-800" />
           {notPassed ? (
             <ErrorBoundary>
               <Suspense fallback={<SectionSkeleton />}>
@@ -95,7 +95,7 @@ function LogicFromNothingPage() {
           )}
 
           {/* Challenge 3: OR — unlocks after AND */}
-          <hr className="border-gray-800" />
+          <hr className="border-gray-200 dark:border-gray-800" />
           {andPassed ? (
             <ErrorBoundary>
               <Suspense fallback={<SectionSkeleton />}>
@@ -107,7 +107,7 @@ function LogicFromNothingPage() {
           )}
 
           {/* Challenge 4: XOR — unlocks after OR */}
-          <hr className="border-gray-800" />
+          <hr className="border-gray-200 dark:border-gray-800" />
           {orPassed ? (
             <ErrorBoundary>
               <Suspense fallback={<SectionSkeleton />}>

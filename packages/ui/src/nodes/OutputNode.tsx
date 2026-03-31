@@ -3,7 +3,8 @@
 import React from 'react';
 import { BaseNode, type PortConfig } from './BaseNode';
 import type { NodeData } from './NodeData';
-import { cn } from '../../lib/utils';
+import { CompositeBadge } from './CompositeBadge';
+import { cn } from '../lib/utils';
 
 interface OutputNodeProps {
   data: NodeData;
@@ -28,33 +29,33 @@ export function OutputNode({ data, selected }: OutputNodeProps) {
       const hexValue = toHexString(numericValue);
       return (
         <div className="flex flex-col items-center gap-2">
-          <div className="px-2 py-1 rounded text-xs font-medium text-gray-300">
+          <div className="px-2 py-1 rounded text-xs font-medium text-[var(--embed-text-primary)]">
             {data.label || data.componentRef}
           </div>
           <div className="flex items-center justify-center px-4 py-2 bg-black rounded border-2 border-gray-600">
             <span className="text-2xl font-mono font-bold text-green-400">{hexValue}</span>
           </div>
-          <div className="text-xs text-gray-400">Dec: {numericValue}</div>
+          <div className="text-xs text-[var(--embed-text-secondary)]">Dec: {numericValue}</div>
         </div>
       );
     } else if (data.componentRef === 'SevenSegment') {
       const hexDigit = (numericValue & 0xF).toString(16).toUpperCase();
       return (
         <div className="flex flex-col items-center gap-2">
-          <div className="px-2 py-1 rounded text-xs font-medium text-gray-300">
+          <div className="px-2 py-1 rounded text-xs font-medium text-[var(--embed-text-primary)]">
             {data.label || data.componentRef}
           </div>
           <div className="flex items-center justify-center px-3 py-2 bg-black rounded border-2 border-gray-600">
             <span className="text-xl font-mono font-bold text-red-500">{hexDigit}</span>
           </div>
-          <div className="text-xs text-gray-400">Dec: {numericValue & 0xF}</div>
+          <div className="text-xs text-[var(--embed-text-secondary)]">Dec: {numericValue & 0xF}</div>
         </div>
       );
     } else {
       // LED display (default)
       return (
         <div className="flex flex-col items-center gap-2">
-          <div className="px-2 py-1 rounded text-xs font-medium text-gray-300">
+          <div className="px-2 py-1 rounded text-xs font-medium text-[var(--embed-text-primary)]">
             {data.label || data.componentRef}
           </div>
           <div
@@ -62,14 +63,14 @@ export function OutputNode({ data, selected }: OutputNodeProps) {
               'h-10 w-10 rounded-full border-2 transition-all',
               value
                 ? 'border-green-600 bg-green-400 shadow-lg shadow-green-500/50'
-                : 'border-gray-500 bg-[#2a2a2e]'
+                : 'border-gray-500 bg-[var(--embed-bg-tertiary)]'
             )}
           >
             {value && (
               <div className="h-full w-full rounded-full bg-gradient-to-br from-green-300 to-green-500" />
             )}
           </div>
-          <div className={cn('text-xs font-semibold', value ? 'text-green-400' : 'text-gray-400')}>
+          <div className={cn('text-xs font-semibold', value ? 'text-green-400' : 'text-[var(--embed-text-secondary)]')}>
             {value ? 'ON' : 'OFF'}
           </div>
         </div>
@@ -80,6 +81,7 @@ export function OutputNode({ data, selected }: OutputNodeProps) {
   return (
     <BaseNode inputPorts={inputPorts} selected={selected} className="min-w-[80px]" showPortLabels={data.showPortLabels} onPortClick={data.onPortClick} glowUnconnected={data.glowUnconnected}>
       <div className="relative">
+        {data.isComposite && <CompositeBadge />}
         {renderDisplay()}
       </div>
     </BaseNode>

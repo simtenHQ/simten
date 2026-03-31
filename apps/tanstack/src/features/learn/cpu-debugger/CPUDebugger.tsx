@@ -72,12 +72,12 @@ pub extern "C" fn main() -> i32 {
 }`,
 };
 
-const PIPELINE_DESCRIPTIONS: Record<keyof PipelineStages, { title: string; desc: string }> = {
-  IF:  { title: "Instruction Fetch",   desc: "Read the next instruction from memory at the current program counter (PC)." },
-  ID:  { title: "Instruction Decode",  desc: "Decode the instruction, read source registers from the register file, and generate control signals." },
-  EX:  { title: "Execute",            desc: "The ALU performs the computation — arithmetic, logic, or address calculation." },
-  MEM: { title: "Memory Access",       desc: "Load or store data in RAM. For non-memory instructions this stage passes values through unchanged." },
-  WB:  { title: "Write Back",          desc: "Write the result back to the destination register in the register file." },
+const PIPELINE_DESCRIPTIONS: Record<keyof PipelineStages, { label: string; title: string; desc: string }> = {
+  IF:  { label: "Fetch",   title: "Instruction Fetch",   desc: "Read the next instruction from memory at the current program counter (PC)." },
+  ID:  { label: "Decode",  title: "Instruction Decode",  desc: "Decode the instruction, read source registers from the register file, and generate control signals." },
+  EX:  { label: "Compute", title: "Execute",             desc: "The ALU performs the computation — arithmetic, logic, or address calculation." },
+  MEM: { label: "Memory",  title: "Memory Access",       desc: "Load or store data in RAM. For non-memory instructions this stage passes values through unchanged." },
+  WB:  { label: "Save",    title: "Write Back",          desc: "Write the result back to the destination register in the register file." },
 };
 
 const PIPELINE_COLORS: Record<keyof PipelineStages, string> = {
@@ -92,6 +92,55 @@ function hex(n: number): string {
   return "0x" + n.toString(16).padStart(8, "0");
 }
 
+/**
+ * Generate a plain-English narrative of what the pipeline is doing this cycle.
+ * Focuses on the most interesting stage activity.
+ */
+function describeCurrentCycle(
+  stages: PipelineStages,
+  disasmLines: DisasmLine[],
+  cycleCount: number,
+): string | null {
+  if (cycleCount === 0) return "Press Step to advance one clock cycle, or Run to execute continuously.";
+
+  const parts: string[] = [];
+
+  // Describe EX stage — this is where computation happens
+  if (stages.EX != null) {
+    const line = disasmLines.find(l => l.address === stages.EX && l.instruction);
+    if (line) {
+      const explanation = explainInstruction(line.instruction);
+      if (explanation) {
+        parts.push(explanation);
+      }
+    }
+  }
+
+  // Mention WB if a register is being written
+  if (stages.WB != null) {
+    const line = disasmLines.find(l => l.address === stages.WB && l.instruction);
+    if (line) {
+      const explanation = explainInstruction(line.instruction);
+      if (explanation && explanation.includes("=")) {
+        // Only mention WB if it's distinct from EX
+        if (stages.EX !== stages.WB) {
+          parts.push("Writing result to register file.");
+        }
+      }
+    }
+  }
+
+  if (parts.length === 0) {
+    // Pipeline is filling or flushing
+    const activeCount = Object.values(stages).filter(v => v != null).length;
+    if (activeCount === 0) return "Pipeline is empty — all instructions have completed.";
+    if (activeCount < 5) return "Pipeline is filling — instructions flow through one stage per cycle.";
+    return null;
+  }
+
+  return parts.join(" ");
+}
+
 function PipelineBadge({
   stage,
   pc,
@@ -102,12 +151,15 @@ function PipelineBadge({
   instruction: string | null;
 }) {
   const color = PIPELINE_COLORS[stage];
-  const { title, desc } = PIPELINE_DESCRIPTIONS[stage];
+  const { label, title, desc } = PIPELINE_DESCRIPTIONS[stage];
   return (
     <Tooltip>
       <TooltipTrigger asChild>
         <div className={`flex flex-col rounded-lg border px-2 py-1.5 cursor-help min-w-0 flex-1 ${color}`}>
-          <span className="text-[10px] font-bold uppercase tracking-widest opacity-70">{stage}</span>
+          <div className="flex items-center gap-1.5">
+            <span className="text-[11px] font-semibold">{label}</span>
+            <span className="text-[9px] font-mono opacity-40">{stage}</span>
+          </div>
           <span className="font-mono text-[10px] tabular-nums opacity-40">
             {pc != null ? hex(pc) : <span className="opacity-30">——</span>}
           </span>
@@ -275,12 +327,27 @@ export function CPUDebugger() {
   }
 
   const loading = !dslLoaded || (!!compiled && !sim.ready);
+  const narrative = sim.ready
+    ? describeCurrentCycle(pipelineStages, disasmLines, sim.cycleCount)
+    : null;
 
   return (
     <div className="flex h-full flex-col bg-gray-950 text-gray-100 overflow-hidden">
+      {/* Intro banner — shown before first compile */}
+      {!compiled && !compiling && (
+        <div className="shrink-0 border-b border-blue-900/30 bg-blue-950/20 px-4 py-3">
+          <p className="text-sm text-blue-200/90">
+            <span className="font-semibold text-blue-100">This is a real CPU</span>
+            {" "}&mdash; built from registers, ALUs, muxes, and memory, simulated cycle by cycle in your browser.
+            Write code in C, C++, Rust, or assembly, compile it,
+            then step through each clock cycle and watch instructions flow through the pipeline.
+          </p>
+        </div>
+      )}
+
       {/* Top bar */}
       <div className="flex shrink-0 items-center gap-2 flex-wrap border-b border-gray-800 bg-gray-900 px-3 py-2">
-        <span className="text-sm font-semibold text-gray-200">RV32I CPU Debugger</span>
+        <span className="text-sm font-semibold text-gray-200">RV32I CPU</span>
         <div className="h-4 w-px bg-gray-700" />
 
         {/* Language selector */}
@@ -420,6 +487,12 @@ export function CPUDebugger() {
                 })}
               </div>
             </TooltipProvider>
+            {/* Narrative: what just happened this cycle */}
+            {narrative && (
+              <p className="mt-1.5 text-[11px] text-gray-400 leading-relaxed">
+                {narrative}
+              </p>
+            )}
           </div>
 
           {/* Disassembly + registers split */}

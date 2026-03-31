@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useCircuitSimulator } from "@turing-incomplete/ui/embed";
+import { useCircuitSimulator } from "@turing-incomplete/embed";
 import { CircuitCanvas } from "@turing-incomplete/ui/shared";
 import { Logo } from "@/components/Logo";
 import { ClaudeCTA } from "@/features/splash/ClaudeCTA";
@@ -896,6 +896,7 @@ function Splash5Page() {
             <Link to="/blog" className="text-gray-600 hover:text-gray-300 transition-colors text-xs">Blog</Link>
             <Link to="/challenges" className="text-gray-600 hover:text-gray-300 transition-colors text-xs">Challenges</Link>
             <Link to="/editor" className="text-gray-600 hover:text-gray-300 transition-colors text-xs">Editor</Link>
+            <Link to="/docs" className="text-gray-600 hover:text-gray-300 transition-colors text-xs">Docs</Link>
           </div>
         </div>
         <div className="px-5 pb-6 flex flex-col items-center text-center gap-4">
@@ -957,6 +958,12 @@ function Splash5Page() {
               className="text-gray-600 hover:text-gray-300 transition-colors text-xs"
             >
               Editor
+            </Link>
+            <Link
+              to="/docs"
+              className="text-gray-600 hover:text-gray-300 transition-colors text-xs"
+            >
+              Docs
             </Link>
           </div>
         </div>

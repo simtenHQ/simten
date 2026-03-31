@@ -4,15 +4,15 @@ export function CostSection() {
   return (
     <section className="py-12 md:py-16">
       <div className="max-w-3xl">
-        <h2 className="text-2xl md:text-3xl font-bold text-white mb-6">
+        <h2 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-6">
           Zero API Cost: The User Brings Their Own&nbsp;AI
         </h2>
 
-        <div className="space-y-5 text-gray-300 leading-relaxed">
+        <div className="space-y-5 text-gray-500 dark:text-gray-300 leading-relaxed">
           <p>
             There&rsquo;s an often-overlooked consequence of this architecture:
             the app developer pays for{" "}
-            <strong className="text-white">zero AI API calls</strong>.
+            <strong className="text-gray-900 dark:text-white">zero AI API calls</strong>.
           </p>
 
           <p>
@@ -24,11 +24,11 @@ export function CostSection() {
           </p>
 
           <div className="my-8 grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="rounded-xl border border-gray-800 bg-[#0d1117] p-5">
+            <div className="rounded-xl border border-gray-200 dark:border-gray-800 bg-[#0d1117] p-5">
               <h3 className="text-sm font-semibold text-red-400 mb-3">
                 Traditional AI-powered app
               </h3>
-              <ul className="space-y-2 text-sm text-gray-400">
+              <ul className="space-y-2 text-sm text-gray-500 dark:text-gray-400">
                 <li className="flex items-start gap-2">
                   <span className="text-red-500 mt-0.5">&#x2717;</span>
                   <span>Developer pays per API call</span>
@@ -48,11 +48,11 @@ export function CostSection() {
               </ul>
             </div>
 
-            <div className="rounded-xl border border-gray-800 bg-[#0d1117] p-5">
+            <div className="rounded-xl border border-gray-200 dark:border-gray-800 bg-[#0d1117] p-5">
               <h3 className="text-sm font-semibold text-green-400 mb-3">
                 MCP bridge approach
               </h3>
-              <ul className="space-y-2 text-sm text-gray-400">
+              <ul className="space-y-2 text-sm text-gray-500 dark:text-gray-400">
                 <li className="flex items-start gap-2">
                   <span className="text-green-500 mt-0.5">&#x2713;</span>
                   <span>User pays their own Claude subscription</span>

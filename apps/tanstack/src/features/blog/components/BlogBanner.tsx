@@ -8,8 +8,8 @@ import { Link } from "@tanstack/react-router";
  */
 export function BlogBanner() {
   return (
-    <div className="flex items-center gap-2 text-[13px] text-gray-500 py-3 mb-4 border-b border-gray-800/50">
-      <span className="font-medium text-gray-400">Turing Incomplete</span>
+    <div className="flex items-center gap-2 text-[13px] text-gray-500 dark:text-gray-500 py-3 mb-4 border-b border-gray-200 dark:border-gray-800/50">
+      <span className="font-medium text-gray-500 dark:text-gray-400">Turing Incomplete</span>
       <span className="text-gray-700">—</span>
       <span>every circuit on this page is live. Toggle switches, watch signals propagate.</span>
       <Link

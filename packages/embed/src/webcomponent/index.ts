@@ -34,6 +34,7 @@ const CircuitEmbedWC = r2wc<CircuitEmbedProps>(CircuitEmbed, {
     title: "string",
     description: "string",
     autoHarness: "boolean",
+    theme: "string",
   },
 });
 
@@ -45,6 +46,7 @@ const CircuitEditorWC = r2wc<CircuitEditorProps>(CircuitEditor, {
     height: "number",
     title: "string",
     description: "string",
+    theme: "string",
   },
 });
 

@@ -29,7 +29,7 @@ function StatusDot({ status }: { status: ConnectionStatus }) {
   return (
     <div className="flex items-center gap-2">
       <span className={`h-2.5 w-2.5 rounded-full ${colors[status]}`} />
-      <span className="text-sm text-gray-400">{labels[status]}</span>
+      <span className="text-sm text-gray-500 dark:text-gray-400">{labels[status]}</span>
     </div>
   );
 }
@@ -141,11 +141,11 @@ export function LiveDemoSection() {
   return (
     <section className="py-12 md:py-16">
       <div className="max-w-3xl">
-        <h2 className="text-2xl md:text-3xl font-bold text-white mb-6">
+        <h2 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-6">
           Try It Yourself
         </h2>
 
-        <div className="space-y-5 text-gray-300 leading-relaxed">
+        <div className="space-y-5 text-gray-500 dark:text-gray-300 leading-relaxed">
           <p>
             This isn&rsquo;t a diagram. This page is connected to your local
             MCP server right now. If you have Claude Code running with the
@@ -155,22 +155,22 @@ export function LiveDemoSection() {
         </div>
 
         {/* Connection status */}
-        <div className="mt-8 rounded-xl border border-gray-800 bg-[#0d1117] p-5">
+        <div className="mt-8 rounded-xl border border-gray-200 dark:border-gray-800 bg-[#0d1117] p-5">
           <div className="flex items-center justify-between">
             <StatusDot status={status} />
             {isConnected && (
-              <span className="text-xs text-gray-600 font-mono">
+              <span className="text-xs text-gray-500 dark:text-gray-600 font-mono">
                 ws://localhost:19847
               </span>
             )}
           </div>
 
           {status === "idle" || status === "disconnected" ? (
-            <div className="mt-4 rounded-lg border border-gray-800 bg-gray-900/50 p-4">
-              <p className="text-sm text-gray-500 leading-relaxed">
+            <div className="mt-4 rounded-lg border border-gray-200 dark:border-gray-800 bg-gray-100/50 dark:bg-gray-900/50 p-4">
+              <p className="text-sm text-gray-500 dark:text-gray-500 leading-relaxed">
                 To see this demo live, start the MCP server in Claude Code:
               </p>
-              <pre className="mt-2 text-xs font-mono text-gray-400 bg-[#0d1117] rounded p-3 overflow-x-auto">
+              <pre className="mt-2 text-xs font-mono text-gray-500 dark:text-gray-400 bg-[#0d1117] rounded p-3 overflow-x-auto">
                 {`# In Claude Code, add the Turing Incomplete MCP server
 # Then call show_circuit to connect this page`}
               </pre>
@@ -179,15 +179,15 @@ export function LiveDemoSection() {
         </div>
 
         {/* Live message log */}
-        <div className="mt-6 rounded-xl border border-gray-800 bg-[#0d1117] overflow-hidden">
-          <div className="flex items-center justify-between px-4 py-2.5 bg-[#161b22] border-b border-gray-800">
-            <span className="text-xs text-gray-400 font-mono">
+        <div className="mt-6 rounded-xl border border-gray-200 dark:border-gray-800 bg-[#0d1117] overflow-hidden">
+          <div className="flex items-center justify-between px-4 py-2.5 bg-[#161b22] border-b border-gray-200 dark:border-gray-800">
+            <span className="text-xs text-gray-500 dark:text-gray-400 font-mono">
               WebSocket Message Log
             </span>
             {log.length > 0 && (
               <button
                 onClick={() => setLog([])}
-                className="text-[10px] text-gray-600 hover:text-gray-400 transition-colors font-mono"
+                className="text-[10px] text-gray-500 dark:text-gray-600 hover:text-gray-500 dark:hover:text-gray-400 transition-colors font-mono"
               >
                 Clear
               </button>
@@ -195,7 +195,7 @@ export function LiveDemoSection() {
           </div>
           <div className="h-48 overflow-y-auto p-3 space-y-1.5">
             {log.length === 0 ? (
-              <p className="text-xs text-gray-600 font-mono py-4 text-center">
+              <p className="text-xs text-gray-500 dark:text-gray-600 font-mono py-4 text-center">
                 {isConnected
                   ? "Waiting for messages... Try using Claude Code tools"
                   : "Connect your MCP server to see live messages"}
@@ -216,7 +216,7 @@ export function LiveDemoSection() {
                   </span>
                   <DirectionBadge direction={entry.direction} />
                   <span className="text-gray-500">{entry.type}</span>
-                  <span className="text-gray-400 truncate">
+                  <span className="text-gray-500 dark:text-gray-400 truncate">
                     {entry.summary}
                   </span>
                 </div>
@@ -227,9 +227,9 @@ export function LiveDemoSection() {
         </div>
 
         {/* Mini chat */}
-        <div className="mt-6 rounded-xl border border-gray-800 bg-[#0d1117] overflow-hidden">
-          <div className="px-4 py-2.5 bg-[#161b22] border-b border-gray-800">
-            <span className="text-xs text-gray-400 font-mono">
+        <div className="mt-6 rounded-xl border border-gray-200 dark:border-gray-800 bg-[#0d1117] overflow-hidden">
+          <div className="px-4 py-2.5 bg-[#161b22] border-b border-gray-200 dark:border-gray-800">
+            <span className="text-xs text-gray-500 dark:text-gray-400 font-mono">
               Channel Notification Demo
             </span>
           </div>
@@ -237,7 +237,7 @@ export function LiveDemoSection() {
           {/* Chat messages */}
           <div className="h-40 overflow-y-auto p-4 space-y-3">
             {chatMessages.length === 0 ? (
-              <p className="text-xs text-gray-600 text-center py-6">
+              <p className="text-xs text-gray-500 dark:text-gray-600 text-center py-6">
                 {isConnected
                   ? "Send a message below — it will reach your Claude via a channel notification"
                   : "Connect your MCP server to try the channel demo"}
@@ -249,7 +249,7 @@ export function LiveDemoSection() {
                   className={`text-sm leading-relaxed ${
                     msg.role === "user"
                       ? "text-blue-300"
-                      : "text-gray-300"
+                      : "text-gray-600 dark:text-gray-300"
                   }`}
                 >
                   <span
@@ -266,7 +266,7 @@ export function LiveDemoSection() {
               ))
             )}
             {isThinking && (
-              <div className="text-sm text-gray-500 flex items-center gap-2">
+              <div className="text-sm text-gray-500 dark:text-gray-500 flex items-center gap-2">
                 <span className="text-xs font-mono text-green-500 mr-2">claude</span>
                 <span className="inline-flex gap-1">
                   <span className="h-1.5 w-1.5 rounded-full bg-gray-500 animate-pulse" />
@@ -279,7 +279,7 @@ export function LiveDemoSection() {
           </div>
 
           {/* Input */}
-          <div className="border-t border-gray-800 p-3 flex gap-2">
+          <div className="border-t border-gray-200 dark:border-gray-800 p-3 flex gap-2">
             <input
               type="text"
               value={chatInput}
@@ -291,12 +291,12 @@ export function LiveDemoSection() {
                   : "Connect MCP server first..."
               }
               disabled={!isConnected}
-              className="flex-1 bg-[#161b22] border border-gray-800 rounded-lg px-3 py-2 text-sm text-gray-200 placeholder-gray-600 focus:outline-none focus:border-gray-600 disabled:opacity-50"
+              className="flex-1 bg-[#161b22] border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2 text-sm text-gray-200 placeholder-gray-600 focus:outline-none focus:border-gray-600 disabled:opacity-50"
             />
             <button
               onClick={handleSend}
               disabled={!isConnected || !chatInput.trim()}
-              className="px-4 py-2 bg-blue-600 hover:bg-blue-500 disabled:bg-gray-800 disabled:text-gray-600 text-white text-sm font-medium rounded-lg transition-colors"
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-500 disabled:bg-gray-200 dark:bg-gray-800 disabled:text-gray-600 text-gray-900 dark:text-white text-sm font-medium rounded-lg transition-colors"
             >
               Send
             </button>
@@ -305,21 +305,21 @@ export function LiveDemoSection() {
 
         {/* Last pushed DSL */}
         {lastDSL && (
-          <div className="mt-6 rounded-xl border border-gray-800 bg-[#0d1117] overflow-hidden">
-            <div className="px-4 py-2.5 bg-[#161b22] border-b border-gray-800">
-              <span className="text-xs text-gray-400 font-mono">
+          <div className="mt-6 rounded-xl border border-gray-200 dark:border-gray-800 bg-[#0d1117] overflow-hidden">
+            <div className="px-4 py-2.5 bg-[#161b22] border-b border-gray-200 dark:border-gray-800">
+              <span className="text-xs text-gray-500 dark:text-gray-400 font-mono">
                 Last DSL pushed by Claude
               </span>
             </div>
             <pre className="p-4 overflow-x-auto max-h-48 overflow-y-auto">
-              <code className="text-xs font-mono text-gray-400 leading-relaxed">
+              <code className="text-xs font-mono text-gray-500 dark:text-gray-400 leading-relaxed">
                 {lastDSL}
               </code>
             </pre>
           </div>
         )}
 
-        <div className="mt-8 space-y-5 text-gray-300 leading-relaxed">
+        <div className="mt-8 space-y-5 text-gray-500 dark:text-gray-300 leading-relaxed">
           <p>
             Everything you see above is happening over a single WebSocket
             connection. The message log shows the raw protocol. The chat input

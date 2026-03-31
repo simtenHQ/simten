@@ -48,8 +48,8 @@ export function PongDemo() {
 
   if (!sim.ready) {
     return (
-      <div className="rounded-xl border border-gray-700/50 bg-gray-900/50 p-8">
-        <div className="flex items-center gap-3 text-gray-400">
+      <div className="rounded-xl border border-gray-700/50 bg-gray-100/50 dark:bg-gray-900/50 p-8">
+        <div className="flex items-center gap-3 text-gray-500 dark:text-gray-400">
           <div className="h-5 w-5 animate-spin rounded-full border-2 border-gray-600 border-t-blue-400" />
           <span className="text-sm">Compiling Pong circuit...</span>
         </div>
@@ -66,20 +66,20 @@ export function PongDemo() {
   }
 
   return (
-    <div className="rounded-xl border border-gray-700/50 bg-gray-900/80 overflow-hidden">
+    <div className="rounded-xl border border-gray-700/50 bg-gray-100 dark:bg-gray-900/80 overflow-hidden">
       {/* Controls header */}
       <div className="px-4 py-3 border-b border-gray-700/50 flex items-center gap-3">
-        <span className="text-xs font-medium text-gray-400 uppercase tracking-wider">
+        <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
           Controls
         </span>
-        <span className="text-xs text-gray-500">
+        <span className="text-xs text-gray-500 dark:text-gray-500">
           W/S = left paddle &middot; &uarr;/&darr; = right paddle
         </span>
         <div className="ml-auto flex gap-1">
           {["W", "S", "\u2191", "\u2193"].map((key) => (
             <kbd
               key={key}
-              className="px-1.5 py-0.5 text-xs font-mono bg-gray-800 text-gray-300 rounded border border-gray-600"
+              className="px-1.5 py-0.5 text-xs font-mono bg-gray-200 dark:bg-gray-800 text-gray-500 dark:text-gray-300 rounded border border-gray-600"
             >
               {key}
             </kbd>
@@ -88,7 +88,7 @@ export function PongDemo() {
       </div>
 
       {/* Game screen */}
-      <div className="flex justify-center py-8 bg-gray-950">
+      <div className="flex justify-center py-8 bg-gray-50 dark:bg-gray-950">
         <svg
           width={TOTAL_SIZE}
           height={TOTAL_SIZE}
@@ -114,12 +114,12 @@ export function PongDemo() {
       </div>
 
       {/* Controls bar */}
-      <div className="px-4 py-3 border-t border-gray-700/50 flex flex-wrap items-center gap-3 bg-gray-900/90">
+      <div className="px-4 py-3 border-t border-gray-700/50 flex flex-wrap items-center gap-3 bg-gray-100 dark:bg-gray-900/90">
         <button
           onClick={() => setIsRunning(!isRunning)}
           className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
             isRunning
-              ? "bg-amber-600 hover:bg-amber-500 text-white"
+              ? "bg-amber-600 hover:bg-amber-500 text-gray-900 dark:text-white"
               : "bg-green-600 hover:bg-green-500 text-white"
           }`}
         >
@@ -139,7 +139,7 @@ export function PongDemo() {
           Reset
         </button>
         <div className="flex items-center gap-2 ml-auto">
-          <label className="text-xs text-gray-400">Speed</label>
+          <label className="text-xs text-gray-500 dark:text-gray-400">Speed</label>
           <input
             type="range"
             min={1}
@@ -149,7 +149,7 @@ export function PongDemo() {
             className="w-20 accent-blue-500"
           />
         </div>
-        <span className="text-xs text-gray-400 font-mono tabular-nums">
+        <span className="text-xs text-gray-500 dark:text-gray-400 font-mono tabular-nums">
           Cycle {sim.cycleCount.toLocaleString()}
         </span>
       </div>

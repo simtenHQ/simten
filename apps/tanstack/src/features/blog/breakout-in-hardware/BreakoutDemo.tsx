@@ -89,8 +89,8 @@ export function BreakoutDemo() {
 
   if (!sim.ready) {
     return (
-      <div className="rounded-xl border border-gray-700/50 bg-gray-900/50 p-8">
-        <div className="flex items-center gap-3 text-gray-400">
+      <div className="rounded-xl border border-gray-700/50 bg-gray-100/50 dark:bg-gray-900/50 p-8">
+        <div className="flex items-center gap-3 text-gray-500 dark:text-gray-400">
           <div className="h-5 w-5 animate-spin rounded-full border-2 border-gray-600 border-t-blue-400" />
           <span className="text-sm">Compiling Breakout circuit...</span>
         </div>
@@ -107,20 +107,20 @@ export function BreakoutDemo() {
   }
 
   return (
-    <div className="rounded-xl border border-gray-700/50 bg-gray-900/80 overflow-hidden">
+    <div className="rounded-xl border border-gray-700/50 bg-gray-100 dark:bg-gray-900/80 overflow-hidden">
       {/* Keyboard instructions */}
       <div className="hidden sm:flex px-4 py-3 border-b border-gray-700/50 items-center gap-3">
-        <span className="text-xs font-medium text-gray-400 uppercase tracking-wider">
+        <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
           Controls
         </span>
-        <span className="text-xs text-gray-500">
+        <span className="text-xs text-gray-500 dark:text-gray-500">
           Arrow keys to move the paddle
         </span>
         <div className="ml-auto flex gap-1">
           {["\u2190", "\u2192"].map((key) => (
             <kbd
               key={key}
-              className="px-1.5 py-0.5 text-xs font-mono bg-gray-800 text-gray-300 rounded border border-gray-600"
+              className="px-1.5 py-0.5 text-xs font-mono bg-gray-200 dark:bg-gray-800 text-gray-500 dark:text-gray-300 rounded border border-gray-600"
             >
               {key}
             </kbd>
@@ -129,7 +129,7 @@ export function BreakoutDemo() {
       </div>
 
       {/* Game screen */}
-      <div className="flex justify-center py-6 sm:py-8 bg-gray-950">
+      <div className="flex justify-center py-6 sm:py-8 bg-gray-50 dark:bg-gray-950">
         <svg
           viewBox={`0 0 ${TOTAL_W} ${TOTAL_H}`}
           className="border-2 border-gray-700 rounded-lg bg-black w-[min(100%-2rem,500px)]"
@@ -154,17 +154,17 @@ export function BreakoutDemo() {
       </div>
 
       {/* Touch controls — mobile only */}
-      <div className="sm:hidden py-4 border-t border-gray-700/50 bg-gray-900/90">
+      <div className="sm:hidden py-4 border-t border-gray-700/50 bg-gray-100 dark:bg-gray-900/90">
         <LRPad onDirection={sendDirection} />
       </div>
 
       {/* Controls bar */}
-      <div className="px-4 py-3 border-t border-gray-700/50 flex flex-wrap items-center gap-3 bg-gray-900/90">
+      <div className="px-4 py-3 border-t border-gray-700/50 flex flex-wrap items-center gap-3 bg-gray-100 dark:bg-gray-900/90">
         <button
           onClick={() => setIsRunning(!isRunning)}
           className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
             isRunning
-              ? "bg-amber-600 hover:bg-amber-500 text-white"
+              ? "bg-amber-600 hover:bg-amber-500 text-gray-900 dark:text-white"
               : "bg-green-600 hover:bg-green-500 text-white"
           }`}
         >
@@ -183,7 +183,7 @@ export function BreakoutDemo() {
         >
           Reset
         </button>
-        <span className="ml-auto text-xs text-gray-400 font-mono tabular-nums">
+        <span className="ml-auto text-xs text-gray-500 dark:text-gray-400 font-mono tabular-nums">
           Cycle {sim.cycleCount.toLocaleString()}
         </span>
       </div>

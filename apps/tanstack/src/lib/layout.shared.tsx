@@ -6,5 +6,6 @@ export function baseOptions(): BaseLayoutProps {
       title: 'Turing Incomplete',
     },
     links: [],
+    themeSwitch: { enabled: false },
   };
 }

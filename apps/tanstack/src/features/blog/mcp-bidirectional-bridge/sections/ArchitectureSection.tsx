@@ -2,8 +2,8 @@
 
 function Diagram() {
   return (
-    <div className="my-8 rounded-xl border border-gray-800 bg-[#0d1117] p-6 md:p-8 overflow-x-auto">
-      <pre className="text-sm md:text-base font-mono text-gray-300 leading-relaxed whitespace-pre">
+    <div className="my-8 rounded-xl border border-gray-200 dark:border-gray-800 bg-[#0d1117] p-6 md:p-8 overflow-x-auto">
+      <pre className="text-sm md:text-base font-mono text-gray-500 dark:text-gray-300 leading-relaxed whitespace-pre">
         {`┌─────────────────────┐
 │    Claude Code      │
 │   (LLM + Client)    │
@@ -44,15 +44,15 @@ function CodeBlock({
   children: string;
 }) {
   return (
-    <div className="my-6 rounded-xl border border-gray-800 overflow-hidden">
-      <div className="flex items-center justify-between px-4 py-2 bg-[#161b22] border-b border-gray-800">
-        <span className="text-xs text-gray-400 font-mono">{title}</span>
-        <span className="text-[10px] text-gray-600 font-mono uppercase">
+    <div className="my-6 rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden">
+      <div className="flex items-center justify-between px-4 py-2 bg-[#161b22] border-b border-gray-200 dark:border-gray-800">
+        <span className="text-xs text-gray-500 dark:text-gray-400 font-mono">{title}</span>
+        <span className="text-[10px] text-gray-500 dark:text-gray-600 font-mono uppercase">
           {language}
         </span>
       </div>
       <pre className="p-4 bg-[#0d1117] overflow-x-auto">
-        <code className="text-sm font-mono text-gray-300 leading-relaxed">
+        <code className="text-sm font-mono text-gray-500 dark:text-gray-300 leading-relaxed">
           {children}
         </code>
       </pre>
@@ -64,14 +64,14 @@ export function ArchitectureSection() {
   return (
     <section className="py-12 md:py-16">
       <div className="max-w-3xl">
-        <h2 className="text-2xl md:text-3xl font-bold text-white mb-6">
+        <h2 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-6">
           The Architecture: MCP + WebSocket Bridge
         </h2>
 
-        <div className="space-y-5 text-gray-300 leading-relaxed">
+        <div className="space-y-5 text-gray-500 dark:text-gray-300 leading-relaxed">
           <p>
             The key insight is that the MCP server does{" "}
-            <strong className="text-white">double duty</strong>. It&rsquo;s both
+            <strong className="text-gray-900 dark:text-white">double duty</strong>. It&rsquo;s both
             a tool provider for Claude (standard MCP) and a WebSocket server for
             the browser (custom bridge). Same process, two protocols.
           </p>

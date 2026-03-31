@@ -56,6 +56,8 @@ export interface SimulatorActions {
   setNodeValue: (nodeId: string, value: number) => void;
   tick: () => void;
   reset: () => void;
+  /** Direct access to the simulator engine for performance-critical loops */
+  getSimulator: () => SimulatorEngine | null;
 }
 
 export interface UseCircuitSimulatorOptions {
@@ -304,5 +306,6 @@ export function useCircuitSimulator(
     setNodeValue,
     tick,
     reset,
+    getSimulator: useCallback(() => simulatorRef.current, []),
   };
 }

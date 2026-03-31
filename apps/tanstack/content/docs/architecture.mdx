@@ -125,22 +125,32 @@ The atomic commit in Phase 4 is what makes this match real hardware — all flip
 
 ## Packages
 
+```
+@turing-incomplete/core       ← headless: parser, compiler, simulator, verilog
+       ↑
+@turing-incomplete/ui         ← visual: nodes, canvas, layout, editor
+       ↑
+@turing-incomplete/embed      ← convenience: CircuitEmbed, web components
+```
+
 | Package | Description |
 |---------|-------------|
-| `@turing-incomplete/core` | DSL parser, compiler, validator, simulator engine |
-| `@turing-incomplete/ui` | React components — canvas, embeds, editor stores |
+| `@turing-incomplete/core` | DSL parser, compiler, validator, simulator engine, Verilog export. No UI dependencies. |
+| `@turing-incomplete/ui` | React components — canonical node renderers, shared canvas, ELK layout, editor stores and controls. |
+| `@turing-incomplete/embed` | Batteries-included wrapper: `CircuitEmbed` (pass DSL, get interactive circuit), `useCircuitSimulator` hook, web component registration. Depends on core + ui. |
 | `@turing-incomplete/mcp` | MCP server for Claude Code integration |
 | `@turing-incomplete/challenges` | Challenge definitions (ALU, Snake, CPU) |
 
-### UI sub-paths
+### Import paths
 
 | Import | Contents |
 |--------|----------|
-| `@turing-incomplete/ui/embed` | `CircuitEmbed`, `useCircuitSimulator` — high-level embedding |
-| `@turing-incomplete/ui/shared` | `CircuitCanvas`, `WaveformViewer`, `TestResultsPanel` — core rendering |
-| `@turing-incomplete/ui/editor` | Full editor kit — stores, components, simulation controller |
+| `@turing-incomplete/embed` | `CircuitEmbed`, `useCircuitSimulator`, `CircuitCanvas` — everything needed to embed a circuit |
+| `@turing-incomplete/ui/nodes` | `BaseNode`, `InputNode`, `OutputNode`, `LogicGateNode`, `NodeData` — canonical node components (props-driven, store-free) |
+| `@turing-incomplete/ui/shared` | `CircuitCanvas`, `WaveformViewer`, `TestResultsPanel` — shared rendering |
+| `@turing-incomplete/ui/editor` | Full editor kit — Zustand stores, component palette, diagnostics, simulation controller |
 
-The editor uses the same `CircuitCanvas` as blog embeds. Layout is handled by ELK auto-layout with optional `nodePositions` overrides. The DSL is the single source of truth — the canvas is a viewer, not an editor.
+Node components live in `@turing-incomplete/ui/nodes` and are the single source of truth — both the embed and the editor use them. The embed re-exports them at `@turing-incomplete/embed/nodes` for external consumers.
 
 ## MCP Integration
 

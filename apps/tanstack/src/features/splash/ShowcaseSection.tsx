@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useCircuitSimulator } from "@turing-incomplete/ui/embed";
+import { useCircuitSimulator } from "@turing-incomplete/embed";
 import { CircuitCanvas } from "@turing-incomplete/ui/shared";
 
 // --- Live Fibonacci circuit (auto-ticking) ---

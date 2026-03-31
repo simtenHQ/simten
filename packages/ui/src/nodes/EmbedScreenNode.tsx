@@ -1,19 +1,14 @@
 "use client";
 
 import React from "react";
-import { BaseNode } from "../editor/components/nodes/BaseNode";
-import type { NodeData } from "../editor/utils/projection";
+import { BaseNode } from "./BaseNode";
+import type { NodeData } from "./NodeData";
 
 interface EmbedScreenNodeProps {
   data: NodeData;
   selected?: boolean;
 }
 
-/**
- * Lightweight screen node for embeds - no useCircuitStore dependency.
- * Reads pixel data directly from data.__pixels.
- * Supports configurable width/height via node arguments.
- */
 export function EmbedScreenNode({ data, selected }: EmbedScreenNodeProps) {
   const GRID_W = (data.arguments?.width as number) ?? 8;
   const GRID_H = (data.arguments?.height as number) ?? 8;
@@ -40,13 +35,13 @@ export function EmbedScreenNode({ data, selected }: EmbedScreenNodeProps) {
       className="min-w-[160px]"
     >
       <div className="flex flex-col items-center gap-2">
-        <div className="px-2 py-1 rounded text-xs font-medium text-gray-700 dark:text-gray-300">
+        <div className="px-2 py-1 rounded text-xs font-medium text-[var(--embed-text-primary)]">
           {data.label || "Screen"}
         </div>
         <svg
           width={GRID_W * PIXEL_SIZE + (GRID_W - 1) * PIXEL_GAP}
           height={GRID_H * PIXEL_SIZE + (GRID_H - 1) * PIXEL_GAP}
-          className="border-2 border-gray-700 rounded bg-black"
+          className="border-2 border-[var(--embed-border-node)] rounded bg-black"
           style={{ imageRendering: "pixelated" }}
         >
           {pixels.slice(0, TOTAL_PIXELS).map((value, index) => {
@@ -64,8 +59,8 @@ export function EmbedScreenNode({ data, selected }: EmbedScreenNodeProps) {
             );
           })}
         </svg>
-        <div className="text-xs text-gray-500 dark:text-gray-400">
-          {GRID_W}×{GRID_H} pixels
+        <div className="text-xs text-[var(--embed-text-secondary)]">
+          {GRID_W}x{GRID_H} pixels
         </div>
       </div>
     </BaseNode>

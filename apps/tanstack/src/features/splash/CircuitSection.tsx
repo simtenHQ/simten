@@ -1,4 +1,4 @@
-import { useCircuitSimulator } from "@turing-incomplete/ui/embed";
+import { useCircuitSimulator } from "@turing-incomplete/embed";
 import { CircuitCanvas } from "@turing-incomplete/ui/shared";
 import type { SectionDef } from "./sections";
 

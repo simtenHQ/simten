@@ -3,7 +3,8 @@
 import React, { useCallback, useState } from 'react';
 import { BaseNode, type PortConfig } from './BaseNode';
 import type { NodeData } from './NodeData';
-import { cn } from '../../lib/utils';
+import { CompositeBadge } from './CompositeBadge';
+import { cn } from '../lib/utils';
 
 interface InputNodeProps {
   data: NodeData;
@@ -49,7 +50,7 @@ function NumericInputControl({ data }: { data: NodeData }) {
         <button
           onClick={(e) => { e.stopPropagation(); setValue(currentValue - 1); }}
           aria-label="Decrease value"
-          className="w-6 h-6 flex items-center justify-center rounded bg-[#2a2a2e] hover:bg-[#3a3a3e] text-gray-400 text-sm font-bold active:scale-90 transition-all"
+          className="w-6 h-6 flex items-center justify-center rounded bg-[var(--embed-bg-tertiary)] hover:opacity-80 text-[var(--embed-text-secondary)] text-sm font-bold active:scale-90 transition-all"
         >-</button>
         {isEditing ? (
           <input
@@ -66,7 +67,7 @@ function NumericInputControl({ data }: { data: NodeData }) {
           <button
             onClick={handleStartEdit}
             aria-label={`Current value: ${currentValue}. Click to edit`}
-            className="w-14 h-7 flex items-center justify-center rounded bg-gray-800 text-emerald-400 font-mono text-sm font-bold hover:bg-gray-700 transition-colors cursor-text"
+            className="w-14 h-7 flex items-center justify-center rounded bg-[var(--embed-bg-tertiary)] text-emerald-400 font-mono text-sm font-bold hover:opacity-80 transition-colors cursor-text"
           >
             0x{hexValue}
           </button>
@@ -74,10 +75,10 @@ function NumericInputControl({ data }: { data: NodeData }) {
         <button
           onClick={(e) => { e.stopPropagation(); setValue(currentValue + 1); }}
           aria-label="Increase value"
-          className="w-6 h-6 flex items-center justify-center rounded bg-[#2a2a2e] hover:bg-[#3a3a3e] text-gray-400 text-sm font-bold active:scale-90 transition-all"
+          className="w-6 h-6 flex items-center justify-center rounded bg-[var(--embed-bg-tertiary)] hover:opacity-80 text-[var(--embed-text-secondary)] text-sm font-bold active:scale-90 transition-all"
         >+</button>
       </div>
-      <div className="text-[10px] text-gray-400 font-mono">= {currentValue}</div>
+      <div className="text-[10px] text-[var(--embed-text-secondary)] font-mono">= {currentValue}</div>
     </div>
   );
 }
@@ -101,7 +102,8 @@ export function InputNode({ data, selected }: InputNodeProps) {
   return (
     <BaseNode outputPorts={outputPorts} selected={selected} className="min-w-[80px]" showPortLabels={data.showPortLabels} onPortClick={data.onPortClick} glowUnconnected={data.glowUnconnected}>
       <div className="relative flex flex-col items-center gap-2">
-        <div className="px-2 py-1 rounded text-xs font-medium text-gray-300">
+        {data.isComposite && <CompositeBadge />}
+        <div className="px-2 py-1 rounded text-xs font-medium text-[var(--embed-text-primary)]">
           {data.label || data.componentRef}
         </div>
 
@@ -143,7 +145,7 @@ export function InputNode({ data, selected }: InputNodeProps) {
             </button>
             <div className={cn(
               'text-xs font-semibold tracking-wide transition-colors duration-300',
-              value ? 'text-emerald-400' : 'text-gray-400'
+              value ? 'text-emerald-400' : 'text-[var(--embed-text-secondary)]'
             )}>
               {value ? 'ON' : 'OFF'}
             </div>
