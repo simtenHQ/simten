@@ -1,36 +1,44 @@
 "use client";
 
-import React, { useMemo, useState, useCallback, useEffect, type ReactNode } from "react";
 import {
-  ReactFlow,
+  applyNodeChanges,
   Background,
   BackgroundVariant,
   Controls,
   Panel,
-  SelectionMode,
-  applyNodeChanges,
-  applyEdgeChanges,
-  useReactFlow,
+  ReactFlow,
   ReactFlowProvider,
-  type Node,
+  useReactFlow,
   type Edge,
-  type NodeTypes,
   type EdgeTypes,
+  type Node,
+  type NodeTypes,
   type OnNodesChange,
-  type OnEdgesChange,
-  type OnConnect,
-  type Connection,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
 
 import type { Circuit } from "@turing-incomplete/core/dsl";
-import type { ComponentLibrary, FlatPortValueMap, FlatSequentialState } from "@turing-incomplete/core/simulator";
-import { createComponentLibrary, PRIMITIVES } from "@turing-incomplete/core/simulator";
-import type { MetadataState } from "./types";
+import type {
+  ComponentLibrary,
+  FlatPortValueMap,
+  FlatSequentialState,
+} from "@turing-incomplete/core/simulator";
+import {
+  createComponentLibrary,
+  PRIMITIVES,
+} from "@turing-incomplete/core/simulator";
 import type { NodeData } from "../nodes";
-import { projectCircuitToReactFlow } from "./projection";
-import { NODE_TYPES, EDGE_TYPES } from "./node-types";
 import { cleanCircuitLabels } from "./label-utils";
+import { EDGE_TYPES, NODE_TYPES } from "./node-types";
+import { projectCircuitToReactFlow } from "./projection";
+import type { MetadataState } from "./types";
 import { useElkLayout } from "./useElkLayout";
 
 function FitViewButton() {
@@ -41,8 +49,18 @@ function FitViewButton() {
       className="bg-[var(--embed-bg-tertiary)] hover:opacity-80 text-[var(--embed-text-secondary)] p-1.5 rounded border border-[var(--embed-border)] transition-colors"
       title="Fit view"
     >
-      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15" />
+      <svg
+        className="w-4 h-4"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+        strokeWidth={1.5}
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15"
+        />
       </svg>
     </button>
   );
@@ -69,7 +87,11 @@ export interface CircuitCanvasProps {
   edgeTypes?: EdgeTypes;
   showControls?: boolean;
   showPortLabels?: boolean;
-  onPortClick?: (nodeLabel: string, portName: string, portType: 'input' | 'output') => void;
+  onPortClick?: (
+    nodeLabel: string,
+    portName: string,
+    portType: "input" | "output",
+  ) => void;
   glowUnconnected?: boolean;
   /** Theme for the canvas. Defaults to "dark". */
   theme?: "light" | "dark";
@@ -78,7 +100,8 @@ export interface CircuitCanvasProps {
 // Default library — created once, reused
 let _defaultLibrary: ComponentLibrary | null = null;
 function getDefaultLibrary(): ComponentLibrary {
-  if (!_defaultLibrary) _defaultLibrary = createComponentLibrary([...PRIMITIVES]);
+  if (!_defaultLibrary)
+    _defaultLibrary = createComponentLibrary([...PRIMITIVES]);
   return _defaultLibrary;
 }
 
@@ -117,7 +140,9 @@ function CircuitCanvasInner({
   }, [focus]);
 
   const cleanedCircuit = useMemo(() => {
-    return circuit && autoLayout ? cleanCircuitLabels(circuit) : circuit ?? null;
+    return circuit && autoLayout
+      ? cleanCircuitLabels(circuit)
+      : circuit ?? null;
   }, [circuit, autoLayout]);
 
   const { metadata: elkMetadata } = useElkLayout(
@@ -126,15 +151,21 @@ function CircuitCanvasInner({
 
   const metadata = useMemo(() => {
     if (metadataProp) return metadataProp;
-    if (!cleanedCircuit) return { components: {}, connections: {} } as MetadataState;
+    if (!cleanedCircuit)
+      return { components: {}, connections: {} } as MetadataState;
 
-    const base = autoLayout ? elkMetadata : ({ components: {}, connections: {} } as MetadataState);
+    const base = autoLayout
+      ? elkMetadata
+      : ({ components: {}, connections: {} } as MetadataState);
 
     if (nodePositions) {
       for (const node of cleanedCircuit.nodes) {
         const label = node.label || node.id;
         if (nodePositions[label]) {
-          base.components[node.id] = { id: node.id, position: nodePositions[label] };
+          base.components[node.id] = {
+            id: node.id,
+            position: nodePositions[label],
+          };
         }
       }
     }
@@ -161,14 +192,17 @@ function CircuitCanvasInner({
       if (glowUnconnected) data.glowUnconnected = true;
       if (onPortClickProp) {
         const label = nodeData.label || nodeData.componentRef;
-        data.onPortClick = (portName: string, portType: 'input' | 'output') =>
+        data.onPortClick = (portName: string, portType: "input" | "output") =>
           onPortClickProp(label, portName, portType);
       }
 
-      if (componentRef === 'Input' && onSetNodeValue) {
+      if (componentRef === "Input" && onSetNodeValue) {
         data.onValueChange = (value: number) => onSetNodeValue(node.id, value);
       }
-      if (onToggleNode && (componentRef === 'Switch' || componentRef === 'Button')) {
+      if (
+        onToggleNode &&
+        (componentRef === "Switch" || componentRef === "Button")
+      ) {
         data.onToggle = () => onToggleNode(node.id);
       }
 
@@ -187,42 +221,65 @@ function CircuitCanvasInner({
           const label = (node.data as NodeData)?.label ?? node.id;
           return {
             ...node,
-            style: { ...node.style, opacity: focusLabels.has(label) ? 1 : 0.15, transition: 'opacity 0.2s' },
+            style: {
+              ...node.style,
+              opacity: focusLabels.has(label) ? 1 : 0.15,
+              transition: "opacity 0.2s",
+            },
           };
         }),
         projectedEdges: projected.edges.map((edge) => ({
           ...edge,
           style: {
             ...edge.style,
-            opacity: (focusedNodeIds.has(edge.source) || focusedNodeIds.has(edge.target)) ? 1 : 0.15,
-            transition: 'opacity 0.2s',
+            opacity:
+              focusedNodeIds.has(edge.source) || focusedNodeIds.has(edge.target)
+                ? 1
+                : 0.15,
+            transition: "opacity 0.2s",
           },
         })),
       };
     }
 
-    return { projectedNodes: nodesWithHandlers, projectedEdges: projected.edges };
-  }, [cleanedCircuit, metadata, library, portValues, sequentialState, onToggleNode, onSetNodeValue, focusLabels, showPortLabels, onPortClickProp, glowUnconnected]);
+    return {
+      projectedNodes: nodesWithHandlers,
+      projectedEdges: projected.edges,
+    };
+  }, [
+    cleanedCircuit,
+    metadata,
+    library,
+    portValues,
+    sequentialState,
+    onToggleNode,
+    onSetNodeValue,
+    focusLabels,
+    showPortLabels,
+    onPortClickProp,
+    glowUnconnected,
+  ]);
 
   const [nodes, setNodes] = useState<Node[]>([]);
   const [edges, setEdges] = useState<Edge[]>([]);
 
   useEffect(() => {
     setNodes((currentNodes) => {
-      const positionMap = new Map(currentNodes.map(n => [n.id, n.position]));
-      return projectedNodes.map(node => ({
+      const positionMap = new Map(currentNodes.map((n) => [n.id, n.position]));
+      return projectedNodes.map((node) => ({
         ...node,
         position: positionMap.get(node.id) ?? node.position,
       }));
     });
   }, [projectedNodes]);
 
-  useEffect(() => { setEdges(projectedEdges); }, [projectedEdges]);
+  useEffect(() => {
+    setEdges(projectedEdges);
+  }, [projectedEdges]);
 
-  const onNodesChange: OnNodesChange = useCallback(
-    (changes) => { setNodes((nds) => applyNodeChanges(changes, nds)); },
-    [],
-  );
+  const onNodesChange: OnNodesChange = useCallback((changes) => {
+    setNodes((nds) => applyNodeChanges(changes, nds));
+  }, []);
 
   const handleNodeDoubleClick = useCallback(
     (_event: React.MouseEvent, node: Node) => {
@@ -237,7 +294,9 @@ function CircuitCanvasInner({
     return (
       <div
         data-embed-theme={theme}
-        className={`bg-[var(--embed-bg-primary)] rounded-lg flex items-center justify-center text-[var(--embed-text-muted)] ${className ?? ""}`}
+        className={`bg-[var(--embed-bg-primary)] rounded-lg flex items-center justify-center text-[var(--embed-text-muted)] ${
+          className ?? ""
+        }`}
         style={{ height }}
       >
         No circuit
@@ -248,7 +307,9 @@ function CircuitCanvasInner({
   return (
     <div
       data-embed-theme={theme}
-      className={`bg-[var(--embed-bg-primary)] rounded-lg overflow-hidden ${className ?? ""}`}
+      className={`bg-[var(--embed-bg-primary)] rounded-lg overflow-hidden ${
+        className ?? ""
+      }`}
       style={{ height }}
       aria-label="Circuit diagram"
     >
@@ -281,7 +342,12 @@ function CircuitCanvasInner({
         deleteKeyCode={null}
         panActivationKeyCode={null}
       >
-        <Background variant={BackgroundVariant.Dots} gap={20} size={1} color="var(--embed-dot-color)" />
+        <Background
+          variant={BackgroundVariant.Dots}
+          gap={20}
+          size={1}
+          color="var(--embed-dot-color)"
+        />
         {showControls ? (
           <Controls />
         ) : (
