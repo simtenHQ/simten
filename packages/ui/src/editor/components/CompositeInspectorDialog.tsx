@@ -396,6 +396,7 @@ function InspectorCanvas({ frame }: InspectorCanvasProps) {
 
       <CircuitCanvas
         circuit={viewCircuit}
+        componentLibrary={library}
         portValues={portValues}
         sequentialState={seqState}
         onToggleNode={handleToggle}
@@ -546,30 +547,10 @@ export function CompositeInspectorDialog() {
           >
             <motion.div
               className="flex h-[80vh] w-full max-w-5xl flex-col rounded-lg bg-white shadow-xl pointer-events-auto overflow-hidden"
-              initial={
-                originRect
-                  ? { ...originTransform, borderRadius: 8 }
-                  : { opacity: 0, scale: 0.9 }
-              }
-              animate={{
-                x: 0,
-                y: 0,
-                scaleX: 1,
-                scaleY: 1,
-                opacity: 1,
-                borderRadius: 8,
-              }}
-              exit={
-                originRect
-                  ? { ...originTransform, borderRadius: 8 }
-                  : { opacity: 0, scale: 0.9 }
-              }
-              transition={{
-                type: "spring",
-                damping: 28,
-                stiffness: 300,
-                mass: 0.8,
-              }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.15 }}
             >
               {/* Header */}
               <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3">
