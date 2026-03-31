@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
-import { useCircuitSimulator } from "@turing-incomplete/ui/embed";
+import { useCircuitSimulator } from "@turing-incomplete/embed";
 import { CircuitCanvas } from "@turing-incomplete/ui/shared";
 import { compileDSL } from "@turing-incomplete/core/dsl";
 import {

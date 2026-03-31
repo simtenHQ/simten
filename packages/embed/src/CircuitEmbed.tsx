@@ -24,6 +24,8 @@ export interface CircuitEmbedProps {
   onPortClick?: (nodeLabel: string, portName: string, portType: 'input' | 'output') => void;
   glowUnconnected?: boolean;
   autoHarness?: boolean;
+  /** Theme for the embed. Defaults to "dark". The embed owns its own theme, independent of the host page. */
+  theme?: "light" | "dark";
 }
 
 export interface CheckSpec {
@@ -62,6 +64,7 @@ export const CircuitEmbed = forwardRef<CircuitEmbedHandle, CircuitEmbedProps>(fu
   onPortClick,
   glowUnconnected,
   autoHarness = false,
+  theme = "dark",
 }, ref) {
   const options: UseCircuitSimulatorOptions | undefined = initialMemory
     ? { initialMemory }
@@ -157,16 +160,17 @@ export const CircuitEmbed = forwardRef<CircuitEmbedHandle, CircuitEmbedProps>(fu
   return (
     <ErrorBoundary title="Circuit Render Error">
     <div
-      className={`rounded-xl border border-gray-700/50 bg-gray-900/80 overflow-hidden${fillParent ? " flex flex-col" : ""}`}
+      data-embed-theme={theme}
+      className={`rounded-xl border border-[var(--embed-border)] bg-[var(--embed-bg-surface-80)] overflow-hidden${fillParent ? " flex flex-col" : ""}`}
       style={fillParent ? { height } : undefined}
       role="application"
       aria-label={title || "Interactive circuit simulator"}
       aria-busy={!sim.ready}
     >
       {(title || description) && (
-        <div className="px-4 py-3 border-b border-gray-700/50 shrink-0">
-          {title && <h3 className="text-sm font-semibold text-gray-200">{title}</h3>}
-          {description && <p className="text-xs text-gray-400 mt-0.5">{description}</p>}
+        <div className="px-4 py-3 border-b border-[var(--embed-border)] shrink-0">
+          {title && <h3 className="text-sm font-semibold text-[var(--embed-text-primary)]">{title}</h3>}
+          {description && <p className="text-xs text-[var(--embed-text-secondary)] mt-0.5">{description}</p>}
         </div>
       )}
 
@@ -186,7 +190,7 @@ export const CircuitEmbed = forwardRef<CircuitEmbedHandle, CircuitEmbedProps>(fu
       />
 
       {showControls && sim.isSequential && (
-        <div className="px-3 py-2 border-t border-gray-700/50 flex items-center gap-2 bg-gray-900/90">
+        <div className="px-3 py-2 border-t border-[var(--embed-border)] flex items-center gap-2 bg-[var(--embed-bg-surface)]">
           <button
             onClick={sim.tick}
             className="px-3 py-1.5 text-xs font-medium rounded-md bg-blue-600 hover:bg-blue-500 text-white transition-colors"
@@ -198,28 +202,28 @@ export const CircuitEmbed = forwardRef<CircuitEmbedHandle, CircuitEmbedProps>(fu
             className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
               isAutoRunning
                 ? "bg-amber-600 hover:bg-amber-500 text-white"
-                : "bg-gray-700 hover:bg-gray-600 text-gray-200"
+                : "bg-[var(--embed-bg-tertiary)] hover:opacity-80 text-[var(--embed-text-primary)]"
             }`}
           >
             {isAutoRunning ? "Pause" : "Auto"}
           </button>
           <button
             onClick={handleReset}
-            className="px-3 py-1.5 text-xs font-medium rounded-md bg-gray-700 hover:bg-gray-600 text-gray-200 transition-colors"
+            className="px-3 py-1.5 text-xs font-medium rounded-md bg-[var(--embed-bg-tertiary)] hover:opacity-80 text-[var(--embed-text-primary)] transition-colors"
           >
             Reset
           </button>
-          <span className="ml-auto text-xs text-gray-400 font-mono tabular-nums">
+          <span className="ml-auto text-xs text-[var(--embed-text-secondary)] font-mono tabular-nums">
             Cycle {sim.cycleCount}
           </span>
         </div>
       )}
 
       {displayDsl && (
-        <div className="border-t border-gray-700/50">
+        <div className="border-t border-[var(--embed-border)]">
           <button
             onClick={() => setCodeVisible(!codeVisible)}
-            className="w-full px-3 py-2 text-xs text-gray-400 hover:text-gray-200 hover:bg-gray-800/50 transition-colors text-left flex items-center gap-1.5"
+            className="w-full px-3 py-2 text-xs text-[var(--embed-text-secondary)] hover:text-[var(--embed-text-primary)] hover:bg-[var(--embed-bg-tertiary)]/50 transition-colors text-left flex items-center gap-1.5"
           >
             <svg
               className={`w-3 h-3 transition-transform ${codeVisible ? "rotate-90" : ""}`}
@@ -235,7 +239,7 @@ export const CircuitEmbed = forwardRef<CircuitEmbedHandle, CircuitEmbedProps>(fu
             View DSL
           </button>
           {codeVisible && (
-            <pre className="px-4 pb-3 text-xs font-mono text-gray-300 overflow-x-auto leading-relaxed">
+            <pre className="px-4 pb-3 text-xs font-mono text-[var(--embed-text-secondary)] overflow-x-auto leading-relaxed">
               {displayDsl}
             </pre>
           )}

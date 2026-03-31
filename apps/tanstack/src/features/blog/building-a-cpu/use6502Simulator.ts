@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { useCircuitSimulator, type UseCircuitSimulatorOptions } from "@turing-incomplete/ui/embed";
+import { useCircuitSimulator, type UseCircuitSimulatorOptions } from "@turing-incomplete/embed";
 
 export interface Program {
   id: string;

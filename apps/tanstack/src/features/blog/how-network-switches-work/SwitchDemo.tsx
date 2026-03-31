@@ -72,8 +72,8 @@ export function SwitchDemo() {
 
   if (!sim.ready) {
     return (
-      <div className="rounded-xl border border-gray-700/50 bg-gray-900/50 p-8">
-        <div className="flex items-center gap-3 text-gray-400">
+      <div className="rounded-xl border border-gray-700/50 bg-gray-100/50 dark:bg-gray-900/50 p-8">
+        <div className="flex items-center gap-3 text-gray-500 dark:text-gray-400">
           <div className="h-5 w-5 animate-spin rounded-full border-2 border-gray-600 border-t-blue-400" />
           <span className="text-sm">Compiling network switch circuit...</span>
         </div>
@@ -99,13 +99,13 @@ export function SwitchDemo() {
   };
 
   return (
-    <div className="rounded-xl border border-gray-700/50 bg-gray-900/80 overflow-hidden">
+    <div className="rounded-xl border border-gray-700/50 bg-gray-100 dark:bg-gray-900/80 overflow-hidden">
       {/* Header */}
       <div className="px-4 py-3 border-b border-gray-700/50 flex items-center gap-3">
-        <span className="text-xs font-medium text-gray-400 uppercase tracking-wider">
+        <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
           2-Port Network Switch
         </span>
-        <span className="text-xs text-gray-500">
+        <span className="text-xs text-gray-500 dark:text-gray-500">
           Inject frames, watch them cross-over to the opposite port
         </span>
       </div>
@@ -123,14 +123,14 @@ export function SwitchDemo() {
             >
               Send Packet
             </button>
-            <div className="text-xs text-gray-500 font-mono">
+            <div className="text-xs text-gray-500 dark:text-gray-500 font-mono">
               Payload: 10 20 30 40...
             </div>
           </div>
 
           {/* Center: switch diagram */}
           <div className="flex flex-col items-center gap-2">
-            <div className="text-xs text-gray-500 uppercase tracking-wider">
+            <div className="text-xs text-gray-500 dark:text-gray-500 uppercase tracking-wider">
               Crossbar
             </div>
             <svg
@@ -163,7 +163,7 @@ export function SwitchDemo() {
               <circle cx={110} cy={20} r={4} fill="#a855f7" />
               <circle cx={110} cy={60} r={4} fill="#3b82f6" />
             </svg>
-            <div className="text-xs text-gray-600">0 &#8594; 1, 1 &#8594; 0</div>
+            <div className="text-xs text-gray-500 dark:text-gray-600">0 &#8594; 1, 1 &#8594; 0</div>
           </div>
 
           {/* Port 1 input */}
@@ -174,11 +174,11 @@ export function SwitchDemo() {
             <button
               onClick={() => injectFrame(1)}
               disabled={injecting}
-              className="w-full px-3 py-2 text-sm font-medium rounded-md bg-purple-600 hover:bg-purple-500 text-white transition-colors disabled:opacity-40"
+              className="w-full px-3 py-2 text-sm font-medium rounded-md bg-purple-600 hover:bg-purple-500 text-gray-900 dark:text-white transition-colors disabled:opacity-40"
             >
               Send Packet
             </button>
-            <div className="text-xs text-gray-500 font-mono">
+            <div className="text-xs text-gray-500 dark:text-gray-500 font-mono">
               Payload: A1 B2 C3 D4...
             </div>
           </div>
@@ -186,14 +186,14 @@ export function SwitchDemo() {
 
         {/* Output status */}
         <div className="mt-6 grid grid-cols-2 gap-4">
-          <div className="rounded-lg border border-gray-700/50 bg-gray-950/50 p-3">
-            <h5 className="text-xs text-gray-500 mb-1">Port 0 Output</h5>
+          <div className="rounded-lg border border-gray-700/50 bg-gray-50 dark:bg-gray-950/50 p-3">
+            <h5 className="text-xs text-gray-500 dark:text-gray-500 mb-1">Port 0 Output</h5>
             <div className="font-mono text-sm text-blue-300">
               Data: 0x{(getVal("p0_out") & 0xff).toString(16).padStart(2, "0")}
             </div>
           </div>
-          <div className="rounded-lg border border-gray-700/50 bg-gray-950/50 p-3">
-            <h5 className="text-xs text-gray-500 mb-1">Port 1 Output</h5>
+          <div className="rounded-lg border border-gray-700/50 bg-gray-50 dark:bg-gray-950/50 p-3">
+            <h5 className="text-xs text-gray-500 dark:text-gray-500 mb-1">Port 1 Output</h5>
             <div className="font-mono text-sm text-purple-300">
               Data: 0x{(getVal("p1_out") & 0xff).toString(16).padStart(2, "0")}
             </div>
@@ -203,10 +203,10 @@ export function SwitchDemo() {
 
       {/* Packet log */}
       <div className="border-t border-gray-700/50 px-4 py-3">
-        <h4 className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-2">
+        <h4 className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
           Activity Log
         </h4>
-        <div className="h-40 overflow-y-auto font-mono text-xs text-gray-400 space-y-0.5 bg-gray-950/50 rounded-lg p-3">
+        <div className="h-40 overflow-y-auto font-mono text-xs text-gray-500 dark:text-gray-400 space-y-0.5 bg-gray-50 dark:bg-gray-950/50 rounded-lg p-3">
           {log.length === 0 ? (
             <div className="text-gray-600">
               Click &ldquo;Send Packet&rdquo; to inject a frame...
@@ -218,12 +218,12 @@ export function SwitchDemo() {
       </div>
 
       {/* Controls bar */}
-      <div className="px-4 py-3 border-t border-gray-700/50 flex flex-wrap items-center gap-3 bg-gray-900/90">
+      <div className="px-4 py-3 border-t border-gray-700/50 flex flex-wrap items-center gap-3 bg-gray-100 dark:bg-gray-900/90">
         <button
           onClick={() => setIsRunning(!isRunning)}
           className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
             isRunning
-              ? "bg-amber-600 hover:bg-amber-500 text-white"
+              ? "bg-amber-600 hover:bg-amber-500 text-gray-900 dark:text-white"
               : "bg-green-600 hover:bg-green-500 text-white"
           }`}
         >
@@ -246,7 +246,7 @@ export function SwitchDemo() {
           Reset
         </button>
         <div className="flex items-center gap-2 ml-auto">
-          <label className="text-xs text-gray-400">Speed</label>
+          <label className="text-xs text-gray-500 dark:text-gray-400">Speed</label>
           <input
             type="range"
             min={1}
@@ -256,7 +256,7 @@ export function SwitchDemo() {
             className="w-20 accent-blue-500"
           />
         </div>
-        <span className="text-xs text-gray-400 font-mono tabular-nums">
+        <span className="text-xs text-gray-500 dark:text-gray-400 font-mono tabular-nums">
           Cycle {sim.cycleCount.toLocaleString()}
         </span>
       </div>

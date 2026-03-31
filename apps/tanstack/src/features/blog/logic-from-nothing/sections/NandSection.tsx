@@ -1,15 +1,15 @@
 "use client";
 
-import { CircuitEmbed } from "@turing-incomplete/ui/embed";
+import { ThemedCircuitEmbed as CircuitEmbed } from "@/features/blog/components/ThemedCircuitEmbed";
 
 export function NandSection() {
   return (
     <section className="py-12">
-      <h2 className="text-3xl font-bold text-white mb-4">
+      <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
         The Only Gate You Need
       </h2>
       <div className="prose-invert space-y-6">
-        <p className="text-gray-300 leading-relaxed">
+        <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
           A NAND gate outputs <strong>0 only when both inputs are 1</strong>.
           Every other combination gives 1. That&rsquo;s it. Toggle the switches
           below &mdash; try all four combinations and build the truth table in
@@ -28,12 +28,12 @@ export function NandSection() {
                 key={`${i}-${j}`}
                 className={`px-2 py-1.5 rounded ${
                   i === 0
-                    ? "text-gray-400 font-semibold"
+                    ? "text-gray-500 dark:text-gray-400 font-semibold"
                     : i === 4 && j === 2
                     ? "bg-red-950/30 text-red-400"
                     : j === 2
                     ? "bg-emerald-950/30 text-emerald-400"
-                    : "text-gray-300"
+                    : "text-gray-600 dark:text-gray-300"
                 }`}
               >
                 {cell}
@@ -41,7 +41,7 @@ export function NandSection() {
             ))}</>
           ))}
         </div>
-        <p className="text-gray-300 leading-relaxed">
+        <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
           The name comes from <strong>Not-AND</strong> &mdash; it&rsquo;s the
           inverse of AND. In 1913, Henry Sheffer proved that NAND alone can
           express every possible Boolean function. This means you can build

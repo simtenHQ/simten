@@ -17,7 +17,7 @@ function BlogLayout() {
 
   // Individual blog posts get the shared wrapper + banner
   return (
-    <div className="min-h-screen bg-gray-950 text-gray-100">
+    <div className="min-h-screen bg-white text-gray-900 dark:bg-gray-950 dark:text-gray-100">
       <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pb-24">
         <BlogBanner />
         <Outlet />

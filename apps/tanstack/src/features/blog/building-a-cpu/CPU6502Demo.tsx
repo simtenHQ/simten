@@ -116,8 +116,8 @@ export function CPU6502Demo() {
 
   if (loading || !sim.ready) {
     return (
-      <div className="rounded-xl border border-gray-700/50 bg-gray-900/50 p-8">
-        <div className="flex items-center gap-3 text-gray-400">
+      <div className="rounded-xl border border-gray-700/50 bg-gray-100/50 dark:bg-gray-900/50 p-8">
+        <div className="flex items-center gap-3 text-gray-500 dark:text-gray-400">
           <div className="h-5 w-5 animate-spin rounded-full border-2 border-gray-600 border-t-blue-400" />
           <div>
             <span className="text-sm">
@@ -126,7 +126,7 @@ export function CPU6502Demo() {
                 : "Compiling 6502 CPU..."}
             </span>
             {!loading && (
-              <span className="block text-xs text-gray-500 mt-1">
+              <span className="block text-xs text-gray-500 dark:text-gray-500 mt-1">
                 This may take a few seconds
               </span>
             )}
@@ -137,7 +137,7 @@ export function CPU6502Demo() {
   }
 
   return (
-    <div className="rounded-xl border border-gray-700/50 bg-gray-900/80 overflow-hidden">
+    <div className="rounded-xl border border-gray-700/50 bg-gray-100 dark:bg-gray-900/80 overflow-hidden">
       {/* Header bar: program selector OR compile controls */}
       <div className="px-4 py-3 border-b border-gray-700/50 flex flex-wrap items-center gap-3">
         {editMode ? (
@@ -160,14 +160,14 @@ export function CPU6502Demo() {
             )}
             <button
               onClick={handleExitEditMode}
-              className="px-3 py-1.5 text-xs font-medium rounded-md bg-gray-800 text-gray-300 hover:bg-gray-700 transition-colors ml-auto"
+              className="px-3 py-1.5 text-xs font-medium rounded-md bg-gray-200 dark:bg-gray-800 text-gray-500 dark:text-gray-300 hover:bg-gray-700 transition-colors ml-auto"
             >
               Back to Examples
             </button>
           </>
         ) : (
           <>
-            <label className="text-xs font-medium text-gray-400 uppercase tracking-wider">
+            <label className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
               Program
             </label>
             <div className="flex gap-2">
@@ -178,7 +178,7 @@ export function CPU6502Demo() {
                   className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
                     currentProgram.id === prog.id
                       ? "bg-blue-600 text-white"
-                      : "bg-gray-800 text-gray-300 hover:bg-gray-700"
+                      : "bg-gray-200 dark:bg-gray-800 text-gray-500 dark:text-gray-300 hover:bg-gray-700"
                   }`}
                 >
                   {prog.name}
@@ -187,7 +187,7 @@ export function CPU6502Demo() {
             </div>
             <button
               onClick={handleEnterEditMode}
-              className="px-3 py-1.5 text-xs font-medium rounded-md bg-gray-800 text-gray-300 hover:bg-gray-700 transition-colors ml-auto"
+              className="px-3 py-1.5 text-xs font-medium rounded-md bg-gray-200 dark:bg-gray-800 text-gray-500 dark:text-gray-300 hover:bg-gray-700 transition-colors ml-auto"
             >
               Edit Code
             </button>
@@ -199,7 +199,7 @@ export function CPU6502Demo() {
       <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-gray-700/50">
         {/* Console output */}
         <div className="p-4">
-          <div className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-2">
+          <div className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
             Console Output
           </div>
           <pre
@@ -218,7 +218,7 @@ export function CPU6502Demo() {
 
         {/* C source / editor */}
         <div className="p-4">
-          <div className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-2">
+          <div className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
             {editMode ? "C Editor" : `C Source (${currentProgram.name})`}
           </div>
 
@@ -228,22 +228,22 @@ export function CPU6502Demo() {
                 value={editorSource}
                 onChange={(e) => setEditorSource(e.target.value)}
                 spellCheck={false}
-                className="h-48 w-full resize-none rounded-lg border border-gray-700 bg-gray-950 text-gray-300 font-mono text-xs p-3 leading-relaxed focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600"
+                className="h-48 w-full resize-none rounded-lg border border-gray-700 bg-gray-50 dark:bg-gray-950 text-gray-500 dark:text-gray-300 font-mono text-xs p-3 leading-relaxed focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600"
               />
               {compiler.errors.length > 0 && (
                 <pre className="max-h-24 overflow-auto rounded-lg border border-red-800/50 bg-red-950/30 text-red-400 font-mono text-xs p-3">
                   {compiler.errors.join("\n")}
                 </pre>
               )}
-              <div className="text-[10px] text-gray-500 leading-snug">
+              <div className="text-[10px] text-gray-500 dark:text-gray-500 leading-snug">
                 No standard library (printf, etc.) — use{" "}
-                <code className="text-gray-400">CONSOLE = &apos;c&apos;;</code> for output.
-                Program must end with <code className="text-gray-400">while(1);</code> to
+                <code className="text-gray-500 dark:text-gray-400">CONSOLE = &apos;c&apos;;</code> for output.
+                Program must end with <code className="text-gray-500 dark:text-gray-400">while(1);</code> to
                 halt. ROM size: 16KB max.
               </div>
             </div>
           ) : (
-            <pre className="h-48 overflow-auto rounded-lg border border-gray-700 bg-gray-950 text-gray-300 font-mono text-xs p-3 leading-relaxed">
+            <pre className="h-48 overflow-auto rounded-lg border border-gray-700 bg-gray-50 dark:bg-gray-950 text-gray-500 dark:text-gray-300 font-mono text-xs p-3 leading-relaxed">
               {sourceCode}
             </pre>
           )}
@@ -251,13 +251,13 @@ export function CPU6502Demo() {
       </div>
 
       {/* Controls bar */}
-      <div className="px-4 py-3 border-t border-gray-700/50 flex flex-wrap items-center gap-3 bg-gray-900/90">
+      <div className="px-4 py-3 border-t border-gray-700/50 flex flex-wrap items-center gap-3 bg-gray-100 dark:bg-gray-900/90">
         {/* Run/Pause */}
         <button
           onClick={() => setIsRunning(!isRunning)}
           className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
             isRunning
-              ? "bg-amber-600 hover:bg-amber-500 text-white"
+              ? "bg-amber-600 hover:bg-amber-500 text-gray-900 dark:text-white"
               : "bg-green-600 hover:bg-green-500 text-white"
           }`}
         >
@@ -283,7 +283,7 @@ export function CPU6502Demo() {
 
         {/* Speed slider */}
         <div className="flex items-center gap-2 ml-auto">
-          <label className="text-xs text-gray-400">Speed</label>
+          <label className="text-xs text-gray-500 dark:text-gray-400">Speed</label>
           <input
             type="range"
             min={1}
@@ -295,7 +295,7 @@ export function CPU6502Demo() {
         </div>
 
         {/* Cycle counter */}
-        <span className="text-xs text-gray-400 font-mono tabular-nums">
+        <span className="text-xs text-gray-500 dark:text-gray-400 font-mono tabular-nums">
           Cycle {sim.cycleCount.toLocaleString()}
         </span>
       </div>

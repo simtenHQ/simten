@@ -208,3 +208,34 @@
   color: transparent;
   animation: shimmer 2s ease-in-out infinite;
 }
+
+/* ── Embed theme tokens ─────────────────────────────────────────────── */
+[data-embed-theme="dark"] {
+  --embed-bg-primary: #141418;
+  --embed-bg-secondary: #1a1a1e;
+  --embed-bg-tertiary: #2a2a2e;
+  --embed-bg-surface: rgba(17, 17, 20, 0.9);
+  --embed-bg-surface-80: rgba(17, 17, 20, 0.8);
+  --embed-bg-code: #0d1117;
+  --embed-border: rgba(55, 55, 65, 0.5);
+  --embed-border-node: #3a3a3e;
+  --embed-text-primary: #e5e5e5;
+  --embed-text-secondary: #a1a1aa;
+  --embed-text-muted: #71717a;
+  --embed-dot-color: #2a2a2e;
+}
+
+[data-embed-theme="light"] {
+  --embed-bg-primary: #ffffff;
+  --embed-bg-secondary: #f9fafb;
+  --embed-bg-tertiary: #f3f4f6;
+  --embed-bg-surface: rgba(249, 250, 251, 0.95);
+  --embed-bg-surface-80: rgba(249, 250, 251, 0.9);
+  --embed-bg-code: #f8f9fa;
+  --embed-border: rgba(209, 213, 219, 0.6);
+  --embed-border-node: #d1d5db;
+  --embed-text-primary: #111827;
+  --embed-text-secondary: #4b5563;
+  --embed-text-muted: #9ca3af;
+  --embed-dot-color: #e5e7eb;
+}

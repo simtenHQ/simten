@@ -1,11 +1,7 @@
 import { SmoothStepEdge, type NodeTypes, type EdgeTypes } from "@xyflow/react";
 
-// Embed-weight node components (no store dependencies)
-import { InputNode } from "../editor/components/nodes/InputNode";
-import { OutputNode } from "../editor/components/nodes/OutputNode";
-import { LogicGateNode } from "../editor/components/nodes/LogicGateNode";
-import { EmbedConsoleNode } from "../embed/EmbedConsoleNode";
-import { EmbedScreenNode } from "../embed/EmbedScreenNode";
+// Canonical node components (props-driven, no store dependencies)
+import { InputNode, OutputNode, LogicGateNode, EmbedConsoleNode, EmbedScreenNode } from "../nodes";
 
 // Full-weight node components (rich rendering for editor & inspector)
 import { NumericInputNode } from "../editor/components/nodes/NumericInputNode";

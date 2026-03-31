@@ -11,7 +11,7 @@ import {
 import type { Circuit } from "@turing-incomplete/ui/editor/types";
 
 const CircuitEmbed = lazy(() =>
-  import("@turing-incomplete/ui/embed").then((m) => ({
+  import("@turing-incomplete/embed").then((m) => ({
     default: m.CircuitEmbed,
   }))
 );

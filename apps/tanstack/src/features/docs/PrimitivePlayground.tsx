@@ -7,7 +7,7 @@ import {
 } from "@turing-incomplete/core/simulator";
 
 const CircuitEmbed = lazy(() =>
-  import("@turing-incomplete/ui/embed").then((m) => ({
+  import("@turing-incomplete/embed").then((m) => ({
     default: m.CircuitEmbed,
   }))
 );

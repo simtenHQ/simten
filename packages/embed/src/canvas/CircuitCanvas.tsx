@@ -27,7 +27,7 @@ import type { Circuit } from "@turing-incomplete/core/dsl";
 import type { ComponentLibrary, FlatPortValueMap, FlatSequentialState } from "@turing-incomplete/core/simulator";
 import { createComponentLibrary, PRIMITIVES } from "@turing-incomplete/core/simulator";
 import type { MetadataState } from "../types";
-import type { NodeData } from "../components/nodes/NodeData";
+import type { NodeData } from "@turing-incomplete/ui/nodes";
 import { projectCircuitToReactFlow } from "../lib/projection";
 import { EMBED_NODE_TYPES, EDGE_TYPES } from "../components/node-types";
 import { cleanCircuitLabels } from "../lib/label-utils";
@@ -38,7 +38,7 @@ function FitViewButton() {
   return (
     <button
       onClick={() => fitView({ padding: 0.3 })}
-      className="bg-gray-800 hover:bg-gray-700 text-gray-300 p-1.5 rounded border border-gray-600 transition-colors"
+      className="bg-[var(--embed-bg-tertiary)] hover:opacity-80 text-[var(--embed-text-secondary)] p-1.5 rounded border border-[var(--embed-border)] transition-colors"
       title="Fit view"
     >
       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
@@ -233,7 +233,7 @@ function CircuitCanvasInner({
     if (renderEmptyState) return <>{renderEmptyState()}</>;
     return (
       <div
-        className={`bg-gray-900 rounded-lg flex items-center justify-center text-gray-500 ${className ?? ""}`}
+        className={`bg-[var(--embed-bg-primary)] rounded-lg flex items-center justify-center text-[var(--embed-text-muted)] ${className ?? ""}`}
         style={{ height }}
       >
         No circuit
@@ -243,7 +243,7 @@ function CircuitCanvasInner({
 
   return (
     <div
-      className={`bg-[#141418] rounded-lg overflow-hidden ${className ?? ""}`}
+      className={`bg-[var(--embed-bg-primary)] rounded-lg overflow-hidden ${className ?? ""}`}
       style={{ height }}
       aria-label="Circuit diagram"
     >
@@ -276,7 +276,7 @@ function CircuitCanvasInner({
         deleteKeyCode={null}
         panActivationKeyCode={null}
       >
-        <Background variant={BackgroundVariant.Dots} gap={20} size={1} color="#2a2a2e" />
+        <Background variant={BackgroundVariant.Dots} gap={20} size={1} color="var(--embed-dot-color)" />
         {showControls ? (
           <Controls />
         ) : (

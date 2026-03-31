@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 
 import { Link } from "@tanstack/react-router";
-import { CircuitEmbed } from "@turing-incomplete/ui/embed";
+import { CircuitEmbed } from "@turing-incomplete/embed";
 import type { Lesson, LessonSection } from "./types";
 
 interface ScrollyLessonProps {

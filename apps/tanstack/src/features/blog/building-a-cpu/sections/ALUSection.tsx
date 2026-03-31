@@ -1,32 +1,32 @@
 "use client";
 
-import { CircuitEmbed } from "@turing-incomplete/ui/embed";
+import { ThemedCircuitEmbed as CircuitEmbed } from "@/features/blog/components/ThemedCircuitEmbed";
 import { BLOG_CIRCUITS } from "../circuits";
 
 export function ALUSection() {
   return (
     <section className="py-12">
-      <h2 className="text-3xl font-bold text-white mb-4">
+      <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
         The ALU: A Calculator Chip
       </h2>
       <div className="prose-invert space-y-6">
-        <p className="text-gray-300 leading-relaxed">
+        <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
           An adder can only add. A real CPU needs to do logic too &mdash; AND,
           OR, XOR. The{" "}
-          <strong className="text-white">
+          <strong className="text-gray-900 dark:text-white">
             Arithmetic Logic Unit
           </strong>{" "}
           (ALU) computes <em>all</em> of these in parallel and uses a{" "}
-          <strong className="text-white">multiplexer</strong> to pick the result
+          <strong className="text-gray-900 dark:text-white">multiplexer</strong> to pick the result
           based on a control signal.
         </p>
-        <p className="text-gray-300 leading-relaxed">
+        <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
           Below is a 1-bit ALU slice. It has an adder, AND, OR, and XOR gate
           all wired to the same inputs. The two <strong>op</strong> switches
           select which result passes through: 00&nbsp;=&nbsp;ADD,
           01&nbsp;=&nbsp;AND, 10&nbsp;=&nbsp;OR, 11&nbsp;=&nbsp;XOR.
         </p>
-        <p className="text-gray-300 leading-relaxed">
+        <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
           Chain 8 of these slices (with carry linking the adders) and you have
           the complete ALU of the 6502. The CPU&rsquo;s control unit just sets
           the <strong>op</strong> bits based on which instruction it decoded.

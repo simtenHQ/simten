@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { useCircuitSimulator } from "@turing-incomplete/ui/embed";
+import { useCircuitSimulator } from "@turing-incomplete/embed";
 import { SYSTOLIC_3X3_DSL } from "./circuits";
 
 export function useSystolicSimulator() {

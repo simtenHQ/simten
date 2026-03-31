@@ -49,7 +49,7 @@ function FitViewButton() {
   return (
     <button
       onClick={() => fitView({ padding: 0.3 })}
-      className="bg-gray-800 hover:bg-gray-700 text-gray-300 p-1.5 rounded border border-gray-600 transition-colors"
+      className="bg-[var(--embed-bg-tertiary,#2a2a2e)] hover:opacity-80 text-[var(--embed-text-secondary,#a1a1aa)] p-1.5 rounded border border-[var(--embed-border,rgba(55,55,65,0.5))] transition-colors"
       title="Fit view"
     >
       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
@@ -439,7 +439,7 @@ function CircuitCanvasInner({
     if (renderEmptyState) return <>{renderEmptyState()}</>;
     return (
       <div
-        className={`bg-gray-900 rounded-lg flex items-center justify-center text-gray-500 ${className ?? ""}`}
+        className={`bg-[var(--embed-bg-primary,#141418)] rounded-lg flex items-center justify-center text-[var(--embed-text-muted,#71717a)] ${className ?? ""}`}
         style={{ height }}
       >
         No circuit
@@ -452,7 +452,7 @@ function CircuitCanvasInner({
 
   return (
     <div
-      className={`${isDark ? "bg-[#141418]" : "bg-white"} rounded-lg overflow-hidden ${editable ? "relative h-full w-full" : ""} ${className ?? ""}`}
+      className={`bg-[var(--embed-bg-primary,${isDark ? "#141418" : "#ffffff"})] rounded-lg overflow-hidden ${editable ? "relative h-full w-full" : ""} ${className ?? ""}`}
       style={editable ? undefined : { height }}
       onDrop={editable ? handleDrop : undefined}
       onDragOver={editable ? handleDragOver : undefined}

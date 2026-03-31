@@ -9,22 +9,22 @@ interface AndChallengeSectionProps {
 export function AndChallengeSection({ onPass }: AndChallengeSectionProps) {
   return (
     <section className="py-12">
-      <h2 className="text-3xl font-bold text-white mb-4">
+      <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
         Challenge 2: Build AND
       </h2>
       <div className="prose-invert space-y-6">
-        <p className="text-gray-300 leading-relaxed">
+        <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
           NAND is <em>Not-AND</em>. So if you negate a NAND&hellip; you get AND.
         </p>
-        <p className="text-gray-300 leading-relaxed">
+        <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
           You just built NOT. You know NAND. Chain them:
           first NAND the inputs together, then invert the result with your
           NOT trick (both inputs tied). Two NAND gates total.
         </p>
-        <pre className="bg-gray-900/80 border border-gray-700/50 rounded-lg p-4 text-sm font-mono text-gray-200 overflow-x-auto">
+        <pre className="bg-gray-100 dark:bg-gray-900/80 border border-gray-700/50 rounded-lg p-4 text-sm font-mono text-gray-200 overflow-x-auto">
 {`AND(A, B) = NOT(NAND(A, B))
          = NAND(NAND(A,B), NAND(A,B))`}</pre>
-        <p className="text-gray-300 leading-relaxed">
+        <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
           Wire it up. The LED should light <strong>only</strong> when both
           switches are ON.
         </p>
