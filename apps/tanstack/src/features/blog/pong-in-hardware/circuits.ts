@@ -479,9 +479,9 @@ circuit PixelAddress {
 export const PONG_DSL = `
 circuit PongSimple {
   impl {
-    // ===== SCREEN =====
+    // ===== SCREEN (16x16) =====
     node ram: DualPortRAM
-    node screen: Screen
+    node screen: Screen(width=16, height=16)
     connect screen.addrB -> ram.addrB
     connect ram.outB -> screen.dataIn
 
@@ -490,20 +490,24 @@ circuit PongSimple {
     node keyboard1: Input
 
     // ===== GAME STATE REGISTERS =====
-    node ballX: Register(initial=4)
-    node ballY: Register(initial=4)
+    node ballX: Register(initial=8)
+    node ballY: Register(initial=8)
     node ballDX: Register(initial=1)
     node ballDY: Register(initial=1)
-    node leftPaddleY: Register(initial=3)
-    node rightPaddleY: Register(initial=3)
+    node leftPaddleY: Register(initial=6)
+    node rightPaddleY: Register(initial=6)
 
     // Old positions (for clearing previous frame)
-    node oldBallX: Register(initial=4)
-    node oldBallY: Register(initial=4)
-    node oldLeftPaddleY: Register(initial=3)
-    node oldRightPaddleY: Register(initial=3)
+    node oldBallX: Register(initial=8)
+    node oldBallY: Register(initial=8)
+    node oldLeftPaddleY: Register(initial=6)
+    node oldRightPaddleY: Register(initial=6)
 
-    // ===== PHASE COUNTER (0-5) =====
+
+    // ===== PHASE COUNTER (0-13) =====
+    // 14 phases for 3-pixel-tall paddles:
+    // P0: clear old ball  P1-3: clear old left paddle  P4-6: clear old right paddle
+    // P7: draw new ball   P8-10: draw new left paddle  P11-13: draw new right paddle
     node phaseCounter: Register
     node phaseIncrement: Adder
     connect phaseCounter.q -> phaseIncrement.a
@@ -511,11 +515,11 @@ circuit PongSimple {
     connect one.out -> phaseIncrement.b
 
     node phaseMod: Comparator
-    node six: Input(value=6)
+    node fourteen: Input(value=14)
     connect phaseIncrement.sum -> phaseMod.a
-    connect six.out -> phaseMod.b
+    connect fourteen.out -> phaseMod.b
 
-    node nextPhase: Mux
+    node nextPhase: Mux(width=8)
     connect phaseIncrement.sum -> nextPhase.in0
     node zero: Input(value=0)
     connect zero.out -> nextPhase.in1
@@ -526,36 +530,73 @@ circuit PongSimple {
     connect phaseEnable.out -> phaseCounter.we
 
     // ===== PHASE DETECTION =====
-    node phase0Const: Input(value=0)
-    node phase1Const: Input(value=1)
-    node phase2Const: Input(value=2)
-    node phase3Const: Input(value=3)
-    node phase4Const: Input(value=4)
-    node phase5Const: Input(value=5)
+    node p0c: Input(value=0)
+    node p1c: Input(value=1)
+    node p2c: Input(value=2)
+    node p3c: Input(value=3)
+    node p4c: Input(value=4)
+    node p5c: Input(value=5)
+    node p6c: Input(value=6)
+    node p7c: Input(value=7)
+    node p8c: Input(value=8)
+    node p9c: Input(value=9)
+    node p10c: Input(value=10)
+    node p11c: Input(value=11)
+    node p12c: Input(value=12)
+    node p13c: Input(value=13)
 
-    node isPhase0: Comparator
-    node isPhase1: Comparator
-    node isPhase2: Comparator
-    node isPhase3: Comparator
-    node isPhase4: Comparator
-    node isPhase5: Comparator
+    node isP0: Comparator
+    node isP1: Comparator
+    node isP2: Comparator
+    node isP3: Comparator
+    node isP4: Comparator
+    node isP5: Comparator
+    node isP6: Comparator
+    node isP7: Comparator
+    node isP8: Comparator
+    node isP9: Comparator
+    node isP10: Comparator
+    node isP11: Comparator
+    node isP12: Comparator
+    node isP13: Comparator
 
-    connect phaseCounter.q -> isPhase0.a
-    connect phase0Const.out -> isPhase0.b
-    connect phaseCounter.q -> isPhase1.a
-    connect phase1Const.out -> isPhase1.b
-    connect phaseCounter.q -> isPhase2.a
-    connect phase2Const.out -> isPhase2.b
-    connect phaseCounter.q -> isPhase3.a
-    connect phase3Const.out -> isPhase3.b
-    connect phaseCounter.q -> isPhase4.a
-    connect phase4Const.out -> isPhase4.b
-    connect phaseCounter.q -> isPhase5.a
-    connect phase5Const.out -> isPhase5.b
+    connect phaseCounter.q -> isP0.a
+    connect p0c.out -> isP0.b
+    connect phaseCounter.q -> isP1.a
+    connect p1c.out -> isP1.b
+    connect phaseCounter.q -> isP2.a
+    connect p2c.out -> isP2.b
+    connect phaseCounter.q -> isP3.a
+    connect p3c.out -> isP3.b
+    connect phaseCounter.q -> isP4.a
+    connect p4c.out -> isP4.b
+    connect phaseCounter.q -> isP5.a
+    connect p5c.out -> isP5.b
+    connect phaseCounter.q -> isP6.a
+    connect p6c.out -> isP6.b
+    connect phaseCounter.q -> isP7.a
+    connect p7c.out -> isP7.b
+    connect phaseCounter.q -> isP8.a
+    connect p8c.out -> isP8.b
+    connect phaseCounter.q -> isP9.a
+    connect p9c.out -> isP9.b
+    connect phaseCounter.q -> isP10.a
+    connect p10c.out -> isP10.b
+    connect phaseCounter.q -> isP11.a
+    connect p11c.out -> isP11.b
+    connect phaseCounter.q -> isP12.a
+    connect p12c.out -> isP12.b
+    connect phaseCounter.q -> isP13.a
+    connect p13c.out -> isP13.b
 
     // ===== CONSTANTS =====
-    node seven: Input(value=7)
+    node fifteen: Input(value=15)
+    node thirteen: Input(value=13)
+    node six: Input(value=6)
+    node two: Input(value=2)
+    node four: Input(value=4)
     node minus1: Input(value=255)
+    node halfRange: Input(value=128)
 
     // ===== KEYBOARD SCAN CODES =====
     node keyW: Input(value=17)
@@ -607,12 +648,12 @@ circuit PongSimple {
     connect isDown_kb1.eq -> isDown.b
 
     // ===== PADDLE MOVEMENT =====
-    node leftUpDelta: Mux
+    node leftUpDelta: Mux(width=8)
     connect zero.out -> leftUpDelta.in0
     connect minus1.out -> leftUpDelta.in1
     connect isW.out -> leftUpDelta.sel
 
-    node leftDelta: Mux
+    node leftDelta: Mux(width=8)
     connect leftUpDelta.out -> leftDelta.in0
     connect one.out -> leftDelta.in1
     connect isS.out -> leftDelta.sel
@@ -621,12 +662,12 @@ circuit PongSimple {
     connect leftPaddleY.q -> newLeftPaddleY.a
     connect leftDelta.out -> newLeftPaddleY.b
 
-    node rightUpDelta: Mux
+    node rightUpDelta: Mux(width=8)
     connect zero.out -> rightUpDelta.in0
     connect minus1.out -> rightUpDelta.in1
     connect isUp.out -> rightUpDelta.sel
 
-    node rightDelta: Mux
+    node rightDelta: Mux(width=8)
     connect rightUpDelta.out -> rightDelta.in0
     connect one.out -> rightDelta.in1
     connect isDown.out -> rightDelta.sel
@@ -636,14 +677,14 @@ circuit PongSimple {
     connect rightDelta.out -> newRightPaddleY.b
 
     // ===== BOUNCE DETECTION =====
-    // Y-axis: bounce when at top wall (y=0, heading up) or bottom (y=7, heading down)
+    // Y-axis: bounce at top wall (y=0 heading up) or bottom (y=7 heading down)
     node atTopWall: Comparator
     connect ballY.q -> atTopWall.a
     connect zero.out -> atTopWall.b
 
     node atBottomWall: Comparator
     connect ballY.q -> atBottomWall.a
-    connect seven.out -> atBottomWall.b
+    connect fifteen.out -> atBottomWall.b
 
     node headingUp: Comparator
     connect ballDY.q -> headingUp.a
@@ -665,79 +706,117 @@ circuit PongSimple {
     connect topBounce.out -> yBounce.a
     connect bottomBounce.out -> yBounce.b
 
-    // Flip DY: if current is 1 -> 255, if current is 255 -> 1
     node dyIs1: Comparator
     connect ballDY.q -> dyIs1.a
     connect one.out -> dyIs1.b
 
-    node negDY: Mux
+    node negDY: Mux(width=8)
     connect one.out -> negDY.in0
     connect minus1.out -> negDY.in1
     connect dyIs1.eq -> negDY.sel
 
-    node newDY: Mux
+    node newDY: Mux(width=8)
     connect ballDY.q -> newDY.in0
     connect negDY.out -> newDY.in1
     connect yBounce.out -> newDY.sel
 
-    // X-axis: bounce only when paddle is at the same Y as the ball
-    // Left paddle collision: ball at x=0, heading left, AND leftPaddleY == ballY
-    node atLeftWall: Comparator
-    connect ballX.q -> atLeftWall.a
-    connect zero.out -> atLeftWall.b
+    // X-axis: bounce when approaching paddle (x=1 heading left, x=6 heading right)
+    // Ball bounces BEFORE entering the paddle column, not while overlapping it.
+    // Left paddle: ball at x=1, heading left, ballY in [paddleY, paddleY+2]
+    node nearLeftWall: Comparator
+    connect ballX.q -> nearLeftWall.a
+    connect one.out -> nearLeftWall.b
 
     node headingLeft: Comparator
     connect ballDX.q -> headingLeft.a
     connect minus1.out -> headingLeft.b
 
-    node leftPaddleMatch: Comparator
-    connect leftPaddleY.q -> leftPaddleMatch.a
-    connect ballY.q -> leftPaddleMatch.b
+    node leftPaddleTop: Comparator
+    connect ballY.q -> leftPaddleTop.a
+    connect leftPaddleY.q -> leftPaddleTop.b
+
+    node leftPaddleBottom: Adder
+    connect leftPaddleY.q -> leftPaddleBottom.a
+    connect two.out -> leftPaddleBottom.b
+
+    node leftPaddleBot: Comparator
+    connect ballY.q -> leftPaddleBot.a
+    connect leftPaddleBottom.sum -> leftPaddleBot.b
+
+    node leftAboveOrEq: Not
+    connect leftPaddleTop.lt -> leftAboveOrEq.in
+
+    node leftBelowOrEq: Or
+    connect leftPaddleBot.eq -> leftBelowOrEq.a
+    connect leftPaddleBot.lt -> leftBelowOrEq.b
+
+    node leftPaddleMatch: And
+    connect leftAboveOrEq.out -> leftPaddleMatch.a
+    connect leftBelowOrEq.out -> leftPaddleMatch.b
 
     node leftWallAndHeading: And
-    connect atLeftWall.eq -> leftWallAndHeading.a
+    connect nearLeftWall.eq -> leftWallAndHeading.a
     connect headingLeft.eq -> leftWallAndHeading.b
 
     node leftBounce: And
     connect leftWallAndHeading.out -> leftBounce.a
-    connect leftPaddleMatch.eq -> leftBounce.b
+    connect leftPaddleMatch.out -> leftBounce.b
 
-    // Right paddle collision: ball at x=7, heading right, AND rightPaddleY == ballY
-    node atRightWall: Comparator
-    connect ballX.q -> atRightWall.a
-    connect seven.out -> atRightWall.b
+    // Right paddle: ball at x=14, heading right, ballY in [paddleY, paddleY+2]
+    node nearRightWall: Comparator
+    node wallBounceRight: Input(value=14)
+    connect ballX.q -> nearRightWall.a
+    connect wallBounceRight.out -> nearRightWall.b
 
     node headingRight: Comparator
     connect ballDX.q -> headingRight.a
     connect one.out -> headingRight.b
 
-    node rightPaddleMatch: Comparator
-    connect rightPaddleY.q -> rightPaddleMatch.a
-    connect ballY.q -> rightPaddleMatch.b
+    node rightPaddleTop: Comparator
+    connect ballY.q -> rightPaddleTop.a
+    connect rightPaddleY.q -> rightPaddleTop.b
+
+    node rightPaddleBottom: Adder
+    connect rightPaddleY.q -> rightPaddleBottom.a
+    connect two.out -> rightPaddleBottom.b
+
+    node rightPaddleBot: Comparator
+    connect ballY.q -> rightPaddleBot.a
+    connect rightPaddleBottom.sum -> rightPaddleBot.b
+
+    node rightAboveOrEq: Not
+    connect rightPaddleTop.lt -> rightAboveOrEq.in
+
+    node rightBelowOrEq: Or
+    connect rightPaddleBot.eq -> rightBelowOrEq.a
+    connect rightPaddleBot.lt -> rightBelowOrEq.b
+
+    node rightPaddleMatch: And
+    connect rightAboveOrEq.out -> rightPaddleMatch.a
+    connect rightBelowOrEq.out -> rightPaddleMatch.b
 
     node rightWallAndHeading: And
-    connect atRightWall.eq -> rightWallAndHeading.a
+    connect nearRightWall.eq -> rightWallAndHeading.a
     connect headingRight.eq -> rightWallAndHeading.b
 
     node rightBounce: And
     connect rightWallAndHeading.out -> rightBounce.a
-    connect rightPaddleMatch.eq -> rightBounce.b
+    connect rightPaddleMatch.out -> rightBounce.b
 
     node xBounce: Or
     connect leftBounce.out -> xBounce.a
     connect rightBounce.out -> xBounce.b
 
-    // Flip DX: if current is 1 -> 255, if current is 255 -> 1
     node dxIs1: Comparator
     connect ballDX.q -> dxIs1.a
     connect one.out -> dxIs1.b
 
-    node negDX: Mux
+    node negDX: Mux(width=8)
     connect one.out -> negDX.in0
     connect minus1.out -> negDX.in1
     connect dxIs1.eq -> negDX.sel
 
-    node newDX: Mux
+    node newDX: Mux(width=8)
     connect ballDX.q -> newDX.in0
     connect negDX.out -> newDX.in1
     connect xBounce.out -> newDX.sel
@@ -751,11 +830,11 @@ circuit PongSimple {
     connect ballY.q -> newBallY.a
     connect newDY.out -> newBallY.b
 
-    // ===== UPDATE GAME STATE (phase 5 only) =====
+    // ===== UPDATE GAME STATE (phase 13 — last phase) =====
     node updateEnable: Switch
     node shouldUpdate: And
     connect updateEnable.out -> shouldUpdate.a
-    connect isPhase5.eq -> shouldUpdate.b
+    connect isP13.eq -> shouldUpdate.b
 
     // Save old positions before update
     connect ballX.q -> oldBallX.data
@@ -769,25 +848,58 @@ circuit PongSimple {
     connect shouldUpdate.out -> oldRightPaddleY.we
 
     // Update ball position (wrapped to 0-7) and velocity
-    node wrappedBallX: BitSlice(low=0, high=2)
+    node wrappedBallX: BitSlice(low=0, high=3)
     connect newBallX.sum -> wrappedBallX.in
     connect wrappedBallX.out -> ballX.data
 
-    node wrappedBallY: BitSlice(low=0, high=2)
+    node wrappedBallY: BitSlice(low=0, high=3)
     connect newBallY.sum -> wrappedBallY.in
     connect wrappedBallY.out -> ballY.data
 
     connect newDX.out -> ballDX.data
     connect newDY.out -> ballDY.data
 
-    // Wrap paddle positions to 0-7 range
-    node wrappedLeftY: BitSlice(low=0, high=2)
-    connect newLeftPaddleY.sum -> wrappedLeftY.in
-    connect wrappedLeftY.out -> leftPaddleY.data
+    // Clamp paddle Y to 0-5 (3-tall paddle on 8-pixel screen)
+    // Negative wrap (>128) -> 0, Over 5 -> 5, else use value
+    node leftYOver: Comparator
+    connect newLeftPaddleY.sum -> leftYOver.a
+    connect thirteen.out -> leftYOver.b
 
-    node wrappedRightY: BitSlice(low=0, high=2)
-    connect newRightPaddleY.sum -> wrappedRightY.in
-    connect wrappedRightY.out -> rightPaddleY.data
+    node leftYNeg: Comparator
+    connect newLeftPaddleY.sum -> leftYNeg.a
+    connect halfRange.out -> leftYNeg.b
+
+    node leftYClamped1: Mux(width=8)
+    connect newLeftPaddleY.sum -> leftYClamped1.in0
+    connect thirteen.out -> leftYClamped1.in1
+    connect leftYOver.gt -> leftYClamped1.sel
+
+    node leftYClamped: Mux(width=8)
+    connect leftYClamped1.out -> leftYClamped.in0
+    connect zero.out -> leftYClamped.in1
+    connect leftYNeg.gt -> leftYClamped.sel
+
+    connect leftYClamped.out -> leftPaddleY.data
+
+    node rightYOver: Comparator
+    connect newRightPaddleY.sum -> rightYOver.a
+    connect thirteen.out -> rightYOver.b
+
+    node rightYNeg: Comparator
+    connect newRightPaddleY.sum -> rightYNeg.a
+    connect halfRange.out -> rightYNeg.b
+
+    node rightYClamped1: Mux(width=8)
+    connect newRightPaddleY.sum -> rightYClamped1.in0
+    connect thirteen.out -> rightYClamped1.in1
+    connect rightYOver.gt -> rightYClamped1.sel
+
+    node rightYClamped: Mux(width=8)
+    connect rightYClamped1.out -> rightYClamped.in0
+    connect zero.out -> rightYClamped.in1
+    connect rightYNeg.gt -> rightYClamped.sel
+
+    connect rightYClamped.out -> rightPaddleY.data
 
     connect shouldUpdate.out -> ballX.we
     connect shouldUpdate.out -> ballY.we
@@ -796,84 +908,158 @@ circuit PongSimple {
     connect shouldUpdate.out -> leftPaddleY.we
     connect shouldUpdate.out -> rightPaddleY.we
 
-    // ===== RENDERING: SELECT Y COORDINATE BY PHASE =====
-    node yMux0: Mux
-    connect oldBallY.q -> yMux0.in0
-    connect oldLeftPaddleY.q -> yMux0.in1
-    connect isPhase1.eq -> yMux0.sel
+    // ===== PADDLE Y OFFSETS FOR 3-PIXEL RENDERING =====
+    // Within each paddle group, phases offset by 0, 1, 2
+    // P1/P4/P8/P11 -> 0, P2/P5/P9/P12 -> 1, P3/P6/P10/P13 -> 2
+    node isOff1a: Or
+    connect isP2.eq -> isOff1a.a
+    connect isP5.eq -> isOff1a.b
+    node isOff1b: Or
+    connect isP9.eq -> isOff1b.a
+    connect isP12.eq -> isOff1b.b
+    node isOffset1: Or
+    connect isOff1a.out -> isOffset1.a
+    connect isOff1b.out -> isOffset1.b
 
-    node yMux1: Mux
-    connect yMux0.out -> yMux1.in0
-    connect oldRightPaddleY.q -> yMux1.in1
-    connect isPhase2.eq -> yMux1.sel
+    node isOff2a: Or
+    connect isP3.eq -> isOff2a.a
+    connect isP6.eq -> isOff2a.b
+    node isOff2b: Or
+    connect isP10.eq -> isOff2b.a
+    connect isP13.eq -> isOff2b.b
+    node isOffset2: Or
+    connect isOff2a.out -> isOffset2.a
+    connect isOff2b.out -> isOffset2.b
 
-    node yMux2: Mux
-    connect yMux1.out -> yMux2.in0
-    connect ballY.q -> yMux2.in1
-    connect isPhase3.eq -> yMux2.sel
+    node paddleOffset: Mux(width=8)
+    connect zero.out -> paddleOffset.in0
+    connect one.out -> paddleOffset.in1
+    connect isOffset1.out -> paddleOffset.sel
 
-    node yMux3: Mux
-    connect yMux2.out -> yMux3.in0
-    connect leftPaddleY.q -> yMux3.in1
-    connect isPhase4.eq -> yMux3.sel
+    node paddleOffset2: Mux(width=8)
+    connect paddleOffset.out -> paddleOffset2.in0
+    connect two.out -> paddleOffset2.in1
+    connect isOffset2.out -> paddleOffset2.sel
 
-    node selectY: Mux
-    connect yMux3.out -> selectY.in0
-    connect rightPaddleY.q -> selectY.in1
-    connect isPhase5.eq -> selectY.sel
+    // ===== RENDERING: PHASE GROUP DETECTION =====
+    node isClearLeft: Or
+    connect isP1.eq -> isClearLeft.a
+    connect isP2.eq -> isClearLeft.b
+    node isClearLeft2: Or
+    connect isClearLeft.out -> isClearLeft2.a
+    connect isP3.eq -> isClearLeft2.b
 
-    // ===== RENDERING: SELECT X COORDINATE BY PHASE =====
-    node xMux0: Mux
-    connect oldBallX.q -> xMux0.in0
-    connect zero.out -> xMux0.in1
-    connect isPhase1.eq -> xMux0.sel
+    node isClearRight: Or
+    connect isP4.eq -> isClearRight.a
+    connect isP5.eq -> isClearRight.b
+    node isClearRight2: Or
+    connect isClearRight.out -> isClearRight2.a
+    connect isP6.eq -> isClearRight2.b
 
-    node xMux1: Mux
-    connect xMux0.out -> xMux1.in0
-    connect seven.out -> xMux1.in1
-    connect isPhase2.eq -> xMux1.sel
+    node isDrawLeft: Or
+    connect isP8.eq -> isDrawLeft.a
+    connect isP9.eq -> isDrawLeft.b
+    node isDrawLeft2: Or
+    connect isDrawLeft.out -> isDrawLeft2.a
+    connect isP10.eq -> isDrawLeft2.b
 
-    node xMux2: Mux
-    connect xMux1.out -> xMux2.in0
-    connect ballX.q -> xMux2.in1
-    connect isPhase3.eq -> xMux2.sel
+    node isDrawRight: Or
+    connect isP11.eq -> isDrawRight.a
+    connect isP12.eq -> isDrawRight.b
+    node isDrawRight2: Or
+    connect isDrawRight.out -> isDrawRight2.a
+    connect isP13.eq -> isDrawRight2.b
 
-    node xMux3: Mux
-    connect xMux2.out -> xMux3.in0
-    connect zero.out -> xMux3.in1
-    connect isPhase4.eq -> xMux3.sel
+    // ===== RENDERING: SELECT Y COORDINATE =====
+    // Paddle base Y depends on phase group
+    node basePaddleY0: Mux(width=8)
+    connect oldLeftPaddleY.q -> basePaddleY0.in0
+    connect oldRightPaddleY.q -> basePaddleY0.in1
+    connect isClearRight2.out -> basePaddleY0.sel
 
-    node selectX: Mux
-    connect xMux3.out -> selectX.in0
-    connect seven.out -> selectX.in1
-    connect isPhase5.eq -> selectX.sel
+    node basePaddleY1: Mux(width=8)
+    connect basePaddleY0.out -> basePaddleY1.in0
+    connect leftPaddleY.q -> basePaddleY1.in1
+    connect isDrawLeft2.out -> basePaddleY1.sel
 
-    // ===== ADDRESS CALCULATION: (Y << 3) + X =====
-    // In real hardware, a left shift by 3 is just wiring (zero gates).
-    node three: Input(value=3)
-    node yTimes8: LeftShifter
-    connect selectY.out -> yTimes8.value
-    connect three.out -> yTimes8.shift
+    node basePaddleY: Mux(width=8)
+    connect basePaddleY1.out -> basePaddleY.in0
+    connect rightPaddleY.q -> basePaddleY.in1
+    connect isDrawRight2.out -> basePaddleY.sel
+
+    // paddlePixelY = basePaddleY + offset (0, 1, or 2)
+    node paddlePixelY: Adder
+    connect basePaddleY.out -> paddlePixelY.a
+    connect paddleOffset2.out -> paddlePixelY.b
+
+    // Is this a paddle phase?
+    node isPaddlePhase1: Or
+    connect isClearLeft2.out -> isPaddlePhase1.a
+    connect isClearRight2.out -> isPaddlePhase1.b
+    node isPaddlePhase2: Or
+    connect isDrawLeft2.out -> isPaddlePhase2.a
+    connect isDrawRight2.out -> isPaddlePhase2.b
+    node isPaddlePhase: Or
+    connect isPaddlePhase1.out -> isPaddlePhase.a
+    connect isPaddlePhase2.out -> isPaddlePhase.b
+
+    // Ball Y: use oldBallY for clear (P0), ballY for draw (P7)
+    node selectBallY: Mux(width=8)
+    connect ballY.q -> selectBallY.in0
+    connect oldBallY.q -> selectBallY.in1
+    connect isP0.eq -> selectBallY.sel
+
+    // Final Y: ball phases use ball Y, paddle phases use paddlePixelY
+    node selectY: Mux(width=8)
+    connect selectBallY.out -> selectY.in0
+    connect paddlePixelY.sum -> selectY.in1
+    connect isPaddlePhase.out -> selectY.sel
+
+    // ===== RENDERING: SELECT X COORDINATE =====
+    node isLeftPaddle: Or
+    connect isClearLeft2.out -> isLeftPaddle.a
+    connect isDrawLeft2.out -> isLeftPaddle.b
+
+    node isRightPaddle: Or
+    connect isClearRight2.out -> isRightPaddle.a
+    connect isDrawRight2.out -> isRightPaddle.b
+
+    node selectBallX: Mux(width=8)
+    connect ballX.q -> selectBallX.in0
+    connect oldBallX.q -> selectBallX.in1
+    connect isP0.eq -> selectBallX.sel
+
+    node selectX0: Mux(width=8)
+    connect selectBallX.out -> selectX0.in0
+    connect zero.out -> selectX0.in1
+    connect isLeftPaddle.out -> selectX0.sel
+
+    node selectX: Mux(width=8)
+    connect selectX0.out -> selectX.in0
+    connect fifteen.out -> selectX.in1
+    connect isRightPaddle.out -> selectX.sel
+
+    // ===== ADDRESS CALCULATION: (Y << 4) + X =====
+    node yTimes16: LeftShifter
+    connect selectY.out -> yTimes16.value
+    connect four.out -> yTimes16.shift
 
     node ramAddr: Adder
-    connect yTimes8.result -> ramAddr.a
+    connect yTimes16.result -> ramAddr.a
     connect selectX.out -> ramAddr.b
 
     connect ramAddr.sum -> ram.addrA
 
     // ===== CLEAR/DRAW DATA =====
-    // Phases 0-2: clear (write 0), Phases 3-5: draw (write 1)
-    node isClearPhase: Or
-    node isClearPhase2: Or
-    connect isPhase0.eq -> isClearPhase.a
-    connect isPhase1.eq -> isClearPhase.b
-    connect isClearPhase.out -> isClearPhase2.a
-    connect isPhase2.eq -> isClearPhase2.b
+    // Phases 0-6: clear (write 0), Phases 7-13: draw (write 1)
+    node isClearPhase: Comparator
+    connect phaseCounter.q -> isClearPhase.a
+    connect p7c.out -> isClearPhase.b
 
-    node ramData: Mux
+    node ramData: Mux(width=8)
     connect one.out -> ramData.in0
     connect zero.out -> ramData.in1
-    connect isClearPhase2.out -> ramData.sel
+    connect isClearPhase.lt -> ramData.sel
 
     connect ramData.out -> ram.dataA
 
