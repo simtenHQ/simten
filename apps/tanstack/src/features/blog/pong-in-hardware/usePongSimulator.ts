@@ -87,7 +87,7 @@ export function usePongSimulator() {
     };
   }, [sim.ready, sim.setNodeValue, nodeIds]);
 
-  // Auto-run interval — run a complete 6-phase game frame each time.
+  // Auto-run interval — run a complete 14-phase game frame each time.
   // Speed controls how often frames run (higher = slower ball + paddles).
   useEffect(() => {
     if (isRunning && sim.ready) {

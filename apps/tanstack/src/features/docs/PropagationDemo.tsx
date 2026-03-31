@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useCircuitSimulator } from "@turing-incomplete/embed";
-import { CircuitCanvas } from "@turing-incomplete/ui/shared";
+import { CircuitCanvas } from "@turing-incomplete/ui/canvas";
 import { compileDSL } from "@turing-incomplete/core/dsl";
 import {
   elaborate,
@@ -306,6 +306,7 @@ export function PropagationDemo() {
       {/* Circuit */}
       <CircuitCanvas
         circuit={sim.circuit}
+        componentLibrary={sim.componentLibrary ?? undefined}
         portValues={sim.portValues}
         sequentialState={sim.sequentialState}
         onToggleNode={sim.toggleNode}

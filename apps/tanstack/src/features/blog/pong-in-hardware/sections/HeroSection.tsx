@@ -8,7 +8,7 @@ export function HeroSection() {
           Pong in Hardware
         </h1>
         <p className="mt-6 text-xl text-gray-500 dark:text-gray-300 leading-relaxed">
-          Two paddles, a bouncing ball, and a 6-phase rendering pipeline
+          Two paddles, a bouncing ball, and a 14-phase rendering pipeline
           &mdash; all built from logic gates, registers, and memory. No CPU
           runs this game. Every decision is wired directly into the circuit.
         </p>

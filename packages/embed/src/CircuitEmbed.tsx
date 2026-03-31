@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback, forwardRef, useImperativeHandle, useMemo } from "react";
 import { useCircuitSimulator, type UseCircuitSimulatorOptions } from "./hooks/useCircuitSimulator";
-import { CircuitCanvas } from "./canvas/CircuitCanvas";
+import { CircuitCanvas } from "@turing-incomplete/ui/canvas";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { ErrorDisplay } from "./components/ErrorDisplay";
 import { LoadingSkeleton } from "./components/LoadingSkeleton";
@@ -176,6 +176,7 @@ export const CircuitEmbed = forwardRef<CircuitEmbedHandle, CircuitEmbedProps>(fu
 
       <CircuitCanvas
         circuit={sim.circuit}
+        componentLibrary={sim.componentLibrary ?? undefined}
         portValues={sim.portValues}
         sequentialState={sim.sequentialState}
         onToggleNode={sim.toggleNode}

@@ -35,8 +35,8 @@ export const PONG_CIRCUITS: Record<string, BlogCircuit> = {
     displayDsl: `circuit BallPosition {
   clock clk
   impl {
-    node ballX: Register(initial=4)
-    node ballY: Register(initial=4)
+    node ballX: Register(initial=8)
+    node ballY: Register(initial=8)
     connect clk -> ballX.clk
     connect clk -> ballY.clk
 
@@ -50,8 +50,8 @@ export const PONG_CIRCUITS: Record<string, BlogCircuit> = {
     connect ballY.q -> nextY.a
     connect dy.out -> nextY.b
 
-    node wrapX: BitSlice(low=0, high=2)
-    node wrapY: BitSlice(low=0, high=2)
+    node wrapX: BitSlice(low=0, high=3)
+    node wrapY: BitSlice(low=0, high=3)
     connect nextX.sum -> wrapX.in
     connect nextY.sum -> wrapY.in
 
@@ -72,8 +72,8 @@ export const PONG_CIRCUITS: Record<string, BlogCircuit> = {
 circuit BallPosition {
   clock clk
   impl {
-    node ballX: Register(initial=4)
-    node ballY: Register(initial=4)
+    node ballX: Register(initial=8)
+    node ballY: Register(initial=8)
     connect clk -> ballX.clk
     connect clk -> ballY.clk
 
@@ -87,8 +87,8 @@ circuit BallPosition {
     connect ballY.q -> nextY.a
     connect dy.out -> nextY.b
 
-    node wrapX: BitSlice(low=0, high=2)
-    node wrapY: BitSlice(low=0, high=2)
+    node wrapX: BitSlice(low=0, high=3)
+    node wrapY: BitSlice(low=0, high=3)
     connect nextX.sum -> wrapX.in
     connect nextY.sum -> wrapY.in
 
@@ -110,11 +110,11 @@ circuit BallPosition {
   bounceDetection: {
     name: "Bounce Detection",
     description:
-      "Comparators check if the ball is at a screen edge (0 or 7), signaling when it needs to reverse direction.",
+      "Comparators check if the ball is at a screen edge (0 or 15), signaling when it needs to reverse direction.",
     nodePositions: {
       ballY: { x: 0, y: 120 },
       zero: { x: 0, y: 0 },
-      seven: { x: 0, y: 240 },
+      fifteen: { x: 0, y: 240 },
       atTop: { x: 200, y: 30 },
       atBottom: { x: 200, y: 200 },
       shouldBounce: { x: 380, y: 120 },
@@ -126,9 +126,9 @@ circuit BallPosition {
     },
     displayDsl: `circuit BounceDetection {
   impl {
-    node ballY: Input(value=7)
+    node ballY: Input(value=15)
     node zero: Constant(value=0)
-    node seven: Constant(value=7)
+    node fifteen: Constant(value=15)
 
     node atTop: Comparator
     connect ballY.out -> atTop.a
@@ -136,7 +136,7 @@ circuit BallPosition {
 
     node atBottom: Comparator
     connect ballY.out -> atBottom.a
-    connect seven.out -> atBottom.b
+    connect fifteen.out -> atBottom.b
 
     node shouldBounce: Or
     connect atTop.eq -> shouldBounce.a
@@ -147,7 +147,7 @@ circuit BallPosition {
 
     node one: Constant(value=1)
     node minus1: Constant(value=255)
-    node newDY: Mux
+    node newDY: Mux(width=8)
     connect one.out -> newDY.in0
     connect minus1.out -> newDY.in1
     connect atBottom.eq -> newDY.sel
@@ -159,9 +159,9 @@ circuit BallPosition {
     dsl: `
 circuit BounceDetection {
   impl {
-    node ballY: Input(value=7)
+    node ballY: Input(value=15)
     node zero: Constant(value=0)
-    node seven: Constant(value=7)
+    node fifteen: Constant(value=15)
 
     node atTop: Comparator
     connect ballY.out -> atTop.a
@@ -169,7 +169,7 @@ circuit BounceDetection {
 
     node atBottom: Comparator
     connect ballY.out -> atBottom.a
-    connect seven.out -> atBottom.b
+    connect fifteen.out -> atBottom.b
 
     node shouldBounce: Or
     connect atTop.eq -> shouldBounce.a
@@ -180,7 +180,7 @@ circuit BounceDetection {
 
     node one: Constant(value=1)
     node minus1: Constant(value=255)
-    node newDY: Mux
+    node newDY: Mux(width=8)
     connect one.out -> newDY.in0
     connect minus1.out -> newDY.in1
     connect atBottom.eq -> newDY.sel
@@ -230,24 +230,24 @@ circuit BounceDetection {
     connect keyboard.out -> isS.a
     connect keyS.out -> isS.b
 
-    node upDelta: Mux
+    node upDelta: Mux(width=8)
     connect zero.out -> upDelta.in0
     connect minus1.out -> upDelta.in1
     connect isW.eq -> upDelta.sel
 
-    node delta: Mux
+    node delta: Mux(width=8)
     connect upDelta.out -> delta.in0
     connect one.out -> delta.in1
     connect isS.eq -> delta.sel
 
-    node paddleY: Register(initial=3)
+    node paddleY: Register(initial=6)
     connect clk -> paddleY.clk
 
     node newY: Adder
     connect paddleY.q -> newY.a
     connect delta.out -> newY.b
 
-    node wrapY: BitSlice(low=0, high=2)
+    node wrapY: BitSlice(low=0, high=3)
     connect newY.sum -> wrapY.in
     connect wrapY.out -> paddleY.data
 
@@ -279,24 +279,24 @@ circuit PaddleMovement {
     connect keyboard.out -> isS.a
     connect keyS.out -> isS.b
 
-    node upDelta: Mux
+    node upDelta: Mux(width=8)
     connect zero.out -> upDelta.in0
     connect minus1.out -> upDelta.in1
     connect isW.eq -> upDelta.sel
 
-    node delta: Mux
+    node delta: Mux(width=8)
     connect upDelta.out -> delta.in0
     connect one.out -> delta.in1
     connect isS.eq -> delta.sel
 
-    node paddleY: Register(initial=3)
+    node paddleY: Register(initial=6)
     connect clk -> paddleY.clk
 
     node newY: Adder
     connect paddleY.q -> newY.a
     connect delta.out -> newY.b
 
-    node wrapY: BitSlice(low=0, high=2)
+    node wrapY: BitSlice(low=0, high=3)
     connect newY.sum -> wrapY.in
     connect wrapY.out -> paddleY.data
 
@@ -313,24 +313,24 @@ circuit PaddleMovement {
   },
 
   phaseCounter: {
-    name: "6-Phase Rendering Pipeline",
+    name: "14-Phase Rendering Pipeline",
     description:
-      "A counter cycles 0-5, orchestrating: clear old ball, clear old left paddle, clear old right paddle, draw new ball, draw new left paddle, draw new right paddle.",
+      "A counter cycles 0-13, orchestrating: clear old ball, clear old left paddle, clear old right paddle, draw new ball, draw new left paddle, draw new right paddle.",
     nodePositions: {
       enable: { x: 0, y: 100 },
       one: { x: 0, y: 250 },
       zero: { x: 200, y: 350 },
-      six: { x: 200, y: 250 },
+      fourteen: { x: 200, y: 250 },
       phase: { x: 200, y: 100 },
       phaseInc: { x: 370, y: 100 },
-      atSix: { x: 370, y: 250 },
+      atFourteen: { x: 370, y: 250 },
       nextPhase: { x: 530, y: 180 },
       display: { x: 700, y: 100 },
-      two: { x: 370, y: 400 },
+      drawThreshold: { x: 370, y: 400 },
       isDrawPhase: { x: 530, y: 400 },
       drawLed: { x: 700, y: 400 },
     },
-    displayDsl: `circuit PhaseCounter6 {
+    displayDsl: `circuit PhaseCounter14 {
   clock clk
   impl {
     node phase: Register(initial=0)
@@ -338,20 +338,20 @@ circuit PaddleMovement {
 
     node one: Constant(value=1)
     node zero: Constant(value=0)
-    node six: Constant(value=6)
+    node fourteen: Constant(value=14)
 
     node phaseInc: Adder
     connect phase.q -> phaseInc.a
     connect one.out -> phaseInc.b
 
-    node atSix: Comparator
-    connect phaseInc.sum -> atSix.a
-    connect six.out -> atSix.b
+    node atFourteen: Comparator
+    connect phaseInc.sum -> atFourteen.a
+    connect fourteen.out -> atFourteen.b
 
-    node nextPhase: Mux
+    node nextPhase: Mux(width=8)
     connect phaseInc.sum -> nextPhase.in0
     connect zero.out -> nextPhase.in1
-    connect atSix.eq -> nextPhase.sel
+    connect atFourteen.eq -> nextPhase.sel
 
     connect nextPhase.out -> phase.data
 
@@ -361,17 +361,17 @@ circuit PaddleMovement {
     node display: HexDisplay
     connect phase.q -> display.in
 
-    node two: Constant(value=2)
+    node drawThreshold: Constant(value=6)
     node isDrawPhase: Comparator
     connect phase.q -> isDrawPhase.a
-    connect two.out -> isDrawPhase.b
+    connect drawThreshold.out -> isDrawPhase.b
 
     node drawLed: Led
     connect isDrawPhase.gt -> drawLed.in
   }
 }`,
     dsl: `
-circuit PhaseCounter6 {
+circuit PhaseCounter14 {
   clock clk
   impl {
     node phase: Register(initial=0)
@@ -379,20 +379,20 @@ circuit PhaseCounter6 {
 
     node one: Constant(value=1)
     node zero: Constant(value=0)
-    node six: Constant(value=6)
+    node fourteen: Constant(value=14)
 
     node phaseInc: Adder
     connect phase.q -> phaseInc.a
     connect one.out -> phaseInc.b
 
-    node atSix: Comparator
-    connect phaseInc.sum -> atSix.a
-    connect six.out -> atSix.b
+    node atFourteen: Comparator
+    connect phaseInc.sum -> atFourteen.a
+    connect fourteen.out -> atFourteen.b
 
-    node nextPhase: Mux
+    node nextPhase: Mux(width=8)
     connect phaseInc.sum -> nextPhase.in0
     connect zero.out -> nextPhase.in1
-    connect atSix.eq -> nextPhase.sel
+    connect atFourteen.eq -> nextPhase.sel
 
     connect nextPhase.out -> phase.data
 
@@ -402,10 +402,10 @@ circuit PhaseCounter6 {
     node display: HexDisplay
     connect phase.q -> display.in
 
-    node two: Constant(value=2)
+    node drawThreshold: Constant(value=6)
     node isDrawPhase: Comparator
     connect phase.q -> isDrawPhase.a
-    connect two.out -> isDrawPhase.b
+    connect drawThreshold.out -> isDrawPhase.b
 
     node drawLed: Led
     connect isDrawPhase.gt -> drawLed.in
@@ -416,27 +416,27 @@ circuit PhaseCounter6 {
   pixelAddress: {
     name: "Pixel Address Calculation",
     description:
-      "Converts (X, Y) coordinates to a linear framebuffer address using (Y << 3) + X. In real hardware a left shift by 3 is just wiring — each bit of Y connects to a position 3 places higher — so the only real gate is the final adder.",
+      "Converts (X, Y) coordinates to a linear framebuffer address using (Y << 4) + X. In real hardware a left shift by 4 is just wiring — each bit of Y connects to a position 4 places higher — so the only real gate is the final adder.",
     nodePositions: {
       x: { x: 0, y: 120 },
       y: { x: 0, y: 0 },
-      three: { x: 0, y: 240 },
-      y8: { x: 220, y: 60 },
+      four: { x: 0, y: 240 },
+      y16: { x: 220, y: 60 },
       addr: { x: 420, y: 90 },
       result: { x: 600, y: 90 },
     },
     displayDsl: `circuit PixelAddress {
   impl {
-    node x: Input(value=3)
+    node x: Input(value=4)
     node y: Input(value=4)
-    node three: Input(value=3)
+    node four: Input(value=4)
 
-    node y8: LeftShifter
-    connect y.out -> y8.value
-    connect three.out -> y8.shift
+    node y16: LeftShifter
+    connect y.out -> y16.value
+    connect four.out -> y16.shift
 
     node addr: Adder
-    connect y8.result -> addr.a
+    connect y16.result -> addr.a
     connect x.out -> addr.b
 
     node result: HexDisplay
@@ -446,16 +446,16 @@ circuit PhaseCounter6 {
     dsl: `
 circuit PixelAddress {
   impl {
-    node x: Input(value=3)
+    node x: Input(value=4)
     node y: Input(value=4)
-    node three: Input(value=3)
+    node four: Input(value=4)
 
-    node y8: LeftShifter
-    connect y.out -> y8.value
-    connect three.out -> y8.shift
+    node y16: LeftShifter
+    connect y.out -> y16.value
+    connect four.out -> y16.shift
 
     node addr: Adder
-    connect y8.result -> addr.a
+    connect y16.result -> addr.a
     connect x.out -> addr.b
 
     node result: HexDisplay
@@ -467,7 +467,7 @@ circuit PixelAddress {
 
 /**
  * Full PongSimple DSL — a complete Pong game on an 8x8 screen.
- * Two paddles (W/S and Up/Down), a bouncing ball, 6-phase rendering pipeline.
+ * Two paddles (W/S and Up/Down), a bouncing ball, 14-phase rendering pipeline.
  *
  * Key additions over the raw PongSimple.dsl:
  * - Register initial values (ball starts at center, velocity = diagonal)

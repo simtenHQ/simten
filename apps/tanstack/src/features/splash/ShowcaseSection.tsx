@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useCircuitSimulator } from "@turing-incomplete/embed";
-import { CircuitCanvas } from "@turing-incomplete/ui/shared";
+import { CircuitCanvas } from "@turing-incomplete/ui/canvas";
 
 // --- Live Fibonacci circuit (auto-ticking) ---
 
@@ -58,6 +58,7 @@ function LiveFibonacci() {
       <div className="h-[220px]">
         <CircuitCanvas
           circuit={sim.circuit}
+        componentLibrary={sim.componentLibrary ?? undefined}
           portValues={sim.portValues}
           sequentialState={sim.sequentialState}
           onToggleNode={sim.toggleNode}

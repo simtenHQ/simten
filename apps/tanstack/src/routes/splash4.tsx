@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useCircuitSimulator } from "@turing-incomplete/embed";
-import { CircuitCanvas } from "@turing-incomplete/ui/shared";
+import { CircuitCanvas } from "@turing-incomplete/ui/canvas";
 
 // --- Live NAND demo with visible DSL ---
 
@@ -58,10 +58,10 @@ function HeroDemo() {
           ) : (
             <CircuitCanvas
               circuit={sim.circuit}
+        componentLibrary={sim.componentLibrary ?? undefined}
               portValues={sim.portValues}
               sequentialState={sim.sequentialState}
               onToggleNode={sim.toggleNode}
-              drillDown={false}
             />
           )}
         </div>
