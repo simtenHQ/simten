@@ -34,6 +34,7 @@ import {
 } from "lucide-react";
 
 import { CircuitCanvas, NODE_TYPES, EDGE_TYPES } from "../../canvas";
+import type { NodeData } from "../../nodes";
 
 // ── Animation helpers ──
 
@@ -208,6 +209,7 @@ interface InspectorCanvasProps {
 function InspectorCanvas({ frame }: InspectorCanvasProps) {
   const resolveComponent = useComponentLibraryStore((s) => s.resolveComponent);
   const getAllPrimitiveNames = useComponentLibraryStore((s) => s.getAllPrimitiveNames);
+  const pushLevel = useInspectorStore((s) => s.pushLevel);
 
   // Build the view circuit (boundary Switch/Led nodes for composite ports)
   const viewCircuit = useMemo(
@@ -226,6 +228,14 @@ function InspectorCanvas({ frame }: InspectorCanvasProps) {
     resolveComponent: (name: string) => resolveComponent(name),
     getAllPrimitiveNames: () => getAllPrimitiveNames(),
   }), [resolveComponent, getAllPrimitiveNames]);
+
+  const handleNodeDoubleClick = useCallback((nodeData: NodeData) => {
+    if (!nodeData.isComposite) return;
+    const componentDef = resolveComponent(nodeData.componentRef);
+    if (componentDef) {
+      pushLevel(nodeData.componentRef, componentDef, nodeData.label ?? nodeData.componentRef);
+    }
+  }, [resolveComponent, pushLevel]);
 
   // ── Simulator state ──
   const simulatorRef = useRef<ReturnType<typeof createSimulatorFromCircuit> | null>(null);
@@ -401,6 +411,7 @@ function InspectorCanvas({ frame }: InspectorCanvasProps) {
         sequentialState={seqState}
         onToggleNode={handleToggle}
         onSetNodeValue={handleNumericChange}
+        onNodeDoubleClick={handleNodeDoubleClick}
         nodeTypes={NODE_TYPES}
         edgeTypes={EDGE_TYPES}
         theme="light"
