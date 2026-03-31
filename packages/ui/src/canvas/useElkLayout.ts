@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import type { Circuit } from "@turing-incomplete/core/dsl";
-import type { MetadataState } from "../editor/types";
+import type { MetadataState } from "./types";
 import { computeElkLayout, fallbackLayout } from "./elk-layout";
 import type { ElkLayoutOptions } from "./elk-layout";
 
@@ -15,7 +15,6 @@ export function useElkLayout(
   circuit: Circuit | null,
   options?: ElkLayoutOptions,
 ): { metadata: MetadataState; isLayoutReady: boolean } {
-  // Synchronous fallback for immediate render
   const fallback = useMemo(() => {
     if (!circuit) return { components: {}, connections: {} } as MetadataState;
     return fallbackLayout(circuit);
@@ -24,7 +23,6 @@ export function useElkLayout(
   const [elkMetadata, setElkMetadata] = useState<MetadataState | null>(null);
   const [isLayoutReady, setIsLayoutReady] = useState(false);
 
-  // Serialize options to avoid re-running on reference changes
   const direction = options?.direction ?? "RIGHT";
   const spacing = options?.spacing ?? 50;
 

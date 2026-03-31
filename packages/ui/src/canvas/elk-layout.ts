@@ -1,13 +1,13 @@
 /**
  * ELK layout computation — pure async function, no React hooks.
- * Safe to import in server components.
+ * Safe to import in server components (ELK is lazy-loaded).
  */
 
 import type { ElkNode, ElkExtendedEdge, ElkPort } from "elkjs/lib/elk.bundled.js";
 import type { Circuit } from "@turing-incomplete/core/dsl";
-import type { MetadataState } from "../editor/types";
+import type { MetadataState } from "./types";
 
-// Lazy-load ELK to avoid instantiating Worker in non-browser runtimes (e.g. Cloudflare Workers SSR)
+// Lazy-load ELK to avoid instantiating Worker in non-browser runtimes (e.g. SSR)
 let elkInstance: InstanceType<typeof import("elkjs/lib/elk.bundled.js").default> | null = null;
 async function getElk() {
   if (!elkInstance) {

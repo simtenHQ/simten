@@ -21,7 +21,8 @@ export function PaddleSection() {
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
           The delta feeds into an <code>Adder</code> that updates a{" "}
           <code>Register</code> storing the paddle&rsquo;s Y position. A{" "}
-          <code>BitSlice</code> wraps the result to keep the paddle on screen.
+          <code>BitSlice</code> wraps the result to keep the paddle within
+          the 16-pixel screen height.
           Set <strong>keyboard</strong> to 17 (W) or 31 (S), toggle the
           enable switch, and tick to see it move.
         </p>

@@ -1,5 +1,5 @@
 import { useCircuitSimulator } from "@turing-incomplete/embed";
-import { CircuitCanvas } from "@turing-incomplete/ui/shared";
+import { CircuitCanvas } from "@turing-incomplete/ui/canvas";
 import type { SectionDef } from "./sections";
 
 interface CircuitSectionProps {
@@ -53,10 +53,10 @@ export function CircuitSection({ section }: CircuitSectionProps) {
                 ) : (
                   <CircuitCanvas
                     circuit={sim.circuit}
+        componentLibrary={sim.componentLibrary ?? undefined}
                     portValues={sim.portValues}
                     sequentialState={sim.sequentialState}
                     onToggleNode={sim.toggleNode}
-                    drillDown={false}
                   />
                 )}
               </div>

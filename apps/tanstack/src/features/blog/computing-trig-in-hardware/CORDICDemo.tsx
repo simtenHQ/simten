@@ -1,6 +1,6 @@
 "use client";
 import { useCORDICSimulator } from "./useCORDICSimulator";
-import { CircuitCanvas } from "@turing-incomplete/ui/shared";
+import { CircuitCanvas } from "@turing-incomplete/ui/canvas";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 const CORDIC_LAYOUT: Record<string, { x: number; y: number }> = {

@@ -88,7 +88,7 @@ describe("PongSimple Circuit", () => {
     return { circuit, sim };
   }
 
-  /** Tick through one complete 6-phase frame */
+  /** Tick through one complete 14-phase frame */
   function tickFrame(sim: ReturnType<typeof createSimulatorFromCircuit>) {
     let result;
     for (let i = 0; i < 6; i++) {

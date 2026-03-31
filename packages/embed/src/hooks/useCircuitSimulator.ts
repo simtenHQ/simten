@@ -47,6 +47,8 @@ export interface SimulatorState {
   circuit: Circuit | null;
   portValues: FlatPortValueMap | null;
   sequentialState: FlatSequentialState | null;
+  /** The component library used by this simulator instance (includes user-defined circuits) */
+  componentLibrary: ComponentLibrary | null;
 }
 
 export interface SimulatorActions {
@@ -300,6 +302,7 @@ export function useCircuitSimulator(
     circuit,
     portValues,
     sequentialState,
+    componentLibrary: libraryRef.current,
     setInput,
     toggleInput,
     toggleNode,
