@@ -33,11 +33,11 @@ export const Route = createFileRoute('/blog/breakout-in-hardware')({
 function SectionSkeleton() {
   return (
     <div className="py-12 animate-pulse">
-      <div className="h-8 bg-gray-800 rounded w-64 mb-4" />
+      <div className="h-8 bg-gray-200 dark:bg-gray-800 rounded w-64 mb-4" />
       <div className="space-y-3">
-        <div className="h-4 bg-gray-800/50 rounded w-full" />
-        <div className="h-4 bg-gray-800/50 rounded w-5/6" />
-        <div className="h-4 bg-gray-800/50 rounded w-4/6" />
+        <div className="h-4 bg-gray-200/50 dark:bg-gray-800/50 rounded w-full" />
+        <div className="h-4 bg-gray-200/50 dark:bg-gray-800/50 rounded w-5/6" />
+        <div className="h-4 bg-gray-200/50 dark:bg-gray-800/50 rounded w-4/6" />
       </div>
     </div>
   );
@@ -50,35 +50,35 @@ function BreakoutInHardwarePage() {
         <HeroSection />
 
         <div className="space-y-4">
-          <hr className="border-gray-800" />
+          <hr className="border-gray-200 dark:border-gray-800" />
           <ErrorBoundary>
             <Suspense fallback={<SectionSkeleton />}>
               <PaddleSection />
             </Suspense>
           </ErrorBoundary>
 
-          <hr className="border-gray-800" />
+          <hr className="border-gray-200 dark:border-gray-800" />
           <ErrorBoundary>
             <Suspense fallback={<SectionSkeleton />}>
               <BallSection />
             </Suspense>
           </ErrorBoundary>
 
-          <hr className="border-gray-800" />
+          <hr className="border-gray-200 dark:border-gray-800" />
           <ErrorBoundary>
             <Suspense fallback={<SectionSkeleton />}>
               <BricksSection />
             </Suspense>
           </ErrorBoundary>
 
-          <hr className="border-gray-800" />
+          <hr className="border-gray-200 dark:border-gray-800" />
           <ErrorBoundary>
             <Suspense fallback={<SectionSkeleton />}>
               <PipelineSection />
             </Suspense>
           </ErrorBoundary>
 
-          <hr className="border-gray-800" />
+          <hr className="border-gray-200 dark:border-gray-800" />
           <ErrorBoundary>
             <Suspense fallback={<SectionSkeleton />}>
               <BreakoutSection />

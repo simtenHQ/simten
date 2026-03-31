@@ -5,30 +5,30 @@ import { InlineChallenge } from "../../components/InlineChallenge";
 export function XorChallengeSection() {
   return (
     <section className="py-12">
-      <h2 className="text-3xl font-bold text-white mb-4">
+      <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
         Challenge 4: Build XOR
       </h2>
       <div className="prose-invert space-y-6">
-        <p className="text-gray-300 leading-relaxed">
+        <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
           XOR outputs 1 when the inputs are <strong>different</strong>. This is
           the hardest one yet &mdash; four NAND gates. But the payoff is huge:
           XOR is addition without carry. It&rsquo;s the gate that makes arithmetic
           possible.
         </p>
-        <p className="text-gray-300 leading-relaxed">
+        <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
           The trick: start with NAND(A,B) &mdash; call it <code>mid</code>.
           Then:
         </p>
-        <pre className="bg-gray-900/80 border border-gray-700/50 rounded-lg p-4 text-sm font-mono text-gray-200 overflow-x-auto">
+        <pre className="bg-gray-100 dark:bg-gray-900/80 border border-gray-700/50 rounded-lg p-4 text-sm font-mono text-gray-200 overflow-x-auto">
 {`mid   = NAND(A, B)
 left  = NAND(A, mid)
 right = NAND(mid, B)
 out   = NAND(left, right)`}</pre>
-        <p className="text-gray-300 leading-relaxed">
+        <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
           Trace it through mentally for A=1, B=0: mid=NAND(1,0)=1,
           left=NAND(1,1)=0, right=NAND(1,0)=1, out=NAND(0,1)=1. Correct!
         </p>
-        <p className="text-gray-300 leading-relaxed">
+        <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
           If you can build this, you understand how <strong>every logic gate
           in a CPU</strong> is constructed. This is the foundation.
         </p>
@@ -76,10 +76,10 @@ out   = NAND(left, right)`}</pre>
       />
 
       <div className="mt-8 rounded-lg border border-emerald-800/40 bg-emerald-900/10 p-5">
-        <h3 className="text-lg font-semibold text-white mb-3">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
           You Just Proved Functional Completeness
         </h3>
-        <p className="text-gray-300 text-sm leading-relaxed">
+        <p className="text-gray-600 dark:text-gray-300 text-sm leading-relaxed">
           NOT, AND, OR, XOR &mdash; all from a single gate type. In 1913,
           Henry Sheffer proved this was possible. You just did it yourself.
           Every circuit in every computer &mdash; from a pocket calculator to

@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useCallback, useRef, useEffect, useMemo } from "react";
-import { CircuitEmbed } from "@turing-incomplete/ui/embed";
-import type { CircuitEmbedHandle, CheckResult } from "@turing-incomplete/ui/embed";
+import { CircuitEmbed } from "@turing-incomplete/embed";
+import type { CircuitEmbedHandle, CheckResult } from "@turing-incomplete/embed";
 import type { ChallengeLevel } from "@turing-incomplete/challenges";
 import { checkProgress } from "@turing-incomplete/challenges";
 import { DSLEditor, type DSLEditorRef } from "@/features/dsl/ui/DSLEditor";

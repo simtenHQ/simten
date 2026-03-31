@@ -28,17 +28,17 @@ const CATEGORY_LABELS: Record<PostCategory, string> = {
 
 function BlogIndex() {
   return (
-    <div className="min-h-screen bg-[#010409] text-white">
+    <div className="min-h-screen bg-[#010409] text-gray-900 dark:text-white">
       <div className="max-w-3xl mx-auto px-6 py-16">
         <Link
           to="/"
-          className="text-gray-600 hover:text-gray-300 transition-colors text-sm"
+          className="text-gray-600 hover:text-gray-600 dark:text-gray-300 transition-colors text-sm"
         >
           &larr; Home
         </Link>
         <h1 className="text-3xl font-bold mt-6 mb-2">Blog</h1>
         <p className="text-gray-500 text-sm mb-12">
-          Interactive articles about how hardware works. Every circuit is live.
+          Articles about hardware design, simulation, and the tools we're building.
         </p>
         <div className="space-y-3">
           {posts.map((post) => (
@@ -49,20 +49,20 @@ function BlogIndex() {
             >
               <div className="flex items-start justify-between gap-4">
                 <div className="min-w-0">
-                  <h2 className="text-base font-semibold text-gray-200 group-hover:text-white transition-colors">
+                  <h2 className="text-base font-semibold text-gray-200 group-hover:text-gray-900 dark:text-white transition-colors">
                     {post.title}
                   </h2>
-                  <p className="text-sm text-gray-500 mt-1.5 leading-relaxed">
+                  <p className="text-sm text-gray-500 dark:text-gray-500 mt-1.5 leading-relaxed">
                     {post.description}
                   </p>
                   <div className="flex items-center gap-2.5 mt-3">
                     <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-medium ${CATEGORY_COLORS[post.category]}`}>
                       {CATEGORY_LABELS[post.category]}
                     </span>
-                    <span className="text-[11px] text-gray-600 font-mono">{post.nodes}</span>
+                    <span className="text-[11px] text-gray-500 dark:text-gray-600 font-mono">{post.nodes}</span>
                   </div>
                 </div>
-                <svg className="w-4 h-4 text-gray-700 group-hover:text-gray-400 transition-colors shrink-0 mt-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <svg className="w-4 h-4 text-gray-700 group-hover:text-gray-500 dark:text-gray-400 transition-colors shrink-0 mt-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
                 </svg>
               </div>

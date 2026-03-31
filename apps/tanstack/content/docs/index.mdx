@@ -12,9 +12,21 @@ Everything runs in the browser — no toolchain, no installation, no FPGA requir
 - **Logic gates and adders** — start from AND, OR, XOR and build up to full adders and ALUs
 - **Sequential circuits** — counters, shift registers, state machines using registers and flip-flops
 - **Games in hardware** — [Snake](/blog/snake-in-hardware) and [Pong](/blog/pong-in-hardware), built entirely from logic gates with no CPU
-- **A complete CPU** — a [5-stage pipelined RISC-V processor](/blog/building-a-cpu) that runs compiled C code
+- **A complete CPU** — a [5-stage pipelined RISC-V processor](/blog/rv32i-cpu) that runs compiled C code
 - **Accelerators** — a [TPU systolic array](/blog/how-tpus-work) doing matrix multiplication, a [CORDIC unit](/blog/computing-trig-in-hardware) computing trigonometry
 - **Networking hardware** — an [Ethernet switch](/blog/how-network-switches-work) with frame parsing, buffering, and forwarding
+
+## Verilog export
+
+Circuits export to synthesizable Verilog. The exporter maps 60+ primitives to standard RTL constructs — `assign` for combinational logic, `always @(posedge clk)` with non-blocking assignments for sequential logic. The output is verified against [Icarus Verilog](https://steveicarus.github.io/iverilog/) via a containerized verification service.
+
+```typescript
+import { exportVerilog } from '@turing-incomplete/core/verilog';
+
+const verilog = exportVerilog(circuit, library, { target: 'synthesis' });
+```
+
+The `target: 'synthesis'` option strips simulation-only constructs (`initial` blocks) for FPGA-ready output.
 
 ## AI tutor with Claude Code
 
@@ -30,28 +42,29 @@ See the [Claude Code Integration](/docs/claude-code) guide for the full setup, a
 
 ## Packages
 
+```
+@turing-incomplete/core       ← headless engine (no UI)
+       ↑
+@turing-incomplete/ui         ← visual components (nodes, canvas, editor)
+       ↑
+@turing-incomplete/embed      ← batteries-included wrapper + web components
+```
+
 | Package | Description |
 |---------|-------------|
-| `@turing-incomplete/core` | DSL parser, compiler, validator, simulator engine |
-| `@turing-incomplete/ui` | React components for rendering and interacting with circuits |
+| `@turing-incomplete/core` | DSL parser, compiler, validator, simulator engine, Verilog export |
+| `@turing-incomplete/ui` | Canonical node components, shared canvas, ELK layout, editor stores and controls |
+| `@turing-incomplete/embed` | `CircuitEmbed` convenience wrapper, `useCircuitSimulator` hook, `<circuit-embed>` web component |
 | `@turing-incomplete/mcp` | MCP server for Claude Code integration |
 | `@turing-incomplete/challenges` | Educational challenge definitions (ALU, Snake, CPU) |
 | `@turing-incomplete/cli` | Command-line interface |
-
-### UI sub-paths
-
-```
-@turing-incomplete/ui/embed   — CircuitEmbed, useCircuitSimulator
-@turing-incomplete/ui/shared  — CircuitCanvas, WaveformViewer, TestResultsPanel
-@turing-incomplete/ui/editor  — Full editor kit (stores, components, simulation controller)
-```
 
 ## Embed a circuit
 
 Drop an interactive circuit into any React app:
 
 ```tsx
-import { CircuitEmbed } from '@turing-incomplete/ui/embed';
+import { CircuitEmbed } from '@turing-incomplete/embed';
 
 <CircuitEmbed
   dsl={`circuit HalfAdder {
@@ -78,7 +91,7 @@ import { CircuitEmbed } from '@turing-incomplete/ui/embed';
 
 Here's that exact code running live:
 
-import { CircuitEmbed } from '@turing-incomplete/ui/embed'
+import { CircuitEmbed } from '@turing-incomplete/embed'
 
 <CircuitEmbed
   dsl={`circuit HalfAdder {

@@ -9,22 +9,22 @@ interface OrChallengeSectionProps {
 export function OrChallengeSection({ onPass }: OrChallengeSectionProps) {
   return (
     <section className="py-12">
-      <h2 className="text-3xl font-bold text-white mb-4">
+      <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
         Challenge 3: Build OR
       </h2>
       <div className="prose-invert space-y-6">
-        <p className="text-gray-300 leading-relaxed">
+        <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
           This one requires a mental leap. De Morgan&rsquo;s law says:
         </p>
-        <pre className="bg-gray-900/80 border border-gray-700/50 rounded-lg p-4 text-sm font-mono text-gray-200 overflow-x-auto">
+        <pre className="bg-gray-100 dark:bg-gray-900/80 border border-gray-700/50 rounded-lg p-4 text-sm font-mono text-gray-200 overflow-x-auto">
 {`A OR B  =  NOT(NOT(A) AND NOT(B))
         =  NAND(NOT(A), NOT(B))`}</pre>
-        <p className="text-gray-300 leading-relaxed">
+        <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
           In words: invert each input separately, then NAND the results together.
           Three NAND gates total &mdash; two for the inversions (NOT trick),
           one to combine them.
         </p>
-        <p className="text-gray-300 leading-relaxed">
+        <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
           Think about why this works: NAND(NOT A, NOT B) is 0 only when
           both NOT A <em>and</em> NOT B are 1 &mdash; meaning both A and B
           are 0. Every other case gives 1. That&rsquo;s OR.

@@ -42,11 +42,11 @@ export const Route = createFileRoute('/blog/mcp-bidirectional-bridge')({
 function SectionSkeleton() {
   return (
     <div className="py-12 animate-pulse">
-      <div className="h-8 bg-gray-800 rounded w-64 mb-4" />
+      <div className="h-8 bg-gray-200 dark:bg-gray-800 rounded w-64 mb-4" />
       <div className="space-y-3">
-        <div className="h-4 bg-gray-800/50 rounded w-full" />
-        <div className="h-4 bg-gray-800/50 rounded w-5/6" />
-        <div className="h-4 bg-gray-800/50 rounded w-4/6" />
+        <div className="h-4 bg-gray-200/50 dark:bg-gray-800/50 rounded w-full" />
+        <div className="h-4 bg-gray-200/50 dark:bg-gray-800/50 rounded w-5/6" />
+        <div className="h-4 bg-gray-200/50 dark:bg-gray-800/50 rounded w-4/6" />
       </div>
     </div>
   );
@@ -59,56 +59,56 @@ function MCPBridgePage() {
         <HeroSection />
 
         <div className="space-y-4">
-          <hr className="border-gray-800" />
+          <hr className="border-gray-200 dark:border-gray-800" />
           <ErrorBoundary>
             <Suspense fallback={<SectionSkeleton />}>
               <ProblemSection />
             </Suspense>
           </ErrorBoundary>
 
-          <hr className="border-gray-800" />
+          <hr className="border-gray-200 dark:border-gray-800" />
           <ErrorBoundary>
             <Suspense fallback={<SectionSkeleton />}>
               <ArchitectureSection />
             </Suspense>
           </ErrorBoundary>
 
-          <hr className="border-gray-800" />
+          <hr className="border-gray-200 dark:border-gray-800" />
           <ErrorBoundary>
             <Suspense fallback={<SectionSkeleton />}>
               <LiveDemoSection />
             </Suspense>
           </ErrorBoundary>
 
-          <hr className="border-gray-800" />
+          <hr className="border-gray-200 dark:border-gray-800" />
           <ErrorBoundary>
             <Suspense fallback={<SectionSkeleton />}>
               <ChannelSection />
             </Suspense>
           </ErrorBoundary>
 
-          <hr className="border-gray-800" />
+          <hr className="border-gray-200 dark:border-gray-800" />
           <ErrorBoundary>
             <Suspense fallback={<SectionSkeleton />}>
               <StateSection />
             </Suspense>
           </ErrorBoundary>
 
-          <hr className="border-gray-800" />
+          <hr className="border-gray-200 dark:border-gray-800" />
           <ErrorBoundary>
             <Suspense fallback={<SectionSkeleton />}>
               <CostSection />
             </Suspense>
           </ErrorBoundary>
 
-          <hr className="border-gray-800" />
+          <hr className="border-gray-200 dark:border-gray-800" />
           <ErrorBoundary>
             <Suspense fallback={<SectionSkeleton />}>
               <FutureSection />
             </Suspense>
           </ErrorBoundary>
 
-          <hr className="border-gray-800" />
+          <hr className="border-gray-200 dark:border-gray-800" />
           <ErrorBoundary>
             <Suspense fallback={<SectionSkeleton />}>
               <PatternSection />

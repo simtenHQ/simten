@@ -9,6 +9,7 @@ export interface CircuitEditorProps {
   height?: number | string;
   title?: string;
   description?: string;
+  theme?: "light" | "dark";
 }
 
 const DEFAULT_DSL = `circuit MyCircuit {
@@ -32,6 +33,7 @@ export function CircuitEditor({
   height = 500,
   title,
   description,
+  theme = "dark",
 }: CircuitEditorProps) {
   const [dsl, setDsl] = useState(initialDsl);
   const [liveDsl, setLiveDsl] = useState(initialDsl);
@@ -83,13 +85,14 @@ export function CircuitEditor({
 
   return (
     <div
-      className="rounded-xl border border-gray-700/50 bg-gray-900/80 overflow-hidden"
+      data-embed-theme={theme}
+      className="rounded-xl border border-[var(--embed-border)] bg-[var(--embed-bg-surface-80)] overflow-hidden"
       style={{ height }}
     >
       {/* Toolbar */}
-      <div className="flex items-center gap-2 px-3 py-2 border-b border-gray-700/50 bg-gray-900/90 shrink-0">
-        {title && <span className="text-sm font-semibold text-gray-200">{title}</span>}
-        {description && <span className="text-xs text-gray-500 ml-1">{description}</span>}
+      <div className="flex items-center gap-2 px-3 py-2 border-b border-[var(--embed-border)] bg-[var(--embed-bg-surface)] shrink-0">
+        {title && <span className="text-sm font-semibold text-[var(--embed-text-primary)]">{title}</span>}
+        {description && <span className="text-xs text-[var(--embed-text-muted)] ml-1">{description}</span>}
         <div className="ml-auto flex items-center gap-2">
           <button
             onClick={handleRun}
@@ -97,18 +100,18 @@ export function CircuitEditor({
             className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
               hasChanges
                 ? "bg-blue-600 hover:bg-blue-500 text-white"
-                : "bg-gray-800 text-gray-600 cursor-default"
+                : "bg-[var(--embed-bg-tertiary)] text-[var(--embed-text-muted)] cursor-default"
             }`}
           >
             Run
           </button>
           <button
             onClick={handleReset}
-            className="px-3 py-1 text-xs font-medium rounded-md bg-gray-800 hover:bg-gray-700 text-gray-400 transition-colors"
+            className="px-3 py-1 text-xs font-medium rounded-md bg-[var(--embed-bg-tertiary)] hover:opacity-80 text-[var(--embed-text-secondary)] transition-colors"
           >
             Reset
           </button>
-          <span className="text-[10px] text-gray-600 font-mono">
+          <span className="text-[10px] text-[var(--embed-text-muted)] font-mono">
             {hasChanges ? "unsaved" : ""}
           </span>
         </div>
@@ -117,14 +120,14 @@ export function CircuitEditor({
       {/* Editor + Canvas */}
       <div className="flex" style={{ height: canvasHeight }}>
         {/* Code panel */}
-        <div className="w-[40%] shrink-0 border-r border-gray-700/50 overflow-hidden">
+        <div className="w-[40%] shrink-0 border-r border-[var(--embed-border)] overflow-hidden">
           <textarea
             ref={textareaRef}
             value={dsl}
             onChange={handleCodeChange}
             onKeyDown={handleKeyDown}
             spellCheck={false}
-            className="w-full h-full bg-[#0d1117] text-gray-300 font-mono text-[12px] leading-relaxed p-4 resize-none focus:outline-none border-none"
+            className="w-full h-full bg-[var(--embed-bg-code)] text-[var(--embed-text-primary)] font-mono text-[12px] leading-relaxed p-4 resize-none focus:outline-none border-none"
           />
         </div>
 
@@ -135,6 +138,7 @@ export function CircuitEditor({
             dsl={liveDsl}
             height="100%"
             showControls={true}
+            theme={theme}
           />
         </div>
       </div>

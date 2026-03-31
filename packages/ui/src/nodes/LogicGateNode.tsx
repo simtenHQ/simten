@@ -3,6 +3,7 @@
 import React from 'react';
 import { BaseNode, type PortConfig } from './BaseNode';
 import type { NodeData } from './NodeData';
+import { CompositeBadge } from './CompositeBadge';
 
 const SIMPLE_GATES = new Set([
   'And', 'Or', 'Not', 'Nand', 'Nor', 'Xor', 'Xnor', 'Buffer',
@@ -58,7 +59,7 @@ export function LogicGateNode({ data, selected }: LogicGateNodeProps) {
     const isSimple = SIMPLE_GATES.has(data.componentRef);
 
     return (
-      <div className={`flex items-center justify-center rounded-md bg-[#2a2a2e] text-gray-300 ${
+      <div className={`flex items-center justify-center rounded-md bg-[var(--embed-bg-tertiary)] text-[var(--embed-text-primary)] ${
         isSimple ? 'h-12 w-12 text-2xl font-bold' : 'h-auto w-auto px-3 py-2 text-xs font-semibold'
       }`}>
         {symbol}
@@ -69,10 +70,14 @@ export function LogicGateNode({ data, selected }: LogicGateNodeProps) {
   return (
     <BaseNode inputPorts={inputPorts} outputPorts={outputPorts} selected={selected} className="min-w-[60px]" showPortLabels={data.showPortLabels} onPortClick={data.onPortClick} glowUnconnected={data.glowUnconnected}>
       <div className="relative flex flex-col items-center gap-1">
-        <div className="text-xs font-medium text-gray-400">
+        {data.isComposite && <CompositeBadge />}
+        <div className="text-xs font-medium text-[var(--embed-text-secondary)]">
           {data.label || data.componentRef}
         </div>
         <div className="flex items-center justify-center">{renderGateSymbol()}</div>
+        {data.isComposite && (
+          <div className="text-[9px] text-[var(--embed-text-muted)] italic">double-click to inspect</div>
+        )}
       </div>
     </BaseNode>
   );

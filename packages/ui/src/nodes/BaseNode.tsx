@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Handle, Position } from '@xyflow/react';
-import { cn } from '../../lib/utils';
+import { cn } from '../lib/utils';
 
 export interface PortConfig {
   name: string;
@@ -27,8 +27,8 @@ export function BaseNode({ children, inputPorts = [], outputPorts = [], selected
   return (
     <div
       className={cn(
-        'relative rounded-lg border-2 bg-[#1a1a1e] shadow-md transition-all',
-        selected ? 'border-blue-500 shadow-lg' : 'border-[#3a3a3e]',
+        'relative rounded-lg border-2 bg-[var(--embed-bg-secondary)] shadow-md transition-all',
+        selected ? 'border-blue-500 shadow-lg' : 'border-[var(--embed-border-node)]',
         className
       )}
     >
@@ -55,7 +55,7 @@ export function BaseNode({ children, inputPorts = [], outputPorts = [], selected
               id={`in-${port.name}`}
               className={cn(
                 'h-3 w-3 rounded-full border-2 transition-all duration-200',
-                port.connected ? 'bg-blue-500 border-blue-600' : 'bg-[#2a2a2e] border-gray-500',
+                port.connected ? 'bg-blue-500 border-blue-600' : 'bg-[var(--embed-bg-tertiary)] border-[var(--embed-border-node)]',
                 unconnected && 'border-blue-400',
                 onPortClick && 'cursor-pointer hover:scale-150',
                 'hover:bg-blue-300 hover:border-blue-500'
@@ -65,7 +65,7 @@ export function BaseNode({ children, inputPorts = [], outputPorts = [], selected
             />
             {showPortLabels && (
               <div
-                className="absolute text-[9px] font-mono text-gray-400 pointer-events-none select-none"
+                className="absolute text-[9px] font-mono text-[var(--embed-text-secondary)] pointer-events-none select-none"
                 style={{ top: topPct, left: '10px', transform: 'translateY(-50%)' }}
               >
                 {port.name}
@@ -101,7 +101,7 @@ export function BaseNode({ children, inputPorts = [], outputPorts = [], selected
               id={`out-${port.name}`}
               className={cn(
                 'h-3 w-3 rounded-full border-2 transition-all duration-200',
-                port.connected ? 'bg-green-500 border-green-600' : 'bg-[#2a2a2e] border-gray-500',
+                port.connected ? 'bg-green-500 border-green-600' : 'bg-[var(--embed-bg-tertiary)] border-[var(--embed-border-node)]',
                 port.value === true && 'bg-green-500 border-green-600',
                 port.value === false && 'bg-gray-300 border-gray-400',
                 unconnected && 'border-green-400',
@@ -113,7 +113,7 @@ export function BaseNode({ children, inputPorts = [], outputPorts = [], selected
             />
             {showPortLabels && (
               <div
-                className="absolute text-[9px] font-mono text-gray-400 pointer-events-none select-none"
+                className="absolute text-[9px] font-mono text-[var(--embed-text-secondary)] pointer-events-none select-none"
                 style={{ top: topPct, right: '10px', transform: 'translateY(-50%)', textAlign: 'right' }}
               >
                 {port.name}

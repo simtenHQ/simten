@@ -9,7 +9,7 @@ import type { Circuit, PortPath } from '@turing-incomplete/core/dsl';
 import type { ComponentLibrary, FlatPortValueMap, FlatSequentialState } from '@turing-incomplete/core/simulator';
 import { getReferenceCircuit } from '@turing-incomplete/core/simulator';
 import type { MetadataState } from '../types';
-import type { NodeData } from '../components/nodes/NodeData';
+import type { NodeData } from '@turing-incomplete/ui/nodes';
 
 export type { NodeData };
 

@@ -13,8 +13,8 @@ export function BlogFooter({ slug, tagline = "Every circuit on this page is simu
     : null;
 
   return (
-    <footer className="mt-16 pt-8 border-t border-gray-800 text-center">
-      <p className="text-sm text-gray-500">
+    <footer className="mt-16 pt-8 border-t border-gray-200 dark:border-gray-800 text-center">
+      <p className="text-sm text-gray-500 dark:text-gray-500">
         Built with{" "}
         <a
           href="/"
@@ -24,7 +24,7 @@ export function BlogFooter({ slug, tagline = "Every circuit on this page is simu
         </a>
         {" "}&mdash; a visual circuit simulator with an AI tutor.
       </p>
-      <p className="text-xs text-gray-600 mt-2">
+      <p className="text-xs text-gray-500 dark:text-gray-600 mt-2">
         {tagline}
       </p>
       <div className="mt-6 flex items-center justify-center gap-4">
@@ -37,14 +37,14 @@ export function BlogFooter({ slug, tagline = "Every circuit on this page is simu
         {next && (
           <Link
             to={`/blog/${next.slug}` as string}
-            className="text-sm text-gray-500 hover:text-gray-300 transition-colors"
+            className="text-sm text-gray-500 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
           >
             Next: {next.title} &rarr;
           </Link>
         )}
       </div>
-      <p className="text-xs text-gray-600 mt-4">
-        <Link to="/blog" className="hover:text-gray-400 transition-colors">
+      <p className="text-xs text-gray-500 dark:text-gray-600 mt-4">
+        <Link to="/blog" className="hover:text-gray-500 dark:text-gray-400 transition-colors">
           &larr; Back to blog
         </Link>
       </p>

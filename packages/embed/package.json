@@ -28,6 +28,10 @@
       "types": "./src/index.ts",
       "default": "./src/index.ts"
     },
+    "./nodes": {
+      "types": "./src/components/nodes/index.ts",
+      "default": "./src/components/nodes/index.ts"
+    },
     "./canvas": {
       "types": "./src/canvas/index.ts",
       "default": "./src/canvas/index.ts"
@@ -58,6 +62,7 @@
   "dependencies": {
     "@r2wc/react-to-web-component": "^2.1.1",
     "@turing-incomplete/core": "workspace:*",
+    "@turing-incomplete/ui": "workspace:*",
     "@xyflow/react": "^12.10.0",
     "clsx": "^2.1.1",
     "elkjs": "^0.9.3",

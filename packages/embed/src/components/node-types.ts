@@ -1,10 +1,6 @@
 import { SmoothStepEdge, type NodeTypes, type EdgeTypes } from "@xyflow/react";
 
-import { InputNode } from "./nodes/InputNode";
-import { OutputNode } from "./nodes/OutputNode";
-import { LogicGateNode } from "./nodes/LogicGateNode";
-import { EmbedConsoleNode } from "./nodes/EmbedConsoleNode";
-import { EmbedScreenNode } from "./nodes/EmbedScreenNode";
+import { InputNode, OutputNode, LogicGateNode, EmbedConsoleNode, EmbedScreenNode } from "@turing-incomplete/ui/nodes";
 
 /**
  * Node type map for embed contexts.

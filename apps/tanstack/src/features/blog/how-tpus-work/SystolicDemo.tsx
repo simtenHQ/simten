@@ -80,8 +80,8 @@ export function SystolicDemo() {
 
   if (!sim.ready) {
     return (
-      <div className="rounded-xl border border-gray-700/50 bg-gray-900/50 p-8">
-        <div className="flex items-center gap-3 text-gray-400">
+      <div className="rounded-xl border border-gray-700/50 bg-gray-100/50 dark:bg-gray-900/50 p-8">
+        <div className="flex items-center gap-3 text-gray-500 dark:text-gray-400">
           <div className="h-5 w-5 animate-spin rounded-full border-2 border-gray-600 border-t-blue-400" />
           <span className="text-sm">Compiling systolic array circuit...</span>
         </div>
@@ -126,15 +126,15 @@ export function SystolicDemo() {
 
   return (
     <TooltipProvider delayDuration={300}>
-    <div className="rounded-xl border border-gray-700/50 bg-gray-900/80 overflow-hidden">
+    <div className="rounded-xl border border-gray-700/50 bg-gray-100 dark:bg-gray-900/80 overflow-hidden">
       {/* Matrix display header */}
       <div className="px-4 py-3 border-b border-gray-700/50">
         <div className="flex items-center gap-6 text-sm">
           <div>
-            <span className="text-xs font-medium text-gray-400 uppercase tracking-wider">
+            <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
               Matrix A
             </span>
-            <div className="font-mono text-gray-300 mt-1 text-xs">
+            <div className="font-mono text-gray-500 dark:text-gray-300 mt-1 text-xs">
               <div>[{getInputValue("a00")}, {getInputValue("a01")}, {getInputValue("a02")}]</div>
               <div>[{getInputValue("a10")}, {getInputValue("a11")}, {getInputValue("a12")}]</div>
               <div>[{getInputValue("a20")}, {getInputValue("a21")}, {getInputValue("a22")}]</div>
@@ -142,10 +142,10 @@ export function SystolicDemo() {
           </div>
           <span className="text-gray-500 text-lg">&times;</span>
           <div>
-            <span className="text-xs font-medium text-gray-400 uppercase tracking-wider">
+            <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
               Matrix B
             </span>
-            <div className="font-mono text-gray-300 mt-1 text-xs">
+            <div className="font-mono text-gray-500 dark:text-gray-300 mt-1 text-xs">
               <div>[{getInputValue("b00")}, {getInputValue("b01")}, {getInputValue("b02")}]</div>
               <div>[{getInputValue("b10")}, {getInputValue("b11")}, {getInputValue("b12")}]</div>
               <div>[{getInputValue("b20")}, {getInputValue("b21")}, {getInputValue("b22")}]</div>
@@ -153,7 +153,7 @@ export function SystolicDemo() {
           </div>
           <span className="text-gray-500 text-lg">=</span>
           <div>
-            <span className="text-xs font-medium text-gray-400 uppercase tracking-wider">
+            <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
               Result C
             </span>
             <div
@@ -191,7 +191,7 @@ export function SystolicDemo() {
       />
 
       {/* Controls bar */}
-      <div className="px-4 py-3 border-t border-gray-700/50 flex flex-wrap items-center gap-3 bg-gray-900/90">
+      <div className="px-4 py-3 border-t border-gray-700/50 flex flex-wrap items-center gap-3 bg-gray-100 dark:bg-gray-900/90">
         {!hasStarted ? (
           <button
             onClick={handleStart}
@@ -205,7 +205,7 @@ export function SystolicDemo() {
             disabled={isDone}
             className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
               isRunning
-                ? "bg-amber-600 hover:bg-amber-500 text-white"
+                ? "bg-amber-600 hover:bg-amber-500 text-gray-900 dark:text-white"
                 : "bg-blue-600 hover:bg-blue-500 text-white"
             } disabled:opacity-40`}
           >
@@ -227,7 +227,7 @@ export function SystolicDemo() {
           Reset
         </button>
         <div className="flex items-center gap-2 ml-auto">
-          <label className="text-xs text-gray-400">Speed</label>
+          <label className="text-xs text-gray-500 dark:text-gray-400">Speed</label>
           <input
             type="range"
             min={1}
@@ -237,7 +237,7 @@ export function SystolicDemo() {
             className="w-20 accent-blue-500"
           />
         </div>
-        <span className="text-xs text-gray-400 font-mono tabular-nums">
+        <span className="text-xs text-gray-500 dark:text-gray-400 font-mono tabular-nums">
           Cycle {sim.cycleCount.toLocaleString()}
         </span>
       </div>

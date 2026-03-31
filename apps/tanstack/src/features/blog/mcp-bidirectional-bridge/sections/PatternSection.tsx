@@ -4,11 +4,11 @@ export function PatternSection() {
   return (
     <section className="py-12 md:py-16">
       <div className="max-w-3xl">
-        <h2 className="text-2xl md:text-3xl font-bold text-white mb-6">
+        <h2 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-6">
           The General Pattern
         </h2>
 
-        <div className="space-y-5 text-gray-300 leading-relaxed">
+        <div className="space-y-5 text-gray-500 dark:text-gray-300 leading-relaxed">
           <p>
             This isn&rsquo;t specific to circuit simulators. The pattern
             generalizes to any application where an AI agent needs to be a
@@ -40,9 +40,9 @@ export function PatternSection() {
             ].map((example, i) => (
               <div
                 key={i}
-                className="rounded-xl border border-gray-800 bg-[#0d1117] p-5"
+                className="rounded-xl border border-gray-200 dark:border-gray-800 bg-[#0d1117] p-5"
               >
-                <h3 className="text-sm font-semibold text-white mb-3">
+                <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">
                   {example.app}
                 </h3>
                 <div className="space-y-1.5 text-sm">
@@ -50,13 +50,13 @@ export function PatternSection() {
                     <span className="text-green-500 font-mono text-xs mt-0.5 shrink-0">
                       PUSH
                     </span>
-                    <span className="text-gray-400">{example.push}</span>
+                    <span className="text-gray-500 dark:text-gray-400">{example.push}</span>
                   </div>
                   <div className="flex items-start gap-2">
                     <span className="text-blue-500 font-mono text-xs mt-0.5 shrink-0">
                       PULL
                     </span>
-                    <span className="text-gray-400">{example.pull}</span>
+                    <span className="text-gray-500 dark:text-gray-400">{example.pull}</span>
                   </div>
                 </div>
               </div>
@@ -67,7 +67,7 @@ export function PatternSection() {
             The recipe is the same in every case:
           </p>
 
-          <ol className="list-decimal list-inside space-y-2 text-gray-300 pl-1">
+          <ol className="list-decimal list-inside space-y-2 text-gray-500 dark:text-gray-300 pl-1">
             <li>
               Build an MCP server that exposes domain-specific tools
             </li>
