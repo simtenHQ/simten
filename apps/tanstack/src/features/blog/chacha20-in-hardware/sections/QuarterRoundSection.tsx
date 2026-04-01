@@ -1,6 +1,6 @@
 "use client";
 
-import { ThemedCircuitEmbed as CircuitEmbed } from "@/features/blog/components/ThemedCircuitEmbed";
+import { CircuitEmbed } from "@turing-incomplete/embed";
 import { CHACHA20_CIRCUITS } from "../circuits";
 
 export function QuarterRoundSection() {
