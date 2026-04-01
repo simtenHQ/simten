@@ -298,14 +298,11 @@ function projectCircuitToEdges(
 
     let edgeColor = WIRE_COLORS.UNDEFINED;
     if (portValues) {
-      const sourceKey = portPathKey(connection.source);
-      const value = portValues.get(sourceKey);
+      const value = portValues.get(portPathKey(connection.source))
+        ?? portValues.get(portPathKey(connection.target));
       if (value !== undefined) {
-        if (typeof value === 'boolean') {
-          edgeColor = value ? WIRE_COLORS.TRUE : WIRE_COLORS.FALSE;
-        } else {
-          edgeColor = value !== 0 ? WIRE_COLORS.TRUE : WIRE_COLORS.FALSE;
-        }
+        edgeColor = (typeof value === 'boolean' ? value : value !== 0)
+          ? WIRE_COLORS.TRUE : WIRE_COLORS.FALSE;
       }
     }
 
