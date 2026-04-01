@@ -7,6 +7,7 @@ import { ErrorBoundary } from "./components/ErrorBoundary";
 import { ErrorDisplay } from "./components/ErrorDisplay";
 import { LoadingSkeleton } from "./components/LoadingSkeleton";
 import { generateHarnessAppended } from "@turing-incomplete/core/dsl";
+import type { FlatPortValueMap, FlatSequentialState } from "@turing-incomplete/core/simulator";
 
 export interface CircuitEmbedProps {
   dsl: string;
@@ -97,7 +98,7 @@ export const CircuitEmbed = forwardRef<CircuitEmbedHandle, CircuitEmbedProps>(fu
 
   useEffect(() => {
     if (isAutoRunning && sim.ready && sim.isSequential) {
-      intervalRef.current = setInterval(() => { sim.tick(); }, autoRunSpeed);
+      intervalRef.current = setInterval(() => { tickWithHistory(); }, autoRunSpeed);
     }
     return () => {
       if (intervalRef.current) {
@@ -105,7 +106,7 @@ export const CircuitEmbed = forwardRef<CircuitEmbedHandle, CircuitEmbedProps>(fu
         intervalRef.current = null;
       }
     };
-  }, [isAutoRunning, sim.ready, sim.isSequential, autoRunSpeed, sim.tick]);
+  }, [isAutoRunning, sim.ready, sim.isSequential, autoRunSpeed, tickWithHistory]);
 
   // Imperative handle for behavioral checks
   useImperativeHandle(ref, () => ({
@@ -157,10 +158,83 @@ export const CircuitEmbed = forwardRef<CircuitEmbedHandle, CircuitEmbedProps>(fu
     }
   }), [sim]);
 
+  // ── Time-travel: snapshot history for sequential circuits ──
+  type Snapshot = { portValues: FlatPortValueMap; sequentialState: FlatSequentialState | null; cycleCount: number };
+  const [history, setHistory] = useState<Snapshot[]>([]);
+  const [historyIndex, setHistoryIndex] = useState(-1);
+  const isViewingPast = historyIndex >= 0 && historyIndex < history.length - 1;
+
+  // Save initial snapshot when circuit first compiles
+  useEffect(() => {
+    if (sim.ready && sim.isSequential) {
+      const engine = sim.getSimulator();
+      if (engine) {
+        try {
+          const snap = engine.snapshot();
+          setHistory([{ portValues: snap.portValues, sequentialState: snap.sequentialState, cycleCount: 0 }]);
+          setHistoryIndex(0);
+        } catch {
+          setHistory([]);
+          setHistoryIndex(-1);
+        }
+      }
+    } else {
+      setHistory([]);
+      setHistoryIndex(-1);
+    }
+  }, [sim.ready, sim.isSequential]);
+
+  // Wrap tick to record snapshots
+  const tickWithHistory = useCallback(() => {
+    sim.tick();
+    const engine = sim.getSimulator();
+    if (engine && sim.isSequential) {
+      try {
+        const snap = engine.snapshot();
+        setHistory((prev) => {
+          const next = [...prev, { portValues: snap.portValues, sequentialState: snap.sequentialState, cycleCount: sim.cycleCount + 1 }];
+          setHistoryIndex(next.length - 1);
+          return next;
+        });
+      } catch { /* non-sequential, ignore */ }
+    }
+  }, [sim]);
+
+  const stepBack = useCallback(() => {
+    if (historyIndex <= 0) return;
+    const engine = sim.getSimulator();
+    if (!engine) return;
+    const newIndex = historyIndex - 1;
+    engine.restore(history[newIndex] as any);
+    // Force re-render with restored state
+    const pv = engine.getPortValues() as FlatPortValueMap;
+    // Trigger sim state update via a combinational pass
+    engine.runCombinational();
+    setHistoryIndex(newIndex);
+  }, [historyIndex, history, sim]);
+
+  const stepForward = useCallback(() => {
+    if (historyIndex >= history.length - 1) return;
+    const engine = sim.getSimulator();
+    if (!engine) return;
+    const newIndex = historyIndex + 1;
+    engine.restore(history[newIndex] as any);
+    engine.runCombinational();
+    setHistoryIndex(newIndex);
+  }, [historyIndex, history, sim]);
+
   const handleReset = useCallback(() => {
     setIsAutoRunning(false);
     sim.reset();
-  }, [sim.reset]);
+    const engine = sim.getSimulator();
+    if (engine && sim.isSequential) {
+      try {
+        const snap = engine.snapshot();
+        setHistory([{ portValues: snap.portValues, sequentialState: snap.sequentialState, cycleCount: 0 }]);
+        setHistoryIndex(0);
+      } catch { /* ignore */ }
+    }
+  }, [sim]);
 
   if (sim.error) {
     return <ErrorDisplay error={sim.error} title="Compilation Error" />;
@@ -209,14 +283,16 @@ export const CircuitEmbed = forwardRef<CircuitEmbedHandle, CircuitEmbedProps>(fu
       {showControls && sim.isSequential && (
         <div className="px-3 py-2 border-t border-[var(--embed-border)] flex items-center gap-2 bg-[var(--embed-bg-surface)]">
           <button
-            onClick={sim.tick}
-            className="px-3 py-1.5 text-xs font-medium rounded-md bg-blue-600 hover:bg-blue-500 text-white transition-colors"
+            onClick={tickWithHistory}
+            disabled={isViewingPast || isAutoRunning}
+            className="px-3 py-1.5 text-xs font-medium rounded-md bg-blue-600 hover:bg-blue-500 text-white transition-colors disabled:opacity-40"
           >
             Tick
           </button>
           <button
             onClick={() => setIsAutoRunning(!isAutoRunning)}
-            className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+            disabled={isViewingPast}
+            className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors disabled:opacity-40 ${
               isAutoRunning
                 ? "bg-amber-600 hover:bg-amber-500 text-white"
                 : "bg-[var(--embed-bg-tertiary)] hover:opacity-80 text-[var(--embed-text-primary)]"
@@ -230,8 +306,39 @@ export const CircuitEmbed = forwardRef<CircuitEmbedHandle, CircuitEmbedProps>(fu
           >
             Reset
           </button>
+
+          {/* Time-travel controls */}
+          {history.length > 1 && (
+            <>
+              <div className="w-px h-4 bg-[var(--embed-border)] mx-1" />
+              <button
+                onClick={stepBack}
+                disabled={historyIndex <= 0 || isAutoRunning}
+                className="px-1.5 py-1 text-xs font-medium rounded-md bg-[var(--embed-bg-tertiary)] hover:opacity-80 text-[var(--embed-text-primary)] transition-colors disabled:opacity-30"
+                title="Step back"
+              >
+                ◀
+              </button>
+              <span className="text-[10px] text-[var(--embed-text-secondary)] font-mono tabular-nums min-w-[40px] text-center">
+                {isViewingPast ? (
+                  <span className="text-amber-500">{historyIndex + 1}/{history.length}</span>
+                ) : (
+                  <span>{history.length}/{history.length}</span>
+                )}
+              </span>
+              <button
+                onClick={stepForward}
+                disabled={!isViewingPast || isAutoRunning}
+                className="px-1.5 py-1 text-xs font-medium rounded-md bg-[var(--embed-bg-tertiary)] hover:opacity-80 text-[var(--embed-text-primary)] transition-colors disabled:opacity-30"
+                title="Step forward"
+              >
+                ▶
+              </button>
+            </>
+          )}
+
           <span className="ml-auto text-xs text-[var(--embed-text-secondary)] font-mono tabular-nums">
-            Cycle {sim.cycleCount}
+            Cycle {isViewingPast ? history[historyIndex]?.cycleCount ?? 0 : sim.cycleCount}
           </span>
         </div>
       )}
