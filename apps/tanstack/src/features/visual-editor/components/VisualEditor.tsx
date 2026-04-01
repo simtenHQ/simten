@@ -17,7 +17,6 @@ import {
   RightSidebar,
   ClockControls,
   SignalOutputPanel,
-  CompositeInspectorDialog,
 } from "@turing-incomplete/ui/editor/components";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useCircuitStore, useDSLPreviewStore, useComponentLibraryStore } from "@turing-incomplete/ui/editor/stores";
@@ -397,9 +396,6 @@ export function VisualEditor({ theme = "light" }: VisualEditorProps) {
             <SignalOutputPanel />
           </div>
         )}
-
-        {/* Composite Inspector Dialog */}
-        <CompositeInspectorDialog theme={theme} />
 
         {/* AI Chat Panel */}
         <ChatPanel

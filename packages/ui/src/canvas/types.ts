@@ -12,6 +12,24 @@ export type {
 
 export type { Circuit } from "@turing-incomplete/core/dsl";
 
+// --- Inspector types (used by the canvas-level drill-down inspector) ---
+
+import type { Circuit as CircuitType } from "@turing-incomplete/core/dsl";
+
+export interface InspectorFrame {
+  componentName: string;
+  componentDef: CircuitType;
+  nodeLabel: string;
+}
+
+/** Screen rect of the node that triggered the dialog (for animate-from-origin) */
+export interface OriginRect {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
 // --- Layout metadata types (extracted from packages/ui/src/editor/types/visual.ts) ---
 
 export interface Position {
