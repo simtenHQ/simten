@@ -573,6 +573,66 @@ function useTypewriter(
 }
 
 // ============================================================================
+// DSL syntax highlighting
+// ============================================================================
+
+/** Lightweight DSL syntax highlighter — matches the Monaco dsl-light/dsl-dark themes */
+function highlightDsl(code: string): React.ReactNode[] {
+  // Monaco uses a single "keyword" token (blue, bold) for all DSL keywords
+  const KW = "text-[#0000ff] dark:text-[#569cd6] font-bold";
+  // Comments
+  const COMMENT = "text-[#008000] dark:text-[#6a9955] italic";
+  // Strings / types
+  const TYPE = "text-[#267f99] dark:text-[#4ec9b0]";
+  // Component refs after ":"
+  const COMPONENT = "text-[#267f99] dark:text-[#4ec9b0]";
+  // Numbers
+  const NUM = "text-[#098658] dark:text-[#b5cea8]";
+
+  const KEYWORD_RE = /^(circuit|input|output|clock|state|impl|node|connect|on)\b/;
+
+  return code.split("\n").map((line, i) => {
+    const trimmed = line.trimStart();
+    const indent = line.slice(0, line.length - trimmed.length);
+
+    if (trimmed.startsWith("//")) {
+      return <div key={i}>{indent}<span className={COMMENT}>{trimmed}</span></div>;
+    }
+
+    const tokens: React.ReactNode[] = [];
+    let rest = trimmed;
+    let k = 0;
+
+    const eat = (pattern: RegExp, cls?: string) => {
+      const m = rest.match(pattern);
+      if (!m) return false;
+      tokens.push(cls ? <span key={k++} className={cls}>{m[0]}</span> : <span key={k++}>{m[0]}</span>);
+      rest = rest.slice(m[0].length);
+      return true;
+    };
+
+    while (rest.length > 0) {
+      if (eat(KEYWORD_RE, KW)) continue;
+      if (eat(/^->/, KW)) continue;
+      if (eat(/^(Bit|Bus\[\d+\])/, TYPE)) continue;
+      // After ": " — component type
+      if (eat(/^:\s*/, "text-muted-foreground")) {
+        eat(/^[A-Z]\w*/, COMPONENT);
+        // Params in parens
+        eat(/^\([^)]*\)/, "text-muted-foreground");
+        continue;
+      }
+      if (eat(/^\d+/, NUM)) continue;
+      if (eat(/^[{}()]/, "text-muted-foreground/60")) continue;
+      if (eat(/^\s+/)) continue;
+      if (eat(/^[^\s{}()]+/)) continue;
+    }
+
+    return <div key={i}>{indent}{tokens}</div>;
+  });
+}
+
+// ============================================================================
 // Window chrome
 // ============================================================================
 
@@ -616,20 +676,20 @@ function BrowserWindow({
 }) {
   return (
     <div
-      className={`flex flex-col rounded-lg overflow-hidden border border-[#30363d] ${
+      className={`flex flex-col rounded-lg overflow-hidden border border-border ${
         className ?? ""
       }`}
     >
-      <div className="flex-shrink-0 bg-[#161b22] px-4 h-11 flex items-center gap-3 border-b border-[#30363d]">
+      {/* Title bar */}
+      <div className="flex-shrink-0 bg-muted px-4 h-11 flex items-center gap-3 border-b border-border">
         <div className="flex gap-1.5 shrink-0">
           <span className="w-3 h-3 rounded-full bg-[#ff5f57]" />
           <span className="w-3 h-3 rounded-full bg-[#febc2e]" />
           <span className="w-3 h-3 rounded-full bg-[#28c840]" />
         </div>
-        {/* URL bar */}
-        <div className="flex-1 flex items-center bg-[#0d1117] rounded-full border border-[#30363d] px-3 h-6 gap-2 min-w-0">
+        <div className="flex-1 flex items-center bg-card rounded-full border border-border px-3 h-6 gap-2 min-w-0">
           <svg
-            className="w-3 h-3 text-gray-600 shrink-0"
+            className="w-3 h-3 text-muted-foreground shrink-0"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -641,19 +701,19 @@ function BrowserWindow({
               d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
             />
           </svg>
-          <span className="text-[12px] text-gray-500 font-mono truncate">
+          <span className="text-[12px] text-muted-foreground font-mono truncate">
             turingincomplete.com
           </span>
         </div>
-        {/* MCP badge */}
         {showMcp && (
-          <div className="inline-flex items-center gap-1.5 rounded-full bg-[#0d1117]/80 border border-[#30363d] px-2.5 py-1 text-[11px] text-gray-500 shrink-0">
+          <div className="inline-flex items-center gap-1.5 rounded-full bg-card/80 border border-border px-2.5 py-1 text-[11px] text-muted-foreground shrink-0">
             <div className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
             MCP connected
           </div>
         )}
       </div>
-      <div className="flex-1 min-h-0 bg-[#0d1117] text-gray-200">{children}</div>
+      {/* Content area — follows page theme */}
+      <div className="flex-1 min-h-0 bg-card text-foreground">{children}</div>
     </div>
   );
 }
@@ -1073,17 +1133,17 @@ function Splash5Page() {
           <BrowserWindow className="flex-1" showMcp={dslTyping || !!activeDsl}>
             <div className="flex h-full">
               {/* DSL code strip — thin left panel */}
-              <div className="w-[250px] shrink-0 border-r border-[#30363d] overflow-y-auto">
-                <pre className="text-[12px] font-mono text-gray-500 leading-relaxed whitespace-pre-wrap py-3 px-4 mx-auto">
+              <div className="w-[250px] shrink-0 border-r border-border overflow-y-auto">
+                <pre className="text-[12px] font-mono text-foreground/70 leading-relaxed whitespace-pre-wrap py-3 px-4 mx-auto">
                   {dslTyping ? (
                     <>
-                      {dslTw.displayed}
+                      {highlightDsl(dslTw.displayed)}
                       <span className="inline-block w-[2px] h-[12px] bg-green-500 ml-0.5 animate-pulse align-text-bottom" />
                     </>
                   ) : activeDslDisplay ? (
-                    activeDslDisplay
+                    highlightDsl(activeDslDisplay)
                   ) : (
-                    <span className="text-gray-700 italic text-[11px]">
+                    <span className="text-muted-foreground/40 italic text-[11px]">
                       Waiting for circuit...
                     </span>
                   )}
@@ -1094,9 +1154,9 @@ function Splash5Page() {
               <div className="flex-1 flex flex-col min-w-0">
                 <div className="flex-1 min-h-0 relative">
                   {activeDsl ? (
-                    <DemoCircuit dsl={activeDsl} height="100%" theme="dark" />
+                    <DemoCircuit dsl={activeDsl} height="100%" />
                   ) : (
-                    <div className="h-full flex items-center justify-center text-gray-700 text-sm font-mono">
+                    <div className="h-full flex items-center justify-center text-muted-foreground/40 text-sm font-mono">
                       {dslTyping ? "Compiling..." : ""}
                     </div>
                   )}
@@ -1104,13 +1164,13 @@ function Splash5Page() {
 
                 {/* Footer */}
                 {activeDsl && (
-                  <div className="flex-shrink-0 border-t border-[#30363d] px-4 py-2 flex items-center justify-between">
-                    <span className="text-[11px] text-gray-600">
+                  <div className="flex-shrink-0 border-t border-border px-4 py-2 flex items-center justify-between">
+                    <span className="text-[11px] text-muted-foreground/60">
                       Click switches to interact
                     </span>
                     <Link
                       to="/editor"
-                      className="text-[11px] text-gray-600 hover:text-gray-300 transition-colors"
+                      className="text-[11px] text-muted-foreground/60 hover:text-foreground transition-colors"
                     >
                       Open in full editor
                     </Link>
