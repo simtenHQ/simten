@@ -97,19 +97,19 @@ function shouldShow(name: string): boolean {
 }
 
 function PortList({ ports, label }: { ports: CorePrimitiveDefinition["inputs"]; label: string }) {
-  if (ports.length === 0) return <span className="text-gray-600 text-xs">none</span>;
+  if (ports.length === 0) return <span className="text-muted-foreground text-xs">none</span>;
   return (
     <div>
-      <span className="text-[10px] uppercase tracking-wider text-gray-500">{label}</span>
+      <span className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</span>
       <div className="flex flex-wrap gap-1.5 mt-1">
         {ports.map((p) => (
           <span
             key={p.name}
-            className="inline-flex items-center gap-1 rounded bg-gray-800 px-1.5 py-0.5 text-xs font-mono"
+            className="inline-flex items-center gap-1 rounded bg-muted px-1.5 py-0.5 text-xs font-mono"
           >
-            <span className="text-gray-300">{p.name}</span>
-            <span className="text-gray-600">:</span>
-            <span className="text-blue-400">
+            <span className="text-foreground">{p.name}</span>
+            <span className="text-muted-foreground">:</span>
+            <span className="text-blue-600 dark:text-blue-400">
               {p.portType.kind === "bus" ? `Bus[${p.portType.width}]` : "Bit"}
             </span>
           </span>
@@ -188,9 +188,9 @@ export function PrimitiveExplorer() {
           }}
           onFocus={() => setDropdownOpen(true)}
           placeholder="Search primitives... (e.g. Adder, Register, Mux)"
-          className="w-full rounded-lg border border-gray-700 bg-gray-900 px-4 py-2.5 text-sm text-gray-200 placeholder-gray-500 focus:outline-none focus:border-blue-500 transition-colors"
+          className="w-full rounded-lg border border-border bg-card px-4 py-2.5 text-sm text-foreground placeholder-muted-foreground focus:outline-none focus:border-blue-500 transition-colors"
         />
-        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 text-xs">
+        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-xs">
           {totalFiltered} primitives
         </span>
 
@@ -198,14 +198,14 @@ export function PrimitiveExplorer() {
         {dropdownOpen && (
           <div
             ref={dropdownRef}
-            className="absolute z-50 mt-1 w-full max-h-80 overflow-y-auto rounded-lg border border-gray-700 bg-gray-900 shadow-xl"
+            className="absolute z-50 mt-1 w-full max-h-80 overflow-y-auto rounded-lg border border-border bg-card shadow-xl"
           >
             {Object.keys(filtered).length === 0 ? (
-              <div className="px-4 py-3 text-sm text-gray-500">No primitives match "{search}"</div>
+              <div className="px-4 py-3 text-sm text-muted-foreground">No primitives match "{search}"</div>
             ) : (
               CATEGORY_ORDER.filter((cat) => filtered[cat]).map((cat) => (
                 <div key={cat}>
-                  <div className="px-3 py-1.5 text-[10px] uppercase tracking-wider text-gray-500 bg-gray-900/80 sticky top-0">
+                  <div className="px-3 py-1.5 text-[10px] uppercase tracking-wider text-muted-foreground bg-card/80 sticky top-0">
                     {CATEGORY_LABELS[cat] ?? cat}
                   </div>
                   {filtered[cat].map((def) => (
@@ -216,19 +216,19 @@ export function PrimitiveExplorer() {
                         setSearch("");
                         setDropdownOpen(false);
                       }}
-                      className={`w-full text-left px-3 py-2 hover:bg-gray-800 transition-colors flex items-center justify-between gap-2 ${
-                        selectedName === def.name ? "bg-gray-800" : ""
+                      className={`w-full text-left px-3 py-2 hover:bg-accent transition-colors flex items-center justify-between gap-2 ${
+                        selectedName === def.name ? "bg-accent" : ""
                       }`}
                     >
                       <div className="min-w-0">
                         <div className="flex items-center gap-2">
-                          <span className="text-sm font-medium text-white">{def.name}</span>
-                          <span className="text-xs text-gray-600">{def.icon}</span>
+                          <span className="text-sm font-medium text-foreground">{def.name}</span>
+                          <span className="text-xs text-muted-foreground">{def.icon}</span>
                         </div>
-                        <div className="text-xs text-gray-500 truncate">{def.description}</div>
+                        <div className="text-xs text-muted-foreground truncate">{def.description}</div>
                       </div>
                       {(def.clocks?.length ?? 0) > 0 && (
-                        <span className="text-[9px] rounded bg-purple-900/50 text-purple-400 px-1.5 py-0.5 shrink-0">
+                        <span className="text-[9px] rounded bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-400 px-1.5 py-0.5 shrink-0">
                           CLK
                         </span>
                       )}
@@ -243,34 +243,34 @@ export function PrimitiveExplorer() {
 
       {/* Selected primitive detail */}
       {selected ? (
-        <div className="rounded-xl border border-gray-700 bg-gray-900/80 overflow-hidden">
+        <div className="rounded-xl border border-border bg-card overflow-hidden">
           {/* Header */}
-          <div className="px-4 py-3 border-b border-gray-700/50">
+          <div className="px-4 py-3 border-b border-border">
             <div className="flex items-center gap-2">
-              <span className="text-lg font-semibold text-white">{selected.name}</span>
-              <span className="text-gray-500">{selected.icon}</span>
+              <span className="text-lg font-semibold text-foreground">{selected.name}</span>
+              <span className="text-muted-foreground">{selected.icon}</span>
               {(selected.clocks?.length ?? 0) > 0 && (
-                <span className="text-[10px] rounded bg-purple-900/50 text-purple-400 border border-purple-800/50 px-1.5 py-0.5">
+                <span className="text-[10px] rounded bg-purple-100 text-purple-700 border border-purple-200 dark:bg-purple-900/50 dark:text-purple-400 dark:border-purple-800/50 px-1.5 py-0.5">
                   Sequential
                 </span>
               )}
-              <span className="text-[10px] rounded bg-gray-800 text-gray-400 border border-gray-700/50 px-1.5 py-0.5">
+              <span className="text-[10px] rounded bg-muted text-muted-foreground border border-border px-1.5 py-0.5">
                 {CATEGORY_LABELS[selected.category] ?? selected.category}
               </span>
             </div>
-            <p className="text-sm text-gray-400 mt-1">{selected.description}</p>
+            <p className="text-sm text-muted-foreground mt-1">{selected.description}</p>
           </div>
 
           {/* Ports */}
-          <div className="px-4 py-3 border-b border-gray-700/50 flex flex-wrap gap-6">
+          <div className="px-4 py-3 border-b border-border flex flex-wrap gap-6">
             <PortList ports={selected.inputs} label="Inputs" />
             <PortList ports={selected.outputs} label="Outputs" />
             {(selected.clocks?.length ?? 0) > 0 && (
               <div>
-                <span className="text-[10px] uppercase tracking-wider text-gray-500">Clocks</span>
+                <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Clocks</span>
                 <div className="flex gap-1.5 mt-1">
                   {selected.clocks!.map((c) => (
-                    <span key={c.name} className="inline-flex items-center rounded bg-purple-900/30 px-1.5 py-0.5 text-xs font-mono text-purple-300">
+                    <span key={c.name} className="inline-flex items-center rounded bg-purple-100 dark:bg-purple-900/30 px-1.5 py-0.5 text-xs font-mono text-purple-700 dark:text-purple-300">
                       {c.name}
                     </span>
                   ))}
@@ -279,15 +279,15 @@ export function PrimitiveExplorer() {
             )}
             {(selected.parameters?.length ?? 0) > 0 && (
               <div>
-                <span className="text-[10px] uppercase tracking-wider text-gray-500">Parameters</span>
+                <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Parameters</span>
                 <div className="flex flex-wrap gap-1.5 mt-1">
                   {selected.parameters!.map((p) => (
-                    <span key={p.name} className="inline-flex items-center gap-1 rounded bg-gray-800 px-1.5 py-0.5 text-xs font-mono">
-                      <span className="text-amber-400">{p.name}</span>
+                    <span key={p.name} className="inline-flex items-center gap-1 rounded bg-muted px-1.5 py-0.5 text-xs font-mono">
+                      <span className="text-amber-600 dark:text-amber-400">{p.name}</span>
                       {p.defaultValue !== undefined && (
                         <>
-                          <span className="text-gray-600">=</span>
-                          <span className="text-gray-400">{String(p.defaultValue)}</span>
+                          <span className="text-muted-foreground">=</span>
+                          <span className="text-foreground/70">{String(p.defaultValue)}</span>
                         </>
                       )}
                     </span>
@@ -300,7 +300,7 @@ export function PrimitiveExplorer() {
           {/* Live demo */}
           <Suspense
             fallback={
-              <div className="flex items-center justify-center h-48 text-gray-500 text-sm">
+              <div className="flex items-center justify-center h-48 text-muted-foreground text-sm">
                 Loading simulator...
               </div>
             }
@@ -314,17 +314,17 @@ export function PrimitiveExplorer() {
           </Suspense>
 
           {/* DSL */}
-          <details className="border-t border-gray-700/50">
-            <summary className="px-4 py-2 text-xs text-gray-400 hover:text-gray-200 cursor-pointer transition-colors">
+          <details className="border-t border-border">
+            <summary className="px-4 py-2 text-xs text-muted-foreground hover:text-foreground cursor-pointer transition-colors">
               View generated DSL
             </summary>
-            <pre className="px-4 pb-3 text-xs font-mono text-gray-400 overflow-x-auto leading-relaxed">
+            <pre className="px-4 pb-3 text-xs font-mono text-muted-foreground overflow-x-auto leading-relaxed">
               {generateDemoDsl(selected)}
             </pre>
           </details>
         </div>
       ) : (
-        <div className="rounded-xl border border-gray-700/30 bg-gray-900/30 flex items-center justify-center h-48 text-gray-600 text-sm">
+        <div className="rounded-xl border border-border bg-card/50 flex items-center justify-center h-48 text-muted-foreground text-sm">
           Select a primitive above to see its ports and a live demo
         </div>
       )}
@@ -347,6 +347,6 @@ export function PrimitiveLink({
   }
 
   return (
-    <code className="text-blue-400 text-sm">{children ?? name}</code>
+    <code className="text-blue-600 dark:text-blue-400 text-sm">{children ?? name}</code>
   );
 }

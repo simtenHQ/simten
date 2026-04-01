@@ -65,13 +65,13 @@ function CopyCommand({ command }: { command: string }) {
   return (
     <div
       onClick={handleCopy}
-      className="inline-flex items-center gap-3 bg-[#161b22] rounded-lg border border-[#30363d] px-4 py-3 group max-w-full overflow-x-auto cursor-pointer hover:border-gray-600 transition-colors"
+      className="inline-flex items-center gap-3 bg-muted rounded-lg border border-border px-4 py-3 group max-w-full overflow-x-auto cursor-pointer hover:border-foreground/30 transition-colors"
     >
-      <code className="font-mono text-[13px] text-gray-300 whitespace-nowrap">
-        <span className="text-gray-500 select-none">$ </span>
+      <code className="font-mono text-[13px] text-foreground/80 whitespace-nowrap">
+        <span className="text-muted-foreground select-none">$ </span>
         {command}
       </code>
-      <span className="text-gray-600 group-hover:text-gray-400 transition-colors shrink-0">
+      <span className="text-muted-foreground/60 group-hover:text-muted-foreground transition-colors shrink-0">
         {copied ? (
           <svg className="w-4 h-4 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
@@ -95,7 +95,7 @@ export function ClaudeCTA() {
 
   return (
     <div className="text-center">
-      <h3 className="text-xl sm:text-2xl font-semibold text-gray-100 mb-4">
+      <h3 className="text-xl sm:text-2xl font-semibold text-foreground mb-4">
         <div>Ask Claude to build...</div>
         <div className="text-green-400 font-mono mt-1">
           {cyclingText}
