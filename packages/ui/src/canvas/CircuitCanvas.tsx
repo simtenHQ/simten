@@ -34,12 +34,16 @@ import {
   createComponentLibrary,
   PRIMITIVES,
 } from "@turing-incomplete/core/simulator";
+import { getReferenceCircuit } from "@turing-incomplete/core/simulator";
+import { compileDSL } from "@turing-incomplete/core/dsl";
 import type { NodeData } from "../nodes";
 import { cleanCircuitLabels } from "./label-utils";
 import { EDGE_TYPES, NODE_TYPES } from "./node-types";
 import { projectCircuitToReactFlow } from "./projection";
-import type { MetadataState } from "./types";
+import type { InspectorFrame, MetadataState } from "./types";
 import { useElkLayout } from "./useElkLayout";
+import { createMutableLibraryForRef } from "./utils";
+import { CompositeInspectorDialog } from "./CompositeInspectorDialog";
 
 function FitViewButton() {
   const { fitView } = useReactFlow();
@@ -301,12 +305,64 @@ function CircuitCanvasInner({
     setNodes((nds) => applyNodeChanges(changes, nds));
   }, []);
 
+  // ── Inspector stack for automatic drill-down ──
+  const [inspectorStack, setInspectorStack] = useState<InspectorFrame[]>([]);
+
+  const pushInspectorLevel = useCallback((name: string, def: Circuit, label: string) => {
+    setInspectorStack((prev) => [...prev, { componentName: name, componentDef: def, nodeLabel: label }]);
+  }, []);
+
+  const popInspectorLevel = useCallback(() => {
+    setInspectorStack((prev) => prev.slice(0, -1));
+  }, []);
+
+  const closeInspector = useCallback(() => {
+    setInspectorStack([]);
+  }, []);
+
+  const navigateInspector = useCallback((index: number) => {
+    setInspectorStack((prev) => prev.slice(0, index + 1));
+  }, []);
+
+  // Default double-click handler: opens inspector for composites/reference circuits
+  const defaultNodeDoubleClick = useCallback((nodeData: NodeData) => {
+    if (!nodeData.isComposite) return;
+    const componentDef = library.resolveComponent(nodeData.componentRef);
+    if (!componentDef) return;
+
+    if (componentDef.implementation.kind === "composite" && componentDef.nodes.length > 0) {
+      setInspectorStack([{ componentName: nodeData.componentRef, componentDef, nodeLabel: nodeData.label ?? nodeData.componentRef }]);
+      return;
+    }
+
+    // Lazily compile reference circuit for primitives
+    const params: Record<string, number> = {};
+    if (nodeData.arguments) {
+      for (const [k, v] of Object.entries(nodeData.arguments)) {
+        if (typeof v === "number") params[k] = v;
+      }
+    }
+    const refSource = getReferenceCircuit(nodeData.componentRef, params);
+    if (refSource) {
+      try {
+        const refLib = createMutableLibraryForRef();
+        const result = compileDSL(refSource, refLib, `ref-${nodeData.componentRef}.dsl`);
+        if (result.circuits.length > 0) {
+          const refCircuit = result.circuits[result.circuits.length - 1];
+          setInspectorStack([{ componentName: nodeData.componentRef, componentDef: refCircuit, nodeLabel: nodeData.label ?? nodeData.componentRef }]);
+        }
+      } catch { /* can't drill into this primitive */ }
+    }
+  }, [library]);
+
+  // Use caller's handler if provided, otherwise use built-in inspector
+  const effectiveNodeDoubleClick = onNodeDoubleClickProp ?? defaultNodeDoubleClick;
+
   const handleNodeDoubleClick = useCallback(
     (_event: React.MouseEvent, node: Node) => {
-      if (!onNodeDoubleClickProp) return;
-      onNodeDoubleClickProp(node.data as NodeData);
+      effectiveNodeDoubleClick(node.data as NodeData);
     },
-    [onNodeDoubleClickProp],
+    [effectiveNodeDoubleClick],
   );
 
   if (!circuit) {
@@ -377,6 +433,18 @@ function CircuitCanvasInner({
         )}
       </ReactFlow>
       {renderOverlay?.()}
+      {/* Built-in inspector (only when no external onNodeDoubleClick) */}
+      {!onNodeDoubleClickProp && inspectorStack.length > 0 && (
+        <CompositeInspectorDialog
+          stack={inspectorStack}
+          componentLibrary={library}
+          theme={theme}
+          onClose={closeInspector}
+          onPopLevel={popInspectorLevel}
+          onPushLevel={pushInspectorLevel}
+          onNavigate={navigateInspector}
+        />
+      )}
     </div>
   );
 }
