@@ -18,6 +18,8 @@ import { usePortValuesStore } from "../stores/port-values-store";
 import { useComponentLibraryStore } from "../stores/component-library-store";
 import { useInspectorStore } from "../stores/expansion-store";
 import type { NodeData } from "../../nodes";
+import { getReferenceCircuit, createComponentLibrary, PRIMITIVES } from "@turing-incomplete/core/simulator";
+import { compileDSL } from "@turing-incomplete/core/dsl";
 
 import { CircuitCanvas, NODE_TYPES, EDGE_TYPES } from "../../canvas";
 
@@ -112,8 +114,24 @@ export function Canvas({ renderEmptyState, theme = "light", nodePositions }: Can
   const handleNodeDoubleClick = useCallback((nodeData: NodeData) => {
     if (!nodeData.isComposite) return;
     const componentDef = resolveComponent(nodeData.componentRef);
-    if (componentDef) {
+    if (!componentDef) return;
+
+    if (componentDef.implementation.kind === 'composite' && componentDef.nodes.length > 0) {
       openInspector(nodeData.componentRef, componentDef, nodeData.label ?? nodeData.componentRef);
+      return;
+    }
+
+    // Lazily compile reference circuit for primitives
+    const refSource = getReferenceCircuit(nodeData.componentRef);
+    if (refSource) {
+      try {
+        const refLib = createComponentLibrary([...PRIMITIVES]);
+        const result = compileDSL(refSource, refLib, `ref-${nodeData.componentRef}.dsl`);
+        if (result.circuits.length > 0) {
+          const refCircuit = result.circuits[result.circuits.length - 1];
+          openInspector(nodeData.componentRef, refCircuit, nodeData.label ?? nodeData.componentRef);
+        }
+      } catch { /* can't drill into this primitive */ }
     }
   }, [resolveComponent, openInspector]);
 

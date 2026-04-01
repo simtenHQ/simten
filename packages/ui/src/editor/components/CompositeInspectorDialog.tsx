@@ -21,8 +21,9 @@ import {
 } from "../stores/expansion-store";
 import { useComponentLibraryStore } from "../stores/component-library-store";
 import { createDrillDownViewCircuit } from "../utils/drill-down-view";
-import { createSimulatorFromCircuit, PRIMITIVE_DEFINITIONS } from "@turing-incomplete/core/simulator";
+import { createSimulatorFromCircuit, PRIMITIVE_DEFINITIONS, getReferenceCircuit, createComponentLibrary, PRIMITIVES } from "@turing-incomplete/core/simulator";
 import type { FlatPortValueMap, FlatSequentialState, SimulatorSnapshot } from "@turing-incomplete/core/simulator";
+import { compileDSL } from "@turing-incomplete/core/dsl";
 import type { Circuit } from "../types/circuit";
 import {
   SkipForward,
@@ -232,8 +233,28 @@ function InspectorCanvas({ frame }: InspectorCanvasProps) {
   const handleNodeDoubleClick = useCallback((nodeData: NodeData) => {
     if (!nodeData.isComposite) return;
     const componentDef = resolveComponent(nodeData.componentRef);
-    if (componentDef) {
+    if (!componentDef) return;
+
+    // If it's a real composite, drill into it directly
+    if (componentDef.implementation.kind === 'composite' && componentDef.nodes.length > 0) {
       pushLevel(nodeData.componentRef, componentDef, nodeData.label ?? nodeData.componentRef);
+      return;
+    }
+
+    // For primitives with reference circuits, lazily compile the reference DSL
+    const refSource = getReferenceCircuit(nodeData.componentRef);
+    if (refSource) {
+      try {
+        const refLib = createComponentLibrary([...PRIMITIVES]);
+        const result = compileDSL(refSource, refLib, `ref-${nodeData.componentRef}.dsl`);
+        if (result.circuits.length > 0) {
+          const refCircuit = result.circuits[result.circuits.length - 1];
+          pushLevel(nodeData.componentRef, refCircuit, nodeData.label ?? nodeData.componentRef);
+          return;
+        }
+      } catch {
+        // Fall through — can't drill into this primitive
+      }
     }
   }, [resolveComponent, pushLevel]);
 
@@ -468,11 +489,11 @@ function InspectorBreadcrumb({ stack, onNavigate }: BreadcrumbProps) {
 type Direction = "in" | "out";
 
 const levelVariants = {
-  enterIn: { opacity: 0, scale: 1.08 },
-  enterOut: { opacity: 0, scale: 0.92 },
-  center: { opacity: 1, scale: 1 },
-  exitIn: { opacity: 0, scale: 0.92 },
-  exitOut: { opacity: 0, scale: 1.08 },
+  enterIn: { opacity: 0 },
+  enterOut: { opacity: 0 },
+  center: { opacity: 1 },
+  exitIn: { opacity: 0 },
+  exitOut: { opacity: 0 },
 };
 
 // ── Main dialog component ──
