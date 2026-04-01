@@ -36,19 +36,53 @@ export function SystolicSection() {
           clock cycle.
         </p>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
-          The circuit computes C = A &times; B where A&nbsp;=&nbsp;
-          <code className="text-blue-300">[[1,2,3],[4,5,6],[7,8,9]]</code> and
-          B&nbsp;=&nbsp;
-          <code className="text-blue-300">[[2,0,1],[0,2,0],[1,0,2]]</code>. The
-          expected result is C&nbsp;=&nbsp;
-          <code className="text-blue-300">
-            [[5,4,7],[14,10,16],[23,16,25]]
-          </code>
-          . Click <strong>Start</strong> to begin. The total latency for an
+          The circuit computes <strong className="text-gray-900 dark:text-white">C = A &times; B</strong>.
+          Click <strong>Start</strong> to begin. The total latency for an
           N&times;N multiply is{" "}
           <strong className="text-gray-900 dark:text-white">3N cycles</strong> (9 for our 3&times;3).
           Where does the 3 come from?
         </p>
+
+        <div className="flex items-center justify-center gap-3 my-4 font-mono text-sm">
+          <div className="text-center">
+            <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">A</div>
+            <table className="border border-gray-300 dark:border-gray-600">
+              {[[1,2,3],[4,5,6],[7,8,9]].map((row, i) => (
+                <tr key={i}>
+                  {row.map((v, j) => (
+                    <td key={j} className="w-8 h-8 text-center border border-gray-200 dark:border-gray-700 text-blue-600 dark:text-blue-400">{v}</td>
+                  ))}
+                </tr>
+              ))}
+            </table>
+          </div>
+          <span className="text-gray-500 dark:text-gray-400 text-lg">&times;</span>
+          <div className="text-center">
+            <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">B</div>
+            <table className="border border-gray-300 dark:border-gray-600">
+              {[[2,0,1],[0,2,0],[1,0,2]].map((row, i) => (
+                <tr key={i}>
+                  {row.map((v, j) => (
+                    <td key={j} className="w-8 h-8 text-center border border-gray-200 dark:border-gray-700 text-purple-600 dark:text-purple-400">{v}</td>
+                  ))}
+                </tr>
+              ))}
+            </table>
+          </div>
+          <span className="text-gray-500 dark:text-gray-400 text-lg">=</span>
+          <div className="text-center">
+            <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">C (expected)</div>
+            <table className="border border-gray-300 dark:border-gray-600">
+              {[[5,4,7],[14,10,16],[23,16,25]].map((row, i) => (
+                <tr key={i}>
+                  {row.map((v, j) => (
+                    <td key={j} className="w-8 h-8 text-center border border-gray-200 dark:border-gray-700 text-green-600 dark:text-green-400 font-semibold">{v}</td>
+                  ))}
+                </tr>
+              ))}
+            </table>
+          </div>
+        </div>
         <ol className="text-gray-600 dark:text-gray-300 leading-relaxed list-decimal list-inside space-y-2">
           <li>
             <strong className="text-gray-900 dark:text-white">N cycles to feed data</strong>{" "}
