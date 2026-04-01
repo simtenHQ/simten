@@ -219,9 +219,10 @@ function InspectorClockControls({
 
 interface InspectorCanvasProps {
   frame: InspectorFrame;
+  theme?: "light" | "dark";
 }
 
-function InspectorCanvas({ frame }: InspectorCanvasProps) {
+function InspectorCanvas({ frame, theme = "dark" }: InspectorCanvasProps) {
   const resolveComponent = useComponentLibraryStore((s) => s.resolveComponent);
   const getAllPrimitiveNames = useComponentLibraryStore((s) => s.getAllPrimitiveNames);
   const pushLevel = useInspectorStore((s) => s.pushLevel);
@@ -455,7 +456,7 @@ function InspectorCanvas({ frame }: InspectorCanvasProps) {
         onNodeDoubleClick={handleNodeDoubleClick}
         nodeTypes={NODE_TYPES}
         edgeTypes={EDGE_TYPES}
-        theme="light"
+        theme={theme}
         showControls
         height="100%"
       />
@@ -478,16 +479,16 @@ function InspectorBreadcrumb({ stack, onNavigate }: BreadcrumbProps) {
     <div className="flex items-center gap-1 text-sm min-w-0">
       {stack.map((frame, index) => (
         <React.Fragment key={index}>
-          {index > 0 && <span className="text-gray-400 shrink-0">&gt;</span>}
+          {index > 0 && <span className="text-gray-400 dark:text-gray-500 shrink-0">&gt;</span>}
           {index < stack.length - 1 ? (
             <button
               onClick={() => onNavigate(index)}
-              className="text-blue-600 hover:text-blue-800 hover:underline font-medium shrink-0"
+              className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:underline font-medium shrink-0"
             >
               {frame.nodeLabel} ({frame.componentName})
             </button>
           ) : (
-            <span className="font-semibold text-gray-900 shrink-0">
+            <span className="font-semibold text-gray-900 dark:text-gray-100 shrink-0">
               {frame.nodeLabel} ({frame.componentName})
             </span>
           )}
@@ -495,8 +496,8 @@ function InspectorBreadcrumb({ stack, onNavigate }: BreadcrumbProps) {
       ))}
       {description && (
         <>
-          <span className="text-gray-300 shrink-0">—</span>
-          <span className="text-gray-500 text-xs italic truncate">{description}</span>
+          <span className="text-gray-300 dark:text-gray-600 shrink-0">—</span>
+          <span className="text-gray-500 dark:text-gray-400 text-xs italic truncate">{description}</span>
         </>
       )}
     </div>
@@ -518,7 +519,7 @@ const levelVariants = {
 
 // ── Main dialog component ──
 
-export function CompositeInspectorDialog() {
+export function CompositeInspectorDialog({ theme = "dark" }: { theme?: "light" | "dark" }) {
   const stack = useInspectorStore((s) => s.stack);
   const originRect = useInspectorStore((s) => s.originRect);
   const close = useInspectorStore((s) => s.close);
@@ -598,18 +599,18 @@ export function CompositeInspectorDialog() {
             className="fixed inset-0 z-50 flex items-center justify-center p-8 pointer-events-none"
           >
             <motion.div
-              className="flex h-[80vh] w-full max-w-5xl flex-col rounded-lg bg-white shadow-xl pointer-events-auto overflow-hidden"
+              className="flex h-[80vh] w-full max-w-5xl flex-col rounded-lg bg-white dark:bg-gray-900 shadow-xl pointer-events-auto overflow-hidden"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.15 }}
             >
               {/* Header */}
-              <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3">
+              <div className="flex items-center justify-between border-b border-gray-200 dark:border-gray-700 px-4 py-3">
                 <InspectorBreadcrumb stack={stack} onNavigate={handleNavigate} />
                 <button
                   onClick={close}
-                  className="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+                  className="rounded p-1 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-600 dark:hover:text-gray-300"
                   aria-label="Close inspector"
                 >
                   <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -630,7 +631,7 @@ export function CompositeInspectorDialog() {
                     variants={levelVariants}
                     transition={{ duration: 0.2, ease: "easeInOut" }}
                   >
-                    <InspectorCanvas frame={topFrame} />
+                    <InspectorCanvas frame={topFrame} theme={theme} />
                   </motion.div>
                 </AnimatePresence>
               </div>
