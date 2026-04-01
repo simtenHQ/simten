@@ -76,6 +76,62 @@ circuit ToggleDemo {
 
 // --- Full Adder ---
 
+// --- Composite Full Adder (built from Half Adders — for drill-down showcase) ---
+
+const DRILLDOWN_DSL = `circuit HalfAdder {
+  input a: Bit
+  input b: Bit
+  output sum: Bit
+  output carry: Bit
+  impl {
+    node xor1: Xor
+    node and1: And
+    connect a -> xor1.a
+    connect b -> xor1.b
+    connect xor1.out -> sum
+    connect a -> and1.a
+    connect b -> and1.b
+    connect and1.out -> carry
+  }
+}
+
+circuit FullAdder {
+  input a: Bit
+  input b: Bit
+  input cin: Bit
+  output sum: Bit
+  output cout: Bit
+  impl {
+    node ha1: HalfAdder
+    node ha2: HalfAdder
+    node or1: Or
+    connect a -> ha1.a
+    connect b -> ha1.b
+    connect ha1.sum -> ha2.a
+    connect cin -> ha2.b
+    connect ha2.sum -> sum
+    connect ha1.carry -> or1.a
+    connect ha2.carry -> or1.b
+    connect or1.out -> cout
+  }
+}
+
+circuit DrillDownDemo {
+  impl {
+    node sw_a: Switch
+    node sw_b: Switch
+    node sw_cin: Switch
+    node fa: FullAdder
+    node led_sum: Led
+    node led_cout: Led
+    connect sw_a.out -> fa.a
+    connect sw_b.out -> fa.b
+    connect sw_cin.out -> fa.cin
+    connect fa.sum -> led_sum.in
+    connect fa.cout -> led_cout.in
+  }
+}`;
+
 const FULL_ADDER_DSL = `circuit FullAdder {
   input a: Bit
   input b: Bit
@@ -1234,6 +1290,70 @@ function DemoGallery() {
             }}
           />
           <SnakeCard />
+        </div>
+
+        {/* Row 1.5: Drill-down showcase */}
+        <div className="mt-20 rounded-lg border border-[#30363d] overflow-hidden bg-[#0d1117]">
+          <div className="grid grid-cols-1 sm:grid-cols-[1fr_1.5fr]">
+            {/* Left: explanation */}
+            <div className="flex flex-col justify-center px-6 py-8 sm:px-8 sm:border-r border-[#30363d]">
+              <div className="inline-flex items-center gap-2 mb-4">
+                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-500 shadow-sm shadow-blue-500/30">
+                  <svg className="h-3.5 w-3.5 text-white" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                    <circle cx="6.5" cy="6.5" r="4.5" />
+                    <line x1="10" y1="10" x2="14" y2="14" />
+                  </svg>
+                </span>
+                <span className="text-[11px] font-medium text-blue-400 uppercase tracking-wider">Drill-down</span>
+              </div>
+              <h3 className="text-xl font-semibold text-gray-100 mb-3">
+                Explore inside any component
+              </h3>
+              <p className="text-[13px] text-gray-400 leading-relaxed mb-4">
+                Every composite is explorable. Double-click the pulsing
+                {" "}<span className="relative inline-flex align-middle h-5 w-5 items-center justify-center">
+                  <span className="absolute inset-0 rounded-full bg-blue-400/30 animate-[ping_2s_cubic-bezier(0,0,0.2,1)_infinite]" />
+                  <span className="relative flex h-4 w-4 items-center justify-center rounded-full bg-blue-500">
+                    <svg className="h-2.5 w-2.5 text-white" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                      <circle cx="6.5" cy="6.5" r="4.5" />
+                      <line x1="10" y1="10" x2="14" y2="14" />
+                    </svg>
+                  </span>
+                </span>{" "}
+                badge to open its internals — with full simulation and nested drill-down.
+              </p>
+              <div className="space-y-2 text-[12px] text-gray-500">
+                <div className="flex items-start gap-2">
+                  <span className="text-blue-400 mt-0.5">1.</span>
+                  <span>Double-click <strong className="text-gray-300">fa</strong> (FullAdder) to see its two HalfAdders</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="text-blue-400 mt-0.5">2.</span>
+                  <span>Double-click a <strong className="text-gray-300">HalfAdder</strong> to see its XOR + AND gates</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="text-blue-400 mt-0.5">3.</span>
+                  <span>Toggle switches — signals propagate through every level</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Right: live circuit */}
+            <div style={{ height: 320 }}>
+              <DemoCircuit
+                dsl={DRILLDOWN_DSL}
+                height={320}
+                nodePositions={{
+                  sw_a:     { x: 10,  y: 10 },
+                  sw_b:     { x: 10,  y: 110 },
+                  sw_cin:   { x: 10,  y: 210 },
+                  fa:       { x: 200, y: 100 },
+                  led_sum:  { x: 400, y: 40 },
+                  led_cout: { x: 400, y: 200 },
+                }}
+              />
+            </div>
+          </div>
         </div>
 
         {/* Row 2: complex demos */}
