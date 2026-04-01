@@ -90,6 +90,7 @@ export function CORDICDemo() {
       {/* Circuit canvas */}
       <CircuitCanvas
         circuit={sim.circuit}
+        componentLibrary={sim.componentLibrary ?? undefined}
         portValues={sim.portValues}
         sequentialState={sim.sequentialState}
         onToggleNode={sim.toggleNode}

@@ -97,6 +97,24 @@ export interface CircuitCanvasProps {
   theme?: "light" | "dark";
 }
 
+/** Reactively detect theme from <html> class. Falls back to "dark". */
+function useDetectTheme(): "light" | "dark" {
+  const [theme, setTheme] = useState<"light" | "dark">(() =>
+    typeof document !== 'undefined' && document.documentElement.classList.contains('dark') ? 'dark' : 'light'
+  );
+
+  useEffect(() => {
+    const el = document.documentElement;
+    const observer = new MutationObserver(() => {
+      setTheme(el.classList.contains('dark') ? 'dark' : 'light');
+    });
+    observer.observe(el, { attributes: true, attributeFilter: ['class'] });
+    return () => observer.disconnect();
+  }, []);
+
+  return theme;
+}
+
 // Default library — created once, reused
 let _defaultLibrary: ComponentLibrary | null = null;
 function getDefaultLibrary(): ComponentLibrary {
@@ -128,8 +146,10 @@ function CircuitCanvasInner({
   showPortLabels,
   onPortClick: onPortClickProp,
   glowUnconnected,
-  theme = "dark",
+  theme: themeProp,
 }: CircuitCanvasProps) {
+  const detectedTheme = useDetectTheme();
+  const theme = themeProp ?? detectedTheme;
   const resolvedNodeTypes = nodeTypesOverride ?? NODE_TYPES;
   const resolvedEdgeTypes = edgeTypesOverride ?? EDGE_TYPES;
   const library = componentLibrary ?? getDefaultLibrary();

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useRef, useEffect } from "react";
-import { ThemedCircuitEmbed as CircuitEmbed } from "@/features/blog/components/ThemedCircuitEmbed";
+import { CircuitEmbed } from "@turing-incomplete/embed";
 import type { CircuitEmbedHandle, CheckResult } from "@turing-incomplete/embed";
 
 interface Check {
