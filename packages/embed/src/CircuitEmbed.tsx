@@ -64,7 +64,7 @@ export const CircuitEmbed = forwardRef<CircuitEmbedHandle, CircuitEmbedProps>(fu
   onPortClick,
   glowUnconnected,
   autoHarness = false,
-  theme = "dark",
+  theme,
 }, ref) {
   const options: UseCircuitSimulatorOptions | undefined = initialMemory
     ? { initialMemory }
@@ -188,6 +188,7 @@ export const CircuitEmbed = forwardRef<CircuitEmbedHandle, CircuitEmbedProps>(fu
         showPortLabels={showPortLabels}
         onPortClick={onPortClick}
         glowUnconnected={glowUnconnected}
+        theme={theme}
       />
 
       {showControls && sim.isSequential && (
