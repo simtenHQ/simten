@@ -52,7 +52,7 @@
 
 :root {
 	--radius: 0.625rem;
-	--background: oklch(1 0 0);
+	--background: oklch(0.98 0.004 260);
 	--foreground: oklch(0.145 0 0);
 	--card: oklch(1 0 0);
 	--card-foreground: oklch(0.145 0 0);
@@ -226,15 +226,15 @@
 }
 
 [data-embed-theme="light"] {
-  --embed-bg-primary: #ffffff;
-  --embed-bg-secondary: #f9fafb;
-  --embed-bg-tertiary: #f3f4f6;
-  --embed-bg-surface: rgba(249, 250, 251, 0.95);
-  --embed-bg-surface-80: rgba(249, 250, 251, 0.9);
-  --embed-bg-code: #f8f9fa;
-  --embed-border: rgba(209, 213, 219, 0.6);
-  --embed-border-node: #d1d5db;
-  --embed-text-primary: #111827;
+  --embed-bg-primary: #f8f9fb;
+  --embed-bg-secondary: #f3f4f6;
+  --embed-bg-tertiary: #eef0f3;
+  --embed-bg-surface: rgba(248, 249, 251, 0.95);
+  --embed-bg-surface-80: rgba(248, 249, 251, 0.9);
+  --embed-bg-code: #f3f4f6;
+  --embed-border: rgba(0, 0, 0, 0.08);
+  --embed-border-node: rgba(0, 0, 0, 0.10);
+  --embed-text-primary: #1a1a2e;
   --embed-text-secondary: #4b5563;
   --embed-text-muted: #9ca3af;
   --embed-dot-color: #e5e7eb;
