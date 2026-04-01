@@ -18,8 +18,23 @@ import { usePortValuesStore } from "../stores/port-values-store";
 import { useComponentLibraryStore } from "../stores/component-library-store";
 import { useInspectorStore } from "../stores/expansion-store";
 import type { NodeData } from "../../nodes";
-import { getReferenceCircuit, createComponentLibrary, PRIMITIVES } from "@turing-incomplete/core/simulator";
+import { getReferenceCircuit, PRIMITIVES } from "@turing-incomplete/core/simulator";
 import { compileDSL } from "@turing-incomplete/core/dsl";
+import type { ComponentLibrary as DSLComponentLibrary } from "@turing-incomplete/core/dsl";
+import type { Circuit } from "@turing-incomplete/core/dsl";
+
+/** Create a mutable library for compiling multi-circuit reference DSL */
+function createMutableLibraryForRef() {
+  const circuitMap = new Map<string, Circuit>();
+  for (const c of PRIMITIVES) circuitMap.set(c.name, c);
+  return {
+    resolveComponent: (name: string) => circuitMap.get(name),
+    getAllPrimitiveNames: () => Array.from(circuitMap.entries()).filter(([, c]) => c.implementation.kind === 'primitive').map(([n]) => n),
+    getCircuit: (name: string) => circuitMap.get(name),
+    hasCircuit: (name: string) => circuitMap.has(name),
+    addCircuit: (circuit: Circuit) => { circuitMap.set(circuit.name, circuit); },
+  } satisfies DSLComponentLibrary;
+}
 
 import { CircuitCanvas, NODE_TYPES, EDGE_TYPES } from "../../canvas";
 
@@ -122,10 +137,16 @@ export function Canvas({ renderEmptyState, theme = "light", nodePositions }: Can
     }
 
     // Lazily compile reference circuit for primitives
-    const refSource = getReferenceCircuit(nodeData.componentRef);
+    const params: Record<string, number> = {};
+    if (nodeData.arguments) {
+      for (const [k, v] of Object.entries(nodeData.arguments)) {
+        if (typeof v === 'number') params[k] = v;
+      }
+    }
+    const refSource = getReferenceCircuit(nodeData.componentRef, params);
     if (refSource) {
       try {
-        const refLib = createComponentLibrary([...PRIMITIVES]);
+        const refLib = createMutableLibraryForRef();
         const result = compileDSL(refSource, refLib, `ref-${nodeData.componentRef}.dsl`);
         if (result.circuits.length > 0) {
           const refCircuit = result.circuits[result.circuits.length - 1];
