@@ -132,6 +132,53 @@ circuit DrillDownDemo {
   }
 }`;
 
+// --- 4-bit Shift Register (for time-travel showcase) ---
+
+const SHIFT_REGISTER_DSL = `circuit ShiftRegister4 {
+  input data_in: Bit
+  clock clk
+  output q0: Bit
+  output q1: Bit
+  output q2: Bit
+  output q3: Bit
+  impl {
+    node ff0: DFlipFlop
+    node ff1: DFlipFlop
+    node ff2: DFlipFlop
+    node ff3: DFlipFlop
+    connect data_in -> ff0.d
+    connect clk -> ff0.clk
+    connect ff0.q -> ff1.d
+    connect clk -> ff1.clk
+    connect ff1.q -> ff2.d
+    connect clk -> ff2.clk
+    connect ff2.q -> ff3.d
+    connect clk -> ff3.clk
+    connect ff0.q -> q0
+    connect ff1.q -> q1
+    connect ff2.q -> q2
+    connect ff3.q -> q3
+  }
+}
+
+circuit ShiftRegisterDemo {
+  clock clk
+  impl {
+    node sw_in: Switch
+    node sr: ShiftRegister4
+    node led0: Led
+    node led1: Led
+    node led2: Led
+    node led3: Led
+    connect sw_in.out -> sr.data_in
+    connect clk -> sr.clk
+    connect sr.q0 -> led0.in
+    connect sr.q1 -> led1.in
+    connect sr.q2 -> led2.in
+    connect sr.q3 -> led3.in
+  }
+}`;
+
 const FULL_ADDER_DSL = `circuit FullAdder {
   input a: Bit
   input b: Bit
@@ -1413,6 +1460,60 @@ function DemoGallery() {
                   led_cout: { x: 400, y: 200 },
                 }}
               />
+            </div>
+          </div>
+        </div>
+
+        {/* Row 1.6: Time-travel showcase */}
+        <div className="mt-20 rounded-lg border border-border overflow-hidden bg-card">
+          <div className="grid grid-cols-1 sm:grid-cols-[1.5fr_1fr]">
+            {/* Left: live circuit */}
+            <div style={{ height: 340 }}>
+              <DemoCircuit
+                dsl={SHIFT_REGISTER_DSL}
+                height={340}
+                nodePositions={{
+                  sw_in: { x: 10,  y: 140 },
+                  sr:    { x: 190, y: 100 },
+                  led0:  { x: 390, y: 10 },
+                  led1:  { x: 390, y: 90 },
+                  led2:  { x: 390, y: 170 },
+                  led3:  { x: 390, y: 250 },
+                }}
+              />
+            </div>
+
+            {/* Right: explanation */}
+            <div className="flex flex-col justify-center px-6 py-8 sm:px-8 sm:border-l border-border">
+              <div className="inline-flex items-center gap-2 mb-4">
+                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-amber-500 shadow-sm shadow-amber-500/30">
+                  <svg className="h-3.5 w-3.5 text-white" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                    <circle cx="8" cy="8" r="6" />
+                    <polyline points="8 4 8 8 11 10" />
+                  </svg>
+                </span>
+                <span className="text-[11px] font-medium text-amber-600 dark:text-amber-400 uppercase tracking-wider">Time-travel</span>
+              </div>
+              <h3 className="text-xl font-semibold text-foreground mb-3">
+                Rewind any clock cycle
+              </h3>
+              <p className="text-[13px] text-muted-foreground leading-relaxed mb-4">
+                Sequential circuits record every state. Step forward, spot something wrong, step back to the exact cycle it happened. No printf debugging — just rewind.
+              </p>
+              <div className="space-y-2 text-[12px] text-muted-foreground/80">
+                <div className="flex items-start gap-2">
+                  <span className="text-amber-600 dark:text-amber-400 mt-0.5">1.</span>
+                  <span>Toggle the <strong className="text-foreground">switch</strong> on, then <strong className="text-foreground">Tick</strong> a few times</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="text-amber-600 dark:text-amber-400 mt-0.5">2.</span>
+                  <span>Watch the bit ripple through the four flip-flop stages</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="text-amber-600 dark:text-amber-400 mt-0.5">3.</span>
+                  <span>Use <strong className="text-foreground">◀ ▶</strong> to scrub back and forth — every cycle is preserved</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
