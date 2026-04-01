@@ -585,7 +585,7 @@ function TerminalWindow({
 }) {
   return (
     <div
-      className={`flex flex-col rounded-lg overflow-hidden border border-[#30363d] shadow-2xl ${
+      className={`flex flex-col rounded-lg overflow-hidden border border-[#30363d] ${
         className ?? ""
       }`}
     >
@@ -600,7 +600,7 @@ function TerminalWindow({
         </span>
         <div className="w-[52px]" />
       </div>
-      <div className="flex-1 min-h-0 bg-[#0d1117]">{children}</div>
+      <div className="flex-1 min-h-0 bg-[#0d1117] text-gray-200">{children}</div>
     </div>
   );
 }
@@ -616,7 +616,7 @@ function BrowserWindow({
 }) {
   return (
     <div
-      className={`flex flex-col rounded-lg overflow-hidden border border-[#30363d] shadow-2xl ${
+      className={`flex flex-col rounded-lg overflow-hidden border border-[#30363d] ${
         className ?? ""
       }`}
     >
@@ -641,19 +641,19 @@ function BrowserWindow({
               d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
             />
           </svg>
-          <span className="text-[12px] text-gray-400 font-mono truncate">
+          <span className="text-[12px] text-gray-500 font-mono truncate">
             turingincomplete.com
           </span>
         </div>
         {/* MCP badge */}
         {showMcp && (
-          <div className="inline-flex items-center gap-1.5 rounded-full bg-gray-900/80 border border-gray-700/50 px-2.5 py-1 text-[11px] text-gray-400 shrink-0">
+          <div className="inline-flex items-center gap-1.5 rounded-full bg-[#0d1117]/80 border border-[#30363d] px-2.5 py-1 text-[11px] text-gray-500 shrink-0">
             <div className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
             MCP connected
           </div>
         )}
       </div>
-      <div className="flex-1 min-h-0 bg-[#0d1117]">{children}</div>
+      <div className="flex-1 min-h-0 bg-[#0d1117] text-gray-200">{children}</div>
     </div>
   );
 }
@@ -666,10 +666,12 @@ function DemoCircuit({
   dsl,
   height,
   nodePositions,
+  theme,
 }: {
   dsl: string;
   height: number | string;
   nodePositions?: Record<string, { x: number; y: number }>;
+  theme?: "light" | "dark";
 }) {
   const sim = useCircuitSimulator(dsl);
   const [tickCount, setTickCount] = useState(0);
@@ -681,7 +683,7 @@ function DemoCircuit({
 
   if (!sim.ready) {
     return (
-      <div className="h-full flex items-center justify-center text-gray-600 text-sm">
+      <div className="h-full flex items-center justify-center text-muted-foreground/60 text-sm">
         Compiling...
       </div>
     );
@@ -697,11 +699,12 @@ function DemoCircuit({
         onToggleNode={sim.toggleNode}
         height={height}
         nodePositions={nodePositions}
+        {...(theme ? { theme } : {})}
       />
       {sim.isSequential && (
         <div className="absolute bottom-3 right-3 flex items-center gap-2">
           {tickCount > 0 && (
-            <span className="text-[11px] text-gray-600 font-mono tabular-nums">
+            <span className="text-[11px] text-muted-foreground/60 font-mono tabular-nums">
               cycle {tickCount}
             </span>
           )}
@@ -710,7 +713,7 @@ function DemoCircuit({
             className={`px-3 py-1.5 text-[11px] font-medium rounded border transition-all ${
               tickCount === 0
                 ? "bg-blue-600 border-blue-500 text-white animate-[pulse_1.5s_ease-in-out_infinite] shadow-[0_0_12px_rgba(59,130,246,0.4)]"
-                : "bg-[#161b22] border-[#30363d] text-gray-300 hover:border-gray-500"
+                : "bg-muted border-border text-foreground/80 hover:border-foreground/30"
             }`}
           >
             Tick
@@ -937,26 +940,26 @@ function Splash5Page() {
   }, []);
 
   return (
-    <div className="bg-[#010409] text-white">
+    <div className="bg-background text-foreground">
       {/* Mobile: compact header + gallery */}
       <div className="md:hidden">
         <div className="px-5 pt-6 pb-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Logo size={22} className="text-gray-300 shrink-0" />
-            <span className="font-semibold text-[14px] tracking-tight text-gray-300">
+            <Logo size={22} className="text-foreground/80 shrink-0" />
+            <span className="font-semibold text-[14px] tracking-tight text-foreground/80">
               Turing Incomplete
             </span>
           </div>
           <div className="flex items-center gap-3">
-            <Link to="/learn" className="text-gray-600 hover:text-gray-300 transition-colors text-xs">Learn</Link>
-            <Link to="/blog" className="text-gray-600 hover:text-gray-300 transition-colors text-xs">Blog</Link>
-            <Link to="/challenges" className="text-gray-600 hover:text-gray-300 transition-colors text-xs">Challenges</Link>
-            <Link to="/editor" className="text-gray-600 hover:text-gray-300 transition-colors text-xs">Editor</Link>
-            <Link to="/docs/$" params={{ _splat: "" }} className="text-gray-600 hover:text-gray-300 transition-colors text-xs">Docs</Link>
+            <Link to="/learn" className="text-muted-foreground/60 hover:text-foreground/80 transition-colors text-xs">Learn</Link>
+            <Link to="/blog" className="text-muted-foreground/60 hover:text-foreground/80 transition-colors text-xs">Blog</Link>
+            <Link to="/challenges" className="text-muted-foreground/60 hover:text-foreground/80 transition-colors text-xs">Challenges</Link>
+            <Link to="/editor" className="text-muted-foreground/60 hover:text-foreground/80 transition-colors text-xs">Editor</Link>
+            <Link to="/docs/$" params={{ _splat: "" }} className="text-muted-foreground/60 hover:text-foreground/80 transition-colors text-xs">Docs</Link>
           </div>
         </div>
         <div className="px-5 pb-6 flex flex-col items-center text-center gap-4">
-          <p className="text-sm text-gray-500 max-w-xs">
+          <p className="text-sm text-muted-foreground max-w-xs">
             Live hardware simulations you can explore, build, and embed.
           </p>
           <CopyCommand command="claude mcp add turing-incomplete npx @turing-incomplete/mcp" />
@@ -969,12 +972,12 @@ function Splash5Page() {
         {/* Header — just the name, minimal */}
         <div className="flex-shrink-0 px-6 pt-5 pb-3 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <Logo size={28} className="text-gray-300 shrink-0" />
+            <Logo size={28} className="text-foreground/80 shrink-0" />
             <div>
-              <div className="font-semibold text-[15px] tracking-tight text-gray-300">
+              <div className="font-semibold text-[15px] tracking-tight text-foreground/80">
                 Turing Incomplete
               </div>
-              <div className="text-[11px] text-gray-600">
+              <div className="text-[11px] text-muted-foreground/60">
                 Live hardware simulations you can explore, build, and export to Verilog
               </div>
             </div>
@@ -984,7 +987,7 @@ function Splash5Page() {
               href="https://github.com/charlesharris/turing-incomplete"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-gray-600 hover:text-gray-300 transition-colors"
+              className="text-muted-foreground/60 hover:text-foreground/80 transition-colors"
               aria-label="GitHub"
             >
               <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
@@ -993,31 +996,31 @@ function Splash5Page() {
             </a>
             <Link
               to="/learn"
-              className="text-gray-600 hover:text-gray-300 transition-colors text-xs"
+              className="text-muted-foreground/60 hover:text-foreground/80 transition-colors text-xs"
             >
               Learn
             </Link>
             <Link
               to="/blog"
-              className="text-gray-600 hover:text-gray-300 transition-colors text-xs"
+              className="text-muted-foreground/60 hover:text-foreground/80 transition-colors text-xs"
             >
               Blog
             </Link>
             <Link
               to="/challenges"
-              className="text-gray-600 hover:text-gray-300 transition-colors text-xs"
+              className="text-muted-foreground/60 hover:text-foreground/80 transition-colors text-xs"
             >
               Challenges
             </Link>
             <Link
               to="/editor"
-              className="text-gray-600 hover:text-gray-300 transition-colors text-xs"
+              className="text-muted-foreground/60 hover:text-foreground/80 transition-colors text-xs"
             >
               Editor
             </Link>
             <Link
               to="/docs/$" params={{ _splat: "" }}
-              className="text-gray-600 hover:text-gray-300 transition-colors text-xs"
+              className="text-muted-foreground/60 hover:text-foreground/80 transition-colors text-xs"
             >
               Docs
             </Link>
@@ -1091,7 +1094,7 @@ function Splash5Page() {
               <div className="flex-1 flex flex-col min-w-0">
                 <div className="flex-1 min-h-0 relative">
                   {activeDsl ? (
-                    <DemoCircuit dsl={activeDsl} height="100%" />
+                    <DemoCircuit dsl={activeDsl} height="100%" theme="dark" />
                   ) : (
                     <div className="h-full flex items-center justify-center text-gray-700 text-sm font-mono">
                       {dslTyping ? "Compiling..." : ""}
@@ -1118,13 +1121,11 @@ function Splash5Page() {
           </BrowserWindow>
         </div>
 
-        {/* Bottom gradient hint — fades into page background */}
-        <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-[#010409] via-[#010409]/80 to-transparent pointer-events-none" />
       </div>
       {/* end full-screen section */}
 
       {/* Gallery */}
-      {demoComplete ? <DemoGallery /> : <div className="h-40 bg-[#010409]" />}
+      {demoComplete ? <DemoGallery /> : null}
     </div>
   );
 }
@@ -1152,16 +1153,16 @@ function PackageManagerTabs({ package: pkg }: { package: string }) {
   }, [cmd]);
 
   return (
-    <div className="rounded-lg border border-[#30363d] bg-[#0d1117] overflow-hidden">
-      <div className="flex items-center border-b border-[#30363d]">
+    <div className="rounded-lg border border-border bg-card overflow-hidden">
+      <div className="flex items-center border-b border-border">
         {PM_TABS.map((tab, i) => (
           <button
             key={tab.label}
             onClick={() => setActive(i)}
             className={`px-3 py-1.5 text-[11px] font-medium transition-colors ${
               i === active
-                ? "text-gray-200 border-b-2 border-blue-500 -mb-px"
-                : "text-gray-600 hover:text-gray-400"
+                ? "text-foreground border-b-2 border-blue-500 -mb-px"
+                : "text-muted-foreground/60 hover:text-muted-foreground"
             }`}
           >
             {tab.label}
@@ -1169,13 +1170,13 @@ function PackageManagerTabs({ package: pkg }: { package: string }) {
         ))}
       </div>
       <div className="flex items-center justify-between px-4 py-2.5">
-        <code className="text-[12px] font-mono text-gray-400">
-          <span className="text-gray-600 select-none">$ </span>
+        <code className="text-[12px] font-mono text-muted-foreground">
+          <span className="text-muted-foreground/60 select-none">$ </span>
           {cmd}
         </code>
         <button
           onClick={copy}
-          className="text-gray-600 hover:text-gray-300 transition-colors shrink-0 ml-3"
+          className="text-muted-foreground/60 hover:text-foreground/80 transition-colors shrink-0 ml-3"
           aria-label="Copy to clipboard"
         >
           {copied ? (
@@ -1203,12 +1204,12 @@ function CopyCommand({ command }: { command: string }) {
   }, [command]);
 
   return (
-    <div className="inline-flex items-center gap-3 bg-[#161b22] rounded-lg border border-[#30363d] px-4 py-3 group max-w-full overflow-x-auto">
-      <span className="text-gray-600 font-mono text-sm select-none">$</span>
-      <span className="font-mono text-sm text-gray-200">{command}</span>
+    <div className="inline-flex items-center gap-3 bg-muted rounded-lg border border-border px-4 py-3 group max-w-full overflow-x-auto">
+      <span className="text-muted-foreground/60 font-mono text-sm select-none">$</span>
+      <span className="font-mono text-sm text-foreground">{command}</span>
       <button
         onClick={copy}
-        className="ml-2 text-gray-600 hover:text-gray-300 transition-colors shrink-0"
+        className="ml-2 text-muted-foreground/60 hover:text-foreground/80 transition-colors shrink-0"
         aria-label="Copy to clipboard"
       >
         {copied ? (
@@ -1250,17 +1251,17 @@ function DemoGallery() {
     <div className="px-4 py-10 md:py-20 md:animate-in md:fade-in md:duration-700">
       <div className="max-w-7xl mx-auto">
         <div className="mb-12 text-center">
-          <h2 className="text-2xl sm:text-3xl font-semibold text-gray-100 mb-2">
+          <h2 className="text-2xl sm:text-3xl font-semibold text-foreground mb-2">
             Every circuit is live
           </h2>
-          <p className="text-gray-500 text-[15px]">
+          <p className="text-muted-foreground text-[15px]">
             Click switches, watch signals propagate, step through clock cycles — all simulated from logic gates in your browser.
           </p>
         </div>
 
         {/* Row 1: live circuits */}
-        <h3 className="text-lg font-semibold text-gray-200 mb-1 mt-2">Build anything from gates to games</h3>
-        <p className="text-[13px] text-gray-600 mb-4">Interactive circuits you can click, toggle, and explore</p>
+        <h3 className="text-lg font-semibold text-foreground mb-1 mt-2">Build anything from gates to games</h3>
+        <p className="text-[13px] text-muted-foreground/60 mb-4">Interactive circuits you can click, toggle, and explore</p>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
           <LiveCircuitCard
             title="Half Adder"
@@ -1293,10 +1294,10 @@ function DemoGallery() {
         </div>
 
         {/* Row 1.5: Drill-down showcase */}
-        <div className="mt-20 rounded-lg border border-[#30363d] overflow-hidden bg-[#0d1117]">
+        <div className="mt-20 rounded-lg border border-border overflow-hidden bg-card">
           <div className="grid grid-cols-1 sm:grid-cols-[1fr_1.5fr]">
             {/* Left: explanation */}
-            <div className="flex flex-col justify-center px-6 py-8 sm:px-8 sm:border-r border-[#30363d]">
+            <div className="flex flex-col justify-center px-6 py-8 sm:px-8 sm:border-r border-border">
               <div className="inline-flex items-center gap-2 mb-4">
                 <span className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-500 shadow-sm shadow-blue-500/30">
                   <svg className="h-3.5 w-3.5 text-white" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
@@ -1306,10 +1307,10 @@ function DemoGallery() {
                 </span>
                 <span className="text-[11px] font-medium text-blue-400 uppercase tracking-wider">Drill-down</span>
               </div>
-              <h3 className="text-xl font-semibold text-gray-100 mb-3">
+              <h3 className="text-xl font-semibold text-foreground mb-3">
                 Explore inside any component
               </h3>
-              <p className="text-[13px] text-gray-400 leading-relaxed mb-4">
+              <p className="text-[13px] text-muted-foreground leading-relaxed mb-4">
                 Every composite is explorable. Double-click the pulsing
                 {" "}<span className="relative inline-flex align-middle h-5 w-5 items-center justify-center">
                   <span className="absolute inset-0 rounded-full bg-blue-400/30 animate-[ping_2s_cubic-bezier(0,0,0.2,1)_infinite]" />
@@ -1322,14 +1323,14 @@ function DemoGallery() {
                 </span>{" "}
                 badge to open its internals — with full simulation and nested drill-down.
               </p>
-              <div className="space-y-2 text-[12px] text-gray-500">
+              <div className="space-y-2 text-[12px] text-muted-foreground">
                 <div className="flex items-start gap-2">
                   <span className="text-blue-400 mt-0.5">1.</span>
-                  <span>Double-click <strong className="text-gray-300">fa</strong> (FullAdder) to see its two HalfAdders</span>
+                  <span>Double-click <strong className="text-foreground/80">fa</strong> (FullAdder) to see its two HalfAdders</span>
                 </div>
                 <div className="flex items-start gap-2">
                   <span className="text-blue-400 mt-0.5">2.</span>
-                  <span>Double-click a <strong className="text-gray-300">HalfAdder</strong> to see its XOR + AND gates</span>
+                  <span>Double-click a <strong className="text-foreground/80">HalfAdder</strong> to see its XOR + AND gates</span>
                 </div>
                 <div className="flex items-start gap-2">
                   <span className="text-blue-400 mt-0.5">3.</span>
@@ -1357,8 +1358,8 @@ function DemoGallery() {
         </div>
 
         {/* Row 2: complex demos */}
-        <h3 className="text-lg font-semibold text-gray-200 mb-1 mt-20">Scale to real-world complexity</h3>
-        <p className="text-[13px] text-gray-600 mb-4">Full CPUs, networked systems, hundreds of nodes</p>
+        <h3 className="text-lg font-semibold text-foreground mb-1 mt-20">Scale to real-world complexity</h3>
+        <p className="text-[13px] text-muted-foreground/60 mb-4">Full CPUs, networked systems, hundreds of nodes</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <ComplexDemoCard
             title="RV32I CPU Debugger"
@@ -1379,14 +1380,14 @@ function DemoGallery() {
         </div>
 
         {/* Row 3: Ethernet parser — full width */}
-        <h3 className="text-lg font-semibold text-gray-200 mb-1 mt-20">Real protocols, simulated from gates</h3>
-        <p className="text-[13px] text-gray-600 mb-4">IEEE 802.3 Ethernet frame parsing — MAC addresses, EtherType, CRC-32, all running live</p>
+        <h3 className="text-lg font-semibold text-foreground mb-1 mt-20">Real protocols, simulated from gates</h3>
+        <p className="text-[13px] text-muted-foreground/60 mb-4">IEEE 802.3 Ethernet frame parsing — MAC addresses, EtherType, CRC-32, all running live</p>
         <EthernetParserCard />
 
         {/* Row 4: Featured deep dives */}
         <div className="mt-40">
-          <h3 className="text-lg font-semibold text-gray-200 mb-1">Interactive deep dives</h3>
-          <p className="text-[13px] text-gray-600 mb-5">Not diagrams. Live circuits verified against real specifications.</p>
+          <h3 className="text-lg font-semibold text-foreground mb-1">Interactive deep dives</h3>
+          <p className="text-[13px] text-muted-foreground/60 mb-5">Not diagrams. Live circuits verified against real specifications.</p>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             {[
               {
@@ -1411,12 +1412,12 @@ function DemoGallery() {
               <Link
                 key={post.slug}
                 to={`/blog/${post.slug}` as string}
-                className="group rounded-lg border border-[#21262d] hover:border-[#30363d] bg-[#0d1117] hover:bg-[#161b22] transition-all px-4 py-3.5"
+                className="group rounded-lg border border-border hover:border-border bg-card hover:bg-muted transition-all px-4 py-3.5"
               >
-                <h4 className="text-sm font-semibold text-gray-200 group-hover:text-white transition-colors">
+                <h4 className="text-sm font-semibold text-foreground group-hover:text-foreground transition-colors">
                   {post.title}
                 </h4>
-                <p className="text-xs text-gray-500 mt-1.5 leading-relaxed">
+                <p className="text-xs text-muted-foreground mt-1.5 leading-relaxed">
                   {post.hook}
                 </p>
                 <span className="inline-block mt-2.5 text-[11px] text-blue-400 group-hover:text-blue-300 transition-colors">
@@ -1426,7 +1427,7 @@ function DemoGallery() {
             ))}
           </div>
           <div className="mt-3 text-right">
-            <Link to="/blog" className="text-[12px] text-gray-600 hover:text-gray-300 transition-colors">
+            <Link to="/blog" className="text-[12px] text-muted-foreground/60 hover:text-foreground/80 transition-colors">
               All articles &rarr;
             </Link>
           </div>
@@ -1434,16 +1435,16 @@ function DemoGallery() {
 
         {/* Row 5: Embed CTA */}
         <div className="mt-40">
-          <h3 className="text-lg font-semibold text-gray-200 mb-1">Embed in your own site</h3>
-          <p className="text-[13px] text-gray-600 mb-5">One component. Your docs get live, interactive hardware simulations.</p>
+          <h3 className="text-lg font-semibold text-foreground mb-1">Embed in your own site</h3>
+          <p className="text-[13px] text-muted-foreground/60 mb-5">One component. Your docs get live, interactive hardware simulations.</p>
           <PackageManagerTabs package="@turing-incomplete/embed" />
-          <div className="rounded-lg border border-[#30363d] bg-[#0d1117] overflow-hidden mt-4">
-            <pre className="px-4 py-3 text-[12px] font-mono text-gray-400 leading-relaxed overflow-x-auto">
+          <div className="rounded-lg border border-border bg-card overflow-hidden mt-4">
+            <pre className="px-4 py-3 text-[12px] font-mono text-muted-foreground leading-relaxed overflow-x-auto">
               <span className="text-violet-400">{"import"}</span>{" { CircuitEmbed } "}
               <span className="text-violet-400">{"from"}</span>{" "}
               <span className="text-green-400">{"'@turing-incomplete/embed'"}</span>
               {"\n\n"}
-              <span className="text-gray-500">{"// Compiles, simulates, and renders — in one component"}</span>
+              <span className="text-muted-foreground">{"// Compiles, simulates, and renders — in one component"}</span>
               {"\n"}
               {"<"}
               <span className="text-blue-400">{"CircuitEmbed"}</span>
@@ -1465,13 +1466,13 @@ function DemoGallery() {
 
         {/* Row 7: Verilog Export */}
         <div className="mt-40">
-          <h3 className="text-lg font-semibold text-gray-200 mb-1">Export to Verilog</h3>
-          <p className="text-[13px] text-gray-600 mb-5">Design in DSL. Export synthesisable Verilog. Verified cycle-by-cycle against Icarus Verilog.</p>
+          <h3 className="text-lg font-semibold text-foreground mb-1">Export to Verilog</h3>
+          <p className="text-[13px] text-muted-foreground/60 mb-5">Design in DSL. Export synthesisable Verilog. Verified cycle-by-cycle against Icarus Verilog.</p>
           <div className="grid grid-cols-2 gap-4">
             {/* DSL side */}
-            <div className="rounded-lg border border-[#30363d] bg-[#0d1117] overflow-hidden">
-              <div className="px-3 py-1.5 border-b border-[#30363d] text-[10px] text-gray-500 font-mono">circuit.dsl</div>
-              <pre className="px-4 py-3 text-[11px] font-mono text-gray-400 leading-relaxed overflow-x-auto">
+            <div className="rounded-lg border border-border bg-card overflow-hidden">
+              <div className="px-3 py-1.5 border-b border-border text-[10px] text-muted-foreground font-mono">circuit.dsl</div>
+              <pre className="px-4 py-3 text-[11px] font-mono text-muted-foreground leading-relaxed overflow-x-auto">
 <span className="text-violet-400">{"circuit"}</span>{" HalfAdder {\n"}
 {"  "}<span className="text-violet-400">{"input"}</span>{" a: Bit\n"}
 {"  "}<span className="text-violet-400">{"input"}</span>{" b: Bit\n"}
@@ -1490,13 +1491,13 @@ function DemoGallery() {
               </pre>
             </div>
             {/* Verilog side */}
-            <div className="rounded-lg border border-[#30363d] bg-[#0d1117] overflow-hidden">
-              <div className="px-3 py-1.5 border-b border-[#30363d] flex items-center justify-between">
-                <span className="text-[10px] text-gray-500 font-mono">HalfAdder.v</span>
+            <div className="rounded-lg border border-border bg-card overflow-hidden">
+              <div className="px-3 py-1.5 border-b border-border flex items-center justify-between">
+                <span className="text-[10px] text-muted-foreground font-mono">HalfAdder.v</span>
                 <span className="text-[9px] text-emerald-500 font-medium">✓ verified against Icarus Verilog</span>
               </div>
-              <pre className="px-4 py-3 text-[11px] font-mono text-gray-400 leading-relaxed overflow-x-auto">
-<span className="text-gray-600">{"`timescale 1ns / 1ps\n\n"}</span>
+              <pre className="px-4 py-3 text-[11px] font-mono text-muted-foreground leading-relaxed overflow-x-auto">
+<span className="text-muted-foreground/60">{"`timescale 1ns / 1ps\n\n"}</span>
 <span className="text-violet-400">{"module"}</span>{" HalfAdder (\n"}
 {"  "}<span className="text-violet-400">{"input"}</span>{" a,\n"}
 {"  "}<span className="text-violet-400">{"input"}</span>{" b,\n"}
@@ -1513,29 +1514,29 @@ function DemoGallery() {
               </pre>
             </div>
           </div>
-          <p className="text-[11px] text-gray-600 mt-3">A 5-stage pipelined RISC-V CPU exports as 94KB of synthesisable RTL — cycle-accurate with the DSL simulator.</p>
+          <p className="text-[11px] text-muted-foreground/60 mt-3">A 5-stage pipelined RISC-V CPU exports as 94KB of synthesisable RTL — cycle-accurate with the DSL simulator.</p>
         </div>
 
         <div className="mt-40 flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:justify-between">
-          <p className="text-[13px] text-gray-600">
+          <p className="text-[13px] text-muted-foreground/60">
             Or build circuits yourself — no Claude needed.
           </p>
           <div className="flex items-center gap-4">
             <Link
               to="/editor"
-              className="text-[13px] text-gray-500 hover:text-white transition-colors"
+              className="text-[13px] text-muted-foreground hover:text-foreground transition-colors"
             >
               Open editor →
             </Link>
             <Link
               to="/learn"
-              className="text-[13px] text-gray-500 hover:text-white transition-colors"
+              className="text-[13px] text-muted-foreground hover:text-foreground transition-colors"
             >
               Learn →
             </Link>
             <Link
               to="/challenges"
-              className="text-[13px] text-gray-400 hover:text-white transition-colors"
+              className="text-[13px] text-muted-foreground hover:text-foreground transition-colors"
             >
               Try the challenges →
             </Link>
@@ -1544,20 +1545,20 @@ function DemoGallery() {
       </div>
 
       {/* Footer */}
-      <footer className="max-w-7xl mx-auto mt-32 pt-10 pb-16 border-t border-[#30363d] flex flex-col sm:flex-row items-center justify-between gap-4 px-4">
+      <footer className="max-w-7xl mx-auto mt-32 pt-10 pb-16 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-4 px-4">
         <div className="flex items-center gap-2.5">
-          <Logo size={18} className="text-gray-600" />
-          <span className="text-[12px] text-gray-600">Turing Incomplete</span>
+          <Logo size={18} className="text-muted-foreground/60" />
+          <span className="text-[12px] text-muted-foreground/60">Turing Incomplete</span>
         </div>
         <div className="flex items-center gap-5">
-          <a href="/docs" className="text-[12px] text-gray-600 hover:text-gray-300 transition-colors">Docs</a>
-          <Link to="/blog" className="text-[12px] text-gray-600 hover:text-gray-300 transition-colors">Blog</Link>
-          <Link to="/learn" className="text-[12px] text-gray-600 hover:text-gray-300 transition-colors">Learn</Link>
+          <a href="/docs" className="text-[12px] text-muted-foreground/60 hover:text-foreground/80 transition-colors">Docs</a>
+          <Link to="/blog" className="text-[12px] text-muted-foreground/60 hover:text-foreground/80 transition-colors">Blog</Link>
+          <Link to="/learn" className="text-[12px] text-muted-foreground/60 hover:text-foreground/80 transition-colors">Learn</Link>
           <a
             href="https://github.com/charlesharris/turing-incomplete"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-[12px] text-gray-600 hover:text-gray-300 transition-colors"
+            className="text-[12px] text-muted-foreground/60 hover:text-foreground/80 transition-colors"
           >
             GitHub
           </a>
@@ -1604,7 +1605,7 @@ function SnakeCard() {
   }, [sim.ready, sendDirection]);
 
   return (
-    <div className="flex flex-col rounded-lg border border-[#30363d] overflow-hidden bg-[#0d1117]">
+    <div className="flex flex-col rounded-lg border border-border overflow-hidden bg-card">
       {/* Preview — matches LiveCircuitCard height */}
       <div
         className="flex items-center justify-center bg-black"
@@ -1630,15 +1631,15 @@ function SnakeCard() {
             ))}
           </svg>
         ) : (
-          <div className="text-gray-700 text-[11px] font-mono">Compiling…</div>
+          <div className="text-muted-foreground/40 text-[11px] font-mono">Compiling…</div>
         )}
       </div>
 
       {/* Info strip — matches LiveCircuitCard */}
-      <div className="border-t border-[#30363d] px-4 py-3 flex items-end justify-between gap-4">
+      <div className="border-t border-border px-4 py-3 flex items-end justify-between gap-4">
         <div>
-          <div className="text-[13px] font-semibold text-gray-200">Snake</div>
-          <div className="text-[11px] text-gray-600 font-mono mt-0.5">
+          <div className="text-[13px] font-semibold text-foreground">Snake</div>
+          <div className="text-[11px] text-muted-foreground/60 font-mono mt-0.5">
             ~100 nodes · zero software
           </div>
           <div className="flex items-center gap-1.5 mt-2">
@@ -1647,8 +1648,8 @@ function SnakeCard() {
               disabled={!sim.ready}
               className={`px-2.5 py-1 rounded text-[10px] font-medium transition-colors disabled:opacity-40 ${
                 isRunning
-                  ? "bg-amber-800 hover:bg-amber-700 text-amber-200"
-                  : "bg-green-900 hover:bg-green-800 text-green-300"
+                  ? "bg-amber-100 hover:bg-amber-200 text-amber-800 dark:bg-amber-800 dark:hover:bg-amber-700 dark:text-amber-200"
+                  : "bg-green-100 hover:bg-green-200 text-green-800 dark:bg-green-900 dark:hover:bg-green-800 dark:text-green-300"
               }`}
             >
               {isRunning ? "Pause" : "Play"}
@@ -1664,7 +1665,7 @@ function SnakeCard() {
               <button
                 key={code}
                 onPointerDown={() => sendDirection(code)}
-                className="w-5 h-5 flex items-center justify-center rounded bg-gray-800 hover:bg-gray-700 text-gray-400 text-[9px] transition-colors"
+                className="w-5 h-5 flex items-center justify-center rounded bg-muted hover:bg-accent text-muted-foreground text-[9px] transition-colors"
               >
                 {arrow}
               </button>
@@ -1673,7 +1674,7 @@ function SnakeCard() {
         </div>
         <Link
           to="/blog/snake-in-hardware"
-          className="shrink-0 px-3 py-1.5 rounded border border-[#30363d] text-[11px] text-gray-300 hover:border-gray-500 hover:text-white transition-colors"
+          className="shrink-0 px-3 py-1.5 rounded border border-border text-[11px] text-foreground/80 hover:border-foreground/30 hover:text-foreground transition-colors"
         >
           Read post →
         </Link>
@@ -1828,19 +1829,19 @@ function EthFrameRow({ label, bytes, color, active, valid }: {
   label: string; bytes: string; color: string; active: boolean; valid: boolean;
 }) {
   const palette: Record<string, { border: string; text: string }> = {
-    blue:   { border: "border-blue-500",   text: "text-blue-400"   },
-    violet: { border: "border-violet-500", text: "text-violet-400" },
-    amber:  { border: "border-amber-500",  text: "text-amber-400"  },
-    gray:   { border: "border-gray-600",   text: "text-gray-500"   },
-    green:  { border: "border-green-600",  text: "text-green-400"  },
+    blue:   { border: "border-blue-500",   text: "text-blue-600 dark:text-blue-400"   },
+    violet: { border: "border-violet-500", text: "text-violet-600 dark:text-violet-400" },
+    amber:  { border: "border-amber-500",  text: "text-amber-600 dark:text-amber-400"  },
+    gray:   { border: "border-muted-foreground/40",   text: "text-muted-foreground"   },
+    green:  { border: "border-green-600",  text: "text-green-600 dark:text-green-400"  },
   };
   const c = palette[color] ?? palette.gray;
   return (
     <div className={`flex items-center gap-2 py-0.5 border-l-2 pl-2 transition-all duration-150 ${active ? c.border : "border-transparent"}`}>
-      <span className={`w-14 text-[9px] uppercase tracking-wide shrink-0 transition-colors ${active ? c.text : "text-gray-700"}`}>
+      <span className={`w-14 text-[9px] uppercase tracking-wide shrink-0 transition-colors ${active ? c.text : "text-muted-foreground/40"}`}>
         {label}
       </span>
-      <span className={`font-mono text-[10px] transition-colors ${active ? "text-gray-200" : valid ? "text-gray-600" : "text-gray-800"}`}>
+      <span className={`font-mono text-[10px] transition-colors ${active ? "text-foreground" : valid ? "text-muted-foreground/60" : "text-muted-foreground/20"}`}>
         {bytes}
       </span>
     </div>
@@ -1851,16 +1852,16 @@ function EthParsedField({ label, value, tag, tagColor, valid }: {
   label: string; value: string; tag?: string; tagColor?: string; valid: boolean;
 }) {
   const tagCls: Record<string, string> = {
-    blue:    "text-blue-300 bg-blue-950/70",
-    orange:  "text-orange-300 bg-orange-950/70",
-    emerald: "text-emerald-300 bg-emerald-950/70",
-    violet:  "text-violet-300 bg-violet-950/70",
+    blue:    "text-blue-700 bg-blue-100 dark:text-blue-300 dark:bg-blue-950/70",
+    orange:  "text-orange-700 bg-orange-100 dark:text-orange-300 dark:bg-orange-950/70",
+    emerald: "text-emerald-700 bg-emerald-100 dark:text-emerald-300 dark:bg-emerald-950/70",
+    violet:  "text-violet-700 bg-violet-100 dark:text-violet-300 dark:bg-violet-950/70",
   };
   return (
     <div className={`flex items-center gap-3 transition-opacity duration-300 ${valid ? "opacity-100" : "opacity-20"}`}>
-      <div className={`w-1.5 h-1.5 rounded-full shrink-0 transition-colors ${valid ? "bg-emerald-400" : "bg-gray-700"}`} />
-      <span className="text-[11px] text-gray-500 font-mono w-20 shrink-0">{label}</span>
-      <span className={`font-mono text-[11px] ${valid ? "text-gray-200" : "text-gray-700"}`}>{value}</span>
+      <div className={`w-1.5 h-1.5 rounded-full shrink-0 transition-colors ${valid ? "bg-emerald-400" : "bg-muted"}`} />
+      <span className="text-[11px] text-muted-foreground font-mono w-20 shrink-0">{label}</span>
+      <span className={`font-mono text-[11px] ${valid ? "text-foreground" : "text-muted-foreground/40"}`}>{value}</span>
       {tag && valid && (
         <span className={`text-[9px] px-1.5 py-0.5 rounded font-semibold ${tagCls[tagColor ?? "blue"] ?? tagCls.blue}`}>
           {tag}
@@ -1907,16 +1908,16 @@ function EthernetParserCard() {
   const progress  = Math.min((byteOff / 64) * 100, 100);
 
   return (
-    <div className="rounded-lg border border-[#30363d] overflow-hidden bg-[#0d1117] mt-4">
+    <div className="rounded-lg border border-border overflow-hidden bg-card mt-4">
       <div className="flex flex-col sm:flex-row" style={{ minHeight: 200 }}>
         {/* Left: raw frame bytes */}
-        <div className="sm:w-[42%] shrink-0 border-b sm:border-b-0 sm:border-r border-[#30363d] px-5 py-4 font-mono">
-          <div className="text-[9px] text-gray-600 uppercase tracking-widest mb-3 flex items-center gap-2">
+        <div className="sm:w-[42%] shrink-0 border-b sm:border-b-0 sm:border-r border-border px-5 py-4 font-mono">
+          <div className="text-[9px] text-muted-foreground/60 uppercase tracking-widest mb-3 flex items-center gap-2">
             <span>incoming frame</span>
             <span className={`px-1.5 py-0.5 rounded text-[8px] font-semibold ${
-              frameIndex === 0 ? "bg-blue-950/60 text-blue-400" :
-              frameIndex === 1 ? "bg-orange-950/60 text-orange-400" :
-              "bg-violet-950/60 text-violet-400"
+              frameIndex === 0 ? "bg-blue-100 text-blue-700 dark:bg-blue-950/60 dark:text-blue-400" :
+              frameIndex === 1 ? "bg-orange-100 text-orange-700 dark:bg-orange-950/60 dark:text-orange-400" :
+              "bg-violet-100 text-violet-700 dark:bg-violet-950/60 dark:text-violet-400"
             }`}>
               {frame.label.toUpperCase()}
             </span>
@@ -1927,10 +1928,10 @@ function EthernetParserCard() {
           <EthFrameRow label="payload" bytes={`${hex(14, 18)} …`} color="gray" active={active === "payload"} valid={false} />
           <EthFrameRow label="fcs"     bytes={hex(60, 64)} color="green"  active={active === "fcs"}     valid={crcOk}     />
           <div className="mt-4">
-            <div className="h-0.5 bg-gray-900 rounded-full overflow-hidden">
+            <div className="h-0.5 bg-card rounded-full overflow-hidden">
               <div className="h-full bg-blue-600 transition-all duration-150" style={{ width: `${progress}%` }} />
             </div>
-            <div className="flex justify-between mt-1 text-[9px] text-gray-700 font-mono">
+            <div className="flex justify-between mt-1 text-[9px] text-muted-foreground/40 font-mono">
               <span>{byteOff} / 64 bytes</span>
               <span>{sim.cycleCount} cycles</span>
             </div>
@@ -1966,14 +1967,14 @@ function EthernetParserCard() {
       </div>
 
       {/* Info strip */}
-      <div className="border-t border-[#30363d] px-5 py-3 flex items-center justify-between">
+      <div className="border-t border-border px-5 py-3 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <span className="text-[13px] font-semibold text-gray-200">Ethernet Parser</span>
-          <span className="text-[11px] text-gray-600 font-mono">MAC RX pipeline · Layer 2 · IEEE 802.3</span>
+          <span className="text-[13px] font-semibold text-foreground">Ethernet Parser</span>
+          <span className="text-[11px] text-muted-foreground/60 font-mono">MAC RX pipeline · Layer 2 · IEEE 802.3</span>
         </div>
         <div className="flex items-center gap-2">
           {ETH_FRAMES.map((_, i) => (
-            <div key={i} className={`w-1.5 h-1.5 rounded-full transition-colors duration-300 ${i === frameIndex ? "bg-blue-400" : "bg-gray-700"}`} />
+            <div key={i} className={`w-1.5 h-1.5 rounded-full transition-colors duration-300 ${i === frameIndex ? "bg-blue-400" : "bg-muted"}`} />
           ))}
         </div>
       </div>
@@ -1999,23 +2000,23 @@ function LiveCircuitCard({
   nodePositions?: Record<string, { x: number; y: number }>;
 }) {
   return (
-    <div className="flex flex-col rounded-lg border border-[#30363d] overflow-hidden bg-[#0d1117]">
+    <div className="flex flex-col rounded-lg border border-border overflow-hidden bg-card">
       <div style={{ height }}>
         <DemoCircuit dsl={harness} height={height} nodePositions={nodePositions} />
       </div>
-      <div className="border-t border-[#30363d] px-4 py-3 flex items-end justify-between gap-4">
+      <div className="border-t border-border px-4 py-3 flex items-end justify-between gap-4">
         <div>
-          <div className="text-[13px] font-semibold text-gray-200">{title}</div>
-          <div className="text-[11px] text-gray-600 font-mono mt-0.5">
+          <div className="text-[13px] font-semibold text-foreground">{title}</div>
+          <div className="text-[11px] text-muted-foreground/60 font-mono mt-0.5">
             {subtitle}
           </div>
-          <p className="text-[11px] text-gray-500 mt-1.5 leading-relaxed">
+          <p className="text-[11px] text-muted-foreground mt-1.5 leading-relaxed">
             {description}
           </p>
         </div>
         <Link
           to={href}
-          className="shrink-0 px-3 py-1.5 rounded border border-[#30363d] text-[11px] text-gray-300 hover:border-gray-500 hover:text-white transition-colors"
+          className="shrink-0 px-3 py-1.5 rounded border border-border text-[11px] text-foreground/80 hover:border-foreground/30 hover:text-foreground transition-colors"
         >
           Open in editor
         </Link>
@@ -2040,10 +2041,11 @@ function ComplexDemoCard({
   snippet: string;
 }) {
   const accentColor =
-    accent === "blue" ? "text-blue-400/70" : "text-violet-400/70";
+    accent === "blue" ? "text-blue-600 dark:text-blue-400/70" : "text-violet-600 dark:text-violet-400/70";
   const borderColor =
-    accent === "blue" ? "border-blue-900/30" : "border-violet-900/30";
-  const bgColor = accent === "blue" ? "from-blue-950/20" : "from-violet-950/20";
+    accent === "blue" ? "border-blue-200 dark:border-blue-900/30" : "border-violet-200 dark:border-violet-900/30";
+  const bgColor =
+    accent === "blue" ? "from-blue-50 dark:from-blue-950/20" : "from-violet-50 dark:from-violet-950/20";
 
   const coloredSnippet = snippet.split("\n").map((line, i) => {
     const isComment = line.trim().startsWith("//");
@@ -2054,12 +2056,12 @@ function ComplexDemoCard({
         key={i}
         className={
           isComment
-            ? "text-gray-700"
+            ? "text-muted-foreground/40"
             : isCircuit
             ? accentColor
             : isNode
-            ? "text-gray-400"
-            : "text-gray-600"
+            ? "text-muted-foreground"
+            : "text-muted-foreground/60"
         }
       >
         {line || "\u00A0"}
@@ -2069,7 +2071,7 @@ function ComplexDemoCard({
 
   return (
     <div
-      className={`flex flex-col rounded-lg border ${borderColor} overflow-hidden bg-gradient-to-br ${bgColor} to-[#0d1117]`}
+      className={`flex flex-col rounded-lg border ${borderColor} overflow-hidden bg-gradient-to-br ${bgColor} to-card`}
     >
       <div
         className="flex-1 px-5 pt-5 pb-3 font-mono text-[12px] leading-6"
@@ -2077,19 +2079,19 @@ function ComplexDemoCard({
       >
         {coloredSnippet}
       </div>
-      <div className="border-t border-[#30363d] px-4 py-3 flex items-end justify-between gap-4">
+      <div className="border-t border-border px-4 py-3 flex items-end justify-between gap-4">
         <div>
-          <div className="text-[13px] font-semibold text-gray-200">{title}</div>
-          <div className="text-[11px] text-gray-600 font-mono mt-0.5">
+          <div className="text-[13px] font-semibold text-foreground">{title}</div>
+          <div className="text-[11px] text-muted-foreground/60 font-mono mt-0.5">
             {subtitle}
           </div>
-          <p className="text-[11px] text-gray-500 mt-1.5 leading-relaxed">
+          <p className="text-[11px] text-muted-foreground mt-1.5 leading-relaxed">
             {description}
           </p>
         </div>
         <Link
           to={href}
-          className="shrink-0 px-3 py-1.5 rounded border border-[#30363d] text-[11px] text-gray-300 hover:border-gray-500 hover:text-white transition-colors"
+          className="shrink-0 px-3 py-1.5 rounded border border-border text-[11px] text-foreground/80 hover:border-foreground/30 hover:text-foreground transition-colors"
         >
           Open demo →
         </Link>

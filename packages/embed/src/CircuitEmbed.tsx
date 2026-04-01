@@ -75,6 +75,21 @@ export const CircuitEmbed = forwardRef<CircuitEmbedHandle, CircuitEmbedProps>(fu
     [dsl, autoHarness],
   );
 
+  // Reactively detect page theme from <html> class when no explicit theme is given
+  const [detectedTheme, setDetectedTheme] = useState<"light" | "dark">(() =>
+    typeof document !== "undefined" && document.documentElement.classList.contains("dark") ? "dark" : "light"
+  );
+  useEffect(() => {
+    if (theme) return; // explicit prop — no need to observe
+    const el = document.documentElement;
+    const sync = () => setDetectedTheme(el.classList.contains("dark") ? "dark" : "light");
+    sync();
+    const observer = new MutationObserver(sync);
+    observer.observe(el, { attributes: true, attributeFilter: ["class"] });
+    return () => observer.disconnect();
+  }, [theme]);
+  const resolvedTheme = theme ?? detectedTheme;
+
   const sim = useCircuitSimulator(effectiveDsl, options);
   const [isAutoRunning, setIsAutoRunning] = useState(false);
   const [codeVisible, setCodeVisible] = useState(showCode);
@@ -160,7 +175,7 @@ export const CircuitEmbed = forwardRef<CircuitEmbedHandle, CircuitEmbedProps>(fu
   return (
     <ErrorBoundary title="Circuit Render Error">
     <div
-      data-embed-theme={theme}
+      data-embed-theme={resolvedTheme}
       className={`rounded-xl border border-[var(--embed-border)] bg-[var(--embed-bg-surface-80)] overflow-hidden${fillParent ? " flex flex-col" : ""}`}
       style={fillParent ? { height } : undefined}
       role="application"
@@ -188,7 +203,7 @@ export const CircuitEmbed = forwardRef<CircuitEmbedHandle, CircuitEmbedProps>(fu
         showPortLabels={showPortLabels}
         onPortClick={onPortClick}
         glowUnconnected={glowUnconnected}
-        theme={theme}
+        theme={resolvedTheme}
       />
 
       {showControls && sim.isSequential && (
