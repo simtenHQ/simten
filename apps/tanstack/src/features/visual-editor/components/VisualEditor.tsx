@@ -399,7 +399,7 @@ export function VisualEditor({ theme = "light" }: VisualEditorProps) {
         )}
 
         {/* Composite Inspector Dialog */}
-        <CompositeInspectorDialog />
+        <CompositeInspectorDialog theme={theme} />
 
         {/* AI Chat Panel */}
         <ChatPanel
