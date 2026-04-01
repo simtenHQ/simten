@@ -6,7 +6,6 @@ export { Canvas } from './Canvas';
 export { ComponentPalette } from './ComponentPalette';
 export { ClockControls, type ClockControlsProps } from './ClockControls';
 export { SignalOutputPanel } from './SignalOutputPanel';
-export { CompositeInspectorDialog } from './CompositeInspectorDialog';
 export { CircuitSelector } from './CircuitSelector';
 export { CircuitTabBar } from './CircuitTabBar';
 export { RightSidebar } from './RightSidebar';
