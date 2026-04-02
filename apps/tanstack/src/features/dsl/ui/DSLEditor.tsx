@@ -209,7 +209,7 @@ export interface DSLEditorRef {
 }
 
 interface DSLEditorProps {
-  onCompileSuccess?: (circuits: Circuit[], dslCode: string) => void;
+  onCompileSuccess?: (circuits: Circuit[], dslCode: string, componentLibrary?: { resolveComponent: (name: string) => Circuit | undefined; getAllPrimitiveNames: () => string[] }) => void;
   autoCompileEnabled?: boolean;
   showHeader?: boolean;
   /** Override localStorage key (default: "turing-incomplete-dsl-code"). Set to null to disable persistence. */
@@ -700,8 +700,18 @@ export const DSLEditor = forwardRef<DSLEditorRef, DSLEditorProps>(function DSLEd
           );
         }
 
-        // Notify parent (pass DSL code for version tracking)
-        onCompileSuccess?.(compiledCircuits, code);
+        // Build final library containing all compiled circuits + primitives
+        const finalLibrary = {
+          resolveComponent: (name: string): Circuit | undefined => {
+            const compiled = compiledCircuits.find((c) => c.name === name);
+            if (compiled) return compiled;
+            return resolveComponent(name);
+          },
+          getAllPrimitiveNames: (): string[] => getAllComponentNames(),
+        };
+
+        // Notify parent (pass DSL code + library for simulation)
+        onCompileSuccess?.(compiledCircuits, code, finalLibrary);
 
         // Run validation and analysis pipeline
         try {

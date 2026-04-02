@@ -9,7 +9,7 @@
 
 "use client";
 
-import { useCallback, useState, useEffect, useRef, useMemo } from "react";
+import { useCallback, useState, useEffect, useRef } from "react";
 import {
   ReactFlowProvider,
   Canvas,
@@ -19,7 +19,7 @@ import {
   SignalOutputPanel,
 } from "@turing-incomplete/ui/editor/components";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { useCircuitStore, useDSLPreviewStore, useComponentLibraryStore } from "@turing-incomplete/ui/editor/stores";
+import { useCircuitStore, useDSLPreviewStore } from "@turing-incomplete/ui/editor/stores";
 import { usePrimitivesInit } from "@turing-incomplete/ui/editor/hooks";
 import { useCircuitSession } from "@turing-incomplete/ui/canvas";
 import type { Circuit } from "@turing-incomplete/ui/editor/types";
@@ -68,11 +68,7 @@ export function VisualEditor({ theme = "light" }: VisualEditorProps) {
   const setCompiledCircuits = useDSLPreviewStore(
     (state) => state.setCompiledCircuits,
   );
-  const registerUser = useComponentLibraryStore((state) => state.registerUser);
   const circuit = useCircuitStore((state) => state.circuit);
-  const resolveComponent = useComponentLibraryStore(
-    (state) => state.resolveComponent,
-  );
 
   // Drawer state
   const [componentPaletteOpen, setComponentPaletteOpen] = useState(false);
@@ -93,28 +89,23 @@ export function VisualEditor({ theme = "light" }: VisualEditorProps) {
   // Initialize primitive components library
   usePrimitivesInit();
 
-  // Export to Verilog
+  // ── Compile library — set by DSL editor on compile, used for simulation + export ──
+  const [compileLibrary, setCompileLibrary] = useState<{ resolveComponent: (name: string) => Circuit | undefined; getAllPrimitiveNames: () => string[] } | null>(null);
+
+  // Export to Verilog — uses compile library (no store)
   const handleExportVerilog = useCallback(() => {
     let currentCircuit = useCircuitStore.getState().circuit;
-    if (!currentCircuit) return;
-
-    const store = useComponentLibraryStore.getState();
+    if (!currentCircuit || !compileLibrary) return;
 
     // If this is an auto-generated harness, export the real circuit instead
     if (isHarnessName(currentCircuit.name)) {
       const baseName = currentCircuit.name.replace(/Harness$/, '');
-      const realCircuit = store.resolveComponent(baseName);
+      const realCircuit = compileLibrary.resolveComponent(baseName);
       if (realCircuit) currentCircuit = realCircuit;
     }
 
-    const library = {
-      resolveComponent: (name: string) => store.resolveComponent(name),
-      getAllPrimitiveNames: () => store.getAllPrimitiveNames(),
-      addCircuit: (c: Circuit) => store.registerUser(c),
-    };
-
     try {
-      const verilogCode = exportVerilog(currentCircuit, library);
+      const verilogCode = exportVerilog(currentCircuit, compileLibrary);
       const blob = new Blob([verilogCode], { type: 'text/plain' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -125,16 +116,10 @@ export function VisualEditor({ theme = "light" }: VisualEditorProps) {
     } catch (e) {
       console.error('Verilog export failed:', e);
     }
-  }, []);
+  }, [compileLibrary]);
 
-  // ── Simulation — same hook as embeds, driven by DSL string ──
-  // Adapt store to ComponentLibrary interface
-  const componentLibrary = useMemo(() => ({
-    resolveComponent: useComponentLibraryStore.getState().resolveComponent,
-    getAllPrimitiveNames: useComponentLibraryStore.getState().getAllPrimitiveNames,
-  }), [resolveComponent]);
-
-  const sim = useCircuitSession(circuit, componentLibrary);
+  // ── Simulation — driven by compile result, no store dependency ──
+  const sim = useCircuitSession(circuit, compileLibrary);
   const showClockControls = sim.isSequential;
 
   // Keep sim state in ref for MCP callbacks
@@ -196,22 +181,15 @@ export function VisualEditor({ theme = "light" }: VisualEditorProps) {
 
   // Handle DSL compilation in split mode
   const handleDSLCompile = useCallback(
-    (circuits: Circuit[], dslCode: string) => {
-      // Register all compiled circuits in the component library
-      // so they can be referenced by testbenches and other circuits
-      circuits.forEach((circuit) => {
-        console.log(
-          "[VisualEditor] Registering circuit in library:",
-          circuit.name,
-          "nodes:",
-          circuit.nodes.length,
-        );
-        registerUser(circuit);
-      });
-
+    (circuits: Circuit[], dslCode: string, library?: { resolveComponent: (name: string) => Circuit | undefined; getAllPrimitiveNames: () => string[] }) => {
       setCompiledCircuits(circuits, dslCode);
+
+      // Pass library to simulation and other consumers
+      if (library) {
+        setCompileLibrary(library);
+      }
     },
-    [setCompiledCircuits, registerUser],
+    [setCompiledCircuits],
   );
 
   // Load an example into the editor
