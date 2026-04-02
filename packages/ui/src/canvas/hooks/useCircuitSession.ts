@@ -7,7 +7,7 @@
 
 "use client";
 
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   SimulationSession,
   createSimulatorFromCircuit,
@@ -55,10 +55,10 @@ export function useCircuitSession(
       return;
     }
 
-    const structure = JSON.stringify({
-      nodes: circuit.nodes.map((n) => ({ id: n.id, componentRef: n.componentRef })),
-      connections: circuit.connections,
-    });
+    // Fast structure fingerprint — node IDs + refs + connection count.
+    // Much cheaper than JSON.stringify on every render.
+    const structure = circuit.nodes.map(n => `${n.id}:${n.componentRef}`).join('|')
+      + `#${circuit.connections.length}`;
 
     if (structure === prevStructureRef.current && sessionRef.current) {
       // Structure unchanged — sync input values to existing engine

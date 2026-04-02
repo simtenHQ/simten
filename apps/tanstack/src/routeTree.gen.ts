@@ -9,8 +9,6 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as Splash4RouteImport } from './routes/splash4'
-import { Route as Splash3RouteImport } from './routes/splash3'
 import { Route as EditorRouteImport } from './routes/editor'
 import { Route as BlogRouteImport } from './routes/blog'
 import { Route as IndexRouteImport } from './routes/index'
@@ -39,16 +37,6 @@ import { Route as BlogBreakoutInHardwareRouteImport } from './routes/blog/breako
 import { Route as BlogAesInHardwareRouteImport } from './routes/blog/aes-in-hardware'
 import { Route as ApiSearchRouteImport } from './routes/api/search'
 
-const Splash4Route = Splash4RouteImport.update({
-  id: '/splash4',
-  path: '/splash4',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const Splash3Route = Splash3RouteImport.update({
-  id: '/splash3',
-  path: '/splash3',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const EditorRoute = EditorRouteImport.update({
   id: '/editor',
   path: '/editor',
@@ -192,8 +180,6 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/blog': typeof BlogRouteWithChildren
   '/editor': typeof EditorRoute
-  '/splash3': typeof Splash3Route
-  '/splash4': typeof Splash4Route
   '/api/search': typeof ApiSearchRoute
   '/blog/aes-in-hardware': typeof BlogAesInHardwareRoute
   '/blog/breakout-in-hardware': typeof BlogBreakoutInHardwareRoute
@@ -222,8 +208,6 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/editor': typeof EditorRoute
-  '/splash3': typeof Splash3Route
-  '/splash4': typeof Splash4Route
   '/api/search': typeof ApiSearchRoute
   '/blog/aes-in-hardware': typeof BlogAesInHardwareRoute
   '/blog/breakout-in-hardware': typeof BlogBreakoutInHardwareRoute
@@ -254,8 +238,6 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/blog': typeof BlogRouteWithChildren
   '/editor': typeof EditorRoute
-  '/splash3': typeof Splash3Route
-  '/splash4': typeof Splash4Route
   '/api/search': typeof ApiSearchRoute
   '/blog/aes-in-hardware': typeof BlogAesInHardwareRoute
   '/blog/breakout-in-hardware': typeof BlogBreakoutInHardwareRoute
@@ -287,8 +269,6 @@ export interface FileRouteTypes {
     | '/'
     | '/blog'
     | '/editor'
-    | '/splash3'
-    | '/splash4'
     | '/api/search'
     | '/blog/aes-in-hardware'
     | '/blog/breakout-in-hardware'
@@ -317,8 +297,6 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/editor'
-    | '/splash3'
-    | '/splash4'
     | '/api/search'
     | '/blog/aes-in-hardware'
     | '/blog/breakout-in-hardware'
@@ -348,8 +326,6 @@ export interface FileRouteTypes {
     | '/'
     | '/blog'
     | '/editor'
-    | '/splash3'
-    | '/splash4'
     | '/api/search'
     | '/blog/aes-in-hardware'
     | '/blog/breakout-in-hardware'
@@ -380,8 +356,6 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   BlogRoute: typeof BlogRouteWithChildren
   EditorRoute: typeof EditorRoute
-  Splash3Route: typeof Splash3Route
-  Splash4Route: typeof Splash4Route
   ApiSearchRoute: typeof ApiSearchRoute
   ChallengesBuildACpuRoute: typeof ChallengesBuildACpuRoute
   ChallengesBuildAnAluRoute: typeof ChallengesBuildAnAluRoute
@@ -397,20 +371,6 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/splash4': {
-      id: '/splash4'
-      path: '/splash4'
-      fullPath: '/splash4'
-      preLoaderRoute: typeof Splash4RouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/splash3': {
-      id: '/splash3'
-      path: '/splash3'
-      fullPath: '/splash3'
-      preLoaderRoute: typeof Splash3RouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/editor': {
       id: '/editor'
       path: '/editor'
@@ -641,8 +601,6 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   BlogRoute: BlogRouteWithChildren,
   EditorRoute: EditorRoute,
-  Splash3Route: Splash3Route,
-  Splash4Route: Splash4Route,
   ApiSearchRoute: ApiSearchRoute,
   ChallengesBuildACpuRoute: ChallengesBuildACpuRoute,
   ChallengesBuildAnAluRoute: ChallengesBuildAnAluRoute,
