@@ -1488,6 +1488,55 @@ circuit Comparator {
     outputDependency: 'state+inputs',
   }),
 
+  DualPortROM: defineSequential({
+    name: 'DualPortROM',
+    description: 'Read-only memory with two independent read ports sharing the same data. Byte-addressable, returns 32-bit little-endian words. Use for architectures that need simultaneous instruction fetch and data read.',
+    category: 'memory',
+    icon: '📀²',
+    inputs: [
+      { name: 'addrA', portType: busType(32) },
+      { name: 'addrB', portType: busType(32) },
+    ],
+    outputs: [
+      { name: 'dataA', portType: busType(32) },
+      { name: 'dataB', portType: busType(32) },
+    ],
+    clocks: [],
+    state: [
+      {
+        id: 'dual-rom-state',
+        name: 'memory',
+        stateType: { kind: 'memory', addressWidth: 32, dataWidth: 8 },
+        initialValue: { data: new Map(), addressWidth: 32, dataWidth: 8 },
+      },
+    ],
+    evaluate: (inputs, currentState) => {
+      const memory = (currentState ?? new Map()) as Map<number, number>;
+
+      // Port A — read 4 bytes little-endian
+      const addrA = ((inputs.get('addrA') as number) ?? 0) >>> 0;
+      const a0 = memory.get(addrA) ?? 0;
+      const a1 = memory.get((addrA + 1) >>> 0) ?? 0;
+      const a2 = memory.get((addrA + 2) >>> 0) ?? 0;
+      const a3 = memory.get((addrA + 3) >>> 0) ?? 0;
+      const dataA = ((a3 << 24) | (a2 << 16) | (a1 << 8) | a0) >>> 0;
+
+      // Port B — read 4 bytes little-endian
+      const addrB = ((inputs.get('addrB') as number) ?? 0) >>> 0;
+      const b0 = memory.get(addrB) ?? 0;
+      const b1 = memory.get((addrB + 1) >>> 0) ?? 0;
+      const b2 = memory.get((addrB + 2) >>> 0) ?? 0;
+      const b3 = memory.get((addrB + 3) >>> 0) ?? 0;
+      const dataB = ((b3 << 24) | (b2 << 16) | (b1 << 8) | b0) >>> 0;
+
+      return new Map([['dataA', dataA], ['dataB', dataB]]);
+    },
+    updateState: (_inputs, currentState, _clockEdges) => {
+      return currentState;
+    },
+    outputDependency: 'state+inputs',
+  }),
+
   RAM: defineSequential({
     name: 'RAM',
     description: 'Parameterized SRAM - reads are combinational (addr->data_out), writes occur on rising clock edge with write enable',

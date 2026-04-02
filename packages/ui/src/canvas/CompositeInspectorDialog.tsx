@@ -19,27 +19,19 @@ import { createDrillDownViewCircuit } from "./drill-down-view";
 import { createMutableLibraryForRef } from "./utils";
 import {
   createSimulatorFromCircuit,
+  SimulationSession,
   PRIMITIVE_DEFINITIONS,
   getReferenceCircuit,
 } from "@turing-incomplete/core/simulator";
 import type {
   ComponentLibrary,
-  FlatPortValueMap,
-  FlatSequentialState,
-  SimulatorSnapshot,
 } from "@turing-incomplete/core/simulator";
 import type { Circuit } from "@turing-incomplete/core/dsl";
 import { compileDSL } from "@turing-incomplete/core/dsl";
-import {
-  SkipForward,
-  Play,
-  Pause,
-  RotateCcw,
-  ChevronLeft,
-  ChevronRight,
-} from "lucide-react";
 
 import { CircuitCanvas } from "./CircuitCanvas";
+import { ClockControls } from "./ClockControls";
+import { useSimulationSession } from "./hooks/useSimulationSession";
 import { NODE_TYPES, EDGE_TYPES } from "./node-types";
 import type { NodeData } from "../nodes";
 
@@ -62,116 +54,6 @@ function hasSequentialComponents(
     }
   }
   return false;
-}
-
-// ── Inspector clock controls (floating, compact) ──
-
-interface InspectorClockControlsProps {
-  cycle: number;
-  historyLength: number;
-  historyIndex: number;
-  isRunning: boolean;
-  isViewingPast: boolean;
-  onStep: () => void;
-  onRun: () => void;
-  onPause: () => void;
-  onReset: () => void;
-  onStepBack: () => void;
-  onStepForward: () => void;
-}
-
-function InspectorClockControls({
-  cycle,
-  historyLength,
-  historyIndex,
-  isRunning,
-  isViewingPast,
-  onStep,
-  onRun,
-  onPause,
-  onReset,
-  onStepBack,
-  onStepForward,
-}: InspectorClockControlsProps) {
-  return (
-    <div className="absolute top-3 left-1/2 -translate-x-1/2 z-10">
-      <div className="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white/95 backdrop-blur-sm px-3 py-1.5 shadow-md dark:border-gray-700 dark:bg-gray-800/95">
-        <button
-          onClick={onStep}
-          disabled={isRunning || isViewingPast}
-          className="rounded p-1 text-gray-600 hover:bg-gray-100 disabled:opacity-40 dark:text-gray-300 dark:hover:bg-gray-700"
-          title="Step (one clock cycle)"
-        >
-          <SkipForward className="h-3.5 w-3.5" />
-        </button>
-
-        {isRunning ? (
-          <button
-            onClick={onPause}
-            className="rounded p-1 text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
-            title="Pause"
-          >
-            <Pause className="h-3.5 w-3.5" />
-          </button>
-        ) : (
-          <button
-            onClick={onRun}
-            disabled={isViewingPast}
-            className="rounded p-1 text-gray-600 hover:bg-gray-100 disabled:opacity-40 dark:text-gray-300 dark:hover:bg-gray-700"
-            title="Run continuously"
-          >
-            <Play className="h-3.5 w-3.5" />
-          </button>
-        )}
-
-        <button
-          onClick={onReset}
-          className="rounded p-1 text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
-          title="Reset"
-        >
-          <RotateCcw className="h-3.5 w-3.5" />
-        </button>
-
-        <div className="border-l border-gray-200 dark:border-gray-600 pl-1.5 ml-0.5">
-          <span className="text-[11px] text-gray-500 dark:text-gray-400">
-            Cycle <span className="font-mono font-semibold text-gray-700 dark:text-gray-200">{cycle}</span>
-          </span>
-        </div>
-
-        <div className="flex items-center gap-0.5 border-l border-gray-200 dark:border-gray-600 pl-1.5 ml-0.5">
-          <button
-            onClick={onStepBack}
-            disabled={historyIndex <= 0 || isRunning}
-            className="rounded p-1 text-gray-600 hover:bg-gray-100 disabled:opacity-40 dark:text-gray-300 dark:hover:bg-gray-700"
-            title="Step back"
-          >
-            <ChevronLeft className="h-3.5 w-3.5" />
-          </button>
-
-          <span className="min-w-[40px] text-center text-[11px] text-gray-500 dark:text-gray-400">
-            {isViewingPast ? (
-              <span className="font-mono text-amber-600 dark:text-amber-400">
-                {historyIndex + 1}/{historyLength}
-              </span>
-            ) : (
-              <span className="font-mono">
-                {historyLength}/{historyLength}
-              </span>
-            )}
-          </span>
-
-          <button
-            onClick={onStepForward}
-            disabled={!isViewingPast || isRunning}
-            className="rounded p-1 text-gray-600 hover:bg-gray-100 disabled:opacity-40 dark:text-gray-300 dark:hover:bg-gray-700"
-            title="Step forward"
-          >
-            <ChevronRight className="h-3.5 w-3.5" />
-          </button>
-        </div>
-      </div>
-    </div>
-  );
 }
 
 // ── Inner canvas for a single inspector level ──
@@ -223,170 +105,62 @@ function InspectorCanvas({ frame, componentLibrary, onPushLevel, theme = "dark" 
     }
   }, [componentLibrary, onPushLevel]);
 
-  // ── Simulator state ──
-  const simulatorRef = useRef<ReturnType<typeof createSimulatorFromCircuit> | null>(null);
-  const [portValues, setPortValues] = useState<FlatPortValueMap>(new Map() as FlatPortValueMap);
-  const [seqState, setSeqState] = useState<FlatSequentialState | null>(null);
-
-  const syncFromSimulator = useCallback((newPortValues: FlatPortValueMap) => {
-    setPortValues(newPortValues);
-    setSeqState(simulatorRef.current?.getState() ?? null);
-  }, []);
-
-  const [cycle, setCycle] = useState(0);
-  const [history, setHistory] = useState<SimulatorSnapshot[]>([]);
-  const [historyIndex, setHistoryIndex] = useState(-1);
-  const [isRunning, setIsRunning] = useState(false);
-  const runIntervalRef = useRef<NodeJS.Timeout | null>(null);
-
-  const isViewingPast = historyIndex >= 0 && historyIndex < history.length - 1;
+  // ── Simulation via session ──
+  const [session, setSession] = useState<SimulationSession | null>(null);
 
   useEffect(() => {
     try {
-      const sim = createSimulatorFromCircuit(viewCircuit, componentLibrary);
-      const result = sim.runCombinational();
-      simulatorRef.current = sim;
-      syncFromSimulator(result.portValues);
-      setCycle(0);
-
-      if (isSequential) {
-        const snap = sim.snapshot();
-        setHistory([snap]);
-        setHistoryIndex(0);
-      }
+      const engine = createSimulatorFromCircuit(viewCircuit, componentLibrary);
+      engine.runCombinational();
+      const s = new SimulationSession(engine, { isSequential });
+      setSession(s);
+      return () => s.dispose();
     } catch (e) {
       console.warn("[InspectorCanvas] Simulator init failed:", e);
-      simulatorRef.current = null;
-      syncFromSimulator(new Map() as FlatPortValueMap);
+      setSession(null);
     }
+  }, [viewCircuit, componentLibrary, isSequential]);
 
-    return () => {
-      if (runIntervalRef.current) clearInterval(runIntervalRef.current);
-    };
-  }, [viewCircuit, componentLibrary, isSequential, syncFromSimulator]);
+  const sim = useSimulationSession(session);
 
   const handleToggle = useCallback((nodeId: string) => {
-    const sim = simulatorRef.current;
-    if (!sim) return;
-
+    if (!session) return;
     const outKey = `${nodeId}.out`;
-    const currentValue = portValues.get(outKey);
-    sim.setInput(nodeId, !currentValue);
-    const result = sim.runCombinational();
-    syncFromSimulator(result.portValues);
-  }, [portValues, syncFromSimulator]);
+    const currentValue = sim.portValues.get(outKey);
+    session.setInput(nodeId, !currentValue);
+    session.runCombinational();
+  }, [session, sim.portValues]);
 
   const handleNumericChange = useCallback((nodeId: string, newValue: number) => {
-    const sim = simulatorRef.current;
-    if (!sim) return;
-
-    sim.setInput(nodeId, newValue);
-    const result = sim.runCombinational();
-    syncFromSimulator(result.portValues);
-  }, [syncFromSimulator]);
-
-  // ── Sequential controls ──
-
-  const handleStep = useCallback(() => {
-    const sim = simulatorRef.current;
-    if (!sim) return;
-
-    const result = sim.tick();
-    syncFromSimulator(result.portValues);
-    setCycle((c) => c + 1);
-
-    const snap = sim.snapshot();
-    setHistory((prev) => {
-      const next = [...prev, snap];
-      setHistoryIndex(next.length - 1);
-      return next;
-    });
-  }, [syncFromSimulator]);
-
-  const handleRun = useCallback(() => setIsRunning(true), []);
-  const handlePause = useCallback(() => {
-    if (runIntervalRef.current) {
-      clearInterval(runIntervalRef.current);
-      runIntervalRef.current = null;
-    }
-    setIsRunning(false);
-  }, []);
-
-  const handleReset = useCallback(() => {
-    handlePause();
-    const sim = simulatorRef.current;
-    if (!sim) return;
-
-    sim.reset();
-    const result = sim.runCombinational();
-    syncFromSimulator(result.portValues);
-    setCycle(0);
-
-    const snap = sim.snapshot();
-    setHistory([snap]);
-    setHistoryIndex(0);
-  }, [handlePause, syncFromSimulator]);
-
-  const handleStepBack = useCallback(() => {
-    const sim = simulatorRef.current;
-    if (!sim || historyIndex <= 0) return;
-
-    const newIndex = historyIndex - 1;
-    sim.restore(history[newIndex]);
-    syncFromSimulator(sim.getPortValues() as FlatPortValueMap);
-    setCycle(history[newIndex].cycleCount);
-    setHistoryIndex(newIndex);
-  }, [historyIndex, history, syncFromSimulator]);
-
-  const handleStepForward = useCallback(() => {
-    const sim = simulatorRef.current;
-    if (!sim || historyIndex >= history.length - 1) return;
-
-    const newIndex = historyIndex + 1;
-    sim.restore(history[newIndex]);
-    syncFromSimulator(sim.getPortValues() as FlatPortValueMap);
-    setCycle(history[newIndex].cycleCount);
-    setHistoryIndex(newIndex);
-  }, [historyIndex, history, syncFromSimulator]);
-
-  useEffect(() => {
-    if (!isRunning || !isSequential) return;
-
-    runIntervalRef.current = setInterval(() => {
-      handleStep();
-    }, 200);
-
-    return () => {
-      if (runIntervalRef.current) {
-        clearInterval(runIntervalRef.current);
-        runIntervalRef.current = null;
-      }
-    };
-  }, [isRunning, isSequential, handleStep]);
+    if (!session) return;
+    session.setInput(nodeId, newValue);
+    session.runCombinational();
+  }, [session]);
 
   return (
     <div className="relative h-full w-full">
       {isSequential && (
-        <InspectorClockControls
-          cycle={cycle}
-          historyLength={history.length}
-          historyIndex={historyIndex}
-          isRunning={isRunning}
-          isViewingPast={isViewingPast}
-          onStep={handleStep}
-          onRun={handleRun}
-          onPause={handlePause}
-          onReset={handleReset}
-          onStepBack={handleStepBack}
-          onStepForward={handleStepForward}
+        <ClockControls
+          floating
+          cycle={sim.cycle}
+          historyLength={sim.history.length}
+          historyIndex={sim.historyIndex}
+          isRunning={sim.isRunning}
+          isViewingPast={sim.isViewingPast}
+          onStep={sim.tick}
+          onRun={() => sim.startAutoRun(5, { displayRate: 5 })}
+          onPause={sim.stopAutoRun}
+          onReset={sim.reset}
+          onStepBack={sim.stepBack}
+          onStepForward={sim.stepForward}
         />
       )}
 
       <CircuitCanvas
         circuit={viewCircuit}
         componentLibrary={componentLibrary}
-        portValues={portValues}
-        sequentialState={seqState}
+        portValues={sim.portValues as Map<string, boolean | number>}
+        sequentialState={sim.sequentialState}
         onToggleNode={handleToggle}
         onSetNodeValue={handleNumericChange}
         onNodeDoubleClick={handleNodeDoubleClick}

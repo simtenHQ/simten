@@ -13,3 +13,8 @@ export { createDrillDownViewCircuit, scopePortValues } from "./drill-down-view";
 export { CompositeInspectorDialog } from "./CompositeInspectorDialog";
 export type { CompositeInspectorDialogProps } from "./CompositeInspectorDialog";
 export type { MetadataState, InspectorFrame, OriginRect } from "./types";
+export { useSimulationSession } from "./hooks/useSimulationSession";
+export { useCircuitSession } from "./hooks/useCircuitSession";
+export type { UseSimulationSessionResult } from "./hooks/useSimulationSession";
+export { ClockControls } from "./ClockControls";
+export type { ClockControlsProps } from "./ClockControls";

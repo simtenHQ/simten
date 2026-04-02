@@ -22,6 +22,7 @@ export interface NodeData extends Record<string, unknown> {
   __nicState?: { txCount: number; rxCount: number; draining: boolean };
   onToggle?: () => void;
   onValueChange?: (value: number) => void;
+  onLoadMemory?: (data: Map<number, number>) => void;
   showPortLabels?: boolean;
   onPortClick?: (portName: string, portType: 'input' | 'output') => void;
   glowUnconnected?: boolean;

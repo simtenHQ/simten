@@ -1,26 +1,22 @@
 "use client";
 
-import { Suspense, lazy } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "@tanstack/react-router";
-
-const CPUDebugger = lazy(() =>
-  import("@/features/learn/cpu-debugger/CPUDebugger").then((m) => ({
-    default: m.CPUDebugger,
-  }))
-);
-
-function DebuggerSkeleton() {
-  return (
-    <div className="h-[700px] rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-950 flex items-center justify-center">
-      <div className="flex items-center gap-3 text-gray-500 dark:text-gray-500">
-        <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-600 border-t-blue-400" />
-        Loading CPU&hellip;
-      </div>
-    </div>
-  );
-}
+import { CircuitEmbed } from "@turing-incomplete/embed";
 
 export function RunningCodeSection() {
+  const [boardDsl, setBoardDsl] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch("/blog-assets/rv32i-board.dsl")
+      .then((r) => {
+        if (!r.ok) throw new Error(`Failed to fetch: ${r.status}`);
+        return r.text();
+      })
+      .then(setBoardDsl)
+      .catch((e) => console.error("Failed to load board DSL:", e));
+  }, []);
+
   return (
     <section className="py-12">
       <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
@@ -35,28 +31,38 @@ export function RunningCodeSection() {
           wired together structurally, like a real hardware design.
         </p>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
-          Now for the part that matters: <strong className="text-gray-900 dark:text-white">it runs
-          real programs</strong>. The debugger below compiles C (or C++, Rust,
-          Assembly) with{" "}
-          <code className="text-gray-900 dark:text-white bg-gray-200 dark:bg-gray-800 px-1.5 py-0.5 rounded text-sm">riscv-none-elf-gcc</code>
-          {" "}&mdash; the same GCC cross-compiler used for bare-metal RISC-V
-          development &mdash; loads the binary into the CPU&rsquo;s instruction
-          memory, and lets you step through execution one cycle at a time.
+          Below is the complete board &mdash; CPU chip, instruction ROM, data RAM,
+          memory bus, and UART &mdash; just like a real PCB. Click the{" "}
+          <strong className="text-gray-900 dark:text-white">Code</strong> button
+          on the ROM node to write C, Rust, or Assembly. The compiler produces a
+          RISC-V binary that loads directly into the ROM. Then step the clock and
+          watch your code execute through the 5-stage pipeline.
         </p>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
-          Watch the pipeline badges &mdash; five instructions in flight, each
-          in a different stage. Watch the registers change as results are
-          written back. Hover over any instruction in the disassembly to see
-          what it does.
+          Double-click the CPU to drill into its internals &mdash; you&rsquo;ll
+          see every pipeline register, every forwarding mux, every hazard signal.
+          Toggle switches, inspect values, rewind time. It&rsquo;s the same
+          circuit, all the way down.
         </p>
       </div>
 
-      <div className="mt-8 rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden">
-        <Suspense fallback={<DebuggerSkeleton />}>
-          <div className="h-[700px]">
-            <CPUDebugger />
+      <div className="mt-8">
+        {boardDsl ? (
+          <CircuitEmbed
+            dsl={boardDsl}
+            height={600}
+            showControls
+            title="RV32I CPU Board"
+            description="Click 'Code' on the ROM to load a program, then step the clock."
+          />
+        ) : (
+          <div className="h-[600px] rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-950 flex items-center justify-center">
+            <div className="flex items-center gap-3 text-gray-500">
+              <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-600 border-t-blue-400" />
+              Loading CPU board&hellip;
+            </div>
           </div>
-        </Suspense>
+        )}
       </div>
 
       <div className="mt-6 text-center">

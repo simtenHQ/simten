@@ -9,7 +9,7 @@
 
 "use client";
 
-import { useCallback, useState, useEffect, useRef } from "react";
+import { useCallback, useState, useEffect, useRef, useMemo } from "react";
 import {
   ReactFlowProvider,
   Canvas,
@@ -21,7 +21,7 @@ import {
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useCircuitStore, useDSLPreviewStore, useComponentLibraryStore } from "@turing-incomplete/ui/editor/stores";
 import { usePrimitivesInit } from "@turing-incomplete/ui/editor/hooks";
-import { useSimulationController } from "@turing-incomplete/ui/editor";
+import { useCircuitSession } from "@turing-incomplete/ui/canvas";
 import type { Circuit } from "@turing-incomplete/ui/editor/types";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
@@ -90,9 +90,6 @@ export function VisualEditor({ theme = "light" }: VisualEditorProps) {
   // Channel thinking state (separate from the API streaming system)
   const [channelThinking, setChannelThinking] = useState(false);
 
-  // Check if we need to show clock controls
-  const showClockControls = hasSequentialComponents(circuit, resolveComponent);
-
   // Initialize primitive components library
   usePrimitivesInit();
 
@@ -130,12 +127,19 @@ export function VisualEditor({ theme = "light" }: VisualEditorProps) {
     }
   }, []);
 
-  // Initialize simulation controller (THE ONLY PLACE THAT RUNS SIMULATION)
-  const simulationController = useSimulationController();
+  // ── Simulation — same hook as embeds, driven by DSL string ──
+  // Adapt store to ComponentLibrary interface
+  const componentLibrary = useMemo(() => ({
+    resolveComponent: useComponentLibraryStore.getState().resolveComponent,
+    getAllPrimitiveNames: useComponentLibraryStore.getState().getAllPrimitiveNames,
+  }), [resolveComponent]);
 
-  // Keep simulation controller in a ref so studio callbacks read fresh values
-  const simRef = useRef(simulationController);
-  simRef.current = simulationController;
+  const sim = useCircuitSession(circuit, componentLibrary);
+  const showClockControls = sim.isSequential;
+
+  // Keep sim state in ref for MCP callbacks
+  const simRef = useRef(sim);
+  simRef.current = sim;
 
   // Studio connection (WebSocket to MCP server)
   const { status: mcpStatus, sendToClaudePrompt } = useMCPConnection({
@@ -164,7 +168,7 @@ export function VisualEditor({ theme = "light" }: VisualEditorProps) {
 
   // Narrative context for chat
   const dslCode = dslEditorRef.current?.getCode() ?? "";
-  const narrativeContext = useNarrativeContext(dslCode);
+  const narrativeContext = useNarrativeContext(dslCode, sim.portValues ?? undefined);
 
   // Keyboard shortcuts for drawer toggles
   useEffect(() => {
@@ -363,7 +367,34 @@ export function VisualEditor({ theme = "light" }: VisualEditorProps) {
           {/* Right: Canvas (60%) - Full Height */}
           <div className="flex flex-1 flex-col">
             <div className="flex-1">
-              <Canvas theme={theme} renderEmptyState={renderEmptyState} />
+              <Canvas
+                theme={theme}
+                renderEmptyState={renderEmptyState}
+                portValues={sim.portValues}
+                sequentialState={sim.sequentialState}
+                onToggleNode={(nodeId) => {
+                  const pv = sim.portValues;
+                  const outKey = `${nodeId}.out`;
+                  const currentValue = pv.get(outKey);
+                  sim.setInput(nodeId, !currentValue);
+                  sim.runCombinational();
+                }}
+                onSetNodeValue={(nodeId, value) => {
+                  sim.setInput(nodeId, value);
+                  sim.runCombinational();
+                }}
+                onKeyboardInput={(nodeId, scanCode) => {
+                  const engine = sim.session?.getEngine();
+                  if (engine) engine.setInput(nodeId, scanCode);
+                }}
+                onLoadMemory={(nodeId, memData) => {
+                  const engine = sim.session?.getEngine();
+                  if (engine) {
+                    engine.setNode(nodeId, memData);
+                    sim.runCombinational();
+                  }
+                }}
+              />
             </div>
           </div>
         </div>
@@ -391,9 +422,23 @@ export function VisualEditor({ theme = "light" }: VisualEditorProps) {
         {/* Conditional Bottom Bar: Clock Controls (only for sequential circuits) */}
         {showClockControls && (
           <div className="flex items-center gap-4 border-t border-gray-200 dark:border-[#2a2a2e] bg-white dark:bg-[#1a1a1e] px-6 py-3 shadow-sm">
-            <ClockControls />
+            <ClockControls
+              cycle={sim.cycle}
+              historyLength={sim.history.length}
+              historyIndex={sim.historyIndex}
+              isRunning={sim.isRunning}
+              isViewingPast={sim.isViewingPast}
+              onStep={sim.tick}
+              onRun={() => sim.startAutoRun(5, { displayRate: 5 })}
+              onPause={() => sim.stopAutoRun()}
+              onReset={sim.reset}
+              onStepBack={() => sim.stepBack()}
+              onStepForward={() => sim.stepForward()}
+              onSeek={(i) => sim.seek(i)}
+              showScrubber={sim.history.length > 1}
+            />
             <div className="border-l border-gray-200 dark:border-[#2a2a2e] h-8" />
-            <SignalOutputPanel />
+            <SignalOutputPanel portValues={sim.portValues ?? undefined} />
           </div>
         )}
 
@@ -416,7 +461,7 @@ export function VisualEditor({ theme = "light" }: VisualEditorProps) {
               );
               if (node) {
                 useCircuitStore.getState().updateNode(node.id, { arguments: { ...node.arguments, value } });
-                simulationController.setInput(node.id, value);
+                sim.setInput(node.id, value);
               } else {
                 console.warn('[setInput] Node not found:', nodeName, 'in circuit with', currentCircuit.nodes.length, 'nodes');
               }
@@ -424,7 +469,7 @@ export function VisualEditor({ theme = "light" }: VisualEditorProps) {
           }}
           runSimulation={async (cycles) => {
             for (let i = 0; i < cycles; i++) {
-              simulationController.step();
+              sim.tick();
             }
           }}
           insertNode={(componentRef, label) => {

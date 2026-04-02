@@ -2,35 +2,34 @@
  * SignalOutputPanel
  *
  * Displays circuit output port values in real-time during simulation.
- * Reads from the port-values store (set by the simulator each tick).
+ * Pure presentational — receives portValues as a prop.
  */
 
 'use client';
 
-import { usePortValuesStore } from '../stores/port-values-store';
 import { useCircuitStore } from '../stores';
 
 function formatValue(value: number | boolean | undefined): string {
   if (value === undefined) return '—';
   if (typeof value === 'boolean') return value ? '1' : '0';
-  // Show hex for values > 255, decimal otherwise
   if (Math.abs(value) > 255) {
     return `0x${(value >>> 0).toString(16).toUpperCase().padStart(8, '0')}`;
   }
   return String(value);
 }
 
-export function SignalOutputPanel() {
-  const circuit = useCircuitStore((state) => state.circuit);
-  const portValues = usePortValuesStore((state) => state.portValues);
+export interface SignalOutputPanelProps {
+  portValues?: ReadonlyMap<string, boolean | number>;
+}
 
-  if (!circuit || circuit.outputs.length === 0) return null;
+export function SignalOutputPanel({ portValues }: SignalOutputPanelProps) {
+  const circuit = useCircuitStore((state) => state.circuit);
+
+  if (!circuit || circuit.outputs.length === 0 || !portValues) return null;
 
   return (
     <div className="flex items-center gap-3">
       {circuit.outputs.map((output) => {
-        // Port values store uses keys like "nodeId.portName"
-        // For top-level outputs, try common key patterns
         let value: number | boolean | undefined;
         for (const [key, val] of portValues) {
           if (key.endsWith(`.${output.name}`)) {

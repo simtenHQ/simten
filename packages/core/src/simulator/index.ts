@@ -90,6 +90,18 @@ export type {
 } from '../types/simulator.js';
 
 // ============================================================================
+// Simulation Session
+// ============================================================================
+
+export { SimulationSession } from './simulation-session.js';
+
+export type {
+  SessionSnapshot,
+  SimulationSessionState,
+  SimulationSessionOptions,
+} from './simulation-session.js';
+
+// ============================================================================
 // Primitive Interface Exports
 // ============================================================================
 
@@ -177,6 +189,7 @@ import type {
   FlatCircuit,
   FlatPortValueMap,
   FlatSequentialState,
+  PrimitiveState,
   SimulatorEngine,
   InitOptions,
   TickResult,
@@ -293,26 +306,49 @@ class FastSimulatorEngineImpl implements SimulatorEngine {
     this.cacheValid = false;
   }
 
-  setInput(name: string, value: BitValue | BusValue): void {
+  setNode(name: string, value: PrimitiveState): void {
     if (!this.flatCircuit || !this.numericCircuit) return;
 
     // First, check if this is a top-level input
     const topLevelKey = `${TOP_LEVEL_NODE}.${name}`;
     if (this.topLevelInputs.has(topLevelKey)) {
-      this.topLevelInputs.set(topLevelKey, value);
+      this.topLevelInputs.set(topLevelKey, value as BitValue | BusValue);
       this.cacheValid = false;
       return;
     }
 
-    // Otherwise, find a Switch/Input/Button node by name
+    // Find the node
     const node = this.flatCircuit.nodes.find(
       n => n.id === name || n.id.endsWith('.' + name)
     );
+    if (!node) return;
 
-    if (node) {
+    // If it has sequential state (ROM, RAM, Register, DFlipFlop) → write state
+    const idx = this.numericCircuit.nodeIdToIndex.get(node.id);
+    if (idx !== undefined && this.numericSeqState && this.numericSeqState.currentState[idx] !== undefined) {
+      this.numericSeqState.currentState[idx] = value;
+      this.cacheValid = false;
+      this.cachedFlatSeqState = null; // force recomputation
+
+      // Persist memory data so reset() preserves it (like flashing ROM)
+      if (value instanceof Map && this.options) {
+        if (!this.options.initialMemory) {
+          this.options.initialMemory = new Map();
+        }
+        this.options.initialMemory.set(node.id, value as Map<number, number>);
+      }
+      return;
+    }
+
+    // Otherwise → write arguments (Switch, Input, Button)
+    if (typeof value === 'boolean' || typeof value === 'number' || typeof value === 'string') {
       node.arguments = { ...node.arguments, value };
       this.cacheValid = false;
     }
+  }
+
+  setInput(name: string, value: BitValue | BusValue): void {
+    this.setNode(name, value);
   }
 
   setInputs(values: Map<string, BitValue | BusValue>): void {

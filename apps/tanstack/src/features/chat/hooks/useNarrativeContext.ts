@@ -8,7 +8,6 @@ import { useMemo } from 'react';
 import {
   useAnalysisStore,
   useComponentLibraryStore,
-  usePortValuesStore,
   useCircuitStore,
 } from '@turing-incomplete/ui/editor/stores';
 import type { Circuit } from '@turing-incomplete/ui/editor/types';
@@ -51,7 +50,7 @@ export interface NarrativeContextResult {
  * @param dslCode - Current DSL code from the editor
  * @returns Narrative context for LLM consumption
  */
-export function useNarrativeContext(dslCode: string): NarrativeContextResult {
+export function useNarrativeContext(dslCode: string, portValues?: ReadonlyMap<string, boolean | number>): NarrativeContextResult {
   const validationResult = useAnalysisStore((state) => state.validationResult);
   const metrics = useAnalysisStore((state) => state.metrics);
   const resolveComponent = useComponentLibraryStore(
@@ -60,7 +59,7 @@ export function useNarrativeContext(dslCode: string): NarrativeContextResult {
   const getAllPrimitiveNames = useComponentLibraryStore(
     (state) => state.getAllPrimitiveNames
   );
-  const portValues = usePortValuesStore((state) => state.portValues);
+  const portValuesMap = portValues ?? new Map();
   const circuit = useCircuitStore((state) => state.circuit);
 
   return useMemo(() => {
@@ -106,8 +105,8 @@ export function useNarrativeContext(dslCode: string): NarrativeContextResult {
     }
 
     // Add current port values if available (live simulation state)
-    if (portValues.size > 0) {
-      narrative += '\n' + formatCurrentPortValues(portValues);
+    if (portValuesMap.size > 0) {
+      narrative += '\n' + formatCurrentPortValues(portValuesMap as Map<string, boolean | number>);
     }
 
     // Enforce token budget
@@ -126,7 +125,7 @@ export function useNarrativeContext(dslCode: string): NarrativeContextResult {
     metrics,
     resolveComponent,
     getAllPrimitiveNames,
-    portValues,
+    portValuesMap,
     circuit,
   ]);
 }
