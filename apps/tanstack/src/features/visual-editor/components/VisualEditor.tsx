@@ -428,13 +428,20 @@ export function VisualEditor({ theme = "light" }: VisualEditorProps) {
               historyIndex={sim.historyIndex}
               isRunning={sim.isRunning}
               isViewingPast={sim.isViewingPast}
+              speed={sim.speed || 5}
+              maxSpeed={1000}
               onStep={sim.tick}
-              onRun={() => sim.startAutoRun(5, { displayRate: 5 })}
+              onRun={() => sim.startAutoRun(sim.speed || 5, { displayRate: 30 })}
               onPause={() => sim.stopAutoRun()}
               onReset={sim.reset}
               onStepBack={() => sim.stepBack()}
               onStepForward={() => sim.stepForward()}
               onSeek={(i) => sim.seek(i)}
+              onSpeedChange={(speed) => {
+                if (sim.isRunning) {
+                  sim.session?.setSpeed(speed);
+                }
+              }}
               showScrubber={sim.history.length > 1}
             />
             <div className="border-l border-gray-200 dark:border-[#2a2a2e] h-8" />
