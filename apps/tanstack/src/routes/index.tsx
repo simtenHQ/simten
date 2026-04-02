@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useCircuitSimulator } from "@turing-incomplete/embed";
+import { useCircuitSimulator, CircuitEmbed } from "@turing-incomplete/embed";
 import { CircuitCanvas } from "@turing-incomplete/ui/canvas";
 import { Logo } from "@/components/Logo";
 import { ClaudeCTA } from "@/features/splash/ClaudeCTA";
@@ -1467,21 +1467,20 @@ function DemoGallery() {
         {/* Row 1.6: Time-travel showcase */}
         <div className="mt-20 rounded-lg border border-border overflow-hidden bg-card">
           <div className="grid grid-cols-1 sm:grid-cols-[1.5fr_1fr]">
-            {/* Left: live circuit */}
-            <div style={{ height: 340 }}>
-              <DemoCircuit
-                dsl={SHIFT_REGISTER_DSL}
-                height={340}
-                nodePositions={{
-                  sw_in: { x: 10,  y: 140 },
-                  sr:    { x: 190, y: 100 },
-                  led0:  { x: 390, y: 10 },
-                  led1:  { x: 390, y: 90 },
-                  led2:  { x: 390, y: 170 },
-                  led3:  { x: 390, y: 250 },
-                }}
-              />
-            </div>
+            {/* Left: live circuit with full clock controls + time-travel */}
+            <CircuitEmbed
+              dsl={SHIFT_REGISTER_DSL}
+              height={340}
+              showControls
+              nodePositions={{
+                sw_in: { x: 10,  y: 140 },
+                sr:    { x: 190, y: 100 },
+                led0:  { x: 390, y: 10 },
+                led1:  { x: 390, y: 90 },
+                led2:  { x: 390, y: 170 },
+                led3:  { x: 390, y: 250 },
+              }}
+            />
 
             {/* Right: explanation */}
             <div className="flex flex-col justify-center px-6 py-8 sm:px-8 sm:border-l border-border">

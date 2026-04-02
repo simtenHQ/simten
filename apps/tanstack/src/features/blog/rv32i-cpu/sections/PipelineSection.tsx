@@ -132,6 +132,14 @@ export function PipelineSection() {
           each cycle. Toggle the stall switch to freeze it &mdash; that&rsquo;s
           what happens when a hazard is detected.
         </p>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
+          In the full CPU, the PC doesn&rsquo;t always increment by 4. A mux selects
+          between three sources: <strong className="text-gray-900 dark:text-gray-200">PC + 4</strong> for
+          sequential execution, <strong className="text-gray-900 dark:text-gray-200">PC + immediate</strong> for
+          branches and JAL, or <strong className="text-gray-900 dark:text-gray-200">register + immediate</strong> for
+          JALR (indirect jumps). When a branch is taken, the pipeline flushes the
+          wrongly-fetched instructions and redirects to the target address.
+        </p>
         <CircuitEmbed
           dsl={BLOG_CIRCUITS.programCounter.dsl}
           displayDsl={BLOG_CIRCUITS.programCounter.displayDsl}
@@ -139,6 +147,23 @@ export function PipelineSection() {
           title="Program Counter"
           description="Increments by 4 each clock cycle. Stall freezes the count."
         />
+
+        <div className="mt-6">
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
+            Here&rsquo;s the full version with the mux. Toggle <strong className="text-gray-900 dark:text-gray-200">branch</strong> to
+            redirect the PC to address 0x100, <strong className="text-gray-900 dark:text-gray-200">jump</strong> to
+            redirect to 0x400, or <strong className="text-gray-900 dark:text-gray-200">stall</strong> to freeze it entirely (like a load-use hazard).
+            Turn them off and the PC resumes incrementing by 4 from wherever it landed.
+          </p>
+          <CircuitEmbed
+            dsl={BLOG_CIRCUITS.pcWithMux.dsl}
+            displayDsl={BLOG_CIRCUITS.pcWithMux.displayDsl}
+            height={340}
+            showControls
+            title="PC with Next-PC Mux"
+            description="Toggle stall/branch/jump to see the three PC control paths."
+          />
+        </div>
       </div>
 
       {/* Pipeline Register circuit */}
