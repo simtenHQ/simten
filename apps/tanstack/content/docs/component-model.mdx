@@ -116,6 +116,7 @@ These components have **clocked state** that updates on the rising edge of `clk`
 | `ROM` | `addr: Bus[16]` | `data_out: Bus[8]` | `baseAddress` | Read-only, combinational read |
 | <PrimitiveLink name="RAM" /> | `addr`, `data_in`, `we: Bit` | `data_out` | `addressWidth` (8), `dataWidth` (8) | Single-port, combinational read, clocked write |
 | <PrimitiveLink name="DualPortRAM" /> | `addrA`, `dataA`, `weA: Bit`, `addrB` | `outA`, `outB` | `addressWidth` (8), `dataWidth` (8) | Port A reads/writes, port B read-only |
+| `DualPortROM` | `addrA: Bus[32]`, `addrB: Bus[32]` | `dataA: Bus[32]`, `dataB: Bus[32]` | — | Two independent read ports, one shared memory. Byte-addressable, returns 32-bit little-endian words. Used for architectures that need simultaneous instruction fetch and data read (e.g. `rv32i-board.dsl`). |
 
 Memory is initialized with the `init` parameter:
 

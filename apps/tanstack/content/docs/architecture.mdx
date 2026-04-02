@@ -123,34 +123,99 @@ Each clock tick executes five phases:
 
 The atomic commit in Phase 4 is what makes this match real hardware — all flip-flops and registers update at the same instant, just like a physical clock edge.
 
+## Simulation Session
+
+The `SimulationSession` is the orchestration layer between the UI and the engine. It wraps a `SimulatorEngine` and adds:
+
+```
+┌──────────────────────┐
+│     React UI         │  hooks, components
+└─────────┬────────────┘
+          │ subscribe / commands
+          ▼
+┌──────────────────────┐
+│  SimulationSession   │  history, time-travel, auto-run, batching
+└─────────┬────────────┘
+          │ tick / restore / setNode
+          ▼
+┌──────────────────────┐
+│   SimulatorEngine    │  pure computation (no React, no UI)
+└──────────────────────┘
+```
+
+### Time-travel
+
+Every `tick()` records a snapshot. Users can step back and forward through the history to inspect any clock cycle. The session maintains a ring buffer of snapshots (default 1000) with index-based navigation:
+
+- `stepBack()` / `stepForward()` — move one cycle
+- `seek(index)` — jump to any recorded cycle
+- Ticking while viewing the past truncates forward history (linear, no branching)
+
+Environmental state (switch positions, input values) is captured as opaque metadata in each snapshot and restored via callbacks when time-travelling.
+
+### Auto-run
+
+For continuous execution, `startAutoRun(ticksPerSecond, { displayRate })` runs the engine in a tight loop and only notifies React at the display rate. The RISC-V CPU can run at ~20,000 ticks/sec while the UI updates at 30fps — the engine does ~667 ticks per display frame.
+
+### setNode
+
+`engine.setNode(name, value)` is the unified API for setting any node's value. The engine dispatches based on node type:
+
+- **Switch/Input/Button** → sets `arguments.value` (combinational)
+- **ROM/RAM/Register** → sets sequential state directly
+
+This means loading a binary into ROM works the same as flipping a switch — one API call, no session reset. ROM data persists across reset (like real hardware — flash survives power cycle).
+
 ## Packages
 
 ```
-@turing-incomplete/core       ← headless: parser, compiler, simulator, verilog
+@turing-incomplete/core       ← headless: parser, compiler, simulator, session
        ↑
-@turing-incomplete/ui         ← visual: nodes, canvas, layout, editor
+@turing-incomplete/ui         ← visual: nodes, canvas, simulation hooks, editor
        ↑
-@turing-incomplete/embed      ← convenience: CircuitEmbed, web components
+@turing-incomplete/embed      ← convenience: CircuitEmbed, useCircuitSimulator
 ```
 
 | Package | Description |
 |---------|-------------|
-| `@turing-incomplete/core` | DSL parser, compiler, validator, simulator engine, Verilog export. No UI dependencies. |
-| `@turing-incomplete/ui` | React components — canonical node renderers, shared canvas, ELK layout, editor stores and controls. |
-| `@turing-incomplete/embed` | Batteries-included wrapper: `CircuitEmbed` (pass DSL, get interactive circuit), `useCircuitSimulator` hook, web component registration. Depends on core + ui. |
+| `@turing-incomplete/core` | DSL parser, compiler, validator, simulator engine, `SimulationSession`, environmental state, Verilog export. No UI dependencies. |
+| `@turing-incomplete/ui` | React components — canonical node renderers, shared canvas, ELK layout, `useCircuitSession` hook, `ClockControls`, editor UI. |
+| `@turing-incomplete/embed` | Batteries-included wrapper: `CircuitEmbed` (pass DSL, get interactive circuit), `useCircuitSimulator` hook, `useCompileDSL` hook. Depends on core + ui. |
 | `@turing-incomplete/mcp` | MCP server for Claude Code integration |
 | `@turing-incomplete/challenges` | Challenge definitions (ALU, Snake, CPU) |
+
+### Hooks
+
+Three hooks handle the simulation lifecycle. Each serves a different entry point:
+
+| Hook | Input | Purpose | Used by |
+|------|-------|---------|---------|
+| `useCircuitSession(circuit, library)` | Compiled circuit + library | Simulation only | Editor, inspector |
+| `useCompileDSL(dslCode)` | DSL text | Compilation only | Internal to useCircuitSimulator |
+| `useCircuitSimulator(dslCode)` | DSL text | Compile + simulate + UI sugar | Embeds, blog demos, landing page |
+
+The editor has its own compiler (the DSL editor with Monaco), so it passes the compiled circuit directly to `useCircuitSession`. Embeds don't have their own compiler, so they use `useCircuitSimulator` which compiles internally.
+
+Data flows one direction — from the compiler output to the simulation:
+
+```
+DSL Editor compiles → { circuits, library }
+                           ↓
+                  useCircuitSession → { portValues, tick, reset, history, ... }
+                           ↓
+                  CircuitCanvas (rendering)
+```
 
 ### Import paths
 
 | Import | Contents |
 |--------|----------|
-| `@turing-incomplete/embed` | `CircuitEmbed`, `useCircuitSimulator`, `CircuitCanvas` — everything needed to embed a circuit |
+| `@turing-incomplete/core/simulator` | `SimulationSession`, `SimulatorEngine`, `PRIMITIVE_DEFINITIONS`, `PRIMITIVES`, `createSimulatorFromCircuit`, `captureEnvironmentalState`, `restoreEnvironmentalState` |
+| `@turing-incomplete/embed` | `CircuitEmbed`, `useCircuitSimulator`, `useCompileDSL` — everything needed to embed a circuit |
+| `@turing-incomplete/ui/canvas` | `CircuitCanvas`, `useCircuitSession`, `useSimulationSession`, `ClockControls` — shared simulation UI |
 | `@turing-incomplete/ui/nodes` | `BaseNode`, `InputNode`, `OutputNode`, `LogicGateNode`, `NodeData` — canonical node components (props-driven, store-free) |
-| `@turing-incomplete/ui/shared` | `CircuitCanvas`, `WaveformViewer`, `TestResultsPanel` — shared rendering |
-| `@turing-incomplete/ui/editor` | Full editor kit — Zustand stores, component palette, diagnostics, simulation controller |
 
-Node components live in `@turing-incomplete/ui/nodes` and are the single source of truth — both the embed and the editor use them. The embed re-exports them at `@turing-incomplete/embed/nodes` for external consumers.
+Node components live in `@turing-incomplete/ui/nodes` and are the single source of truth — both the embed and the editor use them.
 
 ## MCP Integration
 
