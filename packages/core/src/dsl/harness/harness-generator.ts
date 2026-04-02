@@ -42,15 +42,7 @@ export function extractCircuitInterface(dslCode: string): CircuitInterface | nul
   const circuits = extractCircuitBlocks(dslCode);
   if (circuits.length === 0) return null;
 
-  // Work backwards to find the last circuit with interface ports
-  for (let i = circuits.length - 1; i >= 0; i--) {
-    const iface = parseCircuitInterface(circuits[i].name, circuits[i].body);
-    if (iface.inputs.length > 0 || iface.outputs.length > 0) {
-      return iface;
-    }
-  }
-
-  // Fallback: return the last circuit even if it has no ports
+  // Always use the last circuit (the "top-level" circuit the user intends to simulate)
   const last = circuits[circuits.length - 1];
   return parseCircuitInterface(last.name, last.body);
 }
