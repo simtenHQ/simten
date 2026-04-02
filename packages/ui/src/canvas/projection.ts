@@ -49,6 +49,7 @@ function getNodeTypeForComponent(componentRef: string, inputCount: number, outpu
     NIC_FIFO: 'nicFifoNode',
     Constant: 'logicGateNode',
     RV32I_InstrMem: 'rv32iInstrMemNode',
+    DualPortROM: 'rv32iInstrMemNode',
     Eth_FrameInput: 'ethFrameInputNode',
   };
 

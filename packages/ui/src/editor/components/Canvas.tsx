@@ -13,8 +13,6 @@
 import React, { useCallback, useEffect } from "react";
 
 import { useCircuitStore } from "../stores/circuit-store";
-import { useSequentialStateStore } from "../stores/sequential-state-store";
-import { usePortValuesStore } from "../stores/port-values-store";
 import { useComponentLibraryStore } from "../stores/component-library-store";
 
 import { CircuitCanvas, NODE_TYPES, EDGE_TYPES } from "../../canvas";
@@ -70,12 +68,16 @@ interface CanvasProps {
   renderEmptyState?: () => React.ReactNode;
   theme?: "light" | "dark";
   nodePositions?: Record<string, { x: number; y: number }>;
+  portValues?: ReadonlyMap<string, boolean | number> | null;
+  sequentialState?: import("@turing-incomplete/core/simulator").FlatSequentialState | null;
+  onToggleNode?: (nodeId: string) => void;
+  onSetNodeValue?: (nodeId: string, value: number) => void;
+  onKeyboardInput?: (nodeId: string, scanCode: number) => void;
+  onLoadMemory?: (nodeId: string, data: Map<number, number>) => void;
 }
 
-export function Canvas({ renderEmptyState, theme = "light", nodePositions }: CanvasProps) {
+export function Canvas({ renderEmptyState, theme = "light", nodePositions, portValues, sequentialState, onToggleNode, onSetNodeValue, onKeyboardInput, onLoadMemory }: CanvasProps) {
   const circuit = useCircuitStore((state) => state.circuit);
-  const seqState = useSequentialStateStore((state) => state.seqState);
-  const portValues = usePortValuesStore((state) => state.portValues);
 
   const hasNodes = (circuit?.nodes?.length ?? 0) > 0;
   const resolveComponent = useComponentLibraryStore((s) => s.resolveComponent);
@@ -86,25 +88,6 @@ export function Canvas({ renderEmptyState, theme = "light", nodePositions }: Can
     resolveComponent,
     getAllPrimitiveNames,
   }), [resolveComponent, getAllPrimitiveNames]);
-
-  const handleToggleNode = useCallback((nodeId: string) => {
-    const node = useCircuitStore.getState().getNode(nodeId);
-    if (node) {
-      const currentValue = node.arguments.value;
-      useCircuitStore.getState().updateNode(nodeId, {
-        arguments: { ...node.arguments, value: typeof currentValue === 'boolean' ? !currentValue : !currentValue },
-      });
-    }
-  }, []);
-
-  const handleSetNodeValue = useCallback((nodeId: string, value: number) => {
-    const node = useCircuitStore.getState().getNode(nodeId);
-    if (node) {
-      useCircuitStore.getState().updateNode(nodeId, {
-        arguments: { ...node.arguments, value },
-      });
-    }
-  }, []);
 
   // Keyboard scan code handler for Input nodes
   useEffect(() => {
@@ -139,11 +122,8 @@ export function Canvas({ renderEmptyState, theme = "light", nodePositions }: Can
       );
 
       keyboardNodes.forEach((node) => {
-        const currentNode = useCircuitStore.getState().getNode(node.id);
-        if (currentNode) {
-          useCircuitStore.getState().updateNode(node.id, {
-            arguments: { ...currentNode.arguments, value: scanCode },
-          });
+        if (onKeyboardInput) {
+          onKeyboardInput(node.id, scanCode);
         }
       });
 
@@ -152,16 +132,17 @@ export function Canvas({ renderEmptyState, theme = "light", nodePositions }: Can
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [circuit]);
+  }, [circuit, onKeyboardInput]);
 
   return (
     <CircuitCanvas
       circuit={circuit}
       componentLibrary={componentLibrary}
-      portValues={portValues}
-      sequentialState={seqState}
-      onToggleNode={handleToggleNode}
-      onSetNodeValue={handleSetNodeValue}
+      portValues={portValues as Map<string, boolean | number> | undefined}
+      sequentialState={sequentialState}
+      onToggleNode={onToggleNode}
+      onSetNodeValue={onSetNodeValue}
+      onLoadMemory={onLoadMemory}
       autoLayout={nodePositions ? false : true}
       nodeTypes={NODE_TYPES}
       edgeTypes={EDGE_TYPES}

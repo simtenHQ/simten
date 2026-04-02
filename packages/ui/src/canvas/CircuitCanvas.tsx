@@ -81,6 +81,7 @@ export interface CircuitCanvasProps {
   metadata?: MetadataState;
   onToggleNode?: (nodeId: string) => void;
   onSetNodeValue?: (nodeId: string, value: number) => void;
+  onLoadMemory?: (nodeId: string, data: Map<number, number>) => void;
   onNodeDoubleClick?: (nodeData: NodeData) => void;
   height?: number | string;
   focus?: string | string[];
@@ -138,6 +139,7 @@ function CircuitCanvasInner({
   metadata: metadataProp,
   onToggleNode,
   onSetNodeValue,
+  onLoadMemory,
   onNodeDoubleClick: onNodeDoubleClickProp,
   height = "100%",
   focus,
@@ -229,6 +231,9 @@ function CircuitCanvasInner({
       ) {
         data.onToggle = () => onToggleNode(node.id);
       }
+      if (onLoadMemory && (componentRef === "RV32I_InstrMem" || componentRef === "DualPortROM")) {
+        data.onLoadMemory = (memData: Map<number, number>) => onLoadMemory(node.id, memData);
+      }
 
       return { ...node, data };
     });
@@ -278,6 +283,7 @@ function CircuitCanvasInner({
     sequentialState,
     onToggleNode,
     onSetNodeValue,
+    onLoadMemory,
     focusLabels,
     showPortLabels,
     onPortClickProp,

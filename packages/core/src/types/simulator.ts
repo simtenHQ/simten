@@ -231,7 +231,12 @@ export interface SimulatorEngine {
   // Initialization
   initialize(circuit: FlatCircuit, options: InitOptions): void;
 
-  // Input control
+  // Node value control
+  /** Set any node's value. The engine dispatches based on node type:
+   *  - Input/Switch/Button → sets arguments.value (combinational)
+   *  - ROM/RAM/Register/DFlipFlop → sets sequential state */
+  setNode(name: string, value: PrimitiveState): void;
+  /** @deprecated Use setNode instead */
   setInput(name: string, value: BitValue | BusValue): void;
   setInputs(values: Map<string, BitValue | BusValue>): void;
 

@@ -5,7 +5,9 @@ import { compileDSL, type ComponentLibrary as DSLComponentLibrary } from "@turin
 import {
   createSimulator,
   elaborate,
+  SimulationSession,
   PRIMITIVES,
+  type SimulationSessionState,
   type SimulatorEngine,
   type ComponentLibrary,
   type FlatCircuit,
@@ -49,6 +51,11 @@ export interface SimulatorState {
   sequentialState: FlatSequentialState | null;
   /** The component library used by this simulator instance (includes user-defined circuits) */
   componentLibrary: ComponentLibrary | null;
+  /** Session state — time-travel, auto-run */
+  history: readonly { engineSnapshot: unknown; metadata?: unknown }[];
+  historyIndex: number;
+  isViewingPast: boolean;
+  isRunning: boolean;
 }
 
 export interface SimulatorActions {
@@ -58,6 +65,13 @@ export interface SimulatorActions {
   setNodeValue: (nodeId: string, value: number) => void;
   tick: () => void;
   reset: () => void;
+  stepBack: () => void;
+  stepForward: () => void;
+  seek: (index: number) => void;
+  startAutoRun: (ticksPerSecond: number, options?: { displayRate?: number; onBeforeTick?: () => void }) => void;
+  stopAutoRun: () => void;
+  /** Run combinational propagation (after setNode, etc.) */
+  runCombinational: () => void;
   /** Direct access to the simulator engine for performance-critical loops */
   getSimulator: () => SimulatorEngine | null;
 }
@@ -66,13 +80,26 @@ export interface UseCircuitSimulatorOptions {
   initialMemory?: Map<string, Map<number, number>>;
 }
 
+const EMPTY_SESSION_STATE = {
+  portValues: new Map() as ReadonlyMap<string, boolean | number>,
+  sequentialState: null as FlatSequentialState | null,
+  cycle: 0,
+  isSequential: false,
+  history: [] as readonly [],
+  historyIndex: -1,
+  isViewingPast: false,
+  isRunning: false,
+  speed: 0,
+};
+const getEmptySessionState = () => EMPTY_SESSION_STATE;
+
 /**
  * Standalone circuit simulator hook.
  *
  * Per-instance component library — each hook call creates its own library
  * to prevent cross-contamination when multiple embeds exist on the same page.
  *
- * Data flow: create library → compile DSL → elaborate → create simulator
+ * Internally uses SimulationSession for tick/reset/time-travel/auto-run.
  */
 export function useCircuitSimulator(
   dslCode: string,
@@ -80,18 +107,17 @@ export function useCircuitSimulator(
 ): SimulatorState & SimulatorActions {
   const flatCircuitRef = useRef<FlatCircuit | null>(null);
   const compiledCircuitRef = useRef<Circuit | null>(null);
-  const simulatorRef = useRef<SimulatorEngine | null>(null);
   const libraryRef = useRef<ComponentLibrary | null>(null);
+  const sessionRef = useRef<SimulationSession | null>(null);
+  // Session in state so useSyncExternalStore re-subscribes when session changes
+  const [session, setSession] = useState<SimulationSession | null>(null);
 
   const [outputs, setOutputs] = useState<Record<string, boolean | number>>({});
   const [inputs, setInputs] = useState<Record<string, boolean | number>>({});
-  const [cycleCount, setCycleCount] = useState(0);
   const [ready, setReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isSequential, setIsSequential] = useState(false);
+  const [isSequentialFlag, setIsSequentialFlag] = useState(false);
   const [circuit, setCircuit] = useState<Circuit | null>(null);
-  const [portValues, setPortValues] = useState<FlatPortValueMap | null>(null);
-  const [sequentialState, setSequentialState] = useState<FlatSequentialState | null>(null);
 
   const initialMemory = options?.initialMemory;
 
@@ -99,10 +125,14 @@ export function useCircuitSimulator(
   useEffect(() => {
     setReady(false);
     setError(null);
-    setCycleCount(0);
     flatCircuitRef.current = null;
-    simulatorRef.current = null;
     compiledCircuitRef.current = null;
+
+    // Dispose previous session
+    if (sessionRef.current) {
+      sessionRef.current.dispose();
+      sessionRef.current = null;
+    }
 
     if (!dslCode) return;
 
@@ -150,35 +180,49 @@ export function useCircuitSimulator(
           }
         }
       }
-      setIsSequential(hasClocks);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
-    }
-  }, [dslCode]);
+      setIsSequentialFlag(hasClocks);
 
-  // Create simulator when compiled circuit or initialMemory changes
-  useEffect(() => {
-    const flatCircuit = flatCircuitRef.current;
-    const library = libraryRef.current;
-    if (!flatCircuit || !library) return;
-
-    simulatorRef.current = null;
-    setReady(false);
-    setCycleCount(0);
-
-    try {
-      const simulator = createSimulator(flatCircuit, {
+      // Create simulator + session
+      const simulator = createSimulator(elaboratedCircuit, {
         componentLibrary: library,
         initialMemory,
       });
-      simulatorRef.current = simulator;
-      setSequentialState(simulator.getState());
+      simulator.runCombinational();
+
+      const session = new SimulationSession(simulator, {
+        isSequential: hasClocks,
+      });
+      sessionRef.current = session;
+      setSession(session);
       setReady(true);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     }
+
+    return () => {
+      if (sessionRef.current) {
+        sessionRef.current.dispose();
+        sessionRef.current = null;
+        setSession(null);
+      }
+    };
   }, [dslCode, initialMemory]);
 
+  // Subscribe to session state
+  const [sessionState, setSessionState] = useState<SimulationSessionState>(getEmptySessionState);
+
+  useEffect(() => {
+    if (!session) {
+      setSessionState(getEmptySessionState());
+      return;
+    }
+    setSessionState(session.getState());
+    return session.subscribe(() => {
+      setSessionState(session.getState());
+    });
+  }, [session]);
+
+  // Extract outputs from portValues
   const extractOutputs = useCallback((simPortValues: ReadonlyMap<string, boolean | number>) => {
     const newOutputs: Record<string, boolean | number> = {};
     const circ = compiledCircuitRef.current;
@@ -194,29 +238,28 @@ export function useCircuitSimulator(
     }
 
     setOutputs(newOutputs);
-    setPortValues(simPortValues as FlatPortValueMap);
   }, []);
 
-  const syncInputsAndRun = useCallback((currentInputs: Record<string, boolean | number>) => {
-    const simulator = simulatorRef.current;
-    if (!simulator || !flatCircuitRef.current) return;
-
-    for (const [inputName, value] of Object.entries(currentInputs)) {
-      simulator.setInput(inputName, value);
-    }
-
-    const result = simulator.runCombinational();
-    if (result.error) {
-      setError(result.error);
-      return;
-    }
-
-    extractOutputs(simulator.getPortValues());
-  }, [extractOutputs]);
-
+  // Sync outputs when session state changes
   useEffect(() => {
-    if (ready) syncInputsAndRun(inputs);
-  }, [ready, inputs, syncInputsAndRun]);
+    if (ready && sessionState.portValues.size > 0) {
+      extractOutputs(sessionState.portValues);
+    }
+  }, [ready, sessionState.portValues, extractOutputs]);
+
+  // Sync inputs to engine and run combinational when inputs change
+  useEffect(() => {
+    const session = sessionRef.current;
+    if (!ready || !session) return;
+
+    for (const [inputName, value] of Object.entries(inputs)) {
+      session.setInput(inputName, value);
+    }
+
+    if (!isSequentialFlag) {
+      session.runCombinational();
+    }
+  }, [ready, inputs, isSequentialFlag]);
 
   const setInput = useCallback((name: string, value: boolean | number) => {
     setInputs(prev => ({ ...prev, [name]: value }));
@@ -231,59 +274,45 @@ export function useCircuitSimulator(
   }, []);
 
   const toggleNode = useCallback((nodeId: string) => {
-    const simulator = simulatorRef.current;
-    if (!simulator || !flatCircuitRef.current) return;
+    const session = sessionRef.current;
+    const flatCircuit = flatCircuitRef.current;
+    if (!session || !flatCircuit) return;
 
-    const node = flatCircuitRef.current.nodes.find(n => n.id === nodeId);
+    const node = flatCircuit.nodes.find(n => n.id === nodeId);
     if (!node) return;
 
     const currentValue = node.arguments?.value;
     const newValue = typeof currentValue === 'boolean' ? !currentValue : (currentValue === 1 ? 0 : 1);
 
-    simulator.setInput(nodeId, newValue);
-    const result = simulator.runCombinational();
-    if (result.error) { setError(result.error); return; }
-
-    setPortValues(simulator.getPortValues() as FlatPortValueMap);
+    session.setInput(nodeId, newValue);
+    session.runCombinational();
   }, []);
 
   const setNodeValue = useCallback((nodeId: string, value: number) => {
-    const simulator = simulatorRef.current;
-    if (!simulator || !flatCircuitRef.current) return;
+    const session = sessionRef.current;
+    if (!session) return;
 
-    simulator.setInput(nodeId, value);
-    const result = simulator.runCombinational();
-    if (result.error) { setError(result.error); return; }
-
-    setPortValues(simulator.getPortValues() as FlatPortValueMap);
+    session.setInput(nodeId, value);
+    session.runCombinational();
   }, []);
 
   const tick = useCallback(() => {
-    const simulator = simulatorRef.current;
-    if (!ready || !simulator || !flatCircuitRef.current) return;
+    const session = sessionRef.current;
+    if (!ready || !session) return;
 
+    // Sync inputs before ticking
     for (const [inputName, value] of Object.entries(inputs)) {
-      simulator.setInput(inputName, value);
+      session.setInput(inputName, value);
     }
 
-    simulator.tick();
-
-    const seqState = simulator.getState();
-    if (seqState) {
-      setCycleCount(seqState.cycleCount);
-      setSequentialState(seqState);
-    }
-
-    extractOutputs(simulator.getPortValues());
-  }, [ready, inputs, extractOutputs]);
+    session.tick();
+  }, [ready, inputs]);
 
   const reset = useCallback(() => {
-    const simulator = simulatorRef.current;
-    if (!simulator || !compiledCircuitRef.current) return;
+    const session = sessionRef.current;
+    if (!session || !compiledCircuitRef.current) return;
 
-    simulator.reset();
-    setCycleCount(0);
-    setSequentialState(simulator.getState());
+    session.reset();
 
     const initialInputs: Record<string, boolean | number> = {};
     for (const input of compiledCircuitRef.current.inputs) {
@@ -295,20 +324,34 @@ export function useCircuitSimulator(
   return {
     outputs,
     inputs,
-    cycleCount,
+    cycleCount: sessionState.cycle,
     ready,
     error,
-    isSequential,
+    isSequential: isSequentialFlag,
     circuit,
-    portValues,
-    sequentialState,
+    portValues: (sessionState.portValues.size > 0 ? sessionState.portValues : null) as FlatPortValueMap | null,
+    sequentialState: sessionState.sequentialState,
     componentLibrary: libraryRef.current,
+    // Session state
+    history: sessionState.history,
+    historyIndex: sessionState.historyIndex,
+    isViewingPast: sessionState.isViewingPast,
+    isRunning: sessionState.isRunning,
+    // Actions
     setInput,
     toggleInput,
     toggleNode,
     setNodeValue,
     tick,
     reset,
-    getSimulator: useCallback(() => simulatorRef.current, []),
+    stepBack: useCallback(() => { sessionRef.current?.stepBack(); }, []),
+    stepForward: useCallback(() => { sessionRef.current?.stepForward(); }, []),
+    seek: useCallback((index: number) => { sessionRef.current?.seek(index); }, []),
+    startAutoRun: useCallback((tps: number, opts?: { displayRate?: number; onBeforeTick?: () => void }) => {
+      sessionRef.current?.startAutoRun(tps, opts);
+    }, []),
+    stopAutoRun: useCallback(() => { sessionRef.current?.stopAutoRun(); }, []),
+    runCombinational: useCallback(() => { sessionRef.current?.runCombinational(); }, []),
+    getSimulator: useCallback(() => sessionRef.current?.getEngine() ?? null, []),
   };
 }

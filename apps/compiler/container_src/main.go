@@ -120,7 +120,7 @@ SECTIONS {
         *(.text*)
     } > IMEM
 
-    .rodata : { *(.rodata*) } > DMEM
+    .rodata : { *(.rodata*) } > IMEM
 
     .data : { *(.data*) } > DMEM
 

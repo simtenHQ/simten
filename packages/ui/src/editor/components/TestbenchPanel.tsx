@@ -28,12 +28,27 @@ import {
 } from 'lucide-react';
 import { Button } from '../../primitives/button';
 import { useTestbenchStore } from '../stores/testbench-store';
-import { useSimulationController } from '../simulation/use-simulation-controller';
-import { simulationController } from '../simulation/simulation-controller';
 import { initializeCaptureData, collectPortValues } from '../lib/testing/testbench-runner';
 import { useCircuitStore } from '../stores/circuit-store';
+import type { SimulationSession } from '@turing-incomplete/core/simulator';
 
-export function TestbenchPanel() {
+export interface TestbenchPanelProps {
+  step?: () => void;
+  reset?: () => void;
+  setInput?: (nodeId: string, value: number) => void;
+  getSession?: () => SimulationSession | null;
+}
+
+const noop = () => {};
+const noopInput = (_id: string, _v: number) => {};
+const noopSession = () => null;
+
+export function TestbenchPanel({
+  step = noop,
+  reset = noop,
+  setInput = noopInput,
+  getSession = noopSession,
+}: TestbenchPanelProps = {}) {
   const testbench = useTestbenchStore((state) => state.testbench);
   const executionState = useTestbenchStore((state) => state.executionState);
   const getCurrentStimulus = useTestbenchStore((state) => state.getCurrentStimulus);
@@ -43,9 +58,6 @@ export function TestbenchPanel() {
   const getTestStatus = useTestbenchStore((state) => state.getTestStatus);
   const getProgress = useTestbenchStore((state) => state.getProgress);
   const clearTestbench = useTestbenchStore((state) => state.clearTestbench);
-
-  // Get simulation controller API
-  const { step, reset, setInput } = useSimulationController();
 
   // Get testbench store actions
   const advanceCycle = useTestbenchStore((state) => state.advanceCycle);
@@ -93,7 +105,8 @@ export function TestbenchPanel() {
     if (captureDataRef.current && circuit) {
       const currentCycle = getCurrentCycle();
       // Get fresh port values directly from controller (not from React hook which may be stale)
-      const freshPortValues = simulationController.getPortValues();
+      const engine = getSession()?.getEngine();
+      const freshPortValues = engine?.getPortValues() ?? new Map();
       const portValuesMap = new Map<string, number | boolean>();
       for (const [key, value] of freshPortValues.entries()) {
         portValuesMap.set(key, value);
