@@ -1355,53 +1355,54 @@ function CopyCommand({ command }: { command: string }) {
 
 function DemoGallery() {
   return (
-    <div className="px-4 py-10 md:py-20 md:animate-in md:fade-in md:duration-700">
-      <div className="max-w-7xl mx-auto">
-        <div className="mb-12 text-center">
-          <h2 className="text-2xl sm:text-3xl font-semibold text-foreground mb-2">
-            Every circuit is live
+    <div className="relative px-4 py-16 md:py-24 md:animate-in md:fade-in md:duration-700 overflow-hidden">
+
+      <div className="relative max-w-7xl mx-auto">
+        {/* Bridge headline */}
+        <div className="mb-20 text-center max-w-2xl mx-auto">
+          <h2 className="text-2xl sm:text-3xl font-semibold text-foreground tracking-tight">
+            Text in. Live circuit out. All in your browser.
           </h2>
-          <p className="text-muted-foreground text-[15px]">
-            Click switches, watch signals propagate, step through clock cycles — all simulated from logic gates in your browser.
-          </p>
         </div>
 
-        {/* Row 1: live circuits */}
-        <h3 className="text-lg font-semibold text-foreground mb-1 mt-2">Build anything from gates to games</h3>
-        <p className="text-[13px] text-muted-foreground/60 mb-4">Interactive circuits you can click, toggle, and explore</p>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+        {/* Row 1: Featured demo (asymmetric) */}
+        <div className="grid grid-cols-1 sm:grid-cols-[1.4fr_1fr] gap-4 mb-4">
           <LiveCircuitCard
             title="Half Adder"
             subtitle="4 nodes · 6 connections"
-            description="XOR for sum, AND for carry. The building block of every adder."
+            description="XOR for sum, AND for carry — the foundation of digital arithmetic."
             harness={DEMO_HARNESS}
             href="/editor"
+            height={300}
             nodePositions={{
               sw_a:     { x: 10,  y: 10 },
-              sw_b:     { x: 10,  y: 130 },
-              dut:      { x: 185, y: 70 },
-              led_sum:  { x: 360, y: 10 },
-              led_carry:{ x: 360, y: 130 },
+              sw_b:     { x: 10,  y: 170 },
+              dut:      { x: 220, y: 90 },
+              led_sum:  { x: 430, y: 10 },
+              led_carry:{ x: 430, y: 170 },
             }}
           />
-          <LiveCircuitCard
-            title="2-bit Counter"
-            subtitle="4 nodes · 8 connections"
-            description="Two flip-flops with toggle logic. Counts 00 → 01 → 10 → 11 → repeat."
-            harness={COUNTER_HARNESS}
-            href="/editor"
-            nodePositions={{
-              clk:  { x: 10,  y: 70 },
-              dut:  { x: 190, y: 50 },
-              led0: { x: 375, y: 10 },
-              led1: { x: 375, y: 135 },
-            }}
-          />
-          <SnakeCard />
+          <div className="flex flex-col gap-4">
+            <LiveCircuitCard
+              title="2-bit Counter"
+              subtitle="Sequential · clock-driven"
+              description="Two flip-flops count 00 → 01 → 10 → 11 → repeat."
+              harness={COUNTER_HARNESS}
+              href="/editor"
+              height={140}
+              nodePositions={{
+                clk:  { x: 10,  y: 40 },
+                dut:  { x: 160, y: 20 },
+                led0: { x: 310, y: 5 },
+                led1: { x: 310, y: 75 },
+              }}
+            />
+            <SnakeCard />
+          </div>
         </div>
 
         {/* Row 1.5: Drill-down showcase */}
-        <div className="mt-20 rounded-lg border border-border overflow-hidden bg-card">
+        <div className="mt-32 rounded-lg border border-border overflow-hidden bg-card">
           <div className="grid grid-cols-1 sm:grid-cols-[1fr_1.5fr]">
             {/* Left: explanation */}
             <div className="flex flex-col justify-center px-6 py-8 sm:px-8 sm:border-r border-border">
@@ -1465,7 +1466,7 @@ function DemoGallery() {
         </div>
 
         {/* Row 1.6: Time-travel showcase */}
-        <div className="mt-20 rounded-lg border border-border overflow-hidden bg-card">
+        <div className="mt-24 rounded-lg border border-border overflow-hidden bg-card">
           <div className="grid grid-cols-1 sm:grid-cols-[1.5fr_1fr]">
             {/* Left: live circuit with full clock controls + time-travel */}
             <CircuitEmbed
@@ -1518,7 +1519,7 @@ function DemoGallery() {
         </div>
 
         {/* Row 2: complex demos */}
-        <h3 className="text-lg font-semibold text-foreground mb-1 mt-20">Scale to real-world complexity</h3>
+        <h3 className="text-lg font-semibold text-foreground mb-1 mt-36">Scale to real-world complexity</h3>
         <p className="text-[13px] text-muted-foreground/60 mb-4">Full CPUs, networked systems, hundreds of nodes</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <ComplexDemoCard
