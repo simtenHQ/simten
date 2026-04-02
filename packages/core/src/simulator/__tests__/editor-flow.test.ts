@@ -370,6 +370,53 @@ describe('Editor flow: DSL → Session → Tick', () => {
     session.dispose();
   });
 
+  it('compile result library resolves composites for simulation', () => {
+    // Simulates the editor flow: DSL editor compiles, passes library to simulation
+    const { session, library } = compileAndCreateSession(`
+      circuit HalfAdder {
+        input a: Bit
+        input b: Bit
+        output sum: Bit
+        output carry: Bit
+        impl {
+          node xor1: Xor
+          node and1: And
+          connect a -> xor1.a
+          connect b -> xor1.b
+          connect xor1.out -> sum
+          connect a -> and1.a
+          connect b -> and1.b
+          connect and1.out -> carry
+        }
+      }
+
+      circuit Demo {
+        impl {
+          node sw_a: Switch
+          node sw_b: Switch
+          node ha: HalfAdder
+          node led_sum: Led
+          node led_carry: Led
+          connect sw_a.out -> ha.a
+          connect sw_b.out -> ha.b
+          connect ha.sum -> led_sum.in
+          connect ha.carry -> led_carry.in
+        }
+      }
+    `);
+
+    // Library should resolve both primitives and user composites
+    expect(library.resolveComponent('And')).toBeDefined();
+    expect(library.resolveComponent('HalfAdder')).toBeDefined();
+    expect(library.resolveComponent('NonExistent')).toBeUndefined();
+
+    // Simulation works with the compile library
+    const pv = session.getState().portValues;
+    expect(readDisplay(pv, 'led_sum')).toBe(false);
+
+    session.dispose();
+  });
+
   it('DSL recompile creates fresh session (simulates editor flow)', () => {
     // First compile
     const { session: session1 } = compileAndCreateSession(`
