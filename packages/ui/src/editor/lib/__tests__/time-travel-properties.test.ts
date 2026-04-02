@@ -7,7 +7,7 @@
 
 import { describe, it, expect } from 'vitest';
 import * as fc from 'fast-check';
-import { PRIMITIVE_EVALUATORS } from '../primitive-registry';
+import { PRIMITIVE_EVALUATORS } from '@turing-incomplete/core/simulator';
 
 // ============================================================================
 // Time Travel State Consistency Tests

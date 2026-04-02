@@ -13,7 +13,7 @@ import type {
   Connection,
 } from '../types';
 import { getComponentSpec, WIRE_COLORS } from '../types';
-import { PRIMITIVE_DEFINITIONS } from './primitive-registry';
+import { PRIMITIVE_DEFINITIONS } from '@turing-incomplete/core/simulator';
 
 /**
  * Port position calculation

@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { compileTestbenchToIR, compileCircuitToIR, parseDSLOrThrow } from '@turing-incomplete/core/dsl';
 import { runTestbench } from '../testing/testbench-runner';
 import { useComponentLibraryStore } from '../../stores/component-library-store';
-import { PRIMITIVES } from '../primitive-registry';
+import { PRIMITIVES } from '@turing-incomplete/core/simulator';
 import { generateVCD } from '../visualization/vcd-generator';
 import * as fs from 'fs';
 import * as path from 'path';

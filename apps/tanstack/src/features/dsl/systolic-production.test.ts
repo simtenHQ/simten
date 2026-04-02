@@ -18,7 +18,7 @@ import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import { compileDSL, type ComponentLibrary, type Circuit as DslCircuit } from './index';
 import { useComponentLibraryStore } from '@turing-incomplete/ui/editor/stores';
-import { getPrimitives } from '@turing-incomplete/ui/editor/lib';
+import { PRIMITIVES } from '@turing-incomplete/ui/editor/lib';
 import type { Circuit } from '@turing-incomplete/ui/editor/types';
 
 describe('Systolic Array - Production Implementations', () => {
@@ -27,7 +27,7 @@ describe('Systolic Array - Production Implementations', () => {
   beforeEach(() => {
     library = useComponentLibraryStore.getState();
     library.clearAll();
-    library.registerPrimitives(getPrimitives());
+    library.registerPrimitives(PRIMITIVES as any[]);
   });
 
   // Component library adapter

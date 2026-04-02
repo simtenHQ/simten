@@ -7,7 +7,7 @@ import { useDSLPreviewStore } from '../dsl-preview-store';
 import { useComponentLibraryStore } from '../component-library-store';
 import { useCircuitStore } from '../circuit-store';
 import type { Circuit } from '../../types/circuit';
-import { BOUNDARY_IN_PREFIX, BOUNDARY_OUT_PREFIX } from '../../utils/drill-down-view';
+import { BOUNDARY_IN_PREFIX, BOUNDARY_OUT_PREFIX } from '../../../canvas/drill-down-view';
 
 /** Re-read store state after mutations */
 const getState = () => useDSLPreviewStore.getState();

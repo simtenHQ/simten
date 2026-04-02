@@ -19,7 +19,7 @@ import {
   type ComponentLibrary,
 } from "@turing-incomplete/core/simulator";
 import { useComponentLibraryStore } from "@turing-incomplete/ui/editor/stores";
-import { getPrimitives } from "@turing-incomplete/ui/editor/lib";
+import { PRIMITIVES } from "@turing-incomplete/ui/editor/lib";
 import type { Circuit } from "@turing-incomplete/ui/editor/types";
 import { SYSTOLIC_3X3_DSL } from "../circuits";
 
@@ -83,7 +83,7 @@ describe("3x3 Systolic Array", () => {
   beforeEach(() => {
     store = useComponentLibraryStore.getState();
     store.clearAll();
-    store.registerPrimitives(getPrimitives());
+    store.registerPrimitives(PRIMITIVES as any[]);
     library = new ComponentLibraryAdapter(store);
   });
 
