@@ -203,12 +203,20 @@ export const CircuitEmbed = forwardRef<CircuitEmbedHandle, CircuitEmbedProps>(fu
           historyIndex={sim.historyIndex}
           isRunning={sim.isRunning}
           isViewingPast={sim.isViewingPast}
+          speed={sim.isRunning ? (1000 / autoRunSpeed) : 5}
+          maxSpeed={100}
           onStep={sim.tick}
           onRun={() => sim.startAutoRun(1000 / autoRunSpeed, { displayRate: 30 })}
           onPause={sim.stopAutoRun}
           onReset={handleReset}
           onStepBack={sim.stepBack}
           onStepForward={sim.stepForward}
+          onSpeedChange={(speed) => {
+            if (sim.isRunning) {
+              sim.stopAutoRun();
+              sim.startAutoRun(speed, { displayRate: 30 });
+            }
+          }}
         />
       )}
 
