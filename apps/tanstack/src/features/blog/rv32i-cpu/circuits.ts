@@ -60,6 +60,95 @@ circuit DemoProgramCounter {
 }`,
   },
 
+  pcWithMux: {
+    name: "PC with Next-PC Mux",
+    description:
+      "The full program counter with a mux selecting between PC+4, branch target, and jump target. Stall freezes the PC.",
+    displayDsl: `circuit PCWithMux {
+  input stall: Bit
+  input branch_taken: Bit
+  input jump: Bit
+  input branch_target: Bus[32]
+  input jump_target: Bus[32]
+  output pc_out: Bus[32]
+  impl {
+    node pc: Register(width=32)
+    node four: Constant(value=4, width=32)
+    node adder: Adder(width=32)
+    node stall_inv: Not
+
+    // PC + 4 (sequential)
+    connect pc.q -> adder.a
+    connect four.out -> adder.b
+
+    // Stall: freeze PC when hazard detected
+    connect stall -> stall_inv.in
+    connect stall_inv.out -> pc.we
+
+    // Mux: branch_taken selects branch_target over PC+4
+    node branch_mux: Mux(width=32)
+    connect adder.sum -> branch_mux.in0
+    connect branch_target -> branch_mux.in1
+    connect branch_taken -> branch_mux.sel
+
+    // Mux: jump selects jump_target over branch result
+    node jump_mux: Mux(width=32)
+    connect branch_mux.out -> jump_mux.in0
+    connect jump_target -> jump_mux.in1
+    connect jump -> jump_mux.sel
+
+    connect jump_mux.out -> pc.data
+    connect pc.q -> pc_out
+  }
+}`,
+    dsl: `circuit PCWithMux {
+  input stall: Bit
+  input branch_taken: Bit
+  input jump: Bit
+  input branch_target: Bus[32]
+  input jump_target: Bus[32]
+  output pc_out: Bus[32]
+  impl {
+    node pc: Register(width=32)
+    node four: Constant(value=4, width=32)
+    node adder: Adder(width=32)
+    node stall_inv: Not
+    connect pc.q -> adder.a
+    connect four.out -> adder.b
+    connect stall -> stall_inv.in
+    connect stall_inv.out -> pc.we
+    node branch_mux: Mux(width=32)
+    connect adder.sum -> branch_mux.in0
+    connect branch_target -> branch_mux.in1
+    connect branch_taken -> branch_mux.sel
+    node jump_mux: Mux(width=32)
+    connect branch_mux.out -> jump_mux.in0
+    connect jump_target -> jump_mux.in1
+    connect jump -> jump_mux.sel
+    connect jump_mux.out -> pc.data
+    connect pc.q -> pc_out
+  }
+}
+
+circuit DemoPCWithMux {
+  impl {
+    node stall_sw: Switch
+    node branch_sw: Switch
+    node jump_sw: Switch
+    node branch_addr: Input(value=256)
+    node jump_addr: Input(value=1024)
+    node pc: PCWithMux
+    node address: HexDisplay(width=32)
+    connect stall_sw.out -> pc.stall
+    connect branch_sw.out -> pc.branch_taken
+    connect jump_sw.out -> pc.jump
+    connect branch_addr.out -> pc.branch_target
+    connect jump_addr.out -> pc.jump_target
+    connect pc.pc_out -> address.in
+  }
+}`,
+  },
+
   pipelineRegister: {
     name: "Pipeline Register",
     description:
