@@ -10,11 +10,11 @@ import {
   getPrimitiveMetadata,
   getPrimitivesByCategory,
 } from '../simulation/primitive-metadata';
-import { getPrimitives } from '../primitive-registry';
+import { PRIMITIVES } from '@turing-incomplete/core/simulator';
 
 describe('Primitive Metadata', () => {
   it('should have metadata for all primitives', () => {
-    const primitives = getPrimitives();
+    const primitives = PRIMITIVES as any[];
     const primitiveNames = primitives.map((p) => p.name);
 
     // Check that all primitives have metadata
@@ -27,7 +27,7 @@ describe('Primitive Metadata', () => {
   });
 
   it('should have metadata for exactly the same number of primitives as defined', () => {
-    const primitives = getPrimitives();
+    const primitives = PRIMITIVES as any[];
     const metadataKeys = Object.keys(PRIMITIVE_METADATA);
 
     // Metadata count should match primitive count
@@ -68,7 +68,7 @@ describe('Primitive Metadata', () => {
       (sum, primitives) => sum + primitives.length,
       0
     );
-    const primitives = getPrimitives();
+    const primitives = PRIMITIVES as any[];
     expect(totalCategorized).toBe(primitives.length);
   });
 

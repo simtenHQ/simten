@@ -95,6 +95,12 @@ export type {
 
 export { SimulationSession } from './simulation-session.js';
 
+export {
+  captureEnvironmentalState,
+  restoreEnvironmentalState,
+  type EnvironmentalStateValue,
+} from './environmental-state.js';
+
 export type {
   SessionSnapshot,
   SimulationSessionState,

@@ -10,8 +10,7 @@ import { immer } from 'zustand/middleware/immer';
 import { enableMapSet } from 'immer';
 import type { Circuit } from '../types/circuit';
 import { clearReferenceCircuitCache, getCompiledReferenceCircuit } from '../utils/reference-circuit-cache';
-import { getPrimitives } from '../lib/primitive-registry';
-import { PRIMITIVE_DEFINITIONS } from '@turing-incomplete/core/simulator';
+import { PRIMITIVES, PRIMITIVE_DEFINITIONS } from '@turing-incomplete/core/simulator';
 
 // Enable Immer's MapSet plugin for Map/Set support
 enableMapSet();
@@ -184,7 +183,7 @@ export const useComponentLibraryStore = create<ComponentLibraryStore>()(
 
     initializeLibrary: () => {
       if (get().library.primitives.size > 0) return; // already initialized
-      const primitives = getPrimitives();
+      const primitives = PRIMITIVES as Circuit[];
       set((state) => {
         for (const circuit of primitives) {
           state.library.primitives.set(circuit.name, circuit);
