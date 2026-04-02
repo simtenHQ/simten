@@ -9,7 +9,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { parseDSL, compileToIR, type ComponentLibrary as DSLComponentLibrary } from '@turing-incomplete/core/dsl';
 import { createSimulatorFromCircuit, type ComponentLibrary, type FlatSequentialState } from '@turing-incomplete/core/simulator';
 import { useComponentLibraryStore } from '../../stores/component-library-store';
-import { getPrimitives } from '../primitive-registry';
+import { PRIMITIVES } from '@turing-incomplete/core/simulator';
 import * as fs from 'fs';
 import * as path from 'path';
 import type { Circuit } from '../../types/circuit';
@@ -47,7 +47,7 @@ describe('SnakeAdvanced - Pixel Address Storage (4 Phases)', () => {
   beforeEach(() => {
     store = useComponentLibraryStore.getState();
     store.clearAll();
-    store.registerPrimitives(getPrimitives());
+    store.registerPrimitives(PRIMITIVES as any[]);
     library = new ComponentLibraryAdapter(store);
 
     // Load SnakeAdvanced.dsl

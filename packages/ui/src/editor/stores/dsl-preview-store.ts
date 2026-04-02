@@ -16,7 +16,7 @@ import { immer } from 'zustand/middleware/immer';
 import type { Circuit } from '../types/circuit';
 import { useCircuitStore } from './circuit-store';
 import { useComponentLibraryStore } from './component-library-store';
-import { createDrillDownViewCircuit } from '../utils/drill-down-view';
+import { createDrillDownViewCircuit } from '../../canvas/drill-down-view';
 
 /**
  * Hash function for DSL version tracking

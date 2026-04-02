@@ -10,7 +10,7 @@
  * - Evaluate assertions (Phase 5)
  *
  * Integration:
- * - Uses flat simulator (elaborate + runFlatSimulationTick)
+ * - Uses core SimulatorEngine (createSimulatorFromCircuit + tick)
  * - Applies stimulus via node.arguments.value manipulation
  * - Integrates with time-travel system (stimulus is environmental state)
  */
@@ -27,12 +27,11 @@ import {
   signalKey,
 } from '../../types/testbench';
 import { Circuit, Node, BitValue, BusValue } from '../../types/circuit';
-import { elaborate, FlatCircuit } from '../elaboration';
 import {
-  runFlatSimulationTick,
-  initializeFlatSequentialState,
+  createSimulatorFromCircuit,
+  type SimulatorEngine,
   type FlatPortValueMap,
-} from '../flat-simulator';
+} from '@turing-incomplete/core/simulator';
 import { useComponentLibraryStore } from '../../stores/component-library-store';
 import { writeVCDToFile } from '../visualization/vcd-generator';
 import type { SimulationTrace } from '@turing-incomplete/core/dsl';
@@ -42,18 +41,17 @@ import type { SimulationTrace } from '@turing-incomplete/core/dsl';
 // ============================================================================
 
 /**
- * Sync environmental values (Input/Switch/Button) from live circuit to flat circuit
+ * Sync environmental values (Input/Switch/Button) from circuit to engine
  */
-function syncEnvironmentalValues(flatCircuit: FlatCircuit, liveCircuit: Circuit): void {
-  for (const flatNode of flatCircuit.nodes) {
+function syncEnvironmentalValues(engine: SimulatorEngine, circuit: Circuit): void {
+  for (const node of circuit.nodes) {
     if (
-      flatNode.primitiveType === 'Input' ||
-      flatNode.primitiveType === 'Switch' ||
-      flatNode.primitiveType === 'Button'
+      node.componentRef === 'Input' ||
+      node.componentRef === 'Switch' ||
+      node.componentRef === 'Button'
     ) {
-      const liveNode = liveCircuit.nodes.find((n) => n.id === flatNode.id);
-      if (liveNode && liveNode.arguments.value !== undefined) {
-        flatNode.arguments = { ...flatNode.arguments, value: liveNode.arguments.value };
+      if (node.arguments.value !== undefined) {
+        engine.setInput(node.id, node.arguments.value as boolean | number);
       }
     }
   }
@@ -75,14 +73,9 @@ export function runTestbench(
   const circuit = testbench.circuit;
   const library = useComponentLibraryStore.getState();
 
-  // Elaborate circuit (flatten composites)
-  const flatCircuit = elaborate(circuit, library);
-
-  // Initialize sequential state
-  let seqState = initializeFlatSequentialState(flatCircuit);
-
-  // Track port values between ticks for O(K) change detection
-  let previousPortValues: FlatPortValueMap | undefined;
+  // Create simulator from circuit
+  const engine = createSimulatorFromCircuit(circuit, library);
+  engine.runCombinational();
 
   // Initialize capture data if configured
   if (testbench.capture) {
@@ -96,32 +89,20 @@ export function runTestbench(
     // Apply stimulus for this cycle (modifies circuit nodes)
     applyStimulusForCycle(circuit, testbench.stimulus, cycle);
 
-    // Sync environmental values from circuit to flat circuit
-    syncEnvironmentalValues(flatCircuit, circuit);
+    // Sync environmental values to engine
+    syncEnvironmentalValues(engine, circuit);
 
-    // Run one simulation tick with previous port values for O(K) change detection
-    const result = runFlatSimulationTick(flatCircuit, seqState, previousPortValues);
-
-    // Check for simulation errors
-    if (result.error) {
-      state.status = 'failed';
-      state.failureReason = result.error;
-      break;
-    }
-
-    // Update sequential state and port values for next tick
-    if (result.sequentialState) {
-      seqState = result.sequentialState;
-    }
-    previousPortValues = result.portValues;
+    // Run one simulation tick
+    const result = engine.tick();
+    const portValues = engine.getPortValues() as FlatPortValueMap;
 
     // Collect port values for capture
     if (state.captureData) {
-      collectPortValues(circuit, state.captureData, cycle, result.portValues);
+      collectPortValues(circuit, state.captureData, cycle, portValues);
     }
 
     // Store current port values in state
-    updatePortValuesFromFlat(state, result.portValues);
+    updatePortValuesFromFlat(state, portValues);
 
     // TODO Phase 5: Evaluate assertions
     // if (testbench.assertions) {
@@ -166,12 +147,10 @@ export function runTestbenchWithTrace(
   const circuit = testbench.circuit;
   const library = useComponentLibraryStore.getState();
 
-  const flatCircuit = elaborate(circuit, library);
-  let seqState = initializeFlatSequentialState(flatCircuit);
-  let previousPortValues: FlatPortValueMap | undefined;
+  const engine = createSimulatorFromCircuit(circuit, library);
+  engine.runCombinational();
 
   // Per-signal value arrays: key -> value per sampled cycle.
-  // Both the raw flat-simulator key and any bare-name aliases are stored here.
   const signalArrays: Record<string, (BitValue | BusValue)[]> = {};
   const sampledCycles: number[] = [];
   let actualCycles = 0;
@@ -179,29 +158,17 @@ export function runTestbenchWithTrace(
   for (let cycle = 0; cycle < cycles; cycle++) {
     state.cycle = cycle;
     applyStimulusForCycle(circuit, testbench.stimulus, cycle);
-    syncEnvironmentalValues(flatCircuit, circuit);
+    syncEnvironmentalValues(engine, circuit);
 
-    const result = runFlatSimulationTick(flatCircuit, seqState, previousPortValues);
-
-    if (result.error) {
-      state.status = 'failed';
-      state.failureReason = result.error;
-      break;
-    }
-
-    if (result.sequentialState) {
-      seqState = result.sequentialState;
-    }
-    previousPortValues = result.portValues;
-    updatePortValuesFromFlat(state, result.portValues);
+    engine.tick();
+    const portValues = engine.getPortValues() as FlatPortValueMap;
+    updatePortValuesFromFlat(state, portValues);
 
     // Accumulate per-cycle values for the trace.
-    // For each flat-simulator key, also record under any bare-name alias so
-    // that assertion conditions can reference signals by their port name alone.
     sampledCycles.push(cycle);
     actualCycles = cycle + 1;
 
-    for (const [key, value] of result.portValues.entries()) {
+    for (const [key, value] of portValues.entries()) {
       // Raw key
       if (!signalArrays[key]) signalArrays[key] = [];
       signalArrays[key].push(value);

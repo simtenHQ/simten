@@ -7,7 +7,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { createSimulatorFromCircuit, type ComponentLibrary } from '@turing-incomplete/core/simulator';
 import { useComponentLibraryStore } from '../../stores/component-library-store';
-import { getPrimitives } from '../primitive-registry';
+import { PRIMITIVES } from '@turing-incomplete/core/simulator';
 import { bitType, busType, type Circuit } from '../../types/circuit';
 
 function getLibrary(): ComponentLibrary {
@@ -24,7 +24,7 @@ describe('Screen Integration', () => {
   beforeEach(() => {
     library = useComponentLibraryStore.getState();
     library.clearAll();
-    library.registerPrimitives(getPrimitives());
+    library.registerPrimitives(PRIMITIVES as any[]);
   });
 
   it('should work with empty circuit (no RAM)', () => {

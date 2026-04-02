@@ -9,7 +9,8 @@
  * @see primitives.ts - The single source of truth for all primitives
  */
 
-import { PRIMITIVE_DEFINITIONS, generateMetadata } from '../primitive-registry';
+import { PRIMITIVE_DEFINITIONS } from '@turing-incomplete/core/simulator';
+import { generateMetadata } from '../create-component';
 
 export interface PrimitiveMetadata {
   category: string;

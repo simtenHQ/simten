@@ -7,7 +7,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { elaborate } from '../elaboration';
 import { useComponentLibraryStore } from '../../stores/component-library-store';
-import { getPrimitives } from '../primitive-registry';
+import { PRIMITIVES } from '@turing-incomplete/core/simulator';
 import type { Circuit } from '../../types/circuit';
 
 describe('Elaboration Bug - Composite Connections Disappearing', () => {
@@ -16,7 +16,7 @@ describe('Elaboration Bug - Composite Connections Disappearing', () => {
   beforeEach(() => {
     store = useComponentLibraryStore.getState();
     store.clearAll();
-    store.registerPrimitives(getPrimitives());
+    store.registerPrimitives(PRIMITIVES as any[]);
   });
 
   it('correctly handles composite with no external connections', () => {

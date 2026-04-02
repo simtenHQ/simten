@@ -9,7 +9,7 @@ import { describe, it, expect, beforeAll } from 'vitest';
 import { Circuit, bitType, busType } from '../../types/circuit';
 import { createSimulatorFromCircuit, type ComponentLibrary } from '@turing-incomplete/core/simulator';
 import { useComponentLibraryStore } from '../../stores/component-library-store';
-import { getPrimitives } from '../primitive-registry';
+import { PRIMITIVES } from '@turing-incomplete/core/simulator';
 
 function getLibrary(): ComponentLibrary {
   const store = useComponentLibraryStore.getState();
@@ -24,7 +24,7 @@ describe('Nested Sequential Components', () => {
     // Register primitives first (required for nested components to work)
     const store = useComponentLibraryStore.getState();
     store.clearAll();
-    store.registerPrimitives(getPrimitives());
+    store.registerPrimitives(PRIMITIVES as any[]);
 
     // Register the circuits so they can be instantiated as components
     const registerCircuit: Circuit = {

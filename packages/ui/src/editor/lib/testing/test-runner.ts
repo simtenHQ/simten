@@ -10,8 +10,7 @@
 
 import type { Circuit, Node } from '../../types/circuit';
 import type { TestCase, TestResult, OutputComparison } from '../../types/testing';
-import { elaborate } from '../elaboration';
-import { runFlatCombinationalSimulation } from '../flat-simulator';
+import { createSimulatorFromCircuit } from '@turing-incomplete/core/simulator';
 import { useComponentLibraryStore } from '../../stores/component-library-store';
 
 interface LabeledSwitch {
@@ -139,10 +138,10 @@ export function runTestCase(
       }
     }
 
-    // Elaborate and run flat simulation to propagate values
+    // Create simulator and run combinational propagation
     const library = useComponentLibraryStore.getState();
-    const flatCircuit = elaborate(testCircuit, library);
-    const simulationResult = runFlatCombinationalSimulation(flatCircuit);
+    const engine = createSimulatorFromCircuit(testCircuit, library);
+    const simulationResult = engine.runCombinational();
 
     // Compare output values (LEDs)
     const comparisons: OutputComparison[] = [];

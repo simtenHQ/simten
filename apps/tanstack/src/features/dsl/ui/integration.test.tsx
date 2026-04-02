@@ -6,7 +6,7 @@
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import { useComponentLibraryStore } from '@turing-incomplete/ui/editor/stores';
-import { getPrimitives } from '@turing-incomplete/ui/editor/lib';
+import { PRIMITIVES } from '@turing-incomplete/ui/editor/lib';
 import { compileDSL } from '../index';
 
 describe('DSL Editor Integration', () => {
@@ -16,7 +16,7 @@ describe('DSL Editor Integration', () => {
     store.clearAll();
 
     // Register primitives
-    const primitives = getPrimitives();
+    const primitives = PRIMITIVES as any[];
     store.registerPrimitives(primitives);
   });
 

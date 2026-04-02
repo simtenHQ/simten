@@ -15,7 +15,7 @@ import {
   type ComponentLibrary,
 } from "@turing-incomplete/core/simulator";
 import { useComponentLibraryStore } from "@turing-incomplete/ui/editor/stores";
-import { getPrimitives } from "@turing-incomplete/ui/editor/lib";
+import { PRIMITIVES } from "@turing-incomplete/ui/editor/lib";
 import type { Circuit } from "@turing-incomplete/ui/editor/types";
 import { SYSTOLIC_2X2_DSL as SYSTOLIC_DSL } from "../circuits";
 
@@ -58,7 +58,7 @@ describe("Systolic Array Circuit", () => {
   beforeEach(() => {
     store = useComponentLibraryStore.getState();
     store.clearAll();
-    store.registerPrimitives(getPrimitives());
+    store.registerPrimitives(PRIMITIVES as any[]);
     library = new ComponentLibraryAdapter(store);
   });
 

@@ -7,7 +7,8 @@
  * For circuit/simulation types (the actual IR), use @/core/simulator.
  */
 
-import { isPrimitive, PRIMITIVES } from '../lib/primitive-registry';
+import { PRIMITIVE_DEFINITIONS, PRIMITIVES } from '@turing-incomplete/core/simulator';
+const isPrimitive = (name: string) => name in PRIMITIVE_DEFINITIONS;
 
 // ===========================
 // Component Type Definitions
