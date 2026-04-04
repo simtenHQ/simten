@@ -1,36 +1,11 @@
 // Auto-generated from DSL
 
-const SimpleArbiter2Port = component('SimpleArbiter2Port')
-  .in('port0_ready', bit)
-  .in('port1_ready', bit)
-  .in('forwarder_done', bit)
-  .out('grant_port', bus(8))
-  .out('grant_valid', bit)
-  .node('last_port', Register)
-  .node('grant_port_reg', Register)
-  .node('grant_valid_reg', Register)
-  .node('ZERO', Input, { value: 0 })
-  .node('ONE', Input, { value: 1 })
-  .node('last_was_port0', Comparator)
-  .node('last_was_port1', Comparator)
-  .node('prefer_port1', And)
-  .node('not_port1_ready', Not)
-  .node('fallback_port0', And)
-  .node('fallback_port0_ready', And)
-  .node('prefer_port0', And)
-  .node('not_port0_ready', Not)
-  .node('fallback_port1', And)
-  .node('fallback_port1_ready', And)
-  .node('grant_port0_signal', Or)
-  .node('grant_port1_signal', Or)
-  .node('grant_valid_signal', Or)
-  .node('grant_port_mux', Mux)
-  .node('grant_valid_we', Input, { value: 1 })
-  .node('grant_port_we', Input, { value: 1 })
-  .node('next_last_port', Mux)
-  .node('last_port_we', Input, { value: 1 })
-  .node('last_port_display', HexDisplay)
-  .connect(({ in: inp, out, last_port, grant_port_reg, grant_valid_reg, ZERO, ONE, last_was_port0, last_was_port1, prefer_port1, not_port1_ready, fallback_port0, fallback_port0_ready, prefer_port0, not_port0_ready, fallback_port1, fallback_port1_ready, grant_port0_signal, grant_port1_signal, grant_valid_signal, grant_port_mux, grant_valid_we, grant_port_we, next_last_port, last_port_we, last_port_display }) => [
+const SimpleArbiter2Port = component('SimpleArbiter2Port', {
+  in: { port0_ready: bit, port1_ready: bit, forwarder_done: bit },
+  out: { grant_port: bus(8), grant_valid: bit },
+  nodes: { last_port: Register, grant_port_reg: Register, grant_valid_reg: Register, ZERO: Input, ONE: Input, last_was_port0: Comparator, last_was_port1: Comparator, prefer_port1: And, not_port1_ready: Not, fallback_port0: And, fallback_port0_ready: And, prefer_port0: And, not_port0_ready: Not, fallback_port1: And, fallback_port1_ready: And, grant_port0_signal: Or, grant_port1_signal: Or, grant_valid_signal: Or, grant_port_mux: Mux, grant_valid_we: Input, grant_port_we: Input, next_last_port: Mux, last_port_we: Input, last_port_display: HexDisplay },
+  nodeArgs: { ZERO: { value: 0 }, ONE: { value: 1 }, grant_valid_we: { value: 1 }, grant_port_we: { value: 1 }, last_port_we: { value: 1 } },
+  connect: ({ in: inp, out, last_port, grant_port_reg, grant_valid_reg, ZERO, ONE, last_was_port0, last_was_port1, prefer_port1, not_port1_ready, fallback_port0, fallback_port0_ready, prefer_port0, not_port0_ready, fallback_port1, fallback_port1_ready, grant_port0_signal, grant_port1_signal, grant_valid_signal, grant_port_mux, grant_valid_we, grant_port_we, next_last_port, last_port_we, last_port_display }) => [
     last_port.q.to(last_was_port0.a, last_was_port1.a, next_last_port.in0, last_port_display.in),
     ZERO.out.to(last_was_port0.b, grant_port_mux.in0),
     ONE.out.to(last_was_port1.b, grant_port_mux.in1),
@@ -57,5 +32,5 @@ const SimpleArbiter2Port = component('SimpleArbiter2Port')
     inp.forwarder_done.to(next_last_port.sel),
     next_last_port.out.to(last_port.data),
     last_port_we.out.to(last_port.we),
-  ])
-  .build()
+  ],
+})

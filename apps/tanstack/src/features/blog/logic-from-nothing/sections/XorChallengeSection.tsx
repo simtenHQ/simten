@@ -44,15 +44,9 @@ out   = NAND(left, right)`}</pre>
           "final: connect left.out -> final.a and right.out -> final.b, then final.out -> light.in",
         ]}
         scaffold={`
-const XorFromNand = component('XorFromNand')
-  .node('A', Switch)
-  .node('B', Switch)
-  .node('mid', Nand)
-  .node('left', Nand)
-  .node('right', Nand)
-  .node('final', Nand)
-  .node('light', Led)
-  .build()
+const XorFromNand = component('XorFromNand', {
+  nodes: { A: Switch, B: Switch, mid: Nand, left: Nand, right: Nand, final: Nand, light: Led },
+})
 `}
         checks={[
           { description: "XOR(0,0) = 0", node: "light", port: "in", expected: 0, inputs: [["A", 0], ["B", 0]] },

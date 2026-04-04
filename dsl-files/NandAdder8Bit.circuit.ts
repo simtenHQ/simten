@@ -1,16 +1,11 @@
 // Auto-generated from DSL
 
-const HalfAdder = component('HalfAdder')
-  .in('a', bit)
-  .in('b', bit)
-  .out('sum', bit)
-  .out('carry', bit)
-  .node('n1', Nand)
-  .node('n2', Nand)
-  .node('n3', Nand)
-  .node('n4', Nand)
-  .node('n5', Nand)
-  .connect(({ in: inp, out, n1, n2, n3, n4, n5 }) => [
+const HalfAdder = component('HalfAdder', {
+  in: { a: bit, b: bit },
+  out: { sum: bit, carry: bit },
+  meta: { description: "Half adder from 5 NAND gates" },
+  nodes: { n1: Nand, n2: Nand, n3: Nand, n4: Nand, n5: Nand },
+  connect: ({ in: inp, out, n1, n2, n3, n4, n5 }) => [
     inp.a.to(n1.a, n2.a),
     inp.b.to(n1.b, n3.b),
     n1.out.to(n2.b, n3.a, n5.a, n5.b),
@@ -18,21 +13,15 @@ const HalfAdder = component('HalfAdder')
     n3.out.to(n4.b),
     n4.out.to(out.sum),
     n5.out.to(out.carry),
-  ])
-  .build()
+  ],
+})
 
-const FullAdder = component('FullAdder')
-  .in('a', bit)
-  .in('b', bit)
-  .in('cin', bit)
-  .out('sum', bit)
-  .out('cout', bit)
-  .node('ha1', HalfAdder)
-  .node('ha2', HalfAdder)
-  .node('nc1', Nand)
-  .node('nc2', Nand)
-  .node('nor', Nand)
-  .connect(({ in: inp, out, ha1, ha2, nc1, nc2, nor }) => [
+const FullAdder = component('FullAdder', {
+  in: { a: bit, b: bit, cin: bit },
+  out: { sum: bit, cout: bit },
+  meta: { description: "Full adder from 2 NAND half adders + 3-NAND OR gate (13 NANDs)" },
+  nodes: { ha1: HalfAdder, ha2: HalfAdder, nc1: Nand, nc2: Nand, nor: Nand },
+  connect: ({ in: inp, out, ha1, ha2, nc1, nc2, nor }) => [
     inp.a.to(ha1.a),
     inp.b.to(ha1.b),
     ha1.sum.to(ha2.a),
@@ -43,27 +32,16 @@ const FullAdder = component('FullAdder')
     nc1.out.to(nor.a),
     nc2.out.to(nor.b),
     nor.out.to(out.cout),
-  ])
-  .build()
+  ],
+})
 
-const Adder8Bit = component('Adder8Bit')
-  .in('a', bus(8))
-  .in('b', bus(8))
-  .out('sum', bus(8))
-  .out('carry_out', bit)
-  .node('split_a', Splitter8to8)
-  .node('split_b', Splitter8to8)
-  .node('fa0', FullAdder)
-  .node('fa1', FullAdder)
-  .node('fa2', FullAdder)
-  .node('fa3', FullAdder)
-  .node('fa4', FullAdder)
-  .node('fa5', FullAdder)
-  .node('fa6', FullAdder)
-  .node('fa7', FullAdder)
-  .node('gnd', Constant, { value: 0 })
-  .node('combine', Combiner8to8)
-  .connect(({ in: inp, out, split_a, split_b, fa0, fa1, fa2, fa3, fa4, fa5, fa6, fa7, gnd, combine }) => [
+const Adder8Bit = component('Adder8Bit', {
+  in: { a: bus(8), b: bus(8) },
+  out: { sum: bus(8), carry_out: bit },
+  meta: { description: "8-bit ripple carry adder from 8 NAND-only full adders (104 NANDs)" },
+  nodes: { split_a: Splitter8to8, split_b: Splitter8to8, fa0: FullAdder, fa1: FullAdder, fa2: FullAdder, fa3: FullAdder, fa4: FullAdder, fa5: FullAdder, fa6: FullAdder, fa7: FullAdder, gnd: Constant, combine: Combiner8to8 },
+  nodeArgs: { gnd: { value: 0 } },
+  connect: ({ in: inp, out, split_a, split_b, fa0, fa1, fa2, fa3, fa4, fa5, fa6, fa7, gnd, combine }) => [
     inp.a.to(split_a.in),
     inp.b.to(split_b.in),
     gnd.out.to(fa0.cin),
@@ -100,21 +78,17 @@ const Adder8Bit = component('Adder8Bit')
     fa6.sum.to(combine.bit6),
     fa7.sum.to(combine.bit7),
     combine.out.to(out.sum),
-  ])
-  .build()
+  ],
+})
 
-const Adder8BitDemo = component('Adder8BitDemo')
-  .node('a', Input, { value: 42 })
-  .node('b', Input, { value: 73 })
-  .node('adder', Adder8Bit)
-  .node('led_carry', Led)
-  .node('display_a', HexDisplay)
-  .node('display_b', HexDisplay)
-  .node('display_sum', HexDisplay)
-  .connect(({ in: inp, out, a, b, adder, led_carry, display_a, display_b, display_sum }) => [
+const Adder8BitDemo = component('Adder8BitDemo', {
+  meta: { description: "Interactive 8-bit NAND adder — change inputs, see result, drill down to gates" },
+  nodes: { a: Input, b: Input, adder: Adder8Bit, led_carry: Led, display_a: HexDisplay, display_b: HexDisplay, display_sum: HexDisplay },
+  nodeArgs: { a: { value: 42 }, b: { value: 73 } },
+  connect: ({ in: inp, out, a, b, adder, led_carry, display_a, display_b, display_sum }) => [
     a.out.to(adder.a, display_a.in),
     b.out.to(adder.b, display_b.in),
     adder.sum.to(display_sum.in),
     adder.carry_out.to(led_carry.in),
-  ])
-  .build()
+  ],
+})

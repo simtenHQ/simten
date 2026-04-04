@@ -1,38 +1,11 @@
 // Auto-generated from DSL
 
-const ALU = component('ALU')
-  .in('a', bus(8))
-  .in('b', bus(8))
-  .in('op', bus(3))
-  .in('carry_in', bit)
-  .out('result', bus(8))
-  .out('carry_out', bit)
-  .out('zero', bit)
-  .out('negative', bit)
-  .node('adder', Adder)
-  .node('subtractor', Subtractor)
-  .node('and_op', BusAnd)
-  .node('or_op', BusOr)
-  .node('xor_op', BusXor)
-  .node('op_0', Constant, { value: 0 })
-  .node('op_1', Constant, { value: 1 })
-  .node('op_2', Constant, { value: 2 })
-  .node('op_3', Constant, { value: 3 })
-  .node('op_4', Constant, { value: 4 })
-  .node('is_add', Comparator)
-  .node('is_sub', Comparator)
-  .node('is_and', Comparator)
-  .node('is_or', Comparator)
-  .node('is_xor', Comparator)
-  .node('mux1', Mux)
-  .node('mux2', Mux)
-  .node('mux3', Mux)
-  .node('mux4', Mux)
-  .node('mux_carry', Mux)
-  .node('zero_cmp', Comparator)
-  .node('threshold', Constant, { value: 127 })
-  .node('neg_cmp', Comparator)
-  .connect(({ in: inp, out, adder, subtractor, and_op, or_op, xor_op, op_0, op_1, op_2, op_3, op_4, is_add, is_sub, is_and, is_or, is_xor, mux1, mux2, mux3, mux4, mux_carry, zero_cmp, threshold, neg_cmp }) => [
+const ALU = component('ALU', {
+  in: { a: bus(8), b: bus(8), op: bus(3), carry_in: bit },
+  out: { result: bus(8), carry_out: bit, zero: bit, negative: bit },
+  nodes: { adder: Adder, subtractor: Subtractor, and_op: BusAnd, or_op: BusOr, xor_op: BusXor, op_0: Constant, op_1: Constant, op_2: Constant, op_3: Constant, op_4: Constant, is_add: Comparator, is_sub: Comparator, is_and: Comparator, is_or: Comparator, is_xor: Comparator, mux1: Mux, mux2: Mux, mux3: Mux, mux4: Mux, mux_carry: Mux, zero_cmp: Comparator, threshold: Constant, neg_cmp: Comparator },
+  nodeArgs: { op_0: { value: 0 }, op_1: { value: 1 }, op_2: { value: 2 }, op_3: { value: 3 }, op_4: { value: 4 }, threshold: { value: 127 } },
+  connect: ({ in: inp, out, adder, subtractor, and_op, or_op, xor_op, op_0, op_1, op_2, op_3, op_4, is_add, is_sub, is_and, is_or, is_xor, mux1, mux2, mux3, mux4, mux_carry, zero_cmp, threshold, neg_cmp }) => [
     inp.a.to(adder.a, subtractor.a, and_op.a, or_op.a, xor_op.a),
     inp.b.to(adder.b, subtractor.b, and_op.b, or_op.b, xor_op.b),
     inp.carry_in.to(adder.carry_in, subtractor.borrow_in),
@@ -62,75 +35,24 @@ const ALU = component('ALU')
     zero_cmp.eq.to(out.zero),
     threshold.out.to(neg_cmp.b),
     neg_cmp.gt.to(out.negative),
-  ])
-  .build()
+  ],
+})
 
-const CPUTest = component('CPUTest')
-  .node('rom_addr', Input)
-  .node('byte_0', Constant, { value: 169 })
-  .node('byte_1', Constant, { value: 66 })
-  .node('byte_2', Constant, { value: 105 })
-  .node('byte_3', Constant, { value: 8 })
-  .node('byte_4', Constant, { value: 141 })
-  .node('byte_5', Constant, { value: 254 })
-  .node('byte_6', Constant, { value: 0 })
-  .node('byte_7', Constant, { value: 0 })
-  .node('info_display', HexDisplay)
-  .node('zero', Constant, { value: 0 })
-  .node('cycle_counter', Register)
-  .node('always_on', Constant, { value: 1 })
-  .node('inc', Incrementer)
-  .node('cycle_display', HexDisplay)
-  .connect(({ in: inp, out, rom_addr, byte_0, byte_1, byte_2, byte_3, byte_4, byte_5, byte_6, byte_7, info_display, zero, cycle_counter, always_on, inc, cycle_display }) => [
+const CPUTest = component('CPUTest', {
+  nodes: { rom_addr: Input, byte_0: Constant, byte_1: Constant, byte_2: Constant, byte_3: Constant, byte_4: Constant, byte_5: Constant, byte_6: Constant, byte_7: Constant, info_display: HexDisplay, zero: Constant, cycle_counter: Register, always_on: Constant, inc: Incrementer, cycle_display: HexDisplay },
+  nodeArgs: { byte_0: { value: 169 }, byte_1: { value: 66 }, byte_2: { value: 105 }, byte_3: { value: 8 }, byte_4: { value: 141 }, byte_5: { value: 254 }, byte_6: { value: 0 }, byte_7: { value: 0 }, zero: { value: 0 }, always_on: { value: 1 } },
+  connect: ({ in: inp, out, rom_addr, byte_0, byte_1, byte_2, byte_3, byte_4, byte_5, byte_6, byte_7, info_display, zero, cycle_counter, always_on, inc, cycle_display }) => [
     zero.out.to(info_display.in),
     always_on.out.to(cycle_counter.we),
     cycle_counter.q.to(inc.in, cycle_display.in),
     inc.out.to(cycle_counter.data),
-  ])
-  .build()
+  ],
+})
 
-const StepByStepCPU = component('StepByStepCPU')
-  .node('pc_reg', Register)
-  .node('always_on', Constant, { value: 1 })
-  .node('pc_inc', Incrementer)
-  .node('zero', Constant, { value: 0 })
-  .node('one', Constant, { value: 1 })
-  .node('two', Constant, { value: 2 })
-  .node('three', Constant, { value: 3 })
-  .node('four', Constant, { value: 4 })
-  .node('five', Constant, { value: 5 })
-  .node('six', Constant, { value: 6 })
-  .node('seven', Constant, { value: 7 })
-  .node('at_0', Comparator)
-  .node('at_1', Comparator)
-  .node('at_2', Comparator)
-  .node('at_3', Comparator)
-  .node('at_4', Comparator)
-  .node('at_5', Comparator)
-  .node('at_6', Comparator)
-  .node('at_7', Comparator)
-  .node('byte_0', Constant, { value: 169 })
-  .node('byte_1', Constant, { value: 66 })
-  .node('byte_2', Constant, { value: 105 })
-  .node('byte_3', Constant, { value: 8 })
-  .node('byte_4', Constant, { value: 141 })
-  .node('byte_5', Constant, { value: 254 })
-  .node('byte_6', Constant, { value: 0 })
-  .node('byte_7', Constant, { value: 0 })
-  .node('mux1', Mux)
-  .node('mux2', Mux)
-  .node('mux3', Mux)
-  .node('mux4', Mux)
-  .node('mux5', Mux)
-  .node('mux6', Mux)
-  .node('mux7', Mux)
-  .node('reg_a', Register)
-  .node('alu', ALU)
-  .node('d_pc', HexDisplay)
-  .node('d_instruction', HexDisplay)
-  .node('d_a', HexDisplay)
-  .node('d_alu_result', HexDisplay)
-  .connect(({ in: inp, out, pc_reg, always_on, pc_inc, zero, one, two, three, four, five, six, seven, at_0, at_1, at_2, at_3, at_4, at_5, at_6, at_7, byte_0, byte_1, byte_2, byte_3, byte_4, byte_5, byte_6, byte_7, mux1, mux2, mux3, mux4, mux5, mux6, mux7, reg_a, alu, d_pc, d_instruction, d_a, d_alu_result }) => [
+const StepByStepCPU = component('StepByStepCPU', {
+  nodes: { pc_reg: Register, always_on: Constant, pc_inc: Incrementer, zero: Constant, one: Constant, two: Constant, three: Constant, four: Constant, five: Constant, six: Constant, seven: Constant, at_0: Comparator, at_1: Comparator, at_2: Comparator, at_3: Comparator, at_4: Comparator, at_5: Comparator, at_6: Comparator, at_7: Comparator, byte_0: Constant, byte_1: Constant, byte_2: Constant, byte_3: Constant, byte_4: Constant, byte_5: Constant, byte_6: Constant, byte_7: Constant, mux1: Mux, mux2: Mux, mux3: Mux, mux4: Mux, mux5: Mux, mux6: Mux, mux7: Mux, reg_a: Register, alu: ALU, d_pc: HexDisplay, d_instruction: HexDisplay, d_a: HexDisplay, d_alu_result: HexDisplay },
+  nodeArgs: { always_on: { value: 1 }, zero: { value: 0 }, one: { value: 1 }, two: { value: 2 }, three: { value: 3 }, four: { value: 4 }, five: { value: 5 }, six: { value: 6 }, seven: { value: 7 }, byte_0: { value: 169 }, byte_1: { value: 66 }, byte_2: { value: 105 }, byte_3: { value: 8 }, byte_4: { value: 141 }, byte_5: { value: 254 }, byte_6: { value: 0 }, byte_7: { value: 0 } },
+  connect: ({ in: inp, out, pc_reg, always_on, pc_inc, zero, one, two, three, four, five, six, seven, at_0, at_1, at_2, at_3, at_4, at_5, at_6, at_7, byte_0, byte_1, byte_2, byte_3, byte_4, byte_5, byte_6, byte_7, mux1, mux2, mux3, mux4, mux5, mux6, mux7, reg_a, alu, d_pc, d_instruction, d_a, d_alu_result }) => [
     always_on.out.to(pc_reg.we, reg_a.we),
     pc_reg.q.to(pc_inc.in, at_0.a, at_1.a, at_2.a, at_3.a, at_4.a, at_5.a, at_6.a, at_7.a, d_pc.in),
     pc_inc.out.to(pc_reg.data),
@@ -166,5 +88,5 @@ const StepByStepCPU = component('StepByStepCPU')
     reg_a.q.to(alu.a, d_a.in),
     mux7.out.to(alu.b, d_instruction.in),
     alu.result.to(reg_a.data, d_alu_result.in),
-  ])
-  .build()
+  ],
+})

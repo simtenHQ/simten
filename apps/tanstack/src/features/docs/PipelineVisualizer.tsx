@@ -17,31 +17,23 @@ const CircuitEmbed = lazy(() =>
 );
 
 const FULL_ADDER_DSL = `
-const HalfAdder = component('HalfAdder')
-  .in('a', bit)
-  .in('b', bit)
-  .out('sum', bit)
-  .out('carry', bit)
-  .node('xor1', Xor)
-  .node('and1', And)
-  .connect(({ in: inp, out, xor1, and1 }) => [
+const HalfAdder = component('HalfAdder', {
+  in: { a: bit, b: bit },
+  out: { sum: bit, carry: bit },
+  nodes: { xor1: Xor, and1: And },
+  connect: ({ in: inp, out, xor1, and1 }) => [
     inp.a.to(xor1.a, and1.a),
     inp.b.to(xor1.b, and1.b),
     xor1.out.to(out.sum),
     and1.out.to(out.carry),
-  ])
-  .build()
+  ],
+})
 
-const FullAdder = component('FullAdder')
-  .in('a', bit)
-  .in('b', bit)
-  .in('cin', bit)
-  .out('sum', bit)
-  .out('cout', bit)
-  .node('ha1', HalfAdder)
-  .node('ha2', HalfAdder)
-  .node('or1', Or)
-  .connect(({ in: inp, out, ha1, ha2, or1 }) => [
+const FullAdder = component('FullAdder', {
+  in: { a: bit, b: bit, cin: bit },
+  out: { sum: bit, cout: bit },
+  nodes: { ha1: HalfAdder, ha2: HalfAdder, or1: Or },
+  connect: ({ in: inp, out, ha1, ha2, or1 }) => [
     inp.a.to(ha1.a),
     inp.b.to(ha1.b),
     ha1.sum.to(ha2.a),
@@ -50,8 +42,8 @@ const FullAdder = component('FullAdder')
     ha1.carry.to(or1.a),
     ha2.carry.to(or1.b),
     or1.out.to(out.cout),
-  ])
-  .build()
+  ],
+})
 `;
 
 type Tab = "dsl" | "ir" | "flat" | "numeric" | "live";

@@ -60,6 +60,7 @@ export function useSnakeSimulator() {
   const handleReset = useCallback(() => {
     setIsRunning(false);
     sim.reset();
+    sim.tick(); // Propagate reset state to screen
   }, [sim]);
 
   const sendDirection = useCallback(

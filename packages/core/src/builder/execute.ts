@@ -22,7 +22,7 @@
  */
 
 import { transform } from 'sucrase';
-import { component, ComponentBuilder } from './component.js';
+import { component } from './component.js';
 import { bit, bus } from './bit-bus.js';
 import type { BuiltComponent } from './types.js';
 import type { Circuit, ComponentLibrary } from '../types/circuit.js';
@@ -98,8 +98,8 @@ export function stripTypes(code: string): string {
  * Execute TypeScript circuit code and extract Circuit IR.
  *
  * The code is type-stripped, then run in a function scope with the
- * standard library injected. The last BuiltComponent (or unbuilt
- * ComponentBuilder) in the code becomes the main circuit.
+ * standard library injected. All component() calls are tracked and
+ * the last one becomes the main circuit.
  *
  * @param code - TypeScript or JavaScript circuit code
  * @returns Execution result with circuits and any error
@@ -114,21 +114,15 @@ export function executeCircuitCode(code: string): ExecuteResult {
     // Strip TypeScript types → plain JavaScript
     const js = stripTypes(code);
 
-    // Wrap: execute code, return the last expression or collected components
-    // Strategy: run the code, then return all top-level bindings via a collector
+    // Wrap: intercept component() calls to collect all created components
     const wrappedCode = `
       "use strict";
       const __collector = [];
       const __origComponent = component;
-      const __trackingComponent = function(name) {
-        const builder = __origComponent(name);
-        const origBuild = builder.build.bind(builder);
-        builder.build = function() {
-          const result = origBuild();
-          __collector.push(result);
-          return result;
-        };
-        return builder;
+      const __trackingComponent = function(name, config) {
+        const result = __origComponent(name, config);
+        __collector.push(result);
+        return result;
       };
       {
         const component = __trackingComponent;

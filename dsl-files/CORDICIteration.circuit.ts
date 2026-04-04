@@ -1,55 +1,9 @@
 // Auto-generated from DSL
 
-const CORDICIteration = component('CORDICIteration')
-  .node('x', Register, { initial: 80 })
-  .node('y', Register, { initial: 0 })
-  .node('z', Register, { initial: 32 })
-  .node('iteration', Register, { initial: 0 })
-  .node('zero', Constant, { value: 0 })
-  .node('one', Constant, { value: 1 })
-  .node('eight', Constant, { value: 8 })
-  .node('zPositive', SignedComparator)
-  .node('xShifted', RightShifter)
-  .node('yShifted', RightShifter)
-  .node('yShiftedNeg', BusNot)
-  .node('xSubtract', SignedAdder)
-  .node('xAdd', SignedAdder)
-  .node('xUpdate', Mux)
-  .node('xShiftedNeg', BusNot)
-  .node('yAdd', SignedAdder)
-  .node('ySubtract', SignedAdder)
-  .node('yUpdate', Mux)
-  .node('angle0', Constant, { value: 32 })
-  .node('angle1', Constant, { value: 19 })
-  .node('angle2', Constant, { value: 10 })
-  .node('angle3', Constant, { value: 5 })
-  .node('angle4', Constant, { value: 3 })
-  .node('angle5', Constant, { value: 1 })
-  .node('angle6', Constant, { value: 1 })
-  .node('angle7', Constant, { value: 0 })
-  .node('bit0', BitSlice, { low: 0, high: 0 })
-  .node('bit1', BitSlice, { low: 1, high: 1 })
-  .node('bit2', BitSlice, { low: 2, high: 2 })
-  .node('mux01', Mux)
-  .node('mux23', Mux)
-  .node('mux45', Mux)
-  .node('mux67', Mux)
-  .node('mux0123', Mux)
-  .node('mux4567', Mux)
-  .node('angleSel', Mux)
-  .node('angleNeg', BusNot)
-  .node('zSubtract', SignedAdder)
-  .node('zAdd', SignedAdder)
-  .node('zUpdate', Mux)
-  .node('iterInc', Incrementer)
-  .node('shouldContinue', Comparator)
-  .node('xDisplay', HexDisplay)
-  .node('yDisplay', HexDisplay)
-  .node('zDisplay', HexDisplay)
-  .node('iterDisplay', HexDisplay)
-  .node('doneCheck', Comparator)
-  .node('doneLed', Led)
-  .connect(({ in: inp, out, x, y, z, iteration, zero, one, eight, zPositive, xShifted, yShifted, yShiftedNeg, xSubtract, xAdd, xUpdate, xShiftedNeg, yAdd, ySubtract, yUpdate, angle0, angle1, angle2, angle3, angle4, angle5, angle6, angle7, bit0, bit1, bit2, mux01, mux23, mux45, mux67, mux0123, mux4567, angleSel, angleNeg, zSubtract, zAdd, zUpdate, iterInc, shouldContinue, xDisplay, yDisplay, zDisplay, iterDisplay, doneCheck, doneLed }) => [
+const CORDICIteration = component('CORDICIteration', {
+  nodes: { x: Register, y: Register, z: Register, iteration: Register, zero: Constant, one: Constant, eight: Constant, zPositive: SignedComparator, xShifted: RightShifter, yShifted: RightShifter, yShiftedNeg: BusNot, xSubtract: SignedAdder, xAdd: SignedAdder, xUpdate: Mux, xShiftedNeg: BusNot, yAdd: SignedAdder, ySubtract: SignedAdder, yUpdate: Mux, angle0: Constant, angle1: Constant, angle2: Constant, angle3: Constant, angle4: Constant, angle5: Constant, angle6: Constant, angle7: Constant, bit0: BitSlice, bit1: BitSlice, bit2: BitSlice, mux01: Mux, mux23: Mux, mux45: Mux, mux67: Mux, mux0123: Mux, mux4567: Mux, angleSel: Mux, angleNeg: BusNot, zSubtract: SignedAdder, zAdd: SignedAdder, zUpdate: Mux, iterInc: Incrementer, shouldContinue: Comparator, xDisplay: HexDisplay, yDisplay: HexDisplay, zDisplay: HexDisplay, iterDisplay: HexDisplay, doneCheck: Comparator, doneLed: Led },
+  nodeArgs: { x: { initial: 80 }, y: { initial: 0 }, z: { initial: 32 }, iteration: { initial: 0 }, zero: { value: 0 }, one: { value: 1 }, eight: { value: 8 }, angle0: { value: 32 }, angle1: { value: 19 }, angle2: { value: 10 }, angle3: { value: 5 }, angle4: { value: 3 }, angle5: { value: 1 }, angle6: { value: 1 }, angle7: { value: 0 }, bit0: { low: 0, high: 0 }, bit1: { low: 1, high: 1 }, bit2: { low: 2, high: 2 } },
+  connect: ({ in: inp, out, x, y, z, iteration, zero, one, eight, zPositive, xShifted, yShifted, yShiftedNeg, xSubtract, xAdd, xUpdate, xShiftedNeg, yAdd, ySubtract, yUpdate, angle0, angle1, angle2, angle3, angle4, angle5, angle6, angle7, bit0, bit1, bit2, mux01, mux23, mux45, mux67, mux0123, mux4567, angleSel, angleNeg, zSubtract, zAdd, zUpdate, iterInc, shouldContinue, xDisplay, yDisplay, zDisplay, iterDisplay, doneCheck, doneLed }) => [
     z.q.to(zPositive.a, zSubtract.a, zAdd.a, zDisplay.in),
     zero.out.to(zPositive.b, xAdd.carry_in, yAdd.carry_in, zAdd.carry_in),
     x.q.to(xShifted.value, xSubtract.a, xAdd.a, xDisplay.in),
@@ -93,5 +47,5 @@ const CORDICIteration = component('CORDICIteration')
     zUpdate.out.to(z.data),
     iterInc.out.to(iteration.data),
     doneCheck.eq.to(doneLed.in),
-  ])
-  .build()
+  ],
+})

@@ -1,19 +1,10 @@
 // Auto-generated from DSL
 
-const RegisterFile = component('RegisterFile')
-  .in('write_a', bit)
-  .in('write_x', bit)
-  .in('write_y', bit)
-  .in('data_a', bus(8))
-  .in('data_x', bus(8))
-  .in('data_y', bus(8))
-  .out('reg_a', bus(8))
-  .out('reg_x', bus(8))
-  .out('reg_y', bus(8))
-  .node('regA', Register)
-  .node('regX', Register)
-  .node('regY', Register)
-  .connect(({ in: inp, out, regA, regX, regY }) => [
+const RegisterFile = component('RegisterFile', {
+  in: { write_a: bit, write_x: bit, write_y: bit, data_a: bus(8), data_x: bus(8), data_y: bus(8) },
+  out: { reg_a: bus(8), reg_x: bus(8), reg_y: bus(8) },
+  nodes: { regA: Register, regX: Register, regY: Register },
+  connect: ({ in: inp, out, regA, regX, regY }) => [
     inp.data_a.to(regA.data),
     inp.data_x.to(regX.data),
     inp.data_y.to(regY.data),
@@ -23,27 +14,15 @@ const RegisterFile = component('RegisterFile')
     regA.q.to(out.reg_a),
     regX.q.to(out.reg_x),
     regY.q.to(out.reg_y),
-  ])
-  .build()
+  ],
+})
 
-const FlagRegister = component('FlagRegister')
-  .in('update_n', bit)
-  .in('update_z', bit)
-  .in('update_c', bit)
-  .in('update_v', bit)
-  .in('new_n', bit)
-  .in('new_z', bit)
-  .in('new_c', bit)
-  .in('new_v', bit)
-  .out('flag_n', bit)
-  .out('flag_z', bit)
-  .out('flag_c', bit)
-  .out('flag_v', bit)
-  .node('reg_n', Register, { initial: 0 })
-  .node('reg_z', Register, { initial: 0 })
-  .node('reg_c', Register, { initial: 0 })
-  .node('reg_v', Register, { initial: 0 })
-  .connect(({ in: inp, out, reg_n, reg_z, reg_c, reg_v }) => [
+const FlagRegister = component('FlagRegister', {
+  in: { update_n: bit, update_z: bit, update_c: bit, update_v: bit, new_n: bit, new_z: bit, new_c: bit, new_v: bit },
+  out: { flag_n: bit, flag_z: bit, flag_c: bit, flag_v: bit },
+  nodes: { reg_n: Register, reg_z: Register, reg_c: Register, reg_v: Register },
+  nodeArgs: { reg_n: { initial: 0 }, reg_z: { initial: 0 }, reg_c: { initial: 0 }, reg_v: { initial: 0 } },
+  connect: ({ in: inp, out, reg_n, reg_z, reg_c, reg_v }) => [
     inp.update_n.to(reg_n.we),
     inp.new_n.to(reg_n.data),
     reg_n.q.to(out.flag_n),
@@ -56,102 +35,15 @@ const FlagRegister = component('FlagRegister')
     inp.update_v.to(reg_v.we),
     inp.new_v.to(reg_v.data),
     reg_v.q.to(out.flag_v),
-  ])
-  .build()
+  ],
+})
 
-const BranchControl = component('BranchControl')
-  .in('reset', bit)
-  .in('current_opcode', bus(8))
-  .in('flag_n', bit)
-  .in('flag_z', bit)
-  .in('flag_c', bit)
-  .in('flag_v', bit)
-  .out('current_state', bus(8))
-  .out('exec_subcycle', bus(8))
-  .out('pc_increment', bit)
-  .out('ir_load', bit)
-  .out('operand_load', bit)
-  .out('branch_load_pc', bit)
-  .out('write_a', bit)
-  .out('update_flags', bit)
-  .out('is_lda_imm', bit)
-  .out('is_cmp_imm', bit)
-  .out('is_beq', bit)
-  .out('is_bne', bit)
-  .out('is_bcc', bit)
-  .out('is_bcs', bit)
-  .out('is_bmi', bit)
-  .out('is_bpl', bit)
-  .node('state_reg', Register)
-  .node('subcycle_reg', Register)
-  .node('STATE_FETCH', Constant, { value: 0 })
-  .node('STATE_DECODE', Constant, { value: 1 })
-  .node('STATE_EXECUTE', Constant, { value: 2 })
-  .node('is_fetch', Comparator)
-  .node('is_decode', Comparator)
-  .node('is_execute', Comparator)
-  .node('LDA_IMM', Constant, { value: 169 })
-  .node('CMP_IMM', Constant, { value: 201 })
-  .node('BEQ', Constant, { value: 240 })
-  .node('BNE', Constant, { value: 208 })
-  .node('BCC', Constant, { value: 144 })
-  .node('BCS', Constant, { value: 176 })
-  .node('BMI', Constant, { value: 48 })
-  .node('BPL', Constant, { value: 16 })
-  .node('cmp_lda_imm', Comparator)
-  .node('cmp_cmp_imm', Comparator)
-  .node('cmp_beq', Comparator)
-  .node('cmp_bne', Comparator)
-  .node('cmp_bcc', Comparator)
-  .node('cmp_bcs', Comparator)
-  .node('cmp_bmi', Comparator)
-  .node('cmp_bpl', Comparator)
-  .node('is_imm', Or)
-  .node('is_branch_1', Or)
-  .node('is_branch_2', Or)
-  .node('is_branch_3', Or)
-  .node('is_branch_4', Or)
-  .node('is_branch', Or)
-  .node('beq_cond', And)
-  .node('not_z', Not)
-  .node('bne_cond', And)
-  .node('not_c', Not)
-  .node('bcc_cond', And)
-  .node('bcs_cond', And)
-  .node('bmi_cond', And)
-  .node('not_n', Not)
-  .node('bpl_cond', And)
-  .node('branch_cond_1', Or)
-  .node('branch_cond_2', Or)
-  .node('branch_cond_3', Or)
-  .node('branch_cond_4', Or)
-  .node('branch_taken', Or)
-  .node('zero', Constant, { value: 0 })
-  .node('one', Constant, { value: 1 })
-  .node('inc_subcycle', Incrementer)
-  .node('subcycle_increment', Mux)
-  .node('always_on', Constant, { value: 1 })
-  .node('is_sub0', Comparator)
-  .node('is_sub1', Comparator)
-  .node('exec_sub0', And)
-  .node('exec_sub1', And)
-  .node('next_from_fetch', Mux)
-  .node('next_from_decode', Mux)
-  .node('done_imm', And)
-  .node('done_branch', And)
-  .node('exec_done', Or)
-  .node('next_from_execute', Mux)
-  .node('next_state', Mux)
-  .node('needs_operand', Or)
-  .node('pc_inc_sub0', And)
-  .node('pc_inc_signal', Or)
-  .node('operand_load_signal', And)
-  .node('write_a_signal', And)
-  .node('update_flags_lda', And)
-  .node('update_flags_cmp', And)
-  .node('update_flags_signal', Or)
-  .node('branch_at_sub1', And)
-  .connect(({ in: inp, out, state_reg, subcycle_reg, STATE_FETCH, STATE_DECODE, STATE_EXECUTE, is_fetch, is_decode, is_execute, LDA_IMM, CMP_IMM, BEQ, BNE, BCC, BCS, BMI, BPL, cmp_lda_imm, cmp_cmp_imm, cmp_beq, cmp_bne, cmp_bcc, cmp_bcs, cmp_bmi, cmp_bpl, is_imm, is_branch_1, is_branch_2, is_branch_3, is_branch_4, is_branch, beq_cond, not_z, bne_cond, not_c, bcc_cond, bcs_cond, bmi_cond, not_n, bpl_cond, branch_cond_1, branch_cond_2, branch_cond_3, branch_cond_4, branch_taken, zero, one, inc_subcycle, subcycle_increment, always_on, is_sub0, is_sub1, exec_sub0, exec_sub1, next_from_fetch, next_from_decode, done_imm, done_branch, exec_done, next_from_execute, next_state, needs_operand, pc_inc_sub0, pc_inc_signal, operand_load_signal, write_a_signal, update_flags_lda, update_flags_cmp, update_flags_signal, branch_at_sub1 }) => [
+const BranchControl = component('BranchControl', {
+  in: { reset: bit, current_opcode: bus(8), flag_n: bit, flag_z: bit, flag_c: bit, flag_v: bit },
+  out: { current_state: bus(8), exec_subcycle: bus(8), pc_increment: bit, ir_load: bit, operand_load: bit, branch_load_pc: bit, write_a: bit, update_flags: bit, is_lda_imm: bit, is_cmp_imm: bit, is_beq: bit, is_bne: bit, is_bcc: bit, is_bcs: bit, is_bmi: bit, is_bpl: bit },
+  nodes: { state_reg: Register, subcycle_reg: Register, STATE_FETCH: Constant, STATE_DECODE: Constant, STATE_EXECUTE: Constant, is_fetch: Comparator, is_decode: Comparator, is_execute: Comparator, LDA_IMM: Constant, CMP_IMM: Constant, BEQ: Constant, BNE: Constant, BCC: Constant, BCS: Constant, BMI: Constant, BPL: Constant, cmp_lda_imm: Comparator, cmp_cmp_imm: Comparator, cmp_beq: Comparator, cmp_bne: Comparator, cmp_bcc: Comparator, cmp_bcs: Comparator, cmp_bmi: Comparator, cmp_bpl: Comparator, is_imm: Or, is_branch_1: Or, is_branch_2: Or, is_branch_3: Or, is_branch_4: Or, is_branch: Or, beq_cond: And, not_z: Not, bne_cond: And, not_c: Not, bcc_cond: And, bcs_cond: And, bmi_cond: And, not_n: Not, bpl_cond: And, branch_cond_1: Or, branch_cond_2: Or, branch_cond_3: Or, branch_cond_4: Or, branch_taken: Or, zero: Constant, one: Constant, inc_subcycle: Incrementer, subcycle_increment: Mux, always_on: Constant, is_sub0: Comparator, is_sub1: Comparator, exec_sub0: And, exec_sub1: And, next_from_fetch: Mux, next_from_decode: Mux, done_imm: And, done_branch: And, exec_done: Or, next_from_execute: Mux, next_state: Mux, needs_operand: Or, pc_inc_sub0: And, pc_inc_signal: Or, operand_load_signal: And, write_a_signal: And, update_flags_lda: And, update_flags_cmp: And, update_flags_signal: Or, branch_at_sub1: And },
+  nodeArgs: { STATE_FETCH: { value: 0 }, STATE_DECODE: { value: 1 }, STATE_EXECUTE: { value: 2 }, LDA_IMM: { value: 169 }, CMP_IMM: { value: 201 }, BEQ: { value: 240 }, BNE: { value: 208 }, BCC: { value: 144 }, BCS: { value: 176 }, BMI: { value: 48 }, BPL: { value: 16 }, zero: { value: 0 }, one: { value: 1 }, always_on: { value: 1 } },
+  connect: ({ in: inp, out, state_reg, subcycle_reg, STATE_FETCH, STATE_DECODE, STATE_EXECUTE, is_fetch, is_decode, is_execute, LDA_IMM, CMP_IMM, BEQ, BNE, BCC, BCS, BMI, BPL, cmp_lda_imm, cmp_cmp_imm, cmp_beq, cmp_bne, cmp_bcc, cmp_bcs, cmp_bmi, cmp_bpl, is_imm, is_branch_1, is_branch_2, is_branch_3, is_branch_4, is_branch, beq_cond, not_z, bne_cond, not_c, bcc_cond, bcs_cond, bmi_cond, not_n, bpl_cond, branch_cond_1, branch_cond_2, branch_cond_3, branch_cond_4, branch_taken, zero, one, inc_subcycle, subcycle_increment, always_on, is_sub0, is_sub1, exec_sub0, exec_sub1, next_from_fetch, next_from_decode, done_imm, done_branch, exec_done, next_from_execute, next_state, needs_operand, pc_inc_sub0, pc_inc_signal, operand_load_signal, write_a_signal, update_flags_lda, update_flags_cmp, update_flags_signal, branch_at_sub1 }) => [
     state_reg.q.to(is_fetch.a, is_decode.a, is_execute.a, next_from_fetch.in0, out.current_state),
     STATE_FETCH.out.to(is_fetch.b, next_from_execute.in1, next_state.in1),
     STATE_DECODE.out.to(is_decode.b, next_from_fetch.in1),
@@ -226,82 +118,15 @@ const BranchControl = component('BranchControl')
     update_flags_signal.out.to(out.update_flags),
     branch_taken.out.to(branch_at_sub1.b),
     branch_at_sub1.out.to(out.branch_load_pc),
-  ])
-  .build()
+  ],
+})
 
-const BranchCPU = component('BranchCPU')
-  .in('reset', bit)
-  .out('pc', bus(8))
-  .out('instruction', bus(8))
-  .out('operand', bus(8))
-  .out('current_state', bus(8))
-  .out('subcycle', bus(8))
-  .out('reg_a', bus(8))
-  .out('flag_n', bit)
-  .out('flag_z', bit)
-  .out('flag_c', bit)
-  .node('pc_reg', Register)
-  .node('always_on', Constant, { value: 1 })
-  .node('pc_inc', Incrementer)
-  .node('zero', Constant, { value: 0 })
-  .node('one', Constant, { value: 1 })
-  .node('two', Constant, { value: 2 })
-  .node('three', Constant, { value: 3 })
-  .node('four', Constant, { value: 4 })
-  .node('five', Constant, { value: 5 })
-  .node('six', Constant, { value: 6 })
-  .node('seven', Constant, { value: 7 })
-  .node('eight', Constant, { value: 8 })
-  .node('nine', Constant, { value: 9 })
-  .node('byte_0', Constant, { value: 169 })
-  .node('byte_1', Constant, { value: 5 })
-  .node('byte_2', Constant, { value: 201 })
-  .node('byte_3', Constant, { value: 5 })
-  .node('byte_4', Constant, { value: 240 })
-  .node('byte_5', Constant, { value: 2 })
-  .node('byte_6', Constant, { value: 169 })
-  .node('byte_7', Constant, { value: 255 })
-  .node('byte_8', Constant, { value: 169 })
-  .node('byte_9', Constant, { value: 66 })
-  .node('at_0', Comparator)
-  .node('at_1', Comparator)
-  .node('at_2', Comparator)
-  .node('at_3', Comparator)
-  .node('at_4', Comparator)
-  .node('at_5', Comparator)
-  .node('at_6', Comparator)
-  .node('at_7', Comparator)
-  .node('at_8', Comparator)
-  .node('at_9', Comparator)
-  .node('mux1', Mux)
-  .node('mux2', Mux)
-  .node('mux3', Mux)
-  .node('mux4', Mux)
-  .node('mux5', Mux)
-  .node('mux6', Mux)
-  .node('mux7', Mux)
-  .node('mux8', Mux)
-  .node('mux9', Mux)
-  .node('ir', Register)
-  .node('operand_reg', Register)
-  .node('flags', FlagRegister)
-  .node('control', BranchControl)
-  .node('branch_adder', Adder)
-  .node('pc_after_inc', Mux)
-  .node('pc_after_branch', Mux)
-  .node('reg_a_reg', Register)
-  .node('cmp_sub', Subtractor)
-  .node('const_128', Constant, { value: 128 })
-  .node('cmp_n', Comparator)
-  .node('n_gte', Or)
-  .node('cmp_z', Comparator)
-  .node('not_borrow', Not)
-  .node('lda_n', Comparator)
-  .node('lda_n_gte', Or)
-  .node('lda_z', Comparator)
-  .node('n_source', Mux)
-  .node('z_source', Mux)
-  .connect(({ in: inp, out, pc_reg, always_on, pc_inc, zero, one, two, three, four, five, six, seven, eight, nine, byte_0, byte_1, byte_2, byte_3, byte_4, byte_5, byte_6, byte_7, byte_8, byte_9, at_0, at_1, at_2, at_3, at_4, at_5, at_6, at_7, at_8, at_9, mux1, mux2, mux3, mux4, mux5, mux6, mux7, mux8, mux9, ir, operand_reg, flags, control, branch_adder, pc_after_inc, pc_after_branch, reg_a_reg, cmp_sub, const_128, cmp_n, n_gte, cmp_z, not_borrow, lda_n, lda_n_gte, lda_z, n_source, z_source }) => [
+const BranchCPU = component('BranchCPU', {
+  in: { reset: bit },
+  out: { pc: bus(8), instruction: bus(8), operand: bus(8), current_state: bus(8), subcycle: bus(8), reg_a: bus(8), flag_n: bit, flag_z: bit, flag_c: bit },
+  nodes: { pc_reg: Register, always_on: Constant, pc_inc: Incrementer, zero: Constant, one: Constant, two: Constant, three: Constant, four: Constant, five: Constant, six: Constant, seven: Constant, eight: Constant, nine: Constant, byte_0: Constant, byte_1: Constant, byte_2: Constant, byte_3: Constant, byte_4: Constant, byte_5: Constant, byte_6: Constant, byte_7: Constant, byte_8: Constant, byte_9: Constant, at_0: Comparator, at_1: Comparator, at_2: Comparator, at_3: Comparator, at_4: Comparator, at_5: Comparator, at_6: Comparator, at_7: Comparator, at_8: Comparator, at_9: Comparator, mux1: Mux, mux2: Mux, mux3: Mux, mux4: Mux, mux5: Mux, mux6: Mux, mux7: Mux, mux8: Mux, mux9: Mux, ir: Register, operand_reg: Register, flags: FlagRegister, control: BranchControl, branch_adder: Adder, pc_after_inc: Mux, pc_after_branch: Mux, reg_a_reg: Register, cmp_sub: Subtractor, const_128: Constant, cmp_n: Comparator, n_gte: Or, cmp_z: Comparator, not_borrow: Not, lda_n: Comparator, lda_n_gte: Or, lda_z: Comparator, n_source: Mux, z_source: Mux },
+  nodeArgs: { always_on: { value: 1 }, zero: { value: 0 }, one: { value: 1 }, two: { value: 2 }, three: { value: 3 }, four: { value: 4 }, five: { value: 5 }, six: { value: 6 }, seven: { value: 7 }, eight: { value: 8 }, nine: { value: 9 }, byte_0: { value: 169 }, byte_1: { value: 5 }, byte_2: { value: 201 }, byte_3: { value: 5 }, byte_4: { value: 240 }, byte_5: { value: 2 }, byte_6: { value: 169 }, byte_7: { value: 255 }, byte_8: { value: 169 }, byte_9: { value: 66 }, const_128: { value: 128 } },
+  connect: ({ in: inp, out, pc_reg, always_on, pc_inc, zero, one, two, three, four, five, six, seven, eight, nine, byte_0, byte_1, byte_2, byte_3, byte_4, byte_5, byte_6, byte_7, byte_8, byte_9, at_0, at_1, at_2, at_3, at_4, at_5, at_6, at_7, at_8, at_9, mux1, mux2, mux3, mux4, mux5, mux6, mux7, mux8, mux9, ir, operand_reg, flags, control, branch_adder, pc_after_inc, pc_after_branch, reg_a_reg, cmp_sub, const_128, cmp_n, n_gte, cmp_z, not_borrow, lda_n, lda_n_gte, lda_z, n_source, z_source }) => [
     pc_reg.q.to(pc_inc.in, at_0.a, at_1.a, at_2.a, at_3.a, at_4.a, at_5.a, at_6.a, at_7.a, at_8.a, at_9.a, branch_adder.a, pc_after_inc.in0, out.pc),
     zero.out.to(at_0.b, branch_adder.carry_in, cmp_sub.borrow_in, cmp_z.b, lda_z.b, flags.update_v, flags.new_v),
     one.out.to(at_1.b),
@@ -377,22 +202,12 @@ const BranchCPU = component('BranchCPU')
     not_borrow.out.to(flags.new_c),
     control.current_state.to(out.current_state),
     control.exec_subcycle.to(out.subcycle),
-  ])
-  .build()
+  ],
+})
 
-const BranchTest = component('BranchTest')
-  .node('cpu', BranchCPU)
-  .node('reset_input', Input)
-  .node('d_pc', HexDisplay)
-  .node('d_instruction', HexDisplay)
-  .node('d_operand', HexDisplay)
-  .node('d_state', HexDisplay)
-  .node('d_subcycle', HexDisplay)
-  .node('d_a', HexDisplay)
-  .node('d_n', HexDisplay)
-  .node('d_z', HexDisplay)
-  .node('d_c', HexDisplay)
-  .connect(({ in: inp, out, cpu, reset_input, d_pc, d_instruction, d_operand, d_state, d_subcycle, d_a, d_n, d_z, d_c }) => [
+const BranchTest = component('BranchTest', {
+  nodes: { cpu: BranchCPU, reset_input: Input, d_pc: HexDisplay, d_instruction: HexDisplay, d_operand: HexDisplay, d_state: HexDisplay, d_subcycle: HexDisplay, d_a: HexDisplay, d_n: HexDisplay, d_z: HexDisplay, d_c: HexDisplay },
+  connect: ({ in: inp, out, cpu, reset_input, d_pc, d_instruction, d_operand, d_state, d_subcycle, d_a, d_n, d_z, d_c }) => [
     reset_input.out.to(cpu.reset),
     cpu.pc.to(d_pc.in),
     cpu.instruction.to(d_instruction.in),
@@ -403,5 +218,5 @@ const BranchTest = component('BranchTest')
     cpu.flag_n.to(d_n.in),
     cpu.flag_z.to(d_z.in),
     cpu.flag_c.to(d_c.in),
-  ])
-  .build()
+  ],
+})

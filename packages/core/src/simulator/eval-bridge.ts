@@ -190,3 +190,39 @@ export function registerEvalFunction(
 
   return idx;
 }
+
+// ============================================================================
+// onTick registry — user-defined state update functions
+// ============================================================================
+
+export type OnTickEntry = {
+  inputNames: string[];
+  stateKeys: string[];
+  fn: (inputsAndState: Record<string, any>) => Record<string, any>;
+};
+
+/** Registry of user-defined onTick functions, keyed by component name */
+const onTickRegistry = new Map<string, OnTickEntry>();
+
+/**
+ * Register a user-defined onTick function.
+ */
+export function registerOnTickFunction(
+  name: string,
+  fn: (inputsAndState: Record<string, any>) => Record<string, any>,
+  initialState?: Record<string, any>,
+): void {
+  if (onTickRegistry.has(name)) return;
+  onTickRegistry.set(name, {
+    inputNames: [], // filled lazily from the circuit
+    stateKeys: initialState ? Object.keys(initialState) : [],
+    fn,
+  });
+}
+
+/**
+ * Get a registered onTick function by component name.
+ */
+export function getOnTickFunction(name: string): OnTickEntry | undefined {
+  return onTickRegistry.get(name);
+}

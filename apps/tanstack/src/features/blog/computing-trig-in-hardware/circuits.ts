@@ -19,30 +19,26 @@ export const CORDIC_CIRCUITS: Record<string, BlogCircuit> = {
     description:
       "A RightShifter divides its input by 2^shift. This is the only 'multiplication' CORDIC needs.",
     displayDsl: `
-const RightShiftDemo = component('RightShiftDemo')
-  .node('value', Input, { value: 80 })
-  .node('shift', Input, { value: 1 })
-  .node('shifter', RightShifter)
-  .node('result', HexDisplay)
-  .connect(({ in: inp, out, value, shift, shifter, result }) => [
+const RightShiftDemo = component('RightShiftDemo', {
+  nodes: { value: Input, shift: Input, shifter: RightShifter, result: HexDisplay },
+  nodeArgs: { value: { value: 80 }, shift: { value: 1 } },
+  connect: ({ in: inp, out, value, shift, shifter, result }) => [
     value.out.to(shifter.value),
     shift.out.to(shifter.shift),
     shifter.result.to(result.in),
-  ])
-  .build()
+  ],
+})
 `,
     dsl: `
-const RightShiftDemo = component('RightShiftDemo')
-  .node('value', Input, { value: 80 })
-  .node('shift', Input, { value: 1 })
-  .node('shifter', RightShifter)
-  .node('result', HexDisplay)
-  .connect(({ in: inp, out, value, shift, shifter, result }) => [
+const RightShiftDemo = component('RightShiftDemo', {
+  nodes: { value: Input, shift: Input, shifter: RightShifter, result: HexDisplay },
+  nodeArgs: { value: { value: 80 }, shift: { value: 1 } },
+  connect: ({ in: inp, out, value, shift, shifter, result }) => [
     value.out.to(shifter.value),
     shift.out.to(shifter.shift),
     shifter.result.to(result.in),
-  ])
-  .build()
+  ],
+})
 `,
   },
 
@@ -51,19 +47,10 @@ const RightShiftDemo = component('RightShiftDemo')
     description:
       "The core CORDIC operation: x_next = x - (y >> i). A right-shifted value is subtracted using two's complement.",
     displayDsl: `
-const RotationStep = component('RotationStep')
-  .node('x', Input, { value: 80 })
-  .node('y', Input, { value: 0 })
-  .node('shift', Input, { value: 0 })
-  .node('one', Constant, { value: 1 })
-  .node('zero', Constant, { value: 0 })
-  .node('yShifted', RightShifter)
-  .node('yNeg', BusNot)
-  .node('xMinusY', SignedAdder)
-  .node('xPlusY', SignedAdder)
-  .node('displaySub', HexDisplay)
-  .node('displayAdd', HexDisplay)
-  .connect(({ in: inp, out, x, y, shift, one, zero, yShifted, yNeg, xMinusY, xPlusY, displaySub, displayAdd }) => [
+const RotationStep = component('RotationStep', {
+  nodes: { x: Input, y: Input, shift: Input, one: Constant, zero: Constant, yShifted: RightShifter, yNeg: BusNot, xMinusY: SignedAdder, xPlusY: SignedAdder, displaySub: HexDisplay, displayAdd: HexDisplay },
+  nodeArgs: { x: { value: 80 }, y: { value: 0 }, shift: { value: 0 }, one: { value: 1 }, zero: { value: 0 } },
+  connect: ({ in: inp, out, x, y, shift, one, zero, yShifted, yNeg, xMinusY, xPlusY, displaySub, displayAdd }) => [
     y.out.to(yShifted.value),
     shift.out.to(yShifted.shift),
     yShifted.result.to(yNeg.in, xPlusY.b),
@@ -73,23 +60,14 @@ const RotationStep = component('RotationStep')
     zero.out.to(xPlusY.carry_in),
     xMinusY.sum.to(displaySub.in),
     xPlusY.sum.to(displayAdd.in),
-  ])
-  .build()
+  ],
+})
 `,
     dsl: `
-const RotationStep = component('RotationStep')
-  .node('x', Input, { value: 80 })
-  .node('y', Input, { value: 0 })
-  .node('shift', Input, { value: 0 })
-  .node('one', Constant, { value: 1 })
-  .node('zero', Constant, { value: 0 })
-  .node('yShifted', RightShifter)
-  .node('yNeg', BusNot)
-  .node('xMinusY', SignedAdder)
-  .node('xPlusY', SignedAdder)
-  .node('displaySub', HexDisplay)
-  .node('displayAdd', HexDisplay)
-  .connect(({ in: inp, out, x, y, shift, one, zero, yShifted, yNeg, xMinusY, xPlusY, displaySub, displayAdd }) => [
+const RotationStep = component('RotationStep', {
+  nodes: { x: Input, y: Input, shift: Input, one: Constant, zero: Constant, yShifted: RightShifter, yNeg: BusNot, xMinusY: SignedAdder, xPlusY: SignedAdder, displaySub: HexDisplay, displayAdd: HexDisplay },
+  nodeArgs: { x: { value: 80 }, y: { value: 0 }, shift: { value: 0 }, one: { value: 1 }, zero: { value: 0 } },
+  connect: ({ in: inp, out, x, y, shift, one, zero, yShifted, yNeg, xMinusY, xPlusY, displaySub, displayAdd }) => [
     y.out.to(yShifted.value),
     shift.out.to(yShifted.shift),
     yShifted.result.to(yNeg.in, xPlusY.b),
@@ -99,8 +77,8 @@ const RotationStep = component('RotationStep')
     zero.out.to(xPlusY.carry_in),
     xMinusY.sum.to(displaySub.in),
     xPlusY.sum.to(displayAdd.in),
-  ])
-  .build()
+  ],
+})
 `,
   },
 
@@ -109,44 +87,32 @@ const RotationStep = component('RotationStep')
     description:
       "CORDIC decides which way to rotate by checking the sign of the remaining angle z. If z >= 0, rotate counterclockwise; if z < 0, rotate clockwise.",
     displayDsl: `
-const SignDetection = component('SignDetection')
-  .node('angle', Input, { value: 32 })
-  .node('zero', Constant, { value: 0 })
-  .node('cmp', SignedComparator)
-  .node('positiveLed', Led)
-  .node('addVal', Constant, { value: 10 })
-  .node('subVal', Constant, { value: 246 })
-  .node('result', Mux)
-  .node('display', HexDisplay)
-  .connect(({ in: inp, out, angle, zero, cmp, positiveLed, addVal, subVal, result, display }) => [
+const SignDetection = component('SignDetection', {
+  nodes: { angle: Input, zero: Constant, cmp: SignedComparator, positiveLed: Led, addVal: Constant, subVal: Constant, result: Mux, display: HexDisplay },
+  nodeArgs: { angle: { value: 32 }, zero: { value: 0 }, addVal: { value: 10 }, subVal: { value: 246 } },
+  connect: ({ in: inp, out, angle, zero, cmp, positiveLed, addVal, subVal, result, display }) => [
     angle.out.to(cmp.a),
     zero.out.to(cmp.b),
     cmp.gte.to(positiveLed.in, result.sel),
     subVal.out.to(result.in0),
     addVal.out.to(result.in1),
     result.out.to(display.in),
-  ])
-  .build()
+  ],
+})
 `,
     dsl: `
-const SignDetection = component('SignDetection')
-  .node('angle', Input, { value: 32 })
-  .node('zero', Constant, { value: 0 })
-  .node('cmp', SignedComparator)
-  .node('positiveLed', Led)
-  .node('addVal', Constant, { value: 10 })
-  .node('subVal', Constant, { value: 246 })
-  .node('result', Mux)
-  .node('display', HexDisplay)
-  .connect(({ in: inp, out, angle, zero, cmp, positiveLed, addVal, subVal, result, display }) => [
+const SignDetection = component('SignDetection', {
+  nodes: { angle: Input, zero: Constant, cmp: SignedComparator, positiveLed: Led, addVal: Constant, subVal: Constant, result: Mux, display: HexDisplay },
+  nodeArgs: { angle: { value: 32 }, zero: { value: 0 }, addVal: { value: 10 }, subVal: { value: 246 } },
+  connect: ({ in: inp, out, angle, zero, cmp, positiveLed, addVal, subVal, result, display }) => [
     angle.out.to(cmp.a),
     zero.out.to(cmp.b),
     cmp.gte.to(positiveLed.in, result.sel),
     subVal.out.to(result.in0),
     addVal.out.to(result.in1),
     result.out.to(display.in),
-  ])
-  .build()
+  ],
+})
 `,
   },
 
@@ -155,38 +121,30 @@ const SignDetection = component('SignDetection')
     description:
       "CORDIC runs for a fixed number of iterations (8 in our case). A register counts up and a comparator stops when done.",
     displayDsl: `
-const IterationControl = component('IterationControl')
-  .node('iter', Register, { initial: 0 })
-  .node('eight', Constant, { value: 8 })
-  .node('inc', Incrementer)
-  .node('shouldContinue', Comparator)
-  .node('display', HexDisplay)
-  .node('doneLed', Led)
-  .connect(({ in: inp, out, iter, eight, inc, shouldContinue, display, doneLed }) => [
+const IterationControl = component('IterationControl', {
+  nodes: { iter: Register, eight: Constant, inc: Incrementer, shouldContinue: Comparator, display: HexDisplay, doneLed: Led },
+  nodeArgs: { iter: { initial: 0 }, eight: { value: 8 } },
+  connect: ({ in: inp, out, iter, eight, inc, shouldContinue, display, doneLed }) => [
     iter.q.to(inc.in, shouldContinue.a, display.in),
     eight.out.to(shouldContinue.b),
     shouldContinue.lt.to(iter.we),
     inc.out.to(iter.data),
     shouldContinue.eq.to(doneLed.in),
-  ])
-  .build()
+  ],
+})
 `,
     dsl: `
-const IterationControl = component('IterationControl')
-  .node('iter', Register, { initial: 0 })
-  .node('eight', Constant, { value: 8 })
-  .node('inc', Incrementer)
-  .node('shouldContinue', Comparator)
-  .node('display', HexDisplay)
-  .node('doneLed', Led)
-  .connect(({ in: inp, out, iter, eight, inc, shouldContinue, display, doneLed }) => [
+const IterationControl = component('IterationControl', {
+  nodes: { iter: Register, eight: Constant, inc: Incrementer, shouldContinue: Comparator, display: HexDisplay, doneLed: Led },
+  nodeArgs: { iter: { initial: 0 }, eight: { value: 8 } },
+  connect: ({ in: inp, out, iter, eight, inc, shouldContinue, display, doneLed }) => [
     iter.q.to(inc.in, shouldContinue.a, display.in),
     eight.out.to(shouldContinue.b),
     shouldContinue.lt.to(iter.we),
     inc.out.to(iter.data),
     shouldContinue.eq.to(doneLed.in),
-  ])
-  .build()
+  ],
+})
 `,
   },
 
@@ -195,28 +153,10 @@ const IterationControl = component('IterationControl')
     description:
       "CORDIC uses a pre-computed table of atan(2^-i) values. A cascaded mux tree selects the right angle for each iteration.",
     displayDsl: `
-const AngleLookup = component('AngleLookup')
-  .node('iteration', Input, { value: 0 })
-  .node('angle0', Constant, { value: 32 })
-  .node('angle1', Constant, { value: 19 })
-  .node('angle2', Constant, { value: 10 })
-  .node('angle3', Constant, { value: 5 })
-  .node('angle4', Constant, { value: 3 })
-  .node('angle5', Constant, { value: 1 })
-  .node('angle6', Constant, { value: 1 })
-  .node('angle7', Constant, { value: 0 })
-  .node('bit0', BitSlice, { low: 0, high: 0 })
-  .node('bit1', BitSlice, { low: 1, high: 1 })
-  .node('bit2', BitSlice, { low: 2, high: 2 })
-  .node('mux01', Mux)
-  .node('mux23', Mux)
-  .node('mux45', Mux)
-  .node('mux67', Mux)
-  .node('mux0123', Mux)
-  .node('mux4567', Mux)
-  .node('angleSel', Mux)
-  .node('display', HexDisplay)
-  .connect(({ in: inp, out, iteration, angle0, angle1, angle2, angle3, angle4, angle5, angle6, angle7, bit0, bit1, bit2, mux01, mux23, mux45, mux67, mux0123, mux4567, angleSel, display }) => [
+const AngleLookup = component('AngleLookup', {
+  nodes: { iteration: Input, angle0: Constant, angle1: Constant, angle2: Constant, angle3: Constant, angle4: Constant, angle5: Constant, angle6: Constant, angle7: Constant, bit0: BitSlice, bit1: BitSlice, bit2: BitSlice, mux01: Mux, mux23: Mux, mux45: Mux, mux67: Mux, mux0123: Mux, mux4567: Mux, angleSel: Mux, display: HexDisplay },
+  nodeArgs: { iteration: { value: 0 }, angle0: { value: 32 }, angle1: { value: 19 }, angle2: { value: 10 }, angle3: { value: 5 }, angle4: { value: 3 }, angle5: { value: 1 }, angle6: { value: 1 }, angle7: { value: 0 }, bit0: { low: 0, high: 0 }, bit1: { low: 1, high: 1 }, bit2: { low: 2, high: 2 } },
+  connect: ({ in: inp, out, iteration, angle0, angle1, angle2, angle3, angle4, angle5, angle6, angle7, bit0, bit1, bit2, mux01, mux23, mux45, mux67, mux0123, mux4567, angleSel, display }) => [
     iteration.out.to(bit0.in, bit1.in, bit2.in),
     bit0.out.to(mux01.sel, mux23.sel, mux45.sel, mux67.sel),
     angle0.out.to(mux01.in0),
@@ -236,32 +176,14 @@ const AngleLookup = component('AngleLookup')
     mux0123.out.to(angleSel.in0),
     mux4567.out.to(angleSel.in1),
     angleSel.out.to(display.in),
-  ])
-  .build()
+  ],
+})
 `,
     dsl: `
-const AngleLookup = component('AngleLookup')
-  .node('iteration', Input, { value: 0 })
-  .node('angle0', Constant, { value: 32 })
-  .node('angle1', Constant, { value: 19 })
-  .node('angle2', Constant, { value: 10 })
-  .node('angle3', Constant, { value: 5 })
-  .node('angle4', Constant, { value: 3 })
-  .node('angle5', Constant, { value: 1 })
-  .node('angle6', Constant, { value: 1 })
-  .node('angle7', Constant, { value: 0 })
-  .node('bit0', BitSlice, { low: 0, high: 0 })
-  .node('bit1', BitSlice, { low: 1, high: 1 })
-  .node('bit2', BitSlice, { low: 2, high: 2 })
-  .node('mux01', Mux)
-  .node('mux23', Mux)
-  .node('mux45', Mux)
-  .node('mux67', Mux)
-  .node('mux0123', Mux)
-  .node('mux4567', Mux)
-  .node('angleSel', Mux)
-  .node('display', HexDisplay)
-  .connect(({ in: inp, out, iteration, angle0, angle1, angle2, angle3, angle4, angle5, angle6, angle7, bit0, bit1, bit2, mux01, mux23, mux45, mux67, mux0123, mux4567, angleSel, display }) => [
+const AngleLookup = component('AngleLookup', {
+  nodes: { iteration: Input, angle0: Constant, angle1: Constant, angle2: Constant, angle3: Constant, angle4: Constant, angle5: Constant, angle6: Constant, angle7: Constant, bit0: BitSlice, bit1: BitSlice, bit2: BitSlice, mux01: Mux, mux23: Mux, mux45: Mux, mux67: Mux, mux0123: Mux, mux4567: Mux, angleSel: Mux, display: HexDisplay },
+  nodeArgs: { iteration: { value: 0 }, angle0: { value: 32 }, angle1: { value: 19 }, angle2: { value: 10 }, angle3: { value: 5 }, angle4: { value: 3 }, angle5: { value: 1 }, angle6: { value: 1 }, angle7: { value: 0 }, bit0: { low: 0, high: 0 }, bit1: { low: 1, high: 1 }, bit2: { low: 2, high: 2 } },
+  connect: ({ in: inp, out, iteration, angle0, angle1, angle2, angle3, angle4, angle5, angle6, angle7, bit0, bit1, bit2, mux01, mux23, mux45, mux67, mux0123, mux4567, angleSel, display }) => [
     iteration.out.to(bit0.in, bit1.in, bit2.in),
     bit0.out.to(mux01.sel, mux23.sel, mux45.sel, mux67.sel),
     angle0.out.to(mux01.in0),
@@ -281,8 +203,8 @@ const AngleLookup = component('AngleLookup')
     mux0123.out.to(angleSel.in0),
     mux4567.out.to(angleSel.in1),
     angleSel.out.to(display.in),
-  ])
-  .build()
+  ],
+})
 `,
   },
 };
@@ -293,56 +215,10 @@ const AngleLookup = component('AngleLookup')
  * Expected result: x ~ y ~ 93 after 8 iterations.
  */
 export const CORDIC_DSL = `
-const CORDICIteration = component('CORDICIteration')
-  .node('x', Register, { initial: 80 })
-  .node('y', Register, { initial: 0 })
-  .node('z', Register, { initial: 32 })
-  .node('iteration', Register, { initial: 0 })
-  .node('zero', Constant, { value: 0 })
-  .node('one', Constant, { value: 1 })
-  .node('eight', Constant, { value: 8 })
-  .node('zPositive', SignedComparator)
-  .node('xShifted', RightShifter)
-  .node('yShifted', RightShifter)
-  .node('yShiftedNeg', BusNot)
-  .node('xSubtract', SignedAdder)
-  .node('xAdd', SignedAdder)
-  .node('xUpdate', Mux)
-  .node('xShiftedNeg', BusNot)
-  .node('yAdd', SignedAdder)
-  .node('ySubtract', SignedAdder)
-  .node('yUpdate', Mux)
-  .node('angle0', Constant, { value: 32 })
-  .node('angle1', Constant, { value: 19 })
-  .node('angle2', Constant, { value: 10 })
-  .node('angle3', Constant, { value: 5 })
-  .node('angle4', Constant, { value: 3 })
-  .node('angle5', Constant, { value: 1 })
-  .node('angle6', Constant, { value: 1 })
-  .node('angle7', Constant, { value: 0 })
-  .node('bit0', BitSlice, { low: 0, high: 0 })
-  .node('bit1', BitSlice, { low: 1, high: 1 })
-  .node('bit2', BitSlice, { low: 2, high: 2 })
-  .node('mux01', Mux)
-  .node('mux23', Mux)
-  .node('mux45', Mux)
-  .node('mux67', Mux)
-  .node('mux0123', Mux)
-  .node('mux4567', Mux)
-  .node('angleSel', Mux)
-  .node('angleNeg', BusNot)
-  .node('zSubtract', SignedAdder)
-  .node('zAdd', SignedAdder)
-  .node('zUpdate', Mux)
-  .node('iterInc', Incrementer)
-  .node('shouldContinue', Comparator)
-  .node('xDisplay', HexDisplay)
-  .node('yDisplay', HexDisplay)
-  .node('zDisplay', HexDisplay)
-  .node('iterDisplay', HexDisplay)
-  .node('doneCheck', Comparator)
-  .node('doneLed', Led)
-  .connect(({ in: inp, out, x, y, z, iteration, zero, one, eight, zPositive, xShifted, yShifted, yShiftedNeg, xSubtract, xAdd, xUpdate, xShiftedNeg, yAdd, ySubtract, yUpdate, angle0, angle1, angle2, angle3, angle4, angle5, angle6, angle7, bit0, bit1, bit2, mux01, mux23, mux45, mux67, mux0123, mux4567, angleSel, angleNeg, zSubtract, zAdd, zUpdate, iterInc, shouldContinue, xDisplay, yDisplay, zDisplay, iterDisplay, doneCheck, doneLed }) => [
+const CORDICIteration = component('CORDICIteration', {
+  nodes: { x: Register, y: Register, z: Register, iteration: Register, zero: Constant, one: Constant, eight: Constant, zPositive: SignedComparator, xShifted: RightShifter, yShifted: RightShifter, yShiftedNeg: BusNot, xSubtract: SignedAdder, xAdd: SignedAdder, xUpdate: Mux, xShiftedNeg: BusNot, yAdd: SignedAdder, ySubtract: SignedAdder, yUpdate: Mux, angle0: Constant, angle1: Constant, angle2: Constant, angle3: Constant, angle4: Constant, angle5: Constant, angle6: Constant, angle7: Constant, bit0: BitSlice, bit1: BitSlice, bit2: BitSlice, mux01: Mux, mux23: Mux, mux45: Mux, mux67: Mux, mux0123: Mux, mux4567: Mux, angleSel: Mux, angleNeg: BusNot, zSubtract: SignedAdder, zAdd: SignedAdder, zUpdate: Mux, iterInc: Incrementer, shouldContinue: Comparator, xDisplay: HexDisplay, yDisplay: HexDisplay, zDisplay: HexDisplay, iterDisplay: HexDisplay, doneCheck: Comparator, doneLed: Led },
+  nodeArgs: { x: { initial: 80 }, y: { initial: 0 }, z: { initial: 32 }, iteration: { initial: 0 }, zero: { value: 0 }, one: { value: 1 }, eight: { value: 8 }, angle0: { value: 32 }, angle1: { value: 19 }, angle2: { value: 10 }, angle3: { value: 5 }, angle4: { value: 3 }, angle5: { value: 1 }, angle6: { value: 1 }, angle7: { value: 0 }, bit0: { low: 0, high: 0 }, bit1: { low: 1, high: 1 }, bit2: { low: 2, high: 2 } },
+  connect: ({ in: inp, out, x, y, z, iteration, zero, one, eight, zPositive, xShifted, yShifted, yShiftedNeg, xSubtract, xAdd, xUpdate, xShiftedNeg, yAdd, ySubtract, yUpdate, angle0, angle1, angle2, angle3, angle4, angle5, angle6, angle7, bit0, bit1, bit2, mux01, mux23, mux45, mux67, mux0123, mux4567, angleSel, angleNeg, zSubtract, zAdd, zUpdate, iterInc, shouldContinue, xDisplay, yDisplay, zDisplay, iterDisplay, doneCheck, doneLed }) => [
     z.q.to(zPositive.a, zSubtract.a, zAdd.a, zDisplay.in),
     zero.out.to(zPositive.b, xAdd.carry_in, yAdd.carry_in, zAdd.carry_in),
     x.q.to(xShifted.value, xSubtract.a, xAdd.a, xDisplay.in),
@@ -386,6 +262,6 @@ const CORDICIteration = component('CORDICIteration')
     zUpdate.out.to(z.data),
     iterInc.out.to(iteration.data),
     doneCheck.eq.to(doneLed.in),
-  ])
-  .build()
+  ],
+})
 `;

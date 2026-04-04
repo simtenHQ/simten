@@ -1,38 +1,11 @@
 // Auto-generated from DSL
 
-const ALU = component('ALU')
-  .in('a', bus(8))
-  .in('b', bus(8))
-  .in('op', bus(3))
-  .in('carry_in', bit)
-  .out('result', bus(8))
-  .out('carry_out', bit)
-  .out('zero', bit)
-  .out('negative', bit)
-  .node('adder', Adder)
-  .node('subtractor', Subtractor)
-  .node('and_op', BusAnd)
-  .node('or_op', BusOr)
-  .node('xor_op', BusXor)
-  .node('op_0', Constant, { value: 0 })
-  .node('op_1', Constant, { value: 1 })
-  .node('op_2', Constant, { value: 2 })
-  .node('op_3', Constant, { value: 3 })
-  .node('op_4', Constant, { value: 4 })
-  .node('is_add', Comparator)
-  .node('is_sub', Comparator)
-  .node('is_and', Comparator)
-  .node('is_or', Comparator)
-  .node('is_xor', Comparator)
-  .node('mux1', Mux)
-  .node('mux2', Mux)
-  .node('mux3', Mux)
-  .node('mux4', Mux)
-  .node('mux_carry', Mux)
-  .node('zero_cmp', Comparator)
-  .node('threshold', Constant, { value: 127 })
-  .node('neg_cmp', Comparator)
-  .connect(({ in: inp, out, adder, subtractor, and_op, or_op, xor_op, op_0, op_1, op_2, op_3, op_4, is_add, is_sub, is_and, is_or, is_xor, mux1, mux2, mux3, mux4, mux_carry, zero_cmp, threshold, neg_cmp }) => [
+const ALU = component('ALU', {
+  in: { a: bus(8), b: bus(8), op: bus(3), carry_in: bit },
+  out: { result: bus(8), carry_out: bit, zero: bit, negative: bit },
+  nodes: { adder: Adder, subtractor: Subtractor, and_op: BusAnd, or_op: BusOr, xor_op: BusXor, op_0: Constant, op_1: Constant, op_2: Constant, op_3: Constant, op_4: Constant, is_add: Comparator, is_sub: Comparator, is_and: Comparator, is_or: Comparator, is_xor: Comparator, mux1: Mux, mux2: Mux, mux3: Mux, mux4: Mux, mux_carry: Mux, zero_cmp: Comparator, threshold: Constant, neg_cmp: Comparator },
+  nodeArgs: { op_0: { value: 0 }, op_1: { value: 1 }, op_2: { value: 2 }, op_3: { value: 3 }, op_4: { value: 4 }, threshold: { value: 127 } },
+  connect: ({ in: inp, out, adder, subtractor, and_op, or_op, xor_op, op_0, op_1, op_2, op_3, op_4, is_add, is_sub, is_and, is_or, is_xor, mux1, mux2, mux3, mux4, mux_carry, zero_cmp, threshold, neg_cmp }) => [
     inp.a.to(adder.a, subtractor.a, and_op.a, or_op.a, xor_op.a),
     inp.b.to(adder.b, subtractor.b, and_op.b, or_op.b, xor_op.b),
     inp.carry_in.to(adder.carry_in, subtractor.borrow_in),
@@ -62,29 +35,15 @@ const ALU = component('ALU')
     zero_cmp.eq.to(out.zero),
     threshold.out.to(neg_cmp.b),
     neg_cmp.gt.to(out.negative),
-  ])
-  .build()
+  ],
+})
 
-const ProgramCounter = component('ProgramCounter')
-  .in('load', bit)
-  .in('load_addr_low', bus(8))
-  .in('load_addr_high', bus(8))
-  .in('increment', bit)
-  .out('pc_low', bus(8))
-  .out('pc_high', bus(8))
-  .node('pcl_reg', Register)
-  .node('pch_reg', Register)
-  .node('inc_low', Incrementer)
-  .node('max_byte', Constant, { value: 255 })
-  .node('will_overflow', Comparator)
-  .node('inc_high', Incrementer)
-  .node('high_inc_mux', Mux)
-  .node('low_load_or_inc', Mux)
-  .node('low_final', Mux)
-  .node('high_load_or_inc', Mux)
-  .node('high_final', Mux)
-  .node('always_on', Constant, { value: 1 })
-  .connect(({ in: inp, out, pcl_reg, pch_reg, inc_low, max_byte, will_overflow, inc_high, high_inc_mux, low_load_or_inc, low_final, high_load_or_inc, high_final, always_on }) => [
+const ProgramCounter = component('ProgramCounter', {
+  in: { load: bit, load_addr_low: bus(8), load_addr_high: bus(8), increment: bit },
+  out: { pc_low: bus(8), pc_high: bus(8) },
+  nodes: { pcl_reg: Register, pch_reg: Register, inc_low: Incrementer, max_byte: Constant, will_overflow: Comparator, inc_high: Incrementer, high_inc_mux: Mux, low_load_or_inc: Mux, low_final: Mux, high_load_or_inc: Mux, high_final: Mux, always_on: Constant },
+  nodeArgs: { max_byte: { value: 255 }, always_on: { value: 1 } },
+  connect: ({ in: inp, out, pcl_reg, pch_reg, inc_low, max_byte, will_overflow, inc_high, high_inc_mux, low_load_or_inc, low_final, high_load_or_inc, high_final, always_on }) => [
     pcl_reg.q.to(inc_low.in, will_overflow.a, low_load_or_inc.in0, out.pc_low),
     max_byte.out.to(will_overflow.b),
     pch_reg.q.to(inc_high.in, high_inc_mux.in0, high_load_or_inc.in0, out.pc_high),
@@ -101,43 +60,15 @@ const ProgramCounter = component('ProgramCounter')
     inp.load_addr_high.to(high_final.in1),
     high_final.out.to(pch_reg.data),
     always_on.out.to(pcl_reg.we, pch_reg.we),
-  ])
-  .build()
+  ],
+})
 
-const InstructionDecoder = component('InstructionDecoder')
-  .in('opcode', bus(8))
-  .out('is_LDA_imm', bit)
-  .out('is_ADC_imm', bit)
-  .out('is_STA_abs', bit)
-  .out('is_JMP_abs', bit)
-  .out('is_BRK', bit)
-  .out('addr_mode', bus(2))
-  .out('cycles', bus(3))
-  .node('val_LDA', Constant, { value: 169 })
-  .node('val_ADC', Constant, { value: 105 })
-  .node('val_STA', Constant, { value: 141 })
-  .node('val_JMP', Constant, { value: 76 })
-  .node('val_BRK', Constant, { value: 0 })
-  .node('cmp_LDA', Comparator)
-  .node('cmp_ADC', Comparator)
-  .node('cmp_STA', Comparator)
-  .node('cmp_JMP', Comparator)
-  .node('cmp_BRK', Comparator)
-  .node('mode_implied', Constant, { value: 0 })
-  .node('mode_immediate', Constant, { value: 1 })
-  .node('mode_absolute', Constant, { value: 2 })
-  .node('is_immediate', Or)
-  .node('is_absolute', Or)
-  .node('mode_mux1', Mux)
-  .node('mode_mux2', Mux)
-  .node('cycles_1', Constant, { value: 1 })
-  .node('cycles_2', Constant, { value: 2 })
-  .node('cycles_3', Constant, { value: 3 })
-  .node('cycles_4', Constant, { value: 4 })
-  .node('cycle_mux1', Mux)
-  .node('cycle_mux2', Mux)
-  .node('cycle_mux3', Mux)
-  .connect(({ in: inp, out, val_LDA, val_ADC, val_STA, val_JMP, val_BRK, cmp_LDA, cmp_ADC, cmp_STA, cmp_JMP, cmp_BRK, mode_implied, mode_immediate, mode_absolute, is_immediate, is_absolute, mode_mux1, mode_mux2, cycles_1, cycles_2, cycles_3, cycles_4, cycle_mux1, cycle_mux2, cycle_mux3 }) => [
+const InstructionDecoder = component('InstructionDecoder', {
+  in: { opcode: bus(8) },
+  out: { is_LDA_imm: bit, is_ADC_imm: bit, is_STA_abs: bit, is_JMP_abs: bit, is_BRK: bit, addr_mode: bus(2), cycles: bus(3) },
+  nodes: { val_LDA: Constant, val_ADC: Constant, val_STA: Constant, val_JMP: Constant, val_BRK: Constant, cmp_LDA: Comparator, cmp_ADC: Comparator, cmp_STA: Comparator, cmp_JMP: Comparator, cmp_BRK: Comparator, mode_implied: Constant, mode_immediate: Constant, mode_absolute: Constant, is_immediate: Or, is_absolute: Or, mode_mux1: Mux, mode_mux2: Mux, cycles_1: Constant, cycles_2: Constant, cycles_3: Constant, cycles_4: Constant, cycle_mux1: Mux, cycle_mux2: Mux, cycle_mux3: Mux },
+  nodeArgs: { val_LDA: { value: 169 }, val_ADC: { value: 105 }, val_STA: { value: 141 }, val_JMP: { value: 76 }, val_BRK: { value: 0 }, mode_implied: { value: 0 }, mode_immediate: { value: 1 }, mode_absolute: { value: 2 }, cycles_1: { value: 1 }, cycles_2: { value: 2 }, cycles_3: { value: 3 }, cycles_4: { value: 4 } },
+  connect: ({ in: inp, out, val_LDA, val_ADC, val_STA, val_JMP, val_BRK, cmp_LDA, cmp_ADC, cmp_STA, cmp_JMP, cmp_BRK, mode_implied, mode_immediate, mode_absolute, is_immediate, is_absolute, mode_mux1, mode_mux2, cycles_1, cycles_2, cycles_3, cycles_4, cycle_mux1, cycle_mux2, cycle_mux3 }) => [
     inp.opcode.to(cmp_LDA.a, cmp_ADC.a, cmp_STA.a, cmp_JMP.a, cmp_BRK.a),
     val_LDA.out.to(cmp_LDA.b),
     cmp_LDA.eq.to(out.is_LDA_imm),
@@ -167,44 +98,15 @@ const InstructionDecoder = component('InstructionDecoder')
     cycle_mux2.out.to(cycle_mux3.in0),
     cycles_4.out.to(cycle_mux3.in1),
     cycle_mux3.out.to(out.cycles),
-  ])
-  .build()
+  ],
+})
 
-const CPUControl = component('CPUControl')
-  .in('reset', bit)
-  .in('instr_cycles', bus(3))
-  .in('is_BRK', bit)
-  .out('current_state', bus(3))
-  .out('cycle_num', bus(3))
-  .out('pc_increment', bit)
-  .out('mem_read', bit)
-  .out('mem_write', bit)
-  .out('alu_enable', bit)
-  .out('reg_write', bit)
-  .out('halted', bit)
-  .node('state_reg', Register)
-  .node('cycle_reg', Register)
-  .node('halt_reg', Register)
-  .node('STATE_FETCH', Constant, { value: 0 })
-  .node('STATE_DECODE', Constant, { value: 1 })
-  .node('STATE_EXECUTE', Constant, { value: 2 })
-  .node('is_fetch', Comparator)
-  .node('is_decode', Comparator)
-  .node('is_execute', Comparator)
-  .node('inc_cycle', Incrementer)
-  .node('cycle_done', Comparator)
-  .node('cycle_reset_or_inc', Mux)
-  .node('always_on', Constant, { value: 1 })
-  .node('zero', Constant, { value: 0 })
-  .node('exec_done', And)
-  .node('next_if_fetch', Mux)
-  .node('next_if_decode', Mux)
-  .node('next_if_execute', Mux)
-  .node('handle_reset', Mux)
-  .node('set_halt', Or)
-  .node('halt_value', Mux)
-  .node('mem_read_sig', Or)
-  .connect(({ in: inp, out, state_reg, cycle_reg, halt_reg, STATE_FETCH, STATE_DECODE, STATE_EXECUTE, is_fetch, is_decode, is_execute, inc_cycle, cycle_done, cycle_reset_or_inc, always_on, zero, exec_done, next_if_fetch, next_if_decode, next_if_execute, handle_reset, set_halt, halt_value, mem_read_sig }) => [
+const CPUControl = component('CPUControl', {
+  in: { reset: bit, instr_cycles: bus(3), is_BRK: bit },
+  out: { current_state: bus(3), cycle_num: bus(3), pc_increment: bit, mem_read: bit, mem_write: bit, alu_enable: bit, reg_write: bit, halted: bit },
+  nodes: { state_reg: Register, cycle_reg: Register, halt_reg: Register, STATE_FETCH: Constant, STATE_DECODE: Constant, STATE_EXECUTE: Constant, is_fetch: Comparator, is_decode: Comparator, is_execute: Comparator, inc_cycle: Incrementer, cycle_done: Comparator, cycle_reset_or_inc: Mux, always_on: Constant, zero: Constant, exec_done: And, next_if_fetch: Mux, next_if_decode: Mux, next_if_execute: Mux, handle_reset: Mux, set_halt: Or, halt_value: Mux, mem_read_sig: Or },
+  nodeArgs: { STATE_FETCH: { value: 0 }, STATE_DECODE: { value: 1 }, STATE_EXECUTE: { value: 2 }, always_on: { value: 1 }, zero: { value: 0 } },
+  connect: ({ in: inp, out, state_reg, cycle_reg, halt_reg, STATE_FETCH, STATE_DECODE, STATE_EXECUTE, is_fetch, is_decode, is_execute, inc_cycle, cycle_done, cycle_reset_or_inc, always_on, zero, exec_done, next_if_fetch, next_if_decode, next_if_execute, handle_reset, set_halt, halt_value, mem_read_sig }) => [
     state_reg.q.to(is_fetch.a, is_decode.a, is_execute.a, next_if_fetch.in0, out.current_state),
     STATE_FETCH.out.to(is_fetch.b, cycle_reset_or_inc.in1, next_if_execute.in1, handle_reset.in1),
     STATE_DECODE.out.to(is_decode.b, next_if_fetch.in1),
@@ -230,44 +132,15 @@ const CPUControl = component('CPUControl')
     zero.out.to(halt_value.in1),
     halt_value.out.to(halt_reg.data),
     mem_read_sig.out.to(out.mem_read),
-  ])
-  .build()
+  ],
+})
 
-const SimpleROM = component('SimpleROM')
-  .in('addr', bus(8))
-  .out('data', bus(8))
-  .node('zero', Constant, { value: 0 })
-  .node('one', Constant, { value: 1 })
-  .node('two', Constant, { value: 2 })
-  .node('three', Constant, { value: 3 })
-  .node('four', Constant, { value: 4 })
-  .node('five', Constant, { value: 5 })
-  .node('six', Constant, { value: 6 })
-  .node('seven', Constant, { value: 7 })
-  .node('at_0', Comparator)
-  .node('at_1', Comparator)
-  .node('at_2', Comparator)
-  .node('at_3', Comparator)
-  .node('at_4', Comparator)
-  .node('at_5', Comparator)
-  .node('at_6', Comparator)
-  .node('at_7', Comparator)
-  .node('byte_0', Constant, { value: 169 })
-  .node('byte_1', Constant, { value: 66 })
-  .node('byte_2', Constant, { value: 105 })
-  .node('byte_3', Constant, { value: 8 })
-  .node('byte_4', Constant, { value: 141 })
-  .node('byte_5', Constant, { value: 254 })
-  .node('byte_6', Constant, { value: 0 })
-  .node('byte_7', Constant, { value: 0 })
-  .node('mux1', Mux)
-  .node('mux2', Mux)
-  .node('mux3', Mux)
-  .node('mux4', Mux)
-  .node('mux5', Mux)
-  .node('mux6', Mux)
-  .node('mux7', Mux)
-  .connect(({ in: inp, out, zero, one, two, three, four, five, six, seven, at_0, at_1, at_2, at_3, at_4, at_5, at_6, at_7, byte_0, byte_1, byte_2, byte_3, byte_4, byte_5, byte_6, byte_7, mux1, mux2, mux3, mux4, mux5, mux6, mux7 }) => [
+const SimpleROM = component('SimpleROM', {
+  in: { addr: bus(8) },
+  out: { data: bus(8) },
+  nodes: { zero: Constant, one: Constant, two: Constant, three: Constant, four: Constant, five: Constant, six: Constant, seven: Constant, at_0: Comparator, at_1: Comparator, at_2: Comparator, at_3: Comparator, at_4: Comparator, at_5: Comparator, at_6: Comparator, at_7: Comparator, byte_0: Constant, byte_1: Constant, byte_2: Constant, byte_3: Constant, byte_4: Constant, byte_5: Constant, byte_6: Constant, byte_7: Constant, mux1: Mux, mux2: Mux, mux3: Mux, mux4: Mux, mux5: Mux, mux6: Mux, mux7: Mux },
+  nodeArgs: { zero: { value: 0 }, one: { value: 1 }, two: { value: 2 }, three: { value: 3 }, four: { value: 4 }, five: { value: 5 }, six: { value: 6 }, seven: { value: 7 }, byte_0: { value: 169 }, byte_1: { value: 66 }, byte_2: { value: 105 }, byte_3: { value: 8 }, byte_4: { value: 141 }, byte_5: { value: 254 }, byte_6: { value: 0 }, byte_7: { value: 0 } },
+  connect: ({ in: inp, out, zero, one, two, three, four, five, six, seven, at_0, at_1, at_2, at_3, at_4, at_5, at_6, at_7, byte_0, byte_1, byte_2, byte_3, byte_4, byte_5, byte_6, byte_7, mux1, mux2, mux3, mux4, mux5, mux6, mux7 }) => [
     inp.addr.to(at_0.a, at_1.a, at_2.a, at_3.a, at_4.a, at_5.a, at_6.a, at_7.a),
     zero.out.to(at_0.b),
     one.out.to(at_1.b),
@@ -299,25 +172,15 @@ const SimpleROM = component('SimpleROM')
     mux6.out.to(mux7.in0),
     byte_7.out.to(mux7.in1),
     mux7.out.to(out.data),
-  ])
-  .build()
+  ],
+})
 
-const CompleteCPU = component('CompleteCPU')
-  .in('reset', bit)
-  .out('pc_low', bus(8))
-  .out('pc_high', bus(8))
-  .out('instruction', bus(8))
-  .out('current_state', bus(3))
-  .out('reg_a', bus(8))
-  .out('halted', bit)
-  .node('pc_reg', ProgramCounter)
-  .node('decoder', InstructionDecoder)
-  .node('control', CPUControl)
-  .node('alu', ALU)
-  .node('rom', SimpleROM)
-  .node('regA', Register)
-  .node('zero', Constant, { value: 0 })
-  .connect(({ in: inp, out, pc_reg, decoder, control, alu, rom, regA, zero }) => [
+const CompleteCPU = component('CompleteCPU', {
+  in: { reset: bit },
+  out: { pc_low: bus(8), pc_high: bus(8), instruction: bus(8), current_state: bus(3), reg_a: bus(8), halted: bit },
+  nodes: { pc_reg: ProgramCounter, decoder: InstructionDecoder, control: CPUControl, alu: ALU, rom: SimpleROM, regA: Register, zero: Constant },
+  nodeArgs: { zero: { value: 0 } },
+  connect: ({ in: inp, out, pc_reg, decoder, control, alu, rom, regA, zero }) => [
     pc_reg.pc_low.to(rom.addr, out.pc_low),
     rom.data.to(decoder.opcode, out.instruction, alu.b),
     decoder.cycles.to(control.instr_cycles),
@@ -331,23 +194,17 @@ const CompleteCPU = component('CompleteCPU')
     pc_reg.pc_high.to(out.pc_high),
     control.current_state.to(out.current_state),
     control.halted.to(out.halted),
-  ])
-  .build()
+  ],
+})
 
-const FullCPUTest = component('FullCPUTest')
-  .node('cpu', CompleteCPU)
-  .node('reset_input', Input)
-  .node('d_pc', HexDisplay)
-  .node('d_instruction', HexDisplay)
-  .node('d_state', HexDisplay)
-  .node('d_reg_a', HexDisplay)
-  .node('d_halted', Led)
-  .connect(({ in: inp, out, cpu, reset_input, d_pc, d_instruction, d_state, d_reg_a, d_halted }) => [
+const FullCPUTest = component('FullCPUTest', {
+  nodes: { cpu: CompleteCPU, reset_input: Input, d_pc: HexDisplay, d_instruction: HexDisplay, d_state: HexDisplay, d_reg_a: HexDisplay, d_halted: Led },
+  connect: ({ in: inp, out, cpu, reset_input, d_pc, d_instruction, d_state, d_reg_a, d_halted }) => [
     reset_input.out.to(cpu.reset),
     cpu.pc_low.to(d_pc.in),
     cpu.instruction.to(d_instruction.in),
     cpu.current_state.to(d_state.in),
     cpu.reg_a.to(d_reg_a.in),
     cpu.halted.to(d_halted.in),
-  ])
-  .build()
+  ],
+})

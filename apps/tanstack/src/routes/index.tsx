@@ -10,123 +10,114 @@ import { useSnakeSimulator } from "@/features/blog/snake-in-hardware/useSnakeSim
 // Demo data
 // ============================================================================
 
-const DEMO_DSL = `const HalfAdder = component('HalfAdder')
-  .in('a', bit).in('b', bit)
-  .out('sum', bit).out('carry', bit)
-  .node('xor1', Xor).node('and1', And)
-  .connect(({ in: inp, out, xor1, and1 }) => [
+const DEMO_DSL = `const HalfAdder = component('HalfAdder', {
+  in: { a: bit, b: bit },
+  out: { sum: bit, carry: bit },
+  nodes: { xor1: Xor, and1: And },
+  connect: ({ in: inp, out, xor1, and1 }) => [
     inp.a.to(xor1.a, and1.a),
     inp.b.to(xor1.b, and1.b),
     xor1.out.to(out.sum),
     and1.out.to(out.carry),
-  ])
-  .build()`;
+  ],
+})`;
 
 const DEMO_HARNESS = `${DEMO_DSL}
 
-const HalfAdderDemo = component('HalfAdderDemo')
-  .node('sw_a', Switch).node('sw_b', Switch)
-  .node('dut', HalfAdder)
-  .node('led_sum', Led).node('led_carry', Led)
-  .connect(({ sw_a, sw_b, dut, led_sum, led_carry }) => [
+const HalfAdderDemo = component('HalfAdderDemo', {
+  nodes: { sw_a: Switch, sw_b: Switch, dut: HalfAdder, led_sum: Led, led_carry: Led },
+  connect: ({ sw_a, sw_b, dut, led_sum, led_carry }) => [
     sw_a.out.to(dut.a), sw_b.out.to(dut.b),
     dut.sum.to(led_sum.in), dut.carry.to(led_carry.in),
-  ])
-  .build()`;
+  ],
+})`;
 
 // --- Toggle (DFlipFlop with NOT feedback) ---
 
-const TOGGLE_DSL = `const Toggle = component('Toggle')
-  .out('q', bit).out('q_bar', bit)
-  .node('dff', DFlipFlop).node('inv', Not)
-  .connect(({ out, dff, inv }) => [
+const TOGGLE_DSL = `const Toggle = component('Toggle', {
+  out: { q: bit, q_bar: bit },
+  nodes: { dff: DFlipFlop, inv: Not },
+  connect: ({ out, dff, inv }) => [
     dff.q.to(inv.in, out.q),
     dff.q_bar.to(out.q_bar),
     inv.out.to(dff.d),
-  ])
-  .build()`;
+  ],
+})`;
 
 const TOGGLE_HARNESS = `${TOGGLE_DSL}
 
-const ToggleDemo = component('ToggleDemo')
-  .node('dut', Toggle)
-  .node('led_q', Led).node('led_qbar', Led)
-  .connect(({ dut, led_q, led_qbar }) => [
+const ToggleDemo = component('ToggleDemo', {
+  nodes: { dut: Toggle, led_q: Led, led_qbar: Led },
+  connect: ({ dut, led_q, led_qbar }) => [
     dut.q.to(led_q.in),
     dut.q_bar.to(led_qbar.in),
-  ])
-  .build()`;
+  ],
+})`;
 
 // --- Composite Full Adder (built from Half Adders — for drill-down showcase) ---
 
-const DRILLDOWN_DSL = `const HalfAdder = component('HalfAdder')
-  .in('a', bit).in('b', bit)
-  .out('sum', bit).out('carry', bit)
-  .node('xor1', Xor).node('and1', And)
-  .connect(({ in: inp, out, xor1, and1 }) => [
+const DRILLDOWN_DSL = `const HalfAdder = component('HalfAdder', {
+  in: { a: bit, b: bit },
+  out: { sum: bit, carry: bit },
+  nodes: { xor1: Xor, and1: And },
+  connect: ({ in: inp, out, xor1, and1 }) => [
     inp.a.to(xor1.a, and1.a),
     inp.b.to(xor1.b, and1.b),
     xor1.out.to(out.sum),
     and1.out.to(out.carry),
-  ])
-  .build()
+  ],
+})
 
-const FullAdder = component('FullAdder')
-  .in('a', bit).in('b', bit).in('cin', bit)
-  .out('sum', bit).out('cout', bit)
-  .node('ha1', HalfAdder).node('ha2', HalfAdder).node('or1', Or)
-  .connect(({ in: inp, out, ha1, ha2, or1 }) => [
+const FullAdder = component('FullAdder', {
+  in: { a: bit, b: bit, cin: bit },
+  out: { sum: bit, cout: bit },
+  nodes: { ha1: HalfAdder, ha2: HalfAdder, or1: Or },
+  connect: ({ in: inp, out, ha1, ha2, or1 }) => [
     inp.a.to(ha1.a), inp.b.to(ha1.b),
     ha1.sum.to(ha2.a), inp.cin.to(ha2.b),
     ha2.sum.to(out.sum),
     ha1.carry.to(or1.a), ha2.carry.to(or1.b),
     or1.out.to(out.cout),
-  ])
-  .build()
+  ],
+})
 
-const DrillDownDemo = component('DrillDownDemo')
-  .node('sw_a', Switch).node('sw_b', Switch).node('sw_cin', Switch)
-  .node('fa', FullAdder)
-  .node('led_sum', Led).node('led_cout', Led)
-  .connect(({ sw_a, sw_b, sw_cin, fa, led_sum, led_cout }) => [
+const DrillDownDemo = component('DrillDownDemo', {
+  nodes: { sw_a: Switch, sw_b: Switch, sw_cin: Switch, fa: FullAdder, led_sum: Led, led_cout: Led },
+  connect: ({ sw_a, sw_b, sw_cin, fa, led_sum, led_cout }) => [
     sw_a.out.to(fa.a), sw_b.out.to(fa.b), sw_cin.out.to(fa.cin),
     fa.sum.to(led_sum.in), fa.cout.to(led_cout.in),
-  ])
-  .build()`;
+  ],
+})`;
 
 // --- 4-bit Shift Register (for time-travel showcase) ---
 
-const SHIFT_REGISTER_DSL = `const ShiftRegister4 = component('ShiftRegister4')
-  .in('data_in', bit)
-  .out('q0', bit).out('q1', bit).out('q2', bit).out('q3', bit)
-  .node('ff0', DFlipFlop).node('ff1', DFlipFlop)
-  .node('ff2', DFlipFlop).node('ff3', DFlipFlop)
-  .connect(({ in: inp, out, ff0, ff1, ff2, ff3 }) => [
+const SHIFT_REGISTER_DSL = `const ShiftRegister4 = component('ShiftRegister4', {
+  in: { data_in: bit },
+  out: { q0: bit, q1: bit, q2: bit, q3: bit },
+  nodes: { ff0: DFlipFlop, ff1: DFlipFlop, ff2: DFlipFlop, ff3: DFlipFlop },
+  connect: ({ in: inp, out, ff0, ff1, ff2, ff3 }) => [
     inp.data_in.to(ff0.d),
     ff0.q.to(ff1.d, out.q0),
     ff1.q.to(ff2.d, out.q1),
     ff2.q.to(ff3.d, out.q2),
     ff3.q.to(out.q3),
-  ])
-  .build()
+  ],
+})
 
-const ShiftRegisterDemo = component('ShiftRegisterDemo')
-  .node('sw_in', Switch)
-  .node('sr', ShiftRegister4)
-  .node('led0', Led).node('led1', Led).node('led2', Led).node('led3', Led)
-  .connect(({ sw_in, sr, led0, led1, led2, led3 }) => [
+const ShiftRegisterDemo = component('ShiftRegisterDemo', {
+  nodes: { sw_in: Switch, sr: ShiftRegister4, led0: Led, led1: Led, led2: Led, led3: Led },
+  connect: ({ sw_in, sr, led0, led1, led2, led3 }) => [
     sw_in.out.to(sr.data_in),
     sr.q0.to(led0.in), sr.q1.to(led1.in),
     sr.q2.to(led2.in), sr.q3.to(led3.in),
-  ])
-  .build()`;
+  ],
+})`;
 
-const FULL_ADDER_DSL = `const FullAdder = component('FullAdder')
-  .in('a', bit).in('b', bit).in('cin', bit)
-  .out('sum', bit).out('cout', bit)
-  .node('xor1', Xor).node('xor2', Xor)
-  .node('and1', And).node('and2', And).node('or1', Or)
-  .connect(({ in: inp, out, xor1, xor2, and1, and2, or1 }) => [
+const FULL_ADDER_DSL = `const FullAdder = component('FullAdder', {
+  in: { a: bit, b: bit, cin: bit },
+  out: { sum: bit, cout: bit },
+  nodes: { xor1: Xor, xor2: Xor, and1: And, and2: And, or1: Or },
+  connect: ({ in: inp, out, xor1, xor2, and1, and2, or1 }) => [
     inp.a.to(xor1.a, and1.a),
     inp.b.to(xor1.b, and1.b),
     xor1.out.to(xor2.a, and2.a),
@@ -135,53 +126,49 @@ const FULL_ADDER_DSL = `const FullAdder = component('FullAdder')
     and1.out.to(or1.a),
     and2.out.to(or1.b),
     or1.out.to(out.cout),
-  ])
-  .build()`;
+  ],
+})`;
 
 const FULL_ADDER_HARNESS = `${FULL_ADDER_DSL}
 
-const FullAdderDemo = component('FullAdderDemo')
-  .node('sw_a', Switch).node('sw_b', Switch).node('sw_cin', Switch)
-  .node('dut', FullAdder)
-  .node('led_sum', Led).node('led_cout', Led)
-  .connect(({ sw_a, sw_b, sw_cin, dut, led_sum, led_cout }) => [
+const FullAdderDemo = component('FullAdderDemo', {
+  nodes: { sw_a: Switch, sw_b: Switch, sw_cin: Switch, dut: FullAdder, led_sum: Led, led_cout: Led },
+  connect: ({ sw_a, sw_b, sw_cin, dut, led_sum, led_cout }) => [
     sw_a.out.to(dut.a), sw_b.out.to(dut.b), sw_cin.out.to(dut.cin),
     dut.sum.to(led_sum.in), dut.cout.to(led_cout.in),
-  ])
-  .build()`;
+  ],
+})`;
 
 // --- 2-bit Counter ---
 
-const COUNTER_DSL = `const Counter2Bit = component('Counter2Bit')
-  .out('bit0', bit).out('bit1', bit)
-  .node('dff0', DFlipFlop).node('dff1', DFlipFlop)
-  .node('inv', Not).node('xor1', Xor)
-  .connect(({ out, dff0, dff1, inv, xor1 }) => [
+const COUNTER_DSL = `const Counter2Bit = component('Counter2Bit', {
+  out: { bit0: bit, bit1: bit },
+  nodes: { dff0: DFlipFlop, dff1: DFlipFlop, inv: Not, xor1: Xor },
+  connect: ({ out, dff0, dff1, inv, xor1 }) => [
     dff0.q.to(inv.in, xor1.b, out.bit0),
     inv.out.to(dff0.d),
     dff1.q.to(xor1.a, out.bit1),
     xor1.out.to(dff1.d),
-  ])
-  .build()`;
+  ],
+})`;
 
 const COUNTER_HARNESS = `${COUNTER_DSL}
 
-const CounterDemo = component('CounterDemo')
-  .node('dut', Counter2Bit)
-  .node('led0', Led).node('led1', Led)
-  .connect(({ dut, led0, led1 }) => [
+const CounterDemo = component('CounterDemo', {
+  nodes: { dut: Counter2Bit, led0: Led, led1: Led },
+  connect: ({ dut, led0, led1 }) => [
     dut.bit0.to(led0.in),
     dut.bit1.to(led1.in),
-  ])
-  .build()`;
+  ],
+})`;
 
 // --- 2-to-1 Mux ---
 
-const MUX_DSL = `const Mux2to1 = component('Mux2to1')
-  .in('a', bit).in('b', bit).in('sel', bit)
-  .out('out', bit)
-  .node('not1', Not).node('and1', And).node('and2', And).node('or1', Or)
-  .connect(({ in: inp, out, not1, and1, and2, or1 }) => [
+const MUX_DSL = `const Mux2to1 = component('Mux2to1', {
+  in: { a: bit, b: bit, sel: bit },
+  out: { out: bit },
+  nodes: { not1: Not, and1: And, and2: And, or1: Or },
+  connect: ({ in: inp, out, not1, and1, and2, or1 }) => [
     inp.sel.to(not1.in, and2.b),
     inp.a.to(and1.a),
     not1.out.to(and1.b),
@@ -189,20 +176,18 @@ const MUX_DSL = `const Mux2to1 = component('Mux2to1')
     and1.out.to(or1.a),
     and2.out.to(or1.b),
     or1.out.to(out.out),
-  ])
-  .build()`;
+  ],
+})`;
 
 const MUX_HARNESS = `${MUX_DSL}
 
-const MuxDemo = component('MuxDemo')
-  .node('sw_a', Switch).node('sw_b', Switch).node('sw_sel', Switch)
-  .node('dut', Mux2to1)
-  .node('led_out', Led)
-  .connect(({ sw_a, sw_b, sw_sel, dut, led_out }) => [
+const MuxDemo = component('MuxDemo', {
+  nodes: { sw_a: Switch, sw_b: Switch, sw_sel: Switch, dut: Mux2to1, led_out: Led },
+  connect: ({ sw_a, sw_b, sw_sel, dut, led_out }) => [
     sw_a.out.to(dut.a), sw_b.out.to(dut.b), sw_sel.out.to(dut.sel),
     dut.out.to(led_out.in),
-  ])
-  .build()`;
+  ],
+})`;
 
 type TermLine = {
   type: "input" | "text" | "tool" | "result" | "blank";
@@ -1432,15 +1417,15 @@ function DemoGallery() {
             description="Write C, compile it, watch it execute instruction by instruction on a real 5-stage pipelined RISC-V CPU."
             href="/learn/cpu"
             accent="blue"
-            snippet={`const RV32I_CPU = component('RV32I_CPU')\n  // IF → ID → EX → MEM → WB\n  .node('ifid_pc', Register, { width: 32 })\n  .node('idex_pc', Register, { width: 32 })\n  .node('exmem_alu', Register, { width: 32 })\n  .node('memwb_rd', Register, { width: 32 })\n  // ...+280 lines\n  .build()`}
+            snippet={`const RV32I_CPU = component('RV32I_CPU', {\n  // IF → ID → EX → MEM → WB\n  nodes: {\n    ifid_pc: Register,\n    idex_pc: Register,\n    exmem_alu: Register,\n    memwb_rd: Register,\n    // ...+280 lines\n  },\n})`}
           />
           <ComplexDemoCard
             title="Dual CPU Network"
-            subtitle="~400 lines of DSL"
+            subtitle="~400 lines"
             description="Two independent RISC-V CPUs communicating via a memory-mapped NIC. Watch packets travel cycle by cycle."
             href="/learn/dual-cpu"
             accent="violet"
-            snippet={`const RV32I_DualCPU = component('RV32I_DualCPU')\n  .node('cpu0', RV32I_CPU)\n  .node('cpu1', RV32I_CPU)\n  .node('nic0', NIC_FIFO)\n  .node('nic1', NIC_FIFO)\n  // cross-connect NICs:\n  // cpu0 TX → cpu1 RX\n  // cpu1 TX → cpu0 RX\n  .build()`}
+            snippet={`const RV32I_DualCPU = component('RV32I_DualCPU', {\n  nodes: {\n    cpu0: RV32I_CPU,\n    cpu1: RV32I_CPU,\n    nic0: NIC_FIFO,\n    nic1: NIC_FIFO,\n  },\n  // cross-connect NICs\n})`}
           />
         </div>
 
@@ -1816,23 +1801,11 @@ const ETH_FRAMES = [
 ] as const;
 
 const ETH_PARSER_DSL = `
-const Eth_802_3_Parser = component('Eth_802_3_Parser')
-  .out('dst_mac_hi', bus(16))
-  .out('dst_mac_lo', bus(32))
-  .out('src_mac_hi', bus(16))
-  .out('src_mac_lo', bus(32))
-  .out('ethertype', bus(16))
-  .out('frame_done', bit)
-  .out('crc_ok', bit)
-  .out('is_broadcast', bit)
-  .out('is_ipv4', bit)
-  .node('frame_in', Eth_FrameInput)
-  .node('enable', Constant, { value: 1 })
-  .node('parser', Eth_FrameParser)
-  .node('crc', Eth_CRC32)
-  .node('proto', Eth_ProtocolDecoder)
-  .node('addr', Eth_AddrClassifier)
-  .connect(({ out, frame_in, enable, parser, crc, proto, addr }) => [
+const Eth_802_3_Parser = component('Eth_802_3_Parser', {
+  out: { dst_mac_hi: bus(16), dst_mac_lo: bus(32), src_mac_hi: bus(16), src_mac_lo: bus(32), ethertype: bus(16), frame_done: bit, crc_ok: bit, is_broadcast: bit, is_ipv4: bit },
+  nodes: { frame_in: Eth_FrameInput, enable: Constant, parser: Eth_FrameParser, crc: Eth_CRC32, proto: Eth_ProtocolDecoder, addr: Eth_AddrClassifier },
+  nodeArgs: { enable: { value: 1 } },
+  connect: ({ out, frame_in, enable, parser, crc, proto, addr }) => [
     enable.out.to(frame_in.enable),
     frame_in.tdata.to(parser.tdata, crc.data),
     frame_in.tkeep.to(parser.tkeep, crc.tkeep),
@@ -1847,8 +1820,8 @@ const Eth_802_3_Parser = component('Eth_802_3_Parser')
     crc.crc_ok.to(out.crc_ok),
     addr.is_broadcast.to(out.is_broadcast),
     proto.is_ipv4.to(out.is_ipv4),
-  ])
-  .build()`;
+  ],
+})`;
 
 function readEthPort(
   pv: ReadonlyMap<string, boolean | number> | null,

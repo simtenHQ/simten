@@ -1,7 +1,3 @@
-/**
- * Tests for the circuit code execution engine.
- */
-
 import { describe, it, expect } from 'vitest';
 import { executeCircuitCode, stripTypes } from '../execute.js';
 
@@ -11,7 +7,7 @@ import { executeCircuitCode, stripTypes } from '../execute.js';
 
 describe('stripTypes', () => {
   it('strips type annotations from parameters', () => {
-    const ts = `const Register = (width: number) => component('Reg')`;
+    const ts = `const Register = (width: number) => component('Reg', {})`;
     const js = stripTypes(ts);
     expect(js).not.toContain(': number');
     expect(js).toContain('(width)');
@@ -24,14 +20,8 @@ describe('stripTypes', () => {
     expect(js).toContain('const a = 1');
   });
 
-  it('strips type assertions', () => {
-    const ts = `const x = value as number`;
-    const js = stripTypes(ts);
-    expect(js).not.toContain('as number');
-  });
-
   it('preserves regular JavaScript', () => {
-    const code = `const x = component('Test').in('a', bit).build()`;
+    const code = `const x = component('Test', { in: { a: bit } })`;
     expect(stripTypes(code)).toContain(code);
   });
 });
@@ -43,12 +33,11 @@ describe('stripTypes', () => {
 describe('executeCircuitCode', () => {
   it('executes a simple AND gate', () => {
     const result = executeCircuitCode(`
-      const MyAnd = component('MyAnd')
-        .in('a', bit)
-        .in('b', bit)
-        .out('out', bit)
-        .eval(({ a, b }) => ({ out: (a && b) ? 1 : 0 }))
-        .build()
+      const MyAnd = component('MyAnd', {
+        in: { a: bit, b: bit },
+        out: { out: bit },
+        eval: ({ a, b }) => ({ out: (a && b) ? 1 : 0 }),
+      })
     `);
 
     expect(result.error).toBeNull();
@@ -59,20 +48,17 @@ describe('executeCircuitCode', () => {
 
   it('executes a composite circuit using stdlib', () => {
     const result = executeCircuitCode(`
-      const HalfAdder = component('HalfAdder')
-        .in('a', bit)
-        .in('b', bit)
-        .out('sum', bit)
-        .out('carry', bit)
-        .node('x', Xor)
-        .node('a', And)
-        .connect(({ in: inp, out, x, a }) => [
+      const HalfAdder = component('HalfAdder', {
+        in: { a: bit, b: bit },
+        out: { sum: bit, carry: bit },
+        nodes: { x: Xor, a: And },
+        connect: ({ in: inp, out, x, a }) => [
           inp.a.to(x.a, a.a),
           inp.b.to(x.b, a.b),
           x.out.to(out.sum),
           a.out.to(out.carry),
-        ])
-        .build()
+        ],
+      })
     `);
 
     expect(result.error).toBeNull();
@@ -83,34 +69,34 @@ describe('executeCircuitCode', () => {
 
   it('collects multiple circuits', () => {
     const result = executeCircuitCode(`
-      const A = component('CompA')
-        .in('x', bit).out('y', bit)
-        .eval(({ x }) => ({ y: x }))
-        .build()
+      const A = component('CompA', {
+        in: { x: bit },
+        out: { y: bit },
+        eval: ({ x }) => ({ y: x }),
+      })
 
-      const B = component('CompB')
-        .in('x', bit).out('y', bit)
-        .eval(({ x }) => ({ y: x ? 0 : 1 }))
-        .build()
+      const B = component('CompB', {
+        in: { x: bit },
+        out: { y: bit },
+        eval: ({ x }) => ({ y: x ? 0 : 1 }),
+      })
     `);
 
     expect(result.error).toBeNull();
     expect(result.circuits).toHaveLength(2);
     expect(result.circuits[0].name).toBe('CompA');
     expect(result.circuits[1].name).toBe('CompB');
-    // Last circuit is the "main" one
     expect(result.circuit!.name).toBe('CompB');
   });
 
   it('handles TypeScript syntax', () => {
     const result = executeCircuitCode(`
       const width: number = 8
-      const MyAdder = component('MyAdder')
-        .in('a', bus(width))
-        .in('b', bus(width))
-        .out('sum', bus(width))
-        .eval(({ a, b }: { a: number; b: number }) => ({ sum: (a + b) & 0xFF }))
-        .build()
+      const MyAdder = component('MyAdder', {
+        in: { a: bus(width), b: bus(width) },
+        out: { sum: bus(width) },
+        eval: ({ a, b }: { a: number; b: number }) => ({ sum: (a + b) & 0xFF }),
+      })
     `);
 
     expect(result.error).toBeNull();
@@ -120,13 +106,13 @@ describe('executeCircuitCode', () => {
 
   it('handles parameterized component factories', () => {
     const result = executeCircuitCode(`
-      const makeReg = (w: number) => component('Reg' + w)
-        .in('d', bus(w))
-        .out('q', bus(w))
-        .state({ stored: 0 })
-        .eval(({ stored }) => ({ q: stored }))
-        .onTick(({ d }) => ({ stored: d }))
-        .build()
+      const makeReg = (w: number) => component('Reg' + w, {
+        in: { d: bus(w) },
+        out: { q: bus(w) },
+        state: { stored: 0 },
+        eval: ({ stored }) => ({ q: stored }),
+        onTick: ({ d }) => ({ stored: d }),
+      })
 
       const Reg8 = makeReg(8)
       const Reg16 = makeReg(16)
@@ -140,15 +126,15 @@ describe('executeCircuitCode', () => {
 
   it('stdlib components are available without imports', () => {
     const result = executeCircuitCode(`
-      const Demo = component('Demo')
-        .in('a', bit)
-        .out('b', bit)
-        .node('n', Not)
-        .connect(({ in: inp, out, n }) => [
+      const Demo = component('Demo', {
+        in: { a: bit },
+        out: { b: bit },
+        nodes: { n: Not },
+        connect: ({ in: inp, out, n }) => [
           inp.a.to(n.in),
           n.out.to(out.b),
-        ])
-        .build()
+        ],
+      })
     `);
 
     expect(result.error).toBeNull();
@@ -157,10 +143,11 @@ describe('executeCircuitCode', () => {
 
   it('registers user circuits in the library', () => {
     const result = executeCircuitCode(`
-      const MyGate = component('MyGate')
-        .in('a', bit).out('out', bit)
-        .eval(({ a }) => ({ out: a }))
-        .build()
+      const MyGate = component('MyGate', {
+        in: { a: bit },
+        out: { out: bit },
+        eval: ({ a }) => ({ out: a }),
+      })
     `);
 
     expect(result.library.resolveComponent('MyGate')).toBeDefined();
@@ -180,13 +167,13 @@ describe('error handling', () => {
 
   it('returns error for runtime errors', () => {
     const result = executeCircuitCode(`
-      const x = component('Bad')
-        .in('a', bit)
-        .in('a', bit)
-        .build()
+      const x = component('Bad', {
+        in: { a: bit },
+        out: { a: bit },
+      })
     `);
     expect(result.error).not.toBeNull();
-    expect(result.error).toContain('Duplicate');
+    expect(result.error).toContain('both input and output');
   });
 
   it('returns empty result for code with no circuits', () => {

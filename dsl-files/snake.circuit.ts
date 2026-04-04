@@ -1,49 +1,8 @@
 // Auto-generated from DSL
 
-const Snake4PixelsExplicit = component('Snake4PixelsExplicit')
-  .node('ram', DualPortRAM)
-  .node('screen', Screen)
-  .node('keyboard', Input)
-  .node('pos0X', Register)
-  .node('pos0Y', Register)
-  .node('pos1X', Register)
-  .node('pos1Y', Register)
-  .node('pos2X', Register)
-  .node('pos2Y', Register)
-  .node('pos3X', Register)
-  .node('pos3Y', Register)
-  .node('phase', DFlipFlop)
-  .node('notPhase', Not)
-  .node('upCode', Input)
-  .node('downCode', Input)
-  .node('leftCode', Input)
-  .node('rightCode', Input)
-  .node('isUp', Comparator)
-  .node('isDown', Comparator)
-  .node('isLeft', Comparator)
-  .node('isRight', Comparator)
-  .node('zero', Input)
-  .node('one', Input)
-  .node('minus1', Input)
-  .node('deltaXTemp', Mux)
-  .node('deltaX', Mux)
-  .node('deltaYTemp', Mux)
-  .node('deltaY', Mux)
-  .node('newHeadX', Adder)
-  .node('newHeadY', Adder)
-  .node('wrapX', BitSlice)
-  .node('wrapY', BitSlice)
-  .node('useX', Mux)
-  .node('useY', Mux)
-  .node('y2', Adder)
-  .node('y4', Adder)
-  .node('y8', Adder)
-  .node('addr', Adder)
-  .node('ramData', Mux)
-  .node('regEnable', Switch)
-  .node('shiftEnable', And)
-  .node('writeEnable', Switch)
-  .connect(({ in: inp, out, ram, screen, keyboard, pos0X, pos0Y, pos1X, pos1Y, pos2X, pos2Y, pos3X, pos3Y, phase, notPhase, upCode, downCode, leftCode, rightCode, isUp, isDown, isLeft, isRight, zero, one, minus1, deltaXTemp, deltaX, deltaYTemp, deltaY, newHeadX, newHeadY, wrapX, wrapY, useX, useY, y2, y4, y8, addr, ramData, regEnable, shiftEnable, writeEnable }) => [
+const Snake4PixelsExplicit = component('Snake4PixelsExplicit', {
+  nodes: { ram: DualPortRAM, screen: Screen, keyboard: Input, pos0X: Register, pos0Y: Register, pos1X: Register, pos1Y: Register, pos2X: Register, pos2Y: Register, pos3X: Register, pos3Y: Register, phase: DFlipFlop, notPhase: Not, upCode: Input, downCode: Input, leftCode: Input, rightCode: Input, isUp: Comparator, isDown: Comparator, isLeft: Comparator, isRight: Comparator, zero: Input, one: Input, minus1: Input, deltaXTemp: Mux, deltaX: Mux, deltaYTemp: Mux, deltaY: Mux, newHeadX: Adder, newHeadY: Adder, wrapX: BitSlice, wrapY: BitSlice, useX: Mux, useY: Mux, y2: Adder, y4: Adder, y8: Adder, addr: Adder, ramData: Mux, regEnable: Switch, shiftEnable: And, writeEnable: Switch },
+  connect: ({ in: inp, out, ram, screen, keyboard, pos0X, pos0Y, pos1X, pos1Y, pos2X, pos2Y, pos3X, pos3Y, phase, notPhase, upCode, downCode, leftCode, rightCode, isUp, isDown, isLeft, isRight, zero, one, minus1, deltaXTemp, deltaX, deltaYTemp, deltaY, newHeadX, newHeadY, wrapX, wrapY, useX, useY, y2, y4, y8, addr, ramData, regEnable, shiftEnable, writeEnable }) => [
     screen.addrB.to(ram.addrB),
     ram.outB.to(screen.dataIn),
     phase.q.to(notPhase.in, useX.sel, useY.sel, ramData.sel, shiftEnable.b),
@@ -86,5 +45,5 @@ const Snake4PixelsExplicit = component('Snake4PixelsExplicit')
     pos2Y.q.to(pos3Y.data),
     shiftEnable.out.to(pos0X.we, pos0Y.we, pos1X.we, pos1Y.we, pos2X.we, pos2Y.we, pos3X.we, pos3Y.we),
     writeEnable.out.to(ram.weA),
-  ])
-  .build()
+  ],
+})

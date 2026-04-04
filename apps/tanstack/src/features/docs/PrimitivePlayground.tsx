@@ -37,14 +37,18 @@ function generateDemoDsl(def: CorePrimitiveDefinition): string {
 
   const allConns = [inputConns, outputConns].filter(Boolean).join("\n");
 
-  return `const Demo = component('Demo')
-${ins}
-${outs}
-  .node('dut', ${def.name}${nodeArgs})
-  .connect(({ in: inp, out, dut }) => [
-${allConns}
-  ])
-  .build()`;
+  const parts = [];
+  if (ins) parts.push(`  in: { ${def.inputs.map(p => `${p.name}: ${portType(p)}`).join(', ')} },`);
+  if (outs) parts.push(`  out: { ${def.outputs.map(p => `${p.name}: ${portType(p)}`).join(', ')} },`);
+  parts.push(`  nodes: { dut: ${def.name} },`);
+  if (nodeArgs) parts.push(`  nodeArgs: { dut: { ${params} } },`);
+  if (allConns) {
+    parts.push(`  connect: ({ in: inp, out, dut }) => [`);
+    parts.push(allConns);
+    parts.push(`  ],`);
+  }
+
+  return `const Demo = component('Demo', {\n${parts.join('\n')}\n})`;
 }
 
 // Category display order and labels

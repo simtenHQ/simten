@@ -1,50 +1,11 @@
 // Auto-generated from DSL
 
-const EgressController = component('EgressController')
-  .in('pkt_ready', bit)
-  .in('trigger', bit)
-  .out('egress_addr', bus(8))
-  .out('egress_re', bit)
-  .out('data_valid', bit)
-  .out('sof', bit)
-  .out('eof', bit)
-  .out('ready', bit)
-  .node('fsm_state', Register)
-  .node('byte_counter', Register)
-  .node('read_ptr', Register)
-  .node('STATE_IDLE', Input, { value: 0 })
-  .node('STATE_TRANSMIT', Input, { value: 1 })
-  .node('ZERO', Input, { value: 0 })
-  .node('ONE', Input, { value: 1 })
-  .node('SEVEN', Input, { value: 7 })
-  .node('EIGHT', Input, { value: 8 })
-  .node('isIDLE', Comparator)
-  .node('isTRANSMIT', Comparator)
-  .node('can_start', And)
-  .node('idle_to_transmit', And)
-  .node('byte_is_seven', Comparator)
-  .node('transmit_complete', And)
-  .node('next_state_m1', Mux)
-  .node('next_state', Mux)
-  .node('fsm_state_we', Input, { value: 1 })
-  .node('byte_inc', Adder)
-  .node('should_increment', And)
-  .node('should_reset', And)
-  .node('next_byte_counter_inc', Mux)
-  .node('next_byte_counter', Mux)
-  .node('byte_counter_we', Input, { value: 1 })
-  .node('ptr_add_eight', Adder)
-  .node('should_advance_ptr', And)
-  .node('next_read_ptr', Mux)
-  .node('read_ptr_we', Input, { value: 1 })
-  .node('egress_addr_calc', Adder)
-  .node('byte_is_zero', Comparator)
-  .node('sof_signal', And)
-  .node('eof_signal', And)
-  .node('fsm_state_display', HexDisplay)
-  .node('byte_counter_display', HexDisplay)
-  .node('read_ptr_display', HexDisplay)
-  .connect(({ in: inp, out, fsm_state, byte_counter, read_ptr, STATE_IDLE, STATE_TRANSMIT, ZERO, ONE, SEVEN, EIGHT, isIDLE, isTRANSMIT, can_start, idle_to_transmit, byte_is_seven, transmit_complete, next_state_m1, next_state, fsm_state_we, byte_inc, should_increment, should_reset, next_byte_counter_inc, next_byte_counter, byte_counter_we, ptr_add_eight, should_advance_ptr, next_read_ptr, read_ptr_we, egress_addr_calc, byte_is_zero, sof_signal, eof_signal, fsm_state_display, byte_counter_display, read_ptr_display }) => [
+const EgressController = component('EgressController', {
+  in: { pkt_ready: bit, trigger: bit },
+  out: { egress_addr: bus(8), egress_re: bit, data_valid: bit, sof: bit, eof: bit, ready: bit },
+  nodes: { fsm_state: Register, byte_counter: Register, read_ptr: Register, STATE_IDLE: Input, STATE_TRANSMIT: Input, ZERO: Input, ONE: Input, SEVEN: Input, EIGHT: Input, isIDLE: Comparator, isTRANSMIT: Comparator, can_start: And, idle_to_transmit: And, byte_is_seven: Comparator, transmit_complete: And, next_state_m1: Mux, next_state: Mux, fsm_state_we: Input, byte_inc: Adder, should_increment: And, should_reset: And, next_byte_counter_inc: Mux, next_byte_counter: Mux, byte_counter_we: Input, ptr_add_eight: Adder, should_advance_ptr: And, next_read_ptr: Mux, read_ptr_we: Input, egress_addr_calc: Adder, byte_is_zero: Comparator, sof_signal: And, eof_signal: And, fsm_state_display: HexDisplay, byte_counter_display: HexDisplay, read_ptr_display: HexDisplay },
+  nodeArgs: { STATE_IDLE: { value: 0 }, STATE_TRANSMIT: { value: 1 }, ZERO: { value: 0 }, ONE: { value: 1 }, SEVEN: { value: 7 }, EIGHT: { value: 8 }, fsm_state_we: { value: 1 }, byte_counter_we: { value: 1 }, read_ptr_we: { value: 1 } },
+  connect: ({ in: inp, out, fsm_state, byte_counter, read_ptr, STATE_IDLE, STATE_TRANSMIT, ZERO, ONE, SEVEN, EIGHT, isIDLE, isTRANSMIT, can_start, idle_to_transmit, byte_is_seven, transmit_complete, next_state_m1, next_state, fsm_state_we, byte_inc, should_increment, should_reset, next_byte_counter_inc, next_byte_counter, byte_counter_we, ptr_add_eight, should_advance_ptr, next_read_ptr, read_ptr_we, egress_addr_calc, byte_is_zero, sof_signal, eof_signal, fsm_state_display, byte_counter_display, read_ptr_display }) => [
     fsm_state.q.to(isIDLE.a, isTRANSMIT.a, next_state_m1.in0, fsm_state_display.in),
     STATE_IDLE.out.to(isIDLE.b, next_state.in1),
     STATE_TRANSMIT.out.to(isTRANSMIT.b, next_state_m1.in1),
@@ -79,5 +40,5 @@ const EgressController = component('EgressController')
     byte_is_zero.eq.to(sof_signal.b),
     sof_signal.out.to(out.sof),
     eof_signal.out.to(out.eof),
-  ])
-  .build()
+  ],
+})
