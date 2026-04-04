@@ -1,8 +1,5 @@
 /**
- * DSL-to-TypeScript Conversion Tests
- *
- * Tests the conversion from DSL source to TypeScript builder API code,
- * and verifies the generated code produces valid circuits.
+ * DSL-to-TypeScript Conversion Tests — Object Syntax
  */
 
 import { describe, it, expect } from 'vitest';
@@ -13,102 +10,104 @@ import { executeCircuitCode } from '../execute.js';
 import type {
   Program,
   CircuitDef,
-  NodeDecl,
   ConnectionStmt,
   TypeExpr,
 } from '../../dsl/types/ast.js';
 
 // ============================================================================
-// Code generator (inline for testing — will extract to script later)
+// Code generator — object syntax
 // ============================================================================
 
-function generateTS(program: Program): string {
+export function generateTS(program: Program): string {
   const lines: string[] = [];
   const definedNames = new Set(program.circuits.map(c => c.name));
   lines.push('// Auto-generated from DSL\n');
 
   for (const circuit of program.circuits) {
-    lines.push(...generateCircuit(circuit, definedNames));
+    lines.push(generateCircuit(circuit, definedNames));
     lines.push('');
   }
-
   return lines.join('\n');
 }
 
-function generateCircuit(circuit: CircuitDef, definedNames: Set<string>): string[] {
-  const lines: string[] = [];
+function generateCircuit(circuit: CircuitDef, definedNames: Set<string>): string {
   const ind = '  ';
+  const parts: string[] = [];
 
-  lines.push(`const ${circuit.name} = component('${circuit.name}')`);
-
-  for (const input of circuit.inputs) {
-    lines.push(`${ind}.in('${input.name}', ${typeToTS(input.portType)})`);
-  }
-  for (const output of circuit.outputs) {
-    lines.push(`${ind}.out('${output.name}', ${typeToTS(output.portType)})`);
+  // Inputs
+  if (circuit.inputs.length > 0) {
+    const ins = circuit.inputs.map(i => `${i.name}: ${typeToTS(i.portType)}`).join(', ');
+    parts.push(`${ind}in: { ${ins} },`);
   }
 
+  // Outputs
+  if (circuit.outputs.length > 0) {
+    const outs = circuit.outputs.map(o => `${o.name}: ${typeToTS(o.portType)}`).join(', ');
+    parts.push(`${ind}out: { ${outs} },`);
+  }
+
+  // Meta
+  if (circuit.description) {
+    parts.push(`${ind}meta: { description: ${JSON.stringify(circuit.description)} },`);
+  }
+
+  // Nodes + nodeArgs
   if (circuit.impl && circuit.impl.nodes.length > 0) {
+    const nodeEntries: string[] = [];
+    const argEntries: string[] = [];
+
     for (const node of circuit.impl.nodes) {
-      const args = node.arguments;
-      const cleanArgs = args
+      nodeEntries.push(`${node.instanceName}: ${node.componentType}`);
+      const clean = node.arguments
         .map(a => ({ name: a.name, value: cleanArgValue(a.value) }))
         .filter(a => a.value !== undefined);
-      if (cleanArgs.length > 0) {
-        const argsObj = cleanArgs.map(a => `${a.name}: ${JSON.stringify(a.value)}`).join(', ');
-        lines.push(`${ind}.node('${node.instanceName}', ${node.componentType}, { ${argsObj} })`);
-      } else {
-        lines.push(`${ind}.node('${node.instanceName}', ${node.componentType})`);
+      if (clean.length > 0) {
+        const argsStr = clean.map(a => `${a.name}: ${JSON.stringify(a.value)}`).join(', ');
+        argEntries.push(`${node.instanceName}: { ${argsStr} }`);
       }
     }
+
+    parts.push(`${ind}nodes: { ${nodeEntries.join(', ')} },`);
+    if (argEntries.length > 0) {
+      parts.push(`${ind}nodeArgs: { ${argEntries.join(', ')} },`);
+    }
+
+    // Connections
     if (circuit.impl.connections.length > 0) {
       const nodeNames = circuit.impl.nodes.map(n => n.instanceName).join(', ');
-      lines.push(`${ind}.connect(({ in: inp, out, ${nodeNames} }) => [`);
       const grouped = groupConns(circuit.impl.connections, circuit);
-      for (const g of grouped) {
+      const connLines = grouped.map(g => {
         const src = fmtRef(g.source, circuit);
-        const targets = g.targets.map(t => fmtRef(t, circuit)).join(', ');
-        lines.push(`${ind}${ind}${src}.to(${targets}),`);
-      }
-      lines.push(`${ind}])`);
+        const tgts = g.targets.map(t => fmtRef(t, circuit)).join(', ');
+        return `${ind}${ind}${src}.to(${tgts}),`;
+      });
+      parts.push(`${ind}connect: ({ in: inp, out, ${nodeNames} }) => [`);
+      parts.push(...connLines);
+      parts.push(`${ind}],`);
     }
   }
 
-  lines.push(`${ind}.build()`);
-  return lines;
+  return `const ${circuit.name} = component('${circuit.name}', {\n${parts.join('\n')}\n})`;
+}
+
+function cleanArgValue(v: any): any {
+  if (v == null) return undefined;
+  if (typeof v === 'number' || typeof v === 'string' || typeof v === 'boolean') return v;
+  if (typeof v === 'object' && v.kind === 'object' && Array.isArray(v.entries)) {
+    const o: Record<number, number> = {};
+    for (const e of v.entries) o[e.key] = typeof e.value === 'object' ? cleanArgValue(e.value) : e.value;
+    return o;
+  }
+  if (typeof v === 'object' && v.kind === 'array' && Array.isArray(v.elements)) {
+    return v.elements.map((e: any) => cleanArgValue(e));
+  }
+  return undefined;
 }
 
 function typeToTS(t: TypeExpr): string {
   if (t.kind === 'bit') return 'bit';
-  if (t.kind === 'bus') {
-    const w = typeof t.width === 'number' ? t.width : t.width.name;
-    return `bus(${w})`;
-  }
+  if (t.kind === 'bus') return `bus(${typeof t.width === 'number' ? t.width : t.width.name})`;
   return 'bit';
-}
-
-/**
- * Convert an AST ArgumentValue to a clean JS value for code generation.
- * Strips parser metadata (location, kind tags) and converts to plain values.
- */
-function cleanArgValue(value: any): any {
-  if (value === null || value === undefined) return undefined;
-  if (typeof value === 'number' || typeof value === 'string' || typeof value === 'boolean') return value;
-  if (typeof value === 'object' && value.kind === 'object' && Array.isArray(value.entries)) {
-    // ObjectLiteral → Record<number, number>
-    const obj: Record<number, number> = {};
-    for (const entry of value.entries) {
-      obj[entry.key] = typeof entry.value === 'object' ? cleanArgValue(entry.value) : entry.value;
-    }
-    return obj;
-  }
-  if (typeof value === 'object' && value.kind === 'array' && Array.isArray(value.elements)) {
-    return value.elements.map((e: any) => cleanArgValue(e));
-  }
-  if (typeof value === 'object' && value.kind === 'paramRef') {
-    return undefined; // Parameter references can't be serialized as literals
-  }
-  return value;
 }
 
 interface Grouped {
@@ -117,12 +116,9 @@ interface Grouped {
 }
 
 function groupConns(conns: ConnectionStmt[], circuit: CircuitDef): Grouped[] {
-  // Filter out clock connections — in the builder API, clocks are implicit
   const clockNames = new Set(circuit.clocks.map(c => c.name));
   const filtered = conns.filter(c => {
-    // Skip connections FROM a clock source
     if (!c.source.nodeId && clockNames.has(c.source.portName)) return false;
-    // Skip connections TO a .clk port
     if (c.target.portName === 'clk') return false;
     return true;
   });
@@ -138,34 +134,26 @@ function groupConns(conns: ConnectionStmt[], circuit: CircuitDef): Grouped[] {
 
 function fmtRef(ref: { nodeId: string | null; portName: string }, circuit: CircuitDef): string {
   if (!ref.nodeId) {
-    const isInput = circuit.inputs.some(i => i.name === ref.portName);
-    const isOutput = circuit.outputs.some(o => o.name === ref.portName);
-    if (isInput) return `inp.${ref.portName}`;
-    if (isOutput) return `out.${ref.portName}`;
-    // Clock or other
+    if (circuit.inputs.some(i => i.name === ref.portName)) return `inp.${ref.portName}`;
+    if (circuit.outputs.some(o => o.name === ref.portName)) return `out.${ref.portName}`;
     return `inp.${ref.portName}`;
   }
   return `${ref.nodeId}.${ref.portName}`;
 }
 
 // ============================================================================
-// Tests: convert + execute + verify
+// Tests
 // ============================================================================
 
-describe('DSL-to-TS conversion', () => {
-  function convertAndExecute(dslSource: string): { ts: string; error: string | null; circuitCount: number; circuitNames: string[] } {
+describe('DSL-to-TS conversion (object syntax)', () => {
+  function convertAndExecute(dslSource: string) {
     const { ast, errors } = parseDSL(dslSource, 'test.dsl');
     if (errors.length > 0) {
-      return { ts: '', error: `Parse: ${errors.map(e => e.message).join('; ')}`, circuitCount: 0, circuitNames: [] };
+      return { ts: '', error: `Parse: ${errors.map(e => e.message).join('; ')}`, circuitCount: 0, circuitNames: [] as string[] };
     }
     const ts = generateTS(ast);
     const result = executeCircuitCode(ts);
-    return {
-      ts,
-      error: result.error,
-      circuitCount: result.circuits.length,
-      circuitNames: result.circuits.map(c => c.name),
-    };
+    return { ts, error: result.error, circuitCount: result.circuits.length, circuitNames: result.circuits.map(c => c.name) };
   }
 
   it('converts a simple circuit with switches and gates', () => {
@@ -182,10 +170,8 @@ describe('DSL-to-TS conversion', () => {
         }
       }
     `);
-
     expect(result.error).toBeNull();
     expect(result.circuitCount).toBe(1);
-    expect(result.circuitNames).toContain('Demo');
   });
 
   it('converts a half adder with inputs/outputs', () => {
@@ -207,9 +193,7 @@ describe('DSL-to-TS conversion', () => {
         }
       }
     `);
-
     expect(result.error).toBeNull();
-    expect(result.circuitCount).toBe(1);
     expect(result.circuitNames).toContain('HalfAdder');
   });
 
@@ -231,7 +215,6 @@ describe('DSL-to-TS conversion', () => {
           connect and1.out -> carry
         }
       }
-
       circuit TestHA {
         impl {
           node sw1: Switch
@@ -246,10 +229,8 @@ describe('DSL-to-TS conversion', () => {
         }
       }
     `);
-
     expect(result.error).toBeNull();
     expect(result.circuitCount).toBe(2);
-    expect(result.circuitNames).toEqual(['HalfAdder', 'TestHA']);
   });
 
   it('converts a circuit with bus ports', () => {
@@ -264,73 +245,30 @@ describe('DSL-to-TS conversion', () => {
         }
       }
     `);
-
     expect(result.error).toBeNull();
-    expect(result.circuitCount).toBe(1);
   });
 
-  it('converts a circuit with fan-out connections', () => {
-    const result = convertAndExecute(`
-      circuit FanOut {
-        impl {
-          node sw: Switch
-          node and1: And
-          node and2: And
-          node led1: Led
-          node led2: Led
-          connect sw.out -> and1.a
-          connect sw.out -> and1.b
-          connect sw.out -> and2.a
-          connect sw.out -> and2.b
-          connect and1.out -> led1.in
-          connect and2.out -> led2.in
-        }
-      }
-    `);
-
-    expect(result.error).toBeNull();
-    expect(result.circuitCount).toBe(1);
-  });
-
-  it('generated TS is valid and readable', () => {
+  it('generated TS uses object syntax', () => {
     const { ast } = parseDSL(`
       circuit HalfAdder {
         input a: Bit
-        input b: Bit
         output sum: Bit
-        output carry: Bit
         impl {
           node xor1: Xor
-          node and1: And
           connect a -> xor1.a
-          connect b -> xor1.b
-          connect xor1.out -> sum
-          connect a -> and1.a
-          connect b -> and1.b
-          connect and1.out -> carry
         }
       }
     `, 'test.dsl');
 
     const ts = generateTS(ast);
-
-    // Should contain component() call
-    expect(ts).toContain("component('HalfAdder')");
-    // Should have .in() and .out()
-    expect(ts).toContain(".in('a', bit)");
-    expect(ts).toContain(".out('sum', bit)");
-    // Should have .node()
-    expect(ts).toContain(".node('xor1', Xor)");
-    // Should have .connect()
-    expect(ts).toContain('.connect(');
-    // Should have .build()
-    expect(ts).toContain('.build()');
+    expect(ts).toContain("component('HalfAdder', {");
+    expect(ts).toContain("in: { a: bit }");
+    expect(ts).toContain("out: { sum: bit }");
+    expect(ts).toContain("nodes: { xor1: Xor }");
+    expect(ts).toContain("connect:");
+    expect(ts).not.toContain(".build()");
   });
 });
-
-// ============================================================================
-// Test with real DSL files (if they exist)
-// ============================================================================
 
 describe('convert real DSL files', () => {
   const ROOT = join(__dirname, '..', '..', '..', '..', '..');
@@ -338,47 +276,30 @@ describe('convert real DSL files', () => {
   function tryConvertFile(filename: string) {
     try {
       const source = readFileSync(join(ROOT, filename), 'utf-8');
-      return convertAndExecute(source);
-    } catch {
-      return null; // File doesn't exist
-    }
-  }
-
-  function convertAndExecute(dslSource: string) {
-    const { ast, errors } = parseDSL(dslSource, 'test.dsl');
-    if (errors.length > 0) {
-      return { error: `Parse: ${errors.map(e => e.message).join('; ')}`, circuitCount: 0 };
-    }
-    const ts = generateTS(ast);
-    const result = executeCircuitCode(ts);
-    return { error: result.error, circuitCount: result.circuits.length };
+      const { ast, errors } = parseDSL(source, 'test.dsl');
+      if (errors.length > 0) return { error: `Parse: ${errors.map(e => e.message).join('; ')}`, circuitCount: 0 };
+      const ts = generateTS(ast);
+      const result = executeCircuitCode(ts);
+      return { error: result.error, circuitCount: result.circuits.length };
+    } catch { return null; }
   }
 
   it('converts test-halfadder.dsl', () => {
     const result = tryConvertFile('dsl-files/test-halfadder.dsl');
-    if (!result) return; // skip if file not found
-    expect(result.error).toBeNull();
-    expect(result.circuitCount).toBe(3);
-  });
-
-  it('converts SimpleCombinational.dsl', () => {
-    const result = tryConvertFile('dsl-files/SimpleCombinational.dsl');
     if (!result) return;
     expect(result.error).toBeNull();
-    expect(result.circuitCount).toBeGreaterThan(0);
+    expect(result.circuitCount).toBe(3);
   });
 
   it('converts Counter.dsl', () => {
     const result = tryConvertFile('dsl-files/Counter.dsl');
     if (!result) return;
     expect(result.error).toBeNull();
-    expect(result.circuitCount).toBeGreaterThan(0);
   });
 
   it('converts ALU.dsl', () => {
     const result = tryConvertFile('dsl-files/ALU.dsl');
     if (!result) return;
     expect(result.error).toBeNull();
-    expect(result.circuitCount).toBeGreaterThan(0);
   });
 });

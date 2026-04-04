@@ -12,7 +12,7 @@ import {
 import type { BitValue, BusValue } from '../types/circuit.js';
 import { compileSource } from './compile-source.js';
 import { compressTrace, detectSteadyState } from '../dsl/analysis/simulate.js';
-import type { SimulationTrace } from '../dsl/analysis/simulate.js';
+import type { SimulationTrace } from '../dsl/analysis/types.js';
 
 export type RLEValue = { value: BitValue | BusValue; count: number };
 

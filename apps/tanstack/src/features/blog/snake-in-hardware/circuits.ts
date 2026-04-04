@@ -20,40 +20,30 @@ export const SNAKE_CIRCUITS: Record<string, BlogCircuit> = {
     description:
       "DualPortRAM as a screen framebuffer. Port A reads/writes data, port B is used by the Screen to display pixels.",
     displayDsl: `
-const SimpleFramebuffer = component('SimpleFramebuffer')
-  .node('ram', DualPortRAM, { init: {"0":1,"1":1,"2":1,"3":1,"4":1,"5":1,"6":1,"7":1,"9":1,"14":1,"17":1,"22":1,"25":1,"30":1,"33":1,"38":1,"41":1,"46":1,"49":1,"54":1,"56":1,"57":1,"58":1,"59":1,"60":1,"61":1,"62":1,"63":1} })
-  .node('screen', Screen)
-  .node('addr', Input)
-  .node('data_in', Input)
-  .node('we', Switch)
-  .node('readback', HexDisplay)
-  .connect(({ in: inp, out, ram, screen, addr, data_in, we, readback }) => [
+const SimpleFramebuffer = component('SimpleFramebuffer', {
+  nodes: { screen: Screen, addr: Input, data_in: Input, we: Switch, readback: HexDisplay },
+  connect: ({ in: inp, out, ram, screen, addr, data_in, we, readback }) => [
     screen.addrB.to(ram.addrB),
     ram.outB.to(screen.dataIn),
     addr.out.to(ram.addrA),
     data_in.out.to(ram.dataA),
     we.out.to(ram.weA),
     ram.outA.to(readback.in),
-  ])
-  .build()
+  ],
+})
 `,
     dsl: `
-const SimpleFramebuffer = component('SimpleFramebuffer')
-  .node('ram', DualPortRAM, { init: {"0":1,"1":1,"2":1,"3":1,"4":1,"5":1,"6":1,"7":1,"9":1,"14":1,"17":1,"22":1,"25":1,"30":1,"33":1,"38":1,"41":1,"46":1,"49":1,"54":1,"56":1,"57":1,"58":1,"59":1,"60":1,"61":1,"62":1,"63":1} })
-  .node('screen', Screen)
-  .node('addr', Input)
-  .node('data_in', Input)
-  .node('we', Switch)
-  .node('readback', HexDisplay)
-  .connect(({ in: inp, out, ram, screen, addr, data_in, we, readback }) => [
+const SimpleFramebuffer = component('SimpleFramebuffer', {
+  nodes: { screen: Screen, addr: Input, data_in: Input, we: Switch, readback: HexDisplay },
+  connect: ({ in: inp, out, ram, screen, addr, data_in, we, readback }) => [
     screen.addrB.to(ram.addrB),
     ram.outB.to(screen.dataIn),
     addr.out.to(ram.addrA),
     data_in.out.to(ram.dataA),
     we.out.to(ram.weA),
     ram.outA.to(readback.in),
-  ])
-  .build()
+  ],
+})
 `,
     nodePositions: {
       // Inputs (left)
@@ -73,38 +63,30 @@ const SimpleFramebuffer = component('SimpleFramebuffer')
     description:
       "Converts (X, Y) coordinates to a linear pixel address using (Y << 3) + X. A left shift by 3 is just wiring in real hardware — zero gates.",
     displayDsl: `
-const CoordToPixel = component('CoordToPixel')
-  .node('x', Input, { value: 3 })
-  .node('y', Input, { value: 2 })
-  .node('three', Input, { value: 3 })
-  .node('y8', LeftShifter)
-  .node('addr', Adder)
-  .node('result', HexDisplay)
-  .connect(({ in: inp, out, x, y, three, y8, addr, result }) => [
+const CoordToPixel = component('CoordToPixel', {
+  nodes: { x: Input, y: Input, three: Input, y8: LeftShifter, addr: Adder, result: HexDisplay },
+  nodeArgs: { x: { value: 3 }, y: { value: 2 }, three: { value: 3 } },
+  connect: ({ in: inp, out, x, y, three, y8, addr, result }) => [
     y.out.to(y8.value),
     three.out.to(y8.shift),
     y8.result.to(addr.a),
     x.out.to(addr.b),
     addr.sum.to(result.in),
-  ])
-  .build()
+  ],
+})
 `,
     dsl: `
-const CoordToPixel = component('CoordToPixel')
-  .node('x', Input, { value: 3 })
-  .node('y', Input, { value: 2 })
-  .node('three', Input, { value: 3 })
-  .node('y8', LeftShifter)
-  .node('addr', Adder)
-  .node('result', HexDisplay)
-  .connect(({ in: inp, out, x, y, three, y8, addr, result }) => [
+const CoordToPixel = component('CoordToPixel', {
+  nodes: { x: Input, y: Input, three: Input, y8: LeftShifter, addr: Adder, result: HexDisplay },
+  nodeArgs: { x: { value: 3 }, y: { value: 2 }, three: { value: 3 } },
+  connect: ({ in: inp, out, x, y, three, y8, addr, result }) => [
     y.out.to(y8.value),
     three.out.to(y8.shift),
     y8.result.to(addr.a),
     x.out.to(addr.b),
     addr.sum.to(result.in),
-  ])
-  .build()
+  ],
+})
 `,
     nodePositions: {
       x:      { x: 0,   y: 0 },
@@ -121,26 +103,10 @@ const CoordToPixel = component('CoordToPixel')
     description:
       "Decodes keyboard scan codes into deltaX/deltaY movement values using Comparators and a Mux tree.",
     displayDsl: `
-const DirectionDecoder = component('DirectionDecoder')
-  .node('keyCode', Input, { value: 77 })
-  .node('upCode', Constant, { value: 72 })
-  .node('downCode', Constant, { value: 80 })
-  .node('leftCode', Constant, { value: 75 })
-  .node('rightCode', Constant, { value: 77 })
-  .node('zero', Constant, { value: 0 })
-  .node('one', Constant, { value: 1 })
-  .node('minus1', Constant, { value: 255 })
-  .node('isUp', Comparator)
-  .node('isDown', Comparator)
-  .node('isLeft', Comparator)
-  .node('isRight', Comparator)
-  .node('deltaXTemp', Mux)
-  .node('deltaX', Mux)
-  .node('deltaYTemp', Mux)
-  .node('deltaY', Mux)
-  .node('displayDX', HexDisplay)
-  .node('displayDY', HexDisplay)
-  .connect(({ in: inp, out, keyCode, upCode, downCode, leftCode, rightCode, zero, one, minus1, isUp, isDown, isLeft, isRight, deltaXTemp, deltaX, deltaYTemp, deltaY, displayDX, displayDY }) => [
+const DirectionDecoder = component('DirectionDecoder', {
+  nodes: { keyCode: Input, upCode: Constant, downCode: Constant, leftCode: Constant, rightCode: Constant, zero: Constant, one: Constant, minus1: Constant, isUp: Comparator, isDown: Comparator, isLeft: Comparator, isRight: Comparator, deltaXTemp: Mux, deltaX: Mux, deltaYTemp: Mux, deltaY: Mux, displayDX: HexDisplay, displayDY: HexDisplay },
+  nodeArgs: { keyCode: { value: 77 }, upCode: { value: 72 }, downCode: { value: 80 }, leftCode: { value: 75 }, rightCode: { value: 77 }, zero: { value: 0 }, one: { value: 1 }, minus1: { value: 255 } },
+  connect: ({ in: inp, out, keyCode, upCode, downCode, leftCode, rightCode, zero, one, minus1, isUp, isDown, isLeft, isRight, deltaXTemp, deltaX, deltaYTemp, deltaY, displayDX, displayDY }) => [
     keyCode.out.to(isUp.a, isDown.a, isLeft.a, isRight.a),
     upCode.out.to(isUp.b),
     downCode.out.to(isDown.b),
@@ -157,30 +123,14 @@ const DirectionDecoder = component('DirectionDecoder')
     isDown.eq.to(deltaY.sel),
     deltaX.out.to(displayDX.in),
     deltaY.out.to(displayDY.in),
-  ])
-  .build()
+  ],
+})
 `,
     dsl: `
-const DirectionDecoder = component('DirectionDecoder')
-  .node('keyCode', Input, { value: 77 })
-  .node('upCode', Constant, { value: 72 })
-  .node('downCode', Constant, { value: 80 })
-  .node('leftCode', Constant, { value: 75 })
-  .node('rightCode', Constant, { value: 77 })
-  .node('zero', Constant, { value: 0 })
-  .node('one', Constant, { value: 1 })
-  .node('minus1', Constant, { value: 255 })
-  .node('isUp', Comparator)
-  .node('isDown', Comparator)
-  .node('isLeft', Comparator)
-  .node('isRight', Comparator)
-  .node('deltaXTemp', Mux)
-  .node('deltaX', Mux)
-  .node('deltaYTemp', Mux)
-  .node('deltaY', Mux)
-  .node('displayDX', HexDisplay)
-  .node('displayDY', HexDisplay)
-  .connect(({ in: inp, out, keyCode, upCode, downCode, leftCode, rightCode, zero, one, minus1, isUp, isDown, isLeft, isRight, deltaXTemp, deltaX, deltaYTemp, deltaY, displayDX, displayDY }) => [
+const DirectionDecoder = component('DirectionDecoder', {
+  nodes: { keyCode: Input, upCode: Constant, downCode: Constant, leftCode: Constant, rightCode: Constant, zero: Constant, one: Constant, minus1: Constant, isUp: Comparator, isDown: Comparator, isLeft: Comparator, isRight: Comparator, deltaXTemp: Mux, deltaX: Mux, deltaYTemp: Mux, deltaY: Mux, displayDX: HexDisplay, displayDY: HexDisplay },
+  nodeArgs: { keyCode: { value: 77 }, upCode: { value: 72 }, downCode: { value: 80 }, leftCode: { value: 75 }, rightCode: { value: 77 }, zero: { value: 0 }, one: { value: 1 }, minus1: { value: 255 } },
+  connect: ({ in: inp, out, keyCode, upCode, downCode, leftCode, rightCode, zero, one, minus1, isUp, isDown, isLeft, isRight, deltaXTemp, deltaX, deltaYTemp, deltaY, displayDX, displayDY }) => [
     keyCode.out.to(isUp.a, isDown.a, isLeft.a, isRight.a),
     upCode.out.to(isUp.b),
     downCode.out.to(isDown.b),
@@ -197,8 +147,8 @@ const DirectionDecoder = component('DirectionDecoder')
     isDown.eq.to(deltaY.sel),
     deltaX.out.to(displayDX.in),
     deltaY.out.to(displayDY.in),
-  ])
-  .build()
+  ],
+})
 `,
     nodePositions: {
       // Input (left)
@@ -233,38 +183,10 @@ const DirectionDecoder = component('DirectionDecoder')
     description:
       "Position registers with delta addition and BitSlice wraparound, drawing the result to a Screen via DualPortRAM.",
     displayDsl: `
-const PixelMover = component('PixelMover')
-  .node('ram', DualPortRAM)
-  .node('screen', Screen)
-  .node('keyboard', Input, { value: 77 })
-  .node('headX', Register, { initial: 4 })
-  .node('headY', Register, { initial: 4 })
-  .node('upCode', Constant, { value: 72 })
-  .node('downCode', Constant, { value: 80 })
-  .node('leftCode', Constant, { value: 75 })
-  .node('rightCode', Constant, { value: 77 })
-  .node('zero', Constant, { value: 0 })
-  .node('one', Constant, { value: 1 })
-  .node('minus1', Constant, { value: 255 })
-  .node('isUp', Comparator)
-  .node('isDown', Comparator)
-  .node('isLeft', Comparator)
-  .node('isRight', Comparator)
-  .node('deltaXTemp', Mux)
-  .node('deltaX', Mux)
-  .node('deltaYTemp', Mux)
-  .node('deltaY', Mux)
-  .node('nextX', Adder)
-  .node('nextY', Adder)
-  .node('wrapX', BitSlice, { low: 0, high: 2 })
-  .node('wrapY', BitSlice, { low: 0, high: 2 })
-  .node('enable', Switch)
-  .node('shiftAmt', Constant, { value: 3 })
-  .node('y8', LeftShifter)
-  .node('pixelAddr', Adder)
-  .node('displayX', HexDisplay)
-  .node('displayY', HexDisplay)
-  .connect(({ in: inp, out, ram, screen, keyboard, headX, headY, upCode, downCode, leftCode, rightCode, zero, one, minus1, isUp, isDown, isLeft, isRight, deltaXTemp, deltaX, deltaYTemp, deltaY, nextX, nextY, wrapX, wrapY, enable, shiftAmt, y8, pixelAddr, displayX, displayY }) => [
+const PixelMover = component('PixelMover', {
+  nodes: { ram: DualPortRAM, screen: Screen, keyboard: Input, headX: Register, headY: Register, upCode: Constant, downCode: Constant, leftCode: Constant, rightCode: Constant, zero: Constant, one: Constant, minus1: Constant, isUp: Comparator, isDown: Comparator, isLeft: Comparator, isRight: Comparator, deltaXTemp: Mux, deltaX: Mux, deltaYTemp: Mux, deltaY: Mux, nextX: Adder, nextY: Adder, wrapX: BitSlice, wrapY: BitSlice, enable: Switch, shiftAmt: Constant, y8: LeftShifter, pixelAddr: Adder, displayX: HexDisplay, displayY: HexDisplay },
+  nodeArgs: { ram: { init: {"33":1,"34":1,"35":1,"36":1,"64":33,"65":34,"66":35,"67":36} }, keyboard: { value: 77 }, headX: { initial: 4 }, headY: { initial: 4 }, upCode: { value: 72 }, downCode: { value: 80 }, leftCode: { value: 75 }, rightCode: { value: 77 }, zero: { value: 0 }, one: { value: 1 }, minus1: { value: 255 }, wrapX: { low: 0, high: 2 }, wrapY: { low: 0, high: 2 }, shiftAmt: { value: 3 } },
+  connect: ({ in: inp, out, ram, screen, keyboard, headX, headY, upCode, downCode, leftCode, rightCode, zero, one, minus1, isUp, isDown, isLeft, isRight, deltaXTemp, deltaX, deltaYTemp, deltaY, nextX, nextY, wrapX, wrapY, enable, shiftAmt, y8, pixelAddr, displayX, displayY }) => [
     screen.addrB.to(ram.addrB),
     ram.outB.to(screen.dataIn),
     keyboard.out.to(isUp.a, isDown.a, isLeft.a, isRight.a),
@@ -293,42 +215,14 @@ const PixelMover = component('PixelMover')
     shiftAmt.out.to(y8.shift),
     y8.result.to(pixelAddr.a),
     pixelAddr.sum.to(ram.addrA),
-  ])
-  .build()
+  ],
+})
 `,
     dsl: `
-const PixelMover = component('PixelMover')
-  .node('ram', DualPortRAM)
-  .node('screen', Screen)
-  .node('keyboard', Input, { value: 77 })
-  .node('headX', Register, { initial: 4 })
-  .node('headY', Register, { initial: 4 })
-  .node('upCode', Constant, { value: 72 })
-  .node('downCode', Constant, { value: 80 })
-  .node('leftCode', Constant, { value: 75 })
-  .node('rightCode', Constant, { value: 77 })
-  .node('zero', Constant, { value: 0 })
-  .node('one', Constant, { value: 1 })
-  .node('minus1', Constant, { value: 255 })
-  .node('isUp', Comparator)
-  .node('isDown', Comparator)
-  .node('isLeft', Comparator)
-  .node('isRight', Comparator)
-  .node('deltaXTemp', Mux)
-  .node('deltaX', Mux)
-  .node('deltaYTemp', Mux)
-  .node('deltaY', Mux)
-  .node('nextX', Adder)
-  .node('nextY', Adder)
-  .node('wrapX', BitSlice, { low: 0, high: 2 })
-  .node('wrapY', BitSlice, { low: 0, high: 2 })
-  .node('enable', Switch)
-  .node('shiftAmt', Constant, { value: 3 })
-  .node('y8', LeftShifter)
-  .node('pixelAddr', Adder)
-  .node('displayX', HexDisplay)
-  .node('displayY', HexDisplay)
-  .connect(({ in: inp, out, ram, screen, keyboard, headX, headY, upCode, downCode, leftCode, rightCode, zero, one, minus1, isUp, isDown, isLeft, isRight, deltaXTemp, deltaX, deltaYTemp, deltaY, nextX, nextY, wrapX, wrapY, enable, shiftAmt, y8, pixelAddr, displayX, displayY }) => [
+const PixelMover = component('PixelMover', {
+  nodes: { ram: DualPortRAM, screen: Screen, keyboard: Input, headX: Register, headY: Register, upCode: Constant, downCode: Constant, leftCode: Constant, rightCode: Constant, zero: Constant, one: Constant, minus1: Constant, isUp: Comparator, isDown: Comparator, isLeft: Comparator, isRight: Comparator, deltaXTemp: Mux, deltaX: Mux, deltaYTemp: Mux, deltaY: Mux, nextX: Adder, nextY: Adder, wrapX: BitSlice, wrapY: BitSlice, enable: Switch, shiftAmt: Constant, y8: LeftShifter, pixelAddr: Adder, displayX: HexDisplay, displayY: HexDisplay },
+  nodeArgs: { keyboard: { value: 77 }, headX: { initial: 4 }, headY: { initial: 4 }, upCode: { value: 72 }, downCode: { value: 80 }, leftCode: { value: 75 }, rightCode: { value: 77 }, zero: { value: 0 }, one: { value: 1 }, minus1: { value: 255 }, wrapX: { low: 0, high: 2 }, wrapY: { low: 0, high: 2 }, shiftAmt: { value: 3 } },
+  connect: ({ in: inp, out, ram, screen, keyboard, headX, headY, upCode, downCode, leftCode, rightCode, zero, one, minus1, isUp, isDown, isLeft, isRight, deltaXTemp, deltaX, deltaYTemp, deltaY, nextX, nextY, wrapX, wrapY, enable, shiftAmt, y8, pixelAddr, displayX, displayY }) => [
     screen.addrB.to(ram.addrB),
     ram.outB.to(screen.dataIn),
     keyboard.out.to(isUp.a, isDown.a, isLeft.a, isRight.a),
@@ -357,8 +251,8 @@ const PixelMover = component('PixelMover')
     shiftAmt.out.to(y8.shift),
     y8.result.to(pixelAddr.a),
     pixelAddr.sum.to(ram.addrA),
-  ])
-  .build()
+  ],
+})
 `,
     nodePositions: {
       // Input
@@ -408,25 +302,10 @@ const PixelMover = component('PixelMover')
     description:
       "A 2-bit counter cycling through phases 0-3, with LED indicators showing the active phase.",
     displayDsl: `
-const PhaseDemo = component('PhaseDemo')
-  .node('phase', Register, { initial: 0 })
-  .node('one', Constant, { value: 1 })
-  .node('zero', Constant, { value: 0 })
-  .node('two', Constant, { value: 2 })
-  .node('three', Constant, { value: 3 })
-  .node('phaseInc', Adder)
-  .node('phaseWrap', BitSlice, { low: 0, high: 1 })
-  .node('enable', Switch)
-  .node('isPhase0', Comparator)
-  .node('isPhase1', Comparator)
-  .node('isPhase2', Comparator)
-  .node('isPhase3', Comparator)
-  .node('led0', Led)
-  .node('led1', Led)
-  .node('led2', Led)
-  .node('led3', Led)
-  .node('display', HexDisplay)
-  .connect(({ in: inp, out, phase, one, zero, two, three, phaseInc, phaseWrap, enable, isPhase0, isPhase1, isPhase2, isPhase3, led0, led1, led2, led3, display }) => [
+const PhaseDemo = component('PhaseDemo', {
+  nodes: { phase: Register, one: Constant, zero: Constant, two: Constant, three: Constant, phaseInc: Adder, phaseWrap: BitSlice, enable: Switch, isPhase0: Comparator, isPhase1: Comparator, isPhase2: Comparator, isPhase3: Comparator, led0: Led, led1: Led, led2: Led, led3: Led, display: HexDisplay },
+  nodeArgs: { phase: { initial: 0 }, one: { value: 1 }, zero: { value: 0 }, two: { value: 2 }, three: { value: 3 }, phaseWrap: { low: 0, high: 1 } },
+  connect: ({ in: inp, out, phase, one, zero, two, three, phaseInc, phaseWrap, enable, isPhase0, isPhase1, isPhase2, isPhase3, led0, led1, led2, led3, display }) => [
     phase.q.to(phaseInc.a, isPhase0.a, isPhase1.a, isPhase2.a, isPhase3.a, display.in),
     one.out.to(phaseInc.b, isPhase1.b),
     phaseInc.sum.to(phaseWrap.in),
@@ -439,29 +318,14 @@ const PhaseDemo = component('PhaseDemo')
     isPhase1.eq.to(led1.in),
     isPhase2.eq.to(led2.in),
     isPhase3.eq.to(led3.in),
-  ])
-  .build()
+  ],
+})
 `,
     dsl: `
-const PhaseDemo = component('PhaseDemo')
-  .node('phase', Register, { initial: 0 })
-  .node('one', Constant, { value: 1 })
-  .node('zero', Constant, { value: 0 })
-  .node('two', Constant, { value: 2 })
-  .node('three', Constant, { value: 3 })
-  .node('phaseInc', Adder)
-  .node('phaseWrap', BitSlice, { low: 0, high: 1 })
-  .node('enable', Switch)
-  .node('isPhase0', Comparator)
-  .node('isPhase1', Comparator)
-  .node('isPhase2', Comparator)
-  .node('isPhase3', Comparator)
-  .node('led0', Led)
-  .node('led1', Led)
-  .node('led2', Led)
-  .node('led3', Led)
-  .node('display', HexDisplay)
-  .connect(({ in: inp, out, phase, one, zero, two, three, phaseInc, phaseWrap, enable, isPhase0, isPhase1, isPhase2, isPhase3, led0, led1, led2, led3, display }) => [
+const PhaseDemo = component('PhaseDemo', {
+  nodes: { phase: Register, one: Constant, zero: Constant, two: Constant, three: Constant, phaseInc: Adder, phaseWrap: BitSlice, enable: Switch, isPhase0: Comparator, isPhase1: Comparator, isPhase2: Comparator, isPhase3: Comparator, led0: Led, led1: Led, led2: Led, led3: Led, display: HexDisplay },
+  nodeArgs: { phase: { initial: 0 }, one: { value: 1 }, zero: { value: 0 }, two: { value: 2 }, three: { value: 3 }, phaseWrap: { low: 0, high: 1 } },
+  connect: ({ in: inp, out, phase, one, zero, two, three, phaseInc, phaseWrap, enable, isPhase0, isPhase1, isPhase2, isPhase3, led0, led1, led2, led3, display }) => [
     phase.q.to(phaseInc.a, isPhase0.a, isPhase1.a, isPhase2.a, isPhase3.a, display.in),
     one.out.to(phaseInc.b, isPhase1.b),
     phaseInc.sum.to(phaseWrap.in),
@@ -474,8 +338,8 @@ const PhaseDemo = component('PhaseDemo')
     isPhase1.eq.to(led1.in),
     isPhase2.eq.to(led2.in),
     isPhase3.eq.to(led3.in),
-  ])
-  .build()
+  ],
+})
 `,
     nodePositions: {
       // Control (left)
@@ -508,20 +372,10 @@ const PhaseDemo = component('PhaseDemo')
     description:
       "Compares head and food X/Y coordinates to detect collision, outputting a grow signal when they match.",
     displayDsl: `
-const CollisionDetector = component('CollisionDetector')
-  .node('headX', Input, { value: 3 })
-  .node('headY', Input, { value: 5 })
-  .node('foodX', Input, { value: 3 })
-  .node('foodY', Input, { value: 5 })
-  .node('matchX', Comparator)
-  .node('matchY', Comparator)
-  .node('collision', And)
-  .node('collisionLed', Led)
-  .node('zero', Constant, { value: 0 })
-  .node('one', Constant, { value: 1 })
-  .node('growMux', Mux)
-  .node('growDisplay', HexDisplay)
-  .connect(({ in: inp, out, headX, headY, foodX, foodY, matchX, matchY, collision, collisionLed, zero, one, growMux, growDisplay }) => [
+const CollisionDetector = component('CollisionDetector', {
+  nodes: { headX: Input, headY: Input, foodX: Input, foodY: Input, matchX: Comparator, matchY: Comparator, collision: And, collisionLed: Led, zero: Constant, one: Constant, growMux: Mux, growDisplay: HexDisplay },
+  nodeArgs: { headX: { value: 3 }, headY: { value: 5 }, foodX: { value: 3 }, foodY: { value: 5 }, zero: { value: 0 }, one: { value: 1 } },
+  connect: ({ in: inp, out, headX, headY, foodX, foodY, matchX, matchY, collision, collisionLed, zero, one, growMux, growDisplay }) => [
     headX.out.to(matchX.a),
     foodX.out.to(matchX.b),
     headY.out.to(matchY.a),
@@ -532,24 +386,14 @@ const CollisionDetector = component('CollisionDetector')
     zero.out.to(growMux.in0),
     one.out.to(growMux.in1),
     growMux.out.to(growDisplay.in),
-  ])
-  .build()
+  ],
+})
 `,
     dsl: `
-const CollisionDetector = component('CollisionDetector')
-  .node('headX', Input, { value: 3 })
-  .node('headY', Input, { value: 5 })
-  .node('foodX', Input, { value: 3 })
-  .node('foodY', Input, { value: 5 })
-  .node('matchX', Comparator)
-  .node('matchY', Comparator)
-  .node('collision', And)
-  .node('collisionLed', Led)
-  .node('zero', Constant, { value: 0 })
-  .node('one', Constant, { value: 1 })
-  .node('growMux', Mux)
-  .node('growDisplay', HexDisplay)
-  .connect(({ in: inp, out, headX, headY, foodX, foodY, matchX, matchY, collision, collisionLed, zero, one, growMux, growDisplay }) => [
+const CollisionDetector = component('CollisionDetector', {
+  nodes: { headX: Input, headY: Input, foodX: Input, foodY: Input, matchX: Comparator, matchY: Comparator, collision: And, collisionLed: Led, zero: Constant, one: Constant, growMux: Mux, growDisplay: HexDisplay },
+  nodeArgs: { headX: { value: 3 }, headY: { value: 5 }, foodX: { value: 3 }, foodY: { value: 5 }, zero: { value: 0 }, one: { value: 1 } },
+  connect: ({ in: inp, out, headX, headY, foodX, foodY, matchX, matchY, collision, collisionLed, zero, one, growMux, growDisplay }) => [
     headX.out.to(matchX.a),
     foodX.out.to(matchX.b),
     headY.out.to(matchY.a),
@@ -560,8 +404,8 @@ const CollisionDetector = component('CollisionDetector')
     zero.out.to(growMux.in0),
     one.out.to(growMux.in1),
     growMux.out.to(growDisplay.in),
-  ])
-  .build()
+  ],
+})
 `,
     nodePositions: {
       // Inputs (left, 2x2 grid)
@@ -591,122 +435,10 @@ const CollisionDetector = component('CollisionDetector')
  * direction decoding, collision detection, and food spawning.
  */
 export const SNAKE_ADVANCED_DSL = `
-const SnakeAdvanced = component('SnakeAdvanced')
-  .node('ram', DualPortRAM, { init: {"33":1,"34":1,"35":1,"36":1,"64":33,"65":34,"66":35,"67":36} })
-  .node('screen', Screen)
-  .node('keyboard', Input, { value: 77 })
-  .node('foodX', Register, { initial: 6 })
-  .node('foodY', Register, { initial: 3 })
-  .node('foodNeedsDrawing', Register, { initial: 1 })
-  .node('headPtr', Register, { initial: 3 })
-  .node('tailPtr', Register, { initial: 0 })
-  .node('snakeLen', Register, { initial: 4 })
-  .node('headX', Register, { initial: 4 })
-  .node('headY', Register, { initial: 4 })
-  .node('tailPixelAddr', Register, { initial: 33 })
-  .node('nextHeadPixelAddr', Register, { initial: 36 })
-  .node('phase', Register, { initial: 0 })
-  .node('zero', Constant, { value: 0 })
-  .node('one', Constant, { value: 1 })
-  .node('two', Constant, { value: 2 })
-  .node('three', Constant, { value: 3 })
-  .node('bodyBase', Constant, { value: 64 })
-  .node('minus1', Constant, { value: 255 })
-  .node('eight', Constant, { value: 8 })
-  .node('phaseInc', Adder)
-  .node('phaseWrap', BitSlice, { low: 0, high: 1 })
-  .node('phaseEnable', Switch, { value: 1 })
-  .node('isPhase0', Comparator)
-  .node('isPhase1', Comparator)
-  .node('isPhase2', Comparator)
-  .node('isPhase3', Comparator)
-  .node('keyboardLatched', Register, { initial: 0 })
-  .node('latchKeyboard', And)
-  .node('upCode', Constant, { value: 72 })
-  .node('downCode', Constant, { value: 80 })
-  .node('leftCode', Constant, { value: 75 })
-  .node('rightCode', Constant, { value: 77 })
-  .node('isUp', Comparator)
-  .node('isDown', Comparator)
-  .node('isLeft', Comparator)
-  .node('isRight', Comparator)
-  .node('deltaXTemp', Mux)
-  .node('deltaX', Mux)
-  .node('deltaYTemp', Mux)
-  .node('deltaY', Mux)
-  .node('nextHeadXCalc', Adder)
-  .node('nextHeadYCalc', Adder)
-  .node('nextHeadX', BitSlice, { low: 0, high: 2 })
-  .node('nextHeadY', BitSlice, { low: 0, high: 2 })
-  .node('nextHeadY2', Adder)
-  .node('nextHeadY4', Adder)
-  .node('nextHeadY8', Adder)
-  .node('nextPixelAddr', Adder)
-  .node('foodY2', Adder)
-  .node('foodY4', Adder)
-  .node('foodY8', Adder)
-  .node('foodPixelAddr', Adder)
-  .node('nextHeadAtFoodX', Comparator)
-  .node('nextHeadAtFoodY', Comparator)
-  .node('willEatFood', And)
-  .node('latchNextHead', And)
-  .node('headPtrNext', Adder)
-  .node('headPtrNextWrap', BitSlice, { low: 0, high: 5 })
-  .node('headBodyAddr', Adder)
-  .node('tailBodyAddr', Adder)
-  .node('phase0Addr', Mux)
-  .node('addrMux0', Mux)
-  .node('addrMux1', Mux)
-  .node('ramAddr', Mux)
-  .node('dataMux0', Mux)
-  .node('dataMux1', Mux)
-  .node('ramData', Mux)
-  .node('bufferEmpty', Comparator)
-  .node('bufferNotEmpty', Not)
-  .node('deltaXIsZero', Comparator)
-  .node('deltaYIsZero', Comparator)
-  .node('bothDeltasZero', And)
-  .node('isMoving', Not)
-  .node('shouldMoveTail', Switch, { value: 1 })
-  .node('shouldMoveTailActual', And)
-  .node('notEatingFood', Not)
-  .node('shouldClearTail', And)
-  .node('shouldClearTailMoving', And)
-  .node('writePhase0', And)
-  .node('writePhase1', And)
-  .node('writePhase2', And)
-  .node('writePhase3', And)
-  .node('writePhase01', Or)
-  .node('writePhase2or3', Or)
-  .node('writeAny', Or)
-  .node('writeEnable', Switch, { value: 1 })
-  .node('finalWriteEnable', And)
-  .node('latchTail', And)
-  .node('latchTailFinal', And)
-  .node('latchTailNotFood', And)
-  .node('notDrawingFood', Not)
-  .node('clearFoodFlag', And)
-  .node('clearFoodFlagFinal', And)
-  .node('ateFood', And)
-  .node('ateFoodFinal', And)
-  .node('foodFlagWriteEnable', Or)
-  .node('foodFlagData', Mux)
-  .node('foodXNext', Adder)
-  .node('foodXWrap', BitSlice, { low: 0, high: 2 })
-  .node('foodYNext', Adder)
-  .node('five', Constant, { value: 5 })
-  .node('foodYWrap', BitSlice, { low: 0, high: 2 })
-  .node('updateHead', And)
-  .node('updateHeadFinal', And)
-  .node('headPtrInc', Adder)
-  .node('headPtrWrap', BitSlice, { low: 0, high: 5 })
-  .node('tailPtrInc', Adder)
-  .node('tailPtrWrap', BitSlice, { low: 0, high: 5 })
-  .node('updateTail', And)
-  .node('updateTailFinal', And)
-  .node('snakeLenDelta', Mux)
-  .node('snakeLenNew', Adder)
-  .connect(({ in: inp, out, ram, screen, keyboard, foodX, foodY, foodNeedsDrawing, headPtr, tailPtr, snakeLen, headX, headY, tailPixelAddr, nextHeadPixelAddr, phase, zero, one, two, three, bodyBase, minus1, eight, phaseInc, phaseWrap, phaseEnable, isPhase0, isPhase1, isPhase2, isPhase3, keyboardLatched, latchKeyboard, upCode, downCode, leftCode, rightCode, isUp, isDown, isLeft, isRight, deltaXTemp, deltaX, deltaYTemp, deltaY, nextHeadXCalc, nextHeadYCalc, nextHeadX, nextHeadY, nextHeadY2, nextHeadY4, nextHeadY8, nextPixelAddr, foodY2, foodY4, foodY8, foodPixelAddr, nextHeadAtFoodX, nextHeadAtFoodY, willEatFood, latchNextHead, headPtrNext, headPtrNextWrap, headBodyAddr, tailBodyAddr, phase0Addr, addrMux0, addrMux1, ramAddr, dataMux0, dataMux1, ramData, bufferEmpty, bufferNotEmpty, deltaXIsZero, deltaYIsZero, bothDeltasZero, isMoving, shouldMoveTail, shouldMoveTailActual, notEatingFood, shouldClearTail, shouldClearTailMoving, writePhase0, writePhase1, writePhase2, writePhase3, writePhase01, writePhase2or3, writeAny, writeEnable, finalWriteEnable, latchTail, latchTailFinal, latchTailNotFood, notDrawingFood, clearFoodFlag, clearFoodFlagFinal, ateFood, ateFoodFinal, foodFlagWriteEnable, foodFlagData, foodXNext, foodXWrap, foodYNext, five, foodYWrap, updateHead, updateHeadFinal, headPtrInc, headPtrWrap, tailPtrInc, tailPtrWrap, updateTail, updateTailFinal, snakeLenDelta, snakeLenNew }) => [
+const SnakeAdvanced = component('SnakeAdvanced', {
+  nodes: { ram: DualPortRAM, screen: Screen, keyboard: Input, foodX: Register, foodY: Register, foodNeedsDrawing: Register, headPtr: Register, tailPtr: Register, snakeLen: Register, headX: Register, headY: Register, tailPixelAddr: Register, nextHeadPixelAddr: Register, phase: Register, zero: Constant, one: Constant, two: Constant, three: Constant, bodyBase: Constant, minus1: Constant, eight: Constant, phaseInc: Adder, phaseWrap: BitSlice, phaseEnable: Switch, isPhase0: Comparator, isPhase1: Comparator, isPhase2: Comparator, isPhase3: Comparator, keyboardLatched: Register, latchKeyboard: And, upCode: Constant, downCode: Constant, leftCode: Constant, rightCode: Constant, isUp: Comparator, isDown: Comparator, isLeft: Comparator, isRight: Comparator, deltaXTemp: Mux, deltaX: Mux, deltaYTemp: Mux, deltaY: Mux, nextHeadXCalc: Adder, nextHeadYCalc: Adder, nextHeadX: BitSlice, nextHeadY: BitSlice, nextHeadY2: Adder, nextHeadY4: Adder, nextHeadY8: Adder, nextPixelAddr: Adder, foodY2: Adder, foodY4: Adder, foodY8: Adder, foodPixelAddr: Adder, nextHeadAtFoodX: Comparator, nextHeadAtFoodY: Comparator, willEatFood: And, latchNextHead: And, headPtrNext: Adder, headPtrNextWrap: BitSlice, headBodyAddr: Adder, tailBodyAddr: Adder, phase0Addr: Mux, addrMux0: Mux, addrMux1: Mux, ramAddr: Mux, dataMux0: Mux, dataMux1: Mux, ramData: Mux, bufferEmpty: Comparator, bufferNotEmpty: Not, deltaXIsZero: Comparator, deltaYIsZero: Comparator, bothDeltasZero: And, isMoving: Not, shouldMoveTail: Switch, shouldMoveTailActual: And, notEatingFood: Not, shouldClearTail: And, shouldClearTailMoving: And, writePhase0: And, writePhase1: And, writePhase2: And, writePhase3: And, writePhase01: Or, writePhase2or3: Or, writeAny: Or, writeEnable: Switch, finalWriteEnable: And, latchTail: And, latchTailFinal: And, latchTailNotFood: And, notDrawingFood: Not, clearFoodFlag: And, clearFoodFlagFinal: And, ateFood: And, ateFoodFinal: And, foodFlagWriteEnable: Or, foodFlagData: Mux, foodXNext: Adder, foodXWrap: BitSlice, foodYNext: Adder, five: Constant, foodYWrap: BitSlice, updateHead: And, updateHeadFinal: And, headPtrInc: Adder, headPtrWrap: BitSlice, tailPtrInc: Adder, tailPtrWrap: BitSlice, updateTail: And, updateTailFinal: And, snakeLenDelta: Mux, snakeLenNew: Adder },
+  nodeArgs: { ram: { init: {"33":1,"34":1,"35":1,"36":1,"64":33,"65":34,"66":35,"67":36} }, keyboard: { value: 77 }, foodX: { initial: 6 }, foodY: { initial: 3 }, foodNeedsDrawing: { initial: 1 }, headPtr: { initial: 3 }, tailPtr: { initial: 0 }, snakeLen: { initial: 4 }, headX: { initial: 4 }, headY: { initial: 4 }, tailPixelAddr: { initial: 33 }, nextHeadPixelAddr: { initial: 36 }, phase: { initial: 0 }, zero: { value: 0 }, one: { value: 1 }, two: { value: 2 }, three: { value: 3 }, bodyBase: { value: 64 }, minus1: { value: 255 }, eight: { value: 8 }, phaseWrap: { low: 0, high: 1 }, phaseEnable: { value: 1 }, keyboardLatched: { initial: 0 }, upCode: { value: 72 }, downCode: { value: 80 }, leftCode: { value: 75 }, rightCode: { value: 77 }, nextHeadX: { low: 0, high: 2 }, nextHeadY: { low: 0, high: 2 }, headPtrNextWrap: { low: 0, high: 5 }, shouldMoveTail: { value: 1 }, writeEnable: { value: 1 }, foodXWrap: { low: 0, high: 2 }, five: { value: 5 }, foodYWrap: { low: 0, high: 2 }, headPtrWrap: { low: 0, high: 5 }, tailPtrWrap: { low: 0, high: 5 } },
+  connect: ({ in: inp, out, ram, screen, keyboard, foodX, foodY, foodNeedsDrawing, headPtr, tailPtr, snakeLen, headX, headY, tailPixelAddr, nextHeadPixelAddr, phase, zero, one, two, three, bodyBase, minus1, eight, phaseInc, phaseWrap, phaseEnable, isPhase0, isPhase1, isPhase2, isPhase3, keyboardLatched, latchKeyboard, upCode, downCode, leftCode, rightCode, isUp, isDown, isLeft, isRight, deltaXTemp, deltaX, deltaYTemp, deltaY, nextHeadXCalc, nextHeadYCalc, nextHeadX, nextHeadY, nextHeadY2, nextHeadY4, nextHeadY8, nextPixelAddr, foodY2, foodY4, foodY8, foodPixelAddr, nextHeadAtFoodX, nextHeadAtFoodY, willEatFood, latchNextHead, headPtrNext, headPtrNextWrap, headBodyAddr, tailBodyAddr, phase0Addr, addrMux0, addrMux1, ramAddr, dataMux0, dataMux1, ramData, bufferEmpty, bufferNotEmpty, deltaXIsZero, deltaYIsZero, bothDeltasZero, isMoving, shouldMoveTail, shouldMoveTailActual, notEatingFood, shouldClearTail, shouldClearTailMoving, writePhase0, writePhase1, writePhase2, writePhase3, writePhase01, writePhase2or3, writeAny, writeEnable, finalWriteEnable, latchTail, latchTailFinal, latchTailNotFood, notDrawingFood, clearFoodFlag, clearFoodFlagFinal, ateFood, ateFoodFinal, foodFlagWriteEnable, foodFlagData, foodXNext, foodXWrap, foodYNext, five, foodYWrap, updateHead, updateHeadFinal, headPtrInc, headPtrWrap, tailPtrInc, tailPtrWrap, updateTail, updateTailFinal, snakeLenDelta, snakeLenNew }) => [
     screen.addrB.to(ram.addrB),
     ram.outB.to(screen.dataIn),
     phase.q.to(phaseInc.a, isPhase0.a, isPhase1.a, isPhase2.a, isPhase3.a),
@@ -821,5 +553,5 @@ const SnakeAdvanced = component('SnakeAdvanced')
     updateTailFinal.out.to(tailPtr.we),
     snakeLenDelta.out.to(snakeLenNew.b),
     snakeLenNew.sum.to(snakeLen.data),
-  ])
-  .build()`
+  ],
+})`

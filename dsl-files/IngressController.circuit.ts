@@ -1,70 +1,11 @@
 // Auto-generated from DSL
 
-const IngressController = component('IngressController')
-  .in('data_in', bus(8))
-  .in('sof', bit)
-  .in('eof', bit)
-  .in('data_valid', bit)
-  .in('grant', bit)
-  .out('buf_addr', bus(8))
-  .out('buf_data', bus(8))
-  .out('buf_we', bit)
-  .out('pkt_ready', bit)
-  .out('buf_full', bit)
-  .out('write_ptr', bus(8))
-  .node('fsm_state', Register)
-  .node('byte_count', Register)
-  .node('write_ptr_reg', Register)
-  .node('pkt_count', Register)
-  .node('pkt_ready_reg', Register)
-  .node('STATE_IDLE', Input, { value: 0 })
-  .node('STATE_RECEIVING', Input, { value: 1 })
-  .node('STATE_BUFFERED', Input, { value: 2 })
-  .node('ZERO', Input, { value: 0 })
-  .node('ONE', Input, { value: 1 })
-  .node('FOUR', Input, { value: 4 })
-  .node('SEVEN', Input, { value: 7 })
-  .node('EIGHT', Input, { value: 8 })
-  .node('isIDLE', Comparator)
-  .node('isRECEIVING', Comparator)
-  .node('isBUFFERED', Comparator)
-  .node('buf_full_cmp', Comparator)
-  .node('not_buf_full', Not)
-  .node('can_receive', And)
-  .node('can_receive_valid', And)
-  .node('idle_to_receiving', And)
-  .node('byte_is_seven', Comparator)
-  .node('frame_complete', And)
-  .node('receiving_complete', And)
-  .node('receiving_complete_valid', And)
-  .node('buffered_to_idle', And)
-  .node('next_state_m2', Mux)
-  .node('next_state_m1', Mux)
-  .node('next_state', Mux)
-  .node('fsm_state_we', Input, { value: 1 })
-  .node('byte_inc', Adder)
-  .node('should_count', And)
-  .node('next_byte_count', Mux)
-  .node('byte_count_we', Input, { value: 1 })
-  .node('ptr_add_eight', Adder)
-  .node('should_advance_ptr', And)
-  .node('next_write_ptr_val', Mux)
-  .node('write_ptr_reg_we', Input, { value: 1 })
-  .node('pkt_inc', Adder)
-  .node('pkt_dec', Adder)
-  .node('MINUS_ONE', Input, { value: 255 })
-  .node('next_pkt_count_inc', Mux)
-  .node('next_pkt_count', Mux)
-  .node('pkt_count_we', Input, { value: 1 })
-  .node('buf_addr_calc', Adder)
-  .node('buf_we_signal', And)
-  .node('pkt_count_nonzero', Comparator)
-  .node('pkt_ready_signal', Or)
-  .node('pkt_ready_we', Input, { value: 1 })
-  .node('fsm_state_display', HexDisplay)
-  .node('pkt_count_display', HexDisplay)
-  .node('write_ptr_debug', HexDisplay)
-  .connect(({ in: inp, out, fsm_state, byte_count, write_ptr_reg, pkt_count, pkt_ready_reg, STATE_IDLE, STATE_RECEIVING, STATE_BUFFERED, ZERO, ONE, FOUR, SEVEN, EIGHT, isIDLE, isRECEIVING, isBUFFERED, buf_full_cmp, not_buf_full, can_receive, can_receive_valid, idle_to_receiving, byte_is_seven, frame_complete, receiving_complete, receiving_complete_valid, buffered_to_idle, next_state_m2, next_state_m1, next_state, fsm_state_we, byte_inc, should_count, next_byte_count, byte_count_we, ptr_add_eight, should_advance_ptr, next_write_ptr_val, write_ptr_reg_we, pkt_inc, pkt_dec, MINUS_ONE, next_pkt_count_inc, next_pkt_count, pkt_count_we, buf_addr_calc, buf_we_signal, pkt_count_nonzero, pkt_ready_signal, pkt_ready_we, fsm_state_display, pkt_count_display, write_ptr_debug }) => [
+const IngressController = component('IngressController', {
+  in: { data_in: bus(8), sof: bit, eof: bit, data_valid: bit, grant: bit },
+  out: { buf_addr: bus(8), buf_data: bus(8), buf_we: bit, pkt_ready: bit, buf_full: bit, write_ptr: bus(8) },
+  nodes: { fsm_state: Register, byte_count: Register, write_ptr_reg: Register, pkt_count: Register, pkt_ready_reg: Register, STATE_IDLE: Input, STATE_RECEIVING: Input, STATE_BUFFERED: Input, ZERO: Input, ONE: Input, FOUR: Input, SEVEN: Input, EIGHT: Input, isIDLE: Comparator, isRECEIVING: Comparator, isBUFFERED: Comparator, buf_full_cmp: Comparator, not_buf_full: Not, can_receive: And, can_receive_valid: And, idle_to_receiving: And, byte_is_seven: Comparator, frame_complete: And, receiving_complete: And, receiving_complete_valid: And, buffered_to_idle: And, next_state_m2: Mux, next_state_m1: Mux, next_state: Mux, fsm_state_we: Input, byte_inc: Adder, should_count: And, next_byte_count: Mux, byte_count_we: Input, ptr_add_eight: Adder, should_advance_ptr: And, next_write_ptr_val: Mux, write_ptr_reg_we: Input, pkt_inc: Adder, pkt_dec: Adder, MINUS_ONE: Input, next_pkt_count_inc: Mux, next_pkt_count: Mux, pkt_count_we: Input, buf_addr_calc: Adder, buf_we_signal: And, pkt_count_nonzero: Comparator, pkt_ready_signal: Or, pkt_ready_we: Input, fsm_state_display: HexDisplay, pkt_count_display: HexDisplay, write_ptr_debug: HexDisplay },
+  nodeArgs: { STATE_IDLE: { value: 0 }, STATE_RECEIVING: { value: 1 }, STATE_BUFFERED: { value: 2 }, ZERO: { value: 0 }, ONE: { value: 1 }, FOUR: { value: 4 }, SEVEN: { value: 7 }, EIGHT: { value: 8 }, fsm_state_we: { value: 1 }, byte_count_we: { value: 1 }, write_ptr_reg_we: { value: 1 }, MINUS_ONE: { value: 255 }, pkt_count_we: { value: 1 }, pkt_ready_we: { value: 1 } },
+  connect: ({ in: inp, out, fsm_state, byte_count, write_ptr_reg, pkt_count, pkt_ready_reg, STATE_IDLE, STATE_RECEIVING, STATE_BUFFERED, ZERO, ONE, FOUR, SEVEN, EIGHT, isIDLE, isRECEIVING, isBUFFERED, buf_full_cmp, not_buf_full, can_receive, can_receive_valid, idle_to_receiving, byte_is_seven, frame_complete, receiving_complete, receiving_complete_valid, buffered_to_idle, next_state_m2, next_state_m1, next_state, fsm_state_we, byte_inc, should_count, next_byte_count, byte_count_we, ptr_add_eight, should_advance_ptr, next_write_ptr_val, write_ptr_reg_we, pkt_inc, pkt_dec, MINUS_ONE, next_pkt_count_inc, next_pkt_count, pkt_count_we, buf_addr_calc, buf_we_signal, pkt_count_nonzero, pkt_ready_signal, pkt_ready_we, fsm_state_display, pkt_count_display, write_ptr_debug }) => [
     fsm_state.q.to(isIDLE.a, isRECEIVING.a, isBUFFERED.a, next_state_m2.in0, fsm_state_display.in),
     STATE_IDLE.out.to(isIDLE.b, next_state.in1),
     STATE_RECEIVING.out.to(isRECEIVING.b, next_state_m1.in1),
@@ -119,5 +60,5 @@ const IngressController = component('IngressController')
     pkt_ready_signal.out.to(pkt_ready_reg.data),
     pkt_ready_we.out.to(pkt_ready_reg.we),
     pkt_ready_reg.q.to(out.pkt_ready),
-  ])
-  .build()
+  ],
+})

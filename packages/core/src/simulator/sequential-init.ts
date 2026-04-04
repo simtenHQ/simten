@@ -77,7 +77,12 @@ export function initializeFlatSequentialState(
           }
         }
 
-        initialValue = { data: memory, addressWidth: 8, dataWidth: 8 };
+        const stType = stateBlock.stateType;
+        initialValue = {
+          data: memory,
+          addressWidth: stType.kind === 'memory' ? stType.addressWidth : 8,
+          dataWidth: stType.kind === 'memory' ? stType.dataWidth : 8,
+        };
       } else if (node.primitiveType === 'ROM' || node.primitiveType === 'DualPortROM' || node.primitiveType === 'RV32I_InstrMem' || node.primitiveType === 'RV32I_DataMem' || node.primitiveType === 'Eth_FrameInput') {
         // ROM initialization - check for DSL-embedded data first, then runtime-loaded data
         const memory = new Map<number, number>();

@@ -20,122 +20,10 @@ export const EXAMPLES: Example[] = [
     category: "game",
     nodes: "~100 nodes",
     dsl: `
-const SnakeAdvanced = component('SnakeAdvanced')
-  .node('ram', DualPortRAM, { init: {"33":1,"34":1,"35":1,"36":1,"64":33,"65":34,"66":35,"67":36} })
-  .node('screen', Screen)
-  .node('keyboard', Input)
-  .node('foodX', Register, { initial: 6 })
-  .node('foodY', Register, { initial: 3 })
-  .node('foodNeedsDrawing', Register, { initial: 1 })
-  .node('headPtr', Register, { initial: 3 })
-  .node('tailPtr', Register, { initial: 0 })
-  .node('snakeLen', Register, { initial: 4 })
-  .node('headX', Register, { initial: 4 })
-  .node('headY', Register, { initial: 4 })
-  .node('tailPixelAddr', Register, { initial: 33 })
-  .node('nextHeadPixelAddr', Register, { initial: 36 })
-  .node('phase', Register, { initial: 0 })
-  .node('zero', Constant, { value: 0 })
-  .node('one', Constant, { value: 1 })
-  .node('two', Constant, { value: 2 })
-  .node('three', Constant, { value: 3 })
-  .node('bodyBase', Constant, { value: 64 })
-  .node('minus1', Constant, { value: 255 })
-  .node('eight', Constant, { value: 8 })
-  .node('phaseInc', Adder)
-  .node('phaseWrap', BitSlice, { low: 0, high: 1 })
-  .node('phaseEnable', Switch, { value: 1 })
-  .node('isPhase0', Comparator)
-  .node('isPhase1', Comparator)
-  .node('isPhase2', Comparator)
-  .node('isPhase3', Comparator)
-  .node('keyboardLatched', Register, { initial: 0 })
-  .node('latchKeyboard', And)
-  .node('upCode', Constant, { value: 72 })
-  .node('downCode', Constant, { value: 80 })
-  .node('leftCode', Constant, { value: 75 })
-  .node('rightCode', Constant, { value: 77 })
-  .node('isUp', Comparator)
-  .node('isDown', Comparator)
-  .node('isLeft', Comparator)
-  .node('isRight', Comparator)
-  .node('deltaXTemp', Mux)
-  .node('deltaX', Mux)
-  .node('deltaYTemp', Mux)
-  .node('deltaY', Mux)
-  .node('nextHeadXCalc', Adder)
-  .node('nextHeadYCalc', Adder)
-  .node('nextHeadX', BitSlice, { low: 0, high: 2 })
-  .node('nextHeadY', BitSlice, { low: 0, high: 2 })
-  .node('nextHeadY2', Adder)
-  .node('nextHeadY4', Adder)
-  .node('nextHeadY8', Adder)
-  .node('nextPixelAddr', Adder)
-  .node('foodY2', Adder)
-  .node('foodY4', Adder)
-  .node('foodY8', Adder)
-  .node('foodPixelAddr', Adder)
-  .node('nextHeadAtFoodX', Comparator)
-  .node('nextHeadAtFoodY', Comparator)
-  .node('willEatFood', And)
-  .node('latchNextHead', And)
-  .node('headPtrNext', Adder)
-  .node('headPtrNextWrap', BitSlice, { low: 0, high: 5 })
-  .node('headBodyAddr', Adder)
-  .node('tailBodyAddr', Adder)
-  .node('phase0Addr', Mux)
-  .node('addrMux0', Mux)
-  .node('addrMux1', Mux)
-  .node('ramAddr', Mux)
-  .node('dataMux0', Mux)
-  .node('dataMux1', Mux)
-  .node('ramData', Mux)
-  .node('bufferEmpty', Comparator)
-  .node('bufferNotEmpty', Not)
-  .node('deltaXIsZero', Comparator)
-  .node('deltaYIsZero', Comparator)
-  .node('bothDeltasZero', And)
-  .node('isMoving', Not)
-  .node('shouldMoveTail', Switch, { value: 1 })
-  .node('shouldMoveTailActual', And)
-  .node('notEatingFood', Not)
-  .node('shouldClearTail', And)
-  .node('shouldClearTailMoving', And)
-  .node('writePhase0', And)
-  .node('writePhase1', And)
-  .node('writePhase2', And)
-  .node('writePhase3', And)
-  .node('writePhase01', Or)
-  .node('writePhase2or3', Or)
-  .node('writeAny', Or)
-  .node('writeEnable', Switch, { value: 1 })
-  .node('finalWriteEnable', And)
-  .node('latchTail', And)
-  .node('latchTailFinal', And)
-  .node('latchTailNotFood', And)
-  .node('notDrawingFood', Not)
-  .node('clearFoodFlag', And)
-  .node('clearFoodFlagFinal', And)
-  .node('ateFood', And)
-  .node('ateFoodFinal', And)
-  .node('foodFlagWriteEnable', Or)
-  .node('foodFlagData', Mux)
-  .node('foodXNext', Adder)
-  .node('foodXWrap', BitSlice, { low: 0, high: 2 })
-  .node('foodYNext', Adder)
-  .node('five', Constant, { value: 5 })
-  .node('foodYWrap', BitSlice, { low: 0, high: 2 })
-  .node('updateHead', And)
-  .node('updateHeadFinal', And)
-  .node('headPtrInc', Adder)
-  .node('headPtrWrap', BitSlice, { low: 0, high: 5 })
-  .node('tailPtrInc', Adder)
-  .node('tailPtrWrap', BitSlice, { low: 0, high: 5 })
-  .node('updateTail', And)
-  .node('updateTailFinal', And)
-  .node('snakeLenDelta', Mux)
-  .node('snakeLenNew', Adder)
-  .connect(({ in: inp, out, ram, screen, keyboard, foodX, foodY, foodNeedsDrawing, headPtr, tailPtr, snakeLen, headX, headY, tailPixelAddr, nextHeadPixelAddr, phase, zero, one, two, three, bodyBase, minus1, eight, phaseInc, phaseWrap, phaseEnable, isPhase0, isPhase1, isPhase2, isPhase3, keyboardLatched, latchKeyboard, upCode, downCode, leftCode, rightCode, isUp, isDown, isLeft, isRight, deltaXTemp, deltaX, deltaYTemp, deltaY, nextHeadXCalc, nextHeadYCalc, nextHeadX, nextHeadY, nextHeadY2, nextHeadY4, nextHeadY8, nextPixelAddr, foodY2, foodY4, foodY8, foodPixelAddr, nextHeadAtFoodX, nextHeadAtFoodY, willEatFood, latchNextHead, headPtrNext, headPtrNextWrap, headBodyAddr, tailBodyAddr, phase0Addr, addrMux0, addrMux1, ramAddr, dataMux0, dataMux1, ramData, bufferEmpty, bufferNotEmpty, deltaXIsZero, deltaYIsZero, bothDeltasZero, isMoving, shouldMoveTail, shouldMoveTailActual, notEatingFood, shouldClearTail, shouldClearTailMoving, writePhase0, writePhase1, writePhase2, writePhase3, writePhase01, writePhase2or3, writeAny, writeEnable, finalWriteEnable, latchTail, latchTailFinal, latchTailNotFood, notDrawingFood, clearFoodFlag, clearFoodFlagFinal, ateFood, ateFoodFinal, foodFlagWriteEnable, foodFlagData, foodXNext, foodXWrap, foodYNext, five, foodYWrap, updateHead, updateHeadFinal, headPtrInc, headPtrWrap, tailPtrInc, tailPtrWrap, updateTail, updateTailFinal, snakeLenDelta, snakeLenNew }) => [
+const SnakeAdvanced = component('SnakeAdvanced', {
+  nodes: { screen: Screen, keyboard: Input, foodX: Register, foodY: Register, foodNeedsDrawing: Register, headPtr: Register, tailPtr: Register, snakeLen: Register, headX: Register, headY: Register, tailPixelAddr: Register, nextHeadPixelAddr: Register, phase: Register, zero: Constant, one: Constant, two: Constant, three: Constant, bodyBase: Constant, minus1: Constant, eight: Constant, phaseInc: Adder, phaseWrap: BitSlice, phaseEnable: Switch, isPhase0: Comparator, isPhase1: Comparator, isPhase2: Comparator, isPhase3: Comparator, keyboardLatched: Register, latchKeyboard: And, upCode: Constant, downCode: Constant, leftCode: Constant, rightCode: Constant, isUp: Comparator, isDown: Comparator, isLeft: Comparator, isRight: Comparator, deltaXTemp: Mux, deltaX: Mux, deltaYTemp: Mux, deltaY: Mux, nextHeadXCalc: Adder, nextHeadYCalc: Adder, nextHeadX: BitSlice, nextHeadY: BitSlice, nextHeadY2: Adder, nextHeadY4: Adder, nextHeadY8: Adder, nextPixelAddr: Adder, foodY2: Adder, foodY4: Adder, foodY8: Adder, foodPixelAddr: Adder, nextHeadAtFoodX: Comparator, nextHeadAtFoodY: Comparator, willEatFood: And, latchNextHead: And, headPtrNext: Adder, headPtrNextWrap: BitSlice, headBodyAddr: Adder, tailBodyAddr: Adder, phase0Addr: Mux, addrMux0: Mux, addrMux1: Mux, ramAddr: Mux, dataMux0: Mux, dataMux1: Mux, ramData: Mux, bufferEmpty: Comparator, bufferNotEmpty: Not, deltaXIsZero: Comparator, deltaYIsZero: Comparator, bothDeltasZero: And, isMoving: Not, shouldMoveTail: Switch, shouldMoveTailActual: And, notEatingFood: Not, shouldClearTail: And, shouldClearTailMoving: And, writePhase0: And, writePhase1: And, writePhase2: And, writePhase3: And, writePhase01: Or, writePhase2or3: Or, writeAny: Or, writeEnable: Switch, finalWriteEnable: And, latchTail: And, latchTailFinal: And, latchTailNotFood: And, notDrawingFood: Not, clearFoodFlag: And, clearFoodFlagFinal: And, ateFood: And, ateFoodFinal: And, foodFlagWriteEnable: Or, foodFlagData: Mux, foodXNext: Adder, foodXWrap: BitSlice, foodYNext: Adder, five: Constant, foodYWrap: BitSlice, updateHead: And, updateHeadFinal: And, headPtrInc: Adder, headPtrWrap: BitSlice, tailPtrInc: Adder, tailPtrWrap: BitSlice, updateTail: And, updateTailFinal: And, snakeLenDelta: Mux, snakeLenNew: Adder },
+  nodeArgs: { foodX: { initial: 6 }, foodY: { initial: 3 }, foodNeedsDrawing: { initial: 1 }, headPtr: { initial: 3 }, tailPtr: { initial: 0 }, snakeLen: { initial: 4 }, headX: { initial: 4 }, headY: { initial: 4 }, tailPixelAddr: { initial: 33 }, nextHeadPixelAddr: { initial: 36 }, phase: { initial: 0 }, zero: { value: 0 }, one: { value: 1 }, two: { value: 2 }, three: { value: 3 }, bodyBase: { value: 64 }, minus1: { value: 255 }, eight: { value: 8 }, phaseWrap: { low: 0, high: 1 }, phaseEnable: { value: 1 }, keyboardLatched: { initial: 0 }, upCode: { value: 72 }, downCode: { value: 80 }, leftCode: { value: 75 }, rightCode: { value: 77 }, nextHeadX: { low: 0, high: 2 }, nextHeadY: { low: 0, high: 2 }, headPtrNextWrap: { low: 0, high: 5 }, shouldMoveTail: { value: 1 }, writeEnable: { value: 1 }, foodXWrap: { low: 0, high: 2 }, five: { value: 5 }, foodYWrap: { low: 0, high: 2 }, headPtrWrap: { low: 0, high: 5 }, tailPtrWrap: { low: 0, high: 5 } },
+  connect: ({ in: inp, out, ram, screen, keyboard, foodX, foodY, foodNeedsDrawing, headPtr, tailPtr, snakeLen, headX, headY, tailPixelAddr, nextHeadPixelAddr, phase, zero, one, two, three, bodyBase, minus1, eight, phaseInc, phaseWrap, phaseEnable, isPhase0, isPhase1, isPhase2, isPhase3, keyboardLatched, latchKeyboard, upCode, downCode, leftCode, rightCode, isUp, isDown, isLeft, isRight, deltaXTemp, deltaX, deltaYTemp, deltaY, nextHeadXCalc, nextHeadYCalc, nextHeadX, nextHeadY, nextHeadY2, nextHeadY4, nextHeadY8, nextPixelAddr, foodY2, foodY4, foodY8, foodPixelAddr, nextHeadAtFoodX, nextHeadAtFoodY, willEatFood, latchNextHead, headPtrNext, headPtrNextWrap, headBodyAddr, tailBodyAddr, phase0Addr, addrMux0, addrMux1, ramAddr, dataMux0, dataMux1, ramData, bufferEmpty, bufferNotEmpty, deltaXIsZero, deltaYIsZero, bothDeltasZero, isMoving, shouldMoveTail, shouldMoveTailActual, notEatingFood, shouldClearTail, shouldClearTailMoving, writePhase0, writePhase1, writePhase2, writePhase3, writePhase01, writePhase2or3, writeAny, writeEnable, finalWriteEnable, latchTail, latchTailFinal, latchTailNotFood, notDrawingFood, clearFoodFlag, clearFoodFlagFinal, ateFood, ateFoodFinal, foodFlagWriteEnable, foodFlagData, foodXNext, foodXWrap, foodYNext, five, foodYWrap, updateHead, updateHeadFinal, headPtrInc, headPtrWrap, tailPtrInc, tailPtrWrap, updateTail, updateTailFinal, snakeLenDelta, snakeLenNew }) => [
     screen.addrB.to(ram.addrB),
     ram.outB.to(screen.dataIn),
     phase.q.to(phaseInc.a, isPhase0.a, isPhase1.a, isPhase2.a, isPhase3.a),
@@ -250,8 +138,8 @@ const SnakeAdvanced = component('SnakeAdvanced')
     updateTailFinal.out.to(tailPtr.we),
     snakeLenDelta.out.to(snakeLenNew.b),
     snakeLenNew.sum.to(snakeLen.data),
-  ])
-  .build()
+  ],
+})
 `,
   },
   {
@@ -261,21 +149,12 @@ const SnakeAdvanced = component('SnakeAdvanced')
     category: "cpu",
     nodes: "~120 nodes",
     dsl: `
-const PE_Systolic = component('PE_Systolic')
-  .in('dataIn', bus(8))
-  .in('weightIn', bus(8))
-  .in('partialSumIn', bus(16))
-  .in('weightValid', bit)
-  .out('dataOut', bus(8))
-  .out('partialSumOut', bus(16))
-  .node('weightReg', Register)
-  .node('mult', Multiplier)
-  .node('adder', Adder, { width: 16 })
-  .node('psumReg', Register)
-  .node('dataPipe', Register)
-  .node('one', Constant, { value: 1 })
-  .node('zero', Constant, { value: 0 })
-  .connect(({ in: inp, out, weightReg, mult, adder, psumReg, dataPipe, one, zero }) => [
+const PE_Systolic = component('PE_Systolic', {
+  in: { dataIn: bus(8), weightIn: bus(8), partialSumIn: bus(16), weightValid: bit },
+  out: { dataOut: bus(8), partialSumOut: bus(16) },
+  nodes: { weightReg: Register, mult: Multiplier, adder: Adder, psumReg: Register, dataPipe: Register, one: Constant, zero: Constant },
+  nodeArgs: { adder: { width: 16 }, one: { value: 1 }, zero: { value: 0 } },
+  connect: ({ in: inp, out, weightReg, mult, adder, psumReg, dataPipe, one, zero }) => [
     inp.weightIn.to(weightReg.data),
     inp.weightValid.to(weightReg.we),
     inp.dataIn.to(mult.a, dataPipe.data),
@@ -287,93 +166,15 @@ const PE_Systolic = component('PE_Systolic')
     one.out.to(psumReg.we, dataPipe.we),
     psumReg.q.to(out.partialSumOut),
     dataPipe.q.to(out.dataOut),
-  ])
-  .build()
+  ],
+})
 
-const Systolic3x3 = component('Systolic3x3')
-  .in('a00', bus(8))
-  .in('a01', bus(8))
-  .in('a02', bus(8))
-  .in('a10', bus(8))
-  .in('a11', bus(8))
-  .in('a12', bus(8))
-  .in('a20', bus(8))
-  .in('a21', bus(8))
-  .in('a22', bus(8))
-  .in('b00', bus(8))
-  .in('b01', bus(8))
-  .in('b02', bus(8))
-  .in('b10', bus(8))
-  .in('b11', bus(8))
-  .in('b12', bus(8))
-  .in('b20', bus(8))
-  .in('b21', bus(8))
-  .in('b22', bus(8))
-  .in('start', bit)
-  .out('c00', bus(16))
-  .out('c01', bus(16))
-  .out('c02', bus(16))
-  .out('c10', bus(16))
-  .out('c11', bus(16))
-  .out('c12', bus(16))
-  .out('c20', bus(16))
-  .out('c21', bus(16))
-  .out('c22', bus(16))
-  .out('done', bit)
-  .node('pe00', PE_Systolic)
-  .node('pe01', PE_Systolic)
-  .node('pe02', PE_Systolic)
-  .node('pe10', PE_Systolic)
-  .node('pe11', PE_Systolic)
-  .node('pe12', PE_Systolic)
-  .node('pe20', PE_Systolic)
-  .node('pe21', PE_Systolic)
-  .node('pe22', PE_Systolic)
-  .node('zero', Constant, { value: 0 })
-  .node('one', Constant, { value: 1 })
-  .node('two', Constant, { value: 2 })
-  .node('three', Constant, { value: 3 })
-  .node('four', Constant, { value: 4 })
-  .node('five', Constant, { value: 5 })
-  .node('six', Constant, { value: 6 })
-  .node('seven', Constant, { value: 7 })
-  .node('eight', Constant, { value: 8 })
-  .node('nine', Constant, { value: 9 })
-  .node('counter', Register, { initial: 0 })
-  .node('counterInc', Incrementer)
-  .node('counterMux', Mux)
-  .node('notDone', Comparator)
-  .node('shouldAdvance', And)
-  .node('isCycle0', Comparator)
-  .node('isCycle1', Comparator)
-  .node('isCycle2', Comparator)
-  .node('isCycle3', Comparator)
-  .node('isCycle4', Comparator)
-  .node('isCycle5', Comparator)
-  .node('isCycle6', Comparator)
-  .node('isCycle7', Comparator)
-  .node('isCycle8', Comparator)
-  .node('loadWeights', And)
-  .node('muxR0a', Mux)
-  .node('muxR0b', Mux)
-  .node('muxR0c', Mux)
-  .node('muxR1a', Mux)
-  .node('muxR1b', Mux)
-  .node('muxR1c', Mux)
-  .node('muxR2a', Mux)
-  .node('muxR2b', Mux)
-  .node('muxR2c', Mux)
-  .node('result_c00', Register)
-  .node('result_c10', Register)
-  .node('result_c20', Register)
-  .node('result_c01', Register)
-  .node('result_c11', Register)
-  .node('result_c21', Register)
-  .node('result_c02', Register)
-  .node('result_c12', Register)
-  .node('result_c22', Register)
-  .node('isDone', Comparator)
-  .connect(({ in: inp, out, pe00, pe01, pe02, pe10, pe11, pe12, pe20, pe21, pe22, zero, one, two, three, four, five, six, seven, eight, nine, counter, counterInc, counterMux, notDone, shouldAdvance, isCycle0, isCycle1, isCycle2, isCycle3, isCycle4, isCycle5, isCycle6, isCycle7, isCycle8, loadWeights, muxR0a, muxR0b, muxR0c, muxR1a, muxR1b, muxR1c, muxR2a, muxR2b, muxR2c, result_c00, result_c10, result_c20, result_c01, result_c11, result_c21, result_c02, result_c12, result_c22, isDone }) => [
+const Systolic3x3 = component('Systolic3x3', {
+  in: { a00: bus(8), a01: bus(8), a02: bus(8), a10: bus(8), a11: bus(8), a12: bus(8), a20: bus(8), a21: bus(8), a22: bus(8), b00: bus(8), b01: bus(8), b02: bus(8), b10: bus(8), b11: bus(8), b12: bus(8), b20: bus(8), b21: bus(8), b22: bus(8), start: bit },
+  out: { c00: bus(16), c01: bus(16), c02: bus(16), c10: bus(16), c11: bus(16), c12: bus(16), c20: bus(16), c21: bus(16), c22: bus(16), done: bit },
+  nodes: { pe00: PE_Systolic, pe01: PE_Systolic, pe02: PE_Systolic, pe10: PE_Systolic, pe11: PE_Systolic, pe12: PE_Systolic, pe20: PE_Systolic, pe21: PE_Systolic, pe22: PE_Systolic, zero: Constant, one: Constant, two: Constant, three: Constant, four: Constant, five: Constant, six: Constant, seven: Constant, eight: Constant, nine: Constant, counter: Register, counterInc: Incrementer, counterMux: Mux, notDone: Comparator, shouldAdvance: And, isCycle0: Comparator, isCycle1: Comparator, isCycle2: Comparator, isCycle3: Comparator, isCycle4: Comparator, isCycle5: Comparator, isCycle6: Comparator, isCycle7: Comparator, isCycle8: Comparator, loadWeights: And, muxR0a: Mux, muxR0b: Mux, muxR0c: Mux, muxR1a: Mux, muxR1b: Mux, muxR1c: Mux, muxR2a: Mux, muxR2b: Mux, muxR2c: Mux, result_c00: Register, result_c10: Register, result_c20: Register, result_c01: Register, result_c11: Register, result_c21: Register, result_c02: Register, result_c12: Register, result_c22: Register, isDone: Comparator },
+  nodeArgs: { zero: { value: 0 }, one: { value: 1 }, two: { value: 2 }, three: { value: 3 }, four: { value: 4 }, five: { value: 5 }, six: { value: 6 }, seven: { value: 7 }, eight: { value: 8 }, nine: { value: 9 }, counter: { initial: 0 } },
+  connect: ({ in: inp, out, pe00, pe01, pe02, pe10, pe11, pe12, pe20, pe21, pe22, zero, one, two, three, four, five, six, seven, eight, nine, counter, counterInc, counterMux, notDone, shouldAdvance, isCycle0, isCycle1, isCycle2, isCycle3, isCycle4, isCycle5, isCycle6, isCycle7, isCycle8, loadWeights, muxR0a, muxR0b, muxR0c, muxR1a, muxR1b, muxR1c, muxR2a, muxR2b, muxR2c, result_c00, result_c10, result_c20, result_c01, result_c11, result_c21, result_c02, result_c12, result_c22, isDone }) => [
     counter.q.to(counterInc.in, notDone.a, counterMux.in0, isCycle0.a, isCycle1.a, isCycle2.a, isCycle3.a, isCycle4.a, isCycle5.a, isCycle6.a, isCycle7.a, isCycle8.a, isDone.a),
     nine.out.to(notDone.b, isDone.b),
     inp.start.to(shouldAdvance.a, loadWeights.b),
@@ -452,41 +253,13 @@ const Systolic3x3 = component('Systolic3x3')
     result_c21.q.to(out.c21),
     result_c22.q.to(out.c22),
     isDone.eq.to(out.done),
-  ])
-  .build()
+  ],
+})
 
-const TestSystolic3x3 = component('TestSystolic3x3')
-  .node('sys', Systolic3x3)
-  .node('a00', Input, { value: 1 })
-  .node('a01', Input, { value: 2 })
-  .node('a02', Input, { value: 3 })
-  .node('a10', Input, { value: 4 })
-  .node('a11', Input, { value: 5 })
-  .node('a12', Input, { value: 6 })
-  .node('a20', Input, { value: 7 })
-  .node('a21', Input, { value: 8 })
-  .node('a22', Input, { value: 9 })
-  .node('b00', Input, { value: 2 })
-  .node('b01', Input, { value: 0 })
-  .node('b02', Input, { value: 1 })
-  .node('b10', Input, { value: 0 })
-  .node('b11', Input, { value: 2 })
-  .node('b12', Input, { value: 0 })
-  .node('b20', Input, { value: 1 })
-  .node('b21', Input, { value: 0 })
-  .node('b22', Input, { value: 2 })
-  .node('start', Switch)
-  .node('display_c00', HexDisplay)
-  .node('display_c01', HexDisplay)
-  .node('display_c02', HexDisplay)
-  .node('display_c10', HexDisplay)
-  .node('display_c11', HexDisplay)
-  .node('display_c12', HexDisplay)
-  .node('display_c20', HexDisplay)
-  .node('display_c21', HexDisplay)
-  .node('display_c22', HexDisplay)
-  .node('done_led', Led)
-  .connect(({ in: inp, out, sys, a00, a01, a02, a10, a11, a12, a20, a21, a22, b00, b01, b02, b10, b11, b12, b20, b21, b22, start, display_c00, display_c01, display_c02, display_c10, display_c11, display_c12, display_c20, display_c21, display_c22, done_led }) => [
+const TestSystolic3x3 = component('TestSystolic3x3', {
+  nodes: { sys: Systolic3x3, a00: Input, a01: Input, a02: Input, a10: Input, a11: Input, a12: Input, a20: Input, a21: Input, a22: Input, b00: Input, b01: Input, b02: Input, b10: Input, b11: Input, b12: Input, b20: Input, b21: Input, b22: Input, start: Switch, display_c00: HexDisplay, display_c01: HexDisplay, display_c02: HexDisplay, display_c10: HexDisplay, display_c11: HexDisplay, display_c12: HexDisplay, display_c20: HexDisplay, display_c21: HexDisplay, display_c22: HexDisplay, done_led: Led },
+  nodeArgs: { a00: { value: 1 }, a01: { value: 2 }, a02: { value: 3 }, a10: { value: 4 }, a11: { value: 5 }, a12: { value: 6 }, a20: { value: 7 }, a21: { value: 8 }, a22: { value: 9 }, b00: { value: 2 }, b01: { value: 0 }, b02: { value: 1 }, b10: { value: 0 }, b11: { value: 2 }, b12: { value: 0 }, b20: { value: 1 }, b21: { value: 0 }, b22: { value: 2 } },
+  connect: ({ in: inp, out, sys, a00, a01, a02, a10, a11, a12, a20, a21, a22, b00, b01, b02, b10, b11, b12, b20, b21, b22, start, display_c00, display_c01, display_c02, display_c10, display_c11, display_c12, display_c20, display_c21, display_c22, done_led }) => [
     a00.out.to(sys.a00),
     a01.out.to(sys.a01),
     a02.out.to(sys.a02),
@@ -516,8 +289,8 @@ const TestSystolic3x3 = component('TestSystolic3x3')
     sys.c21.to(display_c21.in),
     sys.c22.to(display_c22.in),
     sys.done.to(done_led.in),
-  ])
-  .build()
+  ],
+})
 `,
   },
   {
@@ -527,35 +300,22 @@ const TestSystolic3x3 = component('TestSystolic3x3')
     category: "math",
     nodes: "~12 nodes",
     dsl: `
-const Fibonacci = component('Fibonacci')
-  .out('fib', bus(8))
-  .node('reg_a', Register)
-  .node('reg_b', Register)
-  .node('adder', Adder)
-  .node('one_bit', Constant, { value: 1 })
-  .node('init', DFlipFlop)
-  .connect(({ in: inp, out, reg_a, reg_b, adder, one_bit, init }) => [
+const Fibonacci = component('Fibonacci', {
+  out: { fib: bus(8) },
+  nodes: { reg_a: Register, reg_b: Register, adder: Adder, one_bit: Constant, init: DFlipFlop },
+  nodeArgs: { one_bit: { value: 1 } },
+  connect: ({ in: inp, out, reg_a, reg_b, adder, one_bit, init }) => [
     one_bit.out.to(init.d, reg_a.we, reg_b.we),
     init.q_bar.to(adder.carry_in),
     reg_a.q.to(adder.a),
     reg_b.q.to(adder.b, reg_a.data, out.fib),
     adder.sum.to(reg_b.data),
-  ])
-  .build()
+  ],
+})
 
-const FibonacciDemo = component('FibonacciDemo')
-  .node('fib', Fibonacci)
-  .node('display', HexDisplay)
-  .node('leds', Splitter8to8)
-  .node('led0', Led)
-  .node('led1', Led)
-  .node('led2', Led)
-  .node('led3', Led)
-  .node('led4', Led)
-  .node('led5', Led)
-  .node('led6', Led)
-  .node('led7', Led)
-  .connect(({ in: inp, out, fib, display, leds, led0, led1, led2, led3, led4, led5, led6, led7 }) => [
+const FibonacciDemo = component('FibonacciDemo', {
+  nodes: { fib: Fibonacci, display: HexDisplay, leds: Splitter8to8, led0: Led, led1: Led, led2: Led, led3: Led, led4: Led, led5: Led, led6: Led, led7: Led },
+  connect: ({ in: inp, out, fib, display, leds, led0, led1, led2, led3, led4, led5, led6, led7 }) => [
     fib.fib.to(display.in, leds.in),
     leds.bit0.to(led0.in),
     leds.bit1.to(led1.in),
@@ -565,8 +325,8 @@ const FibonacciDemo = component('FibonacciDemo')
     leds.bit5.to(led5.in),
     leds.bit6.to(led6.in),
     leds.bit7.to(led7.in),
-  ])
-  .build()
+  ],
+})
 `,
   },
   {
@@ -576,53 +336,23 @@ const FibonacciDemo = component('FibonacciDemo')
     category: "math",
     nodes: "~40 nodes",
     dsl: `
-const Rule30Cell = component('Rule30Cell')
-  .in('left', bit)
-  .in('center', bit)
-  .in('right', bit)
-  .out('next', bit)
-  .node('or1', Or)
-  .node('xor1', Xor)
-  .connect(({ in: inp, out, or1, xor1 }) => [
+const Rule30Cell = component('Rule30Cell', {
+  in: { left: bit, center: bit, right: bit },
+  out: { next: bit },
+  nodes: { or1: Or, xor1: Xor },
+  connect: ({ in: inp, out, or1, xor1 }) => [
     inp.center.to(or1.a),
     inp.right.to(or1.b),
     inp.left.to(xor1.a),
     or1.out.to(xor1.b),
     xor1.out.to(out.next),
-  ])
-  .build()
+  ],
+})
 
-const Rule30 = component('Rule30')
-  .node('c0', DFlipFlop)
-  .node('c1', DFlipFlop)
-  .node('c2', DFlipFlop)
-  .node('c3', DFlipFlop)
-  .node('c4', DFlipFlop)
-  .node('c5', DFlipFlop)
-  .node('c6', DFlipFlop)
-  .node('c7', DFlipFlop)
-  .node('r0', Rule30Cell)
-  .node('r1', Rule30Cell)
-  .node('r2', Rule30Cell)
-  .node('r3', Rule30Cell)
-  .node('r4', Rule30Cell)
-  .node('r5', Rule30Cell)
-  .node('r6', Rule30Cell)
-  .node('r7', Rule30Cell)
-  .node('one', Constant, { value: 1 })
-  .node('init', DFlipFlop)
-  .node('mux4', Mux)
-  .node('led0', Led)
-  .node('led1', Led)
-  .node('led2', Led)
-  .node('led3', Led)
-  .node('led4', Led)
-  .node('led5', Led)
-  .node('led6', Led)
-  .node('led7', Led)
-  .node('combine', Combiner8to8)
-  .node('display', HexDisplay)
-  .connect(({ in: inp, out, c0, c1, c2, c3, c4, c5, c6, c7, r0, r1, r2, r3, r4, r5, r6, r7, one, init, mux4, led0, led1, led2, led3, led4, led5, led6, led7, combine, display }) => [
+const Rule30 = component('Rule30', {
+  nodes: { c0: DFlipFlop, c1: DFlipFlop, c2: DFlipFlop, c3: DFlipFlop, c4: DFlipFlop, c5: DFlipFlop, c6: DFlipFlop, c7: DFlipFlop, r0: Rule30Cell, r1: Rule30Cell, r2: Rule30Cell, r3: Rule30Cell, r4: Rule30Cell, r5: Rule30Cell, r6: Rule30Cell, r7: Rule30Cell, one: Constant, init: DFlipFlop, mux4: Mux, led0: Led, led1: Led, led2: Led, led3: Led, led4: Led, led5: Led, led6: Led, led7: Led, combine: Combiner8to8, display: HexDisplay },
+  nodeArgs: { one: { value: 1 } },
+  connect: ({ in: inp, out, c0, c1, c2, c3, c4, c5, c6, c7, r0, r1, r2, r3, r4, r5, r6, r7, one, init, mux4, led0, led1, led2, led3, led4, led5, led6, led7, combine, display }) => [
     one.out.to(init.d, mux4.in0),
     r4.next.to(mux4.in1),
     init.q.to(mux4.sel),
@@ -643,8 +373,8 @@ const Rule30 = component('Rule30')
     r6.next.to(c6.d),
     r7.next.to(c7.d),
     combine.out.to(display.in),
-  ])
-  .build()
+  ],
+})
 `,
   },
   {
@@ -654,42 +384,12 @@ const Rule30 = component('Rule30')
     category: "cpu",
     nodes: "~30 nodes",
     dsl: `
-const ALU = component('ALU')
-  .in('a', bus(8))
-  .in('b', bus(8))
-  .in('op0', bit)
-  .in('op1', bit)
-  .in('op2', bit)
-  .out('result', bus(8))
-  .out('zero', bit)
-  .out('carry', bit)
-  .out('negative', bit)
-  .node('gnd', Constant, { value: 0 })
-  .node('add', Adder)
-  .node('sub', Subtractor)
-  .node('band', BusAnd)
-  .node('bor', BusOr)
-  .node('bxor', BusXor)
-  .node('bnot', BusNot)
-  .node('shl', LeftShifter)
-  .node('shr', RightShifter)
-  .node('m01', Mux, { width: 8 })
-  .node('m23', Mux, { width: 8 })
-  .node('m45', Mux, { width: 8 })
-  .node('m67', Mux, { width: 8 })
-  .node('m03', Mux, { width: 8 })
-  .node('m47', Mux, { width: 8 })
-  .node('mfinal', Mux, { width: 8 })
-  .node('split_r', Splitter8to8)
-  .node('or01', Or)
-  .node('or23', Or)
-  .node('or45', Or)
-  .node('or67', Or)
-  .node('or_lo', Or)
-  .node('or_hi', Or)
-  .node('or_all', Or)
-  .node('inv_z', Not)
-  .connect(({ in: inp, out, gnd, add, sub, band, bor, bxor, bnot, shl, shr, m01, m23, m45, m67, m03, m47, mfinal, split_r, or01, or23, or45, or67, or_lo, or_hi, or_all, inv_z }) => [
+const ALU = component('ALU', {
+  in: { a: bus(8), b: bus(8), op0: bit, op1: bit, op2: bit },
+  out: { result: bus(8), zero: bit, carry: bit, negative: bit },
+  nodes: { gnd: Constant, add: Adder, sub: Subtractor, band: BusAnd, bor: BusOr, bxor: BusXor, bnot: BusNot, shl: LeftShifter, shr: RightShifter, m01: Mux, m23: Mux, m45: Mux, m67: Mux, m03: Mux, m47: Mux, mfinal: Mux, split_r: Splitter8to8, or01: Or, or23: Or, or45: Or, or67: Or, or_lo: Or, or_hi: Or, or_all: Or, inv_z: Not },
+  nodeArgs: { gnd: { value: 0 }, m01: { width: 8 }, m23: { width: 8 }, m45: { width: 8 }, m67: { width: 8 }, m03: { width: 8 }, m47: { width: 8 }, mfinal: { width: 8 } },
+  connect: ({ in: inp, out, gnd, add, sub, band, bor, bxor, bnot, shl, shr, m01, m23, m45, m67, m03, m47, mfinal, split_r, or01, or23, or45, or67, or_lo, or_hi, or_all, inv_z }) => [
     inp.a.to(add.a, sub.a, band.a, bor.a, bxor.a, bnot.in, shl.value, shr.value),
     inp.b.to(add.b, sub.b, band.b, bor.b, bxor.b, shl.shift, shr.shift),
     gnd.out.to(add.carry_in, sub.borrow_in),
@@ -728,23 +428,13 @@ const ALU = component('ALU')
     or_hi.out.to(or_all.b),
     or_all.out.to(inv_z.in),
     inv_z.out.to(out.zero),
-  ])
-  .build()
+  ],
+})
 
-const ALUDemo = component('ALUDemo')
-  .node('a', Input, { value: 42 })
-  .node('b', Input, { value: 13 })
-  .node('op0', Switch)
-  .node('op1', Switch)
-  .node('op2', Switch)
-  .node('alu', ALU)
-  .node('disp_a', HexDisplay)
-  .node('disp_b', HexDisplay)
-  .node('disp_result', HexDisplay)
-  .node('led_zero', Led)
-  .node('led_carry', Led)
-  .node('led_neg', Led)
-  .connect(({ in: inp, out, a, b, op0, op1, op2, alu, disp_a, disp_b, disp_result, led_zero, led_carry, led_neg }) => [
+const ALUDemo = component('ALUDemo', {
+  nodes: { a: Input, b: Input, op0: Switch, op1: Switch, op2: Switch, alu: ALU, disp_a: HexDisplay, disp_b: HexDisplay, disp_result: HexDisplay, led_zero: Led, led_carry: Led, led_neg: Led },
+  nodeArgs: { a: { value: 42 }, b: { value: 13 } },
+  connect: ({ in: inp, out, a, b, op0, op1, op2, alu, disp_a, disp_b, disp_result, led_zero, led_carry, led_neg }) => [
     a.out.to(alu.a, disp_a.in),
     b.out.to(alu.b, disp_b.in),
     op0.out.to(alu.op0),
@@ -754,8 +444,8 @@ const ALUDemo = component('ALUDemo')
     alu.zero.to(led_zero.in),
     alu.carry.to(led_carry.in),
     alu.negative.to(led_neg.in),
-  ])
-  .build()
+  ],
+})
 `,
   },
   {
@@ -765,34 +455,27 @@ const ALUDemo = component('ALUDemo')
     category: "basics",
     nodes: "4 nodes",
     dsl: `
-const HalfAdder = component('HalfAdder')
-  .in('a', bit)
-  .in('b', bit)
-  .out('sum', bit)
-  .out('carry', bit)
-  .node('xor1', Xor)
-  .node('and1', And)
-  .connect(({ in: inp, out, xor1, and1 }) => [
+const HalfAdder = component('HalfAdder', {
+  in: { a: bit, b: bit },
+  out: { sum: bit, carry: bit },
+  nodes: { xor1: Xor, and1: And },
+  connect: ({ in: inp, out, xor1, and1 }) => [
     inp.a.to(xor1.a, and1.a),
     inp.b.to(xor1.b, and1.b),
     xor1.out.to(out.sum),
     and1.out.to(out.carry),
-  ])
-  .build()
+  ],
+})
 
-const HalfAdderDemo = component('HalfAdderDemo')
-  .node('sw_a', Switch)
-  .node('sw_b', Switch)
-  .node('dut', HalfAdder)
-  .node('led_sum', Led)
-  .node('led_carry', Led)
-  .connect(({ in: inp, out, sw_a, sw_b, dut, led_sum, led_carry }) => [
+const HalfAdderDemo = component('HalfAdderDemo', {
+  nodes: { sw_a: Switch, sw_b: Switch, dut: HalfAdder, led_sum: Led, led_carry: Led },
+  connect: ({ in: inp, out, sw_a, sw_b, dut, led_sum, led_carry }) => [
     sw_a.out.to(dut.a),
     sw_b.out.to(dut.b),
     dut.sum.to(led_sum.in),
     dut.carry.to(led_carry.in),
-  ])
-  .build()
+  ],
+})
 `,
   },
 ];

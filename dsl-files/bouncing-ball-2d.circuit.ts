@@ -1,57 +1,9 @@
 // Auto-generated from DSL
 
-const BouncingBall2D = component('BouncingBall2D')
-  .node('ballX', Register, { initial: 1 })
-  .node('ballY', Register, { initial: 1 })
-  .node('prevX', Register, { initial: 1 })
-  .node('prevY', Register, { initial: 1 })
-  .node('dirX', DFlipFlop, { initial: 1 })
-  .node('dirY', DFlipFlop, { initial: 1 })
-  .node('framePhase', DFlipFlop)
-  .node('xInc', Incrementer)
-  .node('xDec', Adder)
-  .node('xNegOne', Constant, { value: 255 })
-  .node('xNext', Mux)
-  .node('yInc', Incrementer)
-  .node('yDec', Adder)
-  .node('yNegOne', Constant, { value: 255 })
-  .node('yNext', Mux)
-  .node('x3bit', BitSlice, { low: 0, high: 2 })
-  .node('y3bit', BitSlice, { low: 0, high: 2 })
-  .node('prevX3bit', BitSlice, { low: 0, high: 2 })
-  .node('prevY3bit', BitSlice, { low: 0, high: 2 })
-  .node('xZero', Constant, { value: 0 })
-  .node('xSeven', Constant, { value: 7 })
-  .node('cmpXZero', Comparator)
-  .node('cmpXSeven', Comparator)
-  .node('yZero', Constant, { value: 0 })
-  .node('ySeven', Constant, { value: 7 })
-  .node('cmpYZero', Comparator)
-  .node('cmpYSeven', Comparator)
-  .node('dirXInv', Not)
-  .node('hitXLeft', And)
-  .node('hitXRight', And)
-  .node('shouldFlipX', Or)
-  .node('flipX', Xor)
-  .node('dirYInv', Not)
-  .node('hitYTop', And)
-  .node('hitYBottom', And)
-  .node('shouldFlipY', Or)
-  .node('flipY', Xor)
-  .node('eight', Constant, { value: 8 })
-  .node('yTimes8', Multiplier)
-  .node('addr', Adder)
-  .node('prevYTimes8', Multiplier)
-  .node('prevAddr', Adder)
-  .node('addrMux', Mux)
-  .node('pixelMux', Mux)
-  .node('zero', Constant, { value: 0 })
-  .node('one', Constant, { value: 1 })
-  .node('phaseInv', Not)
-  .node('enable', Constant, { value: 1 })
-  .node('fb', DualPortRAM)
-  .node('display', Screen)
-  .connect(({ in: inp, out, ballX, ballY, prevX, prevY, dirX, dirY, framePhase, xInc, xDec, xNegOne, xNext, yInc, yDec, yNegOne, yNext, x3bit, y3bit, prevX3bit, prevY3bit, xZero, xSeven, cmpXZero, cmpXSeven, yZero, ySeven, cmpYZero, cmpYSeven, dirXInv, hitXLeft, hitXRight, shouldFlipX, flipX, dirYInv, hitYTop, hitYBottom, shouldFlipY, flipY, eight, yTimes8, addr, prevYTimes8, prevAddr, addrMux, pixelMux, zero, one, phaseInv, enable, fb, display }) => [
+const BouncingBall2D = component('BouncingBall2D', {
+  nodes: { ballX: Register, ballY: Register, prevX: Register, prevY: Register, dirX: DFlipFlop, dirY: DFlipFlop, framePhase: DFlipFlop, xInc: Incrementer, xDec: Adder, xNegOne: Constant, xNext: Mux, yInc: Incrementer, yDec: Adder, yNegOne: Constant, yNext: Mux, x3bit: BitSlice, y3bit: BitSlice, prevX3bit: BitSlice, prevY3bit: BitSlice, xZero: Constant, xSeven: Constant, cmpXZero: Comparator, cmpXSeven: Comparator, yZero: Constant, ySeven: Constant, cmpYZero: Comparator, cmpYSeven: Comparator, dirXInv: Not, hitXLeft: And, hitXRight: And, shouldFlipX: Or, flipX: Xor, dirYInv: Not, hitYTop: And, hitYBottom: And, shouldFlipY: Or, flipY: Xor, eight: Constant, yTimes8: Multiplier, addr: Adder, prevYTimes8: Multiplier, prevAddr: Adder, addrMux: Mux, pixelMux: Mux, zero: Constant, one: Constant, phaseInv: Not, enable: Constant, fb: DualPortRAM, display: Screen },
+  nodeArgs: { ballX: { initial: 1 }, ballY: { initial: 1 }, prevX: { initial: 1 }, prevY: { initial: 1 }, dirX: { initial: 1 }, dirY: { initial: 1 }, xNegOne: { value: 255 }, yNegOne: { value: 255 }, x3bit: { low: 0, high: 2 }, y3bit: { low: 0, high: 2 }, prevX3bit: { low: 0, high: 2 }, prevY3bit: { low: 0, high: 2 }, xZero: { value: 0 }, xSeven: { value: 7 }, yZero: { value: 0 }, ySeven: { value: 7 }, eight: { value: 8 }, zero: { value: 0 }, one: { value: 1 }, enable: { value: 1 } },
+  connect: ({ in: inp, out, ballX, ballY, prevX, prevY, dirX, dirY, framePhase, xInc, xDec, xNegOne, xNext, yInc, yDec, yNegOne, yNext, x3bit, y3bit, prevX3bit, prevY3bit, xZero, xSeven, cmpXZero, cmpXSeven, yZero, ySeven, cmpYZero, cmpYSeven, dirXInv, hitXLeft, hitXRight, shouldFlipX, flipX, dirYInv, hitYTop, hitYBottom, shouldFlipY, flipY, eight, yTimes8, addr, prevYTimes8, prevAddr, addrMux, pixelMux, zero, one, phaseInv, enable, fb, display }) => [
     ballX.q.to(xInc.in, xDec.a, prevX.data, x3bit.in),
     xNegOne.out.to(xDec.b),
     flipX.out.to(xNext.sel, dirX.d),
@@ -102,5 +54,5 @@ const BouncingBall2D = component('BouncingBall2D')
     enable.out.to(fb.weA),
     display.addrB.to(fb.addrB),
     fb.outB.to(display.dataIn),
-  ])
-  .build()
+  ],
+})

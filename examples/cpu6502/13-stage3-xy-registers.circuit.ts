@@ -1,19 +1,10 @@
 // Auto-generated from DSL
 
-const RegisterFile = component('RegisterFile')
-  .in('write_a', bit)
-  .in('write_x', bit)
-  .in('write_y', bit)
-  .in('data_a', bus(8))
-  .in('data_x', bus(8))
-  .in('data_y', bus(8))
-  .out('reg_a', bus(8))
-  .out('reg_x', bus(8))
-  .out('reg_y', bus(8))
-  .node('regA', Register)
-  .node('regX', Register)
-  .node('regY', Register)
-  .connect(({ in: inp, out, regA, regX, regY }) => [
+const RegisterFile = component('RegisterFile', {
+  in: { write_a: bit, write_x: bit, write_y: bit, data_a: bus(8), data_x: bus(8), data_y: bus(8) },
+  out: { reg_a: bus(8), reg_x: bus(8), reg_y: bus(8) },
+  nodes: { regA: Register, regX: Register, regY: Register },
+  connect: ({ in: inp, out, regA, regX, regY }) => [
     inp.data_a.to(regA.data),
     inp.data_x.to(regX.data),
     inp.data_y.to(regY.data),
@@ -23,102 +14,15 @@ const RegisterFile = component('RegisterFile')
     regA.q.to(out.reg_a),
     regX.q.to(out.reg_x),
     regY.q.to(out.reg_y),
-  ])
-  .build()
+  ],
+})
 
-const Stage3Control = component('Stage3Control')
-  .in('reset', bit)
-  .in('current_opcode', bus(8))
-  .out('current_state', bus(8))
-  .out('exec_subcycle', bus(8))
-  .out('pc_increment', bit)
-  .out('ir_load', bit)
-  .out('operand_load', bit)
-  .out('write_a', bit)
-  .out('write_x', bit)
-  .out('write_y', bit)
-  .out('is_lda', bit)
-  .out('is_adc', bit)
-  .out('is_tax', bit)
-  .out('is_tay', bit)
-  .out('is_txa', bit)
-  .out('is_tya', bit)
-  .out('is_inx', bit)
-  .out('is_dex', bit)
-  .out('is_iny', bit)
-  .out('is_dey', bit)
-  .node('state_reg', Register)
-  .node('subcycle_reg', Register)
-  .node('STATE_FETCH', Constant, { value: 0 })
-  .node('STATE_DECODE', Constant, { value: 1 })
-  .node('STATE_EXECUTE', Constant, { value: 2 })
-  .node('is_fetch', Comparator)
-  .node('is_decode', Comparator)
-  .node('is_execute', Comparator)
-  .node('LDA_IMM', Constant, { value: 169 })
-  .node('ADC_IMM', Constant, { value: 105 })
-  .node('TAX', Constant, { value: 170 })
-  .node('TAY', Constant, { value: 168 })
-  .node('TXA', Constant, { value: 138 })
-  .node('TYA', Constant, { value: 152 })
-  .node('INX', Constant, { value: 232 })
-  .node('DEX', Constant, { value: 202 })
-  .node('INY', Constant, { value: 200 })
-  .node('DEY', Constant, { value: 136 })
-  .node('cmp_lda', Comparator)
-  .node('cmp_adc', Comparator)
-  .node('cmp_tax', Comparator)
-  .node('cmp_tay', Comparator)
-  .node('cmp_txa', Comparator)
-  .node('cmp_tya', Comparator)
-  .node('cmp_inx', Comparator)
-  .node('cmp_dex', Comparator)
-  .node('cmp_iny', Comparator)
-  .node('cmp_dey', Comparator)
-  .node('needs_operand', Or)
-  .node('zero', Constant, { value: 0 })
-  .node('one', Constant, { value: 1 })
-  .node('inc_subcycle', Incrementer)
-  .node('subcycle_increment', Mux)
-  .node('always_on', Constant, { value: 1 })
-  .node('is_subcycle_0', Comparator)
-  .node('is_subcycle_1', Comparator)
-  .node('next_from_fetch', Mux)
-  .node('next_from_decode', Mux)
-  .node('exec_done_2cycle', And)
-  .node('exec_done_1cycle', And)
-  .node('is_1cycle', Or)
-  .node('is_1cycle_2', Or)
-  .node('is_1cycle_3', Or)
-  .node('is_1cycle_4', Or)
-  .node('is_1cycle_5', Or)
-  .node('is_1cycle_6', Or)
-  .node('is_1cycle_final', Or)
-  .node('exec_done_1cycle_check', And)
-  .node('exec_done', Or)
-  .node('next_from_execute', Mux)
-  .node('next_state', Mux)
-  .node('exec_subcycle_0', And)
-  .node('exec_subcycle_0_needs_operand', And)
-  .node('pc_inc_signal', Or)
-  .node('operand_load_signal', And)
-  .node('exec_subcycle_1', And)
-  .node('write_a_2cycle', And)
-  .node('write_a_txa', And)
-  .node('write_a_tya', And)
-  .node('write_a_transfer', Or)
-  .node('write_a_signal', Or)
-  .node('write_x_tax', And)
-  .node('write_x_inx', And)
-  .node('write_x_dex', And)
-  .node('write_x_temp', Or)
-  .node('write_x_signal', Or)
-  .node('write_y_tay', And)
-  .node('write_y_iny', And)
-  .node('write_y_dey', And)
-  .node('write_y_temp', Or)
-  .node('write_y_signal', Or)
-  .connect(({ in: inp, out, state_reg, subcycle_reg, STATE_FETCH, STATE_DECODE, STATE_EXECUTE, is_fetch, is_decode, is_execute, LDA_IMM, ADC_IMM, TAX, TAY, TXA, TYA, INX, DEX, INY, DEY, cmp_lda, cmp_adc, cmp_tax, cmp_tay, cmp_txa, cmp_tya, cmp_inx, cmp_dex, cmp_iny, cmp_dey, needs_operand, zero, one, inc_subcycle, subcycle_increment, always_on, is_subcycle_0, is_subcycle_1, next_from_fetch, next_from_decode, exec_done_2cycle, exec_done_1cycle, is_1cycle, is_1cycle_2, is_1cycle_3, is_1cycle_4, is_1cycle_5, is_1cycle_6, is_1cycle_final, exec_done_1cycle_check, exec_done, next_from_execute, next_state, exec_subcycle_0, exec_subcycle_0_needs_operand, pc_inc_signal, operand_load_signal, exec_subcycle_1, write_a_2cycle, write_a_txa, write_a_tya, write_a_transfer, write_a_signal, write_x_tax, write_x_inx, write_x_dex, write_x_temp, write_x_signal, write_y_tay, write_y_iny, write_y_dey, write_y_temp, write_y_signal }) => [
+const Stage3Control = component('Stage3Control', {
+  in: { reset: bit, current_opcode: bus(8) },
+  out: { current_state: bus(8), exec_subcycle: bus(8), pc_increment: bit, ir_load: bit, operand_load: bit, write_a: bit, write_x: bit, write_y: bit, is_lda: bit, is_adc: bit, is_tax: bit, is_tay: bit, is_txa: bit, is_tya: bit, is_inx: bit, is_dex: bit, is_iny: bit, is_dey: bit },
+  nodes: { state_reg: Register, subcycle_reg: Register, STATE_FETCH: Constant, STATE_DECODE: Constant, STATE_EXECUTE: Constant, is_fetch: Comparator, is_decode: Comparator, is_execute: Comparator, LDA_IMM: Constant, ADC_IMM: Constant, TAX: Constant, TAY: Constant, TXA: Constant, TYA: Constant, INX: Constant, DEX: Constant, INY: Constant, DEY: Constant, cmp_lda: Comparator, cmp_adc: Comparator, cmp_tax: Comparator, cmp_tay: Comparator, cmp_txa: Comparator, cmp_tya: Comparator, cmp_inx: Comparator, cmp_dex: Comparator, cmp_iny: Comparator, cmp_dey: Comparator, needs_operand: Or, zero: Constant, one: Constant, inc_subcycle: Incrementer, subcycle_increment: Mux, always_on: Constant, is_subcycle_0: Comparator, is_subcycle_1: Comparator, next_from_fetch: Mux, next_from_decode: Mux, exec_done_2cycle: And, exec_done_1cycle: And, is_1cycle: Or, is_1cycle_2: Or, is_1cycle_3: Or, is_1cycle_4: Or, is_1cycle_5: Or, is_1cycle_6: Or, is_1cycle_final: Or, exec_done_1cycle_check: And, exec_done: Or, next_from_execute: Mux, next_state: Mux, exec_subcycle_0: And, exec_subcycle_0_needs_operand: And, pc_inc_signal: Or, operand_load_signal: And, exec_subcycle_1: And, write_a_2cycle: And, write_a_txa: And, write_a_tya: And, write_a_transfer: Or, write_a_signal: Or, write_x_tax: And, write_x_inx: And, write_x_dex: And, write_x_temp: Or, write_x_signal: Or, write_y_tay: And, write_y_iny: And, write_y_dey: And, write_y_temp: Or, write_y_signal: Or },
+  nodeArgs: { STATE_FETCH: { value: 0 }, STATE_DECODE: { value: 1 }, STATE_EXECUTE: { value: 2 }, LDA_IMM: { value: 169 }, ADC_IMM: { value: 105 }, TAX: { value: 170 }, TAY: { value: 168 }, TXA: { value: 138 }, TYA: { value: 152 }, INX: { value: 232 }, DEX: { value: 202 }, INY: { value: 200 }, DEY: { value: 136 }, zero: { value: 0 }, one: { value: 1 }, always_on: { value: 1 } },
+  connect: ({ in: inp, out, state_reg, subcycle_reg, STATE_FETCH, STATE_DECODE, STATE_EXECUTE, is_fetch, is_decode, is_execute, LDA_IMM, ADC_IMM, TAX, TAY, TXA, TYA, INX, DEX, INY, DEY, cmp_lda, cmp_adc, cmp_tax, cmp_tay, cmp_txa, cmp_tya, cmp_inx, cmp_dex, cmp_iny, cmp_dey, needs_operand, zero, one, inc_subcycle, subcycle_increment, always_on, is_subcycle_0, is_subcycle_1, next_from_fetch, next_from_decode, exec_done_2cycle, exec_done_1cycle, is_1cycle, is_1cycle_2, is_1cycle_3, is_1cycle_4, is_1cycle_5, is_1cycle_6, is_1cycle_final, exec_done_1cycle_check, exec_done, next_from_execute, next_state, exec_subcycle_0, exec_subcycle_0_needs_operand, pc_inc_signal, operand_load_signal, exec_subcycle_1, write_a_2cycle, write_a_txa, write_a_tya, write_a_transfer, write_a_signal, write_x_tax, write_x_inx, write_x_dex, write_x_temp, write_x_signal, write_y_tay, write_y_iny, write_y_dey, write_y_temp, write_y_signal }) => [
     state_reg.q.to(is_fetch.a, is_decode.a, is_execute.a, next_from_fetch.in0, out.current_state),
     STATE_FETCH.out.to(is_fetch.b, next_from_execute.in1, next_state.in1),
     STATE_DECODE.out.to(is_decode.b, next_from_fetch.in1),
@@ -192,71 +96,15 @@ const Stage3Control = component('Stage3Control')
     write_y_temp.out.to(write_y_signal.a),
     write_y_dey.out.to(write_y_signal.b),
     write_y_signal.out.to(out.write_y),
-  ])
-  .build()
+  ],
+})
 
-const Stage3CPU = component('Stage3CPU')
-  .in('reset', bit)
-  .out('pc', bus(8))
-  .out('instruction', bus(8))
-  .out('operand', bus(8))
-  .out('current_state', bus(8))
-  .out('subcycle', bus(8))
-  .out('reg_a', bus(8))
-  .out('reg_x', bus(8))
-  .out('reg_y', bus(8))
-  .node('pc_reg', Register)
-  .node('always_on', Constant, { value: 1 })
-  .node('pc_inc', Incrementer)
-  .node('zero', Constant, { value: 0 })
-  .node('one', Constant, { value: 1 })
-  .node('two', Constant, { value: 2 })
-  .node('three', Constant, { value: 3 })
-  .node('four', Constant, { value: 4 })
-  .node('five', Constant, { value: 5 })
-  .node('six', Constant, { value: 6 })
-  .node('seven', Constant, { value: 7 })
-  .node('at_0', Comparator)
-  .node('at_1', Comparator)
-  .node('at_2', Comparator)
-  .node('at_3', Comparator)
-  .node('at_4', Comparator)
-  .node('at_5', Comparator)
-  .node('at_6', Comparator)
-  .node('at_7', Comparator)
-  .node('byte_0', Constant, { value: 169 })
-  .node('byte_1', Constant, { value: 66 })
-  .node('byte_2', Constant, { value: 170 })
-  .node('byte_3', Constant, { value: 232 })
-  .node('byte_4', Constant, { value: 152 })
-  .node('byte_5', Constant, { value: 0 })
-  .node('byte_6', Constant, { value: 0 })
-  .node('byte_7', Constant, { value: 0 })
-  .node('mux1', Mux)
-  .node('mux2', Mux)
-  .node('mux3', Mux)
-  .node('mux4', Mux)
-  .node('mux5', Mux)
-  .node('mux6', Mux)
-  .node('mux7', Mux)
-  .node('ir', Register)
-  .node('operand_reg', Register)
-  .node('control', Stage3Control)
-  .node('pc_next', Mux)
-  .node('registers', RegisterFile)
-  .node('adder', Adder)
-  .node('inc_x', Incrementer)
-  .node('dec_x', Subtractor)
-  .node('inc_y', Incrementer)
-  .node('dec_y', Subtractor)
-  .node('result_a_lda_adc', Mux)
-  .node('result_a_txa', Mux)
-  .node('result_a', Mux)
-  .node('result_x_inx_dex', Mux)
-  .node('result_x', Mux)
-  .node('result_y_iny_dey', Mux)
-  .node('result_y', Mux)
-  .connect(({ in: inp, out, pc_reg, always_on, pc_inc, zero, one, two, three, four, five, six, seven, at_0, at_1, at_2, at_3, at_4, at_5, at_6, at_7, byte_0, byte_1, byte_2, byte_3, byte_4, byte_5, byte_6, byte_7, mux1, mux2, mux3, mux4, mux5, mux6, mux7, ir, operand_reg, control, pc_next, registers, adder, inc_x, dec_x, inc_y, dec_y, result_a_lda_adc, result_a_txa, result_a, result_x_inx_dex, result_x, result_y_iny_dey, result_y }) => [
+const Stage3CPU = component('Stage3CPU', {
+  in: { reset: bit },
+  out: { pc: bus(8), instruction: bus(8), operand: bus(8), current_state: bus(8), subcycle: bus(8), reg_a: bus(8), reg_x: bus(8), reg_y: bus(8) },
+  nodes: { pc_reg: Register, always_on: Constant, pc_inc: Incrementer, zero: Constant, one: Constant, two: Constant, three: Constant, four: Constant, five: Constant, six: Constant, seven: Constant, at_0: Comparator, at_1: Comparator, at_2: Comparator, at_3: Comparator, at_4: Comparator, at_5: Comparator, at_6: Comparator, at_7: Comparator, byte_0: Constant, byte_1: Constant, byte_2: Constant, byte_3: Constant, byte_4: Constant, byte_5: Constant, byte_6: Constant, byte_7: Constant, mux1: Mux, mux2: Mux, mux3: Mux, mux4: Mux, mux5: Mux, mux6: Mux, mux7: Mux, ir: Register, operand_reg: Register, control: Stage3Control, pc_next: Mux, registers: RegisterFile, adder: Adder, inc_x: Incrementer, dec_x: Subtractor, inc_y: Incrementer, dec_y: Subtractor, result_a_lda_adc: Mux, result_a_txa: Mux, result_a: Mux, result_x_inx_dex: Mux, result_x: Mux, result_y_iny_dey: Mux, result_y: Mux },
+  nodeArgs: { always_on: { value: 1 }, zero: { value: 0 }, one: { value: 1 }, two: { value: 2 }, three: { value: 3 }, four: { value: 4 }, five: { value: 5 }, six: { value: 6 }, seven: { value: 7 }, byte_0: { value: 169 }, byte_1: { value: 66 }, byte_2: { value: 170 }, byte_3: { value: 232 }, byte_4: { value: 152 }, byte_5: { value: 0 }, byte_6: { value: 0 }, byte_7: { value: 0 } },
+  connect: ({ in: inp, out, pc_reg, always_on, pc_inc, zero, one, two, three, four, five, six, seven, at_0, at_1, at_2, at_3, at_4, at_5, at_6, at_7, byte_0, byte_1, byte_2, byte_3, byte_4, byte_5, byte_6, byte_7, mux1, mux2, mux3, mux4, mux5, mux6, mux7, ir, operand_reg, control, pc_next, registers, adder, inc_x, dec_x, inc_y, dec_y, result_a_lda_adc, result_a_txa, result_a, result_x_inx_dex, result_x, result_y_iny_dey, result_y }) => [
     always_on.out.to(pc_reg.we),
     pc_reg.q.to(pc_inc.in, at_0.a, at_1.a, at_2.a, at_3.a, at_4.a, at_5.a, at_6.a, at_7.a, pc_next.in0, out.pc),
     zero.out.to(at_0.b, adder.carry_in, dec_x.borrow_in, dec_y.borrow_in),
@@ -324,21 +172,12 @@ const Stage3CPU = component('Stage3CPU')
     result_y.out.to(registers.data_y),
     control.current_state.to(out.current_state),
     control.exec_subcycle.to(out.subcycle),
-  ])
-  .build()
+  ],
+})
 
-const Stage3XYTest = component('Stage3XYTest')
-  .node('cpu', Stage3CPU)
-  .node('reset_input', Input)
-  .node('d_pc', HexDisplay)
-  .node('d_instruction', HexDisplay)
-  .node('d_operand', HexDisplay)
-  .node('d_state', HexDisplay)
-  .node('d_subcycle', HexDisplay)
-  .node('d_a', HexDisplay)
-  .node('d_x', HexDisplay)
-  .node('d_y', HexDisplay)
-  .connect(({ in: inp, out, cpu, reset_input, d_pc, d_instruction, d_operand, d_state, d_subcycle, d_a, d_x, d_y }) => [
+const Stage3XYTest = component('Stage3XYTest', {
+  nodes: { cpu: Stage3CPU, reset_input: Input, d_pc: HexDisplay, d_instruction: HexDisplay, d_operand: HexDisplay, d_state: HexDisplay, d_subcycle: HexDisplay, d_a: HexDisplay, d_x: HexDisplay, d_y: HexDisplay },
+  connect: ({ in: inp, out, cpu, reset_input, d_pc, d_instruction, d_operand, d_state, d_subcycle, d_a, d_x, d_y }) => [
     reset_input.out.to(cpu.reset),
     cpu.pc.to(d_pc.in),
     cpu.instruction.to(d_instruction.in),
@@ -348,5 +187,5 @@ const Stage3XYTest = component('Stage3XYTest')
     cpu.reg_a.to(d_a.in),
     cpu.reg_x.to(d_x.in),
     cpu.reg_y.to(d_y.in),
-  ])
-  .build()
+  ],
+})

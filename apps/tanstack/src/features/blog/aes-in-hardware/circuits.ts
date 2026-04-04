@@ -41,17 +41,12 @@ export const AES_SBOX_MEMORY: Map<string, Map<number, number>> = (() => {
 
 // XTime and MixColumn sub-circuits shared across demos
 const XTIME_CIRCUIT = `
-const XTime = component('XTime')
-  .in('x', bus(8))
-  .out('out', bus(8))
-  .node('c1', Constant, { value: 1, width: 8 })
-  .node('shl', LeftShifter, { width: 8 })
-  .node('split', Splitter8to8)
-  .node('poly', Constant, { value: 27, width: 8 })
-  .node('zero8', Constant, { value: 0, width: 8 })
-  .node('mux', Mux, { width: 8 })
-  .node('xor', BusXor, { width: 8 })
-  .connect(({ in: inp, out, c1, shl, split, poly, zero8, mux, xor }) => [
+const XTime = component('XTime', {
+  in: { x: bus(8) },
+  out: { out: bus(8) },
+  nodes: { c1: Constant, shl: LeftShifter, split: Splitter8to8, poly: Constant, zero8: Constant, mux: Mux, xor: BusXor },
+  nodeArgs: { c1: { value: 1, width: 8 }, shl: { width: 8 }, poly: { value: 27, width: 8 }, zero8: { value: 0, width: 8 }, mux: { width: 8 }, xor: { width: 8 } },
+  connect: ({ in: inp, out, c1, shl, split, poly, zero8, mux, xor }) => [
     inp.x.to(shl.value, split.in),
     c1.out.to(shl.shift),
     zero8.out.to(mux.in0),
@@ -60,23 +55,16 @@ const XTime = component('XTime')
     shl.result.to(xor.a),
     mux.out.to(xor.b),
     xor.out.to(out.out),
-  ])
-  .build()
+  ],
+})
 `;
 
 const MIXCOLUMN_CIRCUIT = `
-const MixColumn = component('MixColumn')
-  .in('s0', bus(8)).in('s1', bus(8)).in('s2', bus(8)).in('s3', bus(8))
-  .out('r0', bus(8)).out('r1', bus(8)).out('r2', bus(8)).out('r3', bus(8))
-  .meta({ description: 'AES MixColumns on one 4-byte column over GF(2^8)' })
-  .node('xt0', XTime).node('xt1', XTime).node('xt2', XTime).node('xt3', XTime)
-  .node('m3_0', BusXor, { width: 8 }).node('m3_1', BusXor, { width: 8 })
-  .node('m3_2', BusXor, { width: 8 }).node('m3_3', BusXor, { width: 8 })
-  .node('r0a', BusXor, { width: 8 }).node('r0b', BusXor, { width: 8 }).node('r0c', BusXor, { width: 8 })
-  .node('r1a', BusXor, { width: 8 }).node('r1b', BusXor, { width: 8 }).node('r1c', BusXor, { width: 8 })
-  .node('r2a', BusXor, { width: 8 }).node('r2b', BusXor, { width: 8 }).node('r2c', BusXor, { width: 8 })
-  .node('r3a', BusXor, { width: 8 }).node('r3b', BusXor, { width: 8 }).node('r3c', BusXor, { width: 8 })
-  .connect(({ in: inp, out, xt0, xt1, xt2, xt3, m3_0, m3_1, m3_2, m3_3, r0a, r0b, r0c, r1a, r1b, r1c, r2a, r2b, r2c, r3a, r3b, r3c }) => [
+const MixColumn = component('MixColumn', {
+  in: { s0: bus(8)).in('s1', bus(8)).in('s2', bus(8)).in('s3', bus(8) },
+  out: { r0: bus(8)).out('r1', bus(8)).out('r2', bus(8)).out('r3', bus(8) },
+  meta: { description: 'AES MixColumns on one 4-byte column over GF(2^8)' },
+  connect: ({ in: inp, out, xt0, xt1, xt2, xt3, m3_0, m3_1, m3_2, m3_3, r0a, r0b, r0c, r1a, r1b, r1c, r2a, r2b, r2c, r3a, r3b, r3c }) => [
     inp.s0.to(xt0.x, m3_0.b, r1a.a, r2a.a),
     inp.s1.to(xt1.x, m3_1.b, r1a.b, r2a.b, r3a.b),
     inp.s2.to(xt2.x, m3_2.b, r0b.b, r3b.b),
@@ -93,8 +81,8 @@ const MixColumn = component('MixColumn')
     r1a.out.to(r1b.a), r1b.out.to(r1c.a), r1c.out.to(out.r1),
     r2a.out.to(r2b.a), r2b.out.to(r2c.a), r2c.out.to(out.r2),
     r3a.out.to(r3b.a), r3b.out.to(r3c.a), r3c.out.to(out.r3),
-  ])
-  .build()
+  ],
+})
 `;
 
 export const AES_CIRCUITS: Record<string, BlogCircuit> = {
@@ -104,26 +92,24 @@ export const AES_CIRCUITS: Record<string, BlogCircuit> = {
     description:
       "Each byte is replaced via a 256-entry lookup table. Try 0x00 (→ 0x63), 0x53 (→ 0xed), or 0xff (→ 0x16). Pre-loaded with FIPS 197 S-box.",
     displayDsl: `
-const SubByteDemo = component('SubByteDemo')
-  .node('s', Input, { value: 83, width: 8 })
-  .node('rom', ROM)
-  .node('disp', HexDisplay, { width: 8 })
-  .connect(({ in: inp, out, s, rom, disp }) => [
+const SubByteDemo = component('SubByteDemo', {
+  nodes: { s: Input, rom: ROM, disp: HexDisplay },
+  nodeArgs: { s: { value: 83, width: 8 }, disp: { width: 8 } },
+  connect: ({ in: inp, out, s, rom, disp }) => [
     s.out.to(rom.addr),
     rom.data_out.to(disp.in),
-  ])
-  .build()
+  ],
+})
 `,
     dsl: `
-const SubByteDemo = component('SubByteDemo')
-  .node('s', Input, { value: 83, width: 8 })
-  .node('rom', ROM)
-  .node('disp', HexDisplay, { width: 8 })
-  .connect(({ in: inp, out, s, rom, disp }) => [
+const SubByteDemo = component('SubByteDemo', {
+  nodes: { s: Input, rom: ROM, disp: HexDisplay },
+  nodeArgs: { s: { value: 83, width: 8 }, disp: { width: 8 } },
+  connect: ({ in: inp, out, s, rom, disp }) => [
     s.out.to(rom.addr),
     rom.data_out.to(disp.in),
-  ])
-  .build()
+  ],
+})
 `,
   },
 
@@ -133,17 +119,12 @@ const SubByteDemo = component('SubByteDemo')
     description:
       "Left-shift, then XOR with 0x1b if the MSB was 1. Try 87 (0x57 → 0xae), 128 (0x80 → 0x1b), or 149 (0x95 → 0x35).",
     displayDsl: `
-const XTime = component('XTime')
-  .in('x', bus(8))
-  .out('out', bus(8))
-  .node('c1', Constant, { value: 1, width: 8 })
-  .node('shl', LeftShifter, { width: 8 })
-  .node('split', Splitter8to8)
-  .node('poly', Constant, { value: 27, width: 8 })
-  .node('zero8', Constant, { value: 0, width: 8 })
-  .node('mux', Mux, { width: 8 })
-  .node('xor', BusXor, { width: 8 })
-  .connect(({ in: inp, out, c1, shl, split, poly, zero8, mux, xor }) => [
+const XTime = component('XTime', {
+  in: { x: bus(8) },
+  out: { out: bus(8) },
+  nodes: { c1: Constant, shl: LeftShifter, split: Splitter8to8, poly: Constant, zero8: Constant, mux: Mux, xor: BusXor },
+  nodeArgs: { c1: { value: 1, width: 8 }, shl: { width: 8 }, poly: { value: 27, width: 8 }, zero8: { value: 0, width: 8 }, mux: { width: 8 }, xor: { width: 8 } },
+  connect: ({ in: inp, out, c1, shl, split, poly, zero8, mux, xor }) => [
     inp.x.to(shl.value, split.in),
     c1.out.to(shl.shift),
     zero8.out.to(mux.in0),
@@ -152,30 +133,28 @@ const XTime = component('XTime')
     shl.result.to(xor.a),
     mux.out.to(xor.b),
     xor.out.to(out.out),
-  ])
-  .build()
+  ],
+})
 
-const XTimeDemo = component('XTimeDemo')
-  .node('val', Input, { value: 87, width: 8 })
-  .node('xt', XTime)
-  .node('disp', HexDisplay, { width: 8 })
-  .connect(({ in: inp, out, val, xt, disp }) => [
+const XTimeDemo = component('XTimeDemo', {
+  nodes: { val: Input, xt: XTime, disp: HexDisplay },
+  nodeArgs: { val: { value: 87, width: 8 }, disp: { width: 8 } },
+  connect: ({ in: inp, out, val, xt, disp }) => [
     val.out.to(xt.x),
     xt.out.to(disp.in),
-  ])
-  .build()
+  ],
+})
 `,
     dsl: `${XTIME_CIRCUIT}
 
-const XTimeDemo = component('XTimeDemo')
-  .node('val', Input, { value: 87, width: 8 })
-  .node('xt', XTime)
-  .node('disp', HexDisplay, { width: 8 })
-  .connect(({ val, xt, disp }) => [
+const XTimeDemo = component('XTimeDemo', {
+  nodes: { val: Input, xt: XTime, disp: HexDisplay },
+  nodeArgs: { val: { value: 87, width: 8 }, disp: { width: 8 } },
+  connect: ({ val, xt, disp }) => [
     val.out.to(xt.x),
     xt.out.to(disp.in),
-  ])
-  .build()
+  ],
+})
 `,
   },
 
@@ -188,43 +167,29 @@ const XTimeDemo = component('XTimeDemo')
 //   In:  [0xdb, 0x13, 0x53, 0x45]
 //   Out: [0x8e, 0x4d, 0xa1, 0xbc]
 
-const MixColumnDemo = component('MixColumnDemo')
-  .node('s0', Input, { value: 219, width: 8 })
-  .node('s1', Input, { value: 19, width: 8 })
-  .node('s2', Input, { value: 83, width: 8 })
-  .node('s3', Input, { value: 69, width: 8 })
-  .node('mc', MixColumn)
-  .node('r0', HexDisplay, { width: 8 })
-  .node('r1', HexDisplay, { width: 8 })
-  .node('r2', HexDisplay, { width: 8 })
-  .node('r3', HexDisplay, { width: 8 })
-  .connect(({ s0, s1, s2, s3, mc, r0, r1, r2, r3 }) => [
+const MixColumnDemo = component('MixColumnDemo', {
+  nodes: { s0: Input, s1: Input, s2: Input, s3: Input, mc: MixColumn, r0: HexDisplay, r1: HexDisplay, r2: HexDisplay, r3: HexDisplay },
+  nodeArgs: { s0: { value: 219, width: 8 }, s1: { value: 19, width: 8 }, s2: { value: 83, width: 8 }, s3: { value: 69, width: 8 }, r0: { width: 8 }, r1: { width: 8 }, r2: { width: 8 }, r3: { width: 8 } },
+  connect: ({ s0, s1, s2, s3, mc, r0, r1, r2, r3 }) => [
     s0.out.to(mc.s0), s1.out.to(mc.s1),
     s2.out.to(mc.s2), s3.out.to(mc.s3),
     mc.r0.to(r0.in), mc.r1.to(r1.in),
     mc.r2.to(r2.in), mc.r3.to(r3.in),
-  ])
-  .build()`,
+  ],
+})`,
     dsl: `${XTIME_CIRCUIT}
 ${MIXCOLUMN_CIRCUIT}
 
-const MixColumnDemo = component('MixColumnDemo')
-  .node('s0', Input, { value: 219, width: 8 })
-  .node('s1', Input, { value: 19, width: 8 })
-  .node('s2', Input, { value: 83, width: 8 })
-  .node('s3', Input, { value: 69, width: 8 })
-  .node('mc', MixColumn)
-  .node('r0', HexDisplay, { width: 8 })
-  .node('r1', HexDisplay, { width: 8 })
-  .node('r2', HexDisplay, { width: 8 })
-  .node('r3', HexDisplay, { width: 8 })
-  .connect(({ s0, s1, s2, s3, mc, r0, r1, r2, r3 }) => [
+const MixColumnDemo = component('MixColumnDemo', {
+  nodes: { s0: Input, s1: Input, s2: Input, s3: Input, mc: MixColumn, r0: HexDisplay, r1: HexDisplay, r2: HexDisplay, r3: HexDisplay },
+  nodeArgs: { s0: { value: 219, width: 8 }, s1: { value: 19, width: 8 }, s2: { value: 83, width: 8 }, s3: { value: 69, width: 8 }, r0: { width: 8 }, r1: { width: 8 }, r2: { width: 8 }, r3: { width: 8 } },
+  connect: ({ s0, s1, s2, s3, mc, r0, r1, r2, r3 }) => [
     s0.out.to(mc.s0), s1.out.to(mc.s1),
     s2.out.to(mc.s2), s3.out.to(mc.s3),
     mc.r0.to(r0.in), mc.r1.to(r1.in),
     mc.r2.to(r2.in), mc.r3.to(r3.in),
-  ])
-  .build()
+  ],
+})
 `,
   },
 };

@@ -21,6 +21,7 @@ import type { Circuit, ComponentLibrary } from "@turing-incomplete/core/dsl";
 import { CompileButton } from "./CompileButton";
 import { ErrorDisplay } from "./ErrorDisplay";
 import type { CompilationError } from "./ErrorDisplay";
+import { EDITOR_TYPE_DECLARATIONS } from "./editor-types";
 
 // ============================================================================
 // Default code
@@ -33,20 +34,17 @@ const DEFAULT_CODE = `// Circuit Editor — TypeScript Mode
 //
 // Example: Half Adder
 
-const HalfAdder = component('HalfAdder')
-  .in('a', bit)
-  .in('b', bit)
-  .out('sum', bit)
-  .out('carry', bit)
-  .node('x', Xor)
-  .node('a', And)
-  .connect(({ in: inp, out, x, a }) => [
+const HalfAdder = component('HalfAdder', {
+  in: { a: bit, b: bit },
+  out: { sum: bit, carry: bit },
+  nodes: { x: Xor, a: And },
+  connect: ({ in: inp, out, x, a }) => [
     inp.a.to(x.a, a.a),
     inp.b.to(x.b, a.b),
     x.out.to(out.sum),
     a.out.to(out.carry),
-  ])
-  .build()
+  ],
+})
 `;
 
 const DEFAULT_STORAGE_KEY = "turing-incomplete-ts-code";
@@ -147,7 +145,7 @@ export const TSEditor = forwardRef<TSEditorRef, TSEditorProps>(function TSEditor
         if (result.circuits.length === 0) {
           if (!silent) {
             setErrors([{
-              message: "No circuits found. Call .build() on your component() definitions.",
+              message: "No circuits found. Use component('Name', { ... }) to define a circuit.",
               line: 0,
               column: 0,
             }]);
@@ -207,10 +205,10 @@ export const TSEditor = forwardRef<TSEditorRef, TSEditorProps>(function TSEditor
     });
 
     // Add type declarations for the injected scope
-    // This gives users autocomplete for component(), bit, bus, and all stdlib
+    // Generic types enable autocomplete for port names in connect() callbacks
     monaco.languages.typescript.typescriptDefaults.addExtraLib(
-      SCOPE_TYPE_DECLARATIONS,
-      "scope.d.ts",
+      EDITOR_TYPE_DECLARATIONS,
+      "gate-dev.d.ts",
     );
 
     // Set editor options
@@ -301,11 +299,8 @@ export const TSEditor = forwardRef<TSEditorRef, TSEditorProps>(function TSEditor
   );
 });
 
-// ============================================================================
-// Type declarations for the editor's injected scope
-// ============================================================================
-
-const SCOPE_TYPE_DECLARATIONS = `
+// Type declarations moved to editor-types.ts
+const _DEPRECATED = `
 // Builder API
 declare function component(name: string): ComponentBuilder;
 

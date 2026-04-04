@@ -229,16 +229,12 @@ export function compileForSimulation(
     // Source node: no inputs
     isSourceNode[i] = node.inputs.length === 0 ? 1 : 0;
 
-    // State output node: outputs depend on state (re-evaluate after clock edge)
-    const component = library.resolveComponent(node.primitiveType);
-    if (component?.metadata?.outputDependency === 'state-only' || component?.metadata?.outputDependency === 'state+inputs') {
-      isStateOutputNode[i] = 1;
-    }
-
     // Has state: primitive definition has state
     const primDef = PRIMITIVE_DEFINITIONS[node.primitiveType];
     if (primDef?.state && primDef.state.length > 0) {
       hasState[i] = 1;
+      // Any node with state needs re-evaluation after clock edge
+      isStateOutputNode[i] = 1;
     }
 
     // Reads top-level input

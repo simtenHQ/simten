@@ -1,42 +1,11 @@
 // Auto-generated from DSL
 
-const CPUControl = component('CPUControl')
-  .in('reset', bit)
-  .in('instr_cycles', bus(3))
-  .in('is_BRK', bit)
-  .out('current_state', bus(3))
-  .out('cycle_num', bus(3))
-  .out('pc_increment', bit)
-  .out('mem_read', bit)
-  .out('mem_write', bit)
-  .out('alu_enable', bit)
-  .out('reg_write', bit)
-  .out('halted', bit)
-  .node('state_reg', Register)
-  .node('cycle_reg', Register)
-  .node('halt_reg', Register)
-  .node('STATE_FETCH', Constant, { value: 0 })
-  .node('STATE_DECODE', Constant, { value: 1 })
-  .node('STATE_EXECUTE', Constant, { value: 2 })
-  .node('STATE_WRITEBACK', Constant, { value: 3 })
-  .node('is_fetch', Comparator)
-  .node('is_decode', Comparator)
-  .node('is_execute', Comparator)
-  .node('is_writeback', Comparator)
-  .node('inc_cycle', Incrementer)
-  .node('cycle_done', Comparator)
-  .node('cycle_reset_or_inc', Mux)
-  .node('always_on', Constant, { value: 1 })
-  .node('zero', Constant, { value: 0 })
-  .node('exec_done', And)
-  .node('next_if_fetch', Mux)
-  .node('next_if_decode', Mux)
-  .node('next_if_execute', Mux)
-  .node('handle_reset', Mux)
-  .node('set_halt', Or)
-  .node('halt_value', Mux)
-  .node('mem_read_sig', Or)
-  .connect(({ in: inp, out, state_reg, cycle_reg, halt_reg, STATE_FETCH, STATE_DECODE, STATE_EXECUTE, STATE_WRITEBACK, is_fetch, is_decode, is_execute, is_writeback, inc_cycle, cycle_done, cycle_reset_or_inc, always_on, zero, exec_done, next_if_fetch, next_if_decode, next_if_execute, handle_reset, set_halt, halt_value, mem_read_sig }) => [
+const CPUControl = component('CPUControl', {
+  in: { reset: bit, instr_cycles: bus(3), is_BRK: bit },
+  out: { current_state: bus(3), cycle_num: bus(3), pc_increment: bit, mem_read: bit, mem_write: bit, alu_enable: bit, reg_write: bit, halted: bit },
+  nodes: { state_reg: Register, cycle_reg: Register, halt_reg: Register, STATE_FETCH: Constant, STATE_DECODE: Constant, STATE_EXECUTE: Constant, STATE_WRITEBACK: Constant, is_fetch: Comparator, is_decode: Comparator, is_execute: Comparator, is_writeback: Comparator, inc_cycle: Incrementer, cycle_done: Comparator, cycle_reset_or_inc: Mux, always_on: Constant, zero: Constant, exec_done: And, next_if_fetch: Mux, next_if_decode: Mux, next_if_execute: Mux, handle_reset: Mux, set_halt: Or, halt_value: Mux, mem_read_sig: Or },
+  nodeArgs: { STATE_FETCH: { value: 0 }, STATE_DECODE: { value: 1 }, STATE_EXECUTE: { value: 2 }, STATE_WRITEBACK: { value: 3 }, always_on: { value: 1 }, zero: { value: 0 } },
+  connect: ({ in: inp, out, state_reg, cycle_reg, halt_reg, STATE_FETCH, STATE_DECODE, STATE_EXECUTE, STATE_WRITEBACK, is_fetch, is_decode, is_execute, is_writeback, inc_cycle, cycle_done, cycle_reset_or_inc, always_on, zero, exec_done, next_if_fetch, next_if_decode, next_if_execute, handle_reset, set_halt, halt_value, mem_read_sig }) => [
     state_reg.q.to(is_fetch.a, is_decode.a, is_execute.a, is_writeback.a, next_if_fetch.in0, out.current_state),
     STATE_FETCH.out.to(is_fetch.b, cycle_reset_or_inc.in1, next_if_execute.in1, handle_reset.in1),
     STATE_DECODE.out.to(is_decode.b, next_if_fetch.in1),
@@ -63,24 +32,13 @@ const CPUControl = component('CPUControl')
     zero.out.to(halt_value.in1),
     halt_value.out.to(halt_reg.data),
     mem_read_sig.out.to(out.mem_read),
-  ])
-  .build()
+  ],
+})
 
-const CPUControlTest = component('CPUControlTest')
-  .out('current_state', bus(3))
-  .out('cycle', bus(3))
-  .out('pc_inc', bit)
-  .out('mem_rd', bit)
-  .out('mem_wr', bit)
-  .out('alu_en', bit)
-  .out('halted', bit)
-  .node('fsm', CPUControl)
-  .node('reset_input', Input)
-  .node('cycles_input', Input)
-  .node('brk_input', Input)
-  .node('d_state', HexDisplay)
-  .node('d_cycle', HexDisplay)
-  .connect(({ in: inp, out, fsm, reset_input, cycles_input, brk_input, d_state, d_cycle }) => [
+const CPUControlTest = component('CPUControlTest', {
+  out: { current_state: bus(3), cycle: bus(3), pc_inc: bit, mem_rd: bit, mem_wr: bit, alu_en: bit, halted: bit },
+  nodes: { fsm: CPUControl, reset_input: Input, cycles_input: Input, brk_input: Input, d_state: HexDisplay, d_cycle: HexDisplay },
+  connect: ({ in: inp, out, fsm, reset_input, cycles_input, brk_input, d_state, d_cycle }) => [
     reset_input.out.to(fsm.reset),
     cycles_input.out.to(fsm.instr_cycles),
     brk_input.out.to(fsm.is_BRK),
@@ -93,5 +51,5 @@ const CPUControlTest = component('CPUControlTest')
     fsm.halted.to(out.halted),
     out.current_state.to(d_state.in),
     out.cycle.to(d_cycle.in),
-  ])
-  .build()
+  ],
+})

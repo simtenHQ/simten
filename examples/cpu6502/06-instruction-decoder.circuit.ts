@@ -1,39 +1,11 @@
 // Auto-generated from DSL
 
-const InstructionDecoder = component('InstructionDecoder')
-  .in('opcode', bus(8))
-  .out('is_LDA_imm', bit)
-  .out('is_ADC_imm', bit)
-  .out('is_STA_abs', bit)
-  .out('is_JMP_abs', bit)
-  .out('is_BRK', bit)
-  .out('addr_mode', bus(2))
-  .out('cycles', bus(3))
-  .node('val_LDA', Constant, { value: 169 })
-  .node('val_ADC', Constant, { value: 105 })
-  .node('val_STA', Constant, { value: 141 })
-  .node('val_JMP', Constant, { value: 76 })
-  .node('val_BRK', Constant, { value: 0 })
-  .node('cmp_LDA', Comparator)
-  .node('cmp_ADC', Comparator)
-  .node('cmp_STA', Comparator)
-  .node('cmp_JMP', Comparator)
-  .node('cmp_BRK', Comparator)
-  .node('mode_implied', Constant, { value: 0 })
-  .node('mode_immediate', Constant, { value: 1 })
-  .node('mode_absolute', Constant, { value: 2 })
-  .node('is_immediate', Or)
-  .node('is_absolute', Or)
-  .node('mode_mux1', Mux)
-  .node('mode_mux2', Mux)
-  .node('cycles_1', Constant, { value: 1 })
-  .node('cycles_2', Constant, { value: 2 })
-  .node('cycles_3', Constant, { value: 3 })
-  .node('cycles_4', Constant, { value: 4 })
-  .node('cycle_mux1', Mux)
-  .node('cycle_mux2', Mux)
-  .node('cycle_mux3', Mux)
-  .connect(({ in: inp, out, val_LDA, val_ADC, val_STA, val_JMP, val_BRK, cmp_LDA, cmp_ADC, cmp_STA, cmp_JMP, cmp_BRK, mode_implied, mode_immediate, mode_absolute, is_immediate, is_absolute, mode_mux1, mode_mux2, cycles_1, cycles_2, cycles_3, cycles_4, cycle_mux1, cycle_mux2, cycle_mux3 }) => [
+const InstructionDecoder = component('InstructionDecoder', {
+  in: { opcode: bus(8) },
+  out: { is_LDA_imm: bit, is_ADC_imm: bit, is_STA_abs: bit, is_JMP_abs: bit, is_BRK: bit, addr_mode: bus(2), cycles: bus(3) },
+  nodes: { val_LDA: Constant, val_ADC: Constant, val_STA: Constant, val_JMP: Constant, val_BRK: Constant, cmp_LDA: Comparator, cmp_ADC: Comparator, cmp_STA: Comparator, cmp_JMP: Comparator, cmp_BRK: Comparator, mode_implied: Constant, mode_immediate: Constant, mode_absolute: Constant, is_immediate: Or, is_absolute: Or, mode_mux1: Mux, mode_mux2: Mux, cycles_1: Constant, cycles_2: Constant, cycles_3: Constant, cycles_4: Constant, cycle_mux1: Mux, cycle_mux2: Mux, cycle_mux3: Mux },
+  nodeArgs: { val_LDA: { value: 169 }, val_ADC: { value: 105 }, val_STA: { value: 141 }, val_JMP: { value: 76 }, val_BRK: { value: 0 }, mode_implied: { value: 0 }, mode_immediate: { value: 1 }, mode_absolute: { value: 2 }, cycles_1: { value: 1 }, cycles_2: { value: 2 }, cycles_3: { value: 3 }, cycles_4: { value: 4 } },
+  connect: ({ in: inp, out, val_LDA, val_ADC, val_STA, val_JMP, val_BRK, cmp_LDA, cmp_ADC, cmp_STA, cmp_JMP, cmp_BRK, mode_implied, mode_immediate, mode_absolute, is_immediate, is_absolute, mode_mux1, mode_mux2, cycles_1, cycles_2, cycles_3, cycles_4, cycle_mux1, cycle_mux2, cycle_mux3 }) => [
     inp.opcode.to(cmp_LDA.a, cmp_ADC.a, cmp_STA.a, cmp_JMP.a, cmp_BRK.a),
     val_LDA.out.to(cmp_LDA.b),
     cmp_LDA.eq.to(out.is_LDA_imm),
@@ -63,22 +35,13 @@ const InstructionDecoder = component('InstructionDecoder')
     cycle_mux2.out.to(cycle_mux3.in0),
     cycles_4.out.to(cycle_mux3.in1),
     cycle_mux3.out.to(out.cycles),
-  ])
-  .build()
+  ],
+})
 
-const InstructionDecoderTest = component('InstructionDecoderTest')
-  .out('is_LDA', bit)
-  .out('is_ADC', bit)
-  .out('is_STA', bit)
-  .out('is_JMP', bit)
-  .out('is_BRK', bit)
-  .out('mode', bus(2))
-  .out('cycles', bus(3))
-  .node('decoder', InstructionDecoder)
-  .node('opcode_input', Input)
-  .node('d_mode', HexDisplay)
-  .node('d_cycles', HexDisplay)
-  .connect(({ in: inp, out, decoder, opcode_input, d_mode, d_cycles }) => [
+const InstructionDecoderTest = component('InstructionDecoderTest', {
+  out: { is_LDA: bit, is_ADC: bit, is_STA: bit, is_JMP: bit, is_BRK: bit, mode: bus(2), cycles: bus(3) },
+  nodes: { decoder: InstructionDecoder, opcode_input: Input, d_mode: HexDisplay, d_cycles: HexDisplay },
+  connect: ({ in: inp, out, decoder, opcode_input, d_mode, d_cycles }) => [
     opcode_input.out.to(decoder.opcode),
     decoder.is_LDA_imm.to(out.is_LDA),
     decoder.is_ADC_imm.to(out.is_ADC),
@@ -89,5 +52,5 @@ const InstructionDecoderTest = component('InstructionDecoderTest')
     decoder.cycles.to(out.cycles),
     out.mode.to(d_mode.in),
     out.cycles.to(d_cycles.in),
-  ])
-  .build()
+  ],
+})

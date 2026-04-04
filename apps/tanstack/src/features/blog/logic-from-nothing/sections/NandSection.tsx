@@ -52,17 +52,14 @@ export function NandSection() {
       <div className="mt-8">
         <CircuitEmbed
           dsl={`
-const NandDemo = component('NandDemo')
-  .node('A', Switch)
-  .node('B', Switch)
-  .node('gate', Nand)
-  .node('light', Led)
-  .connect(({ in: inp, out, A, B, gate, light }) => [
+const NandDemo = component('NandDemo', {
+  nodes: { A: Switch, B: Switch, gate: Nand, light: Led },
+  connect: ({ in: inp, out, A, B, gate, light }) => [
     A.out.to(gate.a),
     B.out.to(gate.b),
     gate.out.to(light.in),
-  ])
-  .build()
+  ],
+})
 `}
           height={200}
           showControls={false}

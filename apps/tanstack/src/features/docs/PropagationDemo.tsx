@@ -14,34 +14,27 @@ import {
 import type { Circuit } from "@turing-incomplete/ui/editor/types";
 
 const DEMO_DSL = `
-const HalfAdder = component('HalfAdder')
-  .in('a', bit)
-  .in('b', bit)
-  .out('sum', bit)
-  .out('carry', bit)
-  .node('xor1', Xor)
-  .node('and1', And)
-  .connect(({ in: inp, out, xor1, and1 }) => [
+const HalfAdder = component('HalfAdder', {
+  in: { a: bit, b: bit },
+  out: { sum: bit, carry: bit },
+  nodes: { xor1: Xor, and1: And },
+  connect: ({ in: inp, out, xor1, and1 }) => [
     inp.a.to(xor1.a, and1.a),
     inp.b.to(xor1.b, and1.b),
     xor1.out.to(out.sum),
     and1.out.to(out.carry),
-  ])
-  .build()
+  ],
+})
 
-const HalfAdderDemo = component('HalfAdderDemo')
-  .node('sw_a', Switch)
-  .node('sw_b', Switch)
-  .node('dut', HalfAdder)
-  .node('led_sum', Led)
-  .node('led_carry', Led)
-  .connect(({ in: inp, out, sw_a, sw_b, dut, led_sum, led_carry }) => [
+const HalfAdderDemo = component('HalfAdderDemo', {
+  nodes: { sw_a: Switch, sw_b: Switch, dut: HalfAdder, led_sum: Led, led_carry: Led },
+  connect: ({ in: inp, out, sw_a, sw_b, dut, led_sum, led_carry }) => [
     sw_a.out.to(dut.a),
     sw_b.out.to(dut.b),
     dut.sum.to(led_sum.in),
     dut.carry.to(led_carry.in),
-  ])
-  .build()
+  ],
+})
 `;
 
 /**

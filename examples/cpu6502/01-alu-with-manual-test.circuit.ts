@@ -1,38 +1,11 @@
 // Auto-generated from DSL
 
-const ALU = component('ALU')
-  .in('a', bus(8))
-  .in('b', bus(8))
-  .in('op', bus(3))
-  .in('carry_in', bit)
-  .out('result', bus(8))
-  .out('carry_out', bit)
-  .out('zero', bit)
-  .out('negative', bit)
-  .node('adder', Adder)
-  .node('subtractor', Subtractor)
-  .node('and_op', BusAnd)
-  .node('or_op', BusOr)
-  .node('xor_op', BusXor)
-  .node('op_0', Constant, { value: 0 })
-  .node('op_1', Constant, { value: 1 })
-  .node('op_2', Constant, { value: 2 })
-  .node('op_3', Constant, { value: 3 })
-  .node('op_4', Constant, { value: 4 })
-  .node('is_add', Comparator)
-  .node('is_sub', Comparator)
-  .node('is_and', Comparator)
-  .node('is_or', Comparator)
-  .node('is_xor', Comparator)
-  .node('mux1', Mux)
-  .node('mux2', Mux)
-  .node('mux3', Mux)
-  .node('mux4', Mux)
-  .node('mux_carry', Mux)
-  .node('zero_cmp', Comparator)
-  .node('threshold', Constant, { value: 127 })
-  .node('neg_cmp', Comparator)
-  .connect(({ in: inp, out, adder, subtractor, and_op, or_op, xor_op, op_0, op_1, op_2, op_3, op_4, is_add, is_sub, is_and, is_or, is_xor, mux1, mux2, mux3, mux4, mux_carry, zero_cmp, threshold, neg_cmp }) => [
+const ALU = component('ALU', {
+  in: { a: bus(8), b: bus(8), op: bus(3), carry_in: bit },
+  out: { result: bus(8), carry_out: bit, zero: bit, negative: bit },
+  nodes: { adder: Adder, subtractor: Subtractor, and_op: BusAnd, or_op: BusOr, xor_op: BusXor, op_0: Constant, op_1: Constant, op_2: Constant, op_3: Constant, op_4: Constant, is_add: Comparator, is_sub: Comparator, is_and: Comparator, is_or: Comparator, is_xor: Comparator, mux1: Mux, mux2: Mux, mux3: Mux, mux4: Mux, mux_carry: Mux, zero_cmp: Comparator, threshold: Constant, neg_cmp: Comparator },
+  nodeArgs: { op_0: { value: 0 }, op_1: { value: 1 }, op_2: { value: 2 }, op_3: { value: 3 }, op_4: { value: 4 }, threshold: { value: 127 } },
+  connect: ({ in: inp, out, adder, subtractor, and_op, or_op, xor_op, op_0, op_1, op_2, op_3, op_4, is_add, is_sub, is_and, is_or, is_xor, mux1, mux2, mux3, mux4, mux_carry, zero_cmp, threshold, neg_cmp }) => [
     inp.a.to(adder.a, subtractor.a, and_op.a, or_op.a, xor_op.a),
     inp.b.to(adder.b, subtractor.b, and_op.b, or_op.b, xor_op.b),
     inp.carry_in.to(adder.carry_in, subtractor.borrow_in),
@@ -62,20 +35,13 @@ const ALU = component('ALU')
     zero_cmp.eq.to(out.zero),
     threshold.out.to(neg_cmp.b),
     neg_cmp.gt.to(out.negative),
-  ])
-  .build()
+  ],
+})
 
-const ALUManualTest = component('ALUManualTest')
-  .out('result', bus(8))
-  .out('carry', bit)
-  .out('zero', bit)
-  .out('negative', bit)
-  .node('input_a', Input)
-  .node('input_b', Input)
-  .node('input_op', Input)
-  .node('input_carry', Input)
-  .node('alu', ALU)
-  .connect(({ in: inp, out, input_a, input_b, input_op, input_carry, alu }) => [
+const ALUManualTest = component('ALUManualTest', {
+  out: { result: bus(8), carry: bit, zero: bit, negative: bit },
+  nodes: { input_a: Input, input_b: Input, input_op: Input, input_carry: Input, alu: ALU },
+  connect: ({ in: inp, out, input_a, input_b, input_op, input_carry, alu }) => [
     input_a.out.to(alu.a),
     input_b.out.to(alu.b),
     input_op.out.to(alu.op),
@@ -84,5 +50,5 @@ const ALUManualTest = component('ALUManualTest')
     alu.carry_out.to(out.carry),
     alu.zero.to(out.zero),
     alu.negative.to(out.negative),
-  ])
-  .build()
+  ],
+})

@@ -5,29 +5,25 @@ import { CircuitCanvas } from "@turing-incomplete/ui/canvas";
 // --- Live Fibonacci circuit (auto-ticking) ---
 
 const FIBONACCI_DSL = `
-const Fibonacci = component('Fibonacci')
-  .out('fib', bus(8))
-  .node('reg_a', Register)
-  .node('reg_b', Register)
-  .node('adder', Adder)
-  .node('one_bit', Constant, { value: 1 })
-  .node('init', DFlipFlop)
-  .connect(({ out, reg_a, reg_b, adder, one_bit, init }) => [
+const Fibonacci = component('Fibonacci', {
+  out: { fib: bus(8) },
+  nodes: { reg_a: Register, reg_b: Register, adder: Adder, one_bit: Constant, init: DFlipFlop },
+  nodeArgs: { one_bit: { value: 1 } },
+  connect: ({ out, reg_a, reg_b, adder, one_bit, init }) => [
     one_bit.out.to(init.d, reg_a.we, reg_b.we),
     init.q_bar.to(adder.carry_in),
     reg_a.q.to(adder.a),
     reg_b.q.to(adder.b, reg_a.data, out.fib),
     adder.sum.to(reg_b.data),
-  ])
-  .build()
+  ],
+})
 
-const FibonacciDemo = component('FibonacciDemo')
-  .node('fib', Fibonacci)
-  .node('display', HexDisplay)
-  .connect(({ fib, display }) => [
+const FibonacciDemo = component('FibonacciDemo', {
+  nodes: { fib: Fibonacci, display: HexDisplay },
+  connect: ({ fib, display }) => [
     fib.fib.to(display.in),
-  ])
-  .build()`;
+  ],
+})`;
 
 function LiveFibonacci() {
   const sim = useCircuitSimulator(FIBONACCI_DSL);

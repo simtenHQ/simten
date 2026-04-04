@@ -59,20 +59,17 @@ describe('combinational circuits', () => {
   });
 
   it('simulates a HalfAdder composite', () => {
-    const HalfAdder = component('HalfAdder')
-      .in('a', bit)
-      .in('b', bit)
-      .out('sum', bit)
-      .out('carry', bit)
-      .node('x', Xor)
-      .node('a', And)
-      .connect(({ in: inp, out, x, a }) => [
+    const HalfAdder = component('HalfAdder', {
+      in: { a: bit, b: bit },
+      out: { sum: bit, carry: bit },
+      nodes: { x: Xor, a: And },
+      connect: ({ in: inp, out, x, a }) => [
         inp.a.to(x.a, a.a),
         inp.b.to(x.b, a.b),
         x.out.to(out.sum),
         a.out.to(out.carry),
-      ])
-      .build();
+      ],
+    });
 
     const sim = tracked(simulate(HalfAdder));
 
@@ -90,11 +87,11 @@ describe('combinational circuits', () => {
   });
 
   it('simulates a user-defined eval component', () => {
-    const ReLU = component('ReLU')
-      .in('x', bus(16))
-      .out('y', bus(16))
-      .eval(({ x }) => ({ y: x > 0 ? x : 0 }))
-      .build();
+    const ReLU = component('ReLU', {
+      in: { x: bus(16) },
+      out: { y: bus(16) },
+      eval: ({ x }) => ({ y: x > 0 ? x : 0 }),
+    });
 
     const sim = tracked(simulate(ReLU));
 

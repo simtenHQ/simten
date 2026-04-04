@@ -12,7 +12,7 @@ import {
 } from '../dsl/index.js';
 import type { ComponentLibrary } from '../dsl/index.js';
 import { compressTrace } from '../dsl/analysis/simulate.js';
-import type { SimulationTrace } from '../dsl/analysis/simulate.js';
+import type { SimulationTrace } from '../dsl/analysis/types.js';
 import {
   createComponentLibrary,
   getPrimitives,

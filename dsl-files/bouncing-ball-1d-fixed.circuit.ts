@@ -1,29 +1,9 @@
 // Auto-generated from DSL
 
-const BouncingBall1D = component('BouncingBall1D')
-  .node('position', Register)
-  .node('direction', DFlipFlop)
-  .node('posInc', Incrementer)
-  .node('posDec', Adder)
-  .node('negOne', Constant, { value: 255 })
-  .node('posNext', Mux)
-  .node('zero', Constant, { value: 0 })
-  .node('three', Constant, { value: 3 })
-  .node('cmpZero', Comparator)
-  .node('cmpThree', Comparator)
-  .node('dirInv', Not)
-  .node('hitLeft', And)
-  .node('hitRight', And)
-  .node('shouldFlip', Or)
-  .node('flipDir', Xor)
-  .node('pos2bit', BitSlice, { low: 0, high: 1 })
-  .node('decoder', Decoder)
-  .node('led0', Led)
-  .node('led1', Led)
-  .node('led2', Led)
-  .node('led3', Led)
-  .node('enable', Constant, { value: 1 })
-  .connect(({ in: inp, out, position, direction, posInc, posDec, negOne, posNext, zero, three, cmpZero, cmpThree, dirInv, hitLeft, hitRight, shouldFlip, flipDir, pos2bit, decoder, led0, led1, led2, led3, enable }) => [
+const BouncingBall1D = component('BouncingBall1D', {
+  nodes: { position: Register, direction: DFlipFlop, posInc: Incrementer, posDec: Adder, negOne: Constant, posNext: Mux, zero: Constant, three: Constant, cmpZero: Comparator, cmpThree: Comparator, dirInv: Not, hitLeft: And, hitRight: And, shouldFlip: Or, flipDir: Xor, pos2bit: BitSlice, decoder: Decoder, led0: Led, led1: Led, led2: Led, led3: Led, enable: Constant },
+  nodeArgs: { negOne: { value: 255 }, zero: { value: 0 }, three: { value: 3 }, pos2bit: { low: 0, high: 1 }, enable: { value: 1 } },
+  connect: ({ in: inp, out, position, direction, posInc, posDec, negOne, posNext, zero, three, cmpZero, cmpThree, dirInv, hitLeft, hitRight, shouldFlip, flipDir, pos2bit, decoder, led0, led1, led2, led3, enable }) => [
     position.q.to(posInc.in, posDec.a, pos2bit.in),
     negOne.out.to(posDec.b),
     flipDir.out.to(posNext.sel, direction.d),
@@ -45,5 +25,5 @@ const BouncingBall1D = component('BouncingBall1D')
     decoder.out1.to(led1.in),
     decoder.out2.to(led2.in),
     decoder.out3.to(led3.in),
-  ])
-  .build()
+  ],
+})
