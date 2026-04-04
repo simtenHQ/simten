@@ -1,47 +1,9 @@
 // Auto-generated from DSL
 
-const BouncingBallDamped = component('BouncingBallDamped')
-  .node('ballX', Register, { initial: 3 })
-  .node('ballY', Register, { initial: 7 })
-  .node('prevX', Register, { initial: 3 })
-  .node('prevY', Register, { initial: 7 })
-  .node('dirY', DFlipFlop, { initial: 0 })
-  .node('maxReach', Register, { initial: 0 })
-  .node('framePhase', DFlipFlop)
-  .node('yInc', Incrementer)
-  .node('yDec', Adder)
-  .node('yNegOne', Constant, { value: 255 })
-  .node('yNext', Mux)
-  .node('ground', Constant, { value: 7 })
-  .node('cmpGround', Comparator)
-  .node('cmpMaxReach', Comparator)
-  .node('dirYInv', Not)
-  .node('hitGround', And)
-  .node('hitTop', And)
-  .node('shouldFlip', Or)
-  .node('flipY', Xor)
-  .node('maxReachInc', Incrementer)
-  .node('maxReachNext', Mux)
-  .node('eight', Constant, { value: 8 })
-  .node('yTimes8', Multiplier)
-  .node('addr', Adder)
-  .node('prevYTimes8', Multiplier)
-  .node('prevAddr', Adder)
-  .node('addrMux', Mux)
-  .node('pixelMux', Mux)
-  .node('zero', Constant, { value: 0 })
-  .node('one', Constant, { value: 1 })
-  .node('phaseInv', Not)
-  .node('enable', Constant, { value: 1 })
-  .node('fb', DualPortRAM)
-  .node('display', Screen)
-  .node('debugMaxReach', HexDisplay)
-  .node('y3bit', BitSlice, { low: 0, high: 2 })
-  .node('x3bit', BitSlice, { low: 0, high: 2 })
-  .node('prevY3bit', BitSlice, { low: 0, high: 2 })
-  .node('prevX3bit', BitSlice, { low: 0, high: 2 })
-  .node('maxReach3bit', BitSlice, { low: 0, high: 2 })
-  .connect(({ in: inp, out, ballX, ballY, prevX, prevY, dirY, maxReach, framePhase, yInc, yDec, yNegOne, yNext, ground, cmpGround, cmpMaxReach, dirYInv, hitGround, hitTop, shouldFlip, flipY, maxReachInc, maxReachNext, eight, yTimes8, addr, prevYTimes8, prevAddr, addrMux, pixelMux, zero, one, phaseInv, enable, fb, display, debugMaxReach, y3bit, x3bit, prevY3bit, prevX3bit, maxReach3bit }) => [
+const BouncingBallDamped = component('BouncingBallDamped', {
+  nodes: { ballX: Register, ballY: Register, prevX: Register, prevY: Register, dirY: DFlipFlop, maxReach: Register, framePhase: DFlipFlop, yInc: Incrementer, yDec: Adder, yNegOne: Constant, yNext: Mux, ground: Constant, cmpGround: Comparator, cmpMaxReach: Comparator, dirYInv: Not, hitGround: And, hitTop: And, shouldFlip: Or, flipY: Xor, maxReachInc: Incrementer, maxReachNext: Mux, eight: Constant, yTimes8: Multiplier, addr: Adder, prevYTimes8: Multiplier, prevAddr: Adder, addrMux: Mux, pixelMux: Mux, zero: Constant, one: Constant, phaseInv: Not, enable: Constant, fb: DualPortRAM, display: Screen, debugMaxReach: HexDisplay, y3bit: BitSlice, x3bit: BitSlice, prevY3bit: BitSlice, prevX3bit: BitSlice, maxReach3bit: BitSlice },
+  nodeArgs: { ballX: { initial: 3 }, ballY: { initial: 7 }, prevX: { initial: 3 }, prevY: { initial: 7 }, dirY: { initial: 0 }, maxReach: { initial: 0 }, yNegOne: { value: 255 }, ground: { value: 7 }, eight: { value: 8 }, zero: { value: 0 }, one: { value: 1 }, enable: { value: 1 }, y3bit: { low: 0, high: 2 }, x3bit: { low: 0, high: 2 }, prevY3bit: { low: 0, high: 2 }, prevX3bit: { low: 0, high: 2 }, maxReach3bit: { low: 0, high: 2 } },
+  connect: ({ in: inp, out, ballX, ballY, prevX, prevY, dirY, maxReach, framePhase, yInc, yDec, yNegOne, yNext, ground, cmpGround, cmpMaxReach, dirYInv, hitGround, hitTop, shouldFlip, flipY, maxReachInc, maxReachNext, eight, yTimes8, addr, prevYTimes8, prevAddr, addrMux, pixelMux, zero, one, phaseInv, enable, fb, display, debugMaxReach, y3bit, x3bit, prevY3bit, prevX3bit, maxReach3bit }) => [
     ballY.q.to(yInc.in, yDec.a, prevY.data, y3bit.in),
     yNegOne.out.to(yDec.b),
     flipY.out.to(yNext.sel, dirY.d),
@@ -81,5 +43,5 @@ const BouncingBallDamped = component('BouncingBallDamped')
     pixelMux.out.to(fb.dataA),
     display.addrB.to(fb.addrB),
     fb.outB.to(display.dataIn),
-  ])
-  .build()
+  ],
+})

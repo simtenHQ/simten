@@ -1,51 +1,11 @@
 // Auto-generated from DSL
 
-const SimpleMemory = component('SimpleMemory')
-  .in('addr', bus(8))
-  .in('data_in', bus(8))
-  .in('write_enable', bit)
-  .out('data_out', bus(8))
-  .node('zero', Constant, { value: 0 })
-  .node('addr_10', Constant, { value: 16 })
-  .node('addr_11', Constant, { value: 17 })
-  .node('addr_12', Constant, { value: 18 })
-  .node('addr_13', Constant, { value: 19 })
-  .node('addr_14', Constant, { value: 20 })
-  .node('addr_15', Constant, { value: 21 })
-  .node('addr_20', Constant, { value: 32 })
-  .node('addr_21', Constant, { value: 33 })
-  .node('at_10', Comparator)
-  .node('at_11', Comparator)
-  .node('at_12', Comparator)
-  .node('at_13', Comparator)
-  .node('at_14', Comparator)
-  .node('at_15', Comparator)
-  .node('at_20', Comparator)
-  .node('at_21', Comparator)
-  .node('mem_10', Register)
-  .node('mem_11', Register)
-  .node('mem_12', Register)
-  .node('mem_13', Register)
-  .node('mem_14', Register)
-  .node('mem_15', Register)
-  .node('mem_20', Register)
-  .node('mem_21', Register)
-  .node('we_10', And)
-  .node('we_11', And)
-  .node('we_12', And)
-  .node('we_13', And)
-  .node('we_14', And)
-  .node('we_15', And)
-  .node('we_20', And)
-  .node('we_21', And)
-  .node('out_mux1', Mux)
-  .node('out_mux2', Mux)
-  .node('out_mux3', Mux)
-  .node('out_mux4', Mux)
-  .node('out_mux5', Mux)
-  .node('out_mux6', Mux)
-  .node('out_mux7', Mux)
-  .connect(({ in: inp, out, zero, addr_10, addr_11, addr_12, addr_13, addr_14, addr_15, addr_20, addr_21, at_10, at_11, at_12, at_13, at_14, at_15, at_20, at_21, mem_10, mem_11, mem_12, mem_13, mem_14, mem_15, mem_20, mem_21, we_10, we_11, we_12, we_13, we_14, we_15, we_20, we_21, out_mux1, out_mux2, out_mux3, out_mux4, out_mux5, out_mux6, out_mux7 }) => [
+const SimpleMemory = component('SimpleMemory', {
+  in: { addr: bus(8), data_in: bus(8), write_enable: bit },
+  out: { data_out: bus(8) },
+  nodes: { zero: Constant, addr_10: Constant, addr_11: Constant, addr_12: Constant, addr_13: Constant, addr_14: Constant, addr_15: Constant, addr_20: Constant, addr_21: Constant, at_10: Comparator, at_11: Comparator, at_12: Comparator, at_13: Comparator, at_14: Comparator, at_15: Comparator, at_20: Comparator, at_21: Comparator, mem_10: Register, mem_11: Register, mem_12: Register, mem_13: Register, mem_14: Register, mem_15: Register, mem_20: Register, mem_21: Register, we_10: And, we_11: And, we_12: And, we_13: And, we_14: And, we_15: And, we_20: And, we_21: And, out_mux1: Mux, out_mux2: Mux, out_mux3: Mux, out_mux4: Mux, out_mux5: Mux, out_mux6: Mux, out_mux7: Mux },
+  nodeArgs: { zero: { value: 0 }, addr_10: { value: 16 }, addr_11: { value: 17 }, addr_12: { value: 18 }, addr_13: { value: 19 }, addr_14: { value: 20 }, addr_15: { value: 21 }, addr_20: { value: 32 }, addr_21: { value: 33 } },
+  connect: ({ in: inp, out, zero, addr_10, addr_11, addr_12, addr_13, addr_14, addr_15, addr_20, addr_21, at_10, at_11, at_12, at_13, at_14, at_15, at_20, at_21, mem_10, mem_11, mem_12, mem_13, mem_14, mem_15, mem_20, mem_21, we_10, we_11, we_12, we_13, we_14, we_15, we_20, we_21, out_mux1, out_mux2, out_mux3, out_mux4, out_mux5, out_mux6, out_mux7 }) => [
     inp.addr.to(at_10.a, at_11.a, at_12.a, at_13.a, at_14.a, at_15.a, at_20.a, at_21.a),
     addr_10.out.to(at_10.b),
     addr_11.out.to(at_11.b),
@@ -88,27 +48,14 @@ const SimpleMemory = component('SimpleMemory')
     out_mux6.out.to(out_mux7.in0),
     mem_21.q.to(out_mux7.in1),
     out_mux7.out.to(out.data_out),
-  ])
-  .build()
+  ],
+})
 
-const FlagRegister = component('FlagRegister')
-  .in('new_n', bit)
-  .in('new_z', bit)
-  .in('new_c', bit)
-  .in('new_v', bit)
-  .in('update_n', bit)
-  .in('update_z', bit)
-  .in('update_c', bit)
-  .in('update_v', bit)
-  .out('flag_n', bit)
-  .out('flag_z', bit)
-  .out('flag_c', bit)
-  .out('flag_v', bit)
-  .node('reg_n', Register)
-  .node('reg_z', Register)
-  .node('reg_c', Register)
-  .node('reg_v', Register)
-  .connect(({ in: inp, out, reg_n, reg_z, reg_c, reg_v }) => [
+const FlagRegister = component('FlagRegister', {
+  in: { new_n: bit, new_z: bit, new_c: bit, new_v: bit, update_n: bit, update_z: bit, update_c: bit, update_v: bit },
+  out: { flag_n: bit, flag_z: bit, flag_c: bit, flag_v: bit },
+  nodes: { reg_n: Register, reg_z: Register, reg_c: Register, reg_v: Register },
+  connect: ({ in: inp, out, reg_n, reg_z, reg_c, reg_v }) => [
     inp.new_n.to(reg_n.data),
     inp.new_z.to(reg_z.data),
     inp.new_c.to(reg_c.data),
@@ -121,23 +68,14 @@ const FlagRegister = component('FlagRegister')
     reg_z.q.to(out.flag_z),
     reg_c.q.to(out.flag_c),
     reg_v.q.to(out.flag_v),
-  ])
-  .build()
+  ],
+})
 
-const RegisterFile = component('RegisterFile')
-  .in('data_a', bus(8))
-  .in('data_x', bus(8))
-  .in('data_y', bus(8))
-  .in('write_a', bit)
-  .in('write_x', bit)
-  .in('write_y', bit)
-  .out('reg_a', bus(8))
-  .out('reg_x', bus(8))
-  .out('reg_y', bus(8))
-  .node('regA', Register)
-  .node('regX', Register)
-  .node('regY', Register)
-  .connect(({ in: inp, out, regA, regX, regY }) => [
+const RegisterFile = component('RegisterFile', {
+  in: { data_a: bus(8), data_x: bus(8), data_y: bus(8), write_a: bit, write_x: bit, write_y: bit },
+  out: { reg_a: bus(8), reg_x: bus(8), reg_y: bus(8) },
+  nodes: { regA: Register, regX: Register, regY: Register },
+  connect: ({ in: inp, out, regA, regX, regY }) => [
     inp.data_a.to(regA.data),
     inp.data_x.to(regX.data),
     inp.data_y.to(regY.data),
@@ -147,103 +85,15 @@ const RegisterFile = component('RegisterFile')
     regA.q.to(out.reg_a),
     regX.q.to(out.reg_x),
     regY.q.to(out.reg_y),
-  ])
-  .build()
+  ],
+})
 
-const Part5Control = component('Part5Control')
-  .in('current_state', bus(8))
-  .in('current_opcode', bus(8))
-  .in('subcycle', bus(8))
-  .in('flag_c', bit)
-  .out('next_state', bus(8))
-  .out('next_subcycle', bus(8))
-  .out('pc_increment', bit)
-  .out('ir_load', bit)
-  .out('operand_load', bit)
-  .out('addr_lo_load', bit)
-  .out('write_a', bit)
-  .out('write_x', bit)
-  .out('write_y', bit)
-  .out('mem_write', bit)
-  .out('update_flags', bit)
-  .out('update_c_only', bit)
-  .out('set_c', bit)
-  .out('clear_c', bit)
-  .out('is_adc_imm', bit)
-  .out('is_stx_zp', bit)
-  .out('is_sty_zp', bit)
-  .out('use_x_for_mem', bit)
-  .out('use_y_for_mem', bit)
-  .node('STATE_FETCH', Constant, { value: 0 })
-  .node('STATE_DECODE', Constant, { value: 1 })
-  .node('STATE_EXECUTE', Constant, { value: 2 })
-  .node('SUB0', Constant, { value: 0 })
-  .node('SUB1', Constant, { value: 1 })
-  .node('SUB2', Constant, { value: 2 })
-  .node('LDA_IMM', Constant, { value: 169 })
-  .node('LDX_IMM', Constant, { value: 162 })
-  .node('LDY_IMM', Constant, { value: 160 })
-  .node('ADC_IMM', Constant, { value: 105 })
-  .node('STX_ZP', Constant, { value: 134 })
-  .node('STY_ZP', Constant, { value: 132 })
-  .node('SEC', Constant, { value: 56 })
-  .node('CLC', Constant, { value: 24 })
-  .node('is_fetch', Comparator)
-  .node('is_decode', Comparator)
-  .node('is_execute', Comparator)
-  .node('at_sub0', Comparator)
-  .node('at_sub1', Comparator)
-  .node('at_sub2', Comparator)
-  .node('exec_sub0', And)
-  .node('exec_sub1', And)
-  .node('exec_sub2', And)
-  .node('cmp_lda_imm', Comparator)
-  .node('cmp_ldx_imm', Comparator)
-  .node('cmp_ldy_imm', Comparator)
-  .node('cmp_adc_imm', Comparator)
-  .node('cmp_stx_zp', Comparator)
-  .node('cmp_sty_zp', Comparator)
-  .node('cmp_sec', Comparator)
-  .node('cmp_clc', Comparator)
-  .node('is_imm_1', Or)
-  .node('is_imm_2', Or)
-  .node('is_imm', Or)
-  .node('is_zp', Or)
-  .node('is_1cycle', Or)
-  .node('needs_operand', Or)
-  .node('one', Constant, { value: 1 })
-  .node('zero', Constant, { value: 0 })
-  .node('go_to_decode', Mux)
-  .node('go_to_execute', Mux)
-  .node('done_1cycle', And)
-  .node('done_imm', And)
-  .node('done_zp', And)
-  .node('done_temp', Or)
-  .node('done', Or)
-  .node('go_to_fetch', Mux)
-  .node('inc_subcycle', Incrementer)
-  .node('reset_subcycle', Mux)
-  .node('keep_subcycle', Mux)
-  .node('pc_inc_fetch', And)
-  .node('pc_inc_exec', And)
-  .node('pc_inc_signal', Or)
-  .node('operand_load_signal', And)
-  .node('is_write_a', Or)
-  .node('write_a_signal', And)
-  .node('write_x_signal', And)
-  .node('write_y_signal', And)
-  .node('mem_write_signal', And)
-  .node('use_x_signal', And)
-  .node('use_y_signal', And)
-  .node('is_update_flags_1', Or)
-  .node('is_update_flags_2', Or)
-  .node('is_update_flags', Or)
-  .node('update_flags_signal', And)
-  .node('is_sec_clc', Or)
-  .node('update_c_only_signal', And)
-  .node('set_c_signal', And)
-  .node('clear_c_signal', And)
-  .connect(({ in: inp, out, STATE_FETCH, STATE_DECODE, STATE_EXECUTE, SUB0, SUB1, SUB2, LDA_IMM, LDX_IMM, LDY_IMM, ADC_IMM, STX_ZP, STY_ZP, SEC, CLC, is_fetch, is_decode, is_execute, at_sub0, at_sub1, at_sub2, exec_sub0, exec_sub1, exec_sub2, cmp_lda_imm, cmp_ldx_imm, cmp_ldy_imm, cmp_adc_imm, cmp_stx_zp, cmp_sty_zp, cmp_sec, cmp_clc, is_imm_1, is_imm_2, is_imm, is_zp, is_1cycle, needs_operand, one, zero, go_to_decode, go_to_execute, done_1cycle, done_imm, done_zp, done_temp, done, go_to_fetch, inc_subcycle, reset_subcycle, keep_subcycle, pc_inc_fetch, pc_inc_exec, pc_inc_signal, operand_load_signal, is_write_a, write_a_signal, write_x_signal, write_y_signal, mem_write_signal, use_x_signal, use_y_signal, is_update_flags_1, is_update_flags_2, is_update_flags, update_flags_signal, is_sec_clc, update_c_only_signal, set_c_signal, clear_c_signal }) => [
+const Part5Control = component('Part5Control', {
+  in: { current_state: bus(8), current_opcode: bus(8), subcycle: bus(8), flag_c: bit },
+  out: { next_state: bus(8), next_subcycle: bus(8), pc_increment: bit, ir_load: bit, operand_load: bit, addr_lo_load: bit, write_a: bit, write_x: bit, write_y: bit, mem_write: bit, update_flags: bit, update_c_only: bit, set_c: bit, clear_c: bit, is_adc_imm: bit, is_stx_zp: bit, is_sty_zp: bit, use_x_for_mem: bit, use_y_for_mem: bit },
+  nodes: { STATE_FETCH: Constant, STATE_DECODE: Constant, STATE_EXECUTE: Constant, SUB0: Constant, SUB1: Constant, SUB2: Constant, LDA_IMM: Constant, LDX_IMM: Constant, LDY_IMM: Constant, ADC_IMM: Constant, STX_ZP: Constant, STY_ZP: Constant, SEC: Constant, CLC: Constant, is_fetch: Comparator, is_decode: Comparator, is_execute: Comparator, at_sub0: Comparator, at_sub1: Comparator, at_sub2: Comparator, exec_sub0: And, exec_sub1: And, exec_sub2: And, cmp_lda_imm: Comparator, cmp_ldx_imm: Comparator, cmp_ldy_imm: Comparator, cmp_adc_imm: Comparator, cmp_stx_zp: Comparator, cmp_sty_zp: Comparator, cmp_sec: Comparator, cmp_clc: Comparator, is_imm_1: Or, is_imm_2: Or, is_imm: Or, is_zp: Or, is_1cycle: Or, needs_operand: Or, one: Constant, zero: Constant, go_to_decode: Mux, go_to_execute: Mux, done_1cycle: And, done_imm: And, done_zp: And, done_temp: Or, done: Or, go_to_fetch: Mux, inc_subcycle: Incrementer, reset_subcycle: Mux, keep_subcycle: Mux, pc_inc_fetch: And, pc_inc_exec: And, pc_inc_signal: Or, operand_load_signal: And, is_write_a: Or, write_a_signal: And, write_x_signal: And, write_y_signal: And, mem_write_signal: And, use_x_signal: And, use_y_signal: And, is_update_flags_1: Or, is_update_flags_2: Or, is_update_flags: Or, update_flags_signal: And, is_sec_clc: Or, update_c_only_signal: And, set_c_signal: And, clear_c_signal: And },
+  nodeArgs: { STATE_FETCH: { value: 0 }, STATE_DECODE: { value: 1 }, STATE_EXECUTE: { value: 2 }, SUB0: { value: 0 }, SUB1: { value: 1 }, SUB2: { value: 2 }, LDA_IMM: { value: 169 }, LDX_IMM: { value: 162 }, LDY_IMM: { value: 160 }, ADC_IMM: { value: 105 }, STX_ZP: { value: 134 }, STY_ZP: { value: 132 }, SEC: { value: 56 }, CLC: { value: 24 }, one: { value: 1 }, zero: { value: 0 } },
+  connect: ({ in: inp, out, STATE_FETCH, STATE_DECODE, STATE_EXECUTE, SUB0, SUB1, SUB2, LDA_IMM, LDX_IMM, LDY_IMM, ADC_IMM, STX_ZP, STY_ZP, SEC, CLC, is_fetch, is_decode, is_execute, at_sub0, at_sub1, at_sub2, exec_sub0, exec_sub1, exec_sub2, cmp_lda_imm, cmp_ldx_imm, cmp_ldy_imm, cmp_adc_imm, cmp_stx_zp, cmp_sty_zp, cmp_sec, cmp_clc, is_imm_1, is_imm_2, is_imm, is_zp, is_1cycle, needs_operand, one, zero, go_to_decode, go_to_execute, done_1cycle, done_imm, done_zp, done_temp, done, go_to_fetch, inc_subcycle, reset_subcycle, keep_subcycle, pc_inc_fetch, pc_inc_exec, pc_inc_signal, operand_load_signal, is_write_a, write_a_signal, write_x_signal, write_y_signal, mem_write_signal, use_x_signal, use_y_signal, is_update_flags_1, is_update_flags_2, is_update_flags, update_flags_signal, is_sec_clc, update_c_only_signal, set_c_signal, clear_c_signal }) => [
     inp.current_state.to(is_fetch.a, is_decode.a, is_execute.a, go_to_decode.in0),
     STATE_FETCH.out.to(is_fetch.b, go_to_fetch.in1),
     STATE_DECODE.out.to(is_decode.b, go_to_decode.in1),
@@ -316,125 +166,15 @@ const Part5Control = component('Part5Control')
     update_c_only_signal.out.to(out.update_c_only),
     set_c_signal.out.to(out.set_c),
     clear_c_signal.out.to(out.clear_c),
-  ])
-  .build()
+  ],
+})
 
-const Part5TestCPU = component('Part5TestCPU')
-  .in('reset', bit)
-  .out('pc', bus(8))
-  .out('reg_a', bus(8))
-  .out('reg_x', bus(8))
-  .out('reg_y', bus(8))
-  .out('flag_c', bit)
-  .out('flag_z', bit)
-  .out('flag_n', bit)
-  .out('mem_10', bus(8))
-  .out('mem_11', bus(8))
-  .node('pc_reg', Register)
-  .node('pc_inc', Incrementer)
-  .node('zero', Constant, { value: 0 })
-  .node('one', Constant, { value: 1 })
-  .node('two', Constant, { value: 2 })
-  .node('three', Constant, { value: 3 })
-  .node('four', Constant, { value: 4 })
-  .node('five', Constant, { value: 5 })
-  .node('six', Constant, { value: 6 })
-  .node('seven', Constant, { value: 7 })
-  .node('eight', Constant, { value: 8 })
-  .node('nine', Constant, { value: 9 })
-  .node('ten', Constant, { value: 10 })
-  .node('eleven', Constant, { value: 11 })
-  .node('twelve', Constant, { value: 12 })
-  .node('thirteen', Constant, { value: 13 })
-  .node('fourteen', Constant, { value: 14 })
-  .node('fifteen', Constant, { value: 15 })
-  .node('sixteen', Constant, { value: 16 })
-  .node('seventeen', Constant, { value: 17 })
-  .node('byte_0', Constant, { value: 24 })
-  .node('byte_1', Constant, { value: 169 })
-  .node('byte_2', Constant, { value: 16 })
-  .node('byte_3', Constant, { value: 105 })
-  .node('byte_4', Constant, { value: 5 })
-  .node('byte_5', Constant, { value: 105 })
-  .node('byte_6', Constant, { value: 5 })
-  .node('byte_7', Constant, { value: 56 })
-  .node('byte_8', Constant, { value: 105 })
-  .node('byte_9', Constant, { value: 5 })
-  .node('byte_10', Constant, { value: 162 })
-  .node('byte_11', Constant, { value: 66 })
-  .node('byte_12', Constant, { value: 134 })
-  .node('byte_13', Constant, { value: 16 })
-  .node('byte_14', Constant, { value: 160 })
-  .node('byte_15', Constant, { value: 85 })
-  .node('byte_16', Constant, { value: 132 })
-  .node('byte_17', Constant, { value: 17 })
-  .node('at_0', Comparator)
-  .node('at_1', Comparator)
-  .node('at_2', Comparator)
-  .node('at_3', Comparator)
-  .node('at_4', Comparator)
-  .node('at_5', Comparator)
-  .node('at_6', Comparator)
-  .node('at_7', Comparator)
-  .node('at_8', Comparator)
-  .node('at_9', Comparator)
-  .node('at_10', Comparator)
-  .node('at_11', Comparator)
-  .node('at_12', Comparator)
-  .node('at_13', Comparator)
-  .node('at_14', Comparator)
-  .node('at_15', Comparator)
-  .node('at_16', Comparator)
-  .node('at_17', Comparator)
-  .node('mux1', Mux)
-  .node('mux2', Mux)
-  .node('mux3', Mux)
-  .node('mux4', Mux)
-  .node('mux5', Mux)
-  .node('mux6', Mux)
-  .node('mux7', Mux)
-  .node('mux8', Mux)
-  .node('mux9', Mux)
-  .node('mux10', Mux)
-  .node('mux11', Mux)
-  .node('mux12', Mux)
-  .node('mux13', Mux)
-  .node('mux14', Mux)
-  .node('mux15', Mux)
-  .node('mux16', Mux)
-  .node('rom_out', Mux)
-  .node('state_reg', Register)
-  .node('subcycle_reg', Register)
-  .node('ir_reg', Register)
-  .node('operand_reg', Register)
-  .node('addr_reg', Register)
-  .node('control', Part5Control)
-  .node('registers', RegisterFile)
-  .node('flags', FlagRegister)
-  .node('memory', SimpleMemory)
-  .node('mem_data_x_mux', Mux)
-  .node('mem_data_y_mux', Mux)
-  .node('adc_result', Adder)
-  .node('result_a_adc', Mux)
-  .node('always_on', Constant, { value: 1 })
-  .node('pc_next', Mux)
-  .node('split_a', Splitter8to8)
-  .node('split_operand', Splitter8to8)
-  .node('n_value_x', Mux)
-  .node('n_value', Mux)
-  .node('z_check_a', Comparator)
-  .node('z_check_operand', Comparator)
-  .node('z_value_x', Mux)
-  .node('z_value', Mux)
-  .node('c_from_adc', Mux)
-  .node('c_from_sec', Mux)
-  .node('c_value', Mux)
-  .node('update_c_signal', Or)
-  .node('addr_10', Constant, { value: 16 })
-  .node('addr_11', Constant, { value: 17 })
-  .node('at_addr_10', Comparator)
-  .node('at_addr_11', Comparator)
-  .connect(({ in: inp, out, pc_reg, pc_inc, zero, one, two, three, four, five, six, seven, eight, nine, ten, eleven, twelve, thirteen, fourteen, fifteen, sixteen, seventeen, byte_0, byte_1, byte_2, byte_3, byte_4, byte_5, byte_6, byte_7, byte_8, byte_9, byte_10, byte_11, byte_12, byte_13, byte_14, byte_15, byte_16, byte_17, at_0, at_1, at_2, at_3, at_4, at_5, at_6, at_7, at_8, at_9, at_10, at_11, at_12, at_13, at_14, at_15, at_16, at_17, mux1, mux2, mux3, mux4, mux5, mux6, mux7, mux8, mux9, mux10, mux11, mux12, mux13, mux14, mux15, mux16, rom_out, state_reg, subcycle_reg, ir_reg, operand_reg, addr_reg, control, registers, flags, memory, mem_data_x_mux, mem_data_y_mux, adc_result, result_a_adc, always_on, pc_next, split_a, split_operand, n_value_x, n_value, z_check_a, z_check_operand, z_value_x, z_value, c_from_adc, c_from_sec, c_value, update_c_signal, addr_10, addr_11, at_addr_10, at_addr_11 }) => [
+const Part5TestCPU = component('Part5TestCPU', {
+  in: { reset: bit },
+  out: { pc: bus(8), reg_a: bus(8), reg_x: bus(8), reg_y: bus(8), flag_c: bit, flag_z: bit, flag_n: bit, mem_10: bus(8), mem_11: bus(8) },
+  nodes: { pc_reg: Register, pc_inc: Incrementer, zero: Constant, one: Constant, two: Constant, three: Constant, four: Constant, five: Constant, six: Constant, seven: Constant, eight: Constant, nine: Constant, ten: Constant, eleven: Constant, twelve: Constant, thirteen: Constant, fourteen: Constant, fifteen: Constant, sixteen: Constant, seventeen: Constant, byte_0: Constant, byte_1: Constant, byte_2: Constant, byte_3: Constant, byte_4: Constant, byte_5: Constant, byte_6: Constant, byte_7: Constant, byte_8: Constant, byte_9: Constant, byte_10: Constant, byte_11: Constant, byte_12: Constant, byte_13: Constant, byte_14: Constant, byte_15: Constant, byte_16: Constant, byte_17: Constant, at_0: Comparator, at_1: Comparator, at_2: Comparator, at_3: Comparator, at_4: Comparator, at_5: Comparator, at_6: Comparator, at_7: Comparator, at_8: Comparator, at_9: Comparator, at_10: Comparator, at_11: Comparator, at_12: Comparator, at_13: Comparator, at_14: Comparator, at_15: Comparator, at_16: Comparator, at_17: Comparator, mux1: Mux, mux2: Mux, mux3: Mux, mux4: Mux, mux5: Mux, mux6: Mux, mux7: Mux, mux8: Mux, mux9: Mux, mux10: Mux, mux11: Mux, mux12: Mux, mux13: Mux, mux14: Mux, mux15: Mux, mux16: Mux, rom_out: Mux, state_reg: Register, subcycle_reg: Register, ir_reg: Register, operand_reg: Register, addr_reg: Register, control: Part5Control, registers: RegisterFile, flags: FlagRegister, memory: SimpleMemory, mem_data_x_mux: Mux, mem_data_y_mux: Mux, adc_result: Adder, result_a_adc: Mux, always_on: Constant, pc_next: Mux, split_a: Splitter8to8, split_operand: Splitter8to8, n_value_x: Mux, n_value: Mux, z_check_a: Comparator, z_check_operand: Comparator, z_value_x: Mux, z_value: Mux, c_from_adc: Mux, c_from_sec: Mux, c_value: Mux, update_c_signal: Or, addr_10: Constant, addr_11: Constant, at_addr_10: Comparator, at_addr_11: Comparator },
+  nodeArgs: { zero: { value: 0 }, one: { value: 1 }, two: { value: 2 }, three: { value: 3 }, four: { value: 4 }, five: { value: 5 }, six: { value: 6 }, seven: { value: 7 }, eight: { value: 8 }, nine: { value: 9 }, ten: { value: 10 }, eleven: { value: 11 }, twelve: { value: 12 }, thirteen: { value: 13 }, fourteen: { value: 14 }, fifteen: { value: 15 }, sixteen: { value: 16 }, seventeen: { value: 17 }, byte_0: { value: 24 }, byte_1: { value: 169 }, byte_2: { value: 16 }, byte_3: { value: 105 }, byte_4: { value: 5 }, byte_5: { value: 105 }, byte_6: { value: 5 }, byte_7: { value: 56 }, byte_8: { value: 105 }, byte_9: { value: 5 }, byte_10: { value: 162 }, byte_11: { value: 66 }, byte_12: { value: 134 }, byte_13: { value: 16 }, byte_14: { value: 160 }, byte_15: { value: 85 }, byte_16: { value: 132 }, byte_17: { value: 17 }, always_on: { value: 1 }, addr_10: { value: 16 }, addr_11: { value: 17 } },
+  connect: ({ in: inp, out, pc_reg, pc_inc, zero, one, two, three, four, five, six, seven, eight, nine, ten, eleven, twelve, thirteen, fourteen, fifteen, sixteen, seventeen, byte_0, byte_1, byte_2, byte_3, byte_4, byte_5, byte_6, byte_7, byte_8, byte_9, byte_10, byte_11, byte_12, byte_13, byte_14, byte_15, byte_16, byte_17, at_0, at_1, at_2, at_3, at_4, at_5, at_6, at_7, at_8, at_9, at_10, at_11, at_12, at_13, at_14, at_15, at_16, at_17, mux1, mux2, mux3, mux4, mux5, mux6, mux7, mux8, mux9, mux10, mux11, mux12, mux13, mux14, mux15, mux16, rom_out, state_reg, subcycle_reg, ir_reg, operand_reg, addr_reg, control, registers, flags, memory, mem_data_x_mux, mem_data_y_mux, adc_result, result_a_adc, always_on, pc_next, split_a, split_operand, n_value_x, n_value, z_check_a, z_check_operand, z_value_x, z_value, c_from_adc, c_from_sec, c_value, update_c_signal, addr_10, addr_11, at_addr_10, at_addr_11 }) => [
     pc_reg.q.to(pc_inc.in, at_0.a, at_1.a, at_2.a, at_3.a, at_4.a, at_5.a, at_6.a, at_7.a, at_8.a, at_9.a, at_10.a, at_11.a, at_12.a, at_13.a, at_14.a, at_15.a, at_16.a, at_17.a, pc_next.in0, out.pc),
     zero.out.to(at_0.b, z_check_a.b, z_check_operand.b, c_value.in1, flags.new_v, flags.update_v),
     one.out.to(at_1.b),
@@ -557,20 +297,14 @@ const Part5TestCPU = component('Part5TestCPU')
     addr_10.out.to(at_addr_10.b),
     addr_11.out.to(at_addr_11.b),
     memory.data_out.to(out.mem_10, out.mem_11),
-  ])
-  .build()
+  ],
+})
 
-const Part5Test = component('Part5Test')
-  .out('pc', bus(8))
-  .out('reg_a', bus(8))
-  .out('reg_x', bus(8))
-  .out('reg_y', bus(8))
-  .out('flag_c', bit)
-  .out('flag_z', bit)
-  .out('flag_n', bit)
-  .node('zero', Constant, { value: 0 })
-  .node('cpu', Part5TestCPU)
-  .connect(({ in: inp, out, zero, cpu }) => [
+const Part5Test = component('Part5Test', {
+  out: { pc: bus(8), reg_a: bus(8), reg_x: bus(8), reg_y: bus(8), flag_c: bit, flag_z: bit, flag_n: bit },
+  nodes: { zero: Constant, cpu: Part5TestCPU },
+  nodeArgs: { zero: { value: 0 } },
+  connect: ({ in: inp, out, zero, cpu }) => [
     zero.out.to(cpu.reset),
     cpu.pc.to(out.pc),
     cpu.reg_a.to(out.reg_a),
@@ -579,5 +313,5 @@ const Part5Test = component('Part5Test')
     cpu.flag_c.to(out.flag_c),
     cpu.flag_z.to(out.flag_z),
     cpu.flag_n.to(out.flag_n),
-  ])
-  .build()
+  ],
+})

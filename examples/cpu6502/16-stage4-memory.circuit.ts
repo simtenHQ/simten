@@ -1,22 +1,11 @@
 // Auto-generated from DSL
 
-const StackPointer = component('StackPointer')
-  .in('decrement', bit)
-  .in('increment', bit)
-  .in('load', bit)
-  .in('load_value', bus(8))
-  .out('sp', bus(8))
-  .node('sp_reg', Register, { initial: 255 })
-  .node('always_on', Constant, { value: 1 })
-  .node('one', Constant, { value: 1 })
-  .node('init_value', Constant, { value: 255 })
-  .node('dec', Subtractor)
-  .node('zero_bit', Constant, { value: 0 })
-  .node('inc', Adder)
-  .node('mux_inc', Mux)
-  .node('mux_dec', Mux)
-  .node('mux_load', Mux)
-  .connect(({ in: inp, out, sp_reg, always_on, one, init_value, dec, zero_bit, inc, mux_inc, mux_dec, mux_load }) => [
+const StackPointer = component('StackPointer', {
+  in: { decrement: bit, increment: bit, load: bit, load_value: bus(8) },
+  out: { sp: bus(8) },
+  nodes: { sp_reg: Register, always_on: Constant, one: Constant, init_value: Constant, dec: Subtractor, zero_bit: Constant, inc: Adder, mux_inc: Mux, mux_dec: Mux, mux_load: Mux },
+  nodeArgs: { sp_reg: { initial: 255 }, always_on: { value: 1 }, one: { value: 1 }, init_value: { value: 255 }, zero_bit: { value: 0 } },
+  connect: ({ in: inp, out, sp_reg, always_on, one, init_value, dec, zero_bit, inc, mux_inc, mux_dec, mux_load }) => [
     always_on.out.to(sp_reg.we),
     sp_reg.q.to(dec.a, inc.a, mux_inc.in0, out.sp),
     one.out.to(dec.b, inc.b),
@@ -30,96 +19,15 @@ const StackPointer = component('StackPointer')
     mux_dec.out.to(mux_load.in0),
     inp.load_value.to(mux_load.in1),
     mux_load.out.to(sp_reg.data),
-  ])
-  .build()
+  ],
+})
 
-const StackMemory = component('StackMemory')
-  .in('addr', bus(8))
-  .in('data_in', bus(8))
-  .in('write_enable', bit)
-  .out('data_out', bus(8))
-  .node('zero', Constant, { value: 0 })
-  .node('addr_f0', Constant, { value: 240 })
-  .node('addr_f1', Constant, { value: 241 })
-  .node('addr_f2', Constant, { value: 242 })
-  .node('addr_f3', Constant, { value: 243 })
-  .node('addr_f4', Constant, { value: 244 })
-  .node('addr_f5', Constant, { value: 245 })
-  .node('addr_f6', Constant, { value: 246 })
-  .node('addr_f7', Constant, { value: 247 })
-  .node('addr_f8', Constant, { value: 248 })
-  .node('addr_f9', Constant, { value: 249 })
-  .node('addr_fa', Constant, { value: 250 })
-  .node('addr_fb', Constant, { value: 251 })
-  .node('addr_fc', Constant, { value: 252 })
-  .node('addr_fd', Constant, { value: 253 })
-  .node('addr_fe', Constant, { value: 254 })
-  .node('addr_ff', Constant, { value: 255 })
-  .node('at_f0', Comparator)
-  .node('at_f1', Comparator)
-  .node('at_f2', Comparator)
-  .node('at_f3', Comparator)
-  .node('at_f4', Comparator)
-  .node('at_f5', Comparator)
-  .node('at_f6', Comparator)
-  .node('at_f7', Comparator)
-  .node('at_f8', Comparator)
-  .node('at_f9', Comparator)
-  .node('at_fa', Comparator)
-  .node('at_fb', Comparator)
-  .node('at_fc', Comparator)
-  .node('at_fd', Comparator)
-  .node('at_fe', Comparator)
-  .node('at_ff', Comparator)
-  .node('mem_f0', Register)
-  .node('mem_f1', Register)
-  .node('mem_f2', Register)
-  .node('mem_f3', Register)
-  .node('mem_f4', Register)
-  .node('mem_f5', Register)
-  .node('mem_f6', Register)
-  .node('mem_f7', Register)
-  .node('mem_f8', Register)
-  .node('mem_f9', Register)
-  .node('mem_fa', Register)
-  .node('mem_fb', Register)
-  .node('mem_fc', Register)
-  .node('mem_fd', Register)
-  .node('mem_fe', Register)
-  .node('mem_ff', Register)
-  .node('we_f0', And)
-  .node('we_f1', And)
-  .node('we_f2', And)
-  .node('we_f3', And)
-  .node('we_f4', And)
-  .node('we_f5', And)
-  .node('we_f6', And)
-  .node('we_f7', And)
-  .node('we_f8', And)
-  .node('we_f9', And)
-  .node('we_fa', And)
-  .node('we_fb', And)
-  .node('we_fc', And)
-  .node('we_fd', And)
-  .node('we_fe', And)
-  .node('we_ff', And)
-  .node('mux1', Mux)
-  .node('mux2', Mux)
-  .node('mux3', Mux)
-  .node('mux4', Mux)
-  .node('mux5', Mux)
-  .node('mux6', Mux)
-  .node('mux7', Mux)
-  .node('mux8', Mux)
-  .node('mux9', Mux)
-  .node('mux10', Mux)
-  .node('mux11', Mux)
-  .node('mux12', Mux)
-  .node('mux13', Mux)
-  .node('mux14', Mux)
-  .node('mux15', Mux)
-  .node('mux16', Mux)
-  .connect(({ in: inp, out, zero, addr_f0, addr_f1, addr_f2, addr_f3, addr_f4, addr_f5, addr_f6, addr_f7, addr_f8, addr_f9, addr_fa, addr_fb, addr_fc, addr_fd, addr_fe, addr_ff, at_f0, at_f1, at_f2, at_f3, at_f4, at_f5, at_f6, at_f7, at_f8, at_f9, at_fa, at_fb, at_fc, at_fd, at_fe, at_ff, mem_f0, mem_f1, mem_f2, mem_f3, mem_f4, mem_f5, mem_f6, mem_f7, mem_f8, mem_f9, mem_fa, mem_fb, mem_fc, mem_fd, mem_fe, mem_ff, we_f0, we_f1, we_f2, we_f3, we_f4, we_f5, we_f6, we_f7, we_f8, we_f9, we_fa, we_fb, we_fc, we_fd, we_fe, we_ff, mux1, mux2, mux3, mux4, mux5, mux6, mux7, mux8, mux9, mux10, mux11, mux12, mux13, mux14, mux15, mux16 }) => [
+const StackMemory = component('StackMemory', {
+  in: { addr: bus(8), data_in: bus(8), write_enable: bit },
+  out: { data_out: bus(8) },
+  nodes: { zero: Constant, addr_f0: Constant, addr_f1: Constant, addr_f2: Constant, addr_f3: Constant, addr_f4: Constant, addr_f5: Constant, addr_f6: Constant, addr_f7: Constant, addr_f8: Constant, addr_f9: Constant, addr_fa: Constant, addr_fb: Constant, addr_fc: Constant, addr_fd: Constant, addr_fe: Constant, addr_ff: Constant, at_f0: Comparator, at_f1: Comparator, at_f2: Comparator, at_f3: Comparator, at_f4: Comparator, at_f5: Comparator, at_f6: Comparator, at_f7: Comparator, at_f8: Comparator, at_f9: Comparator, at_fa: Comparator, at_fb: Comparator, at_fc: Comparator, at_fd: Comparator, at_fe: Comparator, at_ff: Comparator, mem_f0: Register, mem_f1: Register, mem_f2: Register, mem_f3: Register, mem_f4: Register, mem_f5: Register, mem_f6: Register, mem_f7: Register, mem_f8: Register, mem_f9: Register, mem_fa: Register, mem_fb: Register, mem_fc: Register, mem_fd: Register, mem_fe: Register, mem_ff: Register, we_f0: And, we_f1: And, we_f2: And, we_f3: And, we_f4: And, we_f5: And, we_f6: And, we_f7: And, we_f8: And, we_f9: And, we_fa: And, we_fb: And, we_fc: And, we_fd: And, we_fe: And, we_ff: And, mux1: Mux, mux2: Mux, mux3: Mux, mux4: Mux, mux5: Mux, mux6: Mux, mux7: Mux, mux8: Mux, mux9: Mux, mux10: Mux, mux11: Mux, mux12: Mux, mux13: Mux, mux14: Mux, mux15: Mux, mux16: Mux },
+  nodeArgs: { zero: { value: 0 }, addr_f0: { value: 240 }, addr_f1: { value: 241 }, addr_f2: { value: 242 }, addr_f3: { value: 243 }, addr_f4: { value: 244 }, addr_f5: { value: 245 }, addr_f6: { value: 246 }, addr_f7: { value: 247 }, addr_f8: { value: 248 }, addr_f9: { value: 249 }, addr_fa: { value: 250 }, addr_fb: { value: 251 }, addr_fc: { value: 252 }, addr_fd: { value: 253 }, addr_fe: { value: 254 }, addr_ff: { value: 255 } },
+  connect: ({ in: inp, out, zero, addr_f0, addr_f1, addr_f2, addr_f3, addr_f4, addr_f5, addr_f6, addr_f7, addr_f8, addr_f9, addr_fa, addr_fb, addr_fc, addr_fd, addr_fe, addr_ff, at_f0, at_f1, at_f2, at_f3, at_f4, at_f5, at_f6, at_f7, at_f8, at_f9, at_fa, at_fb, at_fc, at_fd, at_fe, at_ff, mem_f0, mem_f1, mem_f2, mem_f3, mem_f4, mem_f5, mem_f6, mem_f7, mem_f8, mem_f9, mem_fa, mem_fb, mem_fc, mem_fd, mem_fe, mem_ff, we_f0, we_f1, we_f2, we_f3, we_f4, we_f5, we_f6, we_f7, we_f8, we_f9, we_fa, we_fb, we_fc, we_fd, we_fe, we_ff, mux1, mux2, mux3, mux4, mux5, mux6, mux7, mux8, mux9, mux10, mux11, mux12, mux13, mux14, mux15, mux16 }) => [
     inp.addr.to(at_f0.a, at_f1.a, at_f2.a, at_f3.a, at_f4.a, at_f5.a, at_f6.a, at_f7.a, at_f8.a, at_f9.a, at_fa.a, at_fb.a, at_fc.a, at_fd.a, at_fe.a, at_ff.a),
     addr_f0.out.to(at_f0.b),
     addr_f1.out.to(at_f1.b),
@@ -204,21 +112,12 @@ const StackMemory = component('StackMemory')
     mux15.out.to(mux16.in0),
     mem_ff.q.to(mux16.in1),
     mux16.out.to(out.data_out),
-  ])
-  .build()
+  ],
+})
 
-const StackTest = component('StackTest')
-  .node('sp', StackPointer)
-  .node('stack_mem', StackMemory)
-  .node('dec_input', Input)
-  .node('inc_input', Input)
-  .node('load_input', Input)
-  .node('load_val_input', Input)
-  .node('data_input', Input)
-  .node('write_input', Input)
-  .node('d_sp', HexDisplay)
-  .node('d_data_out', HexDisplay)
-  .connect(({ in: inp, out, sp, stack_mem, dec_input, inc_input, load_input, load_val_input, data_input, write_input, d_sp, d_data_out }) => [
+const StackTest = component('StackTest', {
+  nodes: { sp: StackPointer, stack_mem: StackMemory, dec_input: Input, inc_input: Input, load_input: Input, load_val_input: Input, data_input: Input, write_input: Input, d_sp: HexDisplay, d_data_out: HexDisplay },
+  connect: ({ in: inp, out, sp, stack_mem, dec_input, inc_input, load_input, load_val_input, data_input, write_input, d_sp, d_data_out }) => [
     sp.sp.to(stack_mem.addr, d_sp.in),
     dec_input.out.to(sp.decrement),
     inc_input.out.to(sp.increment),
@@ -227,5 +126,5 @@ const StackTest = component('StackTest')
     data_input.out.to(stack_mem.data_in),
     write_input.out.to(stack_mem.write_enable),
     stack_mem.data_out.to(d_data_out.in),
-  ])
-  .build()
+  ],
+})

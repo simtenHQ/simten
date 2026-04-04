@@ -1,23 +1,10 @@
 // Auto-generated from DSL
 
-const Eth_802_3_Parser = component('Eth_802_3_Parser')
-  .out('dst_mac_hi', bus(16))
-  .out('dst_mac_lo', bus(32))
-  .out('src_mac_hi', bus(16))
-  .out('src_mac_lo', bus(32))
-  .out('ethertype', bus(16))
-  .out('frame_done', bit)
-  .out('crc_ok', bit)
-  .out('is_broadcast', bit)
-  .out('is_ipv4', bit)
-  .out('parse_state', bus(4))
-  .node('frame_in', Eth_FrameInput)
-  .node('enable', Constant, { value: 1, width: 1 })
-  .node('parser', Eth_FrameParser)
-  .node('crc', Eth_CRC32)
-  .node('proto', Eth_ProtocolDecoder)
-  .node('addr', Eth_AddrClassifier)
-  .connect(({ in: inp, out, frame_in, enable, parser, crc, proto, addr }) => [
+const Eth_802_3_Parser = component('Eth_802_3_Parser', {
+  out: { dst_mac_hi: bus(16), dst_mac_lo: bus(32), src_mac_hi: bus(16), src_mac_lo: bus(32), ethertype: bus(16), frame_done: bit, crc_ok: bit, is_broadcast: bit, is_ipv4: bit, parse_state: bus(4) },
+  nodes: { frame_in: Eth_FrameInput, enable: Constant, parser: Eth_FrameParser, crc: Eth_CRC32, proto: Eth_ProtocolDecoder, addr: Eth_AddrClassifier },
+  nodeArgs: { enable: { value: 1, width: 1 } },
+  connect: ({ in: inp, out, frame_in, enable, parser, crc, proto, addr }) => [
     enable.out.to(frame_in.enable),
     frame_in.tdata.to(parser.tdata, crc.data),
     frame_in.tkeep.to(parser.tkeep, crc.tkeep),
@@ -33,5 +20,5 @@ const Eth_802_3_Parser = component('Eth_802_3_Parser')
     crc.crc_ok.to(out.crc_ok),
     addr.is_broadcast.to(out.is_broadcast),
     proto.is_ipv4.to(out.is_ipv4),
-  ])
-  .build()
+  ],
+})

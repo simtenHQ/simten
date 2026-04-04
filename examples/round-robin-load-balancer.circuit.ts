@@ -1,37 +1,10 @@
 // Auto-generated from DSL
 
-const RoundRobinLoadBalancer = component('RoundRobinLoadBalancer')
-  .out('server0', bit)
-  .out('server1', bit)
-  .out('server2', bit)
-  .out('server3', bit)
-  .out('server4', bit)
-  .out('server5', bit)
-  .out('server6', bit)
-  .out('server7', bit)
-  .node('counter', Register)
-  .node('always_write', Constant, { value: 1 })
-  .node('adder', Adder)
-  .node('one', Constant, { value: 1 })
-  .node('at_eight', Comparator)
-  .node('eight', Constant, { value: 8 })
-  .node('zero', Constant, { value: 0 })
-  .node('wrap_mux', Mux)
-  .node('cmp0', Comparator)
-  .node('cmp1', Comparator)
-  .node('cmp2', Comparator)
-  .node('two', Constant, { value: 2 })
-  .node('cmp3', Comparator)
-  .node('three', Constant, { value: 3 })
-  .node('cmp4', Comparator)
-  .node('four', Constant, { value: 4 })
-  .node('cmp5', Comparator)
-  .node('five', Constant, { value: 5 })
-  .node('cmp6', Comparator)
-  .node('six', Constant, { value: 6 })
-  .node('cmp7', Comparator)
-  .node('seven', Constant, { value: 7 })
-  .connect(({ in: inp, out, counter, always_write, adder, one, at_eight, eight, zero, wrap_mux, cmp0, cmp1, cmp2, two, cmp3, three, cmp4, four, cmp5, five, cmp6, six, cmp7, seven }) => [
+const RoundRobinLoadBalancer = component('RoundRobinLoadBalancer', {
+  out: { server0: bit, server1: bit, server2: bit, server3: bit, server4: bit, server5: bit, server6: bit, server7: bit },
+  nodes: { counter: Register, always_write: Constant, adder: Adder, one: Constant, at_eight: Comparator, eight: Constant, zero: Constant, wrap_mux: Mux, cmp0: Comparator, cmp1: Comparator, cmp2: Comparator, two: Constant, cmp3: Comparator, three: Constant, cmp4: Comparator, four: Constant, cmp5: Comparator, five: Constant, cmp6: Comparator, six: Constant, cmp7: Comparator, seven: Constant },
+  nodeArgs: { always_write: { value: 1 }, one: { value: 1 }, eight: { value: 8 }, zero: { value: 0 }, two: { value: 2 }, three: { value: 3 }, four: { value: 4 }, five: { value: 5 }, six: { value: 6 }, seven: { value: 7 } },
+  connect: ({ in: inp, out, counter, always_write, adder, one, at_eight, eight, zero, wrap_mux, cmp0, cmp1, cmp2, two, cmp3, three, cmp4, four, cmp5, five, cmp6, six, cmp7, seven }) => [
     counter.q.to(adder.a, cmp0.a, cmp1.a, cmp2.a, cmp3.a, cmp4.a, cmp5.a, cmp6.a, cmp7.a),
     one.out.to(adder.b, cmp1.b),
     adder.sum.to(at_eight.a, wrap_mux.in0),
@@ -54,20 +27,12 @@ const RoundRobinLoadBalancer = component('RoundRobinLoadBalancer')
     cmp6.eq.to(out.server6),
     seven.out.to(cmp7.b),
     cmp7.eq.to(out.server7),
-  ])
-  .build()
+  ],
+})
 
-const RoundRobinDemo = component('RoundRobinDemo')
-  .node('led0', Led)
-  .node('led1', Led)
-  .node('led2', Led)
-  .node('led3', Led)
-  .node('led4', Led)
-  .node('led5', Led)
-  .node('led6', Led)
-  .node('led7', Led)
-  .node('balancer', RoundRobinLoadBalancer)
-  .connect(({ in: inp, out, led0, led1, led2, led3, led4, led5, led6, led7, balancer }) => [
+const RoundRobinDemo = component('RoundRobinDemo', {
+  nodes: { led0: Led, led1: Led, led2: Led, led3: Led, led4: Led, led5: Led, led6: Led, led7: Led, balancer: RoundRobinLoadBalancer },
+  connect: ({ in: inp, out, led0, led1, led2, led3, led4, led5, led6, led7, balancer }) => [
     balancer.server0.to(led0.in),
     balancer.server1.to(led1.in),
     balancer.server2.to(led2.in),
@@ -76,5 +41,5 @@ const RoundRobinDemo = component('RoundRobinDemo')
     balancer.server5.to(led5.in),
     balancer.server6.to(led6.in),
     balancer.server7.to(led7.in),
-  ])
-  .build()
+  ],
+})

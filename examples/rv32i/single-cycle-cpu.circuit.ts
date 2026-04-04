@@ -1,29 +1,10 @@
 // Auto-generated from DSL
 
-const RV32I_CPU = component('RV32I_CPU')
-  .out('pc_out', bus(32))
-  .out('alu_result', bus(32))
-  .node('imem', RV32I_InstrMem)
-  .node('pc', Register, { width: 32 })
-  .node('pc_plus4', Adder, { width: 32 })
-  .node('pc_we', Constant, { value: 1, width: 1 })
-  .node('four', Constant, { value: 4, width: 32 })
-  .node('decode', RV32I_Decode)
-  .node('immgen', RV32I_ImmGen)
-  .node('control', RV32I_Control)
-  .node('funct7_splitter', BitSlice, { low: 5, high: 5 })
-  .node('regfile', RV32I_RegisterFile)
-  .node('alu_src_mux', Mux, { width: 32 })
-  .node('alu', RV32I_ALU)
-  .node('branch_comp', RV32I_BranchComp)
-  .node('dmem', RV32I_DataMem)
-  .node('pc_plus_imm', Adder, { width: 32 })
-  .node('wb_mux', RV32I_WritebackMux)
-  .node('branch_target', Adder, { width: 32 })
-  .node('jalr_target', BusAnd, { width: 32 })
-  .node('jalr_mask', Constant, { value: 4294967294, width: 32 })
-  .node('next_pc', RV32I_NextPCMux)
-  .connect(({ in: inp, out, imem, pc, pc_plus4, pc_we, four, decode, immgen, control, funct7_splitter, regfile, alu_src_mux, alu, branch_comp, dmem, pc_plus_imm, wb_mux, branch_target, jalr_target, jalr_mask, next_pc }) => [
+const RV32I_CPU = component('RV32I_CPU', {
+  out: { pc_out: bus(32), alu_result: bus(32) },
+  nodes: { imem: RV32I_InstrMem, pc: Register, pc_plus4: Adder, pc_we: Constant, four: Constant, decode: RV32I_Decode, immgen: RV32I_ImmGen, control: RV32I_Control, funct7_splitter: BitSlice, regfile: RV32I_RegisterFile, alu_src_mux: Mux, alu: RV32I_ALU, branch_comp: RV32I_BranchComp, dmem: RV32I_DataMem, pc_plus_imm: Adder, wb_mux: RV32I_WritebackMux, branch_target: Adder, jalr_target: BusAnd, jalr_mask: Constant, next_pc: RV32I_NextPCMux },
+  nodeArgs: { pc: { width: 32 }, pc_plus4: { width: 32 }, pc_we: { value: 1, width: 1 }, four: { value: 4, width: 32 }, funct7_splitter: { low: 5, high: 5 }, alu_src_mux: { width: 32 }, pc_plus_imm: { width: 32 }, branch_target: { width: 32 }, jalr_target: { width: 32 }, jalr_mask: { value: 4294967294, width: 32 } },
+  connect: ({ in: inp, out, imem, pc, pc_plus4, pc_we, four, decode, immgen, control, funct7_splitter, regfile, alu_src_mux, alu, branch_comp, dmem, pc_plus_imm, wb_mux, branch_target, jalr_target, jalr_mask, next_pc }) => [
     pc.q.to(pc_plus4.a, imem.addr, pc_plus_imm.a, branch_target.a, out.pc_out),
     four.out.to(pc_plus4.b),
     pc_we.out.to(pc.we),
@@ -60,5 +41,5 @@ const RV32I_CPU = component('RV32I_CPU')
     branch_comp.take_branch.to(next_pc.take_branch),
     control.is_jalr.to(next_pc.is_jalr),
     next_pc.next_pc.to(pc.data),
-  ])
-  .build()
+  ],
+})

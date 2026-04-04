@@ -13,16 +13,15 @@ import { Route as EditorRouteImport } from './routes/editor'
 import { Route as BlogRouteImport } from './routes/blog'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as LearnIndexRouteImport } from './routes/learn/index'
-import { Route as ChallengesIndexRouteImport } from './routes/challenges/index'
 import { Route as BlogIndexRouteImport } from './routes/blog/index'
 import { Route as LearnProgramCounterRouteImport } from './routes/learn/program-counter'
 import { Route as LearnDualCpuRouteImport } from './routes/learn/dual-cpu'
 import { Route as LearnCpuRouteImport } from './routes/learn/cpu'
 import { Route as DocsSplatRouteImport } from './routes/docs/$'
-import { Route as ChallengesSnakeRouteImport } from './routes/challenges/snake'
-import { Route as ChallengesNandToLogicRouteImport } from './routes/challenges/nand-to-logic'
-import { Route as ChallengesBuildAnAluRouteImport } from './routes/challenges/build-an-alu'
-import { Route as ChallengesBuildACpuRouteImport } from './routes/challenges/build-a-cpu'
+import { Route as DemosSortingNetworkRouteImport } from './routes/demos/sorting-network'
+import { Route as DemosPlaygroundRouteImport } from './routes/demos/playground'
+import { Route as DemosGenerativeRouteImport } from './routes/demos/generative'
+import { Route as DemosCpuRouteImport } from './routes/demos/cpu'
 import { Route as BlogSnakeInHardwareRouteImport } from './routes/blog/snake-in-hardware'
 import { Route as BlogRv32iCpuRouteImport } from './routes/blog/rv32i-cpu'
 import { Route as BlogPongInHardwareRouteImport } from './routes/blog/pong-in-hardware'
@@ -57,11 +56,6 @@ const LearnIndexRoute = LearnIndexRouteImport.update({
   path: '/learn/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ChallengesIndexRoute = ChallengesIndexRouteImport.update({
-  id: '/challenges/',
-  path: '/challenges/',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const BlogIndexRoute = BlogIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -87,24 +81,24 @@ const DocsSplatRoute = DocsSplatRouteImport.update({
   path: '/docs/$',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ChallengesSnakeRoute = ChallengesSnakeRouteImport.update({
-  id: '/challenges/snake',
-  path: '/challenges/snake',
+const DemosSortingNetworkRoute = DemosSortingNetworkRouteImport.update({
+  id: '/demos/sorting-network',
+  path: '/demos/sorting-network',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ChallengesNandToLogicRoute = ChallengesNandToLogicRouteImport.update({
-  id: '/challenges/nand-to-logic',
-  path: '/challenges/nand-to-logic',
+const DemosPlaygroundRoute = DemosPlaygroundRouteImport.update({
+  id: '/demos/playground',
+  path: '/demos/playground',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ChallengesBuildAnAluRoute = ChallengesBuildAnAluRouteImport.update({
-  id: '/challenges/build-an-alu',
-  path: '/challenges/build-an-alu',
+const DemosGenerativeRoute = DemosGenerativeRouteImport.update({
+  id: '/demos/generative',
+  path: '/demos/generative',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ChallengesBuildACpuRoute = ChallengesBuildACpuRouteImport.update({
-  id: '/challenges/build-a-cpu',
-  path: '/challenges/build-a-cpu',
+const DemosCpuRoute = DemosCpuRouteImport.update({
+  id: '/demos/cpu',
+  path: '/demos/cpu',
   getParentRoute: () => rootRouteImport,
 } as any)
 const BlogSnakeInHardwareRoute = BlogSnakeInHardwareRouteImport.update({
@@ -193,16 +187,15 @@ export interface FileRoutesByFullPath {
   '/blog/pong-in-hardware': typeof BlogPongInHardwareRoute
   '/blog/rv32i-cpu': typeof BlogRv32iCpuRoute
   '/blog/snake-in-hardware': typeof BlogSnakeInHardwareRoute
-  '/challenges/build-a-cpu': typeof ChallengesBuildACpuRoute
-  '/challenges/build-an-alu': typeof ChallengesBuildAnAluRoute
-  '/challenges/nand-to-logic': typeof ChallengesNandToLogicRoute
-  '/challenges/snake': typeof ChallengesSnakeRoute
+  '/demos/cpu': typeof DemosCpuRoute
+  '/demos/generative': typeof DemosGenerativeRoute
+  '/demos/playground': typeof DemosPlaygroundRoute
+  '/demos/sorting-network': typeof DemosSortingNetworkRoute
   '/docs/$': typeof DocsSplatRoute
   '/learn/cpu': typeof LearnCpuRoute
   '/learn/dual-cpu': typeof LearnDualCpuRoute
   '/learn/program-counter': typeof LearnProgramCounterRoute
   '/blog/': typeof BlogIndexRoute
-  '/challenges/': typeof ChallengesIndexRoute
   '/learn/': typeof LearnIndexRoute
 }
 export interface FileRoutesByTo {
@@ -221,16 +214,15 @@ export interface FileRoutesByTo {
   '/blog/pong-in-hardware': typeof BlogPongInHardwareRoute
   '/blog/rv32i-cpu': typeof BlogRv32iCpuRoute
   '/blog/snake-in-hardware': typeof BlogSnakeInHardwareRoute
-  '/challenges/build-a-cpu': typeof ChallengesBuildACpuRoute
-  '/challenges/build-an-alu': typeof ChallengesBuildAnAluRoute
-  '/challenges/nand-to-logic': typeof ChallengesNandToLogicRoute
-  '/challenges/snake': typeof ChallengesSnakeRoute
+  '/demos/cpu': typeof DemosCpuRoute
+  '/demos/generative': typeof DemosGenerativeRoute
+  '/demos/playground': typeof DemosPlaygroundRoute
+  '/demos/sorting-network': typeof DemosSortingNetworkRoute
   '/docs/$': typeof DocsSplatRoute
   '/learn/cpu': typeof LearnCpuRoute
   '/learn/dual-cpu': typeof LearnDualCpuRoute
   '/learn/program-counter': typeof LearnProgramCounterRoute
   '/blog': typeof BlogIndexRoute
-  '/challenges': typeof ChallengesIndexRoute
   '/learn': typeof LearnIndexRoute
 }
 export interface FileRoutesById {
@@ -251,16 +243,15 @@ export interface FileRoutesById {
   '/blog/pong-in-hardware': typeof BlogPongInHardwareRoute
   '/blog/rv32i-cpu': typeof BlogRv32iCpuRoute
   '/blog/snake-in-hardware': typeof BlogSnakeInHardwareRoute
-  '/challenges/build-a-cpu': typeof ChallengesBuildACpuRoute
-  '/challenges/build-an-alu': typeof ChallengesBuildAnAluRoute
-  '/challenges/nand-to-logic': typeof ChallengesNandToLogicRoute
-  '/challenges/snake': typeof ChallengesSnakeRoute
+  '/demos/cpu': typeof DemosCpuRoute
+  '/demos/generative': typeof DemosGenerativeRoute
+  '/demos/playground': typeof DemosPlaygroundRoute
+  '/demos/sorting-network': typeof DemosSortingNetworkRoute
   '/docs/$': typeof DocsSplatRoute
   '/learn/cpu': typeof LearnCpuRoute
   '/learn/dual-cpu': typeof LearnDualCpuRoute
   '/learn/program-counter': typeof LearnProgramCounterRoute
   '/blog/': typeof BlogIndexRoute
-  '/challenges/': typeof ChallengesIndexRoute
   '/learn/': typeof LearnIndexRoute
 }
 export interface FileRouteTypes {
@@ -282,16 +273,15 @@ export interface FileRouteTypes {
     | '/blog/pong-in-hardware'
     | '/blog/rv32i-cpu'
     | '/blog/snake-in-hardware'
-    | '/challenges/build-a-cpu'
-    | '/challenges/build-an-alu'
-    | '/challenges/nand-to-logic'
-    | '/challenges/snake'
+    | '/demos/cpu'
+    | '/demos/generative'
+    | '/demos/playground'
+    | '/demos/sorting-network'
     | '/docs/$'
     | '/learn/cpu'
     | '/learn/dual-cpu'
     | '/learn/program-counter'
     | '/blog/'
-    | '/challenges/'
     | '/learn/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -310,16 +300,15 @@ export interface FileRouteTypes {
     | '/blog/pong-in-hardware'
     | '/blog/rv32i-cpu'
     | '/blog/snake-in-hardware'
-    | '/challenges/build-a-cpu'
-    | '/challenges/build-an-alu'
-    | '/challenges/nand-to-logic'
-    | '/challenges/snake'
+    | '/demos/cpu'
+    | '/demos/generative'
+    | '/demos/playground'
+    | '/demos/sorting-network'
     | '/docs/$'
     | '/learn/cpu'
     | '/learn/dual-cpu'
     | '/learn/program-counter'
     | '/blog'
-    | '/challenges'
     | '/learn'
   id:
     | '__root__'
@@ -339,16 +328,15 @@ export interface FileRouteTypes {
     | '/blog/pong-in-hardware'
     | '/blog/rv32i-cpu'
     | '/blog/snake-in-hardware'
-    | '/challenges/build-a-cpu'
-    | '/challenges/build-an-alu'
-    | '/challenges/nand-to-logic'
-    | '/challenges/snake'
+    | '/demos/cpu'
+    | '/demos/generative'
+    | '/demos/playground'
+    | '/demos/sorting-network'
     | '/docs/$'
     | '/learn/cpu'
     | '/learn/dual-cpu'
     | '/learn/program-counter'
     | '/blog/'
-    | '/challenges/'
     | '/learn/'
   fileRoutesById: FileRoutesById
 }
@@ -357,15 +345,14 @@ export interface RootRouteChildren {
   BlogRoute: typeof BlogRouteWithChildren
   EditorRoute: typeof EditorRoute
   ApiSearchRoute: typeof ApiSearchRoute
-  ChallengesBuildACpuRoute: typeof ChallengesBuildACpuRoute
-  ChallengesBuildAnAluRoute: typeof ChallengesBuildAnAluRoute
-  ChallengesNandToLogicRoute: typeof ChallengesNandToLogicRoute
-  ChallengesSnakeRoute: typeof ChallengesSnakeRoute
+  DemosCpuRoute: typeof DemosCpuRoute
+  DemosGenerativeRoute: typeof DemosGenerativeRoute
+  DemosPlaygroundRoute: typeof DemosPlaygroundRoute
+  DemosSortingNetworkRoute: typeof DemosSortingNetworkRoute
   DocsSplatRoute: typeof DocsSplatRoute
   LearnCpuRoute: typeof LearnCpuRoute
   LearnDualCpuRoute: typeof LearnDualCpuRoute
   LearnProgramCounterRoute: typeof LearnProgramCounterRoute
-  ChallengesIndexRoute: typeof ChallengesIndexRoute
   LearnIndexRoute: typeof LearnIndexRoute
 }
 
@@ -397,13 +384,6 @@ declare module '@tanstack/react-router' {
       path: '/learn'
       fullPath: '/learn/'
       preLoaderRoute: typeof LearnIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/challenges/': {
-      id: '/challenges/'
-      path: '/challenges'
-      fullPath: '/challenges/'
-      preLoaderRoute: typeof ChallengesIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/blog/': {
@@ -441,32 +421,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DocsSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/challenges/snake': {
-      id: '/challenges/snake'
-      path: '/challenges/snake'
-      fullPath: '/challenges/snake'
-      preLoaderRoute: typeof ChallengesSnakeRouteImport
+    '/demos/sorting-network': {
+      id: '/demos/sorting-network'
+      path: '/demos/sorting-network'
+      fullPath: '/demos/sorting-network'
+      preLoaderRoute: typeof DemosSortingNetworkRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/challenges/nand-to-logic': {
-      id: '/challenges/nand-to-logic'
-      path: '/challenges/nand-to-logic'
-      fullPath: '/challenges/nand-to-logic'
-      preLoaderRoute: typeof ChallengesNandToLogicRouteImport
+    '/demos/playground': {
+      id: '/demos/playground'
+      path: '/demos/playground'
+      fullPath: '/demos/playground'
+      preLoaderRoute: typeof DemosPlaygroundRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/challenges/build-an-alu': {
-      id: '/challenges/build-an-alu'
-      path: '/challenges/build-an-alu'
-      fullPath: '/challenges/build-an-alu'
-      preLoaderRoute: typeof ChallengesBuildAnAluRouteImport
+    '/demos/generative': {
+      id: '/demos/generative'
+      path: '/demos/generative'
+      fullPath: '/demos/generative'
+      preLoaderRoute: typeof DemosGenerativeRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/challenges/build-a-cpu': {
-      id: '/challenges/build-a-cpu'
-      path: '/challenges/build-a-cpu'
-      fullPath: '/challenges/build-a-cpu'
-      preLoaderRoute: typeof ChallengesBuildACpuRouteImport
+    '/demos/cpu': {
+      id: '/demos/cpu'
+      path: '/demos/cpu'
+      fullPath: '/demos/cpu'
+      preLoaderRoute: typeof DemosCpuRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/blog/snake-in-hardware': {
@@ -602,15 +582,14 @@ const rootRouteChildren: RootRouteChildren = {
   BlogRoute: BlogRouteWithChildren,
   EditorRoute: EditorRoute,
   ApiSearchRoute: ApiSearchRoute,
-  ChallengesBuildACpuRoute: ChallengesBuildACpuRoute,
-  ChallengesBuildAnAluRoute: ChallengesBuildAnAluRoute,
-  ChallengesNandToLogicRoute: ChallengesNandToLogicRoute,
-  ChallengesSnakeRoute: ChallengesSnakeRoute,
+  DemosCpuRoute: DemosCpuRoute,
+  DemosGenerativeRoute: DemosGenerativeRoute,
+  DemosPlaygroundRoute: DemosPlaygroundRoute,
+  DemosSortingNetworkRoute: DemosSortingNetworkRoute,
   DocsSplatRoute: DocsSplatRoute,
   LearnCpuRoute: LearnCpuRoute,
   LearnDualCpuRoute: LearnDualCpuRoute,
   LearnProgramCounterRoute: LearnProgramCounterRoute,
-  ChallengesIndexRoute: ChallengesIndexRoute,
   LearnIndexRoute: LearnIndexRoute,
 }
 export const routeTree = rootRouteImport

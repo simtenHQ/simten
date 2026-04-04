@@ -1,30 +1,24 @@
 // Auto-generated from DSL
 
-const HalfAdder = component('HalfAdder')
-  .in('a', bit)
-  .in('b', bit)
-  .out('sum', bit)
-  .out('carry', bit)
-  .node('xor1', Xor)
-  .node('and1', And)
-  .connect(({ in: inp, out, xor1, and1 }) => [
+const HalfAdder = component('HalfAdder', {
+  in: { a: bit, b: bit },
+  out: { sum: bit, carry: bit },
+  meta: { description: "Adds two 1-bit values" },
+  nodes: { xor1: Xor, and1: And },
+  connect: ({ in: inp, out, xor1, and1 }) => [
     inp.a.to(xor1.a, and1.a),
     inp.b.to(xor1.b, and1.b),
     xor1.out.to(out.sum),
     and1.out.to(out.carry),
-  ])
-  .build()
+  ],
+})
 
-const FullAdder = component('FullAdder')
-  .in('a', bit)
-  .in('b', bit)
-  .in('cin', bit)
-  .out('sum', bit)
-  .out('cout', bit)
-  .node('ha1', HalfAdder)
-  .node('ha2', HalfAdder)
-  .node('or1', Or)
-  .connect(({ in: inp, out, ha1, ha2, or1 }) => [
+const FullAdder = component('FullAdder', {
+  in: { a: bit, b: bit, cin: bit },
+  out: { sum: bit, cout: bit },
+  meta: { description: "Adds two 1-bit values with carry-in" },
+  nodes: { ha1: HalfAdder, ha2: HalfAdder, or1: Or },
+  connect: ({ in: inp, out, ha1, ha2, or1 }) => [
     inp.a.to(ha1.a),
     inp.b.to(ha1.b),
     ha1.sum.to(ha2.a),
@@ -33,27 +27,15 @@ const FullAdder = component('FullAdder')
     ha1.carry.to(or1.a),
     ha2.carry.to(or1.b),
     or1.out.to(out.cout),
-  ])
-  .build()
+  ],
+})
 
-const Adder8Bit = component('Adder8Bit')
-  .in('a', bus(8))
-  .in('b', bus(8))
-  .in('cin', bit)
-  .out('sum', bus(8))
-  .out('cout', bit)
-  .node('splitA', Splitter8to8)
-  .node('splitB', Splitter8to8)
-  .node('fa0', FullAdder)
-  .node('fa1', FullAdder)
-  .node('fa2', FullAdder)
-  .node('fa3', FullAdder)
-  .node('fa4', FullAdder)
-  .node('fa5', FullAdder)
-  .node('fa6', FullAdder)
-  .node('fa7', FullAdder)
-  .node('combine', Combiner8to8)
-  .connect(({ in: inp, out, splitA, splitB, fa0, fa1, fa2, fa3, fa4, fa5, fa6, fa7, combine }) => [
+const Adder8Bit = component('Adder8Bit', {
+  in: { a: bus(8), b: bus(8), cin: bit },
+  out: { sum: bus(8), cout: bit },
+  meta: { description: "Ripple-carry 8-bit adder built from full adders" },
+  nodes: { splitA: Splitter8to8, splitB: Splitter8to8, fa0: FullAdder, fa1: FullAdder, fa2: FullAdder, fa3: FullAdder, fa4: FullAdder, fa5: FullAdder, fa6: FullAdder, fa7: FullAdder, combine: Combiner8to8 },
+  connect: ({ in: inp, out, splitA, splitB, fa0, fa1, fa2, fa3, fa4, fa5, fa6, fa7, combine }) => [
     inp.a.to(splitA.in),
     inp.b.to(splitB.in),
     splitA.bit0.to(fa0.a),
@@ -90,21 +72,18 @@ const Adder8Bit = component('Adder8Bit')
     fa7.sum.to(combine.bit7),
     combine.out.to(out.sum),
     fa7.cout.to(out.cout),
-  ])
-  .build()
+  ],
+})
 
-const Adder8BitDemo = component('Adder8BitDemo')
-  .node('inA', Input, { value: 42 })
-  .node('inB', Input, { value: 17 })
-  .node('sw_cin', Switch)
-  .node('adder', Adder8Bit)
-  .node('dispSum', HexDisplay)
-  .node('led_cout', Led)
-  .connect(({ in: inp, out, inA, inB, sw_cin, adder, dispSum, led_cout }) => [
+const Adder8BitDemo = component('Adder8BitDemo', {
+  meta: { description: "Interactive 8-bit ripple-carry adder" },
+  nodes: { inA: Input, inB: Input, sw_cin: Switch, adder: Adder8Bit, dispSum: HexDisplay, led_cout: Led },
+  nodeArgs: { inA: { value: 42 }, inB: { value: 17 } },
+  connect: ({ in: inp, out, inA, inB, sw_cin, adder, dispSum, led_cout }) => [
     inA.out.to(adder.a),
     inB.out.to(adder.b),
     sw_cin.out.to(adder.cin),
     adder.sum.to(dispSum.in),
     adder.cout.to(led_cout.in),
-  ])
-  .build()
+  ],
+})

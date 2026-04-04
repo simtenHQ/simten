@@ -139,12 +139,14 @@ describe('I/O components', () => {
     expect(Led.circuit.outputs).toHaveLength(0);
   });
 
-  it('Switch has environmental state metadata', () => {
-    expect((Switch as any)._environmentalState).toBe('value');
+  it('Switch is a source component (no inputs)', () => {
+    expect(Switch.circuit.inputs).toHaveLength(0);
+    expect(Switch.circuit.outputs).toHaveLength(1);
   });
 
-  it('Button has environmental state metadata', () => {
-    expect((Button as any)._environmentalState).toBe('value');
+  it('Button is a source component (no inputs)', () => {
+    expect(Button.circuit.inputs).toHaveLength(0);
+    expect(Button.circuit.outputs).toHaveLength(1);
   });
 });
 
@@ -208,20 +210,17 @@ describe('stdlib + builder integration', () => {
   it('builds a HalfAdder from stdlib components', async () => {
     const { component, bit } = await import('../../builder/index.js');
 
-    const HalfAdder = component('HalfAdder')
-      .in('a', bit)
-      .in('b', bit)
-      .out('sum', bit)
-      .out('carry', bit)
-      .node('x', Xor)
-      .node('a', And)
-      .connect(({ in: inp, out, x, a }) => [
+    const HalfAdder = component('HalfAdder', {
+      in: { a: bit, b: bit },
+      out: { sum: bit, carry: bit },
+      nodes: { x: Xor, a: And },
+      connect: ({ in: inp, out, x, a }) => [
         inp.a.to(x.a, a.a),
         inp.b.to(x.b, a.b),
         x.out.to(out.sum),
         a.out.to(out.carry),
-      ])
-      .build();
+      ],
+    });
 
     expect(HalfAdder.circuit.nodes).toHaveLength(2);
     expect(HalfAdder.circuit.nodes[0].componentRef).toBe('Xor');

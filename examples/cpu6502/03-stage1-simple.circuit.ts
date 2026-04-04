@@ -1,38 +1,11 @@
 // Auto-generated from DSL
 
-const ALU = component('ALU')
-  .in('a', bus(8))
-  .in('b', bus(8))
-  .in('op', bus(3))
-  .in('carry_in', bit)
-  .out('result', bus(8))
-  .out('carry_out', bit)
-  .out('zero', bit)
-  .out('negative', bit)
-  .node('adder', Adder)
-  .node('subtractor', Subtractor)
-  .node('and_op', BusAnd)
-  .node('or_op', BusOr)
-  .node('xor_op', BusXor)
-  .node('op_0', Constant, { value: 0 })
-  .node('op_1', Constant, { value: 1 })
-  .node('op_2', Constant, { value: 2 })
-  .node('op_3', Constant, { value: 3 })
-  .node('op_4', Constant, { value: 4 })
-  .node('is_add', Comparator)
-  .node('is_sub', Comparator)
-  .node('is_and', Comparator)
-  .node('is_or', Comparator)
-  .node('is_xor', Comparator)
-  .node('mux1', Mux)
-  .node('mux2', Mux)
-  .node('mux3', Mux)
-  .node('mux4', Mux)
-  .node('mux_carry', Mux)
-  .node('zero_cmp', Comparator)
-  .node('threshold', Constant, { value: 127 })
-  .node('neg_cmp', Comparator)
-  .connect(({ in: inp, out, adder, subtractor, and_op, or_op, xor_op, op_0, op_1, op_2, op_3, op_4, is_add, is_sub, is_and, is_or, is_xor, mux1, mux2, mux3, mux4, mux_carry, zero_cmp, threshold, neg_cmp }) => [
+const ALU = component('ALU', {
+  in: { a: bus(8), b: bus(8), op: bus(3), carry_in: bit },
+  out: { result: bus(8), carry_out: bit, zero: bit, negative: bit },
+  nodes: { adder: Adder, subtractor: Subtractor, and_op: BusAnd, or_op: BusOr, xor_op: BusXor, op_0: Constant, op_1: Constant, op_2: Constant, op_3: Constant, op_4: Constant, is_add: Comparator, is_sub: Comparator, is_and: Comparator, is_or: Comparator, is_xor: Comparator, mux1: Mux, mux2: Mux, mux3: Mux, mux4: Mux, mux_carry: Mux, zero_cmp: Comparator, threshold: Constant, neg_cmp: Comparator },
+  nodeArgs: { op_0: { value: 0 }, op_1: { value: 1 }, op_2: { value: 2 }, op_3: { value: 3 }, op_4: { value: 4 }, threshold: { value: 127 } },
+  connect: ({ in: inp, out, adder, subtractor, and_op, or_op, xor_op, op_0, op_1, op_2, op_3, op_4, is_add, is_sub, is_and, is_or, is_xor, mux1, mux2, mux3, mux4, mux_carry, zero_cmp, threshold, neg_cmp }) => [
     inp.a.to(adder.a, subtractor.a, and_op.a, or_op.a, xor_op.a),
     inp.b.to(adder.b, subtractor.b, and_op.b, or_op.b, xor_op.b),
     inp.carry_in.to(adder.carry_in, subtractor.borrow_in),
@@ -62,32 +35,15 @@ const ALU = component('ALU')
     zero_cmp.eq.to(out.zero),
     threshold.out.to(neg_cmp.b),
     neg_cmp.gt.to(out.negative),
-  ])
-  .build()
+  ],
+})
 
-const RegisterFile = component('RegisterFile')
-  .in('write_sel', bus(2))
-  .in('write_data', bus(8))
-  .in('write_enable', bit)
-  .in('read_sel', bus(2))
-  .out('read_data', bus(8))
-  .node('regA', Register)
-  .node('regX', Register)
-  .node('regY', Register)
-  .node('sel_0', Constant, { value: 0 })
-  .node('sel_1', Constant, { value: 1 })
-  .node('sel_2', Constant, { value: 2 })
-  .node('is_sel_A', Comparator)
-  .node('is_sel_X', Comparator)
-  .node('is_sel_Y', Comparator)
-  .node('write_A', And)
-  .node('write_X', And)
-  .node('write_Y', And)
-  .node('is_read_X', Comparator)
-  .node('is_read_Y', Comparator)
-  .node('read_mux1', Mux)
-  .node('read_mux2', Mux)
-  .connect(({ in: inp, out, regA, regX, regY, sel_0, sel_1, sel_2, is_sel_A, is_sel_X, is_sel_Y, write_A, write_X, write_Y, is_read_X, is_read_Y, read_mux1, read_mux2 }) => [
+const RegisterFile = component('RegisterFile', {
+  in: { write_sel: bus(2), write_data: bus(8), write_enable: bit, read_sel: bus(2) },
+  out: { read_data: bus(8) },
+  nodes: { regA: Register, regX: Register, regY: Register, sel_0: Constant, sel_1: Constant, sel_2: Constant, is_sel_A: Comparator, is_sel_X: Comparator, is_sel_Y: Comparator, write_A: And, write_X: And, write_Y: And, is_read_X: Comparator, is_read_Y: Comparator, read_mux1: Mux, read_mux2: Mux },
+  nodeArgs: { sel_0: { value: 0 }, sel_1: { value: 1 }, sel_2: { value: 2 } },
+  connect: ({ in: inp, out, regA, regX, regY, sel_0, sel_1, sel_2, is_sel_A, is_sel_X, is_sel_Y, write_A, write_X, write_Y, is_read_X, is_read_Y, read_mux1, read_mux2 }) => [
     inp.write_data.to(regA.data, regX.data, regY.data),
     inp.write_sel.to(is_sel_A.a, is_sel_X.a, is_sel_Y.a),
     sel_0.out.to(is_sel_A.b),
@@ -108,41 +64,14 @@ const RegisterFile = component('RegisterFile')
     read_mux1.out.to(read_mux2.in0),
     regY.q.to(read_mux2.in1),
     read_mux2.out.to(out.read_data),
-  ])
-  .build()
+  ],
+})
 
-const Stage1Simple = component('Stage1Simple')
-  .out('cycle', bus(8))
-  .out('alu_out', bus(8))
-  .out('reg_out', bus(8))
-  .out('write_to', bus(2))
-  .node('counter', Register)
-  .node('always_on', Constant, { value: 1 })
-  .node('inc', Incrementer)
-  .node('c0', Constant, { value: 0 })
-  .node('c1', Constant, { value: 1 })
-  .node('c2', Constant, { value: 2 })
-  .node('c3', Constant, { value: 3 })
-  .node('is_c0', Comparator)
-  .node('is_c1', Comparator)
-  .node('is_c2', Comparator)
-  .node('is_c3', Comparator)
-  .node('rf', RegisterFile)
-  .node('alu', ALU)
-  .node('v66', Constant, { value: 66 })
-  .node('v8', Constant, { value: 8 })
-  .node('v10', Constant, { value: 10 })
-  .node('zero', Constant, { value: 0 })
-  .node('sel_a', Constant, { value: 0 })
-  .node('sel_x', Constant, { value: 1 })
-  .node('read_sel', Mux)
-  .node('read_sel2', Mux)
-  .node('b1', Mux)
-  .node('b2', Mux)
-  .node('b3', Mux)
-  .node('ws1', Mux)
-  .node('ws2', Mux)
-  .connect(({ in: inp, out, counter, always_on, inc, c0, c1, c2, c3, is_c0, is_c1, is_c2, is_c3, rf, alu, v66, v8, v10, zero, sel_a, sel_x, read_sel, read_sel2, b1, b2, b3, ws1, ws2 }) => [
+const Stage1Simple = component('Stage1Simple', {
+  out: { cycle: bus(8), alu_out: bus(8), reg_out: bus(8), write_to: bus(2) },
+  nodes: { counter: Register, always_on: Constant, inc: Incrementer, c0: Constant, c1: Constant, c2: Constant, c3: Constant, is_c0: Comparator, is_c1: Comparator, is_c2: Comparator, is_c3: Comparator, rf: RegisterFile, alu: ALU, v66: Constant, v8: Constant, v10: Constant, zero: Constant, sel_a: Constant, sel_x: Constant, read_sel: Mux, read_sel2: Mux, b1: Mux, b2: Mux, b3: Mux, ws1: Mux, ws2: Mux },
+  nodeArgs: { always_on: { value: 1 }, c0: { value: 0 }, c1: { value: 1 }, c2: { value: 2 }, c3: { value: 3 }, v66: { value: 66 }, v8: { value: 8 }, v10: { value: 10 }, zero: { value: 0 }, sel_a: { value: 0 }, sel_x: { value: 1 } },
+  connect: ({ in: inp, out, counter, always_on, inc, c0, c1, c2, c3, is_c0, is_c1, is_c2, is_c3, rf, alu, v66, v8, v10, zero, sel_a, sel_x, read_sel, read_sel2, b1, b2, b3, ws1, ws2 }) => [
     always_on.out.to(counter.we, rf.write_enable),
     counter.q.to(inc.in, out.cycle, is_c0.a, is_c1.a, is_c2.a, is_c3.a),
     inc.out.to(counter.data),
@@ -168,19 +97,15 @@ const Stage1Simple = component('Stage1Simple')
     alu.result.to(out.alu_out, rf.write_data),
     ws1.out.to(ws2.in0),
     ws2.out.to(rf.write_sel, out.write_to),
-  ])
-  .build()
+  ],
+})
 
-const Stage1Demo = component('Stage1Demo')
-  .node('cpu', Stage1Simple)
-  .node('d_cycle', HexDisplay)
-  .node('d_alu', HexDisplay)
-  .node('d_reg', HexDisplay)
-  .node('d_write', HexDisplay)
-  .connect(({ in: inp, out, cpu, d_cycle, d_alu, d_reg, d_write }) => [
+const Stage1Demo = component('Stage1Demo', {
+  nodes: { cpu: Stage1Simple, d_cycle: HexDisplay, d_alu: HexDisplay, d_reg: HexDisplay, d_write: HexDisplay },
+  connect: ({ in: inp, out, cpu, d_cycle, d_alu, d_reg, d_write }) => [
     cpu.cycle.to(d_cycle.in),
     cpu.alu_out.to(d_alu.in),
     cpu.reg_out.to(d_reg.in),
     cpu.write_to.to(d_write.in),
-  ])
-  .build()
+  ],
+})

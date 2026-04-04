@@ -1,27 +1,11 @@
 // Auto-generated from DSL
 
-const SimpleMemory = component('SimpleMemory')
-  .in('addr', bus(8))
-  .in('data_in', bus(8))
-  .in('write_enable', bit)
-  .out('data_out', bus(8))
-  .node('zero', Constant, { value: 0 })
-  .node('addr_10', Constant, { value: 16 })
-  .node('addr_11', Constant, { value: 17 })
-  .node('addr_12', Constant, { value: 18 })
-  .node('at_10', Comparator)
-  .node('at_11', Comparator)
-  .node('at_12', Comparator)
-  .node('mem_10', Register)
-  .node('mem_11', Register)
-  .node('mem_12', Register)
-  .node('we_10', And)
-  .node('we_11', And)
-  .node('we_12', And)
-  .node('mux1', Mux)
-  .node('mux2', Mux)
-  .node('mux3', Mux)
-  .connect(({ in: inp, out, zero, addr_10, addr_11, addr_12, at_10, at_11, at_12, mem_10, mem_11, mem_12, we_10, we_11, we_12, mux1, mux2, mux3 }) => [
+const SimpleMemory = component('SimpleMemory', {
+  in: { addr: bus(8), data_in: bus(8), write_enable: bit },
+  out: { data_out: bus(8) },
+  nodes: { zero: Constant, addr_10: Constant, addr_11: Constant, addr_12: Constant, at_10: Comparator, at_11: Comparator, at_12: Comparator, mem_10: Register, mem_11: Register, mem_12: Register, we_10: And, we_11: And, we_12: And, mux1: Mux, mux2: Mux, mux3: Mux },
+  nodeArgs: { zero: { value: 0 }, addr_10: { value: 16 }, addr_11: { value: 17 }, addr_12: { value: 18 } },
+  connect: ({ in: inp, out, zero, addr_10, addr_11, addr_12, at_10, at_11, at_12, mem_10, mem_11, mem_12, we_10, we_11, we_12, mux1, mux2, mux3 }) => [
     inp.addr.to(at_10.a, at_11.a, at_12.a),
     addr_10.out.to(at_10.b),
     addr_11.out.to(at_11.b),
@@ -41,23 +25,14 @@ const SimpleMemory = component('SimpleMemory')
     mux2.out.to(mux3.in0),
     mem_12.q.to(mux3.in1),
     mux3.out.to(out.data_out),
-  ])
-  .build()
+  ],
+})
 
-const RegisterFile = component('RegisterFile')
-  .in('write_a', bit)
-  .in('write_x', bit)
-  .in('write_y', bit)
-  .in('data_a', bus(8))
-  .in('data_x', bus(8))
-  .in('data_y', bus(8))
-  .out('reg_a', bus(8))
-  .out('reg_x', bus(8))
-  .out('reg_y', bus(8))
-  .node('regA', Register)
-  .node('regX', Register)
-  .node('regY', Register)
-  .connect(({ in: inp, out, regA, regX, regY }) => [
+const RegisterFile = component('RegisterFile', {
+  in: { write_a: bit, write_x: bit, write_y: bit, data_a: bus(8), data_x: bus(8), data_y: bus(8) },
+  out: { reg_a: bus(8), reg_x: bus(8), reg_y: bus(8) },
+  nodes: { regA: Register, regX: Register, regY: Register },
+  connect: ({ in: inp, out, regA, regX, regY }) => [
     inp.data_a.to(regA.data),
     inp.data_x.to(regX.data),
     inp.data_y.to(regY.data),
@@ -67,87 +42,15 @@ const RegisterFile = component('RegisterFile')
     regA.q.to(out.reg_a),
     regX.q.to(out.reg_x),
     regY.q.to(out.reg_y),
-  ])
-  .build()
+  ],
+})
 
-const MemoryControl = component('MemoryControl')
-  .in('reset', bit)
-  .in('current_opcode', bus(8))
-  .out('current_state', bus(8))
-  .out('exec_subcycle', bus(8))
-  .out('pc_increment', bit)
-  .out('ir_load', bit)
-  .out('operand_load', bit)
-  .out('addr_load', bit)
-  .out('mem_read', bit)
-  .out('mem_write', bit)
-  .out('write_a', bit)
-  .out('write_x', bit)
-  .out('write_y', bit)
-  .out('is_lda_imm', bit)
-  .out('is_lda_zp', bit)
-  .out('is_sta_zp', bit)
-  .out('is_tax', bit)
-  .out('is_inx', bit)
-  .node('state_reg', Register)
-  .node('subcycle_reg', Register)
-  .node('STATE_FETCH', Constant, { value: 0 })
-  .node('STATE_DECODE', Constant, { value: 1 })
-  .node('STATE_EXECUTE', Constant, { value: 2 })
-  .node('is_fetch', Comparator)
-  .node('is_decode', Comparator)
-  .node('is_execute', Comparator)
-  .node('LDA_IMM', Constant, { value: 169 })
-  .node('LDA_ZP', Constant, { value: 165 })
-  .node('STA_ZP', Constant, { value: 133 })
-  .node('TAX', Constant, { value: 170 })
-  .node('INX', Constant, { value: 232 })
-  .node('cmp_lda_imm', Comparator)
-  .node('cmp_lda_zp', Comparator)
-  .node('cmp_sta_zp', Comparator)
-  .node('cmp_tax', Comparator)
-  .node('cmp_inx', Comparator)
-  .node('needs_operand_imm', Or)
-  .node('is_zp_mode', Or)
-  .node('is_1cycle', Or)
-  .node('zero', Constant, { value: 0 })
-  .node('one', Constant, { value: 1 })
-  .node('two', Constant, { value: 2 })
-  .node('inc_subcycle', Incrementer)
-  .node('subcycle_increment', Mux)
-  .node('always_on', Constant, { value: 1 })
-  .node('is_subcycle_0', Comparator)
-  .node('is_subcycle_1', Comparator)
-  .node('is_subcycle_2', Comparator)
-  .node('next_from_fetch', Mux)
-  .node('next_from_decode', Mux)
-  .node('exec_done_imm', And)
-  .node('exec_done_imm_check', And)
-  .node('exec_done_zp', And)
-  .node('exec_done_zp_check', And)
-  .node('exec_done_1cycle', And)
-  .node('exec_done_1cycle_check', And)
-  .node('exec_done_temp', Or)
-  .node('exec_done', Or)
-  .node('next_from_execute', Mux)
-  .node('next_state', Mux)
-  .node('exec_subcycle_0', And)
-  .node('needs_operand', Or)
-  .node('exec_subcycle_0_needs_operand', And)
-  .node('pc_inc_signal', Or)
-  .node('operand_load_signal', And)
-  .node('addr_load_signal', And)
-  .node('exec_subcycle_1', And)
-  .node('mem_read_signal', And)
-  .node('mem_write_signal', And)
-  .node('write_a_imm', And)
-  .node('exec_subcycle_2', And)
-  .node('write_a_zp', And)
-  .node('write_a_signal', Or)
-  .node('write_x_tax', And)
-  .node('write_x_inx', And)
-  .node('write_x_signal', Or)
-  .connect(({ in: inp, out, state_reg, subcycle_reg, STATE_FETCH, STATE_DECODE, STATE_EXECUTE, is_fetch, is_decode, is_execute, LDA_IMM, LDA_ZP, STA_ZP, TAX, INX, cmp_lda_imm, cmp_lda_zp, cmp_sta_zp, cmp_tax, cmp_inx, needs_operand_imm, is_zp_mode, is_1cycle, zero, one, two, inc_subcycle, subcycle_increment, always_on, is_subcycle_0, is_subcycle_1, is_subcycle_2, next_from_fetch, next_from_decode, exec_done_imm, exec_done_imm_check, exec_done_zp, exec_done_zp_check, exec_done_1cycle, exec_done_1cycle_check, exec_done_temp, exec_done, next_from_execute, next_state, exec_subcycle_0, needs_operand, exec_subcycle_0_needs_operand, pc_inc_signal, operand_load_signal, addr_load_signal, exec_subcycle_1, mem_read_signal, mem_write_signal, write_a_imm, exec_subcycle_2, write_a_zp, write_a_signal, write_x_tax, write_x_inx, write_x_signal }) => [
+const MemoryControl = component('MemoryControl', {
+  in: { reset: bit, current_opcode: bus(8) },
+  out: { current_state: bus(8), exec_subcycle: bus(8), pc_increment: bit, ir_load: bit, operand_load: bit, addr_load: bit, mem_read: bit, mem_write: bit, write_a: bit, write_x: bit, write_y: bit, is_lda_imm: bit, is_lda_zp: bit, is_sta_zp: bit, is_tax: bit, is_inx: bit },
+  nodes: { state_reg: Register, subcycle_reg: Register, STATE_FETCH: Constant, STATE_DECODE: Constant, STATE_EXECUTE: Constant, is_fetch: Comparator, is_decode: Comparator, is_execute: Comparator, LDA_IMM: Constant, LDA_ZP: Constant, STA_ZP: Constant, TAX: Constant, INX: Constant, cmp_lda_imm: Comparator, cmp_lda_zp: Comparator, cmp_sta_zp: Comparator, cmp_tax: Comparator, cmp_inx: Comparator, needs_operand_imm: Or, is_zp_mode: Or, is_1cycle: Or, zero: Constant, one: Constant, two: Constant, inc_subcycle: Incrementer, subcycle_increment: Mux, always_on: Constant, is_subcycle_0: Comparator, is_subcycle_1: Comparator, is_subcycle_2: Comparator, next_from_fetch: Mux, next_from_decode: Mux, exec_done_imm: And, exec_done_imm_check: And, exec_done_zp: And, exec_done_zp_check: And, exec_done_1cycle: And, exec_done_1cycle_check: And, exec_done_temp: Or, exec_done: Or, next_from_execute: Mux, next_state: Mux, exec_subcycle_0: And, needs_operand: Or, exec_subcycle_0_needs_operand: And, pc_inc_signal: Or, operand_load_signal: And, addr_load_signal: And, exec_subcycle_1: And, mem_read_signal: And, mem_write_signal: And, write_a_imm: And, exec_subcycle_2: And, write_a_zp: And, write_a_signal: Or, write_x_tax: And, write_x_inx: And, write_x_signal: Or },
+  nodeArgs: { STATE_FETCH: { value: 0 }, STATE_DECODE: { value: 1 }, STATE_EXECUTE: { value: 2 }, LDA_IMM: { value: 169 }, LDA_ZP: { value: 165 }, STA_ZP: { value: 133 }, TAX: { value: 170 }, INX: { value: 232 }, zero: { value: 0 }, one: { value: 1 }, two: { value: 2 }, always_on: { value: 1 } },
+  connect: ({ in: inp, out, state_reg, subcycle_reg, STATE_FETCH, STATE_DECODE, STATE_EXECUTE, is_fetch, is_decode, is_execute, LDA_IMM, LDA_ZP, STA_ZP, TAX, INX, cmp_lda_imm, cmp_lda_zp, cmp_sta_zp, cmp_tax, cmp_inx, needs_operand_imm, is_zp_mode, is_1cycle, zero, one, two, inc_subcycle, subcycle_increment, always_on, is_subcycle_0, is_subcycle_1, is_subcycle_2, next_from_fetch, next_from_decode, exec_done_imm, exec_done_imm_check, exec_done_zp, exec_done_zp_check, exec_done_1cycle, exec_done_1cycle_check, exec_done_temp, exec_done, next_from_execute, next_state, exec_subcycle_0, needs_operand, exec_subcycle_0_needs_operand, pc_inc_signal, operand_load_signal, addr_load_signal, exec_subcycle_1, mem_read_signal, mem_write_signal, write_a_imm, exec_subcycle_2, write_a_zp, write_a_signal, write_x_tax, write_x_inx, write_x_signal }) => [
     state_reg.q.to(is_fetch.a, is_decode.a, is_execute.a, next_from_fetch.in0, out.current_state),
     STATE_FETCH.out.to(is_fetch.b, next_from_execute.in1, next_state.in1),
     STATE_DECODE.out.to(is_decode.b, next_from_fetch.in1),
@@ -208,69 +111,15 @@ const MemoryControl = component('MemoryControl')
     write_x_tax.out.to(write_x_signal.a),
     write_x_inx.out.to(write_x_signal.b),
     write_x_signal.out.to(out.write_x),
-  ])
-  .build()
+  ],
+})
 
-const MemoryCPU = component('MemoryCPU')
-  .in('reset', bit)
-  .out('pc', bus(8))
-  .out('instruction', bus(8))
-  .out('operand', bus(8))
-  .out('address', bus(8))
-  .out('mem_data', bus(8))
-  .out('current_state', bus(8))
-  .out('subcycle', bus(8))
-  .out('reg_a', bus(8))
-  .out('reg_x', bus(8))
-  .node('pc_reg', Register)
-  .node('always_on', Constant, { value: 1 })
-  .node('pc_inc', Incrementer)
-  .node('zero', Constant, { value: 0 })
-  .node('one', Constant, { value: 1 })
-  .node('two', Constant, { value: 2 })
-  .node('three', Constant, { value: 3 })
-  .node('four', Constant, { value: 4 })
-  .node('five', Constant, { value: 5 })
-  .node('six', Constant, { value: 6 })
-  .node('seven', Constant, { value: 7 })
-  .node('eight', Constant, { value: 8 })
-  .node('at_0', Comparator)
-  .node('at_1', Comparator)
-  .node('at_2', Comparator)
-  .node('at_3', Comparator)
-  .node('at_4', Comparator)
-  .node('at_5', Comparator)
-  .node('at_6', Comparator)
-  .node('at_7', Comparator)
-  .node('at_8', Comparator)
-  .node('byte_0', Constant, { value: 169 })
-  .node('byte_1', Constant, { value: 66 })
-  .node('byte_2', Constant, { value: 133 })
-  .node('byte_3', Constant, { value: 16 })
-  .node('byte_4', Constant, { value: 165 })
-  .node('byte_5', Constant, { value: 16 })
-  .node('byte_6', Constant, { value: 170 })
-  .node('byte_7', Constant, { value: 232 })
-  .node('byte_8', Constant, { value: 0 })
-  .node('mux1', Mux)
-  .node('mux2', Mux)
-  .node('mux3', Mux)
-  .node('mux4', Mux)
-  .node('mux5', Mux)
-  .node('mux6', Mux)
-  .node('mux7', Mux)
-  .node('mux8', Mux)
-  .node('ir', Register)
-  .node('operand_reg', Register)
-  .node('addr_reg', Register)
-  .node('control', MemoryControl)
-  .node('pc_next', Mux)
-  .node('memory', SimpleMemory)
-  .node('registers', RegisterFile)
-  .node('inc_x', Incrementer)
-  .node('result_a', Mux)
-  .node('result_x', Mux)
-  .connect(({ in: inp, out, pc_reg, always_on, pc_inc, zero, one, two, three, four, five, six, seven, eight, at_0, at_1, at_2, at_3, at_4, at_5, at_6, at_7, at_8, byte_0, byte_1, byte_2, byte_3, byte_4, byte_5, byte_6, byte_7, byte_8, mux1, mux2, mux3, mux4, mux5, mux6, mux7, mux8, ir, operand_reg, addr_reg, control, pc_next, memory, registers, inc_x, result_a, result_x }) => [
+const MemoryCPU = component('MemoryCPU', {
+  in: { reset: bit },
+  out: { pc: bus(8), instruction: bus(8), operand: bus(8), address: bus(8), mem_data: bus(8), current_state: bus(8), subcycle: bus(8), reg_a: bus(8), reg_x: bus(8) },
+  nodes: { pc_reg: Register, always_on: Constant, pc_inc: Incrementer, zero: Constant, one: Constant, two: Constant, three: Constant, four: Constant, five: Constant, six: Constant, seven: Constant, eight: Constant, at_0: Comparator, at_1: Comparator, at_2: Comparator, at_3: Comparator, at_4: Comparator, at_5: Comparator, at_6: Comparator, at_7: Comparator, at_8: Comparator, byte_0: Constant, byte_1: Constant, byte_2: Constant, byte_3: Constant, byte_4: Constant, byte_5: Constant, byte_6: Constant, byte_7: Constant, byte_8: Constant, mux1: Mux, mux2: Mux, mux3: Mux, mux4: Mux, mux5: Mux, mux6: Mux, mux7: Mux, mux8: Mux, ir: Register, operand_reg: Register, addr_reg: Register, control: MemoryControl, pc_next: Mux, memory: SimpleMemory, registers: RegisterFile, inc_x: Incrementer, result_a: Mux, result_x: Mux },
+  nodeArgs: { always_on: { value: 1 }, zero: { value: 0 }, one: { value: 1 }, two: { value: 2 }, three: { value: 3 }, four: { value: 4 }, five: { value: 5 }, six: { value: 6 }, seven: { value: 7 }, eight: { value: 8 }, byte_0: { value: 169 }, byte_1: { value: 66 }, byte_2: { value: 133 }, byte_3: { value: 16 }, byte_4: { value: 165 }, byte_5: { value: 16 }, byte_6: { value: 170 }, byte_7: { value: 232 }, byte_8: { value: 0 } },
+  connect: ({ in: inp, out, pc_reg, always_on, pc_inc, zero, one, two, three, four, five, six, seven, eight, at_0, at_1, at_2, at_3, at_4, at_5, at_6, at_7, at_8, byte_0, byte_1, byte_2, byte_3, byte_4, byte_5, byte_6, byte_7, byte_8, mux1, mux2, mux3, mux4, mux5, mux6, mux7, mux8, ir, operand_reg, addr_reg, control, pc_next, memory, registers, inc_x, result_a, result_x }) => [
     always_on.out.to(pc_reg.we),
     pc_reg.q.to(pc_inc.in, at_0.a, at_1.a, at_2.a, at_3.a, at_4.a, at_5.a, at_6.a, at_7.a, at_8.a, pc_next.in0, out.pc),
     zero.out.to(at_0.b, registers.data_y),
@@ -331,21 +180,12 @@ const MemoryCPU = component('MemoryCPU')
     result_x.out.to(registers.data_x),
     control.current_state.to(out.current_state),
     control.exec_subcycle.to(out.subcycle),
-  ])
-  .build()
+  ],
+})
 
-const MemoryTest = component('MemoryTest')
-  .node('cpu', MemoryCPU)
-  .node('reset_input', Input)
-  .node('d_pc', HexDisplay)
-  .node('d_instruction', HexDisplay)
-  .node('d_address', HexDisplay)
-  .node('d_mem_data', HexDisplay)
-  .node('d_state', HexDisplay)
-  .node('d_subcycle', HexDisplay)
-  .node('d_a', HexDisplay)
-  .node('d_x', HexDisplay)
-  .connect(({ in: inp, out, cpu, reset_input, d_pc, d_instruction, d_address, d_mem_data, d_state, d_subcycle, d_a, d_x }) => [
+const MemoryTest = component('MemoryTest', {
+  nodes: { cpu: MemoryCPU, reset_input: Input, d_pc: HexDisplay, d_instruction: HexDisplay, d_address: HexDisplay, d_mem_data: HexDisplay, d_state: HexDisplay, d_subcycle: HexDisplay, d_a: HexDisplay, d_x: HexDisplay },
+  connect: ({ in: inp, out, cpu, reset_input, d_pc, d_instruction, d_address, d_mem_data, d_state, d_subcycle, d_a, d_x }) => [
     reset_input.out.to(cpu.reset),
     cpu.pc.to(d_pc.in),
     cpu.instruction.to(d_instruction.in),
@@ -355,5 +195,5 @@ const MemoryTest = component('MemoryTest')
     cpu.subcycle.to(d_subcycle.in),
     cpu.reg_a.to(d_a.in),
     cpu.reg_x.to(d_x.in),
-  ])
-  .build()
+  ],
+})

@@ -39,13 +39,9 @@ export function AndChallengeSection({ onPass }: AndChallengeSectionProps) {
           "Connect nand2.out to light.in.",
         ]}
         scaffold={`
-const AndFromNand = component('AndFromNand')
-  .node('A', Switch)
-  .node('B', Switch)
-  .node('nand1', Nand)
-  .node('nand2', Nand)
-  .node('light', Led)
-  .build()
+const AndFromNand = component('AndFromNand', {
+  nodes: { A: Switch, B: Switch, nand1: Nand, nand2: Nand, light: Led },
+})
 `}
         checks={[
           { description: "AND(0,0) = 0", node: "light", port: "in", expected: 0, inputs: [["A", 0], ["B", 0]] },

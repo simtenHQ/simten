@@ -28,15 +28,15 @@ describe('Narrative Component Catalog', () => {
 
   describe('catalog includes all critical primitives', () => {
     const DEFAULT_CODE = `
-const Inverter = component('Inverter')
-  .in('a', bit)
-  .out('out', bit)
-  .node('inv', Not)
-  .connect(({ in: inp, out, inv }) => [
+const Inverter = component('Inverter', {
+  in: { a: bit },
+  out: { out: bit },
+  nodes: { inv: Not },
+  connect: ({ in: inp, out, inv }) => [
     inp.a.to(inv.in),
     inv.out.to(out.out),
-  ])
-  .build()
+  ],
+})
 `;
 
     it('includes Register with correct port names (data, we, q)', () => {
@@ -85,10 +85,10 @@ const Inverter = component('Inverter')
 
   describe('catalog includes parameters and descriptions', () => {
     const DEFAULT_CODE = `
-const Test = component('Test')
-  .in('a', bit)
-  .out('out', bit)
-  .build()
+const Test = component('Test', {
+  in: { a: bit },
+  out: { out: bit },
+})
 `;
 
     it('Switch shows params syntax', () => {
@@ -112,15 +112,15 @@ const Test = component('Test')
   describe('catalog survives token budget enforcement', () => {
     it('Register port names survive enforceTokenBudget', () => {
       const DEFAULT_CODE = `
-const Inverter = component('Inverter')
-  .in('a', bit)
-  .out('out', bit)
-  .node('inv', Not)
-  .connect(({ in: inp, out, inv }) => [
+const Inverter = component('Inverter', {
+  in: { a: bit },
+  out: { out: bit },
+  nodes: { inv: Not },
+  connect: ({ in: inp, out, inv }) => [
     inp.a.to(inv.in),
     inv.out.to(out.out),
-  ])
-  .build()
+  ],
+})
 `;
 
       const narrative = buildNarrative(DEFAULT_CODE);

@@ -22,7 +22,7 @@ import {
 import { createSimulatorFromCircuit } from '../simulator/index.js';
 import { createStdLibrary } from '../std/index.js';
 import type { BuiltComponent, PortMap } from '../builder/types.js';
-import { registerEvalFunction } from '../simulator/eval-bridge.js';
+import { registerEvalFunction, registerOnTickFunction } from '../simulator/eval-bridge.js';
 
 // ============================================================================
 // Simulation handle type
@@ -342,8 +342,10 @@ function detectSequential(circuit: Circuit, library: ComponentLibrary): boolean 
  */
 function registerUserEvals(comp: BuiltComponent): void {
   const evalFn = (comp as any)._evalFn;
+  const onTickFn = (comp as any)._onTickFn;
+  const initialState = (comp as any)._initialState;
+
   if (evalFn) {
-    const initialState = (comp as any)._initialState;
     const stateKeys = initialState ? Object.keys(initialState) : undefined;
     registerEvalFunction(
       comp.name,
@@ -352,5 +354,9 @@ function registerUserEvals(comp: BuiltComponent): void {
       evalFn,
       stateKeys,
     );
+  }
+
+  if (onTickFn) {
+    registerOnTickFunction(comp.name, onTickFn, initialState);
   }
 }

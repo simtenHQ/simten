@@ -1,41 +1,12 @@
 // Auto-generated from DSL
 
-const ALU = component('ALU')
-  .in('a', bus(8))
-  .in('b', bus(8))
-  .in('op0', bit)
-  .in('op1', bit)
-  .in('op2', bit)
-  .out('result', bus(8))
-  .out('zero', bit)
-  .out('carry', bit)
-  .out('negative', bit)
-  .node('gnd', Constant, { value: 0 })
-  .node('add', Adder)
-  .node('sub', Subtractor)
-  .node('band', BusAnd)
-  .node('bor', BusOr)
-  .node('bxor', BusXor)
-  .node('bnot', BusNot)
-  .node('shl', LeftShifter)
-  .node('shr', RightShifter)
-  .node('m01', Mux, { width: 8 })
-  .node('m23', Mux, { width: 8 })
-  .node('m45', Mux, { width: 8 })
-  .node('m67', Mux, { width: 8 })
-  .node('m03', Mux, { width: 8 })
-  .node('m47', Mux, { width: 8 })
-  .node('mfinal', Mux, { width: 8 })
-  .node('split_r', Splitter8to8)
-  .node('or01', Or)
-  .node('or23', Or)
-  .node('or45', Or)
-  .node('or67', Or)
-  .node('or_lo', Or)
-  .node('or_hi', Or)
-  .node('or_all', Or)
-  .node('inv_z', Not)
-  .connect(({ in: inp, out, gnd, add, sub, band, bor, bxor, bnot, shl, shr, m01, m23, m45, m67, m03, m47, mfinal, split_r, or01, or23, or45, or67, or_lo, or_hi, or_all, inv_z }) => [
+const ALU = component('ALU', {
+  in: { a: bus(8), b: bus(8), op0: bit, op1: bit, op2: bit },
+  out: { result: bus(8), zero: bit, carry: bit, negative: bit },
+  meta: { description: "8-bit ALU — 8 operations, 3 status flags, the heart of every CPU" },
+  nodes: { gnd: Constant, add: Adder, sub: Subtractor, band: BusAnd, bor: BusOr, bxor: BusXor, bnot: BusNot, shl: LeftShifter, shr: RightShifter, m01: Mux, m23: Mux, m45: Mux, m67: Mux, m03: Mux, m47: Mux, mfinal: Mux, split_r: Splitter8to8, or01: Or, or23: Or, or45: Or, or67: Or, or_lo: Or, or_hi: Or, or_all: Or, inv_z: Not },
+  nodeArgs: { gnd: { value: 0 }, m01: { width: 8 }, m23: { width: 8 }, m45: { width: 8 }, m67: { width: 8 }, m03: { width: 8 }, m47: { width: 8 }, mfinal: { width: 8 } },
+  connect: ({ in: inp, out, gnd, add, sub, band, bor, bxor, bnot, shl, shr, m01, m23, m45, m67, m03, m47, mfinal, split_r, or01, or23, or45, or67, or_lo, or_hi, or_all, inv_z }) => [
     inp.a.to(add.a, sub.a, band.a, bor.a, bxor.a, bnot.in, shl.value, shr.value),
     inp.b.to(add.b, sub.b, band.b, bor.b, bxor.b, shl.shift, shr.shift),
     gnd.out.to(add.carry_in, sub.borrow_in),
@@ -74,23 +45,14 @@ const ALU = component('ALU')
     or_hi.out.to(or_all.b),
     or_all.out.to(inv_z.in),
     inv_z.out.to(out.zero),
-  ])
-  .build()
+  ],
+})
 
-const ALUDemo = component('ALUDemo')
-  .node('a', Input, { value: 42 })
-  .node('b', Input, { value: 13 })
-  .node('op0', Switch)
-  .node('op1', Switch)
-  .node('op2', Switch)
-  .node('alu', ALU)
-  .node('disp_a', HexDisplay)
-  .node('disp_b', HexDisplay)
-  .node('disp_result', HexDisplay)
-  .node('led_zero', Led)
-  .node('led_carry', Led)
-  .node('led_neg', Led)
-  .connect(({ in: inp, out, a, b, op0, op1, op2, alu, disp_a, disp_b, disp_result, led_zero, led_carry, led_neg }) => [
+const ALUDemo = component('ALUDemo', {
+  meta: { description: "Interactive ALU — toggle opcode switches to change operations in real time" },
+  nodes: { a: Input, b: Input, op0: Switch, op1: Switch, op2: Switch, alu: ALU, disp_a: HexDisplay, disp_b: HexDisplay, disp_result: HexDisplay, led_zero: Led, led_carry: Led, led_neg: Led },
+  nodeArgs: { a: { value: 42 }, b: { value: 13 } },
+  connect: ({ in: inp, out, a, b, op0, op1, op2, alu, disp_a, disp_b, disp_result, led_zero, led_carry, led_neg }) => [
     a.out.to(alu.a, disp_a.in),
     b.out.to(alu.b, disp_b.in),
     op0.out.to(alu.op0),
@@ -100,5 +62,5 @@ const ALUDemo = component('ALUDemo')
     alu.zero.to(led_zero.in),
     alu.carry.to(led_carry.in),
     alu.negative.to(led_neg.in),
-  ])
-  .build()
+  ],
+})

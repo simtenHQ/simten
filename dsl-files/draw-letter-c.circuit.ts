@@ -1,57 +1,9 @@
 // Auto-generated from DSL
 
-const DrawLetterC = component('DrawLetterC')
-  .node('fb1', DualPortRAM)
-  .node('fb2', DualPortRAM)
-  .node('display', Screen)
-  .node('bufferSelect', DFlipFlop)
-  .node('readDataMux', Mux)
-  .node('pixelIndex', Register, { initial: 0 })
-  .node('drawing', DFlipFlop, { initial: 1 })
-  .node('done', DFlipFlop, { initial: 0 })
-  .node('addr0', Constant, { value: 10 })
-  .node('addr1', Constant, { value: 11 })
-  .node('addr2', Constant, { value: 12 })
-  .node('addr3', Constant, { value: 13 })
-  .node('addr4', Constant, { value: 17 })
-  .node('addr5', Constant, { value: 22 })
-  .node('addr6', Constant, { value: 24 })
-  .node('addr7', Constant, { value: 32 })
-  .node('addr8', Constant, { value: 41 })
-  .node('addr9', Constant, { value: 46 })
-  .node('addr10', Constant, { value: 50 })
-  .node('addr11', Constant, { value: 51 })
-  .node('zero', Constant, { value: 0 })
-  .node('one', Constant, { value: 1 })
-  .node('twelve', Constant, { value: 12 })
-  .node('mux0', Mux)
-  .node('mux1', Mux)
-  .node('mux2', Mux)
-  .node('mux3', Mux)
-  .node('mux4', Mux)
-  .node('mux5', Mux)
-  .node('mux6', Mux)
-  .node('mux7', Mux)
-  .node('mux8', Mux)
-  .node('mux9', Mux)
-  .node('mux10', Mux)
-  .node('bit0', BitSlice, { low: 0, high: 0 })
-  .node('bit1', BitSlice, { low: 1, high: 1 })
-  .node('bit2', BitSlice, { low: 2, high: 2 })
-  .node('bit3', BitSlice, { low: 3, high: 3 })
-  .node('checkDone', Comparator)
-  .node('isDone', Not)
-  .node('shouldSetDone', And)
-  .node('notDone', Not)
-  .node('keepDrawing', And)
-  .node('indexInc', Incrementer)
-  .node('shouldIncrement', And)
-  .node('swapBuffers', Xor)
-  .node('writeEnable1', Mux)
-  .node('writeEnable2', Mux)
-  .node('statusDisplay', HexDisplay)
-  .node('doneLed', Led)
-  .connect(({ in: inp, out, fb1, fb2, display, bufferSelect, readDataMux, pixelIndex, drawing, done, addr0, addr1, addr2, addr3, addr4, addr5, addr6, addr7, addr8, addr9, addr10, addr11, zero, one, twelve, mux0, mux1, mux2, mux3, mux4, mux5, mux6, mux7, mux8, mux9, mux10, bit0, bit1, bit2, bit3, checkDone, isDone, shouldSetDone, notDone, keepDrawing, indexInc, shouldIncrement, swapBuffers, writeEnable1, writeEnable2, statusDisplay, doneLed }) => [
+const DrawLetterC = component('DrawLetterC', {
+  nodes: { fb1: DualPortRAM, fb2: DualPortRAM, display: Screen, bufferSelect: DFlipFlop, readDataMux: Mux, pixelIndex: Register, drawing: DFlipFlop, done: DFlipFlop, addr0: Constant, addr1: Constant, addr2: Constant, addr3: Constant, addr4: Constant, addr5: Constant, addr6: Constant, addr7: Constant, addr8: Constant, addr9: Constant, addr10: Constant, addr11: Constant, zero: Constant, one: Constant, twelve: Constant, mux0: Mux, mux1: Mux, mux2: Mux, mux3: Mux, mux4: Mux, mux5: Mux, mux6: Mux, mux7: Mux, mux8: Mux, mux9: Mux, mux10: Mux, bit0: BitSlice, bit1: BitSlice, bit2: BitSlice, bit3: BitSlice, checkDone: Comparator, isDone: Not, shouldSetDone: And, notDone: Not, keepDrawing: And, indexInc: Incrementer, shouldIncrement: And, swapBuffers: Xor, writeEnable1: Mux, writeEnable2: Mux, statusDisplay: HexDisplay, doneLed: Led },
+  nodeArgs: { pixelIndex: { initial: 0 }, drawing: { initial: 1 }, done: { initial: 0 }, addr0: { value: 10 }, addr1: { value: 11 }, addr2: { value: 12 }, addr3: { value: 13 }, addr4: { value: 17 }, addr5: { value: 22 }, addr6: { value: 24 }, addr7: { value: 32 }, addr8: { value: 41 }, addr9: { value: 46 }, addr10: { value: 50 }, addr11: { value: 51 }, zero: { value: 0 }, one: { value: 1 }, twelve: { value: 12 }, bit0: { low: 0, high: 0 }, bit1: { low: 1, high: 1 }, bit2: { low: 2, high: 2 }, bit3: { low: 3, high: 3 } },
+  connect: ({ in: inp, out, fb1, fb2, display, bufferSelect, readDataMux, pixelIndex, drawing, done, addr0, addr1, addr2, addr3, addr4, addr5, addr6, addr7, addr8, addr9, addr10, addr11, zero, one, twelve, mux0, mux1, mux2, mux3, mux4, mux5, mux6, mux7, mux8, mux9, mux10, bit0, bit1, bit2, bit3, checkDone, isDone, shouldSetDone, notDone, keepDrawing, indexInc, shouldIncrement, swapBuffers, writeEnable1, writeEnable2, statusDisplay, doneLed }) => [
     pixelIndex.q.to(bit0.in, bit1.in, bit2.in, bit3.in, checkDone.a, indexInc.in, statusDisplay.in),
     bit0.out.to(mux0.sel, mux1.sel, mux2.sel, mux3.sel, mux4.sel, mux5.sel),
     addr0.out.to(mux0.in0),
@@ -100,5 +52,5 @@ const DrawLetterC = component('DrawLetterC')
     fb1.outB.to(readDataMux.in0),
     fb2.outB.to(readDataMux.in1),
     readDataMux.out.to(display.dataIn),
-  ])
-  .build()
+  ],
+})

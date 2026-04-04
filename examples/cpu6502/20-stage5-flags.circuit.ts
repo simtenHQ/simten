@@ -1,23 +1,11 @@
 // Auto-generated from DSL
 
-const FlagRegister = component('FlagRegister')
-  .in('update_n', bit)
-  .in('update_z', bit)
-  .in('update_c', bit)
-  .in('update_v', bit)
-  .in('new_n', bit)
-  .in('new_z', bit)
-  .in('new_c', bit)
-  .in('new_v', bit)
-  .out('flag_n', bit)
-  .out('flag_z', bit)
-  .out('flag_c', bit)
-  .out('flag_v', bit)
-  .node('reg_n', Register, { initial: 0 })
-  .node('reg_z', Register, { initial: 0 })
-  .node('reg_c', Register, { initial: 0 })
-  .node('reg_v', Register, { initial: 0 })
-  .connect(({ in: inp, out, reg_n, reg_z, reg_c, reg_v }) => [
+const FlagRegister = component('FlagRegister', {
+  in: { update_n: bit, update_z: bit, update_c: bit, update_v: bit, new_n: bit, new_z: bit, new_c: bit, new_v: bit },
+  out: { flag_n: bit, flag_z: bit, flag_c: bit, flag_v: bit },
+  nodes: { reg_n: Register, reg_z: Register, reg_c: Register, reg_v: Register },
+  nodeArgs: { reg_n: { initial: 0 }, reg_z: { initial: 0 }, reg_c: { initial: 0 }, reg_v: { initial: 0 } },
+  connect: ({ in: inp, out, reg_n, reg_z, reg_c, reg_v }) => [
     inp.update_n.to(reg_n.we),
     inp.new_n.to(reg_n.data),
     reg_n.q.to(out.flag_n),
@@ -30,29 +18,15 @@ const FlagRegister = component('FlagRegister')
     inp.update_v.to(reg_v.we),
     inp.new_v.to(reg_v.data),
     reg_v.q.to(out.flag_v),
-  ])
-  .build()
+  ],
+})
 
-const FlagCalculator = component('FlagCalculator')
-  .in('result', bus(8))
-  .in('carry_out', bit)
-  .in('operand_a_bit7', bit)
-  .in('operand_b_bit7', bit)
-  .in('result_bit7', bit)
-  .out('calc_n', bit)
-  .out('calc_z', bit)
-  .out('calc_c', bit)
-  .out('calc_v', bit)
-  .node('const_128', Constant, { value: 128 })
-  .node('cmp_neg', Comparator)
-  .node('n_flag', Or)
-  .node('const_0', Constant, { value: 0 })
-  .node('cmp_zero', Comparator)
-  .node('xor_ab', Xor)
-  .node('xor_ar', Xor)
-  .node('not_xor_ab', Not)
-  .node('v_flag', And)
-  .connect(({ in: inp, out, const_128, cmp_neg, n_flag, const_0, cmp_zero, xor_ab, xor_ar, not_xor_ab, v_flag }) => [
+const FlagCalculator = component('FlagCalculator', {
+  in: { result: bus(8), carry_out: bit, operand_a_bit7: bit, operand_b_bit7: bit, result_bit7: bit },
+  out: { calc_n: bit, calc_z: bit, calc_c: bit, calc_v: bit },
+  nodes: { const_128: Constant, cmp_neg: Comparator, n_flag: Or, const_0: Constant, cmp_zero: Comparator, xor_ab: Xor, xor_ar: Xor, not_xor_ab: Not, v_flag: And },
+  nodeArgs: { const_128: { value: 128 }, const_0: { value: 0 } },
+  connect: ({ in: inp, out, const_128, cmp_neg, n_flag, const_0, cmp_zero, xor_ab, xor_ar, not_xor_ab, v_flag }) => [
     inp.result.to(cmp_neg.a, cmp_zero.a),
     const_128.out.to(cmp_neg.b),
     cmp_neg.gt.to(n_flag.a),
@@ -68,58 +42,28 @@ const FlagCalculator = component('FlagCalculator')
     not_xor_ab.out.to(v_flag.a),
     xor_ar.out.to(v_flag.b),
     v_flag.out.to(out.calc_v),
-  ])
-  .build()
+  ],
+})
 
-const Bit7Extractor = component('Bit7Extractor')
-  .in('value', bus(8))
-  .out('bit7', bit)
-  .node('const_128', Constant, { value: 128 })
-  .node('cmp', Comparator)
-  .node('is_gte', Or)
-  .connect(({ in: inp, out, const_128, cmp, is_gte }) => [
+const Bit7Extractor = component('Bit7Extractor', {
+  in: { value: bus(8) },
+  out: { bit7: bit },
+  nodes: { const_128: Constant, cmp: Comparator, is_gte: Or },
+  nodeArgs: { const_128: { value: 128 } },
+  connect: ({ in: inp, out, const_128, cmp, is_gte }) => [
     inp.value.to(cmp.a),
     const_128.out.to(cmp.b),
     cmp.gt.to(is_gte.a),
     cmp.eq.to(is_gte.b),
     is_gte.out.to(out.bit7),
-  ])
-  .build()
+  ],
+})
 
-const BranchCondition = component('BranchCondition')
-  .in('flag_n', bit)
-  .in('flag_z', bit)
-  .in('flag_c', bit)
-  .in('flag_v', bit)
-  .in('is_beq', bit)
-  .in('is_bne', bit)
-  .in('is_bcc', bit)
-  .in('is_bcs', bit)
-  .in('is_bmi', bit)
-  .in('is_bpl', bit)
-  .in('is_bvc', bit)
-  .in('is_bvs', bit)
-  .out('branch_taken', bit)
-  .node('beq_cond', And)
-  .node('not_z', Not)
-  .node('bne_cond', And)
-  .node('not_c', Not)
-  .node('bcc_cond', And)
-  .node('bcs_cond', And)
-  .node('bmi_cond', And)
-  .node('not_n', Not)
-  .node('bpl_cond', And)
-  .node('not_v', Not)
-  .node('bvc_cond', And)
-  .node('bvs_cond', And)
-  .node('or1', Or)
-  .node('or2', Or)
-  .node('or3', Or)
-  .node('or4', Or)
-  .node('or5', Or)
-  .node('or6', Or)
-  .node('or7', Or)
-  .connect(({ in: inp, out, beq_cond, not_z, bne_cond, not_c, bcc_cond, bcs_cond, bmi_cond, not_n, bpl_cond, not_v, bvc_cond, bvs_cond, or1, or2, or3, or4, or5, or6, or7 }) => [
+const BranchCondition = component('BranchCondition', {
+  in: { flag_n: bit, flag_z: bit, flag_c: bit, flag_v: bit, is_beq: bit, is_bne: bit, is_bcc: bit, is_bcs: bit, is_bmi: bit, is_bpl: bit, is_bvc: bit, is_bvs: bit },
+  out: { branch_taken: bit },
+  nodes: { beq_cond: And, not_z: Not, bne_cond: And, not_c: Not, bcc_cond: And, bcs_cond: And, bmi_cond: And, not_n: Not, bpl_cond: And, not_v: Not, bvc_cond: And, bvs_cond: And, or1: Or, or2: Or, or3: Or, or4: Or, or5: Or, or6: Or, or7: Or },
+  connect: ({ in: inp, out, beq_cond, not_z, bne_cond, not_c, bcc_cond, bcs_cond, bmi_cond, not_n, bpl_cond, not_v, bvc_cond, bvs_cond, or1, or2, or3, or4, or5, or6, or7 }) => [
     inp.is_beq.to(beq_cond.a),
     inp.flag_z.to(beq_cond.b, not_z.in),
     inp.is_bne.to(bne_cond.a),
@@ -151,49 +95,25 @@ const BranchCondition = component('BranchCondition')
     or6.out.to(or7.a),
     bvs_cond.out.to(or7.b),
     or7.out.to(out.branch_taken),
-  ])
-  .build()
+  ],
+})
 
-const SignedBranchAdder = component('SignedBranchAdder')
-  .in('pc', bus(8))
-  .in('offset', bus(8))
-  .out('result', bus(8))
-  .node('adder', Adder)
-  .node('zero', Constant, { value: 0 })
-  .connect(({ in: inp, out, adder, zero }) => [
+const SignedBranchAdder = component('SignedBranchAdder', {
+  in: { pc: bus(8), offset: bus(8) },
+  out: { result: bus(8) },
+  nodes: { adder: Adder, zero: Constant },
+  nodeArgs: { zero: { value: 0 } },
+  connect: ({ in: inp, out, adder, zero }) => [
     inp.pc.to(adder.a),
     inp.offset.to(adder.b),
     zero.out.to(adder.carry_in),
     adder.sum.to(out.result),
-  ])
-  .build()
+  ],
+})
 
-const FlagTest = component('FlagTest')
-  .node('flags', FlagRegister)
-  .node('calc', FlagCalculator)
-  .node('bit7_a', Bit7Extractor)
-  .node('bit7_b', Bit7Extractor)
-  .node('bit7_r', Bit7Extractor)
-  .node('branch', BranchCondition)
-  .node('result_input', Input)
-  .node('operand_a_input', Input)
-  .node('operand_b_input', Input)
-  .node('carry_input', Input)
-  .node('update_input', Input)
-  .node('beq_input', Input)
-  .node('bne_input', Input)
-  .node('bcc_input', Input)
-  .node('bcs_input', Input)
-  .node('bmi_input', Input)
-  .node('bpl_input', Input)
-  .node('bvc_input', Input)
-  .node('bvs_input', Input)
-  .node('d_n', HexDisplay)
-  .node('d_z', HexDisplay)
-  .node('d_c', HexDisplay)
-  .node('d_v', HexDisplay)
-  .node('d_branch', HexDisplay)
-  .connect(({ in: inp, out, flags, calc, bit7_a, bit7_b, bit7_r, branch, result_input, operand_a_input, operand_b_input, carry_input, update_input, beq_input, bne_input, bcc_input, bcs_input, bmi_input, bpl_input, bvc_input, bvs_input, d_n, d_z, d_c, d_v, d_branch }) => [
+const FlagTest = component('FlagTest', {
+  nodes: { flags: FlagRegister, calc: FlagCalculator, bit7_a: Bit7Extractor, bit7_b: Bit7Extractor, bit7_r: Bit7Extractor, branch: BranchCondition, result_input: Input, operand_a_input: Input, operand_b_input: Input, carry_input: Input, update_input: Input, beq_input: Input, bne_input: Input, bcc_input: Input, bcs_input: Input, bmi_input: Input, bpl_input: Input, bvc_input: Input, bvs_input: Input, d_n: HexDisplay, d_z: HexDisplay, d_c: HexDisplay, d_v: HexDisplay, d_branch: HexDisplay },
+  connect: ({ in: inp, out, flags, calc, bit7_a, bit7_b, bit7_r, branch, result_input, operand_a_input, operand_b_input, carry_input, update_input, beq_input, bne_input, bcc_input, bcs_input, bmi_input, bpl_input, bvc_input, bvs_input, d_n, d_z, d_c, d_v, d_branch }) => [
     flags.flag_n.to(branch.flag_n, d_n.in),
     flags.flag_z.to(branch.flag_z, d_z.in),
     flags.flag_c.to(branch.flag_c, d_c.in),
@@ -219,5 +139,5 @@ const FlagTest = component('FlagTest')
     bvc_input.out.to(branch.is_bvc),
     bvs_input.out.to(branch.is_bvs),
     branch.branch_taken.to(d_branch.in),
-  ])
-  .build()
+  ],
+})

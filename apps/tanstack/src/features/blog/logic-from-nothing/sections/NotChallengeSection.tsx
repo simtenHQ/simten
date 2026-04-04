@@ -41,11 +41,9 @@ NAND(1, 1) = 0`}</pre>
           "connect A.out -> gate.a\nconnect A.out -> gate.b\nconnect gate.out -> light.in",
         ]}
         scaffold={`
-const NotFromNand = component('NotFromNand')
-  .node('A', Switch)
-  .node('gate', Nand)
-  .node('light', Led)
-  .build()
+const NotFromNand = component('NotFromNand', {
+  nodes: { A: Switch, gate: Nand, light: Led },
+})
 `}
         checks={[
           { description: "NOT(0) = 1", node: "light", port: "in", expected: 1, inputs: [["A", 0]] },

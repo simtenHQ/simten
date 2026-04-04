@@ -1,57 +1,22 @@
 // Auto-generated from DSL
 
-const InstructionRegister = component('InstructionRegister')
-  .in('opcode', bus(8))
-  .in('load', bit)
-  .out('current_opcode', bus(8))
-  .node('ir', Register)
-  .connect(({ in: inp, out, ir }) => [
+const InstructionRegister = component('InstructionRegister', {
+  in: { opcode: bus(8), load: bit },
+  out: { current_opcode: bus(8) },
+  nodes: { ir: Register },
+  connect: ({ in: inp, out, ir }) => [
     inp.opcode.to(ir.data),
     inp.load.to(ir.we),
     ir.q.to(out.current_opcode),
-  ])
-  .build()
+  ],
+})
 
-const EnhancedControl = component('EnhancedControl')
-  .in('reset', bit)
-  .in('current_opcode', bus(8))
-  .out('current_state', bus(3))
-  .out('exec_subcycle', bus(3))
-  .out('pc_increment', bit)
-  .out('ir_load', bit)
-  .out('operand_load', bit)
-  .out('reg_write', bit)
-  .out('is_lda', bit)
-  .out('is_adc', bit)
-  .node('state_reg', Register)
-  .node('subcycle_reg', Register)
-  .node('STATE_FETCH', Constant, { value: 0 })
-  .node('STATE_DECODE', Constant, { value: 1 })
-  .node('STATE_EXECUTE', Constant, { value: 2 })
-  .node('is_fetch', Comparator)
-  .node('is_decode', Comparator)
-  .node('is_execute', Comparator)
-  .node('LDA_IMM', Constant, { value: 169 })
-  .node('ADC_IMM', Constant, { value: 105 })
-  .node('cmp_lda', Comparator)
-  .node('cmp_adc', Comparator)
-  .node('zero', Constant, { value: 0 })
-  .node('one', Constant, { value: 1 })
-  .node('two', Constant, { value: 2 })
-  .node('inc_subcycle', Incrementer)
-  .node('subcycle_increment', Mux)
-  .node('always_on', Constant, { value: 1 })
-  .node('is_subcycle_0', Comparator)
-  .node('is_subcycle_1', Comparator)
-  .node('next_from_fetch', Mux)
-  .node('next_from_decode', Mux)
-  .node('exec_done', And)
-  .node('next_from_execute', Mux)
-  .node('next_state', Mux)
-  .node('exec_subcycle_0', And)
-  .node('pc_inc_signal', Or)
-  .node('exec_subcycle_1', And)
-  .connect(({ in: inp, out, state_reg, subcycle_reg, STATE_FETCH, STATE_DECODE, STATE_EXECUTE, is_fetch, is_decode, is_execute, LDA_IMM, ADC_IMM, cmp_lda, cmp_adc, zero, one, two, inc_subcycle, subcycle_increment, always_on, is_subcycle_0, is_subcycle_1, next_from_fetch, next_from_decode, exec_done, next_from_execute, next_state, exec_subcycle_0, pc_inc_signal, exec_subcycle_1 }) => [
+const EnhancedControl = component('EnhancedControl', {
+  in: { reset: bit, current_opcode: bus(8) },
+  out: { current_state: bus(3), exec_subcycle: bus(3), pc_increment: bit, ir_load: bit, operand_load: bit, reg_write: bit, is_lda: bit, is_adc: bit },
+  nodes: { state_reg: Register, subcycle_reg: Register, STATE_FETCH: Constant, STATE_DECODE: Constant, STATE_EXECUTE: Constant, is_fetch: Comparator, is_decode: Comparator, is_execute: Comparator, LDA_IMM: Constant, ADC_IMM: Constant, cmp_lda: Comparator, cmp_adc: Comparator, zero: Constant, one: Constant, two: Constant, inc_subcycle: Incrementer, subcycle_increment: Mux, always_on: Constant, is_subcycle_0: Comparator, is_subcycle_1: Comparator, next_from_fetch: Mux, next_from_decode: Mux, exec_done: And, next_from_execute: Mux, next_state: Mux, exec_subcycle_0: And, pc_inc_signal: Or, exec_subcycle_1: And },
+  nodeArgs: { STATE_FETCH: { value: 0 }, STATE_DECODE: { value: 1 }, STATE_EXECUTE: { value: 2 }, LDA_IMM: { value: 169 }, ADC_IMM: { value: 105 }, zero: { value: 0 }, one: { value: 1 }, two: { value: 2 }, always_on: { value: 1 } },
+  connect: ({ in: inp, out, state_reg, subcycle_reg, STATE_FETCH, STATE_DECODE, STATE_EXECUTE, is_fetch, is_decode, is_execute, LDA_IMM, ADC_IMM, cmp_lda, cmp_adc, zero, one, two, inc_subcycle, subcycle_increment, always_on, is_subcycle_0, is_subcycle_1, next_from_fetch, next_from_decode, exec_done, next_from_execute, next_state, exec_subcycle_0, pc_inc_signal, exec_subcycle_1 }) => [
     state_reg.q.to(is_fetch.a, is_decode.a, is_execute.a, next_from_fetch.in0, out.current_state),
     STATE_FETCH.out.to(is_fetch.b, next_from_execute.in1, next_state.in1),
     STATE_DECODE.out.to(is_decode.b, next_from_fetch.in1),
@@ -81,51 +46,15 @@ const EnhancedControl = component('EnhancedControl')
     exec_subcycle_0.out.to(pc_inc_signal.b, out.operand_load),
     pc_inc_signal.out.to(out.pc_increment),
     exec_subcycle_1.out.to(out.reg_write),
-  ])
-  .build()
+  ],
+})
 
-const EnhancedCPU = component('EnhancedCPU')
-  .in('reset', bit)
-  .out('pc', bus(8))
-  .out('instruction', bus(8))
-  .out('operand', bus(8))
-  .out('current_state', bus(3))
-  .out('subcycle', bus(3))
-  .out('reg_a', bus(8))
-  .node('pc_reg', Register)
-  .node('always_on', Constant, { value: 1 })
-  .node('pc_inc', Incrementer)
-  .node('zero', Constant, { value: 0 })
-  .node('one', Constant, { value: 1 })
-  .node('two', Constant, { value: 2 })
-  .node('three', Constant, { value: 3 })
-  .node('four', Constant, { value: 4 })
-  .node('five', Constant, { value: 5 })
-  .node('at_0', Comparator)
-  .node('at_1', Comparator)
-  .node('at_2', Comparator)
-  .node('at_3', Comparator)
-  .node('at_4', Comparator)
-  .node('at_5', Comparator)
-  .node('byte_0', Constant, { value: 169 })
-  .node('byte_1', Constant, { value: 66 })
-  .node('byte_2', Constant, { value: 105 })
-  .node('byte_3', Constant, { value: 8 })
-  .node('byte_4', Constant, { value: 0 })
-  .node('byte_5', Constant, { value: 0 })
-  .node('mux1', Mux)
-  .node('mux2', Mux)
-  .node('mux3', Mux)
-  .node('mux4', Mux)
-  .node('mux5', Mux)
-  .node('ir', Register)
-  .node('operand_reg', Register)
-  .node('control', EnhancedControl)
-  .node('pc_next', Mux)
-  .node('reg_a_internal', Register)
-  .node('adder', Adder)
-  .node('result', Mux)
-  .connect(({ in: inp, out, pc_reg, always_on, pc_inc, zero, one, two, three, four, five, at_0, at_1, at_2, at_3, at_4, at_5, byte_0, byte_1, byte_2, byte_3, byte_4, byte_5, mux1, mux2, mux3, mux4, mux5, ir, operand_reg, control, pc_next, reg_a_internal, adder, result }) => [
+const EnhancedCPU = component('EnhancedCPU', {
+  in: { reset: bit },
+  out: { pc: bus(8), instruction: bus(8), operand: bus(8), current_state: bus(3), subcycle: bus(3), reg_a: bus(8) },
+  nodes: { pc_reg: Register, always_on: Constant, pc_inc: Incrementer, zero: Constant, one: Constant, two: Constant, three: Constant, four: Constant, five: Constant, at_0: Comparator, at_1: Comparator, at_2: Comparator, at_3: Comparator, at_4: Comparator, at_5: Comparator, byte_0: Constant, byte_1: Constant, byte_2: Constant, byte_3: Constant, byte_4: Constant, byte_5: Constant, mux1: Mux, mux2: Mux, mux3: Mux, mux4: Mux, mux5: Mux, ir: Register, operand_reg: Register, control: EnhancedControl, pc_next: Mux, reg_a_internal: Register, adder: Adder, result: Mux },
+  nodeArgs: { always_on: { value: 1 }, zero: { value: 0 }, one: { value: 1 }, two: { value: 2 }, three: { value: 3 }, four: { value: 4 }, five: { value: 5 }, byte_0: { value: 169 }, byte_1: { value: 66 }, byte_2: { value: 105 }, byte_3: { value: 8 }, byte_4: { value: 0 }, byte_5: { value: 0 } },
+  connect: ({ in: inp, out, pc_reg, always_on, pc_inc, zero, one, two, three, four, five, at_0, at_1, at_2, at_3, at_4, at_5, byte_0, byte_1, byte_2, byte_3, byte_4, byte_5, mux1, mux2, mux3, mux4, mux5, ir, operand_reg, control, pc_next, reg_a_internal, adder, result }) => [
     always_on.out.to(pc_reg.we),
     pc_reg.q.to(pc_inc.in, at_0.a, at_1.a, at_2.a, at_3.a, at_4.a, at_5.a, pc_next.in0, out.pc),
     zero.out.to(at_0.b, adder.carry_in),
@@ -165,19 +94,12 @@ const EnhancedCPU = component('EnhancedCPU')
     result.out.to(reg_a_internal.data),
     control.current_state.to(out.current_state),
     control.exec_subcycle.to(out.subcycle),
-  ])
-  .build()
+  ],
+})
 
-const Stage3Test = component('Stage3Test')
-  .node('cpu', EnhancedCPU)
-  .node('reset_input', Input)
-  .node('d_pc', HexDisplay)
-  .node('d_instruction', HexDisplay)
-  .node('d_operand', HexDisplay)
-  .node('d_state', HexDisplay)
-  .node('d_subcycle', HexDisplay)
-  .node('d_a', HexDisplay)
-  .connect(({ in: inp, out, cpu, reset_input, d_pc, d_instruction, d_operand, d_state, d_subcycle, d_a }) => [
+const Stage3Test = component('Stage3Test', {
+  nodes: { cpu: EnhancedCPU, reset_input: Input, d_pc: HexDisplay, d_instruction: HexDisplay, d_operand: HexDisplay, d_state: HexDisplay, d_subcycle: HexDisplay, d_a: HexDisplay },
+  connect: ({ in: inp, out, cpu, reset_input, d_pc, d_instruction, d_operand, d_state, d_subcycle, d_a }) => [
     reset_input.out.to(cpu.reset),
     cpu.pc.to(d_pc.in),
     cpu.instruction.to(d_instruction.in),
@@ -185,5 +107,5 @@ const Stage3Test = component('Stage3Test')
     cpu.current_state.to(d_state.in),
     cpu.subcycle.to(d_subcycle.in),
     cpu.reg_a.to(d_a.in),
-  ])
-  .build()
+  ],
+})

@@ -13,6 +13,7 @@ import type { NumericPortValues } from './numeric-values.js';
 import { UNINITIALIZED_VALUE } from './numeric-values.js';
 import { NumericEventQueue } from './numeric-event-queue.js';
 import { getPrimitiveEvaluator } from './primitives.js';
+import { getOnTickFunction } from './eval-bridge.js';
 import type { ClockEdges } from './primitive-interface.js';
 import { EVALUATORS, type EvalContext } from './evaluators/index.js';
 
@@ -272,7 +273,8 @@ export function updateSequentialStates(
 
     const node = circuit.flatCircuit.nodes[nodeIdx];
     const evaluator = getPrimitiveEvaluator(node.primitiveType);
-    if (!evaluator || !evaluator.updateState) continue;
+    const onTick = !evaluator?.updateState ? getOnTickFunction(node.primitiveType) : undefined;
+    if (!evaluator?.updateState && !onTick) continue;
 
     // Build inputs Map (same as evaluateNode fallback path)
     const inputs = new Map<string, BitValue | BusValue>();
@@ -324,21 +326,24 @@ export function updateSequentialStates(
 
     // Update state
     const currentState = seqState.currentState[nodeIdx];
-    const nextState = evaluator.updateState(inputs, currentState as PrimitiveState, clockEdges);
+    let nextState: PrimitiveState;
 
-    // Debug logging for sequential nodes
-    if (DEBUG_STATE_UPDATE) {
-      if (node.primitiveType === 'Register' && node.id.includes('pc_lo')) {
-        console.log(`[updateSequentialStates] ${node.id}:`);
-        console.log(`  inputs: data=${inputs.get('data')}, we=${inputs.get('we')}`);
-        console.log(`  clockEdges: ${JSON.stringify(clockEdges)}`);
-        console.log(`  currentState=${currentState}, nextState=${nextState}`);
-      } else if (node.primitiveType === 'DFlipFlop') {
-        console.log(`[updateSequentialStates] ${node.id}:`);
-        console.log(`  inputs: d=${inputs.get('d')}`);
-        console.log(`  clockEdges: ${JSON.stringify(clockEdges)}`);
-        console.log(`  currentState=${currentState}, nextState=${nextState}`);
+    if (evaluator?.updateState) {
+      // Built-in primitive path
+      nextState = evaluator.updateState(inputs, currentState as PrimitiveState, clockEdges);
+    } else if (onTick) {
+      // User-defined onTick path — build flat object from inputs + state
+      const obj: Record<string, any> = {};
+      for (const [k, v] of inputs) obj[k] = v;
+      if (currentState != null && typeof currentState === 'object' && !(currentState instanceof Map)) {
+        for (const key of onTick.stateKeys) obj[key] = (currentState as any)[key];
+      } else if (currentState != null && onTick.stateKeys.length === 1) {
+        obj[onTick.stateKeys[0]] = currentState;
       }
+      const result = onTick.fn(obj);
+      nextState = onTick.stateKeys.length === 1 ? result[onTick.stateKeys[0]] : result;
+    } else {
+      continue;
     }
 
     seqState.nextState[nodeIdx] = nextState;
