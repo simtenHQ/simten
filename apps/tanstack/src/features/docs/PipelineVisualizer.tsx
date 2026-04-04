@@ -16,43 +16,43 @@ const CircuitEmbed = lazy(() =>
   }))
 );
 
-const FULL_ADDER_DSL = `circuit HalfAdder {
-  input a: Bit
-  input b: Bit
-  output sum: Bit
-  output carry: Bit
-  impl {
-    node xor1: Xor
-    node and1: And
-    connect a -> xor1.a
-    connect b -> xor1.b
-    connect xor1.out -> sum
-    connect a -> and1.a
-    connect b -> and1.b
-    connect and1.out -> carry
-  }
-}
+const FULL_ADDER_DSL = `
+const HalfAdder = component('HalfAdder')
+  .in('a', bit)
+  .in('b', bit)
+  .out('sum', bit)
+  .out('carry', bit)
+  .node('xor1', Xor)
+  .node('and1', And)
+  .connect(({ in: inp, out, xor1, and1 }) => [
+    inp.a.to(xor1.a, and1.a),
+    inp.b.to(xor1.b, and1.b),
+    xor1.out.to(out.sum),
+    and1.out.to(out.carry),
+  ])
+  .build()
 
-circuit FullAdder {
-  input a: Bit
-  input b: Bit
-  input cin: Bit
-  output sum: Bit
-  output cout: Bit
-  impl {
-    node ha1: HalfAdder
-    node ha2: HalfAdder
-    node or1: Or
-    connect a -> ha1.a
-    connect b -> ha1.b
-    connect ha1.sum -> ha2.a
-    connect cin -> ha2.b
-    connect ha2.sum -> sum
-    connect ha1.carry -> or1.a
-    connect ha2.carry -> or1.b
-    connect or1.out -> cout
-  }
-}`;
+const FullAdder = component('FullAdder')
+  .in('a', bit)
+  .in('b', bit)
+  .in('cin', bit)
+  .out('sum', bit)
+  .out('cout', bit)
+  .node('ha1', HalfAdder)
+  .node('ha2', HalfAdder)
+  .node('or1', Or)
+  .connect(({ in: inp, out, ha1, ha2, or1 }) => [
+    inp.a.to(ha1.a),
+    inp.b.to(ha1.b),
+    ha1.sum.to(ha2.a),
+    inp.cin.to(ha2.b),
+    ha2.sum.to(out.sum),
+    ha1.carry.to(or1.a),
+    ha2.carry.to(or1.b),
+    or1.out.to(out.cout),
+  ])
+  .build()
+`;
 
 type Tab = "dsl" | "ir" | "flat" | "numeric" | "live";
 

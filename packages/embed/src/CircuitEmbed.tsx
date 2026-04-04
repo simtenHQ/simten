@@ -6,7 +6,7 @@ import { CircuitCanvas, ClockControls } from "@turing-incomplete/ui/canvas";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { ErrorDisplay } from "./components/ErrorDisplay";
 import { LoadingSkeleton } from "./components/LoadingSkeleton";
-import { generateHarnessAppended } from "@turing-incomplete/core/dsl";
+// generateHarnessAppended removed — TS builder code includes wrappers directly
 
 export interface CircuitEmbedProps {
   dsl: string;
@@ -70,10 +70,7 @@ export const CircuitEmbed = forwardRef<CircuitEmbedHandle, CircuitEmbedProps>(fu
     ? { initialMemory }
     : undefined;
 
-  const effectiveDsl = useMemo(
-    () => autoHarness ? generateHarnessAppended(dsl) : dsl,
-    [dsl, autoHarness],
-  );
+  const effectiveDsl = dsl;
 
   // Reactively detect page theme from <html> class when no explicit theme is given
   const [detectedTheme, setDetectedTheme] = useState<"light" | "dark">(() =>

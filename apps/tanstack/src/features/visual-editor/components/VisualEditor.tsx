@@ -26,7 +26,7 @@ import type { Circuit } from "@turing-incomplete/ui/editor/types";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { DSLEditor, type DSLEditorRef } from "@/features/dsl/ui/DSLEditor";
+import { TSEditor as DSLEditor, type TSEditorRef as DSLEditorRef } from "@/features/dsl/ui/TSEditor";
 import { Menu, TestTube, Bot, Download } from "lucide-react";
 import { exportVerilog } from "@turing-incomplete/core/verilog";
 import { isHarnessName } from "@turing-incomplete/core/dsl";
@@ -441,6 +441,7 @@ export function VisualEditor({ theme = "light" }: VisualEditorProps) {
             if (currentCircuit) {
               const node = currentCircuit.nodes.find(n =>
                 n.id === nodeName ||
+                n.label === nodeName ||
                 n.id.includes(`_${nodeName}_`) ||
                 n.id.endsWith(`_${nodeName}`)
               );

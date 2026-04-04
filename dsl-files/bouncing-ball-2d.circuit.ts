@@ -1,0 +1,106 @@
+// Auto-generated from DSL
+
+const BouncingBall2D = component('BouncingBall2D')
+  .node('ballX', Register, { initial: 1 })
+  .node('ballY', Register, { initial: 1 })
+  .node('prevX', Register, { initial: 1 })
+  .node('prevY', Register, { initial: 1 })
+  .node('dirX', DFlipFlop, { initial: 1 })
+  .node('dirY', DFlipFlop, { initial: 1 })
+  .node('framePhase', DFlipFlop)
+  .node('xInc', Incrementer)
+  .node('xDec', Adder)
+  .node('xNegOne', Constant, { value: 255 })
+  .node('xNext', Mux)
+  .node('yInc', Incrementer)
+  .node('yDec', Adder)
+  .node('yNegOne', Constant, { value: 255 })
+  .node('yNext', Mux)
+  .node('x3bit', BitSlice, { low: 0, high: 2 })
+  .node('y3bit', BitSlice, { low: 0, high: 2 })
+  .node('prevX3bit', BitSlice, { low: 0, high: 2 })
+  .node('prevY3bit', BitSlice, { low: 0, high: 2 })
+  .node('xZero', Constant, { value: 0 })
+  .node('xSeven', Constant, { value: 7 })
+  .node('cmpXZero', Comparator)
+  .node('cmpXSeven', Comparator)
+  .node('yZero', Constant, { value: 0 })
+  .node('ySeven', Constant, { value: 7 })
+  .node('cmpYZero', Comparator)
+  .node('cmpYSeven', Comparator)
+  .node('dirXInv', Not)
+  .node('hitXLeft', And)
+  .node('hitXRight', And)
+  .node('shouldFlipX', Or)
+  .node('flipX', Xor)
+  .node('dirYInv', Not)
+  .node('hitYTop', And)
+  .node('hitYBottom', And)
+  .node('shouldFlipY', Or)
+  .node('flipY', Xor)
+  .node('eight', Constant, { value: 8 })
+  .node('yTimes8', Multiplier)
+  .node('addr', Adder)
+  .node('prevYTimes8', Multiplier)
+  .node('prevAddr', Adder)
+  .node('addrMux', Mux)
+  .node('pixelMux', Mux)
+  .node('zero', Constant, { value: 0 })
+  .node('one', Constant, { value: 1 })
+  .node('phaseInv', Not)
+  .node('enable', Constant, { value: 1 })
+  .node('fb', DualPortRAM)
+  .node('display', Screen)
+  .connect(({ in: inp, out, ballX, ballY, prevX, prevY, dirX, dirY, framePhase, xInc, xDec, xNegOne, xNext, yInc, yDec, yNegOne, yNext, x3bit, y3bit, prevX3bit, prevY3bit, xZero, xSeven, cmpXZero, cmpXSeven, yZero, ySeven, cmpYZero, cmpYSeven, dirXInv, hitXLeft, hitXRight, shouldFlipX, flipX, dirYInv, hitYTop, hitYBottom, shouldFlipY, flipY, eight, yTimes8, addr, prevYTimes8, prevAddr, addrMux, pixelMux, zero, one, phaseInv, enable, fb, display }) => [
+    ballX.q.to(xInc.in, xDec.a, prevX.data, x3bit.in),
+    xNegOne.out.to(xDec.b),
+    flipX.out.to(xNext.sel, dirX.d),
+    xInc.out.to(xNext.in1),
+    xDec.sum.to(xNext.in0),
+    xNext.out.to(ballX.data),
+    framePhase.q.to(ballX.we, ballY.we, prevX.we, prevY.we, phaseInv.in, addrMux.sel, pixelMux.sel),
+    ballY.q.to(yInc.in, yDec.a, prevY.data, y3bit.in),
+    yNegOne.out.to(yDec.b),
+    flipY.out.to(yNext.sel, dirY.d),
+    yInc.out.to(yNext.in1),
+    yDec.sum.to(yNext.in0),
+    yNext.out.to(ballY.data),
+    prevX.q.to(prevX3bit.in),
+    prevY.q.to(prevY3bit.in),
+    x3bit.out.to(cmpXZero.a, cmpXSeven.a, addr.b),
+    xZero.out.to(cmpXZero.b),
+    xSeven.out.to(cmpXSeven.b),
+    y3bit.out.to(cmpYZero.a, cmpYSeven.a, yTimes8.a),
+    yZero.out.to(cmpYZero.b),
+    ySeven.out.to(cmpYSeven.b),
+    dirX.q.to(dirXInv.in, hitXRight.b, flipX.a),
+    cmpXZero.eq.to(hitXLeft.a),
+    dirXInv.out.to(hitXLeft.b),
+    cmpXSeven.eq.to(hitXRight.a),
+    hitXLeft.out.to(shouldFlipX.a),
+    hitXRight.out.to(shouldFlipX.b),
+    shouldFlipX.out.to(flipX.b),
+    dirY.q.to(dirYInv.in, hitYBottom.b, flipY.a),
+    cmpYZero.eq.to(hitYTop.a),
+    dirYInv.out.to(hitYTop.b),
+    cmpYSeven.eq.to(hitYBottom.a),
+    hitYTop.out.to(shouldFlipY.a),
+    hitYBottom.out.to(shouldFlipY.b),
+    shouldFlipY.out.to(flipY.b),
+    eight.out.to(yTimes8.b, prevYTimes8.b),
+    yTimes8.product.to(addr.a),
+    prevY3bit.out.to(prevYTimes8.a),
+    prevYTimes8.product.to(prevAddr.a),
+    prevX3bit.out.to(prevAddr.b),
+    phaseInv.out.to(framePhase.d),
+    prevAddr.sum.to(addrMux.in0),
+    addr.sum.to(addrMux.in1),
+    zero.out.to(pixelMux.in0),
+    one.out.to(pixelMux.in1),
+    addrMux.out.to(fb.addrA),
+    pixelMux.out.to(fb.dataA),
+    enable.out.to(fb.weA),
+    display.addrB.to(fb.addrB),
+    fb.outB.to(display.dataIn),
+  ])
+  .build()

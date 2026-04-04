@@ -48,6 +48,7 @@ export interface ParseDSLOptions {
  * The parser produces a best-effort AST with incomplete nodes marked,
  * and the validator defensively skips broken nodes.
  *
+ * @deprecated Use `executeCircuitCode()` from `@turing-incomplete/core/builder` instead.
  * @param source - DSL source code
  * @param options - Optional parse options (sourceName, componentLibrary)
  * @returns Object with AST and merged diagnostics

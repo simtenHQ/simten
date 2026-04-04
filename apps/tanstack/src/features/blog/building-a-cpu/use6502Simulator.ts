@@ -80,7 +80,7 @@ export function use6502Simulator() {
   useEffect(() => {
     if (dslCacheRef.current) return;
 
-    fetch("/blog-assets/cpu6502-system.dsl")
+    fetch("/blog-assets/cpu6502-system.circuit.ts")
       .then((res) => {
         if (!res.ok) throw new Error(`Failed to fetch DSL: ${res.status}`);
         return res.text();

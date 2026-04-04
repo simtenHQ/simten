@@ -2,18 +2,17 @@
  * Simulate Circuit Handler
  *
  * Pure function to compile and simulate a circuit.
- * Accepts already-resolved source string, returns typed result.
+ * Accepts TypeScript builder code or DSL source string.
  */
 
-import { parseDSL, compileToIR, compressTrace, detectSteadyState } from '../dsl/index.js';
-import type { SimulationTrace } from '../dsl/index.js';
 import {
   createSimulatorFromCircuit,
-  createComponentLibrary,
   TOP_LEVEL_NODE,
 } from '../simulator/index.js';
 import type { BitValue, BusValue } from '../types/circuit.js';
-import { createMutableLibrary } from './lib.js';
+import { compileSource } from './compile-source.js';
+import { compressTrace, detectSteadyState } from '../dsl/analysis/simulate.js';
+import type { SimulationTrace } from '../dsl/analysis/simulate.js';
 
 export type RLEValue = { value: BitValue | BusValue; count: number };
 
@@ -40,38 +39,21 @@ export function simulateCircuit(
     memoryData?: Map<string, Map<number, number>>;
   },
 ): SimulateResult | SimulateError {
-  const sourceName = params.sourceName ?? '<inline>';
   const ticks = params.ticks ?? 10;
 
-  // Parse
-  const { ast, errors: parseErrors } = parseDSL(params.source, sourceName);
-  if (parseErrors.length > 0) {
-    const messages = parseErrors.map(
-      (e) => `${e.location.start.line}:${e.location.start.column} ${e.message}`
-    );
-    return { error: `Parse errors:\n${messages.join('\n')}` };
-  }
-
-  // Compile
-  const { library: mutableLibrary, circuits: allCircuits } = createMutableLibrary();
-
-  let compiledCircuits: typeof allCircuits;
-  try {
-    compiledCircuits = compileToIR(ast, mutableLibrary);
-    allCircuits.push(...compiledCircuits);
-  } catch (e) {
-    return {
-      error: `Compilation error: ${e instanceof Error ? e.message : String(e)}`,
-    };
+  // Compile (auto-detects TS vs DSL)
+  const compiled = compileSource(params.source, params.sourceName);
+  if (compiled.error) {
+    return { error: compiled.error };
   }
 
   // Find target circuit
   const target = params.circuitName
-    ? compiledCircuits.find((c) => c.name === params.circuitName)
-    : compiledCircuits[compiledCircuits.length - 1];
+    ? compiled.circuits.find((c) => c.name === params.circuitName)
+    : compiled.circuits[compiled.circuits.length - 1];
 
   if (!target) {
-    const names = compiledCircuits.map((c) => c.name).join(', ');
+    const names = compiled.circuits.map((c) => c.name).join(', ');
     return {
       error: params.circuitName
         ? `Circuit "${params.circuitName}" not found. Available: ${names}`
@@ -80,8 +62,7 @@ export function simulateCircuit(
   }
 
   // Create simulator
-  const library = createComponentLibrary(allCircuits);
-  const simulator = createSimulatorFromCircuit(target, library, params.memoryData);
+  const simulator = createSimulatorFromCircuit(target, compiled.library, params.memoryData);
 
   // Set inputs
   if (params.inputs) {
@@ -110,7 +91,7 @@ export function simulateCircuit(
     }
   }
 
-  // Wrap raw signals into a SimulationTrace for compression
+  // Compress
   const trace: SimulationTrace = {
     cycles: ticks,
     signals,

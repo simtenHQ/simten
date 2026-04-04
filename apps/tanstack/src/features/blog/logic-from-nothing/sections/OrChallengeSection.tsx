@@ -39,19 +39,16 @@ export function OrChallengeSection({ onPass }: OrChallengeSectionProps) {
           "notB: connect B.out to both inputs.",
           "combine: connect notA.out to combine.a, notB.out to combine.b.",
         ]}
-        scaffold={`circuit OrFromNand {
-  impl {
-    node A: Switch
-    node B: Switch
-    node notA: Nand
-    node notB: Nand
-    node combine: Nand
-    node light: Led
-
-    // Your connections here:
-
-  }
-}`}
+        scaffold={`
+const OrFromNand = component('OrFromNand')
+  .node('A', Switch)
+  .node('B', Switch)
+  .node('notA', Nand)
+  .node('notB', Nand)
+  .node('combine', Nand)
+  .node('light', Led)
+  .build()
+`}
         checks={[
           { description: "OR(0,0) = 0", node: "light", port: "in", expected: 0, inputs: [["A", 0], ["B", 0]] },
           { description: "OR(0,1) = 1", node: "light", port: "in", expected: 1, inputs: [["A", 0], ["B", 1]] },

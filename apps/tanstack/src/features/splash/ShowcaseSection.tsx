@@ -5,35 +5,29 @@ import { CircuitCanvas } from "@turing-incomplete/ui/canvas";
 // --- Live Fibonacci circuit (auto-ticking) ---
 
 const FIBONACCI_DSL = `
-circuit Fibonacci {
-  output fib: Bus[8]
-  clock clk
-  impl {
-    node reg_a: Register
-    node reg_b: Register
-    node adder: Adder
-    node one_bit: Constant(value=1)
-    node init: DFlipFlop
-    connect one_bit.out -> init.d
-    connect init.q_bar -> adder.carry_in
-    connect reg_a.q -> adder.a
-    connect reg_b.q -> adder.b
-    connect reg_b.q -> reg_a.data
-    connect one_bit.out -> reg_a.we
-    connect adder.sum -> reg_b.data
-    connect one_bit.out -> reg_b.we
-    connect reg_b.q -> fib
-  }
-}
+const Fibonacci = component('Fibonacci')
+  .out('fib', bus(8))
+  .node('reg_a', Register)
+  .node('reg_b', Register)
+  .node('adder', Adder)
+  .node('one_bit', Constant, { value: 1 })
+  .node('init', DFlipFlop)
+  .connect(({ out, reg_a, reg_b, adder, one_bit, init }) => [
+    one_bit.out.to(init.d, reg_a.we, reg_b.we),
+    init.q_bar.to(adder.carry_in),
+    reg_a.q.to(adder.a),
+    reg_b.q.to(adder.b, reg_a.data, out.fib),
+    adder.sum.to(reg_b.data),
+  ])
+  .build()
 
-circuit FibonacciDemo {
-  clock clk
-  impl {
-    node fib: Fibonacci
-    node display: HexDisplay
-    connect fib.fib -> display.in
-  }
-}`;
+const FibonacciDemo = component('FibonacciDemo')
+  .node('fib', Fibonacci)
+  .node('display', HexDisplay)
+  .connect(({ fib, display }) => [
+    fib.fib.to(display.in),
+  ])
+  .build()`;
 
 function LiveFibonacci() {
   const sim = useCircuitSimulator(FIBONACCI_DSL);

@@ -9,15 +9,17 @@ import {
   parseDSL,
   compileToIR,
   runTestbench,
-  compressTrace,
 } from '../dsl/index.js';
-import type { ComponentLibrary, SimulationTrace } from '../dsl/index.js';
+import type { ComponentLibrary } from '../dsl/index.js';
+import { compressTrace } from '../dsl/analysis/simulate.js';
+import type { SimulationTrace } from '../dsl/analysis/simulate.js';
 import {
   createComponentLibrary,
   getPrimitives,
 } from '../simulator/index.js';
 import type { Circuit } from '../types/circuit.js';
 import type { RLEValue } from './simulate.js';
+import { compileSource } from './compile-source.js';
 
 export interface TestbenchResult {
   name: string;
@@ -46,8 +48,14 @@ export function runTestbenchHandler(
     testbenchSourceName?: string;
   },
 ): TestbenchResult[] | TestError {
-  // Build shared mutable library
-  const allCircuits: Circuit[] = [...getPrimitives()];
+  // Compile circuit source (auto-detects TS vs DSL)
+  const compiledCircuits = compileSource(params.circuitSource, params.circuitSourceName);
+  if (compiledCircuits.error) {
+    return { error: `Circuit: ${compiledCircuits.error}` };
+  }
+
+  // Build shared mutable library including compiled circuits
+  const allCircuits: Circuit[] = [...getPrimitives(), ...compiledCircuits.circuits];
   const mutableLibrary: ComponentLibrary = {
     resolveComponent: (name: string) =>
       allCircuits.find((c) => c.name === name),
@@ -60,27 +68,6 @@ export function runTestbenchHandler(
       allCircuits.push(circuit);
     },
   };
-
-  // Parse and compile circuit source
-  const { ast: circuitAst, errors: circuitParseErrors } = parseDSL(
-    params.circuitSource,
-    params.circuitSourceName ?? '<circuit>'
-  );
-  if (circuitParseErrors.length > 0) {
-    const messages = circuitParseErrors.map(
-      (e) => `${e.location.start.line}:${e.location.start.column} ${e.message}`
-    );
-    return { error: `Circuit parse errors:\n${messages.join('\n')}` };
-  }
-
-  try {
-    const circuits = compileToIR(circuitAst, mutableLibrary);
-    allCircuits.push(...circuits);
-  } catch (e) {
-    return {
-      error: `Circuit compilation error: ${e instanceof Error ? e.message : String(e)}`,
-    };
-  }
 
   // Parse and compile testbench source
   const { ast: tbAst, errors: tbParseErrors } = parseDSL(
