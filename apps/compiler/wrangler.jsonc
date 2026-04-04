@@ -28,6 +28,6 @@
       "tag": "v1"
     }
   ],
-  //   "workers_dev": false,
+  // "workers_dev": false,
   "upload_source_maps": true
 }

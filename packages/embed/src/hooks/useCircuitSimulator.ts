@@ -11,7 +11,7 @@ import {
   type FlatSequentialState,
 } from "@turing-incomplete/core/simulator";
 import type { Circuit } from "@turing-incomplete/core/dsl";
-import { useCompileDSL, type UseCompileDSLOptions } from "./useCompileDSL";
+import { useCompileCode } from "./useCompileCode";
 import { useCircuitSession } from "@turing-incomplete/ui/canvas";
 
 const TOP_LEVEL_NODE = "__top__";
@@ -63,11 +63,11 @@ export function useCircuitSimulator(
   dslCode: string,
   options?: UseCircuitSimulatorOptions,
 ): SimulatorState & SimulatorActions {
-  // ── Compilation ──
-  const compiled = useCompileDSL(dslCode, options);
+  // ── Compilation (auto-detects TypeScript vs DSL) ──
+  const compiled = useCompileCode(dslCode);
 
   // ── Simulation (via the same hook the editor uses) ──
-  const sim = useCircuitSession(compiled.circuit, compiled.componentLibrary);
+  const sim = useCircuitSession(compiled.circuit, compiled.componentLibrary, options?.initialMemory);
 
   // ── Higher-level state (outputs, inputs, toggles) ──
   const [outputs, setOutputs] = useState<Record<string, boolean | number>>({});

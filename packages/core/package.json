@@ -43,16 +43,31 @@
     "./verilog": {
       "types": "./dist/verilog/index.d.ts",
       "import": "./dist/verilog/index.js"
+    },
+    "./builder": {
+      "types": "./src/builder/index.ts",
+      "import": "./src/builder/index.ts"
+    },
+    "./std": {
+      "types": "./src/std/index.ts",
+      "import": "./src/std/index.ts"
+    },
+    "./sim": {
+      "types": "./src/sim/index.ts",
+      "import": "./src/sim/index.ts"
     }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsc -b",
     "test": "vitest run",
     "test:watch": "vitest"
   },
   "dependencies": {
-    "chevrotain": "^11.1.1"
+    "chevrotain": "^11.1.1",
+    "sucrase": "^3.35.1"
   },
   "devDependencies": {
     "@types/node": "^20",

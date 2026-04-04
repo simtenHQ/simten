@@ -26,17 +26,11 @@ function readPort(
   portName: string,
 ): number | null {
   if (!portValues) return null;
-  const suffix = `.${portName}`;
-  for (const [key, val] of portValues) {
-    if (
-      key.endsWith(suffix) &&
-      key.includes(`_${cpuLabel}_`) &&
-      key.includes(`_${nodeLabel}_`)
-    ) {
-      return typeof val === "number" ? (val >>> 0) : null;
-    }
-  }
-  return null;
+  // Try hierarchical key: "cpuLabel.nodeLabel.portName"
+  const val = portValues.get(`${cpuLabel}.${nodeLabel}.${portName}`)
+    ?? portValues.get(`${nodeLabel}.${portName}`);
+  if (val === undefined) return null;
+  return typeof val === "number" ? (val >>> 0) : null;
 }
 
 function extractRegisters(
@@ -132,7 +126,7 @@ export function useRV32IDualCPU() {
   // Fetch DSL once
   useEffect(() => {
     if (dslCacheRef.current) return;
-    fetch("/blog-assets/rv32i-dual-cpu.dsl")
+    fetch("/blog-assets/rv32i-dual-cpu.circuit.ts")
       .then((r) => {
         if (!r.ok) throw new Error(`Failed to fetch DSL: ${r.status}`);
         return r.text();

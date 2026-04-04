@@ -11,6 +11,7 @@ import { TOP_LEVEL_NODE } from '../types/simulator.js';
 import type { NumericCircuit, NumericSequentialState } from './numeric-types.js';
 import { PRIMITIVE_TYPE_INDICES } from './numeric-types.js';
 import { PRIMITIVE_DEFINITIONS } from './primitives.js';
+import { resolveTypeIndex } from './eval-bridge.js';
 
 /**
  * Compile a FlatCircuit to a NumericCircuit for fast simulation.
@@ -149,8 +150,11 @@ export function compileForSimulation(
 
   for (let i = 0; i < nodeCount; i++) {
     const node = flatCircuit.nodes[i];
-    const typeIdx = PRIMITIVE_TYPE_INDICES[node.primitiveType];
-    primitiveTypeIndex[i] = typeIdx !== undefined ? typeIdx : 255; // 255 = unknown
+    // Check static indices first, then dynamic (user-defined components)
+    const typeIdx = PRIMITIVE_TYPE_INDICES[node.primitiveType]
+      ?? resolveTypeIndex(node.primitiveType)
+      ?? 255; // 255 = unknown
+    primitiveTypeIndex[i] = typeIdx;
   }
 
   // ============================================================================

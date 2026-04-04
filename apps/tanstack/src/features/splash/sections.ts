@@ -23,17 +23,17 @@ export const SECTIONS: SectionDef[] = [
     hint: "Click the inputs to toggle them",
     align: "right",
     dsl: `
-circuit NandDemo {
-  impl {
-    node in_a: Switch
-    node in_b: Switch
-    node gate: Nand
-    node out: Led
-    connect in_a.out -> gate.a
-    connect in_b.out -> gate.b
-    connect gate.out -> out.in
-  }
-}`,
+const NandDemo = component('NandDemo')
+  .node('in_a', Switch)
+  .node('in_b', Switch)
+  .node('gate', Nand)
+  .node('out', Led)
+  .connect(({ in_a, in_b, gate, out }) => [
+    in_a.out.to(gate.a),
+    in_b.out.to(gate.b),
+    gate.out.to(out.in),
+  ])
+  .build()`,
   },
   {
     id: "not",
@@ -43,16 +43,15 @@ circuit NandDemo {
       "Connect both inputs of a NAND to the same signal. Now 1 becomes 0, and 0 becomes 1. We've built an inverter.",
     align: "left",
     dsl: `
-circuit NotDemo {
-  impl {
-    node sw_in: Switch
-    node gate: Nand
-    node out: Led
-    connect sw_in.out -> gate.a
-    connect sw_in.out -> gate.b
-    connect gate.out -> out.in
-  }
-}`,
+const NotDemo = component('NotDemo')
+  .node('sw_in', Switch)
+  .node('gate', Nand)
+  .node('out', Led)
+  .connect(({ sw_in, gate, out }) => [
+    sw_in.out.to(gate.a, gate.b),
+    gate.out.to(out.in),
+  ])
+  .build()`,
   },
   {
     id: "and",
@@ -62,20 +61,19 @@ circuit NotDemo {
       "NAND gives us the opposite of AND. So put a NOT after it. Two NANDs working together give us AND logic.",
     align: "right",
     dsl: `
-circuit AndDemo {
-  impl {
-    node in_a: Switch
-    node in_b: Switch
-    node nand1: Nand
-    node nand2: Nand
-    node out: Led
-    connect in_a.out -> nand1.a
-    connect in_b.out -> nand1.b
-    connect nand1.out -> nand2.a
-    connect nand1.out -> nand2.b
-    connect nand2.out -> out.in
-  }
-}`,
+const AndDemo = component('AndDemo')
+  .node('in_a', Switch)
+  .node('in_b', Switch)
+  .node('nand1', Nand)
+  .node('nand2', Nand)
+  .node('out', Led)
+  .connect(({ in_a, in_b, nand1, nand2, out }) => [
+    in_a.out.to(nand1.a),
+    in_b.out.to(nand1.b),
+    nand1.out.to(nand2.a, nand2.b),
+    nand2.out.to(out.in),
+  ])
+  .build()`,
   },
   {
     id: "or",
@@ -85,23 +83,21 @@ circuit AndDemo {
       "Invert each input, then NAND them together. Output is 1 when either input is 1. Three NANDs make an OR gate.",
     align: "left",
     dsl: `
-circuit OrDemo {
-  impl {
-    node in_a: Switch
-    node in_b: Switch
-    node not_a: Nand
-    node not_b: Nand
-    node or_out: Nand
-    node out: Led
-    connect in_a.out -> not_a.a
-    connect in_a.out -> not_a.b
-    connect in_b.out -> not_b.a
-    connect in_b.out -> not_b.b
-    connect not_a.out -> or_out.a
-    connect not_b.out -> or_out.b
-    connect or_out.out -> out.in
-  }
-}`,
+const OrDemo = component('OrDemo')
+  .node('in_a', Switch)
+  .node('in_b', Switch)
+  .node('not_a', Nand)
+  .node('not_b', Nand)
+  .node('or_out', Nand)
+  .node('out', Led)
+  .connect(({ in_a, in_b, not_a, not_b, or_out, out }) => [
+    in_a.out.to(not_a.a, not_a.b),
+    in_b.out.to(not_b.a, not_b.b),
+    not_a.out.to(or_out.a),
+    not_b.out.to(or_out.b),
+    or_out.out.to(out.in),
+  ])
+  .build()`,
   },
   {
     id: "xor",
@@ -111,26 +107,23 @@ circuit OrDemo {
       "XOR outputs 1 when inputs are different. It's trickier to build, but still just four NANDs arranged cleverly.",
     align: "right",
     dsl: `
-circuit XorDemo {
-  impl {
-    node in_a: Switch
-    node in_b: Switch
-    node nand1: Nand
-    node nand2: Nand
-    node nand3: Nand
-    node nand4: Nand
-    node out: Led
-    connect in_a.out -> nand1.a
-    connect in_b.out -> nand1.b
-    connect in_a.out -> nand2.a
-    connect nand1.out -> nand2.b
-    connect nand1.out -> nand3.a
-    connect in_b.out -> nand3.b
-    connect nand2.out -> nand4.a
-    connect nand3.out -> nand4.b
-    connect nand4.out -> out.in
-  }
-}`,
+const XorDemo = component('XorDemo')
+  .node('in_a', Switch)
+  .node('in_b', Switch)
+  .node('nand1', Nand)
+  .node('nand2', Nand)
+  .node('nand3', Nand)
+  .node('nand4', Nand)
+  .node('out', Led)
+  .connect(({ in_a, in_b, nand1, nand2, nand3, nand4, out }) => [
+    in_a.out.to(nand1.a, nand2.a),
+    in_b.out.to(nand1.b, nand3.b),
+    nand1.out.to(nand2.b, nand3.a),
+    nand2.out.to(nand4.a),
+    nand3.out.to(nand4.b),
+    nand4.out.to(out.in),
+  ])
+  .build()`,
   },
   {
     id: "half-adder",
@@ -141,22 +134,20 @@ circuit XorDemo {
     hint: "Try: 0+0=00, 0+1=01, 1+0=01, 1+1=10",
     align: "left",
     dsl: `
-circuit HalfAdderDemo {
-  impl {
-    node in_a: Switch
-    node in_b: Switch
-    node xor1: Xor
-    node and1: And
-    node sum: Led
-    node carry: Led
-    connect in_a.out -> xor1.a
-    connect in_b.out -> xor1.b
-    connect in_a.out -> and1.a
-    connect in_b.out -> and1.b
-    connect xor1.out -> sum.in
-    connect and1.out -> carry.in
-  }
-}`,
+const HalfAdderDemo = component('HalfAdderDemo')
+  .node('in_a', Switch)
+  .node('in_b', Switch)
+  .node('xor1', Xor)
+  .node('and1', And)
+  .node('sum', Led)
+  .node('carry', Led)
+  .connect(({ in_a, in_b, xor1, and1, sum, carry }) => [
+    in_a.out.to(xor1.a, and1.a),
+    in_b.out.to(xor1.b, and1.b),
+    xor1.out.to(sum.in),
+    and1.out.to(carry.in),
+  ])
+  .build()`,
   },
   {
     id: "full-adder",
@@ -167,43 +158,41 @@ circuit HalfAdderDemo {
     hint: "Three inputs: A, B, and Carry-in",
     align: "right",
     dsl: `
-circuit HalfAdder4 {
-  input a: Bit
-  input b: Bit
-  output sum: Bit
-  output carry: Bit
-  impl {
-    node xor1: Xor
-    node and1: And
-    connect a -> xor1.a
-    connect b -> xor1.b
-    connect xor1.out -> sum
-    connect a -> and1.a
-    connect b -> and1.b
-    connect and1.out -> carry
-  }
-}
+const HalfAdder4 = component('HalfAdder4')
+  .in('a', bit)
+  .in('b', bit)
+  .out('sum', bit)
+  .out('carry', bit)
+  .node('xor1', Xor)
+  .node('and1', And)
+  .connect(({ in: inp, out, xor1, and1 }) => [
+    inp.a.to(xor1.a, and1.a),
+    inp.b.to(xor1.b, and1.b),
+    xor1.out.to(out.sum),
+    and1.out.to(out.carry),
+  ])
+  .build()
 
-circuit FullAdderDemo {
-  impl {
-    node in_a: Switch
-    node in_b: Switch
-    node in_cin: Switch
-    node ha1: HalfAdder4
-    node ha2: HalfAdder4
-    node or1: Or
-    node sum: Led
-    node cout: Led
-    connect in_a.out -> ha1.a
-    connect in_b.out -> ha1.b
-    connect ha1.sum -> ha2.a
-    connect in_cin.out -> ha2.b
-    connect ha2.sum -> sum.in
-    connect ha1.carry -> or1.a
-    connect ha2.carry -> or1.b
-    connect or1.out -> cout.in
-  }
-}`,
+const FullAdderDemo = component('FullAdderDemo')
+  .node('in_a', Switch)
+  .node('in_b', Switch)
+  .node('in_cin', Switch)
+  .node('ha1', HalfAdder4)
+  .node('ha2', HalfAdder4)
+  .node('or1', Or)
+  .node('sum', Led)
+  .node('cout', Led)
+  .connect(({ in_a, in_b, in_cin, ha1, ha2, or1, sum, cout }) => [
+    in_a.out.to(ha1.a),
+    in_b.out.to(ha1.b),
+    ha1.sum.to(ha2.a),
+    in_cin.out.to(ha2.b),
+    ha2.sum.to(sum.in),
+    ha1.carry.to(or1.a),
+    ha2.carry.to(or1.b),
+    or1.out.to(cout.in),
+  ])
+  .build()`,
   },
   {
     id: "memory",
@@ -214,16 +203,14 @@ circuit FullAdderDemo {
     hint: "Set input, then click Tick to capture",
     align: "left",
     dsl: `
-circuit MemoryDemo {
-  clock clk
-  impl {
-    node sw_in: Switch
-    node dff: DFlipFlop
-    node stored: Led
-    connect clk -> dff.clk
-    connect sw_in.out -> dff.d
-    connect dff.q -> stored.in
-  }
-}`,
+const MemoryDemo = component('MemoryDemo')
+  .node('sw_in', Switch)
+  .node('dff', DFlipFlop)
+  .node('stored', Led)
+  .connect(({ sw_in, dff, stored }) => [
+    sw_in.out.to(dff.d),
+    dff.q.to(stored.in),
+  ])
+  .build()`,
   },
 ];

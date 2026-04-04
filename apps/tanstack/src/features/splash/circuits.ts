@@ -2,8 +2,8 @@
  * Demo circuits for the splash page.
  *
  * Each circuit has:
- * - displayDsl: The circuit definition shown to users
- * - dsl: Full DSL including wrapper with Switch/LED nodes for simulation
+ * - displayCode: The circuit definition shown to users (TS builder syntax)
+ * - code: Full TS code including wrapper with Switch/LED nodes for simulation
  */
 
 export interface CircuitDefinition {
@@ -17,457 +17,404 @@ export const CIRCUITS: Record<string, CircuitDefinition> = {
   inverter: {
     name: "NOT Gate",
     description: "Inverts the input signal",
-    displayDsl: `circuit Not {
-  input a: Bit
-  output out: Bit
-  impl {
-    node nand1: Nand
-    connect a -> nand1.a
-    connect a -> nand1.b
-    connect nand1.out -> out
-  }
-}`,
-    // Use unique name "NotGate" to avoid conflict with primitive "Not"
+    displayDsl: `const NotGate = component('NotGate')
+  .in('a', bit)
+  .out('out', bit)
+  .node('nand1', Nand)
+  .connect(({ in: inp, out, nand1 }) => [
+    inp.a.to(nand1.a, nand1.b),
+    nand1.out.to(out.out),
+  ])
+  .build()`,
     dsl: `
-circuit NotGate {
-  input a: Bit
-  output out: Bit
-  impl {
-    node nand1: Nand
-    connect a -> nand1.a
-    connect a -> nand1.b
-    connect nand1.out -> out
-  }
-}
+const NotGate = component('NotGate')
+  .in('a', bit)
+  .out('out', bit)
+  .node('nand1', Nand)
+  .connect(({ in: inp, out, nand1 }) => [
+    inp.a.to(nand1.a, nand1.b),
+    nand1.out.to(out.out),
+  ])
+  .build()
 
-circuit DemoNot {
-  impl {
-    node sw_a: Switch
-    node dut: NotGate
-    node led_out: Led
-    connect sw_a.out -> dut.a
-    connect dut.out -> led_out.in
-  }
-}`,
+const DemoNot = component('DemoNot')
+  .node('sw_a', Switch)
+  .node('dut', NotGate)
+  .node('led_out', Led)
+  .connect(({ sw_a, dut, led_out }) => [
+    sw_a.out.to(dut.a),
+    dut.out.to(led_out.in),
+  ])
+  .build()`,
   },
 
   and: {
     name: "AND Gate",
     description: "Output is 1 only when both inputs are 1",
-    displayDsl: `circuit And {
-  input a: Bit
-  input b: Bit
-  output out: Bit
-  impl {
-    node nand1: Nand
-    node nand2: Nand
-    connect a -> nand1.a
-    connect b -> nand1.b
-    connect nand1.out -> nand2.a
-    connect nand1.out -> nand2.b
-    connect nand2.out -> out
-  }
-}`,
+    displayDsl: `const AndGate = component('AndGate')
+  .in('a', bit)
+  .in('b', bit)
+  .out('out', bit)
+  .node('nand1', Nand)
+  .node('nand2', Nand)
+  .connect(({ in: inp, out, nand1, nand2 }) => [
+    inp.a.to(nand1.a),
+    inp.b.to(nand1.b),
+    nand1.out.to(nand2.a, nand2.b),
+    nand2.out.to(out.out),
+  ])
+  .build()`,
     dsl: `
-circuit And {
-  input a: Bit
-  input b: Bit
-  output out: Bit
-  impl {
-    node nand1: Nand
-    node nand2: Nand
-    connect a -> nand1.a
-    connect b -> nand1.b
-    connect nand1.out -> nand2.a
-    connect nand1.out -> nand2.b
-    connect nand2.out -> out
-  }
-}
+const AndGate = component('AndGate')
+  .in('a', bit)
+  .in('b', bit)
+  .out('out', bit)
+  .node('nand1', Nand)
+  .node('nand2', Nand)
+  .connect(({ in: inp, out, nand1, nand2 }) => [
+    inp.a.to(nand1.a),
+    inp.b.to(nand1.b),
+    nand1.out.to(nand2.a, nand2.b),
+    nand2.out.to(out.out),
+  ])
+  .build()
 
-circuit DemoAnd {
-  impl {
-    node sw_a: Switch
-    node sw_b: Switch
-    node dut: And
-    node led_out: Led
-    connect sw_a.out -> dut.a
-    connect sw_b.out -> dut.b
-    connect dut.out -> led_out.in
-  }
-}`,
+const DemoAnd = component('DemoAnd')
+  .node('sw_a', Switch)
+  .node('sw_b', Switch)
+  .node('dut', AndGate)
+  .node('led_out', Led)
+  .connect(({ sw_a, sw_b, dut, led_out }) => [
+    sw_a.out.to(dut.a),
+    sw_b.out.to(dut.b),
+    dut.out.to(led_out.in),
+  ])
+  .build()`,
   },
 
   or: {
     name: "OR Gate",
     description: "Output is 1 when either input is 1",
-    displayDsl: `circuit Or {
-  input a: Bit
-  input b: Bit
-  output out: Bit
-  impl {
-    node not_a: Nand
-    node not_b: Nand
-    node or_out: Nand
-    connect a -> not_a.a
-    connect a -> not_a.b
-    connect b -> not_b.a
-    connect b -> not_b.b
-    connect not_a.out -> or_out.a
-    connect not_b.out -> or_out.b
-    connect or_out.out -> out
-  }
-}`,
+    displayDsl: `const OrGate = component('OrGate')
+  .in('a', bit)
+  .in('b', bit)
+  .out('out', bit)
+  .node('not_a', Nand)
+  .node('not_b', Nand)
+  .node('or_out', Nand)
+  .connect(({ in: inp, out, not_a, not_b, or_out }) => [
+    inp.a.to(not_a.a, not_a.b),
+    inp.b.to(not_b.a, not_b.b),
+    not_a.out.to(or_out.a),
+    not_b.out.to(or_out.b),
+    or_out.out.to(out.out),
+  ])
+  .build()`,
     dsl: `
-circuit Or {
-  input a: Bit
-  input b: Bit
-  output out: Bit
-  impl {
-    node not_a: Nand
-    node not_b: Nand
-    node or_out: Nand
-    connect a -> not_a.a
-    connect a -> not_a.b
-    connect b -> not_b.a
-    connect b -> not_b.b
-    connect not_a.out -> or_out.a
-    connect not_b.out -> or_out.b
-    connect or_out.out -> out
-  }
-}
+const OrGate = component('OrGate')
+  .in('a', bit)
+  .in('b', bit)
+  .out('out', bit)
+  .node('not_a', Nand)
+  .node('not_b', Nand)
+  .node('or_out', Nand)
+  .connect(({ in: inp, out, not_a, not_b, or_out }) => [
+    inp.a.to(not_a.a, not_a.b),
+    inp.b.to(not_b.a, not_b.b),
+    not_a.out.to(or_out.a),
+    not_b.out.to(or_out.b),
+    or_out.out.to(out.out),
+  ])
+  .build()
 
-circuit DemoOr {
-  impl {
-    node sw_a: Switch
-    node sw_b: Switch
-    node dut: Or
-    node led_out: Led
-    connect sw_a.out -> dut.a
-    connect sw_b.out -> dut.b
-    connect dut.out -> led_out.in
-  }
-}`,
+const DemoOr = component('DemoOr')
+  .node('sw_a', Switch)
+  .node('sw_b', Switch)
+  .node('dut', OrGate)
+  .node('led_out', Led)
+  .connect(({ sw_a, sw_b, dut, led_out }) => [
+    sw_a.out.to(dut.a),
+    sw_b.out.to(dut.b),
+    dut.out.to(led_out.in),
+  ])
+  .build()`,
   },
 
   xor: {
     name: "XOR Gate",
     description: "Output is 1 when inputs are different",
-    displayDsl: `circuit Xor {
-  input a: Bit
-  input b: Bit
-  output out: Bit
-  impl {
-    node nand1: Nand
-    node nand2: Nand
-    node nand3: Nand
-    node nand4: Nand
-    connect a -> nand1.a
-    connect b -> nand1.b
-    connect a -> nand2.a
-    connect nand1.out -> nand2.b
-    connect nand1.out -> nand3.a
-    connect b -> nand3.b
-    connect nand2.out -> nand4.a
-    connect nand3.out -> nand4.b
-    connect nand4.out -> out
-  }
-}`,
+    displayDsl: `const XorGate = component('XorGate')
+  .in('a', bit)
+  .in('b', bit)
+  .out('out', bit)
+  .node('nand1', Nand)
+  .node('nand2', Nand)
+  .node('nand3', Nand)
+  .node('nand4', Nand)
+  .connect(({ in: inp, out, nand1, nand2, nand3, nand4 }) => [
+    inp.a.to(nand1.a, nand2.a),
+    inp.b.to(nand1.b, nand3.b),
+    nand1.out.to(nand2.b, nand3.a),
+    nand2.out.to(nand4.a),
+    nand3.out.to(nand4.b),
+    nand4.out.to(out.out),
+  ])
+  .build()`,
     dsl: `
-circuit Xor {
-  input a: Bit
-  input b: Bit
-  output out: Bit
-  impl {
-    node nand1: Nand
-    node nand2: Nand
-    node nand3: Nand
-    node nand4: Nand
-    connect a -> nand1.a
-    connect b -> nand1.b
-    connect a -> nand2.a
-    connect nand1.out -> nand2.b
-    connect nand1.out -> nand3.a
-    connect b -> nand3.b
-    connect nand2.out -> nand4.a
-    connect nand3.out -> nand4.b
-    connect nand4.out -> out
-  }
-}
+const XorGate = component('XorGate')
+  .in('a', bit)
+  .in('b', bit)
+  .out('out', bit)
+  .node('nand1', Nand)
+  .node('nand2', Nand)
+  .node('nand3', Nand)
+  .node('nand4', Nand)
+  .connect(({ in: inp, out, nand1, nand2, nand3, nand4 }) => [
+    inp.a.to(nand1.a, nand2.a),
+    inp.b.to(nand1.b, nand3.b),
+    nand1.out.to(nand2.b, nand3.a),
+    nand2.out.to(nand4.a),
+    nand3.out.to(nand4.b),
+    nand4.out.to(out.out),
+  ])
+  .build()
 
-circuit DemoXor {
-  impl {
-    node sw_a: Switch
-    node sw_b: Switch
-    node dut: Xor
-    node led_out: Led
-    connect sw_a.out -> dut.a
-    connect sw_b.out -> dut.b
-    connect dut.out -> led_out.in
-  }
-}`,
+const DemoXor = component('DemoXor')
+  .node('sw_a', Switch)
+  .node('sw_b', Switch)
+  .node('dut', XorGate)
+  .node('led_out', Led)
+  .connect(({ sw_a, sw_b, dut, led_out }) => [
+    sw_a.out.to(dut.a),
+    sw_b.out.to(dut.b),
+    dut.out.to(led_out.in),
+  ])
+  .build()`,
   },
 
   halfAdder: {
     name: "Half Adder",
     description: "Adds two bits, outputs sum and carry",
-    displayDsl: `circuit HalfAdder {
-  input a: Bit
-  input b: Bit
-  output sum: Bit
-  output carry: Bit
-  impl {
-    node xor1: Xor
-    node and1: And
-    connect a -> xor1.a
-    connect b -> xor1.b
-    connect xor1.out -> sum
-    connect a -> and1.a
-    connect b -> and1.b
-    connect and1.out -> carry
-  }
-}`,
+    displayDsl: `const HalfAdder = component('HalfAdder')
+  .in('a', bit)
+  .in('b', bit)
+  .out('sum', bit)
+  .out('carry', bit)
+  .node('xor1', Xor)
+  .node('and1', And)
+  .connect(({ in: inp, out, xor1, and1 }) => [
+    inp.a.to(xor1.a, and1.a),
+    inp.b.to(xor1.b, and1.b),
+    xor1.out.to(out.sum),
+    and1.out.to(out.carry),
+  ])
+  .build()`,
     dsl: `
-circuit HalfAdder {
-  input a: Bit
-  input b: Bit
-  output sum: Bit
-  output carry: Bit
-  impl {
-    node xor1: Xor
-    node and1: And
-    connect a -> xor1.a
-    connect b -> xor1.b
-    connect xor1.out -> sum
-    connect a -> and1.a
-    connect b -> and1.b
-    connect and1.out -> carry
-  }
-}
+const HalfAdder = component('HalfAdder')
+  .in('a', bit)
+  .in('b', bit)
+  .out('sum', bit)
+  .out('carry', bit)
+  .node('xor1', Xor)
+  .node('and1', And)
+  .connect(({ in: inp, out, xor1, and1 }) => [
+    inp.a.to(xor1.a, and1.a),
+    inp.b.to(xor1.b, and1.b),
+    xor1.out.to(out.sum),
+    and1.out.to(out.carry),
+  ])
+  .build()
 
-circuit DemoHalfAdder {
-  impl {
-    node sw_a: Switch
-    node sw_b: Switch
-    node dut: HalfAdder
-    node led_sum: Led
-    node led_carry: Led
-    connect sw_a.out -> dut.a
-    connect sw_b.out -> dut.b
-    connect dut.sum -> led_sum.in
-    connect dut.carry -> led_carry.in
-  }
-}`,
+const DemoHalfAdder = component('DemoHalfAdder')
+  .node('sw_a', Switch)
+  .node('sw_b', Switch)
+  .node('dut', HalfAdder)
+  .node('led_sum', Led)
+  .node('led_carry', Led)
+  .connect(({ sw_a, sw_b, dut, led_sum, led_carry }) => [
+    sw_a.out.to(dut.a),
+    sw_b.out.to(dut.b),
+    dut.sum.to(led_sum.in),
+    dut.carry.to(led_carry.in),
+  ])
+  .build()`,
   },
 
   fullAdder: {
     name: "Full Adder",
     description: "Adds three bits (a, b, carry-in)",
-    displayDsl: `circuit FullAdder {
-  input a: Bit
-  input b: Bit
-  input cin: Bit
-  output sum: Bit
-  output cout: Bit
-  impl {
-    node ha1: HalfAdder
-    node ha2: HalfAdder
-    node or1: Or
-    connect a -> ha1.a
-    connect b -> ha1.b
-    connect ha1.sum -> ha2.a
-    connect cin -> ha2.b
-    connect ha2.sum -> sum
-    connect ha1.carry -> or1.a
-    connect ha2.carry -> or1.b
-    connect or1.out -> cout
-  }
-}`,
-    // Include HalfAdder and Or dependencies so it's self-contained
+    displayDsl: `const FullAdder = component('FullAdder')
+  .in('a', bit)
+  .in('b', bit)
+  .in('cin', bit)
+  .out('sum', bit)
+  .out('cout', bit)
+  .node('ha1', HalfAdder)
+  .node('ha2', HalfAdder)
+  .node('or1', Or)
+  .connect(({ in: inp, out, ha1, ha2, or1 }) => [
+    inp.a.to(ha1.a),
+    inp.b.to(ha1.b),
+    ha1.sum.to(ha2.a),
+    inp.cin.to(ha2.b),
+    ha2.sum.to(out.sum),
+    ha1.carry.to(or1.a),
+    ha2.carry.to(or1.b),
+    or1.out.to(out.cout),
+  ])
+  .build()`,
     dsl: `
-circuit HalfAdder {
-  input a: Bit
-  input b: Bit
-  output sum: Bit
-  output carry: Bit
-  impl {
-    node xor1: Xor
-    node and1: And
-    connect a -> xor1.a
-    connect b -> xor1.b
-    connect xor1.out -> sum
-    connect a -> and1.a
-    connect b -> and1.b
-    connect and1.out -> carry
-  }
-}
+const HalfAdder = component('HalfAdder')
+  .in('a', bit)
+  .in('b', bit)
+  .out('sum', bit)
+  .out('carry', bit)
+  .node('xor1', Xor)
+  .node('and1', And)
+  .connect(({ in: inp, out, xor1, and1 }) => [
+    inp.a.to(xor1.a, and1.a),
+    inp.b.to(xor1.b, and1.b),
+    xor1.out.to(out.sum),
+    and1.out.to(out.carry),
+  ])
+  .build()
 
-circuit Or {
-  input a: Bit
-  input b: Bit
-  output out: Bit
-  impl {
-    node not_a: Nand
-    node not_b: Nand
-    node or_out: Nand
-    connect a -> not_a.a
-    connect a -> not_a.b
-    connect b -> not_b.a
-    connect b -> not_b.b
-    connect not_a.out -> or_out.a
-    connect not_b.out -> or_out.b
-    connect or_out.out -> out
-  }
-}
+const FullAdder = component('FullAdder')
+  .in('a', bit)
+  .in('b', bit)
+  .in('cin', bit)
+  .out('sum', bit)
+  .out('cout', bit)
+  .node('ha1', HalfAdder)
+  .node('ha2', HalfAdder)
+  .node('or1', Or)
+  .connect(({ in: inp, out, ha1, ha2, or1 }) => [
+    inp.a.to(ha1.a),
+    inp.b.to(ha1.b),
+    ha1.sum.to(ha2.a),
+    inp.cin.to(ha2.b),
+    ha2.sum.to(out.sum),
+    ha1.carry.to(or1.a),
+    ha2.carry.to(or1.b),
+    or1.out.to(out.cout),
+  ])
+  .build()
 
-circuit FullAdder {
-  input a: Bit
-  input b: Bit
-  input cin: Bit
-  output sum: Bit
-  output cout: Bit
-  impl {
-    node ha1: HalfAdder
-    node ha2: HalfAdder
-    node or1: Or
-    connect a -> ha1.a
-    connect b -> ha1.b
-    connect ha1.sum -> ha2.a
-    connect cin -> ha2.b
-    connect ha2.sum -> sum
-    connect ha1.carry -> or1.a
-    connect ha2.carry -> or1.b
-    connect or1.out -> cout
-  }
-}
-
-circuit DemoFullAdder {
-  impl {
-    node sw_a: Switch
-    node sw_b: Switch
-    node sw_cin: Switch
-    node dut: FullAdder
-    node led_sum: Led
-    node led_cout: Led
-    connect sw_a.out -> dut.a
-    connect sw_b.out -> dut.b
-    connect sw_cin.out -> dut.cin
-    connect dut.sum -> led_sum.in
-    connect dut.cout -> led_cout.in
-  }
-}`,
+const DemoFullAdder = component('DemoFullAdder')
+  .node('sw_a', Switch)
+  .node('sw_b', Switch)
+  .node('sw_cin', Switch)
+  .node('dut', FullAdder)
+  .node('led_sum', Led)
+  .node('led_cout', Led)
+  .connect(({ sw_a, sw_b, sw_cin, dut, led_sum, led_cout }) => [
+    sw_a.out.to(dut.a),
+    sw_b.out.to(dut.b),
+    sw_cin.out.to(dut.cin),
+    dut.sum.to(led_sum.in),
+    dut.cout.to(led_cout.in),
+  ])
+  .build()`,
   },
 
   mux: {
     name: "Multiplexer",
     description: "sel=0 picks a, sel=1 picks b",
-    displayDsl: `circuit Mux {
-  input a: Bit
-  input b: Bit
-  input sel: Bit
-  output out: Bit
-  impl {
-    node not_sel: Not
-    node and_a: And
-    node and_b: And
-    node or_out: Or
-    connect sel -> not_sel.in
-    connect a -> and_a.a
-    connect not_sel.out -> and_a.b
-    connect b -> and_b.a
-    connect sel -> and_b.b
-    connect and_a.out -> or_out.a
-    connect and_b.out -> or_out.b
-    connect or_out.out -> out
-  }
-}`,
-    // Use unique name "MuxGate" to avoid conflict with primitive "Mux"
+    displayDsl: `const MuxGate = component('MuxGate')
+  .in('a', bit)
+  .in('b', bit)
+  .in('sel', bit)
+  .out('out', bit)
+  .node('not_sel', Not)
+  .node('and_a', And)
+  .node('and_b', And)
+  .node('or_out', Or)
+  .connect(({ in: inp, out, not_sel, and_a, and_b, or_out }) => [
+    inp.sel.to(not_sel.in, and_b.b),
+    inp.a.to(and_a.a),
+    not_sel.out.to(and_a.b),
+    inp.b.to(and_b.a),
+    and_a.out.to(or_out.a),
+    and_b.out.to(or_out.b),
+    or_out.out.to(out.out),
+  ])
+  .build()`,
     dsl: `
-circuit MuxGate {
-  input a: Bit
-  input b: Bit
-  input sel: Bit
-  output out: Bit
-  impl {
-    node not_sel: Not
-    node and_a: And
-    node and_b: And
-    node or_out: Or
-    connect sel -> not_sel.in
-    connect a -> and_a.a
-    connect not_sel.out -> and_a.b
-    connect b -> and_b.a
-    connect sel -> and_b.b
-    connect and_a.out -> or_out.a
-    connect and_b.out -> or_out.b
-    connect or_out.out -> out
-  }
-}
+const MuxGate = component('MuxGate')
+  .in('a', bit)
+  .in('b', bit)
+  .in('sel', bit)
+  .out('out', bit)
+  .node('not_sel', Not)
+  .node('and_a', And)
+  .node('and_b', And)
+  .node('or_out', Or)
+  .connect(({ in: inp, out, not_sel, and_a, and_b, or_out }) => [
+    inp.sel.to(not_sel.in, and_b.b),
+    inp.a.to(and_a.a),
+    not_sel.out.to(and_a.b),
+    inp.b.to(and_b.a),
+    and_a.out.to(or_out.a),
+    and_b.out.to(or_out.b),
+    or_out.out.to(out.out),
+  ])
+  .build()
 
-circuit DemoMux {
-  impl {
-    node sw_a: Switch
-    node sw_b: Switch
-    node sw_sel: Switch
-    node dut: MuxGate
-    node led_out: Led
-    connect sw_a.out -> dut.a
-    connect sw_b.out -> dut.b
-    connect sw_sel.out -> dut.sel
-    connect dut.out -> led_out.in
-  }
-}`,
+const DemoMux = component('DemoMux')
+  .node('sw_a', Switch)
+  .node('sw_b', Switch)
+  .node('sw_sel', Switch)
+  .node('dut', MuxGate)
+  .node('led_out', Led)
+  .connect(({ sw_a, sw_b, sw_sel, dut, led_out }) => [
+    sw_a.out.to(dut.a),
+    sw_b.out.to(dut.b),
+    sw_sel.out.to(dut.sel),
+    dut.out.to(led_out.in),
+  ])
+  .build()`,
   },
 
   delayLine: {
     name: "2-Cycle Delay",
     description: "Data takes 2 clock ticks to reach output",
-    displayDsl: `circuit DelayLine {
-  input d: Bit
-  clock clk
-  output q1: Bit
-  output q2: Bit
-  impl {
-    node dff1: DFlipFlop
-    node dff2: DFlipFlop
-    connect clk -> dff1.clk
-    connect clk -> dff2.clk
-    connect d -> dff1.d
-    connect dff1.q -> dff2.d
-    connect dff1.q -> q1
-    connect dff2.q -> q2
-  }
-}`,
+    displayDsl: `const DelayLine = component('DelayLine')
+  .in('d', bit)
+  .out('q1', bit)
+  .out('q2', bit)
+  .node('dff1', DFlipFlop)
+  .node('dff2', DFlipFlop)
+  .connect(({ in: inp, out, dff1, dff2 }) => [
+    inp.d.to(dff1.d),
+    dff1.q.to(dff2.d, out.q1),
+    dff2.q.to(out.q2),
+  ])
+  .build()`,
     dsl: `
-circuit DelayLine {
-  input d: Bit
-  clock clk
-  output q1: Bit
-  output q2: Bit
-  impl {
-    node dff1: DFlipFlop
-    node dff2: DFlipFlop
-    connect clk -> dff1.clk
-    connect clk -> dff2.clk
-    connect d -> dff1.d
-    connect dff1.q -> dff2.d
-    connect dff1.q -> q1
-    connect dff2.q -> q2
-  }
-}
+const DelayLine = component('DelayLine')
+  .in('d', bit)
+  .out('q1', bit)
+  .out('q2', bit)
+  .node('dff1', DFlipFlop)
+  .node('dff2', DFlipFlop)
+  .connect(({ in: inp, out, dff1, dff2 }) => [
+    inp.d.to(dff1.d),
+    dff1.q.to(dff2.d, out.q1),
+    dff2.q.to(out.q2),
+  ])
+  .build()
 
-circuit DemoDelayLine {
-  clock clk
-  impl {
-    node sw_d: Switch
-    node dut: DelayLine
-    node led_q1: Led
-    node led_q2: Led
-    connect clk -> dut.clk
-    connect sw_d.out -> dut.d
-    connect dut.q1 -> led_q1.in
-    connect dut.q2 -> led_q2.in
-  }
-}`,
+const DemoDelayLine = component('DemoDelayLine')
+  .node('sw_d', Switch)
+  .node('dut', DelayLine)
+  .node('led_q1', Led)
+  .node('led_q2', Led)
+  .connect(({ sw_d, dut, led_q1, led_q2 }) => [
+    sw_d.out.to(dut.d),
+    dut.q1.to(led_q1.in),
+    dut.q2.to(led_q2.in),
+  ])
+  .build()`,
   },
 };
 

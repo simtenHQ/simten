@@ -13,36 +13,36 @@ import {
 } from "@turing-incomplete/core/simulator";
 import type { Circuit } from "@turing-incomplete/ui/editor/types";
 
-const DEMO_DSL = `circuit HalfAdder {
-  input a: Bit
-  input b: Bit
-  output sum: Bit
-  output carry: Bit
-  impl {
-    node xor1: Xor
-    node and1: And
-    connect a -> xor1.a
-    connect b -> xor1.b
-    connect xor1.out -> sum
-    connect a -> and1.a
-    connect b -> and1.b
-    connect and1.out -> carry
-  }
-}
+const DEMO_DSL = `
+const HalfAdder = component('HalfAdder')
+  .in('a', bit)
+  .in('b', bit)
+  .out('sum', bit)
+  .out('carry', bit)
+  .node('xor1', Xor)
+  .node('and1', And)
+  .connect(({ in: inp, out, xor1, and1 }) => [
+    inp.a.to(xor1.a, and1.a),
+    inp.b.to(xor1.b, and1.b),
+    xor1.out.to(out.sum),
+    and1.out.to(out.carry),
+  ])
+  .build()
 
-circuit HalfAdderDemo {
-  impl {
-    node sw_a: Switch
-    node sw_b: Switch
-    node dut: HalfAdder
-    node led_sum: Led
-    node led_carry: Led
-    connect sw_a.out -> dut.a
-    connect sw_b.out -> dut.b
-    connect dut.sum -> led_sum.in
-    connect dut.carry -> led_carry.in
-  }
-}`;
+const HalfAdderDemo = component('HalfAdderDemo')
+  .node('sw_a', Switch)
+  .node('sw_b', Switch)
+  .node('dut', HalfAdder)
+  .node('led_sum', Led)
+  .node('led_carry', Led)
+  .connect(({ in: inp, out, sw_a, sw_b, dut, led_sum, led_carry }) => [
+    sw_a.out.to(dut.a),
+    sw_b.out.to(dut.b),
+    dut.sum.to(led_sum.in),
+    dut.carry.to(led_carry.in),
+  ])
+  .build()
+`;
 
 /**
  * Extract a clean label from a mangled node ID.
@@ -179,9 +179,12 @@ export function PropagationDemo() {
   // Find which circuit-level node label matches for the focus prop
   const focusLabel = useMemo(() => {
     if (!currentStep || !sim.circuit) return null;
-    // Try to find a node whose label or id matches any part of the trace nodeId
+    // Try to find a node whose label or id matches the trace nodeId
     for (const node of sim.circuit.nodes) {
       const nodeLabel = node.label || node.id;
+      // Plain key match (TS builder format: nodeId equals label)
+      if (currentStep.nodeId === nodeLabel) return nodeLabel;
+      // Fallback: mangled DSL format
       if (currentStep.nodeId.includes(`_${nodeLabel}_`)) return nodeLabel;
     }
     return null;

@@ -3,6 +3,7 @@
  */
 
 export { DSLEditor } from './DSLEditor';
+export { TSEditor } from './TSEditor';
 export { ErrorDisplay } from './ErrorDisplay';
 export { CompileButton } from './CompileButton';
 export { ComponentLibrary } from './ComponentLibrary';

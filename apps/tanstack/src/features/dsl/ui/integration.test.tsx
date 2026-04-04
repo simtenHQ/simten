@@ -22,19 +22,18 @@ describe('DSL Editor Integration', () => {
 
   it('should compile a simple AND gate and register it', () => {
     const dslCode = `
-      circuit MyAnd {
-        input a: Bit
-        input b: Bit
-        output out: Bit
-
-        impl {
-          node and1: And
-          connect a -> and1.a
-          connect b -> and1.b
-          connect and1.out -> out
-        }
-      }
-    `;
+const MyAnd = component('MyAnd')
+  .in('a', bit)
+  .in('b', bit)
+  .out('out', bit)
+  .node('and1', And)
+  .connect(({ in: inp, out, and1 }) => [
+    inp.a.to(and1.a),
+    inp.b.to(and1.b),
+    and1.out.to(out.out),
+  ])
+  .build()
+`;
 
     const store = useComponentLibraryStore.getState();
 
@@ -65,24 +64,21 @@ describe('DSL Editor Integration', () => {
 
   it('should compile a composite component using primitives', () => {
     const dslCode = `
-      circuit HalfAdder {
-        input a: Bit
-        input b: Bit
-        output sum: Bit
-        output carry: Bit
-
-        impl {
-          node xor1: Xor
-          node and1: And
-          connect a -> xor1.a
-          connect b -> xor1.b
-          connect xor1.out -> sum
-          connect a -> and1.a
-          connect b -> and1.b
-          connect and1.out -> carry
-        }
-      }
-    `;
+const HalfAdder = component('HalfAdder')
+  .in('a', bit)
+  .in('b', bit)
+  .out('sum', bit)
+  .out('carry', bit)
+  .node('xor1', Xor)
+  .node('and1', And)
+  .connect(({ in: inp, out, xor1, and1 }) => [
+    inp.a.to(xor1.a, and1.a),
+    inp.b.to(xor1.b, and1.b),
+    xor1.out.to(out.sum),
+    and1.out.to(out.carry),
+  ])
+  .build()
+`;
 
     const store = useComponentLibraryStore.getState();
 
@@ -132,26 +128,26 @@ describe('DSL Editor Integration', () => {
 
   it('should handle multiple components in one DSL file', () => {
     const dslCode = `
-      circuit FirstComponent {
-        input a: Bit
-        output out: Bit
-        impl {
-          node buf1: Buffer
-          connect a -> buf1.in
-          connect buf1.out -> out
-        }
-      }
+const FirstComponent = component('FirstComponent')
+  .in('a', bit)
+  .out('out', bit)
+  .node('buf1', Buffer)
+  .connect(({ in: inp, out, buf1 }) => [
+    inp.a.to(buf1.in),
+    buf1.out.to(out.out),
+  ])
+  .build()
 
-      circuit SecondComponent {
-        input x: Bit
-        output y: Bit
-        impl {
-          node not1: Not
-          connect x -> not1.in
-          connect not1.out -> y
-        }
-      }
-    `;
+const SecondComponent = component('SecondComponent')
+  .in('x', bit)
+  .out('y', bit)
+  .node('not1', Not)
+  .connect(({ in: inp, out, not1 }) => [
+    inp.x.to(not1.in),
+    not1.out.to(out.y),
+  ])
+  .build()
+`;
 
     const store = useComponentLibraryStore.getState();
 
@@ -177,23 +173,21 @@ describe('DSL Editor Integration', () => {
 
     // First, define and register a half adder
     const halfAdderCode = `
-      circuit HalfAdder {
-        input a: Bit
-        input b: Bit
-        output sum: Bit
-        output carry: Bit
-        impl {
-          node xor1: Xor
-          node and1: And
-          connect a -> xor1.a
-          connect b -> xor1.b
-          connect xor1.out -> sum
-          connect a -> and1.a
-          connect b -> and1.b
-          connect and1.out -> carry
-        }
-      }
-    `;
+const HalfAdder = component('HalfAdder')
+  .in('a', bit)
+  .in('b', bit)
+  .out('sum', bit)
+  .out('carry', bit)
+  .node('xor1', Xor)
+  .node('and1', And)
+  .connect(({ in: inp, out, xor1, and1 }) => [
+    inp.a.to(xor1.a, and1.a),
+    inp.b.to(xor1.b, and1.b),
+    xor1.out.to(out.sum),
+    and1.out.to(out.carry),
+  ])
+  .build()
+`;
 
     const library = {
       getCircuit: (name: string) => store.resolveComponent(name),
