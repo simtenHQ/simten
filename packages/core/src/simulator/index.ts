@@ -272,11 +272,10 @@ class FastSimulatorEngineImpl implements SimulatorEngine {
     // Compile circuit to numeric representation
     this.numericCircuit = compileForSimulation(circuit, options.componentLibrary);
 
-    // Initialize flat sequential state first (for proper state initialization)
+    // Initialize flat sequential state (memory data loaded later via setNode)
     const flatSeqState = initializeFlatSequentialState(
       circuit,
       options.componentLibrary,
-      options.initialMemory
     );
 
     // Convert to numeric sequential state
@@ -646,8 +645,16 @@ export function createSimulatorFromCircuit(
   memoryData?: Map<string, Map<number, number>>
 ): SimulatorEngine {
   const flatCircuit = elaborate(circuit, library);
-  return createSimulator(flatCircuit, {
+  const engine = createSimulator(flatCircuit, {
     componentLibrary: library,
-    initialMemory: memoryData
   });
+
+  // Load memory data via setNode (single API for all node state)
+  if (memoryData) {
+    for (const [nodeId, data] of memoryData) {
+      engine.setNode(nodeId, data);
+    }
+  }
+
+  return engine;
 }

@@ -42,9 +42,8 @@ export interface CompileDSLResult {
   inputs: Record<string, boolean | number>;
 }
 
-export interface UseCompileDSLOptions {
-  initialMemory?: Map<string, Map<number, number>>;
-}
+/** @deprecated Use memoryData parameter on useCircuitSession instead */
+export interface UseCompileDSLOptions {}
 
 export function useCompileDSL(
   dslCode: string,

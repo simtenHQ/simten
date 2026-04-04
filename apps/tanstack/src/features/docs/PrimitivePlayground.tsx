@@ -12,54 +12,39 @@ const CircuitEmbed = lazy(() =>
   }))
 );
 
-// Generate a minimal DSL circuit that exercises a primitive with autoHarness
+// Generate a minimal TS builder circuit that exercises a primitive
 function generateDemoDsl(def: CorePrimitiveDefinition): string {
-  const inputs = def.inputs
-    .map((p) => {
-      const type = p.portType.kind === "bus" ? `Bus[${p.portType.width}]` : "Bit";
-      return `  input ${p.name}: ${type}`;
-    })
-    .join("\n");
+  const portType = (p: { portType: { kind: string; width?: number } }) =>
+    p.portType.kind === "bus" ? `bus(${p.portType.width ?? 8})` : "bit";
 
-  const outputs = def.outputs
-    .map((p) => {
-      const type = p.portType.kind === "bus" ? `Bus[${p.portType.width}]` : "Bit";
-      return `  output ${p.name}: ${type}`;
-    })
-    .join("\n");
+  const ins = def.inputs.map((p) => `  .in('${p.name}', ${portType(p)})`).join("\n");
+  const outs = def.outputs.map((p) => `  .out('${p.name}', ${portType(p)})`).join("\n");
 
-  const clocks = (def.clocks ?? []).map((c) => `  clock ${c.name}`).join("\n");
-
-  // Build node instantiation with default params
+  // Build node args from default params
   const params = (def.parameters ?? [])
     .filter((p) => p.defaultValue !== undefined)
-    .map((p) => `${p.name}=${p.defaultValue}`)
+    .map((p) => `${p.name}: ${JSON.stringify(p.defaultValue)}`)
     .join(", ");
-  const nodeDecl = params ? `node dut: ${def.name}(${params})` : `node dut: ${def.name}`;
+  const nodeArgs = params ? `, { ${params} }` : "";
 
+  // Connection lines
   const inputConns = def.inputs
-    .map((p) => `    connect ${p.name} -> dut.${p.name}`)
+    .map((p) => `    inp.${p.name}.to(dut.${p.name}),`)
     .join("\n");
-
   const outputConns = def.outputs
-    .map((p) => `    connect dut.${p.name} -> ${p.name}`)
+    .map((p) => `    dut.${p.name}.to(out.${p.name}),`)
     .join("\n");
 
-  const clockConns = (def.clocks ?? [])
-    .map((c) => `    connect ${c.name} -> dut.${c.name}`)
-    .join("\n");
+  const allConns = [inputConns, outputConns].filter(Boolean).join("\n");
 
-  return `circuit Demo {
-${inputs}
-${outputs}
-${clocks}
-  impl {
-    ${nodeDecl}
-${inputConns}
-${outputConns}
-${clockConns}
-  }
-}`;
+  return `const Demo = component('Demo')
+${ins}
+${outs}
+  .node('dut', ${def.name}${nodeArgs})
+  .connect(({ in: inp, out, dut }) => [
+${allConns}
+  ])
+  .build()`;
 }
 
 // Category display order and labels

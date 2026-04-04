@@ -41,121 +41,61 @@ export const AES_SBOX_MEMORY: Map<string, Map<number, number>> = (() => {
 
 // XTime and MixColumn sub-circuits shared across demos
 const XTIME_CIRCUIT = `
-circuit XTime {
-  description "GF(2^8) multiply by 2: shift left, XOR 0x1b if MSB was set"
-  input x: Bus[8]
-  output out: Bus[8]
-  impl {
-    // Shift left by 1
-    node c1: Constant(value=1, width=8)
-    node shl: LeftShifter(width=8)
-    connect x -> shl.value
-    connect c1.out -> shl.shift
-
-    // Extract bit 7 (MSB) to decide on polynomial reduction
-    node split: Splitter8to8
-    connect x -> split.in
-
-    // If bit7 was set, XOR with 0x1b (the AES irreducible polynomial)
-    node poly: Constant(value=27, width=8)
-    node zero8: Constant(value=0, width=8)
-    node mux: Mux(width=8)
-    connect zero8.out -> mux.in0
-    connect poly.out -> mux.in1
-    connect split.bit7 -> mux.sel
-
-    node xor: BusXor(width=8)
-    connect shl.result -> xor.a
-    connect mux.out -> xor.b
-    connect xor.out -> out
-  }
-}`;
+const XTime = component('XTime')
+  .in('x', bus(8))
+  .out('out', bus(8))
+  .node('c1', Constant, { value: 1, width: 8 })
+  .node('shl', LeftShifter, { width: 8 })
+  .node('split', Splitter8to8)
+  .node('poly', Constant, { value: 27, width: 8 })
+  .node('zero8', Constant, { value: 0, width: 8 })
+  .node('mux', Mux, { width: 8 })
+  .node('xor', BusXor, { width: 8 })
+  .connect(({ in: inp, out, c1, shl, split, poly, zero8, mux, xor }) => [
+    inp.x.to(shl.value, split.in),
+    c1.out.to(shl.shift),
+    zero8.out.to(mux.in0),
+    poly.out.to(mux.in1),
+    split.bit7.to(mux.sel),
+    shl.result.to(xor.a),
+    mux.out.to(xor.b),
+    xor.out.to(out.out),
+  ])
+  .build()
+`;
 
 const MIXCOLUMN_CIRCUIT = `
-circuit MixColumn {
-  description "AES MixColumns on one 4-byte column over GF(2^8)"
-  input s0: Bus[8]
-  input s1: Bus[8]
-  input s2: Bus[8]
-  input s3: Bus[8]
-  output r0: Bus[8]
-  output r1: Bus[8]
-  output r2: Bus[8]
-  output r3: Bus[8]
-  impl {
-    // 2*si = XTime(si)
-    node xt0: XTime
-    node xt1: XTime
-    node xt2: XTime
-    node xt3: XTime
-    connect s0 -> xt0.x
-    connect s1 -> xt1.x
-    connect s2 -> xt2.x
-    connect s3 -> xt3.x
-
-    // 3*si = XTime(si) XOR si
-    node m3_0: BusXor(width=8)
-    node m3_1: BusXor(width=8)
-    node m3_2: BusXor(width=8)
-    node m3_3: BusXor(width=8)
-    connect xt0.out -> m3_0.a
-    connect s0 -> m3_0.b
-    connect xt1.out -> m3_1.a
-    connect s1 -> m3_1.b
-    connect xt2.out -> m3_2.a
-    connect s2 -> m3_2.b
-    connect xt3.out -> m3_3.a
-    connect s3 -> m3_3.b
-
-    // r0 = 2*s0 XOR 3*s1 XOR s2 XOR s3
-    node r0a: BusXor(width=8)
-    node r0b: BusXor(width=8)
-    node r0c: BusXor(width=8)
-    connect xt0.out -> r0a.a
-    connect m3_1.out -> r0a.b
-    connect r0a.out -> r0b.a
-    connect s2 -> r0b.b
-    connect r0b.out -> r0c.a
-    connect s3 -> r0c.b
-    connect r0c.out -> r0
-
-    // r1 = s0 XOR 2*s1 XOR 3*s2 XOR s3
-    node r1a: BusXor(width=8)
-    node r1b: BusXor(width=8)
-    node r1c: BusXor(width=8)
-    connect s0 -> r1a.a
-    connect xt1.out -> r1a.b
-    connect r1a.out -> r1b.a
-    connect m3_2.out -> r1b.b
-    connect r1b.out -> r1c.a
-    connect s3 -> r1c.b
-    connect r1c.out -> r1
-
-    // r2 = s0 XOR s1 XOR 2*s2 XOR 3*s3
-    node r2a: BusXor(width=8)
-    node r2b: BusXor(width=8)
-    node r2c: BusXor(width=8)
-    connect s0 -> r2a.a
-    connect s1 -> r2a.b
-    connect r2a.out -> r2b.a
-    connect xt2.out -> r2b.b
-    connect r2b.out -> r2c.a
-    connect m3_3.out -> r2c.b
-    connect r2c.out -> r2
-
-    // r3 = 3*s0 XOR s1 XOR s2 XOR 2*s3
-    node r3a: BusXor(width=8)
-    node r3b: BusXor(width=8)
-    node r3c: BusXor(width=8)
-    connect m3_0.out -> r3a.a
-    connect s1 -> r3a.b
-    connect r3a.out -> r3b.a
-    connect s2 -> r3b.b
-    connect r3b.out -> r3c.a
-    connect xt3.out -> r3c.b
-    connect r3c.out -> r3
-  }
-}`;
+const MixColumn = component('MixColumn')
+  .in('s0', bus(8)).in('s1', bus(8)).in('s2', bus(8)).in('s3', bus(8))
+  .out('r0', bus(8)).out('r1', bus(8)).out('r2', bus(8)).out('r3', bus(8))
+  .meta({ description: 'AES MixColumns on one 4-byte column over GF(2^8)' })
+  .node('xt0', XTime).node('xt1', XTime).node('xt2', XTime).node('xt3', XTime)
+  .node('m3_0', BusXor, { width: 8 }).node('m3_1', BusXor, { width: 8 })
+  .node('m3_2', BusXor, { width: 8 }).node('m3_3', BusXor, { width: 8 })
+  .node('r0a', BusXor, { width: 8 }).node('r0b', BusXor, { width: 8 }).node('r0c', BusXor, { width: 8 })
+  .node('r1a', BusXor, { width: 8 }).node('r1b', BusXor, { width: 8 }).node('r1c', BusXor, { width: 8 })
+  .node('r2a', BusXor, { width: 8 }).node('r2b', BusXor, { width: 8 }).node('r2c', BusXor, { width: 8 })
+  .node('r3a', BusXor, { width: 8 }).node('r3b', BusXor, { width: 8 }).node('r3c', BusXor, { width: 8 })
+  .connect(({ in: inp, out, xt0, xt1, xt2, xt3, m3_0, m3_1, m3_2, m3_3, r0a, r0b, r0c, r1a, r1b, r1c, r2a, r2b, r2c, r3a, r3b, r3c }) => [
+    inp.s0.to(xt0.x, m3_0.b, r1a.a, r2a.a),
+    inp.s1.to(xt1.x, m3_1.b, r1a.b, r2a.b, r3a.b),
+    inp.s2.to(xt2.x, m3_2.b, r0b.b, r3b.b),
+    inp.s3.to(xt3.x, m3_3.b, r0c.b, r1c.b),
+    xt0.out.to(m3_0.a, r0a.a),
+    xt1.out.to(m3_1.a, r1a.b),
+    xt2.out.to(m3_2.a, r2b.b),
+    xt3.out.to(m3_3.a, r3c.b),
+    m3_1.out.to(r0a.b),
+    m3_2.out.to(r1b.b),
+    m3_3.out.to(r2c.b),
+    m3_0.out.to(r3a.a),
+    r0a.out.to(r0b.a), r0b.out.to(r0c.a), r0c.out.to(out.r0),
+    r1a.out.to(r1b.a), r1b.out.to(r1c.a), r1c.out.to(out.r1),
+    r2a.out.to(r2b.a), r2b.out.to(r2c.a), r2c.out.to(out.r2),
+    r3a.out.to(r3b.a), r3b.out.to(r3c.a), r3c.out.to(out.r3),
+  ])
+  .build()
+`;
 
 export const AES_CIRCUITS: Record<string, BlogCircuit> = {
   // Demo 1: S-box lookup via ROM
@@ -163,27 +103,28 @@ export const AES_CIRCUITS: Record<string, BlogCircuit> = {
     name: "SubBytes: S-Box Lookup",
     description:
       "Each byte is replaced via a 256-entry lookup table. Try 0x00 (→ 0x63), 0x53 (→ 0xed), or 0xff (→ 0x16). Pre-loaded with FIPS 197 S-box.",
-    displayDsl: `// FIPS 197 AES S-box lookup
-// S[0x00]=0x63  S[0x53]=0xed  S[0xff]=0x16
-
-circuit SubByteDemo {
-  impl {
-    node s: Input(value=83, width=8)
-    node rom: ROM
-    connect s.out -> rom.addr
-    node disp: HexDisplay(width=8)
-    connect rom.data_out -> disp.in
-  }
-}`,
-    dsl: `circuit SubByteDemo {
-  impl {
-    node s: Input(value=83, width=8)
-    node rom: ROM
-    connect s.out -> rom.addr
-    node disp: HexDisplay(width=8)
-    connect rom.data_out -> disp.in
-  }
-}`,
+    displayDsl: `
+const SubByteDemo = component('SubByteDemo')
+  .node('s', Input, { value: 83, width: 8 })
+  .node('rom', ROM)
+  .node('disp', HexDisplay, { width: 8 })
+  .connect(({ in: inp, out, s, rom, disp }) => [
+    s.out.to(rom.addr),
+    rom.data_out.to(disp.in),
+  ])
+  .build()
+`,
+    dsl: `
+const SubByteDemo = component('SubByteDemo')
+  .node('s', Input, { value: 83, width: 8 })
+  .node('rom', ROM)
+  .node('disp', HexDisplay, { width: 8 })
+  .connect(({ in: inp, out, s, rom, disp }) => [
+    s.out.to(rom.addr),
+    rom.data_out.to(disp.in),
+  ])
+  .build()
+`,
   },
 
   // Demo 2: XTime — GF(2^8) multiplication by 2
@@ -191,54 +132,51 @@ circuit SubByteDemo {
     name: "XTime: Multiply by 2 in GF(2^8)",
     description:
       "Left-shift, then XOR with 0x1b if the MSB was 1. Try 87 (0x57 → 0xae), 128 (0x80 → 0x1b), or 149 (0x95 → 0x35).",
-    displayDsl: `circuit XTime {
-  input x: Bus[8]
-  output out: Bus[8]
-  impl {
-    // Shift left by 1
-    node c1: Constant(value=1, width=8)
-    node shl: LeftShifter(width=8)
-    connect x -> shl.value
-    connect c1.out -> shl.shift
+    displayDsl: `
+const XTime = component('XTime')
+  .in('x', bus(8))
+  .out('out', bus(8))
+  .node('c1', Constant, { value: 1, width: 8 })
+  .node('shl', LeftShifter, { width: 8 })
+  .node('split', Splitter8to8)
+  .node('poly', Constant, { value: 27, width: 8 })
+  .node('zero8', Constant, { value: 0, width: 8 })
+  .node('mux', Mux, { width: 8 })
+  .node('xor', BusXor, { width: 8 })
+  .connect(({ in: inp, out, c1, shl, split, poly, zero8, mux, xor }) => [
+    inp.x.to(shl.value, split.in),
+    c1.out.to(shl.shift),
+    zero8.out.to(mux.in0),
+    poly.out.to(mux.in1),
+    split.bit7.to(mux.sel),
+    shl.result.to(xor.a),
+    mux.out.to(xor.b),
+    xor.out.to(out.out),
+  ])
+  .build()
 
-    // If bit7 was set, XOR with 0x1b
-    node split: Splitter8to8
-    connect x -> split.in
-
-    node poly: Constant(value=27, width=8)
-    node zero8: Constant(value=0, width=8)
-    node mux: Mux(width=8)
-    connect zero8.out -> mux.in0
-    connect poly.out -> mux.in1
-    connect split.bit7 -> mux.sel
-
-    node xor: BusXor(width=8)
-    connect shl.result -> xor.a
-    connect mux.out -> xor.b
-    connect xor.out -> out
-  }
-}
-
-circuit XTimeDemo {
-  impl {
-    node val: Input(value=87, width=8)
-    node xt: XTime
-    connect val.out -> xt.x
-    node disp: HexDisplay(width=8)
-    connect xt.out -> disp.in
-  }
-}`,
+const XTimeDemo = component('XTimeDemo')
+  .node('val', Input, { value: 87, width: 8 })
+  .node('xt', XTime)
+  .node('disp', HexDisplay, { width: 8 })
+  .connect(({ in: inp, out, val, xt, disp }) => [
+    val.out.to(xt.x),
+    xt.out.to(disp.in),
+  ])
+  .build()
+`,
     dsl: `${XTIME_CIRCUIT}
 
-circuit XTimeDemo {
-  impl {
-    node val: Input(value=87, width=8)
-    node xt: XTime
-    connect val.out -> xt.x
-    node disp: HexDisplay(width=8)
-    connect xt.out -> disp.in
-  }
-}`,
+const XTimeDemo = component('XTimeDemo')
+  .node('val', Input, { value: 87, width: 8 })
+  .node('xt', XTime)
+  .node('disp', HexDisplay, { width: 8 })
+  .connect(({ val, xt, disp }) => [
+    val.out.to(xt.x),
+    xt.out.to(disp.in),
+  ])
+  .build()
+`,
   },
 
   // Demo 3: MixColumns on one column — FIPS 197 test vector
@@ -250,55 +188,43 @@ circuit XTimeDemo {
 //   In:  [0xdb, 0x13, 0x53, 0x45]
 //   Out: [0x8e, 0x4d, 0xa1, 0xbc]
 
-circuit MixColumnDemo {
-  impl {
-    node s0: Input(value=219, width=8)
-    node s1: Input(value=19, width=8)
-    node s2: Input(value=83, width=8)
-    node s3: Input(value=69, width=8)
-
-    node mc: MixColumn
-    connect s0.out -> mc.s0
-    connect s1.out -> mc.s1
-    connect s2.out -> mc.s2
-    connect s3.out -> mc.s3
-
-    node r0: HexDisplay(width=8)
-    node r1: HexDisplay(width=8)
-    node r2: HexDisplay(width=8)
-    node r3: HexDisplay(width=8)
-    connect mc.r0 -> r0.in
-    connect mc.r1 -> r1.in
-    connect mc.r2 -> r2.in
-    connect mc.r3 -> r3.in
-  }
-}`,
+const MixColumnDemo = component('MixColumnDemo')
+  .node('s0', Input, { value: 219, width: 8 })
+  .node('s1', Input, { value: 19, width: 8 })
+  .node('s2', Input, { value: 83, width: 8 })
+  .node('s3', Input, { value: 69, width: 8 })
+  .node('mc', MixColumn)
+  .node('r0', HexDisplay, { width: 8 })
+  .node('r1', HexDisplay, { width: 8 })
+  .node('r2', HexDisplay, { width: 8 })
+  .node('r3', HexDisplay, { width: 8 })
+  .connect(({ s0, s1, s2, s3, mc, r0, r1, r2, r3 }) => [
+    s0.out.to(mc.s0), s1.out.to(mc.s1),
+    s2.out.to(mc.s2), s3.out.to(mc.s3),
+    mc.r0.to(r0.in), mc.r1.to(r1.in),
+    mc.r2.to(r2.in), mc.r3.to(r3.in),
+  ])
+  .build()`,
     dsl: `${XTIME_CIRCUIT}
 ${MIXCOLUMN_CIRCUIT}
 
-circuit MixColumnDemo {
-  impl {
-    // FIPS 197 test vector: [db,13,53,45] → [8e,4d,a1,bc]
-    node s0: Input(value=219, width=8)
-    node s1: Input(value=19, width=8)
-    node s2: Input(value=83, width=8)
-    node s3: Input(value=69, width=8)
-
-    node mc: MixColumn
-    connect s0.out -> mc.s0
-    connect s1.out -> mc.s1
-    connect s2.out -> mc.s2
-    connect s3.out -> mc.s3
-
-    node r0: HexDisplay(width=8)
-    node r1: HexDisplay(width=8)
-    node r2: HexDisplay(width=8)
-    node r3: HexDisplay(width=8)
-    connect mc.r0 -> r0.in
-    connect mc.r1 -> r1.in
-    connect mc.r2 -> r2.in
-    connect mc.r3 -> r3.in
-  }
-}`,
+const MixColumnDemo = component('MixColumnDemo')
+  .node('s0', Input, { value: 219, width: 8 })
+  .node('s1', Input, { value: 19, width: 8 })
+  .node('s2', Input, { value: 83, width: 8 })
+  .node('s3', Input, { value: 69, width: 8 })
+  .node('mc', MixColumn)
+  .node('r0', HexDisplay, { width: 8 })
+  .node('r1', HexDisplay, { width: 8 })
+  .node('r2', HexDisplay, { width: 8 })
+  .node('r3', HexDisplay, { width: 8 })
+  .connect(({ s0, s1, s2, s3, mc, r0, r1, r2, r3 }) => [
+    s0.out.to(mc.s0), s1.out.to(mc.s1),
+    s2.out.to(mc.s2), s3.out.to(mc.s3),
+    mc.r0.to(r0.in), mc.r1.to(r1.in),
+    mc.r2.to(r2.in), mc.r3.to(r3.in),
+  ])
+  .build()
+`,
   },
 };

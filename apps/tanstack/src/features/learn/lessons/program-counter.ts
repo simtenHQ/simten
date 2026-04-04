@@ -21,13 +21,15 @@ export const PROGRAM_COUNTER_LESSON: Lesson = {
         "When the CPU starts, the PC is zero. After executing an instruction, the PC advances to point at the next one. That's it. But getting that increment right is the foundation of everything a CPU does.",
         "Here it is: a single 32-bit register, sitting alone. Right now it just holds a value — it doesn't do anything yet.",
       ],
-      dsl: `circuit ProgramCounter {
-  output pc_out: Bus[32]
-  impl {
-    node pc: Register(width=32)
-    connect pc.q -> pc_out
-  }
-}`,
+      dsl: `
+const ProgramCounter = component('ProgramCounter')
+  .out('pc_out', bus(32))
+  .node('pc', Register, { width: 32 })
+  .connect(({ in: inp, out, pc }) => [
+    pc.q.to(out.pc_out),
+  ])
+  .build()
+`,
       focus: "pc",
       nodePositions: { pc: BASE_POSITIONS.pc },
     },
@@ -39,15 +41,17 @@ export const PROGRAM_COUNTER_LESSON: Lesson = {
         "So we need a circuit that adds 4 to whatever the PC currently holds. An Adder takes two inputs and produces their sum. We'll use a 32-bit adder with a constant value of 4.",
         "Three nodes, not yet connected. The adder is waiting for its inputs. The constant 4 is ready to provide one of them.",
       ],
-      dsl: `circuit ProgramCounter {
-  output pc_out: Bus[32]
-  impl {
-    node pc: Register(width=32)
-    node adder: Adder(width=32)
-    node four: Constant(value=4, width=32)
-    connect pc.q -> pc_out
-  }
-}`,
+      dsl: `
+const ProgramCounter = component('ProgramCounter')
+  .out('pc_out', bus(32))
+  .node('pc', Register, { width: 32 })
+  .node('adder', Adder, { width: 32 })
+  .node('four', Constant, { value: 4, width: 32 })
+  .connect(({ in: inp, out, pc, adder, four }) => [
+    pc.q.to(out.pc_out),
+  ])
+  .build()
+`,
       focus: "adder",
       nodePositions: {
         pc: BASE_POSITIONS.pc,
@@ -63,17 +67,18 @@ export const PROGRAM_COUNTER_LESSON: Lesson = {
         "On every cycle, the adder computes pc.q + 4. The result sits at adder.sum, ready to be used. But nothing has changed yet — the sum isn't going anywhere.",
         "Notice the wire from pc.q splitting: one branch goes to the adder, the other to pc_out. This is how hardware multiplexes a signal to multiple consumers — no copying, just wiring.",
       ],
-      dsl: `circuit ProgramCounter {
-  output pc_out: Bus[32]
-  impl {
-    node pc: Register(width=32)
-    node adder: Adder(width=32)
-    node four: Constant(value=4, width=32)
-    connect pc.q -> adder.a
-    connect four.out -> adder.b
-    connect pc.q -> pc_out
-  }
-}`,
+      dsl: `
+const ProgramCounter = component('ProgramCounter')
+  .out('pc_out', bus(32))
+  .node('pc', Register, { width: 32 })
+  .node('adder', Adder, { width: 32 })
+  .node('four', Constant, { value: 4, width: 32 })
+  .connect(({ in: inp, out, pc, adder, four }) => [
+    pc.q.to(adder.a, out.pc_out),
+    four.out.to(adder.b),
+  ])
+  .build()
+`,
       focus: ["pc", "adder"],
       nodePositions: {
         pc: BASE_POSITIONS.pc,
@@ -89,18 +94,19 @@ export const PROGRAM_COUNTER_LESSON: Lesson = {
         "Now the circuit has a feedback loop. Each clock tick, the register captures the value on its data input — which is pc.q + 4. The register's output jumps to the new value, which immediately flows through the adder again, adding 4 again, ready for the next tick.",
         "This is what makes it a counter. The output of the computation feeds back as the next input. The register is the memory that lets the circuit 'remember' where it is between clock edges.",
       ],
-      dsl: `circuit ProgramCounter {
-  output pc_out: Bus[32]
-  impl {
-    node pc: Register(width=32)
-    node adder: Adder(width=32)
-    node four: Constant(value=4, width=32)
-    connect pc.q -> adder.a
-    connect four.out -> adder.b
-    connect adder.sum -> pc.data
-    connect pc.q -> pc_out
-  }
-}`,
+      dsl: `
+const ProgramCounter = component('ProgramCounter')
+  .out('pc_out', bus(32))
+  .node('pc', Register, { width: 32 })
+  .node('adder', Adder, { width: 32 })
+  .node('four', Constant, { value: 4, width: 32 })
+  .connect(({ in: inp, out, pc, adder, four }) => [
+    pc.q.to(adder.a, out.pc_out),
+    four.out.to(adder.b),
+    adder.sum.to(pc.data),
+  ])
+  .build()
+`,
       focus: "pc",
       nodePositions: {
         pc: BASE_POSITIONS.pc,
@@ -116,20 +122,21 @@ export const PROGRAM_COUNTER_LESSON: Lesson = {
         "We want the PC to advance every single cycle, so we tie write-enable permanently high with a 1-bit constant. This is a common pattern — drive a control signal to a fixed value when you don't need dynamic control.",
         "The circuit is now fully connected. All inputs are driven, all outputs are used. This is a complete, synthesizable program counter.",
       ],
-      dsl: `circuit ProgramCounter {
-  output pc_out: Bus[32]
-  impl {
-    node pc: Register(width=32)
-    node adder: Adder(width=32)
-    node four: Constant(value=4, width=32)
-    node we: Constant(value=1, width=1)
-    connect pc.q -> adder.a
-    connect four.out -> adder.b
-    connect adder.sum -> pc.data
-    connect we.out -> pc.we
-    connect pc.q -> pc_out
-  }
-}`,
+      dsl: `
+const ProgramCounter = component('ProgramCounter')
+  .out('pc_out', bus(32))
+  .node('pc', Register, { width: 32 })
+  .node('adder', Adder, { width: 32 })
+  .node('four', Constant, { value: 4, width: 32 })
+  .node('we', Constant, { value: 1, width: 1 })
+  .connect(({ in: inp, out, pc, adder, four, we }) => [
+    pc.q.to(adder.a, out.pc_out),
+    four.out.to(adder.b),
+    adder.sum.to(pc.data),
+    we.out.to(pc.we),
+  ])
+  .build()
+`,
       nodePositions: BASE_POSITIONS,
     },
     {
@@ -140,20 +147,21 @@ export const PROGRAM_COUNTER_LESSON: Lesson = {
         "This is the heartbeat of a CPU. Every instruction fetch begins with 'what does the PC say?' The fetch unit reads memory at that address, the PC advances, and the cycle repeats billions of times per second in a modern processor.",
         "From here, a real CPU would add logic to override the PC on branch instructions — jumping to a different address rather than just adding 4. But the foundation is what you see here: a register in a feedback loop with an adder.",
       ],
-      dsl: `circuit ProgramCounter {
-  output pc_out: Bus[32]
-  impl {
-    node pc: Register(width=32)
-    node adder: Adder(width=32)
-    node four: Constant(value=4, width=32)
-    node we: Constant(value=1, width=1)
-    connect pc.q -> adder.a
-    connect four.out -> adder.b
-    connect adder.sum -> pc.data
-    connect we.out -> pc.we
-    connect pc.q -> pc_out
-  }
-}`,
+      dsl: `
+const ProgramCounter = component('ProgramCounter')
+  .out('pc_out', bus(32))
+  .node('pc', Register, { width: 32 })
+  .node('adder', Adder, { width: 32 })
+  .node('four', Constant, { value: 4, width: 32 })
+  .node('we', Constant, { value: 1, width: 1 })
+  .connect(({ in: inp, out, pc, adder, four, we }) => [
+    pc.q.to(adder.a, out.pc_out),
+    four.out.to(adder.b),
+    adder.sum.to(pc.data),
+    we.out.to(pc.we),
+  ])
+  .build()
+`,
       ticks: 8,
       nodePositions: BASE_POSITIONS,
     },

@@ -29,6 +29,13 @@ export function CORDICDemo() {
   // Read display values from port values
   const getDisplayValue = (name: string): number => {
     if (!sim.portValues) return 0;
+    // Try plain key first (TS builder format)
+    const displayKey = `${name}Display.in`;
+    const plain = sim.portValues.get(displayKey);
+    if (plain !== undefined && typeof plain === "number") return plain;
+    const plainQ = sim.portValues.get(`${name}.q`);
+    if (plainQ !== undefined && typeof plainQ === "number") return plainQ;
+    // Fallback: mangled DSL format
     for (const [key, value] of sim.portValues) {
       if (key.includes(name) && (key.includes("Display") || key.includes("display"))) {
         return typeof value === "number" ? value : 0;

@@ -18,335 +18,272 @@ export const CORDIC_CIRCUITS: Record<string, BlogCircuit> = {
     name: "Right Shift = Divide by Power of 2",
     description:
       "A RightShifter divides its input by 2^shift. This is the only 'multiplication' CORDIC needs.",
-    displayDsl: `circuit RightShiftDemo {
-  impl {
-    node value: Input(value=80)
-    node shift: Input(value=1)
-
-    node shifter: RightShifter
-    connect value.out -> shifter.value
-    connect shift.out -> shifter.shift
-
-    node result: HexDisplay
-    connect shifter.result -> result.in
-  }
-}`,
+    displayDsl: `
+const RightShiftDemo = component('RightShiftDemo')
+  .node('value', Input, { value: 80 })
+  .node('shift', Input, { value: 1 })
+  .node('shifter', RightShifter)
+  .node('result', HexDisplay)
+  .connect(({ in: inp, out, value, shift, shifter, result }) => [
+    value.out.to(shifter.value),
+    shift.out.to(shifter.shift),
+    shifter.result.to(result.in),
+  ])
+  .build()
+`,
     dsl: `
-circuit RightShiftDemo {
-  impl {
-    node value: Input(value=80)
-    node shift: Input(value=1)
-
-    node shifter: RightShifter
-    connect value.out -> shifter.value
-    connect shift.out -> shifter.shift
-
-    node result: HexDisplay
-    connect shifter.result -> result.in
-  }
-}`,
+const RightShiftDemo = component('RightShiftDemo')
+  .node('value', Input, { value: 80 })
+  .node('shift', Input, { value: 1 })
+  .node('shifter', RightShifter)
+  .node('result', HexDisplay)
+  .connect(({ in: inp, out, value, shift, shifter, result }) => [
+    value.out.to(shifter.value),
+    shift.out.to(shifter.shift),
+    shifter.result.to(result.in),
+  ])
+  .build()
+`,
   },
 
   rotationStep: {
     name: "One Rotation Step",
     description:
       "The core CORDIC operation: x_next = x - (y >> i). A right-shifted value is subtracted using two's complement.",
-    displayDsl: `circuit RotationStep {
-  impl {
-    node x: Input(value=80)
-    node y: Input(value=0)
-    node shift: Input(value=0)
-
-    node one: Constant(value=1)
-    node zero: Constant(value=0)
-
-    node yShifted: RightShifter
-    connect y.out -> yShifted.value
-    connect shift.out -> yShifted.shift
-
-    node yNeg: BusNot
-    connect yShifted.result -> yNeg.in
-
-    node xMinusY: SignedAdder
-    connect x.out -> xMinusY.a
-    connect yNeg.out -> xMinusY.b
-    connect one.out -> xMinusY.carry_in
-
-    node xPlusY: SignedAdder
-    connect x.out -> xPlusY.a
-    connect yShifted.result -> xPlusY.b
-    connect zero.out -> xPlusY.carry_in
-
-    node displaySub: HexDisplay
-    connect xMinusY.sum -> displaySub.in
-
-    node displayAdd: HexDisplay
-    connect xPlusY.sum -> displayAdd.in
-  }
-}`,
+    displayDsl: `
+const RotationStep = component('RotationStep')
+  .node('x', Input, { value: 80 })
+  .node('y', Input, { value: 0 })
+  .node('shift', Input, { value: 0 })
+  .node('one', Constant, { value: 1 })
+  .node('zero', Constant, { value: 0 })
+  .node('yShifted', RightShifter)
+  .node('yNeg', BusNot)
+  .node('xMinusY', SignedAdder)
+  .node('xPlusY', SignedAdder)
+  .node('displaySub', HexDisplay)
+  .node('displayAdd', HexDisplay)
+  .connect(({ in: inp, out, x, y, shift, one, zero, yShifted, yNeg, xMinusY, xPlusY, displaySub, displayAdd }) => [
+    y.out.to(yShifted.value),
+    shift.out.to(yShifted.shift),
+    yShifted.result.to(yNeg.in, xPlusY.b),
+    x.out.to(xMinusY.a, xPlusY.a),
+    yNeg.out.to(xMinusY.b),
+    one.out.to(xMinusY.carry_in),
+    zero.out.to(xPlusY.carry_in),
+    xMinusY.sum.to(displaySub.in),
+    xPlusY.sum.to(displayAdd.in),
+  ])
+  .build()
+`,
     dsl: `
-circuit RotationStep {
-  impl {
-    node x: Input(value=80)
-    node y: Input(value=0)
-    node shift: Input(value=0)
-
-    node one: Constant(value=1)
-    node zero: Constant(value=0)
-
-    node yShifted: RightShifter
-    connect y.out -> yShifted.value
-    connect shift.out -> yShifted.shift
-
-    node yNeg: BusNot
-    connect yShifted.result -> yNeg.in
-
-    node xMinusY: SignedAdder
-    connect x.out -> xMinusY.a
-    connect yNeg.out -> xMinusY.b
-    connect one.out -> xMinusY.carry_in
-
-    node xPlusY: SignedAdder
-    connect x.out -> xPlusY.a
-    connect yShifted.result -> xPlusY.b
-    connect zero.out -> xPlusY.carry_in
-
-    node displaySub: HexDisplay
-    connect xMinusY.sum -> displaySub.in
-
-    node displayAdd: HexDisplay
-    connect xPlusY.sum -> displayAdd.in
-  }
-}`,
+const RotationStep = component('RotationStep')
+  .node('x', Input, { value: 80 })
+  .node('y', Input, { value: 0 })
+  .node('shift', Input, { value: 0 })
+  .node('one', Constant, { value: 1 })
+  .node('zero', Constant, { value: 0 })
+  .node('yShifted', RightShifter)
+  .node('yNeg', BusNot)
+  .node('xMinusY', SignedAdder)
+  .node('xPlusY', SignedAdder)
+  .node('displaySub', HexDisplay)
+  .node('displayAdd', HexDisplay)
+  .connect(({ in: inp, out, x, y, shift, one, zero, yShifted, yNeg, xMinusY, xPlusY, displaySub, displayAdd }) => [
+    y.out.to(yShifted.value),
+    shift.out.to(yShifted.shift),
+    yShifted.result.to(yNeg.in, xPlusY.b),
+    x.out.to(xMinusY.a, xPlusY.a),
+    yNeg.out.to(xMinusY.b),
+    one.out.to(xMinusY.carry_in),
+    zero.out.to(xPlusY.carry_in),
+    xMinusY.sum.to(displaySub.in),
+    xPlusY.sum.to(displayAdd.in),
+  ])
+  .build()
+`,
   },
 
   signDetection: {
     name: "Rotation Direction",
     description:
       "CORDIC decides which way to rotate by checking the sign of the remaining angle z. If z >= 0, rotate counterclockwise; if z < 0, rotate clockwise.",
-    displayDsl: `circuit SignDetection {
-  impl {
-    node angle: Input(value=32)
-    node zero: Constant(value=0)
-
-    node cmp: SignedComparator
-    connect angle.out -> cmp.a
-    connect zero.out -> cmp.b
-
-    node positiveLed: Led
-    connect cmp.gte -> positiveLed.in
-
-    node addVal: Constant(value=10)
-    node subVal: Constant(value=246)
-
-    node result: Mux
-    connect subVal.out -> result.in0
-    connect addVal.out -> result.in1
-    connect cmp.gte -> result.sel
-
-    node display: HexDisplay
-    connect result.out -> display.in
-  }
-}`,
+    displayDsl: `
+const SignDetection = component('SignDetection')
+  .node('angle', Input, { value: 32 })
+  .node('zero', Constant, { value: 0 })
+  .node('cmp', SignedComparator)
+  .node('positiveLed', Led)
+  .node('addVal', Constant, { value: 10 })
+  .node('subVal', Constant, { value: 246 })
+  .node('result', Mux)
+  .node('display', HexDisplay)
+  .connect(({ in: inp, out, angle, zero, cmp, positiveLed, addVal, subVal, result, display }) => [
+    angle.out.to(cmp.a),
+    zero.out.to(cmp.b),
+    cmp.gte.to(positiveLed.in, result.sel),
+    subVal.out.to(result.in0),
+    addVal.out.to(result.in1),
+    result.out.to(display.in),
+  ])
+  .build()
+`,
     dsl: `
-circuit SignDetection {
-  impl {
-    node angle: Input(value=32)
-    node zero: Constant(value=0)
-
-    node cmp: SignedComparator
-    connect angle.out -> cmp.a
-    connect zero.out -> cmp.b
-
-    node positiveLed: Led
-    connect cmp.gte -> positiveLed.in
-
-    node addVal: Constant(value=10)
-    node subVal: Constant(value=246)
-
-    node result: Mux
-    connect subVal.out -> result.in0
-    connect addVal.out -> result.in1
-    connect cmp.gte -> result.sel
-
-    node display: HexDisplay
-    connect result.out -> display.in
-  }
-}`,
+const SignDetection = component('SignDetection')
+  .node('angle', Input, { value: 32 })
+  .node('zero', Constant, { value: 0 })
+  .node('cmp', SignedComparator)
+  .node('positiveLed', Led)
+  .node('addVal', Constant, { value: 10 })
+  .node('subVal', Constant, { value: 246 })
+  .node('result', Mux)
+  .node('display', HexDisplay)
+  .connect(({ in: inp, out, angle, zero, cmp, positiveLed, addVal, subVal, result, display }) => [
+    angle.out.to(cmp.a),
+    zero.out.to(cmp.b),
+    cmp.gte.to(positiveLed.in, result.sel),
+    subVal.out.to(result.in0),
+    addVal.out.to(result.in1),
+    result.out.to(display.in),
+  ])
+  .build()
+`,
   },
 
   iterationControl: {
     name: "Iteration Counter",
     description:
       "CORDIC runs for a fixed number of iterations (8 in our case). A register counts up and a comparator stops when done.",
-    displayDsl: `circuit IterationControl {
-  clock clk
-  impl {
-    node iter: Register(initial=0)
-    connect clk -> iter.clk
-
-    node eight: Constant(value=8)
-
-    node inc: Incrementer
-    connect iter.q -> inc.in
-
-    node shouldContinue: Comparator
-    connect iter.q -> shouldContinue.a
-    connect eight.out -> shouldContinue.b
-
-    connect shouldContinue.lt -> iter.we
-    connect inc.out -> iter.data
-
-    node display: HexDisplay
-    connect iter.q -> display.in
-
-    node doneLed: Led
-    connect shouldContinue.eq -> doneLed.in
-  }
-}`,
+    displayDsl: `
+const IterationControl = component('IterationControl')
+  .node('iter', Register, { initial: 0 })
+  .node('eight', Constant, { value: 8 })
+  .node('inc', Incrementer)
+  .node('shouldContinue', Comparator)
+  .node('display', HexDisplay)
+  .node('doneLed', Led)
+  .connect(({ in: inp, out, iter, eight, inc, shouldContinue, display, doneLed }) => [
+    iter.q.to(inc.in, shouldContinue.a, display.in),
+    eight.out.to(shouldContinue.b),
+    shouldContinue.lt.to(iter.we),
+    inc.out.to(iter.data),
+    shouldContinue.eq.to(doneLed.in),
+  ])
+  .build()
+`,
     dsl: `
-circuit IterationControl {
-  clock clk
-  impl {
-    node iter: Register(initial=0)
-    connect clk -> iter.clk
-
-    node eight: Constant(value=8)
-
-    node inc: Incrementer
-    connect iter.q -> inc.in
-
-    node shouldContinue: Comparator
-    connect iter.q -> shouldContinue.a
-    connect eight.out -> shouldContinue.b
-
-    connect shouldContinue.lt -> iter.we
-    connect inc.out -> iter.data
-
-    node display: HexDisplay
-    connect iter.q -> display.in
-
-    node doneLed: Led
-    connect shouldContinue.eq -> doneLed.in
-  }
-}`,
+const IterationControl = component('IterationControl')
+  .node('iter', Register, { initial: 0 })
+  .node('eight', Constant, { value: 8 })
+  .node('inc', Incrementer)
+  .node('shouldContinue', Comparator)
+  .node('display', HexDisplay)
+  .node('doneLed', Led)
+  .connect(({ in: inp, out, iter, eight, inc, shouldContinue, display, doneLed }) => [
+    iter.q.to(inc.in, shouldContinue.a, display.in),
+    eight.out.to(shouldContinue.b),
+    shouldContinue.lt.to(iter.we),
+    inc.out.to(iter.data),
+    shouldContinue.eq.to(doneLed.in),
+  ])
+  .build()
+`,
   },
 
   angleLookup: {
     name: "Angle Lookup Table",
     description:
       "CORDIC uses a pre-computed table of atan(2^-i) values. A cascaded mux tree selects the right angle for each iteration.",
-    displayDsl: `circuit AngleLookup {
-  impl {
-    node iteration: Input(value=0)
-
-    node angle0: Constant(value=32)
-    node angle1: Constant(value=19)
-    node angle2: Constant(value=10)
-    node angle3: Constant(value=5)
-    node angle4: Constant(value=3)
-    node angle5: Constant(value=1)
-    node angle6: Constant(value=1)
-    node angle7: Constant(value=0)
-
-    node bit0: BitSlice(low=0, high=0)
-    node bit1: BitSlice(low=1, high=1)
-    node bit2: BitSlice(low=2, high=2)
-    connect iteration.out -> bit0.in
-    connect iteration.out -> bit1.in
-    connect iteration.out -> bit2.in
-
-    node mux01: Mux
-    node mux23: Mux
-    node mux45: Mux
-    node mux67: Mux
-    connect bit0.out -> mux01.sel
-    connect bit0.out -> mux23.sel
-    connect bit0.out -> mux45.sel
-    connect bit0.out -> mux67.sel
-    connect angle0.out -> mux01.in0
-    connect angle1.out -> mux01.in1
-    connect angle2.out -> mux23.in0
-    connect angle3.out -> mux23.in1
-    connect angle4.out -> mux45.in0
-    connect angle5.out -> mux45.in1
-    connect angle6.out -> mux67.in0
-    connect angle7.out -> mux67.in1
-
-    node mux0123: Mux
-    node mux4567: Mux
-    connect bit1.out -> mux0123.sel
-    connect bit1.out -> mux4567.sel
-    connect mux01.out -> mux0123.in0
-    connect mux23.out -> mux0123.in1
-    connect mux45.out -> mux4567.in0
-    connect mux67.out -> mux4567.in1
-
-    node angleSel: Mux
-    connect bit2.out -> angleSel.sel
-    connect mux0123.out -> angleSel.in0
-    connect mux4567.out -> angleSel.in1
-
-    node display: HexDisplay
-    connect angleSel.out -> display.in
-  }
-}`,
+    displayDsl: `
+const AngleLookup = component('AngleLookup')
+  .node('iteration', Input, { value: 0 })
+  .node('angle0', Constant, { value: 32 })
+  .node('angle1', Constant, { value: 19 })
+  .node('angle2', Constant, { value: 10 })
+  .node('angle3', Constant, { value: 5 })
+  .node('angle4', Constant, { value: 3 })
+  .node('angle5', Constant, { value: 1 })
+  .node('angle6', Constant, { value: 1 })
+  .node('angle7', Constant, { value: 0 })
+  .node('bit0', BitSlice, { low: 0, high: 0 })
+  .node('bit1', BitSlice, { low: 1, high: 1 })
+  .node('bit2', BitSlice, { low: 2, high: 2 })
+  .node('mux01', Mux)
+  .node('mux23', Mux)
+  .node('mux45', Mux)
+  .node('mux67', Mux)
+  .node('mux0123', Mux)
+  .node('mux4567', Mux)
+  .node('angleSel', Mux)
+  .node('display', HexDisplay)
+  .connect(({ in: inp, out, iteration, angle0, angle1, angle2, angle3, angle4, angle5, angle6, angle7, bit0, bit1, bit2, mux01, mux23, mux45, mux67, mux0123, mux4567, angleSel, display }) => [
+    iteration.out.to(bit0.in, bit1.in, bit2.in),
+    bit0.out.to(mux01.sel, mux23.sel, mux45.sel, mux67.sel),
+    angle0.out.to(mux01.in0),
+    angle1.out.to(mux01.in1),
+    angle2.out.to(mux23.in0),
+    angle3.out.to(mux23.in1),
+    angle4.out.to(mux45.in0),
+    angle5.out.to(mux45.in1),
+    angle6.out.to(mux67.in0),
+    angle7.out.to(mux67.in1),
+    bit1.out.to(mux0123.sel, mux4567.sel),
+    mux01.out.to(mux0123.in0),
+    mux23.out.to(mux0123.in1),
+    mux45.out.to(mux4567.in0),
+    mux67.out.to(mux4567.in1),
+    bit2.out.to(angleSel.sel),
+    mux0123.out.to(angleSel.in0),
+    mux4567.out.to(angleSel.in1),
+    angleSel.out.to(display.in),
+  ])
+  .build()
+`,
     dsl: `
-circuit AngleLookup {
-  impl {
-    node iteration: Input(value=0)
-
-    node angle0: Constant(value=32)
-    node angle1: Constant(value=19)
-    node angle2: Constant(value=10)
-    node angle3: Constant(value=5)
-    node angle4: Constant(value=3)
-    node angle5: Constant(value=1)
-    node angle6: Constant(value=1)
-    node angle7: Constant(value=0)
-
-    node bit0: BitSlice(low=0, high=0)
-    node bit1: BitSlice(low=1, high=1)
-    node bit2: BitSlice(low=2, high=2)
-    connect iteration.out -> bit0.in
-    connect iteration.out -> bit1.in
-    connect iteration.out -> bit2.in
-
-    node mux01: Mux
-    node mux23: Mux
-    node mux45: Mux
-    node mux67: Mux
-    connect bit0.out -> mux01.sel
-    connect bit0.out -> mux23.sel
-    connect bit0.out -> mux45.sel
-    connect bit0.out -> mux67.sel
-    connect angle0.out -> mux01.in0
-    connect angle1.out -> mux01.in1
-    connect angle2.out -> mux23.in0
-    connect angle3.out -> mux23.in1
-    connect angle4.out -> mux45.in0
-    connect angle5.out -> mux45.in1
-    connect angle6.out -> mux67.in0
-    connect angle7.out -> mux67.in1
-
-    node mux0123: Mux
-    node mux4567: Mux
-    connect bit1.out -> mux0123.sel
-    connect bit1.out -> mux4567.sel
-    connect mux01.out -> mux0123.in0
-    connect mux23.out -> mux0123.in1
-    connect mux45.out -> mux4567.in0
-    connect mux67.out -> mux4567.in1
-
-    node angleSel: Mux
-    connect bit2.out -> angleSel.sel
-    connect mux0123.out -> angleSel.in0
-    connect mux4567.out -> angleSel.in1
-
-    node display: HexDisplay
-    connect angleSel.out -> display.in
-  }
-}`,
+const AngleLookup = component('AngleLookup')
+  .node('iteration', Input, { value: 0 })
+  .node('angle0', Constant, { value: 32 })
+  .node('angle1', Constant, { value: 19 })
+  .node('angle2', Constant, { value: 10 })
+  .node('angle3', Constant, { value: 5 })
+  .node('angle4', Constant, { value: 3 })
+  .node('angle5', Constant, { value: 1 })
+  .node('angle6', Constant, { value: 1 })
+  .node('angle7', Constant, { value: 0 })
+  .node('bit0', BitSlice, { low: 0, high: 0 })
+  .node('bit1', BitSlice, { low: 1, high: 1 })
+  .node('bit2', BitSlice, { low: 2, high: 2 })
+  .node('mux01', Mux)
+  .node('mux23', Mux)
+  .node('mux45', Mux)
+  .node('mux67', Mux)
+  .node('mux0123', Mux)
+  .node('mux4567', Mux)
+  .node('angleSel', Mux)
+  .node('display', HexDisplay)
+  .connect(({ in: inp, out, iteration, angle0, angle1, angle2, angle3, angle4, angle5, angle6, angle7, bit0, bit1, bit2, mux01, mux23, mux45, mux67, mux0123, mux4567, angleSel, display }) => [
+    iteration.out.to(bit0.in, bit1.in, bit2.in),
+    bit0.out.to(mux01.sel, mux23.sel, mux45.sel, mux67.sel),
+    angle0.out.to(mux01.in0),
+    angle1.out.to(mux01.in1),
+    angle2.out.to(mux23.in0),
+    angle3.out.to(mux23.in1),
+    angle4.out.to(mux45.in0),
+    angle5.out.to(mux45.in1),
+    angle6.out.to(mux67.in0),
+    angle7.out.to(mux67.in1),
+    bit1.out.to(mux0123.sel, mux4567.sel),
+    mux01.out.to(mux0123.in0),
+    mux23.out.to(mux0123.in1),
+    mux45.out.to(mux4567.in0),
+    mux67.out.to(mux4567.in1),
+    bit2.out.to(angleSel.sel),
+    mux0123.out.to(angleSel.in0),
+    mux4567.out.to(angleSel.in1),
+    angleSel.out.to(display.in),
+  ])
+  .build()
+`,
   },
 };
 
@@ -356,168 +293,99 @@ circuit AngleLookup {
  * Expected result: x ~ y ~ 93 after 8 iterations.
  */
 export const CORDIC_DSL = `
-circuit CORDICIteration {
-  clock clk
-
-  impl {
-    node x: Register(initial=80)
-    node y: Register(initial=0)
-    node z: Register(initial=32)
-    node iteration: Register(initial=0)
-
-    node zero: Constant(value=0)
-    node one: Constant(value=1)
-    node eight: Constant(value=8)
-
-    node zPositive: SignedComparator
-    connect z.q -> zPositive.a
-    connect zero.out -> zPositive.b
-
-    node xShifted: RightShifter
-    node yShifted: RightShifter
-    connect x.q -> xShifted.value
-    connect y.q -> yShifted.value
-    connect iteration.q -> xShifted.shift
-    connect iteration.q -> yShifted.shift
-
-    node yShiftedNeg: BusNot
-    connect yShifted.result -> yShiftedNeg.in
-
-    node xSubtract: SignedAdder
-    connect x.q -> xSubtract.a
-    connect yShiftedNeg.out -> xSubtract.b
-    connect one.out -> xSubtract.carry_in
-
-    node xAdd: SignedAdder
-    connect x.q -> xAdd.a
-    connect yShifted.result -> xAdd.b
-    connect zero.out -> xAdd.carry_in
-
-    node xUpdate: Mux
-    connect zPositive.gte -> xUpdate.sel
-    connect xAdd.sum -> xUpdate.in0
-    connect xSubtract.sum -> xUpdate.in1
-
-    node xShiftedNeg: BusNot
-    connect xShifted.result -> xShiftedNeg.in
-
-    node yAdd: SignedAdder
-    connect y.q -> yAdd.a
-    connect xShifted.result -> yAdd.b
-    connect zero.out -> yAdd.carry_in
-
-    node ySubtract: SignedAdder
-    connect y.q -> ySubtract.a
-    connect xShiftedNeg.out -> ySubtract.b
-    connect one.out -> ySubtract.carry_in
-
-    node yUpdate: Mux
-    connect zPositive.gte -> yUpdate.sel
-    connect ySubtract.sum -> yUpdate.in0
-    connect yAdd.sum -> yUpdate.in1
-
-    node angle0: Constant(value=32)
-    node angle1: Constant(value=19)
-    node angle2: Constant(value=10)
-    node angle3: Constant(value=5)
-    node angle4: Constant(value=3)
-    node angle5: Constant(value=1)
-    node angle6: Constant(value=1)
-    node angle7: Constant(value=0)
-
-    node bit0: BitSlice(low=0, high=0)
-    node bit1: BitSlice(low=1, high=1)
-    node bit2: BitSlice(low=2, high=2)
-    connect iteration.q -> bit0.in
-    connect iteration.q -> bit1.in
-    connect iteration.q -> bit2.in
-
-    node mux01: Mux
-    node mux23: Mux
-    node mux45: Mux
-    node mux67: Mux
-    connect bit0.out -> mux01.sel
-    connect bit0.out -> mux23.sel
-    connect bit0.out -> mux45.sel
-    connect bit0.out -> mux67.sel
-    connect angle0.out -> mux01.in0
-    connect angle1.out -> mux01.in1
-    connect angle2.out -> mux23.in0
-    connect angle3.out -> mux23.in1
-    connect angle4.out -> mux45.in0
-    connect angle5.out -> mux45.in1
-    connect angle6.out -> mux67.in0
-    connect angle7.out -> mux67.in1
-
-    node mux0123: Mux
-    node mux4567: Mux
-    connect bit1.out -> mux0123.sel
-    connect bit1.out -> mux4567.sel
-    connect mux01.out -> mux0123.in0
-    connect mux23.out -> mux0123.in1
-    connect mux45.out -> mux4567.in0
-    connect mux67.out -> mux4567.in1
-
-    node angleSel: Mux
-    connect bit2.out -> angleSel.sel
-    connect mux0123.out -> angleSel.in0
-    connect mux4567.out -> angleSel.in1
-
-    node angleNeg: BusNot
-    connect angleSel.out -> angleNeg.in
-
-    node zSubtract: SignedAdder
-    connect z.q -> zSubtract.a
-    connect angleNeg.out -> zSubtract.b
-    connect one.out -> zSubtract.carry_in
-
-    node zAdd: SignedAdder
-    connect z.q -> zAdd.a
-    connect angleSel.out -> zAdd.b
-    connect zero.out -> zAdd.carry_in
-
-    node zUpdate: Mux
-    connect zPositive.gte -> zUpdate.sel
-    connect zAdd.sum -> zUpdate.in0
-    connect zSubtract.sum -> zUpdate.in1
-
-    node iterInc: Incrementer
-    connect iteration.q -> iterInc.in
-
-    node shouldContinue: Comparator
-    connect iteration.q -> shouldContinue.a
-    connect eight.out -> shouldContinue.b
-
-    connect shouldContinue.lt -> x.we
-    connect shouldContinue.lt -> y.we
-    connect shouldContinue.lt -> z.we
-    connect shouldContinue.lt -> iteration.we
-
-    connect xUpdate.out -> x.data
-    connect yUpdate.out -> y.data
-    connect zUpdate.out -> z.data
-    connect iterInc.out -> iteration.data
-
-    node xDisplay: HexDisplay
-    node yDisplay: HexDisplay
-    node zDisplay: HexDisplay
-    node iterDisplay: HexDisplay
-
-    connect x.q -> xDisplay.in
-    connect y.q -> yDisplay.in
-    connect z.q -> zDisplay.in
-    connect iteration.q -> iterDisplay.in
-
-    node doneCheck: Comparator
-    node doneLed: Led
-    connect iteration.q -> doneCheck.a
-    connect eight.out -> doneCheck.b
-    connect doneCheck.eq -> doneLed.in
-
-    connect clk -> x.clk
-    connect clk -> y.clk
-    connect clk -> z.clk
-    connect clk -> iteration.clk
-  }
-}
+const CORDICIteration = component('CORDICIteration')
+  .node('x', Register, { initial: 80 })
+  .node('y', Register, { initial: 0 })
+  .node('z', Register, { initial: 32 })
+  .node('iteration', Register, { initial: 0 })
+  .node('zero', Constant, { value: 0 })
+  .node('one', Constant, { value: 1 })
+  .node('eight', Constant, { value: 8 })
+  .node('zPositive', SignedComparator)
+  .node('xShifted', RightShifter)
+  .node('yShifted', RightShifter)
+  .node('yShiftedNeg', BusNot)
+  .node('xSubtract', SignedAdder)
+  .node('xAdd', SignedAdder)
+  .node('xUpdate', Mux)
+  .node('xShiftedNeg', BusNot)
+  .node('yAdd', SignedAdder)
+  .node('ySubtract', SignedAdder)
+  .node('yUpdate', Mux)
+  .node('angle0', Constant, { value: 32 })
+  .node('angle1', Constant, { value: 19 })
+  .node('angle2', Constant, { value: 10 })
+  .node('angle3', Constant, { value: 5 })
+  .node('angle4', Constant, { value: 3 })
+  .node('angle5', Constant, { value: 1 })
+  .node('angle6', Constant, { value: 1 })
+  .node('angle7', Constant, { value: 0 })
+  .node('bit0', BitSlice, { low: 0, high: 0 })
+  .node('bit1', BitSlice, { low: 1, high: 1 })
+  .node('bit2', BitSlice, { low: 2, high: 2 })
+  .node('mux01', Mux)
+  .node('mux23', Mux)
+  .node('mux45', Mux)
+  .node('mux67', Mux)
+  .node('mux0123', Mux)
+  .node('mux4567', Mux)
+  .node('angleSel', Mux)
+  .node('angleNeg', BusNot)
+  .node('zSubtract', SignedAdder)
+  .node('zAdd', SignedAdder)
+  .node('zUpdate', Mux)
+  .node('iterInc', Incrementer)
+  .node('shouldContinue', Comparator)
+  .node('xDisplay', HexDisplay)
+  .node('yDisplay', HexDisplay)
+  .node('zDisplay', HexDisplay)
+  .node('iterDisplay', HexDisplay)
+  .node('doneCheck', Comparator)
+  .node('doneLed', Led)
+  .connect(({ in: inp, out, x, y, z, iteration, zero, one, eight, zPositive, xShifted, yShifted, yShiftedNeg, xSubtract, xAdd, xUpdate, xShiftedNeg, yAdd, ySubtract, yUpdate, angle0, angle1, angle2, angle3, angle4, angle5, angle6, angle7, bit0, bit1, bit2, mux01, mux23, mux45, mux67, mux0123, mux4567, angleSel, angleNeg, zSubtract, zAdd, zUpdate, iterInc, shouldContinue, xDisplay, yDisplay, zDisplay, iterDisplay, doneCheck, doneLed }) => [
+    z.q.to(zPositive.a, zSubtract.a, zAdd.a, zDisplay.in),
+    zero.out.to(zPositive.b, xAdd.carry_in, yAdd.carry_in, zAdd.carry_in),
+    x.q.to(xShifted.value, xSubtract.a, xAdd.a, xDisplay.in),
+    y.q.to(yShifted.value, yAdd.a, ySubtract.a, yDisplay.in),
+    iteration.q.to(xShifted.shift, yShifted.shift, bit0.in, bit1.in, bit2.in, iterInc.in, shouldContinue.a, iterDisplay.in, doneCheck.a),
+    yShifted.result.to(yShiftedNeg.in, xAdd.b),
+    yShiftedNeg.out.to(xSubtract.b),
+    one.out.to(xSubtract.carry_in, ySubtract.carry_in, zSubtract.carry_in),
+    zPositive.gte.to(xUpdate.sel, yUpdate.sel, zUpdate.sel),
+    xAdd.sum.to(xUpdate.in0),
+    xSubtract.sum.to(xUpdate.in1),
+    xShifted.result.to(xShiftedNeg.in, yAdd.b),
+    xShiftedNeg.out.to(ySubtract.b),
+    ySubtract.sum.to(yUpdate.in0),
+    yAdd.sum.to(yUpdate.in1),
+    bit0.out.to(mux01.sel, mux23.sel, mux45.sel, mux67.sel),
+    angle0.out.to(mux01.in0),
+    angle1.out.to(mux01.in1),
+    angle2.out.to(mux23.in0),
+    angle3.out.to(mux23.in1),
+    angle4.out.to(mux45.in0),
+    angle5.out.to(mux45.in1),
+    angle6.out.to(mux67.in0),
+    angle7.out.to(mux67.in1),
+    bit1.out.to(mux0123.sel, mux4567.sel),
+    mux01.out.to(mux0123.in0),
+    mux23.out.to(mux0123.in1),
+    mux45.out.to(mux4567.in0),
+    mux67.out.to(mux4567.in1),
+    bit2.out.to(angleSel.sel),
+    mux0123.out.to(angleSel.in0),
+    mux4567.out.to(angleSel.in1),
+    angleSel.out.to(angleNeg.in, zAdd.b),
+    angleNeg.out.to(zSubtract.b),
+    zAdd.sum.to(zUpdate.in0),
+    zSubtract.sum.to(zUpdate.in1),
+    eight.out.to(shouldContinue.b, doneCheck.b),
+    shouldContinue.lt.to(x.we, y.we, z.we, iteration.we),
+    xUpdate.out.to(x.data),
+    yUpdate.out.to(y.data),
+    zUpdate.out.to(z.data),
+    iterInc.out.to(iteration.data),
+    doneCheck.eq.to(doneLed.in),
+  ])
+  .build()
 `;

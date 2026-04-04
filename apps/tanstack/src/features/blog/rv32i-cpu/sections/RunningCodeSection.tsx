@@ -8,7 +8,7 @@ export function RunningCodeSection() {
   const [boardDsl, setBoardDsl] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch("/blog-assets/rv32i-board.dsl")
+    fetch("/blog-assets/rv32i-board.circuit.ts")
       .then((r) => {
         if (!r.ok) throw new Error(`Failed to fetch: ${r.status}`);
         return r.text();

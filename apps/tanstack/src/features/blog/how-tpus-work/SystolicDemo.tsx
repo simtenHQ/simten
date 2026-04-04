@@ -110,10 +110,17 @@ export function SystolicDemo() {
 
   // Read input node values (searches for nodeId.out in portValues)
   const getInputValue = (name: string): number => {
+    if (!sim.portValues) return 0;
+    // Try plain key first (TS builder format)
+    const plain = sim.portValues.get(`${name}.out`);
+    if (plain !== undefined && typeof plain === "number") return plain;
+    // Try mapped nodeId (may differ from label)
     const nodeId = inputNodeIds[name];
-    if (!nodeId || !sim.portValues) return 0;
-    const exact = sim.portValues.get(`${nodeId}.out`);
-    if (typeof exact === "number") return exact;
+    if (nodeId) {
+      const exact = sim.portValues.get(`${nodeId}.out`);
+      if (typeof exact === "number") return exact;
+    }
+    // Fallback: mangled DSL format
     for (const [key, value] of sim.portValues) {
       if (key.includes(`_${name}_`) && key.endsWith(".out")) {
         return typeof value === "number" ? value : 0;

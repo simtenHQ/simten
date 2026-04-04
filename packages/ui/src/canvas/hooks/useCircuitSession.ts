@@ -38,6 +38,7 @@ function detectSequential(
 export function useCircuitSession(
   circuit: Circuit | null,
   componentLibrary: ComponentLibrary | null,
+  memoryData?: Map<string, Map<number, number>>,
 ): UseSimulationSessionResult & { session: SimulationSession | null } {
   const [session, setSession] = useState<SimulationSession | null>(null);
   const sessionRef = useRef<SimulationSession | null>(null);
@@ -85,7 +86,7 @@ export function useCircuitSession(
 
     try {
       const isSeq = detectSequential(circuit, componentLibrary.resolveComponent);
-      const engine = createSimulatorFromCircuit(circuit, componentLibrary);
+      const engine = createSimulatorFromCircuit(circuit, componentLibrary, memoryData);
       engine.runCombinational();
       const s = new SimulationSession(engine, { isSequential: isSeq });
       sessionRef.current = s;
@@ -100,7 +101,7 @@ export function useCircuitSession(
       console.error("[useCircuitSession] Init failed:", e);
       setSession(null);
     }
-  }, [circuit, componentLibrary]);
+  }, [circuit, componentLibrary, memoryData]);
 
   const simState = useSimulationSession(session);
 

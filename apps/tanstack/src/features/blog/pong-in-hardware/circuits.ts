@@ -32,79 +32,58 @@ export const PONG_CIRCUITS: Record<string, BlogCircuit> = {
       displayX: { x: 710, y: 50 },
       displayY: { x: 710, y: 200 },
     },
-    displayDsl: `circuit BallPosition {
-  clock clk
-  impl {
-    node ballX: Register(initial=8)
-    node ballY: Register(initial=8)
-    connect clk -> ballX.clk
-    connect clk -> ballY.clk
-
-    node dx: Input(value=1)
-    node dy: Input(value=1)
-
-    node nextX: Adder
-    node nextY: Adder
-    connect ballX.q -> nextX.a
-    connect dx.out -> nextX.b
-    connect ballY.q -> nextY.a
-    connect dy.out -> nextY.b
-
-    node wrapX: BitSlice(low=0, high=3)
-    node wrapY: BitSlice(low=0, high=3)
-    connect nextX.sum -> wrapX.in
-    connect nextY.sum -> wrapY.in
-
-    connect wrapX.out -> ballX.data
-    connect wrapY.out -> ballY.data
-
-    node enable: Switch
-    connect enable.out -> ballX.we
-    connect enable.out -> ballY.we
-
-    node displayX: HexDisplay
-    node displayY: HexDisplay
-    connect ballX.q -> displayX.in
-    connect ballY.q -> displayY.in
-  }
-}`,
+    displayDsl: `
+const BallPosition = component('BallPosition')
+  .node('ballX', Register, { initial: 8 })
+  .node('ballY', Register, { initial: 8 })
+  .node('dx', Input, { value: 1 })
+  .node('dy', Input, { value: 1 })
+  .node('nextX', Adder)
+  .node('nextY', Adder)
+  .node('wrapX', BitSlice, { low: 0, high: 3 })
+  .node('wrapY', BitSlice, { low: 0, high: 3 })
+  .node('enable', Switch)
+  .node('displayX', HexDisplay)
+  .node('displayY', HexDisplay)
+  .connect(({ in: inp, out, ballX, ballY, dx, dy, nextX, nextY, wrapX, wrapY, enable, displayX, displayY }) => [
+    ballX.q.to(nextX.a, displayX.in),
+    dx.out.to(nextX.b),
+    ballY.q.to(nextY.a, displayY.in),
+    dy.out.to(nextY.b),
+    nextX.sum.to(wrapX.in),
+    nextY.sum.to(wrapY.in),
+    wrapX.out.to(ballX.data),
+    wrapY.out.to(ballY.data),
+    enable.out.to(ballX.we, ballY.we),
+  ])
+  .build()
+`,
     dsl: `
-circuit BallPosition {
-  clock clk
-  impl {
-    node ballX: Register(initial=8)
-    node ballY: Register(initial=8)
-    connect clk -> ballX.clk
-    connect clk -> ballY.clk
-
-    node dx: Input(value=1)
-    node dy: Input(value=1)
-
-    node nextX: Adder
-    node nextY: Adder
-    connect ballX.q -> nextX.a
-    connect dx.out -> nextX.b
-    connect ballY.q -> nextY.a
-    connect dy.out -> nextY.b
-
-    node wrapX: BitSlice(low=0, high=3)
-    node wrapY: BitSlice(low=0, high=3)
-    connect nextX.sum -> wrapX.in
-    connect nextY.sum -> wrapY.in
-
-    connect wrapX.out -> ballX.data
-    connect wrapY.out -> ballY.data
-
-    node enable: Switch
-    connect enable.out -> ballX.we
-    connect enable.out -> ballY.we
-
-    node displayX: HexDisplay
-    node displayY: HexDisplay
-    connect ballX.q -> displayX.in
-    connect ballY.q -> displayY.in
-  }
-}`,
+const BallPosition = component('BallPosition')
+  .node('ballX', Register, { initial: 8 })
+  .node('ballY', Register, { initial: 8 })
+  .node('dx', Input, { value: 1 })
+  .node('dy', Input, { value: 1 })
+  .node('nextX', Adder)
+  .node('nextY', Adder)
+  .node('wrapX', BitSlice, { low: 0, high: 3 })
+  .node('wrapY', BitSlice, { low: 0, high: 3 })
+  .node('enable', Switch)
+  .node('displayX', HexDisplay)
+  .node('displayY', HexDisplay)
+  .connect(({ in: inp, out, ballX, ballY, dx, dy, nextX, nextY, wrapX, wrapY, enable, displayX, displayY }) => [
+    ballX.q.to(nextX.a, displayX.in),
+    dx.out.to(nextX.b),
+    ballY.q.to(nextY.a, displayY.in),
+    dy.out.to(nextY.b),
+    nextX.sum.to(wrapX.in),
+    nextY.sum.to(wrapY.in),
+    wrapX.out.to(ballX.data),
+    wrapY.out.to(ballY.data),
+    enable.out.to(ballX.we, ballY.we),
+  ])
+  .build()
+`,
   },
 
   bounceDetection: {
@@ -124,71 +103,58 @@ circuit BallPosition {
       newDY: { x: 380, y: 400 },
       display: { x: 560, y: 400 },
     },
-    displayDsl: `circuit BounceDetection {
-  impl {
-    node ballY: Input(value=15)
-    node zero: Constant(value=0)
-    node fifteen: Constant(value=15)
-
-    node atTop: Comparator
-    connect ballY.out -> atTop.a
-    connect zero.out -> atTop.b
-
-    node atBottom: Comparator
-    connect ballY.out -> atBottom.a
-    connect fifteen.out -> atBottom.b
-
-    node shouldBounce: Or
-    connect atTop.eq -> shouldBounce.a
-    connect atBottom.eq -> shouldBounce.b
-
-    node bounceLed: Led
-    connect shouldBounce.out -> bounceLed.in
-
-    node one: Constant(value=1)
-    node minus1: Constant(value=255)
-    node newDY: Mux(width=8)
-    connect one.out -> newDY.in0
-    connect minus1.out -> newDY.in1
-    connect atBottom.eq -> newDY.sel
-
-    node display: HexDisplay
-    connect newDY.out -> display.in
-  }
-}`,
+    displayDsl: `
+const BounceDetection = component('BounceDetection')
+  .node('ballY', Input, { value: 15 })
+  .node('zero', Constant, { value: 0 })
+  .node('fifteen', Constant, { value: 15 })
+  .node('atTop', Comparator)
+  .node('atBottom', Comparator)
+  .node('shouldBounce', Or)
+  .node('bounceLed', Led)
+  .node('one', Constant, { value: 1 })
+  .node('minus1', Constant, { value: 255 })
+  .node('newDY', Mux, { width: 8 })
+  .node('display', HexDisplay)
+  .connect(({ in: inp, out, ballY, zero, fifteen, atTop, atBottom, shouldBounce, bounceLed, one, minus1, newDY, display }) => [
+    ballY.out.to(atTop.a, atBottom.a),
+    zero.out.to(atTop.b),
+    fifteen.out.to(atBottom.b),
+    atTop.eq.to(shouldBounce.a),
+    atBottom.eq.to(shouldBounce.b, newDY.sel),
+    shouldBounce.out.to(bounceLed.in),
+    one.out.to(newDY.in0),
+    minus1.out.to(newDY.in1),
+    newDY.out.to(display.in),
+  ])
+  .build()
+`,
     dsl: `
-circuit BounceDetection {
-  impl {
-    node ballY: Input(value=15)
-    node zero: Constant(value=0)
-    node fifteen: Constant(value=15)
-
-    node atTop: Comparator
-    connect ballY.out -> atTop.a
-    connect zero.out -> atTop.b
-
-    node atBottom: Comparator
-    connect ballY.out -> atBottom.a
-    connect fifteen.out -> atBottom.b
-
-    node shouldBounce: Or
-    connect atTop.eq -> shouldBounce.a
-    connect atBottom.eq -> shouldBounce.b
-
-    node bounceLed: Led
-    connect shouldBounce.out -> bounceLed.in
-
-    node one: Constant(value=1)
-    node minus1: Constant(value=255)
-    node newDY: Mux(width=8)
-    connect one.out -> newDY.in0
-    connect minus1.out -> newDY.in1
-    connect atBottom.eq -> newDY.sel
-
-    node display: HexDisplay
-    connect newDY.out -> display.in
-  }
-}`,
+const BounceDetection = component('BounceDetection')
+  .node('ballY', Input, { value: 15 })
+  .node('zero', Constant, { value: 0 })
+  .node('fifteen', Constant, { value: 15 })
+  .node('atTop', Comparator)
+  .node('atBottom', Comparator)
+  .node('shouldBounce', Or)
+  .node('bounceLed', Led)
+  .node('one', Constant, { value: 1 })
+  .node('minus1', Constant, { value: 255 })
+  .node('newDY', Mux, { width: 8 })
+  .node('display', HexDisplay)
+  .connect(({ in: inp, out, ballY, zero, fifteen, atTop, atBottom, shouldBounce, bounceLed, one, minus1, newDY, display }) => [
+    ballY.out.to(atTop.a, atBottom.a),
+    zero.out.to(atTop.b),
+    fifteen.out.to(atBottom.b),
+    atTop.eq.to(shouldBounce.a),
+    atBottom.eq.to(shouldBounce.b, newDY.sel),
+    shouldBounce.out.to(bounceLed.in),
+    one.out.to(newDY.in0),
+    minus1.out.to(newDY.in1),
+    newDY.out.to(display.in),
+  ])
+  .build()
+`,
   },
 
   paddleMovement: {
@@ -213,103 +179,78 @@ circuit BounceDetection {
       display: { x: 720, y: 150 },
       deltaDisplay: { x: 720, y: 330 },
     },
-    displayDsl: `circuit PaddleMovement {
-  clock clk
-  impl {
-    node keyboard: Input(value=17)
-    node zero: Constant(value=0)
-    node one: Constant(value=1)
-    node minus1: Constant(value=255)
-    node keyW: Constant(value=17)
-    node keyS: Constant(value=31)
-
-    node isW: Comparator
-    node isS: Comparator
-    connect keyboard.out -> isW.a
-    connect keyW.out -> isW.b
-    connect keyboard.out -> isS.a
-    connect keyS.out -> isS.b
-
-    node upDelta: Mux(width=8)
-    connect zero.out -> upDelta.in0
-    connect minus1.out -> upDelta.in1
-    connect isW.eq -> upDelta.sel
-
-    node delta: Mux(width=8)
-    connect upDelta.out -> delta.in0
-    connect one.out -> delta.in1
-    connect isS.eq -> delta.sel
-
-    node paddleY: Register(initial=6)
-    connect clk -> paddleY.clk
-
-    node newY: Adder
-    connect paddleY.q -> newY.a
-    connect delta.out -> newY.b
-
-    node wrapY: BitSlice(low=0, high=3)
-    connect newY.sum -> wrapY.in
-    connect wrapY.out -> paddleY.data
-
-    node enable: Switch
-    connect enable.out -> paddleY.we
-
-    node display: HexDisplay
-    connect paddleY.q -> display.in
-
-    node deltaDisplay: HexDisplay
-    connect delta.out -> deltaDisplay.in
-  }
-}`,
+    displayDsl: `
+const PaddleMovement = component('PaddleMovement')
+  .node('keyboard', Input, { value: 17 })
+  .node('zero', Constant, { value: 0 })
+  .node('one', Constant, { value: 1 })
+  .node('minus1', Constant, { value: 255 })
+  .node('keyW', Constant, { value: 17 })
+  .node('keyS', Constant, { value: 31 })
+  .node('isW', Comparator)
+  .node('isS', Comparator)
+  .node('upDelta', Mux, { width: 8 })
+  .node('delta', Mux, { width: 8 })
+  .node('paddleY', Register, { initial: 6 })
+  .node('newY', Adder)
+  .node('wrapY', BitSlice, { low: 0, high: 3 })
+  .node('enable', Switch)
+  .node('display', HexDisplay)
+  .node('deltaDisplay', HexDisplay)
+  .connect(({ in: inp, out, keyboard, zero, one, minus1, keyW, keyS, isW, isS, upDelta, delta, paddleY, newY, wrapY, enable, display, deltaDisplay }) => [
+    keyboard.out.to(isW.a, isS.a),
+    keyW.out.to(isW.b),
+    keyS.out.to(isS.b),
+    zero.out.to(upDelta.in0),
+    minus1.out.to(upDelta.in1),
+    isW.eq.to(upDelta.sel),
+    upDelta.out.to(delta.in0),
+    one.out.to(delta.in1),
+    isS.eq.to(delta.sel),
+    paddleY.q.to(newY.a, display.in),
+    delta.out.to(newY.b, deltaDisplay.in),
+    newY.sum.to(wrapY.in),
+    wrapY.out.to(paddleY.data),
+    enable.out.to(paddleY.we),
+  ])
+  .build()
+`,
     dsl: `
-circuit PaddleMovement {
-  clock clk
-  impl {
-    node keyboard: Input(value=17)
-    node zero: Constant(value=0)
-    node one: Constant(value=1)
-    node minus1: Constant(value=255)
-    node keyW: Constant(value=17)
-    node keyS: Constant(value=31)
-
-    node isW: Comparator
-    node isS: Comparator
-    connect keyboard.out -> isW.a
-    connect keyW.out -> isW.b
-    connect keyboard.out -> isS.a
-    connect keyS.out -> isS.b
-
-    node upDelta: Mux(width=8)
-    connect zero.out -> upDelta.in0
-    connect minus1.out -> upDelta.in1
-    connect isW.eq -> upDelta.sel
-
-    node delta: Mux(width=8)
-    connect upDelta.out -> delta.in0
-    connect one.out -> delta.in1
-    connect isS.eq -> delta.sel
-
-    node paddleY: Register(initial=6)
-    connect clk -> paddleY.clk
-
-    node newY: Adder
-    connect paddleY.q -> newY.a
-    connect delta.out -> newY.b
-
-    node wrapY: BitSlice(low=0, high=3)
-    connect newY.sum -> wrapY.in
-    connect wrapY.out -> paddleY.data
-
-    node enable: Switch
-    connect enable.out -> paddleY.we
-
-    node display: HexDisplay
-    connect paddleY.q -> display.in
-
-    node deltaDisplay: HexDisplay
-    connect delta.out -> deltaDisplay.in
-  }
-}`,
+const PaddleMovement = component('PaddleMovement')
+  .node('keyboard', Input, { value: 17 })
+  .node('zero', Constant, { value: 0 })
+  .node('one', Constant, { value: 1 })
+  .node('minus1', Constant, { value: 255 })
+  .node('keyW', Constant, { value: 17 })
+  .node('keyS', Constant, { value: 31 })
+  .node('isW', Comparator)
+  .node('isS', Comparator)
+  .node('upDelta', Mux, { width: 8 })
+  .node('delta', Mux, { width: 8 })
+  .node('paddleY', Register, { initial: 6 })
+  .node('newY', Adder)
+  .node('wrapY', BitSlice, { low: 0, high: 3 })
+  .node('enable', Switch)
+  .node('display', HexDisplay)
+  .node('deltaDisplay', HexDisplay)
+  .connect(({ in: inp, out, keyboard, zero, one, minus1, keyW, keyS, isW, isS, upDelta, delta, paddleY, newY, wrapY, enable, display, deltaDisplay }) => [
+    keyboard.out.to(isW.a, isS.a),
+    keyW.out.to(isW.b),
+    keyS.out.to(isS.b),
+    zero.out.to(upDelta.in0),
+    minus1.out.to(upDelta.in1),
+    isW.eq.to(upDelta.sel),
+    upDelta.out.to(delta.in0),
+    one.out.to(delta.in1),
+    isS.eq.to(delta.sel),
+    paddleY.q.to(newY.a, display.in),
+    delta.out.to(newY.b, deltaDisplay.in),
+    newY.sum.to(wrapY.in),
+    wrapY.out.to(paddleY.data),
+    enable.out.to(paddleY.we),
+  ])
+  .build()
+`,
   },
 
   phaseCounter: {
@@ -330,87 +271,62 @@ circuit PaddleMovement {
       isDrawPhase: { x: 530, y: 400 },
       drawLed: { x: 700, y: 400 },
     },
-    displayDsl: `circuit PhaseCounter14 {
-  clock clk
-  impl {
-    node phase: Register(initial=0)
-    connect clk -> phase.clk
-
-    node one: Constant(value=1)
-    node zero: Constant(value=0)
-    node fourteen: Constant(value=14)
-
-    node phaseInc: Adder
-    connect phase.q -> phaseInc.a
-    connect one.out -> phaseInc.b
-
-    node atFourteen: Comparator
-    connect phaseInc.sum -> atFourteen.a
-    connect fourteen.out -> atFourteen.b
-
-    node nextPhase: Mux(width=8)
-    connect phaseInc.sum -> nextPhase.in0
-    connect zero.out -> nextPhase.in1
-    connect atFourteen.eq -> nextPhase.sel
-
-    connect nextPhase.out -> phase.data
-
-    node enable: Switch
-    connect enable.out -> phase.we
-
-    node display: HexDisplay
-    connect phase.q -> display.in
-
-    node drawThreshold: Constant(value=6)
-    node isDrawPhase: Comparator
-    connect phase.q -> isDrawPhase.a
-    connect drawThreshold.out -> isDrawPhase.b
-
-    node drawLed: Led
-    connect isDrawPhase.gt -> drawLed.in
-  }
-}`,
+    displayDsl: `
+const PhaseCounter14 = component('PhaseCounter14')
+  .node('phase', Register, { initial: 0 })
+  .node('one', Constant, { value: 1 })
+  .node('zero', Constant, { value: 0 })
+  .node('fourteen', Constant, { value: 14 })
+  .node('phaseInc', Adder)
+  .node('atFourteen', Comparator)
+  .node('nextPhase', Mux, { width: 8 })
+  .node('enable', Switch)
+  .node('display', HexDisplay)
+  .node('drawThreshold', Constant, { value: 6 })
+  .node('isDrawPhase', Comparator)
+  .node('drawLed', Led)
+  .connect(({ in: inp, out, phase, one, zero, fourteen, phaseInc, atFourteen, nextPhase, enable, display, drawThreshold, isDrawPhase, drawLed }) => [
+    phase.q.to(phaseInc.a, display.in, isDrawPhase.a),
+    one.out.to(phaseInc.b),
+    phaseInc.sum.to(atFourteen.a, nextPhase.in0),
+    fourteen.out.to(atFourteen.b),
+    zero.out.to(nextPhase.in1),
+    atFourteen.eq.to(nextPhase.sel),
+    nextPhase.out.to(phase.data),
+    enable.out.to(phase.we),
+    drawThreshold.out.to(isDrawPhase.b),
+    isDrawPhase.gt.to(drawLed.in),
+  ])
+  .build()
+`,
     dsl: `
-circuit PhaseCounter14 {
-  clock clk
-  impl {
-    node phase: Register(initial=0)
-    connect clk -> phase.clk
-
-    node one: Constant(value=1)
-    node zero: Constant(value=0)
-    node fourteen: Constant(value=14)
-
-    node phaseInc: Adder
-    connect phase.q -> phaseInc.a
-    connect one.out -> phaseInc.b
-
-    node atFourteen: Comparator
-    connect phaseInc.sum -> atFourteen.a
-    connect fourteen.out -> atFourteen.b
-
-    node nextPhase: Mux(width=8)
-    connect phaseInc.sum -> nextPhase.in0
-    connect zero.out -> nextPhase.in1
-    connect atFourteen.eq -> nextPhase.sel
-
-    connect nextPhase.out -> phase.data
-
-    node enable: Switch
-    connect enable.out -> phase.we
-
-    node display: HexDisplay
-    connect phase.q -> display.in
-
-    node drawThreshold: Constant(value=6)
-    node isDrawPhase: Comparator
-    connect phase.q -> isDrawPhase.a
-    connect drawThreshold.out -> isDrawPhase.b
-
-    node drawLed: Led
-    connect isDrawPhase.gt -> drawLed.in
-  }
-}`,
+const PhaseCounter14 = component('PhaseCounter14')
+  .node('phase', Register, { initial: 0 })
+  .node('one', Constant, { value: 1 })
+  .node('zero', Constant, { value: 0 })
+  .node('fourteen', Constant, { value: 14 })
+  .node('phaseInc', Adder)
+  .node('atFourteen', Comparator)
+  .node('nextPhase', Mux, { width: 8 })
+  .node('enable', Switch)
+  .node('display', HexDisplay)
+  .node('drawThreshold', Constant, { value: 6 })
+  .node('isDrawPhase', Comparator)
+  .node('drawLed', Led)
+  .connect(({ in: inp, out, phase, one, zero, fourteen, phaseInc, atFourteen, nextPhase, enable, display, drawThreshold, isDrawPhase, drawLed }) => [
+    phase.q.to(phaseInc.a, display.in, isDrawPhase.a),
+    one.out.to(phaseInc.b),
+    phaseInc.sum.to(atFourteen.a, nextPhase.in0),
+    fourteen.out.to(atFourteen.b),
+    zero.out.to(nextPhase.in1),
+    atFourteen.eq.to(nextPhase.sel),
+    nextPhase.out.to(phase.data),
+    enable.out.to(phase.we),
+    drawThreshold.out.to(isDrawPhase.b),
+    isDrawPhase.gt.to(drawLed.in),
+  ])
+  .build()
+`,
   },
 
   pixelAddress: {
@@ -425,43 +341,40 @@ circuit PhaseCounter14 {
       addr: { x: 420, y: 90 },
       result: { x: 600, y: 90 },
     },
-    displayDsl: `circuit PixelAddress {
-  impl {
-    node x: Input(value=4)
-    node y: Input(value=4)
-    node four: Input(value=4)
-
-    node y16: LeftShifter
-    connect y.out -> y16.value
-    connect four.out -> y16.shift
-
-    node addr: Adder
-    connect y16.result -> addr.a
-    connect x.out -> addr.b
-
-    node result: HexDisplay
-    connect addr.sum -> result.in
-  }
-}`,
+    displayDsl: `
+const PixelAddress = component('PixelAddress')
+  .node('x', Input, { value: 4 })
+  .node('y', Input, { value: 4 })
+  .node('four', Input, { value: 4 })
+  .node('y16', LeftShifter)
+  .node('addr', Adder)
+  .node('result', HexDisplay)
+  .connect(({ in: inp, out, x, y, four, y16, addr, result }) => [
+    y.out.to(y16.value),
+    four.out.to(y16.shift),
+    y16.result.to(addr.a),
+    x.out.to(addr.b),
+    addr.sum.to(result.in),
+  ])
+  .build()
+`,
     dsl: `
-circuit PixelAddress {
-  impl {
-    node x: Input(value=4)
-    node y: Input(value=4)
-    node four: Input(value=4)
-
-    node y16: LeftShifter
-    connect y.out -> y16.value
-    connect four.out -> y16.shift
-
-    node addr: Adder
-    connect y16.result -> addr.a
-    connect x.out -> addr.b
-
-    node result: HexDisplay
-    connect addr.sum -> result.in
-  }
-}`,
+const PixelAddress = component('PixelAddress')
+  .node('x', Input, { value: 4 })
+  .node('y', Input, { value: 4 })
+  .node('four', Input, { value: 4 })
+  .node('y16', LeftShifter)
+  .node('addr', Adder)
+  .node('result', HexDisplay)
+  .connect(({ in: inp, out, x, y, four, y16, addr, result }) => [
+    y.out.to(y16.value),
+    four.out.to(y16.shift),
+    y16.result.to(addr.a),
+    x.out.to(addr.b),
+    addr.sum.to(result.in),
+  ])
+  .build()
+`,
   },
 };
 
@@ -477,625 +390,352 @@ circuit PixelAddress {
  * - All Input "constants" have value= so the circuit is self-contained
  */
 export const PONG_DSL = `
-circuit PongSimple {
-  impl {
-    // ===== SCREEN (16x16) =====
-    node ram: DualPortRAM
-    node screen: Screen(width=16, height=16)
-    connect screen.addrB -> ram.addrB
-    connect ram.outB -> screen.dataIn
-
-    // ===== KEYBOARD (two registers for multi-key polling) =====
-    node keyboard0: Input
-    node keyboard1: Input
-
-    // ===== GAME STATE REGISTERS =====
-    node ballX: Register(initial=8)
-    node ballY: Register(initial=8)
-    node ballDX: Register(initial=1)
-    node ballDY: Register(initial=1)
-    node leftPaddleY: Register(initial=6)
-    node rightPaddleY: Register(initial=6)
-
-    // Old positions (for clearing previous frame)
-    node oldBallX: Register(initial=8)
-    node oldBallY: Register(initial=8)
-    node oldLeftPaddleY: Register(initial=6)
-    node oldRightPaddleY: Register(initial=6)
-
-
-    // ===== PHASE COUNTER (0-13) =====
-    // 14 phases for 3-pixel-tall paddles:
-    // P0: clear old ball  P1-3: clear old left paddle  P4-6: clear old right paddle
-    // P7: draw new ball   P8-10: draw new left paddle  P11-13: draw new right paddle
-    node phaseCounter: Register
-    node phaseIncrement: Adder
-    connect phaseCounter.q -> phaseIncrement.a
-    node one: Input(value=1)
-    connect one.out -> phaseIncrement.b
-
-    node phaseMod: Comparator
-    node fourteen: Input(value=14)
-    connect phaseIncrement.sum -> phaseMod.a
-    connect fourteen.out -> phaseMod.b
-
-    node nextPhase: Mux(width=8)
-    connect phaseIncrement.sum -> nextPhase.in0
-    node zero: Input(value=0)
-    connect zero.out -> nextPhase.in1
-    connect phaseMod.eq -> nextPhase.sel
-
-    connect nextPhase.out -> phaseCounter.data
-    node phaseEnable: Switch
-    connect phaseEnable.out -> phaseCounter.we
-
-    // ===== PHASE DETECTION =====
-    node p0c: Input(value=0)
-    node p1c: Input(value=1)
-    node p2c: Input(value=2)
-    node p3c: Input(value=3)
-    node p4c: Input(value=4)
-    node p5c: Input(value=5)
-    node p6c: Input(value=6)
-    node p7c: Input(value=7)
-    node p8c: Input(value=8)
-    node p9c: Input(value=9)
-    node p10c: Input(value=10)
-    node p11c: Input(value=11)
-    node p12c: Input(value=12)
-    node p13c: Input(value=13)
-
-    node isP0: Comparator
-    node isP1: Comparator
-    node isP2: Comparator
-    node isP3: Comparator
-    node isP4: Comparator
-    node isP5: Comparator
-    node isP6: Comparator
-    node isP7: Comparator
-    node isP8: Comparator
-    node isP9: Comparator
-    node isP10: Comparator
-    node isP11: Comparator
-    node isP12: Comparator
-    node isP13: Comparator
-
-    connect phaseCounter.q -> isP0.a
-    connect p0c.out -> isP0.b
-    connect phaseCounter.q -> isP1.a
-    connect p1c.out -> isP1.b
-    connect phaseCounter.q -> isP2.a
-    connect p2c.out -> isP2.b
-    connect phaseCounter.q -> isP3.a
-    connect p3c.out -> isP3.b
-    connect phaseCounter.q -> isP4.a
-    connect p4c.out -> isP4.b
-    connect phaseCounter.q -> isP5.a
-    connect p5c.out -> isP5.b
-    connect phaseCounter.q -> isP6.a
-    connect p6c.out -> isP6.b
-    connect phaseCounter.q -> isP7.a
-    connect p7c.out -> isP7.b
-    connect phaseCounter.q -> isP8.a
-    connect p8c.out -> isP8.b
-    connect phaseCounter.q -> isP9.a
-    connect p9c.out -> isP9.b
-    connect phaseCounter.q -> isP10.a
-    connect p10c.out -> isP10.b
-    connect phaseCounter.q -> isP11.a
-    connect p11c.out -> isP11.b
-    connect phaseCounter.q -> isP12.a
-    connect p12c.out -> isP12.b
-    connect phaseCounter.q -> isP13.a
-    connect p13c.out -> isP13.b
-
-    // ===== CONSTANTS =====
-    node fifteen: Input(value=15)
-    node thirteen: Input(value=13)
-    node six: Input(value=6)
-    node two: Input(value=2)
-    node four: Input(value=4)
-    node minus1: Input(value=255)
-    node halfRange: Input(value=128)
-
-    // ===== KEYBOARD SCAN CODES =====
-    node keyW: Input(value=17)
-    node keyS: Input(value=31)
-    node keyUp: Input(value=72)
-    node keyDown: Input(value=80)
-
-    // ===== KEYBOARD DETECTION (poll both registers via OR) =====
-    node isW_kb0: Comparator
-    node isS_kb0: Comparator
-    node isUp_kb0: Comparator
-    node isDown_kb0: Comparator
-
-    connect keyboard0.out -> isW_kb0.a
-    connect keyW.out -> isW_kb0.b
-    connect keyboard0.out -> isS_kb0.a
-    connect keyS.out -> isS_kb0.b
-    connect keyboard0.out -> isUp_kb0.a
-    connect keyUp.out -> isUp_kb0.b
-    connect keyboard0.out -> isDown_kb0.a
-    connect keyDown.out -> isDown_kb0.b
-
-    node isW_kb1: Comparator
-    node isS_kb1: Comparator
-    node isUp_kb1: Comparator
-    node isDown_kb1: Comparator
-
-    connect keyboard1.out -> isW_kb1.a
-    connect keyW.out -> isW_kb1.b
-    connect keyboard1.out -> isS_kb1.a
-    connect keyS.out -> isS_kb1.b
-    connect keyboard1.out -> isUp_kb1.a
-    connect keyUp.out -> isUp_kb1.b
-    connect keyboard1.out -> isDown_kb1.a
-    connect keyDown.out -> isDown_kb1.b
-
-    node isW: Or
-    node isS: Or
-    node isUp: Or
-    node isDown: Or
-
-    connect isW_kb0.eq -> isW.a
-    connect isW_kb1.eq -> isW.b
-    connect isS_kb0.eq -> isS.a
-    connect isS_kb1.eq -> isS.b
-    connect isUp_kb0.eq -> isUp.a
-    connect isUp_kb1.eq -> isUp.b
-    connect isDown_kb0.eq -> isDown.a
-    connect isDown_kb1.eq -> isDown.b
-
-    // ===== PADDLE MOVEMENT =====
-    node leftUpDelta: Mux(width=8)
-    connect zero.out -> leftUpDelta.in0
-    connect minus1.out -> leftUpDelta.in1
-    connect isW.out -> leftUpDelta.sel
-
-    node leftDelta: Mux(width=8)
-    connect leftUpDelta.out -> leftDelta.in0
-    connect one.out -> leftDelta.in1
-    connect isS.out -> leftDelta.sel
-
-    node newLeftPaddleY: Adder
-    connect leftPaddleY.q -> newLeftPaddleY.a
-    connect leftDelta.out -> newLeftPaddleY.b
-
-    node rightUpDelta: Mux(width=8)
-    connect zero.out -> rightUpDelta.in0
-    connect minus1.out -> rightUpDelta.in1
-    connect isUp.out -> rightUpDelta.sel
-
-    node rightDelta: Mux(width=8)
-    connect rightUpDelta.out -> rightDelta.in0
-    connect one.out -> rightDelta.in1
-    connect isDown.out -> rightDelta.sel
-
-    node newRightPaddleY: Adder
-    connect rightPaddleY.q -> newRightPaddleY.a
-    connect rightDelta.out -> newRightPaddleY.b
-
-    // ===== BOUNCE DETECTION =====
-    // Y-axis: bounce at top wall (y=0 heading up) or bottom (y=7 heading down)
-    node atTopWall: Comparator
-    connect ballY.q -> atTopWall.a
-    connect zero.out -> atTopWall.b
-
-    node atBottomWall: Comparator
-    connect ballY.q -> atBottomWall.a
-    connect fifteen.out -> atBottomWall.b
-
-    node headingUp: Comparator
-    connect ballDY.q -> headingUp.a
-    connect minus1.out -> headingUp.b
-
-    node headingDown: Comparator
-    connect ballDY.q -> headingDown.a
-    connect one.out -> headingDown.b
-
-    node topBounce: And
-    connect atTopWall.eq -> topBounce.a
-    connect headingUp.eq -> topBounce.b
-
-    node bottomBounce: And
-    connect atBottomWall.eq -> bottomBounce.a
-    connect headingDown.eq -> bottomBounce.b
-
-    node yBounce: Or
-    connect topBounce.out -> yBounce.a
-    connect bottomBounce.out -> yBounce.b
-
-    node dyIs1: Comparator
-    connect ballDY.q -> dyIs1.a
-    connect one.out -> dyIs1.b
-
-    node negDY: Mux(width=8)
-    connect one.out -> negDY.in0
-    connect minus1.out -> negDY.in1
-    connect dyIs1.eq -> negDY.sel
-
-    node newDY: Mux(width=8)
-    connect ballDY.q -> newDY.in0
-    connect negDY.out -> newDY.in1
-    connect yBounce.out -> newDY.sel
-
-    // X-axis: bounce when approaching paddle (x=1 heading left, x=6 heading right)
-    // Ball bounces BEFORE entering the paddle column, not while overlapping it.
-    // Left paddle: ball at x=1, heading left, ballY in [paddleY, paddleY+2]
-    node nearLeftWall: Comparator
-    connect ballX.q -> nearLeftWall.a
-    connect one.out -> nearLeftWall.b
-
-    node headingLeft: Comparator
-    connect ballDX.q -> headingLeft.a
-    connect minus1.out -> headingLeft.b
-
-    node leftPaddleTop: Comparator
-    connect ballY.q -> leftPaddleTop.a
-    connect leftPaddleY.q -> leftPaddleTop.b
-
-    node leftPaddleBottom: Adder
-    connect leftPaddleY.q -> leftPaddleBottom.a
-    connect two.out -> leftPaddleBottom.b
-
-    node leftPaddleBot: Comparator
-    connect ballY.q -> leftPaddleBot.a
-    connect leftPaddleBottom.sum -> leftPaddleBot.b
-
-    node leftAboveOrEq: Not
-    connect leftPaddleTop.lt -> leftAboveOrEq.in
-
-    node leftBelowOrEq: Or
-    connect leftPaddleBot.eq -> leftBelowOrEq.a
-    connect leftPaddleBot.lt -> leftBelowOrEq.b
-
-    node leftPaddleMatch: And
-    connect leftAboveOrEq.out -> leftPaddleMatch.a
-    connect leftBelowOrEq.out -> leftPaddleMatch.b
-
-    node leftWallAndHeading: And
-    connect nearLeftWall.eq -> leftWallAndHeading.a
-    connect headingLeft.eq -> leftWallAndHeading.b
-
-    node leftBounce: And
-    connect leftWallAndHeading.out -> leftBounce.a
-    connect leftPaddleMatch.out -> leftBounce.b
-
-    // Right paddle: ball at x=14, heading right, ballY in [paddleY, paddleY+2]
-    node nearRightWall: Comparator
-    node wallBounceRight: Input(value=14)
-    connect ballX.q -> nearRightWall.a
-    connect wallBounceRight.out -> nearRightWall.b
-
-    node headingRight: Comparator
-    connect ballDX.q -> headingRight.a
-    connect one.out -> headingRight.b
-
-    node rightPaddleTop: Comparator
-    connect ballY.q -> rightPaddleTop.a
-    connect rightPaddleY.q -> rightPaddleTop.b
-
-    node rightPaddleBottom: Adder
-    connect rightPaddleY.q -> rightPaddleBottom.a
-    connect two.out -> rightPaddleBottom.b
-
-    node rightPaddleBot: Comparator
-    connect ballY.q -> rightPaddleBot.a
-    connect rightPaddleBottom.sum -> rightPaddleBot.b
-
-    node rightAboveOrEq: Not
-    connect rightPaddleTop.lt -> rightAboveOrEq.in
-
-    node rightBelowOrEq: Or
-    connect rightPaddleBot.eq -> rightBelowOrEq.a
-    connect rightPaddleBot.lt -> rightBelowOrEq.b
-
-    node rightPaddleMatch: And
-    connect rightAboveOrEq.out -> rightPaddleMatch.a
-    connect rightBelowOrEq.out -> rightPaddleMatch.b
-
-    node rightWallAndHeading: And
-    connect nearRightWall.eq -> rightWallAndHeading.a
-    connect headingRight.eq -> rightWallAndHeading.b
-
-    node rightBounce: And
-    connect rightWallAndHeading.out -> rightBounce.a
-    connect rightPaddleMatch.out -> rightBounce.b
-
-    node xBounce: Or
-    connect leftBounce.out -> xBounce.a
-    connect rightBounce.out -> xBounce.b
-
-    node dxIs1: Comparator
-    connect ballDX.q -> dxIs1.a
-    connect one.out -> dxIs1.b
-
-    node negDX: Mux(width=8)
-    connect one.out -> negDX.in0
-    connect minus1.out -> negDX.in1
-    connect dxIs1.eq -> negDX.sel
-
-    node newDX: Mux(width=8)
-    connect ballDX.q -> newDX.in0
-    connect negDX.out -> newDX.in1
-    connect xBounce.out -> newDX.sel
-
-    // ===== BALL MOVEMENT (uses bounced velocity) =====
-    node newBallX: Adder
-    connect ballX.q -> newBallX.a
-    connect newDX.out -> newBallX.b
-
-    node newBallY: Adder
-    connect ballY.q -> newBallY.a
-    connect newDY.out -> newBallY.b
-
-    // ===== UPDATE GAME STATE (phase 13 — last phase) =====
-    node updateEnable: Switch
-    node shouldUpdate: And
-    connect updateEnable.out -> shouldUpdate.a
-    connect isP13.eq -> shouldUpdate.b
-
-    // ===== BALL SPEED DIVIDER (clock divider) =====
-    // Paddles move every game frame. Ball moves every 3rd frame.
-    // Same technique used in real hardware — a counter divides the clock.
-    node ballSpeedCounter: Register(width=2)
-    node ballSpeedInc: Adder(width=2)
-    connect ballSpeedCounter.q -> ballSpeedInc.a
-    node ballSpeedOne: Input(value=1, width=2)
-    connect ballSpeedOne.out -> ballSpeedInc.b
-
-    node ballSpeedLimit: Comparator(width=2)
-    node ballSpeedMax: Input(value=2, width=2)
-    connect ballSpeedCounter.q -> ballSpeedLimit.a
-    connect ballSpeedMax.out -> ballSpeedLimit.b
-
-    node ballSpeedNext: Mux(width=2)
-    connect ballSpeedInc.sum -> ballSpeedNext.in0
-    node ballSpeedZero: Input(value=0, width=2)
-    connect ballSpeedZero.out -> ballSpeedNext.in1
-    connect ballSpeedLimit.eq -> ballSpeedNext.sel
-
-    connect ballSpeedNext.out -> ballSpeedCounter.data
-    connect shouldUpdate.out -> ballSpeedCounter.we
-
-    node isBallTick: Comparator(width=2)
-    connect ballSpeedCounter.q -> isBallTick.a
-    connect ballSpeedZero.out -> isBallTick.b
-
-    node shouldUpdateBall: And
-    connect shouldUpdate.out -> shouldUpdateBall.a
-    connect isBallTick.eq -> shouldUpdateBall.b
-
-    // Save old positions before update
-    connect ballX.q -> oldBallX.data
-    connect ballY.q -> oldBallY.data
-    connect leftPaddleY.q -> oldLeftPaddleY.data
-    connect rightPaddleY.q -> oldRightPaddleY.data
-
-    connect shouldUpdateBall.out -> oldBallX.we
-    connect shouldUpdateBall.out -> oldBallY.we
-    connect shouldUpdate.out -> oldLeftPaddleY.we
-    connect shouldUpdate.out -> oldRightPaddleY.we
-
-    // Update ball position (wrapped to 0-7) and velocity
-    node wrappedBallX: BitSlice(low=0, high=3)
-    connect newBallX.sum -> wrappedBallX.in
-    connect wrappedBallX.out -> ballX.data
-
-    node wrappedBallY: BitSlice(low=0, high=3)
-    connect newBallY.sum -> wrappedBallY.in
-    connect wrappedBallY.out -> ballY.data
-
-    connect newDX.out -> ballDX.data
-    connect newDY.out -> ballDY.data
-
-    // Clamp paddle Y to 0-5 (3-tall paddle on 8-pixel screen)
-    // Negative wrap (>128) -> 0, Over 5 -> 5, else use value
-    node leftYOver: Comparator
-    connect newLeftPaddleY.sum -> leftYOver.a
-    connect thirteen.out -> leftYOver.b
-
-    node leftYNeg: Comparator
-    connect newLeftPaddleY.sum -> leftYNeg.a
-    connect halfRange.out -> leftYNeg.b
-
-    node leftYClamped1: Mux(width=8)
-    connect newLeftPaddleY.sum -> leftYClamped1.in0
-    connect thirteen.out -> leftYClamped1.in1
-    connect leftYOver.gt -> leftYClamped1.sel
-
-    node leftYClamped: Mux(width=8)
-    connect leftYClamped1.out -> leftYClamped.in0
-    connect zero.out -> leftYClamped.in1
-    connect leftYNeg.gt -> leftYClamped.sel
-
-    connect leftYClamped.out -> leftPaddleY.data
-
-    node rightYOver: Comparator
-    connect newRightPaddleY.sum -> rightYOver.a
-    connect thirteen.out -> rightYOver.b
-
-    node rightYNeg: Comparator
-    connect newRightPaddleY.sum -> rightYNeg.a
-    connect halfRange.out -> rightYNeg.b
-
-    node rightYClamped1: Mux(width=8)
-    connect newRightPaddleY.sum -> rightYClamped1.in0
-    connect thirteen.out -> rightYClamped1.in1
-    connect rightYOver.gt -> rightYClamped1.sel
-
-    node rightYClamped: Mux(width=8)
-    connect rightYClamped1.out -> rightYClamped.in0
-    connect zero.out -> rightYClamped.in1
-    connect rightYNeg.gt -> rightYClamped.sel
-
-    connect rightYClamped.out -> rightPaddleY.data
-
-    connect shouldUpdateBall.out -> ballX.we
-    connect shouldUpdateBall.out -> ballY.we
-    connect shouldUpdateBall.out -> ballDX.we
-    connect shouldUpdateBall.out -> ballDY.we
-    connect shouldUpdate.out -> leftPaddleY.we
-    connect shouldUpdate.out -> rightPaddleY.we
-
-    // ===== PADDLE Y OFFSETS FOR 3-PIXEL RENDERING =====
-    // Within each paddle group, phases offset by 0, 1, 2
-    // P1/P4/P8/P11 -> 0, P2/P5/P9/P12 -> 1, P3/P6/P10/P13 -> 2
-    node isOff1a: Or
-    connect isP2.eq -> isOff1a.a
-    connect isP5.eq -> isOff1a.b
-    node isOff1b: Or
-    connect isP9.eq -> isOff1b.a
-    connect isP12.eq -> isOff1b.b
-    node isOffset1: Or
-    connect isOff1a.out -> isOffset1.a
-    connect isOff1b.out -> isOffset1.b
-
-    node isOff2a: Or
-    connect isP3.eq -> isOff2a.a
-    connect isP6.eq -> isOff2a.b
-    node isOff2b: Or
-    connect isP10.eq -> isOff2b.a
-    connect isP13.eq -> isOff2b.b
-    node isOffset2: Or
-    connect isOff2a.out -> isOffset2.a
-    connect isOff2b.out -> isOffset2.b
-
-    node paddleOffset: Mux(width=8)
-    connect zero.out -> paddleOffset.in0
-    connect one.out -> paddleOffset.in1
-    connect isOffset1.out -> paddleOffset.sel
-
-    node paddleOffset2: Mux(width=8)
-    connect paddleOffset.out -> paddleOffset2.in0
-    connect two.out -> paddleOffset2.in1
-    connect isOffset2.out -> paddleOffset2.sel
-
-    // ===== RENDERING: PHASE GROUP DETECTION =====
-    node isClearLeft: Or
-    connect isP1.eq -> isClearLeft.a
-    connect isP2.eq -> isClearLeft.b
-    node isClearLeft2: Or
-    connect isClearLeft.out -> isClearLeft2.a
-    connect isP3.eq -> isClearLeft2.b
-
-    node isClearRight: Or
-    connect isP4.eq -> isClearRight.a
-    connect isP5.eq -> isClearRight.b
-    node isClearRight2: Or
-    connect isClearRight.out -> isClearRight2.a
-    connect isP6.eq -> isClearRight2.b
-
-    node isDrawLeft: Or
-    connect isP8.eq -> isDrawLeft.a
-    connect isP9.eq -> isDrawLeft.b
-    node isDrawLeft2: Or
-    connect isDrawLeft.out -> isDrawLeft2.a
-    connect isP10.eq -> isDrawLeft2.b
-
-    node isDrawRight: Or
-    connect isP11.eq -> isDrawRight.a
-    connect isP12.eq -> isDrawRight.b
-    node isDrawRight2: Or
-    connect isDrawRight.out -> isDrawRight2.a
-    connect isP13.eq -> isDrawRight2.b
-
-    // ===== RENDERING: SELECT Y COORDINATE =====
-    // Paddle base Y depends on phase group
-    node basePaddleY0: Mux(width=8)
-    connect oldLeftPaddleY.q -> basePaddleY0.in0
-    connect oldRightPaddleY.q -> basePaddleY0.in1
-    connect isClearRight2.out -> basePaddleY0.sel
-
-    node basePaddleY1: Mux(width=8)
-    connect basePaddleY0.out -> basePaddleY1.in0
-    connect leftPaddleY.q -> basePaddleY1.in1
-    connect isDrawLeft2.out -> basePaddleY1.sel
-
-    node basePaddleY: Mux(width=8)
-    connect basePaddleY1.out -> basePaddleY.in0
-    connect rightPaddleY.q -> basePaddleY.in1
-    connect isDrawRight2.out -> basePaddleY.sel
-
-    // paddlePixelY = basePaddleY + offset (0, 1, or 2)
-    node paddlePixelY: Adder
-    connect basePaddleY.out -> paddlePixelY.a
-    connect paddleOffset2.out -> paddlePixelY.b
-
-    // Is this a paddle phase?
-    node isPaddlePhase1: Or
-    connect isClearLeft2.out -> isPaddlePhase1.a
-    connect isClearRight2.out -> isPaddlePhase1.b
-    node isPaddlePhase2: Or
-    connect isDrawLeft2.out -> isPaddlePhase2.a
-    connect isDrawRight2.out -> isPaddlePhase2.b
-    node isPaddlePhase: Or
-    connect isPaddlePhase1.out -> isPaddlePhase.a
-    connect isPaddlePhase2.out -> isPaddlePhase.b
-
-    // Ball Y: use oldBallY for clear (P0), ballY for draw (P7)
-    node selectBallY: Mux(width=8)
-    connect ballY.q -> selectBallY.in0
-    connect oldBallY.q -> selectBallY.in1
-    connect isP0.eq -> selectBallY.sel
-
-    // Final Y: ball phases use ball Y, paddle phases use paddlePixelY
-    node selectY: Mux(width=8)
-    connect selectBallY.out -> selectY.in0
-    connect paddlePixelY.sum -> selectY.in1
-    connect isPaddlePhase.out -> selectY.sel
-
-    // ===== RENDERING: SELECT X COORDINATE =====
-    node isLeftPaddle: Or
-    connect isClearLeft2.out -> isLeftPaddle.a
-    connect isDrawLeft2.out -> isLeftPaddle.b
-
-    node isRightPaddle: Or
-    connect isClearRight2.out -> isRightPaddle.a
-    connect isDrawRight2.out -> isRightPaddle.b
-
-    node selectBallX: Mux(width=8)
-    connect ballX.q -> selectBallX.in0
-    connect oldBallX.q -> selectBallX.in1
-    connect isP0.eq -> selectBallX.sel
-
-    node selectX0: Mux(width=8)
-    connect selectBallX.out -> selectX0.in0
-    connect zero.out -> selectX0.in1
-    connect isLeftPaddle.out -> selectX0.sel
-
-    node selectX: Mux(width=8)
-    connect selectX0.out -> selectX.in0
-    connect fifteen.out -> selectX.in1
-    connect isRightPaddle.out -> selectX.sel
-
-    // ===== ADDRESS CALCULATION: (Y << 4) + X =====
-    node yTimes16: LeftShifter
-    connect selectY.out -> yTimes16.value
-    connect four.out -> yTimes16.shift
-
-    node ramAddr: Adder
-    connect yTimes16.result -> ramAddr.a
-    connect selectX.out -> ramAddr.b
-
-    connect ramAddr.sum -> ram.addrA
-
-    // ===== CLEAR/DRAW DATA =====
-    // Phases 0-6: clear (write 0), Phases 7-13: draw (write 1)
-    node isClearPhase: Comparator
-    connect phaseCounter.q -> isClearPhase.a
-    connect p7c.out -> isClearPhase.b
-
-    node ramData: Mux(width=8)
-    connect one.out -> ramData.in0
-    connect zero.out -> ramData.in1
-    connect isClearPhase.lt -> ramData.sel
-
-    connect ramData.out -> ram.dataA
-
-    node writeEnable: Switch
-    connect writeEnable.out -> ram.weA
-  }
-}
+const PongSimple = component('PongSimple')
+  .node('ram', DualPortRAM)
+  .node('screen', Screen, { width: 16, height: 16 })
+  .node('keyboard0', Input)
+  .node('keyboard1', Input)
+  .node('ballX', Register, { initial: 8 })
+  .node('ballY', Register, { initial: 8 })
+  .node('ballDX', Register, { initial: 1 })
+  .node('ballDY', Register, { initial: 1 })
+  .node('leftPaddleY', Register, { initial: 6 })
+  .node('rightPaddleY', Register, { initial: 6 })
+  .node('oldBallX', Register, { initial: 8 })
+  .node('oldBallY', Register, { initial: 8 })
+  .node('oldLeftPaddleY', Register, { initial: 6 })
+  .node('oldRightPaddleY', Register, { initial: 6 })
+  .node('phaseCounter', Register)
+  .node('phaseIncrement', Adder)
+  .node('one', Input, { value: 1 })
+  .node('phaseMod', Comparator)
+  .node('fourteen', Input, { value: 14 })
+  .node('nextPhase', Mux, { width: 8 })
+  .node('zero', Input, { value: 0 })
+  .node('phaseEnable', Switch)
+  .node('p0c', Input, { value: 0 })
+  .node('p1c', Input, { value: 1 })
+  .node('p2c', Input, { value: 2 })
+  .node('p3c', Input, { value: 3 })
+  .node('p4c', Input, { value: 4 })
+  .node('p5c', Input, { value: 5 })
+  .node('p6c', Input, { value: 6 })
+  .node('p7c', Input, { value: 7 })
+  .node('p8c', Input, { value: 8 })
+  .node('p9c', Input, { value: 9 })
+  .node('p10c', Input, { value: 10 })
+  .node('p11c', Input, { value: 11 })
+  .node('p12c', Input, { value: 12 })
+  .node('p13c', Input, { value: 13 })
+  .node('isP0', Comparator)
+  .node('isP1', Comparator)
+  .node('isP2', Comparator)
+  .node('isP3', Comparator)
+  .node('isP4', Comparator)
+  .node('isP5', Comparator)
+  .node('isP6', Comparator)
+  .node('isP7', Comparator)
+  .node('isP8', Comparator)
+  .node('isP9', Comparator)
+  .node('isP10', Comparator)
+  .node('isP11', Comparator)
+  .node('isP12', Comparator)
+  .node('isP13', Comparator)
+  .node('fifteen', Input, { value: 15 })
+  .node('thirteen', Input, { value: 13 })
+  .node('six', Input, { value: 6 })
+  .node('two', Input, { value: 2 })
+  .node('four', Input, { value: 4 })
+  .node('minus1', Input, { value: 255 })
+  .node('halfRange', Input, { value: 128 })
+  .node('keyW', Input, { value: 17 })
+  .node('keyS', Input, { value: 31 })
+  .node('keyUp', Input, { value: 72 })
+  .node('keyDown', Input, { value: 80 })
+  .node('isW_kb0', Comparator)
+  .node('isS_kb0', Comparator)
+  .node('isUp_kb0', Comparator)
+  .node('isDown_kb0', Comparator)
+  .node('isW_kb1', Comparator)
+  .node('isS_kb1', Comparator)
+  .node('isUp_kb1', Comparator)
+  .node('isDown_kb1', Comparator)
+  .node('isW', Or)
+  .node('isS', Or)
+  .node('isUp', Or)
+  .node('isDown', Or)
+  .node('leftUpDelta', Mux, { width: 8 })
+  .node('leftDelta', Mux, { width: 8 })
+  .node('newLeftPaddleY', Adder)
+  .node('rightUpDelta', Mux, { width: 8 })
+  .node('rightDelta', Mux, { width: 8 })
+  .node('newRightPaddleY', Adder)
+  .node('atTopWall', Comparator)
+  .node('atBottomWall', Comparator)
+  .node('headingUp', Comparator)
+  .node('headingDown', Comparator)
+  .node('topBounce', And)
+  .node('bottomBounce', And)
+  .node('yBounce', Or)
+  .node('dyIs1', Comparator)
+  .node('negDY', Mux, { width: 8 })
+  .node('newDY', Mux, { width: 8 })
+  .node('nearLeftWall', Comparator)
+  .node('headingLeft', Comparator)
+  .node('leftPaddleTop', Comparator)
+  .node('leftPaddleBottom', Adder)
+  .node('leftPaddleBot', Comparator)
+  .node('leftAboveOrEq', Not)
+  .node('leftBelowOrEq', Or)
+  .node('leftPaddleMatch', And)
+  .node('leftWallAndHeading', And)
+  .node('leftBounce', And)
+  .node('nearRightWall', Comparator)
+  .node('wallBounceRight', Input, { value: 14 })
+  .node('headingRight', Comparator)
+  .node('rightPaddleTop', Comparator)
+  .node('rightPaddleBottom', Adder)
+  .node('rightPaddleBot', Comparator)
+  .node('rightAboveOrEq', Not)
+  .node('rightBelowOrEq', Or)
+  .node('rightPaddleMatch', And)
+  .node('rightWallAndHeading', And)
+  .node('rightBounce', And)
+  .node('xBounce', Or)
+  .node('dxIs1', Comparator)
+  .node('negDX', Mux, { width: 8 })
+  .node('newDX', Mux, { width: 8 })
+  .node('newBallX', Adder)
+  .node('newBallY', Adder)
+  .node('updateEnable', Switch)
+  .node('shouldUpdate', And)
+  .node('ballSpeedCounter', Register, { width: 2 })
+  .node('ballSpeedInc', Adder, { width: 2 })
+  .node('ballSpeedOne', Input, { value: 1, width: 2 })
+  .node('ballSpeedLimit', Comparator, { width: 2 })
+  .node('ballSpeedMax', Input, { value: 2, width: 2 })
+  .node('ballSpeedNext', Mux, { width: 2 })
+  .node('ballSpeedZero', Input, { value: 0, width: 2 })
+  .node('isBallTick', Comparator, { width: 2 })
+  .node('shouldUpdateBall', And)
+  .node('wrappedBallX', BitSlice, { low: 0, high: 3 })
+  .node('wrappedBallY', BitSlice, { low: 0, high: 3 })
+  .node('leftYOver', Comparator)
+  .node('leftYNeg', Comparator)
+  .node('leftYClamped1', Mux, { width: 8 })
+  .node('leftYClamped', Mux, { width: 8 })
+  .node('rightYOver', Comparator)
+  .node('rightYNeg', Comparator)
+  .node('rightYClamped1', Mux, { width: 8 })
+  .node('rightYClamped', Mux, { width: 8 })
+  .node('isOff1a', Or)
+  .node('isOff1b', Or)
+  .node('isOffset1', Or)
+  .node('isOff2a', Or)
+  .node('isOff2b', Or)
+  .node('isOffset2', Or)
+  .node('paddleOffset', Mux, { width: 8 })
+  .node('paddleOffset2', Mux, { width: 8 })
+  .node('isClearLeft', Or)
+  .node('isClearLeft2', Or)
+  .node('isClearRight', Or)
+  .node('isClearRight2', Or)
+  .node('isDrawLeft', Or)
+  .node('isDrawLeft2', Or)
+  .node('isDrawRight', Or)
+  .node('isDrawRight2', Or)
+  .node('basePaddleY0', Mux, { width: 8 })
+  .node('basePaddleY1', Mux, { width: 8 })
+  .node('basePaddleY', Mux, { width: 8 })
+  .node('paddlePixelY', Adder)
+  .node('isPaddlePhase1', Or)
+  .node('isPaddlePhase2', Or)
+  .node('isPaddlePhase', Or)
+  .node('selectBallY', Mux, { width: 8 })
+  .node('selectY', Mux, { width: 8 })
+  .node('isLeftPaddle', Or)
+  .node('isRightPaddle', Or)
+  .node('selectBallX', Mux, { width: 8 })
+  .node('selectX0', Mux, { width: 8 })
+  .node('selectX', Mux, { width: 8 })
+  .node('yTimes16', LeftShifter)
+  .node('ramAddr', Adder)
+  .node('isClearPhase', Comparator)
+  .node('ramData', Mux, { width: 8 })
+  .node('writeEnable', Switch)
+  .connect(({ in: inp, out, ram, screen, keyboard0, keyboard1, ballX, ballY, ballDX, ballDY, leftPaddleY, rightPaddleY, oldBallX, oldBallY, oldLeftPaddleY, oldRightPaddleY, phaseCounter, phaseIncrement, one, phaseMod, fourteen, nextPhase, zero, phaseEnable, p0c, p1c, p2c, p3c, p4c, p5c, p6c, p7c, p8c, p9c, p10c, p11c, p12c, p13c, isP0, isP1, isP2, isP3, isP4, isP5, isP6, isP7, isP8, isP9, isP10, isP11, isP12, isP13, fifteen, thirteen, six, two, four, minus1, halfRange, keyW, keyS, keyUp, keyDown, isW_kb0, isS_kb0, isUp_kb0, isDown_kb0, isW_kb1, isS_kb1, isUp_kb1, isDown_kb1, isW, isS, isUp, isDown, leftUpDelta, leftDelta, newLeftPaddleY, rightUpDelta, rightDelta, newRightPaddleY, atTopWall, atBottomWall, headingUp, headingDown, topBounce, bottomBounce, yBounce, dyIs1, negDY, newDY, nearLeftWall, headingLeft, leftPaddleTop, leftPaddleBottom, leftPaddleBot, leftAboveOrEq, leftBelowOrEq, leftPaddleMatch, leftWallAndHeading, leftBounce, nearRightWall, wallBounceRight, headingRight, rightPaddleTop, rightPaddleBottom, rightPaddleBot, rightAboveOrEq, rightBelowOrEq, rightPaddleMatch, rightWallAndHeading, rightBounce, xBounce, dxIs1, negDX, newDX, newBallX, newBallY, updateEnable, shouldUpdate, ballSpeedCounter, ballSpeedInc, ballSpeedOne, ballSpeedLimit, ballSpeedMax, ballSpeedNext, ballSpeedZero, isBallTick, shouldUpdateBall, wrappedBallX, wrappedBallY, leftYOver, leftYNeg, leftYClamped1, leftYClamped, rightYOver, rightYNeg, rightYClamped1, rightYClamped, isOff1a, isOff1b, isOffset1, isOff2a, isOff2b, isOffset2, paddleOffset, paddleOffset2, isClearLeft, isClearLeft2, isClearRight, isClearRight2, isDrawLeft, isDrawLeft2, isDrawRight, isDrawRight2, basePaddleY0, basePaddleY1, basePaddleY, paddlePixelY, isPaddlePhase1, isPaddlePhase2, isPaddlePhase, selectBallY, selectY, isLeftPaddle, isRightPaddle, selectBallX, selectX0, selectX, yTimes16, ramAddr, isClearPhase, ramData, writeEnable }) => [
+    screen.addrB.to(ram.addrB),
+    ram.outB.to(screen.dataIn),
+    phaseCounter.q.to(phaseIncrement.a, isP0.a, isP1.a, isP2.a, isP3.a, isP4.a, isP5.a, isP6.a, isP7.a, isP8.a, isP9.a, isP10.a, isP11.a, isP12.a, isP13.a, isClearPhase.a),
+    one.out.to(phaseIncrement.b, leftDelta.in1, rightDelta.in1, headingDown.b, dyIs1.b, negDY.in0, nearLeftWall.b, headingRight.b, dxIs1.b, negDX.in0, paddleOffset.in1, ramData.in0),
+    phaseIncrement.sum.to(phaseMod.a, nextPhase.in0),
+    fourteen.out.to(phaseMod.b),
+    zero.out.to(nextPhase.in1, leftUpDelta.in0, rightUpDelta.in0, atTopWall.b, leftYClamped.in1, rightYClamped.in1, paddleOffset.in0, selectX0.in1, ramData.in1),
+    phaseMod.eq.to(nextPhase.sel),
+    nextPhase.out.to(phaseCounter.data),
+    phaseEnable.out.to(phaseCounter.we),
+    p0c.out.to(isP0.b),
+    p1c.out.to(isP1.b),
+    p2c.out.to(isP2.b),
+    p3c.out.to(isP3.b),
+    p4c.out.to(isP4.b),
+    p5c.out.to(isP5.b),
+    p6c.out.to(isP6.b),
+    p7c.out.to(isP7.b, isClearPhase.b),
+    p8c.out.to(isP8.b),
+    p9c.out.to(isP9.b),
+    p10c.out.to(isP10.b),
+    p11c.out.to(isP11.b),
+    p12c.out.to(isP12.b),
+    p13c.out.to(isP13.b),
+    keyboard0.out.to(isW_kb0.a, isS_kb0.a, isUp_kb0.a, isDown_kb0.a),
+    keyW.out.to(isW_kb0.b, isW_kb1.b),
+    keyS.out.to(isS_kb0.b, isS_kb1.b),
+    keyUp.out.to(isUp_kb0.b, isUp_kb1.b),
+    keyDown.out.to(isDown_kb0.b, isDown_kb1.b),
+    keyboard1.out.to(isW_kb1.a, isS_kb1.a, isUp_kb1.a, isDown_kb1.a),
+    isW_kb0.eq.to(isW.a),
+    isW_kb1.eq.to(isW.b),
+    isS_kb0.eq.to(isS.a),
+    isS_kb1.eq.to(isS.b),
+    isUp_kb0.eq.to(isUp.a),
+    isUp_kb1.eq.to(isUp.b),
+    isDown_kb0.eq.to(isDown.a),
+    isDown_kb1.eq.to(isDown.b),
+    minus1.out.to(leftUpDelta.in1, rightUpDelta.in1, headingUp.b, negDY.in1, headingLeft.b, negDX.in1),
+    isW.out.to(leftUpDelta.sel),
+    leftUpDelta.out.to(leftDelta.in0),
+    isS.out.to(leftDelta.sel),
+    leftPaddleY.q.to(newLeftPaddleY.a, leftPaddleTop.b, leftPaddleBottom.a, oldLeftPaddleY.data, basePaddleY1.in1),
+    leftDelta.out.to(newLeftPaddleY.b),
+    isUp.out.to(rightUpDelta.sel),
+    rightUpDelta.out.to(rightDelta.in0),
+    isDown.out.to(rightDelta.sel),
+    rightPaddleY.q.to(newRightPaddleY.a, rightPaddleTop.b, rightPaddleBottom.a, oldRightPaddleY.data, basePaddleY.in1),
+    rightDelta.out.to(newRightPaddleY.b),
+    ballY.q.to(atTopWall.a, atBottomWall.a, leftPaddleTop.a, leftPaddleBot.a, rightPaddleTop.a, rightPaddleBot.a, newBallY.a, oldBallY.data, selectBallY.in0),
+    fifteen.out.to(atBottomWall.b, selectX.in1),
+    ballDY.q.to(headingUp.a, headingDown.a, dyIs1.a, newDY.in0),
+    atTopWall.eq.to(topBounce.a),
+    headingUp.eq.to(topBounce.b),
+    atBottomWall.eq.to(bottomBounce.a),
+    headingDown.eq.to(bottomBounce.b),
+    topBounce.out.to(yBounce.a),
+    bottomBounce.out.to(yBounce.b),
+    dyIs1.eq.to(negDY.sel),
+    negDY.out.to(newDY.in1),
+    yBounce.out.to(newDY.sel),
+    ballX.q.to(nearLeftWall.a, nearRightWall.a, newBallX.a, oldBallX.data, selectBallX.in0),
+    ballDX.q.to(headingLeft.a, headingRight.a, dxIs1.a, newDX.in0),
+    two.out.to(leftPaddleBottom.b, rightPaddleBottom.b, paddleOffset2.in1),
+    leftPaddleBottom.sum.to(leftPaddleBot.b),
+    leftPaddleTop.lt.to(leftAboveOrEq.in),
+    leftPaddleBot.eq.to(leftBelowOrEq.a),
+    leftPaddleBot.lt.to(leftBelowOrEq.b),
+    leftAboveOrEq.out.to(leftPaddleMatch.a),
+    leftBelowOrEq.out.to(leftPaddleMatch.b),
+    nearLeftWall.eq.to(leftWallAndHeading.a),
+    headingLeft.eq.to(leftWallAndHeading.b),
+    leftWallAndHeading.out.to(leftBounce.a),
+    leftPaddleMatch.out.to(leftBounce.b),
+    wallBounceRight.out.to(nearRightWall.b),
+    rightPaddleBottom.sum.to(rightPaddleBot.b),
+    rightPaddleTop.lt.to(rightAboveOrEq.in),
+    rightPaddleBot.eq.to(rightBelowOrEq.a),
+    rightPaddleBot.lt.to(rightBelowOrEq.b),
+    rightAboveOrEq.out.to(rightPaddleMatch.a),
+    rightBelowOrEq.out.to(rightPaddleMatch.b),
+    nearRightWall.eq.to(rightWallAndHeading.a),
+    headingRight.eq.to(rightWallAndHeading.b),
+    rightWallAndHeading.out.to(rightBounce.a),
+    rightPaddleMatch.out.to(rightBounce.b),
+    leftBounce.out.to(xBounce.a),
+    rightBounce.out.to(xBounce.b),
+    dxIs1.eq.to(negDX.sel),
+    negDX.out.to(newDX.in1),
+    xBounce.out.to(newDX.sel),
+    newDX.out.to(newBallX.b, ballDX.data),
+    newDY.out.to(newBallY.b, ballDY.data),
+    updateEnable.out.to(shouldUpdate.a),
+    isP13.eq.to(shouldUpdate.b, isOff2b.b, isDrawRight2.b),
+    ballSpeedCounter.q.to(ballSpeedInc.a, ballSpeedLimit.a, isBallTick.a),
+    ballSpeedOne.out.to(ballSpeedInc.b),
+    ballSpeedMax.out.to(ballSpeedLimit.b),
+    ballSpeedInc.sum.to(ballSpeedNext.in0),
+    ballSpeedZero.out.to(ballSpeedNext.in1, isBallTick.b),
+    ballSpeedLimit.eq.to(ballSpeedNext.sel),
+    ballSpeedNext.out.to(ballSpeedCounter.data),
+    shouldUpdate.out.to(ballSpeedCounter.we, shouldUpdateBall.a, oldLeftPaddleY.we, oldRightPaddleY.we, leftPaddleY.we, rightPaddleY.we),
+    isBallTick.eq.to(shouldUpdateBall.b),
+    shouldUpdateBall.out.to(oldBallX.we, oldBallY.we, ballX.we, ballY.we, ballDX.we, ballDY.we),
+    newBallX.sum.to(wrappedBallX.in),
+    wrappedBallX.out.to(ballX.data),
+    newBallY.sum.to(wrappedBallY.in),
+    wrappedBallY.out.to(ballY.data),
+    newLeftPaddleY.sum.to(leftYOver.a, leftYNeg.a, leftYClamped1.in0),
+    thirteen.out.to(leftYOver.b, leftYClamped1.in1, rightYOver.b, rightYClamped1.in1),
+    halfRange.out.to(leftYNeg.b, rightYNeg.b),
+    leftYOver.gt.to(leftYClamped1.sel),
+    leftYClamped1.out.to(leftYClamped.in0),
+    leftYNeg.gt.to(leftYClamped.sel),
+    leftYClamped.out.to(leftPaddleY.data),
+    newRightPaddleY.sum.to(rightYOver.a, rightYNeg.a, rightYClamped1.in0),
+    rightYOver.gt.to(rightYClamped1.sel),
+    rightYClamped1.out.to(rightYClamped.in0),
+    rightYNeg.gt.to(rightYClamped.sel),
+    rightYClamped.out.to(rightPaddleY.data),
+    isP2.eq.to(isOff1a.a, isClearLeft.b),
+    isP5.eq.to(isOff1a.b, isClearRight.b),
+    isP9.eq.to(isOff1b.a, isDrawLeft.b),
+    isP12.eq.to(isOff1b.b, isDrawRight.b),
+    isOff1a.out.to(isOffset1.a),
+    isOff1b.out.to(isOffset1.b),
+    isP3.eq.to(isOff2a.a, isClearLeft2.b),
+    isP6.eq.to(isOff2a.b, isClearRight2.b),
+    isP10.eq.to(isOff2b.a, isDrawLeft2.b),
+    isOff2a.out.to(isOffset2.a),
+    isOff2b.out.to(isOffset2.b),
+    isOffset1.out.to(paddleOffset.sel),
+    paddleOffset.out.to(paddleOffset2.in0),
+    isOffset2.out.to(paddleOffset2.sel),
+    isP1.eq.to(isClearLeft.a),
+    isClearLeft.out.to(isClearLeft2.a),
+    isP4.eq.to(isClearRight.a),
+    isClearRight.out.to(isClearRight2.a),
+    isP8.eq.to(isDrawLeft.a),
+    isDrawLeft.out.to(isDrawLeft2.a),
+    isP11.eq.to(isDrawRight.a),
+    isDrawRight.out.to(isDrawRight2.a),
+    oldLeftPaddleY.q.to(basePaddleY0.in0),
+    oldRightPaddleY.q.to(basePaddleY0.in1),
+    isClearRight2.out.to(basePaddleY0.sel, isPaddlePhase1.b, isRightPaddle.a),
+    basePaddleY0.out.to(basePaddleY1.in0),
+    isDrawLeft2.out.to(basePaddleY1.sel, isPaddlePhase2.a, isLeftPaddle.b),
+    basePaddleY1.out.to(basePaddleY.in0),
+    isDrawRight2.out.to(basePaddleY.sel, isPaddlePhase2.b, isRightPaddle.b),
+    basePaddleY.out.to(paddlePixelY.a),
+    paddleOffset2.out.to(paddlePixelY.b),
+    isClearLeft2.out.to(isPaddlePhase1.a, isLeftPaddle.a),
+    isPaddlePhase1.out.to(isPaddlePhase.a),
+    isPaddlePhase2.out.to(isPaddlePhase.b),
+    oldBallY.q.to(selectBallY.in1),
+    isP0.eq.to(selectBallY.sel, selectBallX.sel),
+    selectBallY.out.to(selectY.in0),
+    paddlePixelY.sum.to(selectY.in1),
+    isPaddlePhase.out.to(selectY.sel),
+    oldBallX.q.to(selectBallX.in1),
+    selectBallX.out.to(selectX0.in0),
+    isLeftPaddle.out.to(selectX0.sel),
+    selectX0.out.to(selectX.in0),
+    isRightPaddle.out.to(selectX.sel),
+    selectY.out.to(yTimes16.value),
+    four.out.to(yTimes16.shift),
+    yTimes16.result.to(ramAddr.a),
+    selectX.out.to(ramAddr.b),
+    ramAddr.sum.to(ram.addrA),
+    isClearPhase.lt.to(ramData.sel),
+    ramData.out.to(ram.dataA),
+    writeEnable.out.to(ram.weA),
+  ])
+  .build()
 `;

@@ -1,0 +1,329 @@
+// Auto-generated from DSL
+
+const Breakout = component('Breakout')
+  .node('display', RasterDisplay, { width: 32, height: 16 })
+  .node('c0', Constant, { value: 0 })
+  .node('c1', Constant, { value: 1 })
+  .node('c2', Constant, { value: 2 })
+  .node('c3', Constant, { value: 3 })
+  .node('c4', Constant, { value: 4 })
+  .node('c5', Constant, { value: 5 })
+  .node('c14', Constant, { value: 14 })
+  .node('c15', Constant, { value: 15 })
+  .node('c16', Constant, { value: 16 })
+  .node('c28', Constant, { value: 28 })
+  .node('c29', Constant, { value: 29 })
+  .node('c30', Constant, { value: 30 })
+  .node('c31', Constant, { value: 31 })
+  .node('c32', Constant, { value: 32 })
+  .node('c253', Constant, { value: 253 })
+  .node('c254', Constant, { value: 254 })
+  .node('c255', Constant, { value: 255 })
+  .node('brickRAM', DualPortRAM, { addressWidth: 8, dataWidth: 8, init: {"0":1,"1":1,"2":1,"3":1,"4":1,"5":1,"6":1,"7":1,"8":1,"9":1,"10":1,"11":1,"12":1,"13":1,"14":1,"15":1,"16":1,"17":1,"18":1,"19":1,"20":1,"21":1,"22":1,"23":1,"24":1,"25":1,"26":1,"27":1,"28":1,"29":1,"30":1,"31":1,"32":1,"33":1,"34":1,"35":1,"36":1,"37":1,"38":1,"39":1,"40":1,"41":1,"42":1,"43":1,"44":1,"45":1,"46":1,"47":1,"48":1,"49":1,"50":1,"51":1,"52":1,"53":1,"54":1,"55":1,"56":1,"57":1,"58":1,"59":1,"60":1,"61":1,"62":1,"63":1,"64":1,"65":1,"66":1,"67":1,"68":1,"69":1,"70":1,"71":1,"72":1,"73":1,"74":1,"75":1,"76":1,"77":1,"78":1,"79":1,"80":1,"81":1,"82":1,"83":1,"84":1,"85":1,"86":1,"87":1,"88":1,"89":1,"90":1,"91":1,"92":1,"93":1,"94":1,"95":1,"96":1,"97":1,"98":1,"99":1,"100":1,"101":1,"102":1,"103":1,"104":1,"105":1,"106":1,"107":1,"108":1,"109":1,"110":1,"111":1,"112":1,"113":1,"114":1,"115":1,"116":1,"117":1,"118":1,"119":1,"120":1,"121":1,"122":1,"123":1,"124":1,"125":1,"126":1,"127":1} })
+  .node('ballX', Register, { initial: 16 })
+  .node('ballY', Register, { initial: 8 })
+  .node('ballDX', Register, { initial: 1 })
+  .node('ballDY', Register, { initial: 255 })
+  .node('paddleX', Register, { initial: 15 })
+  .node('keyboard', Input)
+  .node('leftCode', Constant, { value: 75 })
+  .node('rightCode', Constant, { value: 77 })
+  .node('isLeftCmp', Comparator)
+  .node('isRightCmp', Comparator)
+  .node('scanYsh', LeftShifter, { width: 8 })
+  .node('scanBrickAddr', Adder, { width: 8 })
+  .node('scanInBrickArea', Comparator)
+  .node('brickAlive', Comparator)
+  .node('brickPixel', And)
+  .node('cmpBallX', Comparator)
+  .node('cmpBallY', Comparator)
+  .node('ballPixel', And)
+  .node('scanYsplit', Splitter8to8)
+  .node('notScanY4', Not)
+  .node('notScanY5', Not)
+  .node('notScanY6', Not)
+  .node('notScanY7', Not)
+  .node('isScanY15a', And)
+  .node('isScanY15b', And)
+  .node('isScanY15c', And)
+  .node('isScanY15d', And)
+  .node('isScanY15e', And)
+  .node('isScanY15f', And)
+  .node('isScanY15', And)
+  .node('padMinRaw', Adder, { width: 8 })
+  .node('padMaxRaw', Adder, { width: 8 })
+  .node('cmpScanGteMin', Comparator)
+  .node('notLtPadMin', Not)
+  .node('cmpScanLteMax', Comparator)
+  .node('notGtPadMax', Not)
+  .node('inPadRange', And)
+  .node('paddlePixel', And)
+  .node('pixOr1', Or)
+  .node('pixOr2', Or)
+  .node('pixelBus', Mux, { width: 8 })
+  .node('prevVblank', Register, { initial: 0 })
+  .node('alwaysHigh', Switch, { value: 1 })
+  .node('notPrevVblank', Not)
+  .node('onVblank', And)
+  .node('ballSpeedCtr', Register, { initial: 0 })
+  .node('ballSpeedInc', Adder, { width: 8 })
+  .node('ballSpeedMax', Constant, { value: 3 })
+  .node('ballSpeedAtMax', Comparator)
+  .node('nextBallSpeed', Mux, { width: 8 })
+  .node('ballUpdate', And)
+  .node('padSpeedCtr', Register, { initial: 0 })
+  .node('padSpeedInc', Adder, { width: 8 })
+  .node('padSpeedMax', Constant, { value: 1 })
+  .node('padSpeedAtMax', Comparator)
+  .node('nextPadSpeed', Mux, { width: 8 })
+  .node('paddleUpdate', And)
+  .node('movingLeftCmp', Comparator)
+  .node('c127', Constant, { value: 127 })
+  .node('movingLeft', Buffer)
+  .node('notMovingLeft', Not)
+  .node('movingUpCmp', Comparator)
+  .node('movingUp', Buffer)
+  .node('movingDown', Not)
+  .node('ballAtLeft', Comparator)
+  .node('hitLeft', And)
+  .node('ballAtRight', Comparator)
+  .node('notBallLtRight', Not)
+  .node('hitRight', And)
+  .node('flipDX', Or)
+  .node('ballAtTop', Comparator)
+  .node('hitTop', And)
+  .node('dxNegated', Subtractor, { width: 8 })
+  .node('newDXbeforePaddle', Mux, { width: 8 })
+  .node('nextBallXraw', Adder, { width: 8 })
+  .node('dyNegated', Subtractor, { width: 8 })
+  .node('topBouncedDY', Mux, { width: 8 })
+  .node('nextBallYraw', Adder, { width: 8 })
+  .node('nextYsh', LeftShifter, { width: 8 })
+  .node('nextBrickAddr', Adder, { width: 8 })
+  .node('nextInBrickArea', Comparator)
+  .node('brickAtNext', Comparator)
+  .node('hitBrickRaw', And)
+  .node('hitBrick', And)
+  .node('nextYis14', Comparator)
+  .node('cmpNextGteMin', Comparator)
+  .node('notNextLtMin', Not)
+  .node('cmpNextLteMax', Comparator)
+  .node('notNextGtMax', Not)
+  .node('nextInPadRange', And)
+  .node('paddleHitCheck', And)
+  .node('hitPaddle', And)
+  .node('padOffset', Subtractor, { width: 8 })
+  .node('isFarLeft', Comparator)
+  .node('offsetLt254', Comparator)
+  .node('isMidLeft', Not)
+  .node('isMidRight', Comparator)
+  .node('isFarRight', Comparator)
+  .node('paddleDXa', Mux, { width: 8 })
+  .node('paddleDXb', Mux, { width: 8 })
+  .node('paddleDXc', Mux, { width: 8 })
+  .node('newDX', Mux, { width: 8 })
+  .node('flipDYa', Or)
+  .node('flipDY', Or)
+  .node('newDY', Mux, { width: 8 })
+  .node('topDYneg', Subtractor, { width: 8 })
+  .node('paddleBrickFlipDY', Or)
+  .node('finalDY', Mux, { width: 8 })
+  .node('nextYlt15', Comparator)
+  .node('nextYge15', Not)
+  .node('ballAtBottom', And)
+  .node('notHitPaddle', Not)
+  .node('ballMissed', And)
+  .node('resetX', Constant, { value: 16 })
+  .node('resetY', Constant, { value: 8 })
+  .node('resetDX', Constant, { value: 1 })
+  .node('resetDY', Constant, { value: 255 })
+  .node('actualBallX', Mux, { width: 8 })
+  .node('actualBallY', Mux, { width: 8 })
+  .node('actualDX', Mux, { width: 8 })
+  .node('actualDY', Mux, { width: 8 })
+  .node('paddleDelta', Mux, { width: 8 })
+  .node('paddleDelta2', Mux, { width: 8 })
+  .node('paddleXnewRaw', Adder, { width: 8 })
+  .node('paddleAtMin', Comparator)
+  .node('paddleAtMax', Comparator)
+  .node('paddleClamped1', Mux, { width: 8 })
+  .node('newPaddleX', Mux, { width: 8 })
+  .node('fillCtr', Register, { initial: 128 })
+  .node('fillCtrInc', Adder, { width: 8 })
+  .node('isFilling', Comparator)
+  .node('c128', Constant, { value: 128 })
+  .node('fillNext', Mux, { width: 8 })
+  .node('onMissVblank', And)
+  .node('fillCtrData', Mux, { width: 8 })
+  .node('fillCtrWe', Or)
+  .node('brickHitWe', And)
+  .node('fillWe', And)
+  .node('brickRAMweA', Or)
+  .node('brickRAMaddrA', Mux, { width: 8 })
+  .node('brickRAMdataA', Mux, { width: 8 })
+  .connect(({ in: inp, out, display, c0, c1, c2, c3, c4, c5, c14, c15, c16, c28, c29, c30, c31, c32, c253, c254, c255, brickRAM, ballX, ballY, ballDX, ballDY, paddleX, keyboard, leftCode, rightCode, isLeftCmp, isRightCmp, scanYsh, scanBrickAddr, scanInBrickArea, brickAlive, brickPixel, cmpBallX, cmpBallY, ballPixel, scanYsplit, notScanY4, notScanY5, notScanY6, notScanY7, isScanY15a, isScanY15b, isScanY15c, isScanY15d, isScanY15e, isScanY15f, isScanY15, padMinRaw, padMaxRaw, cmpScanGteMin, notLtPadMin, cmpScanLteMax, notGtPadMax, inPadRange, paddlePixel, pixOr1, pixOr2, pixelBus, prevVblank, alwaysHigh, notPrevVblank, onVblank, ballSpeedCtr, ballSpeedInc, ballSpeedMax, ballSpeedAtMax, nextBallSpeed, ballUpdate, padSpeedCtr, padSpeedInc, padSpeedMax, padSpeedAtMax, nextPadSpeed, paddleUpdate, movingLeftCmp, c127, movingLeft, notMovingLeft, movingUpCmp, movingUp, movingDown, ballAtLeft, hitLeft, ballAtRight, notBallLtRight, hitRight, flipDX, ballAtTop, hitTop, dxNegated, newDXbeforePaddle, nextBallXraw, dyNegated, topBouncedDY, nextBallYraw, nextYsh, nextBrickAddr, nextInBrickArea, brickAtNext, hitBrickRaw, hitBrick, nextYis14, cmpNextGteMin, notNextLtMin, cmpNextLteMax, notNextGtMax, nextInPadRange, paddleHitCheck, hitPaddle, padOffset, isFarLeft, offsetLt254, isMidLeft, isMidRight, isFarRight, paddleDXa, paddleDXb, paddleDXc, newDX, flipDYa, flipDY, newDY, topDYneg, paddleBrickFlipDY, finalDY, nextYlt15, nextYge15, ballAtBottom, notHitPaddle, ballMissed, resetX, resetY, resetDX, resetDY, actualBallX, actualBallY, actualDX, actualDY, paddleDelta, paddleDelta2, paddleXnewRaw, paddleAtMin, paddleAtMax, paddleClamped1, newPaddleX, fillCtr, fillCtrInc, isFilling, c128, fillNext, onMissVblank, fillCtrData, fillCtrWe, brickHitWe, fillWe, brickRAMweA, brickRAMaddrA, brickRAMdataA }) => [
+    keyboard.out.to(isLeftCmp.a, isRightCmp.a),
+    leftCode.out.to(isLeftCmp.b),
+    rightCode.out.to(isRightCmp.b),
+    display.scanY.to(scanYsh.value, scanInBrickArea.a, cmpBallY.a, scanYsplit.in),
+    c5.out.to(scanYsh.shift, nextYsh.shift),
+    scanYsh.result.to(scanBrickAddr.a),
+    display.scanX.to(scanBrickAddr.b, cmpBallX.a, cmpScanGteMin.a, cmpScanLteMax.b),
+    c0.out.to(scanBrickAddr.carry_in, brickAlive.b, padMinRaw.carry_in, padMaxRaw.carry_in, pixelBus.in0, ballSpeedInc.carry_in, nextBallSpeed.in1, padSpeedInc.carry_in, nextPadSpeed.in1, ballAtTop.b, dxNegated.a, dxNegated.borrow_in, nextBallXraw.carry_in, dyNegated.a, dyNegated.borrow_in, nextBallYraw.carry_in, nextBrickAddr.carry_in, brickAtNext.b, padOffset.borrow_in, topDYneg.a, topDYneg.borrow_in, paddleDelta.in0, paddleXnewRaw.carry_in, fillCtrInc.carry_in, fillCtrData.in1, brickRAMdataA.in0),
+    scanBrickAddr.sum.to(brickRAM.addrB),
+    c4.out.to(scanInBrickArea.b, nextInBrickArea.b),
+    brickRAM.outB.to(brickAlive.a),
+    scanInBrickArea.lt.to(brickPixel.a),
+    brickAlive.gt.to(brickPixel.b),
+    ballX.q.to(cmpBallX.b, ballAtLeft.a, ballAtRight.a, nextBallXraw.a),
+    ballY.q.to(cmpBallY.b, ballAtTop.a, nextBallYraw.a),
+    cmpBallX.eq.to(ballPixel.a),
+    cmpBallY.eq.to(ballPixel.b),
+    scanYsplit.bit4.to(notScanY4.in),
+    scanYsplit.bit5.to(notScanY5.in),
+    scanYsplit.bit6.to(notScanY6.in),
+    scanYsplit.bit7.to(notScanY7.in),
+    scanYsplit.bit0.to(isScanY15a.a),
+    scanYsplit.bit1.to(isScanY15a.b),
+    scanYsplit.bit2.to(isScanY15b.a),
+    scanYsplit.bit3.to(isScanY15b.b),
+    isScanY15a.out.to(isScanY15c.a),
+    isScanY15b.out.to(isScanY15c.b),
+    notScanY4.out.to(isScanY15d.a),
+    notScanY5.out.to(isScanY15d.b),
+    notScanY6.out.to(isScanY15e.a),
+    notScanY7.out.to(isScanY15e.b),
+    isScanY15d.out.to(isScanY15f.a),
+    isScanY15e.out.to(isScanY15f.b),
+    isScanY15c.out.to(isScanY15.a),
+    isScanY15f.out.to(isScanY15.b),
+    paddleX.q.to(padMinRaw.a, padMaxRaw.a, padOffset.b, paddleXnewRaw.a),
+    c253.out.to(padMinRaw.b, isFarLeft.b),
+    c2.out.to(padMaxRaw.b, ballAtLeft.b, isMidRight.b, isFarRight.b, paddleDXa.in1),
+    padMinRaw.sum.to(cmpScanGteMin.b, cmpNextGteMin.b),
+    cmpScanGteMin.lt.to(notLtPadMin.in),
+    padMaxRaw.sum.to(cmpScanLteMax.a, cmpNextLteMax.a),
+    cmpScanLteMax.lt.to(notGtPadMax.in),
+    notLtPadMin.out.to(inPadRange.a),
+    notGtPadMax.out.to(inPadRange.b),
+    isScanY15.out.to(paddlePixel.a),
+    inPadRange.out.to(paddlePixel.b),
+    ballPixel.out.to(pixOr1.a),
+    paddlePixel.out.to(pixOr1.b),
+    pixOr1.out.to(pixOr2.a),
+    brickPixel.out.to(pixOr2.b),
+    c1.out.to(pixelBus.in1, ballSpeedInc.b, padSpeedInc.b, paddleDXa.in0, paddleDelta2.in1, fillCtrInc.b, brickRAMdataA.in1),
+    pixOr2.out.to(pixelBus.sel),
+    pixelBus.out.to(display.dataIn),
+    display.vblank.to(prevVblank.data, onVblank.a),
+    alwaysHigh.out.to(prevVblank.we),
+    prevVblank.q.to(notPrevVblank.in),
+    notPrevVblank.out.to(onVblank.b),
+    ballSpeedCtr.q.to(ballSpeedInc.a, ballSpeedAtMax.a),
+    ballSpeedMax.out.to(ballSpeedAtMax.b),
+    ballSpeedInc.sum.to(nextBallSpeed.in0),
+    ballSpeedAtMax.eq.to(nextBallSpeed.sel, ballUpdate.b),
+    nextBallSpeed.out.to(ballSpeedCtr.data),
+    onVblank.out.to(ballSpeedCtr.we, ballUpdate.a, padSpeedCtr.we, paddleUpdate.a, onMissVblank.a, fillWe.b),
+    padSpeedCtr.q.to(padSpeedInc.a, padSpeedAtMax.a),
+    padSpeedMax.out.to(padSpeedAtMax.b),
+    padSpeedInc.sum.to(nextPadSpeed.in0),
+    padSpeedAtMax.eq.to(nextPadSpeed.sel, paddleUpdate.b),
+    nextPadSpeed.out.to(padSpeedCtr.data),
+    c127.out.to(movingLeftCmp.a, movingUpCmp.a),
+    ballDX.q.to(movingLeftCmp.b, dxNegated.b, newDXbeforePaddle.in0),
+    movingLeftCmp.lt.to(movingLeft.in),
+    movingLeft.out.to(notMovingLeft.in, hitLeft.b),
+    ballDY.q.to(movingUpCmp.b, dyNegated.b, topBouncedDY.in0),
+    movingUpCmp.lt.to(movingUp.in),
+    movingUp.out.to(movingDown.in, hitTop.b, hitBrick.b),
+    ballAtLeft.lt.to(hitLeft.a),
+    c30.out.to(ballAtRight.b),
+    ballAtRight.lt.to(notBallLtRight.in),
+    notBallLtRight.out.to(hitRight.a),
+    notMovingLeft.out.to(hitRight.b),
+    hitLeft.out.to(flipDX.a),
+    hitRight.out.to(flipDX.b),
+    ballAtTop.eq.to(hitTop.a),
+    dxNegated.difference.to(newDXbeforePaddle.in1),
+    flipDX.out.to(newDXbeforePaddle.sel),
+    newDXbeforePaddle.out.to(nextBallXraw.b, newDX.in0),
+    dyNegated.difference.to(topBouncedDY.in1, newDY.in1),
+    hitTop.out.to(topBouncedDY.sel, flipDYa.a),
+    topBouncedDY.out.to(nextBallYraw.b, newDY.in0, topDYneg.b, finalDY.in0),
+    nextBallYraw.sum.to(nextYsh.value, nextInBrickArea.a, nextYis14.a, nextYlt15.a, actualBallY.in0),
+    nextYsh.result.to(nextBrickAddr.a),
+    nextBallXraw.sum.to(nextBrickAddr.b, cmpNextGteMin.a, cmpNextLteMax.b, padOffset.a, actualBallX.in0),
+    brickRAM.outA.to(brickAtNext.a),
+    nextInBrickArea.lt.to(hitBrickRaw.a),
+    brickAtNext.gt.to(hitBrickRaw.b),
+    hitBrickRaw.out.to(hitBrick.a),
+    c14.out.to(nextYis14.b),
+    cmpNextGteMin.lt.to(notNextLtMin.in),
+    cmpNextLteMax.lt.to(notNextGtMax.in),
+    notNextLtMin.out.to(nextInPadRange.a),
+    notNextGtMax.out.to(nextInPadRange.b),
+    nextYis14.eq.to(paddleHitCheck.a),
+    nextInPadRange.out.to(paddleHitCheck.b),
+    paddleHitCheck.out.to(hitPaddle.a),
+    movingDown.out.to(hitPaddle.b, ballAtBottom.b),
+    padOffset.difference.to(isFarLeft.a, offsetLt254.a, isMidRight.a, isFarRight.a),
+    c254.out.to(offsetLt254.b, paddleDXc.in1),
+    offsetLt254.lt.to(isMidLeft.in),
+    isFarRight.eq.to(paddleDXa.sel),
+    paddleDXa.out.to(paddleDXb.in0),
+    c255.out.to(paddleDXb.in1, paddleDelta.in1),
+    isMidLeft.out.to(paddleDXb.sel),
+    paddleDXb.out.to(paddleDXc.in0),
+    isFarLeft.eq.to(paddleDXc.sel),
+    paddleDXc.out.to(newDX.in1),
+    hitPaddle.out.to(newDX.sel, flipDYa.b, newDY.sel, paddleBrickFlipDY.a, notHitPaddle.in),
+    flipDYa.out.to(flipDY.a),
+    hitBrick.out.to(flipDY.b, paddleBrickFlipDY.b, brickHitWe.b),
+    topDYneg.difference.to(finalDY.in1),
+    paddleBrickFlipDY.out.to(finalDY.sel),
+    c15.out.to(nextYlt15.b),
+    nextYlt15.lt.to(nextYge15.in),
+    nextYge15.out.to(ballAtBottom.a),
+    ballAtBottom.out.to(ballMissed.a),
+    notHitPaddle.out.to(ballMissed.b),
+    resetX.out.to(actualBallX.in1),
+    ballMissed.out.to(actualBallX.sel, actualBallY.sel, actualDX.sel, actualDY.sel, onMissVblank.b),
+    resetY.out.to(actualBallY.in1),
+    newDX.out.to(actualDX.in0),
+    resetDX.out.to(actualDX.in1),
+    finalDY.out.to(actualDY.in0),
+    resetDY.out.to(actualDY.in1),
+    actualBallX.out.to(ballX.data),
+    actualBallY.out.to(ballY.data),
+    actualDX.out.to(ballDX.data),
+    actualDY.out.to(ballDY.data),
+    ballUpdate.out.to(ballX.we, ballY.we, ballDX.we, ballDY.we, brickHitWe.a),
+    isLeftCmp.eq.to(paddleDelta.sel),
+    paddleDelta.out.to(paddleDelta2.in0),
+    isRightCmp.eq.to(paddleDelta2.sel),
+    paddleDelta2.out.to(paddleXnewRaw.b),
+    paddleXnewRaw.sum.to(paddleAtMin.a, paddleAtMax.a, paddleClamped1.in0),
+    c3.out.to(paddleAtMin.b, paddleClamped1.in1),
+    c28.out.to(paddleAtMax.b, newPaddleX.in1),
+    paddleAtMin.lt.to(paddleClamped1.sel),
+    paddleClamped1.out.to(newPaddleX.in0),
+    paddleAtMax.gt.to(newPaddleX.sel),
+    newPaddleX.out.to(paddleX.data),
+    paddleUpdate.out.to(paddleX.we),
+    fillCtr.q.to(fillCtrInc.a, isFilling.a, fillNext.in1, brickRAMaddrA.in1),
+    c128.out.to(isFilling.b),
+    fillCtrInc.sum.to(fillNext.in0),
+    isFilling.lt.to(fillNext.sel, fillCtrWe.a, fillWe.a, brickRAMaddrA.sel, brickRAMdataA.sel),
+    fillNext.out.to(fillCtrData.in0),
+    onMissVblank.out.to(fillCtrData.sel, fillCtrWe.b),
+    fillCtrData.out.to(fillCtr.data),
+    fillCtrWe.out.to(fillCtr.we),
+    brickHitWe.out.to(brickRAMweA.a),
+    fillWe.out.to(brickRAMweA.b),
+    nextBrickAddr.sum.to(brickRAMaddrA.in0),
+    brickRAMaddrA.out.to(brickRAM.addrA),
+    brickRAMdataA.out.to(brickRAM.dataA),
+    brickRAMweA.out.to(brickRAM.weA),
+  ])
+  .build()

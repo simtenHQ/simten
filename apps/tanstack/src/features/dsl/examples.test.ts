@@ -55,11 +55,11 @@ describe('DSL Examples', () => {
   describe('Example 1: Simple Buffer', () => {
     it('should compile a simple buffer circuit', () => {
       const source = `
-        circuit Buffer {
-          input a: Bit
-          output out: Bit
-        }
-      `;
+const Buffer = component('Buffer')
+  .in('a', bit)
+  .out('out', bit)
+  .build()
+`;
 
       const library = new ExampleLibrary();
       const { circuits, errors } = compileDSL(source, library);
@@ -78,18 +78,16 @@ describe('DSL Examples', () => {
   describe('Example 2: NOT Gate (Inverter)', () => {
     it('should compile a NOT gate using Nand', () => {
       const source = `
-        circuit Not {
-          input a: Bit
-          output out: Bit
-
-          impl {
-            node nand1: Nand
-            connect a -> nand1.a
-            connect a -> nand1.b
-            connect nand1.out -> out
-          }
-        }
-      `;
+const Not = component('Not')
+  .in('a', bit)
+  .out('out', bit)
+  .node('nand1', Nand)
+  .connect(({ in: inp, out, nand1 }) => [
+    inp.a.to(nand1.a, nand1.b),
+    nand1.out.to(out.out),
+  ])
+  .build()
+`;
 
       const library = new ExampleLibrary();
       const { circuits, errors } = compileDSL(source, library);
@@ -107,28 +105,21 @@ describe('DSL Examples', () => {
   describe('Example 3: HalfAdder', () => {
     it('should compile a complete HalfAdder circuit', () => {
       const source = `
-        // A half adder adds two bits and produces sum and carry
-        circuit HalfAdder {
-          input a: Bit
-          input b: Bit
-          output sum: Bit
-          output carry: Bit
-
-          impl {
-            // XOR for sum
-            node xor1: Xor
-            connect a -> xor1.a
-            connect b -> xor1.b
-            connect xor1.out -> sum
-
-            // AND for carry
-            node and1: And
-            connect a -> and1.a
-            connect b -> and1.b
-            connect and1.out -> carry
-          }
-        }
-      `;
+const HalfAdder = component('HalfAdder')
+  .in('a', bit)
+  .in('b', bit)
+  .out('sum', bit)
+  .out('carry', bit)
+  .node('xor1', Xor)
+  .node('and1', And)
+  .connect(({ in: inp, out, xor1, and1 }) => [
+    inp.a.to(xor1.a, and1.a),
+    inp.b.to(xor1.b, and1.b),
+    xor1.out.to(out.sum),
+    and1.out.to(out.carry),
+  ])
+  .build()
+`;
 
       const library = new ExampleLibrary();
       const { circuits, errors } = compileDSL(source, library);
@@ -154,24 +145,21 @@ describe('DSL Examples', () => {
     it('should compile FullAdder using HalfAdder', () => {
       // First define and compile HalfAdder
       const halfAdderSource = `
-        circuit HalfAdder {
-          input a: Bit
-          input b: Bit
-          output sum: Bit
-          output carry: Bit
-
-          impl {
-            node xor1: Xor
-            node and1: And
-            connect a -> xor1.a
-            connect b -> xor1.b
-            connect xor1.out -> sum
-            connect a -> and1.a
-            connect b -> and1.b
-            connect and1.out -> carry
-          }
-        }
-      `;
+const HalfAdder = component('HalfAdder')
+  .in('a', bit)
+  .in('b', bit)
+  .out('sum', bit)
+  .out('carry', bit)
+  .node('xor1', Xor)
+  .node('and1', And)
+  .connect(({ in: inp, out, xor1, and1 }) => [
+    inp.a.to(xor1.a, and1.a),
+    inp.b.to(xor1.b, and1.b),
+    xor1.out.to(out.sum),
+    and1.out.to(out.carry),
+  ])
+  .build()
+`;
 
       const library = new ExampleLibrary();
       const halfAdderResult = compileDSL(halfAdderSource, library);

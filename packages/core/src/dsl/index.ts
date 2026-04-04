@@ -1,9 +1,17 @@
 /**
  * DSL Module - Main Entry Point
  *
- * LLM-native hardware design environment with:
- * - Validation Pipeline: Static correctness (syntax -> semantic -> type -> structural)
- * - Analysis Pipeline: Hardware metrics, simulation traces, design deltas
+ * @deprecated The DSL parser is being replaced by the TypeScript builder API.
+ * Use `component()` from `@turing-incomplete/core/builder` instead of writing DSL text.
+ * Use `executeCircuitCode()` from `@turing-incomplete/core/builder` to compile TS code.
+ * Use `simulate()` from `@turing-incomplete/core/sim` for the typed simulation API.
+ * Use `@turing-incomplete/core/std` for standard library components.
+ *
+ * This module is retained for backward compatibility with:
+ * - Challenge system (scaffolds/solutions are DSL strings)
+ * - MCP tools (accept DSL text)
+ * - Existing tests
+ * - Embed package (useCompileDSL hook)
  *
  * Complete DSL pipeline: Text -> Tokens -> AST -> Validated AST -> IR
  */

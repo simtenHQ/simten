@@ -38,18 +38,15 @@ export function AndChallengeSection({ onPass }: AndChallengeSectionProps) {
           "Connect nand1.out to BOTH inputs of nand2 (the NOT trick).",
           "Connect nand2.out to light.in.",
         ]}
-        scaffold={`circuit AndFromNand {
-  impl {
-    node A: Switch
-    node B: Switch
-    node nand1: Nand
-    node nand2: Nand
-    node light: Led
-
-    // Your connections here:
-
-  }
-}`}
+        scaffold={`
+const AndFromNand = component('AndFromNand')
+  .node('A', Switch)
+  .node('B', Switch)
+  .node('nand1', Nand)
+  .node('nand2', Nand)
+  .node('light', Led)
+  .build()
+`}
         checks={[
           { description: "AND(0,0) = 0", node: "light", port: "in", expected: 0, inputs: [["A", 0], ["B", 0]] },
           { description: "AND(0,1) = 0", node: "light", port: "in", expected: 0, inputs: [["A", 0], ["B", 1]] },

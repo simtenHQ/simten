@@ -40,16 +40,13 @@ NAND(1, 1) = 0`}</pre>
           "You need three connect lines total.",
           "connect A.out -> gate.a\nconnect A.out -> gate.b\nconnect gate.out -> light.in",
         ]}
-        scaffold={`circuit NotFromNand {
-  impl {
-    node A: Switch
-    node gate: Nand
-    node light: Led
-
-    // Your connections here:
-
-  }
-}`}
+        scaffold={`
+const NotFromNand = component('NotFromNand')
+  .node('A', Switch)
+  .node('gate', Nand)
+  .node('light', Led)
+  .build()
+`}
         checks={[
           { description: "NOT(0) = 1", node: "light", port: "in", expected: 1, inputs: [["A", 0]] },
           { description: "NOT(1) = 0", node: "light", port: "in", expected: 0, inputs: [["A", 1]] },

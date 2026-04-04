@@ -76,14 +76,9 @@ function readPort(
   portName: string
 ): number | null {
   if (!portValues) return null;
-  const suffix = `.${portName}`;
-  const segment = `_${nodeLabel}_`;
-  for (const [key, val] of portValues) {
-    if (key.endsWith(suffix) && key.includes(segment)) {
-      return typeof val === "number" ? (val >>> 0) : null;
-    }
-  }
-  return null;
+  const val = portValues.get(`${nodeLabel}.${portName}`);
+  if (val === undefined) return null;
+  return typeof val === "number" ? (val >>> 0) : null;
 }
 
 export interface CompileResult {
@@ -107,7 +102,7 @@ export function useRV32IDebugger() {
   // Fetch DSL once
   useEffect(() => {
     if (dslCacheRef.current) return;
-    fetch("/blog-assets/rv32i-cpu.dsl")
+    fetch("/blog-assets/rv32i-cpu.circuit.ts")
       .then((r) => {
         if (!r.ok) throw new Error(`Failed to fetch DSL: ${r.status}`);
         return r.text();
@@ -186,21 +181,18 @@ export function useRV32IDebugger() {
     WB:  (() => { const v = readPort(sim.portValues, "memwb_pc4",  "q"); return v != null ? (v - 4) >>> 0 : null; })(),
   };
 
-  // Extract register file from sequential state (key contains _regfile_)
+  // Extract register file from sequential state
   const registers: Map<number, number> = (() => {
     if (!sim.sequentialState?.currentState) return new Map();
-    for (const [key, value] of sim.sequentialState.currentState) {
-      if (key.includes("_regfile_")) {
-        if (value instanceof Map) return value as Map<number, number>;
-        // May be a plain object if deserialized
-        if (value && typeof value === "object") {
-          const m = new Map<number, number>();
-          for (const [k, v] of Object.entries(value as Record<string, number>)) {
-            m.set(Number(k), v);
-          }
-          return m;
-        }
+    const value = sim.sequentialState.currentState.get("regfile");
+    if (!value) return new Map();
+    if (value instanceof Map) return value as Map<number, number>;
+    if (typeof value === "object") {
+      const m = new Map<number, number>();
+      for (const [k, v] of Object.entries(value as Record<string, number>)) {
+        m.set(Number(k), v);
       }
+      return m;
     }
     return new Map();
   })();
