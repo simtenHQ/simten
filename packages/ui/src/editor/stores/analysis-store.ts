@@ -7,7 +7,7 @@
 
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
-import type { ValidationResult, CircuitMetrics, Diagnostic } from '@turing-incomplete/core/dsl';
+import type { ValidationResult, CircuitMetrics, Diagnostic } from '@turing-incomplete/core';
 
 interface AnalysisState {
   // Validation results

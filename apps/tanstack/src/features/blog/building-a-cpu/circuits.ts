@@ -11,7 +11,7 @@ export { CIRCUITS as GATE_CIRCUITS } from "@/features/splash/circuits";
 export interface BlogCircuit {
   name: string;
   description: string;
-  displayDsl: string;
+  displayCode: string;
   dsl: string;
 }
 
@@ -20,7 +20,7 @@ export const BLOG_CIRCUITS: Record<string, BlogCircuit> = {
     name: "SR Latch",
     description:
       "The simplest memory element. Set (S) stores a 1, Reset (R) clears to 0.",
-    displayDsl: `
+    displayCode: `
 const SRLatch = component('SRLatch', {
   in: { s: bit, r: bit },
   out: { q: bit, q_bar: bit },
@@ -62,7 +62,7 @@ const DemoSRLatch = component('DemoSRLatch', {
     name: "D Flip-Flop",
     description:
       "Captures the input value on each clock edge. The building block of registers.",
-    displayDsl: `
+    displayCode: `
 const DemoFlipFlop = component('DemoFlipFlop', {
   nodes: { sw_d: Switch, dff: DFlipFlop, led_q: Led },
   connect: ({ in: inp, out, sw_d, dff, led_q }) => [
@@ -86,7 +86,7 @@ const DemoFlipFlop = component('DemoFlipFlop', {
     name: "4-Bit Register",
     description:
       "Four flip-flops in parallel store a nibble (4 bits) of data.",
-    displayDsl: `
+    displayCode: `
 const Reg4 = component('Reg4', {
   in: { d0: bit, d1: bit, d2: bit, d3: bit },
   out: { q0: bit, q1: bit, q2: bit, q3: bit },
@@ -140,7 +140,7 @@ const DemoReg4 = component('DemoReg4', {
     name: "4-Bit Counter",
     description:
       "Counts from 0 to 15 using a synchronous binary counter.",
-    displayDsl: `
+    displayCode: `
 const Counter4 = component('Counter4', {
   out: { q0: bit, q1: bit, q2: bit, q3: bit },
   nodes: { ff0: DFlipFlop, ff1: DFlipFlop, ff2: DFlipFlop, ff3: DFlipFlop, inv0: Not, xor1: Xor, and01: And, xor2: Xor, and012: And, xor3: Xor },
@@ -192,7 +192,7 @@ const DemoCounter4 = component('DemoCounter4', {
     name: "4-Bit Adder",
     description:
       "Chains four full adders to add two 4-bit numbers with carry propagation.",
-    displayDsl: `
+    displayCode: `
 const Adder4 = component('Adder4', {
   in: { a0: bit, a1: bit, a2: bit, a3: bit, b0: bit, b1: bit, b2: bit, b3: bit },
   out: { s0: bit, s1: bit, s2: bit, s3: bit, cout: bit },
@@ -295,7 +295,7 @@ const DemoAdder4 = component('DemoAdder4', {
     name: "1-Bit ALU Slice",
     description:
       "Performs ADD, AND, OR, or XOR on one bit, selected by a 2-bit control signal.",
-    displayDsl: `
+    displayCode: `
 const ALU1 = component('ALU1', {
   in: { a: bit, b: bit, cin: bit, op0: bit, op1: bit },
   out: { result: bit, cout: bit },
@@ -386,7 +386,7 @@ const DemoALU1 = component('DemoALU1', {
     name: "RAM",
     description:
       "256x8 memory. Reads are instant (combinational). Writes happen on the clock edge when write-enable is on.",
-    displayDsl: `
+    displayCode: `
 const DemoRAM = component('DemoRAM', {
   nodes: { addr: Input, data_in: Input, we: Switch, mem: RAM, data_out: HexDisplay },
   connect: ({ in: inp, out, addr, data_in, we, mem, data_out }) => [

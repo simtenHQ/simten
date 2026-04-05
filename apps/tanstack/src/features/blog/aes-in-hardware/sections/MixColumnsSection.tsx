@@ -1,6 +1,6 @@
 "use client";
 
-import { CircuitEmbed } from "@turing-incomplete/embed";
+import { ComponentEmbed } from "@turing-incomplete/embed";
 import { AES_CIRCUITS } from "../circuits";
 
 export function MixColumnsSection() {
@@ -64,11 +64,11 @@ r3 = 3·s0 ⊕ s1   ⊕ s2   ⊕ 2·s3`}</pre>
       </div>
 
       <div className="mt-8">
-        <CircuitEmbed
-          dsl={circuit.dsl}
+        <ComponentEmbed
+          code={circuit.dsl}
           height={420}
           showControls={false}
-          displayDsl={circuit.displayDsl}
+          displayCode={circuit.displayCode}
           title={circuit.name}
           description={circuit.description}
         />

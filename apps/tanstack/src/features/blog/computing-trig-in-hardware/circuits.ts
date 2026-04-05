@@ -9,7 +9,7 @@
 export interface BlogCircuit {
   name: string;
   description: string;
-  displayDsl: string;
+  displayCode: string;
   dsl: string;
 }
 
@@ -18,7 +18,7 @@ export const CORDIC_CIRCUITS: Record<string, BlogCircuit> = {
     name: "Right Shift = Divide by Power of 2",
     description:
       "A RightShifter divides its input by 2^shift. This is the only 'multiplication' CORDIC needs.",
-    displayDsl: `
+    displayCode: `
 const RightShiftDemo = component('RightShiftDemo', {
   nodes: { value: Input, shift: Input, shifter: RightShifter, result: HexDisplay },
   nodeArgs: { value: { value: 80 }, shift: { value: 1 } },
@@ -46,7 +46,7 @@ const RightShiftDemo = component('RightShiftDemo', {
     name: "One Rotation Step",
     description:
       "The core CORDIC operation: x_next = x - (y >> i). A right-shifted value is subtracted using two's complement.",
-    displayDsl: `
+    displayCode: `
 const RotationStep = component('RotationStep', {
   nodes: { x: Input, y: Input, shift: Input, one: Constant, zero: Constant, yShifted: RightShifter, yNeg: BusNot, xMinusY: SignedAdder, xPlusY: SignedAdder, displaySub: HexDisplay, displayAdd: HexDisplay },
   nodeArgs: { x: { value: 80 }, y: { value: 0 }, shift: { value: 0 }, one: { value: 1 }, zero: { value: 0 } },
@@ -86,7 +86,7 @@ const RotationStep = component('RotationStep', {
     name: "Rotation Direction",
     description:
       "CORDIC decides which way to rotate by checking the sign of the remaining angle z. If z >= 0, rotate counterclockwise; if z < 0, rotate clockwise.",
-    displayDsl: `
+    displayCode: `
 const SignDetection = component('SignDetection', {
   nodes: { angle: Input, zero: Constant, cmp: SignedComparator, positiveLed: Led, addVal: Constant, subVal: Constant, result: Mux, display: HexDisplay },
   nodeArgs: { angle: { value: 32 }, zero: { value: 0 }, addVal: { value: 10 }, subVal: { value: 246 } },
@@ -120,7 +120,7 @@ const SignDetection = component('SignDetection', {
     name: "Iteration Counter",
     description:
       "CORDIC runs for a fixed number of iterations (8 in our case). A register counts up and a comparator stops when done.",
-    displayDsl: `
+    displayCode: `
 const IterationControl = component('IterationControl', {
   nodes: { iter: Register, eight: Constant, inc: Incrementer, shouldContinue: Comparator, display: HexDisplay, doneLed: Led },
   nodeArgs: { iter: { initial: 0 }, eight: { value: 8 } },
@@ -152,7 +152,7 @@ const IterationControl = component('IterationControl', {
     name: "Angle Lookup Table",
     description:
       "CORDIC uses a pre-computed table of atan(2^-i) values. A cascaded mux tree selects the right angle for each iteration.",
-    displayDsl: `
+    displayCode: `
 const AngleLookup = component('AngleLookup', {
   nodes: { iteration: Input, angle0: Constant, angle1: Constant, angle2: Constant, angle3: Constant, angle4: Constant, angle5: Constant, angle6: Constant, angle7: Constant, bit0: BitSlice, bit1: BitSlice, bit2: BitSlice, mux01: Mux, mux23: Mux, mux45: Mux, mux67: Mux, mux0123: Mux, mux4567: Mux, angleSel: Mux, display: HexDisplay },
   nodeArgs: { iteration: { value: 0 }, angle0: { value: 32 }, angle1: { value: 19 }, angle2: { value: 10 }, angle3: { value: 5 }, angle4: { value: 3 }, angle5: { value: 1 }, angle6: { value: 1 }, angle7: { value: 0 }, bit0: { low: 0, high: 0 }, bit1: { low: 1, high: 1 }, bit2: { low: 2, high: 2 } },

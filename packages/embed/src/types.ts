@@ -10,7 +10,7 @@ export type {
   FlatSequentialState,
 } from "@turing-incomplete/core/simulator";
 
-export type { Circuit } from "@turing-incomplete/core/dsl";
+export type { Circuit } from "@turing-incomplete/core";
 
 // --- Layout metadata types (extracted from packages/ui/src/editor/types/visual.ts) ---
 

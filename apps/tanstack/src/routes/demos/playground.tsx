@@ -5,7 +5,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { component, bit, bus, executeCircuitCode } from "@turing-incomplete/core/builder";
+import { component, bit, bus, executeComponentCode } from "@turing-incomplete/core/builder";
 import { simulate, type SimulationHandle } from "@turing-incomplete/core/sim";
 import { And, Xor, Or, Not, DFlipFlop, Register, Constant, Mux } from "@turing-incomplete/core/std";
 
@@ -254,7 +254,7 @@ function LiveCodeDemo() {
   const [inputB, setInputB] = useState(0);
 
   const run = useCallback(() => {
-    const execResult = executeCircuitCode(code);
+    const execResult = executeComponentCode(code);
     if (execResult.error) {
       setResult({ outputs: {}, error: execResult.error });
       return;

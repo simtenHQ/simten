@@ -7,7 +7,7 @@
 
 export { component } from './component.js';
 export { bit, bus } from './bit-bus.js';
-export { executeCircuitCode, stripTypes, type ExecuteResult } from './execute.js';
+export { executeComponentCode, stripTypes, type ExecuteResult } from './execute.js';
 export type {
   BuiltComponent,
   ComponentMeta,

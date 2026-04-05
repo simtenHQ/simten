@@ -61,6 +61,7 @@ export function useSimulationSession<TMeta = unknown>(
 
   const state = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
 
+
   const actions = useMemo(() => ({
     tick: (metadata?: TMeta) => session?.tick(metadata),
     reset: () => session?.reset(),

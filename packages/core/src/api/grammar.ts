@@ -1,11 +1,11 @@
 /**
  * Grammar Handler
  *
- * Pure function to return DSL grammar summary.
+ * Returns a summary of the TypeScript builder API.
  */
 
-import { getGrammarSummary } from '../dsl/index.js';
+import { getBuilderAPISummary } from '../types/analysis.js';
 
 export function getGrammarHandler(): string {
-  return getGrammarSummary();
+  return getBuilderAPISummary();
 }

@@ -15,7 +15,7 @@
 export interface BlogCircuit {
   name: string;
   description: string;
-  displayDsl: string;
+  displayCode: string;
   dsl: string;
   nodePositions?: Record<string, { x: number; y: number }>;
 }
@@ -55,7 +55,7 @@ export const TPU_CIRCUITS: Record<string, BlogCircuit> = {
     name: "Multiply-Add Unit",
     description:
       "Multiply two numbers and add to a partial sum. The fundamental operation inside every PE.",
-    displayDsl: `
+    displayCode: `
 const MultiplyAdd = component('MultiplyAdd', {
   nodes: { data: Input, weight: Input, partialSumIn: Input, mult: Multiplier, adder: Adder, zero: Constant, result: HexDisplay },
   nodeArgs: { data: { value: 3 }, weight: { value: 5 }, partialSumIn: { value: 10 }, adder: { width: 16 }, zero: { value: 0 } },
@@ -106,7 +106,7 @@ const MultiplyAdd = component('MultiplyAdd', {
     name: "Weight Register",
     description:
       "A register that stores a weight only when the valid signal is high. The weight stays fixed while data streams through.",
-    displayDsl: `
+    displayCode: `
 const WeightRegister = component('WeightRegister', {
   nodes: { weightIn: Input, weightValid: Switch, dataIn: Input, weightReg: Register, storedWeight: HexDisplay, mult: Multiplier, product: HexDisplay },
   nodeArgs: { weightIn: { value: 7 }, dataIn: { value: 3 } },
@@ -155,7 +155,7 @@ const WeightRegister = component('WeightRegister', {
     name: "Processing Element",
     description:
       "A full PE with weight register, multiplier, registered partial-sum adder, and data pipeline. The building block of the systolic array.",
-    displayDsl: `
+    displayCode: `
 const TestPE = component('TestPE', {
   nodes: { pe: PE_Systolic, dataIn: Input, weightIn: Input, weightValid: Switch, partialSumIn: Input, partialSumOut: HexDisplay, dataOut: HexDisplay },
   nodeArgs: { dataIn: { value: 3 }, weightIn: { value: 5 }, partialSumIn: { value: 0 } },
@@ -208,7 +208,7 @@ const TestPE = component('TestPE', {
     name: "Two-PE Row",
     description:
       "Two PEs connected horizontally. Data flows left to right with a one-cycle delay between elements.",
-    displayDsl: `
+    displayCode: `
 const TwoPERow = component('TwoPERow', {
   nodes: { pe0: PE_Systolic, pe1: PE_Systolic, data0: Input, weight0: Input, weight1: Input, weightValid: Switch, zero16: Constant, result0: HexDisplay, result1: HexDisplay },
   nodeArgs: { data0: { value: 2 }, weight0: { value: 3 }, weight1: { value: 5 }, zero16: { value: 0 } },
@@ -269,7 +269,7 @@ const TwoPERow = component('TwoPERow', {
     name: "Two-PE Column",
     description:
       "Two PEs stacked vertically. Partial sums flow down through registers — one PE per clock cycle, just like real hardware.",
-    displayDsl: `
+    displayCode: `
 const TwoPEColumn = component('TwoPEColumn', {
   nodes: { pe0: PE_Systolic, pe1: PE_Systolic, dataIn: Input, weight0: Input, weight1: Input, weightValid: Switch, zero16: Constant, topResult: HexDisplay, bottomResult: HexDisplay },
   nodeArgs: { dataIn: { value: 4 }, weight0: { value: 3 }, weight1: { value: 5 }, zero16: { value: 0 } },
@@ -324,7 +324,7 @@ const TwoPEColumn = component('TwoPEColumn', {
     name: "Wavefront Controller",
     description:
       "A phase register drives multi-step computation. Each phase has its own enable counter. LEDs show the active phase.",
-    displayDsl: `
+    displayCode: `
 const WavefrontController = component('WavefrontController', {
   nodes: { phase: Register, enable: Switch, inc: Incrementer, phaseMux: Mux, one: Constant, zero: Constant, const1: Constant, const2: Constant, const3: Constant, isPhase0: Comparator, isPhase1: Comparator, isPhase2: Comparator, isPhase3: Comparator, led0: Led, led1: Led, led2: Led, led3: Led, display: HexDisplay },
   nodeArgs: { phase: { initial: 0 }, one: { value: 1 }, zero: { value: 0 }, const1: { value: 1 }, const2: { value: 2 }, const3: { value: 3 } },

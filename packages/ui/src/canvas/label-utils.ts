@@ -1,4 +1,4 @@
-import type { Circuit } from "@turing-incomplete/core/dsl";
+import type { Circuit } from "@turing-incomplete/core";
 
 /**
  * Extract clean label from node ID (removes timestamps and prefixes).

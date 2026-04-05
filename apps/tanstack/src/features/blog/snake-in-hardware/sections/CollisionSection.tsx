@@ -1,6 +1,6 @@
 "use client";
 
-import { CircuitEmbed } from "@turing-incomplete/embed";
+import { ComponentEmbed } from "@turing-incomplete/embed";
 import { SNAKE_CIRCUITS } from "../circuits";
 
 export function CollisionSection() {
@@ -34,9 +34,9 @@ export function CollisionSection() {
       </div>
 
       <div className="mt-8">
-        <CircuitEmbed
-          dsl={SNAKE_CIRCUITS.collisionDetector.dsl}
-          displayDsl={SNAKE_CIRCUITS.collisionDetector.displayDsl}
+        <ComponentEmbed
+          code={SNAKE_CIRCUITS.collisionDetector.dsl}
+          displayCode={SNAKE_CIRCUITS.collisionDetector.displayCode}
           nodePositions={SNAKE_CIRCUITS.collisionDetector.nodePositions}
           height={350}
           showControls

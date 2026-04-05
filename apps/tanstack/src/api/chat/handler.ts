@@ -37,19 +37,6 @@ const analysisTools: ToolDef[] = [
       required: ['source'],
     },
   },
-  {
-    name: 'run_testbench',
-    description:
-      'Run a testbench against a circuit. Returns test status, cycle count, assertion results, and signal traces.',
-    input_schema: {
-      type: 'object',
-      properties: {
-        circuitSource: { type: 'string', description: 'DSL source for the circuit under test' },
-        testbenchSource: { type: 'string', description: 'DSL source for the testbench' },
-      },
-      required: ['circuitSource', 'testbenchSource'],
-    },
-  },
 ];
 
 const editorTools: ToolDef[] = [

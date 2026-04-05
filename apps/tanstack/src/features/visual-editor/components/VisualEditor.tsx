@@ -2,7 +2,7 @@
  * VisualEditor Component
  *
  * Main component that integrates all parts of the visual editor.
- * Combines ComponentPalette, Canvas, and DSL Editor.
+ * Combines ComponentPalette, Canvas, and Code Editor.
  *
  * This is a thin shell — all editor components come from @turing-incomplete/ui.
  */
@@ -26,11 +26,14 @@ import type { Circuit } from "@turing-incomplete/ui/editor/types";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { TSEditor as DSLEditor, type TSEditorRef as DSLEditorRef } from "@/features/dsl/ui/TSEditor";
+import { TSEditor, type TSEditorRef } from "@/features/code-editor/TSEditor";
 import { Menu, TestTube, Bot, Download } from "lucide-react";
 import { exportVerilog } from "@turing-incomplete/core/verilog";
-import { isHarnessName } from "@turing-incomplete/core/dsl";
-import { ChatPanel, useChatStore, useNarrativeContext } from "@/features/chat";
+/** Check if a circuit name is an auto-generated harness */
+function isHarnessName(name: string): boolean {
+  return name.endsWith('Harness');
+}
+import { ChatPanel, useChatStore, useLLMContext } from "@/features/chat";
 import { useMCPConnection } from "@/hooks/useMCPConnection";
 import { EXAMPLES, CATEGORY_COLORS, CATEGORY_LABELS, type Example } from "../examples";
 
@@ -74,8 +77,8 @@ export function VisualEditor({ theme = "light" }: VisualEditorProps) {
   const [componentPaletteOpen, setComponentPaletteOpen] = useState(false);
   const [testsPanelOpen, setTestsPanelOpen] = useState(false);
 
-  // DSL Editor ref for ChatPanel integration
-  const dslEditorRef = useRef<DSLEditorRef>(null);
+  // Editor ref for ChatPanel integration
+  const editorRef = useRef<TSEditorRef>(null);
 
   // Track whether we've loaded content so we can skip the first MCP cache replay
   const hasLoadedContentRef = useRef(false);
@@ -89,7 +92,7 @@ export function VisualEditor({ theme = "light" }: VisualEditorProps) {
   // Initialize primitive components library
   usePrimitivesInit();
 
-  // ── Compile library — set by DSL editor on compile, used for simulation + export ──
+  // ── Compile library — set by editor on compile, used for simulation + export ──
   const [compileLibrary, setCompileLibrary] = useState<{ resolveComponent: (name: string) => Circuit | undefined; getAllPrimitiveNames: () => string[] } | null>(null);
 
   // Export to Verilog — uses compile library (no store)
@@ -129,8 +132,8 @@ export function VisualEditor({ theme = "light" }: VisualEditorProps) {
   // Studio connection (WebSocket to MCP server)
   const { status: mcpStatus, sendToClaudePrompt } = useMCPConnection({
     onDSL: useCallback((source: string) => {
-      dslEditorRef.current?.setCode(source);
-      setTimeout(() => dslEditorRef.current?.compile(), 100);
+      editorRef.current?.setCode(source);
+      setTimeout(() => editorRef.current?.compile(), 100);
     }, []),
     onChatMessage: useCallback((text: string) => {
       addAssistantMessage(text);
@@ -152,8 +155,8 @@ export function VisualEditor({ theme = "light" }: VisualEditorProps) {
   });
 
   // Narrative context for chat
-  const dslCode = dslEditorRef.current?.getCode() ?? "";
-  const narrativeContext = useNarrativeContext(dslCode, sim.portValues ?? undefined);
+  const dslCode = editorRef.current?.getCode() ?? "";
+  const narrativeContext = useLLMContext(dslCode, sim.portValues ?? undefined);
 
   // Keyboard shortcuts for drawer toggles
   useEffect(() => {
@@ -179,10 +182,10 @@ export function VisualEditor({ theme = "light" }: VisualEditorProps) {
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [toggleChat]);
 
-  // Handle DSL compilation in split mode
-  const handleDSLCompile = useCallback(
-    (circuits: Circuit[], dslCode: string, library?: { resolveComponent: (name: string) => Circuit | undefined; getAllPrimitiveNames: () => string[] }) => {
-      setCompiledCircuits(circuits, dslCode);
+  // Handle compilation in split mode
+  const handleCompile = useCallback(
+    (circuits: Circuit[], code: string, library?: { resolveComponent: (name: string) => Circuit | undefined; getAllPrimitiveNames: () => string[] }) => {
+      setCompiledCircuits(circuits, code);
 
       // Pass library to simulation and other consumers
       if (library) {
@@ -194,9 +197,9 @@ export function VisualEditor({ theme = "light" }: VisualEditorProps) {
 
   // Load an example into the editor
   const loadExample = useCallback((example: Example) => {
-    dslEditorRef.current?.setCode(example.dsl);
+    editorRef.current?.setCode(example.dsl);
     hasLoadedContentRef.current = true;
-    setTimeout(() => dslEditorRef.current?.compile(), 100);
+    setTimeout(() => editorRef.current?.compile(), 100);
   }, []);
 
   // Empty state with example picker
@@ -205,7 +208,7 @@ export function VisualEditor({ theme = "light" }: VisualEditorProps) {
       <div className="pointer-events-auto rounded-xl border border-gray-200 dark:border-[#2a2a2e] bg-white dark:bg-[#1a1a1e] p-6 shadow-lg max-w-md w-full">
         <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-1">Load an example</h2>
         <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">
-          Pick a circuit to explore, or write your own DSL on the left.
+          Pick a circuit to explore, or write your own on the left.
         </p>
         <div className="space-y-1.5 max-h-[340px] overflow-y-auto">
           {EXAMPLES.map((ex) => (
@@ -330,14 +333,14 @@ export function VisualEditor({ theme = "light" }: VisualEditorProps) {
 
         {/* Main Content Area - Unified Workspace */}
         <div className="flex flex-1 overflow-hidden">
-          {/* Left: DSL Editor (40%) - Full Height */}
+          {/* Left: Code Editor (40%) - Full Height */}
           <div className="w-[40%] border-r border-gray-200 dark:border-[#2a2a2e]">
-            <DSLEditor
-              ref={dslEditorRef}
+            <TSEditor
+              ref={editorRef}
               storageKey={null}
               initialCode=""
               autoCompileEnabled={true}
-              onCompileSuccess={handleDSLCompile}
+              onCompileSuccess={handleCompile}
               showHeader={false}
             />
           </div>
@@ -429,11 +432,11 @@ export function VisualEditor({ theme = "light" }: VisualEditorProps) {
 
         {/* AI Chat Panel */}
         <ChatPanel
-          getCurrentCode={() => dslEditorRef.current?.getCode() ?? ""}
+          getCurrentCode={() => editorRef.current?.getCode() ?? ""}
           setCode={(code) => {
-            dslEditorRef.current?.setCode(code);
+            editorRef.current?.setCode(code);
             // Trigger recompile after setting code
-            setTimeout(() => dslEditorRef.current?.compile(), 100);
+            setTimeout(() => editorRef.current?.compile(), 100);
           }}
           setInput={(nodeName, value) => {
             // Read circuit from store at call time to avoid stale closures.

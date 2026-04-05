@@ -10,7 +10,7 @@ import {
   type FlatPortValueMap,
   type FlatSequentialState,
 } from "@turing-incomplete/core/simulator";
-import type { Circuit } from "@turing-incomplete/core/dsl";
+import type { Circuit } from "@turing-incomplete/core";
 import { useCompileCode } from "./useCompileCode";
 import { useCircuitSession } from "@turing-incomplete/ui/canvas";
 
@@ -37,7 +37,7 @@ export interface SimulatorActions {
   setInput: (name: string, value: boolean | number) => void;
   toggleInput: (name: string) => void;
   toggleNode: (nodeId: string) => void;
-  setNodeValue: (nodeId: string, value: number) => void;
+  setNodeValue: (nodeId: string, value: number | boolean | Map<number, number>) => void;
   tick: () => void;
   reset: () => void;
   stepBack: () => void;
@@ -49,15 +49,13 @@ export interface SimulatorActions {
   getSimulator: () => SimulatorEngine | null;
 }
 
-export interface UseCircuitSimulatorOptions {
-  initialMemory?: Map<string, Map<number, number>>;
-}
+export interface UseCircuitSimulatorOptions {}
 
 /**
  * Standalone circuit simulator hook.
  *
  * Compiles DSL → creates SimulationSession → exposes reactive state + actions.
- * Internally delegates to useCompileDSL (compilation) + useCircuitSession (simulation).
+ * Internally delegates to useCompileCode (compilation) + useCircuitSession (simulation).
  */
 export function useCircuitSimulator(
   dslCode: string,
@@ -67,7 +65,7 @@ export function useCircuitSimulator(
   const compiled = useCompileCode(dslCode);
 
   // ── Simulation (via the same hook the editor uses) ──
-  const sim = useCircuitSession(compiled.circuit, compiled.componentLibrary, options?.initialMemory);
+  const sim = useCircuitSession(compiled.circuit, compiled.componentLibrary);
 
   // ── Higher-level state (outputs, inputs, toggles) ──
   const [outputs, setOutputs] = useState<Record<string, boolean | number>>({});
@@ -99,6 +97,7 @@ export function useCircuitSimulator(
 
   // Sync inputs to engine when inputs change
   useEffect(() => {
+
     if (!sim.session || !compiled.ready) return;
     const engine = sim.session.getEngine();
     if (!engine) return;
@@ -138,7 +137,7 @@ export function useCircuitSimulator(
     sim.session.runCombinational();
   }, [sim.session]);
 
-  const setNodeValue = useCallback((nodeId: string, value: number) => {
+  const setNodeValue = useCallback((nodeId: string, value: number | boolean | Map<number, number>) => {
     if (!sim.session) return;
     sim.session.getEngine()?.setNode(nodeId, value);
     sim.session.runCombinational();

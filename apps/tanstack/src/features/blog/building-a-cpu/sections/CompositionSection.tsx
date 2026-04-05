@@ -1,6 +1,6 @@
 "use client";
 
-import { CircuitEmbed } from "@turing-incomplete/embed";
+import { ComponentEmbed } from "@turing-incomplete/embed";
 import { GATE_CIRCUITS } from "../circuits";
 
 export function CompositionSection() {
@@ -34,9 +34,9 @@ export function CompositionSection() {
             the AND (are both bits 1?). Try it: 1+1 = 10 in binary &mdash; sum
             is 0, carry is 1.
           </p>
-          <CircuitEmbed
-            dsl={GATE_CIRCUITS.halfAdder.dsl}
-            displayDsl={GATE_CIRCUITS.halfAdder.displayDsl}
+          <ComponentEmbed
+            code={GATE_CIRCUITS.halfAdder.dsl}
+            displayCode={GATE_CIRCUITS.halfAdder.displayCode}
             height={260}
             title="Half Adder"
             description="Adds two bits: produces sum and carry"
@@ -54,9 +54,9 @@ export function CompositionSection() {
             these together and you can add two bytes. Chain 32 and you have the
             adder in a modern CPU.
           </p>
-          <CircuitEmbed
-            dsl={GATE_CIRCUITS.fullAdder.dsl}
-            displayDsl={GATE_CIRCUITS.fullAdder.displayDsl}
+          <ComponentEmbed
+            code={GATE_CIRCUITS.fullAdder.dsl}
+            displayCode={GATE_CIRCUITS.fullAdder.displayCode}
             height={300}
             title="Full Adder"
             description="Adds three bits: a, b, and carry-in"
@@ -74,9 +74,9 @@ export function CompositionSection() {
             CPUs &mdash; they&rsquo;re how the control unit routes data between
             components.
           </p>
-          <CircuitEmbed
-            dsl={GATE_CIRCUITS.mux.dsl}
-            displayDsl={GATE_CIRCUITS.mux.displayDsl}
+          <ComponentEmbed
+            code={GATE_CIRCUITS.mux.dsl}
+            displayCode={GATE_CIRCUITS.mux.displayCode}
             height={280}
             title="2:1 Multiplexer"
             description="sel=OFF picks A, sel=ON picks B"

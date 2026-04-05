@@ -1,58 +1,45 @@
 import { readFileSync } from 'node:fs';
-import { resolve, dirname, extname } from 'node:path';
+import { resolve } from 'node:path';
 import {
-  preprocessDSL,
-  createNodeFileResolver,
-} from '@turing-incomplete/core/dsl';
+  executeComponentCode,
+  type ExecuteResult,
+} from '@turing-incomplete/core/builder';
 
 export interface LoadResult {
-  source: string;
   filePath: string;
+  result: ExecuteResult;
   errors: string[];
-  isTypeScript: boolean;
 }
 
 /**
- * Load a circuit file from disk.
- * For .dsl files: runs the DSL preprocessor (#include support).
- * For .ts/.circuit.ts files: reads raw source (no preprocessing needed).
+ * Load a circuit file from disk and compile it via the TS builder.
+ * Accepts .circuit.ts or .circuit files (both treated as TS builder code).
  */
-export function loadDSLFile(filePath: string): LoadResult {
+export function loadCircuitFile(filePath: string): LoadResult {
   const absPath = resolve(filePath);
-  const basePath = dirname(absPath);
-  const ext = extname(absPath);
-  const isTS = ext === '.ts';
 
-  let raw: string;
+  let source: string;
   try {
-    raw = readFileSync(absPath, 'utf-8');
+    source = readFileSync(absPath, 'utf-8');
   } catch (e) {
     return {
-      source: '',
       filePath: absPath,
+      result: {
+        circuit: null,
+        circuits: [],
+        components: [],
+        library: null as any,
+        error: `Cannot read file: ${absPath}`,
+      },
       errors: [`Cannot read file: ${absPath}`],
-      isTypeScript: isTS,
     };
   }
 
-  if (isTS) {
-    // TypeScript files don't need preprocessing
-    return {
-      source: raw,
-      filePath: absPath,
-      errors: [],
-      isTypeScript: true,
-    };
-  }
-
-  // DSL files get preprocessor treatment
-  const resolver = createNodeFileResolver(basePath);
-  const result = preprocessDSL(raw, resolver, absPath);
+  const result = executeComponentCode(source);
 
   return {
-    source: result.source,
     filePath: absPath,
-    errors: result.errors.map((e) => e.message),
-    isTypeScript: false,
+    result,
+    errors: result.error ? [result.error] : [],
   };
 }

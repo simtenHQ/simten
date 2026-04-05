@@ -1,6 +1,6 @@
 "use client";
 
-import { CircuitEmbed } from "@turing-incomplete/embed";
+import { ComponentEmbed } from "@turing-incomplete/embed";
 import { TPU_CIRCUITS } from "../circuits";
 
 export function DataFlowSection() {
@@ -44,9 +44,9 @@ export function DataFlowSection() {
       </div>
 
       <div className="mt-8">
-        <CircuitEmbed
-          dsl={TPU_CIRCUITS.twoPERow.dsl}
-          displayDsl={TPU_CIRCUITS.twoPERow.displayDsl}
+        <ComponentEmbed
+          code={TPU_CIRCUITS.twoPERow.dsl}
+          displayCode={TPU_CIRCUITS.twoPERow.displayCode}
           nodePositions={TPU_CIRCUITS.twoPERow.nodePositions}
           height={400}
           showControls

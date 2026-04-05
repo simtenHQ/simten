@@ -1,6 +1,6 @@
 "use client";
 
-import { CircuitEmbed } from "@turing-incomplete/embed";
+import { ComponentEmbed } from "@turing-incomplete/embed";
 import { BLOG_CIRCUITS } from "../circuits";
 
 export function AdderSection() {
@@ -32,9 +32,9 @@ export function AdderSection() {
       </div>
 
       <div className="mt-8">
-        <CircuitEmbed
-          dsl={BLOG_CIRCUITS.adder4bit.dsl}
-          displayDsl={BLOG_CIRCUITS.adder4bit.displayDsl}
+        <ComponentEmbed
+          code={BLOG_CIRCUITS.adder4bit.dsl}
+          displayCode={BLOG_CIRCUITS.adder4bit.displayCode}
           height={380}
           title="4-Bit Ripple-Carry Adder"
           description="Set A and B in binary, watch the carry propagate"

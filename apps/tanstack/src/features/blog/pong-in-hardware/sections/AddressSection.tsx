@@ -1,6 +1,6 @@
 "use client";
 
-import { CircuitEmbed } from "@turing-incomplete/embed";
+import { ComponentEmbed } from "@turing-incomplete/embed";
 import { PONG_CIRCUITS } from "../circuits";
 
 export function AddressSection() {
@@ -30,11 +30,11 @@ export function AddressSection() {
       </div>
 
       <div className="mt-8">
-        <CircuitEmbed
-          dsl={circuit.dsl}
+        <ComponentEmbed
+          code={circuit.dsl}
           height={240}
           showControls={false}
-          displayDsl={circuit.displayDsl}
+          displayCode={circuit.displayCode}
           nodePositions={circuit.nodePositions}
           title={circuit.name}
           description={circuit.description}

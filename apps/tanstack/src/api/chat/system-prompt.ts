@@ -27,7 +27,6 @@ ${grammar}
 
 ### Analysis Tools (execute server-side, results returned to you)
 - **simulate_circuit**: Compile and simulate. Returns per-cycle signal traces.
-- **run_testbench**: Run testbenches with assertions.
 
 ### Editor Action Tools (execute in the student's visual editor)
 - **write_circuit**: Write DSL code to the editor. Code is auto-validated and a test harness with Switches/Leds is auto-appended. You only need to write the clean DUT circuit — the harness is generated automatically.
@@ -35,32 +34,10 @@ ${grammar}
 - **run_simulation**: Run clock cycles (sequential circuits only).
 - **insert_node**: Add a component to the visual editor.
 - **generate_harness**: Regenerate test harness.
-- **verify_assertion**: Run testbench assertions.
 
 ## Composite Components
 
 You can define a circuit and use it as a component inside another circuit. Define the sub-circuit first, then reference it by name with \`node\`. The grammar example above shows HalfAdder used inside FullAdder — this is the standard pattern. Always prefer composites when the student asks for modular or hierarchical designs.
-
-## Testbench Syntax
-
-testbench <Name> {
-  use circuit <DUT> as dut
-  input <name>: Bit | Bus[N]
-  output <name>: Bit | Bus[N]
-  clock clk
-  impl {
-    node <instance>: <DUT>
-    connect <input> -> <instance>.<port>
-    connect <instance>.<port> -> <output>
-    stimulus on clk {
-      at <cycle>: <signal> = <value>
-      at <start>..<end>: <signal> = <value>
-    }
-    assert on clk {
-      at <cycle>: <condition>, "message"
-    }
-  }
-}
 
 ## Combinational vs Sequential
 
@@ -72,7 +49,7 @@ testbench <Name> {
 When the student asks you to build something:
 
 1. **Write code** — you already have the component catalog and syntax above. Call write_circuit with clean DUT code (include all circuits — sub-circuits first, then the top-level circuit). A test harness is auto-appended for the last circuit. The auto-harness uses HexDisplay for Bus outputs and Led for Bit outputs.
-2. **Verify** — For complex circuits (ALUs, multi-operation designs, state machines), write a testbench with stimulus + assertions and call run_testbench to verify correctness before demoing. For simple circuits, simulate_circuit with a few ticks is sufficient. Use your judgment — don't force testbenches on trivial circuits.
+2. **Verify** — Use simulate_circuit with a few ticks to verify correctness before demoing.
 3. **Fix if needed** — if write_circuit returns validation errors, fix and retry.
 4. **Demo live** — call demo_inputs (combinational) or run_simulation (sequential). The harness switch nodes are named \`inputName_sw\` (e.g. for input "a", the switch is "a_sw").
 5. **Explain** — briefly describe what each demo shows.

@@ -15,7 +15,7 @@ import { getIdempotencyTracker } from './idempotency-tracker';
 import { checkStaleness, createStaleResult, createCannotSimulateResult } from './staleness-checker';
 import { getSimulationThrottle, type SimulationContext } from './simulation-throttle';
 import type { SetInputAction, RunSimulationAction, ShowDiffAction, WriteCircuitAction, InsertNodeAction, GenerateHarnessAction, VerifyAssertionAction } from '../types';
-import { generateHarness, parseDSL, formatAssertionSummary, evaluateAssertions } from '@/features/dsl';
+import { executeComponentCode } from '@turing-incomplete/core';
 import type { ValidationSnapshot } from '../types';
 
 // ============================================================================
@@ -365,29 +365,37 @@ async function executeGenerateHarness(
 ): Promise<ActionResult> {
   try {
     const currentCode = context.getCurrentCode();
-    const harnessDSL = generateHarness(currentCode);
+    const result = executeComponentCode(currentCode);
 
-    if (!harnessDSL) {
+    if (result.error || !result.circuit) {
       return {
         success: false,
         actionId: action.actionId,
         type: action.type,
-        reason: 'Circuit does not need a harness (no interface ports or already has interactive components)',
+        reason: `Cannot generate harness: ${result.error ?? 'no circuit found'}`,
       };
     }
 
-    // The harness is appended to the current code
-    // We present it as a SHOW_DIFF action so the user can review
-    const suggestedCode = `${currentCode.trim()}\n\n${harnessDSL}`;
+    const circuit = result.circuit;
+    const hasInputs = (circuit.inputs?.length ?? 0) > 0;
+    const hasOutputs = (circuit.outputs?.length ?? 0) > 0;
 
-    // Store the generated harness for the UI to display
-    // The UI will show this as a diff when the action card is rendered
-    (action as GenerateHarnessAction & { actionId: string; _generatedCode?: string })._generatedCode = suggestedCode;
+    if (!hasInputs && !hasOutputs) {
+      return {
+        success: false,
+        actionId: action.actionId,
+        type: action.type,
+        reason: 'Circuit does not need a harness (no interface ports)',
+      };
+    }
 
+    // With the TS builder, the LLM should generate harness code directly.
+    // TODO: Implement programmatic TS harness generation if needed.
     return {
-      success: true,
+      success: false,
       actionId: action.actionId,
       type: action.type,
+      reason: 'Harness generation for TS builder circuits should be done by the LLM producing TS code directly. Ask the LLM to wrap your circuit with Switch/Input controls and LED/Display outputs.',
     };
   } catch (error) {
     return {
@@ -401,90 +409,18 @@ async function executeGenerateHarness(
 
 /**
  * Execute VERIFY_ASSERTION action.
- * Parses the current DSL, finds testbench assertions, compiles and evaluates them.
+ * The DSL testbench system has been removed. Use vitest + simulate() instead.
  */
 async function executeVerifyAssertion(
   action: VerifyAssertionAction & { actionId: string },
-  context: ActionExecutionContext
+  _context: ActionExecutionContext
 ): Promise<ActionResult> {
-  try {
-    const currentCode = context.getCurrentCode();
-
-    // Parse DSL to get AST (including testbenches)
-    const { ast, errors } = parseDSL(currentCode);
-    if (errors.some(e => e.severity === 'error')) {
-      return {
-        success: false,
-        actionId: action.actionId,
-        type: action.type,
-        reason: `Cannot verify assertions: DSL has ${errors.filter(e => e.severity === 'error').length} error(s)`,
-      };
-    }
-
-    // Find testbench definitions
-    const testbenches = ast.testbenches ?? [];
-    if (testbenches.length === 0) {
-      return {
-        success: false,
-        actionId: action.actionId,
-        type: action.type,
-        reason: 'No testbench found in current code. Write a testbench with assert blocks first.',
-      };
-    }
-
-    // Find testbench (optionally matching target circuit)
-    const targetTb = action.targetCircuit
-      ? testbenches.find(tb => tb.circuitRef.circuitName === action.targetCircuit)
-      : testbenches[0];
-
-    if (!targetTb) {
-      return {
-        success: false,
-        actionId: action.actionId,
-        type: action.type,
-        reason: `Testbench for '${action.targetCircuit}' not found`,
-      };
-    }
-
-    // Check if testbench has assertions
-    if (!targetTb.impl?.assertions || targetTb.impl.assertions.length === 0) {
-      return {
-        success: false,
-        actionId: action.actionId,
-        type: action.type,
-        reason: 'Testbench has no assert blocks. Add assert blocks to verify behavior.',
-      };
-    }
-
-    // Compile the testbench using the component library store
-    const { compileTestbenchToIR } = await import('@/features/dsl');
-    const { useComponentLibraryStore } = await import('@turing-incomplete/ui/editor/stores');
-    const library = useComponentLibraryStore.getState();
-
-    const compiledTestbench = compileTestbenchToIR(targetTb, library);
-
-    // Run testbench, collecting a per-cycle trace for accurate assertion evaluation
-    const { runTestbenchWithTrace } = await import('@turing-incomplete/ui/editor/lib');
-    const maxCycles = action.maxCycles ?? compiledTestbench.maxCycles;
-    const { trace } = runTestbenchWithTrace(compiledTestbench, maxCycles);
-
-    // Evaluate assertions against per-cycle signal values from the trace
-    const summary = evaluateAssertions(compiledTestbench, trace);
-
-    return {
-      success: true,
-      actionId: action.actionId,
-      type: action.type,
-      reason: formatAssertionSummary(summary),
-    };
-  } catch (error) {
-    return {
-      success: false,
-      actionId: action.actionId,
-      type: action.type,
-      reason: error instanceof Error ? error.message : String(error),
-    };
-  }
+  return {
+    success: false,
+    actionId: action.actionId,
+    type: action.type,
+    reason: 'Assertion verification has been replaced by vitest tests',
+  };
 }
 
 // ============================================================================

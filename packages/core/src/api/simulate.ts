@@ -11,8 +11,8 @@ import {
 } from '../simulator/index.js';
 import type { BitValue, BusValue } from '../types/circuit.js';
 import { compileSource } from './compile-source.js';
-import { compressTrace, detectSteadyState } from '../dsl/analysis/simulate.js';
-import type { SimulationTrace } from '../dsl/analysis/types.js';
+import { compressTrace, detectSteadyState } from '../types/analysis.js';
+import type { SimulationTrace } from '../types/analysis.js';
 
 export type RLEValue = { value: BitValue | BusValue; count: number };
 
@@ -62,7 +62,14 @@ export function simulateCircuit(
   }
 
   // Create simulator
-  const simulator = createSimulatorFromCircuit(target, compiled.library, params.memoryData);
+  const simulator = createSimulatorFromCircuit(target, compiled.library);
+
+  // Load memory data if provided
+  if (params.memoryData) {
+    for (const [nodeId, data] of Object.entries(params.memoryData)) {
+      simulator.setNode(nodeId, data);
+    }
+  }
 
   // Set inputs
   if (params.inputs) {

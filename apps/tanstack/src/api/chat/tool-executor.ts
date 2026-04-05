@@ -10,13 +10,9 @@
 import {
   checkCircuit,
   simulateCircuit,
-  runTestbenchHandler,
   getLibrary,
 } from '@turing-incomplete/core/api';
 import { EDITOR_TOOL_NAMES, editorToolToActions } from './editor-tools';
-import {
-  generateHarnessAppended,
-} from '@/features/dsl';
 
 export interface ToolExecResult {
   /** Text result to return to the LLM */
@@ -57,12 +53,9 @@ export function executeTool(
         };
       }
 
-      // Auto-append test harness if the circuit has interface ports
-      const codeWithHarness = generateHarnessAppended(code);
-
       const actions = editorToolToActions(toolName, {
         ...input,
-        code: codeWithHarness,
+        code,
       });
 
       return {
@@ -87,19 +80,6 @@ export function executeTool(
         circuitName: input.circuitName as string | undefined,
         ticks: input.ticks as number | undefined,
         inputs: input.inputs as Record<string, number | boolean> | undefined,
-      });
-      if ('error' in result) {
-        return { content: `Error: ${result.error}` };
-      }
-      return { content: JSON.stringify(result, null, 2) };
-    }
-
-    case 'run_testbench': {
-      const result = runTestbenchHandler({
-        circuitSource: input.circuitSource as string,
-        circuitSourceName: '<circuit>',
-        testbenchSource: input.testbenchSource as string,
-        testbenchSourceName: '<testbench>',
       });
       if ('error' in result) {
         return { content: `Error: ${result.error}` };

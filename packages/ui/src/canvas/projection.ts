@@ -5,7 +5,7 @@
  */
 
 import type { Node as ReactFlowNode, Edge } from '@xyflow/react';
-import type { Circuit, PortPath } from '@turing-incomplete/core/dsl';
+import type { Circuit, PortPath } from '@turing-incomplete/core';
 import type { ComponentLibrary, FlatPortValueMap, FlatSequentialState } from '@turing-incomplete/core/simulator';
 import { getReferenceCircuit } from '@turing-incomplete/core/simulator';
 import type { MetadataState } from './types';

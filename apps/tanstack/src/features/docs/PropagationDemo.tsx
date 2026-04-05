@@ -3,7 +3,8 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useCircuitSimulator } from "@turing-incomplete/embed";
 import { CircuitCanvas } from "@turing-incomplete/ui/canvas";
-import { compileDSL } from "@turing-incomplete/core/dsl";
+import { executeComponentCode } from "@turing-incomplete/core";
+import type { Circuit } from "@turing-incomplete/core";
 import {
   elaborate,
   tracePropagation,
@@ -11,7 +12,6 @@ import {
   generatePrimitives,
   type PropagationStep,
 } from "@turing-incomplete/core/simulator";
-import type { Circuit } from "@turing-incomplete/ui/editor/types";
 
 const DEMO_DSL = `
 const HalfAdder = component('HalfAdder', {
@@ -105,30 +105,25 @@ export function PropagationDemo() {
   // Run the real propagation trace
   const trace = useMemo((): PropagationStep[] => {
     try {
+      const result = executeComponentCode(DEMO_DSL);
+      if (result.error || result.circuits.length === 0) return [];
+
+      const { circuits, library } = result;
+      const resolveComponent = (name: string) => library.resolveComponent(name);
+
       const prims = generatePrimitives(PRIMITIVE_DEFINITIONS) as Circuit[];
-      const primMap = new Map<string, Circuit>();
-      for (const p of prims) primMap.set(p.name, p);
-
-      const fullLib = new Map(primMap);
-      const lib = {
-        resolveComponent: (name: string) => fullLib.get(name),
-        addCircuit: (c: Circuit) => fullLib.set(c.name, c),
-      };
-
-      const { circuits, errors } = compileDSL(DEMO_DSL, lib);
-      if (errors.length > 0 || circuits.length === 0) return [];
+      const primNames = prims.map((p) => p.name);
 
       const topCircuit = circuits[circuits.length - 1];
-      const resolveComponent = (name: string) => fullLib.get(name);
 
       const flat = elaborate(topCircuit, {
         resolveComponent,
-        getAllPrimitiveNames: () => Array.from(primMap.keys()),
+        getAllPrimitiveNames: () => primNames,
       });
 
       return tracePropagation(flat, {
         resolveComponent,
-        getAllPrimitiveNames: () => Array.from(primMap.keys()),
+        getAllPrimitiveNames: () => primNames,
       });
     } catch (e) {
       console.error("Trace failed:", e);

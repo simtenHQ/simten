@@ -8,7 +8,7 @@
  * 3. Scope port values so internal node IDs match simulation keys
  */
 
-import type { Circuit, Node, Connection } from '@turing-incomplete/core/dsl';
+import type { Circuit, Node, Connection } from '@turing-incomplete/core';
 import type { FlatPortValueMap } from '@turing-incomplete/core/simulator';
 
 /** Prefix for synthetic boundary input nodes */

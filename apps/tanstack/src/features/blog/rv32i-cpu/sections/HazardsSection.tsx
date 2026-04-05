@@ -1,6 +1,6 @@
 "use client";
 
-import { CircuitEmbed } from "@turing-incomplete/embed";
+import { ComponentEmbed } from "@turing-incomplete/embed";
 import { BLOG_CIRCUITS } from "../circuits";
 
 export function HazardsSection() {
@@ -80,9 +80,9 @@ export function HazardsSection() {
           stage. The forwarding unit sets these bits automatically by comparing
           register addresses across pipeline stages.
         </p>
-        <CircuitEmbed
-          dsl={BLOG_CIRCUITS.forwardingMux.dsl}
-          displayDsl={BLOG_CIRCUITS.forwardingMux.displayDsl}
+        <ComponentEmbed
+          code={BLOG_CIRCUITS.forwardingMux.dsl}
+          displayCode={BLOG_CIRCUITS.forwardingMux.displayCode}
           height={340}
           title="Forwarding Mux"
           description="sel: 00=register 01=EX forward 10=MEM forward"
