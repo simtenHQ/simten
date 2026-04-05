@@ -9,7 +9,7 @@ export {
   buildMinimalNarrative,
   formatCurrentPortValues,
   formatHarnessSuggestion,
-} from './narrative-builder';
+} from './llm-context';
 
 export {
   countTokens,

@@ -1,6 +1,6 @@
 "use client";
 
-import { CircuitEmbed } from "@turing-incomplete/embed";
+import { ComponentEmbed } from "@turing-incomplete/embed";
 import { BLOG_CIRCUITS } from "../circuits";
 
 const STAGES = [
@@ -140,9 +140,9 @@ export function PipelineSection() {
           JALR (indirect jumps). When a branch is taken, the pipeline flushes the
           wrongly-fetched instructions and redirects to the target address.
         </p>
-        <CircuitEmbed
-          dsl={BLOG_CIRCUITS.programCounter.dsl}
-          displayDsl={BLOG_CIRCUITS.programCounter.displayDsl}
+        <ComponentEmbed
+          code={BLOG_CIRCUITS.programCounter.dsl}
+          displayCode={BLOG_CIRCUITS.programCounter.displayCode}
           height={300}
           title="Program Counter"
           description="Increments by 4 each clock cycle. Stall freezes the count."
@@ -155,9 +155,9 @@ export function PipelineSection() {
             redirect to 0x400, or <strong className="text-gray-900 dark:text-gray-200">stall</strong> to freeze it entirely (like a load-use hazard).
             Turn them off and the PC resumes incrementing by 4 from wherever it landed.
           </p>
-          <CircuitEmbed
-            dsl={BLOG_CIRCUITS.pcWithMux.dsl}
-            displayDsl={BLOG_CIRCUITS.pcWithMux.displayDsl}
+          <ComponentEmbed
+            code={BLOG_CIRCUITS.pcWithMux.dsl}
+            displayCode={BLOG_CIRCUITS.pcWithMux.displayCode}
             height={340}
             showControls
             title="PC with Next-PC Mux"
@@ -178,9 +178,9 @@ export function PipelineSection() {
           used when a branch is taken and the partially-fetched instruction
           must be discarded.
         </p>
-        <CircuitEmbed
-          dsl={BLOG_CIRCUITS.pipelineRegister.dsl}
-          displayDsl={BLOG_CIRCUITS.pipelineRegister.displayDsl}
+        <ComponentEmbed
+          code={BLOG_CIRCUITS.pipelineRegister.dsl}
+          displayCode={BLOG_CIRCUITS.pipelineRegister.displayCode}
           height={300}
           title="Pipeline Register"
           description="Latches data between stages. Flush clears to zero."

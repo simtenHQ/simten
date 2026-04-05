@@ -16,18 +16,16 @@ import { motion, AnimatePresence } from "framer-motion";
 
 import type { InspectorFrame } from "./types";
 import { createDrillDownViewCircuit } from "./drill-down-view";
-import { createMutableLibraryForRef } from "./utils";
 import {
   createSimulatorFromCircuit,
   SimulationSession,
   PRIMITIVE_DEFINITIONS,
-  getReferenceCircuit,
+  compileReferenceCircuit,
 } from "@turing-incomplete/core/simulator";
 import type {
   ComponentLibrary,
 } from "@turing-incomplete/core/simulator";
-import type { Circuit } from "@turing-incomplete/core/dsl";
-import { compileDSL } from "@turing-incomplete/core/dsl";
+import type { Circuit } from "@turing-incomplete/core";
 
 import { CircuitCanvas } from "./CircuitCanvas";
 import { ClockControls } from "./ClockControls";
@@ -92,16 +90,9 @@ function InspectorCanvas({ frame, componentLibrary, onPushLevel, theme = "dark" 
         if (typeof v === "number") params[k] = v;
       }
     }
-    const refSource = getReferenceCircuit(nodeData.componentRef, params);
-    if (refSource) {
-      try {
-        const refLib = createMutableLibraryForRef();
-        const result = compileDSL(refSource, refLib, `ref-${nodeData.componentRef}.dsl`);
-        if (result.circuits.length > 0) {
-          const refCircuit = result.circuits[result.circuits.length - 1];
-          onPushLevel(nodeData.componentRef, refCircuit, nodeData.label ?? nodeData.componentRef);
-        }
-      } catch { /* can't drill into this primitive */ }
+    const refCircuit = compileReferenceCircuit(nodeData.componentRef, params);
+    if (refCircuit) {
+      onPushLevel(nodeData.componentRef, refCircuit, nodeData.label ?? nodeData.componentRef);
     }
   }, [componentLibrary, onPushLevel]);
 

@@ -22,6 +22,8 @@ import { Route as DemosSortingNetworkRouteImport } from './routes/demos/sorting-
 import { Route as DemosPlaygroundRouteImport } from './routes/demos/playground'
 import { Route as DemosGenerativeRouteImport } from './routes/demos/generative'
 import { Route as DemosCpuRouteImport } from './routes/demos/cpu'
+import { Route as DemosCircuitStateRouteImport } from './routes/demos/circuit-state'
+import { Route as DemosCalculatorRouteImport } from './routes/demos/calculator'
 import { Route as BlogSnakeInHardwareRouteImport } from './routes/blog/snake-in-hardware'
 import { Route as BlogRv32iCpuRouteImport } from './routes/blog/rv32i-cpu'
 import { Route as BlogPongInHardwareRouteImport } from './routes/blog/pong-in-hardware'
@@ -99,6 +101,16 @@ const DemosGenerativeRoute = DemosGenerativeRouteImport.update({
 const DemosCpuRoute = DemosCpuRouteImport.update({
   id: '/demos/cpu',
   path: '/demos/cpu',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DemosCircuitStateRoute = DemosCircuitStateRouteImport.update({
+  id: '/demos/circuit-state',
+  path: '/demos/circuit-state',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DemosCalculatorRoute = DemosCalculatorRouteImport.update({
+  id: '/demos/calculator',
+  path: '/demos/calculator',
   getParentRoute: () => rootRouteImport,
 } as any)
 const BlogSnakeInHardwareRoute = BlogSnakeInHardwareRouteImport.update({
@@ -187,6 +199,8 @@ export interface FileRoutesByFullPath {
   '/blog/pong-in-hardware': typeof BlogPongInHardwareRoute
   '/blog/rv32i-cpu': typeof BlogRv32iCpuRoute
   '/blog/snake-in-hardware': typeof BlogSnakeInHardwareRoute
+  '/demos/calculator': typeof DemosCalculatorRoute
+  '/demos/circuit-state': typeof DemosCircuitStateRoute
   '/demos/cpu': typeof DemosCpuRoute
   '/demos/generative': typeof DemosGenerativeRoute
   '/demos/playground': typeof DemosPlaygroundRoute
@@ -214,6 +228,8 @@ export interface FileRoutesByTo {
   '/blog/pong-in-hardware': typeof BlogPongInHardwareRoute
   '/blog/rv32i-cpu': typeof BlogRv32iCpuRoute
   '/blog/snake-in-hardware': typeof BlogSnakeInHardwareRoute
+  '/demos/calculator': typeof DemosCalculatorRoute
+  '/demos/circuit-state': typeof DemosCircuitStateRoute
   '/demos/cpu': typeof DemosCpuRoute
   '/demos/generative': typeof DemosGenerativeRoute
   '/demos/playground': typeof DemosPlaygroundRoute
@@ -243,6 +259,8 @@ export interface FileRoutesById {
   '/blog/pong-in-hardware': typeof BlogPongInHardwareRoute
   '/blog/rv32i-cpu': typeof BlogRv32iCpuRoute
   '/blog/snake-in-hardware': typeof BlogSnakeInHardwareRoute
+  '/demos/calculator': typeof DemosCalculatorRoute
+  '/demos/circuit-state': typeof DemosCircuitStateRoute
   '/demos/cpu': typeof DemosCpuRoute
   '/demos/generative': typeof DemosGenerativeRoute
   '/demos/playground': typeof DemosPlaygroundRoute
@@ -273,6 +291,8 @@ export interface FileRouteTypes {
     | '/blog/pong-in-hardware'
     | '/blog/rv32i-cpu'
     | '/blog/snake-in-hardware'
+    | '/demos/calculator'
+    | '/demos/circuit-state'
     | '/demos/cpu'
     | '/demos/generative'
     | '/demos/playground'
@@ -300,6 +320,8 @@ export interface FileRouteTypes {
     | '/blog/pong-in-hardware'
     | '/blog/rv32i-cpu'
     | '/blog/snake-in-hardware'
+    | '/demos/calculator'
+    | '/demos/circuit-state'
     | '/demos/cpu'
     | '/demos/generative'
     | '/demos/playground'
@@ -328,6 +350,8 @@ export interface FileRouteTypes {
     | '/blog/pong-in-hardware'
     | '/blog/rv32i-cpu'
     | '/blog/snake-in-hardware'
+    | '/demos/calculator'
+    | '/demos/circuit-state'
     | '/demos/cpu'
     | '/demos/generative'
     | '/demos/playground'
@@ -345,6 +369,8 @@ export interface RootRouteChildren {
   BlogRoute: typeof BlogRouteWithChildren
   EditorRoute: typeof EditorRoute
   ApiSearchRoute: typeof ApiSearchRoute
+  DemosCalculatorRoute: typeof DemosCalculatorRoute
+  DemosCircuitStateRoute: typeof DemosCircuitStateRoute
   DemosCpuRoute: typeof DemosCpuRoute
   DemosGenerativeRoute: typeof DemosGenerativeRoute
   DemosPlaygroundRoute: typeof DemosPlaygroundRoute
@@ -447,6 +473,20 @@ declare module '@tanstack/react-router' {
       path: '/demos/cpu'
       fullPath: '/demos/cpu'
       preLoaderRoute: typeof DemosCpuRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/demos/circuit-state': {
+      id: '/demos/circuit-state'
+      path: '/demos/circuit-state'
+      fullPath: '/demos/circuit-state'
+      preLoaderRoute: typeof DemosCircuitStateRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/demos/calculator': {
+      id: '/demos/calculator'
+      path: '/demos/calculator'
+      fullPath: '/demos/calculator'
+      preLoaderRoute: typeof DemosCalculatorRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/blog/snake-in-hardware': {
@@ -582,6 +622,8 @@ const rootRouteChildren: RootRouteChildren = {
   BlogRoute: BlogRouteWithChildren,
   EditorRoute: EditorRoute,
   ApiSearchRoute: ApiSearchRoute,
+  DemosCalculatorRoute: DemosCalculatorRoute,
+  DemosCircuitStateRoute: DemosCircuitStateRoute,
   DemosCpuRoute: DemosCpuRoute,
   DemosGenerativeRoute: DemosGenerativeRoute,
   DemosPlaygroundRoute: DemosPlaygroundRoute,

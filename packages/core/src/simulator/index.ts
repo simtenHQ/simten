@@ -261,6 +261,7 @@ class FastSimulatorEngineImpl implements SimulatorEngine {
   private cachedPortValues: FlatPortValueMap | null = null;
   private cacheValid = false;
 
+
   // Metrics
   private totalTicks = 0;
   private totalEvaluations = 0;
@@ -309,6 +310,7 @@ class FastSimulatorEngineImpl implements SimulatorEngine {
     this.totalTicks = 0;
     this.totalEvaluations = 0;
     this.cacheValid = false;
+
   }
 
   setNode(name: string, value: PrimitiveState): void {
@@ -333,6 +335,7 @@ class FastSimulatorEngineImpl implements SimulatorEngine {
     if (idx !== undefined && this.numericSeqState && this.numericSeqState.currentState[idx] !== undefined) {
       this.numericSeqState.currentState[idx] = value;
       this.cacheValid = false;
+
       this.cachedFlatSeqState = null; // force recomputation
 
       // Persist memory data so reset() preserves it (like flashing ROM)
@@ -349,6 +352,7 @@ class FastSimulatorEngineImpl implements SimulatorEngine {
     if (typeof value === 'boolean' || typeof value === 'number' || typeof value === 'string') {
       node.arguments = { ...node.arguments, value };
       this.cacheValid = false;
+
     }
   }
 
@@ -447,6 +451,11 @@ class FastSimulatorEngineImpl implements SimulatorEngine {
       throw new Error('Simulator not initialized');
     }
 
+    // Nothing changed since last propagation — return cached result.
+    if (this.cacheValid && this.cachedPortValues) {
+      return { portValues: this.cachedPortValues, metrics: { totalEvals: 0 } };
+    }
+
     this.eventQueue.clear();
     seedInitialQueue(this.numericCircuit, this.eventQueue);
 
@@ -541,6 +550,7 @@ class FastSimulatorEngineImpl implements SimulatorEngine {
     fromFlatPortValueMap(this.numericCircuit, this.numericValues, snapshot.portValues);
 
     this.cacheValid = false;
+
   }
 
   reset(): void {
@@ -573,6 +583,7 @@ class FastSimulatorEngineImpl implements SimulatorEngine {
     this.totalTicks = 0;
     this.totalEvaluations = 0;
     this.cacheValid = false;
+
   }
 
   getMetrics(): SimulatorMetrics {
@@ -583,6 +594,23 @@ class FastSimulatorEngineImpl implements SimulatorEngine {
       nodeCount: this.flatCircuit?.nodes.length ?? 0
     };
   }
+}
+
+// ============================================================================
+// Reference Circuit Compilation
+// ============================================================================
+
+/**
+ * Compile a reference circuit for a primitive component.
+ *
+ * @deprecated Reference circuits were DSL strings. Now returns undefined always.
+ * Will be replaced with TS builder reference circuits in a future pass.
+ */
+export function compileReferenceCircuit(
+  _primitiveName: string,
+  _params?: Record<string, number>,
+): Circuit | undefined {
+  return undefined;
 }
 
 /**
@@ -642,19 +670,9 @@ export function createComponentLibrary(circuits: Circuit[]): ComponentLibrary {
 export function createSimulatorFromCircuit(
   circuit: Circuit,
   library: ComponentLibrary,
-  memoryData?: Map<string, Map<number, number>>
 ): SimulatorEngine {
   const flatCircuit = elaborate(circuit, library);
-  const engine = createSimulator(flatCircuit, {
+  return createSimulator(flatCircuit, {
     componentLibrary: library,
   });
-
-  // Load memory data via setNode (single API for all node state)
-  if (memoryData) {
-    for (const [nodeId, data] of memoryData) {
-      engine.setNode(nodeId, data);
-    }
-  }
-
-  return engine;
 }

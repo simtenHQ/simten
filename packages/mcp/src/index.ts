@@ -1,7 +1,7 @@
 /**
  * Turing Incomplete MCP Server
  *
- * Exposes the DSL parser, validator, simulator, and testbench runner
+ * Exposes the DSL parser, validator, and simulator
  * as structured MCP tools for Claude Code.
  *
  * Also acts as a channel: browser users can send messages to Claude
@@ -19,11 +19,9 @@ import { registerPrimitivesTool } from './tools/primitives.js';
 import { registerGrammarTool } from './tools/grammar.js';
 import { registerCheckTool } from './tools/check.js';
 import { registerSimulateTool } from './tools/simulate.js';
-import { registerTestTool } from './tools/test.js';
 import { registerShowTools } from './tools/show.js';
 import { registerStateTool } from './tools/state.js';
 import { registerTracesTool } from './tools/traces.js';
-import { registerTestResultsTool } from './tools/test-results.js';
 import { registerChallengeTools } from './tools/challenges.js';
 import { setOnSendToClaude, getPreviewServer } from './lib/preview-singleton.js';
 import { z } from 'zod';
@@ -52,11 +50,9 @@ registerPrimitivesTool(server);
 registerGrammarTool(server);
 registerCheckTool(server);
 registerSimulateTool(server);
-registerTestTool(server);
 registerShowTools(server);
 registerStateTool(server);
 registerTracesTool(server);
-registerTestResultsTool(server);
 registerChallengeTools(server);
 
 // push_chat_response tool — sends Claude's response to the in-app chat panel

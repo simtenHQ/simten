@@ -1,19 +1,19 @@
 /**
  * useCompileCode — compiles TypeScript circuit code into a Circuit + ComponentLibrary.
  *
- * Uses executeCircuitCode() from the builder API.
+ * Uses executeComponentCode() from the builder API.
  */
 
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { executeCircuitCode } from "@turing-incomplete/core/builder";
+import { executeComponentCode } from "@turing-incomplete/core/builder";
 import {
   elaborate,
   type ComponentLibrary,
   type FlatCircuit,
-} from "@turing-incomplete/core/simulator";
-import type { Circuit } from "@turing-incomplete/core/dsl";
+  type Circuit,
+} from "@turing-incomplete/core";
 
 export interface CompileCodeResult {
   circuit: Circuit | null;
@@ -33,7 +33,6 @@ export function useCompileCode(code: string): CompileCodeResult {
   const [inputs, setInputs] = useState<Record<string, boolean | number>>({});
   const flatCircuitRef = useRef<FlatCircuit | null>(null);
   const libraryRef = useRef<ComponentLibrary | null>(null);
-
   useEffect(() => {
     setReady(false);
     setError(null);
@@ -45,7 +44,7 @@ export function useCompileCode(code: string): CompileCodeResult {
       return;
     }
 
-    const result = executeCircuitCode(code);
+    const result = executeComponentCode(code);
 
     if (result.error) {
       setError(result.error);
@@ -64,7 +63,13 @@ export function useCompileCode(code: string): CompileCodeResult {
     for (const input of mainCircuit.inputs) {
       initialInputs[input.name] = input.portType.kind === 'bit' ? false : 0;
     }
-    setInputs(initialInputs);
+    // Only update if inputs actually changed (prevents render loops)
+    setInputs(prev => {
+      const keys = Object.keys(initialInputs);
+      if (keys.length !== Object.keys(prev).length) return initialInputs;
+      if (keys.every(k => prev[k] === initialInputs[k])) return prev;
+      return initialInputs;
+    });
 
     try {
       const flatCircuit = elaborate(mainCircuit, result.library);

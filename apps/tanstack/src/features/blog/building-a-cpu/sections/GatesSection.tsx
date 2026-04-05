@@ -1,6 +1,6 @@
 "use client";
 
-import { CircuitEmbed } from "@turing-incomplete/embed";
+import { ComponentEmbed } from "@turing-incomplete/embed";
 import { GATE_CIRCUITS } from "../circuits";
 
 export function GatesSection() {
@@ -36,9 +36,9 @@ export function GatesSection() {
             Wire both NAND inputs together. When the input is 1, both NAND
             inputs are 1, so the output is 0. Inversion!
           </p>
-          <CircuitEmbed
-            dsl={GATE_CIRCUITS.inverter.dsl}
-            displayDsl={GATE_CIRCUITS.inverter.displayDsl}
+          <ComponentEmbed
+            code={GATE_CIRCUITS.inverter.dsl}
+            displayCode={GATE_CIRCUITS.inverter.displayCode}
             height={220}
             title="NOT Gate"
             description="Toggle the switch to see the output invert"
@@ -54,9 +54,9 @@ export function GatesSection() {
             NAND followed by NOT. The double negation cancels out, giving us
             a gate that outputs 1 only when both inputs are 1.
           </p>
-          <CircuitEmbed
-            dsl={GATE_CIRCUITS.and.dsl}
-            displayDsl={GATE_CIRCUITS.and.displayDsl}
+          <ComponentEmbed
+            code={GATE_CIRCUITS.and.dsl}
+            displayCode={GATE_CIRCUITS.and.displayCode}
             height={220}
             title="AND Gate"
             description="Output is ON only when both inputs are ON"
@@ -72,9 +72,9 @@ export function GatesSection() {
             De Morgan&rsquo;s theorem in action: NOT each input, then NAND the
             results. The output is 1 when <em>either</em> input is 1.
           </p>
-          <CircuitEmbed
-            dsl={GATE_CIRCUITS.or.dsl}
-            displayDsl={GATE_CIRCUITS.or.displayDsl}
+          <ComponentEmbed
+            code={GATE_CIRCUITS.or.dsl}
+            displayCode={GATE_CIRCUITS.or.displayCode}
             height={220}
             title="OR Gate"
             description="Output is ON when either input is ON"
@@ -91,9 +91,9 @@ export function GatesSection() {
             inputs are <em>different</em>. Built from 4 NAND gates. This one
             is essential for arithmetic.
           </p>
-          <CircuitEmbed
-            dsl={GATE_CIRCUITS.xor.dsl}
-            displayDsl={GATE_CIRCUITS.xor.displayDsl}
+          <ComponentEmbed
+            code={GATE_CIRCUITS.xor.dsl}
+            displayCode={GATE_CIRCUITS.xor.displayCode}
             height={260}
             title="XOR Gate"
             description="Output is ON when inputs differ"

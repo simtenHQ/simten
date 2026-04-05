@@ -3,7 +3,7 @@ title: Overview
 description: A digital logic simulator for learning and building hardware designs
 ---
 
-Turing Incomplete is a browser-based platform for learning digital hardware design. You write circuits in a structural DSL, see them rendered live on an interactive canvas, and simulate them with time-travel debugging. An AI tutor (Claude) can help you build, debug, and understand circuits in real time.
+Turing Incomplete is a browser-based platform for learning digital hardware design. You write circuits in TypeScript using the `component()` builder, see them rendered live on an interactive canvas, and simulate them with time-travel debugging. An AI tutor (Claude) can help you build, debug, and understand circuits in real time.
 
 ## What you can build
 
@@ -36,7 +36,7 @@ Connect Claude Code to get an AI tutor that can see your circuit, push changes t
 claude mcp add turing-incomplete npx @turing-incomplete/mcp
 ```
 
-Ask Claude to build a counter, debug your ALU, or walk you through a challenge — it writes the DSL and the circuit appears on your canvas instantly.
+Ask Claude to build a counter, debug your ALU, or walk you through a challenge — it writes the TypeScript and the circuit appears on your canvas instantly.
 
 See the [Claude Code Integration](/docs/claude-code) guide for the full setup, available tools, and how the bidirectional MCP bridge works.
 
@@ -52,9 +52,9 @@ See the [Claude Code Integration](/docs/claude-code) guide for the full setup, a
 
 | Package | Description |
 |---------|-------------|
-| `@turing-incomplete/core` | DSL parser, compiler, validator, simulator engine, `SimulationSession`, Verilog export |
+| `@turing-incomplete/core` | TypeScript builder, compiler, validator, simulator engine, `SimulationSession`, Verilog export |
 | `@turing-incomplete/ui` | Canonical node components, shared canvas, ELK layout, `useCircuitSession` hook, `ClockControls` |
-| `@turing-incomplete/embed` | `CircuitEmbed` convenience wrapper, `useCircuitSimulator` hook, `useCompileDSL` hook |
+| `@turing-incomplete/embed` | `ComponentEmbed` convenience wrapper, `useCircuitSimulator` hook |
 | `@turing-incomplete/mcp` | MCP server for Claude Code integration |
 | `@turing-incomplete/challenges` | Educational challenge definitions (ALU, Snake, CPU) |
 | `@turing-incomplete/cli` | Command-line interface |
@@ -64,55 +64,55 @@ See the [Claude Code Integration](/docs/claude-code) guide for the full setup, a
 Drop an interactive circuit into any React app:
 
 ```tsx
-import { CircuitEmbed } from '@turing-incomplete/embed';
+import { ComponentEmbed } from '@turing-incomplete/embed';
 
-<CircuitEmbed
-  dsl={`circuit HalfAdder {
-    input a: Bit
-    input b: Bit
-    output sum: Bit
-    output carry: Bit
-    impl {
-      node xor1: Xor
-      node and1: And
-      connect a -> xor1.a
-      connect b -> xor1.b
-      connect xor1.out -> sum
-      connect a -> and1.a
-      connect b -> and1.b
-      connect and1.out -> carry
-    }
-  }`}
+<ComponentEmbed
+  code={`const HalfAdder = component('HalfAdder', {
+    in: { a: bit, b: bit },
+    out: { sum: bit, carry: bit },
+    nodes: { xor1: Xor, and1: And },
+    connect: ({ in: inp, out, xor1, and1 }) => [
+      inp.a.to(xor1.a), inp.b.to(xor1.b), xor1.out.to(out.sum),
+      inp.a.to(and1.a), inp.b.to(and1.b), and1.out.to(out.carry),
+    ],
+  })
+
+  const Demo = component('Demo', {
+    nodes: { sw_a: Switch, sw_b: Switch, dut: HalfAdder, led_sum: Led, led_carry: Led },
+    connect: ({ sw_a, sw_b, dut, led_sum, led_carry }) => [
+      sw_a.out.to(dut.a), sw_b.out.to(dut.b),
+      dut.sum.to(led_sum.in), dut.carry.to(led_carry.in),
+    ],
+  })`}
   height={250}
   showControls
-  autoHarness
 />
 ```
 
 Here's that exact code running live:
 
-import { CircuitEmbed } from '@turing-incomplete/embed'
+import { ComponentEmbed } from '@turing-incomplete/embed'
 
-<CircuitEmbed
-  dsl={`circuit HalfAdder {
-    input a: Bit
-    input b: Bit
-    output sum: Bit
-    output carry: Bit
-    impl {
-      node xor1: Xor
-      node and1: And
-      connect a -> xor1.a
-      connect b -> xor1.b
-      connect xor1.out -> sum
-      connect a -> and1.a
-      connect b -> and1.b
-      connect and1.out -> carry
-    }
-  }`}
+<ComponentEmbed
+  code={`const HalfAdder = component('HalfAdder', {
+    in: { a: bit, b: bit },
+    out: { sum: bit, carry: bit },
+    nodes: { xor1: Xor, and1: And },
+    connect: ({ in: inp, out, xor1, and1 }) => [
+      inp.a.to(xor1.a), inp.b.to(xor1.b), xor1.out.to(out.sum),
+      inp.a.to(and1.a), inp.b.to(and1.b), and1.out.to(out.carry),
+    ],
+  })
+
+  const Demo = component('Demo', {
+    nodes: { sw_a: Switch, sw_b: Switch, dut: HalfAdder, led_sum: Led, led_carry: Led },
+    connect: ({ sw_a, sw_b, dut, led_sum, led_carry }) => [
+      sw_a.out.to(dut.a), sw_b.out.to(dut.b),
+      dut.sum.to(led_sum.in), dut.carry.to(led_carry.in),
+    ],
+  })`}
   height={250}
   showControls
-  autoHarness
   title="Half Adder"
   description="Toggle the switches to see sum and carry"
 />

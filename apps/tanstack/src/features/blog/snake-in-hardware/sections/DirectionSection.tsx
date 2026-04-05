@@ -1,6 +1,6 @@
 "use client";
 
-import { CircuitEmbed } from "@turing-incomplete/embed";
+import { ComponentEmbed } from "@turing-incomplete/embed";
 import { SNAKE_CIRCUITS } from "../circuits";
 
 export function DirectionSection() {
@@ -35,9 +35,9 @@ export function DirectionSection() {
       </div>
 
       <div className="mt-8">
-        <CircuitEmbed
-          dsl={SNAKE_CIRCUITS.directionDecoder.dsl}
-          displayDsl={SNAKE_CIRCUITS.directionDecoder.displayDsl}
+        <ComponentEmbed
+          code={SNAKE_CIRCUITS.directionDecoder.dsl}
+          displayCode={SNAKE_CIRCUITS.directionDecoder.displayCode}
           nodePositions={SNAKE_CIRCUITS.directionDecoder.nodePositions}
           height={350}
           showControls

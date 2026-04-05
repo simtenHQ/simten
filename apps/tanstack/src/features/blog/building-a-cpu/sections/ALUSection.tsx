@@ -1,6 +1,6 @@
 "use client";
 
-import { CircuitEmbed } from "@turing-incomplete/embed";
+import { ComponentEmbed } from "@turing-incomplete/embed";
 import { BLOG_CIRCUITS } from "../circuits";
 
 export function ALUSection() {
@@ -36,9 +36,9 @@ export function ALUSection() {
       </div>
 
       <div className="mt-8">
-        <CircuitEmbed
-          dsl={BLOG_CIRCUITS.alu1bit.dsl}
-          displayDsl={BLOG_CIRCUITS.alu1bit.displayDsl}
+        <ComponentEmbed
+          code={BLOG_CIRCUITS.alu1bit.dsl}
+          displayCode={BLOG_CIRCUITS.alu1bit.displayCode}
           height={380}
           title="1-Bit ALU Slice"
           description="op: 00=ADD 01=AND 10=OR 11=XOR"

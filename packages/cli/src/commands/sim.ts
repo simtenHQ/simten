@@ -1,16 +1,10 @@
 import chalk from 'chalk';
 import {
-  parseDSL,
-  compileToIR,
-} from '@turing-incomplete/core/dsl';
-import {
-  createComponentLibrary,
   createSimulatorFromCircuit,
-  getPrimitives,
   TOP_LEVEL_NODE,
-} from '@turing-incomplete/core/simulator';
-import type { Circuit, BitValue, BusValue } from '@turing-incomplete/core';
-import { loadDSLFile } from '../lib/file-loader.js';
+} from '@turing-incomplete/core';
+import type { BitValue, BusValue } from '@turing-incomplete/core';
+import { loadCircuitFile } from '../lib/file-loader.js';
 
 interface SimOptions {
   ticks: number;
@@ -19,52 +13,30 @@ interface SimOptions {
 }
 
 export async function sim(filePath: string, opts: SimOptions): Promise<void> {
-  const { source, filePath: absPath, errors: loadErrors } = loadDSLFile(filePath);
+  const { filePath: absPath, result, errors } = loadCircuitFile(filePath);
 
-  if (loadErrors.length > 0) {
-    for (const err of loadErrors) {
+  if (errors.length > 0) {
+    for (const err of errors) {
       console.error(chalk.red('error:'), err);
     }
     process.exit(1);
   }
 
-  // Parse
-  const { ast, errors: parseErrors } = parseDSL(source, absPath);
-  if (parseErrors.length > 0) {
-    for (const err of parseErrors) {
-      console.error(chalk.red(`  ${err.location.start.line}:${err.location.start.column}  ${err.message}`));
-    }
-    process.exit(1);
-  }
+  const { circuits, library } = result;
 
-  // Build library and compile
-  const allCircuits: Circuit[] = [...getPrimitives()];
-
-  const mutableLibrary = {
-    resolveComponent: (name: string) => allCircuits.find((c) => c.name === name),
-    getAllPrimitiveNames: () => getPrimitives().map((c) => c.name),
-    getCircuit: (name: string) => allCircuits.find((c) => c.name === name),
-    hasCircuit: (name: string) => allCircuits.some((c) => c.name === name),
-    addCircuit: (circuit: Circuit) => { allCircuits.push(circuit); },
-  };
-
-  let compiledCircuits: Circuit[];
-  try {
-    compiledCircuits = compileToIR(ast, mutableLibrary);
-    allCircuits.push(...compiledCircuits);
-  } catch (e) {
-    console.error(chalk.red('Compilation error:'), e instanceof Error ? e.message : String(e));
+  if (circuits.length === 0) {
+    console.error(chalk.red('No circuits found in file'));
     process.exit(1);
   }
 
   // Select circuit to simulate
   const targetName = opts.circuit;
   const target = targetName
-    ? compiledCircuits.find((c) => c.name === targetName)
-    : compiledCircuits[compiledCircuits.length - 1];
+    ? circuits.find((c) => c.name === targetName)
+    : circuits[circuits.length - 1];
 
   if (!target) {
-    const names = compiledCircuits.map((c) => c.name).join(', ');
+    const names = circuits.map((c) => c.name).join(', ');
     console.error(
       chalk.red(`Circuit "${targetName}" not found. Available: ${names}`)
     );
@@ -74,7 +46,6 @@ export async function sim(filePath: string, opts: SimOptions): Promise<void> {
   console.log(chalk.bold(`Simulating ${target.name} for ${opts.ticks} tick${opts.ticks === 1 ? '' : 's'}`));
 
   // Create simulator
-  const library = createComponentLibrary(allCircuits);
   const simulator = createSimulatorFromCircuit(target, library);
 
   // Set inputs if provided

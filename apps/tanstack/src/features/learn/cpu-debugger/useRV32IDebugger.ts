@@ -55,15 +55,15 @@ export function parseDisassembly(text: string): DisasmLine[] {
   return lines;
 }
 
-/** Convert base64-encoded binary (Go []byte JSON) to the initialMemory format for imem */
-function binaryToMemory(base64: string): Map<string, Map<number, number>> {
+/** Convert base64-encoded binary to a Map for loading into ROM via setNodeValue */
+function binaryToROM(base64: string): Map<number, number> {
   const raw = atob(base64);
-  const addressMap = new Map<number, number>();
+  const m = new Map<number, number>();
   for (let i = 0; i < raw.length; i++) {
     const b = raw.charCodeAt(i);
-    if (b !== 0) addressMap.set(i, b);
+    if (b !== 0) m.set(i, b);
   }
-  return new Map([["imem", addressMap]]);
+  return m;
 }
 
 /** Read a 32-bit port value from portValues by node label + port name.
@@ -92,19 +92,19 @@ export function useRV32IDebugger() {
   const [dslError, setDslError] = useState<string | null>(null);
 
   const [compiled, setCompiled] = useState<CompileResult | null>(null);
-  const [memory, setMemory] = useState<Map<string, Map<number, number>> | null>(null);
+  const [romData, setRomData] = useState<Map<number, number> | null>(null);
   const [compiling, setCompiling] = useState(false);
   const [compileError, setCompileError] = useState<string | null>(null);
 
   const [isRunning, setIsRunning] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Fetch DSL once
+  // Fetch CPU circuit once
   useEffect(() => {
     if (dslCacheRef.current) return;
     fetch("/blog-assets/rv32i-cpu.circuit.ts")
       .then((r) => {
-        if (!r.ok) throw new Error(`Failed to fetch DSL: ${r.status}`);
+        if (!r.ok) throw new Error(`Failed to load CPU: ${r.status}`);
         return r.text();
       })
       .then((text) => {
@@ -114,11 +114,14 @@ export function useRV32IDebugger() {
       .catch((e) => setDslError(e.message));
   }, []);
 
-  const simOptions = memory ? { initialMemory: memory } : undefined;
-  const sim = useCircuitSimulator(
-    dslCode && memory ? dslCode : "",
-    simOptions
-  );
+  const sim = useCircuitSimulator(dslCode ?? "");
+
+  // Load ROM data into imem via setNodeValue when ready
+  useEffect(() => {
+    if (!sim.ready || !romData) return;
+    sim.setNodeValue("imem", romData);
+    sim.runCombinational();
+  }, [sim.ready, romData]);
 
   // Auto-run
   useEffect(() => {
@@ -159,7 +162,7 @@ export function useRV32IDebugger() {
         disassembly: data.disassembly ?? "",
       };
       setCompiled(result);
-      setMemory(binaryToMemory(data.binary));
+      setRomData(binaryToROM(data.binary));
     } catch (e) {
       setCompileError(e instanceof Error ? e.message : String(e));
     } finally {

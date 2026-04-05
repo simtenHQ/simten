@@ -1,7 +1,6 @@
-import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo, forwardRef, useImperativeHandle } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useCircuitSimulator, CircuitEmbed } from "@turing-incomplete/embed";
-import { CircuitCanvas } from "@turing-incomplete/ui/canvas";
+import { useCircuitSimulator, ComponentEmbed } from "@turing-incomplete/embed";
 import { Logo } from "@/components/Logo";
 import { ClaudeCTA } from "@/features/splash/ClaudeCTA";
 import { useSnakeSimulator } from "@/features/blog/snake-in-hardware/useSnakeSimulator";
@@ -91,25 +90,14 @@ const DrillDownDemo = component('DrillDownDemo', {
 
 // --- 4-bit Shift Register (for time-travel showcase) ---
 
-const SHIFT_REGISTER_DSL = `const ShiftRegister4 = component('ShiftRegister4', {
-  in: { data_in: bit },
-  out: { q0: bit, q1: bit, q2: bit, q3: bit },
-  nodes: { ff0: DFlipFlop, ff1: DFlipFlop, ff2: DFlipFlop, ff3: DFlipFlop },
-  connect: ({ in: inp, out, ff0, ff1, ff2, ff3 }) => [
-    inp.data_in.to(ff0.d),
-    ff0.q.to(ff1.d, out.q0),
-    ff1.q.to(ff2.d, out.q1),
-    ff2.q.to(ff3.d, out.q2),
-    ff3.q.to(out.q3),
-  ],
-})
-
-const ShiftRegisterDemo = component('ShiftRegisterDemo', {
-  nodes: { sw_in: Switch, sr: ShiftRegister4, led0: Led, led1: Led, led2: Led, led3: Led },
-  connect: ({ sw_in, sr, led0, led1, led2, led3 }) => [
-    sw_in.out.to(sr.data_in),
-    sr.q0.to(led0.in), sr.q1.to(led1.in),
-    sr.q2.to(led2.in), sr.q3.to(led3.in),
+const SHIFT_REGISTER_DSL = `const ShiftRegisterDemo = component('ShiftRegisterDemo', {
+  nodes: { sw_in: Switch, ff0: DFlipFlop, ff1: DFlipFlop, ff2: DFlipFlop, ff3: DFlipFlop, led0: Led, led1: Led, led2: Led, led3: Led },
+  connect: ({ sw_in, ff0, ff1, ff2, ff3, led0, led1, led2, led3 }) => [
+    sw_in.out.to(ff0.d),
+    ff0.q.to(ff1.d, led0.in),
+    ff1.q.to(ff2.d, led1.in),
+    ff2.q.to(ff3.d, led2.in),
+    ff3.q.to(led3.in),
   ],
 })`;
 
@@ -513,7 +501,7 @@ function useTypewriter(
 // ============================================================================
 
 /** Lightweight DSL syntax highlighter — matches the Monaco dsl-light/dsl-dark themes */
-function highlightDsl(code: string): React.ReactNode[] {
+function highlightCode(code: string): React.ReactNode[] {
   // Monaco uses a single "keyword" token (blue, bold) for all DSL keywords
   const KW = "text-[#0000ff] dark:text-[#569cd6] font-bold";
   // Comments
@@ -658,67 +646,6 @@ function BrowserWindow({
 // Circuit viewer
 // ============================================================================
 
-function DemoCircuit({
-  dsl,
-  height,
-  nodePositions,
-  theme,
-}: {
-  dsl: string;
-  height: number | string;
-  nodePositions?: Record<string, { x: number; y: number }>;
-  theme?: "light" | "dark";
-}) {
-  const sim = useCircuitSimulator(dsl);
-  const [tickCount, setTickCount] = useState(0);
-
-  const handleTick = useCallback(() => {
-    sim.tick();
-    setTickCount((c) => c + 1);
-  }, [sim.tick]);
-
-  if (!sim.ready) {
-    return (
-      <div className="h-full flex items-center justify-center text-muted-foreground/60 text-sm">
-        Compiling...
-      </div>
-    );
-  }
-
-  return (
-    <div className="relative h-full">
-      <CircuitCanvas
-        circuit={sim.circuit}
-        componentLibrary={sim.componentLibrary ?? undefined}
-        portValues={sim.portValues}
-        sequentialState={sim.sequentialState}
-        onToggleNode={sim.toggleNode}
-        height={height}
-        nodePositions={nodePositions}
-        {...(theme ? { theme } : {})}
-      />
-      {sim.isSequential && (
-        <div className="absolute bottom-3 right-3 flex items-center gap-2">
-          {tickCount > 0 && (
-            <span className="text-[11px] text-muted-foreground/60 font-mono tabular-nums">
-              cycle {tickCount}
-            </span>
-          )}
-          <button
-            onClick={handleTick}
-            className={`px-3 py-1.5 text-[11px] font-medium rounded border transition-all ${
-              tickCount === 0
-                ? "bg-blue-600 border-blue-500 text-white animate-[pulse_1.5s_ease-in-out_infinite] shadow-[0_0_12px_rgba(59,130,246,0.4)]"
-                : "bg-muted border-border text-foreground/80 hover:border-foreground/30"
-            }`}
-          >
-            Tick
-          </button>
-        </div>
-      )}
-    </div>
-  );
-}
 
 // ============================================================================
 // Terminal line component
@@ -799,19 +726,19 @@ function TerminalLine({
 const noop = () => {};
 
 function ScriptedTerminal({
-  onDslStage,
+  onCodeStage,
   onComplete,
   extraLines,
 }: {
-  onDslStage: () => void;
+  onCodeStage: () => void;
   onComplete: () => void;
   extraLines: TermLine[];
 }) {
   const allLines = useRef(DEMO_SCRIPT);
   const [visibleCount, setVisibleCount] = useState(0);
   const [currentDone, setCurrentDone] = useState(false);
-  const onDslStageRef = useRef(onDslStage);
-  onDslStageRef.current = onDslStage;
+  const onCodeStageRef = useRef(onCodeStage);
+  onCodeStageRef.current = onCodeStage;
   const onCompleteRef = useRef(onComplete);
   onCompleteRef.current = onComplete;
   const prevExtraLen = useRef(0);
@@ -861,7 +788,7 @@ function ScriptedTerminal({
       lastShown?.type === "tool" &&
       lastShown.content.includes("write_circuit")
     ) {
-      onDslStageRef.current();
+      onCodeStageRef.current();
     }
   }, [visibleCount]);
 
@@ -896,41 +823,111 @@ export const Route = createFileRoute("/")({
   component: Splash5Page,
 });
 
+// ============================================================================
+// HeroBrowserWindow — owns typewriter state so it doesn't rerender the page
+// ============================================================================
+
+interface HeroBrowserWindowHandle {
+  startTyping: () => void;
+  pickPrompt: (option: PromptOption) => void;
+}
+
+const HeroBrowserWindow = forwardRef<HeroBrowserWindowHandle, {}>(
+  function HeroBrowserWindow(_, ref) {
+    const [codeTyping, setCodeTyping] = useState(false);
+    const [activeCode, setActiveCode] = useState<string | null>(null);
+    const [activeCodeDisplay, setActiveCodeDisplay] = useState<string | null>(null);
+    const [targetCode, setTargetCode] = useState(DEMO_DSL);
+    const [targetHarness, setTargetHarness] = useState(DEMO_HARNESS);
+
+    const codeTw = useTypewriter(targetCode, 12, 0, codeTyping);
+
+    useEffect(() => {
+      if (codeTyping && codeTw.done) {
+        setActiveCode(targetHarness);
+        setActiveCodeDisplay(targetCode);
+        setCodeTyping(false);
+      }
+    }, [codeTyping, codeTw.done, targetCode, targetHarness]);
+
+    useImperativeHandle(ref, () => ({
+      startTyping() { setCodeTyping(true); },
+      pickPrompt(option: PromptOption) {
+        setTargetCode(option.dsl);
+        setTargetHarness(option.harness);
+        setActiveCode(null);
+        setActiveCodeDisplay(null);
+      },
+    }), []);
+
+    return (
+      <BrowserWindow className="flex-1" showMcp={codeTyping || !!activeCode}>
+        <div className="flex h-full">
+          <div className="w-[250px] shrink-0 border-r border-border overflow-y-auto">
+            <pre className="text-[12px] font-mono text-foreground/70 leading-relaxed whitespace-pre-wrap py-3 px-4 mx-auto">
+              {codeTyping ? (
+                <>
+                  {highlightCode(codeTw.displayed)}
+                  <span className="inline-block w-[2px] h-[12px] bg-green-500 ml-0.5 animate-pulse align-text-bottom" />
+                </>
+              ) : activeCodeDisplay ? (
+                highlightCode(activeCodeDisplay)
+              ) : (
+                <span className="text-muted-foreground/40 italic text-[11px]">
+                  Waiting for circuit...
+                </span>
+              )}
+            </pre>
+          </div>
+          <div className="flex-1 flex flex-col min-w-0">
+            <div className="flex-1 min-h-0 relative">
+              {activeCode ? (
+                <ComponentEmbed code={activeCode} height="100%" />
+              ) : (
+                <div className="h-full flex items-center justify-center text-muted-foreground/40 text-sm font-mono">
+                  {codeTyping ? "Compiling..." : ""}
+                </div>
+              )}
+            </div>
+            {activeCode && (
+              <div className="flex-shrink-0 border-t border-border px-4 py-2 flex items-center justify-between">
+                <span className="text-[11px] text-muted-foreground/60">
+                  Click switches to interact
+                </span>
+                <Link
+                  to="/editor"
+                  className="text-[11px] text-muted-foreground/60 hover:text-foreground transition-colors"
+                >
+                  Open in full editor
+                </Link>
+              </div>
+            )}
+          </div>
+        </div>
+      </BrowserWindow>
+    );
+  }
+);
+
 function Splash5Page() {
-  const [dslTyping, setDslTyping] = useState(false);
-  const [activeDsl, setActiveDsl] = useState<string | null>(null);
-  const [activeDslDisplay, setActiveDslDisplay] = useState<string | null>(null);
   const [demoComplete, setDemoComplete] = useState(false);
   const [extraLines, setExtraLines] = useState<TermLine[]>([]);
   const [pickedPrompt, setPickedPrompt] = useState(false);
-  const [targetDsl, setTargetDsl] = useState(DEMO_DSL);
-  const [targetHarness, setTargetHarness] = useState(DEMO_HARNESS);
 
-  const dslTw = useTypewriter(targetDsl, 12, 0, dslTyping);
+  const heroRef = useRef<HeroBrowserWindowHandle>(null);
 
-  useEffect(() => {
-    if (dslTyping && dslTw.done) {
-      setActiveDsl(targetHarness);
-      setActiveDslDisplay(targetDsl);
-      setDslTyping(false);
-    }
-  }, [dslTyping, dslTw.done, targetDsl, targetHarness]);
+  const handleCodeStage = useCallback(() => {
+    heroRef.current?.startTyping();
+  }, []);
 
   const handlePickPrompt = useCallback((option: PromptOption) => {
     setPickedPrompt(true);
     setDemoComplete(false);
-    // Set up new DSL targets — will be used when DSL typing triggers
-    setTargetDsl(option.dsl);
-    setTargetHarness(option.harness);
-    // Clear old circuit while new one builds
-    setActiveDsl(null);
-    setActiveDslDisplay(null);
-    // Add a blank line separator then the new script
+    heroRef.current?.pickPrompt(option);
     const separator: TermLine = { type: "blank", content: "", delay: 300 };
     setExtraLines([separator, ...option.script]);
   }, []);
 
-  const handleDslStage = useCallback(() => setDslTyping(true), []);
   const handleComplete = useCallback(() => {
     setDemoComplete(true);
   }, []);
@@ -1030,7 +1027,7 @@ function Splash5Page() {
             <div className="flex flex-col h-full">
               <div className="flex-1 overflow-y-auto px-5 py-4">
                 <ScriptedTerminal
-                  onDslStage={handleDslStage}
+                  onCodeStage={handleCodeStage}
                   onComplete={handleComplete}
                   extraLines={extraLines}
                 />
@@ -1066,55 +1063,7 @@ function Splash5Page() {
           </TerminalWindow>
 
           {/* Right window: Browser */}
-          <BrowserWindow className="flex-1" showMcp={dslTyping || !!activeDsl}>
-            <div className="flex h-full">
-              {/* DSL code strip — thin left panel */}
-              <div className="w-[250px] shrink-0 border-r border-border overflow-y-auto">
-                <pre className="text-[12px] font-mono text-foreground/70 leading-relaxed whitespace-pre-wrap py-3 px-4 mx-auto">
-                  {dslTyping ? (
-                    <>
-                      {highlightDsl(dslTw.displayed)}
-                      <span className="inline-block w-[2px] h-[12px] bg-green-500 ml-0.5 animate-pulse align-text-bottom" />
-                    </>
-                  ) : activeDslDisplay ? (
-                    highlightDsl(activeDslDisplay)
-                  ) : (
-                    <span className="text-muted-foreground/40 italic text-[11px]">
-                      Waiting for circuit...
-                    </span>
-                  )}
-                </pre>
-              </div>
-
-              {/* Circuit canvas + footer */}
-              <div className="flex-1 flex flex-col min-w-0">
-                <div className="flex-1 min-h-0 relative">
-                  {activeDsl ? (
-                    <DemoCircuit dsl={activeDsl} height="100%" />
-                  ) : (
-                    <div className="h-full flex items-center justify-center text-muted-foreground/40 text-sm font-mono">
-                      {dslTyping ? "Compiling..." : ""}
-                    </div>
-                  )}
-                </div>
-
-                {/* Footer */}
-                {activeDsl && (
-                  <div className="flex-shrink-0 border-t border-border px-4 py-2 flex items-center justify-between">
-                    <span className="text-[11px] text-muted-foreground/60">
-                      Click switches to interact
-                    </span>
-                    <Link
-                      to="/editor"
-                      className="text-[11px] text-muted-foreground/60 hover:text-foreground transition-colors"
-                    >
-                      Open in full editor
-                    </Link>
-                  </div>
-                )}
-              </div>
-            </div>
-          </BrowserWindow>
+          <HeroBrowserWindow ref={heroRef} />
         </div>
 
       </div>
@@ -1256,11 +1205,11 @@ function DemoGallery() {
 
         {/* Row 1: Featured demo (asymmetric) */}
         <div className="grid grid-cols-1 sm:grid-cols-[1.4fr_1fr] gap-4 mb-4">
-          <LiveCircuitCard
+          <ComponentEmbed
             title="Half Adder"
             subtitle="4 nodes · 6 connections"
             description="XOR for sum, AND for carry — the foundation of digital arithmetic."
-            harness={DEMO_HARNESS}
+            code={DEMO_HARNESS}
             href="/editor"
             height={300}
             nodePositions={{
@@ -1272,11 +1221,11 @@ function DemoGallery() {
             }}
           />
           <div className="flex flex-col gap-4">
-            <LiveCircuitCard
+            <ComponentEmbed
               title="2-bit Counter"
               subtitle="Sequential · clock-driven"
               description="Two flip-flops count 00 → 01 → 10 → 11 → repeat."
-              harness={COUNTER_HARNESS}
+              code={COUNTER_HARNESS}
               href="/editor"
               height={140}
               nodePositions={{
@@ -1338,8 +1287,8 @@ function DemoGallery() {
 
             {/* Right: live circuit */}
             <div style={{ height: 320 }}>
-              <DemoCircuit
-                dsl={DRILLDOWN_DSL}
+              <ComponentEmbed
+                code={DRILLDOWN_DSL}
                 height={320}
                 nodePositions={{
                   sw_a:     { x: 10,  y: 10 },
@@ -1358,17 +1307,20 @@ function DemoGallery() {
         <div className="mt-24 rounded-lg border border-border overflow-hidden bg-card">
           <div className="grid grid-cols-1 sm:grid-cols-[1.5fr_1fr]">
             {/* Left: live circuit with full clock controls + time-travel */}
-            <CircuitEmbed
-              dsl={SHIFT_REGISTER_DSL}
+            <ComponentEmbed
+              code={SHIFT_REGISTER_DSL}
               height={340}
-              showControls
+              theme="dark"
               nodePositions={{
-                sw_in: { x: 10,  y: 140 },
-                sr:    { x: 190, y: 100 },
-                led0:  { x: 390, y: 10 },
-                led1:  { x: 390, y: 90 },
-                led2:  { x: 390, y: 170 },
-                led3:  { x: 390, y: 250 },
+                sw_in: { x: 10, y: 140 },
+                ff0: { x: 130, y: 20 },
+                ff1: { x: 130, y: 100 },
+                ff2: { x: 130, y: 180 },
+                ff3: { x: 130, y: 260 },
+                led0: { x: 310, y: 20 },
+                led1: { x: 310, y: 100 },
+                led2: { x: 310, y: 180 },
+                led3: { x: 310, y: 260 },
               }}
             />
 
@@ -1490,14 +1442,14 @@ function DemoGallery() {
           <PackageManagerTabs package="@turing-incomplete/embed" />
           <div className="rounded-lg border border-border bg-card overflow-hidden mt-4">
             <pre className="px-4 py-3 text-[12px] font-mono text-muted-foreground leading-relaxed overflow-x-auto">
-              <span className="text-violet-400">{"import"}</span>{" { CircuitEmbed } "}
+              <span className="text-violet-400">{"import"}</span>{" { ComponentEmbed } "}
               <span className="text-violet-400">{"from"}</span>{" "}
               <span className="text-green-400">{"'@turing-incomplete/embed'"}</span>
               {"\n\n"}
               <span className="text-muted-foreground">{"// Compiles, simulates, and renders — in one component"}</span>
               {"\n"}
               {"<"}
-              <span className="text-blue-400">{"CircuitEmbed"}</span>
+              <span className="text-blue-400">{"ComponentEmbed"}</span>
               {"\n  "}
               <span className="text-cyan-400">{"dsl"}</span>
               {"={myCircuitDSL}"}
@@ -1683,7 +1635,7 @@ function SnakeCard() {
 
   return (
     <div className="flex flex-col rounded-lg border border-border overflow-hidden bg-card">
-      {/* Preview — matches LiveCircuitCard height */}
+      {/* Preview — matches ComponentEmbed height */}
       <div
         className="flex items-center justify-center bg-black"
         style={{ height: 240 }}
@@ -1712,7 +1664,7 @@ function SnakeCard() {
         )}
       </div>
 
-      {/* Info strip — matches LiveCircuitCard */}
+      {/* Info strip — matches ComponentEmbed */}
       <div className="border-t border-border px-4 py-3 flex items-end justify-between gap-4">
         <div>
           <div className="text-[13px] font-semibold text-foreground">Snake</div>
@@ -1788,10 +1740,10 @@ function buildEthFrame(dst: number[], src: number[], ethertype: number): number[
   return frame;
 }
 
-function frameToMemory(bytes: number[]): Map<string, Map<number, number>> {
-  const m = new Map<number, number>();
-  bytes.forEach((b, i) => m.set(i, b));
-  return new Map([["eth_frameinput", m]]);
+function frameToInitData(bytes: number[]): Record<number, number> {
+  const obj: Record<number, number> = {};
+  bytes.forEach((b, i) => { if (b !== 0) obj[i] = b; });
+  return obj;
 }
 
 const ETH_FRAMES = [
@@ -1849,8 +1801,33 @@ function useEthernetParser() {
     () => buildEthFrame([...frame.dst], [...frame.src], frame.ethertype),
     [frame],
   );
-  const memory = useMemo(() => frameToMemory(frameBytes), [frameBytes]);
-  const sim = useCircuitSimulator(ETH_PARSER_DSL, { initialMemory: memory });
+  // Generate circuit code with frame data baked into nodeArgs
+  const circuitCode = useMemo(() => {
+    const initData = frameToInitData(frameBytes);
+    return `
+const Eth_802_3_Parser = component('Eth_802_3_Parser', {
+  out: { dst_mac_hi: bus(16), dst_mac_lo: bus(32), src_mac_hi: bus(16), src_mac_lo: bus(32), ethertype: bus(16), frame_done: bit, crc_ok: bit, is_broadcast: bit, is_ipv4: bit },
+  nodes: { frame_in: Eth_FrameInput, enable: Constant, parser: Eth_FrameParser, crc: Eth_CRC32, proto: Eth_ProtocolDecoder, addr: Eth_AddrClassifier },
+  nodeArgs: { enable: { value: 1 }, frame_in: { init: ${JSON.stringify(initData)} } },
+  connect: ({ out, frame_in, enable, parser, crc, proto, addr }) => [
+    enable.out.to(frame_in.enable),
+    frame_in.tdata.to(parser.tdata, crc.data),
+    frame_in.tkeep.to(parser.tkeep, crc.tkeep),
+    frame_in.tvalid.to(parser.tvalid, crc.data_valid),
+    frame_in.tlast.to(parser.tlast, crc.tlast),
+    parser.ethertype.to(proto.ethertype, out.ethertype),
+    parser.dst_mac_hi.to(addr.dst_mac_hi, out.dst_mac_hi),
+    parser.dst_mac_lo.to(addr.dst_mac_lo, out.dst_mac_lo),
+    parser.src_mac_hi.to(out.src_mac_hi),
+    parser.src_mac_lo.to(out.src_mac_lo),
+    parser.frame_done.to(out.frame_done),
+    crc.crc_ok.to(out.crc_ok),
+    addr.is_broadcast.to(out.is_broadcast),
+    proto.is_ipv4.to(out.is_ipv4),
+  ],
+})`;
+  }, [frameBytes]);
+  const sim = useCircuitSimulator(circuitCode);
 
   useEffect(() => {
     if (!sim.ready) return;
@@ -2037,48 +2014,6 @@ function EthernetParserCard() {
   );
 }
 
-function LiveCircuitCard({
-  title,
-  subtitle,
-  description,
-  harness,
-  href,
-  height = 240,
-  nodePositions,
-}: {
-  title: string;
-  subtitle: string;
-  description: string;
-  harness: string;
-  href: string;
-  height?: number;
-  nodePositions?: Record<string, { x: number; y: number }>;
-}) {
-  return (
-    <div className="flex flex-col rounded-lg border border-border overflow-hidden bg-card">
-      <div style={{ height }}>
-        <DemoCircuit dsl={harness} height={height} nodePositions={nodePositions} />
-      </div>
-      <div className="border-t border-border px-4 py-3 flex items-end justify-between gap-4">
-        <div>
-          <div className="text-[13px] font-semibold text-foreground">{title}</div>
-          <div className="text-[11px] text-muted-foreground/60 font-mono mt-0.5">
-            {subtitle}
-          </div>
-          <p className="text-[11px] text-muted-foreground mt-1.5 leading-relaxed">
-            {description}
-          </p>
-        </div>
-        <Link
-          to={href}
-          className="shrink-0 px-3 py-1.5 rounded border border-border text-[11px] text-foreground/80 hover:border-foreground/30 hover:text-foreground transition-colors"
-        >
-          Open in editor
-        </Link>
-      </div>
-    </div>
-  );
-}
 
 function ComplexDemoCard({
   title,

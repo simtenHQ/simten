@@ -8,7 +8,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState, useCallback, useMemo, useEffect } from "react";
 import { createServerFn } from "@tanstack/react-start";
-import { executeCircuitCode } from "@turing-incomplete/core/builder";
+import { executeComponentCode } from "@turing-incomplete/core/builder";
 import { simulate } from "@turing-incomplete/core/sim";
 
 // ============================================================================
@@ -103,14 +103,16 @@ function DemoCPUPage() {
     fetch("/blog-assets/rv32i-cpu.circuit.ts")
       .then(r => r.text())
       .then(code => {
-        const result = executeCircuitCode(code);
+        const result = executeComponentCode(code);
         if (result.error || !result.circuit) {
           console.error("Failed to load CPU:", result.error);
           return;
         }
         const comp = result.components[result.components.length - 1];
         const romData = binaryToMemory(binary);
-        const s = simulate(comp, { memoryData: new Map([["imem", romData]]) });
+        const s = simulate(comp);
+        s.setNode("imem", romData);
+        s.session.runCombinational();
         setSim(s);
       });
   }, [binary]);
@@ -254,10 +256,11 @@ function DemoCPUPage() {
 const binary = await compileFibonacci()
 
 // 2. Client loads CPU circuit (TypeScript component)
-const cpu = executeCircuitCode(cpuCode)
+const cpu = executeComponentCode(cpuCode)
 
 // 3. Load binary into instruction memory
-const sim = simulate(cpu, { memoryData: new Map([["imem", binary]]) })
+const sim = simulate(cpu)
+sim.setNode("imem", binary)
 
 // 4. Tick and read registers
 sim.tick()

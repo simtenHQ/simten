@@ -42,7 +42,7 @@ export { ChatPanel, ChatInput, MessageList, MessageBubble, ActionCard, CodeDiffV
 export { executeAction, applyDiff, validateAction, validateShowDiff, normalizeAction, type ActionExecutionContext } from './actions';
 
 // Hooks
-export { useNarrativeContext, buildNarrativeContext, useAgentLoop, useTutorFlow, type NarrativeContextResult, type UseAgentLoopOptions, type UseAgentLoopResult, type UseTutorFlowResult } from './hooks';
+export { useLLMContext, useNarrativeContext, buildLLMContext, buildNarrativeContext, useAgentLoop, useTutorFlow, type LLMContextResult, type NarrativeContextResult, type UseAgentLoopOptions, type UseAgentLoopResult, type UseTutorFlowResult } from './hooks';
 
 // Context
 export { buildNarrativeSummary, buildMinimalNarrative, enforceTokenBudget, countTokens } from './context';

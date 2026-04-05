@@ -1,6 +1,6 @@
 "use client";
 
-import { CircuitEmbed } from "@turing-incomplete/embed";
+import { ComponentEmbed } from "@turing-incomplete/embed";
 import { BLOG_CIRCUITS } from "../circuits";
 
 export function MemorySection() {
@@ -37,9 +37,9 @@ export function MemorySection() {
             <em>stays</em> after you release the input &mdash; that&rsquo;s
             memory!
           </p>
-          <CircuitEmbed
-            dsl={BLOG_CIRCUITS.srLatch.dsl}
-            displayDsl={BLOG_CIRCUITS.srLatch.displayDsl}
+          <ComponentEmbed
+            code={BLOG_CIRCUITS.srLatch.dsl}
+            displayCode={BLOG_CIRCUITS.srLatch.displayCode}
             height={260}
             title="SR Latch"
             description="Set stores a 1, Reset clears to 0"
@@ -57,9 +57,9 @@ export function MemorySection() {
             holds it until the next tick. Set the switch, then click{" "}
             <strong>Tick</strong> to capture the value.
           </p>
-          <CircuitEmbed
-            dsl={BLOG_CIRCUITS.dFlipFlop.dsl}
-            displayDsl={BLOG_CIRCUITS.dFlipFlop.displayDsl}
+          <ComponentEmbed
+            code={BLOG_CIRCUITS.dFlipFlop.dsl}
+            displayCode={BLOG_CIRCUITS.dFlipFlop.displayCode}
             height={220}
             showControls
             title="D Flip-Flop"
@@ -78,9 +78,9 @@ export function MemorySection() {
             at once. This is exactly how CPU registers work &mdash; just wider
             (8, 16, 32, or 64 bits).
           </p>
-          <CircuitEmbed
-            dsl={BLOG_CIRCUITS.register4bit.dsl}
-            displayDsl={BLOG_CIRCUITS.register4bit.displayDsl}
+          <ComponentEmbed
+            code={BLOG_CIRCUITS.register4bit.dsl}
+            displayCode={BLOG_CIRCUITS.register4bit.displayCode}
             height={350}
             showControls
             title="4-Bit Register"

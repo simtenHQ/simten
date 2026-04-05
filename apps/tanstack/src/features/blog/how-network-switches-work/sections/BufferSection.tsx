@@ -1,6 +1,6 @@
 "use client";
 
-import { CircuitEmbed } from "@turing-incomplete/embed";
+import { ComponentEmbed } from "@turing-incomplete/embed";
 import { SWITCH_CIRCUITS } from "../circuits";
 
 export function BufferSection() {
@@ -33,11 +33,11 @@ export function BufferSection() {
       </div>
 
       <div className="mt-8">
-        <CircuitEmbed
-          dsl={circuit.dsl}
+        <ComponentEmbed
+          code={circuit.dsl}
           height={280}
           showControls
-          displayDsl={circuit.displayDsl}
+          displayCode={circuit.displayCode}
           title={circuit.name}
           description={circuit.description}
         />

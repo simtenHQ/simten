@@ -6,7 +6,7 @@
  * Standard library is injected as scope — no imports needed.
  *
  * Usage:
- *   const result = executeCircuitCode(`
+ *   const result = executeComponentCode(`
  *     const ha = component('HalfAdder')
  *       .in('a', bit).in('b', bit)
  *       .out('sum', bit).out('carry', bit)
@@ -104,7 +104,7 @@ export function stripTypes(code: string): string {
  * @param code - TypeScript or JavaScript circuit code
  * @returns Execution result with circuits and any error
  */
-export function executeCircuitCode(code: string): ExecuteResult {
+export function executeComponentCode(code: string): ExecuteResult {
   const { names, values } = getScope();
   const library = createStdLibrary();
   const components: BuiltComponent[] = [];

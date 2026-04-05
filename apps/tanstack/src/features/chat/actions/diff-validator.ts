@@ -10,7 +10,7 @@
 import { DIFF_GUARDRAILS } from '../constants';
 import type { ValidationResult } from '../types';
 import type { ShowDiffAction } from '../types';
-import { parseDSL } from '@/features/dsl';
+import { executeComponentCode } from '@turing-incomplete/core';
 
 // ============================================================================
 // Line Counting
@@ -86,20 +86,15 @@ export function validateShowDiff(action: ShowDiffAction): ValidationResult {
     };
   }
 
-  // Guard 4: Verify suggested code parses
+  // Guard 4: Verify suggested code compiles
   if (DIFF_GUARDRAILS.REQUIRE_VALID_SYNTAX) {
-    const parseResult = parseDSL(action.suggestedCode, {
-      sourceName: 'suggested-diff',
-    });
+    const result = executeComponentCode(action.suggestedCode);
 
-    if (parseResult.errors.length > 0) {
+    if (result.error) {
       return {
         valid: false,
-        reason: 'Suggested code has syntax errors',
-        errors: parseResult.errors.map((e) => ({
-          message: e.message,
-          line: e.location.start.line,
-        })),
+        reason: 'Suggested code has errors',
+        errors: [{ message: result.error, line: 1 }],
       };
     }
   }

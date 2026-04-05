@@ -9,7 +9,7 @@
 export interface BlogCircuit {
   name: string;
   description: string;
-  displayDsl: string;
+  displayCode: string;
   dsl: string;
   nodePositions?: Record<string, { x: number; y: number }>;
 }
@@ -32,7 +32,7 @@ export const PONG_CIRCUITS: Record<string, BlogCircuit> = {
       displayX: { x: 710, y: 50 },
       displayY: { x: 710, y: 200 },
     },
-    displayDsl: `
+    displayCode: `
 const BallPosition = component('BallPosition', {
   nodes: { ballX: Register, ballY: Register, dx: Input, dy: Input, nextX: Adder, nextY: Adder, wrapX: BitSlice, wrapY: BitSlice, enable: Switch, displayX: HexDisplay, displayY: HexDisplay },
   nodeArgs: { ballX: { initial: 8 }, ballY: { initial: 8 }, dx: { value: 1 }, dy: { value: 1 }, wrapX: { low: 0, high: 3 }, wrapY: { low: 0, high: 3 } },
@@ -85,7 +85,7 @@ const BallPosition = component('BallPosition', {
       newDY: { x: 380, y: 400 },
       display: { x: 560, y: 400 },
     },
-    displayDsl: `
+    displayCode: `
 const BounceDetection = component('BounceDetection', {
   nodes: { ballY: Input, zero: Constant, fifteen: Constant, atTop: Comparator, atBottom: Comparator, shouldBounce: Or, bounceLed: Led, one: Constant, minus1: Constant, newDY: Mux, display: HexDisplay },
   nodeArgs: { ballY: { value: 15 }, zero: { value: 0 }, fifteen: { value: 15 }, one: { value: 1 }, minus1: { value: 255 }, newDY: { width: 8 } },
@@ -143,7 +143,7 @@ const BounceDetection = component('BounceDetection', {
       display: { x: 720, y: 150 },
       deltaDisplay: { x: 720, y: 330 },
     },
-    displayDsl: `
+    displayCode: `
 const PaddleMovement = component('PaddleMovement', {
   nodes: { keyboard: Input, zero: Constant, one: Constant, minus1: Constant, keyW: Constant, keyS: Constant, isW: Comparator, isS: Comparator, upDelta: Mux, delta: Mux, paddleY: Register, newY: Adder, wrapY: BitSlice, enable: Switch, display: HexDisplay, deltaDisplay: HexDisplay },
   nodeArgs: { keyboard: { value: 17 }, zero: { value: 0 }, one: { value: 1 }, minus1: { value: 255 }, keyW: { value: 17 }, keyS: { value: 31 }, upDelta: { width: 8 }, delta: { width: 8 }, paddleY: { initial: 6 }, wrapY: { low: 0, high: 3 } },
@@ -207,7 +207,7 @@ const PaddleMovement = component('PaddleMovement', {
       isDrawPhase: { x: 530, y: 400 },
       drawLed: { x: 700, y: 400 },
     },
-    displayDsl: `
+    displayCode: `
 const PhaseCounter14 = component('PhaseCounter14', {
   nodes: { phase: Register, one: Constant, zero: Constant, fourteen: Constant, phaseInc: Adder, atFourteen: Comparator, nextPhase: Mux, enable: Switch, display: HexDisplay, drawThreshold: Constant, isDrawPhase: Comparator, drawLed: Led },
   nodeArgs: { phase: { initial: 0 }, one: { value: 1 }, zero: { value: 0 }, fourteen: { value: 14 }, nextPhase: { width: 8 }, drawThreshold: { value: 6 } },
@@ -257,7 +257,7 @@ const PhaseCounter14 = component('PhaseCounter14', {
       addr: { x: 420, y: 90 },
       result: { x: 600, y: 90 },
     },
-    displayDsl: `
+    displayCode: `
 const PixelAddress = component('PixelAddress', {
   nodes: { x: Input, y: Input, four: Input, y16: LeftShifter, addr: Adder, result: HexDisplay },
   nodeArgs: { x: { value: 4 }, y: { value: 4 }, four: { value: 4 } },

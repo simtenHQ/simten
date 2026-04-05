@@ -8,7 +8,7 @@
 export interface BlogCircuit {
   name: string;
   description: string;
-  displayDsl: string;
+  displayCode: string;
   dsl: string;
 }
 
@@ -108,7 +108,7 @@ export const CHACHA20_CIRCUITS: Record<string, BlogCircuit> = {
     name: "The Three Operations: ADD, XOR, ROTL",
     description:
       "The entire ChaCha20 cipher is built from just these three operations on 32-bit words. Try changing a and b.",
-    displayDsl: `
+    displayCode: `
 const ARXDemo = component('ARXDemo', {
   nodes: { a: Input, b: Input, gnd: Constant, add: Adder, sum: HexDisplay, xor: BusXor, xor_out: HexDisplay },
   nodeArgs: { a: { value: 100, width: 32 }, b: { value: 42, width: 32 }, gnd: { value: 0 }, add: { width: 32 }, sum: { width: 32 }, xor: { width: 32 }, xor_out: { width: 32 } },
@@ -141,7 +141,7 @@ const ARXDemo = component('ARXDemo', {
     name: "Rotation: The Free Operation",
     description:
       "Left rotation rearranges bits with zero gate delay. In silicon, it's just rewiring.",
-    displayDsl: `
+    displayCode: `
 const RotateDemo = component('RotateDemo', {
   nodes: { val: Input, rot16: RotateLeft16, disp16: HexDisplay, rot7: RotateLeft7, disp7: HexDisplay },
   nodeArgs: { val: { value: 1, width: 32 }, disp16: { width: 32 }, disp7: { width: 32 } },
@@ -170,7 +170,7 @@ const RotateDemo = component('RotateDemo', {
     name: "One ARX Step: ADD, XOR, Rotate",
     description:
       "Each of the 4 steps in a quarter-round chains ADD → XOR → ROTL.",
-    displayDsl: `
+    displayCode: `
 const ARXStep = component('ARXStep', {
   nodes: { a: Input, b: Input, d: Input, gnd: Constant, add: Adder, xor: BusXor, rot: RotateLeft16, disp_a: HexDisplay, disp_d: HexDisplay },
   nodeArgs: { a: { value: 100, width: 32 }, b: { value: 42, width: 32 }, d: { value: 255, width: 32 }, gnd: { value: 0 }, add: { width: 32 }, xor: { width: 32 }, disp_a: { width: 32 }, disp_d: { width: 32 } },
@@ -207,7 +207,7 @@ const ARXStep = component('ARXStep', {
     name: "ChaCha20 Quarter-Round",
     description:
       "The complete quarter-round — 4 chained ARX steps. Verified against RFC 7539 test vector.",
-    displayDsl: `// RFC 7539 test vector:
+    displayCode: `// RFC 7539 test vector:
 //   In:  a=0x11111111  b=0x01020304
 //        c=0x9b8d6f43  d=0x01234567
 //   Out: a=0xea2a92f4  b=0xcb1cf8ce

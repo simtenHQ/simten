@@ -81,14 +81,14 @@ function App() {
 
 The circuit compiles, simulates, and renders in the browser. Users can toggle switches, see values propagate, and interact with the simulation.
 
-### CircuitEditor — editable playground
+### ComponentEditor — editable playground
 
 ```tsx
 import '@turing-incomplete/embed/styles.css'
-import { CircuitEditor } from '@turing-incomplete/embed/editor'
+import { ComponentEditor } from '@turing-incomplete/embed/editor'
 
 function App() {
-  return <CircuitEditor initialDsl={myDsl} height={500} />
+  return <ComponentEditor initialDsl={myDsl} height={500} />
 }
 ```
 

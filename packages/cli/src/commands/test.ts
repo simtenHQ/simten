@@ -1,18 +1,10 @@
-import { writeFileSync } from 'node:fs';
-import { resolve, dirname } from 'node:path';
 import chalk from 'chalk';
 import {
-  parseDSL,
-  compileToIR,
-  runTestbench,
-} from '@turing-incomplete/core/dsl';
-import {
-  createComponentLibrary,
-  getPrimitives,
+  createSimulatorFromCircuit,
   TOP_LEVEL_NODE,
-} from '@turing-incomplete/core/simulator';
+} from '@turing-incomplete/core';
 import type { Circuit, BitValue, BusValue } from '@turing-incomplete/core';
-import { loadDSLFile } from '../lib/file-loader.js';
+import { loadCircuitFile } from '../lib/file-loader.js';
 
 interface TestOptions {
   verbose?: boolean;
@@ -20,143 +12,89 @@ interface TestOptions {
 }
 
 export async function test(filePaths: string[], opts: TestOptions): Promise<void> {
-  // Shared library — all files compile into the same unit
-  const allCircuits: Circuit[] = [...getPrimitives()];
-  const mutableLibrary = {
-    resolveComponent: (name: string) => allCircuits.find((c) => c.name === name),
-    getAllPrimitiveNames: () => getPrimitives().map((c) => c.name),
-    getCircuit: (name: string) => allCircuits.find((c) => c.name === name),
-    hasCircuit: (name: string) => allCircuits.some((c) => c.name === name),
-    addCircuit: (circuit: Circuit) => { allCircuits.push(circuit); },
-  };
+  const allCircuits: Circuit[] = [];
+  let library: any = null;
 
-  // Collect testbenches across all files
-  const testbenches: Array<{ tb: Parameters<typeof runTestbench>[0]; sourceDir: string }> = [];
-
-  // Phase 1: Load, parse, and compile all files
+  // Phase 1: Load and compile all files via TS builder
   for (const filePath of filePaths) {
-    const { source, filePath: absPath, errors: loadErrors } = loadDSLFile(filePath);
+    const { filePath: absPath, result, errors } = loadCircuitFile(filePath);
 
-    if (loadErrors.length > 0) {
-      for (const err of loadErrors) {
+    if (errors.length > 0) {
+      for (const err of errors) {
         console.error(chalk.red('error:'), err);
       }
       process.exit(1);
     }
 
-    // Parse
-    const { ast, errors: parseErrors } = parseDSL(source, absPath);
-    if (parseErrors.length > 0) {
-      console.error(chalk.red(`\n${absPath}:`));
-      for (const err of parseErrors) {
-        console.error(chalk.red(`  ${err.location.start.line}:${err.location.start.column}  ${err.message}`));
-      }
-      process.exit(1);
-    }
-
-    // Compile circuits from this file into shared library
-    try {
-      const circuits = compileToIR(ast, mutableLibrary);
-      allCircuits.push(...circuits);
-    } catch (e) {
-      console.error(chalk.red(`Compilation error in ${absPath}:`), e instanceof Error ? e.message : String(e));
-      process.exit(1);
-    }
-
-    // Collect testbenches
-    if (ast.testbenches) {
-      for (const tb of ast.testbenches) {
-        testbenches.push({ tb, sourceDir: dirname(absPath) });
-      }
-    }
+    allCircuits.push(...result.circuits);
+    library = result.library;
   }
 
-  // Check if any testbenches were found
-  if (testbenches.length === 0) {
-    const circuitCount = allCircuits.length - getPrimitives().length;
-    console.log(chalk.yellow('No testbenches found. Running compilation check only.'));
-    console.log(chalk.green(`  ${circuitCount} circuit${circuitCount === 1 ? '' : 's'} compiled successfully`));
+  if (allCircuits.length === 0) {
+    console.log(chalk.yellow('No circuits found.'));
     return;
   }
 
-  // Phase 2: Build final library and run testbenches
-  const library = createComponentLibrary(allCircuits);
-
+  // Phase 2: Run test cases defined via .testCases() on builder components
+  const maxCycles = opts.ticks ? parseInt(opts.ticks, 10) : 100;
   let totalPassed = 0;
   let totalFailed = 0;
 
-  for (const { tb, sourceDir } of testbenches) {
-    console.log(chalk.bold(`\nTestbench: ${tb.name}`));
+  for (const circuit of allCircuits) {
+    const testCases = circuit.metadata?.testCases;
+    if (!testCases || testCases.length === 0) continue;
 
-    // Find the DUT circuit
-    const dutName = tb.circuitRef.circuitName;
-    const dut = allCircuits.find((c) => c.name === dutName);
-    if (!dut) {
-      const available = allCircuits
-        .filter((c) => !getPrimitives().some((p) => p.name === c.name))
-        .map((c) => c.name);
-      console.error(chalk.red(`  DUT "${dutName}" not found`));
-      if (available.length > 0) {
-        console.error(chalk.dim(`  Available circuits: ${available.join(', ')}`));
-      }
-      console.error(chalk.dim(`  Hint: pass the circuit file too — turing test Circuit.dsl Testbench.tb.dsl`));
-      totalFailed++;
-      continue;
-    }
+    console.log(chalk.bold(`\nTesting: ${circuit.name}`));
 
-    // Determine max cycles
-    const maxCycles = opts.ticks ? parseInt(opts.ticks, 10) : undefined;
+    for (const tc of testCases) {
+      const simulator = createSimulatorFromCircuit(circuit, library);
 
-    // Run testbench
-    try {
-      const result = runTestbench(tb, dut, library, { maxCycles });
-
-      console.log(chalk.dim(`  Simulated ${result.cycles} cycles`));
-
-      // Show per-cycle trace in verbose mode
-      if (opts.verbose) {
-        printTrace(result.signals, result.sampledCycles, dut);
+      // Set inputs
+      for (const [name, value] of Object.entries(tc.inputs)) {
+        simulator.setInput(name, value as BitValue | BusValue);
       }
 
-      // Write VCD file if capture configured
-      if (result.vcd && tb.impl?.capture?.filename) {
-        const vcdPath = resolve(sourceDir, tb.impl.capture.filename);
-        writeFileSync(vcdPath, result.vcd, 'utf-8');
-        console.log(chalk.cyan(`  VCD written to ${vcdPath}`));
-      }
+      // Run for one tick
+      const result = simulator.tick();
 
-      // Show assertion results if present
-      if (result.assertionSummary) {
-        const summary = result.assertionSummary;
-        for (const ar of summary.results) {
-          if (ar.passed) {
-            console.log(chalk.green(`  \u2713 cycle ${ar.cycle}: ${ar.message}`));
-          } else {
-            console.log(chalk.red(`  \u2717 cycle ${ar.cycle}: ${ar.message}`));
-          }
+      // Check expected outputs
+      let passed = true;
+      const failures: string[] = [];
+
+      for (const [name, expected] of Object.entries(tc.expectedOutputs)) {
+        const key = `${TOP_LEVEL_NODE}.${name}`;
+        const actual = result.portValues.get(key);
+        if (actual !== expected) {
+          passed = false;
+          failures.push(`${name}: expected ${expected}, got ${actual}`);
         }
-        console.log(
-          chalk.dim(`  Assertions: ${summary.passed}/${summary.total} passed`)
-        );
       }
 
-      if (result.status === 'passed') {
-        console.log(chalk.green(`  \u2713 ${tb.name} passed`));
+      const label = tc.name ?? JSON.stringify(tc.inputs);
+      if (passed) {
+        console.log(chalk.green(`  \u2713 ${label}`));
         totalPassed++;
       } else {
-        console.log(chalk.red(`  \u2717 ${tb.name} failed: ${result.failureReason}`));
+        console.log(chalk.red(`  \u2717 ${label}: ${failures.join(', ')}`));
         totalFailed++;
       }
-    } catch (e) {
-      console.error(chalk.red(`  \u2717 ${tb.name} error: ${e instanceof Error ? e.message : String(e)}`));
-      totalFailed++;
+
+      if (opts.verbose) {
+        printTrace(circuit, result, library);
+      }
     }
+  }
+
+  if (totalPassed === 0 && totalFailed === 0) {
+    console.log(chalk.yellow('No test cases found. Running compilation check only.'));
+    console.log(chalk.green(`  ${allCircuits.length} circuit${allCircuits.length === 1 ? '' : 's'} compiled successfully`));
+    return;
   }
 
   // Summary
   console.log('');
   if (totalFailed === 0) {
-    console.log(chalk.green.bold(`All ${totalPassed} testbench${totalPassed === 1 ? '' : 'es'} passed`));
+    console.log(chalk.green.bold(`All ${totalPassed} test${totalPassed === 1 ? '' : 's'} passed`));
   } else {
     console.log(
       chalk.red.bold(`${totalFailed} failed`) +
@@ -167,39 +105,33 @@ export async function test(filePaths: string[], opts: TestOptions): Promise<void
 }
 
 /**
- * Print a trace table for verbose output.
+ * Print port values for verbose output.
  */
 function printTrace(
-  signals: Record<string, (BitValue | BusValue)[]>,
-  sampledCycles: number[],
-  dut: Circuit
+  circuit: Circuit,
+  result: { portValues: Map<string, BitValue | BusValue> },
+  _library: any
 ): void {
-  const inputNames = dut.inputs.map((i) => i.name);
-  const outputNames = dut.outputs.map((o) => o.name);
+  const inputNames = circuit.inputs.map((i) => i.name);
+  const outputNames = circuit.outputs.map((o) => o.name);
   const headers = [...inputNames, ...outputNames];
 
   if (headers.length === 0) return;
 
-  // Print header
-  console.log(chalk.dim('  tick  ') + headers.map((h) => chalk.cyan(h.padEnd(10))).join(''));
-  console.log(chalk.dim('  ' + '\u2500'.repeat(6 + headers.length * 10)));
+  console.log(chalk.dim('  ') + headers.map((h) => chalk.cyan(h.padEnd(10))).join(''));
+  console.log(chalk.dim('  ' + '\u2500'.repeat(headers.length * 10)));
 
-  // Print each cycle
-  for (let i = 0; i < sampledCycles.length; i++) {
-    const cycle = sampledCycles[i];
-    const values = headers.map((name) => {
-      const key = `${TOP_LEVEL_NODE}.${name}`;
-      const vals = signals[key];
-      const val = vals?.[i];
-      if (val === undefined) return chalk.dim('\u2014'.padEnd(10));
-      const str = typeof val === 'boolean' ? (val ? '1' : '0') : String(val);
-      const padded = str.padEnd(10);
-      if (typeof val === 'boolean') {
-        return val ? chalk.green(padded) : chalk.dim(padded);
-      }
-      return padded;
-    });
+  const values = headers.map((name) => {
+    const key = `${TOP_LEVEL_NODE}.${name}`;
+    const val = result.portValues.get(key);
+    if (val === undefined) return chalk.dim('\u2014'.padEnd(10));
+    const str = typeof val === 'boolean' ? (val ? '1' : '0') : String(val);
+    const padded = str.padEnd(10);
+    if (typeof val === 'boolean') {
+      return val ? chalk.green(padded) : chalk.dim(padded);
+    }
+    return padded;
+  });
 
-    console.log(chalk.dim('  ' + String(cycle).padStart(4) + '  ') + values.join(''));
-  }
+  console.log(chalk.dim('  ') + values.join(''));
 }

@@ -193,8 +193,9 @@ export class SimulationSession<TMeta = unknown> {
   runCombinational(): void {
     if (!this.engine) return;
     this.engine.runCombinational();
-    this.syncFromEngine();
-    this.notifyListeners();
+    if (this.syncFromEngine()) {
+      this.notifyListeners();
+    }
   }
 
   // ============================================================================
@@ -328,10 +329,10 @@ export class SimulationSession<TMeta = unknown> {
 
   /**
    * Read engine state. Only replaces references if they actually changed.
-   * Engine outputs are pass-through — no wrapping, no cloning.
+   * Returns true if state was updated.
    */
-  private syncFromEngine(): void {
-    if (!this.engine) return;
+  private syncFromEngine(): boolean {
+    if (!this.engine) return false;
 
     const portValues = this.engine.getPortValues();
     const sequentialState = this.engine.getState();
@@ -343,7 +344,9 @@ export class SimulationSession<TMeta = unknown> {
       cycle !== this.state.cycle
     ) {
       this.state = { ...this.state, portValues, sequentialState, cycle };
+      return true;
     }
+    return false;
   }
 
   /**

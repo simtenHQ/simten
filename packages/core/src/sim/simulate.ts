@@ -107,7 +107,6 @@ export function simulate<
   comp: BuiltComponent<Ins, Outs>,
   options?: {
     library?: ComponentLibrary;
-    memoryData?: Map<string, Map<number, number>>;
   },
 ): SimulationHandle<Ins, Outs> {
   const rawCircuit = comp.circuit;
@@ -129,7 +128,7 @@ export function simulate<
   const isSequential = detectSequential(circuit, library);
 
   // Create engine and session
-  const engine = createSimulatorFromCircuit(circuit, library, options?.memoryData);
+  const engine = createSimulatorFromCircuit(circuit, library);
 
   // Run initial combinational propagation
   engine.runCombinational();

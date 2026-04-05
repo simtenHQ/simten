@@ -1,18 +1,18 @@
 "use client";
 
 import { useState, useMemo, lazy, Suspense } from "react";
-import { compileDSL } from "@turing-incomplete/core/dsl";
+import { executeComponentCode } from "@turing-incomplete/core";
+import type { Circuit } from "@turing-incomplete/core";
 import {
   elaborate,
   compileForSimulation,
   PRIMITIVE_DEFINITIONS,
   generatePrimitives,
 } from "@turing-incomplete/core/simulator";
-import type { Circuit } from "@turing-incomplete/ui/editor/types";
 
-const CircuitEmbed = lazy(() =>
+const ComponentEmbed = lazy(() =>
   import("@turing-incomplete/embed").then((m) => ({
-    default: m.CircuitEmbed,
+    default: m.ComponentEmbed,
   }))
 );
 
@@ -49,7 +49,7 @@ const FullAdder = component('FullAdder', {
 type Tab = "dsl" | "ir" | "flat" | "numeric" | "live";
 
 const TABS: { id: Tab; label: string; description: string }[] = [
-  { id: "dsl", label: "DSL", description: "Source code" },
+  { id: "dsl", label: "Source", description: "TypeScript code" },
   { id: "ir", label: "Circuit IR", description: "Compiled objects" },
   { id: "flat", label: "Elaborated", description: "Flattened to primitives" },
   { id: "numeric", label: "Numeric", description: "Typed arrays" },
@@ -87,23 +87,16 @@ export function PipelineVisualizer() {
 
   const compiled = useMemo(() => {
     try {
-      // Build a minimal library from primitives
+      // Stage 1: Execute TS code to get Circuit IR
+      const result = executeComponentCode(FULL_ADDER_DSL);
+      if (result.error) return { error: result.error };
+
+      const { circuits, library } = result;
+      const resolveComponent = (name: string) => library.resolveComponent(name);
+
+      // Build primitive name list for elaboration
       const prims = generatePrimitives(PRIMITIVE_DEFINITIONS) as Circuit[];
-      const primMap = new Map<string, Circuit>();
-      for (const p of prims) primMap.set(p.name, p);
-
-      // Stage 1: Parse + compile to IR
-      // addCircuit allows the compiler to register each circuit as it's compiled,
-      // so FullAdder can reference HalfAdder defined earlier in the same file.
-      const fullLib = new Map(primMap);
-      const userLib = {
-        resolveComponent: (name: string) => fullLib.get(name),
-        addCircuit: (c: Circuit) => fullLib.set(c.name, c),
-      };
-      const { circuits, errors } = compileDSL(FULL_ADDER_DSL, userLib);
-      if (errors.length > 0) return { error: errors[0].message };
-
-      const resolveComponent = (name: string) => fullLib.get(name);
+      const primNames = prims.map((p) => p.name);
 
       // Stage 2: Elaborate the FullAdder
       const fullAdder = circuits.find((c) => c.name === "FullAdder");
@@ -111,13 +104,13 @@ export function PipelineVisualizer() {
 
       const flat = elaborate(fullAdder, {
         resolveComponent,
-        getAllPrimitiveNames: () => Array.from(primMap.keys()),
+        getAllPrimitiveNames: () => primNames,
       });
 
       // Stage 3: Compile to numeric
       const numeric = compileForSimulation(flat, {
         resolveComponent,
-        getAllPrimitiveNames: () => Array.from(primMap.keys()),
+        getAllPrimitiveNames: () => primNames,
       });
 
       return { circuits, fullAdder, flat, numeric };
@@ -163,7 +156,7 @@ export function PipelineVisualizer() {
         {activeTab === "dsl" && (
           <div>
             <p className="text-sm text-gray-400 mb-3">
-              The DSL source defines two circuits. <code className="text-blue-400">HalfAdder</code> is
+              The TypeScript source defines two components. <code className="text-blue-400">HalfAdder</code> is
               a composite used inside <code className="text-blue-400">FullAdder</code>. This is just text
               — no compilation has happened yet.
             </p>
@@ -176,13 +169,13 @@ export function PipelineVisualizer() {
         {activeTab === "ir" && circuits && fullAdder && (
           <div>
             <p className="text-sm text-gray-400 mb-3">
-              The parser and compiler produce <code className="text-blue-400">Circuit</code> objects.
+              The <code className="text-blue-400">executeComponentCode()</code> call produces <code className="text-blue-400">Circuit</code> objects.
               The FullAdder has 3 nodes — two HalfAdders and one Or gate. The HalfAdders are still
               composites at this stage.
             </p>
             <div className="space-y-3">
               <div className="text-xs text-gray-500 font-mono">
-                compileDSL() → {circuits!.length} circuits
+                executeComponentCode() → {circuits!.length} circuits
               </div>
               {circuits!.map((c) => (
                 <div key={c.name} className="rounded-lg border border-gray-700/50 bg-gray-950 p-3">
@@ -371,11 +364,10 @@ export function PipelineVisualizer() {
                 </div>
               }
             >
-              <CircuitEmbed
-                dsl={FULL_ADDER_DSL}
+              <ComponentEmbed
+                code={FULL_ADDER_DSL}
                 height={280}
                 showControls
-                autoHarness
               />
             </Suspense>
           </div>
