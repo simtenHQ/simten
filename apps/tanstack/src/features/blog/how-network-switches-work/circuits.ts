@@ -8,7 +8,7 @@
 export interface BlogCircuit {
   name: string;
   description: string;
-  displayDsl: string;
+  displayCode: string;
   dsl: string;
 }
 
@@ -17,7 +17,7 @@ export const SWITCH_CIRCUITS: Record<string, BlogCircuit> = {
     name: "Frame Detector",
     description:
       "Detects the start of an Ethernet frame by matching a preamble byte (0x55) followed by Start-of-Frame Delimiter (0xD5).",
-    displayDsl: `const FrameDetector = component('FrameDetector', {
+    displayCode: `const FrameDetector = component('FrameDetector', {
   nodes: { byteIn: Input, valid: Switch, state: Register, PREAMBLE: Constant, SFD: Constant, zero: Constant, one: Constant, two: Constant, isPreamble: Comparator, isSFD: Comparator, isIdle: Comparator, isWaiting: Comparator, isActive: Comparator, gotPreamble: And, gotPreambleValid: And, gotSFD: And, gotSFDValid: And, next1: Mux, next2: Mux, we: Input, stateDisplay: HexDisplay, frameLed: Led },
   nodeArgs: { byteIn: { value: 85 }, state: { initial: 0 }, PREAMBLE: { value: 85 }, SFD: { value: 213 }, zero: { value: 0 }, one: { value: 1 }, two: { value: 2 }, we: { value: 1 } },
   connect: ({ byteIn, valid, state, PREAMBLE, SFD, zero, one, two, isPreamble, isSFD, isIdle, isWaiting, isActive, gotPreamble, gotPreambleValid, gotSFD, gotSFDValid, next1, next2, we, stateDisplay, frameLed }) => [
@@ -76,7 +76,7 @@ const FrameDetector = component('FrameDetector', {
     name: "Packet Buffer",
     description:
       "Stores incoming bytes in DualPortRAM as they arrive. A write pointer register tracks the next free address.",
-    displayDsl: `
+    displayCode: `
 const PacketBuffer = component('PacketBuffer', {
   nodes: { dataIn: Input, writeCmd: Switch, writePtr: Register, one: Constant, ram: DualPortRAM, nextPtr: Adder, readAddr: Input, readback: HexDisplay, ptrDisplay: HexDisplay },
   nodeArgs: { dataIn: { value: 42 }, writePtr: { initial: 0 }, one: { value: 1 }, readAddr: { value: 0 } },
@@ -112,7 +112,7 @@ const PacketBuffer = component('PacketBuffer', {
     name: "Port Arbiter",
     description:
       "Decides which port gets to send next. When both ports have packets ready, it alternates fairly between them.",
-    displayDsl: `
+    displayCode: `
 const PortArbiter = component('PortArbiter', {
   nodes: { port0_ready: Switch, port1_ready: Switch, lastPort: Input, zero: Constant, one: Constant, lastWas0: Comparator, prefer1: And, notPort1: Not, fallback0: And, fallback0Ready: And, lastWas1: Comparator, prefer0: And, grant0: Or, grant1: Or, grantValid: Or, grantPort: Mux, portDisplay: HexDisplay, validLed: Led },
   nodeArgs: { lastPort: { value: 0 }, zero: { value: 0 }, one: { value: 1 } },
@@ -166,7 +166,7 @@ const PortArbiter = component('PortArbiter', {
     name: "Crossbar Router",
     description:
       "Routes packets to the opposite port: port 0 sends to port 1 and vice versa. A comparator and mux implement the cross-over logic.",
-    displayDsl: `
+    displayCode: `
 const CrossbarRouter = component('CrossbarRouter', {
   nodes: { sourcePort: Input, zero: Constant, one: Constant, isPort0: Comparator, destPort: Mux, destDisplay: HexDisplay, srcDisplay: HexDisplay, routedLed: Led },
   nodeArgs: { sourcePort: { value: 0 }, zero: { value: 0 }, one: { value: 1 } },
@@ -198,7 +198,7 @@ const CrossbarRouter = component('CrossbarRouter', {
     name: "Packet Serializer",
     description:
       "Reads bytes from RAM one at a time and outputs them with a valid signal. A counter tracks progress and signals when the packet is complete.",
-    displayDsl: `
+    displayCode: `
 const PacketSerializer = component('PacketSerializer', {
   nodes: { readPtr: Register, one: Constant, seven: Constant, nextPtr: Adder, enable: Switch, dataOut: HexDisplay, ptrDisplay: HexDisplay, isDone: Comparator, doneLed: Led },
   nodeArgs: { readPtr: { initial: 0 }, one: { value: 1 }, seven: { value: 7 } },

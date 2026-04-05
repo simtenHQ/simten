@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { executeCircuitCode, stripTypes } from '../execute.js';
+import { executeComponentCode, stripTypes } from '../execute.js';
 
 // ============================================================================
 // Type stripping
@@ -30,9 +30,9 @@ describe('stripTypes', () => {
 // Basic execution
 // ============================================================================
 
-describe('executeCircuitCode', () => {
+describe('executeComponentCode', () => {
   it('executes a simple AND gate', () => {
-    const result = executeCircuitCode(`
+    const result = executeComponentCode(`
       const MyAnd = component('MyAnd', {
         in: { a: bit, b: bit },
         out: { out: bit },
@@ -47,7 +47,7 @@ describe('executeCircuitCode', () => {
   });
 
   it('executes a composite circuit using stdlib', () => {
-    const result = executeCircuitCode(`
+    const result = executeComponentCode(`
       const HalfAdder = component('HalfAdder', {
         in: { a: bit, b: bit },
         out: { sum: bit, carry: bit },
@@ -68,7 +68,7 @@ describe('executeCircuitCode', () => {
   });
 
   it('collects multiple circuits', () => {
-    const result = executeCircuitCode(`
+    const result = executeComponentCode(`
       const A = component('CompA', {
         in: { x: bit },
         out: { y: bit },
@@ -90,7 +90,7 @@ describe('executeCircuitCode', () => {
   });
 
   it('handles TypeScript syntax', () => {
-    const result = executeCircuitCode(`
+    const result = executeComponentCode(`
       const width: number = 8
       const MyAdder = component('MyAdder', {
         in: { a: bus(width), b: bus(width) },
@@ -105,7 +105,7 @@ describe('executeCircuitCode', () => {
   });
 
   it('handles parameterized component factories', () => {
-    const result = executeCircuitCode(`
+    const result = executeComponentCode(`
       const makeReg = (w: number) => component('Reg' + w, {
         in: { d: bus(w) },
         out: { q: bus(w) },
@@ -125,7 +125,7 @@ describe('executeCircuitCode', () => {
   });
 
   it('stdlib components are available without imports', () => {
-    const result = executeCircuitCode(`
+    const result = executeComponentCode(`
       const Demo = component('Demo', {
         in: { a: bit },
         out: { b: bit },
@@ -142,7 +142,7 @@ describe('executeCircuitCode', () => {
   });
 
   it('registers user circuits in the library', () => {
-    const result = executeCircuitCode(`
+    const result = executeComponentCode(`
       const MyGate = component('MyGate', {
         in: { a: bit },
         out: { out: bit },
@@ -160,13 +160,13 @@ describe('executeCircuitCode', () => {
 
 describe('error handling', () => {
   it('returns error for syntax errors', () => {
-    const result = executeCircuitCode(`const x = {{{`);
+    const result = executeComponentCode(`const x = {{{`);
     expect(result.error).not.toBeNull();
     expect(result.circuit).toBeNull();
   });
 
   it('returns error for runtime errors', () => {
-    const result = executeCircuitCode(`
+    const result = executeComponentCode(`
       const x = component('Bad', {
         in: { a: bit },
         out: { a: bit },
@@ -177,7 +177,7 @@ describe('error handling', () => {
   });
 
   it('returns empty result for code with no circuits', () => {
-    const result = executeCircuitCode(`const x = 42`);
+    const result = executeComponentCode(`const x = 42`);
     expect(result.error).toBeNull();
     expect(result.circuit).toBeNull();
     expect(result.circuits).toHaveLength(0);

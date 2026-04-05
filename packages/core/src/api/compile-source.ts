@@ -5,7 +5,7 @@
  * Accepts TypeScript code using the component() builder API.
  */
 
-import { executeCircuitCode } from '../builder/execute.js';
+import { executeComponentCode } from '../builder/execute.js';
 import type { Circuit, ComponentLibrary } from '../types/circuit.js';
 
 export interface CompileSourceResult {
@@ -21,7 +21,7 @@ export function compileSource(
   source: string,
   _sourceName?: string,
 ): CompileSourceResult {
-  const result = executeCircuitCode(source);
+  const result = executeComponentCode(source);
   if (result.error) {
     return { circuits: [], library: result.library, error: result.error };
   }

@@ -8,7 +8,7 @@
 export interface BlogCircuit {
   name: string;
   description: string;
-  displayDsl: string;
+  displayCode: string;
   dsl: string;
 }
 
@@ -33,11 +33,10 @@ export const AES_SBOX: number[] = [
 ];
 
 // Pre-loaded ROM memory for SubBytes lookups
-export const AES_SBOX_MEMORY: Map<string, Map<number, number>> = (() => {
-  const sboxMap = new Map<number, number>();
-  AES_SBOX.forEach((val, idx) => sboxMap.set(idx, val));
-  return new Map([["ROM", sboxMap]]);
-})();
+/** S-box as a JSON object for nodeArgs init */
+const AES_SBOX_INIT: Record<number, number> = {};
+AES_SBOX.forEach((val, idx) => { AES_SBOX_INIT[idx] = val; });
+const AES_SBOX_JSON = JSON.stringify(AES_SBOX_INIT);
 
 // XTime and MixColumn sub-circuits shared across demos
 const XTIME_CIRCUIT = `
@@ -91,7 +90,7 @@ export const AES_CIRCUITS: Record<string, BlogCircuit> = {
     name: "SubBytes: S-Box Lookup",
     description:
       "Each byte is replaced via a 256-entry lookup table. Try 0x00 (→ 0x63), 0x53 (→ 0xed), or 0xff (→ 0x16). Pre-loaded with FIPS 197 S-box.",
-    displayDsl: `
+    displayCode: `
 const SubByteDemo = component('SubByteDemo', {
   nodes: { s: Input, rom: ROM, disp: HexDisplay },
   nodeArgs: { s: { value: 83, width: 8 }, disp: { width: 8 } },
@@ -104,7 +103,7 @@ const SubByteDemo = component('SubByteDemo', {
     dsl: `
 const SubByteDemo = component('SubByteDemo', {
   nodes: { s: Input, rom: ROM, disp: HexDisplay },
-  nodeArgs: { s: { value: 83, width: 8 }, disp: { width: 8 } },
+  nodeArgs: { s: { value: 83, width: 8 }, rom: { init: ${AES_SBOX_JSON} }, disp: { width: 8 } },
   connect: ({ in: inp, out, s, rom, disp }) => [
     s.out.to(rom.addr),
     rom.data_out.to(disp.in),
@@ -118,7 +117,7 @@ const SubByteDemo = component('SubByteDemo', {
     name: "XTime: Multiply by 2 in GF(2^8)",
     description:
       "Left-shift, then XOR with 0x1b if the MSB was 1. Try 87 (0x57 → 0xae), 128 (0x80 → 0x1b), or 149 (0x95 → 0x35).",
-    displayDsl: `
+    displayCode: `
 const XTime = component('XTime', {
   in: { x: bus(8) },
   out: { out: bus(8) },
@@ -163,7 +162,7 @@ const XTimeDemo = component('XTimeDemo', {
     name: "MixColumns: One Column",
     description:
       "FIPS 197 test vector: [0xdb, 0x13, 0x53, 0x45] → [0x8e, 0x4d, 0xa1, 0xbc]. Four bytes in, four bytes out, completely mixed.",
-    displayDsl: `// FIPS 197 MixColumns test vector:
+    displayCode: `// FIPS 197 MixColumns test vector:
 //   In:  [0xdb, 0x13, 0x53, 0x45]
 //   Out: [0x8e, 0x4d, 0xa1, 0xbc]
 

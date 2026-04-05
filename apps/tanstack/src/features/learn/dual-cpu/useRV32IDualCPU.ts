@@ -138,11 +138,16 @@ export function useRV32IDualCPU() {
       .catch((e) => setDslError(e.message));
   }, []);
 
-  const simOptions = memory ? { initialMemory: memory } : undefined;
-  const sim = useCircuitSimulator(
-    dslCode && memory ? dslCode : "",
-    simOptions,
-  );
+  const sim = useCircuitSimulator(dslCode ?? "");
+
+  // Load ROM data when ready
+  useEffect(() => {
+    if (!sim.ready || !memory) return;
+    for (const [nodeId, data] of memory) {
+      sim.setNodeValue(nodeId, data);
+    }
+    sim.runCombinational();
+  }, [sim.ready, memory]);
 
 
   // Auto-run

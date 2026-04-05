@@ -9,8 +9,7 @@ import {
   getPrimitives,
   createComponentLibrary,
 } from '../simulator/index.js';
-import type { Circuit, ComponentLibrary } from '../types/circuit.js';
-import type { ComponentLibrary as DSLComponentLibrary } from '../dsl/index.js';
+import type { Circuit, ComponentLibrary, MutableComponentLibrary } from '../types/circuit.js';
 
 let _library: ComponentLibrary | undefined;
 
@@ -28,21 +27,18 @@ export function getLibrary(): ComponentLibrary {
  * Create a mutable library that can accumulate compiled circuits.
  * Used by simulate and test handlers that need to compile user circuits
  * into the same namespace as primitives.
- *
- * Returns the compiler-compatible library interface and the backing array.
  */
 export function createMutableLibrary(): {
-  library: DSLComponentLibrary;
+  library: MutableComponentLibrary;
   circuits: Circuit[];
 } {
   const circuits: Circuit[] = [...getPrimitives()];
 
-  const library: DSLComponentLibrary = {
+  const library: MutableComponentLibrary = {
     resolveComponent: (name: string) => circuits.find((c) => c.name === name),
     getAllPrimitiveNames: () => getPrimitives().map((c) => c.name),
-    getCircuit: (name: string) => circuits.find((c) => c.name === name),
-    hasCircuit: (name: string) => circuits.some((c) => c.name === name),
     addCircuit: (circuit: Circuit) => { circuits.push(circuit); },
+    getAllComponentNames: () => circuits.map((c) => c.name),
   };
 
   return { library, circuits };

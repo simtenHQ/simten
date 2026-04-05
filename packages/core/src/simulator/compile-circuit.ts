@@ -10,7 +10,6 @@ import type { FlatCircuit, PrimitiveState } from '../types/simulator.js';
 import { TOP_LEVEL_NODE } from '../types/simulator.js';
 import type { NumericCircuit, NumericSequentialState } from './numeric-types.js';
 import { PRIMITIVE_TYPE_INDICES } from './numeric-types.js';
-import { PRIMITIVE_DEFINITIONS } from './primitives.js';
 import { resolveTypeIndex } from './eval-bridge.js';
 
 /**
@@ -229,9 +228,9 @@ export function compileForSimulation(
     // Source node: no inputs
     isSourceNode[i] = node.inputs.length === 0 ? 1 : 0;
 
-    // Has state: primitive definition has state
-    const primDef = PRIMITIVE_DEFINITIONS[node.primitiveType];
-    if (primDef?.state && primDef.state.length > 0) {
+    // Has state: check if the component has state blocks
+    const resolvedComp = library.resolveComponent(node.primitiveType);
+    if (resolvedComp?.state && resolvedComp.state.length > 0) {
       hasState[i] = 1;
       // Any node with state needs re-evaluation after clock edge
       isStateOutputNode[i] = 1;

@@ -5,7 +5,7 @@
  * Prevents acting on outdated DSL if user typed during streaming.
  */
 
-import { validateCircuit, type ValidationContext } from '@/features/dsl';
+import { executeComponentCode } from '@turing-incomplete/core';
 import { hashSourceCode, hasSourceCodeChanged } from './action-normalizer';
 import type { AssistantAction, ActionResult } from '../types';
 
@@ -14,12 +14,10 @@ import type { AssistantAction, ActionResult } from '../types';
 // ============================================================================
 
 export interface StalenessCheckContext {
-  /** Get the current DSL code from the editor */
+  /** Get the current code from the editor */
   getCurrentCode: () => string;
   /** The hash of code when the action was created */
   sourceCodeHash?: string;
-  /** Component library for validation */
-  componentLibrary?: ValidationContext['componentLibrary'];
 }
 
 export interface StalenessCheckResult {
@@ -73,12 +71,10 @@ export function checkStaleness(
   }
 
   // For RUN_SIMULATION: verify circuit is simulatable
-  if (action.type === 'RUN_SIMULATION' && context.componentLibrary) {
-    const validation = validateCircuit(currentCode, {
-      componentLibrary: context.componentLibrary,
-    });
+  if (action.type === 'RUN_SIMULATION') {
+    const result = executeComponentCode(currentCode);
 
-    if (!validation.canSimulate) {
+    if (result.error || !result.circuit) {
       return {
         isStale: false,
         canSimulate: false,

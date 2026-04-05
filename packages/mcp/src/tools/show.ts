@@ -11,8 +11,7 @@ import { exec } from 'node:child_process';
 import { resolve } from 'node:path';
 import { readDSLSource } from '../lib/file-reader.js';
 import { TI_URL } from '../lib/config.js';
-import { checkCircuit, getLibrary } from '@turing-incomplete/core/api';
-import { generateHarnessAppended } from '@turing-incomplete/core/dsl';
+import { checkCircuit } from '@turing-incomplete/core/api';
 import {
   getOrCreateServer,
   getPreviewServer,
@@ -128,11 +127,9 @@ export function registerShowTools(server: McpServer): void {
         };
       }
 
-      // 2. Validate DSL before pushing to browser
-      const library = getLibrary();
+      // 2. Validate circuit source before pushing to browser
       const check = checkCircuit(
         { source: read.source, sourceName: read.sourceName },
-        library
       );
       if (!check.valid) {
         const msgs = check.diagnostics
@@ -140,15 +137,12 @@ export function registerShowTools(server: McpServer): void {
           .map((d) => d.message)
           .join('\n');
         return {
-          content: [{ type: 'text' as const, text: `DSL validation failed:\n${msgs}` }],
+          content: [{ type: 'text' as const, text: `Validation failed:\n${msgs}` }],
           isError: true,
         };
       }
 
-      // 3. Auto-generate interactive harness (Switch/Led/HexDisplay) if needed
-      const dslToShow = generateHarnessAppended(read.source, inputs);
-
-      // 4. Start or get existing studio server
+      // 3. Start or get existing studio server
       let studio;
       try {
         studio = await getOrCreateServer();
@@ -165,24 +159,24 @@ export function registerShowTools(server: McpServer): void {
         };
       }
 
-      // 5. Push DSL (with harness) to the target session
-      studio.updateDSL(dslToShow, session);
+      // 4. Push source to the target session
+      studio.updateDSL(read.source, session);
 
-      // 5b. Push memory data if provided
+      // 4b. Push memory data if provided
       if (memoryData) {
         studio.pushMemoryData(memoryData, session);
       }
 
-      // 6. Watch file for changes if path provided
+      // 5. Watch file for changes if path provided
       if (filePath) {
         studio.watchFile(resolve(filePath));
       }
 
-      // 7. Open browser on first call (token passed via fragment — never sent to server)
+      // 6. Open browser on first call (token passed via fragment — never sent to server)
       const editorUrl = `${TI_URL}/editor#token=${studio.token}&port=${studio.port}`;
       openBrowser(editorUrl);
 
-      // 8. Return confirmation
+      // 7. Return confirmation
       const watchingNote = filePath
         ? ` Watching ${resolve(filePath)} for changes.`
         : '';

@@ -147,16 +147,17 @@ export function use6502Simulator() {
     }
   }, [state.dslCode, state.loading, state.romData, state.currentProgram, loadProgram]);
 
-  // Build simulator options
-  const simOptions: UseCircuitSimulatorOptions | undefined = state.romData
-    ? { initialMemory: state.romData }
-    : undefined;
+  // The circuit simulator — only activates when DSL is loaded
+  const sim = useCircuitSimulator(state.dslCode ?? "");
 
-  // The circuit simulator — only activates when both DSL and ROM are loaded
-  const sim = useCircuitSimulator(
-    state.dslCode && state.romData ? state.dslCode : "",
-    simOptions
-  );
+  // Load ROM data when ready
+  useEffect(() => {
+    if (!sim.ready || !state.romData) return;
+    for (const [nodeId, data] of state.romData) {
+      sim.setNodeValue(nodeId, data);
+    }
+    sim.runCombinational();
+  }, [sim.ready, state.romData]);
 
   // Extract console text from sequential state
   const consoleText = (() => {

@@ -13,7 +13,7 @@ import {
   createSimulatorFromCircuit,
   type ComponentLibrary,
 } from "@turing-incomplete/core/simulator";
-import type { Circuit } from "@turing-incomplete/core/dsl";
+import type { Circuit } from "@turing-incomplete/core";
 import { useSimulationSession, type UseSimulationSessionResult } from "./useSimulationSession";
 
 function detectSequential(
@@ -38,8 +38,8 @@ function detectSequential(
 export function useCircuitSession(
   circuit: Circuit | null,
   componentLibrary: ComponentLibrary | null,
-  memoryData?: Map<string, Map<number, number>>,
 ): UseSimulationSessionResult & { session: SimulationSession | null } {
+
   const [session, setSession] = useState<SimulationSession | null>(null);
   const sessionRef = useRef<SimulationSession | null>(null);
 
@@ -62,18 +62,6 @@ export function useCircuitSession(
       + `#${circuit.connections.length}`;
 
     if (structure === prevStructureRef.current && sessionRef.current) {
-      // Structure unchanged — sync input values to existing engine
-      const engine = sessionRef.current.getEngine();
-      if (engine) {
-        for (const node of circuit.nodes) {
-          if (node.arguments?.value !== undefined) {
-            engine.setInput(node.id, node.arguments.value as boolean | number);
-          }
-        }
-        // Always run combinational to propagate values (switches, LEDs).
-        // For sequential circuits this doesn't advance the clock.
-        sessionRef.current.runCombinational();
-      }
       return;
     }
     prevStructureRef.current = structure;
@@ -86,7 +74,7 @@ export function useCircuitSession(
 
     try {
       const isSeq = detectSequential(circuit, componentLibrary.resolveComponent);
-      const engine = createSimulatorFromCircuit(circuit, componentLibrary, memoryData);
+      const engine = createSimulatorFromCircuit(circuit, componentLibrary);
       engine.runCombinational();
       const s = new SimulationSession(engine, { isSequential: isSeq });
       sessionRef.current = s;
@@ -101,7 +89,7 @@ export function useCircuitSession(
       console.error("[useCircuitSession] Init failed:", e);
       setSession(null);
     }
-  }, [circuit, componentLibrary, memoryData]);
+  }, [circuit, componentLibrary]);
 
   const simState = useSimulationSession(session);
 

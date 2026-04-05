@@ -9,40 +9,39 @@
  *   <link rel="stylesheet" href="https://unpkg.com/@turing-incomplete/embed/dist/styles.css">
  *   <script src="https://unpkg.com/@turing-incomplete/embed/dist/circuit-embed.js"></script>
  *
- *   <circuit-embed dsl="circuit HalfAdder { ... }" height="300"></circuit-embed>
- *   <circuit-editor initial-dsl="..." height="500"></circuit-editor>
+ *   <circuit-embed code="const Demo = component('Demo', { ... })" height="300"></circuit-embed>
+ *   <circuit-editor initial-code="..." height="500"></circuit-editor>
  *
  * Light DOM (no Shadow DOM) — ReactFlow requires direct DOM access.
- * Style isolation via  class prefix.
+ * Style isolation via class prefix.
  */
 
 import "../styles/embed.css";
 import r2wc from "@r2wc/react-to-web-component";
-import { CircuitEmbed, type CircuitEmbedProps } from "../CircuitEmbed";
-import { CircuitEditor, type CircuitEditorProps } from "../editor/CircuitEditor";
+import { ComponentEmbed, type ComponentEmbedProps } from "../ComponentEmbed";
+import { ComponentEditor, type ComponentEditorProps } from "../editor/ComponentEditor";
 
 // --- <circuit-embed> ---
 
-const CircuitEmbedWC = r2wc<CircuitEmbedProps>(CircuitEmbed, {
+const CircuitEmbedWC = r2wc<ComponentEmbedProps>(ComponentEmbed, {
   props: {
-    dsl: "string",
+    code: "string",
     height: "number",
     showControls: "boolean",
-    showCode: "boolean",
-    displayDsl: "string",
-    autoRunSpeed: "number",
     title: "string",
+    subtitle: "string",
     description: "string",
-    autoHarness: "boolean",
+    href: "string",
+    autoRunSpeed: "number",
     theme: "string",
   },
 });
 
 // --- <circuit-editor> ---
 
-const CircuitEditorWC = r2wc<CircuitEditorProps>(CircuitEditor, {
+const ComponentEditorWC = r2wc<ComponentEditorProps>(ComponentEditor, {
   props: {
-    initialDsl: "string",
+    initialCode: "string",
     height: "number",
     title: "string",
     description: "string",
@@ -57,7 +56,7 @@ if (!customElements.get("circuit-embed")) {
 }
 
 if (!customElements.get("circuit-editor")) {
-  customElements.define("circuit-editor", CircuitEditorWC);
+  customElements.define("circuit-editor", ComponentEditorWC);
 }
 
-export { CircuitEmbedWC, CircuitEditorWC };
+export { CircuitEmbedWC, ComponentEditorWC };

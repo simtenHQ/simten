@@ -1,6 +1,6 @@
 "use client";
 
-import { CircuitEmbed } from "@turing-incomplete/embed";
+import { ComponentEmbed } from "@turing-incomplete/embed";
 import { SNAKE_CIRCUITS } from "../circuits";
 
 export function MovementSection() {
@@ -36,9 +36,9 @@ export function MovementSection() {
       </div>
 
       <div className="mt-8">
-        <CircuitEmbed
-          dsl={SNAKE_CIRCUITS.pixelMover.dsl}
-          displayDsl={SNAKE_CIRCUITS.pixelMover.displayDsl}
+        <ComponentEmbed
+          code={SNAKE_CIRCUITS.pixelMover.dsl}
+          displayCode={SNAKE_CIRCUITS.pixelMover.displayCode}
           nodePositions={SNAKE_CIRCUITS.pixelMover.nodePositions}
           height={400}
           showControls

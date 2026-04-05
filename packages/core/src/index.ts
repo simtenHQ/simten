@@ -86,27 +86,41 @@ export {
 } from './simulator/index.js';
 
 // ============================================================================
-// DSL (re-exported key functions)
+// Builder (TypeScript component API)
+// ============================================================================
+
+export { executeComponentCode } from './builder/execute.js';
+export type { ExecuteResult } from './builder/execute.js';
+export { component } from './builder/component.js';
+export { bit, bus } from './builder/bit-bus.js';
+export type { BuiltComponent, ComponentConfig } from './builder/types.js';
+
+// ============================================================================
+// Analysis Types (extracted from former DSL module)
 // ============================================================================
 
 export {
-  parseDSL,
-  parseDSLOrThrow,
-  compileDSL,
-  compileToIR,
-  validateCircuit,
-  isValid,
-  canSimulate,
   buildEnvelope,
-  simulateCircuit,
-  analyzeCircuit,
-  generateHarness,
-  evaluateAssertions,
-} from './dsl/index.js';
+  compressTrace,
+  detectSteadyState,
+  getBuilderAPISummary,
+} from './types/analysis.js';
 
-// Preprocessor (Node.js only)
-export {
-  preprocessDSL,
-  createMapFileResolver,
-  createNodeFileResolver,
-} from './dsl/preprocessor-entry.js';
+export type {
+  ValidationResult,
+  ValidationSummary,
+  ValidationPhase,
+  DiagnosticCode,
+  Diagnostic,
+  AnalysisContext,
+  CircuitMetrics,
+  SimulationTrace,
+  SignalMetrics,
+  ComponentInterface,
+  HardwareLLMEnvelope,
+  EnvelopeValidation,
+  EnvelopeDiagnostic,
+  BehavioralDiagnostic,
+  CircuitDelta,
+  BuildEnvelopeOptions,
+} from './types/analysis.js';

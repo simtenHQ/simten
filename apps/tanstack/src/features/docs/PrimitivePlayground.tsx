@@ -6,9 +6,9 @@ import {
   type CorePrimitiveDefinition,
 } from "@turing-incomplete/core/simulator";
 
-const CircuitEmbed = lazy(() =>
+const ComponentEmbed = lazy(() =>
   import("@turing-incomplete/embed").then((m) => ({
-    default: m.CircuitEmbed,
+    default: m.ComponentEmbed,
   }))
 );
 
@@ -294,11 +294,10 @@ export function PrimitiveExplorer() {
               </div>
             }
           >
-            <CircuitEmbed
-              dsl={generateDemoDsl(selected)}
+            <ComponentEmbed
+              code={generateDemoDsl(selected)}
               height={280}
               showControls
-              autoHarness
             />
           </Suspense>
 

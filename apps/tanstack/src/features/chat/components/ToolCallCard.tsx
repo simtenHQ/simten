@@ -20,7 +20,6 @@ const TOOL_LABELS: Record<string, string> = {
   get_grammar: 'Get DSL syntax',
   check_circuit: 'Validate code',
   simulate_circuit: 'Simulate circuit',
-  run_testbench: 'Run testbench',
   show_diff: 'Propose code change',
   set_input: 'Set input',
   run_simulation: 'Run simulation',

@@ -1,16 +1,12 @@
 /**
  * File Reader
  *
- * Reads DSL source from either a `source` string param or a `filePath` param.
- * Handles preprocessing (include directives) for file-based sources.
+ * Reads circuit source from either a `source` string param or a `filePath` param.
+ * For TS builder code, executeComponentCode handles everything — this just reads the file.
  */
 
 import { readFileSync } from 'node:fs';
-import { resolve, dirname } from 'node:path';
-import {
-  preprocessDSL,
-  createNodeFileResolver,
-} from '@turing-incomplete/core/dsl/preprocessor';
+import { resolve } from 'node:path';
 
 export interface ReadResult {
   source: string;
@@ -19,7 +15,7 @@ export interface ReadResult {
 }
 
 /**
- * Read DSL source from either an inline string or a file path.
+ * Read circuit source from either an inline string or a file path.
  */
 export function readDSLSource(params: {
   source?: string;
@@ -39,18 +35,7 @@ export function readDSLSource(params: {
       return { source: '', error: `Cannot read file: ${absPath}` };
     }
 
-    const basePath = dirname(absPath);
-    const resolver = createNodeFileResolver(basePath);
-    const result = preprocessDSL(raw, resolver, absPath);
-
-    if (result.errors.length > 0) {
-      return {
-        source: '',
-        error: result.errors.map((e) => e.message).join('\n'),
-      };
-    }
-
-    return { source: result.source, sourceName: absPath };
+    return { source: raw, sourceName: absPath };
   }
 
   return { source: '', error: 'Either "source" or "filePath" must be provided' };

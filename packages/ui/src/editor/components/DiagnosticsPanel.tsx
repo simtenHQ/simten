@@ -9,7 +9,7 @@
 
 import React from 'react';
 import { useAnalysisStore } from '../stores/analysis-store';
-import type { Diagnostic } from '@turing-incomplete/core/dsl/validation';
+import type { Diagnostic } from '@turing-incomplete/core';
 
 function DiagnosticItem({ diagnostic }: { diagnostic: Diagnostic }) {
   const severityColors = {

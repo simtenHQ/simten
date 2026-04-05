@@ -2,20 +2,9 @@
  * Primitives Handler
  *
  * Pure function to get primitive component catalog.
- * Optionally parses user DSL source to include composite circuits.
  */
 
-import {
-  getComponentCatalog,
-  getComponentsByKind,
-  getComponentDetails,
-  formatComponentDetails,
-  formatComponentCompact,
-  parseDSL,
-  compileToIR,
-} from '../dsl/index.js';
-import type { ComponentLibrary } from '../types/circuit.js';
-import { createMutableLibrary } from './lib.js';
+import type { ComponentLibrary, Circuit } from '../types/circuit.js';
 
 export function getPrimitivesHandler(
   params: {
@@ -27,62 +16,109 @@ export function getPrimitivesHandler(
   library: ComponentLibrary
 ): string {
   const compact = params.compact ?? true;
-  const catalog = getComponentCatalog(library);
 
-  const components = params.kind
-    ? getComponentsByKind(catalog, params.kind)
-    : catalog.components;
+  // Get all primitives from the library
+  const primitiveNames = library.getAllPrimitiveNames?.() ?? [];
+  const components: Array<{
+    name: string;
+    kind?: string;
+    description?: string;
+    inputs: Array<{ name: string; type: string }>;
+    outputs: Array<{ name: string; type: string }>;
+    clocks: Array<{ name: string }>;
+    parameters?: Array<{ name: string; type: string; defaultValue?: string }>;
+  }> = [];
 
-  const formatter = compact ? formatComponentCompact : formatComponentDetails;
-  const separator = compact ? '\n' : '\n\n---\n\n';
+  for (const name of primitiveNames) {
+    const circuit = library.resolveComponent(name);
+    if (!circuit) continue;
 
-  let output = components
-    .map((c) => formatter(c))
-    .join(separator) || 'No components found.';
+    const kind = circuit.metadata?.kind;
+    if (params.kind && kind !== params.kind) continue;
 
-  // If source provided, parse and append user-defined circuits
-  if (params.source) {
-    const sourceName = params.sourceName ?? '<inline>';
-    const { ast, errors: parseErrors } = parseDSL(params.source, sourceName);
-
-    if (parseErrors.length > 0) {
-      const messages = parseErrors.map(
-        (e) => `${e.location.start.line}:${e.location.start.column} ${e.message}`
-      );
-      output += `\n\n--- Circuits defined in ${sourceName} ---\n\nParse errors:\n${messages.join('\n')}`;
-      return output;
-    }
-
-    const { library: mutableLibrary, circuits } = createMutableLibrary();
-
-    try {
-      const compiledCircuits = compileToIR(ast, mutableLibrary);
-      circuits.push(...compiledCircuits);
-
-      if (compiledCircuits.length > 0) {
-        // Build a ComponentLibrary that can resolve both user circuits and primitives
-        const combinedLibrary: ComponentLibrary = {
-          resolveComponent: (name) =>
-            circuits.find((c) => c.name === name) ?? library.resolveComponent(name),
-          getAllPrimitiveNames: () => library.getAllPrimitiveNames(),
-        };
-
-        const userDetails = compiledCircuits
-          .map((c) => {
-            const detail = getComponentDetails(combinedLibrary, c.name);
-            return detail ? formatter(detail) : null;
-          })
-          .filter(Boolean);
-
-        if (userDetails.length > 0) {
-          output += `\n\n--- Circuits defined in ${sourceName} ---\n\n`;
-          output += userDetails.join(separator);
-        }
-      }
-    } catch (e) {
-      output += `\n\n--- Circuits defined in ${sourceName} ---\n\nCompilation error: ${e instanceof Error ? e.message : String(e)}`;
-    }
+    components.push({
+      name: circuit.name,
+      kind,
+      description: circuit.metadata?.description,
+      inputs: circuit.inputs.map((p) => ({
+        name: p.name,
+        type: p.portType.kind === 'bit' ? 'Bit' : `Bus[${(p.portType as any).width ?? '?'}]`,
+      })),
+      outputs: circuit.outputs.map((p) => ({
+        name: p.name,
+        type: p.portType.kind === 'bit' ? 'Bit' : `Bus[${(p.portType as any).width ?? '?'}]`,
+      })),
+      clocks: circuit.clocks.map((c) => ({ name: c.name })),
+      parameters: circuit.parameters.length > 0
+        ? circuit.parameters.map((p) => ({
+            name: p.name,
+            type: p.paramType,
+            defaultValue: p.defaultValue?.toString(),
+          }))
+        : undefined,
+    });
   }
 
-  return output;
+  components.sort((a, b) => a.name.localeCompare(b.name));
+
+  const formatter = compact ? formatCompact : formatDetailed;
+  const separator = compact ? '\n' : '\n\n---\n\n';
+
+  return components.map((c) => formatter(c)).join(separator) || 'No components found.';
+}
+
+function formatCompact(c: {
+  name: string;
+  kind?: string;
+  description?: string;
+  inputs: Array<{ name: string; type: string }>;
+  outputs: Array<{ name: string; type: string }>;
+  clocks: Array<{ name: string }>;
+  parameters?: Array<{ name: string; type: string; defaultValue?: string }>;
+}): string {
+  let sig = c.name;
+  if (c.parameters && c.parameters.length > 0) {
+    sig += `<${c.parameters.map((p) => `${p.name}=${p.defaultValue ?? '?'}`).join(', ')}>`;
+  }
+  sig += `(${c.inputs.map((p) => `${p.name}:${p.type}`).join(', ')})`;
+  sig += ` -> (${c.outputs.map((p) => `${p.name}:${p.type}`).join(', ')})`;
+  if (c.clocks.length > 0) sig += ` [clk:${c.clocks.map((cl) => cl.name).join(',')}]`;
+  if (c.kind) sig += ` [${c.kind}]`;
+  if (c.description) sig += ` // ${c.description}`;
+  return sig;
+}
+
+function formatDetailed(c: {
+  name: string;
+  kind?: string;
+  description?: string;
+  inputs: Array<{ name: string; type: string }>;
+  outputs: Array<{ name: string; type: string }>;
+  clocks: Array<{ name: string }>;
+  parameters?: Array<{ name: string; type: string; defaultValue?: string }>;
+}): string {
+  const lines: string[] = [];
+  lines.push(`Component: ${c.name}`);
+  if (c.description) lines.push(`Description: ${c.description}`);
+  if (c.kind) lines.push(`Kind: ${c.kind}`);
+  lines.push('');
+  lines.push('Inputs:');
+  for (const input of c.inputs) lines.push(`  ${input.name}: ${input.type}`);
+  lines.push('');
+  lines.push('Outputs:');
+  for (const output of c.outputs) lines.push(`  ${output.name}: ${output.type}`);
+  if (c.clocks.length > 0) {
+    lines.push('');
+    lines.push('Clocks:');
+    for (const clock of c.clocks) lines.push(`  ${clock.name}`);
+  }
+  if (c.parameters && c.parameters.length > 0) {
+    lines.push('');
+    lines.push('Parameters:');
+    for (const param of c.parameters) {
+      const def = param.defaultValue ? ` (default: ${param.defaultValue})` : '';
+      lines.push(`  ${param.name}: ${param.type}${def}`);
+    }
+  }
+  return lines.join('\n');
 }

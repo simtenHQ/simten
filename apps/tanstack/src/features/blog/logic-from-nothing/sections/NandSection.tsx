@@ -1,6 +1,6 @@
 "use client";
 
-import { CircuitEmbed } from "@turing-incomplete/embed";
+import { ComponentEmbed } from "@turing-incomplete/embed";
 
 export function NandSection() {
   return (
@@ -50,8 +50,8 @@ export function NandSection() {
       </div>
 
       <div className="mt-8">
-        <CircuitEmbed
-          dsl={`
+        <ComponentEmbed
+          code={`
 const NandDemo = component('NandDemo', {
   nodes: { A: Switch, B: Switch, gate: Nand, light: Led },
   connect: ({ in: inp, out, A, B, gate, light }) => [

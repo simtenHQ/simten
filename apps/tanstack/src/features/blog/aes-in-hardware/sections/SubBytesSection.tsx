@@ -1,7 +1,7 @@
 "use client";
 
-import { CircuitEmbed } from "@turing-incomplete/embed";
-import { AES_CIRCUITS, AES_SBOX_MEMORY } from "../circuits";
+import { ComponentEmbed } from "@turing-incomplete/embed";
+import { AES_CIRCUITS } from "../circuits";
 
 export function SubBytesSection() {
   const circuit = AES_CIRCUITS.subByteDemo;
@@ -51,12 +51,11 @@ export function SubBytesSection() {
       </div>
 
       <div className="mt-8">
-        <CircuitEmbed
-          dsl={circuit.dsl}
-          initialMemory={AES_SBOX_MEMORY}
+        <ComponentEmbed
+          code={circuit.dsl}
           height={180}
           showControls={false}
-          displayDsl={circuit.displayDsl}
+          displayCode={circuit.displayCode}
           title={circuit.name}
           description={circuit.description}
         />

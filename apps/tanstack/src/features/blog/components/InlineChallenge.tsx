@@ -1,8 +1,15 @@
 "use client";
 
 import { useState, useCallback, useRef, useEffect } from "react";
-import { CircuitEmbed } from "@turing-incomplete/embed";
-import type { CircuitEmbedHandle, CheckResult } from "@turing-incomplete/embed";
+import { ComponentEmbed } from "@turing-incomplete/embed";
+import type { ComponentEmbedHandle } from "@turing-incomplete/embed";
+
+interface CheckResult {
+  passed: boolean;
+  actual: number | boolean | undefined;
+  description?: string;
+  expected: number;
+}
 
 interface Check {
   description: string;
@@ -39,7 +46,7 @@ export function InlineChallenge({
   const [passed, setPassed] = useState(false);
   const [hintIndex, setHintIndex] = useState(-1);
   const [compileError, setCompileError] = useState<string | null>(null);
-  const circuitRef = useRef<CircuitEmbedHandle>(null);
+  const circuitRef = useRef<ComponentEmbedHandle>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const allPassed = results !== null && results.every((r) => r.passed);
@@ -55,7 +62,7 @@ export function InlineChallenge({
     if (!circuitRef.current) return;
     setCompileError(null);
     try {
-      const r = circuitRef.current.runChecks(checks);
+      const r = (circuitRef.current as unknown as { runChecks(checks: Check[]): CheckResult[] }).runChecks(checks);
       setResults(r);
     } catch (e: unknown) {
       setCompileError(e instanceof Error ? e.message : "Compilation error");
@@ -107,9 +114,9 @@ export function InlineChallenge({
 
         {/* Live circuit preview */}
         <div className="lg:flex-1 min-h-0">
-          <CircuitEmbed
+          <ComponentEmbed
             ref={circuitRef}
-            dsl={code}
+            code={code}
             height={height}
             showControls={true}
             nodePositions={nodePositions}

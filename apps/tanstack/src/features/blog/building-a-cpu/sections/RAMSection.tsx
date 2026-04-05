@@ -1,6 +1,6 @@
 "use client";
 
-import { CircuitEmbed } from "@turing-incomplete/embed";
+import { ComponentEmbed } from "@turing-incomplete/embed";
 import { BLOG_CIRCUITS } from "../circuits";
 
 export function RAMSection() {
@@ -37,9 +37,9 @@ export function RAMSection() {
       </div>
 
       <div className="mt-8">
-        <CircuitEmbed
-          dsl={BLOG_CIRCUITS.ram.dsl}
-          displayDsl={BLOG_CIRCUITS.ram.displayDsl}
+        <ComponentEmbed
+          code={BLOG_CIRCUITS.ram.dsl}
+          displayCode={BLOG_CIRCUITS.ram.displayCode}
           height={380}
           showControls
           title="256×8 RAM"

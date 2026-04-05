@@ -7,7 +7,7 @@
 export interface BlogCircuit {
   name: string;
   description: string;
-  displayDsl: string;
+  displayCode: string;
   dsl: string;
 }
 
@@ -16,7 +16,7 @@ export const BLOG_CIRCUITS: Record<string, BlogCircuit> = {
     name: "Program Counter",
     description:
       "A register that holds the current instruction address, incrementing by 4 each cycle.",
-    displayDsl: `
+    displayCode: `
 const ProgramCounter = component('ProgramCounter', {
   in: { stall: bit },
   out: { pc_out: bus(32) },
@@ -61,7 +61,7 @@ const DemoProgramCounter = component('DemoProgramCounter', {
     name: "PC with Next-PC Mux",
     description:
       "The full program counter with a mux selecting between PC+4, branch target, and jump target. Stall freezes the PC.",
-    displayDsl: `
+    displayCode: `
 const PCWithMux = component('PCWithMux', {
   in: { stall: bit, branch_taken: bit, jump: bit, branch_target: bus(32), jump_target: bus(32) },
   out: { pc_out: bus(32) },
@@ -122,7 +122,7 @@ const DemoPCWithMux = component('DemoPCWithMux', {
     name: "Pipeline Register",
     description:
       "A register between pipeline stages. It latches data on each clock edge so each stage works on a different instruction.",
-    displayDsl: `
+    displayCode: `
 const PipelineReg = component('PipelineReg', {
   in: { data_in: bus(8), flush: bit },
   out: { data_out: bus(8) },
@@ -170,7 +170,7 @@ const DemoPipelineReg = component('DemoPipelineReg', {
     name: "Forwarding Mux",
     description:
       "When a later instruction needs a result that hasn't been written back yet, the forwarding mux bypasses the register file.",
-    displayDsl: `
+    displayCode: `
 const ForwardingMux = component('ForwardingMux', {
   in: { reg_val: bus(32), ex_val: bus(32), mem_val: bus(32), sel: bus(2) },
   out: { out: bus(32) },
@@ -224,7 +224,7 @@ const DemoForwardingMux = component('DemoForwardingMux', {
     name: "ALU",
     description:
       "The arithmetic logic unit. It performs addition, subtraction, shifts, and comparisons based on a 4-bit control signal.",
-    displayDsl: `
+    displayCode: `
 const SimpleALU = component('SimpleALU', {
   in: { a: bus(8), b: bus(8), op: bus(2) },
   out: { result: bus(8) },

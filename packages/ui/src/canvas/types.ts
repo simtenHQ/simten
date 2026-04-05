@@ -10,11 +10,11 @@ export type {
   FlatSequentialState,
 } from "@turing-incomplete/core/simulator";
 
-export type { Circuit } from "@turing-incomplete/core/dsl";
+export type { Circuit } from "@turing-incomplete/core";
 
 // --- Inspector types (used by the canvas-level drill-down inspector) ---
 
-import type { Circuit as CircuitType } from "@turing-incomplete/core/dsl";
+import type { Circuit as CircuitType } from "@turing-incomplete/core";
 
 export interface InspectorFrame {
   componentName: string;

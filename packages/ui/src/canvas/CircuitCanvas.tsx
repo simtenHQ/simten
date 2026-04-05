@@ -24,25 +24,22 @@ import React, {
   type ReactNode,
 } from "react";
 
-import type { Circuit } from "@turing-incomplete/core/dsl";
 import type {
+  Circuit,
   ComponentLibrary,
   FlatPortValueMap,
   FlatSequentialState,
-} from "@turing-incomplete/core/simulator";
+} from "@turing-incomplete/core";
 import {
   createComponentLibrary,
-  PRIMITIVES,
-} from "@turing-incomplete/core/simulator";
-import { getReferenceCircuit } from "@turing-incomplete/core/simulator";
-import { compileDSL } from "@turing-incomplete/core/dsl";
+} from "@turing-incomplete/core";
+import { PRIMITIVES, compileReferenceCircuit } from "@turing-incomplete/core/simulator";
 import type { NodeData } from "../nodes";
 import { cleanCircuitLabels } from "./label-utils";
 import { EDGE_TYPES, NODE_TYPES } from "./node-types";
 import { projectCircuitToReactFlow } from "./projection";
 import type { InspectorFrame, MetadataState } from "./types";
 import { useElkLayout } from "./useElkLayout";
-import { createMutableLibraryForRef } from "./utils";
 import { CompositeInspectorDialog } from "./CompositeInspectorDialog";
 
 function FitViewButton() {
@@ -348,16 +345,9 @@ function CircuitCanvasInner({
         if (typeof v === "number") params[k] = v;
       }
     }
-    const refSource = getReferenceCircuit(nodeData.componentRef, params);
-    if (refSource) {
-      try {
-        const refLib = createMutableLibraryForRef();
-        const result = compileDSL(refSource, refLib, `ref-${nodeData.componentRef}.dsl`);
-        if (result.circuits.length > 0) {
-          const refCircuit = result.circuits[result.circuits.length - 1];
-          setInspectorStack([{ componentName: nodeData.componentRef, componentDef: refCircuit, nodeLabel: nodeData.label ?? nodeData.componentRef }]);
-        }
-      } catch { /* can't drill into this primitive */ }
+    const refCircuit = compileReferenceCircuit(nodeData.componentRef, params);
+    if (refCircuit) {
+      setInspectorStack([{ componentName: nodeData.componentRef, componentDef: refCircuit, nodeLabel: nodeData.label ?? nodeData.componentRef }]);
     }
   }, [library]);
 

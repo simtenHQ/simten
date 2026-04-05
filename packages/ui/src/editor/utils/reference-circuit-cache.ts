@@ -1,14 +1,11 @@
 /**
  * Reference Circuit Cache
  *
- * Compiles reference circuit DSL strings on demand and caches the results.
- * Reference circuits are optional DSL strings attached to primitive definitions
- * that show how the primitive could be built from lower-level components.
+ * Previously compiled reference circuit DSL strings on demand.
+ * Now returns undefined since DSL parser has been removed.
+ * Will be reimplemented using TS builder API.
  */
 
-import { getReferenceCircuit } from '@turing-incomplete/core/simulator';
-import { compileDSL } from '@turing-incomplete/core/dsl';
-import type { ComponentLibrary as DSLComponentLibrary } from '@turing-incomplete/core/dsl';
 import type { Circuit } from '../types/circuit';
 
 interface ComponentLibraryStore {
@@ -16,58 +13,22 @@ interface ComponentLibraryStore {
   registerStandard(circuit: Circuit): void;
 }
 
-const cache = new Map<string, Circuit>();
-
 /**
  * Get the compiled reference circuit for a primitive.
- * Compiles on first access, then caches.
  *
- * Multi-circuit DSL is supported — helper circuits (e.g., HalfAdder defined
- * above FullAdder) are registered via registerStandard so the inspector
- * can resolve them for nested drill-down.
+ * @deprecated DSL parser removed. Returns undefined until reimplemented with TS builder.
  */
 export function getCompiledReferenceCircuit(
-  primitiveName: string,
-  store: ComponentLibraryStore,
-  params?: Record<string, number>,
+  _primitiveName: string,
+  _store: ComponentLibraryStore,
+  _params?: Record<string, number>,
 ): Circuit | undefined {
-  const cacheKey = params && Object.keys(params).length > 0
-    ? `${primitiveName}:${JSON.stringify(params)}`
-    : primitiveName;
-  if (cache.has(cacheKey)) return cache.get(cacheKey);
-
-  const dsl = getReferenceCircuit(primitiveName, params);
-  if (!dsl) return undefined;
-
-  try {
-    const dslLibrary: DSLComponentLibrary = {
-      getCircuit: (name: string) => store.resolveComponent(name),
-      hasCircuit: (name: string) => store.resolveComponent(name) !== undefined,
-      addCircuit: (circuit: Circuit) => store.registerStandard(circuit),
-    };
-    const { circuits, errors } = compileDSL(dsl, dslLibrary);
-
-    if (errors.length > 0) {
-      console.warn(`Failed to compile reference circuit for ${primitiveName}:`, errors);
-      return undefined;
-    }
-
-    // Use the last circuit in the file (the top-level one that uses the others)
-    const compiled = circuits[circuits.length - 1];
-    if (!compiled) return undefined;
-
-    cache.set(cacheKey, compiled);
-    return compiled;
-  } catch (e) {
-    console.warn(`Failed to compile reference circuit for ${primitiveName}:`, e);
-    return undefined;
-  }
+  return undefined;
 }
 
 /**
  * Clear the reference circuit cache.
- * Call on: component library reload, DSL language version change.
  */
 export function clearReferenceCircuitCache(): void {
-  cache.clear();
+  // No-op — cache is empty
 }

@@ -23,7 +23,7 @@ import { ConfirmationModal } from './ConfirmationModal';
 import { useChatStore } from '../stores/chat-store';
 import { executeAction, applyDiff, buildConfirmationRequest, type ActionExecutionContext } from '../actions';
 import { useTutorFlow } from '../hooks/useTutorFlow';
-import { generateHarnessAppended } from '@/features/dsl';
+import { executeComponentCode } from '@turing-incomplete/core';
 import type { AssistantAction } from '../types';
 import type { ShowDiffAction, GenerateHarnessAction } from '../types';
 import type { ConfirmationRequest } from '../actions/confirmation-flow';
@@ -177,25 +177,15 @@ export function ChatPanel({
     if (action.type === 'SHOW_DIFF') {
       setShowDiffAction(action);
     } else if (action.type === 'GENERATE_HARNESS') {
-      // Generate harness deterministically and show as diff
+      // With the TS builder, harness generation is handled by the LLM
+      // producing TS code directly. Show a message instead.
       const currentCode = getCurrentCode();
-      const combinedCode = generateHarnessAppended(currentCode);
+      const result = executeComponentCode(currentCode);
+      const circuitName = result.circuit?.name ?? (action as GenerateHarnessAction).circuitName ?? 'circuit';
 
-      if (combinedCode === currentCode) {
-        console.warn('[ChatPanel] No harness generated - circuit may already have interactive components');
-        return;
-      }
-
-      // Create a synthetic SHOW_DIFF action
-      const syntheticDiff: ShowDiffAction = {
-        type: 'SHOW_DIFF',
-        actionId: action.actionId ?? `harness-${Date.now()}`,
-        originalCode: currentCode,
-        suggestedCode: combinedCode,
-        explanation: `Generated test harness for ${(action as GenerateHarnessAction).circuitName ?? 'circuit'}. Adds interactive controls (Switch/Input) for inputs and displays (LED/Display) for outputs.`,
-      };
-
-      setShowDiffAction(syntheticDiff);
+      console.warn(`[ChatPanel] GENERATE_HARNESS for "${circuitName}" — harness generation should be done via TS builder code from the LLM`);
+      // TODO: Implement TS builder harness generation if needed.
+      // For now, the LLM should produce harness code directly.
     }
   }, [getCurrentCode]);
 
