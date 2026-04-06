@@ -21,15 +21,6 @@ const DEMO_DSL = `const HalfAdder = component('HalfAdder', {
   ],
 })`;
 
-const DEMO_HARNESS = `${DEMO_DSL}
-
-const HalfAdderDemo = component('HalfAdderDemo', {
-  nodes: { sw_a: Switch, sw_b: Switch, dut: HalfAdder, led_sum: Led, led_carry: Led },
-  connect: ({ sw_a, sw_b, dut, led_sum, led_carry }) => [
-    sw_a.out.to(dut.a), sw_b.out.to(dut.b),
-    dut.sum.to(led_sum.in), dut.carry.to(led_carry.in),
-  ],
-})`;
 
 // --- Toggle (DFlipFlop with NOT feedback) ---
 
@@ -43,15 +34,6 @@ const TOGGLE_DSL = `const Toggle = component('Toggle', {
   ],
 })`;
 
-const TOGGLE_HARNESS = `${TOGGLE_DSL}
-
-const ToggleDemo = component('ToggleDemo', {
-  nodes: { dut: Toggle, led_q: Led, led_qbar: Led },
-  connect: ({ dut, led_q, led_qbar }) => [
-    dut.q.to(led_q.in),
-    dut.q_bar.to(led_qbar.in),
-  ],
-})`;
 
 // --- Composite Full Adder (built from Half Adders — for drill-down showcase) ---
 
@@ -78,26 +60,20 @@ const FullAdder = component('FullAdder', {
     ha1.carry.to(or1.a), ha2.carry.to(or1.b),
     or1.out.to(out.cout),
   ],
-})
-
-const DrillDownDemo = component('DrillDownDemo', {
-  nodes: { sw_a: Switch, sw_b: Switch, sw_cin: Switch, fa: FullAdder, led_sum: Led, led_cout: Led },
-  connect: ({ sw_a, sw_b, sw_cin, fa, led_sum, led_cout }) => [
-    sw_a.out.to(fa.a), sw_b.out.to(fa.b), sw_cin.out.to(fa.cin),
-    fa.sum.to(led_sum.in), fa.cout.to(led_cout.in),
-  ],
 })`;
 
 // --- 4-bit Shift Register (for time-travel showcase) ---
 
-const SHIFT_REGISTER_DSL = `const ShiftRegisterDemo = component('ShiftRegisterDemo', {
-  nodes: { sw_in: Switch, ff0: DFlipFlop, ff1: DFlipFlop, ff2: DFlipFlop, ff3: DFlipFlop, led0: Led, led1: Led, led2: Led, led3: Led },
-  connect: ({ sw_in, ff0, ff1, ff2, ff3, led0, led1, led2, led3 }) => [
-    sw_in.out.to(ff0.d),
-    ff0.q.to(ff1.d, led0.in),
-    ff1.q.to(ff2.d, led1.in),
-    ff2.q.to(ff3.d, led2.in),
-    ff3.q.to(led3.in),
+const SHIFT_REGISTER_DSL = `const ShiftRegister4 = component('ShiftRegister4', {
+  in: { din: bit },
+  out: { q0: bit, q1: bit, q2: bit, q3: bit },
+  nodes: { ff0: DFlipFlop, ff1: DFlipFlop, ff2: DFlipFlop, ff3: DFlipFlop },
+  connect: ({ in: inp, out, ff0, ff1, ff2, ff3 }) => [
+    inp.din.to(ff0.d),
+    ff0.q.to(ff1.d, out.q0),
+    ff1.q.to(ff2.d, out.q1),
+    ff2.q.to(ff3.d, out.q2),
+    ff3.q.to(out.q3),
   ],
 })`;
 
@@ -117,15 +93,6 @@ const FULL_ADDER_DSL = `const FullAdder = component('FullAdder', {
   ],
 })`;
 
-const FULL_ADDER_HARNESS = `${FULL_ADDER_DSL}
-
-const FullAdderDemo = component('FullAdderDemo', {
-  nodes: { sw_a: Switch, sw_b: Switch, sw_cin: Switch, dut: FullAdder, led_sum: Led, led_cout: Led },
-  connect: ({ sw_a, sw_b, sw_cin, dut, led_sum, led_cout }) => [
-    sw_a.out.to(dut.a), sw_b.out.to(dut.b), sw_cin.out.to(dut.cin),
-    dut.sum.to(led_sum.in), dut.cout.to(led_cout.in),
-  ],
-})`;
 
 // --- 2-bit Counter ---
 
@@ -140,15 +107,6 @@ const COUNTER_DSL = `const Counter2Bit = component('Counter2Bit', {
   ],
 })`;
 
-const COUNTER_HARNESS = `${COUNTER_DSL}
-
-const CounterDemo = component('CounterDemo', {
-  nodes: { dut: Counter2Bit, led0: Led, led1: Led },
-  connect: ({ dut, led0, led1 }) => [
-    dut.bit0.to(led0.in),
-    dut.bit1.to(led1.in),
-  ],
-})`;
 
 // --- 2-to-1 Mux ---
 
@@ -167,15 +125,6 @@ const MUX_DSL = `const Mux2to1 = component('Mux2to1', {
   ],
 })`;
 
-const MUX_HARNESS = `${MUX_DSL}
-
-const MuxDemo = component('MuxDemo', {
-  nodes: { sw_a: Switch, sw_b: Switch, sw_sel: Switch, dut: Mux2to1, led_out: Led },
-  connect: ({ sw_a, sw_b, sw_sel, dut, led_out }) => [
-    sw_a.out.to(dut.a), sw_b.out.to(dut.b), sw_sel.out.to(dut.sel),
-    dut.out.to(led_out.in),
-  ],
-})`;
 
 type TermLine = {
   type: "input" | "text" | "tool" | "result" | "blank";
@@ -227,8 +176,6 @@ const DEMO_SCRIPT: TermLine[] = [
 type PromptOption = {
   label: string;
   dsl: string;
-  harness: string;
-  dslDisplay: string;
   script: TermLine[];
 };
 
@@ -236,8 +183,6 @@ const PROMPT_OPTIONS: PromptOption[] = [
   {
     label: "Build a full adder",
     dsl: FULL_ADDER_DSL,
-    harness: FULL_ADDER_HARNESS,
-    dslDisplay: FULL_ADDER_DSL,
     script: [
       {
         type: "input",
@@ -292,8 +237,6 @@ const PROMPT_OPTIONS: PromptOption[] = [
   {
     label: "Make a 2-bit binary counter",
     dsl: COUNTER_DSL,
-    harness: COUNTER_HARNESS,
-    dslDisplay: COUNTER_DSL,
     script: [
       {
         type: "input",
@@ -344,8 +287,6 @@ const PROMPT_OPTIONS: PromptOption[] = [
   {
     label: "Make a toggle flip-flop",
     dsl: TOGGLE_DSL,
-    harness: TOGGLE_HARNESS,
-    dslDisplay: TOGGLE_DSL,
     script: [
       {
         type: "input",
@@ -396,8 +337,6 @@ const PROMPT_OPTIONS: PromptOption[] = [
   {
     label: "Build a 2-to-1 multiplexer",
     dsl: MUX_DSL,
-    harness: MUX_HARNESS,
-    dslDisplay: MUX_DSL,
     script: [
       {
         type: "input",
@@ -836,27 +775,22 @@ const HeroBrowserWindow = forwardRef<HeroBrowserWindowHandle, {}>(
   function HeroBrowserWindow(_, ref) {
     const [codeTyping, setCodeTyping] = useState(false);
     const [activeCode, setActiveCode] = useState<string | null>(null);
-    const [activeCodeDisplay, setActiveCodeDisplay] = useState<string | null>(null);
     const [targetCode, setTargetCode] = useState(DEMO_DSL);
-    const [targetHarness, setTargetHarness] = useState(DEMO_HARNESS);
 
     const codeTw = useTypewriter(targetCode, 12, 0, codeTyping);
 
     useEffect(() => {
       if (codeTyping && codeTw.done) {
-        setActiveCode(targetHarness);
-        setActiveCodeDisplay(targetCode);
+        setActiveCode(targetCode);
         setCodeTyping(false);
       }
-    }, [codeTyping, codeTw.done, targetCode, targetHarness]);
+    }, [codeTyping, codeTw.done, targetCode]);
 
     useImperativeHandle(ref, () => ({
       startTyping() { setCodeTyping(true); },
       pickPrompt(option: PromptOption) {
         setTargetCode(option.dsl);
-        setTargetHarness(option.harness);
         setActiveCode(null);
-        setActiveCodeDisplay(null);
       },
     }), []);
 
@@ -870,8 +804,8 @@ const HeroBrowserWindow = forwardRef<HeroBrowserWindowHandle, {}>(
                   {highlightCode(codeTw.displayed)}
                   <span className="inline-block w-[2px] h-[12px] bg-green-500 ml-0.5 animate-pulse align-text-bottom" />
                 </>
-              ) : activeCodeDisplay ? (
-                highlightCode(activeCodeDisplay)
+              ) : activeCode ? (
+                highlightCode(targetCode)
               ) : (
                 <span className="text-muted-foreground/40 italic text-[11px]">
                   Waiting for circuit...
@@ -1209,15 +1143,15 @@ function DemoGallery() {
             title="Half Adder"
             subtitle="4 nodes · 6 connections"
             description="XOR for sum, AND for carry — the foundation of digital arithmetic."
-            code={DEMO_HARNESS}
+            code={DEMO_DSL}
             href="/editor"
             height={300}
             nodePositions={{
-              sw_a:     { x: 10,  y: 10 },
-              sw_b:     { x: 10,  y: 170 },
-              dut:      { x: 220, y: 90 },
-              led_sum:  { x: 430, y: 10 },
-              led_carry:{ x: 430, y: 170 },
+              a:     { x: 10,  y: 10 },
+              b:     { x: 10,  y: 170 },
+              dut:   { x: 220, y: 90 },
+              sum:   { x: 430, y: 10 },
+              carry: { x: 430, y: 170 },
             }}
           />
           <div className="flex flex-col gap-4">
@@ -1225,14 +1159,13 @@ function DemoGallery() {
               title="2-bit Counter"
               subtitle="Sequential · clock-driven"
               description="Two flip-flops count 00 → 01 → 10 → 11 → repeat."
-              code={COUNTER_HARNESS}
+              code={COUNTER_DSL}
               href="/editor"
               height={140}
               nodePositions={{
-                clk:  { x: 10,  y: 40 },
-                dut:  { x: 160, y: 20 },
-                led0: { x: 310, y: 5 },
-                led1: { x: 310, y: 75 },
+                dut:  { x: 10,  y: 20 },
+                bit0: { x: 210, y: 5 },
+                bit1: { x: 210, y: 75 },
               }}
             />
             <SnakeCard />
@@ -1291,12 +1224,12 @@ function DemoGallery() {
                 code={DRILLDOWN_DSL}
                 height={320}
                 nodePositions={{
-                  sw_a:     { x: 10,  y: 10 },
-                  sw_b:     { x: 10,  y: 110 },
-                  sw_cin:   { x: 10,  y: 210 },
-                  fa:       { x: 200, y: 100 },
-                  led_sum:  { x: 400, y: 40 },
-                  led_cout: { x: 400, y: 200 },
+                  a:    { x: 10,  y: 10 },
+                  b:    { x: 10,  y: 110 },
+                  cin:  { x: 10,  y: 210 },
+                  dut:  { x: 200, y: 100 },
+                  sum:  { x: 400, y: 40 },
+                  cout: { x: 400, y: 200 },
                 }}
               />
             </div>
@@ -1312,15 +1245,12 @@ function DemoGallery() {
               height={340}
               theme="dark"
               nodePositions={{
-                sw_in: { x: 10, y: 140 },
-                ff0: { x: 130, y: 20 },
-                ff1: { x: 130, y: 100 },
-                ff2: { x: 130, y: 180 },
-                ff3: { x: 130, y: 260 },
-                led0: { x: 310, y: 20 },
-                led1: { x: 310, y: 100 },
-                led2: { x: 310, y: 180 },
-                led3: { x: 310, y: 260 },
+                din: { x: 10, y: 140 },
+                dut: { x: 160, y: 120 },
+                q0:  { x: 310, y: 20 },
+                q1:  { x: 310, y: 100 },
+                q2:  { x: 310, y: 180 },
+                q3:  { x: 310, y: 260 },
               }}
             />
 

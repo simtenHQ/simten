@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, forwardRef, useImperativeHandle, useEffect, useRef, memo } from "react";
+import { useState, useCallback, forwardRef, useImperativeHandle, useEffect } from "react";
 import { useCircuitSimulator } from "./hooks/useCircuitSimulator";
 import { CircuitCanvas, ClockControls } from "@turing-incomplete/ui/canvas";
 

@@ -14,6 +14,7 @@ import {
   type FlatCircuit,
   type Circuit,
 } from "@turing-incomplete/core";
+import { autoHarness } from "../auto-harness";
 
 export interface CompileCodeResult {
   circuit: Circuit | null;
@@ -56,7 +57,8 @@ export function useCompileCode(code: string): CompileCodeResult {
       return;
     }
 
-    const mainCircuit = result.circuit!;
+    const rawCircuit = result.circuit!;
+    const mainCircuit = autoHarness(rawCircuit, result.library);
     libraryRef.current = result.library;
 
     const initialInputs: Record<string, boolean | number> = {};
