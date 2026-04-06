@@ -39,7 +39,7 @@ export function AndChallengeSection({ onPass }: AndChallengeSectionProps) {
           "Connect nand2.out to light.in.",
         ]}
         scaffold={`
-const AndFromNand = component('AndFromNand', {
+const AndFromNand = circuit('AndFromNand', {
   nodes: { A: Switch, B: Switch, nand1: Nand, nand2: Nand, light: Led },
 })
 `}

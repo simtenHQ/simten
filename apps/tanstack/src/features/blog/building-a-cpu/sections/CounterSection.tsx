@@ -1,6 +1,6 @@
 "use client";
 
-import { ComponentEmbed } from "@turing-incomplete/embed";
+import { CircuitEmbed } from "@turing-incomplete/embed";
 import { BLOG_CIRCUITS } from "../circuits";
 
 export function CounterSection() {
@@ -31,7 +31,7 @@ export function CounterSection() {
       </div>
 
       <div className="mt-8">
-        <ComponentEmbed
+        <CircuitEmbed
           code={BLOG_CIRCUITS.counter4bit.dsl}
           displayCode={BLOG_CIRCUITS.counter4bit.displayCode}
           height={350}

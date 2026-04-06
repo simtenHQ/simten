@@ -22,7 +22,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 import {
   createSimulatorFromCircuit,
-  createComponentLibrary,
+  createCircuitLibrary,
   generatePrimitives,
   PRIMITIVE_DEFINITIONS,
   TOP_LEVEL_NODE,
@@ -167,15 +167,15 @@ describe('Dual CPU Ping-Pong LED', () => {
     const source = readDSLWithIncludes(dslPath);
     const primitiveCircuits = generatePrimitives(PRIMITIVE_DEFINITIONS);
     const allCircuits = [...primitiveCircuits];
-    const compLib = createComponentLibrary(allCircuits) as any;
-    compLib.addCircuit = (c: any) => { allCircuits.push(c); compLib.resolveComponent = (name: string) => allCircuits.find((cc: any) => cc.name === name); };
-    // Rebuild resolveComponent to use allCircuits array (which grows as circuits compile)
-    compLib.resolveComponent = (name: string) => allCircuits.find((c: any) => c.name === name);
+    const compLib = createCircuitLibrary(allCircuits) as any;
+    compLib.addCircuit = (c: any) => { allCircuits.push(c); compLib.resolveCircuit = (name: string) => allCircuits.find((cc: any) => cc.name === name); };
+    // Rebuild resolveCircuit to use allCircuits array (which grows as circuits compile)
+    compLib.resolveCircuit = (name: string) => allCircuits.find((c: any) => c.name === name);
     const { circuits: compiled, errors } = compileDSL(source, compLib, dslPath);
     if (errors.length > 0) throw new Error(errors.map(e => e.message).join('\n'));
     allCircuits.push(...compiled);
     const target = compiled[compiled.length - 1];
-    const fullLib = createComponentLibrary(allCircuits);
+    const fullLib = createCircuitLibrary(allCircuits);
 
     // Load programs into each CPU's instruction memory
     const cpu0Mem = instructionsToMemory(cpu0);

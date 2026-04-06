@@ -1,6 +1,6 @@
 // Auto-generated from DSL
 
-const ScrollingHello = component('ScrollingHello', {
+const ScrollingHello = circuit('ScrollingHello', {
   nodes: { bitmap: ROM, scrollOffset: Register, debugScroll: HexDisplay, renderAddr: Register, renderInc: Incrementer, sixtythree: Constant, renderDone: Comparator, renderNext: Mux, zero: Constant, renderX: BitSlice, renderY: BitSlice, scrollInc: Incrementer, twentythree: Constant, scrollWrap: Comparator, scrollWrapped: Mux, twentyfour: Constant, yTimes24: Multiplier, scrollPlusX: Adder, xOffset: BitSlice, bitmapAddr: Adder, fb: DualPortRAM, display: Screen, enable: Constant },
   nodeArgs: { bitmap: { data: [1,0,1,0,1,1,1,0,1,0,0,0,1,0,0,0,0,1,0,0,0,0,0,0,1,0,1,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,1,0,0,0,0,0,1,1,1,0,1,1,0,0,1,0,0,0,1,0,0,0,1,0,1,0,0,0,0,0,1,0,1,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,1,0,0,0,0,0,1,0,1,0,1,1,1,0,1,1,1,0,1,1,1,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0] }, sixtythree: { value: 63 }, zero: { value: 0 }, renderX: { low: 0, high: 2 }, renderY: { low: 3, high: 5 }, twentythree: { value: 23 }, twentyfour: { value: 24 }, xOffset: { low: 0, high: 4 }, enable: { value: 1 } },
   connect: ({ in: inp, out, bitmap, scrollOffset, debugScroll, renderAddr, renderInc, sixtythree, renderDone, renderNext, zero, renderX, renderY, scrollInc, twentythree, scrollWrap, scrollWrapped, twentyfour, yTimes24, scrollPlusX, xOffset, bitmapAddr, fb, display, enable }) => [

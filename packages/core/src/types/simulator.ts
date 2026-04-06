@@ -12,7 +12,7 @@ import type {
   BitValue,
   BusValue,
   ClockInstance,
-  ComponentLibrary,
+  CircuitLibrary,
   PortDescriptor,
   PortInstance,
   PortPath,
@@ -29,12 +29,15 @@ export type {
   BitValue,
   BusValue,
   ClockInstance,
-  ComponentLibrary,
+  CircuitLibrary,
   PortDescriptor,
   PortInstance,
   PortPath,
   PortType,
 } from './circuit.js';
+
+// Deprecated re-exports
+export type { ComponentLibrary } from './circuit.js';
 
 // ============================================================================
 // Sequential Port Classification
@@ -169,8 +172,8 @@ export interface FlatSimulationResult {
  * Options for initializing the simulator.
  */
 export interface InitOptions {
-  /** Component library for resolving component definitions */
-  componentLibrary: ComponentLibrary;
+  /** Circuit library for resolving circuit definitions */
+  componentLibrary: CircuitLibrary;
   /** Initial memory data for ROM/RAM components (nodeId -> address -> value) */
   initialMemory?: Map<string, Map<number, number>>;
 }

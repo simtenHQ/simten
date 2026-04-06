@@ -1,6 +1,6 @@
 // Auto-generated from DSL
 
-const EgressController = component('EgressController', {
+const EgressController = circuit('EgressController', {
   in: { pkt_ready: bit, trigger: bit },
   out: { egress_addr: bus(8), egress_re: bit, data_valid: bit, sof: bit, eof: bit, ready: bit },
   nodes: { fsm_state: Register, byte_counter: Register, read_ptr: Register, STATE_IDLE: Input, STATE_TRANSMIT: Input, ZERO: Input, ONE: Input, SEVEN: Input, EIGHT: Input, isIDLE: Comparator, isTRANSMIT: Comparator, can_start: And, idle_to_transmit: And, byte_is_seven: Comparator, transmit_complete: And, next_state_m1: Mux, next_state: Mux, fsm_state_we: Input, byte_inc: Adder, should_increment: And, should_reset: And, next_byte_counter_inc: Mux, next_byte_counter: Mux, byte_counter_we: Input, ptr_add_eight: Adder, should_advance_ptr: And, next_read_ptr: Mux, read_ptr_we: Input, egress_addr_calc: Adder, byte_is_zero: Comparator, sof_signal: And, eof_signal: And, fsm_state_display: HexDisplay, byte_counter_display: HexDisplay, read_ptr_display: HexDisplay },

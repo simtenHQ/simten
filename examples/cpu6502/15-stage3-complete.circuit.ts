@@ -1,6 +1,6 @@
 // Auto-generated from DSL
 
-const SimpleMemory = component('SimpleMemory', {
+const SimpleMemory = circuit('SimpleMemory', {
   in: { addr: bus(8), data_in: bus(8), write_enable: bit },
   out: { data_out: bus(8) },
   nodes: { zero: Constant, addr_10: Constant, addr_11: Constant, addr_12: Constant, addr_13: Constant, addr_14: Constant, addr_15: Constant, at_10: Comparator, at_11: Comparator, at_12: Comparator, at_13: Comparator, at_14: Comparator, at_15: Comparator, mem_10: Register, mem_11: Register, mem_12: Register, mem_13: Register, mem_14: Register, mem_15: Register, we_10: And, we_11: And, we_12: And, we_13: And, we_14: And, we_15: And, mux1: Mux, mux2: Mux, mux3: Mux, mux4: Mux, mux5: Mux, mux6: Mux },
@@ -43,7 +43,7 @@ const SimpleMemory = component('SimpleMemory', {
   ],
 })
 
-const RegisterFile = component('RegisterFile', {
+const RegisterFile = circuit('RegisterFile', {
   in: { write_a: bit, write_x: bit, write_y: bit, data_a: bus(8), data_x: bus(8), data_y: bus(8) },
   out: { reg_a: bus(8), reg_x: bus(8), reg_y: bus(8) },
   nodes: { regA: Register, regX: Register, regY: Register },
@@ -60,7 +60,7 @@ const RegisterFile = component('RegisterFile', {
   ],
 })
 
-const CompleteControl = component('CompleteControl', {
+const CompleteControl = circuit('CompleteControl', {
   in: { reset: bit, current_opcode: bus(8) },
   out: { current_state: bus(8), exec_subcycle: bus(8), pc_increment: bit, ir_load: bit, operand_load: bit, addr_lo_load: bit, addr_hi_load: bit, mem_read: bit, mem_write: bit, write_a: bit, write_x: bit, write_y: bit, is_lda_imm: bit, is_lda_zp: bit, is_lda_abs: bit, is_lda_abs_x: bit, is_sta_zp: bit, is_sta_abs: bit, is_sta_abs_x: bit, is_tax: bit, is_inx: bit },
   nodes: { state_reg: Register, subcycle_reg: Register, STATE_FETCH: Constant, STATE_DECODE: Constant, STATE_EXECUTE: Constant, is_fetch: Comparator, is_decode: Comparator, is_execute: Comparator, LDA_IMM: Constant, LDA_ZP: Constant, LDA_ABS: Constant, LDA_ABS_X: Constant, STA_ZP: Constant, STA_ABS: Constant, STA_ABS_X: Constant, TAX: Constant, INX: Constant, cmp_lda_imm: Comparator, cmp_lda_zp: Comparator, cmp_lda_abs: Comparator, cmp_lda_abs_x: Comparator, cmp_sta_zp: Comparator, cmp_sta_abs: Comparator, cmp_sta_abs_x: Comparator, cmp_tax: Comparator, cmp_inx: Comparator, is_imm: Or, is_zp: Or, is_abs_temp: Or, is_abs: Or, is_abs_final: Or, is_1cycle: Or, zero: Constant, one: Constant, two: Constant, three: Constant, inc_subcycle: Incrementer, subcycle_increment: Mux, always_on: Constant, is_sub0: Comparator, is_sub1: Comparator, is_sub2: Comparator, is_sub3: Comparator, four: Constant, is_sub4: Comparator, next_from_fetch: Mux, next_from_decode: Mux, exec_sub0: And, exec_sub1: And, exec_sub2: And, exec_sub3: And, exec_sub4: And, done_imm: And, done_zp: And, done_abs: And, done_1cyc: And, exec_done_temp1: Or, exec_done_temp2: Or, exec_done: Or, next_from_execute: Mux, next_state: Mux, needs_operand_any: Or, needs_operand: Or, pc_inc_exec_sub0: And, pc_inc_exec_sub1: And, pc_inc_temp: Or, pc_inc_signal: Or, operand_load_signal: And, addr_lo_load_signal: And, addr_hi_load_signal: And, is_load: Or, is_load_final: Or, mem_read_zp: And, mem_read_abs_temp: And, mem_read_abs_x: And, mem_read_abs: Or, mem_read_signal: Or, mem_write_zp: And, mem_write_abs_temp: And, mem_write_abs_x: And, mem_write_abs: Or, mem_write_signal: Or, write_a_imm: And, write_a_zp: And, write_a_abs_temp: And, write_a_abs_x: And, write_a_abs: Or, write_a_temp: Or, write_a_signal: Or, write_x_tax: And, write_x_inx: And, write_x_signal: Or },
@@ -162,7 +162,7 @@ const CompleteControl = component('CompleteControl', {
   ],
 })
 
-const CompleteCPU = component('CompleteCPU', {
+const CompleteCPU = circuit('CompleteCPU', {
   in: { reset: bit },
   out: { pc: bus(8), instruction: bus(8), operand: bus(8), address: bus(8), mem_data: bus(8), current_state: bus(8), subcycle: bus(8), reg_a: bus(8), reg_x: bus(8) },
   nodes: { pc_reg: Register, always_on: Constant, pc_inc: Incrementer, zero: Constant, one: Constant, two: Constant, three: Constant, four: Constant, five: Constant, six: Constant, seven: Constant, eight: Constant, nine: Constant, ten: Constant, eleven: Constant, twelve: Constant, byte_0: Constant, byte_1: Constant, byte_2: Constant, byte_3: Constant, byte_4: Constant, byte_5: Constant, byte_6: Constant, byte_7: Constant, byte_8: Constant, byte_9: Constant, byte_10: Constant, byte_11: Constant, byte_12: Constant, at_0: Comparator, at_1: Comparator, at_2: Comparator, at_3: Comparator, at_4: Comparator, at_5: Comparator, at_6: Comparator, at_7: Comparator, at_8: Comparator, at_9: Comparator, at_10: Comparator, at_11: Comparator, at_12: Comparator, mux1: Mux, mux2: Mux, mux3: Mux, mux4: Mux, mux5: Mux, mux6: Mux, mux7: Mux, mux8: Mux, mux9: Mux, mux10: Mux, mux11: Mux, mux12: Mux, ir: Register, operand_reg: Register, addr_lo_reg: Register, addr_hi_reg: Register, addr_with_x: Adder, control: CompleteControl, pc_next: Mux, registers: RegisterFile, effective_addr: Mux, effective_addr_final: Mux, memory: SimpleMemory, inc_x: Incrementer, result_a_imm_zp: Mux, result_a_abs: Mux, result_a: Mux, result_x: Mux },
@@ -256,7 +256,7 @@ const CompleteCPU = component('CompleteCPU', {
   ],
 })
 
-const CompleteTest = component('CompleteTest', {
+const CompleteTest = circuit('CompleteTest', {
   nodes: { cpu: CompleteCPU, reset_input: Input, d_pc: HexDisplay, d_instruction: HexDisplay, d_operand: HexDisplay, d_address: HexDisplay, d_mem_data: HexDisplay, d_state: HexDisplay, d_subcycle: HexDisplay, d_a: HexDisplay, d_x: HexDisplay },
   connect: ({ in: inp, out, cpu, reset_input, d_pc, d_instruction, d_operand, d_address, d_mem_data, d_state, d_subcycle, d_a, d_x }) => [
     reset_input.out.to(cpu.reset),

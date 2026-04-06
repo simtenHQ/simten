@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Link } from "@tanstack/react-router";
-import { ComponentEmbed } from "@turing-incomplete/embed";
+import { CircuitEmbed } from "@turing-incomplete/embed";
 
 export function RunningCodeSection() {
   const [boardDsl, setBoardDsl] = useState<string | null>(null);
@@ -48,7 +48,7 @@ export function RunningCodeSection() {
 
       <div className="mt-8">
         {boardDsl ? (
-          <ComponentEmbed
+          <CircuitEmbed
             code={boardDsl}
             height={600}
             showControls

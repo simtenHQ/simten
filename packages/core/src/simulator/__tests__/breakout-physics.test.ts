@@ -19,21 +19,21 @@ import { fileURLToPath } from 'node:url';
 import { parseDSL } from '../../dsl/parser/index.js';
 import { compileToIR } from '../../dsl/compiler/index.js';
 import { PRIMITIVES } from '../primitives.js';
-import { createComponentLibrary, createSimulatorFromCircuit } from '../index.js';
+import { createCircuitLibrary, createSimulatorFromCircuit } from '../index.js';
 import type { Circuit } from '../../types/circuit.js';
 import type { SimulatorEngine } from '../../types/simulator.js';
 
 // Build the adapter the compiler expects
-function makeCompilerLibrary(simLibrary: ReturnType<typeof createComponentLibrary>) {
+function makeCompilerLibrary(simLibrary: ReturnType<typeof createCircuitLibrary>) {
   return {
-    getCircuit: (name: string) => simLibrary.resolveComponent(name),
-    hasCircuit: (name: string) => simLibrary.resolveComponent(name) !== undefined,
+    getCircuit: (name: string) => simLibrary.resolveCircuit(name),
+    hasCircuit: (name: string) => simLibrary.resolveCircuit(name) !== undefined,
     addCircuit: (_circuit: Circuit) => {},
   };
 }
 
 let breakoutCircuit: Circuit;
-let simLibrary: ReturnType<typeof createComponentLibrary>;
+let simLibrary: ReturnType<typeof createCircuitLibrary>;
 
 beforeAll(() => {
   // __tests__ -> simulator -> src -> packages/core -> packages -> repo root
@@ -41,7 +41,7 @@ beforeAll(() => {
   const dslPath = join(repoRoot, 'dsl-files/Breakout.dsl');
   const source = readFileSync(dslPath, 'utf-8');
 
-  simLibrary = createComponentLibrary(PRIMITIVES as Circuit[]);
+  simLibrary = createCircuitLibrary(PRIMITIVES as Circuit[]);
   const compilerLib = makeCompilerLibrary(simLibrary);
 
   const { ast, errors } = parseDSL(source, 'Breakout.dsl');

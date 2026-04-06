@@ -1,11 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import { exportVerilog } from '../exporter.js';
 import { compileDSL } from '../../dsl/index.js';
-import { createComponentLibrary, PRIMITIVES } from '../../simulator/index.js';
-import type { ComponentLibrary } from '../../types/simulator.js';
+import { createCircuitLibrary, PRIMITIVES } from '../../simulator/index.js';
+import type { CircuitLibrary } from '../../types/simulator.js';
 
-function compile(dsl: string): { circuit: ReturnType<typeof compileDSL>['circuits'][0]; library: ComponentLibrary } {
-  const library = createComponentLibrary([...PRIMITIVES]);
+function compile(dsl: string): { circuit: ReturnType<typeof compileDSL>['circuits'][0]; library: CircuitLibrary } {
+  const library = createCircuitLibrary([...PRIMITIVES]);
   const result = compileDSL(dsl, library as any, 'test.dsl');
   if (result.errors.length > 0) {
     throw new Error(`DSL compilation failed: ${result.errors.map(e => e.message).join('; ')}`);

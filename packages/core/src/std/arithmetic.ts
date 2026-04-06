@@ -2,17 +2,17 @@
  * Standard Library — Arithmetic Operations
  */
 
-import { component } from '../builder/component.js';
-import { bit, bus } from '../builder/bit-bus.js';
+import { circuit } from '../circuit/circuit.js';
+import { bit, bus } from '../circuit/bit-bus.js';
 
-export const Incrementer = component('Incrementer', {
+export const Incrementer = circuit('Incrementer', {
   in: { in: bus(8) },
   out: { out: bus(8) },
   meta: { category: 'arithmetic', icon: '+1', description: 'Adds 1 to the input' },
   eval: ({ in: a }) => ({ out: (a + 1) & 0xFF }),
 });
 
-export const Adder = component('Adder', {
+export const Adder = circuit('Adder', {
   in: { a: bus(8), b: bus(8), carry_in: bit },
   out: { sum: bus(8), carry_out: bit },
   meta: { category: 'arithmetic', icon: '+', description: 'N-bit adder with carry' },
@@ -22,7 +22,7 @@ export const Adder = component('Adder', {
   },
 });
 
-export const Subtractor = component('Subtractor', {
+export const Subtractor = circuit('Subtractor', {
   in: { a: bus(8), b: bus(8), borrow_in: bit },
   out: { difference: bus(8), borrow_out: bit },
   meta: { category: 'arithmetic', icon: '−', description: 'N-bit subtractor with borrow' },
@@ -32,35 +32,35 @@ export const Subtractor = component('Subtractor', {
   },
 });
 
-export const Multiplier = component('Multiplier', {
+export const Multiplier = circuit('Multiplier', {
   in: { a: bus(8), b: bus(8) },
   out: { product: bus(16) },
   meta: { category: 'arithmetic', icon: '×', description: 'N-bit multiplier' },
   eval: ({ a, b }) => ({ product: (a * b) & 0xFFFF }),
 });
 
-export const Comparator = component('Comparator', {
+export const Comparator = circuit('Comparator', {
   in: { a: bus(8), b: bus(8) },
   out: { eq: bit, lt: bit, gt: bit },
   meta: { category: 'arithmetic', icon: '⋚', description: 'Unsigned comparator' },
   eval: ({ a, b }) => ({ eq: a === b ? 1 : 0, lt: a < b ? 1 : 0, gt: a > b ? 1 : 0 }),
 });
 
-export const LeftShifter = component('LeftShifter', {
+export const LeftShifter = circuit('LeftShifter', {
   in: { value: bus(8), shift: bus(8) },
   out: { result: bus(8) },
   meta: { category: 'arithmetic', icon: '≪', description: 'Left bit shifter' },
   eval: ({ value, shift }) => ({ result: (value << shift) & 0xFF }),
 });
 
-export const RightShifter = component('RightShifter', {
+export const RightShifter = circuit('RightShifter', {
   in: { value: bus(8), shift: bus(8) },
   out: { result: bus(8) },
   meta: { category: 'arithmetic', icon: '≫', description: 'Right bit shifter' },
   eval: ({ value, shift }) => ({ result: (value >>> shift) & 0xFF }),
 });
 
-export const SignedAdder = component('SignedAdder', {
+export const SignedAdder = circuit('SignedAdder', {
   in: { a: bus(8), b: bus(8), carry_in: bit },
   out: { sum: bus(8), overflow: bit, carry_out: bit },
   meta: { category: 'arithmetic', icon: '±+', description: 'Signed adder with overflow detection' },
@@ -70,14 +70,14 @@ export const SignedAdder = component('SignedAdder', {
   },
 });
 
-export const SignedComparator = component('SignedComparator', {
+export const SignedComparator = circuit('SignedComparator', {
   in: { a: bus(8), b: bus(8) },
   out: { eq: bit, lt: bit, gt: bit, lte: bit, gte: bit },
   meta: { category: 'arithmetic', icon: '±⋚', description: 'Signed comparator' },
   eval: ({ a, b }) => ({ eq: a === b ? 1 : 0, lt: a < b ? 1 : 0, gt: a > b ? 1 : 0, lte: a <= b ? 1 : 0, gte: a >= b ? 1 : 0 }),
 });
 
-export const SignedMultiplier = component('SignedMultiplier', {
+export const SignedMultiplier = circuit('SignedMultiplier', {
   in: { a: bus(8), b: bus(8) },
   out: { product: bus(16) },
   meta: { category: 'arithmetic', icon: '±×', description: 'Signed multiplier' },
@@ -85,28 +85,28 @@ export const SignedMultiplier = component('SignedMultiplier', {
 });
 
 // Bus operations
-export const BusAnd = component('BusAnd', {
+export const BusAnd = circuit('BusAnd', {
   in: { a: bus(8), b: bus(8) },
   out: { out: bus(8) },
   meta: { category: 'bus-operations', icon: '&8', description: 'Bitwise AND on buses' },
   eval: ({ a, b }) => ({ out: a & b }),
 });
 
-export const BusOr = component('BusOr', {
+export const BusOr = circuit('BusOr', {
   in: { a: bus(8), b: bus(8) },
   out: { out: bus(8) },
   meta: { category: 'bus-operations', icon: '|8', description: 'Bitwise OR on buses' },
   eval: ({ a, b }) => ({ out: a | b }),
 });
 
-export const BusNot = component('BusNot', {
+export const BusNot = circuit('BusNot', {
   in: { in: bus(8) },
   out: { out: bus(8) },
   meta: { category: 'bus-operations', icon: '¬8', description: 'Bitwise NOT on bus' },
   eval: ({ in: a }) => ({ out: (~a) & 0xFF }),
 });
 
-export const BusXor = component('BusXor', {
+export const BusXor = circuit('BusXor', {
   in: { a: bus(8), b: bus(8) },
   out: { out: bus(8) },
   meta: { category: 'bus-operations', icon: '⊕8', description: 'Bitwise XOR on buses' },

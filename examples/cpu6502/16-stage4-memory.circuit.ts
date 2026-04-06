@@ -1,6 +1,6 @@
 // Auto-generated from DSL
 
-const StackPointer = component('StackPointer', {
+const StackPointer = circuit('StackPointer', {
   in: { decrement: bit, increment: bit, load: bit, load_value: bus(8) },
   out: { sp: bus(8) },
   nodes: { sp_reg: Register, always_on: Constant, one: Constant, init_value: Constant, dec: Subtractor, zero_bit: Constant, inc: Adder, mux_inc: Mux, mux_dec: Mux, mux_load: Mux },
@@ -22,7 +22,7 @@ const StackPointer = component('StackPointer', {
   ],
 })
 
-const StackMemory = component('StackMemory', {
+const StackMemory = circuit('StackMemory', {
   in: { addr: bus(8), data_in: bus(8), write_enable: bit },
   out: { data_out: bus(8) },
   nodes: { zero: Constant, addr_f0: Constant, addr_f1: Constant, addr_f2: Constant, addr_f3: Constant, addr_f4: Constant, addr_f5: Constant, addr_f6: Constant, addr_f7: Constant, addr_f8: Constant, addr_f9: Constant, addr_fa: Constant, addr_fb: Constant, addr_fc: Constant, addr_fd: Constant, addr_fe: Constant, addr_ff: Constant, at_f0: Comparator, at_f1: Comparator, at_f2: Comparator, at_f3: Comparator, at_f4: Comparator, at_f5: Comparator, at_f6: Comparator, at_f7: Comparator, at_f8: Comparator, at_f9: Comparator, at_fa: Comparator, at_fb: Comparator, at_fc: Comparator, at_fd: Comparator, at_fe: Comparator, at_ff: Comparator, mem_f0: Register, mem_f1: Register, mem_f2: Register, mem_f3: Register, mem_f4: Register, mem_f5: Register, mem_f6: Register, mem_f7: Register, mem_f8: Register, mem_f9: Register, mem_fa: Register, mem_fb: Register, mem_fc: Register, mem_fd: Register, mem_fe: Register, mem_ff: Register, we_f0: And, we_f1: And, we_f2: And, we_f3: And, we_f4: And, we_f5: And, we_f6: And, we_f7: And, we_f8: And, we_f9: And, we_fa: And, we_fb: And, we_fc: And, we_fd: And, we_fe: And, we_ff: And, mux1: Mux, mux2: Mux, mux3: Mux, mux4: Mux, mux5: Mux, mux6: Mux, mux7: Mux, mux8: Mux, mux9: Mux, mux10: Mux, mux11: Mux, mux12: Mux, mux13: Mux, mux14: Mux, mux15: Mux, mux16: Mux },
@@ -115,7 +115,7 @@ const StackMemory = component('StackMemory', {
   ],
 })
 
-const StackTest = component('StackTest', {
+const StackTest = circuit('StackTest', {
   nodes: { sp: StackPointer, stack_mem: StackMemory, dec_input: Input, inc_input: Input, load_input: Input, load_val_input: Input, data_input: Input, write_input: Input, d_sp: HexDisplay, d_data_out: HexDisplay },
   connect: ({ in: inp, out, sp, stack_mem, dec_input, inc_input, load_input, load_val_input, data_input, write_input, d_sp, d_data_out }) => [
     sp.sp.to(stack_mem.addr, d_sp.in),

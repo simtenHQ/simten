@@ -6,7 +6,7 @@
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import { useCircuitStore } from './circuit-store';
-import { useComponentLibraryStore } from './component-library-store';
+import { useCircuitLibraryStore } from './circuit-library-store';
 import type { Circuit } from '../types/circuit';
 import { bitType, busType } from '../types/circuit';
 
@@ -16,7 +16,7 @@ describe('CircuitStore', () => {
     useCircuitStore.setState({ circuit: null });
 
     // Set up a minimal component library for testing
-    const library = useComponentLibraryStore.getState();
+    const library = useCircuitLibraryStore.getState();
 
     // Clear existing library
     library.clearAll();
@@ -328,7 +328,7 @@ describe('CircuitStore', () => {
 
     it('should validate port type compatibility', () => {
       const store = useCircuitStore.getState();
-      const library = useComponentLibraryStore.getState();
+      const library = useCircuitLibraryStore.getState();
 
       // Add a bus component
       library.registerPrimitive({

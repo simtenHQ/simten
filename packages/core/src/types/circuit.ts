@@ -27,22 +27,22 @@ export type BitValue = boolean;
 export type BusValue = number;
 
 // ============================================================================
-// Component Library Interface
+// Circuit Library Interface
 // ============================================================================
 
 /**
- * Pure interface for component resolution.
+ * Pure interface for circuit resolution.
  * This decouples the simulator from Zustand/React.
  *
  * The Zustand store in features/visual-editor/stores/ implements this interface
  * for UI integration, but the core simulator only depends on this interface.
  */
-export interface ComponentLibrary {
+export interface CircuitLibrary {
   /**
-   * Resolve a component by name.
+   * Resolve a circuit by name.
    * Returns the Circuit definition or undefined if not found.
    */
-  resolveComponent(name: string): Circuit | undefined;
+  resolveCircuit(name: string): Circuit | undefined;
 
   /**
    * Get all registered primitive names.
@@ -50,8 +50,22 @@ export interface ComponentLibrary {
   getAllPrimitiveNames(): string[];
 }
 
+export interface MutableCircuitLibrary extends CircuitLibrary {
+  addCircuit(circuit: Circuit): void;
+  getAllCircuitNames(): string[];
+}
+
+/** @deprecated Use CircuitLibrary instead */
+export interface ComponentLibrary {
+  /** @deprecated Use resolveCircuit() instead */
+  resolveComponent(name: string): Circuit | undefined;
+  getAllPrimitiveNames(): string[];
+}
+
+/** @deprecated Use MutableCircuitLibrary instead */
 export interface MutableComponentLibrary extends ComponentLibrary {
   addCircuit(circuit: Circuit): void;
+  /** @deprecated Use getAllCircuitNames() instead */
   getAllComponentNames(): string[];
 }
 
@@ -216,13 +230,16 @@ export interface TestCase {
 }
 
 /**
- * Component Kind - determines evaluation order and cycle detection
+ * Circuit Kind - determines evaluation order and cycle detection
  *
  * - combinational: Pure logic, no state, must be acyclic
  * - sequential: Has state (registers, RAM), updates on clock edges
  * - sink: Consumes signals but outputs don't feed back (Screen, audio, UART)
  */
-export type ComponentKind = 'combinational' | 'sequential' | 'sink';
+export type CircuitKind = 'combinational' | 'sequential' | 'sink';
+
+/** @deprecated Use CircuitKind instead */
+export type ComponentKind = CircuitKind;
 
 export interface CircuitMetadata {
   source?: {
@@ -234,9 +251,9 @@ export interface CircuitMetadata {
   version?: string;
   testCases?: TestCase[];
   tags?: string[];
-  kind?: ComponentKind;
+  kind?: CircuitKind;
   /**
-   * For sequential components: how outputs are computed
+   * For sequential circuits: how outputs are computed
    * - 'state-only': Outputs come purely from state (DFlipFlop, Register)
    * - 'state+inputs': Outputs depend on state AND combinational inputs (RAM/ROM - address-based read)
    * - 'input-dependent': Outputs depend only on current inputs (pure combinational)

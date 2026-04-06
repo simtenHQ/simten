@@ -1,6 +1,6 @@
 // Auto-generated from DSL
 
-const ProgramCounter = component('ProgramCounter', {
+const ProgramCounter = circuit('ProgramCounter', {
   in: { load: bit, load_addr_low: bus(8), load_addr_high: bus(8), increment: bit },
   out: { pc_low: bus(8), pc_high: bus(8) },
   nodes: { pcl_reg: Register, pch_reg: Register, inc_low: Incrementer, max_byte: Constant, will_overflow: Comparator, inc_high: Incrementer, high_inc_mux: Mux, low_load_or_inc: Mux, low_final: Mux, high_load_or_inc: Mux, high_final: Mux, always_on: Constant },
@@ -25,7 +25,7 @@ const ProgramCounter = component('ProgramCounter', {
   ],
 })
 
-const ProgramCounterTest = component('ProgramCounterTest', {
+const ProgramCounterTest = circuit('ProgramCounterTest', {
   out: { pc_low: bus(8), pc_high: bus(8) },
   nodes: { pc_reg: ProgramCounter, load_input: Input, addr_low_input: Input, addr_high_input: Input, inc_input: Input, display_low: HexDisplay, display_high: HexDisplay },
   connect: ({ in: inp, out, pc_reg, load_input, addr_low_input, addr_high_input, inc_input, display_low, display_high }) => [

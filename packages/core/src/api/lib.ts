@@ -1,24 +1,24 @@
 /**
  * Shared Component Library
  *
- * Builds a reusable ComponentLibrary from primitives.
+ * Builds a reusable CircuitLibrary from primitives.
  * Shared across all API handlers.
  */
 
 import {
   getPrimitives,
-  createComponentLibrary,
+  createCircuitLibrary,
 } from '../simulator/index.js';
-import type { Circuit, ComponentLibrary, MutableComponentLibrary } from '../types/circuit.js';
+import type { Circuit, CircuitLibrary, MutableCircuitLibrary } from '../types/circuit.js';
 
-let _library: ComponentLibrary | undefined;
+let _library: CircuitLibrary | undefined;
 
 /**
- * Get the shared component library (lazy-initialized singleton).
+ * Get the shared circuit library (lazy-initialized singleton).
  */
-export function getLibrary(): ComponentLibrary {
+export function getLibrary(): CircuitLibrary {
   if (!_library) {
-    _library = createComponentLibrary(getPrimitives());
+    _library = createCircuitLibrary(getPrimitives());
   }
   return _library;
 }
@@ -29,16 +29,16 @@ export function getLibrary(): ComponentLibrary {
  * into the same namespace as primitives.
  */
 export function createMutableLibrary(): {
-  library: MutableComponentLibrary;
+  library: MutableCircuitLibrary;
   circuits: Circuit[];
 } {
   const circuits: Circuit[] = [...getPrimitives()];
 
-  const library: MutableComponentLibrary = {
-    resolveComponent: (name: string) => circuits.find((c) => c.name === name),
+  const library: MutableCircuitLibrary = {
+    resolveCircuit: (name: string) => circuits.find((c) => c.name === name),
     getAllPrimitiveNames: () => getPrimitives().map((c) => c.name),
     addCircuit: (circuit: Circuit) => { circuits.push(circuit); },
-    getAllComponentNames: () => circuits.map((c) => c.name),
+    getAllCircuitNames: () => circuits.map((c) => c.name),
   };
 
   return { library, circuits };

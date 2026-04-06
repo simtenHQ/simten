@@ -23,7 +23,7 @@ import {
   compileReferenceCircuit,
 } from "@turing-incomplete/core/simulator";
 import type {
-  ComponentLibrary,
+  CircuitLibrary,
 } from "@turing-incomplete/core/simulator";
 import type { Circuit } from "@turing-incomplete/core";
 
@@ -35,20 +35,20 @@ import type { NodeData } from "../nodes";
 
 // ── Sequential detection ──
 
-function hasSequentialComponents(
+function hasSequentialCircuits(
   circuit: Circuit | null,
-  resolveComponent: (name: string) => Circuit | undefined,
+  resolveCircuit: (name: string) => Circuit | undefined,
   visited: Set<string> = new Set(),
 ): boolean {
   if (!circuit) return false;
   if (visited.has(circuit.name)) return false;
   visited.add(circuit.name);
   for (const node of circuit.nodes) {
-    const componentDef = resolveComponent(node.componentRef);
+    const componentDef = resolveCircuit(node.componentRef);
     if (!componentDef) continue;
     if (componentDef.clocks.length > 0 || componentDef.state.length > 0) return true;
     if (componentDef.implementation.kind === "composite") {
-      if (hasSequentialComponents(componentDef, resolveComponent, visited)) return true;
+      if (hasSequentialCircuits(componentDef, resolveCircuit, visited)) return true;
     }
   }
   return false;
@@ -58,7 +58,7 @@ function hasSequentialComponents(
 
 interface InspectorCanvasProps {
   frame: InspectorFrame;
-  componentLibrary: ComponentLibrary;
+  componentLibrary: CircuitLibrary;
   onPushLevel: (name: string, def: Circuit, label: string) => void;
   theme?: "light" | "dark";
 }
@@ -70,13 +70,13 @@ function InspectorCanvas({ frame, componentLibrary, onPushLevel, theme = "dark" 
   );
 
   const isSequential = useMemo(
-    () => hasSequentialComponents(viewCircuit, componentLibrary.resolveComponent),
+    () => hasSequentialCircuits(viewCircuit, componentLibrary.resolveCircuit),
     [viewCircuit, componentLibrary],
   );
 
   const handleNodeDoubleClick = useCallback((nodeData: NodeData) => {
     if (!nodeData.isComposite) return;
-    const componentDef = componentLibrary.resolveComponent(nodeData.componentRef);
+    const componentDef = componentLibrary.resolveCircuit(nodeData.componentRef);
     if (!componentDef) return;
 
     if (componentDef.implementation.kind === "composite" && componentDef.nodes.length > 0) {
@@ -223,7 +223,7 @@ const levelVariants = {
 
 export interface CompositeInspectorDialogProps {
   stack: InspectorFrame[];
-  componentLibrary: ComponentLibrary;
+  componentLibrary: CircuitLibrary;
   theme?: "light" | "dark";
   onClose: () => void;
   onPopLevel: () => void;

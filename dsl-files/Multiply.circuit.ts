@@ -1,6 +1,6 @@
 // Auto-generated from DSL
 
-const Multiply = component('Multiply', {
+const Multiply = circuit('Multiply', {
   in: { a: bus(8), b: bus(8) },
   out: { low: bus(8), high: bus(8) },
   nodes: { mul: Multiplier, lo: BitSlice, hi: BitSlice },

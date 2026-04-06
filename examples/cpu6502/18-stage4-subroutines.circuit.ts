@@ -1,6 +1,6 @@
 // Auto-generated from DSL
 
-const SimpleMemory = component('SimpleMemory', {
+const SimpleMemory = circuit('SimpleMemory', {
   in: { addr: bus(8), data_in: bus(8), write_enable: bit },
   out: { data_out: bus(8) },
   nodes: { zero: Constant, addr_10: Constant, addr_11: Constant, addr_12: Constant, addr_13: Constant, addr_14: Constant, addr_15: Constant, at_10: Comparator, at_11: Comparator, at_12: Comparator, at_13: Comparator, at_14: Comparator, at_15: Comparator, mem_10: Register, mem_11: Register, mem_12: Register, mem_13: Register, mem_14: Register, mem_15: Register, we_10: And, we_11: And, we_12: And, we_13: And, we_14: And, we_15: And, mux1: Mux, mux2: Mux, mux3: Mux, mux4: Mux, mux5: Mux, mux6: Mux },
@@ -43,7 +43,7 @@ const SimpleMemory = component('SimpleMemory', {
   ],
 })
 
-const RegisterFile = component('RegisterFile', {
+const RegisterFile = circuit('RegisterFile', {
   in: { write_a: bit, write_x: bit, write_y: bit, data_a: bus(8), data_x: bus(8), data_y: bus(8) },
   out: { reg_a: bus(8), reg_x: bus(8), reg_y: bus(8) },
   nodes: { regA: Register, regX: Register, regY: Register },
@@ -60,7 +60,7 @@ const RegisterFile = component('RegisterFile', {
   ],
 })
 
-const StackPointer = component('StackPointer', {
+const StackPointer = circuit('StackPointer', {
   in: { decrement: bit, increment: bit, load: bit, load_value: bus(8) },
   out: { sp: bus(8) },
   nodes: { sp_reg: Register, always_on: Constant, one: Constant, dec: Subtractor, zero_bit: Constant, inc: Adder, mux_inc: Mux, mux_dec: Mux, mux_load: Mux },
@@ -82,7 +82,7 @@ const StackPointer = component('StackPointer', {
   ],
 })
 
-const StackMemory = component('StackMemory', {
+const StackMemory = circuit('StackMemory', {
   in: { addr: bus(8), data_in: bus(8), write_enable: bit },
   out: { data_out: bus(8) },
   nodes: { zero: Constant, addr_f0: Constant, addr_f1: Constant, addr_f2: Constant, addr_f3: Constant, addr_f4: Constant, addr_f5: Constant, addr_f6: Constant, addr_f7: Constant, addr_f8: Constant, addr_f9: Constant, addr_fa: Constant, addr_fb: Constant, addr_fc: Constant, addr_fd: Constant, addr_fe: Constant, addr_ff: Constant, at_f0: Comparator, at_f1: Comparator, at_f2: Comparator, at_f3: Comparator, at_f4: Comparator, at_f5: Comparator, at_f6: Comparator, at_f7: Comparator, at_f8: Comparator, at_f9: Comparator, at_fa: Comparator, at_fb: Comparator, at_fc: Comparator, at_fd: Comparator, at_fe: Comparator, at_ff: Comparator, mem_f0: Register, mem_f1: Register, mem_f2: Register, mem_f3: Register, mem_f4: Register, mem_f5: Register, mem_f6: Register, mem_f7: Register, mem_f8: Register, mem_f9: Register, mem_fa: Register, mem_fb: Register, mem_fc: Register, mem_fd: Register, mem_fe: Register, mem_ff: Register, we_f0: And, we_f1: And, we_f2: And, we_f3: And, we_f4: And, we_f5: And, we_f6: And, we_f7: And, we_f8: And, we_f9: And, we_fa: And, we_fb: And, we_fc: And, we_fd: And, we_fe: And, we_ff: And, mux1: Mux, mux2: Mux, mux3: Mux, mux4: Mux, mux5: Mux, mux6: Mux, mux7: Mux, mux8: Mux, mux9: Mux, mux10: Mux, mux11: Mux, mux12: Mux, mux13: Mux, mux14: Mux, mux15: Mux, mux16: Mux },
@@ -175,7 +175,7 @@ const StackMemory = component('StackMemory', {
   ],
 })
 
-const SubroutineControl = component('SubroutineControl', {
+const SubroutineControl = circuit('SubroutineControl', {
   in: { reset: bit, current_opcode: bus(8) },
   out: { current_state: bus(8), exec_subcycle: bus(8), pc_increment: bit, ir_load: bit, operand_load: bit, addr_lo_load: bit, addr_hi_load: bit, mem_read: bit, mem_write: bit, write_a: bit, write_x: bit, write_y: bit, sp_decrement: bit, sp_increment: bit, stack_write: bit, use_stack_data: bit, jsr_load_pc: bit, rts_load_pc: bit, save_pc_lo: bit, save_pc_hi: bit, push_pc_hi: bit, push_pc_lo: bit, pull_pc_lo: bit, pull_pc_hi: bit, is_lda_imm: bit, is_lda_zp: bit, is_lda_abs: bit, is_lda_abs_x: bit, is_sta_zp: bit, is_sta_abs: bit, is_sta_abs_x: bit, is_tax: bit, is_inx: bit, is_pha: bit, is_pla: bit, is_jsr: bit, is_rts: bit },
   nodes: { state_reg: Register, subcycle_reg: Register, STATE_FETCH: Constant, STATE_DECODE: Constant, STATE_EXECUTE: Constant, is_fetch: Comparator, is_decode: Comparator, is_execute: Comparator, LDA_IMM: Constant, LDA_ZP: Constant, LDA_ABS: Constant, LDA_ABS_X: Constant, STA_ZP: Constant, STA_ABS: Constant, STA_ABS_X: Constant, TAX: Constant, INX: Constant, PHA: Constant, PLA: Constant, JSR: Constant, RTS: Constant, cmp_lda_imm: Comparator, cmp_lda_zp: Comparator, cmp_lda_abs: Comparator, cmp_lda_abs_x: Comparator, cmp_sta_zp: Comparator, cmp_sta_abs: Comparator, cmp_sta_abs_x: Comparator, cmp_tax: Comparator, cmp_inx: Comparator, cmp_pha: Comparator, cmp_pla: Comparator, cmp_jsr: Comparator, cmp_rts: Comparator, is_imm: Or, is_zp: Or, is_abs_temp: Or, is_abs: Or, is_abs_final: Or, is_1cycle: Or, zero: Constant, one: Constant, two: Constant, three: Constant, four: Constant, five: Constant, inc_subcycle: Incrementer, subcycle_increment: Mux, always_on: Constant, is_sub0: Comparator, is_sub1: Comparator, is_sub2: Comparator, is_sub3: Comparator, is_sub4: Comparator, is_sub5: Comparator, next_from_fetch: Mux, next_from_decode: Mux, exec_sub0: And, exec_sub1: And, exec_sub2: And, exec_sub3: And, exec_sub4: And, exec_sub5: And, done_imm: And, done_zp: And, done_abs: And, done_1cyc: And, done_pha: And, done_pla: And, done_jsr: And, done_rts: And, exec_done_temp1: Or, exec_done_temp2: Or, exec_done_temp3: Or, exec_done_temp4: Or, exec_done_temp5: Or, exec_done_temp6: Or, exec_done: Or, next_from_execute: Mux, next_state: Mux, needs_operand_any: Or, needs_operand_temp: Or, needs_operand: Or, pc_inc_exec_sub0: And, needs_2nd_byte: Or, pc_inc_exec_sub1: And, pc_inc_temp: Or, pc_inc_signal: Or, operand_load_signal: And, addr_lo_load_signal: And, addr_hi_load_signal: And, is_load: Or, is_load_final: Or, mem_read_zp: And, mem_read_abs_temp: And, mem_read_abs_x: And, mem_read_abs: Or, mem_read_signal: Or, mem_write_zp: And, mem_write_abs_temp: And, mem_write_abs_x: And, mem_write_abs: Or, mem_write_signal: Or, sp_dec_pha: And, sp_dec_jsr_sub2: And, sp_dec_jsr_sub3: And, sp_dec_temp: Or, sp_dec_signal: Or, sp_inc_pla: And, sp_inc_rts_sub0: And, sp_inc_rts_sub2: And, sp_inc_temp: Or, sp_inc_signal: Or, stack_write_pha: And, stack_write_jsr_hi: And, stack_write_jsr_lo: And, stack_write_temp: Or, stack_write_signal: Or, use_stack_signal: And, jsr_load_pc_signal: And, rts_load_pc_signal: And, push_pc_hi_signal: And, push_pc_lo_signal: And, pull_pc_lo_signal: And, pull_pc_hi_signal: And, write_a_imm: And, write_a_zp: And, write_a_abs_temp: And, write_a_abs_x: And, write_a_abs: Or, write_a_temp: Or, write_a_temp2: Or, write_a_pla: And, write_a_signal: Or, write_x_tax: And, write_x_inx: And, write_x_signal: Or },
@@ -322,7 +322,7 @@ const SubroutineControl = component('SubroutineControl', {
   ],
 })
 
-const SubroutineCPU = component('SubroutineCPU', {
+const SubroutineCPU = circuit('SubroutineCPU', {
   in: { reset: bit },
   out: { pc: bus(8), instruction: bus(8), operand: bus(8), address: bus(8), mem_data: bus(8), stack_data: bus(8), current_state: bus(8), subcycle: bus(8), reg_a: bus(8), reg_x: bus(8), reg_sp: bus(8) },
   nodes: { pc_reg: Register, always_on: Constant, pc_inc: Incrementer, zero: Constant, one: Constant, two: Constant, three: Constant, four: Constant, five: Constant, six: Constant, seven: Constant, eight: Constant, nine: Constant, ten: Constant, eleven: Constant, byte_0: Constant, byte_1: Constant, byte_2: Constant, byte_3: Constant, byte_4: Constant, byte_5: Constant, byte_6: Constant, byte_7: Constant, byte_8: Constant, byte_9: Constant, byte_10: Constant, byte_11: Constant, at_0: Comparator, at_1: Comparator, at_2: Comparator, at_3: Comparator, at_4: Comparator, at_5: Comparator, at_6: Comparator, at_7: Comparator, at_8: Comparator, at_9: Comparator, at_10: Comparator, at_11: Comparator, mux1: Mux, mux2: Mux, mux3: Mux, mux4: Mux, mux5: Mux, mux6: Mux, mux7: Mux, mux8: Mux, mux9: Mux, mux10: Mux, mux11: Mux, ir: Register, operand_reg: Register, addr_lo_reg: Register, addr_hi_reg: Register, pc_lo_temp: Register, pc_hi_temp: Register, addr_with_x: Adder, control: SubroutineControl, registers: RegisterFile, sp: StackPointer, sp_init: Constant, stack: StackMemory, pc_minus_1: Subtractor, one_const: Constant, stack_data_pha_or_lo: Mux, stack_data_final: Mux, effective_addr: Mux, effective_addr_final: Mux, memory: SimpleMemory, inc_x: Incrementer, rts_pc_plus1: Incrementer, result_a_imm_zp: Mux, result_a_abs: Mux, result_a_abs_x: Mux, result_a: Mux, result_x: Mux, pc_after_inc: Mux, pc_after_rts: Mux, pc_after_jsr: Mux },
@@ -434,7 +434,7 @@ const SubroutineCPU = component('SubroutineCPU', {
   ],
 })
 
-const SubroutineTest = component('SubroutineTest', {
+const SubroutineTest = circuit('SubroutineTest', {
   nodes: { cpu: SubroutineCPU, reset_input: Input, d_pc: HexDisplay, d_instruction: HexDisplay, d_operand: HexDisplay, d_address: HexDisplay, d_mem_data: HexDisplay, d_stack_data: HexDisplay, d_state: HexDisplay, d_subcycle: HexDisplay, d_a: HexDisplay, d_x: HexDisplay, d_sp: HexDisplay },
   connect: ({ in: inp, out, cpu, reset_input, d_pc, d_instruction, d_operand, d_address, d_mem_data, d_stack_data, d_state, d_subcycle, d_a, d_x, d_sp }) => [
     reset_input.out.to(cpu.reset),

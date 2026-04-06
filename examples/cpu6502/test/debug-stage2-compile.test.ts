@@ -2,14 +2,14 @@ import { describe, it, beforeEach } from 'vitest';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import { compileDSL, adaptStoreToCompilerLibrary } from '../../../src/features/dsl/index';
-import { useComponentLibraryStore } from '../../../src/features/visual-editor/stores/component-library-store';
+import { useCircuitLibraryStore } from '../../../src/features/visual-editor/stores/circuit-library-store';
 import { getPrimitives } from '../../../src/features/visual-editor/lib/primitive-registry';
 
 describe('Debug Stage2 Compilation', () => {
-  let library: ReturnType<typeof useComponentLibraryStore.getState>;
+  let library: ReturnType<typeof useCircuitLibraryStore.getState>;
 
   beforeEach(() => {
-    library = useComponentLibraryStore.getState();
+    library = useCircuitLibraryStore.getState();
     library.clearAll();
     library.registerPrimitives(getPrimitives());
   });

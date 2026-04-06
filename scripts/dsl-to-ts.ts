@@ -48,7 +48,7 @@ function generateTS(program: Program): string {
   }
 
   // Generate imports
-  lines.push(`import { component, bit, bus } from '@turing-incomplete/core/builder'`);
+  lines.push(`import { circuit, bit, bus } from '@turing-incomplete/core/circuit'`);
   if (usedStdlib.size > 0) {
     const sorted = Array.from(usedStdlib).sort();
     lines.push(`import { ${sorted.join(', ')} } from '@turing-incomplete/core/std'`);
@@ -73,7 +73,7 @@ function generateCircuit(circuit: CircuitDef, definedNames: Set<string>): string
     lines.push(`// ${circuit.description}`);
   }
 
-  lines.push(`export const ${circuit.name} = component('${circuit.name}')`);
+  lines.push(`export const ${circuit.name} = circuit('${circuit.name}')`);
 
   // Inputs
   for (const input of circuit.inputs) {
@@ -136,7 +136,7 @@ function nodeRef(node: NodeDecl, definedNames: Set<string>): string {
   const name = node.componentType;
   const args = formatArguments(node.arguments);
   if (args) {
-    // Parameterized: component('Mux', { inputs: 4 }) — but in the builder API
+    // Parameterized: circuit('Mux', { inputs: 4 }) — but in the builder API
     // we don't have parameterized stdlib yet, so we'll pass args differently
     // For now, just reference the component name
     return name;

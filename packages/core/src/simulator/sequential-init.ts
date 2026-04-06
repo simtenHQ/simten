@@ -8,7 +8,7 @@
 import type {
   BitValue,
   BusValue,
-  ComponentLibrary,
+  CircuitLibrary,
 } from '../types/circuit.js';
 import type {
   FlatCircuit,
@@ -32,7 +32,7 @@ function portKey(nodeId: string, portName: string): string {
  */
 export function initializeFlatSequentialState(
   flatCircuit: FlatCircuit,
-  library: ComponentLibrary,
+  library: CircuitLibrary,
   memoryData?: Map<string, Map<number, number>>
 ): FlatSequentialState {
   const currentState = new Map<string, PrimitiveState>();
@@ -44,7 +44,7 @@ export function initializeFlatSequentialState(
   }
 
   for (const node of flatCircuit.nodes) {
-    const component = library.resolveComponent(node.primitiveType);
+    const component = library.resolveCircuit(node.primitiveType);
     if (!component) continue;
 
     // Check if this primitive has state

@@ -16,7 +16,7 @@
 import React, { useCallback, useState, useEffect, useRef, useMemo } from 'react';
 import { cn } from '../../lib/utils';
 import { useCircuitStore } from '../stores/circuit-store';
-import { useComponentLibraryStore } from '../stores/component-library-store';
+import { useCircuitLibraryStore } from '../stores/circuit-library-store';
 import type { Circuit } from '../types/circuit';
 import { ComponentTooltip, PortInfo } from './ComponentTooltip';
 import {
@@ -335,7 +335,7 @@ function ComponentGroup({
 
 export function ComponentPalette() {
   const addNode = useCircuitStore((state) => state.addNode);
-  const { library } = useComponentLibraryStore();
+  const { library } = useCircuitLibraryStore();
 
   // Search state
   const [searchQuery, setSearchQuery] = useState('');

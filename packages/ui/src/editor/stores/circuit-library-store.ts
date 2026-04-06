@@ -1,8 +1,8 @@
 /**
- * Component Library Store
+ * Circuit Library Store
  *
- * Manages the library of available component definitions.
- * Includes primitives, standard library, and user-defined components.
+ * Manages the library of available circuit definitions.
+ * Includes primitives, standard library, and user-defined circuits.
  */
 
 import { create } from 'zustand';
@@ -16,24 +16,24 @@ import { PRIMITIVES, PRIMITIVE_DEFINITIONS } from '@turing-incomplete/core/simul
 enableMapSet();
 
 /**
- * Component library structure
+ * Circuit library data structure (UI-layer; distinct from core CircuitLibrary)
  */
-export interface ComponentLibrary {
-  // Primitive components (implemented by simulator kernel)
+export interface CircuitLibraryData {
+  // Primitive circuits (implemented by simulator kernel)
   primitives: Map<string, Circuit>;
 
-  // Standard library components (composite components)
+  // Standard library circuits (composite circuits)
   standard: Map<string, Circuit>;
 
-  // User-defined components
+  // User-defined circuits
   user: Map<string, Circuit>;
 }
 
-interface ComponentLibraryState {
-  library: ComponentLibrary;
+interface CircuitLibraryState {
+  library: CircuitLibraryData;
 }
 
-interface ComponentLibraryActions {
+interface CircuitLibraryActions {
   // Primitive operations
   registerPrimitive: (circuit: Circuit) => void;
   getPrimitive: (name: string) => Circuit | undefined;
@@ -42,13 +42,13 @@ interface ComponentLibraryActions {
   registerStandard: (circuit: Circuit) => void;
   getStandard: (name: string) => Circuit | undefined;
 
-  // User component operations
+  // User circuit operations
   registerUser: (circuit: Circuit) => void;
   removeUser: (name: string) => void;
   getUser: (name: string) => Circuit | undefined;
 
   // Unified resolution
-  resolveComponent: (name: string) => Circuit | undefined;
+  resolveCircuit: (name: string) => Circuit | undefined;
 
   // Bulk operations
   registerPrimitives: (circuits: Circuit[]) => void;
@@ -58,19 +58,19 @@ interface ComponentLibraryActions {
   getAllPrimitiveNames: () => string[];
   getAllStandardNames: () => string[];
   getAllUserNames: () => string[];
-  getAllComponentNames: () => string[];
+  getAllCircuitNames: () => string[];
 
   // Initialization
   initializeLibrary: () => void;
 
   // Clear operations
-  clearUserComponents: () => void;
+  clearUserCircuits: () => void;
   clearAll: () => void;
 }
 
-export interface ComponentLibraryStore extends ComponentLibraryState, ComponentLibraryActions {}
+export interface CircuitLibraryStore extends CircuitLibraryState, CircuitLibraryActions {}
 
-const initialState: ComponentLibraryState = {
+const initialState: CircuitLibraryState = {
   library: {
     primitives: new Map(),
     standard: new Map(),
@@ -78,7 +78,7 @@ const initialState: ComponentLibraryState = {
   },
 };
 
-export const useComponentLibraryStore = create<ComponentLibraryStore>()(
+export const useCircuitLibraryStore = create<CircuitLibraryStore>()(
   immer((set, get) => ({
     ...initialState,
 
@@ -104,7 +104,7 @@ export const useComponentLibraryStore = create<ComponentLibraryStore>()(
       return get().library.standard.get(name);
     },
 
-    // User component operations
+    // User circuit operations
     registerUser: (circuit) => {
       set((state) => {
         state.library.user.set(circuit.name, circuit);
@@ -124,7 +124,7 @@ export const useComponentLibraryStore = create<ComponentLibraryStore>()(
 
     // Unified resolution
     // Resolution order: primitives -> standard -> user
-    resolveComponent: (name) => {
+    resolveCircuit: (name) => {
       const { primitives, standard, user } = get().library;
 
       return (
@@ -164,7 +164,7 @@ export const useComponentLibraryStore = create<ComponentLibraryStore>()(
       return Array.from(get().library.user.keys()).sort();
     },
 
-    getAllComponentNames: () => {
+    getAllCircuitNames: () => {
       const { primitives, standard, user } = get().library;
       return [
         ...primitives.keys(),
@@ -174,7 +174,7 @@ export const useComponentLibraryStore = create<ComponentLibraryStore>()(
     },
 
     // Clear operations
-    clearUserComponents: () => {
+    clearUserCircuits: () => {
       set((state) => {
         state.library.user.clear();
       });
@@ -189,7 +189,7 @@ export const useComponentLibraryStore = create<ComponentLibraryStore>()(
           state.library.primitives.set(circuit.name, circuit);
         }
       });
-      // Pre-compile all composites (FullAdder, HalfAdder, etc.) as standard components
+      // Pre-compile all composites (FullAdder, HalfAdder, etc.) as standard circuits
       const store = get();
       for (const [name, def] of Object.entries(PRIMITIVE_DEFINITIONS)) {
         if (def.referenceCircuit) {

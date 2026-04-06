@@ -6,9 +6,9 @@ import {
   type CorePrimitiveDefinition,
 } from "@turing-incomplete/core/simulator";
 
-const ComponentEmbed = lazy(() =>
+const CircuitEmbed = lazy(() =>
   import("@turing-incomplete/embed").then((m) => ({
-    default: m.ComponentEmbed,
+    default: m.CircuitEmbed,
   }))
 );
 
@@ -48,7 +48,7 @@ function generateDemoDsl(def: CorePrimitiveDefinition): string {
     parts.push(`  ],`);
   }
 
-  return `const Demo = component('Demo', {\n${parts.join('\n')}\n})`;
+  return `const Demo = circuit('Demo', {\n${parts.join('\n')}\n})`;
 }
 
 // Category display order and labels
@@ -294,7 +294,7 @@ export function PrimitiveExplorer() {
               </div>
             }
           >
-            <ComponentEmbed
+            <CircuitEmbed
               code={generateDemoDsl(selected)}
               height={280}
               showControls

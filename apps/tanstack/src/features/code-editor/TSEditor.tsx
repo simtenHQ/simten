@@ -2,10 +2,10 @@
  * TSEditor Component
  *
  * Monaco-based TypeScript editor for writing circuit definitions using
- * the component() builder API. Drop-in replacement for DSLEditor.
+ * the circuit() builder API. Drop-in replacement for DSLEditor.
  *
  * Uses Monaco's built-in TypeScript language service for autocomplete,
- * type checking, and error display. Compilation uses executeComponentCode()
+ * type checking, and error display. Compilation uses executeCircuitCode()
  * which strips types via sucrase and executes the code.
  */
 
@@ -16,7 +16,7 @@ import { useTheme } from "@/components/ThemeProvider";
 import Editor from "@monaco-editor/react";
 import type { OnMount, Monaco } from "@monaco-editor/react";
 import type { editor } from "monaco-editor";
-import { executeComponentCode } from "@turing-incomplete/core/builder";
+import { executeCircuitCode } from "@turing-incomplete/core/circuit";
 import type { Circuit } from "@turing-incomplete/core";
 import { CompileButton } from "./CompileButton";
 import { ErrorDisplay } from "./ErrorDisplay";
@@ -29,12 +29,12 @@ import { EDITOR_TYPE_DECLARATIONS } from "./editor-types";
 
 const DEFAULT_CODE = `// Circuit Editor — TypeScript Mode
 //
-// Build circuits using the component() API.
+// Build circuits using the circuit() API.
 // All standard components are available: And, Or, Xor, Not, Mux, Register, etc.
 //
 // Example: Half Adder
 
-const HalfAdder = component('HalfAdder', {
+const HalfAdder = circuit('HalfAdder', {
   in: { a: bit, b: bit },
   out: { sum: bit, carry: bit },
   nodes: { x: Xor, a: And },
@@ -64,7 +64,7 @@ interface TSEditorProps {
     circuits: Circuit[],
     tsCode: string,
     componentLibrary?: {
-      resolveComponent: (name: string) => Circuit | undefined;
+      resolveCircuit: (name: string) => Circuit | undefined;
       getAllPrimitiveNames: () => string[];
     },
   ) => void;
@@ -128,7 +128,7 @@ export const TSEditor = forwardRef<TSEditorRef, TSEditorProps>(function TSEditor
 
     setTimeout(() => {
       try {
-        const result = executeComponentCode(code);
+        const result = executeCircuitCode(code);
 
         if (result.error) {
           // Try to extract line info from error message
@@ -145,7 +145,7 @@ export const TSEditor = forwardRef<TSEditorRef, TSEditorProps>(function TSEditor
         if (result.circuits.length === 0) {
           if (!silent) {
             setErrors([{
-              message: "No circuits found. Use component('Name', { ... }) to define a circuit.",
+              message: "No circuits found. Use circuit('Name', { ... }) to define a circuit.",
               line: 0,
               column: 0,
             }]);
@@ -158,12 +158,12 @@ export const TSEditor = forwardRef<TSEditorRef, TSEditorProps>(function TSEditor
         setErrors([]);
         if (!silent) {
           const names = result.circuits.map(c => c.name).join(", ");
-          setSuccessMessage(`Compiled ${result.circuits.length} component(s): ${names}`);
+          setSuccessMessage(`Compiled ${result.circuits.length} circuit(s): ${names}`);
         }
 
         // Build library for simulation
         const library = {
-          resolveComponent: (name: string) => result.library.resolveComponent(name),
+          resolveCircuit: (name: string) => result.library.resolveCircuit(name),
           getAllPrimitiveNames: () => result.library.getAllPrimitiveNames(),
         };
 
@@ -302,7 +302,7 @@ export const TSEditor = forwardRef<TSEditorRef, TSEditorProps>(function TSEditor
 // Type declarations moved to editor-types.ts
 const _DEPRECATED = `
 // Builder API
-declare function component(name: string): ComponentBuilder;
+declare function circuit(name: string): CircuitBuilder;
 
 declare const bit: PortType;
 declare function bus(width: number): PortType;
@@ -317,82 +317,82 @@ interface PortRef {
 
 interface ConnectionDef {}
 
-interface ComponentBuilder {
-  in(name: string, type: PortType | number): ComponentBuilder;
-  out(name: string, type: PortType | number): ComponentBuilder;
-  node(name: string, component: any): ComponentBuilder;
-  connect(fn: (arg: any) => ConnectionDef[]): ComponentBuilder;
-  eval(fn: (inputs: any) => any): ComponentBuilder;
-  state(initial: any): ComponentBuilder;
-  onTick(fn: (inputsAndState: any) => any): ComponentBuilder;
-  impl(fn: (c: ComponentBuilder) => ComponentBuilder): ComponentBuilder;
-  meta(meta: { category?: string; description?: string; icon?: string }): ComponentBuilder;
-  build(): BuiltComponent;
+interface CircuitBuilder {
+  in(name: string, type: PortType | number): CircuitBuilder;
+  out(name: string, type: PortType | number): CircuitBuilder;
+  node(name: string, component: any): CircuitBuilder;
+  connect(fn: (arg: any) => ConnectionDef[]): CircuitBuilder;
+  eval(fn: (inputs: any) => any): CircuitBuilder;
+  state(initial: any): CircuitBuilder;
+  onTick(fn: (inputsAndState: any) => any): CircuitBuilder;
+  impl(fn: (c: CircuitBuilder) => CircuitBuilder): CircuitBuilder;
+  meta(meta: { category?: string; description?: string; icon?: string }): CircuitBuilder;
+  build(): BuiltCircuit;
 }
 
-interface BuiltComponent {
+interface BuiltCircuit {
   readonly name: string;
   readonly circuit: any;
 }
 
 // Standard Library — Logic Gates
-declare const And: BuiltComponent;
-declare const Or: BuiltComponent;
-declare const Not: BuiltComponent;
-declare const Xor: BuiltComponent;
-declare const Nand: BuiltComponent;
-declare const Nor: BuiltComponent;
-declare const Xnor: BuiltComponent;
-declare const Buffer: BuiltComponent;
+declare const And: BuiltCircuit;
+declare const Or: BuiltCircuit;
+declare const Not: BuiltCircuit;
+declare const Xor: BuiltCircuit;
+declare const Nand: BuiltCircuit;
+declare const Nor: BuiltCircuit;
+declare const Xnor: BuiltCircuit;
+declare const Buffer: BuiltCircuit;
 
 // Standard Library — Arithmetic
-declare const Adder: BuiltComponent;
-declare const Subtractor: BuiltComponent;
-declare const Multiplier: BuiltComponent;
-declare const Comparator: BuiltComponent;
-declare const Incrementer: BuiltComponent;
-declare const LeftShifter: BuiltComponent;
-declare const RightShifter: BuiltComponent;
-declare const SignedAdder: BuiltComponent;
-declare const SignedComparator: BuiltComponent;
-declare const SignedMultiplier: BuiltComponent;
-declare const BusAnd: BuiltComponent;
-declare const BusOr: BuiltComponent;
-declare const BusNot: BuiltComponent;
-declare const BusXor: BuiltComponent;
+declare const Adder: BuiltCircuit;
+declare const Subtractor: BuiltCircuit;
+declare const Multiplier: BuiltCircuit;
+declare const Comparator: BuiltCircuit;
+declare const Incrementer: BuiltCircuit;
+declare const LeftShifter: BuiltCircuit;
+declare const RightShifter: BuiltCircuit;
+declare const SignedAdder: BuiltCircuit;
+declare const SignedComparator: BuiltCircuit;
+declare const SignedMultiplier: BuiltCircuit;
+declare const BusAnd: BuiltCircuit;
+declare const BusOr: BuiltCircuit;
+declare const BusNot: BuiltCircuit;
+declare const BusXor: BuiltCircuit;
 
 // Standard Library — Routing
-declare const Mux: BuiltComponent;
-declare const Decoder: BuiltComponent;
-declare const Splitter: BuiltComponent;
-declare const Splitter8to8: BuiltComponent;
-declare const Combiner8to8: BuiltComponent;
-declare const Concat: BuiltComponent;
-declare const BitSlice: BuiltComponent;
-declare const AddressCombiner: BuiltComponent;
-declare const Probe: BuiltComponent;
+declare const Mux: BuiltCircuit;
+declare const Decoder: BuiltCircuit;
+declare const Splitter: BuiltCircuit;
+declare const Splitter8to8: BuiltCircuit;
+declare const Combiner8to8: BuiltCircuit;
+declare const Concat: BuiltCircuit;
+declare const BitSlice: BuiltCircuit;
+declare const AddressCombiner: BuiltCircuit;
+declare const Probe: BuiltCircuit;
 
 // Standard Library — Sequential
-declare const DFlipFlop: BuiltComponent;
-declare const Register: BuiltComponent;
+declare const DFlipFlop: BuiltCircuit;
+declare const Register: BuiltCircuit;
 
 // Standard Library — Memory
-declare const ROM: BuiltComponent;
-declare const RAM: BuiltComponent;
-declare const DualPortRAM: BuiltComponent;
+declare const ROM: BuiltCircuit;
+declare const RAM: BuiltCircuit;
+declare const DualPortRAM: BuiltCircuit;
 
 // Standard Library — I/O
-declare const Switch: BuiltComponent;
-declare const Button: BuiltComponent;
-declare const Led: BuiltComponent;
-declare const Input: BuiltComponent;
-declare const Output: BuiltComponent;
-declare const Constant: BuiltComponent;
+declare const Switch: BuiltCircuit;
+declare const Button: BuiltCircuit;
+declare const Led: BuiltCircuit;
+declare const Input: BuiltCircuit;
+declare const Output: BuiltCircuit;
+declare const Constant: BuiltCircuit;
 
 // Standard Library — Display
-declare const SevenSegment: BuiltComponent;
-declare const HexDisplay: BuiltComponent;
-declare const Screen: BuiltComponent;
-declare const RasterDisplay: BuiltComponent;
-declare const Console: BuiltComponent;
+declare const SevenSegment: BuiltCircuit;
+declare const HexDisplay: BuiltCircuit;
+declare const Screen: BuiltCircuit;
+declare const RasterDisplay: BuiltCircuit;
+declare const Console: BuiltCircuit;
 `;

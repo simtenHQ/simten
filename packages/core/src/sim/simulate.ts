@@ -12,7 +12,7 @@
  *   sim.get('sum')  // 0
  */
 
-import type { Circuit, ComponentLibrary, BitValue, BusValue } from '../types/circuit.js';
+import type { Circuit, CircuitLibrary, BitValue, BusValue } from '../types/circuit.js';
 import type { SimulatorSnapshot } from '../types/simulator.js';
 import {
   SimulationSession,
@@ -21,7 +21,7 @@ import {
 } from '../simulator/simulation-session.js';
 import { createSimulatorFromCircuit } from '../simulator/index.js';
 import { createStdLibrary } from '../std/index.js';
-import type { BuiltComponent, PortMap } from '../builder/types.js';
+import type { BuiltCircuit, PortMap } from '../circuit/types.js';
 import { registerEvalFunction, registerOnTickFunction } from '../simulator/eval-bridge.js';
 
 // ============================================================================
@@ -97,16 +97,16 @@ export interface SimulationHandle<
 /**
  * Create a simulation from a component.
  *
- * @param comp - A BuiltComponent (from component().build() or stdlib)
+ * @param comp - A BuiltCircuit (from circuit().build() or stdlib)
  * @param options - Optional: custom library, initial memory data
  */
 export function simulate<
   Ins extends PortMap,
   Outs extends PortMap,
 >(
-  comp: BuiltComponent<Ins, Outs>,
+  comp: BuiltCircuit<Ins, Outs>,
   options?: {
-    library?: ComponentLibrary;
+    library?: CircuitLibrary;
   },
 ): SimulationHandle<Ins, Outs> {
   const rawCircuit = comp.circuit;
@@ -267,7 +267,7 @@ export function simulate<
  * The elaboration pipeline expects a composite top-level circuit with nodes.
  * Bare primitives need a wrapper that instantiates them and wires through.
  */
-function wrapIfPrimitive(circuit: Circuit, library: ComponentLibrary): Circuit {
+function wrapIfPrimitive(circuit: Circuit, library: CircuitLibrary): Circuit {
   if (circuit.implementation.kind !== 'primitive') return circuit;
 
   const nodeId = '_inner';
@@ -326,10 +326,10 @@ function wrapIfPrimitive(circuit: Circuit, library: ComponentLibrary): Circuit {
   };
 }
 
-function detectSequential(circuit: Circuit, library: ComponentLibrary): boolean {
+function detectSequential(circuit: Circuit, library: CircuitLibrary): boolean {
   if (circuit.clocks.length > 0 || circuit.state.length > 0) return true;
   for (const node of circuit.nodes) {
-    const def = library.resolveComponent(node.componentRef);
+    const def = library.resolveCircuit(node.componentRef);
     if (def && (def.clocks.length > 0 || def.state.length > 0)) return true;
   }
   return false;
@@ -339,7 +339,7 @@ function detectSequential(circuit: Circuit, library: ComponentLibrary): boolean 
  * Register user-defined eval functions for a component tree.
  * Walks the component's nodes and registers any with _evalFn.
  */
-function registerUserEvals(comp: BuiltComponent): void {
+function registerUserEvals(comp: BuiltCircuit): void {
   const evalFn = (comp as any)._evalFn;
   const onTickFn = (comp as any)._onTickFn;
   const initialState = (comp as any)._initialState;

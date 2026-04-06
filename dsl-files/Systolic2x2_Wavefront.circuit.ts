@@ -1,6 +1,6 @@
 // Auto-generated from DSL
 
-const PE_Systolic = component('PE_Systolic', {
+const PE_Systolic = circuit('PE_Systolic', {
   in: { dataIn: bus(8), weightIn: bus(8), partialSumIn: bus(16), weightValid: bit, validIn: bit },
   out: { dataOut: bus(8), partialSumOut: bus(16), validOut: bit },
   nodes: { weightReg: Register, mult: Multiplier, adder: Adder, psumReg: Register, dataPipe: Register, validPipe: DFlipFlop, one: Constant, zero: Constant },
@@ -22,7 +22,7 @@ const PE_Systolic = component('PE_Systolic', {
   ],
 })
 
-const Systolic2x2 = component('Systolic2x2', {
+const Systolic2x2 = circuit('Systolic2x2', {
   in: { a00: bus(8), a01: bus(8), a10: bus(8), a11: bus(8), b00: bus(8), b01: bus(8), b10: bus(8), b11: bus(8), start: bit },
   out: { c00: bus(16), c01: bus(16), c10: bus(16), c11: bus(16), done: bit },
   nodes: { pe00: PE_Systolic, pe01: PE_Systolic, pe10: PE_Systolic, pe11: PE_Systolic, zero: Constant, one: Constant, two: Constant, three: Constant, four: Constant, counter: Register, counterInc: Incrementer, counterMux: Mux, notDone: Comparator, shouldAdvance: And, isCycle0: Comparator, isCycle1: Comparator, isCycle2: Comparator, loadWeights: And, muxR0a: Mux, muxR0b: Mux, r0valid: Or, muxR1a: Mux, muxR1b: Mux, r1valid: Or, col0count: Register, col0countInc: Incrementer, col0isFirst: Comparator, col0isSecond: Comparator, c00we: And, result_c00: Register, c10we: And, result_c10: Register, col1count: Register, col1countInc: Incrementer, col1isFirst: Comparator, col1isSecond: Comparator, c01we: And, result_c01: Register, c11we: And, result_c11: Register, isDone: Comparator },
@@ -85,7 +85,7 @@ const Systolic2x2 = component('Systolic2x2', {
   ],
 })
 
-const TestWavefront = component('TestWavefront', {
+const TestWavefront = circuit('TestWavefront', {
   nodes: { sys: Systolic2x2, a00: Input, a01: Input, a10: Input, a11: Input, b00: Input, b01: Input, b10: Input, b11: Input, start: Switch, display_c00: HexDisplay, display_c01: HexDisplay, display_c10: HexDisplay, display_c11: HexDisplay, done_led: Led },
   nodeArgs: { a00: { value: 1 }, a01: { value: 2 }, a10: { value: 3 }, a11: { value: 4 }, b00: { value: 5 }, b01: { value: 6 }, b10: { value: 7 }, b11: { value: 8 }, start: { value: 1 } },
   connect: ({ in: inp, out, sys, a00, a01, a10, a11, b00, b01, b10, b11, start, display_c00, display_c01, display_c10, display_c11, done_led }) => [

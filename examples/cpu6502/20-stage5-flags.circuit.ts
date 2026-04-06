@@ -1,6 +1,6 @@
 // Auto-generated from DSL
 
-const FlagRegister = component('FlagRegister', {
+const FlagRegister = circuit('FlagRegister', {
   in: { update_n: bit, update_z: bit, update_c: bit, update_v: bit, new_n: bit, new_z: bit, new_c: bit, new_v: bit },
   out: { flag_n: bit, flag_z: bit, flag_c: bit, flag_v: bit },
   nodes: { reg_n: Register, reg_z: Register, reg_c: Register, reg_v: Register },
@@ -21,7 +21,7 @@ const FlagRegister = component('FlagRegister', {
   ],
 })
 
-const FlagCalculator = component('FlagCalculator', {
+const FlagCalculator = circuit('FlagCalculator', {
   in: { result: bus(8), carry_out: bit, operand_a_bit7: bit, operand_b_bit7: bit, result_bit7: bit },
   out: { calc_n: bit, calc_z: bit, calc_c: bit, calc_v: bit },
   nodes: { const_128: Constant, cmp_neg: Comparator, n_flag: Or, const_0: Constant, cmp_zero: Comparator, xor_ab: Xor, xor_ar: Xor, not_xor_ab: Not, v_flag: And },
@@ -45,7 +45,7 @@ const FlagCalculator = component('FlagCalculator', {
   ],
 })
 
-const Bit7Extractor = component('Bit7Extractor', {
+const Bit7Extractor = circuit('Bit7Extractor', {
   in: { value: bus(8) },
   out: { bit7: bit },
   nodes: { const_128: Constant, cmp: Comparator, is_gte: Or },
@@ -59,7 +59,7 @@ const Bit7Extractor = component('Bit7Extractor', {
   ],
 })
 
-const BranchCondition = component('BranchCondition', {
+const BranchCondition = circuit('BranchCondition', {
   in: { flag_n: bit, flag_z: bit, flag_c: bit, flag_v: bit, is_beq: bit, is_bne: bit, is_bcc: bit, is_bcs: bit, is_bmi: bit, is_bpl: bit, is_bvc: bit, is_bvs: bit },
   out: { branch_taken: bit },
   nodes: { beq_cond: And, not_z: Not, bne_cond: And, not_c: Not, bcc_cond: And, bcs_cond: And, bmi_cond: And, not_n: Not, bpl_cond: And, not_v: Not, bvc_cond: And, bvs_cond: And, or1: Or, or2: Or, or3: Or, or4: Or, or5: Or, or6: Or, or7: Or },
@@ -98,7 +98,7 @@ const BranchCondition = component('BranchCondition', {
   ],
 })
 
-const SignedBranchAdder = component('SignedBranchAdder', {
+const SignedBranchAdder = circuit('SignedBranchAdder', {
   in: { pc: bus(8), offset: bus(8) },
   out: { result: bus(8) },
   nodes: { adder: Adder, zero: Constant },
@@ -111,7 +111,7 @@ const SignedBranchAdder = component('SignedBranchAdder', {
   ],
 })
 
-const FlagTest = component('FlagTest', {
+const FlagTest = circuit('FlagTest', {
   nodes: { flags: FlagRegister, calc: FlagCalculator, bit7_a: Bit7Extractor, bit7_b: Bit7Extractor, bit7_r: Bit7Extractor, branch: BranchCondition, result_input: Input, operand_a_input: Input, operand_b_input: Input, carry_input: Input, update_input: Input, beq_input: Input, bne_input: Input, bcc_input: Input, bcs_input: Input, bmi_input: Input, bpl_input: Input, bvc_input: Input, bvs_input: Input, d_n: HexDisplay, d_z: HexDisplay, d_c: HexDisplay, d_v: HexDisplay, d_branch: HexDisplay },
   connect: ({ in: inp, out, flags, calc, bit7_a, bit7_b, bit7_r, branch, result_input, operand_a_input, operand_b_input, carry_input, update_input, beq_input, bne_input, bcc_input, bcs_input, bmi_input, bpl_input, bvc_input, bvs_input, d_n, d_z, d_c, d_v, d_branch }) => [
     flags.flag_n.to(branch.flag_n, d_n.in),

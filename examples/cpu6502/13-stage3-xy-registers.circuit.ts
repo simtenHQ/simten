@@ -1,6 +1,6 @@
 // Auto-generated from DSL
 
-const RegisterFile = component('RegisterFile', {
+const RegisterFile = circuit('RegisterFile', {
   in: { write_a: bit, write_x: bit, write_y: bit, data_a: bus(8), data_x: bus(8), data_y: bus(8) },
   out: { reg_a: bus(8), reg_x: bus(8), reg_y: bus(8) },
   nodes: { regA: Register, regX: Register, regY: Register },
@@ -17,7 +17,7 @@ const RegisterFile = component('RegisterFile', {
   ],
 })
 
-const Stage3Control = component('Stage3Control', {
+const Stage3Control = circuit('Stage3Control', {
   in: { reset: bit, current_opcode: bus(8) },
   out: { current_state: bus(8), exec_subcycle: bus(8), pc_increment: bit, ir_load: bit, operand_load: bit, write_a: bit, write_x: bit, write_y: bit, is_lda: bit, is_adc: bit, is_tax: bit, is_tay: bit, is_txa: bit, is_tya: bit, is_inx: bit, is_dex: bit, is_iny: bit, is_dey: bit },
   nodes: { state_reg: Register, subcycle_reg: Register, STATE_FETCH: Constant, STATE_DECODE: Constant, STATE_EXECUTE: Constant, is_fetch: Comparator, is_decode: Comparator, is_execute: Comparator, LDA_IMM: Constant, ADC_IMM: Constant, TAX: Constant, TAY: Constant, TXA: Constant, TYA: Constant, INX: Constant, DEX: Constant, INY: Constant, DEY: Constant, cmp_lda: Comparator, cmp_adc: Comparator, cmp_tax: Comparator, cmp_tay: Comparator, cmp_txa: Comparator, cmp_tya: Comparator, cmp_inx: Comparator, cmp_dex: Comparator, cmp_iny: Comparator, cmp_dey: Comparator, needs_operand: Or, zero: Constant, one: Constant, inc_subcycle: Incrementer, subcycle_increment: Mux, always_on: Constant, is_subcycle_0: Comparator, is_subcycle_1: Comparator, next_from_fetch: Mux, next_from_decode: Mux, exec_done_2cycle: And, exec_done_1cycle: And, is_1cycle: Or, is_1cycle_2: Or, is_1cycle_3: Or, is_1cycle_4: Or, is_1cycle_5: Or, is_1cycle_6: Or, is_1cycle_final: Or, exec_done_1cycle_check: And, exec_done: Or, next_from_execute: Mux, next_state: Mux, exec_subcycle_0: And, exec_subcycle_0_needs_operand: And, pc_inc_signal: Or, operand_load_signal: And, exec_subcycle_1: And, write_a_2cycle: And, write_a_txa: And, write_a_tya: And, write_a_transfer: Or, write_a_signal: Or, write_x_tax: And, write_x_inx: And, write_x_dex: And, write_x_temp: Or, write_x_signal: Or, write_y_tay: And, write_y_iny: And, write_y_dey: And, write_y_temp: Or, write_y_signal: Or },
@@ -99,7 +99,7 @@ const Stage3Control = component('Stage3Control', {
   ],
 })
 
-const Stage3CPU = component('Stage3CPU', {
+const Stage3CPU = circuit('Stage3CPU', {
   in: { reset: bit },
   out: { pc: bus(8), instruction: bus(8), operand: bus(8), current_state: bus(8), subcycle: bus(8), reg_a: bus(8), reg_x: bus(8), reg_y: bus(8) },
   nodes: { pc_reg: Register, always_on: Constant, pc_inc: Incrementer, zero: Constant, one: Constant, two: Constant, three: Constant, four: Constant, five: Constant, six: Constant, seven: Constant, at_0: Comparator, at_1: Comparator, at_2: Comparator, at_3: Comparator, at_4: Comparator, at_5: Comparator, at_6: Comparator, at_7: Comparator, byte_0: Constant, byte_1: Constant, byte_2: Constant, byte_3: Constant, byte_4: Constant, byte_5: Constant, byte_6: Constant, byte_7: Constant, mux1: Mux, mux2: Mux, mux3: Mux, mux4: Mux, mux5: Mux, mux6: Mux, mux7: Mux, ir: Register, operand_reg: Register, control: Stage3Control, pc_next: Mux, registers: RegisterFile, adder: Adder, inc_x: Incrementer, dec_x: Subtractor, inc_y: Incrementer, dec_y: Subtractor, result_a_lda_adc: Mux, result_a_txa: Mux, result_a: Mux, result_x_inx_dex: Mux, result_x: Mux, result_y_iny_dey: Mux, result_y: Mux },
@@ -175,7 +175,7 @@ const Stage3CPU = component('Stage3CPU', {
   ],
 })
 
-const Stage3XYTest = component('Stage3XYTest', {
+const Stage3XYTest = circuit('Stage3XYTest', {
   nodes: { cpu: Stage3CPU, reset_input: Input, d_pc: HexDisplay, d_instruction: HexDisplay, d_operand: HexDisplay, d_state: HexDisplay, d_subcycle: HexDisplay, d_a: HexDisplay, d_x: HexDisplay, d_y: HexDisplay },
   connect: ({ in: inp, out, cpu, reset_input, d_pc, d_instruction, d_operand, d_state, d_subcycle, d_a, d_x, d_y }) => [
     reset_input.out.to(cpu.reset),

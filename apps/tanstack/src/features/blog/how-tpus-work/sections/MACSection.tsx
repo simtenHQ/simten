@@ -1,6 +1,6 @@
 "use client";
 
-import { ComponentEmbed } from "@turing-incomplete/embed";
+import { CircuitEmbed } from "@turing-incomplete/embed";
 import { TPU_CIRCUITS } from "../circuits";
 
 export function MACSection() {
@@ -41,7 +41,7 @@ export function MACSection() {
       </div>
 
       <div className="mt-8">
-        <ComponentEmbed
+        <CircuitEmbed
           code={TPU_CIRCUITS.multiplyAdd.dsl}
           displayCode={TPU_CIRCUITS.multiplyAdd.displayCode}
           nodePositions={TPU_CIRCUITS.multiplyAdd.nodePositions}

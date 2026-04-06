@@ -1,6 +1,6 @@
 // Auto-generated from DSL
 
-const InstructionRegister = component('InstructionRegister', {
+const InstructionRegister = circuit('InstructionRegister', {
   in: { opcode: bus(8), load: bit },
   out: { current_opcode: bus(8) },
   nodes: { ir: Register },
@@ -11,7 +11,7 @@ const InstructionRegister = component('InstructionRegister', {
   ],
 })
 
-const EnhancedControl = component('EnhancedControl', {
+const EnhancedControl = circuit('EnhancedControl', {
   in: { reset: bit, current_opcode: bus(8) },
   out: { current_state: bus(3), exec_subcycle: bus(3), pc_increment: bit, ir_load: bit, operand_load: bit, reg_write: bit, is_lda: bit, is_adc: bit },
   nodes: { state_reg: Register, subcycle_reg: Register, STATE_FETCH: Constant, STATE_DECODE: Constant, STATE_EXECUTE: Constant, is_fetch: Comparator, is_decode: Comparator, is_execute: Comparator, LDA_IMM: Constant, ADC_IMM: Constant, cmp_lda: Comparator, cmp_adc: Comparator, zero: Constant, one: Constant, two: Constant, inc_subcycle: Incrementer, subcycle_increment: Mux, always_on: Constant, is_subcycle_0: Comparator, is_subcycle_1: Comparator, next_from_fetch: Mux, next_from_decode: Mux, exec_done: And, next_from_execute: Mux, next_state: Mux, exec_subcycle_0: And, pc_inc_signal: Or, exec_subcycle_1: And },
@@ -49,7 +49,7 @@ const EnhancedControl = component('EnhancedControl', {
   ],
 })
 
-const EnhancedCPU = component('EnhancedCPU', {
+const EnhancedCPU = circuit('EnhancedCPU', {
   in: { reset: bit },
   out: { pc: bus(8), instruction: bus(8), operand: bus(8), current_state: bus(3), subcycle: bus(3), reg_a: bus(8) },
   nodes: { pc_reg: Register, always_on: Constant, pc_inc: Incrementer, zero: Constant, one: Constant, two: Constant, three: Constant, four: Constant, five: Constant, at_0: Comparator, at_1: Comparator, at_2: Comparator, at_3: Comparator, at_4: Comparator, at_5: Comparator, byte_0: Constant, byte_1: Constant, byte_2: Constant, byte_3: Constant, byte_4: Constant, byte_5: Constant, mux1: Mux, mux2: Mux, mux3: Mux, mux4: Mux, mux5: Mux, ir: Register, operand_reg: Register, control: EnhancedControl, pc_next: Mux, reg_a_internal: Register, adder: Adder, result: Mux },
@@ -97,7 +97,7 @@ const EnhancedCPU = component('EnhancedCPU', {
   ],
 })
 
-const Stage3Test = component('Stage3Test', {
+const Stage3Test = circuit('Stage3Test', {
   nodes: { cpu: EnhancedCPU, reset_input: Input, d_pc: HexDisplay, d_instruction: HexDisplay, d_operand: HexDisplay, d_state: HexDisplay, d_subcycle: HexDisplay, d_a: HexDisplay },
   connect: ({ in: inp, out, cpu, reset_input, d_pc, d_instruction, d_operand, d_state, d_subcycle, d_a }) => [
     reset_input.out.to(cpu.reset),

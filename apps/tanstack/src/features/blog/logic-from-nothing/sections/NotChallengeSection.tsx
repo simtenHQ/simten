@@ -41,7 +41,7 @@ NAND(1, 1) = 0`}</pre>
           "connect A.out -> gate.a\nconnect A.out -> gate.b\nconnect gate.out -> light.in",
         ]}
         scaffold={`
-const NotFromNand = component('NotFromNand', {
+const NotFromNand = circuit('NotFromNand', {
   nodes: { A: Switch, gate: Nand, light: Led },
 })
 `}

@@ -20,7 +20,7 @@ export const EXAMPLES: Example[] = [
     category: "game",
     nodes: "~100 nodes",
     dsl: `
-const SnakeAdvanced = component('SnakeAdvanced', {
+const SnakeAdvanced = circuit('SnakeAdvanced', {
   nodes: { screen: Screen, keyboard: Input, foodX: Register, foodY: Register, foodNeedsDrawing: Register, headPtr: Register, tailPtr: Register, snakeLen: Register, headX: Register, headY: Register, tailPixelAddr: Register, nextHeadPixelAddr: Register, phase: Register, zero: Constant, one: Constant, two: Constant, three: Constant, bodyBase: Constant, minus1: Constant, eight: Constant, phaseInc: Adder, phaseWrap: BitSlice, phaseEnable: Switch, isPhase0: Comparator, isPhase1: Comparator, isPhase2: Comparator, isPhase3: Comparator, keyboardLatched: Register, latchKeyboard: And, upCode: Constant, downCode: Constant, leftCode: Constant, rightCode: Constant, isUp: Comparator, isDown: Comparator, isLeft: Comparator, isRight: Comparator, deltaXTemp: Mux, deltaX: Mux, deltaYTemp: Mux, deltaY: Mux, nextHeadXCalc: Adder, nextHeadYCalc: Adder, nextHeadX: BitSlice, nextHeadY: BitSlice, nextHeadY2: Adder, nextHeadY4: Adder, nextHeadY8: Adder, nextPixelAddr: Adder, foodY2: Adder, foodY4: Adder, foodY8: Adder, foodPixelAddr: Adder, nextHeadAtFoodX: Comparator, nextHeadAtFoodY: Comparator, willEatFood: And, latchNextHead: And, headPtrNext: Adder, headPtrNextWrap: BitSlice, headBodyAddr: Adder, tailBodyAddr: Adder, phase0Addr: Mux, addrMux0: Mux, addrMux1: Mux, ramAddr: Mux, dataMux0: Mux, dataMux1: Mux, ramData: Mux, bufferEmpty: Comparator, bufferNotEmpty: Not, deltaXIsZero: Comparator, deltaYIsZero: Comparator, bothDeltasZero: And, isMoving: Not, shouldMoveTail: Switch, shouldMoveTailActual: And, notEatingFood: Not, shouldClearTail: And, shouldClearTailMoving: And, writePhase0: And, writePhase1: And, writePhase2: And, writePhase3: And, writePhase01: Or, writePhase2or3: Or, writeAny: Or, writeEnable: Switch, finalWriteEnable: And, latchTail: And, latchTailFinal: And, latchTailNotFood: And, notDrawingFood: Not, clearFoodFlag: And, clearFoodFlagFinal: And, ateFood: And, ateFoodFinal: And, foodFlagWriteEnable: Or, foodFlagData: Mux, foodXNext: Adder, foodXWrap: BitSlice, foodYNext: Adder, five: Constant, foodYWrap: BitSlice, updateHead: And, updateHeadFinal: And, headPtrInc: Adder, headPtrWrap: BitSlice, tailPtrInc: Adder, tailPtrWrap: BitSlice, updateTail: And, updateTailFinal: And, snakeLenDelta: Mux, snakeLenNew: Adder },
   nodeArgs: { foodX: { initial: 6 }, foodY: { initial: 3 }, foodNeedsDrawing: { initial: 1 }, headPtr: { initial: 3 }, tailPtr: { initial: 0 }, snakeLen: { initial: 4 }, headX: { initial: 4 }, headY: { initial: 4 }, tailPixelAddr: { initial: 33 }, nextHeadPixelAddr: { initial: 36 }, phase: { initial: 0 }, zero: { value: 0 }, one: { value: 1 }, two: { value: 2 }, three: { value: 3 }, bodyBase: { value: 64 }, minus1: { value: 255 }, eight: { value: 8 }, phaseWrap: { low: 0, high: 1 }, phaseEnable: { value: 1 }, keyboardLatched: { initial: 0 }, upCode: { value: 72 }, downCode: { value: 80 }, leftCode: { value: 75 }, rightCode: { value: 77 }, nextHeadX: { low: 0, high: 2 }, nextHeadY: { low: 0, high: 2 }, headPtrNextWrap: { low: 0, high: 5 }, shouldMoveTail: { value: 1 }, writeEnable: { value: 1 }, foodXWrap: { low: 0, high: 2 }, five: { value: 5 }, foodYWrap: { low: 0, high: 2 }, headPtrWrap: { low: 0, high: 5 }, tailPtrWrap: { low: 0, high: 5 } },
   connect: ({ in: inp, out, ram, screen, keyboard, foodX, foodY, foodNeedsDrawing, headPtr, tailPtr, snakeLen, headX, headY, tailPixelAddr, nextHeadPixelAddr, phase, zero, one, two, three, bodyBase, minus1, eight, phaseInc, phaseWrap, phaseEnable, isPhase0, isPhase1, isPhase2, isPhase3, keyboardLatched, latchKeyboard, upCode, downCode, leftCode, rightCode, isUp, isDown, isLeft, isRight, deltaXTemp, deltaX, deltaYTemp, deltaY, nextHeadXCalc, nextHeadYCalc, nextHeadX, nextHeadY, nextHeadY2, nextHeadY4, nextHeadY8, nextPixelAddr, foodY2, foodY4, foodY8, foodPixelAddr, nextHeadAtFoodX, nextHeadAtFoodY, willEatFood, latchNextHead, headPtrNext, headPtrNextWrap, headBodyAddr, tailBodyAddr, phase0Addr, addrMux0, addrMux1, ramAddr, dataMux0, dataMux1, ramData, bufferEmpty, bufferNotEmpty, deltaXIsZero, deltaYIsZero, bothDeltasZero, isMoving, shouldMoveTail, shouldMoveTailActual, notEatingFood, shouldClearTail, shouldClearTailMoving, writePhase0, writePhase1, writePhase2, writePhase3, writePhase01, writePhase2or3, writeAny, writeEnable, finalWriteEnable, latchTail, latchTailFinal, latchTailNotFood, notDrawingFood, clearFoodFlag, clearFoodFlagFinal, ateFood, ateFoodFinal, foodFlagWriteEnable, foodFlagData, foodXNext, foodXWrap, foodYNext, five, foodYWrap, updateHead, updateHeadFinal, headPtrInc, headPtrWrap, tailPtrInc, tailPtrWrap, updateTail, updateTailFinal, snakeLenDelta, snakeLenNew }) => [
@@ -149,7 +149,7 @@ const SnakeAdvanced = component('SnakeAdvanced', {
     category: "cpu",
     nodes: "~120 nodes",
     dsl: `
-const PE_Systolic = component('PE_Systolic', {
+const PE_Systolic = circuit('PE_Systolic', {
   in: { dataIn: bus(8), weightIn: bus(8), partialSumIn: bus(16), weightValid: bit },
   out: { dataOut: bus(8), partialSumOut: bus(16) },
   nodes: { weightReg: Register, mult: Multiplier, adder: Adder, psumReg: Register, dataPipe: Register, one: Constant, zero: Constant },
@@ -169,7 +169,7 @@ const PE_Systolic = component('PE_Systolic', {
   ],
 })
 
-const Systolic3x3 = component('Systolic3x3', {
+const Systolic3x3 = circuit('Systolic3x3', {
   in: { a00: bus(8), a01: bus(8), a02: bus(8), a10: bus(8), a11: bus(8), a12: bus(8), a20: bus(8), a21: bus(8), a22: bus(8), b00: bus(8), b01: bus(8), b02: bus(8), b10: bus(8), b11: bus(8), b12: bus(8), b20: bus(8), b21: bus(8), b22: bus(8), start: bit },
   out: { c00: bus(16), c01: bus(16), c02: bus(16), c10: bus(16), c11: bus(16), c12: bus(16), c20: bus(16), c21: bus(16), c22: bus(16), done: bit },
   nodes: { pe00: PE_Systolic, pe01: PE_Systolic, pe02: PE_Systolic, pe10: PE_Systolic, pe11: PE_Systolic, pe12: PE_Systolic, pe20: PE_Systolic, pe21: PE_Systolic, pe22: PE_Systolic, zero: Constant, one: Constant, two: Constant, three: Constant, four: Constant, five: Constant, six: Constant, seven: Constant, eight: Constant, nine: Constant, counter: Register, counterInc: Incrementer, counterMux: Mux, notDone: Comparator, shouldAdvance: And, isCycle0: Comparator, isCycle1: Comparator, isCycle2: Comparator, isCycle3: Comparator, isCycle4: Comparator, isCycle5: Comparator, isCycle6: Comparator, isCycle7: Comparator, isCycle8: Comparator, loadWeights: And, muxR0a: Mux, muxR0b: Mux, muxR0c: Mux, muxR1a: Mux, muxR1b: Mux, muxR1c: Mux, muxR2a: Mux, muxR2b: Mux, muxR2c: Mux, result_c00: Register, result_c10: Register, result_c20: Register, result_c01: Register, result_c11: Register, result_c21: Register, result_c02: Register, result_c12: Register, result_c22: Register, isDone: Comparator },
@@ -256,7 +256,7 @@ const Systolic3x3 = component('Systolic3x3', {
   ],
 })
 
-const TestSystolic3x3 = component('TestSystolic3x3', {
+const TestSystolic3x3 = circuit('TestSystolic3x3', {
   nodes: { sys: Systolic3x3, a00: Input, a01: Input, a02: Input, a10: Input, a11: Input, a12: Input, a20: Input, a21: Input, a22: Input, b00: Input, b01: Input, b02: Input, b10: Input, b11: Input, b12: Input, b20: Input, b21: Input, b22: Input, start: Switch, display_c00: HexDisplay, display_c01: HexDisplay, display_c02: HexDisplay, display_c10: HexDisplay, display_c11: HexDisplay, display_c12: HexDisplay, display_c20: HexDisplay, display_c21: HexDisplay, display_c22: HexDisplay, done_led: Led },
   nodeArgs: { a00: { value: 1 }, a01: { value: 2 }, a02: { value: 3 }, a10: { value: 4 }, a11: { value: 5 }, a12: { value: 6 }, a20: { value: 7 }, a21: { value: 8 }, a22: { value: 9 }, b00: { value: 2 }, b01: { value: 0 }, b02: { value: 1 }, b10: { value: 0 }, b11: { value: 2 }, b12: { value: 0 }, b20: { value: 1 }, b21: { value: 0 }, b22: { value: 2 } },
   connect: ({ in: inp, out, sys, a00, a01, a02, a10, a11, a12, a20, a21, a22, b00, b01, b02, b10, b11, b12, b20, b21, b22, start, display_c00, display_c01, display_c02, display_c10, display_c11, display_c12, display_c20, display_c21, display_c22, done_led }) => [
@@ -300,7 +300,7 @@ const TestSystolic3x3 = component('TestSystolic3x3', {
     category: "math",
     nodes: "~12 nodes",
     dsl: `
-const Fibonacci = component('Fibonacci', {
+const Fibonacci = circuit('Fibonacci', {
   out: { fib: bus(8) },
   nodes: { reg_a: Register, reg_b: Register, adder: Adder, one_bit: Constant, init: DFlipFlop },
   nodeArgs: { one_bit: { value: 1 } },
@@ -313,7 +313,7 @@ const Fibonacci = component('Fibonacci', {
   ],
 })
 
-const FibonacciDemo = component('FibonacciDemo', {
+const FibonacciDemo = circuit('FibonacciDemo', {
   nodes: { fib: Fibonacci, display: HexDisplay, leds: Splitter8to8, led0: Led, led1: Led, led2: Led, led3: Led, led4: Led, led5: Led, led6: Led, led7: Led },
   connect: ({ in: inp, out, fib, display, leds, led0, led1, led2, led3, led4, led5, led6, led7 }) => [
     fib.fib.to(display.in, leds.in),
@@ -336,7 +336,7 @@ const FibonacciDemo = component('FibonacciDemo', {
     category: "math",
     nodes: "~40 nodes",
     dsl: `
-const Rule30Cell = component('Rule30Cell', {
+const Rule30Cell = circuit('Rule30Cell', {
   in: { left: bit, center: bit, right: bit },
   out: { next: bit },
   nodes: { or1: Or, xor1: Xor },
@@ -349,7 +349,7 @@ const Rule30Cell = component('Rule30Cell', {
   ],
 })
 
-const Rule30 = component('Rule30', {
+const Rule30 = circuit('Rule30', {
   nodes: { c0: DFlipFlop, c1: DFlipFlop, c2: DFlipFlop, c3: DFlipFlop, c4: DFlipFlop, c5: DFlipFlop, c6: DFlipFlop, c7: DFlipFlop, r0: Rule30Cell, r1: Rule30Cell, r2: Rule30Cell, r3: Rule30Cell, r4: Rule30Cell, r5: Rule30Cell, r6: Rule30Cell, r7: Rule30Cell, one: Constant, init: DFlipFlop, mux4: Mux, led0: Led, led1: Led, led2: Led, led3: Led, led4: Led, led5: Led, led6: Led, led7: Led, combine: Combiner8to8, display: HexDisplay },
   nodeArgs: { one: { value: 1 } },
   connect: ({ in: inp, out, c0, c1, c2, c3, c4, c5, c6, c7, r0, r1, r2, r3, r4, r5, r6, r7, one, init, mux4, led0, led1, led2, led3, led4, led5, led6, led7, combine, display }) => [
@@ -384,7 +384,7 @@ const Rule30 = component('Rule30', {
     category: "cpu",
     nodes: "~30 nodes",
     dsl: `
-const ALU = component('ALU', {
+const ALU = circuit('ALU', {
   in: { a: bus(8), b: bus(8), op0: bit, op1: bit, op2: bit },
   out: { result: bus(8), zero: bit, carry: bit, negative: bit },
   nodes: { gnd: Constant, add: Adder, sub: Subtractor, band: BusAnd, bor: BusOr, bxor: BusXor, bnot: BusNot, shl: LeftShifter, shr: RightShifter, m01: Mux, m23: Mux, m45: Mux, m67: Mux, m03: Mux, m47: Mux, mfinal: Mux, split_r: Splitter8to8, or01: Or, or23: Or, or45: Or, or67: Or, or_lo: Or, or_hi: Or, or_all: Or, inv_z: Not },
@@ -431,7 +431,7 @@ const ALU = component('ALU', {
   ],
 })
 
-const ALUDemo = component('ALUDemo', {
+const ALUDemo = circuit('ALUDemo', {
   nodes: { a: Input, b: Input, op0: Switch, op1: Switch, op2: Switch, alu: ALU, disp_a: HexDisplay, disp_b: HexDisplay, disp_result: HexDisplay, led_zero: Led, led_carry: Led, led_neg: Led },
   nodeArgs: { a: { value: 42 }, b: { value: 13 } },
   connect: ({ in: inp, out, a, b, op0, op1, op2, alu, disp_a, disp_b, disp_result, led_zero, led_carry, led_neg }) => [
@@ -455,7 +455,7 @@ const ALUDemo = component('ALUDemo', {
     category: "basics",
     nodes: "4 nodes",
     dsl: `
-const HalfAdder = component('HalfAdder', {
+const HalfAdder = circuit('HalfAdder', {
   in: { a: bit, b: bit },
   out: { sum: bit, carry: bit },
   nodes: { xor1: Xor, and1: And },
@@ -467,7 +467,7 @@ const HalfAdder = component('HalfAdder', {
   ],
 })
 
-const HalfAdderDemo = component('HalfAdderDemo', {
+const HalfAdderDemo = circuit('HalfAdderDemo', {
   nodes: { sw_a: Switch, sw_b: Switch, dut: HalfAdder, led_sum: Led, led_carry: Led },
   connect: ({ in: inp, out, sw_a, sw_b, dut, led_sum, led_carry }) => [
     sw_a.out.to(dut.a),

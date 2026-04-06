@@ -2,10 +2,10 @@
  * Standard Library — Memory Components
  */
 
-import { component } from '../builder/component.js';
-import { bit, bus } from '../builder/bit-bus.js';
+import { circuit } from '../circuit/circuit.js';
+import { bit, bus } from '../circuit/bit-bus.js';
 
-export const ROM = component('ROM', {
+export const ROM = circuit('ROM', {
   in: { addr: bus(16) },
   out: { data_out: bus(8) },
   state: { memory: new Map<number, number>() },
@@ -15,7 +15,7 @@ export const ROM = component('ROM', {
   }),
 });
 
-export const RAM = component('RAM', {
+export const RAM = circuit('RAM', {
   in: { addr: bus(8), data_in: bus(8), we: bit },
   out: { data_out: bus(8) },
   state: { memory: new Map<number, number>() },
@@ -31,7 +31,7 @@ export const RAM = component('RAM', {
   },
 });
 
-export const DualPortRAM = component('DualPortRAM', {
+export const DualPortRAM = circuit('DualPortRAM', {
   in: { addrA: bus(8), dataA: bus(8), weA: bit, addrB: bus(8) },
   out: { outA: bus(8), outB: bus(8) },
   state: { memory: new Map<number, number>() },

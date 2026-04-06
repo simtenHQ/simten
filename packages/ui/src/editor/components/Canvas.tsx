@@ -13,7 +13,7 @@
 import React, { useCallback, useEffect } from "react";
 
 import { useCircuitStore } from "../stores/circuit-store";
-import { useComponentLibraryStore } from "../stores/component-library-store";
+import { useCircuitLibraryStore } from "../stores/circuit-library-store";
 
 import { CircuitCanvas, NODE_TYPES, EDGE_TYPES } from "../../canvas";
 
@@ -80,14 +80,14 @@ export function Canvas({ renderEmptyState, theme = "light", nodePositions, portV
   const circuit = useCircuitStore((state) => state.circuit);
 
   const hasNodes = (circuit?.nodes?.length ?? 0) > 0;
-  const resolveComponent = useComponentLibraryStore((s) => s.resolveComponent);
-  const getAllPrimitiveNames = useComponentLibraryStore((s) => s.getAllPrimitiveNames);
+  const resolveCircuit = useCircuitLibraryStore((s) => s.resolveCircuit);
+  const getAllPrimitiveNames = useCircuitLibraryStore((s) => s.getAllPrimitiveNames);
 
-  // Adapt the store to the ComponentLibrary interface expected by the canvas
+  // Adapt the store to the CircuitLibrary interface expected by the canvas
   const componentLibrary = React.useMemo(() => ({
-    resolveComponent,
+    resolveCircuit,
     getAllPrimitiveNames,
-  }), [resolveComponent, getAllPrimitiveNames]);
+  }), [resolveCircuit, getAllPrimitiveNames]);
 
   // Keyboard scan code handler for Input nodes
   useEffect(() => {

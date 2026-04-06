@@ -18,7 +18,7 @@ import {
   elaborate,
   PRIMITIVES,
 } from '../index.js';
-import { compileDSL, type ComponentLibrary as DSLComponentLibrary } from '../../dsl/index.js';
+import { compileDSL, type CircuitLibrary as DSLCircuitLibrary } from '../../dsl/index.js';
 import type { Circuit } from '../../types/circuit.js';
 
 // Same mutable library pattern as useCircuitSimulator
@@ -26,13 +26,13 @@ function createMutableLibrary() {
   const circuitMap = new Map<string, Circuit>();
   for (const c of PRIMITIVES as Circuit[]) circuitMap.set(c.name, c);
   return {
-    resolveComponent: (name: string) => circuitMap.get(name),
+    resolveCircuit: (name: string) => circuitMap.get(name),
     getAllPrimitiveNames: () => Array.from(circuitMap.entries())
       .filter(([, c]) => c.implementation.kind === 'primitive').map(([n]) => n),
     getCircuit: (name: string) => circuitMap.get(name),
     hasCircuit: (name: string) => circuitMap.has(name),
     addCircuit: (circuit: Circuit) => { circuitMap.set(circuit.name, circuit); },
-  } satisfies DSLComponentLibrary;
+  } satisfies DSLCircuitLibrary;
 }
 
 /** Mimics what useCircuitSimulator does internally */
@@ -50,7 +50,7 @@ function compileAndCreateSession(dsl: string) {
   if (!isSequential) {
     for (const node of flat.nodes) {
       if (node.primitiveType) {
-        const def = library.resolveComponent(node.primitiveType);
+        const def = library.resolveCircuit(node.primitiveType);
         if (def && def.clocks && def.clocks.length > 0) { isSequential = true; break; }
       }
     }
@@ -406,9 +406,9 @@ describe('Editor flow: DSL → Session → Tick', () => {
     `);
 
     // Library should resolve both primitives and user composites
-    expect(library.resolveComponent('And')).toBeDefined();
-    expect(library.resolveComponent('HalfAdder')).toBeDefined();
-    expect(library.resolveComponent('NonExistent')).toBeUndefined();
+    expect(library.resolveCircuit('And')).toBeDefined();
+    expect(library.resolveCircuit('HalfAdder')).toBeDefined();
+    expect(library.resolveCircuit('NonExistent')).toBeUndefined();
 
     // Simulation works with the compile library
     const pv = session.getState().portValues;

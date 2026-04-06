@@ -14,7 +14,7 @@
 import type {
   Circuit,
   PortPath,
-  ComponentLibrary,
+  CircuitLibrary,
 } from '../types/circuit.js';
 import type {
   FlatCircuit,
@@ -50,7 +50,7 @@ export interface ElaborateOptions {
  */
 export function elaborate(
   circuit: Circuit,
-  library: ComponentLibrary,
+  library: CircuitLibrary,
   debug: boolean = false,
   options?: ElaborateOptions,
 ): FlatCircuit {
@@ -74,7 +74,7 @@ export function elaborate(
   ): void {
     for (const node of circ.nodes) {
       const fullPath = pathPrefix + node.id;
-      const component = library.resolveComponent(node.componentRef);
+      const component = library.resolveCircuit(node.componentRef);
 
       if (!component) {
         throw new Error(
@@ -203,7 +203,7 @@ function stitchCompositeConnections(
   circuit: Circuit,
   connections: FlatConnection[],
   flatNodes: FlatNode[],
-  library: ComponentLibrary,
+  library: CircuitLibrary,
   pathPrefix: string,
   debug: boolean = false
 ): FlatConnection[] {
@@ -217,7 +217,7 @@ function stitchCompositeConnections(
   function buildForwardingMap(circ: Circuit, prefix: string, elaborationStack: Set<string> = new Set()): void {
     for (const node of circ.nodes) {
       const fullPath = prefix + node.id;
-      const component = library.resolveComponent(node.componentRef);
+      const component = library.resolveCircuit(node.componentRef);
 
       if (!component) continue;
 
@@ -504,7 +504,7 @@ function traceCompositePorts(
   composite: Circuit,
   compositePath: string,
   portForwarding: Map<string, PortPath[]>,
-  library: ComponentLibrary,
+  library: CircuitLibrary,
   debug: boolean = false
 ): void {
   for (const conn of composite.connections) {
@@ -574,7 +574,7 @@ function resolveInternalPorts(
   compositePath: string,
   portRef: PortPath,
   composite: Circuit,
-  library: ComponentLibrary,
+  library: CircuitLibrary,
   visited: Set<string> = new Set()
 ): PortPath[] {
   if (portRef.nodeId === '') {
@@ -588,7 +588,7 @@ function resolveInternalPorts(
     return [{ nodeId: fullPath, portName: portRef.portName }];
   }
 
-  const component = library.resolveComponent(node.componentRef);
+  const component = library.resolveCircuit(node.componentRef);
   if (!component || component.implementation.kind !== 'composite') {
     return [{ nodeId: fullPath, portName: portRef.portName }];
   }
@@ -683,7 +683,7 @@ export function isFlatCircuit(value: unknown): value is FlatCircuit {
 export function topologicalSortFlat(
   nodes: FlatNode[],
   connections: FlatConnection[],
-  library: ComponentLibrary
+  library: CircuitLibrary
 ): string[] | null {
   const stateOutputNodes = new Set<string>();
   const stateReadNodes = new Set<string>();
@@ -691,7 +691,7 @@ export function topologicalSortFlat(
   const dependentNodes: string[] = [];
 
   for (const node of nodes) {
-    const component = library.resolveComponent(node.primitiveType);
+    const component = library.resolveCircuit(node.primitiveType);
     if (!component) continue;
 
     const isSink = component.metadata?.kind === 'sink';

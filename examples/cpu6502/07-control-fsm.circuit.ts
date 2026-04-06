@@ -1,6 +1,6 @@
 // Auto-generated from DSL
 
-const CPUControl = component('CPUControl', {
+const CPUControl = circuit('CPUControl', {
   in: { reset: bit, instr_cycles: bus(3), is_BRK: bit },
   out: { current_state: bus(3), cycle_num: bus(3), pc_increment: bit, mem_read: bit, mem_write: bit, alu_enable: bit, reg_write: bit, halted: bit },
   nodes: { state_reg: Register, cycle_reg: Register, halt_reg: Register, STATE_FETCH: Constant, STATE_DECODE: Constant, STATE_EXECUTE: Constant, STATE_WRITEBACK: Constant, is_fetch: Comparator, is_decode: Comparator, is_execute: Comparator, is_writeback: Comparator, inc_cycle: Incrementer, cycle_done: Comparator, cycle_reset_or_inc: Mux, always_on: Constant, zero: Constant, exec_done: And, next_if_fetch: Mux, next_if_decode: Mux, next_if_execute: Mux, handle_reset: Mux, set_halt: Or, halt_value: Mux, mem_read_sig: Or },
@@ -35,7 +35,7 @@ const CPUControl = component('CPUControl', {
   ],
 })
 
-const CPUControlTest = component('CPUControlTest', {
+const CPUControlTest = circuit('CPUControlTest', {
   out: { current_state: bus(3), cycle: bus(3), pc_inc: bit, mem_rd: bit, mem_wr: bit, alu_en: bit, halted: bit },
   nodes: { fsm: CPUControl, reset_input: Input, cycles_input: Input, brk_input: Input, d_state: HexDisplay, d_cycle: HexDisplay },
   connect: ({ in: inp, out, fsm, reset_input, cycles_input, brk_input, d_state, d_cycle }) => [

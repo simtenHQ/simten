@@ -8,7 +8,7 @@
 
 import { createFileRoute } from "@tanstack/react-router";
 import { useState, useMemo, useCallback } from "react";
-import { component, bus } from "@turing-incomplete/core/builder";
+import { circuit, bus } from "@turing-incomplete/core/circuit";
 import { simulate } from "@turing-incomplete/core/sim";
 
 export const Route = createFileRoute("/demos/sorting-network")({
@@ -81,12 +81,12 @@ function optimizeStages(stages: Stage[], n: number): Stage[] {
 }
 
 // ============================================================================
-// Build a sorting circuit using component()
+// Build a sorting circuit using circuit()
 // ============================================================================
 
 function buildSortingCircuit(n: number, stages: Stage[]) {
   // Each comparator-swap is a component that outputs min and max
-  const CompSwap = component('CompSwap', {
+  const CompSwap = circuit('CompSwap', {
     in: { a: bus(8), b: bus(8) },
     out: { lo: bus(8), hi: bus(8) },
     eval: ({ a, b }) => ({
@@ -107,7 +107,7 @@ function buildSortingCircuit(n: number, stages: Stage[]) {
     outputNames[`out${i}`] = bus(8);
   }
 
-  return component('SortingNetwork', {
+  return circuit('SortingNetwork', {
     in: inputNames,
     out: outputNames,
     eval: (inputs) => {
@@ -365,7 +365,7 @@ function SortingNetworkPage() {
 const stages = generateBatcherNetwork(${n})
 // stages = ${JSON.stringify(stages.map(s => s.map(([a,b]) => `[${a},${b}]`).join(' ')).slice(0, 4).join(' → '))}${stages.length > 4 ? ' → ...' : ''}
 
-const SortingNetwork = component('SortingNetwork', {
+const SortingNetwork = circuit('SortingNetwork', {
   in: { ${Array.from({length: Math.min(n, 4)}, (_, i) => `in${i}: bus(8)`).join(', ')}${n > 4 ? ', ...' : ''} },
   out: { ${Array.from({length: Math.min(n, 4)}, (_, i) => `out${i}: bus(8)`).join(', ')}${n > 4 ? ', ...' : ''} },
   eval: (inputs) => {

@@ -10,7 +10,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useComponentLibraryStore } from '@turing-incomplete/ui/editor/stores';
+import { useCircuitLibraryStore } from '@turing-incomplete/ui/editor/stores';
 import type { Circuit } from '@turing-incomplete/ui/editor/types';
 
 type TabType = 'primitives' | 'standard' | 'user';
@@ -114,7 +114,7 @@ export function ComponentLibrary() {
     getStandard,
     getUser,
     removeUser,
-  } = useComponentLibraryStore();
+  } = useCircuitLibraryStore();
 
   const primitiveNames = getAllPrimitiveNames();
   const standardNames = getAllStandardNames();

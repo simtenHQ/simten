@@ -1,6 +1,6 @@
 "use client";
 
-import { ComponentEmbed } from "@turing-incomplete/embed";
+import { CircuitEmbed } from "@turing-incomplete/embed";
 import { TPU_CIRCUITS } from "../circuits";
 
 export function WeightSection() {
@@ -38,7 +38,7 @@ export function WeightSection() {
       </div>
 
       <div className="mt-8">
-        <ComponentEmbed
+        <CircuitEmbed
           code={TPU_CIRCUITS.weightRegister.dsl}
           displayCode={TPU_CIRCUITS.weightRegister.displayCode}
           nodePositions={TPU_CIRCUITS.weightRegister.nodePositions}

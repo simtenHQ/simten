@@ -1,6 +1,6 @@
 // Auto-generated from DSL
 
-const ALU = component('ALU', {
+const ALU = circuit('ALU', {
   in: { a: bus(8), b: bus(8), op: bus(3), carry_in: bit },
   out: { result: bus(8), carry_out: bit, zero: bit, negative: bit },
   nodes: { adder: Adder, subtractor: Subtractor, and_op: BusAnd, or_op: BusOr, xor_op: BusXor, op_0: Constant, op_1: Constant, op_2: Constant, op_3: Constant, op_4: Constant, is_add: Comparator, is_sub: Comparator, is_and: Comparator, is_or: Comparator, is_xor: Comparator, mux1: Mux, mux2: Mux, mux3: Mux, mux4: Mux, mux_carry: Mux, zero_cmp: Comparator, threshold: Constant, neg_cmp: Comparator },
@@ -38,7 +38,7 @@ const ALU = component('ALU', {
   ],
 })
 
-const ALUTest = component('ALUTest', {
+const ALUTest = circuit('ALUTest', {
   out: { result: bus(8), carry: bit, zero: bit, negative: bit },
   nodes: { val_a: Constant, val_b: Constant, op_input: Input, carry_in: Constant, alu: ALU },
   nodeArgs: { val_a: { value: 66 }, val_b: { value: 8 }, carry_in: { value: 0 } },

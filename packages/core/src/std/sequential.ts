@@ -2,10 +2,10 @@
  * Standard Library — Sequential Components
  */
 
-import { component } from '../builder/component.js';
-import { bit, bus } from '../builder/bit-bus.js';
+import { circuit } from '../circuit/circuit.js';
+import { bit, bus } from '../circuit/bit-bus.js';
 
-export const DFlipFlop = component('DFlipFlop', {
+export const DFlipFlop = circuit('DFlipFlop', {
   in: { d: bit },
   out: { q: bit, q_bar: bit },
   state: { value: false as (boolean | number) },
@@ -14,7 +14,7 @@ export const DFlipFlop = component('DFlipFlop', {
   onTick: ({ d }) => ({ value: Boolean(d) }),
 });
 
-export const Register = component('Register', {
+export const Register = circuit('Register', {
   in: { data: bus(8), we: bit },
   out: { q: bus(8) },
   state: { value: 0 },

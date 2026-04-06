@@ -103,7 +103,7 @@ export function VisualEditor({ theme = "light" }: VisualEditorProps) {
     // If this is an auto-generated harness, export the real circuit instead
     if (isHarnessName(currentCircuit.name)) {
       const baseName = currentCircuit.name.replace(/Harness$/, '');
-      const realCircuit = compileLibrary.resolveComponent(baseName);
+      const realCircuit = compileLibrary.resolveCircuit(baseName);
       if (realCircuit) currentCircuit = realCircuit;
     }
 

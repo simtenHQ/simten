@@ -40,7 +40,7 @@ const AES_SBOX_JSON = JSON.stringify(AES_SBOX_INIT);
 
 // XTime and MixColumn sub-circuits shared across demos
 const XTIME_CIRCUIT = `
-const XTime = component('XTime', {
+const XTime = circuit('XTime', {
   in: { x: bus(8) },
   out: { out: bus(8) },
   nodes: { c1: Constant, shl: LeftShifter, split: Splitter8to8, poly: Constant, zero8: Constant, mux: Mux, xor: BusXor },
@@ -59,7 +59,7 @@ const XTime = component('XTime', {
 `;
 
 const MIXCOLUMN_CIRCUIT = `
-const MixColumn = component('MixColumn', {
+const MixColumn = circuit('MixColumn', {
   in: { s0: bus(8)).in('s1', bus(8)).in('s2', bus(8)).in('s3', bus(8) },
   out: { r0: bus(8)).out('r1', bus(8)).out('r2', bus(8)).out('r3', bus(8) },
   meta: { description: 'AES MixColumns on one 4-byte column over GF(2^8)' },
@@ -91,7 +91,7 @@ export const AES_CIRCUITS: Record<string, BlogCircuit> = {
     description:
       "Each byte is replaced via a 256-entry lookup table. Try 0x00 (→ 0x63), 0x53 (→ 0xed), or 0xff (→ 0x16). Pre-loaded with FIPS 197 S-box.",
     displayCode: `
-const SubByteDemo = component('SubByteDemo', {
+const SubByteDemo = circuit('SubByteDemo', {
   nodes: { s: Input, rom: ROM, disp: HexDisplay },
   nodeArgs: { s: { value: 83, width: 8 }, disp: { width: 8 } },
   connect: ({ in: inp, out, s, rom, disp }) => [
@@ -101,7 +101,7 @@ const SubByteDemo = component('SubByteDemo', {
 })
 `,
     dsl: `
-const SubByteDemo = component('SubByteDemo', {
+const SubByteDemo = circuit('SubByteDemo', {
   nodes: { s: Input, rom: ROM, disp: HexDisplay },
   nodeArgs: { s: { value: 83, width: 8 }, rom: { init: ${AES_SBOX_JSON} }, disp: { width: 8 } },
   connect: ({ in: inp, out, s, rom, disp }) => [
@@ -118,7 +118,7 @@ const SubByteDemo = component('SubByteDemo', {
     description:
       "Left-shift, then XOR with 0x1b if the MSB was 1. Try 87 (0x57 → 0xae), 128 (0x80 → 0x1b), or 149 (0x95 → 0x35).",
     displayCode: `
-const XTime = component('XTime', {
+const XTime = circuit('XTime', {
   in: { x: bus(8) },
   out: { out: bus(8) },
   nodes: { c1: Constant, shl: LeftShifter, split: Splitter8to8, poly: Constant, zero8: Constant, mux: Mux, xor: BusXor },
@@ -135,7 +135,7 @@ const XTime = component('XTime', {
   ],
 })
 
-const XTimeDemo = component('XTimeDemo', {
+const XTimeDemo = circuit('XTimeDemo', {
   nodes: { val: Input, xt: XTime, disp: HexDisplay },
   nodeArgs: { val: { value: 87, width: 8 }, disp: { width: 8 } },
   connect: ({ in: inp, out, val, xt, disp }) => [
@@ -146,7 +146,7 @@ const XTimeDemo = component('XTimeDemo', {
 `,
     dsl: `${XTIME_CIRCUIT}
 
-const XTimeDemo = component('XTimeDemo', {
+const XTimeDemo = circuit('XTimeDemo', {
   nodes: { val: Input, xt: XTime, disp: HexDisplay },
   nodeArgs: { val: { value: 87, width: 8 }, disp: { width: 8 } },
   connect: ({ val, xt, disp }) => [
@@ -166,7 +166,7 @@ const XTimeDemo = component('XTimeDemo', {
 //   In:  [0xdb, 0x13, 0x53, 0x45]
 //   Out: [0x8e, 0x4d, 0xa1, 0xbc]
 
-const MixColumnDemo = component('MixColumnDemo', {
+const MixColumnDemo = circuit('MixColumnDemo', {
   nodes: { s0: Input, s1: Input, s2: Input, s3: Input, mc: MixColumn, r0: HexDisplay, r1: HexDisplay, r2: HexDisplay, r3: HexDisplay },
   nodeArgs: { s0: { value: 219, width: 8 }, s1: { value: 19, width: 8 }, s2: { value: 83, width: 8 }, s3: { value: 69, width: 8 }, r0: { width: 8 }, r1: { width: 8 }, r2: { width: 8 }, r3: { width: 8 } },
   connect: ({ s0, s1, s2, s3, mc, r0, r1, r2, r3 }) => [
@@ -179,7 +179,7 @@ const MixColumnDemo = component('MixColumnDemo', {
     dsl: `${XTIME_CIRCUIT}
 ${MIXCOLUMN_CIRCUIT}
 
-const MixColumnDemo = component('MixColumnDemo', {
+const MixColumnDemo = circuit('MixColumnDemo', {
   nodes: { s0: Input, s1: Input, s2: Input, s3: Input, mc: MixColumn, r0: HexDisplay, r1: HexDisplay, r2: HexDisplay, r3: HexDisplay },
   nodeArgs: { s0: { value: 219, width: 8 }, s1: { value: 19, width: 8 }, s2: { value: 83, width: 8 }, s3: { value: 69, width: 8 }, r0: { width: 8 }, r1: { width: 8 }, r2: { width: 8 }, r3: { width: 8 } },
   connect: ({ s0, s1, s2, s3, mc, r0, r1, r2, r3 }) => [

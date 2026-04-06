@@ -19,7 +19,7 @@ import type {
   PortDescriptor,
   ArgumentValue,
 } from '../types/circuit';
-import { useComponentLibraryStore } from './component-library-store';
+import { useCircuitLibraryStore } from './circuit-library-store';
 
 interface CircuitActions {
   // Circuit-level operations
@@ -89,8 +89,8 @@ export const useCircuitStore = create<CircuitStore>()(
         }
 
         // Resolve component to get its port definitions
-        const library = useComponentLibraryStore.getState();
-        const component = library.resolveComponent(componentRef);
+        const library = useCircuitLibraryStore.getState();
+        const component = library.resolveCircuit(componentRef);
 
         if (!component) {
           console.warn(`Component not found: ${componentRef}`);

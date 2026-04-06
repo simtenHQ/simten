@@ -1,6 +1,6 @@
 // Auto-generated from DSL
 
-const ALU = component('ALU', {
+const ALU = circuit('ALU', {
   in: { a: bus(8), b: bus(8), op: bus(3), carry_in: bit },
   out: { result: bus(8), carry_out: bit, zero: bit, negative: bit },
   nodes: { adder: Adder, subtractor: Subtractor, and_op: BusAnd, or_op: BusOr, xor_op: BusXor, op_0: Constant, op_1: Constant, op_2: Constant, op_3: Constant, op_4: Constant, is_add: Comparator, is_sub: Comparator, is_and: Comparator, is_or: Comparator, is_xor: Comparator, mux1: Mux, mux2: Mux, mux3: Mux, mux4: Mux, mux_carry: Mux, zero_cmp: Comparator, threshold: Constant, neg_cmp: Comparator },
@@ -38,7 +38,7 @@ const ALU = component('ALU', {
   ],
 })
 
-const SimplePCTest = component('SimplePCTest', {
+const SimplePCTest = circuit('SimplePCTest', {
   nodes: { pc: Register, always_on: Constant, pc_inc: Incrementer, zero: Constant, one: Constant, two: Constant, three: Constant, at_0: Comparator, at_1: Comparator, at_2: Comparator, at_3: Comparator, byte_0: Constant, byte_1: Constant, byte_2: Constant, byte_3: Constant, mux1: Mux, mux2: Mux, mux3: Mux, d_pc: HexDisplay, d_instruction: HexDisplay },
   nodeArgs: { always_on: { value: 1 }, zero: { value: 0 }, one: { value: 1 }, two: { value: 2 }, three: { value: 3 }, byte_0: { value: 169 }, byte_1: { value: 66 }, byte_2: { value: 105 }, byte_3: { value: 8 } },
   connect: ({ in: inp, out, pc, always_on, pc_inc, zero, one, two, three, at_0, at_1, at_2, at_3, byte_0, byte_1, byte_2, byte_3, mux1, mux2, mux3, d_pc, d_instruction }) => [
@@ -62,7 +62,7 @@ const SimplePCTest = component('SimplePCTest', {
   ],
 })
 
-const ManualRegisterTest = component('ManualRegisterTest', {
+const ManualRegisterTest = circuit('ManualRegisterTest', {
   nodes: { reg_a: Register, write_enable: Input, data_input: Input, d_a: HexDisplay },
   connect: ({ in: inp, out, reg_a, write_enable, data_input, d_a }) => [
     write_enable.out.to(reg_a.we),
@@ -71,7 +71,7 @@ const ManualRegisterTest = component('ManualRegisterTest', {
   ],
 })
 
-const ALUOnlyTest = component('ALUOnlyTest', {
+const ALUOnlyTest = circuit('ALUOnlyTest', {
   nodes: { alu: ALU, input_a: Input, input_b: Input, op_input: Input, zero: Constant, d_result: HexDisplay },
   nodeArgs: { zero: { value: 0 } },
   connect: ({ in: inp, out, alu, input_a, input_b, op_input, zero, d_result }) => [

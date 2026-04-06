@@ -17,7 +17,7 @@ export const CIRCUITS: Record<string, CircuitDefinition> = {
   inverter: {
     name: "NOT Gate",
     description: "Inverts the input signal",
-    displayCode: `const NotGate = component('NotGate', {
+    displayCode: `const NotGate = circuit('NotGate', {
   in: { a: bit },
   out: { out: bit },
   nodes: { nand1: Nand },
@@ -27,7 +27,7 @@ export const CIRCUITS: Record<string, CircuitDefinition> = {
   ],
 })`,
     dsl: `
-const NotGate = component('NotGate', {
+const NotGate = circuit('NotGate', {
   in: { a: bit },
   out: { out: bit },
   nodes: { nand1: Nand },
@@ -37,7 +37,7 @@ const NotGate = component('NotGate', {
   ],
 })
 
-const DemoNot = component('DemoNot', {
+const DemoNot = circuit('DemoNot', {
   nodes: { sw_a: Switch, dut: NotGate, led_out: Led },
   connect: ({ sw_a, dut, led_out }) => [
     sw_a.out.to(dut.a),
@@ -49,7 +49,7 @@ const DemoNot = component('DemoNot', {
   and: {
     name: "AND Gate",
     description: "Output is 1 only when both inputs are 1",
-    displayCode: `const AndGate = component('AndGate', {
+    displayCode: `const AndGate = circuit('AndGate', {
   in: { a: bit, b: bit },
   out: { out: bit },
   nodes: { nand1: Nand, nand2: Nand },
@@ -61,7 +61,7 @@ const DemoNot = component('DemoNot', {
   ],
 })`,
     dsl: `
-const AndGate = component('AndGate', {
+const AndGate = circuit('AndGate', {
   in: { a: bit, b: bit },
   out: { out: bit },
   nodes: { nand1: Nand, nand2: Nand },
@@ -73,7 +73,7 @@ const AndGate = component('AndGate', {
   ],
 })
 
-const DemoAnd = component('DemoAnd', {
+const DemoAnd = circuit('DemoAnd', {
   nodes: { sw_a: Switch, sw_b: Switch, dut: AndGate, led_out: Led },
   connect: ({ sw_a, sw_b, dut, led_out }) => [
     sw_a.out.to(dut.a),
@@ -86,7 +86,7 @@ const DemoAnd = component('DemoAnd', {
   or: {
     name: "OR Gate",
     description: "Output is 1 when either input is 1",
-    displayCode: `const OrGate = component('OrGate', {
+    displayCode: `const OrGate = circuit('OrGate', {
   in: { a: bit, b: bit },
   out: { out: bit },
   nodes: { not_a: Nand, not_b: Nand, or_out: Nand },
@@ -99,7 +99,7 @@ const DemoAnd = component('DemoAnd', {
   ],
 })`,
     dsl: `
-const OrGate = component('OrGate', {
+const OrGate = circuit('OrGate', {
   in: { a: bit, b: bit },
   out: { out: bit },
   nodes: { not_a: Nand, not_b: Nand, or_out: Nand },
@@ -112,7 +112,7 @@ const OrGate = component('OrGate', {
   ],
 })
 
-const DemoOr = component('DemoOr', {
+const DemoOr = circuit('DemoOr', {
   nodes: { sw_a: Switch, sw_b: Switch, dut: OrGate, led_out: Led },
   connect: ({ sw_a, sw_b, dut, led_out }) => [
     sw_a.out.to(dut.a),
@@ -125,7 +125,7 @@ const DemoOr = component('DemoOr', {
   xor: {
     name: "XOR Gate",
     description: "Output is 1 when inputs are different",
-    displayCode: `const XorGate = component('XorGate', {
+    displayCode: `const XorGate = circuit('XorGate', {
   in: { a: bit, b: bit },
   out: { out: bit },
   nodes: { nand1: Nand, nand2: Nand, nand3: Nand, nand4: Nand },
@@ -139,7 +139,7 @@ const DemoOr = component('DemoOr', {
   ],
 })`,
     dsl: `
-const XorGate = component('XorGate', {
+const XorGate = circuit('XorGate', {
   in: { a: bit, b: bit },
   out: { out: bit },
   nodes: { nand1: Nand, nand2: Nand, nand3: Nand, nand4: Nand },
@@ -153,7 +153,7 @@ const XorGate = component('XorGate', {
   ],
 })
 
-const DemoXor = component('DemoXor', {
+const DemoXor = circuit('DemoXor', {
   nodes: { sw_a: Switch, sw_b: Switch, dut: XorGate, led_out: Led },
   connect: ({ sw_a, sw_b, dut, led_out }) => [
     sw_a.out.to(dut.a),
@@ -166,7 +166,7 @@ const DemoXor = component('DemoXor', {
   halfAdder: {
     name: "Half Adder",
     description: "Adds two bits, outputs sum and carry",
-    displayCode: `const HalfAdder = component('HalfAdder', {
+    displayCode: `const HalfAdder = circuit('HalfAdder', {
   in: { a: bit, b: bit },
   out: { sum: bit, carry: bit },
   nodes: { xor1: Xor, and1: And },
@@ -178,7 +178,7 @@ const DemoXor = component('DemoXor', {
   ],
 })`,
     dsl: `
-const HalfAdder = component('HalfAdder', {
+const HalfAdder = circuit('HalfAdder', {
   in: { a: bit, b: bit },
   out: { sum: bit, carry: bit },
   nodes: { xor1: Xor, and1: And },
@@ -190,7 +190,7 @@ const HalfAdder = component('HalfAdder', {
   ],
 })
 
-const DemoHalfAdder = component('DemoHalfAdder', {
+const DemoHalfAdder = circuit('DemoHalfAdder', {
   nodes: { sw_a: Switch, sw_b: Switch, dut: HalfAdder, led_sum: Led, led_carry: Led },
   connect: ({ sw_a, sw_b, dut, led_sum, led_carry }) => [
     sw_a.out.to(dut.a),
@@ -204,7 +204,7 @@ const DemoHalfAdder = component('DemoHalfAdder', {
   fullAdder: {
     name: "Full Adder",
     description: "Adds three bits (a, b, carry-in)",
-    displayCode: `const FullAdder = component('FullAdder', {
+    displayCode: `const FullAdder = circuit('FullAdder', {
   in: { a: bit, b: bit, cin: bit },
   out: { sum: bit, cout: bit },
   nodes: { ha1: HalfAdder, ha2: HalfAdder, or1: Or },
@@ -220,7 +220,7 @@ const DemoHalfAdder = component('DemoHalfAdder', {
   ],
 })`,
     dsl: `
-const HalfAdder = component('HalfAdder', {
+const HalfAdder = circuit('HalfAdder', {
   in: { a: bit, b: bit },
   out: { sum: bit, carry: bit },
   nodes: { xor1: Xor, and1: And },
@@ -232,7 +232,7 @@ const HalfAdder = component('HalfAdder', {
   ],
 })
 
-const FullAdder = component('FullAdder', {
+const FullAdder = circuit('FullAdder', {
   in: { a: bit, b: bit, cin: bit },
   out: { sum: bit, cout: bit },
   nodes: { ha1: HalfAdder, ha2: HalfAdder, or1: Or },
@@ -248,7 +248,7 @@ const FullAdder = component('FullAdder', {
   ],
 })
 
-const DemoFullAdder = component('DemoFullAdder', {
+const DemoFullAdder = circuit('DemoFullAdder', {
   nodes: { sw_a: Switch, sw_b: Switch, sw_cin: Switch, dut: FullAdder, led_sum: Led, led_cout: Led },
   connect: ({ sw_a, sw_b, sw_cin, dut, led_sum, led_cout }) => [
     sw_a.out.to(dut.a),
@@ -263,7 +263,7 @@ const DemoFullAdder = component('DemoFullAdder', {
   mux: {
     name: "Multiplexer",
     description: "sel=0 picks a, sel=1 picks b",
-    displayCode: `const MuxGate = component('MuxGate', {
+    displayCode: `const MuxGate = circuit('MuxGate', {
   in: { a: bit, b: bit, sel: bit },
   out: { out: bit },
   nodes: { not_sel: Not, and_a: And, and_b: And, or_out: Or },
@@ -278,7 +278,7 @@ const DemoFullAdder = component('DemoFullAdder', {
   ],
 })`,
     dsl: `
-const MuxGate = component('MuxGate', {
+const MuxGate = circuit('MuxGate', {
   in: { a: bit, b: bit, sel: bit },
   out: { out: bit },
   nodes: { not_sel: Not, and_a: And, and_b: And, or_out: Or },
@@ -293,7 +293,7 @@ const MuxGate = component('MuxGate', {
   ],
 })
 
-const DemoMux = component('DemoMux', {
+const DemoMux = circuit('DemoMux', {
   nodes: { sw_a: Switch, sw_b: Switch, sw_sel: Switch, dut: MuxGate, led_out: Led },
   connect: ({ sw_a, sw_b, sw_sel, dut, led_out }) => [
     sw_a.out.to(dut.a),
@@ -307,7 +307,7 @@ const DemoMux = component('DemoMux', {
   delayLine: {
     name: "2-Cycle Delay",
     description: "Data takes 2 clock ticks to reach output",
-    displayCode: `const DelayLine = component('DelayLine', {
+    displayCode: `const DelayLine = circuit('DelayLine', {
   in: { d: bit },
   out: { q1: bit, q2: bit },
   nodes: { dff1: DFlipFlop, dff2: DFlipFlop },
@@ -318,7 +318,7 @@ const DemoMux = component('DemoMux', {
   ],
 })`,
     dsl: `
-const DelayLine = component('DelayLine', {
+const DelayLine = circuit('DelayLine', {
   in: { d: bit },
   out: { q1: bit, q2: bit },
   nodes: { dff1: DFlipFlop, dff2: DFlipFlop },
@@ -329,7 +329,7 @@ const DelayLine = component('DelayLine', {
   ],
 })
 
-const DemoDelayLine = component('DemoDelayLine', {
+const DemoDelayLine = circuit('DemoDelayLine', {
   nodes: { sw_d: Switch, dut: DelayLine, led_q1: Led, led_q2: Led },
   connect: ({ sw_d, dut, led_q1, led_q2 }) => [
     sw_d.out.to(dut.d),

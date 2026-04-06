@@ -1,10 +1,10 @@
 "use client";
 
 import { useState, useCallback, useRef } from "react";
-import { ComponentEmbed } from "../ComponentEmbed";
-import type { ComponentEmbedHandle } from "../ComponentEmbed";
+import { CircuitEmbed } from "../CircuitEmbed";
+import type { CircuitEmbedHandle } from "../CircuitEmbed";
 
-export interface ComponentEditorProps {
+export interface CircuitEditorProps {
   initialCode?: string;
   height?: number | string;
   title?: string;
@@ -12,7 +12,7 @@ export interface ComponentEditorProps {
   theme?: "light" | "dark";
 }
 
-const DEFAULT_CODE = `const MyCircuit = component('MyCircuit', {
+const DEFAULT_CODE = `const MyCircuit = circuit('MyCircuit', {
   nodes: { A: Switch, B: Switch, gate: And, light: Led },
   connect: ({ A, B, gate, light }) => [
     A.out.to(gate.a),
@@ -25,17 +25,17 @@ const DEFAULT_CODE = `const MyCircuit = component('MyCircuit', {
  * Embeddable circuit editor — DSL code panel + live circuit preview.
  * Consumers can embed this in docs/tutorials for an interactive playground.
  */
-export function ComponentEditor({
+export function CircuitEditor({
   initialCode = DEFAULT_CODE,
   height = 500,
   title,
   description,
   theme = "dark",
-}: ComponentEditorProps) {
+}: CircuitEditorProps) {
   const [code, setCode] = useState(initialCode);
   const [liveCode, setLiveCode] = useState(initialCode);
   const [hasChanges, setHasChanges] = useState(false);
-  const circuitRef = useRef<ComponentEmbedHandle>(null);
+  const circuitRef = useRef<CircuitEmbedHandle>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const handleCodeChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -130,7 +130,7 @@ export function ComponentEditor({
 
         {/* Live preview */}
         <div className="flex-1 min-w-0">
-          <ComponentEmbed
+          <CircuitEmbed
             ref={circuitRef}
             code={liveCode}
             height="100%"

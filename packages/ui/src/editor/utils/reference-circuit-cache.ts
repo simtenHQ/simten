@@ -8,8 +8,8 @@
 
 import type { Circuit } from '../types/circuit';
 
-interface ComponentLibraryStore {
-  resolveComponent(name: string): Circuit | undefined;
+interface CircuitLibraryStore {
+  resolveCircuit(name: string): Circuit | undefined;
   registerStandard(circuit: Circuit): void;
 }
 
@@ -20,7 +20,7 @@ interface ComponentLibraryStore {
  */
 export function getCompiledReferenceCircuit(
   _primitiveName: string,
-  _store: ComponentLibraryStore,
+  _store: CircuitLibraryStore,
   _params?: Record<string, number>,
 ): Circuit | undefined {
   return undefined;

@@ -1,6 +1,6 @@
 // Auto-generated from DSL
 
-const IngressController = component('IngressController', {
+const IngressController = circuit('IngressController', {
   in: { data_in: bus(8), sof: bit, eof: bit, data_valid: bit, grant: bit },
   out: { buf_addr: bus(8), buf_data: bus(8), buf_we: bit, pkt_ready: bit, buf_full: bit, write_ptr: bus(8) },
   nodes: { fsm_state: Register, byte_count: Register, write_ptr_reg: Register, pkt_count: Register, pkt_ready_reg: Register, STATE_IDLE: Input, STATE_RECEIVING: Input, STATE_BUFFERED: Input, ZERO: Input, ONE: Input, FOUR: Input, SEVEN: Input, EIGHT: Input, isIDLE: Comparator, isRECEIVING: Comparator, isBUFFERED: Comparator, buf_full_cmp: Comparator, not_buf_full: Not, can_receive: And, can_receive_valid: And, idle_to_receiving: And, byte_is_seven: Comparator, frame_complete: And, receiving_complete: And, receiving_complete_valid: And, buffered_to_idle: And, next_state_m2: Mux, next_state_m1: Mux, next_state: Mux, fsm_state_we: Input, byte_inc: Adder, should_count: And, next_byte_count: Mux, byte_count_we: Input, ptr_add_eight: Adder, should_advance_ptr: And, next_write_ptr_val: Mux, write_ptr_reg_we: Input, pkt_inc: Adder, pkt_dec: Adder, MINUS_ONE: Input, next_pkt_count_inc: Mux, next_pkt_count: Mux, pkt_count_we: Input, buf_addr_calc: Adder, buf_we_signal: And, pkt_count_nonzero: Comparator, pkt_ready_signal: Or, pkt_ready_we: Input, fsm_state_display: HexDisplay, pkt_count_display: HexDisplay, write_ptr_debug: HexDisplay },

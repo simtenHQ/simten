@@ -9,7 +9,7 @@
  */
 
 import type { FlatCircuit } from '../types/simulator.js';
-import type { ComponentLibrary } from '../types/circuit.js';
+import type { CircuitLibrary } from '../types/circuit.js';
 import type { NumericCircuit } from './numeric-types.js';
 import type { NumericPortValues } from './numeric-values.js';
 import { compileForSimulation } from './compile-circuit.js';
@@ -121,7 +121,7 @@ function propagateWithTrace(
  */
 export function tracePropagation(
   flatCircuit: FlatCircuit,
-  library: ComponentLibrary,
+  library: CircuitLibrary,
 ): PropagationStep[] {
   const numeric = compileForSimulation(flatCircuit, library);
   const values = createNumericPortValues(numeric.portCount);

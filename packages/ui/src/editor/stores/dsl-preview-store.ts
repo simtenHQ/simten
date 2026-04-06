@@ -15,7 +15,7 @@ import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 import type { Circuit } from '../types/circuit';
 import { useCircuitStore } from './circuit-store';
-import { useComponentLibraryStore } from './component-library-store';
+import { useCircuitLibraryStore } from './circuit-library-store';
 import { createDrillDownViewCircuit } from '../../canvas/drill-down-view';
 
 /**
@@ -243,7 +243,7 @@ export const useDSLPreviewStore = create<DSLPreviewStore>()(
       }
 
       // Resolve the component definition
-      const componentDef = useComponentLibraryStore.getState().resolveComponent(node.componentRef);
+      const componentDef = useCircuitLibraryStore.getState().resolveCircuit(node.componentRef);
       if (!componentDef || componentDef.implementation.kind !== 'composite') {
         console.warn('[DSLPreviewStore] drillInto: not a composite component:', node.componentRef);
         return;

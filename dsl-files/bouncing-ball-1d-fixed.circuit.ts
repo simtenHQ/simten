@@ -1,6 +1,6 @@
 // Auto-generated from DSL
 
-const BouncingBall1D = component('BouncingBall1D', {
+const BouncingBall1D = circuit('BouncingBall1D', {
   nodes: { position: Register, direction: DFlipFlop, posInc: Incrementer, posDec: Adder, negOne: Constant, posNext: Mux, zero: Constant, three: Constant, cmpZero: Comparator, cmpThree: Comparator, dirInv: Not, hitLeft: And, hitRight: And, shouldFlip: Or, flipDir: Xor, pos2bit: BitSlice, decoder: Decoder, led0: Led, led1: Led, led2: Led, led3: Led, enable: Constant },
   nodeArgs: { negOne: { value: 255 }, zero: { value: 0 }, three: { value: 3 }, pos2bit: { low: 0, high: 1 }, enable: { value: 1 } },
   connect: ({ in: inp, out, position, direction, posInc, posDec, negOne, posNext, zero, three, cmpZero, cmpThree, dirInv, hitLeft, hitRight, shouldFlip, flipDir, pos2bit, decoder, led0, led1, led2, led3, enable }) => [

@@ -1,6 +1,6 @@
 // Auto-generated from DSL
 
-const Snake4PixelsExplicit = component('Snake4PixelsExplicit', {
+const Snake4PixelsExplicit = circuit('Snake4PixelsExplicit', {
   nodes: { ram: DualPortRAM, screen: Screen, keyboard: Input, pos0X: Register, pos0Y: Register, pos1X: Register, pos1Y: Register, pos2X: Register, pos2Y: Register, pos3X: Register, pos3Y: Register, phase: DFlipFlop, notPhase: Not, upCode: Input, downCode: Input, leftCode: Input, rightCode: Input, isUp: Comparator, isDown: Comparator, isLeft: Comparator, isRight: Comparator, zero: Input, one: Input, minus1: Input, deltaXTemp: Mux, deltaX: Mux, deltaYTemp: Mux, deltaY: Mux, newHeadX: Adder, newHeadY: Adder, wrapX: BitSlice, wrapY: BitSlice, useX: Mux, useY: Mux, y2: Adder, y4: Adder, y8: Adder, addr: Adder, ramData: Mux, regEnable: Switch, shiftEnable: And, writeEnable: Switch },
   connect: ({ in: inp, out, ram, screen, keyboard, pos0X, pos0Y, pos1X, pos1Y, pos2X, pos2Y, pos3X, pos3Y, phase, notPhase, upCode, downCode, leftCode, rightCode, isUp, isDown, isLeft, isRight, zero, one, minus1, deltaXTemp, deltaX, deltaYTemp, deltaY, newHeadX, newHeadY, wrapX, wrapY, useX, useY, y2, y4, y8, addr, ramData, regEnable, shiftEnable, writeEnable }) => [
     screen.addrB.to(ram.addrB),

@@ -1,6 +1,6 @@
 // Auto-generated from DSL
 
-const RoundRobinLoadBalancer = component('RoundRobinLoadBalancer', {
+const RoundRobinLoadBalancer = circuit('RoundRobinLoadBalancer', {
   out: { server0: bit, server1: bit, server2: bit, server3: bit, server4: bit, server5: bit, server6: bit, server7: bit },
   nodes: { counter: Register, always_write: Constant, adder: Adder, one: Constant, at_eight: Comparator, eight: Constant, zero: Constant, wrap_mux: Mux, cmp0: Comparator, cmp1: Comparator, cmp2: Comparator, two: Constant, cmp3: Comparator, three: Constant, cmp4: Comparator, four: Constant, cmp5: Comparator, five: Constant, cmp6: Comparator, six: Constant, cmp7: Comparator, seven: Constant },
   nodeArgs: { always_write: { value: 1 }, one: { value: 1 }, eight: { value: 8 }, zero: { value: 0 }, two: { value: 2 }, three: { value: 3 }, four: { value: 4 }, five: { value: 5 }, six: { value: 6 }, seven: { value: 7 } },
@@ -30,7 +30,7 @@ const RoundRobinLoadBalancer = component('RoundRobinLoadBalancer', {
   ],
 })
 
-const RoundRobinDemo = component('RoundRobinDemo', {
+const RoundRobinDemo = circuit('RoundRobinDemo', {
   nodes: { led0: Led, led1: Led, led2: Led, led3: Led, led4: Led, led5: Led, led6: Led, led7: Led, balancer: RoundRobinLoadBalancer },
   connect: ({ in: inp, out, led0, led1, led2, led3, led4, led5, led6, led7, balancer }) => [
     balancer.server0.to(led0.in),

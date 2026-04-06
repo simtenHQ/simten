@@ -1,6 +1,6 @@
 "use client";
 
-import { ComponentEmbed } from "@turing-incomplete/embed";
+import { CircuitEmbed } from "@turing-incomplete/embed";
 import { GATE_CIRCUITS } from "../circuits";
 
 export function CompositionSection() {
@@ -34,7 +34,7 @@ export function CompositionSection() {
             the AND (are both bits 1?). Try it: 1+1 = 10 in binary &mdash; sum
             is 0, carry is 1.
           </p>
-          <ComponentEmbed
+          <CircuitEmbed
             code={GATE_CIRCUITS.halfAdder.dsl}
             displayCode={GATE_CIRCUITS.halfAdder.displayCode}
             height={260}
@@ -54,7 +54,7 @@ export function CompositionSection() {
             these together and you can add two bytes. Chain 32 and you have the
             adder in a modern CPU.
           </p>
-          <ComponentEmbed
+          <CircuitEmbed
             code={GATE_CIRCUITS.fullAdder.dsl}
             displayCode={GATE_CIRCUITS.fullAdder.displayCode}
             height={300}
@@ -74,7 +74,7 @@ export function CompositionSection() {
             CPUs &mdash; they&rsquo;re how the control unit routes data between
             components.
           </p>
-          <ComponentEmbed
+          <CircuitEmbed
             code={GATE_CIRCUITS.mux.dsl}
             displayCode={GATE_CIRCUITS.mux.displayCode}
             height={280}

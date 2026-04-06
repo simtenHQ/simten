@@ -1,6 +1,6 @@
 // Auto-generated from DSL
 
-const ProcessingElement = component('ProcessingElement', {
+const ProcessingElement = circuit('ProcessingElement', {
   in: { dataIn: bus(8), weightIn: bus(8), partialSumIn: bus(16), loadWeight: bit, resetAccum: bit },
   out: { dataOut: bus(8), result: bus(16) },
   nodes: { weightReg: Register, mult: Multiplier, adder: Adder, accum: Register, dataPipe: Register, accum_mux: Mux, one: Constant, zero: Constant, zero16: Constant },
@@ -22,7 +22,7 @@ const ProcessingElement = component('ProcessingElement', {
   ],
 })
 
-const Systolic3x3_CounterBased = component('Systolic3x3_CounterBased', {
+const Systolic3x3_CounterBased = circuit('Systolic3x3_CounterBased', {
   in: { a00: bus(8), a01: bus(8), a02: bus(8), a10: bus(8), a11: bus(8), a12: bus(8), a20: bus(8), a21: bus(8), a22: bus(8), b00: bus(8), b01: bus(8), b02: bus(8), b10: bus(8), b11: bus(8), b12: bus(8), b20: bus(8), b21: bus(8), b22: bus(8), start: bit },
   out: { c00: bus(16), c01: bus(16), c02: bus(16), c10: bus(16), c11: bus(16), c12: bus(16), c20: bus(16), c21: bus(16), c22: bus(16), done: bit },
   nodes: { pe00: ProcessingElement, pe01: ProcessingElement, pe02: ProcessingElement, pe10: ProcessingElement, pe11: ProcessingElement, pe12: ProcessingElement, pe20: ProcessingElement, pe21: ProcessingElement, pe22: ProcessingElement, reg_a00: Register, reg_a01: Register, reg_a02: Register, reg_a10: Register, reg_a11: Register, reg_a12: Register, reg_a20: Register, reg_a21: Register, reg_a22: Register, reg_b00: Register, reg_b01: Register, reg_b02: Register, reg_b10: Register, reg_b11: Register, reg_b12: Register, reg_b20: Register, reg_b21: Register, reg_b22: Register, global_cycle: Register, global_inc: Incrementer, global_mux: Mux, k_phase: Register, k_inc: Incrementer, k_mux_01: Mux, k_mux_reset: Mux, running: DFlipFlop, start_or_running: Or, is_cycle_0: Comparator, is_cycle_1: Comparator, is_cycle_2: Comparator, is_cycle_3: Comparator, is_cycle_4: Comparator, is_cycle_5: Comparator, is_cycle_6: Comparator, is_cycle_7: Comparator, is_cycle_8: Comparator, is_cycle_9: Comparator, is_cycle_10: Comparator, is_cycle_11: Comparator, is_cycle_12: Comparator, is_cycle_13: Comparator, is_cycle_14: Comparator, is_cycle_15: Comparator, is_cycle_16: Comparator, k_is_0: Comparator, k_is_1: Comparator, k_is_2: Comparator, loadWeights_or1: Or, loadWeights_or2: Or, done_latch: DFlipFlop, done_hold: Or, a_row0_mux_01: Mux, a_row0_mux_final: Mux, a_row0_inject_01: Or, a_row0_inject_final: Or, a_row0_gate: Mux, a_row1_mux_01: Mux, a_row1_mux_final: Mux, a_row1_inject_01: Or, a_row1_inject_final: Or, a_row1_gate: Mux, a_row2_mux_01: Mux, a_row2_mux_final: Mux, a_row2_inject_01: Or, a_row2_inject_final: Or, a_row2_gate: Mux, b_col0_mux_01: Mux, b_col0_mux_final: Mux, b_col1_mux_01: Mux, b_col1_mux_final: Mux, b_col2_mux_01: Mux, b_col2_mux_final: Mux, k_inc_trigger: Or, zero8: Constant, zero16: Constant, one: Constant, zero: Constant, const_0: Constant, const_1: Constant, const_2: Constant, const_3: Constant, const_4: Constant, const_5: Constant, const_6: Constant, const_7: Constant, const_8: Constant, const_9: Constant, const_10: Constant, const_11: Constant, const_12: Constant, const_13: Constant, const_14: Constant, const_15: Constant, const_16: Constant },
@@ -156,7 +156,7 @@ const Systolic3x3_CounterBased = component('Systolic3x3_CounterBased', {
   ],
 })
 
-const TestSystolic3x3 = component('TestSystolic3x3', {
+const TestSystolic3x3 = circuit('TestSystolic3x3', {
   nodes: { sys: Systolic3x3_CounterBased, a00: Input, a01: Input, a02: Input, a10: Input, a11: Input, a12: Input, a20: Input, a21: Input, a22: Input, b00: Input, b01: Input, b02: Input, b10: Input, b11: Input, b12: Input, b20: Input, b21: Input, b22: Input, start: Switch, display_c00: HexDisplay, display_c01: HexDisplay, display_c02: HexDisplay, display_c10: HexDisplay, display_c11: HexDisplay, display_c12: HexDisplay, display_c20: HexDisplay, display_c21: HexDisplay, display_c22: HexDisplay, done_led: Led },
   nodeArgs: { a00: { value: 1 }, a01: { value: 2 }, a02: { value: 3 }, a10: { value: 4 }, a11: { value: 5 }, a12: { value: 6 }, a20: { value: 7 }, a21: { value: 8 }, a22: { value: 9 }, b00: { value: 9 }, b01: { value: 8 }, b02: { value: 7 }, b10: { value: 6 }, b11: { value: 5 }, b12: { value: 4 }, b20: { value: 3 }, b21: { value: 2 }, b22: { value: 1 } },
   connect: ({ in: inp, out, sys, a00, a01, a02, a10, a11, a12, a20, a21, a22, b00, b01, b02, b10, b11, b12, b20, b21, b22, start, display_c00, display_c01, display_c02, display_c10, display_c11, display_c12, display_c20, display_c21, display_c22, done_led }) => [
