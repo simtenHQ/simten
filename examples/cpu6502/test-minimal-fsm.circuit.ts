@@ -1,6 +1,6 @@
 // Auto-generated from DSL
 
-const MinimalFSM = component('MinimalFSM', {
+const MinimalFSM = circuit('MinimalFSM', {
   in: { reset: bit },
   out: { current_state: bus(3) },
   nodes: { state_reg: Register, zero: Constant, always_on: Constant },

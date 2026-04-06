@@ -1,6 +1,6 @@
 // Auto-generated from DSL
 
-const ALU = component('ALU', {
+const ALU = circuit('ALU', {
   in: { a: bus(8), b: bus(8), op: bus(3), carry_in: bit },
   out: { result: bus(8), carry_out: bit, zero: bit, negative: bit },
   nodes: { adder: Adder, subtractor: Subtractor, and_op: BusAnd, or_op: BusOr, xor_op: BusXor, op_0: Constant, op_1: Constant, op_2: Constant, op_3: Constant, op_4: Constant, is_add: Comparator, is_sub: Comparator, is_and: Comparator, is_or: Comparator, is_xor: Comparator, mux1: Mux, mux2: Mux, mux3: Mux, mux4: Mux, mux_carry: Mux, zero_cmp: Comparator, threshold: Constant, neg_cmp: Comparator },
@@ -38,7 +38,7 @@ const ALU = component('ALU', {
   ],
 })
 
-const RegisterFile = component('RegisterFile', {
+const RegisterFile = circuit('RegisterFile', {
   in: { write_sel: bus(2), write_data: bus(8), write_enable: bit, read_sel: bus(2) },
   out: { read_data: bus(8) },
   nodes: { regA: Register, regX: Register, regY: Register, sel_0: Constant, sel_1: Constant, sel_2: Constant, is_sel_A: Comparator, is_sel_X: Comparator, is_sel_Y: Comparator, write_A: And, write_X: And, write_Y: And, is_read_X: Comparator, is_read_Y: Comparator, read_mux1: Mux, read_mux2: Mux },
@@ -67,7 +67,7 @@ const RegisterFile = component('RegisterFile', {
   ],
 })
 
-const Stage1Simple = component('Stage1Simple', {
+const Stage1Simple = circuit('Stage1Simple', {
   out: { cycle: bus(8), alu_out: bus(8), reg_out: bus(8), write_to: bus(2) },
   nodes: { counter: Register, always_on: Constant, inc: Incrementer, c0: Constant, c1: Constant, c2: Constant, c3: Constant, is_c0: Comparator, is_c1: Comparator, is_c2: Comparator, is_c3: Comparator, rf: RegisterFile, alu: ALU, v66: Constant, v8: Constant, v10: Constant, zero: Constant, sel_a: Constant, sel_x: Constant, read_sel: Mux, read_sel2: Mux, b1: Mux, b2: Mux, b3: Mux, ws1: Mux, ws2: Mux },
   nodeArgs: { always_on: { value: 1 }, c0: { value: 0 }, c1: { value: 1 }, c2: { value: 2 }, c3: { value: 3 }, v66: { value: 66 }, v8: { value: 8 }, v10: { value: 10 }, zero: { value: 0 }, sel_a: { value: 0 }, sel_x: { value: 1 } },
@@ -100,7 +100,7 @@ const Stage1Simple = component('Stage1Simple', {
   ],
 })
 
-const Stage1Demo = component('Stage1Demo', {
+const Stage1Demo = circuit('Stage1Demo', {
   nodes: { cpu: Stage1Simple, d_cycle: HexDisplay, d_alu: HexDisplay, d_reg: HexDisplay, d_write: HexDisplay },
   connect: ({ in: inp, out, cpu, d_cycle, d_alu, d_reg, d_write }) => [
     cpu.cycle.to(d_cycle.in),

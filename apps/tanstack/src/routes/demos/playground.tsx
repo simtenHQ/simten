@@ -1,11 +1,11 @@
 /**
- * TypeScript Playground — demonstrates the new component() API
+ * TypeScript Playground — demonstrates the new circuit() API
  * with live simulation running entirely in React, no canvas needed.
  */
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { component, bit, bus, executeComponentCode } from "@turing-incomplete/core/builder";
+import { circuit, bit, bus, executeCircuitCode } from "@turing-incomplete/core/circuit";
 import { simulate, type SimulationHandle } from "@turing-incomplete/core/sim";
 import { And, Xor, Or, Not, DFlipFlop, Register, Constant, Mux } from "@turing-incomplete/core/std";
 
@@ -18,7 +18,7 @@ export const Route = createFileRoute("/demos/playground")({
 // ============================================================================
 
 // 4-bit counter with enable and reset
-const Counter4 = component('Counter4', {
+const Counter4 = circuit('Counter4', {
   in: { enable: bit, reset: bit },
   out: { count: bus(4), zero: bit, max: bit },
   state: { value: 0 },
@@ -33,7 +33,7 @@ const Counter4 = component('Counter4', {
 });
 
 // Fibonacci generator
-const Fibonacci = component('Fibonacci', {
+const Fibonacci = circuit('Fibonacci', {
   out: { value: bus(16), step: bus(8) },
   state: { a: 0, b: 1, n: 0 },
   eval: ({ a }) => ({ value: a as number, step: 0 }),
@@ -45,7 +45,7 @@ const Fibonacci = component('Fibonacci', {
 });
 
 // Shift register — watch bits ripple through
-const ShiftReg8 = component('ShiftReg8', {
+const ShiftReg8 = circuit('ShiftReg8', {
   in: { data: bit },
   out: { b0: bit, b1: bit, b2: bit, b3: bit, b4: bit, b5: bit, b6: bit, b7: bit },
   state: { reg: 0 },
@@ -65,7 +65,7 @@ const ShiftReg8 = component('ShiftReg8', {
 });
 
 // Custom user-defined eval: ReLU activation function
-const ReLU = component('ReLU', {
+const ReLU = circuit('ReLU', {
   in: { x: bus(16) },
   out: { y: bus(16) },
   eval: ({ x }) => ({ y: x > 32767 ? 0 : x }), // Treat >32767 as negative
@@ -237,7 +237,7 @@ function ShiftRegisterDemo() {
 }
 
 function LiveCodeDemo() {
-  const [code, setCode] = useState(`const MyGate = component('MyGate', {
+  const [code, setCode] = useState(`const MyGate = circuit('MyGate', {
   in: { a: bit, b: bit },
   out: { and_out: bit, or_out: bit, xor_out: bit },
   nodes: { g_and: And, g_or: Or, g_xor: Xor },
@@ -254,7 +254,7 @@ function LiveCodeDemo() {
   const [inputB, setInputB] = useState(0);
 
   const run = useCallback(() => {
-    const execResult = executeComponentCode(code);
+    const execResult = executeCircuitCode(code);
     if (execResult.error) {
       setResult({ outputs: {}, error: execResult.error });
       return;
@@ -325,7 +325,7 @@ function PlaygroundPage() {
         <div className="mt-8 p-4 bg-muted/30 rounded-lg">
           <h2 className="text-sm font-semibold mb-2">How it works</h2>
           <pre className="text-xs font-mono text-muted-foreground whitespace-pre-wrap">{`// Define a component in TypeScript
-const Counter = component('Counter', {
+const Counter = circuit('Counter', {
   in: { enable: bit },
   out: { count: bus(4) },
   state: { value: 0 },

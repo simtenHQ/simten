@@ -1,14 +1,14 @@
 'use client';
 
 import { useEffect } from 'react';
-import { useComponentLibraryStore } from '../stores/component-library-store';
+import { useCircuitLibraryStore } from '../stores/circuit-library-store';
 
 /**
- * Hook to initialize the component library with primitives and standard components.
+ * Hook to initialize the circuit library with primitives and standard circuits.
  * Call this once at the root of your app.
  */
 export function usePrimitivesInit() {
-  const initializeLibrary = useComponentLibraryStore((s) => s.initializeLibrary);
+  const initializeLibrary = useCircuitLibraryStore((s) => s.initializeLibrary);
 
   useEffect(() => {
     initializeLibrary();

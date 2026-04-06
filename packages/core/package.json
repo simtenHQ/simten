@@ -20,9 +20,9 @@
       "types": "./dist/verilog/index.d.ts",
       "import": "./dist/verilog/index.js"
     },
-    "./builder": {
-      "types": "./src/builder/index.ts",
-      "import": "./src/builder/index.ts"
+    "./circuit": {
+      "types": "./src/circuit/index.ts",
+      "import": "./src/circuit/index.ts"
     },
     "./std": {
       "types": "./src/std/index.ts",

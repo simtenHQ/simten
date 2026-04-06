@@ -6,24 +6,24 @@ import { describe, it, expect } from 'vitest';
 import {
   SimulationSession,
   createSimulator,
-  createComponentLibrary,
+  createCircuitLibrary,
   elaborate,
   PRIMITIVES,
 } from '../index.js';
-import { compileDSL, type ComponentLibrary as DSLComponentLibrary } from '../../dsl/index.js';
+import { compileDSL, type CircuitLibrary as DSLCircuitLibrary } from '../../dsl/index.js';
 import type { Circuit } from '../../types/circuit.js';
 
 function createMutableLibrary() {
   const circuitMap = new Map<string, Circuit>();
   for (const c of PRIMITIVES as Circuit[]) circuitMap.set(c.name, c);
   return {
-    resolveComponent: (name: string) => circuitMap.get(name),
+    resolveCircuit: (name: string) => circuitMap.get(name),
     getAllPrimitiveNames: () => Array.from(circuitMap.entries())
       .filter(([, c]) => c.implementation.kind === 'primitive').map(([n]) => n),
     getCircuit: (name: string) => circuitMap.get(name),
     hasCircuit: (name: string) => circuitMap.has(name),
     addCircuit: (circuit: Circuit) => { circuitMap.set(circuit.name, circuit); },
-  } satisfies DSLComponentLibrary;
+  } satisfies DSLCircuitLibrary;
 }
 
 // Minimal test: Switch(value=1) feeding a sequential circuit

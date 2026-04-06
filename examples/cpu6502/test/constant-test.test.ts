@@ -4,21 +4,21 @@
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import { busType, type Circuit } from '../../../src/features/visual-editor/types/circuit';
-import { createSimulatorFromCircuit, type ComponentLibrary } from '@/core/simulator';
-import { useComponentLibraryStore } from '../../../src/features/visual-editor/stores/component-library-store';
+import { createSimulatorFromCircuit, type CircuitLibrary } from '@/core/simulator';
+import { useCircuitLibraryStore } from '../../../src/features/visual-editor/stores/circuit-library-store';
 import { getPrimitives } from '../../../src/features/visual-editor/lib/primitive-registry';
 
-function getLibrary(): ComponentLibrary {
-  const store = useComponentLibraryStore.getState();
+function getLibrary(): CircuitLibrary {
+  const store = useCircuitLibraryStore.getState();
   return {
-    resolveComponent: (name) => store.resolveComponent(name),
+    resolveCircuit: (name) => store.resolveCircuit(name),
     getAllPrimitiveNames: () => store.getAllPrimitiveNames(),
   };
 }
 
 describe('Constant Primitive Test', () => {
   beforeEach(() => {
-    const store = useComponentLibraryStore.getState();
+    const store = useCircuitLibraryStore.getState();
     store.clearAll();
     store.registerPrimitives(getPrimitives());
   });

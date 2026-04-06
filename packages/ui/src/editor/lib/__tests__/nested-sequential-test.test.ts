@@ -7,14 +7,14 @@
 
 import { describe, it, expect, beforeAll } from 'vitest';
 import { Circuit, bitType, busType } from '../../types/circuit';
-import { createSimulatorFromCircuit, type ComponentLibrary } from '@turing-incomplete/core/simulator';
-import { useComponentLibraryStore } from '../../stores/component-library-store';
+import { createSimulatorFromCircuit, type CircuitLibrary } from '@turing-incomplete/core/simulator';
+import { useCircuitLibraryStore } from '../../stores/circuit-library-store';
 import { PRIMITIVES } from '@turing-incomplete/core/simulator';
 
-function getLibrary(): ComponentLibrary {
-  const store = useComponentLibraryStore.getState();
+function getLibrary(): CircuitLibrary {
+  const store = useCircuitLibraryStore.getState();
   return {
-    resolveComponent: (name) => store.resolveComponent(name),
+    resolveCircuit: (name) => store.resolveCircuit(name),
     getAllPrimitiveNames: () => store.getAllPrimitiveNames(),
   };
 }
@@ -22,7 +22,7 @@ function getLibrary(): ComponentLibrary {
 describe('Nested Sequential Components', () => {
   beforeAll(() => {
     // Register primitives first (required for nested components to work)
-    const store = useComponentLibraryStore.getState();
+    const store = useCircuitLibraryStore.getState();
     store.clearAll();
     store.registerPrimitives(PRIMITIVES as any[]);
 

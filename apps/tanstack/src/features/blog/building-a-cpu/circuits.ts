@@ -21,7 +21,7 @@ export const BLOG_CIRCUITS: Record<string, BlogCircuit> = {
     description:
       "The simplest memory element. Set (S) stores a 1, Reset (R) clears to 0.",
     displayCode: `
-const SRLatch = component('SRLatch', {
+const SRLatch = circuit('SRLatch', {
   in: { s: bit, r: bit },
   out: { q: bit, q_bar: bit },
   nodes: { nor1: Nor, nor2: Nor },
@@ -34,7 +34,7 @@ const SRLatch = component('SRLatch', {
 })
 `,
     dsl: `
-const SRLatch = component('SRLatch', {
+const SRLatch = circuit('SRLatch', {
   in: { s: bit, r: bit },
   out: { q: bit, q_bar: bit },
   nodes: { nor1: Nor, nor2: Nor },
@@ -46,7 +46,7 @@ const SRLatch = component('SRLatch', {
   ],
 })
 
-const DemoSRLatch = component('DemoSRLatch', {
+const DemoSRLatch = circuit('DemoSRLatch', {
   nodes: { sw_s: Switch, sw_r: Switch, latch: SRLatch, led_q: Led, led_qbar: Led },
   connect: ({ in: inp, out, sw_s, sw_r, latch, led_q, led_qbar }) => [
     sw_s.out.to(latch.s),
@@ -63,7 +63,7 @@ const DemoSRLatch = component('DemoSRLatch', {
     description:
       "Captures the input value on each clock edge. The building block of registers.",
     displayCode: `
-const DemoFlipFlop = component('DemoFlipFlop', {
+const DemoFlipFlop = circuit('DemoFlipFlop', {
   nodes: { sw_d: Switch, dff: DFlipFlop, led_q: Led },
   connect: ({ in: inp, out, sw_d, dff, led_q }) => [
     sw_d.out.to(dff.d),
@@ -72,7 +72,7 @@ const DemoFlipFlop = component('DemoFlipFlop', {
 })
 `,
     dsl: `
-const DemoFlipFlop = component('DemoFlipFlop', {
+const DemoFlipFlop = circuit('DemoFlipFlop', {
   nodes: { sw_d: Switch, dff: DFlipFlop, led_q: Led },
   connect: ({ in: inp, out, sw_d, dff, led_q }) => [
     sw_d.out.to(dff.d),
@@ -87,7 +87,7 @@ const DemoFlipFlop = component('DemoFlipFlop', {
     description:
       "Four flip-flops in parallel store a nibble (4 bits) of data.",
     displayCode: `
-const Reg4 = component('Reg4', {
+const Reg4 = circuit('Reg4', {
   in: { d0: bit, d1: bit, d2: bit, d3: bit },
   out: { q0: bit, q1: bit, q2: bit, q3: bit },
   nodes: { ff0: DFlipFlop, ff1: DFlipFlop, ff2: DFlipFlop, ff3: DFlipFlop },
@@ -104,7 +104,7 @@ const Reg4 = component('Reg4', {
 })
 `,
     dsl: `
-const Reg4 = component('Reg4', {
+const Reg4 = circuit('Reg4', {
   in: { d0: bit, d1: bit, d2: bit, d3: bit },
   out: { q0: bit, q1: bit, q2: bit, q3: bit },
   nodes: { ff0: DFlipFlop, ff1: DFlipFlop, ff2: DFlipFlop, ff3: DFlipFlop },
@@ -120,7 +120,7 @@ const Reg4 = component('Reg4', {
   ],
 })
 
-const DemoReg4 = component('DemoReg4', {
+const DemoReg4 = circuit('DemoReg4', {
   nodes: { sw_d0: Switch, sw_d1: Switch, sw_d2: Switch, sw_d3: Switch, reg: Reg4, led_q0: Led, led_q1: Led, led_q2: Led, led_q3: Led },
   connect: ({ in: inp, out, sw_d0, sw_d1, sw_d2, sw_d3, reg, led_q0, led_q1, led_q2, led_q3 }) => [
     sw_d0.out.to(reg.d0),
@@ -141,7 +141,7 @@ const DemoReg4 = component('DemoReg4', {
     description:
       "Counts from 0 to 15 using a synchronous binary counter.",
     displayCode: `
-const Counter4 = component('Counter4', {
+const Counter4 = circuit('Counter4', {
   out: { q0: bit, q1: bit, q2: bit, q3: bit },
   nodes: { ff0: DFlipFlop, ff1: DFlipFlop, ff2: DFlipFlop, ff3: DFlipFlop, inv0: Not, xor1: Xor, and01: And, xor2: Xor, and012: And, xor3: Xor },
   connect: ({ in: inp, out, ff0, ff1, ff2, ff3, inv0, xor1, and01, xor2, and012, xor3 }) => [
@@ -159,7 +159,7 @@ const Counter4 = component('Counter4', {
 })
 `,
     dsl: `
-const Counter4 = component('Counter4', {
+const Counter4 = circuit('Counter4', {
   out: { q0: bit, q1: bit, q2: bit, q3: bit },
   nodes: { ff0: DFlipFlop, ff1: DFlipFlop, ff2: DFlipFlop, ff3: DFlipFlop, inv0: Not, xor1: Xor, and01: And, xor2: Xor, and012: And, xor3: Xor },
   connect: ({ in: inp, out, ff0, ff1, ff2, ff3, inv0, xor1, and01, xor2, and012, xor3 }) => [
@@ -176,7 +176,7 @@ const Counter4 = component('Counter4', {
   ],
 })
 
-const DemoCounter4 = component('DemoCounter4', {
+const DemoCounter4 = circuit('DemoCounter4', {
   nodes: { ctr: Counter4, led_q0: Led, led_q1: Led, led_q2: Led, led_q3: Led },
   connect: ({ in: inp, out, ctr, led_q0, led_q1, led_q2, led_q3 }) => [
     ctr.q0.to(led_q0.in),
@@ -193,7 +193,7 @@ const DemoCounter4 = component('DemoCounter4', {
     description:
       "Chains four full adders to add two 4-bit numbers with carry propagation.",
     displayCode: `
-const Adder4 = component('Adder4', {
+const Adder4 = circuit('Adder4', {
   in: { a0: bit, a1: bit, a2: bit, a3: bit, b0: bit, b1: bit, b2: bit, b3: bit },
   out: { s0: bit, s1: bit, s2: bit, s3: bit, cout: bit },
   nodes: { fa0: FullAdder, fa1: FullAdder, fa2: FullAdder, fa3: FullAdder },
@@ -218,7 +218,7 @@ const Adder4 = component('Adder4', {
 })
 `,
     dsl: `
-const HalfAdder = component('HalfAdder', {
+const HalfAdder = circuit('HalfAdder', {
   in: { a: bit, b: bit },
   out: { sum: bit, carry: bit },
   nodes: { xor1: Xor, and1: And },
@@ -230,7 +230,7 @@ const HalfAdder = component('HalfAdder', {
   ],
 })
 
-const FullAdder = component('FullAdder', {
+const FullAdder = circuit('FullAdder', {
   in: { a: bit, b: bit, cin: bit },
   out: { sum: bit, cout: bit },
   nodes: { ha1: HalfAdder, ha2: HalfAdder, or1: Or },
@@ -246,7 +246,7 @@ const FullAdder = component('FullAdder', {
   ],
 })
 
-const Adder4 = component('Adder4', {
+const Adder4 = circuit('Adder4', {
   in: { a0: bit, a1: bit, a2: bit, a3: bit, b0: bit, b1: bit, b2: bit, b3: bit },
   out: { s0: bit, s1: bit, s2: bit, s3: bit, cout: bit },
   nodes: { fa0: FullAdder, fa1: FullAdder, fa2: FullAdder, fa3: FullAdder },
@@ -270,7 +270,7 @@ const Adder4 = component('Adder4', {
   ],
 })
 
-const DemoAdder4 = component('DemoAdder4', {
+const DemoAdder4 = circuit('DemoAdder4', {
   nodes: { sw_a0: Switch, sw_a1: Switch, sw_a2: Switch, sw_a3: Switch, sw_b0: Switch, sw_b1: Switch, sw_b2: Switch, sw_b3: Switch, adder: Adder4, led_s0: Led, led_s1: Led, led_s2: Led, led_s3: Led, led_cout: Led },
   connect: ({ in: inp, out, sw_a0, sw_a1, sw_a2, sw_a3, sw_b0, sw_b1, sw_b2, sw_b3, adder, led_s0, led_s1, led_s2, led_s3, led_cout }) => [
     sw_a0.out.to(adder.a0),
@@ -296,7 +296,7 @@ const DemoAdder4 = component('DemoAdder4', {
     description:
       "Performs ADD, AND, OR, or XOR on one bit, selected by a 2-bit control signal.",
     displayCode: `
-const ALU1 = component('ALU1', {
+const ALU1 = circuit('ALU1', {
   in: { a: bit, b: bit, cin: bit, op0: bit, op1: bit },
   out: { result: bit, cout: bit },
   nodes: { add: FullAdder, op_and: And, op_or: Or, op_xor: Xor, mux_lo: Mux, mux_hi: Mux, mux_out: Mux },
@@ -318,7 +318,7 @@ const ALU1 = component('ALU1', {
 })
 `,
     dsl: `
-const HalfAdder = component('HalfAdder', {
+const HalfAdder = circuit('HalfAdder', {
   in: { a: bit, b: bit },
   out: { sum: bit, carry: bit },
   nodes: { xor1: Xor, and1: And },
@@ -330,7 +330,7 @@ const HalfAdder = component('HalfAdder', {
   ],
 })
 
-const FullAdder = component('FullAdder', {
+const FullAdder = circuit('FullAdder', {
   in: { a: bit, b: bit, cin: bit },
   out: { sum: bit, cout: bit },
   nodes: { ha1: HalfAdder, ha2: HalfAdder, or1: Or },
@@ -346,7 +346,7 @@ const FullAdder = component('FullAdder', {
   ],
 })
 
-const ALU1 = component('ALU1', {
+const ALU1 = circuit('ALU1', {
   in: { a: bit, b: bit, cin: bit, op0: bit, op1: bit },
   out: { result: bit, cout: bit },
   nodes: { add: FullAdder, op_and: And, op_or: Or, op_xor: Xor, mux_lo: Mux, mux_hi: Mux, mux_out: Mux },
@@ -367,7 +367,7 @@ const ALU1 = component('ALU1', {
   ],
 })
 
-const DemoALU1 = component('DemoALU1', {
+const DemoALU1 = circuit('DemoALU1', {
   nodes: { sw_a: Switch, sw_b: Switch, sw_cin: Switch, sw_op0: Switch, sw_op1: Switch, alu: ALU1, led_result: Led, led_cout: Led },
   connect: ({ in: inp, out, sw_a, sw_b, sw_cin, sw_op0, sw_op1, alu, led_result, led_cout }) => [
     sw_a.out.to(alu.a),
@@ -387,7 +387,7 @@ const DemoALU1 = component('DemoALU1', {
     description:
       "256x8 memory. Reads are instant (combinational). Writes happen on the clock edge when write-enable is on.",
     displayCode: `
-const DemoRAM = component('DemoRAM', {
+const DemoRAM = circuit('DemoRAM', {
   nodes: { addr: Input, data_in: Input, we: Switch, mem: RAM, data_out: HexDisplay },
   connect: ({ in: inp, out, addr, data_in, we, mem, data_out }) => [
     addr.out.to(mem.addr),
@@ -398,7 +398,7 @@ const DemoRAM = component('DemoRAM', {
 })
 `,
     dsl: `
-const DemoRAM = component('DemoRAM', {
+const DemoRAM = circuit('DemoRAM', {
   nodes: { addr: Input, data_in: Input, we: Switch, mem: RAM, data_out: HexDisplay },
   connect: ({ in: inp, out, addr, data_in, we, mem, data_out }) => [
     addr.out.to(mem.addr),

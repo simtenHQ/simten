@@ -12,7 +12,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   createSimulator,
-  createComponentLibrary,
+  createCircuitLibrary,
   elaborate,
   type Circuit,
   bitType,
@@ -117,17 +117,17 @@ function createTestPrimitives(): Circuit[] {
 describe('Core Simulator Standalone', () => {
   it('should create a component library without browser dependencies', () => {
     const primitives = createTestPrimitives();
-    const library = createComponentLibrary(primitives);
+    const library = createCircuitLibrary(primitives);
 
-    expect(library.resolveComponent('And')).toBeDefined();
-    expect(library.resolveComponent('Or')).toBeDefined();
-    expect(library.resolveComponent('Not')).toBeDefined();
+    expect(library.resolveCircuit('And')).toBeDefined();
+    expect(library.resolveCircuit('Or')).toBeDefined();
+    expect(library.resolveCircuit('Not')).toBeDefined();
     expect(library.getAllPrimitiveNames()).toContain('And');
   });
 
   it('should elaborate a simple circuit without browser dependencies', () => {
     const primitives = createTestPrimitives();
-    const library = createComponentLibrary(primitives);
+    const library = createCircuitLibrary(primitives);
 
     // Create a simple AND gate circuit
     const circuit: Circuit = {
@@ -189,7 +189,7 @@ describe('Core Simulator Standalone', () => {
 
   it('should run combinational simulation without browser dependencies', () => {
     const primitives = createTestPrimitives();
-    const library = createComponentLibrary(primitives);
+    const library = createCircuitLibrary(primitives);
 
     // Create circuit with switch inputs
     const circuit: Circuit = {
@@ -270,7 +270,7 @@ describe('Core Simulator Standalone', () => {
 
   it('should support sequential simulation API without browser dependencies', () => {
     const primitives = createTestPrimitives();
-    const library = createComponentLibrary(primitives);
+    const library = createCircuitLibrary(primitives);
 
     // Create a simple register circuit
     const circuit: Circuit = {

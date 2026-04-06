@@ -23,7 +23,7 @@ import { ConfirmationModal } from './ConfirmationModal';
 import { useChatStore } from '../stores/chat-store';
 import { executeAction, applyDiff, buildConfirmationRequest, type ActionExecutionContext } from '../actions';
 import { useTutorFlow } from '../hooks/useTutorFlow';
-import { executeComponentCode } from '@turing-incomplete/core';
+import { executeCircuitCode } from '@turing-incomplete/core';
 import type { AssistantAction } from '../types';
 import type { ShowDiffAction, GenerateHarnessAction } from '../types';
 import type { ConfirmationRequest } from '../actions/confirmation-flow';
@@ -180,7 +180,7 @@ export function ChatPanel({
       // With the TS builder, harness generation is handled by the LLM
       // producing TS code directly. Show a message instead.
       const currentCode = getCurrentCode();
-      const result = executeComponentCode(currentCode);
+      const result = executeCircuitCode(currentCode);
       const circuitName = result.circuit?.name ?? (action as GenerateHarnessAction).circuitName ?? 'circuit';
 
       console.warn(`[ChatPanel] GENERATE_HARNESS for "${circuitName}" — harness generation should be done via TS builder code from the LLM`);

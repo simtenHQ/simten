@@ -7,7 +7,7 @@
 import { useMemo } from 'react';
 import {
   useAnalysisStore,
-  useComponentLibraryStore,
+  useCircuitLibraryStore,
   useCircuitStore,
 } from '@turing-incomplete/ui/editor/stores';
 import type { Circuit } from '@turing-incomplete/ui/editor/types';
@@ -56,10 +56,10 @@ export type NarrativeContextResult = LLMContextResult;
 export function useLLMContext(code: string, portValues?: ReadonlyMap<string, boolean | number>): LLMContextResult {
   const validationResult = useAnalysisStore((state) => state.validationResult);
   const metrics = useAnalysisStore((state) => state.metrics);
-  const resolveComponent = useComponentLibraryStore(
-    (state) => state.resolveComponent
+  const resolveComponent = useCircuitLibraryStore(
+    (state) => state.resolveCircuit
   );
-  const getAllPrimitiveNames = useComponentLibraryStore(
+  const getAllPrimitiveNames = useCircuitLibraryStore(
     (state) => state.getAllPrimitiveNames
   );
   const portValuesMap = portValues ?? new Map();

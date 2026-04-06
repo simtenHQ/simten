@@ -40,7 +40,7 @@ export function OrChallengeSection({ onPass }: OrChallengeSectionProps) {
           "combine: connect notA.out to combine.a, notB.out to combine.b.",
         ]}
         scaffold={`
-const OrFromNand = component('OrFromNand', {
+const OrFromNand = circuit('OrFromNand', {
   nodes: { A: Switch, B: Switch, notA: Nand, notB: Nand, combine: Nand, light: Led },
 })
 `}

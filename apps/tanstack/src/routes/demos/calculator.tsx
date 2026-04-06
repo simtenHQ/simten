@@ -9,7 +9,7 @@
 
 import { createFileRoute } from "@tanstack/react-router";
 import { useState, useCallback, useMemo } from "react";
-import { component, bit, bus } from "@turing-incomplete/core/builder";
+import { circuit, bit, bus } from "@turing-incomplete/core/circuit";
 import { simulate } from "@turing-incomplete/core/sim";
 
 export const Route = createFileRoute("/demos/calculator")({
@@ -29,7 +29,7 @@ const ALU_XOR = 5;
 const ALU_SHL = 6;
 const ALU_SHR = 7;
 
-const Calculator = component('Calculator', {
+const Calculator = circuit('Calculator', {
   in: {
     load_a: bit,       // load input into register A
     load_b: bit,       // load input into register B
@@ -378,7 +378,7 @@ function CalculatorPage() {
         {/* Circuit info */}
         <div className="p-4 bg-muted/30 rounded-lg">
           <h2 className="text-sm font-semibold mb-2">This is a circuit</h2>
-          <pre className="text-xs font-mono text-muted-foreground whitespace-pre-wrap">{`const Calculator = component('Calculator', {
+          <pre className="text-xs font-mono text-muted-foreground whitespace-pre-wrap">{`const Calculator = circuit('Calculator', {
   in: { load_a: bit, load_b: bit, compute: bit, data_in: bus(16), alu_op: bus(4) },
   out: { reg_a: bus(16), reg_b: bus(16), result: bus(16), carry: bit, zero: bit },
   state: { a: 0, b: 0, res: 0, flags: 0 },

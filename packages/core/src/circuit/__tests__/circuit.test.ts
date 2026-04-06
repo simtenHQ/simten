@@ -1,31 +1,31 @@
 import { describe, it, expect } from 'vitest';
-import { component } from '../component.js';
+import { circuit } from '../circuit.js';
 import { bit, bus } from '../bit-bus.js';
-import type { BuiltComponent } from '../types.js';
+import type { BuiltCircuit } from '../types.js';
 
 // ============================================================================
 // Helper: pre-built leaf components for use as nodes
 // ============================================================================
 
-const And = component('And', {
+const And = circuit('And', {
   in: { a: bit, b: bit },
   out: { out: bit },
   eval: ({ a, b }) => ({ out: (a && b) ? 1 : 0 }),
 });
 
-const Or = component('Or', {
+const Or = circuit('Or', {
   in: { a: bit, b: bit },
   out: { out: bit },
   eval: ({ a, b }) => ({ out: (a || b) ? 1 : 0 }),
 });
 
-const Xor = component('Xor', {
+const Xor = circuit('Xor', {
   in: { a: bit, b: bit },
   out: { out: bit },
   eval: ({ a, b }) => ({ out: (a !== b) ? 1 : 0 }),
 });
 
-const Not = component('Not', {
+const Not = circuit('Not', {
   in: { in: bit },
   out: { out: bit },
   eval: ({ in: inp }) => ({ out: inp ? 0 : 1 }),
@@ -71,7 +71,7 @@ describe('combinational leaf', () => {
   });
 
   it('builds a bus-width component', () => {
-    const Adder = component('Adder', {
+    const Adder = circuit('Adder', {
       in: { a: bus(8), b: bus(8) },
       out: { sum: bus(8), carry: bit },
       eval: ({ a, b }) => ({ sum: (a + b) & 0xFF, carry: (a + b) >> 8 }),
@@ -91,7 +91,7 @@ describe('combinational leaf', () => {
   });
 
   it('allows numeric shorthand for bus width', () => {
-    const Comp = component('Comp', {
+    const Comp = circuit('Comp', {
       in: { data: 8 },
       out: { result: 16 },
       eval: ({ data }) => ({ result: data * 2 }),
@@ -108,7 +108,7 @@ describe('combinational leaf', () => {
 
 describe('sequential leaf', () => {
   it('builds a counter with state', () => {
-    const Counter = component('Counter', {
+    const Counter = circuit('Counter', {
       in: { enable: bit },
       out: { count: bus(8) },
       state: { total: 0 },
@@ -128,7 +128,7 @@ describe('sequential leaf', () => {
   });
 
   it('builds a register', () => {
-    const Register = component('Register8', {
+    const Register = circuit('Register8', {
       in: { d: bus(8) },
       out: { q: bus(8) },
       state: { stored: 0 },
@@ -149,7 +149,7 @@ describe('sequential leaf', () => {
 
 describe('composite', () => {
   it('builds a HalfAdder from gates', () => {
-    const HalfAdder = component('HalfAdder', {
+    const HalfAdder = circuit('HalfAdder', {
       in: { a: bit, b: bit },
       out: { sum: bit, carry: bit },
       nodes: { x: Xor, a: And },
@@ -171,7 +171,7 @@ describe('composite', () => {
   });
 
   it('builds a composite from composites', () => {
-    const HalfAdder = component('HalfAdder', {
+    const HalfAdder = circuit('HalfAdder', {
       in: { a: bit, b: bit },
       out: { sum: bit, carry: bit },
       nodes: { x: Xor, a: And },
@@ -183,7 +183,7 @@ describe('composite', () => {
       ],
     });
 
-    const FullAdder = component('FullAdder', {
+    const FullAdder = circuit('FullAdder', {
       in: { a: bit, b: bit, cin: bit },
       out: { sum: bit, cout: bit },
       nodes: { ha1: HalfAdder, ha2: HalfAdder, or: Or },
@@ -205,7 +205,7 @@ describe('composite', () => {
   });
 
   it('detects sequential when nodes contain sequential components', () => {
-    const Reg = component('Reg', {
+    const Reg = circuit('Reg', {
       in: { d: bus(8) },
       out: { q: bus(8) },
       state: { stored: 0 },
@@ -213,7 +213,7 @@ describe('composite', () => {
       onTick: ({ d }) => ({ stored: d as number }),
     });
 
-    const Pipeline = component('Pipeline', {
+    const Pipeline = circuit('Pipeline', {
       in: { data: bus(8) },
       out: { result: bus(8) },
       nodes: { r: Reg },
@@ -233,7 +233,7 @@ describe('composite', () => {
 
 describe('parameterized', () => {
   it('creates components via factory function', () => {
-    const Register = (width: number) => component(`Register${width}`, {
+    const Register = (width: number) => circuit(`Register${width}`, {
       in: { d: bus(width) },
       out: { q: bus(width) },
       state: { stored: 0 },
@@ -257,12 +257,12 @@ describe('parameterized', () => {
 
 describe('node arguments', () => {
   it('passes arguments to nodes via nodeArgs', () => {
-    const Constant = component('Constant', {
+    const Constant = circuit('Constant', {
       out: { out: bit },
       eval: () => ({ out: 0 }),
     });
 
-    const Demo = component('Demo', {
+    const Demo = circuit('Demo', {
       nodes: { c: Constant },
       nodeArgs: { c: { value: 42 } },
     });
@@ -277,7 +277,7 @@ describe('node arguments', () => {
 
 describe('metadata', () => {
   it('attaches metadata via meta', () => {
-    const ALU = component('ALU', {
+    const ALU = circuit('ALU', {
       in: { a: bus(32) },
       out: { result: bus(32) },
       meta: { category: 'arithmetic', description: 'Arithmetic Logic Unit', icon: '+' },
@@ -297,7 +297,7 @@ describe('metadata', () => {
 describe('validation', () => {
   it('rejects input/output name collision', () => {
     expect(() =>
-      component('Bad', {
+      circuit('Bad', {
         in: { x: bit },
         out: { x: bit },
         eval: ({ x }) => ({ x }),
@@ -307,7 +307,7 @@ describe('validation', () => {
 
   it('rejects state name colliding with input', () => {
     expect(() =>
-      component('Bad', {
+      circuit('Bad', {
         in: { count: bus(8) },
         out: { out: bus(8) },
         state: { count: 0 },
@@ -318,7 +318,7 @@ describe('validation', () => {
 
   it('rejects reserved node names', () => {
     expect(() =>
-      component('Bad', {
+      circuit('Bad', {
         in: { a: bit },
         out: { b: bit },
         nodes: { in: And },
@@ -328,7 +328,7 @@ describe('validation', () => {
 
   it('rejects onTick without state', () => {
     expect(() =>
-      component('Bad', {
+      circuit('Bad', {
         in: { d: bit },
         out: { q: bit },
         onTick: ({ d }) => ({ value: d }),
@@ -338,7 +338,7 @@ describe('validation', () => {
 
   it('rejects connection to nonexistent port on node', () => {
     expect(() =>
-      component('Bad', {
+      circuit('Bad', {
         in: { a: bit },
         out: { b: bit },
         nodes: { x: And },
@@ -356,7 +356,7 @@ describe('validation', () => {
 
 describe('source components', () => {
   it('builds a Switch (no eval, no nodes)', () => {
-    const Switch = component('Switch', {
+    const Switch = circuit('Switch', {
       out: { value: bit },
     });
 

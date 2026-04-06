@@ -8,25 +8,25 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import { compileDSL } from '../../src/features/dsl/index';
-import { ComponentLibrary, Circuit as DslCircuit } from '../../src/features/dsl/types';
-import { useComponentLibraryStore } from '../../src/features/visual-editor/stores/component-library-store';
+import { CircuitLibrary, Circuit as DslCircuit } from '../../src/features/dsl/types';
+import { useCircuitLibraryStore } from '../../src/features/visual-editor/stores/circuit-library-store';
 import { getPrimitives } from '../../src/features/visual-editor/lib/primitive-registry';
 import type { Circuit } from '../../src/features/visual-editor/types/circuit';
 
 describe('EgressController', () => {
-  let library: ReturnType<typeof useComponentLibraryStore.getState>;
+  let library: ReturnType<typeof useCircuitLibraryStore.getState>;
 
   beforeEach(() => {
-    library = useComponentLibraryStore.getState();
+    library = useCircuitLibraryStore.getState();
     library.clearAll();
     library.registerPrimitives(getPrimitives());
   });
 
-  class TestLibrary implements ComponentLibrary {
-    constructor(private store: ReturnType<typeof useComponentLibraryStore.getState>) {}
+  class TestLibrary implements CircuitLibrary {
+    constructor(private store: ReturnType<typeof useCircuitLibraryStore.getState>) {}
 
     getCircuit(name: string): DslCircuit | undefined {
-      const comp = this.store.resolveComponent(name);
+      const comp = this.store.resolveCircuit(name);
       if (!comp) return undefined;
 
       return {
@@ -44,7 +44,7 @@ describe('EgressController', () => {
     }
 
     hasCircuit(name: string): boolean {
-      return this.store.resolveComponent(name) !== undefined;
+      return this.store.resolveCircuit(name) !== undefined;
     }
 
     addCircuit(circuit: DslCircuit): void {

@@ -67,7 +67,9 @@
       "Bash(docker start:*)",
       "Bash(__NEW_LINE_13a2d21a3b8e46ad__ sed:*)",
       "Bash(sed -i '' \"s|from ''../../lib/utils''|from ''../lib/utils''|g\" packages/ui/src/nodes/*.ts)",
-      "Bash(__NEW_LINE_13a2d21a3b8e46ad__ echo:*)"
+      "Bash(__NEW_LINE_13a2d21a3b8e46ad__ echo:*)",
+      "Bash(sed 's/:.*$//')",
+      "Bash(git mv:*)"
     ]
   }
 }

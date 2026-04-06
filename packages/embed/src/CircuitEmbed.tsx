@@ -4,7 +4,7 @@ import { useState, useCallback, forwardRef, useImperativeHandle, useEffect } fro
 import { useCircuitSimulator } from "./hooks/useCircuitSimulator";
 import { CircuitCanvas, ClockControls } from "@turing-incomplete/ui/canvas";
 
-export interface ComponentEmbedProps {
+export interface CircuitEmbedProps {
   /** TypeScript component code */
   code: string;
   /** Container height */
@@ -35,17 +35,19 @@ export interface ComponentEmbedProps {
   autoRunSpeed?: number;
   /** Display code in collapsible panel */
   displayCode?: string;
+  /** Initial values for input ports (set on harness Switch/Input nodes) */
+  initialInputs?: Record<string, number | boolean>;
 }
 
-export interface ComponentEmbedHandle {
+export interface CircuitEmbedHandle {
   tick: () => void;
   reset: () => void;
   setNodeValue: (nodeId: string, value: number | boolean | Map<number, number>) => void;
 }
 
-export const ComponentEmbed = forwardRef<ComponentEmbedHandle, ComponentEmbedProps>(
-  function ComponentEmbed({ code, height = 300, showControls = true, nodePositions, theme, title, subtitle, description, href, focus, showPortLabels, onPortClick, glowUnconnected, autoRunSpeed = 500, displayCode }, ref) {
-    const sim = useCircuitSimulator(code);
+export const CircuitEmbed = forwardRef<CircuitEmbedHandle, CircuitEmbedProps>(
+  function CircuitEmbed({ code, height = 300, showControls = true, nodePositions, theme, title, subtitle, description, href, focus, showPortLabels, onPortClick, glowUnconnected, autoRunSpeed = 500, displayCode, initialInputs }, ref) {
+    const sim = useCircuitSimulator(code, { autoHarness: true, initialInputs });
     const [tickCount, setTickCount] = useState(0);
     const [codeVisible, setCodeVisible] = useState(false);
 

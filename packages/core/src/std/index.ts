@@ -1,7 +1,7 @@
 /**
- * Standard Library — All built-in components
+ * Standard Library — All built-in circuits
  *
- * Every component is defined with component() — full TypeScript type inference.
+ * Every circuit is defined with circuit() — full TypeScript type inference.
  * No fromPrimitive() bridge needed.
  *
  * Usage:
@@ -59,8 +59,8 @@ export {
 // Library helper
 // ============================================================================
 
-import type { Circuit, ComponentLibrary } from '../types/circuit.js';
-import type { BuiltComponent } from '../builder/types.js';
+import type { Circuit, CircuitLibrary } from '../types/circuit.js';
+import type { BuiltCircuit } from '../circuit/types.js';
 
 import * as logic from './logic.js';
 import * as arithmetic from './arithmetic.js';
@@ -72,13 +72,13 @@ import * as display from './display.js';
 import * as rv32i from './rv32i.js';
 import * as networking from './networking.js';
 
-/** All stdlib components */
-const ALL_COMPONENTS: BuiltComponent[] = (() => {
-  const byName = new Map<string, BuiltComponent>();
+/** All stdlib circuits */
+const ALL_CIRCUITS: BuiltCircuit[] = (() => {
+  const byName = new Map<string, BuiltCircuit>();
   for (const mod of [logic, arithmetic, routing, sequential, memory, io, display, rv32i, networking]) {
     for (const comp of Object.values(mod)) {
       if (comp && typeof comp === 'object' && 'name' in comp && 'circuit' in comp) {
-        byName.set((comp as BuiltComponent).name, comp as BuiltComponent);
+        byName.set((comp as BuiltCircuit).name, comp as BuiltCircuit);
       }
     }
   }
@@ -86,17 +86,17 @@ const ALL_COMPONENTS: BuiltComponent[] = (() => {
 })();
 
 /**
- * Create a ComponentLibrary from the standard library.
+ * Create a CircuitLibrary from the standard library.
  */
-export function createStdLibrary(): ComponentLibrary & { addCircuit(c: Circuit): void } {
+export function createStdLibrary(): CircuitLibrary & { addCircuit(c: Circuit): void } {
   const circuits = new Map<string, Circuit>();
 
-  for (const comp of ALL_COMPONENTS) {
+  for (const comp of ALL_CIRCUITS) {
     circuits.set(comp.name, comp.circuit);
   }
 
   return {
-    resolveComponent(name: string): Circuit | undefined {
+    resolveCircuit(name: string): Circuit | undefined {
       return circuits.get(name);
     },
     getAllPrimitiveNames(): string[] {
@@ -111,8 +111,11 @@ export function createStdLibrary(): ComponentLibrary & { addCircuit(c: Circuit):
 }
 
 /**
- * Get all stdlib components.
+ * Get all stdlib circuits.
  */
-export function getAllStdComponents(): BuiltComponent[] {
-  return [...ALL_COMPONENTS];
+export function getAllStdCircuits(): BuiltCircuit[] {
+  return [...ALL_CIRCUITS];
 }
+
+/** @deprecated Use getAllStdCircuits() instead */
+export const getAllStdComponents = getAllStdCircuits;

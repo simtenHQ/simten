@@ -1,13 +1,13 @@
 /**
  * Demo: React state management powered by hardware simulation.
  *
- * The shopping cart's entire state logic is a component() — a verified
+ * The shopping cart's entire state logic is a circuit() — a verified
  * state machine with typed inputs, typed outputs, and time-travel.
  */
 
 import { createFileRoute } from "@tanstack/react-router";
 import { useState, useCallback, useMemo, useRef } from "react";
-import { component, bit, bus } from "@turing-incomplete/core/builder";
+import { circuit, bit, bus } from "@turing-incomplete/core/circuit";
 import { simulate, type SimulationHandle } from "@turing-incomplete/core/sim";
 import type { SimulatorSnapshot } from "@turing-incomplete/core/simulator";
 
@@ -37,7 +37,7 @@ const PRODUCTS = [
   { id: 6, name: "Logic Analyzer", price: 35, emoji: "📊" },
 ];
 
-const CartMachine = component('CartMachine', {
+const CartMachine = circuit('CartMachine', {
   in: {
     action: bus(4),      // which action
     item_id: bus(8),     // which product
@@ -170,7 +170,7 @@ function CircuitStatePage() {
       <div className="max-w-5xl mx-auto">
         <h1 className="text-2xl font-bold mb-1">Hardware State Machine</h1>
         <p className="text-sm text-muted-foreground mb-6">
-          This shopping cart's state logic is a <code className="text-xs bg-muted px-1 rounded">component()</code> —
+          This shopping cart's state logic is a <code className="text-xs bg-muted px-1 rounded">circuit()</code> —
           a verified state machine with time-travel debugging. Every state transition is a clock tick.
         </p>
 
@@ -303,7 +303,7 @@ function CircuitStatePage() {
         {/* Code */}
         <div className="mt-6 p-4 bg-muted/30 rounded-lg">
           <h2 className="text-sm font-semibold mb-2">The state machine</h2>
-          <pre className="text-xs font-mono text-muted-foreground whitespace-pre-wrap">{`const CartMachine = component('CartMachine', {
+          <pre className="text-xs font-mono text-muted-foreground whitespace-pre-wrap">{`const CartMachine = circuit('CartMachine', {
   in: { action: bus(4), item_id: bus(8), discount: bus(8) },
   out: { total: bus(32), item_count: bus(8), discount_active: bit, savings: bus(32) },
   state: { items: new Map(), discountPct: 0 },

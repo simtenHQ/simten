@@ -1,6 +1,6 @@
 // Auto-generated from DSL
 
-const Part4TestCPU = component('Part4TestCPU', {
+const Part4TestCPU = circuit('Part4TestCPU', {
   in: { reset: bit },
   out: { pc: bus(8), reg_a: bus(8), reg_x: bus(8), reg_y: bus(8), flag_n: bit, flag_z: bit, flag_c: bit },
   nodes: { pc_reg: Register, always_on: Constant, pc_inc: Incrementer, zero: Constant, one: Constant, two: Constant, three: Constant, four: Constant, five: Constant, six: Constant, seven: Constant, eight: Constant, nine: Constant, ten: Constant, eleven: Constant, twelve: Constant, thirteen: Constant, fourteen: Constant, fifteen: Constant, byte_0: Constant, byte_1: Constant, byte_2: Constant, byte_3: Constant, byte_4: Constant, byte_5: Constant, byte_6: Constant, byte_7: Constant, byte_8: Constant, byte_9: Constant, byte_10: Constant, byte_11: Constant, byte_12: Constant, byte_13: Constant, byte_14: Constant, byte_15: Constant, at_0: Comparator, at_1: Comparator, at_2: Comparator, at_3: Comparator, at_4: Comparator, at_5: Comparator, at_6: Comparator, at_7: Comparator, at_8: Comparator, at_9: Comparator, at_10: Comparator, at_11: Comparator, at_12: Comparator, at_13: Comparator, at_14: Comparator, at_15: Comparator, mux1: Mux, mux2: Mux, mux3: Mux, mux4: Mux, mux5: Mux, mux6: Mux, mux7: Mux, mux8: Mux, mux9: Mux, mux10: Mux, mux11: Mux, mux12: Mux, mux13: Mux, mux14: Mux, mux15: Mux, ir: Register, operand_reg: Register, regA: Register, regX: Register, regY: Register, flag_n_reg: Register, flag_z_reg: Register, flag_c_reg: Register, state_reg: Register, subcycle_reg: Register, STATE_FETCH: Constant, STATE_DECODE: Constant, STATE_EXECUTE: Constant, is_fetch: Comparator, is_decode: Comparator, is_execute: Comparator, LDX_IMM: Constant, LDA_IMM: Constant, SEC: Constant, SBC_IMM: Constant, NOP: Constant, cmp_ldx_imm: Comparator, cmp_lda_imm: Comparator, cmp_sec: Comparator, cmp_sbc_imm: Comparator, cmp_nop: Comparator, is_sub0: Comparator, is_sub1: Comparator, inc_subcycle: Incrementer, subcycle_next: Mux, exec_sub0: And, exec_sub1: And, is_imm_1: Or, is_imm: Or, is_1cycle: Or, done_imm: And, done_1cyc: And, exec_done: Or, next_from_fetch: Mux, next_from_decode: Mux, next_from_execute: Mux, next_state: Mux, pc_inc_fetch: Or, needs_operand: And, pc_inc_imm: Or, pc_next: Mux, not_carry: Not, sbc_sub: Subtractor, a_from_lda: Mux, a_data: Mux, is_lda_or_sbc: Or, write_a: And, write_x: And, const_128: Constant, flag_val: Mux, n_check: Comparator, n_val: Or, z_check: Comparator, not_borrow: Not, c_from_sbc: Mux, c_from_sec: Mux, update_imm: And, update_sec: And, update_flags: Or },
@@ -140,7 +140,7 @@ const Part4TestCPU = component('Part4TestCPU', {
   ],
 })
 
-const Part4Test = component('Part4Test', {
+const Part4Test = circuit('Part4Test', {
   nodes: { cpu: Part4TestCPU, reset_input: Input, d_pc: HexDisplay, d_a: HexDisplay, d_x: HexDisplay },
   connect: ({ in: inp, out, cpu, reset_input, d_pc, d_a, d_x }) => [
     reset_input.out.to(cpu.reset),

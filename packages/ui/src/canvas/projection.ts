@@ -6,7 +6,7 @@
 
 import type { Node as ReactFlowNode, Edge } from '@xyflow/react';
 import type { Circuit, PortPath } from '@turing-incomplete/core';
-import type { ComponentLibrary, FlatPortValueMap, FlatSequentialState } from '@turing-incomplete/core/simulator';
+import type { CircuitLibrary, FlatPortValueMap, FlatSequentialState } from '@turing-incomplete/core/simulator';
 import { getReferenceCircuit } from '@turing-incomplete/core/simulator';
 import type { MetadataState } from './types';
 import type { NodeData } from '../nodes';
@@ -69,7 +69,7 @@ function getNodeTypeForComponent(componentRef: string, inputCount: number, outpu
 function projectCircuitToNodes(
   circuit: Circuit,
   metadata: MetadataState,
-  library: ComponentLibrary,
+  library: CircuitLibrary,
   portValues?: FlatPortValueMap,
   seqState?: FlatSequentialState,
 ): ReactFlowNode<NodeData>[] {
@@ -79,7 +79,7 @@ function projectCircuitToNodes(
     const nodeMetadata = metadata.components[node.id];
     if (!nodeMetadata) continue;
 
-    const componentDef = library.resolveComponent(node.componentRef);
+    const componentDef = library.resolveCircuit(node.componentRef);
     if (!componentDef) continue;
 
     const inputCount = node.inputs.length;
@@ -331,7 +331,7 @@ function projectCircuitToEdges(
 export function projectCircuitToReactFlow(
   circuit: Circuit | null,
   metadata: MetadataState,
-  library: ComponentLibrary,
+  library: CircuitLibrary,
   portValues?: FlatPortValueMap,
   seqState?: FlatSequentialState,
 ) {

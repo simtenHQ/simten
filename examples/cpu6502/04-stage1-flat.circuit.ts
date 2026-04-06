@@ -1,6 +1,6 @@
 // Auto-generated from DSL
 
-const Stage1Flat = component('Stage1Flat', {
+const Stage1Flat = circuit('Stage1Flat', {
   out: { cycle: bus(8), reg_a: bus(8), reg_x: bus(8) },
   nodes: { counter: Register, always_on: Constant, inc: Incrementer, c0: Constant, c1: Constant, c2: Constant, c3: Constant, is_c0: Comparator, is_c2: Comparator, is_c3: Comparator, regA: Register, regX: Register, adder: Adder, v66: Constant, v8: Constant, v10: Constant, alu_a_mux: Mux, alu_b_mux1: Mux, alu_b_mux2: Mux, alu_b_mux3: Mux, write_a_mux1: Mux, write_a_mux2: Mux, write_x_mux1: Mux, write_x_mux2: Mux },
   nodeArgs: { always_on: { value: 1 }, c0: { value: 0 }, c1: { value: 1 }, c2: { value: 2 }, c3: { value: 3 }, v66: { value: 66 }, v8: { value: 8 }, v10: { value: 10 } },
@@ -31,7 +31,7 @@ const Stage1Flat = component('Stage1Flat', {
   ],
 })
 
-const Stage1FlatDemo = component('Stage1FlatDemo', {
+const Stage1FlatDemo = circuit('Stage1FlatDemo', {
   nodes: { cpu: Stage1Flat, d_cycle: HexDisplay, d_a: HexDisplay, d_x: HexDisplay },
   connect: ({ in: inp, out, cpu, d_cycle, d_a, d_x }) => [
     cpu.cycle.to(d_cycle.in),

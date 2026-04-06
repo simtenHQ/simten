@@ -22,7 +22,7 @@ export interface BlogCircuit {
 
 /** The PE definition used by all circuits — registered partial-sum output */
 const PE_SYSTOLIC_DEFINITION = `
-const PE_Systolic = component('PE_Systolic', {
+const PE_Systolic = circuit('PE_Systolic', {
   in: { dataIn: bus(8), weightIn: bus(8), partialSumIn: bus(16), weightValid: bit, validIn: bit },
   out: { dataOut: bus(8), partialSumOut: bus(16), validOut: bit },
   nodes: { weightReg: Register, mult: Multiplier, adder: Adder, psumReg: Register, dataPipe: Register, validPipe: DFlipFlop, one: Constant, zero: Constant },
@@ -56,7 +56,7 @@ export const TPU_CIRCUITS: Record<string, BlogCircuit> = {
     description:
       "Multiply two numbers and add to a partial sum. The fundamental operation inside every PE.",
     displayCode: `
-const MultiplyAdd = component('MultiplyAdd', {
+const MultiplyAdd = circuit('MultiplyAdd', {
   nodes: { data: Input, weight: Input, partialSumIn: Input, mult: Multiplier, adder: Adder, zero: Constant, result: HexDisplay },
   nodeArgs: { data: { value: 3 }, weight: { value: 5 }, partialSumIn: { value: 10 }, adder: { width: 16 }, zero: { value: 0 } },
   connect: ({ in: inp, out, data, weight, partialSumIn, mult, adder, zero, result }) => [
@@ -70,7 +70,7 @@ const MultiplyAdd = component('MultiplyAdd', {
 })
 `,
     dsl: `
-const MultiplyAdd = component('MultiplyAdd', {
+const MultiplyAdd = circuit('MultiplyAdd', {
   nodes: { data: Input, weight: Input, partialSumIn: Input, mult: Multiplier, adder: Adder, zero: Constant, result: HexDisplay },
   nodeArgs: { data: { value: 3 }, weight: { value: 5 }, partialSumIn: { value: 10 }, adder: { width: 16 }, zero: { value: 0 } },
   connect: ({ in: inp, out, data, weight, partialSumIn, mult, adder, zero, result }) => [
@@ -107,7 +107,7 @@ const MultiplyAdd = component('MultiplyAdd', {
     description:
       "A register that stores a weight only when the valid signal is high. The weight stays fixed while data streams through.",
     displayCode: `
-const WeightRegister = component('WeightRegister', {
+const WeightRegister = circuit('WeightRegister', {
   nodes: { weightIn: Input, weightValid: Switch, dataIn: Input, weightReg: Register, storedWeight: HexDisplay, mult: Multiplier, product: HexDisplay },
   nodeArgs: { weightIn: { value: 7 }, dataIn: { value: 3 } },
   connect: ({ in: inp, out, weightIn, weightValid, dataIn, weightReg, storedWeight, mult, product }) => [
@@ -120,7 +120,7 @@ const WeightRegister = component('WeightRegister', {
 })
 `,
     dsl: `
-const WeightRegister = component('WeightRegister', {
+const WeightRegister = circuit('WeightRegister', {
   nodes: { weightIn: Input, weightValid: Switch, dataIn: Input, weightReg: Register, storedWeight: HexDisplay, mult: Multiplier, product: HexDisplay },
   nodeArgs: { weightIn: { value: 7 }, dataIn: { value: 3 } },
   connect: ({ in: inp, out, weightIn, weightValid, dataIn, weightReg, storedWeight, mult, product }) => [
@@ -156,7 +156,7 @@ const WeightRegister = component('WeightRegister', {
     description:
       "A full PE with weight register, multiplier, registered partial-sum adder, and data pipeline. The building block of the systolic array.",
     displayCode: `
-const TestPE = component('TestPE', {
+const TestPE = circuit('TestPE', {
   nodes: { pe: PE_Systolic, dataIn: Input, weightIn: Input, weightValid: Switch, partialSumIn: Input, partialSumOut: HexDisplay, dataOut: HexDisplay },
   nodeArgs: { dataIn: { value: 3 }, weightIn: { value: 5 }, partialSumIn: { value: 0 } },
   connect: ({ in: inp, out, pe, dataIn, weightIn, weightValid, partialSumIn, partialSumOut, dataOut }) => [
@@ -172,7 +172,7 @@ const TestPE = component('TestPE', {
     dsl: `
 ${PE_SYSTOLIC_DEFINITION}
 
-const TestPE = component('TestPE', {
+const TestPE = circuit('TestPE', {
   nodes: { pe: PE_Systolic, dataIn: Input, weightIn: Input, weightValid: Switch, partialSumIn: Input, partialSumOut: HexDisplay, dataOut: HexDisplay },
   nodeArgs: { dataIn: { value: 3 }, weightIn: { value: 5 }, partialSumIn: { value: 0 } },
   connect: ({ in: inp, out, pe, dataIn, weightIn, weightValid, partialSumIn, partialSumOut, dataOut }) => [
@@ -209,7 +209,7 @@ const TestPE = component('TestPE', {
     description:
       "Two PEs connected horizontally. Data flows left to right with a one-cycle delay between elements.",
     displayCode: `
-const TwoPERow = component('TwoPERow', {
+const TwoPERow = circuit('TwoPERow', {
   nodes: { pe0: PE_Systolic, pe1: PE_Systolic, data0: Input, weight0: Input, weight1: Input, weightValid: Switch, zero16: Constant, result0: HexDisplay, result1: HexDisplay },
   nodeArgs: { data0: { value: 2 }, weight0: { value: 3 }, weight1: { value: 5 }, zero16: { value: 0 } },
   connect: ({ in: inp, out, pe0, pe1, data0, weight0, weight1, weightValid, zero16, result0, result1 }) => [
@@ -227,7 +227,7 @@ const TwoPERow = component('TwoPERow', {
     dsl: `
 ${PE_SYSTOLIC_DEFINITION}
 
-const TwoPERow = component('TwoPERow', {
+const TwoPERow = circuit('TwoPERow', {
   nodes: { pe0: PE_Systolic, pe1: PE_Systolic, data0: Input, weight0: Input, weight1: Input, weightValid: Switch, zero16: Constant, result0: HexDisplay, result1: HexDisplay },
   nodeArgs: { data0: { value: 2 }, weight0: { value: 3 }, weight1: { value: 5 }, zero16: { value: 0 } },
   connect: ({ in: inp, out, pe0, pe1, data0, weight0, weight1, weightValid, zero16, result0, result1 }) => [
@@ -270,7 +270,7 @@ const TwoPERow = component('TwoPERow', {
     description:
       "Two PEs stacked vertically. Partial sums flow down through registers — one PE per clock cycle, just like real hardware.",
     displayCode: `
-const TwoPEColumn = component('TwoPEColumn', {
+const TwoPEColumn = circuit('TwoPEColumn', {
   nodes: { pe0: PE_Systolic, pe1: PE_Systolic, dataIn: Input, weight0: Input, weight1: Input, weightValid: Switch, zero16: Constant, topResult: HexDisplay, bottomResult: HexDisplay },
   nodeArgs: { dataIn: { value: 4 }, weight0: { value: 3 }, weight1: { value: 5 }, zero16: { value: 0 } },
   connect: ({ in: inp, out, pe0, pe1, dataIn, weight0, weight1, weightValid, zero16, topResult, bottomResult }) => [
@@ -287,7 +287,7 @@ const TwoPEColumn = component('TwoPEColumn', {
     dsl: `
 ${PE_SYSTOLIC_DEFINITION}
 
-const TwoPEColumn = component('TwoPEColumn', {
+const TwoPEColumn = circuit('TwoPEColumn', {
   nodes: { pe0: PE_Systolic, pe1: PE_Systolic, dataIn: Input, weight0: Input, weight1: Input, weightValid: Switch, zero16: Constant, topResult: HexDisplay, bottomResult: HexDisplay },
   nodeArgs: { dataIn: { value: 4 }, weight0: { value: 3 }, weight1: { value: 5 }, zero16: { value: 0 } },
   connect: ({ in: inp, out, pe0, pe1, dataIn, weight0, weight1, weightValid, zero16, topResult, bottomResult }) => [
@@ -325,7 +325,7 @@ const TwoPEColumn = component('TwoPEColumn', {
     description:
       "A phase register drives multi-step computation. Each phase has its own enable counter. LEDs show the active phase.",
     displayCode: `
-const WavefrontController = component('WavefrontController', {
+const WavefrontController = circuit('WavefrontController', {
   nodes: { phase: Register, enable: Switch, inc: Incrementer, phaseMux: Mux, one: Constant, zero: Constant, const1: Constant, const2: Constant, const3: Constant, isPhase0: Comparator, isPhase1: Comparator, isPhase2: Comparator, isPhase3: Comparator, led0: Led, led1: Led, led2: Led, led3: Led, display: HexDisplay },
   nodeArgs: { phase: { initial: 0 }, one: { value: 1 }, zero: { value: 0 }, const1: { value: 1 }, const2: { value: 2 }, const3: { value: 3 } },
   connect: ({ in: inp, out, phase, enable, inc, phaseMux, one, zero, const1, const2, const3, isPhase0, isPhase1, isPhase2, isPhase3, led0, led1, led2, led3, display }) => [
@@ -346,7 +346,7 @@ const WavefrontController = component('WavefrontController', {
 })
 `,
     dsl: `
-const WavefrontController = component('WavefrontController', {
+const WavefrontController = circuit('WavefrontController', {
   nodes: { phase: Register, enable: Switch, inc: Incrementer, phaseMux: Mux, one: Constant, zero: Constant, const1: Constant, const2: Constant, const3: Constant, isPhase0: Comparator, isPhase1: Comparator, isPhase2: Comparator, isPhase3: Comparator, led0: Led, led1: Led, led2: Led, led3: Led, display: HexDisplay },
   nodeArgs: { phase: { initial: 0 }, one: { value: 1 }, zero: { value: 0 }, const1: { value: 1 }, const2: { value: 2 }, const3: { value: 3 } },
   connect: ({ in: inp, out, phase, enable, inc, phaseMux, one, zero, const1, const2, const3, isPhase0, isPhase1, isPhase2, isPhase3, led0, led1, led2, led3, display }) => [
@@ -406,7 +406,7 @@ const WavefrontController = component('WavefrontController', {
 export const SYSTOLIC_2X2_DSL = `
 ${PE_SYSTOLIC_DEFINITION}
 
-const Systolic2x2 = component('Systolic2x2', {
+const Systolic2x2 = circuit('Systolic2x2', {
   in: { a00: bus(8), a01: bus(8), a10: bus(8), a11: bus(8), b00: bus(8), b01: bus(8), b10: bus(8), b11: bus(8), start: bit },
   out: { c00: bus(16), c01: bus(16), c10: bus(16), c11: bus(16), done: bit },
   nodes: { pe00: PE_Systolic, pe01: PE_Systolic, pe10: PE_Systolic, pe11: PE_Systolic, zero: Constant, one: Constant, two: Constant, three: Constant, four: Constant, five: Constant, six: Constant, counter: Register, counterInc: Incrementer, counterMux: Mux, notDone: Comparator, shouldAdvance: And, isCycle0: Comparator, isCycle1: Comparator, isCycle2: Comparator, isCycle3: Comparator, isCycle4: Comparator, isCycle5: Comparator, loadWeights: And, muxR0a: Mux, muxR0b: Mux, muxR1a: Mux, muxR1b: Mux, result_c00: Register, result_c10: Register, result_c01: Register, result_c11: Register, isDone: Comparator },
@@ -470,7 +470,7 @@ const Systolic2x2 = component('Systolic2x2', {
   ],
 })
 
-const TestWavefront = component('TestWavefront', {
+const TestWavefront = circuit('TestWavefront', {
   nodes: { sys: Systolic2x2, a00: Input, a01: Input, a10: Input, a11: Input, b00: Input, b01: Input, b10: Input, b11: Input, start: Switch, display_c00: HexDisplay, display_c01: HexDisplay, display_c10: HexDisplay, display_c11: HexDisplay, done_led: Led },
   nodeArgs: { a00: { value: 1 }, a01: { value: 2 }, a10: { value: 3 }, a11: { value: 4 }, b00: { value: 5 }, b01: { value: 6 }, b10: { value: 7 }, b11: { value: 8 } },
   connect: ({ in: inp, out, sys, a00, a01, a10, a11, b00, b01, b10, b11, start, display_c00, display_c01, display_c10, display_c11, done_led }) => [
@@ -514,7 +514,7 @@ export const SYSTOLIC_DSL = SYSTOLIC_2X2_DSL;
 export const SYSTOLIC_3X3_DSL = `
 ${PE_SYSTOLIC_DEFINITION}
 
-const Systolic3x3 = component('Systolic3x3', {
+const Systolic3x3 = circuit('Systolic3x3', {
   in: { a00: bus(8), a01: bus(8), a02: bus(8), a10: bus(8), a11: bus(8), a12: bus(8), a20: bus(8), a21: bus(8), a22: bus(8), b00: bus(8), b01: bus(8), b02: bus(8), b10: bus(8), b11: bus(8), b12: bus(8), b20: bus(8), b21: bus(8), b22: bus(8), start: bit },
   out: { c00: bus(16), c01: bus(16), c02: bus(16), c10: bus(16), c11: bus(16), c12: bus(16), c20: bus(16), c21: bus(16), c22: bus(16), done: bit },
   nodes: { pe00: PE_Systolic, pe01: PE_Systolic, pe02: PE_Systolic, pe10: PE_Systolic, pe11: PE_Systolic, pe12: PE_Systolic, pe20: PE_Systolic, pe21: PE_Systolic, pe22: PE_Systolic, zero: Constant, one: Constant, two: Constant, three: Constant, four: Constant, five: Constant, nine: Constant, counter: Register, counterInc: Incrementer, counterMux: Mux, notDone: Comparator, shouldAdvance: And, isCycle0: Comparator, isCycle1: Comparator, isCycle2: Comparator, isCycle3: Comparator, isCycle4: Comparator, isCycle5: Comparator, loadWeights: And, muxR0a: Mux, muxR0b: Mux, muxR0c: Mux, muxR1a: Mux, muxR1b: Mux, muxR1c: Mux, muxR2a: Mux, muxR2b: Mux, muxR2c: Mux, r0validA: Or, r0valid: Or, r1validA: Or, r1valid: Or, r2validA: Or, r2valid: Or, col0validD: DFlipFlop, col0psumD: Register, col0count: Register, col0countInc: Incrementer, col0is0: Comparator, col0is1: Comparator, col0is2: Comparator, c00we: And, result_c00: Register, c10we: And, result_c10: Register, c20we: And, result_c20: Register, col1validD: DFlipFlop, col1psumD: Register, col1count: Register, col1countInc: Incrementer, col1is0: Comparator, col1is1: Comparator, col1is2: Comparator, c01we: And, result_c01: Register, c11we: And, result_c11: Register, c21we: And, result_c21: Register, col2validD: DFlipFlop, col2psumD: Register, col2count: Register, col2countInc: Incrementer, col2is0: Comparator, col2is1: Comparator, col2is2: Comparator, c02we: And, result_c02: Register, c12we: And, result_c12: Register, c22we: And, result_c22: Register, col0done: Comparator, col1done: Comparator, col2done: Comparator, doneAnd1: And, doneAnd2: And, doneReg: DFlipFlop },
@@ -660,7 +660,7 @@ const Systolic3x3 = component('Systolic3x3', {
   ],
 })
 
-const TestSystolic3x3 = component('TestSystolic3x3', {
+const TestSystolic3x3 = circuit('TestSystolic3x3', {
   nodes: { sys: Systolic3x3, a00: Input, a01: Input, a02: Input, a10: Input, a11: Input, a12: Input, a20: Input, a21: Input, a22: Input, b00: Input, b01: Input, b02: Input, b10: Input, b11: Input, b12: Input, b20: Input, b21: Input, b22: Input, start: Switch, display_c00: HexDisplay, display_c01: HexDisplay, display_c02: HexDisplay, display_c10: HexDisplay, display_c11: HexDisplay, display_c12: HexDisplay, display_c20: HexDisplay, display_c21: HexDisplay, display_c22: HexDisplay, done_led: Led },
   nodeArgs: { a00: { value: 1 }, a01: { value: 2 }, a02: { value: 3 }, a10: { value: 4 }, a11: { value: 5 }, a12: { value: 6 }, a20: { value: 7 }, a21: { value: 8 }, a22: { value: 9 }, b00: { value: 2 }, b01: { value: 0 }, b02: { value: 1 }, b10: { value: 0 }, b11: { value: 2 }, b12: { value: 0 }, b20: { value: 1 }, b21: { value: 0 }, b22: { value: 2 } },
   connect: ({ in: inp, out, sys, a00, a01, a02, a10, a11, a12, a20, a21, a22, b00, b01, b02, b10, b11, b12, b20, b21, b22, start, display_c00, display_c01, display_c02, display_c10, display_c11, display_c12, display_c20, display_c21, display_c22, done_led }) => [

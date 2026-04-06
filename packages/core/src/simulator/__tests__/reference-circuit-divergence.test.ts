@@ -14,13 +14,13 @@
 import { describe, it, expect } from 'vitest';
 import {
   PRIMITIVE_DEFINITIONS,
-  createComponentLibrary,
+  createCircuitLibrary,
   generatePrimitives,
   createSimulatorFromCircuit,
   TOP_LEVEL_NODE,
 } from '../index.js';
 import { compileDSL } from '../../dsl/index.js';
-import type { ComponentLibrary as DSLComponentLibrary } from '../../dsl/index.js';
+import type { CircuitLibrary as DSLCircuitLibrary } from '../../dsl/index.js';
 import type { BitValue, BusValue } from '../../types/circuit.js';
 
 // Build a component library from all primitives.
@@ -28,17 +28,17 @@ import type { BitValue, BusValue } from '../../types/circuit.js';
 // added dynamically via addCircuit during compilation.
 const primitiveCircuits = generatePrimitives(PRIMITIVE_DEFINITIONS);
 const allCircuits = [...primitiveCircuits];
-const library = createComponentLibrary(primitiveCircuits);
+const library = createCircuitLibrary(primitiveCircuits);
 
-const dslLibrary: DSLComponentLibrary = {
-  getCircuit: (name: string) => library.resolveComponent(name),
-  hasCircuit: (name: string) => library.resolveComponent(name) !== undefined,
+const dslLibrary: DSLCircuitLibrary = {
+  getCircuit: (name: string) => library.resolveCircuit(name),
+  hasCircuit: (name: string) => library.resolveCircuit(name) !== undefined,
   addCircuit: (circuit) => {
     allCircuits.push(circuit);
     // Rebuild library so subsequent circuits and simulation can resolve it
-    const rebuilt = createComponentLibrary(allCircuits);
-    dslLibrary.getCircuit = (name: string) => rebuilt.resolveComponent(name);
-    dslLibrary.hasCircuit = (name: string) => rebuilt.resolveComponent(name) !== undefined;
+    const rebuilt = createCircuitLibrary(allCircuits);
+    dslLibrary.getCircuit = (name: string) => rebuilt.resolveCircuit(name);
+    dslLibrary.hasCircuit = (name: string) => rebuilt.resolveCircuit(name) !== undefined;
   },
 };
 
@@ -85,7 +85,7 @@ describe('Reference Circuit Divergence', () => {
 
       // Build library with the reference circuit included
       const allCircuits = [...primitiveCircuits, ...circuits];
-      const testLibrary = createComponentLibrary(allCircuits);
+      const testLibrary = createCircuitLibrary(allCircuits);
 
       // The reference circuit may use different port names than the primitive
       // (e.g., 'data' instead of 'in' because 'in' is a DSL keyword).

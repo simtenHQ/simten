@@ -1,6 +1,6 @@
 // Auto-generated from DSL
 
-const RotateLeft16 = component('RotateLeft16', {
+const RotateLeft16 = circuit('RotateLeft16', {
   in: { x: bus(32) },
   out: { out: bus(32) },
   meta: { description: "32-bit left rotation by 16 bits" },
@@ -15,7 +15,7 @@ const RotateLeft16 = component('RotateLeft16', {
   ],
 })
 
-const RotateLeft12 = component('RotateLeft12', {
+const RotateLeft12 = circuit('RotateLeft12', {
   in: { x: bus(32) },
   out: { out: bus(32) },
   meta: { description: "32-bit left rotation by 12 bits" },
@@ -31,7 +31,7 @@ const RotateLeft12 = component('RotateLeft12', {
   ],
 })
 
-const RotateLeft8 = component('RotateLeft8', {
+const RotateLeft8 = circuit('RotateLeft8', {
   in: { x: bus(32) },
   out: { out: bus(32) },
   meta: { description: "32-bit left rotation by 8 bits" },
@@ -47,7 +47,7 @@ const RotateLeft8 = component('RotateLeft8', {
   ],
 })
 
-const RotateLeft7 = component('RotateLeft7', {
+const RotateLeft7 = circuit('RotateLeft7', {
   in: { x: bus(32) },
   out: { out: bus(32) },
   meta: { description: "32-bit left rotation by 7 bits" },
@@ -63,7 +63,7 @@ const RotateLeft7 = component('RotateLeft7', {
   ],
 })
 
-const ChaCha20QuarterRound = component('ChaCha20QuarterRound', {
+const ChaCha20QuarterRound = circuit('ChaCha20QuarterRound', {
   in: { a: bus(32), b: bus(32), c: bus(32), d: bus(32) },
   out: { a_out: bus(32), b_out: bus(32), c_out: bus(32), d_out: bus(32) },
   meta: { description: "ChaCha20 quarter-round: 4 ARX steps on 32-bit words (ADD, XOR, ROTL)" },
@@ -90,7 +90,7 @@ const ChaCha20QuarterRound = component('ChaCha20QuarterRound', {
   ],
 })
 
-const ChaCha20Demo = component('ChaCha20Demo', {
+const ChaCha20Demo = circuit('ChaCha20Demo', {
   meta: { description: "Interactive ChaCha20 quarter-round — RFC 7539 test vector, live hex display" },
   nodes: { in_a: Input, in_b: Input, in_c: Input, in_d: Input, qr: ChaCha20QuarterRound, disp_in_a: HexDisplay, disp_in_b: HexDisplay, disp_in_c: HexDisplay, disp_in_d: HexDisplay, disp_out_a: HexDisplay, disp_out_b: HexDisplay, disp_out_c: HexDisplay, disp_out_d: HexDisplay },
   nodeArgs: { in_a: { value: 286331153, width: 32 }, in_b: { value: 16909060, width: 32 }, in_c: { value: 2609737539, width: 32 }, in_d: { value: 19088743, width: 32 }, disp_in_a: { width: 32 }, disp_in_b: { width: 32 }, disp_in_c: { width: 32 }, disp_in_d: { width: 32 }, disp_out_a: { width: 32 }, disp_out_b: { width: 32 }, disp_out_c: { width: 32 }, disp_out_d: { width: 32 } },

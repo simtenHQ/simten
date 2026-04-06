@@ -156,7 +156,7 @@ export function generateEvalWrapper(
 }
 
 /**
- * Register evaluator functions from a BuiltComponent into the EVALUATORS table.
+ * Register evaluator functions from a BuiltCircuit into the EVALUATORS table.
  *
  * Call this during circuit compilation, before simulation starts.
  * Returns the type index assigned to this component.

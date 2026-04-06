@@ -19,7 +19,7 @@ function createMutableLibrary() {
   const circuitMap = new Map<string, Circuit>();
   for (const c of PRIMITIVES as Circuit[]) circuitMap.set(c.name, c);
   return {
-    resolveComponent: (name: string) => circuitMap.get(name),
+    resolveCircuit: (name: string) => circuitMap.get(name),
     getAllPrimitiveNames: () => Array.from(circuitMap.entries())
       .filter(([, c]) => c.implementation.kind === 'primitive').map(([n]) => n),
     getCircuit: (name: string) => circuitMap.get(name),

@@ -1,6 +1,6 @@
 // Auto-generated from DSL
 
-const ALU = component('ALU', {
+const ALU = circuit('ALU', {
   in: { a: bus(8), b: bus(8), op: bus(3), carry_in: bit },
   out: { result: bus(8), carry_out: bit, zero: bit, negative: bit },
   nodes: { adder: Adder, subtractor: Subtractor, and_op: BusAnd, or_op: BusOr, xor_op: BusXor, op_0: Constant, op_1: Constant, op_2: Constant, op_3: Constant, op_4: Constant, is_add: Comparator, is_sub: Comparator, is_and: Comparator, is_or: Comparator, is_xor: Comparator, mux1: Mux, mux2: Mux, mux3: Mux, mux4: Mux, mux_carry: Mux, zero_cmp: Comparator, threshold: Constant, neg_cmp: Comparator },
@@ -38,7 +38,7 @@ const ALU = component('ALU', {
   ],
 })
 
-const RegisterFile = component('RegisterFile', {
+const RegisterFile = circuit('RegisterFile', {
   in: { write_sel: bus(2), write_data: bus(8), write_enable: bit, read_sel: bus(2) },
   out: { read_data: bus(8) },
   nodes: { regA: Register, regX: Register, regY: Register, sel_0: Constant, sel_1: Constant, sel_2: Constant, is_sel_A: Comparator, is_sel_X: Comparator, is_sel_Y: Comparator, write_A: And, write_X: And, write_Y: And, is_read_X: Comparator, is_read_Y: Comparator, read_mux1: Mux, read_mux2: Mux },
@@ -67,7 +67,7 @@ const RegisterFile = component('RegisterFile', {
   ],
 })
 
-const Stage1Integration = component('Stage1Integration', {
+const Stage1Integration = circuit('Stage1Integration', {
   out: { cycle_count: bus(8), reg_a_value: bus(8), reg_x_value: bus(8), alu_result: bus(8) },
   nodes: { counter: Register, always_enable: Constant, inc: Incrementer, cycle_0: Constant, cycle_1: Constant, cycle_2: Constant, cycle_3: Constant, is_cycle_0: Comparator, is_cycle_1: Comparator, is_cycle_2: Comparator, is_cycle_3: Comparator, regfile: RegisterFile, alu: ALU, val_66: Constant, val_8: Constant, val_10: Constant, zero: Constant, sel_A: Constant, sel_X: Constant, op_add: Constant, alu_read_sel: Mux, alu_read_sel2: Mux, alu_b_mux1: Mux, alu_b_mux2: Mux, alu_b_mux3: Mux, write_sel_mux1: Mux, write_sel_mux2: Mux, reader_A: RegisterFile, reader_X: RegisterFile },
   nodeArgs: { always_enable: { value: 1 }, cycle_0: { value: 0 }, cycle_1: { value: 1 }, cycle_2: { value: 2 }, cycle_3: { value: 3 }, val_66: { value: 66 }, val_8: { value: 8 }, val_10: { value: 10 }, zero: { value: 0 }, sel_A: { value: 0 }, sel_X: { value: 1 }, op_add: { value: 0 } },
@@ -103,7 +103,7 @@ const Stage1Integration = component('Stage1Integration', {
   ],
 })
 
-const Stage1Demo = component('Stage1Demo', {
+const Stage1Demo = circuit('Stage1Demo', {
   nodes: { cpu: Stage1Integration, display_cycle: HexDisplay, display_a: HexDisplay, display_x: HexDisplay, display_alu: HexDisplay },
   connect: ({ in: inp, out, cpu, display_cycle, display_a, display_x, display_alu }) => [
     cpu.cycle_count.to(display_cycle.in),

@@ -2,10 +2,10 @@
  * Type declarations for the Monaco editor's TypeScript language service.
  *
  * These are loaded via addExtraLib to give users autocomplete for
- * component(), bit, bus, and all stdlib components.
+ * circuit(), bit, bus, and all stdlib components.
  *
- * The types mirror the actual builder API from @turing-incomplete/core/builder.
- * The generic ComponentConfig type enables autocomplete for port names
+ * The types mirror the actual builder API from @turing-incomplete/core/circuit.
+ * The generic CircuitConfig type enables autocomplete for port names
  * inside connect() callbacks.
  */
 
@@ -16,13 +16,13 @@ function portTypeStr(portType: { kind: string; width?: number }): string {
   return portType.kind === 'bit' ? 'BitType' : `BusType`;
 }
 
-/** Generate a typed BuiltComponent declaration for a primitive */
+/** Generate a typed BuiltCircuit declaration for a primitive */
 function typedDecl(def: CorePrimitiveDefinition): string {
   const ins = def.inputs.map(p => `${p.name}: ${portTypeStr(p.portType)}`).join('; ');
   const outs = def.outputs.map(p => `${p.name}: ${portTypeStr(p.portType)}`).join('; ');
   const insType = ins ? `{ ${ins} }` : '{}';
   const outsType = outs ? `{ ${outs} }` : '{}';
-  return `declare const ${def.name}: BuiltComponent<${insType}, ${outsType}>;`;
+  return `declare const ${def.name}: BuiltCircuit<${insType}, ${outsType}>;`;
 }
 
 /** Generate stdlib declarations with typed port shapes from actual primitive definitions */
@@ -66,7 +66,7 @@ interface ConnectionDef {
 // Built Component
 // ============================================================================
 
-interface BuiltComponent<
+interface BuiltCircuit<
   Ins extends Record<string, PortType> = Record<string, PortType>,
   Outs extends Record<string, PortType> = Record<string, PortType>,
 > {
@@ -84,15 +84,15 @@ type PortRefs<M> = {
   readonly [K in keyof M]: PortRef;
 };
 
-/** Extract all port refs from a BuiltComponent */
-type NodePortRefs<C extends BuiltComponent> =
+/** Extract all port refs from a BuiltCircuit */
+type NodePortRefs<C extends BuiltCircuit> =
   PortRefs<C['_shape']['inputs']> & PortRefs<C['_shape']['outputs']>;
 
 /** The connect callback argument — typed from config's in/out/nodes */
 type ConnectArg<
   Ins extends Record<string, PortType | number>,
   Outs extends Record<string, PortType | number>,
-  Nodes extends Record<string, BuiltComponent>,
+  Nodes extends Record<string, BuiltCircuit>,
 > = {
   readonly in: PortRefs<Ins>;
   readonly out: PortRefs<Outs>;
@@ -107,10 +107,10 @@ type PortValues<M> = { [K in keyof M]: number };
 // Component Config (generic — enables autocomplete)
 // ============================================================================
 
-interface ComponentConfig<
+interface CircuitConfig<
   Ins extends Record<string, PortType | number> = Record<string, PortType | number>,
   Outs extends Record<string, PortType | number> = Record<string, PortType | number>,
-  Nodes extends Record<string, BuiltComponent> = Record<string, BuiltComponent>,
+  Nodes extends Record<string, BuiltCircuit> = Record<string, BuiltCircuit>,
   S extends Record<string, number | boolean | object> = Record<string, number | boolean | object>,
 > {
   in?: Ins;
@@ -125,15 +125,15 @@ interface ComponentConfig<
 }
 
 // ============================================================================
-// component() function
+// circuit() function
 // ============================================================================
 
-declare function component<
+declare function circuit<
   Ins extends Record<string, PortType | number>,
   Outs extends Record<string, PortType | number>,
-  Nodes extends Record<string, BuiltComponent>,
+  Nodes extends Record<string, BuiltCircuit>,
   S extends Record<string, number | boolean | object>,
->(name: string, config?: ComponentConfig<Ins, Outs, Nodes, S>): BuiltComponent;
+>(name: string, config?: CircuitConfig<Ins, Outs, Nodes, S>): BuiltCircuit;
 
 // ============================================================================
 // Standard Library

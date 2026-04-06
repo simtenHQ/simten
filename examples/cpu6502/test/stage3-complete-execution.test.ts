@@ -6,8 +6,8 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
-import { compileDSL, ComponentLibrary } from '../../../src/features/dsl/index';
-import { useComponentLibraryStore } from '../../../src/features/visual-editor/stores/component-library-store';
+import { compileDSL, CircuitLibrary } from '../../../src/features/dsl/index';
+import { useCircuitLibraryStore } from '../../../src/features/visual-editor/stores/circuit-library-store';
 import { getPrimitives } from '../../../src/features/visual-editor/lib/primitive-registry';
 import type { Circuit } from '../../../src/features/dsl/types';
 import { elaborate, TOP_LEVEL_NODE } from '../../../src/features/visual-editor/lib/elaboration';
@@ -18,16 +18,16 @@ import {
   type FlatSimulationResult,
 } from '../../../src/features/visual-editor/lib/flat-simulator';
 
-// Adapter to make ComponentLibraryStore compatible with ComponentLibrary interface
-class ComponentLibraryAdapter implements ComponentLibrary {
-  constructor(private store: ReturnType<typeof useComponentLibraryStore.getState>) {}
+// Adapter to make CircuitLibraryStore compatible with CircuitLibrary interface
+class CircuitLibraryAdapter implements CircuitLibrary {
+  constructor(private store: ReturnType<typeof useCircuitLibraryStore.getState>) {}
 
   getCircuit(name: string): Circuit | undefined {
-    return this.store.resolveComponent(name);
+    return this.store.resolveCircuit(name);
   }
 
   hasCircuit(name: string): boolean {
-    return this.store.resolveComponent(name) !== undefined;
+    return this.store.resolveCircuit(name) !== undefined;
   }
 
   addCircuit(circuit: Circuit): void {
@@ -36,14 +36,14 @@ class ComponentLibraryAdapter implements ComponentLibrary {
 }
 
 describe('6502 CPU Stage 3 Complete: Execution Tests', () => {
-  let store: ReturnType<typeof useComponentLibraryStore.getState>;
-  let library: ComponentLibrary;
+  let store: ReturnType<typeof useCircuitLibraryStore.getState>;
+  let library: CircuitLibrary;
 
   beforeEach(() => {
-    store = useComponentLibraryStore.getState();
+    store = useCircuitLibraryStore.getState();
     store.clearAll();
     store.registerPrimitives(getPrimitives());
-    library = new ComponentLibraryAdapter(store);
+    library = new CircuitLibraryAdapter(store);
   });
 
   function loadAndCompileDSL(filename: string) {

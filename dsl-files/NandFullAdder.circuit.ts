@@ -1,6 +1,6 @@
 // Auto-generated from DSL
 
-const HalfAdder = component('HalfAdder', {
+const HalfAdder = circuit('HalfAdder', {
   in: { a: bit, b: bit },
   out: { sum: bit, carry: bit },
   meta: { description: "Half adder built entirely from NAND gates" },
@@ -16,7 +16,7 @@ const HalfAdder = component('HalfAdder', {
   ],
 })
 
-const FullAdder = component('FullAdder', {
+const FullAdder = circuit('FullAdder', {
   in: { a: bit, b: bit, cin: bit },
   out: { sum: bit, cout: bit },
   meta: { description: "Full adder from two NAND-only half adders and a NAND OR gate" },
@@ -35,7 +35,7 @@ const FullAdder = component('FullAdder', {
   ],
 })
 
-const FullAdderDemo = component('FullAdderDemo', {
+const FullAdderDemo = circuit('FullAdderDemo', {
   meta: { description: "Interactive full adder demo with drill-down" },
   nodes: { sw_a: Switch, sw_b: Switch, sw_cin: Switch, led_sum: Led, led_cout: Led, fa: FullAdder },
   connect: ({ in: inp, out, sw_a, sw_b, sw_cin, led_sum, led_cout, fa }) => [

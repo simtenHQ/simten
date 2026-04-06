@@ -1,6 +1,6 @@
 // Auto-generated from DSL
 
-const RegisterFile = component('RegisterFile', {
+const RegisterFile = circuit('RegisterFile', {
   in: { write_sel: bus(2), write_data: bus(8), write_enable: bit, read_sel: bus(2) },
   out: { read_data: bus(8) },
   nodes: { regA: Register, regX: Register, regY: Register, sel_0: Constant, sel_1: Constant, sel_2: Constant, is_sel_A: Comparator, is_sel_X: Comparator, is_sel_Y: Comparator, write_A: And, write_X: And, write_Y: And, is_read_X: Comparator, is_read_Y: Comparator, read_mux1: Mux, read_mux2: Mux },
@@ -29,7 +29,7 @@ const RegisterFile = component('RegisterFile', {
   ],
 })
 
-const RegisterFileTest = component('RegisterFileTest', {
+const RegisterFileTest = circuit('RegisterFileTest', {
   out: { reg_a: bus(8), reg_x: bus(8), reg_y: bus(8) },
   nodes: { regfile: RegisterFile, write_sel_input: Input, write_data_input: Input, write_enable_input: Input, read_sel_input: Input, sel_0: Constant, sel_1: Constant, sel_2: Constant, reader_A: RegisterFile, reader_X: RegisterFile, reader_Y: RegisterFile },
   nodeArgs: { sel_0: { value: 0 }, sel_1: { value: 1 }, sel_2: { value: 2 } },

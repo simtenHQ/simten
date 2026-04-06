@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef, useMemo, forwardRef, useImperativeHandle } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useCircuitSimulator, ComponentEmbed } from "@turing-incomplete/embed";
+import { useCircuitSimulator, CircuitEmbed } from "@turing-incomplete/embed";
 import { Logo } from "@/components/Logo";
 import { ClaudeCTA } from "@/features/splash/ClaudeCTA";
 import { useSnakeSimulator } from "@/features/blog/snake-in-hardware/useSnakeSimulator";
@@ -9,7 +9,7 @@ import { useSnakeSimulator } from "@/features/blog/snake-in-hardware/useSnakeSim
 // Demo data
 // ============================================================================
 
-const DEMO_DSL = `const HalfAdder = component('HalfAdder', {
+const DEMO_DSL = `const HalfAdder = circuit('HalfAdder', {
   in: { a: bit, b: bit },
   out: { sum: bit, carry: bit },
   nodes: { xor1: Xor, and1: And },
@@ -24,7 +24,7 @@ const DEMO_DSL = `const HalfAdder = component('HalfAdder', {
 
 // --- Toggle (DFlipFlop with NOT feedback) ---
 
-const TOGGLE_DSL = `const Toggle = component('Toggle', {
+const TOGGLE_DSL = `const Toggle = circuit('Toggle', {
   out: { q: bit, q_bar: bit },
   nodes: { dff: DFlipFlop, inv: Not },
   connect: ({ out, dff, inv }) => [
@@ -37,7 +37,7 @@ const TOGGLE_DSL = `const Toggle = component('Toggle', {
 
 // --- Composite Full Adder (built from Half Adders — for drill-down showcase) ---
 
-const DRILLDOWN_DSL = `const HalfAdder = component('HalfAdder', {
+const DRILLDOWN_DSL = `const HalfAdder = circuit('HalfAdder', {
   in: { a: bit, b: bit },
   out: { sum: bit, carry: bit },
   nodes: { xor1: Xor, and1: And },
@@ -49,7 +49,7 @@ const DRILLDOWN_DSL = `const HalfAdder = component('HalfAdder', {
   ],
 })
 
-const FullAdder = component('FullAdder', {
+const FullAdder = circuit('FullAdder', {
   in: { a: bit, b: bit, cin: bit },
   out: { sum: bit, cout: bit },
   nodes: { ha1: HalfAdder, ha2: HalfAdder, or1: Or },
@@ -64,7 +64,7 @@ const FullAdder = component('FullAdder', {
 
 // --- 4-bit Shift Register (for time-travel showcase) ---
 
-const SHIFT_REGISTER_DSL = `const ShiftRegister4 = component('ShiftRegister4', {
+const SHIFT_REGISTER_DSL = `const ShiftRegister4 = circuit('ShiftRegister4', {
   in: { din: bit },
   out: { q0: bit, q1: bit, q2: bit, q3: bit },
   nodes: { ff0: DFlipFlop, ff1: DFlipFlop, ff2: DFlipFlop, ff3: DFlipFlop },
@@ -77,7 +77,7 @@ const SHIFT_REGISTER_DSL = `const ShiftRegister4 = component('ShiftRegister4', {
   ],
 })`;
 
-const FULL_ADDER_DSL = `const FullAdder = component('FullAdder', {
+const FULL_ADDER_DSL = `const FullAdder = circuit('FullAdder', {
   in: { a: bit, b: bit, cin: bit },
   out: { sum: bit, cout: bit },
   nodes: { xor1: Xor, xor2: Xor, and1: And, and2: And, or1: Or },
@@ -96,7 +96,7 @@ const FULL_ADDER_DSL = `const FullAdder = component('FullAdder', {
 
 // --- 2-bit Counter ---
 
-const COUNTER_DSL = `const Counter2Bit = component('Counter2Bit', {
+const COUNTER_DSL = `const Counter2Bit = circuit('Counter2Bit', {
   out: { bit0: bit, bit1: bit },
   nodes: { dff0: DFlipFlop, dff1: DFlipFlop, inv: Not, xor1: Xor },
   connect: ({ out, dff0, dff1, inv, xor1 }) => [
@@ -110,7 +110,7 @@ const COUNTER_DSL = `const Counter2Bit = component('Counter2Bit', {
 
 // --- 2-to-1 Mux ---
 
-const MUX_DSL = `const Mux2to1 = component('Mux2to1', {
+const MUX_DSL = `const Mux2to1 = circuit('Mux2to1', {
   in: { a: bit, b: bit, sel: bit },
   out: { out: bit },
   nodes: { not1: Not, and1: And, and2: And, or1: Or },
@@ -816,7 +816,7 @@ const HeroBrowserWindow = forwardRef<HeroBrowserWindowHandle, {}>(
           <div className="flex-1 flex flex-col min-w-0">
             <div className="flex-1 min-h-0 relative">
               {activeCode ? (
-                <ComponentEmbed code={activeCode} height="100%" />
+                <CircuitEmbed code={activeCode} height="100%" />
               ) : (
                 <div className="h-full flex items-center justify-center text-muted-foreground/40 text-sm font-mono">
                   {codeTyping ? "Compiling..." : ""}
@@ -1139,7 +1139,7 @@ function DemoGallery() {
 
         {/* Row 1: Featured demo (asymmetric) */}
         <div className="grid grid-cols-1 sm:grid-cols-[1.4fr_1fr] gap-4 mb-4">
-          <ComponentEmbed
+          <CircuitEmbed
             title="Half Adder"
             subtitle="4 nodes · 6 connections"
             description="XOR for sum, AND for carry — the foundation of digital arithmetic."
@@ -1155,7 +1155,7 @@ function DemoGallery() {
             }}
           />
           <div className="flex flex-col gap-4">
-            <ComponentEmbed
+            <CircuitEmbed
               title="2-bit Counter"
               subtitle="Sequential · clock-driven"
               description="Two flip-flops count 00 → 01 → 10 → 11 → repeat."
@@ -1220,7 +1220,7 @@ function DemoGallery() {
 
             {/* Right: live circuit */}
             <div style={{ height: 320 }}>
-              <ComponentEmbed
+              <CircuitEmbed
                 code={DRILLDOWN_DSL}
                 height={320}
                 nodePositions={{
@@ -1240,10 +1240,11 @@ function DemoGallery() {
         <div className="mt-24 rounded-lg border border-border overflow-hidden bg-card">
           <div className="grid grid-cols-1 sm:grid-cols-[1.5fr_1fr]">
             {/* Left: live circuit with full clock controls + time-travel */}
-            <ComponentEmbed
+            <CircuitEmbed
               code={SHIFT_REGISTER_DSL}
               height={340}
               theme="dark"
+              initialInputs={{ din: 1 }}
               nodePositions={{
                 din: { x: 10, y: 140 },
                 dut: { x: 160, y: 120 },
@@ -1299,7 +1300,7 @@ function DemoGallery() {
             description="Write C, compile it, watch it execute instruction by instruction on a real 5-stage pipelined RISC-V CPU."
             href="/learn/cpu"
             accent="blue"
-            snippet={`const RV32I_CPU = component('RV32I_CPU', {\n  // IF → ID → EX → MEM → WB\n  nodes: {\n    ifid_pc: Register,\n    idex_pc: Register,\n    exmem_alu: Register,\n    memwb_rd: Register,\n    // ...+280 lines\n  },\n})`}
+            snippet={`const RV32I_CPU = circuit('RV32I_CPU', {\n  // IF → ID → EX → MEM → WB\n  nodes: {\n    ifid_pc: Register,\n    idex_pc: Register,\n    exmem_alu: Register,\n    memwb_rd: Register,\n    // ...+280 lines\n  },\n})`}
           />
           <ComplexDemoCard
             title="Dual CPU Network"
@@ -1307,7 +1308,7 @@ function DemoGallery() {
             description="Two independent RISC-V CPUs communicating via a memory-mapped NIC. Watch packets travel cycle by cycle."
             href="/learn/dual-cpu"
             accent="violet"
-            snippet={`const RV32I_DualCPU = component('RV32I_DualCPU', {\n  nodes: {\n    cpu0: RV32I_CPU,\n    cpu1: RV32I_CPU,\n    nic0: NIC_FIFO,\n    nic1: NIC_FIFO,\n  },\n  // cross-connect NICs\n})`}
+            snippet={`const RV32I_DualCPU = circuit('RV32I_DualCPU', {\n  nodes: {\n    cpu0: RV32I_CPU,\n    cpu1: RV32I_CPU,\n    nic0: NIC_FIFO,\n    nic1: NIC_FIFO,\n  },\n  // cross-connect NICs\n})`}
           />
         </div>
 
@@ -1372,14 +1373,14 @@ function DemoGallery() {
           <PackageManagerTabs package="@turing-incomplete/embed" />
           <div className="rounded-lg border border-border bg-card overflow-hidden mt-4">
             <pre className="px-4 py-3 text-[12px] font-mono text-muted-foreground leading-relaxed overflow-x-auto">
-              <span className="text-violet-400">{"import"}</span>{" { ComponentEmbed } "}
+              <span className="text-violet-400">{"import"}</span>{" { CircuitEmbed } "}
               <span className="text-violet-400">{"from"}</span>{" "}
               <span className="text-green-400">{"'@turing-incomplete/embed'"}</span>
               {"\n\n"}
               <span className="text-muted-foreground">{"// Compiles, simulates, and renders — in one component"}</span>
               {"\n"}
               {"<"}
-              <span className="text-blue-400">{"ComponentEmbed"}</span>
+              <span className="text-blue-400">{"CircuitEmbed"}</span>
               {"\n  "}
               <span className="text-cyan-400">{"dsl"}</span>
               {"={myCircuitDSL}"}
@@ -1565,7 +1566,7 @@ function SnakeCard() {
 
   return (
     <div className="flex flex-col rounded-lg border border-border overflow-hidden bg-card">
-      {/* Preview — matches ComponentEmbed height */}
+      {/* Preview — matches CircuitEmbed height */}
       <div
         className="flex items-center justify-center bg-black"
         style={{ height: 240 }}
@@ -1594,7 +1595,7 @@ function SnakeCard() {
         )}
       </div>
 
-      {/* Info strip — matches ComponentEmbed */}
+      {/* Info strip — matches CircuitEmbed */}
       <div className="border-t border-border px-4 py-3 flex items-end justify-between gap-4">
         <div>
           <div className="text-[13px] font-semibold text-foreground">Snake</div>
@@ -1683,8 +1684,7 @@ const ETH_FRAMES = [
 ] as const;
 
 const ETH_PARSER_DSL = `
-const Eth_802_3_Parser = component('Eth_802_3_Parser', {
-  out: { dst_mac_hi: bus(16), dst_mac_lo: bus(32), src_mac_hi: bus(16), src_mac_lo: bus(32), ethertype: bus(16), frame_done: bit, crc_ok: bit, is_broadcast: bit, is_ipv4: bit },
+const Eth_802_3_Parser = circuit('Eth_802_3_Parser', {
   nodes: { frame_in: Eth_FrameInput, enable: Constant, parser: Eth_FrameParser, crc: Eth_CRC32, proto: Eth_ProtocolDecoder, addr: Eth_AddrClassifier },
   nodeArgs: { enable: { value: 1 } },
   connect: ({ out, frame_in, enable, parser, crc, proto, addr }) => [
@@ -1735,25 +1735,18 @@ function useEthernetParser() {
   const circuitCode = useMemo(() => {
     const initData = frameToInitData(frameBytes);
     return `
-const Eth_802_3_Parser = component('Eth_802_3_Parser', {
-  out: { dst_mac_hi: bus(16), dst_mac_lo: bus(32), src_mac_hi: bus(16), src_mac_lo: bus(32), ethertype: bus(16), frame_done: bit, crc_ok: bit, is_broadcast: bit, is_ipv4: bit },
+const Eth_802_3_Parser = circuit('Eth_802_3_Parser', {
   nodes: { frame_in: Eth_FrameInput, enable: Constant, parser: Eth_FrameParser, crc: Eth_CRC32, proto: Eth_ProtocolDecoder, addr: Eth_AddrClassifier },
   nodeArgs: { enable: { value: 1 }, frame_in: { init: ${JSON.stringify(initData)} } },
-  connect: ({ out, frame_in, enable, parser, crc, proto, addr }) => [
+  connect: ({ frame_in, enable, parser, crc, proto, addr }) => [
     enable.out.to(frame_in.enable),
     frame_in.tdata.to(parser.tdata, crc.data),
     frame_in.tkeep.to(parser.tkeep, crc.tkeep),
     frame_in.tvalid.to(parser.tvalid, crc.data_valid),
     frame_in.tlast.to(parser.tlast, crc.tlast),
-    parser.ethertype.to(proto.ethertype, out.ethertype),
-    parser.dst_mac_hi.to(addr.dst_mac_hi, out.dst_mac_hi),
-    parser.dst_mac_lo.to(addr.dst_mac_lo, out.dst_mac_lo),
-    parser.src_mac_hi.to(out.src_mac_hi),
-    parser.src_mac_lo.to(out.src_mac_lo),
-    parser.frame_done.to(out.frame_done),
-    crc.crc_ok.to(out.crc_ok),
-    addr.is_broadcast.to(out.is_broadcast),
-    proto.is_ipv4.to(out.is_ipv4),
+    parser.ethertype.to(proto.ethertype),
+    parser.dst_mac_hi.to(addr.dst_mac_hi),
+    parser.dst_mac_lo.to(addr.dst_mac_lo),
   ],
 })`;
   }, [frameBytes]);

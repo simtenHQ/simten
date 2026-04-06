@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useCircuitSimulator } from "@turing-incomplete/embed";
 import { CircuitCanvas } from "@turing-incomplete/ui/canvas";
-import { executeComponentCode } from "@turing-incomplete/core";
+import { executeCircuitCode } from "@turing-incomplete/core";
 import type { Circuit } from "@turing-incomplete/core";
 import {
   elaborate,
@@ -14,7 +14,7 @@ import {
 } from "@turing-incomplete/core/simulator";
 
 const DEMO_DSL = `
-const HalfAdder = component('HalfAdder', {
+const HalfAdder = circuit('HalfAdder', {
   in: { a: bit, b: bit },
   out: { sum: bit, carry: bit },
   nodes: { xor1: Xor, and1: And },
@@ -26,7 +26,7 @@ const HalfAdder = component('HalfAdder', {
   ],
 })
 
-const HalfAdderDemo = component('HalfAdderDemo', {
+const HalfAdderDemo = circuit('HalfAdderDemo', {
   nodes: { sw_a: Switch, sw_b: Switch, dut: HalfAdder, led_sum: Led, led_carry: Led },
   connect: ({ in: inp, out, sw_a, sw_b, dut, led_sum, led_carry }) => [
     sw_a.out.to(dut.a),
@@ -105,11 +105,11 @@ export function PropagationDemo() {
   // Run the real propagation trace
   const trace = useMemo((): PropagationStep[] => {
     try {
-      const result = executeComponentCode(DEMO_DSL);
+      const result = executeCircuitCode(DEMO_DSL);
       if (result.error || result.circuits.length === 0) return [];
 
       const { circuits, library } = result;
-      const resolveComponent = (name: string) => library.resolveComponent(name);
+      const resolveCircuit = (name: string) => library.resolveCircuit(name);
 
       const prims = generatePrimitives(PRIMITIVE_DEFINITIONS) as Circuit[];
       const primNames = prims.map((p) => p.name);
@@ -117,12 +117,12 @@ export function PropagationDemo() {
       const topCircuit = circuits[circuits.length - 1];
 
       const flat = elaborate(topCircuit, {
-        resolveComponent,
+        resolveCircuit,
         getAllPrimitiveNames: () => primNames,
       });
 
       return tracePropagation(flat, {
-        resolveComponent,
+        resolveCircuit,
         getAllPrimitiveNames: () => primNames,
       });
     } catch (e) {

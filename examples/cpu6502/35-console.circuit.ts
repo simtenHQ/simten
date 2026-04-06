@@ -1,6 +1,6 @@
 // Auto-generated from DSL
 
-const ConsoleOutput = component('ConsoleOutput', {
+const ConsoleOutput = circuit('ConsoleOutput', {
   in: { addr_lo: bus(8), addr_hi: bus(8), data_in: bus(8), we: bit },
   out: { responds: bit, data_out: bus(8) },
   nodes: { f0: Constant, zero: Constant, hi_match: Comparator, lo_match: Comparator, addr_match: And, console_we: And, console: Console },
@@ -19,7 +19,7 @@ const ConsoleOutput = component('ConsoleOutput', {
   ],
 })
 
-const ConsoleOutputTest = component('ConsoleOutputTest', {
+const ConsoleOutputTest = circuit('ConsoleOutputTest', {
   nodes: { console_dev: ConsoleOutput, addr_lo_in: Input, addr_hi_in: Input, data_in: Input, we_in: Switch, d_responds: Led, d_data_out: HexDisplay },
   connect: ({ in: inp, out, console_dev, addr_lo_in, addr_hi_in, data_in, we_in, d_responds, d_data_out }) => [
     addr_lo_in.out.to(console_dev.addr_lo),

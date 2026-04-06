@@ -19,7 +19,7 @@ import type {
 } from '@turing-incomplete/core';
 import type { BitValue, BusValue } from '@turing-incomplete/ui/editor/types';
 import type { FlatPortValueMap } from '@turing-incomplete/core/simulator';
-import { executeComponentCode } from '@turing-incomplete/core';
+import { executeCircuitCode } from '@turing-incomplete/core';
 
 // ============================================================================
 // Severity Ordering
@@ -538,11 +538,11 @@ export function formatCurrentPortValues(portValues: FlatPortValueMap): string {
 
 /**
  * Analyze circuit code and format harness suggestion if needed.
- * Uses executeComponentCode to compile and inspect the circuit's interface.
+ * Uses executeCircuitCode to compile and inspect the circuit's interface.
  * Returns null if no harness is needed.
  */
 export function formatHarnessSuggestion(code: string): string | null {
-  const result = executeComponentCode(code);
+  const result = executeCircuitCode(code);
   if (result.error || !result.circuit) {
     return null;
   }

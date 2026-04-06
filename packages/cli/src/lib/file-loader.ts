@@ -1,9 +1,9 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import {
-  executeComponentCode,
+  executeCircuitCode,
   type ExecuteResult,
-} from '@turing-incomplete/core/builder';
+} from '@turing-incomplete/core/circuit';
 
 export interface LoadResult {
   filePath: string;
@@ -35,7 +35,7 @@ export function loadCircuitFile(filePath: string): LoadResult {
     };
   }
 
-  const result = executeComponentCode(source);
+  const result = executeCircuitCode(source);
 
   return {
     filePath: absPath,

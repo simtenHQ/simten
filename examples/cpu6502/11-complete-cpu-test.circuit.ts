@@ -1,6 +1,6 @@
 // Auto-generated from DSL
 
-const ALU = component('ALU', {
+const ALU = circuit('ALU', {
   in: { a: bus(8), b: bus(8), op: bus(3), carry_in: bit },
   out: { result: bus(8), carry_out: bit, zero: bit, negative: bit },
   nodes: { adder: Adder, subtractor: Subtractor, and_op: BusAnd, or_op: BusOr, xor_op: BusXor, op_0: Constant, op_1: Constant, op_2: Constant, op_3: Constant, op_4: Constant, is_add: Comparator, is_sub: Comparator, is_and: Comparator, is_or: Comparator, is_xor: Comparator, mux1: Mux, mux2: Mux, mux3: Mux, mux4: Mux, mux_carry: Mux, zero_cmp: Comparator, threshold: Constant, neg_cmp: Comparator },
@@ -38,7 +38,7 @@ const ALU = component('ALU', {
   ],
 })
 
-const ProgramCounter = component('ProgramCounter', {
+const ProgramCounter = circuit('ProgramCounter', {
   in: { load: bit, load_addr_low: bus(8), load_addr_high: bus(8), increment: bit },
   out: { pc_low: bus(8), pc_high: bus(8) },
   nodes: { pcl_reg: Register, pch_reg: Register, inc_low: Incrementer, max_byte: Constant, will_overflow: Comparator, inc_high: Incrementer, high_inc_mux: Mux, low_load_or_inc: Mux, low_final: Mux, high_load_or_inc: Mux, high_final: Mux, always_on: Constant },
@@ -63,7 +63,7 @@ const ProgramCounter = component('ProgramCounter', {
   ],
 })
 
-const InstructionDecoder = component('InstructionDecoder', {
+const InstructionDecoder = circuit('InstructionDecoder', {
   in: { opcode: bus(8) },
   out: { is_LDA_imm: bit, is_ADC_imm: bit, is_STA_abs: bit, is_JMP_abs: bit, is_BRK: bit, addr_mode: bus(2), cycles: bus(3) },
   nodes: { val_LDA: Constant, val_ADC: Constant, val_STA: Constant, val_JMP: Constant, val_BRK: Constant, cmp_LDA: Comparator, cmp_ADC: Comparator, cmp_STA: Comparator, cmp_JMP: Comparator, cmp_BRK: Comparator, mode_implied: Constant, mode_immediate: Constant, mode_absolute: Constant, is_immediate: Or, is_absolute: Or, mode_mux1: Mux, mode_mux2: Mux, cycles_1: Constant, cycles_2: Constant, cycles_3: Constant, cycles_4: Constant, cycle_mux1: Mux, cycle_mux2: Mux, cycle_mux3: Mux },
@@ -101,7 +101,7 @@ const InstructionDecoder = component('InstructionDecoder', {
   ],
 })
 
-const CPUControl = component('CPUControl', {
+const CPUControl = circuit('CPUControl', {
   in: { reset: bit, instr_cycles: bus(3), is_BRK: bit },
   out: { current_state: bus(3), cycle_num: bus(3), pc_increment: bit, mem_read: bit, mem_write: bit, alu_enable: bit, reg_write: bit, halted: bit },
   nodes: { state_reg: Register, cycle_reg: Register, halt_reg: Register, STATE_FETCH: Constant, STATE_DECODE: Constant, STATE_EXECUTE: Constant, is_fetch: Comparator, is_decode: Comparator, is_execute: Comparator, inc_cycle: Incrementer, cycle_done: Comparator, cycle_reset_or_inc: Mux, always_on: Constant, zero: Constant, exec_done: And, next_if_fetch: Mux, next_if_decode: Mux, next_if_execute: Mux, handle_reset: Mux, set_halt: Or, halt_value: Mux, mem_read_sig: Or },
@@ -135,7 +135,7 @@ const CPUControl = component('CPUControl', {
   ],
 })
 
-const SimpleROM = component('SimpleROM', {
+const SimpleROM = circuit('SimpleROM', {
   in: { addr: bus(8) },
   out: { data: bus(8) },
   nodes: { zero: Constant, one: Constant, two: Constant, three: Constant, four: Constant, five: Constant, six: Constant, seven: Constant, at_0: Comparator, at_1: Comparator, at_2: Comparator, at_3: Comparator, at_4: Comparator, at_5: Comparator, at_6: Comparator, at_7: Comparator, byte_0: Constant, byte_1: Constant, byte_2: Constant, byte_3: Constant, byte_4: Constant, byte_5: Constant, byte_6: Constant, byte_7: Constant, mux1: Mux, mux2: Mux, mux3: Mux, mux4: Mux, mux5: Mux, mux6: Mux, mux7: Mux },
@@ -175,7 +175,7 @@ const SimpleROM = component('SimpleROM', {
   ],
 })
 
-const CompleteCPU = component('CompleteCPU', {
+const CompleteCPU = circuit('CompleteCPU', {
   in: { reset: bit },
   out: { pc_low: bus(8), pc_high: bus(8), instruction: bus(8), current_state: bus(3), reg_a: bus(8), halted: bit },
   nodes: { pc_reg: ProgramCounter, decoder: InstructionDecoder, control: CPUControl, alu: ALU, rom: SimpleROM, regA: Register, zero: Constant },
@@ -197,7 +197,7 @@ const CompleteCPU = component('CompleteCPU', {
   ],
 })
 
-const FullCPUTest = component('FullCPUTest', {
+const FullCPUTest = circuit('FullCPUTest', {
   nodes: { cpu: CompleteCPU, reset_input: Input, d_pc: HexDisplay, d_instruction: HexDisplay, d_state: HexDisplay, d_reg_a: HexDisplay, d_halted: Led },
   connect: ({ in: inp, out, cpu, reset_input, d_pc, d_instruction, d_state, d_reg_a, d_halted }) => [
     reset_input.out.to(cpu.reset),

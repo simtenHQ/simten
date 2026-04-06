@@ -44,7 +44,7 @@ out   = NAND(left, right)`}</pre>
           "final: connect left.out -> final.a and right.out -> final.b, then final.out -> light.in",
         ]}
         scaffold={`
-const XorFromNand = component('XorFromNand', {
+const XorFromNand = circuit('XorFromNand', {
   nodes: { A: Switch, B: Switch, mid: Nand, left: Nand, right: Nand, final: Nand, light: Led },
 })
 `}

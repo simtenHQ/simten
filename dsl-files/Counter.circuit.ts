@@ -1,6 +1,6 @@
 // Auto-generated from DSL
 
-const Counter = component('Counter', {
+const Counter = circuit('Counter', {
   in: { reset: bit, enable: bit },
   out: { count: bus(8) },
   nodes: { counter_reg: Register, next_val: Adder, one: Constant, reset_mux: Mux, enable_mux: Mux, zero: Constant, write_enable: Constant },

@@ -23,7 +23,7 @@ export const SECTIONS: SectionDef[] = [
     hint: "Click the inputs to toggle them",
     align: "right",
     dsl: `
-const NandDemo = component('NandDemo', {
+const NandDemo = circuit('NandDemo', {
   nodes: { in_a: Switch, in_b: Switch, gate: Nand, out: Led },
   connect: ({ in_a, in_b, gate, out }) => [
     in_a.out.to(gate.a),
@@ -40,7 +40,7 @@ const NandDemo = component('NandDemo', {
       "Connect both inputs of a NAND to the same signal. Now 1 becomes 0, and 0 becomes 1. We've built an inverter.",
     align: "left",
     dsl: `
-const NotDemo = component('NotDemo', {
+const NotDemo = circuit('NotDemo', {
   nodes: { sw_in: Switch, gate: Nand, out: Led },
   connect: ({ sw_in, gate, out }) => [
     sw_in.out.to(gate.a, gate.b),
@@ -56,7 +56,7 @@ const NotDemo = component('NotDemo', {
       "NAND gives us the opposite of AND. So put a NOT after it. Two NANDs working together give us AND logic.",
     align: "right",
     dsl: `
-const AndDemo = component('AndDemo', {
+const AndDemo = circuit('AndDemo', {
   nodes: { in_a: Switch, in_b: Switch, nand1: Nand, nand2: Nand, out: Led },
   connect: ({ in_a, in_b, nand1, nand2, out }) => [
     in_a.out.to(nand1.a),
@@ -74,7 +74,7 @@ const AndDemo = component('AndDemo', {
       "Invert each input, then NAND them together. Output is 1 when either input is 1. Three NANDs make an OR gate.",
     align: "left",
     dsl: `
-const OrDemo = component('OrDemo', {
+const OrDemo = circuit('OrDemo', {
   nodes: { in_a: Switch, in_b: Switch, not_a: Nand, not_b: Nand, or_out: Nand, out: Led },
   connect: ({ in_a, in_b, not_a, not_b, or_out, out }) => [
     in_a.out.to(not_a.a, not_a.b),
@@ -93,7 +93,7 @@ const OrDemo = component('OrDemo', {
       "XOR outputs 1 when inputs are different. It's trickier to build, but still just four NANDs arranged cleverly.",
     align: "right",
     dsl: `
-const XorDemo = component('XorDemo', {
+const XorDemo = circuit('XorDemo', {
   nodes: { in_a: Switch, in_b: Switch, nand1: Nand, nand2: Nand, nand3: Nand, nand4: Nand, out: Led },
   connect: ({ in_a, in_b, nand1, nand2, nand3, nand4, out }) => [
     in_a.out.to(nand1.a, nand2.a),
@@ -114,7 +114,7 @@ const XorDemo = component('XorDemo', {
     hint: "Try: 0+0=00, 0+1=01, 1+0=01, 1+1=10",
     align: "left",
     dsl: `
-const HalfAdderDemo = component('HalfAdderDemo', {
+const HalfAdderDemo = circuit('HalfAdderDemo', {
   nodes: { in_a: Switch, in_b: Switch, xor1: Xor, and1: And, sum: Led, carry: Led },
   connect: ({ in_a, in_b, xor1, and1, sum, carry }) => [
     in_a.out.to(xor1.a, and1.a),
@@ -133,7 +133,7 @@ const HalfAdderDemo = component('HalfAdderDemo', {
     hint: "Three inputs: A, B, and Carry-in",
     align: "right",
     dsl: `
-const HalfAdder4 = component('HalfAdder4', {
+const HalfAdder4 = circuit('HalfAdder4', {
   in: { a: bit, b: bit },
   out: { sum: bit, carry: bit },
   nodes: { xor1: Xor, and1: And },
@@ -145,7 +145,7 @@ const HalfAdder4 = component('HalfAdder4', {
   ],
 })
 
-const FullAdderDemo = component('FullAdderDemo', {
+const FullAdderDemo = circuit('FullAdderDemo', {
   nodes: { in_a: Switch, in_b: Switch, in_cin: Switch, ha1: HalfAdder4, ha2: HalfAdder4, or1: Or, sum: Led, cout: Led },
   connect: ({ in_a, in_b, in_cin, ha1, ha2, or1, sum, cout }) => [
     in_a.out.to(ha1.a),
@@ -168,7 +168,7 @@ const FullAdderDemo = component('FullAdderDemo', {
     hint: "Set input, then click Tick to capture",
     align: "left",
     dsl: `
-const MemoryDemo = component('MemoryDemo', {
+const MemoryDemo = circuit('MemoryDemo', {
   nodes: { sw_in: Switch, dff: DFlipFlop, stored: Led },
   connect: ({ sw_in, dff, stored }) => [
     sw_in.out.to(dff.d),

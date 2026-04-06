@@ -3,12 +3,12 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { containsSequentialComponent, hasSequentialComponents } from '../utils/component-utils';
+import { containsSequentialCircuit, hasSequentialCircuits } from '../utils/component-utils';
 import type { Component } from '../../types';
 import type { Circuit } from '../../types/circuit';
 
-describe('containsSequentialComponent', () => {
-  const mockResolveComponent = (name: string): Circuit | undefined => {
+describe('containsSequentialCircuit', () => {
+  const mockResolveCircuit = (name: string): Circuit | undefined => {
     // Mock component library
     const library: Record<string, Circuit> = {
       // Primitive sequential component (DFlipFlop)
@@ -128,35 +128,35 @@ describe('containsSequentialComponent', () => {
 
   it('should return true for sequential primitive types', () => {
     const components: Record<string, Component> = {};
-    expect(containsSequentialComponent('DFlipFlop', components, mockResolveComponent)).toBe(true);
+    expect(containsSequentialCircuit('DFlipFlop', components, mockResolveCircuit)).toBe(true);
   });
 
   it('should return false for combinational primitive types', () => {
     const components: Record<string, Component> = {};
-    expect(containsSequentialComponent('AndGate', components, mockResolveComponent)).toBe(false);
+    expect(containsSequentialCircuit('AndGate', components, mockResolveCircuit)).toBe(false);
   });
 
   it('should return true for composite components containing sequential primitives', () => {
     const components: Record<string, Component> = {};
-    expect(containsSequentialComponent('DFlipFlopTest', components, mockResolveComponent)).toBe(
+    expect(containsSequentialCircuit('DFlipFlopTest', components, mockResolveCircuit)).toBe(
       true
     );
   });
 
   it('should return false for composite components with only combinational logic', () => {
     const components: Record<string, Component> = {};
-    expect(containsSequentialComponent('MyAndGate', components, mockResolveComponent)).toBe(false);
+    expect(containsSequentialCircuit('MyAndGate', components, mockResolveCircuit)).toBe(false);
   });
 
   it('should handle deeply nested composite components', () => {
     const components: Record<string, Component> = {};
-    expect(containsSequentialComponent('DeepNested', components, mockResolveComponent)).toBe(true);
+    expect(containsSequentialCircuit('DeepNested', components, mockResolveCircuit)).toBe(true);
   });
 
   it('should return false for undefined components', () => {
     const components: Record<string, Component> = {};
     expect(
-      containsSequentialComponent('NonExistentComponent', components, mockResolveComponent)
+      containsSequentialCircuit('NonExistentComponent', components, mockResolveCircuit)
     ).toBe(false);
   });
 
@@ -212,12 +212,12 @@ describe('containsSequentialComponent', () => {
 
     const components: Record<string, Component> = {};
     // Should not throw or hang
-    expect(containsSequentialComponent('CircularA', components, circularResolve)).toBe(false);
+    expect(containsSequentialCircuit('CircularA', components, circularResolve)).toBe(false);
   });
 });
 
-describe('hasSequentialComponents', () => {
-  const mockResolveComponent = (name: string): Circuit | undefined => {
+describe('hasSequentialCircuits', () => {
+  const mockResolveCircuit = (name: string): Circuit | undefined => {
     const library: Record<string, Circuit> = {
       DFlipFlop: {
         id: 'dff',
@@ -275,7 +275,7 @@ describe('hasSequentialComponents', () => {
       comp2: { id: 'comp2', type: 'AndGate' },
     };
 
-    expect(hasSequentialComponents(components, mockResolveComponent)).toBe(true);
+    expect(hasSequentialCircuits(components, mockResolveCircuit)).toBe(true);
   });
 
   it('should return true when circuit contains composite with sequential primitives', () => {
@@ -284,7 +284,7 @@ describe('hasSequentialComponents', () => {
       comp2: { id: 'comp2', type: 'AndGate' },
     };
 
-    expect(hasSequentialComponents(components, mockResolveComponent)).toBe(true);
+    expect(hasSequentialCircuits(components, mockResolveCircuit)).toBe(true);
   });
 
   it('should return false when circuit contains only combinational components', () => {
@@ -293,12 +293,12 @@ describe('hasSequentialComponents', () => {
       comp2: { id: 'comp2', type: 'AndGate' },
     };
 
-    expect(hasSequentialComponents(components, mockResolveComponent)).toBe(false);
+    expect(hasSequentialCircuits(components, mockResolveCircuit)).toBe(false);
   });
 
   it('should return false for empty circuit', () => {
     const components: Record<string, Component> = {};
 
-    expect(hasSequentialComponents(components, mockResolveComponent)).toBe(false);
+    expect(hasSequentialCircuits(components, mockResolveCircuit)).toBe(false);
   });
 });

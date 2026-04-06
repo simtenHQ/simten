@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 
 import { Link } from "@tanstack/react-router";
-import { ComponentEmbed } from "@turing-incomplete/embed";
+import { CircuitEmbed } from "@turing-incomplete/embed";
 import type { Lesson, LessonSection } from "./types";
 
 interface ScrollyLessonProps {
@@ -170,7 +170,7 @@ export function ScrollyLesson({ lesson }: ScrollyLessonProps) {
 
         {/* Right: sticky circuit panel (60%) */}
         <div className="flex-1 overflow-hidden">
-          <ComponentEmbed
+          <CircuitEmbed
             code={activeSection.dsl}
             height="100%"
             showControls

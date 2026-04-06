@@ -1,6 +1,6 @@
 "use client";
 
-import { ComponentEmbed } from "@turing-incomplete/embed";
+import { CircuitEmbed } from "@turing-incomplete/embed";
 import { AES_CIRCUITS } from "../circuits";
 
 export function XTimeSection() {
@@ -58,7 +58,7 @@ export function XTimeSection() {
       </div>
 
       <div className="mt-8">
-        <ComponentEmbed
+        <CircuitEmbed
           code={circuit.dsl}
           height={360}
           showControls={false}

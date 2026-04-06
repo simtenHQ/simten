@@ -1,6 +1,6 @@
 // Auto-generated from DSL
 
-const SimpleMemory = component('SimpleMemory', {
+const SimpleMemory = circuit('SimpleMemory', {
   in: { addr: bus(8), data_in: bus(8), write_enable: bit },
   out: { data_out: bus(8) },
   nodes: { zero: Constant, addr_10: Constant, addr_11: Constant, addr_12: Constant, addr_13: Constant, addr_14: Constant, addr_15: Constant, addr_20: Constant, addr_21: Constant, at_10: Comparator, at_11: Comparator, at_12: Comparator, at_13: Comparator, at_14: Comparator, at_15: Comparator, at_20: Comparator, at_21: Comparator, mem_10: Register, mem_11: Register, mem_12: Register, mem_13: Register, mem_14: Register, mem_15: Register, mem_20: Register, mem_21: Register, we_10: And, we_11: And, we_12: And, we_13: And, we_14: And, we_15: And, we_20: And, we_21: And, out_mux1: Mux, out_mux2: Mux, out_mux3: Mux, out_mux4: Mux, out_mux5: Mux, out_mux6: Mux, out_mux7: Mux },
@@ -51,7 +51,7 @@ const SimpleMemory = component('SimpleMemory', {
   ],
 })
 
-const FlagRegister = component('FlagRegister', {
+const FlagRegister = circuit('FlagRegister', {
   in: { new_n: bit, new_z: bit, new_c: bit, new_v: bit, update_n: bit, update_z: bit, update_c: bit, update_v: bit },
   out: { flag_n: bit, flag_z: bit, flag_c: bit, flag_v: bit },
   nodes: { reg_n: Register, reg_z: Register, reg_c: Register, reg_v: Register },
@@ -71,7 +71,7 @@ const FlagRegister = component('FlagRegister', {
   ],
 })
 
-const RegisterFile = component('RegisterFile', {
+const RegisterFile = circuit('RegisterFile', {
   in: { data_a: bus(8), data_x: bus(8), data_y: bus(8), write_a: bit, write_x: bit, write_y: bit },
   out: { reg_a: bus(8), reg_x: bus(8), reg_y: bus(8) },
   nodes: { regA: Register, regX: Register, regY: Register },
@@ -88,7 +88,7 @@ const RegisterFile = component('RegisterFile', {
   ],
 })
 
-const Part5Control = component('Part5Control', {
+const Part5Control = circuit('Part5Control', {
   in: { current_state: bus(8), current_opcode: bus(8), subcycle: bus(8), flag_c: bit },
   out: { next_state: bus(8), next_subcycle: bus(8), pc_increment: bit, ir_load: bit, operand_load: bit, addr_lo_load: bit, write_a: bit, write_x: bit, write_y: bit, mem_write: bit, update_flags: bit, update_c_only: bit, set_c: bit, clear_c: bit, is_adc_imm: bit, is_stx_zp: bit, is_sty_zp: bit, use_x_for_mem: bit, use_y_for_mem: bit },
   nodes: { STATE_FETCH: Constant, STATE_DECODE: Constant, STATE_EXECUTE: Constant, SUB0: Constant, SUB1: Constant, SUB2: Constant, LDA_IMM: Constant, LDX_IMM: Constant, LDY_IMM: Constant, ADC_IMM: Constant, STX_ZP: Constant, STY_ZP: Constant, SEC: Constant, CLC: Constant, is_fetch: Comparator, is_decode: Comparator, is_execute: Comparator, at_sub0: Comparator, at_sub1: Comparator, at_sub2: Comparator, exec_sub0: And, exec_sub1: And, exec_sub2: And, cmp_lda_imm: Comparator, cmp_ldx_imm: Comparator, cmp_ldy_imm: Comparator, cmp_adc_imm: Comparator, cmp_stx_zp: Comparator, cmp_sty_zp: Comparator, cmp_sec: Comparator, cmp_clc: Comparator, is_imm_1: Or, is_imm_2: Or, is_imm: Or, is_zp: Or, is_1cycle: Or, needs_operand: Or, one: Constant, zero: Constant, go_to_decode: Mux, go_to_execute: Mux, done_1cycle: And, done_imm: And, done_zp: And, done_temp: Or, done: Or, go_to_fetch: Mux, inc_subcycle: Incrementer, reset_subcycle: Mux, keep_subcycle: Mux, pc_inc_fetch: And, pc_inc_exec: And, pc_inc_signal: Or, operand_load_signal: And, is_write_a: Or, write_a_signal: And, write_x_signal: And, write_y_signal: And, mem_write_signal: And, use_x_signal: And, use_y_signal: And, is_update_flags_1: Or, is_update_flags_2: Or, is_update_flags: Or, update_flags_signal: And, is_sec_clc: Or, update_c_only_signal: And, set_c_signal: And, clear_c_signal: And },
@@ -169,7 +169,7 @@ const Part5Control = component('Part5Control', {
   ],
 })
 
-const Part5TestCPU = component('Part5TestCPU', {
+const Part5TestCPU = circuit('Part5TestCPU', {
   in: { reset: bit },
   out: { pc: bus(8), reg_a: bus(8), reg_x: bus(8), reg_y: bus(8), flag_c: bit, flag_z: bit, flag_n: bit, mem_10: bus(8), mem_11: bus(8) },
   nodes: { pc_reg: Register, pc_inc: Incrementer, zero: Constant, one: Constant, two: Constant, three: Constant, four: Constant, five: Constant, six: Constant, seven: Constant, eight: Constant, nine: Constant, ten: Constant, eleven: Constant, twelve: Constant, thirteen: Constant, fourteen: Constant, fifteen: Constant, sixteen: Constant, seventeen: Constant, byte_0: Constant, byte_1: Constant, byte_2: Constant, byte_3: Constant, byte_4: Constant, byte_5: Constant, byte_6: Constant, byte_7: Constant, byte_8: Constant, byte_9: Constant, byte_10: Constant, byte_11: Constant, byte_12: Constant, byte_13: Constant, byte_14: Constant, byte_15: Constant, byte_16: Constant, byte_17: Constant, at_0: Comparator, at_1: Comparator, at_2: Comparator, at_3: Comparator, at_4: Comparator, at_5: Comparator, at_6: Comparator, at_7: Comparator, at_8: Comparator, at_9: Comparator, at_10: Comparator, at_11: Comparator, at_12: Comparator, at_13: Comparator, at_14: Comparator, at_15: Comparator, at_16: Comparator, at_17: Comparator, mux1: Mux, mux2: Mux, mux3: Mux, mux4: Mux, mux5: Mux, mux6: Mux, mux7: Mux, mux8: Mux, mux9: Mux, mux10: Mux, mux11: Mux, mux12: Mux, mux13: Mux, mux14: Mux, mux15: Mux, mux16: Mux, rom_out: Mux, state_reg: Register, subcycle_reg: Register, ir_reg: Register, operand_reg: Register, addr_reg: Register, control: Part5Control, registers: RegisterFile, flags: FlagRegister, memory: SimpleMemory, mem_data_x_mux: Mux, mem_data_y_mux: Mux, adc_result: Adder, result_a_adc: Mux, always_on: Constant, pc_next: Mux, split_a: Splitter8to8, split_operand: Splitter8to8, n_value_x: Mux, n_value: Mux, z_check_a: Comparator, z_check_operand: Comparator, z_value_x: Mux, z_value: Mux, c_from_adc: Mux, c_from_sec: Mux, c_value: Mux, update_c_signal: Or, addr_10: Constant, addr_11: Constant, at_addr_10: Comparator, at_addr_11: Comparator },
@@ -300,7 +300,7 @@ const Part5TestCPU = component('Part5TestCPU', {
   ],
 })
 
-const Part5Test = component('Part5Test', {
+const Part5Test = circuit('Part5Test', {
   out: { pc: bus(8), reg_a: bus(8), reg_x: bus(8), reg_y: bus(8), flag_c: bit, flag_z: bit, flag_n: bit },
   nodes: { zero: Constant, cpu: Part5TestCPU },
   nodeArgs: { zero: { value: 0 } },

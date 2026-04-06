@@ -6,24 +6,24 @@
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';
-import { createSimulatorFromCircuit, type ComponentLibrary } from '@turing-incomplete/core/simulator';
-import { useComponentLibraryStore } from '../../stores/component-library-store';
+import { createSimulatorFromCircuit, type CircuitLibrary } from '@turing-incomplete/core/simulator';
+import { useCircuitLibraryStore } from '../../stores/circuit-library-store';
 import { PRIMITIVES } from '@turing-incomplete/core/simulator';
 import { bitType, busType, type Circuit } from '../../types/circuit';
 
-function getLibrary(): ComponentLibrary {
-  const store = useComponentLibraryStore.getState();
+function getLibrary(): CircuitLibrary {
+  const store = useCircuitLibraryStore.getState();
   return {
-    resolveComponent: (name) => store.resolveComponent(name),
+    resolveCircuit: (name) => store.resolveCircuit(name),
     getAllPrimitiveNames: () => store.getAllPrimitiveNames(),
   };
 }
 
 describe('Simulator', () => {
-  let library: ReturnType<typeof useComponentLibraryStore.getState>;
+  let library: ReturnType<typeof useCircuitLibraryStore.getState>;
 
   beforeEach(() => {
-    library = useComponentLibraryStore.getState();
+    library = useCircuitLibraryStore.getState();
     library.clearAll();
     library.registerPrimitives(PRIMITIVES as any[]);
   });

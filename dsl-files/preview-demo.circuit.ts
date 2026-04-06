@@ -1,6 +1,6 @@
 // Auto-generated from DSL
 
-const HalfAdder = component('HalfAdder', {
+const HalfAdder = circuit('HalfAdder', {
   in: { a: bit, b: bit },
   out: { sum: bit, carry: bit },
   meta: { description: "Adds two 1-bit values" },
@@ -13,7 +13,7 @@ const HalfAdder = component('HalfAdder', {
   ],
 })
 
-const FullAdder = component('FullAdder', {
+const FullAdder = circuit('FullAdder', {
   in: { a: bit, b: bit, cin: bit },
   out: { sum: bit, cout: bit },
   meta: { description: "Adds two 1-bit values with carry-in" },
@@ -30,7 +30,7 @@ const FullAdder = component('FullAdder', {
   ],
 })
 
-const Adder8Bit = component('Adder8Bit', {
+const Adder8Bit = circuit('Adder8Bit', {
   in: { a: bus(8), b: bus(8), cin: bit },
   out: { sum: bus(8), cout: bit },
   meta: { description: "Ripple-carry 8-bit adder built from full adders" },
@@ -75,7 +75,7 @@ const Adder8Bit = component('Adder8Bit', {
   ],
 })
 
-const Adder8BitDemo = component('Adder8BitDemo', {
+const Adder8BitDemo = circuit('Adder8BitDemo', {
   meta: { description: "Interactive 8-bit ripple-carry adder" },
   nodes: { inA: Input, inB: Input, sw_cin: Switch, adder: Adder8Bit, dispSum: HexDisplay, led_cout: Led },
   nodeArgs: { inA: { value: 42 }, inB: { value: 17 } },

@@ -7,8 +7,8 @@
 const fs = require('fs');
 
 function convertChainedToObject(source) {
-  // Match: component('Name')\n  .in(...)\n  .out(...)\n  ... .build()
-  // This regex captures everything from component('...') to .build()
+  // Match: circuit('Name')\n  .in(...)\n  .out(...)\n  ... .build()
+  // This regex captures everything from circuit('...') to .build()
   return source.replace(
     /component\('([^']+)'\)\s*\n((?:\s+\.(?:in|out|node|connect|eval|state|onTick|meta|impl|build)\([^]*?))\s*\.build\(\)/g,
     (match, name, chainedBody) => {
@@ -144,7 +144,7 @@ function convertOneComponent(name, body) {
   if (stateStr) parts.push(`  state: ${stateStr},`);
   if (onTickStr) parts.push(`  onTick: ${onTickStr},`);
 
-  return `component('${name}', {\n${parts.join('\n')}\n})`;
+  return `circuit('${name}', {\n${parts.join('\n')}\n})`;
 }
 
 // Process files

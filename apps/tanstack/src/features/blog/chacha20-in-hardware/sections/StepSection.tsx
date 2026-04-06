@@ -1,6 +1,6 @@
 "use client";
 
-import { ComponentEmbed } from "@turing-incomplete/embed";
+import { CircuitEmbed } from "@turing-incomplete/embed";
 import { CHACHA20_CIRCUITS } from "../circuits";
 
 export function StepSection() {
@@ -36,7 +36,7 @@ d <<<= 16; // rotate d left by 16`}</pre>
       </div>
 
       <div className="mt-8">
-        <ComponentEmbed
+        <CircuitEmbed
           code={circuit.dsl}
           height={320}
           showControls={false}

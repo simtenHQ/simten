@@ -1,6 +1,6 @@
 "use client";
 
-import { ComponentEmbed } from "@turing-incomplete/embed";
+import { CircuitEmbed } from "@turing-incomplete/embed";
 import { SNAKE_CIRCUITS } from "../circuits";
 
 export function PhaseSection() {
@@ -38,7 +38,7 @@ export function PhaseSection() {
       </div>
 
       <div className="mt-8">
-        <ComponentEmbed
+        <CircuitEmbed
           code={SNAKE_CIRCUITS.phaseDemo.dsl}
           displayCode={SNAKE_CIRCUITS.phaseDemo.displayCode}
           nodePositions={SNAKE_CIRCUITS.phaseDemo.nodePositions}

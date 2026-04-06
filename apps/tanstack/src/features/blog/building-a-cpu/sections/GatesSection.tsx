@@ -1,6 +1,6 @@
 "use client";
 
-import { ComponentEmbed } from "@turing-incomplete/embed";
+import { CircuitEmbed } from "@turing-incomplete/embed";
 import { GATE_CIRCUITS } from "../circuits";
 
 export function GatesSection() {
@@ -36,7 +36,7 @@ export function GatesSection() {
             Wire both NAND inputs together. When the input is 1, both NAND
             inputs are 1, so the output is 0. Inversion!
           </p>
-          <ComponentEmbed
+          <CircuitEmbed
             code={GATE_CIRCUITS.inverter.dsl}
             displayCode={GATE_CIRCUITS.inverter.displayCode}
             height={220}
@@ -54,7 +54,7 @@ export function GatesSection() {
             NAND followed by NOT. The double negation cancels out, giving us
             a gate that outputs 1 only when both inputs are 1.
           </p>
-          <ComponentEmbed
+          <CircuitEmbed
             code={GATE_CIRCUITS.and.dsl}
             displayCode={GATE_CIRCUITS.and.displayCode}
             height={220}
@@ -72,7 +72,7 @@ export function GatesSection() {
             De Morgan&rsquo;s theorem in action: NOT each input, then NAND the
             results. The output is 1 when <em>either</em> input is 1.
           </p>
-          <ComponentEmbed
+          <CircuitEmbed
             code={GATE_CIRCUITS.or.dsl}
             displayCode={GATE_CIRCUITS.or.displayCode}
             height={220}
@@ -91,7 +91,7 @@ export function GatesSection() {
             inputs are <em>different</em>. Built from 4 NAND gates. This one
             is essential for arithmetic.
           </p>
-          <ComponentEmbed
+          <CircuitEmbed
             code={GATE_CIRCUITS.xor.dsl}
             displayCode={GATE_CIRCUITS.xor.displayCode}
             height={260}

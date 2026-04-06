@@ -15,7 +15,7 @@ import { getIdempotencyTracker } from './idempotency-tracker';
 import { checkStaleness, createStaleResult, createCannotSimulateResult } from './staleness-checker';
 import { getSimulationThrottle, type SimulationContext } from './simulation-throttle';
 import type { SetInputAction, RunSimulationAction, ShowDiffAction, WriteCircuitAction, InsertNodeAction, GenerateHarnessAction, VerifyAssertionAction } from '../types';
-import { executeComponentCode } from '@turing-incomplete/core';
+import { executeCircuitCode } from '@turing-incomplete/core';
 import type { ValidationSnapshot } from '../types';
 
 // ============================================================================
@@ -365,7 +365,7 @@ async function executeGenerateHarness(
 ): Promise<ActionResult> {
   try {
     const currentCode = context.getCurrentCode();
-    const result = executeComponentCode(currentCode);
+    const result = executeCircuitCode(currentCode);
 
     if (result.error || !result.circuit) {
       return {

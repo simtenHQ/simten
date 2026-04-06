@@ -1,6 +1,6 @@
 // Auto-generated from DSL
 
-const ALU16 = component('ALU16', {
+const ALU16 = circuit('ALU16', {
   in: { a: bus(16), b: bus(16), op0: bit, op1: bit, op2: bit },
   out: { result: bus(16), carry: bit },
   meta: { description: "16-bit ALU with 8 operations" },
@@ -31,7 +31,7 @@ const ALU16 = component('ALU16', {
   ],
 })
 
-const CPU16 = component('CPU16', {
+const CPU16 = circuit('CPU16', {
   in: { data_in: bus(16), op0: bit, op1: bit, op2: bit, load: bit, we: bit },
   out: { acc_out: bus(16), carry: bit },
   meta: { description: "16-bit accumulator CPU with 8-operation ALU" },
@@ -51,7 +51,7 @@ const CPU16 = component('CPU16', {
   ],
 })
 
-const CPU16_Interactive = component('CPU16_Interactive', {
+const CPU16_Interactive = circuit('CPU16_Interactive', {
   meta: { description: "Interactive 16-bit CPU" },
   nodes: { data: Input, op0_sw: Switch, op1_sw: Switch, op2_sw: Switch, load_sw: Switch, we_sw: Switch, cpu: CPU16, display: HexDisplay, carry_led: Led },
   nodeArgs: { data: { value: 1000 } },

@@ -8,7 +8,7 @@
  * ```typescript
  * import { createSimulator, elaborate } from '@turing-incomplete/core/simulator';
  *
- * const library = createComponentLibrary(primitives, composites);
+ * const library = createCircuitLibrary(primitives, composites);
  * const flatCircuit = elaborate(circuit, library);
  * const sim = createSimulator(flatCircuit, { componentLibrary: library });
  *
@@ -30,7 +30,11 @@ export type {
   BitValue,
   BusValue,
 
-  // Component library
+  // Circuit library
+  CircuitLibrary,
+  MutableCircuitLibrary,
+
+  // Deprecated aliases
   ComponentLibrary,
   MutableComponentLibrary,
 
@@ -51,6 +55,7 @@ export type {
   MemoryType,
   MemoryValue,
   PortInstance,
+  CircuitKind,
   ComponentKind,
   ArgumentValue,
   TestCase,
@@ -204,7 +209,7 @@ import type {
   SimulatorMetrics,
 } from '../types/simulator.js';
 import type {
-  ComponentLibrary,
+  CircuitLibrary,
   BitValue,
   BusValue,
   Circuit,
@@ -632,15 +637,15 @@ export function createSimulator(
 }
 
 /**
- * Create a simple component library from a list of circuits.
+ * Create a simple circuit library from a list of circuits.
  *
- * This is a convenience function for creating a ComponentLibrary
+ * This is a convenience function for creating a CircuitLibrary
  * from an array of Circuit definitions (e.g., primitives + composites).
  *
  * @param circuits - Array of circuit definitions
- * @returns A ComponentLibrary implementation
+ * @returns A CircuitLibrary implementation
  */
-export function createComponentLibrary(circuits: Circuit[]): ComponentLibrary {
+export function createCircuitLibrary(circuits: Circuit[]): CircuitLibrary {
   const circuitMap = new Map<string, Circuit>();
 
   for (const circuit of circuits) {
@@ -648,7 +653,7 @@ export function createComponentLibrary(circuits: Circuit[]): ComponentLibrary {
   }
 
   return {
-    resolveComponent: (name: string) => circuitMap.get(name),
+    resolveCircuit: (name: string) => circuitMap.get(name),
     getAllPrimitiveNames: () => {
       return Array.from(circuitMap.entries())
         .filter(([_, c]) => c.implementation.kind === 'primitive')
@@ -656,6 +661,9 @@ export function createComponentLibrary(circuits: Circuit[]): ComponentLibrary {
     }
   };
 }
+
+/** @deprecated Use createCircuitLibrary() instead */
+export const createComponentLibrary = createCircuitLibrary;
 
 /**
  * Elaborate and create a simulator in one step.
@@ -669,7 +677,7 @@ export function createComponentLibrary(circuits: Circuit[]): ComponentLibrary {
  */
 export function createSimulatorFromCircuit(
   circuit: Circuit,
-  library: ComponentLibrary,
+  library: CircuitLibrary,
 ): SimulatorEngine {
   const flatCircuit = elaborate(circuit, library);
   return createSimulator(flatCircuit, {

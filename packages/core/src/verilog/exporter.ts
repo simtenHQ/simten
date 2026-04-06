@@ -13,7 +13,7 @@
 
 import type { Circuit, PortType } from '../types/circuit.js';
 import type { FlatCircuit, FlatNode, FlatConnection } from '../types/simulator.js';
-import type { ComponentLibrary } from '../types/simulator.js';
+import type { CircuitLibrary } from '../types/simulator.js';
 import { elaborate } from '../simulator/elaboration.js';
 import type { VerilogExportOptions } from './types.js';
 import {
@@ -48,7 +48,7 @@ function portTypeToVerilog(pt: PortType): string {
  */
 export function exportVerilogFlat(
   circuit: Circuit,
-  library: ComponentLibrary,
+  library: CircuitLibrary,
   options?: VerilogExportOptions,
 ): string {
   const opts = { ...DEFAULT_OPTIONS, ...options };
@@ -61,7 +61,7 @@ export function exportVerilogFlat(
  */
 export function exportVerilog(
   circuit: Circuit,
-  library: ComponentLibrary,
+  library: CircuitLibrary,
   options?: VerilogExportOptions,
 ): string {
   const opts = { ...DEFAULT_OPTIONS, ...options };

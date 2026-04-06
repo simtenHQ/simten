@@ -13,7 +13,7 @@
  */
 
 import type { Circuit, Node, Connection, PortPath } from '../../types/circuit';
-import { useComponentLibraryStore } from '../../stores/component-library-store';
+import { useCircuitLibraryStore } from '../../stores/circuit-library-store';
 import { nanoid } from 'nanoid';
 
 /**
@@ -35,7 +35,7 @@ function portMapKey(nodeId: string, portName: string): string {
  * Flatten a circuit by recursively expanding all composite components into primitives
  */
 export function flattenCircuit(circuit: Circuit): FlattenedCircuit {
-  const library = useComponentLibraryStore.getState();
+  const library = useCircuitLibraryStore.getState();
 
   const flatNodes: Node[] = [];
   const flatConnections: Connection[] = [];
@@ -63,7 +63,7 @@ export function flattenCircuit(circuit: Circuit): FlattenedCircuit {
     }
 
     // Try to resolve from library for user-defined components
-    const componentDef = library.resolveComponent(node.componentRef);
+    const componentDef = library.resolveCircuit(node.componentRef);
 
     if (!componentDef) {
       // Unknown component - treat as primitive (fail gracefully)
@@ -85,7 +85,7 @@ export function flattenCircuit(circuit: Circuit): FlattenedCircuit {
       const expansionResult = expandCompositeNode(
         node,
         componentDef,
-        library.resolveComponent.bind(library),
+        library.resolveCircuit.bind(library),
         knownPrimitives
       );
 
@@ -129,7 +129,7 @@ interface ExpansionResult {
 function expandCompositeNode(
   node: Node,
   componentDef: Circuit,
-  resolveComponent: (name: string) => Circuit | undefined,
+  resolveCircuit: (name: string) => Circuit | undefined,
   knownPrimitives: Set<string>,
   visited: Set<string> = new Set()
 ): ExpansionResult {
@@ -162,7 +162,7 @@ function expandCompositeNode(
     }
 
     // Check if internal node is also composite - recursively expand
-    const internalComponentDef = resolveComponent(internalNode.componentRef);
+    const internalComponentDef = resolveCircuit(internalNode.componentRef);
 
     if (internalComponentDef?.implementation.kind === 'composite') {
       // Guard against recursive circuit definitions
@@ -176,7 +176,7 @@ function expandCompositeNode(
       const nestedExpansion = expandCompositeNode(
         { ...internalNode, id: expandedId },
         internalComponentDef,
-        resolveComponent,
+        resolveCircuit,
         knownPrimitives,
         childVisited
       );
@@ -291,10 +291,10 @@ function remapConnection(
  * Check if a circuit contains any composite components
  */
 export function hasCompositeComponents(circuit: Circuit): boolean {
-  const library = useComponentLibraryStore.getState();
+  const library = useCircuitLibraryStore.getState();
 
   for (const node of circuit.nodes) {
-    const componentDef = library.resolveComponent(node.componentRef);
+    const componentDef = library.resolveCircuit(node.componentRef);
     if (componentDef?.implementation.kind === 'composite') {
       return true;
     }

@@ -1,11 +1,11 @@
 /**
- * Component Definition — Object Syntax Only
+ * Circuit Definition — Object Syntax Only
  *
- * Creates hardware components using a single object configuration.
+ * Creates hardware circuits using a single object configuration.
  * Produces Circuit IR compatible with the simulation pipeline.
  *
  * Usage:
- *   const HalfAdder = component('HalfAdder', {
+ *   const HalfAdder = circuit('HalfAdder', {
  *     in: { a: bit, b: bit },
  *     out: { sum: bit, carry: bit },
  *     nodes: { x: Xor, a: And },
@@ -28,7 +28,7 @@ import type {
   StateBlock,
   Implementation,
   CircuitMetadata,
-  ComponentKind,
+  CircuitKind,
   ArgumentValue,
 } from '../types/circuit.js';
 import { normalizePortType } from './bit-bus.js';
@@ -38,9 +38,9 @@ import type {
   ConnectArg,
   PortRef,
   StateShape,
-  ComponentMeta,
-  BuiltComponent,
-  ComponentConfig,
+  CircuitMeta,
+  BuiltCircuit,
+  CircuitConfig,
 } from './types.js';
 
 // ============================================================================
@@ -80,26 +80,26 @@ function createNodeProxy(nodeId: string, ports: Map<string, PortType>, component
 }
 
 // ============================================================================
-// component() — single entry point
+// circuit() — single entry point
 // ============================================================================
 
 /**
- * Create a hardware component.
+ * Create a hardware circuit.
  *
- * @param name - Component name
- * @param config - Component configuration (generic — TypeScript infers port/node names)
- * @returns A BuiltComponent ready for simulation or use as a node
+ * @param name - Circuit name
+ * @param config - Circuit configuration (generic — TypeScript infers port/node names)
+ * @returns A BuiltCircuit ready for simulation or use as a node
  */
 /** Normalize port type at the type level: number → BusType, PortType → PortType */
 type NormalizePort<T> = T extends number ? import('../types/circuit.js').BusType : T extends PortType ? T : PortType;
 type NormalizePorts<M> = { [K in keyof M]: NormalizePort<M[K]> };
 
-export function component<
+export function circuit<
   Ins extends Record<string, PortType | number>,
   Outs extends Record<string, PortType | number>,
-  Nodes extends Record<string, BuiltComponent>,
+  Nodes extends Record<string, BuiltCircuit>,
   S extends StateShape,
->(name: string, config: ComponentConfig<Ins, Outs, Nodes, S> = {} as any): BuiltComponent<NormalizePorts<Ins>, NormalizePorts<Outs>> {
+>(name: string, config: CircuitConfig<Ins, Outs, Nodes, S> = {} as any): BuiltCircuit<NormalizePorts<Ins>, NormalizePorts<Outs>> {
   // ── Normalize inputs/outputs ──
 
   const inputs = new Map<string, PortType>();
@@ -163,7 +163,7 @@ export function component<
     arg['in'] = createNodeProxy('', inputs);
     arg['out'] = createNodeProxy('', outputs);
 
-    for (const [nodeName, comp] of Object.entries(nodes) as [string, BuiltComponent][]) {
+    for (const [nodeName, comp] of Object.entries(nodes) as [string, BuiltCircuit][]) {
       const allPorts = new Map<string, PortType>();
       for (const pd of comp.circuit.inputs) allPorts.set(pd.name, pd.portType);
       for (const pd of comp.circuit.outputs) allPorts.set(pd.name, pd.portType);
@@ -186,7 +186,7 @@ export function component<
   }
 
   if (errors.length > 0) {
-    throw new Error(`Component '${name}' validation failed:\n  - ${errors.join('\n  - ')}`);
+    throw new Error(`Circuit '${name}' validation failed:\n  - ${errors.join('\n  - ')}`);
   }
 
   // ── Determine implementation kind ──
@@ -194,7 +194,7 @@ export function component<
   const hasEval = config.eval != null;
   const hasNodes = Object.keys(nodes).length > 0;
   let implementation: Implementation;
-  let kind: ComponentKind;
+  let kind: CircuitKind;
 
   if (hasEval && !hasNodes) {
     implementation = { kind: 'primitive' };
@@ -261,7 +261,7 @@ export function component<
   // ── Build nodes ──
 
   const irNodes: Node[] = [];
-  for (const [nodeId, comp] of Object.entries(nodes) as [string, BuiltComponent][]) {
+  for (const [nodeId, comp] of Object.entries(nodes) as [string, BuiltCircuit][]) {
     const args = (nodeArgs as Record<string, Record<string, ArgumentValue>>)[nodeId] ?? {};
     irNodes.push({
       id: nodeId,
@@ -304,8 +304,8 @@ export function component<
     version: config.meta?.version,
   };
 
-  const circuit: Circuit = {
-    id: `component:${name}`,
+  const circuitIR: Circuit = {
+    id: `circuit:${name}`,
     name,
     parameters: [],
     inputs: inputDescs,
@@ -326,10 +326,10 @@ export function component<
   for (const [n, t] of outputs) outputMap[n] = t;
 
   const built = {
-    circuit,
+    circuit: circuitIR,
     _shape: { inputs: inputMap as NormalizePorts<Ins>, outputs: outputMap as NormalizePorts<Outs> },
     name,
-  } as BuiltComponent<NormalizePorts<Ins>, NormalizePorts<Outs>>;
+  } as BuiltCircuit<NormalizePorts<Ins>, NormalizePorts<Outs>>;
 
   // Attach eval/onTick/state for the simulator bridge
   if (config.eval) (built as any)._evalFn = config.eval;
@@ -349,7 +349,7 @@ function validatePortRef(
   ref: { nodeId: string; portName: string },
   inputs: Map<string, PortType>,
   outputs: Map<string, PortType>,
-  nodes: Record<string, BuiltComponent>,
+  nodes: Record<string, BuiltCircuit>,
   errors: string[],
 ): void {
   if (ref.nodeId === '') {
@@ -370,10 +370,13 @@ function validatePortRef(
   }
 }
 
-function detectSequential(nodes: Record<string, BuiltComponent>, state?: StateShape | null): boolean {
+function detectSequential(nodes: Record<string, BuiltCircuit>, state?: StateShape | null): boolean {
   if (state != null) return true;
   for (const comp of Object.values(nodes)) {
     if (comp.circuit.clocks.length > 0 || comp.circuit.state.length > 0) return true;
   }
   return false;
 }
+
+/** @deprecated Use circuit() instead */
+export const component = circuit;

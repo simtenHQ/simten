@@ -1,24 +1,24 @@
 /**
- * Adapter utility for component library interface
+ * Adapter utility for circuit library interface
  *
  * @deprecated No longer needed since DSL compiler library interface is gone.
  * Kept as a thin passthrough for any remaining callers.
  */
 
-import type { ComponentLibrary, Circuit } from '@turing-incomplete/core';
+import type { CircuitLibrary, Circuit } from '@turing-incomplete/core';
 
-interface StoreWithResolveComponent {
-  resolveComponent(name: string): Circuit | undefined;
+interface StoreWithResolveCircuit {
+  resolveCircuit(name: string): Circuit | undefined;
 }
 
 /**
- * Adapt a store-like object to a ComponentLibrary.
+ * Adapt a store-like object to a CircuitLibrary.
  */
-export function adaptStoreToCompilerLibrary(
-  store: StoreWithResolveComponent
-): ComponentLibrary {
+export function adaptStoreToCircuitLibrary(
+  store: StoreWithResolveCircuit
+): CircuitLibrary {
   return {
-    resolveComponent: (name: string) => store.resolveComponent(name),
+    resolveCircuit: (name: string) => store.resolveCircuit(name),
     getAllPrimitiveNames: () => [],
   };
 }

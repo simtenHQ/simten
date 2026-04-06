@@ -7,10 +7,10 @@
 
 import { createFileRoute } from "@tanstack/react-router";
 import { useState, useCallback, useMemo } from "react";
-import { component, bit, bus } from "@turing-incomplete/core/builder";
+import { circuit, bit, bus } from "@turing-incomplete/core/circuit";
 import { simulate } from "@turing-incomplete/core/sim";
 import { Xor, And, Or, DFlipFlop, Not } from "@turing-incomplete/core/std";
-import type { BuiltComponent } from "@turing-incomplete/core/builder";
+import type { BuiltCircuit } from "@turing-incomplete/core/circuit";
 
 export const Route = createFileRoute("/demos/generative")({
   component: GenerativePage,
@@ -22,7 +22,7 @@ export const Route = createFileRoute("/demos/generative")({
 
 function generateRippleCarryAdder(bits: number) {
   // Build FullAdder as a reusable component
-  const FullAdder = component('FullAdder', {
+  const FullAdder = circuit('FullAdder', {
     in: { a: bit, b: bit, cin: bit },
     out: { sum: bit, cout: bit },
     nodes: { x1: Xor, x2: Xor, a1: And, a2: And, o1: Or },
@@ -39,7 +39,7 @@ function generateRippleCarryAdder(bits: number) {
   });
 
   // Programmatically generate N-bit adder
-  const nodes: Record<string, BuiltComponent> = {};
+  const nodes: Record<string, BuiltCircuit> = {};
   for (let i = 0; i < bits; i++) {
     nodes[`fa${i}`] = FullAdder;
   }
@@ -122,12 +122,12 @@ function RingOscillatorDemo() {
   const sim = useMemo(() => {
     // Build a ring oscillator: N inverters, output of last feeds input of first
     // Since this creates a combinational loop, we simulate it as a shift register instead
-    const nodes: Record<string, BuiltComponent> = {};
+    const nodes: Record<string, BuiltCircuit> = {};
     for (let i = 0; i < stages; i++) {
       nodes[`inv${i}`] = Not;
     }
 
-    const ShiftOsc = component('ShiftOsc', {
+    const ShiftOsc = circuit('ShiftOsc', {
       out: { out: bit },
       state: { ring: 1 },
       eval: ({ ring }) => ({ out: (ring as number) & 1 }),
@@ -210,7 +210,7 @@ function TruthTableDemo() {
     }
 
     // Generate a circuit from the truth table using eval
-    const circuit = component('FromTruthTable', {
+    const circuit = circuit('FromTruthTable', {
       in: { a: bit, b: bit },
       out: { out: bit },
       eval: ({ a, b }) => ({ out: table[(a ? 2 : 0) + (b ? 1 : 0)] }),
@@ -279,7 +279,7 @@ function TruthTableDemo() {
       </div>
 
       <pre className="text-xs font-mono bg-muted rounded p-2 text-muted-foreground">{`// Generated from truth table:
-const gate = component('FromTruthTable', {
+const gate = circuit('FromTruthTable', {
   in: { a: bit, b: bit },
   out: { out: bit },
   eval: ({ a, b }) => ({
@@ -299,7 +299,7 @@ function LFSRDemo() {
   const bits = 4;
 
   const sim = useMemo(() => {
-    return simulate(component('LFSR', {
+    return simulate(circuit('LFSR', {
       out: { value: bus(bits), feedback: bit },
       state: { reg: 1 },
       eval: ({ reg }) => ({

@@ -1,6 +1,6 @@
 "use client";
 
-import { ComponentEmbed } from "@turing-incomplete/embed";
+import { CircuitEmbed } from "@turing-incomplete/embed";
 import { BLOG_CIRCUITS } from "../circuits";
 
 export function HazardsSection() {
@@ -80,7 +80,7 @@ export function HazardsSection() {
           stage. The forwarding unit sets these bits automatically by comparing
           register addresses across pipeline stages.
         </p>
-        <ComponentEmbed
+        <CircuitEmbed
           code={BLOG_CIRCUITS.forwardingMux.dsl}
           displayCode={BLOG_CIRCUITS.forwardingMux.displayCode}
           height={340}

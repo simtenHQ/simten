@@ -6,27 +6,28 @@
  * Standard library is injected as scope — no imports needed.
  *
  * Usage:
- *   const result = executeComponentCode(`
- *     const ha = component('HalfAdder')
- *       .in('a', bit).in('b', bit)
- *       .out('sum', bit).out('carry', bit)
- *       .node('x', Xor).node('a', And)
- *       .connect(({ in: inp, out, x, a }) => [
+ *   const result = executeCircuitCode(`
+ *     const ha = circuit('HalfAdder', {
+ *       in: { a: bit, b: bit },
+ *       out: { sum: bit, carry: bit },
+ *       nodes: { x: Xor, a: And },
+ *       connect: ({ in: inp, out, x, a }) => [
  *         inp.a.to(x.a, a.a),
  *         inp.b.to(x.b, a.b),
  *         x.out.to(out.sum),
  *         a.out.to(out.carry),
- *       ])
+ *       ],
+ *     })
  *   `)
  *   result.circuit // → Circuit IR
  */
 
 import { transform } from 'sucrase';
-import { component } from './component.js';
+import { circuit } from './circuit.js';
 import { bit, bus } from './bit-bus.js';
-import type { BuiltComponent } from './types.js';
-import type { Circuit, ComponentLibrary } from '../types/circuit.js';
-import { createStdLibrary, getAllStdComponents } from '../std/index.js';
+import type { BuiltCircuit } from './types.js';
+import type { Circuit, CircuitLibrary } from '../types/circuit.js';
+import { createStdLibrary, getAllStdCircuits } from '../std/index.js';
 
 // ============================================================================
 // Execution result
@@ -37,10 +38,10 @@ export interface ExecuteResult {
   circuit: Circuit | null;
   /** All circuits found (if code defines multiple) */
   circuits: Circuit[];
-  /** All BuiltComponents found */
-  components: BuiltComponent[];
-  /** The component library (stdlib + user-defined components) */
-  library: ComponentLibrary & { addCircuit(c: Circuit): void };
+  /** All BuiltCircuits found */
+  builtCircuits: BuiltCircuit[];
+  /** The circuit library (stdlib + user-defined circuits) */
+  library: CircuitLibrary & { addCircuit(c: Circuit): void };
   /** Error message if execution failed */
   error: string | null;
 }
@@ -53,13 +54,14 @@ export interface ExecuteResult {
 function buildScope(): { names: string[]; values: unknown[] } {
   const scope = new Map<string, unknown>();
 
-  // Core builder API
-  scope.set('component', component);
+  // Core builder API — inject both `circuit` (canonical) and `component` (backward compat)
+  scope.set('circuit', circuit);
+  scope.set('component', circuit);
   scope.set('bit', bit);
   scope.set('bus', bus);
 
   // All stdlib components
-  for (const comp of getAllStdComponents()) {
+  for (const comp of getAllStdCircuits()) {
     scope.set(comp.name, comp);
   }
 
@@ -104,39 +106,40 @@ export function stripTypes(code: string): string {
  * @param code - TypeScript or JavaScript circuit code
  * @returns Execution result with circuits and any error
  */
-export function executeComponentCode(code: string): ExecuteResult {
+export function executeCircuitCode(code: string): ExecuteResult {
   const { names, values } = getScope();
   const library = createStdLibrary();
-  const components: BuiltComponent[] = [];
+  const builtCircuits: BuiltCircuit[] = [];
   const circuits: Circuit[] = [];
 
   try {
     // Strip TypeScript types → plain JavaScript
     const js = stripTypes(code);
 
-    // Wrap: intercept component() calls to collect all created components
+    // Wrap: intercept circuit()/component() calls to collect all created circuits
     const wrappedCode = `
       "use strict";
       const __collector = [];
-      const __origComponent = component;
-      const __trackingComponent = function(name, config) {
-        const result = __origComponent(name, config);
+      const __origCircuit = circuit;
+      const __trackingCircuit = function(name, config) {
+        const result = __origCircuit(name, config);
         __collector.push(result);
         return result;
       };
       {
-        const component = __trackingComponent;
+        const circuit = __trackingCircuit;
+        const component = __trackingCircuit;
         ${js}
       }
       return __collector;
     `;
 
     const fn = new Function(...names, wrappedCode);
-    const collected = fn(...values) as BuiltComponent[];
+    const collected = fn(...values) as BuiltCircuit[];
 
     for (const built of collected) {
       if (built && built.circuit) {
-        components.push(built);
+        builtCircuits.push(built);
         circuits.push(built.circuit);
         library.addCircuit(built.circuit);
       }
@@ -145,7 +148,7 @@ export function executeComponentCode(code: string): ExecuteResult {
     return {
       circuit: circuits.length > 0 ? circuits[circuits.length - 1] : null,
       circuits,
-      components,
+      builtCircuits,
       library,
       error: null,
     };
@@ -153,9 +156,12 @@ export function executeComponentCode(code: string): ExecuteResult {
     return {
       circuit: null,
       circuits: [],
-      components: [],
+      builtCircuits: [],
       library,
       error: e instanceof Error ? e.message : String(e),
     };
   }
 }
+
+/** @deprecated Use executeCircuitCode instead */
+export const executeComponentCode = executeCircuitCode;

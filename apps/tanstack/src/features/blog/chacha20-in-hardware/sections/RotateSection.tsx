@@ -1,6 +1,6 @@
 "use client";
 
-import { ComponentEmbed } from "@turing-incomplete/embed";
+import { CircuitEmbed } from "@turing-incomplete/embed";
 import { CHACHA20_CIRCUITS } from "../circuits";
 
 export function RotateSection() {
@@ -35,7 +35,7 @@ export function RotateSection() {
       </div>
 
       <div className="mt-8">
-        <ComponentEmbed
+        <CircuitEmbed
           code={circuit.dsl}
           height={300}
           showControls={false}

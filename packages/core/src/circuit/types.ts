@@ -40,11 +40,14 @@ export interface ConnectionDef {
 /** Map of port names to their types */
 export type PortMap = Record<string, PortType>;
 
-/** Describes a component's port interface */
-export interface ComponentShape {
+/** Describes a circuit's port interface */
+export interface CircuitShape {
   inputs: PortMap;
   outputs: PortMap;
 }
+
+/** @deprecated Use CircuitShape instead */
+export type ComponentShape = CircuitShape;
 
 // ============================================================================
 // Connect callback types (generic)
@@ -55,14 +58,14 @@ type PortRefs<M> = {
   readonly [K in keyof M]: PortRef;
 };
 
-/** Extract port refs from a BuiltComponent's shape */
-type NodePortRefs<C extends BuiltComponent> = PortRefs<C['_shape']['inputs']> & PortRefs<C['_shape']['outputs']>;
+/** Extract port refs from a BuiltCircuit's shape */
+type NodePortRefs<C extends BuiltCircuit> = PortRefs<C['_shape']['inputs']> & PortRefs<C['_shape']['outputs']>;
 
 /** The connect callback argument — typed from the config's in/out/nodes */
 export type ConnectArg<
   Ins extends Record<string, PortType | number>,
   Outs extends Record<string, PortType | number>,
-  Nodes extends Record<string, BuiltComponent>,
+  Nodes extends Record<string, BuiltCircuit>,
 > = {
   readonly in: PortRefs<Ins>;
   readonly out: PortRefs<Outs>;
@@ -89,7 +92,7 @@ export type StateShape = Record<string, StateValue>;
 // Component metadata
 // ============================================================================
 
-export interface ComponentMeta {
+export interface CircuitMeta {
   category?: string;
   description?: string;
   icon?: string;
@@ -98,32 +101,41 @@ export interface ComponentMeta {
   version?: string;
 }
 
+/** @deprecated Use CircuitMeta instead */
+export type ComponentMeta = CircuitMeta;
+
 // ============================================================================
 // Built component
 // ============================================================================
 
-/** A fully built component that can be used as a node or simulated */
-export interface BuiltComponent<
+/** A fully built circuit that can be used as a node or simulated */
+export interface BuiltCircuit<
   Ins extends PortMap = PortMap,
   Outs extends PortMap = PortMap,
 > {
-  /** The Circuit IR for this component */
+  /** The Circuit IR for this circuit */
   readonly circuit: Circuit;
   /** Type-level shape for generic propagation */
   readonly _shape: { inputs: Ins; outputs: Outs };
-  /** Component name */
+  /** Circuit name */
   readonly name: string;
 }
+
+/** @deprecated Use BuiltCircuit instead */
+export type BuiltComponent<
+  Ins extends PortMap = PortMap,
+  Outs extends PortMap = PortMap,
+> = BuiltCircuit<Ins, Outs>;
 
 // ============================================================================
 // Component config (generic)
 // ============================================================================
 
-/** Configuration object for component() */
-export interface ComponentConfig<
+/** Configuration object for circuit() */
+export interface CircuitConfig<
   Ins extends Record<string, PortType | number> = Record<string, PortType | number>,
   Outs extends Record<string, PortType | number> = Record<string, PortType | number>,
-  Nodes extends Record<string, BuiltComponent> = Record<string, BuiltComponent>,
+  Nodes extends Record<string, BuiltCircuit> = Record<string, BuiltCircuit>,
   S extends StateShape = StateShape,
 > {
   in?: Ins;
@@ -134,5 +146,13 @@ export interface ComponentConfig<
   eval?: (inputs: PortValues<Ins> & Partial<S>) => PortValues<Outs>;
   state?: S;
   onTick?: (inputsAndState: PortValues<Ins> & S) => S;
-  meta?: ComponentMeta;
+  meta?: CircuitMeta;
 }
+
+/** @deprecated Use CircuitConfig instead */
+export type ComponentConfig<
+  Ins extends Record<string, PortType | number> = Record<string, PortType | number>,
+  Outs extends Record<string, PortType | number> = Record<string, PortType | number>,
+  Nodes extends Record<string, BuiltCircuit> = Record<string, BuiltCircuit>,
+  S extends StateShape = StateShape,
+> = CircuitConfig<Ins, Outs, Nodes, S>;

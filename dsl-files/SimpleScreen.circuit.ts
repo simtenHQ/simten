@@ -1,6 +1,6 @@
 // Auto-generated from DSL
 
-const SimpleScreen = component('SimpleScreen', {
+const SimpleScreen = circuit('SimpleScreen', {
   nodes: { ram: DualPortRAM, screen: Screen },
   nodeArgs: { ram: { init: {"0":1,"1":1,"9":1,"63":1} } },
   connect: ({ in: inp, out, ram, screen }) => [
