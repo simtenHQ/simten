@@ -1,7 +1,7 @@
 /**
- * Component Resolver
+ * Circuit Resolver
  *
- * Utilities for resolving component references and instantiating nodes.
+ * Utilities for resolving circuit references and instantiating nodes.
  */
 
 import { nanoid } from 'nanoid';
@@ -12,12 +12,12 @@ import type {
   ClockInstance,
   ArgumentValue,
 } from '../types/circuit';
-import type { ComponentLibrary } from '../stores/component-library-store';
+import type { CircuitLibraryData } from '../stores/circuit-library-store';
 
 /**
  * Resolution result
  */
-export interface ResolvedComponent {
+export interface ResolvedCircuit {
   circuit: Circuit;
   isPrimitive: boolean;
 }
@@ -25,45 +25,45 @@ export interface ResolvedComponent {
 /**
  * Resolution error
  */
-export class ComponentResolutionError extends Error {
+export class CircuitResolutionError extends Error {
   constructor(
-    public componentName: string,
+    public circuitName: string,
     message: string
   ) {
     super(message);
-    this.name = 'ComponentResolutionError';
+    this.name = 'CircuitResolutionError';
   }
 }
 
 /**
- * Resolve a component name to its circuit definition
+ * Resolve a circuit name to its circuit definition
  */
-export function resolveComponent(
-  componentName: string,
-  library: ComponentLibrary
-): ResolvedComponent {
+export function resolveCircuit(
+  circuitName: string,
+  library: CircuitLibraryData
+): ResolvedCircuit {
   // Try primitives first
-  const primitive = library.primitives.get(componentName);
+  const primitive = library.primitives.get(circuitName);
   if (primitive) {
     return { circuit: primitive, isPrimitive: true };
   }
 
   // Try standard library
-  const standard = library.standard.get(componentName);
+  const standard = library.standard.get(circuitName);
   if (standard) {
     return { circuit: standard, isPrimitive: false };
   }
 
-  // Try user components
-  const user = library.user.get(componentName);
+  // Try user circuits
+  const user = library.user.get(circuitName);
   if (user) {
     return { circuit: user, isPrimitive: false };
   }
 
   // Not found
-  throw new ComponentResolutionError(
-    componentName,
-    `Cannot resolve component '${componentName}'. Component not found in library.`
+  throw new CircuitResolutionError(
+    circuitName,
+    `Cannot resolve circuit '${circuitName}'. Circuit not found in library.`
   );
 }
 
@@ -120,7 +120,7 @@ function validateArguments(circuit: Circuit, args: Record<string, ArgumentValue>
     const param = circuit.parameters.find((p) => p.name === argName);
     if (!param) {
       throw new Error(
-        `Unknown argument '${argName}' for component '${circuit.name}'. ` +
+        `Unknown argument '${argName}' for circuit '${circuit.name}'. ` +
           `Valid parameters: ${circuit.parameters.map((p) => p.name).join(', ')}`
       );
     }
@@ -131,19 +131,19 @@ function validateArguments(circuit: Circuit, args: Record<string, ArgumentValue>
 
     if (expectedType === 'int' && typeof argValue !== 'number') {
       throw new Error(
-        `Argument '${argName}' for component '${circuit.name}' must be a number, got ${typeof argValue}`
+        `Argument '${argName}' for circuit '${circuit.name}' must be a number, got ${typeof argValue}`
       );
     }
 
     if (expectedType === 'string' && typeof argValue !== 'string') {
       throw new Error(
-        `Argument '${argName}' for component '${circuit.name}' must be a string, got ${typeof argValue}`
+        `Argument '${argName}' for circuit '${circuit.name}' must be a string, got ${typeof argValue}`
       );
     }
 
     if (expectedType === 'bool' && typeof argValue !== 'boolean') {
       throw new Error(
-        `Argument '${argName}' for component '${circuit.name}' must be a boolean, got ${typeof argValue}`
+        `Argument '${argName}' for circuit '${circuit.name}' must be a boolean, got ${typeof argValue}`
       );
     }
   }
@@ -152,7 +152,7 @@ function validateArguments(circuit: Circuit, args: Record<string, ArgumentValue>
   for (const param of circuit.parameters) {
     if (param.defaultValue === undefined && !(param.name in args)) {
       throw new Error(
-        `Missing required argument '${param.name}' for component '${circuit.name}'`
+        `Missing required argument '${param.name}' for circuit '${circuit.name}'`
       );
     }
   }
@@ -162,12 +162,12 @@ function validateArguments(circuit: Circuit, args: Record<string, ArgumentValue>
  * Create a node with automatic ID generation
  */
 export function createNode(
-  componentName: string,
-  library: ComponentLibrary,
+  circuitName: string,
+  library: CircuitLibraryData,
   label?: string,
   args: Record<string, ArgumentValue> = {}
 ): Node {
-  const resolved = resolveComponent(componentName, library);
+  const resolved = resolveCircuit(circuitName, library);
   const nodeId = nanoid();
   return instantiateNode(resolved.circuit, nodeId, label, args);
 }

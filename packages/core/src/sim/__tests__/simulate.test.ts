@@ -1,13 +1,13 @@
 /**
  * Tests for the typed simulate() API.
  *
- * Verifies end-to-end: component() → simulate() → set/get/tick/run/snapshot/reset
+ * Verifies end-to-end: circuit() → simulate() → set/get/tick/run/snapshot/reset
  * running through the real simulation pipeline.
  */
 
 import { describe, it, expect, afterEach } from 'vitest';
 import { simulate } from '../simulate.js';
-import { component, bit, bus } from '../../builder/index.js';
+import { circuit, bit, bus } from '../../circuit/index.js';
 import { And, Or, Xor, Not, Register, DFlipFlop, Led, Switch } from '../../std/index.js';
 import type { SimulationHandle } from '../simulate.js';
 
@@ -59,7 +59,7 @@ describe('combinational circuits', () => {
   });
 
   it('simulates a HalfAdder composite', () => {
-    const HalfAdder = component('HalfAdder', {
+    const HalfAdder = circuit('HalfAdder', {
       in: { a: bit, b: bit },
       out: { sum: bit, carry: bit },
       nodes: { x: Xor, a: And },
@@ -87,7 +87,7 @@ describe('combinational circuits', () => {
   });
 
   it('simulates a user-defined eval component', () => {
-    const ReLU = component('ReLU', {
+    const ReLU = circuit('ReLU', {
       in: { x: bus(16) },
       out: { y: bus(16) },
       eval: ({ x }) => ({ y: x > 0 ? x : 0 }),

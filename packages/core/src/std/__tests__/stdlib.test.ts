@@ -2,9 +2,9 @@
  * Standard Library Tests
  *
  * Verifies that:
- * 1. All stdlib components load without errors
- * 2. Each component produces valid Circuit IR matching existing PRIMITIVE_DEFINITIONS
- * 3. The stdlib ComponentLibrary resolves all components
+ * 1. All stdlib circuits load without errors
+ * 2. Each circuit produces valid Circuit IR matching existing PRIMITIVE_DEFINITIONS
+ * 3. The stdlib CircuitLibrary resolves all components
  * 4. Stdlib components work in the simulation pipeline (end-to-end)
  */
 
@@ -22,16 +22,16 @@ import {
   Switch, Button, Led, Input, Output, Constant,
   SevenSegment, HexDisplay, Screen, RasterDisplay, Console,
   createStdLibrary,
-  getAllStdComponents,
+  getAllStdCircuits,
 } from '../index.js';
-import type { BuiltComponent } from '../../builder/types.js';
+import type { BuiltCircuit } from '../../circuit/types.js';
 
 // ============================================================================
 // All components load
 // ============================================================================
 
-describe('stdlib components load', () => {
-  const allComponents: [string, BuiltComponent][] = [
+describe('stdlib circuits load', () => {
+  const allCircuits: [string, BuiltCircuit][] = [
     // Logic
     ['And', And], ['Or', Or], ['Not', Not], ['Xor', Xor],
     ['Nand', Nand], ['Nor', Nor], ['Xnor', Xnor], ['Buffer', Buffer],
@@ -59,17 +59,17 @@ describe('stdlib components load', () => {
     ['Screen', Screen], ['RasterDisplay', RasterDisplay], ['Console', Console],
   ];
 
-  it.each(allComponents)('%s has correct name', (name, comp) => {
+  it.each(allCircuits)('%s has correct name', (name, comp) => {
     expect(comp.name).toBe(name);
   });
 
-  it.each(allComponents)('%s has valid circuit IR', (name, comp) => {
+  it.each(allCircuits)('%s has valid circuit IR', (name, comp) => {
     expect(comp.circuit).toBeDefined();
-    expect(comp.circuit.id).toBe(`component:${name}`);
+    expect(comp.circuit.id).toBe(`circuit:${name}`);
     expect(comp.circuit.implementation.kind).toBe('primitive');
   });
 
-  it.each(allComponents)('%s matches PRIMITIVE_DEFINITIONS ports', (name, comp) => {
+  it.each(allCircuits)('%s matches PRIMITIVE_DEFINITIONS ports', (name, comp) => {
     const def = PRIMITIVE_DEFINITIONS[name];
     expect(def).toBeDefined();
 
@@ -88,7 +88,7 @@ describe('stdlib components load', () => {
     }
   });
 
-  it.each(allComponents)('%s has _shape matching ports', (name, comp) => {
+  it.each(allCircuits)('%s has _shape matching ports', (name, comp) => {
     const shape = comp._shape;
     expect(Object.keys(shape.inputs).length).toBe(comp.circuit.inputs.length);
     expect(Object.keys(shape.outputs).length).toBe(comp.circuit.outputs.length);
@@ -96,7 +96,7 @@ describe('stdlib components load', () => {
 });
 
 // ============================================================================
-// Sequential components have clocks and state
+// Sequential circuits have clocks and state
 // ============================================================================
 
 describe('sequential components', () => {
@@ -124,10 +124,10 @@ describe('sequential components', () => {
 });
 
 // ============================================================================
-// I/O components
+// I/O circuits
 // ============================================================================
 
-describe('I/O components', () => {
+describe('I/O circuits', () => {
   it('Switch has no inputs and one output', () => {
     expect(Switch.circuit.inputs).toHaveLength(0);
     expect(Switch.circuit.outputs).toHaveLength(1);
@@ -159,7 +159,7 @@ describe('createStdLibrary', () => {
     const lib = createStdLibrary();
 
     for (const name of Object.keys(PRIMITIVE_DEFINITIONS)) {
-      const circuit = lib.resolveComponent(name);
+      const circuit = lib.resolveCircuit(name);
       expect(circuit).toBeDefined();
       expect(circuit!.name).toBe(name);
     }
@@ -180,22 +180,22 @@ describe('createStdLibrary', () => {
     const renamed = { ...custom, name: 'CustomAnd' };
     lib.addCircuit(renamed);
 
-    expect(lib.resolveComponent('CustomAnd')).toBeDefined();
+    expect(lib.resolveCircuit('CustomAnd')).toBeDefined();
   });
 });
 
 // ============================================================================
-// getAllStdComponents
+// getAllStdCircuits
 // ============================================================================
 
-describe('getAllStdComponents', () => {
+describe('getAllStdCircuits', () => {
   it('returns all components', () => {
-    const all = getAllStdComponents();
+    const all = getAllStdCircuits();
     expect(all.length).toBeGreaterThanOrEqual(Object.keys(PRIMITIVE_DEFINITIONS).length);
   });
 
   it('each component has a unique name', () => {
-    const all = getAllStdComponents();
+    const all = getAllStdCircuits();
     const names = all.map(c => c.name);
     const unique = new Set(names);
     expect(unique.size).toBe(names.length);
@@ -208,9 +208,9 @@ describe('getAllStdComponents', () => {
 
 describe('stdlib + builder integration', () => {
   it('builds a HalfAdder from stdlib components', async () => {
-    const { component, bit } = await import('../../builder/index.js');
+    const { circuit, bit } = await import('../../circuit/index.js');
 
-    const HalfAdder = component('HalfAdder', {
+    const HalfAdder = circuit('HalfAdder', {
       in: { a: bit, b: bit },
       out: { sum: bit, carry: bit },
       nodes: { x: Xor, a: And },

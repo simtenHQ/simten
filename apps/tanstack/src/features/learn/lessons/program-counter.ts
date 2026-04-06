@@ -22,7 +22,7 @@ export const PROGRAM_COUNTER_LESSON: Lesson = {
         "Here it is: a single 32-bit register, sitting alone. Right now it just holds a value — it doesn't do anything yet.",
       ],
       dsl: `
-const ProgramCounter = component('ProgramCounter', {
+const ProgramCounter = circuit('ProgramCounter', {
   out: { pc_out: bus(32) },
   nodes: { pc: Register },
   nodeArgs: { pc: { width: 32 } },
@@ -43,7 +43,7 @@ const ProgramCounter = component('ProgramCounter', {
         "Three nodes, not yet connected. The adder is waiting for its inputs. The constant 4 is ready to provide one of them.",
       ],
       dsl: `
-const ProgramCounter = component('ProgramCounter', {
+const ProgramCounter = circuit('ProgramCounter', {
   out: { pc_out: bus(32) },
   nodes: { pc: Register, adder: Adder, four: Constant },
   nodeArgs: { pc: { width: 32 }, adder: { width: 32 }, four: { value: 4, width: 32 } },
@@ -68,7 +68,7 @@ const ProgramCounter = component('ProgramCounter', {
         "Notice the wire from pc.q splitting: one branch goes to the adder, the other to pc_out. This is how hardware multiplexes a signal to multiple consumers — no copying, just wiring.",
       ],
       dsl: `
-const ProgramCounter = component('ProgramCounter', {
+const ProgramCounter = circuit('ProgramCounter', {
   out: { pc_out: bus(32) },
   nodes: { pc: Register, adder: Adder, four: Constant },
   nodeArgs: { pc: { width: 32 }, adder: { width: 32 }, four: { value: 4, width: 32 } },
@@ -94,7 +94,7 @@ const ProgramCounter = component('ProgramCounter', {
         "This is what makes it a counter. The output of the computation feeds back as the next input. The register is the memory that lets the circuit 'remember' where it is between clock edges.",
       ],
       dsl: `
-const ProgramCounter = component('ProgramCounter', {
+const ProgramCounter = circuit('ProgramCounter', {
   out: { pc_out: bus(32) },
   nodes: { pc: Register, adder: Adder, four: Constant },
   nodeArgs: { pc: { width: 32 }, adder: { width: 32 }, four: { value: 4, width: 32 } },
@@ -121,7 +121,7 @@ const ProgramCounter = component('ProgramCounter', {
         "The circuit is now fully connected. All inputs are driven, all outputs are used. This is a complete, synthesizable program counter.",
       ],
       dsl: `
-const ProgramCounter = component('ProgramCounter', {
+const ProgramCounter = circuit('ProgramCounter', {
   out: { pc_out: bus(32) },
   nodes: { pc: Register, adder: Adder, four: Constant, we: Constant },
   nodeArgs: { pc: { width: 32 }, adder: { width: 32 }, four: { value: 4, width: 32 }, we: { value: 1, width: 1 } },
@@ -144,7 +144,7 @@ const ProgramCounter = component('ProgramCounter', {
         "From here, a real CPU would add logic to override the PC on branch instructions — jumping to a different address rather than just adding 4. But the foundation is what you see here: a register in a feedback loop with an adder.",
       ],
       dsl: `
-const ProgramCounter = component('ProgramCounter', {
+const ProgramCounter = circuit('ProgramCounter', {
   out: { pc_out: bus(32) },
   nodes: { pc: Register, adder: Adder, four: Constant, we: Constant },
   nodeArgs: { pc: { width: 32 }, adder: { width: 32 }, four: { value: 4, width: 32 }, we: { value: 1, width: 1 } },

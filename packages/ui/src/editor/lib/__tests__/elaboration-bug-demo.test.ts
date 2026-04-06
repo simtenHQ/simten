@@ -6,15 +6,15 @@
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import { elaborate } from '../elaboration';
-import { useComponentLibraryStore } from '../../stores/component-library-store';
+import { useCircuitLibraryStore } from '../../stores/circuit-library-store';
 import { PRIMITIVES } from '@turing-incomplete/core/simulator';
 import type { Circuit } from '../../types/circuit';
 
 describe('Elaboration Bug - Composite Connections Disappearing', () => {
-  let store: ReturnType<typeof useComponentLibraryStore.getState>;
+  let store: ReturnType<typeof useCircuitLibraryStore.getState>;
 
   beforeEach(() => {
-    store = useComponentLibraryStore.getState();
+    store = useCircuitLibraryStore.getState();
     store.clearAll();
     store.registerPrimitives(PRIMITIVES as any[]);
   });

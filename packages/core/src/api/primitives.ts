@@ -4,7 +4,7 @@
  * Pure function to get primitive component catalog.
  */
 
-import type { ComponentLibrary, Circuit } from '../types/circuit.js';
+import type { CircuitLibrary } from '../types/circuit.js';
 
 export function getPrimitivesHandler(
   params: {
@@ -13,7 +13,7 @@ export function getPrimitivesHandler(
     sourceName?: string;
     compact?: boolean;
   },
-  library: ComponentLibrary
+  library: CircuitLibrary
 ): string {
   const compact = params.compact ?? true;
 
@@ -30,7 +30,7 @@ export function getPrimitivesHandler(
   }> = [];
 
   for (const name of primitiveNames) {
-    const circuit = library.resolveComponent(name);
+    const circuit = library.resolveCircuit(name);
     if (!circuit) continue;
 
     const kind = circuit.metadata?.kind;

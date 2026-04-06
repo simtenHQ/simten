@@ -1,6 +1,6 @@
 // Auto-generated from DSL
 
-const BitRegister = component('BitRegister', {
+const BitRegister = circuit('BitRegister', {
   in: { data: bit },
   out: { q: bit },
   nodes: { ff1: DFlipFlop, ff2: DFlipFlop },
@@ -11,7 +11,7 @@ const BitRegister = component('BitRegister', {
   ],
 })
 
-const WrappedRegister = component('WrappedRegister', {
+const WrappedRegister = circuit('WrappedRegister', {
   in: { data: bit },
   out: { q: bit },
   nodes: { inner: BitRegister },
@@ -21,7 +21,7 @@ const WrappedRegister = component('WrappedRegister', {
   ],
 })
 
-const TestNestedSequential = component('TestNestedSequential', {
+const TestNestedSequential = circuit('TestNestedSequential', {
   nodes: { data_sw: Switch, wrapped: WrappedRegister, led: Led },
   connect: ({ in: inp, out, data_sw, wrapped, led }) => [
     data_sw.out.to(wrapped.data),

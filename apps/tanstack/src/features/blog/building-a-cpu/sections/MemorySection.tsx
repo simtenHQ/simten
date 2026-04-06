@@ -1,6 +1,6 @@
 "use client";
 
-import { ComponentEmbed } from "@turing-incomplete/embed";
+import { CircuitEmbed } from "@turing-incomplete/embed";
 import { BLOG_CIRCUITS } from "../circuits";
 
 export function MemorySection() {
@@ -37,7 +37,7 @@ export function MemorySection() {
             <em>stays</em> after you release the input &mdash; that&rsquo;s
             memory!
           </p>
-          <ComponentEmbed
+          <CircuitEmbed
             code={BLOG_CIRCUITS.srLatch.dsl}
             displayCode={BLOG_CIRCUITS.srLatch.displayCode}
             height={260}
@@ -57,7 +57,7 @@ export function MemorySection() {
             holds it until the next tick. Set the switch, then click{" "}
             <strong>Tick</strong> to capture the value.
           </p>
-          <ComponentEmbed
+          <CircuitEmbed
             code={BLOG_CIRCUITS.dFlipFlop.dsl}
             displayCode={BLOG_CIRCUITS.dFlipFlop.displayCode}
             height={220}
@@ -78,7 +78,7 @@ export function MemorySection() {
             at once. This is exactly how CPU registers work &mdash; just wider
             (8, 16, 32, or 64 bits).
           </p>
-          <ComponentEmbed
+          <CircuitEmbed
             code={BLOG_CIRCUITS.register4bit.dsl}
             displayCode={BLOG_CIRCUITS.register4bit.displayCode}
             height={350}

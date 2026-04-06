@@ -1,6 +1,6 @@
 // Auto-generated from DSL
 
-const ALU = component('ALU', {
+const ALU = circuit('ALU', {
   in: { a: bus(8), b: bus(8), op0: bit, op1: bit, op2: bit },
   out: { result: bus(8), zero: bit, carry: bit, negative: bit },
   meta: { description: "8-bit ALU — 8 operations, 3 status flags, the heart of every CPU" },
@@ -48,7 +48,7 @@ const ALU = component('ALU', {
   ],
 })
 
-const ALUDemo = component('ALUDemo', {
+const ALUDemo = circuit('ALUDemo', {
   meta: { description: "Interactive ALU — toggle opcode switches to change operations in real time" },
   nodes: { a: Input, b: Input, op0: Switch, op1: Switch, op2: Switch, alu: ALU, disp_a: HexDisplay, disp_b: HexDisplay, disp_result: HexDisplay, led_zero: Led, led_carry: Led, led_neg: Led },
   nodeArgs: { a: { value: 42 }, b: { value: 13 } },

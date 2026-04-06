@@ -1,6 +1,6 @@
 // Auto-generated from DSL
 
-const Rule30Cell = component('Rule30Cell', {
+const Rule30Cell = circuit('Rule30Cell', {
   in: { left: bit, center: bit, right: bit },
   out: { next: bit },
   meta: { description: "Single Rule 30 cell: next = left XOR (center OR right)" },
@@ -14,7 +14,7 @@ const Rule30Cell = component('Rule30Cell', {
   ],
 })
 
-const Rule30 = component('Rule30', {
+const Rule30 = circuit('Rule30', {
   meta: { description: "Rule 30 cellular automaton — 8 cells in a ring, chaos from a single seed" },
   nodes: { c0: DFlipFlop, c1: DFlipFlop, c2: DFlipFlop, c3: DFlipFlop, c4: DFlipFlop, c5: DFlipFlop, c6: DFlipFlop, c7: DFlipFlop, r0: Rule30Cell, r1: Rule30Cell, r2: Rule30Cell, r3: Rule30Cell, r4: Rule30Cell, r5: Rule30Cell, r6: Rule30Cell, r7: Rule30Cell, one: Constant, init: DFlipFlop, mux4: Mux, led0: Led, led1: Led, led2: Led, led3: Led, led4: Led, led5: Led, led6: Led, led7: Led, combine: Combiner8to8, display: HexDisplay },
   nodeArgs: { one: { value: 1 } },

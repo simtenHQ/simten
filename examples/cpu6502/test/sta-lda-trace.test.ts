@@ -5,21 +5,21 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
-import { compileDSL, ComponentLibrary as DSLComponentLibrary } from '../../../src/features/dsl/index';
-import { useComponentLibraryStore } from '../../../src/features/visual-editor/stores/component-library-store';
+import { compileDSL, CircuitLibrary as DSLCircuitLibrary } from '../../../src/features/dsl/index';
+import { useCircuitLibraryStore } from '../../../src/features/visual-editor/stores/circuit-library-store';
 import { getPrimitives } from '../../../src/features/visual-editor/lib/primitive-registry';
 import type { Circuit } from '../../../src/features/dsl/types';
-import { createSimulatorFromCircuit, type ComponentLibrary } from '@/core/simulator';
+import { createSimulatorFromCircuit, type CircuitLibrary } from '@/core/simulator';
 
-class ComponentLibraryAdapter implements DSLComponentLibrary {
-  constructor(private store: ReturnType<typeof useComponentLibraryStore.getState>) {}
+class CircuitLibraryAdapter implements DSLCircuitLibrary {
+  constructor(private store: ReturnType<typeof useCircuitLibraryStore.getState>) {}
 
   getCircuit(name: string): Circuit | undefined {
-    return this.store.resolveComponent(name);
+    return this.store.resolveCircuit(name);
   }
 
   hasCircuit(name: string): boolean {
-    return this.store.resolveComponent(name) !== undefined;
+    return this.store.resolveCircuit(name) !== undefined;
   }
 
   addCircuit(circuit: Circuit): void {
@@ -27,23 +27,23 @@ class ComponentLibraryAdapter implements DSLComponentLibrary {
   }
 }
 
-function getSimLibrary(): ComponentLibrary {
-  const store = useComponentLibraryStore.getState();
+function getSimLibrary(): CircuitLibrary {
+  const store = useCircuitLibraryStore.getState();
   return {
-    resolveComponent: (name) => store.resolveComponent(name),
+    resolveCircuit: (name) => store.resolveCircuit(name),
     getAllPrimitiveNames: () => store.getAllPrimitiveNames(),
   };
 }
 
 describe('STA then LDA Trace', () => {
-  let store: ReturnType<typeof useComponentLibraryStore.getState>;
-  let library: DSLComponentLibrary;
+  let store: ReturnType<typeof useCircuitLibraryStore.getState>;
+  let library: DSLCircuitLibrary;
 
   beforeEach(() => {
-    store = useComponentLibraryStore.getState();
+    store = useCircuitLibraryStore.getState();
     store.clearAll();
     store.registerPrimitives(getPrimitives());
-    library = new ComponentLibraryAdapter(store);
+    library = new CircuitLibraryAdapter(store);
   });
 
   function busToNumber(value: any): number {

@@ -26,12 +26,12 @@ import React, {
 
 import type {
   Circuit,
-  ComponentLibrary,
+  CircuitLibrary,
   FlatPortValueMap,
   FlatSequentialState,
 } from "@turing-incomplete/core";
 import {
-  createComponentLibrary,
+  createCircuitLibrary,
 } from "@turing-incomplete/core";
 import { PRIMITIVES, compileReferenceCircuit } from "@turing-incomplete/core/simulator";
 import type { NodeData } from "../nodes";
@@ -69,7 +69,7 @@ function FitViewButton() {
 
 export interface CircuitCanvasProps {
   circuit?: Circuit | null;
-  componentLibrary?: ComponentLibrary;
+  componentLibrary?: CircuitLibrary;
   portValues?: FlatPortValueMap | null;
   sequentialState?: FlatSequentialState | null;
   draggable?: boolean;
@@ -118,10 +118,10 @@ function useDetectTheme(): "light" | "dark" {
 }
 
 // Default library — created once, reused
-let _defaultLibrary: ComponentLibrary | null = null;
-function getDefaultLibrary(): ComponentLibrary {
+let _defaultLibrary: CircuitLibrary | null = null;
+function getDefaultLibrary(): CircuitLibrary {
   if (!_defaultLibrary)
-    _defaultLibrary = createComponentLibrary([...PRIMITIVES]);
+    _defaultLibrary = createCircuitLibrary([...PRIMITIVES]);
   return _defaultLibrary;
 }
 
@@ -330,7 +330,7 @@ function CircuitCanvasInner({
   // Default double-click handler: opens inspector for composites/reference circuits
   const defaultNodeDoubleClick = useCallback((nodeData: NodeData) => {
     if (!nodeData.isComposite) return;
-    const componentDef = library.resolveComponent(nodeData.componentRef);
+    const componentDef = library.resolveCircuit(nodeData.componentRef);
     if (!componentDef) return;
 
     if (componentDef.implementation.kind === "composite" && componentDef.nodes.length > 0) {

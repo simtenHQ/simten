@@ -1,6 +1,6 @@
 // Auto-generated from DSL
 
-const ALU = component('ALU', {
+const ALU = circuit('ALU', {
   in: { a: bus(8), b: bus(8), op: bus(3), carry_in: bit },
   out: { result: bus(8), carry_out: bit, zero: bit, negative: bit },
   nodes: { adder: Adder, subtractor: Subtractor, and_op: BusAnd, or_op: BusOr, xor_op: BusXor, op_0: Constant, op_1: Constant, op_2: Constant, op_3: Constant, op_4: Constant, is_add: Comparator, is_sub: Comparator, is_and: Comparator, is_or: Comparator, is_xor: Comparator, mux1: Mux, mux2: Mux, mux3: Mux, mux4: Mux, mux_carry: Mux, zero_cmp: Comparator, threshold: Constant, neg_cmp: Comparator },
@@ -38,7 +38,7 @@ const ALU = component('ALU', {
   ],
 })
 
-const CPUTest = component('CPUTest', {
+const CPUTest = circuit('CPUTest', {
   nodes: { rom_addr: Input, byte_0: Constant, byte_1: Constant, byte_2: Constant, byte_3: Constant, byte_4: Constant, byte_5: Constant, byte_6: Constant, byte_7: Constant, info_display: HexDisplay, zero: Constant, cycle_counter: Register, always_on: Constant, inc: Incrementer, cycle_display: HexDisplay },
   nodeArgs: { byte_0: { value: 169 }, byte_1: { value: 66 }, byte_2: { value: 105 }, byte_3: { value: 8 }, byte_4: { value: 141 }, byte_5: { value: 254 }, byte_6: { value: 0 }, byte_7: { value: 0 }, zero: { value: 0 }, always_on: { value: 1 } },
   connect: ({ in: inp, out, rom_addr, byte_0, byte_1, byte_2, byte_3, byte_4, byte_5, byte_6, byte_7, info_display, zero, cycle_counter, always_on, inc, cycle_display }) => [
@@ -49,7 +49,7 @@ const CPUTest = component('CPUTest', {
   ],
 })
 
-const StepByStepCPU = component('StepByStepCPU', {
+const StepByStepCPU = circuit('StepByStepCPU', {
   nodes: { pc_reg: Register, always_on: Constant, pc_inc: Incrementer, zero: Constant, one: Constant, two: Constant, three: Constant, four: Constant, five: Constant, six: Constant, seven: Constant, at_0: Comparator, at_1: Comparator, at_2: Comparator, at_3: Comparator, at_4: Comparator, at_5: Comparator, at_6: Comparator, at_7: Comparator, byte_0: Constant, byte_1: Constant, byte_2: Constant, byte_3: Constant, byte_4: Constant, byte_5: Constant, byte_6: Constant, byte_7: Constant, mux1: Mux, mux2: Mux, mux3: Mux, mux4: Mux, mux5: Mux, mux6: Mux, mux7: Mux, reg_a: Register, alu: ALU, d_pc: HexDisplay, d_instruction: HexDisplay, d_a: HexDisplay, d_alu_result: HexDisplay },
   nodeArgs: { always_on: { value: 1 }, zero: { value: 0 }, one: { value: 1 }, two: { value: 2 }, three: { value: 3 }, four: { value: 4 }, five: { value: 5 }, six: { value: 6 }, seven: { value: 7 }, byte_0: { value: 169 }, byte_1: { value: 66 }, byte_2: { value: 105 }, byte_3: { value: 8 }, byte_4: { value: 141 }, byte_5: { value: 254 }, byte_6: { value: 0 }, byte_7: { value: 0 } },
   connect: ({ in: inp, out, pc_reg, always_on, pc_inc, zero, one, two, three, four, five, six, seven, at_0, at_1, at_2, at_3, at_4, at_5, at_6, at_7, byte_0, byte_1, byte_2, byte_3, byte_4, byte_5, byte_6, byte_7, mux1, mux2, mux3, mux4, mux5, mux6, mux7, reg_a, alu, d_pc, d_instruction, d_a, d_alu_result }) => [

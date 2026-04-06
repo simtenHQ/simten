@@ -8,7 +8,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState, useCallback, useMemo, useEffect } from "react";
 import { createServerFn } from "@tanstack/react-start";
-import { executeComponentCode } from "@turing-incomplete/core/builder";
+import { executeCircuitCode } from "@turing-incomplete/core/circuit";
 import { simulate } from "@turing-incomplete/core/sim";
 
 // ============================================================================
@@ -103,7 +103,7 @@ function DemoCPUPage() {
     fetch("/blog-assets/rv32i-cpu.circuit.ts")
       .then(r => r.text())
       .then(code => {
-        const result = executeComponentCode(code);
+        const result = executeCircuitCode(code);
         if (result.error || !result.circuit) {
           console.error("Failed to load CPU:", result.error);
           return;
@@ -160,7 +160,7 @@ function DemoCPUPage() {
       <div className="max-w-4xl mx-auto">
         <h1 className="text-2xl font-bold mb-1">C → Hardware</h1>
         <p className="text-sm text-muted-foreground mb-6">
-          Fibonacci compiled to RISC-V, running on a CPU built with <code className="text-xs bg-muted px-1 rounded">component()</code>
+          Fibonacci compiled to RISC-V, running on a CPU built with <code className="text-xs bg-muted px-1 rounded">circuit()</code>
         </p>
 
         <div className="grid md:grid-cols-2 gap-6">
@@ -256,7 +256,7 @@ function DemoCPUPage() {
 const binary = await compileFibonacci()
 
 // 2. Client loads CPU circuit (TypeScript component)
-const cpu = executeComponentCode(cpuCode)
+const cpu = executeCircuitCode(cpuCode)
 
 // 3. Load binary into instruction memory
 const sim = simulate(cpu)

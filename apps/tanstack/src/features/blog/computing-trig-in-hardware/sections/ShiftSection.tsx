@@ -1,6 +1,6 @@
 "use client";
 
-import { ComponentEmbed } from "@turing-incomplete/embed";
+import { CircuitEmbed } from "@turing-incomplete/embed";
 import { CORDIC_CIRCUITS } from "../circuits";
 
 export function ShiftSection() {
@@ -27,7 +27,7 @@ export function ShiftSection() {
       </div>
 
       <div className="mt-8">
-        <ComponentEmbed
+        <CircuitEmbed
           code={circuit.dsl}
           height={220}
           showControls={false}

@@ -1,7 +1,7 @@
 /**
- * Component Utility Functions
+ * Circuit Utility Functions
  *
- * Helper functions for analyzing component structure and properties.
+ * Helper functions for analyzing circuit structure and properties.
  */
 
 import type { Component } from '../../types';
@@ -9,7 +9,7 @@ import type { Circuit } from '../../types/circuit';
 import { isSequentialComponent } from '../../types';
 
 /**
- * Check if a component type is sequential.
+ * Check if a circuit type is sequential.
  * Delegates entirely to isSequentialComponent (data-driven via clock ports).
  */
 function isSequentialPrimitive(componentType: string): boolean {
@@ -17,22 +17,22 @@ function isSequentialPrimitive(componentType: string): boolean {
 }
 
 /**
- * Recursively checks if a component or any of its nested components
+ * Recursively checks if a circuit or any of its nested circuits
  * contains sequential primitives (D_FLIP_FLOP, REGISTER, RAM).
  *
- * @param componentType - The type/name of the component to check
+ * @param componentType - The type/name of the circuit to check
  * @param components - The current circuit's component instances
- * @param resolveComponent - Function to resolve component definitions from the library
- * @param visited - Set of already-visited component types to prevent infinite recursion
- * @returns true if the component or any nested component is sequential
+ * @param resolveCircuit - Function to resolve circuit definitions from the library
+ * @param visited - Set of already-visited circuit types to prevent infinite recursion
+ * @returns true if the circuit or any nested circuit is sequential
  */
-export function containsSequentialComponent(
+export function containsSequentialCircuit(
   componentType: string,
   components: Record<string, Component>,
-  resolveComponent: (name: string) => Circuit | undefined,
+  resolveCircuit: (name: string) => Circuit | undefined,
   visited: Set<string> = new Set()
 ): boolean {
-  // Prevent infinite recursion for circular component references
+  // Prevent infinite recursion for circular references
   if (visited.has(componentType)) {
     return false;
   }
@@ -43,10 +43,10 @@ export function containsSequentialComponent(
     return true;
   }
 
-  // Resolve the component definition from the library
-  const circuit = resolveComponent(componentType);
+  // Resolve the circuit definition from the library
+  const circuit = resolveCircuit(componentType);
   if (!circuit) {
-    // Component not found in library, assume non-sequential
+    // Circuit not found in library, assume non-sequential
     return false;
   }
 
@@ -55,34 +55,34 @@ export function containsSequentialComponent(
     return false;
   }
 
-  // For composite components, recursively check all internal nodes
+  // For composite circuits, recursively check all internal nodes
   if (circuit.implementation.kind === 'composite') {
     for (const node of circuit.nodes) {
-      // Recursively check if this node's component is sequential
-      if (containsSequentialComponent(node.componentRef, components, resolveComponent, visited)) {
+      // Recursively check if this node's circuit is sequential
+      if (containsSequentialCircuit(node.componentRef, components, resolveCircuit, visited)) {
         return true;
       }
     }
   }
 
-  // No sequential components found
+  // No sequential circuits found
   return false;
 }
 
 /**
- * Checks if the current circuit has any sequential components,
- * including those nested inside composite components.
+ * Checks if the current circuit has any sequential circuits,
+ * including those nested inside composite circuits.
  *
  * @param components - The current circuit's component instances
- * @param resolveComponent - Function to resolve component definitions from the library
- * @returns true if any component in the circuit is or contains sequential primitives
+ * @param resolveCircuit - Function to resolve circuit definitions from the library
+ * @returns true if any circuit in the hierarchy is or contains sequential primitives
  */
-export function hasSequentialComponents(
+export function hasSequentialCircuits(
   components: Record<string, Component>,
-  resolveComponent: (name: string) => Circuit | undefined
+  resolveCircuit: (name: string) => Circuit | undefined
 ): boolean {
   for (const component of Object.values(components)) {
-    if (containsSequentialComponent(component.type, components, resolveComponent)) {
+    if (containsSequentialCircuit(component.type, components, resolveCircuit)) {
       return true;
     }
   }

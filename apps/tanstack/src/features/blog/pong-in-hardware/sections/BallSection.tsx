@@ -1,6 +1,6 @@
 "use client";
 
-import { ComponentEmbed } from "@turing-incomplete/embed";
+import { CircuitEmbed } from "@turing-incomplete/embed";
 import { PONG_CIRCUITS } from "../circuits";
 
 export function BallSection() {
@@ -28,7 +28,7 @@ export function BallSection() {
       </div>
 
       <div className="mt-8">
-        <ComponentEmbed
+        <CircuitEmbed
           code={circuit.dsl}
           height={280}
           showControls={true}

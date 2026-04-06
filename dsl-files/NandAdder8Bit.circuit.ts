@@ -1,6 +1,6 @@
 // Auto-generated from DSL
 
-const HalfAdder = component('HalfAdder', {
+const HalfAdder = circuit('HalfAdder', {
   in: { a: bit, b: bit },
   out: { sum: bit, carry: bit },
   meta: { description: "Half adder from 5 NAND gates" },
@@ -16,7 +16,7 @@ const HalfAdder = component('HalfAdder', {
   ],
 })
 
-const FullAdder = component('FullAdder', {
+const FullAdder = circuit('FullAdder', {
   in: { a: bit, b: bit, cin: bit },
   out: { sum: bit, cout: bit },
   meta: { description: "Full adder from 2 NAND half adders + 3-NAND OR gate (13 NANDs)" },
@@ -35,7 +35,7 @@ const FullAdder = component('FullAdder', {
   ],
 })
 
-const Adder8Bit = component('Adder8Bit', {
+const Adder8Bit = circuit('Adder8Bit', {
   in: { a: bus(8), b: bus(8) },
   out: { sum: bus(8), carry_out: bit },
   meta: { description: "8-bit ripple carry adder from 8 NAND-only full adders (104 NANDs)" },
@@ -81,7 +81,7 @@ const Adder8Bit = component('Adder8Bit', {
   ],
 })
 
-const Adder8BitDemo = component('Adder8BitDemo', {
+const Adder8BitDemo = circuit('Adder8BitDemo', {
   meta: { description: "Interactive 8-bit NAND adder — change inputs, see result, drill down to gates" },
   nodes: { a: Input, b: Input, adder: Adder8Bit, led_carry: Led, display_a: HexDisplay, display_b: HexDisplay, display_sum: HexDisplay },
   nodeArgs: { a: { value: 42 }, b: { value: 73 } },

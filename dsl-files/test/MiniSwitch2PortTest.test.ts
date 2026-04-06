@@ -8,39 +8,39 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import { compileDSL } from '../../src/features/dsl/index';
-import { ComponentLibrary as DSLComponentLibrary, Circuit as DslCircuit } from '../../src/features/dsl/types';
-import { useComponentLibraryStore } from '../../src/features/visual-editor/stores/component-library-store';
+import { CircuitLibrary as DSLCircuitLibrary, Circuit as DslCircuit } from '../../src/features/dsl/types';
+import { useCircuitLibraryStore } from '../../src/features/visual-editor/stores/circuit-library-store';
 import { getPrimitives } from '../../src/features/visual-editor/lib/primitive-registry';
 import {
   createSimulatorFromCircuit,
-  type ComponentLibrary,
+  type CircuitLibrary,
   type FlatSequentialState,
   type SimulatorEngine,
 } from '@/core/simulator';
 import type { Circuit } from '../../src/features/visual-editor/types/circuit';
 
-function getSimLibrary(): ComponentLibrary {
-  const store = useComponentLibraryStore.getState();
+function getSimLibrary(): CircuitLibrary {
+  const store = useCircuitLibraryStore.getState();
   return {
-    resolveComponent: (name) => store.resolveComponent(name),
+    resolveCircuit: (name) => store.resolveCircuit(name),
     getAllPrimitiveNames: () => store.getAllPrimitiveNames(),
   };
 }
 
 describe('MiniSwitch2Port', () => {
-  let library: ReturnType<typeof useComponentLibraryStore.getState>;
+  let library: ReturnType<typeof useCircuitLibraryStore.getState>;
 
   beforeEach(() => {
-    library = useComponentLibraryStore.getState();
+    library = useCircuitLibraryStore.getState();
     library.clearAll();
     library.registerPrimitives(getPrimitives());
   });
 
-  class TestLibrary implements DSLComponentLibrary {
-    constructor(private store: ReturnType<typeof useComponentLibraryStore.getState>) {}
+  class TestLibrary implements DSLCircuitLibrary {
+    constructor(private store: ReturnType<typeof useCircuitLibraryStore.getState>) {}
 
     getCircuit(name: string): DslCircuit | undefined {
-      const comp = this.store.resolveComponent(name);
+      const comp = this.store.resolveCircuit(name);
       if (!comp) return undefined;
 
       return {
@@ -58,7 +58,7 @@ describe('MiniSwitch2Port', () => {
     }
 
     hasCircuit(name: string): boolean {
-      return this.store.resolveComponent(name) !== undefined;
+      return this.store.resolveCircuit(name) !== undefined;
     }
 
     addCircuit(circuit: DslCircuit): void {

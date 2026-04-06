@@ -5,15 +5,15 @@ import { fileURLToPath } from 'node:url';
 import { exportVerilog } from '../exporter.js';
 import { parseDSL } from '../../dsl/parser/index.js';
 import { compileToIR } from '../../dsl/compiler/index.js';
-import { createComponentLibrary, PRIMITIVES } from '../../simulator/index.js';
+import { createCircuitLibrary, PRIMITIVES } from '../../simulator/index.js';
 import type { Circuit } from '../../types/circuit.js';
-import type { ComponentLibrary } from '../../types/simulator.js';
+import type { CircuitLibrary } from '../../types/simulator.js';
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../../../../..');
 
 function createMutableLibrary(): {
   compilerLib: { getCircuit: (name: string) => Circuit | undefined; hasCircuit: (name: string) => boolean; addCircuit: (c: Circuit) => void };
-  simLib: ComponentLibrary;
+  simLib: CircuitLibrary;
 } {
   const allCircuits = new Map<string, Circuit>();
   for (const p of PRIMITIVES) {
@@ -27,7 +27,7 @@ function createMutableLibrary(): {
       addCircuit: (circuit: Circuit) => { allCircuits.set(circuit.name, circuit); },
     },
     simLib: {
-      resolveComponent: (name: string) => allCircuits.get(name),
+      resolveCircuit: (name: string) => allCircuits.get(name),
       getAllPrimitiveNames: () => Array.from(allCircuits.entries())
         .filter(([_, c]) => c.implementation.kind === 'primitive')
         .map(([name]) => name),

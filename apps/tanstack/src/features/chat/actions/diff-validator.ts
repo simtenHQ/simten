@@ -10,7 +10,7 @@
 import { DIFF_GUARDRAILS } from '../constants';
 import type { ValidationResult } from '../types';
 import type { ShowDiffAction } from '../types';
-import { executeComponentCode } from '@turing-incomplete/core';
+import { executeCircuitCode } from '@turing-incomplete/core';
 
 // ============================================================================
 // Line Counting
@@ -88,7 +88,7 @@ export function validateShowDiff(action: ShowDiffAction): ValidationResult {
 
   // Guard 4: Verify suggested code compiles
   if (DIFF_GUARDRAILS.REQUIRE_VALID_SYNTAX) {
-    const result = executeComponentCode(action.suggestedCode);
+    const result = executeCircuitCode(action.suggestedCode);
 
     if (result.error) {
       return {

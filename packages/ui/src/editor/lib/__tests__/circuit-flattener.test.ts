@@ -4,14 +4,14 @@
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import { flattenCircuit, hasCompositeComponents } from '../utils/circuit-flattener';
-import { useComponentLibraryStore } from '../../stores/component-library-store';
+import { useCircuitLibraryStore } from '../../stores/circuit-library-store';
 import type { Circuit } from '../../types/circuit';
 import { bitType } from '../../types/circuit';
 
 describe('Circuit Flattener (IR v0.1)', () => {
   beforeEach(() => {
     // Reset library before each test
-    const library = useComponentLibraryStore.getState();
+    const library = useCircuitLibraryStore.getState();
     library.clearUserComponents();
   });
 
@@ -76,7 +76,7 @@ describe('Circuit Flattener (IR v0.1)', () => {
   });
 
   it('should expand simple composite component (HalfAdder)', () => {
-    const library = useComponentLibraryStore.getState();
+    const library = useCircuitLibraryStore.getState();
 
     // Define HalfAdder as composite
     const halfAdder: Circuit = {
@@ -257,7 +257,7 @@ describe('Circuit Flattener (IR v0.1)', () => {
   });
 
   it('should handle nested composite components (FullAdder using HalfAdders)', () => {
-    const library = useComponentLibraryStore.getState();
+    const library = useCircuitLibraryStore.getState();
 
     // Define HalfAdder
     const halfAdder: Circuit = {
@@ -517,7 +517,7 @@ describe('Circuit Flattener (IR v0.1)', () => {
   });
 
   it('should handle sequential components with state isolation', () => {
-    const library = useComponentLibraryStore.getState();
+    const library = useCircuitLibraryStore.getState();
 
     // Define Counter composite with Register
     const counter: Circuit = {
@@ -619,7 +619,7 @@ describe('Circuit Flattener (IR v0.1)', () => {
   });
 
   it('should correctly detect composite components', () => {
-    const library = useComponentLibraryStore.getState();
+    const library = useCircuitLibraryStore.getState();
 
     // Circuit with only primitives
     const primitiveCircuit: Circuit = {

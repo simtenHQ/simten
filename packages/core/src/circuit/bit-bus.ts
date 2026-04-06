@@ -14,7 +14,7 @@ import type { BitType, BusType, PortType } from '../types/circuit.js';
  * Single-wire port type (0 or 1).
  *
  * Usage:
- *   component('And').in('a', bit).in('b', bit).out('out', bit)
+ *   circuit('And').in('a', bit).in('b', bit).out('out', bit)
  */
 export const bit: BitType = { kind: 'bit' } as const;
 
@@ -22,10 +22,10 @@ export const bit: BitType = { kind: 'bit' } as const;
  * Multi-wire bus port type.
  *
  * Usage:
- *   component('Adder').in('a', bus(8)).out('sum', bus(8))
+ *   circuit('Adder').in('a', bus(8)).out('sum', bus(8))
  *
  * Also accepts a raw number as shorthand:
- *   component('Adder').in('a', 8)  // same as bus(8)
+ *   circuit('Adder').in('a', 8)  // same as bus(8)
  */
 export function bus(width: number): BusType {
   if (width < 1 || !Number.isInteger(width)) {

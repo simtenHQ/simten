@@ -1,6 +1,6 @@
 // Auto-generated from DSL
 
-const Charlie = component('Charlie', {
+const Charlie = circuit('Charlie', {
   in: { start: bus(8) },
   out: { value: bus(8) },
   nodes: { reg: Register, loaded: DFlipFlop, sub: Subtractor, one: Constant, load_mux: Mux, we: Constant, loaded_flag: Constant },

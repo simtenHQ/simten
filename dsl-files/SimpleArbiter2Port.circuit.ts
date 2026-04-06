@@ -1,6 +1,6 @@
 // Auto-generated from DSL
 
-const SimpleArbiter2Port = component('SimpleArbiter2Port', {
+const SimpleArbiter2Port = circuit('SimpleArbiter2Port', {
   in: { port0_ready: bit, port1_ready: bit, forwarder_done: bit },
   out: { grant_port: bus(8), grant_valid: bit },
   nodes: { last_port: Register, grant_port_reg: Register, grant_valid_reg: Register, ZERO: Input, ONE: Input, last_was_port0: Comparator, last_was_port1: Comparator, prefer_port1: And, not_port1_ready: Not, fallback_port0: And, fallback_port0_ready: And, prefer_port0: And, not_port0_ready: Not, fallback_port1: And, fallback_port1_ready: And, grant_port0_signal: Or, grant_port1_signal: Or, grant_valid_signal: Or, grant_port_mux: Mux, grant_valid_we: Input, grant_port_we: Input, next_last_port: Mux, last_port_we: Input, last_port_display: HexDisplay },

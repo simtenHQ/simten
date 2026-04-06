@@ -1,6 +1,6 @@
 // Auto-generated from DSL
 
-const SimpleMemory = component('SimpleMemory', {
+const SimpleMemory = circuit('SimpleMemory', {
   in: { addr: bus(8), data_in: bus(8), write_enable: bit },
   out: { data_out: bus(8) },
   nodes: { zero: Constant, addr_10: Constant, addr_11: Constant, addr_12: Constant, addr_13: Constant, addr_14: Constant, addr_15: Constant, at_10: Comparator, at_11: Comparator, at_12: Comparator, at_13: Comparator, at_14: Comparator, at_15: Comparator, mem_10: Register, mem_11: Register, mem_12: Register, mem_13: Register, mem_14: Register, mem_15: Register, we_10: And, we_11: And, we_12: And, we_13: And, we_14: And, we_15: And, mux1: Mux, mux2: Mux, mux3: Mux, mux4: Mux, mux5: Mux, mux6: Mux },
@@ -43,7 +43,7 @@ const SimpleMemory = component('SimpleMemory', {
   ],
 })
 
-const RegisterFile = component('RegisterFile', {
+const RegisterFile = circuit('RegisterFile', {
   in: { write_a: bit, write_x: bit, write_y: bit, data_a: bus(8), data_x: bus(8), data_y: bus(8) },
   out: { reg_a: bus(8), reg_x: bus(8), reg_y: bus(8) },
   nodes: { regA: Register, regX: Register, regY: Register },
@@ -60,7 +60,7 @@ const RegisterFile = component('RegisterFile', {
   ],
 })
 
-const FlagRegister = component('FlagRegister', {
+const FlagRegister = circuit('FlagRegister', {
   in: { update_n: bit, update_z: bit, update_c: bit, update_v: bit, new_n: bit, new_z: bit, new_c: bit, new_v: bit },
   out: { flag_n: bit, flag_z: bit, flag_c: bit, flag_v: bit },
   nodes: { reg_n: Register, reg_z: Register, reg_c: Register, reg_v: Register },
@@ -81,7 +81,7 @@ const FlagRegister = component('FlagRegister', {
   ],
 })
 
-const CompareControl = component('CompareControl', {
+const CompareControl = circuit('CompareControl', {
   in: { reset: bit, current_opcode: bus(8) },
   out: { current_state: bus(8), exec_subcycle: bus(8), pc_increment: bit, ir_load: bit, operand_load: bit, write_a: bit, update_flags: bit, is_lda_imm: bit, is_cmp_imm: bit },
   nodes: { state_reg: Register, subcycle_reg: Register, STATE_FETCH: Constant, STATE_DECODE: Constant, STATE_EXECUTE: Constant, is_fetch: Comparator, is_decode: Comparator, is_execute: Comparator, LDA_IMM: Constant, CMP_IMM: Constant, cmp_lda_imm: Comparator, cmp_cmp_imm: Comparator, is_imm: Or, zero: Constant, one: Constant, inc_subcycle: Incrementer, subcycle_increment: Mux, always_on: Constant, is_sub0: Comparator, is_sub1: Comparator, exec_sub0: And, exec_sub1: And, next_from_fetch: Mux, next_from_decode: Mux, done_imm: And, next_from_execute: Mux, next_state: Mux, pc_inc_sub0: And, pc_inc_signal: Or, operand_load_signal: And, write_a_signal: And, update_flags_lda: And, update_flags_cmp: And, update_flags_signal: Or },
@@ -126,7 +126,7 @@ const CompareControl = component('CompareControl', {
   ],
 })
 
-const CompareCPU = component('CompareCPU', {
+const CompareCPU = circuit('CompareCPU', {
   in: { reset: bit },
   out: { pc: bus(8), instruction: bus(8), operand: bus(8), current_state: bus(8), subcycle: bus(8), reg_a: bus(8), flag_n: bit, flag_z: bit, flag_c: bit },
   nodes: { pc_reg: Register, always_on: Constant, pc_inc: Incrementer, zero: Constant, one: Constant, two: Constant, three: Constant, four: Constant, five: Constant, six: Constant, seven: Constant, byte_0: Constant, byte_1: Constant, byte_2: Constant, byte_3: Constant, byte_4: Constant, byte_5: Constant, byte_6: Constant, byte_7: Constant, at_0: Comparator, at_1: Comparator, at_2: Comparator, at_3: Comparator, at_4: Comparator, at_5: Comparator, at_6: Comparator, at_7: Comparator, mux1: Mux, mux2: Mux, mux3: Mux, mux4: Mux, mux5: Mux, mux6: Mux, mux7: Mux, ir: Register, operand_reg: Register, control: CompareControl, pc_next: Mux, reg_a_reg: Register, cmp_sub: Subtractor, const_128: Constant, cmp_n: Comparator, n_gte: Or, cmp_z: Comparator, not_borrow: Not, flags: FlagRegister, lda_n: Comparator, lda_n_gte: Or, n_source: Mux, lda_z: Comparator, z_source: Mux },
@@ -198,7 +198,7 @@ const CompareCPU = component('CompareCPU', {
   ],
 })
 
-const CompareTest = component('CompareTest', {
+const CompareTest = circuit('CompareTest', {
   nodes: { cpu: CompareCPU, reset_input: Input, d_pc: HexDisplay, d_instruction: HexDisplay, d_operand: HexDisplay, d_state: HexDisplay, d_subcycle: HexDisplay, d_a: HexDisplay, d_n: HexDisplay, d_z: HexDisplay, d_c: HexDisplay },
   connect: ({ in: inp, out, cpu, reset_input, d_pc, d_instruction, d_operand, d_state, d_subcycle, d_a, d_n, d_z, d_c }) => [
     reset_input.out.to(cpu.reset),

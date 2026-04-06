@@ -1,6 +1,6 @@
 // Auto-generated from DSL
 
-const SimpleMemory = component('SimpleMemory', {
+const SimpleMemory = circuit('SimpleMemory', {
   in: { addr: bus(8), data_in: bus(8), write_enable: bit },
   out: { data_out: bus(8) },
   nodes: { zero: Constant, addr_10: Constant, addr_11: Constant, at_10: Comparator, at_11: Comparator, mem_10: Register, mem_11: Register, we_10: And, we_11: And, out_10: Mux, out_11: Mux },
@@ -23,7 +23,7 @@ const SimpleMemory = component('SimpleMemory', {
   ],
 })
 
-const FlagRegister = component('FlagRegister', {
+const FlagRegister = circuit('FlagRegister', {
   in: { new_n: bit, new_z: bit, new_c: bit, update_n: bit, update_z: bit, update_c: bit },
   out: { flag_n: bit, flag_z: bit, flag_c: bit },
   nodes: { reg_n: Register, reg_z: Register, reg_c: Register },
@@ -40,7 +40,7 @@ const FlagRegister = component('FlagRegister', {
   ],
 })
 
-const Part9TestCPU = component('Part9TestCPU', {
+const Part9TestCPU = circuit('Part9TestCPU', {
   in: { reset: bit },
   out: { pc: bus(8), reg_a: bus(8), flag_n: bit, flag_z: bit, flag_c: bit },
   nodes: { zero: Constant, one: Constant, pc_reg: Register, pc_inc: Incrementer, state_reg: Register, always_on: Constant, STATE_FETCH: Constant, STATE_DECODE: Constant, STATE_EXECUTE: Constant, is_fetch: Comparator, is_decode: Comparator, is_execute: Comparator, subcycle_reg: Register, sub_inc: Incrementer, subcycle_next: Mux, two: Constant, three: Constant, four: Constant, is_sub0: Comparator, is_sub1: Comparator, is_sub2: Comparator, is_sub3: Comparator, is_sub4: Comparator, ir_reg: Register, operand_reg: Register, a_reg: Register, flags: FlagRegister, byte_00: Constant, byte_01: Constant, byte_02: Constant, byte_03: Constant, byte_04: Constant, byte_05: Constant, byte_06: Constant, byte_07: Constant, byte_08: Constant, byte_09: Constant, byte_0A: Constant, byte_0B: Constant, byte_0C: Constant, byte_0D: Constant, byte_0E: Constant, byte_0F: Constant, byte_10: Constant, byte_11: Constant, byte_12: Constant, byte_13: Constant, byte_14: Constant, byte_15: Constant, byte_16: Constant, byte_17: Constant, byte_18: Constant, byte_19: Constant, byte_1A: Constant, byte_1B: Constant, byte_1C: Constant, byte_1D: Constant, byte_1E: Constant, byte_1F: Constant, byte_20: Constant, byte_21: Constant, byte_22: Constant, byte_23: Constant, five: Constant, six: Constant, seven: Constant, eight: Constant, nine: Constant, ten: Constant, eleven: Constant, twelve: Constant, thirteen: Constant, fourteen: Constant, fifteen: Constant, sixteen: Constant, seventeen: Constant, eighteen: Constant, nineteen: Constant, twenty: Constant, twentyone: Constant, twentytwo: Constant, twentythree: Constant, twentyfour: Constant, twentyfive: Constant, twentysix: Constant, twentyseven: Constant, twentyeight: Constant, twentynine: Constant, thirty: Constant, thirtyone: Constant, thirtytwo: Constant, thirtythree: Constant, thirtyfour: Constant, thirtyfive: Constant, at_01: Comparator, at_02: Comparator, at_03: Comparator, at_04: Comparator, at_05: Comparator, at_06: Comparator, at_07: Comparator, at_08: Comparator, at_09: Comparator, at_0A: Comparator, at_0B: Comparator, at_0C: Comparator, at_0D: Comparator, at_0E: Comparator, at_0F: Comparator, at_10: Comparator, at_11: Comparator, at_12: Comparator, at_13: Comparator, at_14: Comparator, at_15: Comparator, at_16: Comparator, at_17: Comparator, at_18: Comparator, at_19: Comparator, at_1A: Comparator, at_1B: Comparator, at_1C: Comparator, at_1D: Comparator, at_1E: Comparator, at_1F: Comparator, at_20: Comparator, at_21: Comparator, at_22: Comparator, at_23: Comparator, mux_01: Mux, mux_02: Mux, mux_03: Mux, mux_04: Mux, mux_05: Mux, mux_06: Mux, mux_07: Mux, mux_08: Mux, mux_09: Mux, mux_0A: Mux, mux_0B: Mux, mux_0C: Mux, mux_0D: Mux, mux_0E: Mux, mux_0F: Mux, mux_10: Mux, mux_11: Mux, mux_12: Mux, mux_13: Mux, mux_14: Mux, mux_15: Mux, mux_16: Mux, mux_17: Mux, mux_18: Mux, mux_19: Mux, mux_1A: Mux, mux_1B: Mux, mux_1C: Mux, mux_1D: Mux, mux_1E: Mux, mux_1F: Mux, mux_20: Mux, mux_21: Mux, mux_22: Mux, rom: Mux, LDA_IMM: Constant, LDA_ZP: Constant, STA_ZP: Constant, SEC: Constant, ASL_ZP: Constant, LSR_ZP: Constant, ROL_ZP: Constant, ROR_ZP: Constant, cmp_lda_imm: Comparator, cmp_lda_zp: Comparator, cmp_sta_zp: Comparator, cmp_sec: Comparator, cmp_asl_zp: Comparator, cmp_lsr_zp: Comparator, cmp_rol_zp: Comparator, cmp_ror_zp: Comparator, is_rmw_1: Or, is_rmw_2: Or, is_rmw: Or, is_zp_1: Or, is_zp: Or, exec_sub0: And, exec_sub1: And, exec_sub2: And, exec_sub3: And, exec_sub4: And, done_lda_imm: And, done_sec: And, not_rmw: Not, is_zp_non_rmw: And, done_zp: And, done_rmw: And, done_temp1: Or, done_temp2: Or, exec_done: Or, next_from_fetch: Mux, next_from_decode: Mux, next_from_execute: Mux, next_state: Mux, needs_operand_1: Or, pc_inc_sub0: And, pc_inc_signal: Or, pc_next: Mux, pc_reset: Mux, operand_load: And, memory: SimpleMemory, is_load_or_rmw: Or, mem_read: And, mem_write_sta: And, mem_write_rmw: And, mem_write: Or, mem_bits: Splitter8to8, mem_shift_one: Constant, asl_mem: LeftShifter, lsr_mem: RightShifter, rol_mem: Adder, c_times_128: Constant, ror_add_val: Mux, ror_mem: Adder, rmw_asl_or_lsr: Mux, rmw_or_rol: Mux, rmw_result: Mux, mem_data_in: Mux, load_a_imm: And, load_a_zp: And, load_a: Or, a_data: Mux, update_nz_rmw: And, update_c_sec: And, update_c: Or, const_128: Constant, n_check: Comparator, n_flag_val: Or, z_check: Comparator, c_from_asl_rol: Mux, c_with_rol: Mux, c_with_lsr: Mux, c_with_ror: Mux, const_true: Constant, c_from_sec: Mux },
@@ -297,7 +297,7 @@ const Part9TestCPU = component('Part9TestCPU', {
   ],
 })
 
-const Part9Test = component('Part9Test', {
+const Part9Test = circuit('Part9Test', {
   out: { pc: bus(8), reg_a: bus(8), flag_n: bit, flag_z: bit, flag_c: bit },
   nodes: { zero: Constant, cpu: Part9TestCPU },
   nodeArgs: { zero: { value: 0 } },

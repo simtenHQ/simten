@@ -2,7 +2,7 @@
  * File Reader
  *
  * Reads circuit source from either a `source` string param or a `filePath` param.
- * For TS builder code, executeComponentCode handles everything — this just reads the file.
+ * For TS builder code, executeCircuitCode handles everything — this just reads the file.
  */
 
 import { readFileSync } from 'node:fs';

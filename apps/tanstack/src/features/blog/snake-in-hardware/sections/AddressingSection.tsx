@@ -1,6 +1,6 @@
 "use client";
 
-import { ComponentEmbed } from "@turing-incomplete/embed";
+import { CircuitEmbed } from "@turing-incomplete/embed";
 import { SNAKE_CIRCUITS } from "../circuits";
 
 export function AddressingSection() {
@@ -34,7 +34,7 @@ export function AddressingSection() {
       </div>
 
       <div className="mt-8">
-        <ComponentEmbed
+        <CircuitEmbed
           code={SNAKE_CIRCUITS.coordToPixel.dsl}
           displayCode={SNAKE_CIRCUITS.coordToPixel.displayCode}
           nodePositions={SNAKE_CIRCUITS.coordToPixel.nodePositions}

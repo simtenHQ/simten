@@ -1,6 +1,6 @@
 // Auto-generated from DSL
 
-const SimpleAddTest = component('SimpleAddTest', {
+const SimpleAddTest = circuit('SimpleAddTest', {
   out: { sum: bus(8), carry: bit },
   nodes: { val_a: Constant, val_b: Constant, zero: Constant, adder: Adder },
   nodeArgs: { val_a: { value: 66 }, val_b: { value: 8 }, zero: { value: 0 } },

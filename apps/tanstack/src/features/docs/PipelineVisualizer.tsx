@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, lazy, Suspense } from "react";
-import { executeComponentCode } from "@turing-incomplete/core";
+import { executeCircuitCode } from "@turing-incomplete/core";
 import type { Circuit } from "@turing-incomplete/core";
 import {
   elaborate,
@@ -10,14 +10,14 @@ import {
   generatePrimitives,
 } from "@turing-incomplete/core/simulator";
 
-const ComponentEmbed = lazy(() =>
+const CircuitEmbed = lazy(() =>
   import("@turing-incomplete/embed").then((m) => ({
-    default: m.ComponentEmbed,
+    default: m.CircuitEmbed,
   }))
 );
 
 const FULL_ADDER_DSL = `
-const HalfAdder = component('HalfAdder', {
+const HalfAdder = circuit('HalfAdder', {
   in: { a: bit, b: bit },
   out: { sum: bit, carry: bit },
   nodes: { xor1: Xor, and1: And },
@@ -29,7 +29,7 @@ const HalfAdder = component('HalfAdder', {
   ],
 })
 
-const FullAdder = component('FullAdder', {
+const FullAdder = circuit('FullAdder', {
   in: { a: bit, b: bit, cin: bit },
   out: { sum: bit, cout: bit },
   nodes: { ha1: HalfAdder, ha2: HalfAdder, or1: Or },
@@ -88,11 +88,11 @@ export function PipelineVisualizer() {
   const compiled = useMemo(() => {
     try {
       // Stage 1: Execute TS code to get Circuit IR
-      const result = executeComponentCode(FULL_ADDER_DSL);
+      const result = executeCircuitCode(FULL_ADDER_DSL);
       if (result.error) return { error: result.error };
 
       const { circuits, library } = result;
-      const resolveComponent = (name: string) => library.resolveComponent(name);
+      const resolveCircuit = (name: string) => library.resolveCircuit(name);
 
       // Build primitive name list for elaboration
       const prims = generatePrimitives(PRIMITIVE_DEFINITIONS) as Circuit[];
@@ -103,13 +103,13 @@ export function PipelineVisualizer() {
       if (!fullAdder) return { error: "FullAdder not found" };
 
       const flat = elaborate(fullAdder, {
-        resolveComponent,
+        resolveCircuit,
         getAllPrimitiveNames: () => primNames,
       });
 
       // Stage 3: Compile to numeric
       const numeric = compileForSimulation(flat, {
-        resolveComponent,
+        resolveCircuit,
         getAllPrimitiveNames: () => primNames,
       });
 
@@ -169,13 +169,13 @@ export function PipelineVisualizer() {
         {activeTab === "ir" && circuits && fullAdder && (
           <div>
             <p className="text-sm text-gray-400 mb-3">
-              The <code className="text-blue-400">executeComponentCode()</code> call produces <code className="text-blue-400">Circuit</code> objects.
+              The <code className="text-blue-400">executeCircuitCode()</code> call produces <code className="text-blue-400">Circuit</code> objects.
               The FullAdder has 3 nodes — two HalfAdders and one Or gate. The HalfAdders are still
               composites at this stage.
             </p>
             <div className="space-y-3">
               <div className="text-xs text-gray-500 font-mono">
-                executeComponentCode() → {circuits!.length} circuits
+                executeCircuitCode() → {circuits!.length} circuits
               </div>
               {circuits!.map((c) => (
                 <div key={c.name} className="rounded-lg border border-gray-700/50 bg-gray-950 p-3">
@@ -364,7 +364,7 @@ export function PipelineVisualizer() {
                 </div>
               }
             >
-              <ComponentEmbed
+              <CircuitEmbed
                 code={FULL_ADDER_DSL}
                 height={280}
                 showControls

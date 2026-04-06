@@ -1,6 +1,6 @@
 // Auto-generated from DSL
 
-const ProcessingElement = component('ProcessingElement', {
+const ProcessingElement = circuit('ProcessingElement', {
   in: { dataIn: bus(8), weightIn: bus(8), partialSumIn: bus(16), loadWeight: bit, resetAccum: bit },
   out: { dataOut: bus(8), result: bus(16) },
   nodes: { weightReg: Register, mult: Multiplier, adder: Adder, accum: Register, dataPipe: Register, accum_mux: Mux, one: Constant, zero: Constant, zero16: Constant },
@@ -22,7 +22,7 @@ const ProcessingElement = component('ProcessingElement', {
   ],
 })
 
-const Systolic2x2_Streaming = component('Systolic2x2_Streaming', {
+const Systolic2x2_Streaming = circuit('Systolic2x2_Streaming', {
   in: { a00: bus(8), a01: bus(8), a10: bus(8), a11: bus(8), b00: bus(8), b01: bus(8), b10: bus(8), b11: bus(8), start: bit },
   out: { c00: bus(16), c01: bus(16), c10: bus(16), c11: bus(16), done: bit },
   nodes: { pe00: ProcessingElement, pe01: ProcessingElement, pe10: ProcessingElement, pe11: ProcessingElement, reg_a00: Register, reg_a01: Register, reg_a10: Register, reg_a11: Register, reg_b00: Register, reg_b01: Register, reg_b10: Register, reg_b11: Register, global_cycle: Register, global_inc: Incrementer, global_mux: Mux, running: DFlipFlop, start_or_running: Or, is_cycle_0: Comparator, is_cycle_1: Comparator, is_cycle_2: Comparator, is_cycle_3: Comparator, is_cycle_4: Comparator, is_cycle_5: Comparator, is_cycle_6: Comparator, is_cycle_7: Comparator, is_cycle_8: Comparator, is_cycle_9: Comparator, cycle_4: Constant, k_implicit: Comparator, loadWeights_or: Or, done_latch: DFlipFlop, done_hold: Or, a_row0_mux: Mux, a_row1_mux: Mux, b_col0_mux: Mux, b_col1_mux: Mux, a_row0_inject: Or, a_row1_inject: Or, a_row0_gate: Mux, a_row1_gate: Mux, zero8: Constant, zero16: Constant, one: Constant, zero: Constant, const_0: Constant, const_1: Constant, const_2: Constant, const_3: Constant, const_4: Constant, const_5: Constant, const_6: Constant, const_7: Constant, const_8: Constant, const_9: Constant },
@@ -93,7 +93,7 @@ const Systolic2x2_Streaming = component('Systolic2x2_Streaming', {
   ],
 })
 
-const TestStreaming = component('TestStreaming', {
+const TestStreaming = circuit('TestStreaming', {
   nodes: { sys: Systolic2x2_Streaming, a00: Input, a01: Input, a10: Input, a11: Input, b00: Input, b01: Input, b10: Input, b11: Input, start: Switch, display_c00: HexDisplay, display_c01: HexDisplay, display_c10: HexDisplay, display_c11: HexDisplay, done_led: Led },
   nodeArgs: { a00: { value: 1 }, a01: { value: 2 }, a10: { value: 3 }, a11: { value: 4 }, b00: { value: 5 }, b01: { value: 6 }, b10: { value: 7 }, b11: { value: 8 } },
   connect: ({ in: inp, out, sys, a00, a01, a10, a11, b00, b01, b10, b11, start, display_c00, display_c01, display_c10, display_c11, done_led }) => [

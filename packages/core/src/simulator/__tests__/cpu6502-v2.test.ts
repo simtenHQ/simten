@@ -8,7 +8,7 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { createComponentLibrary } from '../index.js';
+import { createCircuitLibrary } from '../index.js';
 import { PRIMITIVES } from '../primitives.js';
 import { parseDSL, compileDSL } from '../../dsl/index.js';
 
@@ -16,7 +16,7 @@ const dslPath = resolve(__dirname, '../../../../../examples/cpu6502/cpu6502-syst
 
 describe('CPU 6502 System V2 (motherboard layout)', () => {
   const source = readFileSync(dslPath, 'utf8');
-  const library = createComponentLibrary(PRIMITIVES);
+  const library = createCircuitLibrary(PRIMITIVES);
 
   it('should parse without errors', () => {
     const { errors } = parseDSL(source, 'cpu6502-system-v2.dsl');
@@ -26,8 +26,8 @@ describe('CPU 6502 System V2 (motherboard layout)', () => {
   it('should compile all circuits', () => {
     const compiled = new Map<string, any>();
     const compilerLib = {
-      getCircuit: (name: string) => compiled.get(name) ?? library.resolveComponent(name),
-      hasCircuit: (name: string) => compiled.has(name) || library.resolveComponent(name) !== undefined,
+      getCircuit: (name: string) => compiled.get(name) ?? library.resolveCircuit(name),
+      hasCircuit: (name: string) => compiled.has(name) || library.resolveCircuit(name) !== undefined,
       addCircuit: (circuit: any) => { compiled.set(circuit.name, circuit); },
     };
 

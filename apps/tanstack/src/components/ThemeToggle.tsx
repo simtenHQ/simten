@@ -15,7 +15,7 @@ export function ThemeToggle() {
       variant="outline"
       size="sm"
       onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
-      title={`Switch to ${resolvedTheme === "dark" ? "light" : "dark"} mode`}
+      aria-label={`Switch to ${resolvedTheme === "dark" ? "light" : "dark"} mode`}
       className="w-9 h-9 p-0"
     >
       <svg className="w-5 h-4" viewBox="0 0 20 14" fill="none" strokeLinecap="square" strokeLinejoin="miter">

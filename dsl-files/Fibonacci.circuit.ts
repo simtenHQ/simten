@@ -1,6 +1,6 @@
 // Auto-generated from DSL
 
-const Fibonacci = component('Fibonacci', {
+const Fibonacci = circuit('Fibonacci', {
   out: { fib: bus(8) },
   meta: { description: "Hardware Fibonacci generator - pure datapath, no software" },
   nodes: { reg_a: Register, reg_b: Register, adder: Adder, one_bit: Constant, init: DFlipFlop },
@@ -14,7 +14,7 @@ const Fibonacci = component('Fibonacci', {
   ],
 })
 
-const FibonacciDemo = component('FibonacciDemo', {
+const FibonacciDemo = circuit('FibonacciDemo', {
   meta: { description: "Interactive Fibonacci with hex display and 8 LEDs showing binary" },
   nodes: { fib: Fibonacci, display: HexDisplay, leds: Splitter8to8, led0: Led, led1: Led, led2: Led, led3: Led, led4: Led, led5: Led, led6: Led, led7: Led },
   connect: ({ in: inp, out, fib, display, leds, led0, led1, led2, led3, led4, led5, led6, led7 }) => [

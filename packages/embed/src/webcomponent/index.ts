@@ -9,7 +9,7 @@
  *   <link rel="stylesheet" href="https://unpkg.com/@turing-incomplete/embed/dist/styles.css">
  *   <script src="https://unpkg.com/@turing-incomplete/embed/dist/circuit-embed.js"></script>
  *
- *   <circuit-embed code="const Demo = component('Demo', { ... })" height="300"></circuit-embed>
+ *   <circuit-embed code="const Demo = circuit('Demo', { ... })" height="300"></circuit-embed>
  *   <circuit-editor initial-code="..." height="500"></circuit-editor>
  *
  * Light DOM (no Shadow DOM) — ReactFlow requires direct DOM access.
@@ -18,12 +18,12 @@
 
 import "../styles/embed.css";
 import r2wc from "@r2wc/react-to-web-component";
-import { ComponentEmbed, type ComponentEmbedProps } from "../ComponentEmbed";
-import { ComponentEditor, type ComponentEditorProps } from "../editor/ComponentEditor";
+import { CircuitEmbed, type CircuitEmbedProps } from "../CircuitEmbed";
+import { CircuitEditor, type CircuitEditorProps } from "../editor/CircuitEditor";
 
 // --- <circuit-embed> ---
 
-const CircuitEmbedWC = r2wc<ComponentEmbedProps>(ComponentEmbed, {
+const CircuitEmbedWC = r2wc<CircuitEmbedProps>(CircuitEmbed, {
   props: {
     code: "string",
     height: "number",
@@ -39,7 +39,7 @@ const CircuitEmbedWC = r2wc<ComponentEmbedProps>(ComponentEmbed, {
 
 // --- <circuit-editor> ---
 
-const ComponentEditorWC = r2wc<ComponentEditorProps>(ComponentEditor, {
+const CircuitEditorWC = r2wc<CircuitEditorProps>(CircuitEditor, {
   props: {
     initialCode: "string",
     height: "number",
@@ -56,7 +56,7 @@ if (!customElements.get("circuit-embed")) {
 }
 
 if (!customElements.get("circuit-editor")) {
-  customElements.define("circuit-editor", ComponentEditorWC);
+  customElements.define("circuit-editor", CircuitEditorWC);
 }
 
-export { CircuitEmbedWC, ComponentEditorWC };
+export { CircuitEmbedWC, CircuitEditorWC };

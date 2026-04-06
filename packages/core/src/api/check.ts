@@ -4,7 +4,7 @@
  * Validates TypeScript circuit source code by executing it.
  */
 
-import type { ComponentLibrary } from '../types/circuit.js';
+import type { CircuitLibrary } from '../types/circuit.js';
 import { compileSource } from './compile-source.js';
 
 export interface CheckResult {
@@ -29,7 +29,7 @@ export interface CheckResult {
 
 export function checkCircuit(
   params: { source: string; sourceName?: string },
-  _library?: ComponentLibrary,
+  _library?: CircuitLibrary,
 ): CheckResult {
   const compiled = compileSource(params.source, params.sourceName);
 

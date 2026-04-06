@@ -4,7 +4,7 @@
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import { useDSLPreviewStore } from '../dsl-preview-store';
-import { useComponentLibraryStore } from '../component-library-store';
+import { useCircuitLibraryStore } from '../circuit-library-store';
 import { useCircuitStore } from '../circuit-store';
 import type { Circuit } from '../../types/circuit';
 import { BOUNDARY_IN_PREFIX, BOUNDARY_OUT_PREFIX } from '../../../canvas/drill-down-view';
@@ -155,7 +155,7 @@ function makeFullAdder(): Circuit {
 describe('DSLPreviewStore drill-down navigation', () => {
   beforeEach(() => {
     // Reset stores
-    const library = useComponentLibraryStore.getState();
+    const library = useCircuitLibraryStore.getState();
     library.clearAll();
 
     // Register primitives

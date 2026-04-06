@@ -1,5 +1,5 @@
-export { ComponentEmbed } from './ComponentEmbed';
-export type { ComponentEmbedProps, ComponentEmbedHandle } from './ComponentEmbed';
+export { CircuitEmbed } from './CircuitEmbed';
+export type { CircuitEmbedProps, CircuitEmbedHandle } from './CircuitEmbed';
 export { useCircuitSimulator } from './hooks/useCircuitSimulator';
 export type { SimulatorState, SimulatorActions, UseCircuitSimulatorOptions } from './hooks/useCircuitSimulator';
 export { CircuitCanvas } from '@turing-incomplete/ui/canvas';

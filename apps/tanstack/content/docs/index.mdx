@@ -54,7 +54,7 @@ See the [Claude Code Integration](/docs/claude-code) guide for the full setup, a
 |---------|-------------|
 | `@turing-incomplete/core` | TypeScript builder, compiler, validator, simulator engine, `SimulationSession`, Verilog export |
 | `@turing-incomplete/ui` | Canonical node components, shared canvas, ELK layout, `useCircuitSession` hook, `ClockControls` |
-| `@turing-incomplete/embed` | `ComponentEmbed` convenience wrapper, `useCircuitSimulator` hook |
+| `@turing-incomplete/embed` | `CircuitEmbed` convenience wrapper, `useCircuitSimulator` hook |
 | `@turing-incomplete/mcp` | MCP server for Claude Code integration |
 | `@turing-incomplete/challenges` | Educational challenge definitions (ALU, Snake, CPU) |
 | `@turing-incomplete/cli` | Command-line interface |
@@ -64,10 +64,10 @@ See the [Claude Code Integration](/docs/claude-code) guide for the full setup, a
 Drop an interactive circuit into any React app:
 
 ```tsx
-import { ComponentEmbed } from '@turing-incomplete/embed';
+import { CircuitEmbed } from '@turing-incomplete/embed';
 
-<ComponentEmbed
-  code={`const HalfAdder = component('HalfAdder', {
+<CircuitEmbed
+  code={`const HalfAdder = circuit('HalfAdder', {
     in: { a: bit, b: bit },
     out: { sum: bit, carry: bit },
     nodes: { xor1: Xor, and1: And },
@@ -77,7 +77,7 @@ import { ComponentEmbed } from '@turing-incomplete/embed';
     ],
   })
 
-  const Demo = component('Demo', {
+  const Demo = circuit('Demo', {
     nodes: { sw_a: Switch, sw_b: Switch, dut: HalfAdder, led_sum: Led, led_carry: Led },
     connect: ({ sw_a, sw_b, dut, led_sum, led_carry }) => [
       sw_a.out.to(dut.a), sw_b.out.to(dut.b),
@@ -91,10 +91,10 @@ import { ComponentEmbed } from '@turing-incomplete/embed';
 
 Here's that exact code running live:
 
-import { ComponentEmbed } from '@turing-incomplete/embed'
+import { CircuitEmbed } from '@turing-incomplete/embed'
 
-<ComponentEmbed
-  code={`const HalfAdder = component('HalfAdder', {
+<CircuitEmbed
+  code={`const HalfAdder = circuit('HalfAdder', {
     in: { a: bit, b: bit },
     out: { sum: bit, carry: bit },
     nodes: { xor1: Xor, and1: And },
@@ -104,7 +104,7 @@ import { ComponentEmbed } from '@turing-incomplete/embed'
     ],
   })
 
-  const Demo = component('Demo', {
+  const Demo = circuit('Demo', {
     nodes: { sw_a: Switch, sw_b: Switch, dut: HalfAdder, led_sum: Led, led_carry: Led },
     connect: ({ sw_a, sw_b, dut, led_sum, led_carry }) => [
       sw_a.out.to(dut.a), sw_b.out.to(dut.b),

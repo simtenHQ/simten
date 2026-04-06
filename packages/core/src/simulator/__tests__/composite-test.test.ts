@@ -1,10 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { executeComponentCode } from '../../builder/execute.js';
+import { executeCircuitCode } from '../../circuit/execute.js';
 import { elaborate } from '../index.js';
 
 describe('composite elaboration', () => {
   it('elaborates HalfAdder composite', () => {
-    const code = `const HalfAdder = component('HalfAdder', {
+    const code = `const HalfAdder = circuit('HalfAdder', {
       in: { a: bit, b: bit },
       out: { sum: bit, carry: bit },
       nodes: { xor1: Xor, and1: And },
@@ -16,7 +16,7 @@ describe('composite elaboration', () => {
       ],
     })
 
-    const Demo = component('Demo', {
+    const Demo = circuit('Demo', {
       nodes: { sw_a: Switch, sw_b: Switch, dut: HalfAdder, led_sum: Led, led_carry: Led },
       connect: ({ sw_a, sw_b, dut, led_sum, led_carry }) => [
         sw_a.out.to(dut.a), sw_b.out.to(dut.b),
@@ -24,7 +24,7 @@ describe('composite elaboration', () => {
       ],
     })`;
 
-    const result = executeComponentCode(code);
+    const result = executeCircuitCode(code);
     expect(result.error).toBeNull();
     expect(result.circuits).toHaveLength(2);
     

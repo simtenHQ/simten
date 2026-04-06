@@ -1,20 +1,19 @@
 /**
  * useCompileCode — compiles TypeScript circuit code into a Circuit + ComponentLibrary.
  *
- * Uses executeComponentCode() from the builder API.
+ * Uses executeCircuitCode() from the builder API.
  */
 
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { executeComponentCode } from "@turing-incomplete/core/builder";
+import { executeCircuitCode } from "@turing-incomplete/core/circuit";
 import {
   elaborate,
   type ComponentLibrary,
   type FlatCircuit,
   type Circuit,
 } from "@turing-incomplete/core";
-import { autoHarness } from "../auto-harness";
 
 export interface CompileCodeResult {
   circuit: Circuit | null;
@@ -45,7 +44,7 @@ export function useCompileCode(code: string): CompileCodeResult {
       return;
     }
 
-    const result = executeComponentCode(code);
+    const result = executeCircuitCode(code);
 
     if (result.error) {
       setError(result.error);
@@ -53,24 +52,23 @@ export function useCompileCode(code: string): CompileCodeResult {
     }
 
     if (result.circuits.length === 0) {
-      setError("No circuits found. Call .build() on your component() definitions.");
+      setError("No circuits found. Call .build() on your circuit() definitions.");
       return;
     }
 
-    const rawCircuit = result.circuit!;
-    const mainCircuit = autoHarness(rawCircuit, result.library);
+    const mainCircuit = result.circuit!;
     libraryRef.current = result.library;
 
-    const initialInputs: Record<string, boolean | number> = {};
+    const defaultInputs: Record<string, boolean | number> = {};
     for (const input of mainCircuit.inputs) {
-      initialInputs[input.name] = input.portType.kind === 'bit' ? false : 0;
+      defaultInputs[input.name] = input.portType.kind === 'bit' ? false : 0;
     }
     // Only update if inputs actually changed (prevents render loops)
     setInputs(prev => {
-      const keys = Object.keys(initialInputs);
-      if (keys.length !== Object.keys(prev).length) return initialInputs;
-      if (keys.every(k => prev[k] === initialInputs[k])) return prev;
-      return initialInputs;
+      const keys = Object.keys(defaultInputs);
+      if (keys.length !== Object.keys(prev).length) return defaultInputs;
+      if (keys.every(k => prev[k] === defaultInputs[k])) return prev;
+      return defaultInputs;
     });
 
     try {
@@ -81,7 +79,7 @@ export function useCompileCode(code: string): CompileCodeResult {
       if (!hasClocks) {
         for (const node of flatCircuit.nodes) {
           if (node.primitiveType) {
-            const def = result.library.resolveComponent(node.primitiveType);
+            const def = result.library.resolveCircuit(node.primitiveType);
             if (def && def.clocks && def.clocks.length > 0) {
               hasClocks = true;
               break;

@@ -1,6 +1,6 @@
 // Auto-generated from DSL
 
-const FlagRegister = component('FlagRegister', {
+const FlagRegister = circuit('FlagRegister', {
   in: { new_n: bit, new_z: bit, new_c: bit, new_v: bit, update_n: bit, update_z: bit, update_c: bit, update_v: bit },
   out: { flag_n: bit, flag_z: bit, flag_c: bit, flag_v: bit },
   nodes: { reg_n: Register, reg_z: Register, reg_c: Register, reg_v: Register },
@@ -20,7 +20,7 @@ const FlagRegister = component('FlagRegister', {
   ],
 })
 
-const RegisterFile = component('RegisterFile', {
+const RegisterFile = circuit('RegisterFile', {
   in: { data_a: bus(8), write_a: bit },
   out: { reg_a: bus(8) },
   nodes: { regA: Register },
@@ -31,7 +31,7 @@ const RegisterFile = component('RegisterFile', {
   ],
 })
 
-const Part6Control = component('Part6Control', {
+const Part6Control = circuit('Part6Control', {
   in: { current_state: bus(8), current_opcode: bus(8), subcycle: bus(8), flag_c: bit },
   out: { next_state: bus(8), next_subcycle: bus(8), pc_increment: bit, ir_load: bit, operand_load: bit, write_a: bit, update_flags: bit, update_c_only: bit, set_c: bit, clear_c: bit, is_asl_a: bit, is_lsr_a: bit, is_rol_a: bit, is_ror_a: bit, is_lda_imm: bit },
   nodes: { STATE_FETCH: Constant, STATE_DECODE: Constant, STATE_EXECUTE: Constant, SUB0: Constant, SUB1: Constant, LDA_IMM: Constant, SEC: Constant, CLC: Constant, ASL_A: Constant, LSR_A: Constant, ROL_A: Constant, ROR_A: Constant, is_fetch: Comparator, is_decode: Comparator, is_execute: Comparator, at_sub0: Comparator, at_sub1: Comparator, exec_sub0: And, exec_sub1: And, cmp_lda_imm: Comparator, cmp_sec: Comparator, cmp_clc: Comparator, cmp_asl_a: Comparator, cmp_lsr_a: Comparator, cmp_rol_a: Comparator, cmp_ror_a: Comparator, is_1cycle_1: Or, is_1cycle_2: Or, is_1cycle_3: Or, is_1cycle_4: Or, is_1cycle: Or, is_imm: Or, one: Constant, zero: Constant, go_to_decode: Mux, go_to_execute: Mux, done_1cycle: And, done_imm: And, done: Or, go_to_fetch: Mux, inc_subcycle: Incrementer, reset_subcycle: Mux, keep_subcycle: Mux, pc_inc_fetch: And, pc_inc_exec: And, pc_inc_signal: Or, operand_load_signal: And, write_a_lda: And, is_shift_rotate: Or, is_shift_rotate_2: Or, is_shift_rotate_all: Or, write_a_shift: And, write_a_signal: Or, update_flags_lda: And, update_flags_shift: And, update_flags_signal: Or, is_sec_clc: Or, update_c_only_signal: And, set_c_signal: And, clear_c_signal: And },
@@ -103,7 +103,7 @@ const Part6Control = component('Part6Control', {
   ],
 })
 
-const Part6TestCPU = component('Part6TestCPU', {
+const Part6TestCPU = circuit('Part6TestCPU', {
   in: { reset: bit },
   out: { pc: bus(8), reg_a: bus(8), flag_c: bit, flag_z: bit, flag_n: bit },
   nodes: { pc_reg: Register, pc_inc: Incrementer, zero: Constant, one: Constant, two: Constant, three: Constant, four: Constant, five: Constant, six: Constant, seven: Constant, eight: Constant, nine: Constant, ten: Constant, eleven: Constant, twelve: Constant, thirteen: Constant, fourteen: Constant, fifteen: Constant, sixteen: Constant, seventeen: Constant, eighteen: Constant, nineteen: Constant, twenty: Constant, byte_0: Constant, byte_1: Constant, byte_2: Constant, byte_3: Constant, byte_4: Constant, byte_5: Constant, byte_6: Constant, byte_7: Constant, byte_8: Constant, byte_9: Constant, byte_10: Constant, byte_11: Constant, byte_12: Constant, byte_13: Constant, byte_14: Constant, byte_15: Constant, byte_16: Constant, byte_17: Constant, byte_18: Constant, byte_19: Constant, at_0: Comparator, at_1: Comparator, at_2: Comparator, at_3: Comparator, at_4: Comparator, at_5: Comparator, at_6: Comparator, at_7: Comparator, at_8: Comparator, at_9: Comparator, at_10: Comparator, at_11: Comparator, at_12: Comparator, at_13: Comparator, at_14: Comparator, at_15: Comparator, at_16: Comparator, at_17: Comparator, at_18: Comparator, at_19: Comparator, mux1: Mux, mux2: Mux, mux3: Mux, mux4: Mux, mux5: Mux, mux6: Mux, mux7: Mux, mux8: Mux, mux9: Mux, mux10: Mux, mux11: Mux, mux12: Mux, mux13: Mux, mux14: Mux, mux15: Mux, mux16: Mux, mux17: Mux, mux18: Mux, rom_out: Mux, state_reg: Register, subcycle_reg: Register, ir_reg: Register, operand_reg: Register, control: Part6Control, registers: RegisterFile, flags: FlagRegister, a_bits: Splitter8to8, shift_one: Constant, asl_result: LeftShifter, lsr_result: RightShifter, rol_adder: Adder, c_times_128: Constant, ror_add_val: Mux, ror_adder: Adder, result_a_lda: Mux, result_a_lsr: Mux, result_a_rol: Mux, result_a: Mux, always_on: Constant, pc_next: Mux, split_result: Splitter8to8, z_check: Comparator, is_shift_left: Or, c_from_shift: Mux, c_from_sec: Mux, c_value: Mux, update_c_signal: Or },
@@ -236,7 +236,7 @@ const Part6TestCPU = component('Part6TestCPU', {
   ],
 })
 
-const Part6Test = component('Part6Test', {
+const Part6Test = circuit('Part6Test', {
   out: { pc: bus(8), reg_a: bus(8), flag_c: bit, flag_z: bit, flag_n: bit },
   nodes: { zero: Constant, cpu: Part6TestCPU },
   nodeArgs: { zero: { value: 0 } },

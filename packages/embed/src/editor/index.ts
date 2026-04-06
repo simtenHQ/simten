@@ -1,2 +1,2 @@
-export { ComponentEditor } from './ComponentEditor';
-export type { ComponentEditorProps } from './ComponentEditor';
+export { CircuitEditor } from './CircuitEditor';
+export type { CircuitEditorProps } from './CircuitEditor';

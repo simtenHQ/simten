@@ -5,7 +5,7 @@
  * Prevents acting on outdated DSL if user typed during streaming.
  */
 
-import { executeComponentCode } from '@turing-incomplete/core';
+import { executeCircuitCode } from '@turing-incomplete/core';
 import { hashSourceCode, hasSourceCodeChanged } from './action-normalizer';
 import type { AssistantAction, ActionResult } from '../types';
 
@@ -72,7 +72,7 @@ export function checkStaleness(
 
   // For RUN_SIMULATION: verify circuit is simulatable
   if (action.type === 'RUN_SIMULATION') {
-    const result = executeComponentCode(currentCode);
+    const result = executeCircuitCode(currentCode);
 
     if (result.error || !result.circuit) {
       return {

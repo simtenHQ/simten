@@ -1,6 +1,6 @@
 // Auto-generated from DSL
 
-const DirectTest = component('DirectTest', {
+const DirectTest = circuit('DirectTest', {
   nodes: { sw1: Switch, sw2: Switch, xor1: Xor, and1: And, led1: Led, led2: Led },
   connect: ({ in: inp, out, sw1, sw2, xor1, and1, led1, led2 }) => [
     sw1.out.to(xor1.a, and1.a),
@@ -10,7 +10,7 @@ const DirectTest = component('DirectTest', {
   ],
 })
 
-const HalfAdder = component('HalfAdder', {
+const HalfAdder = circuit('HalfAdder', {
   in: { a: bit, b: bit },
   out: { sum: bit, carry: bit },
   nodes: { xor1: Xor, and1: And },
@@ -22,7 +22,7 @@ const HalfAdder = component('HalfAdder', {
   ],
 })
 
-const CompositeTest = component('CompositeTest', {
+const CompositeTest = circuit('CompositeTest', {
   nodes: { sw1: Switch, sw2: Switch, ha: HalfAdder, led1: Led, led2: Led },
   connect: ({ in: inp, out, sw1, sw2, ha, led1, led2 }) => [
     sw1.out.to(ha.a),

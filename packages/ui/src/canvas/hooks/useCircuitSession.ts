@@ -11,21 +11,21 @@ import { useState, useEffect, useRef } from "react";
 import {
   SimulationSession,
   createSimulatorFromCircuit,
-  type ComponentLibrary,
+  type CircuitLibrary,
 } from "@turing-incomplete/core/simulator";
 import type { Circuit } from "@turing-incomplete/core";
 import { useSimulationSession, type UseSimulationSessionResult } from "./useSimulationSession";
 
 function detectSequential(
   circuit: Circuit,
-  resolveComponent: (name: string) => Circuit | undefined,
+  resolveCircuit: (name: string) => Circuit | undefined,
 ): boolean {
   const visited = new Set<string>();
   function check(c: Circuit): boolean {
     if (visited.has(c.name)) return false;
     visited.add(c.name);
     for (const node of c.nodes) {
-      const def = resolveComponent(node.componentRef);
+      const def = resolveCircuit(node.componentRef);
       if (!def) continue;
       if (def.clocks.length > 0 || def.state.length > 0) return true;
       if (def.implementation.kind === "composite" && check(def)) return true;
@@ -37,7 +37,7 @@ function detectSequential(
 
 export function useCircuitSession(
   circuit: Circuit | null,
-  componentLibrary: ComponentLibrary | null,
+  componentLibrary: CircuitLibrary | null,
 ): UseSimulationSessionResult & { session: SimulationSession | null } {
 
   const [session, setSession] = useState<SimulationSession | null>(null);
@@ -73,7 +73,7 @@ export function useCircuitSession(
     }
 
     try {
-      const isSeq = detectSequential(circuit, componentLibrary.resolveComponent);
+      const isSeq = detectSequential(circuit, componentLibrary.resolveCircuit);
       const engine = createSimulatorFromCircuit(circuit, componentLibrary);
       engine.runCombinational();
       const s = new SimulationSession(engine, { isSequential: isSeq });

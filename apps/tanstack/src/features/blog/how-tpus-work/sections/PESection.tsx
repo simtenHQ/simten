@@ -1,6 +1,6 @@
 "use client";
 
-import { ComponentEmbed } from "@turing-incomplete/embed";
+import { CircuitEmbed } from "@turing-incomplete/embed";
 import { TPU_CIRCUITS } from "../circuits";
 
 export function PESection() {
@@ -62,7 +62,7 @@ export function PESection() {
       </div>
 
       <div className="mt-8">
-        <ComponentEmbed
+        <CircuitEmbed
           code={TPU_CIRCUITS.processingElement.dsl}
           displayCode={TPU_CIRCUITS.processingElement.displayCode}
           nodePositions={TPU_CIRCUITS.processingElement.nodePositions}

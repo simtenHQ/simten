@@ -1,6 +1,6 @@
 "use client";
 
-import { ComponentEmbed } from "@turing-incomplete/embed";
+import { CircuitEmbed } from "@turing-incomplete/embed";
 import { BLOG_CIRCUITS } from "../circuits";
 
 export function ALUSection() {
@@ -30,7 +30,7 @@ export function ALUSection() {
       </div>
 
       <div className="mt-8">
-        <ComponentEmbed
+        <CircuitEmbed
           code={BLOG_CIRCUITS.aluSlice.dsl}
           displayCode={BLOG_CIRCUITS.aluSlice.displayCode}
           height={400}

@@ -1,6 +1,6 @@
 // Auto-generated from DSL
 
-const RV32I_CPU = component('RV32I_CPU', {
+const RV32I_CPU = circuit('RV32I_CPU', {
   in: { net_rx_data: bus(32), net_rx_valid: bit, net_rx_frame: bit },
   out: { net_tx_data: bus(32), net_tx_valid: bit, net_tx_frame: bit, pc_out: bus(32) },
   nodes: { four: Constant, zero32: Constant, zero5: Constant, zero4: Constant, zero3: Constant, zero1: Constant, one1: Constant, hazard: RV32I_HazardUnit, stall_inv: Not, pc: Register, pc_plus4: Adder, imem: RV32I_InstrMem, ifid_instr_mux: Mux, ifid_instr: Register, ifid_pc_mux: Mux, ifid_pc: Register, ifid_pc4_mux: Mux, ifid_pc4: Register, decode: RV32I_Decode, immgen: RV32I_ImmGen, control: RV32I_Control, funct7_splitter: BitSlice, regfile: RV32I_RegisterFile, ifid_decode_for_hazard: RV32I_Decode, idex_flush: Or, idex_pc: Register, idex_pc4: Register, wb_bypass1: RV32I_WBBypass, wb_bypass2: RV32I_WBBypass, idex_read1: Register, idex_read2: Register, idex_imm: Register, idex_rs1_mux: Mux, idex_rs1: Register, idex_rs2_mux: Mux, idex_rs2: Register, idex_rd_mux: Mux, idex_rd: Register, idex_funct3_mux: Mux, idex_funct3: Register, idex_alu_op_mux: Mux, idex_alu_op: Register, idex_alu_src_mux: Mux, idex_alu_src: Register, idex_mem_read_mux: Mux, idex_mem_read: Register, idex_mem_write_mux: Mux, idex_mem_write: Register, idex_reg_write_mux: Mux, idex_reg_write: Register, idex_mem_to_reg_mux: Mux, idex_mem_to_reg: Register, idex_branch_mux: Mux, idex_branch: Register, idex_jump_mux: Mux, idex_jump: Register, idex_lui_mux: Mux, idex_lui: Register, idex_auipc_mux: Mux, idex_auipc: Register, idex_is_jalr_mux: Mux, idex_is_jalr: Register, forward: RV32I_ForwardingUnit, fwd_a_bit0: BitSlice, fwd_a_bit1: BitSlice, fwd_a_mux1: Mux, fwd_a_mux2: Mux, fwd_b_bit0: BitSlice, fwd_b_bit1: BitSlice, fwd_b_mux1: Mux, fwd_b_mux2: Mux, alu_src_mux: Mux, alu: RV32I_ALU, branch_comp: RV32I_BranchComp, branch_target: Adder, jalr_target: BusAnd, jalr_mask: Constant, pc_plus_imm: Adder, ex_result: RV32I_WritebackMux, branch_and: And, next_pc: RV32I_NextPCMux, pc_src_taken: Or, pc_next_mux: Mux, exmem_alu_result: Register, exmem_result: Register, exmem_read2: Register, exmem_rd: Register, exmem_funct3: Register, exmem_pc4: Register, exmem_imm: Register, exmem_pc_plus_imm: Register, exmem_mem_read: Register, exmem_mem_write: Register, exmem_reg_write: Register, exmem_mem_to_reg: Register, exmem_lui: Register, exmem_auipc: Register, exmem_jump: Register, bus_mux: MemBusMux, dmem: RV32I_DataMem, uart: UART_TX, nic: NIC_FIFO, imem_data: RV32I_InstrMem, imem_load_align: RV32I_LoadAlign, memwb_alu_result: Register, memwb_load_data: Register, memwb_rd: Register, memwb_pc4: Register, memwb_imm: Register, memwb_pc_plus_imm: Register, memwb_reg_write: Register, memwb_mem_to_reg: Register, memwb_lui: Register, memwb_auipc: Register, memwb_jump: Register, wb_mux: RV32I_WritebackMux },
@@ -162,7 +162,7 @@ const RV32I_CPU = component('RV32I_CPU', {
   ],
 })
 
-const RV32I_DualCPU = component('RV32I_DualCPU', {
+const RV32I_DualCPU = circuit('RV32I_DualCPU', {
   out: { cpu0_pc: bus(32), cpu1_pc: bus(32) },
   nodes: { cpu0: RV32I_CPU, cpu1: RV32I_CPU },
   connect: ({ in: inp, out, cpu0, cpu1 }) => [

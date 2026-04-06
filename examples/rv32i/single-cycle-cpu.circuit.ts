@@ -1,6 +1,6 @@
 // Auto-generated from DSL
 
-const RV32I_CPU = component('RV32I_CPU', {
+const RV32I_CPU = circuit('RV32I_CPU', {
   out: { pc_out: bus(32), alu_result: bus(32) },
   nodes: { imem: RV32I_InstrMem, pc: Register, pc_plus4: Adder, pc_we: Constant, four: Constant, decode: RV32I_Decode, immgen: RV32I_ImmGen, control: RV32I_Control, funct7_splitter: BitSlice, regfile: RV32I_RegisterFile, alu_src_mux: Mux, alu: RV32I_ALU, branch_comp: RV32I_BranchComp, dmem: RV32I_DataMem, pc_plus_imm: Adder, wb_mux: RV32I_WritebackMux, branch_target: Adder, jalr_target: BusAnd, jalr_mask: Constant, next_pc: RV32I_NextPCMux },
   nodeArgs: { pc: { width: 32 }, pc_plus4: { width: 32 }, pc_we: { value: 1, width: 1 }, four: { value: 4, width: 32 }, funct7_splitter: { low: 5, high: 5 }, alu_src_mux: { width: 32 }, pc_plus_imm: { width: 32 }, branch_target: { width: 32 }, jalr_target: { width: 32 }, jalr_mask: { value: 4294967294, width: 32 } },

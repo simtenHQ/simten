@@ -1,6 +1,6 @@
 // Auto-generated from DSL
 
-const InstructionDecoder = component('InstructionDecoder', {
+const InstructionDecoder = circuit('InstructionDecoder', {
   in: { opcode: bus(8) },
   out: { is_LDA_imm: bit, is_ADC_imm: bit, is_STA_abs: bit, is_JMP_abs: bit, is_BRK: bit, addr_mode: bus(2), cycles: bus(3) },
   nodes: { val_LDA: Constant, val_ADC: Constant, val_STA: Constant, val_JMP: Constant, val_BRK: Constant, cmp_LDA: Comparator, cmp_ADC: Comparator, cmp_STA: Comparator, cmp_JMP: Comparator, cmp_BRK: Comparator, mode_implied: Constant, mode_immediate: Constant, mode_absolute: Constant, is_immediate: Or, is_absolute: Or, mode_mux1: Mux, mode_mux2: Mux, cycles_1: Constant, cycles_2: Constant, cycles_3: Constant, cycles_4: Constant, cycle_mux1: Mux, cycle_mux2: Mux, cycle_mux3: Mux },
@@ -38,7 +38,7 @@ const InstructionDecoder = component('InstructionDecoder', {
   ],
 })
 
-const InstructionDecoderTest = component('InstructionDecoderTest', {
+const InstructionDecoderTest = circuit('InstructionDecoderTest', {
   out: { is_LDA: bit, is_ADC: bit, is_STA: bit, is_JMP: bit, is_BRK: bit, mode: bus(2), cycles: bus(3) },
   nodes: { decoder: InstructionDecoder, opcode_input: Input, d_mode: HexDisplay, d_cycles: HexDisplay },
   connect: ({ in: inp, out, decoder, opcode_input, d_mode, d_cycles }) => [

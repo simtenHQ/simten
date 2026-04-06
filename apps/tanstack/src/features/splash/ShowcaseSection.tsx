@@ -5,7 +5,7 @@ import { CircuitCanvas } from "@turing-incomplete/ui/canvas";
 // --- Live Fibonacci circuit (auto-ticking) ---
 
 const FIBONACCI_DSL = `
-const Fibonacci = component('Fibonacci', {
+const Fibonacci = circuit('Fibonacci', {
   out: { fib: bus(8) },
   nodes: { reg_a: Register, reg_b: Register, adder: Adder, one_bit: Constant, init: DFlipFlop },
   nodeArgs: { one_bit: { value: 1 } },
@@ -18,7 +18,7 @@ const Fibonacci = component('Fibonacci', {
   ],
 })
 
-const FibonacciDemo = component('FibonacciDemo', {
+const FibonacciDemo = circuit('FibonacciDemo', {
   nodes: { fib: Fibonacci, display: HexDisplay },
   connect: ({ fib, display }) => [
     fib.fib.to(display.in),

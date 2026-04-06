@@ -5,7 +5,7 @@
  * These are pure interfaces with no parser dependency.
  */
 
-import type { BitValue, BusValue, ComponentLibrary } from './circuit.js';
+import type { BitValue, BusValue, CircuitLibrary } from './circuit.js';
 
 // ============================================================================
 // Circuit Metrics
@@ -177,7 +177,7 @@ export interface BuildEnvelopeOptions {
   metrics?: CircuitMetrics;
   simulation?: SimulationTrace;
   delta?: CircuitDelta;
-  library: ComponentLibrary;
+  library: CircuitLibrary;
 }
 
 /**
@@ -211,7 +211,7 @@ export function buildEnvelope(options: BuildEnvelopeOptions): HardwareLLMEnvelop
   const components: ComponentInterface[] = [];
   const primitiveNames = library.getAllPrimitiveNames?.() ?? [];
   for (const name of primitiveNames) {
-    const circuit = library.resolveComponent(name);
+    const circuit = library.resolveCircuit(name);
     if (circuit) {
       components.push({
         name: circuit.name,
@@ -325,19 +325,19 @@ export function detectSteadyState(trace: SimulationTrace): number | undefined {
 // ============================================================================
 
 export function getBuilderAPISummary(): string {
-  return `// TypeScript Builder API — use component() to define circuits
+  return `// TypeScript Builder API — use circuit() to define circuits
 
-import { component, bit, bus } from '@turing-incomplete/core';
+import { circuit, bit, bus } from '@turing-incomplete/core';
 
 // Basic example:
-const SwitchToLed = component('SwitchToLed')
+const SwitchToLed = circuit('SwitchToLed')
   .node('sw', 'Switch')
   .node('led', 'Led')
   .wire('sw.out', 'led.in')
   .build();
 
 // With ports and parameters:
-const Counter16 = component('Counter16')
+const Counter16 = circuit('Counter16')
   .input('enable', bit)
   .output('count', bus(16))
   .clock('clk')
@@ -354,7 +354,7 @@ const Counter16 = component('Counter16')
   .build();
 
 // Composites: use a previously-built component as a node type
-const ha = component('HalfAdder')
+const ha = circuit('HalfAdder')
   .input('a', bit).input('b', bit)
   .output('sum', bit).output('carry', bit)
   .node('xor1', 'Xor').node('and1', 'And')

@@ -1,6 +1,6 @@
 // Auto-generated from DSL
 
-const PassThrough = component('PassThrough', {
+const PassThrough = circuit('PassThrough', {
   in: { x: bit },
   out: { y: bit },
   nodes: { n: Not },
@@ -10,7 +10,7 @@ const PassThrough = component('PassThrough', {
   ],
 })
 
-const TestPassThrough = component('TestPassThrough', {
+const TestPassThrough = circuit('TestPassThrough', {
   nodes: { sw: Switch, pt: PassThrough, led: Led },
   connect: ({ in: inp, out, sw, pt, led }) => [
     sw.out.to(pt.x),

@@ -17,7 +17,7 @@ export const SWITCH_CIRCUITS: Record<string, BlogCircuit> = {
     name: "Frame Detector",
     description:
       "Detects the start of an Ethernet frame by matching a preamble byte (0x55) followed by Start-of-Frame Delimiter (0xD5).",
-    displayCode: `const FrameDetector = component('FrameDetector', {
+    displayCode: `const FrameDetector = circuit('FrameDetector', {
   nodes: { byteIn: Input, valid: Switch, state: Register, PREAMBLE: Constant, SFD: Constant, zero: Constant, one: Constant, two: Constant, isPreamble: Comparator, isSFD: Comparator, isIdle: Comparator, isWaiting: Comparator, isActive: Comparator, gotPreamble: And, gotPreambleValid: And, gotSFD: And, gotSFDValid: And, next1: Mux, next2: Mux, we: Input, stateDisplay: HexDisplay, frameLed: Led },
   nodeArgs: { byteIn: { value: 85 }, state: { initial: 0 }, PREAMBLE: { value: 85 }, SFD: { value: 213 }, zero: { value: 0 }, one: { value: 1 }, two: { value: 2 }, we: { value: 1 } },
   connect: ({ byteIn, valid, state, PREAMBLE, SFD, zero, one, two, isPreamble, isSFD, isIdle, isWaiting, isActive, gotPreamble, gotPreambleValid, gotSFD, gotSFDValid, next1, next2, we, stateDisplay, frameLed }) => [
@@ -44,7 +44,7 @@ export const SWITCH_CIRCUITS: Record<string, BlogCircuit> = {
   ],
 })`,
     dsl: `
-const FrameDetector = component('FrameDetector', {
+const FrameDetector = circuit('FrameDetector', {
   nodes: { byteIn: Input, valid: Switch, state: Register, PREAMBLE: Constant, SFD: Constant, zero: Constant, one: Constant, two: Constant, isPreamble: Comparator, isSFD: Comparator, isIdle: Comparator, isWaiting: Comparator, isActive: Comparator, gotPreamble: And, gotPreambleValid: And, gotSFD: And, gotSFDValid: And, next1: Mux, next2: Mux, we: Input, stateDisplay: HexDisplay, frameLed: Led },
   nodeArgs: { byteIn: { value: 85 }, state: { initial: 0 }, PREAMBLE: { value: 85 }, SFD: { value: 213 }, zero: { value: 0 }, one: { value: 1 }, two: { value: 2 }, we: { value: 1 } },
   connect: ({ byteIn, valid, state, PREAMBLE, SFD, zero, one, two, isPreamble, isSFD, isIdle, isWaiting, isActive, gotPreamble, gotPreambleValid, gotSFD, gotSFDValid, next1, next2, we, stateDisplay, frameLed }) => [
@@ -77,7 +77,7 @@ const FrameDetector = component('FrameDetector', {
     description:
       "Stores incoming bytes in DualPortRAM as they arrive. A write pointer register tracks the next free address.",
     displayCode: `
-const PacketBuffer = component('PacketBuffer', {
+const PacketBuffer = circuit('PacketBuffer', {
   nodes: { dataIn: Input, writeCmd: Switch, writePtr: Register, one: Constant, ram: DualPortRAM, nextPtr: Adder, readAddr: Input, readback: HexDisplay, ptrDisplay: HexDisplay },
   nodeArgs: { dataIn: { value: 42 }, writePtr: { initial: 0 }, one: { value: 1 }, readAddr: { value: 0 } },
   connect: ({ in: inp, out, dataIn, writeCmd, writePtr, one, ram, nextPtr, readAddr, readback, ptrDisplay }) => [
@@ -92,7 +92,7 @@ const PacketBuffer = component('PacketBuffer', {
 })
 `,
     dsl: `
-const PacketBuffer = component('PacketBuffer', {
+const PacketBuffer = circuit('PacketBuffer', {
   nodes: { dataIn: Input, writeCmd: Switch, writePtr: Register, one: Constant, ram: DualPortRAM, nextPtr: Adder, readAddr: Input, readback: HexDisplay, ptrDisplay: HexDisplay },
   nodeArgs: { dataIn: { value: 42 }, writePtr: { initial: 0 }, one: { value: 1 }, readAddr: { value: 0 } },
   connect: ({ in: inp, out, dataIn, writeCmd, writePtr, one, ram, nextPtr, readAddr, readback, ptrDisplay }) => [
@@ -113,7 +113,7 @@ const PacketBuffer = component('PacketBuffer', {
     description:
       "Decides which port gets to send next. When both ports have packets ready, it alternates fairly between them.",
     displayCode: `
-const PortArbiter = component('PortArbiter', {
+const PortArbiter = circuit('PortArbiter', {
   nodes: { port0_ready: Switch, port1_ready: Switch, lastPort: Input, zero: Constant, one: Constant, lastWas0: Comparator, prefer1: And, notPort1: Not, fallback0: And, fallback0Ready: And, lastWas1: Comparator, prefer0: And, grant0: Or, grant1: Or, grantValid: Or, grantPort: Mux, portDisplay: HexDisplay, validLed: Led },
   nodeArgs: { lastPort: { value: 0 }, zero: { value: 0 }, one: { value: 1 } },
   connect: ({ in: inp, out, port0_ready, port1_ready, lastPort, zero, one, lastWas0, prefer1, notPort1, fallback0, fallback0Ready, lastWas1, prefer0, grant0, grant1, grantValid, grantPort, portDisplay, validLed }) => [
@@ -137,7 +137,7 @@ const PortArbiter = component('PortArbiter', {
 })
 `,
     dsl: `
-const PortArbiter = component('PortArbiter', {
+const PortArbiter = circuit('PortArbiter', {
   nodes: { port0_ready: Switch, port1_ready: Switch, lastPort: Input, zero: Constant, one: Constant, lastWas0: Comparator, prefer1: And, notPort1: Not, fallback0: And, fallback0Ready: And, lastWas1: Comparator, prefer0: And, grant0: Or, grant1: Or, grantValid: Or, grantPort: Mux, portDisplay: HexDisplay, validLed: Led },
   nodeArgs: { lastPort: { value: 0 }, zero: { value: 0 }, one: { value: 1 } },
   connect: ({ in: inp, out, port0_ready, port1_ready, lastPort, zero, one, lastWas0, prefer1, notPort1, fallback0, fallback0Ready, lastWas1, prefer0, grant0, grant1, grantValid, grantPort, portDisplay, validLed }) => [
@@ -167,7 +167,7 @@ const PortArbiter = component('PortArbiter', {
     description:
       "Routes packets to the opposite port: port 0 sends to port 1 and vice versa. A comparator and mux implement the cross-over logic.",
     displayCode: `
-const CrossbarRouter = component('CrossbarRouter', {
+const CrossbarRouter = circuit('CrossbarRouter', {
   nodes: { sourcePort: Input, zero: Constant, one: Constant, isPort0: Comparator, destPort: Mux, destDisplay: HexDisplay, srcDisplay: HexDisplay, routedLed: Led },
   nodeArgs: { sourcePort: { value: 0 }, zero: { value: 0 }, one: { value: 1 } },
   connect: ({ in: inp, out, sourcePort, zero, one, isPort0, destPort, destDisplay, srcDisplay, routedLed }) => [
@@ -180,7 +180,7 @@ const CrossbarRouter = component('CrossbarRouter', {
 })
 `,
     dsl: `
-const CrossbarRouter = component('CrossbarRouter', {
+const CrossbarRouter = circuit('CrossbarRouter', {
   nodes: { sourcePort: Input, zero: Constant, one: Constant, isPort0: Comparator, destPort: Mux, destDisplay: HexDisplay, srcDisplay: HexDisplay, routedLed: Led },
   nodeArgs: { sourcePort: { value: 0 }, zero: { value: 0 }, one: { value: 1 } },
   connect: ({ in: inp, out, sourcePort, zero, one, isPort0, destPort, destDisplay, srcDisplay, routedLed }) => [
@@ -199,7 +199,7 @@ const CrossbarRouter = component('CrossbarRouter', {
     description:
       "Reads bytes from RAM one at a time and outputs them with a valid signal. A counter tracks progress and signals when the packet is complete.",
     displayCode: `
-const PacketSerializer = component('PacketSerializer', {
+const PacketSerializer = circuit('PacketSerializer', {
   nodes: { readPtr: Register, one: Constant, seven: Constant, nextPtr: Adder, enable: Switch, dataOut: HexDisplay, ptrDisplay: HexDisplay, isDone: Comparator, doneLed: Led },
   nodeArgs: { readPtr: { initial: 0 }, one: { value: 1 }, seven: { value: 7 } },
   connect: ({ in: inp, out, ram, readPtr, one, seven, nextPtr, enable, dataOut, ptrDisplay, isDone, doneLed }) => [
@@ -214,7 +214,7 @@ const PacketSerializer = component('PacketSerializer', {
 })
 `,
     dsl: `
-const PacketSerializer = component('PacketSerializer', {
+const PacketSerializer = circuit('PacketSerializer', {
   nodes: { readPtr: Register, one: Constant, seven: Constant, nextPtr: Adder, enable: Switch, dataOut: HexDisplay, ptrDisplay: HexDisplay, isDone: Comparator, doneLed: Led },
   nodeArgs: { readPtr: { initial: 0 }, one: { value: 1 }, seven: { value: 7 } },
   connect: ({ in: inp, out, ram, readPtr, one, seven, nextPtr, enable, dataOut, ptrDisplay, isDone, doneLed }) => [
@@ -237,7 +237,7 @@ const PacketSerializer = component('PacketSerializer', {
  * PacketForwarder2Port, EgressController, and MiniSwitch2Port.
  */
 export const SWITCH_DSL = `
-const MacRxParser = component('MacRxParser', {
+const MacRxParser = circuit('MacRxParser', {
   in: { byte_in: bus(8), valid: bit },
   out: { data_out: bus(8), sof: bit, eof: bit, data_valid: bit, error: bit },
   nodes: { fsm_state: Register, preamble_count: Register, byte_count: Register, STATE_IDLE: Input, STATE_PREAMBLE_SYNC: Input, STATE_WAIT_SFD: Input, STATE_IN_FRAME: Input, PREAMBLE_BYTE: Input, SFD_BYTE: Input, SEVEN: Input, EIGHT: Input, ZERO: Input, ONE: Input, SIX: Input, isIDLE: Comparator, isPREAMBLE_SYNC: Comparator, isWAIT_SFD: Comparator, isIN_FRAME: Comparator, isPreambleByte: Comparator, isSFDByte: Comparator, preamble_inc: Adder, preamble_is_seven: Comparator, byte_inc: Adder, byte_is_seven: Comparator, byte_is_zero: Comparator, idle_to_preamble: And, idle_transition: And, preamble_count_full: And, preamble_to_wait: And, preamble_to_wait_match: And, not_preamble_byte: Not, preamble_incomplete: Comparator, preamble_bad_byte: And, preamble_broken: And, preamble_reset: And, preamble_got_sfd: And, preamble_complete: And, preamble_to_frame: And, sfd_to_frame: And, sfd_transition: And, sfd_missing: And, not_sfd_byte: Not, sfd_error: And, frame_complete: And, frame_done: And, next_state_m5: Mux, next_state_m4: Mux, next_state_m3: Mux, next_state_m2: Mux, next_state_m1: Mux, error_reset: Or, next_state: Mux, fsm_state_we: Input, preamble_counting: And, next_preamble_count: Mux, preamble_count_we: Input, byte_counting: And, next_byte_count: Mux, byte_count_we: Input, sof_condition: And, data_valid_signal: And, fsm_state_display: HexDisplay, preamble_count_display: HexDisplay, byte_count_display: HexDisplay },
@@ -308,7 +308,7 @@ const MacRxParser = component('MacRxParser', {
   ],
 })
 
-const IngressController = component('IngressController', {
+const IngressController = circuit('IngressController', {
   in: { data_in: bus(8), sof: bit, eof: bit, data_valid: bit, grant: bit },
   out: { buf_addr: bus(8), buf_data: bus(8), buf_we: bit, pkt_ready: bit, buf_full: bit, write_ptr: bus(8) },
   nodes: { fsm_state: Register, byte_count: Register, write_ptr_reg: Register, pkt_count: Register, pkt_ready_reg: Register, STATE_IDLE: Input, STATE_RECEIVING: Input, STATE_BUFFERED: Input, ZERO: Input, ONE: Input, FOUR: Input, SEVEN: Input, EIGHT: Input, isIDLE: Comparator, isRECEIVING: Comparator, isBUFFERED: Comparator, buf_full_cmp: Comparator, not_buf_full: Not, can_receive: And, can_receive_valid: And, idle_to_receiving: And, byte_is_seven: Comparator, frame_complete: And, receiving_complete: And, receiving_complete_valid: And, buffered_to_idle: And, next_state_m2: Mux, next_state_m1: Mux, next_state: Mux, fsm_state_we: Input, byte_inc: Adder, should_count: And, next_byte_count: Mux, byte_count_we: Input, ptr_add_eight: Adder, should_advance_ptr: And, next_write_ptr_val: Mux, write_ptr_reg_we: Input, pkt_inc: Adder, pkt_dec: Adder, MINUS_ONE: Input, next_pkt_count_inc: Mux, next_pkt_count: Mux, pkt_count_we: Input, buf_addr_calc: Adder, buf_we_signal: And, pkt_count_nonzero: Comparator, pkt_ready_signal: Or, pkt_ready_we: Input, fsm_state_display: HexDisplay, pkt_count_display: HexDisplay, write_ptr_debug: HexDisplay },
@@ -371,7 +371,7 @@ const IngressController = component('IngressController', {
   ],
 })
 
-const SimpleArbiter2Port = component('SimpleArbiter2Port', {
+const SimpleArbiter2Port = circuit('SimpleArbiter2Port', {
   in: { port0_ready: bit, port1_ready: bit, forwarder_done: bit },
   out: { grant_port: bus(8), grant_valid: bit },
   nodes: { last_port: Register, grant_port_reg: Register, grant_valid_reg: Register, ZERO: Input, ONE: Input, last_was_port0: Comparator, last_was_port1: Comparator, prefer_port1: And, not_port1_ready: Not, fallback_port0: And, fallback_port0_ready: And, prefer_port0: And, not_port0_ready: Not, fallback_port1: And, fallback_port1_ready: And, grant_port0_signal: Or, grant_port1_signal: Or, grant_valid_signal: Or, grant_port_mux: Mux, grant_valid_we: Input, grant_port_we: Input, next_last_port: Mux, last_port_we: Input, last_port_display: HexDisplay },
@@ -406,7 +406,7 @@ const SimpleArbiter2Port = component('SimpleArbiter2Port', {
   ],
 })
 
-const PacketForwarder2Port = component('PacketForwarder2Port', {
+const PacketForwarder2Port = circuit('PacketForwarder2Port', {
   in: { grant_port: bus(8), grant_valid: bit, port0_read_ptr: bus(8), port1_read_ptr: bus(8) },
   out: { ingress_addr: bus(8), ingress_re: bit, egress_addr: bus(8), egress_we: bit, done: bit, output_port: bus(8), ingress_port: bus(8) },
   nodes: { fsm_state: Register, byte_counter: Register, output_port_reg: Register, ingress_port_reg: Register, done_reg: Register, STATE_IDLE: Input, STATE_READ_HEADER: Input, STATE_WAIT_HEADER: Input, STATE_ROUTE: Input, STATE_COPY_PAYLOAD: Input, STATE_DONE: Input, ZERO: Input, ONE: Input, SEVEN: Input, EIGHT: Input, DA_MASK: Input, DA_SHIFT: Input, isIDLE: Comparator, isREAD_HEADER: Comparator, isWAIT_HEADER: Comparator, isROUTE: Comparator, isCOPY_PAYLOAD: Comparator, isDONE: Comparator, idle_to_read: And, read_to_wait: And, wait_to_route: And, byte_is_seven: Comparator, copy_complete: And, done_to_idle: And, next_state_m5: Mux, next_state_m4: Mux, next_state_m3: Mux, next_state_m2: Mux, next_state_m1: Mux, route_to_copy: And, next_state: Mux, fsm_state_we: Input, latch_ingress_port: And, next_ingress_port_val: Mux, ingress_port_reg_we: Input, byte_inc: Adder, should_increment: And, should_reset: And, next_byte_counter_inc: Mux, next_byte_counter: Mux, byte_counter_we: Input, ingress_is_port0: Comparator, selected_read_ptr: Mux, ingress_addr_calc: Adder, cross_route: Adder, neg_ingress: Adder, MINUS_ONE: Input, latch_output_port: And, next_output_port_val: Mux, output_port_reg_we: Input, port_offset: LeftShifter, THREE: Input, egress_addr_calc: Adder, ingress_re_signal: Or, done_we: Input, fsm_state_display: HexDisplay, byte_counter_display: HexDisplay, output_port_debug: HexDisplay, ingress_port_debug: HexDisplay },
@@ -476,7 +476,7 @@ const PacketForwarder2Port = component('PacketForwarder2Port', {
   ],
 })
 
-const EgressController = component('EgressController', {
+const EgressController = circuit('EgressController', {
   in: { pkt_ready: bit, trigger: bit },
   out: { egress_addr: bus(8), egress_re: bit, data_valid: bit, sof: bit, eof: bit, ready: bit },
   nodes: { fsm_state: Register, byte_counter: Register, read_ptr: Register, STATE_IDLE: Input, STATE_TRANSMIT: Input, ZERO: Input, ONE: Input, SEVEN: Input, EIGHT: Input, isIDLE: Comparator, isTRANSMIT: Comparator, can_start: And, idle_to_transmit: And, byte_is_seven: Comparator, transmit_complete: And, next_state_m1: Mux, next_state: Mux, fsm_state_we: Input, byte_inc: Adder, should_increment: And, should_reset: And, next_byte_counter_inc: Mux, next_byte_counter: Mux, byte_counter_we: Input, ptr_add_eight: Adder, should_advance_ptr: And, next_read_ptr: Mux, read_ptr_we: Input, egress_addr_calc: Adder, byte_is_zero: Comparator, sof_signal: And, eof_signal: And, fsm_state_display: HexDisplay, byte_counter_display: HexDisplay, read_ptr_display: HexDisplay },
@@ -519,7 +519,7 @@ const EgressController = component('EgressController', {
   ],
 })
 
-const MiniSwitch2Port = component('MiniSwitch2Port', {
+const MiniSwitch2Port = circuit('MiniSwitch2Port', {
   nodes: { p0_byte: Input, p0_valid: Input, p1_byte: Input, p1_valid: Input, ZERO: Input, ONE: Input, EIGHT: Input, parser0: MacRxParser, parser1: MacRxParser, ingress0: IngressController, ingress1: IngressController, ram_ingress0: DualPortRAM, ram_ingress1: DualPortRAM, arbiter: SimpleArbiter2Port, forwarder: PacketForwarder2Port, ram_egress0: DualPortRAM, ram_egress1: DualPortRAM, egress0: EgressController, egress1: EgressController, grant_is_port0: Comparator, grant_to_port0: And, grant_is_port1: Comparator, grant_to_port1: And, ingress_data_mux: Mux, output_is_port0: Comparator, egress0_we: And, output_is_port1: Comparator, egress1_we: And, egress0_trigger: And, egress1_trigger: And, always_ready: Switch, p0_out: HexDisplay, p0_valid_out: Led, p0_sof: Led, p0_eof: Led, p1_out: HexDisplay, p1_valid_out: Led, p1_sof: Led, p1_eof: Led, debug_grant_port: HexDisplay, debug_grant_valid: Led, debug_forwarder_ingress_port: HexDisplay, debug_forwarder_output_port: HexDisplay, debug_ingress0_ready: Led, debug_ingress1_ready: Led },
   nodeArgs: { ZERO: { value: 0 }, ONE: { value: 1 }, EIGHT: { value: 8 } },
   connect: ({ in: inp, out, p0_byte, p0_valid, p1_byte, p1_valid, ZERO, ONE, EIGHT, parser0, parser1, ingress0, ingress1, ram_ingress0, ram_ingress1, arbiter, forwarder, ram_egress0, ram_egress1, egress0, egress1, grant_is_port0, grant_to_port0, grant_is_port1, grant_to_port1, ingress_data_mux, output_is_port0, egress0_we, output_is_port1, egress1_we, egress0_trigger, egress1_trigger, always_ready, p0_out, p0_valid_out, p0_sof, p0_eof, p1_out, p1_valid_out, p1_sof, p1_eof, debug_grant_port, debug_grant_valid, debug_forwarder_ingress_port, debug_forwarder_output_port, debug_ingress0_ready, debug_ingress1_ready }) => [

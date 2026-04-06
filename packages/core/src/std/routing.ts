@@ -2,17 +2,17 @@
  * Standard Library — Routing / Plexers / Utilities
  */
 
-import { component } from '../builder/component.js';
-import { bit, bus } from '../builder/bit-bus.js';
+import { circuit } from '../circuit/circuit.js';
+import { bit, bus } from '../circuit/bit-bus.js';
 
-export const Mux = component('Mux', {
+export const Mux = circuit('Mux', {
   in: { in0: bit, in1: bit, sel: bit },
   out: { out: bit },
   meta: { category: 'plexers', icon: 'MUX', description: 'Multiplexer — sel=0 picks in0, sel=1 picks in1' },
   eval: ({ in0, in1, sel }) => ({ out: sel ? in1 : in0 }),
 });
 
-export const Decoder = component('Decoder', {
+export const Decoder = circuit('Decoder', {
   in: { in: bus(2) },
   out: { out0: bit, out1: bit, out2: bit, out3: bit },
   meta: { category: 'plexers', icon: 'DEC', description: '2-to-4 decoder' },
@@ -24,14 +24,14 @@ export const Decoder = component('Decoder', {
   }),
 });
 
-export const Splitter = component('Splitter', {
+export const Splitter = circuit('Splitter', {
   in: { in: bus(8) },
   out: { out0: bus(4), out1: bus(4) },
   meta: { category: 'utilities', icon: '⊢', description: 'Bus splitter' },
   eval: ({ in: val }) => ({ out0: val & 0xF, out1: (val >> 4) & 0xF }),
 });
 
-export const Splitter8to8 = component('Splitter8to8', {
+export const Splitter8to8 = circuit('Splitter8to8', {
   in: { in: bus(8) },
   out: { bit0: bit, bit1: bit, bit2: bit, bit3: bit, bit4: bit, bit5: bit, bit6: bit, bit7: bit },
   meta: { category: 'utilities', icon: '⊢8', description: 'Splits 8-bit bus into 8 individual bits' },
@@ -41,7 +41,7 @@ export const Splitter8to8 = component('Splitter8to8', {
   }),
 });
 
-export const Combiner8to8 = component('Combiner8to8', {
+export const Combiner8to8 = circuit('Combiner8to8', {
   in: { bit0: bit, bit1: bit, bit2: bit, bit3: bit, bit4: bit, bit5: bit, bit6: bit, bit7: bit },
   out: { out: bus(8) },
   meta: { category: 'utilities', icon: '⊣8', description: 'Combines 8 bits into an 8-bit bus' },
@@ -51,28 +51,28 @@ export const Combiner8to8 = component('Combiner8to8', {
   }),
 });
 
-export const Concat = component('Concat', {
+export const Concat = circuit('Concat', {
   in: { high: bus(4), low: bus(4) },
   out: { out: bus(8) },
   meta: { category: 'utilities', icon: '||', description: 'Concatenate two buses' },
   eval: ({ high, low }) => ({ out: (high << 4) | low }),
 });
 
-export const BitSlice = component('BitSlice', {
+export const BitSlice = circuit('BitSlice', {
   in: { in: bus(8) },
   out: { out: bus(8) },
   meta: { category: 'utilities', icon: '[]', description: 'Extract bits [low..high] from input' },
   eval: ({ in: val }) => ({ out: val }),
 });
 
-export const AddressCombiner = component('AddressCombiner', {
+export const AddressCombiner = circuit('AddressCombiner', {
   in: { lo: bus(8), hi: bus(8) },
   out: { out: bus(16) },
   meta: { category: 'utilities', icon: '⊕16', description: 'Combines two 8-bit buses into 16-bit' },
   eval: ({ lo, hi }) => ({ out: ((hi & 0xFF) << 8) | (lo & 0xFF) }),
 });
 
-export const Probe = component('Probe', {
+export const Probe = circuit('Probe', {
   in: { in: bit },
   out: { out: bit },
   meta: { category: 'utilities', icon: '🔍', description: 'Debug observation point' },

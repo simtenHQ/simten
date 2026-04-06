@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import {
   SimulationSession,
   type SimulationSessionState,
@@ -13,6 +13,7 @@ import {
 import type { Circuit } from "@turing-incomplete/core";
 import { useCompileCode } from "./useCompileCode";
 import { useCircuitSession } from "@turing-incomplete/ui/canvas";
+import { autoHarness } from "../auto-harness";
 
 const TOP_LEVEL_NODE = "__top__";
 
@@ -49,7 +50,12 @@ export interface SimulatorActions {
   getSimulator: () => SimulatorEngine | null;
 }
 
-export interface UseCircuitSimulatorOptions {}
+export interface UseCircuitSimulatorOptions {
+  /** Wrap the circuit with auto-generated Switch/Led nodes */
+  autoHarness?: boolean;
+  /** Initial values for input ports (only used when autoHarness is true) */
+  initialInputs?: Record<string, number | boolean>;
+}
 
 /**
  * Standalone circuit simulator hook.
@@ -64,8 +70,14 @@ export function useCircuitSimulator(
   // ── Compilation (auto-detects TypeScript vs DSL) ──
   const compiled = useCompileCode(dslCode);
 
+  // ── Auto-harness (wrap with Switches/LEDs if enabled) ──
+  const harnessedCircuit = useMemo(() => {
+    if (!options?.autoHarness || !compiled.circuit || !compiled.componentLibrary) return compiled.circuit;
+    return autoHarness(compiled.circuit, compiled.componentLibrary, options.initialInputs);
+  }, [compiled.circuit, compiled.componentLibrary, options?.autoHarness, options?.initialInputs]);
+
   // ── Simulation (via the same hook the editor uses) ──
-  const sim = useCircuitSession(compiled.circuit, compiled.componentLibrary);
+  const sim = useCircuitSession(harnessedCircuit, compiled.componentLibrary);
 
   // ── Higher-level state (outputs, inputs, toggles) ──
   const [outputs, setOutputs] = useState<Record<string, boolean | number>>({});
@@ -173,7 +185,7 @@ export function useCircuitSimulator(
     ready: compiled.ready && sim.session !== null,
     error: compiled.error,
     isSequential: compiled.isSequential,
-    circuit: compiled.circuit,
+    circuit: harnessedCircuit,
     portValues: (sim.portValues.size > 0 ? sim.portValues : null) as FlatPortValueMap | null,
     sequentialState: sim.sequentialState,
     componentLibrary: compiled.componentLibrary,

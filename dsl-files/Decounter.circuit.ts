@@ -1,6 +1,6 @@
 // Auto-generated from DSL
 
-const Decounter = component('Decounter', {
+const Decounter = circuit('Decounter', {
   in: { load_val: bus(8), load: bit, enable: bit },
   out: { count: bus(8) },
   nodes: { counter_reg: Register, prev_val: Subtractor, one: Constant, zero: Constant, enable_mux: Mux, load_mux: Mux, write_enable: Constant },

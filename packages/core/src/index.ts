@@ -15,8 +15,8 @@ export type {
   PortType,
   BitValue,
   BusValue,
-  ComponentLibrary,
-  MutableComponentLibrary,
+  CircuitLibrary,
+  MutableCircuitLibrary,
   Circuit,
   PortDescriptor,
   ClockDescriptor,
@@ -33,9 +33,13 @@ export type {
   MemoryType,
   MemoryValue,
   PortInstance,
-  ComponentKind,
+  CircuitKind,
   ArgumentValue,
   TestCase,
+  /** @deprecated aliases */
+  ComponentLibrary,
+  MutableComponentLibrary,
+  ComponentKind,
 } from './types/circuit.js';
 
 export {
@@ -74,6 +78,7 @@ export type {
 
 export {
   createSimulator,
+  createCircuitLibrary,
   createComponentLibrary,
   createSimulatorFromCircuit,
   elaborate,
@@ -86,14 +91,14 @@ export {
 } from './simulator/index.js';
 
 // ============================================================================
-// Builder (TypeScript component API)
+// Builder (TypeScript circuit API)
 // ============================================================================
 
-export { executeComponentCode } from './builder/execute.js';
-export type { ExecuteResult } from './builder/execute.js';
-export { component } from './builder/component.js';
-export { bit, bus } from './builder/bit-bus.js';
-export type { BuiltComponent, ComponentConfig } from './builder/types.js';
+export { executeCircuitCode, executeComponentCode } from './circuit/execute.js';
+export type { ExecuteResult } from './circuit/execute.js';
+export { circuit, component } from './circuit/circuit.js';
+export { bit, bus } from './circuit/bit-bus.js';
+export type { BuiltCircuit, CircuitConfig, BuiltComponent, ComponentConfig } from './circuit/types.js';
 
 // ============================================================================
 // Analysis Types (extracted from former DSL module)

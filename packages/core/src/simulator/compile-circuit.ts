@@ -5,7 +5,7 @@
  * This is a one-time operation during initialization.
  */
 
-import type { ComponentLibrary } from '../types/circuit.js';
+import type { CircuitLibrary } from '../types/circuit.js';
 import type { FlatCircuit, PrimitiveState } from '../types/simulator.js';
 import { TOP_LEVEL_NODE } from '../types/simulator.js';
 import type { NumericCircuit, NumericSequentialState } from './numeric-types.js';
@@ -21,7 +21,7 @@ import { resolveTypeIndex } from './eval-bridge.js';
  */
 export function compileForSimulation(
   flatCircuit: FlatCircuit,
-  library: ComponentLibrary
+  library: CircuitLibrary
 ): NumericCircuit {
   const nodeCount = flatCircuit.nodes.length;
 
@@ -229,7 +229,7 @@ export function compileForSimulation(
     isSourceNode[i] = node.inputs.length === 0 ? 1 : 0;
 
     // Has state: check if the component has state blocks
-    const resolvedComp = library.resolveComponent(node.primitiveType);
+    const resolvedComp = library.resolveCircuit(node.primitiveType);
     if (resolvedComp?.state && resolvedComp.state.length > 0) {
       hasState[i] = 1;
       // Any node with state needs re-evaluation after clock edge

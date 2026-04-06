@@ -6,13 +6,13 @@
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import { elaborate, topologicalSortFlat, TOP_LEVEL_NODE } from '../elaboration';
-import { useComponentLibraryStore } from '../../stores/component-library-store';
+import { useCircuitLibraryStore } from '../../stores/circuit-library-store';
 import type { Circuit } from '../../types/circuit';
 
 describe('Circuit Elaboration', () => {
   beforeEach(() => {
     // Clear component library before each test
-    const library = useComponentLibraryStore.getState();
+    const library = useCircuitLibraryStore.getState();
     library.clearAll();
 
     // Register basic primitives
@@ -108,7 +108,7 @@ describe('Circuit Elaboration', () => {
       implementation: { kind: 'composite' }
     };
 
-    const library = useComponentLibraryStore.getState();
+    const library = useCircuitLibraryStore.getState();
     const flat = elaborate(circuit, library);
 
     // Should have 2 nodes (both primitives)
@@ -131,7 +131,7 @@ describe('Circuit Elaboration', () => {
   });
 
   it('flattens nested composites', () => {
-    const library = useComponentLibraryStore.getState();
+    const library = useCircuitLibraryStore.getState();
 
     // Define a composite "AndGate" that contains primitive And
     library.registerStandard({
@@ -232,7 +232,7 @@ describe('Circuit Elaboration', () => {
   });
 
   it('handles top-level ports correctly', () => {
-    const library = useComponentLibraryStore.getState();
+    const library = useCircuitLibraryStore.getState();
 
     const circuit: Circuit = {
       id: 'circuit-with-ports',
@@ -292,7 +292,7 @@ describe('Circuit Elaboration', () => {
   });
 
   it('topological sort works on flat circuits', () => {
-    const library = useComponentLibraryStore.getState();
+    const library = useCircuitLibraryStore.getState();
 
     const circuit: Circuit = {
       id: 'topo-test',

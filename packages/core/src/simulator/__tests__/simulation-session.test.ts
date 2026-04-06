@@ -14,7 +14,7 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 import {
   SimulationSession,
   createSimulator,
-  createComponentLibrary,
+  createCircuitLibrary,
   elaborate,
   PRIMITIVES,
   type SimulatorEngine,
@@ -24,7 +24,7 @@ import { compileDSL } from '../../dsl/index.js';
 // ── Helpers ──
 
 function createShiftRegister(): SimulatorEngine {
-  const lib = createComponentLibrary(PRIMITIVES as any[]);
+  const lib = createCircuitLibrary(PRIMITIVES as any[]);
   const dsl = `circuit SR {
     input d: Bit
     clock clk
@@ -48,7 +48,7 @@ function createShiftRegister(): SimulatorEngine {
 }
 
 function createAndGate(): SimulatorEngine {
-  const lib = createComponentLibrary(PRIMITIVES as any[]);
+  const lib = createCircuitLibrary(PRIMITIVES as any[]);
   const dsl = `circuit Demo {
     input a: Bit
     input b: Bit
