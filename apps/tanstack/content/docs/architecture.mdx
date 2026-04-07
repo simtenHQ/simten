@@ -3,9 +3,9 @@ title: Architecture
 description: How circuits go from text to simulation
 ---
 
-## From DSL to Simulation
+## From TypeScript to Simulation
 
-When you write a circuit, it goes through six stages before anything appears on screen:
+When you define a circuit, it goes through six stages before anything appears on screen:
 
 export function PipelineStage({ number, title, subtitle, children }) {
   return (
@@ -26,8 +26,8 @@ export function PipelineStage({ number, title, subtitle, children }) {
 }
 
 <div className="my-8">
-<PipelineStage number={1} title="Parse" subtitle="DSL text → AST">
-  A [Chevrotain](https://github.com/Chevrotain/chevrotain) lexer tokenizes the source, the parser produces a concrete syntax tree (CST), and a visitor converts it to an abstract syntax tree (AST).
+<PipelineStage number={1} title="Build" subtitle="circuit() calls → Circuit IR">
+  The TypeScript `circuit()` builder collects node types, port declarations, and connection calls. The `.to()` wiring calls produce a declarative connection list. The result is a `BuiltCircuit` — a plain data structure describing the circuit's structure.
 </PipelineStage>
 
 <PipelineStage number={2} title="Validate" subtitle="Check for errors before running">
@@ -169,7 +169,7 @@ This means loading a binary into ROM works the same as flipping a switch — one
 ## Packages
 
 ```
-@turing-incomplete/core       ← headless: parser, compiler, simulator, session
+@turing-incomplete/core       ← headless: circuit builder, compiler, simulator, session
        ↑
 @turing-incomplete/ui         ← visual: nodes, canvas, simulation hooks, editor
        ↑
@@ -242,9 +242,9 @@ export function FlowDiagram() {
 
 | Direction | Mechanism | Examples |
 |-----------|-----------|----------|
-| Claude → Browser | WebSocket push | DSL updates, waveforms, test results, chat messages |
+| Claude → Browser | WebSocket push | Circuit updates, waveforms, test results, chat messages |
 | Browser → Claude | Channel notifications | User prompts with challenge/circuit context |
-| Claude reads state | Pull request/response | Current port values, cycle count, user's DSL |
+| Claude reads state | Pull request/response | Current port values, cycle count, user's circuit code |
 
 The MCP server provides tools, not inference — users bring their own Claude subscription. Zero AI API cost for the app developer.
 

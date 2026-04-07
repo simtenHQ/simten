@@ -9,7 +9,7 @@ Turing Incomplete integrates with [Claude Code](https://claude.ai/claude-code) v
 
 You open the app in your browser and Claude Code in your terminal. When you ask Claude to build something, it:
 
-1. Writes the DSL circuit definition
+1. Writes the TypeScript circuit definition
 2. Pushes it to your browser — the circuit appears on the canvas instantly
 3. Runs the simulation and shows you the results
 4. Responds to your follow-up questions with full awareness of the circuit state
@@ -42,14 +42,14 @@ Once the MCP server is registered, Claude has access to these tools:
 
 | Tool | What it does |
 |------|-------------|
-| `show_circuit` | Push DSL to the browser and open a live preview. Watches the file for changes. |
+| `show_circuit` | Push a circuit file to the browser and open a live preview. Watches the file for changes. |
 | `get_circuit_state` | Read the current circuit state from the browser — port values, cycle count, inputs/outputs. |
 | `simulate_circuit` | Compile and simulate a circuit, returning signal traces. |
 | `run_testbench` | Execute a testbench with stimulus, capture waveforms, check assertions. |
 | `show_traces` | Push simulation waveforms to the browser for visualization. |
 | `show_test_results` | Push test results to the browser. |
-| `check_circuit` | Validate DSL syntax and structure without running simulation. |
-| `get_grammar` | Return the DSL grammar reference (so Claude can write valid DSL). |
+| `check_circuit` | Validate circuit structure without running simulation. |
+| `get_grammar` | Return the component reference (so Claude can write valid circuits). |
 | `get_primitives` | Return the list of available primitives with their ports and parameters. |
 
 ### Challenges
@@ -69,7 +69,7 @@ The MCP server runs locally alongside Claude Code. It serves two roles:
 1. **MCP tool provider** — Claude calls tools via the standard MCP protocol (stdio transport)
 2. **WebSocket bridge** — a WebSocket server on `localhost:19847` connects to the browser
 
-When Claude calls `show_circuit`, the tool pushes the DSL to the browser over WebSocket. When you type in the app's chat, the message is forwarded to Claude via an MCP channel notification. Claude's response comes back through `push_chat_response`.
+When Claude calls `show_circuit`, the tool pushes the circuit file to the browser over WebSocket. When you type in the app's chat, the message is forwarded to Claude via an MCP channel notification. Claude's response comes back through `push_chat_response`.
 
 ```
 Claude Code (terminal)
@@ -92,7 +92,7 @@ Browser App
 
 **Claude:**
 1. Calls `get_primitives` to check available components
-2. Writes the DSL: Register + Adder + Constant + HexDisplay
+2. Writes the circuit: Register + Adder + Constant + HexDisplay
 3. Calls `show_circuit` — the circuit appears in your browser
 4. Calls `simulate_circuit` to verify it counts correctly
 5. Responds: "I've built a 4-bit counter. Click the play button to see it count from 0 to F."
@@ -102,7 +102,7 @@ Browser App
 **Claude:**
 1. Calls `get_circuit_state` to see the current circuit
 2. Adds a Switch and Mux for reset logic
-3. Calls `show_circuit` with the updated DSL
+3. Calls `show_circuit` with the updated circuit
 4. The browser updates live — you see the reset switch appear
 
 ## Challenges with Claude
@@ -114,13 +114,13 @@ The challenge system works especially well with Claude. Open a challenge in the 
 - Add connections one at a time (`solve_next`) if you're stuck
 - Explain why each connection is needed via the chat panel
 
-The challenge chat supports **channel notifications** — when you type in the app's chat, Claude receives your message with full context (which challenge, which level, your current DSL). No need to describe what you're looking at.
+The challenge chat supports **channel notifications** — when you type in the app's chat, Claude receives your message with full context (which challenge, which level, your current circuit). No need to describe what you're looking at.
 
 ## Running without Claude
 
 The app works without Claude Code. You can:
 
-- Write DSL directly in the editor
+- Write circuit code directly in the editor
 - Use the built-in challenges (hints, tests, and solution reveal are all built in)
 - Explore the interactive blog posts
 - Embed circuits in your own React app
