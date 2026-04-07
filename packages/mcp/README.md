@@ -40,14 +40,14 @@ npm install -g @turing-incomplete/mcp
 
 | Tool | Description |
 |------|-------------|
-| `show_circuit` | Push DSL to browser, open live visual editor |
+| `show_circuit` | Push circuit file to browser, open live visual editor |
 | `hide_circuit` | Close preview, stop WebSocket server |
 | `simulate_circuit` | Compile and simulate, return signal traces |
-| `check_circuit` | Validate DSL (syntax, semantic, type, structural) |
+| `check_circuit` | Validate circuit (semantic, type, structural) |
 | `run_testbench` | Run testbench assertions against circuit |
 | `get_circuit_state` | Pull current port values from browser (live read) |
 | `get_primitives` | List available primitive components |
-| `get_grammar` | Return DSL syntax reference |
+| `get_grammar` | Return component reference and builder API |
 | `show_traces` | Push simulation waveforms to browser |
 | `show_test_results` | Push test results to browser |
 | `list_sessions` | List connected browser tabs |
@@ -72,7 +72,7 @@ Multiple browser tabs can connect simultaneously. State is cached for late-joini
 ```
 You: show me a half adder
 
-Claude: [calls show_circuit with DSL]
+Claude: [writes circuit file, calls show_circuit]
         → Browser opens, circuit appears live
 
 Claude: [calls simulate_circuit, then show_traces]
