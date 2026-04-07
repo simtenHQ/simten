@@ -84,13 +84,13 @@ export function initializeFlatSequentialState(
           dataWidth: stType.kind === 'memory' ? stType.dataWidth : 8,
         };
       } else if (node.primitiveType === 'ROM' || node.primitiveType === 'DualPortROM' || node.primitiveType === 'RV32I_InstrMem' || node.primitiveType === 'RV32I_DataMem' || node.primitiveType === 'Eth_FrameInput') {
-        // ROM initialization - check for DSL-embedded data first, then runtime-loaded data
+        // ROM initialization - check for node argument data first, then runtime-loaded data
         const memory = new Map<number, number>();
 
-        // 1. Check for DSL-embedded data (node.arguments.data)
+        // 1. Check for node argument data (node.arguments.data)
         if ('data' in node.arguments && node.arguments.data) {
-          const dslData = node.arguments.data as Record<string, number>;
-          for (const [key, value] of Object.entries(dslData)) {
+          const initData = node.arguments.data as Record<string, number>;
+          for (const [key, value] of Object.entries(initData)) {
             const addr = parseInt(key, 10);
             if (!isNaN(addr) && typeof value === 'number') {
               memory.set(addr, value);
@@ -99,11 +99,11 @@ export function initializeFlatSequentialState(
         }
 
         // 2. Check for runtime-loaded data from injected memoryData
-        // Runtime data takes precedence (allows patching DSL-embedded ROMs)
+        // Runtime data takes precedence (allows patching node-argument ROMs)
         if (memoryData) {
           const loadedData = getMemoryDataForNode(node.id, memoryData, node.primitiveType);
           if (loadedData) {
-            // Runtime data overwrites DSL data for same addresses
+            // Runtime data overwrites node argument data for same addresses
             for (const [addr, value] of loadedData.entries()) {
               memory.set(addr, value);
             }

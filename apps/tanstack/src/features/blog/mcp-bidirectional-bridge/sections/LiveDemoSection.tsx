@@ -54,7 +54,7 @@ export function LiveDemoSection() {
   const [chatMessages, setChatMessages] = useState<
     { role: "user" | "claude"; text: string }[]
   >([]);
-  const [lastDSL, setLastDSL] = useState<string | null>(null);
+  const [lastSource, setLastSource] = useState<string | null>(null);
   const [isThinking, setIsThinking] = useState(false);
   const idRef = useRef(0);
   const logEndRef = useRef<HTMLDivElement>(null);
@@ -81,9 +81,9 @@ export function LiveDemoSection() {
   );
 
   const { status, isConnected, sendToClaudePrompt } = useMCPConnection({
-    onDSL: (source) => {
-      addLog("in", "dsl", `Received DSL (${source.length} chars)`);
-      setLastDSL(source);
+    onSource: (source) => {
+      addLog("in", "source", `Received circuit source (${source.length} chars)`);
+      setLastSource(source);
     },
     onTraces: () => {
       addLog("in", "traces", "Received simulation traces");
@@ -302,17 +302,17 @@ export function LiveDemoSection() {
           </div>
         </div>
 
-        {/* Last pushed DSL */}
-        {lastDSL && (
+        {/* Last circuit pushed */}
+        {lastSource && (
           <div className="mt-6 rounded-xl border border-gray-200 dark:border-gray-800 bg-[#0d1117] overflow-hidden">
             <div className="px-4 py-2.5 bg-[#161b22] border-b border-gray-200 dark:border-gray-800">
               <span className="text-xs text-gray-500 dark:text-gray-400 font-mono">
-                Last DSL pushed by Claude
+                Last circuit pushed by Claude
               </span>
             </div>
             <pre className="p-4 overflow-x-auto max-h-48 overflow-y-auto">
               <code className="text-xs font-mono text-gray-500 dark:text-gray-400 leading-relaxed">
-                {lastDSL}
+                {lastSource}
               </code>
             </pre>
           </div>

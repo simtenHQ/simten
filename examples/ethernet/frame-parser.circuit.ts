@@ -1,4 +1,4 @@
-// Auto-generated from DSL
+// Auto-generated
 
 const Eth_802_3_Parser = circuit('Eth_802_3_Parser', {
   out: { dst_mac_hi: bus(16), dst_mac_lo: bus(32), src_mac_hi: bus(16), src_mac_lo: bus(32), ethertype: bus(16), frame_done: bit, crc_ok: bit, is_broadcast: bit, is_ipv4: bit, parse_state: bus(4) },

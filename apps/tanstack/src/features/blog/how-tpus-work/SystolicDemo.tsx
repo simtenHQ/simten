@@ -119,7 +119,7 @@ export function SystolicDemo() {
       const exact = sim.portValues.get(`${nodeId}.out`);
       if (typeof exact === "number") return exact;
     }
-    // Fallback: mangled DSL format
+    // Fallback: legacy node ID format
     for (const [key, value] of sim.portValues) {
       if (key.includes(`_${name}_`) && key.endsWith(".out")) {
         return typeof value === "number" ? value : 0;

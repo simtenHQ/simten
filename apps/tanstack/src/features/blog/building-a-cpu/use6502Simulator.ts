@@ -171,7 +171,7 @@ export function use6502Simulator() {
 
   // Load a custom binary (from the in-browser compiler).
   // useCircuitSimulator now depends on initialMemory, so setting new romData
-  // directly triggers a simulator rebuild without needing to recompile the DSL.
+  // directly triggers a simulator rebuild.
   const loadCustomBinary = useCallback(
     (binary: Uint8Array, source: string) => {
       setIsRunning(false);

@@ -16,7 +16,7 @@ test.describe("<circuit-embed> web component", () => {
     expect(defined).toBe(true);
   });
 
-  test("renders circuit nodes from DSL", async ({ page }) => {
+  test("renders circuit nodes from source", async ({ page }) => {
     const basicSection = page.locator("#test-basic circuit-embed");
     // Wait for the circuit to compile and render — look for ReactFlow nodes
     await expect(basicSection.locator(".react-flow__node").first()).toBeVisible({ timeout: 10_000 });
@@ -31,7 +31,7 @@ test.describe("<circuit-embed> web component", () => {
     await expect(basicSection.locator("text=Half Adder Test")).toBeVisible({ timeout: 10_000 });
   });
 
-  test("shows error display for invalid DSL", async ({ page }) => {
+  test("shows error display for invalid source", async ({ page }) => {
     const errorSection = page.locator("#test-error circuit-embed");
     // Should show error UI, not crash
     await expect(errorSection.locator("[role='alert']")).toBeVisible({ timeout: 10_000 });
@@ -54,14 +54,14 @@ test.describe("<circuit-embed> web component", () => {
     expect(errors).toHaveLength(0);
   });
 
-  test("dynamic DSL update re-renders circuit", async ({ page }) => {
+  test("dynamic source update re-renders circuit", async ({ page }) => {
     const basicEmbed = page.locator("#test-basic circuit-embed");
     await expect(basicEmbed.locator(".react-flow__node").first()).toBeVisible({ timeout: 10_000 });
 
-    // Change the DSL attribute
+    // Change the source attribute
     await page.evaluate(() => {
       const el = document.querySelector("#test-basic circuit-embed")!;
-      el.setAttribute("dsl", `circuit Simple {
+      el.setAttribute("source", `circuit Simple {
         impl {
           node A: Switch
           node light: Led

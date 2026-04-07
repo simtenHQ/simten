@@ -2,7 +2,7 @@
  * TSEditor Component
  *
  * Monaco-based TypeScript editor for writing circuit definitions using
- * the circuit() builder API. Drop-in replacement for DSLEditor.
+ * the circuit() builder API. TypeScript circuit editor.
  *
  * Uses Monaco's built-in TypeScript language service for autocomplete,
  * type checking, and error display. Compilation uses executeCircuitCode()

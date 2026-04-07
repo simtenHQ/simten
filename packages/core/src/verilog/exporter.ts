@@ -3,7 +3,7 @@
  *
  * Converts a Circuit IR to synthesizable structural Verilog.
  *
- * DSL contract:
+ * Simulator contract:
  * - Cycle-based synchronous digital logic
  * - One clock domain (no async crossings, no derived clocks)
  * - All operations unsigned (overflow wraps)
@@ -174,7 +174,7 @@ function emitFlatModule(
   }
 
   // Width inference: for each connection, take the wider of source/target port types.
-  // This handles cases where the DSL simulator is lenient about width mismatches
+  // This handles cases where the simulator is lenient about width mismatches
   // (e.g., Constant(value=4) connecting to an 8-bit input).
   function inferWidth(conn: FlatConnection): PortType {
     const sourceType = resolvedPortTypes.get(`${conn.source.nodeId}.${conn.source.portName}`) ?? conn.portType;
@@ -206,8 +206,8 @@ function emitFlatModule(
     }
   }
 
-  // ── DSL-to-Verilog timing ────────────────────────────────────────────
-  // After the DSL simulator timing fix, the DSL now uses standard
+  // ── Simulator-to-Verilog timing ────────────────────────────────────────────
+  // After the simulator timing fix, the simulator now uses standard
   // synchronous semantics: register.q reflects the PREVIOUS tick's state,
   // matching Verilog's non-blocking assignment behavior.
   // No timing transformation is needed — the wire map is used as-is.

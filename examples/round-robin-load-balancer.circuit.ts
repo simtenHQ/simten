@@ -1,4 +1,4 @@
-// Auto-generated from DSL
+// Auto-generated
 
 const RoundRobinLoadBalancer = circuit('RoundRobinLoadBalancer', {
   out: { server0: bit, server1: bit, server2: bit, server3: bit, server4: bit, server5: bit, server6: bit, server7: bit },

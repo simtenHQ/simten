@@ -5,15 +5,15 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import { simulateCircuit } from '@turing-incomplete/core/api';
-import { readDSLSource } from '../lib/file-reader.js';
+import { readCircuitSource } from '../lib/file-reader.js';
 
 export function registerSimulateTool(server: McpServer): void {
   server.tool(
     'simulate_circuit',
     'Compile and simulate a circuit. Returns RLE-compressed signal traces and optional steadyStateAt cycle. Optionally set initial input values and number of ticks. Tip: pass the output to show_traces to visualize waveforms in the live preview.',
     {
-      source: z.string().optional().describe('DSL source code as a string'),
-      filePath: z.string().optional().describe('Path to a .dsl file'),
+      source: z.string().optional().describe('TypeScript circuit code as a string'),
+      filePath: z.string().optional().describe('Path to a .circuit.ts file'),
       circuitName: z
         .string()
         .optional()
@@ -38,7 +38,7 @@ export function registerSimulateTool(server: McpServer): void {
         ),
     },
     async ({ source, filePath, circuitName, ticks, inputs, memoryData: memoryDataJson }) => {
-      const read = readDSLSource({ source, filePath });
+      const read = readCircuitSource({ source, filePath });
       if (read.error) {
         return {
           content: [{ type: 'text' as const, text: `Error: ${read.error}` }],

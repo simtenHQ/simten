@@ -1,7 +1,7 @@
 /**
  * show_circuit tool — opens a live circuit preview in the browser.
  *
- * Starts a WebSocket server and pushes DSL to the connected browser tab.
+ * Starts a WebSocket server and pushes circuit source to the connected browser tab.
  * When a filePath is provided, watches the file for changes and pushes updates.
  */
 
@@ -9,7 +9,7 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import { exec } from 'node:child_process';
 import { resolve } from 'node:path';
-import { readDSLSource } from '../lib/file-reader.js';
+import { readCircuitSource } from '../lib/file-reader.js';
 import { TI_URL } from '../lib/config.js';
 import { checkCircuit } from '@turing-incomplete/core/api';
 import {
@@ -97,11 +97,11 @@ export function registerShowTools(server: McpServer): void {
     'show_circuit',
     'Open a live circuit preview in the browser. Updates automatically when the file changes. Optionally target a specific browser tab by session ID.',
     {
-      source: z.string().optional().describe('DSL source code as a string'),
+      source: z.string().optional().describe('TypeScript circuit code as a string'),
       filePath: z
         .string()
         .optional()
-        .describe('Path to a .dsl file (will be watched for changes)'),
+        .describe('Path to a .circuit.ts file (will be watched for changes)'),
       inputs: z
         .record(z.union([z.number(), z.boolean()]))
         .optional()
@@ -118,8 +118,8 @@ export function registerShowTools(server: McpServer): void {
         .describe('Target a specific browser tab by session ID. If omitted, uses the most recently active tab or opens a new one.'),
     },
     async ({ source, filePath, inputs, memoryData, session }) => {
-      // 1. Read DSL
-      const read = readDSLSource({ source, filePath });
+      // 1. Read circuit source
+      const read = readCircuitSource({ source, filePath });
       if (read.error) {
         return {
           content: [{ type: 'text' as const, text: `Error: ${read.error}` }],
@@ -160,7 +160,7 @@ export function registerShowTools(server: McpServer): void {
       }
 
       // 4. Push source to the target session
-      studio.updateDSL(read.source, session);
+      studio.updateSource(read.source, session);
 
       // 4b. Push memory data if provided
       if (memoryData) {

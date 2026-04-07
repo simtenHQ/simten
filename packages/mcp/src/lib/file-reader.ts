@@ -17,7 +17,7 @@ export interface ReadResult {
 /**
  * Read circuit source from either an inline string or a file path.
  */
-export function readDSLSource(params: {
+export function readCircuitSource(params: {
   source?: string;
   filePath?: string;
 }): ReadResult {

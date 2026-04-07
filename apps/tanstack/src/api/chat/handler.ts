@@ -29,7 +29,7 @@ const analysisTools: ToolDef[] = [
     input_schema: {
       type: 'object',
       properties: {
-        source: { type: 'string', description: 'DSL source code as a string' },
+        source: { type: 'string', description: 'TypeScript circuit code as a string' },
         circuitName: { type: 'string', description: 'Name of the circuit to simulate (defaults to last defined)' },
         ticks: { type: 'number', description: 'Number of clock ticks to simulate (default: 10, max: 10000)' },
         inputs: { type: 'object', description: 'Initial input values as { portName: value }', additionalProperties: { type: ['number', 'boolean'] } },
@@ -42,11 +42,11 @@ const analysisTools: ToolDef[] = [
 const editorTools: ToolDef[] = [
   {
     name: 'write_circuit',
-    description: 'Write DSL code to the editor. Code is auto-validated and a test harness is auto-appended.',
+    description: 'Write circuit code to the editor. Code is auto-validated and a test harness is auto-appended.',
     input_schema: {
       type: 'object',
       properties: {
-        code: { type: 'string', description: 'The full DSL circuit code' },
+        code: { type: 'string', description: 'The full circuit code' },
         explanation: { type: 'string', description: 'What the circuit does and why' },
       },
       required: ['code', 'explanation'],

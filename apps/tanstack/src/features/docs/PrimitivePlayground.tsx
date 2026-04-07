@@ -300,10 +300,10 @@ export function PrimitiveExplorer() {
             />
           </Suspense>
 
-          {/* DSL */}
+          {/* circuit */}
           <details className="border-t border-border">
             <summary className="px-4 py-2 text-xs text-muted-foreground hover:text-foreground cursor-pointer transition-colors">
-              View generated DSL
+              View generated circuit
             </summary>
             <pre className="px-4 pb-3 text-xs font-mono text-muted-foreground overflow-x-auto leading-relaxed">
               {generateDemoDsl(selected)}

@@ -5,7 +5,7 @@
  * - Auto-discovery: tries ws://localhost:19847 on mount, retries every 5s
  * - Token auth from URL fragment (cleaned immediately)
  * - Session registration with a stable UUID
- * - Incoming messages: DSL updates, traces, test results, memory data, challenges
+ * - Incoming messages: circuit source, traces, test results, memory data, challenges
  * - Responding to state requests from the MCP server (pull model)
  */
 
@@ -22,8 +22,8 @@ export interface MCPMessage {
 }
 
 export interface MCPCallbacks {
-  /** Called when new DSL source is pushed from Claude Code */
-  onDSL?: (source: string) => void;
+  /** Called when new circuit source is pushed from Claude Code */
+  onSource?: (source: string) => void;
   /** Called when a file-deleted event is received */
   onFileDeleted?: () => void;
   /** Called when an error message is received */
@@ -128,8 +128,8 @@ export function useMCPConnection(callbacks: MCPCallbacks) {
         const cb = callbacksRef.current;
 
         switch (msg.type) {
-          case 'dsl':
-            cb.onDSL?.(msg.source as string);
+          case 'source':
+            cb.onSource?.(msg.source as string);
             break;
           case 'file-deleted':
             cb.onFileDeleted?.();
