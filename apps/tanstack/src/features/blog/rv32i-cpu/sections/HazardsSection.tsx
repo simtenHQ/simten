@@ -81,7 +81,7 @@ export function HazardsSection() {
           register addresses across pipeline stages.
         </p>
         <CircuitEmbed
-          code={BLOG_CIRCUITS.forwardingMux.dsl}
+          circuit={BLOG_CIRCUITS.forwardingMux.circuit}
           displayCode={BLOG_CIRCUITS.forwardingMux.displayCode}
           height={340}
           title="Forwarding Mux"

@@ -141,7 +141,7 @@ export function PipelineSection() {
           wrongly-fetched instructions and redirects to the target address.
         </p>
         <CircuitEmbed
-          code={BLOG_CIRCUITS.programCounter.dsl}
+          circuit={BLOG_CIRCUITS.programCounter.circuit}
           displayCode={BLOG_CIRCUITS.programCounter.displayCode}
           height={300}
           title="Program Counter"
@@ -156,7 +156,7 @@ export function PipelineSection() {
             Turn them off and the PC resumes incrementing by 4 from wherever it landed.
           </p>
           <CircuitEmbed
-            code={BLOG_CIRCUITS.pcWithMux.dsl}
+            circuit={BLOG_CIRCUITS.pcWithMux.circuit}
             displayCode={BLOG_CIRCUITS.pcWithMux.displayCode}
             height={340}
             showControls
@@ -179,7 +179,7 @@ export function PipelineSection() {
           must be discarded.
         </p>
         <CircuitEmbed
-          code={BLOG_CIRCUITS.pipelineRegister.dsl}
+          circuit={BLOG_CIRCUITS.pipelineRegister.circuit}
           displayCode={BLOG_CIRCUITS.pipelineRegister.displayCode}
           height={300}
           title="Pipeline Register"

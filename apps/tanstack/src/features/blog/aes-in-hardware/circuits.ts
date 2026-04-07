@@ -1,18 +1,25 @@
 /**
  * Circuit definitions for the "AES in Hardware" blog post.
  *
- * Builds from SubBytes (ROM S-box lookup) through XTime (GF(2^8) ×2)
- * to MixColumns — the operation so complex Intel built it into the CPU.
+ * Builds from SubBytes (ROM S-box lookup) through XTime (GF(2^8) x2)
+ * to MixColumns -- the operation so complex Intel built it into the CPU.
  */
+
+import { circuit, bus } from "@turing-incomplete/core/circuit";
+import type { BuiltCircuit } from "@turing-incomplete/core/circuit";
+import {
+  Input, HexDisplay, Constant,
+  LeftShifter, Splitter8to8, Mux, BusXor, ROM,
+} from "@turing-incomplete/core/std";
 
 export interface BlogCircuit {
   name: string;
   description: string;
   displayCode: string;
-  dsl: string;
+  circuit: BuiltCircuit;
 }
 
-// FIPS 197, Figure 7 — the AES forward S-box
+// FIPS 197, Figure 7 -- the AES forward S-box
 export const AES_SBOX: number[] = [
   0x63, 0x7c, 0x77, 0x7b, 0xf2, 0x6b, 0x6f, 0xc5, 0x30, 0x01, 0x67, 0x2b, 0xfe, 0xd7, 0xab, 0x76,
   0xca, 0x82, 0xc9, 0x7d, 0xfa, 0x59, 0x47, 0xf0, 0xad, 0xd4, 0xa2, 0xaf, 0x9c, 0xa4, 0x72, 0xc0,
@@ -33,14 +40,12 @@ export const AES_SBOX: number[] = [
 ];
 
 // Pre-loaded ROM memory for SubBytes lookups
-/** S-box as a JSON object for nodeArgs init */
 const AES_SBOX_INIT: Record<number, number> = {};
 AES_SBOX.forEach((val, idx) => { AES_SBOX_INIT[idx] = val; });
-const AES_SBOX_JSON = JSON.stringify(AES_SBOX_INIT);
 
-// XTime and MixColumn sub-circuits shared across demos
-const XTIME_CIRCUIT = `
-const XTime = circuit('XTime', {
+// ── Circuit Definitions ──
+
+export const XTime = circuit('XTime', {
   in: { x: bus(8) },
   out: { out: bus(8) },
   nodes: { c1: Constant, shl: LeftShifter, split: Splitter8to8, poly: Constant, zero8: Constant, mux: Mux, xor: BusXor },
@@ -55,17 +60,37 @@ const XTime = circuit('XTime', {
     mux.out.to(xor.b),
     xor.out.to(out.out),
   ],
-})
-`;
+});
 
-const MIXCOLUMN_CIRCUIT = `
-const MixColumn = circuit('MixColumn', {
-  in: { s0: bus(8)).in('s1', bus(8)).in('s2', bus(8)).in('s3', bus(8) },
-  out: { r0: bus(8)).out('r1', bus(8)).out('r2', bus(8)).out('r3', bus(8) },
+// Self-contained demos
+export const SubByteDemo = circuit('SubByteDemo', {
+  nodes: { s: Input, rom: ROM, disp: HexDisplay },
+  nodeArgs: { s: { value: 83, width: 8 }, rom: { init: AES_SBOX_INIT }, disp: { width: 8 } },
+  connect: ({ s, rom, disp }) => [
+    s.out.to(rom.addr),
+    rom.data_out.to(disp.in),
+  ],
+});
+
+export const XTimeDemo = circuit('XTimeDemo', {
+  nodes: { val: Input, xt: XTime, disp: HexDisplay },
+  nodeArgs: { val: { value: 87, width: 8 }, disp: { width: 8 } },
+  connect: ({ val, xt, disp }) => [
+    val.out.to(xt.x),
+    xt.out.to(disp.in),
+  ],
+});
+
+// MixColumn uses XTime internally -- define as a circuit with nodes
+export const MixColumn = circuit('MixColumn', {
+  in: { s0: bus(8), s1: bus(8), s2: bus(8), s3: bus(8) },
+  out: { r0: bus(8), r1: bus(8), r2: bus(8), r3: bus(8) },
   meta: { description: 'AES MixColumns on one 4-byte column over GF(2^8)' },
+  nodes: { xt0: XTime, xt1: XTime, xt2: XTime, xt3: XTime, m3_0: BusXor, m3_1: BusXor, m3_2: BusXor, m3_3: BusXor, r0a: BusXor, r0b: BusXor, r0c: BusXor, r1a: BusXor, r1b: BusXor, r1c: BusXor, r2a: BusXor, r2b: BusXor, r2c: BusXor, r3a: BusXor, r3b: BusXor, r3c: BusXor },
+  nodeArgs: { xt0: {}, xt1: {}, xt2: {}, xt3: {}, m3_0: { width: 8 }, m3_1: { width: 8 }, m3_2: { width: 8 }, m3_3: { width: 8 }, r0a: { width: 8 }, r0b: { width: 8 }, r0c: { width: 8 }, r1a: { width: 8 }, r1b: { width: 8 }, r1c: { width: 8 }, r2a: { width: 8 }, r2b: { width: 8 }, r2c: { width: 8 }, r3a: { width: 8 }, r3b: { width: 8 }, r3c: { width: 8 } },
   connect: ({ in: inp, out, xt0, xt1, xt2, xt3, m3_0, m3_1, m3_2, m3_3, r0a, r0b, r0c, r1a, r1b, r1c, r2a, r2b, r2c, r3a, r3b, r3c }) => [
     inp.s0.to(xt0.x, m3_0.b, r1a.a, r2a.a),
-    inp.s1.to(xt1.x, m3_1.b, r1a.b, r2a.b, r3a.b),
+    inp.s1.to(xt1.x, m3_1.b, r2a.b, r3a.b),
     inp.s2.to(xt2.x, m3_2.b, r0b.b, r3b.b),
     inp.s3.to(xt3.x, m3_3.b, r0c.b, r1c.b),
     xt0.out.to(m3_0.a, r0a.a),
@@ -81,42 +106,41 @@ const MixColumn = circuit('MixColumn', {
     r2a.out.to(r2b.a), r2b.out.to(r2c.a), r2c.out.to(out.r2),
     r3a.out.to(r3b.a), r3b.out.to(r3c.a), r3c.out.to(out.r3),
   ],
-})
-`;
+});
+
+export const MixColumnDemo = circuit('MixColumnDemo', {
+  nodes: { s0: Input, s1: Input, s2: Input, s3: Input, mc: MixColumn, r0: HexDisplay, r1: HexDisplay, r2: HexDisplay, r3: HexDisplay },
+  nodeArgs: { s0: { value: 219, width: 8 }, s1: { value: 19, width: 8 }, s2: { value: 83, width: 8 }, s3: { value: 69, width: 8 }, r0: { width: 8 }, r1: { width: 8 }, r2: { width: 8 }, r3: { width: 8 } },
+  connect: ({ s0, s1, s2, s3, mc, r0, r1, r2, r3 }) => [
+    s0.out.to(mc.s0), s1.out.to(mc.s1),
+    s2.out.to(mc.s2), s3.out.to(mc.s3),
+    mc.r0.to(r0.in), mc.r1.to(r1.in),
+    mc.r2.to(r2.in), mc.r3.to(r3.in),
+  ],
+});
 
 export const AES_CIRCUITS: Record<string, BlogCircuit> = {
-  // Demo 1: S-box lookup via ROM
   subByteDemo: {
     name: "SubBytes: S-Box Lookup",
     description:
-      "Each byte is replaced via a 256-entry lookup table. Try 0x00 (→ 0x63), 0x53 (→ 0xed), or 0xff (→ 0x16). Pre-loaded with FIPS 197 S-box.",
+      "Each byte is replaced via a 256-entry lookup table. Try 0x00 (-> 0x63), 0x53 (-> 0xed), or 0xff (-> 0x16). Pre-loaded with FIPS 197 S-box.",
     displayCode: `
 const SubByteDemo = circuit('SubByteDemo', {
   nodes: { s: Input, rom: ROM, disp: HexDisplay },
   nodeArgs: { s: { value: 83, width: 8 }, disp: { width: 8 } },
-  connect: ({ in: inp, out, s, rom, disp }) => [
+  connect: ({ s, rom, disp }) => [
     s.out.to(rom.addr),
     rom.data_out.to(disp.in),
   ],
 })
 `,
-    dsl: `
-const SubByteDemo = circuit('SubByteDemo', {
-  nodes: { s: Input, rom: ROM, disp: HexDisplay },
-  nodeArgs: { s: { value: 83, width: 8 }, rom: { init: ${AES_SBOX_JSON} }, disp: { width: 8 } },
-  connect: ({ in: inp, out, s, rom, disp }) => [
-    s.out.to(rom.addr),
-    rom.data_out.to(disp.in),
-  ],
-})
-`,
+    circuit: SubByteDemo,
   },
 
-  // Demo 2: XTime — GF(2^8) multiplication by 2
   xTimeDemo: {
     name: "XTime: Multiply by 2 in GF(2^8)",
     description:
-      "Left-shift, then XOR with 0x1b if the MSB was 1. Try 87 (0x57 → 0xae), 128 (0x80 → 0x1b), or 149 (0x95 → 0x35).",
+      "Left-shift, then XOR with 0x1b if the MSB was 1. Try 87 (0x57 -> 0xae), 128 (0x80 -> 0x1b), or 149 (0x95 -> 0x35).",
     displayCode: `
 const XTime = circuit('XTime', {
   in: { x: bus(8) },
@@ -138,30 +162,19 @@ const XTime = circuit('XTime', {
 const XTimeDemo = circuit('XTimeDemo', {
   nodes: { val: Input, xt: XTime, disp: HexDisplay },
   nodeArgs: { val: { value: 87, width: 8 }, disp: { width: 8 } },
-  connect: ({ in: inp, out, val, xt, disp }) => [
-    val.out.to(xt.x),
-    xt.out.to(disp.in),
-  ],
-})
-`,
-    dsl: `${XTIME_CIRCUIT}
-
-const XTimeDemo = circuit('XTimeDemo', {
-  nodes: { val: Input, xt: XTime, disp: HexDisplay },
-  nodeArgs: { val: { value: 87, width: 8 }, disp: { width: 8 } },
   connect: ({ val, xt, disp }) => [
     val.out.to(xt.x),
     xt.out.to(disp.in),
   ],
 })
 `,
+    circuit: XTimeDemo,
   },
 
-  // Demo 3: MixColumns on one column — FIPS 197 test vector
   mixColumnDemo: {
     name: "MixColumns: One Column",
     description:
-      "FIPS 197 test vector: [0xdb, 0x13, 0x53, 0x45] → [0x8e, 0x4d, 0xa1, 0xbc]. Four bytes in, four bytes out, completely mixed.",
+      "FIPS 197 test vector: [0xdb, 0x13, 0x53, 0x45] -> [0x8e, 0x4d, 0xa1, 0xbc]. Four bytes in, four bytes out, completely mixed.",
     displayCode: `// FIPS 197 MixColumns test vector:
 //   In:  [0xdb, 0x13, 0x53, 0x45]
 //   Out: [0x8e, 0x4d, 0xa1, 0xbc]
@@ -176,19 +189,6 @@ const MixColumnDemo = circuit('MixColumnDemo', {
     mc.r2.to(r2.in), mc.r3.to(r3.in),
   ],
 })`,
-    dsl: `${XTIME_CIRCUIT}
-${MIXCOLUMN_CIRCUIT}
-
-const MixColumnDemo = circuit('MixColumnDemo', {
-  nodes: { s0: Input, s1: Input, s2: Input, s3: Input, mc: MixColumn, r0: HexDisplay, r1: HexDisplay, r2: HexDisplay, r3: HexDisplay },
-  nodeArgs: { s0: { value: 219, width: 8 }, s1: { value: 19, width: 8 }, s2: { value: 83, width: 8 }, s3: { value: 69, width: 8 }, r0: { width: 8 }, r1: { width: 8 }, r2: { width: 8 }, r3: { width: 8 } },
-  connect: ({ s0, s1, s2, s3, mc, r0, r1, r2, r3 }) => [
-    s0.out.to(mc.s0), s1.out.to(mc.s1),
-    s2.out.to(mc.s2), s3.out.to(mc.s3),
-    mc.r0.to(r0.in), mc.r1.to(r1.in),
-    mc.r2.to(r2.in), mc.r3.to(r3.in),
-  ],
-})
-`,
+    circuit: MixColumnDemo,
   },
 };

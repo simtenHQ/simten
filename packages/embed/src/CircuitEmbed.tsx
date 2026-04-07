@@ -2,11 +2,12 @@
 
 import { useState, useCallback, forwardRef, useImperativeHandle, useEffect } from "react";
 import { useCircuitSimulator } from "./hooks/useCircuitSimulator";
+import type { BuiltCircuit } from "@turing-incomplete/core/circuit";
 import { CircuitCanvas, ClockControls } from "@turing-incomplete/ui/canvas";
 
 export interface CircuitEmbedProps {
-  /** TypeScript component code */
-  code: string;
+  /** The circuit to display (result of circuit()) */
+  circuit: BuiltCircuit;
   /** Container height */
   height?: number | string;
   /** Show clock controls for sequential circuits */
@@ -46,8 +47,8 @@ export interface CircuitEmbedHandle {
 }
 
 export const CircuitEmbed = forwardRef<CircuitEmbedHandle, CircuitEmbedProps>(
-  function CircuitEmbed({ code, height = 300, showControls = true, nodePositions, theme, title, subtitle, description, href, focus, showPortLabels, onPortClick, glowUnconnected, autoRunSpeed = 500, displayCode, initialInputs }, ref) {
-    const sim = useCircuitSimulator(code, { autoHarness: true, initialInputs });
+  function CircuitEmbed({ circuit, height = 300, showControls = true, nodePositions, theme, title, subtitle, description, href, focus, showPortLabels, onPortClick, glowUnconnected, autoRunSpeed = 500, displayCode, initialInputs }, ref) {
+    const sim = useCircuitSimulator(circuit, { autoHarness: true, initialInputs });
     const [tickCount, setTickCount] = useState(0);
     const [codeVisible, setCodeVisible] = useState(false);
 

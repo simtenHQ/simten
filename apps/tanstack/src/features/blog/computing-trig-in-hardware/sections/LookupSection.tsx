@@ -4,7 +4,7 @@ import { CircuitEmbed } from "@turing-incomplete/embed";
 import { CORDIC_CIRCUITS } from "../circuits";
 
 export function LookupSection() {
-  const circuit = CORDIC_CIRCUITS.angleLookup;
+  const entry = CORDIC_CIRCUITS.angleLookup;
 
   return (
     <section className="py-12">
@@ -30,12 +30,12 @@ export function LookupSection() {
 
       <div className="mt-8">
         <CircuitEmbed
-          code={circuit.dsl}
+          circuit={entry.circuit}
           height={320}
           showControls={false}
-          displayCode={circuit.displayCode}
-          title={circuit.name}
-          description={circuit.description}
+          displayCode={entry.displayCode}
+          title={entry.name}
+          description={entry.description}
         />
       </div>
     </section>

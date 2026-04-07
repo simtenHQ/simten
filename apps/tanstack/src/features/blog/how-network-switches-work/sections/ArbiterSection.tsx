@@ -4,7 +4,7 @@ import { CircuitEmbed } from "@turing-incomplete/embed";
 import { SWITCH_CIRCUITS } from "../circuits";
 
 export function ArbiterSection() {
-  const circuit = SWITCH_CIRCUITS.portArbiter;
+  const entry = SWITCH_CIRCUITS.portArbiter;
 
   return (
     <section className="py-12">
@@ -35,12 +35,12 @@ export function ArbiterSection() {
 
       <div className="mt-8">
         <CircuitEmbed
-          code={circuit.dsl}
+          circuit={entry.circuit}
           height={260}
           showControls={false}
-          displayCode={circuit.displayCode}
-          title={circuit.name}
-          description={circuit.description}
+          displayCode={entry.displayCode}
+          title={entry.name}
+          description={entry.description}
         />
       </div>
     </section>

@@ -4,7 +4,7 @@ import { CircuitEmbed } from "@turing-incomplete/embed";
 import { CORDIC_CIRCUITS } from "../circuits";
 
 export function IterationSection() {
-  const circuit = CORDIC_CIRCUITS.iterationControl;
+  const entry = CORDIC_CIRCUITS.iterationControl;
 
   return (
     <section className="py-12">
@@ -28,12 +28,12 @@ export function IterationSection() {
 
       <div className="mt-8">
         <CircuitEmbed
-          code={circuit.dsl}
+          circuit={entry.circuit}
           height={240}
           showControls={true}
-          displayCode={circuit.displayCode}
-          title={circuit.name}
-          description={circuit.description}
+          displayCode={entry.displayCode}
+          title={entry.name}
+          description={entry.description}
         />
       </div>
     </section>

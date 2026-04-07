@@ -117,6 +117,8 @@ export interface BuiltCircuit<
   readonly circuit: Circuit;
   /** Type-level shape for generic propagation */
   readonly _shape: { inputs: Ins; outputs: Outs };
+  /** Sub-circuit definitions needed for simulation (transitive) */
+  readonly _dependencies: ReadonlyMap<string, Circuit>;
   /** Circuit name */
   readonly name: string;
 }

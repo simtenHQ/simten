@@ -37,7 +37,7 @@ export function GatesSection() {
             inputs are 1, so the output is 0. Inversion!
           </p>
           <CircuitEmbed
-            code={GATE_CIRCUITS.inverter.dsl}
+            circuit={GATE_CIRCUITS.inverter.circuit}
             displayCode={GATE_CIRCUITS.inverter.displayCode}
             height={220}
             title="NOT Gate"
@@ -55,7 +55,7 @@ export function GatesSection() {
             a gate that outputs 1 only when both inputs are 1.
           </p>
           <CircuitEmbed
-            code={GATE_CIRCUITS.and.dsl}
+            circuit={GATE_CIRCUITS.and.circuit}
             displayCode={GATE_CIRCUITS.and.displayCode}
             height={220}
             title="AND Gate"
@@ -73,7 +73,7 @@ export function GatesSection() {
             results. The output is 1 when <em>either</em> input is 1.
           </p>
           <CircuitEmbed
-            code={GATE_CIRCUITS.or.dsl}
+            circuit={GATE_CIRCUITS.or.circuit}
             displayCode={GATE_CIRCUITS.or.displayCode}
             height={220}
             title="OR Gate"
@@ -92,7 +92,7 @@ export function GatesSection() {
             is essential for arithmetic.
           </p>
           <CircuitEmbed
-            code={GATE_CIRCUITS.xor.dsl}
+            circuit={GATE_CIRCUITS.xor.circuit}
             displayCode={GATE_CIRCUITS.xor.displayCode}
             height={260}
             title="XOR Gate"

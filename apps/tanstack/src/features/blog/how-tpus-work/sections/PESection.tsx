@@ -63,7 +63,7 @@ export function PESection() {
 
       <div className="mt-8">
         <CircuitEmbed
-          code={TPU_CIRCUITS.processingElement.dsl}
+          circuit={TPU_CIRCUITS.processingElement.circuit}
           displayCode={TPU_CIRCUITS.processingElement.displayCode}
           nodePositions={TPU_CIRCUITS.processingElement.nodePositions}
           height={400}

@@ -6,11 +6,26 @@
  * the complete PongSimple circuit.
  */
 
+import { circuit, bus, bit, executeCircuitCode } from "@turing-incomplete/core/circuit";
+import type { BuiltCircuit } from "@turing-incomplete/core/circuit";
+
+/** Compile a circuit code string to a BuiltCircuit at import time */
+function compile(code: string): BuiltCircuit {
+  const result = executeCircuitCode(code);
+  if (result.error) throw new Error(result.error);
+  return result.builtCircuits[result.builtCircuits.length - 1];
+}
+import {
+  Input, HexDisplay, Constant, Switch, Led,
+  Register, Adder, Comparator, Or, And, Not, Mux,
+  LeftShifter, BitSlice, Incrementer,
+} from "@turing-incomplete/core/std";
+
 export interface BlogCircuit {
   name: string;
   description: string;
   displayCode: string;
-  dsl: string;
+  circuit: BuiltCircuit;
   nodePositions?: Record<string, { x: number; y: number }>;
 }
 
@@ -49,7 +64,7 @@ const BallPosition = circuit('BallPosition', {
   ],
 })
 `,
-    dsl: `
+    circuit: compile(`
 const BallPosition = circuit('BallPosition', {
   nodes: { ballX: Register, ballY: Register, dx: Input, dy: Input, nextX: Adder, nextY: Adder, wrapX: BitSlice, wrapY: BitSlice, enable: Switch, displayX: HexDisplay, displayY: HexDisplay },
   nodeArgs: { ballX: { initial: 8 }, ballY: { initial: 8 }, dx: { value: 1 }, dy: { value: 1 }, wrapX: { low: 0, high: 3 }, wrapY: { low: 0, high: 3 } },
@@ -65,7 +80,7 @@ const BallPosition = circuit('BallPosition', {
     enable.out.to(ballX.we, ballY.we),
   ],
 })
-`,
+`),
   },
 
   bounceDetection: {
@@ -102,7 +117,7 @@ const BounceDetection = circuit('BounceDetection', {
   ],
 })
 `,
-    dsl: `
+    circuit: compile(`
 const BounceDetection = circuit('BounceDetection', {
   nodes: { ballY: Input, zero: Constant, fifteen: Constant, atTop: Comparator, atBottom: Comparator, shouldBounce: Or, bounceLed: Led, one: Constant, minus1: Constant, newDY: Mux, display: HexDisplay },
   nodeArgs: { ballY: { value: 15 }, zero: { value: 0 }, fifteen: { value: 15 }, one: { value: 1 }, minus1: { value: 255 }, newDY: { width: 8 } },
@@ -118,7 +133,7 @@ const BounceDetection = circuit('BounceDetection', {
     newDY.out.to(display.in),
   ],
 })
-`,
+`),
   },
 
   paddleMovement: {
@@ -165,7 +180,7 @@ const PaddleMovement = circuit('PaddleMovement', {
   ],
 })
 `,
-    dsl: `
+    circuit: compile(`
 const PaddleMovement = circuit('PaddleMovement', {
   nodes: { keyboard: Input, zero: Constant, one: Constant, minus1: Constant, keyW: Constant, keyS: Constant, isW: Comparator, isS: Comparator, upDelta: Mux, delta: Mux, paddleY: Register, newY: Adder, wrapY: BitSlice, enable: Switch, display: HexDisplay, deltaDisplay: HexDisplay },
   nodeArgs: { keyboard: { value: 17 }, zero: { value: 0 }, one: { value: 1 }, minus1: { value: 255 }, keyW: { value: 17 }, keyS: { value: 31 }, upDelta: { width: 8 }, delta: { width: 8 }, paddleY: { initial: 6 }, wrapY: { low: 0, high: 3 } },
@@ -186,7 +201,7 @@ const PaddleMovement = circuit('PaddleMovement', {
     enable.out.to(paddleY.we),
   ],
 })
-`,
+`),
   },
 
   phaseCounter: {
@@ -225,7 +240,7 @@ const PhaseCounter14 = circuit('PhaseCounter14', {
   ],
 })
 `,
-    dsl: `
+    circuit: compile(`
 const PhaseCounter14 = circuit('PhaseCounter14', {
   nodes: { phase: Register, one: Constant, zero: Constant, fourteen: Constant, phaseInc: Adder, atFourteen: Comparator, nextPhase: Mux, enable: Switch, display: HexDisplay, drawThreshold: Constant, isDrawPhase: Comparator, drawLed: Led },
   nodeArgs: { phase: { initial: 0 }, one: { value: 1 }, zero: { value: 0 }, fourteen: { value: 14 }, nextPhase: { width: 8 }, drawThreshold: { value: 6 } },
@@ -242,7 +257,7 @@ const PhaseCounter14 = circuit('PhaseCounter14', {
     isDrawPhase.gt.to(drawLed.in),
   ],
 })
-`,
+`),
   },
 
   pixelAddress: {
@@ -270,7 +285,7 @@ const PixelAddress = circuit('PixelAddress', {
   ],
 })
 `,
-    dsl: `
+    circuit: compile(`
 const PixelAddress = circuit('PixelAddress', {
   nodes: { x: Input, y: Input, four: Input, y16: LeftShifter, addr: Adder, result: HexDisplay },
   nodeArgs: { x: { value: 4 }, y: { value: 4 }, four: { value: 4 } },
@@ -282,7 +297,7 @@ const PixelAddress = circuit('PixelAddress', {
     addr.sum.to(result.in),
   ],
 })
-`,
+`),
   },
 };
 

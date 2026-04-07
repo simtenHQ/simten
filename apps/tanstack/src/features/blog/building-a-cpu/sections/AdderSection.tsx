@@ -33,7 +33,7 @@ export function AdderSection() {
 
       <div className="mt-8">
         <CircuitEmbed
-          code={BLOG_CIRCUITS.adder4bit.dsl}
+          circuit={BLOG_CIRCUITS.adder4bit.circuit}
           displayCode={BLOG_CIRCUITS.adder4bit.displayCode}
           height={380}
           title="4-Bit Ripple-Carry Adder"

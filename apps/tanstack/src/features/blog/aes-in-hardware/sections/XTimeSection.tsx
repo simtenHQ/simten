@@ -4,7 +4,7 @@ import { CircuitEmbed } from "@turing-incomplete/embed";
 import { AES_CIRCUITS } from "../circuits";
 
 export function XTimeSection() {
-  const circuit = AES_CIRCUITS.xTimeDemo;
+  const entry = AES_CIRCUITS.xTimeDemo;
 
   return (
     <section className="py-12">
@@ -59,12 +59,12 @@ export function XTimeSection() {
 
       <div className="mt-8">
         <CircuitEmbed
-          code={circuit.dsl}
+          circuit={entry.circuit}
           height={360}
           showControls={false}
-          displayCode={circuit.displayCode}
-          title={circuit.name}
-          description={circuit.description}
+          displayCode={entry.displayCode}
+          title={entry.name}
+          description={entry.description}
         />
       </div>
     </section>

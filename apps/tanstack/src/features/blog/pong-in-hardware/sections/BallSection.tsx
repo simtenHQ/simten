@@ -4,7 +4,7 @@ import { CircuitEmbed } from "@turing-incomplete/embed";
 import { PONG_CIRCUITS } from "../circuits";
 
 export function BallSection() {
-  const circuit = PONG_CIRCUITS.ballPosition;
+  const entry = PONG_CIRCUITS.ballPosition;
 
   return (
     <section className="py-12">
@@ -29,13 +29,13 @@ export function BallSection() {
 
       <div className="mt-8">
         <CircuitEmbed
-          code={circuit.dsl}
+          circuit={entry.circuit}
           height={280}
           showControls={true}
-          displayCode={circuit.displayCode}
-          nodePositions={circuit.nodePositions}
-          title={circuit.name}
-          description={circuit.description}
+          displayCode={entry.displayCode}
+          nodePositions={entry.nodePositions}
+          title={entry.name}
+          description={entry.description}
         />
       </div>
     </section>

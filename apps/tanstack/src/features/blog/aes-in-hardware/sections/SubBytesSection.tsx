@@ -4,7 +4,7 @@ import { CircuitEmbed } from "@turing-incomplete/embed";
 import { AES_CIRCUITS } from "../circuits";
 
 export function SubBytesSection() {
-  const circuit = AES_CIRCUITS.subByteDemo;
+  const entry = AES_CIRCUITS.subByteDemo;
 
   return (
     <section className="py-12">
@@ -52,12 +52,12 @@ export function SubBytesSection() {
 
       <div className="mt-8">
         <CircuitEmbed
-          code={circuit.dsl}
+          circuit={entry.circuit}
           height={180}
           showControls={false}
-          displayCode={circuit.displayCode}
-          title={circuit.name}
-          description={circuit.description}
+          displayCode={entry.displayCode}
+          title={entry.name}
+          description={entry.description}
         />
       </div>
 
