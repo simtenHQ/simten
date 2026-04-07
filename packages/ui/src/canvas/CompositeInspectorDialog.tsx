@@ -25,7 +25,6 @@ import { createDrillDownViewCircuit } from "./drill-down-view";
 import {
   createSimulatorFromCircuit,
   SimulationSession,
-  PRIMITIVE_DEFINITIONS,
 } from "@turing-incomplete/core/simulator";
 import type { CircuitLibrary } from "@turing-incomplete/core/simulator";
 import type { Circuit } from "@turing-incomplete/core";
@@ -195,10 +194,7 @@ function InspectorBreadcrumb({
   theme = "dark",
 }: BreadcrumbProps) {
   const topFrame = stack[stack.length - 1];
-  const description =
-    topFrame?.componentDef.metadata?.description ??
-    PRIMITIVE_DEFINITIONS[topFrame?.componentName]?.referenceCircuit
-      ?.description;
+  const description = topFrame?.componentDef.metadata?.description;
   const dark = theme === "dark";
   return (
     <div className="flex items-center gap-1 text-sm min-w-0">

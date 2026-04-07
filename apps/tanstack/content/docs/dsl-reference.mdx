@@ -45,12 +45,18 @@ const MyCircuit = circuit('MyCircuit', {
 
 ```typescript
 circuit(name, {
-  in?:       Record<string, PortType>     // named input ports
-  out?:      Record<string, PortType>     // named output ports
-  meta?:     { description?: string }     // shown in palette / used by Claude
-  nodes:     Record<string, ComponentClass>   // node label → component type
-  nodeArgs?: Record<string, object>           // parameters per node
-  connect:   (refs) => Connection[]           // wiring
+  in?:       Record<string, PortType>          // named input ports
+  out?:      Record<string, PortType>          // named output ports
+  meta?:     { description?: string }          // shown in palette / used by Claude
+  // Composite (structural):
+  nodes?:    Record<string, BuiltCircuit>      // node label → component type
+  nodeArgs?: Record<string, object>            // parameters per node
+  connect?:  (refs) => Connection[]            // wiring
+  // Behavioral (eval):
+  eval?:     (inputs & state) => outputs       // combinational output function
+  // Stateful (sequential):
+  state?:    Record<string, any>               // initial state shape
+  onTick?:   (inputs & state) => nextState     // state update on clock edge
 })
 ```
 
@@ -132,6 +138,69 @@ const AdderDemo = circuit('AdderDemo', {
   ],
 })
 ```
+
+## Behavioral Circuits
+
+Circuits can have executable behavior instead of (or in addition to) structural connections. There are three patterns:
+
+### 1. Composite (structural only)
+
+Uses `nodes` + `connect` — the simulator elaborates these into primitives at compile time. No JS runs at simulation time; all behavior comes from the leaf primitives.
+
+```typescript
+const HalfAdder = circuit('HalfAdder', {
+  in:  { a: bit, b: bit },
+  out: { sum: bit, carry: bit },
+  nodes:   { xor1: Xor, and1: And },
+  connect: ({ in: inp, out, xor1, and1 }) => [
+    inp.a.to(xor1.a, and1.a),
+    inp.b.to(xor1.b, and1.b),
+    xor1.out.to(out.sum),
+    and1.out.to(out.carry),
+  ],
+})
+```
+
+### 2. Behavioral (eval — combinational)
+
+Uses `eval` — a pure function from inputs to outputs. Runs on every propagation step. No state, no clock.
+
+```typescript
+const Xor = circuit('Xor', {
+  in:  { a: bit, b: bit },
+  out: { out: bit },
+  eval: ({ a, b }) => ({ out: a !== b ? 1 : 0 }),
+})
+```
+
+`eval` receives named input values as numbers (`0` or `1` for `bit`, integers for `bus(N)`).
+It returns an object with named output values.
+
+### 3. Stateful (state + onTick + eval — sequential)
+
+Uses `state`, `onTick`, and `eval`. The circuit has internal state that updates on the rising clock edge.
+
+```typescript
+const Register = circuit('Register', {
+  in:  { data: bus(8), we: bit },
+  out: { q: bus(8) },
+  state: { value: 0 },                              // initial state shape
+  eval:   ({ value }) => ({ q: value as number }),  // outputs from current state
+  onTick: ({ data, we, value }) => ({               // next state from inputs + state
+    value: we ? (data as number) : (value as number),
+  }),
+})
+```
+
+- `state` — the initial state object (shape defines what state exists)
+- `eval` receives current state fields merged with inputs — return output values
+- `onTick` receives inputs merged with current state — return next state object
+
+The tick cycle calls `eval` first (combinational output from current state), then `onTick` after the clock edge (state update), matching real sequential hardware.
+
+---
+
+The three patterns are not mutually exclusive — a circuit can have both `nodes`/`connect` and `eval`, though in practice you use one or the other.
 
 ## Type Rules
 

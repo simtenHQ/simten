@@ -8,7 +8,7 @@ import {
 } from "@turing-incomplete/core/simulator";
 import type { Circuit } from "@turing-incomplete/core";
 import type { BuiltCircuit } from "@turing-incomplete/core/circuit";
-import { createStdLibrary } from "@turing-incomplete/core/std";
+import { Switch, Button, Led, Input, Output, HexDisplay } from "@turing-incomplete/core/std";
 import { useCircuitSession } from "@turing-incomplete/ui/canvas";
 import { autoHarness } from "../auto-harness";
 
@@ -66,10 +66,19 @@ export function useCircuitSimulator(
 ): SimulatorState & SimulatorActions {
   // ── Build library + resolve circuit IR ──
   const { rawCircuit, componentLibrary } = useMemo(() => {
-    const lib = createStdLibrary();
+    const circuitMap = new Map<string, Circuit>();
+    const lib: CircuitLibrary & { addCircuit(c: Circuit): void } = {
+      resolveCircuit: (name) => circuitMap.get(name),
+      getAllPrimitiveNames: () => [...circuitMap.entries()].filter(([, c]) => c.implementation.kind === 'primitive').map(([n]) => n),
+      addCircuit: (c) => { circuitMap.set(c.name, c); },
+    };
+    // Always include harness components (Switch, Led, etc.) since autoHarness may inject them
+    for (const c of [Switch, Button, Led, Input, Output, HexDisplay]) {
+      lib.addCircuit(c.circuit);
+    }
     lib.addCircuit(circuit.circuit);
     for (const [, dep] of circuit._dependencies) {
-      lib.addCircuit(dep);
+      if (dep?.circuit) lib.addCircuit(dep.circuit);
     }
     return { rawCircuit: circuit.circuit, componentLibrary: lib };
   }, [circuit]);

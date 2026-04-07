@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { circuit } from '../circuit.js';
 import { bit, bus } from '../bit-bus.js';
+import { getCircuitEval } from '../eval-registry.js';
 import type { BuiltCircuit } from '../types.js';
 
 // ============================================================================
@@ -83,11 +84,11 @@ describe('combinational leaf', () => {
     expect(Adder.circuit.outputs[1].name).toBe('carry');
   });
 
-  it('attaches eval function', () => {
-    expect((And as any)._evalFn).toBeDefined();
-    const evalFn = (And as any)._evalFn;
-    expect(evalFn({ a: 1, b: 1 })).toEqual({ out: 1 });
-    expect(evalFn({ a: 1, b: 0 })).toEqual({ out: 0 });
+  it('registers eval function in registry at definition time', () => {
+    const entry = getCircuitEval('And');
+    expect(entry).toBeDefined();
+    expect(entry!.evalFn({ a: 1, b: 1 })).toEqual({ out: 1 });
+    expect(entry!.evalFn({ a: 1, b: 0 })).toEqual({ out: 0 });
   });
 
   it('allows numeric shorthand for bus width', () => {
@@ -122,9 +123,10 @@ describe('sequential leaf', () => {
     expect(Counter.circuit.clocks[0].name).toBe('clk');
     expect(Counter.circuit.state).toHaveLength(1);
     expect(Counter.circuit.metadata?.kind).toBe('sequential');
-    expect((Counter as any)._evalFn).toBeDefined();
-    expect((Counter as any)._onTickFn).toBeDefined();
-    expect((Counter as any)._initialState).toEqual({ total: 0 });
+    const entry = getCircuitEval('Counter');
+    expect(entry?.evalFn).toBeDefined();
+    expect(entry?.onTickFn).toBeDefined();
+    expect(entry?.stateKeys).toEqual(['total']);
   });
 
   it('builds a register', () => {
@@ -285,8 +287,8 @@ describe('metadata', () => {
     });
 
     expect(ALU.circuit.metadata?.description).toBe('Arithmetic Logic Unit');
-    expect((ALU as any)._category).toBe('arithmetic');
-    expect((ALU as any)._icon).toBe('+');
+    expect(ALU.circuit.metadata?.category).toBe('arithmetic');
+    expect(ALU.circuit.metadata?.icon).toBe('+');
   });
 });
 

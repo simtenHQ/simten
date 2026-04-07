@@ -7,7 +7,6 @@
 import type { Node as ReactFlowNode, Edge } from '@xyflow/react';
 import type { Circuit, PortPath } from '@turing-incomplete/core';
 import type { CircuitLibrary, FlatPortValueMap, FlatSequentialState } from '@turing-incomplete/core/simulator';
-import { getReferenceCircuit } from '@turing-incomplete/core/simulator';
 import type { MetadataState } from './types';
 import type { NodeData } from '../nodes';
 
@@ -209,8 +208,7 @@ function projectCircuitToNodes(
       }
     }
 
-    const hasReferenceCircuit = componentDef.implementation.kind === 'primitive'
-      && getReferenceCircuit(node.componentRef) !== undefined;
+    const hasReferenceCircuit = false;
     const isComposite = componentDef.implementation.kind === 'composite' || hasReferenceCircuit;
 
     reactFlowNodes.push({

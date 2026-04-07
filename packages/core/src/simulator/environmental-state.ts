@@ -7,8 +7,7 @@
  * state (switch positions, input values) must be restored separately via callbacks.
  */
 
-import type { Circuit, Node, ArgumentValue } from '../types/circuit.js';
-import { PRIMITIVE_DEFINITIONS } from './primitives.js';
+import type { Circuit, CircuitLibrary, Node, ArgumentValue } from '../types/circuit.js';
 
 /**
  * Allowed environmental state value types.
@@ -24,17 +23,20 @@ export type EnvironmentalStateValue =
 
 /**
  * Capture environmental state from all nodes that have it.
- * Uses metadata-driven discovery via primitive def's `environmentalState` field.
+ * Uses circuit metadata's `interactiveArg` field to discover which nodes have
+ * user-interactive arguments (Switch value, Input value, etc.).
  */
 export function captureEnvironmentalState(
   circuit: Circuit,
+  library?: CircuitLibrary,
 ): Map<string, EnvironmentalStateValue> {
   const result = new Map<string, EnvironmentalStateValue>();
 
   for (const node of circuit.nodes) {
-    const def = PRIMITIVE_DEFINITIONS[node.componentRef];
-    if (def?.environmentalState) {
-      const value = node.arguments[def.environmentalState];
+    const def = library?.resolveCircuit(node.componentRef);
+    const interactiveArg = def?.metadata?.interactiveArg;
+    if (interactiveArg) {
+      const value = node.arguments[interactiveArg];
       result.set(node.id, structuredClone(value) as EnvironmentalStateValue);
     }
   }
@@ -50,17 +52,19 @@ export function restoreEnvironmentalState(
   circuit: Circuit,
   environmentalState: Map<string, EnvironmentalStateValue>,
   updateNode: (nodeId: string, updates: Partial<Node>) => void,
+  library?: CircuitLibrary,
 ): void {
   for (const node of circuit.nodes) {
     const value = environmentalState.get(node.id);
     if (value === undefined) continue;
 
-    const def = PRIMITIVE_DEFINITIONS[node.componentRef];
-    if (def?.environmentalState) {
+    const def = library?.resolveCircuit(node.componentRef);
+    const interactiveArg = def?.metadata?.interactiveArg;
+    if (interactiveArg) {
       updateNode(node.id, {
         arguments: {
           ...node.arguments,
-          [def.environmentalState]: structuredClone(value) as ArgumentValue,
+          [interactiveArg]: structuredClone(value) as ArgumentValue,
         },
       });
     }

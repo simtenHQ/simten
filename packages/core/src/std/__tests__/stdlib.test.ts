@@ -9,7 +9,6 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { PRIMITIVE_DEFINITIONS } from '../../simulator/primitives.js';
 import {
   And, Or, Not, Xor, Nand, Nor, Xnor, Buffer,
   Adder, Subtractor, Multiplier, Comparator,
@@ -21,9 +20,8 @@ import {
   ROM, RAM, DualPortRAM,
   Switch, Button, Led, Input, Output, Constant,
   SevenSegment, HexDisplay, Screen, RasterDisplay, Console,
-  createStdLibrary,
-  getAllStdCircuits,
 } from '../index.js';
+import type { Circuit, CircuitLibrary } from '../../types/circuit.js';
 import type { BuiltCircuit } from '../../circuit/types.js';
 
 // ============================================================================
@@ -69,22 +67,14 @@ describe('stdlib circuits load', () => {
     expect(comp.circuit.implementation.kind).toBe('primitive');
   });
 
-  it.each(allCircuits)('%s matches PRIMITIVE_DEFINITIONS ports', (name, comp) => {
-    const def = PRIMITIVE_DEFINITIONS[name];
-    expect(def).toBeDefined();
-
-    // Input ports match
-    expect(comp.circuit.inputs.length).toBe(def.inputs.length);
-    for (let i = 0; i < def.inputs.length; i++) {
-      expect(comp.circuit.inputs[i].name).toBe(def.inputs[i].name);
-      expect(comp.circuit.inputs[i].portType.kind).toBe(def.inputs[i].portType.kind);
+  it.each(allCircuits)('%s has well-formed ports', (name, comp) => {
+    for (const port of comp.circuit.inputs) {
+      expect(port.name).toBeTruthy();
+      expect(port.portType.kind).toMatch(/^(bit|bus)$/);
     }
-
-    // Output ports match
-    expect(comp.circuit.outputs.length).toBe(def.outputs.length);
-    for (let i = 0; i < def.outputs.length; i++) {
-      expect(comp.circuit.outputs[i].name).toBe(def.outputs[i].name);
-      expect(comp.circuit.outputs[i].portType.kind).toBe(def.outputs[i].portType.kind);
+    for (const port of comp.circuit.outputs) {
+      expect(port.name).toBeTruthy();
+      expect(port.portType.kind).toMatch(/^(bit|bus)$/);
     }
   });
 
@@ -151,54 +141,31 @@ describe('I/O circuits', () => {
 });
 
 // ============================================================================
-// Library helper
+// Library from dependencies
 // ============================================================================
 
-describe('createStdLibrary', () => {
-  it('resolves all standard components', () => {
-    const lib = createStdLibrary();
+describe('circuit._dependencies', () => {
+  it('includes all referenced stdlib components', () => {
+    // And._dependencies is empty (it's a leaf primitive)
+    expect(And._dependencies.size).toBe(0);
+  });
 
-    for (const name of Object.keys(PRIMITIVE_DEFINITIONS)) {
-      const circuit = lib.resolveCircuit(name);
-      expect(circuit).toBeDefined();
-      expect(circuit!.name).toBe(name);
+  it('building a library from deps resolves all needed components', () => {
+    // Adder is composite — it has And, Or, Xor, etc. in _dependencies
+    const circuitMap = new Map<string, Circuit>();
+    const lib: CircuitLibrary & { addCircuit(c: Circuit): void } = {
+      resolveCircuit: (name) => circuitMap.get(name),
+      getAllPrimitiveNames: () => [...circuitMap.entries()].filter(([, c]) => c.implementation.kind === 'primitive').map(([n]) => n),
+      addCircuit: (c) => { circuitMap.set(c.name, c); },
+    };
+    lib.addCircuit(Adder.circuit);
+    for (const [, dep] of Adder._dependencies) lib.addCircuit(dep.circuit);
+
+    expect(lib.resolveCircuit('Adder')).toBeDefined();
+    // All transitive deps are present
+    for (const [name] of Adder._dependencies) {
+      expect(lib.resolveCircuit(name)).toBeDefined();
     }
-  });
-
-  it('getAllPrimitiveNames returns all primitives', () => {
-    const lib = createStdLibrary();
-    const names = lib.getAllPrimitiveNames();
-
-    for (const name of Object.keys(PRIMITIVE_DEFINITIONS)) {
-      expect(names).toContain(name);
-    }
-  });
-
-  it('addCircuit adds a custom component', () => {
-    const lib = createStdLibrary();
-    const custom = And.circuit;  // reuse And's circuit as a test
-    const renamed = { ...custom, name: 'CustomAnd' };
-    lib.addCircuit(renamed);
-
-    expect(lib.resolveCircuit('CustomAnd')).toBeDefined();
-  });
-});
-
-// ============================================================================
-// getAllStdCircuits
-// ============================================================================
-
-describe('getAllStdCircuits', () => {
-  it('returns all components', () => {
-    const all = getAllStdCircuits();
-    expect(all.length).toBeGreaterThanOrEqual(Object.keys(PRIMITIVE_DEFINITIONS).length);
-  });
-
-  it('each component has a unique name', () => {
-    const all = getAllStdCircuits();
-    const names = all.map(c => c.name);
-    const unique = new Set(names);
-    expect(unique.size).toBe(names.length);
   });
 });
 
