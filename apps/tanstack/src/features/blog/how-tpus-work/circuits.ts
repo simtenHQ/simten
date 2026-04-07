@@ -12,11 +12,21 @@
  *   - Both partial sums and data are registered (1 cycle per PE in each direction)
  */
 
+import { executeCircuitCode } from "@turing-incomplete/core/circuit";
+import type { BuiltCircuit } from "@turing-incomplete/core/circuit";
+
+/** Compile a circuit code string to a BuiltCircuit at import time */
+function compile(code: string): BuiltCircuit {
+  const result = executeCircuitCode(code);
+  if (result.error) throw new Error(result.error);
+  return result.builtCircuits[result.builtCircuits.length - 1];
+}
+
 export interface BlogCircuit {
   name: string;
   description: string;
   displayCode: string;
-  dsl: string;
+  circuit: BuiltCircuit;
   nodePositions?: Record<string, { x: number; y: number }>;
 }
 
@@ -69,7 +79,7 @@ const MultiplyAdd = circuit('MultiplyAdd', {
   ],
 })
 `,
-    dsl: `
+    circuit: compile(`
 const MultiplyAdd = circuit('MultiplyAdd', {
   nodes: { data: Input, weight: Input, partialSumIn: Input, mult: Multiplier, adder: Adder, zero: Constant, result: HexDisplay },
   nodeArgs: { data: { value: 3 }, weight: { value: 5 }, partialSumIn: { value: 10 }, adder: { width: 16 }, zero: { value: 0 } },
@@ -82,7 +92,7 @@ const MultiplyAdd = circuit('MultiplyAdd', {
     adder.sum.to(result.in),
   ],
 })
-`,
+`),
     nodePositions: {
       // Inputs (left)
       data:          { x: 0,   y: 0 },
@@ -118,8 +128,8 @@ const WeightRegister = circuit('WeightRegister', {
     mult.product.to(product.in),
   ],
 })
-`,
-    dsl: `
+`),
+    circuit: compile(`
 const WeightRegister = circuit('WeightRegister', {
   nodes: { weightIn: Input, weightValid: Switch, dataIn: Input, weightReg: Register, storedWeight: HexDisplay, mult: Multiplier, product: HexDisplay },
   nodeArgs: { weightIn: { value: 7 }, dataIn: { value: 3 } },
@@ -131,7 +141,7 @@ const WeightRegister = circuit('WeightRegister', {
     mult.product.to(product.in),
   ],
 })
-`,
+`),
     nodePositions: {
       // Inputs (left)
       weightIn:     { x: 0,   y: 0 },
@@ -168,8 +178,8 @@ const TestPE = circuit('TestPE', {
     pe.dataOut.to(dataOut.in),
   ],
 })
-`,
-    dsl: `
+`),
+    circuit: compile(`
 ${PE_SYSTOLIC_DEFINITION}
 
 const TestPE = circuit('TestPE', {
@@ -184,7 +194,7 @@ const TestPE = circuit('TestPE', {
     pe.dataOut.to(dataOut.in),
   ],
 })
-`,
+`),
     nodePositions: {
       // Inputs (left)
       dataIn:        { x: 0,   y: 0 },
@@ -223,8 +233,8 @@ const TwoPERow = circuit('TwoPERow', {
     pe1.partialSumOut.to(result1.in),
   ],
 })
-`,
-    dsl: `
+`),
+    circuit: compile(`
 ${PE_SYSTOLIC_DEFINITION}
 
 const TwoPERow = circuit('TwoPERow', {
@@ -241,7 +251,7 @@ const TwoPERow = circuit('TwoPERow', {
     pe1.partialSumOut.to(result1.in),
   ],
 })
-`,
+`),
     nodePositions: {
       // Inputs (left)
       data0:       { x: 0,   y: 0 },
@@ -283,8 +293,8 @@ const TwoPEColumn = circuit('TwoPEColumn', {
     pe1.partialSumOut.to(bottomResult.in),
   ],
 })
-`,
-    dsl: `
+`),
+    circuit: compile(`
 ${PE_SYSTOLIC_DEFINITION}
 
 const TwoPEColumn = circuit('TwoPEColumn', {
@@ -300,7 +310,7 @@ const TwoPEColumn = circuit('TwoPEColumn', {
     pe1.partialSumOut.to(bottomResult.in),
   ],
 })
-`,
+`),
     nodePositions: {
       // Inputs (left)
       dataIn:       { x: 0,   y: 120 },
@@ -344,8 +354,8 @@ const WavefrontController = circuit('WavefrontController', {
     isPhase3.eq.to(led3.in),
   ],
 })
-`,
-    dsl: `
+`),
+    circuit: compile(`
 const WavefrontController = circuit('WavefrontController', {
   nodes: { phase: Register, enable: Switch, inc: Incrementer, phaseMux: Mux, one: Constant, zero: Constant, const1: Constant, const2: Constant, const3: Constant, isPhase0: Comparator, isPhase1: Comparator, isPhase2: Comparator, isPhase3: Comparator, led0: Led, led1: Led, led2: Led, led3: Led, display: HexDisplay },
   nodeArgs: { phase: { initial: 0 }, one: { value: 1 }, zero: { value: 0 }, const1: { value: 1 }, const2: { value: 2 }, const3: { value: 3 } },
@@ -365,7 +375,7 @@ const WavefrontController = circuit('WavefrontController', {
     isPhase3.eq.to(led3.in),
   ],
 })
-`,
+`),
     nodePositions: {
       // Control (left)
       enable:   { x: 0,   y: 100 },

@@ -32,7 +32,7 @@ export function CounterSection() {
 
       <div className="mt-8">
         <CircuitEmbed
-          code={BLOG_CIRCUITS.counter4bit.dsl}
+          circuit={BLOG_CIRCUITS.counter4bit.circuit}
           displayCode={BLOG_CIRCUITS.counter4bit.displayCode}
           height={350}
           showControls

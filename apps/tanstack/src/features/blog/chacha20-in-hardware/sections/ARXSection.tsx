@@ -4,7 +4,7 @@ import { CircuitEmbed } from "@turing-incomplete/embed";
 import { CHACHA20_CIRCUITS } from "../circuits";
 
 export function ARXSection() {
-  const circuit = CHACHA20_CIRCUITS.arxDemo;
+  const entry = CHACHA20_CIRCUITS.arxDemo;
 
   return (
     <section className="py-12">
@@ -35,12 +35,12 @@ export function ARXSection() {
 
       <div className="mt-8">
         <CircuitEmbed
-          code={circuit.dsl}
+          circuit={entry.circuit}
           height={280}
           showControls={false}
-          displayCode={circuit.displayCode}
-          title={circuit.name}
-          description={circuit.description}
+          displayCode={entry.displayCode}
+          title={entry.name}
+          description={entry.description}
         />
       </div>
     </section>

@@ -35,7 +35,7 @@ export function CompositionSection() {
             is 0, carry is 1.
           </p>
           <CircuitEmbed
-            code={GATE_CIRCUITS.halfAdder.dsl}
+            circuit={GATE_CIRCUITS.halfAdder.circuit}
             displayCode={GATE_CIRCUITS.halfAdder.displayCode}
             height={260}
             title="Half Adder"
@@ -55,7 +55,7 @@ export function CompositionSection() {
             adder in a modern CPU.
           </p>
           <CircuitEmbed
-            code={GATE_CIRCUITS.fullAdder.dsl}
+            circuit={GATE_CIRCUITS.fullAdder.circuit}
             displayCode={GATE_CIRCUITS.fullAdder.displayCode}
             height={300}
             title="Full Adder"
@@ -75,7 +75,7 @@ export function CompositionSection() {
             components.
           </p>
           <CircuitEmbed
-            code={GATE_CIRCUITS.mux.dsl}
+            circuit={GATE_CIRCUITS.mux.circuit}
             displayCode={GATE_CIRCUITS.mux.displayCode}
             height={280}
             title="2:1 Multiplexer"

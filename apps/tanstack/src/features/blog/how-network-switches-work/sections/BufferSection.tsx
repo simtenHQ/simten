@@ -4,7 +4,7 @@ import { CircuitEmbed } from "@turing-incomplete/embed";
 import { SWITCH_CIRCUITS } from "../circuits";
 
 export function BufferSection() {
-  const circuit = SWITCH_CIRCUITS.packetBuffer;
+  const entry = SWITCH_CIRCUITS.packetBuffer;
 
   return (
     <section className="py-12">
@@ -34,12 +34,12 @@ export function BufferSection() {
 
       <div className="mt-8">
         <CircuitEmbed
-          code={circuit.dsl}
+          circuit={entry.circuit}
           height={280}
           showControls
-          displayCode={circuit.displayCode}
-          title={circuit.name}
-          description={circuit.description}
+          displayCode={entry.displayCode}
+          title={entry.name}
+          description={entry.description}
         />
       </div>
     </section>

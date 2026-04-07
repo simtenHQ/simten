@@ -4,7 +4,7 @@ import { CircuitEmbed } from "@turing-incomplete/embed";
 import { PONG_CIRCUITS } from "../circuits";
 
 export function PhaseSection() {
-  const circuit = PONG_CIRCUITS.phaseCounter;
+  const entry = PONG_CIRCUITS.phaseCounter;
 
   return (
     <section className="py-12">
@@ -34,13 +34,13 @@ export function PhaseSection() {
 
       <div className="mt-8">
         <CircuitEmbed
-          code={circuit.dsl}
+          circuit={entry.circuit}
           height={260}
           showControls={true}
-          displayCode={circuit.displayCode}
-          nodePositions={circuit.nodePositions}
-          title={circuit.name}
-          description={circuit.description}
+          displayCode={entry.displayCode}
+          nodePositions={entry.nodePositions}
+          title={entry.name}
+          description={entry.description}
         />
       </div>
     </section>

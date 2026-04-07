@@ -10,14 +10,6 @@ export interface BlogPost {
 
 export const posts: BlogPost[] = [
   {
-    slug: "logic-from-nothing",
-    title: "Logic from Nothing",
-    description:
-      "Build NOT, AND, OR, and XOR from nothing but NAND gates. An interactive article where you write real circuits, pass truth table checks, and unlock each section.",
-    category: 'interactive',
-    nodes: '4 challenges',
-  },
-  {
     slug: "pong-in-hardware",
     title: "Pong in Hardware",
     description:

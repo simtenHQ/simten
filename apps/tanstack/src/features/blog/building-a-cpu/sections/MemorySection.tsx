@@ -38,7 +38,7 @@ export function MemorySection() {
             memory!
           </p>
           <CircuitEmbed
-            code={BLOG_CIRCUITS.srLatch.dsl}
+            circuit={BLOG_CIRCUITS.srLatch.circuit}
             displayCode={BLOG_CIRCUITS.srLatch.displayCode}
             height={260}
             title="SR Latch"
@@ -58,7 +58,7 @@ export function MemorySection() {
             <strong>Tick</strong> to capture the value.
           </p>
           <CircuitEmbed
-            code={BLOG_CIRCUITS.dFlipFlop.dsl}
+            circuit={BLOG_CIRCUITS.dFlipFlop.circuit}
             displayCode={BLOG_CIRCUITS.dFlipFlop.displayCode}
             height={220}
             showControls
@@ -79,7 +79,7 @@ export function MemorySection() {
             (8, 16, 32, or 64 bits).
           </p>
           <CircuitEmbed
-            code={BLOG_CIRCUITS.register4bit.dsl}
+            circuit={BLOG_CIRCUITS.register4bit.circuit}
             displayCode={BLOG_CIRCUITS.register4bit.displayCode}
             height={350}
             showControls

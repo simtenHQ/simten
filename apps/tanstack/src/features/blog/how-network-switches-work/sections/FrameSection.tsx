@@ -4,7 +4,7 @@ import { CircuitEmbed } from "@turing-incomplete/embed";
 import { SWITCH_CIRCUITS } from "../circuits";
 
 export function FrameSection() {
-  const circuit = SWITCH_CIRCUITS.frameDetector;
+  const entry = SWITCH_CIRCUITS.frameDetector;
 
   return (
     <section className="py-12">
@@ -38,11 +38,11 @@ export function FrameSection() {
 
       <div className="mt-8">
         <CircuitEmbed
-          code={circuit.dsl}
+          circuit={entry.circuit}
           height={300}
           showControls
-          displayCode={circuit.displayCode}
-          title={circuit.name}
+          displayCode={entry.displayCode}
+          title={entry.name}
           description={circuit.description}
         />
       </div>

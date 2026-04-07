@@ -4,7 +4,7 @@ import { CircuitEmbed } from "@turing-incomplete/embed";
 import { AES_CIRCUITS } from "../circuits";
 
 export function MixColumnsSection() {
-  const circuit = AES_CIRCUITS.mixColumnDemo;
+  const entry = AES_CIRCUITS.mixColumnDemo;
 
   return (
     <section className="py-12">
@@ -65,12 +65,12 @@ r3 = 3·s0 ⊕ s1   ⊕ s2   ⊕ 2·s3`}</pre>
 
       <div className="mt-8">
         <CircuitEmbed
-          code={circuit.dsl}
+          circuit={entry.circuit}
           height={420}
           showControls={false}
-          displayCode={circuit.displayCode}
-          title={circuit.name}
-          description={circuit.description}
+          displayCode={entry.displayCode}
+          title={entry.name}
+          description={entry.description}
         />
       </div>
     </section>

@@ -5,16 +5,24 @@
  * full quarter-round that powers TLS encryption across the internet.
  */
 
+import { circuit, bus } from "@turing-incomplete/core/circuit";
+import type { BuiltCircuit } from "@turing-incomplete/core/circuit";
+import {
+  Input, HexDisplay, Constant,
+  Adder, BusXor, BusOr,
+  LeftShifter, RightShifter,
+} from "@turing-incomplete/core/std";
+
 export interface BlogCircuit {
   name: string;
   description: string;
   displayCode: string;
-  dsl: string;
+  circuit: BuiltCircuit;
 }
 
-// Shared rotation sub-circuits used by the quarter-round and step demos
-const ROTATE_CIRCUITS = `
-const RotateLeft16 = circuit('RotateLeft16', {
+// ── Rotation sub-circuits ──
+
+export const RotateLeft16 = circuit('RotateLeft16', {
   in: { x: bus(32) },
   out: { out: bus(32) },
   nodes: { sh_left: LeftShifter, sh_right: RightShifter, c16: Constant, combine: BusOr },
@@ -26,9 +34,9 @@ const RotateLeft16 = circuit('RotateLeft16', {
     sh_right.result.to(combine.b),
     combine.out.to(out.out),
   ],
-})
+});
 
-const RotateLeft12 = circuit('RotateLeft12', {
+export const RotateLeft12 = circuit('RotateLeft12', {
   in: { x: bus(32) },
   out: { out: bus(32) },
   nodes: { sh_left: LeftShifter, sh_right: RightShifter, c12: Constant, c20: Constant, combine: BusOr },
@@ -41,9 +49,9 @@ const RotateLeft12 = circuit('RotateLeft12', {
     sh_right.result.to(combine.b),
     combine.out.to(out.out),
   ],
-})
+});
 
-const RotateLeft8 = circuit('RotateLeft8', {
+export const RotateLeft8 = circuit('RotateLeft8', {
   in: { x: bus(32) },
   out: { out: bus(32) },
   nodes: { sh_left: LeftShifter, sh_right: RightShifter, c8: Constant, c24: Constant, combine: BusOr },
@@ -56,9 +64,9 @@ const RotateLeft8 = circuit('RotateLeft8', {
     sh_right.result.to(combine.b),
     combine.out.to(out.out),
   ],
-})
+});
 
-const RotateLeft7 = circuit('RotateLeft7', {
+export const RotateLeft7 = circuit('RotateLeft7', {
   in: { x: bus(32) },
   out: { out: bus(32) },
   nodes: { sh_left: LeftShifter, sh_right: RightShifter, c7: Constant, c25: Constant, combine: BusOr },
@@ -71,11 +79,11 @@ const RotateLeft7 = circuit('RotateLeft7', {
     sh_right.result.to(combine.b),
     combine.out.to(out.out),
   ],
-})
-`;
+});
 
-const QUARTER_ROUND_CIRCUIT = `
-const ChaCha20QuarterRound = circuit('ChaCha20QuarterRound', {
+// ── Quarter-round ──
+
+export const ChaCha20QuarterRound = circuit('ChaCha20QuarterRound', {
   in: { a: bus(32), b: bus(32), c: bus(32), d: bus(32) },
   out: { a_out: bus(32), b_out: bus(32), c_out: bus(32), d_out: bus(32) },
   nodes: { gnd: Constant, add1: Adder, xor1: BusXor, rot16: RotateLeft16, add2: Adder, xor2: BusXor, rot12: RotateLeft12, add3: Adder, xor3: BusXor, rot8: RotateLeft8, add4: Adder, xor4: BusXor, rot7: RotateLeft7 },
@@ -99,11 +107,62 @@ const ChaCha20QuarterRound = circuit('ChaCha20QuarterRound', {
     xor4.out.to(rot7.x),
     rot7.out.to(out.b_out),
   ],
-})
-`;
+});
+
+// ── Self-contained demo circuits ──
+
+export const ARXDemo = circuit('ARXDemo', {
+  nodes: { a: Input, b: Input, gnd: Constant, add: Adder, sum: HexDisplay, xor: BusXor, xor_out: HexDisplay },
+  nodeArgs: { a: { value: 100, width: 32 }, b: { value: 42, width: 32 }, gnd: { value: 0 }, add: { width: 32 }, sum: { width: 32 }, xor: { width: 32 }, xor_out: { width: 32 } },
+  connect: ({ a, b, gnd, add, sum, xor, xor_out }) => [
+    a.out.to(add.a, xor.a),
+    b.out.to(add.b, xor.b),
+    gnd.out.to(add.carry_in),
+    add.sum.to(sum.in),
+    xor.out.to(xor_out.in),
+  ],
+});
+
+export const RotateDemo = circuit('RotateDemo', {
+  nodes: { val: Input, rot16: RotateLeft16, disp16: HexDisplay, rot7: RotateLeft7, disp7: HexDisplay },
+  nodeArgs: { val: { value: 1, width: 32 }, disp16: { width: 32 }, disp7: { width: 32 } },
+  connect: ({ val, rot16, disp16, rot7, disp7 }) => [
+    val.out.to(rot16.x, rot7.x),
+    rot16.out.to(disp16.in),
+    rot7.out.to(disp7.in),
+  ],
+});
+
+export const ARXStep = circuit('ARXStep', {
+  nodes: { a: Input, b: Input, d: Input, gnd: Constant, add: Adder, xor: BusXor, rot: RotateLeft16, disp_a: HexDisplay, disp_d: HexDisplay },
+  nodeArgs: { a: { value: 100, width: 32 }, b: { value: 42, width: 32 }, d: { value: 255, width: 32 }, gnd: { value: 0 }, add: { width: 32 }, xor: { width: 32 }, disp_a: { width: 32 }, disp_d: { width: 32 } },
+  connect: ({ a, b, d, gnd, add, xor, rot, disp_a, disp_d }) => [
+    a.out.to(add.a),
+    b.out.to(add.b),
+    gnd.out.to(add.carry_in),
+    d.out.to(xor.a),
+    add.sum.to(xor.b, disp_a.in),
+    xor.out.to(rot.x),
+    rot.out.to(disp_d.in),
+  ],
+});
+
+export const ChaCha20Demo = circuit('ChaCha20Demo', {
+  nodes: { in_a: Input, in_b: Input, in_c: Input, in_d: Input, qr: ChaCha20QuarterRound, out_a: HexDisplay, out_b: HexDisplay, out_c: HexDisplay, out_d: HexDisplay },
+  nodeArgs: { in_a: { value: 0x11111111, width: 32 }, in_b: { value: 0x01020304, width: 32 }, in_c: { value: 0x9b8d6f43, width: 32 }, in_d: { value: 0x01234567, width: 32 }, out_a: { width: 32 }, out_b: { width: 32 }, out_c: { width: 32 }, out_d: { width: 32 } },
+  connect: ({ in_a, in_b, in_c, in_d, qr, out_a, out_b, out_c, out_d }) => [
+    in_a.out.to(qr.a),
+    in_b.out.to(qr.b),
+    in_c.out.to(qr.c),
+    in_d.out.to(qr.d),
+    qr.a_out.to(out_a.in),
+    qr.b_out.to(out_b.in),
+    qr.c_out.to(out_c.in),
+    qr.d_out.to(out_d.in),
+  ],
+});
 
 export const CHACHA20_CIRCUITS: Record<string, BlogCircuit> = {
-  // Demo 1: The three ARX operations side by side
   arxDemo: {
     name: "The Three Operations: ADD, XOR, ROTL",
     description:
@@ -112,7 +171,7 @@ export const CHACHA20_CIRCUITS: Record<string, BlogCircuit> = {
 const ARXDemo = circuit('ARXDemo', {
   nodes: { a: Input, b: Input, gnd: Constant, add: Adder, sum: HexDisplay, xor: BusXor, xor_out: HexDisplay },
   nodeArgs: { a: { value: 100, width: 32 }, b: { value: 42, width: 32 }, gnd: { value: 0 }, add: { width: 32 }, sum: { width: 32 }, xor: { width: 32 }, xor_out: { width: 32 } },
-  connect: ({ in: inp, out, a, b, gnd, add, sum, xor, xor_out }) => [
+  connect: ({ a, b, gnd, add, sum, xor, xor_out }) => [
     a.out.to(add.a, xor.a),
     b.out.to(add.b, xor.b),
     gnd.out.to(add.carry_in),
@@ -121,22 +180,9 @@ const ARXDemo = circuit('ARXDemo', {
   ],
 })
 `,
-    dsl: `
-const ARXDemo = circuit('ARXDemo', {
-  nodes: { a: Input, b: Input, gnd: Constant, add: Adder, sum: HexDisplay, xor: BusXor, xor_out: HexDisplay },
-  nodeArgs: { a: { value: 100, width: 32 }, b: { value: 42, width: 32 }, gnd: { value: 0 }, add: { width: 32 }, sum: { width: 32 }, xor: { width: 32 }, xor_out: { width: 32 } },
-  connect: ({ in: inp, out, a, b, gnd, add, sum, xor, xor_out }) => [
-    a.out.to(add.a, xor.a),
-    b.out.to(add.b, xor.b),
-    gnd.out.to(add.carry_in),
-    add.sum.to(sum.in),
-    xor.out.to(xor_out.in),
-  ],
-})
-`,
+    circuit: ARXDemo,
   },
 
-  // Demo 2: Rotation — the "free" operation
   rotateDemo: {
     name: "Rotation: The Free Operation",
     description:
@@ -145,36 +191,25 @@ const ARXDemo = circuit('ARXDemo', {
 const RotateDemo = circuit('RotateDemo', {
   nodes: { val: Input, rot16: RotateLeft16, disp16: HexDisplay, rot7: RotateLeft7, disp7: HexDisplay },
   nodeArgs: { val: { value: 1, width: 32 }, disp16: { width: 32 }, disp7: { width: 32 } },
-  connect: ({ in: inp, out, val, rot16, disp16, rot7, disp7 }) => [
+  connect: ({ val, rot16, disp16, rot7, disp7 }) => [
     val.out.to(rot16.x, rot7.x),
     rot16.out.to(disp16.in),
     rot7.out.to(disp7.in),
   ],
 })
 `,
-    dsl: `${ROTATE_CIRCUITS}
-const RotateDemo = circuit('RotateDemo', {
-  nodes: { val: Input, rot16: RotateLeft16, disp16: HexDisplay, rot7: RotateLeft7, disp7: HexDisplay },
-  nodeArgs: { val: { value: 1, width: 32 }, disp16: { width: 32 }, disp7: { width: 32 } },
-  connect: ({ in: inp, out, val, rot16, disp16, rot7, disp7 }) => [
-    val.out.to(rot16.x, rot7.x),
-    rot16.out.to(disp16.in),
-    rot7.out.to(disp7.in),
-  ],
-})
-`,
+    circuit: RotateDemo,
   },
 
-  // Demo 3: One ARX step (a += b; d ^= a; d <<<= 16)
   arxStep: {
     name: "One ARX Step: ADD, XOR, Rotate",
     description:
-      "Each of the 4 steps in a quarter-round chains ADD → XOR → ROTL.",
+      "Each of the 4 steps in a quarter-round chains ADD -> XOR -> ROTL.",
     displayCode: `
 const ARXStep = circuit('ARXStep', {
   nodes: { a: Input, b: Input, d: Input, gnd: Constant, add: Adder, xor: BusXor, rot: RotateLeft16, disp_a: HexDisplay, disp_d: HexDisplay },
   nodeArgs: { a: { value: 100, width: 32 }, b: { value: 42, width: 32 }, d: { value: 255, width: 32 }, gnd: { value: 0 }, add: { width: 32 }, xor: { width: 32 }, disp_a: { width: 32 }, disp_d: { width: 32 } },
-  connect: ({ in: inp, out, a, b, d, gnd, add, xor, rot, disp_a, disp_d }) => [
+  connect: ({ a, b, d, gnd, add, xor, rot, disp_a, disp_d }) => [
     a.out.to(add.a),
     b.out.to(add.b),
     gnd.out.to(add.carry_in),
@@ -185,28 +220,13 @@ const ARXStep = circuit('ARXStep', {
   ],
 })
 `,
-    dsl: `${ROTATE_CIRCUITS}
-const ARXStep = circuit('ARXStep', {
-  nodes: { a: Input, b: Input, d: Input, gnd: Constant, add: Adder, xor: BusXor, rot: RotateLeft16, disp_a: HexDisplay, disp_d: HexDisplay },
-  nodeArgs: { a: { value: 100, width: 32 }, b: { value: 42, width: 32 }, d: { value: 255, width: 32 }, gnd: { value: 0 }, add: { width: 32 }, xor: { width: 32 }, disp_a: { width: 32 }, disp_d: { width: 32 } },
-  connect: ({ in: inp, out, a, b, d, gnd, add, xor, rot, disp_a, disp_d }) => [
-    a.out.to(add.a),
-    b.out.to(add.b),
-    gnd.out.to(add.carry_in),
-    d.out.to(xor.a),
-    add.sum.to(xor.b, disp_a.in),
-    xor.out.to(rot.x),
-    rot.out.to(disp_d.in),
-  ],
-})
-`,
+    circuit: ARXStep,
   },
 
-  // Demo 4: The full quarter-round with RFC test vector
   quarterRound: {
     name: "ChaCha20 Quarter-Round",
     description:
-      "The complete quarter-round — 4 chained ARX steps. Verified against RFC 7539 test vector.",
+      "The complete quarter-round -- 4 chained ARX steps. Verified against RFC 7539 test vector.",
     displayCode: `// RFC 7539 test vector:
 //   In:  a=0x11111111  b=0x01020304
 //        c=0x9b8d6f43  d=0x01234567
@@ -216,7 +236,7 @@ const ARXStep = circuit('ARXStep', {
 const ChaCha20Demo = circuit('ChaCha20Demo', {
   nodes: { in_a: Input, in_b: Input, in_c: Input, in_d: Input, qr: ChaCha20QuarterRound, out_a: HexDisplay, out_b: HexDisplay, out_c: HexDisplay, out_d: HexDisplay },
   nodeArgs: { in_a: { value: 0x11111111, width: 32 }, in_b: { value: 0x01020304, width: 32 }, in_c: { value: 0x9b8d6f43, width: 32 }, in_d: { value: 0x01234567, width: 32 }, out_a: { width: 32 }, out_b: { width: 32 }, out_c: { width: 32 }, out_d: { width: 32 } },
-  connect: ({ in: inp, out, in_a, in_b, in_c, in_d, qr, out_a, out_b, out_c, out_d }) => [
+  connect: ({ in_a, in_b, in_c, in_d, qr, out_a, out_b, out_c, out_d }) => [
     in_a.out.to(qr.a),
     in_b.out.to(qr.b),
     in_c.out.to(qr.c),
@@ -228,23 +248,6 @@ const ChaCha20Demo = circuit('ChaCha20Demo', {
   ],
 })
 `,
-    dsl: `${ROTATE_CIRCUITS}
-${QUARTER_ROUND_CIRCUIT}
-
-const ChaCha20Demo = circuit('ChaCha20Demo', {
-  nodes: { in_a: Input, in_b: Input, in_c: Input, in_d: Input, qr: ChaCha20QuarterRound, out_a: HexDisplay, out_b: HexDisplay, out_c: HexDisplay, out_d: HexDisplay },
-  nodeArgs: { in_a: { value: 0x11111111, width: 32 }, in_b: { value: 0x01020304, width: 32 }, in_c: { value: 0x9b8d6f43, width: 32 }, in_d: { value: 0x01234567, width: 32 }, out_a: { width: 32 }, out_b: { width: 32 }, out_c: { width: 32 }, out_d: { width: 32 } },
-  connect: ({ in: inp, out, in_a, in_b, in_c, in_d, qr, out_a, out_b, out_c, out_d }) => [
-    in_a.out.to(qr.a),
-    in_b.out.to(qr.b),
-    in_c.out.to(qr.c),
-    in_d.out.to(qr.d),
-    qr.a_out.to(out_a.in),
-    qr.b_out.to(out_b.in),
-    qr.c_out.to(out_c.in),
-    qr.d_out.to(out_d.in),
-  ],
-})
-`,
+    circuit: ChaCha20Demo,
   },
 };

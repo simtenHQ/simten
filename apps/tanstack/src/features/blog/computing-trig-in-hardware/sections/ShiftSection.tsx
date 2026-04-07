@@ -4,7 +4,7 @@ import { CircuitEmbed } from "@turing-incomplete/embed";
 import { CORDIC_CIRCUITS } from "../circuits";
 
 export function ShiftSection() {
-  const circuit = CORDIC_CIRCUITS.rightShiftDemo;
+  const entry = CORDIC_CIRCUITS.rightShiftDemo;
 
   return (
     <section className="py-12">
@@ -28,12 +28,12 @@ export function ShiftSection() {
 
       <div className="mt-8">
         <CircuitEmbed
-          code={circuit.dsl}
+          circuit={entry.circuit}
           height={220}
           showControls={false}
-          displayCode={circuit.displayCode}
-          title={circuit.name}
-          description={circuit.description}
+          displayCode={entry.displayCode}
+          title={entry.name}
+          description={entry.description}
         />
       </div>
     </section>

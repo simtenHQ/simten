@@ -35,7 +35,7 @@ export function AddressingSection() {
 
       <div className="mt-8">
         <CircuitEmbed
-          code={SNAKE_CIRCUITS.coordToPixel.dsl}
+          circuit={SNAKE_CIRCUITS.coordToPixel.circuit}
           displayCode={SNAKE_CIRCUITS.coordToPixel.displayCode}
           nodePositions={SNAKE_CIRCUITS.coordToPixel.nodePositions}
           height={350}

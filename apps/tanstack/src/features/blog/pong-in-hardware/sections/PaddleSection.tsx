@@ -4,7 +4,7 @@ import { CircuitEmbed } from "@turing-incomplete/embed";
 import { PONG_CIRCUITS } from "../circuits";
 
 export function PaddleSection() {
-  const circuit = PONG_CIRCUITS.paddleMovement;
+  const entry = PONG_CIRCUITS.paddleMovement;
 
   return (
     <section className="py-12">
@@ -30,13 +30,13 @@ export function PaddleSection() {
 
       <div className="mt-8">
         <CircuitEmbed
-          code={circuit.dsl}
+          circuit={entry.circuit}
           height={300}
           showControls={true}
-          displayCode={circuit.displayCode}
-          nodePositions={circuit.nodePositions}
-          title={circuit.name}
-          description={circuit.description}
+          displayCode={entry.displayCode}
+          nodePositions={entry.nodePositions}
+          title={entry.name}
+          description={entry.description}
         />
       </div>
     </section>

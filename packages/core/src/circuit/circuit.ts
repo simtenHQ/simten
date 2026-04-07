@@ -325,9 +325,25 @@ export function circuit<
   const outputMap: PortMap = {};
   for (const [n, t] of outputs) outputMap[n] = t;
 
+  // ── Collect dependencies (for direct BuiltCircuit → simulator path) ──
+
+  const deps = new Map<string, Circuit>();
+  for (const [, comp] of Object.entries(nodes) as [string, BuiltCircuit][]) {
+    if (!deps.has(comp.name)) {
+      deps.set(comp.name, comp.circuit);
+    }
+    // Merge transitive dependencies
+    if (comp._dependencies) {
+      for (const [depName, depCircuit] of comp._dependencies) {
+        if (!deps.has(depName)) deps.set(depName, depCircuit);
+      }
+    }
+  }
+
   const built = {
     circuit: circuitIR,
     _shape: { inputs: inputMap as NormalizePorts<Ins>, outputs: outputMap as NormalizePorts<Outs> },
+    _dependencies: deps,
     name,
   } as BuiltCircuit<NormalizePorts<Ins>, NormalizePorts<Outs>>;
 

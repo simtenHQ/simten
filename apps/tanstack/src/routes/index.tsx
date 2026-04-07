@@ -1,15 +1,19 @@
 import { useState, useEffect, useCallback, useRef, useMemo, forwardRef, useImperativeHandle } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useCircuitSimulator, CircuitEmbed } from "@turing-incomplete/embed";
+import { circuit, bit } from "@turing-incomplete/core/circuit";
+import type { BuiltCircuit } from "@turing-incomplete/core/circuit";
+import { Xor, And, Or, Not, DFlipFlop, Constant } from "@turing-incomplete/core/std";
+import { Eth_FrameInput, Eth_FrameParser, Eth_CRC32, Eth_ProtocolDecoder, Eth_AddrClassifier } from "@turing-incomplete/core/std";
 import { Logo } from "@/components/Logo";
 import { ClaudeCTA } from "@/features/splash/ClaudeCTA";
 import { useSnakeSimulator } from "@/features/blog/snake-in-hardware/useSnakeSimulator";
 
 // ============================================================================
-// Demo data
+// Demo circuits
 // ============================================================================
 
-const DEMO_DSL = `const HalfAdder = circuit('HalfAdder', {
+const HalfAdder = circuit('HalfAdder', {
   in: { a: bit, b: bit },
   out: { sum: bit, carry: bit },
   nodes: { xor1: Xor, and1: And },
@@ -19,12 +23,9 @@ const DEMO_DSL = `const HalfAdder = circuit('HalfAdder', {
     xor1.out.to(out.sum),
     and1.out.to(out.carry),
   ],
-})`;
+});
 
-
-// --- Toggle (DFlipFlop with NOT feedback) ---
-
-const TOGGLE_DSL = `const Toggle = circuit('Toggle', {
+const Toggle = circuit('Toggle', {
   out: { q: bit, q_bar: bit },
   nodes: { dff: DFlipFlop, inv: Not },
   connect: ({ out, dff, inv }) => [
@@ -32,24 +33,9 @@ const TOGGLE_DSL = `const Toggle = circuit('Toggle', {
     dff.q_bar.to(out.q_bar),
     inv.out.to(dff.d),
   ],
-})`;
+});
 
-
-// --- Composite Full Adder (built from Half Adders — for drill-down showcase) ---
-
-const DRILLDOWN_DSL = `const HalfAdder = circuit('HalfAdder', {
-  in: { a: bit, b: bit },
-  out: { sum: bit, carry: bit },
-  nodes: { xor1: Xor, and1: And },
-  connect: ({ in: inp, out, xor1, and1 }) => [
-    inp.a.to(xor1.a, and1.a),
-    inp.b.to(xor1.b, and1.b),
-    xor1.out.to(out.sum),
-    and1.out.to(out.carry),
-  ],
-})
-
-const FullAdder = circuit('FullAdder', {
+const DrilldownFullAdder = circuit('FullAdder', {
   in: { a: bit, b: bit, cin: bit },
   out: { sum: bit, cout: bit },
   nodes: { ha1: HalfAdder, ha2: HalfAdder, or1: Or },
@@ -60,11 +46,9 @@ const FullAdder = circuit('FullAdder', {
     ha1.carry.to(or1.a), ha2.carry.to(or1.b),
     or1.out.to(out.cout),
   ],
-})`;
+});
 
-// --- 4-bit Shift Register (for time-travel showcase) ---
-
-const SHIFT_REGISTER_DSL = `const ShiftRegister4 = circuit('ShiftRegister4', {
+const ShiftRegister4 = circuit('ShiftRegister4', {
   in: { din: bit },
   out: { q0: bit, q1: bit, q2: bit, q3: bit },
   nodes: { ff0: DFlipFlop, ff1: DFlipFlop, ff2: DFlipFlop, ff3: DFlipFlop },
@@ -75,9 +59,9 @@ const SHIFT_REGISTER_DSL = `const ShiftRegister4 = circuit('ShiftRegister4', {
     ff2.q.to(ff3.d, out.q2),
     ff3.q.to(out.q3),
   ],
-})`;
+});
 
-const FULL_ADDER_DSL = `const FullAdder = circuit('FullAdder', {
+const GateFullAdder = circuit('FullAdder', {
   in: { a: bit, b: bit, cin: bit },
   out: { sum: bit, cout: bit },
   nodes: { xor1: Xor, xor2: Xor, and1: And, and2: And, or1: Or },
@@ -91,12 +75,9 @@ const FULL_ADDER_DSL = `const FullAdder = circuit('FullAdder', {
     and2.out.to(or1.b),
     or1.out.to(out.cout),
   ],
-})`;
+});
 
-
-// --- 2-bit Counter ---
-
-const COUNTER_DSL = `const Counter2Bit = circuit('Counter2Bit', {
+const Counter2Bit = circuit('Counter2Bit', {
   out: { bit0: bit, bit1: bit },
   nodes: { dff0: DFlipFlop, dff1: DFlipFlop, inv: Not, xor1: Xor },
   connect: ({ out, dff0, dff1, inv, xor1 }) => [
@@ -105,12 +86,9 @@ const COUNTER_DSL = `const Counter2Bit = circuit('Counter2Bit', {
     dff1.q.to(xor1.a, out.bit1),
     xor1.out.to(dff1.d),
   ],
-})`;
+});
 
-
-// --- 2-to-1 Mux ---
-
-const MUX_DSL = `const Mux2to1 = circuit('Mux2to1', {
+const Mux2to1 = circuit('Mux2to1', {
   in: { a: bit, b: bit, sel: bit },
   out: { out: bit },
   nodes: { not1: Not, and1: And, and2: And, or1: Or },
@@ -123,7 +101,8 @@ const MUX_DSL = `const Mux2to1 = circuit('Mux2to1', {
     and2.out.to(or1.b),
     or1.out.to(out.out),
   ],
-})`;
+});
+
 
 
 type TermLine = {
@@ -175,14 +154,30 @@ const DEMO_SCRIPT: TermLine[] = [
 
 type PromptOption = {
   label: string;
-  dsl: string;
+  circuit: BuiltCircuit;
+  displayCode: string;
   script: TermLine[];
 };
 
 const PROMPT_OPTIONS: PromptOption[] = [
   {
     label: "Build a full adder",
-    dsl: FULL_ADDER_DSL,
+    circuit: GateFullAdder,
+    displayCode: `const FullAdder = circuit('FullAdder', {
+  in: { a: bit, b: bit, cin: bit },
+  out: { sum: bit, cout: bit },
+  nodes: { xor1: Xor, xor2: Xor, and1: And, and2: And, or1: Or },
+  connect: ({ in: inp, out, xor1, xor2, and1, and2, or1 }) => [
+    inp.a.to(xor1.a, and1.a),
+    inp.b.to(xor1.b, and1.b),
+    xor1.out.to(xor2.a, and2.a),
+    inp.cin.to(xor2.b, and2.b),
+    xor2.out.to(out.sum),
+    and1.out.to(or1.a),
+    and2.out.to(or1.b),
+    or1.out.to(out.cout),
+  ],
+});`,
     script: [
       {
         type: "input",
@@ -236,7 +231,17 @@ const PROMPT_OPTIONS: PromptOption[] = [
   },
   {
     label: "Make a 2-bit binary counter",
-    dsl: COUNTER_DSL,
+    circuit: Counter2Bit,
+    displayCode: `const Counter2Bit = circuit('Counter2Bit', {
+  out: { bit0: bit, bit1: bit },
+  nodes: { dff0: DFlipFlop, dff1: DFlipFlop, inv: Not, xor1: Xor },
+  connect: ({ out, dff0, dff1, inv, xor1 }) => [
+    dff0.q.to(inv.in, xor1.b, out.bit0),
+    inv.out.to(dff0.d),
+    dff1.q.to(xor1.a, out.bit1),
+    xor1.out.to(dff1.d),
+  ],
+});`,
     script: [
       {
         type: "input",
@@ -286,7 +291,16 @@ const PROMPT_OPTIONS: PromptOption[] = [
   },
   {
     label: "Make a toggle flip-flop",
-    dsl: TOGGLE_DSL,
+    circuit: Toggle,
+    displayCode: `const Toggle = circuit('Toggle', {
+  out: { q: bit, q_bar: bit },
+  nodes: { dff: DFlipFlop, inv: Not },
+  connect: ({ out, dff, inv }) => [
+    dff.q.to(inv.in, out.q),
+    dff.q_bar.to(out.q_bar),
+    inv.out.to(dff.d),
+  ],
+});`,
     script: [
       {
         type: "input",
@@ -336,7 +350,21 @@ const PROMPT_OPTIONS: PromptOption[] = [
   },
   {
     label: "Build a 2-to-1 multiplexer",
-    dsl: MUX_DSL,
+    circuit: Mux2to1,
+    displayCode: `const Mux2to1 = circuit('Mux2to1', {
+  in: { a: bit, b: bit, sel: bit },
+  out: { out: bit },
+  nodes: { not1: Not, and1: And, and2: And, or1: Or },
+  connect: ({ in: inp, out, not1, and1, and2, or1 }) => [
+    inp.sel.to(not1.in, and2.b),
+    inp.a.to(and1.a),
+    not1.out.to(and1.b),
+    inp.b.to(and2.a),
+    and1.out.to(or1.a),
+    and2.out.to(or1.b),
+    or1.out.to(out.out),
+  ],
+});`,
     script: [
       {
         type: "input",
@@ -771,31 +799,45 @@ interface HeroBrowserWindowHandle {
   pickPrompt: (option: PromptOption) => void;
 }
 
+const HALF_ADDER_DISPLAY = `const HalfAdder = circuit('HalfAdder', {
+  in: { a: bit, b: bit },
+  out: { sum: bit, carry: bit },
+  nodes: { xor1: Xor, and1: And },
+  connect: ({ in: inp, out, xor1, and1 }) => [
+    inp.a.to(xor1.a, and1.a),
+    inp.b.to(xor1.b, and1.b),
+    xor1.out.to(out.sum),
+    and1.out.to(out.carry),
+  ],
+});`;
+
 const HeroBrowserWindow = forwardRef<HeroBrowserWindowHandle, {}>(
   function HeroBrowserWindow(_, ref) {
     const [codeTyping, setCodeTyping] = useState(false);
-    const [activeCode, setActiveCode] = useState<string | null>(null);
-    const [targetCode, setTargetCode] = useState(DEMO_DSL);
+    const [showCircuit, setShowCircuit] = useState(false);
+    const [targetCircuit, setTargetCircuit] = useState<BuiltCircuit>(HalfAdder);
+    const [displayCode, setDisplayCode] = useState(HALF_ADDER_DISPLAY);
 
-    const codeTw = useTypewriter(targetCode, 12, 0, codeTyping);
+    const codeTw = useTypewriter(displayCode, 12, 0, codeTyping);
 
     useEffect(() => {
       if (codeTyping && codeTw.done) {
-        setActiveCode(targetCode);
+        setShowCircuit(true);
         setCodeTyping(false);
       }
-    }, [codeTyping, codeTw.done, targetCode]);
+    }, [codeTyping, codeTw.done]);
 
     useImperativeHandle(ref, () => ({
       startTyping() { setCodeTyping(true); },
       pickPrompt(option: PromptOption) {
-        setTargetCode(option.dsl);
-        setActiveCode(null);
+        setTargetCircuit(option.circuit);
+        setDisplayCode(option.displayCode);
+        setShowCircuit(false);
       },
     }), []);
 
     return (
-      <BrowserWindow className="flex-1" showMcp={codeTyping || !!activeCode}>
+      <BrowserWindow className="flex-1" showMcp={codeTyping || showCircuit}>
         <div className="flex h-full">
           <div className="w-[250px] shrink-0 border-r border-border overflow-y-auto">
             <pre className="text-[12px] font-mono text-foreground/70 leading-relaxed whitespace-pre-wrap py-3 px-4 mx-auto">
@@ -804,8 +846,8 @@ const HeroBrowserWindow = forwardRef<HeroBrowserWindowHandle, {}>(
                   {highlightCode(codeTw.displayed)}
                   <span className="inline-block w-[2px] h-[12px] bg-green-500 ml-0.5 animate-pulse align-text-bottom" />
                 </>
-              ) : activeCode ? (
-                highlightCode(targetCode)
+              ) : showCircuit ? (
+                highlightCode(displayCode)
               ) : (
                 <span className="text-muted-foreground/40 italic text-[11px]">
                   Waiting for circuit...
@@ -815,15 +857,15 @@ const HeroBrowserWindow = forwardRef<HeroBrowserWindowHandle, {}>(
           </div>
           <div className="flex-1 flex flex-col min-w-0">
             <div className="flex-1 min-h-0 relative">
-              {activeCode ? (
-                <CircuitEmbed code={activeCode} height="100%" />
+              {showCircuit ? (
+                <CircuitEmbed circuit={targetCircuit} height="100%" />
               ) : (
                 <div className="h-full flex items-center justify-center text-muted-foreground/40 text-sm font-mono">
                   {codeTyping ? "Compiling..." : ""}
                 </div>
               )}
             </div>
-            {activeCode && (
+            {showCircuit && (
               <div className="flex-shrink-0 border-t border-border px-4 py-2 flex items-center justify-between">
                 <span className="text-[11px] text-muted-foreground/60">
                   Click switches to interact
@@ -1143,7 +1185,7 @@ function DemoGallery() {
             title="Half Adder"
             subtitle="4 nodes · 6 connections"
             description="XOR for sum, AND for carry — the foundation of digital arithmetic."
-            code={DEMO_DSL}
+            circuit={HalfAdder}
             href="/editor"
             height={300}
             nodePositions={{
@@ -1159,7 +1201,7 @@ function DemoGallery() {
               title="2-bit Counter"
               subtitle="Sequential · clock-driven"
               description="Two flip-flops count 00 → 01 → 10 → 11 → repeat."
-              code={COUNTER_DSL}
+              circuit={Counter2Bit}
               href="/editor"
               height={140}
               nodePositions={{
@@ -1221,7 +1263,7 @@ function DemoGallery() {
             {/* Right: live circuit */}
             <div style={{ height: 320 }}>
               <CircuitEmbed
-                code={DRILLDOWN_DSL}
+                circuit={DrilldownFullAdder}
                 height={320}
                 nodePositions={{
                   a:    { x: 10,  y: 10 },
@@ -1241,7 +1283,7 @@ function DemoGallery() {
           <div className="grid grid-cols-1 sm:grid-cols-[1.5fr_1fr]">
             {/* Left: live circuit with full clock controls + time-travel */}
             <CircuitEmbed
-              code={SHIFT_REGISTER_DSL}
+              circuit={ShiftRegister4}
               height={340}
               theme="dark"
               initialInputs={{ din: 1 }}
@@ -1382,8 +1424,8 @@ function DemoGallery() {
               {"<"}
               <span className="text-blue-400">{"CircuitEmbed"}</span>
               {"\n  "}
-              <span className="text-cyan-400">{"dsl"}</span>
-              {"={myCircuitDSL}"}
+              <span className="text-cyan-400">{"circuit"}</span>
+              {"={myCircuit}"}
               {"\n  "}
               <span className="text-cyan-400">{"height"}</span>
               {"={300}"}
@@ -1683,27 +1725,6 @@ const ETH_FRAMES = [
   { label: "IPv6 multicast",  dst: [0x33,0x33,0x00,0x00,0x00,0x01],  src: [0xFE,0xDC,0xBA,0x98,0x76,0x54], ethertype: 0x86DD },
 ] as const;
 
-const ETH_PARSER_DSL = `
-const Eth_802_3_Parser = circuit('Eth_802_3_Parser', {
-  nodes: { frame_in: Eth_FrameInput, enable: Constant, parser: Eth_FrameParser, crc: Eth_CRC32, proto: Eth_ProtocolDecoder, addr: Eth_AddrClassifier },
-  nodeArgs: { enable: { value: 1 } },
-  connect: ({ out, frame_in, enable, parser, crc, proto, addr }) => [
-    enable.out.to(frame_in.enable),
-    frame_in.tdata.to(parser.tdata, crc.data),
-    frame_in.tkeep.to(parser.tkeep, crc.tkeep),
-    frame_in.tvalid.to(parser.tvalid, crc.data_valid),
-    frame_in.tlast.to(parser.tlast, crc.tlast),
-    parser.ethertype.to(proto.ethertype, out.ethertype),
-    parser.dst_mac_hi.to(addr.dst_mac_hi, out.dst_mac_hi),
-    parser.dst_mac_lo.to(addr.dst_mac_lo, out.dst_mac_lo),
-    parser.src_mac_hi.to(out.src_mac_hi),
-    parser.src_mac_lo.to(out.src_mac_lo),
-    parser.frame_done.to(out.frame_done),
-    crc.crc_ok.to(out.crc_ok),
-    addr.is_broadcast.to(out.is_broadcast),
-    proto.is_ipv4.to(out.is_ipv4),
-  ],
-})`;
 
 function readEthPort(
   pv: ReadonlyMap<string, boolean | number> | null,
@@ -1731,26 +1752,21 @@ function useEthernetParser() {
     () => buildEthFrame([...frame.dst], [...frame.src], frame.ethertype),
     [frame],
   );
-  // Generate circuit code with frame data baked into nodeArgs
-  const circuitCode = useMemo(() => {
-    const initData = frameToInitData(frameBytes);
-    return `
-const Eth_802_3_Parser = circuit('Eth_802_3_Parser', {
-  nodes: { frame_in: Eth_FrameInput, enable: Constant, parser: Eth_FrameParser, crc: Eth_CRC32, proto: Eth_ProtocolDecoder, addr: Eth_AddrClassifier },
-  nodeArgs: { enable: { value: 1 }, frame_in: { init: ${JSON.stringify(initData)} } },
-  connect: ({ frame_in, enable, parser, crc, proto, addr }) => [
-    enable.out.to(frame_in.enable),
-    frame_in.tdata.to(parser.tdata, crc.data),
-    frame_in.tkeep.to(parser.tkeep, crc.tkeep),
-    frame_in.tvalid.to(parser.tvalid, crc.data_valid),
-    frame_in.tlast.to(parser.tlast, crc.tlast),
-    parser.ethertype.to(proto.ethertype),
-    parser.dst_mac_hi.to(addr.dst_mac_hi),
-    parser.dst_mac_lo.to(addr.dst_mac_lo),
-  ],
-})`;
-  }, [frameBytes]);
-  const sim = useCircuitSimulator(circuitCode);
+  const ethernetCircuit = useMemo(() => circuit('Eth_802_3_Parser', {
+    nodes: { frame_in: Eth_FrameInput, enable: Constant, parser: Eth_FrameParser, crc: Eth_CRC32, proto: Eth_ProtocolDecoder, addr: Eth_AddrClassifier },
+    nodeArgs: { enable: { value: 1 }, frame_in: { init: frameToInitData(frameBytes) } },
+    connect: ({ frame_in, enable, parser, crc, proto, addr }) => [
+      enable.out.to(frame_in.enable),
+      frame_in.tdata.to(parser.tdata, crc.data),
+      frame_in.tkeep.to(parser.tkeep, crc.tkeep),
+      frame_in.tvalid.to(parser.tvalid, crc.data_valid),
+      frame_in.tlast.to(parser.tlast, crc.tlast),
+      parser.ethertype.to(proto.ethertype),
+      parser.dst_mac_hi.to(addr.dst_mac_hi),
+      parser.dst_mac_lo.to(addr.dst_mac_lo),
+    ],
+  }), [frameBytes]);
+  const sim = useCircuitSimulator(ethernetCircuit);
 
   useEffect(() => {
     if (!sim.ready) return;
