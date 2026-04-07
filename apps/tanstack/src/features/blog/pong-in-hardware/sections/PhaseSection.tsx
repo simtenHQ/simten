@@ -36,7 +36,6 @@ export function PhaseSection() {
           circuit={entry.circuit}
           height={260}
           showControls={true}
-          displayCode={entry.displayCode}
           nodePositions={entry.nodePositions}
           title={entry.name}
           description={entry.description}

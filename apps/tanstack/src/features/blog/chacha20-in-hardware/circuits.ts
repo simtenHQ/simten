@@ -6,19 +6,12 @@
  */
 
 import { circuit, bus } from "@turing-incomplete/core/circuit";
-import type { BuiltCircuit } from "@turing-incomplete/core/circuit";
+import type { BlogCircuit } from '../types';
 import {
   Input, HexDisplay, Constant,
   Adder, BusXor, BusOr,
   LeftShifter, RightShifter,
 } from "@turing-incomplete/core/std";
-
-export interface BlogCircuit {
-  name: string;
-  description: string;
-  displayCode: string;
-  circuit: BuiltCircuit;
-}
 
 // ── Rotation sub-circuits ──
 
@@ -167,19 +160,6 @@ export const CHACHA20_CIRCUITS: Record<string, BlogCircuit> = {
     name: "The Three Operations: ADD, XOR, ROTL",
     description:
       "The entire ChaCha20 cipher is built from just these three operations on 32-bit words. Try changing a and b.",
-    displayCode: `
-const ARXDemo = circuit('ARXDemo', {
-  nodes: { a: Input, b: Input, gnd: Constant, add: Adder, sum: HexDisplay, xor: BusXor, xor_out: HexDisplay },
-  nodeArgs: { a: { value: 100, width: 32 }, b: { value: 42, width: 32 }, gnd: { value: 0 }, add: { width: 32 }, sum: { width: 32 }, xor: { width: 32 }, xor_out: { width: 32 } },
-  connect: ({ a, b, gnd, add, sum, xor, xor_out }) => [
-    a.out.to(add.a, xor.a),
-    b.out.to(add.b, xor.b),
-    gnd.out.to(add.carry_in),
-    add.sum.to(sum.in),
-    xor.out.to(xor_out.in),
-  ],
-})
-`,
     circuit: ARXDemo,
   },
 
@@ -187,17 +167,6 @@ const ARXDemo = circuit('ARXDemo', {
     name: "Rotation: The Free Operation",
     description:
       "Left rotation rearranges bits with zero gate delay. In silicon, it's just rewiring.",
-    displayCode: `
-const RotateDemo = circuit('RotateDemo', {
-  nodes: { val: Input, rot16: RotateLeft16, disp16: HexDisplay, rot7: RotateLeft7, disp7: HexDisplay },
-  nodeArgs: { val: { value: 1, width: 32 }, disp16: { width: 32 }, disp7: { width: 32 } },
-  connect: ({ val, rot16, disp16, rot7, disp7 }) => [
-    val.out.to(rot16.x, rot7.x),
-    rot16.out.to(disp16.in),
-    rot7.out.to(disp7.in),
-  ],
-})
-`,
     circuit: RotateDemo,
   },
 
@@ -205,21 +174,6 @@ const RotateDemo = circuit('RotateDemo', {
     name: "One ARX Step: ADD, XOR, Rotate",
     description:
       "Each of the 4 steps in a quarter-round chains ADD -> XOR -> ROTL.",
-    displayCode: `
-const ARXStep = circuit('ARXStep', {
-  nodes: { a: Input, b: Input, d: Input, gnd: Constant, add: Adder, xor: BusXor, rot: RotateLeft16, disp_a: HexDisplay, disp_d: HexDisplay },
-  nodeArgs: { a: { value: 100, width: 32 }, b: { value: 42, width: 32 }, d: { value: 255, width: 32 }, gnd: { value: 0 }, add: { width: 32 }, xor: { width: 32 }, disp_a: { width: 32 }, disp_d: { width: 32 } },
-  connect: ({ a, b, d, gnd, add, xor, rot, disp_a, disp_d }) => [
-    a.out.to(add.a),
-    b.out.to(add.b),
-    gnd.out.to(add.carry_in),
-    d.out.to(xor.a),
-    add.sum.to(xor.b, disp_a.in),
-    xor.out.to(rot.x),
-    rot.out.to(disp_d.in),
-  ],
-})
-`,
     circuit: ARXStep,
   },
 
@@ -227,27 +181,6 @@ const ARXStep = circuit('ARXStep', {
     name: "ChaCha20 Quarter-Round",
     description:
       "The complete quarter-round -- 4 chained ARX steps. Verified against RFC 7539 test vector.",
-    displayCode: `// RFC 7539 test vector:
-//   In:  a=0x11111111  b=0x01020304
-//        c=0x9b8d6f43  d=0x01234567
-//   Out: a=0xea2a92f4  b=0xcb1cf8ce
-//        c=0x4581472e  d=0x5881c4bb
-
-const ChaCha20Demo = circuit('ChaCha20Demo', {
-  nodes: { in_a: Input, in_b: Input, in_c: Input, in_d: Input, qr: ChaCha20QuarterRound, out_a: HexDisplay, out_b: HexDisplay, out_c: HexDisplay, out_d: HexDisplay },
-  nodeArgs: { in_a: { value: 0x11111111, width: 32 }, in_b: { value: 0x01020304, width: 32 }, in_c: { value: 0x9b8d6f43, width: 32 }, in_d: { value: 0x01234567, width: 32 }, out_a: { width: 32 }, out_b: { width: 32 }, out_c: { width: 32 }, out_d: { width: 32 } },
-  connect: ({ in_a, in_b, in_c, in_d, qr, out_a, out_b, out_c, out_d }) => [
-    in_a.out.to(qr.a),
-    in_b.out.to(qr.b),
-    in_c.out.to(qr.c),
-    in_d.out.to(qr.d),
-    qr.a_out.to(out_a.in),
-    qr.b_out.to(out_b.in),
-    qr.c_out.to(out_c.in),
-    qr.d_out.to(out_d.in),
-  ],
-})
-`,
     circuit: ChaCha20Demo,
   },
 };

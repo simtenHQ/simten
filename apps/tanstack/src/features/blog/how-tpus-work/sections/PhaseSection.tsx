@@ -39,7 +39,6 @@ export function PhaseSection() {
       <div className="mt-8">
         <CircuitEmbed
           circuit={TPU_CIRCUITS.wavefrontController.circuit}
-          displayCode={TPU_CIRCUITS.wavefrontController.displayCode}
           nodePositions={TPU_CIRCUITS.wavefrontController.nodePositions}
           height={400}
           showControls

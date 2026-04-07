@@ -30,7 +30,6 @@ export function ShiftSection() {
           circuit={entry.circuit}
           height={220}
           showControls={false}
-          displayCode={entry.displayCode}
           title={entry.name}
           description={entry.description}
         />

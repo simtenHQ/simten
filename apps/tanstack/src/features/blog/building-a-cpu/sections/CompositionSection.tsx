@@ -35,7 +35,6 @@ export function CompositionSection() {
           </p>
           <CircuitEmbed
             circuit={GATE_CIRCUITS.halfAdder.circuit}
-            displayCode={GATE_CIRCUITS.halfAdder.displayCode}
             height={260}
             title="Half Adder"
             description="Adds two bits: produces sum and carry"
@@ -55,7 +54,6 @@ export function CompositionSection() {
           </p>
           <CircuitEmbed
             circuit={GATE_CIRCUITS.fullAdder.circuit}
-            displayCode={GATE_CIRCUITS.fullAdder.displayCode}
             height={300}
             title="Full Adder"
             description="Adds three bits: a, b, and carry-in"
@@ -75,7 +73,6 @@ export function CompositionSection() {
           </p>
           <CircuitEmbed
             circuit={GATE_CIRCUITS.mux.circuit}
-            displayCode={GATE_CIRCUITS.mux.displayCode}
             height={280}
             title="2:1 Multiplexer"
             description="sel=OFF picks A, sel=ON picks B"

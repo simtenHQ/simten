@@ -36,7 +36,6 @@ export function BufferSection() {
           circuit={entry.circuit}
           height={280}
           showControls
-          displayCode={entry.displayCode}
           title={entry.name}
           description={entry.description}
         />

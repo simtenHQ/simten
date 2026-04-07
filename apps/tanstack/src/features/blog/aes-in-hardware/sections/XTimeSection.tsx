@@ -61,7 +61,6 @@ export function XTimeSection() {
           circuit={entry.circuit}
           height={360}
           showControls={false}
-          displayCode={entry.displayCode}
           title={entry.name}
           description={entry.description}
         />

@@ -38,7 +38,6 @@ export function RotateSection() {
           circuit={entry.circuit}
           height={300}
           showControls={false}
-          displayCode={entry.displayCode}
           title={entry.name}
           description={entry.description}
         />

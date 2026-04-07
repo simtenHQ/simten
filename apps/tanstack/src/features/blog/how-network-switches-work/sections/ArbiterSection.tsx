@@ -37,7 +37,6 @@ export function ArbiterSection() {
           circuit={entry.circuit}
           height={260}
           showControls={false}
-          displayCode={entry.displayCode}
           title={entry.name}
           description={entry.description}
         />

@@ -6,19 +6,12 @@
  */
 
 import { circuit, bit, bus } from "@turing-incomplete/core/circuit";
-import type { BuiltCircuit } from "@turing-incomplete/core/circuit";
+import type { BlogCircuit } from '../types';
 import {
   Input, Switch, HexDisplay, Led, Constant,
   Register, Adder, Comparator, Mux, And, Or, Not,
   LeftShifter, DualPortRAM,
 } from "@turing-incomplete/core/std";
-
-export interface BlogCircuit {
-  name: string;
-  description: string;
-  displayCode: string;
-  circuit: BuiltCircuit;
-}
 
 // ── Simple demo circuits ──
 
@@ -119,32 +112,6 @@ export const SWITCH_CIRCUITS: Record<string, BlogCircuit> = {
     name: "Frame Detector",
     description:
       "Detects the start of an Ethernet frame by matching a preamble byte (0x55) followed by Start-of-Frame Delimiter (0xD5).",
-    displayCode: `const FrameDetector = circuit('FrameDetector', {
-  nodes: { byteIn: Input, valid: Switch, state: Register, PREAMBLE: Constant, SFD: Constant, zero: Constant, one: Constant, two: Constant, isPreamble: Comparator, isSFD: Comparator, isIdle: Comparator, isWaiting: Comparator, isActive: Comparator, gotPreamble: And, gotPreambleValid: And, gotSFD: And, gotSFDValid: And, next1: Mux, next2: Mux, we: Input, stateDisplay: HexDisplay, frameLed: Led },
-  nodeArgs: { byteIn: { value: 85 }, state: { initial: 0 }, PREAMBLE: { value: 85 }, SFD: { value: 213 }, zero: { value: 0 }, one: { value: 1 }, two: { value: 2 }, we: { value: 1 } },
-  connect: ({ byteIn, valid, state, PREAMBLE, SFD, zero, one, two, isPreamble, isSFD, isIdle, isWaiting, isActive, gotPreamble, gotPreambleValid, gotSFD, gotSFDValid, next1, next2, we, stateDisplay, frameLed }) => [
-    byteIn.out.to(isPreamble.a, isSFD.a),
-    PREAMBLE.out.to(isPreamble.b),
-    SFD.out.to(isSFD.b),
-    state.q.to(isIdle.a, isWaiting.a, isActive.a, next1.in0, stateDisplay.in),
-    zero.out.to(isIdle.b),
-    one.out.to(isWaiting.b, next1.in1),
-    two.out.to(isActive.b, next2.in1),
-    isIdle.eq.to(gotPreamble.a),
-    isPreamble.eq.to(gotPreamble.b),
-    gotPreamble.out.to(gotPreambleValid.a),
-    valid.out.to(gotPreambleValid.b, gotSFDValid.b),
-    isWaiting.eq.to(gotSFD.a),
-    isSFD.eq.to(gotSFD.b),
-    gotSFD.out.to(gotSFDValid.a),
-    gotPreambleValid.out.to(next1.sel),
-    next1.out.to(next2.in0),
-    gotSFDValid.out.to(next2.sel),
-    next2.out.to(state.data),
-    we.out.to(state.we),
-    isActive.eq.to(frameLed.in),
-  ],
-})`,
     circuit: FrameDetector,
   },
 
@@ -152,21 +119,6 @@ export const SWITCH_CIRCUITS: Record<string, BlogCircuit> = {
     name: "Packet Buffer",
     description:
       "Stores incoming bytes in DualPortRAM as they arrive. A write pointer register tracks the next free address.",
-    displayCode: `
-const PacketBuffer = circuit('PacketBuffer', {
-  nodes: { dataIn: Input, writeCmd: Switch, writePtr: Register, one: Constant, ram: DualPortRAM, nextPtr: Adder, readAddr: Input, readback: HexDisplay, ptrDisplay: HexDisplay },
-  nodeArgs: { dataIn: { value: 42 }, writePtr: { initial: 0 }, one: { value: 1 }, readAddr: { value: 0 } },
-  connect: ({ in: inp, out, dataIn, writeCmd, writePtr, one, ram, nextPtr, readAddr, readback, ptrDisplay }) => [
-    writePtr.q.to(ram.addrA, nextPtr.a, ptrDisplay.in),
-    dataIn.out.to(ram.dataA),
-    writeCmd.out.to(ram.weA, writePtr.we),
-    one.out.to(nextPtr.b),
-    nextPtr.sum.to(writePtr.data),
-    readAddr.out.to(ram.addrB),
-    ram.outB.to(readback.in),
-  ],
-})
-`,
     circuit: PacketBuffer,
   },
 
@@ -174,30 +126,6 @@ const PacketBuffer = circuit('PacketBuffer', {
     name: "Port Arbiter",
     description:
       "Decides which port gets to send next. When both ports have packets ready, it alternates fairly between them.",
-    displayCode: `
-const PortArbiter = circuit('PortArbiter', {
-  nodes: { port0_ready: Switch, port1_ready: Switch, lastPort: Input, zero: Constant, one: Constant, lastWas0: Comparator, prefer1: And, notPort1: Not, fallback0: And, fallback0Ready: And, lastWas1: Comparator, prefer0: And, grant0: Or, grant1: Or, grantValid: Or, grantPort: Mux, portDisplay: HexDisplay, validLed: Led },
-  nodeArgs: { lastPort: { value: 0 }, zero: { value: 0 }, one: { value: 1 } },
-  connect: ({ in: inp, out, port0_ready, port1_ready, lastPort, zero, one, lastWas0, prefer1, notPort1, fallback0, fallback0Ready, lastWas1, prefer0, grant0, grant1, grantValid, grantPort, portDisplay, validLed }) => [
-    lastPort.out.to(lastWas0.a, lastWas1.a),
-    zero.out.to(lastWas0.b, grantPort.in0),
-    lastWas0.eq.to(prefer1.a, fallback0.a),
-    port1_ready.out.to(prefer1.b, notPort1.in),
-    notPort1.out.to(fallback0.b),
-    fallback0.out.to(fallback0Ready.a),
-    port0_ready.out.to(fallback0Ready.b, prefer0.b),
-    one.out.to(lastWas1.b, grantPort.in1),
-    lastWas1.eq.to(prefer0.a),
-    prefer0.out.to(grant0.a),
-    fallback0Ready.out.to(grant0.b),
-    prefer1.out.to(grant1.a),
-    grant0.out.to(grantValid.a),
-    grant1.out.to(grantValid.b, grantPort.sel),
-    grantPort.out.to(portDisplay.in),
-    grantValid.out.to(validLed.in),
-  ],
-})
-`,
     circuit: PortArbiter,
   },
 
@@ -205,19 +133,6 @@ const PortArbiter = circuit('PortArbiter', {
     name: "Crossbar Router",
     description:
       "Routes packets to the opposite port: port 0 sends to port 1 and vice versa. A comparator and mux implement the cross-over logic.",
-    displayCode: `
-const CrossbarRouter = circuit('CrossbarRouter', {
-  nodes: { sourcePort: Input, zero: Constant, one: Constant, isPort0: Comparator, destPort: Mux, destDisplay: HexDisplay, srcDisplay: HexDisplay, routedLed: Led },
-  nodeArgs: { sourcePort: { value: 0 }, zero: { value: 0 }, one: { value: 1 } },
-  connect: ({ in: inp, out, sourcePort, zero, one, isPort0, destPort, destDisplay, srcDisplay, routedLed }) => [
-    sourcePort.out.to(isPort0.a, srcDisplay.in),
-    zero.out.to(isPort0.b, destPort.in0),
-    one.out.to(destPort.in1),
-    isPort0.eq.to(destPort.sel, routedLed.in),
-    destPort.out.to(destDisplay.in),
-  ],
-})
-`,
     circuit: CrossbarRouter,
   },
 
@@ -225,21 +140,6 @@ const CrossbarRouter = circuit('CrossbarRouter', {
     name: "Packet Serializer",
     description:
       "Reads bytes from RAM one at a time and outputs them with a valid signal. A counter tracks progress and signals when the packet is complete.",
-    displayCode: `
-const PacketSerializer = circuit('PacketSerializer', {
-  nodes: { ram: DualPortRAM, readPtr: Register, one: Constant, seven: Constant, nextPtr: Adder, enable: Switch, dataOut: HexDisplay, ptrDisplay: HexDisplay, isDone: Comparator, doneLed: Led },
-  nodeArgs: { readPtr: { initial: 0 }, one: { value: 1 }, seven: { value: 7 } },
-  connect: ({ in: inp, out, ram, readPtr, one, seven, nextPtr, enable, dataOut, ptrDisplay, isDone, doneLed }) => [
-    readPtr.q.to(nextPtr.a, ram.addrB, ptrDisplay.in, isDone.a),
-    one.out.to(nextPtr.b),
-    enable.out.to(readPtr.we),
-    nextPtr.sum.to(readPtr.data),
-    ram.outB.to(dataOut.in),
-    seven.out.to(isDone.b),
-    isDone.eq.to(doneLed.in),
-  ],
-})
-`,
     circuit: PacketSerializer,
   },
 };

@@ -31,7 +31,6 @@ export function ALUSection() {
       <div className="mt-8">
         <CircuitEmbed
           circuit={BLOG_CIRCUITS.aluSlice.circuit}
-          displayCode={BLOG_CIRCUITS.aluSlice.displayCode}
           height={400}
           title="8-bit ALU"
           description="op: 00=ADD 01=SUB 10=AND 11=OR"

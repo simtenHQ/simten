@@ -36,7 +36,6 @@ export function PixelsSection() {
       <div className="mt-8">
         <CircuitEmbed
           circuit={SNAKE_CIRCUITS.simpleFramebuffer.circuit}
-          displayCode={SNAKE_CIRCUITS.simpleFramebuffer.displayCode}
           nodePositions={SNAKE_CIRCUITS.simpleFramebuffer.nodePositions}
           height={350}
           showControls

@@ -33,7 +33,6 @@ y_next = y + (x >> iteration)`}
           circuit={entry.circuit}
           height={280}
           showControls={false}
-          displayCode={entry.displayCode}
           title={entry.name}
           description={entry.description}
         />
