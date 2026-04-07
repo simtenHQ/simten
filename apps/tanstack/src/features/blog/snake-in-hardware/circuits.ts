@@ -6,11 +6,21 @@
  * operations, collision detection, and the full SnakeAdvanced circuit.
  */
 
+import { executeCircuitCode } from "@turing-incomplete/core/circuit";
+import type { BuiltCircuit } from "@turing-incomplete/core/circuit";
+
+/** Compile a circuit code string to a BuiltCircuit at import time */
+function compile(code: string): BuiltCircuit {
+  const result = executeCircuitCode(code);
+  if (result.error) throw new Error(result.error);
+  return result.builtCircuits[result.builtCircuits.length - 1];
+}
+
 export interface BlogCircuit {
   name: string;
   description: string;
   displayCode: string;
-  dsl: string;
+  circuit: BuiltCircuit;
   nodePositions?: Record<string, { x: number; y: number }>;
 }
 
@@ -32,7 +42,7 @@ const SimpleFramebuffer = circuit('SimpleFramebuffer', {
   ],
 })
 `,
-    dsl: `
+    circuit: compile(`
 const SimpleFramebuffer = circuit('SimpleFramebuffer', {
   nodes: { screen: Screen, addr: Input, data_in: Input, we: Switch, readback: HexDisplay },
   connect: ({ in: inp, out, ram, screen, addr, data_in, we, readback }) => [
@@ -44,7 +54,7 @@ const SimpleFramebuffer = circuit('SimpleFramebuffer', {
     ram.outA.to(readback.in),
   ],
 })
-`,
+`),
     nodePositions: {
       // Inputs (left)
       addr:     { x: 0,   y: 0 },
@@ -74,8 +84,8 @@ const CoordToPixel = circuit('CoordToPixel', {
     addr.sum.to(result.in),
   ],
 })
-`,
-    dsl: `
+`),
+    circuit: compile(`
 const CoordToPixel = circuit('CoordToPixel', {
   nodes: { x: Input, y: Input, three: Input, y8: LeftShifter, addr: Adder, result: HexDisplay },
   nodeArgs: { x: { value: 3 }, y: { value: 2 }, three: { value: 3 } },
@@ -87,7 +97,7 @@ const CoordToPixel = circuit('CoordToPixel', {
     addr.sum.to(result.in),
   ],
 })
-`,
+`),
     nodePositions: {
       x:      { x: 0,   y: 0 },
       y:      { x: 0,   y: 120 },
@@ -125,8 +135,8 @@ const DirectionDecoder = circuit('DirectionDecoder', {
     deltaY.out.to(displayDY.in),
   ],
 })
-`,
-    dsl: `
+`),
+    circuit: compile(`
 const DirectionDecoder = circuit('DirectionDecoder', {
   nodes: { keyCode: Input, upCode: Constant, downCode: Constant, leftCode: Constant, rightCode: Constant, zero: Constant, one: Constant, minus1: Constant, isUp: Comparator, isDown: Comparator, isLeft: Comparator, isRight: Comparator, deltaXTemp: Mux, deltaX: Mux, deltaYTemp: Mux, deltaY: Mux, displayDX: HexDisplay, displayDY: HexDisplay },
   nodeArgs: { keyCode: { value: 77 }, upCode: { value: 72 }, downCode: { value: 80 }, leftCode: { value: 75 }, rightCode: { value: 77 }, zero: { value: 0 }, one: { value: 1 }, minus1: { value: 255 } },
@@ -149,7 +159,7 @@ const DirectionDecoder = circuit('DirectionDecoder', {
     deltaY.out.to(displayDY.in),
   ],
 })
-`,
+`),
     nodePositions: {
       // Input (left)
       keyCode:    { x: 0,   y: 140 },
@@ -217,8 +227,8 @@ const PixelMover = circuit('PixelMover', {
     pixelAddr.sum.to(ram.addrA),
   ],
 })
-`,
-    dsl: `
+`),
+    circuit: compile(`
 const PixelMover = circuit('PixelMover', {
   nodes: { ram: DualPortRAM, screen: Screen, keyboard: Input, headX: Register, headY: Register, upCode: Constant, downCode: Constant, leftCode: Constant, rightCode: Constant, zero: Constant, one: Constant, minus1: Constant, isUp: Comparator, isDown: Comparator, isLeft: Comparator, isRight: Comparator, deltaXTemp: Mux, deltaX: Mux, deltaYTemp: Mux, deltaY: Mux, nextX: Adder, nextY: Adder, wrapX: BitSlice, wrapY: BitSlice, enable: Switch, shiftAmt: Constant, y8: LeftShifter, pixelAddr: Adder, displayX: HexDisplay, displayY: HexDisplay },
   nodeArgs: { keyboard: { value: 77 }, headX: { initial: 4 }, headY: { initial: 4 }, upCode: { value: 72 }, downCode: { value: 80 }, leftCode: { value: 75 }, rightCode: { value: 77 }, zero: { value: 0 }, one: { value: 1 }, minus1: { value: 255 }, wrapX: { low: 0, high: 2 }, wrapY: { low: 0, high: 2 }, shiftAmt: { value: 3 } },
@@ -253,7 +263,7 @@ const PixelMover = circuit('PixelMover', {
     pixelAddr.sum.to(ram.addrA),
   ],
 })
-`,
+`),
     nodePositions: {
       // Input
       keyboard:   { x: 0,   y: 200 },
@@ -320,8 +330,8 @@ const PhaseDemo = circuit('PhaseDemo', {
     isPhase3.eq.to(led3.in),
   ],
 })
-`,
-    dsl: `
+`),
+    circuit: compile(`
 const PhaseDemo = circuit('PhaseDemo', {
   nodes: { phase: Register, one: Constant, zero: Constant, two: Constant, three: Constant, phaseInc: Adder, phaseWrap: BitSlice, enable: Switch, isPhase0: Comparator, isPhase1: Comparator, isPhase2: Comparator, isPhase3: Comparator, led0: Led, led1: Led, led2: Led, led3: Led, display: HexDisplay },
   nodeArgs: { phase: { initial: 0 }, one: { value: 1 }, zero: { value: 0 }, two: { value: 2 }, three: { value: 3 }, phaseWrap: { low: 0, high: 1 } },
@@ -340,7 +350,7 @@ const PhaseDemo = circuit('PhaseDemo', {
     isPhase3.eq.to(led3.in),
   ],
 })
-`,
+`),
     nodePositions: {
       // Control (left)
       enable:   { x: 0,   y: 100 },
@@ -388,8 +398,8 @@ const CollisionDetector = circuit('CollisionDetector', {
     growMux.out.to(growDisplay.in),
   ],
 })
-`,
-    dsl: `
+`),
+    circuit: compile(`
 const CollisionDetector = circuit('CollisionDetector', {
   nodes: { headX: Input, headY: Input, foodX: Input, foodY: Input, matchX: Comparator, matchY: Comparator, collision: And, collisionLed: Led, zero: Constant, one: Constant, growMux: Mux, growDisplay: HexDisplay },
   nodeArgs: { headX: { value: 3 }, headY: { value: 5 }, foodX: { value: 3 }, foodY: { value: 5 }, zero: { value: 0 }, one: { value: 1 } },
@@ -406,7 +416,7 @@ const CollisionDetector = circuit('CollisionDetector', {
     growMux.out.to(growDisplay.in),
   ],
 })
-`,
+`),
     nodePositions: {
       // Inputs (left, 2x2 grid)
       headX:        { x: 0,   y: 0 },

@@ -14,7 +14,6 @@ import { Route as BlogRouteImport } from './routes/blog'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as LearnIndexRouteImport } from './routes/learn/index'
 import { Route as BlogIndexRouteImport } from './routes/blog/index'
-import { Route as LearnProgramCounterRouteImport } from './routes/learn/program-counter'
 import { Route as LearnDualCpuRouteImport } from './routes/learn/dual-cpu'
 import { Route as LearnCpuRouteImport } from './routes/learn/cpu'
 import { Route as DocsSplatRouteImport } from './routes/docs/$'
@@ -28,7 +27,6 @@ import { Route as BlogSnakeInHardwareRouteImport } from './routes/blog/snake-in-
 import { Route as BlogRv32iCpuRouteImport } from './routes/blog/rv32i-cpu'
 import { Route as BlogPongInHardwareRouteImport } from './routes/blog/pong-in-hardware'
 import { Route as BlogMcpBidirectionalBridgeRouteImport } from './routes/blog/mcp-bidirectional-bridge'
-import { Route as BlogLogicFromNothingRouteImport } from './routes/blog/logic-from-nothing'
 import { Route as BlogHowTpusWorkRouteImport } from './routes/blog/how-tpus-work'
 import { Route as BlogHowNetworkSwitchesWorkRouteImport } from './routes/blog/how-network-switches-work'
 import { Route as BlogComputingTrigInHardwareRouteImport } from './routes/blog/computing-trig-in-hardware'
@@ -62,11 +60,6 @@ const BlogIndexRoute = BlogIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => BlogRoute,
-} as any)
-const LearnProgramCounterRoute = LearnProgramCounterRouteImport.update({
-  id: '/learn/program-counter',
-  path: '/learn/program-counter',
-  getParentRoute: () => rootRouteImport,
 } as any)
 const LearnDualCpuRoute = LearnDualCpuRouteImport.update({
   id: '/learn/dual-cpu',
@@ -134,11 +127,6 @@ const BlogMcpBidirectionalBridgeRoute =
     path: '/mcp-bidirectional-bridge',
     getParentRoute: () => BlogRoute,
   } as any)
-const BlogLogicFromNothingRoute = BlogLogicFromNothingRouteImport.update({
-  id: '/logic-from-nothing',
-  path: '/logic-from-nothing',
-  getParentRoute: () => BlogRoute,
-} as any)
 const BlogHowTpusWorkRoute = BlogHowTpusWorkRouteImport.update({
   id: '/how-tpus-work',
   path: '/how-tpus-work',
@@ -194,7 +182,6 @@ export interface FileRoutesByFullPath {
   '/blog/computing-trig-in-hardware': typeof BlogComputingTrigInHardwareRoute
   '/blog/how-network-switches-work': typeof BlogHowNetworkSwitchesWorkRoute
   '/blog/how-tpus-work': typeof BlogHowTpusWorkRoute
-  '/blog/logic-from-nothing': typeof BlogLogicFromNothingRoute
   '/blog/mcp-bidirectional-bridge': typeof BlogMcpBidirectionalBridgeRoute
   '/blog/pong-in-hardware': typeof BlogPongInHardwareRoute
   '/blog/rv32i-cpu': typeof BlogRv32iCpuRoute
@@ -208,7 +195,6 @@ export interface FileRoutesByFullPath {
   '/docs/$': typeof DocsSplatRoute
   '/learn/cpu': typeof LearnCpuRoute
   '/learn/dual-cpu': typeof LearnDualCpuRoute
-  '/learn/program-counter': typeof LearnProgramCounterRoute
   '/blog/': typeof BlogIndexRoute
   '/learn/': typeof LearnIndexRoute
 }
@@ -223,7 +209,6 @@ export interface FileRoutesByTo {
   '/blog/computing-trig-in-hardware': typeof BlogComputingTrigInHardwareRoute
   '/blog/how-network-switches-work': typeof BlogHowNetworkSwitchesWorkRoute
   '/blog/how-tpus-work': typeof BlogHowTpusWorkRoute
-  '/blog/logic-from-nothing': typeof BlogLogicFromNothingRoute
   '/blog/mcp-bidirectional-bridge': typeof BlogMcpBidirectionalBridgeRoute
   '/blog/pong-in-hardware': typeof BlogPongInHardwareRoute
   '/blog/rv32i-cpu': typeof BlogRv32iCpuRoute
@@ -237,7 +222,6 @@ export interface FileRoutesByTo {
   '/docs/$': typeof DocsSplatRoute
   '/learn/cpu': typeof LearnCpuRoute
   '/learn/dual-cpu': typeof LearnDualCpuRoute
-  '/learn/program-counter': typeof LearnProgramCounterRoute
   '/blog': typeof BlogIndexRoute
   '/learn': typeof LearnIndexRoute
 }
@@ -254,7 +238,6 @@ export interface FileRoutesById {
   '/blog/computing-trig-in-hardware': typeof BlogComputingTrigInHardwareRoute
   '/blog/how-network-switches-work': typeof BlogHowNetworkSwitchesWorkRoute
   '/blog/how-tpus-work': typeof BlogHowTpusWorkRoute
-  '/blog/logic-from-nothing': typeof BlogLogicFromNothingRoute
   '/blog/mcp-bidirectional-bridge': typeof BlogMcpBidirectionalBridgeRoute
   '/blog/pong-in-hardware': typeof BlogPongInHardwareRoute
   '/blog/rv32i-cpu': typeof BlogRv32iCpuRoute
@@ -268,7 +251,6 @@ export interface FileRoutesById {
   '/docs/$': typeof DocsSplatRoute
   '/learn/cpu': typeof LearnCpuRoute
   '/learn/dual-cpu': typeof LearnDualCpuRoute
-  '/learn/program-counter': typeof LearnProgramCounterRoute
   '/blog/': typeof BlogIndexRoute
   '/learn/': typeof LearnIndexRoute
 }
@@ -286,7 +268,6 @@ export interface FileRouteTypes {
     | '/blog/computing-trig-in-hardware'
     | '/blog/how-network-switches-work'
     | '/blog/how-tpus-work'
-    | '/blog/logic-from-nothing'
     | '/blog/mcp-bidirectional-bridge'
     | '/blog/pong-in-hardware'
     | '/blog/rv32i-cpu'
@@ -300,7 +281,6 @@ export interface FileRouteTypes {
     | '/docs/$'
     | '/learn/cpu'
     | '/learn/dual-cpu'
-    | '/learn/program-counter'
     | '/blog/'
     | '/learn/'
   fileRoutesByTo: FileRoutesByTo
@@ -315,7 +295,6 @@ export interface FileRouteTypes {
     | '/blog/computing-trig-in-hardware'
     | '/blog/how-network-switches-work'
     | '/blog/how-tpus-work'
-    | '/blog/logic-from-nothing'
     | '/blog/mcp-bidirectional-bridge'
     | '/blog/pong-in-hardware'
     | '/blog/rv32i-cpu'
@@ -329,7 +308,6 @@ export interface FileRouteTypes {
     | '/docs/$'
     | '/learn/cpu'
     | '/learn/dual-cpu'
-    | '/learn/program-counter'
     | '/blog'
     | '/learn'
   id:
@@ -345,7 +323,6 @@ export interface FileRouteTypes {
     | '/blog/computing-trig-in-hardware'
     | '/blog/how-network-switches-work'
     | '/blog/how-tpus-work'
-    | '/blog/logic-from-nothing'
     | '/blog/mcp-bidirectional-bridge'
     | '/blog/pong-in-hardware'
     | '/blog/rv32i-cpu'
@@ -359,7 +336,6 @@ export interface FileRouteTypes {
     | '/docs/$'
     | '/learn/cpu'
     | '/learn/dual-cpu'
-    | '/learn/program-counter'
     | '/blog/'
     | '/learn/'
   fileRoutesById: FileRoutesById
@@ -378,7 +354,6 @@ export interface RootRouteChildren {
   DocsSplatRoute: typeof DocsSplatRoute
   LearnCpuRoute: typeof LearnCpuRoute
   LearnDualCpuRoute: typeof LearnDualCpuRoute
-  LearnProgramCounterRoute: typeof LearnProgramCounterRoute
   LearnIndexRoute: typeof LearnIndexRoute
 }
 
@@ -418,13 +393,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/blog/'
       preLoaderRoute: typeof BlogIndexRouteImport
       parentRoute: typeof BlogRoute
-    }
-    '/learn/program-counter': {
-      id: '/learn/program-counter'
-      path: '/learn/program-counter'
-      fullPath: '/learn/program-counter'
-      preLoaderRoute: typeof LearnProgramCounterRouteImport
-      parentRoute: typeof rootRouteImport
     }
     '/learn/dual-cpu': {
       id: '/learn/dual-cpu'
@@ -517,13 +485,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BlogMcpBidirectionalBridgeRouteImport
       parentRoute: typeof BlogRoute
     }
-    '/blog/logic-from-nothing': {
-      id: '/blog/logic-from-nothing'
-      path: '/logic-from-nothing'
-      fullPath: '/blog/logic-from-nothing'
-      preLoaderRoute: typeof BlogLogicFromNothingRouteImport
-      parentRoute: typeof BlogRoute
-    }
     '/blog/how-tpus-work': {
       id: '/blog/how-tpus-work'
       path: '/how-tpus-work'
@@ -591,7 +552,6 @@ interface BlogRouteChildren {
   BlogComputingTrigInHardwareRoute: typeof BlogComputingTrigInHardwareRoute
   BlogHowNetworkSwitchesWorkRoute: typeof BlogHowNetworkSwitchesWorkRoute
   BlogHowTpusWorkRoute: typeof BlogHowTpusWorkRoute
-  BlogLogicFromNothingRoute: typeof BlogLogicFromNothingRoute
   BlogMcpBidirectionalBridgeRoute: typeof BlogMcpBidirectionalBridgeRoute
   BlogPongInHardwareRoute: typeof BlogPongInHardwareRoute
   BlogRv32iCpuRoute: typeof BlogRv32iCpuRoute
@@ -607,7 +567,6 @@ const BlogRouteChildren: BlogRouteChildren = {
   BlogComputingTrigInHardwareRoute: BlogComputingTrigInHardwareRoute,
   BlogHowNetworkSwitchesWorkRoute: BlogHowNetworkSwitchesWorkRoute,
   BlogHowTpusWorkRoute: BlogHowTpusWorkRoute,
-  BlogLogicFromNothingRoute: BlogLogicFromNothingRoute,
   BlogMcpBidirectionalBridgeRoute: BlogMcpBidirectionalBridgeRoute,
   BlogPongInHardwareRoute: BlogPongInHardwareRoute,
   BlogRv32iCpuRoute: BlogRv32iCpuRoute,
@@ -631,7 +590,6 @@ const rootRouteChildren: RootRouteChildren = {
   DocsSplatRoute: DocsSplatRoute,
   LearnCpuRoute: LearnCpuRoute,
   LearnDualCpuRoute: LearnDualCpuRoute,
-  LearnProgramCounterRoute: LearnProgramCounterRoute,
   LearnIndexRoute: LearnIndexRoute,
 }
 export const routeTree = rootRouteImport

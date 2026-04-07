@@ -11,6 +11,8 @@ import {
   type FlatSequentialState,
 } from "@turing-incomplete/core/simulator";
 import type { Circuit } from "@turing-incomplete/core";
+import type { BuiltCircuit } from "@turing-incomplete/core/circuit";
+import { createStdLibrary } from "@turing-incomplete/core/std";
 import { useCompileCode } from "./useCompileCode";
 import { useCircuitSession } from "@turing-incomplete/ui/canvas";
 import { autoHarness } from "../auto-harness";
@@ -60,24 +62,38 @@ export interface UseCircuitSimulatorOptions {
 /**
  * Standalone circuit simulator hook.
  *
- * Compiles DSL → creates SimulationSession → exposes reactive state + actions.
- * Internally delegates to useCompileCode (compilation) + useCircuitSession (simulation).
+ * Accepts either a BuiltCircuit (no compilation) or a code string (compiled at runtime).
  */
 export function useCircuitSimulator(
-  dslCode: string,
+  source: string | BuiltCircuit,
   options?: UseCircuitSimulatorOptions,
 ): SimulatorState & SimulatorActions {
-  // ── Compilation (auto-detects TypeScript vs DSL) ──
-  const compiled = useCompileCode(dslCode);
+  const isBuilt = typeof source !== 'string';
+
+  // ── Compilation (string path only — BuiltCircuit skips this) ──
+  const compiled = useCompileCode(isBuilt ? '' : source);
+
+  // ── Resolve circuit + library ──
+  const { circuit: rawCircuit, componentLibrary } = useMemo(() => {
+    if (isBuilt) {
+      const lib = createStdLibrary();
+      lib.addCircuit(source.circuit);
+      for (const [, dep] of source._dependencies) {
+        lib.addCircuit(dep);
+      }
+      return { circuit: source.circuit, componentLibrary: lib };
+    }
+    return { circuit: compiled.circuit, componentLibrary: compiled.componentLibrary };
+  }, [isBuilt, isBuilt ? source : compiled.circuit, isBuilt ? null : compiled.componentLibrary]);
 
   // ── Auto-harness (wrap with Switches/LEDs if enabled) ──
   const harnessedCircuit = useMemo(() => {
-    if (!options?.autoHarness || !compiled.circuit || !compiled.componentLibrary) return compiled.circuit;
-    return autoHarness(compiled.circuit, compiled.componentLibrary, options.initialInputs);
-  }, [compiled.circuit, compiled.componentLibrary, options?.autoHarness, options?.initialInputs]);
+    if (!options?.autoHarness || !rawCircuit || !componentLibrary) return rawCircuit;
+    return autoHarness(rawCircuit, componentLibrary, options.initialInputs);
+  }, [rawCircuit, componentLibrary, options?.autoHarness, options?.initialInputs]);
 
   // ── Simulation (via the same hook the editor uses) ──
-  const sim = useCircuitSession(harnessedCircuit, compiled.componentLibrary);
+  const sim = useCircuitSession(harnessedCircuit, componentLibrary);
 
   // ── Higher-level state (outputs, inputs, toggles) ──
   const [outputs, setOutputs] = useState<Record<string, boolean | number>>({});
@@ -182,13 +198,13 @@ export function useCircuitSimulator(
     outputs,
     inputs,
     cycleCount: sim.cycle,
-    ready: compiled.ready && sim.session !== null,
-    error: compiled.error,
-    isSequential: compiled.isSequential,
+    ready: isBuilt ? sim.session !== null : (compiled.ready && sim.session !== null),
+    error: isBuilt ? null : compiled.error,
+    isSequential: isBuilt ? (rawCircuit?.clocks?.length ?? 0) > 0 : compiled.isSequential,
     circuit: harnessedCircuit,
     portValues: (sim.portValues.size > 0 ? sim.portValues : null) as FlatPortValueMap | null,
     sequentialState: sim.sequentialState,
-    componentLibrary: compiled.componentLibrary,
+    componentLibrary,
     history: sim.history,
     historyIndex: sim.historyIndex,
     isViewingPast: sim.isViewingPast,

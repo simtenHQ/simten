@@ -45,7 +45,7 @@ export function DataFlowSection() {
 
       <div className="mt-8">
         <CircuitEmbed
-          code={TPU_CIRCUITS.twoPERow.dsl}
+          circuit={TPU_CIRCUITS.twoPERow.circuit}
           displayCode={TPU_CIRCUITS.twoPERow.displayCode}
           nodePositions={TPU_CIRCUITS.twoPERow.nodePositions}
           height={400}

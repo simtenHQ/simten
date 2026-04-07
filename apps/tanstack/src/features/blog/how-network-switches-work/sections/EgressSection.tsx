@@ -4,7 +4,7 @@ import { CircuitEmbed } from "@turing-incomplete/embed";
 import { SWITCH_CIRCUITS } from "../circuits";
 
 export function EgressSection() {
-  const circuit = SWITCH_CIRCUITS.packetSerializer;
+  const entry = SWITCH_CIRCUITS.packetSerializer;
 
   return (
     <section className="py-12">
@@ -35,12 +35,12 @@ export function EgressSection() {
 
       <div className="mt-8">
         <CircuitEmbed
-          code={circuit.dsl}
+          circuit={entry.circuit}
           height={280}
           showControls
-          displayCode={circuit.displayCode}
-          title={circuit.name}
-          description={circuit.description}
+          displayCode={entry.displayCode}
+          title={entry.name}
+          description={entry.description}
         />
       </div>
     </section>

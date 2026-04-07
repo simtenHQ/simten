@@ -5,11 +5,21 @@
  * detection and buffering to arbitration, routing, and serialization.
  */
 
+import { executeCircuitCode } from "@turing-incomplete/core/circuit";
+import type { BuiltCircuit } from "@turing-incomplete/core/circuit";
+
+/** Compile a circuit code string to a BuiltCircuit at import time */
+function compile(code: string): BuiltCircuit {
+  const result = executeCircuitCode(code);
+  if (result.error) throw new Error(result.error);
+  return result.builtCircuits[result.builtCircuits.length - 1];
+}
+
 export interface BlogCircuit {
   name: string;
   description: string;
   displayCode: string;
-  dsl: string;
+  circuit: BuiltCircuit;
 }
 
 export const SWITCH_CIRCUITS: Record<string, BlogCircuit> = {
@@ -43,7 +53,7 @@ export const SWITCH_CIRCUITS: Record<string, BlogCircuit> = {
     isActive.eq.to(frameLed.in),
   ],
 })`,
-    dsl: `
+    circuit: compile(`
 const FrameDetector = circuit('FrameDetector', {
   nodes: { byteIn: Input, valid: Switch, state: Register, PREAMBLE: Constant, SFD: Constant, zero: Constant, one: Constant, two: Constant, isPreamble: Comparator, isSFD: Comparator, isIdle: Comparator, isWaiting: Comparator, isActive: Comparator, gotPreamble: And, gotPreambleValid: And, gotSFD: And, gotSFDValid: And, next1: Mux, next2: Mux, we: Input, stateDisplay: HexDisplay, frameLed: Led },
   nodeArgs: { byteIn: { value: 85 }, state: { initial: 0 }, PREAMBLE: { value: 85 }, SFD: { value: 213 }, zero: { value: 0 }, one: { value: 1 }, two: { value: 2 }, we: { value: 1 } },
@@ -90,8 +100,8 @@ const PacketBuffer = circuit('PacketBuffer', {
     ram.outB.to(readback.in),
   ],
 })
-`,
-    dsl: `
+`),
+    circuit: compile(`
 const PacketBuffer = circuit('PacketBuffer', {
   nodes: { dataIn: Input, writeCmd: Switch, writePtr: Register, one: Constant, ram: DualPortRAM, nextPtr: Adder, readAddr: Input, readback: HexDisplay, ptrDisplay: HexDisplay },
   nodeArgs: { dataIn: { value: 42 }, writePtr: { initial: 0 }, one: { value: 1 }, readAddr: { value: 0 } },
@@ -105,7 +115,7 @@ const PacketBuffer = circuit('PacketBuffer', {
     ram.outB.to(readback.in),
   ],
 })
-`,
+`),
   },
 
   portArbiter: {
@@ -135,8 +145,8 @@ const PortArbiter = circuit('PortArbiter', {
     grantValid.out.to(validLed.in),
   ],
 })
-`,
-    dsl: `
+`),
+    circuit: compile(`
 const PortArbiter = circuit('PortArbiter', {
   nodes: { port0_ready: Switch, port1_ready: Switch, lastPort: Input, zero: Constant, one: Constant, lastWas0: Comparator, prefer1: And, notPort1: Not, fallback0: And, fallback0Ready: And, lastWas1: Comparator, prefer0: And, grant0: Or, grant1: Or, grantValid: Or, grantPort: Mux, portDisplay: HexDisplay, validLed: Led },
   nodeArgs: { lastPort: { value: 0 }, zero: { value: 0 }, one: { value: 1 } },
@@ -159,7 +169,7 @@ const PortArbiter = circuit('PortArbiter', {
     grantValid.out.to(validLed.in),
   ],
 })
-`,
+`),
   },
 
   crossbarRouter: {
@@ -178,8 +188,8 @@ const CrossbarRouter = circuit('CrossbarRouter', {
     destPort.out.to(destDisplay.in),
   ],
 })
-`,
-    dsl: `
+`),
+    circuit: compile(`
 const CrossbarRouter = circuit('CrossbarRouter', {
   nodes: { sourcePort: Input, zero: Constant, one: Constant, isPort0: Comparator, destPort: Mux, destDisplay: HexDisplay, srcDisplay: HexDisplay, routedLed: Led },
   nodeArgs: { sourcePort: { value: 0 }, zero: { value: 0 }, one: { value: 1 } },
@@ -191,7 +201,7 @@ const CrossbarRouter = circuit('CrossbarRouter', {
     destPort.out.to(destDisplay.in),
   ],
 })
-`,
+`),
   },
 
   packetSerializer: {
@@ -212,8 +222,8 @@ const PacketSerializer = circuit('PacketSerializer', {
     isDone.eq.to(doneLed.in),
   ],
 })
-`,
-    dsl: `
+`),
+    circuit: compile(`
 const PacketSerializer = circuit('PacketSerializer', {
   nodes: { readPtr: Register, one: Constant, seven: Constant, nextPtr: Adder, enable: Switch, dataOut: HexDisplay, ptrDisplay: HexDisplay, isDone: Comparator, doneLed: Led },
   nodeArgs: { readPtr: { initial: 0 }, one: { value: 1 }, seven: { value: 7 } },
@@ -227,7 +237,7 @@ const PacketSerializer = circuit('PacketSerializer', {
     isDone.eq.to(doneLed.in),
   ],
 })
-`,
+`),
   },
 };
 

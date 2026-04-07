@@ -1,5 +1,4 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { PROGRAM_COUNTER_LESSON } from "@/features/learn/lessons/program-counter";
 
 export const Route = createFileRoute("/learn/")({
   head: () => ({
@@ -7,14 +6,6 @@ export const Route = createFileRoute("/learn/")({
   }),
   component: LearnIndexPage,
 });
-
-const LESSONS = [
-  {
-    lesson: PROGRAM_COUNTER_LESSON,
-    path: "/learn/program-counter" as const,
-    readMinutes: 5,
-  },
-];
 
 function LearnIndexPage() {
   return (
@@ -97,34 +88,6 @@ function LearnIndexPage() {
             </div>
           </Link>
 
-          {LESSONS.map(({ lesson, path, readMinutes }) => (
-            <Link
-              key={lesson.slug}
-              to={path}
-              className="block p-6 rounded-xl bg-gray-900 border border-gray-800 hover:border-blue-700/50 hover:bg-gray-900/80 transition-colors group"
-            >
-              <div className="flex items-start justify-between">
-                <div>
-                  <h2 className="text-xl font-bold text-white group-hover:text-blue-300 transition-colors">
-                    {lesson.title}
-                  </h2>
-                  <p className="mt-2 text-gray-400 leading-relaxed">
-                    {lesson.description}
-                  </p>
-                </div>
-                <span className="text-gray-600 group-hover:text-blue-400 transition-colors text-2xl ml-4">
-                  &rarr;
-                </span>
-              </div>
-              <div className="mt-4 flex items-center gap-4 text-sm text-gray-500">
-                <span>{lesson.sections.length} sections</span>
-                <span>{readMinutes} min read</span>
-                <span className="px-2 py-0.5 rounded-full bg-blue-900/50 text-blue-300 text-xs font-medium">
-                  Interactive
-                </span>
-              </div>
-            </Link>
-          ))}
         </div>
 
         <footer className="mt-16 pt-8 border-t border-gray-800 text-center">

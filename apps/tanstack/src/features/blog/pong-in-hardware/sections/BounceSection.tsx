@@ -4,7 +4,7 @@ import { CircuitEmbed } from "@turing-incomplete/embed";
 import { PONG_CIRCUITS } from "../circuits";
 
 export function BounceSection() {
-  const circuit = PONG_CIRCUITS.bounceDetection;
+  const entry = PONG_CIRCUITS.bounceDetection;
 
   return (
     <section className="py-12">
@@ -28,13 +28,13 @@ export function BounceSection() {
 
       <div className="mt-8">
         <CircuitEmbed
-          code={circuit.dsl}
+          circuit={entry.circuit}
           height={260}
           showControls={false}
-          displayCode={circuit.displayCode}
-          nodePositions={circuit.nodePositions}
-          title={circuit.name}
-          description={circuit.description}
+          displayCode={entry.displayCode}
+          nodePositions={entry.nodePositions}
+          title={entry.name}
+          description={entry.description}
         />
       </div>
     </section>

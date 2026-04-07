@@ -4,7 +4,7 @@ import { CircuitEmbed } from "@turing-incomplete/embed";
 import { SWITCH_CIRCUITS } from "../circuits";
 
 export function RouterSection() {
-  const circuit = SWITCH_CIRCUITS.crossbarRouter;
+  const entry = SWITCH_CIRCUITS.crossbarRouter;
 
   return (
     <section className="py-12">
@@ -33,12 +33,12 @@ export function RouterSection() {
 
       <div className="mt-8">
         <CircuitEmbed
-          code={circuit.dsl}
+          circuit={entry.circuit}
           height={220}
           showControls={false}
-          displayCode={circuit.displayCode}
-          title={circuit.name}
-          description={circuit.description}
+          displayCode={entry.displayCode}
+          title={entry.name}
+          description={entry.description}
         />
       </div>
     </section>

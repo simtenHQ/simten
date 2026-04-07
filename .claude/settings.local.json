@@ -69,7 +69,9 @@
       "Bash(sed -i '' \"s|from ''../../lib/utils''|from ''../lib/utils''|g\" packages/ui/src/nodes/*.ts)",
       "Bash(__NEW_LINE_13a2d21a3b8e46ad__ echo:*)",
       "Bash(sed 's/:.*$//')",
-      "Bash(git mv:*)"
+      "Bash(git mv:*)",
+      "Read(//circuit: compile\\\\\\(`/ { in_circuit = 1 }\nin_circuit && /^`,$/**)",
+      "Bash(mv /tmp/pong-fixed.ts apps/tanstack/src/features/blog/pong-in-hardware/circuits.ts)"
     ]
   }
 }

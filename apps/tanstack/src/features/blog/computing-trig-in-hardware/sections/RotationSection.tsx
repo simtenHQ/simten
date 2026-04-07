@@ -4,7 +4,7 @@ import { CircuitEmbed } from "@turing-incomplete/embed";
 import { CORDIC_CIRCUITS } from "../circuits";
 
 export function RotationSection() {
-  const circuit = CORDIC_CIRCUITS.rotationStep;
+  const entry = CORDIC_CIRCUITS.rotationStep;
 
   return (
     <section className="py-12">
@@ -31,12 +31,12 @@ y_next = y + (x >> iteration)`}
 
       <div className="mt-8">
         <CircuitEmbed
-          code={circuit.dsl}
+          circuit={entry.circuit}
           height={280}
           showControls={false}
-          displayCode={circuit.displayCode}
-          title={circuit.name}
-          description={circuit.description}
+          displayCode={entry.displayCode}
+          title={entry.name}
+          description={entry.description}
         />
       </div>
     </section>

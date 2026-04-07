@@ -4,7 +4,7 @@ import { CircuitEmbed } from "@turing-incomplete/embed";
 import { CHACHA20_CIRCUITS } from "../circuits";
 
 export function StepSection() {
-  const circuit = CHACHA20_CIRCUITS.arxStep;
+  const entry = CHACHA20_CIRCUITS.arxStep;
 
   return (
     <section className="py-12">
@@ -37,12 +37,12 @@ d <<<= 16; // rotate d left by 16`}</pre>
 
       <div className="mt-8">
         <CircuitEmbed
-          code={circuit.dsl}
+          circuit={entry.circuit}
           height={320}
           showControls={false}
-          displayCode={circuit.displayCode}
-          title={circuit.name}
-          description={circuit.description}
+          displayCode={entry.displayCode}
+          title={entry.name}
+          description={entry.description}
         />
       </div>
     </section>
