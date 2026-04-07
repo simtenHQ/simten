@@ -3,7 +3,7 @@
  *
  * Replaces the old HTTP/SSE preview server with a bidirectional WebSocket.
  * - Manages sessions (one per browser tab, identified by UUID)
- * - Pushes DSL, traces, test results, memory data to connected tabs
+ * - Pushes circuit source, traces, test results, memory data to connected tabs
  * - Requests circuit/challenge state on demand (pull model)
  * - File watching with dedup (skips watcher events within 500ms of explicit push)
  * - Token auth: connections must provide the server's token to be accepted
@@ -32,7 +32,7 @@ export interface StudioServer {
   token: string;
   sessions: Map<string, Session>;
 
-  updateDSL(dsl: string, sessionId?: string): void;
+  updateSource(source: string, sessionId?: string): void;
   watchFile(filePath: string): void;
   getState(sessionId?: string): Promise<CircuitState | null>;
   getChallengeState(sessionId?: string): Promise<ChallengeState | null>;
@@ -61,7 +61,7 @@ export async function createStudioServer(
   const sessions = new Map<string, Session>();
   const pendingRequests = new Map<string, { resolve: (value: unknown) => void; timer: ReturnType<typeof setTimeout> }>();
 
-  let currentDSL: string | null = null;
+  let currentSource: string | null = null;
   let cachedTraces: TracesPayload | null = null;
   let cachedTestResults: TestResultsPayload | null = null;
   let cachedMemoryData: MemoryDataPayload | null = null;
@@ -119,8 +119,8 @@ export async function createStudioServer(
           lastActiveSessionId = sessionId;
 
           // Send cached state to late-joining client
-          if (currentDSL) {
-            send(ws, { type: 'dsl', source: currentDSL });
+          if (currentSource) {
+            send(ws, { type: 'source', source: currentSource });
           }
           if (cachedTraces) {
             send(ws, { type: 'traces', data: cachedTraces });
@@ -238,10 +238,10 @@ export async function createStudioServer(
     });
   }
 
-  function updateDSL(dsl: string, sessionId?: string) {
-    currentDSL = dsl;
+  function updateSource(source: string, sessionId?: string) {
+    currentSource = source;
     lastExplicitPushAt = Date.now();
-    broadcast({ type: 'dsl', source: dsl }, sessionId);
+    broadcast({ type: 'source', source }, sessionId);
   }
 
   function watchFile(filePath: string) {
@@ -268,7 +268,7 @@ export async function createStudioServer(
 
       try {
         const content = readFileSync(absPath, 'utf-8');
-        updateDSL(content);
+        updateSource(content);
       } catch {
         broadcast({ type: 'error', message: `Failed to read ${absPath}` });
       }
@@ -334,7 +334,7 @@ export async function createStudioServer(
     port: assignedPort,
     token,
     sessions,
-    updateDSL,
+    updateSource,
     watchFile,
     getState,
     getChallengeState,

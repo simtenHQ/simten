@@ -31,7 +31,7 @@ export function usePongSimulator() {
   }, [sim.circuit]);
 
   // Auto-toggle switches when simulator is ready
-  // Constants are now embedded in the DSL via Input(value=...) and Register(initial=...)
+  // Constants are now embedded via Input(value=...) and Register(initial=...)
   useEffect(() => {
     if (sim.ready && !hasInitialized.current) {
       hasInitialized.current = true;

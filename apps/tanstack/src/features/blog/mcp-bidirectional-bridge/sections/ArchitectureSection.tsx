@@ -24,7 +24,7 @@ function Diagram() {
 │   Browser App       │
 │                     │
 │  ┌───────────────┐  │
-│  │ Visual Editor │  │◄─── Receives DSL, traces, test results
+│  │ Visual Editor │  │◄─── Receives circuit code, traces, test results
 │  │ + Chat Panel  │  │     Sends user prompts, circuit state
 │  └───────────────┘  │
 └─────────────────────┘`}
@@ -84,14 +84,14 @@ export function ArchitectureSection() {
               show_circuit
             </code>
             , the tool handler doesn&rsquo;t just return text to Claude &mdash;
-            it also pushes the circuit DSL to the browser over WebSocket:
+            it also pushes the circuit code to the browser over WebSocket:
           </p>
 
           <CodeBlock title="packages/mcp/src/tools/show.ts" language="typescript">
 {`// When Claude calls show_circuit, two things happen:
 
-// 1. Push the DSL to the browser via WebSocket
-studio.updateDSL(dslSource, sessionId);
+// 1. Push circuit code to the browser via WebSocket
+studio.updateSource(circuitSource, sessionId);
 
 // 2. Return a text summary to Claude
 return { content: [{ type: "text", text: "Circuit displayed" }] };`}
@@ -104,8 +104,8 @@ return { content: [{ type: "text", text: "Circuit displayed" }] };`}
 
           <CodeBlock title="apps/tanstack/src/hooks/useMCPConnection.ts" language="typescript">
 {`const { status, sendToClaudePrompt } = useMCPConnection({
-  // Claude pushes new DSL → update the editor
-  onDSL: (source) => dslEditorRef.current?.setCode(source),
+  // Claude pushes new circuit source → update the editor
+  onSource: (source) => circuitEditorRef.current?.setCode(source),
 
   // Claude pushes waveforms → render in trace viewer
   onTraces: (data) => setTraces(data),

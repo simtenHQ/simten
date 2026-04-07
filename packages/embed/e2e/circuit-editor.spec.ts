@@ -13,9 +13,9 @@ test.describe("<circuit-editor> web component", () => {
     expect(defined).toBe(true);
   });
 
-  test("renders with initial DSL in code panel", async ({ page }) => {
+  test("renders with initial circuit source in code panel", async ({ page }) => {
     const editor = page.locator("#test-editor circuit-editor");
-    // Should have a textarea with the initial DSL
+    // Should have a textarea with the initial circuit source
     const textarea = editor.locator("textarea");
     await expect(textarea).toBeVisible({ timeout: 10_000 });
 
@@ -35,7 +35,7 @@ test.describe("<circuit-editor> web component", () => {
     const textarea = editor.locator("textarea");
     await expect(textarea).toBeVisible({ timeout: 10_000 });
 
-    // Clear and type new DSL
+    // Clear and type new circuit source
     await textarea.fill(`circuit TwoLeds {
   impl {
     node A: Switch

@@ -194,7 +194,7 @@ export function updateGoalState(
       // Extract component name from description (e.g., "Circuit contains inverter")
       const descMatch = hasComponentCriterion.description.match(/contains?\s+(.+)/i);
       const componentName = descMatch?.[1]?.trim() ?? '';
-      // Check for the component in DSL code (component instantiation or type reference)
+      // Check for the component in circuit code (component instantiation or type reference)
       const nameVariants = [componentName, componentName.toUpperCase(), componentName.charAt(0).toUpperCase() + componentName.slice(1)];
       const found = nameVariants.some(name => code.includes(name));
       updateCriterion(goalState, 'has-component', {

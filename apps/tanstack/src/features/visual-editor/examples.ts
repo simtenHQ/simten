@@ -1,6 +1,6 @@
 /**
  * Example circuits for the editor empty state.
- * Each example has a title, description, category, and DSL source.
+ * Each example has a title, description, category, and circuit source.
  */
 
 export interface Example {
@@ -9,7 +9,7 @@ export interface Example {
   description: string;
   category: "game" | "math" | "cpu" | "basics";
   nodes: string;
-  dsl: string;
+  code: string;
 }
 
 export const EXAMPLES: Example[] = [
@@ -19,7 +19,7 @@ export const EXAMPLES: Example[] = [
     description: "A complete Snake game with food, growth, and collision — 4-phase pipeline, circular buffer body storage, all from logic gates. No CPU.",
     category: "game",
     nodes: "~100 nodes",
-    dsl: `
+    code: `
 const SnakeAdvanced = circuit('SnakeAdvanced', {
   nodes: { screen: Screen, keyboard: Input, foodX: Register, foodY: Register, foodNeedsDrawing: Register, headPtr: Register, tailPtr: Register, snakeLen: Register, headX: Register, headY: Register, tailPixelAddr: Register, nextHeadPixelAddr: Register, phase: Register, zero: Constant, one: Constant, two: Constant, three: Constant, bodyBase: Constant, minus1: Constant, eight: Constant, phaseInc: Adder, phaseWrap: BitSlice, phaseEnable: Switch, isPhase0: Comparator, isPhase1: Comparator, isPhase2: Comparator, isPhase3: Comparator, keyboardLatched: Register, latchKeyboard: And, upCode: Constant, downCode: Constant, leftCode: Constant, rightCode: Constant, isUp: Comparator, isDown: Comparator, isLeft: Comparator, isRight: Comparator, deltaXTemp: Mux, deltaX: Mux, deltaYTemp: Mux, deltaY: Mux, nextHeadXCalc: Adder, nextHeadYCalc: Adder, nextHeadX: BitSlice, nextHeadY: BitSlice, nextHeadY2: Adder, nextHeadY4: Adder, nextHeadY8: Adder, nextPixelAddr: Adder, foodY2: Adder, foodY4: Adder, foodY8: Adder, foodPixelAddr: Adder, nextHeadAtFoodX: Comparator, nextHeadAtFoodY: Comparator, willEatFood: And, latchNextHead: And, headPtrNext: Adder, headPtrNextWrap: BitSlice, headBodyAddr: Adder, tailBodyAddr: Adder, phase0Addr: Mux, addrMux0: Mux, addrMux1: Mux, ramAddr: Mux, dataMux0: Mux, dataMux1: Mux, ramData: Mux, bufferEmpty: Comparator, bufferNotEmpty: Not, deltaXIsZero: Comparator, deltaYIsZero: Comparator, bothDeltasZero: And, isMoving: Not, shouldMoveTail: Switch, shouldMoveTailActual: And, notEatingFood: Not, shouldClearTail: And, shouldClearTailMoving: And, writePhase0: And, writePhase1: And, writePhase2: And, writePhase3: And, writePhase01: Or, writePhase2or3: Or, writeAny: Or, writeEnable: Switch, finalWriteEnable: And, latchTail: And, latchTailFinal: And, latchTailNotFood: And, notDrawingFood: Not, clearFoodFlag: And, clearFoodFlagFinal: And, ateFood: And, ateFoodFinal: And, foodFlagWriteEnable: Or, foodFlagData: Mux, foodXNext: Adder, foodXWrap: BitSlice, foodYNext: Adder, five: Constant, foodYWrap: BitSlice, updateHead: And, updateHeadFinal: And, headPtrInc: Adder, headPtrWrap: BitSlice, tailPtrInc: Adder, tailPtrWrap: BitSlice, updateTail: And, updateTailFinal: And, snakeLenDelta: Mux, snakeLenNew: Adder },
   nodeArgs: { foodX: { initial: 6 }, foodY: { initial: 3 }, foodNeedsDrawing: { initial: 1 }, headPtr: { initial: 3 }, tailPtr: { initial: 0 }, snakeLen: { initial: 4 }, headX: { initial: 4 }, headY: { initial: 4 }, tailPixelAddr: { initial: 33 }, nextHeadPixelAddr: { initial: 36 }, phase: { initial: 0 }, zero: { value: 0 }, one: { value: 1 }, two: { value: 2 }, three: { value: 3 }, bodyBase: { value: 64 }, minus1: { value: 255 }, eight: { value: 8 }, phaseWrap: { low: 0, high: 1 }, phaseEnable: { value: 1 }, keyboardLatched: { initial: 0 }, upCode: { value: 72 }, downCode: { value: 80 }, leftCode: { value: 75 }, rightCode: { value: 77 }, nextHeadX: { low: 0, high: 2 }, nextHeadY: { low: 0, high: 2 }, headPtrNextWrap: { low: 0, high: 5 }, shouldMoveTail: { value: 1 }, writeEnable: { value: 1 }, foodXWrap: { low: 0, high: 2 }, five: { value: 5 }, foodYWrap: { low: 0, high: 2 }, headPtrWrap: { low: 0, high: 5 }, tailPtrWrap: { low: 0, high: 5 } },
@@ -148,7 +148,7 @@ const SnakeAdvanced = circuit('SnakeAdvanced', {
     description: "Google's TPU architecture — 9 processing elements doing matrix multiplication in a wavefront pattern. Watch A*B compute one cycle at a time.",
     category: "cpu",
     nodes: "~120 nodes",
-    dsl: `
+    code: `
 const PE_Systolic = circuit('PE_Systolic', {
   in: { dataIn: bus(8), weightIn: bus(8), partialSumIn: bus(16), weightValid: bit },
   out: { dataOut: bus(8), partialSumOut: bus(16) },
@@ -299,7 +299,7 @@ const TestSystolic3x3 = circuit('TestSystolic3x3', {
     description: "Pure datapath — two registers and one adder produce the Fibonacci sequence every clock tick. No software, no ROM, no instructions.",
     category: "math",
     nodes: "~12 nodes",
-    dsl: `
+    code: `
 const Fibonacci = circuit('Fibonacci', {
   out: { fib: bus(8) },
   nodes: { reg_a: Register, reg_b: Register, adder: Adder, one_bit: Constant, init: DFlipFlop },
@@ -335,7 +335,7 @@ const FibonacciDemo = circuit('FibonacciDemo', {
     description: "Wolfram's famous Rule 30 — the simplest known source of cryptographic randomness. 8 cells in a ring, two gates per cell, chaos from one seed.",
     category: "math",
     nodes: "~40 nodes",
-    dsl: `
+    code: `
 const Rule30Cell = circuit('Rule30Cell', {
   in: { left: bit, center: bit, right: bit },
   out: { next: bit },
@@ -383,7 +383,7 @@ const Rule30 = circuit('Rule30', {
     description: "The heart of every CPU — 8 operations (ADD, SUB, AND, OR, XOR, NOT, SHL, SHR) selected by a 3-bit opcode, with zero/carry/negative flags.",
     category: "cpu",
     nodes: "~30 nodes",
-    dsl: `
+    code: `
 const ALU = circuit('ALU', {
   in: { a: bus(8), b: bus(8), op0: bit, op1: bit, op2: bit },
   out: { result: bus(8), zero: bit, carry: bit, negative: bit },
@@ -454,7 +454,7 @@ const ALUDemo = circuit('ALUDemo', {
     description: "The simplest arithmetic circuit — XOR for sum, AND for carry. The building block of every adder in every CPU ever made.",
     category: "basics",
     nodes: "4 nodes",
-    dsl: `
+    code: `
 const HalfAdder = circuit('HalfAdder', {
   in: { a: bit, b: bit },
   out: { sum: bit, carry: bit },

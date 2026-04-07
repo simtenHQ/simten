@@ -15,7 +15,7 @@ export interface NicMessage {
 }
 
 /** Read a 32-bit port value, matching by cpu prefix + node label.
- *  Node IDs in a dual-CPU DSL are mangled like:
+ *  Node IDs in a dual-CPU circuit are mangled like:
  *  cpu0_RV32I_CPU_ifid_pc_<timestamp>_<random>.q
  *  so we need to match both _cpuLabel_ (e.g. _cpu0_) and _nodeLabel_ (e.g. _ifid_pc_).
  */

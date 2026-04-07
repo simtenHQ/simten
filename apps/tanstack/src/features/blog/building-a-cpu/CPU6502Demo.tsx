@@ -121,7 +121,7 @@ export function CPU6502Demo() {
           <div>
             <span className="text-sm">
               {loading
-                ? "Loading 6502 system (5,574 lines of DSL)..."
+                ? "Loading 6502 system (5,574 lines of TypeScript)..."
                 : "Compiling 6502 CPU..."}
             </span>
             {!loading && (

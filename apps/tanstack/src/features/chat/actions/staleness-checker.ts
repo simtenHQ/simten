@@ -2,7 +2,7 @@
  * Staleness Checker
  *
  * Re-validate circuit before action execution.
- * Prevents acting on outdated DSL if user typed during streaming.
+ * Prevents acting on outdated circuit code if user typed during streaming.
  */
 
 import { executeCircuitCode } from '@turing-incomplete/core';

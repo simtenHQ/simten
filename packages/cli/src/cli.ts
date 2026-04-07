@@ -12,7 +12,7 @@ program
 
 program
   .command('check <file>')
-  .description('Parse and validate a DSL file')
+  .description('Parse and validate a circuit file')
   .action(check);
 
 program

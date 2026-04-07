@@ -464,12 +464,12 @@ function useTypewriter(
 }
 
 // ============================================================================
-// DSL syntax highlighting
+// Circuit code syntax highlighting
 // ============================================================================
 
-/** Lightweight DSL syntax highlighter — matches the Monaco dsl-light/dsl-dark themes */
+/** Lightweight circuit code syntax highlighter */
 function highlightCode(code: string): React.ReactNode[] {
-  // Monaco uses a single "keyword" token (blue, bold) for all DSL keywords
+  // Monaco uses a single "keyword" token (blue, bold) for all keywords
   const KW = "text-[#0000ff] dark:text-[#569cd6] font-bold";
   // Comments
   const COMMENT = "text-[#008000] dark:text-[#6a9955] italic";
@@ -747,7 +747,7 @@ function ScriptedTerminal({
     return () => clearTimeout(t);
   }, [currentDone, visibleCount]);
 
-  // Trigger DSL typing when a write_circuit tool line becomes visible
+  // Trigger circuit code typing when a write_circuit tool line becomes visible
   useEffect(() => {
     if (visibleCount === 0) return;
     const lastShown = allLines.current[visibleCount - 1];
@@ -1338,7 +1338,7 @@ function DemoGallery() {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <ComplexDemoCard
             title="RV32I CPU Debugger"
-            subtitle="~300 lines of DSL"
+            subtitle="~300 lines of TypeScript"
             description="Write C, compile it, watch it execute instruction by instruction on a real 5-stage pipelined RISC-V CPU."
             href="/learn/cpu"
             accent="blue"
@@ -1446,7 +1446,7 @@ function DemoGallery() {
               <span className="flex-1 text-center text-[11px] text-muted-foreground font-mono">terminal</span>
             </div>
             <pre className="px-5 py-4 text-[12px] font-mono leading-relaxed overflow-x-auto">
-<span className="text-muted-foreground">{"$ "}</span><span className="text-foreground">{"npx @turing-incomplete/core simulate rv32i-board.dsl --ticks 1000"}</span>{"\n"}
+<span className="text-muted-foreground">{"$ "}</span><span className="text-foreground">{"npx @turing-incomplete/core simulate rv32i-board.circuit.ts --ticks 1000"}</span>{"\n"}
 {"\n"}
 <span className="text-muted-foreground/60">{"Compiling..."}</span><span className="text-muted-foreground">{" 2 circuits (RV32I_Core, RV32I_Board)"}</span>{"\n"}
 <span className="text-muted-foreground/60">{"Elaborating..."}</span><span className="text-muted-foreground">{" 117 primitive nodes"}</span>{"\n"}
@@ -1469,11 +1469,11 @@ function DemoGallery() {
         {/* Row 7: Verilog Export */}
         <div className="mt-40">
           <h3 className="text-lg font-semibold text-foreground mb-1">Export to Verilog</h3>
-          <p className="text-[13px] text-muted-foreground/60 mb-5">Design in DSL. Export synthesisable Verilog. Verified cycle-by-cycle against Icarus Verilog.</p>
+          <p className="text-[13px] text-muted-foreground/60 mb-5">Design in TypeScript. Export synthesisable Verilog. Verified cycle-by-cycle against Icarus Verilog.</p>
           <div className="grid grid-cols-2 gap-4">
-            {/* DSL side */}
+            {/* TypeScript side */}
             <div className="rounded-lg border border-border bg-card overflow-hidden">
-              <div className="px-3 py-1.5 border-b border-border text-[10px] text-muted-foreground font-mono">circuit.dsl</div>
+              <div className="px-3 py-1.5 border-b border-border text-[10px] text-muted-foreground font-mono">circuit.ts</div>
               <pre className="px-4 py-3 text-[11px] font-mono text-muted-foreground leading-relaxed overflow-x-auto">
 <span className="text-violet-400">{"circuit"}</span>{" HalfAdder {\n"}
 {"  "}<span className="text-violet-400">{"input"}</span>{" a: Bit\n"}
@@ -1516,7 +1516,7 @@ function DemoGallery() {
               </pre>
             </div>
           </div>
-          <p className="text-[11px] text-muted-foreground/60 mt-3">A 5-stage pipelined RISC-V CPU exports as 94KB of synthesisable RTL — cycle-accurate with the DSL simulator.</p>
+          <p className="text-[11px] text-muted-foreground/60 mt-3">A 5-stage pipelined RISC-V CPU exports as 94KB of synthesisable RTL — cycle-accurate with the TypeScript simulator.</p>
         </div>
 
         <div className="mt-40 flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:justify-between">

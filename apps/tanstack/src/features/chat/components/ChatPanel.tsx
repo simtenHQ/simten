@@ -29,7 +29,7 @@ import type { ShowDiffAction, GenerateHarnessAction } from '../types';
 import type { ConfirmationRequest } from '../actions/confirmation-flow';
 
 interface ChatPanelProps {
-  /** Get current DSL code from editor */
+  /** Get current circuit code from editor */
   getCurrentCode: () => string;
   /** Set code in the editor */
   setCode: (code: string) => void;

@@ -161,7 +161,7 @@ export function PropagationDemo() {
       const nodeLabel = node.label || node.id;
       // Plain key match (TS builder format: nodeId equals label)
       if (currentStep.nodeId === nodeLabel) return nodeLabel;
-      // Fallback: mangled DSL format
+      // Fallback: legacy node ID format
       if (currentStep.nodeId.includes(`_${nodeLabel}_`)) return nodeLabel;
     }
     return null;

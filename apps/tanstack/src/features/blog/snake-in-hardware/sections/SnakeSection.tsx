@@ -27,7 +27,7 @@ export function SnakeSection() {
           addressing, direction decoding, pixel movement, phased operations,
           and collision detection &mdash; comes together in one circuit. The
           full <strong className="text-gray-900 dark:text-white">SnakeAdvanced</strong> circuit is
-          over 300 lines of DSL, compiled and running in your browser.
+          over 300 lines of TypeScript, compiled and running in your browser.
         </p>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
           The snake body is stored as a circular buffer of pixel addresses in

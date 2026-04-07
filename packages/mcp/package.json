@@ -14,7 +14,7 @@
     "model-context-protocol",
     "circuit-simulator",
     "hardware",
-    "dsl",
+    "circuit",
     "websocket",
     "interactive"
   ],

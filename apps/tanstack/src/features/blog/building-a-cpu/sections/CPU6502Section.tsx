@@ -34,7 +34,7 @@ export function CPU6502Section() {
         </p>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
           Below is a complete 6502 system simulated at the gate level &mdash;
-          over 5,500 lines of circuit DSL, compiled and running in your
+          over 5,500 lines of TypeScript, compiled and running in your
           browser. It has a CPU, RAM, ROM, and a memory-mapped console output
           at address <code className="text-blue-300">$F000</code>.
         </p>

@@ -17,7 +17,7 @@ interface ToolCallCardProps {
 
 const TOOL_LABELS: Record<string, string> = {
   get_primitives: 'Browse components',
-  get_grammar: 'Get DSL syntax',
+  get_grammar: 'Get circuit API reference',
   check_circuit: 'Validate code',
   simulate_circuit: 'Simulate circuit',
   show_diff: 'Propose code change',

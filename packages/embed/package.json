@@ -15,7 +15,7 @@
     "embed",
     "interactive",
     "react",
-    "dsl",
+    "circuit",
     "digital-logic"
   ],
   "type": "module",

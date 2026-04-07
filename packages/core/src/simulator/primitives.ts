@@ -3711,7 +3711,7 @@ export function getPrimitiveCircuit(name: string): Circuit | undefined {
 }
 
 /**
- * Get the reference circuit DSL source for a primitive, if it has one.
+ * Get the reference circuit source for a primitive, if it has one.
  * Pass params to resolve function-based generators (e.g. width-aware circuits).
  */
 export function getReferenceCircuit(name: string, params?: Record<string, number>): string | undefined {

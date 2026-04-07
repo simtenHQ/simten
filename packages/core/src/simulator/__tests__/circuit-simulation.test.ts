@@ -1,8 +1,8 @@
 /**
  * End-to-end circuit simulation tests using the circuit() builder API.
  *
- * Replaces the old DSL-based test files. These verify the simulator
- * runs circuits correctly when defined with circuit() instead of DSL.
+ * Circuit simulation tests. These verify the simulator
+ * runs circuits correctly when defined with circuit().
  */
 
 import { describe, it, expect } from 'vitest';

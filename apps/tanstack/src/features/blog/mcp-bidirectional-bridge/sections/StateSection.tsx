@@ -90,7 +90,7 @@ if (msg.type === "request-challenge-state") {
     state: {
       challengeId: currentChallenge.id,
       levelId: currentLevel.id,
-      userSource: editor.getCode(),  // Current DSL in editor
+      userSource: editor.getCode(),  // Current circuit code in editor
     },
   }));
 }`}
@@ -101,7 +101,7 @@ if (msg.type === "request-challenge-state") {
             copy-paste their code. It doesn&rsquo;t read files from disk. It
             pulls the{" "}
             <strong className="text-gray-900 dark:text-white">live, in-memory state</strong> of the
-            running application &mdash; the exact DSL the user is editing right
+            running application &mdash; the exact circuit code the user is editing right
             now, the exact values on the wires after the last simulation tick.
           </p>
 

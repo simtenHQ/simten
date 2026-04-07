@@ -5,7 +5,7 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import { getPrimitivesHandler, getLibrary } from '@turing-incomplete/core/api';
-import { readDSLSource } from '../lib/file-reader.js';
+import { readCircuitSource } from '../lib/file-reader.js';
 
 export function registerPrimitivesTool(server: McpServer): void {
   server.tool(
@@ -16,8 +16,8 @@ export function registerPrimitivesTool(server: McpServer): void {
         .enum(['combinational', 'sequential', 'sink'])
         .optional()
         .describe('Filter components by kind'),
-      source: z.string().optional().describe('DSL source code as a string'),
-      filePath: z.string().optional().describe('Path to a .dsl file'),
+      source: z.string().optional().describe('TypeScript circuit code as a string'),
+      filePath: z.string().optional().describe('Path to a .circuit.ts file'),
       compact: z
         .boolean()
         .optional()
@@ -32,7 +32,7 @@ export function registerPrimitivesTool(server: McpServer): void {
       let sourceName: string | undefined;
 
       if (source || filePath) {
-        const read = readDSLSource({ source, filePath });
+        const read = readCircuitSource({ source, filePath });
         if (read.error) {
           return {
             content: [{ type: 'text' as const, text: `Error: ${read.error}` }],

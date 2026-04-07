@@ -11,7 +11,7 @@ export type MemoryDataPayload = Record<string, Record<string, number>>;
 
 export interface PreviewServer {
   port: number;
-  updateDSL(dsl: string): void;
+  updateSource(source: string): void;
   watchFile(filePath: string): void;
   getState(): CircuitState | null;
   getChallengeState(): ChallengeState | null;
@@ -29,7 +29,7 @@ export async function createPreviewServer(
   const port = options?.port ?? 0;
   const allowedOrigin = TI_URL;
 
-  let currentDSL: string | null = null;
+  let currentSource: string | null = null;
   let cachedState: CircuitState | null = null;
   let cachedChallengeState: ChallengeState | null = null;
   let cachedTraces: TracesPayload | null = null;
@@ -61,10 +61,10 @@ export async function createPreviewServer(
       return;
     }
 
-    if (url.pathname === '/api/dsl') {
+    if (url.pathname === '/api/source') {
       sendCORS(res);
       res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
-      res.end(JSON.stringify({ source: currentDSL }));
+      res.end(JSON.stringify({ source: currentSource }));
       return;
     }
 
@@ -124,8 +124,8 @@ export async function createPreviewServer(
       res.flushHeaders();
 
       // Send current state immediately so late-joining clients are caught up
-      if (currentDSL) {
-        res.write(`data: ${JSON.stringify({ type: 'dsl', source: currentDSL })}\n\n`);
+      if (currentSource) {
+        res.write(`data: ${JSON.stringify({ type: 'source', source: currentSource })}\n\n`);
       }
       if (cachedTraces) {
         res.write(`data: ${JSON.stringify({ type: 'traces', data: cachedTraces })}\n\n`);
@@ -170,9 +170,9 @@ export async function createPreviewServer(
     server.on('error', reject);
   });
 
-  function updateDSL(dsl: string) {
-    currentDSL = dsl;
-    broadcastSSE({ type: 'dsl', source: dsl });
+  function updateSource(source: string) {
+    currentSource = source;
+    broadcastSSE({ type: 'source', source });
   }
 
   function watchFile(filePath: string) {
@@ -196,7 +196,7 @@ export async function createPreviewServer(
 
       try {
         const content = readFileSync(absPath, 'utf-8');
-        updateDSL(content);
+        updateSource(content);
       } catch {
         broadcastSSE({ type: 'error', message: `Failed to read ${absPath}` });
       }
@@ -248,7 +248,7 @@ export async function createPreviewServer(
 
   return {
     port: assignedPort,
-    updateDSL,
+    updateSource,
     watchFile,
     getState,
     getChallengeState,

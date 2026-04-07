@@ -170,7 +170,7 @@ export function ShowcaseSection() {
               What people have built
             </h2>
             <p className="text-gray-500 text-sm">
-              Same simulator, same DSL. From logic gates to a working processor.
+              Same simulator, same TypeScript. From logic gates to a working processor.
             </p>
           </div>
           <div className="grid md:grid-cols-3 gap-4">

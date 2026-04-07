@@ -35,7 +35,7 @@ export function ProblemSection() {
           <ul className="list-none space-y-3 pl-0">
             {[
               "See the current circuit state (what gates are connected, what values are on the wires)",
-              "Push corrected DSL code directly into the browser editor",
+              "Push corrected circuit code directly into the browser editor",
               "Send waveforms and test results to the browser for visualization",
               "Receive questions from the in-app chat and respond in context",
             ].map((item, i) => (

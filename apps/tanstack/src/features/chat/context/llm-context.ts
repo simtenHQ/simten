@@ -74,14 +74,14 @@ function formatCycleCompact(
  *
  * IMPORTANT: Grammar and component catalog are placed FIRST because
  * token budget enforcement truncates from the end. These sections
- * are critical for correct DSL code generation.
+ * are critical for correct circuit code generation.
  */
 export function buildNarrativeSummary(envelope: HardwareLLMEnvelope): string {
   const lines: string[] = [];
 
-  // DSL Grammar FIRST (critical for code generation - survives truncation)
+  // Circuit API FIRST (critical for code generation - survives truncation)
   if (envelope.grammarSummary) {
-    lines.push(`## DSL Grammar (REQUIRED SYNTAX)`);
+    lines.push(`## Circuit API (REQUIRED SYNTAX)`);
     lines.push('```');
     lines.push(envelope.grammarSummary);
     lines.push('```');

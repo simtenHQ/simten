@@ -15,7 +15,7 @@ const CircuitEmbed = lazy(() =>
   }))
 );
 
-const FULL_ADDER_DSL = `
+const FULL_ADDER_SOURCE = `
 const HalfAdder = circuit('HalfAdder', {
   in: { a: bit, b: bit },
   out: { sum: bit, carry: bit },
@@ -45,10 +45,10 @@ const FullAdder = circuit('FullAdder', {
 })
 `;
 
-type Tab = "dsl" | "ir" | "flat" | "numeric" | "live";
+type Tab = "source" | "ir" | "flat" | "numeric" | "live";
 
 const TABS: { id: Tab; label: string; description: string }[] = [
-  { id: "dsl", label: "Source", description: "TypeScript code" },
+  { id: "source", label: "Source", description: "TypeScript code" },
   { id: "ir", label: "Circuit IR", description: "Compiled objects" },
   { id: "flat", label: "Elaborated", description: "Flattened to primitives" },
   { id: "numeric", label: "Numeric", description: "Typed arrays" },
@@ -82,12 +82,12 @@ function ConnectionArrow({ from, to }: { from: string; to: string }) {
 }
 
 export function PipelineVisualizer() {
-  const [activeTab, setActiveTab] = useState<Tab>("dsl");
+  const [activeTab, setActiveTab] = useState<Tab>("source");
 
   const compiled = useMemo(() => {
     try {
       // Stage 1: Execute TS code to get Circuit IR
-      const result = executeCircuitCode(FULL_ADDER_DSL);
+      const result = executeCircuitCode(FULL_ADDER_SOURCE);
       if (result.error) return { error: result.error };
 
       const { circuits, library } = result;
@@ -152,7 +152,7 @@ export function PipelineVisualizer() {
 
       {/* Tab content */}
       <div className="p-4">
-        {activeTab === "dsl" && (
+        {activeTab === "source" && (
           <div>
             <p className="text-sm text-gray-400 mb-3">
               The TypeScript source defines two components. <code className="text-blue-400">HalfAdder</code> is
@@ -160,7 +160,7 @@ export function PipelineVisualizer() {
               — no compilation has happened yet.
             </p>
             <pre className="text-xs font-mono text-gray-300 bg-gray-950 rounded-lg p-4 overflow-x-auto leading-relaxed max-h-80 overflow-y-auto">
-              {FULL_ADDER_DSL}
+              {FULL_ADDER_SOURCE}
             </pre>
           </div>
         )}
@@ -364,7 +364,7 @@ export function PipelineVisualizer() {
               }
             >
               <CircuitEmbed
-                code={FULL_ADDER_DSL}
+                code={FULL_ADDER_SOURCE}
                 height={280}
                 showControls
               />
