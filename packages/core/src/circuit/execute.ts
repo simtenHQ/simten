@@ -27,7 +27,7 @@ import { circuit } from './circuit.js';
 import { bit, bus } from './bit-bus.js';
 import type { BuiltCircuit } from './types.js';
 import type { Circuit, CircuitLibrary } from '../types/circuit.js';
-import { createStdLibrary, getAllStdCircuits } from '../std/index.js';
+import * as std from '../std/index.js';
 
 // ============================================================================
 // Execution result
@@ -60,9 +60,11 @@ function buildScope(): { names: string[]; values: unknown[] } {
   scope.set('bit', bit);
   scope.set('bus', bus);
 
-  // All stdlib components
-  for (const comp of getAllStdCircuits()) {
-    scope.set(comp.name, comp);
+  // All stdlib components (inject by name so user code can reference And, Or, etc.)
+  for (const [, value] of Object.entries(std)) {
+    if (value && typeof value === 'object' && 'name' in value && 'circuit' in value) {
+      scope.set((value as BuiltCircuit).name, value);
+    }
   }
 
   return {
@@ -108,7 +110,12 @@ export function stripTypes(code: string): string {
  */
 export function executeCircuitCode(code: string): ExecuteResult {
   const { names, values } = getScope();
-  const library = createStdLibrary();
+  const circuitMap = new Map<string, Circuit>();
+  const library: CircuitLibrary & { addCircuit(c: Circuit): void } = {
+    resolveCircuit: (name) => circuitMap.get(name),
+    getAllPrimitiveNames: () => [...circuitMap.entries()].filter(([, c]) => c.implementation.kind === 'primitive').map(([n]) => n),
+    addCircuit: (c) => { circuitMap.set(c.name, c); },
+  };
   const builtCircuits: BuiltCircuit[] = [];
   const circuits: Circuit[] = [];
 
@@ -142,6 +149,12 @@ export function executeCircuitCode(code: string): ExecuteResult {
         builtCircuits.push(built);
         circuits.push(built.circuit);
         library.addCircuit(built.circuit);
+        // Add all transitive dependencies (stdlib + user-defined)
+        if (built._dependencies) {
+          for (const [, dep] of built._dependencies) {
+            library.addCircuit(dep.circuit);
+          }
+        }
       }
     }
 

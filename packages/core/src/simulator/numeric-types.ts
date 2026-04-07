@@ -125,7 +125,7 @@ export interface NumericCircuit {
   // ============================================================================
 
   /** Primitive type index for each node (index into PRIMITIVE_TYPE_INDICES) */
-  primitiveTypeIndex: Uint8Array;
+  primitiveTypeIndex: Uint16Array;
 
   /** First port index for this node */
   nodePortStart: Uint32Array;

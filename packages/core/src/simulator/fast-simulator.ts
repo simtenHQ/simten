@@ -12,7 +12,6 @@ import type { NumericCircuit, NumericSequentialState } from './numeric-types.js'
 import type { NumericPortValues } from './numeric-values.js';
 import { UNINITIALIZED_VALUE } from './numeric-values.js';
 import { NumericEventQueue } from './numeric-event-queue.js';
-import { getPrimitiveEvaluator } from './primitives.js';
 import { getOnTickFunction } from './eval-bridge.js';
 import type { ClockEdges } from './primitive-interface.js';
 import { EVALUATORS, type EvalContext } from './evaluators/index.js';
@@ -125,83 +124,24 @@ export function fastPropagate(
 }
 
 /**
- * Fallback evaluation using Map-based evaluator.
- * Only called for unknown primitives (should not happen in practice).
+ * Fallback: zero outputs for unknown primitives.
+ * Should not be reached if all circuits have evals registered via circuit().
  */
 function evaluateNodeFallback(
   circuit: NumericCircuit,
   nodeIndex: number,
   values: NumericPortValues,
-  seqState: NumericSequentialState | undefined,
-  topLevelInputs: FlatPortValueMap | undefined
+  _seqState: NumericSequentialState | undefined,
+  _topLevelInputs: FlatPortValueMap | undefined
 ): void {
   const node = circuit.flatCircuit.nodes[nodeIndex];
   const portStart = circuit.nodePortStart[nodeIndex];
   const inputCount = circuit.nodeInputCount[nodeIndex];
   const outputCount = circuit.nodeOutputCount[nodeIndex];
   const outputStart = portStart + inputCount;
-  const primitiveType = node.primitiveType;
-
-  // Build inputs Map
-  const inputs = new Map<string, BitValue | BusValue>();
-
-  for (let i = 0; i < inputCount; i++) {
-    const portIdx = portStart + i;
-    const srcNodeIdx = circuit.inputSourceNode[portIdx];
-    const srcPortIdx = circuit.inputSourcePort[portIdx];
-    const portName = circuit.inputPortNames[portIdx];
-
-    if (srcNodeIdx === -1) {
-      if (topLevelInputs && srcPortIdx >= 0) {
-        const topKey = circuit.indexToPortKey[srcPortIdx];
-        const val = topLevelInputs.get(topKey);
-        if (val !== undefined) {
-          inputs.set(portName, val);
-        }
-      }
-    } else if (srcPortIdx >= 0) {
-      const value = values.values[srcPortIdx];
-      inputs.set(portName, value);
-    }
-  }
-
-  // Provide default values for unconnected inputs
-  for (let i = 0; i < inputCount; i++) {
-    const portIdx = portStart + i;
-    const portName = circuit.inputPortNames[portIdx];
-    if (!inputs.has(portName)) {
-      inputs.set(portName, 0);
-    }
-  }
-
-  // Add arguments with __ prefix
-  if (node.arguments && Object.keys(node.arguments).length > 0) {
-    for (const [key, value] of Object.entries(node.arguments)) {
-      inputs.set(`__${key}`, value as BitValue | BusValue);
-    }
-  }
-
-  // Get evaluator and current state
-  const evaluator = getPrimitiveEvaluator(primitiveType);
-  if (!evaluator) {
-    for (let i = 0; i < outputCount; i++) {
-      values.values[outputStart + i] = 0;
-    }
-    return;
-  }
-
-  const currentState = seqState?.currentState[nodeIndex];
-  const outputsMap = evaluator.evaluate(inputs, currentState);
-
-  // Write outputs back to numeric array
-  let outIdx = 0;
-  for (const output of node.outputs) {
-    const outputVal = outputsMap.get(output.name);
-    if (outputVal !== undefined) {
-      const numVal = typeof outputVal === 'boolean' ? (outputVal ? 1 : 0) : outputVal;
-      values.values[outputStart + outIdx] = numVal;
-    }
-    outIdx++;
+  console.warn(`[fastSimulator] No evaluator for '${node.primitiveType}' — outputs zeroed`);
+  for (let i = 0; i < outputCount; i++) {
+    values.values[outputStart + i] = 0;
   }
 }
 
@@ -272,9 +212,8 @@ export function updateSequentialStates(
     if (!circuit.hasState[nodeIdx]) continue;
 
     const node = circuit.flatCircuit.nodes[nodeIdx];
-    const evaluator = getPrimitiveEvaluator(node.primitiveType);
-    const onTick = !evaluator?.updateState ? getOnTickFunction(node.primitiveType) : undefined;
-    if (!evaluator?.updateState && !onTick) continue;
+    const onTick = getOnTickFunction(node.primitiveType);
+    if (!onTick) continue;
 
     // Build inputs Map (same as evaluateNode fallback path)
     const inputs = new Map<string, BitValue | BusValue>();
@@ -324,27 +263,17 @@ export function updateSequentialStates(
       }
     }
 
-    // Update state
+    // Update state via onTick
     const currentState = seqState.currentState[nodeIdx];
-    let nextState: PrimitiveState;
-
-    if (evaluator?.updateState) {
-      // Built-in primitive path
-      nextState = evaluator.updateState(inputs, currentState as PrimitiveState, clockEdges);
-    } else if (onTick) {
-      // User-defined onTick path — build flat object from inputs + state
-      const obj: Record<string, any> = {};
-      for (const [k, v] of inputs) obj[k] = v;
-      if (currentState != null && typeof currentState === 'object' && !(currentState instanceof Map)) {
-        for (const key of onTick.stateKeys) obj[key] = (currentState as any)[key];
-      } else if (currentState != null && onTick.stateKeys.length === 1) {
-        obj[onTick.stateKeys[0]] = currentState;
-      }
-      const result = onTick.fn(obj);
-      nextState = onTick.stateKeys.length === 1 ? result[onTick.stateKeys[0]] : result;
-    } else {
-      continue;
+    const obj: Record<string, any> = {};
+    for (const [k, v] of inputs) obj[k] = v;
+    if (currentState != null && typeof currentState === 'object' && !(currentState instanceof Map)) {
+      for (const key of onTick.stateKeys) obj[key] = (currentState as any)[key];
+    } else if (currentState != null && onTick.stateKeys.length === 1) {
+      obj[onTick.stateKeys[0]] = currentState;
     }
+    const result = onTick.fn(obj);
+    const nextState: PrimitiveState = onTick.stateKeys.length === 1 ? result[onTick.stateKeys[0]] : result;
 
     seqState.nextState[nodeIdx] = nextState;
   }

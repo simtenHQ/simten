@@ -8,12 +8,17 @@ import { describe, it, expect } from 'vitest';
 import { exportVerilog } from '../exporter.js';
 import { circuit, bit, bus } from '../../circuit/index.js';
 import { And, Or, Xor, Not, Adder, Register, DFlipFlop } from '../../std/index.js';
-import { createStdLibrary } from '../../std/index.js';
+import type { Circuit, CircuitLibrary } from '../../types/circuit.js';
 
 function libraryFor(c: { circuit: any; _dependencies: ReadonlyMap<string, any> }) {
-  const lib = createStdLibrary();
+  const circuitMap = new Map<string, Circuit>();
+  const lib: CircuitLibrary & { addCircuit(c: Circuit): void } = {
+    resolveCircuit: (name) => circuitMap.get(name),
+    getAllPrimitiveNames: () => [...circuitMap.entries()].filter(([, c]) => c.implementation.kind === 'primitive').map(([n]) => n),
+    addCircuit: (c) => { circuitMap.set(c.name, c); },
+  };
   lib.addCircuit(c.circuit);
-  for (const [, dep] of c._dependencies) lib.addCircuit(dep);
+  for (const [, dep] of c._dependencies) lib.addCircuit(dep.circuit ?? dep);
   return lib;
 }
 

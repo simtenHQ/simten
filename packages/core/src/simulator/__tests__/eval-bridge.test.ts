@@ -170,6 +170,39 @@ describe('generateEvalWrapper (combinational)', () => {
     expect(values[0]).toBe(42);
   });
 
+  it('merges node.arguments into eval inputs', () => {
+    // Simulates Switch/Input/Constant — value comes from arguments, not a port
+    const wrapper = generateEvalWrapper(
+      [],
+      ['out'],
+      ({ value }) => ({ out: value ? 1 : 0 }),
+    );
+
+    const { ctx, values } = createTestContext([], 1);
+    // Set the node argument (normally set when user clicks Switch)
+    (ctx.circuit.flatCircuit.nodes[0] as any).arguments = { value: true };
+    wrapper(ctx);
+    expect(values[0]).toBe(1);
+
+    (ctx.circuit.flatCircuit.nodes[0] as any).arguments = { value: false };
+    wrapper(ctx);
+    expect(values[0]).toBe(0);
+  });
+
+  it('port inputs take precedence over node.arguments', () => {
+    // If a port and an argument have the same name, the port wins
+    const wrapper = generateEvalWrapper(
+      ['value'],
+      ['out'],
+      ({ value }) => ({ out: value as number }),
+    );
+
+    const { ctx, values } = createTestContext([99], 1);
+    (ctx.circuit.flatCircuit.nodes[0] as any).arguments = { value: 7 };
+    wrapper(ctx);
+    expect(values[1]).toBe(99); // port input (99), not argument (7)
+  });
+
   it('wraps a ReLU activation', () => {
     const wrapper = generateEvalWrapper(
       ['x'],

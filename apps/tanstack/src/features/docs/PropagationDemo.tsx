@@ -4,15 +4,12 @@ import { useCircuitSimulator } from "@turing-incomplete/embed";
 import { CircuitCanvas } from "@turing-incomplete/ui/canvas";
 import { circuit, bit } from "@turing-incomplete/core/circuit";
 import { Switch, Led, Xor, And } from "@turing-incomplete/core/std";
-import { createStdLibrary } from "@turing-incomplete/core/std";
 import {
   elaborate,
   tracePropagation,
-  PRIMITIVE_DEFINITIONS,
-  generatePrimitives,
   type PropagationStep,
 } from "@turing-incomplete/core/simulator";
-import type { Circuit } from "@turing-incomplete/core";
+import type { Circuit, CircuitLibrary } from "@turing-incomplete/core";
 
 const HalfAdder = circuit('HalfAdder', {
   in: { a: bit, b: bit },
@@ -104,15 +101,16 @@ export function PropagationDemo() {
   // Run the real propagation trace
   const trace = useMemo((): PropagationStep[] => {
     try {
-      const library = createStdLibrary();
+      const circuitMap = new Map<string, Circuit>();
+      const library: CircuitLibrary & { addCircuit(c: Circuit): void } = {
+        resolveCircuit: (name) => circuitMap.get(name),
+        getAllPrimitiveNames: () => [...circuitMap.entries()].filter(([, c]) => c.implementation.kind === 'primitive').map(([n]) => n),
+        addCircuit: (c) => { circuitMap.set(c.name, c); },
+      };
       library.addCircuit(HalfAdderDemo.circuit);
-      for (const [, dep] of HalfAdderDemo._dependencies) library.addCircuit(dep);
-
-      const prims = generatePrimitives(PRIMITIVE_DEFINITIONS) as Circuit[];
-      const primNames = prims.map((p) => p.name);
+      for (const [, dep] of HalfAdderDemo._dependencies) library.addCircuit(dep.circuit);
 
       const flat = elaborate(HalfAdderDemo.circuit, library);
-
       return tracePropagation(flat, library);
     } catch (e) {
       console.error("Trace failed:", e);

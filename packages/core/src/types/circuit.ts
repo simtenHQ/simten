@@ -230,11 +230,15 @@ export interface CircuitMetadata {
     lineNumber?: number;
   };
   description?: string;
+  category?: string;
+  icon?: string;
   author?: string;
   version?: string;
   testCases?: TestCase[];
   tags?: string[];
   kind?: CircuitKind;
+  /** Key in node.arguments that holds the user-interactive value (Switch, Button, Input) */
+  interactiveArg?: string;
   /**
    * For sequential circuits: how outputs are computed
    * - 'state-only': Outputs come purely from state (DFlipFlop, Register)

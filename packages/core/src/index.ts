@@ -77,12 +77,6 @@ export {
   createCircuitLibrary,
   createSimulatorFromCircuit,
   elaborate,
-  getPrimitives,
-  getPrimitiveEvaluator,
-  isPrimitive,
-  getPrimitiveCircuit,
-  generatePrimitives,
-  PRIMITIVE_DEFINITIONS,
 } from './simulator/index.js';
 
 // ============================================================================

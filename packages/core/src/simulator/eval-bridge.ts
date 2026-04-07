@@ -18,6 +18,7 @@ import type { NumericEvaluator, EvalContext } from './evaluators/types.js';
 import { readInput, writeOutput } from './evaluators/types.js';
 import { EVALUATORS } from './evaluators/index.js';
 import { PRIMITIVE_TYPE_INDICES, PRIMITIVE_INDEX_TO_NAME } from './numeric-types.js';
+import { getCircuitEval } from '../circuit/eval-registry.js';
 
 // ============================================================================
 // Dynamic type index allocation
@@ -100,21 +101,24 @@ export function generateEvalWrapper(
   // Pre-compute for the common case: no state
   if (!stateKeys || stateKeys.length === 0) {
     return function userEvalWrapper(ctx: EvalContext): void {
-      // Build input object from typed arrays
-      const inputs: Record<string, number> = {};
+      const inputs: Record<string, any> = {};
+
+      // Merge node.arguments first so eval functions can read parameters (value, width, etc.)
+      // Port inputs below will overwrite any same-named argument (ports take precedence).
+      const nodeArgs = ctx.circuit.flatCircuit.nodes[ctx.nodeIndex]?.arguments;
+      if (nodeArgs) {
+        for (const key in nodeArgs) inputs[key] = (nodeArgs as Record<string, any>)[key];
+      }
+
       for (let i = 0; i < numInputs; i++) {
         inputs[inputNames[i]] = readInput(ctx, i);
       }
 
-      // Call user function
       const outputs = evalFn(inputs);
 
-      // Write outputs back to typed arrays
       for (let i = 0; i < numOutputs; i++) {
         const val = outputs[outputNames[i]];
-        if (val !== undefined) {
-          writeOutput(ctx, i, val);
-        }
+        if (val !== undefined) writeOutput(ctx, i, val);
       }
     };
   }
@@ -123,12 +127,18 @@ export function generateEvalWrapper(
   return function userEvalWrapperWithState(ctx: EvalContext): void {
     const inputs: Record<string, any> = {};
 
-    // Read port inputs
+    // Merge node.arguments (parameters like value, width)
+    const nodeArgs = ctx.circuit.flatCircuit.nodes[ctx.nodeIndex]?.arguments;
+    if (nodeArgs) {
+      for (const key in nodeArgs) inputs[key] = (nodeArgs as Record<string, any>)[key];
+    }
+
+    // Port inputs overwrite arguments
     for (let i = 0; i < numInputs; i++) {
       inputs[inputNames[i]] = readInput(ctx, i);
     }
 
-    // Merge state values into the input object
+    // State overwrites everything (current stored value)
     if (ctx.state) {
       const nodeState = ctx.state.currentState[ctx.nodeIndex];
       if (nodeState != null && typeof nodeState === 'object' && !Array.isArray(nodeState) && !(nodeState instanceof Map)) {
@@ -137,56 +147,39 @@ export function generateEvalWrapper(
           inputs[key] = stateObj[key];
         }
       } else if (nodeState != null) {
-        // Simple state (single value) — use first state key
         inputs[stateKeys![0]] = nodeState;
       }
     }
 
-    // Call user function
     const outputs = evalFn(inputs);
 
-    // Write outputs
     for (let i = 0; i < numOutputs; i++) {
       const val = outputs[outputNames[i]];
-      if (val !== undefined) {
-        writeOutput(ctx, i, val);
-      }
+      if (val !== undefined) writeOutput(ctx, i, val);
     }
   };
 }
 
+// ============================================================================
+// EVALUATORS population from eval-registry
+// ============================================================================
+
 /**
- * Register evaluator functions from a BuiltCircuit into the EVALUATORS table.
- *
- * Call this during circuit compilation, before simulation starts.
- * Returns the type index assigned to this component.
- *
- * @param name - Component name
- * @param inputNames - Ordered input port names
- * @param outputNames - Ordered output port names
- * @param evalFn - User's .eval() function (plain objects in/out)
- * @param stateKeys - State property names (if sequential)
+ * Ensure the EVALUATORS table has an entry for the given component name.
+ * Reads from the eval-registry (populated at circuit() definition time).
+ * No-op if already registered or no eval exists for this name.
  */
-export function registerEvalFunction(
-  name: string,
-  inputNames: string[],
-  outputNames: string[],
-  evalFn: (inputs: Record<string, number>) => Record<string, number>,
-  stateKeys?: string[],
-): number {
+export function ensureEvaluatorRegistered(name: string): number {
   const idx = getOrAllocateTypeIndex(name);
 
-  // Don't overwrite existing evaluators (stdlib hand-written fast path)
-  if (EVALUATORS[idx] != null) {
-    return idx;
-  }
+  // Already registered (static stdlib evaluator or previously resolved)
+  if (EVALUATORS[idx] != null) return idx;
 
-  // Ensure EVALUATORS array is large enough
-  while (EVALUATORS.length <= idx) {
-    EVALUATORS.push(null);
-  }
+  const entry = getCircuitEval(name);
+  if (!entry) return idx;
 
-  EVALUATORS[idx] = generateEvalWrapper(inputNames, outputNames, evalFn, stateKeys);
+  while (EVALUATORS.length <= idx) EVALUATORS.push(null);
+  EVALUATORS[idx] = generateEvalWrapper(entry.inputNames, entry.outputNames, entry.evalFn, entry.stateKeys);
 
   return idx;
 }
@@ -205,8 +198,38 @@ export type OnTickEntry = {
 const onTickRegistry = new Map<string, OnTickEntry>();
 
 /**
- * Register a user-defined onTick function.
+ * Get (or lazily populate) the onTick function for a component name.
  */
+export function getOnTickFunction(name: string): OnTickEntry | undefined {
+  if (onTickRegistry.has(name)) return onTickRegistry.get(name);
+
+  const entry = getCircuitEval(name);
+  if (!entry?.onTickFn) return undefined;
+
+  const onTickEntry: OnTickEntry = {
+    inputNames: entry.inputNames,
+    stateKeys: entry.stateKeys ?? [],
+    fn: entry.onTickFn,
+  };
+  onTickRegistry.set(name, onTickEntry);
+  return onTickEntry;
+}
+
+// Keep for backwards compat — simulate.ts still calls these
+export function registerEvalFunction(
+  name: string,
+  inputNames: string[],
+  outputNames: string[],
+  evalFn: (inputs: Record<string, number>) => Record<string, number>,
+  stateKeys?: string[],
+): number {
+  const idx = getOrAllocateTypeIndex(name);
+  if (EVALUATORS[idx] != null) return idx;
+  while (EVALUATORS.length <= idx) EVALUATORS.push(null);
+  EVALUATORS[idx] = generateEvalWrapper(inputNames, outputNames, evalFn, stateKeys);
+  return idx;
+}
+
 export function registerOnTickFunction(
   name: string,
   fn: (inputsAndState: Record<string, any>) => Record<string, any>,
@@ -214,15 +237,8 @@ export function registerOnTickFunction(
 ): void {
   if (onTickRegistry.has(name)) return;
   onTickRegistry.set(name, {
-    inputNames: [], // filled lazily from the circuit
+    inputNames: [],
     stateKeys: initialState ? Object.keys(initialState) : [],
     fn,
   });
-}
-
-/**
- * Get a registered onTick function by component name.
- */
-export function getOnTickFunction(name: string): OnTickEntry | undefined {
-  return onTickRegistry.get(name);
 }

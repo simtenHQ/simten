@@ -126,25 +126,6 @@ export {
 } from './primitive-interface.js';
 
 // ============================================================================
-// Primitive Exports
-// ============================================================================
-
-export {
-  PRIMITIVE_DEFINITIONS,
-  PRIMITIVE_EVALUATORS,
-  PRIMITIVES,
-  getPrimitives,
-  getPrimitiveEvaluator,
-  isPrimitive,
-  getPrimitiveCircuit,
-  getReferenceCircuit,
-  generatePrimitives,
-  generateEvaluators,
-} from './primitives.js';
-
-export type { CorePrimitiveDefinition } from './primitives.js';
-
-// ============================================================================
 // Elaboration Exports
 // ============================================================================
 
