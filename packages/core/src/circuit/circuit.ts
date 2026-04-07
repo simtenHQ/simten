@@ -394,5 +394,3 @@ function detectSequential(nodes: Record<string, BuiltCircuit>, state?: StateShap
   return false;
 }
 
-/** @deprecated Use circuit() instead */
-export const component = circuit;

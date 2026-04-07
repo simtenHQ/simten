@@ -1,4 +1,3 @@
-"use client";
 
 import React, { type ErrorInfo, type ReactNode } from "react";
 import { ErrorDisplay } from "./ErrorDisplay";

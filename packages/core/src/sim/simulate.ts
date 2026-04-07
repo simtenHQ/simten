@@ -12,7 +12,7 @@
  *   sim.get('sum')  // 0
  */
 
-import type { Circuit, CircuitLibrary, BitValue, BusValue } from '../types/circuit.js';
+import type { Circuit, CircuitLibrary, MutableCircuitLibrary, BitValue, BusValue } from '../types/circuit.js';
 import type { SimulatorSnapshot } from '../types/simulator.js';
 import {
   SimulationSession,
@@ -23,6 +23,10 @@ import { createSimulatorFromCircuit } from '../simulator/index.js';
 import { createStdLibrary } from '../std/index.js';
 import type { BuiltCircuit, PortMap } from '../circuit/types.js';
 import { registerEvalFunction, registerOnTickFunction } from '../simulator/eval-bridge.js';
+
+function isMutable(lib: CircuitLibrary): lib is MutableCircuitLibrary {
+  return 'addCircuit' in lib && typeof (lib as MutableCircuitLibrary).addCircuit === 'function';
+}
 
 // ============================================================================
 // Simulation handle type
@@ -111,10 +115,15 @@ export function simulate<
 ): SimulationHandle<Ins, Outs> {
   const rawCircuit = comp.circuit;
 
-  // Build component library: stdlib + the component itself + any user components
-  const library = options?.library ?? createStdLibrary();
-  if ('addCircuit' in library) {
-    (library as any).addCircuit(rawCircuit);
+  // Build component library: stdlib + the component itself + its dependencies
+  const library: CircuitLibrary = options?.library ?? createStdLibrary();
+  if (isMutable(library)) {
+    library.addCircuit(rawCircuit);
+    if (comp._dependencies) {
+      for (const [, dep] of comp._dependencies) {
+        library.addCircuit(dep);
+      }
+    }
   }
 
   // Register user-defined eval functions for any components with _evalFn

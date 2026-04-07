@@ -1,10 +1,10 @@
-"use client";
 
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useCircuitSimulator } from "@turing-incomplete/embed";
 import { CircuitCanvas } from "@turing-incomplete/ui/canvas";
-import { executeCircuitCode } from "@turing-incomplete/core";
-import type { Circuit } from "@turing-incomplete/core";
+import { circuit, bit } from "@turing-incomplete/core/circuit";
+import { Switch, Led, Xor, And } from "@turing-incomplete/core/std";
+import { createStdLibrary } from "@turing-incomplete/core/std";
 import {
   elaborate,
   tracePropagation,
@@ -12,8 +12,8 @@ import {
   generatePrimitives,
   type PropagationStep,
 } from "@turing-incomplete/core/simulator";
+import type { Circuit } from "@turing-incomplete/core";
 
-const DEMO_DSL = `
 const HalfAdder = circuit('HalfAdder', {
   in: { a: bit, b: bit },
   out: { sum: bit, carry: bit },
@@ -24,18 +24,17 @@ const HalfAdder = circuit('HalfAdder', {
     xor1.out.to(out.sum),
     and1.out.to(out.carry),
   ],
-})
+});
 
 const HalfAdderDemo = circuit('HalfAdderDemo', {
   nodes: { sw_a: Switch, sw_b: Switch, dut: HalfAdder, led_sum: Led, led_carry: Led },
-  connect: ({ in: inp, out, sw_a, sw_b, dut, led_sum, led_carry }) => [
+  connect: ({ sw_a, sw_b, dut, led_sum, led_carry }) => [
     sw_a.out.to(dut.a),
     sw_b.out.to(dut.b),
     dut.sum.to(led_sum.in),
     dut.carry.to(led_carry.in),
   ],
-})
-`;
+});
 
 /**
  * Extract a clean label from a mangled node ID.
@@ -97,7 +96,7 @@ function describeStep(step: PropagationStep): string {
 }
 
 export function PropagationDemo() {
-  const sim = useCircuitSimulator(DEMO_DSL);
+  const sim = useCircuitSimulator(HalfAdderDemo);
   const [activeStep, setActiveStep] = useState(-1);
   const [isPlaying, setIsPlaying] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -105,26 +104,16 @@ export function PropagationDemo() {
   // Run the real propagation trace
   const trace = useMemo((): PropagationStep[] => {
     try {
-      const result = executeCircuitCode(DEMO_DSL);
-      if (result.error || result.circuits.length === 0) return [];
-
-      const { circuits, library } = result;
-      const resolveCircuit = (name: string) => library.resolveCircuit(name);
+      const library = createStdLibrary();
+      library.addCircuit(HalfAdderDemo.circuit);
+      for (const [, dep] of HalfAdderDemo._dependencies) library.addCircuit(dep);
 
       const prims = generatePrimitives(PRIMITIVE_DEFINITIONS) as Circuit[];
       const primNames = prims.map((p) => p.name);
 
-      const topCircuit = circuits[circuits.length - 1];
+      const flat = elaborate(HalfAdderDemo.circuit, library);
 
-      const flat = elaborate(topCircuit, {
-        resolveCircuit,
-        getAllPrimitiveNames: () => primNames,
-      });
-
-      return tracePropagation(flat, {
-        resolveCircuit,
-        getAllPrimitiveNames: () => primNames,
-      });
+      return tracePropagation(flat, library);
     } catch (e) {
       console.error("Trace failed:", e);
       return [];

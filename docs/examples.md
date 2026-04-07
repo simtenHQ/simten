@@ -2,195 +2,91 @@
 
 ## Half Adder
 
-Two bits → sum + carry.
+Two bits → sum + carry. The foundation of binary arithmetic.
 
-```dsl
-circuit HalfAdder {
-  input a: Bit
-  input b: Bit
-  output sum: Bit
-  output carry: Bit
+```typescript
+import { circuit, bit } from '@turing-incomplete/core/circuit'
+import { Xor, And } from '@turing-incomplete/core/std'
 
-  impl {
-    node xor1: Xor
-    node and1: And
-
-    connect a -> xor1.a
-    connect b -> xor1.b
-    connect xor1.out -> sum
-
-    connect a -> and1.a
-    connect b -> and1.b
-    connect and1.out -> carry
-  }
-}
+export const HalfAdder = circuit('HalfAdder', {
+  in: { a: bit, b: bit },
+  out: { sum: bit, carry: bit },
+  nodes: { xor1: Xor, and1: And },
+  connect: ({ in: inp, out, xor1, and1 }) => [
+    inp.a.to(xor1.a, and1.a),
+    inp.b.to(xor1.b, and1.b),
+    xor1.out.to(out.sum),
+    and1.out.to(out.carry),
+  ],
+})
 ```
 
-## Full Adder
+## Full Adder (composite)
 
-Three bits (a + b + carry in) → sum + carry out. Reuses HalfAdder.
+Built from two half adders + an OR gate.
 
-```dsl
-circuit FullAdder {
-  input a: Bit
-  input b: Bit
-  input cin: Bit
-  output sum: Bit
-  output cout: Bit
+```typescript
+import { circuit, bit } from '@turing-incomplete/core/circuit'
+import { Or } from '@turing-incomplete/core/std'
+import { HalfAdder } from './half-adder'
 
-  impl {
-    node ha1: HalfAdder
-    node ha2: HalfAdder
-    node or1: Or
-
-    connect a -> ha1.a
-    connect b -> ha1.b
-    connect ha1.sum -> ha2.a
-    connect cin -> ha2.b
-    connect ha2.sum -> sum
-
-    connect ha1.carry -> or1.a
-    connect ha2.carry -> or1.b
-    connect or1.out -> cout
-  }
-}
+export const FullAdder = circuit('FullAdder', {
+  in: { a: bit, b: bit, cin: bit },
+  out: { sum: bit, cout: bit },
+  nodes: { ha1: HalfAdder, ha2: HalfAdder, or1: Or },
+  connect: ({ in: inp, out, ha1, ha2, or1 }) => [
+    inp.a.to(ha1.a),
+    inp.b.to(ha1.b),
+    ha1.sum.to(ha2.a),
+    inp.cin.to(ha2.b),
+    ha2.sum.to(out.sum),
+    ha1.carry.to(or1.a),
+    ha2.carry.to(or1.b),
+    or1.out.to(out.cout),
+  ],
+})
 ```
 
-## 2-to-1 Multiplexer
+## 2-bit Counter (sequential)
 
-Select between two inputs: `out = (a AND NOT sel) OR (b AND sel)`.
+Two flip-flops counting 00 → 01 → 10 → 11 → repeat.
 
-```dsl
-circuit Mux2to1 {
-  input a: Bit
-  input b: Bit
-  input sel: Bit
-  output out: Bit
+```typescript
+import { circuit, bit } from '@turing-incomplete/core/circuit'
+import { DFlipFlop, Not, Xor } from '@turing-incomplete/core/std'
 
-  impl {
-    node not1: Not
-    node and1: And
-    node and2: And
-    node or1: Or
-
-    connect sel -> not1.a
-    connect a -> and1.a
-    connect not1.out -> and1.b
-
-    connect b -> and2.a
-    connect sel -> and2.b
-
-    connect and1.out -> or1.a
-    connect and2.out -> or1.b
-    connect or1.out -> out
-  }
-}
+export const Counter2Bit = circuit('Counter2Bit', {
+  out: { bit0: bit, bit1: bit },
+  nodes: { dff0: DFlipFlop, dff1: DFlipFlop, inv: Not, xor1: Xor },
+  connect: ({ out, dff0, dff1, inv, xor1 }) => [
+    dff0.q.to(inv.in, xor1.b, out.bit0),
+    inv.out.to(dff0.d),
+    dff1.q.to(xor1.a, out.bit1),
+    xor1.out.to(dff1.d),
+  ],
+})
 ```
 
-## 4-Bit Ripple Carry Adder
+## Simulating
 
-Chain four full adders to add two 4-bit numbers.
+```typescript
+import { simulate } from '@turing-incomplete/core/sim'
 
-```dsl
-circuit RippleCarryAdder4 {
-  input a: Bus[4]
-  input b: Bus[4]
-  input cin: Bit
-  output sum: Bus[4]
-  output cout: Bit
+const sim = simulate(HalfAdder)
 
-  impl {
-    node fa0: FullAdder
-    node fa1: FullAdder
-    node fa2: FullAdder
-    node fa3: FullAdder
+sim.set({ a: 1, b: 1 })
+sim.get('sum')   // 0
+sim.get('carry') // 1
 
-    connect a[0] -> fa0.a
-    connect b[0] -> fa0.b
-    connect cin -> fa0.cin
-    connect fa0.sum -> sum[0]
-
-    connect a[1] -> fa1.a
-    connect b[1] -> fa1.b
-    connect fa0.cout -> fa1.cin
-    connect fa1.sum -> sum[1]
-
-    connect a[2] -> fa2.a
-    connect b[2] -> fa2.b
-    connect fa1.cout -> fa2.cin
-    connect fa2.sum -> sum[2]
-
-    connect a[3] -> fa3.a
-    connect b[3] -> fa3.b
-    connect fa2.cout -> fa3.cin
-    connect fa3.sum -> sum[3]
-
-    connect fa3.cout -> cout
-  }
-}
+sim.dispose()
 ```
 
-## Counter (Sequential)
+## Embedding in React
 
-Increments on each clock cycle using a register and incrementer.
+```tsx
+import { CircuitEmbed } from '@turing-incomplete/embed'
 
-```dsl
-circuit Counter {
-  input clk: Bit
-  output count: Bus[8]
-
-  impl {
-    node reg: Register
-    node inc: Incrementer
-
-    connect clk -> reg.clk
-    connect reg.q -> inc.in
-    connect inc.out -> reg.d
-    connect reg.q -> count
-  }
-}
+<CircuitEmbed circuit={HalfAdder} />
 ```
 
-## Simple ALU
-
-Selects between ADD, SUB, AND, OR based on 2-bit opcode.
-
-```dsl
-circuit SimpleALU {
-  input a: Bus[8]
-  input b: Bus[8]
-  input opcode: Bus[2]
-  output result: Bus[8]
-
-  impl {
-    node adder: Adder(width = 8)
-    node and_op: BusAnd
-    node or_op: BusOr
-    node mux: Mux
-
-    connect a -> adder.a
-    connect b -> adder.b
-
-    connect a -> and_op.a
-    connect b -> and_op.b
-
-    connect a -> or_op.a
-    connect b -> or_op.b
-
-    connect adder.sum -> mux.in0
-    connect and_op.out -> mux.in2
-    connect or_op.out -> mux.in3
-    connect opcode -> mux.sel
-
-    connect mux.out -> result
-  }
-}
-```
-
-## Design Patterns
-
-**Combinational** — no state, no clock. Outputs computed directly from inputs.
-
-**Sequential** — has state and clock. State updates on clock edges, outputs reflect current state.
-
-**Hierarchical composition** — build complex circuits from simpler ones (FullAdder from HalfAdder, ALU from Adder).
+The embed auto-generates Switch nodes for inputs and Led nodes for outputs.

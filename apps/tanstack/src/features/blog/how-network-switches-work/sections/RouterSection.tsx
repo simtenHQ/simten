@@ -1,4 +1,3 @@
-"use client";
 
 import { CircuitEmbed } from "@turing-incomplete/embed";
 import { SWITCH_CIRCUITS } from "../circuits";

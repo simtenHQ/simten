@@ -1,4 +1,3 @@
-"use client";
 
 import { useState, useMemo, lazy, Suspense } from "react";
 import { executeCircuitCode } from "@turing-incomplete/core";

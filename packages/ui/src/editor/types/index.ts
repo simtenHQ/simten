@@ -12,7 +12,7 @@ export type {
   StateBlock, StateValue,
   PortPath, Node, Parameter, Implementation,
   CircuitMetadata, Circuit,
-  ComponentKind, ValidationError,
+  CircuitKind, ValidationError,
 } from './circuit';
 export {
   createPortPath, portPathKey,

@@ -97,7 +97,7 @@ export function useTutorFlow(options: UseTutorFlowOptions): UseTutorFlowResult {
         sendMessage(
           {
             userMessage,
-            dslCode: getCurrentCode(),
+            code: getCurrentCode(),
             compactContext: getNarrativeContext(),
             conversationHistory: getConversationHistory(),
           },

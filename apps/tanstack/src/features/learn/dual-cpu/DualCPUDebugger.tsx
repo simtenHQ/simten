@@ -1,4 +1,3 @@
-"use client";
 
 import { useState, useRef, useEffect } from "react";
 import { useRV32IDualCPU, type NicMessage } from "./useRV32IDualCPU";
@@ -56,7 +55,6 @@ function ComputerPanel({
   onLanguageChange,
   onSourceChange,
   onCompile,
-  dslLoaded,
   isRunning,
   cycleCount,
 }: {
@@ -67,7 +65,6 @@ function ComputerPanel({
   onLanguageChange: (lang: string) => void;
   onSourceChange: (src: string) => void;
   onCompile: () => void;
-  dslLoaded: boolean;
   isRunning: boolean;
   cycleCount: number;
 }) {
@@ -103,7 +100,7 @@ function ComputerPanel({
         </div>
         <button
           onClick={onCompile}
-          disabled={cpu.compiling || !dslLoaded}
+          disabled={cpu.compiling}
           className={`ml-auto px-3 py-1 rounded text-xs font-semibold ${compileBg} text-white transition-colors disabled:opacity-40`}
         >
           {cpu.compiling ? "Compiling…" : "Compile"}
@@ -233,25 +230,14 @@ function MessageBubble({ msg }: { msg: NicMessage }) {
 
 export function DualCPUDebugger() {
   const state = useRV32IDualCPU();
-  const { sim, isRunning, setIsRunning, reset, dslLoaded, dslError, nicMessages } = state;
+  const { sim, isRunning, setIsRunning, reset, nicMessages } = state;
 
   const [cpu0Lang, setCpu0Lang] = useState("c");
   const [cpu0Src, setCpu0Src] = useState(CPU0_STARTER);
   const [cpu1Lang, setCpu1Lang] = useState("c");
   const [cpu1Src, setCpu1Src] = useState(CPU1_STARTER);
 
-  if (dslError) {
-    return (
-      <div className="flex h-screen items-center justify-center bg-gray-950">
-        <div className="rounded-xl border border-red-800/50 bg-red-950/30 p-6 text-red-400 font-mono text-sm max-w-lg">
-          <div className="font-bold mb-1">Failed to load circuit</div>
-          {dslError}
-        </div>
-      </div>
-    );
-  }
-
-  const loading = !dslLoaded || (state.bothCompiled && !sim.ready);
+  const loading = state.bothCompiled && !sim.ready;
 
   return (
     <div className="flex h-screen flex-col bg-gray-950 text-gray-100 overflow-hidden">
@@ -295,7 +281,7 @@ export function DualCPUDebugger() {
         {!sim.ready && (
           <div className="flex items-center gap-2 text-xs text-gray-500 ml-auto">
             {loading && <div className="h-3 w-3 animate-spin rounded-full border border-gray-600 border-t-blue-400" />}
-            {!dslLoaded ? "Loading circuit…" : state.bothCompiled ? "Building simulator…" : "Compile both computers to start"}
+            {state.bothCompiled ? "Building simulator…" : "Compile both computers to start"}
           </div>
         )}
       </div>
@@ -311,7 +297,6 @@ export function DualCPUDebugger() {
             onLanguageChange={setCpu0Lang}
             onSourceChange={setCpu0Src}
             onCompile={() => state.compile(0, cpu0Src, cpu0Lang)}
-            dslLoaded={dslLoaded}
             isRunning={isRunning}
             cycleCount={sim.cycleCount}
           />
@@ -330,7 +315,6 @@ export function DualCPUDebugger() {
             onLanguageChange={setCpu1Lang}
             onSourceChange={setCpu1Src}
             onCompile={() => state.compile(1, cpu1Src, cpu1Lang)}
-            dslLoaded={dslLoaded}
             isRunning={isRunning}
             cycleCount={sim.cycleCount}
           />

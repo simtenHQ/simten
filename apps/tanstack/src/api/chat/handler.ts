@@ -133,7 +133,7 @@ const allTools: ToolDef[] = [...analysisTools, ...editorTools];
 
 interface ChatRequest {
   userMessage: string;
-  dslCode: string;
+  code: string;
   compactContext: string;
   conversationHistory: Array<{ role: 'user' | 'assistant'; content: string }>;
 }
@@ -178,7 +178,7 @@ const MAX_TOOL_ITERATIONS = 10;
 export async function handleChat(request: Request, env: Record<string, string | undefined>): Promise<Response> {
   try {
     const body = (await request.json()) as ChatRequest;
-    const { userMessage, dslCode, compactContext, conversationHistory } = body;
+    const { userMessage, code, compactContext, conversationHistory } = body;
 
     if (!userMessage?.trim()) {
       return Response.json({ error: 'userMessage is required' }, { status: 400 });
@@ -200,7 +200,7 @@ export async function handleChat(request: Request, env: Record<string, string | 
     }
     messages.push({ role: 'user', content: userMessage });
 
-    const systemPrompt = buildSystemPrompt(dslCode || '', compactContext || '');
+    const systemPrompt = buildSystemPrompt(code || '', compactContext || '');
 
     const encoder = new TextEncoder();
     const stream = new ReadableStream({

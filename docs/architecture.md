@@ -3,21 +3,27 @@
 ## Pipeline
 
 ```
-DSL text → Lexer → Tokens → Parser → AST → Validator → IR Compiler → Circuit[]
-                                                                         ↓
-                                                                    Elaboration (flatten composites → primitives)
-                                                                         ↓
-                                                                    Simulator (topological evaluation)
+TypeScript circuit() → Circuit IR → Elaboration → Simulation
+                           ↓             ↓             ↓
+                       node graph    flat circuit   tick cycle
 ```
 
-### Validation (4 phases)
+## Definition Layer
 
-1. **Syntax** — Chevrotain parser produces CST, converted to AST
-2. **Semantic** — reference checks, duplicate names, self-references
-3. **Type** — width matching, parameter validation (during IR compilation)
-4. **Structural** — cycle detection (Tarjan's SCC), floating ports (during elaboration)
+Circuits are defined with the `circuit()` factory function from `@turing-incomplete/core/circuit`. It takes a config object and returns a `BuiltCircuit` containing:
 
-Later phases skip if earlier phases have blocking errors.
+- The Circuit IR
+- Type-level shape info for autocomplete and width checking
+- A dependency map of sub-circuits used as nodes
+
+```typescript
+const HalfAdder = circuit('HalfAdder', {
+  in: { a: bit, b: bit },
+  out: { sum: bit, carry: bit },
+  nodes: { xor1: Xor, and1: And },
+  connect: ({ in: inp, out, xor1, and1 }) => [...]
+})
+```
 
 ## IR Types
 
@@ -48,47 +54,53 @@ interface Node {
 }
 
 interface Connection {
-  from: PortPath;   // { nodeId: string, portName: string }
-  to: PortPath;     // nodeId is "" for circuit-level ports
+  source: PortPath;   // { nodeId: string, portName: string }
+  target: PortPath;   // nodeId is "" for circuit-level ports
 }
 
 type PortType = { kind: 'bit' } | { kind: 'bus'; width: number };
 ```
+
+## Elaboration
+
+`elaborate()` recursively expands composite nodes into primitives, producing a `FlatCircuit`. This happens once per circuit load. The flat circuit is then compiled into a numeric representation (typed arrays, integer indices) for fast simulation.
 
 ## Simulation
 
 ### Combinational
 
 1. Elaborate: flatten all composites to primitives
-2. Topological sort (detects combinational loops)
-3. Evaluate each primitive in order: read inputs → evaluate → write outputs
-4. Return circuit outputs
+2. Build dependency graph (cycle detection during elaboration)
+3. Propagate values from inputs through gates until quiescent
+4. Return port values
 
 ### Sequential (per clock tick)
 
-1. **Combinational phase** — evaluate all logic with current state
-2. **Sequential update** — detect clock edges, compute next state
-3. **State commit** — atomically update all state (current ← next)
-4. **Re-evaluate** — propagate new state through combinational logic
+1. **Combinational phase 1** — propagate from current state
+2. **Clock edge** — toggle clocks
+3. **Sequential capture** — sample register inputs into next-state
+4. **State commit** — registers update atomically
+5. **Combinational phase 2** — propagate post-edge state to outputs
 
 ### Fast Simulator
 
-`packages/core/src/simulator/fast-simulator.ts` uses typed arrays for 2-5x speedup. Compiles flat circuits to a numeric representation for cache-friendly evaluation.
+`packages/core/src/simulator/index.ts` uses typed arrays and numeric indices for cache-friendly evaluation. The hot path has zero allocations once the circuit is compiled.
 
 ## Key Packages
 
-| Package | Entry | Responsibility |
-|---------|-------|---------------|
-| `@turing-incomplete/core` | `src/dsl/`, `src/simulator/`, `src/api/` | Parser, compiler, validator, simulator, API handlers |
-| `@turing-incomplete/ui` | `src/editor/` | Monaco editor, ReactFlow canvas, Zustand stores, clock controls |
-| `@turing-incomplete/mcp` | `src/tools/`, `src/schemas/` | MCP server wrapping core handlers for Claude Code |
-| `@turing-incomplete/challenges` | `src/` | Challenge definitions (ALU stages, Snake) |
+| Package | Responsibility |
+|---------|----------------|
+| `@turing-incomplete/core` | Simulator, `circuit()` builder, stdlib, Verilog exporter |
+| `@turing-incomplete/ui` | Canvas, editor components, shadcn primitives, stores |
+| `@turing-incomplete/embed` | `CircuitEmbed` React component |
+| `@turing-incomplete/mcp` | MCP server wrapping core handlers for Claude Code |
+| `@turing-incomplete/cli` | CLI wrapper |
 
 ## Chat System
 
-- **API route:** `apps/web/src/app/api/chat/route.ts`
-- Server-side tool_use loop with Anthropic SDK (max 10 iterations)
+- **API route:** `apps/tanstack/src/api/chat/`
+- Server-side tool_use loop with Anthropic SDK
 - Streams NDJSON: `tool_call | message | done | error` chunks
-- Analysis tools (simulate, validate, testbench) run server-side
-- Editor tools (write code, set inputs) deferred to client in `done` chunk
-- Model: `claude-sonnet-4-20250514`
+- Analysis tools (simulate, testbench) run server-side
+- Editor tools (write code, set inputs) deferred to client
+- Supports multiple LLM providers (Anthropic, OpenRouter, OpenAI)

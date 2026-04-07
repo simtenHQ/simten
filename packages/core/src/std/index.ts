@@ -117,5 +117,3 @@ export function getAllStdCircuits(): BuiltCircuit[] {
   return [...ALL_CIRCUITS];
 }
 
-/** @deprecated Use getAllStdCircuits() instead */
-export const getAllStdComponents = getAllStdCircuits;

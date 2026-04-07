@@ -111,7 +111,7 @@ export function DiagnosticsPanel() {
             &#x26A1;
           </span>
         </div>
-        <p className="text-sm">Compile your DSL code to see analysis results</p>
+        <p className="text-sm">Compile your circuit code to see analysis results</p>
         <p className="text-xs text-gray-400 mt-2">
           Press Cmd/Ctrl+Enter or click Compile
         </p>

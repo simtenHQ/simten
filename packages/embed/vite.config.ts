@@ -16,6 +16,9 @@ const isAnalyze = process.env.ANALYZE === "true";
  * CSS is handled entirely by Vite + Tailwind plugin — no manual merging.
  */
 export default defineConfig({
+  resolve: {
+    conditions: ["@turing-incomplete/source", "import", "module", "browser", "default"],
+  },
   plugins: [
     tailwindcss(),
     react(),

@@ -8,8 +8,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState, useCallback, useMemo, useEffect } from "react";
 import { createServerFn } from "@tanstack/react-start";
-import { executeCircuitCode } from "@turing-incomplete/core/circuit";
 import { simulate } from "@turing-incomplete/core/sim";
+import { RV32I_CPU } from "@/features/learn/cpu-debugger/rv32i-cpu.circuit";
 
 // ============================================================================
 // Server function: compile C → binary
@@ -87,34 +87,20 @@ function DemoCPUPage() {
   const { binary, disassembly } = Route.useLoaderData();
 
   // Load the RV32I CPU circuit
-  const cpuSim = useMemo(() => {
-    // Fetch the CPU circuit definition
-    return null as any; // Will be set after fetch
-  }, []);
-
   const [sim, setSim] = useState<ReturnType<typeof simulate> | null>(null);
   const [cycle, setCycle] = useState(0);
   const [pc, setPC] = useState(0);
   const [registers, setRegisters] = useState<Map<number, number>>(new Map());
   const [running, setRunning] = useState(false);
 
-  // Load CPU circuit + ROM
+  // Load ROM into CPU
   useEffect(() => {
-    fetch("/blog-assets/rv32i-cpu.circuit.ts")
-      .then(r => r.text())
-      .then(code => {
-        const result = executeCircuitCode(code);
-        if (result.error || !result.circuit) {
-          console.error("Failed to load CPU:", result.error);
-          return;
-        }
-        const comp = result.components[result.components.length - 1];
-        const romData = binaryToMemory(binary);
-        const s = simulate(comp);
-        s.setNode("imem", romData);
-        s.session.runCombinational();
-        setSim(s);
-      });
+    const romData = binaryToMemory(binary);
+    const s = simulate(RV32I_CPU);
+    s.setNode("imem", romData);
+    s.session.runCombinational();
+    setSim(s);
+    return () => s.dispose();
   }, [binary]);
 
   const tick = useCallback(() => {

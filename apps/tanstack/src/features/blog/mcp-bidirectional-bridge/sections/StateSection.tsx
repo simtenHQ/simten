@@ -1,4 +1,3 @@
-"use client";
 
 function CodeBlock({
   title,

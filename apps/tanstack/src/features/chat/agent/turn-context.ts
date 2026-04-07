@@ -23,7 +23,7 @@ export interface TurnContextOptions {
   /** Original user message */
   userMessage: string;
   /** Current DSL code */
-  dslCode: string;
+  code: string;
   /** Narrative context from the analysis pipeline */
   narrativeContext: string;
   /** Current goal state */
@@ -38,7 +38,7 @@ export interface TurnContextOptions {
  * Build context for an agent turn.
  */
 export function buildTurnContext(options: TurnContextOptions): AgentTurnContext {
-  const { userMessage, dslCode, narrativeContext, goalState, turns, signals } = options;
+  const { userMessage, code, narrativeContext, goalState, turns, signals } = options;
 
   // Format goal state for prompt
   const goalStateStr = formatGoalState(goalState);
@@ -51,7 +51,7 @@ export function buildTurnContext(options: TurnContextOptions): AgentTurnContext 
 
   return {
     userMessage,
-    dslCode,
+    code,
     context: narrativeContext,
     goalState: goalStateStr,
     turnHistory,
@@ -68,13 +68,13 @@ export function buildTurnContext(options: TurnContextOptions): AgentTurnContext 
  */
 export function buildInitialContext(
   userMessage: string,
-  dslCode: string,
+  code: string,
   narrativeContext: string,
   goalState: GoalState
 ): AgentTurnContext {
   return {
     userMessage,
-    dslCode,
+    code,
     context: narrativeContext,
     goalState: formatGoalState(goalState),
     turnHistory: '(First turn - no history)',
@@ -92,7 +92,7 @@ export function buildInitialContext(
  */
 export function refreshContext(
   previousContext: AgentTurnContext,
-  newDslCode: string,
+  newCode: string,
   newNarrativeContext: string,
   goalState: GoalState,
   turns: AgentTurn[],
@@ -100,7 +100,7 @@ export function refreshContext(
 ): AgentTurnContext {
   return buildTurnContext({
     userMessage: previousContext.userMessage,
-    dslCode: newDslCode,
+    code: newCode,
     narrativeContext: newNarrativeContext,
     goalState,
     turns,
