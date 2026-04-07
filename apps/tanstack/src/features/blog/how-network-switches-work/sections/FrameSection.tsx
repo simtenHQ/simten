@@ -40,7 +40,6 @@ export function FrameSection() {
           circuit={entry.circuit}
           height={300}
           showControls
-          displayCode={entry.displayCode}
           title={entry.name}
           description={circuit.description}
         />

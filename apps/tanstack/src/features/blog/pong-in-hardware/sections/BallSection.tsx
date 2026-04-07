@@ -31,7 +31,6 @@ export function BallSection() {
           circuit={entry.circuit}
           height={280}
           showControls={true}
-          displayCode={entry.displayCode}
           nodePositions={entry.nodePositions}
           title={entry.name}
           description={entry.description}

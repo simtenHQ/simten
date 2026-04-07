@@ -6,18 +6,11 @@
  */
 
 import { circuit, bus } from "@turing-incomplete/core/circuit";
-import type { BuiltCircuit } from "@turing-incomplete/core/circuit";
+import type { BlogCircuit } from '../types';
 import {
   Input, HexDisplay, Constant,
   LeftShifter, Splitter8to8, Mux, BusXor, ROM,
 } from "@turing-incomplete/core/std";
-
-export interface BlogCircuit {
-  name: string;
-  description: string;
-  displayCode: string;
-  circuit: BuiltCircuit;
-}
 
 // FIPS 197, Figure 7 -- the AES forward S-box
 export const AES_SBOX: number[] = [
@@ -124,16 +117,6 @@ export const AES_CIRCUITS: Record<string, BlogCircuit> = {
     name: "SubBytes: S-Box Lookup",
     description:
       "Each byte is replaced via a 256-entry lookup table. Try 0x00 (-> 0x63), 0x53 (-> 0xed), or 0xff (-> 0x16). Pre-loaded with FIPS 197 S-box.",
-    displayCode: `
-const SubByteDemo = circuit('SubByteDemo', {
-  nodes: { s: Input, rom: ROM, disp: HexDisplay },
-  nodeArgs: { s: { value: 83, width: 8 }, disp: { width: 8 } },
-  connect: ({ s, rom, disp }) => [
-    s.out.to(rom.addr),
-    rom.data_out.to(disp.in),
-  ],
-})
-`,
     circuit: SubByteDemo,
   },
 
@@ -141,33 +124,6 @@ const SubByteDemo = circuit('SubByteDemo', {
     name: "XTime: Multiply by 2 in GF(2^8)",
     description:
       "Left-shift, then XOR with 0x1b if the MSB was 1. Try 87 (0x57 -> 0xae), 128 (0x80 -> 0x1b), or 149 (0x95 -> 0x35).",
-    displayCode: `
-const XTime = circuit('XTime', {
-  in: { x: bus(8) },
-  out: { out: bus(8) },
-  nodes: { c1: Constant, shl: LeftShifter, split: Splitter8to8, poly: Constant, zero8: Constant, mux: Mux, xor: BusXor },
-  nodeArgs: { c1: { value: 1, width: 8 }, shl: { width: 8 }, poly: { value: 27, width: 8 }, zero8: { value: 0, width: 8 }, mux: { width: 8 }, xor: { width: 8 } },
-  connect: ({ in: inp, out, c1, shl, split, poly, zero8, mux, xor }) => [
-    inp.x.to(shl.value, split.in),
-    c1.out.to(shl.shift),
-    zero8.out.to(mux.in0),
-    poly.out.to(mux.in1),
-    split.bit7.to(mux.sel),
-    shl.result.to(xor.a),
-    mux.out.to(xor.b),
-    xor.out.to(out.out),
-  ],
-})
-
-const XTimeDemo = circuit('XTimeDemo', {
-  nodes: { val: Input, xt: XTime, disp: HexDisplay },
-  nodeArgs: { val: { value: 87, width: 8 }, disp: { width: 8 } },
-  connect: ({ val, xt, disp }) => [
-    val.out.to(xt.x),
-    xt.out.to(disp.in),
-  ],
-})
-`,
     circuit: XTimeDemo,
   },
 
@@ -175,20 +131,6 @@ const XTimeDemo = circuit('XTimeDemo', {
     name: "MixColumns: One Column",
     description:
       "FIPS 197 test vector: [0xdb, 0x13, 0x53, 0x45] -> [0x8e, 0x4d, 0xa1, 0xbc]. Four bytes in, four bytes out, completely mixed.",
-    displayCode: `// FIPS 197 MixColumns test vector:
-//   In:  [0xdb, 0x13, 0x53, 0x45]
-//   Out: [0x8e, 0x4d, 0xa1, 0xbc]
-
-const MixColumnDemo = circuit('MixColumnDemo', {
-  nodes: { s0: Input, s1: Input, s2: Input, s3: Input, mc: MixColumn, r0: HexDisplay, r1: HexDisplay, r2: HexDisplay, r3: HexDisplay },
-  nodeArgs: { s0: { value: 219, width: 8 }, s1: { value: 19, width: 8 }, s2: { value: 83, width: 8 }, s3: { value: 69, width: 8 }, r0: { width: 8 }, r1: { width: 8 }, r2: { width: 8 }, r3: { width: 8 } },
-  connect: ({ s0, s1, s2, s3, mc, r0, r1, r2, r3 }) => [
-    s0.out.to(mc.s0), s1.out.to(mc.s1),
-    s2.out.to(mc.s2), s3.out.to(mc.s3),
-    mc.r0.to(r0.in), mc.r1.to(r1.in),
-    mc.r2.to(r2.in), mc.r3.to(r3.in),
-  ],
-})`,
     circuit: MixColumnDemo,
   },
 };

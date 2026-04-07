@@ -32,7 +32,6 @@ export function PaddleSection() {
           circuit={entry.circuit}
           height={300}
           showControls={true}
-          displayCode={entry.displayCode}
           nodePositions={entry.nodePositions}
           title={entry.name}
           description={entry.description}

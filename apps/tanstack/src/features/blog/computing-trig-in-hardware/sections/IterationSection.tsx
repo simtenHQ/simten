@@ -30,7 +30,6 @@ export function IterationSection() {
           circuit={entry.circuit}
           height={240}
           showControls={true}
-          displayCode={entry.displayCode}
           title={entry.name}
           description={entry.description}
         />

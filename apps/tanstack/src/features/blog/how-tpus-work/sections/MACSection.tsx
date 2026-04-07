@@ -42,7 +42,6 @@ export function MACSection() {
       <div className="mt-8">
         <CircuitEmbed
           circuit={TPU_CIRCUITS.multiplyAdd.circuit}
-          displayCode={TPU_CIRCUITS.multiplyAdd.displayCode}
           nodePositions={TPU_CIRCUITS.multiplyAdd.nodePositions}
           height={300}
           showControls

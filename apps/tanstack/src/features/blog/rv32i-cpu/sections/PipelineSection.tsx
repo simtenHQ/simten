@@ -141,7 +141,6 @@ export function PipelineSection() {
         </p>
         <CircuitEmbed
           circuit={BLOG_CIRCUITS.programCounter.circuit}
-          displayCode={BLOG_CIRCUITS.programCounter.displayCode}
           height={300}
           title="Program Counter"
           description="Increments by 4 each clock cycle. Stall freezes the count."
@@ -156,7 +155,6 @@ export function PipelineSection() {
           </p>
           <CircuitEmbed
             circuit={BLOG_CIRCUITS.pcWithMux.circuit}
-            displayCode={BLOG_CIRCUITS.pcWithMux.displayCode}
             height={340}
             showControls
             title="PC with Next-PC Mux"
@@ -179,7 +177,6 @@ export function PipelineSection() {
         </p>
         <CircuitEmbed
           circuit={BLOG_CIRCUITS.pipelineRegister.circuit}
-          displayCode={BLOG_CIRCUITS.pipelineRegister.displayCode}
           height={300}
           title="Pipeline Register"
           description="Latches data between stages. Flush clears to zero."

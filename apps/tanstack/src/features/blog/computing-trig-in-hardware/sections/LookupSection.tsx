@@ -32,7 +32,6 @@ export function LookupSection() {
           circuit={entry.circuit}
           height={320}
           showControls={false}
-          displayCode={entry.displayCode}
           title={entry.name}
           description={entry.description}
         />
