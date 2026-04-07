@@ -32,7 +32,6 @@ import type {
 import {
   createCircuitLibrary,
 } from "@turing-incomplete/core";
-import { PRIMITIVES } from "@turing-incomplete/core/simulator";
 import type { NodeData } from "../nodes";
 import { cleanCircuitLabels } from "./label-utils";
 import { EDGE_TYPES, NODE_TYPES } from "./node-types";
@@ -119,8 +118,14 @@ function useDetectTheme(): "light" | "dark" {
 // Default library — created once, reused
 let _defaultLibrary: CircuitLibrary | null = null;
 function getDefaultLibrary(): CircuitLibrary {
-  if (!_defaultLibrary)
-    _defaultLibrary = createCircuitLibrary([...PRIMITIVES]);
+  if (!_defaultLibrary) {
+    const circuitMap = new Map<string, Circuit>();
+    _defaultLibrary = {
+      resolveCircuit: (name) => circuitMap.get(name),
+      getAllPrimitiveNames: () => [...circuitMap.entries()].filter(([, c]) => c.implementation.kind === 'primitive').map(([n]) => n),
+      addCircuit: (c: Circuit) => { circuitMap.set(c.name, c); },
+    } as CircuitLibrary & { addCircuit(c: Circuit): void };
+  }
   return _defaultLibrary;
 }
 

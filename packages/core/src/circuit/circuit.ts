@@ -32,6 +32,7 @@ import type {
   ArgumentValue,
 } from '../types/circuit.js';
 import { normalizePortType } from './bit-bus.js';
+import { registerCircuitEval } from './eval-registry.js';
 import type {
   PortMap,
   ConnectionDef,
@@ -299,6 +300,8 @@ export function circuit<
   const metadata: CircuitMetadata = {
     kind,
     description: config.meta?.description,
+    category: config.meta?.category,
+    icon: config.meta?.icon,
     tags: config.meta?.tags,
     author: config.meta?.author,
     version: config.meta?.version,
@@ -327,15 +330,15 @@ export function circuit<
 
   // ── Collect dependencies (for direct BuiltCircuit → simulator path) ──
 
-  const deps = new Map<string, Circuit>();
+  const deps = new Map<string, BuiltCircuit>();
   for (const [, comp] of Object.entries(nodes) as [string, BuiltCircuit][]) {
     if (!deps.has(comp.name)) {
-      deps.set(comp.name, comp.circuit);
+      deps.set(comp.name, comp);
     }
     // Merge transitive dependencies
     if (comp._dependencies) {
-      for (const [depName, depCircuit] of comp._dependencies) {
-        if (!deps.has(depName)) deps.set(depName, depCircuit);
+      for (const [depName, depComp] of comp._dependencies) {
+        if (!deps.has(depName)) deps.set(depName, depComp);
       }
     }
   }
@@ -347,12 +350,18 @@ export function circuit<
     name,
   } as BuiltCircuit<NormalizePorts<Ins>, NormalizePorts<Outs>>;
 
-  // Attach eval/onTick/state for the simulator bridge
-  if (config.eval) (built as any)._evalFn = config.eval;
-  if (config.onTick) (built as any)._onTickFn = config.onTick;
-  if (config.state) (built as any)._initialState = config.state;
-  if (config.meta?.category) (built as any)._category = config.meta.category;
-  if (config.meta?.icon) (built as any)._icon = config.meta.icon;
+  // Register eval/onTick in the shared registry at definition time.
+  // This means any circuit with eval just works in simulation — no manual registration.
+  if (config.eval || config.onTick) {
+    const stateKeys = config.state ? Object.keys(config.state) : undefined;
+    registerCircuitEval(name, {
+      inputNames: circuitIR.inputs.map(p => p.name),
+      outputNames: circuitIR.outputs.map(p => p.name),
+      evalFn: config.eval ?? (() => ({})),
+      stateKeys,
+      onTickFn: config.onTick as ((inputs: Record<string, any>) => Record<string, any>) | undefined,
+    });
+  }
 
   return built;
 }

@@ -23,7 +23,6 @@ import type {
   HierarchyNode,
 } from '../types/simulator.js';
 import { TOP_LEVEL_NODE, SEQUENTIAL_INPUT_PORTS } from '../types/simulator.js';
-import { PRIMITIVE_DEFINITIONS } from './primitives.js';
 import { isBasePrimitive } from '../verilog/primitive-map.js';
 
 export interface ElaborateOptions {
