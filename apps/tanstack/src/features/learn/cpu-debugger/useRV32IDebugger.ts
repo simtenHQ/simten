@@ -1,7 +1,7 @@
-"use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useCircuitSimulator } from "@turing-incomplete/embed";
+import { RV32I_CPU } from "./rv32i-cpu.circuit";
 
 // ABI register names for RV32I
 export const ABI_NAMES: Record<number, string> = {
@@ -87,10 +87,6 @@ export interface CompileResult {
 }
 
 export function useRV32IDebugger() {
-  const dslCacheRef = useRef<string | null>(null);
-  const [dslCode, setDslCode] = useState<string | null>(null);
-  const [dslError, setDslError] = useState<string | null>(null);
-
   const [compiled, setCompiled] = useState<CompileResult | null>(null);
   const [romData, setRomData] = useState<Map<number, number> | null>(null);
   const [compiling, setCompiling] = useState(false);
@@ -99,22 +95,7 @@ export function useRV32IDebugger() {
   const [isRunning, setIsRunning] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Fetch CPU circuit once
-  useEffect(() => {
-    if (dslCacheRef.current) return;
-    fetch("/blog-assets/rv32i-cpu.circuit.ts")
-      .then((r) => {
-        if (!r.ok) throw new Error(`Failed to load CPU: ${r.status}`);
-        return r.text();
-      })
-      .then((text) => {
-        dslCacheRef.current = text;
-        setDslCode(text);
-      })
-      .catch((e) => setDslError(e.message));
-  }, []);
-
-  const sim = useCircuitSimulator(dslCode ?? "");
+  const sim = useCircuitSimulator(RV32I_CPU);
 
   // Load ROM data into imem via setNodeValue when ready
   useEffect(() => {
@@ -211,10 +192,6 @@ export function useRV32IDebugger() {
   const disasmLines = compiled ? parseDisassembly(compiled.disassembly) : [];
 
   return {
-    // Loading
-    dslError,
-    dslLoaded: !!dslCode,
-
     // Compile
     compile,
     compiling,

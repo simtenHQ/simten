@@ -19,7 +19,7 @@ import {
   SignalOutputPanel,
 } from "@turing-incomplete/ui/editor/components";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { useCircuitStore, useDSLPreviewStore } from "@turing-incomplete/ui/editor/stores";
+import { useCircuitStore, useCircuitPreviewStore } from "@turing-incomplete/ui/editor/stores";
 import { usePrimitivesInit } from "@turing-incomplete/ui/editor/hooks";
 import { useCircuitSession } from "@turing-incomplete/ui/canvas";
 import type { Circuit } from "@turing-incomplete/ui/editor/types";
@@ -68,7 +68,7 @@ interface VisualEditorProps {
 }
 
 export function VisualEditor({ theme = "light" }: VisualEditorProps) {
-  const setCompiledCircuits = useDSLPreviewStore(
+  const setCompiledCircuits = useCircuitPreviewStore(
     (state) => state.setCompiledCircuits,
   );
   const circuit = useCircuitStore((state) => state.circuit);
@@ -155,8 +155,8 @@ export function VisualEditor({ theme = "light" }: VisualEditorProps) {
   });
 
   // Narrative context for chat
-  const dslCode = editorRef.current?.getCode() ?? "";
-  const narrativeContext = useLLMContext(dslCode, sim.portValues ?? undefined);
+  const code = editorRef.current?.getCode() ?? "";
+  const narrativeContext = useLLMContext(code, sim.portValues ?? undefined);
 
   // Keyboard shortcuts for drawer toggles
   useEffect(() => {

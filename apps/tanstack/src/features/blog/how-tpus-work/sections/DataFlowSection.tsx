@@ -1,4 +1,3 @@
-"use client";
 
 import { CircuitEmbed } from "@turing-incomplete/embed";
 import { TPU_CIRCUITS } from "../circuits";

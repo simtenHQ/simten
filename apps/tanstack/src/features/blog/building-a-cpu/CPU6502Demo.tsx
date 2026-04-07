@@ -1,4 +1,3 @@
-"use client";
 
 import { useRef, useEffect, useState, useCallback } from "react";
 import { use6502Simulator } from "./use6502Simulator";

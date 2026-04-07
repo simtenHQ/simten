@@ -5,18 +5,14 @@
  *   import { circuit, bit, bus } from '@turing-incomplete/core/circuit'
  */
 
-export { circuit, component } from './circuit.js';
+export { circuit } from './circuit.js';
 export { bit, bus } from './bit-bus.js';
-export { executeCircuitCode, executeComponentCode, stripTypes, type ExecuteResult } from './execute.js';
+export { executeCircuitCode, stripTypes, type ExecuteResult } from './execute.js';
 export type {
   BuiltCircuit,
-  BuiltComponent,
   CircuitMeta,
-  ComponentMeta,
   CircuitConfig,
-  ComponentConfig,
   CircuitShape,
-  ComponentShape,
   PortRef,
   ConnectionDef,
   PortMap,

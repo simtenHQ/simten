@@ -1,4 +1,3 @@
-"use client";
 
 import React, { useCallback, useState } from 'react';
 import { BaseNode, type PortConfig } from './BaseNode';

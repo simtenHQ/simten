@@ -1,10 +1,9 @@
-"use client";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useCircuitSimulator } from "@turing-incomplete/embed";
-import { CORDIC_DSL } from "./circuits";
+import { CORDICCircuit } from "./circuits";
 
 export function useCORDICSimulator() {
-  const sim = useCircuitSimulator(CORDIC_DSL);
+  const sim = useCircuitSimulator(CORDICCircuit);
   const [isRunning, setIsRunning] = useState(false);
   const [speed, setSpeed] = useState(100);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);

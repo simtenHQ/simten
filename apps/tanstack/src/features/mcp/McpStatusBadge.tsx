@@ -1,4 +1,3 @@
-"use client";
 
 import type { McpConnectionStatus } from "@/features/challenges/useChallengeSync";
 

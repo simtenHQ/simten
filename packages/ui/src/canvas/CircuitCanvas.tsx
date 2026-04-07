@@ -1,4 +1,3 @@
-"use client";
 
 import {
   applyNodeChanges,
@@ -33,7 +32,7 @@ import type {
 import {
   createCircuitLibrary,
 } from "@turing-incomplete/core";
-import { PRIMITIVES, compileReferenceCircuit } from "@turing-incomplete/core/simulator";
+import { PRIMITIVES } from "@turing-incomplete/core/simulator";
 import type { NodeData } from "../nodes";
 import { cleanCircuitLabels } from "./label-utils";
 import { EDGE_TYPES, NODE_TYPES } from "./node-types";
@@ -327,7 +326,7 @@ function CircuitCanvasInner({
     setInspectorStack((prev) => prev.slice(0, index + 1));
   }, []);
 
-  // Default double-click handler: opens inspector for composites/reference circuits
+  // Default double-click handler: opens inspector for composites
   const defaultNodeDoubleClick = useCallback((nodeData: NodeData) => {
     if (!nodeData.isComposite) return;
     const componentDef = library.resolveCircuit(nodeData.componentRef);
@@ -335,19 +334,6 @@ function CircuitCanvasInner({
 
     if (componentDef.implementation.kind === "composite" && componentDef.nodes.length > 0) {
       setInspectorStack([{ componentName: nodeData.componentRef, componentDef, nodeLabel: nodeData.label ?? nodeData.componentRef }]);
-      return;
-    }
-
-    // Lazily compile reference circuit for primitives
-    const params: Record<string, number> = {};
-    if (nodeData.arguments) {
-      for (const [k, v] of Object.entries(nodeData.arguments)) {
-        if (typeof v === "number") params[k] = v;
-      }
-    }
-    const refCircuit = compileReferenceCircuit(nodeData.componentRef, params);
-    if (refCircuit) {
-      setInspectorStack([{ componentName: nodeData.componentRef, componentDef: refCircuit, nodeLabel: nodeData.label ?? nodeData.componentRef }]);
     }
   }, [library]);
 

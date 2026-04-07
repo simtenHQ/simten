@@ -71,7 +71,8 @@
       "Bash(sed 's/:.*$//')",
       "Bash(git mv:*)",
       "Read(//circuit: compile\\\\\\(`/ { in_circuit = 1 }\nin_circuit && /^`,$/**)",
-      "Bash(mv /tmp/pong-fixed.ts apps/tanstack/src/features/blog/pong-in-hardware/circuits.ts)"
+      "Bash(mv /tmp/pong-fixed.ts apps/tanstack/src/features/blog/pong-in-hardware/circuits.ts)",
+      "Bash(python3:*)"
     ]
   }
 }

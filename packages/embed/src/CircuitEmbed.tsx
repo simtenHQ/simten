@@ -1,4 +1,3 @@
-"use client";
 
 import { useState, useCallback, forwardRef, useImperativeHandle, useEffect } from "react";
 import { useCircuitSimulator } from "./hooks/useCircuitSimulator";

@@ -46,9 +46,6 @@ export interface CircuitShape {
   outputs: PortMap;
 }
 
-/** @deprecated Use CircuitShape instead */
-export type ComponentShape = CircuitShape;
-
 // ============================================================================
 // Connect callback types (generic)
 // ============================================================================
@@ -101,9 +98,6 @@ export interface CircuitMeta {
   version?: string;
 }
 
-/** @deprecated Use CircuitMeta instead */
-export type ComponentMeta = CircuitMeta;
-
 // ============================================================================
 // Built component
 // ============================================================================
@@ -122,12 +116,6 @@ export interface BuiltCircuit<
   /** Circuit name */
   readonly name: string;
 }
-
-/** @deprecated Use BuiltCircuit instead */
-export type BuiltComponent<
-  Ins extends PortMap = PortMap,
-  Outs extends PortMap = PortMap,
-> = BuiltCircuit<Ins, Outs>;
 
 // ============================================================================
 // Component config (generic)
@@ -151,10 +139,3 @@ export interface CircuitConfig<
   meta?: CircuitMeta;
 }
 
-/** @deprecated Use CircuitConfig instead */
-export type ComponentConfig<
-  Ins extends Record<string, PortType | number> = Record<string, PortType | number>,
-  Outs extends Record<string, PortType | number> = Record<string, PortType | number>,
-  Nodes extends Record<string, BuiltCircuit> = Record<string, BuiltCircuit>,
-  S extends StateShape = StateShape,
-> = CircuitConfig<Ins, Outs, Nodes, S>;

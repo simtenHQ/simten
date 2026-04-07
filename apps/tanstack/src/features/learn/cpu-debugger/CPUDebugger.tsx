@@ -1,4 +1,3 @@
-"use client";
 
 import { useState, useRef, useEffect, lazy, Suspense } from "react";
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
@@ -290,8 +289,6 @@ function RegisterFile({ registers, changed }: { registers: Map<number, number>; 
 
 export function CPUDebugger() {
   const {
-    dslError,
-    dslLoaded,
     compile,
     compiling,
     compileError,
@@ -316,17 +313,7 @@ export function CPUDebugger() {
 
   const handleCompile = () => compile(source, language);
 
-  if (dslError) {
-    return (
-      <div className="flex h-screen items-center justify-center bg-gray-950">
-        <div className="rounded-xl border border-red-800/50 bg-red-950/30 p-6 text-red-400 font-mono text-sm">
-          {dslError}
-        </div>
-      </div>
-    );
-  }
-
-  const loading = !dslLoaded || (!!compiled && !sim.ready);
+  const loading = !!compiled && !sim.ready;
   const narrative = sim.ready
     ? describeCurrentCycle(pipelineStages, disasmLines, sim.cycleCount)
     : null;
@@ -372,7 +359,7 @@ export function CPUDebugger() {
         {/* Compile button */}
         <button
           onClick={handleCompile}
-          disabled={compiling || !dslLoaded}
+          disabled={compiling}
           className="px-3 py-1 rounded text-xs font-medium bg-blue-600 hover:bg-blue-500 text-white transition-colors disabled:opacity-50"
         >
           {compiling ? "Compiling…" : "Compile"}
@@ -416,7 +403,7 @@ export function CPUDebugger() {
             <div className="h-4 w-px bg-gray-700" />
             <div className="flex items-center gap-2 text-xs text-gray-500">
               <div className="h-3 w-3 animate-spin rounded-full border border-gray-600 border-t-blue-400" />
-              {!dslLoaded ? "Loading CPU…" : "Building simulator…"}
+              Building simulator…
             </div>
           </>
         )}

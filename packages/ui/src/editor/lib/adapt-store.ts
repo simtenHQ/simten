@@ -1,7 +1,7 @@
 /**
  * Adapter utility for circuit library interface
  *
- * @deprecated No longer needed since DSL compiler library interface is gone.
+ * @deprecated No longer needed since the legacy compiler library interface is gone.
  * Kept as a thin passthrough for any remaining callers.
  */
 

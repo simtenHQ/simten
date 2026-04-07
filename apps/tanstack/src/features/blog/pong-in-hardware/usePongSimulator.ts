@@ -1,10 +1,9 @@
-"use client";
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useCircuitSimulator } from "@turing-incomplete/embed";
-import { PONG_DSL } from "./circuits";
+import { PongSimple } from "./circuits";
 
 export function usePongSimulator() {
-  const sim = useCircuitSimulator(PONG_DSL);
+  const sim = useCircuitSimulator(PongSimple);
   const [isRunning, setIsRunning] = useState(false);
   const [speed, setSpeed] = useState(60);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);

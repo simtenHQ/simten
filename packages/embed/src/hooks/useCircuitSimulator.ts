@@ -1,19 +1,14 @@
-"use client";
 
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import {
-  SimulationSession,
-  type SimulationSessionState,
   type SimulatorEngine,
-  type ComponentLibrary,
-  type FlatCircuit,
+  type CircuitLibrary,
   type FlatPortValueMap,
   type FlatSequentialState,
 } from "@turing-incomplete/core/simulator";
 import type { Circuit } from "@turing-incomplete/core";
 import type { BuiltCircuit } from "@turing-incomplete/core/circuit";
 import { createStdLibrary } from "@turing-incomplete/core/std";
-import { useCompileCode } from "./useCompileCode";
 import { useCircuitSession } from "@turing-incomplete/ui/canvas";
 import { autoHarness } from "../auto-harness";
 
@@ -29,7 +24,7 @@ export interface SimulatorState {
   circuit: Circuit | null;
   portValues: FlatPortValueMap | null;
   sequentialState: FlatSequentialState | null;
-  componentLibrary: ComponentLibrary | null;
+  componentLibrary: CircuitLibrary | null;
   history: readonly { engineSnapshot: unknown; metadata?: unknown }[];
   historyIndex: number;
   isViewingPast: boolean;
@@ -60,57 +55,63 @@ export interface UseCircuitSimulatorOptions {
 }
 
 /**
- * Standalone circuit simulator hook.
+ * Circuit simulator hook.
  *
- * Accepts either a BuiltCircuit (no compilation) or a code string (compiled at runtime).
+ * Takes a BuiltCircuit and returns reactive simulation state + actions.
+ * For dynamic code compilation, use executeCircuitCode() from core/circuit directly.
  */
 export function useCircuitSimulator(
-  source: string | BuiltCircuit,
+  circuit: BuiltCircuit,
   options?: UseCircuitSimulatorOptions,
 ): SimulatorState & SimulatorActions {
-  const isBuilt = typeof source !== 'string';
-
-  // ── Compilation (string path only — BuiltCircuit skips this) ──
-  const compiled = useCompileCode(isBuilt ? '' : source);
-
-  // ── Resolve circuit + library ──
-  const { circuit: rawCircuit, componentLibrary } = useMemo(() => {
-    if (isBuilt) {
-      const lib = createStdLibrary();
-      lib.addCircuit(source.circuit);
-      for (const [, dep] of source._dependencies) {
-        lib.addCircuit(dep);
-      }
-      return { circuit: source.circuit, componentLibrary: lib };
+  // ── Build library + resolve circuit IR ──
+  const { rawCircuit, componentLibrary } = useMemo(() => {
+    const lib = createStdLibrary();
+    lib.addCircuit(circuit.circuit);
+    for (const [, dep] of circuit._dependencies) {
+      lib.addCircuit(dep);
     }
-    return { circuit: compiled.circuit, componentLibrary: compiled.componentLibrary };
-  }, [isBuilt, isBuilt ? source : compiled.circuit, isBuilt ? null : compiled.componentLibrary]);
+    return { rawCircuit: circuit.circuit, componentLibrary: lib };
+  }, [circuit]);
 
   // ── Auto-harness (wrap with Switches/LEDs if enabled) ──
   const harnessedCircuit = useMemo(() => {
-    if (!options?.autoHarness || !rawCircuit || !componentLibrary) return rawCircuit;
+    if (!options?.autoHarness) return rawCircuit;
     return autoHarness(rawCircuit, componentLibrary, options.initialInputs);
   }, [rawCircuit, componentLibrary, options?.autoHarness, options?.initialInputs]);
 
   // ── Simulation (via the same hook the editor uses) ──
   const sim = useCircuitSession(harnessedCircuit, componentLibrary);
 
-  // ── Higher-level state (outputs, inputs, toggles) ──
-  const [outputs, setOutputs] = useState<Record<string, boolean | number>>({});
-  const [inputs, setInputs] = useState<Record<string, boolean | number>>(compiled.inputs);
-  const compiledCircuitRef = useRef<Circuit | null>(null);
-  compiledCircuitRef.current = compiled.circuit;
+  // ── Default inputs from the top-level simulated circuit ──
+  // Use the harnessed circuit (what the engine actually runs) so that when
+  // the auto-harness wraps the circuit with Switch nodes, those become internal
+  // nodes (not top-level inputs) and aren't overwritten on every tick.
+  const defaultInputs = useMemo(() => {
+    const result: Record<string, boolean | number> = {};
+    for (const input of harnessedCircuit.inputs) {
+      result[input.name] = input.portType.kind === 'bit' ? false : 0;
+    }
+    return result;
+  }, [harnessedCircuit]);
 
-  // Sync inputs when compilation changes
+  const [outputs, setOutputs] = useState<Record<string, boolean | number>>({});
+  const [inputs, setInputs] = useState<Record<string, boolean | number>>(defaultInputs);
+  const topCircuitRef = useRef<Circuit>(harnessedCircuit);
+  topCircuitRef.current = harnessedCircuit;
+
+  const ready = sim.session !== null;
+  const isSequential = sim.isSequential;
+
+  // Sync inputs when the underlying circuit changes
   useEffect(() => {
-    setInputs(compiled.inputs);
-  }, [compiled.inputs]);
+    setInputs(defaultInputs);
+  }, [defaultInputs]);
 
   // Extract outputs from portValues
   useEffect(() => {
-    if (!compiled.ready || !sim.portValues || sim.portValues.size === 0) return;
-    const circ = compiledCircuitRef.current;
-    if (!circ) return;
+    if (!ready || !sim.portValues || sim.portValues.size === 0) return;
+    const circ = topCircuitRef.current;
 
     const newOutputs: Record<string, boolean | number> = {};
     for (const output of circ.outputs) {
@@ -121,12 +122,11 @@ export function useCircuitSimulator(
       }
     }
     setOutputs(newOutputs);
-  }, [compiled.ready, sim.portValues]);
+  }, [ready, sim.portValues]);
 
   // Sync inputs to engine when inputs change
   useEffect(() => {
-
-    if (!sim.session || !compiled.ready) return;
+    if (!sim.session || !ready) return;
     const engine = sim.session.getEngine();
     if (!engine) return;
 
@@ -134,10 +134,10 @@ export function useCircuitSimulator(
       engine.setInput(inputName, value);
     }
 
-    if (!compiled.isSequential) {
+    if (!isSequential) {
       sim.session.runCombinational();
     }
-  }, [inputs, compiled.ready, compiled.isSequential, sim.session]);
+  }, [inputs, ready, isSequential, sim.session]);
 
   // ── Actions ──
 
@@ -172,7 +172,7 @@ export function useCircuitSimulator(
   }, [sim.session]);
 
   const tick = useCallback(() => {
-    if (!sim.session || !compiled.ready) return;
+    if (!sim.session || !ready) return;
     const engine = sim.session.getEngine();
     if (engine) {
       for (const [inputName, value] of Object.entries(inputs)) {
@@ -180,27 +180,21 @@ export function useCircuitSimulator(
       }
     }
     sim.tick();
-  }, [compiled.ready, inputs, sim.session, sim.tick]);
+  }, [ready, inputs, sim.session, sim.tick]);
 
   const reset = useCallback(() => {
     sim.reset();
-    if (compiledCircuitRef.current) {
-      const initialInputs: Record<string, boolean | number> = {};
-      for (const input of compiledCircuitRef.current.inputs) {
-        initialInputs[input.name] = input.portType.kind === 'bit' ? false : 0;
-      }
-      setInputs(initialInputs);
-    }
-  }, [sim.reset]);
+    setInputs(defaultInputs);
+  }, [sim.reset, defaultInputs]);
 
   return {
     // State
     outputs,
     inputs,
     cycleCount: sim.cycle,
-    ready: isBuilt ? sim.session !== null : (compiled.ready && sim.session !== null),
-    error: isBuilt ? null : compiled.error,
-    isSequential: isBuilt ? (rawCircuit?.clocks?.length ?? 0) > 0 : compiled.isSequential,
+    ready,
+    error: null,
+    isSequential,
     circuit: harnessedCircuit,
     portValues: (sim.portValues.size > 0 ? sim.portValues : null) as FlatPortValueMap | null,
     sequentialState: sim.sequentialState,

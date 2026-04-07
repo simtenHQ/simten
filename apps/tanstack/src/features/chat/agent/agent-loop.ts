@@ -65,7 +65,7 @@ export type AgentCaller = (context: AgentTurnContext) => Promise<AgentResponse>;
  */
 export interface AgentTurnContext {
   userMessage: string;
-  dslCode: string;
+  code: string;
   context: string;
   goalState: string;
   turnHistory: string;
@@ -122,7 +122,7 @@ export async function runAgentLoop(
     // Build context for this turn
     const turnContext = buildTurnContext({
       userMessage,
-      dslCode: executionContext.getCurrentCode(),
+      code: executionContext.getCurrentCode(),
       narrativeContext: currentNarrative,
       goalState: state.goalState,
       turns: state.turns,

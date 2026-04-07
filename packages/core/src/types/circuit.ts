@@ -55,20 +55,6 @@ export interface MutableCircuitLibrary extends CircuitLibrary {
   getAllCircuitNames(): string[];
 }
 
-/** @deprecated Use CircuitLibrary instead */
-export interface ComponentLibrary {
-  /** @deprecated Use resolveCircuit() instead */
-  resolveComponent(name: string): Circuit | undefined;
-  getAllPrimitiveNames(): string[];
-}
-
-/** @deprecated Use MutableCircuitLibrary instead */
-export interface MutableComponentLibrary extends ComponentLibrary {
-  addCircuit(circuit: Circuit): void;
-  /** @deprecated Use getAllCircuitNames() instead */
-  getAllComponentNames(): string[];
-}
-
 // ============================================================================
 // Port Descriptors (Component Definition)
 // ============================================================================
@@ -237,9 +223,6 @@ export interface TestCase {
  * - sink: Consumes signals but outputs don't feed back (Screen, audio, UART)
  */
 export type CircuitKind = 'combinational' | 'sequential' | 'sink';
-
-/** @deprecated Use CircuitKind instead */
-export type ComponentKind = CircuitKind;
 
 export interface CircuitMetadata {
   source?: {

@@ -1,4 +1,3 @@
-"use client";
 import { useCORDICSimulator } from "./useCORDICSimulator";
 import { CircuitCanvas } from "@turing-incomplete/ui/canvas";
 import { TooltipProvider } from "@/components/ui/tooltip";

@@ -1,4 +1,3 @@
-"use client";
 
 import { useMemo, useCallback } from "react";
 import { useBreakoutSimulator } from "./useBreakoutSimulator";

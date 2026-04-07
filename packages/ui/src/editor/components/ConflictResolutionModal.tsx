@@ -1,12 +1,12 @@
 /**
  * ConflictResolutionModal Component
  *
- * Modal dialog for resolving conflicts between DSL and canvas edits.
- * Shows when both DSL and canvas have been modified simultaneously.
+ * Modal dialog for resolving conflicts between circuit code and canvas edits.
+ * Shows when both the TypeScript circuit code and canvas have been modified simultaneously.
  *
  * User can choose to:
- * - Keep DSL changes (discard canvas changes)
- * - Keep canvas changes (update DSL from canvas)
+ * - Keep code changes (discard canvas changes)
+ * - Keep canvas changes (update code from canvas)
  */
 
 'use client';
@@ -42,15 +42,15 @@ export function ConflictResolutionModal({
         {/* Content */}
         <div className="px-6 py-4">
           <p className="text-sm text-gray-700 mb-4">
-            Both the DSL code and the canvas have been modified since the last sync.
+            Both the circuit code and the canvas have been modified since the last sync.
             Please choose which changes to keep:
           </p>
 
           <div className="space-y-3">
             <div className="p-3 bg-blue-50 border border-blue-200 rounded">
-              <h3 className="text-sm font-medium text-blue-900 mb-1">Keep DSL Changes</h3>
+              <h3 className="text-sm font-medium text-blue-900 mb-1">Keep Code Changes</h3>
               <p className="text-xs text-blue-700">
-                The canvas will be updated to match the current DSL code.
+                The canvas will be updated to match the current circuit code.
                 Any canvas-only changes will be lost.
               </p>
             </div>
@@ -58,8 +58,8 @@ export function ConflictResolutionModal({
             <div className="p-3 bg-green-50 border border-green-200 rounded">
               <h3 className="text-sm font-medium text-green-900 mb-1">Keep Canvas Changes</h3>
               <p className="text-xs text-green-700">
-                The DSL code will be generated from the current canvas state.
-                Any DSL-only changes will be lost.
+                The circuit code will be regenerated from the current canvas state.
+                Any code-only changes will be lost.
               </p>
             </div>
           </div>
@@ -78,7 +78,7 @@ export function ConflictResolutionModal({
             onClick={onKeepDSL}
             className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
           >
-            Keep DSL
+            Keep Code
           </Button>
           <Button
             onClick={onKeepCanvas}

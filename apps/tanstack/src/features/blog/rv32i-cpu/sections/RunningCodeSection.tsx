@@ -1,22 +1,9 @@
-"use client";
 
-import { useState, useEffect } from "react";
 import { Link } from "@tanstack/react-router";
 import { CircuitEmbed } from "@turing-incomplete/embed";
+import { RV32I_Board } from "../rv32i-board.circuit";
 
 export function RunningCodeSection() {
-  const [boardDsl, setBoardDsl] = useState<string | null>(null);
-
-  useEffect(() => {
-    fetch("/blog-assets/rv32i-board.circuit.ts")
-      .then((r) => {
-        if (!r.ok) throw new Error(`Failed to fetch: ${r.status}`);
-        return r.text();
-      })
-      .then(setBoardDsl)
-      .catch((e) => console.error("Failed to load board DSL:", e));
-  }, []);
-
   return (
     <section className="py-12">
       <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
@@ -47,22 +34,13 @@ export function RunningCodeSection() {
       </div>
 
       <div className="mt-8">
-        {boardDsl ? (
-          <CircuitEmbed
-            code={boardDsl}
-            height={600}
-            showControls
-            title="RV32I CPU Board"
-            description="Click 'Code' on the ROM to load a program, then step the clock."
-          />
-        ) : (
-          <div className="h-[600px] rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-950 flex items-center justify-center">
-            <div className="flex items-center gap-3 text-gray-500">
-              <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-600 border-t-blue-400" />
-              Loading CPU board&hellip;
-            </div>
-          </div>
-        )}
+        <CircuitEmbed
+          circuit={RV32I_Board}
+          height={600}
+          showControls
+          title="RV32I CPU Board"
+          description="Click 'Code' on the ROM to load a program, then step the clock."
+        />
       </div>
 
       <div className="mt-6 text-center">

@@ -1,9 +1,8 @@
 /**
  * Reference Circuit Cache
  *
- * Previously compiled reference circuit DSL strings on demand.
- * Now returns undefined since DSL parser has been removed.
- * Will be reimplemented using TS builder API.
+ * Previously compiled reference circuits on demand from a now-removed DSL parser.
+ * Returns undefined until reimplemented using the TypeScript builder API.
  */
 
 import type { Circuit } from '../types/circuit';
@@ -16,7 +15,7 @@ interface CircuitLibraryStore {
 /**
  * Get the compiled reference circuit for a primitive.
  *
- * @deprecated DSL parser removed. Returns undefined until reimplemented with TS builder.
+ * @deprecated Returns undefined until reimplemented with the TypeScript builder API.
  */
 export function getCompiledReferenceCircuit(
   _primitiveName: string,

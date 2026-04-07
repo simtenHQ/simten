@@ -1,7 +1,7 @@
-"use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useCircuitSimulator, type UseCircuitSimulatorOptions } from "@turing-incomplete/embed";
+import { System6502 } from "./cpu6502-system.circuit";
 
 export interface Program {
   id: string;
@@ -53,7 +53,6 @@ function romToMemoryMap(data: Uint8Array): Map<string, Map<number, number>> {
 }
 
 interface Use6502SimulatorState {
-  dslCode: string | null;
   romData: Map<string, Map<number, number>> | null;
   sourceCode: string;
   loading: boolean;
@@ -63,7 +62,6 @@ interface Use6502SimulatorState {
 
 export function use6502Simulator() {
   const [state, setState] = useState<Use6502SimulatorState>({
-    dslCode: null,
     romData: null,
     sourceCode: "",
     loading: true,
@@ -74,29 +72,6 @@ export function use6502Simulator() {
   const [isRunning, setIsRunning] = useState(false);
   const [speed, setSpeed] = useState(50); // ms between ticks
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const dslCacheRef = useRef<string | null>(null);
-
-  // Fetch DSL once
-  useEffect(() => {
-    if (dslCacheRef.current) return;
-
-    fetch("/blog-assets/cpu6502-system.circuit.ts")
-      .then((res) => {
-        if (!res.ok) throw new Error(`Failed to fetch DSL: ${res.status}`);
-        return res.text();
-      })
-      .then((dsl) => {
-        dslCacheRef.current = dsl;
-        setState((s) => ({ ...s, dslCode: dsl }));
-      })
-      .catch((err) => {
-        setState((s) => ({
-          ...s,
-          loading: false,
-          loadError: err.message,
-        }));
-      });
-  }, []);
 
   // Load ROM + source when program changes
   const loadProgram = useCallback(
@@ -127,7 +102,6 @@ export function use6502Simulator() {
           romData,
           sourceCode: sourceText,
           loading: false,
-          dslCode: dslCacheRef.current,
         }));
       } catch (err) {
         setState((s) => ({
@@ -140,15 +114,15 @@ export function use6502Simulator() {
     []
   );
 
-  // Load initial program after DSL loads
+  // Load initial program on mount
+  const loadedInitialRef = useRef(false);
   useEffect(() => {
-    if (state.dslCode && state.loading && !state.romData) {
-      loadProgram(state.currentProgram);
-    }
-  }, [state.dslCode, state.loading, state.romData, state.currentProgram, loadProgram]);
+    if (loadedInitialRef.current) return;
+    loadedInitialRef.current = true;
+    loadProgram(state.currentProgram);
+  }, [loadProgram, state.currentProgram]);
 
-  // The circuit simulator — only activates when DSL is loaded
-  const sim = useCircuitSimulator(state.dslCode ?? "");
+  const sim = useCircuitSimulator(System6502);
 
   // Load ROM data when ready
   useEffect(() => {
@@ -208,7 +182,6 @@ export function use6502Simulator() {
         sourceCode: source,
         loading: false,
         loadError: null,
-        dslCode: dslCacheRef.current,
       }));
     },
     []

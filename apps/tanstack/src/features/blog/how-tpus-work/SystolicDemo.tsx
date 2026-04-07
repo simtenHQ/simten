@@ -1,4 +1,3 @@
-"use client";
 import { useMemo } from "react";
 import { useSystolicSimulator } from "./useSystolicSimulator";
 import { CircuitCanvas } from "@turing-incomplete/ui/canvas";

@@ -1,7 +1,7 @@
 /**
  * @turing-incomplete/core
  *
- * Pure-JS hardware circuit simulator and DSL parser/compiler.
+ * Pure-JS hardware circuit simulator and TypeScript circuit builder.
  * Zero browser dependencies — works in Node.js, Bun, Deno, and bundlers.
  */
 
@@ -36,10 +36,6 @@ export type {
   CircuitKind,
   ArgumentValue,
   TestCase,
-  /** @deprecated aliases */
-  ComponentLibrary,
-  MutableComponentLibrary,
-  ComponentKind,
 } from './types/circuit.js';
 
 export {
@@ -79,7 +75,6 @@ export type {
 export {
   createSimulator,
   createCircuitLibrary,
-  createComponentLibrary,
   createSimulatorFromCircuit,
   elaborate,
   getPrimitives,
@@ -94,14 +89,14 @@ export {
 // Builder (TypeScript circuit API)
 // ============================================================================
 
-export { executeCircuitCode, executeComponentCode } from './circuit/execute.js';
+export { executeCircuitCode } from './circuit/execute.js';
 export type { ExecuteResult } from './circuit/execute.js';
-export { circuit, component } from './circuit/circuit.js';
+export { circuit } from './circuit/circuit.js';
 export { bit, bus } from './circuit/bit-bus.js';
-export type { BuiltCircuit, CircuitConfig, BuiltComponent, ComponentConfig } from './circuit/types.js';
+export type { BuiltCircuit, CircuitConfig } from './circuit/types.js';
 
 // ============================================================================
-// Analysis Types (extracted from former DSL module)
+// Analysis Types
 // ============================================================================
 
 export {

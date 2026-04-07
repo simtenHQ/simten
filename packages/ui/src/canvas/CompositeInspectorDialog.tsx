@@ -11,7 +11,13 @@
 
 "use client";
 
-import React, { useMemo, useState, useCallback, useEffect, useRef } from "react";
+import React, {
+  useMemo,
+  useState,
+  useCallback,
+  useEffect,
+  useRef,
+} from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 import type { InspectorFrame } from "./types";
@@ -20,11 +26,8 @@ import {
   createSimulatorFromCircuit,
   SimulationSession,
   PRIMITIVE_DEFINITIONS,
-  compileReferenceCircuit,
 } from "@turing-incomplete/core/simulator";
-import type {
-  CircuitLibrary,
-} from "@turing-incomplete/core/simulator";
+import type { CircuitLibrary } from "@turing-incomplete/core/simulator";
 import type { Circuit } from "@turing-incomplete/core";
 
 import { CircuitCanvas } from "./CircuitCanvas";
@@ -46,9 +49,11 @@ function hasSequentialCircuits(
   for (const node of circuit.nodes) {
     const componentDef = resolveCircuit(node.componentRef);
     if (!componentDef) continue;
-    if (componentDef.clocks.length > 0 || componentDef.state.length > 0) return true;
+    if (componentDef.clocks.length > 0 || componentDef.state.length > 0)
+      return true;
     if (componentDef.implementation.kind === "composite") {
-      if (hasSequentialCircuits(componentDef, resolveCircuit, visited)) return true;
+      if (hasSequentialCircuits(componentDef, resolveCircuit, visited))
+        return true;
     }
   }
   return false;
@@ -63,7 +68,12 @@ interface InspectorCanvasProps {
   theme?: "light" | "dark";
 }
 
-function InspectorCanvas({ frame, componentLibrary, onPushLevel, theme = "dark" }: InspectorCanvasProps) {
+function InspectorCanvas({
+  frame,
+  componentLibrary,
+  onPushLevel,
+  theme = "dark",
+}: InspectorCanvasProps) {
   const viewCircuit = useMemo(
     () => createDrillDownViewCircuit(frame.componentDef),
     [frame.componentDef],
@@ -74,27 +84,27 @@ function InspectorCanvas({ frame, componentLibrary, onPushLevel, theme = "dark" 
     [viewCircuit, componentLibrary],
   );
 
-  const handleNodeDoubleClick = useCallback((nodeData: NodeData) => {
-    if (!nodeData.isComposite) return;
-    const componentDef = componentLibrary.resolveCircuit(nodeData.componentRef);
-    if (!componentDef) return;
+  const handleNodeDoubleClick = useCallback(
+    (nodeData: NodeData) => {
+      if (!nodeData.isComposite) return;
+      const componentDef = componentLibrary.resolveCircuit(
+        nodeData.componentRef,
+      );
+      if (!componentDef) return;
 
-    if (componentDef.implementation.kind === "composite" && componentDef.nodes.length > 0) {
-      onPushLevel(nodeData.componentRef, componentDef, nodeData.label ?? nodeData.componentRef);
-      return;
-    }
-
-    const params: Record<string, number> = {};
-    if (nodeData.arguments) {
-      for (const [k, v] of Object.entries(nodeData.arguments)) {
-        if (typeof v === "number") params[k] = v;
+      if (
+        componentDef.implementation.kind === "composite" &&
+        componentDef.nodes.length > 0
+      ) {
+        onPushLevel(
+          nodeData.componentRef,
+          componentDef,
+          nodeData.label ?? nodeData.componentRef,
+        );
       }
-    }
-    const refCircuit = compileReferenceCircuit(nodeData.componentRef, params);
-    if (refCircuit) {
-      onPushLevel(nodeData.componentRef, refCircuit, nodeData.label ?? nodeData.componentRef);
-    }
-  }, [componentLibrary, onPushLevel]);
+    },
+    [componentLibrary, onPushLevel],
+  );
 
   // ── Simulation via session ──
   const [session, setSession] = useState<SimulationSession | null>(null);
@@ -114,19 +124,25 @@ function InspectorCanvas({ frame, componentLibrary, onPushLevel, theme = "dark" 
 
   const sim = useSimulationSession(session);
 
-  const handleToggle = useCallback((nodeId: string) => {
-    if (!session) return;
-    const outKey = `${nodeId}.out`;
-    const currentValue = sim.portValues.get(outKey);
-    session.setInput(nodeId, !currentValue);
-    session.runCombinational();
-  }, [session, sim.portValues]);
+  const handleToggle = useCallback(
+    (nodeId: string) => {
+      if (!session) return;
+      const outKey = `${nodeId}.out`;
+      const currentValue = sim.portValues.get(outKey);
+      session.setInput(nodeId, !currentValue);
+      session.runCombinational();
+    },
+    [session, sim.portValues],
+  );
 
-  const handleNumericChange = useCallback((nodeId: string, newValue: number) => {
-    if (!session) return;
-    session.setInput(nodeId, newValue);
-    session.runCombinational();
-  }, [session]);
+  const handleNumericChange = useCallback(
+    (nodeId: string, newValue: number) => {
+      if (!session) return;
+      session.setInput(nodeId, newValue);
+      session.runCombinational();
+    },
+    [session],
+  );
 
   return (
     <div className="relative h-full w-full">
@@ -173,25 +189,45 @@ interface BreadcrumbProps {
   theme?: "light" | "dark";
 }
 
-function InspectorBreadcrumb({ stack, onNavigate, theme = "dark" }: BreadcrumbProps) {
+function InspectorBreadcrumb({
+  stack,
+  onNavigate,
+  theme = "dark",
+}: BreadcrumbProps) {
   const topFrame = stack[stack.length - 1];
-  const description = topFrame?.componentDef.metadata?.description
-    ?? PRIMITIVE_DEFINITIONS[topFrame?.componentName]?.referenceCircuit?.description;
+  const description =
+    topFrame?.componentDef.metadata?.description ??
+    PRIMITIVE_DEFINITIONS[topFrame?.componentName]?.referenceCircuit
+      ?.description;
   const dark = theme === "dark";
   return (
     <div className="flex items-center gap-1 text-sm min-w-0">
       {stack.map((frame, index) => (
         <React.Fragment key={index}>
-          {index > 0 && <span className={`${dark ? "text-gray-500" : "text-gray-400"} shrink-0`}>&gt;</span>}
+          {index > 0 && (
+            <span
+              className={`${dark ? "text-gray-500" : "text-gray-400"} shrink-0`}
+            >
+              &gt;
+            </span>
+          )}
           {index < stack.length - 1 ? (
             <button
               onClick={() => onNavigate(index)}
-              className={`${dark ? "text-blue-400 hover:text-blue-300" : "text-blue-600 hover:text-blue-800"} hover:underline font-medium shrink-0`}
+              className={`${
+                dark
+                  ? "text-blue-400 hover:text-blue-300"
+                  : "text-blue-600 hover:text-blue-800"
+              } hover:underline font-medium shrink-0`}
             >
               {frame.nodeLabel} ({frame.componentName})
             </button>
           ) : (
-            <span className={`font-semibold shrink-0 ${dark ? "text-gray-100" : "text-gray-900"}`}>
+            <span
+              className={`font-semibold shrink-0 ${
+                dark ? "text-gray-100" : "text-gray-900"
+              }`}
+            >
               {frame.nodeLabel} ({frame.componentName})
             </span>
           )}
@@ -199,8 +235,18 @@ function InspectorBreadcrumb({ stack, onNavigate, theme = "dark" }: BreadcrumbPr
       ))}
       {description && (
         <>
-          <span className={`${dark ? "text-gray-600" : "text-gray-300"} shrink-0`}>—</span>
-          <span className={`${dark ? "text-gray-400" : "text-gray-500"} text-xs italic truncate`}>{description}</span>
+          <span
+            className={`${dark ? "text-gray-600" : "text-gray-300"} shrink-0`}
+          >
+            —
+          </span>
+          <span
+            className={`${
+              dark ? "text-gray-400" : "text-gray-500"
+            } text-xs italic truncate`}
+          >
+            {description}
+          </span>
         </>
       )}
     </div>
@@ -309,10 +355,16 @@ export function CompositeInspectorDialog({
               transition={{ duration: 0.15 }}
             >
               {/* Header */}
-              <div className={`flex items-center justify-between border-b px-4 py-3 ${
-                theme === "dark" ? "border-gray-700" : "border-gray-200"
-              }`}>
-                <InspectorBreadcrumb stack={stack} onNavigate={onNavigate} theme={theme} />
+              <div
+                className={`flex items-center justify-between border-b px-4 py-3 ${
+                  theme === "dark" ? "border-gray-700" : "border-gray-200"
+                }`}
+              >
+                <InspectorBreadcrumb
+                  stack={stack}
+                  onNavigate={onNavigate}
+                  theme={theme}
+                />
                 <button
                   onClick={onClose}
                   className={`rounded p-1 ${
@@ -322,8 +374,18 @@ export function CompositeInspectorDialog({
                   }`}
                   aria-label="Close inspector"
                 >
-                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  <svg
+                    className="h-5 w-5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
                   </svg>
                 </button>
               </div>
