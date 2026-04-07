@@ -63,7 +63,7 @@ export function FutureSection() {
                 why: "Same object handles both browser connections and MCP tool calls",
               },
               {
-                local: "Cached DSL/traces in memory",
+                local: "Cached circuit/traces in memory",
                 remote: "KV or D1 for persistent state",
                 why: "Late joiners get state even if the DO has hibernated",
               },

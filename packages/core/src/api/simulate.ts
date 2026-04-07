@@ -2,7 +2,7 @@
  * Simulate Circuit Handler
  *
  * Pure function to compile and simulate a circuit.
- * Accepts TypeScript builder code or DSL source string.
+ * Accepts TypeScript circuit builder code.
  */
 
 import {
@@ -41,7 +41,7 @@ export function simulateCircuit(
 ): SimulateResult | SimulateError {
   const ticks = params.ticks ?? 10;
 
-  // Compile (auto-detects TS vs DSL)
+  // Compile TypeScript circuit code
   const compiled = compileSource(params.source, params.sourceName);
   if (compiled.error) {
     return { error: compiled.error };

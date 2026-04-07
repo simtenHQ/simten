@@ -17,14 +17,14 @@ import { Button } from '../../primitives/button';
 
 interface ConflictResolutionModalProps {
   isOpen: boolean;
-  onKeepDSL: () => void;
+  onKeepCode: () => void;
   onKeepCanvas: () => void;
   onCancel: () => void;
 }
 
 export function ConflictResolutionModal({
   isOpen,
-  onKeepDSL,
+  onKeepCode,
   onKeepCanvas,
   onCancel,
 }: ConflictResolutionModalProps) {
@@ -75,7 +75,7 @@ export function ConflictResolutionModal({
             Cancel
           </Button>
           <Button
-            onClick={onKeepDSL}
+            onClick={onKeepCode}
             className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
           >
             Keep Code

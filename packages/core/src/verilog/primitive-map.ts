@@ -1,7 +1,7 @@
 /**
  * Verilog primitive mapping.
  *
- * Maps each DSL primitive to its Verilog equivalent.
+ * Maps each circuit primitive to its Verilog equivalent.
  * Returns an array of Verilog statements (assign, always, etc.).
  *
  * Convention:
@@ -362,7 +362,7 @@ export function emitPrimitive(ctx: PrimitiveContext): { lines: string[]; declara
       };
 
     // ── RV32I Behavioral Primitives ─────────────────────────────────
-    // These are too complex for DSL reference circuits (they'd be hundreds
+    // These are too complex for reference circuits (they'd be hundreds
     // of nodes). Instead, emit behavioral Verilog directly.
 
     case 'RV32I_Decode': {

@@ -34,7 +34,7 @@ export function CORDICDemo() {
     if (plain !== undefined && typeof plain === "number") return plain;
     const plainQ = sim.portValues.get(`${name}.q`);
     if (plainQ !== undefined && typeof plainQ === "number") return plainQ;
-    // Fallback: mangled DSL format
+    // Fallback: legacy node ID format
     for (const [key, value] of sim.portValues) {
       if (key.includes(name) && (key.includes("Display") || key.includes("display"))) {
         return typeof value === "number" ? value : 0;

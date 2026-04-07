@@ -22,7 +22,7 @@ import { buildTurnHistory } from './turn-summarizer';
 export interface TurnContextOptions {
   /** Original user message */
   userMessage: string;
-  /** Current DSL code */
+  /** Current circuit code */
   code: string;
   /** Narrative context from the analysis pipeline */
   narrativeContext: string;

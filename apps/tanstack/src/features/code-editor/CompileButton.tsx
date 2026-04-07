@@ -1,7 +1,7 @@
 /**
  * CompileButton Component
  *
- * Button to trigger DSL compilation with loading state
+ * Button to trigger circuit compilation with loading state
  */
 
 'use client';
@@ -20,7 +20,7 @@ export function CompileButton({ onClick, isCompiling = false, disabled = false }
       onClick={onClick}
       disabled={disabled || isCompiling}
       className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center gap-2 text-sm font-medium"
-      title="Compile DSL to circuit components"
+      title="Compile circuit code"
     >
       {isCompiling ? (
         <>

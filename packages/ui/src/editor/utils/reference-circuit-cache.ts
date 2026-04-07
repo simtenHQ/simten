@@ -1,7 +1,7 @@
 /**
  * Reference Circuit Cache
  *
- * Previously compiled reference circuits on demand from a now-removed DSL parser.
+ * Caches previously compiled reference circuits.
  * Returns undefined until reimplemented using the TypeScript builder API.
  */
 

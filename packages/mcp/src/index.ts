@@ -1,7 +1,7 @@
 /**
  * Turing Incomplete MCP Server
  *
- * Exposes the DSL parser, validator, and simulator
+ * Exposes the circuit builder, validator, and simulator
  * as structured MCP tools for Claude Code.
  *
  * Also acts as a channel: browser users can send messages to Claude
@@ -39,8 +39,8 @@ const server = new McpServer(
       'You are assisting a user learning digital hardware design on Turing Incomplete.\n\n' +
       'Challenge prompts arrive as <channel source="turing-incomplete" type="challenge_prompt" challenge_id="..." level_id="...">.\n' +
       'When you receive one, respond helpfully in the context of that challenge level. If the prompt asks you to wire up a circuit, use solve_next to add connections one by one.\n\n' +
-      'DSL syntax errors arrive as <channel source="turing-incomplete" type="dsl_error">.\n' +
-      'When you receive one, use get_circuit_state to read the current DSL, fix the error, and push the corrected DSL.\n\n' +
+      'Circuit errors arrive as <channel source="turing-incomplete" type="circuit_error">.\n' +
+      'When you receive one, use get_circuit_state to read the current circuit code, fix the error, and push the corrected code.\n\n' +
       'IMPORTANT: After handling any channel message, always call push_chat_response with your response text (markdown supported). This is the only way the user sees your reply — the in-app chat displays it. Keep responses concise and educational.',
   },
 );

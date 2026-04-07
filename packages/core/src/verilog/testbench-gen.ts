@@ -1,7 +1,7 @@
 /**
  * Verilog testbench generator.
  *
- * Generates an Icarus Verilog testbench from DSL test vectors.
+ * Generates an Icarus Verilog testbench from circuit test vectors.
  * Uses the strict RESULT protocol for output parsing:
  *   RESULT|test|<id>|cycle|<n>|<port>|<val>|<port>|<val>|...
  *
@@ -223,7 +223,7 @@ export function generateExhaustiveVectors(
     vectors.push({
       id: combo,
       inputs,
-      expected: {}, // Filled by running DSL simulator
+      expected: {}, // Filled by running circuit simulator
       description: `combo ${combo}/${totalCombinations}`,
     });
   }

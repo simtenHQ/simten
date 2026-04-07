@@ -91,7 +91,7 @@ const CrossbarRouter = circuit('CrossbarRouter', {
   ],
 });
 
-// NOTE: the original DSL referenced `ram` in the connect callback but did not
+// NOTE: the original circuit referenced `ram` in the connect callback but did not
 // declare it in `nodes` — that was a silent bug. Add `ram: DualPortRAM` here.
 const PacketSerializer = circuit('PacketSerializer', {
   nodes: { ram: DualPortRAM, readPtr: Register, one: Constant, seven: Constant, nextPtr: Adder, enable: Switch, dataOut: HexDisplay, ptrDisplay: HexDisplay, isDone: Comparator, doneLed: Led },

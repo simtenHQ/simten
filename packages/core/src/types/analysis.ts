@@ -1,7 +1,7 @@
 /**
  * Analysis Types
  *
- * Type definitions extracted from the former DSL analysis module.
+ * Type definitions for circuit analysis.
  * These are pure interfaces with no parser dependency.
  */
 
@@ -321,7 +321,7 @@ export function detectSteadyState(trace: SimulationTrace): number | undefined {
 }
 
 // ============================================================================
-// Builder API Summary (replaces DSL grammar summary)
+// Builder API Summary
 // ============================================================================
 
 export function getBuilderAPISummary(): string {

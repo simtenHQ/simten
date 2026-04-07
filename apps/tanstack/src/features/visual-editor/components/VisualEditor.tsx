@@ -131,7 +131,7 @@ export function VisualEditor({ theme = "light" }: VisualEditorProps) {
 
   // Studio connection (WebSocket to MCP server)
   const { status: mcpStatus, sendToClaudePrompt } = useMCPConnection({
-    onDSL: useCallback((source: string) => {
+    onSource: useCallback((source: string) => {
       editorRef.current?.setCode(source);
       setTimeout(() => editorRef.current?.compile(), 100);
     }, []),
@@ -197,7 +197,7 @@ export function VisualEditor({ theme = "light" }: VisualEditorProps) {
 
   // Load an example into the editor
   const loadExample = useCallback((example: Example) => {
-    editorRef.current?.setCode(example.dsl);
+    editorRef.current?.setCode(example.code);
     hasLoadedContentRef.current = true;
     setTimeout(() => editorRef.current?.compile(), 100);
   }, []);

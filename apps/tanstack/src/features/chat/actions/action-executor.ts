@@ -25,7 +25,7 @@ import type { ValidationSnapshot } from '../types';
 export interface ActionExecutionContext {
   /** Session ID for idempotency tracking */
   sessionId: string;
-  /** Get current DSL code */
+  /** Get current circuit code */
   getCurrentCode: () => string;
   /** Code hash when action was created */
   sourceCodeHash?: string;
@@ -409,7 +409,7 @@ async function executeGenerateHarness(
 
 /**
  * Execute VERIFY_ASSERTION action.
- * The DSL testbench system has been removed. Use vitest + simulate() instead.
+ * The testbench system has been removed. Use vitest + simulate() instead.
  */
 async function executeVerifyAssertion(
   action: VerifyAssertionAction & { actionId: string },

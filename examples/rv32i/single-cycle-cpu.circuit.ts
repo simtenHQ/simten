@@ -1,4 +1,4 @@
-// Auto-generated from DSL
+// Auto-generated
 
 const RV32I_CPU = circuit('RV32I_CPU', {
   out: { pc_out: bus(32), alu_result: bus(32) },
