@@ -7,7 +7,7 @@
 
 import { getPrimitivesHandler, getGrammarHandler, getLibrary } from '@turing-incomplete/core/api';
 
-export function buildSystemPrompt(dslCode: string, compactContext: string): string {
+export function buildSystemPrompt(code: string, compactContext: string): string {
   // Fetch live data from the same handlers the MCP server uses
   const library = getLibrary();
   const primitives = getPrimitivesHandler({}, library);
@@ -19,7 +19,7 @@ export function buildSystemPrompt(dslCode: string, compactContext: string): stri
 
 ${primitives}
 
-## DSL Syntax Reference
+## Circuit Builder Syntax Reference
 
 ${grammar}
 
@@ -29,7 +29,7 @@ ${grammar}
 - **simulate_circuit**: Compile and simulate. Returns per-cycle signal traces.
 
 ### Editor Action Tools (execute in the student's visual editor)
-- **write_circuit**: Write DSL code to the editor. Code is auto-validated and a test harness with Switches/Leds is auto-appended. You only need to write the clean DUT circuit — the harness is generated automatically.
+- **write_circuit**: Write TypeScript circuit code to the editor. Code is auto-validated and a test harness with Switches/Leds is auto-appended. You only need to write the clean DUT circuit — the harness is generated automatically.
 - **demo_inputs**: Set multiple input values to demo the circuit. Pass 2-3 representative combos, NOT exhaustive truth tables. The harness uses \`name_sw\` for switch nodes (e.g. input "a" becomes switch node "a_sw").
 - **run_simulation**: Run clock cycles (sequential circuits only).
 - **insert_node**: Add a component to the visual editor.
@@ -56,10 +56,10 @@ When the student asks you to build something:
 
 **Keep demos short — 2-3 combos that show the key behaviors.**
 
-## Current Circuit DSL
+## Current Circuit Code
 
-\`\`\`dsl
-${dslCode}
+\`\`\`typescript
+${code}
 \`\`\`
 
 ## Circuit Analysis Context

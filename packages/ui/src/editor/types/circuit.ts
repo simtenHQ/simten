@@ -237,12 +237,6 @@ export interface Circuit {
 // Library and System
 // ============================================================================
 
-export interface ComponentLibrary {
-  name: string;
-  version: string;
-  circuits: Circuit[];
-}
-
 export interface CircuitFile {
   version: string;
   circuit: Circuit;

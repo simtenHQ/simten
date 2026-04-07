@@ -1,6 +1,5 @@
 {
-  "include": ["**/*.ts", "**/*.tsx"],
-  "exclude": ["public/**/*.circuit.ts"],
+  "include": ["src/**/*.ts", "src/**/*.tsx"],
   "compilerOptions": {
     "target": "ES2022",
     "jsx": "react-jsx",
@@ -19,6 +18,7 @@
 
     /* Bundler mode */
     "moduleResolution": "bundler",
+    "customConditions": ["@turing-incomplete/source"],
     "allowImportingTsExtensions": true,
     "verbatimModuleSyntax": true,
     "noEmit": true,

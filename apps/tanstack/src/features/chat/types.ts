@@ -223,7 +223,7 @@ export interface ValidationSnapshot {
 // ============================================================================
 
 export interface ChatContext {
-  dslCode: string;
+  code: string;
   compactContext: string;
   conversationHistory: string[];
   sourceCodeHash: string;

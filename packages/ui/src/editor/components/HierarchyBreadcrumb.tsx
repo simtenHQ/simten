@@ -9,15 +9,15 @@
 "use client";
 
 import React from "react";
-import { useDSLPreviewStore } from "../stores/dsl-preview-store";
+import { useCircuitPreviewStore } from "../stores/circuit-preview-store";
 
 export function HierarchyBreadcrumb() {
-  const drillDownStack = useDSLPreviewStore((state) => state.drillDownStack);
-  const navigateTo = useDSLPreviewStore((state) => state.navigateTo);
-  const compiledCircuits = useDSLPreviewStore(
+  const drillDownStack = useCircuitPreviewStore((state) => state.drillDownStack);
+  const navigateTo = useCircuitPreviewStore((state) => state.navigateTo);
+  const compiledCircuits = useCircuitPreviewStore(
     (state) => state.compiledCircuits,
   );
-  const selectedCircuitIndex = useDSLPreviewStore(
+  const selectedCircuitIndex = useCircuitPreviewStore(
     (state) => state.selectedCircuitIndex,
   );
 

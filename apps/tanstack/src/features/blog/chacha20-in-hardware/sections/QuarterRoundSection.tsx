@@ -1,4 +1,3 @@
-"use client";
 
 import { CircuitEmbed } from "@turing-incomplete/embed";
 import { CHACHA20_CIRCUITS } from "../circuits";

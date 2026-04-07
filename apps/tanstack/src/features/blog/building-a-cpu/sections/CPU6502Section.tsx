@@ -1,4 +1,3 @@
-"use client";
 
 import { lazy, Suspense } from "react";
 import { ClientOnly } from "@/components/ClientOnly";

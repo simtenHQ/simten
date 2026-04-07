@@ -1,11 +1,10 @@
-"use client";
 
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useCircuitSimulator } from "@turing-incomplete/embed";
-import { SNAKE_ADVANCED_DSL } from "./circuits";
+import { SnakeAdvanced } from "./circuits";
 
 export function useSnakeSimulator() {
-  const sim = useCircuitSimulator(SNAKE_ADVANCED_DSL);
+  const sim = useCircuitSimulator(SnakeAdvanced);
   const [isRunning, setIsRunning] = useState(false);
   const [speed, setSpeed] = useState(60);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);

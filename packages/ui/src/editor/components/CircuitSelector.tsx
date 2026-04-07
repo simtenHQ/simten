@@ -1,21 +1,21 @@
 /**
  * CircuitSelector Component
  *
- * Dropdown selector for choosing which DSL-compiled circuit to visualize.
+ * Dropdown selector for choosing which compiled TypeScript circuit to visualize.
  * Displays circuit count and allows switching between multiple circuits
- * when a DSL file defines multiple circuits.
+ * when a circuit code file defines multiple circuits.
  */
 
 'use client';
 
 import React from 'react';
-import { useDSLPreviewStore } from '../stores/dsl-preview-store';
+import { useCircuitPreviewStore } from '../stores/circuit-preview-store';
 import { cn } from '../../lib/utils';
 
 export function CircuitSelector() {
-  const compiledCircuits = useDSLPreviewStore((state) => state.compiledCircuits);
-  const selectedCircuitIndex = useDSLPreviewStore((state) => state.selectedCircuitIndex);
-  const selectCircuit = useDSLPreviewStore((state) => state.selectCircuit);
+  const compiledCircuits = useCircuitPreviewStore((state) => state.compiledCircuits);
+  const selectedCircuitIndex = useCircuitPreviewStore((state) => state.selectedCircuitIndex);
+  const selectCircuit = useCircuitPreviewStore((state) => state.selectCircuit);
 
   const hasCircuits = compiledCircuits.length > 0;
   const circuitCount = compiledCircuits.length;

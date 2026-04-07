@@ -5,15 +5,13 @@
  * detection and buffering to arbitration, routing, and serialization.
  */
 
-import { executeCircuitCode } from "@turing-incomplete/core/circuit";
+import { circuit, bit, bus } from "@turing-incomplete/core/circuit";
 import type { BuiltCircuit } from "@turing-incomplete/core/circuit";
-
-/** Compile a circuit code string to a BuiltCircuit at import time */
-function compile(code: string): BuiltCircuit {
-  const result = executeCircuitCode(code);
-  if (result.error) throw new Error(result.error);
-  return result.builtCircuits[result.builtCircuits.length - 1];
-}
+import {
+  Input, Switch, HexDisplay, Led, Constant,
+  Register, Adder, Comparator, Mux, And, Or, Not,
+  LeftShifter, DualPortRAM,
+} from "@turing-incomplete/core/std";
 
 export interface BlogCircuit {
   name: string;
@@ -21,6 +19,100 @@ export interface BlogCircuit {
   displayCode: string;
   circuit: BuiltCircuit;
 }
+
+// ── Simple demo circuits ──
+
+const FrameDetector = circuit('FrameDetector', {
+  nodes: { byteIn: Input, valid: Switch, state: Register, PREAMBLE: Constant, SFD: Constant, zero: Constant, one: Constant, two: Constant, isPreamble: Comparator, isSFD: Comparator, isIdle: Comparator, isWaiting: Comparator, isActive: Comparator, gotPreamble: And, gotPreambleValid: And, gotSFD: And, gotSFDValid: And, next1: Mux, next2: Mux, we: Input, stateDisplay: HexDisplay, frameLed: Led },
+  nodeArgs: { byteIn: { value: 85 }, state: { initial: 0 }, PREAMBLE: { value: 85 }, SFD: { value: 213 }, zero: { value: 0 }, one: { value: 1 }, two: { value: 2 }, we: { value: 1 } },
+  connect: ({ byteIn, valid, state, PREAMBLE, SFD, zero, one, two, isPreamble, isSFD, isIdle, isWaiting, isActive, gotPreamble, gotPreambleValid, gotSFD, gotSFDValid, next1, next2, we, stateDisplay, frameLed }) => [
+    byteIn.out.to(isPreamble.a, isSFD.a),
+    PREAMBLE.out.to(isPreamble.b),
+    SFD.out.to(isSFD.b),
+    state.q.to(isIdle.a, isWaiting.a, isActive.a, next1.in0, stateDisplay.in),
+    zero.out.to(isIdle.b),
+    one.out.to(isWaiting.b, next1.in1),
+    two.out.to(isActive.b, next2.in1),
+    isIdle.eq.to(gotPreamble.a),
+    isPreamble.eq.to(gotPreamble.b),
+    gotPreamble.out.to(gotPreambleValid.a),
+    valid.out.to(gotPreambleValid.b, gotSFDValid.b),
+    isWaiting.eq.to(gotSFD.a),
+    isSFD.eq.to(gotSFD.b),
+    gotSFD.out.to(gotSFDValid.a),
+    gotPreambleValid.out.to(next1.sel),
+    next1.out.to(next2.in0),
+    gotSFDValid.out.to(next2.sel),
+    next2.out.to(state.data),
+    we.out.to(state.we),
+    isActive.eq.to(frameLed.in),
+  ],
+});
+
+const PacketBuffer = circuit('PacketBuffer', {
+  nodes: { dataIn: Input, writeCmd: Switch, writePtr: Register, one: Constant, ram: DualPortRAM, nextPtr: Adder, readAddr: Input, readback: HexDisplay, ptrDisplay: HexDisplay },
+  nodeArgs: { dataIn: { value: 42 }, writePtr: { initial: 0 }, one: { value: 1 }, readAddr: { value: 0 } },
+  connect: ({ in: inp, out, dataIn, writeCmd, writePtr, one, ram, nextPtr, readAddr, readback, ptrDisplay }) => [
+    writePtr.q.to(ram.addrA, nextPtr.a, ptrDisplay.in),
+    dataIn.out.to(ram.dataA),
+    writeCmd.out.to(ram.weA, writePtr.we),
+    one.out.to(nextPtr.b),
+    nextPtr.sum.to(writePtr.data),
+    readAddr.out.to(ram.addrB),
+    ram.outB.to(readback.in),
+  ],
+});
+
+const PortArbiter = circuit('PortArbiter', {
+  nodes: { port0_ready: Switch, port1_ready: Switch, lastPort: Input, zero: Constant, one: Constant, lastWas0: Comparator, prefer1: And, notPort1: Not, fallback0: And, fallback0Ready: And, lastWas1: Comparator, prefer0: And, grant0: Or, grant1: Or, grantValid: Or, grantPort: Mux, portDisplay: HexDisplay, validLed: Led },
+  nodeArgs: { lastPort: { value: 0 }, zero: { value: 0 }, one: { value: 1 } },
+  connect: ({ in: inp, out, port0_ready, port1_ready, lastPort, zero, one, lastWas0, prefer1, notPort1, fallback0, fallback0Ready, lastWas1, prefer0, grant0, grant1, grantValid, grantPort, portDisplay, validLed }) => [
+    lastPort.out.to(lastWas0.a, lastWas1.a),
+    zero.out.to(lastWas0.b, grantPort.in0),
+    lastWas0.eq.to(prefer1.a, fallback0.a),
+    port1_ready.out.to(prefer1.b, notPort1.in),
+    notPort1.out.to(fallback0.b),
+    fallback0.out.to(fallback0Ready.a),
+    port0_ready.out.to(fallback0Ready.b, prefer0.b),
+    one.out.to(lastWas1.b, grantPort.in1),
+    lastWas1.eq.to(prefer0.a),
+    prefer0.out.to(grant0.a),
+    fallback0Ready.out.to(grant0.b),
+    prefer1.out.to(grant1.a),
+    grant0.out.to(grantValid.a),
+    grant1.out.to(grantValid.b, grantPort.sel),
+    grantPort.out.to(portDisplay.in),
+    grantValid.out.to(validLed.in),
+  ],
+});
+
+const CrossbarRouter = circuit('CrossbarRouter', {
+  nodes: { sourcePort: Input, zero: Constant, one: Constant, isPort0: Comparator, destPort: Mux, destDisplay: HexDisplay, srcDisplay: HexDisplay, routedLed: Led },
+  nodeArgs: { sourcePort: { value: 0 }, zero: { value: 0 }, one: { value: 1 } },
+  connect: ({ in: inp, out, sourcePort, zero, one, isPort0, destPort, destDisplay, srcDisplay, routedLed }) => [
+    sourcePort.out.to(isPort0.a, srcDisplay.in),
+    zero.out.to(isPort0.b, destPort.in0),
+    one.out.to(destPort.in1),
+    isPort0.eq.to(destPort.sel, routedLed.in),
+    destPort.out.to(destDisplay.in),
+  ],
+});
+
+// NOTE: the original DSL referenced `ram` in the connect callback but did not
+// declare it in `nodes` — that was a silent bug. Add `ram: DualPortRAM` here.
+const PacketSerializer = circuit('PacketSerializer', {
+  nodes: { ram: DualPortRAM, readPtr: Register, one: Constant, seven: Constant, nextPtr: Adder, enable: Switch, dataOut: HexDisplay, ptrDisplay: HexDisplay, isDone: Comparator, doneLed: Led },
+  nodeArgs: { readPtr: { initial: 0 }, one: { value: 1 }, seven: { value: 7 } },
+  connect: ({ in: inp, out, ram, readPtr, one, seven, nextPtr, enable, dataOut, ptrDisplay, isDone, doneLed }) => [
+    readPtr.q.to(nextPtr.a, ram.addrB, ptrDisplay.in, isDone.a),
+    one.out.to(nextPtr.b),
+    enable.out.to(readPtr.we),
+    nextPtr.sum.to(readPtr.data),
+    ram.outB.to(dataOut.in),
+    seven.out.to(isDone.b),
+    isDone.eq.to(doneLed.in),
+  ],
+});
 
 export const SWITCH_CIRCUITS: Record<string, BlogCircuit> = {
   frameDetector: {
@@ -53,33 +145,7 @@ export const SWITCH_CIRCUITS: Record<string, BlogCircuit> = {
     isActive.eq.to(frameLed.in),
   ],
 })`,
-    circuit: compile(`
-const FrameDetector = circuit('FrameDetector', {
-  nodes: { byteIn: Input, valid: Switch, state: Register, PREAMBLE: Constant, SFD: Constant, zero: Constant, one: Constant, two: Constant, isPreamble: Comparator, isSFD: Comparator, isIdle: Comparator, isWaiting: Comparator, isActive: Comparator, gotPreamble: And, gotPreambleValid: And, gotSFD: And, gotSFDValid: And, next1: Mux, next2: Mux, we: Input, stateDisplay: HexDisplay, frameLed: Led },
-  nodeArgs: { byteIn: { value: 85 }, state: { initial: 0 }, PREAMBLE: { value: 85 }, SFD: { value: 213 }, zero: { value: 0 }, one: { value: 1 }, two: { value: 2 }, we: { value: 1 } },
-  connect: ({ byteIn, valid, state, PREAMBLE, SFD, zero, one, two, isPreamble, isSFD, isIdle, isWaiting, isActive, gotPreamble, gotPreambleValid, gotSFD, gotSFDValid, next1, next2, we, stateDisplay, frameLed }) => [
-    byteIn.out.to(isPreamble.a, isSFD.a),
-    PREAMBLE.out.to(isPreamble.b),
-    SFD.out.to(isSFD.b),
-    state.q.to(isIdle.a, isWaiting.a, isActive.a, next1.in0, stateDisplay.in),
-    zero.out.to(isIdle.b),
-    one.out.to(isWaiting.b, next1.in1),
-    two.out.to(isActive.b, next2.in1),
-    isIdle.eq.to(gotPreamble.a),
-    isPreamble.eq.to(gotPreamble.b),
-    gotPreamble.out.to(gotPreambleValid.a),
-    valid.out.to(gotPreambleValid.b, gotSFDValid.b),
-    isWaiting.eq.to(gotSFD.a),
-    isSFD.eq.to(gotSFD.b),
-    gotSFD.out.to(gotSFDValid.a),
-    gotPreambleValid.out.to(next1.sel),
-    next1.out.to(next2.in0),
-    gotSFDValid.out.to(next2.sel),
-    next2.out.to(state.data),
-    we.out.to(state.we),
-    isActive.eq.to(frameLed.in),
-  ],
-})`,
+    circuit: FrameDetector,
   },
 
   packetBuffer: {
@@ -100,22 +166,8 @@ const PacketBuffer = circuit('PacketBuffer', {
     ram.outB.to(readback.in),
   ],
 })
-`),
-    circuit: compile(`
-const PacketBuffer = circuit('PacketBuffer', {
-  nodes: { dataIn: Input, writeCmd: Switch, writePtr: Register, one: Constant, ram: DualPortRAM, nextPtr: Adder, readAddr: Input, readback: HexDisplay, ptrDisplay: HexDisplay },
-  nodeArgs: { dataIn: { value: 42 }, writePtr: { initial: 0 }, one: { value: 1 }, readAddr: { value: 0 } },
-  connect: ({ in: inp, out, dataIn, writeCmd, writePtr, one, ram, nextPtr, readAddr, readback, ptrDisplay }) => [
-    writePtr.q.to(ram.addrA, nextPtr.a, ptrDisplay.in),
-    dataIn.out.to(ram.dataA),
-    writeCmd.out.to(ram.weA, writePtr.we),
-    one.out.to(nextPtr.b),
-    nextPtr.sum.to(writePtr.data),
-    readAddr.out.to(ram.addrB),
-    ram.outB.to(readback.in),
-  ],
-})
-`),
+`,
+    circuit: PacketBuffer,
   },
 
   portArbiter: {
@@ -145,31 +197,8 @@ const PortArbiter = circuit('PortArbiter', {
     grantValid.out.to(validLed.in),
   ],
 })
-`),
-    circuit: compile(`
-const PortArbiter = circuit('PortArbiter', {
-  nodes: { port0_ready: Switch, port1_ready: Switch, lastPort: Input, zero: Constant, one: Constant, lastWas0: Comparator, prefer1: And, notPort1: Not, fallback0: And, fallback0Ready: And, lastWas1: Comparator, prefer0: And, grant0: Or, grant1: Or, grantValid: Or, grantPort: Mux, portDisplay: HexDisplay, validLed: Led },
-  nodeArgs: { lastPort: { value: 0 }, zero: { value: 0 }, one: { value: 1 } },
-  connect: ({ in: inp, out, port0_ready, port1_ready, lastPort, zero, one, lastWas0, prefer1, notPort1, fallback0, fallback0Ready, lastWas1, prefer0, grant0, grant1, grantValid, grantPort, portDisplay, validLed }) => [
-    lastPort.out.to(lastWas0.a, lastWas1.a),
-    zero.out.to(lastWas0.b, grantPort.in0),
-    lastWas0.eq.to(prefer1.a, fallback0.a),
-    port1_ready.out.to(prefer1.b, notPort1.in),
-    notPort1.out.to(fallback0.b),
-    fallback0.out.to(fallback0Ready.a),
-    port0_ready.out.to(fallback0Ready.b, prefer0.b),
-    one.out.to(lastWas1.b, grantPort.in1),
-    lastWas1.eq.to(prefer0.a),
-    prefer0.out.to(grant0.a),
-    fallback0Ready.out.to(grant0.b),
-    prefer1.out.to(grant1.a),
-    grant0.out.to(grantValid.a),
-    grant1.out.to(grantValid.b, grantPort.sel),
-    grantPort.out.to(portDisplay.in),
-    grantValid.out.to(validLed.in),
-  ],
-})
-`),
+`,
+    circuit: PortArbiter,
   },
 
   crossbarRouter: {
@@ -188,20 +217,8 @@ const CrossbarRouter = circuit('CrossbarRouter', {
     destPort.out.to(destDisplay.in),
   ],
 })
-`),
-    circuit: compile(`
-const CrossbarRouter = circuit('CrossbarRouter', {
-  nodes: { sourcePort: Input, zero: Constant, one: Constant, isPort0: Comparator, destPort: Mux, destDisplay: HexDisplay, srcDisplay: HexDisplay, routedLed: Led },
-  nodeArgs: { sourcePort: { value: 0 }, zero: { value: 0 }, one: { value: 1 } },
-  connect: ({ in: inp, out, sourcePort, zero, one, isPort0, destPort, destDisplay, srcDisplay, routedLed }) => [
-    sourcePort.out.to(isPort0.a, srcDisplay.in),
-    zero.out.to(isPort0.b, destPort.in0),
-    one.out.to(destPort.in1),
-    isPort0.eq.to(destPort.sel, routedLed.in),
-    destPort.out.to(destDisplay.in),
-  ],
-})
-`),
+`,
+    circuit: CrossbarRouter,
   },
 
   packetSerializer: {
@@ -210,7 +227,7 @@ const CrossbarRouter = circuit('CrossbarRouter', {
       "Reads bytes from RAM one at a time and outputs them with a valid signal. A counter tracks progress and signals when the packet is complete.",
     displayCode: `
 const PacketSerializer = circuit('PacketSerializer', {
-  nodes: { readPtr: Register, one: Constant, seven: Constant, nextPtr: Adder, enable: Switch, dataOut: HexDisplay, ptrDisplay: HexDisplay, isDone: Comparator, doneLed: Led },
+  nodes: { ram: DualPortRAM, readPtr: Register, one: Constant, seven: Constant, nextPtr: Adder, enable: Switch, dataOut: HexDisplay, ptrDisplay: HexDisplay, isDone: Comparator, doneLed: Led },
   nodeArgs: { readPtr: { initial: 0 }, one: { value: 1 }, seven: { value: 7 } },
   connect: ({ in: inp, out, ram, readPtr, one, seven, nextPtr, enable, dataOut, ptrDisplay, isDone, doneLed }) => [
     readPtr.q.to(nextPtr.a, ram.addrB, ptrDisplay.in, isDone.a),
@@ -222,31 +239,13 @@ const PacketSerializer = circuit('PacketSerializer', {
     isDone.eq.to(doneLed.in),
   ],
 })
-`),
-    circuit: compile(`
-const PacketSerializer = circuit('PacketSerializer', {
-  nodes: { readPtr: Register, one: Constant, seven: Constant, nextPtr: Adder, enable: Switch, dataOut: HexDisplay, ptrDisplay: HexDisplay, isDone: Comparator, doneLed: Led },
-  nodeArgs: { readPtr: { initial: 0 }, one: { value: 1 }, seven: { value: 7 } },
-  connect: ({ in: inp, out, ram, readPtr, one, seven, nextPtr, enable, dataOut, ptrDisplay, isDone, doneLed }) => [
-    readPtr.q.to(nextPtr.a, ram.addrB, ptrDisplay.in, isDone.a),
-    one.out.to(nextPtr.b),
-    enable.out.to(readPtr.we),
-    nextPtr.sum.to(readPtr.data),
-    ram.outB.to(dataOut.in),
-    seven.out.to(isDone.b),
-    isDone.eq.to(doneLed.in),
-  ],
-})
-`),
+`,
+    circuit: PacketSerializer,
   },
 };
 
-/**
- * Full MiniSwitch2Port DSL — all sub-circuit definitions concatenated.
- * Includes: MacRxParser, IngressController, SimpleArbiter2Port,
- * PacketForwarder2Port, EgressController, and MiniSwitch2Port.
- */
-export const SWITCH_DSL = `
+// ── Full MiniSwitch2Port definition ──
+
 const MacRxParser = circuit('MacRxParser', {
   in: { byte_in: bus(8), valid: bit },
   out: { data_out: bus(8), sof: bit, eof: bit, data_valid: bit, error: bit },
@@ -316,7 +315,7 @@ const MacRxParser = circuit('MacRxParser', {
     sof_condition.out.to(out.sof),
     data_valid_signal.out.to(out.data_valid),
   ],
-})
+});
 
 const IngressController = circuit('IngressController', {
   in: { data_in: bus(8), sof: bit, eof: bit, data_valid: bit, grant: bit },
@@ -379,7 +378,7 @@ const IngressController = circuit('IngressController', {
     pkt_ready_we.out.to(pkt_ready_reg.we),
     pkt_ready_reg.q.to(out.pkt_ready),
   ],
-})
+});
 
 const SimpleArbiter2Port = circuit('SimpleArbiter2Port', {
   in: { port0_ready: bit, port1_ready: bit, forwarder_done: bit },
@@ -414,7 +413,7 @@ const SimpleArbiter2Port = circuit('SimpleArbiter2Port', {
     next_last_port.out.to(last_port.data),
     last_port_we.out.to(last_port.we),
   ],
-})
+});
 
 const PacketForwarder2Port = circuit('PacketForwarder2Port', {
   in: { grant_port: bus(8), grant_valid: bit, port0_read_ptr: bus(8), port1_read_ptr: bus(8) },
@@ -484,7 +483,7 @@ const PacketForwarder2Port = circuit('PacketForwarder2Port', {
     done_we.out.to(done_reg.we),
     done_reg.q.to(out.done),
   ],
-})
+});
 
 const EgressController = circuit('EgressController', {
   in: { pkt_ready: bit, trigger: bit },
@@ -527,9 +526,9 @@ const EgressController = circuit('EgressController', {
     sof_signal.out.to(out.sof),
     eof_signal.out.to(out.eof),
   ],
-})
+});
 
-const MiniSwitch2Port = circuit('MiniSwitch2Port', {
+export const MiniSwitch2Port = circuit('MiniSwitch2Port', {
   nodes: { p0_byte: Input, p0_valid: Input, p1_byte: Input, p1_valid: Input, ZERO: Input, ONE: Input, EIGHT: Input, parser0: MacRxParser, parser1: MacRxParser, ingress0: IngressController, ingress1: IngressController, ram_ingress0: DualPortRAM, ram_ingress1: DualPortRAM, arbiter: SimpleArbiter2Port, forwarder: PacketForwarder2Port, ram_egress0: DualPortRAM, ram_egress1: DualPortRAM, egress0: EgressController, egress1: EgressController, grant_is_port0: Comparator, grant_to_port0: And, grant_is_port1: Comparator, grant_to_port1: And, ingress_data_mux: Mux, output_is_port0: Comparator, egress0_we: And, output_is_port1: Comparator, egress1_we: And, egress0_trigger: And, egress1_trigger: And, always_ready: Switch, p0_out: HexDisplay, p0_valid_out: Led, p0_sof: Led, p0_eof: Led, p1_out: HexDisplay, p1_valid_out: Led, p1_sof: Led, p1_eof: Led, debug_grant_port: HexDisplay, debug_grant_valid: Led, debug_forwarder_ingress_port: HexDisplay, debug_forwarder_output_port: HexDisplay, debug_ingress0_ready: Led, debug_ingress1_ready: Led },
   nodeArgs: { ZERO: { value: 0 }, ONE: { value: 1 }, EIGHT: { value: 8 } },
   connect: ({ in: inp, out, p0_byte, p0_valid, p1_byte, p1_valid, ZERO, ONE, EIGHT, parser0, parser1, ingress0, ingress1, ram_ingress0, ram_ingress1, arbiter, forwarder, ram_egress0, ram_egress1, egress0, egress1, grant_is_port0, grant_to_port0, grant_is_port1, grant_to_port1, ingress_data_mux, output_is_port0, egress0_we, output_is_port1, egress1_we, egress0_trigger, egress1_trigger, always_ready, p0_out, p0_valid_out, p0_sof, p0_eof, p1_out, p1_valid_out, p1_sof, p1_eof, debug_grant_port, debug_grant_valid, debug_forwarder_ingress_port, debug_forwarder_output_port, debug_ingress0_ready, debug_ingress1_ready }) => [
@@ -586,5 +585,4 @@ const MiniSwitch2Port = circuit('MiniSwitch2Port', {
     egress1.eof.to(p1_eof.in),
     forwarder.ingress_port.to(debug_forwarder_ingress_port.in),
   ],
-})
-`;
+});

@@ -8,13 +8,13 @@
 'use client';
 
 import React from 'react';
-import { useDSLPreviewStore } from '../stores/dsl-preview-store';
+import { useCircuitPreviewStore } from '../stores/circuit-preview-store';
 import { cn } from '../../lib/utils';
 
 export function CircuitTabBar() {
-  const compiledCircuits = useDSLPreviewStore((state) => state.compiledCircuits);
-  const selectedCircuitIndex = useDSLPreviewStore((state) => state.selectedCircuitIndex);
-  const selectCircuit = useDSLPreviewStore((state) => state.selectCircuit);
+  const compiledCircuits = useCircuitPreviewStore((state) => state.compiledCircuits);
+  const selectedCircuitIndex = useCircuitPreviewStore((state) => state.selectedCircuitIndex);
+  const selectCircuit = useCircuitPreviewStore((state) => state.selectCircuit);
 
   const hasCircuits = compiledCircuits.length > 0;
 
@@ -22,7 +22,7 @@ export function CircuitTabBar() {
     return (
       <div className="flex items-center gap-2 px-4 py-3 border-b bg-gray-50 dark:bg-gray-900">
         <span className="text-sm text-gray-600 dark:text-gray-400">
-          No circuits compiled. Write DSL code to see circuits here.
+          No circuits compiled. Write circuit code to see circuits here.
         </span>
       </div>
     );

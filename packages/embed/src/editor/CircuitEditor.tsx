@@ -1,4 +1,3 @@
-"use client";
 
 import { useState, useCallback, useRef } from "react";
 import { CircuitEmbed } from "../CircuitEmbed";
@@ -22,7 +21,7 @@ const DEFAULT_CODE = `const MyCircuit = circuit('MyCircuit', {
 })`;
 
 /**
- * Embeddable circuit editor — DSL code panel + live circuit preview.
+ * Embeddable circuit editor — TypeScript code panel + live circuit preview.
  * Consumers can embed this in docs/tutorials for an interactive playground.
  */
 export function CircuitEditor({

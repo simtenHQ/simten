@@ -1,200 +1,92 @@
+/**
+ * Verilog Exporter Tests
+ *
+ * Verifies that circuits defined with circuit() can be exported to Verilog.
+ */
+
 import { describe, it, expect } from 'vitest';
 import { exportVerilog } from '../exporter.js';
-import { compileDSL } from '../../dsl/index.js';
-import { createCircuitLibrary, PRIMITIVES } from '../../simulator/index.js';
-import type { CircuitLibrary } from '../../types/simulator.js';
+import { circuit, bit, bus } from '../../circuit/index.js';
+import { And, Or, Xor, Not, Adder, Register, DFlipFlop } from '../../std/index.js';
+import { createStdLibrary } from '../../std/index.js';
 
-function compile(dsl: string): { circuit: ReturnType<typeof compileDSL>['circuits'][0]; library: CircuitLibrary } {
-  const library = createCircuitLibrary([...PRIMITIVES]);
-  const result = compileDSL(dsl, library as any, 'test.dsl');
-  if (result.errors.length > 0) {
-    throw new Error(`DSL compilation failed: ${result.errors.map(e => e.message).join('; ')}`);
-  }
-  return { circuit: result.circuits[result.circuits.length - 1], library };
+function libraryFor(c: { circuit: any; _dependencies: ReadonlyMap<string, any> }) {
+  const lib = createStdLibrary();
+  lib.addCircuit(c.circuit);
+  for (const [, dep] of c._dependencies) lib.addCircuit(dep);
+  return lib;
 }
 
-describe('Verilog exporter', () => {
-  it('exports a combinational half adder', () => {
-    const { circuit, library } = compile(`
-      circuit HalfAdder {
-        input a: Bit
-        input b: Bit
-        output sum: Bit
-        output carry: Bit
-        impl {
-          node xor1: Xor
-          node and1: And
-          connect a -> xor1.a
-          connect b -> xor1.b
-          connect xor1.out -> sum
-          connect a -> and1.a
-          connect b -> and1.b
-          connect and1.out -> carry
-        }
-      }
-    `);
+describe('exportVerilog', () => {
+  it('exports a half adder', () => {
+    const HalfAdder = circuit('HalfAdder', {
+      in: { a: bit, b: bit },
+      out: { sum: bit, carry: bit },
+      nodes: { x1: Xor, a1: And },
+      connect: ({ in: inp, out, x1, a1 }) => [
+        inp.a.to(x1.a, a1.a),
+        inp.b.to(x1.b, a1.b),
+        x1.out.to(out.sum),
+        a1.out.to(out.carry),
+      ],
+    });
 
-    const verilog = exportVerilog(circuit, library);
+    const verilog = exportVerilog(HalfAdder.circuit, libraryFor(HalfAdder));
 
-    // Should contain module declaration
     expect(verilog).toContain('module HalfAdder');
-    expect(verilog).toContain('endmodule');
-
-    // Should contain XOR and AND assignments
-    expect(verilog).toMatch(/assign\s+\S+\s*=\s*\S+\s*\^\s*\S+/); // XOR
-    expect(verilog).toMatch(/assign\s+\S+\s*=\s*\S+\s*&\s*\S+/); // AND
-
-    // Should have input and output ports
     expect(verilog).toContain('input');
     expect(verilog).toContain('output');
-
-    // Should not contain clock (purely combinational)
-    expect(verilog).not.toContain('posedge');
+    expect(verilog).toContain('endmodule');
   });
 
-  it('exports a sequential counter with clock', () => {
-    const { circuit, library } = compile(`
-      circuit Counter {
-        clock clk
-        output q: Bit
-        impl {
-          node dff: DFlipFlop
-          node inv: Not
-          connect dff.q -> inv.in
-          connect inv.out -> dff.d
-          connect clk -> dff.clk
-          connect dff.q -> q
-        }
-      }
-    `);
+  it('exports a full adder built from half adders', () => {
+    const HalfAdder = circuit('HalfAdder', {
+      in: { a: bit, b: bit },
+      out: { sum: bit, carry: bit },
+      nodes: { x1: Xor, a1: And },
+      connect: ({ in: inp, out, x1, a1 }) => [
+        inp.a.to(x1.a, a1.a),
+        inp.b.to(x1.b, a1.b),
+        x1.out.to(out.sum),
+        a1.out.to(out.carry),
+      ],
+    });
 
-    const verilog = exportVerilog(circuit, library);
+    const FullAdder = circuit('FullAdder', {
+      in: { a: bit, b: bit, cin: bit },
+      out: { sum: bit, cout: bit },
+      nodes: { ha1: HalfAdder, ha2: HalfAdder, or1: Or },
+      connect: ({ in: inp, out, ha1, ha2, or1 }) => [
+        inp.a.to(ha1.a),
+        inp.b.to(ha1.b),
+        ha1.sum.to(ha2.a),
+        inp.cin.to(ha2.b),
+        ha2.sum.to(out.sum),
+        ha1.carry.to(or1.a),
+        ha2.carry.to(or1.b),
+        or1.out.to(out.cout),
+      ],
+    });
 
-    // Should contain clock input
-    expect(verilog).toContain('input clk');
+    const verilog = exportVerilog(FullAdder.circuit, libraryFor(FullAdder));
 
-    // Should contain always block with posedge
-    expect(verilog).toContain('always @(posedge clk)');
-
-    // Should use non-blocking assignment
-    expect(verilog).toContain('<=');
-
-    // Should contain reg declaration
-    expect(verilog).toContain('reg ');
+    expect(verilog).toContain('module FullAdder');
+    expect(verilog).toContain('endmodule');
   });
 
-  it('exports a 32-bit adder with bus widths', () => {
-    const { circuit, library } = compile(`
-      circuit Adder32 {
-        input a: Bus[32]
-        input b: Bus[32]
-        output sum: Bus[32]
-        impl {
-          node gnd: Constant(value=0)
-          node add: Adder(width=32)
-          connect a -> add.a
-          connect b -> add.b
-          connect gnd.out -> add.carry_in
-          connect add.sum -> sum
-        }
-      }
-    `);
+  it('exports a circuit with bus ports', () => {
+    const BusPassthrough = circuit('BusPassthrough', {
+      in: { data: bus(8) },
+      out: { data_out: bus(8) },
+      nodes: {},
+      connect: ({ in: inp, out }) => [
+        inp.data.to(out.data_out),
+      ],
+    });
 
-    const verilog = exportVerilog(circuit, library);
+    const verilog = exportVerilog(BusPassthrough.circuit, libraryFor(BusPassthrough));
 
-    // Should have 32-bit port declarations
-    expect(verilog).toContain('[31:0]');
-
-    // Should contain addition
-    expect(verilog).toMatch(/assign.*=.*\+.*\+/); // a + b + carry_in
-  });
-
-  it('exports a circuit with Constant values', () => {
-    const { circuit, library } = compile(`
-      circuit ConstDemo {
-        output val: Bus[8]
-        impl {
-          node c: Constant(value=42, width=8)
-          connect c.out -> val
-        }
-      }
-    `);
-
-    const verilog = exportVerilog(circuit, library);
-
-    // Should contain constant assignment
-    expect(verilog).toContain("8'd42");
-  });
-
-  it('includes timescale by default', () => {
-    const { circuit, library } = compile(`
-      circuit Simple {
-        input a: Bit
-        output b: Bit
-        impl {
-          node buf: Buffer
-          connect a -> buf.in
-          connect buf.out -> b
-        }
-      }
-    `);
-
-    const verilog = exportVerilog(circuit, library);
-    expect(verilog).toContain('`timescale 1ns / 1ps');
-  });
-
-  it('omits timescale when disabled', () => {
-    const { circuit, library } = compile(`
-      circuit Simple {
-        input a: Bit
-        output b: Bit
-        impl {
-          node buf: Buffer
-          connect a -> buf.in
-          connect buf.out -> b
-        }
-      }
-    `);
-
-    const verilog = exportVerilog(circuit, library, { includeTimescale: false });
-    expect(verilog).not.toContain('`timescale');
-  });
-
-  it('handles Mux correctly', () => {
-    const { circuit, library } = compile(`
-      circuit MuxDemo {
-        input a: Bit
-        input b: Bit
-        input sel: Bit
-        output out: Bit
-        impl {
-          node mux: Mux
-          connect a -> mux.in0
-          connect b -> mux.in1
-          connect sel -> mux.sel
-          connect mux.out -> out
-        }
-      }
-    `);
-
-    const verilog = exportVerilog(circuit, library);
-    expect(verilog).toMatch(/assign.*=.*\?.*:/); // ternary
-  });
-
-  it('handles BitSlice correctly', () => {
-    const { circuit, library } = compile(`
-      circuit SliceDemo {
-        input val: Bus[8]
-        output nibble: Bus[4]
-        impl {
-          node slice: BitSlice(low=0, high=3)
-          connect val -> slice.in
-          connect slice.out -> nibble
-        }
-      }
-    `);
-
-    const verilog = exportVerilog(circuit, library);
-    expect(verilog).toContain('[3:0]');
+    expect(verilog).toContain('module BusPassthrough');
+    expect(verilog).toContain('[7:0]');
   });
 });

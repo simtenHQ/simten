@@ -163,5 +163,3 @@ export function executeCircuitCode(code: string): ExecuteResult {
   }
 }
 
-/** @deprecated Use executeCircuitCode instead */
-export const executeComponentCode = executeCircuitCode;

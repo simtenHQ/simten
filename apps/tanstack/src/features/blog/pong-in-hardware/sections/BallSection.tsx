@@ -1,4 +1,3 @@
-"use client";
 
 import { CircuitEmbed } from "@turing-incomplete/embed";
 import { PONG_CIRCUITS } from "../circuits";

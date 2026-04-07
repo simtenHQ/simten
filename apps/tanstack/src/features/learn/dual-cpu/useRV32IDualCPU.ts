@@ -1,8 +1,8 @@
-"use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useCircuitSimulator } from "@turing-incomplete/embed";
 import { ABI_NAMES, parseDisassembly, type DisasmLine, type PipelineStages } from "../cpu-debugger/useRV32IDebugger";
+import { RV32I_DualCPU } from "./rv32i-dual-cpu.circuit";
 
 export { ABI_NAMES };
 export type { DisasmLine, PipelineStages };
@@ -105,10 +105,6 @@ export interface CompileResult {
 }
 
 export function useRV32IDualCPU() {
-  const dslCacheRef = useRef<string | null>(null);
-  const [dslCode, setDslCode] = useState<string | null>(null);
-  const [dslError, setDslError] = useState<string | null>(null);
-
   const [cpu0Compiled, setCpu0Compiled] = useState<CompileResult | null>(null);
   const [cpu1Compiled, setCpu1Compiled] = useState<CompileResult | null>(null);
   const [memory, setMemory] = useState<Map<string, Map<number, number>> | null>(null);
@@ -123,22 +119,7 @@ export function useRV32IDualCPU() {
 
   const [nicMessages, setNicMessages] = useState<NicMessage[]>([]);
 
-  // Fetch DSL once
-  useEffect(() => {
-    if (dslCacheRef.current) return;
-    fetch("/blog-assets/rv32i-dual-cpu.circuit.ts")
-      .then((r) => {
-        if (!r.ok) throw new Error(`Failed to fetch DSL: ${r.status}`);
-        return r.text();
-      })
-      .then((text) => {
-        dslCacheRef.current = text;
-        setDslCode(text);
-      })
-      .catch((e) => setDslError(e.message));
-  }, []);
-
-  const sim = useCircuitSimulator(dslCode ?? "");
+  const sim = useCircuitSimulator(RV32I_DualCPU);
 
   // Load ROM data when ready
   useEffect(() => {
@@ -280,8 +261,6 @@ export function useRV32IDualCPU() {
   const bothCompiled = !!(cpu0Compiled && cpu1Compiled);
 
   return {
-    dslError,
-    dslLoaded: !!dslCode,
     sim,
     isRunning,
     setIsRunning,

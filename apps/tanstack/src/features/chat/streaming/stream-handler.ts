@@ -204,7 +204,7 @@ function processRemainingBuffer(
 
 export interface SendMessageOptions {
   userMessage: string;
-  dslCode: string;
+  code: string;
   compactContext: string;
   conversationHistory: Array<{ role: 'user' | 'assistant'; content: string }>;
   signal?: AbortSignal;
@@ -217,7 +217,7 @@ export async function sendMessage(
   options: SendMessageOptions,
   callbacks: StreamCallbacks
 ): Promise<void> {
-  const { userMessage, dslCode, compactContext, conversationHistory, signal } =
+  const { userMessage, code, compactContext, conversationHistory, signal } =
     options;
 
   try {
@@ -226,7 +226,7 @@ export async function sendMessage(
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         userMessage,
-        dslCode,
+        code,
         compactContext,
         conversationHistory,
       }),

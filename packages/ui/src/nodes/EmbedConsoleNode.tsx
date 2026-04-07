@@ -1,4 +1,3 @@
-"use client";
 
 import React, { useRef, useEffect } from "react";
 import { BaseNode } from "./BaseNode";

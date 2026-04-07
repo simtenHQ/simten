@@ -1,11 +1,10 @@
-"use client";
 
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useCircuitSimulator } from "@turing-incomplete/embed";
-import { SWITCH_DSL } from "./circuits";
+import { MiniSwitch2Port } from "./circuits";
 
 export function useSwitchSimulator() {
-  const sim = useCircuitSimulator(SWITCH_DSL);
+  const sim = useCircuitSimulator(MiniSwitch2Port);
   const [isRunning, setIsRunning] = useState(false);
   const [speed, setSpeed] = useState(50);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);

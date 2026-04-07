@@ -1,14 +1,13 @@
-"use client";
 
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useCircuitSimulator } from "@turing-incomplete/embed";
-import { BREAKOUT_DSL } from "./circuits";
+import { Breakout } from "./circuits";
 
 // One full raster frame for 32x16 display (34x18 grid with blanking)
 const TICKS_PER_FRAME = 612;
 
 export function useBreakoutSimulator() {
-  const sim = useCircuitSimulator(BREAKOUT_DSL);
+  const sim = useCircuitSimulator(Breakout);
   const [isRunning, setIsRunning] = useState(false);
   const rafRef = useRef<number | null>(null);
 

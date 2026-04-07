@@ -36,9 +36,6 @@ export type {
   PortType,
 } from './circuit.js';
 
-// Deprecated re-exports
-export type { ComponentLibrary } from './circuit.js';
-
 // ============================================================================
 // Sequential Port Classification
 // ============================================================================

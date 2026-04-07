@@ -2,7 +2,7 @@
  * useCircuitSession — creates a SimulationSession from a compiled Circuit.
  *
  * For consumers that already have a Circuit object (editor, inspector).
- * For consumers that have DSL text, use useCircuitSimulator from @turing-incomplete/embed instead.
+ * For consumers that have a Circuit IR, use useCircuitSimulator from @turing-incomplete/embed instead.
  */
 
 "use client";

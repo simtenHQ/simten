@@ -360,7 +360,7 @@ export function ComponentPalette() {
       id: 'user-components',
       label: 'User Components',
       icon: '🔧',
-      description: 'Components compiled from DSL',
+      description: 'Components compiled from circuit code',
       items: userComponents.map((circuit) => {
         // Extract port information from circuit
         const inputs = circuitPortsToPortInfo(circuit.inputs);

@@ -10,7 +10,7 @@ interface CircuitSectionProps {
 
 export function CircuitSection({ section }: CircuitSectionProps) {
   const isLeft = section.align === "left";
-  const sim = useCircuitSimulator(section.dsl);
+  const sim = useCircuitSimulator(section.circuit);
 
   return (
     <section className="px-6 py-16">

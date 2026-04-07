@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
 import { useCircuitSimulator } from "@turing-incomplete/embed";
 import { CircuitCanvas } from "@turing-incomplete/ui/canvas";
+import { circuit, bus } from "@turing-incomplete/core/circuit";
+import { Register, Adder, Constant, DFlipFlop, HexDisplay } from "@turing-incomplete/core/std";
 
 // --- Live Fibonacci circuit (auto-ticking) ---
 
-const FIBONACCI_DSL = `
 const Fibonacci = circuit('Fibonacci', {
   out: { fib: bus(8) },
   nodes: { reg_a: Register, reg_b: Register, adder: Adder, one_bit: Constant, init: DFlipFlop },
@@ -16,17 +17,17 @@ const Fibonacci = circuit('Fibonacci', {
     reg_b.q.to(adder.b, reg_a.data, out.fib),
     adder.sum.to(reg_b.data),
   ],
-})
+});
 
 const FibonacciDemo = circuit('FibonacciDemo', {
   nodes: { fib: Fibonacci, display: HexDisplay },
   connect: ({ fib, display }) => [
     fib.fib.to(display.in),
   ],
-})`;
+});
 
 function LiveFibonacci() {
-  const sim = useCircuitSimulator(FIBONACCI_DSL);
+  const sim = useCircuitSimulator(FibonacciDemo);
   const [running, setRunning] = useState(true);
 
   useEffect(() => {

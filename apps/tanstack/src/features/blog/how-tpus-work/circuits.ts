@@ -2,7 +2,7 @@
  * Circuit definitions for the "How TPUs Do Calculations" blog post.
  *
  * Builds up from a simple multiply-add to a full 3x3 systolic array
- * with wavefront control, all defined in circuit DSL.
+ * with wavefront control, all defined with the circuit() builder.
  *
  * All building blocks use the same PE_Systolic architecture as the final array:
  *   - Weight register with valid-bit gating
@@ -12,15 +12,13 @@
  *   - Both partial sums and data are registered (1 cycle per PE in each direction)
  */
 
-import { executeCircuitCode } from "@turing-incomplete/core/circuit";
+import { circuit, bit, bus } from "@turing-incomplete/core/circuit";
 import type { BuiltCircuit } from "@turing-incomplete/core/circuit";
-
-/** Compile a circuit code string to a BuiltCircuit at import time */
-function compile(code: string): BuiltCircuit {
-  const result = executeCircuitCode(code);
-  if (result.error) throw new Error(result.error);
-  return result.builtCircuits[result.builtCircuits.length - 1];
-}
+import {
+  Input, Switch, HexDisplay, Constant, Led,
+  Register, DFlipFlop, Adder, Multiplier, Comparator,
+  Mux, Incrementer, And, Or,
+} from "@turing-incomplete/core/std";
 
 export interface BlogCircuit {
   name: string;
@@ -31,7 +29,6 @@ export interface BlogCircuit {
 }
 
 /** The PE definition used by all circuits — registered partial-sum output */
-const PE_SYSTOLIC_DEFINITION = `
 const PE_Systolic = circuit('PE_Systolic', {
   in: { dataIn: bus(8), weightIn: bus(8), partialSumIn: bus(16), weightValid: bit, validIn: bit },
   out: { dataOut: bus(8), partialSumOut: bus(16), validOut: bit },
@@ -52,20 +49,8 @@ const PE_Systolic = circuit('PE_Systolic', {
     inp.validIn.to(validPipe.d),
     validPipe.q.to(out.validOut),
   ],
-})
-`;
+});
 
-export const TPU_CIRCUITS: Record<string, BlogCircuit> = {
-  /**
-   * Section 1: Multiply-Add — the fundamental operation.
-   * Purely combinational: partialSumIn + (data × weight) = result.
-   * No accumulator, no clock. This is what one PE computes in a single step.
-   */
-  multiplyAdd: {
-    name: "Multiply-Add Unit",
-    description:
-      "Multiply two numbers and add to a partial sum. The fundamental operation inside every PE.",
-    displayCode: `
 const MultiplyAdd = circuit('MultiplyAdd', {
   nodes: { data: Input, weight: Input, partialSumIn: Input, mult: Multiplier, adder: Adder, zero: Constant, result: HexDisplay },
   nodeArgs: { data: { value: 3 }, weight: { value: 5 }, partialSumIn: { value: 10 }, adder: { width: 16 }, zero: { value: 0 } },
@@ -77,46 +62,8 @@ const MultiplyAdd = circuit('MultiplyAdd', {
     zero.out.to(adder.carry_in),
     adder.sum.to(result.in),
   ],
-})
-`,
-    circuit: compile(`
-const MultiplyAdd = circuit('MultiplyAdd', {
-  nodes: { data: Input, weight: Input, partialSumIn: Input, mult: Multiplier, adder: Adder, zero: Constant, result: HexDisplay },
-  nodeArgs: { data: { value: 3 }, weight: { value: 5 }, partialSumIn: { value: 10 }, adder: { width: 16 }, zero: { value: 0 } },
-  connect: ({ in: inp, out, data, weight, partialSumIn, mult, adder, zero, result }) => [
-    data.out.to(mult.a),
-    weight.out.to(mult.b),
-    partialSumIn.out.to(adder.a),
-    mult.product.to(adder.b),
-    zero.out.to(adder.carry_in),
-    adder.sum.to(result.in),
-  ],
-})
-`),
-    nodePositions: {
-      // Inputs (left)
-      data:          { x: 0,   y: 0 },
-      weight:        { x: 0,   y: 120 },
-      partialSumIn:  { x: 0,   y: 240 },
-      // Processing (center)
-      mult:          { x: 250, y: 40 },
-      zero:          { x: 250, y: 240 },
-      adder:         { x: 470, y: 100 },
-      // Output (right)
-      result:        { x: 680, y: 100 },
-    },
-  },
+});
 
-  /**
-   * Section 2: Weight Register — latch once, hold fixed while data streams.
-   * Shows: weight register with valid-bit gating + multiplier preview.
-   * No pipeline register (that concept appears in the PE section).
-   */
-  weightRegister: {
-    name: "Weight Register",
-    description:
-      "A register that stores a weight only when the valid signal is high. The weight stays fixed while data streams through.",
-    displayCode: `
 const WeightRegister = circuit('WeightRegister', {
   nodes: { weightIn: Input, weightValid: Switch, dataIn: Input, weightReg: Register, storedWeight: HexDisplay, mult: Multiplier, product: HexDisplay },
   nodeArgs: { weightIn: { value: 7 }, dataIn: { value: 3 } },
@@ -127,60 +74,7 @@ const WeightRegister = circuit('WeightRegister', {
     dataIn.out.to(mult.a),
     mult.product.to(product.in),
   ],
-})
-`),
-    circuit: compile(`
-const WeightRegister = circuit('WeightRegister', {
-  nodes: { weightIn: Input, weightValid: Switch, dataIn: Input, weightReg: Register, storedWeight: HexDisplay, mult: Multiplier, product: HexDisplay },
-  nodeArgs: { weightIn: { value: 7 }, dataIn: { value: 3 } },
-  connect: ({ in: inp, out, weightIn, weightValid, dataIn, weightReg, storedWeight, mult, product }) => [
-    weightIn.out.to(weightReg.data),
-    weightValid.out.to(weightReg.we),
-    weightReg.q.to(storedWeight.in, mult.b),
-    dataIn.out.to(mult.a),
-    mult.product.to(product.in),
-  ],
-})
-`),
-    nodePositions: {
-      // Inputs (left)
-      weightIn:     { x: 0,   y: 0 },
-      weightValid:  { x: 0,   y: 140 },
-      dataIn:       { x: 0,   y: 280 },
-      // Register (center)
-      weightReg:    { x: 260, y: 40 },
-      // Multiplier (center-right)
-      mult:         { x: 260, y: 220 },
-      // Outputs (right)
-      storedWeight: { x: 500, y: 40 },
-      product:      { x: 500, y: 220 },
-    },
-  },
-
-  /**
-   * Section 3: The Processing Element — the actual PE_Systolic design.
-   * Weight register + multiplier + registered partial-sum adder + data pipeline.
-   */
-  processingElement: {
-    name: "Processing Element",
-    description:
-      "A full PE with weight register, multiplier, registered partial-sum adder, and data pipeline. The building block of the systolic array.",
-    displayCode: `
-const TestPE = circuit('TestPE', {
-  nodes: { pe: PE_Systolic, dataIn: Input, weightIn: Input, weightValid: Switch, partialSumIn: Input, partialSumOut: HexDisplay, dataOut: HexDisplay },
-  nodeArgs: { dataIn: { value: 3 }, weightIn: { value: 5 }, partialSumIn: { value: 0 } },
-  connect: ({ in: inp, out, pe, dataIn, weightIn, weightValid, partialSumIn, partialSumOut, dataOut }) => [
-    dataIn.out.to(pe.dataIn),
-    weightIn.out.to(pe.weightIn),
-    weightValid.out.to(pe.weightValid),
-    partialSumIn.out.to(pe.partialSumIn),
-    pe.partialSumOut.to(partialSumOut.in),
-    pe.dataOut.to(dataOut.in),
-  ],
-})
-`),
-    circuit: compile(`
-${PE_SYSTOLIC_DEFINITION}
+});
 
 const TestPE = circuit('TestPE', {
   nodes: { pe: PE_Systolic, dataIn: Input, weightIn: Input, weightValid: Switch, partialSumIn: Input, partialSumOut: HexDisplay, dataOut: HexDisplay },
@@ -193,49 +87,7 @@ const TestPE = circuit('TestPE', {
     pe.partialSumOut.to(partialSumOut.in),
     pe.dataOut.to(dataOut.in),
   ],
-})
-`),
-    nodePositions: {
-      // Inputs (left)
-      dataIn:        { x: 0,   y: 0 },
-      weightIn:      { x: 0,   y: 120 },
-      weightValid:   { x: 0,   y: 240 },
-      partialSumIn:  { x: 0,   y: 350 },
-      // PE (center)
-      pe:            { x: 280, y: 100 },
-      // Outputs (right)
-      partialSumOut: { x: 540, y: 40 },
-      dataOut:       { x: 540, y: 220 },
-    },
-  },
-
-  /**
-   * Section 4: Horizontal Data Flow — two PEs in a row.
-   * Data flows left→right via pipeline registers. Each PE has its own weight
-   * and computes partialSumIn + data×weight independently (partialSumIn=0 for each).
-   */
-  twoPERow: {
-    name: "Two-PE Row",
-    description:
-      "Two PEs connected horizontally. Data flows left to right with a one-cycle delay between elements.",
-    displayCode: `
-const TwoPERow = circuit('TwoPERow', {
-  nodes: { pe0: PE_Systolic, pe1: PE_Systolic, data0: Input, weight0: Input, weight1: Input, weightValid: Switch, zero16: Constant, result0: HexDisplay, result1: HexDisplay },
-  nodeArgs: { data0: { value: 2 }, weight0: { value: 3 }, weight1: { value: 5 }, zero16: { value: 0 } },
-  connect: ({ in: inp, out, pe0, pe1, data0, weight0, weight1, weightValid, zero16, result0, result1 }) => [
-    data0.out.to(pe0.dataIn),
-    pe0.dataOut.to(pe1.dataIn),
-    weight0.out.to(pe0.weightIn),
-    weight1.out.to(pe1.weightIn),
-    weightValid.out.to(pe0.weightValid, pe1.weightValid),
-    zero16.out.to(pe0.partialSumIn, pe1.partialSumIn),
-    pe0.partialSumOut.to(result0.in),
-    pe1.partialSumOut.to(result1.in),
-  ],
-})
-`),
-    circuit: compile(`
-${PE_SYSTOLIC_DEFINITION}
+});
 
 const TwoPERow = circuit('TwoPERow', {
   nodes: { pe0: PE_Systolic, pe1: PE_Systolic, data0: Input, weight0: Input, weight1: Input, weightValid: Switch, zero16: Constant, result0: HexDisplay, result1: HexDisplay },
@@ -250,52 +102,7 @@ const TwoPERow = circuit('TwoPERow', {
     pe0.partialSumOut.to(result0.in),
     pe1.partialSumOut.to(result1.in),
   ],
-})
-`),
-    nodePositions: {
-      // Inputs (left)
-      data0:       { x: 0,   y: 0 },
-      weight0:     { x: 0,   y: 120 },
-      weight1:     { x: 0,   y: 240 },
-      weightValid: { x: 0,   y: 360 },
-      zero16:      { x: 200, y: 360 },
-      // PEs (center)
-      pe0:         { x: 280, y: 60 },
-      pe1:         { x: 520, y: 60 },
-      // Outputs (right)
-      result0:     { x: 760, y: 0 },
-      result1:     { x: 760, y: 160 },
-    },
-  },
-
-  /**
-   * Section 5: Vertical Partial-Sum Flow — two PEs in a column.
-   * Partial sums flow top→bottom through registers (1 cycle per PE).
-   * Both PEs receive the same data; PE0 computes data×weight0 (registered),
-   * PE1 adds data×weight1 to the delayed partial sum. The bottom PE's
-   * output is the full dot product, available one cycle after the top PE.
-   */
-  twoPEColumn: {
-    name: "Two-PE Column",
-    description:
-      "Two PEs stacked vertically. Partial sums flow down through registers — one PE per clock cycle, just like real hardware.",
-    displayCode: `
-const TwoPEColumn = circuit('TwoPEColumn', {
-  nodes: { pe0: PE_Systolic, pe1: PE_Systolic, dataIn: Input, weight0: Input, weight1: Input, weightValid: Switch, zero16: Constant, topResult: HexDisplay, bottomResult: HexDisplay },
-  nodeArgs: { dataIn: { value: 4 }, weight0: { value: 3 }, weight1: { value: 5 }, zero16: { value: 0 } },
-  connect: ({ in: inp, out, pe0, pe1, dataIn, weight0, weight1, weightValid, zero16, topResult, bottomResult }) => [
-    dataIn.out.to(pe0.dataIn, pe1.dataIn),
-    weight0.out.to(pe0.weightIn),
-    weight1.out.to(pe1.weightIn),
-    weightValid.out.to(pe0.weightValid, pe1.weightValid),
-    zero16.out.to(pe0.partialSumIn),
-    pe0.partialSumOut.to(pe1.partialSumIn, topResult.in),
-    pe1.partialSumOut.to(bottomResult.in),
-  ],
-})
-`),
-    circuit: compile(`
-${PE_SYSTOLIC_DEFINITION}
+});
 
 const TwoPEColumn = circuit('TwoPEColumn', {
   nodes: { pe0: PE_Systolic, pe1: PE_Systolic, dataIn: Input, weight0: Input, weight1: Input, weightValid: Switch, zero16: Constant, topResult: HexDisplay, bottomResult: HexDisplay },
@@ -309,32 +116,8 @@ const TwoPEColumn = circuit('TwoPEColumn', {
     pe0.partialSumOut.to(pe1.partialSumIn, topResult.in),
     pe1.partialSumOut.to(bottomResult.in),
   ],
-})
-`),
-    nodePositions: {
-      // Inputs (left)
-      dataIn:       { x: 0,   y: 120 },
-      weight0:      { x: 0,   y: 0 },
-      weight1:      { x: 0,   y: 280 },
-      weightValid:  { x: 0,   y: 400 },
-      zero16:       { x: 200, y: 400 },
-      // PEs (center, stacked vertically)
-      pe0:          { x: 300, y: 20 },
-      pe1:          { x: 300, y: 260 },
-      // Outputs (right)
-      topResult:    { x: 560, y: 20 },
-      bottomResult: { x: 560, y: 260 },
-    },
-  },
+});
 
-  /**
-   * Section 6: Wavefront Controller — unchanged.
-   */
-  wavefrontController: {
-    name: "Wavefront Controller",
-    description:
-      "A phase register drives multi-step computation. Each phase has its own enable counter. LEDs show the active phase.",
-    displayCode: `
 const WavefrontController = circuit('WavefrontController', {
   nodes: { phase: Register, enable: Switch, inc: Incrementer, phaseMux: Mux, one: Constant, zero: Constant, const1: Constant, const2: Constant, const3: Constant, isPhase0: Comparator, isPhase1: Comparator, isPhase2: Comparator, isPhase3: Comparator, led0: Led, led1: Led, led2: Led, led3: Led, display: HexDisplay },
   nodeArgs: { phase: { initial: 0 }, one: { value: 1 }, zero: { value: 0 }, const1: { value: 1 }, const2: { value: 2 }, const3: { value: 3 } },
@@ -353,57 +136,7 @@ const WavefrontController = circuit('WavefrontController', {
     isPhase2.eq.to(led2.in),
     isPhase3.eq.to(led3.in),
   ],
-})
-`),
-    circuit: compile(`
-const WavefrontController = circuit('WavefrontController', {
-  nodes: { phase: Register, enable: Switch, inc: Incrementer, phaseMux: Mux, one: Constant, zero: Constant, const1: Constant, const2: Constant, const3: Constant, isPhase0: Comparator, isPhase1: Comparator, isPhase2: Comparator, isPhase3: Comparator, led0: Led, led1: Led, led2: Led, led3: Led, display: HexDisplay },
-  nodeArgs: { phase: { initial: 0 }, one: { value: 1 }, zero: { value: 0 }, const1: { value: 1 }, const2: { value: 2 }, const3: { value: 3 } },
-  connect: ({ in: inp, out, phase, enable, inc, phaseMux, one, zero, const1, const2, const3, isPhase0, isPhase1, isPhase2, isPhase3, led0, led1, led2, led3, display }) => [
-    phase.q.to(inc.in, phaseMux.in0, isPhase0.a, isPhase1.a, isPhase2.a, isPhase3.a, display.in),
-    inc.out.to(phaseMux.in1),
-    enable.out.to(phaseMux.sel),
-    phaseMux.out.to(phase.data),
-    one.out.to(phase.we),
-    zero.out.to(isPhase0.b),
-    const1.out.to(isPhase1.b),
-    const2.out.to(isPhase2.b),
-    const3.out.to(isPhase3.b),
-    isPhase0.eq.to(led0.in),
-    isPhase1.eq.to(led1.in),
-    isPhase2.eq.to(led2.in),
-    isPhase3.eq.to(led3.in),
-  ],
-})
-`),
-    nodePositions: {
-      // Control (left)
-      enable:   { x: 0,   y: 100 },
-      // Phase register + increment (center-left)
-      phase:    { x: 200, y: 100 },
-      inc:      { x: 200, y: 0 },
-      phaseMux: { x: 200, y: 230 },
-      one:      { x: 60,  y: 230 },
-      // Constants (center)
-      zero:     { x: 420, y: 0 },
-      const1:   { x: 420, y: 80 },
-      const2:   { x: 420, y: 160 },
-      const3:   { x: 420, y: 240 },
-      // Comparators (center-right)
-      isPhase0: { x: 580, y: 0 },
-      isPhase1: { x: 580, y: 80 },
-      isPhase2: { x: 580, y: 160 },
-      isPhase3: { x: 580, y: 240 },
-      // LEDs (right)
-      led0:     { x: 760, y: 0 },
-      led1:     { x: 760, y: 80 },
-      led2:     { x: 760, y: 160 },
-      led3:     { x: 760, y: 240 },
-      // Display (bottom-right)
-      display:  { x: 760, y: 340 },
-    },
-  },
-};
+});
 
 /**
  * 2x2 systolic array with registered partial-sum flow.
@@ -413,10 +146,7 @@ const WavefrontController = circuit('WavefrontController', {
  * C[k][j] emerges at PE(N-1,j) on cycle k+j+N+1 (N=2).
  * Total: 3N = 6 ticks for N=2.
  */
-export const SYSTOLIC_2X2_DSL = `
-${PE_SYSTOLIC_DEFINITION}
-
-const Systolic2x2 = circuit('Systolic2x2', {
+export const Systolic2x2 = circuit('Systolic2x2', {
   in: { a00: bus(8), a01: bus(8), a10: bus(8), a11: bus(8), b00: bus(8), b01: bus(8), b10: bus(8), b11: bus(8), start: bit },
   out: { c00: bus(16), c01: bus(16), c10: bus(16), c11: bus(16), done: bit },
   nodes: { pe00: PE_Systolic, pe01: PE_Systolic, pe10: PE_Systolic, pe11: PE_Systolic, zero: Constant, one: Constant, two: Constant, three: Constant, four: Constant, five: Constant, six: Constant, counter: Register, counterInc: Incrementer, counterMux: Mux, notDone: Comparator, shouldAdvance: And, isCycle0: Comparator, isCycle1: Comparator, isCycle2: Comparator, isCycle3: Comparator, isCycle4: Comparator, isCycle5: Comparator, loadWeights: And, muxR0a: Mux, muxR0b: Mux, muxR1a: Mux, muxR1b: Mux, result_c00: Register, result_c10: Register, result_c01: Register, result_c11: Register, isDone: Comparator },
@@ -478,9 +208,9 @@ const Systolic2x2 = circuit('Systolic2x2', {
     result_c11.q.to(out.c11),
     isDone.eq.to(out.done),
   ],
-})
+});
 
-const TestWavefront = circuit('TestWavefront', {
+export const TestWavefront = circuit('TestWavefront', {
   nodes: { sys: Systolic2x2, a00: Input, a01: Input, a10: Input, a11: Input, b00: Input, b01: Input, b10: Input, b11: Input, start: Switch, display_c00: HexDisplay, display_c01: HexDisplay, display_c10: HexDisplay, display_c11: HexDisplay, done_led: Led },
   nodeArgs: { a00: { value: 1 }, a01: { value: 2 }, a10: { value: 3 }, a11: { value: 4 }, b00: { value: 5 }, b01: { value: 6 }, b10: { value: 7 }, b11: { value: 8 } },
   connect: ({ in: inp, out, sys, a00, a01, a10, a11, b00, b01, b10, b11, start, display_c00, display_c01, display_c10, display_c11, done_led }) => [
@@ -499,31 +229,15 @@ const TestWavefront = circuit('TestWavefront', {
     sys.c11.to(display_c11.in),
     sys.done.to(done_led.in),
   ],
-})
-`;
-
-/** Backwards-compat alias */
-export const SYSTOLIC_DSL = SYSTOLIC_2X2_DSL;
+});
 
 /**
  * Full 3x3 systolic array: PE_Systolic + Systolic3x3 + TestSystolic3x3
  *
  * Architecture: weight-stationary with registered partial-sum flow.
- * - Cycle 0: load all 9 weights into PEs
- * - Staggered data injection: row r starts at cycle 1+r
- * - Valid signals propagate through PE pipeline alongside data
- * - Result registers latch when valid arrives at bottom PE
- * - Per-column valid counter distinguishes C[0][j] vs C[1][j] vs C[2][j]
- * - No global cycle-number assumptions for result timing
- *
- * This design is correct for both DSL simulation and Verilog synthesis.
- *
  * Test: A=[[1,2,3],[4,5,6],[7,8,9]] × B=[[2,0,1],[0,2,0],[1,0,2]]
  * Expected C = [[5,4,7],[14,10,16],[23,16,25]]
  */
-export const SYSTOLIC_3X3_DSL = `
-${PE_SYSTOLIC_DEFINITION}
-
 const Systolic3x3 = circuit('Systolic3x3', {
   in: { a00: bus(8), a01: bus(8), a02: bus(8), a10: bus(8), a11: bus(8), a12: bus(8), a20: bus(8), a21: bus(8), a22: bus(8), b00: bus(8), b01: bus(8), b02: bus(8), b10: bus(8), b11: bus(8), b12: bus(8), b20: bus(8), b21: bus(8), b22: bus(8), start: bit },
   out: { c00: bus(16), c01: bus(16), c02: bus(16), c10: bus(16), c11: bus(16), c12: bus(16), c20: bus(16), c21: bus(16), c22: bus(16), done: bit },
@@ -668,9 +382,9 @@ const Systolic3x3 = circuit('Systolic3x3', {
     doneAnd2.out.to(doneReg.d),
     doneReg.q.to(out.done),
   ],
-})
+});
 
-const TestSystolic3x3 = circuit('TestSystolic3x3', {
+export const TestSystolic3x3 = circuit('TestSystolic3x3', {
   nodes: { sys: Systolic3x3, a00: Input, a01: Input, a02: Input, a10: Input, a11: Input, a12: Input, a20: Input, a21: Input, a22: Input, b00: Input, b01: Input, b02: Input, b10: Input, b11: Input, b12: Input, b20: Input, b21: Input, b22: Input, start: Switch, display_c00: HexDisplay, display_c01: HexDisplay, display_c02: HexDisplay, display_c10: HexDisplay, display_c11: HexDisplay, display_c12: HexDisplay, display_c20: HexDisplay, display_c21: HexDisplay, display_c22: HexDisplay, done_led: Led },
   nodeArgs: { a00: { value: 1 }, a01: { value: 2 }, a02: { value: 3 }, a10: { value: 4 }, a11: { value: 5 }, a12: { value: 6 }, a20: { value: 7 }, a21: { value: 8 }, a22: { value: 9 }, b00: { value: 2 }, b01: { value: 0 }, b02: { value: 1 }, b10: { value: 0 }, b11: { value: 2 }, b12: { value: 0 }, b20: { value: 1 }, b21: { value: 0 }, b22: { value: 2 } },
   connect: ({ in: inp, out, sys, a00, a01, a02, a10, a11, a12, a20, a21, a22, b00, b01, b02, b10, b11, b12, b20, b21, b22, start, display_c00, display_c01, display_c02, display_c10, display_c11, display_c12, display_c20, display_c21, display_c22, done_led }) => [
@@ -695,7 +409,6 @@ const TestSystolic3x3 = circuit('TestSystolic3x3', {
     start.out.to(sys.start),
     sys.c00.to(display_c00.in),
     sys.c01.to(display_c01.in),
-    sys.c02.to(display_c02.in),
     sys.c10.to(display_c10.in),
     sys.c11.to(display_c11.in),
     sys.c12.to(display_c12.in),
@@ -704,5 +417,235 @@ const TestSystolic3x3 = circuit('TestSystolic3x3', {
     sys.c22.to(display_c22.in),
     sys.done.to(done_led.in),
   ],
+});
+
+export const TPU_CIRCUITS: Record<string, BlogCircuit> = {
+  /**
+   * Section 1: Multiply-Add — the fundamental operation.
+   */
+  multiplyAdd: {
+    name: "Multiply-Add Unit",
+    description:
+      "Multiply two numbers and add to a partial sum. The fundamental operation inside every PE.",
+    displayCode: `
+const MultiplyAdd = circuit('MultiplyAdd', {
+  nodes: { data: Input, weight: Input, partialSumIn: Input, mult: Multiplier, adder: Adder, zero: Constant, result: HexDisplay },
+  nodeArgs: { data: { value: 3 }, weight: { value: 5 }, partialSumIn: { value: 10 }, adder: { width: 16 }, zero: { value: 0 } },
+  connect: ({ in: inp, out, data, weight, partialSumIn, mult, adder, zero, result }) => [
+    data.out.to(mult.a),
+    weight.out.to(mult.b),
+    partialSumIn.out.to(adder.a),
+    mult.product.to(adder.b),
+    zero.out.to(adder.carry_in),
+    adder.sum.to(result.in),
+  ],
 })
-`;
+`,
+    circuit: MultiplyAdd,
+    nodePositions: {
+      // Inputs (left)
+      data:          { x: 0,   y: 0 },
+      weight:        { x: 0,   y: 120 },
+      partialSumIn:  { x: 0,   y: 240 },
+      // Processing (center)
+      mult:          { x: 250, y: 40 },
+      zero:          { x: 250, y: 240 },
+      adder:         { x: 470, y: 100 },
+      // Output (right)
+      result:        { x: 680, y: 100 },
+    },
+  },
+
+  weightRegister: {
+    name: "Weight Register",
+    description:
+      "A register that stores a weight only when the valid signal is high. The weight stays fixed while data streams through.",
+    displayCode: `
+const WeightRegister = circuit('WeightRegister', {
+  nodes: { weightIn: Input, weightValid: Switch, dataIn: Input, weightReg: Register, storedWeight: HexDisplay, mult: Multiplier, product: HexDisplay },
+  nodeArgs: { weightIn: { value: 7 }, dataIn: { value: 3 } },
+  connect: ({ in: inp, out, weightIn, weightValid, dataIn, weightReg, storedWeight, mult, product }) => [
+    weightIn.out.to(weightReg.data),
+    weightValid.out.to(weightReg.we),
+    weightReg.q.to(storedWeight.in, mult.b),
+    dataIn.out.to(mult.a),
+    mult.product.to(product.in),
+  ],
+})
+`,
+    circuit: WeightRegister,
+    nodePositions: {
+      // Inputs (left)
+      weightIn:     { x: 0,   y: 0 },
+      weightValid:  { x: 0,   y: 140 },
+      dataIn:       { x: 0,   y: 280 },
+      // Register (center)
+      weightReg:    { x: 260, y: 40 },
+      // Multiplier (center-right)
+      mult:         { x: 260, y: 220 },
+      // Outputs (right)
+      storedWeight: { x: 500, y: 40 },
+      product:      { x: 500, y: 220 },
+    },
+  },
+
+  processingElement: {
+    name: "Processing Element",
+    description:
+      "A full PE with weight register, multiplier, registered partial-sum adder, and data pipeline. The building block of the systolic array.",
+    displayCode: `
+const TestPE = circuit('TestPE', {
+  nodes: { pe: PE_Systolic, dataIn: Input, weightIn: Input, weightValid: Switch, partialSumIn: Input, partialSumOut: HexDisplay, dataOut: HexDisplay },
+  nodeArgs: { dataIn: { value: 3 }, weightIn: { value: 5 }, partialSumIn: { value: 0 } },
+  connect: ({ in: inp, out, pe, dataIn, weightIn, weightValid, partialSumIn, partialSumOut, dataOut }) => [
+    dataIn.out.to(pe.dataIn),
+    weightIn.out.to(pe.weightIn),
+    weightValid.out.to(pe.weightValid),
+    partialSumIn.out.to(pe.partialSumIn),
+    pe.partialSumOut.to(partialSumOut.in),
+    pe.dataOut.to(dataOut.in),
+  ],
+})
+`,
+    circuit: TestPE,
+    nodePositions: {
+      // Inputs (left)
+      dataIn:        { x: 0,   y: 0 },
+      weightIn:      { x: 0,   y: 120 },
+      weightValid:   { x: 0,   y: 240 },
+      partialSumIn:  { x: 0,   y: 350 },
+      // PE (center)
+      pe:            { x: 280, y: 100 },
+      // Outputs (right)
+      partialSumOut: { x: 540, y: 40 },
+      dataOut:       { x: 540, y: 220 },
+    },
+  },
+
+  twoPERow: {
+    name: "Two-PE Row",
+    description:
+      "Two PEs connected horizontally. Data flows left to right with a one-cycle delay between elements.",
+    displayCode: `
+const TwoPERow = circuit('TwoPERow', {
+  nodes: { pe0: PE_Systolic, pe1: PE_Systolic, data0: Input, weight0: Input, weight1: Input, weightValid: Switch, zero16: Constant, result0: HexDisplay, result1: HexDisplay },
+  nodeArgs: { data0: { value: 2 }, weight0: { value: 3 }, weight1: { value: 5 }, zero16: { value: 0 } },
+  connect: ({ in: inp, out, pe0, pe1, data0, weight0, weight1, weightValid, zero16, result0, result1 }) => [
+    data0.out.to(pe0.dataIn),
+    pe0.dataOut.to(pe1.dataIn),
+    weight0.out.to(pe0.weightIn),
+    weight1.out.to(pe1.weightIn),
+    weightValid.out.to(pe0.weightValid, pe1.weightValid),
+    zero16.out.to(pe0.partialSumIn, pe1.partialSumIn),
+    pe0.partialSumOut.to(result0.in),
+    pe1.partialSumOut.to(result1.in),
+  ],
+})
+`,
+    circuit: TwoPERow,
+    nodePositions: {
+      // Inputs (left)
+      data0:       { x: 0,   y: 0 },
+      weight0:     { x: 0,   y: 120 },
+      weight1:     { x: 0,   y: 240 },
+      weightValid: { x: 0,   y: 360 },
+      zero16:      { x: 200, y: 360 },
+      // PEs (center)
+      pe0:         { x: 280, y: 60 },
+      pe1:         { x: 520, y: 60 },
+      // Outputs (right)
+      result0:     { x: 760, y: 0 },
+      result1:     { x: 760, y: 160 },
+    },
+  },
+
+  twoPEColumn: {
+    name: "Two-PE Column",
+    description:
+      "Two PEs stacked vertically. Partial sums flow down through registers — one PE per clock cycle, just like real hardware.",
+    displayCode: `
+const TwoPEColumn = circuit('TwoPEColumn', {
+  nodes: { pe0: PE_Systolic, pe1: PE_Systolic, dataIn: Input, weight0: Input, weight1: Input, weightValid: Switch, zero16: Constant, topResult: HexDisplay, bottomResult: HexDisplay },
+  nodeArgs: { dataIn: { value: 4 }, weight0: { value: 3 }, weight1: { value: 5 }, zero16: { value: 0 } },
+  connect: ({ in: inp, out, pe0, pe1, dataIn, weight0, weight1, weightValid, zero16, topResult, bottomResult }) => [
+    dataIn.out.to(pe0.dataIn, pe1.dataIn),
+    weight0.out.to(pe0.weightIn),
+    weight1.out.to(pe1.weightIn),
+    weightValid.out.to(pe0.weightValid, pe1.weightValid),
+    zero16.out.to(pe0.partialSumIn),
+    pe0.partialSumOut.to(pe1.partialSumIn, topResult.in),
+    pe1.partialSumOut.to(bottomResult.in),
+  ],
+})
+`,
+    circuit: TwoPEColumn,
+    nodePositions: {
+      // Inputs (left)
+      dataIn:       { x: 0,   y: 120 },
+      weight0:      { x: 0,   y: 0 },
+      weight1:      { x: 0,   y: 280 },
+      weightValid:  { x: 0,   y: 400 },
+      zero16:       { x: 200, y: 400 },
+      // PEs (center, stacked vertically)
+      pe0:          { x: 300, y: 20 },
+      pe1:          { x: 300, y: 260 },
+      // Outputs (right)
+      topResult:    { x: 560, y: 20 },
+      bottomResult: { x: 560, y: 260 },
+    },
+  },
+
+  wavefrontController: {
+    name: "Wavefront Controller",
+    description:
+      "A phase register drives multi-step computation. Each phase has its own enable counter. LEDs show the active phase.",
+    displayCode: `
+const WavefrontController = circuit('WavefrontController', {
+  nodes: { phase: Register, enable: Switch, inc: Incrementer, phaseMux: Mux, one: Constant, zero: Constant, const1: Constant, const2: Constant, const3: Constant, isPhase0: Comparator, isPhase1: Comparator, isPhase2: Comparator, isPhase3: Comparator, led0: Led, led1: Led, led2: Led, led3: Led, display: HexDisplay },
+  nodeArgs: { phase: { initial: 0 }, one: { value: 1 }, zero: { value: 0 }, const1: { value: 1 }, const2: { value: 2 }, const3: { value: 3 } },
+  connect: ({ in: inp, out, phase, enable, inc, phaseMux, one, zero, const1, const2, const3, isPhase0, isPhase1, isPhase2, isPhase3, led0, led1, led2, led3, display }) => [
+    phase.q.to(inc.in, phaseMux.in0, isPhase0.a, isPhase1.a, isPhase2.a, isPhase3.a, display.in),
+    inc.out.to(phaseMux.in1),
+    enable.out.to(phaseMux.sel),
+    phaseMux.out.to(phase.data),
+    one.out.to(phase.we),
+    zero.out.to(isPhase0.b),
+    const1.out.to(isPhase1.b),
+    const2.out.to(isPhase2.b),
+    const3.out.to(isPhase3.b),
+    isPhase0.eq.to(led0.in),
+    isPhase1.eq.to(led1.in),
+    isPhase2.eq.to(led2.in),
+    isPhase3.eq.to(led3.in),
+  ],
+})
+`,
+    circuit: WavefrontController,
+    nodePositions: {
+      // Control (left)
+      enable:   { x: 0,   y: 100 },
+      // Phase register + increment (center-left)
+      phase:    { x: 200, y: 100 },
+      inc:      { x: 200, y: 0 },
+      phaseMux: { x: 200, y: 230 },
+      one:      { x: 60,  y: 230 },
+      // Constants (center)
+      zero:     { x: 420, y: 0 },
+      const1:   { x: 420, y: 80 },
+      const2:   { x: 420, y: 160 },
+      const3:   { x: 420, y: 240 },
+      // Comparators (center-right)
+      isPhase0: { x: 580, y: 0 },
+      isPhase1: { x: 580, y: 80 },
+      isPhase2: { x: 580, y: 160 },
+      isPhase3: { x: 580, y: 240 },
+      // LEDs (right)
+      led0:     { x: 760, y: 0 },
+      led1:     { x: 760, y: 80 },
+      led2:     { x: 760, y: 160 },
+      led3:     { x: 760, y: 240 },
+      // Display (bottom-right)
+      display:  { x: 760, y: 340 },
+    },
+  },
+};

@@ -5,32 +5,39 @@
   "sideEffects": false,
   "exports": {
     ".": {
+      "@turing-incomplete/source": "./src/index.ts",
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     },
     "./simulator": {
+      "@turing-incomplete/source": "./src/simulator/index.ts",
       "types": "./dist/simulator/index.d.ts",
       "import": "./dist/simulator/index.js"
     },
     "./api": {
+      "@turing-incomplete/source": "./src/api/index.ts",
       "types": "./dist/api/index.d.ts",
       "import": "./dist/api/index.js"
     },
     "./verilog": {
+      "@turing-incomplete/source": "./src/verilog/index.ts",
       "types": "./dist/verilog/index.d.ts",
       "import": "./dist/verilog/index.js"
     },
     "./circuit": {
-      "types": "./src/circuit/index.ts",
-      "import": "./src/circuit/index.ts"
+      "@turing-incomplete/source": "./src/circuit/index.ts",
+      "types": "./dist/circuit/index.d.ts",
+      "import": "./dist/circuit/index.js"
     },
     "./std": {
-      "types": "./src/std/index.ts",
-      "import": "./src/std/index.ts"
+      "@turing-incomplete/source": "./src/std/index.ts",
+      "types": "./dist/std/index.d.ts",
+      "import": "./dist/std/index.js"
     },
     "./sim": {
-      "types": "./src/sim/index.ts",
-      "import": "./src/sim/index.ts"
+      "@turing-incomplete/source": "./src/sim/index.ts",
+      "types": "./dist/sim/index.d.ts",
+      "import": "./dist/sim/index.js"
     }
   },
   "files": [

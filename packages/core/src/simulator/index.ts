@@ -34,10 +34,6 @@ export type {
   CircuitLibrary,
   MutableCircuitLibrary,
 
-  // Deprecated aliases
-  ComponentLibrary,
-  MutableComponentLibrary,
-
   // Circuit types
   Circuit,
   PortDescriptor,
@@ -56,7 +52,6 @@ export type {
   MemoryValue,
   PortInstance,
   CircuitKind,
-  ComponentKind,
   ArgumentValue,
   TestCase,
 } from '../types/circuit.js';
@@ -601,23 +596,6 @@ class FastSimulatorEngineImpl implements SimulatorEngine {
   }
 }
 
-// ============================================================================
-// Reference Circuit Compilation
-// ============================================================================
-
-/**
- * Compile a reference circuit for a primitive component.
- *
- * @deprecated Reference circuits were DSL strings. Now returns undefined always.
- * Will be replaced with TS builder reference circuits in a future pass.
- */
-export function compileReferenceCircuit(
-  _primitiveName: string,
-  _params?: Record<string, number>,
-): Circuit | undefined {
-  return undefined;
-}
-
 /**
  * Create a new simulator engine instance.
  *
@@ -661,9 +639,6 @@ export function createCircuitLibrary(circuits: Circuit[]): CircuitLibrary {
     }
   };
 }
-
-/** @deprecated Use createCircuitLibrary() instead */
-export const createComponentLibrary = createCircuitLibrary;
 
 /**
  * Elaborate and create a simulator in one step.

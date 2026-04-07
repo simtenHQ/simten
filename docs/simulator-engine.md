@@ -261,14 +261,14 @@ Phase 1. Not returned to the API.
 
 Memory primitives (ROM, RAM, DualPortRAM) are initialized from two sources:
 
-1. **DSL-embedded data**: `node ram: DualPortRAM(init={ 0: 42, 1: 100 })`
+1. **Circuit-embedded data**: `nodeArgs: { ram: { init: { 0: 42, 1: 100 } } }`
 2. **Injected memory data**: Runtime data passed via `initialMemory` option (e.g., compiled
    RISC-V binaries loaded into instruction memory)
 
 Memory data uses glob-pattern matching for node identification:
 `"cpu0*imem"` matches `"cpu0_abc_RV32I_CPU_imem_xyz"`.
 
-Injected data overwrites DSL data for overlapping addresses.
+Injected data overwrites embedded data for overlapping addresses.
 
 ### Storage
 

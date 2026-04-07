@@ -98,9 +98,23 @@ Split-pane editor with code on the left and live circuit on the right. Ctrl+Ente
 
 ```tsx
 import { useCircuitSimulator } from '@turing-incomplete/embed'
+import { circuit, bit } from '@turing-incomplete/core/circuit'
+import { Xor, And } from '@turing-incomplete/core/std'
+
+const HalfAdder = circuit('HalfAdder', {
+  in: { a: bit, b: bit },
+  out: { sum: bit, carry: bit },
+  nodes: { xor1: Xor, and1: And },
+  connect: ({ in: inp, out, xor1, and1 }) => [
+    inp.a.to(xor1.a, and1.a),
+    inp.b.to(xor1.b, and1.b),
+    xor1.out.to(out.sum),
+    and1.out.to(out.carry),
+  ],
+})
 
 function MyComponent() {
-  const sim = useCircuitSimulator(dslCode)
+  const sim = useCircuitSimulator(HalfAdder)
 
   // sim.ready, sim.error, sim.circuit
   // sim.inputs, sim.outputs, sim.portValues
