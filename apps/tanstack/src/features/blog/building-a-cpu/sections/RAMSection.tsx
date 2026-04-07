@@ -38,7 +38,6 @@ export function RAMSection() {
       <div className="mt-8">
         <CircuitEmbed
           circuit={BLOG_CIRCUITS.ram.circuit}
-          displayCode={BLOG_CIRCUITS.ram.displayCode}
           height={380}
           showControls
           title="256×8 RAM"

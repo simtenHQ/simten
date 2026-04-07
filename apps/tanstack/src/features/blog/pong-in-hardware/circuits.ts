@@ -7,21 +7,13 @@
  */
 
 import { circuit, bus, bit } from "@turing-incomplete/core/circuit";
-import type { BuiltCircuit } from "@turing-incomplete/core/circuit";
+import type { BlogCircuit } from '../types';
 import {
   Input, HexDisplay, Constant, Switch, Led,
   Register, Adder, Comparator, Or, And, Not, Mux,
   LeftShifter, BitSlice, Incrementer,
   DualPortRAM, Screen,
 } from "@turing-incomplete/core/std";
-
-export interface BlogCircuit {
-  name: string;
-  description: string;
-  displayCode: string;
-  circuit: BuiltCircuit;
-  nodePositions?: Record<string, { x: number; y: number }>;
-}
 
 // ── Module-level circuit definitions ──
 
@@ -125,23 +117,6 @@ export const PONG_CIRCUITS: Record<string, BlogCircuit> = {
       displayX: { x: 710, y: 50 },
       displayY: { x: 710, y: 200 },
     },
-    displayCode: `
-const BallPosition = circuit('BallPosition', {
-  nodes: { ballX: Register, ballY: Register, dx: Input, dy: Input, nextX: Adder, nextY: Adder, wrapX: BitSlice, wrapY: BitSlice, enable: Switch, displayX: HexDisplay, displayY: HexDisplay },
-  nodeArgs: { ballX: { initial: 8 }, ballY: { initial: 8 }, dx: { value: 1 }, dy: { value: 1 }, wrapX: { low: 0, high: 3 }, wrapY: { low: 0, high: 3 } },
-  connect: ({ in: inp, out, ballX, ballY, dx, dy, nextX, nextY, wrapX, wrapY, enable, displayX, displayY }) => [
-    ballX.q.to(nextX.a, displayX.in),
-    dx.out.to(nextX.b),
-    ballY.q.to(nextY.a, displayY.in),
-    dy.out.to(nextY.b),
-    nextX.sum.to(wrapX.in),
-    nextY.sum.to(wrapY.in),
-    wrapX.out.to(ballX.data),
-    wrapY.out.to(ballY.data),
-    enable.out.to(ballX.we, ballY.we),
-  ],
-})
-`,
     circuit: BallPosition,
   },
 
@@ -162,23 +137,6 @@ const BallPosition = circuit('BallPosition', {
       newDY: { x: 380, y: 400 },
       display: { x: 560, y: 400 },
     },
-    displayCode: `
-const BounceDetection = circuit('BounceDetection', {
-  nodes: { ballY: Input, zero: Constant, fifteen: Constant, atTop: Comparator, atBottom: Comparator, shouldBounce: Or, bounceLed: Led, one: Constant, minus1: Constant, newDY: Mux, display: HexDisplay },
-  nodeArgs: { ballY: { value: 15 }, zero: { value: 0 }, fifteen: { value: 15 }, one: { value: 1 }, minus1: { value: 255 }, newDY: { width: 8 } },
-  connect: ({ in: inp, out, ballY, zero, fifteen, atTop, atBottom, shouldBounce, bounceLed, one, minus1, newDY, display }) => [
-    ballY.out.to(atTop.a, atBottom.a),
-    zero.out.to(atTop.b),
-    fifteen.out.to(atBottom.b),
-    atTop.eq.to(shouldBounce.a),
-    atBottom.eq.to(shouldBounce.b, newDY.sel),
-    shouldBounce.out.to(bounceLed.in),
-    one.out.to(newDY.in0),
-    minus1.out.to(newDY.in1),
-    newDY.out.to(display.in),
-  ],
-})
-`,
     circuit: BounceDetection,
   },
 
@@ -204,28 +162,6 @@ const BounceDetection = circuit('BounceDetection', {
       display: { x: 720, y: 150 },
       deltaDisplay: { x: 720, y: 330 },
     },
-    displayCode: `
-const PaddleMovement = circuit('PaddleMovement', {
-  nodes: { keyboard: Input, zero: Constant, one: Constant, minus1: Constant, keyW: Constant, keyS: Constant, isW: Comparator, isS: Comparator, upDelta: Mux, delta: Mux, paddleY: Register, newY: Adder, wrapY: BitSlice, enable: Switch, display: HexDisplay, deltaDisplay: HexDisplay },
-  nodeArgs: { keyboard: { value: 17 }, zero: { value: 0 }, one: { value: 1 }, minus1: { value: 255 }, keyW: { value: 17 }, keyS: { value: 31 }, upDelta: { width: 8 }, delta: { width: 8 }, paddleY: { initial: 6 }, wrapY: { low: 0, high: 3 } },
-  connect: ({ in: inp, out, keyboard, zero, one, minus1, keyW, keyS, isW, isS, upDelta, delta, paddleY, newY, wrapY, enable, display, deltaDisplay }) => [
-    keyboard.out.to(isW.a, isS.a),
-    keyW.out.to(isW.b),
-    keyS.out.to(isS.b),
-    zero.out.to(upDelta.in0),
-    minus1.out.to(upDelta.in1),
-    isW.eq.to(upDelta.sel),
-    upDelta.out.to(delta.in0),
-    one.out.to(delta.in1),
-    isS.eq.to(delta.sel),
-    paddleY.q.to(newY.a, display.in),
-    delta.out.to(newY.b, deltaDisplay.in),
-    newY.sum.to(wrapY.in),
-    wrapY.out.to(paddleY.data),
-    enable.out.to(paddleY.we),
-  ],
-})
-`,
     circuit: PaddleMovement,
   },
 
@@ -247,24 +183,6 @@ const PaddleMovement = circuit('PaddleMovement', {
       isDrawPhase: { x: 530, y: 400 },
       drawLed: { x: 700, y: 400 },
     },
-    displayCode: `
-const PhaseCounter14 = circuit('PhaseCounter14', {
-  nodes: { phase: Register, one: Constant, zero: Constant, fourteen: Constant, phaseInc: Adder, atFourteen: Comparator, nextPhase: Mux, enable: Switch, display: HexDisplay, drawThreshold: Constant, isDrawPhase: Comparator, drawLed: Led },
-  nodeArgs: { phase: { initial: 0 }, one: { value: 1 }, zero: { value: 0 }, fourteen: { value: 14 }, nextPhase: { width: 8 }, drawThreshold: { value: 6 } },
-  connect: ({ in: inp, out, phase, one, zero, fourteen, phaseInc, atFourteen, nextPhase, enable, display, drawThreshold, isDrawPhase, drawLed }) => [
-    phase.q.to(phaseInc.a, display.in, isDrawPhase.a),
-    one.out.to(phaseInc.b),
-    phaseInc.sum.to(atFourteen.a, nextPhase.in0),
-    fourteen.out.to(atFourteen.b),
-    zero.out.to(nextPhase.in1),
-    atFourteen.eq.to(nextPhase.sel),
-    nextPhase.out.to(phase.data),
-    enable.out.to(phase.we),
-    drawThreshold.out.to(isDrawPhase.b),
-    isDrawPhase.gt.to(drawLed.in),
-  ],
-})
-`,
     circuit: PhaseCounter14,
   },
 
@@ -280,19 +198,6 @@ const PhaseCounter14 = circuit('PhaseCounter14', {
       addr: { x: 420, y: 90 },
       result: { x: 600, y: 90 },
     },
-    displayCode: `
-const PixelAddress = circuit('PixelAddress', {
-  nodes: { x: Input, y: Input, four: Input, y16: LeftShifter, addr: Adder, result: HexDisplay },
-  nodeArgs: { x: { value: 4 }, y: { value: 4 }, four: { value: 4 } },
-  connect: ({ in: inp, out, x, y, four, y16, addr, result }) => [
-    y.out.to(y16.value),
-    four.out.to(y16.shift),
-    y16.result.to(addr.a),
-    x.out.to(addr.b),
-    addr.sum.to(result.in),
-  ],
-})
-`,
     circuit: PixelAddress,
   },
 };

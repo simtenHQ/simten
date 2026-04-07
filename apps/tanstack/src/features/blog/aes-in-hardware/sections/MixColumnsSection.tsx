@@ -67,7 +67,6 @@ r3 = 3·s0 ⊕ s1   ⊕ s2   ⊕ 2·s3`}</pre>
           circuit={entry.circuit}
           height={420}
           showControls={false}
-          displayCode={entry.displayCode}
           title={entry.name}
           description={entry.description}
         />

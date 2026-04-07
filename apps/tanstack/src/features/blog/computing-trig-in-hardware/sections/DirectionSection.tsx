@@ -30,7 +30,6 @@ export function DirectionSection() {
           circuit={entry.circuit}
           height={240}
           showControls={false}
-          displayCode={entry.displayCode}
           title={entry.name}
           description={entry.description}
         />

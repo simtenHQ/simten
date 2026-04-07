@@ -39,7 +39,6 @@ d <<<= 16; // rotate d left by 16`}</pre>
           circuit={entry.circuit}
           height={320}
           showControls={false}
-          displayCode={entry.displayCode}
           title={entry.name}
           description={entry.description}
         />

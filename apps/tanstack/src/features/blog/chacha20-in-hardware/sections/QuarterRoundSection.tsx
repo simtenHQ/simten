@@ -49,7 +49,6 @@ c += d;  b ^= c;  b <<<= 7;`}</pre>
           circuit={entry.circuit}
           height={500}
           showControls={false}
-          displayCode={entry.displayCode}
           title={entry.name}
           description={entry.description}
         />

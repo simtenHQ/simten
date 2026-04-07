@@ -33,8 +33,6 @@ export interface CircuitEmbedProps {
   glowUnconnected?: boolean;
   /** Auto-run speed (ms between ticks) */
   autoRunSpeed?: number;
-  /** Display code in collapsible panel */
-  displayCode?: string;
   /** Initial values for input ports (set on harness Switch/Input nodes) */
   initialInputs?: Record<string, number | boolean>;
 }
@@ -46,10 +44,9 @@ export interface CircuitEmbedHandle {
 }
 
 export const CircuitEmbed = forwardRef<CircuitEmbedHandle, CircuitEmbedProps>(
-  function CircuitEmbed({ circuit, height = 300, showControls = true, nodePositions, theme, title, subtitle, description, href, focus, showPortLabels, onPortClick, glowUnconnected, autoRunSpeed = 500, displayCode, initialInputs }, ref) {
+  function CircuitEmbed({ circuit, height = 300, showControls = true, nodePositions, theme, title, subtitle, description, href, focus, showPortLabels, onPortClick, glowUnconnected, autoRunSpeed = 500, initialInputs }, ref) {
     const sim = useCircuitSimulator(circuit, { autoHarness: true, initialInputs });
     const [tickCount, setTickCount] = useState(0);
-    const [codeVisible, setCodeVisible] = useState(false);
 
     const handleTick = useCallback(() => {
       sim.tick();
@@ -142,32 +139,6 @@ export const CircuitEmbed = forwardRef<CircuitEmbedHandle, CircuitEmbedProps>(
             />
           )}
         </div>
-        {displayCode && (
-          <div className="border-t border-[var(--embed-border)]">
-            <button
-              onClick={() => setCodeVisible(!codeVisible)}
-              className="w-full px-3 py-2 text-xs text-[var(--embed-text-secondary)] hover:text-[var(--embed-text-primary)] hover:bg-[var(--embed-bg-tertiary)]/50 transition-colors text-left flex items-center gap-1.5"
-            >
-              <svg
-                className={`w-3 h-3 transition-transform ${codeVisible ? "rotate-90" : ""}`}
-                fill="currentColor"
-                viewBox="0 0 20 20"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z"
-                  clipRule="evenodd"
-                />
-              </svg>
-              View Code
-            </button>
-            {codeVisible && (
-              <pre className="px-4 pb-3 text-xs font-mono text-[var(--embed-text-secondary)] overflow-x-auto leading-relaxed">
-                {displayCode}
-              </pre>
-            )}
-          </div>
-        )}
         {hasInfoBar && (
           <div className="border-t border-border px-4 py-3 flex items-end justify-between gap-4">
             <div>
