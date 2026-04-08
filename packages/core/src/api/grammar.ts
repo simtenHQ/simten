@@ -4,8 +4,8 @@
  * Returns a summary of the TypeScript builder API.
  */
 
-import { getBuilderAPISummary } from '../types/analysis.js';
+import { getCircuitAPISummary } from '../types/analysis.js';
 
 export function getGrammarHandler(): string {
-  return getBuilderAPISummary();
+  return getCircuitAPISummary();
 }

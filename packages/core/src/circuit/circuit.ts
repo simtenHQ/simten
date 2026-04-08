@@ -357,7 +357,7 @@ export function circuit<
     registerCircuitEval(name, {
       inputNames: circuitIR.inputs.map(p => p.name),
       outputNames: circuitIR.outputs.map(p => p.name),
-      evalFn: config.eval ?? (() => ({})),
+      evalFn: (config.eval ?? (() => ({}))) as (inputs: Record<string, any>) => Record<string, any>,
       stateKeys,
       onTickFn: config.onTick as ((inputs: Record<string, any>) => Record<string, any>) | undefined,
     });
