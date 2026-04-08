@@ -18,10 +18,3 @@ export {
   enforceTokenBudget,
   truncateConversationHistory,
 } from './token-counter';
-
-export {
-  formatGoalState,
-  formatGoalStateCompact,
-  formatStatusChange,
-  getRecentChanges,
-} from './goal-formatter';
