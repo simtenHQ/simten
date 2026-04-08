@@ -20,7 +20,7 @@ import { CircuitEmbed } from "@turing-incomplete/embed";
 import { circuit, bit } from "@turing-incomplete/core/circuit";
 import type { BuiltCircuit } from "@turing-incomplete/core/circuit";
 import { Xor, And, Or, Not, DFlipFlop } from "@turing-incomplete/core/std";
-import { Logo } from "@/components/Logo";
+import { HighlightedCode } from "@/components/HighlightedCode";
 
 // ============================================================================
 // Demo circuits (self-contained — the gallery has its own copies of shared ones)
@@ -451,57 +451,7 @@ function useTypewriter(
   return { displayed, done };
 }
 
-// ============================================================================
-// Circuit code syntax highlighting
-// ============================================================================
-
-function highlightCode(code: string): ReactNode[] {
-  const KW = "text-[#0000ff] dark:text-[#569cd6] font-bold";
-  const COMMENT = "text-[#008000] dark:text-[#6a9955] italic";
-  const TYPE = "text-[#267f99] dark:text-[#4ec9b0]";
-  const COMPONENT = "text-[#267f99] dark:text-[#4ec9b0]";
-  const NUM = "text-[#098658] dark:text-[#b5cea8]";
-
-  const KEYWORD_RE = /^(circuit|input|output|clock|state|impl|node|connect|on)\b/;
-
-  return code.split("\n").map((line, i) => {
-    const trimmed = line.trimStart();
-    const indent = line.slice(0, line.length - trimmed.length);
-
-    if (trimmed.startsWith("//")) {
-      return <div key={i}>{indent}<span className={COMMENT}>{trimmed}</span></div>;
-    }
-
-    const tokens: ReactNode[] = [];
-    let rest = trimmed;
-    let k = 0;
-
-    const eat = (pattern: RegExp, cls?: string) => {
-      const m = rest.match(pattern);
-      if (!m) return false;
-      tokens.push(cls ? <span key={k++} className={cls}>{m[0]}</span> : <span key={k++}>{m[0]}</span>);
-      rest = rest.slice(m[0].length);
-      return true;
-    };
-
-    while (rest.length > 0) {
-      if (eat(KEYWORD_RE, KW)) continue;
-      if (eat(/^->/, KW)) continue;
-      if (eat(/^(Bit|Bus\[\d+\])/, TYPE)) continue;
-      if (eat(/^:\s*/, "text-muted-foreground")) {
-        eat(/^[A-Z]\w*/, COMPONENT);
-        eat(/^\([^)]*\)/, "text-muted-foreground");
-        continue;
-      }
-      if (eat(/^\d+/, NUM)) continue;
-      if (eat(/^[{}()]/, "text-muted-foreground/60")) continue;
-      if (eat(/^\s+/)) continue;
-      if (eat(/^[^\s{}()]+/)) continue;
-    }
-
-    return <div key={i}>{indent}{tokens}</div>;
-  });
-}
+// Code highlighting is provided by @/components/HighlightedCode (sugar-high).
 
 // ============================================================================
 // Window chrome
@@ -775,7 +725,27 @@ function ScriptedTerminal({
 
   const bottomRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    // Only scroll once there's content to scroll to. On initial mount
+    // (visibleCount = 0) we don't want any scroll at all, otherwise the
+    // page auto-scrolls down to this section just because the ref exists
+    // below the fold.
+    if (visibleCount === 0) return;
+
+    // Walk up to find the nearest scrollable ancestor (the terminal's own
+    // overflow-y container) and scroll only it — never the page. Using
+    // scrollIntoView would cascade through every scrollable ancestor and
+    // drag the viewport along when this section is off-screen.
+    const el = bottomRef.current;
+    if (!el) return;
+    let parent: HTMLElement | null = el.parentElement;
+    while (parent) {
+      const overflowY = getComputedStyle(parent).overflowY;
+      if (overflowY === "auto" || overflowY === "scroll") {
+        parent.scrollTop = parent.scrollHeight;
+        return;
+      }
+      parent = parent.parentElement;
+    }
   }, [visibleCount]);
 
   return (
@@ -842,20 +812,26 @@ const HeroBrowserWindow = forwardRef<HeroBrowserWindowHandle, {}>(
       <BrowserWindow className="flex-1" showMcp={codeTyping || showCircuit}>
         <div className="flex h-full">
           <div className="w-[250px] shrink-0 border-r border-border overflow-y-auto">
-            <pre className="text-[12px] font-mono text-foreground/70 leading-relaxed whitespace-pre-wrap py-3 px-4 mx-auto">
-              {codeTyping ? (
-                <>
-                  {highlightCode(codeTw.displayed)}
+            {codeTyping ? (
+              <HighlightedCode
+                code={codeTw.displayed}
+                className="text-[12px] font-mono leading-relaxed whitespace-pre-wrap py-3 px-4 m-0"
+                trailing={
                   <span className="inline-block w-[2px] h-[12px] bg-green-500 ml-0.5 animate-pulse align-text-bottom" />
-                </>
-              ) : showCircuit ? (
-                highlightCode(displayCode)
-              ) : (
+                }
+              />
+            ) : showCircuit ? (
+              <HighlightedCode
+                code={displayCode}
+                className="text-[12px] font-mono leading-relaxed whitespace-pre-wrap py-3 px-4 m-0"
+              />
+            ) : (
+              <div className="text-[12px] font-mono py-3 px-4">
                 <span className="text-muted-foreground/40 italic text-[11px]">
                   Waiting for circuit...
                 </span>
-              )}
-            </pre>
+              </div>
+            )}
           </div>
           <div className="flex-1 flex flex-col min-w-0">
             <div className="flex-1 min-h-0 relative">
@@ -979,70 +955,27 @@ export function ClaudeDemoSection({
   }, []);
 
   return (
-    <>
-      {/* Mobile: compact header + tagline + install command */}
-      <div className="md:hidden">
-        <div className="px-5 pt-6 pb-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Logo size={22} className="text-foreground/80 shrink-0" />
-            <span className="font-semibold text-[14px] tracking-tight text-foreground/80">
-              Turing Incomplete
-            </span>
+    <section className="hidden md:block px-6 py-16 border-t border-border">
+      <div className="max-w-6xl mx-auto">
+        {/* Section label */}
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1 text-[11px] text-muted-foreground">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+            Works with Claude + MCP
           </div>
-          <div className="flex items-center gap-3">
-            <Link to="/learn" className="text-muted-foreground/60 hover:text-foreground/80 transition-colors text-xs">Learn</Link>
-            <Link to="/blog" className="text-muted-foreground/60 hover:text-foreground/80 transition-colors text-xs">Blog</Link>
-            <Link to="/challenges" className="text-muted-foreground/60 hover:text-foreground/80 transition-colors text-xs">Challenges</Link>
-            <Link to="/editor" className="text-muted-foreground/60 hover:text-foreground/80 transition-colors text-xs">Editor</Link>
-            <Link to="/docs/$" params={{ _splat: "" }} className="text-muted-foreground/60 hover:text-foreground/80 transition-colors text-xs">Docs</Link>
-          </div>
-        </div>
-        <div className="px-5 pb-6 flex flex-col items-center text-center gap-4">
-          <p className="text-sm text-muted-foreground max-w-xs">
-            Live hardware simulations you can explore, build, and embed.
+          <h2 className="mt-4 text-2xl md:text-3xl font-semibold tracking-tight text-foreground">
+            Let Claude build circuits for you.
+          </h2>
+          <p className="mt-3 text-sm text-muted-foreground max-w-xl mx-auto">
+            Install the MCP server and Claude can write, simulate, and iterate
+            on hardware directly in your chat.
           </p>
-          <CopyCommand command="claude mcp add turing-incomplete npx @turing-incomplete/mcp" />
-        </div>
-      </div>
-
-      {/* Desktop: full-screen two-window demo */}
-      <div
-        ref={desktopContainerRef}
-        className="hidden md:flex h-[calc(100vh-140px)] flex-col overflow-hidden relative"
-      >
-        <div className="flex-shrink-0 px-6 pt-5 pb-3 flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <Logo size={28} className="text-foreground/80 shrink-0" />
-            <div>
-              <div className="font-semibold text-[15px] tracking-tight text-foreground/80">
-                Turing Incomplete
-              </div>
-              <div className="text-[11px] text-muted-foreground/60">
-                Live hardware simulations you can explore, build, and export to Verilog
-              </div>
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <a
-              href="https://github.com/charlesharris/turing-incomplete"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-muted-foreground/60 hover:text-foreground/80 transition-colors"
-              aria-label="GitHub"
-            >
-              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z" />
-              </svg>
-            </a>
-            <Link to="/learn" className="text-muted-foreground/60 hover:text-foreground/80 transition-colors text-xs">Learn</Link>
-            <Link to="/blog" className="text-muted-foreground/60 hover:text-foreground/80 transition-colors text-xs">Blog</Link>
-            <Link to="/challenges" className="text-muted-foreground/60 hover:text-foreground/80 transition-colors text-xs">Challenges</Link>
-            <Link to="/editor" className="text-muted-foreground/60 hover:text-foreground/80 transition-colors text-xs">Editor</Link>
-            <Link to="/docs/$" params={{ _splat: "" }} className="text-muted-foreground/60 hover:text-foreground/80 transition-colors text-xs">Docs</Link>
-          </div>
         </div>
 
-        <div className="flex flex-1 gap-4 px-5 pb-5 min-h-0">
+        <div
+          ref={desktopContainerRef}
+          className="h-[560px] flex gap-4 min-h-0"
+        >
           <TerminalWindow className="w-[38%] flex-shrink-0">
             <div className="flex flex-col h-full">
               <div className="flex-1 overflow-y-auto px-5 py-4">
@@ -1084,7 +1017,11 @@ export function ClaudeDemoSection({
 
           <HeroBrowserWindow ref={heroRef} />
         </div>
+
+        <div className="mt-6 flex justify-center">
+          <CopyCommand command="claude mcp add turing-incomplete npx @turing-incomplete/mcp" />
+        </div>
       </div>
-    </>
+    </section>
   );
 }
