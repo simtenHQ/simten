@@ -7,8 +7,21 @@
  * For circuit/simulation types (the actual IR), use @/core/simulator.
  */
 
-import { PRIMITIVE_DEFINITIONS, PRIMITIVES } from '@turing-incomplete/core/simulator';
-const isPrimitive = (name: string) => name in PRIMITIVE_DEFINITIONS;
+import type { BuiltCircuit } from '@turing-incomplete/core/circuit';
+import type { Circuit } from '@turing-incomplete/core';
+import * as std from '@turing-incomplete/core/std';
+
+// Build lookup structures from stdlib exports
+const STD_BUILT: BuiltCircuit[] = Object.values(std).filter(
+  (v): v is BuiltCircuit => !!v && typeof v === 'object' && 'name' in v && 'circuit' in v,
+);
+const STD_CIRCUIT_MAP: Map<string, Circuit> = new Map(STD_BUILT.map((b) => [b.name, b.circuit]));
+const PRIMITIVE_NAMES: Set<string> = new Set(
+  STD_BUILT
+    .filter((b) => b.circuit.implementation.kind === 'primitive')
+    .map((b) => b.name),
+);
+const isPrimitive = (name: string) => PRIMITIVE_NAMES.has(name);
 
 // ===========================
 // Component Type Definitions
@@ -59,7 +72,7 @@ export interface ComponentSpec {
  * Uses primitives.ts as the source of truth for primitive components.
  */
 export function getComponentSpec(type: string): ComponentSpec | undefined {
-  const primitive = PRIMITIVES.find((p) => p.name === type);
+  const primitive = STD_CIRCUIT_MAP.get(type);
   if (primitive) {
     return {
       type,
@@ -88,7 +101,7 @@ export function isPrimitiveComponentType(type: string): boolean {
  * Data-driven: checks if the primitive has clock ports.
  */
 export function isSequentialComponent(type: string): boolean {
-  const primitive = PRIMITIVES.find((p) => p.name === type);
+  const primitive = STD_CIRCUIT_MAP.get(type);
   return !!(primitive && primitive.clocks && primitive.clocks.length > 0);
 }
 

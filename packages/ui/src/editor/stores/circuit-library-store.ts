@@ -9,8 +9,14 @@ import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 import { enableMapSet } from 'immer';
 import type { Circuit } from '../types/circuit';
-import { clearReferenceCircuitCache, getCompiledReferenceCircuit } from '../utils/reference-circuit-cache';
-import { PRIMITIVES, PRIMITIVE_DEFINITIONS } from '@turing-incomplete/core/simulator';
+import { clearReferenceCircuitCache } from '../utils/reference-circuit-cache';
+import type { BuiltCircuit } from '@turing-incomplete/core/circuit';
+import * as std from '@turing-incomplete/core/std';
+
+// Extract Circuit IR objects from all stdlib BuiltCircuit exports
+const STD_CIRCUITS: Circuit[] = Object.values(std)
+  .filter((v): v is BuiltCircuit => !!v && typeof v === 'object' && 'name' in v && 'circuit' in v)
+  .map((v) => v.circuit);
 
 // Enable Immer's MapSet plugin for Map/Set support
 enableMapSet();
@@ -183,19 +189,11 @@ export const useCircuitLibraryStore = create<CircuitLibraryStore>()(
 
     initializeLibrary: () => {
       if (get().library.primitives.size > 0) return; // already initialized
-      const primitives = PRIMITIVES as Circuit[];
       set((state) => {
-        for (const circuit of primitives) {
+        for (const circuit of STD_CIRCUITS) {
           state.library.primitives.set(circuit.name, circuit);
         }
       });
-      // Pre-compile all composites (FullAdder, HalfAdder, etc.) as standard circuits
-      const store = get();
-      for (const [name, def] of Object.entries(PRIMITIVE_DEFINITIONS)) {
-        if (def.referenceCircuit) {
-          getCompiledReferenceCircuit(name, store);
-        }
-      }
     },
 
     clearAll: () => {
