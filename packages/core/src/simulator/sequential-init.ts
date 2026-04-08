@@ -49,6 +49,24 @@ export function initializeFlatSequentialState(
 
     // Check if this primitive has state
     if (component.implementation.kind === 'primitive' && component.state.length > 0) {
+
+      // Multi-block state: build a composite plain object (e.g. hybrid Map + scalars)
+      if (component.state.length > 1) {
+        const stateObj: Record<string, any> = {};
+        for (const block of component.state) {
+          const iv = block.initialValue;
+          if (typeof iv === 'object' && iv !== null && 'data' in iv) {
+            // Memory block — store the Map directly
+            stateObj[block.name] = (iv as { data: Map<number, number> }).data;
+          } else {
+            stateObj[block.name] = iv;
+          }
+        }
+        currentState.set(node.id, stateObj as PrimitiveState);
+        nextState.set(node.id, stateObj as PrimitiveState);
+        continue;
+      }
+
       const stateBlock = component.state[0];
 
       // Check for instance-specific initial value in node.arguments
@@ -83,7 +101,7 @@ export function initializeFlatSequentialState(
           addressWidth: stType.kind === 'memory' ? stType.addressWidth : 8,
           dataWidth: stType.kind === 'memory' ? stType.dataWidth : 8,
         };
-      } else if (node.primitiveType === 'ROM' || node.primitiveType === 'DualPortROM' || node.primitiveType === 'RV32I_InstrMem' || node.primitiveType === 'RV32I_DataMem' || node.primitiveType === 'Eth_FrameInput') {
+      } else if (node.primitiveType === 'ROM' || node.primitiveType === 'DualPortROM' || node.primitiveType === 'RV32I_InstrMem' || node.primitiveType === 'RV32I_DataMem') {
         // ROM initialization - check for node argument data first, then runtime-loaded data
         const memory = new Map<number, number>();
 
