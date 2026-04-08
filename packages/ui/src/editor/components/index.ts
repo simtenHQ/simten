@@ -3,7 +3,6 @@
  */
 export { ReactFlowProvider } from '@xyflow/react';
 export { Canvas } from './Canvas';
-export { ComponentPalette } from './ComponentPalette';
 export { ClockControls, type ClockControlsProps } from './ClockControls';
 export { SignalOutputPanel } from './SignalOutputPanel';
 export { CircuitSelector } from './CircuitSelector';
