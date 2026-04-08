@@ -6,11 +6,12 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import { simulateCircuit } from '@turing-incomplete/core/api';
 import { readCircuitSource } from '../lib/file-reader.js';
+import { getPreviewServer } from '../lib/preview-singleton.js';
 
 export function registerSimulateTool(server: McpServer): void {
   server.tool(
     'simulate_circuit',
-    'Compile and simulate a circuit. Returns RLE-compressed signal traces and optional steadyStateAt cycle. Optionally set initial input values and number of ticks. Tip: pass the output to show_traces to visualize waveforms in the live preview.',
+    'Compile and simulate a circuit. Automatically pushes waveforms to the browser preview if one is open (set show: false to suppress). Returns signal traces and steady-state cycle.',
     {
       source: z.string().optional().describe('TypeScript circuit code as a string'),
       filePath: z.string().optional().describe('Path to a .circuit.ts file'),
@@ -36,8 +37,13 @@ export function registerSimulateTool(server: McpServer): void {
         .describe(
           'Pre-load memory into sequential nodes. Keys are substring patterns matched against node IDs (e.g. "imem" matches any node containing "imem"). Values are { address: data } maps. Architecture-agnostic — works with any ROM/RAM primitive.'
         ),
+      show: z
+        .boolean()
+        .optional()
+        .default(true)
+        .describe('Push waveforms to the browser preview after simulating (default: true)'),
     },
-    async ({ source, filePath, circuitName, ticks, inputs, memoryData: memoryDataJson }) => {
+    async ({ source, filePath, circuitName, ticks, inputs, memoryData: memoryDataJson, show }) => {
       const read = readCircuitSource({ source, filePath });
       if (read.error) {
         return {
@@ -73,6 +79,13 @@ export function registerSimulateTool(server: McpServer): void {
           content: [{ type: 'text' as const, text: result.error }],
           isError: true,
         };
+      }
+
+      if (show) {
+        const preview = getPreviewServer();
+        if (preview) {
+          preview.pushTraces(result);
+        }
       }
 
       return {

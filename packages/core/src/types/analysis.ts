@@ -324,43 +324,60 @@ export function detectSteadyState(trace: SimulationTrace): number | undefined {
 // Builder API Summary
 // ============================================================================
 
-export function getBuilderAPISummary(): string {
-  return `// TypeScript Builder API — use circuit() to define circuits
+export function getCircuitAPISummary(): string {
+  return `// Circuit API — use circuit() to define circuits
 
 import { circuit, bit, bus } from '@turing-incomplete/core';
 
-// Basic example:
-const SwitchToLed = circuit('SwitchToLed')
-  .node('sw', 'Switch')
-  .node('led', 'Led')
-  .wire('sw.out', 'led.in')
-  .build();
+// Composite circuit — wire stdlib components together:
+const HalfAdder = circuit('HalfAdder', {
+  in: { a: bit, b: bit },
+  out: { sum: bit, carry: bit },
+  nodes: { x: Xor, a: And },
+  connect: ({ in: inp, out, x, a }) => [
+    inp.a.to(x.a, a.a),
+    inp.b.to(x.b, a.b),
+    x.out.to(out.sum),
+    a.out.to(out.carry),
+  ],
+});
 
-// With ports and parameters:
-const Counter16 = circuit('Counter16')
-  .input('enable', bit)
-  .output('count', bus(16))
-  .clock('clk')
-  .node('reg', 'Register', { width: 16 })
-  .node('adder', 'Adder', { width: 16 })
-  .node('one', 'Constant', { value: 1 })
-  .node('zero', 'Constant', { value: 0 })
-  .wire('reg.q', 'adder.a')
-  .wire('one.out', 'adder.b')
-  .wire('zero.out', 'adder.carry_in')
-  .wire('adder.sum', 'reg.data')
-  .wire('enable', 'reg.we')
-  .wire('reg.q', 'count')
-  .build();
+// Sequential circuit — Register + Adder feedback loop:
+const Counter = circuit('Counter', {
+  out: { count: bus(8) },
+  nodes: { reg: Register, adder: Adder, one: Constant, we: Constant, zero: Constant },
+  nodeArgs: { reg: { width: 8 }, adder: { width: 8 }, one: { value: 1 }, we: { value: 1 }, zero: { value: 0 } },
+  connect: ({ out, reg, adder, one, we, zero }) => [
+    reg.q.to(adder.a),
+    one.out.to(adder.b),
+    zero.out.to(adder.carry_in),
+    adder.sum.to(reg.data),
+    we.out.to(reg.we),  // write-enable must be wired — use Constant({ value: 1 }) for always-on
+    reg.q.to(out.count),
+  ],
+});
 
-// Composites: use a previously-built component as a node type
-const ha = circuit('HalfAdder')
-  .input('a', bit).input('b', bit)
-  .output('sum', bit).output('carry', bit)
-  .node('xor1', 'Xor').node('and1', 'And')
-  .wire('a', 'xor1.a').wire('b', 'xor1.b')
-  .wire('a', 'and1.a').wire('b', 'and1.b')
-  .wire('xor1.out', 'sum').wire('and1.out', 'carry')
-  .build();
+// Nodes with arguments — use nodeArgs:
+const Adder8 = circuit('Adder8', {
+  in: { a: bus(8), b: bus(8) },
+  out: { sum: bus(8), carry: bit },
+  nodes: { add: Adder },
+  nodeArgs: { add: { width: 8 } },
+  connect: ({ in: inp, out, add }) => [
+    inp.a.to(add.a),
+    inp.b.to(add.b),
+    add.sum.to(out.sum),
+    add.carry_out.to(out.carry),
+  ],
+});
+
+// Stdlib components are available by name without imports:
+// And, Or, Not, Xor, Nand, Nor, Adder, Register, Mux, Decoder,
+// ROM, RAM, DFlipFlop, Switch, Led, Input, Output, Constant, ...
 `;
+}
+
+/** @deprecated use getCircuitAPISummary */
+export function getBuilderAPISummary(): string {
+  return getCircuitAPISummary();
 }
