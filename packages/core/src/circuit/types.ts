@@ -79,8 +79,8 @@ export type PortValues<M> = {
   [K in keyof M]: number;
 };
 
-/** State value types: number (bus), boolean (bit), or Map (memory) */
-export type StateValue = number | boolean | Map<number, number>;
+/** State value types: number (bus), boolean (bit), Map (memory), or string (text buffers) */
+export type StateValue = number | boolean | Map<number, number> | string;
 
 /** State shape — plain object where each field is a state value */
 export type StateShape = Record<string, StateValue>;
@@ -96,6 +96,8 @@ export interface CircuitMeta {
   tags?: string[];
   author?: string;
   version?: string;
+  /** Key in node.arguments that holds the user-interactive value (Switch, Button, Input) */
+  interactiveArg?: string;
 }
 
 // ============================================================================
