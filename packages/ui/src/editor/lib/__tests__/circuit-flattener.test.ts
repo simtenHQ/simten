@@ -12,7 +12,7 @@ describe('Circuit Flattener (IR v0.1)', () => {
   beforeEach(() => {
     // Reset library before each test
     const library = useCircuitLibraryStore.getState();
-    library.clearUserComponents();
+    library.clear();
   });
 
   it('should keep primitive-only circuits unchanged', () => {
@@ -168,7 +168,7 @@ describe('Circuit Flattener (IR v0.1)', () => {
       implementation: { kind: 'composite' },
     };
 
-    library.registerUser(halfAdder);
+    library.addCircuit(halfAdder);
 
     // Create circuit using HalfAdder
     const circuit: Circuit = {
@@ -343,7 +343,7 @@ describe('Circuit Flattener (IR v0.1)', () => {
       implementation: { kind: 'composite' },
     };
 
-    library.registerUser(halfAdder);
+    library.addCircuit(halfAdder);
 
     // Define FullAdder using HalfAdders
     const fullAdder: Circuit = {
@@ -465,7 +465,7 @@ describe('Circuit Flattener (IR v0.1)', () => {
       implementation: { kind: 'composite' },
     };
 
-    library.registerUser(fullAdder);
+    library.addCircuit(fullAdder);
 
     // Create circuit using FullAdder
     const circuit: Circuit = {
@@ -560,7 +560,7 @@ describe('Circuit Flattener (IR v0.1)', () => {
       implementation: { kind: 'composite' },
     };
 
-    library.registerUser(counter);
+    library.addCircuit(counter);
 
     // Create circuit with TWO counter instances
     const circuit: Circuit = {
@@ -671,7 +671,7 @@ describe('Circuit Flattener (IR v0.1)', () => {
       implementation: { kind: 'composite' },
     };
 
-    library.registerUser(halfAdder);
+    library.addCircuit(halfAdder);
 
     // Circuit with composite component
     const compositeCircuit: Circuit = {

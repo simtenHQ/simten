@@ -111,10 +111,11 @@ export function stripTypes(code: string): string {
 export function executeCircuitCode(code: string): ExecuteResult {
   const { names, values } = getScope();
   const circuitMap = new Map<string, Circuit>();
-  const library: CircuitLibrary & { addCircuit(c: Circuit): void } = {
+  const library: CircuitLibrary & { addCircuit(c: Circuit): void; getAllCircuitNames(): string[] } = {
     resolveCircuit: (name) => circuitMap.get(name),
     getAllPrimitiveNames: () => [...circuitMap.entries()].filter(([, c]) => c.implementation.kind === 'primitive').map(([n]) => n),
     addCircuit: (c) => { circuitMap.set(c.name, c); },
+    getAllCircuitNames: () => [...circuitMap.keys()],
   };
   const builtCircuits: BuiltCircuit[] = [];
   const circuits: Circuit[] = [];
