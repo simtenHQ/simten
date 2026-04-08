@@ -30,7 +30,7 @@ function typedDecl(comp: BuiltCircuit): string {
 /** Generate stdlib declarations with typed port shapes from actual stdlib circuits */
 function generateStdlibDeclarations(): string {
   const lines: string[] = ['// Standard Library Components (auto-generated with port shapes)'];
-  const circuits = Object.values(std).filter(
+  const circuits = (Object.values(std) as unknown[]).filter(
     (v): v is BuiltCircuit => !!v && typeof v === 'object' && 'name' in v && 'circuit' in v,
   );
   for (const comp of circuits) {

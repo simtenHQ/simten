@@ -11,46 +11,9 @@ const CircuitEmbed = lazy(() =>
 );
 
 // Collect all stdlib BuiltCircuit objects
-const ALL_STD: BuiltCircuit[] = Object.values(std).filter(
+const ALL_STD: BuiltCircuit[] = (Object.values(std) as unknown[]).filter(
   (v): v is BuiltCircuit => !!v && typeof v === 'object' && 'name' in v && 'circuit' in v,
 );
-
-// Generate a minimal TS builder circuit that exercises a stdlib component
-function generateDemoDsl(comp: BuiltCircuit): string {
-  const c = comp.circuit;
-  const portType = (p: PortDescriptor) =>
-    p.portType.kind === "bus" ? `bus(${p.portType.width ?? 8})` : "bit";
-
-  // Build node args from default params
-  const params = (c.parameters ?? [])
-    .filter((p) => p.defaultValue !== undefined)
-    .map((p) => `${p.name}: ${JSON.stringify(p.defaultValue)}`)
-    .join(", ");
-  const nodeArgs = params ? `, { ${params} }` : "";
-
-  // Connection lines
-  const inputConns = c.inputs
-    .map((p) => `    inp.${p.name}.to(dut.${p.name}),`)
-    .join("\n");
-  const outputConns = c.outputs
-    .map((p) => `    dut.${p.name}.to(out.${p.name}),`)
-    .join("\n");
-
-  const allConns = [inputConns, outputConns].filter(Boolean).join("\n");
-
-  const parts = [];
-  if (c.inputs.length > 0) parts.push(`  in: { ${c.inputs.map(p => `${p.name}: ${portType(p)}`).join(', ')} },`);
-  if (c.outputs.length > 0) parts.push(`  out: { ${c.outputs.map(p => `${p.name}: ${portType(p)}`).join(', ')} },`);
-  parts.push(`  nodes: { dut: ${comp.name} },`);
-  if (nodeArgs) parts.push(`  nodeArgs: { dut: { ${params} } },`);
-  if (allConns) {
-    parts.push(`  connect: ({ in: inp, out, dut }) => [`);
-    parts.push(allConns);
-    parts.push(`  ],`);
-  }
-
-  return `const Demo = circuit('Demo', {\n${parts.join('\n')}\n})`;
-}
 
 // Category display order and labels
 const CATEGORY_ORDER = [
@@ -299,21 +262,11 @@ export function PrimitiveExplorer() {
             }
           >
             <CircuitEmbed
-              code={generateDemoDsl(selected)}
+              circuit={selected}
               height={280}
               showControls
             />
           </Suspense>
-
-          {/* circuit */}
-          <details className="border-t border-border">
-            <summary className="px-4 py-2 text-xs text-muted-foreground hover:text-foreground cursor-pointer transition-colors">
-              View generated circuit
-            </summary>
-            <pre className="px-4 pb-3 text-xs font-mono text-muted-foreground overflow-x-auto leading-relaxed">
-              {generateDemoDsl(selected)}
-            </pre>
-          </details>
         </div>
       ) : (
         <div className="rounded-xl border border-border bg-card/50 flex items-center justify-center h-48 text-muted-foreground text-sm">
