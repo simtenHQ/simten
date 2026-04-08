@@ -895,20 +895,67 @@ export interface ClaudeDemoSectionProps {
   /** Called once when the scripted demo finishes playing. */
   onComplete?: () => void;
   /**
-   * When false, the scripted terminal does not auto-play. Used to gate
-   * the animation on scroll-into-view via IntersectionObserver.
-   * Defaults to true for backwards-compatible "auto-play on mount" behavior.
+   * When true, the scripted demo auto-plays immediately on mount regardless
+   * of scroll position. Defaults to false — the demo waits until its desktop
+   * container scrolls into view before starting. Useful for placing the
+   * component further down the page without triggering a hidden animation.
    */
-  active?: boolean;
+  autoPlay?: boolean;
 }
 
 export function ClaudeDemoSection({
   onComplete,
-  active = true,
+  autoPlay = false,
 }: ClaudeDemoSectionProps) {
   const [demoComplete, setDemoComplete] = useState(false);
   const [extraLines, setExtraLines] = useState<TermLine[]>([]);
   const [pickedPrompt, setPickedPrompt] = useState(false);
+
+  // Scroll-into-view gating for the scripted terminal animation.
+  // Starts true if autoPlay was requested, otherwise waits for IO.
+  const [inView, setInView] = useState(autoPlay);
+  const desktopContainerRef = useRef<HTMLDivElement>(null);
+  const hasPlayedRef = useRef(autoPlay);
+
+  useEffect(() => {
+    if (hasPlayedRef.current) return;
+    if (typeof window === "undefined") return;
+
+    // Reduced-motion users: activate immediately so content isn't hidden,
+    // but the typewriter still runs (it's short). Simpler than building a
+    // separate "static final state" render path.
+    if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) {
+      hasPlayedRef.current = true;
+      setInView(true);
+      return;
+    }
+
+    // Old browsers without IntersectionObserver: fall back to auto-play.
+    if (typeof IntersectionObserver === "undefined") {
+      hasPlayedRef.current = true;
+      setInView(true);
+      return;
+    }
+
+    const el = desktopContainerRef.current;
+    if (!el) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            hasPlayedRef.current = true;
+            setInView(true);
+            observer.disconnect();
+            break;
+          }
+        }
+      },
+      { threshold: 0.15 },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
 
   const heroRef = useRef<HeroBrowserWindowHandle>(null);
 
@@ -959,7 +1006,10 @@ export function ClaudeDemoSection({
       </div>
 
       {/* Desktop: full-screen two-window demo */}
-      <div className="hidden md:flex h-[calc(100vh-140px)] flex-col overflow-hidden relative">
+      <div
+        ref={desktopContainerRef}
+        className="hidden md:flex h-[calc(100vh-140px)] flex-col overflow-hidden relative"
+      >
         <div className="flex-shrink-0 px-6 pt-5 pb-3 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <Logo size={28} className="text-foreground/80 shrink-0" />
@@ -1000,7 +1050,7 @@ export function ClaudeDemoSection({
                   onCodeStage={handleCodeStage}
                   onComplete={handleComplete}
                   extraLines={extraLines}
-                  active={active}
+                  active={inView}
                 />
               </div>
 
