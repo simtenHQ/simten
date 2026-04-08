@@ -7,8 +7,14 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { createSimulatorFromCircuit, type CircuitLibrary } from '@turing-incomplete/core/simulator';
 import { useCircuitLibraryStore } from '../../stores/circuit-library-store';
-import { PRIMITIVES } from '@turing-incomplete/core/simulator';
+import * as std from '@turing-incomplete/core/std';
+import type { BuiltCircuit } from '@turing-incomplete/core/circuit';
 import { bitType, busType, type Circuit } from '../../types/circuit';
+
+const PRIMITIVES = Object.values(std)
+  .filter((v): v is BuiltCircuit => !!v && typeof v === 'object' && 'circuit' in v && 'name' in v)
+  .map((v) => v.circuit)
+  .filter(c => c.implementation.kind === 'primitive');
 
 function getLibrary(): CircuitLibrary {
   const store = useCircuitLibraryStore.getState();
@@ -23,8 +29,8 @@ describe('Screen Integration', () => {
 
   beforeEach(() => {
     library = useCircuitLibraryStore.getState();
-    library.clearAll();
-    library.registerPrimitives(PRIMITIVES as any[]);
+    library.clear();
+    library.addCircuits(PRIMITIVES as any[]);
   });
 
   it('should work with empty circuit (no RAM)', () => {

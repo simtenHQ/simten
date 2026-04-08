@@ -9,7 +9,13 @@ import { describe, it, expect, beforeAll } from 'vitest';
 import { Circuit, bitType, busType } from '../../types/circuit';
 import { createSimulatorFromCircuit, type CircuitLibrary } from '@turing-incomplete/core/simulator';
 import { useCircuitLibraryStore } from '../../stores/circuit-library-store';
-import { PRIMITIVES } from '@turing-incomplete/core/simulator';
+import * as std from '@turing-incomplete/core/std';
+import type { BuiltCircuit } from '@turing-incomplete/core/circuit';
+
+const PRIMITIVES = Object.values(std)
+  .filter((v): v is BuiltCircuit => !!v && typeof v === 'object' && 'circuit' in v && 'name' in v)
+  .map((v) => v.circuit)
+  .filter(c => c.implementation.kind === 'primitive');
 
 function getLibrary(): CircuitLibrary {
   const store = useCircuitLibraryStore.getState();
@@ -23,8 +29,8 @@ describe('Nested Sequential Components', () => {
   beforeAll(() => {
     // Register primitives first (required for nested components to work)
     const store = useCircuitLibraryStore.getState();
-    store.clearAll();
-    store.registerPrimitives(PRIMITIVES as any[]);
+    store.clear();
+    store.addCircuits(PRIMITIVES as any[]);
 
     // Register the circuits so they can be instantiated as components
     const registerCircuit: Circuit = {
@@ -191,8 +197,8 @@ describe('Nested Sequential Components', () => {
     };
 
     // Register both circuits in the component library
-    store.registerUser(registerCircuit);
-    store.registerUser(counterCircuit);
+    store.addCircuit(registerCircuit);
+    store.addCircuit(counterCircuit);
   });
 
   it('should handle a simple register in a nested circuit', () => {
@@ -265,8 +271,9 @@ describe('Nested Sequential Components', () => {
     const result1 = sim.tick();
     expect(result1.sequentialState?.cycleCount).toBe(1);
 
-    // Check output using portValues
-    const regOutput = result1.portValues.get('reg_instance.dataOut');
+    // After elaboration, reg_instance (SimpleReg composite) is flattened.
+    // The internal Register's output q is accessible as reg_instance.reg.q.
+    const regOutput = result1.portValues.get('reg_instance.reg.q');
 
     // This is the key test: does the nested register's output update?
     expect(regOutput).toBe(42);
@@ -320,8 +327,9 @@ describe('Nested Sequential Components', () => {
       lastResult = sim.tick();
     }
 
-    // Check counter output using portValues from last result
-    const counterOutput = lastResult!.portValues.get('counter.count');
+    // After elaboration, counter (SimpleCounter composite) is flattened.
+    // The internal Register's output q is accessible as counter.reg.q.
+    const counterOutput = lastResult!.portValues.get('counter.reg.q');
 
     // This tests if nested sequential components with feedback work
     expect(counterOutput).toBe(5);

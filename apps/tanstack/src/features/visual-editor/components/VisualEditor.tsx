@@ -18,8 +18,7 @@ import {
   SignalOutputPanel,
 } from "@turing-incomplete/ui/editor/components";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { useCircuitStore, useCircuitPreviewStore } from "@turing-incomplete/ui/editor/stores";
-import { usePrimitivesInit } from "@turing-incomplete/ui/editor/hooks";
+import { useCircuitStore, useCircuitPreviewStore, useCircuitLibraryStore } from "@turing-incomplete/ui/editor/stores";
 import { useCircuitSession } from "@turing-incomplete/ui/canvas";
 import type { Circuit } from "@turing-incomplete/ui/editor/types";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
@@ -87,26 +86,24 @@ export function VisualEditor({ theme = "light" }: VisualEditorProps) {
   // Channel thinking state (separate from the API streaming system)
   const [channelThinking, setChannelThinking] = useState(false);
 
-  // Initialize primitive components library
-  usePrimitivesInit();
+  // Library from the last successful compile (stored in Zustand)
+  const library = useCircuitLibraryStore((s) => s.library);
 
-  // ── Compile library — set by editor on compile, used for simulation + export ──
-  const [compileLibrary, setCompileLibrary] = useState<{ resolveComponent: (name: string) => Circuit | undefined; getAllPrimitiveNames: () => string[] } | null>(null);
-
-  // Export to Verilog — uses compile library (no store)
+  // Export to Verilog — uses library store
   const handleExportVerilog = useCallback(() => {
+    const lib = useCircuitLibraryStore.getState();
     let currentCircuit = useCircuitStore.getState().circuit;
-    if (!currentCircuit || !compileLibrary) return;
+    if (!currentCircuit || !lib.library) return;
 
     // If this is an auto-generated harness, export the real circuit instead
     if (isHarnessName(currentCircuit.name)) {
       const baseName = currentCircuit.name.replace(/Harness$/, '');
-      const realCircuit = compileLibrary.resolveCircuit(baseName);
+      const realCircuit = lib.resolveCircuit(baseName);
       if (realCircuit) currentCircuit = realCircuit;
     }
 
     try {
-      const verilogCode = exportVerilog(currentCircuit, compileLibrary);
+      const verilogCode = exportVerilog(currentCircuit, lib);
       const blob = new Blob([verilogCode], { type: 'text/plain' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -117,10 +114,10 @@ export function VisualEditor({ theme = "light" }: VisualEditorProps) {
     } catch (e) {
       console.error('Verilog export failed:', e);
     }
-  }, [compileLibrary]);
+  }, []);
 
   // ── Simulation — driven by compile result, no store dependency ──
-  const sim = useCircuitSession(circuit, compileLibrary);
+  const sim = useCircuitSession(circuit, library);
   const showClockControls = sim.isSequential;
 
   // Keep sim state in ref for MCP callbacks
@@ -177,12 +174,12 @@ export function VisualEditor({ theme = "light" }: VisualEditorProps) {
 
   // Handle compilation in split mode
   const handleCompile = useCallback(
-    (circuits: Circuit[], code: string, library?: { resolveComponent: (name: string) => Circuit | undefined; getAllPrimitiveNames: () => string[] }) => {
+    (circuits: Circuit[], code: string, library?: { resolveCircuit(name: string): Circuit | undefined; getAllPrimitiveNames(): string[]; getAllCircuitNames(): string[] }) => {
       setCompiledCircuits(circuits, code);
 
-      // Pass library to simulation and other consumers
+      // Store library so Canvas, simulation, and Verilog export can all use it
       if (library) {
-        setCompileLibrary(library);
+        useCircuitLibraryStore.getState().setLibrary(library);
       }
     },
     [setCompiledCircuits],
