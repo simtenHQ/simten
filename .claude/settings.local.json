@@ -121,7 +121,9 @@
       "Bash(sed -i '' 's/updateSource\\(dsl: string, sessionId?: string\\)/updateSource\\(source: string, sessionId?: string\\)/g' packages/mcp/src/server/ws-server.ts)",
       "Bash(sed -i '' 's/- Pushes DSL, traces, test results, memory data to connected tabs/- Pushes circuit source, traces, test results, memory data to connected tabs/g' packages/mcp/src/server/ws-server.ts)",
       "Bash(sed -i '' 's/library\\\\.clearAll\\(\\)/library.clear\\(\\)/g' circuit-store.test.ts)",
-      "Bash(sed -i '' 's/library\\\\.registerPrimitive\\(/library.addCircuit\\(/g' circuit-store.test.ts)"
+      "Bash(sed -i '' 's/library\\\\.registerPrimitive\\(/library.addCircuit\\(/g' circuit-store.test.ts)",
+      "Bash(awk 'NR>=66 && NR<=365' apps/tanstack/src/routes/index.tsx)",
+      "Bash(awk NR>=735 && NR<=745:*)"
     ]
   }
 }
