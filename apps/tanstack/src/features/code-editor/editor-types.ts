@@ -9,27 +9,32 @@
  * inside connect() callbacks.
  */
 
-import { PRIMITIVE_DEFINITIONS, type CorePrimitiveDefinition } from '@turing-incomplete/core/simulator';
+import type { BuiltCircuit } from '@turing-incomplete/core/circuit';
+import * as std from '@turing-incomplete/core/std';
 
 /** Convert a port type to its TypeScript type string */
 function portTypeStr(portType: { kind: string; width?: number }): string {
   return portType.kind === 'bit' ? 'BitType' : `BusType`;
 }
 
-/** Generate a typed BuiltCircuit declaration for a primitive */
-function typedDecl(def: CorePrimitiveDefinition): string {
-  const ins = def.inputs.map(p => `${p.name}: ${portTypeStr(p.portType)}`).join('; ');
-  const outs = def.outputs.map(p => `${p.name}: ${portTypeStr(p.portType)}`).join('; ');
+/** Generate a typed BuiltCircuit declaration from a BuiltCircuit */
+function typedDecl(comp: BuiltCircuit): string {
+  const c = comp.circuit;
+  const ins = c.inputs.map(p => `${p.name}: ${portTypeStr(p.portType)}`).join('; ');
+  const outs = c.outputs.map(p => `${p.name}: ${portTypeStr(p.portType)}`).join('; ');
   const insType = ins ? `{ ${ins} }` : '{}';
   const outsType = outs ? `{ ${outs} }` : '{}';
-  return `declare const ${def.name}: BuiltCircuit<${insType}, ${outsType}>;`;
+  return `declare const ${comp.name}: BuiltCircuit<${insType}, ${outsType}>;`;
 }
 
-/** Generate stdlib declarations with typed port shapes from actual primitive definitions */
+/** Generate stdlib declarations with typed port shapes from actual stdlib circuits */
 function generateStdlibDeclarations(): string {
   const lines: string[] = ['// Standard Library Components (auto-generated with port shapes)'];
-  for (const def of Object.values(PRIMITIVE_DEFINITIONS)) {
-    lines.push(typedDecl(def));
+  const circuits = Object.values(std).filter(
+    (v): v is BuiltCircuit => !!v && typeof v === 'object' && 'name' in v && 'circuit' in v,
+  );
+  for (const comp of circuits) {
+    lines.push(typedDecl(comp));
   }
   return lines.join('\n');
 }

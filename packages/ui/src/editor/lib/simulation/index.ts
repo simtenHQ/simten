@@ -5,4 +5,3 @@
  * import directly from '@turing-incomplete/core/simulator'.
  */
 
-export * from './primitive-metadata';

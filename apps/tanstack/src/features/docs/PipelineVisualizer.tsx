@@ -5,9 +5,9 @@ import type { Circuit } from "@turing-incomplete/core";
 import {
   elaborate,
   compileForSimulation,
-  PRIMITIVE_DEFINITIONS,
-  generatePrimitives,
 } from "@turing-incomplete/core/simulator";
+import type { BuiltCircuit } from "@turing-incomplete/core/circuit";
+import * as std from "@turing-incomplete/core/std";
 
 const CircuitEmbed = lazy(() =>
   import("@turing-incomplete/embed").then((m) => ({
@@ -94,7 +94,9 @@ export function PipelineVisualizer() {
       const resolveCircuit = (name: string) => library.resolveCircuit(name);
 
       // Build primitive name list for elaboration
-      const prims = generatePrimitives(PRIMITIVE_DEFINITIONS) as Circuit[];
+      const prims = Object.values(std)
+        .filter((v): v is BuiltCircuit => !!v && typeof v === 'object' && 'name' in v && 'circuit' in v)
+        .map((v) => v.circuit) as Circuit[];
       const primNames = prims.map((p) => p.name);
 
       // Stage 2: Elaborate the FullAdder

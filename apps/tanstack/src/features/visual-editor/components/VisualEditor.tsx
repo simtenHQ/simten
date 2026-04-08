@@ -13,7 +13,6 @@ import { useCallback, useState, useEffect, useRef } from "react";
 import {
   ReactFlowProvider,
   Canvas,
-  ComponentPalette,
   RightSidebar,
   ClockControls,
   SignalOutputPanel,
@@ -27,7 +26,7 @@ import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { TSEditor, type TSEditorRef } from "@/features/code-editor/TSEditor";
-import { Menu, TestTube, Bot, Download } from "lucide-react";
+import { TestTube, Bot, Download } from "lucide-react";
 import { exportVerilog } from "@turing-incomplete/core/verilog";
 /** Check if a circuit name is an auto-generated harness */
 function isHarnessName(name: string): boolean {
@@ -74,7 +73,6 @@ export function VisualEditor({ theme = "light" }: VisualEditorProps) {
   const circuit = useCircuitStore((state) => state.circuit);
 
   // Drawer state
-  const [componentPaletteOpen, setComponentPaletteOpen] = useState(false);
   const [testsPanelOpen, setTestsPanelOpen] = useState(false);
 
   // Editor ref for ChatPanel integration
@@ -161,11 +159,6 @@ export function VisualEditor({ theme = "light" }: VisualEditorProps) {
   // Keyboard shortcuts for drawer toggles
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Cmd+P / Ctrl+P - Toggle component palette
-      if ((e.metaKey || e.ctrlKey) && e.key === "p") {
-        e.preventDefault();
-        setComponentPaletteOpen((prev) => !prev);
-      }
       // Cmd+T / Ctrl+T - Toggle tests panel
       if ((e.metaKey || e.ctrlKey) && e.key === "t") {
         e.preventDefault();
@@ -260,15 +253,6 @@ export function VisualEditor({ theme = "light" }: VisualEditorProps) {
         {/* Top Control Bar with Drawer Toggle Buttons */}
         <div className="flex items-center gap-3 border-b border-gray-200 dark:border-[#2a2a2e] bg-white dark:bg-[#1a1a1e] px-6 py-2 shadow-sm">
           {/* Left: Drawer Toggle Buttons */}
-          <Button
-            onClick={() => setComponentPaletteOpen(true)}
-            variant="outline"
-            size="sm"
-            className="gap-2"
-            title="Open Component Palette (Cmd+P)"
-          >
-            <Menu className="h-4 w-4" />
-          </Button>
 
           <Button
             onClick={() => setTestsPanelOpen(true)}
@@ -380,17 +364,6 @@ export function VisualEditor({ theme = "light" }: VisualEditorProps) {
           </div>
         </div>
 
-        {/* Left Drawer: Component Palette (non-modal for drag-and-drop) */}
-        <Sheet
-          modal={false}
-          open={componentPaletteOpen}
-          onOpenChange={setComponentPaletteOpen}
-        >
-          <SheetContent side="left" className="w-80 p-0">
-            <SheetTitle className="sr-only">Component Palette</SheetTitle>
-            <ComponentPalette />
-          </SheetContent>
-        </Sheet>
 
         {/* Right Drawer: Tests + Testbench */}
         <Sheet open={testsPanelOpen} onOpenChange={setTestsPanelOpen}>
