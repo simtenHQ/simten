@@ -19,10 +19,10 @@ describe('CircuitStore', () => {
     const library = useCircuitLibraryStore.getState();
 
     // Clear existing library
-    library.clearAll();
+    library.clear();
 
     // Add a simple AND gate primitive for testing
-    library.registerPrimitive({
+    library.addCircuit({
       id: 'primitive_and',
       name: 'And',
       parameters: [],
@@ -41,7 +41,7 @@ describe('CircuitStore', () => {
     });
 
     // Add a simple LED output for testing
-    library.registerPrimitive({
+    library.addCircuit({
       id: 'primitive_led',
       name: 'Led',
       parameters: [],
@@ -331,7 +331,7 @@ describe('CircuitStore', () => {
       const library = useCircuitLibraryStore.getState();
 
       // Add a bus component
-      library.registerPrimitive({
+      library.addCircuit({
         id: 'primitive_bus_source',
         name: 'BusSource',
         parameters: [],

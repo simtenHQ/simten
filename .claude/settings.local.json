@@ -119,7 +119,9 @@
       "Bash(sed -i '' 's|Runtime data overwrites DSL data for same addresses|Runtime data overwrites node argument data for same addresses|g' packages/core/src/simulator/sequential-init.ts)",
       "Bash(sed -i '' 's/updateSource\\(dsl: string\\)/updateSource\\(source: string\\)/g; s/currentSource = dsl;/currentSource = source;/g; s/broadcastSSE\\({ type: .source., source: dsl }\\)/broadcastSSE\\({ type: '\\\\''source'\\\\'', source }\\)/g; s/broadcast\\({ type: .source., source: dsl }/broadcast\\({ type: '\\\\''source'\\\\'', source }/g' packages/mcp/src/server/preview-server.ts packages/mcp/src/server/ws-server.ts)",
       "Bash(sed -i '' 's/updateSource\\(dsl: string, sessionId?: string\\)/updateSource\\(source: string, sessionId?: string\\)/g' packages/mcp/src/server/ws-server.ts)",
-      "Bash(sed -i '' 's/- Pushes DSL, traces, test results, memory data to connected tabs/- Pushes circuit source, traces, test results, memory data to connected tabs/g' packages/mcp/src/server/ws-server.ts)"
+      "Bash(sed -i '' 's/- Pushes DSL, traces, test results, memory data to connected tabs/- Pushes circuit source, traces, test results, memory data to connected tabs/g' packages/mcp/src/server/ws-server.ts)",
+      "Bash(sed -i '' 's/library\\\\.clearAll\\(\\)/library.clear\\(\\)/g' circuit-store.test.ts)",
+      "Bash(sed -i '' 's/library\\\\.registerPrimitive\\(/library.addCircuit\\(/g' circuit-store.test.ts)"
     ]
   }
 }

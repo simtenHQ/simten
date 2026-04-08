@@ -156,20 +156,20 @@ describe('CircuitPreviewStore drill-down navigation', () => {
   beforeEach(() => {
     // Reset stores
     const library = useCircuitLibraryStore.getState();
-    library.clearAll();
+    library.clear();
 
     // Register primitives
-    library.registerPrimitive(makePrimitive('Switch', [], ['out']));
-    library.registerPrimitive(makePrimitive('Led', ['in'], []));
-    library.registerPrimitive(makePrimitive('Xor', ['a', 'b'], ['out']));
-    library.registerPrimitive(makePrimitive('And', ['a', 'b'], ['out']));
+    library.addCircuit(makePrimitive('Switch', [], ['out']));
+    library.addCircuit(makePrimitive('Led', ['in'], []));
+    library.addCircuit(makePrimitive('Xor', ['a', 'b'], ['out']));
+    library.addCircuit(makePrimitive('And', ['a', 'b'], ['out']));
 
     // Register composite HalfAdder
-    library.registerUser(makeHalfAdderDef());
+    library.addCircuit(makeHalfAdderDef());
 
     // Set up the top-level circuit
     const fullAdder = makeFullAdder();
-    library.registerUser(fullAdder);
+    library.addCircuit(fullAdder);
 
     // Initialize preview store with the FullAdder circuit
     getState().setCompiledCircuits([fullAdder], 'component FullAdder {}');

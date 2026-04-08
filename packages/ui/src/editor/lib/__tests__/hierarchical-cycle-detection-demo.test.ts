@@ -7,8 +7,14 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { createSimulatorFromCircuit, type CircuitLibrary } from '@turing-incomplete/core/simulator';
 import { useCircuitLibraryStore } from '../../stores/circuit-library-store';
-import { PRIMITIVES } from '@turing-incomplete/core/simulator';
+import * as std from '@turing-incomplete/core/std';
+import type { BuiltCircuit } from '@turing-incomplete/core/circuit';
 import { bitType, busType, type Circuit } from '../../types/circuit';
+
+const PRIMITIVES = Object.values(std)
+  .filter((v): v is BuiltCircuit => !!v && typeof v === 'object' && 'circuit' in v && 'name' in v)
+  .map((v) => v.circuit)
+  .filter(c => c.implementation.kind === 'primitive');
 
 function getLibrary(): CircuitLibrary {
   const store = useCircuitLibraryStore.getState();
@@ -21,10 +27,25 @@ function getLibrary(): CircuitLibrary {
 describe('Hierarchical Cycle Detection - Real World Scenarios', () => {
   let library: ReturnType<typeof useCircuitLibraryStore.getState>;
 
+  // Minimal Add circuit (8-bit adder, no carry) for tests that reference 'Add'
+  const Add: import('../../types/circuit').Circuit = {
+    id: 'add',
+    name: 'Add',
+    parameters: [],
+    inputs: [{ name: 'a', portType: busType(8) }, { name: 'b', portType: busType(8) }],
+    outputs: [{ name: 'out', portType: busType(8) }],
+    clocks: [],
+    state: [],
+    nodes: [],
+    connections: [],
+    implementation: { kind: 'primitive' },
+  };
+
   beforeEach(() => {
     library = useCircuitLibraryStore.getState();
-    library.clearAll();
-    library.registerPrimitives(PRIMITIVES as any[]);
+    library.clear();
+    library.addCircuits(PRIMITIVES as any[]);
+    library.addCircuit(Add);
   });
 
   it('should compile a multi-level hierarchy with state machines', () => {
@@ -118,7 +139,7 @@ describe('Hierarchical Cycle Detection - Real World Scenarios', () => {
       implementation: { kind: 'composite' },
     };
 
-    library.registerUser(fsm);
+    library.addCircuit(fsm);
 
     // Create a Controller that contains the FSM
     const controller: Circuit = {
@@ -157,7 +178,7 @@ describe('Hierarchical Cycle Detection - Real World Scenarios', () => {
       implementation: { kind: 'composite' },
     };
 
-    library.registerUser(controller);
+    library.addCircuit(controller);
 
     // Create a top-level system with multiple controllers
     const system: Circuit = {
@@ -391,9 +412,9 @@ describe('Hierarchical Cycle Detection - Real World Scenarios', () => {
       implementation: { kind: 'composite' },
     };
 
-    library.registerUser(ingressController);
-    library.registerUser(arbiter);
-    library.registerUser(packetForwarder);
+    library.addCircuit(ingressController);
+    library.addCircuit(arbiter);
+    library.addCircuit(packetForwarder);
 
     // Create the network with apparent cycle:
     // IngressController → Arbiter → PacketForwarder → IngressController

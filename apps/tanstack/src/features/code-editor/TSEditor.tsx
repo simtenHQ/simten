@@ -70,9 +70,10 @@ interface TSEditorProps {
   onCompileSuccess?: (
     circuits: Circuit[],
     tsCode: string,
-    componentLibrary?: {
+    library?: {
       resolveCircuit: (name: string) => Circuit | undefined;
       getAllPrimitiveNames: () => string[];
+      getAllCircuitNames: () => string[];
     },
   ) => void;
   autoCompileEnabled?: boolean;
@@ -180,14 +181,7 @@ export const TSEditor = forwardRef<TSEditorRef, TSEditorProps>(
               );
             }
 
-            // Build library for simulation
-            const library = {
-              resolveCircuit: (name: string) =>
-                result.library.resolveCircuit(name),
-              getAllPrimitiveNames: () => result.library.getAllPrimitiveNames(),
-            };
-
-            onCompileSuccess?.(result.circuits, code, library);
+            onCompileSuccess?.(result.circuits, code, result.library);
           } catch (e) {
             setErrors([
               {

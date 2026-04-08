@@ -1,207 +1,83 @@
 /**
  * Circuit Library Store
  *
- * Manages the library of available circuit definitions.
- * Includes primitives, standard library, and user-defined circuits.
+ * Holds all circuit definitions available for simulation and canvas rendering.
+ * Populated from the compiled result of executeCircuitCode() via setLibrary().
+ *
+ * All circuits are equal — no primitives/standard/user split.
  */
 
 import { create } from 'zustand';
-import { immer } from 'zustand/middleware/immer';
-import { enableMapSet } from 'immer';
 import type { Circuit } from '../types/circuit';
-import { clearReferenceCircuitCache } from '../utils/reference-circuit-cache';
-import type { BuiltCircuit } from '@turing-incomplete/core/circuit';
-import * as std from '@turing-incomplete/core/std';
+import type { CircuitLibrary } from '@turing-incomplete/core/simulator';
 
-// Extract Circuit IR objects from all stdlib BuiltCircuit exports
-const STD_CIRCUITS: Circuit[] = Object.values(std)
-  .filter((v): v is BuiltCircuit => !!v && typeof v === 'object' && 'name' in v && 'circuit' in v)
-  .map((v) => v.circuit);
+interface CircuitLibraryStore {
+  // Stable CircuitLibrary reference — changes identity only when circuits change.
+  // null until first compile succeeds (or addCircuit is called).
+  library: CircuitLibrary | null;
 
-// Enable Immer's MapSet plugin for Map/Set support
-enableMapSet();
+  // Set all circuits from a compiled result (production path)
+  setLibrary: (lib: { resolveCircuit(name: string): Circuit | undefined; getAllCircuitNames(): string[] }) => void;
 
-/**
- * Circuit library data structure (UI-layer; distinct from core CircuitLibrary)
- */
-export interface CircuitLibraryData {
-  // Primitive circuits (implemented by simulator kernel)
-  primitives: Map<string, Circuit>;
+  // Add circuits directly (used by tests)
+  addCircuit: (circuit: Circuit) => void;
+  addCircuits: (circuits: Circuit[]) => void;
 
-  // Standard library circuits (composite circuits)
-  standard: Map<string, Circuit>;
+  // Clear all circuits
+  clear: () => void;
 
-  // User-defined circuits
-  user: Map<string, Circuit>;
-}
-
-interface CircuitLibraryState {
-  library: CircuitLibraryData;
-}
-
-interface CircuitLibraryActions {
-  // Primitive operations
-  registerPrimitive: (circuit: Circuit) => void;
-  getPrimitive: (name: string) => Circuit | undefined;
-
-  // Standard library operations
-  registerStandard: (circuit: Circuit) => void;
-  getStandard: (name: string) => Circuit | undefined;
-
-  // User circuit operations
-  registerUser: (circuit: Circuit) => void;
-  removeUser: (name: string) => void;
-  getUser: (name: string) => Circuit | undefined;
-
-  // Unified resolution
+  // Consumer interface — delegates to library
   resolveCircuit: (name: string) => Circuit | undefined;
-
-  // Bulk operations
-  registerPrimitives: (circuits: Circuit[]) => void;
-  registerStandardLibrary: (circuits: Circuit[]) => void;
-
-  // Query operations
   getAllPrimitiveNames: () => string[];
-  getAllStandardNames: () => string[];
-  getAllUserNames: () => string[];
-  getAllCircuitNames: () => string[];
-
-  // Initialization
-  initializeLibrary: () => void;
-
-  // Clear operations
-  clearUserCircuits: () => void;
-  clearAll: () => void;
 }
 
-export interface CircuitLibraryStore extends CircuitLibraryState, CircuitLibraryActions {}
+export type { CircuitLibraryStore };
 
-const initialState: CircuitLibraryState = {
-  library: {
-    primitives: new Map(),
-    standard: new Map(),
-    user: new Map(),
-  },
-};
+function buildLibrary(circuits: Map<string, Circuit>): CircuitLibrary {
+  // Snapshot the map so the library is immutable after creation
+  const snapshot = new Map(circuits);
+  return {
+    resolveCircuit: (name) => snapshot.get(name),
+    getAllPrimitiveNames: () =>
+      [...snapshot.entries()]
+        .filter(([, c]) => c.implementation.kind === 'primitive')
+        .map(([n]) => n),
+  };
+}
 
-export const useCircuitLibraryStore = create<CircuitLibraryStore>()(
-  immer((set, get) => ({
-    ...initialState,
+export const useCircuitLibraryStore = create<CircuitLibraryStore>()((set, get) => {
+  // Mutable backing map — not in Zustand state to avoid serialization overhead
+  const _circuits = new Map<string, Circuit>();
 
-    // Primitive operations
-    registerPrimitive: (circuit) => {
-      set((state) => {
-        state.library.primitives.set(circuit.name, circuit);
-      });
+  return {
+    library: null,
+
+    setLibrary: (lib) => {
+      _circuits.clear();
+      for (const name of lib.getAllCircuitNames()) {
+        const c = lib.resolveCircuit(name);
+        if (c) _circuits.set(name, c as Circuit);
+      }
+      set({ library: buildLibrary(_circuits) });
     },
 
-    getPrimitive: (name) => {
-      return get().library.primitives.get(name);
+    addCircuit: (circuit) => {
+      _circuits.set(circuit.name, circuit);
+      set({ library: buildLibrary(_circuits) });
     },
 
-    // Standard library operations
-    registerStandard: (circuit) => {
-      set((state) => {
-        state.library.standard.set(circuit.name, circuit);
-      });
+    addCircuits: (circuits) => {
+      for (const c of circuits) _circuits.set(c.name, c);
+      set({ library: buildLibrary(_circuits) });
     },
 
-    getStandard: (name) => {
-      return get().library.standard.get(name);
+    clear: () => {
+      _circuits.clear();
+      set({ library: null });
     },
 
-    // User circuit operations
-    registerUser: (circuit) => {
-      set((state) => {
-        state.library.user.set(circuit.name, circuit);
-      });
-      clearReferenceCircuitCache();
-    },
+    resolveCircuit: (name) => get().library?.resolveCircuit(name) as Circuit | undefined,
 
-    removeUser: (name) => {
-      set((state) => {
-        state.library.user.delete(name);
-      });
-    },
-
-    getUser: (name) => {
-      return get().library.user.get(name);
-    },
-
-    // Unified resolution
-    // Resolution order: primitives -> standard -> user
-    resolveCircuit: (name) => {
-      const { primitives, standard, user } = get().library;
-
-      return (
-        primitives.get(name) ||
-        standard.get(name) ||
-        user.get(name)
-      );
-    },
-
-    // Bulk operations
-    registerPrimitives: (circuits) => {
-      set((state) => {
-        for (const circuit of circuits) {
-          state.library.primitives.set(circuit.name, circuit);
-        }
-      });
-    },
-
-    registerStandardLibrary: (circuits) => {
-      set((state) => {
-        for (const circuit of circuits) {
-          state.library.standard.set(circuit.name, circuit);
-        }
-      });
-    },
-
-    // Query operations
-    getAllPrimitiveNames: () => {
-      return Array.from(get().library.primitives.keys()).sort();
-    },
-
-    getAllStandardNames: () => {
-      return Array.from(get().library.standard.keys()).sort();
-    },
-
-    getAllUserNames: () => {
-      return Array.from(get().library.user.keys()).sort();
-    },
-
-    getAllCircuitNames: () => {
-      const { primitives, standard, user } = get().library;
-      return [
-        ...primitives.keys(),
-        ...standard.keys(),
-        ...user.keys(),
-      ].sort();
-    },
-
-    // Clear operations
-    clearUserCircuits: () => {
-      set((state) => {
-        state.library.user.clear();
-      });
-      clearReferenceCircuitCache();
-    },
-
-    initializeLibrary: () => {
-      if (get().library.primitives.size > 0) return; // already initialized
-      set((state) => {
-        for (const circuit of STD_CIRCUITS) {
-          state.library.primitives.set(circuit.name, circuit);
-        }
-      });
-    },
-
-    clearAll: () => {
-      set((state) => {
-        state.library.primitives.clear();
-        state.library.standard.clear();
-        state.library.user.clear();
-      });
-    },
-  }))
-);
+    getAllPrimitiveNames: () => get().library?.getAllPrimitiveNames() ?? [],
+  };
+});
