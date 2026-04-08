@@ -41,7 +41,7 @@ export interface ExecuteResult {
   /** All BuiltCircuits found */
   builtCircuits: BuiltCircuit[];
   /** The circuit library (stdlib + user-defined circuits) */
-  library: CircuitLibrary & { addCircuit(c: Circuit): void };
+  library: CircuitLibrary & { addCircuit(c: Circuit): void; getAllCircuitNames(): string[] };
   /** Error message if execution failed */
   error: string | null;
 }
