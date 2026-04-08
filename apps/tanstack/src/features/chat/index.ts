@@ -36,13 +36,13 @@ export {
 export { useChatStore, selectIsStreaming, selectMessages, selectIsOpen, selectLastMessage } from './stores/chat-store';
 
 // Components
-export { ChatPanel, ChatInput, MessageList, MessageBubble, ActionCard, CodeDiffView, ConfirmationModal, StaleActionNotice, AgentProgress, GoalStateView, GoalBadge } from './components';
+export { ChatPanel, ChatInput, MessageList, MessageBubble, ActionCard, CodeDiffView, ConfirmationModal, StaleActionNotice } from './components';
 
 // Actions
 export { executeAction, applyDiff, validateAction, validateShowDiff, normalizeAction, type ActionExecutionContext } from './actions';
 
 // Hooks
-export { useLLMContext, useNarrativeContext, buildLLMContext, buildNarrativeContext, useAgentLoop, useTutorFlow, type LLMContextResult, type NarrativeContextResult, type UseAgentLoopOptions, type UseAgentLoopResult, type UseTutorFlowResult } from './hooks';
+export { useLLMContext, useNarrativeContext, buildLLMContext, buildNarrativeContext, useTutorFlow, type LLMContextResult, type NarrativeContextResult, type UseTutorFlowResult } from './hooks';
 
 // Context
 export { buildNarrativeSummary, buildMinimalNarrative, enforceTokenBudget, countTokens } from './context';
@@ -55,6 +55,3 @@ export { extractNodeReferences, highlightNodesFromMessage, createCircuitChecker 
 
 // Versioning
 export { isVersionSupported, getSupportedActions, getCurrentVersion, isKnownActionType } from './versioning/schema-compat';
-
-// Agent (legacy — unused but preserved)
-export * from './agent';
