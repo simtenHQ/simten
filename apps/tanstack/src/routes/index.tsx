@@ -5,8 +5,10 @@ import { circuit, bit } from "@turing-incomplete/core/circuit";
 import { Xor, And, Or, Not, DFlipFlop, Constant } from "@turing-incomplete/core/std";
 import { Eth_FrameInput, Eth_FrameParser, Eth_CRC32, Eth_ProtocolDecoder, Eth_AddrClassifier } from "@turing-incomplete/core/std";
 import { Logo } from "@/components/Logo";
+import { HighlightedCode } from "@/components/HighlightedCode";
 import { ClaudeCTA } from "@/features/splash/ClaudeCTA";
 import { ClaudeDemoSection } from "@/features/splash/ClaudeDemoSection";
+import { Hero } from "@/features/splash/Hero";
 import { useSnakeSimulator } from "@/features/blog/snake-in-hardware/useSnakeSimulator";
 
 // ============================================================================
@@ -74,21 +76,11 @@ export const Route = createFileRoute("/")({
 });
 
 function Splash5Page() {
-  const [demoComplete, setDemoComplete] = useState(false);
-
-  const handleComplete = useCallback(() => {
-    setDemoComplete(true);
-  }, []);
-
   return (
     <div className="bg-background text-foreground">
-      <ClaudeDemoSection onComplete={handleComplete} />
-
-      {/* Mobile: gallery always visible. Desktop: after demo completes. */}
-      <div className="md:hidden"><DemoGallery /></div>
-      <div className="hidden md:block">
-        {demoComplete ? <DemoGallery /> : null}
-      </div>
+      <Hero />
+      <DemoGallery />
+      <ClaudeDemoSection />
     </div>
   );
 }
@@ -464,23 +456,20 @@ function DemoGallery() {
             {/* TypeScript side */}
             <div className="rounded-lg border border-border bg-card overflow-hidden">
               <div className="px-3 py-1.5 border-b border-border text-[10px] text-muted-foreground font-mono">circuit.ts</div>
-              <pre className="px-4 py-3 text-[11px] font-mono text-muted-foreground leading-relaxed overflow-x-auto">
-<span className="text-violet-400">{"circuit"}</span>{" HalfAdder {\n"}
-{"  "}<span className="text-violet-400">{"input"}</span>{" a: Bit\n"}
-{"  "}<span className="text-violet-400">{"input"}</span>{" b: Bit\n"}
-{"  "}<span className="text-violet-400">{"output"}</span>{" sum: Bit\n"}
-{"  "}<span className="text-violet-400">{"output"}</span>{" carry: Bit\n"}
-{"  "}<span className="text-violet-400">{"impl"}</span>{" {\n"}
-{"    "}<span className="text-cyan-400">{"node"}</span>{" xor1: Xor\n"}
-{"    "}<span className="text-cyan-400">{"node"}</span>{" and1: And\n"}
-{"    "}<span className="text-green-400">{"connect"}</span>{" a -> xor1.a\n"}
-{"    "}<span className="text-green-400">{"connect"}</span>{" b -> xor1.b\n"}
-{"    "}<span className="text-green-400">{"connect"}</span>{" xor1.out -> sum\n"}
-{"    "}<span className="text-green-400">{"connect"}</span>{" a -> and1.a\n"}
-{"    "}<span className="text-green-400">{"connect"}</span>{" b -> and1.b\n"}
-{"    "}<span className="text-green-400">{"connect"}</span>{" and1.out -> carry\n"}
-{"  }\n}"}
-              </pre>
+              <HighlightedCode
+                code={`const HalfAdder = circuit('HalfAdder', {
+  in: { a: bit, b: bit },
+  out: { sum: bit, carry: bit },
+  nodes: { xor1: Xor, and1: And },
+  connect: ({ in: inp, out, xor1, and1 }) => [
+    inp.a.to(xor1.a, and1.a),
+    inp.b.to(xor1.b, and1.b),
+    xor1.out.to(out.sum),
+    and1.out.to(out.carry),
+  ],
+});`}
+                className="px-4 py-3 text-[11px] font-mono leading-relaxed overflow-x-auto m-0"
+              />
             </div>
             {/* Verilog side */}
             <div className="rounded-lg border border-border bg-card overflow-hidden">
