@@ -20,7 +20,7 @@
 		"hono": "4.11.1"
 	},
 	"devDependencies": {
-		"@types/node": "^25.5.0",
+		"@types/node": "^20",
 		"typescript": "5.9.3",
 		"wrangler": "4.72.0"
 	},
