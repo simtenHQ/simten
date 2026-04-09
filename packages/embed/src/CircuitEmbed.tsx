@@ -70,8 +70,8 @@ export const CircuitEmbed = forwardRef<CircuitEmbedHandle, CircuitEmbedProps>(
     const hasInfoBar = title || description;
 
     return (
-      <div style={hasInfoBar ? undefined : { height }} className={`flex flex-col ${hasInfoBar ? 'rounded-lg border border-border overflow-hidden bg-card' : ''}`}>
-        <div style={{ height: typeof height === 'number' ? height : undefined }} className="flex-1 min-h-0">
+      <div className={`flex flex-col ${hasInfoBar ? 'rounded-xl border border-[var(--embed-border)] overflow-hidden bg-[var(--embed-bg-secondary)]' : ''}`}>
+        <div style={{ height }} className="min-h-0">
           <CircuitViewer
             ref={ref}
             circuit={circuit}
@@ -89,14 +89,14 @@ export const CircuitEmbed = forwardRef<CircuitEmbedHandle, CircuitEmbedProps>(
           />
         </div>
         {hasInfoBar && (
-          <div className="border-t border-border px-4 py-3 flex items-end justify-between gap-4">
+          <div className="border-t border-[var(--embed-border)] px-4 py-3 flex items-end justify-between gap-4">
             <div>
-              <div className="text-[13px] font-semibold text-foreground">{title}</div>
-              {subtitle && <div className="text-[11px] text-muted-foreground/60 font-mono mt-0.5">{subtitle}</div>}
-              {description && <div className="text-[11px] text-muted-foreground mt-1 leading-relaxed">{description}</div>}
+              <div className="text-[13px] font-semibold text-[var(--embed-text-primary)]">{title}</div>
+              {subtitle && <div className="text-[11px] text-[var(--embed-text-muted)] font-mono mt-0.5">{subtitle}</div>}
+              {description && <div className="text-[11px] text-[var(--embed-text-secondary)] mt-1 leading-relaxed">{description}</div>}
             </div>
             {href && (
-              <a href={href} className="shrink-0 px-3 py-1.5 rounded border border-border text-[11px] text-foreground/80 hover:border-foreground/30 hover:text-foreground transition-colors">
+              <a href={href} className="shrink-0 px-3 py-1.5 rounded border border-[var(--embed-border)] text-[11px] text-[var(--embed-text-primary)] hover:opacity-80 transition-colors">
                 Open →
               </a>
             )}

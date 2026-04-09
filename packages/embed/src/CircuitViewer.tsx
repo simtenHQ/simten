@@ -6,10 +6,26 @@
  * is a thin wrapper around this.
  */
 
-import { useState, useCallback, forwardRef, useImperativeHandle } from "react";
+import { useState, useEffect, useCallback, forwardRef, useImperativeHandle } from "react";
 import { useCircuitSimulator } from "./hooks/useCircuitSimulator";
 import type { BuiltCircuit } from "@turing-incomplete/core/circuit";
 import { CircuitCanvas, ClockControls } from "@turing-incomplete/ui/canvas";
+
+/** Detect theme from <html> class, reactive via MutationObserver. */
+function useDetectTheme(): "light" | "dark" {
+  const [theme, setTheme] = useState<"light" | "dark">(() =>
+    typeof document !== "undefined" ? (document.documentElement.classList.contains("dark") ? "dark" : "light") : "dark"
+  );
+  useEffect(() => {
+    const el = document.documentElement;
+    const observer = new MutationObserver(() => {
+      setTheme(el.classList.contains("dark") ? "dark" : "light");
+    });
+    observer.observe(el, { attributes: true, attributeFilter: ["class"] });
+    return () => observer.disconnect();
+  }, []);
+  return theme;
+}
 
 export interface CircuitViewerProps {
   /** The circuit to display (result of circuit()) */
@@ -66,6 +82,8 @@ export const CircuitViewer = forwardRef<CircuitViewerHandle, CircuitViewerProps>
     renderOverlay,
   }, ref) {
     const sim = useCircuitSimulator(circuit, { autoHarness, initialInputs });
+    const detectedTheme = useDetectTheme();
+    const resolvedTheme = theme ?? detectedTheme;
     const [tickCount, setTickCount] = useState(0);
 
     const handleTick = useCallback(() => {
@@ -107,7 +125,7 @@ export const CircuitViewer = forwardRef<CircuitViewerHandle, CircuitViewerProps>
     const canvasHeight = typeof height === "number" ? height - controlHeight : height;
 
     return (
-      <div style={{ height }} className="flex flex-col">
+      <div style={{ height }} className="flex flex-col" data-embed-theme={resolvedTheme}>
         <div className="flex-1 min-h-0">
           <CircuitCanvas
             circuit={sim.circuit}
