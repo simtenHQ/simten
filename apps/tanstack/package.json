@@ -25,7 +25,6 @@
 		"@tanstack/react-router-ssr-query": "^1.131.7",
 		"@tanstack/react-start": "^1.132.0",
 		"@tanstack/router-plugin": "^1.132.0",
-		"@turing-incomplete/challenges": "workspace:*",
 		"@turing-incomplete/core": "workspace:*",
 		"@turing-incomplete/embed": "workspace:*",
 		"@turing-incomplete/ui": "workspace:*",

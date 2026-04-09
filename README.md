@@ -2,24 +2,47 @@
 
 A TypeScript-native digital circuit simulator and visual editor for learning hardware design.
 
-## What is Turing Incomplete?
+[![CI](https://github.com/charlesfrisbee/turing-incomplete/actions/workflows/ci.yml/badge.svg)](https://github.com/charlesfrisbee/turing-incomplete/actions/workflows/ci.yml)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue?logo=typescript)](https://www.typescriptlang.org/)
+[![Cloudflare Workers](https://img.shields.io/badge/deployed_on-Cloudflare-F38020?logo=cloudflare)](https://developers.cloudflare.com/workers/)
 
-Turing Incomplete is a browser-based platform for designing, simulating, and debugging digital circuits. It combines:
+<!-- TODO: replace with your deployed URL -->
+**[Live Demo →](<!-- DEPLOYED_URL -->)**
 
-- **TypeScript Circuit API** — define hardware as typed code with full IDE support
-- **Visual Editor** — interactive canvas with drag-and-drop, drill-down, time-travel
-- **Live Simulation** — deterministic tick-based execution with cycle-accurate visibility
-- **AI Tutoring** — built-in chat that designs, verifies, and explains circuits
-- **Embeddable** — drop a circuit into any React app with `<CircuitEmbed />`
+<!-- TODO: add a GIF showing build → simulate → drill-down → export Verilog -->
+<!-- ![Demo](docs/assets/demo.gif) -->
 
-## Quick Start
+## Why?
 
-```bash
-pnpm install
-pnpm dev
+Existing tools for learning digital logic fall into two camps: visual-only simulators like Logisim that don't scale past a handful of gates, and industrial HDLs like Verilog that require a full toolchain and offer no interactive feedback. Turing Incomplete sits in the middle:
+
+- **Circuits are typed TypeScript.** You get IDE autocomplete, compile-time port checks, and refactoring tools — none of which exist in Verilog or visual drag-and-drop editors.
+- **An IR makes everything possible.** The `circuit()` factory produces a platform-independent intermediate representation. That single IR powers the visual editor, Verilog export, snapshot/restore (time-travel debugging), and the AI tutor — all from one source of truth.
+- **The simulator runs in the browser.** No backend round-trip for simulation; the edge stays stateless. The only server-side work is the AI chat loop and the two Cloudflare Container services described below.
+
+## Architecture
+
+```
+TypeScript circuit() ──→ Circuit IR ──→ Elaborate ──→ Fast Simulator ──→ Trace
+       │                     │                              │
+       │                     ├── Verilog Export              ├── Snapshot / Restore
+       │                     └── Visual Editor               └── Time-Travel Debugging
+       │
+   Typed API: IDE autocomplete, compile-time port checks
 ```
 
-Open `http://localhost:3001`.
+**Core principle:** only primitive components contain executable behavior. Composite circuits are structural — they expand into primitives at elaboration time. This guarantees full transparency, deterministic execution, and the ability to drill into any composite to see its internals.
+
+### What runs where
+
+| Layer | Runtime | What it does |
+|---|---|---|
+| Visual editor + simulator | Browser | Circuit canvas, tick-based simulation, time-travel, drill-down |
+| Chat API (`/api/chat`) | Cloudflare Workers (edge) | Server-side Anthropic `tool_use` loop — streams NDJSON back to the client |
+| `apps/compiler` | Cloudflare Container | RISC-V cross-compiler (GCC + Rust). Compiles C/C++/Rust/asm → rv32i machine code for the simulated CPU |
+| `apps/verifier` | Cloudflare Container | Icarus Verilog runner. Cross-validates exported Verilog against our simulator's trace |
+
+Both containers are addressed via Durable Objects and sleep after 2 minutes idle.
 
 ## Your First Circuit
 
@@ -50,34 +73,20 @@ import { CircuitEmbed } from '@turing-incomplete/embed'
 
 The embed auto-wraps the circuit with switches for inputs and LEDs for outputs.
 
-## Architecture
-
-```
-TypeScript circuit() → Circuit IR → Elaborate → Simulate
-```
-
-- **`circuit()`** — typed factory function that returns a `BuiltCircuit`
-- **Circuit IR** — platform-independent intermediate representation
-- **Simulator** — fast numeric tick-based engine with snapshot/restore
-
-### Core Principle
-
-Only primitive components contain executable behavior. Composite circuits are structural — they expand into primitives at elaboration time. This guarantees full transparency, deterministic execution, and the ability to drill into any composite to see its internals.
-
 ## Project Structure
 
 ```
 packages/
-├── core/        # Simulator, circuit() builder, stdlib, Verilog exporter
-├── ui/          # Canvas, editor components, shadcn primitives
-├── embed/       # CircuitEmbed React component
-├── mcp/         # MCP server for AI integration
+├── core/        # Simulator engine, circuit() builder, stdlib, Verilog exporter
+├── ui/          # Canvas components, editor, shadcn primitives
+├── embed/       # <CircuitEmbed /> React component + web component
+├── mcp/         # MCP server for AI integration (WebSocket bridge)
 └── cli/         # turing CLI
 
 apps/
-├── tanstack/    # Main web app (TanStack Start + Vite + Cloudflare)
-├── compiler/    # RISC-V compiler service
-└── verifier/    # Verilog verification service
+├── tanstack/    # Main web app (TanStack Start + Vite + Cloudflare Workers)
+├── compiler/    # RISC-V cross-compiler service (Cloudflare Container)
+└── verifier/    # Verilog verification service (Cloudflare Container + Icarus Verilog)
 ```
 
 ## Tech Stack
@@ -86,14 +95,26 @@ apps/
 - **State:** Zustand with Immer
 - **Canvas:** React Flow
 - **Styling:** Tailwind CSS 4 + shadcn/ui
-- **Language:** TypeScript
-- **Testing:** Vitest
+- **Language:** TypeScript 5
+- **Testing:** Vitest (398 tests across simulator, circuit IR, stdlib, Verilog exporter)
+- **AI:** Anthropic SDK with server-side `tool_use` loop
+- **Infrastructure:** Cloudflare Workers, Cloudflare Containers, Durable Objects, Hono
+- **Verification:** Icarus Verilog (via Go container service)
+
+## Quick Start
+
+```bash
+pnpm install
+pnpm dev
+```
+
+Open `http://localhost:3001`.
 
 ## Development
 
 ```bash
 pnpm dev          # Start dev server
-pnpm test         # Run tests
+pnpm test         # Run all tests
 pnpm build        # Build all packages
 ```
 
