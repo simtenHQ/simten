@@ -209,7 +209,7 @@
 }
 
 /* ── Embed theme tokens ─────────────────────────────────────────────── */
-[data-embed-theme="dark"] {
+[data-embed-theme="dark"], .dark {
   --embed-bg-primary: #141418;
   --embed-bg-secondary: #1a1a1e;
   --embed-bg-tertiary: #2a2a2e;
@@ -224,7 +224,7 @@
   --embed-dot-color: #2a2a2e;
 }
 
-[data-embed-theme="light"] {
+[data-embed-theme="light"], html.light {
   --embed-bg-primary: #f8f9fb;
   --embed-bg-secondary: #f3f4f6;
   --embed-bg-tertiary: #eef0f3;

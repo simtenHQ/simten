@@ -97,7 +97,7 @@ export interface CircuitCanvasProps {
   theme?: "light" | "dark";
 }
 
-/** Reactively detect theme from <html> class. Falls back to "dark". */
+/** Reactively detect theme from <html> class. Falls back to "light". */
 function useDetectTheme(): "light" | "dark" {
   const [theme, setTheme] = useState<"light" | "dark">(() =>
     typeof document !== 'undefined' && document.documentElement.classList.contains('dark') ? 'dark' : 'light'

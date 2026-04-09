@@ -1,16 +1,27 @@
 @import "tailwindcss";
 
 @source "../**/*.tsx";
+@source "../../../../packages/ui/src/**/*.tsx";
 
 @theme inline {
-  --color-background: #010409;
+  --color-background: var(--background, #141418);
+  --color-foreground: var(--foreground, #e5e5e5);
+  --color-card: var(--card, #1a1a1e);
+  --color-card-foreground: var(--card-foreground, #e5e5e5);
+  --color-muted: var(--muted, #2a2a2e);
+  --color-muted-foreground: var(--muted-foreground, #71717a);
+  --color-accent: var(--accent, #2a2a2e);
+  --color-accent-foreground: var(--accent-foreground, #e5e5e5);
+  --color-border: var(--border, rgba(55, 55, 65, 0.5));
+  --color-input: var(--input, rgba(55, 55, 65, 0.5));
+  --color-ring: var(--ring, #555);
 }
 
 /* ── Embed theme tokens ─────────────────────────────────────────────── */
-/* Self-contained: the embed owns its own theme via data-embed-theme,   */
-/* independent of the host page's dark/light class on <html>.           */
+/* Activated by data-embed-theme attribute (web components) OR by       */
+/* .dark/.light class on <html> (React apps with ThemeProvider).        */
 
-[data-embed-theme="dark"] {
+[data-embed-theme="dark"], .dark {
   --embed-bg-primary: #141418;
   --embed-bg-secondary: #1a1a1e;
   --embed-bg-tertiary: #2a2a2e;
@@ -23,9 +34,41 @@
   --embed-text-secondary: #a1a1aa;
   --embed-text-muted: #71717a;
   --embed-dot-color: #2a2a2e;
+
+  /* Tailwind/shadcn theme variables — needed for bg-card, border-border, etc. */
+  --background: #141418;
+  --foreground: #e5e5e5;
+  --card: #1a1a1e;
+  --card-foreground: #e5e5e5;
+  --muted: #2a2a2e;
+  --muted-foreground: #71717a;
+  --accent: #2a2a2e;
+  --accent-foreground: #e5e5e5;
+  --border: rgba(55, 55, 65, 0.5);
+  --input: rgba(55, 55, 65, 0.5);
+  --ring: #555;
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
 }
 
-[data-embed-theme="light"] {
+/* Base defaults — apply border-color so Tailwind's border-border works.
+   Uses unlayered rule to ensure it overrides Tailwind's @layer base defaults. */
+[data-embed-theme] *,
+[data-embed-theme] *::before,
+[data-embed-theme] *::after {
+  border-color: var(--color-border, rgba(55, 55, 65, 0.5));
+}
+
+[data-embed-theme="light"], html.light {
   --embed-bg-primary: #f8f9fb;
   --embed-bg-secondary: #f3f4f6;
   --embed-bg-tertiary: #eef0f3;
@@ -38,4 +81,27 @@
   --embed-text-secondary: #4b5563;
   --embed-text-muted: #9ca3af;
   --embed-dot-color: #e5e7eb;
+
+  --background: #f8f9fb;
+  --foreground: #1a1a2e;
+  --card: #ffffff;
+  --card-foreground: #1a1a2e;
+  --muted: #eef0f3;
+  --muted-foreground: #9ca3af;
+  --accent: #eef0f3;
+  --accent-foreground: #1a1a2e;
+  --border: rgba(0, 0, 0, 0.08);
+  --input: rgba(0, 0, 0, 0.08);
+  --ring: #aaa;
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
 }
