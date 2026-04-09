@@ -59,21 +59,5 @@ const Toggle = circuit('Toggle', {
     ></circuit-embed>
   </div>
 
-  <!-- Test 4: Circuit editor -->
-  <div class="test-section" id="test-editor">
-    <h2>Test: Circuit Editor</h2>
-    <circuit-editor
-      initial-code="import { circuit } from '@turing-incomplete/core/circuit';
-import { Switch, Led } from '@turing-incomplete/core/std';
-
-const Simple = circuit('Simple', {
-  nodes: { A: Switch, light: Led },
-  connect: ({ A, light }) => [
-    A.out.to(light.in),
-  ],
-});"
-      height="400"
-    ></circuit-editor>
-  </div>
 </body>
 </html>

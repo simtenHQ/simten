@@ -1,25 +1,22 @@
 /**
- * VisualEditor Component
+ * EditorWorkspace — the full /editor page shell.
  *
- * Main component that integrates all parts of the visual editor.
- * Combines ComponentPalette, Canvas, and Code Editor.
- *
- * This is a thin shell — all editor components come from @turing-incomplete/ui.
+ * Combines Monaco code editor, CircuitCanvas, AI chat, clock controls,
+ * Verilog export, MCP connection, and example picker.
  */
 
 "use client";
 
-import { useCallback, useState, useEffect, useRef } from "react";
+import { useCallback, useState, useEffect, useRef, useMemo } from "react";
 import {
   ReactFlowProvider,
-  Canvas,
   RightSidebar,
   ClockControls,
   SignalOutputPanel,
 } from "@turing-incomplete/ui/editor/components";
+import { CircuitCanvas, useCircuitSession } from "@turing-incomplete/ui/canvas";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useCircuitStore, useCircuitPreviewStore, useCircuitLibraryStore } from "@turing-incomplete/ui/editor/stores";
-import { useCircuitSession } from "@turing-incomplete/ui/canvas";
 import type { Circuit } from "@turing-incomplete/ui/editor/types";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
@@ -61,11 +58,46 @@ function hasSequentialComponents(
   return false;
 }
 
-interface VisualEditorProps {
+const SCAN_CODES: Record<string, number> = {
+  ArrowUp: 0x48, ArrowDown: 0x50, ArrowLeft: 0x4b, ArrowRight: 0x4d,
+  Space: 0x39, Enter: 0x1c, Escape: 0x01,
+  KeyA: 0x1e, KeyB: 0x30, KeyC: 0x2e, KeyD: 0x20, KeyE: 0x12,
+  KeyF: 0x21, KeyG: 0x22, KeyH: 0x23, KeyI: 0x17, KeyJ: 0x24,
+  KeyK: 0x25, KeyL: 0x26, KeyM: 0x32, KeyN: 0x31, KeyO: 0x18,
+  KeyP: 0x19, KeyQ: 0x10, KeyR: 0x13, KeyS: 0x1f, KeyT: 0x14,
+  KeyU: 0x16, KeyV: 0x2f, KeyW: 0x11, KeyX: 0x2d, KeyY: 0x15,
+  KeyZ: 0x2c,
+  Digit0: 0x0b, Digit1: 0x02, Digit2: 0x03, Digit3: 0x04,
+  Digit4: 0x05, Digit5: 0x06, Digit6: 0x07, Digit7: 0x08,
+  Digit8: 0x09, Digit9: 0x0a,
+};
+
+function useKeyboardInput(circuit: Circuit | null, onKeyboardInput: (nodeId: string, scanCode: number) => void) {
+  useEffect(() => {
+    if (!circuit) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (document.activeElement?.tagName === "INPUT" || document.activeElement?.tagName === "TEXTAREA") return;
+      const scanCode = SCAN_CODES[e.code];
+      if (scanCode == null) return;
+
+      circuit.nodes
+        .filter((node) => node.componentRef === "Input" && (node.label?.toLowerCase().includes("keyboard") || node.id.toLowerCase().includes("keyboard")))
+        .forEach((node) => onKeyboardInput(node.id, scanCode));
+
+      if (e.code.startsWith("Arrow")) e.preventDefault();
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [circuit, onKeyboardInput]);
+}
+
+interface EditorWorkspaceProps {
   theme?: "light" | "dark";
 }
 
-export function VisualEditor({ theme = "light" }: VisualEditorProps) {
+export function EditorWorkspace({ theme = "light" }: EditorWorkspaceProps) {
   const setCompiledCircuits = useCircuitPreviewStore(
     (state) => state.setCompiledCircuits,
   );
@@ -119,6 +151,20 @@ export function VisualEditor({ theme = "light" }: VisualEditorProps) {
   // ── Simulation — driven by compile result, no store dependency ──
   const sim = useCircuitSession(circuit, library);
   const showClockControls = sim.isSequential;
+
+  // Keyboard scan code input for Input nodes (e.g. keyboard-driven CPU demos)
+  useKeyboardInput(circuit, useCallback((nodeId: string, scanCode: number) => {
+    const engine = sim.session?.getEngine();
+    if (engine) engine.setInput(nodeId, scanCode);
+  }, [sim.session]));
+
+  // Build library interface for CircuitCanvas from store
+  const resolveCircuit = useCircuitLibraryStore((s) => s.resolveCircuit);
+  const getAllPrimitiveNames = useCircuitLibraryStore((s) => s.getAllPrimitiveNames);
+  const componentLibrary = useMemo(() => ({
+    resolveCircuit,
+    getAllPrimitiveNames,
+  }), [resolveCircuit, getAllPrimitiveNames]);
 
   // Keep sim state in ref for MCP callbacks
   const simRef = useRef(sim);
@@ -326,11 +372,14 @@ export function VisualEditor({ theme = "light" }: VisualEditorProps) {
             />
           </div>
 
-          {/* Right: Canvas (60%) - Full Height */}
+          {/* Right: Circuit Canvas (60%) - Full Height */}
           <div className="flex flex-1 flex-col">
             <div className="flex-1">
-              <Canvas
+              <CircuitCanvas
+                circuit={circuit}
+                componentLibrary={componentLibrary}
                 theme={theme}
+                showControls
                 renderEmptyState={renderEmptyState}
                 portValues={sim.portValues}
                 sequentialState={sim.sequentialState}
@@ -344,10 +393,6 @@ export function VisualEditor({ theme = "light" }: VisualEditorProps) {
                 onSetNodeValue={(nodeId, value) => {
                   sim.setInput(nodeId, value);
                   sim.runCombinational();
-                }}
-                onKeyboardInput={(nodeId, scanCode) => {
-                  const engine = sim.session?.getEngine();
-                  if (engine) engine.setInput(nodeId, scanCode);
                 }}
                 onLoadMemory={(nodeId, memData) => {
                   const engine = sim.session?.getEngine();

@@ -2,7 +2,6 @@
  * Editor component exports
  */
 export { ReactFlowProvider } from '@xyflow/react';
-export { Canvas } from './Canvas';
 export { ClockControls, type ClockControlsProps } from './ClockControls';
 export { SignalOutputPanel } from './SignalOutputPanel';
 export { CircuitSelector } from './CircuitSelector';

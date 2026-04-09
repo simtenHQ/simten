@@ -1,8 +1,18 @@
+/**
+ * CircuitEmbed — embeddable circuit viewer with optional info bar.
+ *
+ * Thin wrapper around CircuitViewer that adds:
+ *   - Auto-harness (wraps bare circuits with Switch/Led nodes)
+ *   - Info bar (title, subtitle, description, link)
+ *
+ * For React users: pass a BuiltCircuit object.
+ * For web component users: <circuit-embed code="..."> goes through the
+ * web component bridge which calls executeCircuitCode() first.
+ */
 
-import { useState, useCallback, forwardRef, useImperativeHandle, useEffect } from "react";
-import { useCircuitSimulator } from "./hooks/useCircuitSimulator";
+import { forwardRef } from "react";
+import { CircuitViewer, type CircuitViewerHandle } from "./CircuitViewer";
 import type { BuiltCircuit } from "@turing-incomplete/core/circuit";
-import { CircuitCanvas, ClockControls } from "@turing-incomplete/ui/canvas";
 
 export interface CircuitEmbedProps {
   /** The circuit to display (result of circuit()) */
@@ -28,7 +38,7 @@ export interface CircuitEmbedProps {
   /** Show port labels on nodes */
   showPortLabels?: boolean;
   /** Callback when a port is clicked */
-  onPortClick?: (nodeLabel: string, portName: string, portType: 'input' | 'output') => void;
+  onPortClick?: (nodeLabel: string, portName: string, portType: "input" | "output") => void;
   /** Highlight unconnected ports */
   glowUnconnected?: boolean;
   /** Auto-run speed (ms between ticks) */
@@ -37,107 +47,46 @@ export interface CircuitEmbedProps {
   initialInputs?: Record<string, number | boolean>;
 }
 
-export interface CircuitEmbedHandle {
-  tick: () => void;
-  reset: () => void;
-  setNodeValue: (nodeId: string, value: number | boolean | Map<number, number>) => void;
-}
+export type CircuitEmbedHandle = CircuitViewerHandle;
 
 export const CircuitEmbed = forwardRef<CircuitEmbedHandle, CircuitEmbedProps>(
-  function CircuitEmbed({ circuit, height = 300, showControls = true, nodePositions, theme, title, subtitle, description, href, focus, showPortLabels, onPortClick, glowUnconnected, autoRunSpeed = 500, initialInputs }, ref) {
-    const sim = useCircuitSimulator(circuit, { autoHarness: true, initialInputs });
-    const [tickCount, setTickCount] = useState(0);
-
-    const handleTick = useCallback(() => {
-      sim.tick();
-      setTickCount(c => c + 1);
-    }, [sim.tick]);
-
-    const handleReset = useCallback(() => {
-      sim.reset();
-      setTickCount(0);
-    }, [sim.reset]);
-
-    useImperativeHandle(ref, () => ({
-      tick: handleTick,
-      reset: handleReset,
-      setNodeValue: sim.setNodeValue,
-    }), [handleTick, handleReset, sim.setNodeValue]);
-
-    if (sim.error) {
-      return (
-        <div style={{ height }} className="flex items-center justify-center p-4">
-          <div className="text-sm text-red-400 bg-red-500/10 rounded p-3 border border-red-500/20">
-            <div className="font-medium mb-1">Compilation Error</div>
-            <div className="font-mono text-xs">{sim.error}</div>
-          </div>
-        </div>
-      );
-    }
-
-    if (!sim.ready) {
-      return (
-        <div style={{ height }} className="flex items-center justify-center text-muted-foreground/60 text-sm">
-          Compiling...
-        </div>
-      );
-    }
-
-    const controlHeight = sim.isSequential && showControls ? 40 : 0;
-    const canvasHeight = typeof height === "number" ? height - controlHeight : height;
-
+  function CircuitEmbed({
+    circuit,
+    height = 300,
+    showControls = true,
+    nodePositions,
+    theme,
+    title,
+    subtitle,
+    description,
+    href,
+    focus,
+    showPortLabels,
+    onPortClick,
+    glowUnconnected,
+    autoRunSpeed = 500,
+    initialInputs,
+  }, ref) {
     const hasInfoBar = title || description;
 
     return (
       <div style={hasInfoBar ? undefined : { height }} className={`flex flex-col ${hasInfoBar ? 'rounded-lg border border-border overflow-hidden bg-card' : ''}`}>
-        <div style={{ height: typeof height === 'number' ? height : undefined }} className="flex-1 min-h-0 flex flex-col">
-          <div className="flex-1 min-h-0">
-            <CircuitCanvas
-              circuit={sim.circuit}
-              componentLibrary={sim.componentLibrary ?? undefined}
-              portValues={sim.portValues}
-              sequentialState={sim.sequentialState}
-              onToggleNode={sim.toggleNode}
-              onSetNodeValue={sim.setNodeValue}
-              onLoadMemory={(nodeId, memData) => {
-                const engine = sim.getSimulator();
-                if (engine) {
-                  engine.setNode(nodeId, memData);
-                  sim.runCombinational();
-                }
-              }}
-              height={canvasHeight}
-              focus={focus}
-              showPortLabels={showPortLabels}
-              onPortClick={onPortClick}
-              glowUnconnected={glowUnconnected}
-              {...(nodePositions ? { nodePositions, autoLayout: false } : {})}
-              {...(theme ? { theme } : {})}
-            />
-          </div>
-          {sim.isSequential && showControls && (
-            <ClockControls
-              cycle={tickCount}
-              historyLength={sim.history?.length ?? 0}
-              historyIndex={sim.historyIndex ?? -1}
-              isRunning={sim.isRunning}
-              isViewingPast={sim.isViewingPast ?? false}
-              onStep={handleTick}
-              onRun={() => sim.startAutoRun(5)}
-              onPause={() => sim.stopAutoRun()}
-              onReset={handleReset}
-              onStepBack={() => { sim.stepBack(); setTickCount(Math.max(0, tickCount - 1)); }}
-              onStepForward={() => {
-                if (sim.isViewingPast) {
-                  sim.stepForward();
-                  setTickCount(c => c + 1);
-                } else {
-                  handleTick();
-                }
-              }}
-              speed={5}
-            />
-          )}
+        <div style={{ height: typeof height === 'number' ? height : undefined }} className="flex-1 min-h-0">
+          <CircuitViewer
+            ref={ref}
+            circuit={circuit}
+            height="100%"
+            showControls={showControls}
+            autoHarness
+            initialInputs={initialInputs}
+            nodePositions={nodePositions}
+            theme={theme}
+            focus={focus}
+            showPortLabels={showPortLabels}
+            onPortClick={onPortClick}
+            glowUnconnected={glowUnconnected}
+            autoRunSpeed={autoRunSpeed}
+          />
         </div>
         {hasInfoBar && (
           <div className="border-t border-border px-4 py-3 flex items-end justify-between gap-4">
