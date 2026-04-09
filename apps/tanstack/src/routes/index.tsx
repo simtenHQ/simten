@@ -442,6 +442,52 @@ function DemoGallery() {
           </div>
         </div>
 
+        {/* Row 5.6: npm interop */}
+        <div className="mt-40">
+          <h3 className="text-lg font-semibold text-foreground mb-1">Import any npm package</h3>
+          <p className="text-[13px] text-muted-foreground/60 mb-5">Circuits are TypeScript. Use fast-check for property testing, D3 for visualization, or your own libraries to drive simulations.</p>
+          <div className="rounded-lg border border-border bg-card overflow-hidden">
+            <div className="flex items-center gap-1.5 px-4 h-9 border-b border-border bg-muted">
+              <span className="w-2.5 h-2.5 rounded-full bg-[#ff5f57]" />
+              <span className="w-2.5 h-2.5 rounded-full bg-[#febc2e]" />
+              <span className="w-2.5 h-2.5 rounded-full bg-[#28c840]" />
+              <span className="flex-1 text-center text-[11px] text-muted-foreground font-mono">verify-adder.test.ts</span>
+            </div>
+            <HighlightedCode
+              code={`import { circuit, bit } from '@turing-incomplete/core/circuit'
+import { Xor, And } from '@turing-incomplete/core/std'
+import { simulate } from '@turing-incomplete/core/sim'
+import * as fc from 'fast-check'
+
+const HalfAdder = circuit('HalfAdder', {
+  in: { a: bit, b: bit },
+  out: { sum: bit, carry: bit },
+  nodes: { xor1: Xor, and1: And },
+  connect: ({ in: inp, out, xor1, and1 }) => [
+    inp.a.to(xor1.a, and1.a),
+    inp.b.to(xor1.b, and1.b),
+    xor1.out.to(out.sum),
+    and1.out.to(out.carry),
+  ],
+})
+
+// Property: sum + 2·carry always equals a + b
+fc.assert(
+  fc.property(fc.boolean(), fc.boolean(), (a, b) => {
+    const sim = simulate(HalfAdder)
+    sim.set({ a: a ? 1 : 0, b: b ? 1 : 0 })
+    const result = sim.get('sum') + 2 * sim.get('carry')
+    sim.dispose()
+    return result === (a ? 1 : 0) + (b ? 1 : 0)
+  })
+)
+// ✓ Passed 100 random inputs`}
+              className="px-5 py-4 text-[12px] font-mono leading-relaxed overflow-x-auto m-0"
+            />
+          </div>
+          <p className="text-[11px] text-muted-foreground/60 mt-3">No testbench language. No waveform files. Just TypeScript and whatever libraries you already know.</p>
+        </div>
+
         {/* Row 6: Build with AI */}
         <div className="mt-40">
           <ClaudeCTA />
@@ -494,7 +540,7 @@ function DemoGallery() {
               </pre>
             </div>
           </div>
-          <p className="text-[11px] text-muted-foreground/60 mt-3">A 5-stage pipelined RISC-V CPU exports as 94KB of synthesisable RTL — cycle-accurate with the TypeScript simulator.</p>
+          <p className="text-[11px] text-muted-foreground/60 mt-3">Any circuit you build exports to synthesisable Verilog — verified cycle-by-cycle against Icarus Verilog.</p>
         </div>
 
         <div className="mt-40 flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:justify-between">
