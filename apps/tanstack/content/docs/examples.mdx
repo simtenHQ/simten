@@ -4,43 +4,27 @@ description: Interactive circuit examples from half adder to Fibonacci generator
 ---
 
 import { CircuitEmbed } from '@turing-incomplete/embed'
+import { circuit, bit, bus } from '@turing-incomplete/core/circuit'
+import { Xor, And, Or, Register, Adder, Constant, HexDisplay, DFlipFlop } from '@turing-incomplete/core/std'
 
 ## Half Adder
 
 Two bits → sum + carry. The simplest arithmetic circuit. Toggle the switches to see how AND computes carry and XOR computes sum.
 
-export const halfAdderCode = `
-const HalfAdder = circuit('HalfAdder', {
+export const HalfAdder = circuit('HalfAdder', {
   in: { a: bit, b: bit },
   out: { sum: bit, carry: bit },
   nodes: { xor1: Xor, and1: And },
   connect: ({ in: inp, out, xor1, and1 }) => [
-    inp.a.to(xor1.a), inp.b.to(xor1.b), xor1.out.to(out.sum),
-    inp.a.to(and1.a), inp.b.to(and1.b), and1.out.to(out.carry),
+    inp.a.to(xor1.a, and1.a),
+    inp.b.to(xor1.b, and1.b),
+    xor1.out.to(out.sum),
+    and1.out.to(out.carry),
   ],
 })
 
-const HalfAdderDemo = circuit('HalfAdderDemo', {
-  nodes: { sw_a: Switch, sw_b: Switch, dut: HalfAdder, led_sum: Led, led_carry: Led },
-  connect: ({ sw_a, sw_b, dut, led_sum, led_carry }) => [
-    sw_a.out.to(dut.a), sw_b.out.to(dut.b),
-    dut.sum.to(led_sum.in), dut.carry.to(led_carry.in),
-  ],
-})`
-
-export const halfAdderDisplay = `const HalfAdder = circuit('HalfAdder', {
-  in: { a: bit, b: bit },
-  out: { sum: bit, carry: bit },
-  nodes: { xor1: Xor, and1: And },
-  connect: ({ in: inp, out, xor1, and1 }) => [
-    inp.a.to(xor1.a), inp.b.to(xor1.b), xor1.out.to(out.sum),
-    inp.a.to(and1.a), inp.b.to(and1.b), and1.out.to(out.carry),
-  ],
-})`
-
 <CircuitEmbed
-  code={halfAdderCode}
-  displayCode={halfAdderDisplay}
+  circuit={HalfAdder}
   height={250}
   showControls
   title="Half Adder"
@@ -51,18 +35,7 @@ export const halfAdderDisplay = `const HalfAdder = circuit('HalfAdder', {
 
 Three bits (a + b + carry in) → sum + carry out. Reuses HalfAdder as a composite — the simulator expands it to primitives automatically.
 
-export const fullAdderCode = `
-const HalfAdder = circuit('HalfAdder', {
-  in: { a: bit, b: bit },
-  out: { sum: bit, carry: bit },
-  nodes: { xor1: Xor, and1: And },
-  connect: ({ in: inp, out, xor1, and1 }) => [
-    inp.a.to(xor1.a), inp.b.to(xor1.b), xor1.out.to(out.sum),
-    inp.a.to(and1.a), inp.b.to(and1.b), and1.out.to(out.carry),
-  ],
-})
-
-const FullAdder = circuit('FullAdder', {
+export const FullAdder = circuit('FullAdder', {
   in: { a: bit, b: bit, cin: bit },
   out: { sum: bit, cout: bit },
   nodes: { ha1: HalfAdder, ha2: HalfAdder, or1: Or },
@@ -73,30 +46,9 @@ const FullAdder = circuit('FullAdder', {
     ha1.carry.to(or1.a), ha2.carry.to(or1.b), or1.out.to(out.cout),
   ],
 })
-
-const FullAdderDemo = circuit('FullAdderDemo', {
-  nodes: { sw_a: Switch, sw_b: Switch, sw_cin: Switch, dut: FullAdder, led_sum: Led, led_cout: Led },
-  connect: ({ sw_a, sw_b, sw_cin, dut, led_sum, led_cout }) => [
-    sw_a.out.to(dut.a), sw_b.out.to(dut.b), sw_cin.out.to(dut.cin),
-    dut.sum.to(led_sum.in), dut.cout.to(led_cout.in),
-  ],
-})`
-
-export const fullAdderDisplay = `const FullAdder = circuit('FullAdder', {
-  in: { a: bit, b: bit, cin: bit },
-  out: { sum: bit, cout: bit },
-  nodes: { ha1: HalfAdder, ha2: HalfAdder, or1: Or },
-  connect: ({ in: inp, out, ha1, ha2, or1 }) => [
-    inp.a.to(ha1.a), inp.b.to(ha1.b),
-    ha1.sum.to(ha2.a), inp.cin.to(ha2.b),
-    ha2.sum.to(out.sum),
-    ha1.carry.to(or1.a), ha2.carry.to(or1.b), or1.out.to(out.cout),
-  ],
-})`
 
 <CircuitEmbed
-  code={fullAdderCode}
-  displayCode={fullAdderDisplay}
+  circuit={FullAdder}
   height={280}
   showControls
   title="Full Adder"
@@ -107,39 +59,19 @@ export const fullAdderDisplay = `const FullAdder = circuit('FullAdder', {
 
 Increments on each clock cycle. A register feeds its output through an adder that adds 1, and the result loops back. Step the clock to watch it count.
 
-export const counterCode = `
-const Counter = circuit('Counter', {
+export const Counter = circuit('Counter', {
   out: { count: bus(8) },
   nodes: { reg: Register, adder: Adder, one: Constant },
   nodeArgs: { one: { value: 1 } },
   connect: ({ out, reg, adder, one }) => [
-    reg.q.to(adder.a), one.out.to(adder.b),
-    adder.sum.to(reg.data), one.out.to(reg.we),
-    reg.q.to(out.count),
+    reg.q.to(adder.a, out.count),
+    one.out.to(adder.b, reg.we),
+    adder.sum.to(reg.data),
   ],
 })
 
-const CounterDemo = circuit('CounterDemo', {
-  nodes: { counter: Counter, display: HexDisplay },
-  connect: ({ counter, display }) => [
-    counter.count.to(display.in),
-  ],
-})`
-
-export const counterDisplay = `const Counter = circuit('Counter', {
-  out: { count: bus(8) },
-  nodes: { reg: Register, adder: Adder, one: Constant },
-  nodeArgs: { one: { value: 1 } },
-  connect: ({ out, reg, adder, one }) => [
-    reg.q.to(adder.a), one.out.to(adder.b),
-    adder.sum.to(reg.data), one.out.to(reg.we),
-    reg.q.to(out.count),
-  ],
-})`
-
 <CircuitEmbed
-  code={counterCode}
-  displayCode={counterDisplay}
+  circuit={Counter}
   height={200}
   showControls
   title="8-Bit Counter"
@@ -150,45 +82,22 @@ export const counterDisplay = `const Counter = circuit('Counter', {
 
 Two registers and one adder produce the Fibonacci sequence every clock tick. A DFlipFlop seed trick injects +1 on the first tick only.
 
-export const fibCode = `
-const Fibonacci = circuit('Fibonacci', {
+export const Fibonacci = circuit('Fibonacci', {
   out: { fib: bus(8) },
   nodes: { reg_a: Register, reg_b: Register, adder: Adder, one: Constant, init: DFlipFlop },
   nodeArgs: { one: { value: 1 } },
   connect: ({ out, reg_a, reg_b, adder, one, init }) => [
-    one.out.to(init.d),
+    one.out.to(init.d, reg_a.we, reg_b.we),
     init.q_bar.to(adder.carry_in),
     reg_a.q.to(adder.a), reg_b.q.to(adder.b),
-    reg_b.q.to(reg_a.data), one.out.to(reg_a.we),
-    adder.sum.to(reg_b.data), one.out.to(reg_b.we),
+    reg_b.q.to(reg_a.data),
+    adder.sum.to(reg_b.data),
     reg_b.q.to(out.fib),
   ],
 })
 
-const FibonacciDemo = circuit('FibonacciDemo', {
-  nodes: { fib: Fibonacci, display: HexDisplay },
-  connect: ({ fib, display }) => [
-    fib.fib.to(display.in),
-  ],
-})`
-
-export const fibDisplay = `const Fibonacci = circuit('Fibonacci', {
-  out: { fib: bus(8) },
-  nodes: { reg_a: Register, reg_b: Register, adder: Adder, one: Constant, init: DFlipFlop },
-  nodeArgs: { one: { value: 1 } },
-  connect: ({ out, reg_a, reg_b, adder, one, init }) => [
-    one.out.to(init.d),
-    init.q_bar.to(adder.carry_in),
-    reg_a.q.to(adder.a), reg_b.q.to(adder.b),
-    reg_b.q.to(reg_a.data), one.out.to(reg_a.we),
-    adder.sum.to(reg_b.data), one.out.to(reg_b.we),
-    reg_b.q.to(out.fib),
-  ],
-})`
-
 <CircuitEmbed
-  code={fibCode}
-  displayCode={fibDisplay}
+  circuit={Fibonacci}
   height={220}
   showControls
   title="Fibonacci Generator"
