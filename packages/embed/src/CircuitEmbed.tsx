@@ -70,8 +70,8 @@ export const CircuitEmbed = forwardRef<CircuitEmbedHandle, CircuitEmbedProps>(
     const hasInfoBar = title || description;
 
     return (
-      <div className={`flex flex-col ${hasInfoBar ? 'rounded-xl border border-[var(--embed-border)] overflow-hidden bg-[var(--embed-bg-secondary)]' : ''}`}>
-        <div style={{ height }} className="min-h-0">
+      <div style={hasInfoBar ? undefined : { height }} className={`flex flex-col ${hasInfoBar ? 'rounded-xl border border-[var(--embed-border)] overflow-hidden bg-[var(--embed-bg-secondary)]' : ''}`}>
+        <div style={{ height: hasInfoBar ? height : '100%' }} className="min-h-0">
           <CircuitViewer
             ref={ref}
             circuit={circuit}
