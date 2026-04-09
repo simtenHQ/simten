@@ -44,7 +44,7 @@ export function StateSection() {
           <p>
             When Claude calls a tool like{" "}
             <code className="text-blue-400 bg-blue-400/10 px-1.5 py-0.5 rounded text-sm">
-              check_challenge_progress
+              get_circuit_state
             </code>{" "}
             without providing the circuit source, the MCP server asks the
             browser for it:
@@ -83,14 +83,16 @@ export function StateSection() {
             language="typescript"
           >
 {`// MCP server asks for state → browser responds
-if (msg.type === "request-challenge-state") {
+if (msg.type === "request-state") {
   ws.send(JSON.stringify({
-    type: "challenge-state-response",
+    type: "state-response",
     requestId: msg.requestId,
     state: {
-      challengeId: currentChallenge.id,
-      levelId: currentLevel.id,
-      userSource: editor.getCode(),  // Current circuit code in editor
+      circuitName: currentCircuit.name,
+      cycleCount: session.cycle,
+      inputs: session.getInputs(),
+      outputs: session.getOutputs(),
+      isSequential: session.isSequential,
     },
   }));
 }`}

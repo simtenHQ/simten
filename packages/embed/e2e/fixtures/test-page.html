@@ -17,27 +17,27 @@
   <div class="test-section" id="test-basic">
     <h2>Test: Basic Embed</h2>
     <circuit-embed
-      dsl="circuit HalfAdder {
-        impl {
-          node A: Switch
-          node B: Switch
-          node gate: Xor
-          node light: Led
-          connect A.out -> gate.a
-          connect B.out -> gate.b
-          connect gate.out -> light.in
-        }
-      }"
+      code="import { circuit, bit } from '@turing-incomplete/core/circuit';
+import { Switch, Xor, Led } from '@turing-incomplete/core/std';
+
+const HalfAdder = circuit('HalfAdder', {
+  nodes: { A: Switch, B: Switch, gate: Xor, light: Led },
+  connect: ({ A, B, gate, light }) => [
+    A.out.to(gate.a),
+    B.out.to(gate.b),
+    gate.out.to(light.in),
+  ],
+});"
       height="250"
       title="Half Adder Test"
     ></circuit-embed>
   </div>
 
-  <!-- Test 2: Invalid DSL (should show error) -->
+  <!-- Test 2: Invalid code (should show error) -->
   <div class="test-section" id="test-error">
     <h2>Test: Error Handling</h2>
     <circuit-embed
-      dsl="circuit Broken { this is invalid }"
+      code="this is invalid code"
       height="200"
     ></circuit-embed>
   </div>
@@ -46,13 +46,15 @@
   <div class="test-section" id="test-isolation">
     <h2>Test: Multi-Instance Isolation</h2>
     <circuit-embed
-      dsl="circuit Toggle {
-        impl {
-          node sw: Switch
-          node led: Led
-          connect sw.out -> led.in
-        }
-      }"
+      code="import { circuit } from '@turing-incomplete/core/circuit';
+import { Switch, Led } from '@turing-incomplete/core/std';
+
+const Toggle = circuit('Toggle', {
+  nodes: { sw: Switch, led: Led },
+  connect: ({ sw, led }) => [
+    sw.out.to(led.in),
+  ],
+});"
       height="200"
     ></circuit-embed>
   </div>
@@ -61,13 +63,15 @@
   <div class="test-section" id="test-editor">
     <h2>Test: Circuit Editor</h2>
     <circuit-editor
-      initial-dsl="circuit Simple {
-        impl {
-          node A: Switch
-          node light: Led
-          connect A.out -> light.in
-        }
-      }"
+      initial-code="import { circuit } from '@turing-incomplete/core/circuit';
+import { Switch, Led } from '@turing-incomplete/core/std';
+
+const Simple = circuit('Simple', {
+  nodes: { A: Switch, light: Led },
+  connect: ({ A, light }) => [
+    A.out.to(light.in),
+  ],
+});"
       height="400"
     ></circuit-editor>
   </div>

@@ -4,15 +4,14 @@ function FlowDiagram() {
     <div className="my-8 rounded-xl border border-gray-200 dark:border-gray-800 bg-[#0d1117] p-6 md:p-8 overflow-x-auto">
       <pre className="text-sm md:text-base font-mono text-gray-500 dark:text-gray-300 leading-relaxed whitespace-pre">
         {`User types "How do I connect the carry bit?"
-  in the browser challenge chat
+  in the browser chat panel
             │
             ▼
 Browser sends WebSocket message:
   { type: "send-to-claude",
     content: "How do I connect the carry bit?",
-    meta: { type: "challenge_prompt",
-            challenge_id: "build-an-alu",
-            level_id: "full-adder" } }
+    meta: { type: "tutor_prompt",
+            circuit: "FullAdder" } }
             │
             ▼
 MCP server receives, fires channel notification:
@@ -24,9 +23,8 @@ MCP server receives, fires channel notification:
             ▼
 Claude receives the notification with full context:
   <channel source="turing-incomplete"
-           type="challenge_prompt"
-           challenge_id="build-an-alu"
-           level_id="full-adder">
+           type="tutor_prompt"
+           circuit="FullAdder">
   How do I connect the carry bit?
   </channel>
             │
@@ -117,7 +115,7 @@ export function ChannelSection() {
           <p>
             The metadata is critical. When Claude receives the channel
             notification, it knows{" "}
-            <em>which challenge, which level, and what the user is working on</em>
+            <em>which circuit the user is editing and what they&rsquo;re working on</em>
             . It can call{" "}
             <code className="text-blue-400 bg-blue-400/10 px-1.5 py-0.5 rounded text-sm">
               get_circuit_state

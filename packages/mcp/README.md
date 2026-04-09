@@ -13,7 +13,7 @@ Claude Code ──stdio──▸ MCP Server ──WebSocket──▸ Browser
                               ◂── channel notifications ──
 ```
 
-The browser can also talk back. Channel notifications let the visual editor send messages to the LLM — challenge prompts, error reports, user questions — creating a bidirectional loop between AI and interactive UI.
+The browser can also talk back. Channel notifications let the visual editor send messages to the LLM — error reports, user questions, circuit context — creating a bidirectional loop between AI and interactive UI.
 
 ## Setup
 
