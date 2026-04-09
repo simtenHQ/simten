@@ -51,10 +51,6 @@ npm install -g @turing-incomplete/mcp
 | `show_traces` | Push simulation waveforms to browser |
 | `show_test_results` | Push test results to browser |
 | `list_sessions` | List connected browser tabs |
-| `list_challenges` | Enumerate available hardware challenges |
-| `get_challenge_level` | Get level metadata, scaffold, hints |
-| `check_challenge_progress` | Analyse user progress vs solution |
-| `solve_next` | Add next missing connection to browser |
 | `push_chat_response` | Send message to in-app chat panel |
 
 ## How it works

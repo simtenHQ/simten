@@ -515,12 +515,6 @@ function DemoGallery() {
             >
               Learn →
             </Link>
-            <Link
-              to="/challenges"
-              className="text-[13px] text-muted-foreground hover:text-foreground transition-colors"
-            >
-              Try the challenges →
-            </Link>
           </div>
         </div>
       </div>

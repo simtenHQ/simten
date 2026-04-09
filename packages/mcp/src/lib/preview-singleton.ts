@@ -2,7 +2,7 @@
  * Shared studio server singleton.
  *
  * Provides a single WebSocket-based studio server shared across all MCP tools
- * (show, state, traces, test-results, challenges).
+ * (show, state, traces, test-results).
  */
 
 import type { StudioServer, CircuitState, ChallengeState, TracesPayload, TestResultsPayload } from '../server/ws-server.js';
