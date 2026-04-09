@@ -68,16 +68,18 @@ export function WebComponentEmbed({
   }
 
   return (
-    <CircuitEmbed
-      circuit={builtCircuit}
-      height={height}
-      showControls={showControls}
-      title={title}
-      subtitle={subtitle}
-      description={description}
-      href={href}
-      autoRunSpeed={autoRunSpeed}
-      theme={theme}
-    />
+    <div data-embed-theme={theme ?? "dark"}>
+      <CircuitEmbed
+        circuit={builtCircuit}
+        height={height}
+        showControls={showControls}
+        title={title}
+        subtitle={subtitle}
+        description={description}
+        href={href}
+        autoRunSpeed={autoRunSpeed}
+        theme={theme}
+      />
+    </div>
   );
 }

@@ -18,6 +18,7 @@ const isAnalyze = process.env.ANALYZE === "true";
 export default defineConfig({
   resolve: {
     conditions: ["@turing-incomplete/source", "import", "module", "browser", "default"],
+    dedupe: ["react", "react-dom"],
   },
   plugins: [
     tailwindcss(),
