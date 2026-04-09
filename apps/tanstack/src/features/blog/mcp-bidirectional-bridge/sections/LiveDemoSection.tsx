@@ -96,21 +96,11 @@ export function LiveDemoSection() {
       setChatMessages((prev) => [...prev, { role: "claude", text }]);
       setIsThinking(false);
     },
-    onChallengeNavigate: (cId, lId) => {
-      addLog("in", "challenge-navigate", `Navigate to ${cId}/${lId}`);
-    },
-    onChallengeAddStep: (_cId, _lId, step) => {
-      addLog("in", "challenge-add-step", `Add step: ${step}`);
-    },
     onError: (message) => {
       addLog("in", "error", message);
     },
     getCircuitState: () => {
       addLog("out", "state-response", "Sent circuit state to MCP");
-      return null;
-    },
-    getChallengeState: () => {
-      addLog("out", "challenge-state-response", "Sent challenge state to MCP");
       return null;
     },
   });

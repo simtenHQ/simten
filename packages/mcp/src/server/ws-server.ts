@@ -4,7 +4,7 @@
  * Replaces the old HTTP/SSE preview server with a bidirectional WebSocket.
  * - Manages sessions (one per browser tab, identified by UUID)
  * - Pushes circuit source, traces, test results, memory data to connected tabs
- * - Requests circuit/challenge state on demand (pull model)
+ * - Requests circuit state on demand (pull model)
  * - File watching with dedup (skips watcher events within 500ms of explicit push)
  * - Token auth: connections must provide the server's token to be accepted
  */
@@ -13,9 +13,9 @@ import { WebSocketServer, WebSocket } from 'ws';
 import { watchFile as fsWatchFile, unwatchFile, existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { randomUUID } from 'node:crypto';
-import type { CircuitState, ChallengeState, TracesPayload, TestResultsPayload } from './types.js';
+import type { CircuitState, TracesPayload, TestResultsPayload } from './types.js';
 
-export type { CircuitState, ChallengeState, TracesPayload, TestResultsPayload };
+export type { CircuitState, TracesPayload, TestResultsPayload };
 
 /** JSON-serializable memory data: { nodePattern: { address: value } } */
 export type MemoryDataPayload = Record<string, Record<string, number>>;
@@ -35,9 +35,6 @@ export interface StudioServer {
   updateSource(source: string, sessionId?: string): void;
   watchFile(filePath: string): void;
   getState(sessionId?: string): Promise<CircuitState | null>;
-  getChallengeState(sessionId?: string): Promise<ChallengeState | null>;
-  navigateChallenge(challengeId: string, levelId: string, sessionId?: string): void;
-  addChallengeStep(challengeId: string, levelId: string, step: string, sessionId?: string): void;
   pushTraces(data: TracesPayload, sessionId?: string): void;
   pushTestResults(data: TestResultsPayload, sessionId?: string): void;
   pushMemoryData(data: MemoryDataPayload, sessionId?: string): void;
@@ -135,7 +132,7 @@ export async function createStudioServer(
         }
 
         // Handle responses to state requests
-        if (msg.type === 'state-response' || msg.type === 'challenge-state-response') {
+        if (msg.type === 'state-response') {
           const pending = pendingRequests.get(msg.requestId);
           if (pending) {
             clearTimeout(pending.timer);
@@ -279,18 +276,6 @@ export async function createStudioServer(
     return requestFromBrowser('request-state', sessionId) as Promise<CircuitState | null>;
   }
 
-  async function getChallengeState(sessionId?: string): Promise<ChallengeState | null> {
-    return requestFromBrowser('request-challenge-state', sessionId) as Promise<ChallengeState | null>;
-  }
-
-  function navigateChallenge(challengeId: string, levelId: string, sessionId?: string) {
-    broadcast({ type: 'challenge-navigate', challengeId, levelId }, sessionId);
-  }
-
-  function addChallengeStep(challengeId: string, levelId: string, step: string, sessionId?: string) {
-    broadcast({ type: 'challenge-add-step', challengeId, levelId, step }, sessionId);
-  }
-
   function pushTraces(data: TracesPayload, sessionId?: string) {
     cachedTraces = data;
     broadcast({ type: 'traces', data }, sessionId);
@@ -337,9 +322,6 @@ export async function createStudioServer(
     updateSource,
     watchFile,
     getState,
-    getChallengeState,
-    navigateChallenge,
-    addChallengeStep,
     pushTraces,
     pushTestResults,
     pushMemoryData,

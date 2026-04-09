@@ -1,10 +1,10 @@
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
 import { watchFile as fsWatchFile, unwatchFile, existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import type { CircuitState, ChallengeState, TracesPayload, TestResultsPayload } from './types.js';
+import type { CircuitState, TracesPayload, TestResultsPayload } from './types.js';
 import { TI_URL } from '../lib/config.js';
 
-export type { CircuitState, ChallengeState, TracesPayload, TestResultsPayload };
+export type { CircuitState, TracesPayload, TestResultsPayload };
 
 /** JSON-serializable memory data: { nodePattern: { address: value } } */
 export type MemoryDataPayload = Record<string, Record<string, number>>;
@@ -14,9 +14,6 @@ export interface PreviewServer {
   updateSource(source: string): void;
   watchFile(filePath: string): void;
   getState(): CircuitState | null;
-  getChallengeState(): ChallengeState | null;
-  navigateChallenge(challengeId: string, levelId: string): void;
-  addChallengeStep(challengeId: string, levelId: string, step: string): void;
   pushTraces(data: TracesPayload): void;
   pushTestResults(data: TestResultsPayload): void;
   pushMemoryData(data: MemoryDataPayload): void;
@@ -31,7 +28,6 @@ export async function createPreviewServer(
 
   let currentSource: string | null = null;
   let cachedState: CircuitState | null = null;
-  let cachedChallengeState: ChallengeState | null = null;
   let cachedTraces: TracesPayload | null = null;
   let cachedTestResults: TestResultsPayload | null = null;
   let cachedMemoryData: MemoryDataPayload | null = null;
@@ -88,29 +84,6 @@ export async function createPreviewServer(
       // GET
       res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
       res.end(JSON.stringify({ state: cachedState }));
-      return;
-    }
-
-    if (url.pathname === '/api/challenge') {
-      sendCORS(res);
-      if (req.method === 'POST') {
-        let body = '';
-        req.on('data', (chunk: Buffer) => { body += chunk.toString(); });
-        req.on('end', () => {
-          try {
-            cachedChallengeState = JSON.parse(body) as ChallengeState;
-            res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
-            res.end(JSON.stringify({ ok: true }));
-          } catch {
-            res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
-            res.end(JSON.stringify({ error: 'Invalid JSON' }));
-          }
-        });
-        return;
-      }
-      // GET
-      res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
-      res.end(JSON.stringify({ challenge: cachedChallengeState }));
       return;
     }
 
@@ -219,18 +192,6 @@ export async function createPreviewServer(
     return cachedState;
   }
 
-  function getChallengeState(): ChallengeState | null {
-    return cachedChallengeState;
-  }
-
-  function navigateChallenge(challengeId: string, levelId: string) {
-    broadcastSSE({ type: 'challenge-navigate', challengeId, levelId });
-  }
-
-  function addChallengeStep(challengeId: string, levelId: string, step: string) {
-    broadcastSSE({ type: 'challenge-add-step', challengeId, levelId, step });
-  }
-
   function pushTraces(data: TracesPayload) {
     cachedTraces = data;
     broadcastSSE({ type: 'traces', data });
@@ -251,9 +212,6 @@ export async function createPreviewServer(
     updateSource,
     watchFile,
     getState,
-    getChallengeState,
-    navigateChallenge,
-    addChallengeStep,
     pushTraces,
     pushTestResults,
     pushMemoryData,

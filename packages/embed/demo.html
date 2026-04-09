@@ -25,22 +25,18 @@
     <h2>Half Adder</h2>
     <p>Toggle the switches. XOR gives the sum, AND gives the carry. <code>&lt;circuit-embed&gt;</code></p>
     <circuit-embed
-      dsl="circuit HalfAdder {
-        impl {
-          node A: Switch
-          node B: Switch
-          node xor1: Xor
-          node and1: And
-          node sumLed: Led
-          node carryLed: Led
-          connect A.out -> xor1.a
-          connect B.out -> xor1.b
-          connect xor1.out -> sumLed.in
-          connect A.out -> and1.a
-          connect B.out -> and1.b
-          connect and1.out -> carryLed.in
-        }
-      }"
+      code="import { circuit, bit } from '@turing-incomplete/core/circuit';
+import { Switch, Xor, And, Led } from '@turing-incomplete/core/std';
+
+const HalfAdder = circuit('HalfAdder', {
+  nodes: { A: Switch, B: Switch, xor1: Xor, and1: And, sumLed: Led, carryLed: Led },
+  connect: ({ A, B, xor1, and1, sumLed, carryLed }) => [
+    A.out.to(xor1.a, and1.a),
+    B.out.to(xor1.b, and1.b),
+    xor1.out.to(sumLed.in),
+    and1.out.to(carryLed.in),
+  ],
+});"
       height="280"
       title="Half Adder"
       description="sum = XOR(A,B), carry = AND(A,B)"
@@ -51,26 +47,18 @@
     <h2>2-bit Counter (Sequential)</h2>
     <p>Click Tick to advance. The LEDs count in binary: 00 → 01 → 10 → 11 → 00. <code>&lt;circuit-embed&gt;</code></p>
     <circuit-embed
-      dsl="circuit Counter2Bit {
-        clock clk
-        impl {
-          node dff0: DFlipFlop
-          node dff1: DFlipFlop
-          node inv: Not
-          node xor1: Xor
-          connect dff0.q -> inv.in
-          connect inv.out -> dff0.d
-          connect clk -> dff0.clk
-          connect dff1.q -> xor1.a
-          connect dff0.q -> xor1.b
-          connect xor1.out -> dff1.d
-          connect clk -> dff1.clk
-          node led0: Led
-          node led1: Led
-          connect dff0.q -> led0.in
-          connect dff1.q -> led1.in
-        }
-      }"
+      code="import { circuit, bit } from '@turing-incomplete/core/circuit';
+import { DFlipFlop, Not, Xor, Led } from '@turing-incomplete/core/std';
+
+const Counter2Bit = circuit('Counter2Bit', {
+  nodes: { dff0: DFlipFlop, dff1: DFlipFlop, inv: Not, xor1: Xor, led0: Led, led1: Led },
+  connect: ({ dff0, dff1, inv, xor1, led0, led1 }) => [
+    dff0.q.to(inv.in, xor1.b, led0.in),
+    inv.out.to(dff0.d),
+    dff1.q.to(xor1.a, led1.in),
+    xor1.out.to(dff1.d),
+  ],
+});"
       height="300"
       title="2-bit Counter"
       description="Two flip-flops with toggle logic"
@@ -79,19 +67,19 @@
 
   <div class="demo">
     <h2>Editor Playground</h2>
-    <p>Edit the DSL on the left, click Run (or Ctrl+Enter). <code>&lt;circuit-editor&gt;</code></p>
+    <p>Edit the code on the left, click Run (or Ctrl+Enter). <code>&lt;circuit-editor&gt;</code></p>
     <circuit-editor
-      initial-dsl="circuit MyCircuit {
-  impl {
-    node A: Switch
-    node B: Switch
-    node gate: And
-    node light: Led
-    connect A.out -> gate.a
-    connect B.out -> gate.b
-    connect gate.out -> light.in
-  }
-}"
+      initial-code="import { circuit, bit } from '@turing-incomplete/core/circuit';
+import { Switch, And, Led } from '@turing-incomplete/core/std';
+
+const MyCircuit = circuit('MyCircuit', {
+  nodes: { A: Switch, B: Switch, gate: And, light: Led },
+  connect: ({ A, B, gate, light }) => [
+    A.out.to(gate.a),
+    B.out.to(gate.b),
+    gate.out.to(light.in),
+  ],
+});"
       height="450"
       title="Playground"
       description="Try changing And to Or or Xor"

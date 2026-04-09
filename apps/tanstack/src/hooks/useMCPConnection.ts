@@ -34,16 +34,10 @@ export interface MCPCallbacks {
   onTestResults?: (data: unknown) => void;
   /** Called when memory data is pushed */
   onMemoryData?: (data: unknown) => void;
-  /** Called when challenge navigation is requested */
-  onChallengeNavigate?: (challengeId: string, levelId: string) => void;
-  /** Called when a challenge step should be added */
-  onChallengeAddStep?: (challengeId: string, levelId: string, step: string) => void;
   /** Called when Claude pushes a chat message via push_chat_response */
   onChatMessage?: (text: string) => void;
   /** Called to get current circuit state for MCP server requests */
   getCircuitState?: () => unknown;
-  /** Called to get current challenge state for MCP server requests */
-  getChallengeState?: () => unknown;
 }
 
 const RETRY_INTERVAL = 5000;
@@ -146,12 +140,6 @@ export function useMCPConnection(callbacks: MCPCallbacks) {
           case 'memory-data':
             cb.onMemoryData?.(msg.data);
             break;
-          case 'challenge-navigate':
-            cb.onChallengeNavigate?.(msg.challengeId as string, msg.levelId as string);
-            break;
-          case 'challenge-add-step':
-            cb.onChallengeAddStep?.(msg.challengeId as string, msg.levelId as string, msg.step as string);
-            break;
           case 'chat-message':
             cb.onChatMessage?.(msg.text as string);
             break;
@@ -163,15 +151,6 @@ export function useMCPConnection(callbacks: MCPCallbacks) {
               type: 'state-response',
               requestId: msg.requestId,
               state: state ?? null,
-            }));
-            break;
-          }
-          case 'request-challenge-state': {
-            const challengeState = cb.getChallengeState?.();
-            ws.send(JSON.stringify({
-              type: 'challenge-state-response',
-              requestId: msg.requestId,
-              state: challengeState ?? null,
             }));
             break;
           }
