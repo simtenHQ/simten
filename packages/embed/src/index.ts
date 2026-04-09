@@ -1,3 +1,5 @@
+export { CircuitViewer } from './CircuitViewer';
+export type { CircuitViewerProps, CircuitViewerHandle } from './CircuitViewer';
 export { CircuitEmbed } from './CircuitEmbed';
 export type { CircuitEmbedProps, CircuitEmbedHandle } from './CircuitEmbed';
 export { useCircuitSimulator } from './hooks/useCircuitSimulator';
