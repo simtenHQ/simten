@@ -10,7 +10,7 @@ const isAnalyze = process.env.ANALYZE === "true";
  * Vite config for building the web component bundle.
  *
  * Produces:
- *   dist/circuit-embed.js  — IIFE registering <circuit-embed> and <circuit-editor>
+ *   dist/circuit-embed.js  — IIFE registering <circuit-embed>
  *   dist/styles.css         — all CSS (Tailwind ti-prefixed + ReactFlow)
  *
  * CSS is handled entirely by Vite + Tailwind plugin — no manual merging.

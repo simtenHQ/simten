@@ -65,25 +65,5 @@ const Counter2Bit = circuit('Counter2Bit', {
     ></circuit-embed>
   </div>
 
-  <div class="demo">
-    <h2>Editor Playground</h2>
-    <p>Edit the code on the left, click Run (or Ctrl+Enter). <code>&lt;circuit-editor&gt;</code></p>
-    <circuit-editor
-      initial-code="import { circuit, bit } from '@turing-incomplete/core/circuit';
-import { Switch, And, Led } from '@turing-incomplete/core/std';
-
-const MyCircuit = circuit('MyCircuit', {
-  nodes: { A: Switch, B: Switch, gate: And, light: Led },
-  connect: ({ A, B, gate, light }) => [
-    A.out.to(gate.a),
-    B.out.to(gate.b),
-    gate.out.to(light.in),
-  ],
-});"
-      height="450"
-      title="Playground"
-      description="Try changing And to Or or Xor"
-    ></circuit-editor>
-  </div>
 </body>
 </html>

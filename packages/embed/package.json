@@ -36,10 +36,6 @@
       "types": "./src/canvas/index.ts",
       "default": "./src/canvas/index.ts"
     },
-    "./editor": {
-      "types": "./src/editor/index.ts",
-      "default": "./src/editor/index.ts"
-    },
     "./styles.css": "./dist/styles.css",
     "./webcomponent": {
       "types": "./src/webcomponent/index.ts",
