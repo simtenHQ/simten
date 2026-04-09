@@ -6,9 +6,7 @@
  * If the circuit has no ports (already self-contained), returns it as-is.
  */
 
-import type { Circuit, Connection, Node, PortDescriptor, PortType, ArgumentValue } from "@turing-incomplete/core";
-
-const BIT: PortType = { kind: 'bit' };
+import type { Circuit, Connection, Node, PortType, ArgumentValue } from "@turing-incomplete/core";
 
 let harnessCounter = 0;
 
@@ -39,9 +37,9 @@ export function autoHarness(
     id: 'dut',
     componentRef: circuit.name,
     arguments: {},
-    inputs: circuit.inputs.map(p => ({ name: p.name, portType: p.portType })),
-    outputs: circuit.outputs.map(p => ({ name: p.name, portType: p.portType })),
-    clocks: circuit.clocks.map(c => ({ name: c.name, edge: c.edge })),
+    inputs: circuit.inputs.map(p => ({ id: `dut.${p.name}`, name: p.name, portType: p.portType })),
+    outputs: circuit.outputs.map(p => ({ id: `dut.${p.name}`, name: p.name, portType: p.portType })),
+    clocks: circuit.clocks.map(c => ({ id: `dut.${c.name}`, name: c.name })),
   };
   nodes.push(dutNode);
 
@@ -61,7 +59,7 @@ export function autoHarness(
       componentRef: isBit ? 'Switch' : 'Input',
       arguments: args,
       inputs: [],
-      outputs: [{ name: 'out', portType: input.portType }],
+      outputs: [{ id: `${input.name}.out`, name: 'out', portType: input.portType }],
       clocks: [],
     };
     nodes.push(switchNode);
@@ -86,7 +84,7 @@ export function autoHarness(
       label: output.name,
       componentRef: isBit ? 'Led' : 'HexDisplay',
       arguments: outArgs,
-      inputs: [{ name: 'in', portType: output.portType }],
+      inputs: [{ id: `${output.name}.in`, name: 'in', portType: output.portType }],
       outputs: [],
       clocks: [],
     };
