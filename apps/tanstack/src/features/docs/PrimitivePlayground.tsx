@@ -285,9 +285,9 @@ export function PrimitiveLink({
   name: string;
   children?: React.ReactNode;
 }) {
-  const hasDsl = ALL_STD.some((c) => c.name === name) && shouldShow(name);
+  const hasDemo = ALL_STD.some((c) => c.name === name) && shouldShow(name);
 
-  if (!hasDsl) {
+  if (!hasDemo) {
     return <code className="text-sm">{children ?? name}</code>;
   }
 

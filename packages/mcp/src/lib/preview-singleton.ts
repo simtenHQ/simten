@@ -5,9 +5,9 @@
  * (show, state, traces, test-results).
  */
 
-import type { StudioServer, CircuitState, ChallengeState, TracesPayload, TestResultsPayload } from '../server/ws-server.js';
+import type { StudioServer, CircuitState, TracesPayload, TestResultsPayload } from '../server/ws-server.js';
 
-export type { StudioServer, CircuitState, ChallengeState, TracesPayload, TestResultsPayload };
+export type { StudioServer, CircuitState, TracesPayload, TestResultsPayload };
 
 // Module-level singleton
 let studioServer: StudioServer | null = null;

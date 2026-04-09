@@ -157,7 +157,6 @@
   100% { background-position: -200% 0; }
 }
 
-/* Port glow pulse for challenge mode */
 @keyframes ping-slow {
   0% { transform: translateY(-50%) scale(1); opacity: 0.6; }
   50% { transform: translateY(-50%) scale(1.8); opacity: 0; }

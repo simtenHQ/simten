@@ -16,13 +16,6 @@ export interface TracesPayload {
   steadyStateAt?: number;
 }
 
-export interface ChallengeState {
-  challengeId: string;
-  levelId: string;
-  userSource: string;
-  timestamp: number;
-}
-
 export interface TestResultsPayload {
   results: Array<{
     name: string;
