@@ -357,7 +357,7 @@ function CircuitCanvasInner({
     return (
       <div
         data-embed-theme={theme}
-        className={`bg-[var(--embed-bg-primary)] rounded-lg flex items-center justify-center text-[var(--embed-text-muted)] ${
+        className={`bg-[var(--embed-bg-primary)] flex items-center justify-center text-[var(--embed-text-muted)] ${
           className ?? ""
         }`}
         style={{ height }}
@@ -370,7 +370,7 @@ function CircuitCanvasInner({
   return (
     <div
       data-embed-theme={theme}
-      className={`bg-[var(--embed-bg-primary)] rounded-lg overflow-hidden ${
+      className={`bg-[var(--embed-bg-primary)] overflow-hidden ${
         className ?? ""
       }`}
       style={{ height }}

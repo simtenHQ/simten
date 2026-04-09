@@ -67,7 +67,7 @@ export function ClockControls({
   return (
     <TooltipProvider>
       <div className={wrapper}>
-        <div className="flex items-center gap-1.5 rounded-lg border border-border bg-card/95 backdrop-blur-sm px-3 py-1.5 shadow-sm">
+        <div className="flex items-center gap-1.5 border-t border-border bg-card/95 px-3 py-1.5">
           {/* Step */}
           <Tooltip>
             <TooltipTrigger asChild>
