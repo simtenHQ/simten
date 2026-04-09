@@ -267,7 +267,6 @@ function DemoGallery() {
             <CircuitEmbed
               circuit={ShiftRegister4}
               height={340}
-              theme="dark"
               initialInputs={{ din: 1 }}
               nodePositions={{
                 din: { x: 10, y: 140 },
