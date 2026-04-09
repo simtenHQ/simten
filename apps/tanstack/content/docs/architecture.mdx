@@ -173,14 +173,14 @@ This means loading a binary into ROM works the same as flipping a switch — one
        ↑
 @turing-incomplete/ui         ← visual: nodes, canvas, simulation hooks, editor
        ↑
-@turing-incomplete/embed      ← convenience: CircuitEmbed, useCircuitSimulator
+@turing-incomplete/embed      ← convenience: CircuitViewer, CircuitEmbed, web component
 ```
 
 | Package | Description |
 |---------|-------------|
 | `@turing-incomplete/core` | TypeScript builder, compiler, validator, simulator engine, `SimulationSession`, environmental state, Verilog export. No UI dependencies. |
 | `@turing-incomplete/ui` | React components — canonical node renderers, shared canvas, ELK layout, `useCircuitSession` hook, `ClockControls`, editor UI. |
-| `@turing-incomplete/embed` | Batteries-included wrapper: `CircuitEmbed` (pass TS code, get interactive circuit), `useCircuitSimulator` hook. Depends on core + ui. |
+| `@turing-incomplete/embed` | `CircuitViewer` (simulation + canvas), `CircuitEmbed` (viewer + auto-harness + info bar), `<circuit-embed>` web component. Depends on core + ui. |
 | `@turing-incomplete/mcp` | MCP server for Claude Code integration |
 
 ### Hooks
@@ -189,10 +189,10 @@ Three hooks handle the simulation lifecycle. Each serves a different entry point
 
 | Hook | Input | Purpose | Used by |
 |------|-------|---------|---------|
-| `useCircuitSession(circuit, library)` | Compiled circuit + library | Simulation only | Editor, inspector |
-| `useCircuitSimulator(code)` | TypeScript code | Compile + simulate + UI sugar | Embeds, blog demos, landing page |
+| `useCircuitSession(circuit, library)` | Compiled `Circuit` + `CircuitLibrary` | Low-level simulation binding | `EditorWorkspace` (reads circuit/library from stores) |
+| `useCircuitSimulator(builtCircuit)` | `BuiltCircuit` | Builds library from dependencies, optional auto-harness, wraps `useCircuitSession` | `CircuitViewer` → `CircuitEmbed` → landing page, blog demos |
 
-The editor has its own compiler (TypeScript editor with Monaco), so it passes the compiled circuit directly to `useCircuitSession`. Embeds don't have their own compiler, so they use `useCircuitSimulator` which compiles internally via `executeCircuitCode()`.
+The editor has its own compiler (Monaco), so it passes the compiled circuit directly to `useCircuitSession`. Embeds receive a `BuiltCircuit` (from `circuit()`) and use `useCircuitSimulator` which builds the library internally from the circuit's dependency tree.
 
 Data flows one direction — from the compiler output to the simulation:
 
@@ -204,12 +204,43 @@ TS Editor compiles → { circuits, library }
                   CircuitCanvas (rendering)
 ```
 
+### Editor State Management
+
+The `/editor` page uses [Zustand](https://zustand-demo.pmnd.rs/) with Immer middleware for state that multiple sibling components need to share. Three stores handle the compilation→simulation→rendering pipeline:
+
+| Store | What it holds | Written by | Read by |
+|-------|--------------|------------|---------|
+| `useCircuitPreviewStore` | List of compiled `Circuit` objects from the last successful compilation | Monaco `onCompileSuccess` callback | Circuit selector UI |
+| `useCircuitStore` | The currently active `Circuit` (selected from the preview list) | Preview store / circuit selector | Canvas, ChatPanel, Verilog export, MCP state callbacks |
+| `useCircuitLibraryStore` | The `CircuitLibrary` that resolves component names to definitions | Monaco `onCompileSuccess` callback | Canvas, ChatPanel, Verilog export |
+
+The data flows in one direction:
+
+```
+Monaco compiles
+     │
+     ▼
+useCircuitPreviewStore  (all compiled circuits)
+     │
+     ▼
+useCircuitStore         (the active circuit)
+     │
+     ├──→ useCircuitSession(circuit, library) → simulation state
+     ├──→ ChatPanel (reads circuit for AI context)
+     ├──→ Verilog export (reads circuit + library)
+     └──→ MCP callbacks (reads circuit for state responses)
+```
+
+**Why stores instead of props?** The editor page has multiple sibling consumers — Monaco, the circuit canvas, the AI chat panel, the Verilog export button, and MCP callbacks all need the current circuit and library. Threading this through props would mean `EditorWorkspace` becomes a giant prop-drilling intermediary. Zustand gives each consumer direct access with fine-grained subscriptions (a store update only re-renders components that read the changed slice).
+
+**Why not stores in embeds?** Embeds (`CircuitEmbed`, `CircuitViewer`) are props-driven — they receive a `BuiltCircuit` and manage simulation internally. They don't need shared state because there's only one consumer (the canvas). This keeps embeds self-contained and avoids leaking store state between multiple `<CircuitEmbed>` instances on the same page.
+
 ### Import paths
 
 | Import | Contents |
 |--------|----------|
 | `@turing-incomplete/core/simulator` | `SimulationSession`, `SimulatorEngine`, `PRIMITIVE_DEFINITIONS`, `PRIMITIVES`, `createSimulatorFromCircuit`, `captureEnvironmentalState`, `restoreEnvironmentalState` |
-| `@turing-incomplete/embed` | `CircuitEmbed`, `useCircuitSimulator` — everything needed to embed a circuit |
+| `@turing-incomplete/embed` | `CircuitViewer`, `CircuitEmbed`, `<circuit-embed>` web component — everything needed to embed a circuit |
 | `@turing-incomplete/ui/canvas` | `CircuitCanvas`, `useCircuitSession`, `useSimulationSession`, `ClockControls` — shared simulation UI |
 | `@turing-incomplete/ui/nodes` | `BaseNode`, `InputNode`, `OutputNode`, `LogicGateNode`, `NodeData` — canonical node components (props-driven, store-free) |
 
