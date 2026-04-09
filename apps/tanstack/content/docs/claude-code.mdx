@@ -52,16 +52,6 @@ Once the MCP server is registered, Claude has access to these tools:
 | `get_grammar` | Return the component reference (so Claude can write valid circuits). |
 | `get_primitives` | Return the list of available primitives with their ports and parameters. |
 
-### Challenges
-
-| Tool | What it does |
-|------|-------------|
-| `list_challenges` | List all available challenges with metadata. |
-| `get_challenge_level` | Fetch a challenge level's objective, hints, and scaffold. Opens it in the browser. |
-| `check_challenge_progress` | Compare the user's circuit to the solution — returns progress without revealing answers. |
-| `solve_next` | Add the next missing connection to the user's circuit (guided solving). |
-| `push_chat_response` | Send a message to the in-app chat panel (used after receiving a channel notification). |
-
 ## How the connection works
 
 The MCP server runs locally alongside Claude Code. It serves two roles:
@@ -121,7 +111,6 @@ The challenge chat supports **channel notifications** — when you type in the a
 The app works without Claude Code. You can:
 
 - Write circuit code directly in the editor
-- Use the built-in challenges (hints, tests, and solution reveal are all built in)
 - Explore the interactive blog posts
 - Embed circuits in your own React app
 

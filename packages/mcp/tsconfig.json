@@ -16,7 +16,6 @@
     "resolveJsonModule": true
   },
   "references": [
-    { "path": "../challenges" },
     { "path": "../core" }
   ],
   "include": ["src/**/*.ts"],

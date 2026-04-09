@@ -5,7 +5,7 @@
  * - Auto-discovery: tries ws://localhost:19847 on mount, retries every 5s
  * - Token auth from URL fragment (cleaned immediately)
  * - Session registration with a stable UUID
- * - Incoming messages: circuit source, traces, test results, memory data, challenges
+ * - Incoming messages: circuit source, traces, test results, memory data
  * - Responding to state requests from the MCP server (pull model)
  */
 

@@ -1,59 +1,66 @@
-# Containers Starter
+# @turing-incomplete/compiler
 
-[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/cloudflare/templates/tree/main/containers-template)
+RISC-V cross-compiler running inside a [Cloudflare Container](https://developers.cloudflare.com/containers/). Compiles C, C++, Rust, and raw assembly into rv32i machine code so users can write programs in the browser and execute them on the simulated CPU — without shipping a 50MB toolchain to the client.
 
-![Containers Template Preview](https://imagedelivery.net/_yJ02hpOMj_EnGvsU2aygw/5aba1fb7-b937-46fd-fa67-138221082200/public)
+## Architecture
 
-<!-- dash-content-start -->
-
-This is a [Container](https://developers.cloudflare.com/containers/) starter template.
-
-It demonstrates basic Container configuration, launching and routing to individual container, load balancing over multiple container, running basic hooks on container status changes.
-
-<!-- dash-content-end -->
-
-Outside of this repo, you can start a new project with this template using [C3](https://developers.cloudflare.com/pages/get-started/c3/) (the `create-cloudflare` CLI):
-
-```bash
-npm create cloudflare@latest -- --template=cloudflare/templates/containers-template
+```
+Browser ──POST /compile──→ Hono Worker ──→ Durable Object ──→ Container (sleeps after 2m)
+                                                                  │
+                                                      ┌──────────┼──────────┐
+                                                      │  Go server (:8080)  │
+                                                      │  ├── riscv-none-elf-gcc (C/C++/asm)
+                                                      │  └── rustc --target riscv32i (Rust)
+                                                      └─────────────────────┘
 ```
 
-## Getting Started
+The container image is a multi-stage Alpine build:
+1. Go compilation server (handles routing, sandboxing, output parsing)
+2. RISC-V GCC cross-compiler (`gcc-riscv-none-elf`, `newlib-riscv-none-elf`) with unused multilib variants stripped (~600MB saved)
+3. Rust with the `riscv32i-unknown-none-elf` target (minimal profile)
 
-First, run:
+## API
 
-```bash
-npm install
-# or
-yarn install
-# or
-pnpm install
-# or
-bun install
+### `POST /compile`
+
+Compile source code to RISC-V machine code.
+
+**Request:**
+```json
+{
+  "source": "int main() { return 42; }",
+  "language": "c",
+  "linkerScript": "...",
+  "disassemble": true
+}
 ```
 
-Then run the development server (using the package manager of your choice):
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `source` | string | yes | Source code to compile |
+| `language` | string | no | `c` (default), `cpp`, `rust`, or `asm` |
+| `linkerScript` | string | no | Custom linker script |
+| `disassemble` | boolean | no | Include disassembly in response |
+
+**Response:** compiled binary (as JSON with base64-encoded bytes), disassembly if requested, or error details.
+
+**Limits:** 60KB max request body.
+
+### `GET /`
+
+Health check. Returns container status.
+
+## Local Development
+
+Requires Docker for the container build.
 
 ```bash
-npm run dev
+pnpm dev          # Start with wrangler (builds container)
+pnpm build:container  # Build Docker image only
 ```
 
-Open [http://localhost:8787](http://localhost:8787) with your browser to see the result.
+## Deploy
 
-You can start editing your Worker by modifying `src/index.ts` and you can start
-editing your Container by editing the content of `container_src`.
-
-## Deploying To Production
-
-| Command          | Action                                |
-| :--------------- | :------------------------------------ |
-| `npm run deploy` | Deploy your application to Cloudflare |
-
-## Learn More
-
-To learn more about Containers, take a look at the following resources:
-
-- [Container Documentation](https://developers.cloudflare.com/containers/) - learn about Containers
-- [Container Class](https://github.com/cloudflare/containers) - learn about the Container helper class
-
-Your feedback and contributions are welcome!
+```bash
+pnpm deploy       # Deploy to Cloudflare via wrangler
+```
