@@ -123,7 +123,7 @@ export interface FlatCircuit {
  * Port value storage using full paths.
  * Key format: "nodeId.portName"
  */
-export type FlatPortValueMap = Map<string, BitValue | BusValue>;
+export type FlatPortValueMap = ReadonlyMap<string, BitValue | BusValue>;
 
 /**
  * State value types for sequential components.
