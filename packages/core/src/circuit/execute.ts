@@ -54,7 +54,7 @@ export interface ExecuteResult {
 function buildScope(): { names: string[]; values: unknown[] } {
   const scope = new Map<string, unknown>();
 
-  // Core builder API — inject both `circuit` (canonical) and `component` (backward compat)
+  // Core circuit() API — inject both `circuit` (canonical) and `component` (backward compat)
   scope.set('circuit', circuit);
   scope.set('component', circuit);
   scope.set('bit', bit);

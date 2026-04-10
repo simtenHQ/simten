@@ -170,7 +170,7 @@ describe('circuit._dependencies', () => {
 });
 
 // ============================================================================
-// End-to-end: use stdlib with builder API
+// End-to-end: use stdlib with circuit() API
 // ============================================================================
 
 describe('stdlib + builder integration', () => {

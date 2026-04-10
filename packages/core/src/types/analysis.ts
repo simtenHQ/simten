@@ -239,8 +239,8 @@ export function buildEnvelope(options: BuildEnvelopeOptions): HardwareLLMEnvelop
   }
   components.sort((a, b) => a.name.localeCompare(b.name));
 
-  // Grammar summary for TS builder API
-  const grammarSummary = getBuilderAPISummary();
+  // Grammar summary for TS circuit() API
+  const grammarSummary = getCircuitAPISummary();
 
   return {
     version: '1.0',
@@ -321,7 +321,7 @@ export function detectSteadyState(trace: SimulationTrace): number | undefined {
 }
 
 // ============================================================================
-// Builder API Summary
+// Circuit API Summary
 // ============================================================================
 
 export function getCircuitAPISummary(): string {
@@ -375,9 +375,4 @@ const Adder8 = circuit('Adder8', {
 // And, Or, Not, Xor, Nand, Nor, Adder, Register, Mux, Decoder,
 // ROM, RAM, DFlipFlop, Switch, Led, Input, Output, Constant, ...
 `;
-}
-
-/** @deprecated use getCircuitAPISummary */
-export function getBuilderAPISummary(): string {
-  return getCircuitAPISummary();
 }
