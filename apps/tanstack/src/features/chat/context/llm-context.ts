@@ -16,10 +16,10 @@ import type {
   CircuitMetrics,
   SimulationTrace,
   ComponentInterface,
-} from '@turing-incomplete/core';
-import type { BitValue, BusValue } from '@turing-incomplete/ui/editor/types';
-import type { FlatPortValueMap } from '@turing-incomplete/core/simulator';
-import { executeCircuitCode } from '@turing-incomplete/core';
+} from '@simten/core';
+import type { BitValue, BusValue } from '@simten/ui/editor/types';
+import type { FlatPortValueMap } from '@simten/core/simulator';
+import { executeCircuitCode } from '@simten/core';
 
 // ============================================================================
 // Severity Ordering

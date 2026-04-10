@@ -15,7 +15,7 @@ import { getIdempotencyTracker } from './idempotency-tracker';
 import { checkStaleness, createStaleResult, createCannotSimulateResult } from './staleness-checker';
 import { getSimulationThrottle, type SimulationContext } from './simulation-throttle';
 import type { SetInputAction, RunSimulationAction, ShowDiffAction, WriteCircuitAction, InsertNodeAction, GenerateHarnessAction, VerifyAssertionAction } from '../types';
-import { executeCircuitCode } from '@turing-incomplete/core';
+import { executeCircuitCode } from '@simten/core';
 import type { ValidationSnapshot } from '../types';
 
 // ============================================================================

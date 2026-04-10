@@ -1,6 +1,6 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { useCircuitSimulator } from "@turing-incomplete/embed";
+import { useCircuitSimulator } from "@simten/embed";
 import { RV32I_CPU } from "./rv32i-cpu.circuit";
 
 // ABI register names for RV32I

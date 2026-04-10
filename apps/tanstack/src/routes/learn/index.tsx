@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/learn/")({
   head: () => ({
-    meta: [{ title: "Learn | Turing Incomplete" }],
+    meta: [{ title: "Learn | Simten" }],
   }),
   component: LearnIndexPage,
 });
@@ -95,7 +95,7 @@ function LearnIndexPage() {
             to="/"
             className="text-blue-400 hover:text-blue-300 underline underline-offset-2"
           >
-            Turing Incomplete
+            Simten
           </Link>
         </footer>
       </main>

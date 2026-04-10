@@ -1,15 +1,15 @@
 
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
-import { useCircuitSimulator } from "@turing-incomplete/embed";
-import { CircuitCanvas } from "@turing-incomplete/ui/canvas";
-import { circuit, bit } from "@turing-incomplete/core/circuit";
-import { Switch, Led, Xor, And } from "@turing-incomplete/core/std";
+import { useCircuitSimulator } from "@simten/embed";
+import { CircuitCanvas } from "@simten/ui/canvas";
+import { circuit, bit } from "@simten/core/circuit";
+import { Switch, Led, Xor, And } from "@simten/core/std";
 import {
   elaborate,
   tracePropagation,
   type PropagationStep,
-} from "@turing-incomplete/core/simulator";
-import type { Circuit, CircuitLibrary } from "@turing-incomplete/core";
+} from "@simten/core/simulator";
+import type { Circuit, CircuitLibrary } from "@simten/core";
 
 const HalfAdder = circuit('HalfAdder', {
   in: { a: bit, b: bit },

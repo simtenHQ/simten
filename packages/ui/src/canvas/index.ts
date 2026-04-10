@@ -1,5 +1,5 @@
 /**
- * @turing-incomplete/ui/canvas
+ * @simten/ui/canvas
  *
  * Unified circuit canvas — props-driven, store-free.
  * Used by both the embed package and the editor.

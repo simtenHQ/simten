@@ -13,8 +13,8 @@ import type {
   SimulationSession,
   SimulationSessionState,
   SessionSnapshot,
-} from "@turing-incomplete/core/simulator";
-import type { BitValue, BusValue } from "@turing-incomplete/core/simulator";
+} from "@simten/core/simulator";
+import type { BitValue, BusValue } from "@simten/core/simulator";
 
 const EMPTY_STATE: SimulationSessionState = {
   portValues: new Map(),

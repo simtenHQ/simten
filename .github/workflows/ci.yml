@@ -6,7 +6,7 @@ name: CI
 #
 # What runs today:
 #   1. pnpm install (frozen lockfile)
-#   2. @turing-incomplete/core unit tests   — 389 tests, the load-bearing
+#   2. @simten/core unit tests   — 389 tests, the load-bearing
 #                                              simulator + circuit IR + std lib
 #                                              + verilog exporter
 #   3. tanstack production build            — proves the web app + Cloudflare
@@ -38,7 +38,7 @@ name: CI
 #
 #   • packages/ui vitest tests
 #       Status: 82 passing, 14 failing across 2 test files. Investigate and
-#       fix the failing assertions, then add `pnpm --filter @turing-incomplete/ui test`.
+#       fix the failing assertions, then add `pnpm --filter @simten/ui test`.
 #
 #   • packages/embed Playwright e2e tests
 #       Status: not run in CI yet. Needs `pnpm exec playwright install` step
@@ -84,7 +84,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Run core tests
-        run: pnpm --filter @turing-incomplete/core test
+        run: pnpm --filter @simten/core test
 
       - name: Build tanstack web app
         run: pnpm --filter tanstack build

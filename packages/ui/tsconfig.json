@@ -4,7 +4,7 @@
     "lib": ["dom", "dom.iterable", "esnext"],
     "module": "esnext",
     "moduleResolution": "bundler",
-    "customConditions": ["@turing-incomplete/source"],
+    "customConditions": ["@simten/source"],
     "jsx": "react-jsx",
     "strict": true,
     "noEmit": true,

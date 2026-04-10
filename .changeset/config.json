@@ -3,7 +3,7 @@
   "changelog": "@changesets/cli/changelog",
   "commit": false,
   "fixed": [],
-  "linked": [["@turing-incomplete/core", "@turing-incomplete/cli"]],
+  "linked": [["@simten/core", "@simten/cli"]],
   "access": "public",
   "baseBranch": "main",
   "updateInternalDependencies": "patch",

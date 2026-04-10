@@ -1,6 +1,6 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { useCircuitSimulator } from "@turing-incomplete/embed";
+import { useCircuitSimulator } from "@simten/embed";
 import { ABI_NAMES, parseDisassembly, type DisasmLine, type PipelineStages } from "../cpu-debugger/useRV32IDebugger";
 import { RV32I_DualCPU } from "./rv32i-dual-cpu.circuit";
 

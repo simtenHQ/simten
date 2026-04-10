@@ -1,11 +1,11 @@
-# @turing-incomplete/embed
+# @simten/embed
 
 Embeddable interactive circuit simulator. Drop live hardware simulations into any React app.
 
 ## Install
 
 ```bash
-npm install @turing-incomplete/embed @turing-incomplete/core
+npm install @simten/embed @simten/core
 ```
 
 ## Usage
@@ -13,10 +13,10 @@ npm install @turing-incomplete/embed @turing-incomplete/core
 ### CircuitEmbed — read-only interactive viewer
 
 ```tsx
-import '@turing-incomplete/embed/styles.css'
-import { CircuitEmbed } from '@turing-incomplete/embed'
-import { circuit, bit } from '@turing-incomplete/core/circuit'
-import { Xor, And } from '@turing-incomplete/core/std'
+import '@simten/embed/styles.css'
+import { CircuitEmbed } from '@simten/embed'
+import { circuit, bit } from '@simten/core/circuit'
+import { Xor, And } from '@simten/core/std'
 
 const HalfAdder = circuit('HalfAdder', {
   in:  { a: bit, b: bit },
@@ -40,9 +40,9 @@ The circuit compiles, simulates, and renders in the browser. Users can toggle sw
 ### useCircuitSimulator — custom layouts
 
 ```tsx
-import { useCircuitSimulator } from '@turing-incomplete/embed'
-import { circuit, bit } from '@turing-incomplete/core/circuit'
-import { Xor, And } from '@turing-incomplete/core/std'
+import { useCircuitSimulator } from '@simten/embed'
+import { circuit, bit } from '@simten/core/circuit'
+import { Xor, And } from '@simten/core/std'
 
 const HalfAdder = circuit('HalfAdder', {
   in: { a: bit, b: bit },
@@ -100,7 +100,7 @@ Each `useCircuitSimulator` call creates its own component library instance. Sub-
 The package ships compiled CSS at `dist/styles.css`. All classes are prefixed with `ti-` to avoid collisions with host app styles.
 
 ```tsx
-import '@turing-incomplete/embed/styles.css'
+import '@simten/embed/styles.css'
 ```
 
 No Tailwind configuration required in the consuming app.
@@ -119,7 +119,7 @@ Components work directly — the `"use client"` boundary is automatic.
 import dynamic from 'next/dynamic'
 
 const CircuitEmbed = dynamic(
-  () => import('@turing-incomplete/embed').then(m => m.CircuitEmbed),
+  () => import('@simten/embed').then(m => m.CircuitEmbed),
   { ssr: false }
 )
 ```

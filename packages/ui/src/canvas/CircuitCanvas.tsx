@@ -28,10 +28,10 @@ import type {
   CircuitLibrary,
   FlatPortValueMap,
   FlatSequentialState,
-} from "@turing-incomplete/core";
+} from "@simten/core";
 import {
   createCircuitLibrary,
-} from "@turing-incomplete/core";
+} from "@simten/core";
 import type { NodeData } from "../nodes";
 import { cleanCircuitLabels } from "./label-utils";
 import { EDGE_TYPES, NODE_TYPES } from "./node-types";

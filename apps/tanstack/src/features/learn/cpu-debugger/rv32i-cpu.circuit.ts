@@ -1,4 +1,4 @@
-import { circuit, bit, bus } from "@turing-incomplete/core/circuit";
+import { circuit, bit, bus } from "@simten/core/circuit";
 import {
   Constant, Register, Adder, BitSlice, Mux, And, Or, Not,
   HexDisplay, BusAnd,
@@ -7,7 +7,7 @@ import {
   RV32I_BranchComp, RV32I_WritebackMux, RV32I_NextPCMux,
   RV32I_InstrMem, RV32I_DataMem, RV32I_LoadAlign,
   MemBusMux, UART_TX, NIC_FIFO,
-} from "@turing-incomplete/core/std";
+} from "@simten/core/std";
 
 export const RV32I_CPU = circuit('RV32I_CPU', {
   in: { net_rx_data: bus(32), net_rx_valid: bit, net_rx_frame: bit },

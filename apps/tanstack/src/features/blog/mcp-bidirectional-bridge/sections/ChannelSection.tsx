@@ -22,7 +22,7 @@ MCP server receives, fires channel notification:
             │
             ▼
 Claude receives the notification with full context:
-  <channel source="turing-incomplete"
+  <channel source="simten"
            type="tutor_prompt"
            circuit="FullAdder">
   How do I connect the carry bit?
@@ -95,7 +95,7 @@ export function ChannelSection() {
 
           <CodeBlock title="packages/mcp/src/index.ts" language="typescript">
 {`const server = new McpServer({
-  name: "turing-incomplete",
+  name: "simten",
   version: "1.0.0",
 }, {
   capabilities: {

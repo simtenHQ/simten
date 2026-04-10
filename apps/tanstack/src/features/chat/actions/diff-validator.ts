@@ -10,7 +10,7 @@
 import { DIFF_GUARDRAILS } from '../constants';
 import type { ValidationResult } from '../types';
 import type { ShowDiffAction } from '../types';
-import { executeCircuitCode } from '@turing-incomplete/core';
+import { executeCircuitCode } from '@simten/core';
 
 // ============================================================================
 // Line Counting

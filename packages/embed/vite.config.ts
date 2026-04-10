@@ -17,7 +17,7 @@ const isAnalyze = process.env.ANALYZE === "true";
  */
 export default defineConfig({
   resolve: {
-    conditions: ["@turing-incomplete/source", "import", "module", "browser", "default"],
+    conditions: ["@simten/source", "import", "module", "browser", "default"],
     dedupe: ["react", "react-dom"],
   },
   plugins: [
@@ -42,7 +42,7 @@ export default defineConfig({
     lib: {
       entry: resolve(__dirname, "src/webcomponent/index.ts"),
       formats: ["iife"],
-      name: "TuringIncompleteEmbed",
+      name: "SimtenEmbed",
       fileName: () => "circuit-embed.js",
     },
     outDir: "dist",

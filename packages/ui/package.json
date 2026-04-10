@@ -1,5 +1,5 @@
 {
-  "name": "@turing-incomplete/ui",
+  "name": "@simten/ui",
   "version": "0.1.0",
   "type": "module",
   "sideEffects": false,
@@ -21,7 +21,7 @@
     "lint": "tsc --noEmit"
   },
   "dependencies": {
-    "@turing-incomplete/core": "workspace:*",
+    "@simten/core": "workspace:*",
     "@xyflow/react": "^12.10.0",
     "@radix-ui/react-dialog": "^1.1.15",
     "class-variance-authority": "^0.7.1",

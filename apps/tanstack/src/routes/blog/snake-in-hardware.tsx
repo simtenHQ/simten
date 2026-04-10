@@ -126,7 +126,7 @@ function SnakeInHardwarePage() {
 export const Route = createFileRoute('/blog/snake-in-hardware')({
   head: () => ({
     meta: [
-      { title: 'Snake in Hardware | Turing Incomplete' },
+      { title: 'Snake in Hardware | Simten' },
       {
         name: 'description',
         content:

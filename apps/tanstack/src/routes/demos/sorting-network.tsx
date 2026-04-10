@@ -8,8 +8,8 @@
 
 import { createFileRoute } from "@tanstack/react-router";
 import { useState, useMemo, useCallback } from "react";
-import { circuit, bus } from "@turing-incomplete/core/circuit";
-import { simulate } from "@turing-incomplete/core/sim";
+import { circuit, bus } from "@simten/core/circuit";
+import { simulate } from "@simten/core/sim";
 
 export const Route = createFileRoute("/demos/sorting-network")({
   component: SortingNetworkPage,

@@ -9,7 +9,7 @@ export function CTASection() {
           Now build your own
         </h2>
         <p className="text-gray-600 dark:text-gray-400 max-w-xl mx-auto leading-relaxed">
-          Every circuit on this page was designed in Turing Incomplete &mdash; a
+          Every circuit on this page was designed in Simten &mdash; a
           visual circuit simulator with an AI tutor. Start from simple
           components or jump straight to CPU design. The AI helps you wire
           things up, debug issues, and understand what&rsquo;s happening at

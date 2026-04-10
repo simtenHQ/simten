@@ -9,12 +9,12 @@ import {
   useAnalysisStore,
   useCircuitLibraryStore,
   useCircuitStore,
-} from '@turing-incomplete/ui/editor/stores';
-import type { Circuit } from '@turing-incomplete/ui/editor/types';
+} from '@simten/ui/editor/stores';
+import type { Circuit } from '@simten/ui/editor/types';
 import {
   buildEnvelope,
   type HardwareLLMEnvelope,
-} from '@turing-incomplete/core';
+} from '@simten/core';
 import {
   buildNarrativeSummary,
   formatCurrentPortValues,

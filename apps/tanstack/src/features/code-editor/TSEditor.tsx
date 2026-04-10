@@ -23,8 +23,8 @@ import { useTheme } from "@/components/ThemeProvider";
 import Editor from "@monaco-editor/react";
 import type { OnMount, Monaco } from "@monaco-editor/react";
 import type { editor } from "monaco-editor";
-import { executeCircuitCode } from "@turing-incomplete/core/circuit";
-import type { Circuit } from "@turing-incomplete/core";
+import { executeCircuitCode } from "@simten/core/circuit";
+import type { Circuit } from "@simten/core";
 import { CompileButton } from "./CompileButton";
 import { ErrorDisplay } from "./ErrorDisplay";
 import type { CompilationError } from "./ErrorDisplay";
@@ -54,7 +54,7 @@ const HalfAdder = circuit('HalfAdder', {
 })
 `;
 
-const DEFAULT_STORAGE_KEY = "turing-incomplete-ts-code";
+const DEFAULT_STORAGE_KEY = "simten-ts-code";
 
 // ============================================================================
 // Types

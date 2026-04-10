@@ -2,7 +2,7 @@
  * Simulation API — public exports
  *
  * Usage:
- *   import { simulate } from '@turing-incomplete/core/sim'
+ *   import { simulate } from '@simten/core/sim'
  */
 
 export { simulate, type SimulationHandle } from './simulate.js';

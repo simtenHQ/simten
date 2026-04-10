@@ -20,7 +20,7 @@ export function BlogFooter({ slug, tagline = "Every circuit on this page is simu
           href="/"
           className="text-blue-400 hover:text-blue-300 underline underline-offset-2"
         >
-          Turing Incomplete
+          Simten
         </a>
         {" "}&mdash; a visual circuit simulator with an AI tutor.
       </p>

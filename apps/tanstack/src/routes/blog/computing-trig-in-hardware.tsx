@@ -113,7 +113,7 @@ function ComputingTrigPage() {
 export const Route = createFileRoute('/blog/computing-trig-in-hardware')({
   head: () => ({
     meta: [
-      { title: 'Computing Trig in Hardware | Turing Incomplete' },
+      { title: 'Computing Trig in Hardware | Simten' },
       {
         name: 'description',
         content:

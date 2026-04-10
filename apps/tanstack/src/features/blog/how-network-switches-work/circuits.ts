@@ -5,13 +5,13 @@
  * detection and buffering to arbitration, routing, and serialization.
  */
 
-import { circuit, bit, bus } from "@turing-incomplete/core/circuit";
+import { circuit, bit, bus } from "@simten/core/circuit";
 import type { BlogCircuit } from '../types';
 import {
   Input, Switch, HexDisplay, Led, Constant,
   Register, Adder, Comparator, Mux, And, Or, Not,
   LeftShifter, DualPortRAM,
-} from "@turing-incomplete/core/std";
+} from "@simten/core/std";
 
 // ── Simple demo circuits ──
 

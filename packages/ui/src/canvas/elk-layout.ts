@@ -4,7 +4,7 @@
  */
 
 import type { ElkNode, ElkExtendedEdge, ElkPort } from "elkjs/lib/elk.bundled.js";
-import type { Circuit } from "@turing-incomplete/core";
+import type { Circuit } from "@simten/core";
 import type { MetadataState } from "./types";
 
 // Lazy-load ELK to avoid instantiating Worker in non-browser runtimes (e.g. SSR)

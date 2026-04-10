@@ -16,10 +16,10 @@ import {
   type ReactNode,
 } from "react";
 import { Link } from "@tanstack/react-router";
-import { CircuitEmbed } from "@turing-incomplete/embed";
-import { circuit, bit } from "@turing-incomplete/core/circuit";
-import type { BuiltCircuit } from "@turing-incomplete/core/circuit";
-import { Xor, And, Or, Not, DFlipFlop } from "@turing-incomplete/core/std";
+import { CircuitEmbed } from "@simten/embed";
+import { circuit, bit } from "@simten/core/circuit";
+import type { BuiltCircuit } from "@simten/core/circuit";
+import { Xor, And, Or, Not, DFlipFlop } from "@simten/core/std";
 import { HighlightedCode } from "@/components/HighlightedCode";
 
 // ============================================================================
@@ -120,15 +120,15 @@ const DEMO_SCRIPT: TermLine[] = [
     typeSpeed: 12,
   },
   { type: "blank", content: "", delay: 200 },
-  { type: "tool", content: "write_circuit (turing-incomplete)", delay: 100 },
+  { type: "tool", content: "write_circuit (simten)", delay: 100 },
   {
     type: "result",
-    content: "Writing HalfAdder to turingincomplete.com...",
+    content: "Writing HalfAdder to simten.dev...",
     delay: 400,
   },
   { type: "result", content: "4 nodes, 6 connections, 0 errors", delay: 0 },
   { type: "blank", content: "", delay: 200 },
-  { type: "tool", content: "simulate_circuit (turing-incomplete)", delay: 100 },
+  { type: "tool", content: "simulate_circuit (simten)", delay: 100 },
   { type: "result", content: "Simulation ready", delay: 600 },
   { type: "blank", content: "", delay: 200 },
   {
@@ -187,12 +187,12 @@ const PROMPT_OPTIONS: PromptOption[] = [
       { type: "blank", content: "", delay: 200 },
       {
         type: "tool",
-        content: "write_circuit (turing-incomplete)",
+        content: "write_circuit (simten)",
         delay: 100,
       },
       {
         type: "result",
-        content: "Writing FullAdder to turingincomplete.com...",
+        content: "Writing FullAdder to simten.dev...",
         delay: 400,
       },
       {
@@ -203,7 +203,7 @@ const PROMPT_OPTIONS: PromptOption[] = [
       { type: "blank", content: "", delay: 200 },
       {
         type: "tool",
-        content: "simulate_circuit (turing-incomplete)",
+        content: "simulate_circuit (simten)",
         delay: 100,
       },
       { type: "result", content: "Simulation ready", delay: 600 },
@@ -251,19 +251,19 @@ const PROMPT_OPTIONS: PromptOption[] = [
       { type: "blank", content: "", delay: 200 },
       {
         type: "tool",
-        content: "write_circuit (turing-incomplete)",
+        content: "write_circuit (simten)",
         delay: 100,
       },
       {
         type: "result",
-        content: "Writing Counter2Bit to turingincomplete.com...",
+        content: "Writing Counter2Bit to simten.dev...",
         delay: 400,
       },
       { type: "result", content: "4 nodes, 8 connections, 0 errors", delay: 0 },
       { type: "blank", content: "", delay: 200 },
       {
         type: "tool",
-        content: "simulate_circuit (turing-incomplete)",
+        content: "simulate_circuit (simten)",
         delay: 100,
       },
       { type: "result", content: "Simulation ready", delay: 600 },
@@ -310,19 +310,19 @@ const PROMPT_OPTIONS: PromptOption[] = [
       { type: "blank", content: "", delay: 200 },
       {
         type: "tool",
-        content: "write_circuit (turing-incomplete)",
+        content: "write_circuit (simten)",
         delay: 100,
       },
       {
         type: "result",
-        content: "Writing Toggle to turingincomplete.com...",
+        content: "Writing Toggle to simten.dev...",
         delay: 400,
       },
       { type: "result", content: "2 nodes, 4 connections, 0 errors", delay: 0 },
       { type: "blank", content: "", delay: 200 },
       {
         type: "tool",
-        content: "simulate_circuit (turing-incomplete)",
+        content: "simulate_circuit (simten)",
         delay: 100,
       },
       { type: "result", content: "Simulation ready", delay: 600 },
@@ -374,19 +374,19 @@ const PROMPT_OPTIONS: PromptOption[] = [
       { type: "blank", content: "", delay: 200 },
       {
         type: "tool",
-        content: "write_circuit (turing-incomplete)",
+        content: "write_circuit (simten)",
         delay: 100,
       },
       {
         type: "result",
-        content: "Writing Mux2to1 to turingincomplete.com...",
+        content: "Writing Mux2to1 to simten.dev...",
         delay: 400,
       },
       { type: "result", content: "4 nodes, 7 connections, 0 errors", delay: 0 },
       { type: "blank", content: "", delay: 200 },
       {
         type: "tool",
-        content: "simulate_circuit (turing-incomplete)",
+        content: "simulate_circuit (simten)",
         delay: 100,
       },
       { type: "result", content: "Simulation ready", delay: 600 },
@@ -522,7 +522,7 @@ function BrowserWindow({
             />
           </svg>
           <span className="text-[12px] text-muted-foreground font-mono truncate">
-            turingincomplete.com
+            simten.dev
           </span>
         </div>
         {showMcp && (
@@ -1019,7 +1019,7 @@ export function ClaudeDemoSection({
         </div>
 
         <div className="mt-6 flex justify-center">
-          <CopyCommand command="claude mcp add turing-incomplete npx @turing-incomplete/mcp" />
+          <CopyCommand command="claude mcp add simten npx @simten/mcp" />
         </div>
       </div>
     </section>

@@ -2,8 +2,8 @@ import chalk from 'chalk';
 import {
   createSimulatorFromCircuit,
   TOP_LEVEL_NODE,
-} from '@turing-incomplete/core';
-import type { BitValue, BusValue } from '@turing-incomplete/core';
+} from '@simten/core';
+import type { BitValue, BusValue } from '@simten/core';
 import { loadCircuitFile } from '../lib/file-loader.js';
 
 interface SimOptions {

@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useCircuitSimulator, CircuitEmbed } from "@turing-incomplete/embed";
-import { circuit, bit } from "@turing-incomplete/core/circuit";
-import { Xor, And, Or, Not, DFlipFlop, Constant } from "@turing-incomplete/core/std";
-import { Eth_FrameInput, Eth_FrameParser, Eth_CRC32, Eth_ProtocolDecoder, Eth_AddrClassifier } from "@turing-incomplete/core/std";
+import { useCircuitSimulator, CircuitEmbed } from "@simten/embed";
+import { circuit, bit } from "@simten/core/circuit";
+import { Xor, And, Or, Not, DFlipFlop, Constant } from "@simten/core/std";
+import { Eth_FrameInput, Eth_FrameParser, Eth_CRC32, Eth_ProtocolDecoder, Eth_AddrClassifier } from "@simten/core/std";
 import { Logo } from "@/components/Logo";
 import { HighlightedCode } from "@/components/HighlightedCode";
 import { ClaudeCTA } from "@/features/splash/ClaudeCTA";
@@ -393,12 +393,12 @@ function DemoGallery() {
         <div className="mt-40">
           <h3 className="text-lg font-semibold text-foreground mb-1">Embed in your own site</h3>
           <p className="text-[13px] text-muted-foreground/60 mb-5">One component. Your docs get live, interactive hardware simulations.</p>
-          <PackageManagerTabs package="@turing-incomplete/embed" />
+          <PackageManagerTabs package="@simten/embed" />
           <div className="rounded-lg border border-border bg-card overflow-hidden mt-4">
             <pre className="px-4 py-3 text-[12px] font-mono text-muted-foreground leading-relaxed overflow-x-auto">
               <span className="text-violet-400">{"import"}</span>{" { CircuitEmbed } "}
               <span className="text-violet-400">{"from"}</span>{" "}
-              <span className="text-green-400">{"'@turing-incomplete/embed'"}</span>
+              <span className="text-green-400">{"'@simten/embed'"}</span>
               {"\n\n"}
               <span className="text-muted-foreground">{"// Compiles, simulates, and renders — in one component"}</span>
               {"\n"}
@@ -427,7 +427,7 @@ function DemoGallery() {
               <span className="flex-1 text-center text-[11px] text-muted-foreground font-mono">terminal</span>
             </div>
             <pre className="px-5 py-4 text-[12px] font-mono leading-relaxed overflow-x-auto">
-<span className="text-muted-foreground">{"$ "}</span><span className="text-foreground">{"npx @turing-incomplete/core simulate rv32i-board.circuit.ts --ticks 1000"}</span>{"\n"}
+<span className="text-muted-foreground">{"$ "}</span><span className="text-foreground">{"npx @simten/core simulate rv32i-board.circuit.ts --ticks 1000"}</span>{"\n"}
 {"\n"}
 <span className="text-muted-foreground/60">{"Compiling..."}</span><span className="text-muted-foreground">{" 2 circuits (RV32I_Core, RV32I_Board)"}</span>{"\n"}
 <span className="text-muted-foreground/60">{"Elaborating..."}</span><span className="text-muted-foreground">{" 117 primitive nodes"}</span>{"\n"}
@@ -454,9 +454,9 @@ function DemoGallery() {
               <span className="flex-1 text-center text-[11px] text-muted-foreground font-mono">verify-adder.test.ts</span>
             </div>
             <HighlightedCode
-              code={`import { circuit, bit } from '@turing-incomplete/core/circuit'
-import { Xor, And } from '@turing-incomplete/core/std'
-import { simulate } from '@turing-incomplete/core/sim'
+              code={`import { circuit, bit } from '@simten/core/circuit'
+import { Xor, And } from '@simten/core/std'
+import { simulate } from '@simten/core/sim'
 import * as fc from 'fast-check'
 
 const HalfAdder = circuit('HalfAdder', {
@@ -568,14 +568,14 @@ fc.assert(
       <footer className="max-w-7xl mx-auto mt-32 pt-10 pb-16 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-4 px-4">
         <div className="flex items-center gap-2.5">
           <Logo size={18} className="text-muted-foreground/60" />
-          <span className="text-[12px] text-muted-foreground/60">Turing Incomplete</span>
+          <span className="text-[12px] text-muted-foreground/60">Simten</span>
         </div>
         <div className="flex items-center gap-5">
           <a href="/docs" className="text-[12px] text-muted-foreground/60 hover:text-foreground/80 transition-colors">Docs</a>
           <Link to="/blog" className="text-[12px] text-muted-foreground/60 hover:text-foreground/80 transition-colors">Blog</Link>
           <Link to="/learn" className="text-[12px] text-muted-foreground/60 hover:text-foreground/80 transition-colors">Learn</Link>
           <a
-            href="https://github.com/charlesharris/turing-incomplete"
+            href="https://github.com/simtenjs/simten"
             target="_blank"
             rel="noopener noreferrer"
             className="text-[12px] text-muted-foreground/60 hover:text-foreground/80 transition-colors"

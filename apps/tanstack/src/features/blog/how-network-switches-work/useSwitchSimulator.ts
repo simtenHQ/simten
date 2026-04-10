@@ -1,6 +1,6 @@
 
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { useCircuitSimulator } from "@turing-incomplete/embed";
+import { useCircuitSimulator } from "@simten/embed";
 import { MiniSwitch2Port } from "./circuits";
 
 export function useSwitchSimulator() {

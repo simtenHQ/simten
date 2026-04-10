@@ -1,5 +1,5 @@
 {
-	"name": "@turing-incomplete/compiler",
+	"name": "@simten/compiler",
 	"description": "RISC-V cross-compiler service (Cloudflare Container)",
 	"cloudflare": {
 		"label": "Containers Starter",
@@ -27,7 +27,7 @@
 	"private": true,
 	"scripts": {
 		"cf-typegen": "wrangler types",
-		"build:container": "docker build -t turing-incomplete-compiler .",
+		"build:container": "docker build -t simten-compiler .",
 		"deploy": "wrangler deploy",
 		"dev": "wrangler dev",
 		"start": "wrangler dev"

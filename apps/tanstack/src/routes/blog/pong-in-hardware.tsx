@@ -94,7 +94,7 @@ function PongInHardwarePage() {
 export const Route = createFileRoute('/blog/pong-in-hardware')({
   head: () => ({
     meta: [
-      { title: 'Pong in Hardware | Turing Incomplete' },
+      { title: 'Pong in Hardware | Simten' },
       {
         name: 'description',
         content:

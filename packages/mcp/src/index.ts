@@ -1,11 +1,11 @@
 /**
- * Turing Incomplete MCP Server
+ * Simten MCP Server
  *
  * Exposes circuit simulation tools for Claude Code.
  * Build circuits, simulate them, and push live visualizations to a browser tab.
  *
  * Usage:
- *   claude mcp add turing-incomplete node packages/mcp/bin/turing-mcp.js
+ *   claude mcp add simten node packages/mcp/bin/simten-mcp.js
  */
 
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
@@ -16,7 +16,7 @@ import { registerSimulateTool } from './tools/simulate.js';
 import { registerShowTools } from './tools/show.js';
 import { registerStateTool } from './tools/state.js';
 import { setOnSendToClaude } from './lib/preview-singleton.js';
-import { getGrammarHandler, getPrimitivesHandler, getLibrary } from '@turing-incomplete/core/api';
+import { getGrammarHandler, getPrimitivesHandler, getLibrary } from '@simten/core/api';
 
 const builderAPI = getGrammarHandler();
 const primitivesList = getPrimitivesHandler({ compact: true }, getLibrary());
@@ -44,7 +44,7 @@ ${primitivesList}
 
 const server = new McpServer(
   {
-    name: 'turing-incomplete',
+    name: 'simten',
     version: '0.1.0',
   },
   {

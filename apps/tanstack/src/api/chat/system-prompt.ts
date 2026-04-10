@@ -5,7 +5,7 @@
  * so the AI never needs to call get_primitives or get_grammar.
  */
 
-import { getPrimitivesHandler, getGrammarHandler, getLibrary } from '@turing-incomplete/core/api';
+import { getPrimitivesHandler, getGrammarHandler, getLibrary } from '@simten/core/api';
 
 export function buildSystemPrompt(code: string, compactContext: string): string {
   // Fetch live data from the same handlers the MCP server uses
