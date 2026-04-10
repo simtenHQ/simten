@@ -263,7 +263,7 @@ function LiveCodeDemo() {
       setResult({ outputs: {}, error: 'No circuit found' });
       return;
     }
-    const sim = simulate(execResult.components[execResult.components.length - 1]);
+    const sim = simulate(execResult.builtCircuits[execResult.builtCircuits.length - 1]);
     sim.set({ a: inputA, b: inputB });
     const outputs: Record<string, number> = {};
     for (const port of execResult.circuit.outputs) {
