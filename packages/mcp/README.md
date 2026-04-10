@@ -47,7 +47,7 @@ npm install -g @simten/mcp
 | `run_testbench` | Run testbench assertions against circuit |
 | `get_circuit_state` | Pull current port values from browser (live read) |
 | `get_primitives` | List available primitive components |
-| `get_grammar` | Return component reference and builder API |
+| `get_grammar` | Return component reference and circuit() API |
 | `show_traces` | Push simulation waveforms to browser |
 | `show_test_results` | Push test results to browser |
 | `list_sessions` | List connected browser tabs |

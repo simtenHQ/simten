@@ -1,8 +1,8 @@
 /**
- * Source Code Compilation — TypeScript builder API only.
+ * Source Code Compilation — circuit() API only.
  *
  * Shared by all API handlers (check, simulate, test).
- * Accepts TypeScript code using the component() builder API.
+ * Accepts TypeScript code using the circuit() API.
  */
 
 import { executeCircuitCode } from '../circuit/execute.js';

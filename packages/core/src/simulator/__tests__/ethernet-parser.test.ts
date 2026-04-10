@@ -2,7 +2,7 @@
  * IEEE 802.3 Ethernet Parser Integration Tests
  *
  * Tests the full Eth_FrameInput → Eth_FrameParser → Eth_CRC32 pipeline
- * with real Ethernet frame data, using the circuit() builder API.
+ * with real Ethernet frame data, using the circuit() API.
  */
 
 import { describe, it, expect } from 'vitest';

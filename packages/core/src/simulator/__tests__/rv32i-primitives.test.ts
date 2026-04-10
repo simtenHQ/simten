@@ -1,7 +1,7 @@
 /**
  * RV32I Primitive Unit Tests
  *
- * Tests each RV32I primitive in isolation using the circuit() builder API.
+ * Tests each RV32I primitive in isolation using the circuit() API.
  */
 
 import { describe, it, expect } from 'vitest';

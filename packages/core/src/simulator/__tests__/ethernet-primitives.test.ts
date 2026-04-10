@@ -1,7 +1,7 @@
 /**
  * IEEE 802.3 Ethernet Primitive Unit Tests
  *
- * Tests each Ethernet primitive in isolation using the circuit() builder API.
+ * Tests each Ethernet primitive in isolation using the circuit() API.
  */
 
 import { describe, it, expect } from 'vitest';

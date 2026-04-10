@@ -40,8 +40,6 @@ export interface LLMContextResult {
   envelope: HardwareLLMEnvelope | null;
 }
 
-/** @deprecated Use LLMContextResult instead */
-export type NarrativeContextResult = LLMContextResult;
 
 // ============================================================================
 // Hook Implementation
@@ -133,8 +131,6 @@ export function useLLMContext(code: string, portValues?: ReadonlyMap<string, boo
   ]);
 }
 
-/** @deprecated Use useLLMContext instead */
-export const useNarrativeContext = useLLMContext;
 
 // ============================================================================
 // Utility: Build Context Without Hook
@@ -169,8 +165,6 @@ export function buildLLMContext(
   };
 }
 
-/** @deprecated Use buildLLMContext instead */
-export const buildNarrativeContext = buildLLMContext;
 
 /**
  * Format current input node settings (Switch, Button, Input values).

@@ -2,7 +2,7 @@
  * Networking Primitive Unit Tests
  *
  * Tests MemBusMux, UART_TX, and NIC_FIFO primitives in isolation
- * using the circuit() builder API.
+ * using the circuit() API.
  */
 
 import { describe, it, expect } from 'vitest';
