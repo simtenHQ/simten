@@ -1,5 +1,5 @@
 /**
- * End-to-end circuit simulation tests using the circuit() builder API.
+ * End-to-end circuit simulation tests using the circuit() API.
  *
  * Circuit simulation tests. These verify the simulator
  * runs circuits correctly when defined with circuit().

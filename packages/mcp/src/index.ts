@@ -25,7 +25,7 @@ const instructions = `You help developers simulate and explore hardware systems 
 
 Build circuits from TypeScript, run simulations, and push live visualizations to a connected browser tab. When someone asks about a hardware concept, build a circuit that demonstrates it and simulate it so they can see it running.
 
-## Circuit Builder API
+## Circuit API
 
 ${builderAPI}
 

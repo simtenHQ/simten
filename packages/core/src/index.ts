@@ -98,7 +98,6 @@ export {
   compressTrace,
   detectSteadyState,
   getCircuitAPISummary,
-  getBuilderAPISummary, // deprecated alias
 } from './types/analysis.js';
 
 export type {

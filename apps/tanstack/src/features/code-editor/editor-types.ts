@@ -4,7 +4,7 @@
  * These are loaded via addExtraLib to give users autocomplete for
  * circuit(), bit, bus, and all stdlib components.
  *
- * The types mirror the actual builder API from @simten/core/circuit.
+ * The types mirror the actual circuit() API from @simten/core/circuit.
  * The generic CircuitConfig type enables autocomplete for port names
  * inside connect() callbacks.
  */

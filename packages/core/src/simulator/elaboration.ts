@@ -83,7 +83,7 @@ export function elaborate(
 
       if (component.implementation.kind === 'primitive') {
         // TODO: Reference circuit expansion for Verilog export will be
-        // reimplemented using the TypeScript builder API.
+        // reimplemented using the circuit() API.
         // For now, all primitives are emitted as-is (no expansion).
 
         // Standard path: leaf primitive - add to flat list

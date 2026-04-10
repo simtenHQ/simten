@@ -1,5 +1,5 @@
 /**
- * Port type constructors for the builder API.
+ * Port type constructors for the circuit() API.
  *
  * These produce PortType values compatible with the existing Circuit IR.
  */

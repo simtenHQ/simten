@@ -1,7 +1,7 @@
 /**
  * Grammar Handler
  *
- * Returns a summary of the TypeScript builder API.
+ * Returns a summary of the circuit() API.
  */
 
 import { getCircuitAPISummary } from '../types/analysis.js';
