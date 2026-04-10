@@ -27,8 +27,8 @@ export function loadCircuitFile(filePath: string): LoadResult {
       result: {
         circuit: null,
         circuits: [],
-        components: [],
-        library: null as any,
+        builtCircuits: [],
+        library: { resolveCircuit: () => undefined, getAllPrimitiveNames: () => [], addCircuit: () => {}, getAllCircuitNames: () => [] },
         error: `Cannot read file: ${absPath}`,
       },
       errors: [`Cannot read file: ${absPath}`],

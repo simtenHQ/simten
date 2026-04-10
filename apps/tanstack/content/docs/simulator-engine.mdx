@@ -299,8 +299,7 @@ const result = engine.tick();
 // result.metrics — { phase1Evals, phase2Evals, totalEvals }
 
 // Input control
-engine.setInput(nodeId, value);
-engine.setInputs(valuesMap);
+engine.setNode(nodeId, value);
 
 // State query
 engine.getPortValues();

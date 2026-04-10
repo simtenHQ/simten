@@ -46,7 +46,7 @@ export async function sim(filePath: string, opts: SimOptions): Promise<void> {
   console.log(chalk.bold(`Simulating ${target.name} for ${opts.ticks} tick${opts.ticks === 1 ? '' : 's'}`));
 
   // Create simulator
-  const simulator = createSimulatorFromCircuit(target, library);
+  const simulator = createSimulatorFromCircuit(target, library!);
 
   // Set inputs if provided
   if (opts.inputs) {
@@ -57,7 +57,7 @@ export async function sim(filePath: string, opts: SimOptions): Promise<void> {
         process.exit(1);
       }
       const value = valStr === 'true' ? true : valStr === 'false' ? false : Number(valStr);
-      simulator.setInput(name, value as BitValue | BusValue);
+      simulator.setNode(name, value as BitValue | BusValue);
     }
   }
 

@@ -74,7 +74,7 @@ export function simulateCircuit(
   // Set inputs
   if (params.inputs) {
     for (const [name, value] of Object.entries(params.inputs)) {
-      simulator.setInput(name, value as BitValue | BusValue);
+      simulator.setNode(name, value as BitValue | BusValue);
     }
   }
 
