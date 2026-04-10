@@ -7,10 +7,10 @@
 
 import { createFileRoute } from "@tanstack/react-router";
 import { useState, useCallback, useMemo } from "react";
-import { circuit, bit, bus } from "@turing-incomplete/core/circuit";
-import { simulate } from "@turing-incomplete/core/sim";
-import { Xor, And, Or, DFlipFlop, Not } from "@turing-incomplete/core/std";
-import type { BuiltCircuit } from "@turing-incomplete/core/circuit";
+import { circuit, bit, bus } from "@simten/core/circuit";
+import { simulate } from "@simten/core/sim";
+import { Xor, And, Or, DFlipFlop, Not } from "@simten/core/std";
+import type { BuiltCircuit } from "@simten/core/circuit";
 
 export const Route = createFileRoute("/demos/generative")({
   component: GenerativePage,

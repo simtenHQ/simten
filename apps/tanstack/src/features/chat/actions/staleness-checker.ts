@@ -5,7 +5,7 @@
  * Prevents acting on outdated circuit code if user typed during streaming.
  */
 
-import { executeCircuitCode } from '@turing-incomplete/core';
+import { executeCircuitCode } from '@simten/core';
 import { hashSourceCode, hasSourceCodeChanged } from './action-normalizer';
 import type { AssistantAction, ActionResult } from '../types';
 

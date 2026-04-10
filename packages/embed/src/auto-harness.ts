@@ -6,7 +6,7 @@
  * If the circuit has no ports (already self-contained), returns it as-is.
  */
 
-import type { Circuit, Connection, Node, PortType, ArgumentValue } from "@turing-incomplete/core";
+import type { Circuit, Connection, Node, PortType, ArgumentValue } from "@simten/core";
 
 let harnessCounter = 0;
 

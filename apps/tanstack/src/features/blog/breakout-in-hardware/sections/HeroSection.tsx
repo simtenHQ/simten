@@ -20,7 +20,7 @@ export function HeroSection() {
           <span>
             Built with{" "}
             <a href="/" className="text-blue-400 hover:text-blue-300 underline underline-offset-2">
-              Turing Incomplete
+              Simten
             </a>
           </span>
         </div>

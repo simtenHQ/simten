@@ -1,5 +1,5 @@
 
-import { CircuitEmbed } from "@turing-incomplete/embed";
+import { CircuitEmbed } from "@simten/embed";
 import { CORDIC_CIRCUITS } from "../circuits";
 
 export function DirectionSection() {

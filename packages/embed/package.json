@@ -1,12 +1,12 @@
 {
-  "name": "@turing-incomplete/embed",
+  "name": "@simten/embed",
   "version": "0.1.0",
   "description": "Embeddable interactive circuit simulator. Drop live hardware simulations into any React app or HTML page.",
   "license": "BUSL-1.1",
   "author": "Charles Harris",
   "repository": {
     "type": "git",
-    "url": "https://github.com/charlesharris/turing-incomplete.git",
+    "url": "https://github.com/simtenjs/simten.git",
     "directory": "packages/embed"
   },
   "keywords": [
@@ -57,8 +57,8 @@
   },
   "dependencies": {
     "@r2wc/react-to-web-component": "^2.1.1",
-    "@turing-incomplete/core": "workspace:*",
-    "@turing-incomplete/ui": "workspace:*",
+    "@simten/core": "workspace:*",
+    "@simten/ui": "workspace:*",
     "@xyflow/react": "^12.10.0",
     "clsx": "^2.1.1",
     "elkjs": "^0.9.3",

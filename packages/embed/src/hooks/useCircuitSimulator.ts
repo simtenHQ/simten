@@ -5,11 +5,11 @@ import {
   type CircuitLibrary,
   type FlatPortValueMap,
   type FlatSequentialState,
-} from "@turing-incomplete/core/simulator";
-import type { Circuit } from "@turing-incomplete/core";
-import type { BuiltCircuit } from "@turing-incomplete/core/circuit";
-import { Switch, Button, Led, Input, Output, HexDisplay } from "@turing-incomplete/core/std";
-import { useCircuitSession } from "@turing-incomplete/ui/canvas";
+} from "@simten/core/simulator";
+import type { Circuit } from "@simten/core";
+import type { BuiltCircuit } from "@simten/core/circuit";
+import { Switch, Button, Led, Input, Output, HexDisplay } from "@simten/core/std";
+import { useCircuitSession } from "@simten/ui/canvas";
 import { autoHarness } from "../auto-harness";
 
 const TOP_LEVEL_NODE = "__top__";

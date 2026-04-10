@@ -23,7 +23,7 @@ import { ConfirmationModal } from './ConfirmationModal';
 import { useChatStore } from '../stores/chat-store';
 import { executeAction, applyDiff, buildConfirmationRequest, type ActionExecutionContext } from '../actions';
 import { useTutorFlow } from '../hooks/useTutorFlow';
-import { executeCircuitCode } from '@turing-incomplete/core';
+import { executeCircuitCode } from '@simten/core';
 import type { AssistantAction } from '../types';
 import type { ShowDiffAction, GenerateHarnessAction } from '../types';
 import type { ConfirmationRequest } from '../actions/confirmation-flow';

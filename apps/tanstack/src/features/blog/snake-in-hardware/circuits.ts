@@ -6,7 +6,7 @@
  * operations, collision detection, and the full SnakeAdvanced circuit.
  */
 
-import { circuit, bit, bus } from "@turing-incomplete/core/circuit";
+import { circuit, bit, bus } from "@simten/core/circuit";
 import type { BlogCircuit } from "../types";
 import {
   Screen,
@@ -25,7 +25,7 @@ import {
   Not,
   Led,
   DualPortRAM,
-} from "@turing-incomplete/core/std";
+} from "@simten/core/std";
 
 // ── Module-level circuit definitions ──
 

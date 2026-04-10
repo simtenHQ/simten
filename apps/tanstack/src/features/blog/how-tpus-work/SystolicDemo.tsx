@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { useSystolicSimulator } from "./useSystolicSimulator";
-import { CircuitCanvas } from "@turing-incomplete/ui/canvas";
+import { CircuitCanvas } from "@simten/ui/canvas";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 /**

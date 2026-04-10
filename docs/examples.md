@@ -5,8 +5,8 @@
 Two bits → sum + carry. The foundation of binary arithmetic.
 
 ```typescript
-import { circuit, bit } from '@turing-incomplete/core/circuit'
-import { Xor, And } from '@turing-incomplete/core/std'
+import { circuit, bit } from '@simten/core/circuit'
+import { Xor, And } from '@simten/core/std'
 
 export const HalfAdder = circuit('HalfAdder', {
   in: { a: bit, b: bit },
@@ -26,8 +26,8 @@ export const HalfAdder = circuit('HalfAdder', {
 Built from two half adders + an OR gate.
 
 ```typescript
-import { circuit, bit } from '@turing-incomplete/core/circuit'
-import { Or } from '@turing-incomplete/core/std'
+import { circuit, bit } from '@simten/core/circuit'
+import { Or } from '@simten/core/std'
 import { HalfAdder } from './half-adder'
 
 export const FullAdder = circuit('FullAdder', {
@@ -52,8 +52,8 @@ export const FullAdder = circuit('FullAdder', {
 Two flip-flops counting 00 → 01 → 10 → 11 → repeat.
 
 ```typescript
-import { circuit, bit } from '@turing-incomplete/core/circuit'
-import { DFlipFlop, Not, Xor } from '@turing-incomplete/core/std'
+import { circuit, bit } from '@simten/core/circuit'
+import { DFlipFlop, Not, Xor } from '@simten/core/std'
 
 export const Counter2Bit = circuit('Counter2Bit', {
   out: { bit0: bit, bit1: bit },
@@ -70,7 +70,7 @@ export const Counter2Bit = circuit('Counter2Bit', {
 ## Simulating
 
 ```typescript
-import { simulate } from '@turing-incomplete/core/sim'
+import { simulate } from '@simten/core/sim'
 
 const sim = simulate(HalfAdder)
 
@@ -84,7 +84,7 @@ sim.dispose()
 ## Embedding in React
 
 ```tsx
-import { CircuitEmbed } from '@turing-incomplete/embed'
+import { CircuitEmbed } from '@simten/embed'
 
 <CircuitEmbed circuit={HalfAdder} />
 ```

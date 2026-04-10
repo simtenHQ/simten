@@ -1,12 +1,12 @@
 /**
- * Web component registration for Turing Incomplete embeds.
+ * Web component registration for Simten embeds.
  *
  * Registers a custom element:
  *   <circuit-embed>  — interactive circuit viewer
  *
  * Usage:
- *   <link rel="stylesheet" href="https://unpkg.com/@turing-incomplete/embed/dist/styles.css">
- *   <script src="https://unpkg.com/@turing-incomplete/embed/dist/circuit-embed.js"></script>
+ *   <link rel="stylesheet" href="https://unpkg.com/@simten/embed/dist/styles.css">
+ *   <script src="https://unpkg.com/@simten/embed/dist/circuit-embed.js"></script>
  *
  *   <circuit-embed code="const Demo = circuit('Demo', { ... })" height="300"></circuit-embed>
  *

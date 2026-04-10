@@ -8,8 +8,8 @@
  * 3. Scope port values so internal node IDs match simulation keys
  */
 
-import type { Circuit, Node, Connection } from '@turing-incomplete/core';
-import type { FlatPortValueMap } from '@turing-incomplete/core/simulator';
+import type { Circuit, Node, Connection } from '@simten/core';
+import type { FlatPortValueMap } from '@simten/core/simulator';
 
 /** Prefix for synthetic boundary input nodes */
 export const BOUNDARY_IN_PREFIX = '__boundary_in_';

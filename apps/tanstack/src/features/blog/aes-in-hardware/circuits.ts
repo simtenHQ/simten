@@ -5,12 +5,12 @@
  * to MixColumns -- the operation so complex Intel built it into the CPU.
  */
 
-import { circuit, bus } from "@turing-incomplete/core/circuit";
+import { circuit, bus } from "@simten/core/circuit";
 import type { BlogCircuit } from '../types';
 import {
   Input, HexDisplay, Constant,
   LeftShifter, Splitter8to8, Mux, BusXor, ROM,
-} from "@turing-incomplete/core/std";
+} from "@simten/core/std";
 
 // FIPS 197, Figure 7 -- the AES forward S-box
 export const AES_SBOX: number[] = [

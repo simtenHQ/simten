@@ -9,8 +9,8 @@
 
 import { createFileRoute } from "@tanstack/react-router";
 import { useState, useCallback, useMemo } from "react";
-import { circuit, bit, bus } from "@turing-incomplete/core/circuit";
-import { simulate } from "@turing-incomplete/core/sim";
+import { circuit, bit, bus } from "@simten/core/circuit";
+import { simulate } from "@simten/core/sim";
 
 export const Route = createFileRoute("/demos/calculator")({
   component: CalculatorPage,

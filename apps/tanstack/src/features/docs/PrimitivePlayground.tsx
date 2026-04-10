@@ -1,11 +1,11 @@
 
 import { useState, useMemo, lazy, Suspense, useRef, useEffect } from "react";
-import type { BuiltCircuit } from "@turing-incomplete/core/circuit";
-import type { PortDescriptor } from "@turing-incomplete/core";
-import * as std from "@turing-incomplete/core/std";
+import type { BuiltCircuit } from "@simten/core/circuit";
+import type { PortDescriptor } from "@simten/core";
+import * as std from "@simten/core/std";
 
 const CircuitEmbed = lazy(() =>
-  import("@turing-incomplete/embed").then((m) => ({
+  import("@simten/embed").then((m) => ({
     default: m.CircuitEmbed,
   }))
 );

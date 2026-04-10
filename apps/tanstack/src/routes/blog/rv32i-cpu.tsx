@@ -128,7 +128,7 @@ function RV32ICPUPage() {
 export const Route = createFileRoute("/blog/rv32i-cpu")({
   head: () => ({
     meta: [
-      { title: "A RISC-V CPU That Runs C | Turing Incomplete" },
+      { title: "A RISC-V CPU That Runs C | Simten" },
       {
         name: "description",
         content:

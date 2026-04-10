@@ -5,8 +5,8 @@
  * No fromPrimitive() bridge needed.
  *
  * Usage:
- *   import { And, Or, Register, RAM } from '@turing-incomplete/core/std'
- *   import { createStdLibrary } from '@turing-incomplete/core/std'
+ *   import { And, Or, Register, RAM } from '@simten/core/std'
+ *   import { createStdLibrary } from '@simten/core/std'
  */
 
 // Logic Gates

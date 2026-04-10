@@ -1,4 +1,4 @@
-# @turing-incomplete/verifier
+# @simten/verifier
 
 Verilog verification service running inside a [Cloudflare Container](https://developers.cloudflare.com/containers/). Cross-validates exported Verilog against our simulator's trace by compiling and simulating it with [Icarus Verilog](http://iverilog.icarus.com/).
 

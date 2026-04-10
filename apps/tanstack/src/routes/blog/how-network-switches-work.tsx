@@ -114,7 +114,7 @@ function HowNetworkSwitchesWorkPage() {
 export const Route = createFileRoute('/blog/how-network-switches-work')({
   head: () => ({
     meta: [
-      { title: 'How Network Switches Work | Turing Incomplete' },
+      { title: 'How Network Switches Work | Simten' },
       {
         name: 'description',
         content:

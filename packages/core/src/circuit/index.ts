@@ -2,7 +2,7 @@
  * Circuit definition API — public exports
  *
  * Usage:
- *   import { circuit, bit, bus } from '@turing-incomplete/core/circuit'
+ *   import { circuit, bit, bus } from '@simten/core/circuit'
  */
 
 export { circuit } from './circuit.js';

@@ -1,5 +1,5 @@
-import { useCircuitSimulator } from "@turing-incomplete/embed";
-import { CircuitCanvas } from "@turing-incomplete/ui/canvas";
+import { useCircuitSimulator } from "@simten/embed";
+import { CircuitCanvas } from "@simten/ui/canvas";
 import type { SectionDef } from "./sections";
 
 interface CircuitSectionProps {

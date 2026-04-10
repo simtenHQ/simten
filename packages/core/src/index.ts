@@ -1,5 +1,5 @@
 /**
- * @turing-incomplete/core
+ * @simten/core
  *
  * Pure-JS hardware circuit simulator and TypeScript circuit builder.
  * Zero browser dependencies — works in Node.js, Bun, Deno, and bundlers.

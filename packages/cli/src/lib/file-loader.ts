@@ -3,7 +3,7 @@ import { resolve } from 'node:path';
 import {
   executeCircuitCode,
   type ExecuteResult,
-} from '@turing-incomplete/core/circuit';
+} from '@simten/core/circuit';
 
 export interface LoadResult {
   filePath: string;

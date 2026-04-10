@@ -8,8 +8,8 @@
 
 import { useState, useEffect, useCallback, forwardRef, useImperativeHandle } from "react";
 import { useCircuitSimulator } from "./hooks/useCircuitSimulator";
-import type { BuiltCircuit } from "@turing-incomplete/core/circuit";
-import { CircuitCanvas, ClockControls } from "@turing-incomplete/ui/canvas";
+import type { BuiltCircuit } from "@simten/core/circuit";
+import { CircuitCanvas, ClockControls } from "@simten/ui/canvas";
 
 /** Detect theme from <html> class, reactive via MutationObserver. */
 function useDetectTheme(): "light" | "dark" {

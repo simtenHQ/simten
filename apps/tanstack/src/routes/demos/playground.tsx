@@ -5,9 +5,9 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { circuit, bit, bus, executeCircuitCode } from "@turing-incomplete/core/circuit";
-import { simulate, type SimulationHandle } from "@turing-incomplete/core/sim";
-import { And, Xor, Or, Not, DFlipFlop, Register, Constant, Mux } from "@turing-incomplete/core/std";
+import { circuit, bit, bus, executeCircuitCode } from "@simten/core/circuit";
+import { simulate, type SimulationHandle } from "@simten/core/sim";
+import { And, Xor, Or, Not, DFlipFlop, Register, Constant, Mux } from "@simten/core/std";
 
 export const Route = createFileRoute("/demos/playground")({
   component: PlaygroundPage,

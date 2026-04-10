@@ -6,8 +6,8 @@ import { test } from './commands/test.js';
 const program = new Command();
 
 program
-  .name('turing')
-  .description('Turing Incomplete — hardware design from the terminal')
+  .name('simten')
+  .description('Simten — hardware design from the terminal')
   .version('0.1.0');
 
 program

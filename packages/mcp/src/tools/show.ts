@@ -11,7 +11,7 @@ import { exec } from 'node:child_process';
 import { resolve } from 'node:path';
 import { readCircuitSource } from '../lib/file-reader.js';
 import { TI_URL } from '../lib/config.js';
-import { checkCircuit } from '@turing-incomplete/core/api';
+import { checkCircuit } from '@simten/core/api';
 import {
   getOrCreateServer,
   getPreviewServer,

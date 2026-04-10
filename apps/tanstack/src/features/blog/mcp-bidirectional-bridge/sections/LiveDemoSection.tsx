@@ -138,7 +138,7 @@ export function LiveDemoSection() {
           <p>
             This isn&rsquo;t a diagram. This page is connected to your local
             MCP server right now. If you have Claude Code running with the
-            Turing Incomplete MCP server, you&rsquo;ll see a green dot below
+            Simten MCP server, you&rsquo;ll see a green dot below
             and every WebSocket message will appear in the live log.
           </p>
         </div>
@@ -160,7 +160,7 @@ export function LiveDemoSection() {
                 To see this demo live, start the MCP server in Claude Code:
               </p>
               <pre className="mt-2 text-xs font-mono text-gray-500 dark:text-gray-400 bg-[#0d1117] rounded p-3 overflow-x-auto">
-                {`# In Claude Code, add the Turing Incomplete MCP server
+                {`# In Claude Code, add the Simten MCP server
 # Then call show_circuit to connect this page`}
               </pre>
             </div>

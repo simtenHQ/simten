@@ -1,4 +1,4 @@
-# Turing Incomplete
+# Simten
 
 A browser-based digital logic simulator for learning hardware design. Define circuits in TypeScript, visualize them on a canvas, and simulate with time-travel debugging.
 
@@ -19,8 +19,8 @@ pnpm dev        # starts on localhost:3001
 ## Quick Example
 
 ```typescript
-import { circuit, bit } from '@turing-incomplete/core/circuit'
-import { Xor, And } from '@turing-incomplete/core/std'
+import { circuit, bit } from '@simten/core/circuit'
+import { Xor, And } from '@simten/core/std'
 
 const HalfAdder = circuit('HalfAdder', {
   in: { a: bit, b: bit },

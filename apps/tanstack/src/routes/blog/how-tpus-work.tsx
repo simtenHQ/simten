@@ -123,7 +123,7 @@ function HowTPUsWorkPage() {
 export const Route = createFileRoute('/blog/how-tpus-work')({
   head: () => ({
     meta: [
-      { title: 'How TPUs Do Calculations | Turing Incomplete' },
+      { title: 'How TPUs Do Calculations | Simten' },
       {
         name: 'description',
         content:

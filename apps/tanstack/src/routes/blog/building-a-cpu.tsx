@@ -138,7 +138,7 @@ function BuildingACPUPage() {
 export const Route = createFileRoute('/blog/building-a-cpu')({
   head: () => ({
     meta: [
-      { title: 'Building a CPU from Scratch | Turing Incomplete' },
+      { title: 'Building a CPU from Scratch | Simten' },
       {
         name: 'description',
         content:

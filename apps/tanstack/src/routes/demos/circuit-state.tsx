@@ -7,9 +7,9 @@
 
 import { createFileRoute } from "@tanstack/react-router";
 import { useState, useCallback, useMemo, useRef } from "react";
-import { circuit, bit, bus } from "@turing-incomplete/core/circuit";
-import { simulate, type SimulationHandle } from "@turing-incomplete/core/sim";
-import type { SimulatorSnapshot } from "@turing-incomplete/core/simulator";
+import { circuit, bit, bus } from "@simten/core/circuit";
+import { simulate, type SimulationHandle } from "@simten/core/sim";
+import type { SimulatorSnapshot } from "@simten/core/simulator";
 
 export const Route = createFileRoute("/demos/circuit-state")({
   component: CircuitStatePage,

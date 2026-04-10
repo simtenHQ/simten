@@ -11,7 +11,7 @@ import {
   checkCircuit,
   simulateCircuit,
   getLibrary,
-} from '@turing-incomplete/core/api';
+} from '@simten/core/api';
 import { EDITOR_TOOL_NAMES, editorToolToActions } from './editor-tools';
 
 export interface ToolExecResult {

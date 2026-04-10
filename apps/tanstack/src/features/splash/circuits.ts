@@ -6,9 +6,9 @@
  * - circuit: The actual BuiltCircuit for simulation
  */
 
-import { circuit, bit } from "@turing-incomplete/core/circuit";
-import type { BuiltCircuit } from "@turing-incomplete/core/circuit";
-import { Nand, Not, And, Or, Xor, DFlipFlop, Switch, Led } from "@turing-incomplete/core/std";
+import { circuit, bit } from "@simten/core/circuit";
+import type { BuiltCircuit } from "@simten/core/circuit";
+import { Nand, Not, And, Or, Xor, DFlipFlop, Switch, Led } from "@simten/core/std";
 
 export interface CircuitDefinition {
   name: string;

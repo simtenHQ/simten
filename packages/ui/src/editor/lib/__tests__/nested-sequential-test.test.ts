@@ -7,10 +7,10 @@
 
 import { describe, it, expect, beforeAll } from 'vitest';
 import { Circuit, bitType, busType } from '../../types/circuit';
-import { createSimulatorFromCircuit, type CircuitLibrary } from '@turing-incomplete/core/simulator';
+import { createSimulatorFromCircuit, type CircuitLibrary } from '@simten/core/simulator';
 import { useCircuitLibraryStore } from '../../stores/circuit-library-store';
-import * as std from '@turing-incomplete/core/std';
-import type { BuiltCircuit } from '@turing-incomplete/core/circuit';
+import * as std from '@simten/core/std';
+import type { BuiltCircuit } from '@simten/core/circuit';
 
 const PRIMITIVES = Object.values(std)
   .filter((v): v is BuiltCircuit => !!v && typeof v === 'object' && 'circuit' in v && 'name' in v)

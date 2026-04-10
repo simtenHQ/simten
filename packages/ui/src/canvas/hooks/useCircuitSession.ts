@@ -2,7 +2,7 @@
  * useCircuitSession — creates a SimulationSession from a compiled Circuit.
  *
  * For consumers that already have a Circuit object (editor, inspector).
- * For consumers that have a Circuit IR, use useCircuitSimulator from @turing-incomplete/embed instead.
+ * For consumers that have a Circuit IR, use useCircuitSimulator from @simten/embed instead.
  */
 
 "use client";
@@ -12,8 +12,8 @@ import {
   SimulationSession,
   createSimulatorFromCircuit,
   type CircuitLibrary,
-} from "@turing-incomplete/core/simulator";
-import type { Circuit } from "@turing-incomplete/core";
+} from "@simten/core/simulator";
+import type { Circuit } from "@simten/core";
 import { useSimulationSession, type UseSimulationSessionResult } from "./useSimulationSession";
 
 function detectSequential(
