@@ -169,19 +169,19 @@ This means loading a binary into ROM works the same as flipping a switch — one
 ## Packages
 
 ```
-@turing-incomplete/core       ← headless: circuit builder, compiler, simulator, session
+@simten/core       ← headless: circuit builder, compiler, simulator, session
        ↑
-@turing-incomplete/ui         ← visual: nodes, canvas, simulation hooks, editor
+@simten/ui         ← visual: nodes, canvas, simulation hooks, editor
        ↑
-@turing-incomplete/embed      ← convenience: CircuitViewer, CircuitEmbed, web component
+@simten/embed      ← convenience: CircuitViewer, CircuitEmbed, web component
 ```
 
 | Package | Description |
 |---------|-------------|
-| `@turing-incomplete/core` | TypeScript builder, compiler, validator, simulator engine, `SimulationSession`, environmental state, Verilog export. No UI dependencies. |
-| `@turing-incomplete/ui` | React components — canonical node renderers, shared canvas, ELK layout, `useCircuitSession` hook, `ClockControls`, editor UI. |
-| `@turing-incomplete/embed` | `CircuitViewer` (simulation + canvas), `CircuitEmbed` (viewer + auto-harness + info bar), `<circuit-embed>` web component. Depends on core + ui. |
-| `@turing-incomplete/mcp` | MCP server for Claude Code integration |
+| `@simten/core` | TypeScript builder, compiler, validator, simulator engine, `SimulationSession`, environmental state, Verilog export. No UI dependencies. |
+| `@simten/ui` | React components — canonical node renderers, shared canvas, ELK layout, `useCircuitSession` hook, `ClockControls`, editor UI. |
+| `@simten/embed` | `CircuitViewer` (simulation + canvas), `CircuitEmbed` (viewer + auto-harness + info bar), `<circuit-embed>` web component. Depends on core + ui. |
+| `@simten/mcp` | MCP server for Claude Code integration |
 
 ### Hooks
 
@@ -239,12 +239,12 @@ useCircuitStore         (the active circuit)
 
 | Import | Contents |
 |--------|----------|
-| `@turing-incomplete/core/simulator` | `SimulationSession`, `SimulatorEngine`, `PRIMITIVE_DEFINITIONS`, `PRIMITIVES`, `createSimulatorFromCircuit`, `captureEnvironmentalState`, `restoreEnvironmentalState` |
-| `@turing-incomplete/embed` | `CircuitViewer`, `CircuitEmbed`, `<circuit-embed>` web component — everything needed to embed a circuit |
-| `@turing-incomplete/ui/canvas` | `CircuitCanvas`, `useCircuitSession`, `useSimulationSession`, `ClockControls` — shared simulation UI |
-| `@turing-incomplete/ui/nodes` | `BaseNode`, `InputNode`, `OutputNode`, `LogicGateNode`, `NodeData` — canonical node components (props-driven, store-free) |
+| `@simten/core/simulator` | `SimulationSession`, `SimulatorEngine`, `PRIMITIVE_DEFINITIONS`, `PRIMITIVES`, `createSimulatorFromCircuit`, `captureEnvironmentalState`, `restoreEnvironmentalState` |
+| `@simten/embed` | `CircuitViewer`, `CircuitEmbed`, `<circuit-embed>` web component — everything needed to embed a circuit |
+| `@simten/ui/canvas` | `CircuitCanvas`, `useCircuitSession`, `useSimulationSession`, `ClockControls` — shared simulation UI |
+| `@simten/ui/nodes` | `BaseNode`, `InputNode`, `OutputNode`, `LogicGateNode`, `NodeData` — canonical node components (props-driven, store-free) |
 
-Node components live in `@turing-incomplete/ui/nodes` and are the single source of truth — both the embed and the editor use them.
+Node components live in `@simten/ui/nodes` and are the single source of truth — both the embed and the editor use them.
 
 ## MCP Integration
 

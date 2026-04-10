@@ -327,7 +327,7 @@ export function detectSteadyState(trace: SimulationTrace): number | undefined {
 export function getCircuitAPISummary(): string {
   return `// Circuit API — use circuit() to define circuits
 
-import { circuit, bit, bus } from '@turing-incomplete/core';
+import { circuit, bit, bus } from '@simten/core';
 
 // Composite circuit — wire stdlib components together:
 const HalfAdder = circuit('HalfAdder', {

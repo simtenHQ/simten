@@ -13,17 +13,17 @@ import {
   RightSidebar,
   ClockControls,
   SignalOutputPanel,
-} from "@turing-incomplete/ui/editor/components";
-import { CircuitCanvas, useCircuitSession } from "@turing-incomplete/ui/canvas";
+} from "@simten/ui/editor/components";
+import { CircuitCanvas, useCircuitSession } from "@simten/ui/canvas";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { useCircuitStore, useCircuitPreviewStore, useCircuitLibraryStore } from "@turing-incomplete/ui/editor/stores";
-import type { Circuit } from "@turing-incomplete/ui/editor/types";
+import { useCircuitStore, useCircuitPreviewStore, useCircuitLibraryStore } from "@simten/ui/editor/stores";
+import type { Circuit } from "@simten/ui/editor/types";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { TSEditor, type TSEditorRef } from "@/features/code-editor/TSEditor";
 import { TestTube, Bot, Download } from "lucide-react";
-import { exportVerilog } from "@turing-incomplete/core/verilog";
+import { exportVerilog } from "@simten/core/verilog";
 /** Check if a circuit name is an auto-generated harness */
 function isHarnessName(name: string): boolean {
   return name.endsWith('Harness');
@@ -335,7 +335,7 @@ export function EditorWorkspace({ theme = "light" }: EditorWorkspaceProps) {
           <div className="border-l border-gray-200 dark:border-[#2a2a2e] h-8"></div>
 
           {/* App Title */}
-          <h1 className="text-lg font-bold text-gray-900 dark:text-gray-100">Turing Incomplete</h1>
+          <h1 className="text-lg font-bold text-gray-900 dark:text-gray-100">Simten</h1>
 
           {/* Spacer */}
           <div className="flex-1"></div>

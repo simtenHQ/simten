@@ -18,7 +18,7 @@
 
     /* Bundler mode */
     "moduleResolution": "bundler",
-    "customConditions": ["@turing-incomplete/source"],
+    "customConditions": ["@simten/source"],
     "allowImportingTsExtensions": true,
     "verbatimModuleSyntax": true,
     "noEmit": true,

@@ -7,7 +7,7 @@
 
 import { describe, it, expect } from 'vitest';
 import * as fc from 'fast-check';
-import { PRIMITIVE_EVALUATORS } from '@turing-incomplete/core/simulator';
+import { PRIMITIVE_EVALUATORS } from '@simten/core/simulator';
 
 // ============================================================================
 // DFlipFlop Stateful Tests

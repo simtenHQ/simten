@@ -101,7 +101,7 @@ export function ClaudeCTA() {
           <span className="inline-block w-[2px] h-[1em] bg-green-400 ml-0.5 align-middle animate-pulse" />
         </div>
       </h3>
-      <CopyCommand command="claude mcp add turing-incomplete npx @turing-incomplete/mcp" />
+      <CopyCommand command="claude mcp add simten npx @simten/mcp" />
     </div>
   );
 }

@@ -4,7 +4,7 @@
 
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
-import { simulateCircuit } from '@turing-incomplete/core/api';
+import { simulateCircuit } from '@simten/core/api';
 import { readCircuitSource } from '../lib/file-reader.js';
 import { getPreviewServer } from '../lib/preview-singleton.js';
 

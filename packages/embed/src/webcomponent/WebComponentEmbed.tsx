@@ -8,7 +8,7 @@
  */
 
 import { useMemo } from "react";
-import { executeCircuitCode } from "@turing-incomplete/core/circuit";
+import { executeCircuitCode } from "@simten/core/circuit";
 import { CircuitEmbed, type CircuitEmbedProps } from "../CircuitEmbed";
 
 export interface WebComponentEmbedProps {

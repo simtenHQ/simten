@@ -7,9 +7,9 @@
  * For circuit/simulation types (the actual IR), use @/core/simulator.
  */
 
-import type { BuiltCircuit } from '@turing-incomplete/core/circuit';
-import type { Circuit } from '@turing-incomplete/core';
-import * as std from '@turing-incomplete/core/std';
+import type { BuiltCircuit } from '@simten/core/circuit';
+import type { Circuit } from '@simten/core';
+import * as std from '@simten/core/std';
 
 // Build lookup structures from stdlib exports
 const STD_BUILT: BuiltCircuit[] = Object.values(std).filter(

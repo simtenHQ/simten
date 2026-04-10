@@ -1,6 +1,6 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { useCircuitSimulator, type UseCircuitSimulatorOptions } from "@turing-incomplete/embed";
+import { useCircuitSimulator, type UseCircuitSimulatorOptions } from "@simten/embed";
 import { System6502 } from "./cpu6502-system.circuit";
 
 export interface Program {

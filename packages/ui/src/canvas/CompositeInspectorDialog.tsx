@@ -25,9 +25,9 @@ import { createDrillDownViewCircuit } from "./drill-down-view";
 import {
   createSimulatorFromCircuit,
   SimulationSession,
-} from "@turing-incomplete/core/simulator";
-import type { CircuitLibrary } from "@turing-incomplete/core/simulator";
-import type { Circuit } from "@turing-incomplete/core";
+} from "@simten/core/simulator";
+import type { CircuitLibrary } from "@simten/core/simulator";
+import type { Circuit } from "@simten/core";
 
 import { CircuitCanvas } from "./CircuitCanvas";
 import { ClockControls } from "./ClockControls";

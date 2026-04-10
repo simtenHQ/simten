@@ -8,13 +8,13 @@ export type {
   FlatCircuit,
   FlatPortValueMap,
   FlatSequentialState,
-} from "@turing-incomplete/core/simulator";
+} from "@simten/core/simulator";
 
-export type { Circuit } from "@turing-incomplete/core";
+export type { Circuit } from "@simten/core";
 
 // --- Inspector types (used by the canvas-level drill-down inspector) ---
 
-import type { Circuit as CircuitType } from "@turing-incomplete/core";
+import type { Circuit as CircuitType } from "@simten/core";
 
 export interface InspectorFrame {
   componentName: string;

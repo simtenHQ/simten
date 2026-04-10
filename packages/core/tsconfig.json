@@ -3,7 +3,7 @@
     "target": "ES2024",
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
-    "customConditions": ["@turing-incomplete/source"],
+    "customConditions": ["@simten/source"],
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true,

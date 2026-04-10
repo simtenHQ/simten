@@ -12,7 +12,7 @@
 
 import { forwardRef } from "react";
 import { CircuitViewer, type CircuitViewerHandle } from "./CircuitViewer";
-import type { BuiltCircuit } from "@turing-incomplete/core/circuit";
+import type { BuiltCircuit } from "@simten/core/circuit";
 
 export interface CircuitEmbedProps {
   /** The circuit to display (result of circuit()) */

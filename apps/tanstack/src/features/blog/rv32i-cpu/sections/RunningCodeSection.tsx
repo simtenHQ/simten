@@ -1,6 +1,6 @@
 
 import { Link } from "@tanstack/react-router";
-import { CircuitEmbed } from "@turing-incomplete/embed";
+import { CircuitEmbed } from "@simten/embed";
 import { RV32I_Board } from "../rv32i-board.circuit";
 
 export function RunningCodeSection() {

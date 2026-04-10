@@ -105,8 +105,8 @@ export function FutureSection() {
           <CodeBlock title="claude_desktop_config.json" language="json">
 {`{
   "mcpServers": {
-    "turing-incomplete": {
-      "url": "https://mcp.turing-incomplete.com/sse",
+    "simten": {
+      "url": "https://mcp.simten.dev/sse",
       "transport": "sse"
     }
   }

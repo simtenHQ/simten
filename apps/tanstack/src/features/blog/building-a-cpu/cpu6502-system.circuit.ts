@@ -1,4 +1,4 @@
-import { circuit, bit, bus } from "@turing-incomplete/core/circuit";
+import { circuit, bit, bus } from "@simten/core/circuit";
 import {
   Input, Constant, HexDisplay, Console,
   Register, Adder, Subtractor, Comparator, Incrementer,
@@ -6,7 +6,7 @@ import {
   AddressCombiner, Combiner8to8, Splitter8to8,
   And, Or, Not, Xor, BusAnd, BusOr, BusXor,
   RAM, ROM,
-} from "@turing-incomplete/core/std";
+} from "@simten/core/std";
 
 const RAM2K = circuit('RAM2K', {
   in: { addr_lo: bus(8), addr_hi: bus(8), data_in: bus(8), we: bit },

@@ -3,7 +3,7 @@ import { DualCPUDebugger } from "@/features/learn/dual-cpu/DualCPUDebugger";
 
 export const Route = createFileRoute("/learn/dual-cpu")({
   head: () => ({
-    meta: [{ title: "RV32I Dual CPU | Turing Incomplete" }],
+    meta: [{ title: "RV32I Dual CPU | Simten" }],
   }),
   component: DualCPUDebugger,
 });

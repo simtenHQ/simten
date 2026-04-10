@@ -9,7 +9,7 @@
 
 import { create } from 'zustand';
 import type { Circuit } from '../types/circuit';
-import type { CircuitLibrary } from '@turing-incomplete/core/simulator';
+import type { CircuitLibrary } from '@simten/core/simulator';
 
 interface CircuitLibraryStore {
   // Stable CircuitLibrary reference — changes identity only when circuits change.

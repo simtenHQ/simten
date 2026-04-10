@@ -6,14 +6,14 @@
  * the complete PongSimple circuit.
  */
 
-import { circuit, bus, bit } from "@turing-incomplete/core/circuit";
+import { circuit, bus, bit } from "@simten/core/circuit";
 import type { BlogCircuit } from '../types';
 import {
   Input, HexDisplay, Constant, Switch, Led,
   Register, Adder, Comparator, Or, And, Not, Mux,
   LeftShifter, BitSlice, Incrementer,
   DualPortRAM, Screen,
-} from "@turing-incomplete/core/std";
+} from "@simten/core/std";
 
 // ── Module-level circuit definitions ──
 

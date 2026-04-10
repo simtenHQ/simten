@@ -4,13 +4,13 @@
  * These are loaded via addExtraLib to give users autocomplete for
  * circuit(), bit, bus, and all stdlib components.
  *
- * The types mirror the actual builder API from @turing-incomplete/core/circuit.
+ * The types mirror the actual builder API from @simten/core/circuit.
  * The generic CircuitConfig type enables autocomplete for port names
  * inside connect() callbacks.
  */
 
-import type { BuiltCircuit } from '@turing-incomplete/core/circuit';
-import * as std from '@turing-incomplete/core/std';
+import type { BuiltCircuit } from '@simten/core/circuit';
+import * as std from '@simten/core/std';
 
 /** Convert a port type to its TypeScript type string */
 function portTypeStr(portType: { kind: string; width?: number }): string {

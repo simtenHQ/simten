@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
-import { useCircuitSimulator } from "@turing-incomplete/embed";
-import { CircuitCanvas } from "@turing-incomplete/ui/canvas";
-import { circuit, bus } from "@turing-incomplete/core/circuit";
-import { Register, Adder, Constant, DFlipFlop, HexDisplay } from "@turing-incomplete/core/std";
+import { useCircuitSimulator } from "@simten/embed";
+import { CircuitCanvas } from "@simten/ui/canvas";
+import { circuit, bus } from "@simten/core/circuit";
+import { Register, Adder, Constant, DFlipFlop, HexDisplay } from "@simten/core/std";
 
 // --- Live Fibonacci circuit (auto-ticking) ---
 

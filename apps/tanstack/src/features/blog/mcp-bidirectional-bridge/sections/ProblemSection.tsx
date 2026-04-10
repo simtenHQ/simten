@@ -27,7 +27,7 @@ export function ProblemSection() {
           </p>
 
           <p>
-            Turing Incomplete is a browser-based hardware design tool. Users
+            Simten is a browser-based hardware design tool. Users
             build circuits visually, and an AI tutor helps them learn. The AI
             needs to:
           </p>

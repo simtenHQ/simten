@@ -3,7 +3,7 @@ import { posts, type PostCategory } from '@/features/blog/posts'
 
 export const Route = createFileRoute('/blog/')({
   head: () => ({
-    meta: [{ title: 'Blog | Turing Incomplete' }],
+    meta: [{ title: 'Blog | Simten' }],
   }),
   component: BlogIndex,
 })

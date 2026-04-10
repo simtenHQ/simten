@@ -23,7 +23,7 @@ const BreakoutSection = lazy(() =>
 export const Route = createFileRoute('/blog/breakout-in-hardware')({
   head: () => ({
     meta: [
-      { title: 'Breakout in Hardware | Turing Incomplete' },
+      { title: 'Breakout in Hardware | Simten' },
       { name: 'description', content: 'A complete Breakout game built from logic gates — paddle, ball, bricks, and a 10-phase rendering pipeline, all without a CPU.' },
     ],
   }),

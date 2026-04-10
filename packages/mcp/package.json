@@ -1,12 +1,12 @@
 {
-  "name": "@turing-incomplete/mcp",
+  "name": "@simten/mcp",
   "version": "0.1.0",
-  "description": "MCP server for Turing Incomplete. Live circuit simulation with real-time browser push via WebSocket.",
+  "description": "MCP server for Simten. Live circuit simulation with real-time browser push via WebSocket.",
   "license": "BUSL-1.1",
   "author": "Charles Harris",
   "repository": {
     "type": "git",
-    "url": "https://github.com/charlesharris/turing-incomplete.git",
+    "url": "https://github.com/simtenjs/simten.git",
     "directory": "packages/mcp"
   },
   "keywords": [
@@ -20,7 +20,7 @@
   ],
   "type": "module",
   "bin": {
-    "turing-mcp": "./bin/turing-mcp.js"
+    "simten-mcp": "./bin/simten-mcp.js"
   },
   "exports": {
     ".": "./dist/index.js",
@@ -36,7 +36,7 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.12.0",
-    "@turing-incomplete/core": "workspace:*",
+    "@simten/core": "workspace:*",
     "ws": "^8.19.0",
     "zod": "^3.24.0",
     "zod-to-json-schema": "^3.24.0"

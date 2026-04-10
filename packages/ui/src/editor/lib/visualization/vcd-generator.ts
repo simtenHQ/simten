@@ -60,7 +60,7 @@ function generateVCDHeader(timescale: string): string[] {
   lines.push('$end');
 
   lines.push('$version');
-  lines.push('  Turing Incomplete VCD Generator v0.1');
+  lines.push('  Simten VCD Generator v0.1');
   lines.push('$end');
 
   lines.push('$timescale');

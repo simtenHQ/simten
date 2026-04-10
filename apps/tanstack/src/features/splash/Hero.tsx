@@ -13,10 +13,10 @@
 
 import { useState, useCallback, useEffect, type ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
-import { CircuitEmbed } from "@turing-incomplete/embed";
-import { circuit, bit } from "@turing-incomplete/core/circuit";
-import type { BuiltCircuit } from "@turing-incomplete/core/circuit";
-import { Xor, And, Or, Not, DFlipFlop } from "@turing-incomplete/core/std";
+import { CircuitEmbed } from "@simten/embed";
+import { circuit, bit } from "@simten/core/circuit";
+import type { BuiltCircuit } from "@simten/core/circuit";
+import { Xor, And, Or, Not, DFlipFlop } from "@simten/core/std";
 import { Logo } from "@/components/Logo";
 import { HighlightedCode } from "@/components/HighlightedCode";
 
@@ -174,12 +174,12 @@ function HeroHeader() {
       <div className="flex items-center gap-2.5">
         <Logo size={28} className="text-foreground/80 shrink-0" />
         <div className="font-semibold text-[15px] tracking-tight text-foreground/80">
-          Turing Incomplete
+          Simten
         </div>
       </div>
       <nav className="flex items-center gap-3">
         <a
-          href="https://github.com/charlesharris/turing-incomplete"
+          href="https://github.com/simtenjs/simten"
           target="_blank"
           rel="noopener noreferrer"
           className="text-muted-foreground/60 hover:text-foreground/80 transition-colors"
@@ -234,7 +234,7 @@ function HeroWindow({ children }: { children: ReactNode }) {
         </div>
         <div className="flex-1 flex items-center bg-card rounded-full border border-border px-3 h-6 gap-2 min-w-0">
           <span className="text-[12px] text-muted-foreground font-mono truncate">
-            turingincomplete.com
+            simten.dev
           </span>
         </div>
         <div className="w-[52px]" />

@@ -1,5 +1,5 @@
 {
-	"name": "@turing-incomplete/verifier",
+	"name": "@simten/verifier",
 	"description": "Verilog verification service — cross-validates exported Verilog against Icarus Verilog (Cloudflare Container)",
 	"dependencies": {
 		"@cloudflare/containers": "0.0.30",
@@ -13,7 +13,7 @@
 	"private": true,
 	"scripts": {
 		"cf-typegen": "wrangler types",
-		"build:container": "docker build -t turing-incomplete-verifier .",
+		"build:container": "docker build -t simten-verifier .",
 		"deploy": "wrangler deploy",
 		"dev": "wrangler dev",
 		"start": "wrangler dev"

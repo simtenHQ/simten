@@ -1,5 +1,5 @@
 import { useCORDICSimulator } from "./useCORDICSimulator";
-import { CircuitCanvas } from "@turing-incomplete/ui/canvas";
+import { CircuitCanvas } from "@simten/ui/canvas";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 const CORDIC_LAYOUT: Record<string, { x: number; y: number }> = {

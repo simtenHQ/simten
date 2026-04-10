@@ -1,8 +1,8 @@
-# Turing Incomplete
+# Simten
 
 A TypeScript-native digital circuit simulator and visual editor for learning hardware design.
 
-[![CI](https://github.com/charlesfrisbee/turing-incomplete/actions/workflows/ci.yml/badge.svg)](https://github.com/charlesfrisbee/turing-incomplete/actions/workflows/ci.yml)
+[![CI](https://github.com/simtenjs/simten/actions/workflows/ci.yml/badge.svg)](https://github.com/simtenjs/simten/actions/workflows/ci.yml)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue?logo=typescript)](https://www.typescriptlang.org/)
 [![Cloudflare Workers](https://img.shields.io/badge/deployed_on-Cloudflare-F38020?logo=cloudflare)](https://developers.cloudflare.com/workers/)
 
@@ -14,7 +14,7 @@ A TypeScript-native digital circuit simulator and visual editor for learning har
 
 ## Why?
 
-Existing tools for learning digital logic fall into two camps: visual-only simulators like Logisim that don't scale past a handful of gates, and industrial HDLs like Verilog that require a full toolchain and offer no interactive feedback. Turing Incomplete sits in the middle:
+Existing tools for learning digital logic fall into two camps: visual-only simulators like Logisim that don't scale past a handful of gates, and industrial HDLs like Verilog that require a full toolchain and offer no interactive feedback. Simten sits in the middle:
 
 - **Circuits are typed TypeScript.** You get IDE autocomplete, compile-time port checks, and refactoring tools — none of which exist in Verilog or visual drag-and-drop editors.
 - **An IR makes everything possible.** The `circuit()` factory produces a platform-independent intermediate representation. That single IR powers the visual editor, Verilog export, snapshot/restore (time-travel debugging), and the AI tutor — all from one source of truth.
@@ -47,8 +47,8 @@ Both containers are addressed via Durable Objects and sleep after 2 minutes idle
 ## Your First Circuit
 
 ```typescript
-import { circuit, bit } from '@turing-incomplete/core/circuit'
-import { Xor, And } from '@turing-incomplete/core/std'
+import { circuit, bit } from '@simten/core/circuit'
+import { Xor, And } from '@simten/core/std'
 
 const HalfAdder = circuit('HalfAdder', {
   in: { a: bit, b: bit },
@@ -66,7 +66,7 @@ const HalfAdder = circuit('HalfAdder', {
 Embed it in a React app:
 
 ```tsx
-import { CircuitEmbed } from '@turing-incomplete/embed'
+import { CircuitEmbed } from '@simten/embed'
 
 <CircuitEmbed circuit={HalfAdder} />
 ```
@@ -81,7 +81,7 @@ packages/
 ├── ui/          # Canvas components, editor, shadcn primitives
 ├── embed/       # <CircuitEmbed /> React component + web component
 ├── mcp/         # MCP server for AI integration (WebSocket bridge)
-└── cli/         # turing CLI
+└── cli/         # simten CLI
 
 apps/
 ├── tanstack/    # Main web app (TanStack Start + Vite + Cloudflare Workers)

@@ -23,7 +23,7 @@ const BigPictureSection = lazy(() =>
 export const Route = createFileRoute('/blog/chacha20-in-hardware')({
   head: () => ({
     meta: [
-      { title: 'ChaCha20 in Hardware | Turing Incomplete' },
+      { title: 'ChaCha20 in Hardware | Simten' },
       { name: 'description', content: 'The TLS cipher that encrypts most of the internet, built from logic gates. Explore the ADD-XOR-ROTATE quarter-round with live interactive circuits.' },
     ],
   }),

@@ -1,8 +1,8 @@
 /**
- * @turing-incomplete/ui/editor
+ * @simten/ui/editor
  */
 export {
   captureEnvironmentalState,
   restoreEnvironmentalState,
   type EnvironmentalStateValue,
-} from '@turing-incomplete/core/simulator';
+} from '@simten/core/simulator';

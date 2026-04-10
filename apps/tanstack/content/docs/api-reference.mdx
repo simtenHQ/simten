@@ -8,8 +8,8 @@ description: How to define circuits using the circuit() builder and standard lib
 Circuits are defined in TypeScript using the `circuit()` builder:
 
 ```typescript
-import { circuit, bus, bit } from '@turing-incomplete/core/circuit'
-import { Xor, And } from '@turing-incomplete/core/std'
+import { circuit, bus, bit } from '@simten/core/circuit'
+import { Xor, And } from '@simten/core/std'
 
 const HalfAdder = circuit('HalfAdder', {
   in:  { a: bit, b: bit },
@@ -32,7 +32,7 @@ const HalfAdder = circuit('HalfAdder', {
 | `bus(N)` | N-bit wide bus | `number` (unsigned, max 32 bits) |
 
 ```typescript
-import { bus, bit } from '@turing-incomplete/core/circuit'
+import { bus, bit } from '@simten/core/circuit'
 
 const MyCircuit = circuit('MyCircuit', {
   in:  { addr: bus(16), enable: bit },
@@ -126,7 +126,7 @@ The simulator **elaborates** composites by recursively flattening them to primit
 Circuits without `in`/`out` ports are treated as top-level demos. Use `Input`, `Switch`, and `HexDisplay` for interactive elements:
 
 ```typescript
-import { Input, HexDisplay, Adder } from '@turing-incomplete/core/std'
+import { Input, HexDisplay, Adder } from '@simten/core/std'
 
 const AdderDemo = circuit('AdderDemo', {
   nodes: { a: Input, b: Input, add: Adder, disp: HexDisplay },

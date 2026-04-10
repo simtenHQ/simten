@@ -4,14 +4,14 @@
  * Small, focused circuits that illustrate individual pipeline concepts.
  */
 
-import { circuit, bit, bus } from "@turing-incomplete/core/circuit";
+import { circuit, bit, bus } from "@simten/core/circuit";
 import type { BlogCircuit } from '../types';
 import {
   Not, And, Or, Mux,
   Register, Constant, Adder, Subtractor, DFlipFlop,
   BusAnd, BusOr, BitSlice,
   Switch, Led, Input, HexDisplay,
-} from "@turing-incomplete/core/std";
+} from "@simten/core/std";
 
 // ── Circuit Definitions ──
 

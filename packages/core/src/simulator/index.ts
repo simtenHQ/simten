@@ -6,7 +6,7 @@
  *
  * Usage:
  * ```typescript
- * import { createSimulator, elaborate } from '@turing-incomplete/core/simulator';
+ * import { createSimulator, elaborate } from '@simten/core/simulator';
  *
  * const library = createCircuitLibrary(primitives, composites);
  * const flatCircuit = elaborate(circuit, library);

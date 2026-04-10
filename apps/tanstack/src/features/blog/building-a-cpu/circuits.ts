@@ -5,12 +5,12 @@
  * (SR Latch, D Flip-Flop, Register, Counter) for the memory sections.
  */
 
-import { circuit, bit, bus } from "@turing-incomplete/core/circuit";
+import { circuit, bit, bus } from "@simten/core/circuit";
 import type { BlogCircuit } from '../types';
 import {
   Nor, Not, Xor, And, Or, Mux,
   DFlipFlop, Switch, Led, Input, HexDisplay, RAM,
-} from "@turing-incomplete/core/std";
+} from "@simten/core/std";
 import { HalfAdder, FullAdder } from "@/features/splash/circuits";
 
 // Re-export gate circuits from splash

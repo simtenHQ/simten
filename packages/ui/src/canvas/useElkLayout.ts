@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import type { Circuit } from "@turing-incomplete/core";
+import type { Circuit } from "@simten/core";
 import type { MetadataState } from "./types";
 import { computeElkLayout, fallbackLayout } from "./elk-layout";
 import type { ElkLayoutOptions } from "./elk-layout";

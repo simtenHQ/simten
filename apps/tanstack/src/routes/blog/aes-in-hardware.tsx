@@ -20,7 +20,7 @@ const WhyHardwareSection = lazy(() =>
 export const Route = createFileRoute('/blog/aes-in-hardware')({
   head: () => ({
     meta: [
-      { title: 'AES in Hardware | Turing Incomplete' },
+      { title: 'AES in Hardware | Simten' },
       { name: 'description', content: 'Why Intel built AES into the CPU. SubBytes, XTime, and MixColumns — the three operations behind the world\'s most deployed cipher, built from logic gates.' },
     ],
   }),

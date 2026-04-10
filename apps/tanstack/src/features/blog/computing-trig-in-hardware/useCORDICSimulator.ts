@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useCircuitSimulator } from "@turing-incomplete/embed";
+import { useCircuitSimulator } from "@simten/embed";
 import { CORDICCircuit } from "./circuits";
 
 export function useCORDICSimulator() {

@@ -3,7 +3,7 @@ title: Overview
 description: A digital logic simulator for learning and building hardware designs
 ---
 
-Turing Incomplete is a browser-based platform for learning digital hardware design. You write circuits in TypeScript using the `circuit()` factory, see them rendered live on an interactive canvas, and simulate them with time-travel debugging. An AI tutor (Claude) can help you build, debug, and understand circuits in real time.
+Simten is a browser-based platform for learning digital hardware design. You write circuits in TypeScript using the `circuit()` factory, see them rendered live on an interactive canvas, and simulate them with time-travel debugging. An AI tutor (Claude) can help you build, debug, and understand circuits in real time.
 
 ## What you can build
 
@@ -21,7 +21,7 @@ Everything runs in the browser — no toolchain, no installation, no FPGA requir
 Circuits export to synthesizable Verilog. The exporter maps 60+ primitives to standard RTL constructs — `assign` for combinational logic, `always @(posedge clk)` with non-blocking assignments for sequential logic. The output is verified against [Icarus Verilog](https://steveicarus.github.io/iverilog/) via a containerized verification service.
 
 ```typescript
-import { exportVerilog } from '@turing-incomplete/core/verilog';
+import { exportVerilog } from '@simten/core/verilog';
 
 const verilog = exportVerilog(circuit, library, { target: 'synthesis' });
 ```
@@ -33,7 +33,7 @@ The `target: 'synthesis'` option strips simulation-only constructs (`initial` bl
 Connect Claude Code to get an AI tutor that can see your circuit, push changes to the browser, run simulations, and answer questions in real time:
 
 ```bash
-claude mcp add turing-incomplete npx @turing-incomplete/mcp
+claude mcp add simten npx @simten/mcp
 ```
 
 Ask Claude to build a counter or debug your ALU — it writes the TypeScript and the circuit appears on your canvas instantly.
@@ -43,29 +43,29 @@ See the [Claude Code Integration](/docs/claude-code) guide for the full setup, a
 ## Packages
 
 ```
-@turing-incomplete/core       ← headless engine (no UI)
+@simten/core       ← headless engine (no UI)
        ↑
-@turing-incomplete/ui         ← visual components (nodes, canvas, editor)
+@simten/ui         ← visual components (nodes, canvas, editor)
        ↑
-@turing-incomplete/embed      ← batteries-included wrapper + web components
+@simten/embed      ← batteries-included wrapper + web components
 ```
 
 | Package | Description |
 |---------|-------------|
-| `@turing-incomplete/core` | TypeScript builder, compiler, validator, simulator engine, `SimulationSession`, Verilog export |
-| `@turing-incomplete/ui` | Canonical node components, shared canvas, ELK layout, `useCircuitSession` hook, `ClockControls` |
-| `@turing-incomplete/embed` | `CircuitEmbed` convenience wrapper, `useCircuitSimulator` hook |
-| `@turing-incomplete/mcp` | MCP server for Claude Code integration |
-| `@turing-incomplete/cli` | Command-line interface |
+| `@simten/core` | TypeScript builder, compiler, validator, simulator engine, `SimulationSession`, Verilog export |
+| `@simten/ui` | Canonical node components, shared canvas, ELK layout, `useCircuitSession` hook, `ClockControls` |
+| `@simten/embed` | `CircuitEmbed` convenience wrapper, `useCircuitSimulator` hook |
+| `@simten/mcp` | MCP server for Claude Code integration |
+| `@simten/cli` | Command-line interface |
 
 ## Embed a circuit
 
 Drop an interactive circuit into any React app:
 
 ```tsx
-import { CircuitEmbed } from '@turing-incomplete/embed';
-import { circuit, bit } from '@turing-incomplete/core/circuit';
-import { Xor, And } from '@turing-incomplete/core/std';
+import { CircuitEmbed } from '@simten/embed';
+import { circuit, bit } from '@simten/core/circuit';
+import { Xor, And } from '@simten/core/std';
 
 const HalfAdder = circuit('HalfAdder', {
   in: { a: bit, b: bit },
@@ -86,9 +86,9 @@ The embed auto-wraps the circuit with switches for inputs and LEDs for outputs.
 
 Here's that exact code running live:
 
-import { CircuitEmbed } from '@turing-incomplete/embed'
-import { circuit, bit } from '@turing-incomplete/core/circuit'
-import { Xor, And } from '@turing-incomplete/core/std'
+import { CircuitEmbed } from '@simten/embed'
+import { circuit, bit } from '@simten/core/circuit'
+import { Xor, And } from '@simten/core/std'
 
 export const HalfAdder = circuit('HalfAdder', {
   in: { a: bit, b: bit },

@@ -1,6 +1,6 @@
-# @turing-incomplete/mcp
+# @simten/mcp
 
-MCP server for [Turing Incomplete](https://github.com/charlesharris/turing-incomplete) — a live circuit simulator you talk to.
+MCP server for [Simten](https://simten.dev) — a live circuit simulator you talk to.
 
 The only MCP server with real-time browser push. Your LLM calls a tool, the user sees it happen live in a visual editor. No polling, no refresh.
 
@@ -22,9 +22,9 @@ Add to your Claude Code MCP config (`~/.claude/settings.json`):
 ```json
 {
   "mcpServers": {
-    "turing-incomplete": {
+    "simten": {
       "command": "npx",
-      "args": ["@turing-incomplete/mcp"]
+      "args": ["@simten/mcp"]
     }
   }
 }
@@ -33,7 +33,7 @@ Add to your Claude Code MCP config (`~/.claude/settings.json`):
 Or install globally:
 
 ```bash
-npm install -g @turing-incomplete/mcp
+npm install -g @simten/mcp
 ```
 
 ## Tools

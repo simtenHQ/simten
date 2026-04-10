@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { useCircuitSimulator } from "@turing-incomplete/embed";
+import { useCircuitSimulator } from "@simten/embed";
 import { PongSimple } from "./circuits";
 
 export function usePongSimulator() {

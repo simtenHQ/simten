@@ -10,7 +10,7 @@ TypeScript circuit() → Circuit IR → Elaboration → Simulation
 
 ## Definition Layer
 
-Circuits are defined with the `circuit()` factory function from `@turing-incomplete/core/circuit`. It takes a config object and returns a `BuiltCircuit` containing:
+Circuits are defined with the `circuit()` factory function from `@simten/core/circuit`. It takes a config object and returns a `BuiltCircuit` containing:
 
 - The Circuit IR
 - Type-level shape info for autocomplete and width checking
@@ -90,11 +90,11 @@ type PortType = { kind: 'bit' } | { kind: 'bus'; width: number };
 
 | Package | Responsibility |
 |---------|----------------|
-| `@turing-incomplete/core` | Simulator, `circuit()` builder, stdlib, Verilog exporter |
-| `@turing-incomplete/ui` | Canvas, editor components, shadcn primitives, stores |
-| `@turing-incomplete/embed` | `CircuitEmbed` React component |
-| `@turing-incomplete/mcp` | MCP server wrapping core handlers for Claude Code |
-| `@turing-incomplete/cli` | CLI wrapper |
+| `@simten/core` | Simulator, `circuit()` builder, stdlib, Verilog exporter |
+| `@simten/ui` | Canvas, editor components, shadcn primitives, stores |
+| `@simten/embed` | `CircuitEmbed` React component |
+| `@simten/mcp` | MCP server wrapping core handlers for Claude Code |
+| `@simten/cli` | CLI wrapper |
 
 ## Chat System
 

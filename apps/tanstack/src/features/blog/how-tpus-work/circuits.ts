@@ -12,13 +12,13 @@
  *   - Both partial sums and data are registered (1 cycle per PE in each direction)
  */
 
-import { circuit, bit, bus } from "@turing-incomplete/core/circuit";
+import { circuit, bit, bus } from "@simten/core/circuit";
 import type { BlogCircuit } from '../types';
 import {
   Input, Switch, HexDisplay, Constant, Led,
   Register, DFlipFlop, Adder, Multiplier, Comparator,
   Mux, Incrementer, And, Or,
-} from "@turing-incomplete/core/std";
+} from "@simten/core/std";
 
 /** The PE definition used by all circuits — registered partial-sum output */
 const PE_Systolic = circuit('PE_Systolic', {

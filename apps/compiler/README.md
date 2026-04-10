@@ -1,4 +1,4 @@
-# @turing-incomplete/compiler
+# @simten/compiler
 
 RISC-V cross-compiler running inside a [Cloudflare Container](https://developers.cloudflare.com/containers/). Compiles C, C++, Rust, and raw assembly into rv32i machine code so users can write programs in the browser and execute them on the simulated CPU — without shipping a 50MB toolchain to the client.
 

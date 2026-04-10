@@ -41,7 +41,7 @@ export interface MCPCallbacks {
 }
 
 const RETRY_INTERVAL = 5000;
-const LS_KEY = 'turing-incomplete:mcp-connection';
+const LS_KEY = 'simten:mcp-connection';
 
 function saveConnectionParams(params: { token: string; port: number }) {
   try { localStorage.setItem(LS_KEY, JSON.stringify(params)); } catch { /* ignore */ }

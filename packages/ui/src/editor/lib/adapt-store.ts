@@ -5,7 +5,7 @@
  * Kept as a thin passthrough for any remaining callers.
  */
 
-import type { CircuitLibrary, Circuit } from '@turing-incomplete/core';
+import type { CircuitLibrary, Circuit } from '@simten/core';
 
 interface StoreWithResolveCircuit {
   resolveCircuit(name: string): Circuit | undefined;

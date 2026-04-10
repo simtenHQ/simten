@@ -5,13 +5,13 @@
  * full quarter-round that powers TLS encryption across the internet.
  */
 
-import { circuit, bus } from "@turing-incomplete/core/circuit";
+import { circuit, bus } from "@simten/core/circuit";
 import type { BlogCircuit } from '../types';
 import {
   Input, HexDisplay, Constant,
   Adder, BusXor, BusOr,
   LeftShifter, RightShifter,
-} from "@turing-incomplete/core/std";
+} from "@simten/core/std";
 
 // ── Rotation sub-circuits ──
 

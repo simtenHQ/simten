@@ -32,7 +32,7 @@ const PatternSection = lazy(() =>
 export const Route = createFileRoute('/blog/mcp-bidirectional-bridge')({
   head: () => ({
     meta: [
-      { title: 'MCP as a Real-Time Bridge Between AI Agents and Web Apps | Turing Incomplete' },
+      { title: 'MCP as a Real-Time Bridge Between AI Agents and Web Apps | Simten' },
       { name: 'description', content: 'How to use MCP as a bidirectional nervous system between an AI agent and a live web application — with zero AI API costs.' },
     ],
   }),

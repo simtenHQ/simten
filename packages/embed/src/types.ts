@@ -8,9 +8,9 @@ export type {
   FlatCircuit,
   FlatPortValueMap,
   FlatSequentialState,
-} from "@turing-incomplete/core/simulator";
+} from "@simten/core/simulator";
 
-export type { Circuit } from "@turing-incomplete/core";
+export type { Circuit } from "@simten/core";
 
 // --- Layout metadata types (extracted from packages/ui/src/editor/types/visual.ts) ---
 
