@@ -34,7 +34,7 @@ interface ChatPanelProps {
   /** Set code in the editor */
   setCode: (code: string) => void;
   /** Set an input component's value (Switch, Button, Input) */
-  setInput: (nodeName: string, value: number) => void;
+  setNode: (nodeName: string, value: number) => void;
   /** Run simulation */
   runSimulation: (cycles: number, stimuli?: Record<string, number>) => Promise<void>;
   /** Insert a node */
@@ -56,7 +56,7 @@ interface ChatPanelProps {
 export function ChatPanel({
   getCurrentCode,
   setCode,
-  setInput,
+  setNode,
   runSimulation,
   insertNode,
   narrativeContext,
@@ -95,7 +95,7 @@ export function ChatPanel({
     getCurrentCode,
     sourceCodeHash,
     setCode,
-    setInput,
+    setNode,
     runSimulation,
     insertNode,
     onStatusChange: setActionStatus,
@@ -106,7 +106,7 @@ export function ChatPanel({
         confirmationResolveRef.current = resolve;
       });
     },
-  }), [sessionId, getCurrentCode, sourceCodeHash, setCode, setInput, runSimulation, insertNode, setActionStatus]);
+  }), [sessionId, getCurrentCode, sourceCodeHash, setCode, setNode, runSimulation, insertNode, setActionStatus]);
 
   // Tutor flow hook
   const {
@@ -145,7 +145,7 @@ export function ChatPanel({
         getCurrentCode,
         sourceCodeHash,
         setCode,
-        setInput,
+        setNode,
         runSimulation,
         insertNode,
         onStatusChange: setActionStatus,
@@ -165,7 +165,7 @@ export function ChatPanel({
       getCurrentCode,
       sourceCodeHash,
       setCode,
-      setInput,
+      setNode,
       runSimulation,
       insertNode,
       setActionStatus,

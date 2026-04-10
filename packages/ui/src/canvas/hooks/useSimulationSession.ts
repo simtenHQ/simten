@@ -35,7 +35,7 @@ export interface UseSimulationSessionResult<TMeta = unknown>
   extends SimulationSessionState<TMeta> {
   tick: (metadata?: TMeta) => void;
   reset: () => void;
-  setInput: (name: string, value: BitValue | BusValue) => void;
+  setNode: (name: string, value: BitValue | BusValue) => void;
   runCombinational: () => void;
   stepBack: () => SessionSnapshot<TMeta> | null;
   stepForward: () => SessionSnapshot<TMeta> | null;
@@ -65,7 +65,7 @@ export function useSimulationSession<TMeta = unknown>(
   const actions = useMemo(() => ({
     tick: (metadata?: TMeta) => session?.tick(metadata),
     reset: () => session?.reset(),
-    setInput: (name: string, value: BitValue | BusValue) => session?.setInput(name, value),
+    setNode: (name: string, value: BitValue | BusValue) => session?.setNode(name, value),
     runCombinational: () => session?.runCombinational(),
     stepBack: () => session?.stepBack() ?? null,
     stepForward: () => session?.stepForward() ?? null,

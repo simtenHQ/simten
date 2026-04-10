@@ -185,9 +185,9 @@ export class SimulationSession<TMeta = unknown> {
     this.notifyListeners();
   }
 
-  setInput(name: string, value: BitValue | BusValue): void {
+  setNode(name: string, value: BitValue | BusValue): void {
     if (!this.engine) return;
-    this.engine.setInput(name, value);
+    this.engine.setNode(name, value);
   }
 
   runCombinational(): void {

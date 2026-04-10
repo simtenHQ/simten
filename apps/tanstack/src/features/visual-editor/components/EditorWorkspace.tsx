@@ -155,7 +155,7 @@ export function EditorWorkspace({ theme = "light" }: EditorWorkspaceProps) {
   // Keyboard scan code input for Input nodes (e.g. keyboard-driven CPU demos)
   useKeyboardInput(circuit, useCallback((nodeId: string, scanCode: number) => {
     const engine = sim.session?.getEngine();
-    if (engine) engine.setInput(nodeId, scanCode);
+    if (engine) engine.setNode(nodeId, scanCode);
   }, [sim.session]));
 
   // Build library interface for CircuitCanvas from store
@@ -387,11 +387,11 @@ export function EditorWorkspace({ theme = "light" }: EditorWorkspaceProps) {
                   const pv = sim.portValues;
                   const outKey = `${nodeId}.out`;
                   const currentValue = pv.get(outKey);
-                  sim.setInput(nodeId, !currentValue);
+                  sim.setNode(nodeId, !currentValue);
                   sim.runCombinational();
                 }}
                 onSetNodeValue={(nodeId, value) => {
-                  sim.setInput(nodeId, value);
+                  sim.setNode(nodeId, value);
                   sim.runCombinational();
                 }}
                 onLoadMemory={(nodeId, memData) => {
@@ -453,7 +453,7 @@ export function EditorWorkspace({ theme = "light" }: EditorWorkspaceProps) {
             // Trigger recompile after setting code
             setTimeout(() => editorRef.current?.compile(), 100);
           }}
-          setInput={(nodeName, value) => {
+          setNode={(nodeName, value) => {
             // Read circuit from store at call time to avoid stale closures.
             const currentCircuit = useCircuitStore.getState().circuit;
             if (currentCircuit) {
@@ -465,9 +465,9 @@ export function EditorWorkspace({ theme = "light" }: EditorWorkspaceProps) {
               );
               if (node) {
                 useCircuitStore.getState().updateNode(node.id, { arguments: { ...node.arguments, value } });
-                sim.setInput(node.id, value);
+                sim.setNode(node.id, value);
               } else {
-                console.warn('[setInput] Node not found:', nodeName, 'in circuit with', currentCircuit.nodes.length, 'nodes');
+                console.warn('[setNode] Node not found:', nodeName, 'in circuit with', currentCircuit.nodes.length, 'nodes');
               }
             }
           }}

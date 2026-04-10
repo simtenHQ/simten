@@ -12,7 +12,7 @@
  * const flatCircuit = elaborate(circuit, library);
  * const sim = createSimulator(flatCircuit, { componentLibrary: library });
  *
- * sim.setInput('switch1', 'out', true);
+ * sim.setNode('switch1', 'out', true);
  * const result = sim.tick();
  * console.log(result.portValues);
  * ```
@@ -337,15 +337,6 @@ class FastSimulatorEngineImpl implements SimulatorEngine {
     }
   }
 
-  setInput(name: string, value: BitValue | BusValue): void {
-    this.setNode(name, value);
-  }
-
-  setInputs(values: Map<string, BitValue | BusValue>): void {
-    for (const [name, value] of values) {
-      this.setInput(name, value);
-    }
-  }
 
   tick(): TickResult {
     if (!this.numericCircuit || !this.numericSeqState || !this.numericValues || !this.eventQueue) {
@@ -405,7 +396,7 @@ class FastSimulatorEngineImpl implements SimulatorEngine {
     propagateToTopLevelOutputs(this.numericCircuit, this.numericValues, portValues);
 
     // Cache as the canonical observable state. getPortValues() and
-    // getOutput() read from this cache until the next tick() or setInput().
+    // getOutput() read from this cache until the next tick() or setNode().
     this.cachedPortValues = portValues;
     this.cachedFlatSeqState = null; // Force recomputation on next getState()
     this.cacheValid = true;
@@ -485,7 +476,7 @@ class FastSimulatorEngineImpl implements SimulatorEngine {
 
     if (!this.cacheValid) {
       // No tick has run yet — compute from current (initial) state.
-      // After tick() runs, this branch is only hit if setInput()
+      // After tick() runs, this branch is only hit if setNode()
       // invalidated the cache.
       this.cachedPortValues = toFlatPortValueMap(this.numericCircuit, this.numericValues, this.topLevelInputs);
       propagateToTopLevelOutputs(this.numericCircuit, this.numericValues, this.cachedPortValues);

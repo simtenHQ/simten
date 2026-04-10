@@ -61,7 +61,7 @@ function MyComponent() {
 
   // sim.ready, sim.error, sim.circuit
   // sim.inputs, sim.outputs, sim.portValues
-  // sim.setInput(), sim.toggleNode(), sim.tick(), sim.reset()
+  // sim.setNode(), sim.toggleNode(), sim.tick(), sim.reset()
 }
 ```
 
