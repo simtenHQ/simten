@@ -158,7 +158,7 @@ export function simulate<
           const portDef = circuit.inputs.find(p => p.name === name);
           const isBit = portDef?.portType.kind === 'bit';
           const converted = isBit ? Boolean(value) : value;
-          session.setInput(name, converted as BitValue | BusValue);
+          session.setNode(name, converted as BitValue | BusValue);
         }
       }
       // For combinational circuits, auto-propagate

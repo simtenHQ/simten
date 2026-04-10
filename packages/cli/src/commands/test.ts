@@ -51,7 +51,7 @@ export async function test(filePaths: string[], opts: TestOptions): Promise<void
 
       // Set inputs
       for (const [name, value] of Object.entries(tc.inputs)) {
-        simulator.setInput(name, value as BitValue | BusValue);
+        simulator.setNode(name, value as BitValue | BusValue);
       }
 
       // Run for one tick

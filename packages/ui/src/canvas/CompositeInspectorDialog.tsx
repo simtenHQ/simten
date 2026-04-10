@@ -128,7 +128,7 @@ function InspectorCanvas({
       if (!session) return;
       const outKey = `${nodeId}.out`;
       const currentValue = sim.portValues.get(outKey);
-      session.setInput(nodeId, !currentValue);
+      session.setNode(nodeId, !currentValue);
       session.runCombinational();
     },
     [session, sim.portValues],
@@ -137,7 +137,7 @@ function InspectorCanvas({
   const handleNumericChange = useCallback(
     (nodeId: string, newValue: number) => {
       if (!session) return;
-      session.setInput(nodeId, newValue);
+      session.setNode(nodeId, newValue);
       session.runCombinational();
     },
     [session],

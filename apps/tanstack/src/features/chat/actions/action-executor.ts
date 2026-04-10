@@ -32,7 +32,7 @@ export interface ActionExecutionContext {
   /** Set code in the editor */
   setCode: (code: string) => void;
   /** Set an input component's value (Switch, Button, Input) */
-  setInput: (nodeName: string, value: number) => void;
+  setNode: (nodeName: string, value: number) => void;
   /** Run simulation */
   runSimulation: (cycles: number, stimuli?: Record<string, number>) => Promise<void>;
   /** Insert a node into the circuit */
@@ -239,7 +239,7 @@ async function executeSetInput(
   context: ActionExecutionContext
 ): Promise<ActionResult> {
   try {
-    context.setInput(action.node, action.value);
+    context.setNode(action.node, action.value);
 
     return {
       success: true,

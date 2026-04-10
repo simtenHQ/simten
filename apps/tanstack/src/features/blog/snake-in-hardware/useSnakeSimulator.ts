@@ -11,7 +11,7 @@ export function useSnakeSimulator() {
 
   // Find the actual mangled node ID for "keyboard" from the compiled circuit.
   // The IR generator mangles IDs: e.g. "keyboard" → "SnakeAdvanced_keyboard_<ts>_<rand>"
-  // We look up by label to get the real ID that setNodeValue/setInput can find.
+  // We look up by label to get the real ID that setNodeValue/setNode can find.
   const keyboardNodeId = useMemo(() => {
     if (!sim.circuit?.nodes) return null;
     for (const node of sim.circuit.nodes) {

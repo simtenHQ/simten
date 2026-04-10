@@ -32,7 +32,7 @@ export interface SimulatorState {
 }
 
 export interface SimulatorActions {
-  setInput: (name: string, value: boolean | number) => void;
+  setNode: (name: string, value: boolean | number) => void;
   toggleInput: (name: string) => void;
   toggleNode: (nodeId: string) => void;
   setNodeValue: (nodeId: string, value: number | boolean | Map<number, number>) => void;
@@ -140,7 +140,7 @@ export function useCircuitSimulator(
     if (!engine) return;
 
     for (const [inputName, value] of Object.entries(inputs)) {
-      engine.setInput(inputName, value);
+      engine.setNode(inputName, value);
     }
 
     if (!isSequential) {
@@ -150,7 +150,7 @@ export function useCircuitSimulator(
 
   // ── Actions ──
 
-  const setInput = useCallback((name: string, value: boolean | number) => {
+  const setNode = useCallback((name: string, value: boolean | number) => {
     setInputs(prev => ({ ...prev, [name]: value }));
   }, []);
 
@@ -185,7 +185,7 @@ export function useCircuitSimulator(
     const engine = sim.session.getEngine();
     if (engine) {
       for (const [inputName, value] of Object.entries(inputs)) {
-        engine.setInput(inputName, value);
+        engine.setNode(inputName, value);
       }
     }
     sim.tick();
@@ -214,7 +214,7 @@ export function useCircuitSimulator(
     isRunning: sim.isRunning,
 
     // Actions
-    setInput,
+    setNode,
     toggleInput,
     toggleNode,
     setNodeValue,
