@@ -15,7 +15,7 @@ import { registerCheckTool } from './tools/check.js';
 import { registerSimulateTool } from './tools/simulate.js';
 import { registerShowTools } from './tools/show.js';
 import { registerStateTool } from './tools/state.js';
-import { setOnSendToClaude } from './lib/preview-singleton.js';
+import { setOnSendToClaude, getOrCreateServer } from './lib/preview-singleton.js';
 import { getGrammarHandler, getPrimitivesHandler, getLibrary } from '@simten/core/api';
 
 const builderAPI = getGrammarHandler();
@@ -71,3 +71,14 @@ setOnSendToClaude((content, meta) => {
 
 const transport = new StdioServerTransport();
 await server.connect(transport);
+
+// Start the WS server eagerly so the browser can reconnect immediately after MCP restart.
+// Without this, the server only starts when a tool is called (lazy), leaving the browser
+// in "reconnecting" state until the first tool invocation.
+getOrCreateServer()
+  .then((s) => {
+    process.stderr.write(`[simten-mcp] WS server started on port ${s.port}\n`);
+  })
+  .catch((err: unknown) => {
+    process.stderr.write(`[simten-mcp] WS server failed to start: ${err instanceof Error ? err.message : String(err)}\n`);
+  });

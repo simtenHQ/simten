@@ -5,6 +5,10 @@
  * (show, state, traces, test-results).
  */
 
+import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { join } from 'node:path';
+import { homedir } from 'node:os';
+import { randomUUID } from 'node:crypto';
 import type { StudioServer, CircuitState, TracesPayload, TestResultsPayload } from '../server/ws-server.js';
 
 export type { StudioServer, CircuitState, TracesPayload, TestResultsPayload };
@@ -12,6 +16,22 @@ export type { StudioServer, CircuitState, TracesPayload, TestResultsPayload };
 // Module-level singleton
 let studioServer: StudioServer | null = null;
 let browserOpened = false;
+
+/**
+ * Load the persistent token from ~/.simten/token, creating it if absent.
+ * Survives MCP restarts — browser's localStorage stays valid.
+ */
+function getOrCreateToken(): string {
+  const tokenPath = join(homedir(), '.simten', 'token');
+  if (existsSync(tokenPath)) {
+    const stored = readFileSync(tokenPath, 'utf8').trim();
+    if (stored) return stored;
+  }
+  const token = randomUUID();
+  mkdirSync(join(homedir(), '.simten'), { recursive: true });
+  writeFileSync(tokenPath, token, { mode: 0o600 });
+  return token;
+}
 
 // Callback for browser → Claude channel notifications
 let onSendToClaudeCallback: ((content: string, meta: Record<string, string>) => void) | null = null;
@@ -42,6 +62,7 @@ export async function getOrCreateServer(): Promise<StudioServer> {
 
   studioServer = await createStudioServer({
     port: DEFAULT_PORT,
+    token: getOrCreateToken(),
     onSendToClaude: (content, meta) => {
       onSendToClaudeCallback?.(content, meta);
     },

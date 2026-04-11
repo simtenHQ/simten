@@ -172,9 +172,12 @@ export function registerShowTools(server: McpServer): void {
         studio.watchFile(resolve(filePath));
       }
 
-      // 6. Open browser on first call (token passed via fragment — never sent to server)
-      const editorUrl = `${TI_URL}/editor#token=${studio.token}&port=${studio.port}`;
-      openBrowser(editorUrl);
+      // 6. Open browser only if no sessions are connected
+      // With persistent tokens, an existing tab will reconnect automatically on MCP restart
+      if (studio.sessions.size === 0) {
+        const editorUrl = `${TI_URL}/editor#token=${studio.token}&port=${studio.port}`;
+        openBrowser(editorUrl);
+      }
 
       // 7. Return confirmation
       const watchingNote = filePath
