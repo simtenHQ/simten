@@ -30,6 +30,7 @@ function isHarnessName(name: string): boolean {
 }
 import { ChatPanel, useChatStore, useLLMContext } from "@/features/chat";
 import { useMCPConnection } from "@/hooks/useMCPConnection";
+import { WaveformViewer } from "@simten/ui/waveform";
 import { EXAMPLES, CATEGORY_COLORS, CATEGORY_LABELS, type Example } from "../examples";
 
 // Helper to check if circuit has sequential components
@@ -105,6 +106,7 @@ export function EditorWorkspace({ theme = "light" }: EditorWorkspaceProps) {
 
   // Drawer state
   const [testsPanelOpen, setTestsPanelOpen] = useState(false);
+  const [waveformData, setWaveformData] = useState<{ vcd: string; circuit: string; ticks: number; steadyStateAt?: number } | null>(null);
 
   // Editor ref for ChatPanel integration
   const editorRef = useRef<TSEditorRef>(null);
@@ -172,6 +174,10 @@ export function EditorWorkspace({ theme = "light" }: EditorWorkspaceProps) {
 
   // Studio connection (WebSocket to MCP server)
   const { status: mcpStatus, sendToClaudePrompt } = useMCPConnection({
+    onTraces: useCallback((data: unknown) => {
+      const payload = data as { vcd: string; circuit: string; ticks: number; steadyStateAt?: number };
+      if (payload?.vcd) setWaveformData(payload);
+    }, []),
     onSource: useCallback((source: string) => {
       editorRef.current?.setCode(source);
       setTimeout(() => editorRef.current?.compile(), 100);
@@ -406,6 +412,16 @@ export function EditorWorkspace({ theme = "light" }: EditorWorkspaceProps) {
           </div>
         </div>
 
+
+        {/* Waveform viewer — shown when traces arrive via MCP */}
+        {waveformData && (
+          <WaveformViewer
+            vcd={waveformData.vcd}
+            circuit={waveformData.circuit}
+            steadyStateAt={waveformData.steadyStateAt}
+            onLoadVCD={(vcd) => setWaveformData((prev) => prev ? { ...prev, vcd } : null)}
+          />
+        )}
 
         {/* Right Drawer: Tests + Testbench */}
         <Sheet open={testsPanelOpen} onOpenChange={setTestsPanelOpen}>

@@ -109,7 +109,7 @@ export async function test(filePaths: string[], opts: TestOptions): Promise<void
  */
 function printTrace(
   circuit: Circuit,
-  result: { portValues: Map<string, BitValue | BusValue> },
+  result: { portValues: ReadonlyMap<string, BitValue | BusValue> },
   _library: any
 ): void {
   const inputNames = circuit.inputs.map((i) => i.name);
