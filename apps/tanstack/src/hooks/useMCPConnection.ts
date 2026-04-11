@@ -114,6 +114,16 @@ export function useMCPConnection(callbacks: MCPCallbacks) {
         sessionId: sessionIdRef.current,
         page: window.location.pathname,
       }));
+      // Tell the server when this tab is focused so simulate_circuit targets the right tab
+      const sendFocus = () => {
+        if (ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({ type: 'focus' }));
+        }
+      };
+      window.addEventListener('focus', sendFocus);
+      ws.addEventListener('close', () => window.removeEventListener('focus', sendFocus));
+      // Report focus immediately on connect if already focused
+      if (document.hasFocus()) sendFocus();
     };
 
     ws.onmessage = (event) => {

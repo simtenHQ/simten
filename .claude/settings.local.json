@@ -124,7 +124,8 @@
       "Bash(sed -i '' 's/library\\\\.registerPrimitive\\(/library.addCircuit\\(/g' circuit-store.test.ts)",
       "Bash(awk 'NR>=66 && NR<=365' apps/tanstack/src/routes/index.tsx)",
       "Bash(awk NR>=735 && NR<=745:*)",
-      "Bash(xargs -I {} basename {})"
+      "Bash(xargs -I {} basename {})",
+      "mcp__simten__list_sessions"
     ]
   }
 }

@@ -301,8 +301,12 @@ export const TSEditor = forwardRef<TSEditorRef, TSEditorProps>(
           <Editor
             language="typescript"
             theme={resolvedTheme === "dark" ? "vs-dark" : "vs"}
+            path="circuit.ts"
             value={code}
             onChange={handleCodeChange}
+            beforeMount={(monaco) => {
+              monaco.languages.typescript.typescriptDefaults.setEagerModelSync(true);
+            }}
             onMount={handleEditorMount}
             options={{
               minimap: { enabled: false },

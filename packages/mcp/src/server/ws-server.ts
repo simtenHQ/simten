@@ -50,10 +50,10 @@ const STATE_REQUEST_TIMEOUT = 3000;
 const DEDUP_WINDOW_MS = 500;
 
 export async function createStudioServer(
-  options?: { port?: number; onSendToClaude?: (content: string, meta: Record<string, string>) => void }
+  options?: { port?: number; token?: string; onSendToClaude?: (content: string, meta: Record<string, string>) => void }
 ): Promise<StudioServer> {
   const port = options?.port ?? 0;
-  const token = randomUUID();
+  const token = options?.token ?? randomUUID();
 
   const sessions = new Map<string, Session>();
   const pendingRequests = new Map<string, { resolve: (value: unknown) => void; timer: ReturnType<typeof setTimeout> }>();
@@ -139,6 +139,12 @@ export async function createStudioServer(
             pendingRequests.delete(msg.requestId);
             pending.resolve(msg.state ?? null);
           }
+          return;
+        }
+
+        // Browser reports it is focused — use this session for next push
+        if (msg.type === 'focus' && sessionId) {
+          lastActiveSessionId = sessionId;
           return;
         }
 
