@@ -305,8 +305,8 @@ export function toFlatPortValueMap(
   circuit: NumericCircuit,
   values: NumericPortValues,
   topLevelInputs?: FlatPortValueMap
-): FlatPortValueMap {
-  const result: FlatPortValueMap = new Map();
+): Map<string, BitValue | BusValue> {
+  const result = new Map<string, BitValue | BusValue>();
 
   // Copy top-level inputs
   if (topLevelInputs) {
@@ -372,7 +372,7 @@ export function fromFlatPortValueMap(
 export function propagateToTopLevelOutputs(
   circuit: NumericCircuit,
   values: NumericPortValues,
-  result: FlatPortValueMap
+  result: Map<string, BitValue | BusValue>
 ): void {
   for (const conn of circuit.flatCircuit.connections) {
     if (conn.target.nodeId === TOP_LEVEL_NODE || conn.target.nodeId === '') {

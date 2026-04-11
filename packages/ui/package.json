@@ -12,7 +12,8 @@
     "./editor/components": { "types": "./src/editor/components/index.ts", "default": "./src/editor/components/index.ts" },
     "./editor/hooks": { "types": "./src/editor/hooks/index.ts", "default": "./src/editor/hooks/index.ts" },
     "./nodes": { "types": "./src/nodes/index.ts", "default": "./src/nodes/index.ts" },
-    "./canvas": { "types": "./src/canvas/index.ts", "default": "./src/canvas/index.ts" }
+    "./canvas": { "types": "./src/canvas/index.ts", "default": "./src/canvas/index.ts" },
+    "./waveform": { "types": "./src/waveform/WaveformViewer.tsx", "default": "./src/waveform/WaveformViewer.tsx" }
   },
   "files": ["src"],
   "scripts": {
