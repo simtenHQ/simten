@@ -10,9 +10,7 @@ export interface CircuitState {
 export interface TracesPayload {
   circuit: string;
   ticks: number;
-  inputs: string[];
-  outputs: string[];
-  signals: Record<string, Array<{ value: boolean | number; count: number }>>;
+  vcd: string;
   steadyStateAt?: number;
 }
 

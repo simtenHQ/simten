@@ -6,13 +6,15 @@
  */
 
 import {
-  createSimulatorFromCircuit,
+  elaborate,
+  createSimulator,
   TOP_LEVEL_NODE,
 } from '../simulator/index.js';
 import type { BitValue, BusValue } from '../types/circuit.js';
 import { compileSource } from './compile-source.js';
 import { compressTrace, detectSteadyState } from '../types/analysis.js';
 import type { SimulationTrace } from '../types/analysis.js';
+import { exportVCD } from './vcd.js';
 
 export type RLEValue = { value: BitValue | BusValue; count: number };
 
@@ -23,6 +25,7 @@ export interface SimulateResult {
   outputs: string[];
   signals: Record<string, RLEValue[]>;
   steadyStateAt?: number;
+  vcd: string;
 }
 
 export interface SimulateError {
@@ -61,8 +64,11 @@ export function simulateCircuit(
     };
   }
 
-  // Create simulator
-  const simulator = createSimulatorFromCircuit(target, compiled.library);
+  // Elaborate to flat circuit — needed for VCD hierarchy
+  const flatCircuit = elaborate(target, compiled.library);
+
+  // Create simulator from flat circuit
+  const simulator = createSimulator(flatCircuit, { componentLibrary: compiled.library });
 
   // Load memory data if provided
   if (params.memoryData) {
@@ -78,11 +84,12 @@ export function simulateCircuit(
     }
   }
 
-  // Run simulation
+  // Run simulation — capture full portValues each tick for VCD
   const outputNames = target.outputs.map((o) => o.name);
   const inputNames = target.inputs.map((i) => i.name);
   const signalNames = [...inputNames, ...outputNames];
   const signals: Record<string, (BitValue | BusValue)[]> = {};
+  const portValuesByTick: Array<ReadonlyMap<string, BitValue | BusValue>> = [];
 
   for (const name of signalNames) {
     signals[name] = [];
@@ -91,6 +98,10 @@ export function simulateCircuit(
   for (let tick = 0; tick < ticks; tick++) {
     const result = simulator.tick();
 
+    // Capture full port values for VCD (all internal signals)
+    portValuesByTick.push(result.portValues);
+
+    // Capture top-level signals for RLE compression
     for (const name of signalNames) {
       const key = `${TOP_LEVEL_NODE}.${name}`;
       const val = result.portValues.get(key);
@@ -98,7 +109,17 @@ export function simulateCircuit(
     }
   }
 
-  // Compress
+  // Export hierarchical VCD
+  const vcd = exportVCD({
+    circuit: target.name,
+    nodes: flatCircuit.nodes,
+    topLevelInputs: inputNames,
+    topLevelOutputs: outputNames,
+    portValuesByTick,
+    ticks,
+  });
+
+  // Compress top-level signals for MCP return value
   const trace: SimulationTrace = {
     cycles: ticks,
     signals,
@@ -116,6 +137,7 @@ export function simulateCircuit(
     inputs: inputNames,
     outputs: outputNames,
     signals: compressed,
+    vcd,
     ...(steadyStateAt !== undefined ? { steadyStateAt } : {}),
   };
 }

@@ -235,11 +235,11 @@ class FastSimulatorEngineImpl implements SimulatorEngine {
   private eventQueue: NumericEventQueue | null = null;
 
   // Top-level input values (for API compatibility)
-  private topLevelInputs: FlatPortValueMap = new Map();
+  private topLevelInputs: Map<string, BitValue | BusValue> = new Map();
 
   // Cached flat state (lazily computed on getState())
   private cachedFlatSeqState: FlatSequentialState | null = null;
-  private cachedPortValues: FlatPortValueMap | null = null;
+  private cachedPortValues: Map<string, BitValue | BusValue> | null = null;
   private cacheValid = false;
 
 

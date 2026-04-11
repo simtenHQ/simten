@@ -84,7 +84,14 @@ export function registerSimulateTool(server: McpServer): void {
       if (show) {
         const preview = getPreviewServer();
         if (preview) {
-          preview.pushTraces(result);
+          // Update canvas diagram to match simulated circuit
+          preview.updateSource(read.source);
+          preview.pushTraces({
+            circuit: result.circuit,
+            ticks: result.ticks,
+            vcd: result.vcd,
+            ...(result.steadyStateAt !== undefined ? { steadyStateAt: result.steadyStateAt } : {}),
+          });
         }
       }
 
