@@ -1,0 +1,34 @@
+/**
+ * SandboxProvider — singleton sandbox context
+ *
+ * Wraps the app so all consumers share a single hidden iframe.
+ * Use `useSandboxContext()` to get the SandboxHandle.
+ */
+
+import { createContext, useContext, type ReactNode } from 'react';
+import { useSandbox, type SandboxHandle } from './useSandbox.js';
+
+const SandboxContext = createContext<SandboxHandle | null>(null);
+
+export function SandboxProvider({ children }: { children: ReactNode }) {
+  const sandbox = useSandbox();
+  return (
+    <SandboxContext.Provider value={sandbox}>
+      {children}
+    </SandboxContext.Provider>
+  );
+}
+
+// No-op handle returned before the sandbox iframe is ready (SSR / pre-mount)
+const NULL_HANDLE: SandboxHandle = {
+  compile: async () => ({ type: 'error', error: 'Sandbox not ready' }),
+  tick: async () => ({ type: 'error', error: 'Sandbox not ready' }),
+  simulate: async () => ({ type: 'error', error: 'Sandbox not ready' }),
+  reset: async () => ({ type: 'error', error: 'Sandbox not ready' }),
+  setNode: async () => ({ type: 'error', error: 'Sandbox not ready' }),
+  isReady: () => false,
+};
+
+export function useSandboxContext(): SandboxHandle {
+  return useContext(SandboxContext) ?? NULL_HANDLE;
+}

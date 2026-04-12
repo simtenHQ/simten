@@ -5,6 +5,8 @@
 	"scripts": {
 		"build": "pnpm -r build",
 		"dev": "pnpm --filter tanstack dev",
+		"dev:sandbox": "pnpm --filter @simten/sandbox dev",
+		"dev:all": "pnpm --filter tanstack dev & pnpm --filter @simten/sandbox dev",
 		"test": "pnpm -r test",
 		"lint": "pnpm -r lint",
 		"changeset": "changeset",
