@@ -23,8 +23,8 @@ import { useTheme } from "@/components/ThemeProvider";
 import Editor from "@monaco-editor/react";
 import type { OnMount, Monaco } from "@monaco-editor/react";
 import type { editor } from "monaco-editor";
-import { executeCircuitCode } from "@simten/core/circuit";
 import type { Circuit } from "@simten/core";
+import { useSandboxContext } from "@simten/ui/sandbox";
 import { CompileButton } from "./CompileButton";
 import { ErrorDisplay } from "./ErrorDisplay";
 import type { CompilationError } from "./ErrorDisplay";
@@ -100,6 +100,7 @@ export const TSEditor = forwardRef<TSEditorRef, TSEditorProps>(
     ref,
   ) {
     const { resolvedTheme } = useTheme();
+    const sandbox = useSandboxContext();
     const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
     const monacoRef = useRef<Monaco | null>(null);
 
@@ -133,19 +134,28 @@ export const TSEditor = forwardRef<TSEditorRef, TSEditorProps>(
     // ── Compilation ──
 
     const handleCompile = useCallback(
-      (options?: { silent?: boolean }) => {
+      async (options?: { silent?: boolean; _retried?: boolean }) => {
         const silent = options?.silent ?? false;
         setIsCompiling(true);
         if (!silent) setErrors([]);
         setSuccessMessage(null);
 
-        setTimeout(() => {
-          try {
-            const result = executeCircuitCode(code);
+        try {
+          const result = await sandbox.compile(code);
 
-            if (result.error) {
-              // Try to extract line info from error message
-              const lineMatch = result.error.match(/\((\d+):(\d+)\)/);
+          if ('error' in result) {
+            // 'Worker restarted' means this compile was collateral damage — the
+            // worker was killed because a *different* compile caused an infinite
+            // loop. The current code is likely valid; retry once on the fresh
+            // worker. Don't retry 'Execution timed out' — that means this
+            // specific code caused the hang, so retrying the same code is pointless.
+            if (result.error === 'Worker restarted' && silent && !options?._retried) {
+              setTimeout(() => handleCompile({ silent: true, _retried: true }), 100);
+              return;
+            }
+            // Try to extract line info from error message
+            const lineMatch = result.error.match(/\((\d+):(\d+)\)/);
+            if (!silent) {
               setErrors([
                 {
                   message: result.error,
@@ -153,36 +163,49 @@ export const TSEditor = forwardRef<TSEditorRef, TSEditorProps>(
                   column: lineMatch ? parseInt(lineMatch[2]) : 0,
                 },
               ]);
-              setIsCompiling(false);
-              return;
             }
+            return;
+          }
 
-            if (result.circuits.length === 0) {
-              if (!silent) {
-                setErrors([
-                  {
-                    message:
-                      "No circuits found. Use circuit('Name', { ... }) to define a circuit.",
-                    line: 0,
-                    column: 0,
-                  },
-                ]);
-              }
-              setIsCompiling(false);
-              return;
-            }
-
-            // Success
-            setErrors([]);
+          if (result.circuits.length === 0) {
             if (!silent) {
-              const names = result.circuits.map((c) => c.name).join(", ");
-              setSuccessMessage(
-                `Compiled ${result.circuits.length} circuit(s): ${names}`,
-              );
+              setErrors([
+                {
+                  message:
+                    "No circuits found. Use circuit('Name', { ... }) to define a circuit.",
+                  line: 0,
+                  column: 0,
+                },
+              ]);
             }
+            return;
+          }
 
-            onCompileSuccess?.(result.circuits, code, result.library);
-          } catch (e) {
+          // Build a library-like interface from the sandbox result so downstream
+          // consumers (CircuitCanvas, Verilog export) can resolve components.
+          const allCircuits = [...result.circuits, ...result.libraryCircuits];
+          const circuitMap = new Map(allCircuits.map((c) => [c.name, c]));
+          const library = {
+            resolveCircuit: (name: string) => circuitMap.get(name),
+            getAllPrimitiveNames: () =>
+              allCircuits
+                .filter((c) => c.implementation?.kind === 'primitive')
+                .map((c) => c.name),
+            getAllCircuitNames: () => Array.from(circuitMap.keys()),
+          };
+
+          // Success
+          setErrors([]);
+          if (!silent) {
+            const names = result.circuits.map((c) => c.name).join(", ");
+            setSuccessMessage(
+              `Compiled ${result.circuits.length} circuit(s): ${names}`,
+            );
+          }
+
+          onCompileSuccess?.(result.circuits, code, library);
+        } catch (e) {
+          if (!silent) {
             setErrors([
               {
                 message: e instanceof Error ? e.message : String(e),
@@ -190,12 +213,12 @@ export const TSEditor = forwardRef<TSEditorRef, TSEditorProps>(
                 column: 0,
               },
             ]);
-          } finally {
-            setIsCompiling(false);
           }
-        }, 0);
+        } finally {
+          setIsCompiling(false);
+        }
       },
-      [code, onCompileSuccess],
+      [code, onCompileSuccess, sandbox],
     );
 
     // ── Auto-compile ──
