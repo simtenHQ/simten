@@ -1,0 +1,17 @@
+{
+  "name": "@simten/sandbox",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite dev --port 3002",
+    "build": "vite build",
+    "preview": "vite preview --port 3002"
+  },
+  "dependencies": {
+    "@simten/core": "workspace:*"
+  },
+  "devDependencies": {
+    "vite": "^6.3.2",
+    "typescript": "^5.8.3"
+  }
+}

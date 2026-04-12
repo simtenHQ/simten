@@ -3,6 +3,7 @@ import { Outlet } from '@tanstack/react-router'
 import { ThemeProvider } from '../components/ThemeProvider'
 import { ThemeToggle } from '../components/ThemeToggle'
 import { RootProvider } from 'fumadocs-ui/provider/tanstack'
+import { SandboxProvider } from '@simten/ui/sandbox'
 
 import appCss from '../styles.css?url'
 
@@ -36,10 +37,12 @@ function RootComponent() {
       <body className="antialiased">
         <RootProvider>
           <ThemeProvider defaultTheme="dark">
-            <Outlet />
-            <div className="fixed bottom-4 right-4 z-50">
-              <ThemeToggle />
-            </div>
+            <SandboxProvider>
+              <Outlet />
+              <div className="fixed bottom-4 right-4 z-50">
+                <ThemeToggle />
+              </div>
+            </SandboxProvider>
           </ThemeProvider>
         </RootProvider>
         <Scripts />
