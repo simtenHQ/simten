@@ -4,9 +4,9 @@
 
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
-import { simulateCircuit } from '@simten/core/api';
 import { readCircuitSource } from '../lib/file-reader.js';
 import { getPreviewServer } from '../lib/preview-singleton.js';
+import { sandboxSimulate } from '../lib/mcp-sandbox.js';
 
 export function registerSimulateTool(server: McpServer): void {
   server.tool(
@@ -65,7 +65,7 @@ export function registerSimulateTool(server: McpServer): void {
         }
       }
 
-      const result = simulateCircuit({
+      const result = await sandboxSimulate({
         source: read.source,
         sourceName: read.sourceName,
         circuitName,
