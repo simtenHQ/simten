@@ -4,8 +4,8 @@
 
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
-import { checkCircuit, getLibrary } from '@simten/core/api';
 import { readCircuitSource } from '../lib/file-reader.js';
+import { sandboxCheck } from '../lib/mcp-sandbox.js';
 
 export function registerCheckTool(server: McpServer): void {
   server.tool(
@@ -24,11 +24,7 @@ export function registerCheckTool(server: McpServer): void {
         };
       }
 
-      const library = getLibrary();
-      const result = checkCircuit(
-        { source: read.source, sourceName: read.sourceName },
-        library
-      );
+      const result = await sandboxCheck({ source: read.source, sourceName: read.sourceName });
 
       return {
         content: [
