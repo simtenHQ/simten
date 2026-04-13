@@ -12,6 +12,7 @@ import { readFileSync, readdirSync, statSync } from 'fs';
 import { join } from 'path';
 
 const APP_SRC = join(__dirname, '..');
+const EMBED_SRC = join(__dirname, '../../../../packages/embed/src');
 
 function collectSourceFiles(dir: string): string[] {
   const files: string[] = [];
@@ -40,7 +41,10 @@ const BANNED: Array<{ pattern: RegExp; reason: string }> = [
 ];
 
 describe('sandbox invariants', () => {
-  const files = collectSourceFiles(APP_SRC);
+  const files = [
+    ...collectSourceFiles(APP_SRC),
+    ...collectSourceFiles(EMBED_SRC),
+  ];
 
   for (const { pattern, reason } of BANNED) {
     it(`no source file matches: ${pattern}`, () => {
