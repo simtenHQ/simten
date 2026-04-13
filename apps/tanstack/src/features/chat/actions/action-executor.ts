@@ -15,7 +15,7 @@ import { getIdempotencyTracker } from './idempotency-tracker';
 import { checkStaleness, createStaleResult, createCannotSimulateResult } from './staleness-checker';
 import { getSimulationThrottle, type SimulationContext } from './simulation-throttle';
 import type { SetInputAction, RunSimulationAction, ShowDiffAction, WriteCircuitAction, InsertNodeAction, GenerateHarnessAction, VerifyAssertionAction } from '../types';
-import { executeCircuitCode } from '@simten/core';
+import type { Circuit } from '@simten/core';
 import type { ValidationSnapshot } from '../types';
 
 // ============================================================================
@@ -53,6 +53,8 @@ export interface ActionExecutionContext {
   };
   /** Get current validation state (errors, warnings, canSimulate) */
   getValidationSnapshot?: () => ValidationSnapshot;
+  /** Compile code in the sandbox (safe for AI-generated code) */
+  compile?: (code: string) => Promise<{ circuits: Circuit[]; libraryCircuits: Circuit[] } | { error: string }>;
   /** Get fresh narrative context string for LLM */
   getNarrativeContext?: () => string;
   /** Get current port values from simulation */
@@ -120,9 +122,9 @@ export async function executeAction(
     };
   }
 
-  // 5. Additional validation for SHOW_DIFF
+  // 5. Additional validation for SHOW_DIFF (compiles AI-generated code in sandbox)
   if (action.type === 'SHOW_DIFF') {
-    const diffValidation = validateShowDiff(action);
+    const diffValidation = await validateShowDiff(action, context.compile);
     if (!diffValidation.valid) {
       logActionValidationFailed(action, diffValidation.reason ?? 'Unknown');
       return {
@@ -139,6 +141,7 @@ export async function executeAction(
   const staleness = checkStaleness(action, {
     getCurrentCode: context.getCurrentCode,
     sourceCodeHash: context.sourceCodeHash,
+    canSimulate: context.getValidationSnapshot?.()?.canSimulate,
   });
 
   if (staleness.isStale) {
@@ -363,48 +366,14 @@ async function executeGenerateHarness(
   action: GenerateHarnessAction & { actionId: string },
   context: ActionExecutionContext
 ): Promise<ActionResult> {
-  try {
-    const currentCode = context.getCurrentCode();
-    const result = executeCircuitCode(currentCode);
-
-    if (result.error || !result.circuit) {
-      return {
-        success: false,
-        actionId: action.actionId,
-        type: action.type,
-        reason: `Cannot generate harness: ${result.error ?? 'no circuit found'}`,
-      };
-    }
-
-    const circuit = result.circuit;
-    const hasInputs = (circuit.inputs?.length ?? 0) > 0;
-    const hasOutputs = (circuit.outputs?.length ?? 0) > 0;
-
-    if (!hasInputs && !hasOutputs) {
-      return {
-        success: false,
-        actionId: action.actionId,
-        type: action.type,
-        reason: 'Circuit does not need a harness (no interface ports)',
-      };
-    }
-
-    // With the TS builder, the LLM should generate harness code directly.
-    // TODO: Implement programmatic TS harness generation if needed.
-    return {
-      success: false,
-      actionId: action.actionId,
-      type: action.type,
-      reason: 'Harness generation for TS builder circuits should be done by the LLM producing TS code directly. Ask the LLM to wrap your circuit with Switch/Input controls and LED/Display outputs.',
-    };
-  } catch (error) {
-    return {
-      success: false,
-      actionId: action.actionId,
-      type: action.type,
-      reason: error instanceof Error ? error.message : String(error),
-    };
-  }
+  // With the TS builder, the LLM generates harness code directly as a SHOW_DIFF.
+  // This action type is kept for backwards compatibility but always defers to the LLM.
+  return {
+    success: false,
+    actionId: action.actionId,
+    type: action.type,
+    reason: 'Harness generation should be done by the LLM producing TS code directly. Ask the LLM to wrap your circuit with Switch/Input controls and LED/Display outputs.',
+  };
 }
 
 /**

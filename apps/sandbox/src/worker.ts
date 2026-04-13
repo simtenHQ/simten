@@ -8,11 +8,17 @@
  *
  * Handles: compile, simulate
  * Does NOT handle: tick, reset, set-node (those are safe — no user code)
+ *
+ * compile path — two modes:
+ *   No imports → fast path: executeCircuitCode() via new Function()
+ *   Has imports → module path: load npm packages via esm.sh Blob URL, then
+ *                              executeJsCode() with merged scope
  */
 
-import { executeCircuitCode } from '@simten/core/circuit';
+import { executeCircuitCode, executeJsCode, stripTypes } from '@simten/core/circuit';
 import { simulateCircuit } from '@simten/core/api';
 import type { Circuit } from '@simten/core';
+import { hasImportStatements, extractAndRewriteImports } from './rewrite-imports.js';
 
 type WorkerRequest =
   | { id: string; type: 'compile'; source: string }
@@ -22,12 +28,36 @@ function circuitToSerializable(c: Circuit): object {
   return JSON.parse(JSON.stringify(c));
 }
 
-self.onmessage = (event: MessageEvent) => {
-  const req = event.data as WorkerRequest;
-
+async function handleRequest(req: WorkerRequest): Promise<void> {
   if (req.type === 'compile') {
     try {
-      const result = executeCircuitCode(req.source);
+      const js = stripTypes(req.source);
+
+      let result;
+      if (!hasImportStatements(js)) {
+        // Fast path: existing new Function() + scope injection, no network
+        result = executeCircuitCode(req.source);
+      } else {
+        // Module path: load npm packages via dynamic import, merge into scope
+        const { loaderModule, localNames, codeWithoutImports } = extractAndRewriteImports(js);
+
+        let importedMod: Record<string, unknown> = {};
+        if (localNames.length > 0) {
+          const blob = new Blob([loaderModule], { type: 'text/javascript' });
+          const blobUrl = URL.createObjectURL(blob);
+          try {
+            importedMod = await import(/* @vite-ignore */ blobUrl) as Record<string, unknown>;
+          } finally {
+            URL.revokeObjectURL(blobUrl);
+          }
+        }
+
+        const extraScope = Object.fromEntries(
+          localNames.map(n => [n, importedMod[n]])
+        );
+        result = executeJsCode(codeWithoutImports, extraScope);
+      }
+
       if (result.error) {
         self.postMessage({ id: req.id, type: 'error', error: result.error });
         return;
@@ -94,4 +124,11 @@ self.onmessage = (event: MessageEvent) => {
       self.postMessage({ id: req.id, type: 'error', error: e instanceof Error ? e.message : String(e) });
     }
   }
+}
+
+self.onmessage = (event: MessageEvent) => {
+  const req = event.data as WorkerRequest;
+  handleRequest(req).catch(e => {
+    self.postMessage({ id: req.id, type: 'error', error: e instanceof Error ? e.message : String(e) });
+  });
 };

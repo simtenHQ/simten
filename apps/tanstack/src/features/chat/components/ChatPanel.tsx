@@ -23,7 +23,7 @@ import { ConfirmationModal } from './ConfirmationModal';
 import { useChatStore } from '../stores/chat-store';
 import { executeAction, applyDiff, buildConfirmationRequest, type ActionExecutionContext } from '../actions';
 import { useTutorFlow } from '../hooks/useTutorFlow';
-import { executeCircuitCode } from '@simten/core';
+import { useSandboxContext } from '@simten/ui/sandbox';
 import type { AssistantAction } from '../types';
 import type { ShowDiffAction, GenerateHarnessAction } from '../types';
 import type { ConfirmationRequest } from '../actions/confirmation-flow';
@@ -78,6 +78,8 @@ export function ChatPanel({
     sessionUsage,
   } = useChatStore();
 
+  const sandbox = useSandboxContext();
+
   // Local state
   const [showDiffAction, setShowDiffAction] = useState<ShowDiffAction | null>(null);
   const [confirmationRequest, setConfirmationRequest] = useState<ConfirmationRequest | null>(null);
@@ -98,6 +100,7 @@ export function ChatPanel({
     setNode,
     runSimulation,
     insertNode,
+    compile: sandbox.compile,
     onStatusChange: setActionStatus,
     requestConfirmation: async (confirmAction: AssistantAction) => {
       return new Promise((resolve) => {
@@ -106,7 +109,7 @@ export function ChatPanel({
         confirmationResolveRef.current = resolve;
       });
     },
-  }), [sessionId, getCurrentCode, sourceCodeHash, setCode, setNode, runSimulation, insertNode, setActionStatus]);
+  }), [sessionId, getCurrentCode, sourceCodeHash, setCode, setNode, runSimulation, insertNode, sandbox.compile, setActionStatus]);
 
   // Tutor flow hook
   const {
@@ -148,6 +151,7 @@ export function ChatPanel({
         setNode,
         runSimulation,
         insertNode,
+        compile: sandbox.compile,
         onStatusChange: setActionStatus,
         requestConfirmation: async (confirmAction: AssistantAction) => {
           return new Promise((resolve) => {
@@ -177,15 +181,8 @@ export function ChatPanel({
     if (action.type === 'SHOW_DIFF') {
       setShowDiffAction(action);
     } else if (action.type === 'GENERATE_HARNESS') {
-      // With the TS builder, harness generation is handled by the LLM
-      // producing TS code directly. Show a message instead.
-      const currentCode = getCurrentCode();
-      const result = executeCircuitCode(currentCode);
-      const circuitName = result.circuit?.name ?? (action as GenerateHarnessAction).circuitName ?? 'circuit';
-
-      console.warn(`[ChatPanel] GENERATE_HARNESS for "${circuitName}" — harness generation should be done via TS builder code from the LLM`);
-      // TODO: Implement TS builder harness generation if needed.
-      // For now, the LLM should produce harness code directly.
+      // GENERATE_HARNESS is handled by executeAction which tells the LLM to produce TS code directly.
+      // Nothing to show in the diff panel.
     }
   }, [getCurrentCode]);
 

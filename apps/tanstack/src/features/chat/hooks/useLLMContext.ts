@@ -99,8 +99,8 @@ export function useLLMContext(code: string, portValues?: ReadonlyMap<string, boo
       }
     }
 
-    // Add harness suggestion if circuit needs one
-    const harnessSuggestion = formatHarnessSuggestion(code);
+    // Add harness suggestion if circuit needs one (use already-compiled circuit from store)
+    const harnessSuggestion = formatHarnessSuggestion(circuit);
     if (harnessSuggestion) {
       narrative += '\n\n' + harnessSuggestion;
     }
