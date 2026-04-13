@@ -99,17 +99,23 @@ export function stripTypes(code: string): string {
 // ============================================================================
 
 /**
- * Execute TypeScript circuit code and extract Circuit IR.
+ * Execute pre-stripped JavaScript circuit code with an optional extra scope.
  *
- * The code is type-stripped, then run in a function scope with the
- * standard library injected. All component() calls are tracked and
- * the last one becomes the main circuit.
+ * Lower-level than executeCircuitCode: accepts JS that has already been
+ * type-stripped and has had import statements removed. Extra scope entries
+ * (e.g. npm packages loaded via dynamic import) are merged with the stdlib
+ * scope and made available as function parameters.
  *
- * @param code - TypeScript or JavaScript circuit code
+ * @param jsCode - Plain JavaScript circuit code (no TypeScript, no imports)
+ * @param extraScope - Additional names to inject alongside the stdlib scope
  * @returns Execution result with circuits and any error
  */
-export function executeCircuitCode(code: string): ExecuteResult {
+export function executeJsCode(jsCode: string, extraScope?: Record<string, unknown>): ExecuteResult {
   const { names, values } = getScope();
+
+  const allNames = extraScope ? [...names, ...Object.keys(extraScope)] : names;
+  const allValues = extraScope ? [...values, ...Object.values(extraScope)] : values;
+
   const circuitMap = new Map<string, Circuit>();
   const library: CircuitLibrary & { addCircuit(c: Circuit): void; getAllCircuitNames(): string[] } = {
     resolveCircuit: (name) => circuitMap.get(name),
@@ -121,9 +127,6 @@ export function executeCircuitCode(code: string): ExecuteResult {
   const circuits: Circuit[] = [];
 
   try {
-    // Strip TypeScript types → plain JavaScript
-    const js = stripTypes(code);
-
     // Wrap: intercept circuit()/component() calls to collect all created circuits
     const wrappedCode = `
       "use strict";
@@ -137,13 +140,13 @@ export function executeCircuitCode(code: string): ExecuteResult {
       {
         const circuit = __trackingCircuit;
         const component = __trackingCircuit;
-        ${js}
+        ${jsCode}
       }
       return __collector;
     `;
 
-    const fn = new Function(...names, wrappedCode);
-    const collected = fn(...values) as BuiltCircuit[];
+    const fn = new Function(...allNames, wrappedCode);
+    const collected = fn(...allValues) as BuiltCircuit[];
 
     for (const built of collected) {
       if (built && built.circuit) {
@@ -175,5 +178,19 @@ export function executeCircuitCode(code: string): ExecuteResult {
       error: e instanceof Error ? e.message : String(e),
     };
   }
+}
+
+/**
+ * Execute TypeScript circuit code and extract Circuit IR.
+ *
+ * The code is type-stripped, then run in a function scope with the
+ * standard library injected. All component() calls are tracked and
+ * the last one becomes the main circuit.
+ *
+ * @param code - TypeScript or JavaScript circuit code
+ * @returns Execution result with circuits and any error
+ */
+export function executeCircuitCode(code: string): ExecuteResult {
+  return executeJsCode(stripTypes(code));
 }
 

@@ -7,7 +7,7 @@
 
 export { circuit } from './circuit.js';
 export { bit, bus } from './bit-bus.js';
-export { executeCircuitCode, stripTypes, type ExecuteResult } from './execute.js';
+export { executeCircuitCode, executeJsCode, stripTypes, type ExecuteResult } from './execute.js';
 export type {
   BuiltCircuit,
   CircuitMeta,

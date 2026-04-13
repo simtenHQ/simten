@@ -28,6 +28,7 @@ import { useSandboxContext } from "@simten/ui/sandbox";
 import { CompileButton } from "./CompileButton";
 import { ErrorDisplay } from "./ErrorDisplay";
 import type { CompilationError } from "./ErrorDisplay";
+import { useTypeAcquisition } from "./useTypeAcquisition";
 import { EDITOR_TYPE_DECLARATIONS } from "./editor-types";
 
 // ============================================================================
@@ -103,6 +104,7 @@ export const TSEditor = forwardRef<TSEditorRef, TSEditorProps>(
     const sandbox = useSandboxContext();
     const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
     const monacoRef = useRef<Monaco | null>(null);
+    const [monacoInstance, setMonacoInstance] = useState<Monaco | null>(null);
 
     // Code state
     const [code, setCode] = useState<string>(() => {
@@ -113,6 +115,9 @@ export const TSEditor = forwardRef<TSEditorRef, TSEditorProps>(
       }
       return DEFAULT_CODE;
     });
+
+    // Fetch + inject TypeScript declarations for npm imports
+    useTypeAcquisition(code, monacoInstance);
 
     // Compilation state
     const [errors, setErrors] = useState<CompilationError[]>([]);
@@ -234,15 +239,28 @@ export const TSEditor = forwardRef<TSEditorRef, TSEditorProps>(
     const handleEditorMount: OnMount = (editor, monaco) => {
       editorRef.current = editor;
       monacoRef.current = monaco;
+      setMonacoInstance(monaco);
 
       // Configure TypeScript compiler options for the editor
       monaco.languages.typescript.typescriptDefaults.setCompilerOptions({
         target: monaco.languages.typescript.ScriptTarget.ESNext,
         module: monaco.languages.typescript.ModuleKind.ESNext,
+        moduleResolution: monaco.languages.typescript.ModuleResolutionKind.NodeJs,
         strict: false, // Don't require strict types — user code is casual
         noEmit: true,
         allowJs: true,
         esModuleInterop: true,
+        // Tell TypeScript where to find injected @types/* declarations
+        typeRoots: ['file:///node_modules/@types'],
+      });
+
+      // Suppress module-not-found errors for npm imports — packages are resolved
+      // at runtime via esm.sh, not locally installed. Users can import anything.
+      monaco.languages.typescript.typescriptDefaults.setDiagnosticsOptions({
+        diagnosticCodesToIgnore: [
+          2307, // Cannot find module 'X' or its corresponding type declarations
+          2792, // Cannot find module 'X'. Did you mean to set moduleResolution...
+        ],
       });
 
       // Add type declarations for the injected scope
@@ -324,7 +342,7 @@ export const TSEditor = forwardRef<TSEditorRef, TSEditorProps>(
           <Editor
             language="typescript"
             theme={resolvedTheme === "dark" ? "vs-dark" : "vs"}
-            path="circuit.ts"
+            path="file:///circuit.ts"
             value={code}
             onChange={handleCodeChange}
             beforeMount={(monaco) => {

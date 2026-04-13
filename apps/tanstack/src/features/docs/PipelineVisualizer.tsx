@@ -1,6 +1,5 @@
 
-import { useState, useMemo, lazy, Suspense } from "react";
-import { executeCircuitCode } from "@simten/core";
+import { useState, useEffect, lazy, Suspense } from "react";
 import type { Circuit } from "@simten/core";
 import {
   elaborate,
@@ -8,6 +7,7 @@ import {
 } from "@simten/core/simulator";
 import type { BuiltCircuit } from "@simten/core/circuit";
 import * as std from "@simten/core/std";
+import { useSandboxContext } from "@simten/ui/sandbox";
 
 const CircuitEmbed = lazy(() =>
   import("@simten/embed").then((m) => ({
@@ -82,43 +82,52 @@ function ConnectionArrow({ from, to }: { from: string; to: string }) {
 }
 
 export function PipelineVisualizer() {
+  const sandbox = useSandboxContext();
   const [activeTab, setActiveTab] = useState<Tab>("source");
+  const [compiled, setCompiled] = useState<
+    | null
+    | { error: string }
+    | { circuits: Circuit[]; fullAdder: Circuit; flat: Circuit; numeric: ReturnType<typeof compileForSimulation> }
+  >(null);
 
-  const compiled = useMemo(() => {
-    try {
-      // Stage 1: Execute TS code to get Circuit IR
-      const result = executeCircuitCode(FULL_ADDER_SOURCE);
-      if (result.error) return { error: result.error };
+  useEffect(() => {
+    sandbox.compile(FULL_ADDER_SOURCE).then(result => {
+      if ('error' in result) { setCompiled({ error: result.error }); return; }
 
-      const { circuits, library } = result;
-      const resolveCircuit = (name: string) => library.resolveCircuit(name);
+      try {
+        const { circuits, libraryCircuits } = result;
 
-      // Build primitive name list for elaboration
-      const prims = Object.values(std)
-        .filter((v): v is BuiltCircuit => !!v && typeof v === 'object' && 'name' in v && 'circuit' in v)
-        .map((v) => v.circuit) as Circuit[];
-      const primNames = prims.map((p) => p.name);
+        // Build resolveCircuit from sandbox-returned IR (no new Function())
+        const allCircuits = [...circuits, ...libraryCircuits];
+        const circuitMap = new Map(allCircuits.map(c => [c.name, c]));
+        const resolveCircuit = (name: string) => circuitMap.get(name);
 
-      // Stage 2: Elaborate the FullAdder
-      const fullAdder = circuits.find((c) => c.name === "FullAdder");
-      if (!fullAdder) return { error: "FullAdder not found" };
+        // Build primitive name list from stdlib (safe — no new Function())
+        const prims = Object.values(std)
+          .filter((v): v is BuiltCircuit => !!v && typeof v === 'object' && 'name' in v && 'circuit' in v)
+          .map((v) => v.circuit) as Circuit[];
+        const primNames = prims.map((p) => p.name);
 
-      const flat = elaborate(fullAdder, {
-        resolveCircuit,
-        getAllPrimitiveNames: () => primNames,
-      });
+        // Stage 2: Elaborate the FullAdder
+        const fullAdder = circuits.find((c) => c.name === "FullAdder");
+        if (!fullAdder) { setCompiled({ error: "FullAdder not found" }); return; }
 
-      // Stage 3: Compile to numeric
-      const numeric = compileForSimulation(flat, {
-        resolveCircuit,
-        getAllPrimitiveNames: () => primNames,
-      });
+        const flat = elaborate(fullAdder, { resolveCircuit, getAllPrimitiveNames: () => primNames });
 
-      return { circuits, fullAdder, flat, numeric };
-    } catch (e) {
-      return { error: String(e) };
-    }
+        // Stage 3: Compile to numeric
+        const numeric = compileForSimulation(flat, { resolveCircuit, getAllPrimitiveNames: () => primNames });
+
+        setCompiled({ circuits, fullAdder, flat, numeric });
+      } catch (e) {
+        setCompiled({ error: String(e) });
+      }
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  if (compiled === null) {
+    return <div className="rounded-xl border border-gray-700 bg-gray-900/80 p-4 text-gray-400 text-sm">Loading...</div>;
+  }
 
   if ("error" in compiled) {
     return (

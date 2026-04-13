@@ -10,7 +10,7 @@
 import { DIFF_GUARDRAILS } from '../constants';
 import type { ValidationResult } from '../types';
 import type { ShowDiffAction } from '../types';
-import { executeCircuitCode } from '@simten/core';
+import type { Circuit } from '@simten/core';
 
 // ============================================================================
 // Line Counting
@@ -50,10 +50,13 @@ export function countChangedLines(original: string, suggested: string): number {
 // SHOW_DIFF Validation
 // ============================================================================
 
+type CompileFn = (code: string) => Promise<{ circuits: Circuit[]; libraryCircuits: Circuit[] } | { error: string }>;
+
 /**
  * Validate a SHOW_DIFF action against guardrails.
+ * compile is optional — if omitted, Guard 4 (syntax check) is skipped.
  */
-export function validateShowDiff(action: ShowDiffAction): ValidationResult {
+export async function validateShowDiff(action: ShowDiffAction, compile?: CompileFn): Promise<ValidationResult> {
   // Guard 1: Require non-empty explanation
   if (DIFF_GUARDRAILS.REQUIRE_EXPLANATION) {
     if (!action.explanation?.trim()) {
@@ -86,11 +89,11 @@ export function validateShowDiff(action: ShowDiffAction): ValidationResult {
     };
   }
 
-  // Guard 4: Verify suggested code compiles
-  if (DIFF_GUARDRAILS.REQUIRE_VALID_SYNTAX) {
-    const result = executeCircuitCode(action.suggestedCode);
+  // Guard 4: Verify suggested code compiles (runs in sandbox — AI-generated code)
+  if (DIFF_GUARDRAILS.REQUIRE_VALID_SYNTAX && compile) {
+    const result = await compile(action.suggestedCode);
 
-    if (result.error) {
+    if ('error' in result) {
       return {
         valid: false,
         reason: 'Suggested code has errors',
