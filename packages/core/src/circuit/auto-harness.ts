@@ -1,12 +1,15 @@
 /**
- * Auto-harness generator for CircuitEmbed.
+ * Auto-harness generator.
  *
  * Takes a circuit with inputs/outputs and wraps it in a harness circuit
- * with Switch nodes for inputs and Led nodes for outputs.
+ * with Switch nodes for bit inputs, Input nodes for bus inputs,
+ * Led nodes for bit outputs, and HexDisplay nodes for bus outputs.
+ *
  * If the circuit has no ports (already self-contained), returns it as-is.
+ * No code execution — pure Circuit IR construction.
  */
 
-import type { Circuit, Connection, Node, PortType, ArgumentValue } from "@simten/core";
+import type { Circuit, Connection, Node, ArgumentValue } from '../types/circuit.js';
 
 let harnessCounter = 0;
 
@@ -20,7 +23,7 @@ export function autoHarness(
     return circuit;
   }
 
-  // Register the circuit in the library so the harness can reference it
+  // Register the circuit in the library so the harness can reference it by name
   if (!library.resolveCircuit(circuit.name)) {
     library.addCircuit(circuit);
   }
@@ -33,27 +36,23 @@ export function autoHarness(
   let connId = 0;
 
   // DUT node
-  const dutNode: Node = {
+  nodes.push({
     id: 'dut',
     componentRef: circuit.name,
     arguments: {},
     inputs: circuit.inputs.map(p => ({ id: `dut.${p.name}`, name: p.name, portType: p.portType })),
     outputs: circuit.outputs.map(p => ({ id: `dut.${p.name}`, name: p.name, portType: p.portType })),
     clocks: circuit.clocks.map(c => ({ id: `dut.${c.name}`, name: c.name })),
-  };
-  nodes.push(dutNode);
+  });
 
-  // Switch/Input node for each input
+  // Switch / Input node for each input port
   for (const input of circuit.inputs) {
     const isBit = input.portType.kind === 'bit';
     const args: Record<string, ArgumentValue> = {};
-    if (!isBit && input.portType.kind === 'bus') {
-      args.width = input.portType.width;
-    }
-    if (initialInputs && input.name in initialInputs) {
-      args.value = initialInputs[input.name];
-    }
-    const switchNode: Node = {
+    if (!isBit && input.portType.kind === 'bus') args.width = input.portType.width;
+    if (initialInputs && input.name in initialInputs) args.value = initialInputs[input.name];
+
+    nodes.push({
       id: input.name,
       label: input.name,
       componentRef: isBit ? 'Switch' : 'Input',
@@ -61,9 +60,7 @@ export function autoHarness(
       inputs: [],
       outputs: [{ id: `${input.name}.out`, name: 'out', portType: input.portType }],
       clocks: [],
-    };
-    nodes.push(switchNode);
-
+    });
     connections.push({
       id: `c${connId++}`,
       source: { nodeId: input.name, portName: 'out' },
@@ -72,14 +69,13 @@ export function autoHarness(
     });
   }
 
-  // Led/HexDisplay node for each output
+  // Led / HexDisplay node for each output port
   for (const output of circuit.outputs) {
     const isBit = output.portType.kind === 'bit';
     const outArgs: Record<string, ArgumentValue> = {};
-    if (!isBit && output.portType.kind === 'bus') {
-      outArgs.width = output.portType.width;
-    }
-    const ledNode: Node = {
+    if (!isBit && output.portType.kind === 'bus') outArgs.width = output.portType.width;
+
+    nodes.push({
       id: output.name,
       label: output.name,
       componentRef: isBit ? 'Led' : 'HexDisplay',
@@ -87,9 +83,7 @@ export function autoHarness(
       inputs: [{ id: `${output.name}.in`, name: 'in', portType: output.portType }],
       outputs: [],
       clocks: [],
-    };
-    nodes.push(ledNode);
-
+    });
     connections.push({
       id: `c${connId++}`,
       source: { nodeId: 'dut', portName: output.name },
@@ -98,7 +92,7 @@ export function autoHarness(
     });
   }
 
-  const harness: Circuit = {
+  return {
     id: harnessId,
     name: harnessName,
     parameters: [],
@@ -111,6 +105,4 @@ export function autoHarness(
     implementation: { kind: 'composite' },
     metadata: { description: `Auto-generated harness for ${circuit.name}` },
   };
-
-  return harness;
 }

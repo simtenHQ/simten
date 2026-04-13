@@ -17,6 +17,8 @@ import type { Circuit } from '../types/circuit';
 import { useCircuitStore } from './circuit-store';
 import { useCircuitLibraryStore } from './circuit-library-store';
 import { createDrillDownViewCircuit } from '../../canvas/drill-down-view';
+import { autoHarness } from '@simten/core/circuit';
+import { Switch, Button, Led, Input, Output, HexDisplay } from '@simten/core/std';
 
 /**
  * Hash function for circuit code version tracking
@@ -154,8 +156,20 @@ export const useCircuitPreviewStore = create<CircuitPreviewStore>()(
       const selectedCircuit = compiledCircuits[selectedCircuitIndex];
       console.log('[CircuitPreviewStore] Applying circuit:', selectedCircuit.name, selectedCircuit.nodes.length, 'nodes');
 
-      // Apply circuit to CircuitStore (auto-layout handled by CircuitCanvas)
-      useCircuitStore.getState().setCircuit(selectedCircuit);
+      // Ensure harness components (Switch, Led, etc.) are in the library
+      const libStore = useCircuitLibraryStore.getState();
+      for (const c of [Switch, Button, Led, Input, Output, HexDisplay]) {
+        if (!libStore.resolveCircuit(c.name)) libStore.addCircuit(c.circuit);
+      }
+
+      // Wrap with Switch/Led harness so inputs/outputs are interactive on canvas
+      const harnessed = autoHarness(selectedCircuit, {
+        resolveCircuit: (name) => useCircuitLibraryStore.getState().resolveCircuit(name),
+        addCircuit: (c) => useCircuitLibraryStore.getState().addCircuit(c),
+      });
+
+      // Apply to CircuitStore (auto-layout handled by CircuitCanvas)
+      useCircuitStore.getState().setCircuit(harnessed);
 
       console.log('[CircuitPreviewStore] Circuit applied successfully');
     },
