@@ -16,10 +16,10 @@ import type {
   CircuitMetrics,
   SimulationTrace,
   ComponentInterface,
+  Circuit,
 } from '@simten/core';
 import type { BitValue, BusValue } from '@simten/ui/editor/types';
 import type { FlatPortValueMap } from '@simten/core/simulator';
-import { executeCircuitCode } from '@simten/core';
 
 // ============================================================================
 // Severity Ordering
@@ -537,17 +537,13 @@ export function formatCurrentPortValues(portValues: FlatPortValueMap): string {
 // ============================================================================
 
 /**
- * Analyze circuit code and format harness suggestion if needed.
- * Uses executeCircuitCode to compile and inspect the circuit's interface.
+ * Analyze a compiled circuit and format a harness suggestion if needed.
  * Returns null if no harness is needed.
  */
-export function formatHarnessSuggestion(code: string): string | null {
-  const result = executeCircuitCode(code);
-  if (result.error || !result.circuit) {
+export function formatHarnessSuggestion(circuit: Circuit | null | undefined): string | null {
+  if (!circuit) {
     return null;
   }
-
-  const circuit = result.circuit;
   const inputs = circuit.inputs ?? [];
   const outputs = circuit.outputs ?? [];
 

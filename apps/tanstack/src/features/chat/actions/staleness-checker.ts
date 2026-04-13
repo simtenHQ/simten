@@ -5,7 +5,6 @@
  * Prevents acting on outdated circuit code if user typed during streaming.
  */
 
-import { executeCircuitCode } from '@simten/core';
 import { hashSourceCode, hasSourceCodeChanged } from './action-normalizer';
 import type { AssistantAction, ActionResult } from '../types';
 
@@ -18,6 +17,8 @@ export interface StalenessCheckContext {
   getCurrentCode: () => string;
   /** The hash of code when the action was created */
   sourceCodeHash?: string;
+  /** Whether the current circuit is simulatable (from validation store) */
+  canSimulate?: boolean;
 }
 
 export interface StalenessCheckResult {
@@ -70,11 +71,9 @@ export function checkStaleness(
     }
   }
 
-  // For RUN_SIMULATION: verify circuit is simulatable
+  // For RUN_SIMULATION: verify circuit is simulatable (use pre-compiled validation state)
   if (action.type === 'RUN_SIMULATION') {
-    const result = executeCircuitCode(currentCode);
-
-    if (result.error || !result.circuit) {
+    if (context.canSimulate === false) {
       return {
         isStale: false,
         canSimulate: false,

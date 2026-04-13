@@ -5,8 +5,9 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { circuit, bit, bus, executeCircuitCode } from "@simten/core/circuit";
+import { circuit, bit, bus } from "@simten/core/circuit";
 import { simulate, type SimulationHandle } from "@simten/core/sim";
+import { useSandboxContext } from "@simten/ui/sandbox";
 import { And, Xor, Or, Not, DFlipFlop, Register, Constant, Mux } from "@simten/core/std";
 
 export const Route = createFileRoute("/demos/playground")({
@@ -237,6 +238,7 @@ function ShiftRegisterDemo() {
 }
 
 function LiveCodeDemo() {
+  const sandbox = useSandboxContext();
   const [code, setCode] = useState(`const MyGate = circuit('MyGate', {
   in: { a: bit, b: bit },
   out: { and_out: bit, or_out: bit, xor_out: bit },
@@ -253,25 +255,29 @@ function LiveCodeDemo() {
   const [inputA, setInputA] = useState(0);
   const [inputB, setInputB] = useState(0);
 
-  const run = useCallback(() => {
-    const execResult = executeCircuitCode(code);
-    if (execResult.error) {
-      setResult({ outputs: {}, error: execResult.error });
+  const run = useCallback(async () => {
+    const compileResult = await sandbox.compile(code);
+    if ('error' in compileResult) {
+      setResult({ outputs: {}, error: compileResult.error });
       return;
     }
-    if (!execResult.circuit) {
+    const circuit = compileResult.circuits[compileResult.circuits.length - 1];
+    if (!circuit) {
       setResult({ outputs: {}, error: 'No circuit found' });
       return;
     }
-    const sim = simulate(execResult.builtCircuits[execResult.builtCircuits.length - 1]);
-    sim.set({ a: inputA, b: inputB });
+    const tickResult = await sandbox.tick({ a: inputA, b: inputB });
+    if ('error' in tickResult) {
+      setResult({ outputs: {}, error: tickResult.error });
+      return;
+    }
     const outputs: Record<string, number> = {};
-    for (const port of execResult.circuit.outputs) {
-      outputs[port.name] = sim.get(port.name as any);
+    for (const port of circuit.outputs ?? []) {
+      const v = tickResult.portValues[port.name];
+      outputs[port.name] = typeof v === 'boolean' ? (v ? 1 : 0) : (v ?? 0);
     }
     setResult({ outputs });
-    sim.dispose();
-  }, [code, inputA, inputB]);
+  }, [code, inputA, inputB, sandbox]);
 
   return (
     <div className="border border-border rounded-lg p-4">
