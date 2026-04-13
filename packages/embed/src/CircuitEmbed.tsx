@@ -7,7 +7,7 @@
  *
  * For React users: pass a BuiltCircuit object.
  * For web component users: <circuit-embed code="..."> goes through the
- * web component bridge which calls executeCircuitCode() first.
+ * web component bridge which sandboxes compilation via an iframe.
  */
 
 import { forwardRef } from "react";

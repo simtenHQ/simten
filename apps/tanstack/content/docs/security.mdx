@@ -7,19 +7,21 @@ description: How Simten isolates untrusted circuit code in both the browser and 
 
 Circuit code is arbitrary TypeScript. When you share a circuit or ask Claude to simulate one, that code executes on your machine. Simten runs it in two separate sandboxes — one for the browser, one for the MCP server — so untrusted code cannot access your credentials, your filesystem, or your app's state.
 
-**Core invariant:** In: arbitrary TypeScript string. Out: plain JSON only. No functions, Maps, or class instances cross any boundary. Any dangerous code executes only inside the sandbox and its results are serialised to safe primitives before leaving.
+**Core invariant:** In: arbitrary TypeScript string. Out: plain JSON only. No functions, Maps, or class instances cross any boundary. Any dangerous code executes only inside the sandbox, and its results are serialised to safe primitives before leaving.
 
 ---
 
 ## Browser Sandbox
 
-When you type circuit code in the editor, it is compiled and simulated inside a hidden `<iframe>` served from a separate origin (`sandbox.simten.dev` in production, `localhost:3002` in development). The main app (`simten.dev` / `localhost:3001`) never executes user code directly.
+When you type circuit code in the editor, it compiles and simulates inside a hidden `<iframe>` served from a separate origin (`sandbox.simten.dev` in production, `localhost:3002` in development). The main app (`simten.dev` / `localhost:3001`) never executes user code directly — not even via `eval` or `new Function()`.
+
+This applies to every code-execution surface: the editor, the live playground, and `<circuit-embed>` web components. All three route through the same sandbox.
 
 ### Two levels of isolation
 
 **Origin isolation (iframe)**
 
-The iframe is served from a different origin. The browser enforces a hard boundary: code inside `sandbox.simten.dev` cannot read `simten.dev` cookies, `localStorage`, auth tokens, or DOM. This is not a JavaScript check — it is enforced by the browser's same-origin policy at the OS level.
+The iframe is served from a different origin. The browser enforces a hard boundary: code inside `sandbox.simten.dev` cannot read `simten.dev` cookies, `localStorage`, auth tokens, or DOM. This is enforced by the browser's same-origin policy at the OS level — not a JavaScript check.
 
 ```html
 <iframe
@@ -33,23 +35,61 @@ The iframe is served from a different origin. The browser enforces a hard bounda
 
 **Thread isolation (Web Worker)**
 
-The iframe spawns a Web Worker for all user code execution (`executeCircuitCode`, `simulateCircuit`). Workers get their own OS thread. An infinite loop (`while(true){}`) blocks only the worker thread — the main app and the iframe event loop remain responsive.
+The iframe spawns a Web Worker for all user code execution. Workers get their own OS thread. An infinite loop (`while(true){}`) blocks only the worker thread — the main app and iframe event loop remain fully responsive.
 
 ```
-localhost:3001 (main app)
-└── localhost:3002 (hidden iframe — origin boundary)
+simten.dev (main app)
+└── sandbox.simten.dev (hidden iframe — origin boundary)
     └── worker.ts (Web Worker — thread boundary)
-        └── executeCircuitCode(userSource)  ← untrusted code runs here
+        └── new Function(userCode)  ← untrusted code runs here only
 ```
+
+### Network restriction (CSP)
+
+The sandbox server sends a `Content-Security-Policy` header that restricts all outbound network requests from within the iframe:
+
+```
+Content-Security-Policy: connect-src 'self' https://esm.sh;
+```
+
+Code running inside the sandbox worker cannot call `fetch`, `XMLHttpRequest`, or open WebSockets to arbitrary hosts. Only `self` (the sandbox origin itself) and `https://esm.sh` (the npm CDN used for package imports) are allowed. This prevents a compromised or malicious circuit from exfiltrating source code or making requests to attacker-controlled servers.
+
+This header is set in both the dev server (`vite.config.ts`) and production (`public/_headers` for Cloudflare Pages).
 
 ### Timeout and recovery
 
-The iframe sets a 5-second timeout per request. If the worker doesn't respond:
+The sandbox sets a 5-second timeout per request. If the worker doesn't respond:
+
 1. `worker.terminate()` kills the hung thread
 2. A fresh worker is spawned immediately
-3. Any requests queued while the worker was hung are resolved with `'Worker restarted'` so the caller can retry with the current (likely fixed) code
+3. Any requests pending against the old worker are resolved with `'Worker restarted'` so the caller can retry
 
-The main app never hangs. The iframe recovers transparently.
+The main app never hangs. The sandbox recovers transparently.
+
+### postMessage boundary
+
+All communication between the main app and the sandbox crosses a `postMessage` boundary. Only plain JSON is sent in either direction. The `compile` response returns `Circuit[]` (plain IR objects with no executable code) — not `BuiltCircuit` instances, which carry function references. The main frame reconstructs a `BuiltCircuit` from the IR after the boundary is crossed.
+
+### npm imports
+
+Circuit code can use `import` statements to load npm packages:
+
+```ts
+import fc from 'fast-check';
+
+const MyCircuit = circuit('MyCircuit', { ... });
+```
+
+When the worker detects import statements, it:
+
+1. Extracts them and rewrites bare npm specifiers to `https://esm.sh/<package>`
+2. Builds a loader ES module and dynamically imports it via a Blob URL
+3. Merges the resolved package values into the scope passed to the circuit executor
+4. Revokes the Blob URL immediately after loading
+
+`@simten/*` imports are silently skipped — those names are already in scope and don't require a network fetch.
+
+This all happens inside the sandbox worker. The main frame never touches the npm packages.
 
 ### What is and isn't blocked
 
@@ -60,11 +100,9 @@ The main app never hangs. The iframe recovers transparently.
 | `window` object from user code | Blocked — runs in Worker (no `window`) |
 | `localStorage` from user code | Blocked — `localStorage is not defined` in Worker |
 | Infinite loop blocking the UI | Blocked — Worker on separate OS thread, 5s timeout |
-| HTTP requests / crypto mining | Not blocked by origin isolation alone — no credentials reachable; CSP will be added with npm import support |
-
-### postMessage boundary
-
-All communication between the main app and the sandbox crosses a `postMessage` boundary. Only plain JSON is sent. The `compile` response returns `Circuit[]` (plain IR objects), not `BuiltCircuit` instances (which contain function references). The simulator is reconstructed from IR inside the iframe.
+| HTTP requests to arbitrary hosts | Blocked — `connect-src` CSP on sandbox server |
+| Source code exfiltration via `fetch` | Blocked — `connect-src` CSP on sandbox server |
+| `new Function()` in main frame | Blocked — enforced by automated invariant tests (see below) |
 
 ---
 
@@ -80,7 +118,7 @@ MCP server process (full env, full fs)
     ├── env: {}              — no API keys, no HOME, no PATH
     ├── --permission         — Node.js permission model
     ├── --allow-fs-read=<bundle-path>   — only the bundle itself
-    └── executeCircuitCode(userSource)  ← untrusted code runs here
+    └── new Function(userCode)  ← untrusted code runs here only
 ```
 
 ### Empty environment
@@ -98,9 +136,9 @@ Even if circuit code tries to read environment variables, there is nothing there
 The child is started with Node.js's built-in permission model. With no `--allow-fs-read` paths specified (except the bundle itself), all filesystem reads throw `ERR_ACCESS_DENIED`:
 
 ```
-fs.readFileSync('/etc/passwd')       → ERR_ACCESS_DENIED
-fs.readFileSync('~/.ssh/id_rsa')     → ERR_ACCESS_DENIED
-fs.readFileSync('~/.aws/credentials')→ ERR_ACCESS_DENIED
+fs.readFileSync('/etc/passwd')        → ERR_ACCESS_DENIED
+fs.readFileSync('~/.ssh/id_rsa')      → ERR_ACCESS_DENIED
+fs.readFileSync('~/.aws/credentials') → ERR_ACCESS_DENIED
 ```
 
 This is enforced at the Node.js runtime level — JavaScript overrides cannot bypass it.
@@ -108,33 +146,22 @@ This is enforced at the Node.js runtime level — JavaScript overrides cannot by
 With no `--allow-child-process`, subprocess spawning is also blocked:
 
 ```
-child_process.exec('curl ...')  → ERR_ACCESS_DENIED
+child_process.exec('curl ...')   → ERR_ACCESS_DENIED
 child_process.spawn('wget ...')  → ERR_ACCESS_DENIED
 ```
 
-This blocks the `curl`-based exfiltration path (read a file, pipe it to an attacker's server) even if somehow the fs read succeeded.
-
 ### Self-contained bundle
 
-The `--permission` model requires explicitly listing every file the child is allowed to read. Since the child needs to load `@simten/core` and its dependencies, naively listing all module paths would be fragile (especially with pnpm symlinks).
+The `--permission` model requires explicitly listing every file the child is allowed to read. Since the child needs `@simten/core` and its dependencies, naively listing all module paths would be fragile (especially with pnpm symlinks).
 
-Instead, `sandbox-child.ts` is bundled at build time with esbuild into a single self-contained `sandbox-child.cjs` file. All dependencies are inlined — no external module reads are needed at runtime. The only `--allow-fs-read` needed is the path to the bundle itself.
-
-```
-pnpm build
-# → tsc -b (compiles MCP TypeScript)
-# → esbuild src/lib/sandbox-child.ts --bundle --platform=node --format=cjs
-#         --outfile=dist/lib/sandbox-child.cjs
-```
-
-Note: Node.js 23.6 documents that the main script is "automatically allowed" under `--permission`, but the CJS loader uses `readFileSync` internally, which is subject to the permission check. An explicit `--allow-fs-read=<bundle-path>` is required.
+Instead, `sandbox-child.ts` is bundled at build time with esbuild into a single self-contained `sandbox-child.cjs` file. All dependencies are inlined — no external module reads are needed at runtime. The only `--allow-fs-read` needed is the path to that one bundle file.
 
 ### Lifecycle
 
-- Spawned lazily on the first `simulate_circuit` or `check_circuit` call
-- Reused across all subsequent calls in the same MCP session (~1–5ms IPC overhead, invisible in Claude's response latency)
+- Spawned lazily on the first tool call
+- Reused across all subsequent calls in the same MCP session (~1–5ms IPC overhead)
 - Killed and respawned on timeout (30s) or unexpected exit
-- All requests pending against a dead child are resolved with an error immediately — no hanging
+- All requests pending against a dead child are resolved with an error immediately
 
 ### What is and isn't blocked
 
@@ -146,17 +173,15 @@ Note: Node.js 23.6 documents that the main script is "automatically allowed" und
 | Read any file outside the bundle | Blocked — `--permission` |
 | `child_process.exec('curl ...')` | Blocked — `--permission`, no `--allow-child-process` |
 | Infinite loop / hung simulation | Blocked — 30s timeout, kill + respawn |
-| HTTP requests / crypto mining | Not blocked by `--permission` — but `env:{}` means no credentials to send; 30s timeout limits mining window |
+| HTTP requests / crypto mining | Not kernel-restricted — but `env:{}` means no credentials to exfiltrate, and the 30s timeout limits mining windows |
 
 ---
 
-## Known gaps
+## Automated invariant tests
 
-**Network access from both sandboxes** is not kernel-restricted. `http.request`, `net.Socket`, and `fetch` still work inside both the browser Worker and the MCP child process. This is acceptable because:
+To prevent accidental re-introduction of unsafe code execution patterns in the main frame, the test suite includes invariant checks that scan all source files in `apps/tanstack/src` and `packages/embed/src`:
 
-1. `env: {}` means the child has no credentials to exfiltrate
-2. `--permission` means no files can be read to exfiltrate
-3. The 30s (MCP) and 5s (browser) timeouts limit crypto mining windows
-4. The browser worker runs on `localhost:3002` with no cookies, no tokens, no sensitive storage
+- No `new Function(` calls — the underlying primitive behind all dynamic code execution
+- No imports of `executeCircuitCode` or `executeJsCode` — the core functions that call `new Function()`
 
-Network restriction will be tightened when npm import support (`esm.sh`) is added — a `Content-Security-Policy: connect-src 'self' https://esm.sh` header on the sandbox server will whitelist only the CDN.
+These tests run in CI and fail immediately if either pattern appears outside the sandbox worker.

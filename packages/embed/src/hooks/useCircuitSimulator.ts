@@ -58,7 +58,7 @@ export interface UseCircuitSimulatorOptions {
  * Circuit simulator hook.
  *
  * Takes a BuiltCircuit and returns reactive simulation state + actions.
- * For dynamic code compilation, use executeCircuitCode() from core/circuit directly.
+ * For dynamic code compilation, use sandbox.compile() + buildFromIR() from core/circuit.
  */
 export function useCircuitSimulator(
   circuit: BuiltCircuit,
