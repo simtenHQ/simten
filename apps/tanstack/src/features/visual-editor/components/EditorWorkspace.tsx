@@ -24,9 +24,9 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { TSEditor, type TSEditorRef } from "@/features/code-editor/TSEditor";
 import { TestTube, Bot, Download } from "lucide-react";
 import { exportVerilog } from "@simten/core/verilog";
-/** Check if a circuit name is an auto-generated harness */
+/** Check if a circuit name is an auto-generated harness (autoHarness appends 'Demo') */
 function isHarnessName(name: string): boolean {
-  return name.endsWith('Harness');
+  return name.endsWith('Demo') || name.endsWith('Harness');
 }
 import { ChatPanel, useChatStore, useLLMContext } from "@/features/chat";
 import { useMCPConnection } from "@/hooks/useMCPConnection";
@@ -131,7 +131,7 @@ export function EditorWorkspace({ theme = "light" }: EditorWorkspaceProps) {
 
     // If this is an auto-generated harness, export the real circuit instead
     if (isHarnessName(currentCircuit.name)) {
-      const baseName = currentCircuit.name.replace(/Harness$/, '');
+      const baseName = currentCircuit.name.replace(/(Demo|Harness)$/, '');
       const realCircuit = lib.resolveCircuit(baseName);
       if (realCircuit) currentCircuit = realCircuit;
     }
@@ -227,12 +227,13 @@ export function EditorWorkspace({ theme = "light" }: EditorWorkspaceProps) {
   // Handle compilation in split mode
   const handleCompile = useCallback(
     (circuits: Circuit[], code: string, library?: { resolveCircuit(name: string): Circuit | undefined; getAllPrimitiveNames(): string[]; getAllCircuitNames(): string[] }) => {
-      setCompiledCircuits(circuits, code);
-
-      // Store library so Canvas, simulation, and Verilog export can all use it
+      // Set library FIRST — applyToCanvas fires inside setCompiledCircuits and needs
+      // the full library (including user circuits) before adding harness components.
       if (library) {
         useCircuitLibraryStore.getState().setLibrary(library);
       }
+
+      setCompiledCircuits(circuits, code);
     },
     [setCompiledCircuits],
   );
