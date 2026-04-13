@@ -10,7 +10,7 @@ import type { Circuit } from "@simten/core";
 import type { BuiltCircuit } from "@simten/core/circuit";
 import { Switch, Button, Led, Input, Output, HexDisplay } from "@simten/core/std";
 import { useCircuitSession } from "@simten/ui/canvas";
-import { autoHarness } from "../auto-harness";
+import { autoHarness } from "@simten/core/circuit";
 
 const TOP_LEVEL_NODE = "__top__";
 

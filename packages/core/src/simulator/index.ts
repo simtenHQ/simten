@@ -305,10 +305,10 @@ class FastSimulatorEngineImpl implements SimulatorEngine {
       return;
     }
 
-    // Find the node
-    const node = this.flatCircuit.nodes.find(
-      n => n.id === name || n.id.endsWith('.' + name)
-    );
+    // Find the node — prefer exact ID match over suffix match
+    // (suffix match can collide, e.g. switch "a" vs internal node "dut.a")
+    const node = this.flatCircuit.nodes.find(n => n.id === name)
+      ?? this.flatCircuit.nodes.find(n => n.id.endsWith('.' + name));
     if (!node) return;
 
     // If it has sequential state (ROM, RAM, Register, DFlipFlop) → write state
