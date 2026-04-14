@@ -252,6 +252,8 @@ export interface CircuitMetadata {
    * 4. sinks
    */
   outputDependency?: 'state-only' | 'state+inputs' | 'input-dependent';
+  /** Whether this circuit's eval/onTick can be synthesized to Verilog */
+  synthesizable?: boolean;
 }
 
 // ============================================================================

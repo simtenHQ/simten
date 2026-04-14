@@ -14,6 +14,8 @@
  */
 
 import type { ArgumentValue } from '../types/circuit.js';
+import { tryEmitFromEval } from './eval-synth.js';
+import { getCircuitEval } from '../circuit/eval-registry.js';
 
 export interface PrimitiveWires {
   /** Map of input port name → wire/port name in Verilog */
@@ -617,12 +619,15 @@ export function emitPrimitive(ctx: PrimitiveContext): { lines: string[]; declara
         declarations: [],
       };
 
-    // ── Unknown ──────────────────────────────────────────────────────
-    default:
+    // ── Unknown — try eval-synth auto-transpilation ────────────────
+    default: {
+      const synthResult = tryEmitFromEval(ctx, getCircuitEval);
+      if (synthResult) return synthResult;
       return {
         lines: [`// WARNING: Unsupported primitive "${primitiveType}" (${id})`],
         declarations: [],
       };
+    }
   }
 }
 
@@ -658,6 +663,7 @@ export function isSequentialPrimitive(primitiveType: string): boolean {
 export function isBasePrimitive(primitiveType: string): boolean {
   // Test by calling emitPrimitive with dummy wires — if it returns
   // a WARNING comment, it's not a base primitive.
+  // NOTE: This now also checks eval-synth fallback via the default case.
   const dummyWires: PrimitiveWires = { inputs: new Map(), outputs: new Map() };
   const result = emitPrimitive({
     nodeId: '__test__',
@@ -667,6 +673,5 @@ export function isBasePrimitive(primitiveType: string): boolean {
     clockName: 'clk',
     target: 'simulation',
   });
-  // The default case emits "// WARNING: Unsupported primitive"
   return !result.lines.some(l => l.includes('WARNING: Unsupported primitive'));
 }

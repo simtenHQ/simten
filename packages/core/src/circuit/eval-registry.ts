@@ -13,6 +13,12 @@ export interface EvalEntry {
   evalFn: (inputs: Record<string, any>) => Record<string, any>;
   stateKeys?: string[];
   onTickFn?: (inputsAndState: Record<string, any>) => Record<string, any>;
+  /** Cached synthesis AST (populated lazily by eval-synth on first export) */
+  _synthAST?: any;
+  /** Whether the eval passed synthesis validation */
+  _synthValid?: boolean;
+  /** Synthesis validation errors (for diagnostics) */
+  _synthErrors?: string[];
 }
 
 const registry = new Map<string, EvalEntry>();
