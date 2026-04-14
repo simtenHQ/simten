@@ -76,6 +76,7 @@ interface TSEditorProps {
       getAllPrimitiveNames: () => string[];
       getAllCircuitNames: () => string[];
     },
+    sandboxResult?: { circuits: Circuit[]; libraryCircuits: Circuit[]; portValues: Record<string, number | boolean> },
   ) => void;
   autoCompileEnabled?: boolean;
   showHeader?: boolean;
@@ -146,7 +147,7 @@ export const TSEditor = forwardRef<TSEditorRef, TSEditorProps>(
         setSuccessMessage(null);
 
         try {
-          const result = await sandbox.compile(code);
+          const result = await sandbox.compile(code, 'editor-main');
 
           if ('error' in result) {
             // 'Worker restarted' means this compile was collateral damage — the
@@ -208,7 +209,7 @@ export const TSEditor = forwardRef<TSEditorRef, TSEditorProps>(
             );
           }
 
-          onCompileSuccess?.(result.circuits, code, library);
+          onCompileSuccess?.(result.circuits, code, library, result);
         } catch (e) {
           if (!silent) {
             setErrors([

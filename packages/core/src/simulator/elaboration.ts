@@ -166,8 +166,52 @@ export function elaborate(
     }
   }
 
-  // Start elaboration from top level
-  flattenCircuit(circuit, '', hierarchy, new Set([circuit.name]));
+  // Start elaboration from top level.
+  // Only treat as primitive if there are truly no sub-nodes.
+  // (Drill-down view circuits are marked primitive but have internal nodes.)
+  if (circuit.implementation.kind === 'primitive' && circuit.nodes.length === 0) {
+    // Top-level circuit is itself a primitive (has eval, no sub-nodes).
+    // Create a single FlatNode for it and wire top-level ports through.
+    const nodeId = circuit.name;
+    nodes.push({
+      id: nodeId,
+      primitiveType: circuit.name,
+      arguments: {},
+      inputs: circuit.inputs.map(p => ({
+        id: `${nodeId}.${p.name}`, name: p.name, portType: p.portType, nodeId: nodeId,
+      })),
+      outputs: circuit.outputs.map(p => ({
+        id: `${nodeId}.${p.name}`, name: p.name, portType: p.portType, nodeId: nodeId,
+      })),
+      clocks: circuit.clocks.map(c => ({
+        id: `${nodeId}.${c.name}`, name: c.name, nodeId: nodeId,
+      })),
+      dependents: [],
+      inputSources: [],
+    });
+    hierarchy.primitives.push(nodeId);
+
+    // Wire top-level inputs → node inputs
+    for (const input of circuit.inputs) {
+      connections.push({
+        id: `${TOP_LEVEL_NODE}.${input.name}->${nodeId}.${input.name}`,
+        source: { nodeId: TOP_LEVEL_NODE, portName: input.name },
+        target: { nodeId: nodeId, portName: input.name },
+        portType: input.portType,
+      });
+    }
+    // Wire node outputs → top-level outputs
+    for (const output of circuit.outputs) {
+      connections.push({
+        id: `${nodeId}.${output.name}->${TOP_LEVEL_NODE}.${output.name}`,
+        source: { nodeId: nodeId, portName: output.name },
+        target: { nodeId: TOP_LEVEL_NODE, portName: output.name },
+        portType: output.portType,
+      });
+    }
+  } else {
+    flattenCircuit(circuit, '', hierarchy, new Set([circuit.name]));
+  }
 
   // Post-process: Stitch connections through composite port boundaries
   const stitchedConnections = stitchCompositeConnections(

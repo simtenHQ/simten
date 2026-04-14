@@ -398,11 +398,14 @@ describe('tryEmitFromEval', () => {
     expect(result).toBeNull();
   });
 
-  it('returns null for sequential with state', () => {
-    // Register has stateKeys
+  it('transpiles sequential Register with eval + onTick', () => {
+    // Register has stateKeys — now handled by eval-synth
     const ctx = makeCtx('Register', { data: 'w_d', we: 'w_we' }, { q: 'w_q' });
     const result = tryEmitFromEval(ctx, getCircuitEval);
-    expect(result).toBeNull();
+    expect(result).not.toBeNull();
+    const text = result!.lines.join('\n');
+    expect(text).toContain('assign'); // eval outputs
+    expect(text).toContain('always @(posedge'); // onTick
   });
 });
 
@@ -461,6 +464,65 @@ describe('end-to-end eval-synth export', () => {
     expect(verilog).not.toContain('WARNING: Unsupported primitive');
     expect(verilog).toContain('assign');
     expect(verilog).toContain('endmodule');
+  });
+});
+
+// ── End-to-end: top-level primitive → simulate ──────────────────────────
+
+describe('top-level primitive simulation', () => {
+  it('elaborates and simulates a Doubler with eval', async () => {
+    const { elaborate } = await import('../../simulator/elaboration.js');
+    const { createSimulator } = await import('../../simulator/index.js');
+
+    const Doubler = circuit('TestDoubler', {
+      in: { a: bus(8) },
+      out: { result: bus(16) },
+      eval: ({ a }) => ({ result: (a << 1) >>> 0 }),
+    });
+
+    const lib = {
+      resolveCircuit: (name: string) => name === 'TestDoubler' ? Doubler.circuit : undefined,
+      getAllPrimitiveNames: () => ['TestDoubler'],
+    };
+
+    const flat = elaborate(Doubler.circuit, lib);
+    expect(flat.nodes.length).toBe(1);
+    expect(flat.nodes[0].primitiveType).toBe('TestDoubler');
+
+    const sim = createSimulator(flat, { componentLibrary: lib });
+    sim.setNode('a', 5);
+    sim.runCombinational();
+    const vals = sim.getPortValues();
+    expect(vals.get('__top__.result')).toBe(10);
+  });
+
+  it('elaborates and simulates a Register with state', async () => {
+    const { elaborate } = await import('../../simulator/elaboration.js');
+    const { createSimulator } = await import('../../simulator/index.js');
+    const { reg } = await import('../../circuit/bit-bus.js');
+
+    const MyReg = circuit('TestSimReg', {
+      in: { data: bus(8), we: bit },
+      out: { q: bus(8) },
+      state: { value: reg(8) },
+      eval: ({ value }) => ({ q: value as number }),
+      onTick: ({ data, we, value }) => ({ value: we ? (data as number) : (value as number) }),
+    });
+
+    const lib = {
+      resolveCircuit: (name: string) => name === 'TestSimReg' ? MyReg.circuit : undefined,
+      getAllPrimitiveNames: () => ['TestSimReg'],
+    };
+
+    const flat = elaborate(MyReg.circuit, lib);
+    expect(flat.nodes.length).toBe(1);
+
+    const sim = createSimulator(flat, { componentLibrary: lib });
+    sim.setNode('data', 42);
+    sim.setNode('we', 1);
+    sim.tick(); // clock edge: value ← 42
+    const vals = sim.getPortValues();
+    expect(vals.get('__top__.q')).toBe(42);
   });
 });
 

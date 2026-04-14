@@ -86,8 +86,12 @@ export {
 export { executeCircuitCode } from './circuit/execute.js';
 export type { ExecuteResult } from './circuit/execute.js';
 export { circuit } from './circuit/circuit.js';
-export { bit, bus } from './circuit/bit-bus.js';
+export { bit, bus, reg, mem } from './circuit/bit-bus.js';
 export type { BuiltCircuit, CircuitConfig } from './circuit/types.js';
+export { autoHarness } from './circuit/auto-harness.js';
+export { isSequentialCircuit } from './circuit/is-sequential.js';
+export { getCircuitEval, registerCircuitEval, getAllCircuitEvals } from './circuit/eval-registry.js';
+export type { EvalEntry } from './circuit/eval-registry.js';
 
 // ============================================================================
 // Analysis Types

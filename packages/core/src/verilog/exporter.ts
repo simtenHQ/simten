@@ -53,7 +53,7 @@ export function exportVerilogFlat(
 ): string {
   const opts = { ...DEFAULT_OPTIONS, ...options };
   const flatCircuit = elaborate(circuit, library, false, { expandReferences: true });
-  return emitFlatModule(circuit, flatCircuit, opts);
+  return emitFlatModule(circuit, flatCircuit, library, opts);
 }
 
 /**
@@ -77,6 +77,7 @@ export function exportVerilog(
 function emitFlatModule(
   circuit: Circuit,
   flat: FlatCircuit,
+  library: CircuitLibrary,
   opts: Required<VerilogExportOptions>,
 ): string {
   const moduleName = opts.topModuleName || sanitizeId(circuit.name);
@@ -316,3 +317,4 @@ function emitFlatModule(
 
   return lines.join('\n');
 }
+

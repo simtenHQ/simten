@@ -22,41 +22,16 @@ import { motion, AnimatePresence } from "framer-motion";
 
 import type { InspectorFrame } from "./types";
 import { createDrillDownViewCircuit } from "./drill-down-view";
-import {
-  createSimulatorFromCircuit,
-  SimulationSession,
-} from "@simten/core/simulator";
-import type { CircuitLibrary } from "@simten/core/simulator";
-import type { Circuit } from "@simten/core";
+import type { CircuitLibrary, SimulatorEngine } from "@simten/core/simulator";
+import { createSimulatorFromCircuit } from "@simten/core/simulator";
+import type { Circuit, BitValue, BusValue } from "@simten/core";
+import { isSequentialCircuit } from "@simten/core/circuit";
 
 import { CircuitCanvas } from "./CircuitCanvas";
 import { ClockControls } from "./ClockControls";
-import { useSimulationSession } from "./hooks/useSimulationSession";
 import { NODE_TYPES, EDGE_TYPES } from "./node-types";
 import type { NodeData } from "../nodes";
-
-// ── Sequential detection ──
-
-function hasSequentialCircuits(
-  circuit: Circuit | null,
-  resolveCircuit: (name: string) => Circuit | undefined,
-  visited: Set<string> = new Set(),
-): boolean {
-  if (!circuit) return false;
-  if (visited.has(circuit.name)) return false;
-  visited.add(circuit.name);
-  for (const node of circuit.nodes) {
-    const componentDef = resolveCircuit(node.componentRef);
-    if (!componentDef) continue;
-    if (componentDef.clocks.length > 0 || componentDef.state.length > 0)
-      return true;
-    if (componentDef.implementation.kind === "composite") {
-      if (hasSequentialCircuits(componentDef, resolveCircuit, visited))
-        return true;
-    }
-  }
-  return false;
-}
+import { useSandboxContext } from "../sandbox/SandboxProvider";
 
 // ── Inner canvas for a single inspector level ──
 
@@ -79,7 +54,7 @@ function InspectorCanvas({
   );
 
   const isSequential = useMemo(
-    () => hasSequentialCircuits(viewCircuit, componentLibrary.resolveCircuit),
+    () => isSequentialCircuit(viewCircuit, componentLibrary.resolveCircuit),
     [viewCircuit, componentLibrary],
   );
 
@@ -105,68 +80,133 @@ function InspectorCanvas({
     [componentLibrary, onPushLevel],
   );
 
-  // ── Simulation via session ──
-  const [session, setSession] = useState<SimulationSession | null>(null);
+  // ── Simulation: prefer sandbox, fall back to local simulator ──
+  const sandbox = useSandboxContext();
+  const [portValues, setPortValues] = useState<Map<string, BitValue | BusValue>>(new Map());
+  const [useSandbox, setUseSandbox] = useState(false);
+  const localEngineRef = useRef<SimulatorEngine | null>(null);
+
+  // Unique slot ID per drill-down instance (supports nested drill-downs)
+  const slotIdRef = useRef<string>('');
+  if (!slotIdRef.current) {
+    slotIdRef.current = `drill-${typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2)}`;
+  }
+  const slotId = slotIdRef.current;
+
+  // Cleanup slot on unmount
+  useEffect(() => {
+    return () => {
+      if (useSandbox) sandbox.dispose(slotId).catch(() => {});
+    };
+  }, [sandbox, slotId, useSandbox]);
 
   useEffect(() => {
-    try {
-      const engine = createSimulatorFromCircuit(viewCircuit, componentLibrary);
-      engine.runCombinational();
-      const s = new SimulationSession(engine, { isSequential });
-      setSession(s);
-      return () => s.dispose();
-    } catch (e) {
-      console.warn("[InspectorCanvas] Simulator init failed:", e);
-      setSession(null);
+    // Send the drill-down view circuit to the sandbox for simulation.
+    // The sandbox already has eval functions from the source compile.
+    const allLib: Circuit[] = [];
+    // Collect all circuits from the library
+    const primNames = componentLibrary.getAllPrimitiveNames();
+    for (const name of primNames) {
+      const c = componentLibrary.resolveCircuit(name);
+      if (c) allLib.push(c);
     }
-  }, [viewCircuit, componentLibrary, isSequential]);
 
-  const sim = useSimulationSession(session);
+    sandbox.compileIR(viewCircuit, allLib, slotId).then(result => {
+      if ('error' in result) {
+        // Fall back to local simulator (for embed contexts where no source was compiled)
+        try {
+          const engine = createSimulatorFromCircuit(viewCircuit, componentLibrary);
+          engine.runCombinational();
+          localEngineRef.current = engine;
+          setUseSandbox(false);
+          const pvMap = new Map<string, BitValue | BusValue>();
+          for (const [k, v] of engine.getPortValues()) {
+            pvMap.set(k, v);
+          }
+          setPortValues(pvMap);
+        } catch (e) {
+          console.warn("[InspectorCanvas] Both sandbox and local failed:", e);
+        }
+        return;
+      }
+      setUseSandbox(true);
+      const pvMap = new Map<string, BitValue | BusValue>();
+      for (const [k, v] of Object.entries(result.portValues)) {
+        pvMap.set(k, v);
+      }
+      setPortValues(pvMap);
+    });
+  }, [viewCircuit, componentLibrary, sandbox, slotId]);
 
   const handleToggle = useCallback(
     (nodeId: string) => {
-      if (!session) return;
       const outKey = `${nodeId}.out`;
-      const currentValue = sim.portValues.get(outKey);
-      session.setNode(nodeId, !currentValue);
-      session.runCombinational();
+      const currentValue = portValues.get(outKey);
+      sandbox.setNode(nodeId, !currentValue as number | boolean, slotId).then(result => {
+        if ('error' in result) return;
+        const pvMap = new Map<string, BitValue | BusValue>();
+        for (const [k, v] of Object.entries(result.portValues)) pvMap.set(k, v);
+        setPortValues(pvMap);
+      });
     },
-    [session, sim.portValues],
+    [sandbox, portValues],
   );
 
   const handleNumericChange = useCallback(
     (nodeId: string, newValue: number) => {
-      if (!session) return;
-      session.setNode(nodeId, newValue);
-      session.runCombinational();
+      sandbox.setNode(nodeId, newValue, slotId).then(result => {
+        if ('error' in result) return;
+        const pvMap = new Map<string, BitValue | BusValue>();
+        for (const [k, v] of Object.entries(result.portValues)) pvMap.set(k, v);
+        setPortValues(pvMap);
+      });
     },
-    [session],
+    [sandbox],
   );
+
+  // Simple tick/reset for clock controls
+  const handleTick = useCallback(() => {
+    sandbox.tick(undefined, slotId).then(result => {
+      if ('error' in result) return;
+      const pvMap = new Map<string, BitValue | BusValue>();
+      for (const [k, v] of Object.entries(result.portValues)) pvMap.set(k, v);
+      setPortValues(pvMap);
+    });
+  }, [sandbox]);
+
+  const handleReset = useCallback(() => {
+    sandbox.reset(slotId).then(result => {
+      if ('error' in result) return;
+      const pvMap = new Map<string, BitValue | BusValue>();
+      for (const [k, v] of Object.entries(result.portValues)) pvMap.set(k, v);
+      setPortValues(pvMap);
+    });
+  }, [sandbox]);
 
   return (
     <div className="relative h-full w-full">
       {isSequential && (
         <ClockControls
           floating
-          cycle={sim.cycle}
-          historyLength={sim.history.length}
-          historyIndex={sim.historyIndex}
-          isRunning={sim.isRunning}
-          isViewingPast={sim.isViewingPast}
-          onStep={sim.tick}
-          onRun={() => sim.startAutoRun(5, { displayRate: 5 })}
-          onPause={sim.stopAutoRun}
-          onReset={sim.reset}
-          onStepBack={sim.stepBack}
-          onStepForward={sim.stepForward}
+          cycle={0}
+          historyLength={0}
+          historyIndex={-1}
+          isRunning={false}
+          isViewingPast={false}
+          onStep={handleTick}
+          onRun={() => {}}
+          onPause={() => {}}
+          onReset={handleReset}
+          onStepBack={() => null}
+          onStepForward={() => null}
         />
       )}
 
       <CircuitCanvas
         circuit={viewCircuit}
         componentLibrary={componentLibrary}
-        portValues={sim.portValues as Map<string, boolean | number>}
-        sequentialState={sim.sequentialState}
+        portValues={portValues as Map<string, boolean | number>}
+        sequentialState={null}
         onToggleNode={handleToggle}
         onSetNodeValue={handleNumericChange}
         onNodeDoubleClick={handleNodeDoubleClick}

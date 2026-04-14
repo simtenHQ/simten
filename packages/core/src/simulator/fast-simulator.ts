@@ -19,6 +19,35 @@ import { EVALUATORS, type EvalContext } from './evaluators/index.js';
 /** Maximum iterations before assuming unstable feedback loop */
 const MAX_PROPAGATION_ITERATIONS = 10000;
 
+/** WeakMap to unwrap Proxy back to underlying Map after onTick mutation */
+const PROXY_TO_MAP = new WeakMap<object, Map<number, number>>();
+
+/**
+ * Wrap a Map in a Proxy for array-indexed onTick mutation.
+ * Creates a copy so mutations don't affect current state.
+ */
+function wrapMapForOnTick(map: Map<number, number>): any {
+  const copy = new Map(map);
+  const proxy = new Proxy(copy, {
+    get(target, prop) {
+      if (typeof prop === 'string' && /^\d+$/.test(prop)) {
+        return target.get(Number(prop)) ?? 0;
+      }
+      const val = (target as any)[prop];
+      return typeof val === 'function' ? val.bind(target) : val;
+    },
+    set(target, prop, value) {
+      if (typeof prop === 'string' && /^\d+$/.test(prop)) {
+        target.set(Number(prop), value);
+        return true;
+      }
+      return false;
+    },
+  });
+  PROXY_TO_MAP.set(proxy, copy);
+  return proxy;
+}
+
 /** Scratch buffer for old output values (reused to avoid allocation) */
 const oldValuesScratch = new Int32Array(64);
 
@@ -270,10 +299,19 @@ export function updateSequentialStates(
     if (currentState != null && typeof currentState === 'object' && !(currentState instanceof Map)) {
       for (const key of onTick.stateKeys) obj[key] = (currentState as any)[key];
     } else if (currentState != null && onTick.stateKeys.length === 1) {
-      obj[onTick.stateKeys[0]] = currentState;
+      // Wrap Map in Proxy for array-indexable access in onTick: memory[addr] = value
+      if (currentState instanceof Map) {
+        obj[onTick.stateKeys[0]] = wrapMapForOnTick(currentState);
+      } else {
+        obj[onTick.stateKeys[0]] = currentState;
+      }
     }
     const result = onTick.fn(obj);
-    const nextState: PrimitiveState = onTick.stateKeys.length === 1 ? result[onTick.stateKeys[0]] : result;
+    let nextState: PrimitiveState = onTick.stateKeys.length === 1 ? result[onTick.stateKeys[0]] : result;
+    // Unwrap Proxy back to Map if needed
+    if (nextState != null && typeof nextState === 'object' && PROXY_TO_MAP.has(nextState)) {
+      nextState = PROXY_TO_MAP.get(nextState)!;
+    }
 
     seqState.nextState[nodeIdx] = nextState;
   }

@@ -137,17 +137,42 @@ function nextId(state: SandboxState): string {
 // Hook
 // ============================================================================
 
+export interface CompileIRResult {
+  portValues: Record<string, number | boolean>;
+}
+
+/** Serialized eval entry used to transfer eval functions to the sandbox */
+export interface EvalSource {
+  evalSource: string;
+  onTickSource?: string;
+  inputNames: string[];
+  outputNames: string[];
+  stateKeys?: string[];
+}
+
+/** Slot IDs are arbitrary strings — use any unique identifier per simulation context. */
+export type SimSlot = string;
+
 export interface SandboxHandle {
-  compile(source: string): Promise<CompileResult | SandboxError>;
-  tick(inputs?: Record<string, number | boolean>): Promise<TickResult | SandboxError>;
+  compile(source: string, slot?: SimSlot): Promise<CompileResult | SandboxError>;
+  /**
+   * Compile from Circuit IR (e.g. auto-harnessed circuit).
+   * Optional evalSources map transfers eval functions from the caller's context.
+   * If omitted, inherits eval functions from any previously-compiled slot.
+   */
+  compileIR(circuit: any, libraryCircuits: any[], slot: SimSlot, options?: { evalSources?: Record<string, EvalSource> }): Promise<CompileIRResult | SandboxError>;
+  tick(inputs?: Record<string, number | boolean>, slot?: SimSlot): Promise<TickResult | SandboxError>;
   simulate(params: {
     source?: string;
     ticks: number;
     inputs?: Record<string, number | boolean>;
     memoryData?: Record<string, Record<string, number>>;
+    slot?: SimSlot;
   }): Promise<SimulateResult | SandboxError>;
-  reset(): Promise<ResetResult | SandboxError>;
-  setNode(nodeId: string, value: number | boolean): Promise<SetNodeResult | SandboxError>;
+  reset(slot?: SimSlot): Promise<ResetResult | SandboxError>;
+  setNode(nodeId: string, value: number | boolean | Map<number, number>, slot?: SimSlot): Promise<SetNodeResult | SandboxError>;
+  /** Free a slot's simulator + library when no longer needed (e.g. embed unmount). */
+  dispose(slot: SimSlot): Promise<void>;
   isReady(): boolean;
 }
 
@@ -258,8 +283,8 @@ export function useSandbox(): SandboxHandle {
   );
 
   const compile = useCallback(
-    async (source: string): Promise<CompileResult | SandboxError> => {
-      const result = await send<{ type: 'compiled' } & CompileResult>({ type: 'compile', source });
+    async (source: string, slot: SimSlot = 'default'): Promise<CompileResult | SandboxError> => {
+      const result = await send<{ type: 'compiled' } & CompileResult>({ type: 'compile', source, slot });
       if ('error' in result) return result as SandboxError;
       const r = result as { type: 'compiled' } & CompileResult;
       return { circuits: r.circuits, libraryCircuits: r.libraryCircuits, portValues: r.portValues };
@@ -267,9 +292,25 @@ export function useSandbox(): SandboxHandle {
     [send],
   );
 
+  const compileIR = useCallback(
+    async (circuit: any, libraryCircuits: any[], slot: SimSlot, options?: { evalSources?: Record<string, EvalSource> }): Promise<CompileIRResult | SandboxError> => {
+      const result = await send<{ type: 'compiled-ir' } & CompileIRResult>({
+        type: 'compile-ir',
+        circuit,
+        libraryCircuits,
+        slot,
+        evalSources: options?.evalSources,
+      });
+      if ('error' in result) return result as SandboxError;
+      const r = result as { type: 'compiled-ir' } & CompileIRResult;
+      return { portValues: r.portValues };
+    },
+    [send],
+  );
+
   const tick = useCallback(
-    async (inputs?: Record<string, number | boolean>): Promise<TickResult | SandboxError> => {
-      const result = await send<{ type: 'ticked' } & TickResult>({ type: 'tick', inputs });
+    async (inputs?: Record<string, number | boolean>, slot: SimSlot = 'default'): Promise<TickResult | SandboxError> => {
+      const result = await send<{ type: 'ticked' } & TickResult>({ type: 'tick', inputs, slot });
       if ('error' in result) return result as SandboxError;
       const r = result as { type: 'ticked' } & TickResult;
       return { portValues: r.portValues, cycle: r.cycle };
@@ -298,16 +339,16 @@ export function useSandbox(): SandboxHandle {
     [send],
   );
 
-  const reset = useCallback(async (): Promise<ResetResult | SandboxError> => {
-    const result = await send<{ type: 'reset' } & ResetResult>({ type: 'reset' });
+  const reset = useCallback(async (slot: SimSlot = 'default'): Promise<ResetResult | SandboxError> => {
+    const result = await send<{ type: 'reset' } & ResetResult>({ type: 'reset', slot });
     if ('error' in result) return result as SandboxError;
     const r = result as { type: 'reset' } & ResetResult;
     return { portValues: r.portValues };
   }, [send]);
 
   const setNode = useCallback(
-    async (nodeId: string, value: number | boolean): Promise<SetNodeResult | SandboxError> => {
-      const result = await send<{ type: 'set-node' } & SetNodeResult>({ type: 'set-node', nodeId, value });
+    async (nodeId: string, value: number | boolean | Map<number, number>, slot: SimSlot = 'default'): Promise<SetNodeResult | SandboxError> => {
+      const result = await send<{ type: 'set-node' } & SetNodeResult>({ type: 'set-node', nodeId, value, slot });
       if ('error' in result) return result as SandboxError;
       const r = result as { type: 'set-node' } & SetNodeResult;
       return { portValues: r.portValues };
@@ -315,7 +356,14 @@ export function useSandbox(): SandboxHandle {
     [send],
   );
 
+  const dispose = useCallback(
+    async (slot: SimSlot): Promise<void> => {
+      await send({ type: 'dispose', slot });
+    },
+    [send],
+  );
+
   const isReady = useCallback(() => stateRef.current.ready, []);
 
-  return { compile, tick, simulate, reset, setNode, isReady };
+  return { compile, compileIR, tick, simulate, reset, setNode, dispose, isReady };
 }

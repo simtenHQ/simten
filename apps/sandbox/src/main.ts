@@ -21,20 +21,33 @@
 import {
   createSimulator,
   elaborate,
-} from '@simten/core/simulator';
-import type { Circuit } from '@simten/core';
-import type { BitValue, BusValue } from '@simten/core/simulator';
+  executeCircuitCode,
+} from '@simten/core';
+import type { Circuit, BitValue, BusValue } from '@simten/core';
+import { registerCircuitEval } from '@simten/core/circuit';
+
+/** Serialized eval entry — source strings reconstructed via new Function() */
+interface EvalSource {
+  evalSource: string;
+  onTickSource?: string;
+  inputNames: string[];
+  outputNames: string[];
+  stateKeys?: string[];
+}
 
 // ============================================================================
 // Types
 // ============================================================================
 
+/** Each simulation lives in a named slot. Slots are independent (own simulator, library, source). */
 type SandboxRequest =
-  | { id: string; type: 'compile'; source: string }
-  | { id: string; type: 'tick'; inputs?: Record<string, number | boolean> }
-  | { id: string; type: 'simulate'; source?: string; ticks: number; inputs?: Record<string, number | boolean>; memoryData?: Record<string, Record<string, number>> }
-  | { id: string; type: 'reset' }
-  | { id: string; type: 'set-node'; nodeId: string; value: number | boolean };
+  | { id: string; type: 'compile'; source: string; slot?: string }
+  | { id: string; type: 'compile-ir'; circuit: Circuit; libraryCircuits: Circuit[]; slot: string; evalSources?: Record<string, EvalSource> }
+  | { id: string; type: 'tick'; inputs?: Record<string, number | boolean>; slot?: string }
+  | { id: string; type: 'simulate'; source?: string; ticks: number; inputs?: Record<string, number | boolean>; memoryData?: Record<string, Record<string, number>>; slot?: string }
+  | { id: string; type: 'reset'; slot?: string }
+  | { id: string; type: 'set-node'; nodeId: string; value: number | boolean | Map<number, number>; slot?: string }
+  | { id: string; type: 'dispose'; slot: string };
 
 // ============================================================================
 // Worker management
@@ -95,9 +108,25 @@ function delegateToWorker(msg: object & { id: string }): Promise<object> {
 // Active simulation state (held between ticks)
 // ============================================================================
 
-let activeSimulator: ReturnType<typeof createSimulator> | null = null;
-let activeSource: string = '';
-let activeLibrary: { resolveCircuit(name: string): Circuit | undefined } | null = null;
+// Each slot has its own simulator + library + source — fully independent.
+// Slot IDs are supplied by the client. Legacy clients (no slot) use 'default'.
+interface SlotState {
+  simulator: ReturnType<typeof createSimulator> | null;
+  library: { resolveCircuit(name: string): Circuit | undefined; addCircuit?(c: Circuit): void } | null;
+  source: string;
+}
+
+const slots = new Map<string, SlotState>();
+const DEFAULT_SLOT = 'default';
+
+function getSlot(id: string): SlotState {
+  let s = slots.get(id);
+  if (!s) {
+    s = { simulator: null, library: null, source: '' };
+    slots.set(id, s);
+  }
+  return s;
+}
 
 // ============================================================================
 // Helpers
@@ -134,7 +163,7 @@ function respondError(id: string, error: string) {
 // Message handlers
 // ============================================================================
 
-async function handleCompile(id: string, source: string) {
+async function handleCompile(id: string, source: string, slotId: string = DEFAULT_SLOT) {
   // Worker compiles source → returns Circuit IR (plain JSON, no functions)
   const workerResult = await delegateToWorker({ id, type: 'compile', source }) as {
     type: string;
@@ -157,28 +186,28 @@ async function handleCompile(id: string, source: string) {
   }
 
   try {
-    // Build library from returned IR so elaborate() can resolve components
-    const circuitMap = new Map<string, Circuit>();
-    for (const c of [...circuits, ...libraryCircuits]) {
-      circuitMap.set(c.name, c);
+    // Re-execute source on iframe main thread to populate eval-registry.
+    // Safe: worker already proved the code terminates (no infinite loop).
+    // The iframe main thread IS inside the sandbox — not the app's main frame.
+    const reExecResult = executeCircuitCode(source);
+    if (reExecResult.error) {
+      respondError(id, reExecResult.error);
+      return;
     }
-    const library = {
-      resolveCircuit: (name: string) => circuitMap.get(name),
-      getAllPrimitiveNames: () =>
-        [...circuitMap.values()]
-          .filter(c => c.implementation?.kind === 'primitive')
-          .map(c => c.name),
-      getAllCircuitNames: () => [...circuitMap.keys()],
-    };
 
-    // Create simulator from IR on main thread (safe — no user code)
-    const target = circuits[circuits.length - 1];
+    const library = reExecResult.library;
+    for (const c of libraryCircuits) {
+      library.addCircuit(c);
+    }
+
+    const target = reExecResult.circuit ?? circuits[circuits.length - 1];
     const flatCircuit = elaborate(target, library);
     const sim = createSimulator(flatCircuit, { componentLibrary: library });
 
-    activeSimulator = sim;
-    activeSource = source;
-    activeLibrary = library;
+    const slot = getSlot(slotId);
+    slot.simulator = sim;
+    slot.library = library;
+    slot.source = source;
 
     const portValues = portValuesToObject(sim.getPortValues());
 
@@ -193,18 +222,19 @@ async function handleCompile(id: string, source: string) {
   }
 }
 
-function handleTick(id: string, inputs?: Record<string, number | boolean>) {
-  if (!activeSimulator) {
-    respondError(id, 'No circuit compiled. Call compile first.');
+function handleTick(id: string, inputs?: Record<string, number | boolean>, slotId: string = DEFAULT_SLOT) {
+  const sim = slots.get(slotId)?.simulator;
+  if (!sim) {
+    respondError(id, `No circuit compiled for slot '${slotId}'. Call compile first.`);
     return;
   }
   try {
-    if (inputs) applyInputs(activeSimulator, inputs);
-    const result = activeSimulator.tick();
+    if (inputs) applyInputs(sim, inputs);
+    const result = sim.tick();
     respond(id, {
       type: 'ticked',
       portValues: portValuesToObject(result.portValues),
-      cycle: activeSimulator.getMetrics().totalTicks,
+      cycle: sim.getMetrics().totalTicks,
     });
   } catch (e) {
     respondError(id, e instanceof Error ? e.message : String(e));
@@ -217,8 +247,9 @@ async function handleSimulate(
   source?: string,
   inputs?: Record<string, number | boolean>,
   memoryData?: Record<string, Record<string, number>>,
+  slotId: string = DEFAULT_SLOT,
 ) {
-  const sourceToUse = source ?? activeSource;
+  const sourceToUse = source ?? slots.get(slotId)?.source ?? '';
   if (!sourceToUse) {
     respondError(id, 'No circuit compiled. Provide source or call compile first.');
     return;
@@ -237,30 +268,103 @@ async function handleSimulate(
   parent.postMessage({ ...result }, '*');
 }
 
-function handleReset(id: string) {
-  if (!activeSimulator) {
-    respondError(id, 'No circuit compiled.');
+function handleReset(id: string, slotId: string = DEFAULT_SLOT) {
+  const sim = slots.get(slotId)?.simulator;
+  if (!sim) {
+    respondError(id, `No circuit compiled for slot '${slotId}'.`);
     return;
   }
   try {
-    activeSimulator.reset();
-    const portValues = portValuesToObject(activeSimulator.getPortValues());
+    sim.reset();
+    const portValues = portValuesToObject(sim.getPortValues());
     respond(id, { type: 'reset', portValues });
   } catch (e) {
     respondError(id, e instanceof Error ? e.message : String(e));
   }
 }
 
-function handleSetNode(id: string, nodeId: string, value: number | boolean) {
-  if (!activeSimulator) {
-    respondError(id, 'No circuit compiled.');
+function handleSetNode(id: string, nodeId: string, value: number | boolean | Map<number, number>, slotId: string = DEFAULT_SLOT) {
+  const sim = slots.get(slotId)?.simulator;
+  if (!sim) {
+    respondError(id, `No circuit compiled for slot '${slotId}'.`);
     return;
   }
   try {
-    activeSimulator.setNode(nodeId, value as BitValue | BusValue);
-    activeSimulator.runCombinational();
-    const portValues = portValuesToObject(activeSimulator.getPortValues());
+    // Accept Map values for ROM/RAM memory loading
+    sim.setNode(nodeId, value as any);
+    sim.runCombinational();
+    const portValues = portValuesToObject(sim.getPortValues());
     respond(id, { type: 'set-node', portValues });
+  } catch (e) {
+    respondError(id, e instanceof Error ? e.message : String(e));
+  }
+}
+
+function handleDispose(id: string, slotId: string) {
+  slots.delete(slotId);
+  respond(id, { type: 'disposed' });
+}
+
+/**
+ * Compile from Circuit IR (not source code).
+ * Used for the auto-harnessed circuit — the harness is built client-side
+ * as Circuit IR and sent here for simulation.
+ * Uses the library from the last executeCircuitCode (has eval functions).
+ */
+function handleCompileIR(id: string, circuit: Circuit, libraryCircuits: Circuit[], slotId: string, evalSources?: Record<string, EvalSource>) {
+  try {
+    // If evalSources are provided, reconstruct the functions and register them.
+    // This is how the embed transfers eval functions from the main frame to the sandbox.
+    if (evalSources) {
+      for (const [name, info] of Object.entries(evalSources)) {
+        try {
+          const evalFn = new Function('return (' + info.evalSource + ')')() as (inputs: Record<string, any>) => Record<string, any>;
+          const onTickFn = info.onTickSource
+            ? new Function('return (' + info.onTickSource + ')')() as (inputs: Record<string, any>) => Record<string, any>
+            : undefined;
+          registerCircuitEval(name, {
+            inputNames: info.inputNames,
+            outputNames: info.outputNames,
+            evalFn,
+            onTickFn,
+            stateKeys: info.stateKeys,
+          });
+        } catch (e) {
+          console.warn(`[sandbox] Failed to register eval for '${name}':`, e);
+        }
+      }
+    }
+
+    // Find or build a library. If any slot has one (from source compile), reuse it.
+    // Otherwise build a fresh library just for this compile.
+    let lib: { resolveCircuit(name: string): Circuit | undefined; addCircuit?(c: Circuit): void } | null = null;
+    for (const s of slots.values()) {
+      if (s.library) { lib = s.library; break; }
+    }
+    if (!lib) {
+      // Build a library from the provided circuits
+      const circuitMap = new Map<string, Circuit>();
+      lib = {
+        resolveCircuit: (name) => circuitMap.get(name),
+        addCircuit: (c: Circuit) => { circuitMap.set(c.name, c); },
+      };
+    }
+
+    // Add all provided circuits to the library
+    for (const c of libraryCircuits) {
+      if (lib.addCircuit) lib.addCircuit(c);
+    }
+    if (lib.addCircuit) lib.addCircuit(circuit);
+
+    const flatCircuit = elaborate(circuit, lib);
+    const sim = createSimulator(flatCircuit, { componentLibrary: lib });
+
+    const slot = getSlot(slotId);
+    slot.simulator = sim;
+    slot.library = lib;
+
+    const portValues = portValuesToObject(sim.getPortValues());
+    respond(id, { type: 'compiled-ir', portValues });
   } catch (e) {
     respondError(id, e instanceof Error ? e.message : String(e));
   }
@@ -276,19 +380,25 @@ self.addEventListener('message', (event: MessageEvent) => {
 
   switch (req.type) {
     case 'compile':
-      handleCompile(req.id, req.source);
+      handleCompile(req.id, req.source, req.slot);
+      break;
+    case 'compile-ir':
+      handleCompileIR(req.id, req.circuit, req.libraryCircuits, req.slot, req.evalSources);
       break;
     case 'tick':
-      handleTick(req.id, req.inputs);
+      handleTick(req.id, req.inputs, req.slot);
       break;
     case 'simulate':
-      handleSimulate(req.id, req.ticks, req.source, req.inputs, req.memoryData);
+      handleSimulate(req.id, req.ticks, req.source, req.inputs, req.memoryData, req.slot);
       break;
     case 'reset':
-      handleReset(req.id);
+      handleReset(req.id, req.slot);
       break;
     case 'set-node':
-      handleSetNode(req.id, req.nodeId, req.value);
+      handleSetNode(req.id, req.nodeId, req.value, req.slot);
+      break;
+    case 'dispose':
+      handleDispose(req.id, req.slot);
       break;
   }
 });

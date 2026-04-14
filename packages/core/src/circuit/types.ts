@@ -79,8 +79,8 @@ export type PortValues<M> = {
   [K in keyof M]: number;
 };
 
-/** State value types: number (bus), boolean (bit), Map (memory), or string (text buffers) */
-export type StateValue = number | boolean | Map<number, number> | string;
+/** State value types: number (bus), boolean (bit), Map (memory), string (text buffers), or new declarative types */
+export type StateValue = number | boolean | Map<number, number> | string | import('./bit-bus.js').RegState | import('./bit-bus.js').MemState;
 
 /** State shape — plain object where each field is a state value */
 export type StateShape = Record<string, StateValue>;
@@ -135,7 +135,7 @@ export interface CircuitConfig<
   nodes?: Nodes;
   nodeArgs?: { [K in keyof Nodes]?: Record<string, ArgumentValue> };
   connect?: (arg: ConnectArg<Ins, Outs, Nodes>) => ConnectionDef[];
-  eval?: (inputs: PortValues<Ins> & Partial<S>) => PortValues<Outs>;
+  eval?: (inputs: PortValues<Ins> & S) => PortValues<Outs>;
   state?: S;
   onTick?: (inputsAndState: PortValues<Ins> & S) => S;
   meta?: CircuitMeta;
