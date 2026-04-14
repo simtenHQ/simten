@@ -49,6 +49,7 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "acorn": "^8.14.1",
     "sucrase": "^3.35.1"
   },
   "devDependencies": {
