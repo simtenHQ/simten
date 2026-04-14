@@ -40,15 +40,28 @@ const SANDBOX_ORIGIN: string =
 // Types
 // ============================================================================
 
+/**
+ * State of nodes on a peripheral's bus — exposed across the sandbox boundary
+ * so the UI can render displays, consoles, NIC FIFOs, etc.
+ *
+ * Values are whatever the simulator stores for each node: number | boolean |
+ * Map<number, number> | string. The sandbox only snapshots state for nodes
+ * tagged (via circuit `meta.synthesizable: false`) or wired directly to such
+ * a node — the sim analog of memory-mapped I/O.
+ */
+export type PeripheralState = Record<string, unknown>;
+
 export interface CompileResult {
   circuits: Circuit[];
   libraryCircuits: Circuit[];
   portValues: Record<string, number | boolean>;
+  peripheralState?: PeripheralState;
 }
 
 export interface TickResult {
   portValues: Record<string, number | boolean>;
   cycle: number;
+  peripheralState?: PeripheralState;
 }
 
 export interface SimulateResult {
@@ -61,10 +74,12 @@ export interface SimulateResult {
 
 export interface ResetResult {
   portValues: Record<string, number | boolean>;
+  peripheralState?: PeripheralState;
 }
 
 export interface SetNodeResult {
   portValues: Record<string, number | boolean>;
+  peripheralState?: PeripheralState;
 }
 
 export interface SandboxError {
@@ -74,10 +89,13 @@ export interface SandboxError {
 
 export type SandboxResult =
   | ({ type: 'compiled' } & CompileResult)
+  | ({ type: 'compiled-ir' } & { portValues: Record<string, number | boolean>; peripheralState?: PeripheralState })
   | ({ type: 'ticked' } & TickResult)
+  | ({ type: 'ticked-n' } & TickResult)
   | ({ type: 'simulated' } & SimulateResult)
   | ({ type: 'reset' } & ResetResult)
   | ({ type: 'set-node' } & SetNodeResult)
+  | ({ type: 'disposed' } & { })
   | ({ type: 'error' } & SandboxError);
 
 // ============================================================================
@@ -139,6 +157,7 @@ function nextId(state: SandboxState): string {
 
 export interface CompileIRResult {
   portValues: Record<string, number | boolean>;
+  peripheralState?: PeripheralState;
 }
 
 /** Serialized eval entry used to transfer eval functions to the sandbox */
@@ -162,6 +181,12 @@ export interface SandboxHandle {
    */
   compileIR(circuit: any, libraryCircuits: any[], slot: SimSlot, options?: { evalSources?: Record<string, EvalSource> }): Promise<CompileIRResult | SandboxError>;
   tick(inputs?: Record<string, number | boolean>, slot?: SimSlot): Promise<TickResult | SandboxError>;
+  /**
+   * Advance the simulator by N ticks in a single round-trip. Returns final
+   * port values + one peripheral-state snapshot. Use for demos that need
+   * many ticks per frame (raster displays, batched compute).
+   */
+  tickN(n: number, inputs?: Record<string, number | boolean>, slot?: SimSlot): Promise<TickResult | SandboxError>;
   simulate(params: {
     source?: string;
     ticks: number;
@@ -287,7 +312,7 @@ export function useSandbox(): SandboxHandle {
       const result = await send<{ type: 'compiled' } & CompileResult>({ type: 'compile', source, slot });
       if ('error' in result) return result as SandboxError;
       const r = result as { type: 'compiled' } & CompileResult;
-      return { circuits: r.circuits, libraryCircuits: r.libraryCircuits, portValues: r.portValues };
+      return { circuits: r.circuits, libraryCircuits: r.libraryCircuits, portValues: r.portValues, peripheralState: r.peripheralState };
     },
     [send],
   );
@@ -303,7 +328,7 @@ export function useSandbox(): SandboxHandle {
       });
       if ('error' in result) return result as SandboxError;
       const r = result as { type: 'compiled-ir' } & CompileIRResult;
-      return { portValues: r.portValues };
+      return { portValues: r.portValues, peripheralState: r.peripheralState };
     },
     [send],
   );
@@ -313,7 +338,17 @@ export function useSandbox(): SandboxHandle {
       const result = await send<{ type: 'ticked' } & TickResult>({ type: 'tick', inputs, slot });
       if ('error' in result) return result as SandboxError;
       const r = result as { type: 'ticked' } & TickResult;
-      return { portValues: r.portValues, cycle: r.cycle };
+      return { portValues: r.portValues, cycle: r.cycle, peripheralState: r.peripheralState };
+    },
+    [send],
+  );
+
+  const tickN = useCallback(
+    async (n: number, inputs?: Record<string, number | boolean>, slot: SimSlot = 'default'): Promise<TickResult | SandboxError> => {
+      const result = await send<{ type: 'ticked-n' } & TickResult>({ type: 'tick-n', n, inputs, slot });
+      if ('error' in result) return result as SandboxError;
+      const r = result as { type: 'ticked-n' } & TickResult;
+      return { portValues: r.portValues, cycle: r.cycle, peripheralState: r.peripheralState };
     },
     [send],
   );
@@ -343,7 +378,7 @@ export function useSandbox(): SandboxHandle {
     const result = await send<{ type: 'reset' } & ResetResult>({ type: 'reset', slot });
     if ('error' in result) return result as SandboxError;
     const r = result as { type: 'reset' } & ResetResult;
-    return { portValues: r.portValues };
+    return { portValues: r.portValues, peripheralState: r.peripheralState };
   }, [send]);
 
   const setNode = useCallback(
@@ -351,7 +386,7 @@ export function useSandbox(): SandboxHandle {
       const result = await send<{ type: 'set-node' } & SetNodeResult>({ type: 'set-node', nodeId, value, slot });
       if ('error' in result) return result as SandboxError;
       const r = result as { type: 'set-node' } & SetNodeResult;
-      return { portValues: r.portValues };
+      return { portValues: r.portValues, peripheralState: r.peripheralState };
     },
     [send],
   );
@@ -365,5 +400,5 @@ export function useSandbox(): SandboxHandle {
 
   const isReady = useCallback(() => stateRef.current.ready, []);
 
-  return { compile, compileIR, tick, simulate, reset, setNode, dispose, isReady };
+  return { compile, compileIR, tick, tickN, simulate, reset, setNode, dispose, isReady };
 }

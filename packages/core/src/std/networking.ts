@@ -259,7 +259,7 @@ export const UART_TX = circuit('UART_TX', {
     const newText = ((text as string) ?? '') + char;
     return { text: newText.length > 4096 ? newText.slice(-4096) : newText };
   },
-  meta: { category: 'io', icon: 'TX', description: 'UART transmitter' },
+  meta: { category: 'io', icon: 'TX', description: 'UART transmitter', synthesizable: false },
 });
 
 export const NIC_FIFO = circuit('NIC_FIFO', {
@@ -321,5 +321,5 @@ export const NIC_FIFO = circuit('NIC_FIFO', {
     }
     return { memory: newState };
   },
-  meta: { category: 'networking', icon: 'NIC', description: 'Network interface FIFO' },
+  meta: { category: 'networking', icon: 'NIC', description: 'Network interface FIFO', synthesizable: false },
 });
