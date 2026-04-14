@@ -51,34 +51,30 @@ export function useBreakoutSimulator() {
     };
   }, [keyboardNodeId, sim.setNodeValue]);
 
-  // Run continuously like real hardware: tick the engine directly (no React
-  // state updates per tick), then update React once per browser frame.
-  // This avoids 612 setState calls per frame — only 1 after the full raster scan.
+  // Run continuously like real hardware: advance one full raster frame
+  // (TICKS_PER_FRAME ticks) per browser frame via `tickN` — one postMessage
+  // round-trip, one React state update per rAF instead of TICKS_PER_FRAME.
   useEffect(() => {
     if (!isRunning || !sim.ready) return;
 
-    const engine = sim.getSimulator();
-    if (!engine) return;
-
-    const loop = () => {
-      // Tick most of the frame directly on the engine (no React overhead)
-      for (let i = 0; i < TICKS_PER_FRAME - 1; i++) {
-        engine.tick();
-      }
-      // Final tick via sim.tick() triggers a single React state update
-      sim.tick();
+    let cancelled = false;
+    const loop = async () => {
+      if (cancelled) return;
+      await sim.tickN(TICKS_PER_FRAME);
+      if (cancelled) return;
       rafRef.current = requestAnimationFrame(loop);
     };
 
     rafRef.current = requestAnimationFrame(loop);
 
     return () => {
+      cancelled = true;
       if (rafRef.current) {
         cancelAnimationFrame(rafRef.current);
         rafRef.current = null;
       }
     };
-  }, [isRunning, sim.ready, sim.tick, sim.getSimulator]);
+  }, [isRunning, sim.ready, sim.tickN]);
 
   const handleReset = useCallback(() => {
     setIsRunning(false);

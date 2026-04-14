@@ -38,6 +38,8 @@ export interface SimulatorActions {
   toggleNode: (nodeId: string) => void;
   setNodeValue: (nodeId: string, value: number | boolean | Map<number, number>) => void;
   tick: () => void;
+  /** Advance N ticks in a single sandbox round-trip; one React update. */
+  tickN: (n: number) => Promise<void>;
   reset: () => void;
   stepBack: () => void;
   stepForward: () => void;
@@ -167,6 +169,11 @@ export function useCircuitSimulator(
 
   // ── Sandbox simulation state ──
   const [portValues, setPortValues] = useState<FlatPortValueMap>(new Map());
+  // Peripheral-bus state exposed by the sandbox — only includes nodes on a
+  // peripheral's bus (displays, consoles, etc.). Consumers read it through
+  // the `sequentialState` shape below so rendering code doesn't need to know
+  // it's narrower than a full FlatSequentialState.
+  const [peripheralState, setPeripheralState] = useState<Record<string, unknown>>({});
   const [cycle, setCycle] = useState(0);
   const [ready, setReady] = useState(false);
   const [isRunning, setIsRunning] = useState(false);
@@ -244,6 +251,7 @@ export function useCircuitSimulator(
         pvMap.set(k, v);
       }
       setPortValues(pvMap);
+      if (result.peripheralState) setPeripheralState(result.peripheralState);
       setCycle(0);
       setReady(true);
       // isSequential is computed synchronously via useMemo above — no need to set async
@@ -286,6 +294,7 @@ export function useCircuitSimulator(
     const pvMap = new Map<string, BitValue | BusValue>();
     for (const [k, v] of Object.entries(result.portValues)) pvMap.set(k, v);
     setPortValues(pvMap);
+    if (result.peripheralState) setPeripheralState(result.peripheralState);
   }, [ready, sandbox, slotId]);
 
   const toggleInput = useCallback((name: string) => {
@@ -304,6 +313,7 @@ export function useCircuitSimulator(
     const pvMap = new Map<string, BitValue | BusValue>();
     for (const [k, v] of Object.entries(result.portValues)) pvMap.set(k, v);
     setPortValues(pvMap);
+    if (result.peripheralState) setPeripheralState(result.peripheralState);
   }, [ready, portValues, sandbox, slotId]);
 
   const setNodeValue = useCallback(async (nodeId: string, value: number | boolean | Map<number, number>) => {
@@ -314,6 +324,7 @@ export function useCircuitSimulator(
     const pvMap = new Map<string, BitValue | BusValue>();
     for (const [k, v] of Object.entries(result.portValues)) pvMap.set(k, v);
     setPortValues(pvMap);
+    if (result.peripheralState) setPeripheralState(result.peripheralState);
   }, [ready, sandbox, slotId]);
 
   const tick = useCallback(async () => {
@@ -324,6 +335,19 @@ export function useCircuitSimulator(
     for (const [k, v] of Object.entries(result.portValues)) pvMap.set(k, v);
     setPortValues(pvMap);
     setCycle(result.cycle);
+    if (result.peripheralState) setPeripheralState(result.peripheralState);
+  }, [ready, sandbox, slotId]);
+
+  // Batched tick — advances N cycles in one round-trip; one React update.
+  const tickN = useCallback(async (n: number) => {
+    if (!ready || n <= 0) return;
+    const result = await sandbox.tickN(n, undefined, slotId);
+    if ('error' in result) return;
+    const pvMap = new Map<string, BitValue | BusValue>();
+    for (const [k, v] of Object.entries(result.portValues)) pvMap.set(k, v);
+    setPortValues(pvMap);
+    setCycle(result.cycle);
+    if (result.peripheralState) setPeripheralState(result.peripheralState);
   }, [ready, sandbox, slotId]);
 
   const reset = useCallback(async () => {
@@ -334,6 +358,8 @@ export function useCircuitSimulator(
     setPortValues(pvMap);
     setCycle(0);
     setInputs(defaultInputs);
+    if (result.peripheralState) setPeripheralState(result.peripheralState);
+    else setPeripheralState({});
   }, [sandbox, slotId, defaultInputs]);
 
   const startAutoRun = useCallback((ticksPerSecond: number, _opts?: { displayRate?: number; onBeforeTick?: () => void }) => {
@@ -368,6 +394,23 @@ export function useCircuitSimulator(
     };
   }, []);
 
+  // Expose peripheral-bus state as a FlatSequentialState-compatible shape so
+  // projection code (which was written against in-process simulation) doesn't
+  // need to learn about the sandbox boundary. Only nodes on a peripheral's
+  // bus appear here — internal logic state stays sandbox-internal.
+  const sequentialState = useMemo<FlatSequentialState | null>(() => {
+    const entries = Object.entries(peripheralState);
+    if (entries.length === 0) return null;
+    const currentState = new Map<string, any>();
+    for (const [k, v] of entries) currentState.set(k, v);
+    return {
+      currentState,
+      nextState: new Map(),
+      clocks: new Map(),
+      cycleCount: cycle,
+    };
+  }, [peripheralState, cycle]);
+
   return {
     // State
     outputs,
@@ -378,7 +421,7 @@ export function useCircuitSimulator(
     isSequential,
     circuit: harnessedCircuit,
     portValues: portValues.size > 0 ? portValues : null,
-    sequentialState: null,
+    sequentialState,
     componentLibrary,
     history: historyRef.current,
     historyIndex: -1,
@@ -392,6 +435,7 @@ export function useCircuitSimulator(
     toggleNode,
     setNodeValue,
     tick,
+    tickN,
     reset,
     stepBack: () => {},
     stepForward: () => {},

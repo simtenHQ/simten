@@ -98,6 +98,22 @@ export interface CircuitMeta {
   version?: string;
   /** Key in node.arguments that holds the user-interactive value (Switch, Button, Input) */
   interactiveArg?: string;
+  /**
+   * Marks this component as a non-synthesizable peripheral (display, console,
+   * UART, NIC, segment display). Defaults to `true` when omitted.
+   *
+   * Two downstream effects:
+   * - The synth checker / Verilog emitter treats these as module boundaries,
+   *   not logic to transpile.
+   * - The sandbox exposes the simulation state of any node on a peripheral's
+   *   bus across postMessage — the sim analog of memory-mapped I/O (x86 VGA
+   *   at 0xA0000, Game Boy VRAM at 0x8000). A RAM wired to a Screen has its
+   *   contents exposed because, in real hardware, the display controller
+   *   physically shares that RAM's bus. Internal logic state (registers,
+   *   FSMs, pipeline latches) with no connection to any peripheral pin
+   *   stays sandbox-internal.
+   */
+  synthesizable?: boolean;
 }
 
 // ============================================================================
