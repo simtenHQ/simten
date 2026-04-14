@@ -43,6 +43,7 @@ type SandboxRequest =
   | { id: string; type: 'compile'; source: string; slot?: string }
   | { id: string; type: 'compile-ir'; circuit: Circuit; libraryCircuits: Circuit[]; slot: string; evalSources?: Record<string, EvalSource> }
   | { id: string; type: 'tick'; inputs?: Record<string, number | boolean>; slot?: string }
+  | { id: string; type: 'tick-n'; n: number; inputs?: Record<string, number | boolean>; slot?: string }
   | { id: string; type: 'simulate'; source?: string; ticks: number; inputs?: Record<string, number | boolean>; memoryData?: Record<string, Record<string, number>>; slot?: string }
   | { id: string; type: 'reset'; slot?: string }
   | { id: string; type: 'set-node'; nodeId: string; value: number | boolean | Map<number, number>; slot?: string }
@@ -113,6 +114,16 @@ interface SlotState {
   simulator: ReturnType<typeof createSimulator> | null;
   library: { resolveCircuit(name: string): Circuit | undefined; addCircuit?(c: Circuit): void } | null;
   source: string;
+  /**
+   * Set of nodeIds whose simulation state is exposed across the sandbox
+   * boundary every tick. A node qualifies if it has at least one direct
+   * connection to a node whose component is tagged `meta.synthesizable: false`
+   * (i.e. a peripheral). This models memory-mapped I/O: a RAM wired to a
+   * Screen shares its bus with the display controller, so its contents are
+   * observable. Registers/FSMs with no peripheral connection stay internal.
+   * Computed once at compile time; iterated each tick.
+   */
+  peripheralBusNodes: Set<string>;
 }
 
 const slots = new Map<string, SlotState>();
@@ -121,10 +132,64 @@ const DEFAULT_SLOT = 'default';
 function getSlot(id: string): SlotState {
   let s = slots.get(id);
   if (!s) {
-    s = { simulator: null, library: null, source: '' };
+    s = { simulator: null, library: null, source: '', peripheralBusNodes: new Set() };
     slots.set(id, s);
   }
   return s;
+}
+
+/**
+ * One-shot scan over a flat circuit's connections to find every node that's
+ * on the bus of a peripheral (a component with `meta.synthesizable === false`).
+ *
+ * Runs once per compile — the result is cached on the slot and iterated each
+ * tick when snapshotting peripheral state. O(connections); for any realistic
+ * circuit this is microseconds.
+ */
+function computePeripheralBusNodes(
+  flatCircuit: { nodes: { id: string; primitiveType: string }[]; connections: { source: { nodeId: string }; target: { nodeId: string } }[] },
+  library: { resolveCircuit(name: string): Circuit | undefined },
+): Set<string> {
+  const isPeripheral = (primitiveType: string): boolean => {
+    const def = library.resolveCircuit(primitiveType);
+    return def?.metadata?.synthesizable === false;
+  };
+
+  // Index primitive types by nodeId (O(N))
+  const typeByNode = new Map<string, string>();
+  for (const node of flatCircuit.nodes) typeByNode.set(node.id, node.primitiveType);
+
+  // A node qualifies if any of its connections touches a peripheral node.
+  const exposed = new Set<string>();
+  for (const conn of flatCircuit.connections) {
+    const srcType = typeByNode.get(conn.source.nodeId);
+    const tgtType = typeByNode.get(conn.target.nodeId);
+    const srcPeri = srcType && isPeripheral(srcType);
+    const tgtPeri = tgtType && isPeripheral(tgtType);
+    if (srcPeri) exposed.add(conn.target.nodeId);
+    if (tgtPeri) exposed.add(conn.source.nodeId);
+    // Also expose peripheral nodes themselves — their own state is the
+    // primary thing we want to display (Console text, UART_TX buffer, etc.)
+    if (srcPeri) exposed.add(conn.source.nodeId);
+    if (tgtPeri) exposed.add(conn.target.nodeId);
+  }
+  return exposed;
+}
+
+/**
+ * Snapshot the current state of every peripheral-bus node for the given slot.
+ * Runs each tick; cost is O(P) where P ≈ 1-5 for a typical demo.
+ */
+function snapshotPeripheralState(slot: SlotState): Record<string, unknown> | undefined {
+  if (!slot.simulator || slot.peripheralBusNodes.size === 0) return undefined;
+  const seqState = slot.simulator.getState();
+  if (!seqState) return undefined;
+  const out: Record<string, unknown> = {};
+  for (const nodeId of slot.peripheralBusNodes) {
+    const v = seqState.currentState.get(nodeId);
+    if (v !== undefined) out[nodeId] = v;
+  }
+  return out;
 }
 
 // ============================================================================
@@ -240,6 +305,7 @@ async function handleCompile(id: string, source: string, slotId: string = DEFAUL
     slot.simulator = sim;
     slot.library = library;
     slot.source = source;
+    slot.peripheralBusNodes = computePeripheralBusNodes(flatCircuit, library);
 
     const portValues = portValuesToObject(sim.getPortValues());
 
@@ -248,6 +314,7 @@ async function handleCompile(id: string, source: string, slotId: string = DEFAUL
       circuits,
       libraryCircuits,
       portValues,
+      peripheralState: snapshotPeripheralState(slot),
     });
   } catch (e) {
     respondError(id, e instanceof Error ? e.message : String(e));
@@ -255,8 +322,9 @@ async function handleCompile(id: string, source: string, slotId: string = DEFAUL
 }
 
 function handleTick(id: string, inputs?: Record<string, number | boolean>, slotId: string = DEFAULT_SLOT) {
-  const sim = slots.get(slotId)?.simulator;
-  if (!sim) {
+  const slot = slots.get(slotId);
+  const sim = slot?.simulator;
+  if (!sim || !slot) {
     respondError(id, `No circuit compiled for slot '${slotId}'. Call compile first.`);
     return;
   }
@@ -267,6 +335,33 @@ function handleTick(id: string, inputs?: Record<string, number | boolean>, slotI
       type: 'ticked',
       portValues: portValuesToObject(result.portValues),
       cycle: sim.getMetrics().totalTicks,
+      peripheralState: snapshotPeripheralState(slot),
+    });
+  } catch (e) {
+    respondError(id, e instanceof Error ? e.message : String(e));
+  }
+}
+
+// Advance the simulator by N cycles in one round-trip. Returns only the final
+// port values and one peripheral-state snapshot. Used by demos that need high
+// tick rates (raster frames) — one postMessage instead of N.
+function handleTickN(id: string, n: number, inputs?: Record<string, number | boolean>, slotId: string = DEFAULT_SLOT) {
+  const slot = slots.get(slotId);
+  const sim = slot?.simulator;
+  if (!sim || !slot) {
+    respondError(id, `No circuit compiled for slot '${slotId}'. Call compile first.`);
+    return;
+  }
+  try {
+    if (inputs) applyInputs(sim, inputs);
+    let last: ReturnType<typeof sim.tick> | null = null;
+    const count = Math.max(0, n | 0);
+    for (let i = 0; i < count; i++) last = sim.tick();
+    respond(id, {
+      type: 'ticked-n',
+      portValues: last ? portValuesToObject(last.portValues) : portValuesToObject(sim.getPortValues()),
+      cycle: sim.getMetrics().totalTicks,
+      peripheralState: snapshotPeripheralState(slot),
     });
   } catch (e) {
     respondError(id, e instanceof Error ? e.message : String(e));
@@ -301,23 +396,25 @@ async function handleSimulate(
 }
 
 function handleReset(id: string, slotId: string = DEFAULT_SLOT) {
-  const sim = slots.get(slotId)?.simulator;
-  if (!sim) {
+  const slot = slots.get(slotId);
+  const sim = slot?.simulator;
+  if (!sim || !slot) {
     respondError(id, `No circuit compiled for slot '${slotId}'.`);
     return;
   }
   try {
     sim.reset();
     const portValues = portValuesToObject(sim.getPortValues());
-    respond(id, { type: 'reset', portValues });
+    respond(id, { type: 'reset', portValues, peripheralState: snapshotPeripheralState(slot) });
   } catch (e) {
     respondError(id, e instanceof Error ? e.message : String(e));
   }
 }
 
 function handleSetNode(id: string, nodeId: string, value: number | boolean | Map<number, number>, slotId: string = DEFAULT_SLOT) {
-  const sim = slots.get(slotId)?.simulator;
-  if (!sim) {
+  const slot = slots.get(slotId);
+  const sim = slot?.simulator;
+  if (!sim || !slot) {
     respondError(id, `No circuit compiled for slot '${slotId}'.`);
     return;
   }
@@ -326,7 +423,7 @@ function handleSetNode(id: string, nodeId: string, value: number | boolean | Map
     sim.setNode(nodeId, value as any);
     sim.runCombinational();
     const portValues = portValuesToObject(sim.getPortValues());
-    respond(id, { type: 'set-node', portValues });
+    respond(id, { type: 'set-node', portValues, peripheralState: snapshotPeripheralState(slot) });
   } catch (e) {
     respondError(id, e instanceof Error ? e.message : String(e));
   }
@@ -394,9 +491,10 @@ function handleCompileIR(id: string, circuit: Circuit, libraryCircuits: Circuit[
     const slot = getSlot(slotId);
     slot.simulator = sim;
     slot.library = lib;
+    slot.peripheralBusNodes = computePeripheralBusNodes(flatCircuit, lib);
 
     const portValues = portValuesToObject(sim.getPortValues());
-    respond(id, { type: 'compiled-ir', portValues });
+    respond(id, { type: 'compiled-ir', portValues, peripheralState: snapshotPeripheralState(slot) });
   } catch (e) {
     respondError(id, e instanceof Error ? e.message : String(e));
   }
@@ -428,6 +526,9 @@ self.addEventListener('message', (event: MessageEvent) => {
       break;
     case 'tick':
       handleTick(req.id, req.inputs, req.slot);
+      break;
+    case 'tick-n':
+      handleTickN(req.id, req.n, req.inputs, req.slot);
       break;
     case 'simulate':
       handleSimulate(req.id, req.ticks, req.source, req.inputs, req.memoryData, req.slot);

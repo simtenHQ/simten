@@ -328,6 +328,7 @@ export function circuit<
     tags: config.meta?.tags,
     author: config.meta?.author,
     version: config.meta?.version,
+    synthesizable: config.meta?.synthesizable,
   };
 
   const circuitIR: Circuit = {
