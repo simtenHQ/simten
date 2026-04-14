@@ -2,7 +2,7 @@ export { CircuitViewer } from './CircuitViewer';
 export type { CircuitViewerProps, CircuitViewerHandle } from './CircuitViewer';
 export { CircuitEmbed } from './CircuitEmbed';
 export type { CircuitEmbedProps, CircuitEmbedHandle } from './CircuitEmbed';
-export { useCircuitSimulator } from './hooks/useCircuitSimulator';
+export { useCircuitSimulator, builtFromIR } from './hooks/useCircuitSimulator';
 export type { SimulatorState, SimulatorActions, UseCircuitSimulatorOptions } from './hooks/useCircuitSimulator';
 export { CircuitCanvas } from '@simten/ui/canvas';
 export type { CircuitCanvasProps } from '@simten/ui/canvas';

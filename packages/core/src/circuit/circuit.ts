@@ -31,7 +31,7 @@ import type {
   CircuitKind,
   ArgumentValue,
 } from '../types/circuit.js';
-import { normalizePortType } from './bit-bus.js';
+import { normalizePortType, isRegState, isMemState } from './bit-bus.js';
 import { registerCircuitEval } from './eval-registry.js';
 import type {
   PortMap,
@@ -186,6 +186,8 @@ export function circuit<
     }
   }
 
+  // ── Validate read/write config ──
+
   if (errors.length > 0) {
     throw new Error(`Circuit '${name}' validation failed:\n  - ${errors.join('\n  - ')}`);
   }
@@ -225,8 +227,29 @@ export function circuit<
   const stateBlocks: StateBlock[] = [];
   if (config.state != null) {
     for (const [key, value] of Object.entries(config.state)) {
-      if (value instanceof Map) {
-        // Memory state: Map<number, number> → { kind: 'memory' }
+      if (isMemState(value)) {
+        // Declarative memory: mem(depth, width)
+        const addrWidth = Math.ceil(Math.log2(value.depth)) || 1;
+        stateBlocks.push({
+          id: `${name}-${key}`,
+          name: key,
+          stateType: { kind: 'memory', addressWidth: addrWidth, dataWidth: value.width },
+          initialValue: { data: new Map(value.initial), addressWidth: addrWidth, dataWidth: value.width },
+          clockRef: 'clk',
+          edge: 'rising',
+        });
+      } else if (isRegState(value)) {
+        // Declarative register: reg(width)
+        stateBlocks.push({
+          id: `${name}-${key}`,
+          name: key,
+          stateType: value.width === 1 ? { kind: 'bit' } : { kind: 'bus', width: value.width },
+          initialValue: value.initial,
+          clockRef: 'clk',
+          edge: 'rising',
+        });
+      } else if (value instanceof Map) {
+        // Legacy: Map<number, number> → { kind: 'memory' }
         stateBlocks.push({
           id: `${name}-${key}`,
           name: key,
@@ -402,4 +425,5 @@ function detectSequential(nodes: Record<string, BuiltCircuit>, state?: StateShap
   }
   return false;
 }
+
 

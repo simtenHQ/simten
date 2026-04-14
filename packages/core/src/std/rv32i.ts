@@ -3,7 +3,7 @@
  */
 
 import { circuit } from '../circuit/circuit.js';
-import { bit, bus } from '../circuit/bit-bus.js';
+import { bit, bus, mem } from '../circuit/bit-bus.js';
 
 export const RV32I_Decode = circuit('RV32I_Decode', {
   in: { instruction: bus(32) },
@@ -167,25 +167,21 @@ export const RV32I_BranchComp = circuit('RV32I_BranchComp', {
 export const RV32I_RegisterFile = circuit('RV32I_RegisterFile', {
   in: { rs1: bus(5), rs2: bus(5), rd: bus(5), write_data: bus(32), we: bit },
   out: { read1: bus(32), read2: bus(32) },
-  state: { memory: new Map<number, number>() },
+  state: { memory: mem(32, 32) },
   eval: ({ rs1, rs2, memory }) => {
-    const regs = (memory as Map<number, number>) ?? new Map();
     const r1 = (rs1 as number) & 0x1F;
     const r2 = (rs2 as number) & 0x1F;
     return {
-      read1: r1 === 0 ? 0 : (regs.get(r1) ?? 0) >>> 0,
-      read2: r2 === 0 ? 0 : (regs.get(r2) ?? 0) >>> 0,
+      read1: r1 === 0 ? 0 : (memory[r1]) >>> 0,
+      read2: r2 === 0 ? 0 : (memory[r2]) >>> 0,
     };
   },
   onTick: ({ rd, write_data, we, memory }) => {
-    const regs = (memory as Map<number, number>) ?? new Map();
     const r = (rd as number) & 0x1F;
     if (we && r !== 0) {
-      const newRegs = new Map(regs);
-      newRegs.set(r, (write_data as number) >>> 0);
-      return { memory: newRegs };
+      memory[r] = (write_data as number) >>> 0;
     }
-    return { memory: regs };
+    return { memory };
   },
   meta: { category: 'rv32i', icon: 'RF', description: 'RISC-V 32-register file' },
 });
@@ -193,14 +189,13 @@ export const RV32I_RegisterFile = circuit('RV32I_RegisterFile', {
 export const RV32I_InstrMem = circuit('RV32I_InstrMem', {
   in: { addr: bus(32) },
   out: { instruction: bus(32) },
-  state: { memory: new Map<number, number>() },
+  state: { memory: mem(65536, 8) },
   eval: ({ addr, memory }) => {
-    const mem = (memory as Map<number, number>) ?? new Map();
     const a = (addr as number) >>> 0;
-    const b0 = mem.get(a)       ?? 0;
-    const b1 = mem.get(a + 1)   ?? 0;
-    const b2 = mem.get(a + 2)   ?? 0;
-    const b3 = mem.get(a + 3)   ?? 0;
+    const b0 = memory[a];
+    const b1 = memory[a + 1];
+    const b2 = memory[a + 2];
+    const b3 = memory[a + 3];
     return { instruction: ((b3 << 24) | (b2 << 16) | (b1 << 8) | b0) >>> 0 };
   },
   onTick: ({ memory }) => ({ memory }),  // read-only
@@ -210,9 +205,8 @@ export const RV32I_InstrMem = circuit('RV32I_InstrMem', {
 export const RV32I_DataMem = circuit('RV32I_DataMem', {
   in: { addr: bus(32), write_data: bus(32), mem_read: bit, mem_write: bit, funct3: bus(3) },
   out: { read_data: bus(32), misalign: bit },
-  state: { memory: new Map<number, number>() },
+  state: { memory: mem(65536, 8) },
   eval: ({ addr, mem_read, mem_write, funct3, memory }) => {
-    const mem = (memory as Map<number, number>) ?? new Map();
     if (!mem_read && !mem_write) return { read_data: 0, misalign: 0 };
     const a  = (addr as number) >>> 0;
     const f3 = (funct3 as number) & 0x7;
@@ -222,28 +216,26 @@ export const RV32I_DataMem = circuit('RV32I_DataMem', {
     if (!mem_read) return { read_data: 0, misalign };
     let data: number;
     switch (f3) {
-      case 0: { const b = mem.get(a) ?? 0; data = ((b << 24) >> 24) >>> 0; break; }              // LB
-      case 1: { const lo = mem.get(a) ?? 0; const hi = mem.get(a+1) ?? 0; const hw = (hi<<8)|lo; data = ((hw<<16)>>16)>>>0; break; } // LH
-      case 2: { const b0=mem.get(a)??0,b1=mem.get(a+1)??0,b2=mem.get(a+2)??0,b3=mem.get(a+3)??0; data=((b3<<24)|(b2<<16)|(b1<<8)|b0)>>>0; break; } // LW
-      case 4: data = mem.get(a) ?? 0; break;                                                      // LBU
-      case 5: { const lo=mem.get(a)??0,hi=mem.get(a+1)??0; data=((hi<<8)|lo)>>>0; break; }       // LHU
+      case 0: { const b = memory[a]; data = ((b << 24) >> 24) >>> 0; break; }                                       // LB
+      case 1: { const lo = memory[a]; const hi = memory[a + 1]; const hw = (hi << 8) | lo; data = ((hw << 16) >> 16) >>> 0; break; } // LH
+      case 2: { const b0 = memory[a], b1 = memory[a + 1], b2 = memory[a + 2], b3 = memory[a + 3]; data = ((b3 << 24) | (b2 << 16) | (b1 << 8) | b0) >>> 0; break; } // LW
+      case 4: data = memory[a]; break;                                                                                // LBU
+      case 5: { const lo = memory[a], hi = memory[a + 1]; data = ((hi << 8) | lo) >>> 0; break; }                   // LHU
       default: data = 0;
     }
     return { read_data: data, misalign };
   },
   onTick: ({ addr, write_data, mem_write, funct3, memory }) => {
-    const mem = (memory as Map<number, number>) ?? new Map();
-    if (!mem_write) return { memory: mem };
+    if (!mem_write) return { memory };
     const a  = (addr as number) >>> 0;
     const wd = (write_data as number) >>> 0;
     const f3 = (funct3 as number) & 0x7;
-    const newMem = new Map(mem);
     switch (f3) {
-      case 0: newMem.set(a, wd & 0xFF); break;                                                                                       // SB
-      case 1: newMem.set(a, wd & 0xFF); newMem.set(a+1, (wd>>>8) & 0xFF); break;                                                    // SH
-      case 2: newMem.set(a, wd&0xFF); newMem.set(a+1,(wd>>>8)&0xFF); newMem.set(a+2,(wd>>>16)&0xFF); newMem.set(a+3,(wd>>>24)&0xFF); break; // SW
+      case 0: memory[a] = wd & 0xFF; break;                                                                                       // SB
+      case 1: memory[a] = wd & 0xFF; memory[a + 1] = (wd >>> 8) & 0xFF; break;                                                   // SH
+      case 2: memory[a] = wd & 0xFF; memory[a + 1] = (wd >>> 8) & 0xFF; memory[a + 2] = (wd >>> 16) & 0xFF; memory[a + 3] = (wd >>> 24) & 0xFF; break; // SW
     }
-    return { memory: newMem };
+    return { memory };
   },
   meta: { category: 'rv32i', icon: 'DM', description: 'RISC-V data memory with byte/half/word access' },
 });
@@ -342,20 +334,14 @@ export const RV32I_HazardUnit = circuit('RV32I_HazardUnit', {
 export const DualPortROM = circuit('DualPortROM', {
   in: { addrA: bus(32), addrB: bus(32) },
   out: { dataA: bus(32), dataB: bus(32) },
-  state: { memory: new Map<number, number>() },
+  state: { memory: mem(65536, 8) },
   eval: ({ addrA, addrB, memory }) => {
-    const mem = (memory as Map<number, number>) ?? new Map();
-    const readWord = (addr: number) => {
-      const a = addr >>> 0;
-      const b0 = mem.get(a)   ?? 0;
-      const b1 = mem.get(a+1) ?? 0;
-      const b2 = mem.get(a+2) ?? 0;
-      const b3 = mem.get(a+3) ?? 0;
-      return ((b3 << 24) | (b2 << 16) | (b1 << 8) | b0) >>> 0;
-    };
+    const aA = (addrA as number) >>> 0;
+    const aB = (addrB as number) >>> 0;
+    const m = memory!;
     return {
-      dataA: readWord(addrA as number),
-      dataB: readWord(addrB as number),
+      dataA: ((m[aA + 3] << 24) | (m[aA + 2] << 16) | (m[aA + 1] << 8) | m[aA]) >>> 0,
+      dataB: ((m[aB + 3] << 24) | (m[aB + 2] << 16) | (m[aB + 1] << 8) | m[aB]) >>> 0,
     };
   },
   onTick: ({ memory }) => ({ memory }),  // read-only

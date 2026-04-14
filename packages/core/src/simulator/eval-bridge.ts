@@ -18,7 +18,36 @@ import type { NumericEvaluator, EvalContext } from './evaluators/types.js';
 import { readInput, writeOutput } from './evaluators/types.js';
 import { EVALUATORS } from './evaluators/index.js';
 import { PRIMITIVE_TYPE_INDICES, PRIMITIVE_INDEX_TO_NAME } from './numeric-types.js';
-import { getCircuitEval } from '../circuit/eval-registry.js';
+import { getCircuitEval, getAllCircuitEvals } from '../circuit/eval-registry.js';
+
+// ============================================================================
+// Map-as-array Proxy for memory state
+// ============================================================================
+
+/**
+ * Wrap a Map<number, number> in a Proxy that supports array-like indexing.
+ * This allows eval functions to use `memory[addr]` syntax for reads
+ * and `memory[addr] = value` for writes.
+ */
+function wrapMapAsArray(map: Map<number, number>): any {
+  return new Proxy(map, {
+    get(target, prop) {
+      if (typeof prop === 'string' && /^\d+$/.test(prop)) {
+        return target.get(Number(prop)) ?? 0;
+      }
+      // Pass through Map methods (get, set, has, etc.) for backward compat
+      const val = (target as any)[prop];
+      return typeof val === 'function' ? val.bind(target) : val;
+    },
+    set(target, prop, value) {
+      if (typeof prop === 'string' && /^\d+$/.test(prop)) {
+        target.set(Number(prop), value);
+        return true;
+      }
+      return false;
+    },
+  });
+}
 
 // ============================================================================
 // Dynamic type index allocation
@@ -144,10 +173,13 @@ export function generateEvalWrapper(
       if (nodeState != null && typeof nodeState === 'object' && !Array.isArray(nodeState) && !(nodeState instanceof Map)) {
         const stateObj = nodeState as Record<string, unknown>;
         for (const key of stateKeys!) {
-          inputs[key] = stateObj[key];
+          const val = stateObj[key];
+          // Wrap Map state in Proxy for array-indexable access: memory[addr]
+          inputs[key] = val instanceof Map ? wrapMapAsArray(val) : val;
         }
       } else if (nodeState != null) {
-        inputs[stateKeys![0]] = nodeState;
+        // Wrap Map state in Proxy for array-indexable access
+        inputs[stateKeys![0]] = nodeState instanceof Map ? wrapMapAsArray(nodeState) : nodeState;
       }
     }
 
@@ -176,7 +208,10 @@ export function ensureEvaluatorRegistered(name: string): number {
   if (EVALUATORS[idx] != null) return idx;
 
   const entry = getCircuitEval(name);
-  if (!entry) return idx;
+  if (!entry) {
+    console.warn(`[eval-bridge] No eval-registry entry for '${name}' — getAllCircuitEvals:`, [...(getAllCircuitEvals() as Map<string, any>).keys()]);
+    return idx;
+  }
 
   while (EVALUATORS.length <= idx) EVALUATORS.push(null);
   EVALUATORS[idx] = generateEvalWrapper(entry.inputNames, entry.outputNames, entry.evalFn, entry.stateKeys);

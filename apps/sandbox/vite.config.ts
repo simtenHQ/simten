@@ -11,6 +11,7 @@ export default defineConfig({
   },
   resolve: {
     conditions: ['@simten/source', 'import', 'module', 'browser', 'default'],
+    dedupe: ['@simten/core'],
   },
   build: {
     outDir: 'dist',
