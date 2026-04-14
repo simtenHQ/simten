@@ -21,7 +21,6 @@
 import {
   createSimulator,
   elaborate,
-  executeCircuitCode,
 } from '@simten/core';
 import type { Circuit, BitValue, BusValue } from '@simten/core';
 import { registerCircuitEval } from '@simten/core/circuit';
@@ -164,12 +163,19 @@ function respondError(id: string, error: string) {
 // ============================================================================
 
 async function handleCompile(id: string, source: string, slotId: string = DEFAULT_SLOT) {
-  // Worker compiles source → returns Circuit IR (plain JSON, no functions)
+  // Worker compiles source (handles imports via esm.sh) → returns Circuit IR + eval sources
   const workerResult = await delegateToWorker({ id, type: 'compile', source }) as {
     type: string;
     error?: string;
     circuits?: Circuit[];
     libraryCircuits?: Circuit[];
+    evalSources?: Record<string, {
+      evalSource: string;
+      onTickSource?: string;
+      inputNames: string[];
+      outputNames: string[];
+      stateKeys?: string[];
+    }>;
   };
 
   if (workerResult.type === 'error' || workerResult.error) {
@@ -179,6 +185,7 @@ async function handleCompile(id: string, source: string, slotId: string = DEFAUL
 
   const circuits = workerResult.circuits ?? [];
   const libraryCircuits = workerResult.libraryCircuits ?? [];
+  const evalSources = workerResult.evalSources ?? {};
 
   if (circuits.length === 0) {
     respondError(id, 'No circuits found in source.');
@@ -186,21 +193,39 @@ async function handleCompile(id: string, source: string, slotId: string = DEFAUL
   }
 
   try {
-    // Re-execute source on iframe main thread to populate eval-registry.
-    // Safe: worker already proved the code terminates (no infinite loop).
-    // The iframe main thread IS inside the sandbox — not the app's main frame.
-    const reExecResult = executeCircuitCode(source);
-    if (reExecResult.error) {
-      respondError(id, reExecResult.error);
-      return;
+    // Register evals on iframe main thread by reconstructing them from source strings.
+    // This avoids re-executing the module (which may contain npm imports that only
+    // the worker can load via esm.sh) on the main thread.
+    for (const [name, info] of Object.entries(evalSources)) {
+      try {
+        const evalFn = new Function('return (' + info.evalSource + ')')() as (inputs: Record<string, any>) => Record<string, any>;
+        const onTickFn = info.onTickSource
+          ? new Function('return (' + info.onTickSource + ')')() as (inputs: Record<string, any>) => Record<string, any>
+          : undefined;
+        registerCircuitEval(name, {
+          inputNames: info.inputNames,
+          outputNames: info.outputNames,
+          evalFn,
+          onTickFn,
+          stateKeys: info.stateKeys,
+        });
+      } catch (e) {
+        console.warn(`[sandbox] Failed to register eval for '${name}':`, e);
+      }
     }
 
-    const library = reExecResult.library;
-    for (const c of libraryCircuits) {
+    // Build a library from the Circuit IRs the worker sent back
+    const circuitMap = new Map<string, Circuit>();
+    const library = {
+      resolveCircuit: (name: string) => circuitMap.get(name),
+      getAllPrimitiveNames: () => [...circuitMap.values()].filter(c => c.implementation?.kind === 'primitive').map(c => c.name),
+      addCircuit: (c: Circuit) => { circuitMap.set(c.name, c); },
+    };
+    for (const c of [...circuits, ...libraryCircuits]) {
       library.addCircuit(c);
     }
 
-    const target = reExecResult.circuit ?? circuits[circuits.length - 1];
+    const target = circuits[circuits.length - 1];
     const flatCircuit = elaborate(target, library);
     const sim = createSimulator(flatCircuit, { componentLibrary: library });
 
