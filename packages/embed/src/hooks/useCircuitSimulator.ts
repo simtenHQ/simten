@@ -6,11 +6,11 @@ import {
   type FlatPortValueMap,
   type FlatSequentialState,
 } from "@simten/core/simulator";
-import type { Circuit } from "@simten/core";
+import type { Circuit, BitValue, BusValue } from "@simten/core";
 import type { BuiltCircuit } from "@simten/core/circuit";
+import { getCircuitEval, autoHarness, isSequentialCircuit } from "@simten/core/circuit";
 import { Switch, Button, Led, Input, Output, HexDisplay } from "@simten/core/std";
-import { useCircuitSession } from "@simten/ui/canvas";
-import { autoHarness } from "@simten/core/circuit";
+import { useSandboxContext, type EvalSource } from "@simten/ui/sandbox";
 
 const TOP_LEVEL_NODE = "__top__";
 
@@ -29,6 +29,7 @@ export interface SimulatorState {
   historyIndex: number;
   isViewingPast: boolean;
   isRunning: boolean;
+  speed: number;
 }
 
 export interface SimulatorActions {
@@ -43,6 +44,7 @@ export interface SimulatorActions {
   seek: (index: number) => void;
   startAutoRun: (ticksPerSecond: number, options?: { displayRate?: number; onBeforeTick?: () => void }) => void;
   stopAutoRun: () => void;
+  setSpeed: (ticksPerSecond: number) => void;
   runCombinational: () => void;
   getSimulator: () => SimulatorEngine | null;
 }
@@ -55,15 +57,79 @@ export interface UseCircuitSimulatorOptions {
 }
 
 /**
- * Circuit simulator hook.
+ * Extract eval function sources from a BuiltCircuit and its dependencies.
+ * These are serialized and sent to the sandbox, which reconstructs them with new Function().
+ * Returns empty object if the circuit's evals aren't registered in this frame
+ * (e.g. editor case where evals live only in the sandbox from prior compile).
+ */
+function extractEvalSources(circuit: BuiltCircuit): Record<string, EvalSource> {
+  const sources: Record<string, EvalSource> = {};
+  const visited = new Set<string>();
+
+  function collect(c: BuiltCircuit) {
+    if (visited.has(c.name)) return;
+    visited.add(c.name);
+
+    const entry = getCircuitEval(c.name);
+    if (entry) {
+      sources[c.name] = {
+        evalSource: entry.evalFn.toString(),
+        onTickSource: entry.onTickFn?.toString(),
+        inputNames: entry.inputNames,
+        outputNames: entry.outputNames,
+        stateKeys: entry.stateKeys,
+      };
+    }
+    for (const [, dep] of c._dependencies) {
+      if (dep) collect(dep);
+    }
+  }
+
+  collect(circuit);
+  return sources;
+}
+
+/**
+ * Build a minimal BuiltCircuit-like object from a Circuit IR and its dependencies.
+ * Used by the editor to adapt sandbox compile results into the shape useCircuitSimulator expects.
+ * The resulting object has no live eval functions (empty registry lookups) — the sandbox
+ * is expected to already have the evals registered from a prior sandbox.compile(source).
+ */
+export function builtFromIR(circuit: Circuit, dependencies: Circuit[]): BuiltCircuit {
+  const depMap = new Map<string, BuiltCircuit>();
+  for (const dep of dependencies) {
+    depMap.set(dep.name, {
+      name: dep.name,
+      circuit: dep,
+      _shape: { inputs: {}, outputs: {} } as any,
+      _dependencies: new Map(),
+    } as BuiltCircuit);
+  }
+  return {
+    name: circuit.name,
+    circuit,
+    _shape: { inputs: {}, outputs: {} } as any,
+    _dependencies: depMap,
+  } as BuiltCircuit;
+}
+
+/**
+ * Circuit simulator hook — runs simulation in the sandbox iframe.
  *
  * Takes a BuiltCircuit and returns reactive simulation state + actions.
- * For dynamic code compilation, use sandbox.compile() + buildFromIR() from core/circuit.
+ * All simulation happens inside the sandbox for security (CSP-isolated,
+ * cross-origin) — no user code runs in the main frame at simulation time.
  */
 export function useCircuitSimulator(
-  circuit: BuiltCircuit,
+  circuit: BuiltCircuit | null,
   options?: UseCircuitSimulatorOptions,
 ): SimulatorState & SimulatorActions {
+  const sandbox = useSandboxContext();
+  const slotId = useMemo(() =>
+    `embed-${typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2)}`,
+    [],
+  );
+
   // ── Build library + resolve circuit IR ──
   const { rawCircuit, componentLibrary } = useMemo(() => {
     const circuitMap = new Map<string, Circuit>();
@@ -72,32 +138,46 @@ export function useCircuitSimulator(
       getAllPrimitiveNames: () => [...circuitMap.entries()].filter(([, c]) => c.implementation.kind === 'primitive').map(([n]) => n),
       addCircuit: (c) => { circuitMap.set(c.name, c); },
     };
-    // Always include harness components (Switch, Led, etc.) since autoHarness may inject them
     for (const c of [Switch, Button, Led, Input, Output, HexDisplay]) {
       lib.addCircuit(c.circuit);
     }
-    lib.addCircuit(circuit.circuit);
-    for (const [, dep] of circuit._dependencies) {
-      if (dep?.circuit) lib.addCircuit(dep.circuit);
+    if (circuit) {
+      lib.addCircuit(circuit.circuit);
+      if (circuit._dependencies) {
+        for (const [, dep] of circuit._dependencies) {
+          if (dep?.circuit) lib.addCircuit(dep.circuit);
+        }
+      }
     }
-    return { rawCircuit: circuit.circuit, componentLibrary: lib };
+    return { rawCircuit: circuit?.circuit ?? null, componentLibrary: lib };
   }, [circuit]);
 
   // ── Auto-harness (wrap with Switches/LEDs if enabled) ──
   const harnessedCircuit = useMemo(() => {
+    if (!rawCircuit) return null;
     if (!options?.autoHarness) return rawCircuit;
     return autoHarness(rawCircuit, componentLibrary, options.initialInputs);
   }, [rawCircuit, componentLibrary, options?.autoHarness, options?.initialInputs]);
 
-  // ── Simulation (via the same hook the editor uses) ──
-  const sim = useCircuitSession(harnessedCircuit, componentLibrary);
+  // ── Detect sequential (recursively) using shared core util ──
+  const isSequential = useMemo(
+    () => isSequentialCircuit(harnessedCircuit, componentLibrary.resolveCircuit),
+    [harnessedCircuit, componentLibrary],
+  );
 
-  // ── Default inputs from the top-level simulated circuit ──
-  // Use the harnessed circuit (what the engine actually runs) so that when
-  // the auto-harness wraps the circuit with Switch nodes, those become internal
-  // nodes (not top-level inputs) and aren't overwritten on every tick.
+  // ── Sandbox simulation state ──
+  const [portValues, setPortValues] = useState<FlatPortValueMap>(new Map());
+  const [cycle, setCycle] = useState(0);
+  const [ready, setReady] = useState(false);
+  const [isRunning, setIsRunning] = useState(false);
+  const [speed, setSpeedState] = useState(5);
+  const autoRunRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const historyRef = useRef<Array<{ engineSnapshot: unknown; metadata?: unknown }>>([]);
+
+  // Default inputs from the harnessed circuit's top-level inputs
   const defaultInputs = useMemo(() => {
     const result: Record<string, boolean | number> = {};
+    if (!harnessedCircuit) return result;
     for (const input of harnessedCircuit.inputs) {
       result[input.name] = input.portType.kind === 'bit' ? false : 0;
     }
@@ -106,112 +186,205 @@ export function useCircuitSimulator(
 
   const [outputs, setOutputs] = useState<Record<string, boolean | number>>({});
   const [inputs, setInputs] = useState<Record<string, boolean | number>>(defaultInputs);
-  const topCircuitRef = useRef<Circuit>(harnessedCircuit);
-  topCircuitRef.current = harnessedCircuit;
 
-  const ready = sim.session !== null;
-  const isSequential = sim.isSequential;
+  // ── Compile to sandbox on mount / circuit change ──
+  useEffect(() => {
+    if (!circuit || !harnessedCircuit) {
+      setReady(false);
+      setPortValues(new Map());
+      return;
+    }
 
-  // Sync inputs when the underlying circuit changes
+    let cancelled = false;
+
+    async function initSandbox() {
+      if (!circuit || !harnessedCircuit) return;
+      // Extract eval sources from the BuiltCircuit and its dependencies
+      const evalSources = extractEvalSources(circuit);
+
+      // Collect all library circuits (stdlib + user).
+      // The harnessed circuit references the raw circuit as "dut" by name, so we
+      // need to include it + all its dependencies + harness components.
+      const libCircuits: Circuit[] = [];
+      const seen = new Set<string>();
+      const addCircuit = (c: Circuit) => {
+        if (seen.has(c.name)) return;
+        seen.add(c.name);
+        libCircuits.push(c);
+      };
+
+      // The raw circuit (referenced as "dut" by the harness)
+      addCircuit(circuit.circuit);
+      // Its transitive dependencies
+      for (const [, dep] of circuit._dependencies) {
+        if (dep?.circuit) addCircuit(dep.circuit);
+      }
+      // Harness components (Switch, Led, etc.)
+      for (const c of [Switch, Button, Led, Input, Output, HexDisplay]) {
+        addCircuit(c.circuit);
+      }
+      // Anything else in the library
+      const primNames = componentLibrary.getAllPrimitiveNames();
+      for (const name of primNames) {
+        const c = componentLibrary.resolveCircuit(name);
+        if (c) addCircuit(c);
+      }
+
+      const result = await sandbox.compileIR(harnessedCircuit, libCircuits, slotId, { evalSources });
+      if (cancelled) return;
+
+      if ('error' in result) {
+        console.error('[useCircuitSimulator] compileIR failed:', result.error);
+        setReady(false);
+        return;
+      }
+
+      const pvMap = new Map<string, BitValue | BusValue>();
+      for (const [k, v] of Object.entries(result.portValues)) {
+        pvMap.set(k, v);
+      }
+      setPortValues(pvMap);
+      setCycle(0);
+      setReady(true);
+      // isSequential is computed synchronously via useMemo above — no need to set async
+    }
+
+    initSandbox();
+
+    return () => {
+      cancelled = true;
+      sandbox.dispose(slotId).catch(() => {});
+    };
+  }, [circuit, harnessedCircuit, componentLibrary, sandbox, slotId]);
+
+  // Sync inputs when underlying circuit changes
   useEffect(() => {
     setInputs(defaultInputs);
   }, [defaultInputs]);
 
   // Extract outputs from portValues
   useEffect(() => {
-    if (!ready || !sim.portValues || sim.portValues.size === 0) return;
-    const circ = topCircuitRef.current;
-
+    if (!ready || portValues.size === 0) return;
     const newOutputs: Record<string, boolean | number> = {};
-    for (const output of circ.outputs) {
+    for (const output of harnessedCircuit.outputs) {
       const key = `${TOP_LEVEL_NODE}.${output.name}`;
-      const value = sim.portValues.get(key);
+      const value = portValues.get(key);
       if (value !== undefined) {
         newOutputs[output.name] = typeof value === 'number' ? value : Boolean(value);
       }
     }
     setOutputs(newOutputs);
-  }, [ready, sim.portValues]);
-
-  // Sync inputs to engine when inputs change
-  useEffect(() => {
-    if (!sim.session || !ready) return;
-    const engine = sim.session.getEngine();
-    if (!engine) return;
-
-    for (const [inputName, value] of Object.entries(inputs)) {
-      engine.setNode(inputName, value);
-    }
-
-    if (!isSequential) {
-      sim.session.runCombinational();
-    }
-  }, [inputs, ready, isSequential, sim.session]);
+  }, [ready, portValues, harnessedCircuit]);
 
   // ── Actions ──
 
-  const setNode = useCallback((name: string, value: boolean | number) => {
+  const setNode = useCallback(async (name: string, value: boolean | number) => {
     setInputs(prev => ({ ...prev, [name]: value }));
-  }, []);
+    if (!ready) return;
+    const result = await sandbox.setNode(name, value, slotId);
+    if ('error' in result) return;
+    const pvMap = new Map<string, BitValue | BusValue>();
+    for (const [k, v] of Object.entries(result.portValues)) pvMap.set(k, v);
+    setPortValues(pvMap);
+  }, [ready, sandbox, slotId]);
 
   const toggleInput = useCallback((name: string) => {
-    setInputs(prev => {
-      const current = prev[name];
-      if (typeof current === 'boolean') return { ...prev, [name]: !current };
-      return { ...prev, [name]: current === 0 ? 1 : 0 };
-    });
+    const current = inputs[name];
+    const newValue = typeof current === 'boolean' ? !current : (current === 0 ? 1 : 0);
+    setNode(name, newValue);
+  }, [inputs, setNode]);
+
+  const toggleNode = useCallback(async (nodeId: string) => {
+    if (!ready) return;
+    const outKey = `${nodeId}.out`;
+    const current = portValues.get(outKey);
+    const newValue = typeof current === 'boolean' ? !current : (current === 1 ? 0 : 1);
+    const result = await sandbox.setNode(nodeId, newValue, slotId);
+    if ('error' in result) return;
+    const pvMap = new Map<string, BitValue | BusValue>();
+    for (const [k, v] of Object.entries(result.portValues)) pvMap.set(k, v);
+    setPortValues(pvMap);
+  }, [ready, portValues, sandbox, slotId]);
+
+  const setNodeValue = useCallback(async (nodeId: string, value: number | boolean | Map<number, number>) => {
+    if (!ready) return;
+    // Map values (for ROM/RAM loading) are supported via structured clone in postMessage
+    const result = await sandbox.setNode(nodeId, value as any, slotId);
+    if ('error' in result) return;
+    const pvMap = new Map<string, BitValue | BusValue>();
+    for (const [k, v] of Object.entries(result.portValues)) pvMap.set(k, v);
+    setPortValues(pvMap);
+  }, [ready, sandbox, slotId]);
+
+  const tick = useCallback(async () => {
+    if (!ready) return;
+    const result = await sandbox.tick(undefined, slotId);
+    if ('error' in result) return;
+    const pvMap = new Map<string, BitValue | BusValue>();
+    for (const [k, v] of Object.entries(result.portValues)) pvMap.set(k, v);
+    setPortValues(pvMap);
+    setCycle(result.cycle);
+  }, [ready, sandbox, slotId]);
+
+  const reset = useCallback(async () => {
+    const result = await sandbox.reset(slotId);
+    if ('error' in result) return;
+    const pvMap = new Map<string, BitValue | BusValue>();
+    for (const [k, v] of Object.entries(result.portValues)) pvMap.set(k, v);
+    setPortValues(pvMap);
+    setCycle(0);
+    setInputs(defaultInputs);
+  }, [sandbox, slotId, defaultInputs]);
+
+  const startAutoRun = useCallback((ticksPerSecond: number, _opts?: { displayRate?: number; onBeforeTick?: () => void }) => {
+    if (autoRunRef.current) clearInterval(autoRunRef.current);
+    setSpeedState(ticksPerSecond);
+    setIsRunning(true);
+    const interval = Math.max(1, Math.floor(1000 / ticksPerSecond));
+    autoRunRef.current = setInterval(() => { tick(); }, interval);
+  }, [tick]);
+
+  const stopAutoRun = useCallback(() => {
+    if (autoRunRef.current) {
+      clearInterval(autoRunRef.current);
+      autoRunRef.current = null;
+    }
+    setIsRunning(false);
   }, []);
 
-  const toggleNode = useCallback((nodeId: string) => {
-    if (!sim.session) return;
-    const engine = sim.session.getEngine();
-    if (!engine) return;
-    const pv = engine.getPortValues();
-    const outKey = `${nodeId}.out`;
-    const current = pv.get(outKey);
-    const newValue = typeof current === 'boolean' ? !current : (current === 1 ? 0 : 1);
-    engine.setNode(nodeId, newValue);
-    sim.session.runCombinational();
-  }, [sim.session]);
-
-  const setNodeValue = useCallback((nodeId: string, value: number | boolean | Map<number, number>) => {
-    if (!sim.session) return;
-    sim.session.getEngine()?.setNode(nodeId, value);
-    sim.session.runCombinational();
-  }, [sim.session]);
-
-  const tick = useCallback(() => {
-    if (!sim.session || !ready) return;
-    const engine = sim.session.getEngine();
-    if (engine) {
-      for (const [inputName, value] of Object.entries(inputs)) {
-        engine.setNode(inputName, value);
-      }
+  const setSpeed = useCallback((ticksPerSecond: number) => {
+    setSpeedState(ticksPerSecond);
+    if (autoRunRef.current) {
+      // Restart with new speed
+      clearInterval(autoRunRef.current);
+      const interval = Math.max(1, Math.floor(1000 / ticksPerSecond));
+      autoRunRef.current = setInterval(() => { tick(); }, interval);
     }
-    sim.tick();
-  }, [ready, inputs, sim.session, sim.tick]);
+  }, [tick]);
 
-  const reset = useCallback(() => {
-    sim.reset();
-    setInputs(defaultInputs);
-  }, [sim.reset, defaultInputs]);
+  useEffect(() => {
+    return () => {
+      if (autoRunRef.current) clearInterval(autoRunRef.current);
+    };
+  }, []);
 
   return {
     // State
     outputs,
     inputs,
-    cycleCount: sim.cycle,
+    cycleCount: cycle,
     ready,
     error: null,
     isSequential,
     circuit: harnessedCircuit,
-    portValues: (sim.portValues.size > 0 ? sim.portValues : null) as FlatPortValueMap | null,
-    sequentialState: sim.sequentialState,
+    portValues: portValues.size > 0 ? portValues : null,
+    sequentialState: null,
     componentLibrary,
-    history: sim.history,
-    historyIndex: sim.historyIndex,
-    isViewingPast: sim.isViewingPast,
-    isRunning: sim.isRunning,
+    history: historyRef.current,
+    historyIndex: -1,
+    isViewingPast: false,
+    isRunning,
+    speed,
 
     // Actions
     setNode,
@@ -220,14 +393,13 @@ export function useCircuitSimulator(
     setNodeValue,
     tick,
     reset,
-    stepBack: useCallback(() => { sim.session?.stepBack(); }, [sim.session]),
-    stepForward: useCallback(() => { sim.session?.stepForward(); }, [sim.session]),
-    seek: useCallback((index: number) => { sim.session?.seek(index); }, [sim.session]),
-    startAutoRun: useCallback((tps: number, opts?: { displayRate?: number; onBeforeTick?: () => void }) => {
-      sim.session?.startAutoRun(tps, opts);
-    }, [sim.session]),
-    stopAutoRun: useCallback(() => { sim.session?.stopAutoRun(); }, [sim.session]),
-    runCombinational: useCallback(() => { sim.session?.runCombinational(); }, [sim.session]),
-    getSimulator: useCallback(() => sim.session?.getEngine() ?? null, [sim.session]),
+    stepBack: () => {},
+    stepForward: () => {},
+    seek: () => {},
+    startAutoRun,
+    stopAutoRun,
+    setSpeed,
+    runCombinational: () => {}, // sandbox.setNode already runs combinational
+    getSimulator: () => null, // no local engine when running in sandbox
   };
 }

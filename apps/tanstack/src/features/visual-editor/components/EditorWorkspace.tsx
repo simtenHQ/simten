@@ -14,7 +14,9 @@ import {
   ClockControls,
   SignalOutputPanel,
 } from "@simten/ui/editor/components";
-import { CircuitCanvas, useCircuitSession } from "@simten/ui/canvas";
+import { CircuitCanvas } from "@simten/ui/canvas";
+import { useCircuitSimulator, builtFromIR } from "@simten/embed";
+
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useCircuitStore, useCircuitPreviewStore, useCircuitLibraryStore } from "@simten/ui/editor/stores";
 import type { Circuit } from "@simten/ui/editor/types";
@@ -32,32 +34,6 @@ import { ChatPanel, useChatStore, useLLMContext } from "@/features/chat";
 import { useMCPConnection } from "@/hooks/useMCPConnection";
 import { WaveformViewer } from "@simten/ui/waveform";
 import { EXAMPLES, CATEGORY_COLORS, CATEGORY_LABELS, type Example } from "../examples";
-
-// Helper to check if circuit has sequential components
-function hasSequentialComponents(
-  circuit: Circuit | null,
-  resolveComponent: (name: string) => Circuit | undefined,
-): boolean {
-  if (!circuit) return false;
-
-  for (const node of circuit.nodes) {
-    const componentDef = resolveComponent(node.componentRef);
-    if (!componentDef) continue;
-
-    // Check if component has clocks or state (sequential indicators)
-    if (componentDef.clocks.length > 0 || componentDef.state.length > 0) {
-      return true;
-    }
-
-    // If this is a composite, recursively check inside it
-    if (componentDef.implementation.kind === "composite") {
-      if (hasSequentialComponents(componentDef, resolveComponent)) {
-        return true;
-      }
-    }
-  }
-  return false;
-}
 
 const SCAN_CODES: Record<string, number> = {
   ArrowUp: 0x48, ArrowDown: 0x50, ArrowLeft: 0x4b, ArrowRight: 0x4d,
@@ -103,6 +79,17 @@ export function EditorWorkspace({ theme = "light" }: EditorWorkspaceProps) {
     (state) => state.setCompiledCircuits,
   );
   const circuit = useCircuitStore((state) => state.circuit);
+
+  // Sandbox-based simulation — uses same hook as embeds
+  const [compileResult, setCompileResult] = useState<import("@simten/ui/sandbox").CompileResult | null>(null);
+
+  // Build a BuiltCircuit-like object from the compile result for useCircuitSimulator.
+  // When the editor's source was compiled via sandbox.compile(), evals are already
+  // registered in the sandbox — no need to transfer them via evalSources.
+  const editorBuiltCircuit = useMemo<import("@simten/core/circuit").BuiltCircuit | null>(() => {
+    if (!compileResult || !circuit) return null;
+    return builtFromIR(circuit, [...compileResult.libraryCircuits, ...compileResult.circuits]);
+  }, [compileResult, circuit]);
 
   // Drawer state
   const [testsPanelOpen, setTestsPanelOpen] = useState(false);
@@ -150,15 +137,18 @@ export function EditorWorkspace({ theme = "light" }: EditorWorkspaceProps) {
     }
   }, []);
 
-  // ── Simulation — driven by compile result, no store dependency ──
-  const sim = useCircuitSession(circuit, library);
+  // ── Simulation — uses same sandbox-backed hook as embeds ──
+  // The editor already compiled source via sandbox.compile(), so evals exist in the sandbox.
+  // useCircuitSimulator sends the harnessed Circuit IR to the sandbox via compileIR.
+  // Cast needed because useCircuitSimulator requires a BuiltCircuit; we always
+  // provide one once the editor has compiled (see editorBuiltCircuit guard).
+  const sim = useCircuitSimulator(editorBuiltCircuit, { autoHarness: false });
   const showClockControls = sim.isSequential;
 
   // Keyboard scan code input for Input nodes (e.g. keyboard-driven CPU demos)
   useKeyboardInput(circuit, useCallback((nodeId: string, scanCode: number) => {
-    const engine = sim.session?.getEngine();
-    if (engine) engine.setNode(nodeId, scanCode);
-  }, [sim.session]));
+    sim.setNode(nodeId, scanCode);
+  }, [sim.setNode]));
 
   // Build library interface for CircuitCanvas from store
   const resolveCircuit = useCircuitLibraryStore((s) => s.resolveCircuit);
@@ -226,7 +216,7 @@ export function EditorWorkspace({ theme = "light" }: EditorWorkspaceProps) {
 
   // Handle compilation in split mode
   const handleCompile = useCallback(
-    (circuits: Circuit[], code: string, library?: { resolveCircuit(name: string): Circuit | undefined; getAllPrimitiveNames(): string[]; getAllCircuitNames(): string[] }) => {
+    (circuits: Circuit[], code: string, library?: { resolveCircuit(name: string): Circuit | undefined; getAllPrimitiveNames(): string[]; getAllCircuitNames(): string[] }, sandboxResult?: { circuits: Circuit[]; libraryCircuits: Circuit[]; portValues: Record<string, number | boolean> }) => {
       // Set library FIRST — applyToCanvas fires inside setCompiledCircuits and needs
       // the full library (including user circuits) before adding harness components.
       if (library) {
@@ -234,6 +224,11 @@ export function EditorWorkspace({ theme = "light" }: EditorWorkspaceProps) {
       }
 
       setCompiledCircuits(circuits, code);
+
+      // Feed sandbox compile result to simulation session (no double compile)
+      if (sandboxResult) {
+        setCompileResult(sandboxResult);
+      }
     },
     [setCompiledCircuits],
   );
@@ -402,11 +397,7 @@ export function EditorWorkspace({ theme = "light" }: EditorWorkspaceProps) {
                   sim.runCombinational();
                 }}
                 onLoadMemory={(nodeId, memData) => {
-                  const engine = sim.session?.getEngine();
-                  if (engine) {
-                    engine.setNode(nodeId, memData);
-                    sim.runCombinational();
-                  }
+                  sim.setNode(nodeId, memData);
                 }}
               />
             </div>
@@ -451,9 +442,7 @@ export function EditorWorkspace({ theme = "light" }: EditorWorkspaceProps) {
               onStepForward={() => sim.stepForward()}
               onSeek={(i) => sim.seek(i)}
               onSpeedChange={(speed) => {
-                if (sim.isRunning) {
-                  sim.session?.setSpeed(speed);
-                }
+                sim.setSpeed(speed);
               }}
               showScrubber={sim.history.length > 1}
             />

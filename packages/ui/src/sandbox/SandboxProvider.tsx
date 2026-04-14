@@ -22,10 +22,12 @@ export function SandboxProvider({ children }: { children: ReactNode }) {
 // No-op handle returned before the sandbox iframe is ready (SSR / pre-mount)
 const NULL_HANDLE: SandboxHandle = {
   compile: async () => ({ type: 'error', error: 'Sandbox not ready' }),
+  compileIR: async () => ({ type: 'error', error: 'Sandbox not ready' }),
   tick: async () => ({ type: 'error', error: 'Sandbox not ready' }),
   simulate: async () => ({ type: 'error', error: 'Sandbox not ready' }),
   reset: async () => ({ type: 'error', error: 'Sandbox not ready' }),
   setNode: async () => ({ type: 'error', error: 'Sandbox not ready' }),
+  dispose: async () => {},
   isReady: () => false,
 };
 
