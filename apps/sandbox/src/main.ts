@@ -150,12 +150,19 @@ function applyInputs(
   }
 }
 
+// Parent origin is pinned on the first inbound message (see dispatcher below).
+// Until then, we only send the benign `ready` signal with wildcard; all
+// request/response traffic goes to the captured origin.
+let parentOrigin: string | null = null;
+
 function respond(id: string, payload: object) {
-  parent.postMessage({ id, ...payload }, '*');
+  if (!parentOrigin) return;
+  parent.postMessage({ id, ...payload }, parentOrigin);
 }
 
 function respondError(id: string, error: string) {
-  parent.postMessage({ id, type: 'error', error }, '*');
+  if (!parentOrigin) return;
+  parent.postMessage({ id, type: 'error', error }, parentOrigin);
 }
 
 // ============================================================================
@@ -290,7 +297,7 @@ async function handleSimulate(
     memoryData,
   });
 
-  parent.postMessage({ ...result }, '*');
+  if (parentOrigin) parent.postMessage({ ...result }, parentOrigin);
 }
 
 function handleReset(id: string, slotId: string = DEFAULT_SLOT) {
@@ -403,6 +410,15 @@ self.addEventListener('message', (event: MessageEvent) => {
   const req = event.data as SandboxRequest;
   if (!req?.id || !req?.type) return;
 
+  // Pin parent origin on first valid message. Reject any later message from
+  // a different origin — prevents a malicious iframe peer from impersonating
+  // the parent once a legit session is established.
+  if (parentOrigin === null) {
+    parentOrigin = event.origin;
+  } else if (event.origin !== parentOrigin) {
+    return;
+  }
+
   switch (req.type) {
     case 'compile':
       handleCompile(req.id, req.source, req.slot);
@@ -428,5 +444,8 @@ self.addEventListener('message', (event: MessageEvent) => {
   }
 });
 
-// Signal that the sandbox is ready
+// Signal that the sandbox is ready. We can't know the parent's origin yet
+// (no inbound message has arrived), so this single initial signal uses '*'.
+// Payload carries no sensitive data — just a ready bit. All subsequent
+// traffic is pinned to the origin captured from the parent's first message.
 parent.postMessage({ type: 'ready' }, '*');
