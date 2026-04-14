@@ -15,10 +15,36 @@
  *                              executeJsCode() with merged scope
  */
 
-import { executeCircuitCode, executeJsCode, stripTypes } from '@simten/core/circuit';
+import { executeCircuitCode, executeJsCode, stripTypes, getAllCircuitEvals } from '@simten/core/circuit';
 import { simulateCircuit } from '@simten/core/api';
 import type { Circuit } from '@simten/core';
 import { hasImportStatements, extractAndRewriteImports } from './rewrite-imports.js';
+
+/**
+ * Extract all registered evals as source strings (via fn.toString()) so they can
+ * be sent to the iframe main thread and reconstructed there. This bridges the
+ * closure boundary that postMessage can't cross directly.
+ */
+function extractEvalSources(): Record<string, {
+  evalSource: string;
+  onTickSource?: string;
+  inputNames: string[];
+  outputNames: string[];
+  stateKeys?: string[];
+}> {
+  const sources: Record<string, ReturnType<typeof extractEvalSources>[string]> = {};
+  const registry = getAllCircuitEvals();
+  for (const [name, entry] of registry) {
+    sources[name] = {
+      evalSource: entry.evalFn.toString(),
+      onTickSource: entry.onTickFn?.toString(),
+      inputNames: entry.inputNames,
+      outputNames: entry.outputNames,
+      stateKeys: entry.stateKeys,
+    };
+  }
+  return sources;
+}
 
 type WorkerRequest =
   | { id: string; type: 'compile'; source: string }
@@ -73,11 +99,17 @@ async function handleRequest(req: WorkerRequest): Promise<void> {
         if (c) libraryCircuits.push(c);
       }
 
+      // Extract eval sources so the main thread can reconstruct them without
+      // re-executing the source (which may contain npm imports the main thread
+      // can't handle — those are resolved via esm.sh only in the worker).
+      const evalSources = extractEvalSources();
+
       self.postMessage({
         id: req.id,
         type: 'compiled-ir',
         circuits: result.circuits.map(circuitToSerializable),
         libraryCircuits: libraryCircuits.map(circuitToSerializable),
+        evalSources,
       });
     } catch (e) {
       self.postMessage({ id: req.id, type: 'error', error: e instanceof Error ? e.message : String(e) });
