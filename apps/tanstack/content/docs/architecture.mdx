@@ -179,29 +179,30 @@ This means loading a binary into ROM works the same as flipping a switch — one
 | Package | Description |
 |---------|-------------|
 | `@simten/core` | TypeScript builder, compiler, validator, simulator engine, `SimulationSession`, environmental state, Verilog export. No UI dependencies. |
-| `@simten/ui` | React components — canonical node renderers, shared canvas, ELK layout, `useCircuitSession` hook, `ClockControls`, editor UI. |
+| `@simten/ui` | React components — canonical node renderers, shared canvas, ELK layout, sandbox context (`useSandbox`), `ClockControls`, editor UI. |
 | `@simten/embed` | `CircuitViewer` (simulation + canvas), `CircuitEmbed` (viewer + auto-harness + info bar), `<circuit-embed>` web component. Depends on core + ui. |
 | `@simten/mcp` | MCP server for Claude Code integration |
 
 ### Hooks
 
-Three hooks handle the simulation lifecycle. Each serves a different entry point:
+A single hook, `useCircuitSimulator`, handles the simulation lifecycle for every entry point (editor, embeds, web component, drill-down). It delegates compilation and execution to the sandbox iframe via `useSandbox`, so no user code runs on the main thread.
 
 | Hook | Input | Purpose | Used by |
 |------|-------|---------|---------|
-| `useCircuitSession(circuit, library)` | Compiled `Circuit` + `CircuitLibrary` | Low-level simulation binding | `EditorWorkspace` (reads circuit/library from stores) |
-| `useCircuitSimulator(builtCircuit)` | `BuiltCircuit` | Builds library from dependencies, optional auto-harness, wraps `useCircuitSession` | `CircuitViewer` → `CircuitEmbed` → landing page, blog demos |
+| `useCircuitSimulator(builtCircuit)` | `BuiltCircuit` | Builds library from dependencies, optional auto-harness, compiles + ticks via sandbox | `EditorWorkspace`, `CircuitViewer` → `CircuitEmbed` → landing page, blog demos, drill-down |
 
-The editor has its own compiler (Monaco), so it passes the compiled circuit directly to `useCircuitSession`. Embeds receive a `BuiltCircuit` (from `circuit()`) and use `useCircuitSimulator` which builds the library internally from the circuit's dependency tree.
+Each consumer gets an isolated sandbox slot (`Map<slotId, SlotState>`) so simulation state never leaks across embeds or between the editor and a preview.
 
-Data flows one direction — from the compiler output to the simulation:
+Data flows one direction — from the compiled circuit to the sandbox to the UI:
 
 ```
-TS Editor compiles → { circuits, library }
-                           ↓
-                  useCircuitSession → { portValues, tick, reset, history, ... }
-                           ↓
-                  CircuitCanvas (rendering)
+circuit() or TS Editor compile → BuiltCircuit
+                                       ↓
+                              useCircuitSimulator → sandbox iframe
+                                       ↓
+                            { portValues, tick, reset, history, ... }
+                                       ↓
+                                CircuitCanvas (rendering)
 ```
 
 ### Editor State Management
@@ -225,7 +226,7 @@ useCircuitPreviewStore  (all compiled circuits)
      ▼
 useCircuitStore         (the active circuit)
      │
-     ├──→ useCircuitSession(circuit, library) → simulation state
+     ├──→ useCircuitSimulator(circuit) → sandbox-backed simulation state
      ├──→ ChatPanel (reads circuit for AI context)
      ├──→ Verilog export (reads circuit + library)
      └──→ MCP callbacks (reads circuit for state responses)
@@ -241,7 +242,8 @@ useCircuitStore         (the active circuit)
 |--------|----------|
 | `@simten/core/simulator` | `SimulationSession`, `SimulatorEngine`, `PRIMITIVE_DEFINITIONS`, `PRIMITIVES`, `createSimulatorFromCircuit`, `captureEnvironmentalState`, `restoreEnvironmentalState` |
 | `@simten/embed` | `CircuitViewer`, `CircuitEmbed`, `<circuit-embed>` web component — everything needed to embed a circuit |
-| `@simten/ui/canvas` | `CircuitCanvas`, `useCircuitSession`, `useSimulationSession`, `ClockControls` — shared simulation UI |
+| `@simten/ui/canvas` | `CircuitCanvas`, `ClockControls` — shared simulation UI |
+| `@simten/ui/sandbox` | `useSandbox`, `SandboxProvider` — sandbox iframe context used by `useCircuitSimulator` |
 | `@simten/ui/nodes` | `BaseNode`, `InputNode`, `OutputNode`, `LogicGateNode`, `NodeData` — canonical node components (props-driven, store-free) |
 
 Node components live in `@simten/ui/nodes` and are the single source of truth — both the embed and the editor use them.
