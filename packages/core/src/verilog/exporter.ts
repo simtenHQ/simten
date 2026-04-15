@@ -15,7 +15,8 @@ import type { Circuit, PortType } from '../types/circuit.js';
 import type { FlatCircuit, FlatNode, FlatConnection } from '../types/simulator.js';
 import type { CircuitLibrary } from '../types/simulator.js';
 import { elaborate } from '../simulator/elaboration.js';
-import type { VerilogExportOptions } from './types.js';
+import type { VerilogExportOptions, ExportResult } from './types.js';
+import { INLINE_MEMORY_THRESHOLD } from './types.js';
 import {
   emitPrimitive,
   isIOPrimitive,
@@ -32,6 +33,7 @@ const DEFAULT_OPTIONS: Required<VerilogExportOptions> = {
   clockName: 'clk',
   includeTimescale: true,
   target: 'simulation',
+  inlineMemoryThreshold: INLINE_MEMORY_THRESHOLD,
 };
 
 function sanitizeId(id: string): string {
@@ -76,7 +78,7 @@ export function exportVerilogFlat(
   circuit: Circuit,
   library: CircuitLibrary,
   options?: VerilogExportOptions,
-): string {
+): ExportResult {
   const opts = { ...DEFAULT_OPTIONS, ...options };
   const flatCircuit = elaborate(circuit, library, false, { expandReferences: true });
   return emitFlatModule(circuit, flatCircuit, library, opts);
@@ -84,12 +86,17 @@ export function exportVerilogFlat(
 
 /**
  * Export a circuit to Verilog (auto mode — flat by default).
+ *
+ * Returns `{ verilog, files }`: `verilog` is the `.v` source; `files` is a
+ * map of sidecar filename → contents for any `$readmemh` hex files the
+ * exporter emitted for large memories. Callers should write each file
+ * next to the `.v` for the Verilog to compile.
  */
 export function exportVerilog(
   circuit: Circuit,
   library: CircuitLibrary,
   options?: VerilogExportOptions,
-): string {
+): ExportResult {
   const opts = { ...DEFAULT_OPTIONS, ...options };
   if (opts.mode === 'hierarchical') {
     // TODO: hierarchical mode (emit sub-modules)
@@ -105,8 +112,12 @@ function emitFlatModule(
   flat: FlatCircuit,
   library: CircuitLibrary,
   opts: Required<VerilogExportOptions>,
-): string {
+): ExportResult {
   const moduleName = opts.topModuleName || sanitizeId(circuit.name);
+  // Sidecar files (hex) filled in by primitive-map as it emits memory init
+  // above the inline threshold. Drained into ExportResult.files at the end.
+  const sidecarFiles: Record<string, string> = {};
+  const inlineMemoryThreshold = opts.inlineMemoryThreshold ?? INLINE_MEMORY_THRESHOLD;
   const lines: string[] = [];
 
   if (opts.includeTimescale) {
@@ -301,6 +312,9 @@ function emitFlatModule(
       clockName: opts.clockName,
       target: opts.target,
       stateInits: collectStateInits(node, library),
+      inlineMemoryThreshold,
+      sidecarFiles,
+      moduleName,
     };
 
     const result = emitPrimitive(ctx);
@@ -342,6 +356,6 @@ function emitFlatModule(
   lines.push('endmodule');
   lines.push('');
 
-  return lines.join('\n');
+  return { verilog: lines.join('\n'), files: sidecarFiles };
 }
 

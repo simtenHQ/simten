@@ -13,7 +13,42 @@ export interface VerilogExportOptions {
   includeTimescale?: boolean;
   /** Target: simulation (relaxed, initial blocks) or synthesis (strict, FPGA-friendly) */
   target?: 'simulation' | 'synthesis';
+  /**
+   * Memory-init threshold in words. Memories with at least this many
+   * preloaded entries are emitted as `$readmemh("<file>.hex")` with the
+   * hex contents bundled in `ExportResult.files`; smaller memories stay
+   * inline as `initial begin mem[K] = …; end` for readability.
+   * Defaults to `INLINE_MEMORY_THRESHOLD` (2048 words) — matches the
+   * Yosys/Vivado/Quartus convention that very large memories are
+   * better expressed as external hex files.
+   */
+  inlineMemoryThreshold?: number;
 }
+
+/**
+ * Result of exporting a circuit to Verilog. Callers write `verilog` to
+ * a `.v` file and every entry in `files` to its own filename sitting
+ * next to it — the sidecar hex files referenced by `$readmemh`
+ * directives in the Verilog output, when a memory exceeds the inline
+ * threshold.
+ */
+export interface ExportResult {
+  /** The main Verilog source (what would go in a `.v` file). */
+  verilog: string;
+  /**
+   * Sidecar files by filename (e.g. `<module>_<node>_<state>.hex`).
+   * Empty when the circuit has no memory that exceeded the threshold.
+   */
+  files: Record<string, string>;
+}
+
+/**
+ * Default threshold (in words) for switching a memory from inline
+ * `initial begin … end` to `$readmemh` with a sidecar hex file.
+ * Matches common FPGA synthesis tool preferences and keeps inline
+ * Verilog files under ~60KB for readability.
+ */
+export const INLINE_MEMORY_THRESHOLD = 2048;
 
 export interface VerilogTestbenchOptions {
   /** Clock half-period in simulation time units (default: 5) */

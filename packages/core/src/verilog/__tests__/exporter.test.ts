@@ -36,7 +36,7 @@ describe('exportVerilog', () => {
       ],
     });
 
-    const verilog = exportVerilog(HalfAdder.circuit, libraryFor(HalfAdder));
+    const { verilog } = exportVerilog(HalfAdder.circuit, libraryFor(HalfAdder));
 
     expect(verilog).toContain('module HalfAdder');
     expect(verilog).toContain('input');
@@ -73,7 +73,7 @@ describe('exportVerilog', () => {
       ],
     });
 
-    const verilog = exportVerilog(FullAdder.circuit, libraryFor(FullAdder));
+    const { verilog } = exportVerilog(FullAdder.circuit, libraryFor(FullAdder));
 
     expect(verilog).toContain('module FullAdder');
     expect(verilog).toContain('endmodule');
@@ -89,7 +89,7 @@ describe('exportVerilog', () => {
       ],
     });
 
-    const verilog = exportVerilog(BusPassthrough.circuit, libraryFor(BusPassthrough));
+    const { verilog } = exportVerilog(BusPassthrough.circuit, libraryFor(BusPassthrough));
 
     expect(verilog).toContain('module BusPassthrough');
     expect(verilog).toContain('[7:0]');
@@ -110,7 +110,7 @@ describe('exportVerilog', () => {
         ],
       });
 
-      const verilog = exportVerilog(Plain.circuit, libraryFor(Plain));
+      const { verilog } = exportVerilog(Plain.circuit, libraryFor(Plain));
       expect(verilog).not.toMatch(/initial begin\s+mem_/);
     });
 
@@ -155,7 +155,7 @@ describe('exportVerilog', () => {
         getAllPrimitiveNames: () => ['RAM'],
       };
 
-      const verilog = exportVerilog(RamUser.circuit, lib);
+      const { verilog } = exportVerilog(RamUser.circuit, lib);
       const initSection = verilog.match(/initial begin[\s\S]*?end/)?.[0] ?? '';
       // Sorted ascending by address
       expect(initSection.indexOf('[0]')).toBeLessThan(initSection.indexOf('[1]'));
@@ -164,6 +164,64 @@ describe('exportVerilog', () => {
       expect(initSection).toMatch(/\[0\] = 8'hcd/);
       expect(initSection).toMatch(/\[1\] = 8'hef/);
       expect(initSection).toMatch(/\[2\] = 8'hab/);
+    });
+
+    it('switches to $readmemh + sidecar hex file above the inline threshold', () => {
+      // Build a library with a RAM whose state has > threshold entries
+      // populated. Expect the exported Verilog to contain a $readmemh
+      // directive and the returned `files` map to carry the hex payload.
+      const RamUser = circuit('BigRam', {
+        in: { addr: bus(8), data_in: bus(8), we: bit },
+        out: { data_out: bus(8) },
+        nodes: { r: RAM },
+        connect: ({ in: inp, out, r }) => [
+          inp.addr.to(r.addr),
+          inp.data_in.to(r.data_in),
+          inp.we.to(r.we),
+          r.data_out.to(out.data_out),
+        ],
+      });
+
+      const bigData = new Map<number, number>();
+      // 10 entries is tiny, but we'll lower the threshold via export options
+      // to force the $readmemh path — cheaper than populating 2048+ entries
+      // for a unit test.
+      for (let i = 0; i < 10; i++) bigData.set(i, i * 3 + 1);
+
+      const ramDefWithData: Circuit = {
+        ...RAM.circuit,
+        state: [
+          {
+            ...RAM.circuit.state[0],
+            initialValue: { data: bigData, addressWidth: 8, dataWidth: 8 },
+          },
+        ],
+      };
+      const circuitMap = new Map<string, Circuit>([
+        [RamUser.name, RamUser.circuit],
+        ['RAM', ramDefWithData],
+      ]);
+      const lib: CircuitLibrary = {
+        resolveCircuit: (name) => circuitMap.get(name),
+        getAllPrimitiveNames: () => ['RAM'],
+      };
+
+      const result = exportVerilog(RamUser.circuit, lib, {
+        inlineMemoryThreshold: 5, // force the big path
+      });
+
+      expect(result.verilog).toMatch(/\$readmemh\("[^"]+\.hex",\s*mem_/);
+      expect(Object.keys(result.files).length).toBe(1);
+
+      // Hex file content: one word per line, sorted by address, 2 hex chars
+      // (8-bit). Our init map: i -> i*3+1 for i in 0..9.
+      const [filename, contents] = Object.entries(result.files)[0];
+      expect(filename).toMatch(/\.hex$/);
+      const lines = contents.trimEnd().split('\n');
+      expect(lines.length).toBe(10);
+      expect(lines[0]).toBe('01'); // i=0 → 0*3+1 = 1
+      expect(lines[1]).toBe('04'); // i=1 → 4
+      expect(lines[9]).toBe('1c'); // i=9 → 28 = 0x1c
     });
 
     it('emits initial for stdlib ROM via nodeArgs.init (legacy path still works)', () => {
@@ -178,7 +236,7 @@ describe('exportVerilog', () => {
         ],
       });
 
-      const verilog = exportVerilog(LegacyROM.circuit, libraryFor(LegacyROM));
+      const { verilog } = exportVerilog(LegacyROM.circuit, libraryFor(LegacyROM));
       expect(verilog).toMatch(/initial begin/);
       expect(verilog).toMatch(/mem_.*\[0\] = 8'd170/);
       expect(verilog).toMatch(/mem_.*\[1\] = 8'd187/);

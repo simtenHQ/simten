@@ -23,10 +23,12 @@ Circuits export to synthesizable Verilog. The exporter maps 60+ primitives to st
 ```typescript
 import { exportVerilog } from '@simten/core/verilog';
 
-const verilog = exportVerilog(circuit, library, { target: 'synthesis' });
+const { verilog, files } = exportVerilog(circuit, library, { target: 'synthesis' });
+// `verilog` is the .v source; `files` is a map of sidecar filename → contents
+// (hex files referenced by $readmemh for large preloaded memories).
 ```
 
-The `target: 'synthesis'` option strips simulation-only constructs (`initial` blocks) for FPGA-ready output.
+The `target: 'synthesis'` option strips simulation-only constructs (`initial` blocks) for FPGA-ready output. Memories above `inlineMemoryThreshold` (default 2048 words) are emitted as `$readmemh("<file>.hex", reg)` with the hex contents returned alongside — matching the Yosys/Vivado/Quartus convention for large ROM/RAM initialization.
 
 ## AI tutor with Claude Code
 

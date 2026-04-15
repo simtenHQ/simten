@@ -49,20 +49,76 @@ export interface PrimitiveContext {
   target: 'simulation' | 'synthesis';
   /** Preloaded memory state from the component definition (if any). */
   stateInits?: StateInit[];
+  /**
+   * Threshold (in words) above which a memory's initial data is emitted
+   * as `$readmemh("<file>.hex")` + sidecar file instead of inline
+   * `initial begin … end`. Defaults handled by the exporter.
+   */
+  inlineMemoryThreshold?: number;
+  /**
+   * Sink for sidecar files generated during primitive emission (hex
+   * files referenced by `$readmemh`). Primitive-map pushes here; the
+   * exporter drains into `ExportResult.files`.
+   */
+  sidecarFiles?: Record<string, string>;
+  /**
+   * Module name, used to qualify sidecar filenames so multi-circuit
+   * projects don't collide on `<node>_<state>.hex`.
+   */
+  moduleName?: string;
 }
 
 /**
- * Emit a Verilog `initial begin … end` block for the given mem reg name,
- * populating it from a sparse state-init Map. Used by every primitive with
- * a declarative memory state. Keys are sorted so output is deterministic
- * (handy for golden-file tests). Inline path only — the `$readmemh` sidecar
- * path is handled by the exporter once the ExportResult shape lands.
+ * Emit a memory-initialization block for the given reg name, picking
+ * between two paths based on size:
+ *
+ * - **Inline** (default, for small memories): `initial begin` followed
+ *   by `mem[K] = W'hXX;` per address. Readable, single-file, good for
+ *   lookup tables and small ROMs.
+ *
+ * - **`$readmemh` sidecar** (for large memories, ≥ threshold entries):
+ *   emits `initial $readmemh("<file>.hex", <reg>);` and writes the hex
+ *   contents into `ctx.sidecarFiles[<file>]`. Matches what FPGA toolchains
+ *   (Yosys, Vivado, Quartus) expect for program ROMs, framebuffers, and
+ *   other memories that are too large to inline.
+ *
+ * Keys are sorted for determinism. Pass the full `ctx` so we can reach
+ * the sidecar collector and the optional threshold override.
  */
-export function emitMemoryInit(regName: string, init: StateInit): string[] {
+export function emitMemoryInit(
+  regName: string,
+  init: StateInit,
+  ctx?: PrimitiveContext,
+): string[] {
   if (init.data.size === 0) return [];
   const w = init.width;
   const hexWidth = Math.max(1, Math.ceil(w / 4));
+  const threshold = ctx?.inlineMemoryThreshold ?? 2048;
   const keys = [...init.data.keys()].sort((a, b) => a - b);
+
+  // Large-memory path — emit $readmemh and stash the hex contents as a
+  // sidecar file. Depths up to the highest used address are padded with
+  // zeros so the file represents the full memory.
+  if (keys.length >= threshold && ctx?.sidecarFiles !== undefined) {
+    const modPrefix = ctx.moduleName ? `${ctx.moduleName}_` : '';
+    const fileName = `${modPrefix}${sanitizeId(ctx.nodeId ?? 'node')}_${init.stateName}.hex`;
+    const maxAddr = keys[keys.length - 1];
+    // Build the hex file content: one word per line, zero-padded to
+    // width/4 chars. Addresses below the max but unpopulated are zeros.
+    const lines: string[] = new Array(maxAddr + 1);
+    for (let i = 0; i <= maxAddr; i++) {
+      const val = init.data.get(i) ?? 0;
+      lines[i] = (val >>> 0).toString(16).padStart(hexWidth, '0');
+    }
+    ctx.sidecarFiles[fileName] = lines.join('\n') + '\n';
+    return [
+      `initial begin`,
+      `  $readmemh("${fileName}", ${regName});`,
+      `end`,
+    ];
+  }
+
+  // Inline path.
   const lines: string[] = [`initial begin`];
   for (const addr of keys) {
     const val = init.data.get(addr) ?? 0;
@@ -325,7 +381,7 @@ export function emitPrimitive(ctx: PrimitiveContext): { lines: string[]; declara
           initLines.push(`end`);
         }
         for (const init of ctx.stateInits ?? []) {
-          initLines.push(...emitMemoryInit(memName, init));
+          initLines.push(...emitMemoryInit(memName, init, ctx));
         }
       }
 
@@ -346,7 +402,7 @@ export function emitPrimitive(ctx: PrimitiveContext): { lines: string[]; declara
       const initLines: string[] = [];
       if (ctx.target === 'simulation') {
         for (const init of ctx.stateInits ?? []) {
-          initLines.push(...emitMemoryInit(memName, init));
+          initLines.push(...emitMemoryInit(memName, init, ctx));
         }
       }
       return {
@@ -379,7 +435,7 @@ export function emitPrimitive(ctx: PrimitiveContext): { lines: string[]; declara
           initLines.push(`end`);
         }
         for (const init of ctx.stateInits ?? []) {
-          initLines.push(...emitMemoryInit(memName, init));
+          initLines.push(...emitMemoryInit(memName, init, ctx));
         }
       }
 
@@ -572,7 +628,7 @@ export function emitPrimitive(ctx: PrimitiveContext): { lines: string[]; declara
       ];
       if (ctx.target === 'simulation') {
         for (const init of ctx.stateInits ?? []) {
-          initLines.push(...emitMemoryInit(rfName, init));
+          initLines.push(...emitMemoryInit(rfName, init, ctx));
         }
       }
       return {
@@ -601,7 +657,7 @@ export function emitPrimitive(ctx: PrimitiveContext): { lines: string[]; declara
       const initLines: string[] = [];
       if (ctx.target === 'simulation') {
         for (const init of ctx.stateInits ?? []) {
-          initLines.push(...emitMemoryInit(imemName, init));
+          initLines.push(...emitMemoryInit(imemName, init, ctx));
         }
       }
       return {
@@ -619,7 +675,7 @@ export function emitPrimitive(ctx: PrimitiveContext): { lines: string[]; declara
       const initLines: string[] = [];
       if (ctx.target === 'simulation') {
         for (const init of ctx.stateInits ?? []) {
-          initLines.push(...emitMemoryInit(dmemName, init));
+          initLines.push(...emitMemoryInit(dmemName, init, ctx));
         }
       }
       return {
