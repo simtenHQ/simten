@@ -33,42 +33,10 @@ function readPort(
   return typeof val === "number" ? (val >>> 0) : null;
 }
 
-function extractRegisters(
-  sequentialState: ReadonlyMap<string, unknown> | null | undefined,
-  cpuLabel: string,
-): Map<number, number> {
-  if (!sequentialState) return new Map();
-
-  // Primary match: key contains both cpuLabel segment and regfile segment
-  for (const [key, value] of sequentialState) {
-    if (key.includes(`_${cpuLabel}_`) && key.includes("_regfile_")) {
-      if (value instanceof Map) return value as Map<number, number>;
-      if (value && typeof value === "object") {
-        const m = new Map<number, number>();
-        for (const [k, v] of Object.entries(value as Record<string, number>)) {
-          m.set(Number(k), v);
-        }
-        return m;
-      }
-    }
-  }
-
-  // Fallback: match by regfile key that also starts with cpuLabel prefix
-  for (const [key, value] of sequentialState) {
-    if (key.startsWith(`${cpuLabel}_`) && key.includes("regfile")) {
-      if (value instanceof Map) return value as Map<number, number>;
-      if (value && typeof value === "object") {
-        const m = new Map<number, number>();
-        for (const [k, v] of Object.entries(value as Record<string, number>)) {
-          m.set(Number(k), v);
-        }
-        return m;
-      }
-    }
-  }
-
-  return new Map();
-}
+// Register values are now read through the RV32I_DualCPU circuit's debug
+// scan ports (debug_addr0/1 → debug_value0/1), not by reaching into the
+// simulator's internal sequentialState. See cpu-debugger/rv32i-cpu.circuit.ts
+// for the per-CPU pattern.
 
 function extractPipelineStages(
   portValues: ReadonlyMap<string, boolean | number> | null,
@@ -233,13 +201,37 @@ export function useRV32IDualCPU() {
 
   // Extract per-CPU state
   const portValues = sim.portValues;
-  const seqState = sim.sequentialState?.currentState ?? null;
 
   const cpu0Stages = extractPipelineStages(portValues, "cpu0");
   const cpu1Stages = extractPipelineStages(portValues, "cpu1");
 
-  const cpu0Registers = extractRegisters(seqState, "cpu0");
-  const cpu1Registers = extractRegisters(seqState, "cpu1");
+  // Per-CPU JTAG-style register scan. Two batched scans per tick (one per
+  // core) — each is a single sandbox round-trip that loops debug_addr{0,1}
+  // 0..31 internally and returns the whole register array.
+  const [cpu0Registers, setCpu0Registers] = useState<Map<number, number>>(new Map());
+  const [cpu1Registers, setCpu1Registers] = useState<Map<number, number>>(new Map());
+
+  useEffect(() => {
+    if (!sim.ready) return;
+    let cancelled = false;
+    (async () => {
+      const v0 = await sim.scanPort("debug_addr0", "__top__.debug_value0", 32);
+      if (cancelled) return;
+      const v1 = await sim.scanPort("debug_addr1", "__top__.debug_value1", 32);
+      if (cancelled) return;
+      if (v0) {
+        const m0 = new Map<number, number>();
+        for (let i = 0; i < v0.length; i++) m0.set(i, v0[i] >>> 0);
+        setCpu0Registers(m0);
+      }
+      if (v1) {
+        const m1 = new Map<number, number>();
+        for (let i = 0; i < v1.length; i++) m1.set(i, v1[i] >>> 0);
+        setCpu1Registers(m1);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [sim.ready, sim.cycleCount, sim.scanPort]);
 
   const prevCpu0Ref = useRef<Map<number, number>>(new Map());
   const prevCpu1Ref = useRef<Map<number, number>>(new Map());

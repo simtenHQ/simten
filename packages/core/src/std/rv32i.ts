@@ -164,16 +164,24 @@ export const RV32I_BranchComp = circuit('RV32I_BranchComp', {
   meta: { category: 'rv32i', icon: 'CMP', description: 'RISC-V branch comparator' },
 });
 
+// `debug_rs` / `debug_read` are a third combinational read port used by the
+// debugger UI to observe register values. In real hardware this is how JTAG
+// Abstract Commands or a dedicated debug-access port read the architectural
+// register file while the core is halted — it's always synthesizable (just
+// another read port), and it never interferes with the rs1/rs2 reads driven
+// by decode. Unconnected callers get 0 by default (reads x0), which is safe.
 export const RV32I_RegisterFile = circuit('RV32I_RegisterFile', {
-  in: { rs1: bus(5), rs2: bus(5), rd: bus(5), write_data: bus(32), we: bit },
-  out: { read1: bus(32), read2: bus(32) },
+  in: { rs1: bus(5), rs2: bus(5), rd: bus(5), write_data: bus(32), we: bit, debug_rs: bus(5) },
+  out: { read1: bus(32), read2: bus(32), debug_read: bus(32) },
   state: { memory: mem(32, 32) },
-  eval: ({ rs1, rs2, memory }) => {
+  eval: ({ rs1, rs2, debug_rs, memory }) => {
     const r1 = (rs1 as number) & 0x1F;
     const r2 = (rs2 as number) & 0x1F;
+    const rd = (debug_rs as number) & 0x1F;
     return {
       read1: r1 === 0 ? 0 : (memory[r1]) >>> 0,
       read2: r2 === 0 ? 0 : (memory[r2]) >>> 0,
+      debug_read: rd === 0 ? 0 : (memory[rd]) >>> 0,
     };
   },
   onTick: ({ rd, write_data, we, memory }) => {
