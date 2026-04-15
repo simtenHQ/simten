@@ -23,6 +23,7 @@ import {
   isSequentialPrimitive,
   type PrimitiveWires,
   type PrimitiveContext,
+  type StateInit,
 } from './primitive-map.js';
 
 const DEFAULT_OPTIONS: Required<VerilogExportOptions> = {
@@ -40,6 +41,31 @@ function sanitizeId(id: string): string {
 function portTypeToVerilog(pt: PortType): string {
   if (pt.kind === 'bit') return '';
   return `[${pt.width - 1}:0] `;
+}
+
+/**
+ * Collect preloaded memory state from the component definition for a flat
+ * node. Looks up `node.primitiveType` in the library and extracts memory
+ * state blocks that have a non-empty `initialValue.data` Map. Returned
+ * array is handed to primitive-map via `PrimitiveContext.stateInits` so
+ * each primitive can emit `initial begin …` using its own reg-name
+ * convention. Circuits without memory state (or with empty init) yield
+ * `undefined`, which primitives treat as a no-op.
+ */
+function collectStateInits(node: FlatNode, library: CircuitLibrary): StateInit[] | undefined {
+  const def = library.resolveCircuit(node.primitiveType);
+  if (!def?.state || def.state.length === 0) return undefined;
+
+  const inits: StateInit[] = [];
+  for (const block of def.state) {
+    if (block.stateType.kind !== 'memory') continue;
+    const iv = block.initialValue as { data?: Map<number, number>; dataWidth?: number } | undefined;
+    const data = iv?.data;
+    if (!data || !(data instanceof Map) || data.size === 0) continue;
+    const width = iv?.dataWidth ?? block.stateType.dataWidth ?? 8;
+    inits.push({ stateName: block.name, data, width });
+  }
+  return inits.length > 0 ? inits : undefined;
 }
 
 /**
@@ -274,6 +300,7 @@ function emitFlatModule(
       wires,
       clockName: opts.clockName,
       target: opts.target,
+      stateInits: collectStateInits(node, library),
     };
 
     const result = emitPrimitive(ctx);
