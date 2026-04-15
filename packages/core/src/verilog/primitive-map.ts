@@ -789,7 +789,15 @@ export function isSinkPrimitive(primitiveType: string): boolean {
  * Check if a primitive type is sequential (needs a clock).
  */
 export function isSequentialPrimitive(primitiveType: string): boolean {
-  return ['DFlipFlop', 'Register', 'RAM', 'ROM', 'DualPortRAM', 'Console', 'UART_TX'].includes(primitiveType);
+  // Anything that emits a `posedge clk` always-block in primitive-map
+  // OR that the eval-synth path can wrap in clocked logic belongs here.
+  // The exporter uses this to decide whether the module header needs a
+  // `clk` port. Missing entries cause iverilog "port `clk' is not a
+  // port of dut" errors when the testbench tries to drive a clock.
+  return [
+    'DFlipFlop', 'Register', 'RAM', 'ROM', 'DualPortRAM', 'Console', 'UART_TX',
+    'RV32I_RegisterFile', 'RV32I_InstrMem', 'RV32I_DataMem',
+  ].includes(primitiveType);
 }
 
 /**
