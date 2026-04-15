@@ -9,16 +9,14 @@ export function useCORDICSimulator() {
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [isDone, setIsDone] = useState(false);
 
-  // Monitor done signal
+  // Monitor the circuit's formal `done` output port (was previously a
+  // substring scan over portValues looking for a node named "doneLed" —
+  // replaced with a declared top-level port).
   useEffect(() => {
-    if (sim.portValues) {
-      for (const [key, value] of sim.portValues) {
-        if (key.includes("doneLed") && value) {
-          setIsDone(true);
-          setIsRunning(false);
-          break;
-        }
-      }
+    const done = sim.portValues?.get("__top__.done");
+    if (done) {
+      setIsDone(true);
+      setIsRunning(false);
     }
   }, [sim.portValues]);
 
