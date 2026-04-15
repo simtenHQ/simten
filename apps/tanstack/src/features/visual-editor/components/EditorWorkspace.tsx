@@ -124,14 +124,26 @@ export function EditorWorkspace({ theme = "light" }: EditorWorkspaceProps) {
     }
 
     try {
-      const verilogCode = exportVerilog(currentCircuit, lib);
-      const blob = new Blob([verilogCode], { type: 'text/plain' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${currentCircuit.name}.v`;
-      a.click();
-      URL.revokeObjectURL(url);
+      const { verilog, files } = exportVerilog(currentCircuit, lib);
+
+      // Trigger a download for each file produced by the exporter: the main
+      // `.v` plus any sidecar `.hex` files referenced by `$readmemh` for
+      // large preloaded memories. The Verilog won't compile without the
+      // hex files sitting next to it, so we ship them in one go.
+      const download = (name: string, contents: string) => {
+        const blob = new Blob([contents], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = name;
+        a.click();
+        URL.revokeObjectURL(url);
+      };
+
+      download(`${currentCircuit.name}.v`, verilog);
+      for (const [name, contents] of Object.entries(files)) {
+        download(name, contents);
+      }
     } catch (e) {
       console.error('Verilog export failed:', e);
     }

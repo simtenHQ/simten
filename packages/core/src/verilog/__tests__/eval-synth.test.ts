@@ -457,7 +457,7 @@ describe('end-to-end eval-synth export', () => {
       ],
     });
 
-    const verilog = exportVerilog(MyCircuit.circuit, libraryFor(MyCircuit));
+    const { verilog } = exportVerilog(MyCircuit.circuit, libraryFor(MyCircuit));
 
     // Should contain synthesized logic, NOT a WARNING comment
     expect(verilog).toContain('module TestSynthCircuit');
