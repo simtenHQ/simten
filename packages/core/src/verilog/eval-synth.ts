@@ -150,7 +150,7 @@ const ALLOWED_BINARY_OPS = new Set([
   '==', '!=',                          // loose comparison (some compiled JS uses these)
 ]);
 
-const ALLOWED_LOGICAL_OPS = new Set(['&&', '||']);
+const ALLOWED_LOGICAL_OPS = new Set(['&&', '||', '??']);
 const ALLOWED_UNARY_OPS = new Set(['~', '!', '-', '+']);
 
 /** Options for validation */
@@ -763,6 +763,11 @@ function emitExpr(tc: TranspileContext, node: any): string {
     }
 
     case 'LogicalExpression': {
+      // ?? (nullish coalescing) — hardware signals are never null/undefined,
+      // so (x ?? default) is always x. Emit just the left operand.
+      if (node.operator === '??') {
+        return emitExpr(tc, node.left);
+      }
       const op = JS_TO_VERILOG_OP[node.operator] ?? node.operator;
       return `(${emitExpr(tc, node.left)} ${op} ${emitExpr(tc, node.right)})`;
     }
