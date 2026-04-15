@@ -1,0 +1,21 @@
+{
+	"name": "@simten/synth",
+	"description": "Verilog synthesis service — runs Yosys on exported Verilog and returns gate-level stats and netlist (Cloudflare Container)",
+	"dependencies": {
+		"@cloudflare/containers": "0.0.30",
+		"hono": "4.11.1"
+	},
+	"devDependencies": {
+		"@types/node": "^20",
+		"typescript": "5.9.3",
+		"wrangler": "4.72.0"
+	},
+	"private": true,
+	"scripts": {
+		"cf-typegen": "wrangler types",
+		"build:container": "docker build -t simten-synth .",
+		"deploy": "wrangler deploy",
+		"dev": "wrangler dev",
+		"start": "wrangler dev"
+	}
+}
