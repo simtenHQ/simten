@@ -14,6 +14,7 @@
 
 import { describe, it, expect } from 'vitest';
 import { exportVerilog } from '../exporter.js';
+import { generateSequentialTestbench, type SequentialTestVector } from '../testbench-gen.js';
 import { circuit, bit, bus } from '../../circuit/index.js';
 import { RAM } from '../../std/index.js';
 import { createSimulatorFromCircuit } from '../../simulator/index.js';
@@ -75,33 +76,14 @@ function runSimulator(steps: Step[]): number[] {
   return outputs;
 }
 
-function buildTestbench(steps: Step[]): string {
-  const setInputs = steps
-    .map((s, i) =>
-      `    addr = 8'd${s.addr}; data_in = 8'd${s.data_in}; we = 1'b${s.we};\n` +
-      `    @(posedge clk); #1;\n` +
-      `    $display("RESULT|test|${i}|cycle|${i + 1}|data_out|%0d", data_out);`,
-    )
-    .join('\n');
-
-  return `\`timescale 1ns / 1ps
-module tb;
-  reg clk = 0;
-  reg [7:0] addr = 0;
-  reg [7:0] data_in = 0;
-  reg we = 0;
-  wire [7:0] data_out;
-
-  RamWrapper dut (.clk(clk), .addr(addr), .data_in(data_in), .we(we), .data_out(data_out));
-
-  always #5 clk = ~clk;
-
-  initial begin
-${setInputs}
-    $finish;
-  end
-endmodule
-`;
+function buildVectors(steps: Step[]): SequentialTestVector[] {
+  // One vector per cycle: drive inputs before the posedge, sample data_out
+  // after. The generator emits a RESULT|... line per `expect` block.
+  return steps.map((s, i) => ({
+    cycle: i + 1,
+    setInputs: { addr: s.addr, data_in: s.data_in, we: s.we },
+    expect: { data_out: 0 }, // placeholder — co-sim compares against runSimulator output
+  }));
 }
 
 const d = describe.skipIf(!hasVerifier());
@@ -112,7 +94,7 @@ d('RAM — JS simulator vs iverilog co-simulation', () => {
 
     const { circuit, lib } = buildRam();
     const { verilog } = exportVerilog(circuit, lib);
-    const testbench = buildTestbench(SEQUENCE);
+    const testbench = generateSequentialTestbench(circuit, buildVectors(SEQUENCE));
 
     const result = await verifyVerilog(verilog, testbench);
 
