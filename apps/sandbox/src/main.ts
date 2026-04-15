@@ -44,6 +44,7 @@ type SandboxRequest =
   | { id: string; type: 'compile-ir'; circuit: Circuit; libraryCircuits: Circuit[]; slot: string; evalSources?: Record<string, EvalSource> }
   | { id: string; type: 'tick'; inputs?: Record<string, number | boolean>; slot?: string }
   | { id: string; type: 'tick-n'; n: number; inputs?: Record<string, number | boolean>; slot?: string }
+  | { id: string; type: 'scan-port'; addrNodeId: string; valuePortKey: string; count: number; slot?: string }
   | { id: string; type: 'simulate'; source?: string; ticks: number; inputs?: Record<string, number | boolean>; memoryData?: Record<string, Record<string, number>>; slot?: string }
   | { id: string; type: 'reset'; slot?: string }
   | { id: string; type: 'set-node'; nodeId: string; value: number | boolean | Map<number, number>; slot?: string }
@@ -342,6 +343,37 @@ function handleTick(id: string, inputs?: Record<string, number | boolean>, slotI
   }
 }
 
+// Batched debug-port scan. Drives `addrNodeId` through 0..count-1, samples
+// `valuePortKey` after each combinational re-eval, returns the array.
+// Used by JTAG-style register scanners (RV32I debugger) — one round-trip
+// per frame instead of one per register.
+//
+// This doesn't advance the clock — reads are purely combinational, mirroring
+// how real debug hardware observes architectural state while the core is
+// halted (and how it can interleave with normal execution in a properly
+// dual-ported regfile).
+function handleScanPort(id: string, addrNodeId: string, valuePortKey: string, count: number, slotId: string = DEFAULT_SLOT) {
+  const slot = slots.get(slotId);
+  const sim = slot?.simulator;
+  if (!sim || !slot) {
+    respondError(id, `No circuit compiled for slot '${slotId}'.`);
+    return;
+  }
+  try {
+    const n = Math.max(0, count | 0);
+    const values: number[] = new Array(n).fill(0);
+    for (let i = 0; i < n; i++) {
+      sim.setNode(addrNodeId, i);
+      sim.runCombinational();
+      const v = sim.getPortValues().get(valuePortKey);
+      values[i] = typeof v === 'number' ? v : (v ? 1 : 0);
+    }
+    respond(id, { type: 'scanned-port', values });
+  } catch (e) {
+    respondError(id, e instanceof Error ? e.message : String(e));
+  }
+}
+
 // Advance the simulator by N cycles in one round-trip. Returns only the final
 // port values and one peripheral-state snapshot. Used by demos that need high
 // tick rates (raster frames) — one postMessage instead of N.
@@ -529,6 +561,9 @@ self.addEventListener('message', (event: MessageEvent) => {
       break;
     case 'tick-n':
       handleTickN(req.id, req.n, req.inputs, req.slot);
+      break;
+    case 'scan-port':
+      handleScanPort(req.id, req.addrNodeId, req.valuePortKey, req.count, req.slot);
       break;
     case 'simulate':
       handleSimulate(req.id, req.ticks, req.source, req.inputs, req.memoryData, req.slot);

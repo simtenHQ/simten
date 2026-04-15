@@ -92,6 +92,7 @@ export type SandboxResult =
   | ({ type: 'compiled-ir' } & { portValues: Record<string, number | boolean>; peripheralState?: PeripheralState })
   | ({ type: 'ticked' } & TickResult)
   | ({ type: 'ticked-n' } & TickResult)
+  | ({ type: 'scanned-port' } & { values: number[] })
   | ({ type: 'simulated' } & SimulateResult)
   | ({ type: 'reset' } & ResetResult)
   | ({ type: 'set-node' } & SetNodeResult)
@@ -187,6 +188,12 @@ export interface SandboxHandle {
    * many ticks per frame (raster displays, batched compute).
    */
   tickN(n: number, inputs?: Record<string, number | boolean>, slot?: SimSlot): Promise<TickResult | SandboxError>;
+  /**
+   * Combinationally scan a debug address input across 0..count-1, sampling
+   * a value output port after each setting. Returns the array in one
+   * round-trip. Clock is NOT advanced. Models JTAG-style halted-mode reads.
+   */
+  scanPort(addrNodeId: string, valuePortKey: string, count: number, slot?: SimSlot): Promise<{ values: number[] } | SandboxError>;
   simulate(params: {
     source?: string;
     ticks: number;
@@ -353,6 +360,16 @@ export function useSandbox(): SandboxHandle {
     [send],
   );
 
+  const scanPort = useCallback(
+    async (addrNodeId: string, valuePortKey: string, count: number, slot: SimSlot = 'default'): Promise<{ values: number[] } | SandboxError> => {
+      const result = await send<{ type: 'scanned-port'; values: number[] }>({ type: 'scan-port', addrNodeId, valuePortKey, count, slot });
+      if ('error' in result) return result as SandboxError;
+      const r = result as { type: 'scanned-port'; values: number[] };
+      return { values: r.values };
+    },
+    [send],
+  );
+
   const simulate = useCallback(
     async (params: {
       source?: string;
@@ -400,5 +417,5 @@ export function useSandbox(): SandboxHandle {
 
   const isReady = useCallback(() => stateRef.current.ready, []);
 
-  return { compile, compileIR, tick, tickN, simulate, reset, setNode, dispose, isReady };
+  return { compile, compileIR, tick, tickN, scanPort, simulate, reset, setNode, dispose, isReady };
 }

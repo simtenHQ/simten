@@ -25,6 +25,7 @@ const NULL_HANDLE: SandboxHandle = {
   compileIR: async () => ({ type: 'error', error: 'Sandbox not ready' }),
   tick: async () => ({ type: 'error', error: 'Sandbox not ready' }),
   tickN: async () => ({ type: 'error', error: 'Sandbox not ready' }),
+  scanPort: async () => ({ type: 'error', error: 'Sandbox not ready' }),
   simulate: async () => ({ type: 'error', error: 'Sandbox not ready' }),
   reset: async () => ({ type: 'error', error: 'Sandbox not ready' }),
   setNode: async () => ({ type: 'error', error: 'Sandbox not ready' }),
