@@ -14,6 +14,11 @@ const NetworkSection = lazy(() =>
     default: m.NetworkSection,
   }))
 );
+const PipelineSection = lazy(() =>
+  import("@/features/blog/sorting-networks/sections/PipelineSection").then((m) => ({
+    default: m.PipelineSection,
+  }))
+);
 const WhyHardwareSection = lazy(() =>
   import("@/features/blog/sorting-networks/sections/WhyHardwareSection").then((m) => ({
     default: m.WhyHardwareSection,
@@ -53,6 +58,14 @@ function SortingNetworksPage() {
         <ErrorBoundary>
           <Suspense fallback={<SectionSkeleton />}>
             <NetworkSection />
+          </Suspense>
+        </ErrorBoundary>
+
+        <hr className="border-gray-200 dark:border-gray-800" />
+
+        <ErrorBoundary>
+          <Suspense fallback={<SectionSkeleton />}>
+            <PipelineSection />
           </Suspense>
         </ErrorBoundary>
 

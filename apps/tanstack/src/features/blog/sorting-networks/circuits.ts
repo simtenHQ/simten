@@ -122,6 +122,111 @@ export const SortDemo = circuit("SortDemo", {
   ],
 });
 
+// ── Pipelined 4-element sort network ──
+// Same 5 comparators as SortNet4, but register banks between each stage
+// make inputs and outputs independent — a new result emerges every clock cycle
+// after 3 cycles of initial latency.
+export const PipelinedSortNet4 = circuit("PipelinedSortNet4", {
+  in: { v0: bus(8), v1: bus(8), v2: bus(8), v3: bus(8) },
+  out: { s0: bus(8), s1: bus(8), s2: bus(8), s3: bus(8) },
+  nodes: {
+    // Stage 1 comparators
+    cs01: CompareSwap,
+    cs23: CompareSwap,
+    // Registers between stage 1 and 2 (4 wires)
+    r1_0: Register,
+    r1_1: Register,
+    r1_2: Register,
+    r1_3: Register,
+    // Stage 2 comparators
+    cs02: CompareSwap,
+    cs13: CompareSwap,
+    // Registers between stage 2 and 3 (4 wires)
+    r2_0: Register,
+    r2_1: Register,
+    r2_2: Register,
+    r2_3: Register,
+    // Stage 3 comparator
+    cs12: CompareSwap,
+    // Write-enable constant (always 1)
+    we: Constant,
+  },
+  nodeArgs: {
+    r1_0: { width: 8 },
+    r1_1: { width: 8 },
+    r1_2: { width: 8 },
+    r1_3: { width: 8 },
+    r2_0: { width: 8 },
+    r2_1: { width: 8 },
+    r2_2: { width: 8 },
+    r2_3: { width: 8 },
+    we: { value: 1 },
+  },
+  connect: ({ in: inp, out, cs01, cs23, r1_0, r1_1, r1_2, r1_3, cs02, cs13, r2_0, r2_1, r2_2, r2_3, cs12, we }) => [
+    // Stage 1
+    inp.v0.to(cs01.a),
+    inp.v1.to(cs01.b),
+    inp.v2.to(cs23.a),
+    inp.v3.to(cs23.b),
+    // Registers after stage 1
+    cs01.lo.to(r1_0.data),
+    cs01.hi.to(r1_1.data),
+    cs23.lo.to(r1_2.data),
+    cs23.hi.to(r1_3.data),
+    we.out.to(r1_0.we, r1_1.we, r1_2.we, r1_3.we),
+    // Stage 2 reads from stage-1 registers
+    r1_0.q.to(cs02.a),
+    r1_2.q.to(cs02.b),
+    r1_1.q.to(cs13.a),
+    r1_3.q.to(cs13.b),
+    // Registers after stage 2
+    cs02.lo.to(r2_0.data),
+    cs02.hi.to(r2_1.data),
+    cs13.lo.to(r2_2.data),
+    cs13.hi.to(r2_3.data),
+    we.out.to(r2_0.we, r2_1.we, r2_2.we, r2_3.we),
+    // Stage 3 reads from stage-2 registers
+    r2_1.q.to(cs12.a),
+    r2_2.q.to(cs12.b),
+    // Outputs
+    r2_0.q.to(out.s0),
+    cs12.lo.to(out.s1),
+    cs12.hi.to(out.s2),
+    r2_3.q.to(out.s3),
+  ],
+});
+
+// ── Top-level demo: PipelinedSortNet4 with Inputs and HexDisplays ──
+export const PipelinedSortDemo = circuit("PipelinedSortDemo", {
+  nodes: {
+    v0: Input,
+    v1: Input,
+    v2: Input,
+    v3: Input,
+    sorter: PipelinedSortNet4,
+    d0: HexDisplay,
+    d1: HexDisplay,
+    d2: HexDisplay,
+    d3: HexDisplay,
+  },
+  nodeArgs: {
+    v0: { value: 42 },
+    v1: { value: 7 },
+    v2: { value: 200 },
+    v3: { value: 13 },
+  },
+  connect: ({ v0, v1, v2, v3, sorter, d0, d1, d2, d3 }) => [
+    v0.out.to(sorter.v0),
+    v1.out.to(sorter.v1),
+    v2.out.to(sorter.v2),
+    v3.out.to(sorter.v3),
+    sorter.s0.to(d0.in),
+    sorter.s1.to(d1.in),
+    sorter.s2.to(d2.in),
+    sorter.s3.to(d3.in),
+  ],
+});
+
 export const SORTING_CIRCUITS: Record<string, BlogCircuit> = {
   compareSwapDemo: {
     name: "Compare-and-Swap",
@@ -135,5 +240,12 @@ export const SORTING_CIRCUITS: Record<string, BlogCircuit> = {
     description:
       "Three stages, five comparators. Any four 8-bit values emerge sorted in ascending order. Change the inputs and the result updates instantly.",
     circuit: SortDemo,
+  },
+
+  pipelinedSortDemo: {
+    name: "Pipelined Sort Network",
+    description:
+      "Register banks between stages decouple inputs from outputs. After 3 cycles of latency, a new sorted result emerges every single clock cycle. Step through cycles to watch values propagate.",
+    circuit: PipelinedSortDemo,
   },
 };
