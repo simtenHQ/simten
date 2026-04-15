@@ -125,7 +125,9 @@
       "Bash(awk 'NR>=66 && NR<=365' apps/tanstack/src/routes/index.tsx)",
       "Bash(awk NR>=735 && NR<=745:*)",
       "Bash(xargs -I {} basename {})",
-      "mcp__simten__list_sessions"
+      "mcp__simten__list_sessions",
+      "Bash(VERIFIER_URL=https://verifier.charles-harris-de.workers.dev/verify pnpm exec vitest run src/verilog/__tests__/RAM.verify.test.ts)",
+      "Bash(VERIFIER_URL=https://verifier.charles-harris-de.workers.dev/verify pnpm exec vitest run)"
     ]
   }
 }

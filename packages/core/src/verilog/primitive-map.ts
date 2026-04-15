@@ -24,6 +24,22 @@ export interface PrimitiveWires {
   outputs: Map<string, string>;
 }
 
+/**
+ * Preloaded memory data for a single state block on a primitive node.
+ * Populated by the exporter from the component definition's
+ * `state[].initialValue` for memory-kind state blocks; passed to primitives
+ * so they can emit `initial begin mem[K] = …; end` (or `$readmemh` for large
+ * memories) using their own reg-name conventions.
+ */
+export interface StateInit {
+  /** Name of the state block in the component definition (e.g. "memory"). */
+  stateName: string;
+  /** Sparse initial data — keys are addresses, values are word contents. */
+  data: Map<number, number>;
+  /** Word width in bits, from the state block's dataWidth. */
+  width: number;
+}
+
 export interface PrimitiveContext {
   nodeId: string;
   primitiveType: string;
@@ -31,6 +47,30 @@ export interface PrimitiveContext {
   wires: PrimitiveWires;
   clockName: string;
   target: 'simulation' | 'synthesis';
+  /** Preloaded memory state from the component definition (if any). */
+  stateInits?: StateInit[];
+}
+
+/**
+ * Emit a Verilog `initial begin … end` block for the given mem reg name,
+ * populating it from a sparse state-init Map. Used by every primitive with
+ * a declarative memory state. Keys are sorted so output is deterministic
+ * (handy for golden-file tests). Inline path only — the `$readmemh` sidecar
+ * path is handled by the exporter once the ExportResult shape lands.
+ */
+export function emitMemoryInit(regName: string, init: StateInit): string[] {
+  if (init.data.size === 0) return [];
+  const w = init.width;
+  const hexWidth = Math.max(1, Math.ceil(w / 4));
+  const keys = [...init.data.keys()].sort((a, b) => a - b);
+  const lines: string[] = [`initial begin`];
+  for (const addr of keys) {
+    const val = init.data.get(addr) ?? 0;
+    const hex = (val >>> 0).toString(16).padStart(hexWidth, '0');
+    lines.push(`  ${regName}[${addr}] = ${w}'h${hex};`);
+  }
+  lines.push(`end`);
+  return lines;
 }
 
 /**
@@ -271,7 +311,9 @@ export function emitPrimitive(ctx: PrimitiveContext): { lines: string[]; declara
       const memName = `mem_${id}`;
       const declarations = [`reg [${dw - 1}:0] ${memName} [0:${(1 << aw) - 1}];`];
 
-      // Initialize ROM data from arguments
+      // Legacy path: `args.init` from nodeArgs (e.g. user-supplied ROM contents).
+      // Declarative path: `ctx.stateInits` from the component's `mem()` state.
+      // Both emit to the same reg; we run args.init first, then stateInits overlay.
       const initLines: string[] = [];
       if (ctx.target === 'simulation') {
         const initData = args.init;
@@ -281,6 +323,9 @@ export function emitPrimitive(ctx: PrimitiveContext): { lines: string[]; declara
             initLines.push(`  ${memName}[${addr}] = ${dw}'d${val};`);
           }
           initLines.push(`end`);
+        }
+        for (const init of ctx.stateInits ?? []) {
+          initLines.push(...emitMemoryInit(memName, init));
         }
       }
 
@@ -298,9 +343,16 @@ export function emitPrimitive(ctx: PrimitiveContext): { lines: string[]; declara
       const aw = getAddressWidth(args, 8);
       const dw = getDataWidth(args, 8);
       const memName = `mem_${id}`;
+      const initLines: string[] = [];
+      if (ctx.target === 'simulation') {
+        for (const init of ctx.stateInits ?? []) {
+          initLines.push(...emitMemoryInit(memName, init));
+        }
+      }
       return {
         declarations: [`reg [${dw - 1}:0] ${memName} [0:${(1 << aw) - 1}];`],
         lines: [
+          ...initLines,
           `// Write-first RAM`,
           `always @(posedge ${clockName}) begin`,
           `  if (${i('we')}) ${memName}[${i('addr')}] <= ${i('data_in')};`,
@@ -325,6 +377,9 @@ export function emitPrimitive(ctx: PrimitiveContext): { lines: string[]; declara
             initLines.push(`  ${memName}[${addr}] = ${dw}'d${val};`);
           }
           initLines.push(`end`);
+        }
+        for (const init of ctx.stateInits ?? []) {
+          initLines.push(...emitMemoryInit(memName, init));
         }
       }
 
@@ -509,18 +564,33 @@ export function emitPrimitive(ctx: PrimitiveContext): { lines: string[]; declara
 
     case 'RV32I_RegisterFile': {
       const rfName = `rf_${id}`;
+      const initLines: string[] = [
+        `initial begin : ${rfName}_init`,
+        `  integer i;`,
+        `  for (i = 0; i < 32; i = i + 1) ${rfName}[i] = 32'd0;`,
+        `end`,
+      ];
+      if (ctx.target === 'simulation') {
+        for (const init of ctx.stateInits ?? []) {
+          initLines.push(...emitMemoryInit(rfName, init));
+        }
+      }
       return {
-        declarations: [`reg [31:0] ${rfName} [0:31];`],
+        declarations: [
+          `reg [31:0] ${rfName} [0:31];`,
+          // Debug read port: added in WS4b for the /learn/cpu scan interface.
+          // See RV32I_RegisterFile in packages/core/src/std/rv32i.ts.
+        ],
         lines: [
-          `initial begin : ${rfName}_init`,
-          `  integer i;`,
-          `  for (i = 0; i < 32; i = i + 1) ${rfName}[i] = 32'd0;`,
-          `end`,
+          ...initLines,
           `always @(posedge ${clockName}) begin`,
           `  if (${i('we')} && ${i('rd')} != 5'd0) ${rfName}[${i('rd')}] <= ${i('write_data')};`,
           `end`,
           `assign ${o('read1')} = (${i('rs1')} == 5'd0) ? 32'd0 : ${rfName}[${i('rs1')}];`,
           `assign ${o('read2')} = (${i('rs2')} == 5'd0) ? 32'd0 : ${rfName}[${i('rs2')}];`,
+          ...(isConnected(wires, 'debug_read', 'output')
+            ? [`assign ${o('debug_read')} = (${i('debug_rs')} == 5'd0) ? 32'd0 : ${rfName}[${i('debug_rs')}];`]
+            : []),
         ],
       };
     }
@@ -528,9 +598,16 @@ export function emitPrimitive(ctx: PrimitiveContext): { lines: string[]; declara
     case 'RV32I_InstrMem': {
       const imemName = `imem_${id}`;
       const aw = 16; // 64KB = 2^16
+      const initLines: string[] = [];
+      if (ctx.target === 'simulation') {
+        for (const init of ctx.stateInits ?? []) {
+          initLines.push(...emitMemoryInit(imemName, init));
+        }
+      }
       return {
         declarations: [`reg [31:0] ${imemName} [0:${(1 << aw) - 1}];`],
         lines: [
+          ...initLines,
           `assign ${o('instruction')} = ${imemName}[${i('addr')}[${aw + 1}:2]];`,
         ],
       };
@@ -539,9 +616,16 @@ export function emitPrimitive(ctx: PrimitiveContext): { lines: string[]; declara
     case 'RV32I_DataMem': {
       const dmemName = `dmem_${id}`;
       const aw = 16;
+      const initLines: string[] = [];
+      if (ctx.target === 'simulation') {
+        for (const init of ctx.stateInits ?? []) {
+          initLines.push(...emitMemoryInit(dmemName, init));
+        }
+      }
       return {
         declarations: [`reg [31:0] ${dmemName} [0:${(1 << aw) - 1}];`],
         lines: [
+          ...initLines,
           `always @(posedge ${clockName}) begin`,
           `  if (${i('mem_write')}) ${dmemName}[${i('addr')}[${aw + 1}:2]] <= ${i('write_data')};`,
           `end`,
