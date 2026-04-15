@@ -90,6 +90,14 @@ export const posts: BlogPost[] = [
     nodes: '~50 nodes',
   },
   {
+    slug: "crc32-in-hardware",
+    title: "CRC-32 in Hardware",
+    description:
+      "The checksum at the end of every Ethernet frame and ZIP file — a 32-bit shift register with XOR feedback, running in the NIC on your machine right now.",
+    category: 'networking',
+    nodes: '~15 nodes',
+  },
+  {
     slug: "rv32i-cpu",
     title: "A RISC-V CPU That Runs C",
     description:
