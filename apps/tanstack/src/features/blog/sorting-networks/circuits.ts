@@ -12,6 +12,8 @@ import {
   HexDisplay,
   Comparator,
   Mux,
+  Register,
+  Constant,
 } from "@simten/core/std";
 
 // ── Compare-and-swap subcircuit ──
