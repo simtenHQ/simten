@@ -267,6 +267,11 @@ export const CORDIC_CIRCUITS: Record<string, BlogCircuit> = {
  * Expected result: x ~ y ~ 93 after 8 iterations.
  */
 export const CORDICCircuit = circuit("CORDICIteration", {
+  // `done` is asserted when the iteration counter reaches the final value.
+  // Formal output port (replaces a hook-side substring scan over portValues
+  // looking for a node named "doneLed"); the visual doneLed node stays for
+  // on-canvas rendering.
+  out: { done: bit },
   nodes: {
     x: Register,
     y: Register,
@@ -338,6 +343,7 @@ export const CORDICCircuit = circuit("CORDICIteration", {
     bit2: { low: 2, high: 2 },
   },
   connect: ({
+    out,
     x,
     y,
     z,
@@ -439,6 +445,6 @@ export const CORDICCircuit = circuit("CORDICIteration", {
     yUpdate.out.to(y.data),
     zUpdate.out.to(z.data),
     iterInc.out.to(iteration.data),
-    doneCheck.eq.to(doneLed.in),
+    doneCheck.eq.to(doneLed.in, out.done),
   ],
 });
