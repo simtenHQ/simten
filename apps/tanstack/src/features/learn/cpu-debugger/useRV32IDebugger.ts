@@ -165,21 +165,25 @@ export function useRV32IDebugger() {
     WB:  (() => { const v = readPort(sim.portValues, "memwb_pc4",  "q"); return v != null ? (v - 4) >>> 0 : null; })(),
   };
 
-  // Extract register file from sequential state
-  const registers: Map<number, number> = (() => {
-    if (!sim.sequentialState?.currentState) return new Map();
-    const value = sim.sequentialState.currentState.get("regfile");
-    if (!value) return new Map();
-    if (value instanceof Map) return value as Map<number, number>;
-    if (typeof value === "object") {
-      const m = new Map<number, number>();
-      for (const [k, v] of Object.entries(value as Record<string, number>)) {
-        m.set(Number(k), v);
-      }
-      return m;
-    }
-    return new Map();
-  })();
+  // Scan the regfile via the JTAG-style debug port in one sandbox round-trip.
+  // The sandbox loops debug_addr 0..31 internally and returns all values at
+  // once — avoids a 32× round-trip race during Run mode. Models how real
+  // debug hardware (RV Debug Abstract Commands, ARM CoreSight) reads
+  // architectural state while the core is halted.
+  const [registers, setRegisters] = useState<Map<number, number>>(new Map());
+
+  useEffect(() => {
+    if (!sim.ready) return;
+    let cancelled = false;
+    (async () => {
+      const values = await sim.scanPort("debug_addr", "__top__.debug_value", 32);
+      if (cancelled || !values) return;
+      const map = new Map<number, number>();
+      for (let i = 0; i < values.length; i++) map.set(i, values[i] >>> 0);
+      setRegisters(map);
+    })();
+    return () => { cancelled = true; };
+  }, [sim.ready, sim.cycleCount, sim.scanPort]);
 
   // Track which registers changed last tick
   const prevRegistersRef = useRef<Map<number, number>>(new Map());

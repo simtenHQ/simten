@@ -36,10 +36,21 @@ export interface SimulatorActions {
   setNode: (name: string, value: boolean | number) => void;
   toggleInput: (name: string) => void;
   toggleNode: (nodeId: string) => void;
-  setNodeValue: (nodeId: string, value: number | boolean | Map<number, number>) => void;
+  /**
+   * Set a node's value. Returns the resulting port-value Map (so scan-style
+   * callers can read debug outputs without waiting for a React re-render),
+   * or null if the sandbox isn't ready / errored.
+   */
+  setNodeValue: (nodeId: string, value: number | boolean | Map<number, number>) => Promise<ReadonlyMap<string, boolean | number> | null>;
   tick: () => void;
   /** Advance N ticks in a single sandbox round-trip; one React update. */
   tickN: (n: number) => Promise<void>;
+  /**
+   * Combinationally scan a debug-address node across 0..count-1, sampling
+   * a value port after each setting. Single round-trip; clock not advanced.
+   * Returns the `number[]` of length `count`, or null on error.
+   */
+  scanPort: (addrNodeId: string, valuePortKey: string, count: number) => Promise<number[] | null>;
   reset: () => void;
   stepBack: () => void;
   stepForward: () => void;
@@ -317,14 +328,15 @@ export function useCircuitSimulator(
   }, [ready, portValues, sandbox, slotId]);
 
   const setNodeValue = useCallback(async (nodeId: string, value: number | boolean | Map<number, number>) => {
-    if (!ready) return;
-    // Map values (for ROM/RAM loading) are supported via structured clone in postMessage
+    if (!ready) return null;
+    // Map values (for ROM/RAM loading) are supported via structured clone in postMessage.
     const result = await sandbox.setNode(nodeId, value as any, slotId);
-    if ('error' in result) return;
+    if ('error' in result) return null;
     const pvMap = new Map<string, BitValue | BusValue>();
     for (const [k, v] of Object.entries(result.portValues)) pvMap.set(k, v);
     setPortValues(pvMap);
     if (result.peripheralState) setPeripheralState(result.peripheralState);
+    return pvMap as ReadonlyMap<string, boolean | number>;
   }, [ready, sandbox, slotId]);
 
   const tick = useCallback(async () => {
@@ -348,6 +360,13 @@ export function useCircuitSimulator(
     setPortValues(pvMap);
     setCycle(result.cycle);
     if (result.peripheralState) setPeripheralState(result.peripheralState);
+  }, [ready, sandbox, slotId]);
+
+  const scanPort = useCallback(async (addrNodeId: string, valuePortKey: string, count: number): Promise<number[] | null> => {
+    if (!ready || count <= 0) return null;
+    const result = await sandbox.scanPort(addrNodeId, valuePortKey, count, slotId);
+    if ('error' in result) return null;
+    return result.values;
   }, [ready, sandbox, slotId]);
 
   const reset = useCallback(async () => {
@@ -436,6 +455,7 @@ export function useCircuitSimulator(
     setNodeValue,
     tick,
     tickN,
+    scanPort,
     reset,
     stepBack: () => {},
     stepForward: () => {},
