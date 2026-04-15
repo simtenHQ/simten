@@ -23,6 +23,7 @@ import { Route as DemosGenerativeRouteImport } from './routes/demos/generative'
 import { Route as DemosCpuRouteImport } from './routes/demos/cpu'
 import { Route as DemosCircuitStateRouteImport } from './routes/demos/circuit-state'
 import { Route as DemosCalculatorRouteImport } from './routes/demos/calculator'
+import { Route as BlogSortingNetworksRouteImport } from './routes/blog/sorting-networks'
 import { Route as BlogSnakeInHardwareRouteImport } from './routes/blog/snake-in-hardware'
 import { Route as BlogRv32iCpuRouteImport } from './routes/blog/rv32i-cpu'
 import { Route as BlogPongInHardwareRouteImport } from './routes/blog/pong-in-hardware'
@@ -106,6 +107,11 @@ const DemosCalculatorRoute = DemosCalculatorRouteImport.update({
   path: '/demos/calculator',
   getParentRoute: () => rootRouteImport,
 } as any)
+const BlogSortingNetworksRoute = BlogSortingNetworksRouteImport.update({
+  id: '/sorting-networks',
+  path: '/sorting-networks',
+  getParentRoute: () => BlogRoute,
+} as any)
 const BlogSnakeInHardwareRoute = BlogSnakeInHardwareRouteImport.update({
   id: '/snake-in-hardware',
   path: '/snake-in-hardware',
@@ -186,6 +192,7 @@ export interface FileRoutesByFullPath {
   '/blog/pong-in-hardware': typeof BlogPongInHardwareRoute
   '/blog/rv32i-cpu': typeof BlogRv32iCpuRoute
   '/blog/snake-in-hardware': typeof BlogSnakeInHardwareRoute
+  '/blog/sorting-networks': typeof BlogSortingNetworksRoute
   '/demos/calculator': typeof DemosCalculatorRoute
   '/demos/circuit-state': typeof DemosCircuitStateRoute
   '/demos/cpu': typeof DemosCpuRoute
@@ -213,6 +220,7 @@ export interface FileRoutesByTo {
   '/blog/pong-in-hardware': typeof BlogPongInHardwareRoute
   '/blog/rv32i-cpu': typeof BlogRv32iCpuRoute
   '/blog/snake-in-hardware': typeof BlogSnakeInHardwareRoute
+  '/blog/sorting-networks': typeof BlogSortingNetworksRoute
   '/demos/calculator': typeof DemosCalculatorRoute
   '/demos/circuit-state': typeof DemosCircuitStateRoute
   '/demos/cpu': typeof DemosCpuRoute
@@ -242,6 +250,7 @@ export interface FileRoutesById {
   '/blog/pong-in-hardware': typeof BlogPongInHardwareRoute
   '/blog/rv32i-cpu': typeof BlogRv32iCpuRoute
   '/blog/snake-in-hardware': typeof BlogSnakeInHardwareRoute
+  '/blog/sorting-networks': typeof BlogSortingNetworksRoute
   '/demos/calculator': typeof DemosCalculatorRoute
   '/demos/circuit-state': typeof DemosCircuitStateRoute
   '/demos/cpu': typeof DemosCpuRoute
@@ -272,6 +281,7 @@ export interface FileRouteTypes {
     | '/blog/pong-in-hardware'
     | '/blog/rv32i-cpu'
     | '/blog/snake-in-hardware'
+    | '/blog/sorting-networks'
     | '/demos/calculator'
     | '/demos/circuit-state'
     | '/demos/cpu'
@@ -299,6 +309,7 @@ export interface FileRouteTypes {
     | '/blog/pong-in-hardware'
     | '/blog/rv32i-cpu'
     | '/blog/snake-in-hardware'
+    | '/blog/sorting-networks'
     | '/demos/calculator'
     | '/demos/circuit-state'
     | '/demos/cpu'
@@ -327,6 +338,7 @@ export interface FileRouteTypes {
     | '/blog/pong-in-hardware'
     | '/blog/rv32i-cpu'
     | '/blog/snake-in-hardware'
+    | '/blog/sorting-networks'
     | '/demos/calculator'
     | '/demos/circuit-state'
     | '/demos/cpu'
@@ -457,6 +469,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DemosCalculatorRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/blog/sorting-networks': {
+      id: '/blog/sorting-networks'
+      path: '/sorting-networks'
+      fullPath: '/blog/sorting-networks'
+      preLoaderRoute: typeof BlogSortingNetworksRouteImport
+      parentRoute: typeof BlogRoute
+    }
     '/blog/snake-in-hardware': {
       id: '/blog/snake-in-hardware'
       path: '/snake-in-hardware'
@@ -556,6 +575,7 @@ interface BlogRouteChildren {
   BlogPongInHardwareRoute: typeof BlogPongInHardwareRoute
   BlogRv32iCpuRoute: typeof BlogRv32iCpuRoute
   BlogSnakeInHardwareRoute: typeof BlogSnakeInHardwareRoute
+  BlogSortingNetworksRoute: typeof BlogSortingNetworksRoute
   BlogIndexRoute: typeof BlogIndexRoute
 }
 
@@ -571,6 +591,7 @@ const BlogRouteChildren: BlogRouteChildren = {
   BlogPongInHardwareRoute: BlogPongInHardwareRoute,
   BlogRv32iCpuRoute: BlogRv32iCpuRoute,
   BlogSnakeInHardwareRoute: BlogSnakeInHardwareRoute,
+  BlogSortingNetworksRoute: BlogSortingNetworksRoute,
   BlogIndexRoute: BlogIndexRoute,
 }
 
