@@ -50,6 +50,14 @@ export const posts: BlogPost[] = [
     nodes: '~40 nodes',
   },
   {
+    slug: "sorting-networks",
+    title: "Sorting Networks",
+    description:
+      "A fixed wiring of comparators that sorts any input in the same number of steps — no branches, no loops. The algorithm behind network switch fabrics, GPU sort, and median filters.",
+    category: 'accelerator',
+    nodes: '~25 nodes',
+  },
+  {
     slug: "how-network-switches-work",
     title: "How Network Switches Work",
     description:
