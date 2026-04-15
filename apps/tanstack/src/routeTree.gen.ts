@@ -30,6 +30,7 @@ import { Route as BlogPongInHardwareRouteImport } from './routes/blog/pong-in-ha
 import { Route as BlogMcpBidirectionalBridgeRouteImport } from './routes/blog/mcp-bidirectional-bridge'
 import { Route as BlogHowTpusWorkRouteImport } from './routes/blog/how-tpus-work'
 import { Route as BlogHowNetworkSwitchesWorkRouteImport } from './routes/blog/how-network-switches-work'
+import { Route as BlogCrc32InHardwareRouteImport } from './routes/blog/crc32-in-hardware'
 import { Route as BlogComputingTrigInHardwareRouteImport } from './routes/blog/computing-trig-in-hardware'
 import { Route as BlogChacha20InHardwareRouteImport } from './routes/blog/chacha20-in-hardware'
 import { Route as BlogBuildingACpuRouteImport } from './routes/blog/building-a-cpu'
@@ -144,6 +145,11 @@ const BlogHowNetworkSwitchesWorkRoute =
     path: '/how-network-switches-work',
     getParentRoute: () => BlogRoute,
   } as any)
+const BlogCrc32InHardwareRoute = BlogCrc32InHardwareRouteImport.update({
+  id: '/crc32-in-hardware',
+  path: '/crc32-in-hardware',
+  getParentRoute: () => BlogRoute,
+} as any)
 const BlogComputingTrigInHardwareRoute =
   BlogComputingTrigInHardwareRouteImport.update({
     id: '/computing-trig-in-hardware',
@@ -186,6 +192,7 @@ export interface FileRoutesByFullPath {
   '/blog/building-a-cpu': typeof BlogBuildingACpuRoute
   '/blog/chacha20-in-hardware': typeof BlogChacha20InHardwareRoute
   '/blog/computing-trig-in-hardware': typeof BlogComputingTrigInHardwareRoute
+  '/blog/crc32-in-hardware': typeof BlogCrc32InHardwareRoute
   '/blog/how-network-switches-work': typeof BlogHowNetworkSwitchesWorkRoute
   '/blog/how-tpus-work': typeof BlogHowTpusWorkRoute
   '/blog/mcp-bidirectional-bridge': typeof BlogMcpBidirectionalBridgeRoute
@@ -214,6 +221,7 @@ export interface FileRoutesByTo {
   '/blog/building-a-cpu': typeof BlogBuildingACpuRoute
   '/blog/chacha20-in-hardware': typeof BlogChacha20InHardwareRoute
   '/blog/computing-trig-in-hardware': typeof BlogComputingTrigInHardwareRoute
+  '/blog/crc32-in-hardware': typeof BlogCrc32InHardwareRoute
   '/blog/how-network-switches-work': typeof BlogHowNetworkSwitchesWorkRoute
   '/blog/how-tpus-work': typeof BlogHowTpusWorkRoute
   '/blog/mcp-bidirectional-bridge': typeof BlogMcpBidirectionalBridgeRoute
@@ -244,6 +252,7 @@ export interface FileRoutesById {
   '/blog/building-a-cpu': typeof BlogBuildingACpuRoute
   '/blog/chacha20-in-hardware': typeof BlogChacha20InHardwareRoute
   '/blog/computing-trig-in-hardware': typeof BlogComputingTrigInHardwareRoute
+  '/blog/crc32-in-hardware': typeof BlogCrc32InHardwareRoute
   '/blog/how-network-switches-work': typeof BlogHowNetworkSwitchesWorkRoute
   '/blog/how-tpus-work': typeof BlogHowTpusWorkRoute
   '/blog/mcp-bidirectional-bridge': typeof BlogMcpBidirectionalBridgeRoute
@@ -275,6 +284,7 @@ export interface FileRouteTypes {
     | '/blog/building-a-cpu'
     | '/blog/chacha20-in-hardware'
     | '/blog/computing-trig-in-hardware'
+    | '/blog/crc32-in-hardware'
     | '/blog/how-network-switches-work'
     | '/blog/how-tpus-work'
     | '/blog/mcp-bidirectional-bridge'
@@ -303,6 +313,7 @@ export interface FileRouteTypes {
     | '/blog/building-a-cpu'
     | '/blog/chacha20-in-hardware'
     | '/blog/computing-trig-in-hardware'
+    | '/blog/crc32-in-hardware'
     | '/blog/how-network-switches-work'
     | '/blog/how-tpus-work'
     | '/blog/mcp-bidirectional-bridge'
@@ -332,6 +343,7 @@ export interface FileRouteTypes {
     | '/blog/building-a-cpu'
     | '/blog/chacha20-in-hardware'
     | '/blog/computing-trig-in-hardware'
+    | '/blog/crc32-in-hardware'
     | '/blog/how-network-switches-work'
     | '/blog/how-tpus-work'
     | '/blog/mcp-bidirectional-bridge'
@@ -518,6 +530,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BlogHowNetworkSwitchesWorkRouteImport
       parentRoute: typeof BlogRoute
     }
+    '/blog/crc32-in-hardware': {
+      id: '/blog/crc32-in-hardware'
+      path: '/crc32-in-hardware'
+      fullPath: '/blog/crc32-in-hardware'
+      preLoaderRoute: typeof BlogCrc32InHardwareRouteImport
+      parentRoute: typeof BlogRoute
+    }
     '/blog/computing-trig-in-hardware': {
       id: '/blog/computing-trig-in-hardware'
       path: '/computing-trig-in-hardware'
@@ -569,6 +588,7 @@ interface BlogRouteChildren {
   BlogBuildingACpuRoute: typeof BlogBuildingACpuRoute
   BlogChacha20InHardwareRoute: typeof BlogChacha20InHardwareRoute
   BlogComputingTrigInHardwareRoute: typeof BlogComputingTrigInHardwareRoute
+  BlogCrc32InHardwareRoute: typeof BlogCrc32InHardwareRoute
   BlogHowNetworkSwitchesWorkRoute: typeof BlogHowNetworkSwitchesWorkRoute
   BlogHowTpusWorkRoute: typeof BlogHowTpusWorkRoute
   BlogMcpBidirectionalBridgeRoute: typeof BlogMcpBidirectionalBridgeRoute
@@ -585,6 +605,7 @@ const BlogRouteChildren: BlogRouteChildren = {
   BlogBuildingACpuRoute: BlogBuildingACpuRoute,
   BlogChacha20InHardwareRoute: BlogChacha20InHardwareRoute,
   BlogComputingTrigInHardwareRoute: BlogComputingTrigInHardwareRoute,
+  BlogCrc32InHardwareRoute: BlogCrc32InHardwareRoute,
   BlogHowNetworkSwitchesWorkRoute: BlogHowNetworkSwitchesWorkRoute,
   BlogHowTpusWorkRoute: BlogHowTpusWorkRoute,
   BlogMcpBidirectionalBridgeRoute: BlogMcpBidirectionalBridgeRoute,
