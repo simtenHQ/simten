@@ -159,31 +159,32 @@ export const TSEditor = forwardRef<TSEditorRef, TSEditorProps>(
               setTimeout(() => handleCompile({ silent: true, _retried: true }), 100);
               return;
             }
-            // Try to extract line info from error message
+            // Try to extract line info from error message. We surface errors
+            // in both silent and manual compiles — silent auto-compiles were
+            // swallowing failures entirely (e.g. `window is not defined`),
+            // leaving the canvas stuck on the last good build with no user
+            // feedback. `silent` now only suppresses the green success toast
+            // and the pre-clear of errors, not the error display itself.
             const lineMatch = result.error.match(/\((\d+):(\d+)\)/);
-            if (!silent) {
-              setErrors([
-                {
-                  message: result.error,
-                  line: lineMatch ? parseInt(lineMatch[1]) : 0,
-                  column: lineMatch ? parseInt(lineMatch[2]) : 0,
-                },
-              ]);
-            }
+            setErrors([
+              {
+                message: result.error,
+                line: lineMatch ? parseInt(lineMatch[1]) : 0,
+                column: lineMatch ? parseInt(lineMatch[2]) : 0,
+              },
+            ]);
             return;
           }
 
           if (result.circuits.length === 0) {
-            if (!silent) {
-              setErrors([
-                {
-                  message:
-                    "No circuits found. Use circuit('Name', { ... }) to define a circuit.",
-                  line: 0,
-                  column: 0,
-                },
-              ]);
-            }
+            setErrors([
+              {
+                message:
+                  "No circuits found. Use circuit('Name', { ... }) to define a circuit.",
+                line: 0,
+                column: 0,
+              },
+            ]);
             return;
           }
 
@@ -211,15 +212,13 @@ export const TSEditor = forwardRef<TSEditorRef, TSEditorProps>(
 
           onCompileSuccess?.(result.circuits, code, library, result);
         } catch (e) {
-          if (!silent) {
-            setErrors([
-              {
-                message: e instanceof Error ? e.message : String(e),
-                line: 0,
-                column: 0,
-              },
-            ]);
-          }
+          setErrors([
+            {
+              message: e instanceof Error ? e.message : String(e),
+              line: 0,
+              column: 0,
+            },
+          ]);
         } finally {
           setIsCompiling(false);
         }
