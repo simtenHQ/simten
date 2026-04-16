@@ -7,7 +7,8 @@ const PIXEL_SIZE = 40;
 const PIXEL_GAP = 3;
 const TOTAL_SIZE = GRID_SIZE * PIXEL_SIZE + (GRID_SIZE - 1) * PIXEL_GAP;
 
-const DIRECTION_CODES = { up: 72, down: 80, left: 75, right: 77 } as const;
+// 2-bit direction encoding: 0=up, 1=right, 2=down, 3=left
+const DIRECTION_CODES = { up: 0, down: 2, left: 3, right: 1 } as const;
 
 function DPad({ onDirection }: { onDirection: (code: number) => void }) {
   const press = useCallback(

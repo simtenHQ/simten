@@ -620,7 +620,7 @@ function SnakeCard() {
   useEffect(() => {
     if (sim.ready && !directionSetRef.current) {
       directionSetRef.current = true;
-      sendDirection(77); // right
+      sendDirection(1); // right (2-bit encoding: 0=up, 1=right, 2=down, 3=left)
     }
   }, [sim.ready, sendDirection]);
 
@@ -676,10 +676,10 @@ function SnakeCard() {
             </button>
             {(
               [
-                ["↑", 72],
-                ["←", 75],
-                ["↓", 80],
-                ["→", 77],
+                ["↑", 0],
+                ["←", 3],
+                ["↓", 2],
+                ["→", 1],
               ] as [string, number][]
             ).map(([arrow, code]) => (
               <button

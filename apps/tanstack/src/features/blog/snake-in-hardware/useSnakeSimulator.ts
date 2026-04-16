@@ -25,11 +25,12 @@ export function useSnakeSimulator() {
     if (!keyboardNodeId) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
+      // 2-bit direction encoding: 0=up, 1=right, 2=down, 3=left
       const keyMap: Record<string, number> = {
-        ArrowUp: 72,
-        ArrowDown: 80,
-        ArrowLeft: 75,
-        ArrowRight: 77,
+        ArrowUp: 0,
+        ArrowDown: 2,
+        ArrowLeft: 3,
+        ArrowRight: 1,
       };
       const code = keyMap[e.key];
       if (code !== undefined) {
