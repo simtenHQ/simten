@@ -376,10 +376,10 @@ const CollisionDetector = circuit("CollisionDetector", {
 });
 
 export const SnakeAdvanced = circuit("SnakeAdvanced", {
+  in: { dir: bus(2), scan_addr: bus(6) },
+  out: { pixel_out: bus(8) },
   nodes: {
     ram: DualPortRAM,
-    screen: Screen,
-    keyboard: Input,
     foodX: Register,
     foodY: Register,
     foodNeedsDrawing: Register,
@@ -400,7 +400,7 @@ export const SnakeAdvanced = circuit("SnakeAdvanced", {
     eight: Constant,
     phaseInc: Adder,
     phaseWrap: BitSlice,
-    phaseEnable: Switch,
+    phaseEnable: Constant,
     isPhase0: Comparator,
     isPhase1: Comparator,
     isPhase2: Comparator,
@@ -448,7 +448,7 @@ export const SnakeAdvanced = circuit("SnakeAdvanced", {
     deltaYIsZero: Comparator,
     bothDeltasZero: And,
     isMoving: Not,
-    shouldMoveTail: Switch,
+    shouldMoveTail: Constant,
     shouldMoveTailActual: And,
     notEatingFood: Not,
     shouldClearTail: And,
@@ -460,7 +460,7 @@ export const SnakeAdvanced = circuit("SnakeAdvanced", {
     writePhase01: Or,
     writePhase2or3: Or,
     writeAny: Or,
-    writeEnable: Switch,
+    writeEnable: Constant,
     finalWriteEnable: And,
     latchTail: And,
     latchTailFinal: And,
@@ -501,7 +501,6 @@ export const SnakeAdvanced = circuit("SnakeAdvanced", {
         "67": 36,
       },
     },
-    keyboard: { value: 1 },
     foodX: { initial: 6 },
     foodY: { initial: 3 },
     foodNeedsDrawing: { initial: 1 },
@@ -538,8 +537,6 @@ export const SnakeAdvanced = circuit("SnakeAdvanced", {
     in: inp,
     out,
     ram,
-    screen,
-    keyboard,
     foodX,
     foodY,
     foodNeedsDrawing,
@@ -648,8 +645,8 @@ export const SnakeAdvanced = circuit("SnakeAdvanced", {
     snakeLenDelta,
     snakeLenNew,
   }) => [
-    screen.addrB.to(ram.addrB),
-    ram.outB.to(screen.dataIn),
+    inp.scan_addr.to(ram.addrB),
+    ram.outB.to(out.pixel_out),
     phase.q.to(phaseInc.a, isPhase0.a, isPhase1.a, isPhase2.a, isPhase3.a),
     one.out.to(
       phaseInc.b,
@@ -691,7 +688,7 @@ export const SnakeAdvanced = circuit("SnakeAdvanced", {
     ),
     two.out.to(isPhase2.b, isDown.b),
     three.out.to(isPhase3.b, foodXNext.b, isLeft.b),
-    keyboard.out.to(keyboardLatched.data),
+    inp.dir.to(keyboardLatched.data),
     isPhase0.eq.to(
       latchKeyboard.b,
       writePhase0.a,

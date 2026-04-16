@@ -1,5 +1,5 @@
 
-import { useMemo, useCallback } from "react";
+import { useCallback } from "react";
 import { useSnakeSimulator } from "./useSnakeSimulator";
 
 const GRID_SIZE = 8;
@@ -44,36 +44,10 @@ function DPad({ onDirection }: { onDirection: (code: number) => void }) {
   );
 }
 
-/**
- * Extract pixel data from the simulator's sequential state.
- * The SnakeAdvanced circuit stores framebuffer pixels in DualPortRAM
- * at addresses 0–63 (8×8 grid). Node IDs are mangled during compilation
- * (e.g. "ram" → "SnakeAdvanced_ram_<ts>_<rand>"), so we search by substring.
- */
-function usePixels(sequentialState: unknown): number[] {
-  return useMemo(() => {
-    const pixels = new Array(64).fill(0);
-    const state = sequentialState as {
-      currentState?: Map<string, unknown>;
-    } | null;
-    if (!state?.currentState) return pixels;
-
-    for (const [nodeId, nodeState] of state.currentState) {
-      if (nodeState instanceof Map && nodeId.toLowerCase().includes("ram")) {
-        const mem = nodeState as Map<number, number>;
-        for (let addr = 0; addr < 64; addr++) {
-          pixels[addr] = mem.get(addr) ?? 0;
-        }
-        break;
-      }
-    }
-    return pixels;
-  }, [sequentialState]);
-}
-
 export function SnakeDemo() {
   const {
     sim,
+    pixels,
     isRunning,
     setIsRunning,
     speed,
@@ -81,8 +55,6 @@ export function SnakeDemo() {
     handleReset,
     sendDirection,
   } = useSnakeSimulator();
-
-  const pixels = usePixels(sim.sequentialState);
 
   if (!sim.ready) {
     return (

@@ -592,27 +592,8 @@ const GRID = 8;
 const PX = 24;
 const GAP = 2;
 
-function useSnakePixels(sequentialState: unknown): number[] {
-  return useMemo(() => {
-    const pixels = new Array(64).fill(0);
-    const state = sequentialState as {
-      currentState?: Map<string, unknown>;
-    } | null;
-    if (!state?.currentState) return pixels;
-    for (const [nodeId, nodeState] of state.currentState) {
-      if (nodeState instanceof Map && nodeId.toLowerCase().includes("ram")) {
-        for (let i = 0; i < 64; i++)
-          pixels[i] = (nodeState as Map<number, number>).get(i) ?? 0;
-        break;
-      }
-    }
-    return pixels;
-  }, [sequentialState]);
-}
-
 function SnakeCard() {
-  const { sim, isRunning, setIsRunning, sendDirection } = useSnakeSimulator();
-  const pixels = useSnakePixels(sim.sequentialState);
+  const { sim, pixels, isRunning, setIsRunning, sendDirection } = useSnakeSimulator();
   const total = GRID * PX + (GRID - 1) * GAP;
 
   // Set default direction to right once ready

@@ -133,7 +133,8 @@
       "Bash(VERIFIER_URL=https://verifier.charles-harris-de.workers.dev/verify pnpm exec vitest run src/verilog/__tests__/ROM.verify.test.ts)",
       "Bash(VERIFIER_URL=https://verifier.charles-harris-de.workers.dev/verify pnpm exec vitest run src/verilog/__tests__/RV32I_RegisterFile.verify.test.ts)",
       "Bash(VERIFIER_URL=https://verifier.charles-harris-de.workers.dev/verify pnpm exec vitest run src/verilog/__tests__/counter-e2e.verify.test.ts)",
-      "Bash(xargs -I {} bash -c 'echo \"=== {} ===\" && cat {}')"
+      "Bash(xargs -I {} bash -c 'echo \"=== {} ===\" && cat {}')",
+      "Bash(SYNTH_URL=http://localhost:8792/synth pnpm *)"
     ]
   }
 }
