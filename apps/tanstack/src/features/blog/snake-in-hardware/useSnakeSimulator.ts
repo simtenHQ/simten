@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useCircuitSimulator } from "@simten/embed";
 import { SnakeAdvanced } from "./circuits";
 
@@ -8,22 +8,23 @@ export function useSnakeSimulator() {
   const [isRunning, setIsRunning] = useState(false);
   const [speed, setSpeed] = useState(60);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [pixels, setPixels] = useState<number[]>(new Array(64).fill(0));
 
-  // Find the actual mangled node ID for "keyboard" from the compiled circuit.
-  // The IR generator mangles IDs: e.g. "keyboard" → "SnakeAdvanced_keyboard_<ts>_<rand>"
-  // We look up by label to get the real ID that setNodeValue/setNode can find.
-  const keyboardNodeId = useMemo(() => {
-    if (!sim.circuit?.nodes) return null;
-    for (const node of sim.circuit.nodes) {
-      if (node.label === "keyboard" || node.id === "keyboard") return node.id;
-    }
-    return null;
-  }, [sim.circuit]);
-
-  // Keyboard handling
+  // Refresh framebuffer after every tick by scanning scan_addr 0–63
+  // and reading pixel_out. Single sandbox round-trip, clock not advanced.
   useEffect(() => {
-    if (!keyboardNodeId) return;
+    if (!sim.ready) return;
+    let cancelled = false;
+    sim.scanPort("scan_addr", "__top__.pixel_out", 64).then((result) => {
+      if (!cancelled && result) setPixels(result);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [sim.cycleCount, sim.ready, sim.scanPort]);
 
+  // Keyboard handling — single setNode call, no race window with ticks
+  useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // 2-bit direction encoding: 0=up, 1=right, 2=down, 3=left
       const keyMap: Record<string, number> = {
@@ -35,12 +36,12 @@ export function useSnakeSimulator() {
       const code = keyMap[e.key];
       if (code !== undefined) {
         e.preventDefault();
-        sim.setNodeValue(keyboardNodeId, code);
+        sim.setNode("dir", code);
       }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [keyboardNodeId, sim.setNodeValue]);
+  }, [sim.setNode]);
 
   // Auto-run interval
   useEffect(() => {
@@ -60,18 +61,19 @@ export function useSnakeSimulator() {
   const handleReset = useCallback(() => {
     setIsRunning(false);
     sim.reset();
-    sim.tick(); // Propagate reset state to screen
+    sim.tick(); // bump cycleCount so the scanPort effect fires
   }, [sim]);
 
   const sendDirection = useCallback(
     (code: number) => {
-      if (keyboardNodeId) sim.setNodeValue(keyboardNodeId, code);
+      sim.setNode("dir", code);
     },
-    [keyboardNodeId, sim.setNodeValue],
+    [sim.setNode],
   );
 
   return {
     sim,
+    pixels,
     isRunning,
     setIsRunning,
     speed,
