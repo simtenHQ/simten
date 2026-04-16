@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"crypto/rand"
+	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -24,6 +25,9 @@ const maxSourceSize = 100 * 1024
 
 // Synthesis timeout — longer than iverilog since Yosys does more work
 const synthTimeout = 30 * time.Second
+
+// P&R timeout — nextpnr can be slow on large designs
+const buildTimeout = 120 * time.Second
 
 type SynthRequest struct {
 	Verilog string            `json:"verilog"`
@@ -242,6 +246,229 @@ func synthHandler(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// ---- /build types ----------------------------------------------------------
+
+type BuildRequest struct {
+	Netlist string `json:"netlist"` // JSON netlist from /synth
+	Top     string `json:"top"`
+	LPF     string `json:"lpf"`     // optional pin constraints
+	Device  string `json:"device"`  // default "LFE5U-85F"
+	Package string `json:"package"` // default "CABGA381"
+}
+
+type TimingStats struct {
+	AchievedMHz   float64 `json:"achieved_mhz"`
+	ConstraintMHz float64 `json:"constraint_mhz"`
+}
+
+type UtilStats struct {
+	Comb int `json:"comb"` // TRELLIS_COMB (combinational LUTs)
+	FF   int `json:"ff"`   // TRELLIS_FF (flip-flops)
+	BRAM int `json:"bram"` // TRELLIS_BRAM
+	IO   int `json:"io"`   // TRELLIS_IO
+}
+
+type BuildResponse struct {
+	Success     bool         `json:"success"`
+	Bitstream   string       `json:"bitstream,omitempty"` // base64-encoded .bit file
+	Timing      *TimingStats `json:"timing,omitempty"`
+	Utilization *UtilStats   `json:"utilization,omitempty"`
+	Log         string       `json:"log"`
+	Error       string       `json:"error,omitempty"`
+}
+
+// parseTiming extracts the achieved MHz from nextpnr output.
+// nextpnr prints lines like:
+//
+//	Info: Max frequency for clock 'clk': 87.32 MHz (PASS at 50.00 MHz)
+func parseTiming(output string) *TimingStats {
+	re := regexp.MustCompile(`Max frequency for clock[^:]*:\s+([\d.]+) MHz(?:\s+\((?:PASS|FAIL) at ([\d.]+) MHz\))?`)
+	stats := &TimingStats{}
+	if m := re.FindStringSubmatch(output); m != nil {
+		stats.AchievedMHz, _ = strconv.ParseFloat(m[1], 64)
+		if m[2] != "" {
+			stats.ConstraintMHz, _ = strconv.ParseFloat(m[2], 64)
+		}
+	}
+	return stats
+}
+
+// parseUtilization extracts resource usage from nextpnr output.
+// Newer nextpnr versions use TRELLIS_COMB/TRELLIS_FF instead of TRELLIS_SLICE.
+// Format: "Info: \t        TRELLIS_COMB:      16/  83640     0%"
+func parseUtilization(output string) *UtilStats {
+	util := &UtilStats{}
+	reComb := regexp.MustCompile(`TRELLIS_COMB:\s+(\d+)`)
+	reFF := regexp.MustCompile(`TRELLIS_FF:\s+(\d+)`)
+	reBRAM := regexp.MustCompile(`TRELLIS_BRAM:\s+(\d+)`)
+	reIO := regexp.MustCompile(`TRELLIS_IO:\s+(\d+)`)
+	if m := reComb.FindStringSubmatch(output); m != nil {
+		util.Comb, _ = strconv.Atoi(m[1])
+	}
+	if m := reFF.FindStringSubmatch(output); m != nil {
+		util.FF, _ = strconv.Atoi(m[1])
+	}
+	if m := reBRAM.FindStringSubmatch(output); m != nil {
+		util.BRAM, _ = strconv.Atoi(m[1])
+	}
+	if m := reIO.FindStringSubmatch(output); m != nil {
+		util.IO, _ = strconv.Atoi(m[1])
+	}
+	return util
+}
+
+// deviceToFlag maps a device string to the nextpnr-ecp5 size flag.
+// nextpnr-ecp5 uses --25k / --45k / --85k, not --device.
+func deviceToFlag(device string) string {
+	switch device {
+	case "LFE5U-25F", "LFE5UM-25F", "LFE5UM5G-25F":
+		return "--25k"
+	case "LFE5U-45F", "LFE5UM-45F", "LFE5UM5G-45F":
+		return "--45k"
+	default: // LFE5U-85F and anything else → 85K (ULX3S default)
+		return "--85k"
+	}
+}
+
+func buildHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "POST only", http.StatusMethodNotAllowed)
+		return
+	}
+
+	r.Body = http.MaxBytesReader(w, r.Body, 20*1024*1024) // 20MB — netlist can be large
+
+	var req BuildRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeJSON(w, http.StatusBadRequest, BuildResponse{Error: "invalid request body"})
+		return
+	}
+
+	if len(req.Netlist) == 0 {
+		writeJSON(w, http.StatusBadRequest, BuildResponse{Error: "netlist is required"})
+		return
+	}
+	if len(req.Top) == 0 {
+		writeJSON(w, http.StatusBadRequest, BuildResponse{Error: "top module name is required"})
+		return
+	}
+	if req.Device == "" {
+		req.Device = "LFE5U-85F"
+	}
+	if req.Package == "" {
+		req.Package = "CABGA381"
+	}
+
+	// Create temp directory
+	dir := filepath.Join("/tmp/synth", randomID())
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		writeJSON(w, http.StatusInternalServerError, BuildResponse{Error: "failed to create temp directory"})
+		return
+	}
+	defer os.RemoveAll(dir)
+
+	// Write netlist
+	netlistPath := filepath.Join(dir, "netlist.json")
+	if err := os.WriteFile(netlistPath, []byte(req.Netlist), 0644); err != nil {
+		writeJSON(w, http.StatusInternalServerError, BuildResponse{Error: "failed to write netlist"})
+		return
+	}
+
+	// Write LPF if provided
+	lpfPath := filepath.Join(dir, "constraints.lpf")
+	if req.LPF != "" {
+		if err := os.WriteFile(lpfPath, []byte(req.LPF), 0644); err != nil {
+			writeJSON(w, http.StatusInternalServerError, BuildResponse{Error: "failed to write LPF"})
+			return
+		}
+	}
+
+	// Build nextpnr-ecp5 command.
+	// Device size is specified as a flag (--25k / --45k / --85k), not --device.
+	configPath := filepath.Join(dir, "output.config")
+	deviceFlag := deviceToFlag(req.Device)
+	args := []string{
+		"--json", netlistPath,
+		"--textcfg", configPath,
+		deviceFlag,
+		"--package", req.Package,
+		"--timing-allow-fail",
+		"--seed", "1",
+	}
+	if req.LPF != "" {
+		args = append(args, "--lpf", lpfPath)
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), buildTimeout)
+	defer cancel()
+
+	var fullLog strings.Builder
+
+	cmd := exec.CommandContext(ctx, "nextpnr-ecp5", args...)
+	cmd.Dir = dir
+	out, err := cmd.CombinedOutput()
+	fullLog.Write(out)
+	nextpnrLog := fullLog.String()
+
+	if ctx.Err() == context.DeadlineExceeded {
+		writeJSON(w, http.StatusOK, BuildResponse{
+			Success: false,
+			Log:     nextpnrLog,
+			Error:   "place-and-route timed out (120s limit)",
+		})
+		return
+	}
+
+	if err != nil {
+		writeJSON(w, http.StatusOK, BuildResponse{
+			Success: false,
+			Log:     nextpnrLog,
+			Error:   fmt.Sprintf("nextpnr-ecp5 failed: %s", err.Error()),
+		})
+		return
+	}
+
+	// Run ecppack
+	bitPath := filepath.Join(dir, "output.bit")
+	ecpCmd := exec.Command("ecppack", "--input", configPath, "--bit", bitPath)
+	ecpCmd.Dir = dir
+	ecpOut, ecpErr := ecpCmd.CombinedOutput()
+	fullLog.Write(ecpOut)
+	combinedLog := fullLog.String()
+
+	if ecpErr != nil {
+		writeJSON(w, http.StatusOK, BuildResponse{
+			Success: false,
+			Log:     combinedLog,
+			Error:   fmt.Sprintf("ecppack failed: %s", ecpErr.Error()),
+		})
+		return
+	}
+
+	// Read and base64-encode the bitstream
+	bitData, err := os.ReadFile(bitPath)
+	if err != nil {
+		writeJSON(w, http.StatusOK, BuildResponse{
+			Success: false,
+			Log:     combinedLog,
+			Error:   "failed to read bitstream",
+		})
+		return
+	}
+
+	bitstream := base64.StdEncoding.EncodeToString(bitData)
+	timing := parseTiming(nextpnrLog)
+	util := parseUtilization(nextpnrLog)
+
+	writeJSON(w, http.StatusOK, BuildResponse{
+		Success:     true,
+		Bitstream:   bitstream,
+		Timing:      timing,
+		Utilization: util,
+		Log:         combinedLog,
+	})
+}
+
 func healthHandler(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]string{
 		"status":  "healthy",
@@ -252,6 +479,7 @@ func healthHandler(w http.ResponseWriter, r *http.Request) {
 func main() {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/synth", synthHandler)
+	mux.HandleFunc("/build", buildHandler)
 	mux.HandleFunc("/health", healthHandler)
 
 	server := &http.Server{
