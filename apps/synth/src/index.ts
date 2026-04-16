@@ -75,4 +75,45 @@ app.post("/synth", async (c) => {
 	});
 });
 
+// Build endpoint (nextpnr-ecp5 + ecppack)
+app.post("/build", async (c) => {
+	const contentType = c.req.header("Content-Type");
+	if (!contentType?.includes("application/json")) {
+		return c.json({ success: false, error: "Content-Type must be application/json" }, 400);
+	}
+
+	let body: { netlist?: string; top?: string; lpf?: string; device?: string; package?: string };
+	try {
+		body = await c.req.json();
+	} catch {
+		return c.json({ success: false, error: "Invalid JSON" }, 400);
+	}
+
+	if (typeof body.netlist !== "string" || body.netlist.length === 0) {
+		return c.json({ success: false, error: "netlist is required" }, 400);
+	}
+
+	if (typeof body.top !== "string" || body.top.length === 0) {
+		return c.json({ success: false, error: "top module name is required" }, 400);
+	}
+
+	const container = getContainer(c.env.SYNTH_CONTAINER);
+	const resp = await container.fetch("http://container/build", {
+		method: "POST",
+		headers: { "Content-Type": "application/json" },
+		body: JSON.stringify({
+			netlist: body.netlist,
+			top: body.top,
+			lpf: body.lpf ?? "",
+			device: body.device ?? "LFE5U-85F",
+			package: body.package ?? "CABGA381",
+		}),
+	});
+
+	return new Response(resp.body, {
+		status: resp.status,
+		headers: { "Content-Type": "application/json" },
+	});
+});
+
 export default app;
