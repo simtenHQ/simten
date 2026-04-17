@@ -11,8 +11,6 @@
 
 import type { Circuit, Connection, Node, ArgumentValue } from '../types/circuit.js';
 
-let harnessCounter = 0;
-
 export function autoHarness(
   circuit: Circuit,
   library: { resolveCircuit: (name: string) => Circuit | undefined; addCircuit: (c: Circuit) => void },
@@ -28,7 +26,7 @@ export function autoHarness(
     library.addCircuit(circuit);
   }
 
-  const harnessId = `__harness_${++harnessCounter}`;
+  const harnessId = `__harness_${circuit.name}`;
   const harnessName = `${circuit.name}Demo`;
 
   const nodes: Node[] = [];
