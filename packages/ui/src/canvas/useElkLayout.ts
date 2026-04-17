@@ -34,6 +34,7 @@ export function useElkLayout(
     }
 
     let cancelled = false;
+    setElkMetadata(null); // clear stale positions so fallback is used immediately for new circuit
     setIsLayoutReady(false);
 
     computeElkLayout(circuit, { direction, spacing }).then(result => {

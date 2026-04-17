@@ -103,9 +103,6 @@ export const useCircuitPreviewStore = create<CircuitPreviewStore>()(
     setCompiledCircuits: (circuits, code) => {
       const hash = hashCode(code);
 
-      console.log('[CircuitPreviewStore] setCompiledCircuits:', circuits.length, 'circuits');
-      circuits.forEach((c, i) => console.log(`  [${i}] ${c.name} - ${c.nodes.length} nodes, ${c.connections.length} connections`));
-
       set((state) => {
         state.compiledCircuits = circuits;
         state.version = hash;
@@ -144,17 +141,12 @@ export const useCircuitPreviewStore = create<CircuitPreviewStore>()(
     applyToCanvas: () => {
       const { compiledCircuits, selectedCircuitIndex } = get();
 
-      console.log('[CircuitPreviewStore] applyToCanvas - selectedIndex:', selectedCircuitIndex, 'total:', compiledCircuits.length);
-
       if (selectedCircuitIndex < 0 || selectedCircuitIndex >= compiledCircuits.length) {
-        // No valid circuit selected, clear canvas
-        console.log('[CircuitPreviewStore] No valid circuit, clearing canvas');
         useCircuitStore.getState().clearCircuit();
         return;
       }
 
       const selectedCircuit = compiledCircuits[selectedCircuitIndex];
-      console.log('[CircuitPreviewStore] Applying circuit:', selectedCircuit.name, selectedCircuit.nodes.length, 'nodes');
 
       // Ensure harness components (Switch, Led, etc.) are in the library
       const libStore = useCircuitLibraryStore.getState();
@@ -171,7 +163,6 @@ export const useCircuitPreviewStore = create<CircuitPreviewStore>()(
       // Apply to CircuitStore (auto-layout handled by CircuitCanvas)
       useCircuitStore.getState().setCircuit(harnessed);
 
-      console.log('[CircuitPreviewStore] Circuit applied successfully');
     },
 
     updateVersion: (code) => {
@@ -280,7 +271,6 @@ export const useCircuitPreviewStore = create<CircuitPreviewStore>()(
 
       // Apply the view circuit to canvas
       useCircuitStore.getState().setCircuit(viewCircuit);
-      console.log('[CircuitPreviewStore] Drilled into', node.componentRef, 'via node', nodeId);
     },
 
     drillUp: () => {
