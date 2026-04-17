@@ -170,9 +170,28 @@ export function EditorWorkspace({ theme = "light" }: EditorWorkspaceProps) {
     getAllPrimitiveNames,
   }), [resolveCircuit, getAllPrimitiveNames]);
 
-  // Keep sim state in ref for MCP callbacks
+  // Keep sim state in ref for MCP callbacks and stable canvas callbacks
   const simRef = useRef(sim);
   simRef.current = sim;
+
+  // Stable canvas callbacks — read sim via ref so they never change reference.
+  // Without this, inline lambdas here cause projectedNodes to recompute on every
+  // sim tick (portValues changes → EditorWorkspace re-renders → new fn refs →
+  // projectedNodes recomputes → setNodes → ReactFlow churns).
+  const onToggleNode = useCallback((nodeId: string) => {
+    const pv = simRef.current.portValues;
+    const outKey = `${nodeId}.out`;
+    const currentValue = pv?.get(outKey);
+    simRef.current.setNode(nodeId, !currentValue);
+    simRef.current.runCombinational();
+  }, []);
+  const onSetNodeValue = useCallback((nodeId: string, value: number) => {
+    simRef.current.setNode(nodeId, value);
+    simRef.current.runCombinational();
+  }, []);
+  const onLoadMemory = useCallback((nodeId: string, memData: Map<number, number>) => {
+    simRef.current.setNode(nodeId, memData);
+  }, []);
 
   // Studio connection (WebSocket to MCP server)
   const { status: mcpStatus, sendToClaudePrompt } = useMCPConnection({
@@ -397,20 +416,9 @@ export function EditorWorkspace({ theme = "light" }: EditorWorkspaceProps) {
                 renderEmptyState={renderEmptyState}
                 portValues={sim.portValues}
                 sequentialState={sim.sequentialState}
-                onToggleNode={(nodeId) => {
-                  const pv = sim.portValues;
-                  const outKey = `${nodeId}.out`;
-                  const currentValue = pv.get(outKey);
-                  sim.setNode(nodeId, !currentValue);
-                  sim.runCombinational();
-                }}
-                onSetNodeValue={(nodeId, value) => {
-                  sim.setNode(nodeId, value);
-                  sim.runCombinational();
-                }}
-                onLoadMemory={(nodeId, memData) => {
-                  sim.setNode(nodeId, memData);
-                }}
+                onToggleNode={onToggleNode}
+                onSetNodeValue={onSetNodeValue}
+                onLoadMemory={onLoadMemory}
               />
             </div>
           </div>

@@ -18,6 +18,7 @@ import "@xyflow/react/dist/style.css";
 import React, {
   useCallback,
   useEffect,
+  useRef,
   useMemo,
   useState,
   type ReactNode,
@@ -294,14 +295,31 @@ function CircuitCanvasInner({
   const [nodes, setNodes] = useState<Node[]>([]);
   const [edges, setEdges] = useState<Edge[]>([]);
 
+  const { fitView } = useReactFlow();
+  const prevCircuitIdRef = useRef<string | null>(null);
+  const prevNodeCountRef = useRef<number>(0);
+
   useEffect(() => {
+    const newId = cleanedCircuit?.id ?? null;
+    const circuitChanged = newId !== prevCircuitIdRef.current;
+    prevCircuitIdRef.current = newId;
+
+    const wasBlank = prevNodeCountRef.current === 0;
+    prevNodeCountRef.current = projectedNodes.length;
+
     setNodes((currentNodes) => {
       const positionMap = new Map(currentNodes.map((n) => [n.id, n.position]));
       return projectedNodes.map((node) => ({
         ...node,
-        position: positionMap.get(node.id) ?? node.position,
+        // Preserve user-dragged positions for same circuit; use layout positions for new circuit
+        position: (!circuitChanged && positionMap.get(node.id)) ? positionMap.get(node.id)! : node.position,
       }));
     });
+
+    // Fit view when circuit changes OR when nodes appear after a blank state
+    if (projectedNodes.length > 0 && (circuitChanged || wasBlank)) {
+      requestAnimationFrame(() => fitView({ padding: 0.3 }));
+    }
   }, [projectedNodes]);
 
   useEffect(() => {
@@ -352,25 +370,10 @@ function CircuitCanvasInner({
     [effectiveNodeDoubleClick],
   );
 
-  if (!circuit) {
-    if (renderEmptyState) return <>{renderEmptyState()}</>;
-    return (
-      <div
-        data-embed-theme={theme}
-        className={`bg-[var(--embed-bg-primary)] flex items-center justify-center text-[var(--embed-text-muted)] ${
-          className ?? ""
-        }`}
-        style={{ height }}
-      >
-        No circuit
-      </div>
-    );
-  }
-
   return (
     <div
       data-embed-theme={theme}
-      className={`bg-[var(--embed-bg-primary)] overflow-hidden ${
+      className={`bg-[var(--embed-bg-primary)] overflow-hidden relative ${
         className ?? ""
       }`}
       style={{ height }}
@@ -420,6 +423,14 @@ function CircuitCanvasInner({
         )}
       </ReactFlow>
       {renderOverlay?.()}
+      {/* Empty state overlay — rendered on top of ReactFlow when no circuit */}
+      {!circuit && (
+        renderEmptyState ? renderEmptyState() : (
+          <div className="absolute inset-0 flex items-center justify-center text-[var(--embed-text-muted)]">
+            No circuit
+          </div>
+        )
+      )}
       {/* Built-in inspector (only when no external onNodeDoubleClick) */}
       {!onNodeDoubleClickProp && inspectorStack.length > 0 && (
         <CompositeInspectorDialog
