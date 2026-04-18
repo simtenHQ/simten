@@ -1,0 +1,20 @@
+LOCATE COMP "clk_25mhz" SITE "G2";
+IOBUF  PORT "clk_25mhz" IO_TYPE=LVCMOS33;
+
+# Directional buttons (active high, PULLMODE=DOWN)
+LOCATE COMP "btn[3]" SITE "R18"; IOBUF PORT "btn[3]" PULLMODE=DOWN IO_TYPE=LVCMOS33;  # up
+LOCATE COMP "btn[4]" SITE "V1";  IOBUF PORT "btn[4]" PULLMODE=DOWN IO_TYPE=LVCMOS33;  # down
+LOCATE COMP "btn[5]" SITE "U1";  IOBUF PORT "btn[5]" PULLMODE=DOWN IO_TYPE=LVCMOS33;  # left
+LOCATE COMP "btn[6]" SITE "H16"; IOBUF PORT "btn[6]" PULLMODE=DOWN IO_TYPE=LVCMOS33;  # right
+
+# GPDI differential pairs — from emard/ulx3s v20 LPF
+# dp (A-side, positive): LVCMOS33D; dn (B-side, negative): LVCMOS33 driven inverted
+# ch0=Blue ch1=Green ch2=Red ch3=Clock
+LOCATE COMP "gpdi_dp[0]" SITE "A16"; IOBUF PORT "gpdi_dp[0]" IO_TYPE=LVCMOS33D DRIVE=4;
+LOCATE COMP "gpdi_dn[0]" SITE "B16"; IOBUF PORT "gpdi_dn[0]" IO_TYPE=LVCMOS33  DRIVE=4;
+LOCATE COMP "gpdi_dp[1]" SITE "A14"; IOBUF PORT "gpdi_dp[1]" IO_TYPE=LVCMOS33D DRIVE=4;
+LOCATE COMP "gpdi_dn[1]" SITE "C14"; IOBUF PORT "gpdi_dn[1]" IO_TYPE=LVCMOS33  DRIVE=4;
+LOCATE COMP "gpdi_dp[2]" SITE "A12"; IOBUF PORT "gpdi_dp[2]" IO_TYPE=LVCMOS33D DRIVE=4;
+LOCATE COMP "gpdi_dn[2]" SITE "A13"; IOBUF PORT "gpdi_dn[2]" IO_TYPE=LVCMOS33  DRIVE=4;
+LOCATE COMP "gpdi_dp[3]" SITE "A17"; IOBUF PORT "gpdi_dp[3]" IO_TYPE=LVCMOS33D DRIVE=4;
+LOCATE COMP "gpdi_dn[3]" SITE "B18"; IOBUF PORT "gpdi_dn[3]" IO_TYPE=LVCMOS33  DRIVE=4;
