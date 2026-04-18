@@ -16,6 +16,10 @@ Everything runs in the browser — no toolchain, no installation, no FPGA requir
 - **Accelerators** — a [TPU systolic array](/blog/how-tpus-work) doing matrix multiplication, a [CORDIC unit](/blog/computing-trig-in-hardware) computing trigonometry
 - **Networking hardware** — an [Ethernet switch](/blog/how-network-switches-work) with frame parsing, buffering, and forwarding
 
+## Hardware & FPGA
+
+Circuits that export to Verilog can go all the way to a physical FPGA bitstream. The [Hardware & FPGA](/docs/hardware) page covers the full pipeline — Yosys synthesis, nextpnr place-and-route, ecppack, and flashing — using Snake running on a ULX3S ECP5 board over HDMI as a worked example.
+
 ## Verilog export
 
 Circuits export to synthesizable Verilog. The exporter maps 60+ primitives to standard RTL constructs — `assign` for combinational logic, `always @(posedge clk)` with non-blocking assignments for sequential logic. The output is verified against [Icarus Verilog](https://steveicarus.github.io/iverilog/) via a containerized verification service.
