@@ -44,7 +44,7 @@ export {
   RV32I_Decode, RV32I_ALU, RV32I_ImmGen, RV32I_Control,
   RV32I_BranchComp, RV32I_RegisterFile, RV32I_InstrMem, RV32I_DataMem,
   RV32I_WritebackMux, RV32I_NextPCMux, RV32I_ForwardingUnit,
-  RV32I_WBBypass, RV32I_LoadAlign, RV32I_HazardUnit,
+  RV32I_WBBypass, RV32I_LoadAlign, RV32I_LoadAlignFull, RV32I_HazardUnit,
   DualPortROM,
 } from './rv32i.js';
 

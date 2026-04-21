@@ -154,35 +154,23 @@ function emitFlatModule(
   for (const node of flat.nodes) {
     const argWidth = typeof node.arguments?.width === 'number' ? node.arguments.width : undefined;
 
-    // For Constant nodes with no explicit width, infer minimum width from value.
-    // Prevents truncation bugs where e.g. value=255 is treated as 1-bit.
-    const effectiveWidth = (() => {
-      if (argWidth !== undefined) return argWidth;
-      if (node.primitiveType === 'Constant' && typeof node.arguments?.value === 'number') {
-        const v = node.arguments.value;
-        if (v > 65535) return 32;
-        if (v > 255)   return 16;
-        if (v > 1)     return 8;
-      }
-      return undefined;
-    })();
-
     for (const output of node.outputs) {
       let pt = output.portType;
-      if (effectiveWidth && effectiveWidth > 1) {
+      // If the node has a width argument and the port is narrower, widen it
+      if (argWidth && argWidth > 1) {
         const portWidth = pt.kind === 'bus' ? pt.width : 1;
-        if (portWidth < effectiveWidth) {
-          pt = { kind: 'bus', width: effectiveWidth };
+        if (portWidth < argWidth) {
+          pt = { kind: 'bus', width: argWidth };
         }
       }
       resolvedPortTypes.set(`${node.id}.${output.name}`, pt);
     }
     for (const input of node.inputs) {
       let pt = input.portType;
-      if (effectiveWidth && effectiveWidth > 1) {
+      if (argWidth && argWidth > 1) {
         const portWidth = pt.kind === 'bus' ? pt.width : 1;
-        if (portWidth < effectiveWidth) {
-          pt = { kind: 'bus', width: effectiveWidth };
+        if (portWidth < argWidth) {
+          pt = { kind: 'bus', width: argWidth };
         }
       }
       resolvedPortTypes.set(`${node.id}.${input.name}`, pt);

@@ -34,8 +34,8 @@ import type { CircuitLibrary } from '../../packages/core/src/types/circuit.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
-const SYNTH_URL = 'http://localhost:8080/synth';
-const BUILD_URL = 'http://localhost:8080/build';
+const SYNTH_URL = process.env.SYNTH_URL ?? 'http://localhost:8792/synth';
+const BUILD_URL = process.env.BUILD_URL ?? 'http://localhost:8792/build';
 
 // ── Circuit definition (canonical copy from snake.build.test.ts) ───────────
 
@@ -97,8 +97,9 @@ function buildSnakeAdvanced() {
       headX: { initial: 4 }, headY: { initial: 4 },
       tailPixelAddr: { initial: 33 }, nextHeadPixelAddr: { initial: 36 },
       phase: { initial: 0 }, keyboardLatched: { initial: 1 },
-      zero: { value: 0 }, one: { value: 1 }, two: { value: 2 }, three: { value: 3 },
-      bodyBase: { value: 64 }, minus1: { value: 255 }, five: { value: 5 },
+      zero: { value: 0, width: 8 }, one: { value: 1, width: 8 }, two: { value: 2, width: 8 }, three: { value: 3, width: 8 },
+      bodyBase: { value: 64, width: 8 }, minus1: { value: 255, width: 8 }, five: { value: 5, width: 8 },
+      deltaXTemp: { width: 8 }, deltaX: { width: 8 }, deltaYTemp: { width: 8 }, deltaY: { width: 8 },
       phaseWrap: { low: 0, high: 1 },
       phaseEnable: { value: 1 }, shouldMoveTail: { value: 1 }, writeEnable: { value: 1 },
       nextHeadX: { low: 0, high: 2 }, nextHeadY: { low: 0, high: 2 },

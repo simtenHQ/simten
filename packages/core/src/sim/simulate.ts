@@ -21,6 +21,7 @@ import {
 } from '../simulator/simulation-session.js';
 import { createSimulatorFromCircuit } from '../simulator/index.js';
 import type { BuiltCircuit, PortMap } from '../circuit/types.js';
+import { isSequentialCircuit } from '../circuit/is-sequential.js';
 
 function isMutable(lib: CircuitLibrary): lib is MutableCircuitLibrary {
   return 'addCircuit' in lib && typeof (lib as MutableCircuitLibrary).addCircuit === 'function';
@@ -136,7 +137,7 @@ export function simulate<
   const circuit = wrapIfPrimitive(rawCircuit, library);
 
   // Detect sequential
-  const isSequential = detectSequential(circuit, library);
+  const isSequential = isSequentialCircuit(circuit, library.resolveCircuit);
 
   // Create engine and session
   const engine = createSimulatorFromCircuit(circuit, library);
@@ -337,12 +338,4 @@ function wrapIfPrimitive(circuit: Circuit, library: CircuitLibrary): Circuit {
   };
 }
 
-function detectSequential(circuit: Circuit, library: CircuitLibrary): boolean {
-  if (circuit.clocks.length > 0 || circuit.state.length > 0) return true;
-  for (const node of circuit.nodes) {
-    const def = library.resolveCircuit(node.componentRef);
-    if (def && (def.clocks.length > 0 || def.state.length > 0)) return true;
-  }
-  return false;
-}
 

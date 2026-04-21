@@ -1,1 +1,4 @@
 *.bit
+*.bit.gz
+firmware.hex
+combined.v
