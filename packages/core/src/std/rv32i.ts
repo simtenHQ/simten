@@ -325,6 +325,28 @@ export const RV32I_LoadAlign = circuit('RV32I_LoadAlign', {
   meta: { category: 'rv32i', icon: 'LA', description: 'RISC-V load alignment (byte/half/word)' },
 });
 
+export const RV32I_LoadAlignFull = circuit('RV32I_LoadAlignFull', {
+  in: { data: bus(32), byte_offset: bus(2), funct3: bus(3) },
+  out: { out: bus(32) },
+  eval: ({ data, byte_offset, funct3 }) => {
+    const raw = (data as number) >>> 0;
+    const off = (byte_offset as number) & 0x3;
+    const f3  = (funct3 as number) & 0x7;
+    const byte_val = (raw >>> (off * 8)) & 0xFF;
+    const half_val = (raw >>> ((off & 2) * 8)) & 0xFFFF;
+    let out: number;
+    switch (f3) {
+      case 0: out = ((byte_val << 24) >> 24) >>> 0; break;  // LB
+      case 1: out = ((half_val << 16) >> 16) >>> 0; break;  // LH
+      case 4: out = byte_val; break;                         // LBU
+      case 5: out = half_val; break;                         // LHU
+      default: out = raw; break;                             // LW
+    }
+    return { out };
+  },
+  meta: { category: 'rv32i', icon: 'LA2', description: 'RISC-V full load aligner (raw word + byte offset + funct3)' },
+});
+
 export const RV32I_HazardUnit = circuit('RV32I_HazardUnit', {
   in: { if_rs1: bus(5), if_rs2: bus(5), id_rd: bus(5), id_mem_read: bit, branch_taken: bit, jump: bit },
   out: { stall: bit, flush: bit },
