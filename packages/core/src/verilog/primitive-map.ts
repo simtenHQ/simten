@@ -326,7 +326,7 @@ export function emitPrimitive(ctx: PrimitiveContext): { lines: string[]; declara
     // ── Sequential: DFlipFlop ────────────────────────────────────────
     case 'DFlipFlop': {
       const regName = `reg_${id}`;
-      const initLines = ctx.target === 'simulation' ? [`initial ${regName} = 1'b0;`] : [];
+      const initLines = [`initial ${regName} = 1'b0;`];
       return {
         declarations: [`reg ${regName};`],
         lines: [
@@ -345,9 +345,7 @@ export function emitPrimitive(ctx: PrimitiveContext): { lines: string[]; declara
       const regName = `reg_${id}`;
       const widthStr = w > 1 ? `[${w - 1}:0] ` : '';
       const initialValue = typeof args.initial === 'number' ? args.initial : 0;
-      const initLines = ctx.target === 'simulation'
-        ? [`initial ${regName} = ${w > 1 ? `${w}'d` : "1'b"}${initialValue};`]
-        : [];
+      const initLines = [`initial ${regName} = ${w > 1 ? `${w}'d` : "1'b"}${initialValue};`];
       return {
         declarations: [`reg ${widthStr}${regName};`],
         lines: [
@@ -705,6 +703,96 @@ export function emitPrimitive(ctx: PrimitiveContext): { lines: string[]; declara
           `  endcase`,
           `end`,
           `assign ${o('out')} = ${laWire};`,
+        ],
+      };
+    }
+
+    case 'RV32I_LoadAlignFull': {
+      const byte_wire = `la2b_${id}`;
+      const half_wire = `la2h_${id}`;
+      const out_wire  = `la2_${id}`;
+      return {
+        declarations: [`wire [7:0] ${byte_wire};`, `wire [15:0] ${half_wire};`, `reg [31:0] ${out_wire};`],
+        lines: [
+          `assign ${byte_wire} = (${i('byte_offset')} == 2'd3) ? ${i('data')}[31:24] :`,
+          `                      (${i('byte_offset')} == 2'd2) ? ${i('data')}[23:16] :`,
+          `                      (${i('byte_offset')} == 2'd1) ? ${i('data')}[15:8]  :`,
+          `                                                       ${i('data')}[7:0];`,
+          `assign ${half_wire} = ${i('byte_offset')}[1] ? ${i('data')}[31:16] : ${i('data')}[15:0];`,
+          `always @(*) begin`,
+          `  case (${i('funct3')})`,
+          `    3'd0: ${out_wire} = {{24{${byte_wire}[7]}}, ${byte_wire}};`,
+          `    3'd1: ${out_wire} = {{16{${half_wire}[15]}}, ${half_wire}};`,
+          `    3'd4: ${out_wire} = {24'd0, ${byte_wire}};`,
+          `    3'd5: ${out_wire} = {16'd0, ${half_wire}};`,
+          `    default: ${out_wire} = ${i('data')};`,
+          `  endcase`,
+          `end`,
+          `assign ${o('out')} = ${out_wire};`,
+        ],
+      };
+    }
+
+    case 'RV32I_ForwardingUnit': {
+      return {
+        declarations: [],
+        lines: [
+          `assign ${o('forward_a')} = (${i('ex_reg_write')} && ${i('ex_rd')} != 5'd0 && ${i('ex_rd')} == ${i('id_rs1')}) ? 2'd1 :`,
+          `                            (${i('mem_reg_write')} && ${i('mem_rd')} != 5'd0 && ${i('mem_rd')} == ${i('id_rs1')}) ? 2'd2 : 2'd0;`,
+          `assign ${o('forward_b')} = (${i('ex_reg_write')} && ${i('ex_rd')} != 5'd0 && ${i('ex_rd')} == ${i('id_rs2')}) ? 2'd1 :`,
+          `                            (${i('mem_reg_write')} && ${i('mem_rd')} != 5'd0 && ${i('mem_rd')} == ${i('id_rs2')}) ? 2'd2 : 2'd0;`,
+        ],
+      };
+    }
+
+    case 'RV32I_WBBypass': {
+      return {
+        declarations: [],
+        lines: [
+          `assign ${o('out')} = (${i('wb_we')} && ${i('wb_rd')} != 5'd0 && ${i('wb_rd')} == ${i('rs_addr')}) ? ${i('wb_val')} : ${i('rs_val')};`,
+        ],
+      };
+    }
+
+    case 'RV32I_HazardUnit': {
+      return {
+        declarations: [],
+        lines: [
+          `assign ${o('stall')} = (${i('id_mem_read')} && ${i('id_rd')} != 5'd0 && (${i('id_rd')} == ${i('if_rs1')} || ${i('id_rd')} == ${i('if_rs2')})) ? 1'b1 : 1'b0;`,
+          `assign ${o('flush')} = (${i('branch_taken')} || ${i('jump')}) ? 1'b1 : 1'b0;`,
+        ],
+      };
+    }
+
+    case 'RV32I_WritebackMux': {
+      const tmp = `wbmux_${id}`;
+      return {
+        declarations: [`reg [31:0] ${tmp};`],
+        lines: [
+          `always @(*) begin`,
+          `  if (${i('jump')})           ${tmp} = ${i('pc_plus4')};`,
+          `  else if (${i('auipc')})     ${tmp} = ${i('pc_plus_imm')};`,
+          `  else if (${i('lui')})       ${tmp} = ${i('immediate')};`,
+          `  else if (${i('mem_to_reg')}) ${tmp} = ${i('load_data')};`,
+          `  else                        ${tmp} = ${i('alu_result')};`,
+          `end`,
+          `assign ${o('write_data')} = ${tmp};`,
+        ],
+      };
+    }
+
+    case 'RV32I_NextPCMux': {
+      const tmp = `pcmux_${id}`;
+      return {
+        declarations: [`reg [31:0] ${tmp};`],
+        lines: [
+          `always @(*) begin`,
+          `  if (${i('jump')} && ${i('is_jalr')}) ${tmp} = ${i('jalr_target')} & 32'hFFFFFFFE;`,
+          `  else if (${i('jump')})               ${tmp} = ${i('jal_target')};`,
+          `  else if (${i('branch')} && ${i('take_branch')}) ${tmp} = ${i('branch_target')};`,
+          `  else                                 ${tmp} = ${i('pc_plus4')};`,
+          `end`,
+          `assign ${o('next_pc')} = ${tmp};`,
         ],
       };
     }
