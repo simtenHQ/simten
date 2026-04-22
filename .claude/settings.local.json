@@ -172,7 +172,8 @@
       "Bash(DISASM=1 bun hardware/ulx3s/cpu_run_c.ts)",
       "Bash(bun hardware/ulx3s/cpu_verify.ts)",
       "Bash(bun hardware/ulx3s/cpu_verify.ts --suite)",
-      "Bash(bun hardware/ulx3s/cpu_build.ts --rust --flash)"
+      "Bash(bun hardware/ulx3s/cpu_build.ts --rust --flash)",
+      "Bash(bun hardware/ulx3s/cpu_build.ts --flash)"
     ]
   }
 }
