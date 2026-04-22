@@ -16,7 +16,14 @@
 		"changeset": "changeset",
 		"release": "pnpm build && changeset publish",
 		"sync-public": "rsync -av --delete --exclude='node_modules' --exclude='dist' --exclude='*.tsbuildinfo' --exclude='.turbo' ./packages/ /tmp/simten-public/packages/ && rsync -av --delete --exclude='node_modules' --exclude='dist' --exclude='*.tsbuildinfo' --exclude='.turbo' ./examples/ /tmp/simten-public/examples/",
-		"sync-public:push": "pnpm sync-public && cd /tmp/simten-public && git add . && (git diff --cached --quiet || git commit -m \"sync $(date -u +%Y-%m-%dT%H:%M:%SZ)\" && git push)"
+		"sync-public:push": "pnpm sync-public && cd /tmp/simten-public && git add . && (git diff --cached --quiet || git commit -m \"sync $(date -u +%Y-%m-%dT%H:%M:%SZ)\" && git push)",
+		"fpga:test": "bun hardware/ulx3s/cpu_tests.ts",
+		"fpga:verify": "bun hardware/ulx3s/cpu_verify.ts --suite",
+		"fpga:sim": "bun hardware/ulx3s/cpu_run_c.ts",
+		"fpga:regen-verilog": "bun hardware/ulx3s/regen_verilog.ts",
+		"fpga:build": "bun hardware/ulx3s/cpu_build.ts",
+		"fpga:flash": "bun hardware/ulx3s/cpu_build.ts --flash",
+		"fpga:console": "TTY=$(ls /dev/cu.usbserial-* 2>/dev/null | head -1); [ -z \"$TTY\" ] && TTY=/dev/ttyUSB0; echo \"Opening $TTY (exit: Ctrl-A Ctrl-X)\"; picocom --nolock --noreset -b 115200 $TTY"
 	},
 	"devDependencies": {
 		"@changesets/cli": "^2.29.8",
