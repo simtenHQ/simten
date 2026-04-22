@@ -150,26 +150,41 @@ function emitFlatModule(
   // override the port type if the argument specifies a wider width than
   // the static port definition. The elaborator doesn't resolve parameterised
   // widths into port types, so the exporter must do it.
+  // Control signals: port names that are always 1-bit regardless of a node's
+  // width argument. Data ports declared as `bit` (Constant.out, Mux.in0/in1/out,
+  // And/Or/Xor.a/b/out, etc.) DO widen with the node's width arg — that's the
+  // whole point of parameterised widths. But these control inputs/outputs are
+  // always 1-bit and must not be widened, or Verilog's context-extension turns
+  // `~hazard_stall` into 32'hFFFFFFFE instead of 1'b0 and silently breaks
+  // `if (wire)` pipeline stall/flush tests.
+  const CONTROL_PORTS = new Set([
+    'we',        // Register write-enable
+    'sel',       // Mux select
+    'carry_in',  // Adder carry input
+    'carry_out', // Adder carry output
+  ]);
+
   const resolvedPortTypes = new Map<string, PortType>();
   for (const node of flat.nodes) {
     const argWidth = typeof node.arguments?.width === 'number' ? node.arguments.width : undefined;
 
     for (const output of node.outputs) {
       let pt = output.portType;
-      // Only widen data ports (declared as `bus`) to argWidth. Never widen
-      // control signals declared as `bit` (we, sel, carry_in, etc.) — those
-      // must stay 1-bit regardless of the node's width argument, or the
-      // exported wire becomes N-bit and Verilog context-extends ~/!/&-expressions
-      // in ways that silently break `if (wire)` tests.
-      if (argWidth && argWidth > 1 && pt.kind === 'bus' && pt.width < argWidth) {
-        pt = { kind: 'bus', width: argWidth };
+      if (argWidth && argWidth > 1 && !CONTROL_PORTS.has(output.name)) {
+        const portWidth = pt.kind === 'bus' ? pt.width : 1;
+        if (portWidth < argWidth) {
+          pt = { kind: 'bus', width: argWidth };
+        }
       }
       resolvedPortTypes.set(`${node.id}.${output.name}`, pt);
     }
     for (const input of node.inputs) {
       let pt = input.portType;
-      if (argWidth && argWidth > 1 && pt.kind === 'bus' && pt.width < argWidth) {
-        pt = { kind: 'bus', width: argWidth };
+      if (argWidth && argWidth > 1 && !CONTROL_PORTS.has(input.name)) {
+        const portWidth = pt.kind === 'bus' ? pt.width : 1;
+        if (portWidth < argWidth) {
+          pt = { kind: 'bus', width: argWidth };
+        }
       }
       resolvedPortTypes.set(`${node.id}.${input.name}`, pt);
     }
