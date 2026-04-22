@@ -148,7 +148,7 @@ function binaryToInlineInit(binary: Uint8Array, numWords: number = 512): string 
 
 // ── Circuit definition ──────────────────────────────────────────────────────
 
-function buildCPUCore() {
+export function buildCPUCore() {
   // Full RV32I 5-stage pipelined core (copied from rv32i-board.circuit.ts)
   const RV32I_Core = circuit('RV32I_Core', {
     in: { instruction: bus(32), data_read: bus(32), net_rx_data: bus(32), net_rx_valid: bit, net_rx_frame: bit },
@@ -370,6 +370,621 @@ function buildRawFirmware(): Uint8Array {
   const useRaw20 = process.argv.includes('--raw20');
   const useRaw21 = process.argv.includes('--raw21');
   const useRaw22 = process.argv.includes('--raw22');
+
+  const useRaw24 = process.argv.includes('--raw24');
+  if (useRaw24) {
+    // AUIPC test: mirrors C firmware stack setup, then sb+lbu+poll+sw.
+    // If 'A' prints: AUIPC works and stack ops are fine.
+    // If nothing: AUIPC broken (sp = garbage → DMEM accesses go to invalid addresses).
+    const words = [
+      0x00011117, // [0x00] auipc sp, 0x11       sp = PC+0x11000 = 0x11000
+      0xfe010113, // [0x04] addi  sp, sp, -32    sp = 0x10FE0
+      0x04100713, // [0x08] addi  a4, x0, 65     a4 = 'A'
+      0x00e10023, // [0x0C] sb    a4, 0(sp)      dmem[0x10FE0] byte0 = 'A'
+      0x00000013, // [0x10] nop
+      0x00000013, // [0x14] nop
+      0x00000013, // [0x18] nop
+      0x00000013, // [0x1C] nop
+      0x00014703, // [0x20] lbu   a4, 0(sp)      a4 = dmem[0x10FE0] byte0
+      0x00000013, // [0x24] nop
+      // poll UART
+      0x800007b7, // [0x28] lui   a5, 0x80000    ← poll target
+      0x0007a803, // [0x2C] lw    a6, 0(a5)
+      0x00000013, // [0x30] nop
+      0x00000013, // [0x34] nop
+      0x00000013, // [0x38] nop  (beqz would be here, moved to 0x3C)
+      0x00000013, // [0x3C] nop
+      0x00000013, // [0x40] nop
+      0xfe0802e3, // [0x44] beqz  a6, -28        → 0x28 if not ready
+      0x00e7a023, // [0x48] sw    a4, 0(a5)      UART write
+      0x000402b7, // [0x4C] lui   t0, 0x40
+      0xfff28293, // [0x50] addi  t0, t0, -1
+      0xfe029ee3, // [0x54] bne   t0, x0, -4     → 0x50
+      0xfd1ff06f, // [0x58] j     0x28           offset = -48
+    ];
+    console.log('Using raw24 firmware (AUIPC stack test):');
+    console.log('  auipc sp,0x11; addi sp,sp,-32; sb A,0(sp); lbu A,0(sp); poll; sw to UART');
+    console.log('  If A: AUIPC+stack OK. If nothing: AUIPC broken.');
+    const bytes = new Uint8Array(words.length * 4);
+    const view = new DataView(bytes.buffer);
+    words.forEach((w, i) => view.setUint32(i * 4, w, true));
+    return bytes;
+  }
+
+  const useRaw36 = process.argv.includes('--raw36');
+  if (useRaw36) {
+    // rs2 load-use hazard: lw a5 immediately followed by ADD using a5 as rs2.
+    // dmem[0x10000] = 65 ('A'). add a4, x0, a5 — a5 is rs2, stall must fire.
+    // If stall fires: a4=65, sends 'A'. If no stall: a4=0 (stale x0), sends 0x00 (invisible).
+    const words = [
+      0x00010437, // [0x00] lui  s0, 0x10           s0 = 0x10000
+      0x04100713, // [0x04] addi a4, x0, 65         a4 = 'A'
+      0x00e42023, // [0x08] sw   a4, 0(s0)          dmem[0x10000] = 'A'
+      0x00000013, // [0x0C] nop
+      0x00000013, // [0x10] nop
+      0x00000013, // [0x14] nop
+      0x00000013, // [0x18] nop
+      0x00000013, // [0x1C] nop
+      0x00042783, // [0x20] lw   a5, 0(s0)          a5 = 65  ← load
+      0x00f00733, // [0x24] add  a4, x0, a5         a4 = a5  (a5 is rs2! load-use hazard)
+      0x00000013, // [0x28] nop
+      0x00000013, // [0x2C] nop
+      0x00000013, // [0x30] nop
+      0x800007b7, // [0x34] lui  a5, 0x80000        a5 = UART
+      0x0007a283, // [0x38] lw   t0, 0(a5)          poll
+      0x0012f293, // [0x3C] andi t0, t0, 1
+      0xfe028ae3, // [0x40] beqz t0, -12             → 0x34
+      0x00e7a023, // [0x44] sw   a4, 0(a5)          send a4
+      0x000402b7, // [0x48] lui  t0, 0x40           delay
+      0xfff28293, // [0x4C] addi t0, t0, -1
+      0xfe029ee3, // [0x50] bne  t0, x0, -4         → 0x4C
+      0xfcdff06f, // [0x54] j    0x20               loop back to lw
+    ];
+    console.log('Using raw36 firmware (rs2 load-use hazard: lw a5 / add a4,x0,a5):');
+    console.log('  Expected AAAA... If nothing → load-use stall on rs2 broken.');
+    const bytes = new Uint8Array(words.length * 4);
+    const view = new DataView(bytes.buffer);
+    words.forEach((w, i) => view.setUint32(i * 4, w, true));
+    return bytes;
+  }
+
+  const useRaw35 = process.argv.includes('--raw35');
+  if (useRaw35) {
+    // Minimal test: WB-forwarding of load result into bge rs2.
+    // Pattern: lw a4, 0(s0)  /  addi a5, x0, 1  /  bge a5, a4, -36
+    // lw and bge are 2 instr apart (no stall) → lw in WB when bge in EX → WB forward for rs2.
+    // dmem[0] is always 0, so bge(1 >= 0) should always branch → loop prints 'A' forever.
+    // Expected: AAAA... If nothing → WB forwarding of load into bge rs2 is broken.
+    const words = [
+      0x00010437, // [0x00] lui  s0, 0x10           s0 = 0x10000 (DMEM base)
+      0x00042023, // [0x04] sw   zero, 0(s0)         dmem[0] = 0
+      0x0200006f, // [0x08] j    0x28               jump to check (+32)
+      // loop body @ 0x0C
+      0x800007b7, // [0x0C] lui  a5, 0x80000         poll UART
+      0x0007a783, // [0x10] lw   a5, 0(a5)
+      0x0017f793, // [0x14] andi a5, a5, 1
+      0xfe078ae3, // [0x18] beqz a5, -12             → 0x0C
+      0x800007b7, // [0x1C] lui  a5, 0x80000         send 'A'
+      0x04100713, // [0x20] addi a4, x0, 65
+      0x00e7a023, // [0x24] sw   a4, 0(a5)
+      // check @ 0x28
+      0x00042703, // [0x28] lw   a4, 0(s0)           a4 = 0 always
+      0x00100793, // [0x2C] addi a5, x0, 1           a5 = 1
+      0xfce7dee3, // [0x30] bge  a5, a4, -36         if 1>=0 → 0x0C (always taken)
+      0x0000006f, // [0x34] j    0                   trap (never reached)
+    ];
+    console.log('Using raw35 firmware (WB-forward of load into bge rs2):');
+    console.log('  Expected AAAA... If nothing → WB-forwarding lw→bge(rs2) is broken.');
+    const bytes = new Uint8Array(words.length * 4);
+    const view = new DataView(bytes.buffer);
+    words.forEach((w, i) => view.setUint32(i * 4, w, true));
+    return bytes;
+  }
+
+  const useRaw34 = process.argv.includes('--raw34');
+  if (useRaw34) {
+    // raw31 but with lui s0 instead of auipc+addi+addi chain.
+    // Isolates whether the auipc setup is causing the raw31 failure.
+    // If ABCDE prints: auipc chain was the problem. If nothing: bug is in the loop itself.
+    const words = [
+      0x00011437, // [0x00] lui  s0, 0x11            s0 = 0x11000
+      0xfe042623, // [0x04] sw   zero, -20(s0)        i = 0  ← reset target
+      0x03c0006f, // [0x08] j    0x44                 jump to loop check
+      // loop body @ 0x0C
+      0xfec42783, // [0x0C] lw   a5, -20(s0)          a5 = i
+      0x04178713, // [0x10] addi a4, a5, 65            a4 = 'A'+i  (load-use hazard)
+      0xfee405a3, // [0x14] sb   a4, -21(s0)           store c
+      0x00000013, // [0x18] nop
+      // poll
+      0x800007b7, // [0x1C] lui  a5, 0x80000           ← poll target
+      0x0007a783, // [0x20] lw   a5, 0(a5)
+      0x0017f793, // [0x24] andi a5, a5, 1
+      0xfe078ae3, // [0x28] beqz a5, -12               → 0x1C
+      0x800007b7, // [0x2C] lui  a5, 0x80000
+      0xfeb44703, // [0x30] lbu  a4, -21(s0)           reload c
+      0x00e7a023, // [0x34] sw   a4, 0(a5)             send
+      // i++
+      0xfec42783, // [0x38] lw   a5, -20(s0)
+      0x00178793, // [0x3C] addi a5, a5, 1             (load-use hazard)
+      0xfef42623, // [0x40] sw   a5, -20(s0)
+      // loop check @ 0x44
+      0xfec42703, // [0x44] lw   a4, -20(s0)           ← j lands here
+      0x00400793, // [0x48] addi a5, x0, 4             limit = 4
+      0xfce7d0e3, // [0x4C] bge  a5, a4, -64           → 0x0C if 4>=i
+      0xfb5ff06f, // [0x50] j    0x04                  reset (offset=-76)
+    ];
+    console.log('Using raw34 firmware (raw31 with lui s0 instead of auipc chain):');
+    console.log('  Expected ABCDEABCDE... If works: auipc chain caused raw31 fail.');
+    const bytes = new Uint8Array(words.length * 4);
+    const view = new DataView(bytes.buffer);
+    words.forEach((w, i) => view.setUint32(i * 4, w, true));
+    return bytes;
+  }
+
+  const useRaw33 = process.argv.includes('--raw33');
+  if (useRaw33) {
+    // SB/LBU negative offset isolation.
+    // Test 1: sb +offset (known good), lbu -offset → 'A' if LBU neg offset works
+    // Test 2: sb -offset, lbu +offset (known good) → 'A' if SB neg offset works
+    // Expected: AAAA... First char wrong = LBU neg broken. Second char wrong = SB neg broken.
+    const words = [
+      // Test 1: LBU negative offset
+      0x000107b7, // [0x00] lui  a5, 0x10         a5 = 0x10000
+      0x04100713, // [0x04] addi a4, x0, 65       'A'
+      0x00e78023, // [0x08] sb   a4, 0(a5)        byte0 at 0x10000 [+offset]
+      0x00178793, // [0x0C] addi a5, a5, 1         a5 = 0x10001
+      0x00000013, // [0x10] nop
+      0x00000013, // [0x14] nop
+      0x00000013, // [0x18] nop
+      0x00000013, // [0x1C] nop
+      0xfff7c503, // [0x20] lbu  a0, -1(a5)       NEG OFFSET from 0x10000
+      0x00000013, // [0x24] nop
+      0x00000013, // [0x28] nop
+      0x00000013, // [0x2C] nop
+      0x00000013, // [0x30] nop
+      0x800006b7, // [0x34] lui  a3, 0x80000       poll
+      0x0006a683, // [0x38] lw   a3, 0(a3)
+      0x0016f693, // [0x3C] andi a3, a3, 1
+      0xfe068ae3, // [0x40] beqz a3, -12           → 0x34
+      0x800006b7, // [0x44] lui  a3, 0x80000
+      0x00a6a023, // [0x48] sw   a0, 0(a3)         send
+      0x00040337, // [0x4C] lui  t1, 0x40           delay
+      0xfff30313, // [0x50] addi t1, t1, -1
+      0xfe031ee3, // [0x54] bne  t1, x0, -4        → 0x50
+      // Test 2: SB negative offset
+      0x000107b7, // [0x58] lui  a5, 0x10
+      0x04100713, // [0x5C] addi a4, x0, 65
+      0x00178793, // [0x60] addi a5, a5, 1          a5 = 0x10001
+      0xfee78fa3, // [0x64] sb   a4, -1(a5)         NEG OFFSET to 0x10000
+      0xfff78793, // [0x68] addi a5, a5, -1          a5 = 0x10000
+      0x00000013, // [0x6C] nop
+      0x00000013, // [0x70] nop
+      0x00000013, // [0x74] nop
+      0x00000013, // [0x78] nop
+      0x0007c503, // [0x7C] lbu  a0, 0(a5)          [+offset]
+      0x00000013, // [0x80] nop
+      0x00000013, // [0x84] nop
+      0x00000013, // [0x88] nop
+      0x00000013, // [0x8C] nop
+      0x800006b7, // [0x90] lui  a3, 0x80000
+      0x0006a683, // [0x94] lw   a3, 0(a3)
+      0x0016f693, // [0x98] andi a3, a3, 1
+      0xfe068ae3, // [0x9C] beqz a3, -12            → 0x90
+      0x800006b7, // [0xA0] lui  a3, 0x80000
+      0x00a6a023, // [0xA4] sw   a0, 0(a3)          send
+      0x00040337, // [0xA8] lui  t1, 0x40
+      0xfff30313, // [0xAC] addi t1, t1, -1
+      0xfe031ee3, // [0xB0] bne  t1, x0, -4
+      0xf4dff06f, // [0xB4] j    0x00
+    ];
+    console.log('Using raw33 firmware (SB/LBU negative offset test):');
+    console.log('  Test1: sb+0/lbu-1. Test2: sb-1/lbu+0. Both should print A.');
+    const bytes = new Uint8Array(words.length * 4);
+    const view = new DataView(bytes.buffer);
+    words.forEach((w, i) => view.setUint32(i * 4, w, true));
+    return bytes;
+  }
+
+  const useRaw32 = process.argv.includes('--raw32');
+  if (useRaw32) {
+    // Negative-offset load/store isolation.
+    // Test 1: sw +offset (known good) then lw -offset → 'A' if LW neg offset works
+    // Test 2: sw -offset then lw +offset (known good) → 'A' if SW neg offset works
+    // Expected: AAAAAA... If first char wrong: LW neg broken. If second wrong: SW neg broken.
+    const words = [
+      // Test 1: LW negative offset
+      0x000107b7, // [0x00] lui  a5, 0x10         a5 = 0x10000
+      0x02a00713, // [0x04] addi a4, x0, 42
+      0x00e7a023, // [0x08] sw   a4, 0(a5)        store 42 at 0x10000 [+offset]
+      0x00478793, // [0x0C] addi a5, a5, 4         a5 = 0x10004
+      0x00000013, // [0x10] nop
+      0x00000013, // [0x14] nop
+      0x00000013, // [0x18] nop
+      0x00000013, // [0x1C] nop
+      0xffc7a503, // [0x20] lw   a0, -4(a5)       NEG OFFSET TEST from 0x10000
+      0x00000013, // [0x24] nop
+      0x00000013, // [0x28] nop
+      0x00000013, // [0x2C] nop
+      0x00000013, // [0x30] nop
+      0x01750513, // [0x34] addi a0, a0, 23        42→65='A', else garbage
+      0x800006b7, // [0x38] lui  a3, 0x80000       poll
+      0x0006a683, // [0x3C] lw   a3, 0(a3)
+      0x0016f693, // [0x40] andi a3, a3, 1
+      0xfe068ae3, // [0x44] beqz a3, -12           → 0x38
+      0x800006b7, // [0x48] lui  a3, 0x80000       reload
+      0x00a6a023, // [0x4C] sw   a0, 0(a3)         send
+      0x00040337, // [0x50] lui  t1, 0x40           delay
+      0xfff30313, // [0x54] addi t1, t1, -1
+      0xfe031ee3, // [0x58] bne  t1, x0, -4        → 0x54
+      // Test 2: SW negative offset
+      0x000107b7, // [0x5C] lui  a5, 0x10         a5 = 0x10000
+      0x02a00713, // [0x60] addi a4, x0, 42
+      0x00478793, // [0x64] addi a5, a5, 4         a5 = 0x10004
+      0xfee7ae23, // [0x68] sw   a4, -4(a5)        NEG OFFSET TEST → 0x10000
+      0xffc78793, // [0x6C] addi a5, a5, -4        a5 = 0x10000
+      0x00000013, // [0x70] nop
+      0x00000013, // [0x74] nop
+      0x00000013, // [0x78] nop
+      0x00000013, // [0x7C] nop
+      0x0007a503, // [0x80] lw   a0, 0(a5)         load from 0x10000 [+offset]
+      0x00000013, // [0x84] nop
+      0x00000013, // [0x88] nop
+      0x00000013, // [0x8C] nop
+      0x00000013, // [0x90] nop
+      0x01750513, // [0x94] addi a0, a0, 23        42→65='A', else garbage
+      0x800006b7, // [0x98] lui  a3, 0x80000       poll
+      0x0006a683, // [0x9C] lw   a3, 0(a3)
+      0x0016f693, // [0xA0] andi a3, a3, 1
+      0xfe068ae3, // [0xA4] beqz a3, -12           → 0x98
+      0x800006b7, // [0xA8] lui  a3, 0x80000       reload
+      0x00a6a023, // [0xAC] sw   a0, 0(a3)         send
+      0x00040337, // [0xB0] lui  t1, 0x40           delay
+      0xfff30313, // [0xB4] addi t1, t1, -1
+      0xfe031ee3, // [0xB8] bne  t1, x0, -4        → 0xB4
+      0xf45ff06f, // [0xBC] j    0x00
+    ];
+    console.log('Using raw32 firmware (negative offset load/store test):');
+    console.log('  Test1: sw+0 then lw-4. Test2: sw-4 then lw+0. Both → A if correct.');
+    const bytes = new Uint8Array(words.length * 4);
+    const view = new DataView(bytes.buffer);
+    words.forEach((w, i) => view.setUint32(i * 4, w, true));
+    return bytes;
+  }
+
+  const useRaw31 = process.argv.includes('--raw31');
+  if (useRaw31) {
+    // Full C firmware stack pattern: auipc+s0 frame ptr, sw/lw i on stack (neg offset),
+    // sb/lbu c on stack (neg offset), C-style poll, bge loop.
+    // Mirrors hello.c main() exactly. Expected: ABCDEABCDE...
+    // If nothing/garbage: negative-offset load/store broken.
+    const words = [
+      0x00011117, // [0x00] auipc sp, 0x11         sp = 0x11000
+      0xfe010113, // [0x04] addi  sp, sp, -32       sp = 0x10FE0
+      0x02010413, // [0x08] addi  s0, sp, 32        s0 = 0x11000
+      0xfe042623, // [0x0C] sw    zero, -20(s0)     i = 0  ← outer reset
+      0x03c0006f, // [0x10] j     0x4C              jump to loop check (lw a4)
+      // loop body @ 0x14
+      0xfec42783, // [0x14] lw    a5, -20(s0)       a5 = i
+      0x04178713, // [0x18] addi  a4, a5, 65        a4 = 'A'+i
+      0xfee405a3, // [0x1C] sb    a4, -21(s0)       store c
+      0x00000013, // [0x20] nop
+      // poll @ 0x24
+      0x800007b7, // [0x24] lui   a5, 0x80000       ← poll target
+      0x0007a783, // [0x28] lw    a5, 0(a5)
+      0x0017f793, // [0x2C] andi  a5, a5, 1
+      0xfe078ae3, // [0x30] beqz  a5, -12           → 0x24
+      // send
+      0x800007b7, // [0x34] lui   a5, 0x80000
+      0xfeb44703, // [0x38] lbu   a4, -21(s0)       reload c
+      0x00e7a023, // [0x3C] sw    a4, 0(a5)
+      // i++
+      0xfec42783, // [0x40] lw    a5, -20(s0)
+      0x00178793, // [0x44] addi  a5, a5, 1
+      0xfef42623, // [0x48] sw    a5, -20(s0)
+      // loop check @ 0x4C
+      0xfec42703, // [0x4C] lw    a4, -20(s0)
+      0x00400793, // [0x50] li    a5, 4             ← j from 0x10 lands here
+      0xfce7d0e3, // [0x54] bge   a5, a4, -64       → 0x14
+      0xfb5ff06f, // [0x58] j     0x0C              offset=-76 (reset i)
+    ];
+    console.log('Using raw31 firmware (full C firmware stack pattern):');
+    console.log('  auipc+s0+sw/lw i on stack+sb/lbu c on stack+C poll+bge loop.');
+    console.log('  Expected: ABCDEABCDE... If wrong: negative-offset load/store broken.');
+    const bytes = new Uint8Array(words.length * 4);
+    const view = new DataView(bytes.buffer);
+    words.forEach((w, i) => view.setUint32(i * 4, w, true));
+    return bytes;
+  }
+
+  const useRaw30 = process.argv.includes('--raw30');
+  if (useRaw30) {
+    // Exact C firmware poll pattern: lui a5 → lw a5,0(a5) → andi a5,a5,1 → beqz → lui → sw
+    // Key: lw a5,0(a5) where a5 comes from lui (WB forwarding of LUI result).
+    // Also: beqz jumps back to the lui itself (not the lw), re-executing lui each iter.
+    // If 'A': pattern works. If nothing: WB forwarding of LUI broken, or andi/beqz issue.
+    const words = [
+      0x04100713, // [0x00] addi a4, x0, 65     'A'
+      0x800007b7, // [0x04] lui  a5, 0x80000    ← poll loop target
+      0x0007a783, // [0x08] lw   a5, 0(a5)      a5 = *UART  (uses forwarded lui result)
+      0x0017f793, // [0x0C] andi a5, a5, 1      a5 &= 1
+      0xfe078ae3, // [0x10] beqz a5, -12        → 0x04
+      0x800007b7, // [0x14] lui  a5, 0x80000    reload UART addr
+      0x00e7a023, // [0x18] sw   a4, 0(a5)      send 'A'
+      0x00040337, // [0x1C] lui  t1, 0x40        delay
+      0xfff30313, // [0x20] addi t1, t1, -1
+      0xfe031ee3, // [0x24] bne  t1, x0, -4     → 0x20
+      0xfddff06f, // [0x28] j    0x04           offset=-36
+    ];
+    console.log('Using raw30 firmware (exact C firmware poll pattern):');
+    console.log('  lui→lw(a5,0(a5))→andi→beqz back to lui. If A: OK. If nothing: LUI WB-forward broken.');
+    const bytes = new Uint8Array(words.length * 4);
+    const view = new DataView(bytes.buffer);
+    words.forEach((w, i) => view.setUint32(i * 4, w, true));
+    return bytes;
+  }
+
+  const useRaw29 = process.argv.includes('--raw29');
+  if (useRaw29) {
+    // BGE test: for(i=0; i<5; i++) send('A'+i) → should print ABCDEABCDE...
+    // If BGE never fires: prints ABCDEFG... forever (never exits loop)
+    // If BGE always fires: prints nothing (exits immediately)
+    // If correct: ABCDE repeating
+    const words = [
+      0x800006b7, // [0x00] lui  a3, 0x80000    UART
+      0x00500593, // [0x04] addi a1, x0, 5      limit=5
+      0x00000513, // [0x08] addi a0, x0, 0      i=0  ← reset target
+      0x02b55863, // [0x0C] bge  a0, a1, +48    if i>=5, j 0x3C  ← KEY
+      0x04150613, // [0x10] addi a2, a0, 65     c = 'A'+i
+      0x0006a283, // [0x14] lw   t0, 0(a3)      poll ← poll target
+      0x00000013, // [0x18] nop
+      0x00000013, // [0x1C] nop
+      0x00000013, // [0x20] nop
+      0x00000013, // [0x24] nop
+      0x00000013, // [0x28] nop
+      0xfe0284e3, // [0x2C] beqz t0, -24        → 0x14
+      0x00c6a023, // [0x30] sw   a2, 0(a3)      send c
+      0x00150513, // [0x34] addi a0, a0, 1      i++
+      0xfd5ff06f, // [0x38] j    0x0C           offset=-44
+      0xfcdff06f, // [0x3C] j    0x08           offset=-52 (reset i)
+    ];
+    console.log('Using raw29 firmware (BGE test):');
+    console.log('  for(i=0;i<5;i++) send(A+i). Expected ABCDEABCDE...');
+    console.log('  Wrong: BGE never fires = ABCDEFG..., BGE always fires = nothing');
+    const bytes = new Uint8Array(words.length * 4);
+    const view = new DataView(bytes.buffer);
+    words.forEach((w, i) => view.setUint32(i * 4, w, true));
+    return bytes;
+  }
+
+  const useRaw28 = process.argv.includes('--raw28');
+  if (useRaw28) {
+    // ADD test: a0=30, a1=35, a2=ADD(a0,a1)=65='A'. Send a2 via UART.
+    // If 'A' prints: ADD works. If garbage/nothing: ADD broken.
+    const words = [
+      0x01e00513, // [0x00] addi a0, x0, 30
+      0x02300593, // [0x04] addi a1, x0, 35
+      0x00b50633, // [0x08] add  a2, a0, a1     a2 = 65 = 'A'  ← KEY
+      0x800006b7, // [0x0C] lui  a3, 0x80000    UART
+      0x00000013, // [0x10] nop
+      0x00000013, // [0x14] nop
+      0x00000013, // [0x18] nop
+      0x0006a283, // [0x1C] lw   t0, 0(a3)     poll ← loop target
+      0x00000013, // [0x20] nop
+      0x00000013, // [0x24] nop
+      0x00000013, // [0x28] nop
+      0x00000013, // [0x2C] nop
+      0x00000013, // [0x30] nop
+      0xfe0284e3, // [0x34] beqz t0, -24        → 0x1C
+      0x00c6a023, // [0x38] sw   a2, 0(a3)     send a2
+      0x00040337, // [0x3C] lui  t1, 0x40       delay
+      0xfff30313, // [0x40] addi t1, t1, -1
+      0xfe031ee3, // [0x44] bne  t1, x0, -4    → 0x40
+      0xfd5ff06f, // [0x48] j    0x1C          offset=-44
+    ];
+    console.log('Using raw28 firmware (ADD test):');
+    console.log('  a0=30, a1=35, a2=add(a0,a1). Expected 65=A. If wrong: ADD broken.');
+    const bytes = new Uint8Array(words.length * 4);
+    const view = new DataView(bytes.buffer);
+    words.forEach((w, i) => view.setUint32(i * 4, w, true));
+    return bytes;
+  }
+
+  const useRaw27 = process.argv.includes('--raw27');
+  if (useRaw27) {
+    // LBU from IMEM addresses: data word 'ABCD' embedded at 0xB8 in instruction stream.
+    // Tests whether data loads from IMEM range (0x0-0x7FF) work.
+    // C firmware's string literal lives in .rodata → IMEM. If this breaks, that's the bug.
+    const words = [
+      0x0b800693, // [0x00] addi a3, x0, 0xB8    a3 = IMEM data addr
+      0x0006c503, // [0x04] lbu  a0, 0(a3)        byte 0 = 'A'
+      0x0016c583, // [0x08] lbu  a1, 1(a3)        byte 1 = 'B'
+      0x0026c603, // [0x0C] lbu  a2, 2(a3)        byte 2 = 'C'
+      0x0036c683, // [0x10] lbu  a3, 3(a3)        byte 3 = 'D' (clobbers ptr)
+      0x00000013, // [0x14] nop
+      0x00000013, // [0x18] nop
+      0x00000013, // [0x1C] nop
+      0x00000013, // [0x20] nop
+      0x80000737, // [0x24] lui  a4, 0x80000      a4 = UART
+      // loop @ 0x28 — send 'A'
+      0x00072283, // [0x28] lw   t0, 0(a4)        poll ← loop target
+      0x00000013, // [0x2C] nop
+      0x00000013, // [0x30] nop
+      0x00000013, // [0x34] nop
+      0x00000013, // [0x38] nop
+      0x00000013, // [0x3C] nop
+      0xfe0284e3, // [0x40] beqz t0, -24          → 0x28
+      0x00a72023, // [0x44] sw   a0, 0(a4)        send 'A'
+      0x00072283, // [0x48] lw   t0, 0(a4)
+      0x00000013, // [0x4C] nop
+      0x00000013, // [0x50] nop
+      0x00000013, // [0x54] nop
+      0x00000013, // [0x58] nop
+      0x00000013, // [0x5C] nop
+      0xfe0284e3, // [0x60] beqz t0, -24          → 0x48
+      0x00b72023, // [0x64] sw   a1, 0(a4)        send 'B'
+      0x00072283, // [0x68] lw   t0, 0(a4)
+      0x00000013, // [0x6C] nop
+      0x00000013, // [0x70] nop
+      0x00000013, // [0x74] nop
+      0x00000013, // [0x78] nop
+      0x00000013, // [0x7C] nop
+      0xfe0284e3, // [0x80] beqz t0, -24          → 0x68
+      0x00c72023, // [0x84] sw   a2, 0(a4)        send 'C'
+      0x00072283, // [0x88] lw   t0, 0(a4)
+      0x00000013, // [0x8C] nop
+      0x00000013, // [0x90] nop
+      0x00000013, // [0x94] nop
+      0x00000013, // [0x98] nop
+      0x00000013, // [0x9C] nop
+      0xfe0284e3, // [0xA0] beqz t0, -24          → 0x88
+      0x00d72023, // [0xA4] sw   a3, 0(a4)        send 'D'
+      0x00040337, // [0xA8] lui  t1, 0x40          delay
+      0xfff30313, // [0xAC] addi t1, t1, -1
+      0xfe031ee3, // [0xB0] bne  t1, x0, -4       → 0xAC
+      0xf75ff06f, // [0xB4] j    0x28             offset=-140
+      0x44434241, // [0xB8] DATA: 'A','B','C','D' (little-endian word)
+    ];
+    console.log('Using raw27 firmware (LBU from IMEM addresses):');
+    console.log('  Data word 0x44434241 embedded at 0xB8 in IMEM.');
+    console.log('  Expected: ABCDABCD... If nothing/garbage: IMEM data reads broken.');
+    const bytes = new Uint8Array(words.length * 4);
+    const view = new DataView(bytes.buffer);
+    words.forEach((w, i) => view.setUint32(i * 4, w, true));
+    return bytes;
+  }
+
+  const useRaw26 = process.argv.includes('--raw26');
+  if (useRaw26) {
+    // LBU byte-offset test: sb 'A','B','C','D' to bytes 0-3 of one word in DMEM,
+    // then lbu each byte and send via UART. Output should be "ABCD" repeating.
+    // If any char is wrong/missing: that byte offset in LBU is broken.
+    const words = [
+      0x000107b7, // [0x00] lui  a5, 0x10         a5 = 0x10000
+      0x04100513, // [0x04] addi a0, x0, 65       'A'
+      0x04200593, // [0x08] addi a1, x0, 66       'B'
+      0x04300613, // [0x0C] addi a2, x0, 67       'C'
+      0x04400693, // [0x10] addi a3, x0, 68       'D'
+      0x00a78023, // [0x14] sb   a0, 0(a5)        byte 0 = 'A'
+      0x00b780a3, // [0x18] sb   a1, 1(a5)        byte 1 = 'B'
+      0x00c78123, // [0x1C] sb   a2, 2(a5)        byte 2 = 'C'
+      0x00d781a3, // [0x20] sb   a3, 3(a5)        byte 3 = 'D'
+      0x00000013, // [0x24] nop
+      0x00000013, // [0x28] nop
+      0x00000013, // [0x2C] nop
+      0x00000013, // [0x30] nop
+      0x0007c503, // [0x34] lbu  a0, 0(a5)        re-read byte 0
+      0x0017c583, // [0x38] lbu  a1, 1(a5)        re-read byte 1
+      0x0027c603, // [0x3C] lbu  a2, 2(a5)        re-read byte 2
+      0x0037c683, // [0x40] lbu  a3, 3(a5)        re-read byte 3
+      0x00000013, // [0x44] nop
+      0x00000013, // [0x48] nop
+      0x00000013, // [0x4C] nop
+      0x00000013, // [0x50] nop
+      0x80000737, // [0x54] lui  a4, 0x80000      a4 = UART
+      // --- loop @ 0x58 ---
+      0x00072283, // [0x58] lw   t0, 0(a4)        poll ← loop target
+      0x00000013, // [0x5C] nop
+      0x00000013, // [0x60] nop
+      0x00000013, // [0x64] nop
+      0x00000013, // [0x68] nop
+      0x00000013, // [0x6C] nop
+      0xfe0284e3, // [0x70] beqz t0, -24          → 0x58
+      0x00a72023, // [0x74] sw   a0, 0(a4)        send 'A'
+      0x00072283, // [0x78] lw   t0, 0(a4)        poll
+      0x00000013, // [0x7C] nop
+      0x00000013, // [0x80] nop
+      0x00000013, // [0x84] nop
+      0x00000013, // [0x88] nop
+      0x00000013, // [0x8C] nop
+      0xfe0284e3, // [0x90] beqz t0, -24          → 0x78
+      0x00b72023, // [0x94] sw   a1, 0(a4)        send 'B'
+      0x00072283, // [0x98] lw   t0, 0(a4)        poll
+      0x00000013, // [0x9C] nop
+      0x00000013, // [0xA0] nop
+      0x00000013, // [0xA4] nop
+      0x00000013, // [0xA8] nop
+      0x00000013, // [0xAC] nop
+      0xfe0284e3, // [0xB0] beqz t0, -24          → 0x98
+      0x00c72023, // [0xB4] sw   a2, 0(a4)        send 'C'
+      0x00072283, // [0xB8] lw   t0, 0(a4)        poll
+      0x00000013, // [0xBC] nop
+      0x00000013, // [0xC0] nop
+      0x00000013, // [0xC4] nop
+      0x00000013, // [0xC8] nop
+      0x00000013, // [0xCC] nop
+      0xfe0284e3, // [0xD0] beqz t0, -24          → 0xB8
+      0x00d72023, // [0xD4] sw   a3, 0(a4)        send 'D'
+      0x00040337, // [0xD8] lui  t1, 0x40          delay
+      0xfff30313, // [0xDC] addi t1, t1, -1
+      0xfe031ee3, // [0xE0] bne  t1, x0, -4       → 0xDC
+      0xf75ff06f, // [0xE4] j    0x58             offset=-140
+    ];
+    console.log('Using raw26 firmware (LBU byte-offset test):');
+    console.log('  sb A/B/C/D to bytes 0-3, lbu each, send via UART.');
+    console.log('  Expected: ABCDABCD... If wrong chars: that byte lane is broken.');
+    const bytes = new Uint8Array(words.length * 4);
+    const view = new DataView(bytes.buffer);
+    words.forEach((w, i) => view.setUint32(i * 4, w, true));
+    return bytes;
+  }
+
+  const useRaw25 = process.argv.includes('--raw25');
+  if (useRaw25) {
+    // JAL test: mirrors C firmware startup (auipc + mv + jal to main + trap).
+    // If 'A' prints: JAL works. If nothing: JAL broken (CPU hangs at trap 0x0C).
+    const words = [
+      0x00011117, // [0x00] auipc sp, 0x11      sp = 0x11000
+      0x00000013, // [0x04] addi  sp, sp, 0     mv sp,sp (nop on sp)
+      0x008000ef, // [0x08] jal   ra, +8        ra=0x0C, jump to 0x10
+      0x0000006f, // [0x0C] j     0x0C          TRAP — must never reach here
+      // main() starts at 0x10:
+      0x04100713, // [0x10] addi  a4, x0, 65   a4 = 'A'
+      0x800007b7, // [0x14] lui   a5, 0x80000  a5 = UART
+      0x00000013, // [0x18] nop
+      0x00000013, // [0x1C] nop
+      0x00e7a023, // [0x20] sw    a4, 0(a5)   unconditional UART write
+      // delay loop
+      0x000402b7, // [0x24] lui   t0, 0x40
+      0xfff28293, // [0x28] addi  t0, t0, -1
+      0xfe029ee3, // [0x2C] bne   t0, x0, -4  → 0x28
+      0xfe5ff06f, // [0x30] j     0x14        offset=-28 → back to lui a5
+    ];
+    console.log('Using raw25 firmware (JAL test):');
+    console.log('  auipc+mv+jal→main+trap. If A: JAL OK. If nothing: JAL broken.');
+    const bytes = new Uint8Array(words.length * 4);
+    const view = new DataView(bytes.buffer);
+    words.forEach((w, i) => view.setUint32(i * 4, w, true));
+    return bytes;
+  }
+
+  const useRaw23 = process.argv.includes('--raw23');
+  if (useRaw23) {
+    // Unconditional UART write — no polling, no branch. Just lui+addi+nops+sw.
+    // If this prints nothing: sw to UART address is broken (forwarding or address decode).
+    // If this prints 'A': polling loop (lw+beqz) is the issue.
+    const words = [
+      0x800007b7, // [0x00] lui  a5, 0x80000  a5 = 0x80000000 (UART)
+      0x04100713, // [0x04] addi a4, x0, 65   a4 = 65 = 'A'
+      0x00000013, // [0x08] nop
+      0x00000013, // [0x0C] nop
+      0x00000013, // [0x10] nop
+      0x00000013, // [0x14] nop
+      0x00000013, // [0x18] nop
+      0x00e7a023, // [0x1C] sw   a4, 0(a5)   UART write (unconditional)
+      // Delay loop: ~21ms at 25 MHz
+      0x000402b7, // [0x20] lui  t0, 0x40    t0 = 0x40000
+      0xfff28293, // [0x24] addi t0, t0, -1
+      0xfe029ee3, // [0x28] bne  t0, x0, -4  → 0x24
+      0xff1ff06f, // [0x2C] j    0x1C        offset=-16 → back to sw
+    ];
+    console.log('Using raw23 firmware (unconditional sw, no poll):');
+    console.log('  If nothing prints: sw or forwarding is broken.');
+    console.log('  If A prints: polling loop (lw/beqz) is the issue.');
+    const bytes = new Uint8Array(words.length * 4);
+    const view = new DataView(bytes.buffer);
+    words.forEach((w, i) => view.setUint32(i * 4, w, true));
+    return bytes;
+  }
 
   if (useRaw22) {
     // Constant 'A' output — no DMEM, no LBU. Just li a4=65, poll UART, sw to UART.
@@ -1188,7 +1803,7 @@ function buildRawFirmware(): Uint8Array {
 // ── Build pipeline ──────────────────────────────────────────────────────────
 
 async function main() {
-  const useRaw = process.argv.includes('--raw') || process.argv.includes('--raw2') || process.argv.includes('--raw3') || process.argv.includes('--raw4') || process.argv.includes('--raw5') || process.argv.includes('--raw6') || process.argv.includes('--raw7') || process.argv.includes('--raw8') || process.argv.includes('--raw9') || process.argv.includes('--raw10') || process.argv.includes('--raw11') || process.argv.includes('--raw12') || process.argv.includes('--raw13') || process.argv.includes('--raw14') || process.argv.includes('--raw15') || process.argv.includes('--raw16') || process.argv.includes('--raw17') || process.argv.includes('--raw18');
+  const useRaw = process.argv.some(a => /^--raw\d*$/.test(a));
 
   // Step 1: Compile firmware (or use raw test firmware)
   let binary: Uint8Array;
@@ -1296,4 +1911,6 @@ async function main() {
   }
 }
 
-main().catch(e => { console.error(e); process.exit(1); });
+if (import.meta.main) {
+  main().catch(e => { console.error(e); process.exit(1); });
+}
