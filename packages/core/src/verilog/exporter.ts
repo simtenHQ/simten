@@ -156,22 +156,20 @@ function emitFlatModule(
 
     for (const output of node.outputs) {
       let pt = output.portType;
-      // If the node has a width argument and the port is narrower, widen it
-      if (argWidth && argWidth > 1) {
-        const portWidth = pt.kind === 'bus' ? pt.width : 1;
-        if (portWidth < argWidth) {
-          pt = { kind: 'bus', width: argWidth };
-        }
+      // Only widen data ports (declared as `bus`) to argWidth. Never widen
+      // control signals declared as `bit` (we, sel, carry_in, etc.) — those
+      // must stay 1-bit regardless of the node's width argument, or the
+      // exported wire becomes N-bit and Verilog context-extends ~/!/&-expressions
+      // in ways that silently break `if (wire)` tests.
+      if (argWidth && argWidth > 1 && pt.kind === 'bus' && pt.width < argWidth) {
+        pt = { kind: 'bus', width: argWidth };
       }
       resolvedPortTypes.set(`${node.id}.${output.name}`, pt);
     }
     for (const input of node.inputs) {
       let pt = input.portType;
-      if (argWidth && argWidth > 1) {
-        const portWidth = pt.kind === 'bus' ? pt.width : 1;
-        if (portWidth < argWidth) {
-          pt = { kind: 'bus', width: argWidth };
-        }
+      if (argWidth && argWidth > 1 && pt.kind === 'bus' && pt.width < argWidth) {
+        pt = { kind: 'bus', width: argWidth };
       }
       resolvedPortTypes.set(`${node.id}.${input.name}`, pt);
     }

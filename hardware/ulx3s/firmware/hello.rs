@@ -10,23 +10,10 @@ unsafe fn uart_putc(c: u8) {
 
 #[no_mangle]
 pub extern "C" fn main() -> ! {
+    let msg: &[u8] = b"Hello, World!\r\n";
     loop {
-        unsafe {
-            uart_putc(b'H');
-            uart_putc(b'e');
-            uart_putc(b'l');
-            uart_putc(b'l');
-            uart_putc(b'o');
-            uart_putc(b',');
-            uart_putc(b' ');
-            uart_putc(b'W');
-            uart_putc(b'o');
-            uart_putc(b'r');
-            uart_putc(b'l');
-            uart_putc(b'd');
-            uart_putc(b'!');
-            uart_putc(b'\r');
-            uart_putc(b'\n');
+        for &c in msg {
+            unsafe { uart_putc(c); }
         }
         let mut i = 200000u32;
         while i > 0 {
