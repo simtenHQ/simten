@@ -173,7 +173,14 @@
       "Bash(bun hardware/ulx3s/cpu_verify.ts)",
       "Bash(bun hardware/ulx3s/cpu_verify.ts --suite)",
       "Bash(bun hardware/ulx3s/cpu_build.ts --rust --flash)",
-      "Bash(bun hardware/ulx3s/cpu_build.ts --flash)"
+      "Bash(bun hardware/ulx3s/cpu_build.ts --flash)",
+      "Bash(bun hardware/ulx3s/cpu_build.ts --fib)",
+      "Bash(bun hardware/ulx3s/cpu_build.ts --fib --flash)",
+      "Bash(bash /tmp/release_issues.sh)",
+      "Bash(bash /tmp/organize.sh)",
+      "Bash(gh auth *)",
+      "Bash(gh project *)",
+      "Bash(bash /tmp/fill_fields.sh)"
     ]
   }
 }
