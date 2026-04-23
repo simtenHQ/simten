@@ -23,7 +23,9 @@ import {
   elaborate,
 } from '@simten/core';
 import type { Circuit, BitValue, BusValue } from '@simten/core';
+import type { SimulatorSnapshot } from '@simten/core';
 import { registerCircuitEval } from '@simten/core/circuit';
+import { captureEnvironmentalState, type EnvironmentalStateValue } from '@simten/core/simulator';
 
 /** Serialized eval entry — source strings reconstructed via new Function() */
 interface EvalSource {
@@ -41,13 +43,16 @@ interface EvalSource {
 /** Each simulation lives in a named slot. Slots are independent (own simulator, library, source). */
 type SandboxRequest =
   | { id: string; type: 'compile'; source: string; slot?: string }
-  | { id: string; type: 'compile-ir'; circuit: Circuit; libraryCircuits: Circuit[]; slot: string; evalSources?: Record<string, EvalSource> }
-  | { id: string; type: 'tick'; inputs?: Record<string, number | boolean>; slot?: string }
-  | { id: string; type: 'tick-n'; n: number; inputs?: Record<string, number | boolean>; slot?: string }
+  | { id: string; type: 'compile-ir'; circuit: Circuit; libraryCircuits: Circuit[]; slot: string; evalSources?: Record<string, EvalSource>; snapshot?: boolean }
+  | { id: string; type: 'tick'; inputs?: Record<string, number | boolean>; slot?: string; snapshot?: boolean }
+  | { id: string; type: 'tick-n'; n: number; inputs?: Record<string, number | boolean>; slot?: string; snapshot?: boolean }
   | { id: string; type: 'scan-port'; addrNodeId: string; valuePortKey: string; count: number; slot?: string }
   | { id: string; type: 'simulate'; source?: string; ticks: number; inputs?: Record<string, number | boolean>; memoryData?: Record<string, Record<string, number>>; slot?: string }
   | { id: string; type: 'reset'; slot?: string }
-  | { id: string; type: 'set-node'; nodeId: string; value: number | boolean | Map<number, number>; slot?: string }
+  | { id: string; type: 'set-node'; nodeId: string; value: number | boolean | Map<number, number>; slot?: string; snapshot?: boolean }
+  | { id: string; type: 'snapshot'; slot?: string }
+  | { id: string; type: 'restore'; slot?: string; snapshotId: number }
+  | { id: string; type: 'prune-snapshots'; slot?: string; keepAfterId: number }
   | { id: string; type: 'dispose'; slot: string };
 
 // ============================================================================
@@ -111,10 +116,31 @@ function delegateToWorker(msg: object & { id: string }): Promise<object> {
 
 // Each slot has its own simulator + library + source — fully independent.
 // Slot IDs are supplied by the client. Legacy clients (no slot) use 'default'.
+/**
+ * A full time-travel snapshot is (simulator engine state) + (environmental
+ * state). The engine captures sequential registers + port values, but
+ * combinational primitives driven by `node.arguments` (Switch, Button, Input —
+ * anything with metadata.interactiveArg) are NOT part of engine state. They
+ * live as arguments on the circuit's nodes, which the engine doesn't touch on
+ * snapshot/restore. The host expects rewind to restore what the user saw —
+ * including switch positions — so we must capture and restore both halves.
+ * See packages/core/src/simulator/environmental-state.ts.
+ */
+interface FullSnapshot {
+  sim: SimulatorSnapshot;
+  env: Map<string, EnvironmentalStateValue>;
+}
+
 interface SlotState {
   simulator: ReturnType<typeof createSimulator> | null;
   library: { resolveCircuit(name: string): Circuit | undefined; addCircuit?(c: Circuit): void } | null;
   source: string;
+  /**
+   * The elaborated flat circuit. Kept so we can capture/restore environmental
+   * state (node.arguments for Switch/Button/Input) on snapshot/restore —
+   * environmental-state.ts walks these nodes to find interactive args.
+   */
+  flatCircuit: { nodes: Array<{ id: string; primitiveType: string; arguments: Record<string, unknown> }> } | null;
   /**
    * Set of nodeIds whose simulation state is exposed across the sandbox
    * boundary every tick. A node qualifies if it has at least one direct
@@ -125,6 +151,15 @@ interface SlotState {
    * Computed once at compile time; iterated each tick.
    */
   peripheralBusNodes: Set<string>;
+  /**
+   * Saved simulator snapshots for time-travel. Keyed by an auto-incrementing
+   * ID handed back to the host; the host stores only the IDs and passes them
+   * back to restore. Kept inside the sandbox so snapshots never need to cross
+   * the postMessage boundary (saves ~all serialization cost per tick).
+   * Pruned by the host via 'prune-snapshots' when its cap is reached.
+   */
+  snapshots: Map<number, FullSnapshot>;
+  nextSnapshotId: number;
 }
 
 const slots = new Map<string, SlotState>();
@@ -133,10 +168,51 @@ const DEFAULT_SLOT = 'default';
 function getSlot(id: string): SlotState {
   let s = slots.get(id);
   if (!s) {
-    s = { simulator: null, library: null, source: '', peripheralBusNodes: new Set() };
+    s = {
+      simulator: null,
+      library: null,
+      source: '',
+      flatCircuit: null,
+      peripheralBusNodes: new Set(),
+      snapshots: new Map(),
+      nextSnapshotId: 1,
+    };
     slots.set(id, s);
   }
   return s;
+}
+
+/**
+ * Take a full snapshot of the slot: simulator engine state (sequential regs +
+ * port values) plus environmental state (Switch/Button/Input `node.arguments`
+ * for any primitive tagged `metadata.interactiveArg`). Returns the generated
+ * ID. No-op + undefined for circuits with no snapshotable state (purely
+ * combinational with no interactive nodes — sim.snapshot() throws and env
+ * capture is harmlessly empty).
+ */
+function takeSnapshot(slot: SlotState): number | undefined {
+  if (!slot.simulator) return undefined;
+  try {
+    const sim = slot.simulator.snapshot();
+    // Walk the FlatCircuit for interactive args. We can't use core's
+    // captureEnvironmentalState directly: it reads `node.componentRef` on a
+    // pre-elaboration Circuit, but post-elaboration FlatNode has `primitiveType`.
+    const env = new Map<string, EnvironmentalStateValue>();
+    if (slot.flatCircuit && slot.library) {
+      for (const node of slot.flatCircuit.nodes) {
+        const def = slot.library.resolveCircuit(node.primitiveType);
+        const interactiveArg = (def as { metadata?: { interactiveArg?: string } } | undefined)?.metadata?.interactiveArg;
+        if (!interactiveArg) continue;
+        env.set(node.id, node.arguments[interactiveArg] as EnvironmentalStateValue);
+      }
+    }
+    const id = slot.nextSnapshotId++;
+    slot.snapshots.set(id, { sim, env });
+    return id;
+  } catch {
+    // Combinational-only + no interactive: nothing to snapshot.
+    return undefined;
+  }
 }
 
 /**
@@ -306,7 +382,10 @@ async function handleCompile(id: string, source: string, slotId: string = DEFAUL
     slot.simulator = sim;
     slot.library = library;
     slot.source = source;
+    slot.flatCircuit = flatCircuit;
     slot.peripheralBusNodes = computePeripheralBusNodes(flatCircuit, library);
+    // Recompile is a fresh timeline — prior snapshots refer to the old sim.
+    slot.snapshots.clear();
 
     const portValues = portValuesToObject(sim.getPortValues());
 
@@ -322,7 +401,7 @@ async function handleCompile(id: string, source: string, slotId: string = DEFAUL
   }
 }
 
-function handleTick(id: string, inputs?: Record<string, number | boolean>, slotId: string = DEFAULT_SLOT) {
+function handleTick(id: string, inputs?: Record<string, number | boolean>, slotId: string = DEFAULT_SLOT, snapshot?: boolean) {
   const slot = slots.get(slotId);
   const sim = slot?.simulator;
   if (!sim || !slot) {
@@ -332,11 +411,13 @@ function handleTick(id: string, inputs?: Record<string, number | boolean>, slotI
   try {
     if (inputs) applyInputs(sim, inputs);
     const result = sim.tick();
+    const snapshotId = snapshot ? takeSnapshot(slot) : undefined;
     respond(id, {
       type: 'ticked',
       portValues: portValuesToObject(result.portValues),
       cycle: sim.getMetrics().totalTicks,
       peripheralState: snapshotPeripheralState(slot),
+      snapshotId,
     });
   } catch (e) {
     respondError(id, e instanceof Error ? e.message : String(e));
@@ -377,7 +458,7 @@ function handleScanPort(id: string, addrNodeId: string, valuePortKey: string, co
 // Advance the simulator by N cycles in one round-trip. Returns only the final
 // port values and one peripheral-state snapshot. Used by demos that need high
 // tick rates (raster frames) — one postMessage instead of N.
-function handleTickN(id: string, n: number, inputs?: Record<string, number | boolean>, slotId: string = DEFAULT_SLOT) {
+function handleTickN(id: string, n: number, inputs?: Record<string, number | boolean>, slotId: string = DEFAULT_SLOT, snapshot?: boolean) {
   const slot = slots.get(slotId);
   const sim = slot?.simulator;
   if (!sim || !slot) {
@@ -389,11 +470,13 @@ function handleTickN(id: string, n: number, inputs?: Record<string, number | boo
     let last: ReturnType<typeof sim.tick> | null = null;
     const count = Math.max(0, n | 0);
     for (let i = 0; i < count; i++) last = sim.tick();
+    const snapshotId = snapshot ? takeSnapshot(slot) : undefined;
     respond(id, {
       type: 'ticked-n',
       portValues: last ? portValuesToObject(last.portValues) : portValuesToObject(sim.getPortValues()),
       cycle: sim.getMetrics().totalTicks,
       peripheralState: snapshotPeripheralState(slot),
+      snapshotId,
     });
   } catch (e) {
     respondError(id, e instanceof Error ? e.message : String(e));
@@ -436,6 +519,9 @@ function handleReset(id: string, slotId: string = DEFAULT_SLOT) {
   }
   try {
     sim.reset();
+    // Reset is a user-visible "start over" — drop all history so time-travel
+    // begins fresh from the post-reset state.
+    slot.snapshots.clear();
     const portValues = portValuesToObject(sim.getPortValues());
     respond(id, { type: 'reset', portValues, peripheralState: snapshotPeripheralState(slot) });
   } catch (e) {
@@ -443,7 +529,7 @@ function handleReset(id: string, slotId: string = DEFAULT_SLOT) {
   }
 }
 
-function handleSetNode(id: string, nodeId: string, value: number | boolean | Map<number, number>, slotId: string = DEFAULT_SLOT) {
+function handleSetNode(id: string, nodeId: string, value: number | boolean | Map<number, number>, slotId: string = DEFAULT_SLOT, snapshot?: boolean) {
   const slot = slots.get(slotId);
   const sim = slot?.simulator;
   if (!sim || !slot) {
@@ -455,7 +541,8 @@ function handleSetNode(id: string, nodeId: string, value: number | boolean | Map
     sim.setNode(nodeId, value as any);
     sim.runCombinational();
     const portValues = portValuesToObject(sim.getPortValues());
-    respond(id, { type: 'set-node', portValues, peripheralState: snapshotPeripheralState(slot) });
+    const snapshotId = snapshot ? takeSnapshot(slot) : undefined;
+    respond(id, { type: 'set-node', portValues, peripheralState: snapshotPeripheralState(slot), snapshotId });
   } catch (e) {
     respondError(id, e instanceof Error ? e.message : String(e));
   }
@@ -466,13 +553,93 @@ function handleDispose(id: string, slotId: string) {
   respond(id, { type: 'disposed' });
 }
 
+// ============================================================================
+// Time-travel snapshot / restore / prune handlers
+// ============================================================================
+
+function handleSnapshot(id: string, slotId: string = DEFAULT_SLOT) {
+  const slot = slots.get(slotId);
+  const sim = slot?.simulator;
+  if (!sim || !slot) {
+    respondError(id, `No circuit compiled for slot '${slotId}'.`);
+    return;
+  }
+  const snapshotId = takeSnapshot(slot);
+  respond(id, { type: 'snapshot', snapshotId });
+}
+
+function handleRestore(id: string, snapshotId: number, slotId: string = DEFAULT_SLOT) {
+  const slot = slots.get(slotId);
+  const sim = slot?.simulator;
+  if (!sim || !slot) {
+    respondError(id, `No circuit compiled for slot '${slotId}'.`);
+    return;
+  }
+  const full = slot.snapshots.get(snapshotId);
+  if (!full) {
+    respondError(id, `Snapshot ${snapshotId} not found for slot '${slotId}'.`);
+    return;
+  }
+  try {
+    // Restore the engine's sequential + port state first, then re-apply the
+    // environmental state (Switch/Button/Input values).
+    //
+    // Why we can't just call `restoreEnvironmentalState` from core and be
+    // done: the simulator keeps a numeric cache of node-argument values that
+    // it reads at eval time. Mutating `node.arguments` directly updates the
+    // circuit object but NOT the numeric cache — subsequent evals would still
+    // use the stale value. The only API that invalidates both is `sim.setNode`.
+    //
+    // Also: `captureEnvironmentalState` produces `undefined` for primitives
+    // whose interactive arg was never explicitly set (e.g. a Switch at its
+    // implicit default). We can't pass `undefined` to `sim.setNode`, so we
+    // fall back to 0 — the universal "off" for Switch/Button/Input.
+    sim.restore(full.sim);
+    if (slot.flatCircuit && slot.library) {
+      for (const node of slot.flatCircuit.nodes) {
+        const def = slot.library.resolveCircuit(node.primitiveType);
+        const interactiveArg = (def as { metadata?: { interactiveArg?: string } } | undefined)?.metadata?.interactiveArg;
+        if (!interactiveArg) continue;
+        const saved = full.env.get(node.id);
+        const value = saved === undefined ? 0 : saved;
+        sim.setNode(node.id, value as number | boolean);
+      }
+    }
+    sim.runCombinational();
+    respond(id, {
+      type: 'restored',
+      portValues: portValuesToObject(sim.getPortValues()),
+      cycle: full.sim.cycleCount,
+      peripheralState: snapshotPeripheralState(slot),
+    });
+  } catch (e) {
+    respondError(id, e instanceof Error ? e.message : String(e));
+  }
+}
+
+function handlePruneSnapshots(id: string, keepAfterId: number, slotId: string = DEFAULT_SLOT) {
+  const slot = slots.get(slotId);
+  if (!slot) {
+    // Silently succeed — host may prune a slot that was never touched.
+    respond(id, { type: 'pruned' });
+    return;
+  }
+  // Drop every snapshot with id <= keepAfterId. Callers use this to cap
+  // history at N entries on the host side; anything older than the oldest
+  // ID the host is still referencing can safely go.
+  for (const key of [...slot.snapshots.keys()]) {
+    if (key <= keepAfterId) slot.snapshots.delete(key);
+  }
+  respond(id, { type: 'pruned' });
+}
+
 /**
  * Compile from Circuit IR (not source code).
  * Used for the auto-harnessed circuit — the harness is built client-side
  * as Circuit IR and sent here for simulation.
  * Uses the library from the last executeCircuitCode (has eval functions).
  */
-function handleCompileIR(id: string, circuit: Circuit, libraryCircuits: Circuit[], slotId: string, evalSources?: Record<string, EvalSource>) {
+function handleCompileIR(id: string, circuit: Circuit, libraryCircuits: Circuit[], slotId: string, evalSources?: Record<string, EvalSource>, snapshot?: boolean) {
   try {
     // If evalSources are provided, reconstruct the functions and register them.
     // This is how the embed transfers eval functions from the main frame to the sandbox.
@@ -523,10 +690,15 @@ function handleCompileIR(id: string, circuit: Circuit, libraryCircuits: Circuit[
     const slot = getSlot(slotId);
     slot.simulator = sim;
     slot.library = lib;
+    slot.flatCircuit = flatCircuit;
     slot.peripheralBusNodes = computePeripheralBusNodes(flatCircuit, lib);
+    // Recompile is a fresh timeline — any prior history is meaningless against
+    // the new simulator instance.
+    slot.snapshots.clear();
 
     const portValues = portValuesToObject(sim.getPortValues());
-    respond(id, { type: 'compiled-ir', portValues, peripheralState: snapshotPeripheralState(slot) });
+    const snapshotId = snapshot ? takeSnapshot(slot) : undefined;
+    respond(id, { type: 'compiled-ir', portValues, peripheralState: snapshotPeripheralState(slot), snapshotId });
   } catch (e) {
     respondError(id, e instanceof Error ? e.message : String(e));
   }
@@ -554,13 +726,13 @@ self.addEventListener('message', (event: MessageEvent) => {
       handleCompile(req.id, req.source, req.slot);
       break;
     case 'compile-ir':
-      handleCompileIR(req.id, req.circuit, req.libraryCircuits, req.slot, req.evalSources);
+      handleCompileIR(req.id, req.circuit, req.libraryCircuits, req.slot, req.evalSources, req.snapshot);
       break;
     case 'tick':
-      handleTick(req.id, req.inputs, req.slot);
+      handleTick(req.id, req.inputs, req.slot, req.snapshot);
       break;
     case 'tick-n':
-      handleTickN(req.id, req.n, req.inputs, req.slot);
+      handleTickN(req.id, req.n, req.inputs, req.slot, req.snapshot);
       break;
     case 'scan-port':
       handleScanPort(req.id, req.addrNodeId, req.valuePortKey, req.count, req.slot);
@@ -572,7 +744,16 @@ self.addEventListener('message', (event: MessageEvent) => {
       handleReset(req.id, req.slot);
       break;
     case 'set-node':
-      handleSetNode(req.id, req.nodeId, req.value, req.slot);
+      handleSetNode(req.id, req.nodeId, req.value, req.slot, req.snapshot);
+      break;
+    case 'snapshot':
+      handleSnapshot(req.id, req.slot);
+      break;
+    case 'restore':
+      handleRestore(req.id, req.snapshotId, req.slot);
+      break;
+    case 'prune-snapshots':
+      handlePruneSnapshots(req.id, req.keepAfterId, req.slot);
       break;
     case 'dispose':
       handleDispose(req.id, req.slot);
