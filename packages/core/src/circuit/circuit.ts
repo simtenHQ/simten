@@ -329,6 +329,10 @@ export function circuit<
     author: config.meta?.author,
     version: config.meta?.version,
     synthesizable: config.meta?.synthesizable,
+    // Needed for time-travel to restore Switch/Button/Input values alongside
+    // engine state — captureEnvironmentalState reads this to know which
+    // node.arguments key to snapshot. Omitting it silently broke rewind.
+    interactiveArg: config.meta?.interactiveArg,
   };
 
   const circuitIR: Circuit = {
