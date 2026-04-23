@@ -62,6 +62,8 @@ export interface TickResult {
   portValues: Record<string, number | boolean>;
   cycle: number;
   peripheralState?: PeripheralState;
+  /** Snapshot id returned when the tick was requested with `{ snapshot: true }`. */
+  snapshotId?: number;
 }
 
 export interface SimulateResult {
@@ -80,6 +82,19 @@ export interface ResetResult {
 export interface SetNodeResult {
   portValues: Record<string, number | boolean>;
   peripheralState?: PeripheralState;
+  /** Snapshot id returned when `{ snapshot: true }` was passed. */
+  snapshotId?: number;
+}
+
+export interface SnapshotResult {
+  /** Undefined for combinational-only circuits (nothing to snapshot). */
+  snapshotId?: number;
+}
+
+export interface RestoreResult {
+  portValues: Record<string, number | boolean>;
+  cycle: number;
+  peripheralState?: PeripheralState;
 }
 
 export interface SandboxError {
@@ -89,13 +104,16 @@ export interface SandboxError {
 
 export type SandboxResult =
   | ({ type: 'compiled' } & CompileResult)
-  | ({ type: 'compiled-ir' } & { portValues: Record<string, number | boolean>; peripheralState?: PeripheralState })
+  | ({ type: 'compiled-ir' } & { portValues: Record<string, number | boolean>; peripheralState?: PeripheralState; snapshotId?: number })
   | ({ type: 'ticked' } & TickResult)
   | ({ type: 'ticked-n' } & TickResult)
   | ({ type: 'scanned-port' } & { values: number[] })
   | ({ type: 'simulated' } & SimulateResult)
   | ({ type: 'reset' } & ResetResult)
   | ({ type: 'set-node' } & SetNodeResult)
+  | ({ type: 'snapshot' } & SnapshotResult)
+  | ({ type: 'restored' } & RestoreResult)
+  | ({ type: 'pruned' } & { })
   | ({ type: 'disposed' } & { })
   | ({ type: 'error' } & SandboxError);
 
@@ -159,6 +177,8 @@ function nextId(state: SandboxState): string {
 export interface CompileIRResult {
   portValues: Record<string, number | boolean>;
   peripheralState?: PeripheralState;
+  /** Snapshot of the initial state, returned when `{ snapshot: true }` was requested. */
+  snapshotId?: number;
 }
 
 /** Serialized eval entry used to transfer eval functions to the sandbox */
@@ -179,15 +199,18 @@ export interface SandboxHandle {
    * Compile from Circuit IR (e.g. auto-harnessed circuit).
    * Optional evalSources map transfers eval functions from the caller's context.
    * If omitted, inherits eval functions from any previously-compiled slot.
+   * Pass `{ snapshot: true }` to capture the initial state for time-travel.
    */
-  compileIR(circuit: any, libraryCircuits: any[], slot: SimSlot, options?: { evalSources?: Record<string, EvalSource> }): Promise<CompileIRResult | SandboxError>;
-  tick(inputs?: Record<string, number | boolean>, slot?: SimSlot): Promise<TickResult | SandboxError>;
+  compileIR(circuit: any, libraryCircuits: any[], slot: SimSlot, options?: { evalSources?: Record<string, EvalSource>; snapshot?: boolean }): Promise<CompileIRResult | SandboxError>;
+  /** Pass `{ snapshot: true }` to also capture a post-tick snapshot for time-travel. */
+  tick(inputs?: Record<string, number | boolean>, slot?: SimSlot, options?: { snapshot?: boolean }): Promise<TickResult | SandboxError>;
   /**
    * Advance the simulator by N ticks in a single round-trip. Returns final
    * port values + one peripheral-state snapshot. Use for demos that need
    * many ticks per frame (raster displays, batched compute).
+   * Pass `{ snapshot: true }` to capture a post-tickN snapshot.
    */
-  tickN(n: number, inputs?: Record<string, number | boolean>, slot?: SimSlot): Promise<TickResult | SandboxError>;
+  tickN(n: number, inputs?: Record<string, number | boolean>, slot?: SimSlot, options?: { snapshot?: boolean }): Promise<TickResult | SandboxError>;
   /**
    * Combinationally scan a debug address input across 0..count-1, sampling
    * a value output port after each setting. Returns the array in one
@@ -202,7 +225,21 @@ export interface SandboxHandle {
     slot?: SimSlot;
   }): Promise<SimulateResult | SandboxError>;
   reset(slot?: SimSlot): Promise<ResetResult | SandboxError>;
-  setNode(nodeId: string, value: number | boolean | Map<number, number>, slot?: SimSlot): Promise<SetNodeResult | SandboxError>;
+  setNode(nodeId: string, value: number | boolean | Map<number, number>, slot?: SimSlot, options?: { snapshot?: boolean }): Promise<SetNodeResult | SandboxError>;
+  /**
+   * Take a snapshot of the current simulator state. Returns an opaque
+   * snapshotId the host can later pass to `restore()`. For combinational-only
+   * circuits returns `{ snapshotId: undefined }` — nothing to save.
+   */
+  snapshot(slot?: SimSlot): Promise<SnapshotResult | SandboxError>;
+  /** Restore the simulator to a previously-captured snapshot. */
+  restore(snapshotId: number, slot?: SimSlot): Promise<RestoreResult | SandboxError>;
+  /**
+   * Drop all snapshots with id <= keepAfterId. Called by the host when its
+   * local history cap is exceeded, so old snapshots get garbage-collected
+   * inside the sandbox. Silently succeeds if the slot has no snapshots.
+   */
+  pruneSnapshots(keepAfterId: number, slot?: SimSlot): Promise<{ type: 'pruned' } | SandboxError>;
   /** Free a slot's simulator + library when no longer needed (e.g. embed unmount). */
   dispose(slot: SimSlot): Promise<void>;
   isReady(): boolean;
@@ -325,37 +362,38 @@ export function useSandbox(): SandboxHandle {
   );
 
   const compileIR = useCallback(
-    async (circuit: any, libraryCircuits: any[], slot: SimSlot, options?: { evalSources?: Record<string, EvalSource> }): Promise<CompileIRResult | SandboxError> => {
+    async (circuit: any, libraryCircuits: any[], slot: SimSlot, options?: { evalSources?: Record<string, EvalSource>; snapshot?: boolean }): Promise<CompileIRResult | SandboxError> => {
       const result = await send<{ type: 'compiled-ir' } & CompileIRResult>({
         type: 'compile-ir',
         circuit,
         libraryCircuits,
         slot,
         evalSources: options?.evalSources,
+        snapshot: options?.snapshot,
       });
       if ('error' in result) return result as SandboxError;
       const r = result as { type: 'compiled-ir' } & CompileIRResult;
-      return { portValues: r.portValues, peripheralState: r.peripheralState };
+      return { portValues: r.portValues, peripheralState: r.peripheralState, snapshotId: r.snapshotId };
     },
     [send],
   );
 
   const tick = useCallback(
-    async (inputs?: Record<string, number | boolean>, slot: SimSlot = 'default'): Promise<TickResult | SandboxError> => {
-      const result = await send<{ type: 'ticked' } & TickResult>({ type: 'tick', inputs, slot });
+    async (inputs?: Record<string, number | boolean>, slot: SimSlot = 'default', options?: { snapshot?: boolean }): Promise<TickResult | SandboxError> => {
+      const result = await send<{ type: 'ticked' } & TickResult>({ type: 'tick', inputs, slot, snapshot: options?.snapshot });
       if ('error' in result) return result as SandboxError;
       const r = result as { type: 'ticked' } & TickResult;
-      return { portValues: r.portValues, cycle: r.cycle, peripheralState: r.peripheralState };
+      return { portValues: r.portValues, cycle: r.cycle, peripheralState: r.peripheralState, snapshotId: r.snapshotId };
     },
     [send],
   );
 
   const tickN = useCallback(
-    async (n: number, inputs?: Record<string, number | boolean>, slot: SimSlot = 'default'): Promise<TickResult | SandboxError> => {
-      const result = await send<{ type: 'ticked-n' } & TickResult>({ type: 'tick-n', n, inputs, slot });
+    async (n: number, inputs?: Record<string, number | boolean>, slot: SimSlot = 'default', options?: { snapshot?: boolean }): Promise<TickResult | SandboxError> => {
+      const result = await send<{ type: 'ticked-n' } & TickResult>({ type: 'tick-n', n, inputs, slot, snapshot: options?.snapshot });
       if ('error' in result) return result as SandboxError;
       const r = result as { type: 'ticked-n' } & TickResult;
-      return { portValues: r.portValues, cycle: r.cycle, peripheralState: r.peripheralState };
+      return { portValues: r.portValues, cycle: r.cycle, peripheralState: r.peripheralState, snapshotId: r.snapshotId };
     },
     [send],
   );
@@ -399,11 +437,40 @@ export function useSandbox(): SandboxHandle {
   }, [send]);
 
   const setNode = useCallback(
-    async (nodeId: string, value: number | boolean | Map<number, number>, slot: SimSlot = 'default'): Promise<SetNodeResult | SandboxError> => {
-      const result = await send<{ type: 'set-node' } & SetNodeResult>({ type: 'set-node', nodeId, value, slot });
+    async (nodeId: string, value: number | boolean | Map<number, number>, slot: SimSlot = 'default', options?: { snapshot?: boolean }): Promise<SetNodeResult | SandboxError> => {
+      const result = await send<{ type: 'set-node' } & SetNodeResult>({ type: 'set-node', nodeId, value, slot, snapshot: options?.snapshot });
       if ('error' in result) return result as SandboxError;
       const r = result as { type: 'set-node' } & SetNodeResult;
-      return { portValues: r.portValues, peripheralState: r.peripheralState };
+      return { portValues: r.portValues, peripheralState: r.peripheralState, snapshotId: r.snapshotId };
+    },
+    [send],
+  );
+
+  const snapshot = useCallback(
+    async (slot: SimSlot = 'default'): Promise<SnapshotResult | SandboxError> => {
+      const result = await send<{ type: 'snapshot' } & SnapshotResult>({ type: 'snapshot', slot });
+      if ('error' in result) return result as SandboxError;
+      const r = result as { type: 'snapshot' } & SnapshotResult;
+      return { snapshotId: r.snapshotId };
+    },
+    [send],
+  );
+
+  const restore = useCallback(
+    async (snapshotId: number, slot: SimSlot = 'default'): Promise<RestoreResult | SandboxError> => {
+      const result = await send<{ type: 'restored' } & RestoreResult>({ type: 'restore', snapshotId, slot });
+      if ('error' in result) return result as SandboxError;
+      const r = result as { type: 'restored' } & RestoreResult;
+      return { portValues: r.portValues, cycle: r.cycle, peripheralState: r.peripheralState };
+    },
+    [send],
+  );
+
+  const pruneSnapshots = useCallback(
+    async (keepAfterId: number, slot: SimSlot = 'default'): Promise<{ type: 'pruned' } | SandboxError> => {
+      const result = await send<{ type: 'pruned' }>({ type: 'prune-snapshots', keepAfterId, slot });
+      if ('error' in result) return result as SandboxError;
+      return result as { type: 'pruned' };
     },
     [send],
   );
@@ -417,5 +484,5 @@ export function useSandbox(): SandboxHandle {
 
   const isReady = useCallback(() => stateRef.current.ready, []);
 
-  return { compile, compileIR, tick, tickN, scanPort, simulate, reset, setNode, dispose, isReady };
+  return { compile, compileIR, tick, tickN, scanPort, simulate, reset, setNode, snapshot, restore, pruneSnapshots, dispose, isReady };
 }
