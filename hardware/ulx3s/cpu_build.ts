@@ -346,6 +346,12 @@ async function main() {
   if (process.argv.includes('--rust')) {
     const firmwareSrc = readFileSync(resolve(__dirname, 'firmware/hello.rs'), 'utf8');
     binary = await compileFirmware(firmwareSrc, 'rust');
+  } else if (process.argv.includes('--fib')) {
+    const firmwareSrc = readFileSync(resolve(__dirname, 'firmware/fibonacci.c'), 'utf8');
+    binary = await compileFirmware(firmwareSrc);
+  } else if (process.argv.includes('--snake')) {
+    const firmwareSrc = readFileSync(resolve(__dirname, 'firmware/snake.c'), 'utf8');
+    binary = await compileFirmware(firmwareSrc);
   } else {
     const firmwareSrc = readFileSync(resolve(__dirname, 'firmware/hello.c'), 'utf8');
     binary = await compileFirmware(firmwareSrc);
