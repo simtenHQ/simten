@@ -89,9 +89,9 @@ async function invokeCli(args: RunArgs): Promise<{ stdout: string; stderr: strin
 export function registerRunOnFpgaTool(server: McpServer): void {
   server.tool(
     'run_on_fpga',
-    'Build, flash, and UART-capture a project on a connected ULX3S FPGA. Projects: cpu (RV32I CPU, requires firmware), snake (HDMI hardware Snake), uart_test (standalone UART). Returns a structured RunResult covering every stage (compile, synth, flash, run, match). Kills any active picocom before flashing.',
+    'Build, flash, and UART-capture a project on a connected ULX3S FPGA. Known projects at the time of writing: cpu (RV32I CPU, requires firmware), snake (HDMI hardware Snake), uart_test (standalone UART). New projects can be added by dropping a descriptor in hardware/ulx3s/projects/ and registering it in projects/index.ts — they become callable here without editing this tool. The CLI will reject unknown names with a clear error listing what is registered. Returns a structured RunResult covering every stage (compile, synth, flash, run, match). Kills any active picocom before flashing.',
     {
-      project: z.enum(['cpu', 'snake', 'uart_test']).describe('Which project to build and run.'),
+      project: z.string().min(1).describe('Project name as registered in hardware/ulx3s/projects/index.ts (e.g. "cpu", "snake", "uart_test", or any newer one).'),
       firmware: z.string().optional().describe('Path to firmware source (.c or .rs) — required for cpu; relative to repo root.'),
       timeout_ms: z.number().int().positive().optional().describe('UART capture timeout in ms (default: 5000).'),
       match: z.string().optional().describe('Regex matched against UART output; capture early-exits on hit.'),
