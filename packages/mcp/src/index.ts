@@ -15,6 +15,7 @@ import { registerCheckTool } from './tools/check.js';
 import { registerSimulateTool } from './tools/simulate.js';
 import { registerShowTools } from './tools/show.js';
 import { registerStateTool } from './tools/state.js';
+import { registerRunOnFpgaTool } from './tools/run_on_fpga.js';
 import { setOnSendToClaude, getOrCreateServer } from './lib/preview-singleton.js';
 import { getGrammarHandler, getPrimitivesHandler, getLibrary } from '@simten/core/api';
 
@@ -40,6 +41,7 @@ ${primitivesList}
 - \`check_circuit\` — fast validation before simulating
 - \`get_circuit_state\` — read current port values from the live browser preview
 - \`list_sessions\` — list connected browser tabs
+- \`run_on_fpga\` — build, flash, and UART-capture a project on a connected ULX3S FPGA (projects: cpu, snake, uart_test)
 `;
 
 const server = new McpServer(
@@ -59,6 +61,7 @@ registerCheckTool(server);
 registerSimulateTool(server);
 registerShowTools(server);
 registerStateTool(server);
+registerRunOnFpgaTool(server);
 
 // Wire browser → Claude channel notifications
 const rawServer = server.server;

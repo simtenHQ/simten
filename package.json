@@ -23,6 +23,7 @@
 		"fpga:regen-verilog": "bun hardware/ulx3s/regen_verilog.ts",
 		"fpga:build": "bun hardware/ulx3s/cpu_build.ts",
 		"fpga:flash": "bun hardware/ulx3s/cpu_build.ts --flash",
+		"fpga:run": "tsx hardware/ulx3s/run_on_fpga.ts",
 		"fpga:console": "TTY=$(ls /dev/cu.usbserial-* 2>/dev/null | head -1); [ -z \"$TTY\" ] && TTY=/dev/ttyUSB0; echo \"Opening $TTY (exit: Ctrl-A Ctrl-X)\"; picocom --nolock --noreset -b 115200 $TTY"
 	},
 	"devDependencies": {
@@ -30,5 +31,8 @@
 		"typescript": "^5",
 		"vitest": "^4.0.17"
 	},
-	"packageManager": "pnpm@8.8.0+sha1.9922e8b650d393700209ccd81e0ebdbcbe43b0d3"
+	"packageManager": "pnpm@8.8.0+sha1.9922e8b650d393700209ccd81e0ebdbcbe43b0d3",
+	"dependencies": {
+		"serialport": "^13.0.0"
+	}
 }
