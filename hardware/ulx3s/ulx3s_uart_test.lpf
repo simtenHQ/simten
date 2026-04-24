@@ -1,0 +1,10 @@
+## ULX3S minimal constraints for uart_test_top.
+## Just the 25 MHz clock and the UART TX line.
+
+LOCATE COMP "clk_25mhz" SITE "G2";
+IOBUF  PORT "clk_25mhz" IO_TYPE=LVCMOS33;
+
+LOCATE COMP "uart_tx"   SITE "L4";
+IOBUF  PORT "uart_tx"   IO_TYPE=LVCMOS33;
+
+FREQUENCY PORT "clk_25mhz" 25.000000 MHz;
