@@ -23,8 +23,8 @@ import { spawnSync } from 'node:child_process';
 
 import { runPipeline } from './lib/pipeline.js';
 import { openAndCapture } from './lib/serial.js';
-import { projects, listProjects } from './projects/index.js';
-import type { RunResult } from './lib/types.js';
+import { loadProjects, listProjects } from './projects/index.js';
+import type { Project, RunResult } from './lib/types.js';
 
 // ── Argv parsing ───────────────────────────────────────────────────────────
 
@@ -61,12 +61,12 @@ function parseArgs(argv: string[]): Args {
   return out;
 }
 
-function usage(): string {
+function usage(known: Record<string, Project>): string {
   return [
     'Usage: pnpm fpga:run --project=<name> [flags]',
     '       (or: tsx hardware/ulx3s/run_on_fpga.ts --project=<name> [flags])',
     '',
-    'Projects: ' + listProjects().join(', '),
+    'Projects: ' + listProjects(known).join(', '),
     '',
     'Flags:',
     '  --firmware=<path>     path to firmware source (required for projects with firmware)',
@@ -130,14 +130,16 @@ function printResult(result: RunResult, verbose: boolean): void {
 
 async function main() {
   const args = parseArgs(process.argv.slice(2));
+  const known = await loadProjects();
+
   if (args.help || !args.project) {
-    console.log(usage());
+    console.log(usage(known));
     process.exit(args.help ? 0 : 1);
   }
 
-  const project = projects[args.project];
+  const project = known[args.project];
   if (!project) {
-    console.error(`unknown project "${args.project}" — known: ${listProjects().join(', ')}`);
+    console.error(`unknown project "${args.project}" — known: ${listProjects(known).join(', ')}`);
     process.exit(1);
   }
 

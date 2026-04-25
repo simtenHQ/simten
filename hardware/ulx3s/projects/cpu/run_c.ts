@@ -10,7 +10,7 @@
 
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
-import { runFirmware } from './cpu_sim.js';
+import { runFirmware } from './sim.js';
 
 const COMPILER_URL = process.env.COMPILER_URL ?? 'https://compiler.charles-harris-de.workers.dev/compile';
 
