@@ -6,17 +6,20 @@
  */
 
 import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { resolve, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-import { exportVerilog } from '../../../packages/core/src/verilog/exporter.js';
-import { circuit, bus } from '../../../packages/core/src/circuit/index.js';
+import { exportVerilog } from '../../../../packages/core/src/verilog/exporter.js';
+import { circuit, bus } from '../../../../packages/core/src/circuit/index.js';
 import {
   DualPortRAM, Register, Constant, Comparator, Mux, Adder, BitSlice,
   And, Or, Not,
-} from '../../../packages/core/src/std/index.js';
-import type { CircuitLibrary } from '../../../packages/core/src/types/circuit.js';
+} from '../../../../packages/core/src/std/index.js';
+import type { CircuitLibrary } from '../../../../packages/core/src/types/circuit.js';
 
-import type { Project } from '../lib/types.js';
+import type { Project } from '../../lib/types.js';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
 export function buildSnakeAdvanced() {
   const SnakeAdvanced = circuit('SnakeAdvanced', {
@@ -254,8 +257,9 @@ export function buildSnakeAdvanced() {
   return { circuit: SnakeAdvanced.circuit, lib };
 }
 
-export const snakeProject: Project = {
+export const project: Project = {
   name: 'snake',
+  projectDir: __dirname,
   bitFile: 'snake.bit',
 
   async buildVerilog(ctx) {
@@ -265,8 +269,8 @@ export const snakeProject: Project = {
       topModuleName: 'SnakeAdvanced',
     });
 
-    const wrapperVerilog = readFileSync(resolve(ctx.baseDir, 'snake_top.v'), 'utf8');
-    const lpf = readFileSync(resolve(ctx.baseDir, 'ulx3s_snake.lpf'), 'utf8');
+    const wrapperVerilog = readFileSync(resolve(__dirname, 'snake_top.v'), 'utf8');
+    const lpf = readFileSync(resolve(__dirname, 'ulx3s_snake.lpf'), 'utf8');
 
     return {
       verilog: snakeVerilog + '\n\n' + wrapperVerilog,

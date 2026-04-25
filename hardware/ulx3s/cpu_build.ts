@@ -14,15 +14,16 @@ import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { runPipeline } from './lib/pipeline.js';
-import { cpuProject } from './projects/cpu.js';
+import { project as cpuProject } from './projects/cpu/index.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
+const CPU_FIRMWARE_DIR = resolve(__dirname, 'projects/cpu/firmware');
 
 function resolveFirmware(argv: string[]): { path: string; language: string } {
-  if (argv.includes('--rust')) return { path: resolve(__dirname, 'firmware/hello.rs'), language: 'rust' };
-  if (argv.includes('--fib')) return { path: resolve(__dirname, 'firmware/fibonacci.c'), language: 'c' };
-  if (argv.includes('--snake')) return { path: resolve(__dirname, 'firmware/snake.c'), language: 'c' };
-  return { path: resolve(__dirname, 'firmware/hello.c'), language: 'c' };
+  if (argv.includes('--rust')) return { path: resolve(CPU_FIRMWARE_DIR, 'hello.rs'), language: 'rust' };
+  if (argv.includes('--fib')) return { path: resolve(CPU_FIRMWARE_DIR, 'fibonacci.c'), language: 'c' };
+  if (argv.includes('--snake')) return { path: resolve(CPU_FIRMWARE_DIR, 'snake.c'), language: 'c' };
+  return { path: resolve(CPU_FIRMWARE_DIR, 'hello.c'), language: 'c' };
 }
 
 async function main() {
@@ -77,7 +78,7 @@ async function main() {
     }
   }
 
-  console.log(`\nBitstream written to hardware/ulx3s/${cpuProject.bitFile}`);
+  console.log(`\nBitstream written to ${resolve(cpuProject.projectDir, cpuProject.bitFile)}`);
 
   if (result.flash) {
     console.log(`Flashed in ${result.flash.flash_duration_ms} ms. Connect to UART: screen /dev/cu.usbserial-* 115200`);

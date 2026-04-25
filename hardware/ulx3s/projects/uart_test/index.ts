@@ -6,18 +6,22 @@
  */
 
 import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { resolve, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-import type { Project } from '../lib/types.js';
+import type { Project } from '../../lib/types.js';
 
-export const uartTestProject: Project = {
+const __dirname = dirname(fileURLToPath(import.meta.url));
+
+export const project: Project = {
   name: 'uart_test',
+  projectDir: __dirname,
   bitFile: 'uart_test.bit',
   uart: { baud: 115200 },
 
-  async buildVerilog(ctx) {
-    const verilog = readFileSync(resolve(ctx.baseDir, 'uart_test_top.v'), 'utf8');
-    const lpf = readFileSync(resolve(ctx.baseDir, 'ulx3s_uart_test.lpf'), 'utf8');
+  async buildVerilog() {
+    const verilog = readFileSync(resolve(__dirname, 'uart_test_top.v'), 'utf8');
+    const lpf = readFileSync(resolve(__dirname, 'ulx3s_uart_test.lpf'), 'utf8');
     return {
       verilog,
       topModule: 'uart_test_top',

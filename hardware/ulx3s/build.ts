@@ -6,10 +6,11 @@
  *   tsx hardware/ulx3s/build.ts --flash   — build + flash via openFPGALoader
  */
 
+import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { runPipeline } from './lib/pipeline.js';
-import { snakeProject } from './projects/snake.js';
+import { project as snakeProject } from './projects/snake/index.js';
 
 async function main() {
   const argv = process.argv.slice(2);
@@ -47,7 +48,7 @@ async function main() {
     }
   }
 
-  console.log(`\nBitstream written to hardware/ulx3s/${snakeProject.bitFile}`);
+  console.log(`\nBitstream written to ${resolve(snakeProject.projectDir, snakeProject.bitFile)}`);
 
   if (result.flash) {
     console.log(`Flashed in ${result.flash.flash_duration_ms} ms.`);

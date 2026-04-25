@@ -33,7 +33,12 @@ export interface FirmwareSpec {
 }
 
 export interface BuildVerilogCtx {
-  /** Absolute path to hardware/ulx3s/. */
+  /**
+   * Absolute path to hardware/ulx3s/ — kept for back-compat but descriptors
+   * should prefer reading files relative to their own __dirname (derived
+   * from import.meta.url). Each project's own files live alongside its
+   * descriptor, so the descriptor already knows where they are.
+   */
   baseDir: string;
   /** Compiled firmware (present only if project.firmware was configured). */
   firmware?: FirmwareBuild;
@@ -61,7 +66,13 @@ export interface BuildVerilogResult {
 export interface Project {
   /** Short identifier, e.g. 'cpu', 'snake', 'uart_test'. */
   name: string;
-  /** Output bitstream filename (written to hardware/ulx3s/<bitFile>). */
+  /**
+   * Absolute path to the folder this project lives in. Descriptors set this
+   * themselves via `dirname(fileURLToPath(import.meta.url))` so the pipeline
+   * knows where to write the bitstream and find per-project artifacts.
+   */
+  projectDir: string;
+  /** Output bitstream filename, written alongside the descriptor. */
   bitFile: string;
   /** Optional firmware pipeline (present for CPU-like projects). */
   firmware?: FirmwareSpec;

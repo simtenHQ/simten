@@ -9,19 +9,22 @@
  */
 
 import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { resolve, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-import { exportVerilog } from '../../../packages/core/src/verilog/exporter.js';
-import { circuit, bit, bus } from '../../../packages/core/src/circuit/index.js';
+import { exportVerilog } from '../../../../packages/core/src/verilog/exporter.js';
+import { circuit, bit, bus } from '../../../../packages/core/src/circuit/index.js';
 import {
   Constant, Register, Adder, BitSlice, Mux, And, Or, Not, BusAnd,
   RV32I_HazardUnit, RV32I_Decode, RV32I_ImmGen, RV32I_Control,
   RV32I_RegisterFile, RV32I_WBBypass, RV32I_ForwardingUnit, RV32I_ALU,
   RV32I_BranchComp, RV32I_WritebackMux, RV32I_NextPCMux, RV32I_LoadAlignFull,
-} from '../../../packages/core/src/std/index.js';
-import type { CircuitLibrary } from '../../../packages/core/src/types/circuit.js';
+} from '../../../../packages/core/src/std/index.js';
+import type { CircuitLibrary } from '../../../../packages/core/src/types/circuit.js';
 
-import type { Project, FirmwareBuild } from '../lib/types.js';
+import type { Project, FirmwareBuild } from '../../lib/types.js';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const COMPILER_URL = process.env.COMPILER_URL ?? 'https://compiler.charles-harris-de.workers.dev/compile';
 
@@ -318,8 +321,9 @@ export function buildCPUCore() {
 
 // ── Project descriptor ─────────────────────────────────────────────────────
 
-export const cpuProject: Project = {
+export const project: Project = {
   name: 'cpu',
+  projectDir: __dirname,
   bitFile: 'cpu.bit',
   defaultTimeoutMs: 5000,
   uart: { baud: 115200 },
@@ -340,8 +344,8 @@ export const cpuProject: Project = {
       topModuleName: 'RV32I_CPU_Core',
     });
 
-    const wrapperVerilog = readFileSync(resolve(ctx.baseDir, 'cpu_top.v'), 'utf8');
-    const lpf = readFileSync(resolve(ctx.baseDir, 'ulx3s_cpu.lpf'), 'utf8');
+    const wrapperVerilog = readFileSync(resolve(__dirname, 'cpu_top.v'), 'utf8');
+    const lpf = readFileSync(resolve(__dirname, 'ulx3s_cpu.lpf'), 'utf8');
 
     // Substitute inline init for $readmemh — bakes firmware into the netlist.
     // The $readmemh path in the current synth container silently drops BRAM

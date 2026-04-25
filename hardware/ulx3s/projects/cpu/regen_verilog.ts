@@ -2,8 +2,8 @@
 /** Regenerate combined.v from the TS DSL — no flash, no synth. */
 import { writeFileSync, readFileSync } from 'fs';
 import { resolve } from 'path';
-import { exportVerilog } from '../../packages/core/src/verilog/exporter.js';
-import { buildCPUCore } from './cpu_build.js';
+import { exportVerilog } from '../../../../packages/core/src/verilog/exporter.js';
+import { buildCPUCore } from './index.js';
 
 const { circuit: cpuCircuit, lib } = buildCPUCore();
 const { verilog: cpuVerilog } = exportVerilog(cpuCircuit, lib, {

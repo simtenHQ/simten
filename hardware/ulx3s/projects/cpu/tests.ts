@@ -4,11 +4,11 @@
  * Each test runs firmware through the TypeScript RTL simulator and checks UART output.
  * No FPGA needed — runs in ~1 second total.
  *
- * Usage: bun hardware/ulx3s/cpu_tests.ts
- *        bun hardware/ulx3s/cpu_tests.ts --filter "ADD"   (run matching tests only)
+ * Usage: pnpm fpga:test
+ *        pnpm fpga:test --filter "ADD"   (run matching tests only)
  */
 
-import { runFirmware } from './cpu_sim.js';
+import { runFirmware } from './sim.js';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
