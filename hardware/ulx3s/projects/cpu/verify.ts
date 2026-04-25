@@ -18,8 +18,8 @@
 
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
-import { runFirmware } from './cpu_sim.js';
-import { tests, type Test } from './cpu_tests.js';
+import { runFirmware } from './sim.js';
+import { tests, type Test } from './tests.js';
 
 const VERIFIER_URL = process.env.VERIFIER_URL ?? 'https://verifier.charles-harris-de.workers.dev/verify';
 
