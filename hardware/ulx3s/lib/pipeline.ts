@@ -192,7 +192,9 @@ export async function runPipeline(opts: PipelineOptions): Promise<PipelineResult
   }
 
   // ── Stage: write bitstream ────────────────────────────────────────────────
-  const bitPath = resolve(baseDir, project.bitFile);
+  // Write into the project's own folder so each project is self-contained
+  // and artifacts are easy to .gitignore via a projects/*/*.bit rule.
+  const bitPath = resolve(project.projectDir, project.bitFile);
   writeFileSync(bitPath, bitstream);
 
   // ── Stage: flash (optional) ───────────────────────────────────────────────
