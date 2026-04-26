@@ -2,3 +2,4 @@
 *.bit.gz
 firmware.hex
 combined.v
+.vcd/
