@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"crypto/rand"
+	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -41,7 +42,14 @@ type VerifyResponse struct {
 	Results       []OutputResult `json:"results,omitempty"`
 	SimulationLog string         `json:"simulationLog,omitempty"`
 	IverilogStderr string        `json:"iverilogStderr,omitempty"`
+	// VcdBase64 is the base64-encoded contents of verify.vcd, if the testbench
+	// emitted one via $dumpfile/$dumpvars. Capped at maxVcdSize.
+	VcdBase64 string `json:"vcdBase64,omitempty"`
 }
+
+// Cap returned VCDs at 8MB raw — larger than that is almost never useful for
+// debugging a single test and would blow the worker response budget.
+const maxVcdSize = 8 * 1024 * 1024
 
 func randomID() string {
 	b := make([]byte, 8)
@@ -177,6 +185,9 @@ func verifyHandler(w http.ResponseWriter, r *http.Request) {
 	defer simCancel()
 
 	simCmd := exec.CommandContext(simCtx, "vvp", simPath)
+	// Run vvp from the temp dir so any $dumpfile path the testbench emits
+	// (e.g. "verify.vcd") lands inside `dir` where we can read it back.
+	simCmd.Dir = dir
 	simOut, simErr := simCmd.CombinedOutput()
 	simOutput := string(simOut)
 
@@ -205,10 +216,20 @@ func verifyHandler(w http.ResponseWriter, r *http.Request) {
 	// Step 3: Parse results
 	results := parseResults(simOutput)
 
+	// Step 4: Read VCD if the testbench emitted one
+	var vcdB64 string
+	if data, err := os.ReadFile(filepath.Join(dir, "verify.vcd")); err == nil {
+		if len(data) > maxVcdSize {
+			data = data[:maxVcdSize]
+		}
+		vcdB64 = base64.StdEncoding.EncodeToString(data)
+	}
+
 	writeJSON(w, http.StatusOK, VerifyResponse{
 		Success:       true,
 		Results:       results,
 		SimulationLog: simOutput,
+		VcdBase64:     vcdB64,
 	})
 }
 
