@@ -18,7 +18,7 @@ module uart_tx_bb (
     input  [7:0] tx_byte,
     input        tx_write,   // single-cycle write strobe
     output reg   tx_serial,
-    output wire  tx_ready    // 1 = idle, 0 = busy
+    output wire  tx_ready    // 1 = skid has room
 );
     localparam CLKS_PER_BIT = 217;  // 25 MHz / 115200
 
@@ -27,7 +27,15 @@ module uart_tx_bb (
     reg [7:0]  cnt;
     reg        busy;
 
-    assign tx_ready = !busy;
+    // 1-deep skid buffer. Decouples tx_ready from busy so a write that
+    // arrives while the shifter is mid-byte (or in the cycle busy is
+    // flipping) is captured rather than dropped. Software polls
+    // tx_ready=!skid_valid; the skid drains into the shifter as soon as
+    // the line is idle.
+    reg [7:0]  skid_data;
+    reg        skid_valid;
+
+    assign tx_ready = !skid_valid;
 
     initial begin
         tx_serial  = 1'b1;
@@ -35,16 +43,20 @@ module uart_tx_bb (
         bits_left  = 4'd0;
         cnt        = 8'd0;
         shift      = 9'd0;
+        skid_data  = 8'd0;
+        skid_valid = 1'b0;
     end
 
     always @(posedge clk) begin
+        // ── Shifter ─────────────────────────────────────────────────────
         if (!busy) begin
-            if (tx_write) begin
-                busy      <= 1'b1;
-                shift     <= {1'b1, tx_byte};  // stop=1, then 8 data bits
-                bits_left <= 4'd9;             // 8 data + 1 stop
-                cnt       <= 8'd0;
-                tx_serial <= 1'b0;             // start bit
+            if (skid_valid) begin
+                busy       <= 1'b1;
+                shift      <= {1'b1, skid_data};  // stop=1, then 8 data bits
+                bits_left  <= 4'd9;               // 8 data + 1 stop
+                cnt        <= 8'd0;
+                tx_serial  <= 1'b0;               // start bit
+                skid_valid <= 1'b0;
             end
         end else begin
             if (cnt == CLKS_PER_BIT - 1) begin
@@ -60,6 +72,12 @@ module uart_tx_bb (
             end else begin
                 cnt <= cnt + 8'd1;
             end
+        end
+
+        // ── Capture (last; on simultaneous drain+write, new byte wins) ──
+        if (tx_write) begin
+            skid_data  <= tx_byte;
+            skid_valid <= 1'b1;
         end
     end
 endmodule
