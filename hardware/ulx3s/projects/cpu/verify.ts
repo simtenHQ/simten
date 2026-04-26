@@ -16,7 +16,7 @@
  *        bun hardware/ulx3s/cpu_verify.ts --filter ADD (ISA test by substring)
  */
 
-import { readFileSync } from 'fs';
+import { mkdirSync, readFileSync, writeFileSync } from 'fs';
 import { resolve } from 'path';
 import { runFirmware } from './sim.js';
 import { tests, type Test } from './tests.js';
@@ -25,6 +25,21 @@ const VERIFIER_URL = process.env.VERIFIER_URL ?? 'https://verifier.charles-harri
 
 // Load the CPU's Verilog — already exported to combined.v
 const combinedV = readFileSync(resolve(import.meta.dir, 'combined.v'), 'utf8');
+
+// Where iverilog VCDs land. Created lazily on first write.
+const VCD_DIR = resolve(import.meta.dir, '.vcd');
+
+function slugify(s: string): string {
+  return s.replace(/[^a-zA-Z0-9_-]+/g, '_').replace(/^_+|_+$/g, '') || 'unnamed';
+}
+
+function writeVcd(name: string, vcdBase64: string | undefined): string | null {
+  if (!vcdBase64) return null;
+  mkdirSync(VCD_DIR, { recursive: true });
+  const path = resolve(VCD_DIR, `${slugify(name)}.vcd`);
+  writeFileSync(path, Buffer.from(vcdBase64, 'base64'));
+  return path;
+}
 
 // ── Testbench generator ──────────────────────────────────────────────────────
 
@@ -113,6 +128,8 @@ module tb;
   integer cycle;
   integer i;
   initial begin
+    $dumpfile("verify.vcd");
+    $dumpvars(0, tb);
     for (i = 0; i < 512; i = i + 1) imem[i] = 32'h0;
     for (i = 0; i < 1024; i = i + 1) dmem[i] = 32'h0;
 ${imemInit}
@@ -139,7 +156,7 @@ function parseUartFromLog(log: string): number[] {
 
 // ── POST to verifier ─────────────────────────────────────────────────────────
 
-async function verify(firmware: number[], maxCycles: number): Promise<{ ok: boolean; bytes: number[]; log: string; error?: string }> {
+async function verify(firmware: number[], maxCycles: number): Promise<{ ok: boolean; bytes: number[]; log: string; vcdBase64?: string; error?: string }> {
   const testbench = generateTestbench(firmware, maxCycles);
   const resp = await fetch(VERIFIER_URL, {
     method: 'POST',
@@ -153,6 +170,7 @@ async function verify(firmware: number[], maxCycles: number): Promise<{ ok: bool
     simError?: string;
     simulationLog?: string;
     iverilogStderr?: string;
+    vcdBase64?: string;
   };
 
   if (!json.success) {
@@ -160,7 +178,7 @@ async function verify(firmware: number[], maxCycles: number): Promise<{ ok: bool
     return { ok: false, bytes: [], log: '', error: err || 'unknown' };
   }
 
-  return { ok: true, bytes: parseUartFromLog(json.simulationLog ?? ''), log: json.simulationLog ?? '' };
+  return { ok: true, bytes: parseUartFromLog(json.simulationLog ?? ''), log: json.simulationLog ?? '', vcdBase64: json.vcdBase64 };
 }
 
 // ── Test cases ───────────────────────────────────────────────────────────────
@@ -233,6 +251,8 @@ async function compareFirmware(name: string, firmware: number[], maxCycles: numb
     return false;
   }
   console.log(`  iverilog: ${vResult.bytes.length} UART bytes (${elapsed}ms)`);
+  const vcdPath = writeVcd(name, vResult.vcdBase64);
+  if (vcdPath) console.log(`  VCD: ${vcdPath}`);
 
   // Compare — trim iverilog to same length (it may run more cycles since no stall model)
   const compareLen = Math.min(tsBytes.length, vResult.bytes.length);
@@ -278,6 +298,8 @@ async function runOneTestViaVerilog(t: Test): Promise<Verdict> {
   if (!v.ok) {
     return { test: t, verdict: 'verilog-error', tsBytes, vBytes: [], error: v.error };
   }
+
+  writeVcd(`${t.category}_${t.name}`, v.vcdBase64);
 
   // Compare up to the expected length (suite tests define what matters)
   const expectedLen = t.expected.length;
