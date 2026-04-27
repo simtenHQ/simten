@@ -16,6 +16,7 @@ import { registerSimulateTool } from './tools/simulate.js';
 import { registerShowTools } from './tools/show.js';
 import { registerStateTool } from './tools/state.js';
 import { registerRunOnFpgaTool } from './tools/run_on_fpga.js';
+import { registerReadWaveformTool } from './tools/read_waveform.js';
 import { setOnSendToClaude, getOrCreateServer } from './lib/preview-singleton.js';
 import { getGrammarHandler, getPrimitivesHandler, getLibrary } from '@simten/core/api';
 
@@ -42,6 +43,7 @@ ${primitivesList}
 - \`get_circuit_state\` — read current port values from the live browser preview
 - \`list_sessions\` — list connected browser tabs
 - \`run_on_fpga\` — build, flash, and UART-capture a project on a connected ULX3S FPGA (projects: cpu, snake, uart_test)
+- \`read_waveform\` — query VCD waveform files (iverilog cross-validation, future ILA captures, etc.) for specific signals over a cycle window. Returns transitions + carry-in (changes), per-cycle values (raw), or filtered transitions (edges). Use \`test_name\` for the CPU verify-suite (e.g. "R-Type ADD basic") or \`vcd_path\` for arbitrary VCDs.
 `;
 
 const server = new McpServer(
@@ -62,6 +64,7 @@ registerSimulateTool(server);
 registerShowTools(server);
 registerStateTool(server);
 registerRunOnFpgaTool(server);
+registerReadWaveformTool(server);
 
 // Wire browser → Claude channel notifications
 const rawServer = server.server;

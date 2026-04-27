@@ -18,6 +18,7 @@
 
 import { mkdirSync, readFileSync, writeFileSync } from 'fs';
 import { resolve } from 'path';
+import { slugify } from '@simten/core/util/test-name';
 import { runFirmware } from './sim.js';
 import { tests, type Test } from './tests.js';
 
@@ -28,10 +29,6 @@ const combinedV = readFileSync(resolve(import.meta.dir, 'combined.v'), 'utf8');
 
 // Where iverilog VCDs land. Created lazily on first write.
 const VCD_DIR = resolve(import.meta.dir, '.vcd');
-
-function slugify(s: string): string {
-  return s.replace(/[^a-zA-Z0-9_-]+/g, '_').replace(/^_+|_+$/g, '') || 'unnamed';
-}
 
 function writeVcd(name: string, vcdBase64: string | undefined): string | null {
   if (!vcdBase64) return null;
