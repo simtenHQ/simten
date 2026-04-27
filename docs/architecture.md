@@ -94,7 +94,6 @@ type PortType = { kind: 'bit' } | { kind: 'bus'; width: number };
 | `@simten/ui` | Canvas, editor components, shadcn primitives, stores |
 | `@simten/embed` | `CircuitEmbed` React component |
 | `@simten/mcp` | MCP server wrapping core handlers for Claude Code |
-| `@simten/cli` | CLI wrapper |
 
 ## Chat System
 

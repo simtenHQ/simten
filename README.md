@@ -80,8 +80,7 @@ packages/
 ├── core/        # Simulator engine, circuit() builder, stdlib, Verilog exporter
 ├── ui/          # Canvas components, editor, shadcn primitives
 ├── embed/       # <CircuitEmbed /> React component + web component
-├── mcp/         # MCP server for AI integration (WebSocket bridge)
-└── cli/         # simten CLI
+└── mcp/         # MCP server for AI integration (WebSocket bridge)
 
 apps/
 ├── tanstack/    # Main web app (TanStack Start + Vite + Cloudflare Workers)
