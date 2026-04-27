@@ -43,5 +43,4 @@ packages/core/     Simulator, circuit() builder, stdlib, Verilog exporter
 packages/ui/       React components (canvas, editor, shadcn primitives)
 packages/embed/    CircuitEmbed React component for embedding circuits
 packages/mcp/      MCP server (exposes tools to Claude Code)
-packages/cli/      CLI wrapper
 ```
