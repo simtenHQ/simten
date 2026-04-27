@@ -32,7 +32,9 @@
   ],
   "scripts": {
     "build": "tsc -b && esbuild src/lib/sandbox-child.ts --bundle --platform=node --format=cjs --outfile=dist/lib/sandbox-child.cjs",
-    "dev": "tsc -b --watch"
+    "dev": "tsc -b --watch",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.12.0",
@@ -45,7 +47,8 @@
     "@types/node": "^20",
     "@types/ws": "^8.18.1",
     "esbuild": "^0.25.0",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^4.0.17"
   },
   "engines": {
     "node": ">=20"

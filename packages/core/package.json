@@ -38,6 +38,11 @@
       "@simten/source": "./src/sim/index.ts",
       "types": "./dist/sim/index.d.ts",
       "import": "./dist/sim/index.js"
+    },
+    "./util/test-name": {
+      "@simten/source": "./src/util/test-name.ts",
+      "types": "./dist/util/test-name.d.ts",
+      "import": "./dist/util/test-name.js"
     }
   },
   "files": [

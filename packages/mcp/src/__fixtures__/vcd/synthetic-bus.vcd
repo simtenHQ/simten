@@ -1,0 +1,42 @@
+$date
+    handcrafted fixture
+$end
+$version
+    synthetic-bus
+$end
+$timescale 1ps $end
+$scope module tb $end
+$var reg 1 ! clk $end
+$var reg 4 " bus4 [3:0] $end
+$var reg 8 # bus8 [7:0] $end
+$upscope $end
+$enddefinitions $end
+$dumpvars
+0!
+b0000 "
+b00000000 #
+$end
+#5000
+1!
+b1010 "
+b11110000 #
+#10000
+0!
+#15000
+1!
+bxxxx "
+b1010zzzz #
+#20000
+0!
+#25000
+1!
+b1111 "
+b11111111 #
+#30000
+0!
+#35000
+1!
+b0011 "
+b00001111 #
+#40000
+0!

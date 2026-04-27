@@ -1,0 +1,38 @@
+$date
+    handcrafted fixture
+$end
+$version
+    synthetic-real-string
+$end
+$comment
+    This fixture exercises real (r…) and string (s…) value records.
+    Parser must tolerate them — skip with a one-time warning per type,
+    not crash, and not expose them in query output.
+$end
+$timescale 1ps $end
+$scope module tb $end
+$var reg 1 ! clk $end
+$var real 64 " temperature $end
+$var string 1 # message $end
+$upscope $end
+$enddefinitions $end
+$dumpvars
+0!
+r0.0 "
+s"init" #
+$end
+#5000
+1!
+r3.14 "
+#10000
+0!
+#15000
+1!
+s"hello world" #
+#20000
+0!
+#25000
+1!
+r-2.5 "
+#30000
+0!
