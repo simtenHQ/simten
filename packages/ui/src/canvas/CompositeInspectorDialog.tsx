@@ -85,6 +85,13 @@ function InspectorCanvas({
   const [portValues, setPortValues] = useState<Map<string, BitValue | BusValue>>(new Map());
   const [useSandbox, setUseSandbox] = useState(false);
   const localEngineRef = useRef<SimulatorEngine | null>(null);
+  // Clock-control state — minimal time-travel via sandbox snapshots, scoped
+  // to this drill-down's slot.
+  const [cycle, setCycle] = useState(0);
+  const [isRunning, setIsRunning] = useState(false);
+  const historyRef = useRef<{ snapshotId: number; cycle: number }[]>([]);
+  const [historyLen, setHistoryLen] = useState(0);
+  const [historyIndex, setHistoryIndex] = useState(-1);
 
   // Unique slot ID per drill-down instance (supports nested drill-downs)
   const slotIdRef = useRef<string>('');
@@ -103,15 +110,28 @@ function InspectorCanvas({
   useEffect(() => {
     // Send the drill-down view circuit to the sandbox for simulation.
     // The sandbox already has eval functions from the source compile.
+    // Include every circuit the view references (primitives AND composites,
+    // recursively) — without composite defs, the sandbox can't simulate
+    // composite children and their outputs stay stuck.
     const allLib: Circuit[] = [];
-    // Collect all circuits from the library
-    const primNames = componentLibrary.getAllPrimitiveNames();
-    for (const name of primNames) {
+    const seen = new Set<string>();
+    for (const name of componentLibrary.getAllPrimitiveNames()) {
       const c = componentLibrary.resolveCircuit(name);
-      if (c) allLib.push(c);
+      if (c && !seen.has(name)) { seen.add(name); allLib.push(c); }
     }
+    const walk = (c: Circuit) => {
+      for (const node of c.nodes) {
+        if (seen.has(node.componentRef)) continue;
+        const resolved = componentLibrary.resolveCircuit(node.componentRef);
+        if (!resolved) continue;
+        seen.add(node.componentRef);
+        allLib.push(resolved);
+        if (resolved.implementation.kind === 'composite') walk(resolved);
+      }
+    };
+    walk(viewCircuit);
 
-    sandbox.compileIR(viewCircuit, allLib, slotId).then(result => {
+    sandbox.compileIR(viewCircuit, allLib, slotId, { snapshot: isSequential }).then(result => {
       if ('error' in result) {
         // Fall back to local simulator (for embed contexts where no source was compiled)
         try {
@@ -135,8 +155,15 @@ function InspectorCanvas({
         pvMap.set(k, v);
       }
       setPortValues(pvMap);
+      // Seed history with the initial snapshot (sequential circuits only).
+      historyRef.current = result.snapshotId !== undefined
+        ? [{ snapshotId: result.snapshotId, cycle: 0 }]
+        : [];
+      setHistoryLen(historyRef.current.length);
+      setHistoryIndex(historyRef.current.length === 0 ? -1 : 0);
+      setCycle(0);
     });
-  }, [viewCircuit, componentLibrary, sandbox, slotId]);
+  }, [viewCircuit, componentLibrary, sandbox, slotId, isSequential]);
 
   const handleToggle = useCallback(
     (nodeId: string) => {
@@ -164,41 +191,97 @@ function InspectorCanvas({
     [sandbox],
   );
 
-  // Simple tick/reset for clock controls
+  // ── Clock controls ─────────────────────────────────────────────────────
+  // Tick the sandbox slot, capture a snapshot, and record it in history.
+  // If we're currently viewing the past, ticking truncates future entries
+  // (mirrors the embed's history semantics).
   const handleTick = useCallback(() => {
-    sandbox.tick(undefined, slotId).then(result => {
+    sandbox.tick(undefined, slotId, { snapshot: isSequential }).then(result => {
       if ('error' in result) return;
       const pvMap = new Map<string, BitValue | BusValue>();
       for (const [k, v] of Object.entries(result.portValues)) pvMap.set(k, v);
       setPortValues(pvMap);
+      setCycle(result.cycle);
+      if (result.snapshotId !== undefined) {
+        const truncated = historyRef.current.slice(0, historyIndex + 1);
+        truncated.push({ snapshotId: result.snapshotId, cycle: result.cycle });
+        historyRef.current = truncated;
+        setHistoryLen(truncated.length);
+        setHistoryIndex(truncated.length - 1);
+      }
     });
-  }, [sandbox]);
+  }, [sandbox, slotId, isSequential, historyIndex]);
 
   const handleReset = useCallback(() => {
+    setIsRunning(false);
     sandbox.reset(slotId).then(result => {
       if ('error' in result) return;
       const pvMap = new Map<string, BitValue | BusValue>();
       for (const [k, v] of Object.entries(result.portValues)) pvMap.set(k, v);
       setPortValues(pvMap);
+      setCycle(0);
+      // Reset clears all history; if the slot is sequential, take a fresh
+      // snapshot of the post-reset state to seed history again.
+      historyRef.current = [];
+      setHistoryLen(0);
+      setHistoryIndex(-1);
+      if (isSequential) {
+        sandbox.snapshot(slotId).then(snap => {
+          if ('error' in snap || snap.snapshotId === undefined) return;
+          historyRef.current = [{ snapshotId: snap.snapshotId, cycle: 0 }];
+          setHistoryLen(1);
+          setHistoryIndex(0);
+        });
+      }
     });
-  }, [sandbox]);
+  }, [sandbox, slotId, isSequential]);
+
+  const restoreTo = useCallback((index: number) => {
+    const entry = historyRef.current[index];
+    if (!entry) return;
+    sandbox.restore(entry.snapshotId, slotId).then(result => {
+      if ('error' in result) return;
+      const pvMap = new Map<string, BitValue | BusValue>();
+      for (const [k, v] of Object.entries(result.portValues)) pvMap.set(k, v);
+      setPortValues(pvMap);
+      setCycle(entry.cycle);
+      setHistoryIndex(index);
+    });
+  }, [sandbox, slotId]);
+
+  const handleStepBack = useCallback(() => {
+    setIsRunning(false);
+    if (historyIndex > 0) restoreTo(historyIndex - 1);
+  }, [historyIndex, restoreTo]);
+
+  const handleStepForward = useCallback(() => {
+    if (historyIndex < historyLen - 1) restoreTo(historyIndex + 1);
+    else handleTick();
+  }, [historyIndex, historyLen, restoreTo, handleTick]);
+
+  // Auto-run loop while isRunning.
+  useEffect(() => {
+    if (!isRunning) return;
+    const id = window.setInterval(() => { handleTick(); }, 200);
+    return () => window.clearInterval(id);
+  }, [isRunning, handleTick]);
 
   return (
     <div className="relative h-full w-full">
       {isSequential && (
         <ClockControls
           floating
-          cycle={0}
-          historyLength={0}
-          historyIndex={-1}
-          isRunning={false}
-          isViewingPast={false}
+          cycle={cycle}
+          historyLength={historyLen}
+          historyIndex={historyIndex}
+          isRunning={isRunning}
+          isViewingPast={historyIndex >= 0 && historyIndex < historyLen - 1}
           onStep={handleTick}
-          onRun={() => {}}
-          onPause={() => {}}
+          onRun={() => setIsRunning(true)}
+          onPause={() => setIsRunning(false)}
           onReset={handleReset}
-          onStepBack={() => null}
-          onStepForward={() => null}
+          onStepBack={handleStepBack}
+          onStepForward={handleStepForward}
         />
       )}
 
