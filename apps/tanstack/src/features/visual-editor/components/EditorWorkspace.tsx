@@ -17,7 +17,6 @@ import {
 import { CircuitCanvas } from "@simten/ui/canvas";
 import { useCircuitSimulator, builtFromIR } from "@simten/embed";
 
-import { ThemeToggle } from "@/components/ThemeToggle";
 import { useCircuitStore, useCircuitPreviewStore, useCircuitLibraryStore } from "@simten/ui/editor/stores";
 import type { Circuit } from "@simten/ui/editor/types";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
@@ -387,8 +386,6 @@ export function EditorWorkspace({ theme = "light" }: EditorWorkspaceProps) {
             </div>
           )}
 
-          {/* Theme Toggle */}
-          <ThemeToggle />
         </div>
 
         {/* Main Content Area - Unified Workspace */}
