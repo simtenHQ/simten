@@ -42,13 +42,10 @@ export { ChatPanel, ChatInput, MessageList, MessageBubble, ActionCard, CodeDiffV
 export { executeAction, applyDiff, validateAction, validateShowDiff, normalizeAction, type ActionExecutionContext } from './actions';
 
 // Hooks
-export { useLLMContext, buildLLMContext, useTutorFlow, type LLMContextResult, type UseTutorFlowResult } from './hooks';
+export { useLLMContext, buildLLMContext, type LLMContextResult } from './hooks';
 
 // Context
 export { buildNarrativeSummary, buildMinimalNarrative, enforceTokenBudget, countTokens } from './context';
-
-// Streaming
-export { sendMessage, processStream, type StreamResult, type StreamCallbacks } from './streaming';
 
 // UI Utilities
 export { extractNodeReferences, highlightNodesFromMessage, createCircuitChecker } from './ui';

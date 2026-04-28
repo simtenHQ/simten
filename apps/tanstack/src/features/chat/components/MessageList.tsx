@@ -53,19 +53,23 @@ export function MessageList({
         <Bot className="h-10 w-10 text-blue-500" />
         <div className="text-center">
           <p className="text-sm font-medium text-gray-700">Describe a circuit and I&apos;ll build it</p>
-          <p className="text-xs text-gray-400 mt-1">Or try one of these:</p>
+          {onSendStarter && (
+            <p className="text-xs text-gray-400 mt-1">Or try one of these:</p>
+          )}
         </div>
-        <div className="flex flex-col gap-2 w-full max-w-[280px]">
-          {STARTER_PROMPTS.map((prompt) => (
-            <button
-              key={prompt}
-              onClick={() => onSendStarter?.(prompt)}
-              className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:border-blue-300 transition-colors text-left"
-            >
-              {prompt}
-            </button>
-          ))}
-        </div>
+        {onSendStarter && (
+          <div className="flex flex-col gap-2 w-full max-w-[280px]">
+            {STARTER_PROMPTS.map((prompt) => (
+              <button
+                key={prompt}
+                onClick={() => onSendStarter(prompt)}
+                className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:border-blue-300 transition-colors text-left"
+              >
+                {prompt}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
     );
   }

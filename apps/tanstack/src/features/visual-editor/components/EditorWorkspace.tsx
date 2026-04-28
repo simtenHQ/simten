@@ -505,11 +505,11 @@ export function EditorWorkspace({ theme = "light" }: EditorWorkspaceProps) {
           insertNode={(componentRef, label) => {
             console.log("[Chat] Insert node:", componentRef, label);
           }}
-          narrativeContext={narrativeContext.narrative}
           sourceCodeHash={narrativeContext.sourceCodeHash}
           onSendToChannel={mcpStatus === 'connected' ? sendToClaudePrompt : undefined}
           channelThinking={channelThinking}
           setChannelThinking={setChannelThinking}
+          mcpStatus={mcpStatus}
         />
       </div>
       </TooltipProvider>

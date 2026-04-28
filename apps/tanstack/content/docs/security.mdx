@@ -108,7 +108,7 @@ This all happens inside the sandbox worker. The main frame never touches the npm
 
 ## MCP Sandbox
 
-When Claude calls `simulate_circuit` or `check_circuit`, the circuit source runs in a forked child process — not in the MCP server process itself. The MCP process (which holds your `ANTHROPIC_API_KEY` and runs with your full filesystem access) never executes user circuit code.
+When Claude calls `simulate_circuit` or `check_circuit`, the circuit source runs in a forked child process — not in the MCP server process itself. The MCP process (which inherits your shell environment and runs with your full filesystem access) never executes user circuit code.
 
 ### Architecture
 
@@ -125,11 +125,11 @@ MCP server process (full env, full fs)
 
 The child is forked with `env: {}`. `process.env` is completely empty:
 
-- `process.env.ANTHROPIC_API_KEY` → `undefined`
 - `process.env.HOME` → `undefined`
+- `process.env.PATH` → `undefined`
 - All other environment variables → `undefined`
 
-Even if circuit code tries to read environment variables, there is nothing there to steal.
+Even if circuit code tries to read environment variables (API keys, secrets inherited from your shell), there is nothing there to steal.
 
 ### Node.js Permission Model (`--permission`)
 
@@ -167,13 +167,13 @@ Instead, `sandbox-child.ts` is bundled at build time with esbuild into a single 
 
 | Attack | Status |
 |--------|--------|
-| `process.env.ANTHROPIC_API_KEY` | Blocked — `env: {}` |
+| Read inherited env vars (API keys, secrets) | Blocked — `env: {}` |
 | Read `~/.ssh/id_rsa` | Blocked — `--permission` |
 | Read `~/.aws/credentials` | Blocked — `--permission` |
 | Read any file outside the bundle | Blocked — `--permission` |
 | `child_process.exec('curl ...')` | Blocked — `--permission`, no `--allow-child-process` |
 | Infinite loop / hung simulation | Blocked — 30s timeout, kill + respawn |
-| HTTP requests / crypto mining | Not kernel-restricted — but `env:{}` means no credentials to exfiltrate, and the 30s timeout limits mining windows |
+| HTTP requests / crypto mining | Not kernel-restricted — but `env: {}` means no credentials to exfiltrate, and the 30s timeout limits mining windows |
 
 ---
 
