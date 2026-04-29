@@ -48,7 +48,7 @@ const SEQUENCE: Step[] = [
 
 function buildRegfile() {
   const RegFileWrapper = circuit('RegFileWrapper', {
-    in: {
+    inputs: {
       rs1: bus(5),
       rs2: bus(5),
       rd: bus(5),
@@ -56,22 +56,22 @@ function buildRegfile() {
       we: bit,
       debug_rs: bus(5),
     },
-    out: {
+    outputs: {
       read1: bus(32),
       read2: bus(32),
       debug_read: bus(32),
     },
     nodes: { rf: RV32I_RegisterFile },
-    connect: ({ in: inp, out, rf }) => [
-      inp.rs1.to(rf.rs1),
-      inp.rs2.to(rf.rs2),
-      inp.rd.to(rf.rd),
-      inp.write_data.to(rf.write_data),
-      inp.we.to(rf.we),
-      inp.debug_rs.to(rf.debug_rs),
-      rf.read1.to(out.read1),
-      rf.read2.to(out.read2),
-      rf.debug_read.to(out.debug_read),
+    connect: ({ inputs, outputs, nodes: { rf } }) => [
+      inputs.rs1.to(rf.rs1),
+      inputs.rs2.to(rf.rs2),
+      inputs.rd.to(rf.rd),
+      inputs.write_data.to(rf.write_data),
+      inputs.we.to(rf.we),
+      inputs.debug_rs.to(rf.debug_rs),
+      rf.read1.to(outputs.read1),
+      rf.read2.to(outputs.read2),
+      rf.debug_read.to(outputs.debug_read),
     ],
   });
 

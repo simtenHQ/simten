@@ -93,16 +93,15 @@ type PortRefs<M> = {
 type NodePortRefs<C extends BuiltCircuit> =
   PortRefs<C['_shape']['inputs']> & PortRefs<C['_shape']['outputs']>;
 
-/** The connect callback argument — typed from config's in/out/nodes */
+/** The connect callback argument — typed from config's inputs/outputs/nodes */
 type ConnectArg<
   Ins extends Record<string, PortType | number>,
   Outs extends Record<string, PortType | number>,
   Nodes extends Record<string, BuiltCircuit>,
 > = {
-  readonly in: PortRefs<Ins>;
-  readonly out: PortRefs<Outs>;
-} & {
-  readonly [K in keyof Nodes]: NodePortRefs<Nodes[K]>;
+  readonly inputs: PortRefs<Ins>;
+  readonly outputs: PortRefs<Outs>;
+  readonly nodes: { readonly [K in keyof Nodes]: NodePortRefs<Nodes[K]> };
 };
 
 /** Convert port map to numeric values for eval */
@@ -118,8 +117,8 @@ interface CircuitConfig<
   Nodes extends Record<string, BuiltCircuit> = Record<string, BuiltCircuit>,
   S extends Record<string, number | boolean | object> = Record<string, number | boolean | object>,
 > {
-  in?: Ins;
-  out?: Outs;
+  inputs?: Ins;
+  outputs?: Outs;
   nodes?: Nodes;
   nodeArgs?: { [K in keyof Nodes]?: Record<string, any> };
   connect?: (arg: ConnectArg<Ins, Outs, Nodes>) => ConnectionDef[];

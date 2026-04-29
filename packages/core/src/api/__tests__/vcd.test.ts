@@ -71,14 +71,14 @@ function getSignalValues(vcd: string, signalName: string): Array<{ tick: number;
 describe('VCD export — HalfAdder (combinational)', () => {
   const source = `
     const HalfAdder = circuit('HalfAdder', {
-      in: { a: bit, b: bit },
-      out: { sum: bit, carry: bit },
+      inputs: { a: bit, b: bit },
+      outputs: { sum: bit, carry: bit },
       nodes: { x: Xor, and: And },
-      connect: ({ in: inp, out, x, and }) => [
-        inp.a.to(x.a, and.a),
-        inp.b.to(x.b, and.b),
-        x.out.to(out.sum),
-        and.out.to(out.carry),
+      connect: ({ inputs, outputs, nodes: { x, and } }) => [
+        inputs.a.to(x.a, and.a),
+        inputs.b.to(x.b, and.b),
+        x.out.to(outputs.sum),
+        and.out.to(outputs.carry),
       ],
     });
   `;
@@ -160,16 +160,16 @@ describe('VCD export — HalfAdder (combinational)', () => {
 describe('VCD export — Counter (sequential)', () => {
   const source = `
     const Counter = circuit('Counter', {
-      out: { count: bus(8) },
+      outputs: { count: bus(8) },
       nodes: { reg: Register, adder: Adder, one: Constant, we: Constant, zero: Constant },
       nodeArgs: { reg: { width: 8 }, adder: { width: 8 }, one: { value: 1 }, we: { value: 1 }, zero: { value: 0 } },
-      connect: ({ out, reg, adder, one, we, zero }) => [
+      connect: ({ outputs, nodes: { reg, adder, one, we, zero } }) => [
         reg.q.to(adder.a),
         one.out.to(adder.b),
         zero.out.to(adder.carry_in),
         adder.sum.to(reg.data),
         we.out.to(reg.we),
-        reg.q.to(out.count),
+        reg.q.to(outputs.count),
       ],
     });
   `;
@@ -239,30 +239,30 @@ describe('VCD export — Counter (sequential)', () => {
 describe('VCD export — nested composite (FullAdder)', () => {
   const source = `
     const HalfAdder = circuit('HalfAdder', {
-      in: { a: bit, b: bit },
-      out: { sum: bit, carry: bit },
+      inputs: { a: bit, b: bit },
+      outputs: { sum: bit, carry: bit },
       nodes: { x: Xor, and: And },
-      connect: ({ in: inp, out, x, and }) => [
-        inp.a.to(x.a, and.a),
-        inp.b.to(x.b, and.b),
-        x.out.to(out.sum),
-        and.out.to(out.carry),
+      connect: ({ inputs, outputs, nodes: { x, and } }) => [
+        inputs.a.to(x.a, and.a),
+        inputs.b.to(x.b, and.b),
+        x.out.to(outputs.sum),
+        and.out.to(outputs.carry),
       ],
     });
 
     const FullAdder = circuit('FullAdder', {
-      in: { a: bit, b: bit, cin: bit },
-      out: { sum: bit, cout: bit },
+      inputs: { a: bit, b: bit, cin: bit },
+      outputs: { sum: bit, cout: bit },
       nodes: { ha1: HalfAdder, ha2: HalfAdder, orGate: Or },
-      connect: ({ in: inp, out, ha1, ha2, orGate }) => [
-        inp.a.to(ha1.a),
-        inp.b.to(ha1.b),
+      connect: ({ inputs, outputs, nodes: { ha1, ha2, orGate } }) => [
+        inputs.a.to(ha1.a),
+        inputs.b.to(ha1.b),
         ha1.sum.to(ha2.a),
-        inp.cin.to(ha2.b),
-        ha2.sum.to(out.sum),
+        inputs.cin.to(ha2.b),
+        ha2.sum.to(outputs.sum),
         ha1.carry.to(orGate.a),
         ha2.carry.to(orGate.b),
-        orGate.out.to(out.cout),
+        orGate.out.to(outputs.cout),
       ],
     });
   `;

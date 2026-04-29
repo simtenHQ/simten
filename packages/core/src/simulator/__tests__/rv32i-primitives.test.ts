@@ -65,8 +65,8 @@ function simTicks<C extends BuiltCircuit>(
 
 describe('RV32I_Decode', () => {
   const c = circuit('TestDecode', {
-    in: { instruction: bus(32) },
-    out: {
+    inputs: { instruction: bus(32) },
+    outputs: {
       opcode: bus(7),
       rd: bus(5),
       funct3: bus(3),
@@ -75,14 +75,14 @@ describe('RV32I_Decode', () => {
       funct7: bus(7),
     },
     nodes: { d: RV32I_Decode },
-    connect: ({ in: inp, out, d }) => [
-      inp.instruction.to(d.instruction),
-      d.opcode.to(out.opcode),
-      d.rd.to(out.rd),
-      d.funct3.to(out.funct3),
-      d.rs1.to(out.rs1),
-      d.rs2.to(out.rs2),
-      d.funct7.to(out.funct7),
+    connect: ({ inputs, outputs, nodes: { d } }) => [
+      inputs.instruction.to(d.instruction),
+      d.opcode.to(outputs.opcode),
+      d.rd.to(outputs.rd),
+      d.funct3.to(outputs.funct3),
+      d.rs1.to(outputs.rs1),
+      d.rs2.to(outputs.rs2),
+      d.funct7.to(outputs.funct7),
     ],
   });
 
@@ -123,15 +123,15 @@ describe('RV32I_Decode', () => {
 
 describe('RV32I_ALU', () => {
   const c = circuit('TestALU', {
-    in: { a: bus(32), b: bus(32), alu_op: bus(4) },
-    out: { result: bus(32), zero: bit },
+    inputs: { a: bus(32), b: bus(32), alu_op: bus(4) },
+    outputs: { result: bus(32), zero: bit },
     nodes: { alu: RV32I_ALU },
-    connect: ({ in: inp, out, alu }) => [
-      inp.a.to(alu.a),
-      inp.b.to(alu.b),
-      inp.alu_op.to(alu.alu_op),
-      alu.result.to(out.result),
-      alu.zero.to(out.zero),
+    connect: ({ inputs, outputs, nodes: { alu } }) => [
+      inputs.a.to(alu.a),
+      inputs.b.to(alu.b),
+      inputs.alu_op.to(alu.alu_op),
+      alu.result.to(outputs.result),
+      alu.zero.to(outputs.zero),
     ],
   });
 
@@ -210,12 +210,12 @@ describe('RV32I_ALU', () => {
 
 describe('RV32I_ImmGen', () => {
   const c = circuit('TestImmGen', {
-    in: { instruction: bus(32) },
-    out: { immediate: bus(32) },
+    inputs: { instruction: bus(32) },
+    outputs: { immediate: bus(32) },
     nodes: { ig: RV32I_ImmGen },
-    connect: ({ in: inp, out, ig }) => [
-      inp.instruction.to(ig.instruction),
-      ig.immediate.to(out.immediate),
+    connect: ({ inputs, outputs, nodes: { ig } }) => [
+      inputs.instruction.to(ig.instruction),
+      ig.immediate.to(outputs.immediate),
     ],
   });
 
@@ -256,8 +256,8 @@ describe('RV32I_ImmGen', () => {
 
 describe('RV32I_Control', () => {
   const c = circuit('TestControl', {
-    in: { opcode: bus(7), funct3: bus(3), funct7_bit: bit },
-    out: {
+    inputs: { opcode: bus(7), funct3: bus(3), funct7_bit: bit },
+    outputs: {
       alu_op: bus(4),
       alu_src: bit,
       mem_read: bit,
@@ -270,20 +270,20 @@ describe('RV32I_Control', () => {
       auipc: bit,
     },
     nodes: { ctl: RV32I_Control },
-    connect: ({ in: inp, out, ctl }) => [
-      inp.opcode.to(ctl.opcode),
-      inp.funct3.to(ctl.funct3),
-      inp.funct7_bit.to(ctl.funct7_bit),
-      ctl.alu_op.to(out.alu_op),
-      ctl.alu_src.to(out.alu_src),
-      ctl.mem_read.to(out.mem_read),
-      ctl.mem_write.to(out.mem_write),
-      ctl.reg_write.to(out.reg_write),
-      ctl.mem_to_reg.to(out.mem_to_reg),
-      ctl.branch.to(out.branch),
-      ctl.jump.to(out.jump),
-      ctl.lui.to(out.lui),
-      ctl.auipc.to(out.auipc),
+    connect: ({ inputs, outputs, nodes: { ctl } }) => [
+      inputs.opcode.to(ctl.opcode),
+      inputs.funct3.to(ctl.funct3),
+      inputs.funct7_bit.to(ctl.funct7_bit),
+      ctl.alu_op.to(outputs.alu_op),
+      ctl.alu_src.to(outputs.alu_src),
+      ctl.mem_read.to(outputs.mem_read),
+      ctl.mem_write.to(outputs.mem_write),
+      ctl.reg_write.to(outputs.reg_write),
+      ctl.mem_to_reg.to(outputs.mem_to_reg),
+      ctl.branch.to(outputs.branch),
+      ctl.jump.to(outputs.jump),
+      ctl.lui.to(outputs.lui),
+      ctl.auipc.to(outputs.auipc),
     ],
   });
 
@@ -353,14 +353,14 @@ describe('RV32I_Control', () => {
 
 describe('RV32I_BranchComp', () => {
   const c = circuit('TestBranchComp', {
-    in: { a: bus(32), b: bus(32), funct3: bus(3) },
-    out: { take_branch: bit },
+    inputs: { a: bus(32), b: bus(32), funct3: bus(3) },
+    outputs: { take_branch: bit },
     nodes: { bc: RV32I_BranchComp },
-    connect: ({ in: inp, out, bc }) => [
-      inp.a.to(bc.a),
-      inp.b.to(bc.b),
-      inp.funct3.to(bc.funct3),
-      bc.take_branch.to(out.take_branch),
+    connect: ({ inputs, outputs, nodes: { bc } }) => [
+      inputs.a.to(bc.a),
+      inputs.b.to(bc.b),
+      inputs.funct3.to(bc.funct3),
+      bc.take_branch.to(outputs.take_branch),
     ],
   });
 
@@ -399,23 +399,23 @@ describe('RV32I_BranchComp', () => {
 
 describe('RV32I_RegisterFile', () => {
   const c = circuit('TestRegFile', {
-    in: {
+    inputs: {
       rs1_addr: bus(5),
       rs2_addr: bus(5),
       rd_addr: bus(5),
       write_data: bus(32),
       we: bit,
     },
-    out: { read1: bus(32), read2: bus(32) },
+    outputs: { read1: bus(32), read2: bus(32) },
     nodes: { rf: RV32I_RegisterFile },
-    connect: ({ in: inp, out, rf }) => [
-      inp.rs1_addr.to(rf.rs1),
-      inp.rs2_addr.to(rf.rs2),
-      inp.rd_addr.to(rf.rd),
-      inp.write_data.to(rf.write_data),
-      inp.we.to(rf.we),
-      rf.read1.to(out.read1),
-      rf.read2.to(out.read2),
+    connect: ({ inputs, outputs, nodes: { rf } }) => [
+      inputs.rs1_addr.to(rf.rs1),
+      inputs.rs2_addr.to(rf.rs2),
+      inputs.rd_addr.to(rf.rd),
+      inputs.write_data.to(rf.write_data),
+      inputs.we.to(rf.we),
+      rf.read1.to(outputs.read1),
+      rf.read2.to(outputs.read2),
     ],
   });
 
@@ -439,12 +439,12 @@ describe('RV32I_InstrMem', () => {
     // ADDI x1, x0, 5 = 0x00500093
     // Little-endian bytes: 0x93, 0x00, 0x50, 0x00
     const c = circuit('TestInstrMem', {
-      in: { addr: bus(32) },
-      out: { instruction: bus(32) },
+      inputs: { addr: bus(32) },
+      outputs: { instruction: bus(32) },
       nodes: { im: RV32I_InstrMem },
-      connect: ({ in: inp, out, im }) => [
-        inp.addr.to(im.addr),
-        im.instruction.to(out.instruction),
+      connect: ({ inputs, outputs, nodes: { im } }) => [
+        inputs.addr.to(im.addr),
+        im.instruction.to(outputs.instruction),
       ],
     });
 
@@ -468,22 +468,22 @@ describe('RV32I_InstrMem', () => {
 
 describe('RV32I_DataMem', () => {
   const c = circuit('TestDataMem', {
-    in: {
+    inputs: {
       addr: bus(32),
       write_data: bus(32),
       mem_read: bit,
       mem_write: bit,
       funct3: bus(3),
     },
-    out: { read_data: bus(32) },
+    outputs: { read_data: bus(32) },
     nodes: { dm: RV32I_DataMem },
-    connect: ({ in: inp, out, dm }) => [
-      inp.addr.to(dm.addr),
-      inp.write_data.to(dm.write_data),
-      inp.mem_read.to(dm.mem_read),
-      inp.mem_write.to(dm.mem_write),
-      inp.funct3.to(dm.funct3),
-      dm.read_data.to(out.read_data),
+    connect: ({ inputs, outputs, nodes: { dm } }) => [
+      inputs.addr.to(dm.addr),
+      inputs.write_data.to(dm.write_data),
+      inputs.mem_read.to(dm.mem_read),
+      inputs.mem_write.to(dm.mem_write),
+      inputs.funct3.to(dm.funct3),
+      dm.read_data.to(outputs.read_data),
     ],
   });
 

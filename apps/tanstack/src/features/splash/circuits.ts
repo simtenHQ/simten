@@ -20,105 +20,105 @@ export interface CircuitDefinition {
 // ── Gate Circuits (built from NAND only) ──
 
 export const NotGate = circuit('NotGate', {
-  in: { a: bit },
-  out: { out: bit },
+  inputs: { a: bit },
+  outputs: { out: bit },
   nodes: { nand1: Nand },
-  connect: ({ in: inp, out, nand1 }) => [
-    inp.a.to(nand1.a, nand1.b),
-    nand1.out.to(out.out),
+  connect: ({ inputs, outputs, nodes: { nand1 } }) => [
+    inputs.a.to(nand1.a, nand1.b),
+    nand1.out.to(outputs.out),
   ],
 });
 
 export const AndGate = circuit('AndGate', {
-  in: { a: bit, b: bit },
-  out: { out: bit },
+  inputs: { a: bit, b: bit },
+  outputs: { out: bit },
   nodes: { nand1: Nand, nand2: Nand },
-  connect: ({ in: inp, out, nand1, nand2 }) => [
-    inp.a.to(nand1.a),
-    inp.b.to(nand1.b),
+  connect: ({ inputs, outputs, nodes: { nand1, nand2 } }) => [
+    inputs.a.to(nand1.a),
+    inputs.b.to(nand1.b),
     nand1.out.to(nand2.a, nand2.b),
-    nand2.out.to(out.out),
+    nand2.out.to(outputs.out),
   ],
 });
 
 export const OrGate = circuit('OrGate', {
-  in: { a: bit, b: bit },
-  out: { out: bit },
+  inputs: { a: bit, b: bit },
+  outputs: { out: bit },
   nodes: { not_a: Nand, not_b: Nand, or_out: Nand },
-  connect: ({ in: inp, out, not_a, not_b, or_out }) => [
-    inp.a.to(not_a.a, not_a.b),
-    inp.b.to(not_b.a, not_b.b),
+  connect: ({ inputs, outputs, nodes: { not_a, not_b, or_out } }) => [
+    inputs.a.to(not_a.a, not_a.b),
+    inputs.b.to(not_b.a, not_b.b),
     not_a.out.to(or_out.a),
     not_b.out.to(or_out.b),
-    or_out.out.to(out.out),
+    or_out.out.to(outputs.out),
   ],
 });
 
 export const XorGate = circuit('XorGate', {
-  in: { a: bit, b: bit },
-  out: { out: bit },
+  inputs: { a: bit, b: bit },
+  outputs: { out: bit },
   nodes: { nand1: Nand, nand2: Nand, nand3: Nand, nand4: Nand },
-  connect: ({ in: inp, out, nand1, nand2, nand3, nand4 }) => [
-    inp.a.to(nand1.a, nand2.a),
-    inp.b.to(nand1.b, nand3.b),
+  connect: ({ inputs, outputs, nodes: { nand1, nand2, nand3, nand4 } }) => [
+    inputs.a.to(nand1.a, nand2.a),
+    inputs.b.to(nand1.b, nand3.b),
     nand1.out.to(nand2.b, nand3.a),
     nand2.out.to(nand4.a),
     nand3.out.to(nand4.b),
-    nand4.out.to(out.out),
+    nand4.out.to(outputs.out),
   ],
 });
 
 export const HalfAdder = circuit('HalfAdder', {
-  in: { a: bit, b: bit },
-  out: { sum: bit, carry: bit },
+  inputs: { a: bit, b: bit },
+  outputs: { sum: bit, carry: bit },
   nodes: { xor1: Xor, and1: And },
-  connect: ({ in: inp, out, xor1, and1 }) => [
-    inp.a.to(xor1.a, and1.a),
-    inp.b.to(xor1.b, and1.b),
-    xor1.out.to(out.sum),
-    and1.out.to(out.carry),
+  connect: ({ inputs, outputs, nodes: { xor1, and1 } }) => [
+    inputs.a.to(xor1.a, and1.a),
+    inputs.b.to(xor1.b, and1.b),
+    xor1.out.to(outputs.sum),
+    and1.out.to(outputs.carry),
   ],
 });
 
 export const FullAdder = circuit('FullAdder', {
-  in: { a: bit, b: bit, cin: bit },
-  out: { sum: bit, cout: bit },
+  inputs: { a: bit, b: bit, cin: bit },
+  outputs: { sum: bit, cout: bit },
   nodes: { ha1: HalfAdder, ha2: HalfAdder, or1: Or },
-  connect: ({ in: inp, out, ha1, ha2, or1 }) => [
-    inp.a.to(ha1.a),
-    inp.b.to(ha1.b),
+  connect: ({ inputs, outputs, nodes: { ha1, ha2, or1 } }) => [
+    inputs.a.to(ha1.a),
+    inputs.b.to(ha1.b),
     ha1.sum.to(ha2.a),
-    inp.cin.to(ha2.b),
-    ha2.sum.to(out.sum),
+    inputs.cin.to(ha2.b),
+    ha2.sum.to(outputs.sum),
     ha1.carry.to(or1.a),
     ha2.carry.to(or1.b),
-    or1.out.to(out.cout),
+    or1.out.to(outputs.cout),
   ],
 });
 
 export const MuxGate = circuit('MuxGate', {
-  in: { a: bit, b: bit, sel: bit },
-  out: { out: bit },
+  inputs: { a: bit, b: bit, sel: bit },
+  outputs: { out: bit },
   nodes: { not_sel: Not, and_a: And, and_b: And, or_out: Or },
-  connect: ({ in: inp, out, not_sel, and_a, and_b, or_out }) => [
-    inp.sel.to(not_sel.in, and_b.b),
-    inp.a.to(and_a.a),
+  connect: ({ inputs, outputs, nodes: { not_sel, and_a, and_b, or_out } }) => [
+    inputs.sel.to(not_sel.in, and_b.b),
+    inputs.a.to(and_a.a),
     not_sel.out.to(and_a.b),
-    inp.b.to(and_b.a),
+    inputs.b.to(and_b.a),
     and_a.out.to(or_out.a),
     and_b.out.to(or_out.b),
-    or_out.out.to(out.out),
+    or_out.out.to(outputs.out),
   ],
 });
 
 export const DelayLine = circuit('DelayLine', {
-  in: { d: bit },
-  out: { q1: bit, q2: bit },
+  inputs: { d: bit },
+  outputs: { q1: bit, q2: bit },
   nodes: { dff1: DFlipFlop, dff2: DFlipFlop },
-  connect: ({ in: inp, out, dff1, dff2 }) => [
-    inp.d.to(dff1.d),
-    dff1.q.to(dff2.d, out.q1),
-    dff2.q.to(out.q2),
+  connect: ({ inputs, outputs, nodes: { dff1, dff2 } }) => [
+    inputs.d.to(dff1.d),
+    dff1.q.to(dff2.d, outputs.q1),
+    dff2.q.to(outputs.q2),
   ],
 });
 
@@ -127,12 +127,12 @@ export const CIRCUITS: Record<string, CircuitDefinition> = {
     name: "NOT Gate",
     description: "Inverts the input signal",
     displayCode: `const NotGate = circuit('NotGate', {
-  in: { a: bit },
-  out: { out: bit },
+  inputs: { a: bit },
+  outputs: { out: bit },
   nodes: { nand1: Nand },
-  connect: ({ in: inp, out, nand1 }) => [
-    inp.a.to(nand1.a, nand1.b),
-    nand1.out.to(out.out),
+  connect: ({ inputs, outputs, nodes: { nand1 } }) => [
+    inputs.a.to(nand1.a, nand1.b),
+    nand1.out.to(outputs.out),
   ],
 })`,
     circuit: NotGate,
@@ -142,14 +142,14 @@ export const CIRCUITS: Record<string, CircuitDefinition> = {
     name: "AND Gate",
     description: "Output is 1 only when both inputs are 1",
     displayCode: `const AndGate = circuit('AndGate', {
-  in: { a: bit, b: bit },
-  out: { out: bit },
+  inputs: { a: bit, b: bit },
+  outputs: { out: bit },
   nodes: { nand1: Nand, nand2: Nand },
-  connect: ({ in: inp, out, nand1, nand2 }) => [
-    inp.a.to(nand1.a),
-    inp.b.to(nand1.b),
+  connect: ({ inputs, outputs, nodes: { nand1, nand2 } }) => [
+    inputs.a.to(nand1.a),
+    inputs.b.to(nand1.b),
     nand1.out.to(nand2.a, nand2.b),
-    nand2.out.to(out.out),
+    nand2.out.to(outputs.out),
   ],
 })`,
     circuit: AndGate,
@@ -159,15 +159,15 @@ export const CIRCUITS: Record<string, CircuitDefinition> = {
     name: "OR Gate",
     description: "Output is 1 when either input is 1",
     displayCode: `const OrGate = circuit('OrGate', {
-  in: { a: bit, b: bit },
-  out: { out: bit },
+  inputs: { a: bit, b: bit },
+  outputs: { out: bit },
   nodes: { not_a: Nand, not_b: Nand, or_out: Nand },
-  connect: ({ in: inp, out, not_a, not_b, or_out }) => [
-    inp.a.to(not_a.a, not_a.b),
-    inp.b.to(not_b.a, not_b.b),
+  connect: ({ inputs, outputs, nodes: { not_a, not_b, or_out } }) => [
+    inputs.a.to(not_a.a, not_a.b),
+    inputs.b.to(not_b.a, not_b.b),
     not_a.out.to(or_out.a),
     not_b.out.to(or_out.b),
-    or_out.out.to(out.out),
+    or_out.out.to(outputs.out),
   ],
 })`,
     circuit: OrGate,
@@ -177,16 +177,16 @@ export const CIRCUITS: Record<string, CircuitDefinition> = {
     name: "XOR Gate",
     description: "Output is 1 when inputs are different",
     displayCode: `const XorGate = circuit('XorGate', {
-  in: { a: bit, b: bit },
-  out: { out: bit },
+  inputs: { a: bit, b: bit },
+  outputs: { out: bit },
   nodes: { nand1: Nand, nand2: Nand, nand3: Nand, nand4: Nand },
-  connect: ({ in: inp, out, nand1, nand2, nand3, nand4 }) => [
-    inp.a.to(nand1.a, nand2.a),
-    inp.b.to(nand1.b, nand3.b),
+  connect: ({ inputs, outputs, nodes: { nand1, nand2, nand3, nand4 } }) => [
+    inputs.a.to(nand1.a, nand2.a),
+    inputs.b.to(nand1.b, nand3.b),
     nand1.out.to(nand2.b, nand3.a),
     nand2.out.to(nand4.a),
     nand3.out.to(nand4.b),
-    nand4.out.to(out.out),
+    nand4.out.to(outputs.out),
   ],
 })`,
     circuit: XorGate,
@@ -196,14 +196,14 @@ export const CIRCUITS: Record<string, CircuitDefinition> = {
     name: "Half Adder",
     description: "Adds two bits, outputs sum and carry",
     displayCode: `const HalfAdder = circuit('HalfAdder', {
-  in: { a: bit, b: bit },
-  out: { sum: bit, carry: bit },
+  inputs: { a: bit, b: bit },
+  outputs: { sum: bit, carry: bit },
   nodes: { xor1: Xor, and1: And },
-  connect: ({ in: inp, out, xor1, and1 }) => [
-    inp.a.to(xor1.a, and1.a),
-    inp.b.to(xor1.b, and1.b),
-    xor1.out.to(out.sum),
-    and1.out.to(out.carry),
+  connect: ({ inputs, outputs, nodes: { xor1, and1 } }) => [
+    inputs.a.to(xor1.a, and1.a),
+    inputs.b.to(xor1.b, and1.b),
+    xor1.out.to(outputs.sum),
+    and1.out.to(outputs.carry),
   ],
 })`,
     circuit: HalfAdder,
@@ -213,18 +213,18 @@ export const CIRCUITS: Record<string, CircuitDefinition> = {
     name: "Full Adder",
     description: "Adds three bits (a, b, carry-in)",
     displayCode: `const FullAdder = circuit('FullAdder', {
-  in: { a: bit, b: bit, cin: bit },
-  out: { sum: bit, cout: bit },
+  inputs: { a: bit, b: bit, cin: bit },
+  outputs: { sum: bit, cout: bit },
   nodes: { ha1: HalfAdder, ha2: HalfAdder, or1: Or },
-  connect: ({ in: inp, out, ha1, ha2, or1 }) => [
-    inp.a.to(ha1.a),
-    inp.b.to(ha1.b),
+  connect: ({ inputs, outputs, nodes: { ha1, ha2, or1 } }) => [
+    inputs.a.to(ha1.a),
+    inputs.b.to(ha1.b),
     ha1.sum.to(ha2.a),
-    inp.cin.to(ha2.b),
-    ha2.sum.to(out.sum),
+    inputs.cin.to(ha2.b),
+    ha2.sum.to(outputs.sum),
     ha1.carry.to(or1.a),
     ha2.carry.to(or1.b),
-    or1.out.to(out.cout),
+    or1.out.to(outputs.cout),
   ],
 })`,
     circuit: FullAdder,
@@ -234,17 +234,17 @@ export const CIRCUITS: Record<string, CircuitDefinition> = {
     name: "Multiplexer",
     description: "sel=0 picks a, sel=1 picks b",
     displayCode: `const MuxGate = circuit('MuxGate', {
-  in: { a: bit, b: bit, sel: bit },
-  out: { out: bit },
+  inputs: { a: bit, b: bit, sel: bit },
+  outputs: { out: bit },
   nodes: { not_sel: Not, and_a: And, and_b: And, or_out: Or },
-  connect: ({ in: inp, out, not_sel, and_a, and_b, or_out }) => [
-    inp.sel.to(not_sel.in, and_b.b),
-    inp.a.to(and_a.a),
+  connect: ({ inputs, outputs, nodes: { not_sel, and_a, and_b, or_out } }) => [
+    inputs.sel.to(not_sel.in, and_b.b),
+    inputs.a.to(and_a.a),
     not_sel.out.to(and_a.b),
-    inp.b.to(and_b.a),
+    inputs.b.to(and_b.a),
     and_a.out.to(or_out.a),
     and_b.out.to(or_out.b),
-    or_out.out.to(out.out),
+    or_out.out.to(outputs.out),
   ],
 })`,
     circuit: MuxGate,
@@ -254,13 +254,13 @@ export const CIRCUITS: Record<string, CircuitDefinition> = {
     name: "2-Cycle Delay",
     description: "Data takes 2 clock ticks to reach output",
     displayCode: `const DelayLine = circuit('DelayLine', {
-  in: { d: bit },
-  out: { q1: bit, q2: bit },
+  inputs: { d: bit },
+  outputs: { q1: bit, q2: bit },
   nodes: { dff1: DFlipFlop, dff2: DFlipFlop },
-  connect: ({ in: inp, out, dff1, dff2 }) => [
-    inp.d.to(dff1.d),
-    dff1.q.to(dff2.d, out.q1),
-    dff2.q.to(out.q2),
+  connect: ({ inputs, outputs, nodes: { dff1, dff2 } }) => [
+    inputs.d.to(dff1.d),
+    dff1.q.to(dff2.d, outputs.q1),
+    dff2.q.to(outputs.q2),
   ],
 })`,
     circuit: DelayLine,

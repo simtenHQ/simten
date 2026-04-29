@@ -23,8 +23,8 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 
 export function buildSnakeAdvanced() {
   const SnakeAdvanced = circuit('SnakeAdvanced', {
-    in: { dir: bus(2), scan_addr: bus(6) },
-    out: { pixel_out: bus(8) },
+    inputs: { dir: bus(2), scan_addr: bus(6) },
+    outputs: { pixel_out: bus(8) },
     nodes: {
       ram: DualPortRAM,
       foodX: Register, foodY: Register, foodNeedsDrawing: Register,
@@ -89,35 +89,9 @@ export function buildSnakeAdvanced() {
       foodXWrap: { low: 0, high: 2 }, foodYWrap: { low: 0, high: 2 },
       headPtrWrap: { low: 0, high: 5 }, tailPtrWrap: { low: 0, high: 5 },
     },
-    connect: ({
-      in: inp, out, ram,
-      foodX, foodY, foodNeedsDrawing, headPtr, tailPtr, snakeLen, headX, headY,
-      tailPixelAddr, nextHeadPixelAddr, phase, keyboardLatched,
-      zero, one, two, three, bodyBase, minus1, five,
-      phaseInc, phaseWrap, phaseEnable,
-      isPhase0, isPhase1, isPhase2, isPhase3, latchKeyboard,
-      isUp, isDown, isLeft, isRight,
-      deltaXTemp, deltaX, deltaYTemp, deltaY,
-      nextHeadXCalc, nextHeadYCalc, nextHeadX, nextHeadY,
-      nextHeadY2, nextHeadY4, nextHeadY8, nextPixelAddr,
-      foodY2, foodY4, foodY8, foodPixelAddr,
-      nextHeadAtFoodX, nextHeadAtFoodY, willEatFood, latchNextHead,
-      headPtrNext, headPtrNextWrap, headBodyAddr, tailBodyAddr,
-      phase0Addr, addrMux0, addrMux1, ramAddr, dataMux0, dataMux1, ramData,
-      bufferEmpty, bufferNotEmpty, deltaXIsZero, deltaYIsZero, bothDeltasZero, isMoving,
-      shouldMoveTail, shouldMoveTailActual, notEatingFood, shouldClearTail, shouldClearTailMoving,
-      writePhase0, writePhase1, writePhase2, writePhase3,
-      writePhase01, writePhase2or3, writeAny, writeEnable, finalWriteEnable,
-      latchTail, latchTailFinal, latchTailNotFood, notDrawingFood,
-      clearFoodFlag, clearFoodFlagFinal, ateFood, ateFoodFinal,
-      foodFlagWriteEnable, foodFlagData,
-      foodXNext, foodXWrap, foodYNext, foodYWrap,
-      updateHead, updateHeadFinal, headPtrInc, headPtrWrap,
-      tailPtrInc, tailPtrWrap, updateTail, updateTailFinal,
-      snakeLenDelta, snakeLenNew,
-    }) => [
-      inp.scan_addr.to(ram.addrB),
-      ram.outB.to(out.pixel_out),
+    connect: ({ inputs, outputs, nodes: { ram, foodX, foodY, foodNeedsDrawing, headPtr, tailPtr, snakeLen, headX, headY, tailPixelAddr, nextHeadPixelAddr, phase, keyboardLatched, zero, one, two, three, bodyBase, minus1, five, phaseInc, phaseWrap, phaseEnable, isPhase0, isPhase1, isPhase2, isPhase3, latchKeyboard, isUp, isDown, isLeft, isRight, deltaXTemp, deltaX, deltaYTemp, deltaY, nextHeadXCalc, nextHeadYCalc, nextHeadX, nextHeadY, nextHeadY2, nextHeadY4, nextHeadY8, nextPixelAddr, foodY2, foodY4, foodY8, foodPixelAddr, nextHeadAtFoodX, nextHeadAtFoodY, willEatFood, latchNextHead, headPtrNext, headPtrNextWrap, headBodyAddr, tailBodyAddr, phase0Addr, addrMux0, addrMux1, ramAddr, dataMux0, dataMux1, ramData, bufferEmpty, bufferNotEmpty, deltaXIsZero, deltaYIsZero, bothDeltasZero, isMoving, shouldMoveTail, shouldMoveTailActual, notEatingFood, shouldClearTail, shouldClearTailMoving, writePhase0, writePhase1, writePhase2, writePhase3, writePhase01, writePhase2or3, writeAny, writeEnable, finalWriteEnable, latchTail, latchTailFinal, latchTailNotFood, notDrawingFood, clearFoodFlag, clearFoodFlagFinal, ateFood, ateFoodFinal, foodFlagWriteEnable, foodFlagData, foodXNext, foodXWrap, foodYNext, foodYWrap, updateHead, updateHeadFinal, headPtrInc, headPtrWrap, tailPtrInc, tailPtrWrap, updateTail, updateTailFinal, snakeLenDelta, snakeLenNew } }) => [
+      inputs.scan_addr.to(ram.addrB),
+      ram.outB.to(outputs.pixel_out),
       phase.q.to(phaseInc.a, isPhase0.a, isPhase1.a, isPhase2.a, isPhase3.a),
       one.out.to(
         phaseInc.b, isPhase1.b, deltaX.in1, deltaY.in1, headPtrNext.b,
@@ -137,7 +111,7 @@ export function buildSnakeAdvanced() {
       ),
       two.out.to(isPhase2.b, isDown.b),
       three.out.to(isPhase3.b, foodXNext.b, isLeft.b),
-      inp.dir.to(keyboardLatched.data),
+      inputs.dir.to(keyboardLatched.data),
       isPhase0.eq.to(latchKeyboard.b, writePhase0.a, latchTail.b, clearFoodFlag.b),
       latchKeyboard.out.to(keyboardLatched.we),
       keyboardLatched.q.to(isUp.a, isDown.a, isLeft.a, isRight.a),

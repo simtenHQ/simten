@@ -31,7 +31,7 @@ export const LFSR4 = circuit('LFSR4', {
   nodeArgs: {
     ff0: { initial: 1 },
   },
-  connect: ({ ff0, ff1, ff2, ff3, feedback, led0, led1, led2, led3 }) => [
+  connect: ({ nodes: { ff0, ff1, ff2, ff3, feedback, led0, led1, led2, led3 } }) => [
     // Feedback: XOR of MSB (ff3) and LSB (ff0) — polynomial x^4 + x + 1
     ff3.q.to(feedback.a),
     ff0.q.to(feedback.b),
@@ -54,8 +54,8 @@ export const LFSR4 = circuit('LFSR4', {
 // Uses the Ethernet/ZIP/NVMe reflected polynomial 0xEDB88320.
 // This is the pure combinational logic of one CRC-32 byte step.
 export const CRC32Step = circuit('CRC32Step', {
-  in: { crc: bus(8), data: bus(8) },
-  out: { crc_lo: bus(8), crc_hi: bus(8), crc_b2: bus(8), crc_b3: bus(8) },
+  inputs: { crc: bus(8), data: bus(8) },
+  outputs: { crc_lo: bus(8), crc_hi: bus(8), crc_b2: bus(8), crc_b3: bus(8) },
   meta: { description: 'Process one byte through CRC-32 (Ethernet polynomial 0xEDB88320)' },
   eval: ({ crc, data }) => {
     // Full 32-bit CRC step — we receive only the low 8 bits of crc here
@@ -92,7 +92,7 @@ export const CRC32ByteDemo = circuit('CRC32ByteDemo', {
     we: { value: 1 },
     display: { width: 8 },
   },
-  connect: ({ data, crcReg, step, display, we }) => [
+  connect: ({ nodes: { data, crcReg, step, display, we } }) => [
     data.out.to(step.data),
     crcReg.q.to(step.crc),
     step.crc_lo.to(crcReg.data),

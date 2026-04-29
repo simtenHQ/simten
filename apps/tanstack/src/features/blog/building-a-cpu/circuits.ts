@@ -19,14 +19,14 @@ export { CIRCUITS as GATE_CIRCUITS } from "@/features/splash/circuits";
 // ── Circuit Definitions ──
 
 export const SRLatch = circuit('SRLatch', {
-  in: { s: bit, r: bit },
-  out: { q: bit, q_bar: bit },
+  inputs: { s: bit, r: bit },
+  outputs: { q: bit, q_bar: bit },
   nodes: { nor1: Nor, nor2: Nor },
-  connect: ({ in: inp, out, nor1, nor2 }) => [
-    inp.s.to(nor1.a),
-    nor2.out.to(nor1.b, out.q_bar),
-    inp.r.to(nor2.a),
-    nor1.out.to(nor2.b, out.q),
+  connect: ({ inputs, outputs, nodes: { nor1, nor2 } }) => [
+    inputs.s.to(nor1.a),
+    nor2.out.to(nor1.b, outputs.q_bar),
+    inputs.r.to(nor2.a),
+    nor1.out.to(nor2.b, outputs.q),
   ],
 });
 
@@ -34,80 +34,80 @@ export const SRLatch = circuit('SRLatch', {
 // For display, we just show the DFlipFlop itself
 
 export const Reg4 = circuit('Reg4', {
-  in: { d0: bit, d1: bit, d2: bit, d3: bit },
-  out: { q0: bit, q1: bit, q2: bit, q3: bit },
+  inputs: { d0: bit, d1: bit, d2: bit, d3: bit },
+  outputs: { q0: bit, q1: bit, q2: bit, q3: bit },
   nodes: { ff0: DFlipFlop, ff1: DFlipFlop, ff2: DFlipFlop, ff3: DFlipFlop },
-  connect: ({ in: inp, out, ff0, ff1, ff2, ff3 }) => [
-    inp.d0.to(ff0.d),
-    inp.d1.to(ff1.d),
-    inp.d2.to(ff2.d),
-    inp.d3.to(ff3.d),
-    ff0.q.to(out.q0),
-    ff1.q.to(out.q1),
-    ff2.q.to(out.q2),
-    ff3.q.to(out.q3),
+  connect: ({ inputs, outputs, nodes: { ff0, ff1, ff2, ff3 } }) => [
+    inputs.d0.to(ff0.d),
+    inputs.d1.to(ff1.d),
+    inputs.d2.to(ff2.d),
+    inputs.d3.to(ff3.d),
+    ff0.q.to(outputs.q0),
+    ff1.q.to(outputs.q1),
+    ff2.q.to(outputs.q2),
+    ff3.q.to(outputs.q3),
   ],
 });
 
 export const Counter4 = circuit('Counter4', {
-  out: { q0: bit, q1: bit, q2: bit, q3: bit },
+  outputs: { q0: bit, q1: bit, q2: bit, q3: bit },
   nodes: { ff0: DFlipFlop, ff1: DFlipFlop, ff2: DFlipFlop, ff3: DFlipFlop, inv0: Not, xor1: Xor, and01: And, xor2: Xor, and012: And, xor3: Xor },
-  connect: ({ in: inp, out, ff0, ff1, ff2, ff3, inv0, xor1, and01, xor2, and012, xor3 }) => [
-    ff0.q.to(inv0.in, xor1.b, and01.a, out.q0),
+  connect: ({ outputs, nodes: { ff0, ff1, ff2, ff3, inv0, xor1, and01, xor2, and012, xor3 } }) => [
+    ff0.q.to(inv0.in, xor1.b, and01.a, outputs.q0),
     inv0.out.to(ff0.d),
-    ff1.q.to(xor1.a, and01.b, out.q1),
+    ff1.q.to(xor1.a, and01.b, outputs.q1),
     xor1.out.to(ff1.d),
-    ff2.q.to(xor2.a, and012.b, out.q2),
+    ff2.q.to(xor2.a, and012.b, outputs.q2),
     and01.out.to(xor2.b, and012.a),
     xor2.out.to(ff2.d),
-    ff3.q.to(xor3.a, out.q3),
+    ff3.q.to(xor3.a, outputs.q3),
     and012.out.to(xor3.b),
     xor3.out.to(ff3.d),
   ],
 });
 
 export const Adder4 = circuit('Adder4', {
-  in: { a0: bit, a1: bit, a2: bit, a3: bit, b0: bit, b1: bit, b2: bit, b3: bit },
-  out: { s0: bit, s1: bit, s2: bit, s3: bit, cout: bit },
+  inputs: { a0: bit, a1: bit, a2: bit, a3: bit, b0: bit, b1: bit, b2: bit, b3: bit },
+  outputs: { s0: bit, s1: bit, s2: bit, s3: bit, cout: bit },
   nodes: { fa0: FullAdder, fa1: FullAdder, fa2: FullAdder, fa3: FullAdder },
-  connect: ({ in: inp, out, fa0, fa1, fa2, fa3 }) => [
-    inp.a0.to(fa0.a),
-    inp.b0.to(fa0.b),
-    inp.a1.to(fa1.a),
-    inp.b1.to(fa1.b),
-    inp.a2.to(fa2.a),
-    inp.b2.to(fa2.b),
-    inp.a3.to(fa3.a),
-    inp.b3.to(fa3.b),
+  connect: ({ inputs, outputs, nodes: { fa0, fa1, fa2, fa3 } }) => [
+    inputs.a0.to(fa0.a),
+    inputs.b0.to(fa0.b),
+    inputs.a1.to(fa1.a),
+    inputs.b1.to(fa1.b),
+    inputs.a2.to(fa2.a),
+    inputs.b2.to(fa2.b),
+    inputs.a3.to(fa3.a),
+    inputs.b3.to(fa3.b),
     fa0.cout.to(fa1.cin),
     fa1.cout.to(fa2.cin),
     fa2.cout.to(fa3.cin),
-    fa0.sum.to(out.s0),
-    fa1.sum.to(out.s1),
-    fa2.sum.to(out.s2),
-    fa3.sum.to(out.s3),
-    fa3.cout.to(out.cout),
+    fa0.sum.to(outputs.s0),
+    fa1.sum.to(outputs.s1),
+    fa2.sum.to(outputs.s2),
+    fa3.sum.to(outputs.s3),
+    fa3.cout.to(outputs.cout),
   ],
 });
 
 export const ALU1 = circuit('ALU1', {
-  in: { a: bit, b: bit, cin: bit, op0: bit, op1: bit },
-  out: { result: bit, cout: bit },
+  inputs: { a: bit, b: bit, cin: bit, op0: bit, op1: bit },
+  outputs: { result: bit, cout: bit },
   nodes: { add: FullAdder, op_and: And, op_or: Or, op_xor: Xor, mux_lo: Mux, mux_hi: Mux, mux_out: Mux },
-  connect: ({ in: inp, out, add, op_and, op_or, op_xor, mux_lo, mux_hi, mux_out }) => [
-    inp.a.to(add.a, op_and.a, op_or.a, op_xor.a),
-    inp.b.to(add.b, op_and.b, op_or.b, op_xor.b),
-    inp.cin.to(add.cin),
-    add.cout.to(out.cout),
+  connect: ({ inputs, outputs, nodes: { add, op_and, op_or, op_xor, mux_lo, mux_hi, mux_out } }) => [
+    inputs.a.to(add.a, op_and.a, op_or.a, op_xor.a),
+    inputs.b.to(add.b, op_and.b, op_or.b, op_xor.b),
+    inputs.cin.to(add.cin),
+    add.cout.to(outputs.cout),
     add.sum.to(mux_lo.a),
     op_and.out.to(mux_lo.b),
-    inp.op0.to(mux_lo.sel, mux_hi.sel),
+    inputs.op0.to(mux_lo.sel, mux_hi.sel),
     op_or.out.to(mux_hi.a),
     op_xor.out.to(mux_hi.b),
     mux_lo.out.to(mux_out.a),
     mux_hi.out.to(mux_out.b),
-    inp.op1.to(mux_out.sel),
-    mux_out.out.to(out.result),
+    inputs.op1.to(mux_out.sel),
+    mux_out.out.to(outputs.result),
   ],
 });
 
@@ -115,7 +115,7 @@ export const ALU1 = circuit('ALU1', {
 export const DemoRAM = circuit('DemoRAM', {
   nodes: { addr: Input, data_in: Input, we: Switch, mem: RAM, data_out: HexDisplay },
   nodeArgs: { addr: { width: 8 }, data_in: { width: 8 }, we: { value: 0 }, mem: { width: 8 }, data_out: { width: 8 } },
-  connect: ({ addr, data_in, we, mem, data_out }) => [
+  connect: ({ nodes: { addr, data_in, we, mem, data_out } }) => [
     addr.out.to(mem.addr),
     data_in.out.to(mem.data_in),
     we.out.to(mem.we),
@@ -126,7 +126,7 @@ export const DemoRAM = circuit('DemoRAM', {
 // D flip-flop demo is self-contained
 export const DemoFlipFlop = circuit('DemoFlipFlop', {
   nodes: { sw_d: Switch, dff: DFlipFlop, led_q: Led },
-  connect: ({ sw_d, dff, led_q }) => [
+  connect: ({ nodes: { sw_d, dff, led_q } }) => [
     sw_d.out.to(dff.d),
     dff.q.to(led_q.in),
   ],

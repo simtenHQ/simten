@@ -43,14 +43,14 @@ const DEFAULT_CODE = `// Circuit Editor — TypeScript Mode
 // Example: Half Adder
 
 const HalfAdder = circuit('HalfAdder', {
-  in: { a: bit, b: bit },
-  out: { sum: bit, carry: bit },
-  nodes: { x: Xor, a: And },
-  connect: ({ in: inp, out, x, a }) => [
-    inp.a.to(x.a, a.a),
-    inp.b.to(x.b, a.b),
-    x.out.to(out.sum),
-    a.out.to(out.carry),
+  inputs:  { a: bit, b: bit },
+  outputs: { sum: bit, carry: bit },
+  nodes:   { xor1: Xor, and1: And },
+  connect: ({ inputs, outputs, nodes: { xor1, and1 } }) => [
+    inputs.a.to(xor1.a, and1.a),
+    inputs.b.to(xor1.b, and1.b),
+    xor1.out.to(outputs.sum),
+    and1.out.to(outputs.carry),
   ],
 })
 `;
@@ -341,12 +341,58 @@ export const TSEditor = forwardRef<TSEditorRef, TSEditorProps>(
         <div className="flex-1 min-h-0">
           <Editor
             language="typescript"
-            theme={resolvedTheme === "dark" ? "vs-dark" : "vs"}
+            theme={resolvedTheme === "dark" ? "simten-dark" : "simten-light"}
             path="file:///circuit.ts"
             value={code}
             onChange={handleCodeChange}
             beforeMount={(monaco) => {
               monaco.languages.typescript.typescriptDefaults.setEagerModelSync(true);
+
+              // Custom themes — Monaco's vs-dark / vs leave most identifiers
+              // uncolored. These give variable names, types, and keywords
+              // distinct hues so circuit definitions scan the way they do in
+              // VS Code. Defined here (pre-mount) so the editor finds them on
+              // first render.
+              monaco.editor.defineTheme("simten-dark", {
+                base: "vs-dark",
+                inherit: true,
+                rules: [
+                  { token: "identifier", foreground: "9CDCFE" },
+                  { token: "type.identifier", foreground: "4EC9B0" },
+                  { token: "keyword", foreground: "C586C0" },
+                  { token: "keyword.flow", foreground: "C586C0" },
+                  { token: "string", foreground: "CE9178" },
+                  { token: "number", foreground: "B5CEA8" },
+                  { token: "comment", foreground: "6A9955", fontStyle: "italic" },
+                  { token: "delimiter", foreground: "D4D4D4" },
+                  { token: "delimiter.bracket", foreground: "D4D4D4" },
+                  { token: "delimiter.parenthesis", foreground: "D4D4D4" },
+                  { token: "delimiter.square", foreground: "D4D4D4" },
+                  { token: "delimiter.curly", foreground: "D4D4D4" },
+                  { token: "operator", foreground: "D4D4D4" },
+                ],
+                colors: {},
+              });
+              monaco.editor.defineTheme("simten-light", {
+                base: "vs",
+                inherit: true,
+                rules: [
+                  { token: "identifier", foreground: "001080" },
+                  { token: "type.identifier", foreground: "267F99" },
+                  { token: "keyword", foreground: "AF00DB" },
+                  { token: "keyword.flow", foreground: "AF00DB" },
+                  { token: "string", foreground: "A31515" },
+                  { token: "number", foreground: "098658" },
+                  { token: "comment", foreground: "008000", fontStyle: "italic" },
+                  { token: "delimiter", foreground: "000000" },
+                  { token: "delimiter.bracket", foreground: "000000" },
+                  { token: "delimiter.parenthesis", foreground: "000000" },
+                  { token: "delimiter.square", foreground: "000000" },
+                  { token: "delimiter.curly", foreground: "000000" },
+                  { token: "operator", foreground: "000000" },
+                ],
+                colors: {},
+              });
             }}
             onMount={handleEditorMount}
             options={{
@@ -356,6 +402,7 @@ export const TSEditor = forwardRef<TSEditorRef, TSEditorProps>(
               scrollBeyondLastLine: false,
               wordWrap: "on",
               tabSize: 2,
+              "semanticHighlighting.enabled": true,
             }}
           />
         </div>

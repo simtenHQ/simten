@@ -7,21 +7,21 @@ import { Register, Adder, Constant, DFlipFlop, HexDisplay } from "@simten/core/s
 // --- Live Fibonacci circuit (auto-ticking) ---
 
 const Fibonacci = circuit('Fibonacci', {
-  out: { fib: bus(8) },
+  outputs: { fib: bus(8) },
   nodes: { reg_a: Register, reg_b: Register, adder: Adder, one_bit: Constant, init: DFlipFlop },
   nodeArgs: { one_bit: { value: 1 } },
-  connect: ({ out, reg_a, reg_b, adder, one_bit, init }) => [
+  connect: ({ outputs, nodes: { reg_a, reg_b, adder, one_bit, init } }) => [
     one_bit.out.to(init.d, reg_a.we, reg_b.we),
     init.q_bar.to(adder.carry_in),
     reg_a.q.to(adder.a),
-    reg_b.q.to(adder.b, reg_a.data, out.fib),
+    reg_b.q.to(adder.b, reg_a.data, outputs.fib),
     adder.sum.to(reg_b.data),
   ],
 });
 
 const FibonacciDemo = circuit('FibonacciDemo', {
   nodes: { fib: Fibonacci, display: HexDisplay },
-  connect: ({ fib, display }) => [
+  connect: ({ nodes: { fib, display } }) => [
     fib.fib.to(display.in),
   ],
 });

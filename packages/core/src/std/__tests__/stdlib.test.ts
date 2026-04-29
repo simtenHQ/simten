@@ -178,14 +178,14 @@ describe('stdlib + builder integration', () => {
     const { circuit, bit } = await import('../../circuit/index.js');
 
     const HalfAdder = circuit('HalfAdder', {
-      in: { a: bit, b: bit },
-      out: { sum: bit, carry: bit },
+      inputs: { a: bit, b: bit },
+      outputs: { sum: bit, carry: bit },
       nodes: { x: Xor, a: And },
-      connect: ({ in: inp, out, x, a }) => [
-        inp.a.to(x.a, a.a),
-        inp.b.to(x.b, a.b),
-        x.out.to(out.sum),
-        a.out.to(out.carry),
+      connect: ({ inputs, outputs, nodes: { x, a } }) => [
+        inputs.a.to(x.a, a.a),
+        inputs.b.to(x.b, a.b),
+        x.out.to(outputs.sum),
+        a.out.to(outputs.carry),
       ],
     });
 

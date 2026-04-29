@@ -57,7 +57,7 @@ function simAfterTicks<C extends BuiltCircuit>(
 
 describe('MemBusMux', () => {
   const c = circuit('TestMemBusMux', {
-    in: {
+    inputs: {
       addr: bus(32),
       write_data: bus(32),
       mem_read: bit,
@@ -69,7 +69,7 @@ describe('MemBusMux', () => {
       rd3: bus(32),
       rd4: bus(32),
     },
-    out: {
+    outputs: {
       local_addr: bus(32),
       read_data: bus(32),
       p0_read: bit,
@@ -82,27 +82,27 @@ describe('MemBusMux', () => {
       p3_write: bit,
     },
     nodes: { mux: MemBusMux },
-    connect: ({ in: inp, out, mux }) => [
-      inp.addr.to(mux.addr),
-      inp.write_data.to(mux.write_data),
-      inp.mem_read.to(mux.mem_read),
-      inp.mem_write.to(mux.mem_write),
-      inp.funct3.to(mux.funct3),
-      inp.rd0.to(mux.read_data_0),
-      inp.rd1.to(mux.read_data_1),
-      inp.rd2.to(mux.read_data_2),
-      inp.rd3.to(mux.read_data_3),
-      inp.rd4.to(mux.read_data_4),
-      mux.local_addr.to(out.local_addr),
-      mux.read_data.to(out.read_data),
-      mux.p0_read.to(out.p0_read),
-      mux.p0_write.to(out.p0_write),
-      mux.p1_read.to(out.p1_read),
-      mux.p1_write.to(out.p1_write),
-      mux.p2_read.to(out.p2_read),
-      mux.p2_write.to(out.p2_write),
-      mux.p3_read.to(out.p3_read),
-      mux.p3_write.to(out.p3_write),
+    connect: ({ inputs, outputs, nodes: { mux } }) => [
+      inputs.addr.to(mux.addr),
+      inputs.write_data.to(mux.write_data),
+      inputs.mem_read.to(mux.mem_read),
+      inputs.mem_write.to(mux.mem_write),
+      inputs.funct3.to(mux.funct3),
+      inputs.rd0.to(mux.read_data_0),
+      inputs.rd1.to(mux.read_data_1),
+      inputs.rd2.to(mux.read_data_2),
+      inputs.rd3.to(mux.read_data_3),
+      inputs.rd4.to(mux.read_data_4),
+      mux.local_addr.to(outputs.local_addr),
+      mux.read_data.to(outputs.read_data),
+      mux.p0_read.to(outputs.p0_read),
+      mux.p0_write.to(outputs.p0_write),
+      mux.p1_read.to(outputs.p1_read),
+      mux.p1_write.to(outputs.p1_write),
+      mux.p2_read.to(outputs.p2_read),
+      mux.p2_write.to(outputs.p2_write),
+      mux.p3_read.to(outputs.p3_read),
+      mux.p3_write.to(outputs.p3_write),
     ],
   });
 
@@ -168,20 +168,20 @@ describe('MemBusMux', () => {
 
 describe('UART_TX', () => {
   const uartCircuit = circuit('TestUART', {
-    in: {
+    inputs: {
       addr: bus(32),
       write_data: bus(32),
       mem_read: bit,
       mem_write: bit,
     },
-    out: { read_data: bus(32) },
+    outputs: { read_data: bus(32) },
     nodes: { uart: UART_TX },
-    connect: ({ in: inp, out, uart }) => [
-      inp.addr.to(uart.addr),
-      inp.write_data.to(uart.write_data),
-      inp.mem_read.to(uart.mem_read),
-      inp.mem_write.to(uart.mem_write),
-      uart.read_data.to(out.read_data),
+    connect: ({ inputs, outputs, nodes: { uart } }) => [
+      inputs.addr.to(uart.addr),
+      inputs.write_data.to(uart.write_data),
+      inputs.mem_read.to(uart.mem_read),
+      inputs.mem_write.to(uart.mem_write),
+      uart.read_data.to(outputs.read_data),
     ],
   });
 
@@ -205,7 +205,7 @@ describe('UART_TX', () => {
 
 describe('NIC_FIFO', () => {
   const c = circuit('TestNICFifo', {
-    in: {
+    inputs: {
       tx_addr: bus(32),
       tx_write_data: bus(32),
       tx_mem_read: bit,
@@ -217,7 +217,7 @@ describe('NIC_FIFO', () => {
       net_rx_valid: bit,
       net_rx_frame: bit,
     },
-    out: {
+    outputs: {
       tx_read_data: bus(32),
       rx_read_data: bus(32),
       net_tx_data: bus(32),
@@ -225,22 +225,22 @@ describe('NIC_FIFO', () => {
       net_tx_frame: bit,
     },
     nodes: { nic: NIC_FIFO },
-    connect: ({ in: inp, out, nic }) => [
-      inp.tx_addr.to(nic.tx_addr),
-      inp.tx_write_data.to(nic.tx_write_data),
-      inp.tx_mem_read.to(nic.tx_mem_read),
-      inp.tx_mem_write.to(nic.tx_mem_write),
-      inp.rx_addr.to(nic.rx_addr),
-      inp.rx_mem_read.to(nic.rx_mem_read),
-      inp.rx_mem_write.to(nic.rx_mem_write),
-      inp.net_rx_data.to(nic.net_rx_data),
-      inp.net_rx_valid.to(nic.net_rx_valid),
-      inp.net_rx_frame.to(nic.net_rx_frame),
-      nic.tx_read_data.to(out.tx_read_data),
-      nic.rx_read_data.to(out.rx_read_data),
-      nic.net_tx_data.to(out.net_tx_data),
-      nic.net_tx_valid.to(out.net_tx_valid),
-      nic.net_tx_frame.to(out.net_tx_frame),
+    connect: ({ inputs, outputs, nodes: { nic } }) => [
+      inputs.tx_addr.to(nic.tx_addr),
+      inputs.tx_write_data.to(nic.tx_write_data),
+      inputs.tx_mem_read.to(nic.tx_mem_read),
+      inputs.tx_mem_write.to(nic.tx_mem_write),
+      inputs.rx_addr.to(nic.rx_addr),
+      inputs.rx_mem_read.to(nic.rx_mem_read),
+      inputs.rx_mem_write.to(nic.rx_mem_write),
+      inputs.net_rx_data.to(nic.net_rx_data),
+      inputs.net_rx_valid.to(nic.net_rx_valid),
+      inputs.net_rx_frame.to(nic.net_rx_frame),
+      nic.tx_read_data.to(outputs.tx_read_data),
+      nic.rx_read_data.to(outputs.rx_read_data),
+      nic.net_tx_data.to(outputs.net_tx_data),
+      nic.net_tx_valid.to(outputs.net_tx_valid),
+      nic.net_tx_frame.to(outputs.net_tx_frame),
     ],
   });
 

@@ -9,26 +9,26 @@ import type { BuiltCircuit } from '../types.js';
 // ============================================================================
 
 const And = circuit('And', {
-  in: { a: bit, b: bit },
-  out: { out: bit },
+  inputs: { a: bit, b: bit },
+  outputs: { out: bit },
   eval: ({ a, b }) => ({ out: (a && b) ? 1 : 0 }),
 });
 
 const Or = circuit('Or', {
-  in: { a: bit, b: bit },
-  out: { out: bit },
+  inputs: { a: bit, b: bit },
+  outputs: { out: bit },
   eval: ({ a, b }) => ({ out: (a || b) ? 1 : 0 }),
 });
 
 const Xor = circuit('Xor', {
-  in: { a: bit, b: bit },
-  out: { out: bit },
+  inputs: { a: bit, b: bit },
+  outputs: { out: bit },
   eval: ({ a, b }) => ({ out: (a !== b) ? 1 : 0 }),
 });
 
 const Not = circuit('Not', {
-  in: { in: bit },
-  out: { out: bit },
+  inputs: { in: bit },
+  outputs: { out: bit },
   eval: ({ in: inp }) => ({ out: inp ? 0 : 1 }),
 });
 
@@ -73,8 +73,8 @@ describe('combinational leaf', () => {
 
   it('builds a bus-width component', () => {
     const Adder = circuit('Adder', {
-      in: { a: bus(8), b: bus(8) },
-      out: { sum: bus(8), carry: bit },
+      inputs: { a: bus(8), b: bus(8) },
+      outputs: { sum: bus(8), carry: bit },
       eval: ({ a, b }) => ({ sum: (a + b) & 0xFF, carry: (a + b) >> 8 }),
     });
 
@@ -93,8 +93,8 @@ describe('combinational leaf', () => {
 
   it('allows numeric shorthand for bus width', () => {
     const Comp = circuit('Comp', {
-      in: { data: 8 },
-      out: { result: 16 },
+      inputs: { data: 8 },
+      outputs: { result: 16 },
       eval: ({ data }) => ({ result: data * 2 }),
     });
 
@@ -110,8 +110,8 @@ describe('combinational leaf', () => {
 describe('sequential leaf', () => {
   it('builds a counter with state', () => {
     const Counter = circuit('Counter', {
-      in: { enable: bit },
-      out: { count: bus(8) },
+      inputs: { enable: bit },
+      outputs: { count: bus(8) },
       state: { total: 0 },
       eval: ({ total }) => ({ count: total as number }),
       onTick: ({ enable, total }) => ({
@@ -131,8 +131,8 @@ describe('sequential leaf', () => {
 
   it('builds a register', () => {
     const Register = circuit('Register8', {
-      in: { d: bus(8) },
-      out: { q: bus(8) },
+      inputs: { d: bus(8) },
+      outputs: { q: bus(8) },
       state: { stored: 0 },
       eval: ({ stored }) => ({ q: stored as number }),
       onTick: ({ d }) => ({ stored: d as number }),
@@ -152,14 +152,14 @@ describe('sequential leaf', () => {
 describe('composite', () => {
   it('builds a HalfAdder from gates', () => {
     const HalfAdder = circuit('HalfAdder', {
-      in: { a: bit, b: bit },
-      out: { sum: bit, carry: bit },
+      inputs: { a: bit, b: bit },
+      outputs: { sum: bit, carry: bit },
       nodes: { x: Xor, a: And },
-      connect: ({ in: inp, out, x, a }) => [
-        inp.a.to(x.a, a.a),
-        inp.b.to(x.b, a.b),
-        x.out.to(out.sum),
-        a.out.to(out.carry),
+      connect: ({ inputs, outputs, nodes: { x, a } }) => [
+        inputs.a.to(x.a, a.a),
+        inputs.b.to(x.b, a.b),
+        x.out.to(outputs.sum),
+        a.out.to(outputs.carry),
       ],
     });
 
@@ -174,30 +174,30 @@ describe('composite', () => {
 
   it('builds a composite from composites', () => {
     const HalfAdder = circuit('HalfAdder', {
-      in: { a: bit, b: bit },
-      out: { sum: bit, carry: bit },
+      inputs: { a: bit, b: bit },
+      outputs: { sum: bit, carry: bit },
       nodes: { x: Xor, a: And },
-      connect: ({ in: inp, out, x, a }) => [
-        inp.a.to(x.a, a.a),
-        inp.b.to(x.b, a.b),
-        x.out.to(out.sum),
-        a.out.to(out.carry),
+      connect: ({ inputs, outputs, nodes: { x, a } }) => [
+        inputs.a.to(x.a, a.a),
+        inputs.b.to(x.b, a.b),
+        x.out.to(outputs.sum),
+        a.out.to(outputs.carry),
       ],
     });
 
     const FullAdder = circuit('FullAdder', {
-      in: { a: bit, b: bit, cin: bit },
-      out: { sum: bit, cout: bit },
+      inputs: { a: bit, b: bit, cin: bit },
+      outputs: { sum: bit, cout: bit },
       nodes: { ha1: HalfAdder, ha2: HalfAdder, or: Or },
-      connect: ({ in: inp, out, ha1, ha2, or }) => [
-        inp.a.to(ha1.a),
-        inp.b.to(ha1.b),
+      connect: ({ inputs, outputs, nodes: { ha1, ha2, or } }) => [
+        inputs.a.to(ha1.a),
+        inputs.b.to(ha1.b),
         ha1.sum.to(ha2.a),
-        inp.cin.to(ha2.b),
-        ha2.sum.to(out.sum),
+        inputs.cin.to(ha2.b),
+        ha2.sum.to(outputs.sum),
         ha1.carry.to(or.a),
         ha2.carry.to(or.b),
-        or.out.to(out.cout),
+        or.out.to(outputs.cout),
       ],
     });
 
@@ -208,20 +208,20 @@ describe('composite', () => {
 
   it('detects sequential when nodes contain sequential components', () => {
     const Reg = circuit('Reg', {
-      in: { d: bus(8) },
-      out: { q: bus(8) },
+      inputs: { d: bus(8) },
+      outputs: { q: bus(8) },
       state: { stored: 0 },
       eval: ({ stored }) => ({ q: stored as number }),
       onTick: ({ d }) => ({ stored: d as number }),
     });
 
     const Pipeline = circuit('Pipeline', {
-      in: { data: bus(8) },
-      out: { result: bus(8) },
+      inputs: { data: bus(8) },
+      outputs: { result: bus(8) },
       nodes: { r: Reg },
-      connect: ({ in: inp, out, r }) => [
-        inp.data.to(r.d),
-        r.q.to(out.result),
+      connect: ({ inputs, outputs, nodes: { r } }) => [
+        inputs.data.to(r.d),
+        r.q.to(outputs.result),
       ],
     });
 
@@ -236,8 +236,8 @@ describe('composite', () => {
 describe('parameterized', () => {
   it('creates components via factory function', () => {
     const Register = (width: number) => circuit(`Register${width}`, {
-      in: { d: bus(width) },
-      out: { q: bus(width) },
+      inputs: { d: bus(width) },
+      outputs: { q: bus(width) },
       state: { stored: 0 },
       eval: ({ stored }) => ({ q: stored as number }),
       onTick: ({ d }) => ({ stored: d as number }),
@@ -260,7 +260,7 @@ describe('parameterized', () => {
 describe('node arguments', () => {
   it('passes arguments to nodes via nodeArgs', () => {
     const Constant = circuit('Constant', {
-      out: { out: bit },
+      outputs: { out: bit },
       eval: () => ({ out: 0 }),
     });
 
@@ -280,8 +280,8 @@ describe('node arguments', () => {
 describe('metadata', () => {
   it('attaches metadata via meta', () => {
     const ALU = circuit('ALU', {
-      in: { a: bus(32) },
-      out: { result: bus(32) },
+      inputs: { a: bus(32) },
+      outputs: { result: bus(32) },
       meta: { category: 'arithmetic', description: 'Arithmetic Logic Unit', icon: '+' },
       eval: ({ a }) => ({ result: a }),
     });
@@ -300,8 +300,8 @@ describe('validation', () => {
   it('rejects input/output name collision', () => {
     expect(() =>
       circuit('Bad', {
-        in: { x: bit },
-        out: { x: bit },
+        inputs: { x: bit },
+        outputs: { x: bit },
         eval: ({ x }) => ({ x }),
       })
     ).toThrow("used for both input and output");
@@ -310,8 +310,8 @@ describe('validation', () => {
   it('rejects state name colliding with input', () => {
     expect(() =>
       circuit('Bad', {
-        in: { count: bus(8) },
-        out: { out: bus(8) },
+        inputs: { count: bus(8) },
+        outputs: { out: bus(8) },
         state: { count: 0 },
         eval: ({ count }) => ({ out: count as number }),
       })
@@ -321,9 +321,9 @@ describe('validation', () => {
   it('rejects reserved node names', () => {
     expect(() =>
       circuit('Bad', {
-        in: { a: bit },
-        out: { b: bit },
-        nodes: { in: And },
+        inputs: { a: bit },
+        outputs: { b: bit },
+        nodes: { inputs: And },
       })
     ).toThrow("reserved");
   });
@@ -331,8 +331,8 @@ describe('validation', () => {
   it('rejects onTick without state', () => {
     expect(() =>
       circuit('Bad', {
-        in: { d: bit },
-        out: { q: bit },
+        inputs: { d: bit },
+        outputs: { q: bit },
         onTick: ({ d }) => ({ value: d }),
       })
     ).toThrow('requires state');
@@ -341,11 +341,11 @@ describe('validation', () => {
   it('rejects connection to nonexistent port on node', () => {
     expect(() =>
       circuit('Bad', {
-        in: { a: bit },
-        out: { b: bit },
+        inputs: { a: bit },
+        outputs: { b: bit },
         nodes: { x: And },
-        connect: ({ in: inp, x }) => [
-          inp.a.to((x as any).nonexistent),
+        connect: ({ inputs, outputs, nodes: { x } }) => [
+          inputs.a.to((x as any).nonexistent),
         ],
       })
     ).toThrow("does not exist on node 'x'");
@@ -359,7 +359,7 @@ describe('validation', () => {
 describe('source components', () => {
   it('builds a Switch (no eval, no nodes)', () => {
     const Switch = circuit('Switch', {
-      out: { value: bit },
+      outputs: { value: bit },
     });
 
     expect(Switch.circuit.implementation).toEqual({ kind: 'primitive' });

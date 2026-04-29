@@ -17,30 +17,30 @@ const CircuitEmbed = lazy(() =>
 
 const FULL_ADDER_SOURCE = `
 const HalfAdder = circuit('HalfAdder', {
-  in: { a: bit, b: bit },
-  out: { sum: bit, carry: bit },
+  inputs: { a: bit, b: bit },
+  outputs: { sum: bit, carry: bit },
   nodes: { xor1: Xor, and1: And },
-  connect: ({ in: inp, out, xor1, and1 }) => [
-    inp.a.to(xor1.a, and1.a),
-    inp.b.to(xor1.b, and1.b),
-    xor1.out.to(out.sum),
-    and1.out.to(out.carry),
+  connect: ({ inputs, outputs, nodes: { xor1, and1 } }) => [
+    inputs.a.to(xor1.a, and1.a),
+    inputs.b.to(xor1.b, and1.b),
+    xor1.out.to(outputs.sum),
+    and1.out.to(outputs.carry),
   ],
 })
 
 const FullAdder = circuit('FullAdder', {
-  in: { a: bit, b: bit, cin: bit },
-  out: { sum: bit, cout: bit },
+  inputs: { a: bit, b: bit, cin: bit },
+  outputs: { sum: bit, cout: bit },
   nodes: { ha1: HalfAdder, ha2: HalfAdder, or1: Or },
-  connect: ({ in: inp, out, ha1, ha2, or1 }) => [
-    inp.a.to(ha1.a),
-    inp.b.to(ha1.b),
+  connect: ({ inputs, outputs, nodes: { ha1, ha2, or1 } }) => [
+    inputs.a.to(ha1.a),
+    inputs.b.to(ha1.b),
     ha1.sum.to(ha2.a),
-    inp.cin.to(ha2.b),
-    ha2.sum.to(out.sum),
+    inputs.cin.to(ha2.b),
+    ha2.sum.to(outputs.sum),
     ha1.carry.to(or1.a),
     ha2.carry.to(or1.b),
-    or1.out.to(out.cout),
+    or1.out.to(outputs.cout),
   ],
 })
 `;

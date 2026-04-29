@@ -94,8 +94,8 @@ function buildVlanFrame(
 // ============================================================================
 
 const Pipeline = circuit('TestEthPipeline', {
-  in: { enable: bit, reset: bit },
-  out: {
+  inputs: { enable: bit, reset: bit },
+  outputs: {
     dst_mac_hi: bus(16),
     dst_mac_lo: bus(32),
     src_mac_hi: bus(16),
@@ -120,9 +120,9 @@ const Pipeline = circuit('TestEthPipeline', {
     proto: Eth_ProtocolDecoder,
     addr: Eth_AddrClassifier,
   },
-  connect: ({ in: inp, out, fi, parser, crc, proto, addr }) => [
-    inp.enable.to(fi.enable),
-    inp.reset.to(fi.reset, crc.reset),
+  connect: ({ inputs, outputs, nodes: { fi, parser, crc, proto, addr } }) => [
+    inputs.enable.to(fi.enable),
+    inputs.reset.to(fi.reset, crc.reset),
 
     fi.tdata.to(parser.tdata, crc.data),
     fi.tkeep.to(parser.tkeep, crc.tkeep),
@@ -130,25 +130,25 @@ const Pipeline = circuit('TestEthPipeline', {
     fi.tlast.to(parser.tlast, crc.tlast),
 
     parser.ethertype.to(proto.ethertype),
-    parser.dst_mac_hi.to(addr.dst_mac_hi, out.dst_mac_hi),
-    parser.dst_mac_lo.to(addr.dst_mac_lo, out.dst_mac_lo),
-    parser.src_mac_hi.to(out.src_mac_hi),
-    parser.src_mac_lo.to(out.src_mac_lo),
-    parser.ethertype.to(out.ethertype),
-    parser.frame_done.to(out.frame_done),
-    parser.parse_state.to(out.parse_state),
-    parser.frame_length.to(out.frame_length),
-    parser.has_vlan.to(out.has_vlan),
-    parser.vlan_tci.to(out.vlan_tci),
+    parser.dst_mac_hi.to(addr.dst_mac_hi, outputs.dst_mac_hi),
+    parser.dst_mac_lo.to(addr.dst_mac_lo, outputs.dst_mac_lo),
+    parser.src_mac_hi.to(outputs.src_mac_hi),
+    parser.src_mac_lo.to(outputs.src_mac_lo),
+    parser.ethertype.to(outputs.ethertype),
+    parser.frame_done.to(outputs.frame_done),
+    parser.parse_state.to(outputs.parse_state),
+    parser.frame_length.to(outputs.frame_length),
+    parser.has_vlan.to(outputs.has_vlan),
+    parser.vlan_tci.to(outputs.vlan_tci),
 
-    crc.crc_ok.to(out.crc_ok),
+    crc.crc_ok.to(outputs.crc_ok),
 
-    addr.is_broadcast.to(out.is_broadcast),
-    addr.is_multicast.to(out.is_multicast),
-    addr.is_unicast.to(out.is_unicast),
+    addr.is_broadcast.to(outputs.is_broadcast),
+    addr.is_multicast.to(outputs.is_multicast),
+    addr.is_unicast.to(outputs.is_unicast),
 
-    proto.is_ipv4.to(out.is_ipv4),
-    proto.is_arp.to(out.is_arp),
+    proto.is_ipv4.to(outputs.is_ipv4),
+    proto.is_arp.to(outputs.is_arp),
   ],
 });
 

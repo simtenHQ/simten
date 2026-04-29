@@ -16,50 +16,50 @@ import { useSnakeSimulator } from "@/features/blog/snake-in-hardware/useSnakeSim
 // ============================================================================
 
 const HalfAdder = circuit('HalfAdder', {
-  in: { a: bit, b: bit },
-  out: { sum: bit, carry: bit },
+  inputs: { a: bit, b: bit },
+  outputs: { sum: bit, carry: bit },
   nodes: { xor1: Xor, and1: And },
-  connect: ({ in: inp, out, xor1, and1 }) => [
-    inp.a.to(xor1.a, and1.a),
-    inp.b.to(xor1.b, and1.b),
-    xor1.out.to(out.sum),
-    and1.out.to(out.carry),
+  connect: ({ inputs, outputs, nodes: { xor1, and1 } }) => [
+    inputs.a.to(xor1.a, and1.a),
+    inputs.b.to(xor1.b, and1.b),
+    xor1.out.to(outputs.sum),
+    and1.out.to(outputs.carry),
   ],
 });
 
 const DrilldownFullAdder = circuit('FullAdder', {
-  in: { a: bit, b: bit, cin: bit },
-  out: { sum: bit, cout: bit },
+  inputs: { a: bit, b: bit, cin: bit },
+  outputs: { sum: bit, cout: bit },
   nodes: { ha1: HalfAdder, ha2: HalfAdder, or1: Or },
-  connect: ({ in: inp, out, ha1, ha2, or1 }) => [
-    inp.a.to(ha1.a), inp.b.to(ha1.b),
-    ha1.sum.to(ha2.a), inp.cin.to(ha2.b),
-    ha2.sum.to(out.sum),
+  connect: ({ inputs, outputs, nodes: { ha1, ha2, or1 } }) => [
+    inputs.a.to(ha1.a), inputs.b.to(ha1.b),
+    ha1.sum.to(ha2.a), inputs.cin.to(ha2.b),
+    ha2.sum.to(outputs.sum),
     ha1.carry.to(or1.a), ha2.carry.to(or1.b),
-    or1.out.to(out.cout),
+    or1.out.to(outputs.cout),
   ],
 });
 
 const ShiftRegister4 = circuit('ShiftRegister4', {
-  in: { din: bit },
-  out: { q0: bit, q1: bit, q2: bit, q3: bit },
+  inputs: { din: bit },
+  outputs: { q0: bit, q1: bit, q2: bit, q3: bit },
   nodes: { ff0: DFlipFlop, ff1: DFlipFlop, ff2: DFlipFlop, ff3: DFlipFlop },
-  connect: ({ in: inp, out, ff0, ff1, ff2, ff3 }) => [
-    inp.din.to(ff0.d),
-    ff0.q.to(ff1.d, out.q0),
-    ff1.q.to(ff2.d, out.q1),
-    ff2.q.to(ff3.d, out.q2),
-    ff3.q.to(out.q3),
+  connect: ({ inputs, outputs, nodes: { ff0, ff1, ff2, ff3 } }) => [
+    inputs.din.to(ff0.d),
+    ff0.q.to(ff1.d, outputs.q0),
+    ff1.q.to(ff2.d, outputs.q1),
+    ff2.q.to(ff3.d, outputs.q2),
+    ff3.q.to(outputs.q3),
   ],
 });
 
 const Counter2Bit = circuit('Counter2Bit', {
-  out: { bit0: bit, bit1: bit },
+  outputs: { bit0: bit, bit1: bit },
   nodes: { dff0: DFlipFlop, dff1: DFlipFlop, inv: Not, xor1: Xor },
-  connect: ({ out, dff0, dff1, inv, xor1 }) => [
-    dff0.q.to(inv.in, xor1.b, out.bit0),
+  connect: ({ outputs, nodes: { dff0, dff1, inv, xor1 } }) => [
+    dff0.q.to(inv.in, xor1.b, outputs.bit0),
     inv.out.to(dff0.d),
-    dff1.q.to(xor1.a, out.bit1),
+    dff1.q.to(xor1.a, outputs.bit1),
     xor1.out.to(dff1.d),
   ],
 });
@@ -460,14 +460,14 @@ import { simulate } from '@simten/core/sim'
 import * as fc from 'fast-check'
 
 const HalfAdder = circuit('HalfAdder', {
-  in: { a: bit, b: bit },
-  out: { sum: bit, carry: bit },
+  inputs: { a: bit, b: bit },
+  outputs: { sum: bit, carry: bit },
   nodes: { xor1: Xor, and1: And },
-  connect: ({ in: inp, out, xor1, and1 }) => [
-    inp.a.to(xor1.a, and1.a),
-    inp.b.to(xor1.b, and1.b),
-    xor1.out.to(out.sum),
-    and1.out.to(out.carry),
+  connect: ({ inputs, outputs, nodes: { xor1, and1 } }) => [
+    inputs.a.to(xor1.a, and1.a),
+    inputs.b.to(xor1.b, and1.b),
+    xor1.out.to(outputs.sum),
+    and1.out.to(outputs.carry),
   ],
 })
 
@@ -503,14 +503,14 @@ fc.assert(
               <div className="px-3 py-1.5 border-b border-border text-[10px] text-muted-foreground font-mono">circuit.ts</div>
               <HighlightedCode
                 code={`const HalfAdder = circuit('HalfAdder', {
-  in: { a: bit, b: bit },
-  out: { sum: bit, carry: bit },
+  inputs: { a: bit, b: bit },
+  outputs: { sum: bit, carry: bit },
   nodes: { xor1: Xor, and1: And },
-  connect: ({ in: inp, out, xor1, and1 }) => [
-    inp.a.to(xor1.a, and1.a),
-    inp.b.to(xor1.b, and1.b),
-    xor1.out.to(out.sum),
-    and1.out.to(out.carry),
+  connect: ({ inputs, outputs, nodes: { xor1, and1 } }) => [
+    inputs.a.to(xor1.a, and1.a),
+    inputs.b.to(xor1.b, and1.b),
+    xor1.out.to(outputs.sum),
+    and1.out.to(outputs.carry),
   ],
 });`}
                 className="px-4 py-3 text-[11px] font-mono leading-relaxed overflow-x-auto m-0"
@@ -754,7 +754,7 @@ function useEthernetParser() {
   const ethernetCircuit = useMemo(() => circuit('Eth_802_3_Parser', {
     nodes: { frame_in: Eth_FrameInput, enable: Constant, parser: Eth_FrameParser, crc: Eth_CRC32, proto: Eth_ProtocolDecoder, addr: Eth_AddrClassifier },
     nodeArgs: { enable: { value: 1 }, frame_in: { init: frameToInitData(frameBytes) } },
-    connect: ({ frame_in, enable, parser, crc, proto, addr }) => [
+    connect: ({ nodes: { frame_in, enable, parser, crc, proto, addr } }) => [
       enable.out.to(frame_in.enable),
       frame_in.tdata.to(parser.tdata, crc.data),
       frame_in.tkeep.to(parser.tkeep, crc.tkeep),

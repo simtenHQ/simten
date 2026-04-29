@@ -19,7 +19,7 @@ const sinLUT = Array.from({ length: 256 }, (_, i) =>
 );
 
 const SinWave = circuit('SinWave', {
-  out: { value: bus(8), addr: bus(8) },
+  outputs: { value: bus(8), addr: bus(8) },
   nodes: { reg: Register, adder: Adder, rom: ROM, one: Constant, we: Constant, zero: Constant },
   nodeArgs: {
     reg: { width: 8 },
@@ -29,15 +29,15 @@ const SinWave = circuit('SinWave', {
     zero: { value: 0 },
     rom: { data: sinLUT },
   },
-  connect: ({ out, reg, adder, rom, one, we, zero }) => [
+  connect: ({ outputs, nodes: { reg, adder, rom, one, we, zero } }) => [
     reg.q.to(adder.a),
     one.out.to(adder.b),
     zero.out.to(adder.carry_in),
     adder.sum.to(reg.data),
     we.out.to(reg.we),
     reg.q.to(rom.addr),
-    rom.data_out.to(out.value),
-    reg.q.to(out.addr),
+    rom.data_out.to(outputs.value),
+    reg.q.to(outputs.addr),
   ],
 });
 

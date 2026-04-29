@@ -38,14 +38,14 @@ const SEQUENCE: Step[] = [
 
 function buildRam() {
   const RamWrapper = circuit('RamWrapper', {
-    in: { addr: bus(8), data_in: bus(8), we: bit },
-    out: { data_out: bus(8) },
+    inputs: { addr: bus(8), data_in: bus(8), we: bit },
+    outputs: { data_out: bus(8) },
     nodes: { r: RAM },
-    connect: ({ in: inp, out, r }) => [
-      inp.addr.to(r.addr),
-      inp.data_in.to(r.data_in),
-      inp.we.to(r.we),
-      r.data_out.to(out.data_out),
+    connect: ({ inputs, outputs, nodes: { r } }) => [
+      inputs.addr.to(r.addr),
+      inputs.data_in.to(r.data_in),
+      inputs.we.to(r.we),
+      r.data_out.to(outputs.data_out),
     ],
   });
 
