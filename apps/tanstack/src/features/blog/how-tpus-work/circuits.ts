@@ -22,31 +22,31 @@ import {
 
 /** The PE definition used by all circuits — registered partial-sum output */
 const PE_Systolic = circuit('PE_Systolic', {
-  in: { dataIn: bus(8), weightIn: bus(8), partialSumIn: bus(16), weightValid: bit, validIn: bit },
-  out: { dataOut: bus(8), partialSumOut: bus(16), validOut: bit },
+  inputs: { dataIn: bus(8), weightIn: bus(8), partialSumIn: bus(16), weightValid: bit, validIn: bit },
+  outputs: { dataOut: bus(8), partialSumOut: bus(16), validOut: bit },
   nodes: { weightReg: Register, mult: Multiplier, adder: Adder, psumReg: Register, dataPipe: Register, validPipe: DFlipFlop, one: Constant, zero: Constant },
   nodeArgs: { weightReg: { width: 8 }, adder: { width: 16 }, psumReg: { width: 16 }, dataPipe: { width: 8 }, one: { value: 1 }, zero: { value: 0 } },
-  connect: ({ in: inp, out, weightReg, mult, adder, psumReg, dataPipe, validPipe, one, zero }) => [
-    inp.weightIn.to(weightReg.data),
-    inp.weightValid.to(weightReg.we),
-    inp.dataIn.to(mult.a, dataPipe.data),
+  connect: ({ inputs, outputs, nodes: { weightReg, mult, adder, psumReg, dataPipe, validPipe, one, zero } }) => [
+    inputs.weightIn.to(weightReg.data),
+    inputs.weightValid.to(weightReg.we),
+    inputs.dataIn.to(mult.a, dataPipe.data),
     weightReg.q.to(mult.b),
-    inp.partialSumIn.to(adder.a),
+    inputs.partialSumIn.to(adder.a),
     mult.product.to(adder.b),
     zero.out.to(adder.carry_in),
     adder.sum.to(psumReg.data),
     one.out.to(psumReg.we, dataPipe.we),
-    psumReg.q.to(out.partialSumOut),
-    dataPipe.q.to(out.dataOut),
-    inp.validIn.to(validPipe.d),
-    validPipe.q.to(out.validOut),
+    psumReg.q.to(outputs.partialSumOut),
+    dataPipe.q.to(outputs.dataOut),
+    inputs.validIn.to(validPipe.d),
+    validPipe.q.to(outputs.validOut),
   ],
 });
 
 const MultiplyAdd = circuit('MultiplyAdd', {
   nodes: { data: Input, weight: Input, partialSumIn: Input, mult: Multiplier, adder: Adder, zero: Constant, result: HexDisplay },
   nodeArgs: { data: { value: 3 }, weight: { value: 5 }, partialSumIn: { value: 10 }, adder: { width: 16 }, zero: { value: 0 } },
-  connect: ({ in: inp, out, data, weight, partialSumIn, mult, adder, zero, result }) => [
+  connect: ({ nodes: { data, weight, partialSumIn, mult, adder, zero, result } }) => [
     data.out.to(mult.a),
     weight.out.to(mult.b),
     partialSumIn.out.to(adder.a),
@@ -59,7 +59,7 @@ const MultiplyAdd = circuit('MultiplyAdd', {
 const WeightRegister = circuit('WeightRegister', {
   nodes: { weightIn: Input, weightValid: Switch, dataIn: Input, weightReg: Register, storedWeight: HexDisplay, mult: Multiplier, product: HexDisplay },
   nodeArgs: { weightIn: { value: 7 }, dataIn: { value: 3 } },
-  connect: ({ in: inp, out, weightIn, weightValid, dataIn, weightReg, storedWeight, mult, product }) => [
+  connect: ({ nodes: { weightIn, weightValid, dataIn, weightReg, storedWeight, mult, product } }) => [
     weightIn.out.to(weightReg.data),
     weightValid.out.to(weightReg.we),
     weightReg.q.to(storedWeight.in, mult.b),
@@ -71,7 +71,7 @@ const WeightRegister = circuit('WeightRegister', {
 const TestPE = circuit('TestPE', {
   nodes: { pe: PE_Systolic, dataIn: Input, weightIn: Input, weightValid: Switch, partialSumIn: Input, partialSumOut: HexDisplay, dataOut: HexDisplay },
   nodeArgs: { dataIn: { value: 3 }, weightIn: { value: 5 }, partialSumIn: { value: 0 } },
-  connect: ({ in: inp, out, pe, dataIn, weightIn, weightValid, partialSumIn, partialSumOut, dataOut }) => [
+  connect: ({ nodes: { pe, dataIn, weightIn, weightValid, partialSumIn, partialSumOut, dataOut } }) => [
     dataIn.out.to(pe.dataIn),
     weightIn.out.to(pe.weightIn),
     weightValid.out.to(pe.weightValid),
@@ -84,7 +84,7 @@ const TestPE = circuit('TestPE', {
 const TwoPERow = circuit('TwoPERow', {
   nodes: { pe0: PE_Systolic, pe1: PE_Systolic, data0: Input, weight0: Input, weight1: Input, weightValid: Switch, zero16: Constant, result0: HexDisplay, result1: HexDisplay },
   nodeArgs: { data0: { value: 2 }, weight0: { value: 3 }, weight1: { value: 5 }, zero16: { value: 0 } },
-  connect: ({ in: inp, out, pe0, pe1, data0, weight0, weight1, weightValid, zero16, result0, result1 }) => [
+  connect: ({ nodes: { pe0, pe1, data0, weight0, weight1, weightValid, zero16, result0, result1 } }) => [
     data0.out.to(pe0.dataIn),
     pe0.dataOut.to(pe1.dataIn),
     weight0.out.to(pe0.weightIn),
@@ -99,7 +99,7 @@ const TwoPERow = circuit('TwoPERow', {
 const TwoPEColumn = circuit('TwoPEColumn', {
   nodes: { pe0: PE_Systolic, pe1: PE_Systolic, dataIn: Input, weight0: Input, weight1: Input, weightValid: Switch, zero16: Constant, topResult: HexDisplay, bottomResult: HexDisplay },
   nodeArgs: { dataIn: { value: 4 }, weight0: { value: 3 }, weight1: { value: 5 }, zero16: { value: 0 } },
-  connect: ({ in: inp, out, pe0, pe1, dataIn, weight0, weight1, weightValid, zero16, topResult, bottomResult }) => [
+  connect: ({ nodes: { pe0, pe1, dataIn, weight0, weight1, weightValid, zero16, topResult, bottomResult } }) => [
     dataIn.out.to(pe0.dataIn, pe1.dataIn),
     weight0.out.to(pe0.weightIn),
     weight1.out.to(pe1.weightIn),
@@ -113,7 +113,7 @@ const TwoPEColumn = circuit('TwoPEColumn', {
 const WavefrontController = circuit('WavefrontController', {
   nodes: { phase: Register, enable: Switch, inc: Incrementer, phaseMux: Mux, one: Constant, zero: Constant, const1: Constant, const2: Constant, const3: Constant, isPhase0: Comparator, isPhase1: Comparator, isPhase2: Comparator, isPhase3: Comparator, led0: Led, led1: Led, led2: Led, led3: Led, display: HexDisplay },
   nodeArgs: { phase: { initial: 0 }, one: { value: 1 }, zero: { value: 0 }, const1: { value: 1 }, const2: { value: 2 }, const3: { value: 3 } },
-  connect: ({ in: inp, out, phase, enable, inc, phaseMux, one, zero, const1, const2, const3, isPhase0, isPhase1, isPhase2, isPhase3, led0, led1, led2, led3, display }) => [
+  connect: ({ nodes: { phase, enable, inc, phaseMux, one, zero, const1, const2, const3, isPhase0, isPhase1, isPhase2, isPhase3, led0, led1, led2, led3, display } }) => [
     phase.q.to(inc.in, phaseMux.in0, isPhase0.a, isPhase1.a, isPhase2.a, isPhase3.a, display.in),
     inc.out.to(phaseMux.in1),
     enable.out.to(phaseMux.sel),
@@ -139,15 +139,15 @@ const WavefrontController = circuit('WavefrontController', {
  * Total: 3N = 6 ticks for N=2.
  */
 export const Systolic2x2 = circuit('Systolic2x2', {
-  in: { a00: bus(8), a01: bus(8), a10: bus(8), a11: bus(8), b00: bus(8), b01: bus(8), b10: bus(8), b11: bus(8), start: bit },
-  out: { c00: bus(16), c01: bus(16), c10: bus(16), c11: bus(16), done: bit },
+  inputs: { a00: bus(8), a01: bus(8), a10: bus(8), a11: bus(8), b00: bus(8), b01: bus(8), b10: bus(8), b11: bus(8), start: bit },
+  outputs: { c00: bus(16), c01: bus(16), c10: bus(16), c11: bus(16), done: bit },
   nodes: { pe00: PE_Systolic, pe01: PE_Systolic, pe10: PE_Systolic, pe11: PE_Systolic, zero: Constant, one: Constant, two: Constant, three: Constant, four: Constant, five: Constant, six: Constant, counter: Register, counterInc: Incrementer, counterMux: Mux, notDone: Comparator, shouldAdvance: And, isCycle0: Comparator, isCycle1: Comparator, isCycle2: Comparator, isCycle3: Comparator, isCycle4: Comparator, isCycle5: Comparator, loadWeights: And, muxR0a: Mux, muxR0b: Mux, muxR1a: Mux, muxR1b: Mux, result_c00: Register, result_c10: Register, result_c01: Register, result_c11: Register, isDone: Comparator },
   nodeArgs: { zero: { value: 0 }, one: { value: 1 }, two: { value: 2 }, three: { value: 3 }, four: { value: 4 }, five: { value: 5 }, six: { value: 6 }, counter: { initial: 0 } },
-  connect: ({ in: inp, out, pe00, pe01, pe10, pe11, zero, one, two, three, four, five, six, counter, counterInc, counterMux, notDone, shouldAdvance, isCycle0, isCycle1, isCycle2, isCycle3, isCycle4, isCycle5, loadWeights, muxR0a, muxR0b, muxR1a, muxR1b, result_c00, result_c10, result_c01, result_c11, isDone }) => [
+  connect: ({ inputs, outputs, nodes: { pe00, pe01, pe10, pe11, zero, one, two, three, four, five, six, counter, counterInc, counterMux, notDone, shouldAdvance, isCycle0, isCycle1, isCycle2, isCycle3, isCycle4, isCycle5, loadWeights, muxR0a, muxR0b, muxR1a, muxR1b, result_c00, result_c10, result_c01, result_c11, isDone } }) => [
     // Cycle Counter
     counter.q.to(counterInc.in, notDone.a, isCycle0.a, isCycle1.a, isCycle2.a, isCycle3.a, isCycle4.a, isCycle5.a, counterMux.in0, isDone.a),
     six.out.to(notDone.b, isDone.b),
-    inp.start.to(shouldAdvance.a),
+    inputs.start.to(shouldAdvance.a),
     notDone.lt.to(shouldAdvance.b),
     shouldAdvance.out.to(counterMux.sel),
     counterInc.out.to(counterMux.in1),
@@ -162,23 +162,23 @@ export const Systolic2x2 = circuit('Systolic2x2', {
     five.out.to(isCycle5.b),
     // Weight Loading (cycle 0 only)
     isCycle0.eq.to(loadWeights.a),
-    inp.start.to(loadWeights.b),
-    inp.b00.to(pe00.weightIn),
-    inp.b01.to(pe01.weightIn),
-    inp.b10.to(pe10.weightIn),
-    inp.b11.to(pe11.weightIn),
+    inputs.start.to(loadWeights.b),
+    inputs.b00.to(pe00.weightIn),
+    inputs.b01.to(pe01.weightIn),
+    inputs.b10.to(pe10.weightIn),
+    inputs.b11.to(pe11.weightIn),
     loadWeights.out.to(pe00.weightValid, pe01.weightValid, pe10.weightValid, pe11.weightValid),
     // Data Injection Row 0: cycle 1 -> A[0][0], cycle 2 -> A[1][0]
     isCycle1.eq.to(muxR0a.sel),
-    inp.a00.to(muxR0a.in1),
+    inputs.a00.to(muxR0a.in1),
     isCycle2.eq.to(muxR0b.sel, muxR1a.sel),
     muxR0a.out.to(muxR0b.in0),
-    inp.a10.to(muxR0b.in1),
+    inputs.a10.to(muxR0b.in1),
     // Data Injection Row 1: cycle 2 -> A[0][1], cycle 3 -> A[1][1]
-    inp.a01.to(muxR1a.in1),
+    inputs.a01.to(muxR1a.in1),
     isCycle3.eq.to(muxR1b.sel),
     muxR1a.out.to(muxR1b.in0),
-    inp.a11.to(muxR1b.in1),
+    inputs.a11.to(muxR1b.in1),
     // Horizontal Data Flow
     muxR0b.out.to(pe00.dataIn),
     pe00.dataOut.to(pe01.dataIn),
@@ -194,18 +194,18 @@ export const Systolic2x2 = circuit('Systolic2x2', {
     pe11.partialSumOut.to(result_c01.data, result_c11.data),
     isCycle5.eq.to(result_c11.we),
     // Outputs
-    result_c00.q.to(out.c00),
-    result_c01.q.to(out.c01),
-    result_c10.q.to(out.c10),
-    result_c11.q.to(out.c11),
-    isDone.eq.to(out.done),
+    result_c00.q.to(outputs.c00),
+    result_c01.q.to(outputs.c01),
+    result_c10.q.to(outputs.c10),
+    result_c11.q.to(outputs.c11),
+    isDone.eq.to(outputs.done),
   ],
 });
 
 export const TestWavefront = circuit('TestWavefront', {
   nodes: { sys: Systolic2x2, a00: Input, a01: Input, a10: Input, a11: Input, b00: Input, b01: Input, b10: Input, b11: Input, start: Switch, display_c00: HexDisplay, display_c01: HexDisplay, display_c10: HexDisplay, display_c11: HexDisplay, done_led: Led },
   nodeArgs: { a00: { value: 1 }, a01: { value: 2 }, a10: { value: 3 }, a11: { value: 4 }, b00: { value: 5 }, b01: { value: 6 }, b10: { value: 7 }, b11: { value: 8 } },
-  connect: ({ in: inp, out, sys, a00, a01, a10, a11, b00, b01, b10, b11, start, display_c00, display_c01, display_c10, display_c11, done_led }) => [
+  connect: ({ nodes: { sys, a00, a01, a10, a11, b00, b01, b10, b11, start, display_c00, display_c01, display_c10, display_c11, done_led } }) => [
     a00.out.to(sys.a00),
     a01.out.to(sys.a01),
     a10.out.to(sys.a10),
@@ -231,15 +231,15 @@ export const TestWavefront = circuit('TestWavefront', {
  * Expected C = [[5,4,7],[14,10,16],[23,16,25]]
  */
 const Systolic3x3 = circuit('Systolic3x3', {
-  in: { a00: bus(8), a01: bus(8), a02: bus(8), a10: bus(8), a11: bus(8), a12: bus(8), a20: bus(8), a21: bus(8), a22: bus(8), b00: bus(8), b01: bus(8), b02: bus(8), b10: bus(8), b11: bus(8), b12: bus(8), b20: bus(8), b21: bus(8), b22: bus(8), start: bit },
-  out: { c00: bus(16), c01: bus(16), c02: bus(16), c10: bus(16), c11: bus(16), c12: bus(16), c20: bus(16), c21: bus(16), c22: bus(16), done: bit },
+  inputs: { a00: bus(8), a01: bus(8), a02: bus(8), a10: bus(8), a11: bus(8), a12: bus(8), a20: bus(8), a21: bus(8), a22: bus(8), b00: bus(8), b01: bus(8), b02: bus(8), b10: bus(8), b11: bus(8), b12: bus(8), b20: bus(8), b21: bus(8), b22: bus(8), start: bit },
+  outputs: { c00: bus(16), c01: bus(16), c02: bus(16), c10: bus(16), c11: bus(16), c12: bus(16), c20: bus(16), c21: bus(16), c22: bus(16), done: bit },
   nodes: { pe00: PE_Systolic, pe01: PE_Systolic, pe02: PE_Systolic, pe10: PE_Systolic, pe11: PE_Systolic, pe12: PE_Systolic, pe20: PE_Systolic, pe21: PE_Systolic, pe22: PE_Systolic, zero: Constant, one: Constant, two: Constant, three: Constant, four: Constant, five: Constant, nine: Constant, counter: Register, counterInc: Incrementer, counterMux: Mux, notDone: Comparator, shouldAdvance: And, isCycle0: Comparator, isCycle1: Comparator, isCycle2: Comparator, isCycle3: Comparator, isCycle4: Comparator, isCycle5: Comparator, loadWeights: And, muxR0a: Mux, muxR0b: Mux, muxR0c: Mux, muxR1a: Mux, muxR1b: Mux, muxR1c: Mux, muxR2a: Mux, muxR2b: Mux, muxR2c: Mux, r0validA: Or, r0valid: Or, r1validA: Or, r1valid: Or, r2validA: Or, r2valid: Or, col0validD: DFlipFlop, col0psumD: Register, col0count: Register, col0countInc: Incrementer, col0is0: Comparator, col0is1: Comparator, col0is2: Comparator, c00we: And, result_c00: Register, c10we: And, result_c10: Register, c20we: And, result_c20: Register, col1validD: DFlipFlop, col1psumD: Register, col1count: Register, col1countInc: Incrementer, col1is0: Comparator, col1is1: Comparator, col1is2: Comparator, c01we: And, result_c01: Register, c11we: And, result_c11: Register, c21we: And, result_c21: Register, col2validD: DFlipFlop, col2psumD: Register, col2count: Register, col2countInc: Incrementer, col2is0: Comparator, col2is1: Comparator, col2is2: Comparator, c02we: And, result_c02: Register, c12we: And, result_c12: Register, c22we: And, result_c22: Register, col0done: Comparator, col1done: Comparator, col2done: Comparator, doneAnd1: And, doneAnd2: And, doneReg: DFlipFlop },
   nodeArgs: { zero: { value: 0, width: 16 }, one: { value: 1, width: 8 }, two: { value: 2, width: 8 }, three: { value: 3, width: 8 }, four: { value: 4, width: 8 }, five: { value: 5, width: 8 }, nine: { value: 9, width: 8 }, counter: { initial: 0 }, col0count: { initial: 0 }, col1count: { initial: 0 }, col2count: { initial: 0 } },
-  connect: ({ in: inp, out, pe00, pe01, pe02, pe10, pe11, pe12, pe20, pe21, pe22, zero, one, two, three, four, five, nine, counter, counterInc, counterMux, notDone, shouldAdvance, isCycle0, isCycle1, isCycle2, isCycle3, isCycle4, isCycle5, loadWeights, muxR0a, muxR0b, muxR0c, muxR1a, muxR1b, muxR1c, muxR2a, muxR2b, muxR2c, r0validA, r0valid, r1validA, r1valid, r2validA, r2valid, col0validD, col0psumD, col0count, col0countInc, col0is0, col0is1, col0is2, c00we, result_c00, c10we, result_c10, c20we, result_c20, col1validD, col1psumD, col1count, col1countInc, col1is0, col1is1, col1is2, c01we, result_c01, c11we, result_c11, c21we, result_c21, col2validD, col2psumD, col2count, col2countInc, col2is0, col2is1, col2is2, c02we, result_c02, c12we, result_c12, c22we, result_c22, col0done, col1done, col2done, doneAnd1, doneAnd2, doneReg }) => [
+  connect: ({ inputs, outputs, nodes: { pe00, pe01, pe02, pe10, pe11, pe12, pe20, pe21, pe22, zero, one, two, three, four, five, nine, counter, counterInc, counterMux, notDone, shouldAdvance, isCycle0, isCycle1, isCycle2, isCycle3, isCycle4, isCycle5, loadWeights, muxR0a, muxR0b, muxR0c, muxR1a, muxR1b, muxR1c, muxR2a, muxR2b, muxR2c, r0validA, r0valid, r1validA, r1valid, r2validA, r2valid, col0validD, col0psumD, col0count, col0countInc, col0is0, col0is1, col0is2, c00we, result_c00, c10we, result_c10, c20we, result_c20, col1validD, col1psumD, col1count, col1countInc, col1is0, col1is1, col1is2, c01we, result_c01, c11we, result_c11, c21we, result_c21, col2validD, col2psumD, col2count, col2countInc, col2is0, col2is1, col2is2, c02we, result_c02, c12we, result_c12, c22we, result_c22, col0done, col1done, col2done, doneAnd1, doneAnd2, doneReg } }) => [
     // Cycle Counter
     counter.q.to(counterInc.in, notDone.a, counterMux.in0, isCycle0.a, isCycle1.a, isCycle2.a, isCycle3.a, isCycle4.a, isCycle5.a),
     nine.out.to(notDone.b),
-    inp.start.to(shouldAdvance.a, loadWeights.b),
+    inputs.start.to(shouldAdvance.a, loadWeights.b),
     notDone.lt.to(shouldAdvance.b),
     shouldAdvance.out.to(counterMux.sel),
     counterInc.out.to(counterMux.in1),
@@ -253,39 +253,39 @@ const Systolic3x3 = circuit('Systolic3x3', {
     five.out.to(isCycle5.b),
     // Weight Loading (cycle 0 only)
     isCycle0.eq.to(loadWeights.a),
-    inp.b00.to(pe00.weightIn),
-    inp.b01.to(pe01.weightIn),
-    inp.b02.to(pe02.weightIn),
-    inp.b10.to(pe10.weightIn),
-    inp.b11.to(pe11.weightIn),
-    inp.b12.to(pe12.weightIn),
-    inp.b20.to(pe20.weightIn),
-    inp.b21.to(pe21.weightIn),
-    inp.b22.to(pe22.weightIn),
+    inputs.b00.to(pe00.weightIn),
+    inputs.b01.to(pe01.weightIn),
+    inputs.b02.to(pe02.weightIn),
+    inputs.b10.to(pe10.weightIn),
+    inputs.b11.to(pe11.weightIn),
+    inputs.b12.to(pe12.weightIn),
+    inputs.b20.to(pe20.weightIn),
+    inputs.b21.to(pe21.weightIn),
+    inputs.b22.to(pe22.weightIn),
     loadWeights.out.to(pe00.weightValid, pe01.weightValid, pe02.weightValid, pe10.weightValid, pe11.weightValid, pe12.weightValid, pe20.weightValid, pe21.weightValid, pe22.weightValid),
     // Data Injection Row 0
     isCycle1.eq.to(muxR0a.sel, r0validA.a),
-    inp.a00.to(muxR0a.in1),
+    inputs.a00.to(muxR0a.in1),
     isCycle2.eq.to(muxR0b.sel, muxR1a.sel, r0validA.b, r1validA.a),
     muxR0a.out.to(muxR0b.in0),
-    inp.a10.to(muxR0b.in1),
+    inputs.a10.to(muxR0b.in1),
     isCycle3.eq.to(muxR0c.sel, muxR1b.sel, muxR2a.sel, r0valid.b, r1validA.b, r2validA.a),
     muxR0b.out.to(muxR0c.in0),
-    inp.a20.to(muxR0c.in1),
+    inputs.a20.to(muxR0c.in1),
     // Data Injection Row 1
-    inp.a01.to(muxR1a.in1),
+    inputs.a01.to(muxR1a.in1),
     muxR1a.out.to(muxR1b.in0),
-    inp.a11.to(muxR1b.in1),
+    inputs.a11.to(muxR1b.in1),
     isCycle4.eq.to(muxR1c.sel, muxR2b.sel, r1valid.b, r2validA.b),
     muxR1b.out.to(muxR1c.in0),
-    inp.a21.to(muxR1c.in1),
+    inputs.a21.to(muxR1c.in1),
     // Data Injection Row 2
-    inp.a02.to(muxR2a.in1),
+    inputs.a02.to(muxR2a.in1),
     muxR2a.out.to(muxR2b.in0),
-    inp.a12.to(muxR2b.in1),
+    inputs.a12.to(muxR2b.in1),
     isCycle5.eq.to(muxR2c.sel, r2valid.b),
     muxR2b.out.to(muxR2c.in0),
-    inp.a22.to(muxR2c.in1),
+    inputs.a22.to(muxR2c.in1),
     // Valid Signal Injection
     r0validA.out.to(r0valid.a),
     r1validA.out.to(r1valid.a),
@@ -357,22 +357,22 @@ const Systolic3x3 = circuit('Systolic3x3', {
     col2is2.eq.to(c22we.b),
     c22we.out.to(result_c22.we),
     // Outputs
-    result_c00.q.to(out.c00),
-    result_c01.q.to(out.c01),
-    result_c02.q.to(out.c02),
-    result_c10.q.to(out.c10),
-    result_c11.q.to(out.c11),
-    result_c12.q.to(out.c12),
-    result_c20.q.to(out.c20),
-    result_c21.q.to(out.c21),
-    result_c22.q.to(out.c22),
+    result_c00.q.to(outputs.c00),
+    result_c01.q.to(outputs.c01),
+    result_c02.q.to(outputs.c02),
+    result_c10.q.to(outputs.c10),
+    result_c11.q.to(outputs.c11),
+    result_c12.q.to(outputs.c12),
+    result_c20.q.to(outputs.c20),
+    result_c21.q.to(outputs.c21),
+    result_c22.q.to(outputs.c22),
     // Done detection
     col0done.eq.to(doneAnd1.a),
     col1done.eq.to(doneAnd1.b),
     doneAnd1.out.to(doneAnd2.a),
     col2done.eq.to(doneAnd2.b),
     doneAnd2.out.to(doneReg.d),
-    doneReg.q.to(out.done),
+    doneReg.q.to(outputs.done),
   ],
 });
 
@@ -381,10 +381,10 @@ export const TestSystolic3x3 = circuit('TestSystolic3x3', {
   // its compute pipeline. Replaces a hook-side substring scan over
   // portValues looking for a node named "done_led". The visual done_led
   // stays for on-canvas rendering.
-  out: { done: bit },
+  outputs: { done: bit },
   nodes: { sys: Systolic3x3, a00: Input, a01: Input, a02: Input, a10: Input, a11: Input, a12: Input, a20: Input, a21: Input, a22: Input, b00: Input, b01: Input, b02: Input, b10: Input, b11: Input, b12: Input, b20: Input, b21: Input, b22: Input, start: Switch, display_c00: HexDisplay, display_c01: HexDisplay, display_c02: HexDisplay, display_c10: HexDisplay, display_c11: HexDisplay, display_c12: HexDisplay, display_c20: HexDisplay, display_c21: HexDisplay, display_c22: HexDisplay, done_led: Led },
   nodeArgs: { a00: { value: 1 }, a01: { value: 2 }, a02: { value: 3 }, a10: { value: 4 }, a11: { value: 5 }, a12: { value: 6 }, a20: { value: 7 }, a21: { value: 8 }, a22: { value: 9 }, b00: { value: 2 }, b01: { value: 0 }, b02: { value: 1 }, b10: { value: 0 }, b11: { value: 2 }, b12: { value: 0 }, b20: { value: 1 }, b21: { value: 0 }, b22: { value: 2 } },
-  connect: ({ in: inp, out, sys, a00, a01, a02, a10, a11, a12, a20, a21, a22, b00, b01, b02, b10, b11, b12, b20, b21, b22, start, display_c00, display_c01, display_c02, display_c10, display_c11, display_c12, display_c20, display_c21, display_c22, done_led }) => [
+  connect: ({ outputs, nodes: { sys, a00, a01, a02, a10, a11, a12, a20, a21, a22, b00, b01, b02, b10, b11, b12, b20, b21, b22, start, display_c00, display_c01, display_c02, display_c10, display_c11, display_c12, display_c20, display_c21, display_c22, done_led } }) => [
     a00.out.to(sys.a00),
     a01.out.to(sys.a01),
     a02.out.to(sys.a02),
@@ -412,7 +412,7 @@ export const TestSystolic3x3 = circuit('TestSystolic3x3', {
     sys.c20.to(display_c20.in),
     sys.c21.to(display_c21.in),
     sys.c22.to(display_c22.in),
-    sys.done.to(done_led.in, out.done),
+    sys.done.to(done_led.in, outputs.done),
   ],
 });
 

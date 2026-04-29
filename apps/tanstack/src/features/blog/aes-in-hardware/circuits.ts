@@ -39,19 +39,19 @@ AES_SBOX.forEach((val, idx) => { AES_SBOX_INIT[idx] = val; });
 // ── Circuit Definitions ──
 
 export const XTime = circuit('XTime', {
-  in: { x: bus(8) },
-  out: { out: bus(8) },
+  inputs: { x: bus(8) },
+  outputs: { out: bus(8) },
   nodes: { c1: Constant, shl: LeftShifter, split: Splitter8to8, poly: Constant, zero8: Constant, mux: Mux, xor: BusXor },
   nodeArgs: { c1: { value: 1, width: 8 }, shl: { width: 8 }, poly: { value: 27, width: 8 }, zero8: { value: 0, width: 8 }, mux: { width: 8 }, xor: { width: 8 } },
-  connect: ({ in: inp, out, c1, shl, split, poly, zero8, mux, xor }) => [
-    inp.x.to(shl.value, split.in),
+  connect: ({ inputs, outputs, nodes: { c1, shl, split, poly, zero8, mux, xor } }) => [
+    inputs.x.to(shl.value, split.in),
     c1.out.to(shl.shift),
     zero8.out.to(mux.in0),
     poly.out.to(mux.in1),
     split.bit7.to(mux.sel),
     shl.result.to(xor.a),
     mux.out.to(xor.b),
-    xor.out.to(out.out),
+    xor.out.to(outputs.out),
   ],
 });
 
@@ -59,7 +59,7 @@ export const XTime = circuit('XTime', {
 export const SubByteDemo = circuit('SubByteDemo', {
   nodes: { s: Input, rom: ROM, disp: HexDisplay },
   nodeArgs: { s: { value: 83, width: 8 }, rom: { init: AES_SBOX_INIT }, disp: { width: 8 } },
-  connect: ({ s, rom, disp }) => [
+  connect: ({ nodes: { s, rom, disp } }) => [
     s.out.to(rom.addr),
     rom.data_out.to(disp.in),
   ],
@@ -68,7 +68,7 @@ export const SubByteDemo = circuit('SubByteDemo', {
 export const XTimeDemo = circuit('XTimeDemo', {
   nodes: { val: Input, xt: XTime, disp: HexDisplay },
   nodeArgs: { val: { value: 87, width: 8 }, disp: { width: 8 } },
-  connect: ({ val, xt, disp }) => [
+  connect: ({ nodes: { val, xt, disp } }) => [
     val.out.to(xt.x),
     xt.out.to(disp.in),
   ],
@@ -76,16 +76,16 @@ export const XTimeDemo = circuit('XTimeDemo', {
 
 // MixColumn uses XTime internally -- define as a circuit with nodes
 export const MixColumn = circuit('MixColumn', {
-  in: { s0: bus(8), s1: bus(8), s2: bus(8), s3: bus(8) },
-  out: { r0: bus(8), r1: bus(8), r2: bus(8), r3: bus(8) },
+  inputs: { s0: bus(8), s1: bus(8), s2: bus(8), s3: bus(8) },
+  outputs: { r0: bus(8), r1: bus(8), r2: bus(8), r3: bus(8) },
   meta: { description: 'AES MixColumns on one 4-byte column over GF(2^8)' },
   nodes: { xt0: XTime, xt1: XTime, xt2: XTime, xt3: XTime, m3_0: BusXor, m3_1: BusXor, m3_2: BusXor, m3_3: BusXor, r0a: BusXor, r0b: BusXor, r0c: BusXor, r1a: BusXor, r1b: BusXor, r1c: BusXor, r2a: BusXor, r2b: BusXor, r2c: BusXor, r3a: BusXor, r3b: BusXor, r3c: BusXor },
   nodeArgs: { xt0: {}, xt1: {}, xt2: {}, xt3: {}, m3_0: { width: 8 }, m3_1: { width: 8 }, m3_2: { width: 8 }, m3_3: { width: 8 }, r0a: { width: 8 }, r0b: { width: 8 }, r0c: { width: 8 }, r1a: { width: 8 }, r1b: { width: 8 }, r1c: { width: 8 }, r2a: { width: 8 }, r2b: { width: 8 }, r2c: { width: 8 }, r3a: { width: 8 }, r3b: { width: 8 }, r3c: { width: 8 } },
-  connect: ({ in: inp, out, xt0, xt1, xt2, xt3, m3_0, m3_1, m3_2, m3_3, r0a, r0b, r0c, r1a, r1b, r1c, r2a, r2b, r2c, r3a, r3b, r3c }) => [
-    inp.s0.to(xt0.x, m3_0.b, r1a.a, r2a.a),
-    inp.s1.to(xt1.x, m3_1.b, r2a.b, r3a.b),
-    inp.s2.to(xt2.x, m3_2.b, r0b.b, r3b.b),
-    inp.s3.to(xt3.x, m3_3.b, r0c.b, r1c.b),
+  connect: ({ inputs, outputs, nodes: { xt0, xt1, xt2, xt3, m3_0, m3_1, m3_2, m3_3, r0a, r0b, r0c, r1a, r1b, r1c, r2a, r2b, r2c, r3a, r3b, r3c } }) => [
+    inputs.s0.to(xt0.x, m3_0.b, r1a.a, r2a.a),
+    inputs.s1.to(xt1.x, m3_1.b, r2a.b, r3a.b),
+    inputs.s2.to(xt2.x, m3_2.b, r0b.b, r3b.b),
+    inputs.s3.to(xt3.x, m3_3.b, r0c.b, r1c.b),
     xt0.out.to(m3_0.a, r0a.a),
     xt1.out.to(m3_1.a, r1a.b),
     xt2.out.to(m3_2.a, r2b.b),
@@ -94,17 +94,17 @@ export const MixColumn = circuit('MixColumn', {
     m3_2.out.to(r1b.b),
     m3_3.out.to(r2c.b),
     m3_0.out.to(r3a.a),
-    r0a.out.to(r0b.a), r0b.out.to(r0c.a), r0c.out.to(out.r0),
-    r1a.out.to(r1b.a), r1b.out.to(r1c.a), r1c.out.to(out.r1),
-    r2a.out.to(r2b.a), r2b.out.to(r2c.a), r2c.out.to(out.r2),
-    r3a.out.to(r3b.a), r3b.out.to(r3c.a), r3c.out.to(out.r3),
+    r0a.out.to(r0b.a), r0b.out.to(r0c.a), r0c.out.to(outputs.r0),
+    r1a.out.to(r1b.a), r1b.out.to(r1c.a), r1c.out.to(outputs.r1),
+    r2a.out.to(r2b.a), r2b.out.to(r2c.a), r2c.out.to(outputs.r2),
+    r3a.out.to(r3b.a), r3b.out.to(r3c.a), r3c.out.to(outputs.r3),
   ],
 });
 
 export const MixColumnDemo = circuit('MixColumnDemo', {
   nodes: { s0: Input, s1: Input, s2: Input, s3: Input, mc: MixColumn, r0: HexDisplay, r1: HexDisplay, r2: HexDisplay, r3: HexDisplay },
   nodeArgs: { s0: { value: 219, width: 8 }, s1: { value: 19, width: 8 }, s2: { value: 83, width: 8 }, s3: { value: 69, width: 8 }, r0: { width: 8 }, r1: { width: 8 }, r2: { width: 8 }, r3: { width: 8 } },
-  connect: ({ s0, s1, s2, s3, mc, r0, r1, r2, r3 }) => [
+  connect: ({ nodes: { s0, s1, s2, s3, mc, r0, r1, r2, r3 } }) => [
     s0.out.to(mc.s0), s1.out.to(mc.s1),
     s2.out.to(mc.s2), s3.out.to(mc.s3),
     mc.r0.to(r0.in), mc.r1.to(r1.in),

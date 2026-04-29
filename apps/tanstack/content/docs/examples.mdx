@@ -12,14 +12,14 @@ import { Xor, And, Or, Register, Adder, Constant, HexDisplay, DFlipFlop } from '
 Two bits → sum + carry. The simplest arithmetic circuit. Toggle the switches to see how AND computes carry and XOR computes sum.
 
 export const HalfAdder = circuit('HalfAdder', {
-  in: { a: bit, b: bit },
-  out: { sum: bit, carry: bit },
-  nodes: { xor1: Xor, and1: And },
-  connect: ({ in: inp, out, xor1, and1 }) => [
-    inp.a.to(xor1.a, and1.a),
-    inp.b.to(xor1.b, and1.b),
-    xor1.out.to(out.sum),
-    and1.out.to(out.carry),
+  inputs:  { a: bit, b: bit },
+  outputs: { sum: bit, carry: bit },
+  nodes:   { xor1: Xor, and1: And },
+  connect: ({ inputs, outputs, nodes: { xor1, and1 } }) => [
+    inputs.a.to(xor1.a, and1.a),
+    inputs.b.to(xor1.b, and1.b),
+    xor1.out.to(outputs.sum),
+    and1.out.to(outputs.carry),
   ],
 })
 
@@ -36,14 +36,14 @@ export const HalfAdder = circuit('HalfAdder', {
 Three bits (a + b + carry in) → sum + carry out. Reuses HalfAdder as a composite — the simulator expands it to primitives automatically.
 
 export const FullAdder = circuit('FullAdder', {
-  in: { a: bit, b: bit, cin: bit },
-  out: { sum: bit, cout: bit },
-  nodes: { ha1: HalfAdder, ha2: HalfAdder, or1: Or },
-  connect: ({ in: inp, out, ha1, ha2, or1 }) => [
-    inp.a.to(ha1.a), inp.b.to(ha1.b),
-    ha1.sum.to(ha2.a), inp.cin.to(ha2.b),
-    ha2.sum.to(out.sum),
-    ha1.carry.to(or1.a), ha2.carry.to(or1.b), or1.out.to(out.cout),
+  inputs:  { a: bit, b: bit, cin: bit },
+  outputs: { sum: bit, cout: bit },
+  nodes:   { ha1: HalfAdder, ha2: HalfAdder, or1: Or },
+  connect: ({ inputs, outputs, nodes: { ha1, ha2, or1 } }) => [
+    inputs.a.to(ha1.a), inputs.b.to(ha1.b),
+    ha1.sum.to(ha2.a), inputs.cin.to(ha2.b),
+    ha2.sum.to(outputs.sum),
+    ha1.carry.to(or1.a), ha2.carry.to(or1.b), or1.out.to(outputs.cout),
   ],
 })
 
@@ -60,11 +60,11 @@ export const FullAdder = circuit('FullAdder', {
 Increments on each clock cycle. A register feeds its output through an adder that adds 1, and the result loops back. Step the clock to watch it count.
 
 export const Counter = circuit('Counter', {
-  out: { count: bus(8) },
-  nodes: { reg: Register, adder: Adder, one: Constant },
+  outputs:  { count: bus(8) },
+  nodes:    { reg: Register, adder: Adder, one: Constant },
   nodeArgs: { one: { value: 1 } },
-  connect: ({ out, reg, adder, one }) => [
-    reg.q.to(adder.a, out.count),
+  connect: ({ outputs, nodes: { reg, adder, one } }) => [
+    reg.q.to(adder.a, outputs.count),
     one.out.to(adder.b, reg.we),
     adder.sum.to(reg.data),
   ],
@@ -83,16 +83,16 @@ export const Counter = circuit('Counter', {
 Two registers and one adder produce the Fibonacci sequence every clock tick. A DFlipFlop seed trick injects +1 on the first tick only.
 
 export const Fibonacci = circuit('Fibonacci', {
-  out: { fib: bus(8) },
-  nodes: { reg_a: Register, reg_b: Register, adder: Adder, one: Constant, init: DFlipFlop },
+  outputs:  { fib: bus(8) },
+  nodes:    { reg_a: Register, reg_b: Register, adder: Adder, one: Constant, init: DFlipFlop },
   nodeArgs: { one: { value: 1 } },
-  connect: ({ out, reg_a, reg_b, adder, one, init }) => [
+  connect: ({ outputs, nodes: { reg_a, reg_b, adder, one, init } }) => [
     one.out.to(init.d, reg_a.we, reg_b.we),
     init.q_bar.to(adder.carry_in),
     reg_a.q.to(adder.a), reg_b.q.to(adder.b),
     reg_b.q.to(reg_a.data),
     adder.sum.to(reg_b.data),
-    reg_b.q.to(out.fib),
+    reg_b.q.to(outputs.fib),
   ],
 })
 

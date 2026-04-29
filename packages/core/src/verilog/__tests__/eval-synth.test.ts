@@ -381,8 +381,8 @@ describe('tryEmitFromEval', () => {
   it('returns Verilog for a registered eval', () => {
     // Define a custom circuit — this registers its eval
     const MyGate = circuit('TestSynthGate', {
-      in: { a: bit, b: bit },
-      out: { out: bit },
+      inputs: { a: bit, b: bit },
+      outputs: { out: bit },
       eval: ({ a, b }) => ({ out: (a && b) ? 1 : 0 }),
     });
 
@@ -440,20 +440,20 @@ describe('end-to-end eval-synth export', () => {
   it('exports a circuit with custom eval via eval-synth', () => {
     // Define a custom primitive — NOT in primitive-map
     const MyXnor = circuit('TestXnor', {
-      in: { a: bit, b: bit },
-      out: { out: bit },
+      inputs: { a: bit, b: bit },
+      outputs: { out: bit },
       eval: ({ a, b }) => ({ out: (a === b) ? 1 : 0 }),
     });
 
     // Build a composite that uses it
     const MyCircuit = circuit('TestSynthCircuit', {
-      in: { x: bit, y: bit },
-      out: { result: bit },
+      inputs: { x: bit, y: bit },
+      outputs: { result: bit },
       nodes: { xnor: MyXnor },
-      connect: ({ in: inp, out, xnor }) => [
-        inp.x.to(xnor.a),
-        inp.y.to(xnor.b),
-        xnor.out.to(out.result),
+      connect: ({ inputs, outputs, nodes: { xnor } }) => [
+        inputs.x.to(xnor.a),
+        inputs.y.to(xnor.b),
+        xnor.out.to(outputs.result),
       ],
     });
 
@@ -475,8 +475,8 @@ describe('top-level primitive simulation', () => {
     const { createSimulator } = await import('../../simulator/index.js');
 
     const Doubler = circuit('TestDoubler', {
-      in: { a: bus(8) },
-      out: { result: bus(16) },
+      inputs: { a: bus(8) },
+      outputs: { result: bus(16) },
       eval: ({ a }) => ({ result: (a << 1) >>> 0 }),
     });
 
@@ -502,8 +502,8 @@ describe('top-level primitive simulation', () => {
     const { reg } = await import('../../circuit/bit-bus.js');
 
     const MyReg = circuit('TestSimReg', {
-      in: { data: bus(8), we: bit },
-      out: { q: bus(8) },
+      inputs: { data: bus(8), we: bit },
+      outputs: { q: bus(8) },
       state: { value: reg(8) },
       eval: ({ value }) => ({ q: value as number }),
       onTick: ({ data, we, value }) => ({ value: we ? (data as number) : (value as number) }),

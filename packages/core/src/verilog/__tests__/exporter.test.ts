@@ -25,14 +25,14 @@ function libraryFor(c: { circuit: any; _dependencies: ReadonlyMap<string, any> }
 describe('exportVerilog', () => {
   it('exports a half adder', () => {
     const HalfAdder = circuit('HalfAdder', {
-      in: { a: bit, b: bit },
-      out: { sum: bit, carry: bit },
+      inputs: { a: bit, b: bit },
+      outputs: { sum: bit, carry: bit },
       nodes: { x1: Xor, a1: And },
-      connect: ({ in: inp, out, x1, a1 }) => [
-        inp.a.to(x1.a, a1.a),
-        inp.b.to(x1.b, a1.b),
-        x1.out.to(out.sum),
-        a1.out.to(out.carry),
+      connect: ({ inputs, outputs, nodes: { x1, a1 } }) => [
+        inputs.a.to(x1.a, a1.a),
+        inputs.b.to(x1.b, a1.b),
+        x1.out.to(outputs.sum),
+        a1.out.to(outputs.carry),
       ],
     });
 
@@ -46,30 +46,30 @@ describe('exportVerilog', () => {
 
   it('exports a full adder built from half adders', () => {
     const HalfAdder = circuit('HalfAdder', {
-      in: { a: bit, b: bit },
-      out: { sum: bit, carry: bit },
+      inputs: { a: bit, b: bit },
+      outputs: { sum: bit, carry: bit },
       nodes: { x1: Xor, a1: And },
-      connect: ({ in: inp, out, x1, a1 }) => [
-        inp.a.to(x1.a, a1.a),
-        inp.b.to(x1.b, a1.b),
-        x1.out.to(out.sum),
-        a1.out.to(out.carry),
+      connect: ({ inputs, outputs, nodes: { x1, a1 } }) => [
+        inputs.a.to(x1.a, a1.a),
+        inputs.b.to(x1.b, a1.b),
+        x1.out.to(outputs.sum),
+        a1.out.to(outputs.carry),
       ],
     });
 
     const FullAdder = circuit('FullAdder', {
-      in: { a: bit, b: bit, cin: bit },
-      out: { sum: bit, cout: bit },
+      inputs: { a: bit, b: bit, cin: bit },
+      outputs: { sum: bit, cout: bit },
       nodes: { ha1: HalfAdder, ha2: HalfAdder, or1: Or },
-      connect: ({ in: inp, out, ha1, ha2, or1 }) => [
-        inp.a.to(ha1.a),
-        inp.b.to(ha1.b),
+      connect: ({ inputs, outputs, nodes: { ha1, ha2, or1 } }) => [
+        inputs.a.to(ha1.a),
+        inputs.b.to(ha1.b),
         ha1.sum.to(ha2.a),
-        inp.cin.to(ha2.b),
-        ha2.sum.to(out.sum),
+        inputs.cin.to(ha2.b),
+        ha2.sum.to(outputs.sum),
         ha1.carry.to(or1.a),
         ha2.carry.to(or1.b),
-        or1.out.to(out.cout),
+        or1.out.to(outputs.cout),
       ],
     });
 
@@ -81,11 +81,11 @@ describe('exportVerilog', () => {
 
   it('exports a circuit with bus ports', () => {
     const BusPassthrough = circuit('BusPassthrough', {
-      in: { data: bus(8) },
-      out: { data_out: bus(8) },
+      inputs: { data: bus(8) },
+      outputs: { data_out: bus(8) },
       nodes: {},
-      connect: ({ in: inp, out }) => [
-        inp.data.to(out.data_out),
+      connect: ({ inputs, outputs }) => [
+        inputs.data.to(outputs.data_out),
       ],
     });
 
@@ -99,14 +99,14 @@ describe('exportVerilog', () => {
   describe('memory initial-data emission', () => {
     it('omits initial block when memory has no preloaded data', () => {
       const Plain = circuit('PlainRAM', {
-        in: { addr: bus(8), data_in: bus(8), we: bit },
-        out: { data_out: bus(8) },
+        inputs: { addr: bus(8), data_in: bus(8), we: bit },
+        outputs: { data_out: bus(8) },
         nodes: { r: RAM },
-        connect: ({ in: inp, out, r }) => [
-          inp.addr.to(r.addr),
-          inp.data_in.to(r.data_in),
-          inp.we.to(r.we),
-          r.data_out.to(out.data_out),
+        connect: ({ inputs, outputs, nodes: { r } }) => [
+          inputs.addr.to(r.addr),
+          inputs.data_in.to(r.data_in),
+          inputs.we.to(r.we),
+          r.data_out.to(outputs.data_out),
         ],
       });
 
@@ -120,14 +120,14 @@ describe('exportVerilog', () => {
       // initial data. This mirrors what a user would get from
       // `mem(depth, width, initialMap)` in a real circuit definition.
       const RamUser = circuit('RamUser', {
-        in: { addr: bus(8), data_in: bus(8), we: bit },
-        out: { data_out: bus(8) },
+        inputs: { addr: bus(8), data_in: bus(8), we: bit },
+        outputs: { data_out: bus(8) },
         nodes: { r: RAM },
-        connect: ({ in: inp, out, r }) => [
-          inp.addr.to(r.addr),
-          inp.data_in.to(r.data_in),
-          inp.we.to(r.we),
-          r.data_out.to(out.data_out),
+        connect: ({ inputs, outputs, nodes: { r } }) => [
+          inputs.addr.to(r.addr),
+          inputs.data_in.to(r.data_in),
+          inputs.we.to(r.we),
+          r.data_out.to(outputs.data_out),
         ],
       });
 
@@ -171,14 +171,14 @@ describe('exportVerilog', () => {
       // populated. Expect the exported Verilog to contain a $readmemh
       // directive and the returned `files` map to carry the hex payload.
       const RamUser = circuit('BigRam', {
-        in: { addr: bus(8), data_in: bus(8), we: bit },
-        out: { data_out: bus(8) },
+        inputs: { addr: bus(8), data_in: bus(8), we: bit },
+        outputs: { data_out: bus(8) },
         nodes: { r: RAM },
-        connect: ({ in: inp, out, r }) => [
-          inp.addr.to(r.addr),
-          inp.data_in.to(r.data_in),
-          inp.we.to(r.we),
-          r.data_out.to(out.data_out),
+        connect: ({ inputs, outputs, nodes: { r } }) => [
+          inputs.addr.to(r.addr),
+          inputs.data_in.to(r.data_in),
+          inputs.we.to(r.we),
+          r.data_out.to(outputs.data_out),
         ],
       });
 
@@ -226,13 +226,13 @@ describe('exportVerilog', () => {
 
     it('emits initial for stdlib ROM via nodeArgs.init (legacy path still works)', () => {
       const LegacyROM = circuit('LegacyROM', {
-        in: { addr: bus(16) },
-        out: { data_out: bus(8) },
+        inputs: { addr: bus(16) },
+        outputs: { data_out: bus(8) },
         nodes: { r: ROM },
         nodeArgs: { r: { init: { 0: 0xAA, 1: 0xBB } } },
-        connect: ({ in: inp, out, r }) => [
-          inp.addr.to(r.addr),
-          r.data_out.to(out.data_out),
+        connect: ({ inputs, outputs, nodes: { r } }) => [
+          inputs.addr.to(r.addr),
+          r.data_out.to(outputs.data_out),
         ],
       });
 

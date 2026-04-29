@@ -87,8 +87,8 @@ function optimizeStages(stages: Stage[], n: number): Stage[] {
 function buildSortingCircuit(n: number, stages: Stage[]) {
   // Each comparator-swap is a component that outputs min and max
   const CompSwap = circuit('CompSwap', {
-    in: { a: bus(8), b: bus(8) },
-    out: { lo: bus(8), hi: bus(8) },
+    inputs: { a: bus(8), b: bus(8) },
+    outputs: { lo: bus(8), hi: bus(8) },
     eval: ({ a, b }) => ({
       lo: Math.min(a, b),
       hi: Math.max(a, b),
@@ -108,8 +108,8 @@ function buildSortingCircuit(n: number, stages: Stage[]) {
   }
 
   return circuit('SortingNetwork', {
-    in: inputNames,
-    out: outputNames,
+    inputs: inputNames,
+    outputs: outputNames,
     eval: (inputs) => {
       // Run the sorting network on the inputs
       const wires = Array.from({ length: n }, (_, i) => inputs[`in${i}`] as number);
@@ -366,8 +366,8 @@ const stages = generateBatcherNetwork(${n})
 // stages = ${JSON.stringify(stages.map(s => s.map(([a,b]) => `[${a},${b}]`).join(' ')).slice(0, 4).join(' → '))}${stages.length > 4 ? ' → ...' : ''}
 
 const SortingNetwork = circuit('SortingNetwork', {
-  in: { ${Array.from({length: Math.min(n, 4)}, (_, i) => `in${i}: bus(8)`).join(', ')}${n > 4 ? ', ...' : ''} },
-  out: { ${Array.from({length: Math.min(n, 4)}, (_, i) => `out${i}: bus(8)`).join(', ')}${n > 4 ? ', ...' : ''} },
+  inputs:  { ${Array.from({length: Math.min(n, 4)}, (_, i) => `in${i}: bus(8)`).join(', ')}${n > 4 ? ', ...' : ''} },
+  outputs: { ${Array.from({length: Math.min(n, 4)}, (_, i) => `out${i}: bus(8)`).join(', ')}${n > 4 ? ', ...' : ''} },
   eval: (inputs) => {
     // Run comparator network on inputs
     for (const stage of stages)

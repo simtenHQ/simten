@@ -30,7 +30,7 @@ const ALU_SHL = 6;
 const ALU_SHR = 7;
 
 const Calculator = circuit('Calculator', {
-  in: {
+  inputs: {
     load_a: bit,       // load input into register A
     load_b: bit,       // load input into register B
     compute: bit,      // trigger ALU computation
@@ -38,7 +38,7 @@ const Calculator = circuit('Calculator', {
     data_in: bus(16),  // input data
     alu_op: bus(4),    // ALU operation select
   },
-  out: {
+  outputs: {
     reg_a: bus(16),
     reg_b: bus(16),
     result: bus(16),
@@ -379,9 +379,9 @@ function CalculatorPage() {
         <div className="p-4 bg-muted/30 rounded-lg">
           <h2 className="text-sm font-semibold mb-2">This is a circuit</h2>
           <pre className="text-xs font-mono text-muted-foreground whitespace-pre-wrap">{`const Calculator = circuit('Calculator', {
-  in: { load_a: bit, load_b: bit, compute: bit, data_in: bus(16), alu_op: bus(4) },
-  out: { reg_a: bus(16), reg_b: bus(16), result: bus(16), carry: bit, zero: bit },
-  state: { a: 0, b: 0, res: 0, flags: 0 },
+  inputs:  { load_a: bit, load_b: bit, compute: bit, data_in: bus(16), alu_op: bus(4) },
+  outputs: { reg_a: bus(16), reg_b: bus(16), result: bus(16), carry: bit, zero: bit },
+  state:   { a: 0, b: 0, res: 0, flags: 0 },
   // eval: outputs from current state (combinational)
   // onTick: state transitions on clock edge (sequential)
 })

@@ -32,15 +32,15 @@ function buildShiftRegister4() {
   // 4-bit serial-in parallel-out shift register
   // Each DFlipFlop feeds the next: d0 → ff0.q → ff1.d → ff1.q → ... → out3
   const SR4 = circuit('ShiftRegister4', {
-    in: { d: bit },
-    out: { q0: bit, q1: bit, q2: bit, q3: bit },
+    inputs: { d: bit },
+    outputs: { q0: bit, q1: bit, q2: bit, q3: bit },
     nodes: { ff0: DFlipFlop, ff1: DFlipFlop, ff2: DFlipFlop, ff3: DFlipFlop },
-    connect: ({ in: inp, out, ff0, ff1, ff2, ff3 }) => [
-      inp.d.to(ff0.d),
-      ff0.q.to(ff1.d, out.q0),
-      ff1.q.to(ff2.d, out.q1),
-      ff2.q.to(ff3.d, out.q2),
-      ff3.q.to(out.q3),
+    connect: ({ inputs, outputs, nodes: { ff0, ff1, ff2, ff3 } }) => [
+      inputs.d.to(ff0.d),
+      ff0.q.to(ff1.d, outputs.q0),
+      ff1.q.to(ff2.d, outputs.q1),
+      ff2.q.to(ff3.d, outputs.q2),
+      ff3.q.to(outputs.q3),
     ],
   });
   return { circuit: SR4.circuit, lib: makeLib(SR4, 'ShiftRegister4') };
@@ -52,8 +52,8 @@ function buildUpDownCounter() {
   //   dir=1: count down (subtract 1)
   //   enable=1: count, enable=0: hold
   const UDCounter = circuit('UpDownCounter', {
-    in: { enable: bit, dir: bit },
-    out: { count: bus(8) },
+    inputs: { enable: bit, dir: bit },
+    outputs: { count: bus(8) },
     nodes: {
       reg: Register,
       add: Adder,
@@ -67,17 +67,17 @@ function buildUpDownCounter() {
       one: { value: 1 },
       zero: { value: 0 },
     },
-    connect: ({ in: inp, out, reg, add, sub, one, zero, muxResult, weOr }) => [
+    connect: ({ inputs, outputs, nodes: { reg, add, sub, one, zero, muxResult, weOr } }) => [
       // Feed current count to both adder and subtractor
-      reg.q.to(add.a, sub.a, out.count),
+      reg.q.to(add.a, sub.a, outputs.count),
       one.out.to(add.b, sub.b),
       zero.out.to(add.carry_in, sub.borrow_in),
       // Select add or subtract based on dir
       add.sum.to(muxResult.in0),
       sub.difference.to(muxResult.in1),
-      inp.dir.to(muxResult.sel),
+      inputs.dir.to(muxResult.sel),
       // Write enable: count when enabled
-      inp.enable.to(weOr.a, reg.we),
+      inputs.enable.to(weOr.a, reg.we),
       zero.out.to(weOr.b),
       muxResult.out.to(reg.data),
     ],
@@ -90,8 +90,8 @@ function buildPipelineStage() {
   // Stage 1: register input
   // Stage 2: add 1, register result
   const Pipeline = circuit('Pipeline2Stage', {
-    in: { data: bus(8), we: bit },
-    out: { result: bus(8) },
+    inputs: { data: bus(8), we: bit },
+    outputs: { result: bus(8) },
     nodes: {
       reg1: Register,
       reg2: Register,
@@ -103,14 +103,14 @@ function buildPipelineStage() {
       one: { value: 1 },
       zero: { value: 0 },
     },
-    connect: ({ in: inp, out, reg1, reg2, add, one, zero }) => [
-      inp.data.to(reg1.data),
-      inp.we.to(reg1.we, reg2.we),
+    connect: ({ inputs, outputs, nodes: { reg1, reg2, add, one, zero } }) => [
+      inputs.data.to(reg1.data),
+      inputs.we.to(reg1.we, reg2.we),
       reg1.q.to(add.a),
       one.out.to(add.b),
       zero.out.to(add.carry_in),
       add.sum.to(reg2.data),
-      reg2.q.to(out.result),
+      reg2.q.to(outputs.result),
     ],
   });
   return { circuit: Pipeline.circuit, lib: makeLib(Pipeline, 'Pipeline2Stage') };

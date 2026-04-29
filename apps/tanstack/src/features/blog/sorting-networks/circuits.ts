@@ -20,15 +20,15 @@ import {
 // Outputs min on `lo`, max on `hi` — unconditionally, no branching.
 // cmp.lt=1 means a < b, so lo=a (in1), hi=b (in1).
 const CompareSwap = circuit("CompareSwap", {
-  in: { a: bus(8), b: bus(8) },
-  out: { lo: bus(8), hi: bus(8) },
+  inputs: { a: bus(8), b: bus(8) },
+  outputs: { lo: bus(8), hi: bus(8) },
   nodes: { cmp: Comparator, muxLo: Mux, muxHi: Mux },
-  connect: ({ in: inp, out, cmp, muxLo, muxHi }) => [
-    inp.a.to(cmp.a, muxLo.in1, muxHi.in0),
-    inp.b.to(cmp.b, muxLo.in0, muxHi.in1),
+  connect: ({ inputs, outputs, nodes: { cmp, muxLo, muxHi } }) => [
+    inputs.a.to(cmp.a, muxLo.in1, muxHi.in0),
+    inputs.b.to(cmp.b, muxLo.in0, muxHi.in1),
     cmp.lt.to(muxLo.sel, muxHi.sel),
-    muxLo.out.to(out.lo),
-    muxHi.out.to(out.hi),
+    muxLo.out.to(outputs.lo),
+    muxHi.out.to(outputs.hi),
   ],
 });
 
@@ -42,7 +42,7 @@ export const CompareSwapDemo = circuit("CompareSwapDemo", {
     hiDisplay: HexDisplay,
   },
   nodeArgs: { a: { value: 7 }, b: { value: 3 } },
-  connect: ({ a, b, cs, loDisplay, hiDisplay }) => [
+  connect: ({ nodes: { a, b, cs, loDisplay, hiDisplay } }) => [
     a.out.to(cs.a),
     b.out.to(cs.b),
     cs.lo.to(loDisplay.in),
@@ -57,8 +57,8 @@ export const CompareSwapDemo = circuit("CompareSwapDemo", {
 // Stage 2: (0,2) (1,3)
 // Stage 3:    (1,2)
 export const SortNet4 = circuit("SortNet4", {
-  in: { v0: bus(8), v1: bus(8), v2: bus(8), v3: bus(8) },
-  out: { s0: bus(8), s1: bus(8), s2: bus(8), s3: bus(8) },
+  inputs: { v0: bus(8), v1: bus(8), v2: bus(8), v3: bus(8) },
+  outputs: { s0: bus(8), s1: bus(8), s2: bus(8), s3: bus(8) },
   nodes: {
     // Stage 1
     cs01: CompareSwap,
@@ -69,12 +69,12 @@ export const SortNet4 = circuit("SortNet4", {
     // Stage 3
     cs12: CompareSwap,
   },
-  connect: ({ in: inp, out, cs01, cs23, cs02, cs13, cs12 }) => [
+  connect: ({ inputs, outputs, nodes: { cs01, cs23, cs02, cs13, cs12 } }) => [
     // Stage 1
-    inp.v0.to(cs01.a),
-    inp.v1.to(cs01.b),
-    inp.v2.to(cs23.a),
-    inp.v3.to(cs23.b),
+    inputs.v0.to(cs01.a),
+    inputs.v1.to(cs01.b),
+    inputs.v2.to(cs23.a),
+    inputs.v3.to(cs23.b),
     // Stage 2
     cs01.lo.to(cs02.a),
     cs23.lo.to(cs02.b),
@@ -84,10 +84,10 @@ export const SortNet4 = circuit("SortNet4", {
     cs02.hi.to(cs12.a),
     cs13.lo.to(cs12.b),
     // Outputs
-    cs02.lo.to(out.s0),
-    cs12.lo.to(out.s1),
-    cs12.hi.to(out.s2),
-    cs13.hi.to(out.s3),
+    cs02.lo.to(outputs.s0),
+    cs12.lo.to(outputs.s1),
+    cs12.hi.to(outputs.s2),
+    cs13.hi.to(outputs.s3),
   ],
 });
 
@@ -110,7 +110,7 @@ export const SortDemo = circuit("SortDemo", {
     v2: { value: 200 },
     v3: { value: 13 },
   },
-  connect: ({ v0, v1, v2, v3, sorter, d0, d1, d2, d3 }) => [
+  connect: ({ nodes: { v0, v1, v2, v3, sorter, d0, d1, d2, d3 } }) => [
     v0.out.to(sorter.v0),
     v1.out.to(sorter.v1),
     v2.out.to(sorter.v2),
@@ -127,8 +127,8 @@ export const SortDemo = circuit("SortDemo", {
 // make inputs and outputs independent — a new result emerges every clock cycle
 // after 3 cycles of initial latency.
 export const PipelinedSortNet4 = circuit("PipelinedSortNet4", {
-  in: { v0: bus(8), v1: bus(8), v2: bus(8), v3: bus(8) },
-  out: { s0: bus(8), s1: bus(8), s2: bus(8), s3: bus(8) },
+  inputs: { v0: bus(8), v1: bus(8), v2: bus(8), v3: bus(8) },
+  outputs: { s0: bus(8), s1: bus(8), s2: bus(8), s3: bus(8) },
   nodes: {
     // Stage 1 comparators
     cs01: CompareSwap,
@@ -162,12 +162,12 @@ export const PipelinedSortNet4 = circuit("PipelinedSortNet4", {
     r2_3: { width: 8 },
     we: { value: 1 },
   },
-  connect: ({ in: inp, out, cs01, cs23, r1_0, r1_1, r1_2, r1_3, cs02, cs13, r2_0, r2_1, r2_2, r2_3, cs12, we }) => [
+  connect: ({ inputs, outputs, nodes: { cs01, cs23, r1_0, r1_1, r1_2, r1_3, cs02, cs13, r2_0, r2_1, r2_2, r2_3, cs12, we } }) => [
     // Stage 1
-    inp.v0.to(cs01.a),
-    inp.v1.to(cs01.b),
-    inp.v2.to(cs23.a),
-    inp.v3.to(cs23.b),
+    inputs.v0.to(cs01.a),
+    inputs.v1.to(cs01.b),
+    inputs.v2.to(cs23.a),
+    inputs.v3.to(cs23.b),
     // Registers after stage 1
     cs01.lo.to(r1_0.data),
     cs01.hi.to(r1_1.data),
@@ -189,10 +189,10 @@ export const PipelinedSortNet4 = circuit("PipelinedSortNet4", {
     r2_1.q.to(cs12.a),
     r2_2.q.to(cs12.b),
     // Outputs
-    r2_0.q.to(out.s0),
-    cs12.lo.to(out.s1),
-    cs12.hi.to(out.s2),
-    r2_3.q.to(out.s3),
+    r2_0.q.to(outputs.s0),
+    cs12.lo.to(outputs.s1),
+    cs12.hi.to(outputs.s2),
+    r2_3.q.to(outputs.s3),
   ],
 });
 
@@ -215,7 +215,7 @@ export const PipelinedSortDemo = circuit("PipelinedSortDemo", {
     v2: { value: 200 },
     v3: { value: 13 },
   },
-  connect: ({ v0, v1, v2, v3, sorter, d0, d1, d2, d3 }) => [
+  connect: ({ nodes: { v0, v1, v2, v3, sorter, d0, d1, d2, d3 } }) => [
     v0.out.to(sorter.v0),
     v1.out.to(sorter.v1),
     v2.out.to(sorter.v2),

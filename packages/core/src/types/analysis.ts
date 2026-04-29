@@ -331,43 +331,43 @@ import { circuit, bit, bus } from '@simten/core';
 
 // Composite circuit — wire stdlib components together:
 const HalfAdder = circuit('HalfAdder', {
-  in: { a: bit, b: bit },
-  out: { sum: bit, carry: bit },
-  nodes: { x: Xor, a: And },
-  connect: ({ in: inp, out, x, a }) => [
-    inp.a.to(x.a, a.a),
-    inp.b.to(x.b, a.b),
-    x.out.to(out.sum),
-    a.out.to(out.carry),
+  inputs:  { a: bit, b: bit },
+  outputs: { sum: bit, carry: bit },
+  nodes:   { xor1: Xor, and1: And },
+  connect: ({ inputs, outputs, nodes: { xor1, and1 } }) => [
+    inputs.a.to(xor1.a, and1.a),
+    inputs.b.to(xor1.b, and1.b),
+    xor1.out.to(outputs.sum),
+    and1.out.to(outputs.carry),
   ],
 });
 
 // Sequential circuit — Register + Adder feedback loop:
 const Counter = circuit('Counter', {
-  out: { count: bus(8) },
-  nodes: { reg: Register, adder: Adder, one: Constant, we: Constant, zero: Constant },
+  outputs: { count: bus(8) },
+  nodes:    { reg: Register, adder: Adder, one: Constant, we: Constant, zero: Constant },
   nodeArgs: { reg: { width: 8 }, adder: { width: 8 }, one: { value: 1 }, we: { value: 1 }, zero: { value: 0 } },
-  connect: ({ out, reg, adder, one, we, zero }) => [
+  connect: ({ outputs, nodes: { reg, adder, one, we, zero } }) => [
     reg.q.to(adder.a),
     one.out.to(adder.b),
     zero.out.to(adder.carry_in),
     adder.sum.to(reg.data),
     we.out.to(reg.we),  // write-enable must be wired — use Constant({ value: 1 }) for always-on
-    reg.q.to(out.count),
+    reg.q.to(outputs.count),
   ],
 });
 
 // Nodes with arguments — use nodeArgs:
 const Adder8 = circuit('Adder8', {
-  in: { a: bus(8), b: bus(8) },
-  out: { sum: bus(8), carry: bit },
-  nodes: { add: Adder },
+  inputs:  { a: bus(8), b: bus(8) },
+  outputs: { sum: bus(8), carry: bit },
+  nodes:    { add: Adder },
   nodeArgs: { add: { width: 8 } },
-  connect: ({ in: inp, out, add }) => [
-    inp.a.to(add.a),
-    inp.b.to(add.b),
-    add.sum.to(out.sum),
-    add.carry_out.to(out.carry),
+  connect: ({ inputs, outputs, nodes: { add } }) => [
+    inputs.a.to(add.a),
+    inputs.b.to(add.b),
+    add.sum.to(outputs.sum),
+    add.carry_out.to(outputs.carry),
   ],
 });
 

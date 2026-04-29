@@ -46,11 +46,11 @@ function captureFlatEnv(flat: FlatCircuit, library: CircuitLibrary): Map<string,
 }
 
 const SwitchedFF = circuit('SwitchedFF', {
-  out: { q: bit },
+  outputs: { q: bit },
   nodes: { sw: Switch, dff: DFlipFlop },
-  connect: ({ out, sw, dff }) => [
+  connect: ({ outputs, nodes: { sw, dff } }) => [
     sw.out.to(dff.d),
-    dff.q.to(out.q),
+    dff.q.to(outputs.q),
   ],
 });
 

@@ -6,8 +6,8 @@ import { circuit } from '../circuit/circuit.js';
 import { bit, bus, mem } from '../circuit/bit-bus.js';
 
 export const RV32I_Decode = circuit('RV32I_Decode', {
-  in: { instruction: bus(32) },
-  out: { opcode: bus(7), rd: bus(5), funct3: bus(3), rs1: bus(5), rs2: bus(5), funct7: bus(7) },
+  inputs: { instruction: bus(32) },
+  outputs: { opcode: bus(7), rd: bus(5), funct3: bus(3), rs1: bus(5), rs2: bus(5), funct7: bus(7) },
   eval: ({ instruction }) => {
     const instr = (instruction as number) >>> 0;
     return {
@@ -23,8 +23,8 @@ export const RV32I_Decode = circuit('RV32I_Decode', {
 });
 
 export const RV32I_ALU = circuit('RV32I_ALU', {
-  in: { a: bus(32), b: bus(32), alu_op: bus(4) },
-  out: { result: bus(32), zero: bit },
+  inputs: { a: bus(32), b: bus(32), alu_op: bus(4) },
+  outputs: { result: bus(32), zero: bit },
   eval: ({ a, b, alu_op }) => {
     const au = (a as number) >>> 0;
     const bu = (b as number) >>> 0;
@@ -49,8 +49,8 @@ export const RV32I_ALU = circuit('RV32I_ALU', {
 });
 
 export const RV32I_ImmGen = circuit('RV32I_ImmGen', {
-  in: { instruction: bus(32) },
-  out: { immediate: bus(32) },
+  inputs: { instruction: bus(32) },
+  outputs: { immediate: bus(32) },
   eval: ({ instruction }) => {
     const instr = (instruction as number) >>> 0;
     const opcode = instr & 0x7F;
@@ -92,8 +92,8 @@ export const RV32I_ImmGen = circuit('RV32I_ImmGen', {
 });
 
 export const RV32I_Control = circuit('RV32I_Control', {
-  in: { opcode: bus(7), funct3: bus(3), funct7_bit: bit },
-  out: { alu_op: bus(4), alu_src: bit, mem_read: bit, mem_write: bit, reg_write: bit, mem_to_reg: bit, branch: bit, jump: bit, lui: bit, auipc: bit, is_jalr: bit },
+  inputs: { opcode: bus(7), funct3: bus(3), funct7_bit: bit },
+  outputs: { alu_op: bus(4), alu_src: bit, mem_read: bit, mem_write: bit, reg_write: bit, mem_to_reg: bit, branch: bit, jump: bit, lui: bit, auipc: bit, is_jalr: bit },
   eval: ({ opcode, funct3, funct7_bit }) => {
     const op  = (opcode as number) & 0x7F;
     const f3  = (funct3 as number) & 0x7;
@@ -142,8 +142,8 @@ export const RV32I_Control = circuit('RV32I_Control', {
 });
 
 export const RV32I_BranchComp = circuit('RV32I_BranchComp', {
-  in: { a: bus(32), b: bus(32), funct3: bus(3) },
-  out: { take_branch: bit },
+  inputs: { a: bus(32), b: bus(32), funct3: bus(3) },
+  outputs: { take_branch: bit },
   eval: ({ a, b, funct3 }) => {
     const au = (a as number) >>> 0;
     const bu = (b as number) >>> 0;
@@ -171,8 +171,8 @@ export const RV32I_BranchComp = circuit('RV32I_BranchComp', {
 // another read port), and it never interferes with the rs1/rs2 reads driven
 // by decode. Unconnected callers get 0 by default (reads x0), which is safe.
 export const RV32I_RegisterFile = circuit('RV32I_RegisterFile', {
-  in: { rs1: bus(5), rs2: bus(5), rd: bus(5), write_data: bus(32), we: bit, debug_rs: bus(5) },
-  out: { read1: bus(32), read2: bus(32), debug_read: bus(32) },
+  inputs: { rs1: bus(5), rs2: bus(5), rd: bus(5), write_data: bus(32), we: bit, debug_rs: bus(5) },
+  outputs: { read1: bus(32), read2: bus(32), debug_read: bus(32) },
   state: { memory: mem(32, 32) },
   eval: ({ rs1, rs2, debug_rs, memory }) => {
     const r1 = (rs1 as number) & 0x1F;
@@ -195,8 +195,8 @@ export const RV32I_RegisterFile = circuit('RV32I_RegisterFile', {
 });
 
 export const RV32I_InstrMem = circuit('RV32I_InstrMem', {
-  in: { addr: bus(32) },
-  out: { instruction: bus(32) },
+  inputs: { addr: bus(32) },
+  outputs: { instruction: bus(32) },
   state: { memory: mem(65536, 8) },
   eval: ({ addr, memory }) => {
     const a = (addr as number) >>> 0;
@@ -211,8 +211,8 @@ export const RV32I_InstrMem = circuit('RV32I_InstrMem', {
 });
 
 export const RV32I_DataMem = circuit('RV32I_DataMem', {
-  in: { addr: bus(32), write_data: bus(32), mem_read: bit, mem_write: bit, funct3: bus(3) },
-  out: { read_data: bus(32), misalign: bit },
+  inputs: { addr: bus(32), write_data: bus(32), mem_read: bit, mem_write: bit, funct3: bus(3) },
+  outputs: { read_data: bus(32), misalign: bit },
   state: { memory: mem(65536, 8) },
   eval: ({ addr, mem_read, mem_write, funct3, memory }) => {
     if (!mem_read && !mem_write) return { read_data: 0, misalign: 0 };
@@ -249,8 +249,8 @@ export const RV32I_DataMem = circuit('RV32I_DataMem', {
 });
 
 export const RV32I_WritebackMux = circuit('RV32I_WritebackMux', {
-  in: { alu_result: bus(32), load_data: bus(32), pc_plus4: bus(32), immediate: bus(32), pc_plus_imm: bus(32), mem_to_reg: bit, lui: bit, auipc: bit, jump: bit },
-  out: { write_data: bus(32) },
+  inputs: { alu_result: bus(32), load_data: bus(32), pc_plus4: bus(32), immediate: bus(32), pc_plus_imm: bus(32), mem_to_reg: bit, lui: bit, auipc: bit, jump: bit },
+  outputs: { write_data: bus(32) },
   eval: ({ alu_result, load_data, pc_plus4, immediate, pc_plus_imm, mem_to_reg, lui, auipc, jump }) => {
     let write_data: number;
     if (jump)      write_data = pc_plus4 as number;
@@ -264,8 +264,8 @@ export const RV32I_WritebackMux = circuit('RV32I_WritebackMux', {
 });
 
 export const RV32I_NextPCMux = circuit('RV32I_NextPCMux', {
-  in: { pc_plus4: bus(32), branch_target: bus(32), jal_target: bus(32), jalr_target: bus(32), branch: bit, take_branch: bit, jump: bit, is_jalr: bit },
-  out: { next_pc: bus(32) },
+  inputs: { pc_plus4: bus(32), branch_target: bus(32), jal_target: bus(32), jalr_target: bus(32), branch: bit, take_branch: bit, jump: bit, is_jalr: bit },
+  outputs: { next_pc: bus(32) },
   eval: ({ pc_plus4, branch_target, jal_target, jalr_target, branch, take_branch, jump, is_jalr }) => {
     let next_pc: number;
     if (jump)                  next_pc = is_jalr ? ((jalr_target as number) & ~1) : (jal_target as number);
@@ -277,8 +277,8 @@ export const RV32I_NextPCMux = circuit('RV32I_NextPCMux', {
 });
 
 export const RV32I_ForwardingUnit = circuit('RV32I_ForwardingUnit', {
-  in: { id_rs1: bus(5), id_rs2: bus(5), ex_rd: bus(5), ex_reg_write: bit, mem_rd: bus(5), mem_reg_write: bit },
-  out: { forward_a: bus(2), forward_b: bus(2) },
+  inputs: { id_rs1: bus(5), id_rs2: bus(5), ex_rd: bus(5), ex_reg_write: bit, mem_rd: bus(5), mem_reg_write: bit },
+  outputs: { forward_a: bus(2), forward_b: bus(2) },
   eval: ({ id_rs1, id_rs2, ex_rd, ex_reg_write, mem_rd, mem_reg_write }) => {
     const rs1   = (id_rs1 as number) & 0x1F;
     const rs2   = (id_rs2 as number) & 0x1F;
@@ -295,8 +295,8 @@ export const RV32I_ForwardingUnit = circuit('RV32I_ForwardingUnit', {
 });
 
 export const RV32I_WBBypass = circuit('RV32I_WBBypass', {
-  in: { rs_val: bus(32), rs_addr: bus(5), wb_val: bus(32), wb_rd: bus(5), wb_we: bit },
-  out: { out: bus(32) },
+  inputs: { rs_val: bus(32), rs_addr: bus(5), wb_val: bus(32), wb_rd: bus(5), wb_we: bit },
+  outputs: { out: bus(32) },
   eval: ({ rs_val, rs_addr, wb_val, wb_rd, wb_we }) => {
     const rsAddr = (rs_addr as number) & 0x1F;
     const wbRd   = (wb_rd   as number) & 0x1F;
@@ -307,8 +307,8 @@ export const RV32I_WBBypass = circuit('RV32I_WBBypass', {
 });
 
 export const RV32I_LoadAlign = circuit('RV32I_LoadAlign', {
-  in: { data: bus(32), funct3: bus(3) },
-  out: { out: bus(32) },
+  inputs: { data: bus(32), funct3: bus(3) },
+  outputs: { out: bus(32) },
   eval: ({ data, funct3 }) => {
     const raw = (data as number) >>> 0;
     const f3  = (funct3 as number) & 0x7;
@@ -326,8 +326,8 @@ export const RV32I_LoadAlign = circuit('RV32I_LoadAlign', {
 });
 
 export const RV32I_LoadAlignFull = circuit('RV32I_LoadAlignFull', {
-  in: { data: bus(32), byte_offset: bus(2), funct3: bus(3) },
-  out: { out: bus(32) },
+  inputs: { data: bus(32), byte_offset: bus(2), funct3: bus(3) },
+  outputs: { out: bus(32) },
   eval: ({ data, byte_offset, funct3 }) => {
     const raw = (data as number) >>> 0;
     const off = (byte_offset as number) & 0x3;
@@ -348,8 +348,8 @@ export const RV32I_LoadAlignFull = circuit('RV32I_LoadAlignFull', {
 });
 
 export const RV32I_HazardUnit = circuit('RV32I_HazardUnit', {
-  in: { if_rs1: bus(5), if_rs2: bus(5), id_rd: bus(5), id_mem_read: bit, branch_taken: bit, jump: bit },
-  out: { stall: bit, flush: bit },
+  inputs: { if_rs1: bus(5), if_rs2: bus(5), id_rd: bus(5), id_mem_read: bit, branch_taken: bit, jump: bit },
+  outputs: { stall: bit, flush: bit },
   eval: ({ if_rs1, if_rs2, id_rd, id_mem_read, branch_taken, jump }) => {
     const rs1  = (if_rs1 as number) & 0x1F;
     const rs2  = (if_rs2 as number) & 0x1F;
@@ -362,8 +362,8 @@ export const RV32I_HazardUnit = circuit('RV32I_HazardUnit', {
 });
 
 export const DualPortROM = circuit('DualPortROM', {
-  in: { addrA: bus(32), addrB: bus(32) },
-  out: { dataA: bus(32), dataB: bus(32) },
+  inputs: { addrA: bus(32), addrB: bus(32) },
+  outputs: { dataA: bus(32), dataB: bus(32) },
   state: { memory: mem(65536, 8) },
   eval: ({ addrA, addrB, memory }) => {
     const aA = (addrA as number) >>> 0;

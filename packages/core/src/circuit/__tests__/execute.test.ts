@@ -34,8 +34,8 @@ describe('executeCircuitCode', () => {
   it('executes a simple AND gate', () => {
     const result = executeCircuitCode(`
       const MyAnd = circuit('MyAnd', {
-        in: { a: bit, b: bit },
-        out: { out: bit },
+        inputs: { a: bit, b: bit },
+        outputs: { out: bit },
         eval: ({ a, b }) => ({ out: (a && b) ? 1 : 0 }),
       })
     `);
@@ -49,14 +49,14 @@ describe('executeCircuitCode', () => {
   it('executes a composite circuit using stdlib', () => {
     const result = executeCircuitCode(`
       const HalfAdder = circuit('HalfAdder', {
-        in: { a: bit, b: bit },
-        out: { sum: bit, carry: bit },
+        inputs: { a: bit, b: bit },
+        outputs: { sum: bit, carry: bit },
         nodes: { x: Xor, a: And },
-        connect: ({ in: inp, out, x, a }) => [
-          inp.a.to(x.a, a.a),
-          inp.b.to(x.b, a.b),
-          x.out.to(out.sum),
-          a.out.to(out.carry),
+        connect: ({ inputs, outputs, nodes: { x, a } }) => [
+          inputs.a.to(x.a, a.a),
+          inputs.b.to(x.b, a.b),
+          x.out.to(outputs.sum),
+          a.out.to(outputs.carry),
         ],
       })
     `);
@@ -70,14 +70,14 @@ describe('executeCircuitCode', () => {
   it('collects multiple circuits', () => {
     const result = executeCircuitCode(`
       const A = circuit('CompA', {
-        in: { x: bit },
-        out: { y: bit },
+        inputs: { x: bit },
+        outputs: { y: bit },
         eval: ({ x }) => ({ y: x }),
       })
 
       const B = circuit('CompB', {
-        in: { x: bit },
-        out: { y: bit },
+        inputs: { x: bit },
+        outputs: { y: bit },
         eval: ({ x }) => ({ y: x ? 0 : 1 }),
       })
     `);
@@ -93,8 +93,8 @@ describe('executeCircuitCode', () => {
     const result = executeCircuitCode(`
       const width: number = 8
       const MyAdder = circuit('MyAdder', {
-        in: { a: bus(width), b: bus(width) },
-        out: { sum: bus(width) },
+        inputs: { a: bus(width), b: bus(width) },
+        outputs: { sum: bus(width) },
         eval: ({ a, b }: { a: number; b: number }) => ({ sum: (a + b) & 0xFF }),
       })
     `);
@@ -107,8 +107,8 @@ describe('executeCircuitCode', () => {
   it('handles parameterized component factories', () => {
     const result = executeCircuitCode(`
       const makeReg = (w: number) => circuit('Reg' + w, {
-        in: { d: bus(w) },
-        out: { q: bus(w) },
+        inputs: { d: bus(w) },
+        outputs: { q: bus(w) },
         state: { stored: 0 },
         eval: ({ stored }) => ({ q: stored }),
         onTick: ({ d }) => ({ stored: d }),
@@ -127,12 +127,12 @@ describe('executeCircuitCode', () => {
   it('stdlib components are available without imports', () => {
     const result = executeCircuitCode(`
       const Demo = circuit('Demo', {
-        in: { a: bit },
-        out: { b: bit },
+        inputs: { a: bit },
+        outputs: { b: bit },
         nodes: { n: Not },
-        connect: ({ in: inp, out, n }) => [
-          inp.a.to(n.in),
-          n.out.to(out.b),
+        connect: ({ inputs, outputs, nodes: { n } }) => [
+          inputs.a.to(n.in),
+          n.out.to(outputs.b),
         ],
       })
     `);
@@ -144,8 +144,8 @@ describe('executeCircuitCode', () => {
   it('registers user circuits in the library', () => {
     const result = executeCircuitCode(`
       const MyGate = circuit('MyGate', {
-        in: { a: bit },
-        out: { out: bit },
+        inputs: { a: bit },
+        outputs: { out: bit },
         eval: ({ a }) => ({ out: a }),
       })
     `);
@@ -168,8 +168,8 @@ describe('error handling', () => {
   it('returns error for runtime errors', () => {
     const result = executeCircuitCode(`
       const x = circuit('Bad', {
-        in: { a: bit },
-        out: { a: bit },
+        inputs: { a: bit },
+        outputs: { a: bit },
       })
     `);
     expect(result.error).not.toBeNull();

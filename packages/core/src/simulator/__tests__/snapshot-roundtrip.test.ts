@@ -47,12 +47,12 @@ import { Xor, Not, Adder, Register, DFlipFlop } from '../../std/index.js';
 
 /** Free-running 2-bit ripple counter built from D flip-flops. */
 const Counter2Bit = circuit('Counter2Bit', {
-  out: { bit0: bit, bit1: bit },
+  outputs: { bit0: bit, bit1: bit },
   nodes: { dff0: DFlipFlop, dff1: DFlipFlop, inv: Not, xor1: Xor },
-  connect: ({ out, dff0, dff1, inv, xor1 }) => [
-    dff0.q.to(inv.in, xor1.b, out.bit0),
+  connect: ({ outputs, nodes: { dff0, dff1, inv, xor1 } }) => [
+    dff0.q.to(inv.in, xor1.b, outputs.bit0),
     inv.out.to(dff0.d),
-    dff1.q.to(xor1.a, out.bit1),
+    dff1.q.to(xor1.a, outputs.bit1),
     xor1.out.to(dff1.d),
   ],
 });
@@ -62,16 +62,16 @@ const Counter2Bit = circuit('Counter2Bit', {
  * Exercises a bus-level Register feeding back through an Adder.
  */
 const Accumulator = circuit('Accumulator', {
-  in: { addend: 8, we: bit },
-  out: { q: 8, carry: bit },
+  inputs: { addend: 8, we: bit },
+  outputs: { q: 8, carry: bit },
   nodes: { reg: Register, add: Adder },
   nodeArgs: { add: { carry_in: 0 } },
-  connect: ({ in: inp, out, reg, add }) => [
-    reg.q.to(add.a, out.q),
-    inp.addend.to(add.b),
+  connect: ({ inputs, outputs, nodes: { reg, add } }) => [
+    reg.q.to(add.a, outputs.q),
+    inputs.addend.to(add.b),
     add.sum.to(reg.data),
-    inp.we.to(reg.we),
-    add.carry_out.to(out.carry),
+    inputs.we.to(reg.we),
+    add.carry_out.to(outputs.carry),
   ],
 });
 

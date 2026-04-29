@@ -60,14 +60,14 @@ describe('combinational circuits', () => {
 
   it('simulates a HalfAdder composite', () => {
     const HalfAdder = circuit('HalfAdder', {
-      in: { a: bit, b: bit },
-      out: { sum: bit, carry: bit },
+      inputs: { a: bit, b: bit },
+      outputs: { sum: bit, carry: bit },
       nodes: { x: Xor, a: And },
-      connect: ({ in: inp, out, x, a }) => [
-        inp.a.to(x.a, a.a),
-        inp.b.to(x.b, a.b),
-        x.out.to(out.sum),
-        a.out.to(out.carry),
+      connect: ({ inputs, outputs, nodes: { x, a } }) => [
+        inputs.a.to(x.a, a.a),
+        inputs.b.to(x.b, a.b),
+        x.out.to(outputs.sum),
+        a.out.to(outputs.carry),
       ],
     });
 
@@ -88,8 +88,8 @@ describe('combinational circuits', () => {
 
   it('simulates a user-defined eval component', () => {
     const ReLU = circuit('ReLU', {
-      in: { x: bus(16) },
-      out: { y: bus(16) },
+      inputs: { x: bus(16) },
+      outputs: { y: bus(16) },
       eval: ({ x }) => ({ y: x > 0 ? x : 0 }),
     });
 

@@ -25,55 +25,55 @@ import { HighlightedCode } from "@/components/HighlightedCode";
 // ============================================================================
 
 const HalfAdder = circuit('HalfAdder', {
-  in: { a: bit, b: bit },
-  out: { sum: bit, carry: bit },
+  inputs: { a: bit, b: bit },
+  outputs: { sum: bit, carry: bit },
   nodes: { xor1: Xor, and1: And },
-  connect: ({ in: inp, out, xor1, and1 }) => [
-    inp.a.to(xor1.a, and1.a),
-    inp.b.to(xor1.b, and1.b),
-    xor1.out.to(out.sum),
-    and1.out.to(out.carry),
+  connect: ({ inputs, outputs, nodes: { xor1, and1 } }) => [
+    inputs.a.to(xor1.a, and1.a),
+    inputs.b.to(xor1.b, and1.b),
+    xor1.out.to(outputs.sum),
+    and1.out.to(outputs.carry),
   ],
 });
 
 const FullAdder = circuit('FullAdder', {
-  in: { a: bit, b: bit, cin: bit },
-  out: { sum: bit, cout: bit },
+  inputs: { a: bit, b: bit, cin: bit },
+  outputs: { sum: bit, cout: bit },
   nodes: { xor1: Xor, xor2: Xor, and1: And, and2: And, or1: Or },
-  connect: ({ in: inp, out, xor1, xor2, and1, and2, or1 }) => [
-    inp.a.to(xor1.a, and1.a),
-    inp.b.to(xor1.b, and1.b),
+  connect: ({ inputs, outputs, nodes: { xor1, xor2, and1, and2, or1 } }) => [
+    inputs.a.to(xor1.a, and1.a),
+    inputs.b.to(xor1.b, and1.b),
     xor1.out.to(xor2.a, and2.a),
-    inp.cin.to(xor2.b, and2.b),
-    xor2.out.to(out.sum),
+    inputs.cin.to(xor2.b, and2.b),
+    xor2.out.to(outputs.sum),
     and1.out.to(or1.a),
     and2.out.to(or1.b),
-    or1.out.to(out.cout),
+    or1.out.to(outputs.cout),
   ],
 });
 
 const Mux2to1 = circuit('Mux2to1', {
-  in: { a: bit, b: bit, sel: bit },
-  out: { out: bit },
+  inputs: { a: bit, b: bit, sel: bit },
+  outputs: { out: bit },
   nodes: { not1: Not, and1: And, and2: And, or1: Or },
-  connect: ({ in: inp, out, not1, and1, and2, or1 }) => [
-    inp.sel.to(not1.in, and2.b),
-    inp.a.to(and1.a),
+  connect: ({ inputs, outputs, nodes: { not1, and1, and2, or1 } }) => [
+    inputs.sel.to(not1.in, and2.b),
+    inputs.a.to(and1.a),
     not1.out.to(and1.b),
-    inp.b.to(and2.a),
+    inputs.b.to(and2.a),
     and1.out.to(or1.a),
     and2.out.to(or1.b),
-    or1.out.to(out.out),
+    or1.out.to(outputs.out),
   ],
 });
 
 const Counter2Bit = circuit('Counter2Bit', {
-  out: { bit0: bit, bit1: bit },
+  outputs: { bit0: bit, bit1: bit },
   nodes: { dff0: DFlipFlop, dff1: DFlipFlop, inv: Not, xor1: Xor },
-  connect: ({ out, dff0, dff1, inv, xor1 }) => [
-    dff0.q.to(inv.in, xor1.b, out.bit0),
+  connect: ({ outputs, nodes: { dff0, dff1, inv, xor1 } }) => [
+    dff0.q.to(inv.in, xor1.b, outputs.bit0),
     inv.out.to(dff0.d),
-    dff1.q.to(xor1.a, out.bit1),
+    dff1.q.to(xor1.a, outputs.bit1),
     xor1.out.to(dff1.d),
   ],
 });
@@ -97,14 +97,14 @@ const DEMOS: HeroDemo[] = [
     label: "Half adder",
     circuit: HalfAdder,
     code: `const HalfAdder = circuit('HalfAdder', {
-  in: { a: bit, b: bit },
-  out: { sum: bit, carry: bit },
+  inputs: { a: bit, b: bit },
+  outputs: { sum: bit, carry: bit },
   nodes: { xor1: Xor, and1: And },
-  connect: ({ in: inp, out, xor1, and1 }) => [
-    inp.a.to(xor1.a, and1.a),
-    inp.b.to(xor1.b, and1.b),
-    xor1.out.to(out.sum),
-    and1.out.to(out.carry),
+  connect: ({ inputs, outputs, nodes: { xor1, and1 } }) => [
+    inputs.a.to(xor1.a, and1.a),
+    inputs.b.to(xor1.b, and1.b),
+    xor1.out.to(outputs.sum),
+    and1.out.to(outputs.carry),
   ],
 });`,
   },
@@ -113,18 +113,18 @@ const DEMOS: HeroDemo[] = [
     label: "Full adder",
     circuit: FullAdder,
     code: `const FullAdder = circuit('FullAdder', {
-  in: { a: bit, b: bit, cin: bit },
-  out: { sum: bit, cout: bit },
+  inputs: { a: bit, b: bit, cin: bit },
+  outputs: { sum: bit, cout: bit },
   nodes: { xor1: Xor, xor2: Xor, and1: And, and2: And, or1: Or },
-  connect: ({ in: inp, out, xor1, xor2, and1, and2, or1 }) => [
-    inp.a.to(xor1.a, and1.a),
-    inp.b.to(xor1.b, and1.b),
+  connect: ({ inputs, outputs, nodes: { xor1, xor2, and1, and2, or1 } }) => [
+    inputs.a.to(xor1.a, and1.a),
+    inputs.b.to(xor1.b, and1.b),
     xor1.out.to(xor2.a, and2.a),
-    inp.cin.to(xor2.b, and2.b),
-    xor2.out.to(out.sum),
+    inputs.cin.to(xor2.b, and2.b),
+    xor2.out.to(outputs.sum),
     and1.out.to(or1.a),
     and2.out.to(or1.b),
-    or1.out.to(out.cout),
+    or1.out.to(outputs.cout),
   ],
 });`,
   },
@@ -133,12 +133,12 @@ const DEMOS: HeroDemo[] = [
     label: "2-bit counter",
     circuit: Counter2Bit,
     code: `const Counter2Bit = circuit('Counter2Bit', {
-  out: { bit0: bit, bit1: bit },
+  outputs: { bit0: bit, bit1: bit },
   nodes: { dff0: DFlipFlop, dff1: DFlipFlop, inv: Not, xor1: Xor },
-  connect: ({ out, dff0, dff1, inv, xor1 }) => [
-    dff0.q.to(inv.in, xor1.b, out.bit0),
+  connect: ({ outputs, nodes: { dff0, dff1, inv, xor1 } }) => [
+    dff0.q.to(inv.in, xor1.b, outputs.bit0),
     inv.out.to(dff0.d),
-    dff1.q.to(xor1.a, out.bit1),
+    dff1.q.to(xor1.a, outputs.bit1),
     xor1.out.to(dff1.d),
   ],
 });`,
@@ -148,17 +148,17 @@ const DEMOS: HeroDemo[] = [
     label: "2-to-1 mux",
     circuit: Mux2to1,
     code: `const Mux2to1 = circuit('Mux2to1', {
-  in: { a: bit, b: bit, sel: bit },
-  out: { out: bit },
+  inputs: { a: bit, b: bit, sel: bit },
+  outputs: { out: bit },
   nodes: { not1: Not, and1: And, and2: And, or1: Or },
-  connect: ({ in: inp, out, not1, and1, and2, or1 }) => [
-    inp.sel.to(not1.in, and2.b),
-    inp.a.to(and1.a),
+  connect: ({ inputs, outputs, nodes: { not1, and1, and2, or1 } }) => [
+    inputs.sel.to(not1.in, and2.b),
+    inputs.a.to(and1.a),
     not1.out.to(and1.b),
-    inp.b.to(and2.a),
+    inputs.b.to(and2.a),
     and1.out.to(or1.a),
     and2.out.to(or1.b),
-    or1.out.to(out.out),
+    or1.out.to(outputs.out),
   ],
 });`,
   },

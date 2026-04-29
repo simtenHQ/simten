@@ -43,12 +43,12 @@ describe('Evaluator Edge Cases', () => {
 
   describe('BusNot', () => {
     const c = circuit('TestBusNot', {
-      in: { a: bus(8) },
-      out: { z: bus(8) },
+      inputs: { a: bus(8) },
+      outputs: { z: bus(8) },
       nodes: { n: BusNot },
-      connect: ({ in: inp, out, n }) => [
-        inp.a.to(n.in),
-        n.out.to(out.z),
+      connect: ({ inputs, outputs, nodes: { n } }) => [
+        inputs.a.to(n.in),
+        n.out.to(outputs.z),
       ],
     });
 
@@ -71,13 +71,13 @@ describe('Evaluator Edge Cases', () => {
 
   describe('BusAnd', () => {
     const c = circuit('TestBusAnd', {
-      in: { a: bus(8), b: bus(8) },
-      out: { z: bus(8) },
+      inputs: { a: bus(8), b: bus(8) },
+      outputs: { z: bus(8) },
       nodes: { n: BusAnd },
-      connect: ({ in: inp, out, n }) => [
-        inp.a.to(n.a),
-        inp.b.to(n.b),
-        n.out.to(out.z),
+      connect: ({ inputs, outputs, nodes: { n } }) => [
+        inputs.a.to(n.a),
+        inputs.b.to(n.b),
+        n.out.to(outputs.z),
       ],
     });
 
@@ -96,13 +96,13 @@ describe('Evaluator Edge Cases', () => {
 
   describe('BusOr', () => {
     const c = circuit('TestBusOr', {
-      in: { a: bus(8), b: bus(8) },
-      out: { z: bus(8) },
+      inputs: { a: bus(8), b: bus(8) },
+      outputs: { z: bus(8) },
       nodes: { n: BusOr },
-      connect: ({ in: inp, out, n }) => [
-        inp.a.to(n.a),
-        inp.b.to(n.b),
-        n.out.to(out.z),
+      connect: ({ inputs, outputs, nodes: { n } }) => [
+        inputs.a.to(n.a),
+        inputs.b.to(n.b),
+        n.out.to(outputs.z),
       ],
     });
 
@@ -117,13 +117,13 @@ describe('Evaluator Edge Cases', () => {
 
   describe('BusXor', () => {
     const c = circuit('TestBusXor', {
-      in: { a: bus(8), b: bus(8) },
-      out: { z: bus(8) },
+      inputs: { a: bus(8), b: bus(8) },
+      outputs: { z: bus(8) },
       nodes: { n: BusXor },
-      connect: ({ in: inp, out, n }) => [
-        inp.a.to(n.a),
-        inp.b.to(n.b),
-        n.out.to(out.z),
+      connect: ({ inputs, outputs, nodes: { n } }) => [
+        inputs.a.to(n.a),
+        inputs.b.to(n.b),
+        n.out.to(outputs.z),
       ],
     });
 
@@ -144,15 +144,15 @@ describe('Evaluator Edge Cases', () => {
 
   describe('Adder', () => {
     const c = circuit('TestAdder', {
-      in: { a: bus(8), b: bus(8) },
-      out: { sum: bus(8), carry: bit },
+      inputs: { a: bus(8), b: bus(8) },
+      outputs: { sum: bus(8), carry: bit },
       nodes: { n: Adder, gnd: Constant },
-      connect: ({ in: inp, out, n, gnd }) => [
-        inp.a.to(n.a),
-        inp.b.to(n.b),
+      connect: ({ inputs, outputs, nodes: { n, gnd } }) => [
+        inputs.a.to(n.a),
+        inputs.b.to(n.b),
         gnd.out.to(n.carry_in),
-        n.sum.to(out.sum),
-        n.carry_out.to(out.carry),
+        n.sum.to(outputs.sum),
+        n.carry_out.to(outputs.carry),
       ],
     });
 
@@ -183,15 +183,15 @@ describe('Evaluator Edge Cases', () => {
 
   describe('Subtractor', () => {
     const c = circuit('TestSubtractor', {
-      in: { a: bus(8), b: bus(8) },
-      out: { diff: bus(8), borrow: bit },
+      inputs: { a: bus(8), b: bus(8) },
+      outputs: { diff: bus(8), borrow: bit },
       nodes: { n: Subtractor, gnd: Constant },
-      connect: ({ in: inp, out, n, gnd }) => [
-        inp.a.to(n.a),
-        inp.b.to(n.b),
+      connect: ({ inputs, outputs, nodes: { n, gnd } }) => [
+        inputs.a.to(n.a),
+        inputs.b.to(n.b),
         gnd.out.to(n.borrow_in),
-        n.difference.to(out.diff),
-        n.borrow_out.to(out.borrow),
+        n.difference.to(outputs.diff),
+        n.borrow_out.to(outputs.borrow),
       ],
     });
 
@@ -218,13 +218,13 @@ describe('Evaluator Edge Cases', () => {
 
   describe('LeftShifter', () => {
     const c = circuit('TestLeftShifter', {
-      in: { a: bus(8), b: bus(8) },
-      out: { z: bus(8) },
+      inputs: { a: bus(8), b: bus(8) },
+      outputs: { z: bus(8) },
       nodes: { n: LeftShifter },
-      connect: ({ in: inp, out, n }) => [
-        inp.a.to(n.value),
-        inp.b.to(n.shift),
-        n.result.to(out.z),
+      connect: ({ inputs, outputs, nodes: { n } }) => [
+        inputs.a.to(n.value),
+        inputs.b.to(n.shift),
+        n.result.to(outputs.z),
       ],
     });
 
@@ -243,13 +243,13 @@ describe('Evaluator Edge Cases', () => {
 
   describe('RightShifter', () => {
     const c = circuit('TestRightShifter', {
-      in: { a: bus(8), b: bus(8) },
-      out: { z: bus(8) },
+      inputs: { a: bus(8), b: bus(8) },
+      outputs: { z: bus(8) },
       nodes: { n: RightShifter },
-      connect: ({ in: inp, out, n }) => [
-        inp.a.to(n.value),
-        inp.b.to(n.shift),
-        n.result.to(out.z),
+      connect: ({ inputs, outputs, nodes: { n } }) => [
+        inputs.a.to(n.value),
+        inputs.b.to(n.shift),
+        n.result.to(outputs.z),
       ],
     });
 
@@ -270,12 +270,12 @@ describe('Evaluator Edge Cases', () => {
 
   describe('Incrementer', () => {
     const c = circuit('TestIncrementer', {
-      in: { a: bus(8) },
-      out: { z: bus(8) },
+      inputs: { a: bus(8) },
+      outputs: { z: bus(8) },
       nodes: { n: Incrementer },
-      connect: ({ in: inp, out, n }) => [
-        inp.a.to(n.in),
-        n.out.to(out.z),
+      connect: ({ inputs, outputs, nodes: { n } }) => [
+        inputs.a.to(n.in),
+        n.out.to(outputs.z),
       ],
     });
 
@@ -292,15 +292,15 @@ describe('Evaluator Edge Cases', () => {
 
   describe('Comparator', () => {
     const c = circuit('TestComparator', {
-      in: { a: bus(8), b: bus(8) },
-      out: { lt: bit, eq: bit, gt: bit },
+      inputs: { a: bus(8), b: bus(8) },
+      outputs: { lt: bit, eq: bit, gt: bit },
       nodes: { n: Comparator },
-      connect: ({ in: inp, out, n }) => [
-        inp.a.to(n.a),
-        inp.b.to(n.b),
-        n.lt.to(out.lt),
-        n.eq.to(out.eq),
-        n.gt.to(out.gt),
+      connect: ({ inputs, outputs, nodes: { n } }) => [
+        inputs.a.to(n.a),
+        inputs.b.to(n.b),
+        n.lt.to(outputs.lt),
+        n.eq.to(outputs.eq),
+        n.gt.to(outputs.gt),
       ],
     });
 
@@ -330,13 +330,13 @@ describe('Evaluator Edge Cases', () => {
 
   describe('Multiplier', () => {
     const c = circuit('TestMultiplier', {
-      in: { a: bus(8), b: bus(8) },
-      out: { z: bus(16) },
+      inputs: { a: bus(8), b: bus(8) },
+      outputs: { z: bus(16) },
       nodes: { n: Multiplier },
-      connect: ({ in: inp, out, n }) => [
-        inp.a.to(n.a),
-        inp.b.to(n.b),
-        n.product.to(out.z),
+      connect: ({ inputs, outputs, nodes: { n } }) => [
+        inputs.a.to(n.a),
+        inputs.b.to(n.b),
+        n.product.to(outputs.z),
       ],
     });
 
@@ -358,14 +358,14 @@ describe('Evaluator Edge Cases', () => {
   describe('Mux', () => {
     // Mux in the new stdlib is bit-only
     const c = circuit('TestMux', {
-      in: { a: bit, b: bit, sel: bit },
-      out: { z: bit },
+      inputs: { a: bit, b: bit, sel: bit },
+      outputs: { z: bit },
       nodes: { n: Mux },
-      connect: ({ in: inp, out, n }) => [
-        inp.a.to(n.in0),
-        inp.b.to(n.in1),
-        inp.sel.to(n.sel),
-        n.out.to(out.z),
+      connect: ({ inputs, outputs, nodes: { n } }) => [
+        inputs.a.to(n.in0),
+        inputs.b.to(n.in1),
+        inputs.sel.to(n.sel),
+        n.out.to(outputs.z),
       ],
     });
 
@@ -382,13 +382,13 @@ describe('Evaluator Edge Cases', () => {
 
   describe('Xor', () => {
     const c = circuit('TestXor', {
-      in: { a: bit, b: bit },
-      out: { z: bit },
+      inputs: { a: bit, b: bit },
+      outputs: { z: bit },
       nodes: { n: Xor },
-      connect: ({ in: inp, out, n }) => [
-        inp.a.to(n.a),
-        inp.b.to(n.b),
-        n.out.to(out.z),
+      connect: ({ inputs, outputs, nodes: { n } }) => [
+        inputs.a.to(n.a),
+        inputs.b.to(n.b),
+        n.out.to(outputs.z),
       ],
     });
 

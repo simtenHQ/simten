@@ -109,7 +109,7 @@ The `Constant` primitive in the stdlib is defined with a 1-bit output port:
 
 ```typescript
 export const Constant = circuit('Constant', {
-  out: { out: bit },   // ← 1-bit
+  outputs: { out: bit },   // ← 1-bit
   eval: ({ value }) => ({ out: value }),
 });
 ```

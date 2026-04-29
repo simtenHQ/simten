@@ -1,0 +1,32 @@
+{
+  "note": "Pre-migration Verilog hashes. See packages/core/src/verilog/__tests__/golden-hashes.test.ts.",
+  "capturedAt": "2026-04-28T15:32:41.493Z",
+  "hashes": {
+    "And": "adf38b97fba788dc2eab31d728191216311314927f43550f416849cea9ceebdd",
+    "Or": "85b24de96f3cda0f9a4907d820dbcd4f94d4cc6a5969a54b721d9e2e1e44ef53",
+    "Not": "8d07a6840b8be71fb0e0d6865d5c83f5820d629bb15614b123e890f322df4e46",
+    "Nand": "a607d952b5d961ee01999624ac84b7fe23b65a4e4c3e8ee8d641ccc531a8583b",
+    "Xor": "a143cddedd08a6699949534871f6af9d24d061df08fb8ae00503b7a09c8d9fba",
+    "Adder": "8ce2f150b42e227a61b1c649d08dfc621b29881a7bf5bf20e07b13e3a69434e2",
+    "Subtractor": "a377f7703aab0aa7777c06d14298272eb90d23af308d3472b990266dc4a36ead",
+    "Comparator": "25aa3dbb5e83f1422888b367f1cbab849fa0e8f59c0aaf05dba9cf725cd94637",
+    "Multiplier": "e1d84974e3ff153b9f749032e63c3c1c9520ebf16d903c4032f424536b371df0",
+    "Mux": "7058883795ee0f6c025ebf8ddd0bedabb4af72837d6e80e3573c69796fa14fb9",
+    "Decoder": "adf52c6c920be0de6b4b2137f0031603842bc0fa95935a16d7ce2931983153e7",
+    "BitSlice": "26a18ab033abfc7608ac8eedcc025ad170a98f2dd56d8919944edf6501949d70",
+    "DFlipFlop": "0630556d55e04e834cee8de4f90f72a0eaf4fe0fc3997eaee6be6cf760f768d8",
+    "Register": "1d3584c2c2e90baf3912993bd370883257fb6cfb4d5ebc66389c95f844cec0c0",
+    "ROM": "06310d7e3ba0818cee200cf5a7671266c30be123dbce4a85abe9bf811f2a29e4",
+    "RAM": "0b2816980d1367e3036213cf71b3f20be66e903a2a2198e08a84b16fe29fd985",
+    "RV32I_Decode": "a03d2ab7350cdc463c522083a17e5c77e2e76a34b6f2e4f495893aa438fd4b91",
+    "RV32I_ALU": "0e8a0e98357672ac37a7eed5937f864057b9742fb86c13f4c1dd39c3b65addb1",
+    "RV32I_ImmGen": "84429df48562f672604165324d2beeb13d65c298aafad581309c30191dfea673",
+    "RV32I_Control": "a568e0533c675112560b2e15472f9653fcfbf780e06a342db6acbd165724d478",
+    "RV32I_BranchComp": "964780dbfdfc7dcd0927787efd9a5e2d88bba824c98a9328d15ebc5576c96906",
+    "RV32I_RegisterFile": "a2f636cb50c7dc5f43918386229e5a0e34d73e05eb04c04766b3ba38c0a3067f",
+    "GOLDEN_HalfAdder": "91f6b2e8d872e1bf0444e3553812a67d6f0a8d824669df54b8344cb8de3b28b8",
+    "GOLDEN_FullAdder": "e02eee48e4ae92cb188029332222a1a3036a22ebfc0724da94d694fce229afea",
+    "GOLDEN_BusPassthrough": "e09d65492f9963ccce59e2de7bbff9f2fec79bdcb567d6b6f7a7331fdf930799",
+    "GOLDEN_Counter": "a010c83eb46ed648cb230560e4dd63d089ce41e6d564ffd589b0dd611d26773f"
+  }
+}

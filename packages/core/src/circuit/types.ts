@@ -58,16 +58,20 @@ type PortRefs<M> = {
 /** Extract port refs from a BuiltCircuit's shape */
 type NodePortRefs<C extends BuiltCircuit> = PortRefs<C['_shape']['inputs']> & PortRefs<C['_shape']['outputs']>;
 
-/** The connect callback argument — typed from the config's in/out/nodes */
+/** The connect callback argument — typed from the config's inputs/outputs/nodes.
+ *
+ * Shape mirrors the config object the user wrote: `{ inputs, outputs, nodes }`.
+ * Destructure `nodes` inline (`nodes: { xor1, and1 }`) for terseness on small
+ * circuits, or access via `nodes.xor1` for clarity on larger ones.
+ */
 export type ConnectArg<
   Ins extends Record<string, PortType | number>,
   Outs extends Record<string, PortType | number>,
   Nodes extends Record<string, BuiltCircuit>,
 > = {
-  readonly in: PortRefs<Ins>;
-  readonly out: PortRefs<Outs>;
-} & {
-  readonly [K in keyof Nodes]: NodePortRefs<Nodes[K]>;
+  readonly inputs: PortRefs<Ins>;
+  readonly outputs: PortRefs<Outs>;
+  readonly nodes: { readonly [K in keyof Nodes]: NodePortRefs<Nodes[K]> };
 };
 
 // ============================================================================
@@ -146,8 +150,8 @@ export interface CircuitConfig<
   Nodes extends Record<string, BuiltCircuit> = Record<string, BuiltCircuit>,
   S extends StateShape = StateShape,
 > {
-  in?: Ins;
-  out?: Outs;
+  inputs?: Ins;
+  outputs?: Outs;
   nodes?: Nodes;
   nodeArgs?: { [K in keyof Nodes]?: Record<string, ArgumentValue> };
   connect?: (arg: ConnectArg<Ins, Outs, Nodes>) => ConnectionDef[];

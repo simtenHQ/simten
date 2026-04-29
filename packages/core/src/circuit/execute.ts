@@ -8,14 +8,14 @@
  * Usage:
  *   const result = executeCircuitCode(`
  *     const ha = circuit('HalfAdder', {
- *       in: { a: bit, b: bit },
- *       out: { sum: bit, carry: bit },
- *       nodes: { x: Xor, a: And },
- *       connect: ({ in: inp, out, x, a }) => [
- *         inp.a.to(x.a, a.a),
- *         inp.b.to(x.b, a.b),
- *         x.out.to(out.sum),
- *         a.out.to(out.carry),
+ *       inputs:  { a: bit, b: bit },
+ *       outputs: { sum: bit, carry: bit },
+ *       nodes:   { xor1: Xor, and1: And },
+ *       connect: ({ inputs, outputs, nodes: { xor1, and1 } }) => [
+ *         inputs.a.to(xor1.a, and1.a),
+ *         inputs.b.to(xor1.b, and1.b),
+ *         xor1.out.to(outputs.sum),
+ *         and1.out.to(outputs.carry),
  *       ],
  *     })
  *   `)
@@ -191,6 +191,15 @@ export function executeJsCode(jsCode: string, extraScope?: Record<string, unknow
  * @returns Execution result with circuits and any error
  */
 export function executeCircuitCode(code: string): ExecuteResult {
-  return executeJsCode(stripTypes(code));
+  let stripped: string;
+  try {
+    stripped = stripTypes(code);
+  } catch (e) {
+    // sucrase parse failure — return an error result without running anything.
+    // Reuse executeJsCode's empty-library shape by passing a no-op snippet.
+    const empty = executeJsCode('');
+    return { ...empty, error: e instanceof Error ? e.message : String(e) };
+  }
+  return executeJsCode(stripped);
 }
 

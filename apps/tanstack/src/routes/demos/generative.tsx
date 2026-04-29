@@ -23,18 +23,18 @@ export const Route = createFileRoute("/demos/generative")({
 function generateRippleCarryAdder(bits: number) {
   // Build FullAdder as a reusable component
   const FullAdder = circuit('FullAdder', {
-    in: { a: bit, b: bit, cin: bit },
-    out: { sum: bit, cout: bit },
+    inputs: { a: bit, b: bit, cin: bit },
+    outputs: { sum: bit, cout: bit },
     nodes: { x1: Xor, x2: Xor, a1: And, a2: And, o1: Or },
-    connect: ({ in: inp, out, x1, x2, a1, a2, o1 }) => [
-      inp.a.to(x1.a, a1.a),
-      inp.b.to(x1.b, a1.b),
+    connect: ({ inputs, outputs, nodes: { x1, x2, a1, a2, o1 } }) => [
+      inputs.a.to(x1.a, a1.a),
+      inputs.b.to(x1.b, a1.b),
       x1.out.to(x2.a, a2.a),
-      inp.cin.to(x2.b, a2.b),
-      x2.out.to(out.sum),
+      inputs.cin.to(x2.b, a2.b),
+      x2.out.to(outputs.sum),
       a1.out.to(o1.a),
       a2.out.to(o1.b),
-      o1.out.to(out.cout),
+      o1.out.to(outputs.cout),
     ],
   });
 
@@ -128,7 +128,7 @@ function RingOscillatorDemo() {
     }
 
     const ShiftOsc = circuit('ShiftOsc', {
-      out: { out: bit },
+      outputs: { out: bit },
       state: { ring: 1 },
       eval: ({ ring }) => ({ out: (ring as number) & 1 }),
       onTick: ({ ring }) => ({ ring: ((ring as number) + 1) % (stages * 2) < stages ? 1 : 0 }),
@@ -211,8 +211,8 @@ function TruthTableDemo() {
 
     // Generate a circuit from the truth table using eval
     const circuit = circuit('FromTruthTable', {
-      in: { a: bit, b: bit },
-      out: { out: bit },
+      inputs: { a: bit, b: bit },
+      outputs: { out: bit },
       eval: ({ a, b }) => ({ out: table[(a ? 2 : 0) + (b ? 1 : 0)] }),
     });
 
@@ -280,8 +280,8 @@ function TruthTableDemo() {
 
       <pre className="text-xs font-mono bg-muted rounded p-2 text-muted-foreground">{`// Generated from truth table:
 const gate = circuit('FromTruthTable', {
-  in: { a: bit, b: bit },
-  out: { out: bit },
+  inputs: { a: bit, b: bit },
+  outputs: { out: bit },
   eval: ({ a, b }) => ({
     out: [${table.join(', ')}][(a ? 2 : 0) + (b ? 1 : 0)]
   }),
@@ -300,7 +300,7 @@ function LFSRDemo() {
 
   const sim = useMemo(() => {
     return simulate(circuit('LFSR', {
-      out: { value: bus(bits), feedback: bit },
+      outputs: { value: bus(bits), feedback: bit },
       state: { reg: 1 },
       eval: ({ reg }) => ({
         value: (reg as number) & 0xF,

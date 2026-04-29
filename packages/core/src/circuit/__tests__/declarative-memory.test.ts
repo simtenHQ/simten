@@ -59,8 +59,8 @@ describe('mem() helper', () => {
 describe('circuit() with reg() state', () => {
   it('creates a sequential circuit with reg state', () => {
     const MyReg = circuit('TestRegState', {
-      in: { data: bus(8), we: bit },
-      out: { q: bus(8) },
+      inputs: { data: bus(8), we: bit },
+      outputs: { q: bus(8) },
       state: { value: reg(8) },
       eval: ({ value }) => ({ q: value as number }),
       onTick: ({ data, we, value }) => ({ value: we ? (data as number) : (value as number) }),
@@ -74,8 +74,8 @@ describe('circuit() with reg() state', () => {
 
   it('creates a 1-bit reg as bit type', () => {
     const MyFF = circuit('TestBitReg', {
-      in: { d: bit },
-      out: { q: bit },
+      inputs: { d: bit },
+      outputs: { q: bit },
       state: { value: reg(1) },
       eval: ({ value }) => ({ q: value as number }),
       onTick: ({ d }) => ({ value: d as number }),
@@ -90,8 +90,8 @@ describe('circuit() with reg() state', () => {
 describe('circuit() with mem() state', () => {
   it('creates a memory state block with correct dimensions', () => {
     const MyRAM = circuit('TestMemCircuit', {
-      in: { addr: bus(8), data_in: bus(8), we: bit },
-      out: { data_out: bus(8) },
+      inputs: { addr: bus(8), data_in: bus(8), we: bit },
+      outputs: { data_out: bus(8) },
       state: { memory: mem(256, 8) },
       eval: ({ addr, memory }) => ({
         data_out: (memory as any)?.get?.(addr) ?? 0,
@@ -115,8 +115,8 @@ describe('circuit() with mem() state', () => {
 
   it('computes addressWidth from depth', () => {
     const MySmall = circuit('TestSmallMem', {
-      in: { addr: bus(4), data_in: bus(8), we: bit },
-      out: { data_out: bus(8) },
+      inputs: { addr: bus(4), data_in: bus(8), we: bit },
+      outputs: { data_out: bus(8) },
       state: { memory: mem(16, 8) },
       eval: ({ addr, memory }) => ({
         data_out: (memory as any)?.get?.(addr) ?? 0,

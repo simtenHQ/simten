@@ -22,12 +22,12 @@ import { buildBitstream, hasBuild } from './build.js';
 
 function buildALU() {
   const ALU = circuit('RV32I_ALU_Top', {
-    in: { a: bus(32), b: bus(32), alu_op: bus(4) },
-    out: { result: bus(32), zero: bit },
+    inputs: { a: bus(32), b: bus(32), alu_op: bus(4) },
+    outputs: { result: bus(32), zero: bit },
     nodes: { alu: RV32I_ALU },
-    connect: ({ in: i, out: o, alu }) => [
-      i.a.to(alu.a), i.b.to(alu.b), i.alu_op.to(alu.alu_op),
-      alu.result.to(o.result), alu.zero.to(o.zero),
+    connect: ({ inputs, outputs, nodes: { alu } }) => [
+      inputs.a.to(alu.a), inputs.b.to(alu.b), inputs.alu_op.to(alu.alu_op),
+      alu.result.to(outputs.result), alu.zero.to(outputs.zero),
     ],
   });
 

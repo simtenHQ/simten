@@ -38,12 +38,12 @@ const PRODUCTS = [
 ];
 
 const CartMachine = circuit('CartMachine', {
-  in: {
+  inputs: {
     action: bus(4),      // which action
     item_id: bus(8),     // which product
     discount: bus(8),    // discount percentage (0-100)
   },
-  out: {
+  outputs: {
     total: bus(32),      // total price in cents
     item_count: bus(8),  // total items
     discount_active: bit,
@@ -304,8 +304,8 @@ function CircuitStatePage() {
         <div className="mt-6 p-4 bg-muted/30 rounded-lg">
           <h2 className="text-sm font-semibold mb-2">The state machine</h2>
           <pre className="text-xs font-mono text-muted-foreground whitespace-pre-wrap">{`const CartMachine = circuit('CartMachine', {
-  in: { action: bus(4), item_id: bus(8), discount: bus(8) },
-  out: { total: bus(32), item_count: bus(8), discount_active: bit, savings: bus(32) },
+  inputs:  { action: bus(4), item_id: bus(8), discount: bus(8) },
+  outputs: { total: bus(32), item_count: bus(8), discount_active: bit, savings: bus(32) },
   state: { items: new Map(), discountPct: 0 },
   eval: ({ items, discountPct }) => {
     // Compute totals from current state

@@ -40,12 +40,12 @@ const READ_SEQUENCE: number[] = [0x0000, 0x0001, 0x0002, 0x0003, 0x0010, 0x0011,
 
 function buildRom() {
   const RomWrapper = circuit('RomWrapper', {
-    in: { addr: bus(16) },
-    out: { data_out: bus(8) },
+    inputs: { addr: bus(16) },
+    outputs: { data_out: bus(8) },
     nodes: { r: ROM },
-    connect: ({ in: inp, out, r }) => [
-      inp.addr.to(r.addr),
-      r.data_out.to(out.data_out),
+    connect: ({ inputs, outputs, nodes: { r } }) => [
+      inputs.addr.to(r.addr),
+      r.data_out.to(outputs.data_out),
     ],
   });
 
