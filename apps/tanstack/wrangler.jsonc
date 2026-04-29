@@ -8,6 +8,9 @@
   "compatibility_date": "2025-09-02",
   "compatibility_flags": ["nodejs_compat"],
   "main": "app/server.ts",
+  "routes": [
+    { "pattern": "simten.dev", "custom_domain": true }
+  ],
   "observability": {
     "enabled": true
   },
