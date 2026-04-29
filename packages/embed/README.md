@@ -19,14 +19,14 @@ import { circuit, bit } from '@simten/core/circuit'
 import { Xor, And } from '@simten/core/std'
 
 const HalfAdder = circuit('HalfAdder', {
-  in:  { a: bit, b: bit },
-  out: { sum: bit, carry: bit },
+  inputs:  { a: bit, b: bit },
+  outputs: { sum: bit, carry: bit },
   nodes: { xor1: Xor, and1: And },
-  connect: ({ in: inp, out, xor1, and1 }) => [
-    inp.a.to(xor1.a, and1.a),
-    inp.b.to(xor1.b, and1.b),
-    xor1.out.to(out.sum),
-    and1.out.to(out.carry),
+  connect: ({ inputs, outputs, nodes: { xor1, and1 } }) => [
+    inputs.a.to(xor1.a, and1.a),
+    inputs.b.to(xor1.b, and1.b),
+    xor1.out.to(outputs.sum),
+    and1.out.to(outputs.carry),
   ],
 })
 
@@ -45,14 +45,14 @@ import { circuit, bit } from '@simten/core/circuit'
 import { Xor, And } from '@simten/core/std'
 
 const HalfAdder = circuit('HalfAdder', {
-  in: { a: bit, b: bit },
-  out: { sum: bit, carry: bit },
+  inputs: { a: bit, b: bit },
+  outputs: { sum: bit, carry: bit },
   nodes: { xor1: Xor, and1: And },
-  connect: ({ in: inp, out, xor1, and1 }) => [
-    inp.a.to(xor1.a, and1.a),
-    inp.b.to(xor1.b, and1.b),
-    xor1.out.to(out.sum),
-    and1.out.to(out.carry),
+  connect: ({ inputs, outputs, nodes: { xor1, and1 } }) => [
+    inputs.a.to(xor1.a, and1.a),
+    inputs.b.to(xor1.b, and1.b),
+    xor1.out.to(outputs.sum),
+    and1.out.to(outputs.carry),
   ],
 })
 
