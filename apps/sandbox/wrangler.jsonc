@@ -1,0 +1,25 @@
+// Sandbox app — hidden iframe that runs user circuit code in a Web Worker
+// on a separate origin from the main app. The origin boundary is what gates
+// access to simten.dev cookies, localStorage, and DOM (browser same-origin
+// policy). The Worker boundary is what isolates user code from the iframe's
+// own scripts.
+//
+// Deployed as a Cloudflare Worker with Static Assets. Wrangler reads
+// `public/_headers` (copied to `dist/_headers` by Vite) for the CSP that
+// restricts `connect-src` to `self` and `https://esm.sh` (npm CDN).
+//
+// In dev: served by Vite on http://localhost:3002 (CSP set via vite.config.ts).
+// In prod: served at sandbox.simten.dev.
+//
+// Production deploy:
+//   pnpm --filter @simten/sandbox build
+//   pnpm --filter @simten/sandbox deploy
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "simten-sandbox",
+  "compatibility_date": "2025-09-02",
+  "assets": {
+    "directory": "./dist",
+    "not_found_handling": "single-page-application"
+  }
+}
