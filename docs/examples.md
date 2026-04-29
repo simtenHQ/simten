@@ -9,14 +9,14 @@ import { circuit, bit } from '@simten/core/circuit'
 import { Xor, And } from '@simten/core/std'
 
 export const HalfAdder = circuit('HalfAdder', {
-  in: { a: bit, b: bit },
-  out: { sum: bit, carry: bit },
+  inputs: { a: bit, b: bit },
+  outputs: { sum: bit, carry: bit },
   nodes: { xor1: Xor, and1: And },
-  connect: ({ in: inp, out, xor1, and1 }) => [
-    inp.a.to(xor1.a, and1.a),
-    inp.b.to(xor1.b, and1.b),
-    xor1.out.to(out.sum),
-    and1.out.to(out.carry),
+  connect: ({ inputs, outputs, nodes: { xor1, and1 } }) => [
+    inputs.a.to(xor1.a, and1.a),
+    inputs.b.to(xor1.b, and1.b),
+    xor1.out.to(outputs.sum),
+    and1.out.to(outputs.carry),
   ],
 })
 ```
@@ -31,18 +31,18 @@ import { Or } from '@simten/core/std'
 import { HalfAdder } from './half-adder'
 
 export const FullAdder = circuit('FullAdder', {
-  in: { a: bit, b: bit, cin: bit },
-  out: { sum: bit, cout: bit },
+  inputs: { a: bit, b: bit, cin: bit },
+  outputs: { sum: bit, cout: bit },
   nodes: { ha1: HalfAdder, ha2: HalfAdder, or1: Or },
-  connect: ({ in: inp, out, ha1, ha2, or1 }) => [
-    inp.a.to(ha1.a),
-    inp.b.to(ha1.b),
+  connect: ({ inputs, outputs, nodes: { ha1, ha2, or1 } }) => [
+    inputs.a.to(ha1.a),
+    inputs.b.to(ha1.b),
     ha1.sum.to(ha2.a),
-    inp.cin.to(ha2.b),
-    ha2.sum.to(out.sum),
+    inputs.cin.to(ha2.b),
+    ha2.sum.to(outputs.sum),
     ha1.carry.to(or1.a),
     ha2.carry.to(or1.b),
-    or1.out.to(out.cout),
+    or1.out.to(outputs.cout),
   ],
 })
 ```
@@ -56,12 +56,12 @@ import { circuit, bit } from '@simten/core/circuit'
 import { DFlipFlop, Not, Xor } from '@simten/core/std'
 
 export const Counter2Bit = circuit('Counter2Bit', {
-  out: { bit0: bit, bit1: bit },
+  outputs: { bit0: bit, bit1: bit },
   nodes: { dff0: DFlipFlop, dff1: DFlipFlop, inv: Not, xor1: Xor },
-  connect: ({ out, dff0, dff1, inv, xor1 }) => [
-    dff0.q.to(inv.in, xor1.b, out.bit0),
+  connect: ({ outputs, nodes: { dff0, dff1, inv, xor1 } }) => [
+    dff0.q.to(inv.in, xor1.b, outputs.bit0),
     inv.out.to(dff0.d),
-    dff1.q.to(xor1.a, out.bit1),
+    dff1.q.to(xor1.a, outputs.bit1),
     xor1.out.to(dff1.d),
   ],
 })
