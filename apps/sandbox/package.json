@@ -6,7 +6,7 @@
     "dev": "vite dev --port 3002",
     "build": "vite build",
     "preview": "vite preview --port 3002",
-    "deploy": "wrangler deploy"
+    "deploy": "pnpm run build && wrangler deploy"
   },
   "dependencies": {
     "@simten/core": "workspace:*"
