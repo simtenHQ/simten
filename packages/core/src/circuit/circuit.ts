@@ -6,14 +6,14 @@
  *
  * Usage:
  *   const HalfAdder = circuit('HalfAdder', {
- *     in: { a: bit, b: bit },
- *     out: { sum: bit, carry: bit },
- *     nodes: { x: Xor, a: And },
- *     connect: ({ in: inp, out, x, a }) => [
- *       inp.a.to(x.a, a.a),
- *       inp.b.to(x.b, a.b),
- *       x.out.to(out.sum),
- *       a.out.to(out.carry),
+ *     inputs:  { a: bit, b: bit },
+ *     outputs: { sum: bit, carry: bit },
+ *     nodes:   { xor1: Xor, and1: And },
+ *     connect: ({ inputs, outputs, nodes: { xor1, and1 } }) => [
+ *       inputs.a.to(xor1.a, and1.a),
+ *       inputs.b.to(xor1.b, and1.b),
+ *       xor1.out.to(outputs.sum),
+ *       and1.out.to(outputs.carry),
  *     ],
  *   })
  */
@@ -104,15 +104,15 @@ export function circuit<
   // ── Normalize inputs/outputs ──
 
   const inputs = new Map<string, PortType>();
-  if (config.in) {
-    for (const [portName, portType] of Object.entries(config.in)) {
+  if (config.inputs) {
+    for (const [portName, portType] of Object.entries(config.inputs)) {
       inputs.set(portName, normalizePortType(portType as PortType | number));
     }
   }
 
   const outputs = new Map<string, PortType>();
-  if (config.out) {
-    for (const [portName, portType] of Object.entries(config.out)) {
+  if (config.outputs) {
+    for (const [portName, portType] of Object.entries(config.outputs)) {
       outputs.set(portName, normalizePortType(portType as PortType | number));
     }
   }
@@ -143,9 +143,10 @@ export function circuit<
     }
   }
 
-  // Reserved node names
+  // Reserved node names — these would shadow the connect callback's
+  // top-level destructure keys (`inputs`, `outputs`, `nodes`).
   for (const nodeName of Object.keys(nodes)) {
-    if (nodeName === 'in' || nodeName === 'out') {
+    if (nodeName === 'inputs' || nodeName === 'outputs' || nodeName === 'nodes') {
       errors.push(`Node name '${nodeName}' is reserved`);
     }
   }
@@ -159,20 +160,22 @@ export function circuit<
 
   let connectionDefs: ConnectionDef[] = [];
   if (config.connect) {
-    const arg: Record<string, Record<string, PortRef>> = {};
-
-    arg['in'] = createNodeProxy('', inputs);
-    arg['out'] = createNodeProxy('', outputs);
-
+    const nodeRefs: Record<string, Record<string, PortRef>> = {};
     for (const [nodeName, comp] of Object.entries(nodes) as [string, BuiltCircuit][]) {
       const allPorts = new Map<string, PortType>();
       for (const pd of comp.circuit.inputs) allPorts.set(pd.name, pd.portType);
       for (const pd of comp.circuit.outputs) allPorts.set(pd.name, pd.portType);
-      arg[nodeName] = createNodeProxy(nodeName, allPorts, comp.name);
+      nodeRefs[nodeName] = createNodeProxy(nodeName, allPorts, comp.name);
     }
 
+    const arg = {
+      inputs: createNodeProxy('', inputs),
+      outputs: createNodeProxy('', outputs),
+      nodes: nodeRefs,
+    };
+
     try {
-      connectionDefs = config.connect(arg as ConnectArg<Ins, Outs, Nodes>);
+      connectionDefs = config.connect(arg as unknown as ConnectArg<Ins, Outs, Nodes>);
     } catch (e) {
       errors.push(e instanceof Error ? e.message : String(e));
     }

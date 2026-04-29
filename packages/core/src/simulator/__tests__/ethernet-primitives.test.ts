@@ -65,8 +65,8 @@ function simTicks<C extends BuiltCircuit>(
 
 describe('Eth_ProtocolDecoder', () => {
   const c = circuit('TestProtocolDecoder', {
-    in: { ethertype: bus(16) },
-    out: {
+    inputs: { ethertype: bus(16) },
+    outputs: {
       is_ipv4: bit,
       is_ipv6: bit,
       is_arp: bit,
@@ -74,13 +74,13 @@ describe('Eth_ProtocolDecoder', () => {
       is_mpls: bit,
     },
     nodes: { d: Eth_ProtocolDecoder },
-    connect: ({ in: inp, out, d }) => [
-      inp.ethertype.to(d.ethertype),
-      d.is_ipv4.to(out.is_ipv4),
-      d.is_ipv6.to(out.is_ipv6),
-      d.is_arp.to(out.is_arp),
-      d.is_vlan.to(out.is_vlan),
-      d.is_mpls.to(out.is_mpls),
+    connect: ({ inputs, outputs, nodes: { d } }) => [
+      inputs.ethertype.to(d.ethertype),
+      d.is_ipv4.to(outputs.is_ipv4),
+      d.is_ipv6.to(outputs.is_ipv6),
+      d.is_arp.to(outputs.is_arp),
+      d.is_vlan.to(outputs.is_vlan),
+      d.is_mpls.to(outputs.is_mpls),
     ],
   });
 
@@ -129,15 +129,15 @@ describe('Eth_ProtocolDecoder', () => {
 
 describe('Eth_AddrClassifier', () => {
   const c = circuit('TestAddrClassifier', {
-    in: { dst_mac_hi: bus(16), dst_mac_lo: bus(32) },
-    out: { is_broadcast: bit, is_multicast: bit, is_unicast: bit },
+    inputs: { dst_mac_hi: bus(16), dst_mac_lo: bus(32) },
+    outputs: { is_broadcast: bit, is_multicast: bit, is_unicast: bit },
     nodes: { ac: Eth_AddrClassifier },
-    connect: ({ in: inp, out, ac }) => [
-      inp.dst_mac_hi.to(ac.dst_mac_hi),
-      inp.dst_mac_lo.to(ac.dst_mac_lo),
-      ac.is_broadcast.to(out.is_broadcast),
-      ac.is_multicast.to(out.is_multicast),
-      ac.is_unicast.to(out.is_unicast),
+    connect: ({ inputs, outputs, nodes: { ac } }) => [
+      inputs.dst_mac_hi.to(ac.dst_mac_hi),
+      inputs.dst_mac_lo.to(ac.dst_mac_lo),
+      ac.is_broadcast.to(outputs.is_broadcast),
+      ac.is_multicast.to(outputs.is_multicast),
+      ac.is_unicast.to(outputs.is_unicast),
     ],
   });
 
@@ -174,8 +174,8 @@ describe('Eth_AddrClassifier', () => {
 
 describe('Eth_FrameInput', () => {
   const c = circuit('TestFrameInput', {
-    in: { enable: bit, reset: bit },
-    out: {
+    inputs: { enable: bit, reset: bit },
+    outputs: {
       tdata: bus(32),
       tkeep: bus(4),
       tvalid: bit,
@@ -183,14 +183,14 @@ describe('Eth_FrameInput', () => {
       byte_offset: bus(16),
     },
     nodes: { fi: Eth_FrameInput },
-    connect: ({ in: inp, out, fi }) => [
-      inp.enable.to(fi.enable),
-      inp.reset.to(fi.reset),
-      fi.tdata.to(out.tdata),
-      fi.tkeep.to(out.tkeep),
-      fi.tvalid.to(out.tvalid),
-      fi.tlast.to(out.tlast),
-      fi.byte_offset.to(out.byte_offset),
+    connect: ({ inputs, outputs, nodes: { fi } }) => [
+      inputs.enable.to(fi.enable),
+      inputs.reset.to(fi.reset),
+      fi.tdata.to(outputs.tdata),
+      fi.tkeep.to(outputs.tkeep),
+      fi.tvalid.to(outputs.tvalid),
+      fi.tlast.to(outputs.tlast),
+      fi.byte_offset.to(outputs.byte_offset),
     ],
   });
 
@@ -267,17 +267,17 @@ describe('Eth_FrameInput', () => {
 
 describe('Eth_CRC32', () => {
   const c = circuit('TestCRC32', {
-    in: { data: bus(32), data_valid: bit, tkeep: bus(4), tlast: bit, reset: bit },
-    out: { crc: bus(32), crc_ok: bit },
+    inputs: { data: bus(32), data_valid: bit, tkeep: bus(4), tlast: bit, reset: bit },
+    outputs: { crc: bus(32), crc_ok: bit },
     nodes: { cr: Eth_CRC32 },
-    connect: ({ in: inp, out, cr }) => [
-      inp.data.to(cr.data),
-      inp.data_valid.to(cr.data_valid),
-      inp.tkeep.to(cr.tkeep),
-      inp.tlast.to(cr.tlast),
-      inp.reset.to(cr.reset),
-      cr.crc.to(out.crc),
-      cr.crc_ok.to(out.crc_ok),
+    connect: ({ inputs, outputs, nodes: { cr } }) => [
+      inputs.data.to(cr.data),
+      inputs.data_valid.to(cr.data_valid),
+      inputs.tkeep.to(cr.tkeep),
+      inputs.tlast.to(cr.tlast),
+      inputs.reset.to(cr.reset),
+      cr.crc.to(outputs.crc),
+      cr.crc_ok.to(outputs.crc_ok),
     ],
   });
 
@@ -302,8 +302,8 @@ describe('Eth_CRC32', () => {
 
 describe('Eth_FrameParser', () => {
   const c = circuit('TestFrameParser', {
-    in: { tdata: bus(32), tkeep: bus(4), tvalid: bit, tlast: bit },
-    out: {
+    inputs: { tdata: bus(32), tkeep: bus(4), tvalid: bit, tlast: bit },
+    outputs: {
       dst_mac_hi: bus(16),
       dst_mac_lo: bus(32),
       dst_mac_valid: bit,
@@ -320,25 +320,25 @@ describe('Eth_FrameParser', () => {
       frame_length: bus(16),
     },
     nodes: { p: Eth_FrameParser },
-    connect: ({ in: inp, out, p }) => [
-      inp.tdata.to(p.tdata),
-      inp.tkeep.to(p.tkeep),
-      inp.tvalid.to(p.tvalid),
-      inp.tlast.to(p.tlast),
-      p.dst_mac_hi.to(out.dst_mac_hi),
-      p.dst_mac_lo.to(out.dst_mac_lo),
-      p.dst_mac_valid.to(out.dst_mac_valid),
-      p.src_mac_hi.to(out.src_mac_hi),
-      p.src_mac_lo.to(out.src_mac_lo),
-      p.src_mac_valid.to(out.src_mac_valid),
-      p.ethertype.to(out.ethertype),
-      p.ethertype_valid.to(out.ethertype_valid),
-      p.has_vlan.to(out.has_vlan),
-      p.vlan_tci.to(out.vlan_tci),
-      p.payload_valid.to(out.payload_valid),
-      p.frame_done.to(out.frame_done),
-      p.parse_state.to(out.parse_state),
-      p.frame_length.to(out.frame_length),
+    connect: ({ inputs, outputs, nodes: { p } }) => [
+      inputs.tdata.to(p.tdata),
+      inputs.tkeep.to(p.tkeep),
+      inputs.tvalid.to(p.tvalid),
+      inputs.tlast.to(p.tlast),
+      p.dst_mac_hi.to(outputs.dst_mac_hi),
+      p.dst_mac_lo.to(outputs.dst_mac_lo),
+      p.dst_mac_valid.to(outputs.dst_mac_valid),
+      p.src_mac_hi.to(outputs.src_mac_hi),
+      p.src_mac_lo.to(outputs.src_mac_lo),
+      p.src_mac_valid.to(outputs.src_mac_valid),
+      p.ethertype.to(outputs.ethertype),
+      p.ethertype_valid.to(outputs.ethertype_valid),
+      p.has_vlan.to(outputs.has_vlan),
+      p.vlan_tci.to(outputs.vlan_tci),
+      p.payload_valid.to(outputs.payload_valid),
+      p.frame_done.to(outputs.frame_done),
+      p.parse_state.to(outputs.parse_state),
+      p.frame_length.to(outputs.frame_length),
     ],
   });
 

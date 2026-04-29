@@ -33,13 +33,13 @@ const SEQUENCE: Step[] = [
 
 function buildRegister() {
   const RegWrapper = circuit('RegWrapper', {
-    in: { data: bus(8), we: bit },
-    out: { q: bus(8) },
+    inputs: { data: bus(8), we: bit },
+    outputs: { q: bus(8) },
     nodes: { r: Register },
-    connect: ({ in: inp, out, r }) => [
-      inp.data.to(r.data),
-      inp.we.to(r.we),
-      r.q.to(out.q),
+    connect: ({ inputs, outputs, nodes: { r } }) => [
+      inputs.data.to(r.data),
+      inputs.we.to(r.we),
+      r.q.to(outputs.q),
     ],
   });
 

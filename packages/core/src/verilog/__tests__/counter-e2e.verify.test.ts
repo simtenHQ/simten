@@ -64,8 +64,8 @@ function buildCounter() {
   //   clear|enable → reg.we (so clear writes even with enable=0)
   //   mux.out   → reg.data
   const Counter = circuit('Counter', {
-    in: { enable: bit, clear: bit },
-    out: { count: bus(8) },
+    inputs: { enable: bit, clear: bit },
+    outputs: { count: bus(8) },
     nodes: {
       reg: Register,
       add: Adder,
@@ -78,13 +78,13 @@ function buildCounter() {
       one: { value: 1 },
       zero: { value: 0 },
     },
-    connect: ({ in: inp, out, reg, add, one, zero, mux, weOr }) => [
-      reg.q.to(add.a, out.count),
+    connect: ({ inputs, outputs, nodes: { reg, add, one, zero, mux, weOr } }) => [
+      reg.q.to(add.a, outputs.count),
       one.out.to(add.b),
       zero.out.to(add.carry_in, mux.in1),
       add.sum.to(mux.in0),
-      inp.clear.to(mux.sel, weOr.a),
-      inp.enable.to(weOr.b),
+      inputs.clear.to(mux.sel, weOr.a),
+      inputs.enable.to(weOr.b),
       weOr.out.to(reg.we),
       mux.out.to(reg.data),
     ],

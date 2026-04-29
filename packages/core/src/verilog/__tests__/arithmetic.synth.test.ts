@@ -37,18 +37,18 @@ function buildFullAdder() {
   // sum       = a XOR b XOR carry_in
   // carry_out = (a AND b) OR ((a XOR b) AND carry_in)
   const FullAdder = circuit('FullAdder', {
-    in: { a: bit, b: bit, carry_in: bit },
-    out: { sum: bit, carry_out: bit },
+    inputs: { a: bit, b: bit, carry_in: bit },
+    outputs: { sum: bit, carry_out: bit },
     nodes: { xor1: Xor, xor2: Xor, and1: And, and2: And, or1: Or },
-    connect: ({ in: inp, out, xor1, xor2, and1, and2, or1 }) => [
-      inp.a.to(xor1.a, and1.a),
-      inp.b.to(xor1.b, and1.b),
+    connect: ({ inputs, outputs, nodes: { xor1, xor2, and1, and2, or1 } }) => [
+      inputs.a.to(xor1.a, and1.a),
+      inputs.b.to(xor1.b, and1.b),
       xor1.out.to(xor2.a, and2.a),
-      inp.carry_in.to(xor2.b, and2.b),
-      xor2.out.to(out.sum),
+      inputs.carry_in.to(xor2.b, and2.b),
+      xor2.out.to(outputs.sum),
       and1.out.to(or1.a),
       and2.out.to(or1.b),
-      or1.out.to(out.carry_out),
+      or1.out.to(outputs.carry_out),
     ],
   });
   return { circuit: FullAdder.circuit, lib: makeLib(FullAdder, 'FullAdder') };
@@ -62,8 +62,8 @@ function buildRippleCarryAdder4() {
   FA._dependencies.set('FullAdder', { circuit: FullAdder });
 
   const RCA4 = circuit('RippleCarryAdder4', {
-    in: { a: bus(4), b: bus(4), carry_in: bit },
-    out: { sum: bus(4), carry_out: bit },
+    inputs: { a: bus(4), b: bus(4), carry_in: bit },
+    outputs: { sum: bus(4), carry_out: bit },
     nodes: { fa0: FA as any, fa1: FA as any, fa2: FA as any, fa3: FA as any,
              // bit splitters inline via And/Or chains — use Adder instead for simplicity
            },
@@ -73,16 +73,16 @@ function buildRippleCarryAdder4() {
 
   // Actually build it properly using stdlib Adder (width-parameterised)
   const RCA = circuit('RippleCarryAdder4', {
-    in: { a: bus(4), b: bus(4), carry_in: bit },
-    out: { sum: bus(4), carry_out: bit },
+    inputs: { a: bus(4), b: bus(4), carry_in: bit },
+    outputs: { sum: bus(4), carry_out: bit },
     nodes: { add: Adder },
     nodeArgs: { add: { width: 4 } },
-    connect: ({ in: inp, out, add }) => [
-      inp.a.to(add.a),
-      inp.b.to(add.b),
-      inp.carry_in.to(add.carry_in),
-      add.sum.to(out.sum),
-      add.carry_out.to(out.carry_out),
+    connect: ({ inputs, outputs, nodes: { add } }) => [
+      inputs.a.to(add.a),
+      inputs.b.to(add.b),
+      inputs.carry_in.to(add.carry_in),
+      add.sum.to(outputs.sum),
+      add.carry_out.to(outputs.carry_out),
     ],
   });
 
@@ -92,15 +92,15 @@ function buildRippleCarryAdder4() {
 function buildStdlibAdder() {
   // Wraps the stdlib Adder directly — exercises the eval-synth transpiler path
   const Adder8 = circuit('Adder8', {
-    in: { a: bus(8), b: bus(8), carry_in: bit },
-    out: { sum: bus(8), carry_out: bit },
+    inputs: { a: bus(8), b: bus(8), carry_in: bit },
+    outputs: { sum: bus(8), carry_out: bit },
     nodes: { add: Adder },
-    connect: ({ in: inp, out, add }) => [
-      inp.a.to(add.a),
-      inp.b.to(add.b),
-      inp.carry_in.to(add.carry_in),
-      add.sum.to(out.sum),
-      add.carry_out.to(out.carry_out),
+    connect: ({ inputs, outputs, nodes: { add } }) => [
+      inputs.a.to(add.a),
+      inputs.b.to(add.b),
+      inputs.carry_in.to(add.carry_in),
+      add.sum.to(outputs.sum),
+      add.carry_out.to(outputs.carry_out),
     ],
   });
   return { circuit: Adder8.circuit, lib: makeLib(Adder8, 'Adder8') };
@@ -108,13 +108,13 @@ function buildStdlibAdder() {
 
 function buildMultiplier() {
   const Mul = circuit('Multiplier8', {
-    in: { a: bus(8), b: bus(8) },
-    out: { product: bus(16) },
+    inputs: { a: bus(8), b: bus(8) },
+    outputs: { product: bus(16) },
     nodes: { mul: Multiplier },
-    connect: ({ in: inp, out, mul }) => [
-      inp.a.to(mul.a),
-      inp.b.to(mul.b),
-      mul.product.to(out.product),
+    connect: ({ inputs, outputs, nodes: { mul } }) => [
+      inputs.a.to(mul.a),
+      inputs.b.to(mul.b),
+      mul.product.to(outputs.product),
     ],
   });
   return { circuit: Mul.circuit, lib: makeLib(Mul, 'Multiplier8') };
@@ -124,8 +124,8 @@ function buildSimpleALU() {
   // 2-op ALU: op=0 → add, op=1 → bitwise AND
   // Uses Adder + BusAnd + Mux
   const ALU = circuit('SimpleALU', {
-    in: { a: bus(8), b: bus(8), op: bit },
-    out: { result: bus(8) },
+    inputs: { a: bus(8), b: bus(8), op: bit },
+    outputs: { result: bus(8) },
     nodes: { add: Adder, band: BusAnd, mux0: Mux, mux1: Mux, mux2: Mux,
              mux3: Mux, mux4: Mux, mux5: Mux, mux6: Mux, mux7: Mux },
     connect: () => [],
@@ -134,16 +134,16 @@ function buildSimpleALU() {
   // Simpler: use BusAnd and BusOr outputs selected by a bus of Muxes
   // Actually, let's use a cleaner approach with Or for the op select
   const ALU2 = circuit('SimpleALU', {
-    in: { a: bus(8), b: bus(8), carry_in: bit, op: bit },
-    out: { result: bus(8), carry_out: bit },
+    inputs: { a: bus(8), b: bus(8), carry_in: bit, op: bit },
+    outputs: { result: bus(8), carry_out: bit },
     nodes: { add: Adder, band: BusAnd },
-    connect: ({ in: inp, out, add, band }) => [
-      inp.a.to(add.a, band.a),
-      inp.b.to(add.b, band.b),
-      inp.carry_in.to(add.carry_in),
+    connect: ({ inputs, outputs, nodes: { add, band } }) => [
+      inputs.a.to(add.a, band.a),
+      inputs.b.to(add.b, band.b),
+      inputs.carry_in.to(add.carry_in),
       // For simplicity: result is add.sum (we check synthesis works, not full mux)
-      add.sum.to(out.result),
-      add.carry_out.to(out.carry_out),
+      add.sum.to(outputs.result),
+      add.carry_out.to(outputs.carry_out),
     ],
   });
 

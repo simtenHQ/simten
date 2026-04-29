@@ -20,8 +20,8 @@ export const Route = createFileRoute("/demos/playground")({
 
 // 4-bit counter with enable and reset
 const Counter4 = circuit('Counter4', {
-  in: { enable: bit, reset: bit },
-  out: { count: bus(4), zero: bit, max: bit },
+  inputs: { enable: bit, reset: bit },
+  outputs: { count: bus(4), zero: bit, max: bit },
   state: { value: 0 },
   eval: ({ value }) => ({
     count: (value as number) & 0xF,
@@ -35,7 +35,7 @@ const Counter4 = circuit('Counter4', {
 
 // Fibonacci generator
 const Fibonacci = circuit('Fibonacci', {
-  out: { value: bus(16), step: bus(8) },
+  outputs: { value: bus(16), step: bus(8) },
   state: { a: 0, b: 1, n: 0 },
   eval: ({ a }) => ({ value: a as number, step: 0 }),
   onTick: ({ a, b, n }) => ({
@@ -47,8 +47,8 @@ const Fibonacci = circuit('Fibonacci', {
 
 // Shift register — watch bits ripple through
 const ShiftReg8 = circuit('ShiftReg8', {
-  in: { data: bit },
-  out: { b0: bit, b1: bit, b2: bit, b3: bit, b4: bit, b5: bit, b6: bit, b7: bit },
+  inputs: { data: bit },
+  outputs: { b0: bit, b1: bit, b2: bit, b3: bit, b4: bit, b5: bit, b6: bit, b7: bit },
   state: { reg: 0 },
   eval: ({ reg }) => ({
     b0: ((reg as number) >> 0) & 1,
@@ -67,8 +67,8 @@ const ShiftReg8 = circuit('ShiftReg8', {
 
 // Custom user-defined eval: ReLU activation function
 const ReLU = circuit('ReLU', {
-  in: { x: bus(16) },
-  out: { y: bus(16) },
+  inputs: { x: bus(16) },
+  outputs: { y: bus(16) },
   eval: ({ x }) => ({ y: x > 32767 ? 0 : x }), // Treat >32767 as negative
 });
 
@@ -240,15 +240,15 @@ function ShiftRegisterDemo() {
 function LiveCodeDemo() {
   const sandbox = useSandboxContext();
   const [code, setCode] = useState(`const MyGate = circuit('MyGate', {
-  in: { a: bit, b: bit },
-  out: { and_out: bit, or_out: bit, xor_out: bit },
+  inputs: { a: bit, b: bit },
+  outputs: { and_out: bit, or_out: bit, xor_out: bit },
   nodes: { g_and: And, g_or: Or, g_xor: Xor },
-  connect: ({ in: inp, out, g_and, g_or, g_xor }) => [
-    inp.a.to(g_and.a, g_or.a, g_xor.a),
-    inp.b.to(g_and.b, g_or.b, g_xor.b),
-    g_and.out.to(out.and_out),
-    g_or.out.to(out.or_out),
-    g_xor.out.to(out.xor_out),
+  connect: ({ inputs, outputs, nodes: { g_and, g_or, g_xor } }) => [
+    inputs.a.to(g_and.a, g_or.a, g_xor.a),
+    inputs.b.to(g_and.b, g_or.b, g_xor.b),
+    g_and.out.to(outputs.and_out),
+    g_or.out.to(outputs.or_out),
+    g_xor.out.to(outputs.xor_out),
   ],
 })`);
   const [result, setResult] = useState<{ outputs: Record<string, number>; error?: string } | null>(null);
@@ -332,8 +332,8 @@ function PlaygroundPage() {
           <h2 className="text-sm font-semibold mb-2">How it works</h2>
           <pre className="text-xs font-mono text-muted-foreground whitespace-pre-wrap">{`// Define a component in TypeScript
 const Counter = circuit('Counter', {
-  in: { enable: bit },
-  out: { count: bus(4) },
+  inputs: { enable: bit },
+  outputs: { count: bus(4) },
   state: { value: 0 },
   eval: ({ value }) => ({ count: value & 0xF }),
   onTick: ({ enable, value }) => ({

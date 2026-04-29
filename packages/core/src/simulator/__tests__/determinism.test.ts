@@ -29,55 +29,55 @@ import { And, Or, Xor, Adder, Register, DFlipFlop, Not } from '../../std/index.j
 // ============================================================================
 
 const HalfAdder = circuit('HalfAdder', {
-  in: { a: bit, b: bit },
-  out: { sum: bit, carry: bit },
+  inputs: { a: bit, b: bit },
+  outputs: { sum: bit, carry: bit },
   nodes: { x1: Xor, a1: And },
-  connect: ({ in: inp, out, x1, a1 }) => [
-    inp.a.to(x1.a, a1.a),
-    inp.b.to(x1.b, a1.b),
-    x1.out.to(out.sum),
-    a1.out.to(out.carry),
+  connect: ({ inputs, outputs, nodes: { x1, a1 } }) => [
+    inputs.a.to(x1.a, a1.a),
+    inputs.b.to(x1.b, a1.b),
+    x1.out.to(outputs.sum),
+    a1.out.to(outputs.carry),
   ],
 });
 
 const FullAdder = circuit('FullAdder', {
-  in: { a: bit, b: bit, cin: bit },
-  out: { sum: bit, cout: bit },
+  inputs: { a: bit, b: bit, cin: bit },
+  outputs: { sum: bit, cout: bit },
   nodes: { ha1: HalfAdder, ha2: HalfAdder, or1: Or },
-  connect: ({ in: inp, out, ha1, ha2, or1 }) => [
-    inp.a.to(ha1.a),
-    inp.b.to(ha1.b),
+  connect: ({ inputs, outputs, nodes: { ha1, ha2, or1 } }) => [
+    inputs.a.to(ha1.a),
+    inputs.b.to(ha1.b),
     ha1.sum.to(ha2.a),
-    inp.cin.to(ha2.b),
-    ha2.sum.to(out.sum),
+    inputs.cin.to(ha2.b),
+    ha2.sum.to(outputs.sum),
     ha1.carry.to(or1.a),
     ha2.carry.to(or1.b),
-    or1.out.to(out.cout),
+    or1.out.to(outputs.cout),
   ],
 });
 
 const Counter2Bit = circuit('Counter2Bit', {
-  out: { bit0: bit, bit1: bit },
+  outputs: { bit0: bit, bit1: bit },
   nodes: { dff0: DFlipFlop, dff1: DFlipFlop, inv: Not, xor1: Xor },
-  connect: ({ out, dff0, dff1, inv, xor1 }) => [
-    dff0.q.to(inv.in, xor1.b, out.bit0),
+  connect: ({ outputs, nodes: { dff0, dff1, inv, xor1 } }) => [
+    dff0.q.to(inv.in, xor1.b, outputs.bit0),
     inv.out.to(dff0.d),
-    dff1.q.to(xor1.a, out.bit1),
+    dff1.q.to(xor1.a, outputs.bit1),
     xor1.out.to(dff1.d),
   ],
 });
 
 const Accumulator = circuit('Accumulator', {
-  in: { addend: 8, we: bit },
-  out: { q: 8, carry: bit },
+  inputs: { addend: 8, we: bit },
+  outputs: { q: 8, carry: bit },
   nodes: { reg: Register, add: Adder },
   nodeArgs: { add: { carry_in: 0 } },
-  connect: ({ in: inp, out, reg, add }) => [
-    reg.q.to(add.a, out.q),
-    inp.addend.to(add.b),
+  connect: ({ inputs, outputs, nodes: { reg, add } }) => [
+    reg.q.to(add.a, outputs.q),
+    inputs.addend.to(add.b),
     add.sum.to(reg.data),
-    inp.we.to(reg.we),
-    add.carry_out.to(out.carry),
+    inputs.we.to(reg.we),
+    add.carry_out.to(outputs.carry),
   ],
 });
 

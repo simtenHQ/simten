@@ -8,8 +8,8 @@ import { circuit } from '../circuit/circuit.js';
 import { bit, bus, mem } from '../circuit/bit-bus.js';
 
 export const ROM = circuit('ROM', {
-  in: { addr: bus(16) },
-  out: { data_out: bus(8) },
+  inputs: { addr: bus(16) },
+  outputs: { data_out: bus(8) },
   state: { memory: mem(65536, 8) },
   meta: { category: 'memory', icon: '📀', description: 'Read-only memory with address decoding' },
   eval: ({ addr, memory }) => ({
@@ -19,8 +19,8 @@ export const ROM = circuit('ROM', {
 });
 
 export const RAM = circuit('RAM', {
-  in: { addr: bus(8), data_in: bus(8), we: bit },
-  out: { data_out: bus(8) },
+  inputs: { addr: bus(8), data_in: bus(8), we: bit },
+  outputs: { data_out: bus(8) },
   state: { memory: mem(256, 8) },
   meta: { category: 'memory', icon: '📝', description: 'Random access memory' },
   eval: ({ addr, memory }) => ({
@@ -33,8 +33,8 @@ export const RAM = circuit('RAM', {
 });
 
 export const DualPortRAM = circuit('DualPortRAM', {
-  in: { addrA: bus(8), dataA: bus(8), weA: bit, addrB: bus(8) },
-  out: { outA: bus(8), outB: bus(8) },
+  inputs: { addrA: bus(8), dataA: bus(8), weA: bit, addrB: bus(8) },
+  outputs: { outA: bus(8), outB: bus(8) },
   state: { memory: mem(256, 8) },
   meta: { category: 'memory', icon: '📝×2', description: 'Dual-port RAM' },
   eval: ({ addrA, addrB, memory }) => ({

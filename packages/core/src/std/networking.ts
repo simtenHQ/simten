@@ -19,8 +19,8 @@ const CRC32_TABLE: number[] = (() => {
 })();
 
 export const Eth_ProtocolDecoder = circuit('Eth_ProtocolDecoder', {
-  in: { ethertype: bus(16) },
-  out: { is_ipv4: bit, is_ipv6: bit, is_arp: bit, is_vlan: bit, is_mpls: bit },
+  inputs: { ethertype: bus(16) },
+  outputs: { is_ipv4: bit, is_ipv6: bit, is_arp: bit, is_vlan: bit, is_mpls: bit },
   eval: ({ ethertype }) => {
     const et = (ethertype as number) & 0xFFFF;
     return {
@@ -35,8 +35,8 @@ export const Eth_ProtocolDecoder = circuit('Eth_ProtocolDecoder', {
 });
 
 export const Eth_AddrClassifier = circuit('Eth_AddrClassifier', {
-  in: { dst_mac_hi: bus(16), dst_mac_lo: bus(32) },
-  out: { is_broadcast: bit, is_multicast: bit, is_unicast: bit },
+  inputs: { dst_mac_hi: bus(16), dst_mac_lo: bus(32) },
+  outputs: { is_broadcast: bit, is_multicast: bit, is_unicast: bit },
   eval: ({ dst_mac_hi, dst_mac_lo }) => {
     const hi = (dst_mac_hi as number) & 0xFFFF;
     const lo = ((dst_mac_lo as number) & 0xFFFFFFFF) >>> 0;
@@ -49,8 +49,8 @@ export const Eth_AddrClassifier = circuit('Eth_AddrClassifier', {
 });
 
 export const Eth_FrameInput = circuit('Eth_FrameInput', {
-  in: { enable: bit, reset: bit },
-  out: { tdata: bus(32), tkeep: bus(4), tvalid: bit, tlast: bit, byte_offset: bus(16) },
+  inputs: { enable: bit, reset: bit },
+  outputs: { tdata: bus(32), tkeep: bus(4), tvalid: bit, tlast: bit, byte_offset: bus(16) },
   state: { memory: new Map<number, number>() },
   eval: ({ memory }) => {
     const mem = (memory as Map<number, number>) ?? new Map();
@@ -111,8 +111,8 @@ export const Eth_FrameInput = circuit('Eth_FrameInput', {
 });
 
 export const Eth_FrameParser = circuit('Eth_FrameParser', {
-  in: { tdata: bus(32), tkeep: bus(4), tvalid: bit, tlast: bit },
-  out: { dst_mac_hi: bus(16), dst_mac_lo: bus(32), dst_mac_valid: bit, src_mac_hi: bus(16), src_mac_lo: bus(32), src_mac_valid: bit, ethertype: bus(16), ethertype_valid: bit, has_vlan: bit, vlan_tci: bus(16), vlan_valid: bit, payload_valid: bit, frame_done: bit, frame_length: bus(16), parse_state: bus(4) },
+  inputs: { tdata: bus(32), tkeep: bus(4), tvalid: bit, tlast: bit },
+  outputs: { dst_mac_hi: bus(16), dst_mac_lo: bus(32), dst_mac_valid: bit, src_mac_hi: bus(16), src_mac_lo: bus(32), src_mac_valid: bit, ethertype: bus(16), ethertype_valid: bit, has_vlan: bit, vlan_tci: bus(16), vlan_valid: bit, payload_valid: bit, frame_done: bit, frame_length: bus(16), parse_state: bus(4) },
   state: { memory: new Map<number, number>() },
   eval: ({ memory }) => {
     const regs = (memory as Map<number, number>) ?? new Map();
@@ -179,8 +179,8 @@ export const Eth_FrameParser = circuit('Eth_FrameParser', {
 });
 
 export const Eth_CRC32 = circuit('Eth_CRC32', {
-  in: { data: bus(32), data_valid: bit, tkeep: bus(4), tlast: bit, reset: bit },
-  out: { crc: bus(32), crc_ok: bit },
+  inputs: { data: bus(32), data_valid: bit, tkeep: bus(4), tlast: bit, reset: bit },
+  outputs: { crc: bus(32), crc_ok: bit },
   state: { memory: new Map<number, number>() },
   eval: ({ memory }) => {
     const regs = (memory as Map<number, number>) ?? new Map();
@@ -214,8 +214,8 @@ export const Eth_CRC32 = circuit('Eth_CRC32', {
 });
 
 export const MemBusMux = circuit('MemBusMux', {
-  in: { addr: bus(32), write_data: bus(32), mem_read: bit, mem_write: bit, funct3: bus(3), read_data_0: bus(32), read_data_1: bus(32), read_data_2: bus(32), read_data_3: bus(32), read_data_4: bus(32) },
-  out: { local_addr: bus(32), write_data_out: bus(32), funct3_out: bus(3), read_data: bus(32), p0_read: bit, p0_write: bit, p1_read: bit, p1_write: bit, p2_read: bit, p2_write: bit, p3_read: bit, p3_write: bit, p4_read: bit, p4_write: bit },
+  inputs: { addr: bus(32), write_data: bus(32), mem_read: bit, mem_write: bit, funct3: bus(3), read_data_0: bus(32), read_data_1: bus(32), read_data_2: bus(32), read_data_3: bus(32), read_data_4: bus(32) },
+  outputs: { local_addr: bus(32), write_data_out: bus(32), funct3_out: bus(3), read_data: bus(32), p0_read: bit, p0_write: bit, p1_read: bit, p1_write: bit, p2_read: bit, p2_write: bit, p3_read: bit, p3_write: bit, p4_read: bit, p4_write: bit },
   eval: ({ addr, write_data, mem_read, mem_write, funct3, read_data_0, read_data_1, read_data_2, read_data_3, read_data_4,
            base0, base1, base2, base3, base4, end0, end1, end2, end3, end4 }) => {
     const a  = ((addr as number) ?? 0) >>> 0;
@@ -247,8 +247,8 @@ export const MemBusMux = circuit('MemBusMux', {
 });
 
 export const UART_TX = circuit('UART_TX', {
-  in: { addr: bus(32), write_data: bus(32), mem_read: bit, mem_write: bit },
-  out: { read_data: bus(32) },
+  inputs: { addr: bus(32), write_data: bus(32), mem_read: bit, mem_write: bit },
+  outputs: { read_data: bus(32) },
   state: { text: '' as string },
   eval: ({ mem_read }) => ({ read_data: mem_read ? 1 : 0 }),
   onTick: ({ addr, write_data, mem_write, text }) => {
@@ -263,8 +263,8 @@ export const UART_TX = circuit('UART_TX', {
 });
 
 export const NIC_FIFO = circuit('NIC_FIFO', {
-  in: { tx_addr: bus(32), tx_write_data: bus(32), tx_mem_read: bit, tx_mem_write: bit, rx_addr: bus(32), rx_mem_read: bit, rx_mem_write: bit, net_rx_data: bus(32), net_rx_valid: bit, net_rx_frame: bit },
-  out: { tx_read_data: bus(32), rx_read_data: bus(32), net_tx_data: bus(32), net_tx_valid: bit, net_tx_frame: bit },
+  inputs: { tx_addr: bus(32), tx_write_data: bus(32), tx_mem_read: bit, tx_mem_write: bit, rx_addr: bus(32), rx_mem_read: bit, rx_mem_write: bit, net_rx_data: bus(32), net_rx_valid: bit, net_rx_frame: bit },
+  outputs: { tx_read_data: bus(32), rx_read_data: bus(32), net_tx_data: bus(32), net_tx_valid: bit, net_tx_frame: bit },
   state: { memory: new Map<number, number>() },
   eval: ({ tx_mem_read, rx_mem_read, tx_addr, rx_addr, memory }) => {
     const state = (memory as Map<number, number>) ?? new Map();
