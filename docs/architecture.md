@@ -18,10 +18,10 @@ Circuits are defined with the `circuit()` factory function from `@simten/core/ci
 
 ```typescript
 const HalfAdder = circuit('HalfAdder', {
-  in: { a: bit, b: bit },
-  out: { sum: bit, carry: bit },
+  inputs: { a: bit, b: bit },
+  outputs: { sum: bit, carry: bit },
   nodes: { xor1: Xor, and1: And },
-  connect: ({ in: inp, out, xor1, and1 }) => [...]
+  connect: ({ inputs, outputs, nodes: { xor1, and1 } }) => [...]
 })
 ```
 
