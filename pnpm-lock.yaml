@@ -29,7 +29,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: ^4.0.17
-        version: 4.0.17(tsx@4.21.0)
+        version: 4.0.17(@types/node@20.19.33)(tsx@4.21.0)
 
   apps/compiler:
     dependencies:
@@ -85,7 +85,26 @@ importers:
         specifier: 4.72.0
         version: 4.72.0
 
-  apps/tanstack:
+  apps/verifier:
+    dependencies:
+      '@cloudflare/containers':
+        specifier: 0.0.30
+        version: 0.0.30
+      hono:
+        specifier: 4.11.1
+        version: 4.11.1
+    devDependencies:
+      '@types/node':
+        specifier: ^20
+        version: 20.19.33
+      typescript:
+        specifier: 5.9.3
+        version: 5.9.3
+      wrangler:
+        specifier: 4.72.0
+        version: 4.72.0
+
+  apps/web:
     dependencies:
       '@cloudflare/vite-plugin':
         specifier: ^1.13.8
@@ -137,7 +156,7 @@ importers:
         version: 2.1.1
       framer-motion:
         specifier: ^12.34.0
-        version: 12.34.3(react-dom@19.2.4)(react@19.2.4)
+        version: 12.38.0(react-dom@19.2.4)(react@19.2.4)
       fumadocs-core:
         specifier: ^16.7.7
         version: 16.7.7(@tanstack/react-router@1.167.0)(@types/react@19.2.14)(lucide-react@0.562.0)(react-dom@19.2.4)(react@19.2.4)
@@ -146,7 +165,7 @@ importers:
         version: 14.2.11(@types/react@19.2.14)(fumadocs-core@16.7.7)(react@19.2.4)(vite@7.3.1)
       fumadocs-ui:
         specifier: ^16.7.7
-        version: 16.7.7(@types/react-dom@19.2.3)(@types/react@19.2.14)(fumadocs-core@16.7.7)(react-dom@19.2.4)(react@19.2.4)(tailwindcss@4.2.0)
+        version: 16.7.7(@types/react-dom@19.2.3)(@types/react@19.2.14)(fumadocs-core@16.7.7)(react-dom@19.2.4)(react@19.2.4)(tailwindcss@4.2.2)
       immer:
         specifier: ^11.1.3
         version: 11.1.4
@@ -182,7 +201,7 @@ importers:
         version: 3.5.0
       tailwindcss:
         specifier: ^4.1.18
-        version: 4.2.0
+        version: 4.2.2
       zustand:
         specifier: ^5.0.10
         version: 5.0.11(@types/react@19.2.14)(immer@11.1.4)(react@19.2.4)
@@ -232,25 +251,6 @@ importers:
       wrangler:
         specifier: ^4.73.0
         version: 4.73.0
-
-  apps/verifier:
-    dependencies:
-      '@cloudflare/containers':
-        specifier: 0.0.30
-        version: 0.0.30
-      hono:
-        specifier: 4.11.1
-        version: 4.11.1
-    devDependencies:
-      '@types/node':
-        specifier: ^20
-        version: 20.19.33
-      typescript:
-        specifier: 5.9.3
-        version: 5.9.3
-      wrangler:
-        specifier: 4.72.0
-        version: 4.72.0
 
   demos:
     dependencies:
@@ -1566,7 +1566,7 @@ packages:
       '@formatjs/fast-memoize': 3.1.1
     dev: false
 
-  /@fumadocs/tailwind@0.0.3(tailwindcss@4.2.0):
+  /@fumadocs/tailwind@0.0.3(tailwindcss@4.2.2):
     resolution: {integrity: sha512-/FWcggMz9BhoX+13xBoZLX+XX9mYvJ50dkTqy3IfocJqua65ExcsKfxwKH8hgTO3vA5KnWv4+4jU7LaW2AjAmQ==}
     peerDependencies:
       tailwindcss: ^4.0.0
@@ -1575,7 +1575,7 @@ packages:
         optional: true
     dependencies:
       postcss-selector-parser: 7.1.1
-      tailwindcss: 4.2.0
+      tailwindcss: 4.2.2
     dev: false
 
   /@hono/node-server@1.19.9(hono@4.12.2):
@@ -5789,7 +5789,7 @@ packages:
       '@tanstack/react-router': 1.167.0(react-dom@19.2.4)(react@19.2.4)
       '@tanstack/react-start-client': 1.166.9(react-dom@19.2.4)(react@19.2.4)
       '@tanstack/react-start-server': 1.166.9(react-dom@19.2.4)(react@19.2.4)
-      '@tanstack/router-utils': 1.161.4
+      '@tanstack/router-utils': 1.161.6
       '@tanstack/start-client-core': 1.166.8
       '@tanstack/start-plugin-core': 1.166.11(@tanstack/react-router@1.167.0)(vite@7.3.1)
       '@tanstack/start-server-core': 1.166.8
@@ -5987,7 +5987,6 @@ packages:
       tinyglobby: 0.2.15
     transitivePeerDependencies:
       - supports-color
-    dev: true
 
   /@tanstack/start-client-core@1.166.8:
     resolution: {integrity: sha512-xaSrDN+J0yiA/yFzv9CQQOMK3iEEnCznQV7nlNr9uQ4HAn1djbKGIWSBPE4qA/77Bfisuon1u4laFLhJkpd0fg==}
@@ -7804,27 +7803,6 @@ packages:
       tslib: 2.8.1
     dev: false
 
-  /framer-motion@12.34.3(react-dom@19.2.4)(react@19.2.4):
-    resolution: {integrity: sha512-v81ecyZKYO/DfpTwHivqkxSUBzvceOpoI+wLfgCgoUIKxlFKEXdg0oR9imxwXumT4SFy8vRk9xzJ5l3/Du/55Q==}
-    peerDependencies:
-      '@emotion/is-prop-valid': '*'
-      react: ^18.0.0 || ^19.0.0
-      react-dom: ^18.0.0 || ^19.0.0
-    peerDependenciesMeta:
-      '@emotion/is-prop-valid':
-        optional: true
-      react:
-        optional: true
-      react-dom:
-        optional: true
-    dependencies:
-      motion-dom: 12.34.3
-      motion-utils: 12.29.2
-      react: 19.2.4
-      react-dom: 19.2.4(react@19.2.4)
-      tslib: 2.8.1
-    dev: false
-
   /framer-motion@12.38.0(react-dom@19.2.4)(react@19.2.4):
     resolution: {integrity: sha512-rFYkY/pigbcswl1XQSb7q424kSTQ8q6eAC+YUsSKooHQYuLdzdHjrt6uxUC+PRAO++q5IS7+TamgIw1AphxR+g==}
     peerDependencies:
@@ -8031,7 +8009,7 @@ packages:
       - supports-color
     dev: false
 
-  /fumadocs-ui@16.7.7(@types/react-dom@19.2.3)(@types/react@19.2.14)(fumadocs-core@16.7.7)(react-dom@19.2.4)(react@19.2.4)(tailwindcss@4.2.0):
+  /fumadocs-ui@16.7.7(@types/react-dom@19.2.3)(@types/react@19.2.14)(fumadocs-core@16.7.7)(react-dom@19.2.4)(react@19.2.4)(tailwindcss@4.2.2):
     resolution: {integrity: sha512-yeDkVgROkTH+FP38CFcGGlkeNGiiDyNNQpmm0btt9rg653kTITuMAzXU5F8PZ+8upwPIgOdJwFcdxuQEobjO9w==}
     peerDependencies:
       '@takumi-rs/image-response': '*'
@@ -8054,7 +8032,7 @@ packages:
       shiki:
         optional: true
     dependencies:
-      '@fumadocs/tailwind': 0.0.3(tailwindcss@4.2.0)
+      '@fumadocs/tailwind': 0.0.3(tailwindcss@4.2.2)
       '@radix-ui/react-accordion': 1.2.12(@types/react-dom@19.2.3)(@types/react@19.2.14)(react-dom@19.2.4)(react@19.2.4)
       '@radix-ui/react-collapsible': 1.1.12(@types/react-dom@19.2.3)(@types/react@19.2.14)(react-dom@19.2.4)(react@19.2.4)
       '@radix-ui/react-dialog': 1.1.15(@types/react-dom@19.2.3)(@types/react@19.2.14)(react-dom@19.2.4)(react@19.2.4)
@@ -11154,16 +11132,11 @@ packages:
     resolution: {integrity: sha512-I8K9wewnVDkL1NTGoqWmVEIlUcB9gFriAEkXkfCjX5ib8ezGxtR3xD7iZIxrfArjEsH7F1CHD4RFUtxefdqV/A==}
     dev: false
 
-  /tailwindcss@4.2.0:
-    resolution: {integrity: sha512-yYzTZ4++b7fNYxFfpnberEEKu43w44aqDMNM9MHMmcKuCH7lL8jJ4yJ7LGHv7rSwiqM0nkiobF9I6cLlpS2P7Q==}
-    dev: false
-
   /tailwindcss@4.2.1:
     resolution: {integrity: sha512-/tBrSQ36vCleJkAOsy9kbNTgaxvGbyOamC30PRePTQe/o1MFwEKHQk4Cn7BNGaPtjp+PuUrByJehM1hgxfq4sw==}
 
   /tailwindcss@4.2.2:
     resolution: {integrity: sha512-KWBIxs1Xb6NoLdMVqhbhgwZf2PGBpPEiwOqgI4pFIYbNTfBXiKYyWoTsXgBQ9WFg/OlhnvHaY+AEpW7wSmFo2Q==}
-    dev: true
 
   /tapable@2.3.0:
     resolution: {integrity: sha512-g9ljZiwki/LfxmQADO3dEY1CbpmXT5Hm2fJ+QaGKwSXUylMybePR7/67YW7jOrrvjEgL1Fmz5kzyAjWVWLlucg==}
@@ -11209,6 +11182,7 @@ packages:
   /tinyexec@1.0.4:
     resolution: {integrity: sha512-u9r3uZC0bdpGOXtlxUIdwf9pkmvhqJdrVCH9fapQtgy/OeTTMZ1nqH7agtvEfmGui6e1XxjcdrlxvxJvc3sMqw==}
     engines: {node: '>=18'}
+    dev: false
 
   /tinyglobby@0.2.15:
     resolution: {integrity: sha512-j2Zq4NyQYG5XMST4cbs02Ak8iJUdxRM0XI5QyxXuZOzKOINmWurp3smXu3y5wDcJrptwpSjgXHzIQxR0omXljQ==}
@@ -11822,74 +11796,6 @@ packages:
         optional: true
     dependencies:
       '@types/node': 20.19.33
-      '@vitest/expect': 4.0.17
-      '@vitest/mocker': 4.0.17(vite@7.3.1)
-      '@vitest/pretty-format': 4.0.17
-      '@vitest/runner': 4.0.17
-      '@vitest/snapshot': 4.0.17
-      '@vitest/spy': 4.0.17
-      '@vitest/utils': 4.0.17
-      es-module-lexer: 1.7.0
-      expect-type: 1.3.0
-      magic-string: 0.30.21
-      obug: 2.1.1
-      pathe: 2.0.3
-      picomatch: 4.0.3
-      std-env: 3.10.0
-      tinybench: 2.9.0
-      tinyexec: 1.0.4
-      tinyglobby: 0.2.15
-      tinyrainbow: 3.0.3
-      vite: 7.3.1(@types/node@20.19.33)(tsx@4.21.0)
-      why-is-node-running: 2.3.0
-    transitivePeerDependencies:
-      - jiti
-      - less
-      - lightningcss
-      - msw
-      - sass
-      - sass-embedded
-      - stylus
-      - sugarss
-      - terser
-      - tsx
-      - yaml
-    dev: true
-
-  /vitest@4.0.17(tsx@4.21.0):
-    resolution: {integrity: sha512-FQMeF0DJdWY0iOnbv466n/0BudNdKj1l5jYgl5JVTwjSsZSlqyXFt/9+1sEyhR6CLowbZpV7O1sCHrzBhucKKg==}
-    engines: {node: ^20.0.0 || ^22.0.0 || >=24.0.0}
-    hasBin: true
-    peerDependencies:
-      '@edge-runtime/vm': '*'
-      '@opentelemetry/api': ^1.9.0
-      '@types/node': ^20.0.0 || ^22.0.0 || >=24.0.0
-      '@vitest/browser-playwright': 4.0.17
-      '@vitest/browser-preview': 4.0.17
-      '@vitest/browser-webdriverio': 4.0.17
-      '@vitest/ui': 4.0.17
-      happy-dom: '*'
-      jsdom: '*'
-    peerDependenciesMeta:
-      '@edge-runtime/vm':
-        optional: true
-      '@opentelemetry/api':
-        optional: true
-      '@types/node':
-        optional: true
-      '@vitest/browser-playwright':
-        optional: true
-      '@vitest/browser-preview':
-        optional: true
-      '@vitest/browser-webdriverio':
-        optional: true
-      '@vitest/ui':
-        optional: true
-      happy-dom:
-        optional: true
-      jsdom:
-        optional: true
-    dependencies:
       '@vitest/expect': 4.0.17
       '@vitest/mocker': 4.0.17(vite@7.3.1)
       '@vitest/pretty-format': 4.0.17
