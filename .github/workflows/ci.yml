@@ -86,9 +86,9 @@ jobs:
         run: pnpm --filter @simten/core test
 
       - name: Build workspace packages
-        # tanstack imports `@simten/core/circuit`, `@simten/ui`, `@simten/embed`
+        # @simten/web imports `@simten/core/circuit`, `@simten/ui`, `@simten/embed`
         # via their `exports` map → `./dist/...`. Without this step, fresh CI
-        # checkouts have no dist and the tanstack build fails to resolve.
+        # checkouts have no dist and the web app build fails to resolve.
         #
         # `--workspace-concurrency=1` forces sequential builds so @simten/mcp
         # doesn't race ahead of @simten/core. pnpm doesn't enforce topological
@@ -96,5 +96,5 @@ jobs:
         # to evaluate turbo / nx / lage as a proper build orchestrator.
         run: pnpm --filter "./packages/*" --workspace-concurrency=1 build
 
-      - name: Build tanstack web app
-        run: pnpm --filter tanstack build
+      - name: Build web app
+        run: pnpm --filter @simten/web build

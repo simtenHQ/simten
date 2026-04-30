@@ -41,7 +41,7 @@ function discoverFiles(): string[] {
   const dirs = [
     'packages/core/src',
     'packages/embed/src',
-    'apps/tanstack/src',
+    'apps/web/src',
     'apps/sandbox/src',
     'hardware/ulx3s',
     'demos/cli',

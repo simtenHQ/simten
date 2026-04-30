@@ -28,6 +28,8 @@
       "tag": "v1"
     }
   ],
-  // "workers_dev": false,
+  // Disable the public *.workers.dev URL — this service is only callable via
+  // service binding from @simten/web. See issue #59.
+  "workers_dev": false,
   "upload_source_maps": true
 }
