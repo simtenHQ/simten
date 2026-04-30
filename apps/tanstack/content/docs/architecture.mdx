@@ -248,6 +248,38 @@ useCircuitStore         (the active circuit)
 
 Node components live in `@simten/ui/nodes` and are the single source of truth — both the embed and the editor use them.
 
+## Two ways to run a circuit
+
+The same engine powers two distinct consumption paths. The split is **interactive vs programmatic**, not "prototyping vs production":
+
+| Path | Where it runs | Has a canvas? | Drives the canvas? | Typical use |
+|------|---------------|---------------|--------------------|-------------|
+| **Sandbox** | Browser worker (editor, `<circuit-embed>`, web component) | yes | only via human clicks or MCP actions | live editing, interactive embeds, LLM-driven design |
+| **Script** | Node (`tsx`, `vitest`, CI) | no | n/a — there is none | property tests, fuzzers, batch sweeps, CI verification |
+
+### Sandbox path
+
+When user code runs inside the editor or an embed, it goes through the sandbox iframe + worker (see [Security](/docs/security)). Code in this path *defines* circuits; *something else* drives them — a human flipping a switch, or Claude calling MCP actions like `RUN_SIMULATION` / `SET_INPUT`. User code itself currently has no API to drive the canvas simulator. That's intentional: the canvas sim and any user-code sim run on different threads, so a user-code `simulate(...)` call would create a parallel-universe instance instead of moving the canvas. (Tracked in issue #51 as a prereq for self-animating embeds.)
+
+### Script path
+
+Outside the browser there's no sandbox, no canvas, and no boundary to route through. Import `@simten/core` directly:
+
+```ts
+import { circuit, bit } from '@simten/core';
+import { createSimulator } from '@simten/core/simulator';
+
+const Counter = circuit('Counter', { ... });
+const sim = createSimulator(Counter);
+sim.setNode('reset', 1);
+sim.tick();
+// run property tests, fuzzers, sweeps — full engine speed
+```
+
+This is the path for any code that needs to drive simulation programmatically — whether that's a `vitest` property test you're writing during prototyping or a CI fuzzer comparing the TS sim to iverilog. There's nothing for it to be out of sync with, so the constraints that apply in the browser don't apply here.
+
+A blog-post `<circuit-embed>` is "production" but uses the sandbox path. A throwaway `vitest` exploration is "prototyping" but uses the script path. The axis that matters is whether there's a canvas and whether human/LLM input drives it — not how finished the code is.
+
 ## MCP Integration
 
 The MCP server creates a bidirectional bridge between Claude Code and the browser:
