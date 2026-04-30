@@ -9,10 +9,10 @@ If anything here is unclear or wrong, open an issue — fixing this doc is a gre
 You need [Node 20+](https://nodejs.org/) and [pnpm 8+](https://pnpm.io/installation) (run `corepack enable` once and pnpm gets pinned to the version in `package.json`).
 
 ```bash
-git clone https://github.com/charlesfrisbee/turing-incomplete
-cd turing-incomplete
+git clone https://github.com/simtenhq/simten
+cd simten
 pnpm install
-pnpm dev:all     # tanstack on :3001 + sandbox on :3002
+pnpm dev:all     # web app on :3001 + sandbox on :3002
 ```
 
 Open <http://localhost:3001>. The editor, simulator, blog, learn pages, and chat sidebar all work end-to-end. You're done.
@@ -38,7 +38,7 @@ pnpm --filter @simten/synth dev        # Yosys synthesis
 pnpm --filter @simten/verifier dev     # iverilog cross-validation
 ```
 
-The tanstack app falls back to `localhost:55001` for Verilog export when there's no production binding, so running the compiler container locally is enough to test the flow end-to-end.
+The `@simten/web` app falls back to `localhost:55001` for Verilog export when there's no production binding, so running the compiler container locally is enough to test the flow end-to-end.
 
 ### Tier 3 — FPGA hardware flow (`hardware/ulx3s/`)
 
@@ -48,7 +48,7 @@ Add a ULX3S board, [openFPGALoader](https://github.com/trabucayre/openFPGALoader
 
 ```
 apps/
-  tanstack/          ← main React app (editor, blog, learn, chat)
+  web/               ← main React app (editor, blog, learn, chat) — `@simten/web`
   sandbox/           ← isolated iframe that runs user circuit code
   compiler/          ← Cloudflare Container — RISC-V cross-compiler
   synth/             ← Cloudflare Container — Yosys synthesis
@@ -94,7 +94,7 @@ Examples from the history:
 ```
 feat(deploy): sandbox wrangler config + workspace deploy scripts
 refactor(core): rename circuit() builder keys in/out → inputs/outputs
-fix(ci): build workspace packages before tanstack
+fix(ci): build workspace packages before web app
 docs(hardware): cover CPU project, FPGA workflow, and the UART skid race
 ```
 
@@ -108,7 +108,7 @@ If you're not sure whether something is "big enough" to warrant an issue first, 
 
 ## Asking questions
 
-[GitHub Issues](https://github.com/charlesfrisbee/turing-incomplete/issues) for anything: bug, feature request, design question, "is this thing intentional?". Tag with `question` if it's a question rather than work.
+[GitHub Issues](https://github.com/simtenhq/simten/issues) for anything: bug, feature request, design question, "is this thing intentional?". Tag with `question` if it's a question rather than work.
 
 ## Code of conduct
 
@@ -116,7 +116,7 @@ Be respectful. We follow the [Contributor Covenant](https://www.contributor-cove
 
 ## License
 
-MIT (see [LICENSE](./LICENSE)). By contributing, you agree your contributions are licensed under the same terms.
+Apache 2.0 (see [LICENSE](./LICENSE)). By contributing, you agree your contributions are licensed under the same terms.
 
 ## Notes for maintainers
 

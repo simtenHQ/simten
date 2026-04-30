@@ -102,7 +102,7 @@ return { content: [{ type: "text", text: "Circuit displayed" }] };`}
             and dispatches incoming messages to the right handlers:
           </p>
 
-          <CodeBlock title="apps/tanstack/src/hooks/useMCPConnection.ts" language="typescript">
+          <CodeBlock title="apps/web/src/hooks/useMCPConnection.ts" language="typescript">
 {`const { status, sendToClaudePrompt } = useMCPConnection({
   // Claude pushes new circuit source → update the editor
   onSource: (source) => circuitEditorRef.current?.setCode(source),

@@ -1,5 +1,5 @@
 {
-	"name": "tanstack",
+	"name": "@simten/web",
 	"private": true,
 	"type": "module",
 	"imports": {

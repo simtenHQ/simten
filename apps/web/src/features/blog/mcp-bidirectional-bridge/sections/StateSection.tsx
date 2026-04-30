@@ -79,7 +79,7 @@ export function StateSection() {
           </p>
 
           <CodeBlock
-            title="apps/tanstack/src/hooks/useMCPConnection.ts"
+            title="apps/web/src/hooks/useMCPConnection.ts"
             language="typescript"
           >
 {`// MCP server asks for state → browser responds
