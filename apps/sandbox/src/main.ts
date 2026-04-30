@@ -16,6 +16,22 @@
  * Security guarantees:
  *   IN:  arbitrary untrusted TypeScript string
  *   OUT: plain JSON only — no functions, no Maps, no class instances
+ *
+ * Why the persistent sim lives HERE and not in the worker:
+ *   The worker is killable (terminate() is the only recovery from a runaway
+ *   `while(true){}` in user code). If the canvas sim shared that thread,
+ *   every bad loop would wipe switch positions, cycle count, and snapshots.
+ *   Keeping it on iframe-main — which never runs user code and so can't
+ *   hang — makes runaway recovery free: a bad loop costs 5 seconds and an
+ *   error toast, not the session. This is structural crash isolation, not
+ *   a security distinction (both threads share the same origin + CSP).
+ *
+ * ⚠ Do NOT move the persistent sim into the worker without first solving
+ *   canvas-state recovery (snapshot-before-execute / restore-on-terminate).
+ *   See issue #51.
+ *
+ * Snapshots live inside the slot (don't cross postMessage) to avoid
+ * serialization cost per tick — see SlotState.snapshots.
  */
 
 import {

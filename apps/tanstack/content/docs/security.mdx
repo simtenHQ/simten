@@ -66,6 +66,14 @@ The sandbox sets a 5-second timeout per request. If the worker doesn't respond:
 
 The main app never hangs. The sandbox recovers transparently.
 
+### Why the simulator is split across two threads
+
+The same engine runs in two places inside the sandbox: an ephemeral instance in the **worker** during `compile` and headless `simulate`, and a persistent instance on the **iframe main thread** that drives the live canvas (`tick`, `setNode`, `snapshot`, `restore`). The main thread never runs user code — only already-compiled IR — so it cannot hang.
+
+Both threads share identical security guarantees (same origin, same CSP). The split is not about one being safer; it is about **runaway recovery**. `worker.terminate()` is the only way out of a `while(true){}` in user code. If the canvas sim shared that thread, every bad loop would wipe switch positions, cycle count, and snapshots. Keeping the persistent sim on the side that can't hang makes a runaway cost the user 5 seconds and an error toast, not their session.
+
+This is structural crash isolation — it falls out of *where* code runs, not from careful error handling. The cost is one extra postMessage hop per tick, well under the frame budget.
+
 ### postMessage boundary
 
 All communication between the main app and the sandbox crosses a `postMessage` boundary. Only plain JSON is sent in either direction. The `compile` response returns `Circuit[]` (plain IR objects with no executable code) — not `BuiltCircuit` instances, which carry function references. The main frame reconstructs a `BuiltCircuit` from the IR after the boundary is crossed.
