@@ -13,6 +13,17 @@
  *   No imports → fast path: executeCircuitCode() via new Function()
  *   Has imports → module path: load npm packages via esm.sh Blob URL, then
  *                              executeJsCode() with merged scope
+ *
+ * ⚠ Scope injection: the names available to user code (circuit, bit, bus,
+ *   And, Or, Adder, Register, …) come from executeCircuitCode/executeJsCode.
+ *   Do NOT add `simulate` (or any handle that exposes the canvas simulator)
+ *   to that scope. The persistent canvas sim lives in the iframe-main thread
+ *   (see apps/sandbox/src/main.ts header). Calls from here would create a
+ *   parallel-universe sim instance — same engine, different state — and the
+ *   canvas the user is watching would not reflect them. This is the
+ *   "invisible-sim trap" tracked by issue #51; resolving it requires moving
+ *   the persistent sim into this worker first, which trades away free crash
+ *   isolation. Don't expose `simulate` until #51 lands.
  */
 
 import { executeCircuitCode, executeJsCode, stripTypes, getAllCircuitEvals } from '@simten/core/circuit';
