@@ -17,7 +17,6 @@ const isAnalyze = process.env.ANALYZE === "true";
  */
 export default defineConfig({
   resolve: {
-    conditions: ["@simten/source", "import", "module", "browser", "default"],
     dedupe: ["react", "react-dom"],
   },
   plugins: [
@@ -46,7 +45,7 @@ export default defineConfig({
       fileName: () => "circuit-embed.js",
     },
     outDir: "dist",
-    emptyOutDir: true,
+    emptyOutDir: false,
     minify: "esbuild",
     sourcemap: false,
     cssCodeSplit: false,
