@@ -24,30 +24,37 @@
     "*.css"
   ],
   "exports": {
-    ".": {
-      "types": "./src/index.ts",
-      "default": "./src/index.ts"
-    },
-    "./nodes": {
-      "types": "./src/components/nodes/index.ts",
-      "default": "./src/components/nodes/index.ts"
-    },
-    "./canvas": {
-      "types": "./src/canvas/index.ts",
-      "default": "./src/canvas/index.ts"
-    },
+    ".": "./src/index.ts",
+    "./nodes": "./src/components/nodes/index.ts",
+    "./canvas": "./src/canvas/index.ts",
     "./styles.css": "./dist/styles.css",
-    "./webcomponent": {
-      "types": "./src/webcomponent/index.ts",
-      "default": "./src/webcomponent/index.ts"
+    "./webcomponent": "./src/webcomponent/index.ts"
+  },
+  "publishConfig": {
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "import": "./dist/index.js"
+      },
+      "./nodes": {
+        "types": "./dist/components/nodes/index.d.ts",
+        "import": "./dist/components/nodes/index.js"
+      },
+      "./canvas": {
+        "types": "./dist/canvas/index.d.ts",
+        "import": "./dist/canvas/index.js"
+      },
+      "./styles.css": "./dist/styles.css",
+      "./webcomponent": {
+        "default": "./dist/circuit-embed.js"
+      }
     }
   },
   "files": [
-    "src",
     "dist"
   ],
   "scripts": {
-    "build": "vite build",
+    "build": "rm -rf dist *.tsbuildinfo && tsc -b && vite build",
     "analyze": "ANALYZE=true vite build",
     "lint": "tsc --noEmit",
     "test": "vitest run",
