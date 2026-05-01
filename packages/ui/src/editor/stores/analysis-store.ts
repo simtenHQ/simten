@@ -5,7 +5,7 @@
  * from the validation/analysis pipeline.
  */
 
-import { create } from 'zustand';
+import { create, type StoreApi, type UseBoundStore } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 import type { ValidationResult, CircuitMetrics, Diagnostic } from '@simten/core';
 
@@ -42,7 +42,7 @@ const initialState: AnalysisState = {
   lastAnalyzedAt: null,
 };
 
-export const useAnalysisStore = create<AnalysisStore>()(
+export const useAnalysisStore: UseBoundStore<StoreApi<AnalysisStore>> = create<AnalysisStore>()(
   immer((set) => ({
     ...initialState,
 

@@ -4,20 +4,64 @@
   "type": "module",
   "sideEffects": false,
   "exports": {
-    ".": { "types": "./src/index.ts", "default": "./src/index.ts" },
-    "./editor": { "types": "./src/editor/index.ts", "default": "./src/editor/index.ts" },
-    "./editor/stores": { "types": "./src/editor/stores/index.ts", "default": "./src/editor/stores/index.ts" },
-    "./editor/types": { "types": "./src/editor/types/index.ts", "default": "./src/editor/types/index.ts" },
-    "./editor/lib": { "types": "./src/editor/lib/index.ts", "default": "./src/editor/lib/index.ts" },
-    "./editor/components": { "types": "./src/editor/components/index.ts", "default": "./src/editor/components/index.ts" },
-    "./editor/hooks": { "types": "./src/editor/hooks/index.ts", "default": "./src/editor/hooks/index.ts" },
-    "./nodes": { "types": "./src/nodes/index.ts", "default": "./src/nodes/index.ts" },
-    "./canvas": { "types": "./src/canvas/index.ts", "default": "./src/canvas/index.ts" },
-    "./waveform": { "types": "./src/waveform/WaveformViewer.tsx", "default": "./src/waveform/WaveformViewer.tsx" },
-    "./sandbox": { "types": "./src/sandbox/index.ts", "default": "./src/sandbox/index.ts" }
+    ".": "./src/index.ts",
+    "./editor": "./src/editor/index.ts",
+    "./editor/stores": "./src/editor/stores/index.ts",
+    "./editor/types": "./src/editor/types/index.ts",
+    "./editor/components": "./src/editor/components/index.ts",
+    "./editor/hooks": "./src/editor/hooks/index.ts",
+    "./nodes": "./src/nodes/index.ts",
+    "./canvas": "./src/canvas/index.ts",
+    "./waveform": "./src/waveform/WaveformViewer.tsx",
+    "./sandbox": "./src/sandbox/index.ts"
   },
-  "files": ["src"],
+  "publishConfig": {
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "import": "./dist/index.js"
+      },
+      "./editor": {
+        "types": "./dist/editor/index.d.ts",
+        "import": "./dist/editor/index.js"
+      },
+      "./editor/stores": {
+        "types": "./dist/editor/stores/index.d.ts",
+        "import": "./dist/editor/stores/index.js"
+      },
+      "./editor/types": {
+        "types": "./dist/editor/types/index.d.ts",
+        "import": "./dist/editor/types/index.js"
+      },
+      "./editor/components": {
+        "types": "./dist/editor/components/index.d.ts",
+        "import": "./dist/editor/components/index.js"
+      },
+      "./editor/hooks": {
+        "types": "./dist/editor/hooks/index.d.ts",
+        "import": "./dist/editor/hooks/index.js"
+      },
+      "./nodes": {
+        "types": "./dist/nodes/index.d.ts",
+        "import": "./dist/nodes/index.js"
+      },
+      "./canvas": {
+        "types": "./dist/canvas/index.d.ts",
+        "import": "./dist/canvas/index.js"
+      },
+      "./waveform": {
+        "types": "./dist/waveform/WaveformViewer.d.ts",
+        "import": "./dist/waveform/WaveformViewer.js"
+      },
+      "./sandbox": {
+        "types": "./dist/sandbox/index.d.ts",
+        "import": "./dist/sandbox/index.js"
+      }
+    }
+  },
+  "files": ["dist"],
   "scripts": {
+    "build": "rm -rf dist *.tsbuildinfo && tsc -b",
     "test": "vitest run",
     "test:watch": "vitest",
     "lint": "tsc --noEmit"

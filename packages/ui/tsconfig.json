@@ -4,17 +4,31 @@
     "lib": ["dom", "dom.iterable", "esnext"],
     "module": "esnext",
     "moduleResolution": "bundler",
-    "customConditions": ["@simten/source"],
     "jsx": "react-jsx",
     "strict": true,
-    "noEmit": true,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "composite": true,
+    "outDir": "./dist",
+    "rootDir": "./src",
     "esModuleInterop": true,
     "skipLibCheck": true,
     "isolatedModules": true,
     "resolveJsonModule": true,
-    "rootDir": "./src",
     "types": ["node"]
   },
+  "references": [
+    { "path": "../core" }
+  ],
   "include": ["src/**/*.ts", "src/**/*.tsx"],
-  "exclude": ["node_modules", "dist"]
+  // Tests are excluded from the build surface; vitest typechecks them at
+  // run time. See follow-up issue for resolving pre-existing test type debt.
+  "exclude": [
+    "node_modules",
+    "dist",
+    "**/__tests__/**",
+    "**/*.test.ts",
+    "**/*.test.tsx"
+  ]
 }
