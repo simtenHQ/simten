@@ -11,9 +11,6 @@ import fumadocsMdx from "fumadocs-mdx/vite";
 import * as MdxConfig from "./source.config";
 
 const config = defineConfig({
-  resolve: {
-    conditions: ["@simten/source", "import", "module", "browser", "default"],
-  },
   plugins: [
     cloudflare({
       viteEnvironment: { name: "ssr" },
