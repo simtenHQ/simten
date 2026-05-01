@@ -10,7 +10,6 @@ export default defineConfig({
     headers: { 'Content-Security-Policy': CSP },
   },
   resolve: {
-    conditions: ['@simten/source', 'import', 'module', 'browser', 'default'],
     dedupe: ['@simten/core'],
   },
   build: {

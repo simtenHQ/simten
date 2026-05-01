@@ -18,7 +18,6 @@
 
     /* Bundler mode */
     "moduleResolution": "bundler",
-    "customConditions": ["@simten/source"],
     "allowImportingTsExtensions": true,
     "verbatimModuleSyntax": true,
     "noEmit": true,
