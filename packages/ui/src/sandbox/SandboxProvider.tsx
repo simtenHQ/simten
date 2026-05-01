@@ -29,6 +29,9 @@ const NULL_HANDLE: SandboxHandle = {
   simulate: async () => ({ type: 'error', error: 'Sandbox not ready' }),
   reset: async () => ({ type: 'error', error: 'Sandbox not ready' }),
   setNode: async () => ({ type: 'error', error: 'Sandbox not ready' }),
+  snapshot: async () => ({ type: 'error', error: 'Sandbox not ready' }),
+  restore: async () => ({ type: 'error', error: 'Sandbox not ready' }),
+  pruneSnapshots: async () => ({ type: 'error', error: 'Sandbox not ready' }),
   dispose: async () => {},
   isReady: () => false,
 };
