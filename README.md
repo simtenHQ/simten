@@ -83,7 +83,8 @@ packages/
 └── mcp/         # MCP server for AI integration (WebSocket bridge)
 
 apps/
-├── tanstack/    # Main web app (TanStack Start + Vite + Cloudflare Workers)
+├── web/         # Main web app (TanStack Start + Vite + Cloudflare Workers)
+├── sandbox/     # Iframe-isolated sandbox for running user circuit code
 ├── compiler/    # RISC-V cross-compiler service (Cloudflare Container)
 └── verifier/    # Verilog verification service (Cloudflare Container + Icarus Verilog)
 ```
@@ -112,10 +113,64 @@ Open `http://localhost:3001`.
 ## Development
 
 ```bash
-pnpm dev          # Start dev server
-pnpm test         # Run all tests
-pnpm build        # Build all packages
+pnpm install      # First time only
+pnpm dev          # Start the web app (http://localhost:3001)
+pnpm test         # Run all package tests + the exports drift lint
+pnpm build        # Build every package (only needed before publishing)
 ```
+
+You do **not** need to run `pnpm build` before `pnpm dev`. Every workspace package's `exports` map points directly at TypeScript source (`src/*.ts`), and Vite/vitest/tsc all consume that source live with HMR. Edit a file in `packages/core/src/` while the dev server is running and the change reflects in the browser without any build step.
+
+### How the exports work
+
+Each publishable package (`@simten/core`, `@simten/ui`, `@simten/embed`, `@simten/mcp`) has two `exports` blocks in its `package.json`:
+
+```jsonc
+{
+  "exports": {
+    ".":         "./src/index.ts",          // dev: read source directly
+    "./circuit": "./src/circuit/index.ts"
+  },
+  "publishConfig": {
+    "exports": {
+      ".":         { "types": "./dist/index.d.ts",         "import": "./dist/index.js" },
+      "./circuit": { "types": "./dist/circuit/index.d.ts", "import": "./dist/circuit/index.js" }
+    }
+  }
+}
+```
+
+`pnpm` and `npm` rewrite `exports` to the `publishConfig.exports` version at publish time, so consumers installing from the registry receive compiled `.js` + `.d.ts` files in `dist/`. In the monorepo, the `publishConfig` block is inert — you always get source.
+
+The benefit is that there's no custom resolve condition for any tool to know about. Vite (client and Cloudflare Workers SSR), vitest, tsc, and any future tool resolve `@simten/*` the same way: through the standard `default`/`import` keys. There's no fifth config file to forget when adding a new tool.
+
+### Adding a new export subpath
+
+When you add a new entry to a package's `exports`, you must add the matching entry to `publishConfig.exports` too. The `tsx scripts/check-exports.ts` lint runs as part of `pnpm test` and fails CI if the two get out of sync. Four invariants are checked:
+
+1. `exports` and `publishConfig.exports` have identical key sets.
+2. Every dev-export path exists on disk in `src/`.
+3. For entries shaped `./src/<segs>/index.<ext>` ↔ `./dist/<same-segs>/index.<ext'>`, the segments match.
+4. If any `publishConfig.exports` path points at `./dist/...`, `files` includes `"dist"`.
+
+## Publishing
+
+Packages are released via [Changesets](https://github.com/changesets/changesets):
+
+```bash
+pnpm changeset    # Record a changeset for your PR
+pnpm release      # Build all packages and publish (CI)
+```
+
+The release flow runs `pnpm build` first so every package emits its `dist/`, then `changeset publish` invokes `pnpm pack` per package — which is where the `publishConfig.exports` rewrite happens. Inspect what consumers will receive without publishing:
+
+```bash
+cd packages/core && pnpm pack --pack-destination /tmp
+tar -tzf /tmp/simten-core-*.tgz                    # should show dist/, never src/
+tar -xzf /tmp/simten-core-*.tgz -O package/package.json | jq .exports
+```
+
+`@simten/embed` is the one package with a non-trivial build: a `tsc -b` pass for the React surface (`.`, `./nodes`, `./canvas`) plus a Vite IIFE pass for the web-component drop-in (`./webcomponent` → `dist/circuit-embed.js`, `./styles.css` → `dist/styles.css`). The Vite step has `emptyOutDir: false` so it doesn't wipe the tsc output that ran first.
 
 ## Documentation
 
