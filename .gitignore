@@ -42,6 +42,9 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# pnpm pack tarballs (smoke-test artifacts)
+*.tgz
+
 # OpenNext
 .open-next
 
