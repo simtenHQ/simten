@@ -3,7 +3,6 @@
     "target": "ES2024",
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
-    "customConditions": ["@simten/source"],
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true,
