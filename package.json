@@ -1,44 +1,44 @@
 {
-	"name": "simten",
-	"version": "0.1.0",
-	"private": true,
-	"scripts": {
-		"build": "pnpm -r build",
-		"dev": "pnpm --filter @simten/web dev",
-		"dev:sandbox": "pnpm --filter @simten/sandbox dev",
-		"dev:synth": "pnpm --filter @simten/synth dev",
-		"dev:verifier": "pnpm --filter @simten/verifier dev",
-		"deploy": "pnpm run deploy:sandbox && pnpm run deploy:web",
-		"deploy:sandbox": "dotenv -- pnpm --filter @simten/sandbox run deploy",
-		"deploy:web": "dotenv -- pnpm --filter @simten/web run deploy",
-		"deploy:synth": "dotenv -- pnpm --filter @simten/synth run deploy",
-		"deploy:verifier": "dotenv -- pnpm --filter @simten/verifier run deploy",
-		"dev:all": "pnpm --filter @simten/web dev & pnpm --filter @simten/sandbox dev",
-		"test": "pnpm -r test",
-		"lint": "pnpm -r lint",
-		"changeset": "changeset",
-		"release": "pnpm build && changeset publish",
-		"sync-public": "rsync -av --delete --exclude='node_modules' --exclude='dist' --exclude='*.tsbuildinfo' --exclude='.turbo' ./packages/ /tmp/simten-public/packages/ && rsync -av --delete --exclude='node_modules' --exclude='dist' --exclude='*.tsbuildinfo' --exclude='.turbo' ./examples/ /tmp/simten-public/examples/",
-		"sync-public:push": "pnpm sync-public && cd /tmp/simten-public && git add . && (git diff --cached --quiet || git commit -m \"sync $(date -u +%Y-%m-%dT%H:%M:%SZ)\" && git push)",
-		"fpga:test": "bun hardware/ulx3s/projects/cpu/tests.ts",
-		"fpga:verify": "bun hardware/ulx3s/projects/cpu/verify.ts --suite",
-		"fpga:sim": "bun hardware/ulx3s/projects/cpu/run_c.ts",
-		"fpga:regen-verilog": "bun hardware/ulx3s/projects/cpu/regen_verilog.ts",
-		"fpga:build": "bun hardware/ulx3s/cpu_build.ts",
-		"fpga:flash": "bun hardware/ulx3s/cpu_build.ts --flash",
-		"fpga:run": "tsx hardware/ulx3s/run_on_fpga.ts",
-		"fpga:console": "TTY=$(ls /dev/cu.usbserial-* 2>/dev/null | head -1); [ -z \"$TTY\" ] && TTY=/dev/ttyUSB0; echo \"Opening $TTY (exit: Ctrl-A Ctrl-X)\"; picocom --nolock --noreset -b 115200 $TTY"
-	},
-	"devDependencies": {
-		"@changesets/cli": "^2.29.8",
-		"dotenv-cli": "^11.0.0",
-		"ts-morph": "^28.0.0",
-		"tsx": "^4.19.2",
-		"typescript": "^5",
-		"vitest": "^4.0.17"
-	},
-	"packageManager": "pnpm@8.8.0+sha1.9922e8b650d393700209ccd81e0ebdbcbe43b0d3",
-	"dependencies": {
-		"serialport": "^13.0.0"
-	}
+  "name": "simten",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "build": "pnpm -r build",
+    "dev": "dotenv -- pnpm --filter @simten/web dev",
+    "dev:sandbox": "pnpm --filter @simten/sandbox dev",
+    "dev:synth": "pnpm --filter @simten/synth dev",
+    "dev:verifier": "pnpm --filter @simten/verifier dev",
+    "deploy": "pnpm run deploy:sandbox && pnpm run deploy:web",
+    "deploy:sandbox": "dotenv -- pnpm --filter @simten/sandbox run deploy",
+    "deploy:web": "dotenv -- pnpm --filter @simten/web run deploy",
+    "deploy:synth": "dotenv -- pnpm --filter @simten/synth run deploy",
+    "deploy:verifier": "dotenv -- pnpm --filter @simten/verifier run deploy",
+    "dev:all": "pnpm --filter @simten/web dev & pnpm --filter @simten/sandbox dev",
+    "test": "pnpm -r test",
+    "lint": "pnpm -r lint",
+    "changeset": "changeset",
+    "release": "pnpm build && changeset publish",
+    "sync-public": "rsync -av --delete --exclude='node_modules' --exclude='dist' --exclude='*.tsbuildinfo' --exclude='.turbo' ./packages/ /tmp/simten-public/packages/ && rsync -av --delete --exclude='node_modules' --exclude='dist' --exclude='*.tsbuildinfo' --exclude='.turbo' ./examples/ /tmp/simten-public/examples/",
+    "sync-public:push": "pnpm sync-public && cd /tmp/simten-public && git add . && (git diff --cached --quiet || git commit -m \"sync $(date -u +%Y-%m-%dT%H:%M:%SZ)\" && git push)",
+    "fpga:test": "bun hardware/ulx3s/projects/cpu/tests.ts",
+    "fpga:verify": "bun hardware/ulx3s/projects/cpu/verify.ts --suite",
+    "fpga:sim": "bun hardware/ulx3s/projects/cpu/run_c.ts",
+    "fpga:regen-verilog": "bun hardware/ulx3s/projects/cpu/regen_verilog.ts",
+    "fpga:build": "bun hardware/ulx3s/cpu_build.ts",
+    "fpga:flash": "bun hardware/ulx3s/cpu_build.ts --flash",
+    "fpga:run": "tsx hardware/ulx3s/run_on_fpga.ts",
+    "fpga:console": "TTY=$(ls /dev/cu.usbserial-* 2>/dev/null | head -1); [ -z \"$TTY\" ] && TTY=/dev/ttyUSB0; echo \"Opening $TTY (exit: Ctrl-A Ctrl-X)\"; picocom --nolock --noreset -b 115200 $TTY"
+  },
+  "devDependencies": {
+    "@changesets/cli": "^2.29.8",
+    "dotenv-cli": "^11.0.0",
+    "ts-morph": "^28.0.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5",
+    "vitest": "^4.0.17"
+  },
+  "packageManager": "pnpm@8.8.0+sha1.9922e8b650d393700209ccd81e0ebdbcbe43b0d3",
+  "dependencies": {
+    "serialport": "^13.0.0"
+  }
 }
