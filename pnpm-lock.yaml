@@ -233,6 +233,9 @@ importers:
       jsdom:
         specifier: ^27.0.0
         version: 27.4.0
+      rollup-plugin-visualizer:
+        specifier: ^7.0.1
+        version: 7.0.1
       tw-animate-css:
         specifier: ^1.4.0
         version: 1.4.0
@@ -881,7 +884,6 @@ packages:
     dependencies:
       unenv: 2.0.0-rc.24
       workerd: 1.20260310.1
-    dev: true
 
   /@cloudflare/unenv-preset@2.15.0(unenv@2.0.0-rc.24)(workerd@1.20260312.1):
     resolution: {integrity: sha512-EGYmJaGZKWl+X8tXxcnx4v2bOZSjQeNI5dWFeXivgX9+YCT69AkzHHwlNbVpqtEUTbew8eQurpyOpeN8fg00nw==}
@@ -901,7 +903,7 @@ packages:
       vite: ^6.1.0 || ^7.0.0
       wrangler: ^4.73.0
     dependencies:
-      '@cloudflare/unenv-preset': 2.15.0(unenv@2.0.0-rc.24)(workerd@1.20260312.1)
+      '@cloudflare/unenv-preset': 2.15.0(unenv@2.0.0-rc.24)(workerd@1.20260310.1)
       miniflare: 4.20260312.0
       unenv: 2.0.0-rc.24
       vite: 7.3.1(@types/node@20.19.33)(tsx@4.21.0)
@@ -919,7 +921,6 @@ packages:
     cpu: [x64]
     os: [darwin]
     requiresBuild: true
-    dev: true
     optional: true
 
   /@cloudflare/workerd-darwin-64@1.20260312.1:
@@ -936,7 +937,6 @@ packages:
     cpu: [arm64]
     os: [darwin]
     requiresBuild: true
-    dev: true
     optional: true
 
   /@cloudflare/workerd-darwin-arm64@1.20260312.1:
@@ -953,7 +953,6 @@ packages:
     cpu: [x64]
     os: [linux]
     requiresBuild: true
-    dev: true
     optional: true
 
   /@cloudflare/workerd-linux-64@1.20260312.1:
@@ -970,7 +969,6 @@ packages:
     cpu: [arm64]
     os: [linux]
     requiresBuild: true
-    dev: true
     optional: true
 
   /@cloudflare/workerd-linux-arm64@1.20260312.1:
@@ -987,7 +985,6 @@ packages:
     cpu: [x64]
     os: [win32]
     requiresBuild: true
-    dev: true
     optional: true
 
   /@cloudflare/workerd-windows-64@1.20260312.1:
@@ -11909,7 +11906,6 @@ packages:
       '@cloudflare/workerd-linux-64': 1.20260310.1
       '@cloudflare/workerd-linux-arm64': 1.20260310.1
       '@cloudflare/workerd-windows-64': 1.20260310.1
-    dev: true
 
   /workerd@1.20260312.1:
     resolution: {integrity: sha512-nNpPkw9jaqo79B+iBCOiksx+N62xC+ETIfyzofUEdY3cSOHJg6oNnVSHm7vHevzVblfV76c8Gr0cXHEapYMBEg==}
