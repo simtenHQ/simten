@@ -23,8 +23,20 @@
     "simten-mcp": "./bin/simten-mcp.js"
   },
   "exports": {
-    ".": "./dist/index.js",
-    "./schemas": "./dist/schemas/index.js"
+    ".": "./src/index.ts",
+    "./schemas": "./src/schemas/index.ts"
+  },
+  "publishConfig": {
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "import": "./dist/index.js"
+      },
+      "./schemas": {
+        "types": "./dist/schemas/index.d.ts",
+        "import": "./dist/schemas/index.js"
+      }
+    }
   },
   "files": [
     "dist",
