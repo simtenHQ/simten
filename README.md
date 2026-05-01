@@ -119,8 +119,6 @@ pnpm test         # Run all package tests + the exports drift lint
 pnpm build        # Build every package (only needed before publishing)
 ```
 
-You do **not** need to run `pnpm build` before `pnpm dev`. Every workspace package's `exports` map points directly at TypeScript source (`src/*.ts`), and Vite/vitest/tsc all consume that source live with HMR. Edit a file in `packages/core/src/` while the dev server is running and the change reflects in the browser without any build step.
-
 ### How the exports work
 
 Each publishable package (`@simten/core`, `@simten/ui`, `@simten/embed`, `@simten/mcp`) has two `exports` blocks in its `package.json`:
