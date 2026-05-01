@@ -8,7 +8,7 @@
  * 3. Scope port values so internal node IDs match simulation keys
  */
 
-import type { Circuit, Node, Connection } from '@simten/core';
+import type { Circuit, Node, Connection, BitValue, BusValue } from '@simten/core';
 import type { FlatPortValueMap } from '@simten/core/simulator';
 
 /** Prefix for synthetic boundary input nodes */
@@ -120,7 +120,7 @@ export function scopePortValues(
 ): FlatPortValueMap {
   if (!prefix) return portValues;
 
-  const scoped = new Map() as FlatPortValueMap;
+  const scoped = new Map<string, BitValue | BusValue>();
 
   for (const [key, value] of portValues.entries()) {
     if (key.startsWith(prefix)) {

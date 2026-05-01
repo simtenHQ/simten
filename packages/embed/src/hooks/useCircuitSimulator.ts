@@ -328,7 +328,7 @@ export function useCircuitSimulator(
 
   // Extract outputs from portValues
   useEffect(() => {
-    if (!ready || portValues.size === 0) return;
+    if (!ready || portValues.size === 0 || !harnessedCircuit) return;
     const newOutputs: Record<string, boolean | number> = {};
     for (const output of harnessedCircuit.outputs) {
       const key = `${TOP_LEVEL_NODE}.${output.name}`;

@@ -13,8 +13,8 @@ import * as std from '@simten/core/std';
 
 // Build lookup structures from stdlib exports
 const STD_BUILT: BuiltCircuit[] = Object.values(std).filter(
-  (v): v is BuiltCircuit => !!v && typeof v === 'object' && 'name' in v && 'circuit' in v,
-);
+  (v) => !!v && typeof v === 'object' && 'name' in v && 'circuit' in v,
+) as unknown as BuiltCircuit[];
 const STD_CIRCUIT_MAP: Map<string, Circuit> = new Map(STD_BUILT.map((b) => [b.name, b.circuit]));
 const PRIMITIVE_NAMES: Set<string> = new Set(
   STD_BUILT
