@@ -4,45 +4,49 @@
   "type": "module",
   "sideEffects": false,
   "exports": {
-    ".": {
-      "@simten/source": "./src/index.ts",
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
-    },
-    "./simulator": {
-      "@simten/source": "./src/simulator/index.ts",
-      "types": "./dist/simulator/index.d.ts",
-      "import": "./dist/simulator/index.js"
-    },
-    "./api": {
-      "@simten/source": "./src/api/index.ts",
-      "types": "./dist/api/index.d.ts",
-      "import": "./dist/api/index.js"
-    },
-    "./verilog": {
-      "@simten/source": "./src/verilog/index.ts",
-      "types": "./dist/verilog/index.d.ts",
-      "import": "./dist/verilog/index.js"
-    },
-    "./circuit": {
-      "@simten/source": "./src/circuit/index.ts",
-      "types": "./dist/circuit/index.d.ts",
-      "import": "./dist/circuit/index.js"
-    },
-    "./std": {
-      "@simten/source": "./src/std/index.ts",
-      "types": "./dist/std/index.d.ts",
-      "import": "./dist/std/index.js"
-    },
-    "./sim": {
-      "@simten/source": "./src/sim/index.ts",
-      "types": "./dist/sim/index.d.ts",
-      "import": "./dist/sim/index.js"
-    },
-    "./util/test-name": {
-      "@simten/source": "./src/util/test-name.ts",
-      "types": "./dist/util/test-name.d.ts",
-      "import": "./dist/util/test-name.js"
+    ".": "./src/index.ts",
+    "./simulator": "./src/simulator/index.ts",
+    "./api": "./src/api/index.ts",
+    "./verilog": "./src/verilog/index.ts",
+    "./circuit": "./src/circuit/index.ts",
+    "./std": "./src/std/index.ts",
+    "./sim": "./src/sim/index.ts",
+    "./util/test-name": "./src/util/test-name.ts"
+  },
+  "publishConfig": {
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "import": "./dist/index.js"
+      },
+      "./simulator": {
+        "types": "./dist/simulator/index.d.ts",
+        "import": "./dist/simulator/index.js"
+      },
+      "./api": {
+        "types": "./dist/api/index.d.ts",
+        "import": "./dist/api/index.js"
+      },
+      "./verilog": {
+        "types": "./dist/verilog/index.d.ts",
+        "import": "./dist/verilog/index.js"
+      },
+      "./circuit": {
+        "types": "./dist/circuit/index.d.ts",
+        "import": "./dist/circuit/index.js"
+      },
+      "./std": {
+        "types": "./dist/std/index.d.ts",
+        "import": "./dist/std/index.js"
+      },
+      "./sim": {
+        "types": "./dist/sim/index.d.ts",
+        "import": "./dist/sim/index.js"
+      },
+      "./util/test-name": {
+        "types": "./dist/util/test-name.d.ts",
+        "import": "./dist/util/test-name.js"
+      }
     }
   },
   "files": [
