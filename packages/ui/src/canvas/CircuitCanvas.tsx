@@ -37,7 +37,7 @@ import type { NodeData } from "../nodes";
 import { cleanCircuitLabels } from "./label-utils";
 import { EDGE_TYPES, NODE_TYPES } from "./node-types";
 import { projectCircuitToReactFlow } from "./projection";
-import type { InspectorFrame, MetadataState } from "./types";
+import type { CircuitLayout, InspectorFrame, MetadataState } from "./types";
 import { useElkLayout } from "./useElkLayout";
 import { CompositeInspectorDialog } from "./CompositeInspectorDialog";
 
@@ -72,9 +72,12 @@ export interface CircuitCanvasProps {
   portValues?: FlatPortValueMap | null;
   sequentialState?: FlatSequentialState | null;
   draggable?: boolean;
-  autoLayout?: boolean;
-  nodePositions?: Record<string, { x: number; y: number }>;
-  metadata?: MetadataState;
+  /**
+   * Pre-computed node positions keyed by node label (or id, as fallback).
+   * When provided, the layout engine is skipped entirely.
+   * When absent, positions are computed by the layout engine on mount.
+   */
+  layout?: CircuitLayout;
   onToggleNode?: (nodeId: string) => void;
   onSetNodeValue?: (nodeId: string, value: number) => void;
   onLoadMemory?: (nodeId: string, data: Map<number, number>) => void;
@@ -136,9 +139,7 @@ function CircuitCanvasInner({
   portValues,
   sequentialState,
   draggable = true,
-  autoLayout = true,
-  nodePositions,
-  metadata: metadataProp,
+  layout,
   onToggleNode,
   onSetNodeValue,
   onLoadMemory,
@@ -168,38 +169,49 @@ function CircuitCanvasInner({
   }, [focus]);
 
   const cleanedCircuit = useMemo(() => {
-    return circuit && autoLayout
-      ? cleanCircuitLabels(circuit)
-      : circuit ?? null;
-  }, [circuit, autoLayout]);
+    return circuit ? cleanCircuitLabels(circuit) : null;
+  }, [circuit]);
 
-  const { metadata: elkMetadata } = useElkLayout(
-    autoLayout && !metadataProp ? cleanedCircuit : null,
-  );
+  // Run engine only when no layout is provided.
+  const { metadata: elkMetadata } = useElkLayout(layout ? null : cleanedCircuit);
 
   const metadata = useMemo(() => {
-    if (metadataProp) return metadataProp;
     if (!cleanedCircuit)
       return { components: {}, connections: {} } as MetadataState;
 
-    const base = autoLayout
-      ? elkMetadata
-      : ({ components: {}, connections: {} } as MetadataState);
+    if (!layout) return elkMetadata;
 
-    if (nodePositions) {
-      for (const node of cleanedCircuit.nodes) {
-        const label = node.label || node.id;
-        if (nodePositions[label]) {
-          base.components[node.id] = {
-            id: node.id,
-            position: nodePositions[label],
-          };
-        }
+    // Build MetadataState from the user-provided layout. Try label first, fall
+    // back to id. Nodes missing from the layout get no position.
+    const components: Record<string, { id: string; position: { x: number; y: number } }> = {};
+    for (const node of cleanedCircuit.nodes) {
+      const labelKey = node.label || node.id;
+      const pos = layout[labelKey] ?? layout[node.id];
+      if (pos) {
+        components[node.id] = { id: node.id, position: pos };
       }
     }
+    return { components, connections: {} } as MetadataState;
+  }, [cleanedCircuit, elkMetadata, layout]);
 
-    return base;
-  }, [cleanedCircuit, autoLayout, elkMetadata, nodePositions, metadataProp]);
+  // Dev-mode validator: warn when `layout` keys don't match circuit nodes.
+  useEffect(() => {
+    if (process.env.NODE_ENV === "production") return;
+    if (!layout || !cleanedCircuit) return;
+    const labels = new Set(cleanedCircuit.nodes.map((n) => n.label || n.id));
+    const ids = new Set(cleanedCircuit.nodes.map((n) => n.id));
+    const layoutKeys = new Set(Object.keys(layout));
+    const missing = [...labels].filter((k) => !layoutKeys.has(k) && !ids.has(k));
+    const extra = [...layoutKeys].filter((k) => !labels.has(k) && !ids.has(k));
+    if (missing.length || extra.length) {
+      // eslint-disable-next-line no-console
+      console.warn(
+        "[CircuitCanvas] layout keys mismatch with circuit nodes." +
+          (missing.length ? ` Missing positions for: ${missing.join(", ")}.` : "") +
+          (extra.length ? ` Unused layout entries: ${extra.join(", ")}.` : ""),
+      );
+    }
+  }, [layout, cleanedCircuit]);
 
   const { projectedNodes, projectedEdges } = useMemo(() => {
     if (!cleanedCircuit) return { projectedNodes: [], projectedEdges: [] };

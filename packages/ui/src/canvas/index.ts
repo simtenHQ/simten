@@ -12,7 +12,7 @@ export { useElkLayout } from "./useElkLayout";
 export { createDrillDownViewCircuit, scopePortValues } from "./drill-down-view";
 export { CompositeInspectorDialog } from "./CompositeInspectorDialog";
 export type { CompositeInspectorDialogProps } from "./CompositeInspectorDialog";
-export type { MetadataState, InspectorFrame, OriginRect } from "./types";
+export type { CircuitLayout, MetadataState, InspectorFrame, OriginRect } from "./types";
 export { useSimulationSession } from "./hooks/useSimulationSession";
 export type { UseSimulationSessionResult } from "./hooks/useSimulationSession";
 export { ClockControls } from "./ClockControls";

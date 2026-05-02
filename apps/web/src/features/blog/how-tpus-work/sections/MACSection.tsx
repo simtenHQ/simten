@@ -42,7 +42,7 @@ export function MACSection() {
       <div className="mt-8">
         <CircuitEmbed
           circuit={TPU_CIRCUITS.multiplyAdd.circuit}
-          nodePositions={TPU_CIRCUITS.multiplyAdd.nodePositions}
+          layout={TPU_CIRCUITS.multiplyAdd.layout}
           height={300}
           showControls
           title="Multiply-Add Unit"

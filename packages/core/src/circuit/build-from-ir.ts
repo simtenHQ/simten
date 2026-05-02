@@ -36,14 +36,14 @@ export function buildFromIR(circuit: Circuit, libraryCircuits: Circuit[]): Built
     dependencies.set(dep.name, {
       circuit: dep,
       name: dep.name,
-      _shape: { inputs: {}, outputs: {} },
+      _shape: { inputs: {}, outputs: {}, nodes: {} },
       _dependencies: new Map(),
     });
   }
   return {
     circuit,
     name: circuit.name,
-    _shape: { inputs: {}, outputs: {} },
+    _shape: { inputs: {}, outputs: {}, nodes: {} },
     _dependencies: dependencies,
   };
 }

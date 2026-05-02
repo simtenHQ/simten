@@ -46,16 +46,29 @@ export interface ComponentMetadata {
   id: string;
   position: Position;
   dimensions?: Dimensions;
-  selected?: boolean;
-  zIndex?: number;
 }
 
 export interface ConnectionMetadata {
   id: string;
-  selected?: boolean;
 }
 
 export interface MetadataState {
   components: Record<string, ComponentMetadata>;
   connections: Record<string, ConnectionMetadata>;
 }
+
+/**
+ * Public layout prop type. Maps a node's label (or id, as fallback) to its
+ * position on the canvas. Pass to CircuitCanvas / CircuitEmbed via the
+ * `layout` prop to bypass the runtime layout engine entirely.
+ *
+ * When parameterised by a `BuiltCircuit`, the keys are constrained at compile
+ * time to the union of input names, output names, and node labels.
+ */
+import type { BuiltCircuit } from "@simten/core";
+
+export type CircuitLayout<
+  C extends BuiltCircuit | undefined = undefined,
+> = C extends BuiltCircuit<infer Ins, infer Outs, infer Ns>
+  ? Record<keyof Ins | keyof Outs | keyof Ns, { x: number; y: number }>
+  : Record<string, { x: number; y: number }>;
