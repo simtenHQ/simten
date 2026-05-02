@@ -88,10 +88,12 @@ export function usePongSimulator() {
 
   // Auto-run interval — run a complete 14-phase game frame each time.
   // Speed controls how often frames run (higher = slower ball + paddles).
+  // tickN batches all 14 cycles into one sandbox round-trip and one React
+  // update, so React renders only at end-of-frame (no mid-cycle flicker).
   useEffect(() => {
     if (isRunning && sim.ready) {
       intervalRef.current = setInterval(() => {
-        for (let i = 0; i < 14; i++) sim.tick();
+        sim.tickN(14);
       }, speed);
     }
     return () => {
@@ -100,7 +102,7 @@ export function usePongSimulator() {
         intervalRef.current = null;
       }
     };
-  }, [isRunning, sim.ready, speed, sim.tick]);
+  }, [isRunning, sim.ready, speed, sim.tickN]);
 
   const handleReset = useCallback(() => {
     setIsRunning(false);
