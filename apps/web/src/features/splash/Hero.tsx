@@ -20,6 +20,8 @@ import { Xor, And, Or, Not, DFlipFlop } from "@simten/core/std";
 import { Logo } from "@/components/Logo";
 import { HighlightedCode } from "@/components/HighlightedCode";
 
+type HeroLayout = Record<string, { x: number; y: number }>;
+
 // ============================================================================
 // Hero demo circuits
 // ============================================================================
@@ -89,6 +91,7 @@ interface HeroDemo {
   label: string;
   circuit: BuiltCircuit;
   code: string;
+  layout: HeroLayout;
 }
 
 const DEMOS: HeroDemo[] = [
@@ -107,6 +110,13 @@ const DEMOS: HeroDemo[] = [
     and1.out.to(outputs.carry),
   ],
 });`,
+    layout: {
+      a:     { x: 10,  y: 0   },
+      b:     { x: 10,  y: 130 },
+      dut:   { x: 220, y: 65  },
+      sum:   { x: 430, y: 0   },
+      carry: { x: 430, y: 130 },
+    },
   },
   {
     key: "full-adder",
@@ -127,6 +137,14 @@ const DEMOS: HeroDemo[] = [
     or1.out.to(outputs.cout),
   ],
 });`,
+    layout: {
+      a:    { x: 10,  y: 0   },
+      b:    { x: 10,  y: 95  },
+      cin:  { x: 10,  y: 190 },
+      dut:  { x: 220, y: 95  },
+      sum:  { x: 430, y: 30  },
+      cout: { x: 430, y: 160 },
+    },
   },
   {
     key: "counter",
@@ -142,6 +160,11 @@ const DEMOS: HeroDemo[] = [
     xor1.out.to(dff1.d),
   ],
 });`,
+    layout: {
+      dut:  { x: 10,  y: 60  },
+      bit0: { x: 220, y: 0   },
+      bit1: { x: 220, y: 130 },
+    },
   },
   {
     key: "mux",
@@ -161,6 +184,13 @@ const DEMOS: HeroDemo[] = [
     or1.out.to(outputs.out),
   ],
 });`,
+    layout: {
+      a:   { x: 10,  y: 0   },
+      b:   { x: 10,  y: 95  },
+      sel: { x: 10,  y: 190 },
+      dut: { x: 220, y: 95  },
+      out: { x: 430, y: 95  },
+    },
   },
 ];
 
@@ -307,6 +337,7 @@ export function Hero() {
                   <CircuitEmbed
                     key={demo.key}
                     circuit={demo.circuit}
+                    layout={demo.layout}
                     height="100%"
                   />
                 </div>
@@ -372,6 +403,7 @@ export function Hero() {
               <CircuitEmbed
                 key={demo.key}
                 circuit={demo.circuit}
+                layout={demo.layout}
                 height="100%"
               />
             </div>

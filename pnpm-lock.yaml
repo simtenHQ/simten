@@ -396,6 +396,9 @@ importers:
 
   packages/ui:
     dependencies:
+      '@dagrejs/dagre':
+        specifier: ^3.0.0
+        version: 3.0.0
       '@radix-ui/react-dialog':
         specifier: ^1.1.15
         version: 1.1.15(@types/react-dom@19.2.3)(@types/react@19.2.14)(react-dom@19.1.4)(react@19.1.4)
@@ -411,9 +414,6 @@ importers:
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
-      elkjs:
-        specifier: ^0.9.3
-        version: 0.9.3
       framer-motion:
         specifier: ^12.34.0
         version: 12.34.3(react-dom@19.1.4)(react@19.1.4)
@@ -884,6 +884,7 @@ packages:
     dependencies:
       unenv: 2.0.0-rc.24
       workerd: 1.20260310.1
+    dev: true
 
   /@cloudflare/unenv-preset@2.15.0(unenv@2.0.0-rc.24)(workerd@1.20260312.1):
     resolution: {integrity: sha512-EGYmJaGZKWl+X8tXxcnx4v2bOZSjQeNI5dWFeXivgX9+YCT69AkzHHwlNbVpqtEUTbew8eQurpyOpeN8fg00nw==}
@@ -903,7 +904,7 @@ packages:
       vite: ^6.1.0 || ^7.0.0
       wrangler: ^4.73.0
     dependencies:
-      '@cloudflare/unenv-preset': 2.15.0(unenv@2.0.0-rc.24)(workerd@1.20260310.1)
+      '@cloudflare/unenv-preset': 2.15.0(unenv@2.0.0-rc.24)(workerd@1.20260312.1)
       miniflare: 4.20260312.0
       unenv: 2.0.0-rc.24
       vite: 7.3.1(@types/node@20.19.33)(tsx@4.21.0)
@@ -921,6 +922,7 @@ packages:
     cpu: [x64]
     os: [darwin]
     requiresBuild: true
+    dev: true
     optional: true
 
   /@cloudflare/workerd-darwin-64@1.20260312.1:
@@ -937,6 +939,7 @@ packages:
     cpu: [arm64]
     os: [darwin]
     requiresBuild: true
+    dev: true
     optional: true
 
   /@cloudflare/workerd-darwin-arm64@1.20260312.1:
@@ -953,6 +956,7 @@ packages:
     cpu: [x64]
     os: [linux]
     requiresBuild: true
+    dev: true
     optional: true
 
   /@cloudflare/workerd-linux-64@1.20260312.1:
@@ -969,6 +973,7 @@ packages:
     cpu: [arm64]
     os: [linux]
     requiresBuild: true
+    dev: true
     optional: true
 
   /@cloudflare/workerd-linux-arm64@1.20260312.1:
@@ -985,6 +990,7 @@ packages:
     cpu: [x64]
     os: [win32]
     requiresBuild: true
+    dev: true
     optional: true
 
   /@cloudflare/workerd-windows-64@1.20260312.1:
@@ -1054,6 +1060,16 @@ packages:
     resolution: {integrity: sha512-QxULHAm7cNu72w97JUNCBFODFaXpbDg+dP8b/oWFAZ2MTRppA3U00Y2L1HqaS4J6yBqxwa/Y3nMBaxVKbB/NsA==}
     engines: {node: '>=20.19.0'}
     dev: true
+
+  /@dagrejs/dagre@3.0.0:
+    resolution: {integrity: sha512-ZzhnTy1rfuoew9Ez3EIw4L2znPGnYYhfn8vc9c4oB8iw6QAsszbiU0vRhlxWPFnmmNSFAkrYeF1PhM5m4lAN0Q==}
+    dependencies:
+      '@dagrejs/graphlib': 4.0.1
+    dev: false
+
+  /@dagrejs/graphlib@4.0.1:
+    resolution: {integrity: sha512-IvcV6FduIIAmLwnH+yun+QtV36SC7mERqa86aClNqmMN09WhmPPYU8ckHrZBozErf+UvHPWOTJYaGYiIcs0DgA==}
+    dev: false
 
   /@emnapi/runtime@1.8.1:
     resolution: {integrity: sha512-mehfKSMWjjNol8659Z8KxEMrdSJDDot5SXMq00dM8BN4o+CLNXQ0xH2V7EchNHV4RmbZLmmPdEaXZc5H2FXmDg==}
@@ -11906,6 +11922,7 @@ packages:
       '@cloudflare/workerd-linux-64': 1.20260310.1
       '@cloudflare/workerd-linux-arm64': 1.20260310.1
       '@cloudflare/workerd-windows-64': 1.20260310.1
+    dev: true
 
   /workerd@1.20260312.1:
     resolution: {integrity: sha512-nNpPkw9jaqo79B+iBCOiksx+N62xC+ETIfyzofUEdY3cSOHJg6oNnVSHm7vHevzVblfV76c8Gr0cXHEapYMBEg==}
