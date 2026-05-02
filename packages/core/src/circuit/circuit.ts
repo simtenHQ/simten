@@ -100,7 +100,7 @@ export function circuit<
   Outs extends Record<string, PortType | number>,
   Nodes extends Record<string, BuiltCircuit>,
   S extends StateShape,
->(name: string, config: CircuitConfig<Ins, Outs, Nodes, S> = {} as any): BuiltCircuit<NormalizePorts<Ins>, NormalizePorts<Outs>> {
+>(name: string, config: CircuitConfig<Ins, Outs, Nodes, S> = {} as any): BuiltCircuit<NormalizePorts<Ins>, NormalizePorts<Outs>, Nodes> {
   // ── Normalize inputs/outputs ──
 
   const inputs = new Map<string, PortType>();
@@ -376,10 +376,10 @@ export function circuit<
 
   const built = {
     circuit: circuitIR,
-    _shape: { inputs: inputMap as NormalizePorts<Ins>, outputs: outputMap as NormalizePorts<Outs> },
+    _shape: { inputs: inputMap as NormalizePorts<Ins>, outputs: outputMap as NormalizePorts<Outs>, nodes: nodes as Nodes },
     _dependencies: deps,
     name,
-  } as BuiltCircuit<NormalizePorts<Ins>, NormalizePorts<Outs>>;
+  } as BuiltCircuit<NormalizePorts<Ins>, NormalizePorts<Outs>, Nodes>;
 
   // Register eval/onTick in the shared registry at definition time.
   // This means any circuit with eval just works in simulation — no manual registration.

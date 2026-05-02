@@ -104,7 +104,7 @@ export const PONG_CIRCUITS: Record<string, BlogCircuit> = {
     name: "Ball Position",
     description:
       "Two registers store the ball's X and Y coordinates. An adder moves the ball by adding a velocity delta each tick.",
-    nodePositions: {
+    layout: {
       dx: { x: 0, y: 50 },
       dy: { x: 0, y: 200 },
       enable: { x: 0, y: 370 },
@@ -124,7 +124,7 @@ export const PONG_CIRCUITS: Record<string, BlogCircuit> = {
     name: "Bounce Detection",
     description:
       "Comparators check if the ball is at a screen edge (0 or 15), signaling when it needs to reverse direction.",
-    nodePositions: {
+    layout: {
       ballY: { x: 0, y: 120 },
       zero: { x: 0, y: 0 },
       fifteen: { x: 0, y: 240 },
@@ -144,7 +144,7 @@ export const PONG_CIRCUITS: Record<string, BlogCircuit> = {
     name: "Paddle Movement",
     description:
       "Keyboard scan codes are compared to detect W/S key presses. A mux tree converts the result into a delta that moves the paddle register.",
-    nodePositions: {
+    layout: {
       keyboard: { x: 0, y: 100 },
       keyW: { x: 0, y: 200 },
       keyS: { x: 0, y: 300 },
@@ -169,7 +169,7 @@ export const PONG_CIRCUITS: Record<string, BlogCircuit> = {
     name: "14-Phase Rendering Pipeline",
     description:
       "A counter cycles 0-13, orchestrating: clear old ball, clear old left paddle, clear old right paddle, draw new ball, draw new left paddle, draw new right paddle.",
-    nodePositions: {
+    layout: {
       enable: { x: 0, y: 100 },
       one: { x: 0, y: 250 },
       zero: { x: 200, y: 350 },
@@ -190,7 +190,7 @@ export const PONG_CIRCUITS: Record<string, BlogCircuit> = {
     name: "Pixel Address Calculation",
     description:
       "Converts (X, Y) coordinates to a linear framebuffer address using (Y << 4) + X. In real hardware a left shift by 4 is just wiring — each bit of Y connects to a position 4 places higher — so the only real gate is the final adder.",
-    nodePositions: {
+    layout: {
       x: { x: 0, y: 120 },
       y: { x: 0, y: 0 },
       four: { x: 0, y: 240 },

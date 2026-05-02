@@ -193,7 +193,7 @@ export function SystolicDemo() {
         onToggleNode={sim.toggleNode}
         onSetNodeValue={sim.setNodeValue}
         height={480}
-        nodePositions={SYSTOLIC_LAYOUT}
+        layout={SYSTOLIC_LAYOUT}
         autoLayout={false}
       />
 

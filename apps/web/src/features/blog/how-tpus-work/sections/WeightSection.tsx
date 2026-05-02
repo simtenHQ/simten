@@ -39,7 +39,7 @@ export function WeightSection() {
       <div className="mt-8">
         <CircuitEmbed
           circuit={TPU_CIRCUITS.weightRegister.circuit}
-          nodePositions={TPU_CIRCUITS.weightRegister.nodePositions}
+          layout={TPU_CIRCUITS.weightRegister.layout}
           height={350}
           showControls
           autoRunSpeed={400}

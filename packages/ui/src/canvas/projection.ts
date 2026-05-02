@@ -233,7 +233,6 @@ function projectCircuitToNodes(
         __uartText: uartText,
         __nicState: nicState,
       },
-      selected: nodeMetadata.selected,
       selectable: true,
       deletable: false,
     });
@@ -287,14 +286,11 @@ function projectCircuitToNodes(
  */
 function projectCircuitToEdges(
   circuit: Circuit,
-  metadata: MetadataState,
   portValues?: FlatPortValueMap,
 ): Edge[] {
   const edges: Edge[] = [];
 
   for (const connection of circuit.connections) {
-    const connectionMetadata = metadata.connections[connection.id];
-
     let edgeColor = WIRE_COLORS.UNDEFINED;
     if (portValues) {
       const value = portValues.get(portPathKey(connection.source))
@@ -314,7 +310,6 @@ function projectCircuitToEdges(
       targetHandle: `in-${connection.target.portName}`,
       style: { stroke: edgeColor, strokeWidth: 2 },
       animated: false,
-      selected: connectionMetadata?.selected,
       selectable: false,
       deletable: false,
     });
@@ -337,6 +332,6 @@ export function projectCircuitToReactFlow(
 
   return {
     nodes: projectCircuitToNodes(circuit, metadata, library, portValues, seqState),
-    edges: projectCircuitToEdges(circuit, metadata, portValues),
+    edges: projectCircuitToEdges(circuit, portValues),
   };
 }

@@ -45,7 +45,7 @@ export function WeightFlowSection() {
       <div className="mt-8">
         <CircuitEmbed
           circuit={TPU_CIRCUITS.twoPEColumn.circuit}
-          nodePositions={TPU_CIRCUITS.twoPEColumn.nodePositions}
+          layout={TPU_CIRCUITS.twoPEColumn.layout}
           height={400}
           showControls
           autoRunSpeed={400}

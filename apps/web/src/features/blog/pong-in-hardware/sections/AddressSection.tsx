@@ -33,7 +33,7 @@ export function AddressSection() {
           circuit={entry.circuit}
           height={240}
           showControls={false}
-          nodePositions={entry.nodePositions}
+          layout={entry.layout}
           title={entry.name}
           description={entry.description}
         />

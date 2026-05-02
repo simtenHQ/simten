@@ -79,7 +79,7 @@ Build your own UI around the simulator. Each hook instance has its own isolated 
 | `title` | `string` | — | Header title |
 | `description` | `string` | — | Header subtitle |
 | `focus` | `string \| string[]` | — | Highlight specific nodes, dim others |
-| `nodePositions` | `Record<string, {x,y}>` | — | Manual node positions (disables auto-layout) |
+| `layout` | `CircuitLayout<C>` | — | Pre-computed positions, keyed by node label or id. Bypasses the runtime layout engine. Keys are constrained at compile time to the circuit's input/output/node names. |
 | `initialInputs` | `Record<string, number \| boolean>` | — | Set initial input values |
 | `autoRunSpeed` | `number` | `500` | Auto-run interval in ms |
 | `showPortLabels` | `boolean` | — | Show port labels on nodes |
@@ -91,9 +91,38 @@ Build your own UI around the simulator. Each hook instance has its own isolated 
 1. The `BuiltCircuit` is elaborated (composites flattened to primitives)
 2. A simulator engine evaluates the netlist
 3. ReactFlow renders the circuit as interactive nodes and edges
-4. ELK computes automatic layout (lazy-loaded, SSR-safe)
+4. The layout engine computes positions when no `layout` prop is provided (lazy-loaded, SSR-safe)
 
 Each `useCircuitSimulator` call creates its own component library instance. Sub-circuits are registered into that instance during elaboration. No global state is shared between embeds.
+
+## Type-safe layouts
+
+`CircuitLayout<C>` constrains keys to the circuit's actual port/node names at compile time:
+
+```tsx
+import { circuit, bit } from '@simten/core/circuit'
+import { CircuitEmbed, type CircuitLayout } from '@simten/embed'
+
+const HalfAdder = circuit('HalfAdder', {
+  inputs:  { a: bit, b: bit },
+  outputs: { sum: bit, carry: bit },
+  nodes:   { xor1: Xor, and1: And },
+  connect: /* ... */
+})
+
+// TS infers the valid keys: a | b | sum | carry | xor1 | and1
+const halfAdderLayout: CircuitLayout<typeof HalfAdder> = {
+  a:    { x: 0,   y: 0   },
+  b:    { x: 0,   y: 80  },
+  xor1: { x: 200, y: 0   },
+  and1: { x: 200, y: 100 },
+  // typo: { x: 1, y: 1 }  // TS error: not a valid key
+}
+
+<CircuitEmbed circuit={HalfAdder} layout={halfAdderLayout} />
+```
+
+In dev mode, a runtime warning also fires if `layout` keys don't match the circuit's nodes — useful for circuits compiled at runtime via the web component path where TS can't help.
 
 ## CSS
 
@@ -126,7 +155,7 @@ const CircuitEmbed = dynamic(
 
 ### What happens during SSR
 
-Components are skipped on the server and render only on the client. The ELK layout engine uses `dynamic import()` so the 1.5MB library is never loaded on the server.
+Components are skipped on the server and render only on the client. The layout engine uses `dynamic import()` so it is never loaded on the server. If you pass a `layout` prop, the engine isn't loaded at all — positions are applied directly.
 
 ## Requirements
 

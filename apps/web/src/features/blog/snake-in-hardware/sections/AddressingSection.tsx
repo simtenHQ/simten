@@ -35,7 +35,7 @@ export function AddressingSection() {
       <div className="mt-8">
         <CircuitEmbed
           circuit={SNAKE_CIRCUITS.coordToPixel.circuit}
-          nodePositions={SNAKE_CIRCUITS.coordToPixel.nodePositions}
+          layout={SNAKE_CIRCUITS.coordToPixel.layout}
           height={350}
           showControls
           title="Coordinate to Pixel Address"

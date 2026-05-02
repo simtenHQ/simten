@@ -128,11 +128,13 @@ export interface CircuitMeta {
 export interface BuiltCircuit<
   Ins extends PortMap = PortMap,
   Outs extends PortMap = PortMap,
+  Ns extends Record<string, unknown> = Record<string, unknown>,
 > {
   /** The Circuit IR for this circuit */
   readonly circuit: Circuit;
-  /** Type-level shape for generic propagation */
-  readonly _shape: { inputs: Ins; outputs: Outs };
+  /** Type-level shape for generic propagation. Includes node names so that
+   *  consumers (e.g., the canvas `layout` prop) can constrain keys at compile time. */
+  readonly _shape: { inputs: Ins; outputs: Outs; nodes: Ns };
   /** Sub-circuit definitions needed for simulation (transitive) */
   readonly _dependencies: ReadonlyMap<string, BuiltCircuit>;
   /** Circuit name */

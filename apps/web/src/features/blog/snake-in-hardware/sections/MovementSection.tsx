@@ -37,7 +37,7 @@ export function MovementSection() {
       <div className="mt-8">
         <CircuitEmbed
           circuit={SNAKE_CIRCUITS.pixelMover.circuit}
-          nodePositions={SNAKE_CIRCUITS.pixelMover.nodePositions}
+          layout={SNAKE_CIRCUITS.pixelMover.layout}
           height={400}
           showControls
           title="Pixel Mover"
