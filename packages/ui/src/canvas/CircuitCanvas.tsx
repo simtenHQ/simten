@@ -38,7 +38,7 @@ import { cleanCircuitLabels } from "./label-utils";
 import { EDGE_TYPES, NODE_TYPES } from "./node-types";
 import { projectCircuitToReactFlow } from "./projection";
 import type { CircuitLayout, InspectorFrame, MetadataState } from "./types";
-import { useElkLayout } from "./useElkLayout";
+import { useLayout } from "./useLayout";
 import { CompositeInspectorDialog } from "./CompositeInspectorDialog";
 
 function FitViewButton() {
@@ -173,13 +173,13 @@ function CircuitCanvasInner({
   }, [circuit]);
 
   // Run engine only when no layout is provided.
-  const { metadata: elkMetadata } = useElkLayout(layout ? null : cleanedCircuit);
+  const { metadata: computedMetadata } = useLayout(layout ? null : cleanedCircuit);
 
   const metadata = useMemo(() => {
     if (!cleanedCircuit)
       return { components: {}, connections: {} } as MetadataState;
 
-    if (!layout) return elkMetadata;
+    if (!layout) return computedMetadata;
 
     // Build MetadataState from the user-provided layout. Try label first, fall
     // back to id. Nodes missing from the layout get no position.
@@ -192,7 +192,7 @@ function CircuitCanvasInner({
       }
     }
     return { components, connections: {} } as MetadataState;
-  }, [cleanedCircuit, elkMetadata, layout]);
+  }, [cleanedCircuit, computedMetadata, layout]);
 
   // Dev-mode validator: warn when `layout` keys don't match circuit nodes.
   useEffect(() => {
