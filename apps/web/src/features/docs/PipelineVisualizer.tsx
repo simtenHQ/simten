@@ -1,5 +1,5 @@
 
-import { useState, useEffect, lazy, Suspense } from "react";
+import { useState, useEffect } from "react";
 import type { Circuit } from "@simten/core";
 import {
   elaborate,
@@ -8,12 +8,7 @@ import {
 import type { BuiltCircuit } from "@simten/core/circuit";
 import * as std from "@simten/core/std";
 import { useSandboxContext } from "@simten/ui/sandbox";
-
-const CircuitEmbed = lazy(() =>
-  import("@simten/embed").then((m) => ({
-    default: m.CircuitEmbed,
-  }))
-);
+import { CircuitEmbed } from "@simten/embed";
 
 const FULL_ADDER_SOURCE = `
 const HalfAdder = circuit('HalfAdder', {
@@ -367,19 +362,11 @@ export function PipelineVisualizer() {
               The simulator runs the numeric circuit. Toggle the switches to change inputs — values
               propagate through the event queue until the circuit stabilizes.
             </p>
-            <Suspense
-              fallback={
-                <div className="flex items-center justify-center h-48 text-gray-500 text-sm">
-                  Loading simulator...
-                </div>
-              }
-            >
-              <CircuitEmbed
-                code={FULL_ADDER_SOURCE}
-                height={280}
-                showControls
-              />
-            </Suspense>
+            <CircuitEmbed
+              code={FULL_ADDER_SOURCE}
+              height={280}
+              showControls
+            />
           </div>
         )}
       </div>
