@@ -629,7 +629,7 @@ export const SNAKE_CIRCUITS: Record<string, BlogCircuit> = {
     description:
       "DualPortRAM as a screen framebuffer. Port A reads/writes data, port B is used by the Screen to display pixels.",
     circuit: SimpleFramebuffer,
-    nodePositions: {
+    layout: {
       // Inputs (left)
       addr: { x: 0, y: 0 },
       data_in: { x: 0, y: 120 },
@@ -647,7 +647,7 @@ export const SNAKE_CIRCUITS: Record<string, BlogCircuit> = {
     description:
       "Converts (X, Y) coordinates to a linear pixel address using (Y << 3) + X. A left shift by 3 is just wiring in real hardware — zero gates.",
     circuit: CoordToPixel,
-    nodePositions: {
+    layout: {
       x: { x: 0, y: 0 },
       y: { x: 0, y: 120 },
       three: { x: 0, y: 240 },
@@ -662,7 +662,7 @@ export const SNAKE_CIRCUITS: Record<string, BlogCircuit> = {
     description:
       "Decodes keyboard scan codes into deltaX/deltaY movement values using Comparators and a Mux tree.",
     circuit: DirectionDecoder,
-    nodePositions: {
+    layout: {
       // Input (left)
       keyCode: { x: 0, y: 140 },
       // Constants (left column)
@@ -695,7 +695,7 @@ export const SNAKE_CIRCUITS: Record<string, BlogCircuit> = {
     description:
       "Position registers with delta addition and BitSlice wraparound, drawing the result to a Screen via DualPortRAM.",
     circuit: PixelMover,
-    nodePositions: {
+    layout: {
       // Input
       keyboard: { x: 0, y: 200 },
       enable: { x: 0, y: 500 },
@@ -743,7 +743,7 @@ export const SNAKE_CIRCUITS: Record<string, BlogCircuit> = {
     description:
       "A 2-bit counter cycling through phases 0-3, with LED indicators showing the active phase.",
     circuit: PhaseDemo,
-    nodePositions: {
+    layout: {
       // Control (left)
       enable: { x: 0, y: 100 },
       one: { x: 60, y: 230 },
@@ -774,7 +774,7 @@ export const SNAKE_CIRCUITS: Record<string, BlogCircuit> = {
     description:
       "Compares head and food X/Y coordinates to detect collision, outputting a grow signal when they match.",
     circuit: CollisionDetector,
-    nodePositions: {
+    layout: {
       // Inputs (left, 2x2 grid)
       headX: { x: 0, y: 0 },
       headY: { x: 0, y: 120 },

@@ -425,7 +425,7 @@ export const TPU_CIRCUITS: Record<string, BlogCircuit> = {
     description:
       "Multiply two numbers and add to a partial sum. The fundamental operation inside every PE.",
     circuit: MultiplyAdd,
-    nodePositions: {
+    layout: {
       // Inputs (left)
       data:          { x: 0,   y: 0 },
       weight:        { x: 0,   y: 120 },
@@ -444,7 +444,7 @@ export const TPU_CIRCUITS: Record<string, BlogCircuit> = {
     description:
       "A register that stores a weight only when the valid signal is high. The weight stays fixed while data streams through.",
     circuit: WeightRegister,
-    nodePositions: {
+    layout: {
       // Inputs (left)
       weightIn:     { x: 0,   y: 0 },
       weightValid:  { x: 0,   y: 140 },
@@ -464,7 +464,7 @@ export const TPU_CIRCUITS: Record<string, BlogCircuit> = {
     description:
       "A full PE with weight register, multiplier, registered partial-sum adder, and data pipeline. The building block of the systolic array.",
     circuit: TestPE,
-    nodePositions: {
+    layout: {
       // Inputs (left)
       dataIn:        { x: 0,   y: 0 },
       weightIn:      { x: 0,   y: 120 },
@@ -483,7 +483,7 @@ export const TPU_CIRCUITS: Record<string, BlogCircuit> = {
     description:
       "Two PEs connected horizontally. Data flows left to right with a one-cycle delay between elements.",
     circuit: TwoPERow,
-    nodePositions: {
+    layout: {
       // Inputs (left)
       data0:       { x: 0,   y: 0 },
       weight0:     { x: 0,   y: 120 },
@@ -504,7 +504,7 @@ export const TPU_CIRCUITS: Record<string, BlogCircuit> = {
     description:
       "Two PEs stacked vertically. Partial sums flow down through registers — one PE per clock cycle, just like real hardware.",
     circuit: TwoPEColumn,
-    nodePositions: {
+    layout: {
       // Inputs (left)
       dataIn:       { x: 0,   y: 120 },
       weight0:      { x: 0,   y: 0 },
@@ -525,7 +525,7 @@ export const TPU_CIRCUITS: Record<string, BlogCircuit> = {
     description:
       "A phase register drives multi-step computation. Each phase has its own enable counter. LEDs show the active phase.",
     circuit: WavefrontController,
-    nodePositions: {
+    layout: {
       // Control (left)
       enable:   { x: 0,   y: 100 },
       // Phase register + increment (center-left)

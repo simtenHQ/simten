@@ -6,10 +6,11 @@
  * is a thin wrapper around this.
  */
 
-import { useState, useEffect, useCallback, forwardRef, useImperativeHandle } from "react";
+import { useState, useEffect, useCallback, forwardRef, useImperativeHandle, type ForwardedRef, type ReactElement } from "react";
 import { useCircuitSimulator } from "./hooks/useCircuitSimulator";
 import type { BuiltCircuit } from "@simten/core/circuit";
 import { CircuitCanvas, ClockControls } from "@simten/ui/canvas";
+import type { CircuitLayout } from "@simten/ui/canvas";
 
 /** Detect theme from <html> class, reactive via MutationObserver. */
 function useDetectTheme(): "light" | "dark" {
@@ -27,9 +28,9 @@ function useDetectTheme(): "light" | "dark" {
   return theme;
 }
 
-export interface CircuitViewerProps {
+export interface CircuitViewerProps<C extends BuiltCircuit = BuiltCircuit> {
   /** The circuit to display (result of circuit()) */
-  circuit: BuiltCircuit;
+  circuit: C;
   /** Container height */
   height?: number | string;
   /** Show clock controls for sequential circuits */
@@ -38,8 +39,12 @@ export interface CircuitViewerProps {
   autoHarness?: boolean;
   /** Initial values for auto-harnessed input nodes */
   initialInputs?: Record<string, number | boolean>;
-  /** Fixed node positions (disables auto-layout) */
-  nodePositions?: Record<string, { x: number; y: number }>;
+  /**
+   * Pre-computed node positions. Keys are constrained to the circuit's
+   * input names, output names, and node labels at compile time.
+   * Pass to bypass the runtime layout engine.
+   */
+  layout?: CircuitLayout<C>;
   /** Theme */
   theme?: "light" | "dark";
   /** Focus on specific node(s) */
@@ -64,14 +69,14 @@ export interface CircuitViewerHandle {
   setNodeValue: (nodeId: string, value: number | boolean | Map<number, number>) => void;
 }
 
-export const CircuitViewer = forwardRef<CircuitViewerHandle, CircuitViewerProps>(
+const CircuitViewerImpl = forwardRef<CircuitViewerHandle, CircuitViewerProps>(
   function CircuitViewer({
     circuit,
     height = 300,
     showControls = true,
     autoHarness = false,
     initialInputs,
-    nodePositions,
+    layout,
     theme,
     focus,
     showPortLabels,
@@ -148,7 +153,7 @@ export const CircuitViewer = forwardRef<CircuitViewerHandle, CircuitViewerProps>
             glowUnconnected={glowUnconnected}
             renderEmptyState={renderEmptyState}
             renderOverlay={renderOverlay}
-            {...(nodePositions ? { nodePositions, autoLayout: false } : {})}
+            {...(layout ? { layout } : {})}
             {...(theme ? { theme } : {})}
           />
         </div>
@@ -179,3 +184,11 @@ export const CircuitViewer = forwardRef<CircuitViewerHandle, CircuitViewerProps>
     );
   }
 );
+
+/**
+ * CircuitViewer with generic inference over the circuit type.
+ * Cast preserves the generic so `layout` keys are constrained at compile time.
+ */
+export const CircuitViewer = CircuitViewerImpl as <C extends BuiltCircuit>(
+  props: CircuitViewerProps<C> & { ref?: ForwardedRef<CircuitViewerHandle> },
+) => ReactElement;

@@ -35,7 +35,7 @@ export function CollisionSection() {
       <div className="mt-8">
         <CircuitEmbed
           circuit={SNAKE_CIRCUITS.collisionDetector.circuit}
-          nodePositions={SNAKE_CIRCUITS.collisionDetector.nodePositions}
+          layout={SNAKE_CIRCUITS.collisionDetector.layout}
           height={350}
           showControls
           title="Collision Detector"

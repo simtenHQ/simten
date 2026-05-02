@@ -102,7 +102,7 @@ export function CORDICDemo() {
         onToggleNode={sim.toggleNode}
         onSetNodeValue={sim.setNodeValue}
         height={400}
-        nodePositions={CORDIC_LAYOUT}
+        layout={CORDIC_LAYOUT}
         autoLayout={false}
       />
 

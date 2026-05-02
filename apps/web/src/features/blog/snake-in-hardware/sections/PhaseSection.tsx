@@ -39,7 +39,7 @@ export function PhaseSection() {
       <div className="mt-8">
         <CircuitEmbed
           circuit={SNAKE_CIRCUITS.phaseDemo.circuit}
-          nodePositions={SNAKE_CIRCUITS.phaseDemo.nodePositions}
+          layout={SNAKE_CIRCUITS.phaseDemo.layout}
           height={350}
           showControls
           autoRunSpeed={400}

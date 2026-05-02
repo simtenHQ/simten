@@ -170,7 +170,7 @@ function DemoGallery() {
             circuit={HalfAdder}
             href="/editor"
             height={300}
-            nodePositions={{
+            layout={{
               a:     { x: 10,  y: 10 },
               b:     { x: 10,  y: 170 },
               dut:   { x: 220, y: 90 },
@@ -186,7 +186,7 @@ function DemoGallery() {
               circuit={Counter2Bit}
               href="/editor"
               height={140}
-              nodePositions={{
+              layout={{
                 dut:  { x: 10,  y: 20 },
                 bit0: { x: 210, y: 5 },
                 bit1: { x: 210, y: 75 },
@@ -247,7 +247,7 @@ function DemoGallery() {
               <CircuitEmbed
                 circuit={DrilldownFullAdder}
                 height={320}
-                nodePositions={{
+                layout={{
                   a:    { x: 10,  y: 10 },
                   b:    { x: 10,  y: 110 },
                   cin:  { x: 10,  y: 210 },
@@ -268,7 +268,7 @@ function DemoGallery() {
               circuit={ShiftRegister4}
               height={340}
               initialInputs={{ din: 1 }}
-              nodePositions={{
+              layout={{
                 din: { x: 10, y: 140 },
                 dut: { x: 160, y: 120 },
                 q0:  { x: 310, y: 20 },

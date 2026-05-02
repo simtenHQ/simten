@@ -36,7 +36,7 @@ export function DirectionSection() {
       <div className="mt-8">
         <CircuitEmbed
           circuit={SNAKE_CIRCUITS.directionDecoder.circuit}
-          nodePositions={SNAKE_CIRCUITS.directionDecoder.nodePositions}
+          layout={SNAKE_CIRCUITS.directionDecoder.layout}
           height={350}
           showControls
           title="Direction Decoder"

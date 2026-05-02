@@ -30,7 +30,7 @@ export function BounceSection() {
           circuit={entry.circuit}
           height={260}
           showControls={false}
-          nodePositions={entry.nodePositions}
+          layout={entry.layout}
           title={entry.name}
           description={entry.description}
         />

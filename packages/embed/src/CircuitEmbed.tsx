@@ -10,19 +10,24 @@
  * web component bridge which sandboxes compilation via an iframe.
  */
 
-import { forwardRef } from "react";
+import { forwardRef, type ForwardedRef, type ReactElement } from "react";
 import { CircuitViewer, type CircuitViewerHandle } from "./CircuitViewer";
 import type { BuiltCircuit } from "@simten/core/circuit";
+import type { CircuitLayout } from "@simten/ui/canvas";
 
-export interface CircuitEmbedProps {
+export interface CircuitEmbedProps<C extends BuiltCircuit = BuiltCircuit> {
   /** The circuit to display (result of circuit()) */
-  circuit: BuiltCircuit;
+  circuit: C;
   /** Container height */
   height?: number | string;
   /** Show clock controls for sequential circuits */
   showControls?: boolean;
-  /** Fixed node positions */
-  nodePositions?: Record<string, { x: number; y: number }>;
+  /**
+   * Pre-computed node positions. Keys are constrained to the circuit's
+   * input names, output names, and node labels at compile time.
+   * Pass to bypass the runtime layout engine.
+   */
+  layout?: CircuitLayout<C>;
   /** Theme */
   theme?: "light" | "dark";
   /** Title shown in bottom bar */
@@ -49,12 +54,12 @@ export interface CircuitEmbedProps {
 
 export type CircuitEmbedHandle = CircuitViewerHandle;
 
-export const CircuitEmbed = forwardRef<CircuitEmbedHandle, CircuitEmbedProps>(
+const CircuitEmbedImpl = forwardRef<CircuitEmbedHandle, CircuitEmbedProps>(
   function CircuitEmbed({
     circuit,
     height = 300,
     showControls = true,
-    nodePositions,
+    layout,
     theme,
     title,
     subtitle,
@@ -79,7 +84,7 @@ export const CircuitEmbed = forwardRef<CircuitEmbedHandle, CircuitEmbedProps>(
             showControls={showControls}
             autoHarness
             initialInputs={initialInputs}
-            nodePositions={nodePositions}
+            layout={layout}
             theme={theme}
             focus={focus}
             showPortLabels={showPortLabels}
@@ -106,3 +111,11 @@ export const CircuitEmbed = forwardRef<CircuitEmbedHandle, CircuitEmbedProps>(
     );
   }
 );
+
+/**
+ * CircuitEmbed component with generic inference over the circuit type.
+ * Cast preserves the generic so `layout` keys are constrained at compile time.
+ */
+export const CircuitEmbed = CircuitEmbedImpl as <C extends BuiltCircuit>(
+  props: CircuitEmbedProps<C> & { ref?: ForwardedRef<CircuitEmbedHandle> },
+) => ReactElement;
