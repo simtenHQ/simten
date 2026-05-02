@@ -1,14 +1,9 @@
 
-import { useState, useMemo, lazy, Suspense, useRef, useEffect } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import type { BuiltCircuit } from "@simten/core/circuit";
 import type { PortDescriptor } from "@simten/core";
 import * as std from "@simten/core/std";
-
-const CircuitEmbed = lazy(() =>
-  import("@simten/embed").then((m) => ({
-    default: m.CircuitEmbed,
-  }))
-);
+import { CircuitEmbed } from "@simten/embed";
 
 // Collect all stdlib BuiltCircuit objects
 const ALL_STD: BuiltCircuit[] = (Object.values(std) as unknown[]).filter(
@@ -254,19 +249,11 @@ export function PrimitiveExplorer() {
           </div>
 
           {/* Live demo */}
-          <Suspense
-            fallback={
-              <div className="flex items-center justify-center h-48 text-muted-foreground text-sm">
-                Loading simulator...
-              </div>
-            }
-          >
-            <CircuitEmbed
-              circuit={selected}
-              height={280}
-              showControls
-            />
-          </Suspense>
+          <CircuitEmbed
+            circuit={selected}
+            height={280}
+            showControls
+          />
         </div>
       ) : (
         <div className="rounded-xl border border-border bg-card/50 flex items-center justify-center h-48 text-muted-foreground text-sm">
