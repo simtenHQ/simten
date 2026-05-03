@@ -88,6 +88,22 @@ jobs:
             (cd "$d" && pnpm exec wrangler types) || exit 1
           done
 
+      - name: Build workspace packages
+        # Must run before Typecheck: @simten/mcp has a `composite` project
+        # reference to @simten/core, so its tsc invocation expects core's
+        # `dist/*.d.ts` to already exist. Locally these dists persist
+        # between runs; on a fresh CI checkout they don't.
+        #
+        # @simten/web also imports `@simten/core/circuit`, `@simten/ui`,
+        # `@simten/embed` via their `exports` map → `./dist/...`, so the
+        # web build needs this too.
+        #
+        # `--workspace-concurrency=1` forces sequential builds so @simten/mcp
+        # doesn't race ahead of @simten/core. pnpm doesn't enforce topological
+        # ordering for `run` scripts by default — see issue tracker for plans
+        # to evaluate turbo / nx / lage as a proper build orchestrator.
+        run: pnpm --filter "./packages/*" --workspace-concurrency=1 build
+
       - name: Typecheck
         run: pnpm typecheck
 
@@ -96,17 +112,6 @@ jobs:
 
       - name: Run ui tests
         run: pnpm --filter @simten/ui test
-
-      - name: Build workspace packages
-        # @simten/web imports `@simten/core/circuit`, `@simten/ui`, `@simten/embed`
-        # via their `exports` map → `./dist/...`. Without this step, fresh CI
-        # checkouts have no dist and the web app build fails to resolve.
-        #
-        # `--workspace-concurrency=1` forces sequential builds so @simten/mcp
-        # doesn't race ahead of @simten/core. pnpm doesn't enforce topological
-        # ordering for `run` scripts by default — see issue tracker for plans
-        # to evaluate turbo / nx / lage as a proper build orchestrator.
-        run: pnpm --filter "./packages/*" --workspace-concurrency=1 build
 
       - name: Build web app
         run: pnpm --filter @simten/web build
