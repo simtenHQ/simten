@@ -7,7 +7,6 @@
 
 'use client';
 
-import React from 'react';
 import { useCircuitPreviewStore } from '../stores/circuit-preview-store';
 import { cn } from '../../lib/utils';
 

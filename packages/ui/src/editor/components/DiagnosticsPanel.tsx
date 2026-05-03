@@ -7,7 +7,6 @@
 
 'use client';
 
-import React from 'react';
 import { useAnalysisStore } from '../stores/analysis-store';
 import type { Diagnostic } from '@simten/core';
 
