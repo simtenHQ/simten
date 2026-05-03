@@ -10,7 +10,7 @@ import type { FlatCircuit, PrimitiveState } from '../types/simulator.js';
 import { TOP_LEVEL_NODE } from '../types/simulator.js';
 import type { NumericCircuit, NumericSequentialState } from './numeric-types.js';
 import { PRIMITIVE_TYPE_INDICES } from './numeric-types.js';
-import { resolveTypeIndex, ensureEvaluatorRegistered } from './eval-bridge.js';
+import { ensureEvaluatorRegistered } from './eval-bridge.js';
 
 /**
  * Compile a FlatCircuit to a NumericCircuit for fast simulation.

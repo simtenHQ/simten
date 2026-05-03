@@ -260,19 +260,11 @@ function BusWaveform({ values, color, width }: { values: (number | boolean)[]; c
 // Scope grouping
 // ============================================================================
 
-interface ScopeGroup {
-  /** Scope label (e.g. "reg") */
-  label: string;
-  /** Full scope path for nesting depth */
-  depth: number;
-  signals: VCDSignal[];
-}
-
 /**
  * Group signals into scope sections.
  * Root-level signals come first (no heading), then each sub-scope gets a header.
  */
-function groupByScope(signals: VCDSignal[], circuit: string): Array<{ type: 'root'; signals: VCDSignal[] } | { type: 'scope'; label: string; depth: number; signals: VCDSignal[] }> {
+function groupByScope(signals: VCDSignal[], _circuit: string): Array<{ type: 'root'; signals: VCDSignal[] } | { type: 'scope'; label: string; depth: number; signals: VCDSignal[] }> {
   const rootSignals = signals.filter((s) => s.scope.length <= 1);
 
   // Group by immediate child scope under root

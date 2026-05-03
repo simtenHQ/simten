@@ -1,6 +1,6 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { useCircuitSimulator, type UseCircuitSimulatorOptions } from "@simten/embed";
+import { useCircuitSimulator } from "@simten/embed";
 import { System6502 } from "./cpu6502-system.circuit";
 
 export interface Program {

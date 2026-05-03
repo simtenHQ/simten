@@ -6,7 +6,7 @@
  */
 
 import { createFileRoute } from "@tanstack/react-router";
-import { useState, useCallback, useMemo, useEffect } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { createServerFn } from "@tanstack/react-start";
 import { simulate } from "@simten/core/sim";
 import { RV32I_CPU } from "@/features/learn/cpu-debugger/rv32i-cpu.circuit";

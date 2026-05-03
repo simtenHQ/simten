@@ -5,13 +5,13 @@
  * (SR Latch, D Flip-Flop, Register, Counter) for the memory sections.
  */
 
-import { circuit, bit, bus } from "@simten/core/circuit";
+import { circuit, bit } from "@simten/core/circuit";
 import type { BlogCircuit } from '../types';
 import {
   Nor, Not, Xor, And, Or, Mux,
   DFlipFlop, Switch, Led, Input, HexDisplay, RAM,
 } from "@simten/core/std";
-import { HalfAdder, FullAdder } from "@/features/splash/circuits";
+import { FullAdder } from "@/features/splash/circuits";
 
 // Re-export gate circuits from splash
 export { CIRCUITS as GATE_CIRCUITS } from "@/features/splash/circuits";
@@ -99,13 +99,13 @@ export const ALU1 = circuit('ALU1', {
     inputs.b.to(add.b, op_and.b, op_or.b, op_xor.b),
     inputs.cin.to(add.cin),
     add.cout.to(outputs.cout),
-    add.sum.to(mux_lo.a),
-    op_and.out.to(mux_lo.b),
+    add.sum.to(mux_lo.in0),
+    op_and.out.to(mux_lo.in1),
     inputs.op0.to(mux_lo.sel, mux_hi.sel),
-    op_or.out.to(mux_hi.a),
-    op_xor.out.to(mux_hi.b),
-    mux_lo.out.to(mux_out.a),
-    mux_hi.out.to(mux_out.b),
+    op_or.out.to(mux_hi.in0),
+    op_xor.out.to(mux_hi.in1),
+    mux_lo.out.to(mux_out.in0),
+    mux_hi.out.to(mux_out.in1),
     inputs.op1.to(mux_out.sel),
     mux_out.out.to(outputs.result),
   ],

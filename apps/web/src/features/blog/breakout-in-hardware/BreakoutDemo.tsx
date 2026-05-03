@@ -1,5 +1,5 @@
 
-import { useMemo, useCallback } from "react";
+import { useMemo } from "react";
 import { useBreakoutSimulator } from "./useBreakoutSimulator";
 
 const GRID_W = 32;

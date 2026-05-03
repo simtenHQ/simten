@@ -25,7 +25,7 @@ export const Screen = circuit('Screen', {
   outputs: { addrB: bus(16) },
   state: { memory: new Map<number, number>() },
   meta: { category: 'display', icon: '🖥️', description: 'Pixel display', synthesizable: false },
-  eval: ({ memory }) => ({ addrB: 0 }),
+  eval: () => ({ addrB: 0 }),
 });
 
 export const RasterDisplay = circuit('RasterDisplay', {
@@ -33,7 +33,7 @@ export const RasterDisplay = circuit('RasterDisplay', {
   outputs: { addrB: bus(16), scanX: bus(8), scanY: bus(8), hblank: bit, vblank: bit },
   state: { memory: new Map<number, number>() },
   meta: { category: 'display', icon: '📺', description: 'Hardware-accurate raster display with scan counters', synthesizable: false },
-  eval: ({ memory }) => ({ addrB: 0, scanX: 0, scanY: 0, hblank: 0, vblank: 0 }),
+  eval: () => ({ addrB: 0, scanX: 0, scanY: 0, hblank: 0, vblank: 0 }),
 });
 
 export const Console = circuit('Console', {

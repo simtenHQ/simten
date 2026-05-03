@@ -51,7 +51,7 @@ function generateBatcherNetwork(n: number): Stage[] {
 }
 
 /** Merge single-comparator stages into parallel stages where possible */
-function optimizeStages(stages: Stage[], n: number): Stage[] {
+function optimizeStages(stages: Stage[], _n: number): Stage[] {
   const all: CompareSwap[] = stages.flat();
   const optimized: Stage[] = [];
   const used = new Set<number>();
@@ -85,16 +85,6 @@ function optimizeStages(stages: Stage[], n: number): Stage[] {
 // ============================================================================
 
 function buildSortingCircuit(n: number, stages: Stage[]) {
-  // Each comparator-swap is a component that outputs min and max
-  const CompSwap = circuit('CompSwap', {
-    inputs: { a: bus(8), b: bus(8) },
-    outputs: { lo: bus(8), hi: bus(8) },
-    eval: ({ a, b }) => ({
-      lo: Math.min(a, b),
-      hi: Math.max(a, b),
-    }),
-  });
-
   // Build the network: inputs flow through stages of comparators
   // We'll simulate by running the algorithm on values directly
   // (building the full circuit with N×stages nodes is possible but

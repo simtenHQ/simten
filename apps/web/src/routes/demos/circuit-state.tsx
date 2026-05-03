@@ -7,8 +7,8 @@
 
 import { createFileRoute } from "@tanstack/react-router";
 import { useState, useCallback, useMemo, useRef } from "react";
-import { circuit, bit, bus } from "@simten/core/circuit";
-import { simulate, type SimulationHandle } from "@simten/core/sim";
+import { circuit as defineCircuit, bit, bus } from "@simten/core/circuit";
+import { simulate } from "@simten/core/sim";
 import type { SimulatorSnapshot } from "@simten/core/simulator";
 
 export const Route = createFileRoute("/demos/circuit-state")({
@@ -37,7 +37,7 @@ const PRODUCTS = [
   { id: 6, name: "Logic Analyzer", price: 35, emoji: "📊" },
 ];
 
-const CartMachine = circuit('CartMachine', {
+const CartMachine = defineCircuit('CartMachine', {
   inputs: {
     action: bus(4),      // which action
     item_id: bus(8),     // which product
@@ -112,8 +112,8 @@ const CartMachine = circuit('CartMachine', {
 // useCircuitState — 7-line state management hook
 // ============================================================================
 
-function useCircuitState<T extends Record<string, any>>(
-  circuit: ReturnType<typeof component>,
+function useCircuitState(
+  circuit: ReturnType<typeof defineCircuit>,
 ) {
   const sim = useMemo(() => simulate(circuit), [circuit]);
   const [state, setState] = useState(sim.read());

@@ -6,14 +6,13 @@
  * and the complete iterative rotation engine.
  */
 
-import { circuit, bus, bit } from "@simten/core/circuit";
+import { circuit, bit } from "@simten/core/circuit";
 import type { BlogCircuit } from '../types';
 import {
   Input,
   HexDisplay,
   Constant,
   Led,
-  Switch,
   RightShifter,
   SignedAdder,
   BusNot,

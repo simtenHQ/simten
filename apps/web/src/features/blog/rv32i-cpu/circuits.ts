@@ -7,10 +7,9 @@
 import { circuit, bit, bus } from "@simten/core/circuit";
 import type { BlogCircuit } from '../types';
 import {
-  Not, And, Or, Mux,
-  Register, Constant, Adder, Subtractor, DFlipFlop,
+  Not, Mux,
+  Register, Constant, Adder, Subtractor,
   BusAnd, BusOr, BitSlice,
-  Switch, Led, Input, HexDisplay,
 } from "@simten/core/std";
 
 // ── Circuit Definitions ──

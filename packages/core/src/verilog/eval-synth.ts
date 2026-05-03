@@ -9,7 +9,6 @@
  */
 
 import { parse } from 'acorn';
-import type { getCircuitEval } from '../circuit/eval-registry.js';
 import type { PrimitiveContext } from './primitive-map.js';
 
 // ============================================================================
@@ -168,7 +167,7 @@ export interface ValidateOptions {
 export function validateSynthAST(
   parsed: ParsedEval,
   inputNames: string[],
-  outputNames: string[],
+  _outputNames: string[],
   options?: ValidateOptions,
 ): SynthValidation {
   const errors: string[] = [];
@@ -437,7 +436,7 @@ export function emitVerilogFromEval(
   parsed: ParsedEval,
   evalFn: Function,
   ctx: PrimitiveContext,
-  inputNames: string[],
+  _inputNames: string[],
   outputNames: string[],
   options?: { memStateNames?: string[]; isOnTick?: boolean },
 ): { lines: string[]; declarations: string[] } {
@@ -870,8 +869,6 @@ export function tryEmitFromEval(
       }
     }
   }
-  const allStateKeys = [...memStateNames, ...scalarStateKeys];
-
   // Try transpiling eval
   const parsed = parseEvalSource(entry.evalFn);
   if (!parsed) return null;

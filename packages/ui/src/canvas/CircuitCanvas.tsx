@@ -30,9 +30,6 @@ import type {
   FlatPortValueMap,
   FlatSequentialState,
 } from "@simten/core";
-import {
-  createCircuitLibrary,
-} from "@simten/core";
 import type { NodeData } from "../nodes";
 import { cleanCircuitLabels } from "./label-utils";
 import { EDGE_TYPES, NODE_TYPES } from "./node-types";

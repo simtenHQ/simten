@@ -1,7 +1,7 @@
 import { circuit, bit, bus } from "@simten/core/circuit";
 import {
   Constant, Register, Adder, BitSlice, Mux, And, Or, Not,
-  HexDisplay, BusAnd,
+  BusAnd,
   RV32I_HazardUnit, RV32I_Decode, RV32I_ImmGen, RV32I_Control,
   RV32I_RegisterFile, RV32I_WBBypass, RV32I_ForwardingUnit, RV32I_ALU,
   RV32I_BranchComp, RV32I_WritebackMux, RV32I_NextPCMux,

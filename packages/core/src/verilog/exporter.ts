@@ -19,7 +19,6 @@ import type { VerilogExportOptions, ExportResult } from './types.js';
 import { INLINE_MEMORY_THRESHOLD } from './types.js';
 import {
   emitPrimitive,
-  isIOPrimitive,
   isSinkPrimitive,
   isSequentialPrimitive,
   type PrimitiveWires,
@@ -351,7 +350,6 @@ function emitFlatModule(
   // ── Output port assignments ────────────────────────────────────────
   // Find the wire that drives each top-level output
   for (const output of flat.topLevelOutputs) {
-    const targetKey = `${TOP}.${output.name}`;
     // Find the connection whose target is this output
     const conn = flat.connections.find(
       c => c.target.nodeId === TOP && c.target.portName === output.name

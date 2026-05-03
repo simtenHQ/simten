@@ -23,7 +23,6 @@ import type {
   HierarchyNode,
 } from '../types/simulator.js';
 import { TOP_LEVEL_NODE, SEQUENTIAL_INPUT_PORTS } from '../types/simulator.js';
-import { isBasePrimitive } from '../verilog/primitive-map.js';
 
 export interface ElaborateOptions {
   /** Expand primitives that have referenceCircuit definitions into base primitives.
@@ -51,7 +50,7 @@ export function elaborate(
   circuit: Circuit,
   library: CircuitLibrary,
   debug: boolean = false,
-  options?: ElaborateOptions,
+  _options?: ElaborateOptions,
 ): FlatCircuit {
   const nodes: FlatNode[] = [];
   const connections: FlatConnection[] = [];
