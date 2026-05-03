@@ -39,6 +39,7 @@ import { EDGE_TYPES, NODE_TYPES } from "./node-types";
 import { projectCircuitToReactFlow } from "./projection";
 import type { CircuitLayout, InspectorFrame, MetadataState } from "./types";
 import { useLayout } from "./useLayout";
+import { useIsMobile } from "./hooks/useIsMobile";
 import { CompositeInspectorDialog } from "./CompositeInspectorDialog";
 
 function FitViewButton() {
@@ -159,6 +160,7 @@ function CircuitCanvasInner({
 }: CircuitCanvasProps) {
   const detectedTheme = useDetectTheme();
   const theme = themeProp ?? detectedTheme;
+  const isMobile = useIsMobile();
   const resolvedNodeTypes = nodeTypesOverride ?? NODE_TYPES;
   const resolvedEdgeTypes = edgeTypesOverride ?? EDGE_TYPES;
   const library = componentLibrary ?? getDefaultLibrary();
@@ -408,10 +410,11 @@ function CircuitCanvasInner({
             }),
           }),
         }}
-        nodesDraggable={draggable}
+        nodesDraggable={draggable && !isMobile}
         nodesConnectable={false}
         elementsSelectable={true}
-        panOnDrag={[1, 2]}
+        selectionOnDrag={false}
+        panOnDrag={isMobile ? false : [1, 2]}
         zoomOnScroll={true}
         zoomOnPinch={true}
         zoomOnDoubleClick={false}
