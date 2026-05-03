@@ -14,7 +14,7 @@ Existing tools for learning digital logic fall into two camps: visual-only simul
 
 - **Circuits are typed TypeScript.** You get IDE autocomplete, compile-time port checks, and refactoring tools — none of which exist in Verilog or visual drag-and-drop editors.
 - **An IR makes everything possible.** The `circuit()` factory produces a platform-independent intermediate representation. That single IR powers the visual editor, Verilog export, snapshot/restore (time-travel debugging), and the AI tutor — all from one source of truth.
-- **The simulator runs in the browser.** No backend round-trip for simulation; the edge stays stateless. The only server-side work is the AI chat loop and the two Cloudflare Container services described below.
+- **The simulator runs in the browser.** No backend round-trip for simulation; the edge stays stateless. The only server-side work is the two Cloudflare Container services described below. AI assistance is opt-in: users connect their own MCP client (e.g. Claude Code) to the `simten-mcp` server, which bridges to the running browser session over WebSocket.
 
 ## Architecture
 
@@ -34,11 +34,11 @@ TypeScript circuit() ──→ Circuit IR ──→ Elaborate ──→ Fast Sim
 | Layer | Runtime | What it does |
 |---|---|---|
 | Visual editor + simulator | Browser | Circuit canvas, tick-based simulation, time-travel, drill-down |
-| Chat API (`/api/chat`) | Cloudflare Workers (edge) | Server-side Anthropic `tool_use` loop — streams NDJSON back to the client |
+| `packages/mcp` (`simten-mcp`) | User's machine | Local MCP server. Bridges an MCP client (e.g. Claude Code) to the running browser over WebSocket; no Anthropic calls happen on our infrastructure |
 | `apps/compiler` | Cloudflare Container | RISC-V cross-compiler (GCC + Rust). Compiles C/C++/Rust/asm → rv32i machine code for the simulated CPU |
 | `apps/verifier` | Cloudflare Container | Icarus Verilog runner. Cross-validates exported Verilog against our simulator's trace |
 
-Both containers are addressed via Durable Objects and sleep after 2 minutes idle.
+Both containers are addressed via Durable Objects and sleep after 2 minutes idle. The Cloudflare Worker itself only dispatches `/api/compile` and `/api/verify` — everything else is served by TanStack Start's SSR handler.
 
 ## Your First Circuit
 
