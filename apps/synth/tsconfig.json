@@ -6,8 +6,8 @@
 		"strict": true,
 		"noEmit": true,
 		"skipLibCheck": true,
-		"types": ["node"]
+		"types": ["node", "./worker-configuration.d.ts"]
 	},
-	"include": ["src/**/*.ts"],
+	"include": ["worker-configuration.d.ts", "src/**/*.ts"],
 	"exclude": ["node_modules"]
 }
