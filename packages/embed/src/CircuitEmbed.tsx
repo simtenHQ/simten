@@ -11,9 +11,8 @@
  */
 
 import { forwardRef, type ForwardedRef, type ReactElement } from "react";
-import { CircuitViewer, type CircuitViewerHandle } from "./CircuitViewer";
+import { CircuitViewer, type CircuitViewerHandle, type HarnessedLayout } from "./CircuitViewer";
 import type { BuiltCircuit } from "@simten/core/circuit";
-import type { CircuitLayout } from "@simten/ui/canvas";
 
 export interface CircuitEmbedProps<C extends BuiltCircuit = BuiltCircuit> {
   /** The circuit to display (result of circuit()) */
@@ -27,7 +26,7 @@ export interface CircuitEmbedProps<C extends BuiltCircuit = BuiltCircuit> {
    * input names, output names, and node labels at compile time.
    * Pass to bypass the runtime layout engine.
    */
-  layout?: CircuitLayout<C>;
+  layout?: HarnessedLayout<C>;
   /** Theme */
   theme?: "light" | "dark";
   /** Title shown in bottom bar */
