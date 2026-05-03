@@ -196,25 +196,6 @@ function CircuitCanvasInner({
     return { components, connections: {} } as MetadataState;
   }, [cleanedCircuit, computedMetadata, layout]);
 
-  // Dev-mode validator: warn when `layout` keys don't match circuit nodes.
-  useEffect(() => {
-    if (process.env.NODE_ENV === "production") return;
-    if (!layout || !cleanedCircuit) return;
-    const labels = new Set(cleanedCircuit.nodes.map((n) => n.label || n.id));
-    const ids = new Set(cleanedCircuit.nodes.map((n) => n.id));
-    const layoutKeys = new Set(Object.keys(layout));
-    const missing = [...labels].filter((k) => !layoutKeys.has(k) && !ids.has(k));
-    const extra = [...layoutKeys].filter((k) => !labels.has(k) && !ids.has(k));
-    if (missing.length || extra.length) {
-      // eslint-disable-next-line no-console
-      console.warn(
-        "[CircuitCanvas] layout keys mismatch with circuit nodes." +
-          (missing.length ? ` Missing positions for: ${missing.join(", ")}.` : "") +
-          (extra.length ? ` Unused layout entries: ${extra.join(", ")}.` : ""),
-      );
-    }
-  }, [layout, cleanedCircuit]);
-
   const { projectedNodes, projectedEdges } = useMemo(() => {
     if (!cleanedCircuit) return { projectedNodes: [], projectedEdges: [] };
     const projected = projectCircuitToReactFlow(
