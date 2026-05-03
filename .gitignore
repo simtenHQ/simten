@@ -73,6 +73,7 @@ examples/cpu6502/cc65/*.s
 # Mac-compiled executables (no extension)
 examples/cpu6502/cc65/*-mac
 .claude/worktrees/
+.claude/settings.local.json
 
 # FPGA bitstream / config cache for the ecpbram fast path (see #39)
 hardware/ulx3s/.cache/
