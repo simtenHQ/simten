@@ -12,6 +12,27 @@ import type { BuiltCircuit } from "@simten/core/circuit";
 import { CircuitCanvas, ClockControls } from "@simten/ui/canvas";
 import type { CircuitLayout } from "@simten/ui/canvas";
 
+/**
+ * Type-level model of what `autoHarness` produces at runtime: it wraps the
+ * original circuit `C` as a single `dut` node and adds one Switch per input
+ * and one Led per output. The placeable nodes therefore become the input
+ * names ∪ output names ∪ `'dut'`. CircuitLayout<HarnessedCircuit<C>>
+ * resolves to exactly that key set.
+ */
+export type HarnessedCircuit<C extends BuiltCircuit> =
+  C extends BuiltCircuit<infer Ins, infer Outs, any>
+    ? BuiltCircuit<
+        Ins,
+        Outs,
+        & { [K in keyof Ins]: BuiltCircuit }
+        & { [K in keyof Outs]: BuiltCircuit }
+        & { dut: C }
+      >
+    : never;
+
+/** Strictly-keyed layout for an autoHarness-wrapped circuit. */
+export type HarnessedLayout<C extends BuiltCircuit> = CircuitLayout<HarnessedCircuit<C>>;
+
 /** Detect theme from <html> class, reactive via MutationObserver. */
 function useDetectTheme(): "light" | "dark" {
   const [theme, setTheme] = useState<"light" | "dark">(() =>
@@ -40,11 +61,12 @@ export interface CircuitViewerProps<C extends BuiltCircuit = BuiltCircuit> {
   /** Initial values for auto-harnessed input nodes */
   initialInputs?: Record<string, number | boolean>;
   /**
-   * Pre-computed node positions. Keys are constrained to the circuit's
-   * input names, output names, and node labels at compile time.
-   * Pass to bypass the runtime layout engine.
+   * Pre-computed node positions. Keys are constrained at compile time.
+   * Accepts either the raw circuit's layout shape (when autoHarness is
+   * off) or the harnessed layout shape (when autoHarness is on, with
+   * keys = input names ∪ output names ∪ 'dut').
    */
-  layout?: CircuitLayout<C>;
+  layout?: CircuitLayout<C> | HarnessedLayout<C>;
   /** Theme */
   theme?: "light" | "dark";
   /** Focus on specific node(s) */
@@ -82,7 +104,6 @@ const CircuitViewerImpl = forwardRef<CircuitViewerHandle, CircuitViewerProps>(
     showPortLabels,
     onPortClick,
     glowUnconnected,
-    autoRunSpeed = 500,
     renderEmptyState,
     renderOverlay,
   }, ref) {
