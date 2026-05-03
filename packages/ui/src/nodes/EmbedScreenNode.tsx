@@ -1,5 +1,4 @@
 
-import React from "react";
 import { BaseNode } from "./BaseNode";
 import type { NodeData } from "./NodeData";
 

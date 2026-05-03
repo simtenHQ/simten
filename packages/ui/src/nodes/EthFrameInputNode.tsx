@@ -1,5 +1,4 @@
 
-import React from 'react';
 import { BaseNode, type PortConfig } from './BaseNode';
 import type { NodeData } from './NodeData';
 

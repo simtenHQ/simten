@@ -7,7 +7,6 @@
 
 'use client';
 
-import React from 'react';
 import { Play, FileCode, Plus, Loader2, ToggleRight, TestTube2, ShieldCheck, Code2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';

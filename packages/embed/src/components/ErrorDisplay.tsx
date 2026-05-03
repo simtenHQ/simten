@@ -1,6 +1,4 @@
 
-import React from "react";
-
 export interface SimulatorError {
   message: string;
   line?: number;

@@ -6,8 +6,6 @@
 
 'use client';
 
-import React from 'react';
-
 interface CompileButtonProps {
   onClick: () => void;
   isCompiling?: boolean;

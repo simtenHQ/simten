@@ -6,7 +6,6 @@
 
 'use client';
 
-import React from 'react';
 import { DiagnosticsPanel } from './DiagnosticsPanel';
 import { useAnalysisStore } from '../stores/analysis-store';
 
