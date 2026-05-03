@@ -174,7 +174,6 @@ export { tracePropagation } from './trace.js';
 
 import type {
   FlatCircuit,
-  FlatPortValueMap,
   FlatSequentialState,
   PrimitiveState,
   SimulatorEngine,

@@ -14,11 +14,7 @@
 
 import type { Circuit, CircuitLibrary, MutableCircuitLibrary, BitValue, BusValue } from '../types/circuit.js';
 import type { SimulatorSnapshot } from '../types/simulator.js';
-import {
-  SimulationSession,
-  type SimulationSessionState,
-  type SessionSnapshot,
-} from '../simulator/simulation-session.js';
+import { SimulationSession } from '../simulator/simulation-session.js';
 import { createSimulatorFromCircuit } from '../simulator/index.js';
 import type { BuiltCircuit, PortMap } from '../circuit/types.js';
 import { isSequentialCircuit } from '../circuit/is-sequential.js';
@@ -279,7 +275,7 @@ export function simulate<
  * The elaboration pipeline expects a composite top-level circuit with nodes.
  * Bare primitives need a wrapper that instantiates them and wires through.
  */
-function wrapIfPrimitive(circuit: Circuit, library: CircuitLibrary): Circuit {
+function wrapIfPrimitive(circuit: Circuit, _library: CircuitLibrary): Circuit {
   if (circuit.implementation.kind !== 'primitive') return circuit;
 
   const nodeId = '_inner';

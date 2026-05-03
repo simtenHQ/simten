@@ -6,9 +6,8 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { circuit, bit, bus } from "@simten/core/circuit";
-import { simulate, type SimulationHandle } from "@simten/core/sim";
+import { simulate } from "@simten/core/sim";
 import { useSandboxContext } from "@simten/ui/sandbox";
-import { And, Xor, Or, Not, DFlipFlop, Register, Constant, Mux } from "@simten/core/std";
 
 export const Route = createFileRoute("/demos/playground")({
   component: PlaygroundPage,
@@ -65,12 +64,6 @@ const ShiftReg8 = circuit('ShiftReg8', {
   }),
 });
 
-// Custom user-defined eval: ReLU activation function
-const ReLU = circuit('ReLU', {
-  inputs: { x: bus(16) },
-  outputs: { y: bus(16) },
-  eval: ({ x }) => ({ y: x > 32767 ? 0 : x }), // Treat >32767 as negative
-});
 
 // ============================================================================
 // React components — pure simulation, no canvas

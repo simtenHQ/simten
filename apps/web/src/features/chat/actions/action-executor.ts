@@ -364,7 +364,7 @@ async function executeInsertNode(
  */
 async function executeGenerateHarness(
   action: GenerateHarnessAction & { actionId: string },
-  context: ActionExecutionContext
+  _context: ActionExecutionContext
 ): Promise<ActionResult> {
   // With the TS builder, the LLM generates harness code directly as a SHOW_DIFF.
   // This action type is kept for backwards compatibility but always defers to the LLM.

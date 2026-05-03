@@ -101,7 +101,6 @@ export function PipelineSection() {
               onToggleNode={sim.toggleNode}
               onSetNodeValue={sim.setNodeValue}
               height={400}
-              autoLayout={true}
             />
 
             {/* Controls bar */}
