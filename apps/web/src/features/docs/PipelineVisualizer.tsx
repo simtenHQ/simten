@@ -1,11 +1,11 @@
 
 import { useState, useEffect } from "react";
-import type { Circuit } from "@simten/core";
+import type { Circuit, FlatCircuit } from "@simten/core";
 import {
   elaborate,
   compileForSimulation,
 } from "@simten/core/simulator";
-import type { BuiltCircuit } from "@simten/core/circuit";
+import { buildFromIR, type BuiltCircuit } from "@simten/core/circuit";
 import * as std from "@simten/core/std";
 import { useSandboxContext } from "@simten/ui/sandbox";
 import { CircuitEmbed } from "@simten/embed";
@@ -82,7 +82,7 @@ export function PipelineVisualizer() {
   const [compiled, setCompiled] = useState<
     | null
     | { error: string }
-    | { circuits: Circuit[]; fullAdder: Circuit; flat: Circuit; numeric: ReturnType<typeof compileForSimulation> }
+    | { circuits: Circuit[]; fullAdder: Circuit; flat: FlatCircuit; numeric: ReturnType<typeof compileForSimulation> }
   >(null);
 
   useEffect(() => {
@@ -99,7 +99,7 @@ export function PipelineVisualizer() {
 
         // Build primitive name list from stdlib (safe — no new Function())
         const prims = Object.values(std)
-          .filter((v): v is BuiltCircuit => !!v && typeof v === 'object' && 'name' in v && 'circuit' in v)
+          .filter((v: unknown): v is BuiltCircuit => !!v && typeof v === 'object' && 'name' in v && 'circuit' in v)
           .map((v) => v.circuit) as Circuit[];
         const primNames = prims.map((p) => p.name);
 
@@ -363,7 +363,7 @@ export function PipelineVisualizer() {
               propagate through the event queue until the circuit stabilizes.
             </p>
             <CircuitEmbed
-              code={FULL_ADDER_SOURCE}
+              circuit={buildFromIR(compiled.fullAdder, compiled.circuits)}
               height={280}
               showControls
             />

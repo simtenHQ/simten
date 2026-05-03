@@ -9,7 +9,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState, useCallback, useMemo } from "react";
 import { circuit, bit, bus } from "@simten/core/circuit";
 import { simulate } from "@simten/core/sim";
-import { Xor, And, Or, DFlipFlop, Not } from "@simten/core/std";
+import { Xor, And, Or, Not } from "@simten/core/std";
 import type { BuiltCircuit } from "@simten/core/circuit";
 
 export const Route = createFileRoute("/demos/generative")({
@@ -53,7 +53,7 @@ function RippleCarryDemo() {
   const [inputB, setInputB] = useState(3);
 
   const { nodeCount, result, carry } = useMemo(() => {
-    const { adder, FullAdder } = generateRippleCarryAdder(bits);
+    const { adder } = generateRippleCarryAdder(bits);
     const nodeCount = Object.keys(adder).length;
 
     // We can't easily simulate a generated adder without proper bus splitting,
@@ -193,7 +193,7 @@ for (let i = 0; i < stages; i++)
 function TruthTableDemo() {
   const [table, setTable] = useState([0, 1, 1, 0]); // XOR truth table
 
-  const { circuit, name } = useMemo(() => {
+  const { circuit: truthTableCircuit, name } = useMemo(() => {
     // Detect which function the truth table represents
     const knownFunctions: Record<string, number[]> = {
       'AND':  [0, 0, 0, 1],
@@ -210,16 +210,16 @@ function TruthTableDemo() {
     }
 
     // Generate a circuit from the truth table using eval
-    const circuit = circuit('FromTruthTable', {
+    const builtCircuit = circuit('FromTruthTable', {
       inputs: { a: bit, b: bit },
       outputs: { out: bit },
       eval: ({ a, b }) => ({ out: table[(a ? 2 : 0) + (b ? 1 : 0)] }),
     });
 
-    return { circuit, name };
+    return { circuit: builtCircuit, name };
   }, [table]);
 
-  const sim = useMemo(() => simulate(circuit), [circuit]);
+  const sim = useMemo(() => simulate(truthTableCircuit), [truthTableCircuit]);
   const [testResults, setTestResults] = useState<{a: number, b: number, out: number}[]>([]);
 
   const runAll = useCallback(() => {
@@ -295,7 +295,7 @@ const gate = circuit('FromTruthTable', {
 // ============================================================================
 
 function LFSRDemo() {
-  const [taps, setTaps] = useState([3, 2]); // x³ + x² + 1 (maximal for 4-bit)
+  const [taps] = useState([3, 2]); // x³ + x² + 1 (maximal for 4-bit)
   const bits = 4;
 
   const sim = useMemo(() => {

@@ -77,7 +77,7 @@ export function useLLMContext(code: string, portValues?: ReadonlyMap<string, boo
 
     // Build component library adapter
     const library = {
-      resolveComponent,
+      resolveCircuit: resolveComponent,
       getAllPrimitiveNames,
     };
 
