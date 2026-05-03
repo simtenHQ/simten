@@ -227,10 +227,10 @@ describe('CircuitPreviewStore drill-down navigation', () => {
       getState().navigateTo(0);
       expect(getState().drillDownStack).toHaveLength(0);
 
-      // CircuitStore should have the top-level FullAdder circuit
+      // CircuitStore should have the top-level FullAdder circuit (wrapped by autoHarness on apply)
       const circuit = useCircuitStore.getState().circuit;
       expect(circuit).not.toBeNull();
-      expect(circuit!.name).toBe('FullAdder');
+      expect(circuit!.name).toBe('FullAdderDemo');
     });
 
     it('is a no-op when already at target depth', () => {
