@@ -6,10 +6,10 @@
  * is a thin wrapper around this.
  */
 
-import { useState, useEffect, useCallback, forwardRef, useImperativeHandle, type ForwardedRef, type ReactElement } from "react";
+import { useState, useCallback, forwardRef, useImperativeHandle, type ForwardedRef, type ReactElement } from "react";
 import { useCircuitSimulator } from "./hooks/useCircuitSimulator";
 import type { BuiltCircuit } from "@simten/core/circuit";
-import { CircuitCanvas, ClockControls } from "@simten/ui/canvas";
+import { CircuitCanvas, ClockControls, useDetectTheme } from "@simten/ui/canvas";
 import type { CircuitLayout } from "@simten/ui/canvas";
 
 /**
@@ -32,22 +32,6 @@ export type HarnessedCircuit<C extends BuiltCircuit> =
 
 /** Strictly-keyed layout for an autoHarness-wrapped circuit. */
 export type HarnessedLayout<C extends BuiltCircuit> = CircuitLayout<HarnessedCircuit<C>>;
-
-/** Detect theme from <html> class, reactive via MutationObserver. */
-function useDetectTheme(): "light" | "dark" {
-  const [theme, setTheme] = useState<"light" | "dark">(() =>
-    typeof document !== "undefined" ? (document.documentElement.classList.contains("dark") ? "dark" : "light") : "dark"
-  );
-  useEffect(() => {
-    const el = document.documentElement;
-    const observer = new MutationObserver(() => {
-      setTheme(el.classList.contains("dark") ? "dark" : "light");
-    });
-    observer.observe(el, { attributes: true, attributeFilter: ["class"] });
-    return () => observer.disconnect();
-  }, []);
-  return theme;
-}
 
 export interface CircuitViewerProps<C extends BuiltCircuit = BuiltCircuit> {
   /** The circuit to display (result of circuit()) */

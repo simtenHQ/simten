@@ -37,6 +37,7 @@ import { projectCircuitToReactFlow } from "./projection";
 import type { CircuitLayout, InspectorFrame, MetadataState } from "./types";
 import { useLayout } from "./useLayout";
 import { useIsMobile } from "./hooks/useIsMobile";
+import { useDetectTheme } from "./hooks/useDetectTheme";
 import { CompositeInspectorDialog } from "./CompositeInspectorDialog";
 
 function FitViewButton() {
@@ -97,24 +98,6 @@ export interface CircuitCanvasProps {
   glowUnconnected?: boolean;
   /** Theme for the canvas. Defaults to "dark". */
   theme?: "light" | "dark";
-}
-
-/** Reactively detect theme from <html> class. Falls back to "light". */
-function useDetectTheme(): "light" | "dark" {
-  const [theme, setTheme] = useState<"light" | "dark">(() =>
-    typeof document !== 'undefined' && document.documentElement.classList.contains('dark') ? 'dark' : 'light'
-  );
-
-  useEffect(() => {
-    const el = document.documentElement;
-    const observer = new MutationObserver(() => {
-      setTheme(el.classList.contains('dark') ? 'dark' : 'light');
-    });
-    observer.observe(el, { attributes: true, attributeFilter: ['class'] });
-    return () => observer.disconnect();
-  }, []);
-
-  return theme;
 }
 
 // Default library — created once, reused

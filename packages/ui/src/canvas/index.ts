@@ -18,3 +18,4 @@ export { useSimulationSession } from "./hooks/useSimulationSession";
 export type { UseSimulationSessionResult } from "./hooks/useSimulationSession";
 export { ClockControls } from "./ClockControls";
 export type { ClockControlsProps } from "./ClockControls";
+export { useDetectTheme } from "./hooks/useDetectTheme";
