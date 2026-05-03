@@ -1,6 +1,23 @@
 {
   "name": "@simten/core",
   "version": "0.1.0",
+  "description": "Simten simulator engine, circuit IR builder, standard library, and Verilog exporter. Pure TypeScript with no browser dependencies.",
+  "license": "BUSL-1.1",
+  "author": "Charles Harris",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/simtenjs/simten.git",
+    "directory": "packages/core"
+  },
+  "keywords": [
+    "circuit-simulator",
+    "hardware",
+    "verilog",
+    "digital-logic",
+    "hdl",
+    "circuit",
+    "simulator"
+  ],
   "type": "module",
   "sideEffects": false,
   "exports": {

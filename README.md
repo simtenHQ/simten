@@ -6,11 +6,7 @@ A TypeScript-native digital circuit simulator and visual editor for learning har
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue?logo=typescript)](https://www.typescriptlang.org/)
 [![Cloudflare Workers](https://img.shields.io/badge/deployed_on-Cloudflare-F38020?logo=cloudflare)](https://developers.cloudflare.com/workers/)
 
-<!-- TODO: replace with your deployed URL -->
-**[Live Demo →](<!-- DEPLOYED_URL -->)**
-
-<!-- TODO: add a GIF showing build → simulate → drill-down → export Verilog -->
-<!-- ![Demo](docs/assets/demo.gif) -->
+**[Live Demo → simten.dev](https://simten.dev)**
 
 ## Why?
 
