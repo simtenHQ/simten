@@ -13,7 +13,8 @@
     "types": [
         "./worker-configuration.d.ts",
         "node",
-        "vite/client"
+        "vite/client",
+        "vitest/globals"
     ],
 
     /* Bundler mode */
