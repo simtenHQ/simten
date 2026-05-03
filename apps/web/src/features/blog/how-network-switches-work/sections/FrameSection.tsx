@@ -41,7 +41,7 @@ export function FrameSection() {
           height={300}
           showControls
           title={entry.name}
-          description={circuit.description}
+          description={entry.description}
         />
       </div>
     </section>
