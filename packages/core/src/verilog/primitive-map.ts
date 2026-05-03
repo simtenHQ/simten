@@ -276,7 +276,6 @@ export function emitPrimitive(ctx: PrimitiveContext): { lines: string[]; declara
       return { lines: [`assign ${o('out')} = ${i('in')}[${high}:${low}];`], declarations: [] };
     }
     case 'Concat': {
-      const lowWidth = typeof args.lowWidth === 'number' ? args.lowWidth : 4;
       return { lines: [`assign ${o('out')} = {${i('high')}, ${i('low')}};`], declarations: [] };
     }
     case 'Splitter':

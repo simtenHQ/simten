@@ -51,22 +51,6 @@ function cleanNodeId(id: string): string {
     .join(".");
 }
 
-/**
- * Get primitive type from a mangled node ID by looking at the flat circuit.
- */
-function getNodeType(step: PropagationStep, trace: PropagationStep[]): string {
-  // The nodeId contains the primitive type info — but we can also check
-  // common patterns
-  const id = step.nodeId;
-  if (id.includes("_Switch_") || id.includes(": Switch")) return "Switch";
-  if (id.includes("_Led_") || id.includes(": Led")) return "Led";
-  if (id.includes("_Xor_")) return "Xor";
-  if (id.includes("_And_")) return "And";
-  if (id.includes("_Or_")) return "Or";
-  if (id.includes("_Not_")) return "Not";
-  return "?";
-}
-
 function describeStep(step: PropagationStep): string {
   const id = step.nodeId.toLowerCase();
 

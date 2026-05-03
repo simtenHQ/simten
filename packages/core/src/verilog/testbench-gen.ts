@@ -11,7 +11,7 @@
  *   `define SAMPLE_DELAY 1     — delay after posedge before sampling
  */
 
-import type { Circuit, PortDescriptor, PortType } from '../types/circuit.js';
+import type { Circuit, PortType } from '../types/circuit.js';
 import type { VerilogTestbenchOptions, TestVector } from './types.js';
 
 function sanitizeId(id: string): string {
@@ -162,10 +162,6 @@ export function generateTestbench(
       displayParts.push(output.name);
       displayArgs.push(output.name);
     }
-
-    const formatStr = 'RESULT|' + displayParts.map((p, i) =>
-      i % 2 === 0 ? p : '%0d'
-    ).join('|');
 
     // Build proper format: RESULT|test|%0d|cycle|%0d|port1|%0d|port2|%0d
     const fmtParts = ['RESULT'];

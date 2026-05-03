@@ -8,7 +8,7 @@
 
 import { circuit, bit } from "@simten/core/circuit";
 import type { BuiltCircuit } from "@simten/core/circuit";
-import { Nand, Not, And, Or, Xor, DFlipFlop, Switch, Led } from "@simten/core/std";
+import { Nand, Not, And, Or, Xor, DFlipFlop } from "@simten/core/std";
 
 export interface CircuitDefinition {
   name: string;

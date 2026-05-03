@@ -384,7 +384,7 @@ export const TestSystolic3x3 = circuit('TestSystolic3x3', {
   outputs: { done: bit },
   nodes: { sys: Systolic3x3, a00: Input, a01: Input, a02: Input, a10: Input, a11: Input, a12: Input, a20: Input, a21: Input, a22: Input, b00: Input, b01: Input, b02: Input, b10: Input, b11: Input, b12: Input, b20: Input, b21: Input, b22: Input, start: Switch, display_c00: HexDisplay, display_c01: HexDisplay, display_c02: HexDisplay, display_c10: HexDisplay, display_c11: HexDisplay, display_c12: HexDisplay, display_c20: HexDisplay, display_c21: HexDisplay, display_c22: HexDisplay, done_led: Led },
   nodeArgs: { a00: { value: 1 }, a01: { value: 2 }, a02: { value: 3 }, a10: { value: 4 }, a11: { value: 5 }, a12: { value: 6 }, a20: { value: 7 }, a21: { value: 8 }, a22: { value: 9 }, b00: { value: 2 }, b01: { value: 0 }, b02: { value: 1 }, b10: { value: 0 }, b11: { value: 2 }, b12: { value: 0 }, b20: { value: 1 }, b21: { value: 0 }, b22: { value: 2 } },
-  connect: ({ outputs, nodes: { sys, a00, a01, a02, a10, a11, a12, a20, a21, a22, b00, b01, b02, b10, b11, b12, b20, b21, b22, start, display_c00, display_c01, display_c02, display_c10, display_c11, display_c12, display_c20, display_c21, display_c22, done_led } }) => [
+  connect: ({ outputs, nodes: { sys, a00, a01, a02, a10, a11, a12, a20, a21, a22, b00, b01, b02, b10, b11, b12, b20, b21, b22, start, display_c00, display_c01, display_c10, display_c11, display_c12, display_c20, display_c21, display_c22, done_led } }) => [
     a00.out.to(sys.a00),
     a01.out.to(sys.a01),
     a02.out.to(sys.a02),

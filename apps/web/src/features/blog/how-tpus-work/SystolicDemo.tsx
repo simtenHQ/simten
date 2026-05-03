@@ -194,7 +194,6 @@ export function SystolicDemo() {
         onSetNodeValue={sim.setNodeValue}
         height={480}
         layout={SYSTOLIC_LAYOUT}
-        autoLayout={false}
       />
 
       {/* Controls bar */}

@@ -57,7 +57,7 @@ const Calculator = circuit('Calculator', {
     overflow: ((flags as number) >> 2) & 1,
     alu_active: 0,
   }),
-  onTick: ({ load_a, load_b, compute, clear, data_in, alu_op, a, b, res, flags }) => {
+  onTick: ({ load_a, load_b, compute, clear, data_in, alu_op, a, b, res }) => {
     if (clear) return { a: 0, b: 0, res: 0, flags: 0 };
 
     let na = a as number;

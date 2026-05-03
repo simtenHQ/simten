@@ -39,7 +39,6 @@ import type {
   ConnectArg,
   PortRef,
   StateShape,
-  CircuitMeta,
   BuiltCircuit,
   CircuitConfig,
 } from './types.js';

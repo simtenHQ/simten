@@ -106,9 +106,6 @@ export function EditorWorkspace({ theme = "light" }: EditorWorkspaceProps) {
   // Channel thinking state (separate from the API streaming system)
   const [channelThinking, setChannelThinking] = useState(false);
 
-  // Library from the last successful compile (stored in Zustand)
-  const library = useCircuitLibraryStore((s) => s.library);
-
   // Export to Verilog — uses library store
   const handleExportVerilog = useCallback(() => {
     const lib = useCircuitLibraryStore.getState();
@@ -189,7 +186,7 @@ export function EditorWorkspace({ theme = "light" }: EditorWorkspaceProps) {
     simRef.current.runCombinational();
   }, []);
   const onLoadMemory = useCallback((nodeId: string, memData: Map<number, number>) => {
-    simRef.current.setNode(nodeId, memData);
+    simRef.current.setNodeValue(nodeId, memData);
   }, []);
 
   // Studio connection (WebSocket to MCP server)
@@ -211,7 +208,7 @@ export function EditorWorkspace({ theme = "light" }: EditorWorkspaceProps) {
       const currentCircuit = useCircuitStore.getState().circuit;
       const sim = simRef.current;
       return {
-        cycleCount: sim.cycle,
+        cycleCount: sim.cycleCount,
         inputs: {},
         outputs: {},
         isSequential: sim.isSequential,
@@ -444,7 +441,7 @@ export function EditorWorkspace({ theme = "light" }: EditorWorkspaceProps) {
         {showClockControls && (
           <div className="flex items-center gap-4 border-t border-gray-200 dark:border-[#2a2a2e] bg-white dark:bg-[#1a1a1e] px-6 py-3 shadow-sm">
             <ClockControls
-              cycle={sim.cycle}
+              cycle={sim.cycleCount}
               historyLength={sim.history.length}
               historyIndex={sim.historyIndex}
               isRunning={sim.isRunning}

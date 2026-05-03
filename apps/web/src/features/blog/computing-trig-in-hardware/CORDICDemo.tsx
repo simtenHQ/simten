@@ -103,7 +103,6 @@ export function CORDICDemo() {
         onSetNodeValue={sim.setNodeValue}
         height={400}
         layout={CORDIC_LAYOUT}
-        autoLayout={false}
       />
 
       {/* Controls bar */}

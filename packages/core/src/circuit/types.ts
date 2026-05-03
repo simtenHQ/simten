@@ -10,7 +10,7 @@
  * so TypeScript resolves everything in one pass — fast at any circuit size.
  */
 
-import type { PortType, BitType, BusType, Circuit, ArgumentValue } from '../types/circuit.js';
+import type { PortType, Circuit, ArgumentValue } from '../types/circuit.js';
 
 // ============================================================================
 // Port types
