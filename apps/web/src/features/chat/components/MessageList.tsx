@@ -6,7 +6,7 @@
 
 'use client';
 
-import React, { useRef, useEffect } from 'react';
+import { useRef, useEffect } from 'react';
 import { Bot } from 'lucide-react';
 import { MessageBubble } from './MessageBubble';
 import { ActionCard } from './ActionCard';

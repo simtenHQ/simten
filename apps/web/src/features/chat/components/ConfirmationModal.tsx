@@ -6,7 +6,6 @@
 
 'use client';
 
-import React from 'react';
 import { AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { ConfirmationRequest } from '../actions/confirmation-flow';

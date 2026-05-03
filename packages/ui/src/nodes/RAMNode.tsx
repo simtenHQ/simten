@@ -1,5 +1,4 @@
 
-import React from 'react';
 import { BaseNode, type PortConfig } from './BaseNode';
 import { CompositeBadge } from './CompositeBadge';
 import type { NodeData } from './NodeData';

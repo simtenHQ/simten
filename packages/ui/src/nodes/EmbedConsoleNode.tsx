@@ -1,5 +1,5 @@
 
-import React, { useRef, useEffect } from "react";
+import { useRef, useEffect } from "react";
 import { BaseNode } from "./BaseNode";
 import type { NodeData } from "./NodeData";
 
