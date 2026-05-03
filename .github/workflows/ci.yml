@@ -6,10 +6,16 @@ name: CI
 #
 # What runs today:
 #   1. pnpm install (frozen lockfile)
-#   2. @simten/core unit tests   — 389 tests, the load-bearing
+#   2. @simten/core unit tests              — 389 tests, the load-bearing
 #                                              simulator + circuit IR + std lib
 #                                              + verilog exporter
-#   3. tanstack production build            — proves the web app + Cloudflare
+#   3. @simten/ui unit tests                 — 82 tests across editor stores,
+#                                              circuit flattener, vcd generator
+#                                              (14 quarantined; need porting to
+#                                              the post-refactor evaluator API)
+#   4. workspace package builds              — sequential `tsc -b` + vite for
+#                                              core/ui/embed/mcp
+#   5. web production build                  — proves the web app + Cloudflare
 #                                              Workers bundle compiles end to end
 #
 # Deferred coverage (TODO before this is "real" CI):
@@ -36,10 +42,6 @@ name: CI
 #         b) add `tiny-warning` to deps.optimizer.ssr.include in vitest.config
 #         c) alias tiny-warning to an ESM shim via vite resolve.alias
 #
-#   • packages/ui vitest tests
-#       Status: 82 passing, 14 failing across 2 test files. Investigate and
-#       fix the failing assertions, then add `pnpm --filter @simten/ui test`.
-#
 #   • packages/embed Playwright e2e tests
 #       Status: not run in CI yet. Needs `pnpm exec playwright install` step
 #       and a separate job (slower, browser-based). Add when we want
@@ -62,7 +64,7 @@ concurrency:
 
 jobs:
   test:
-    name: core tests + tanstack build
+    name: core+ui tests, workspace build, web build
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -84,6 +86,9 @@ jobs:
 
       - name: Run core tests
         run: pnpm --filter @simten/core test
+
+      - name: Run ui tests
+        run: pnpm --filter @simten/ui test
 
       - name: Build workspace packages
         # @simten/web imports `@simten/core/circuit`, `@simten/ui`, `@simten/embed`
