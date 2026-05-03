@@ -17,6 +17,7 @@
     "test": "tsx scripts/check-exports.ts && pnpm -r test",
     "check-exports": "tsx scripts/check-exports.ts",
     "lint": "pnpm -r lint",
+    "typecheck": "pnpm -r exec tsc --noEmit",
     "changeset": "changeset",
     "release": "pnpm build && changeset publish",
     "sync-public": "rsync -av --delete --exclude='node_modules' --exclude='dist' --exclude='*.tsbuildinfo' --exclude='.turbo' ./packages/ /tmp/simten-public/packages/ && rsync -av --delete --exclude='node_modules' --exclude='dist' --exclude='*.tsbuildinfo' --exclude='.turbo' ./examples/ /tmp/simten-public/examples/",
