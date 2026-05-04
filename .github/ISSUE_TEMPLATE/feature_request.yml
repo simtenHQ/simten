@@ -1,0 +1,42 @@
+name: Feature request
+description: Suggest a new capability or improvement that isn't a new std-lib primitive.
+title: "[feat]: "
+labels: ["enhancement", "triage"]
+body:
+  - type: dropdown
+    id: package
+    attributes:
+      label: Which package or app?
+      options:
+        - "@simten/core"
+        - "@simten/ui"
+        - "@simten/embed"
+        - "@simten/mcp"
+        - apps/web
+        - apps/compiler
+        - apps/verifier
+        - tooling / build / CI
+        - docs
+        - cross-cutting / not sure
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What can't you do today, or what is awkward? Concrete examples beat abstract wishlists.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: API sketch, UX mockup, or behavior description. It's fine if you don't have one yet.
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Workarounds you've tried, or other designs you ruled out.

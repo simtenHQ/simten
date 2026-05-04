@@ -1,0 +1,82 @@
+name: Bug report
+description: Something behaves incorrectly in the simulator, editor, exporter, or one of the apps.
+title: "[bug]: "
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to file a bug. A minimal reproduction is the single most useful thing you can include — ideally a small `circuit()` definition that triggers the issue.
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Affected area
+      description: Which part of Simten is misbehaving?
+      options:
+        - Simulator engine (@simten/core/simulator)
+        - Circuit IR / builder (@simten/core/circuit)
+        - Standard library primitive (@simten/core/std)
+        - Verilog exporter (@simten/core/verilog)
+        - Editor canvas (@simten/ui)
+        - <CircuitEmbed> / web component (@simten/embed)
+        - MCP server (@simten/mcp)
+        - apps/web (TanStack Start / Workers)
+        - apps/compiler (RISC-V cross-compiler)
+        - apps/verifier (Icarus Verilog)
+        - Other / not sure
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Package version, commit SHA, or "main" if running from source.
+      placeholder: "@simten/core@0.x.y or commit abc1234"
+    validations:
+      required: true
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: Minimal reproduction
+      description: |
+        Paste the smallest `circuit()` definition (or IR JSON) that triggers the bug.
+        For editor/embed bugs, a screen recording or screenshot helps.
+      render: typescript
+      placeholder: |
+        import { circuit, bit } from '@simten/core/circuit'
+        import { And } from '@simten/core/std'
+
+        const Repro = circuit('Repro', { ... })
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: Include error messages, stack traces, or the wrong simulator output. For sim bugs, mention the tick count when divergence appears.
+    validations:
+      required: true
+
+  - type: input
+    id: env-browser
+    attributes:
+      label: Browser / runtime
+      description: Browser + OS for editor/embed bugs; Node version for CLI/test bugs.
+      placeholder: "Chrome 134 / macOS 15.3, or Node 22.11"
+
+  - type: textarea
+    id: extra
+    attributes:
+      label: Additional context
+      description: Snapshot JSON, related issues, recent changes, anything else.

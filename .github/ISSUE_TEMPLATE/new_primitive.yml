@@ -1,0 +1,71 @@
+name: New standard-library primitive
+description: Propose a new primitive component for @simten/core/std.
+title: "[std]: add "
+labels: ["enhancement", "stdlib"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Primitives are the only components with executable behavior — every composite circuit eventually expands into them. Adding one is a meaningful commitment, so please be specific about behavior and Verilog mapping.
+
+  - type: input
+    id: name
+    attributes:
+      label: Proposed name
+      placeholder: "e.g. PriorityEncoder"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: category
+    attributes:
+      label: Category
+      options:
+        - logic
+        - arithmetic
+        - routing
+        - sequential
+        - memory
+        - io
+        - rv32i (RISC-V)
+        - new category
+    validations:
+      required: true
+
+  - type: textarea
+    id: ports
+    attributes:
+      label: Port signature
+      description: Inputs and outputs with their bit widths.
+      placeholder: |
+        inputs:  { in: bus(8) }
+        outputs: { idx: bus(3), valid: bit }
+    validations:
+      required: true
+
+  - type: textarea
+    id: behavior
+    attributes:
+      label: Behavior
+      description: Truth table, equation, or pseudocode. For sequential primitives, describe clock/reset semantics.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: synthesizable
+    attributes:
+      label: Should this synthesize to Verilog?
+      description: Most primitives must. Tutor/visualization-only primitives are rare.
+      options:
+        - "Yes — needs a Verilog mapping"
+        - "No — simulation only"
+    validations:
+      required: true
+
+  - type: textarea
+    id: motivation
+    attributes:
+      label: Motivation
+      description: What circuit are you trying to build that needs this? Could it be expressed as a composite of existing primitives instead?
+    validations:
+      required: true
