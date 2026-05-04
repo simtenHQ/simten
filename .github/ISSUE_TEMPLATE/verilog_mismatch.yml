@@ -1,0 +1,64 @@
+name: Verilog export mismatch
+description: Exported Verilog disagrees with the Simten simulator's trace.
+title: "[verilog]: "
+labels: ["bug", "verilog", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Cross-validation between our simulator and Icarus Verilog is a core invariant. If you've found a circuit where they diverge, please include enough detail that we can reproduce both traces.
+
+  - type: textarea
+    id: circuit
+    attributes:
+      label: Source circuit
+      description: The `circuit()` definition (or IR JSON) being exported.
+      render: typescript
+    validations:
+      required: true
+
+  - type: textarea
+    id: verilog
+    attributes:
+      label: Exported Verilog
+      description: Output of the exporter for the circuit above.
+      render: verilog
+    validations:
+      required: true
+
+  - type: textarea
+    id: stimulus
+    attributes:
+      label: Input stimulus
+      description: The sequence of inputs (or testbench) that exposes the divergence.
+      render: text
+    validations:
+      required: true
+
+  - type: textarea
+    id: traces
+    attributes:
+      label: Simten trace vs Icarus trace
+      description: The two traces, with the first diverging tick highlighted.
+      render: text
+    validations:
+      required: true
+
+  - type: dropdown
+    id: source-of-truth
+    attributes:
+      label: Which trace do you believe is correct?
+      options:
+        - Simten simulator
+        - Icarus Verilog
+        - Unsure
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: "@simten/core version"
+      placeholder: "0.x.y or commit SHA"
+    validations:
+      required: true
