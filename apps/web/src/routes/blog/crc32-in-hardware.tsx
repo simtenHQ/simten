@@ -1,4 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
+import { blogPostHead } from '@/lib/seo'
+import { getPost } from '@/features/blog/posts'
 import { Suspense, lazy } from "react";
 import { HeroSection } from "@/features/blog/crc32-in-hardware/sections/HeroSection";
 import { BlogFooter } from "@/features/blog/BlogFooter";
@@ -18,12 +20,7 @@ const VerifySection = lazy(() =>
 );
 
 export const Route = createFileRoute('/blog/crc32-in-hardware')({
-  head: () => ({
-    meta: [
-      { title: 'CRC-32 in Hardware | Simten' },
-      { name: 'description', content: 'The checksum at the end of every Ethernet frame and ZIP file — a 32-bit shift register with XOR feedback, running in the NIC on your machine right now.' },
-    ],
-  }),
+  head: () => blogPostHead(getPost('crc32-in-hardware')),
   component: CRC32InHardwarePage,
 })
 

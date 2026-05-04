@@ -71,7 +71,19 @@ const Counter2Bit = circuit('Counter2Bit', {
 // Route + Page
 // ============================================================================
 
+import { pageHead, softwareApplicationLd } from "@/lib/seo";
+
 export const Route = createFileRoute("/")({
+  head: () => ({
+    ...pageHead({
+      title: "Simten — Hardware simulation in TypeScript",
+      titleExact: true,
+      description:
+        "Build and simulate digital circuits in TypeScript. From single gates to full RISC-V CPUs — all running live in the browser.",
+      path: "/",
+    }),
+    scripts: [softwareApplicationLd()],
+  }),
   component: Splash5Page,
 });
 
@@ -313,25 +325,17 @@ function DemoGallery() {
           </div>
         </div>
 
-        {/* Row 2: complex demos */}
+        {/* Row 2: complex demo */}
         <h3 className="text-lg font-semibold text-foreground mb-1 mt-36">Scale to real-world complexity</h3>
-        <p className="text-[13px] text-muted-foreground/60 mb-4">Full CPUs, networked systems, hundreds of nodes</p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <p className="text-[13px] text-muted-foreground/60 mb-4">A full RISC-V CPU running compiled C, C++, and Rust — hundreds of nodes, all in your browser.</p>
+        <div className="grid grid-cols-1 gap-4">
           <ComplexDemoCard
             title="RV32I CPU Debugger"
             subtitle="~300 lines of TypeScript"
-            description="Write C, compile it, watch it execute instruction by instruction on a real 5-stage pipelined RISC-V CPU."
-            href="/learn/cpu"
+            description="Write C, C++, or Rust, compile it with the GCC RISC-V toolchain, and watch it execute instruction by instruction on a real 5-stage pipelined RISC-V CPU."
+            href="/learn/rv32i-cpu"
             accent="blue"
             snippet={`const RV32I_CPU = circuit('RV32I_CPU', {\n  // IF → ID → EX → MEM → WB\n  nodes: {\n    ifid_pc: Register,\n    idex_pc: Register,\n    exmem_alu: Register,\n    memwb_rd: Register,\n    // ...+280 lines\n  },\n})`}
-          />
-          <ComplexDemoCard
-            title="Dual CPU Network"
-            subtitle="~400 lines"
-            description="Two independent RISC-V CPUs communicating via a memory-mapped NIC. Watch packets travel cycle by cycle."
-            href="/learn/dual-cpu"
-            accent="violet"
-            snippet={`const RV32I_DualCPU = circuit('RV32I_DualCPU', {\n  nodes: {\n    cpu0: RV32I_CPU,\n    cpu1: RV32I_CPU,\n    nic0: NIC_FIFO,\n    nic1: NIC_FIFO,\n  },\n  // cross-connect NICs\n})`}
           />
         </div>
 

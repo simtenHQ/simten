@@ -1,4 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
+import { blogPostHead } from '@/lib/seo'
+import { getPost } from '@/features/blog/posts'
 import { Suspense, lazy } from "react";
 import { HeroSection } from "@/features/blog/chacha20-in-hardware/sections/HeroSection";
 import { BlogFooter } from "@/features/blog/BlogFooter";
@@ -21,12 +23,7 @@ const BigPictureSection = lazy(() =>
 );
 
 export const Route = createFileRoute('/blog/chacha20-in-hardware')({
-  head: () => ({
-    meta: [
-      { title: 'ChaCha20 in Hardware | Simten' },
-      { name: 'description', content: 'The TLS cipher that encrypts most of the internet, built from logic gates. Explore the ADD-XOR-ROTATE quarter-round with live interactive circuits.' },
-    ],
-  }),
+  head: () => blogPostHead(getPost('chacha20-in-hardware')),
   component: ChaCha20InHardwarePage,
 })
 

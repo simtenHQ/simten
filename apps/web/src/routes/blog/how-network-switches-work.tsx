@@ -1,4 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
+import { blogPostHead } from '@/lib/seo'
+import { getPost } from '@/features/blog/posts'
 import { Suspense, lazy } from "react";
 import { HeroSection } from "@/features/blog/how-network-switches-work/sections/HeroSection";
 import { BlogFooter } from "@/features/blog/BlogFooter";
@@ -112,15 +114,6 @@ function HowNetworkSwitchesWorkPage() {
 }
 
 export const Route = createFileRoute('/blog/how-network-switches-work')({
-  head: () => ({
-    meta: [
-      { title: 'How Network Switches Work | Simten' },
-      {
-        name: 'description',
-        content:
-          'Build a 2-port Ethernet switch from logic gates: frame parsing, packet buffering, arbitration, crossbar routing, and egress serialization — all simulated in your browser.',
-      },
-    ],
-  }),
+  head: () => blogPostHead(getPost('how-network-switches-work')),
   component: HowNetworkSwitchesWorkPage,
 })

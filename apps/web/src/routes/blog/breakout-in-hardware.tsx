@@ -1,4 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
+import { blogPostHead } from '@/lib/seo'
+import { getPost } from '@/features/blog/posts'
 import { Suspense, lazy } from "react";
 import { HeroSection } from "@/features/blog/breakout-in-hardware/sections/HeroSection";
 import { BlogFooter } from "@/features/blog/BlogFooter";
@@ -21,12 +23,7 @@ const BreakoutSection = lazy(() =>
 );
 
 export const Route = createFileRoute('/blog/breakout-in-hardware')({
-  head: () => ({
-    meta: [
-      { title: 'Breakout in Hardware | Simten' },
-      { name: 'description', content: 'A complete Breakout game built from logic gates — paddle, ball, bricks, and a 10-phase rendering pipeline, all without a CPU.' },
-    ],
-  }),
+  head: () => blogPostHead(getPost('breakout-in-hardware')),
   component: BreakoutInHardwarePage,
 })
 
