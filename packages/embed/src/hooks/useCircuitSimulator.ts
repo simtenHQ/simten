@@ -1,3 +1,21 @@
+/**
+ * useCircuitSimulator — the public circuit-simulation hook.
+ *
+ * Composes the sandbox bridge (`useSandbox` in @simten/ui) with circuit-level
+ * concerns: auto-harness, time-travel history, auto-run, snapshot/restore.
+ * This is what every embed/blog/editor consumer calls.
+ *
+ * Runtime topology (browser path):
+ *   useCircuitSimulator (here)
+ *     → useSandbox             — packages/ui/src/sandbox/useSandbox.ts (postMessage bridge)
+ *     → apps/sandbox/main.ts   — runs inside the cross-origin iframe
+ *     → core/simulator         — pure simulator engine
+ *
+ * For non-browser callers (vitest, CI), skip this hook entirely and use
+ * `@simten/core/sim` directly — no iframe, no React, just the engine.
+ *
+ * See: apps/web/content/docs/architecture.mdx → "Runtime topology".
+ */
 
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import {

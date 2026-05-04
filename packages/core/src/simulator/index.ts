@@ -1,5 +1,15 @@
 /**
- * Core Simulator Public API
+ * Core Simulator Public API — the SIMULATOR ENGINE layer.
+ *
+ * Pure computation. No iframe, no React, no browser dependencies. Two callers:
+ *   - In the browser: invoked by `apps/sandbox/src/main.ts` inside the
+ *     cross-origin sandbox iframe. UI-facing consumers reach this through
+ *     `useCircuitSimulator` (in @simten/embed) → `useSandbox` (in @simten/ui)
+ *     → the iframe → here.
+ *   - In Node/CI: invoked directly via `@simten/core/sim` for property tests,
+ *     fuzzers, batch sweeps. No bridge involved.
+ *
+ * See `apps/web/content/docs/architecture.mdx` → "Runtime topology".
  *
  * This is the main entry point for the pure simulator engine.
  * All exports from this module are environment-agnostic (no browser dependencies).

@@ -3,6 +3,31 @@ title: Architecture
 description: How circuits go from text to simulation
 ---
 
+## Why there's a sandbox
+
+User-defined circuit code is arbitrary TypeScript — `circuit('Foo', { eval: ({ a, b }) => ... })`. Running it in the main React frame would let a malicious circuit read auth cookies, hijack the chat session, or escape into the editor's tab. Instead, every circuit you compile or simulate runs inside a cross-origin iframe (`sandbox.simten.dev`) with `sandbox="allow-scripts"` — the browser kernel blocks all network access and origin isolation prevents cookie/DOM reach.
+
+This is the same pattern [CodePen](https://codepen.io) uses to isolate user-authored snippets from their editor app — preview runs on a separate origin (`cdpn.io`) inside a sandboxed iframe, talking to the host page via postMessage only. Everything you'll see called "sandbox" in the simten codebase is one side of that bridge or the other.
+
+## Runtime topology
+
+The four layers a circuit flows through in the browser:
+
+| Layer | File | Responsibility |
+|---|---|---|
+| **Public hook** | `packages/embed/src/hooks/useCircuitSimulator.ts` | What every embed/blog/editor consumer calls. `tick()`, `setNode()`, `stepBack()`, time-travel, auto-run. |
+| **Sandbox bridge** (host) | `packages/ui/src/sandbox/useSandbox.ts` | postMessage transport + slot lifecycle. Used internally by `useCircuitSimulator`; only advanced consumers (editor, web component) touch it directly. |
+| **Sandbox iframe** | `apps/sandbox/src/main.ts` | The other side of the bridge. Runs *inside* the iframe (cross-origin). Receives postMessage commands, evaluates user code in a Web Worker, drives the engine. |
+| **Simulator engine** | `packages/core/src/simulator/` | Pure computation — no iframe, no React. Used by the iframe app for browser sims; used directly by `@simten/core/sim` for Node/CI scripts. |
+
+Direction of calls (browser path):
+
+```
+useCircuitSimulator → useSandbox → [postMessage / iframe boundary] → apps/sandbox/main.ts → core/simulator
+```
+
+If you're writing a `vitest` property test or a CI fuzzer, you skip the bridge entirely — just import from `@simten/core/sim` and drive the engine directly. See "Two ways to run a circuit" below.
+
 ## From TypeScript to Simulation
 
 When you define a circuit, it goes through six stages before anything appears on screen:

@@ -1,5 +1,11 @@
 /**
- * Sandbox iframe main thread.
+ * Sandbox iframe main thread — IFRAME side of the bridge.
+ *
+ * The host-side counterpart lives at `packages/ui/src/sandbox/useSandbox.ts`.
+ * This file runs *inside* the cross-origin iframe; it receives postMessage
+ * commands from the host and drives `@simten/core/simulator` (which runs in
+ * the worker for compile/simulate, on iframe-main for tick/reset/set-node).
+ * See `apps/web/content/docs/architecture.mdx` → "Runtime topology".
  *
  * Runs inside a hidden iframe with sandbox="allow-scripts allow-same-origin".
  * Origin isolation (sandbox.simten.dev vs simten.dev) prevents access to the
