@@ -1,4 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
+import { blogPostHead } from '@/lib/seo'
+import { getPost } from '@/features/blog/posts'
 import { Suspense, lazy } from "react";
 import { HeroSection } from "@/features/blog/building-a-cpu/sections/HeroSection";
 import { BlogFooter } from "@/features/blog/BlogFooter";
@@ -136,15 +138,6 @@ function BuildingACPUPage() {
 }
 
 export const Route = createFileRoute('/blog/building-a-cpu')({
-  head: () => ({
-    meta: [
-      { title: 'Building a CPU from Scratch | Simten' },
-      {
-        name: 'description',
-        content:
-          'An interactive guide from NAND gates to a working 6502 CPU running C code. Every circuit is live — click switches, watch signals propagate, and build intuition for how computers work.',
-      },
-    ],
-  }),
+  head: () => blogPostHead(getPost('building-a-cpu')),
   component: BuildingACPUPage,
 })

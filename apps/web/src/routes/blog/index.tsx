@@ -1,10 +1,15 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { posts, type PostCategory } from '@/features/blog/posts'
+import { pageHead } from '@/lib/seo'
 
 export const Route = createFileRoute('/blog/')({
-  head: () => ({
-    meta: [{ title: 'Blog | Simten' }],
-  }),
+  head: () =>
+    pageHead({
+      title: 'Blog',
+      description:
+        'Deep dives on hardware: AES, ChaCha20, RISC-V CPUs, network switches, TPUs. Every post backed by a live, simulated circuit.',
+      path: '/blog',
+    }),
   component: BlogIndex,
 })
 

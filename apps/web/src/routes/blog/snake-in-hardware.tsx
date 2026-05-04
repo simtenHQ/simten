@@ -1,4 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
+import { blogPostHead } from '@/lib/seo'
+import { getPost } from '@/features/blog/posts'
 import { Suspense, lazy } from "react";
 import { HeroSection } from "@/features/blog/snake-in-hardware/sections/HeroSection";
 import { BlogFooter } from "@/features/blog/BlogFooter";
@@ -124,15 +126,6 @@ function SnakeInHardwarePage() {
 }
 
 export const Route = createFileRoute('/blog/snake-in-hardware')({
-  head: () => ({
-    meta: [
-      { title: 'Snake in Hardware | Simten' },
-      {
-        name: 'description',
-        content:
-          'A complete Snake game built entirely from logic gates, registers, and memory — no CPU, no software, just digital circuits. Every circuit is live and interactive.',
-      },
-    ],
-  }),
+  head: () => blogPostHead(getPost('snake-in-hardware')),
   component: SnakeInHardwarePage,
 })

@@ -1,9 +1,14 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { pageHead } from "@/lib/seo";
 
 export const Route = createFileRoute("/learn/")({
-  head: () => ({
-    meta: [{ title: "Learn | Simten" }],
-  }),
+  head: () =>
+    pageHead({
+      title: "Learn",
+      description:
+        "Guided lessons on how hardware works — from logic gates to a full RISC-V CPU. Every circuit is live: tick it, poke it, break it.",
+      path: "/learn",
+    }),
   component: LearnIndexPage,
 });
 
@@ -28,39 +33,9 @@ function LearnIndexPage() {
         </section>
 
         <div className="space-y-4">
-          {/* Dual CPU — featured tool */}
-          <Link
-            to="/learn/dual-cpu"
-            className="block p-6 rounded-xl bg-gray-900 border border-gray-800 hover:border-purple-700/50 hover:bg-gray-900/80 transition-colors group"
-          >
-            <div className="flex items-start justify-between">
-              <div>
-                <h2 className="text-xl font-bold text-white group-hover:text-purple-300 transition-colors">
-                  RV32I Dual CPU
-                </h2>
-                <p className="mt-2 text-gray-400 leading-relaxed">
-                  Two independent RISC-V CPUs running in parallel, communicating
-                  via a memory-mapped NIC. Watch inter-CPU message passing happen
-                  cycle by cycle.
-                </p>
-              </div>
-              <span className="text-gray-600 group-hover:text-purple-400 transition-colors text-2xl ml-4">
-                &rarr;
-              </span>
-            </div>
-            <div className="mt-4 flex items-center gap-4 text-sm text-gray-500">
-              <span className="px-2 py-0.5 rounded-full bg-purple-900/50 text-purple-300 text-xs font-medium">
-                Dual Core
-              </span>
-              <span className="px-2 py-0.5 rounded-full bg-blue-900/50 text-blue-300 text-xs font-medium">
-                Interactive
-              </span>
-            </div>
-          </Link>
-
           {/* CPU Debugger — featured tool */}
           <Link
-            to="/learn/cpu"
+            to="/learn/rv32i-cpu"
             className="block p-6 rounded-xl bg-gray-900 border border-gray-800 hover:border-blue-700/50 hover:bg-gray-900/80 transition-colors group"
           >
             <div className="flex items-start justify-between">

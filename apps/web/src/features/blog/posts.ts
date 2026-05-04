@@ -114,3 +114,9 @@ export const posts: BlogPost[] = [
     nodes: 'N/A',
   },
 ];
+
+export function getPost(slug: string): BlogPost {
+  const post = posts.find((p) => p.slug === slug);
+  if (!post) throw new Error(`No post in manifest with slug "${slug}"`);
+  return post;
+}

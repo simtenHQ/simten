@@ -17,7 +17,7 @@ export function CTASection() {
         </p>
         <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
           <Link
-            to="/learn/cpu"
+            to="/learn/rv32i-cpu"
             className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-medium transition-colors"
           >
             Try the CPU debugger &rarr;

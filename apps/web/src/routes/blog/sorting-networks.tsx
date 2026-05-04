@@ -1,4 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
+import { blogPostHead } from '@/lib/seo'
+import { getPost } from '@/features/blog/posts'
 import { Suspense, lazy } from "react";
 import { HeroSection } from "@/features/blog/sorting-networks/sections/HeroSection";
 import { BlogFooter } from "@/features/blog/BlogFooter";
@@ -84,15 +86,6 @@ function SortingNetworksPage() {
 }
 
 export const Route = createFileRoute('/blog/sorting-networks')({
-  head: () => ({
-    meta: [
-      { title: 'Sorting Networks | Simten' },
-      {
-        name: 'description',
-        content:
-          'A fixed wiring of comparators that sorts any input in the same number of steps — no branches, no loops. The algorithm behind network switch fabrics, GPU sort, and median filters.',
-      },
-    ],
-  }),
+  head: () => blogPostHead(getPost('sorting-networks')),
   component: SortingNetworksPage,
 })

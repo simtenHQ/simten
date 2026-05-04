@@ -14,7 +14,22 @@
   "observability": {
     "enabled": true
   },
-  "services": [{ "binding": "COMPILER", "service": "compiler", "remote": true }]
+  "services": [{ "binding": "COMPILER", "service": "compiler", "remote": true }],
+  "assets": {
+    // Static assets directory is auto-set to "../client" by the Cloudflare
+    // vite plugin at build time — don't set "directory" here.
+    //
+    // html_handling: "drop-trailing-slash" tells Cloudflare's asset router
+    // to canonicalise URLs WITHOUT a trailing slash (redirect /foo/ → /foo).
+    // Default is "auto-trailing-slash" which goes the opposite way and
+    // breaks our canonical URL contract (sitemap / og:url / rel="canonical"
+    // all use the no-slash form).
+    //
+    // not_found_handling: "none" (default) means asset misses fall through
+    // to the worker — required so /editor and /docs/* still hit the SSR
+    // handler instead of returning 404.
+    "html_handling": "drop-trailing-slash"
+  }
   /**
    * Smart Placement
    * https://developers.cloudflare.com/workers/configuration/smart-placement/#smart-placement

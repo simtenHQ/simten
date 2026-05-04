@@ -1,4 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
+import { blogPostHead } from '@/lib/seo'
+import { getPost } from '@/features/blog/posts'
 import { Suspense, lazy } from "react";
 import { HeroSection } from "@/features/blog/pong-in-hardware/sections/HeroSection";
 import { BlogFooter } from "@/features/blog/BlogFooter";
@@ -92,15 +94,6 @@ function PongInHardwarePage() {
 }
 
 export const Route = createFileRoute('/blog/pong-in-hardware')({
-  head: () => ({
-    meta: [
-      { title: 'Pong in Hardware | Simten' },
-      {
-        name: 'description',
-        content:
-          'A complete Pong game built from logic gates, registers, and memory — two paddles, a bouncing ball, and a 14-phase rendering pipeline, all without a CPU.',
-      },
-    ],
-  }),
+  head: () => blogPostHead(getPost('pong-in-hardware')),
   component: PongInHardwarePage,
 })

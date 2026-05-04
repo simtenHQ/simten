@@ -1,4 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
+import { blogPostHead } from '@/lib/seo'
+import { getPost } from '@/features/blog/posts'
 import { Suspense, lazy } from "react";
 import { HeroSection } from "@/features/blog/how-tpus-work/sections/HeroSection";
 import { BlogFooter } from "@/features/blog/BlogFooter";
@@ -121,15 +123,6 @@ function HowTPUsWorkPage() {
 }
 
 export const Route = createFileRoute('/blog/how-tpus-work')({
-  head: () => ({
-    meta: [
-      { title: 'How TPUs Do Calculations | Simten' },
-      {
-        name: 'description',
-        content:
-          'Inside Google\'s Tensor Processing Units: a 2x2 systolic array built from logic gates. Watch matrix multiplication happen one clock cycle at a time.',
-      },
-    ],
-  }),
+  head: () => blogPostHead(getPost('how-tpus-work')),
   component: HowTPUsWorkPage,
 })

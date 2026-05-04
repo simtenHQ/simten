@@ -1,4 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { blogPostHead } from '@/lib/seo'
+import { getPost } from '@/features/blog/posts'
 import { Suspense, lazy } from "react";
 import { HeroSection } from "@/features/blog/rv32i-cpu/sections/HeroSection";
 import { BlogFooter } from "@/features/blog/BlogFooter";
@@ -126,15 +128,6 @@ function RV32ICPUPage() {
 }
 
 export const Route = createFileRoute("/blog/rv32i-cpu")({
-  head: () => ({
-    meta: [
-      { title: "A RISC-V CPU That Runs C | Simten" },
-      {
-        name: "description",
-        content:
-          "A 5-stage pipelined RISC-V CPU running in your browser. Write C, compile it with GCC, and step through execution cycle by cycle.",
-      },
-    ],
-  }),
+  head: () => blogPostHead(getPost('rv32i-cpu')),
   component: RV32ICPUPage,
 });
