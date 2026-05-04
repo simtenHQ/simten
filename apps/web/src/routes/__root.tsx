@@ -35,7 +35,7 @@ function RootComponent() {
         <HeadContent />
       </head>
       <body className="antialiased">
-        <RootProvider>
+        <RootProvider search={{ preload: false }}>
           <ThemeProvider defaultTheme="dark">
             <SandboxProvider>
               <Outlet />
