@@ -1,4 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
+import { blogPostHead } from '@/lib/seo'
+import { getPost } from '@/features/blog/posts'
 import { Suspense, lazy } from "react";
 import { HeroSection } from "@/features/blog/aes-in-hardware/sections/HeroSection";
 import { BlogFooter } from "@/features/blog/BlogFooter";
@@ -18,12 +20,7 @@ const WhyHardwareSection = lazy(() =>
 );
 
 export const Route = createFileRoute('/blog/aes-in-hardware')({
-  head: () => ({
-    meta: [
-      { title: 'AES in Hardware | Simten' },
-      { name: 'description', content: 'Why Intel built AES into the CPU. SubBytes, XTime, and MixColumns — the three operations behind the world\'s most deployed cipher, built from logic gates.' },
-    ],
-  }),
+  head: () => blogPostHead(getPost('aes-in-hardware')),
   component: AESInHardwarePage,
 })
 

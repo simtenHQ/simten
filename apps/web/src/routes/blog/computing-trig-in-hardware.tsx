@@ -1,4 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
+import { blogPostHead } from '@/lib/seo'
+import { getPost } from '@/features/blog/posts'
 import { Suspense, lazy } from "react";
 import { HeroSection } from "@/features/blog/computing-trig-in-hardware/sections/HeroSection";
 import { BlogFooter } from "@/features/blog/BlogFooter";
@@ -111,15 +113,6 @@ function ComputingTrigPage() {
 }
 
 export const Route = createFileRoute('/blog/computing-trig-in-hardware')({
-  head: () => ({
-    meta: [
-      { title: 'Computing Trig in Hardware | Simten' },
-      {
-        name: 'description',
-        content:
-          'How calculators and GPUs compute sine and cosine using only bit shifts and addition — the CORDIC algorithm, built from logic gates in your browser.',
-      },
-    ],
-  }),
+  head: () => blogPostHead(getPost('computing-trig-in-hardware')),
   component: ComputingTrigPage,
 })
