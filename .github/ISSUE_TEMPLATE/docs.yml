@@ -1,0 +1,26 @@
+name: Documentation issue
+description: Something in the README, docs/, or in-app /docs is wrong, missing, or confusing.
+title: "[docs]: "
+labels: ["docs"]
+body:
+  - type: input
+    id: location
+    attributes:
+      label: Where
+      description: File path, URL, or in-app docs page.
+      placeholder: "README.md, docs/architecture.md, /docs/getting-started"
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What's wrong or unclear?
+    validations:
+      required: true
+
+  - type: textarea
+    id: suggestion
+    attributes:
+      label: Suggested fix
+      description: Optional. A sentence, a paragraph, or a PR link.
