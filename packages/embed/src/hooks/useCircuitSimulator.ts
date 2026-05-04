@@ -574,13 +574,20 @@ export function useCircuitSimulator(
     await applyHistoryEntry(hist[index], index);
   }, [ready, applyHistoryEntry]);
 
+  // Stable indirection so setInterval always calls the latest tick(). Without
+  // this, an auto-run started before `ready` flips true would capture the
+  // bail-early version of tick and never recover, even after the sandbox
+  // becomes ready — the interval would fire forever calling a stale closure.
+  const tickRef = useRef(tick);
+  useEffect(() => { tickRef.current = tick; }, [tick]);
+
   const startAutoRun = useCallback((ticksPerSecond: number, _opts?: { displayRate?: number; onBeforeTick?: () => void }) => {
     if (autoRunRef.current) clearInterval(autoRunRef.current);
     setSpeedState(ticksPerSecond);
     setIsRunning(true);
     const interval = Math.max(1, Math.floor(1000 / ticksPerSecond));
-    autoRunRef.current = setInterval(() => { tick(); }, interval);
-  }, [tick]);
+    autoRunRef.current = setInterval(() => { tickRef.current(); }, interval);
+  }, []);
 
   const stopAutoRun = useCallback(() => {
     if (autoRunRef.current) {
@@ -596,9 +603,9 @@ export function useCircuitSimulator(
       // Restart with new speed
       clearInterval(autoRunRef.current);
       const interval = Math.max(1, Math.floor(1000 / ticksPerSecond));
-      autoRunRef.current = setInterval(() => { tick(); }, interval);
+      autoRunRef.current = setInterval(() => { tickRef.current(); }, interval);
     }
-  }, [tick]);
+  }, []);
 
   useEffect(() => {
     return () => {
