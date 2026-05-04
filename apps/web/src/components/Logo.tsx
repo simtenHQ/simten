@@ -233,6 +233,39 @@ export function LogoSim10({ size = 32, className }: LogoProps) {
 }
 
 // ──────────────────────────────────────────────────────────
+// G) Sim10 favicon mark — square, single-stroke variant of the full wordmark.
+//    Same hand-drawn "sim10" path as LogoSim10, but:
+//      - Drop Excalidraw's doubled strokes (every line drawn twice in the
+//        wordmark; at favicon sizes the duplicates blur into mush — single
+//        renders cleaner without losing the wobble)
+//      - Bump strokeWidth from 1 to 2.5 (so it survives 16x16)
+//      - Center in a 32x32 square viewBox
+//    Used in apps/web/public/favicon.svg — the static file the browser
+//    actually fetches. Keep the React variant and the static SVG in sync.
+// ──────────────────────────────────────────────────────────
+export function LogoSim10Mark({ size = 32, className }: LogoProps) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 32 32"
+      fill="none"
+      className={className}
+    >
+      <g transform="translate(1 26) scale(1.26)">
+        <path
+          d="M0 0 C1.18 -0.01, 2.35 -0.02, 5.8 -0.06 M5.8 -0.06 C5.74 -3.55, 5.69 -7.05, 5.55 -15.47 M5.55 -15.47 C7.29 -15.52, 9.04 -15.56, 10.89 -15.61 M10.89 -15.61 C11.01 -10.54, 11.14 -5.48, 11.27 -0.05 M11.27 -0.05 C12.44 -0.1, 13.62 -0.15, 14.43 -0.19 M14.43 -0.19 C14.5 -5.45, 14.56 -10.71, 14.61 -15.56 M14.61 -15.56 C15.28 -15.6, 15.95 -15.64, 16.44 -15.67 M16.44 -15.67 C16.45 -12.31, 16.46 -8.95, 16.48 -0.15 M16.48 -0.15 C16.84 -0.14, 17.2 -0.12, 18.01 -0.08 M18.01 -0.08 C18.06 -5.22, 18.11 -10.35, 18.17 -15.61 M18.17 -15.61 C18.75 -15.64, 19.32 -15.66, 20.13 -15.69 M20.13 -15.69 C20.17 -12.42, 20.2 -9.15, 20.3 0 M20.3 0 C21.52 0, 22.73 0, 23.75 0"
+          stroke="currentColor"
+          strokeWidth="1.4"
+          strokeLinecap="round"
+          fill="none"
+        />
+      </g>
+    </svg>
+  );
+}
+
+// ──────────────────────────────────────────────────────────
 // Original — kept for reference / fallback. Friendly mascot face.
 // ──────────────────────────────────────────────────────────
 export function LogoOriginal({ size = 28, className }: LogoProps) {
@@ -275,7 +308,8 @@ export function LogoOriginal({ size = 28, className }: LogoProps) {
 // Options:
 //   LogoNand · LogoTrace · LogoSquareWave · LogoHex
 //   LogoSimWordmark — 2.5:1 ortho-stroke wordmark (S/I/M)
-//   LogoSim10       — hand-drawn waveform "sim10" (~1.37:1)
+//   LogoSim10       — hand-drawn waveform "sim10" (~1.37:1, header use)
+//   LogoSim10Mark   — square favicon variant of LogoSim10 (mirrored in public/favicon.svg)
 //   LogoOriginal    — friendly triangle mascot
 // ──────────────────────────────────────────────────────────
 export const Logo = LogoSim10;
