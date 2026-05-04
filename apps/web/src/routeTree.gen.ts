@@ -17,12 +17,6 @@ import { Route as BlogIndexRouteImport } from './routes/blog/index'
 import { Route as LearnDualCpuRouteImport } from './routes/learn/dual-cpu'
 import { Route as LearnCpuRouteImport } from './routes/learn/cpu'
 import { Route as DocsSplatRouteImport } from './routes/docs/$'
-import { Route as DemosSortingNetworkRouteImport } from './routes/demos/sorting-network'
-import { Route as DemosPlaygroundRouteImport } from './routes/demos/playground'
-import { Route as DemosGenerativeRouteImport } from './routes/demos/generative'
-import { Route as DemosCpuRouteImport } from './routes/demos/cpu'
-import { Route as DemosCircuitStateRouteImport } from './routes/demos/circuit-state'
-import { Route as DemosCalculatorRouteImport } from './routes/demos/calculator'
 import { Route as BlogSortingNetworksRouteImport } from './routes/blog/sorting-networks'
 import { Route as BlogSnakeInHardwareRouteImport } from './routes/blog/snake-in-hardware'
 import { Route as BlogRv32iCpuRouteImport } from './routes/blog/rv32i-cpu'
@@ -76,36 +70,6 @@ const LearnCpuRoute = LearnCpuRouteImport.update({
 const DocsSplatRoute = DocsSplatRouteImport.update({
   id: '/docs/$',
   path: '/docs/$',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DemosSortingNetworkRoute = DemosSortingNetworkRouteImport.update({
-  id: '/demos/sorting-network',
-  path: '/demos/sorting-network',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DemosPlaygroundRoute = DemosPlaygroundRouteImport.update({
-  id: '/demos/playground',
-  path: '/demos/playground',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DemosGenerativeRoute = DemosGenerativeRouteImport.update({
-  id: '/demos/generative',
-  path: '/demos/generative',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DemosCpuRoute = DemosCpuRouteImport.update({
-  id: '/demos/cpu',
-  path: '/demos/cpu',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DemosCircuitStateRoute = DemosCircuitStateRouteImport.update({
-  id: '/demos/circuit-state',
-  path: '/demos/circuit-state',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DemosCalculatorRoute = DemosCalculatorRouteImport.update({
-  id: '/demos/calculator',
-  path: '/demos/calculator',
   getParentRoute: () => rootRouteImport,
 } as any)
 const BlogSortingNetworksRoute = BlogSortingNetworksRouteImport.update({
@@ -200,12 +164,6 @@ export interface FileRoutesByFullPath {
   '/blog/rv32i-cpu': typeof BlogRv32iCpuRoute
   '/blog/snake-in-hardware': typeof BlogSnakeInHardwareRoute
   '/blog/sorting-networks': typeof BlogSortingNetworksRoute
-  '/demos/calculator': typeof DemosCalculatorRoute
-  '/demos/circuit-state': typeof DemosCircuitStateRoute
-  '/demos/cpu': typeof DemosCpuRoute
-  '/demos/generative': typeof DemosGenerativeRoute
-  '/demos/playground': typeof DemosPlaygroundRoute
-  '/demos/sorting-network': typeof DemosSortingNetworkRoute
   '/docs/$': typeof DocsSplatRoute
   '/learn/cpu': typeof LearnCpuRoute
   '/learn/dual-cpu': typeof LearnDualCpuRoute
@@ -229,12 +187,6 @@ export interface FileRoutesByTo {
   '/blog/rv32i-cpu': typeof BlogRv32iCpuRoute
   '/blog/snake-in-hardware': typeof BlogSnakeInHardwareRoute
   '/blog/sorting-networks': typeof BlogSortingNetworksRoute
-  '/demos/calculator': typeof DemosCalculatorRoute
-  '/demos/circuit-state': typeof DemosCircuitStateRoute
-  '/demos/cpu': typeof DemosCpuRoute
-  '/demos/generative': typeof DemosGenerativeRoute
-  '/demos/playground': typeof DemosPlaygroundRoute
-  '/demos/sorting-network': typeof DemosSortingNetworkRoute
   '/docs/$': typeof DocsSplatRoute
   '/learn/cpu': typeof LearnCpuRoute
   '/learn/dual-cpu': typeof LearnDualCpuRoute
@@ -260,12 +212,6 @@ export interface FileRoutesById {
   '/blog/rv32i-cpu': typeof BlogRv32iCpuRoute
   '/blog/snake-in-hardware': typeof BlogSnakeInHardwareRoute
   '/blog/sorting-networks': typeof BlogSortingNetworksRoute
-  '/demos/calculator': typeof DemosCalculatorRoute
-  '/demos/circuit-state': typeof DemosCircuitStateRoute
-  '/demos/cpu': typeof DemosCpuRoute
-  '/demos/generative': typeof DemosGenerativeRoute
-  '/demos/playground': typeof DemosPlaygroundRoute
-  '/demos/sorting-network': typeof DemosSortingNetworkRoute
   '/docs/$': typeof DocsSplatRoute
   '/learn/cpu': typeof LearnCpuRoute
   '/learn/dual-cpu': typeof LearnDualCpuRoute
@@ -292,12 +238,6 @@ export interface FileRouteTypes {
     | '/blog/rv32i-cpu'
     | '/blog/snake-in-hardware'
     | '/blog/sorting-networks'
-    | '/demos/calculator'
-    | '/demos/circuit-state'
-    | '/demos/cpu'
-    | '/demos/generative'
-    | '/demos/playground'
-    | '/demos/sorting-network'
     | '/docs/$'
     | '/learn/cpu'
     | '/learn/dual-cpu'
@@ -321,12 +261,6 @@ export interface FileRouteTypes {
     | '/blog/rv32i-cpu'
     | '/blog/snake-in-hardware'
     | '/blog/sorting-networks'
-    | '/demos/calculator'
-    | '/demos/circuit-state'
-    | '/demos/cpu'
-    | '/demos/generative'
-    | '/demos/playground'
-    | '/demos/sorting-network'
     | '/docs/$'
     | '/learn/cpu'
     | '/learn/dual-cpu'
@@ -351,12 +285,6 @@ export interface FileRouteTypes {
     | '/blog/rv32i-cpu'
     | '/blog/snake-in-hardware'
     | '/blog/sorting-networks'
-    | '/demos/calculator'
-    | '/demos/circuit-state'
-    | '/demos/cpu'
-    | '/demos/generative'
-    | '/demos/playground'
-    | '/demos/sorting-network'
     | '/docs/$'
     | '/learn/cpu'
     | '/learn/dual-cpu'
@@ -369,12 +297,6 @@ export interface RootRouteChildren {
   BlogRoute: typeof BlogRouteWithChildren
   EditorRoute: typeof EditorRoute
   ApiSearchRoute: typeof ApiSearchRoute
-  DemosCalculatorRoute: typeof DemosCalculatorRoute
-  DemosCircuitStateRoute: typeof DemosCircuitStateRoute
-  DemosCpuRoute: typeof DemosCpuRoute
-  DemosGenerativeRoute: typeof DemosGenerativeRoute
-  DemosPlaygroundRoute: typeof DemosPlaygroundRoute
-  DemosSortingNetworkRoute: typeof DemosSortingNetworkRoute
   DocsSplatRoute: typeof DocsSplatRoute
   LearnCpuRoute: typeof LearnCpuRoute
   LearnDualCpuRoute: typeof LearnDualCpuRoute
@@ -437,48 +359,6 @@ declare module '@tanstack/react-router' {
       path: '/docs/$'
       fullPath: '/docs/$'
       preLoaderRoute: typeof DocsSplatRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/demos/sorting-network': {
-      id: '/demos/sorting-network'
-      path: '/demos/sorting-network'
-      fullPath: '/demos/sorting-network'
-      preLoaderRoute: typeof DemosSortingNetworkRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/demos/playground': {
-      id: '/demos/playground'
-      path: '/demos/playground'
-      fullPath: '/demos/playground'
-      preLoaderRoute: typeof DemosPlaygroundRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/demos/generative': {
-      id: '/demos/generative'
-      path: '/demos/generative'
-      fullPath: '/demos/generative'
-      preLoaderRoute: typeof DemosGenerativeRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/demos/cpu': {
-      id: '/demos/cpu'
-      path: '/demos/cpu'
-      fullPath: '/demos/cpu'
-      preLoaderRoute: typeof DemosCpuRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/demos/circuit-state': {
-      id: '/demos/circuit-state'
-      path: '/demos/circuit-state'
-      fullPath: '/demos/circuit-state'
-      preLoaderRoute: typeof DemosCircuitStateRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/demos/calculator': {
-      id: '/demos/calculator'
-      path: '/demos/calculator'
-      fullPath: '/demos/calculator'
-      preLoaderRoute: typeof DemosCalculatorRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/blog/sorting-networks': {
@@ -623,12 +503,6 @@ const rootRouteChildren: RootRouteChildren = {
   BlogRoute: BlogRouteWithChildren,
   EditorRoute: EditorRoute,
   ApiSearchRoute: ApiSearchRoute,
-  DemosCalculatorRoute: DemosCalculatorRoute,
-  DemosCircuitStateRoute: DemosCircuitStateRoute,
-  DemosCpuRoute: DemosCpuRoute,
-  DemosGenerativeRoute: DemosGenerativeRoute,
-  DemosPlaygroundRoute: DemosPlaygroundRoute,
-  DemosSortingNetworkRoute: DemosSortingNetworkRoute,
   DocsSplatRoute: DocsSplatRoute,
   LearnCpuRoute: LearnCpuRoute,
   LearnDualCpuRoute: LearnDualCpuRoute,
