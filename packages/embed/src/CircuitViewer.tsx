@@ -73,6 +73,11 @@ export interface CircuitViewerHandle {
   tick: () => void;
   reset: () => void;
   setNodeValue: (nodeId: string, value: number | boolean | Map<number, number>) => void;
+  /** Start the simulator's internal auto-run loop. Equivalent to clicking the
+   *  in-canvas play button — the play/pause control will stop it normally. */
+  startAutoRun: (ticksPerSecond: number) => void;
+  /** Stop the simulator's internal auto-run loop. */
+  stopAutoRun: () => void;
 }
 
 const CircuitViewerImpl = forwardRef<CircuitViewerHandle, CircuitViewerProps>(
@@ -107,7 +112,9 @@ const CircuitViewerImpl = forwardRef<CircuitViewerHandle, CircuitViewerProps>(
       tick: handleTick,
       reset: handleReset,
       setNodeValue: sim.setNodeValue,
-    }), [handleTick, handleReset, sim.setNodeValue]);
+      startAutoRun: sim.startAutoRun,
+      stopAutoRun: sim.stopAutoRun,
+    }), [handleTick, handleReset, sim.setNodeValue, sim.startAutoRun, sim.stopAutoRun]);
 
     if (sim.error) {
       return (

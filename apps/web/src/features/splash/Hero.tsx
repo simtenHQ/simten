@@ -11,11 +11,11 @@
  * The goal is "what is this?" answered in under 3 seconds.
  */
 
-import { useState, useCallback, useEffect, type ReactNode } from "react";
+import { useState, useCallback, useEffect, useRef, type ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
 import figlet from "figlet";
 import smallFont from "figlet/fonts/Small";
-import { CircuitEmbed } from "@simten/embed";
+import { CircuitEmbed, type CircuitEmbedHandle } from "@simten/embed";
 import { circuit, bit, bus } from "@simten/core/circuit";
 import type { BuiltCircuit } from "@simten/core/circuit";
 import { Xor, And, Or, Not, DFlipFlop, Register, Adder, ROM, Constant, Console as ConsolePrimitive } from "@simten/core/std";
@@ -391,6 +391,26 @@ export function Hero() {
     setDemoKey(key);
   }, []);
 
+  // Auto-start the figlet demo by handing off to the simulator's own auto-run
+  // engine. This way the play/pause button (which talks to the same engine)
+  // can stop it normally — we're not running a competing timer in user-land.
+  // Other demos stay user-driven; switching demos clears any in-flight run.
+  const desktopEmbedRef = useRef<CircuitEmbedHandle>(null);
+  const mobileEmbedRef = useRef<CircuitEmbedHandle>(null);
+  useEffect(() => {
+    if (demoKey !== "figlet") return;
+    // Wait one tick for the embed to mount its handle.
+    const id = setTimeout(() => {
+      desktopEmbedRef.current?.startAutoRun(5);
+      mobileEmbedRef.current?.startAutoRun(5);
+    }, 0);
+    return () => {
+      clearTimeout(id);
+      desktopEmbedRef.current?.stopAutoRun();
+      mobileEmbedRef.current?.stopAutoRun();
+    };
+  }, [demoKey]);
+
   // Keyboard arrows cycle through demos (only when nothing else is focused)
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -440,6 +460,7 @@ export function Hero() {
               <div className="flex-1 min-w-0 flex flex-col">
                 <div className="flex-1 min-h-0 relative">
                   <CircuitEmbed
+                    ref={desktopEmbedRef}
                     key={demo.key}
                     circuit={demo.circuit}
                     layout={demo.layout}
@@ -506,6 +527,7 @@ export function Hero() {
           <div className="flex flex-col">
             <div className="h-[240px] border-b border-border">
               <CircuitEmbed
+                ref={mobileEmbedRef}
                 key={demo.key}
                 circuit={demo.circuit}
                 layout={demo.layout}
