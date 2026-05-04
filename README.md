@@ -168,6 +168,6 @@ tar -xzf /tmp/simten-core-*.tgz -O package/package.json | jq .exports
 
 ## Documentation
 
-- Architecture and component model: [`docs/`](./docs/)
-- In-app documentation: navigate to `/docs/` in the running app
-- Blog posts demonstrating real circuits: `/blog/`
+- Full docs (rendered): **[simten.dev/docs](https://simten.dev/docs)**
+- Markdown source: [`apps/web/content/docs/`](./apps/web/content/docs/) — readable on GitHub
+- Blog posts demonstrating real circuits: [simten.dev/blog](https://simten.dev/blog)
