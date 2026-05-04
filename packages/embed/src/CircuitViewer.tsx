@@ -6,7 +6,7 @@
  * is a thin wrapper around this.
  */
 
-import { useState, useCallback, forwardRef, useImperativeHandle, type ForwardedRef, type ReactElement } from "react";
+import { useCallback, forwardRef, useImperativeHandle, type ForwardedRef, type ReactElement } from "react";
 import { useCircuitSimulator } from "./hooks/useCircuitSimulator";
 import type { BuiltCircuit } from "@simten/core/circuit";
 import { CircuitCanvas, ClockControls, useDetectTheme } from "@simten/ui/canvas";
@@ -94,16 +94,13 @@ const CircuitViewerImpl = forwardRef<CircuitViewerHandle, CircuitViewerProps>(
     const sim = useCircuitSimulator(circuit, { autoHarness, initialInputs });
     const detectedTheme = useDetectTheme();
     const resolvedTheme = theme ?? detectedTheme;
-    const [tickCount, setTickCount] = useState(0);
 
     const handleTick = useCallback(() => {
       sim.tick();
-      setTickCount(c => c + 1);
     }, [sim.tick]);
 
     const handleReset = useCallback(() => {
       sim.reset();
-      setTickCount(0);
     }, [sim.reset]);
 
     useImperativeHandle(ref, () => ({
@@ -164,7 +161,7 @@ const CircuitViewerImpl = forwardRef<CircuitViewerHandle, CircuitViewerProps>(
         </div>
         {sim.isSequential && showControls && (
           <ClockControls
-            cycle={tickCount}
+            cycle={sim.cycleCount}
             historyLength={sim.history?.length ?? 0}
             historyIndex={sim.historyIndex ?? -1}
             isRunning={sim.isRunning}
@@ -173,11 +170,10 @@ const CircuitViewerImpl = forwardRef<CircuitViewerHandle, CircuitViewerProps>(
             onRun={() => sim.startAutoRun(5)}
             onPause={() => sim.stopAutoRun()}
             onReset={handleReset}
-            onStepBack={() => { sim.stepBack(); setTickCount(Math.max(0, tickCount - 1)); }}
+            onStepBack={() => sim.stepBack()}
             onStepForward={() => {
               if (sim.isViewingPast) {
                 sim.stepForward();
-                setTickCount(c => c + 1);
               } else {
                 handleTick();
               }
