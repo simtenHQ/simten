@@ -1,5 +1,10 @@
 /**
- * useSandbox — iframe execution sandbox manager
+ * useSandbox — iframe execution sandbox manager (HOST side of the bridge).
+ *
+ * The iframe-side counterpart lives at `apps/sandbox/src/main.ts`. Most
+ * consumers should NOT call this directly — use `useCircuitSimulator` from
+ * `@simten/embed`, which composes this transport with circuit-level concerns.
+ * See `apps/web/content/docs/architecture.mdx` → "Runtime topology".
  *
  * Creates and manages a hidden iframe at SANDBOX_ORIGIN with
  * sandbox="allow-scripts". All circuit compilation and simulation
