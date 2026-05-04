@@ -210,7 +210,7 @@ function HeroHeader() {
         </div>
         <nav className="flex items-center gap-4">
           <a
-            href="https://github.com/simtenjs/simten"
+            href="https://github.com/simtenHQ/simten"
             target="_blank"
             rel="noopener noreferrer"
             className="text-muted-foreground/60 hover:text-foreground/80 transition-colors"

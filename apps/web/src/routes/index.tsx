@@ -575,7 +575,7 @@ fc.assert(
           <Link to="/blog" className="text-[12px] text-muted-foreground/60 hover:text-foreground/80 transition-colors">Blog</Link>
           <Link to="/learn" className="text-[12px] text-muted-foreground/60 hover:text-foreground/80 transition-colors">Learn</Link>
           <a
-            href="https://github.com/simtenjs/simten"
+            href="https://github.com/simtenHQ/simten"
             target="_blank"
             rel="noopener noreferrer"
             className="text-[12px] text-muted-foreground/60 hover:text-foreground/80 transition-colors"
