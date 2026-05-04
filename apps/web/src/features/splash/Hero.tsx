@@ -13,10 +13,12 @@
 
 import { useState, useCallback, useEffect, type ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
+import figlet from "figlet";
+import smallFont from "figlet/fonts/Small";
 import { CircuitEmbed } from "@simten/embed";
-import { circuit, bit } from "@simten/core/circuit";
+import { circuit, bit, bus } from "@simten/core/circuit";
 import type { BuiltCircuit } from "@simten/core/circuit";
-import { Xor, And, Or, Not, DFlipFlop } from "@simten/core/std";
+import { Xor, And, Or, Not, DFlipFlop, Register, Adder, ROM, Constant, Console as ConsolePrimitive } from "@simten/core/std";
 import { Logo } from "@/components/Logo";
 import { HighlightedCode } from "@/components/HighlightedCode";
 
@@ -25,6 +27,55 @@ type HeroLayout = Record<string, { x: number; y: number }>;
 // ============================================================================
 // Hero demo circuits
 // ============================================================================
+
+// figlet — a real npm package — renders ASCII-art text at module-load time.
+// We bake the resulting bytes into a hardware ROM and stream them through a
+// hardware Console, character by character, like a typewriter.
+//
+// The point: circuits are TypeScript, so the entire npm registry is available
+// to you at design time.
+figlet.parseFont('Small', smallFont);
+const banner = figlet.textSync('Simten', { font: 'Small' });
+// ROM layout: prefix a form-feed (clear-screen) byte so each pass through
+// the 8-bit counter wipes the terminal before redrawing the banner.
+// Remaining addresses past the banner are NULs (Console treats them as no-op).
+const FF = 12;
+const ascii = [...banner].map((c) => c.charCodeAt(0));
+const bannerBytes = Array.from({ length: 256 }, (_, i) => {
+  if (i === 0) return FF;
+  return i <= ascii.length ? ascii[i - 1] : 0;
+});
+
+const FigletStream = circuit('FigletStream', {
+  outputs: { byte: bus(8), strobe: bit },
+  nodes: { reg: Register, adder: Adder, rom: ROM, one: Constant, we: Constant, zero: Constant },
+  nodeArgs: {
+    reg: { width: 8 },
+    adder: { width: 8 },
+    one: { value: 1 },
+    we: { value: 1 },
+    zero: { value: 0 },
+    rom: { data: bannerBytes },
+  },
+  connect: ({ outputs, nodes: { reg, adder, rom, one, we, zero } }) => [
+    reg.q.to(adder.a),
+    one.out.to(adder.b),
+    zero.out.to(adder.carry_in),
+    adder.sum.to(reg.data),
+    we.out.to(reg.we),
+    reg.q.to(rom.addr),
+    rom.data_out.to(outputs.byte),
+    we.out.to(outputs.strobe),
+  ],
+});
+
+const FigletDemo = circuit('FigletDemo', {
+  nodes: { src: FigletStream, term: ConsolePrimitive },
+  connect: ({ nodes: { src, term } }) => [
+    src.byte.to(term.data),
+    src.strobe.to(term.we),
+  ],
+});
 
 const HalfAdder = circuit('HalfAdder', {
   inputs: { a: bit, b: bit },
@@ -95,6 +146,58 @@ interface HeroDemo {
 }
 
 const DEMOS: HeroDemo[] = [
+  {
+    key: "figlet",
+    label: "Figlet → ROM",
+    circuit: FigletDemo,
+    code: `import figlet from 'figlet';
+import smallFont from 'figlet/fonts/Small.js';
+figlet.parseFont('Small', smallFont);
+
+// Render ASCII-art at compile time with a real npm package,
+// then stream the bytes through hardware — letter by letter.
+const banner = figlet.textSync('Simten', { font: 'Small' });
+const ascii = [...banner].map(c => c.charCodeAt(0));
+// ROM[0] = form-feed (clear), ROM[1..N] = banner, ROM[N+1..] = NUL filler.
+// On counter wrap, the first byte clears the screen for a fresh draw.
+const bannerBytes = Array.from({ length: 256 }, (_, i) =>
+  i === 0 ? 12 : i <= ascii.length ? ascii[i - 1] : 0
+);
+
+const FigletStream = circuit('FigletStream', {
+  outputs: { byte: bus(8), strobe: bit },
+  nodes: { reg: Register, adder: Adder, rom: ROM,
+           one: Constant, we: Constant, zero: Constant },
+  nodeArgs: {
+    reg: { width: 8 }, adder: { width: 8 },
+    one: { value: 1 }, we: { value: 1 }, zero: { value: 0 },
+    rom: { data: bannerBytes },     // ← npm-computed ASCII art
+  },
+  connect: ({ outputs, nodes: { reg, adder, rom, one, we, zero } }) => [
+    reg.q.to(adder.a),
+    one.out.to(adder.b),
+    zero.out.to(adder.carry_in),
+    adder.sum.to(reg.data),
+    we.out.to(reg.we),
+    reg.q.to(rom.addr),
+    rom.data_out.to(outputs.byte),
+    we.out.to(outputs.strobe),
+  ],
+});
+
+// Top-level: drive a hardware Console with the streamed bytes.
+const FigletDemo = circuit('FigletDemo', {
+  nodes: { src: FigletStream, term: Console },
+  connect: ({ nodes: { src, term } }) => [
+    src.byte.to(term.data),
+    src.strobe.to(term.we),
+  ],
+});`,
+    layout: {
+      src:  { x: 0,   y: 65 },
+      term: { x: 160, y: 30 },
+    },
+  },
   {
     key: "half-adder",
     label: "Half adder",

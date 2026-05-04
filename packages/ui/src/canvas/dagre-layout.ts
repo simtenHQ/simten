@@ -22,7 +22,7 @@ export const NODE_DIMENSIONS: Record<string, { width: number; height: number }> 
   SevenSegment:  { width: 100, height: 80 },
   Screen:        { width: 200, height: 200 },
   RasterDisplay: { width: 200, height: 200 },
-  Console:       { width: 220, height: 180 },
+  Console:       { width: 380, height: 220 },
   Register:      { width: 120, height: 80 },
   RAM:           { width: 120, height: 80 },
   ROM:           { width: 120, height: 80 },
