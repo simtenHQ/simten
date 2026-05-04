@@ -39,5 +39,16 @@ export const RasterDisplay = circuit('RasterDisplay', {
 export const Console = circuit('Console', {
   inputs: { data: bus(8), we: bit },
   state: { text: '' as any },
+  onTick: ({ data, we, text }) => {
+    if (!we) return { text };
+    const byte = (data as number) & 0xFF;
+    // ASCII control bytes that don't append a printable character:
+    //   0  (NUL) — no-op, lets ROMs use 0 as a safe filler
+    //   12 (FF)  — form feed, clears the terminal (one-shot redraw pattern)
+    if (byte === 0) return { text };
+    if (byte === 12) return { text: '' };
+    const next = ((text as string) ?? '') + String.fromCharCode(byte);
+    return { text: next.length > 4096 ? next.slice(-4096) : next };
+  },
   meta: { category: 'display', icon: '📟', description: 'Text console output', synthesizable: false },
 });
