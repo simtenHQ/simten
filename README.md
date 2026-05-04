@@ -2,7 +2,7 @@
 
 A TypeScript-native digital circuit simulator and visual editor for learning hardware design.
 
-[![CI](https://github.com/simtenjs/simten/actions/workflows/ci.yml/badge.svg)](https://github.com/simtenjs/simten/actions/workflows/ci.yml)
+[![CI](https://github.com/simtenHQ/simten/actions/workflows/ci.yml/badge.svg)](https://github.com/simtenHQ/simten/actions/workflows/ci.yml)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue?logo=typescript)](https://www.typescriptlang.org/)
 [![Cloudflare Workers](https://img.shields.io/badge/deployed_on-Cloudflare-F38020?logo=cloudflare)](https://developers.cloudflare.com/workers/)
 
