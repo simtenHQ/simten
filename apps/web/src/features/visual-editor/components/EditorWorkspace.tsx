@@ -25,6 +25,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { TSEditor, type TSEditorRef } from "@/features/code-editor/TSEditor";
 import { TestTube, Bot, Download } from "lucide-react";
 import { exportVerilog } from "@simten/core/verilog";
+import { SiteHeader } from "@/components/SiteHeader";
 /** Check if a circuit name is an auto-generated harness (autoHarness appends 'Demo') */
 function isHarnessName(name: string): boolean {
   return name.endsWith('Demo') || name.endsWith('Harness');
@@ -322,68 +323,65 @@ export function EditorWorkspace({ theme = "light" }: EditorWorkspaceProps) {
     <ReactFlowProvider>
       <TooltipProvider delayDuration={300}>
       <div className="flex h-screen w-screen flex-col overflow-hidden bg-gray-50 dark:bg-[#111113]">
-        {/* Top Control Bar with Drawer Toggle Buttons */}
-        <div className="flex items-center gap-3 border-b border-gray-200 dark:border-[#2a2a2e] bg-white dark:bg-[#1a1a1e] px-6 py-2 shadow-sm">
-          {/* Left: Drawer Toggle Buttons */}
+        {/* SiteHeader (brand on left) + editor controls on the right */}
+        <SiteHeader
+          sticky={false}
+          right={
+            <div className="flex flex-1 items-center gap-2 justify-end pl-3">
+              <span className="text-sm font-semibold text-foreground/80 mr-auto pl-2 border-l border-border">
+                Editor
+              </span>
 
-          <Button
-            onClick={() => setTestsPanelOpen(true)}
-            variant="outline"
-            size="sm"
-            className="gap-2"
-            title="Open Tests Panel (Cmd+T)"
-          >
-            <TestTube className="h-4 w-4" />
-          </Button>
+              <Button
+                onClick={() => setTestsPanelOpen(true)}
+                variant="outline"
+                size="sm"
+                className="gap-2"
+                title="Open Tests Panel (Cmd+T)"
+              >
+                <TestTube className="h-4 w-4" />
+              </Button>
 
-          <Button
-            onClick={() => setChatOpen(true)}
-            variant="outline"
-            size="sm"
-            className="gap-2"
-            title="Open AI Assistant (Cmd+K)"
-          >
-            <Bot className="h-4 w-4" />
-          </Button>
+              <Button
+                onClick={() => setChatOpen(true)}
+                variant="outline"
+                size="sm"
+                className="gap-2"
+                title="Open AI Assistant (Cmd+K)"
+              >
+                <Bot className="h-4 w-4" />
+              </Button>
 
-          <div className="border-l border-gray-200 dark:border-[#2a2a2e] h-8"></div>
+              <div className="h-5 w-px bg-border" />
 
-          {/* Export Verilog */}
-          <Button
-            onClick={handleExportVerilog}
-            variant="outline"
-            size="sm"
-            className="gap-2"
-            title="Export circuit to Verilog (.v)"
-            disabled={!circuit}
-          >
-            <Download className="h-4 w-4" />
-            <span className="hidden sm:inline text-xs">Verilog</span>
-          </Button>
+              <Button
+                onClick={handleExportVerilog}
+                variant="outline"
+                size="sm"
+                className="gap-2"
+                title="Export circuit to Verilog (.v)"
+                disabled={!circuit}
+              >
+                <Download className="h-4 w-4" />
+                <span className="hidden sm:inline text-xs">Verilog</span>
+              </Button>
 
-          <div className="border-l border-gray-200 dark:border-[#2a2a2e] h-8"></div>
-
-          {/* App Title */}
-          <h1 className="text-lg font-bold text-gray-900 dark:text-gray-100">Simten</h1>
-
-          {/* Spacer */}
-          <div className="flex-1"></div>
-
-          {/* Studio Connection Status */}
-          {mcpStatus === 'connected' && (
-            <div className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
-              <div className="h-2 w-2 rounded-full bg-emerald-400" />
-              <span>Connected</span>
+              {/* Studio Connection Status */}
+              {mcpStatus === 'connected' && (
+                <div className="flex items-center gap-1.5 text-xs text-muted-foreground pl-2">
+                  <div className="h-2 w-2 rounded-full bg-emerald-400" />
+                  <span>Connected</span>
+                </div>
+              )}
+              {mcpStatus === 'reconnecting' && (
+                <div className="flex items-center gap-1.5 text-xs text-muted-foreground pl-2">
+                  <div className="h-2 w-2 rounded-full bg-amber-400" />
+                  <span>Reconnecting...</span>
+                </div>
+              )}
             </div>
-          )}
-          {mcpStatus === 'reconnecting' && (
-            <div className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
-              <div className="h-2 w-2 rounded-full bg-amber-400" />
-              <span>Reconnecting...</span>
-            </div>
-          )}
-
-        </div>
+          }
+        />
 
         {/* Main Content Area - Unified Workspace */}
         <div className="flex flex-1 overflow-hidden">
