@@ -416,54 +416,11 @@ export function CPUDebugger() {
         }
       />
 
-      {/* Main content */}
+      {/* Main content — two outer columns: [code + pipeline + disassembly] | [registers] */}
       <div className="flex flex-1 overflow-hidden">
-        {/* Left: code editor */}
-        <div className="flex w-[35%] flex-col border-r border-gray-800">
-          <div className="flex-1 min-h-0">
-            <Suspense fallback={
-              <textarea
-                value={source}
-                onChange={(e) => setSource(e.target.value)}
-                spellCheck={false}
-                className="h-full w-full resize-none bg-gray-950 font-mono text-xs text-gray-300 p-4 leading-relaxed focus:outline-none"
-              />
-            }>
-              <MonacoEditor
-                height="100%"
-                language={LANGUAGES.find((l) => l.id === language)?.monaco ?? "c"}
-                value={source}
-                onChange={(v) => setSource(v ?? "")}
-                theme="vs-dark"
-                options={{
-                  fontSize: 13,
-                  minimap: { enabled: false },
-                  lineNumbers: "on",
-                  scrollBeyondLastLine: false,
-                  renderLineHighlight: "none",
-                  overviewRulerLanes: 0,
-                  hideCursorInOverviewRuler: true,
-                  scrollbar: { vertical: "hidden", horizontal: "hidden" },
-                  padding: { top: 12 },
-                  wordWrap: "on",
-                  tabSize: 4,
-                  automaticLayout: true,
-                }}
-              />
-            </Suspense>
-          </div>
-          {compileError && (
-            <div className="shrink-0 border-t border-red-800/50 bg-red-950/20 p-3">
-              <pre className="font-mono text-xs text-red-400 whitespace-pre-wrap max-h-40 overflow-auto">
-                {compileError}
-              </pre>
-            </div>
-          )}
-        </div>
-
-        {/* Right: CPU state */}
-        <div className="flex flex-1 flex-col overflow-hidden">
-          {/* Pipeline stages */}
+        {/* Left+middle group — pipeline on top, code|disassembly below */}
+        <div className="flex flex-1 flex-col overflow-hidden border-r border-gray-800">
+          {/* Pipeline stages — spans full width of this group (not over registers) */}
           <div className="shrink-0 border-b border-gray-800 px-3 py-2">
             <div className="mb-1.5 text-[10px] font-semibold uppercase tracking-widest text-gray-600">
               Pipeline
@@ -481,7 +438,6 @@ export function CPUDebugger() {
                 })}
               </div>
             </TooltipProvider>
-            {/* Narrative: what just happened this cycle */}
             {narrative && (
               <p className="mt-1.5 text-[11px] text-gray-400 leading-relaxed">
                 {narrative}
@@ -489,25 +445,68 @@ export function CPUDebugger() {
             )}
           </div>
 
-          {/* Disassembly + registers split */}
+          {/* Code editor + disassembly side-by-side below the pipeline */}
           <div className="flex flex-1 overflow-hidden">
+            {/* Code editor */}
+            <div className="flex w-[45%] flex-col border-r border-gray-800">
+              <div className="flex-1 min-h-0">
+                <Suspense fallback={
+                  <textarea
+                    value={source}
+                    onChange={(e) => setSource(e.target.value)}
+                    spellCheck={false}
+                    className="h-full w-full resize-none bg-gray-950 font-mono text-xs text-gray-300 p-4 leading-relaxed focus:outline-none"
+                  />
+                }>
+                  <MonacoEditor
+                    height="100%"
+                    language={LANGUAGES.find((l) => l.id === language)?.monaco ?? "c"}
+                    value={source}
+                    onChange={(v) => setSource(v ?? "")}
+                    theme="vs-dark"
+                    options={{
+                      fontSize: 13,
+                      minimap: { enabled: false },
+                      lineNumbers: "on",
+                      scrollBeyondLastLine: false,
+                      renderLineHighlight: "none",
+                      overviewRulerLanes: 0,
+                      hideCursorInOverviewRuler: true,
+                      scrollbar: { vertical: "hidden", horizontal: "hidden" },
+                      padding: { top: 12 },
+                      wordWrap: "on",
+                      tabSize: 4,
+                      automaticLayout: true,
+                    }}
+                  />
+                </Suspense>
+              </div>
+              {compileError && (
+                <div className="shrink-0 border-t border-red-800/50 bg-red-950/20 p-3">
+                  <pre className="font-mono text-xs text-red-400 whitespace-pre-wrap max-h-40 overflow-auto">
+                    {compileError}
+                  </pre>
+                </div>
+              )}
+            </div>
+
             {/* Disassembly */}
-            <div className="flex flex-[4] flex-col overflow-hidden border-r border-gray-800">
+            <div className="flex flex-1 flex-col overflow-hidden">
               <div className="shrink-0 border-b border-gray-800 px-4 py-1.5 text-[10px] font-semibold uppercase tracking-widest text-gray-600">
                 Disassembly
               </div>
               <DisasmPane lines={disasmLines} stages={pipelineStages} />
             </div>
+          </div>
+        </div>
 
-            {/* Register file */}
-            <div className="flex flex-[3] flex-col overflow-hidden">
-              <div className="shrink-0 border-b border-gray-800 px-4 py-1.5 text-[10px] font-semibold uppercase tracking-widest text-gray-600">
-                Registers
-              </div>
-              <div className="flex-1 overflow-y-auto p-4">
-                <RegisterFile registers={registers} changed={changedRegisters} />
-              </div>
-            </div>
+        {/* Right column — registers, full height */}
+        <div className="flex w-[300px] shrink-0 flex-col overflow-hidden">
+          <div className="shrink-0 border-b border-gray-800 px-4 py-1.5 text-[10px] font-semibold uppercase tracking-widest text-gray-600">
+            Registers
+          </div>
+          <div className="flex-1 overflow-y-auto p-4">
+            <RegisterFile registers={registers} changed={changedRegisters} />
           </div>
         </div>
       </div>

@@ -335,7 +335,8 @@ function DemoGallery() {
             description="Write C, C++, or Rust, compile it with the GCC RISC-V toolchain, and watch it execute instruction by instruction on a real 5-stage pipelined RISC-V CPU."
             href="/learn/rv32i-cpu"
             accent="blue"
-            snippet={`const RV32I_CPU = circuit('RV32I_CPU', {\n  // IF → ID → EX → MEM → WB\n  nodes: {\n    ifid_pc: Register,\n    idex_pc: Register,\n    exmem_alu: Register,\n    memwb_rd: Register,\n    // ...+280 lines\n  },\n})`}
+            image="/og/rv32i-debugger.png"
+            imageAlt="RV32I CPU debugger: Rust source, 5-stage pipeline, disassembly with stage badges, and live registers"
           />
         </div>
 
@@ -964,13 +965,18 @@ function ComplexDemoCard({
   href,
   accent,
   snippet,
+  image,
+  imageAlt,
 }: {
   title: string;
   subtitle: string;
   description: string;
   href: string;
   accent: "blue" | "violet";
-  snippet: string;
+  snippet?: string;
+  /** Optional preview image (e.g. screenshot). Renders instead of `snippet`. */
+  image?: string;
+  imageAlt?: string;
 }) {
   const accentColor =
     accent === "blue" ? "text-blue-600 dark:text-blue-400/70" : "text-violet-600 dark:text-violet-400/70";
@@ -979,7 +985,7 @@ function ComplexDemoCard({
   const bgColor =
     accent === "blue" ? "from-blue-50 dark:from-blue-950/20" : "from-violet-50 dark:from-violet-950/20";
 
-  const coloredSnippet = snippet.split("\n").map((line, i) => {
+  const coloredSnippet = (snippet ?? "").split("\n").map((line, i) => {
     const isComment = line.trim().startsWith("//");
     const isCircuit = line.startsWith("circuit");
     const isNode = line.trim().startsWith("node");
@@ -1005,12 +1011,23 @@ function ComplexDemoCard({
     <div
       className={`flex flex-col rounded-lg border ${borderColor} overflow-hidden bg-gradient-to-br ${bgColor} to-card`}
     >
-      <div
-        className="flex-1 px-5 pt-5 pb-3 font-mono text-[12px] leading-6"
-        style={{ height: 240 }}
-      >
-        {coloredSnippet}
-      </div>
+      {image ? (
+        <Link to={href} className="block bg-[#0a0a0a]" style={{ height: 360 }}>
+          <img
+            src={image}
+            alt={imageAlt ?? title}
+            loading="lazy"
+            className="h-full w-full object-cover object-left-top"
+          />
+        </Link>
+      ) : (
+        <div
+          className="flex-1 px-5 pt-5 pb-3 font-mono text-[12px] leading-6"
+          style={{ height: 240 }}
+        >
+          {coloredSnippet}
+        </div>
+      )}
       <div className="border-t border-border px-4 py-3 flex items-end justify-between gap-4">
         <div>
           <div className="text-[13px] font-semibold text-foreground">{title}</div>
