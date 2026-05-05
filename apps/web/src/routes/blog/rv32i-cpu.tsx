@@ -119,10 +119,7 @@ function RV32ICPUPage() {
         </ErrorBoundary>
       </div>
 
-      <BlogFooter
-        slug="rv32i-cpu"
-        tagline="Every circuit on this page is simulated in your browser. The CPU is real — compile C and watch it execute."
-      />
+      <BlogFooter slug="rv32i-cpu" />
     </>
   );
 }
