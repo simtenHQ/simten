@@ -8,7 +8,7 @@ export function ThemeToggle() {
 
   React.useEffect(() => setMounted(true), []);
 
-  if (!mounted) return <div className="w-9 h-9" />;
+  if (!mounted) return <div className="w-7 h-7" />;
 
   return (
     <Button
@@ -16,9 +16,9 @@ export function ThemeToggle() {
       size="sm"
       onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
       aria-label={`Switch to ${resolvedTheme === "dark" ? "light" : "dark"} mode`}
-      className="w-9 h-9 p-0"
+      className="w-7 h-7 p-0"
     >
-      <svg className="w-5 h-4" viewBox="0 0 20 14" fill="none" strokeLinecap="square" strokeLinejoin="miter">
+      <svg className="w-[18px] h-[18px]" viewBox="0 0 20 14" fill="none" strokeLinecap="square" strokeLinejoin="miter">
         {resolvedTheme === "dark" ? (
           /* Low: ____|____ */
           <polyline points="1,12 19,12" stroke="currentColor" strokeWidth="1.5" />

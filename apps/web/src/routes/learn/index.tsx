@@ -14,16 +14,10 @@ export const Route = createFileRoute("/learn/")({
 
 function LearnIndexPage() {
   return (
-    <div className="min-h-screen bg-gray-950 text-gray-100">
+    <div className="bg-gray-950 text-gray-100">
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pb-24">
         <section className="py-16 md:py-24">
-          <Link
-            to="/"
-            className="text-sm text-gray-500 hover:text-gray-300 transition-colors"
-          >
-            &larr; Home
-          </Link>
-          <h1 className="mt-8 text-4xl md:text-5xl font-bold tracking-tight text-white leading-tight">
+          <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-white leading-tight">
             Learn
           </h1>
           <p className="mt-6 text-xl text-gray-400 leading-relaxed max-w-2xl">
