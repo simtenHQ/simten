@@ -1,14 +1,21 @@
+<div align="center">
+
+<img src="apps/web/public/favicon.svg" width="80" alt="Simten" />
+
 # Simten
 
-A TypeScript-native digital circuit simulator and visual editor for learning hardware design.
+**A TypeScript-native digital circuit simulator.**
+
+Build hardware in TypeScript. Simulate it live in the browser. From single
+gates to a full RISC-V CPU running compiled C — all from one typed IR.
+
+[**Live Demo →**](https://simten.dev) &nbsp;·&nbsp; [Docs](https://simten.dev/docs) &nbsp;·&nbsp; [Blog](https://simten.dev/blog)
 
 [![CI](https://github.com/simtenHQ/simten/actions/workflows/ci.yml/badge.svg)](https://github.com/simtenHQ/simten/actions/workflows/ci.yml)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue?logo=typescript)](https://www.typescriptlang.org/)
 [![Cloudflare Workers](https://img.shields.io/badge/deployed_on-Cloudflare-F38020?logo=cloudflare)](https://developers.cloudflare.com/workers/)
 
-**[Live Demo → simten.dev](https://simten.dev)**
-
-![AI builds and simulates hardware in your browser — Claude generates a half-adder circuit and runs it live](docs/assets/claude-demo.gif)
+</div>
 
 ## Why?
 
