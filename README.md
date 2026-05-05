@@ -8,8 +8,9 @@
 
 Build digital hardware that scales from a single gate to a full pipelined CPU
 — all in TypeScript, simulated live in the browser. Use any npm package to
-drive your circuits (`fast-check` for property testing, `figlet` for inputs,
-your own libraries). Export to synthesisable Verilog when you're done.
+drive your circuits (`fast-check` for property testing, `pcap-parser` to feed
+real network captures through your hardware Ethernet parser, your own
+libraries). Export to synthesisable Verilog when you're done.
 
 [**Live Demo →**](https://simten.dev) &nbsp;·&nbsp; [Docs](https://simten.dev/docs) &nbsp;·&nbsp; [Blog](https://simten.dev/blog)
 
