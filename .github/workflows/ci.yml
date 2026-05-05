@@ -114,4 +114,11 @@ jobs:
         run: pnpm --filter @simten/ui test
 
       - name: Build web app
+        # Cloudflare API creds are required for the prerender step — the
+        # Cloudflare vite plugin spins up a preview server at build time.
+        # Locally these come from .env via dotenv-cli; in CI they come from
+        # GitHub Actions secrets (Settings → Secrets and variables → Actions).
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: pnpm --filter @simten/web build
