@@ -6,8 +6,10 @@
 
 **A TypeScript-native digital circuit simulator.**
 
-Build hardware in TypeScript. Simulate it live in the browser. From single
-gates to a full RISC-V CPU running compiled C — all from one typed IR.
+Build digital hardware that scales from a single gate to a full pipelined CPU
+— all in TypeScript, simulated live in the browser. Use any npm package to
+drive your circuits (`fast-check` for property testing, `figlet` for inputs,
+your own libraries). Export to synthesisable Verilog when you're done.
 
 [**Live Demo →**](https://simten.dev) &nbsp;·&nbsp; [Docs](https://simten.dev/docs) &nbsp;·&nbsp; [Blog](https://simten.dev/blog)
 
