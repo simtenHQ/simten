@@ -3,15 +3,16 @@ import { Outlet } from '@tanstack/react-router'
 import { ThemeProvider } from '../components/ThemeProvider'
 import { SiteHeader } from '../components/SiteHeader'
 import { SiteNavLinks } from '../components/SiteNavLinks'
+import { SiteFooter } from '../components/SiteFooter'
 import { RootProvider } from 'fumadocs-ui/provider/tanstack'
 import { SandboxProvider } from '@simten/ui/sandbox'
 
 import appCss from '../styles.css?url'
 
-// Routes that render their own SiteHeader with custom right-slot content
-// (the editor and the RV32I debugger pass tool controls in the right slot
-// instead of nav links). They suppress the default content-pages header.
-const ROUTES_WITHOUT_DEFAULT_HEADER = new Set(['/editor', '/learn/rv32i-cpu'])
+// Tool routes render their own SiteHeader with custom right-slot content
+// (the editor and the RV32I debugger pass tool controls instead of nav
+// links). They also have no SiteFooter — tool pages stay focused.
+const ROUTES_WITHOUT_DEFAULT_CHROME = new Set(['/editor', '/learn/rv32i-cpu'])
 
 const SITE_URL = 'https://simten.dev'
 const SITE_NAME = 'Simten'
@@ -60,7 +61,7 @@ export const Route = createRootRoute({
 
 function RootComponent() {
   const matches = useMatches()
-  const skipDefaultHeader = matches.some((m) => ROUTES_WITHOUT_DEFAULT_HEADER.has(m.routeId))
+  const skipDefaultChrome = matches.some((m) => ROUTES_WITHOUT_DEFAULT_CHROME.has(m.routeId))
 
   return (
     <html lang="en" className="dark" suppressHydrationWarning>
@@ -71,8 +72,9 @@ function RootComponent() {
         <RootProvider search={{ preload: false }}>
           <ThemeProvider defaultTheme="dark">
             <SandboxProvider>
-              {!skipDefaultHeader && <SiteHeader right={<SiteNavLinks />} />}
+              {!skipDefaultChrome && <SiteHeader right={<SiteNavLinks />} />}
               <Outlet />
+              {!skipDefaultChrome && <SiteFooter />}
             </SandboxProvider>
           </ThemeProvider>
         </RootProvider>
