@@ -3,6 +3,7 @@ import { useState, useRef, useEffect, lazy, Suspense } from "react";
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
 import { useRV32IDebugger, ABI_NAMES, type PipelineStages, type DisasmLine } from "./useRV32IDebugger";
 import { explainInstruction } from "./rv32i-explain";
+import { SiteHeader } from "@/components/SiteHeader";
 
 const MonacoEditor = lazy(() => import("@monaco-editor/react"));
 
@@ -332,82 +333,88 @@ export function CPUDebugger() {
         </div>
       )}
 
-      {/* Top bar */}
-      <div className="flex shrink-0 items-center gap-2 flex-wrap border-b border-gray-800 bg-gray-900 px-3 py-2">
-        <span className="text-sm font-semibold text-gray-200">RV32I CPU</span>
-        <div className="h-4 w-px bg-gray-700" />
-
-        {/* Language selector */}
-        <div className="flex gap-1">
-          {LANGUAGES.map((l) => (
-            <button
-              key={l.id}
-              onClick={() => handleLanguageChange(l.id)}
-              className={`px-2.5 py-1 rounded text-xs font-medium transition-colors ${
-                language === l.id
-                  ? "bg-blue-600 text-white"
-                  : "text-gray-400 hover:text-gray-200 hover:bg-gray-800"
-              }`}
-            >
-              {l.label}
-            </button>
-          ))}
-        </div>
-
-        <div className="h-4 w-px bg-gray-700" />
-
-        {/* Compile button */}
-        <button
-          onClick={handleCompile}
-          disabled={compiling}
-          className="px-3 py-1 rounded text-xs font-medium bg-blue-600 hover:bg-blue-500 text-white transition-colors disabled:opacity-50"
-        >
-          {compiling ? "Compiling…" : "Compile"}
-        </button>
-
-        {/* Simulator controls — only when loaded */}
-        {sim.ready && (
-          <>
-            <div className="h-4 w-px bg-gray-700" />
-            <button
-              onClick={sim.tick}
-              disabled={isRunning}
-              className="px-3 py-1 rounded text-xs font-medium bg-gray-700 hover:bg-gray-600 text-gray-200 transition-colors disabled:opacity-40"
-            >
-              Step
-            </button>
-            <button
-              onClick={() => setIsRunning(!isRunning)}
-              className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
-                isRunning
-                  ? "bg-amber-600 hover:bg-amber-500 text-white"
-                  : "bg-green-700 hover:bg-green-600 text-white"
-              }`}
-            >
-              {isRunning ? "Pause" : "Run"}
-            </button>
-            <button
-              onClick={reset}
-              className="px-3 py-1 rounded text-xs font-medium bg-gray-700 hover:bg-gray-600 text-gray-200 transition-colors"
-            >
-              Reset
-            </button>
-            <span className="ml-1 font-mono text-xs text-gray-500 tabular-nums">
-              Cycle {sim.cycleCount.toLocaleString()}
+      {/* Top bar — SiteHeader (brand on left) + tool controls in the right slot */}
+      <SiteHeader
+        sticky={false}
+        right={
+          <div className="flex flex-1 items-center gap-2 flex-wrap justify-end">
+            <span className="text-sm font-semibold text-foreground/80 mr-auto pl-2 border-l border-border">
+              RV32I CPU
             </span>
-          </>
-        )}
 
-        {loading && (
-          <>
-            <div className="h-4 w-px bg-gray-700" />
-            <div className="flex items-center gap-2 text-xs text-gray-500">
-              <div className="h-3 w-3 animate-spin rounded-full border border-gray-600 border-t-blue-400" />
-              Building simulator…
+            {/* Language selector */}
+            <div className="flex gap-1">
+              {LANGUAGES.map((l) => (
+                <button
+                  key={l.id}
+                  onClick={() => handleLanguageChange(l.id)}
+                  className={`px-2.5 py-1 rounded text-xs font-medium transition-colors ${
+                    language === l.id
+                      ? "bg-blue-600 text-white"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                  }`}
+                >
+                  {l.label}
+                </button>
+              ))}
             </div>
-          </>
-        )}
-      </div>
+
+            <div className="h-4 w-px bg-border" />
+
+            {/* Compile button */}
+            <button
+              onClick={handleCompile}
+              disabled={compiling}
+              className="px-3 py-1 rounded text-xs font-medium bg-blue-600 hover:bg-blue-500 text-white transition-colors disabled:opacity-50"
+            >
+              {compiling ? "Compiling…" : "Compile"}
+            </button>
+
+            {/* Simulator controls — only when loaded */}
+            {sim.ready && (
+              <>
+                <div className="h-4 w-px bg-border" />
+                <button
+                  onClick={sim.tick}
+                  disabled={isRunning}
+                  className="px-3 py-1 rounded text-xs font-medium bg-muted hover:bg-muted/80 text-foreground transition-colors disabled:opacity-40"
+                >
+                  Step
+                </button>
+                <button
+                  onClick={() => setIsRunning(!isRunning)}
+                  className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
+                    isRunning
+                      ? "bg-amber-600 hover:bg-amber-500 text-white"
+                      : "bg-green-700 hover:bg-green-600 text-white"
+                  }`}
+                >
+                  {isRunning ? "Pause" : "Run"}
+                </button>
+                <button
+                  onClick={reset}
+                  className="px-3 py-1 rounded text-xs font-medium bg-muted hover:bg-muted/80 text-foreground transition-colors"
+                >
+                  Reset
+                </button>
+                <span className="ml-1 font-mono text-xs text-muted-foreground tabular-nums">
+                  Cycle {sim.cycleCount.toLocaleString()}
+                </span>
+              </>
+            )}
+
+            {loading && (
+              <>
+                <div className="h-4 w-px bg-border" />
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <div className="h-3 w-3 animate-spin rounded-full border border-muted-foreground/30 border-t-blue-400" />
+                  Building simulator…
+                </div>
+              </>
+            )}
+          </div>
+        }
+      />
 
       {/* Main content */}
       <div className="flex flex-1 overflow-hidden">

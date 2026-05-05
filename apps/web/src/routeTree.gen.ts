@@ -14,8 +14,7 @@ import { Route as BlogRouteImport } from './routes/blog'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as LearnIndexRouteImport } from './routes/learn/index'
 import { Route as BlogIndexRouteImport } from './routes/blog/index'
-import { Route as LearnDualCpuRouteImport } from './routes/learn/dual-cpu'
-import { Route as LearnCpuRouteImport } from './routes/learn/cpu'
+import { Route as LearnRv32iCpuRouteImport } from './routes/learn/rv32i-cpu'
 import { Route as DocsSplatRouteImport } from './routes/docs/$'
 import { Route as BlogSortingNetworksRouteImport } from './routes/blog/sorting-networks'
 import { Route as BlogSnakeInHardwareRouteImport } from './routes/blog/snake-in-hardware'
@@ -57,14 +56,9 @@ const BlogIndexRoute = BlogIndexRouteImport.update({
   path: '/',
   getParentRoute: () => BlogRoute,
 } as any)
-const LearnDualCpuRoute = LearnDualCpuRouteImport.update({
-  id: '/learn/dual-cpu',
-  path: '/learn/dual-cpu',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const LearnCpuRoute = LearnCpuRouteImport.update({
-  id: '/learn/cpu',
-  path: '/learn/cpu',
+const LearnRv32iCpuRoute = LearnRv32iCpuRouteImport.update({
+  id: '/learn/rv32i-cpu',
+  path: '/learn/rv32i-cpu',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DocsSplatRoute = DocsSplatRouteImport.update({
@@ -165,8 +159,7 @@ export interface FileRoutesByFullPath {
   '/blog/snake-in-hardware': typeof BlogSnakeInHardwareRoute
   '/blog/sorting-networks': typeof BlogSortingNetworksRoute
   '/docs/$': typeof DocsSplatRoute
-  '/learn/cpu': typeof LearnCpuRoute
-  '/learn/dual-cpu': typeof LearnDualCpuRoute
+  '/learn/rv32i-cpu': typeof LearnRv32iCpuRoute
   '/blog/': typeof BlogIndexRoute
   '/learn/': typeof LearnIndexRoute
 }
@@ -188,8 +181,7 @@ export interface FileRoutesByTo {
   '/blog/snake-in-hardware': typeof BlogSnakeInHardwareRoute
   '/blog/sorting-networks': typeof BlogSortingNetworksRoute
   '/docs/$': typeof DocsSplatRoute
-  '/learn/cpu': typeof LearnCpuRoute
-  '/learn/dual-cpu': typeof LearnDualCpuRoute
+  '/learn/rv32i-cpu': typeof LearnRv32iCpuRoute
   '/blog': typeof BlogIndexRoute
   '/learn': typeof LearnIndexRoute
 }
@@ -213,8 +205,7 @@ export interface FileRoutesById {
   '/blog/snake-in-hardware': typeof BlogSnakeInHardwareRoute
   '/blog/sorting-networks': typeof BlogSortingNetworksRoute
   '/docs/$': typeof DocsSplatRoute
-  '/learn/cpu': typeof LearnCpuRoute
-  '/learn/dual-cpu': typeof LearnDualCpuRoute
+  '/learn/rv32i-cpu': typeof LearnRv32iCpuRoute
   '/blog/': typeof BlogIndexRoute
   '/learn/': typeof LearnIndexRoute
 }
@@ -239,8 +230,7 @@ export interface FileRouteTypes {
     | '/blog/snake-in-hardware'
     | '/blog/sorting-networks'
     | '/docs/$'
-    | '/learn/cpu'
-    | '/learn/dual-cpu'
+    | '/learn/rv32i-cpu'
     | '/blog/'
     | '/learn/'
   fileRoutesByTo: FileRoutesByTo
@@ -262,8 +252,7 @@ export interface FileRouteTypes {
     | '/blog/snake-in-hardware'
     | '/blog/sorting-networks'
     | '/docs/$'
-    | '/learn/cpu'
-    | '/learn/dual-cpu'
+    | '/learn/rv32i-cpu'
     | '/blog'
     | '/learn'
   id:
@@ -286,8 +275,7 @@ export interface FileRouteTypes {
     | '/blog/snake-in-hardware'
     | '/blog/sorting-networks'
     | '/docs/$'
-    | '/learn/cpu'
-    | '/learn/dual-cpu'
+    | '/learn/rv32i-cpu'
     | '/blog/'
     | '/learn/'
   fileRoutesById: FileRoutesById
@@ -298,8 +286,7 @@ export interface RootRouteChildren {
   EditorRoute: typeof EditorRoute
   ApiSearchRoute: typeof ApiSearchRoute
   DocsSplatRoute: typeof DocsSplatRoute
-  LearnCpuRoute: typeof LearnCpuRoute
-  LearnDualCpuRoute: typeof LearnDualCpuRoute
+  LearnRv32iCpuRoute: typeof LearnRv32iCpuRoute
   LearnIndexRoute: typeof LearnIndexRoute
 }
 
@@ -340,18 +327,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BlogIndexRouteImport
       parentRoute: typeof BlogRoute
     }
-    '/learn/dual-cpu': {
-      id: '/learn/dual-cpu'
-      path: '/learn/dual-cpu'
-      fullPath: '/learn/dual-cpu'
-      preLoaderRoute: typeof LearnDualCpuRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/learn/cpu': {
-      id: '/learn/cpu'
-      path: '/learn/cpu'
-      fullPath: '/learn/cpu'
-      preLoaderRoute: typeof LearnCpuRouteImport
+    '/learn/rv32i-cpu': {
+      id: '/learn/rv32i-cpu'
+      path: '/learn/rv32i-cpu'
+      fullPath: '/learn/rv32i-cpu'
+      preLoaderRoute: typeof LearnRv32iCpuRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/docs/$': {
@@ -504,8 +484,7 @@ const rootRouteChildren: RootRouteChildren = {
   EditorRoute: EditorRoute,
   ApiSearchRoute: ApiSearchRoute,
   DocsSplatRoute: DocsSplatRoute,
-  LearnCpuRoute: LearnCpuRoute,
-  LearnDualCpuRoute: LearnDualCpuRoute,
+  LearnRv32iCpuRoute: LearnRv32iCpuRoute,
   LearnIndexRoute: LearnIndexRoute,
 }
 export const routeTree = rootRouteImport

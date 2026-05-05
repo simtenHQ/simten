@@ -3,6 +3,16 @@
 @import "fumadocs-ui/css/neutral.css";
 @import "fumadocs-ui/css/preset.css";
 
+/* Push fumadocs's docs layout (sidebar, collapsed-sidebar trigger, TOC,
+   mobile header) down by the height of our SiteHeader (h-12 = 48px).
+   Fumadocs's row offsets cascade from --fd-banner-height (see its
+   container.js: --fd-docs-row-1 = var(--fd-banner-height, 0px)), so
+   redefining it shifts the whole layout. We're not using fumadocs's
+   banner — this just hijacks the slot. See lib/layout.shared.tsx. */
+:root {
+	--fd-banner-height: 48px;
+}
+
 @source "../../../packages/ui/src/**/*.tsx";
 
 @custom-variant dark (&:is(.dark *));
