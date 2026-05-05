@@ -4,7 +4,6 @@ import { useCircuitSimulator, CircuitEmbed } from "@simten/embed";
 import { circuit, bit } from "@simten/core/circuit";
 import { Xor, And, Or, Not, DFlipFlop, Constant } from "@simten/core/std";
 import { Eth_FrameInput, Eth_FrameParser, Eth_CRC32, Eth_ProtocolDecoder, Eth_AddrClassifier } from "@simten/core/std";
-import { Logo } from "@/components/Logo";
 import { HighlightedCode } from "@/components/HighlightedCode";
 import { ClaudeCTA } from "@/features/splash/ClaudeCTA";
 import { ClaudeDemoSection } from "@/features/splash/ClaudeDemoSection";
@@ -569,26 +568,7 @@ fc.assert(
         </div>
       </div>
 
-      {/* Footer */}
-      <footer className="max-w-7xl mx-auto mt-32 pt-10 pb-16 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-4 px-4">
-        <div className="flex items-center gap-2.5">
-          <Logo size={18} className="text-muted-foreground/60" />
-          <span className="text-[12px] text-muted-foreground/60">Simten</span>
-        </div>
-        <div className="flex items-center gap-5">
-          <a href="/docs" className="text-[12px] text-muted-foreground/60 hover:text-foreground/80 transition-colors">Docs</a>
-          <Link to="/blog" className="text-[12px] text-muted-foreground/60 hover:text-foreground/80 transition-colors">Blog</Link>
-          <Link to="/learn" className="text-[12px] text-muted-foreground/60 hover:text-foreground/80 transition-colors">Learn</Link>
-          <a
-            href="https://github.com/simtenHQ/simten"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-[12px] text-muted-foreground/60 hover:text-foreground/80 transition-colors"
-          >
-            GitHub
-          </a>
-        </div>
-      </footer>
+      {/* SiteFooter is rendered globally in __root.tsx */}
     </div>
   );
 }
