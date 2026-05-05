@@ -132,7 +132,7 @@ function BuildingACPUPage() {
           </ErrorBoundary>
         </div>
 
-        <BlogFooter slug="building-a-cpu" tagline="Every circuit on this page is simulated from NAND gates in your browser. No shortcuts, no abstractions, no cheating." />
+        <BlogFooter slug="building-a-cpu" />
     </>
   );
 }
