@@ -8,6 +8,8 @@ A TypeScript-native digital circuit simulator and visual editor for learning har
 
 **[Live Demo → simten.dev](https://simten.dev)**
 
+![AI builds and simulates hardware in your browser — Claude generates a half-adder circuit and runs it live](docs/assets/claude-demo.gif)
+
 ## Why?
 
 Existing tools for learning digital logic fall into two camps: visual-only simulators like Logisim that don't scale past a handful of gates, and industrial HDLs like Verilog that require a full toolchain and offer no interactive feedback. Simten sits in the middle:
