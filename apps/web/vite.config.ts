@@ -39,6 +39,10 @@ const config = defineConfig(({ command }) => ({
       // /editor is sitemap-only (not prerendered): a Zustand store calls
       // nanoid() at module-init scope, which Cloudflare Workers forbids
       // (Disallowed operation in global scope). See follow-up #81.
+      // Prerender requires CLOUDFLARE_API_TOKEN at build time (TanStack
+      // spins up a Vite preview server, which the Cloudflare vite plugin
+      // bootstraps via the edge-preview API). Locally + CI inject the token
+      // through dotenv-cli / GH Actions secrets respectively.
       prerender: {
         enabled: true,
         crawlLinks: false,
