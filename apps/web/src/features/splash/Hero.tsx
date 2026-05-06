@@ -201,7 +201,8 @@ const FigletDemo = circuit('FigletDemo', {
     key: "half-adder",
     label: "Half adder",
     circuit: HalfAdder,
-    code: `const HalfAdder = circuit('HalfAdder', {
+    code: `// Adds two 1-bit numbers. sum = a XOR b, carry = a AND b.
+const HalfAdder = circuit('HalfAdder', {
   inputs: { a: bit, b: bit },
   outputs: { sum: bit, carry: bit },
   nodes: { xor1: Xor, and1: And },
@@ -224,7 +225,8 @@ const FigletDemo = circuit('FigletDemo', {
     key: "full-adder",
     label: "Full adder",
     circuit: FullAdder,
-    code: `const FullAdder = circuit('FullAdder', {
+    code: `// Adds two bits plus a carry-in. Chain N of these to build an N-bit adder.
+const FullAdder = circuit('FullAdder', {
   inputs: { a: bit, b: bit, cin: bit },
   outputs: { sum: bit, cout: bit },
   nodes: { xor1: Xor, xor2: Xor, and1: And, and2: And, or1: Or },
@@ -252,7 +254,8 @@ const FigletDemo = circuit('FigletDemo', {
     key: "counter",
     label: "2-bit counter",
     circuit: Counter2Bit,
-    code: `const Counter2Bit = circuit('Counter2Bit', {
+    code: `// Counts 0 → 1 → 2 → 3 → 0 on every clock tick using two flip-flops.
+const Counter2Bit = circuit('Counter2Bit', {
   outputs: { bit0: bit, bit1: bit },
   nodes: { dff0: DFlipFlop, dff1: DFlipFlop, inv: Not, xor1: Xor },
   connect: ({ outputs, nodes: { dff0, dff1, inv, xor1 } }) => [
@@ -272,7 +275,8 @@ const FigletDemo = circuit('FigletDemo', {
     key: "mux",
     label: "2-to-1 mux",
     circuit: Mux2to1,
-    code: `const Mux2to1 = circuit('Mux2to1', {
+    code: `// Picks input a or b based on sel. The basic building block for routing data.
+const Mux2to1 = circuit('Mux2to1', {
   inputs: { a: bit, b: bit, sel: bit },
   outputs: { out: bit },
   nodes: { not1: Not, and1: And, and2: And, or1: Or },
