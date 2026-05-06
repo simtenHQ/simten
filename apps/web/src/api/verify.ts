@@ -46,6 +46,18 @@ export async function handleVerify(
     );
   }
 
+  const rl = (env as { VERIFY_RL?: { limit: (k: { key: string }) => Promise<{ success: boolean }> } }).VERIFY_RL;
+  if (rl) {
+    const ip = request.headers.get("CF-Connecting-IP") ?? "unknown";
+    const { success } = await rl.limit({ key: ip });
+    if (!success) {
+      return Response.json(
+        { success: false, compileError: "Rate limit exceeded — try again in a minute" },
+        { status: 429 },
+      );
+    }
+  }
+
   const payload = { verilog: body.verilog, testbench: body.testbench };
 
   const reqInit: RequestInit = {

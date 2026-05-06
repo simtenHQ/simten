@@ -18,6 +18,18 @@ export async function handleCompile(
   request: Request,
   env: Record<string, unknown>,
 ): Promise<Response> {
+  const rl = (env as { COMPILE_RL?: { limit: (k: { key: string }) => Promise<{ success: boolean }> } }).COMPILE_RL;
+  if (rl) {
+    const ip = request.headers.get("CF-Connecting-IP") ?? "unknown";
+    const { success } = await rl.limit({ key: ip });
+    if (!success) {
+      return Response.json(
+        { success: false, error: "Rate limit exceeded — try again in a minute" },
+        { status: 429 },
+      );
+    }
+  }
+
   let body: { source?: string; language?: string; disassemble?: boolean };
   try {
     body = await request.json();
