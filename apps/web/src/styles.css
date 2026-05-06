@@ -3,6 +3,22 @@
 @import "fumadocs-ui/css/neutral.css";
 @import "fumadocs-ui/css/preset.css";
 
+@font-face {
+	font-family: "Geist";
+	src: url("/fonts/Geist-Variable.woff2") format("woff2-variations");
+	font-weight: 100 900;
+	font-style: normal;
+	font-display: swap;
+}
+
+@font-face {
+	font-family: "Geist Mono";
+	src: url("/fonts/GeistMono-Variable.woff2") format("woff2-variations");
+	font-weight: 100 900;
+	font-style: normal;
+	font-display: swap;
+}
+
 /* Push fumadocs's docs layout (sidebar, collapsed-sidebar trigger, TOC,
    mobile header) down by the height of our SiteHeader (h-12 = 48px).
    Fumadocs's row offsets cascade from --fd-banner-height (see its
