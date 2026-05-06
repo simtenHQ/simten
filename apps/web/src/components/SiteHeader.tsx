@@ -20,8 +20,8 @@ export function SiteHeader({ right, sticky = true }: { right?: React.ReactNode; 
         className="flex items-center gap-2 text-foreground transition-colors hover:text-foreground/80"
         aria-label="Simten — home"
       >
-        <Logo size={22} />
-        <span className="text-base font-semibold tracking-tight">Simten</span>
+        <Logo size={26} />
+        <span className="text-lg font-semibold tracking-tight">Simten</span>
       </Link>
       <div className="flex flex-1 items-center justify-end gap-3">
         {right}
