@@ -420,6 +420,19 @@ export function CompositeInspectorDialog({
     prevDepthRef.current = stack.length;
   }, [stack.length]);
 
+  // Lock body scroll while the inspector is open. This is a hand-rolled modal
+  // (motion.div + fixed positioning), so the browser doesn't lock scroll for
+  // us the way native <dialog> would. Without this, swiping the modal scrolls
+  // the page underneath. Tracked for proper Radix Dialog refactor in #84.
+  useEffect(() => {
+    if (!isOpen) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [isOpen]);
+
   const handleBackdropClick = useCallback(
     (e: React.MouseEvent) => {
       if (e.target === e.currentTarget) onClose();
