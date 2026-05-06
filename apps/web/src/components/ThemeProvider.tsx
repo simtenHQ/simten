@@ -28,6 +28,10 @@ export function ThemeProvider({ children, defaultTheme = "dark" }: { children: R
     const root = document.documentElement;
     root.classList.toggle("dark", theme === "dark");
     root.classList.toggle("light", theme === "light");
+    // Native scrollbars + form controls read `color-scheme` to pick light vs
+    // dark styling. Without this, the scrollbar stays in whatever state the
+    // page-load theme script set it to and never updates on toggle.
+    root.style.colorScheme = theme;
     localStorage.setItem("theme", theme);
   }, [theme]);
 
