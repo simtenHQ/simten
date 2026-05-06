@@ -2,7 +2,7 @@
  * Verify API Handler — proxies to the verifier container.
  *
  * Production: uses Cloudflare service binding.
- * Local dev:  falls back to Docker container on localhost:55002.
+ * Local dev:  falls back to wrangler dev on localhost:55002.
  */
 
 interface VerifyResponse {

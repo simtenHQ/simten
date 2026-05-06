@@ -2,7 +2,7 @@
  * Compile API Handler — proxies to the compiler container.
  *
  * Production: uses Cloudflare service binding (private, no public access).
- * Local dev:  falls back to Docker container on localhost:55000.
+ * Local dev:  falls back to wrangler dev on localhost:55001.
  */
 
 interface CompilerResponse {

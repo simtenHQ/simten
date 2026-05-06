@@ -26,7 +26,8 @@ import type { Project, FirmwareBuild } from '../../lib/types.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
-const COMPILER_URL = process.env.COMPILER_URL ?? 'https://compiler.charles-harris-de.workers.dev/compile';
+// Run `pnpm --filter @simten/compiler dev` first, or override with COMPILER_URL.
+const COMPILER_URL = process.env.COMPILER_URL ?? 'http://localhost:55001/compile';
 
 // Custom linker script: 2KB IMEM + 4KB DMEM (matches cpu_top.v declarations)
 const LINKER_SCRIPT = `

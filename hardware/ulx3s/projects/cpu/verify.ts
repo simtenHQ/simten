@@ -8,8 +8,11 @@
  *   3. Parse iverilog $display output → actual UART bytes
  *   4. Compare — if they differ, the bug is in the Verilog export.
  *
- * Usage: VERIFIER_URL=https://verifier.charles-harris-de.workers.dev/verify \
+ * Usage: pnpm --filter @simten/verifier dev   # in another terminal
  *        bun hardware/ulx3s/cpu_verify.ts
+ *
+ *        # or override the URL:
+ *        VERIFIER_URL=http://other-host/verify bun hardware/ulx3s/cpu_verify.ts
  *
  *        # or run a single firmware:
  *        bun hardware/ulx3s/cpu_verify.ts --hello      (hello.c)
@@ -22,7 +25,8 @@ import { slugify } from '@simten/core/util/test-name';
 import { runFirmware } from './sim.js';
 import { tests, type Test } from './tests.js';
 
-const VERIFIER_URL = process.env.VERIFIER_URL ?? 'https://verifier.charles-harris-de.workers.dev/verify';
+// Run `pnpm --filter @simten/verifier dev` first, or override with VERIFIER_URL.
+const VERIFIER_URL = process.env.VERIFIER_URL ?? 'http://localhost:55002/verify';
 
 // Load the CPU's Verilog — already exported to combined.v
 const combinedV = readFileSync(resolve(import.meta.dir, 'combined.v'), 'utf8');
@@ -193,7 +197,8 @@ SECTIONS {
     .bss : { __bss_start = .; *(.bss*) *(COMMON) __bss_end = .; } > DMEM
     __stack_top = ORIGIN(DMEM) + LENGTH(DMEM);
 }`;
-  const COMPILER_URL = process.env.COMPILER_URL ?? 'https://compiler.charles-harris-de.workers.dev/compile';
+  // Run `pnpm --filter @simten/compiler dev` first, or override with COMPILER_URL.
+  const COMPILER_URL = process.env.COMPILER_URL ?? 'http://localhost:55001/compile';
   const resp = await fetch(COMPILER_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
