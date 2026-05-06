@@ -298,6 +298,7 @@ function InspectorCanvas({
         theme={theme}
         showControls
         height="100%"
+        panOnMobile
       />
     </div>
   );

@@ -98,6 +98,13 @@ export interface CircuitCanvasProps {
   glowUnconnected?: boolean;
   /** Theme for the canvas. Defaults to "dark". */
   theme?: "light" | "dark";
+  /**
+   * Allow single-finger pan on mobile. Default false — inline embeds need
+   * the page to scroll naturally over them. Set to true inside modal/full-
+   * screen contexts (drill-down inspector, fullscreen mode) where there's
+   * no page scroll to compete with.
+   */
+  panOnMobile?: boolean;
 }
 
 // Default library — created once, reused
@@ -137,6 +144,7 @@ function CircuitCanvasInner({
   onPortClick: onPortClickProp,
   glowUnconnected,
   theme: themeProp,
+  panOnMobile = false,
 }: CircuitCanvasProps) {
   const detectedTheme = useDetectTheme();
   const theme = themeProp ?? detectedTheme;
@@ -375,7 +383,7 @@ function CircuitCanvasInner({
         nodesConnectable={false}
         elementsSelectable={true}
         selectionOnDrag={false}
-        panOnDrag={isMobile ? false : [1, 2]}
+        panOnDrag={isMobile && !panOnMobile ? false : [1, 2]}
         zoomOnScroll={true}
         zoomOnPinch={true}
         zoomOnDoubleClick={false}
