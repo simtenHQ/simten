@@ -22,7 +22,12 @@ function portPathKey(path: PortPath): string {
   return path.nodeId === '' ? `.${path.portName}` : `${path.nodeId}.${path.portName}`;
 }
 
-function getNodeTypeForComponent(componentRef: string, inputCount: number, outputCount: number): string {
+function getNodeTypeForComponent(
+  componentRef: string,
+  inputCount: number,
+  outputCount: number,
+  isComposite: boolean,
+): string {
   const typeMap: Record<string, string> = {
     Switch: 'inputNode',
     Input: 'numericInputNode',
@@ -53,6 +58,11 @@ function getNodeTypeForComponent(componentRef: string, inputCount: number, outpu
   };
 
   if (typeMap[componentRef]) return typeMap[componentRef];
+
+  // Composites always render as a generic gate box. The shape-based heuristics
+  // below only apply to primitives — a composite with 0 inputs (e.g. an internal
+  // counter that streams bytes) shouldn't be coerced into a toggle.
+  if (isComposite) return 'logicGateNode';
 
   if (inputCount === 0 && outputCount > 0) return 'inputNode';
   if (inputCount > 0 && outputCount === 0) return 'outputNode';
@@ -85,7 +95,8 @@ function projectCircuitToNodes(
     const outputCount = node.outputs.length;
     const inputNames = node.inputs.map((p) => p.name);
     const outputNames = node.outputs.map((p) => p.name);
-    const nodeType = getNodeTypeForComponent(node.componentRef, inputCount, outputCount);
+    const isComposite = componentDef.implementation.kind === 'composite';
+    const nodeType = getNodeTypeForComponent(node.componentRef, inputCount, outputCount, isComposite);
 
     let value: boolean | undefined = undefined;
     let numericValue: number | undefined = undefined;
@@ -207,9 +218,6 @@ function projectCircuitToNodes(
         }
       }
     }
-
-    const hasReferenceCircuit = false;
-    const isComposite = componentDef.implementation.kind === 'composite' || hasReferenceCircuit;
 
     reactFlowNodes.push({
       id: node.id,
