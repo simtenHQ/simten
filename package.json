@@ -13,6 +13,7 @@
     "deploy:web": "dotenv -- pnpm --filter @simten/web run deploy",
     "deploy:synth": "dotenv -- pnpm --filter @simten/synth run deploy",
     "deploy:verifier": "dotenv -- pnpm --filter @simten/verifier run deploy",
+    "deploy:compiler": "dotenv -- pnpm --filter @simten/compiler run deploy",
     "dev:all": "pnpm --filter @simten/web dev & pnpm --filter @simten/sandbox dev",
     "test": "tsx scripts/check-exports.ts && pnpm -r test",
     "check-exports": "tsx scripts/check-exports.ts",
