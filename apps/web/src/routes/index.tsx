@@ -2,13 +2,14 @@ import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useCircuitSimulator, CircuitEmbed } from "@simten/embed";
 import { circuit, bit } from "@simten/core/circuit";
-import { Xor, And, Or, Not, DFlipFlop, Constant } from "@simten/core/std";
+import { Xor, And, Or, DFlipFlop, Constant } from "@simten/core/std";
 import { Eth_FrameInput, Eth_FrameParser, Eth_CRC32, Eth_ProtocolDecoder, Eth_AddrClassifier } from "@simten/core/std";
 import { HighlightedCode } from "@/components/HighlightedCode";
 import { ClaudeCTA } from "@/features/splash/ClaudeCTA";
 import { ClaudeDemoSection } from "@/features/splash/ClaudeDemoSection";
 import { Hero } from "@/features/splash/Hero";
 import { useSnakeSimulator } from "@/features/blog/snake-in-hardware/useSnakeSimulator";
+import { usePongSimulator } from "@/features/blog/pong-in-hardware/usePongSimulator";
 
 // ============================================================================
 // Demo circuits
@@ -52,16 +53,6 @@ const ShiftRegister4 = circuit('ShiftRegister4', {
   ],
 });
 
-const Counter2Bit = circuit('Counter2Bit', {
-  outputs: { bit0: bit, bit1: bit },
-  nodes: { dff0: DFlipFlop, dff1: DFlipFlop, inv: Not, xor1: Xor },
-  connect: ({ outputs, nodes: { dff0, dff1, inv, xor1 } }) => [
-    dff0.q.to(inv.in, xor1.b, outputs.bit0),
-    inv.out.to(dff0.d),
-    dff1.q.to(xor1.a, outputs.bit1),
-    xor1.out.to(dff1.d),
-  ],
-});
 
 
 
@@ -172,39 +163,10 @@ function DemoGallery() {
           </h2>
         </div>
 
-        {/* Row 1: Featured demo (asymmetric) */}
-        <div className="grid grid-cols-1 sm:grid-cols-[1.4fr_1fr] gap-4 mb-4">
-          <CircuitEmbed
-            title="Half Adder"
-            subtitle="4 nodes · 6 connections"
-            description="XOR for sum, AND for carry — the foundation of digital arithmetic."
-            circuit={HalfAdder}
-            href="/editor"
-            height={300}
-            layout={{
-              a:     { x: 10,  y: 10 },
-              b:     { x: 10,  y: 170 },
-              dut:   { x: 220, y: 90 },
-              sum:   { x: 430, y: 10 },
-              carry: { x: 430, y: 170 },
-            }}
-          />
-          <div className="flex flex-col gap-4">
-            <CircuitEmbed
-              title="2-bit Counter"
-              subtitle="Sequential · clock-driven"
-              description="Two flip-flops count 00 → 01 → 10 → 11 → repeat."
-              circuit={Counter2Bit}
-              href="/editor"
-              height={140}
-              layout={{
-                dut:  { x: 10,  y: 20 },
-                bit0: { x: 210, y: 5 },
-                bit1: { x: 210, y: 75 },
-              }}
-            />
-            <SnakeCard />
-          </div>
+        {/* Row 1: Featured games — Pong on the left, Snake on the right */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+          <PongCard />
+          <SnakeCard />
         </div>
 
         {/* Row 1.5: Drill-down showcase */}
@@ -576,6 +538,130 @@ fc.assert(
 const GRID = 8;
 const PX = 24;
 const GAP = 2;
+
+// ============================================================================
+// Pong Card
+// ============================================================================
+
+const PONG_GRID = 16;
+const PONG_PX = 12;
+const PONG_GAP = 1;
+
+function usePongPixels(sequentialState: unknown): number[] {
+  return useMemo(() => {
+    const pixels = new Array(PONG_GRID * PONG_GRID).fill(0);
+    const state = sequentialState as { currentState?: Map<string, unknown> } | null;
+    if (!state?.currentState) return pixels;
+    for (const [nodeId, nodeState] of state.currentState) {
+      if (nodeState instanceof Map && nodeId.toLowerCase().includes("ram")) {
+        const mem = nodeState as Map<number, number>;
+        for (let addr = 0; addr < PONG_GRID * PONG_GRID; addr++) {
+          pixels[addr] = mem.get(addr) ?? 0;
+        }
+        break;
+      }
+    }
+    return pixels;
+  }, [sequentialState]);
+}
+
+function PongCard() {
+  const { sim, isRunning, setIsRunning } = usePongSimulator();
+  const pixels = usePongPixels(sim.sequentialState);
+  const total = PONG_GRID * PONG_PX + (PONG_GRID - 1) * PONG_GAP;
+
+  // Map a key code into the pong simulator's keyboard inputs.
+  // Codes match the values usePongSimulator listens for on the global keydown.
+  const sendKey = useCallback((code: number) => {
+    const nodes = sim.circuit?.nodes ?? [];
+    const ids: Record<string, string> = {};
+    for (const node of nodes) {
+      if (node.label === "keyboard0" || node.id === "keyboard0") ids.k0 = node.id;
+      if (node.label === "keyboard1" || node.id === "keyboard1") ids.k1 = node.id;
+    }
+    if (ids.k0) sim.setNodeValue(ids.k0, code);
+    if (ids.k1) sim.setNodeValue(ids.k1, code);
+    // Release after a brief moment so it acts as a tap, not a hold.
+    setTimeout(() => {
+      if (ids.k0) sim.setNodeValue(ids.k0, 0);
+      if (ids.k1) sim.setNodeValue(ids.k1, 0);
+    }, 80);
+  }, [sim]);
+
+  return (
+    <div className="flex flex-col rounded-lg border border-border overflow-hidden bg-card">
+      <div
+        className="flex items-center justify-center bg-black"
+        style={{ height: 240 }}
+      >
+        {sim.ready ? (
+          <svg
+            viewBox={`0 0 ${total} ${total}`}
+            width={total}
+            height={total}
+            style={{ imageRendering: "pixelated" }}
+          >
+            {pixels.map((val, i) => (
+              <rect
+                key={i}
+                x={(i % PONG_GRID) * (PONG_PX + PONG_GAP)}
+                y={Math.floor(i / PONG_GRID) * (PONG_PX + PONG_GAP)}
+                width={PONG_PX}
+                height={PONG_PX}
+                fill={val !== 0 ? "#22c55e" : "#111"}
+                rx={2}
+              />
+            ))}
+          </svg>
+        ) : (
+          <div className="text-muted-foreground/40 text-[11px] font-mono">Compiling…</div>
+        )}
+      </div>
+
+      <div className="border-t border-border px-4 py-3 flex items-end justify-between gap-4">
+        <div>
+          <div className="text-[13px] font-semibold text-foreground">Pong</div>
+          <div className="text-[11px] text-muted-foreground/60 font-mono mt-0.5">
+            ~80 nodes · zero software
+          </div>
+          <div className="flex items-center gap-1.5 mt-2">
+            <button
+              onClick={() => setIsRunning(!isRunning)}
+              disabled={!sim.ready}
+              className={`px-2.5 py-1 rounded text-[10px] font-medium transition-colors disabled:opacity-40 ${
+                isRunning
+                  ? "bg-amber-100 hover:bg-amber-200 text-amber-800 dark:bg-amber-800 dark:hover:bg-amber-700 dark:text-amber-200"
+                  : "bg-green-100 hover:bg-green-200 text-green-800 dark:bg-green-900 dark:hover:bg-green-800 dark:text-green-300"
+              }`}
+            >
+              {isRunning ? "Pause" : "Play"}
+            </button>
+            {(
+              [
+                ["↑", 17], // W
+                ["↓", 31], // S
+              ] as [string, number][]
+            ).map(([arrow, code]) => (
+              <button
+                key={code}
+                onPointerDown={() => sendKey(code)}
+                className="w-5 h-5 flex items-center justify-center rounded bg-muted hover:bg-accent text-muted-foreground text-[9px] transition-colors"
+              >
+                {arrow}
+              </button>
+            ))}
+          </div>
+        </div>
+        <Link
+          to="/blog/pong-in-hardware"
+          className="shrink-0 px-3 py-1.5 rounded border border-border text-[11px] text-foreground/80 hover:border-foreground/30 hover:text-foreground transition-colors"
+        >
+          Read post →
+        </Link>
+      </div>
+    </div>
+  );
+}
 
 function SnakeCard() {
   const { sim, pixels, isRunning, setIsRunning, sendDirection } = useSnakeSimulator();
