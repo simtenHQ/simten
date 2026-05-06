@@ -48,12 +48,11 @@ export const Route = createRootRoute({
       { rel: 'icon', href: '/favicon.svg', type: 'image/svg+xml' },
       // Note: rel="canonical" is set per-route via pageHead() in lib/seo.ts —
       // not here. Two canonical tags would force Google to pick one at random.
-      { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
-      { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossOrigin: 'anonymous' },
-      {
-        rel: 'stylesheet',
-        href: 'https://fonts.googleapis.com/css2?family=Geist:wght@100..900&family=Geist+Mono:wght@100..900&display=swap',
-      },
+      // Geist + Geist Mono are self-hosted — see /public/fonts and the
+      // @font-face rules in styles.css. Preload both so they're fetched in
+      // parallel with the HTML rather than discovered after CSS parses.
+      { rel: 'preload', href: '/fonts/Geist-Variable.woff2', as: 'font', type: 'font/woff2', crossOrigin: 'anonymous' },
+      { rel: 'preload', href: '/fonts/GeistMono-Variable.woff2', as: 'font', type: 'font/woff2', crossOrigin: 'anonymous' },
     ],
   }),
   component: RootComponent,
