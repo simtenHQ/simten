@@ -378,6 +378,8 @@ function CircuitCanvasInner({
         onNodesChange={onNodesChange}
         onNodeDoubleClick={handleNodeDoubleClick}
         fitView
+        minZoom={0.1}
+        maxZoom={3}
         fitViewOptions={{
           padding: 0.3,
           ...(focusLabels && {
