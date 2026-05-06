@@ -81,6 +81,17 @@ import { CircuitEmbed } from '@simten/embed'
 
 The embed auto-wraps the circuit with switches for inputs and LEDs for outputs.
 
+## AI assist (optional)
+
+Connect Claude (or any MCP client) to a running browser session and have it
+build, debug, and explain circuits in real time. The MCP server runs locally
+on your machine — no Anthropic calls happen on Simten's infrastructure, and
+AI assistance is opt-in.
+
+![Claude generates a half-adder circuit and runs it live in the browser](docs/assets/claude-demo.gif)
+
+See `packages/mcp/README.md` for setup.
+
 ## Project Structure
 
 ```
