@@ -65,7 +65,6 @@ r3 = 3·s0 ⊕ s1   ⊕ s2   ⊕ 2·s3`}</pre>
       <div className="mt-8">
         <CircuitEmbed
           circuit={entry.circuit}
-          height={420}
           showControls={false}
           title={entry.name}
           description={entry.description}

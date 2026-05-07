@@ -34,7 +34,6 @@ export function BufferSection() {
       <div className="mt-8">
         <CircuitEmbed
           circuit={entry.circuit}
-          height={280}
           showControls
           title={entry.name}
           description={entry.description}

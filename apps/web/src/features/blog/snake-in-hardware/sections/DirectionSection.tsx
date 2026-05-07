@@ -37,7 +37,6 @@ export function DirectionSection() {
         <CircuitEmbed
           circuit={SNAKE_CIRCUITS.directionDecoder.circuit}
           layout={SNAKE_CIRCUITS.directionDecoder.layout}
-          height={350}
           showControls
           title="Direction Decoder"
           description="Key code to deltaX/deltaY — try 72 (Up), 75 (Left), 77 (Right), 80 (Down)"

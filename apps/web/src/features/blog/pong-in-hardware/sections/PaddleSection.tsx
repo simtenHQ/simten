@@ -30,7 +30,6 @@ export function PaddleSection() {
       <div className="mt-8">
         <CircuitEmbed
           circuit={entry.circuit}
-          height={300}
           showControls={true}
           layout={entry.layout}
           title={entry.name}

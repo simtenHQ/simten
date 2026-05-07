@@ -28,7 +28,6 @@ export function IterationSection() {
       <div className="mt-8">
         <CircuitEmbed
           circuit={entry.circuit}
-          height={240}
           showControls={true}
           title={entry.name}
           description={entry.description}

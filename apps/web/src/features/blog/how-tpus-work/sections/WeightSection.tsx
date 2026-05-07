@@ -40,7 +40,6 @@ export function WeightSection() {
         <CircuitEmbed
           circuit={TPU_CIRCUITS.weightRegister.circuit}
           layout={TPU_CIRCUITS.weightRegister.layout}
-          height={350}
           showControls
           autoRunSpeed={400}
           title="Weight Register"

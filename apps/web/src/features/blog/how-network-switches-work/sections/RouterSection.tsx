@@ -33,7 +33,6 @@ export function RouterSection() {
       <div className="mt-8">
         <CircuitEmbed
           circuit={entry.circuit}
-          height={220}
           showControls={false}
           title={entry.name}
           description={entry.description}

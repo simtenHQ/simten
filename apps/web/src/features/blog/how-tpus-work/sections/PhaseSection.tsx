@@ -40,7 +40,6 @@ export function PhaseSection() {
         <CircuitEmbed
           circuit={TPU_CIRCUITS.wavefrontController.circuit}
           layout={TPU_CIRCUITS.wavefrontController.layout}
-          height={400}
           showControls
           autoRunSpeed={400}
           title="Wavefront Controller"
