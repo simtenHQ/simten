@@ -37,7 +37,6 @@ export function PixelsSection() {
         <CircuitEmbed
           circuit={SNAKE_CIRCUITS.simpleFramebuffer.circuit}
           layout={SNAKE_CIRCUITS.simpleFramebuffer.layout}
-          height={350}
           showControls
           title="Simple Framebuffer"
           description="DualPortRAM + Screen: toggle write-enable, set address and data, then tick to write a pixel"

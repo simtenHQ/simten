@@ -64,7 +64,6 @@ export function PESection() {
         <CircuitEmbed
           circuit={TPU_CIRCUITS.processingElement.circuit}
           layout={TPU_CIRCUITS.processingElement.layout}
-          height={400}
           showControls
           autoRunSpeed={400}
           title="Processing Element (PE_Systolic)"

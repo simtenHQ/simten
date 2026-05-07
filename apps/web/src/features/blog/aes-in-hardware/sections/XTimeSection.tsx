@@ -59,7 +59,6 @@ export function XTimeSection() {
       <div className="mt-8">
         <CircuitEmbed
           circuit={entry.circuit}
-          height={360}
           showControls={false}
           title={entry.name}
           description={entry.description}

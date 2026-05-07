@@ -33,7 +33,6 @@ export function AdderSection() {
       <div className="mt-8">
         <CircuitEmbed
           circuit={BLOG_CIRCUITS.adder4bit.circuit}
-          height={380}
           title="4-Bit Ripple-Carry Adder"
           description="Set A and B in binary, watch the carry propagate"
         />

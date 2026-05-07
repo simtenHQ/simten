@@ -38,7 +38,6 @@ export function MemorySection() {
           </p>
           <CircuitEmbed
             circuit={BLOG_CIRCUITS.srLatch.circuit}
-            height={260}
             title="SR Latch"
             description="Set stores a 1, Reset clears to 0"
           />
@@ -57,7 +56,6 @@ export function MemorySection() {
           </p>
           <CircuitEmbed
             circuit={BLOG_CIRCUITS.dFlipFlop.circuit}
-            height={220}
             showControls
             title="D Flip-Flop"
             description="Captures input on each clock tick"
@@ -77,7 +75,6 @@ export function MemorySection() {
           </p>
           <CircuitEmbed
             circuit={BLOG_CIRCUITS.register4bit.circuit}
-            height={350}
             showControls
             title="4-Bit Register"
             description="Stores 4 bits simultaneously on each clock tick"

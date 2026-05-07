@@ -36,7 +36,6 @@ export function AddressingSection() {
         <CircuitEmbed
           circuit={SNAKE_CIRCUITS.coordToPixel.circuit}
           layout={SNAKE_CIRCUITS.coordToPixel.layout}
-          height={350}
           showControls
           title="Coordinate to Pixel Address"
           description="(Y << 3) + X — the shift is just wiring, only the final add is a real gate"

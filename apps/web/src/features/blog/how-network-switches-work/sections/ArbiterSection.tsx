@@ -35,7 +35,6 @@ export function ArbiterSection() {
       <div className="mt-8">
         <CircuitEmbed
           circuit={entry.circuit}
-          height={260}
           showControls={false}
           title={entry.name}
           description={entry.description}

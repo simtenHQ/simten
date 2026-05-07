@@ -34,7 +34,6 @@ export function LFSRSection() {
       <div className="mt-8">
         <CircuitEmbed
           circuit={entry.circuit}
-          height={220}
           showControls={true}
           title={entry.name}
           description={entry.description}

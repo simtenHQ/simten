@@ -46,7 +46,6 @@ export function WeightFlowSection() {
         <CircuitEmbed
           circuit={TPU_CIRCUITS.twoPEColumn.circuit}
           layout={TPU_CIRCUITS.twoPEColumn.layout}
-          height={400}
           showControls
           autoRunSpeed={400}
           title="Two-PE Column"

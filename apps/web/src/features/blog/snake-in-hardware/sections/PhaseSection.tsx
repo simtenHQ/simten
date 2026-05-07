@@ -40,7 +40,6 @@ export function PhaseSection() {
         <CircuitEmbed
           circuit={SNAKE_CIRCUITS.phaseDemo.circuit}
           layout={SNAKE_CIRCUITS.phaseDemo.layout}
-          height={350}
           showControls
           autoRunSpeed={400}
           title="4-Phase Counter"

@@ -32,7 +32,6 @@ export function CounterSection() {
       <div className="mt-8">
         <CircuitEmbed
           circuit={BLOG_CIRCUITS.counter4bit.circuit}
-          height={350}
           showControls
           autoRunSpeed={400}
           title="4-Bit Counter"

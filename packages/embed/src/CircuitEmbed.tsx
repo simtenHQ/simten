@@ -10,15 +10,25 @@
  * web component bridge which sandboxes compilation via an iframe.
  */
 
-import { forwardRef, type ForwardedRef, type ReactElement } from "react";
+import { forwardRef, type CSSProperties, type ForwardedRef, type ReactElement } from "react";
 import { CircuitViewer, type CircuitViewerHandle, type HarnessedLayout } from "./CircuitViewer";
 import type { BuiltCircuit } from "@simten/core/circuit";
 
 export interface CircuitEmbedProps<C extends BuiltCircuit = BuiltCircuit> {
   /** The circuit to display (result of circuit()) */
   circuit: C;
-  /** Container height */
+  /**
+   * Container height. Optional — when omitted, the embed sizes itself
+   * width-responsively using `aspectRatio` (or one inferred from `layout`)
+   * with sensible mobile-friendly min/max clamps.
+   */
   height?: number | string;
+  /**
+   * Width-to-height ratio of the embed. Used only when `height` is not set.
+   * If omitted and `layout` is passed, the ratio is computed from the
+   * layout's bounding box. Otherwise defaults to 1.5 (3:2).
+   */
+  aspectRatio?: number;
   /** Show clock controls for sequential circuits */
   showControls?: boolean;
   /**
@@ -53,10 +63,27 @@ export interface CircuitEmbedProps<C extends BuiltCircuit = BuiltCircuit> {
 
 export type CircuitEmbedHandle = CircuitViewerHandle;
 
+// Approximate node footprint used when inferring aspect ratio from a layout.
+// Layout coords are top-left of each node, so we add ~one node's width/height
+// to the bounding box so the rightmost / bottommost nodes aren't clipped.
+const NODE_W = 160;
+const NODE_H = 90;
+
+function inferAspectFromLayout(layout: Record<string, { x: number; y: number }> | undefined): number {
+  if (!layout) return 1.5; // default 3:2 — sane for auto-laid-out circuits
+  const positions = Object.values(layout);
+  if (positions.length === 0) return 1.5;
+  const w = Math.max(...positions.map(p => p.x)) + NODE_W;
+  const h = Math.max(...positions.map(p => p.y)) + NODE_H;
+  if (w <= 0 || h <= 0) return 1.5;
+  return w / h;
+}
+
 const CircuitEmbedImpl = forwardRef<CircuitEmbedHandle, CircuitEmbedProps>(
   function CircuitEmbed({
     circuit,
-    height = 300,
+    height,
+    aspectRatio,
     showControls = true,
     layout,
     theme,
@@ -73,9 +100,31 @@ const CircuitEmbedImpl = forwardRef<CircuitEmbedHandle, CircuitEmbedProps>(
   }, ref) {
     const hasInfoBar = title || description;
 
+    // Sizing strategy: if `height` is set, use it (backwards compat).
+    // Otherwise size width-responsively via aspect-ratio with mobile clamps.
+    const useResponsive = height === undefined;
+    const aspect = aspectRatio ?? inferAspectFromLayout(layout as Record<string, { x: number; y: number }> | undefined);
+    const responsiveStyle: CSSProperties = {
+      width: '100%',
+      aspectRatio: String(aspect),
+      minHeight: 240,
+      maxHeight: '70vh',
+    };
+
+    const outerStyle: CSSProperties | undefined = hasInfoBar
+      ? undefined
+      : useResponsive
+        ? responsiveStyle
+        : { height };
+    const canvasStyle: CSSProperties = hasInfoBar
+      ? useResponsive
+        ? responsiveStyle
+        : { height }
+      : { height: '100%' };
+
     return (
-      <div style={hasInfoBar ? undefined : { height }} className={`flex flex-col ${hasInfoBar ? 'rounded-xl border border-[var(--embed-border)] overflow-hidden bg-[var(--embed-bg-secondary)]' : ''}`}>
-        <div style={{ height: hasInfoBar ? height : '100%' }} className="min-h-0">
+      <div style={outerStyle} className={`flex flex-col ${hasInfoBar ? 'rounded-xl border border-[var(--embed-border)] overflow-hidden bg-[var(--embed-bg-secondary)]' : ''}`}>
+        <div style={canvasStyle} className="min-h-0">
           <CircuitViewer
             ref={ref}
             circuit={circuit}
