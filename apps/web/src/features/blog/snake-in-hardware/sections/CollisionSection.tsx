@@ -36,7 +36,6 @@ export function CollisionSection() {
         <CircuitEmbed
           circuit={SNAKE_CIRCUITS.collisionDetector.circuit}
           layout={SNAKE_CIRCUITS.collisionDetector.layout}
-          height={350}
           showControls
           title="Collision Detector"
           description="Change head/food coordinates to match and see the collision LED light up"

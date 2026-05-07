@@ -36,7 +36,6 @@ export function RunningCodeSection() {
       <div className="mt-8">
         <CircuitEmbed
           circuit={RV32I_Board}
-          height={600}
           showControls
           title="RV32I CPU Board"
           description="Click 'Code' on the ROM to load a program, then step the clock."

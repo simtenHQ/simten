@@ -1,4 +1,3 @@
-
 import { CircuitEmbed } from "@simten/embed";
 import { PONG_CIRCUITS } from "../circuits";
 
@@ -12,8 +11,8 @@ export function BallSection() {
       </h2>
       <div className="prose-invert space-y-6">
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
-          The ball&rsquo;s position is stored in two <code>Register</code>
-          {" "}components &mdash; one for X and one for Y. Each clock tick, an{" "}
+          The ball&rsquo;s position is stored in two <code>Register</code>{" "}
+          components &mdash; one for X and one for Y. Each clock tick, an{" "}
           <code>Adder</code> adds a velocity delta (dx, dy) to the current
           position. A <code>BitSlice</code> wraps the result to the 0&ndash;15
           range so the ball stays on our 16&times;16 screen.
@@ -29,7 +28,6 @@ export function BallSection() {
       <div className="mt-8">
         <CircuitEmbed
           circuit={entry.circuit}
-          height={280}
           showControls={true}
           layout={entry.layout}
           title={entry.name}

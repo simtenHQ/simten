@@ -37,7 +37,6 @@ d <<<= 16; // rotate d left by 16`}</pre>
       <div className="mt-8">
         <CircuitEmbed
           circuit={entry.circuit}
-          height={320}
           showControls={false}
           title={entry.name}
           description={entry.description}

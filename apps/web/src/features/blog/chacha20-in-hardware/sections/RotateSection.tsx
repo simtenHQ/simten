@@ -36,7 +36,6 @@ export function RotateSection() {
       <div className="mt-8">
         <CircuitEmbed
           circuit={entry.circuit}
-          height={300}
           showControls={false}
           title={entry.name}
           description={entry.description}

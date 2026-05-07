@@ -43,7 +43,6 @@ export function MACSection() {
         <CircuitEmbed
           circuit={TPU_CIRCUITS.multiplyAdd.circuit}
           layout={TPU_CIRCUITS.multiplyAdd.layout}
-          height={300}
           showControls
           title="Multiply-Add Unit"
           description="partialSumIn + (data × weight) = result. Purely combinational — no clock needed."

@@ -81,7 +81,6 @@ export function HazardsSection() {
         </p>
         <CircuitEmbed
           circuit={BLOG_CIRCUITS.forwardingMux.circuit}
-          height={340}
           title="Forwarding Mux"
           description="sel: 00=register 01=EX forward 10=MEM forward"
         />

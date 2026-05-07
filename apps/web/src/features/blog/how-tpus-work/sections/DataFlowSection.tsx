@@ -46,7 +46,6 @@ export function DataFlowSection() {
         <CircuitEmbed
           circuit={TPU_CIRCUITS.twoPERow.circuit}
           layout={TPU_CIRCUITS.twoPERow.layout}
-          height={400}
           showControls
           autoRunSpeed={400}
           title="Two-PE Row"

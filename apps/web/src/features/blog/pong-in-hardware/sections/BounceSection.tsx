@@ -1,4 +1,3 @@
-
 import { CircuitEmbed } from "@simten/embed";
 import { PONG_CIRCUITS } from "../circuits";
 
@@ -16,8 +15,8 @@ export function BounceSection() {
           to reverse direction. Two <code>Comparator</code> nodes check if the
           ball&rsquo;s Y coordinate equals 0 (top wall) or 15 (bottom wall). An{" "}
           <code>Or</code> gate combines the results, and a <code>Mux</code>{" "}
-          flips the velocity: moving down (+1) when bouncing off the top,
-          moving up (&minus;1) when bouncing off the bottom.
+          flips the velocity: moving down (+1) when bouncing off the top, moving
+          up (&minus;1) when bouncing off the bottom.
         </p>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
           Change <strong>ballY</strong> to 0 or 15 and watch the bounce LED
@@ -28,7 +27,6 @@ export function BounceSection() {
       <div className="mt-8">
         <CircuitEmbed
           circuit={entry.circuit}
-          height={260}
           showControls={false}
           layout={entry.layout}
           title={entry.name}

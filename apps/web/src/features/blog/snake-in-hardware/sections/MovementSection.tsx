@@ -38,7 +38,6 @@ export function MovementSection() {
         <CircuitEmbed
           circuit={SNAKE_CIRCUITS.pixelMover.circuit}
           layout={SNAKE_CIRCUITS.pixelMover.layout}
-          height={400}
           showControls
           title="Pixel Mover"
           description="Toggle enable, set a direction (72/75/77/80), and tick to move the pixel"

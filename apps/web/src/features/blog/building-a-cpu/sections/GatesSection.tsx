@@ -37,7 +37,6 @@ export function GatesSection() {
           </p>
           <CircuitEmbed
             circuit={GATE_CIRCUITS.inverter.circuit}
-            height={220}
             title="NOT Gate"
             description="Toggle the switch to see the output invert"
           />
@@ -54,7 +53,6 @@ export function GatesSection() {
           </p>
           <CircuitEmbed
             circuit={GATE_CIRCUITS.and.circuit}
-            height={220}
             title="AND Gate"
             description="Output is ON only when both inputs are ON"
           />
@@ -71,7 +69,6 @@ export function GatesSection() {
           </p>
           <CircuitEmbed
             circuit={GATE_CIRCUITS.or.circuit}
-            height={220}
             title="OR Gate"
             description="Output is ON when either input is ON"
           />
@@ -89,7 +86,6 @@ export function GatesSection() {
           </p>
           <CircuitEmbed
             circuit={GATE_CIRCUITS.xor.circuit}
-            height={260}
             title="XOR Gate"
             description="Output is ON when inputs differ"
           />
