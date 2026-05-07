@@ -1,0 +1,14 @@
+{
+  "pages": [
+    "index",
+    "how-it-works",
+    "component-model",
+    "simulator-engine",
+    "api-reference",
+    "architecture",
+    "hardware",
+    "examples",
+    "claude-code",
+    "security"
+  ]
+}
