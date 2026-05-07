@@ -1,0 +1,125 @@
+---
+title: How it works
+description: A short tour of simten's model — primitives, composites, time, and export.
+---
+
+import { CircuitEmbed } from '@simten/embed'
+import { HalfAdder, FullAdder, DelayLine } from '../../src/features/splash/circuits'
+
+Five things that make simten different from a textbook simulator. Most of this page is live circuits — read the code, hit play, drill in.
+
+## 1. Circuits are TypeScript values
+
+A circuit is an object you can read, refactor, and pass to a function. There's no separate HDL file, no synthesis script, no build step. You import it like any other module.
+
+```ts
+const HalfAdder = circuit('HalfAdder', {
+  inputs:  { a: bit, b: bit },
+  outputs: { sum: bit, carry: bit },
+  nodes:   { xor1: Xor, and1: And },
+  connect: ({ inputs, outputs, nodes: { xor1, and1 } }) => [
+    inputs.a.to(xor1.a, and1.a),
+    inputs.b.to(xor1.b, and1.b),
+    xor1.out.to(outputs.sum),
+    and1.out.to(outputs.carry),
+  ],
+});
+```
+
+<CircuitEmbed
+  circuit={HalfAdder}
+  height={280}
+  layout={{
+    a:     { x: 10,  y: 10 },
+    b:     { x: 10,  y: 170 },
+    dut:   { x: 220, y: 90 },
+    sum:   { x: 430, y: 10 },
+    carry: { x: 430, y: 170 },
+  }}
+/>
+
+Toggle the input switches. The output reflects the change immediately because everything here is combinational logic — no clock involved.
+
+## 2. Composites zoom in
+
+Hardware is recursive. A circuit is built of circuits, which are built of circuits, all the way down to primitives. **Double-click any composite node to drill in.**
+
+<CircuitEmbed
+  circuit={FullAdder}
+  height={300}
+  layout={{
+    a:    { x: 10,  y: 10 },
+    b:    { x: 10,  y: 110 },
+    cin:  { x: 10,  y: 210 },
+    ha1:  { x: 200, y: 60 },
+    ha2:  { x: 380, y: 110 },
+    or1:  { x: 380, y: 220 },
+    sum:  { x: 560, y: 110 },
+    cout: { x: 560, y: 220 },
+  }}
+/>
+
+This `FullAdder` is two `HalfAdder`s and an `Or` gate. Double-click `ha1` and you'll see the same circuit you wrote above — its XOR and AND gates exposed. The inspector keeps zooming as long as there's structure to peel.
+
+## 3. Sequential vs combinational
+
+Combinational logic answers *what* — the output is a pure function of the inputs.
+Sequential logic remembers *when* — state advances on each clock tick.
+
+<CircuitEmbed
+  circuit={DelayLine}
+  height={240}
+  layout={{
+    d:    { x: 10,  y: 80 },
+    dff1: { x: 200, y: 80 },
+    dff2: { x: 380, y: 80 },
+    q1:   { x: 560, y: 20 },
+    q2:   { x: 560, y: 140 },
+  }}
+/>
+
+Toggle `d` and hit ▶. The bit shifts one stage per cycle — `q1` lags `d` by one tick, `q2` by two. Flip-flops remember; gates don't.
+
+```ts
+const DelayLine = circuit('DelayLine', {
+  inputs:  { d: bit },
+  outputs: { q1: bit, q2: bit },
+  nodes:   { dff1: DFlipFlop, dff2: DFlipFlop },
+  connect: ({ inputs, outputs, nodes: { dff1, dff2 } }) => [
+    inputs.d.to(dff1.d),
+    dff1.q.to(dff2.d, outputs.q1),
+    dff2.q.to(outputs.q2),
+  ],
+});
+```
+
+The DSL is the same shape — `inputs`, `outputs`, `nodes`, `connect`. Sequentiality comes from which primitives you pick (`DFlipFlop`, `Register`, `RAM`), not from a separate sub-language.
+
+## 4. The trace is the truth
+
+Every value, every wire, every cycle is recorded. When something goes wrong you scrub backward to the exact cycle the bug appeared — no `printf`, no rerun, no guessing.
+
+The [RISC-V CPU debugger](/learn/rv32i-cpu) is the longest worked example. It runs compiled C through a 5-stage pipeline; every register, every pipeline stage, every cycle is inspectable.
+
+## 5. Export to Verilog
+
+The circuits you read are the same circuits we cycle-by-cycle verify against [Icarus Verilog](https://steveicarus.github.io/iverilog/). Synthesizable circuits export to real Verilog you can flash to an FPGA.
+
+```ts
+import { exportVerilog } from '@simten/core/verilog';
+
+const { verilog, files } = exportVerilog(HalfAdder, library, { target: 'synthesis' });
+```
+
+The `synthesis` target strips simulation-only constructs. Memories above 2k words are emitted as `$readmemh` with the hex contents returned alongside — matching the Yosys/Vivado/Quartus convention.
+
+See [Hardware & FPGA](/docs/hardware) for the full pipeline (Yosys → nextpnr → ecppack → flash) using Snake on a ULX3S as the worked example.
+
+---
+
+## Where to go next
+
+- [Component model](/docs/component-model) — the full primitive list and the elaboration pipeline
+- [API reference](/docs/api-reference) — `circuit()`, `bit`, `bus`, exporters
+- [Examples](/docs/examples) — bigger circuits and how they're built
+- [Hardware & FPGA](/docs/hardware) — taking a Verilog export to a real board
