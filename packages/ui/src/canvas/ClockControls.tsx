@@ -8,6 +8,7 @@
 
 "use client";
 
+import type { ComponentType, SVGProps } from "react";
 import {
   SkipForward,
   Play,
@@ -17,6 +18,43 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "../primitives/tooltip";
+import { Button } from "../primitives/button";
+
+/**
+ * Dense icon button used throughout this toolbar. Wraps shadcn `Button`
+ * with `ghost` + `icon` variants but tightens the size for the embed bar,
+ * and bakes in the Tooltip so each call site is a one-liner. The `label`
+ * doubles as `aria-label` and visible tooltip content.
+ */
+function IconBtn({
+  label,
+  icon: Icon,
+  onClick,
+  disabled,
+}: {
+  label: string;
+  icon: ComponentType<SVGProps<SVGSVGElement>>;
+  onClick: () => void;
+  disabled?: boolean;
+}) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={onClick}
+          disabled={disabled}
+          aria-label={label}
+          className="h-7 w-7 text-muted-foreground disabled:opacity-40 [&_svg]:size-3.5"
+        >
+          <Icon />
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent side="bottom">{label}</TooltipContent>
+    </Tooltip>
+  );
+}
 
 export interface ClockControlsProps {
   cycle: number;
@@ -62,52 +100,15 @@ export function ClockControls({
     ? "absolute top-3 left-1/2 -translate-x-1/2 z-10"
     : "";
 
-  const btn = "rounded p-1 text-muted-foreground hover:bg-accent disabled:opacity-40";
-
   return (
     <TooltipProvider>
       <div className={wrapper}>
         <div className="flex items-center gap-1.5 border-t border-border bg-card/95 px-3 py-1.5">
-          {/* Step */}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button onClick={onStep} disabled={isRunning || isViewingPast} className={btn}>
-                <SkipForward className="h-3.5 w-3.5" />
-              </button>
-            </TooltipTrigger>
-            <TooltipContent side="bottom">Tick</TooltipContent>
-          </Tooltip>
-
-          {/* Play / Pause */}
-          {isRunning ? (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button onClick={onPause} className={btn}>
-                  <Pause className="h-3.5 w-3.5" />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="bottom">Pause</TooltipContent>
-            </Tooltip>
-          ) : (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button onClick={onRun} disabled={isViewingPast} className={btn}>
-                  <Play className="h-3.5 w-3.5" />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="bottom">Run</TooltipContent>
-            </Tooltip>
-          )}
-
-          {/* Reset */}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button onClick={onReset} className={btn}>
-                <RotateCcw className="h-3.5 w-3.5" />
-              </button>
-            </TooltipTrigger>
-            <TooltipContent side="bottom">Reset</TooltipContent>
-          </Tooltip>
+          <IconBtn label="Tick" icon={SkipForward} onClick={onStep} disabled={isRunning || isViewingPast} />
+          {isRunning
+            ? <IconBtn label="Pause" icon={Pause} onClick={onPause} />
+            : <IconBtn label="Run"   icon={Play}  onClick={onRun} disabled={isViewingPast} />}
+          <IconBtn label="Reset" icon={RotateCcw} onClick={onReset} />
 
           {/* Speed slider */}
           {onSpeedChange && (
@@ -120,6 +121,7 @@ export function ClockControls({
                 onChange={(e) => onSpeedChange(Number(e.target.value))}
                 className="w-20 h-1 rounded-lg appearance-none cursor-pointer accent-blue-600"
                 disabled={isViewingPast}
+                aria-label="Simulation speed"
               />
               <span className="min-w-[45px] text-[10px] text-muted-foreground font-mono tabular-nums">
                 {speed} t/s
@@ -137,14 +139,7 @@ export function ClockControls({
           {/* Time-travel */}
           {historyLength > 1 && (
             <div className="flex items-center gap-0.5 border-l border-border pl-1.5 ml-0.5">
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button onClick={onStepBack} disabled={historyIndex <= 0 || isRunning} className={btn}>
-                    <ChevronLeft className="h-3.5 w-3.5" />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="bottom">Step back</TooltipContent>
-              </Tooltip>
+              <IconBtn label="Step back" icon={ChevronLeft} onClick={onStepBack} disabled={historyIndex <= 0 || isRunning} />
 
               <span className="min-w-[40px] text-center text-[11px] text-muted-foreground">
                 {isViewingPast ? (
@@ -158,14 +153,7 @@ export function ClockControls({
                 )}
               </span>
 
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button onClick={onStepForward} disabled={!isViewingPast || isRunning} className={btn}>
-                    <ChevronRight className="h-3.5 w-3.5" />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="bottom">Step forward</TooltipContent>
-              </Tooltip>
+              <IconBtn label="Step forward" icon={ChevronRight} onClick={onStepForward} disabled={!isViewingPast || isRunning} />
             </div>
           )}
 
@@ -180,6 +168,7 @@ export function ClockControls({
                 onChange={(e) => onSeek(Number(e.target.value))}
                 className="w-24 h-1 rounded-lg appearance-none cursor-pointer accent-blue-600"
                 disabled={isRunning}
+                aria-label="Cycle scrubber"
               />
             </div>
           )}
