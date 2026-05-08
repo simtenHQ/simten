@@ -7,6 +7,7 @@ const CORDIC_LAYOUT: Record<string, { x: number; y: number }> = {
   y: { x: 30, y: 130 },
   z: { x: 30, y: 230 },
   iteration: { x: 30, y: 330 },
+  step: { x: 360, y: 180 },
   xDisplay: { x: 750, y: 30 },
   yDisplay: { x: 750, y: 130 },
   zDisplay: { x: 750, y: 230 },

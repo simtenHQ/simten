@@ -6,7 +6,7 @@
  * and the complete iterative rotation engine.
  */
 
-import { circuit, bit } from "@simten/core/circuit";
+import { circuit, bit, bus } from "@simten/core/circuit";
 import type { BlogCircuit } from '../types';
 import {
   Input,
@@ -219,21 +219,26 @@ export const CORDIC_CIRCUITS: Record<string, BlogCircuit> = {
 };
 
 /**
- * Full CORDIC circuit — computes sin/cos by rotating a vector using only shifts and adds.
- * Starts at (80, 0) pointing right and rotates 45 degrees.
- * Expected result: x ~ y ~ 93 after 8 iterations.
+ * Inner CORDIC iteration logic — pure combinational.
+ *
+ * Takes the current (x, y, z, iter) and produces the next-cycle values plus
+ * a write_enable signal (active while iter < 8) and a done flag (iter == 8).
+ *
+ * Encapsulating this as its own composite means the outer CORDICCircuit
+ * shows just the four state registers + this single block on canvas, with
+ * a drilldown badge to inspect the full iteration math.
  */
-export const CORDICCircuit = circuit("CORDICIteration", {
-  // `done` is asserted when the iteration counter reaches the final value.
-  // Formal output port (replaces a hook-side substring scan over portValues
-  // looking for a node named "doneLed"); the visual doneLed node stays for
-  // on-canvas rendering.
-  outputs: { done: bit },
+const CORDICStep = circuit("CORDICStep", {
+  inputs: { x_in: bus(8), y_in: bus(8), z_in: bus(8), iter_in: bus(8) },
+  outputs: {
+    x_next: bus(8),
+    y_next: bus(8),
+    z_next: bus(8),
+    iter_next: bus(8),
+    write_enable: bit,
+    done: bit,
+  },
   nodes: {
-    x: Register,
-    y: Register,
-    z: Register,
-    iteration: Register,
     zero: Constant,
     one: Constant,
     eight: Constant,
@@ -272,18 +277,9 @@ export const CORDICCircuit = circuit("CORDICIteration", {
     zUpdate: Mux,
     iterInc: Incrementer,
     shouldContinue: Comparator,
-    xDisplay: HexDisplay,
-    yDisplay: HexDisplay,
-    zDisplay: HexDisplay,
-    iterDisplay: HexDisplay,
     doneCheck: Comparator,
-    doneLed: Led,
   },
   nodeArgs: {
-    x: { initial: 80 },
-    y: { initial: 0 },
-    z: { initial: 32 },
-    iteration: { initial: 0 },
     zero: { value: 0 },
     one: { value: 1 },
     eight: { value: 8 },
@@ -299,12 +295,12 @@ export const CORDICCircuit = circuit("CORDICIteration", {
     bit1: { low: 1, high: 1 },
     bit2: { low: 2, high: 2 },
   },
-  connect: ({ outputs, nodes: { x, y, z, iteration, zero, one, eight, zPositive, xShifted, yShifted, yShiftedNeg, xSubtract, xAdd, xUpdate, xShiftedNeg, yAdd, ySubtract, yUpdate, angle0, angle1, angle2, angle3, angle4, angle5, angle6, angle7, bit0, bit1, bit2, mux01, mux23, mux45, mux67, mux0123, mux4567, angleSel, angleNeg, zSubtract, zAdd, zUpdate, iterInc, shouldContinue, xDisplay, yDisplay, zDisplay, iterDisplay, doneCheck, doneLed } }) => [
-    z.q.to(zPositive.a, zSubtract.a, zAdd.a, zDisplay.in),
+  connect: ({ inputs, outputs, nodes: { zero, one, eight, zPositive, xShifted, yShifted, yShiftedNeg, xSubtract, xAdd, xUpdate, xShiftedNeg, yAdd, ySubtract, yUpdate, angle0, angle1, angle2, angle3, angle4, angle5, angle6, angle7, bit0, bit1, bit2, mux01, mux23, mux45, mux67, mux0123, mux4567, angleSel, angleNeg, zSubtract, zAdd, zUpdate, iterInc, shouldContinue, doneCheck } }) => [
+    inputs.z_in.to(zPositive.a, zSubtract.a, zAdd.a),
     zero.out.to(zPositive.b, xAdd.carry_in, yAdd.carry_in, zAdd.carry_in),
-    x.q.to(xShifted.value, xSubtract.a, xAdd.a, xDisplay.in),
-    y.q.to(yShifted.value, yAdd.a, ySubtract.a, yDisplay.in),
-    iteration.q.to(
+    inputs.x_in.to(xShifted.value, xSubtract.a, xAdd.a),
+    inputs.y_in.to(yShifted.value, yAdd.a, ySubtract.a),
+    inputs.iter_in.to(
       xShifted.shift,
       yShifted.shift,
       bit0.in,
@@ -312,7 +308,6 @@ export const CORDICCircuit = circuit("CORDICIteration", {
       bit2.in,
       iterInc.in,
       shouldContinue.a,
-      iterDisplay.in,
       doneCheck.a,
     ),
     yShifted.result.to(yShiftedNeg.in, xAdd.b),
@@ -347,11 +342,54 @@ export const CORDICCircuit = circuit("CORDICIteration", {
     zAdd.sum.to(zUpdate.in0),
     zSubtract.sum.to(zUpdate.in1),
     eight.out.to(shouldContinue.b, doneCheck.b),
-    shouldContinue.lt.to(x.we, y.we, z.we, iteration.we),
-    xUpdate.out.to(x.data),
-    yUpdate.out.to(y.data),
-    zUpdate.out.to(z.data),
-    iterInc.out.to(iteration.data),
-    doneCheck.eq.to(doneLed.in, outputs.done),
+    xUpdate.out.to(outputs.x_next),
+    yUpdate.out.to(outputs.y_next),
+    zUpdate.out.to(outputs.z_next),
+    iterInc.out.to(outputs.iter_next),
+    shouldContinue.lt.to(outputs.write_enable),
+    doneCheck.eq.to(outputs.done),
+  ],
+});
+
+/**
+ * Full CORDIC circuit — computes sin/cos by rotating a vector using only shifts and adds.
+ * Starts at (80, 0) pointing right and rotates 45 degrees.
+ * Expected result: x ~ y ~ 93 after 8 iterations.
+ *
+ * The four state registers feed a CORDICStep block that produces their
+ * next-cycle values. Double-click `step` on the canvas to inspect the
+ * full iteration math (shifters, signed adders, angle ROM, mux tree).
+ */
+export const CORDICCircuit = circuit("CORDICIteration", {
+  outputs: { done: bit },
+  nodes: {
+    x: Register,
+    y: Register,
+    z: Register,
+    iteration: Register,
+    step: CORDICStep,
+    xDisplay: HexDisplay,
+    yDisplay: HexDisplay,
+    zDisplay: HexDisplay,
+    iterDisplay: HexDisplay,
+    doneLed: Led,
+  },
+  nodeArgs: {
+    x: { initial: 80 },
+    y: { initial: 0 },
+    z: { initial: 32 },
+    iteration: { initial: 0 },
+  },
+  connect: ({ outputs, nodes: { x, y, z, iteration, step, xDisplay, yDisplay, zDisplay, iterDisplay, doneLed } }) => [
+    x.q.to(step.x_in, xDisplay.in),
+    y.q.to(step.y_in, yDisplay.in),
+    z.q.to(step.z_in, zDisplay.in),
+    iteration.q.to(step.iter_in, iterDisplay.in),
+    step.x_next.to(x.data),
+    step.y_next.to(y.data),
+    step.z_next.to(z.data),
+    step.iter_next.to(iteration.data),
+    step.write_enable.to(x.we, y.we, z.we, iteration.we),
+    step.done.to(doneLed.in, outputs.done),
   ],
 });
