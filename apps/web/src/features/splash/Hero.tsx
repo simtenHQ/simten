@@ -422,10 +422,10 @@ export function Hero() {
               <button
                 key={d.key}
                 onClick={() => pickDemo(d.key)}
-                className={`text-[12px] px-3 py-1.5 rounded-full border transition-colors ${
+                className={`text-[13px] px-3.5 py-1.5 rounded-full border transition-colors ${
                   d.key === demoKey
                     ? "border-foreground/30 bg-foreground/10 text-foreground"
-                    : "border-border text-muted-foreground/70 hover:text-foreground hover:border-foreground/20"
+                    : "border-border text-muted-foreground hover:text-foreground hover:border-foreground/30 hover:bg-muted/50"
                 }`}
               >
                 {d.label}
@@ -490,10 +490,10 @@ export function Hero() {
             <button
               key={d.key}
               onClick={() => pickDemo(d.key)}
-              className={`text-[11px] px-2.5 py-1 rounded-full border transition-colors ${
+              className={`text-[12px] px-3 py-1 rounded-full border transition-colors ${
                 d.key === demoKey
                   ? "border-foreground/30 bg-foreground/10 text-foreground"
-                  : "border-border text-muted-foreground/70"
+                  : "border-border text-muted-foreground hover:text-foreground hover:border-foreground/30"
               }`}
             >
               {d.label}
