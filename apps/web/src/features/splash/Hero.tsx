@@ -436,19 +436,19 @@ export function Hero() {
             </span>
           </div>
 
-          <div className="mt-6 flex items-center justify-center gap-4">
+          <div className="mt-6 flex items-center gap-3">
             <Link
               to="/editor"
-              className="text-[13px] text-foreground/80 hover:text-foreground transition-colors underline underline-offset-4"
+              className="inline-flex items-center rounded-full bg-foreground text-background hover:bg-foreground/90 transition-colors px-4 py-2 text-sm font-medium"
             >
               Open the editor →
             </Link>
-            <span className="text-muted-foreground/30">·</span>
             <Link
-              to="/learn"
-              className="text-[13px] text-muted-foreground/70 hover:text-foreground transition-colors"
+              to="/docs/$"
+              params={{ _splat: 'how-it-works' }}
+              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
             >
-              Learn the basics
+              How it works →
             </Link>
           </div>
         </div>
@@ -501,12 +501,18 @@ export function Hero() {
           ))}
         </div>
 
-        <div className="mt-6 flex items-center justify-center gap-4">
+        <div className="mt-6 flex items-center gap-3">
           <Link
             to="/editor"
-            className="text-[13px] text-foreground/80 hover:text-foreground transition-colors underline underline-offset-4"
+            className="inline-flex items-center rounded-full bg-foreground text-background hover:bg-foreground/90 transition-colors px-4 py-2 text-sm font-medium"
           >
             Open the editor →
+          </Link>
+          <Link
+            to="/learn"
+            className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
+            Learn the basics →
           </Link>
         </div>
       </div>
