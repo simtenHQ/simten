@@ -155,9 +155,9 @@ function PackageManagerTabs({ package: pkg }: { package: string }) {
 
 function DemoGallery() {
   return (
-    <div className="relative px-4 py-16 md:py-24 md:animate-in md:fade-in md:duration-700 overflow-hidden">
+    <div className="relative px-6 py-16 md:py-24 md:animate-in md:fade-in md:duration-700 overflow-hidden">
 
-      <div className="relative max-w-7xl mx-auto">
+      <div className="relative max-w-6xl mx-auto">
         {/* Bridge headline — umbrella for Act 1 (demos) */}
         <div className="mb-20 max-w-5xl">
           <h2 className="text-4xl sm:text-5xl font-semibold tracking-tight leading-[1.05]">

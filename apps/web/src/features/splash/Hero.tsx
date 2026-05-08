@@ -191,8 +191,8 @@ const FigletDemo = circuit('FigletDemo', {
   ],
 });`,
     layout: {
-      src:  { x: 0,   y: 65 },
-      term: { x: 160, y: 30 },
+      src:  { x: 0,   y: 50 },
+      term: { x: 240, y: 50 },
     },
   },
   {
@@ -378,11 +378,11 @@ export function Hero() {
       {/* Desktop layout */}
       <div className="hidden md:block px-6 pb-10">
         <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-8 pt-20 md:pt-28">
+          <div className="mb-8 pt-20 md:pt-28">
             <h1 className="text-5xl md:text-6xl lg:text-7xl font-semibold tracking-tight leading-[1.05] text-foreground">
               Hardware simulation in your JavaScript runtime.
             </h1>
-            <p className="mt-5 text-base md:text-lg text-muted-foreground max-w-2xl mx-auto">
+            <p className="mt-5 text-base md:text-lg text-muted-foreground max-w-2xl">
               Write circuits in TypeScript. Simulate them live in the browser.
               Import any npm library to drive, verify, or visualize them.
             </p>
@@ -456,7 +456,7 @@ export function Hero() {
 
       {/* Mobile layout: stacked */}
       <div className="md:hidden px-5 pb-8">
-        <div className="text-center mb-6 pt-2">
+        <div className="mb-6 pt-2">
           <h1 className="text-4xl font-semibold tracking-tight leading-[1.05] text-foreground">
             Hardware simulation in your JavaScript runtime.
           </h1>
