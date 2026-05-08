@@ -144,12 +144,12 @@ const CircuitEmbedImpl = forwardRef<CircuitEmbedHandle, CircuitEmbedProps>(
         {hasInfoBar && (
           <div className="border-t border-[var(--embed-border)] px-4 py-3 flex items-end justify-between gap-4">
             <div>
-              <div className="text-[13px] font-semibold text-[var(--embed-text-primary)]">{title}</div>
-              {subtitle && <div className="text-[11px] text-[var(--embed-text-muted)] font-mono mt-0.5">{subtitle}</div>}
-              {description && <div className="text-[11px] text-[var(--embed-text-secondary)] mt-1 leading-relaxed">{description}</div>}
+              <div className="text-base font-semibold text-[var(--embed-text-primary)]">{title}</div>
+              {subtitle && <div className="text-xs text-[var(--embed-text-muted)] font-mono mt-0.5">{subtitle}</div>}
+              {description && <div className="text-sm text-[var(--embed-text-secondary)] mt-1.5 leading-relaxed">{description}</div>}
             </div>
             {href && (
-              <a href={href} className="shrink-0 px-3 py-1.5 rounded border border-[var(--embed-border)] text-[11px] text-[var(--embed-text-primary)] hover:opacity-80 transition-colors">
+              <a href={href} className="shrink-0 px-3 py-1.5 rounded border border-[var(--embed-border)] text-xs text-[var(--embed-text-primary)] hover:opacity-80 transition-colors">
                 Open →
               </a>
             )}
