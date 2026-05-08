@@ -7,7 +7,7 @@ description: How circuits go from text to simulation
 
 User-defined circuit code is arbitrary TypeScript — `circuit('Foo', { eval: ({ a, b }) => ... })`. Running it in the main React frame would let a malicious circuit read auth cookies, hijack the chat session, or escape into the editor's tab. Instead, every circuit you compile or simulate runs inside a cross-origin iframe (`sandbox.simten.dev`) with `sandbox="allow-scripts"` — the browser kernel blocks all network access and origin isolation prevents cookie/DOM reach.
 
-This is the same pattern [CodePen](https://codepen.io) uses to isolate user-authored snippets from their editor app — preview runs on a separate origin (`cdpn.io`) inside a sandboxed iframe, talking to the host page via postMessage only. Everything you'll see called "sandbox" in the simten codebase is one side of that bridge or the other.
+This is the same pattern [CodePen](https://codepen.io) uses to isolate user-authored snippets from their editor app — preview runs on a separate origin (`cdpn.io`) inside a sandboxed iframe, talking to the host page via postMessage only. Everything you'll see called "sandbox" in the Simten codebase is one side of that bridge or the other.
 
 ## Runtime topology
 
