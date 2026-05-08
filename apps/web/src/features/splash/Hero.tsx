@@ -379,10 +379,10 @@ export function Hero() {
       <div className="hidden md:block px-6 pb-10">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-8 pt-20 md:pt-28">
-            <h1 className="text-3xl md:text-4xl font-semibold tracking-tight text-foreground">
+            <h1 className="text-5xl md:text-6xl lg:text-7xl font-semibold tracking-tight leading-[1.05] text-foreground">
               Hardware simulation in your JavaScript runtime.
             </h1>
-            <p className="mt-4 text-sm md:text-base text-muted-foreground max-w-2xl mx-auto">
+            <p className="mt-5 text-base md:text-lg text-muted-foreground max-w-2xl mx-auto">
               Write circuits in TypeScript. Simulate them live in the browser.
               Import any npm library to drive, verify, or visualize them.
             </p>
@@ -457,7 +457,7 @@ export function Hero() {
       {/* Mobile layout: stacked */}
       <div className="md:hidden px-5 pb-8">
         <div className="text-center mb-6 pt-2">
-          <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+          <h1 className="text-4xl font-semibold tracking-tight leading-[1.05] text-foreground">
             Hardware simulation in your JavaScript runtime.
           </h1>
           <p className="mt-3 text-sm text-muted-foreground">
