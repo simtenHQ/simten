@@ -6,7 +6,7 @@ import { Link } from '@tanstack/react-router'
  */
 export function SiteNavLinks() {
   return (
-    <nav className="flex items-center gap-5 text-[13px] text-muted-foreground">
+    <nav className="flex items-center gap-5 text-[13px] text-foreground/70">
       <Link to="/blog" className="transition-colors hover:text-foreground">
         Blog
       </Link>
