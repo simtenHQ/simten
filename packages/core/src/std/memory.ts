@@ -46,3 +46,71 @@ export const DualPortRAM = circuit('DualPortRAM', {
     return { memory };
   },
 });
+
+// ============================================================================
+// ROM init helpers
+// ============================================================================
+//
+// Convenience builders that turn JS data (typed arrays, plain arrays, sparse
+// entries) into the format accepted by `nodeArgs.<rom>.init`. Lets callers do:
+//
+//   import bytes from 'some-npm-package/data.json'
+//   nodeArgs: { rom: { init: romFromBytes(bytes) } }
+//
+// Output is always a sparse Record<number, number>. Zero entries are omitted
+// since ROM addresses default to 0 — keeps the IR small for sparse data and
+// is functionally identical to a dense array for the consumer in
+// simulator/sequential-init.ts.
+
+/**
+ * Build ROM init data from byte values.
+ *
+ * Each value is masked to 8 bits. Use for fonts, sprites, audio samples,
+ * file blobs, or anything that fits in a Uint8Array.
+ */
+export function romFromBytes(bytes: Uint8Array | ArrayLike<number>): Record<number, number> {
+  const out: Record<number, number> = {};
+  for (let i = 0; i < bytes.length; i++) {
+    const v = bytes[i] & 0xff;
+    if (v !== 0) out[i] = v;
+  }
+  return out;
+}
+
+/**
+ * Build ROM init data from words of arbitrary bit-width (1..32).
+ *
+ * Each word is masked to `width` bits. Use for instruction memories, wide
+ * lookup tables, or any data wider than a byte.
+ */
+export function romFromWords(words: ArrayLike<number>, width: number): Record<number, number> {
+  if (!Number.isInteger(width) || width < 1 || width > 32) {
+    throw new Error(`ROM word width must be an integer in 1..32, got ${width}`);
+  }
+  const mask = width === 32 ? 0xffffffff : ((1 << width) - 1) >>> 0;
+  const out: Record<number, number> = {};
+  for (let i = 0; i < words.length; i++) {
+    const v = ((words[i] >>> 0) & mask) >>> 0;
+    if (v !== 0) out[i] = v;
+  }
+  return out;
+}
+
+/**
+ * Build ROM init data from explicit [address, value] pairs.
+ *
+ * Use when data is naturally sparse (e.g. a few patched opcodes, scattered
+ * lookup entries). Throws on negative or non-integer addresses.
+ */
+export function romFromEntries(
+  entries: Iterable<readonly [number, number]>,
+): Record<number, number> {
+  const out: Record<number, number> = {};
+  for (const [addr, value] of entries) {
+    if (!Number.isInteger(addr) || addr < 0) {
+      throw new Error(`ROM address must be a non-negative integer, got ${addr}`);
+    }
+    if (value !== 0) out[addr] = value;
+  }
+  return out;
+}

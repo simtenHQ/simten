@@ -18,7 +18,7 @@ import smallFont from "figlet/fonts/Small";
 import { CircuitEmbed, type CircuitEmbedHandle } from "@simten/embed";
 import { circuit, bit, bus } from "@simten/core/circuit";
 import type { BuiltCircuit } from "@simten/core/circuit";
-import { Xor, And, Or, Not, DFlipFlop, Register, Adder, ROM, Constant, Console as ConsolePrimitive } from "@simten/core/std";
+import { Xor, And, Or, Not, DFlipFlop, Register, Adder, ROM, Constant, Console as ConsolePrimitive, romFromBytes } from "@simten/core/std";
 import { HighlightedCode } from "@/components/HighlightedCode";
 
 type HeroLayout = Record<string, { x: number; y: number }>;
@@ -54,7 +54,7 @@ const FigletStream = circuit('FigletStream', {
     one: { value: 1 },
     we: { value: 1 },
     zero: { value: 0 },
-    rom: { data: bannerBytes },
+    rom: { init: romFromBytes(bannerBytes) },
   },
   connect: ({ outputs, nodes: { reg, adder, rom, one, we, zero } }) => [
     reg.q.to(adder.a),
@@ -157,8 +157,6 @@ figlet.parseFont('Small', smallFont);
 // then stream the bytes through hardware — letter by letter.
 const banner = figlet.textSync('Simten', { font: 'Small' });
 const ascii = [...banner].map(c => c.charCodeAt(0));
-// ROM[0] = form-feed (clear), ROM[1..N] = banner, ROM[N+1..] = NUL filler.
-// On counter wrap, the first byte clears the screen for a fresh draw.
 const bannerBytes = Array.from({ length: 256 }, (_, i) =>
   i === 0 ? 12 : i <= ascii.length ? ascii[i - 1] : 0
 );
@@ -170,7 +168,7 @@ const FigletStream = circuit('FigletStream', {
   nodeArgs: {
     reg: { width: 8 }, adder: { width: 8 },
     one: { value: 1 }, we: { value: 1 }, zero: { value: 0 },
-    rom: { data: bannerBytes },     // ← npm-computed ASCII art
+    rom: { init: romFromBytes(bannerBytes) }, // ← npm-computed ASCII art
   },
   connect: ({ outputs, nodes: { reg, adder, rom, one, we, zero } }) => [
     reg.q.to(adder.a),

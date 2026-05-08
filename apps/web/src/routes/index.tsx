@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useCircuitSimulator, CircuitEmbed } from "@simten/embed";
 import { circuit, bit } from "@simten/core/circuit";
-import { Xor, And, Or, DFlipFlop, Constant } from "@simten/core/std";
+import { Xor, And, Or, DFlipFlop, Constant, romFromBytes } from "@simten/core/std";
 import { Eth_FrameInput, Eth_FrameParser, Eth_CRC32, Eth_ProtocolDecoder, Eth_AddrClassifier } from "@simten/core/std";
 import { HighlightedCode } from "@/components/HighlightedCode";
 import { ClaudeCTA } from "@/features/splash/ClaudeCTA";
@@ -783,12 +783,6 @@ function buildEthFrame(dst: number[], src: number[], ethertype: number): number[
   return frame;
 }
 
-function frameToInitData(bytes: number[]): Record<number, number> {
-  const obj: Record<number, number> = {};
-  bytes.forEach((b, i) => { if (b !== 0) obj[i] = b; });
-  return obj;
-}
-
 const ETH_FRAMES = [
   { label: "IPv4 unicast",    dst: [0x00,0x1A,0x2B,0x3C,0x4D,0x5E], src: [0xDE,0xAD,0xBE,0xEF,0xCA,0xFE], ethertype: 0x0800 },
   { label: "ARP broadcast",   dst: [0xFF,0xFF,0xFF,0xFF,0xFF,0xFF],   src: [0xAA,0xBB,0xCC,0xDD,0xEE,0xFF], ethertype: 0x0806 },
@@ -824,7 +818,7 @@ function useEthernetParser() {
   );
   const ethernetCircuit = useMemo(() => circuit('Eth_802_3_Parser', {
     nodes: { frame_in: Eth_FrameInput, enable: Constant, parser: Eth_FrameParser, crc: Eth_CRC32, proto: Eth_ProtocolDecoder, addr: Eth_AddrClassifier },
-    nodeArgs: { enable: { value: 1 }, frame_in: { init: frameToInitData(frameBytes) } },
+    nodeArgs: { enable: { value: 1 }, frame_in: { init: romFromBytes(frameBytes) } },
     connect: ({ nodes: { frame_in, enable, parser, crc, proto, addr } }) => [
       enable.out.to(frame_in.enable),
       frame_in.tdata.to(parser.tdata, crc.data),

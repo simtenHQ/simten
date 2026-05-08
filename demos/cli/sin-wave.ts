@@ -8,7 +8,7 @@
  */
 
 import { circuit, bus } from '@simten/core/circuit';
-import { Register, Adder, ROM, Constant } from '@simten/core/std';
+import { Register, Adder, ROM, Constant, romFromBytes } from '@simten/core/std';
 import { createSimulatorFromCircuit, createCircuitLibrary, TOP_LEVEL_NODE } from '@simten/core';
 
 // ── Circuit ──────────────────────────────────────────────────────────────────
@@ -27,7 +27,7 @@ const SinWave = circuit('SinWave', {
     one: { value: 1 },
     we: { value: 1 },
     zero: { value: 0 },
-    rom: { data: sinLUT },
+    rom: { init: romFromBytes(sinLUT) },
   },
   connect: ({ outputs, nodes: { reg, adder, rom, one, we, zero } }) => [
     reg.q.to(adder.a),

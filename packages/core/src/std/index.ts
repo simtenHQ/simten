@@ -9,6 +9,8 @@
  *   import { createStdLibrary } from '@simten/core/std'
  */
 
+import type { BuiltCircuit } from '../circuit/types.js';
+
 // Logic Gates
 export { And, Or, Not, Nand, Nor, Xor, Xnor, Buffer } from './logic.js';
 
@@ -31,7 +33,7 @@ export {
 export { DFlipFlop, Register } from './sequential.js';
 
 // Memory
-export { ROM, RAM, DualPortRAM } from './memory.js';
+export { ROM, RAM, DualPortRAM, romFromBytes, romFromWords, romFromEntries } from './memory.js';
 
 // I/O
 export { Switch, Button, Led, Input, Output, Constant } from './io.js';
@@ -54,5 +56,43 @@ export {
   Eth_FrameParser, Eth_CRC32,
   MemBusMux, UART_TX, NIC_FIFO,
 } from './networking.js';
+
+// ============================================================================
+// Aggregate circuit list
+// ============================================================================
+//
+// Pre-filtered, well-typed list of every BuiltCircuit in the stdlib. Consumers
+// that need to iterate primitives (editor type-gen, library registration,
+// elaboration scope) should use this instead of `Object.values(std).filter(...)`,
+// which breaks the moment a non-circuit helper (like romFromBytes) is exported.
+
+import * as Logic from './logic.js';
+import * as Arithmetic from './arithmetic.js';
+import * as Routing from './routing.js';
+import * as Sequential from './sequential.js';
+import * as Memory from './memory.js';
+import * as IO from './io.js';
+import * as Display from './display.js';
+import * as RV32I from './rv32i.js';
+import * as Networking from './networking.js';
+
+const isBuiltCircuit = (v: unknown): v is BuiltCircuit =>
+  !!v && typeof v === 'object' && 'name' in v && 'circuit' in v;
+
+const _allExports: unknown[] = [
+  ...Object.values(Logic),
+  ...Object.values(Arithmetic),
+  ...Object.values(Routing),
+  ...Object.values(Sequential),
+  ...Object.values(Memory),
+  ...Object.values(IO),
+  ...Object.values(Display),
+  ...Object.values(RV32I),
+  ...Object.values(Networking),
+];
+
+export const STDLIB_CIRCUITS: readonly BuiltCircuit[] = Object.freeze(
+  _allExports.filter(isBuiltCircuit),
+);
 
 
