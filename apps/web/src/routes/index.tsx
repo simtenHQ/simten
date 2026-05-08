@@ -5,6 +5,8 @@ import { circuit, bit } from "@simten/core/circuit";
 import { Xor, And, Or, DFlipFlop, Constant, romFromBytes } from "@simten/core/std";
 import { Eth_FrameInput, Eth_FrameParser, Eth_CRC32, Eth_ProtocolDecoder, Eth_AddrClassifier } from "@simten/core/std";
 import { HighlightedCode } from "@/components/HighlightedCode";
+import { Section, SectionHeading } from "@/components/SectionHeading";
+import { RV32IDebuggerPreview } from "@/features/learn/cpu-debugger/RV32IDebuggerPreview";
 import { ClaudeCTA } from "@/features/splash/ClaudeCTA";
 import { ClaudeDemoSection } from "@/features/splash/ClaudeDemoSection";
 import { Hero } from "@/features/splash/Hero";
@@ -156,10 +158,11 @@ function DemoGallery() {
     <div className="relative px-4 py-16 md:py-24 md:animate-in md:fade-in md:duration-700 overflow-hidden">
 
       <div className="relative max-w-7xl mx-auto">
-        {/* Bridge headline */}
-        <div className="mb-20 text-center max-w-2xl mx-auto">
-          <h2 className="text-2xl sm:text-3xl font-semibold text-foreground tracking-tight">
-            Text in. Live circuit out. All in your browser.
+        {/* Bridge headline — umbrella for Act 1 (demos) */}
+        <div className="mb-20 max-w-5xl">
+          <h2 className="text-4xl sm:text-5xl font-semibold tracking-tight leading-[1.05]">
+            <span className="text-foreground">Text in. Live circuit out.</span>{" "}
+            <span className="text-muted-foreground">All in your browser.</span>
           </h2>
         </div>
 
@@ -168,6 +171,43 @@ function DemoGallery() {
           <PongCard />
           <SnakeCard />
         </div>
+
+        {/* Row 1.1: Embed CTA — every demo on this page is a <CircuitEmbed /> */}
+        <Section>
+          <SectionHeading
+            title="Drop it in your blog or docs"
+            description={
+              <>
+                Every demo on this page is a{" "}
+                <code className="font-mono text-[0.9em] px-1.5 py-0.5 rounded bg-muted text-foreground/90">
+                  &lt;CircuitEmbed /&gt;
+                </code>
+                {" "}— live, interactive hardware in 3 lines.
+              </>
+            }
+          />
+          <PackageManagerTabs package="@simten/embed" />
+          <div className="rounded-lg border border-border bg-card overflow-hidden mt-4">
+            <pre className="px-4 py-3 text-[12px] font-mono text-muted-foreground leading-relaxed overflow-x-auto">
+              <span className="text-violet-400">{"import"}</span>{" { CircuitEmbed } "}
+              <span className="text-violet-400">{"from"}</span>{" "}
+              <span className="text-green-400">{"'@simten/embed'"}</span>
+              {"\n"}
+              <span className="text-violet-400">{"import"}</span>{" { myCircuit } "}
+              <span className="text-violet-400">{"from"}</span>{" "}
+              <span className="text-green-400">{"'./my-circuit'"}</span>
+              {"\n\n"}
+              <span className="text-muted-foreground">{"// Compiles, simulates, and renders — in one component"}</span>
+              {"\n"}
+              {"<"}
+              <span className="text-blue-400">{"CircuitEmbed"}</span>
+              {"\n  "}
+              <span className="text-cyan-400">{"circuit"}</span>
+              {"={myCircuit}"}
+              {"\n/>"}
+            </pre>
+          </div>
+        </Section>
 
         {/* Row 1.5: Drill-down showcase */}
         <div className="mt-32 rounded-lg border border-border overflow-hidden bg-card">
@@ -183,10 +223,10 @@ function DemoGallery() {
                 </span>
                 <span className="text-[11px] font-medium text-blue-400 uppercase tracking-wider">Drill-down</span>
               </div>
-              <h3 className="text-xl font-semibold text-foreground mb-3">
+              <h3 className="text-2xl sm:text-3xl font-semibold text-foreground tracking-tight leading-[1.15] mb-4">
                 Explore inside any component
               </h3>
-              <p className="text-[13px] text-muted-foreground leading-relaxed mb-4">
+              <p className="text-[15px] text-foreground/75 leading-snug mb-5">
                 Every composite is explorable. Double-click the pulsing
                 {" "}<span className="relative inline-flex align-middle h-5 w-5 items-center justify-center">
                   <span className="absolute inset-0 rounded-full bg-blue-400/30 animate-[ping_2s_cubic-bezier(0,0,0.2,1)_infinite]" />
@@ -262,10 +302,10 @@ function DemoGallery() {
                 </span>
                 <span className="text-[11px] font-medium text-amber-600 dark:text-amber-400 uppercase tracking-wider">Time-travel</span>
               </div>
-              <h3 className="text-xl font-semibold text-foreground mb-3">
+              <h3 className="text-2xl sm:text-3xl font-semibold text-foreground tracking-tight leading-[1.15] mb-4">
                 Rewind any clock cycle
               </h3>
-              <p className="text-[13px] text-muted-foreground leading-relaxed mb-4">
+              <p className="text-[15px] text-foreground/75 leading-snug mb-5">
                 Sequential circuits record every state. Step forward, spot something wrong, step back to the exact cycle it happened. No printf debugging — just rewind.
               </p>
               <div className="space-y-2 text-[12px] text-muted-foreground/80">
@@ -287,29 +327,38 @@ function DemoGallery() {
         </div>
 
         {/* Row 2: complex demo */}
-        <h3 className="text-lg font-semibold text-foreground mb-1 mt-36">Scale to real-world complexity</h3>
-        <p className="text-[13px] text-muted-foreground/60 mb-4">A full RISC-V CPU running compiled C, C++, and Rust — hundreds of nodes, all in your browser.</p>
-        <div className="grid grid-cols-1 gap-4">
-          <ComplexDemoCard
-            title="RV32I CPU Debugger"
-            subtitle="~300 lines of TypeScript"
-            description="Write C, C++, or Rust, compile it with the GCC RISC-V toolchain, and watch it execute instruction by instruction on a real 5-stage pipelined RISC-V CPU."
-            href="/learn/rv32i-cpu"
-            accent="blue"
-            image="/og/rv32i-debugger.png"
-            imageAlt="RV32I CPU debugger: Rust source, 5-stage pipeline, disassembly with stage badges, and live registers"
+        <Section>
+          <SectionHeading
+title="Scale to real-world complexity"
+            description="A full RISC-V CPU running compiled C, C++, and Rust — hundreds of nodes, all in your browser."
           />
-        </div>
+          <div className="grid grid-cols-1 gap-4">
+            <ComplexDemoCard
+              title="RV32I CPU Debugger"
+              subtitle="~300 lines of TypeScript"
+              description="Write C, C++, or Rust, compile it with the GCC RISC-V toolchain, and watch it execute instruction by instruction on a real 5-stage pipelined RISC-V CPU."
+              href="/learn/rv32i-cpu"
+              accent="blue"
+              preview={<RV32IDebuggerPreview />}
+            />
+          </div>
+        </Section>
 
         {/* Row 3: Ethernet parser — full width */}
-        <h3 className="text-lg font-semibold text-foreground mb-1 mt-20">Real protocols, simulated from gates</h3>
-        <p className="text-[13px] text-muted-foreground/60 mb-4">IEEE 802.3 Ethernet frame parsing — MAC addresses, EtherType, CRC-32, all running live</p>
-        <EthernetParserCard />
+        <Section>
+          <SectionHeading
+title="Real protocols, simulated from gates"
+            description="IEEE 802.3 Ethernet frame parsing — MAC addresses, EtherType, CRC-32, all running live."
+          />
+          <EthernetParserCard />
+        </Section>
 
         {/* Row 4: Featured deep dives */}
-        <div className="mt-40">
-          <h3 className="text-lg font-semibold text-foreground mb-1">Interactive deep dives</h3>
-          <p className="text-[13px] text-muted-foreground/60 mb-5">Not diagrams. Live circuits verified against real specifications.</p>
+        <Section>
+          <SectionHeading
+title="Interactive deep dives"
+            description="Not diagrams. Live circuits verified against real specifications."
+          />
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             {[
               {
@@ -353,38 +402,14 @@ function DemoGallery() {
               All articles &rarr;
             </Link>
           </div>
-        </div>
-
-        {/* Row 5: Embed CTA */}
-        <div className="mt-40">
-          <h3 className="text-lg font-semibold text-foreground mb-1">Embed in your own site</h3>
-          <p className="text-[13px] text-muted-foreground/60 mb-5">One component. Your docs get live, interactive hardware simulations.</p>
-          <PackageManagerTabs package="@simten/embed" />
-          <div className="rounded-lg border border-border bg-card overflow-hidden mt-4">
-            <pre className="px-4 py-3 text-[12px] font-mono text-muted-foreground leading-relaxed overflow-x-auto">
-              <span className="text-violet-400">{"import"}</span>{" { CircuitEmbed } "}
-              <span className="text-violet-400">{"from"}</span>{" "}
-              <span className="text-green-400">{"'@simten/embed'"}</span>
-              {"\n\n"}
-              <span className="text-muted-foreground">{"// Compiles, simulates, and renders — in one component"}</span>
-              {"\n"}
-              {"<"}
-              <span className="text-blue-400">{"CircuitEmbed"}</span>
-              {"\n  "}
-              <span className="text-cyan-400">{"circuit"}</span>
-              {"={myCircuit}"}
-              {"\n  "}
-              <span className="text-cyan-400">{"height"}</span>
-              {"={300}"}
-              {"\n/>"}
-            </pre>
-          </div>
-        </div>
+        </Section>
 
         {/* Row 5.5: Headless simulation */}
-        <div className="mt-40">
-          <h3 className="text-lg font-semibold text-foreground mb-1">Run headless — no browser needed</h3>
-          <p className="text-[13px] text-muted-foreground/60 mb-5">The same engine runs in Node.js, CI pipelines, and MCP tools at 20,000+ ticks/sec.</p>
+        <Section>
+          <SectionHeading
+title="Run headless — no browser needed"
+            description="The same engine runs in Node.js, CI pipelines, and MCP tools at 20,000+ ticks/sec."
+          />
           <div className="rounded-lg border border-border bg-card overflow-hidden">
             <div className="flex items-center gap-1.5 px-4 h-9 border-b border-border bg-muted">
               <span className="w-2.5 h-2.5 rounded-full bg-[#ff5f57]" />
@@ -406,12 +431,14 @@ function DemoGallery() {
 <span className="text-muted-foreground/60">{"  PC = 0x30 (halted at infinite loop)"}</span>
             </pre>
           </div>
-        </div>
+        </Section>
 
         {/* Row 5.6: npm interop */}
-        <div className="mt-40">
-          <h3 className="text-lg font-semibold text-foreground mb-1">Import any npm package</h3>
-          <p className="text-[13px] text-muted-foreground/60 mb-5">Circuits are TypeScript. Use fast-check for property testing, D3 for visualization, or your own libraries to drive simulations.</p>
+        <Section>
+          <SectionHeading
+title="Import any npm package"
+            description="Circuits are TypeScript. Use fast-check for property testing, D3 for visualization, or your own libraries to drive simulations."
+          />
           <div className="rounded-lg border border-border bg-card overflow-hidden">
             <div className="flex items-center gap-1.5 px-4 h-9 border-b border-border bg-muted">
               <span className="w-2.5 h-2.5 rounded-full bg-[#ff5f57]" />
@@ -452,17 +479,19 @@ fc.assert(
             />
           </div>
           <p className="text-[11px] text-muted-foreground/60 mt-3">No testbench language. No waveform files. Just TypeScript and whatever libraries you already know.</p>
-        </div>
+        </Section>
 
         {/* Row 6: Build with AI */}
-        <div className="mt-40">
+        <Section>
           <ClaudeCTA />
-        </div>
+        </Section>
 
         {/* Row 7: Verilog Export */}
-        <div className="mt-40">
-          <h3 className="text-lg font-semibold text-foreground mb-1">Export to Verilog</h3>
-          <p className="text-[13px] text-muted-foreground/60 mb-5">Design in TypeScript. Export synthesisable Verilog. Verified cycle-by-cycle against Icarus Verilog.</p>
+        <Section>
+          <SectionHeading
+title="Export to Verilog"
+            description="Design in TypeScript. Export synthesisable Verilog. Verified cycle-by-cycle against Icarus Verilog."
+          />
           <div className="grid grid-cols-2 gap-4">
             {/* TypeScript side */}
             <div className="rounded-lg border border-border bg-card overflow-hidden">
@@ -507,9 +536,9 @@ fc.assert(
             </div>
           </div>
           <p className="text-[11px] text-muted-foreground/60 mt-3">Any circuit you build exports to synthesisable Verilog — verified cycle-by-cycle against Icarus Verilog.</p>
-        </div>
+        </Section>
 
-        <div className="mt-40 flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:justify-between">
+        <div className="mt-28 md:mt-36 flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:justify-between">
           <p className="text-[13px] text-muted-foreground/60">
             Or build circuits yourself — no Claude needed.
           </p>
@@ -590,15 +619,12 @@ function PongCard() {
 
   return (
     <div className="flex flex-col rounded-lg border border-border overflow-hidden bg-card">
-      <div
-        className="flex items-center justify-center bg-black"
-        style={{ height: 240 }}
-      >
+      <div className="h-[320px] sm:h-[360px] flex items-center justify-center bg-black p-4 sm:p-6">
         {sim.ready ? (
           <svg
             viewBox={`0 0 ${total} ${total}`}
-            width={total}
-            height={total}
+            preserveAspectRatio="xMidYMid meet"
+            className="w-full h-full"
             style={{ imageRendering: "pixelated" }}
           >
             {pixels.map((val, i) => (
@@ -678,16 +704,13 @@ function SnakeCard() {
 
   return (
     <div className="flex flex-col rounded-lg border border-border overflow-hidden bg-card">
-      {/* Preview — matches CircuitEmbed height */}
-      <div
-        className="flex items-center justify-center bg-black"
-        style={{ height: 240 }}
-      >
+      {/* Preview — square so the grid fills the card at any width */}
+      <div className="h-[320px] sm:h-[360px] flex items-center justify-center bg-black p-4 sm:p-6">
         {sim.ready ? (
           <svg
             viewBox={`0 0 ${total} ${total}`}
-            width={total}
-            height={total}
+            preserveAspectRatio="xMidYMid meet"
+            className="w-full h-full"
             style={{ imageRendering: "pixelated" }}
           >
             {pixels.map((val, i) => (
@@ -1027,6 +1050,7 @@ function ComplexDemoCard({
   snippet,
   image,
   imageAlt,
+  preview,
 }: {
   title: string;
   subtitle: string;
@@ -1037,6 +1061,8 @@ function ComplexDemoCard({
   /** Optional preview image (e.g. screenshot). Renders instead of `snippet`. */
   image?: string;
   imageAlt?: string;
+  /** Optional rendered preview (HTML mockup). Wins over `image` and `snippet`. */
+  preview?: React.ReactNode;
 }) {
   const accentColor =
     accent === "blue" ? "text-blue-600 dark:text-blue-400/70" : "text-violet-600 dark:text-violet-400/70";
@@ -1071,7 +1097,11 @@ function ComplexDemoCard({
     <div
       className={`flex flex-col rounded-lg border ${borderColor} overflow-hidden bg-gradient-to-br ${bgColor} to-card`}
     >
-      {image ? (
+      {preview ? (
+        <Link to={href} className="block bg-card overflow-hidden" style={{ height: 480 }}>
+          {preview}
+        </Link>
+      ) : image ? (
         <Link to={href} className="block bg-[#0a0a0a]" style={{ height: 360 }}>
           <img
             src={image}
