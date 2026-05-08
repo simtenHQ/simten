@@ -73,23 +73,33 @@ export function initializeFlatSequentialState(
       let initialValue = stateBlock.initialValue;
 
       if ('initial' in node.arguments && node.arguments.initial !== undefined) {
-        // Register/DFlipFlop initial value
+        // Register/DFlipFlop scalar initial value
         initialValue = node.arguments.initial as number | boolean;
-      } else if ('init' in node.arguments && node.arguments.init !== undefined) {
-        // RAM initial values (array or object)
-        const initData = node.arguments.init;
+      } else if (stateBlock.stateType.kind === 'memory') {
+        // Memory init: build a Map from `init:` (sparse Record or dense array)
+        // and overlay any runtime-injected `memoryData` on top. Single canonical
+        // path — applies to ROM, RAM, DualPortRAM, RV32I_InstrMem, etc.
         const memory = new Map<number, number>();
 
-        if (Array.isArray(initData)) {
-          initData.forEach((value, index) => {
-            if (typeof value === 'number') {
-              memory.set(index, value);
+        const initData = node.arguments.init;
+        if (initData !== undefined) {
+          if (Array.isArray(initData)) {
+            initData.forEach((value, index) => {
+              if (typeof value === 'number') memory.set(index, value);
+            });
+          } else if (typeof initData === 'object') {
+            for (const [key, value] of Object.entries(initData)) {
+              const addr = parseInt(key, 10);
+              if (!isNaN(addr) && typeof value === 'number') memory.set(addr, value);
             }
-          });
-        } else if (typeof initData === 'object') {
-          for (const [key, value] of Object.entries(initData)) {
-            const addr = parseInt(key, 10);
-            if (!isNaN(addr) && typeof value === 'number') {
+          }
+        }
+
+        // Runtime overlay takes precedence — allows patching node-arg ROM contents.
+        if (memoryData) {
+          const loadedData = getMemoryDataForNode(node.id, memoryData, node.primitiveType);
+          if (loadedData) {
+            for (const [addr, value] of loadedData.entries()) {
               memory.set(addr, value);
             }
           }
@@ -98,41 +108,8 @@ export function initializeFlatSequentialState(
         const stType = stateBlock.stateType;
         initialValue = {
           data: memory,
-          addressWidth: stType.kind === 'memory' ? stType.addressWidth : 8,
-          dataWidth: stType.kind === 'memory' ? stType.dataWidth : 8,
-        };
-      } else if (node.primitiveType === 'ROM' || node.primitiveType === 'DualPortROM' || node.primitiveType === 'RV32I_InstrMem' || node.primitiveType === 'RV32I_DataMem') {
-        // ROM initialization - check for node argument data first, then runtime-loaded data
-        const memory = new Map<number, number>();
-
-        // 1. Check for node argument data (node.arguments.data)
-        if ('data' in node.arguments && node.arguments.data) {
-          const initData = node.arguments.data as Record<string, number>;
-          for (const [key, value] of Object.entries(initData)) {
-            const addr = parseInt(key, 10);
-            if (!isNaN(addr) && typeof value === 'number') {
-              memory.set(addr, value);
-            }
-          }
-        }
-
-        // 2. Check for runtime-loaded data from injected memoryData
-        // Runtime data takes precedence (allows patching node-argument ROMs)
-        if (memoryData) {
-          const loadedData = getMemoryDataForNode(node.id, memoryData, node.primitiveType);
-          if (loadedData) {
-            // Runtime data overwrites node argument data for same addresses
-            for (const [addr, value] of loadedData.entries()) {
-              memory.set(addr, value);
-            }
-          }
-        }
-
-        const stateType = stateBlock.stateType;
-        initialValue = {
-          data: memory,
-          addressWidth: stateType.kind === 'memory' ? stateType.addressWidth : 16,
-          dataWidth: stateType.kind === 'memory' ? stateType.dataWidth : 8,
+          addressWidth: stType.addressWidth,
+          dataWidth: stType.dataWidth,
         };
       }
 
