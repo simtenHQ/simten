@@ -63,8 +63,8 @@ function buildScope(): { names: string[]; values: unknown[] } {
   // All stdlib exports — circuits inject by their internal `name` (And, Or, …),
   // helper functions inject by their export name (romFromBytes, …).
   for (const [exportName, value] of Object.entries(std)) {
-    if (value && typeof value === 'object' && 'name' in value && 'circuit' in value) {
-      scope.set((value as BuiltCircuit).name, value);
+    if (value && typeof value === 'object' && 'circuit' in value) {
+      scope.set((value as BuiltCircuit).circuit.name, value);
     } else if (typeof value === 'function') {
       scope.set(exportName, value);
     }

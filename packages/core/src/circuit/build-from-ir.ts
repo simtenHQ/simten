@@ -33,17 +33,35 @@ import type { BuiltCircuit } from './types.js';
 export function buildFromIR(circuit: Circuit, libraryCircuits: Circuit[]): BuiltCircuit {
   const dependencies = new Map<string, BuiltCircuit>();
   for (const dep of libraryCircuits) {
-    dependencies.set(dep.name, {
-      circuit: dep,
-      name: dep.name,
-      _shape: { inputs: {}, outputs: {}, nodes: {} },
-      _dependencies: new Map(),
-    });
+    dependencies.set(dep.name, attachToJSON(wrap(dep, new Map())));
   }
+  return attachToJSON(wrap(circuit, dependencies));
+}
+
+function wrap(c: Circuit, deps: Map<string, BuiltCircuit>): BuiltCircuit {
+  const inputs: Record<string, typeof c.inputs[number]> = {};
+  for (const p of c.inputs) inputs[p.name] = p;
+  const outputs: Record<string, typeof c.outputs[number]> = {};
+  for (const p of c.outputs) outputs[p.name] = p;
+  const nodes: Record<string, typeof c.nodes[number]> = {};
+  for (const n of c.nodes) nodes[n.id] = n;
   return {
-    circuit,
-    name: circuit.name,
-    _shape: { inputs: {}, outputs: {}, nodes: {} },
-    _dependencies: dependencies,
-  };
+    circuit: c,
+    inputs,
+    outputs,
+    nodes,
+    _dependencies: deps,
+  } as unknown as BuiltCircuit;
+}
+
+function attachToJSON<T extends BuiltCircuit>(built: T): T {
+  Object.defineProperty(built, 'toJSON', {
+    value: function () {
+      const deps: Record<string, unknown> = {};
+      for (const [n, d] of this._dependencies) deps[n] = d;
+      return { circuit: this.circuit, _dependencies: deps };
+    },
+    enumerable: false,
+  });
+  return built;
 }

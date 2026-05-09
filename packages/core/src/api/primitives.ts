@@ -26,14 +26,13 @@ export function getPrimitivesHandler(
     inputs: Array<{ name: string; type: string }>;
     outputs: Array<{ name: string; type: string }>;
     clocks: Array<{ name: string }>;
-    parameters?: Array<{ name: string; type: string; defaultValue?: string }>;
   }> = [];
 
   for (const name of primitiveNames) {
     const circuit = library.resolveCircuit(name);
     if (!circuit) continue;
 
-    const kind = circuit.metadata?.kind;
+    const kind = circuit.metadata?.timing;
     if (params.kind && kind !== params.kind) continue;
 
     components.push({
@@ -49,13 +48,6 @@ export function getPrimitivesHandler(
         type: p.portType.kind === 'bit' ? 'Bit' : `Bus[${(p.portType as any).width ?? '?'}]`,
       })),
       clocks: circuit.clocks.map((c) => ({ name: c.name })),
-      parameters: circuit.parameters.length > 0
-        ? circuit.parameters.map((p) => ({
-            name: p.name,
-            type: p.paramType,
-            defaultValue: p.defaultValue?.toString(),
-          }))
-        : undefined,
     });
   }
 
@@ -74,12 +66,8 @@ function formatCompact(c: {
   inputs: Array<{ name: string; type: string }>;
   outputs: Array<{ name: string; type: string }>;
   clocks: Array<{ name: string }>;
-  parameters?: Array<{ name: string; type: string; defaultValue?: string }>;
 }): string {
   let sig = c.name;
-  if (c.parameters && c.parameters.length > 0) {
-    sig += `<${c.parameters.map((p) => `${p.name}=${p.defaultValue ?? '?'}`).join(', ')}>`;
-  }
   sig += `(${c.inputs.map((p) => `${p.name}:${p.type}`).join(', ')})`;
   sig += ` -> (${c.outputs.map((p) => `${p.name}:${p.type}`).join(', ')})`;
   if (c.clocks.length > 0) sig += ` [clk:${c.clocks.map((cl) => cl.name).join(',')}]`;
@@ -95,7 +83,6 @@ function formatDetailed(c: {
   inputs: Array<{ name: string; type: string }>;
   outputs: Array<{ name: string; type: string }>;
   clocks: Array<{ name: string }>;
-  parameters?: Array<{ name: string; type: string; defaultValue?: string }>;
 }): string {
   const lines: string[] = [];
   lines.push(`Component: ${c.name}`);
@@ -111,14 +98,6 @@ function formatDetailed(c: {
     lines.push('');
     lines.push('Clocks:');
     for (const clock of c.clocks) lines.push(`  ${clock.name}`);
-  }
-  if (c.parameters && c.parameters.length > 0) {
-    lines.push('');
-    lines.push('Parameters:');
-    for (const param of c.parameters) {
-      const def = param.defaultValue ? ` (default: ${param.defaultValue})` : '';
-      lines.push(`  ${param.name}: ${param.type}${def}`);
-    }
   }
   return lines.join('\n');
 }

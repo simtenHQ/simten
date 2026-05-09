@@ -253,19 +253,12 @@ function formatComponentSignature(component: ComponentInterface): string {
     sig += ` [clk: ${component.clocks.map((c) => c.name).join(', ')}]`;
   }
 
-  if (component.parameters && component.parameters.length > 0) {
-    const params = component.parameters
-      .map((p) => `${p.name}=${p.defaultValue ?? '?'}`)
-      .join(', ');
-    sig += ` — params: \`${component.name}(${params})\``;
-  }
-
   if (component.description) {
     sig += ` — ${component.description}`;
   }
 
-  // Clarify: input ports must be driven by connect statements, not params
-  if (component.inputs.length > 0 && (!component.parameters || component.parameters.length === 0)) {
+  // Clarify: input ports must be driven by connect statements
+  if (component.inputs.length > 0) {
     sig += ` (all ports wired via connect)`;
   }
 

@@ -151,7 +151,7 @@ export const useCircuitPreviewStore = create<CircuitPreviewStore>()(
       // Ensure harness components (Switch, Led, etc.) are in the library
       const libStore = useCircuitLibraryStore.getState();
       for (const c of [Switch, Button, Led, Input, Output, HexDisplay]) {
-        if (!libStore.resolveCircuit(c.name)) libStore.addCircuit(c.circuit);
+        if (!libStore.resolveCircuit(c.circuit.name)) libStore.addCircuit(c.circuit);
       }
 
       // Wrap with Switch/Led harness so inputs/outputs are interactive on canvas

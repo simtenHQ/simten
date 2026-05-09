@@ -98,12 +98,13 @@ function extractEvalSources(circuit: BuiltCircuit): Record<string, EvalSource> {
   const visited = new Set<string>();
 
   function collect(c: BuiltCircuit) {
-    if (visited.has(c.name)) return;
-    visited.add(c.name);
+    const name = c.circuit.name;
+    if (visited.has(name)) return;
+    visited.add(name);
 
-    const entry = getCircuitEval(c.name);
+    const entry = getCircuitEval(name);
     if (entry) {
-      sources[c.name] = {
+      sources[name] = {
         evalSource: entry.evalFn.toString(),
         onTickSource: entry.onTickFn?.toString(),
         inputNames: entry.inputNames,
@@ -130,18 +131,14 @@ export function builtFromIR(circuit: Circuit, dependencies: Circuit[]): BuiltCir
   const depMap = new Map<string, BuiltCircuit>();
   for (const dep of dependencies) {
     depMap.set(dep.name, {
-      name: dep.name,
       circuit: dep,
-      _shape: { inputs: {}, outputs: {} } as any,
       _dependencies: new Map(),
-    } as BuiltCircuit);
+    } as unknown as BuiltCircuit);
   }
   return {
-    name: circuit.name,
     circuit,
-    _shape: { inputs: {}, outputs: {} } as any,
     _dependencies: depMap,
-  } as BuiltCircuit;
+  } as unknown as BuiltCircuit;
 }
 
 /**

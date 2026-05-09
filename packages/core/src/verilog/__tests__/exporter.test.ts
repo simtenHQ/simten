@@ -147,7 +147,7 @@ describe('exportVerilog', () => {
         ],
       };
       const circuitMap = new Map<string, Circuit>([
-        [RamUser.name, RamUser.circuit],
+        [RamUser.circuit.name, RamUser.circuit],
         ['RAM', ramDefWithData],
       ]);
       const lib: CircuitLibrary = {
@@ -198,7 +198,7 @@ describe('exportVerilog', () => {
         ],
       };
       const circuitMap = new Map<string, Circuit>([
-        [RamUser.name, RamUser.circuit],
+        [RamUser.circuit.name, RamUser.circuit],
         ['RAM', ramDefWithData],
       ]);
       const lib: CircuitLibrary = {

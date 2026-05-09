@@ -26,7 +26,6 @@ export function autoHarness(
     library.addCircuit(circuit);
   }
 
-  const harnessId = `__harness_${circuit.name}`;
   const harnessName = `${circuit.name}Demo`;
 
   const nodes: Node[] = [];
@@ -91,9 +90,8 @@ export function autoHarness(
   }
 
   return {
-    id: harnessId,
+    version: 1,
     name: harnessName,
-    parameters: [],
     inputs: [],
     outputs: [],
     clocks: [],

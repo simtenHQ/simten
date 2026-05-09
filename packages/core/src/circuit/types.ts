@@ -10,7 +10,7 @@
  * so TypeScript resolves everything in one pass — fast at any circuit size.
  */
 
-import type { PortType, Circuit, ArgumentValue } from '../types/circuit.js';
+import type { PortType, Circuit, ArgumentValue, PortDescriptor, Node } from '../types/circuit.js';
 
 // ============================================================================
 // Port types
@@ -132,13 +132,17 @@ export interface BuiltCircuit<
 > {
   /** The Circuit IR for this circuit */
   readonly circuit: Circuit;
+  /** Input ports by name (instead of `circuit.inputs.find(...)`). */
+  readonly inputs: { readonly [K in keyof Ins]: PortDescriptor };
+  /** Output ports by name. */
+  readonly outputs: { readonly [K in keyof Outs]: PortDescriptor };
+  /** Sub-nodes by id (composite circuits). */
+  readonly nodes: { readonly [K in keyof Ns]: Node };
   /** Type-level shape for generic propagation. Includes node names so that
    *  consumers (e.g., the canvas `layout` prop) can constrain keys at compile time. */
   readonly _shape: { inputs: Ins; outputs: Outs; nodes: Ns };
   /** Sub-circuit definitions needed for simulation (transitive) */
   readonly _dependencies: ReadonlyMap<string, BuiltCircuit>;
-  /** Circuit name */
-  readonly name: string;
 }
 
 // ============================================================================
