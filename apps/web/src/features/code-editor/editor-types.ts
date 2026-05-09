@@ -88,7 +88,6 @@ interface BuiltCircuit<
   readonly inputs: { readonly [K in keyof Ins]: PortDescriptor };
   readonly outputs: { readonly [K in keyof Outs]: PortDescriptor };
   readonly nodes: { readonly [K in keyof Ns]: NodeIR };
-  readonly _shape: { inputs: Ins; outputs: Outs; nodes: Ns };
 }
 
 // ============================================================================
@@ -100,9 +99,11 @@ type PortRefs<M> = {
   readonly [K in keyof M]: PortRef;
 };
 
-/** Extract all port refs from a BuiltCircuit */
+/** Extract all port refs from a BuiltCircuit (use generics via infer, not _shape) */
 type NodePortRefs<C extends BuiltCircuit> =
-  PortRefs<C['_shape']['inputs']> & PortRefs<C['_shape']['outputs']>;
+  C extends BuiltCircuit<infer Ins, infer Outs, any>
+    ? PortRefs<Ins> & PortRefs<Outs>
+    : never;
 
 /** The connect callback argument — typed from config's inputs/outputs/nodes */
 type ConnectArg<
