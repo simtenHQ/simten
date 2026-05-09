@@ -44,5 +44,11 @@
   "packageManager": "pnpm@8.8.0+sha1.9922e8b650d393700209ccd81e0ebdbcbe43b0d3",
   "dependencies": {
     "serialport": "^13.0.0"
+  },
+  "pnpm": {
+    "overrides": {
+      "react": "19.2.0",
+      "react-dom": "19.2.0"
+    }
   }
 }

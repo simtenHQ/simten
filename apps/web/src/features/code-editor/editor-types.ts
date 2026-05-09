@@ -71,13 +71,24 @@ interface ConnectionDef {
 // Built Component
 // ============================================================================
 
+interface PortDescriptor { readonly name: string; readonly portType: PortType; }
+interface NodeIR {
+  readonly id: string;
+  readonly componentRef: string;
+  readonly inputs: readonly PortDescriptor[];
+  readonly outputs: readonly PortDescriptor[];
+}
+
 interface BuiltCircuit<
   Ins extends Record<string, PortType> = Record<string, PortType>,
   Outs extends Record<string, PortType> = Record<string, PortType>,
+  Ns extends Record<string, unknown> = Record<string, unknown>,
 > {
   readonly circuit: any;
-  readonly _shape: { inputs: Ins; outputs: Outs };
-  readonly name: string;
+  readonly inputs: { readonly [K in keyof Ins]: PortDescriptor };
+  readonly outputs: { readonly [K in keyof Outs]: PortDescriptor };
+  readonly nodes: { readonly [K in keyof Ns]: NodeIR };
+  readonly _shape: { inputs: Ins; outputs: Outs; nodes: Ns };
 }
 
 // ============================================================================

@@ -34,12 +34,14 @@ import type { RLEValue } from '@simten/core/api';
 // Config
 // ============================================================================
 
-// In dev the sandbox runs on localhost:3002. In production, sandbox.simten.dev.
-// Vite replaces import.meta.env.VITE_SANDBOX_ORIGIN at build time.
+// Sandbox origin: defaults work for normal dev (localhost:3002) and production
+// (sandbox.simten.dev). VITE_SANDBOX_ORIGIN is an optional escape hatch for
+// unusual setups (e.g. pointing local dev at a staging sandbox).
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
+const env = typeof import.meta !== 'undefined' ? (import.meta as any).env : undefined;
 const SANDBOX_ORIGIN: string =
-  (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_SANDBOX_ORIGIN)
-    || 'http://localhost:3002';
+  env?.VITE_SANDBOX_ORIGIN
+    || (env?.PROD ? 'https://sandbox.simten.dev' : 'http://localhost:3002');
 
 // ============================================================================
 // Types
