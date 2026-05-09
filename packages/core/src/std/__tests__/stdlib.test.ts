@@ -58,12 +58,11 @@ describe('stdlib circuits load', () => {
   ];
 
   it.each(allCircuits)('%s has correct name', (name, comp) => {
-    expect(comp.name).toBe(name);
+    expect(comp.circuit.name).toBe(name);
   });
 
-  it.each(allCircuits)('%s has valid circuit IR', (name, comp) => {
+  it.each(allCircuits)('%s has valid circuit IR', (_name, comp) => {
     expect(comp.circuit).toBeDefined();
-    expect(comp.circuit.id).toBe(`circuit:${name}`);
     expect(comp.circuit.implementation.kind).toBe('primitive');
   });
 
@@ -78,11 +77,6 @@ describe('stdlib circuits load', () => {
     }
   });
 
-  it.each(allCircuits)('%s has _shape matching ports', (name, comp) => {
-    const shape = comp._shape;
-    expect(Object.keys(shape.inputs).length).toBe(comp.circuit.inputs.length);
-    expect(Object.keys(shape.outputs).length).toBe(comp.circuit.outputs.length);
-  });
 });
 
 // ============================================================================
@@ -93,13 +87,13 @@ describe('sequential components', () => {
   it('DFlipFlop has clock and state', () => {
     expect(DFlipFlop.circuit.clocks.length).toBeGreaterThan(0);
     expect(DFlipFlop.circuit.state.length).toBeGreaterThan(0);
-    expect(DFlipFlop.circuit.metadata?.kind).toBe('sequential');
+    expect(DFlipFlop.circuit.metadata?.timing).toBe('sequential');
   });
 
   it('Register has clock and state', () => {
     expect(Register.circuit.clocks.length).toBeGreaterThan(0);
     expect(Register.circuit.state.length).toBeGreaterThan(0);
-    expect(Register.circuit.metadata?.kind).toBe('sequential');
+    expect(Register.circuit.metadata?.timing).toBe('sequential');
   });
 
   it('RAM has clock and state', () => {

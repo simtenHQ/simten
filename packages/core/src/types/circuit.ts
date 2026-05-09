@@ -192,20 +192,6 @@ export interface IntrinsicImpl {
 export type Implementation = PrimitiveImpl | CompositeImpl | IntrinsicImpl;
 
 // ============================================================================
-// Parameters
-// ============================================================================
-
-export type ParameterType = 'int' | 'string' | 'bool';
-
-export interface Parameter {
-  name: string;
-  paramType: ParameterType;
-  defaultValue?: number | string | boolean;
-  /** Valid choices for this parameter (UI can show a dropdown) */
-  options?: (number | string | boolean)[];
-}
-
-// ============================================================================
 // Metadata
 // ============================================================================
 
@@ -222,7 +208,7 @@ export interface TestCase {
  * - sequential: Has state (registers, RAM), updates on clock edges
  * - sink: Consumes signals but outputs don't feed back (Screen, audio, UART)
  */
-export type CircuitKind = 'combinational' | 'sequential' | 'sink';
+export type CircuitTiming = 'combinational' | 'sequential' | 'sink';
 
 export interface CircuitMetadata {
   source?: {
@@ -236,7 +222,8 @@ export interface CircuitMetadata {
   version?: string;
   testCases?: TestCase[];
   tags?: string[];
-  kind?: CircuitKind;
+  /** Timing classification: combinational, sequential, or sink. Distinct from `implementation.kind` (primitive vs composite). */
+  timing?: CircuitTiming;
   /** Key in node.arguments that holds the user-interactive value (Switch, Button, Input) */
   interactiveArg?: string;
   /**
@@ -261,9 +248,9 @@ export interface CircuitMetadata {
 // ============================================================================
 
 export interface Circuit {
-  id: string;
+  /** Schema version for the Circuit IR. Bumped on breaking shape changes. */
+  version: 1;
   name: string;
-  parameters: Parameter[];
   inputs: PortDescriptor[];
   outputs: PortDescriptor[];
   clocks: ClockDescriptor[];

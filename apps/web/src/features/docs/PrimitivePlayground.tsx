@@ -78,7 +78,7 @@ export function PrimitiveExplorer() {
   const grouped = useMemo(() => {
     const groups: Record<string, BuiltCircuit[]> = {};
     for (const comp of ALL_STD) {
-      if (!shouldShow(comp.name)) continue;
+      if (!shouldShow(comp.circuit.name)) continue;
       const cat = comp.circuit.metadata?.category ?? "other";
       if (!groups[cat]) groups[cat] = [];
       groups[cat].push(comp);
@@ -94,7 +94,7 @@ export function PrimitiveExplorer() {
     for (const [cat, comps] of Object.entries(grouped)) {
       const matches = comps.filter(
         (c) =>
-          c.name.toLowerCase().includes(q) ||
+          c.circuit.name.toLowerCase().includes(q) ||
           (c.circuit.metadata?.description ?? "").toLowerCase().includes(q)
       );
       if (matches.length > 0) result[cat] = matches;
@@ -103,7 +103,7 @@ export function PrimitiveExplorer() {
   }, [grouped, search]);
 
   // Build a name→BuiltCircuit map for lookups
-  const byName = useMemo(() => new Map(ALL_STD.map((c) => [c.name, c])), []);
+  const byName = useMemo(() => new Map(ALL_STD.map((c) => [c.circuit.name, c])), []);
 
   const selected = selectedName ? byName.get(selectedName) ?? null : null;
 
@@ -161,19 +161,19 @@ export function PrimitiveExplorer() {
                   </div>
                   {filtered[cat].map((comp) => (
                     <button
-                      key={comp.name}
+                      key={comp.circuit.name}
                       onClick={() => {
-                        setSelectedName(comp.name);
+                        setSelectedName(comp.circuit.name);
                         setSearch("");
                         setDropdownOpen(false);
                       }}
                       className={`w-full text-left px-3 py-2 hover:bg-accent transition-colors flex items-center justify-between gap-2 ${
-                        selectedName === comp.name ? "bg-accent" : ""
+                        selectedName === comp.circuit.name ? "bg-accent" : ""
                       }`}
                     >
                       <div className="min-w-0">
                         <div className="flex items-center gap-2">
-                          <span className="text-sm font-medium text-foreground">{comp.name}</span>
+                          <span className="text-sm font-medium text-foreground">{comp.circuit.name}</span>
                           <span className="text-xs text-muted-foreground">{comp.circuit.metadata?.icon}</span>
                         </div>
                         <div className="text-xs text-muted-foreground truncate">{comp.circuit.metadata?.description}</div>
@@ -198,7 +198,7 @@ export function PrimitiveExplorer() {
           {/* Header */}
           <div className="px-4 py-3 border-b border-border">
             <div className="flex items-center gap-2">
-              <span className="text-lg font-semibold text-foreground">{selected.name}</span>
+              <span className="text-lg font-semibold text-foreground">{selected.circuit.name}</span>
               <span className="text-muted-foreground">{selected.circuit.metadata?.icon}</span>
               {(selected.circuit.clocks?.length ?? 0) > 0 && (
                 <span className="text-[10px] rounded bg-purple-100 text-purple-700 border border-purple-200 dark:bg-purple-900/50 dark:text-purple-400 dark:border-purple-800/50 px-1.5 py-0.5">
@@ -223,24 +223,6 @@ export function PrimitiveExplorer() {
                   {selected.circuit.clocks!.map((c) => (
                     <span key={c.name} className="inline-flex items-center rounded bg-purple-100 dark:bg-purple-900/30 px-1.5 py-0.5 text-xs font-mono text-purple-700 dark:text-purple-300">
                       {c.name}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-            {(selected.circuit.parameters?.length ?? 0) > 0 && (
-              <div>
-                <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Parameters</span>
-                <div className="flex flex-wrap gap-1.5 mt-1">
-                  {selected.circuit.parameters!.map((p) => (
-                    <span key={p.name} className="inline-flex items-center gap-1 rounded bg-muted px-1.5 py-0.5 text-xs font-mono">
-                      <span className="text-amber-600 dark:text-amber-400">{p.name}</span>
-                      {p.defaultValue !== undefined && (
-                        <>
-                          <span className="text-muted-foreground">=</span>
-                          <span className="text-foreground/70">{String(p.defaultValue)}</span>
-                        </>
-                      )}
                     </span>
                   ))}
                 </div>
@@ -272,7 +254,7 @@ export function PrimitiveLink({
   name: string;
   children?: React.ReactNode;
 }) {
-  const hasDemo = ALL_STD.some((c) => c.name === name) && shouldShow(name);
+  const hasDemo = ALL_STD.some((c) => c.circuit.name === name) && shouldShow(name);
 
   if (!hasDemo) {
     return <code className="text-sm">{children ?? name}</code>;

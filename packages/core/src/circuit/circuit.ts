@@ -28,7 +28,7 @@ import type {
   StateBlock,
   Implementation,
   CircuitMetadata,
-  CircuitKind,
+  CircuitTiming,
   ArgumentValue,
 } from '../types/circuit.js';
 import { normalizePortType, isRegState, isMemState } from './bit-bus.js';
@@ -164,7 +164,7 @@ export function circuit<
       const allPorts = new Map<string, PortType>();
       for (const pd of comp.circuit.inputs) allPorts.set(pd.name, pd.portType);
       for (const pd of comp.circuit.outputs) allPorts.set(pd.name, pd.portType);
-      nodeRefs[nodeName] = createNodeProxy(nodeName, allPorts, comp.name);
+      nodeRefs[nodeName] = createNodeProxy(nodeName, allPorts, comp.circuit.name);
     }
 
     const arg = {
@@ -199,17 +199,17 @@ export function circuit<
   const hasEval = config.eval != null;
   const hasNodes = Object.keys(nodes).length > 0;
   let implementation: Implementation;
-  let kind: CircuitKind;
+  let timing: CircuitTiming;
 
   if (hasEval && !hasNodes) {
     implementation = { kind: 'primitive' };
-    kind = config.state != null ? 'sequential' : 'combinational';
+    timing = config.state != null ? 'sequential' : 'combinational';
   } else if (hasNodes) {
     implementation = { kind: 'composite' };
-    kind = detectSequential(nodes, config.state) ? 'sequential' : 'combinational';
+    timing = detectSequential(nodes, config.state) ? 'sequential' : 'combinational';
   } else {
     implementation = { kind: 'primitive' };
-    kind = 'combinational';
+    timing = 'combinational';
   }
 
   // ── Build port descriptors ──
@@ -291,7 +291,7 @@ export function circuit<
     const args = (nodeArgs as Record<string, Record<string, ArgumentValue>>)[nodeId] ?? {};
     irNodes.push({
       id: nodeId,
-      componentRef: comp.name,
+      componentRef: comp.circuit.name,
       arguments: args,
       inputs: comp.circuit.inputs.map((p: PortDescriptor) => ({
         id: `${nodeId}.${p.name}`, name: p.name, portType: p.portType,
@@ -320,27 +320,27 @@ export function circuit<
     }
   }
 
-  // ── Build metadata ──
+  // ── Build metadata (omit undefined keys for cleaner introspection) ──
 
-  const metadata: CircuitMetadata = {
-    kind,
-    description: config.meta?.description,
-    category: config.meta?.category,
-    icon: config.meta?.icon,
-    tags: config.meta?.tags,
-    author: config.meta?.author,
-    version: config.meta?.version,
-    synthesizable: config.meta?.synthesizable,
+  const metadata: CircuitMetadata = { timing };
+  const meta = config.meta;
+  if (meta) {
+    if (meta.description !== undefined) metadata.description = meta.description;
+    if (meta.category !== undefined) metadata.category = meta.category;
+    if (meta.icon !== undefined) metadata.icon = meta.icon;
+    if (meta.tags !== undefined) metadata.tags = meta.tags;
+    if (meta.author !== undefined) metadata.author = meta.author;
+    if (meta.version !== undefined) metadata.version = meta.version;
+    if (meta.synthesizable !== undefined) metadata.synthesizable = meta.synthesizable;
     // Needed for time-travel to restore Switch/Button/Input values alongside
     // engine state — captureEnvironmentalState reads this to know which
-    // node.arguments key to snapshot. Omitting it silently broke rewind.
-    interactiveArg: config.meta?.interactiveArg,
-  };
+    // node.arguments key to snapshot. Omitting silently broke rewind.
+    if (meta.interactiveArg !== undefined) metadata.interactiveArg = meta.interactiveArg;
+  }
 
   const circuitIR: Circuit = {
-    id: `circuit:${name}`,
+    version: 1,
     name,
-    parameters: [],
     inputs: inputDescs,
     outputs: outputDescs,
     clocks,
@@ -362,8 +362,8 @@ export function circuit<
 
   const deps = new Map<string, BuiltCircuit>();
   for (const [, comp] of Object.entries(nodes) as [string, BuiltCircuit][]) {
-    if (!deps.has(comp.name)) {
-      deps.set(comp.name, comp);
+    if (!deps.has(comp.circuit.name)) {
+      deps.set(comp.circuit.name, comp);
     }
     // Merge transitive dependencies
     if (comp._dependencies) {
@@ -373,12 +373,32 @@ export function circuit<
     }
   }
 
+  const inputsByName: Record<string, PortDescriptor> = {};
+  for (const p of inputDescs) inputsByName[p.name] = p;
+  const outputsByName: Record<string, PortDescriptor> = {};
+  for (const p of outputDescs) outputsByName[p.name] = p;
+  const nodesById: Record<string, Node> = {};
+  for (const n of irNodes) nodesById[n.id] = n;
+
   const built = {
     circuit: circuitIR,
-    _shape: { inputs: inputMap as NormalizePorts<Ins>, outputs: outputMap as NormalizePorts<Outs>, nodes: nodes as Nodes },
+    inputs: inputsByName,
+    outputs: outputsByName,
+    nodes: nodesById,
     _dependencies: deps,
-    name,
-  } as BuiltCircuit<NormalizePorts<Ins>, NormalizePorts<Outs>, Nodes>;
+  } as unknown as BuiltCircuit<NormalizePorts<Ins>, NormalizePorts<Outs>, Nodes>;
+
+  // Map serializes as `{}` by default — define a non-enumerable toJSON so
+  // JSON.stringify emits dependencies as a plain object without polluting
+  // `console.log` / `Object.keys` output.
+  Object.defineProperty(built, 'toJSON', {
+    value: function () {
+      const dependencies: Record<string, unknown> = {};
+      for (const [n, d] of this._dependencies) dependencies[n] = d;
+      return { circuit: this.circuit, _dependencies: dependencies };
+    },
+    enumerable: false,
+  });
 
   // Register eval/onTick in the shared registry at definition time.
   // This means any circuit with eval just works in simulation — no manual registration.
@@ -420,7 +440,7 @@ function validatePortRef(
     const hasPort = comp.circuit.inputs.some(p => p.name === ref.portName)
       || comp.circuit.outputs.some(p => p.name === ref.portName);
     if (!hasPort) {
-      errors.push(`Port '${ref.portName}' does not exist on node '${ref.nodeId}' (${comp.name})`);
+      errors.push(`Port '${ref.portName}' does not exist on node '${ref.nodeId}' (${comp.circuit.name})`);
     }
   }
 }

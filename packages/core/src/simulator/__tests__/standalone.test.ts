@@ -21,9 +21,9 @@ import {
 // Define test circuits using only core types (no store dependencies)
 function createTestPrimitives(): Circuit[] {
   const andGate: Circuit = {
-    id: 'prim:and',
+
     name: 'And',
-    parameters: [],
+
     inputs: [
       { name: 'a', portType: bitType() },
       { name: 'b', portType: bitType() },
@@ -36,13 +36,13 @@ function createTestPrimitives(): Circuit[] {
     nodes: [],
     connections: [],
     implementation: { kind: 'primitive' },
-    metadata: { kind: 'combinational' },
+    metadata: { timing: 'combinational' },
   };
 
   const orGate: Circuit = {
-    id: 'prim:or',
+
     name: 'Or',
-    parameters: [],
+
     inputs: [
       { name: 'a', portType: bitType() },
       { name: 'b', portType: bitType() },
@@ -55,13 +55,13 @@ function createTestPrimitives(): Circuit[] {
     nodes: [],
     connections: [],
     implementation: { kind: 'primitive' },
-    metadata: { kind: 'combinational' },
+    metadata: { timing: 'combinational' },
   };
 
   const notGate: Circuit = {
-    id: 'prim:not',
+
     name: 'Not',
-    parameters: [],
+
     inputs: [
       { name: 'in', portType: bitType() },
     ],
@@ -73,13 +73,13 @@ function createTestPrimitives(): Circuit[] {
     nodes: [],
     connections: [],
     implementation: { kind: 'primitive' },
-    metadata: { kind: 'combinational' },
+    metadata: { timing: 'combinational' },
   };
 
   const switchPrim: Circuit = {
-    id: 'prim:switch',
+
     name: 'Switch',
-    parameters: [],
+
     inputs: [],
     outputs: [
       { name: 'out', portType: bitType() },
@@ -89,13 +89,13 @@ function createTestPrimitives(): Circuit[] {
     nodes: [],
     connections: [],
     implementation: { kind: 'primitive' },
-    metadata: { kind: 'combinational' },
+    metadata: { timing: 'combinational' },
   };
 
   const register: Circuit = {
-    id: 'prim:register',
+
     name: 'Register',
-    parameters: [{ name: 'width', paramType: 'int', defaultValue: 1 }],
+
     inputs: [
       { name: 'd', portType: bitType() },
       { name: 'we', portType: bitType() },
@@ -108,7 +108,7 @@ function createTestPrimitives(): Circuit[] {
     nodes: [],
     connections: [],
     implementation: { kind: 'primitive' },
-    metadata: { kind: 'sequential', outputDependency: 'state-only' },
+    metadata: { timing: 'sequential', outputDependency: 'state-only' },
   };
 
   return [andGate, orGate, notGate, switchPrim, register];
@@ -133,7 +133,7 @@ describe('Core Simulator Standalone', () => {
     const circuit: Circuit = {
       id: 'test:simple-and',
       name: 'SimpleAnd',
-      parameters: [],
+  
       inputs: [
         { name: 'x', portType: bitType() },
         { name: 'y', portType: bitType() },
@@ -195,7 +195,7 @@ describe('Core Simulator Standalone', () => {
     const circuit: Circuit = {
       id: 'test:switch-and',
       name: 'SwitchAnd',
-      parameters: [],
+  
       inputs: [],
       outputs: [
         { name: 'result', portType: bitType() },
@@ -276,7 +276,7 @@ describe('Core Simulator Standalone', () => {
     const circuit: Circuit = {
       id: 'test:register',
       name: 'SimpleRegister',
-      parameters: [],
+  
       inputs: [],
       outputs: [
         { name: 'q', portType: bitType() },

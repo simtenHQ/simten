@@ -199,7 +199,8 @@ export interface CircuitMetadata {
   version?: string;
   testCases?: TestCase[];
   tags?: string[];
-  kind?: ComponentKind; // Component classification for evaluation
+  /** Timing classification: combinational, sequential, or sink. */
+  timing?: ComponentKind;
   /**
    * For sequential components: how outputs are computed
    * - 'state-only': Outputs come purely from state (DFlipFlop, Register)
@@ -220,9 +221,9 @@ export interface CircuitMetadata {
 // ============================================================================
 
 export interface Circuit {
-  id: string;
+  /** Schema version for the Circuit IR. */
+  version: 1;
   name: string;
-  parameters: Parameter[];
   inputs: PortDescriptor[];
   outputs: PortDescriptor[];
   clocks: ClockDescriptor[];

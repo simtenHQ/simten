@@ -59,7 +59,7 @@ describe('bit and bus', () => {
 
 describe('combinational leaf', () => {
   it('builds an AND gate', () => {
-    expect(And.name).toBe('And');
+    expect(And.circuit.name).toBe('And');
     expect(And.circuit.inputs).toHaveLength(2);
     expect(And.circuit.outputs).toHaveLength(1);
     expect(And.circuit.inputs[0].name).toBe('a');
@@ -68,7 +68,7 @@ describe('combinational leaf', () => {
     expect(And.circuit.implementation).toEqual({ kind: 'primitive' });
     expect(And.circuit.clocks).toHaveLength(0);
     expect(And.circuit.state).toHaveLength(0);
-    expect(And.circuit.metadata?.kind).toBe('combinational');
+    expect(And.circuit.metadata?.timing).toBe('combinational');
   });
 
   it('builds a bus-width component', () => {
@@ -122,7 +122,7 @@ describe('sequential leaf', () => {
     expect(Counter.circuit.clocks).toHaveLength(1);
     expect(Counter.circuit.clocks[0].name).toBe('clk');
     expect(Counter.circuit.state).toHaveLength(1);
-    expect(Counter.circuit.metadata?.kind).toBe('sequential');
+    expect(Counter.circuit.metadata?.timing).toBe('sequential');
     const entry = getCircuitEval('Counter');
     expect(entry?.evalFn).toBeDefined();
     expect(entry?.onTickFn).toBeDefined();
@@ -141,7 +141,7 @@ describe('sequential leaf', () => {
     expect(Register.circuit.inputs).toHaveLength(1);
     expect(Register.circuit.outputs).toHaveLength(1);
     expect(Register.circuit.clocks).toHaveLength(1);
-    expect(Register.name).toBe('Register8');
+    expect(Register.circuit.name).toBe('Register8');
   });
 });
 
@@ -225,7 +225,7 @@ describe('composite', () => {
       ],
     });
 
-    expect(Pipeline.circuit.metadata?.kind).toBe('sequential');
+    expect(Pipeline.circuit.metadata?.timing).toBe('sequential');
   });
 });
 
@@ -246,9 +246,9 @@ describe('parameterized', () => {
     const r8 = Register(8);
     const r16 = Register(16);
 
-    expect(r8.name).toBe('Register8');
+    expect(r8.circuit.name).toBe('Register8');
     expect(r8.circuit.inputs[0].portType).toEqual({ kind: 'bus', width: 8 });
-    expect(r16.name).toBe('Register16');
+    expect(r16.circuit.name).toBe('Register16');
     expect(r16.circuit.inputs[0].portType).toEqual({ kind: 'bus', width: 16 });
   });
 });
@@ -365,6 +365,6 @@ describe('source components', () => {
     expect(Switch.circuit.implementation).toEqual({ kind: 'primitive' });
     expect(Switch.circuit.inputs).toHaveLength(0);
     expect(Switch.circuit.outputs).toHaveLength(1);
-    expect(Switch.circuit.metadata?.kind).toBe('combinational');
+    expect(Switch.circuit.metadata?.timing).toBe('combinational');
   });
 });
