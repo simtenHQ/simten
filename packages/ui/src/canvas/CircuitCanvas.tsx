@@ -299,12 +299,22 @@ function CircuitCanvasInner({
     prevNodeCountRef.current = projectedNodes.length;
 
     setNodes((currentNodes) => {
-      const positionMap = new Map(currentNodes.map((n) => [n.id, n.position]));
-      return projectedNodes.map((node) => ({
-        ...node,
-        // Preserve user-dragged positions for same circuit; use layout positions for new circuit
-        position: (!circuitChanged && positionMap.get(node.id)) ? positionMap.get(node.id)! : node.position,
-      }));
+      const prevById = new Map(currentNodes.map((n) => [n.id, n]));
+      return projectedNodes.map((node) => {
+        const prev = prevById.get(node.id);
+        if (prev && !circuitChanged) {
+          // Same circuit — keep React Flow's internal fields (measured, handles)
+          // and the user-dragged position; only refresh data/type from projection.
+          return {
+            ...prev,
+            type: node.type,
+            data: node.data,
+            selectable: node.selectable,
+            deletable: node.deletable,
+          };
+        }
+        return node;
+      });
     });
 
     // Fit view when circuit changes OR when nodes appear after a blank state
