@@ -75,9 +75,8 @@ export const useCircuitStore = create<CircuitStore>()(
         // Auto-create empty circuit if it doesn't exist
         if (!state.circuit) {
           state.circuit = {
-            id: nanoid(),
+            version: 1,
             name: 'Untitled Circuit',
-            parameters: [],
             inputs: [],
             outputs: [],
             clocks: [],

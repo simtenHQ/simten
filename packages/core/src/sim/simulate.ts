@@ -320,9 +320,8 @@ function wrapIfPrimitive(circuit: Circuit, _library: CircuitLibrary): Circuit {
   }
 
   return {
-    id: `sim:${circuit.name}`,
+    version: 1,
     name: `__sim_${circuit.name}`,
-    parameters: [],
     inputs: circuit.inputs.map(p => ({ ...p })),
     outputs: circuit.outputs.map(p => ({ ...p })),
     clocks: [],

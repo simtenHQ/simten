@@ -69,7 +69,7 @@ describe('circuit() with reg() state', () => {
     expect(MyReg.circuit.state.length).toBe(1);
     expect(MyReg.circuit.state[0].stateType).toEqual({ kind: 'bus', width: 8 });
     expect(MyReg.circuit.clocks.length).toBe(1);
-    expect(MyReg.circuit.metadata?.kind).toBe('sequential');
+    expect(MyReg.circuit.metadata?.timing).toBe('sequential');
   });
 
   it('creates a 1-bit reg as bit type', () => {

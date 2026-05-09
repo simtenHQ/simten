@@ -24,14 +24,14 @@ function typedDecl(comp: BuiltCircuit): string {
   const outs = c.outputs.map(p => `${p.name}: ${portTypeStr(p.portType)}`).join('; ');
   const insType = ins ? `{ ${ins} }` : '{}';
   const outsType = outs ? `{ ${outs} }` : '{}';
-  return `declare const ${comp.name}: BuiltCircuit<${insType}, ${outsType}>;`;
+  return `declare const ${comp.circuit.name}: BuiltCircuit<${insType}, ${outsType}>;`;
 }
 
 /** Generate stdlib declarations with typed port shapes from actual stdlib circuits */
 function generateStdlibDeclarations(): string {
   const lines: string[] = ['// Standard Library Components (auto-generated with port shapes)'];
   const circuits = (Object.values(std) as unknown[]).filter(
-    (v): v is BuiltCircuit => !!v && typeof v === 'object' && 'name' in v && 'circuit' in v,
+    (v): v is BuiltCircuit => !!v && typeof v === 'object' && 'circuit' in v,
   );
   for (const comp of circuits) {
     lines.push(typedDecl(comp));

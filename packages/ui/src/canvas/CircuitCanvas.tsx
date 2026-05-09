@@ -291,7 +291,7 @@ function CircuitCanvasInner({
   const prevNodeCountRef = useRef<number>(0);
 
   useEffect(() => {
-    const newId = cleanedCircuit?.id ?? null;
+    const newId = cleanedCircuit?.name ?? null;
     const circuitChanged = newId !== prevCircuitIdRef.current;
     prevCircuitIdRef.current = newId;
 

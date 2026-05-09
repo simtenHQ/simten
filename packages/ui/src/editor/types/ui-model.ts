@@ -13,13 +13,13 @@ import * as std from '@simten/core/std';
 
 // Build lookup structures from stdlib exports
 const STD_BUILT: BuiltCircuit[] = Object.values(std).filter(
-  (v) => !!v && typeof v === 'object' && 'name' in v && 'circuit' in v,
+  (v) => !!v && typeof v === 'object' && 'circuit' in v,
 ) as unknown as BuiltCircuit[];
-const STD_CIRCUIT_MAP: Map<string, Circuit> = new Map(STD_BUILT.map((b) => [b.name, b.circuit]));
+const STD_CIRCUIT_MAP: Map<string, Circuit> = new Map(STD_BUILT.map((b) => [b.circuit.name, b.circuit]));
 const PRIMITIVE_NAMES: Set<string> = new Set(
   STD_BUILT
     .filter((b) => b.circuit.implementation.kind === 'primitive')
-    .map((b) => b.name),
+    .map((b) => b.circuit.name),
 );
 const isPrimitive = (name: string) => PRIMITIVE_NAMES.has(name);
 

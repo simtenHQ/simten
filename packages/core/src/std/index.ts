@@ -77,7 +77,7 @@ import * as RV32I from './rv32i.js';
 import * as Networking from './networking.js';
 
 const isBuiltCircuit = (v: unknown): v is BuiltCircuit =>
-  !!v && typeof v === 'object' && 'name' in v && 'circuit' in v;
+  !!v && typeof v === 'object' && 'circuit' in v;
 
 const _allExports: unknown[] = [
   ...Object.values(Logic),

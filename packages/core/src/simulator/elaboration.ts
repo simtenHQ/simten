@@ -736,9 +736,9 @@ export function topologicalSortFlat(
     const component = library.resolveCircuit(node.primitiveType);
     if (!component) continue;
 
-    const isSink = component.metadata?.kind === 'sink';
+    const isSink = component.metadata?.timing === 'sink';
     const outputDep = component.metadata?.outputDependency;
-    const isSequential = component.metadata?.kind === 'sequential';
+    const isSequential = component.metadata?.timing === 'sequential';
 
     if (isSink) {
       sinkNodes.add(node.id);

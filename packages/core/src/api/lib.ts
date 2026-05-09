@@ -20,7 +20,7 @@ export function getLibrary(): CircuitLibrary {
   const { library } = createMutableLibrary();
 
   for (const value of Object.values(std)) {
-    if (value && typeof value === 'object' && 'circuit' in value && 'name' in value) {
+    if (value && typeof value === 'object' && 'circuit' in value) {
       const built = value as BuiltCircuit;
       if (built.circuit) {
         library.addCircuit(built.circuit);

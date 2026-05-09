@@ -13,7 +13,7 @@ import * as std from '@simten/core/std';
 import type { BuiltCircuit } from '@simten/core/circuit';
 
 const PRIMITIVES = Object.values(std)
-  .filter((v): v is BuiltCircuit => !!v && typeof v === 'object' && 'circuit' in v && 'name' in v)
+  .filter((v): v is BuiltCircuit => !!v && typeof v === 'object' && 'circuit' in v)
   .map((v) => v.circuit)
   .filter(c => c.implementation.kind === 'primitive');
 

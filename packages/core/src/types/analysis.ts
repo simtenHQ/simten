@@ -103,7 +103,6 @@ export interface ComponentInterface {
   inputs: Array<{ name: string; type: string }>;
   outputs: Array<{ name: string; type: string }>;
   clocks: Array<{ name: string }>;
-  parameters?: Array<{ name: string; type: string; defaultValue?: string; options?: (number | string | boolean)[] }>;
   kind?: 'combinational' | 'sequential' | 'sink';
   description?: string;
 }
@@ -224,15 +223,7 @@ export function buildEnvelope(options: BuildEnvelopeOptions): HardwareLLMEnvelop
           type: p.portType.kind === 'bit' ? 'Bit' : `Bus[${(p.portType as any).width ?? '?'}]`,
         })),
         clocks: circuit.clocks.map((c) => ({ name: c.name })),
-        parameters: circuit.parameters.length > 0
-          ? circuit.parameters.map((p) => ({
-              name: p.name,
-              type: p.paramType,
-              defaultValue: p.defaultValue?.toString(),
-              options: p.options,
-            }))
-          : undefined,
-        kind: circuit.metadata?.kind,
+        kind: circuit.metadata?.timing,
         description: circuit.metadata?.description,
       });
     }

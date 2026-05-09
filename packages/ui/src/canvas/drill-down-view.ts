@@ -95,7 +95,7 @@ export function createDrillDownViewCircuit(composite: Circuit): Circuit {
 
   return {
     ...composite,
-    id: `__drilldown_${composite.id}`,
+    name: `__drilldown_${composite.name}`,
     nodes: [...boundaryNodes, ...composite.nodes],
     connections: rewrittenConnections,
     // Mark as primitive so the view circuit itself isn't treated as drillable
