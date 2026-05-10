@@ -112,6 +112,7 @@ function WebComponentEmbedInner({
         subtitle={subtitle}
         description={description}
         href={href}
+        forkSource={code}
         autoRunSpeed={autoRunSpeed}
         theme={theme}
       />

@@ -39,6 +39,18 @@ function generateStdlibDeclarations(): string {
   return lines.join('\n');
 }
 
+/** Mirror execute.ts:65-71 — declare every stdlib function export so Monaco
+ *  recognises helpers like romFromBytes that the sandbox injects at runtime. */
+function generateStdlibHelperDeclarations(): string {
+  const lines: string[] = ['// Standard Library Helpers (functions — auto-generated from std exports)'];
+  for (const [name, value] of Object.entries(std)) {
+    if (typeof value === 'function') {
+      lines.push(`declare function ${name}(...args: any[]): any;`);
+    }
+  }
+  return lines.join('\n');
+}
+
 export const EDITOR_TYPE_DECLARATIONS = `
 // ============================================================================
 // Port Types
@@ -50,6 +62,12 @@ type PortType = BitType | BusType;
 
 declare const bit: BitType;
 declare function bus(width: number): BusType;
+
+// State helpers — declarative register/memory used inside circuit() state blocks.
+interface RegState { readonly __reg: true; readonly width: number; readonly initial: number; }
+interface MemState { readonly __mem: true; readonly depth: number; readonly width: number; readonly initial: Map<number, number>; }
+declare function reg(width: number, initial?: number): RegState;
+declare function mem(depth: number, width: number, initial?: Map<number, number>): MemState;
 
 // ============================================================================
 // Port References (for connect callbacks)
@@ -156,4 +174,6 @@ declare function circuit<
 // ============================================================================
 
 ${generateStdlibDeclarations()}
+
+${generateStdlibHelperDeclarations()}
 `;

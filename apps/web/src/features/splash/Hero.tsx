@@ -407,6 +407,7 @@ export function Hero() {
                     circuit={demo.circuit}
                     layout={demo.layout}
                     height="100%"
+                    forkSource={demo.code}
                   />
                 </div>
               </div>
@@ -474,6 +475,7 @@ export function Hero() {
                 circuit={demo.circuit}
                 layout={demo.layout}
                 height="100%"
+                forkSource={demo.code}
               />
             </div>
             <div className="max-h-[180px] overflow-y-auto bg-card">

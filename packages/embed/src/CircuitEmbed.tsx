@@ -10,9 +10,22 @@
  * web component bridge which sandboxes compilation via an iframe.
  */
 
-import { forwardRef, type CSSProperties, type ForwardedRef, type ReactElement } from "react";
+import { forwardRef, useState, type CSSProperties, type ForwardedRef, type ReactElement } from "react";
 import { CircuitViewer, type CircuitViewerHandle, type HarnessedLayout } from "./CircuitViewer";
-import type { BuiltCircuit } from "@simten/core/circuit";
+import { circuitToSource, type BuiltCircuit } from "@simten/core/circuit";
+import { encodeSourceForUrl } from "@simten/ui/share";
+
+/**
+ * Where Fork links open. simten.dev for everything except local dev of the
+ * embed itself (where the embed is mounted at localhost). Detected at runtime
+ * because the embed runs on third-party origins we don't control at build time.
+ */
+function simtenHost(): string {
+  if (typeof window === "undefined") return "https://simten.dev";
+  return window.location.hostname === "localhost"
+    ? window.location.origin
+    : "https://simten.dev";
+}
 
 export interface CircuitEmbedProps<C extends BuiltCircuit = BuiltCircuit> {
   /** The circuit to display (result of circuit()) */
@@ -45,8 +58,19 @@ export interface CircuitEmbedProps<C extends BuiltCircuit = BuiltCircuit> {
   subtitle?: string;
   /** Description shown below title */
   description?: string;
-  /** Link target for the card */
+  /**
+   * Custom URL for the card's right-side link. When omitted (the common case),
+   * a Fork button is rendered that opens the circuit in the simten.dev editor
+   * via `/circuit/<lz-encoded-source>`. Pass `href` only to override.
+   */
   href?: string;
+  /**
+   * Optional raw TypeScript source for the Fork button. When provided, the
+   * Fork button encodes this verbatim instead of running the BuiltCircuit
+   * through the IR-to-source serializer (which drops comments and helpers).
+   * The web-component path passes the user's original `code` here.
+   */
+  forkSource?: string;
   /** Focus on specific node(s) */
   focus?: string | string[];
   /** Show port labels on nodes */
@@ -97,8 +121,21 @@ const CircuitEmbedImpl = forwardRef<CircuitEmbedHandle, CircuitEmbedProps>(
     glowUnconnected,
     autoRunSpeed = 500,
     initialInputs,
+    forkSource,
   }, ref) {
     const hasInfoBar = title || description;
+    const [forkError, setForkError] = useState<string | null>(null);
+
+    const onFork = () => {
+      try {
+        const source = forkSource ?? circuitToSource(circuit);
+        const encoded = encodeSourceForUrl(source);
+        window.open(`${simtenHost()}/circuit/${encoded}`, "_blank", "noopener");
+      } catch (err) {
+        setForkError(err instanceof Error ? err.message : "Couldn't fork this circuit");
+        setTimeout(() => setForkError(null), 3000);
+      }
+    };
 
     // Sizing strategy: if `height` is set, use it (backwards compat).
     // Otherwise size width-responsively via aspect-ratio with mobile clamps.
@@ -123,7 +160,17 @@ const CircuitEmbedImpl = forwardRef<CircuitEmbedHandle, CircuitEmbedProps>(
       : { height: '100%' };
 
     return (
-      <div style={outerStyle} className={`flex flex-col ${hasInfoBar ? 'rounded-xl border border-[var(--embed-border)] overflow-hidden bg-[var(--embed-bg-secondary)]' : ''}`}>
+      <div style={outerStyle} className={`relative flex flex-col ${hasInfoBar ? 'rounded-xl border border-[var(--embed-border)] overflow-hidden bg-[var(--embed-bg-secondary)]' : ''}`}>
+        {!hasInfoBar && !href && (
+          <button
+            type="button"
+            onClick={onFork}
+            title={forkError ?? "Open and modify this circuit in the Simten editor"}
+            className="absolute top-2 right-2 z-10 hidden md:flex items-center px-2.5 py-1 rounded border border-[var(--embed-border)] bg-[var(--embed-bg-secondary)] text-[11px] text-[var(--embed-text-primary)] hover:opacity-80 transition-colors shadow-sm"
+          >
+            {forkError ? "Fork failed" : "Fork →"}
+          </button>
+        )}
         <div style={canvasStyle} className="min-h-0">
           <CircuitViewer
             ref={ref}
@@ -148,10 +195,19 @@ const CircuitEmbedImpl = forwardRef<CircuitEmbedHandle, CircuitEmbedProps>(
               {subtitle && <div className="text-xs text-[var(--embed-text-muted)] font-mono mt-0.5">{subtitle}</div>}
               {description && <div className="text-sm text-[var(--embed-text-secondary)] mt-1.5 leading-relaxed">{description}</div>}
             </div>
-            {href && (
+            {href ? (
               <a href={href} className="shrink-0 px-3 py-1.5 rounded border border-[var(--embed-border)] text-xs text-[var(--embed-text-primary)] hover:opacity-80 transition-colors">
                 Open →
               </a>
+            ) : (
+              <button
+                type="button"
+                onClick={onFork}
+                title={forkError ?? "Open and modify this circuit in the Simten editor"}
+                className="hidden md:flex items-center shrink-0 px-3 py-1.5 rounded border border-[var(--embed-border)] text-xs text-[var(--embed-text-primary)] hover:opacity-80 transition-colors"
+              >
+                {forkError ? `Can't fork: ${forkError.slice(0, 40)}` : "Fork →"}
+              </button>
             )}
           </div>
         )}

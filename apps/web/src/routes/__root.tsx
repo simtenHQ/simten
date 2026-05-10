@@ -12,7 +12,12 @@ import appCss from '../styles.css?url'
 // Tool routes render their own SiteHeader with custom right-slot content
 // (the editor and the RV32I debugger pass tool controls instead of nav
 // links). They also have no SiteFooter — tool pages stay focused.
-const ROUTES_WITHOUT_DEFAULT_CHROME = new Set(['/editor', '/learn/rv32i-cpu'])
+const ROUTES_WITHOUT_DEFAULT_CHROME = new Set([
+  '/circuit',
+  '/circuit_/$encoded',
+  '/circuit_/s/$hash',
+  '/learn/rv32i-cpu',
+])
 
 const SITE_URL = 'https://simten.dev'
 const SITE_NAME = 'Simten'

@@ -10,12 +10,14 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as EditorRouteImport } from './routes/editor'
+import { Route as CircuitRouteImport } from './routes/circuit'
 import { Route as BlogRouteImport } from './routes/blog'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as LearnIndexRouteImport } from './routes/learn/index'
 import { Route as BlogIndexRouteImport } from './routes/blog/index'
 import { Route as LearnRv32iCpuRouteImport } from './routes/learn/rv32i-cpu'
 import { Route as DocsSplatRouteImport } from './routes/docs/$'
+import { Route as CircuitEncodedRouteImport } from './routes/circuit_.$encoded'
 import { Route as BlogSortingNetworksRouteImport } from './routes/blog/sorting-networks'
 import { Route as BlogSnakeInHardwareRouteImport } from './routes/blog/snake-in-hardware'
 import { Route as BlogRv32iCpuRouteImport } from './routes/blog/rv32i-cpu'
@@ -30,10 +32,16 @@ import { Route as BlogBuildingACpuRouteImport } from './routes/blog/building-a-c
 import { Route as BlogBreakoutInHardwareRouteImport } from './routes/blog/breakout-in-hardware'
 import { Route as BlogAesInHardwareRouteImport } from './routes/blog/aes-in-hardware'
 import { Route as ApiSearchRouteImport } from './routes/api/search'
+import { Route as CircuitSHashRouteImport } from './routes/circuit_.s.$hash'
 
 const EditorRoute = EditorRouteImport.update({
   id: '/editor',
   path: '/editor',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CircuitRoute = CircuitRouteImport.update({
+  id: '/circuit',
+  path: '/circuit',
   getParentRoute: () => rootRouteImport,
 } as any)
 const BlogRoute = BlogRouteImport.update({
@@ -64,6 +72,11 @@ const LearnRv32iCpuRoute = LearnRv32iCpuRouteImport.update({
 const DocsSplatRoute = DocsSplatRouteImport.update({
   id: '/docs/$',
   path: '/docs/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CircuitEncodedRoute = CircuitEncodedRouteImport.update({
+  id: '/circuit_/$encoded',
+  path: '/circuit/$encoded',
   getParentRoute: () => rootRouteImport,
 } as any)
 const BlogSortingNetworksRoute = BlogSortingNetworksRouteImport.update({
@@ -139,10 +152,16 @@ const ApiSearchRoute = ApiSearchRouteImport.update({
   path: '/api/search',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CircuitSHashRoute = CircuitSHashRouteImport.update({
+  id: '/circuit_/s/$hash',
+  path: '/circuit/s/$hash',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/blog': typeof BlogRouteWithChildren
+  '/circuit': typeof CircuitRoute
   '/editor': typeof EditorRoute
   '/api/search': typeof ApiSearchRoute
   '/blog/aes-in-hardware': typeof BlogAesInHardwareRoute
@@ -158,13 +177,16 @@ export interface FileRoutesByFullPath {
   '/blog/rv32i-cpu': typeof BlogRv32iCpuRoute
   '/blog/snake-in-hardware': typeof BlogSnakeInHardwareRoute
   '/blog/sorting-networks': typeof BlogSortingNetworksRoute
+  '/circuit/$encoded': typeof CircuitEncodedRoute
   '/docs/$': typeof DocsSplatRoute
   '/learn/rv32i-cpu': typeof LearnRv32iCpuRoute
   '/blog/': typeof BlogIndexRoute
   '/learn/': typeof LearnIndexRoute
+  '/circuit/s/$hash': typeof CircuitSHashRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/circuit': typeof CircuitRoute
   '/editor': typeof EditorRoute
   '/api/search': typeof ApiSearchRoute
   '/blog/aes-in-hardware': typeof BlogAesInHardwareRoute
@@ -180,15 +202,18 @@ export interface FileRoutesByTo {
   '/blog/rv32i-cpu': typeof BlogRv32iCpuRoute
   '/blog/snake-in-hardware': typeof BlogSnakeInHardwareRoute
   '/blog/sorting-networks': typeof BlogSortingNetworksRoute
+  '/circuit/$encoded': typeof CircuitEncodedRoute
   '/docs/$': typeof DocsSplatRoute
   '/learn/rv32i-cpu': typeof LearnRv32iCpuRoute
   '/blog': typeof BlogIndexRoute
   '/learn': typeof LearnIndexRoute
+  '/circuit/s/$hash': typeof CircuitSHashRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/blog': typeof BlogRouteWithChildren
+  '/circuit': typeof CircuitRoute
   '/editor': typeof EditorRoute
   '/api/search': typeof ApiSearchRoute
   '/blog/aes-in-hardware': typeof BlogAesInHardwareRoute
@@ -204,16 +229,19 @@ export interface FileRoutesById {
   '/blog/rv32i-cpu': typeof BlogRv32iCpuRoute
   '/blog/snake-in-hardware': typeof BlogSnakeInHardwareRoute
   '/blog/sorting-networks': typeof BlogSortingNetworksRoute
+  '/circuit_/$encoded': typeof CircuitEncodedRoute
   '/docs/$': typeof DocsSplatRoute
   '/learn/rv32i-cpu': typeof LearnRv32iCpuRoute
   '/blog/': typeof BlogIndexRoute
   '/learn/': typeof LearnIndexRoute
+  '/circuit_/s/$hash': typeof CircuitSHashRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
     | '/blog'
+    | '/circuit'
     | '/editor'
     | '/api/search'
     | '/blog/aes-in-hardware'
@@ -229,13 +257,16 @@ export interface FileRouteTypes {
     | '/blog/rv32i-cpu'
     | '/blog/snake-in-hardware'
     | '/blog/sorting-networks'
+    | '/circuit/$encoded'
     | '/docs/$'
     | '/learn/rv32i-cpu'
     | '/blog/'
     | '/learn/'
+    | '/circuit/s/$hash'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/circuit'
     | '/editor'
     | '/api/search'
     | '/blog/aes-in-hardware'
@@ -251,14 +282,17 @@ export interface FileRouteTypes {
     | '/blog/rv32i-cpu'
     | '/blog/snake-in-hardware'
     | '/blog/sorting-networks'
+    | '/circuit/$encoded'
     | '/docs/$'
     | '/learn/rv32i-cpu'
     | '/blog'
     | '/learn'
+    | '/circuit/s/$hash'
   id:
     | '__root__'
     | '/'
     | '/blog'
+    | '/circuit'
     | '/editor'
     | '/api/search'
     | '/blog/aes-in-hardware'
@@ -274,20 +308,25 @@ export interface FileRouteTypes {
     | '/blog/rv32i-cpu'
     | '/blog/snake-in-hardware'
     | '/blog/sorting-networks'
+    | '/circuit_/$encoded'
     | '/docs/$'
     | '/learn/rv32i-cpu'
     | '/blog/'
     | '/learn/'
+    | '/circuit_/s/$hash'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   BlogRoute: typeof BlogRouteWithChildren
+  CircuitRoute: typeof CircuitRoute
   EditorRoute: typeof EditorRoute
   ApiSearchRoute: typeof ApiSearchRoute
+  CircuitEncodedRoute: typeof CircuitEncodedRoute
   DocsSplatRoute: typeof DocsSplatRoute
   LearnRv32iCpuRoute: typeof LearnRv32iCpuRoute
   LearnIndexRoute: typeof LearnIndexRoute
+  CircuitSHashRoute: typeof CircuitSHashRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -297,6 +336,13 @@ declare module '@tanstack/react-router' {
       path: '/editor'
       fullPath: '/editor'
       preLoaderRoute: typeof EditorRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/circuit': {
+      id: '/circuit'
+      path: '/circuit'
+      fullPath: '/circuit'
+      preLoaderRoute: typeof CircuitRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/blog': {
@@ -339,6 +385,13 @@ declare module '@tanstack/react-router' {
       path: '/docs/$'
       fullPath: '/docs/$'
       preLoaderRoute: typeof DocsSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/circuit_/$encoded': {
+      id: '/circuit_/$encoded'
+      path: '/circuit/$encoded'
+      fullPath: '/circuit/$encoded'
+      preLoaderRoute: typeof CircuitEncodedRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/blog/sorting-networks': {
@@ -439,6 +492,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiSearchRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/circuit_/s/$hash': {
+      id: '/circuit_/s/$hash'
+      path: '/circuit/s/$hash'
+      fullPath: '/circuit/s/$hash'
+      preLoaderRoute: typeof CircuitSHashRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -481,11 +541,14 @@ const BlogRouteWithChildren = BlogRoute._addFileChildren(BlogRouteChildren)
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   BlogRoute: BlogRouteWithChildren,
+  CircuitRoute: CircuitRoute,
   EditorRoute: EditorRoute,
   ApiSearchRoute: ApiSearchRoute,
+  CircuitEncodedRoute: CircuitEncodedRoute,
   DocsSplatRoute: DocsSplatRoute,
   LearnRv32iCpuRoute: LearnRv32iCpuRoute,
   LearnIndexRoute: LearnIndexRoute,
+  CircuitSHashRoute: CircuitSHashRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
