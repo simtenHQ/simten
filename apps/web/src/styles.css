@@ -234,6 +234,16 @@
   animation: shimmer 2s ease-in-out infinite;
 }
 
+/* Disable Geist Mono's programming ligatures in code blocks — `...` was
+   collapsing into `…` and visually fusing with `[` in spread expressions
+   like `[...banner]`. Source still copy-pastes correctly either way. */
+.font-mono,
+code,
+pre {
+  font-variant-ligatures: none;
+  font-feature-settings: "liga" 0, "calt" 0;
+}
+
 /* ── Embed theme tokens ─────────────────────────────────────────────── */
 [data-embed-theme="dark"], .dark {
   --embed-bg-primary: #141418;
