@@ -23,9 +23,11 @@ import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { TSEditor, type TSEditorRef } from "@/features/code-editor/TSEditor";
-import { TestTube, Bot, Download } from "lucide-react";
+import { TestTube, Bot, Download, Share2 } from "lucide-react";
 import { exportVerilog } from "@simten/core/verilog";
 import { SiteHeader } from "@/components/SiteHeader";
+import { encodeSourceForUrl, shouldUseShortLink } from "@simten/ui/share";
+import { shareCircuit } from "@/features/share/server";
 /** Check if a circuit name is an auto-generated harness (autoHarness appends 'Demo') */
 function isHarnessName(name: string): boolean {
   return name.endsWith('Demo') || name.endsWith('Harness');
@@ -72,9 +74,15 @@ function useKeyboardInput(circuit: Circuit | null, onKeyboardInput: (nodeId: str
 
 interface EditorWorkspaceProps {
   theme?: "light" | "dark";
+  /**
+   * Source to pre-load into the editor (e.g. from a shared `/circuit/<encoded>` URL).
+   * When set, the editor runs in ephemeral mode (no localStorage read/write) so a
+   * shared link doesn't clobber the user's saved work.
+   */
+  initialSource?: string;
 }
 
-export function EditorWorkspace({ theme = "light" }: EditorWorkspaceProps) {
+export function EditorWorkspace({ theme = "light", initialSource }: EditorWorkspaceProps) {
   const setCompiledCircuits = useCircuitPreviewStore(
     (state) => state.setCompiledCircuits,
   );
@@ -90,6 +98,14 @@ export function EditorWorkspace({ theme = "light" }: EditorWorkspaceProps) {
     if (!compileResult || !circuit) return null;
     return builtFromIR(circuit, [...compileResult.libraryCircuits, ...compileResult.circuits]);
   }, [compileResult, circuit]);
+
+  // Share button state
+  const [shareStatus, setShareStatus] = useState<
+    | { kind: 'idle' }
+    | { kind: 'sharing' }
+    | { kind: 'copied' }
+    | { kind: 'error'; message: string }
+  >({ kind: 'idle' });
 
   // Drawer state
   const [testsPanelOpen, setTestsPanelOpen] = useState(false);
@@ -143,6 +159,40 @@ export function EditorWorkspace({ theme = "light" }: EditorWorkspaceProps) {
       }
     } catch (e) {
       console.error('Verilog export failed:', e);
+    }
+  }, []);
+
+  // ── Share button ──
+  const handleShare = useCallback(async () => {
+    const source = editorRef.current?.getCode() ?? "";
+    if (!source.trim()) {
+      setShareStatus({ kind: 'error', message: 'Nothing to share' });
+      setTimeout(() => setShareStatus({ kind: 'idle' }), 2000);
+      return;
+    }
+    const encoded = encodeSourceForUrl(source);
+    let url: string;
+    if (!shouldUseShortLink(encoded)) {
+      url = `${window.location.origin}/circuit/${encoded}`;
+    } else {
+      setShareStatus({ kind: 'sharing' });
+      try {
+        const { hash } = await shareCircuit({ data: { source } });
+        url = `${window.location.origin}/circuit/s/${hash}`;
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Sharing failed';
+        setShareStatus({ kind: 'error', message });
+        setTimeout(() => setShareStatus({ kind: 'idle' }), 2500);
+        return;
+      }
+    }
+    try {
+      await navigator.clipboard.writeText(url);
+      setShareStatus({ kind: 'copied' });
+      setTimeout(() => setShareStatus({ kind: 'idle' }), 2000);
+    } catch {
+      setShareStatus({ kind: 'error', message: 'Clipboard blocked' });
+      setTimeout(() => setShareStatus({ kind: 'idle' }), 2500);
     }
   }, []);
 
@@ -355,6 +405,26 @@ export function EditorWorkspace({ theme = "light" }: EditorWorkspaceProps) {
               <div className="h-5 w-px bg-border" />
 
               <Button
+                onClick={handleShare}
+                variant="outline"
+                size="sm"
+                className="gap-2"
+                title="Copy a shareable link to this circuit"
+                disabled={shareStatus.kind === 'sharing'}
+              >
+                <Share2 className="h-4 w-4" />
+                <span className="hidden sm:inline text-xs">
+                  {shareStatus.kind === 'sharing'
+                    ? 'Sharing…'
+                    : shareStatus.kind === 'copied'
+                      ? 'Copied!'
+                      : shareStatus.kind === 'error'
+                        ? shareStatus.message
+                        : 'Share'}
+                </span>
+              </Button>
+
+              <Button
                 onClick={handleExportVerilog}
                 variant="outline"
                 size="sm"
@@ -390,7 +460,7 @@ export function EditorWorkspace({ theme = "light" }: EditorWorkspaceProps) {
             <TSEditor
               ref={editorRef}
               storageKey={null}
-              initialCode=""
+              initialCode={initialSource ?? ""}
               autoCompileEnabled={true}
               onCompileSuccess={handleCompile}
               showHeader={false}

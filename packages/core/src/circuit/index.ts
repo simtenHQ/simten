@@ -14,6 +14,7 @@ export { autoHarness } from './auto-harness.js';
 export { isSequentialCircuit } from './is-sequential.js';
 export { registerCircuitEval, getCircuitEval, getAllCircuitEvals } from './eval-registry.js';
 export type { EvalEntry } from './eval-registry.js';
+export { circuitToSource, CircuitToSourceError } from './circuit-to-source.js';
 export type {
   BuiltCircuit,
   CircuitMeta,

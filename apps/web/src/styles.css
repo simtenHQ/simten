@@ -30,6 +30,7 @@
 }
 
 @source "../../../packages/ui/src/**/*.tsx";
+@source "../../../packages/embed/src/**/*.tsx";
 
 @custom-variant dark (&:is(.dark *));
 
