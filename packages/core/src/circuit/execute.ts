@@ -24,7 +24,7 @@
 
 import { transform } from 'sucrase';
 import { circuit } from './circuit.js';
-import { bit, bus } from './bit-bus.js';
+import { bit, bus, reg, mem } from './bit-bus.js';
 import type { BuiltCircuit } from './types.js';
 import type { Circuit, CircuitLibrary } from '../types/circuit.js';
 import * as std from '../std/index.js';
@@ -59,6 +59,8 @@ function buildScope(): { names: string[]; values: unknown[] } {
   scope.set('component', circuit);
   scope.set('bit', bit);
   scope.set('bus', bus);
+  scope.set('reg', reg);
+  scope.set('mem', mem);
 
   // All stdlib exports — circuits inject by their internal `name` (And, Or, …),
   // helper functions inject by their export name (romFromBytes, …).
