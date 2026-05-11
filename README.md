@@ -194,3 +194,7 @@ tar -xzf /tmp/simten-core-*.tgz -O package/package.json | jq .exports
 - Full docs (rendered): **[simten.dev/docs](https://simten.dev/docs)**
 - Markdown source: [`apps/web/content/docs/`](./apps/web/content/docs/) — readable on GitHub
 - Blog posts demonstrating real circuits: [simten.dev/blog](https://simten.dev/blog)
+
+## License
+
+Licensed under the [Apache License 2.0](./LICENSE).

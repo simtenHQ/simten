@@ -2,7 +2,7 @@
   "name": "@simten/core",
   "version": "0.1.0",
   "description": "Simten simulator engine, circuit IR builder, standard library, and Verilog exporter. Pure TypeScript with no browser dependencies.",
-  "license": "BUSL-1.1",
+  "license": "Apache-2.0",
   "author": "Charles Harris",
   "repository": {
     "type": "git",
