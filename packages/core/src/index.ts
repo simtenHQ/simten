@@ -97,27 +97,12 @@ export type { EvalEntry } from './circuit/eval-registry.js';
 // ============================================================================
 
 export {
-  buildEnvelope,
   compressTrace,
   detectSteadyState,
   getCircuitAPISummary,
 } from './types/analysis.js';
 
 export type {
-  ValidationResult,
-  ValidationSummary,
-  ValidationPhase,
-  DiagnosticCode,
-  Diagnostic,
-  AnalysisContext,
-  CircuitMetrics,
   SimulationTrace,
   SignalMetrics,
-  ComponentInterface,
-  HardwareLLMEnvelope,
-  EnvelopeValidation,
-  EnvelopeDiagnostic,
-  BehavioralDiagnostic,
-  CircuitDelta,
-  BuildEnvelopeOptions,
 } from './types/analysis.js';
