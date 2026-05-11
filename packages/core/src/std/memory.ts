@@ -7,6 +7,28 @@
 import { circuit } from '../circuit/circuit.js';
 import { bit, bus, mem } from '../circuit/bit-bus.js';
 
+/**
+ * Read-only memory with address decoding. 64K × 8-bit by default. Initialize
+ * via the `init` node argument using one of `romFromBytes` / `romFromWords` /
+ * `romFromEntries`. Uninitialized addresses read as 0.
+ *
+ * **Input:** `addr` — `bus(16)`
+ * **Output:** `data_out` — `bus(8)`
+ *
+ * **Example:** instruction-memory pattern
+ * ```ts
+ * circuit('CodeFetch', {
+ *   inputs:  { pc: bus(16) },
+ *   outputs: { instr: bus(8) },
+ *   nodes:   { rom: ROM },
+ *   nodeArgs: { rom: { init: romFromBytes([0x80, 0x12, 0x34]) } },
+ *   connect: ({ inputs, outputs, nodes: { rom } }) => [
+ *     inputs.pc.to(rom.addr),
+ *     rom.data_out.to(outputs.instr),
+ *   ],
+ * })
+ * ```
+ */
 export const ROM = circuit('ROM', {
   inputs: { addr: bus(16) },
   outputs: { data_out: bus(8) },
@@ -18,6 +40,29 @@ export const ROM = circuit('ROM', {
   onTick: ({ memory }) => ({ memory }),
 });
 
+/**
+ * Random access memory. 256 × 8-bit synchronous read/write. Reads
+ * combinationally from the current `addr`; writes the `data_in` value
+ * back to `memory[addr]` on the clock tick when `we` is high.
+ *
+ * **Inputs:** `addr`, `data_in` — `bus(8)`; `we` (write-enable) — `bit`
+ * **Output:** `data_out` — `bus(8)`
+ *
+ * **Example:** scratchpad memory
+ * ```ts
+ * circuit('Scratchpad', {
+ *   inputs:  { address: bus(8), writeData: bus(8), writeEnable: bit },
+ *   outputs: { readData: bus(8) },
+ *   nodes:   { ram: RAM },
+ *   connect: ({ inputs, outputs, nodes: { ram } }) => [
+ *     inputs.address.to(ram.addr),
+ *     inputs.writeData.to(ram.data_in),
+ *     inputs.writeEnable.to(ram.we),
+ *     ram.data_out.to(outputs.readData),
+ *   ],
+ * })
+ * ```
+ */
 export const RAM = circuit('RAM', {
   inputs: { addr: bus(8), data_in: bus(8), we: bit },
   outputs: { data_out: bus(8) },
@@ -32,6 +77,31 @@ export const RAM = circuit('RAM', {
   },
 });
 
+/**
+ * Dual-port RAM — two independent read ports plus one write port. Use port A
+ * for read/write (`addrA` + `weA` + `dataA`) and port B for a simultaneous
+ * independent read (`addrB`). Classic register-file shape.
+ *
+ * **Inputs:** `addrA`, `dataA`, `addrB` — `bus(8)`; `weA` — `bit`
+ * **Outputs:** `outA`, `outB` — `bus(8)`
+ *
+ * **Example:** two-port register file
+ * ```ts
+ * circuit('RegFile', {
+ *   inputs:  { rs1: bus(8), rs2: bus(8), rd: bus(8), wdata: bus(8), wen: bit },
+ *   outputs: { val1: bus(8), val2: bus(8) },
+ *   nodes:   { regs: DualPortRAM },
+ *   connect: ({ inputs, outputs, nodes: { regs } }) => [
+ *     inputs.rd.to(regs.addrA),
+ *     inputs.wdata.to(regs.dataA),
+ *     inputs.wen.to(regs.weA),
+ *     inputs.rs1.to(regs.addrB), // read port for rs1
+ *     regs.outA.to(outputs.val1),
+ *     regs.outB.to(outputs.val2),
+ *   ],
+ * })
+ * ```
+ */
 export const DualPortRAM = circuit('DualPortRAM', {
   inputs: { addrA: bus(8), dataA: bus(8), weA: bit, addrB: bus(8) },
   outputs: { outA: bus(8), outB: bus(8) },

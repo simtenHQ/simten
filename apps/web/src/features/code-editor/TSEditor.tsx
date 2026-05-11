@@ -29,7 +29,7 @@ import { CompileButton } from "./CompileButton";
 import { ErrorDisplay } from "./ErrorDisplay";
 import type { CompilationError } from "./ErrorDisplay";
 import { useTypeAcquisition } from "./useTypeAcquisition";
-import { EDITOR_TYPE_DECLARATIONS } from "./editor-types";
+import { useCorePreload } from "./useCorePreload";
 
 // ============================================================================
 // Default code
@@ -119,6 +119,9 @@ export const TSEditor = forwardRef<TSEditorRef, TSEditorProps>(
 
     // Fetch + inject TypeScript declarations for npm imports
     useTypeAcquisition(code, monacoInstance);
+
+    // Preload bundled @simten/core types + ambient globals shim
+    useCorePreload(monacoInstance);
 
     // Compilation state
     const [errors, setErrors] = useState<CompilationError[]>([]);
@@ -263,12 +266,10 @@ export const TSEditor = forwardRef<TSEditorRef, TSEditorProps>(
         ],
       });
 
-      // Add type declarations for the injected scope
-      // Generic types enable autocomplete for port names in connect() callbacks
-      monaco.languages.typescript.typescriptDefaults.addExtraLib(
-        EDITOR_TYPE_DECLARATIONS,
-        "gate-dev.d.ts",
-      );
+      // Type declarations for circuit(), BuiltCircuit, stdlib, and the
+      // ambient globals injected by executeCircuitCode are loaded by
+      // useCorePreload above — sourced from `@simten/core/bundle?raw` and
+      // `@simten/core/editor-globals?raw`, both produced by core's build.
 
       // Set editor options
       editor.updateOptions({

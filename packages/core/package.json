@@ -28,7 +28,9 @@
     "./circuit": "./src/circuit/index.ts",
     "./std": "./src/std/index.ts",
     "./sim": "./src/sim/index.ts",
-    "./util/test-name": "./src/util/test-name.ts"
+    "./util/test-name": "./src/util/test-name.ts",
+    "./bundle": "./dist/bundle.d.ts",
+    "./editor-globals": "./dist/editor-globals.dts.txt"
   },
   "publishConfig": {
     "exports": {
@@ -63,15 +65,17 @@
       "./util/test-name": {
         "types": "./dist/util/test-name.d.ts",
         "import": "./dist/util/test-name.js"
-      }
+      },
+      "./bundle": "./dist/bundle.d.ts",
+      "./editor-globals": "./dist/editor-globals.dts.txt"
     }
   },
   "files": [
     "dist"
   ],
   "scripts": {
-    "build": "tsc -b",
-    "test": "vitest run",
+    "build": "tsc -b && rollup -c rollup.dts.config.mjs && node scripts/build-editor-globals.mjs",
+    "test": "pnpm run build && vitest run",
     "test:watch": "vitest"
   },
   "dependencies": {
@@ -81,6 +85,8 @@
   "devDependencies": {
     "@types/node": "^20",
     "fast-check": "^4.5.3",
+    "rollup": "^4.60.3",
+    "rollup-plugin-dts": "^6.4.1",
     "typescript": "^5",
     "vitest": "^4.0.17"
   },

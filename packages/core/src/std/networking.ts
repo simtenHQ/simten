@@ -18,6 +18,15 @@ const CRC32_TABLE: number[] = (() => {
   return table;
 })();
 
+/**
+ * EtherType → protocol flags. Decodes the 16-bit EtherType field of an
+ * Ethernet frame into one-hot flags for the common upper-layer protocols:
+ * IPv4 (`0x0800`), IPv6 (`0x86DD`), ARP (`0x0806`), VLAN (`0x8100`),
+ * MPLS (`0x8847`).
+ *
+ * **Input:** `ethertype` — `bus(16)`
+ * **Outputs:** `is_ipv4`, `is_ipv6`, `is_arp`, `is_vlan`, `is_mpls` — `bit`
+ */
 export const Eth_ProtocolDecoder = circuit('Eth_ProtocolDecoder', {
   inputs: { ethertype: bus(16) },
   outputs: { is_ipv4: bit, is_ipv6: bit, is_arp: bit, is_vlan: bit, is_mpls: bit },
@@ -34,6 +43,16 @@ export const Eth_ProtocolDecoder = circuit('Eth_ProtocolDecoder', {
   meta: { category: 'networking', icon: 'EP', description: 'EtherType → protocol flags' },
 });
 
+/**
+ * MAC address classifier. Examines the 48-bit destination MAC (split
+ * across `dst_mac_hi` + `dst_mac_lo`) and emits one-hot flags:
+ * - `is_broadcast` — all-ones MAC (`FF:FF:FF:FF:FF:FF`)
+ * - `is_multicast` — group bit set (LSB of first octet = 1)
+ * - `is_unicast` — neither of the above
+ *
+ * **Inputs:** `dst_mac_hi` — `bus(16)`; `dst_mac_lo` — `bus(32)`
+ * **Outputs:** `is_broadcast`, `is_multicast`, `is_unicast` — `bit`
+ */
 export const Eth_AddrClassifier = circuit('Eth_AddrClassifier', {
   inputs: { dst_mac_hi: bus(16), dst_mac_lo: bus(32) },
   outputs: { is_broadcast: bit, is_multicast: bit, is_unicast: bit },
@@ -48,6 +67,15 @@ export const Eth_AddrClassifier = circuit('Eth_AddrClassifier', {
   meta: { category: 'networking', icon: 'EA', description: 'MAC address classifier' },
 });
 
+/**
+ * Ethernet frame input (AXI-Stream). Reads frame bytes from internal memory
+ * and emits them as a 32-bit AXI-Stream — 4 bytes per beat, with `tkeep`
+ * indicating which lanes are valid and `tlast` flagging the final beat.
+ *
+ * **Inputs:** `enable`, `reset` — `bit`
+ * **Outputs:** `tdata` — `bus(32)`; `tkeep` — `bus(4)`;
+ * `tvalid`, `tlast` — `bit`; `byte_offset` — `bus(16)`
+ */
 export const Eth_FrameInput = circuit('Eth_FrameInput', {
   inputs: { enable: bit, reset: bit },
   outputs: { tdata: bus(32), tkeep: bus(4), tvalid: bit, tlast: bit, byte_offset: bus(16) },
@@ -110,6 +138,16 @@ export const Eth_FrameInput = circuit('Eth_FrameInput', {
   meta: { category: 'networking', icon: 'EI', description: 'Ethernet frame input (AXI-Stream)' },
 });
 
+/**
+ * Ethernet frame parser FSM. Consumes an AXI-Stream of frame bytes and
+ * extracts the L2 header fields — destination MAC, source MAC, EtherType,
+ * and (optionally) 802.1Q VLAN tag. Per-field `*_valid` flags assert as
+ * each header field finishes parsing.
+ *
+ * **Inputs:** `tdata` — `bus(32)`; `tkeep` — `bus(4)`;
+ * `tvalid`, `tlast` — `bit`
+ * **Outputs:** parsed MAC/EtherType/VLAN fields and a `parse_state` cursor
+ */
 export const Eth_FrameParser = circuit('Eth_FrameParser', {
   inputs: { tdata: bus(32), tkeep: bus(4), tvalid: bit, tlast: bit },
   outputs: { dst_mac_hi: bus(16), dst_mac_lo: bus(32), dst_mac_valid: bit, src_mac_hi: bus(16), src_mac_lo: bus(32), src_mac_valid: bit, ethertype: bus(16), ethertype_valid: bit, has_vlan: bit, vlan_tci: bus(16), vlan_valid: bit, payload_valid: bit, frame_done: bit, frame_length: bus(16), parse_state: bus(4) },
@@ -178,6 +216,16 @@ export const Eth_FrameParser = circuit('Eth_FrameParser', {
   meta: { category: 'networking', icon: 'EF', description: 'Ethernet frame parser FSM' },
 });
 
+/**
+ * IEEE 802.3 CRC-32 checker. Computes the Ethernet FCS (CRC-32 with
+ * polynomial `0xEDB88320` reflected) over an AXI-Stream input. Asserts
+ * `crc_ok` on `tlast` if the residual matches the expected magic constant
+ * `0xDEBB20E3`.
+ *
+ * **Inputs:** `data` — `bus(32)`; `tkeep` — `bus(4)`;
+ * `data_valid`, `tlast`, `reset` — `bit`
+ * **Outputs:** `crc` — `bus(32)`; `crc_ok` — `bit`
+ */
 export const Eth_CRC32 = circuit('Eth_CRC32', {
   inputs: { data: bus(32), data_valid: bit, tkeep: bus(4), tlast: bit, reset: bit },
   outputs: { crc: bus(32), crc_ok: bit },
@@ -213,6 +261,17 @@ export const Eth_CRC32 = circuit('Eth_CRC32', {
   meta: { category: 'networking', icon: 'EC', description: 'IEEE 802.3 CRC-32 checker' },
 });
 
+/**
+ * Memory bus multiplexer. Routes a 32-bit address into one of five
+ * peripheral regions (data RAM, MMIO ranges, etc.) based on per-port
+ * `base`/`end` arguments. Asserts the matching port's `pN_read`/`pN_write`
+ * strobes and returns the selected port's data on `read_data`.
+ *
+ * **Inputs:** `addr`, `write_data` — `bus(32)`; `mem_read`, `mem_write` — `bit`;
+ * `funct3` — `bus(3)`; `read_data_0`..`read_data_4` — `bus(32)`
+ * **Outputs:** `local_addr`, `write_data_out`, `read_data` — `bus(32)`;
+ * `funct3_out` — `bus(3)`; `p0_read`/`p0_write`..`p4_read`/`p4_write` — `bit`
+ */
 export const MemBusMux = circuit('MemBusMux', {
   inputs: { addr: bus(32), write_data: bus(32), mem_read: bit, mem_write: bit, funct3: bus(3), read_data_0: bus(32), read_data_1: bus(32), read_data_2: bus(32), read_data_3: bus(32), read_data_4: bus(32) },
   outputs: { local_addr: bus(32), write_data_out: bus(32), funct3_out: bus(3), read_data: bus(32), p0_read: bit, p0_write: bit, p1_read: bit, p1_write: bit, p2_read: bit, p2_write: bit, p3_read: bit, p3_write: bit, p4_read: bit, p4_write: bit },
@@ -246,6 +305,15 @@ export const MemBusMux = circuit('MemBusMux', {
   meta: { category: 'rv32i', icon: 'BUS', description: 'Memory bus multiplexer' },
 });
 
+/**
+ * UART transmitter. Memory-mapped TX-only UART — a write to address 0
+ * appends the low byte of `write_data` to the output text buffer (kept
+ * to the most recent 4 KB). Simulation-only peripheral — not synthesizable
+ * to Verilog.
+ *
+ * **Inputs:** `addr`, `write_data` — `bus(32)`; `mem_read`, `mem_write` — `bit`
+ * **Output:** `read_data` — `bus(32)`
+ */
 export const UART_TX = circuit('UART_TX', {
   inputs: { addr: bus(32), write_data: bus(32), mem_read: bit, mem_write: bit },
   outputs: { read_data: bus(32) },
@@ -262,6 +330,17 @@ export const UART_TX = circuit('UART_TX', {
   meta: { category: 'io', icon: 'TX', description: 'UART transmitter', synthesizable: false },
 });
 
+/**
+ * Network interface FIFO. Memory-mapped Ethernet-style NIC with separate
+ * TX and RX queues. Write bytes to the TX queue and trigger a drain to
+ * emit a frame onto the network port; receive frames into the RX queue
+ * from the network side. Simulation-only peripheral — not synthesizable
+ * to Verilog.
+ *
+ * **Inputs:** TX/RX `addr`/`write_data` + control strobes, plus network-side
+ * `net_rx_data`/`net_rx_valid`/`net_rx_frame`.
+ * **Outputs:** TX/RX read-data + network-side `net_tx_*` stream.
+ */
 export const NIC_FIFO = circuit('NIC_FIFO', {
   inputs: { tx_addr: bus(32), tx_write_data: bus(32), tx_mem_read: bit, tx_mem_write: bit, rx_addr: bus(32), rx_mem_read: bit, rx_mem_write: bit, net_rx_data: bus(32), net_rx_valid: bit, net_rx_frame: bit },
   outputs: { tx_read_data: bus(32), rx_read_data: bus(32), net_tx_data: bus(32), net_tx_valid: bit, net_tx_frame: bit },

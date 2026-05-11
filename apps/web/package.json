@@ -6,9 +6,9 @@
 		"#/*": "./src/*"
 	},
 	"scripts": {
-		"dev": "vite dev --port 3001",
-		"build": "node scripts/build.mjs",
-		"analyze": "ANALYZE=true node scripts/build.mjs",
+		"dev": "pnpm --filter @simten/core build && vite dev --port 3001",
+		"build": "pnpm --filter @simten/core build && node scripts/build.mjs",
+		"analyze": "pnpm --filter @simten/core build && ANALYZE=true node scripts/build.mjs",
 		"preview": "pnpm run build && vite preview",
 		"test": "vitest run",
 		"deploy": "pnpm run build && wrangler deploy",

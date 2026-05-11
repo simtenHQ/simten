@@ -5,6 +5,15 @@
 import { circuit } from '../circuit/circuit.js';
 import { bit, bus, mem } from '../circuit/bit-bus.js';
 
+/**
+ * RISC-V instruction decoder. Splits a 32-bit RV32I instruction word into
+ * its standard fields. Decoded fields drive `RV32I_Control`, the register
+ * file's read/write ports, and the immediate generator.
+ *
+ * **Input:** `instruction` — `bus(32)`
+ * **Outputs:** `opcode` — `bus(7)`; `funct3` — `bus(3)`; `funct7` — `bus(7)`;
+ * `rd`, `rs1`, `rs2` — `bus(5)`
+ */
 export const RV32I_Decode = circuit('RV32I_Decode', {
   inputs: { instruction: bus(32) },
   outputs: { opcode: bus(7), rd: bus(5), funct3: bus(3), rs1: bus(5), rs2: bus(5), funct7: bus(7) },
@@ -22,6 +31,15 @@ export const RV32I_Decode = circuit('RV32I_Decode', {
   meta: { category: 'rv32i', icon: 'DEC', description: 'RISC-V instruction decoder' },
 });
 
+/**
+ * RISC-V ALU. Performs the arithmetic/logic operation selected by `alu_op`
+ * on two 32-bit operands. Encoding: 0=ADD, 1=SUB, 2=AND, 3=OR, 4=XOR,
+ * 5=SLL, 6=SRL, 7=SRA, 8=SLT (signed), 9=SLTU (unsigned). `zero` flags a
+ * zero result — used directly by branch comparators.
+ *
+ * **Inputs:** `a`, `b` — `bus(32)`; `alu_op` — `bus(4)`
+ * **Outputs:** `result` — `bus(32)`; `zero` — `bit`
+ */
 export const RV32I_ALU = circuit('RV32I_ALU', {
   inputs: { a: bus(32), b: bus(32), alu_op: bus(4) },
   outputs: { result: bus(32), zero: bit },
@@ -48,6 +66,15 @@ export const RV32I_ALU = circuit('RV32I_ALU', {
   meta: { category: 'rv32i', icon: 'ALU', description: 'RISC-V ALU' },
 });
 
+/**
+ * RISC-V immediate generator. Sign-extends the encoded immediate from
+ * any RV32I instruction type (I/S/B/U/J) into a 32-bit value. The output
+ * is shifted/assembled per the spec — `RV32I_ImmGen` already accounts for
+ * the bit-scrambling in B-type and J-type encodings.
+ *
+ * **Input:** `instruction` — `bus(32)`
+ * **Output:** `immediate` — `bus(32)`
+ */
 export const RV32I_ImmGen = circuit('RV32I_ImmGen', {
   inputs: { instruction: bus(32) },
   outputs: { immediate: bus(32) },
@@ -91,6 +118,16 @@ export const RV32I_ImmGen = circuit('RV32I_ImmGen', {
   meta: { category: 'rv32i', icon: 'IMM', description: 'RISC-V immediate generator' },
 });
 
+/**
+ * RISC-V control unit. Maps `opcode`/`funct3`/`funct7_bit` into the set of
+ * control signals that drive the datapath: ALU operation, ALU source
+ * mux, memory read/write, register-file write enable, writeback source,
+ * branch/jump flags, and LUI/AUIPC/JALR mode bits.
+ *
+ * **Inputs:** `opcode` — `bus(7)`; `funct3` — `bus(3)`; `funct7_bit` — `bit`
+ * **Outputs:** `alu_op` — `bus(4)`; `alu_src`, `mem_read`, `mem_write`,
+ * `reg_write`, `mem_to_reg`, `branch`, `jump`, `lui`, `auipc`, `is_jalr` — `bit`
+ */
 export const RV32I_Control = circuit('RV32I_Control', {
   inputs: { opcode: bus(7), funct3: bus(3), funct7_bit: bit },
   outputs: { alu_op: bus(4), alu_src: bit, mem_read: bit, mem_write: bit, reg_write: bit, mem_to_reg: bit, branch: bit, jump: bit, lui: bit, auipc: bit, is_jalr: bit },
@@ -141,6 +178,14 @@ export const RV32I_Control = circuit('RV32I_Control', {
   meta: { category: 'rv32i', icon: 'CTL', description: 'RISC-V control unit' },
 });
 
+/**
+ * RISC-V branch comparator. Evaluates the branch condition for the six
+ * RV32I branch instructions using `funct3`: 0=BEQ, 1=BNE, 4=BLT (signed),
+ * 5=BGE (signed), 6=BLTU (unsigned), 7=BGEU (unsigned).
+ *
+ * **Inputs:** `a`, `b` — `bus(32)`; `funct3` — `bus(3)`
+ * **Output:** `take_branch` — `bit`
+ */
 export const RV32I_BranchComp = circuit('RV32I_BranchComp', {
   inputs: { a: bus(32), b: bus(32), funct3: bus(3) },
   outputs: { take_branch: bit },
@@ -170,6 +215,18 @@ export const RV32I_BranchComp = circuit('RV32I_BranchComp', {
 // register file while the core is halted — it's always synthesizable (just
 // another read port), and it never interferes with the rs1/rs2 reads driven
 // by decode. Unconnected callers get 0 by default (reads x0), which is safe.
+/**
+ * RISC-V 32-register file. 32 × 32-bit synchronous register file with two
+ * combinational read ports (`rs1`/`rs2` → `read1`/`read2`) and one write
+ * port (`rd` + `write_data` + `we`). Register x0 always reads as 0 and
+ * ignores writes. A third combinational read port (`debug_rs` →
+ * `debug_read`) is exposed for debugger/JTAG access without disturbing
+ * the rs1/rs2 ports.
+ *
+ * **Inputs:** `rs1`, `rs2`, `rd`, `debug_rs` — `bus(5)`;
+ * `write_data` — `bus(32)`; `we` — `bit`
+ * **Outputs:** `read1`, `read2`, `debug_read` — `bus(32)`
+ */
 export const RV32I_RegisterFile = circuit('RV32I_RegisterFile', {
   inputs: { rs1: bus(5), rs2: bus(5), rd: bus(5), write_data: bus(32), we: bit, debug_rs: bus(5) },
   outputs: { read1: bus(32), read2: bus(32), debug_read: bus(32) },
@@ -194,6 +251,14 @@ export const RV32I_RegisterFile = circuit('RV32I_RegisterFile', {
   meta: { category: 'rv32i', icon: 'RF', description: 'RISC-V 32-register file' },
 });
 
+/**
+ * RISC-V instruction memory. 64 KB byte-addressable ROM that returns a
+ * 32-bit little-endian word at the given PC. Read-only — populated via
+ * the `init` node argument (use `romFromBytes`/`romFromWords`).
+ *
+ * **Input:** `addr` — `bus(32)`
+ * **Output:** `instruction` — `bus(32)`
+ */
 export const RV32I_InstrMem = circuit('RV32I_InstrMem', {
   inputs: { addr: bus(32) },
   outputs: { instruction: bus(32) },
@@ -210,6 +275,16 @@ export const RV32I_InstrMem = circuit('RV32I_InstrMem', {
   meta: { category: 'rv32i', icon: 'IM', description: 'RISC-V instruction memory' },
 });
 
+/**
+ * RISC-V data memory with byte/half/word access. 64 KB byte-addressable
+ * RAM supporting all RV32I load/store sizes via `funct3` (LB/LH/LW/LBU/LHU
+ * for reads; SB/SH/SW for writes). Drives `misalign` high when the access
+ * size requires alignment the address doesn't satisfy.
+ *
+ * **Inputs:** `addr`, `write_data` — `bus(32)`;
+ * `mem_read`, `mem_write` — `bit`; `funct3` — `bus(3)`
+ * **Outputs:** `read_data` — `bus(32)`; `misalign` — `bit`
+ */
 export const RV32I_DataMem = circuit('RV32I_DataMem', {
   inputs: { addr: bus(32), write_data: bus(32), mem_read: bit, mem_write: bit, funct3: bus(3) },
   outputs: { read_data: bus(32), misalign: bit },
@@ -248,6 +323,16 @@ export const RV32I_DataMem = circuit('RV32I_DataMem', {
   meta: { category: 'rv32i', icon: 'DM', description: 'RISC-V data memory with byte/half/word access' },
 });
 
+/**
+ * RISC-V writeback mux. Selects what value gets written back to the
+ * register file. Priority: `jump` → `pc_plus4` (link register for
+ * JAL/JALR); `auipc` → `pc + immediate`; `lui` → `immediate`;
+ * `mem_to_reg` → `load_data` from memory; otherwise the ALU result.
+ *
+ * **Inputs:** `alu_result`, `load_data`, `pc_plus4`, `immediate`,
+ * `pc_plus_imm` — `bus(32)`; `mem_to_reg`, `lui`, `auipc`, `jump` — `bit`
+ * **Output:** `write_data` — `bus(32)`
+ */
 export const RV32I_WritebackMux = circuit('RV32I_WritebackMux', {
   inputs: { alu_result: bus(32), load_data: bus(32), pc_plus4: bus(32), immediate: bus(32), pc_plus_imm: bus(32), mem_to_reg: bit, lui: bit, auipc: bit, jump: bit },
   outputs: { write_data: bus(32) },
@@ -263,6 +348,15 @@ export const RV32I_WritebackMux = circuit('RV32I_WritebackMux', {
   meta: { category: 'rv32i', icon: 'WB', description: 'RISC-V writeback mux' },
 });
 
+/**
+ * RISC-V next PC mux. Picks the next program counter: JALR target (with
+ * LSB cleared per spec) for `jump && is_jalr`; JAL target for `jump`;
+ * branch target when a branch is taken; otherwise `pc_plus4` (sequential).
+ *
+ * **Inputs:** `pc_plus4`, `branch_target`, `jal_target`, `jalr_target` — `bus(32)`;
+ * `branch`, `take_branch`, `jump`, `is_jalr` — `bit`
+ * **Output:** `next_pc` — `bus(32)`
+ */
 export const RV32I_NextPCMux = circuit('RV32I_NextPCMux', {
   inputs: { pc_plus4: bus(32), branch_target: bus(32), jal_target: bus(32), jalr_target: bus(32), branch: bit, take_branch: bit, jump: bit, is_jalr: bit },
   outputs: { next_pc: bus(32) },
@@ -276,6 +370,16 @@ export const RV32I_NextPCMux = circuit('RV32I_NextPCMux', {
   meta: { category: 'rv32i', icon: 'PC', description: 'RISC-V next PC mux' },
 });
 
+/**
+ * RISC-V data forwarding unit. Detects RAW hazards in a pipelined
+ * implementation and emits the forwarding-mux selectors. `forward_a` /
+ * `forward_b` encode the source for ALU operand A / B: 0 = register-file
+ * read; 1 = EX/MEM bypass; 2 = MEM/WB bypass.
+ *
+ * **Inputs:** `id_rs1`, `id_rs2`, `ex_rd`, `mem_rd` — `bus(5)`;
+ * `ex_reg_write`, `mem_reg_write` — `bit`
+ * **Outputs:** `forward_a`, `forward_b` — `bus(2)`
+ */
 export const RV32I_ForwardingUnit = circuit('RV32I_ForwardingUnit', {
   inputs: { id_rs1: bus(5), id_rs2: bus(5), ex_rd: bus(5), ex_reg_write: bit, mem_rd: bus(5), mem_reg_write: bit },
   outputs: { forward_a: bus(2), forward_b: bus(2) },
@@ -294,6 +398,16 @@ export const RV32I_ForwardingUnit = circuit('RV32I_ForwardingUnit', {
   meta: { category: 'rv32i', icon: 'FWD', description: 'RISC-V data forwarding unit' },
 });
 
+/**
+ * RISC-V writeback bypass. Single-stage bypass mux for write-after-read
+ * hazards on the register file: if the value being written this cycle
+ * (`wb_*`) matches the requested source register (`rs_addr`), forward it
+ * instead of the register-file output. x0 is never bypassed.
+ *
+ * **Inputs:** `rs_val`, `wb_val` — `bus(32)`; `rs_addr`, `wb_rd` — `bus(5)`;
+ * `wb_we` — `bit`
+ * **Output:** `out` — `bus(32)`
+ */
 export const RV32I_WBBypass = circuit('RV32I_WBBypass', {
   inputs: { rs_val: bus(32), rs_addr: bus(5), wb_val: bus(32), wb_rd: bus(5), wb_we: bit },
   outputs: { out: bus(32) },
@@ -306,6 +420,15 @@ export const RV32I_WBBypass = circuit('RV32I_WBBypass', {
   meta: { category: 'rv32i', icon: 'BYP', description: 'RISC-V writeback bypass' },
 });
 
+/**
+ * RISC-V load alignment (byte/half/word). Sign- or zero-extends a 32-bit
+ * raw load result according to `funct3`: 0=LB, 1=LH, 4=LBU, 5=LHU, else
+ * pass-through (LW). Assumes the data is already byte-aligned to the LSB
+ * of the bus — see `RV32I_LoadAlignFull` for handling unaligned offsets.
+ *
+ * **Inputs:** `data` — `bus(32)`; `funct3` — `bus(3)`
+ * **Output:** `out` — `bus(32)`
+ */
 export const RV32I_LoadAlign = circuit('RV32I_LoadAlign', {
   inputs: { data: bus(32), funct3: bus(3) },
   outputs: { out: bus(32) },
@@ -325,6 +448,15 @@ export const RV32I_LoadAlign = circuit('RV32I_LoadAlign', {
   meta: { category: 'rv32i', icon: 'LA', description: 'RISC-V load alignment (byte/half/word)' },
 });
 
+/**
+ * RISC-V full load aligner (raw word + byte offset + funct3). Like
+ * `RV32I_LoadAlign` but also handles unaligned byte/half offsets within a
+ * 32-bit word — shifts the relevant byte/half down to the LSBs before
+ * sign/zero extension based on the bottom two bits of the address.
+ *
+ * **Inputs:** `data` — `bus(32)`; `byte_offset` — `bus(2)`; `funct3` — `bus(3)`
+ * **Output:** `out` — `bus(32)`
+ */
 export const RV32I_LoadAlignFull = circuit('RV32I_LoadAlignFull', {
   inputs: { data: bus(32), byte_offset: bus(2), funct3: bus(3) },
   outputs: { out: bus(32) },
@@ -347,6 +479,17 @@ export const RV32I_LoadAlignFull = circuit('RV32I_LoadAlignFull', {
   meta: { category: 'rv32i', icon: 'LA2', description: 'RISC-V full load aligner (raw word + byte offset + funct3)' },
 });
 
+/**
+ * RISC-V hazard detection unit. Detects pipeline hazards that can't be
+ * resolved by forwarding: `stall` fires on a load-use hazard (the
+ * preceding load's destination matches a current-instruction source);
+ * `flush` fires on taken branches and jumps so wrong-path instructions
+ * in the pipeline get squashed.
+ *
+ * **Inputs:** `if_rs1`, `if_rs2`, `id_rd` — `bus(5)`;
+ * `id_mem_read`, `branch_taken`, `jump` — `bit`
+ * **Outputs:** `stall`, `flush` — `bit`
+ */
 export const RV32I_HazardUnit = circuit('RV32I_HazardUnit', {
   inputs: { if_rs1: bus(5), if_rs2: bus(5), id_rd: bus(5), id_mem_read: bit, branch_taken: bit, jump: bit },
   outputs: { stall: bit, flush: bit },
@@ -361,6 +504,16 @@ export const RV32I_HazardUnit = circuit('RV32I_HazardUnit', {
   meta: { category: 'rv32i', icon: 'HAZ', description: 'RISC-V hazard detection unit' },
 });
 
+/**
+ * Dual-port read-only memory. 64 KB byte-addressable ROM with two
+ * independent 32-bit little-endian read ports — typical use is sharing
+ * instruction memory between fetch and a separate inspection/debug path,
+ * or between instruction and data caches in a Harvard-style layout.
+ * Initialize via the `init` node argument (use `romFromBytes`/`romFromWords`).
+ *
+ * **Inputs:** `addrA`, `addrB` — `bus(32)`
+ * **Outputs:** `dataA`, `dataB` — `bus(32)`
+ */
 export const DualPortROM = circuit('DualPortROM', {
   inputs: { addrA: bus(32), addrB: bus(32) },
   outputs: { dataA: bus(32), dataB: bus(32) },

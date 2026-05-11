@@ -5,6 +5,29 @@
 import { circuit } from '../circuit/circuit.js';
 import { bit, bus } from '../circuit/bit-bus.js';
 
+/**
+ * D Flip-Flop — stores 1 bit on rising clock edge. Whatever value is on
+ * `d` at the clock edge is latched and held until the next edge.
+ *
+ * **Input:** `d` — `bit`
+ * **Outputs:** `q` (stored value), `q_bar` (its complement) — `bit`
+ *
+ * D flip-flops are the basic unit of state. Chains of them make shift
+ * registers; arrays of them make multi-bit registers (see `Register`).
+ *
+ * **Example:** one-tick delay
+ * ```ts
+ * circuit('Delay', {
+ *   inputs:  { signal: bit },
+ *   outputs: { delayed: bit },
+ *   nodes:   { ff: DFlipFlop },
+ *   connect: ({ inputs, outputs, nodes: { ff } }) => [
+ *     inputs.signal.to(ff.d),
+ *     ff.q.to(outputs.delayed),
+ *   ],
+ * })
+ * ```
+ */
 export const DFlipFlop = circuit('DFlipFlop', {
   inputs: { d: bit },
   outputs: { q: bit, q_bar: bit },
@@ -14,6 +37,29 @@ export const DFlipFlop = circuit('DFlipFlop', {
   onTick: ({ d }) => ({ value: Boolean(d) }),
 });
 
+/**
+ * N-bit register — stores data on rising clock edge when write-enable is high.
+ * Holds its previous value when `we` is low. The workhorse of synchronous
+ * digital logic: program counters, accumulators, pipeline stages, all
+ * built from registers.
+ *
+ * **Inputs:** `data` — `bus(8)`; `we` (write-enable) — `bit`
+ * **Output:** `q` (stored value) — `bus(8)`
+ *
+ * **Example:** simple accumulator
+ * ```ts
+ * circuit('Acc', {
+ *   inputs:  { incoming: bus(8), load: bit },
+ *   outputs: { value: bus(8) },
+ *   nodes:   { r: Register },
+ *   connect: ({ inputs, outputs, nodes: { r } }) => [
+ *     inputs.incoming.to(r.data),
+ *     inputs.load.to(r.we),
+ *     r.q.to(outputs.value),
+ *   ],
+ * })
+ * ```
+ */
 export const Register = circuit('Register', {
   inputs: { data: bus(8), we: bit },
   outputs: { q: bus(8) },
