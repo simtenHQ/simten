@@ -10,7 +10,6 @@
 import { useCallback, useState, useEffect, useRef, useMemo } from "react";
 import {
   ReactFlowProvider,
-  RightSidebar,
   ClockControls,
   SignalOutputPanel,
 } from "@simten/ui/editor/components";
@@ -19,11 +18,10 @@ import { useCircuitSimulator, builtFromIR } from "@simten/embed";
 
 import { useCircuitStore, useCircuitPreviewStore, useCircuitLibraryStore } from "@simten/ui/editor/stores";
 import type { Circuit } from "@simten/ui/editor/types";
-import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { TSEditor, type TSEditorRef } from "@/features/code-editor/TSEditor";
-import { TestTube, Bot, Download, Share2 } from "lucide-react";
+import { Bot, Download, Share2 } from "lucide-react";
 import { exportVerilog } from "@simten/core/verilog";
 import { SiteHeader } from "@/components/SiteHeader";
 import { encodeSourceForUrl, shouldUseShortLink } from "@simten/ui/share";
@@ -32,7 +30,8 @@ import { shareCircuit } from "@/features/share/server";
 function isHarnessName(name: string): boolean {
   return name.endsWith('Demo') || name.endsWith('Harness');
 }
-import { ChatPanel, useChatStore, useLLMContext } from "@/features/chat";
+import { ChatPanel, useChatStore } from "@/features/chat";
+import { hashSourceCode } from "@/features/chat/actions";
 import { useMCPConnection } from "@/hooks/useMCPConnection";
 import { WaveformViewer } from "@simten/ui/waveform";
 import { EXAMPLES, CATEGORY_COLORS, CATEGORY_LABELS, type Example } from "../examples";
@@ -108,7 +107,6 @@ export function EditorWorkspace({ theme = "light", initialSource }: EditorWorksp
   >({ kind: 'idle' });
 
   // Drawer state
-  const [testsPanelOpen, setTestsPanelOpen] = useState(false);
   const [waveformData, setWaveformData] = useState<{ vcd: string; circuit: string; ticks: number; steadyStateAt?: number } | null>(null);
 
   // Editor ref for ChatPanel integration
@@ -269,18 +267,13 @@ export function EditorWorkspace({ theme = "light", initialSource }: EditorWorksp
     }, []),
   });
 
-  // Narrative context for chat
+  // Source-code hash for chat staleness detection.
   const code = editorRef.current?.getCode() ?? "";
-  const narrativeContext = useLLMContext(code, sim.portValues ?? undefined);
+  const sourceCodeHash = useMemo(() => hashSourceCode(code), [code]);
 
-  // Keyboard shortcuts for drawer toggles
+  // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Cmd+T / Ctrl+T - Toggle tests panel
-      if ((e.metaKey || e.ctrlKey) && e.key === "t") {
-        e.preventDefault();
-        setTestsPanelOpen((prev) => !prev);
-      }
       // Cmd+K / Ctrl+K - Toggle chat panel
       if ((e.metaKey || e.ctrlKey) && e.key === "k") {
         e.preventDefault();
@@ -381,16 +374,6 @@ export function EditorWorkspace({ theme = "light", initialSource }: EditorWorksp
               <span className="text-sm font-semibold text-foreground/80 mr-auto pl-2 border-l border-border">
                 Editor
               </span>
-
-              <Button
-                onClick={() => setTestsPanelOpen(true)}
-                variant="outline"
-                size="sm"
-                className="gap-2"
-                title="Open Tests Panel (Cmd+T)"
-              >
-                <TestTube className="h-4 w-4" />
-              </Button>
 
               <Button
                 onClick={() => setChatOpen(true)}
@@ -497,14 +480,6 @@ export function EditorWorkspace({ theme = "light", initialSource }: EditorWorksp
           />
         )}
 
-        {/* Right Drawer: Tests + Testbench */}
-        <Sheet open={testsPanelOpen} onOpenChange={setTestsPanelOpen}>
-          <SheetContent side="right" className="w-96 p-0">
-            <SheetTitle className="sr-only">Tests and Testbench</SheetTitle>
-            <RightSidebar />
-          </SheetContent>
-        </Sheet>
-
         {/* Conditional Bottom Bar: Clock Controls (only for sequential circuits) */}
         {showClockControls && (
           <div className="flex items-center gap-4 border-t border-gray-200 dark:border-[#2a2a2e] bg-white dark:bg-[#1a1a1e] px-6 py-3 shadow-sm">
@@ -567,7 +542,7 @@ export function EditorWorkspace({ theme = "light", initialSource }: EditorWorksp
           insertNode={(componentRef, label) => {
             console.log("[Chat] Insert node:", componentRef, label);
           }}
-          sourceCodeHash={narrativeContext.sourceCodeHash}
+          sourceCodeHash={sourceCodeHash}
           onSendToChannel={mcpStatus === 'connected' ? sendToClaudePrompt : undefined}
           channelThinking={channelThinking}
           setChannelThinking={setChannelThinking}

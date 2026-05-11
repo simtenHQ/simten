@@ -4,7 +4,6 @@
 export { useCircuitStore } from './circuit-store';
 export { useCircuitLibraryStore } from './circuit-library-store';
 export { useCircuitPreviewStore } from './circuit-preview-store';
-export { useAnalysisStore } from './analysis-store';
 export { useUIStore } from './ui-store';
 
 export type { CircuitStore } from './circuit-store';

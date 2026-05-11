@@ -41,12 +41,6 @@ export { ChatPanel, ChatInput, MessageList, MessageBubble, ActionCard, CodeDiffV
 // Actions
 export { executeAction, applyDiff, validateAction, validateShowDiff, normalizeAction, type ActionExecutionContext } from './actions';
 
-// Hooks
-export { useLLMContext, buildLLMContext, type LLMContextResult } from './hooks';
-
-// Context
-export { buildNarrativeSummary, buildMinimalNarrative, enforceTokenBudget, countTokens } from './context';
-
 // UI Utilities
 export { extractNodeReferences, highlightNodesFromMessage, createCircuitChecker } from './ui';
 
