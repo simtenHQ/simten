@@ -106,3 +106,14 @@ export type {
   SimulationTrace,
   SignalMetrics,
 } from './types/analysis.js';
+
+// ============================================================================
+// Standard Library (flat re-export)
+// ============================================================================
+//
+// All stdlib components and helpers are also exposed at the root so that
+// downstream code can `import { And, Or, ... } from '@simten/core'` and so
+// that the bundled .d.ts shipped to Monaco is self-contained from a single
+// root entrypoint. Subpath `@simten/core/std` continues to work for granular
+// consumers.
+export * from './std/index.js';

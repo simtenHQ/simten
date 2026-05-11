@@ -83,17 +83,35 @@ function createNodeProxy(nodeId: string, ports: Map<string, PortType>, component
 // circuit() — single entry point
 // ============================================================================
 
-/**
- * Create a hardware circuit.
- *
- * @param name - Circuit name
- * @param config - Circuit configuration (generic — TypeScript infers port/node names)
- * @returns A BuiltCircuit ready for simulation or use as a node
- */
 /** Normalize port type at the type level: number → BusType, PortType → PortType */
 type NormalizePort<T> = T extends number ? import('../types/circuit.js').BusType : T extends PortType ? T : PortType;
 type NormalizePorts<M> = { [K in keyof M]: NormalizePort<M[K]> };
 
+/**
+ * Create a hardware circuit from a single object configuration.
+ *
+ * `name` is the circuit's identifier; `config` is the configuration object.
+ * TypeScript infers port and node names from the object literal, so
+ * destructuring inside `connect` and `eval` callbacks autocompletes.
+ *
+ * Returns a `BuiltCircuit` ready for simulation or use as a node in
+ * another circuit.
+ *
+ * **Example:**
+ * ```ts
+ * const HalfAdder = circuit('HalfAdder', {
+ *   inputs:  { a: bit, b: bit },
+ *   outputs: { sum: bit, carry: bit },
+ *   nodes:   { xor1: Xor, and1: And },
+ *   connect: ({ inputs, outputs, nodes: { xor1, and1 } }) => [
+ *     inputs.a.to(xor1.a, and1.a),
+ *     inputs.b.to(xor1.b, and1.b),
+ *     xor1.out.to(outputs.sum),
+ *     and1.out.to(outputs.carry),
+ *   ],
+ * })
+ * ```
+ */
 export function circuit<
   Ins extends Record<string, PortType | number>,
   Outs extends Record<string, PortType | number>,

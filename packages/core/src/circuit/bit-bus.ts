@@ -83,19 +83,31 @@ export function isMemState(v: unknown): v is MemState {
 /**
  * Single-wire port type (0 or 1).
  *
- * Usage:
- *   circuit('And').in('a', bit).in('b', bit).out('out', bit)
+ * **Example:**
+ * ```ts
+ * circuit('And', {
+ *   inputs:  { a: bit, b: bit },
+ *   outputs: { out: bit },
+ *   eval:    ({ a, b }) => ({ out: a & b }),
+ * })
+ * ```
  */
 export const bit: BitType = { kind: 'bit' } as const;
 
 /**
- * Multi-wire bus port type.
+ * Multi-wire bus port type. Pass a width in bits.
  *
- * Usage:
- *   circuit('Adder').in('a', bus(8)).out('sum', bus(8))
+ * As shorthand, port maps accept a raw number — `{ a: 8 }` is equivalent
+ * to `{ a: bus(8) }`.
  *
- * Also accepts a raw number as shorthand:
- *   circuit('Adder').in('a', 8)  // same as bus(8)
+ * **Example:**
+ * ```ts
+ * circuit('Adder', {
+ *   inputs:  { a: bus(8), b: bus(8) },
+ *   outputs: { sum: bus(8) },
+ *   eval:    ({ a, b }) => ({ sum: (a + b) & 0xFF }),
+ * })
+ * ```
  */
 export function bus(width: number): BusType {
   if (width < 1 || !Number.isInteger(width)) {
