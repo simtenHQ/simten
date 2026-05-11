@@ -55,19 +55,18 @@ type PortRefs<M> = {
   readonly [K in keyof M]: PortRef;
 };
 
-/** Extract port refs from a BuiltCircuit. Uses `infer` instead of looking up
- *  `_shape` so that `_shape` can be marked @internal and stripped from the
- *  emitted .d.ts without breaking this resolution in consumer code. */
-type NodePortRefs<C extends BuiltCircuit> =
-  C extends BuiltCircuit<infer Ins, infer Outs, infer _Ns>
-    ? PortRefs<Ins> & PortRefs<Outs>
-    : never;
-
 /** The connect callback argument — typed from the config's inputs/outputs/nodes.
  *
  * Shape mirrors the config object the user wrote: `{ inputs, outputs, nodes }`.
  * Destructure `nodes` inline (`nodes: { xor1, and1 }`) for terseness on small
  * circuits, or access via `nodes.xor1` for clarity on larger ones.
+ *
+ * The conditional on `Nodes[K]` is inlined inside the mapped type so the
+ * `infer` substitution happens per-key. Hoisting the conditional out into a
+ * named alias (e.g. `NodePortRefs<Nodes[K]>`) causes TS to evaluate the
+ * `infer` against `BuiltCircuit`'s default generic constraints — yielding
+ * `PortRefs<PortMap>`, i.e. an open `{ [k: string]: PortRef }` index signature.
+ * That made `nodes.xor1.bogusPort` silently typecheck.
  */
 export type ConnectArg<
   Ins extends Record<string, PortType | number>,
@@ -76,7 +75,11 @@ export type ConnectArg<
 > = {
   readonly inputs: PortRefs<Ins>;
   readonly outputs: PortRefs<Outs>;
-  readonly nodes: { readonly [K in keyof Nodes]: NodePortRefs<Nodes[K]> };
+  readonly nodes: {
+    readonly [K in keyof Nodes]: Nodes[K] extends BuiltCircuit<infer NIns, infer NOuts, infer _NNs>
+      ? PortRefs<NIns> & PortRefs<NOuts>
+      : never;
+  };
 };
 
 // ============================================================================
