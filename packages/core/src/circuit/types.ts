@@ -20,9 +20,9 @@ import type { PortType, Circuit, ArgumentValue, PortDescriptor, Node } from '../
 export interface PortRef<_T extends PortType = PortType> {
   /** Connect this port to one or more destination ports */
   to(...targets: PortRef[]): ConnectionDef;
-  /** Internal: port path for IR generation */
+  /** @internal port path for IR generation */
   readonly _path: { nodeId: string; portName: string };
-  /** Internal: port type for validation */
+  /** @internal port type for validation */
   readonly _type: PortType;
 }
 
@@ -55,8 +55,13 @@ type PortRefs<M> = {
   readonly [K in keyof M]: PortRef;
 };
 
-/** Extract port refs from a BuiltCircuit's shape */
-type NodePortRefs<C extends BuiltCircuit> = PortRefs<C['_shape']['inputs']> & PortRefs<C['_shape']['outputs']>;
+/** Extract port refs from a BuiltCircuit. Uses `infer` instead of looking up
+ *  `_shape` so that `_shape` can be marked @internal and stripped from the
+ *  emitted .d.ts without breaking this resolution in consumer code. */
+type NodePortRefs<C extends BuiltCircuit> =
+  C extends BuiltCircuit<infer Ins, infer Outs, infer _Ns>
+    ? PortRefs<Ins> & PortRefs<Outs>
+    : never;
 
 /** The connect callback argument — typed from the config's inputs/outputs/nodes.
  *
@@ -94,11 +99,23 @@ export type StateShape = Record<string, StateValue>;
 // ============================================================================
 
 export interface CircuitMeta {
+  /** Grouping label for the canvas component picker (e.g. `'logic-gates'`,
+   *  `'arithmetic'`, `'sequential'`). Free-form — components with the same
+   *  category appear together. */
   category?: string;
+  /** Short, one-line description of what the component does. Surfaced in
+   *  the canvas component picker as a tooltip. For IDE hover docs, write
+   *  JSDoc above the `circuit(...)` declaration — the two have different
+   *  consumers (runtime UI vs IDE) and a CI test keeps them in sync. */
   description?: string;
+  /** Short visual marker for the canvas (Unicode glyph, emoji, or 1–4
+   *  characters). Examples: `'&'` for And, `'+'` for Adder, `'📀'` for ROM. */
   icon?: string;
+  /** Free-form tags for search/filter in the component picker. */
   tags?: string[];
+  /** Component author (informational; mainly for user-published components). */
   author?: string;
+  /** Component version (informational). */
   version?: string;
   /** Key in node.arguments that holds the user-interactive value (Switch, Button, Input) */
   interactiveArg?: string;
@@ -130,18 +147,29 @@ export interface BuiltCircuit<
   Outs extends PortMap = PortMap,
   Ns extends Record<string, unknown> = Record<string, unknown>,
 > {
-  /** The Circuit IR for this circuit */
+  /** The Circuit IR for this circuit. Contains the canonical representation
+   *  used by the simulator, Verilog exporter, and serialization — name, port
+   *  descriptors, node list, connection list, etc. Pass this (rather than
+   *  the `BuiltCircuit` wrapper) to APIs that consume IR. */
   readonly circuit: Circuit;
-  /** Input ports by name (instead of `circuit.inputs.find(...)`). */
+  /** Input ports keyed by name. Use this instead of
+   *  `circuit.inputs.find(p => p.name === '…')` when you need a specific
+   *  port descriptor — autocompletes against the actual port names. */
   readonly inputs: { readonly [K in keyof Ins]: PortDescriptor };
-  /** Output ports by name. */
+  /** Output ports keyed by name. Same shape and use case as `inputs`. */
   readonly outputs: { readonly [K in keyof Outs]: PortDescriptor };
-  /** Sub-nodes by id (composite circuits). */
+  /** Sub-nodes keyed by their local id from the `nodes` config. Empty for
+   *  primitives (circuits defined with `eval` but no `nodes`); populated for
+   *  composite circuits. Useful for inspecting structure or driving
+   *  hierarchical UIs. */
   readonly nodes: { readonly [K in keyof Ns]: Node };
-  /** Type-level shape for generic propagation. Includes node names so that
-   *  consumers (e.g., the canvas `layout` prop) can constrain keys at compile time. */
+  /** @internal Type-level shape for generic propagation. Carries the
+   *  per-instance generic parameters so other generic helpers (`ConnectArg`,
+   *  `NodePortRefs`) can recover them via `infer`. Not for runtime use. */
   readonly _shape: { inputs: Ins; outputs: Outs; nodes: Ns };
-  /** Sub-circuit definitions needed for simulation (transitive) */
+  /** Sub-circuit definitions needed for simulation (transitive). Walk this
+   *  map to collect every component needed to register in a `CircuitLibrary`
+   *  before simulating or rendering this circuit. */
   readonly _dependencies: ReadonlyMap<string, BuiltCircuit>;
 }
 
@@ -156,14 +184,40 @@ export interface CircuitConfig<
   Nodes extends Record<string, BuiltCircuit> = Record<string, BuiltCircuit>,
   S extends StateShape = StateShape,
 > {
+  /** Input ports — a map of port names to types (`bit`, `bus(n)`, or a raw
+   *  number as shorthand for `bus(n)`). Port names autocomplete inside
+   *  `connect`/`eval` callbacks. */
   inputs?: Ins;
+  /** Output ports — same shape as `inputs`. */
   outputs?: Outs;
+  /** Sub-components used inside this circuit. Map a local name to a
+   *  `BuiltCircuit` (from the stdlib or another `circuit(...)` call), then
+   *  wire them up in `connect`. Use this for composite circuits. */
   nodes?: Nodes;
+  /** Per-node constant arguments (e.g. `init` for a ROM, `value` for a
+   *  Constant). Keyed by the local node name from `nodes`; each entry is
+   *  a record of argument name → value. */
   nodeArgs?: { [K in keyof Nodes]?: Record<string, ArgumentValue> };
+  /** Wire sub-nodes and ports together. Receives `{ inputs, outputs, nodes }`
+   *  with destructurable port refs and returns an array of connections built
+   *  via `port.to(...targets)`. Use this for composite circuits — the
+   *  alternative is `eval` for primitives. */
   connect?: (arg: ConnectArg<Ins, Outs, Nodes>) => ConnectionDef[];
+  /** Combinational behavior — given input values (and current state), return
+   *  output values. Use for primitives (gates, ALUs, decoders) whose output
+   *  is a pure function of inputs. Pair with `onTick` for sequential logic. */
   eval?: (inputs: PortValues<Ins> & S) => PortValues<Outs>;
+  /** Sequential state. Map of named state fields, each a `reg(width)` or
+   *  `mem(depth, width)` declaration (for synthesizable Verilog), or a raw
+   *  number / boolean / Map for simulation-only state. Read inside `eval`,
+   *  updated by `onTick`. */
   state?: S;
+  /** Clock-edge state update — given inputs and current state, return the
+   *  next state. Runs once per clock tick. Sequential components (registers,
+   *  memories, counters) use this in tandem with `state`. */
   onTick?: (inputsAndState: PortValues<Ins> & S) => S;
+  /** Component metadata — category, description, icon, etc. Used by the
+   *  canvas component picker and by tooling. See `CircuitMeta` for fields. */
   meta?: CircuitMeta;
 }
 
