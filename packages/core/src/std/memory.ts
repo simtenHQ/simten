@@ -29,7 +29,7 @@ import { bit, bus, mem } from '../circuit/bit-bus.js';
  * })
  * ```
  */
-export const ROM = circuit('ROM', {
+export const ROM = circuit('ROM', (_opts?: { memory?: Record<number, number> | number[]; baseAddress?: number }) => ({
   inputs: { addr: bus(16) },
   outputs: { data_out: bus(8) },
   state: { memory: mem(65536, 8) },
@@ -38,7 +38,7 @@ export const ROM = circuit('ROM', {
     data_out: memory[addr],
   }),
   onTick: ({ memory }) => ({ memory }),
-});
+}));
 
 /**
  * Random access memory. 256 × 8-bit synchronous read/write. Reads
@@ -63,7 +63,7 @@ export const ROM = circuit('ROM', {
  * })
  * ```
  */
-export const RAM = circuit('RAM', {
+export const RAM = circuit('RAM', (_opts?: { memory?: Record<number, number> | number[] }) => ({
   inputs: { addr: bus(8), data_in: bus(8), we: bit },
   outputs: { data_out: bus(8) },
   state: { memory: mem(256, 8) },
@@ -75,7 +75,7 @@ export const RAM = circuit('RAM', {
     if (we) memory[addr] = data_in;
     return { memory };
   },
-});
+}));
 
 /**
  * Dual-port RAM — two independent read ports plus one write port. Use port A
@@ -102,7 +102,7 @@ export const RAM = circuit('RAM', {
  * })
  * ```
  */
-export const DualPortRAM = circuit('DualPortRAM', {
+export const DualPortRAM = circuit('DualPortRAM', (_opts?: { memory?: Record<number, number> | number[] }) => ({
   inputs: { addrA: bus(8), dataA: bus(8), weA: bit, addrB: bus(8) },
   outputs: { outA: bus(8), outB: bus(8) },
   state: { memory: mem(256, 8) },
@@ -115,7 +115,7 @@ export const DualPortRAM = circuit('DualPortRAM', {
     if (weA) memory[addrA] = dataA;
     return { memory };
   },
-});
+}));
 
 // ============================================================================
 // ROM init helpers
