@@ -49,8 +49,7 @@ circuit(name, {
   outputs?:  Record<string, PortType>          // named output ports
   meta?:     { description?: string }          // shown in palette / used by Claude
   // Composite (structural):
-  nodes?:    Record<string, BuiltCircuit>      // node label → component type
-  nodeArgs?: Record<string, object>            // parameters per node
+  nodes?:    Record<string, BuiltCircuit>      // node label → component instance (call factory to specialize)
   connect?:  (refs) => Connection[]            // wiring
   // Behavioral (eval):
   eval?:     (inputs & state) => outputs       // combinational output function
@@ -77,23 +76,23 @@ Connections are directional: source (left) drives target(s) (right). A port can 
 
 ## Node Parameters
 
-Pass parameters in `nodeArgs`:
+Call the component factory inline to specialize per-instance args:
 
 ```typescript
-nodes:    { reg: Register, k: Constant, add: Adder },
-nodeArgs: {
-  reg: { initial: 0, width: 8 },
-  k:   { value: 42, width: 8 },
-  add: { width: 8 },
+nodes: {
+  reg: Register({ width: 8, value: 0 }),
+  k:   Constant({ value: 42, width: 8 }),
+  add: Adder({ width: 8 }),
 },
 ```
+
+Bare references like `nodes: { add: Adder }` are shorthand for `Adder()` with defaults.
 
 | Parameter | Used by | Description |
 |-----------|---------|-------------|
 | `width` | Adder, Comparator, Mux, etc. | Bus width (default: 8) |
-| `value` | Constant, Input, Switch | Fixed or initial value |
-| `initial` | Register | Initial state value (default: 0) |
-| `init` | RAM, DualPortRAM, ROM | Memory initialization map `{ addr: value, ... }` |
+| `value` | Constant, Input, Switch, Register, DFlipFlop | Fixed or initial state value |
+| `memory` | RAM, DualPortRAM, ROM | Memory initialization map `{ addr: value, ... }` |
 | `low`, `high` | BitSlice | Bit range to extract (inclusive) |
 | `baseAddress` | ROM | Memory-mapped base address |
 
@@ -129,8 +128,12 @@ Circuits without `inputs`/`outputs` ports are treated as top-level demos. Use `I
 import { Input, HexDisplay, Adder } from '@simten/core/std'
 
 const AdderDemo = circuit('AdderDemo', {
-  nodes:    { a: Input, b: Input, add: Adder, disp: HexDisplay },
-  nodeArgs: { a: { value: 10 }, b: { value: 5 }, add: { width: 8 }, disp: { width: 8 } },
+  nodes: {
+    a: Input({ value: 10 }),
+    b: Input({ value: 5 }),
+    add: Adder({ width: 8 }),
+    disp: HexDisplay,
+  },
   connect: ({ nodes: { a, b, add, disp } }) => [
     a.out.to(add.a),
     b.out.to(add.b),

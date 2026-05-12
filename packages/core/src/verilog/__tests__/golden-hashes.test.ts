@@ -135,26 +135,25 @@ function buildSimpleSequential() {
 // ── Hashable set ─────────────────────────────────────────────────────────────
 
 const subjects: Array<{ name: string; build: () => any }> = [
-  // Stdlib — all are direct BuiltCircuit values; parameterization happens via
-  // nodeArgs at instantiation, not via factory calls. Hashing the bare circuit
-  // exports the canonical shape; widths are exercised through the synthetic
-  // composites further down.
+  // Stdlib — singletons are bare BuiltCircuits; parameterized components are
+  // invoked with default args to capture the canonical (default-width) shape.
+  // Widths are exercised through the synthetic composites further down.
   { name: 'And',                 build: () => And },
   { name: 'Or',                  build: () => Or },
   { name: 'Not',                 build: () => Not },
   { name: 'Nand',                build: () => Nand },
   { name: 'Xor',                 build: () => Xor },
-  { name: 'Adder',               build: () => Adder },
-  { name: 'Subtractor',          build: () => Subtractor },
-  { name: 'Comparator',          build: () => Comparator },
+  { name: 'Adder',               build: () => Adder() },
+  { name: 'Subtractor',          build: () => Subtractor() },
+  { name: 'Comparator',          build: () => Comparator() },
   { name: 'Multiplier',          build: () => Multiplier },
-  { name: 'Mux',                 build: () => Mux },
+  { name: 'Mux',                 build: () => Mux() },
   { name: 'Decoder',             build: () => Decoder },
-  { name: 'BitSlice',            build: () => BitSlice },
-  { name: 'DFlipFlop',           build: () => DFlipFlop },
-  { name: 'Register',            build: () => Register },
-  { name: 'ROM',                 build: () => ROM },
-  { name: 'RAM',                 build: () => RAM },
+  { name: 'BitSlice',            build: () => BitSlice() },
+  { name: 'DFlipFlop',           build: () => DFlipFlop() },
+  { name: 'Register',            build: () => Register() },
+  { name: 'ROM',                 build: () => ROM() },
+  { name: 'RAM',                 build: () => RAM() },
 
   // RV32I (real-world composites, dense usage of connect)
   { name: 'RV32I_Decode',        build: () => RV32I_Decode },

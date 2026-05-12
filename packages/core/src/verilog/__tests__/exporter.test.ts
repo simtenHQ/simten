@@ -101,7 +101,7 @@ describe('exportVerilog', () => {
       const Plain = circuit('PlainRAM', {
         inputs: { addr: bus(8), data_in: bus(8), we: bit },
         outputs: { data_out: bus(8) },
-        nodes: { r: RAM },
+        nodes: { r: RAM() },
         connect: ({ inputs, outputs, nodes: { r } }) => [
           inputs.addr.to(r.addr),
           inputs.data_in.to(r.data_in),
@@ -122,7 +122,7 @@ describe('exportVerilog', () => {
       const RamUser = circuit('RamUser', {
         inputs: { addr: bus(8), data_in: bus(8), we: bit },
         outputs: { data_out: bus(8) },
-        nodes: { r: RAM },
+        nodes: { r: RAM() },
         connect: ({ inputs, outputs, nodes: { r } }) => [
           inputs.addr.to(r.addr),
           inputs.data_in.to(r.data_in),
@@ -173,7 +173,7 @@ describe('exportVerilog', () => {
       const RamUser = circuit('BigRam', {
         inputs: { addr: bus(8), data_in: bus(8), we: bit },
         outputs: { data_out: bus(8) },
-        nodes: { r: RAM },
+        nodes: { r: RAM() },
         connect: ({ inputs, outputs, nodes: { r } }) => [
           inputs.addr.to(r.addr),
           inputs.data_in.to(r.data_in),
@@ -224,19 +224,18 @@ describe('exportVerilog', () => {
       expect(lines[9]).toBe('1c'); // i=9 → 28 = 0x1c
     });
 
-    it('emits initial for stdlib ROM via nodeArgs.init (legacy path still works)', () => {
-      const LegacyROM = circuit('LegacyROM', {
+    it('emits initial for stdlib ROM via factory memory arg', () => {
+      const PreloadedROM = circuit('PreloadedROM', {
         inputs: { addr: bus(16) },
         outputs: { data_out: bus(8) },
-        nodes: { r: ROM },
-        nodeArgs: { r: { init: { 0: 0xAA, 1: 0xBB } } },
+        nodes: { r: ROM({ memory: { 0: 0xAA, 1: 0xBB } }) },
         connect: ({ inputs, outputs, nodes: { r } }) => [
           inputs.addr.to(r.addr),
           r.data_out.to(outputs.data_out),
         ],
       });
 
-      const { verilog } = exportVerilog(LegacyROM.circuit, libraryFor(LegacyROM));
+      const { verilog } = exportVerilog(PreloadedROM.circuit, libraryFor(PreloadedROM));
       expect(verilog).toMatch(/initial begin/);
       expect(verilog).toMatch(/mem_.*\[0\] = 8'd170/);
       expect(verilog).toMatch(/mem_.*\[1\] = 8'd187/);
