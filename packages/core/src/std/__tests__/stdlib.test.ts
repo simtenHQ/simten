@@ -34,27 +34,27 @@ describe('stdlib circuits load', () => {
     ['And', And], ['Or', Or], ['Not', Not], ['Xor', Xor],
     ['Nand', Nand], ['Nor', Nor], ['Xnor', Xnor], ['Buffer', Buffer],
     // Arithmetic
-    ['Adder', Adder], ['Subtractor', Subtractor], ['Multiplier', Multiplier],
-    ['Comparator', Comparator], ['Incrementer', Incrementer],
-    ['LeftShifter', LeftShifter], ['RightShifter', RightShifter],
+    ['Adder', Adder()], ['Subtractor', Subtractor()], ['Multiplier', Multiplier],
+    ['Comparator', Comparator()], ['Incrementer', Incrementer],
+    ['LeftShifter', LeftShifter()], ['RightShifter', RightShifter()],
     ['SignedAdder', SignedAdder], ['SignedComparator', SignedComparator],
     ['SignedMultiplier', SignedMultiplier],
-    ['BusAnd', BusAnd], ['BusOr', BusOr], ['BusNot', BusNot], ['BusXor', BusXor],
+    ['BusAnd', BusAnd()], ['BusOr', BusOr()], ['BusNot', BusNot], ['BusXor', BusXor()],
     // Routing
-    ['Mux', Mux], ['Decoder', Decoder],
+    ['Mux', Mux()], ['Decoder', Decoder],
     ['Splitter', Splitter], ['Splitter8to8', Splitter8to8],
     ['Combiner8to8', Combiner8to8], ['Concat', Concat],
-    ['BitSlice', BitSlice], ['AddressCombiner', AddressCombiner], ['Probe', Probe],
+    ['BitSlice', BitSlice()], ['AddressCombiner', AddressCombiner], ['Probe', Probe],
     // Sequential
-    ['DFlipFlop', DFlipFlop], ['Register', Register],
+    ['DFlipFlop', DFlipFlop()], ['Register', Register()],
     // Memory
-    ['ROM', ROM], ['RAM', RAM], ['DualPortRAM', DualPortRAM],
+    ['ROM', ROM()], ['RAM', RAM()], ['DualPortRAM', DualPortRAM()],
     // I/O
-    ['Switch', Switch], ['Button', Button], ['Led', Led],
-    ['Input', Input], ['Output', Output], ['Constant', Constant],
+    ['Switch', Switch()], ['Button', Button()], ['Led', Led],
+    ['Input', Input()], ['Output', Output], ['Constant', Constant()],
     // Display
     ['SevenSegment', SevenSegment], ['HexDisplay', HexDisplay],
-    ['Screen', Screen], ['RasterDisplay', RasterDisplay], ['Console', Console],
+    ['Screen', Screen()], ['RasterDisplay', RasterDisplay()], ['Console', Console],
   ];
 
   it.each(allCircuits)('%s has correct name', (name, comp) => {
@@ -85,24 +85,28 @@ describe('stdlib circuits load', () => {
 
 describe('sequential components', () => {
   it('DFlipFlop has clock and state', () => {
-    expect(DFlipFlop.circuit.clocks.length).toBeGreaterThan(0);
-    expect(DFlipFlop.circuit.state.length).toBeGreaterThan(0);
-    expect(DFlipFlop.circuit.metadata?.timing).toBe('sequential');
+    const d = DFlipFlop();
+    expect(d.circuit.clocks.length).toBeGreaterThan(0);
+    expect(d.circuit.state.length).toBeGreaterThan(0);
+    expect(d.circuit.metadata?.timing).toBe('sequential');
   });
 
   it('Register has clock and state', () => {
-    expect(Register.circuit.clocks.length).toBeGreaterThan(0);
-    expect(Register.circuit.state.length).toBeGreaterThan(0);
-    expect(Register.circuit.metadata?.timing).toBe('sequential');
+    const r = Register();
+    expect(r.circuit.clocks.length).toBeGreaterThan(0);
+    expect(r.circuit.state.length).toBeGreaterThan(0);
+    expect(r.circuit.metadata?.timing).toBe('sequential');
   });
 
   it('RAM has clock and state', () => {
-    expect(RAM.circuit.clocks.length).toBeGreaterThan(0);
-    expect(RAM.circuit.state.length).toBeGreaterThan(0);
+    const r = RAM();
+    expect(r.circuit.clocks.length).toBeGreaterThan(0);
+    expect(r.circuit.state.length).toBeGreaterThan(0);
   });
 
   it('ROM has state (no clock — combinational read)', () => {
-    expect(ROM.circuit.state.length).toBeGreaterThan(0);
+    const r = ROM();
+    expect(r.circuit.state.length).toBeGreaterThan(0);
     // ROM has no clock — reads are combinational
   });
 });
@@ -113,9 +117,10 @@ describe('sequential components', () => {
 
 describe('I/O circuits', () => {
   it('Switch has no inputs and one output', () => {
-    expect(Switch.circuit.inputs).toHaveLength(0);
-    expect(Switch.circuit.outputs).toHaveLength(1);
-    expect(Switch.circuit.outputs[0].name).toBe('out');
+    const s = Switch();
+    expect(s.circuit.inputs).toHaveLength(0);
+    expect(s.circuit.outputs).toHaveLength(1);
+    expect(s.circuit.outputs[0].name).toBe('out');
   });
 
   it('Led has one input and no outputs', () => {
@@ -124,13 +129,15 @@ describe('I/O circuits', () => {
   });
 
   it('Switch is a source component (no inputs)', () => {
-    expect(Switch.circuit.inputs).toHaveLength(0);
-    expect(Switch.circuit.outputs).toHaveLength(1);
+    const s = Switch();
+    expect(s.circuit.inputs).toHaveLength(0);
+    expect(s.circuit.outputs).toHaveLength(1);
   });
 
   it('Button is a source component (no inputs)', () => {
-    expect(Button.circuit.inputs).toHaveLength(0);
-    expect(Button.circuit.outputs).toHaveLength(1);
+    const b = Button();
+    expect(b.circuit.inputs).toHaveLength(0);
+    expect(b.circuit.outputs).toHaveLength(1);
   });
 });
 
@@ -152,12 +159,13 @@ describe('circuit._dependencies', () => {
       getAllPrimitiveNames: () => [...circuitMap.entries()].filter(([, c]) => c.implementation.kind === 'primitive').map(([n]) => n),
       addCircuit: (c) => { circuitMap.set(c.name, c); },
     };
-    lib.addCircuit(Adder.circuit);
-    for (const [, dep] of Adder._dependencies) lib.addCircuit(dep.circuit);
+    const adder = Adder();
+    lib.addCircuit(adder.circuit);
+    for (const [, dep] of adder._dependencies) lib.addCircuit(dep.circuit);
 
     expect(lib.resolveCircuit('Adder')).toBeDefined();
     // All transitive deps are present
-    for (const [name] of Adder._dependencies) {
+    for (const [name] of adder._dependencies) {
       expect(lib.resolveCircuit(name)).toBeDefined();
     }
   });

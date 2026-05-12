@@ -128,12 +128,12 @@ assign w_deltaXTemp_out = w_isLeft_eq ? w_minus1_out : w_zero_out;
 The exporter already supports a `width` argument on `Constant` nodes to override the inferred width. Adding `width: 8` to all the game's constants forces the width inference pass to treat them as 8-bit:
 
 ```typescript
-nodeArgs: {
-  zero:   { value: 0,   width: 8 },
-  one:    { value: 1,   width: 8 },
-  two:    { value: 2,   width: 8 },
-  three:  { value: 3,   width: 8 },
-  minus1: { value: 255, width: 8 },
+nodes: {
+  zero:   Constant({ value: 0,   width: 8 }),
+  one:    Constant({ value: 1,   width: 8 }),
+  two:    Constant({ value: 2,   width: 8 }),
+  three:  Constant({ value: 3,   width: 8 }),
+  minus1: Constant({ value: 255, width: 8 }),
   // ...
 }
 ```

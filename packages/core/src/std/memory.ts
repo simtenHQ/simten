@@ -9,8 +9,8 @@ import { bit, bus, mem } from '../circuit/bit-bus.js';
 
 /**
  * Read-only memory with address decoding. 64K × 8-bit by default. Initialize
- * via the `init` node argument using one of `romFromBytes` / `romFromWords` /
- * `romFromEntries`. Uninitialized addresses read as 0.
+ * via the `memory` factory option using one of `romFromBytes` / `romFromWords`
+ * / `romFromEntries`. Uninitialized addresses read as 0.
  *
  * **Input:** `addr` — `bus(16)`
  * **Output:** `data_out` — `bus(8)`
@@ -20,8 +20,7 @@ import { bit, bus, mem } from '../circuit/bit-bus.js';
  * circuit('CodeFetch', {
  *   inputs:  { pc: bus(16) },
  *   outputs: { instr: bus(8) },
- *   nodes:   { rom: ROM },
- *   nodeArgs: { rom: { init: romFromBytes([0x80, 0x12, 0x34]) } },
+ *   nodes:   { rom: ROM({ memory: romFromBytes([0x80, 0x12, 0x34]) }) },
  *   connect: ({ inputs, outputs, nodes: { rom } }) => [
  *     inputs.pc.to(rom.addr),
  *     rom.data_out.to(outputs.instr),
@@ -29,7 +28,7 @@ import { bit, bus, mem } from '../circuit/bit-bus.js';
  * })
  * ```
  */
-export const ROM = circuit('ROM', {
+export const ROM = circuit('ROM', (_opts?: { memory?: Record<number, number> | number[]; baseAddress?: number }) => ({
   inputs: { addr: bus(16) },
   outputs: { data_out: bus(8) },
   state: { memory: mem(65536, 8) },
@@ -38,7 +37,7 @@ export const ROM = circuit('ROM', {
     data_out: memory[addr],
   }),
   onTick: ({ memory }) => ({ memory }),
-});
+}));
 
 /**
  * Random access memory. 256 × 8-bit synchronous read/write. Reads
@@ -63,7 +62,7 @@ export const ROM = circuit('ROM', {
  * })
  * ```
  */
-export const RAM = circuit('RAM', {
+export const RAM = circuit('RAM', (_opts?: { memory?: Record<number, number> | number[] }) => ({
   inputs: { addr: bus(8), data_in: bus(8), we: bit },
   outputs: { data_out: bus(8) },
   state: { memory: mem(256, 8) },
@@ -75,7 +74,7 @@ export const RAM = circuit('RAM', {
     if (we) memory[addr] = data_in;
     return { memory };
   },
-});
+}));
 
 /**
  * Dual-port RAM — two independent read ports plus one write port. Use port A
@@ -102,7 +101,7 @@ export const RAM = circuit('RAM', {
  * })
  * ```
  */
-export const DualPortRAM = circuit('DualPortRAM', {
+export const DualPortRAM = circuit('DualPortRAM', (_opts?: { memory?: Record<number, number> | number[] }) => ({
   inputs: { addrA: bus(8), dataA: bus(8), weA: bit, addrB: bus(8) },
   outputs: { outA: bus(8), outB: bus(8) },
   state: { memory: mem(256, 8) },
@@ -115,17 +114,17 @@ export const DualPortRAM = circuit('DualPortRAM', {
     if (weA) memory[addrA] = dataA;
     return { memory };
   },
-});
+}));
 
 // ============================================================================
 // ROM init helpers
 // ============================================================================
 //
 // Convenience builders that turn JS data (typed arrays, plain arrays, sparse
-// entries) into the format accepted by `nodeArgs.<rom>.init`. Lets callers do:
+// entries) into the format accepted by `ROM({ memory: … })`. Lets callers do:
 //
 //   import bytes from 'some-npm-package/data.json'
-//   nodeArgs: { rom: { init: romFromBytes(bytes) } }
+//   nodes: { rom: ROM({ memory: romFromBytes(bytes) }) }
 //
 // Output is always a sparse Record<number, number>. Zero entries are omitted
 // since ROM addresses default to 0 — keeps the IR small for sparse data and

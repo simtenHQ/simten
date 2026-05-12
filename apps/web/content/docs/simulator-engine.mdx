@@ -262,7 +262,7 @@ Phase 1. Not returned to the API.
 
 Memory primitives (ROM, RAM, DualPortRAM) are initialized from two sources:
 
-1. **Builder-embedded data**: `nodeArgs: { ram: { init: { 0: 42, 1: 100 } } }`
+1. **Builder-embedded data**: `nodes: { ram: RAM({ memory: { 0: 42, 1: 100 } }) }`
 2. **Injected memory data**: Runtime data passed via `initialMemory` option (e.g., compiled
    RISC-V binaries loaded into instruction memory)
 

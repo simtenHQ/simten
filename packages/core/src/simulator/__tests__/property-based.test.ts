@@ -92,7 +92,7 @@ describe('property-based circuit verification', () => {
         fc.integer({ min: 0, max: 255 }),
         fc.integer({ min: 0, max: 255 }),
         (a, b) => {
-          const sim = simulate(Adder);
+          const sim = simulate(Adder());
           try {
             sim.set({ a, b, carry_in: 0 });
             const sum = sim.get('sum');
@@ -140,7 +140,7 @@ describe('property-based circuit verification', () => {
         fc.integer({ min: 0, max: 255 }),
         fc.integer({ min: 0, max: 255 }),
         (a, b) => {
-          const sim = simulate(Comparator);
+          const sim = simulate(Comparator());
           try {
             sim.set({ a, b });
             const eq = sim.get('eq');

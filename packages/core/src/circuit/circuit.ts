@@ -90,14 +90,21 @@ type NormalizePorts<M> = { [K in keyof M]: NormalizePort<M[K]> };
 /**
  * Create a hardware circuit from a single object configuration.
  *
- * `name` is the circuit's identifier; `config` is the configuration object.
+ * `name` is the circuit's identifier; the second arg is either:
+ * - A configuration object (for unparameterized circuits) — returns a
+ *   `BuiltCircuit` directly.
+ * - A factory function `(opts) => config` (for parameterized circuits) —
+ *   returns a callable `(opts?) => BuiltCircuit`. Call it to specialize:
+ *   `Register({ width: 16, value: 100 })`.
+ *
+ * Singletons are used bare: `nodes: { g: And }`. Parameterized components
+ * are always called: `nodes: { r: Register() }` for defaults,
+ * `nodes: { r: Register({ width: 16 }) }` to specialize.
+ *
  * TypeScript infers port and node names from the object literal, so
  * destructuring inside `connect` and `eval` callbacks autocompletes.
  *
- * Returns a `BuiltCircuit` ready for simulation or use as a node in
- * another circuit.
- *
- * **Example:**
+ * **Example — unparameterized:**
  * ```ts
  * const HalfAdder = circuit('HalfAdder', {
  *   inputs:  { a: bit, b: bit },
@@ -111,13 +118,80 @@ type NormalizePorts<M> = { [K in keyof M]: NormalizePort<M[K]> };
  *   ],
  * })
  * ```
+ *
+ * **Example — parameterized:**
+ * ```ts
+ * const Register = circuit('Register', ({ width = 8, value = 0 } = {}) => ({
+ *   inputs:  { data: bus(width), we: bit },
+ *   outputs: { q: bus(width) },
+ *   state:   { value },
+ *   eval:    ({ value }) => ({ q: value }),
+ *   onTick:  ({ data, we, value }) => ({ value: we ? data : value }),
+ * }))
+ * ```
  */
+export function circuit<
+  Opts extends Record<string, ArgumentValue>,
+  Ins extends Record<string, PortType | number>,
+  Outs extends Record<string, PortType | number>,
+  Nodes extends Record<string, BuiltCircuit>,
+  S extends StateShape,
+>(
+  name: string,
+  factory: (opts?: Opts) => CircuitConfig<Ins, Outs, Nodes, S>,
+): (opts?: Opts) => BuiltCircuit<NormalizePorts<Ins>, NormalizePorts<Outs>, Nodes>;
 export function circuit<
   Ins extends Record<string, PortType | number>,
   Outs extends Record<string, PortType | number>,
   Nodes extends Record<string, BuiltCircuit>,
   S extends StateShape,
->(name: string, config: CircuitConfig<Ins, Outs, Nodes, S> = {} as any): BuiltCircuit<NormalizePorts<Ins>, NormalizePorts<Outs>, Nodes> {
+>(
+  name: string,
+  config?: CircuitConfig<Ins, Outs, Nodes, S>,
+): BuiltCircuit<NormalizePorts<Ins>, NormalizePorts<Outs>, Nodes>;
+export function circuit(
+  name: string,
+  configOrFactory: any = {} as any,
+): any {
+  // Factory form: return a callable that builds a per-instance BuiltCircuit
+  // with `_args` attached. The factory closes over the original `name`, so
+  // every specialized instance shares the same component name (and registry
+  // entry) — shape can differ per call (e.g. port widths), but the eval/
+  // onTick logic is parameter-agnostic and registers equivalently each time.
+  if (typeof configOrFactory === 'function') {
+    const factory = configOrFactory as (opts?: Record<string, ArgumentValue>) => CircuitConfig;
+    return (opts?: Record<string, ArgumentValue>) => {
+      const innerConfig = factory(opts);
+      const built = circuit(name, innerConfig as any) as any;
+      built._args = opts ?? {};
+      // Strip per-instance state initials baked in by ES6-shorthand
+      // declarations like `state: { value }`. Dep-merging in this same
+      // function picks the FIRST node's BuiltCircuit as the canonical
+      // library entry; if state initials varied per instance, every
+      // instance without an explicit args override would inherit whichever
+      // value happened to come first. Per-instance values flow through
+      // `node.arguments[block.name]` and are applied by sequential-init.ts;
+      // here we normalize the IR's state initials to type defaults.
+      for (const sb of built.circuit.state) {
+        if (sb.stateType.kind === 'bit') {
+          sb.initialValue = false;
+        } else if (sb.stateType.kind === 'bus') {
+          // Preserve string state (e.g. Console buffers) — only numeric
+          // bus initials get reset to 0.
+          if (typeof sb.initialValue === 'number') sb.initialValue = 0;
+        } else if (sb.stateType.kind === 'memory') {
+          const iv = sb.initialValue as { addressWidth: number; dataWidth: number } | undefined;
+          sb.initialValue = {
+            data: new Map<number, number>(),
+            addressWidth: iv?.addressWidth ?? sb.stateType.addressWidth,
+            dataWidth: iv?.dataWidth ?? sb.stateType.dataWidth,
+          };
+        }
+      }
+      return built;
+    };
+  }
+  const config = configOrFactory as CircuitConfig;
   // ── Normalize inputs/outputs ──
 
   const inputs = new Map<string, PortType>();
@@ -135,7 +209,6 @@ export function circuit<
   }
 
   const nodes = config.nodes ?? {};
-  const nodeArgs = config.nodeArgs ?? {};
 
   // ── Validate ──
 
@@ -192,7 +265,7 @@ export function circuit<
     };
 
     try {
-      connectionDefs = config.connect(arg as unknown as ConnectArg<Ins, Outs, Nodes>);
+      connectionDefs = config.connect(arg as unknown as ConnectArg<any, any, any>);
     } catch (e) {
       errors.push(e instanceof Error ? e.message : String(e));
     }
@@ -306,7 +379,7 @@ export function circuit<
 
   const irNodes: Node[] = [];
   for (const [nodeId, comp] of Object.entries(nodes) as [string, BuiltCircuit][]) {
-    const args = (nodeArgs as Record<string, Record<string, ArgumentValue>>)[nodeId] ?? {};
+    const args = comp._args ?? {};
     irNodes.push({
       id: nodeId,
       componentRef: comp.circuit.name,
@@ -404,7 +477,7 @@ export function circuit<
     outputs: outputsByName,
     nodes: nodesById,
     _dependencies: deps,
-  } as unknown as BuiltCircuit<NormalizePorts<Ins>, NormalizePorts<Outs>, Nodes>;
+  } as unknown as BuiltCircuit;
 
   // Map serializes as `{}` by default — define a non-enumerable toJSON so
   // JSON.stringify emits dependencies as a plain object without polluting
