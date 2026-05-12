@@ -20,7 +20,7 @@ export interface SectionDef {
 }
 
 const NandDemo = circuit('NandDemo', {
-  nodes: { in_a: Switch, in_b: Switch, gate: Nand, out: Led },
+  nodes: { in_a: Switch(), in_b: Switch(), gate: Nand, out: Led },
   connect: ({ nodes: { in_a, in_b, gate, out } }) => [
     in_a.out.to(gate.a),
     in_b.out.to(gate.b),
@@ -29,7 +29,7 @@ const NandDemo = circuit('NandDemo', {
 });
 
 const NotDemo = circuit('NotDemo', {
-  nodes: { sw_in: Switch, gate: Nand, out: Led },
+  nodes: { sw_in: Switch(), gate: Nand, out: Led },
   connect: ({ nodes: { sw_in, gate, out } }) => [
     sw_in.out.to(gate.a, gate.b),
     gate.out.to(out.in),
@@ -37,7 +37,7 @@ const NotDemo = circuit('NotDemo', {
 });
 
 const AndDemo = circuit('AndDemo', {
-  nodes: { in_a: Switch, in_b: Switch, nand1: Nand, nand2: Nand, out: Led },
+  nodes: { in_a: Switch(), in_b: Switch(), nand1: Nand, nand2: Nand, out: Led },
   connect: ({ nodes: { in_a, in_b, nand1, nand2, out } }) => [
     in_a.out.to(nand1.a),
     in_b.out.to(nand1.b),
@@ -47,7 +47,7 @@ const AndDemo = circuit('AndDemo', {
 });
 
 const OrDemo = circuit('OrDemo', {
-  nodes: { in_a: Switch, in_b: Switch, not_a: Nand, not_b: Nand, or_out: Nand, out: Led },
+  nodes: { in_a: Switch(), in_b: Switch(), not_a: Nand, not_b: Nand, or_out: Nand, out: Led },
   connect: ({ nodes: { in_a, in_b, not_a, not_b, or_out, out } }) => [
     in_a.out.to(not_a.a, not_a.b),
     in_b.out.to(not_b.a, not_b.b),
@@ -58,7 +58,7 @@ const OrDemo = circuit('OrDemo', {
 });
 
 const XorDemo = circuit('XorDemo', {
-  nodes: { in_a: Switch, in_b: Switch, nand1: Nand, nand2: Nand, nand3: Nand, nand4: Nand, out: Led },
+  nodes: { in_a: Switch(), in_b: Switch(), nand1: Nand, nand2: Nand, nand3: Nand, nand4: Nand, out: Led },
   connect: ({ nodes: { in_a, in_b, nand1, nand2, nand3, nand4, out } }) => [
     in_a.out.to(nand1.a, nand2.a),
     in_b.out.to(nand1.b, nand3.b),
@@ -70,7 +70,7 @@ const XorDemo = circuit('XorDemo', {
 });
 
 const HalfAdderDemo = circuit('HalfAdderDemo', {
-  nodes: { in_a: Switch, in_b: Switch, xor1: Xor, and1: And, sum: Led, carry: Led },
+  nodes: { in_a: Switch(), in_b: Switch(), xor1: Xor, and1: And, sum: Led, carry: Led },
   connect: ({ nodes: { in_a, in_b, xor1, and1, sum, carry } }) => [
     in_a.out.to(xor1.a, and1.a),
     in_b.out.to(xor1.b, and1.b),
@@ -92,7 +92,7 @@ const HalfAdder4 = circuit('HalfAdder4', {
 });
 
 const FullAdderDemo = circuit('FullAdderDemo', {
-  nodes: { in_a: Switch, in_b: Switch, in_cin: Switch, ha1: HalfAdder4, ha2: HalfAdder4, or1: Or, sum: Led, cout: Led },
+  nodes: { in_a: Switch(), in_b: Switch(), in_cin: Switch(), ha1: HalfAdder4, ha2: HalfAdder4, or1: Or, sum: Led, cout: Led },
   connect: ({ nodes: { in_a, in_b, in_cin, ha1, ha2, or1, sum, cout } }) => [
     in_a.out.to(ha1.a),
     in_b.out.to(ha1.b),
@@ -106,7 +106,7 @@ const FullAdderDemo = circuit('FullAdderDemo', {
 });
 
 const MemoryDemo = circuit('MemoryDemo', {
-  nodes: { sw_in: Switch, dff: DFlipFlop, stored: Led },
+  nodes: { sw_in: Switch(), dff: DFlipFlop(), stored: Led },
   connect: ({ nodes: { sw_in, dff, stored } }) => [
     sw_in.out.to(dff.d),
     dff.q.to(stored.in),

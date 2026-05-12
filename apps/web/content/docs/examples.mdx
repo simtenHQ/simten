@@ -59,8 +59,7 @@ Increments on each clock cycle. A register feeds its output through an adder tha
 
 export const Counter = circuit('Counter', {
   outputs:  { count: bus(8) },
-  nodes:    { reg: Register, adder: Adder, one: Constant },
-  nodeArgs: { one: { value: 1 } },
+  nodes: { reg: Register(), adder: Adder(), one: Constant({ value: 1 }) },
   connect: ({ outputs, nodes: { reg, adder, one } }) => [
     reg.q.to(adder.a, outputs.count),
     one.out.to(adder.b, reg.we),
@@ -81,8 +80,7 @@ Two registers and one adder produce the Fibonacci sequence every clock tick. A D
 
 export const Fibonacci = circuit('Fibonacci', {
   outputs:  { fib: bus(8) },
-  nodes:    { reg_a: Register, reg_b: Register, adder: Adder, one: Constant, init: DFlipFlop },
-  nodeArgs: { one: { value: 1 } },
+  nodes: { reg_a: Register(), reg_b: Register(), adder: Adder(), one: Constant({ value: 1 }), init: DFlipFlop() },
   connect: ({ outputs, nodes: { reg_a, reg_b, adder, one, init } }) => [
     one.out.to(init.d, reg_a.we, reg_b.we),
     init.q_bar.to(adder.carry_in),

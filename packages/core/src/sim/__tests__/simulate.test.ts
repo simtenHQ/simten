@@ -115,7 +115,7 @@ describe('combinational circuits', () => {
 
 describe('sequential circuits', () => {
   it('simulates a DFlipFlop', () => {
-    const sim = tracked(simulate(DFlipFlop));
+    const sim = tracked(simulate(DFlipFlop()));
 
     expect(sim.isSequential).toBe(true);
     expect(sim.cycle).toBe(0);
@@ -134,7 +134,7 @@ describe('sequential circuits', () => {
   });
 
   it('simulates a Register', () => {
-    const sim = tracked(simulate(Register));
+    const sim = tracked(simulate(Register()));
 
     // Write enable off — data doesn't capture
     sim.set({ data: 42, we: 0 });
@@ -153,14 +153,14 @@ describe('sequential circuits', () => {
   });
 
   it('tickN advances multiple cycles', () => {
-    const sim = tracked(simulate(DFlipFlop));
+    const sim = tracked(simulate(DFlipFlop()));
     sim.set({ d: 1 });
     sim.tickN(5);
     expect(sim.cycle).toBe(5);
   });
 
   it('reset returns to initial state', () => {
-    const sim = tracked(simulate(DFlipFlop));
+    const sim = tracked(simulate(DFlipFlop()));
 
     sim.set({ d: 1 });
     sim.tick();
@@ -178,7 +178,7 @@ describe('sequential circuits', () => {
 
 describe('snapshot and restore', () => {
   it('saves and restores state', () => {
-    const sim = tracked(simulate(DFlipFlop));
+    const sim = tracked(simulate(DFlipFlop()));
 
     sim.set({ d: 1 });
     sim.tick();
@@ -202,7 +202,7 @@ describe('snapshot and restore', () => {
 
 describe('watch', () => {
   it('notifies on state changes', () => {
-    const sim = tracked(simulate(DFlipFlop));
+    const sim = tracked(simulate(DFlipFlop()));
     let callCount = 0;
     const unsub = sim.watch(() => { callCount++; });
 
@@ -214,7 +214,7 @@ describe('watch', () => {
   });
 
   it('watchPort notifies when specific port changes', () => {
-    const sim = tracked(simulate(DFlipFlop));
+    const sim = tracked(simulate(DFlipFlop()));
     const values: number[] = [];
     const unsub = sim.watchPort('q', (v) => { values.push(v); });
 
@@ -239,7 +239,7 @@ describe('watch', () => {
 
 describe('auto-run', () => {
   it('starts and stops', () => {
-    const sim = tracked(simulate(DFlipFlop));
+    const sim = tracked(simulate(DFlipFlop()));
     expect(sim.isRunning).toBe(false);
 
     sim.run({ speed: 100 });

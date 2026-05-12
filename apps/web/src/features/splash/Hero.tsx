@@ -47,14 +47,13 @@ const bannerBytes = Array.from({ length: 256 }, (_, i) => {
 
 const FigletStream = circuit('FigletStream', {
   outputs: { byte: bus(8), strobe: bit },
-  nodes: { reg: Register, adder: Adder, rom: ROM, one: Constant, we: Constant, zero: Constant },
-  nodeArgs: {
-    reg: { width: 8 },
-    adder: { width: 8 },
-    one: { value: 1 },
-    we: { value: 1 },
-    zero: { value: 0 },
-    rom: { init: romFromBytes(bannerBytes) },
+  nodes: {
+    reg: Register({ width: 8 }),
+    adder: Adder({ width: 8 }),
+    rom: ROM({ memory: romFromBytes(bannerBytes) }),
+    one: Constant({ value: 1 }),
+    we: Constant({ value: 1 }),
+    zero: Constant({ value: 0 }),
   },
   connect: ({ outputs, nodes: { reg, adder, rom, one, we, zero } }) => [
     reg.q.to(adder.a),
@@ -121,7 +120,7 @@ const Mux2to1 = circuit('Mux2to1', {
 
 const Counter2Bit = circuit('Counter2Bit', {
   outputs: { bit0: bit, bit1: bit },
-  nodes: { dff0: DFlipFlop, dff1: DFlipFlop, inv: Not, xor1: Xor },
+  nodes: { dff0: DFlipFlop(), dff1: DFlipFlop(), inv: Not, xor1: Xor },
   connect: ({ outputs, nodes: { dff0, dff1, inv, xor1 } }) => [
     dff0.q.to(inv.in, xor1.b, outputs.bit0),
     inv.out.to(dff0.d),
@@ -163,12 +162,13 @@ const bannerBytes = Array.from({ length: 256 }, (_, i) =>
 
 const FigletStream = circuit('FigletStream', {
   outputs: { byte: bus(8), strobe: bit },
-  nodes: { reg: Register, adder: Adder, rom: ROM,
-           one: Constant, we: Constant, zero: Constant },
-  nodeArgs: {
-    reg: { width: 8 }, adder: { width: 8 },
-    one: { value: 1 }, we: { value: 1 }, zero: { value: 0 },
-    rom: { init: romFromBytes(bannerBytes) }, // ← npm-computed ASCII art
+  nodes: {
+    reg: Register({ width: 8 }),
+    adder: Adder({ width: 8 }),
+    rom: ROM({ memory: romFromBytes(bannerBytes) }), // ← npm-computed ASCII art
+    one: Constant({ value: 1 }),
+    we: Constant({ value: 1 }),
+    zero: Constant({ value: 0 }),
   },
   connect: ({ outputs, nodes: { reg, adder, rom, one, we, zero } }) => [
     reg.q.to(adder.a),
@@ -255,7 +255,7 @@ const FullAdder = circuit('FullAdder', {
     code: `// Counts 0 → 1 → 2 → 3 → 0 on every clock tick using two flip-flops.
 const Counter2Bit = circuit('Counter2Bit', {
   outputs: { bit0: bit, bit1: bit },
-  nodes: { dff0: DFlipFlop, dff1: DFlipFlop, inv: Not, xor1: Xor },
+  nodes: { dff0: DFlipFlop(), dff1: DFlipFlop(), inv: Not, xor1: Xor },
   connect: ({ outputs, nodes: { dff0, dff1, inv, xor1 } }) => [
     dff0.q.to(inv.in, xor1.b, outputs.bit0),
     inv.out.to(dff0.d),

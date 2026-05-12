@@ -8,8 +8,7 @@ import { Register, Adder, Constant, DFlipFlop, HexDisplay } from "@simten/core/s
 
 const Fibonacci = circuit('Fibonacci', {
   outputs: { fib: bus(8) },
-  nodes: { reg_a: Register, reg_b: Register, adder: Adder, one_bit: Constant, init: DFlipFlop },
-  nodeArgs: { one_bit: { value: 1 } },
+  nodes: { reg_a: Register(), reg_b: Register(), adder: Adder(), one_bit: Constant({ value: 1 }), init: DFlipFlop() },
   connect: ({ outputs, nodes: { reg_a, reg_b, adder, one_bit, init } }) => [
     one_bit.out.to(init.d, reg_a.we, reg_b.we),
     init.q_bar.to(adder.carry_in),

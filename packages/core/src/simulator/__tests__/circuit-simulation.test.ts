@@ -136,7 +136,7 @@ describe('sequential circuits', () => {
   it('simulates a 2-bit counter', () => {
     const Counter2Bit = circuit('Counter2Bit', {
       outputs: { bit0: bit, bit1: bit },
-      nodes: { dff0: DFlipFlop, dff1: DFlipFlop, inv: Not, xor1: Xor },
+      nodes: { dff0: DFlipFlop(), dff1: DFlipFlop(), inv: Not, xor1: Xor },
       connect: ({ outputs, nodes: { dff0, dff1, inv, xor1 } }) => [
         dff0.q.to(inv.in, xor1.b, outputs.bit0),
         inv.out.to(dff0.d),
@@ -179,7 +179,7 @@ describe('sequential circuits', () => {
     const ShiftRegister4 = circuit('ShiftRegister4', {
       inputs: { din: bit },
       outputs: { q0: bit, q1: bit, q2: bit, q3: bit },
-      nodes: { ff0: DFlipFlop, ff1: DFlipFlop, ff2: DFlipFlop, ff3: DFlipFlop },
+      nodes: { ff0: DFlipFlop(), ff1: DFlipFlop(), ff2: DFlipFlop(), ff3: DFlipFlop() },
       connect: ({ inputs, outputs, nodes: { ff0, ff1, ff2, ff3 } }) => [
         inputs.din.to(ff0.d),
         ff0.q.to(ff1.d, outputs.q0),
@@ -220,7 +220,7 @@ describe('reset and snapshots', () => {
   it('reset returns the simulator to initial state', () => {
     const Counter2Bit = circuit('Counter2Bit', {
       outputs: { bit0: bit, bit1: bit },
-      nodes: { dff0: DFlipFlop, dff1: DFlipFlop, inv: Not, xor1: Xor },
+      nodes: { dff0: DFlipFlop(), dff1: DFlipFlop(), inv: Not, xor1: Xor },
       connect: ({ outputs, nodes: { dff0, dff1, inv, xor1 } }) => [
         dff0.q.to(inv.in, xor1.b, outputs.bit0),
         inv.out.to(dff0.d),

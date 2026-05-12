@@ -91,8 +91,24 @@ const _allExports: unknown[] = [
   ...Object.values(Networking),
 ];
 
+// Materialize parameterized factories with their default options so the
+// editor/library has a concrete `BuiltCircuit` to register for each one.
+// Singletons pass through unchanged.
+const _materialize = (v: unknown): BuiltCircuit | null => {
+  if (isBuiltCircuit(v)) return v;
+  if (typeof v === 'function') {
+    try {
+      const built = (v as () => unknown)();
+      return isBuiltCircuit(built) ? built : null;
+    } catch {
+      return null;
+    }
+  }
+  return null;
+};
+
 export const STDLIB_CIRCUITS: readonly BuiltCircuit[] = Object.freeze(
-  _allExports.filter(isBuiltCircuit),
+  _allExports.map(_materialize).filter((c): c is BuiltCircuit => c !== null),
 );
 
 

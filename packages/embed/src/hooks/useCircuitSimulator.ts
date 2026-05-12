@@ -166,7 +166,7 @@ export function useCircuitSimulator(
       getAllPrimitiveNames: () => [...circuitMap.entries()].filter(([, c]) => c.implementation.kind === 'primitive').map(([n]) => n),
       addCircuit: (c) => { circuitMap.set(c.name, c); },
     };
-    for (const c of [Switch, Button, Led, Input, Output, HexDisplay]) {
+    for (const c of [Switch(), Button(), Led, Input(), Output, HexDisplay]) {
       lib.addCircuit(c.circuit);
     }
     if (circuit) {
@@ -283,7 +283,7 @@ export function useCircuitSimulator(
         if (dep?.circuit) addCircuit(dep.circuit);
       }
       // Harness components (Switch, Led, etc.)
-      for (const c of [Switch, Button, Led, Input, Output, HexDisplay]) {
+      for (const c of [Switch(), Button(), Led, Input(), Output, HexDisplay]) {
         addCircuit(c.circuit);
       }
       // Anything else in the library

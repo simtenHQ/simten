@@ -343,7 +343,7 @@ export function emitPrimitive(ctx: PrimitiveContext): { lines: string[]; declara
     case 'Register': {
       const regName = `reg_${id}`;
       const widthStr = w > 1 ? `[${w - 1}:0] ` : '';
-      const initialValue = typeof args.initial === 'number' ? args.initial : 0;
+      const initialValue = typeof args.value === 'number' ? args.value : 0;
       const initLines = [`initial ${regName} = ${w > 1 ? `${w}'d` : "1'b"}${initialValue};`];
       return {
         declarations: [`reg ${widthStr}${regName};`],
@@ -364,12 +364,13 @@ export function emitPrimitive(ctx: PrimitiveContext): { lines: string[]; declara
       const memName = `mem_${id}`;
       const declarations = [`reg [${dw - 1}:0] ${memName} [0:${(1 << aw) - 1}];`];
 
-      // Legacy path: `args.init` from nodeArgs (e.g. user-supplied ROM contents).
-      // Declarative path: `ctx.stateInits` from the component's `mem()` state.
-      // Both emit to the same reg; we run args.init first, then stateInits overlay.
+      // Per-instance path: `args.memory` from the factory call (e.g. user-supplied
+      // ROM contents). Declarative path: `ctx.stateInits` from the component's
+      // `mem()` state. Both emit to the same reg; args.memory runs first, then
+      // stateInits overlay.
       const initLines: string[] = [];
       if (ctx.target === 'simulation') {
-        const initData = args.init;
+        const initData = args.memory;
         if (initData && typeof initData === 'object' && !Array.isArray(initData)) {
           initLines.push(`initial begin`);
           for (const [addr, val] of Object.entries(initData as Record<number, number>)) {
@@ -423,7 +424,7 @@ export function emitPrimitive(ctx: PrimitiveContext): { lines: string[]; declara
 
       const initLines: string[] = [];
       if (ctx.target === 'simulation') {
-        const initData = args.init;
+        const initData = args.memory;
         if (initData && typeof initData === 'object' && !Array.isArray(initData)) {
           initLines.push(`initial begin`);
           for (const [addr, val] of Object.entries(initData as Record<number, number>)) {
