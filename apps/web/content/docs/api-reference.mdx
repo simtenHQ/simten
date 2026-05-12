@@ -206,7 +206,7 @@ It returns an object with named output values.
 Uses `state`, `onTick`, and `eval`. The circuit has internal state that updates on the rising clock edge.
 
 ```typescript
-const Register = circuit('Register', {
+const Accumulator = circuit('Accumulator', {
   inputs:  { data: bus(8), we: bit },
   outputs: { q: bus(8) },
   state: { value: 0 },                              // initial state shape
@@ -220,6 +220,8 @@ const Register = circuit('Register', {
 - `state` — the initial state object (shape defines what state exists)
 - `eval` receives current state fields merged with inputs — return output values
 - `onTick` receives inputs merged with current state — return next state object
+
+The stdlib's `Register` follows this same pattern but is wrapped in a factory function so callers can specialize the width and reset value: `circuit('Register', ({ width = 8 } = {}) => ({ ... }))`. See [Node Parameters](#node-parameters) for how factory args flow into per-instance state.
 
 The tick cycle calls `eval` first (combinational output from current state), then `onTick` after the clock edge (state update), matching real sequential hardware.
 
