@@ -106,10 +106,20 @@ function resolveBlockInitial(
 
   if (kind === 'memory') {
     const memory = new Map<number, number>();
-    // Seed from the block's declared initial (if any).
-    const blockInit = block.initialValue as { data?: Map<number, number> } | undefined;
+    // Seed from the block's declared initial (if any). `data` is a Map in
+    // the original BuiltCircuit IR, but the sandbox worker round-trips IR
+    // through JSON before postMessage, which turns Maps into plain objects
+    // — handle both.
+    const blockInit = block.initialValue as { data?: Map<number, number> | Record<string, number> } | undefined;
     if (blockInit?.data) {
-      for (const [addr, value] of blockInit.data) memory.set(addr, value);
+      if (blockInit.data instanceof Map) {
+        for (const [addr, value] of blockInit.data) memory.set(addr, value);
+      } else if (typeof blockInit.data === 'object') {
+        for (const [key, value] of Object.entries(blockInit.data)) {
+          const addr = parseInt(key, 10);
+          if (!isNaN(addr) && typeof value === 'number') memory.set(addr, value);
+        }
+      }
     }
     // Apply node.arguments override (array | sparse object | Map).
     if (override !== undefined) {
