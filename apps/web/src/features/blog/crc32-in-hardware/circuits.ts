@@ -18,18 +18,15 @@ import {
 // state from the first tick rather than being stuck at all-zeros.
 export const LFSR4 = circuit('LFSR4', {
   nodes: {
-    ff0: DFlipFlop,
-    ff1: DFlipFlop,
-    ff2: DFlipFlop,
-    ff3: DFlipFlop,
+    ff0: DFlipFlop({ value: 1 }),
+    ff1: DFlipFlop(),
+    ff2: DFlipFlop(),
+    ff3: DFlipFlop(),
     feedback: Xor,
     led0: Led,
     led1: Led,
     led2: Led,
     led3: Led,
-  },
-  nodeArgs: {
-    ff0: { initial: 1 },
   },
   connect: ({ nodes: { ff0, ff1, ff2, ff3, feedback, led0, led1, led2, led3 } }) => [
     // Feedback: XOR of MSB (ff3) and LSB (ff0) — polynomial x^4 + x + 1
@@ -80,17 +77,11 @@ export const CRC32Step = circuit('CRC32Step', {
 // the running CRC. Register starts at 0xFF (truncated from 0xFFFFFFFF init).
 export const CRC32ByteDemo = circuit('CRC32ByteDemo', {
   nodes: {
-    data: Input,
-    crcReg: Register,
+    data: Input({ value: 49 }),       // ASCII '1' — first byte of "123456789"
+    crcReg: Register({ value: 0xFF }), // CRC-32 initialises to 0xFFFFFFFF; we track low byte
     step: CRC32Step,
     display: HexDisplay,
-    we: Constant,
-  },
-  nodeArgs: {
-    data: { value: 49, width: 8 },   // ASCII '1' — first byte of "123456789"
-    crcReg: { initial: 0xFF },        // CRC-32 initialises to 0xFFFFFFFF; we track low byte
-    we: { value: 1 },
-    display: { width: 8 },
+    we: Constant({ value: 1 }),
   },
   connect: ({ nodes: { data, crcReg, step, display, we } }) => [
     data.out.to(step.data),

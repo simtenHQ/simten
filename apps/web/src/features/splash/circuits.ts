@@ -114,7 +114,7 @@ export const MuxGate = circuit('MuxGate', {
 export const DelayLine = circuit('DelayLine', {
   inputs: { d: bit },
   outputs: { q1: bit, q2: bit },
-  nodes: { dff1: DFlipFlop, dff2: DFlipFlop },
+  nodes: { dff1: DFlipFlop(), dff2: DFlipFlop() },
   connect: ({ inputs, outputs, nodes: { dff1, dff2 } }) => [
     inputs.d.to(dff1.d),
     dff1.q.to(dff2.d, outputs.q1),
@@ -256,7 +256,7 @@ export const CIRCUITS: Record<string, CircuitDefinition> = {
     displayCode: `const DelayLine = circuit('DelayLine', {
   inputs: { d: bit },
   outputs: { q1: bit, q2: bit },
-  nodes: { dff1: DFlipFlop, dff2: DFlipFlop },
+  nodes: { dff1: DFlipFlop(), dff2: DFlipFlop() },
   connect: ({ inputs, outputs, nodes: { dff1, dff2 } }) => [
     inputs.d.to(dff1.d),
     dff1.q.to(dff2.d, outputs.q1),
