@@ -21,11 +21,12 @@ import { bit, bus } from '../circuit/bit-bus.js';
  *   ],
  * })
  * ```
+ *
+ * Stateless parameterized: `value` flows through `node.arguments` to the
+ * simulator (via `interactiveArg: 'value'` in eval-bridge), so the factory
+ * destructure here is purely for the typed call signature — the body
+ * doesn't need to reference it.
  */
-// Stateless parameterized: `value` flows through `node.arguments` to the
-// simulator (via `interactiveArg: 'value'` in eval-bridge), so the factory
-// destructure here is purely for the typed call signature — the body
-// doesn't need to reference it.
 export const Switch = circuit('Switch', (_opts?: { value?: number }) => ({
   outputs: { out: bit },
   eval: ({ value }) => ({ out: value ? 1 : 0 }),

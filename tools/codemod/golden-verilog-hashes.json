@@ -1,6 +1,6 @@
 {
   "note": "Pre-migration Verilog hashes. See packages/core/src/verilog/__tests__/golden-hashes.test.ts.",
-  "capturedAt": "2026-04-28T15:32:41.493Z",
+  "capturedAt": "2026-05-12T16:56:44.418Z",
   "hashes": {
     "And": "adf38b97fba788dc2eab31d728191216311314927f43550f416849cea9ceebdd",
     "Or": "85b24de96f3cda0f9a4907d820dbcd4f94d4cc6a5969a54b721d9e2e1e44ef53",

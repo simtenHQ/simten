@@ -124,7 +124,7 @@ function buildBusPassthrough() {
 function buildSimpleSequential() {
   return circuit('Counter_Golden', {
     outputs: { q: bit },
-    nodes: { dff: DFlipFlop, n: Not },
+    nodes: { dff: DFlipFlop(), n: Not },
     connect: ({ outputs, nodes: { dff, n } }) => [
       dff.q.to(n.in, outputs.q),
       n.out.to(dff.d),

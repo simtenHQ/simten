@@ -134,10 +134,10 @@ describe('exportVerilog', () => {
       // Build a custom library with preloaded RAM state (deliberately
       // out-of-order to verify we sort on emission).
       const ramDefWithData: Circuit = {
-        ...RAM.circuit,
+        ...RAM().circuit,
         state: [
           {
-            ...RAM.circuit.state[0],
+            ...RAM().circuit.state[0],
             initialValue: {
               data: new Map<number, number>([[2, 0xAB], [0, 0xCD], [1, 0xEF]]),
               addressWidth: 8,
@@ -189,10 +189,10 @@ describe('exportVerilog', () => {
       for (let i = 0; i < 10; i++) bigData.set(i, i * 3 + 1);
 
       const ramDefWithData: Circuit = {
-        ...RAM.circuit,
+        ...RAM().circuit,
         state: [
           {
-            ...RAM.circuit.state[0],
+            ...RAM().circuit.state[0],
             initialValue: { data: bigData, addressWidth: 8, dataWidth: 8 },
           },
         ],
