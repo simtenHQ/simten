@@ -76,25 +76,47 @@ Connections are directional: source (left) drives target(s) (right). A port can 
 
 ## Node Parameters
 
-Call the component factory inline to specialize per-instance args:
+Parameterized components are factories — call them inline to specialize per-instance args:
 
 ```typescript
 nodes: {
   reg: Register({ width: 8, value: 0 }),
   k:   Constant({ value: 42, width: 8 }),
   add: Adder({ width: 8 }),
+  mem: ROM({ memory: romFromBytes(bytes) }),
 },
 ```
 
-Bare references like `nodes: { add: Adder }` are shorthand for `Adder()` with defaults.
+A bare `Adder()` with no args is allowed and uses the factory's defaults; bare `Adder` (without parens) is a TS error — parameterized components must always be called. Singletons (logic gates, `Led`, all `RV32I_*`, etc.) are not parameterized and stay as bare references.
+
+**The option name always matches what the component's `state:` or `eval:` destructure uses.** That's the only rule — there's no separate `initial`/`init` keyword to memorize. Examples:
+
+| Component | State / eval declares | Factory option |
+|-----------|----------------------|----------------|
+| `Register` | `state: { value }` | `value: N` |
+| `DFlipFlop` | `state: { value }` | `value: N` |
+| `ROM`, `RAM`, `DualPortRAM` | `state: { memory: mem(...) }` | `memory: {...}` |
+| `Constant`, `Switch`, `Button`, `Input` | `eval: ({ value })` | `value: N` |
+
+Common parameters across the stdlib:
 
 | Parameter | Used by | Description |
 |-----------|---------|-------------|
-| `width` | Adder, Comparator, Mux, etc. | Bus width (default: 8) |
-| `value` | Constant, Input, Switch, Register, DFlipFlop | Fixed or initial state value |
-| `memory` | RAM, DualPortRAM, ROM | Memory initialization map `{ addr: value, ... }` |
+| `width` | Adder, Subtractor, Comparator, Mux, BusAnd/Or/Xor, LeftShifter, RightShifter, Register | Bus width (default: 8) |
+| `value` | Constant, Input, Switch, Button, Register, DFlipFlop | Fixed or initial state value (matches state/eval field) |
+| `memory` | RAM, DualPortRAM, ROM, DualPortROM | Memory initialization map `{ addr: value, ... }` |
 | `low`, `high` | BitSlice | Bit range to extract (inclusive) |
 | `baseAddress` | ROM | Memory-mapped base address |
+| `width`, `height` | Screen, RasterDisplay | Pixel grid dimensions |
+
+### Migrating from `nodeArgs`
+
+Earlier versions of simten used a separate `nodeArgs: { id: { ... } }` block on the parent circuit, with three different keywords (`initial`/`init`/`value`) depending on the component. That's gone — args flow through the factory call. Renames during migration:
+
+- `Register({ initial: N })` → `Register({ value: N })`
+- `DFlipFlop({ initial: N })` → `DFlipFlop({ value: N })`
+- `ROM({ init: data })` → `ROM({ memory: data })`
+- `RAM({ init: data })` → `RAM({ memory: data })`
 
 ## Composition
 
