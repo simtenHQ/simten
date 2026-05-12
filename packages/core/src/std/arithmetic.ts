@@ -57,15 +57,16 @@ export const Incrementer = circuit('Incrementer', {
  * })
  * ```
  */
-export const Adder = circuit('Adder', {
-  inputs: { a: bus(8), b: bus(8), carry_in: bit },
-  outputs: { sum: bus(8), carry_out: bit },
+export const Adder = circuit('Adder', ({ width = 8 }: { width?: number; carry_in?: number } = {}) => ({
+  inputs: { a: bus(width), b: bus(width), carry_in: bit },
+  outputs: { sum: bus(width), carry_out: bit },
   meta: { category: 'arithmetic', icon: '+', description: 'N-bit adder with carry' },
   eval: ({ a, b, carry_in }) => {
-    const result = a + b + carry_in;
-    return { sum: result & 0xFF, carry_out: (result >> 8) & 1 };
+    const mask = width >= 32 ? 0xFFFFFFFF : ((1 << width) - 1) >>> 0;
+    const result = (a + b + carry_in) >>> 0;
+    return { sum: result & mask, carry_out: (result >>> width) & 1 };
   },
-});
+}));
 
 /**
  * N-bit subtractor with borrow. Computes `a - b - borrow_in` and produces
@@ -91,15 +92,16 @@ export const Adder = circuit('Adder', {
  * })
  * ```
  */
-export const Subtractor = circuit('Subtractor', {
-  inputs: { a: bus(8), b: bus(8), borrow_in: bit },
-  outputs: { difference: bus(8), borrow_out: bit },
+export const Subtractor = circuit('Subtractor', ({ width = 8 }: { width?: number } = {}) => ({
+  inputs: { a: bus(width), b: bus(width), borrow_in: bit },
+  outputs: { difference: bus(width), borrow_out: bit },
   meta: { category: 'arithmetic', icon: '−', description: 'N-bit subtractor with borrow' },
   eval: ({ a, b, borrow_in }) => {
+    const mask = width >= 32 ? 0xFFFFFFFF : ((1 << width) - 1) >>> 0;
     const result = a - b - borrow_in;
-    return { difference: result & 0xFF, borrow_out: result < 0 ? 1 : 0 };
+    return { difference: result & mask, borrow_out: result < 0 ? 1 : 0 };
   },
-});
+}));
 
 /**
  * N-bit multiplier. Output is a 16-bit unsigned product so two 8-bit
@@ -151,12 +153,12 @@ export const Multiplier = circuit('Multiplier', {
  * })
  * ```
  */
-export const Comparator = circuit('Comparator', {
-  inputs: { a: bus(8), b: bus(8) },
+export const Comparator = circuit('Comparator', ({ width = 8 }: { width?: number } = {}) => ({
+  inputs: { a: bus(width), b: bus(width) },
   outputs: { eq: bit, lt: bit, gt: bit },
   meta: { category: 'arithmetic', icon: '⋚', description: 'Unsigned comparator' },
   eval: ({ a, b }) => ({ eq: a === b ? 1 : 0, lt: a < b ? 1 : 0, gt: a > b ? 1 : 0 }),
-});
+}));
 
 /**
  * Left bit shifter. Computes `(value << shift) & 0xFF`. Bits shifted out
@@ -179,12 +181,15 @@ export const Comparator = circuit('Comparator', {
  * })
  * ```
  */
-export const LeftShifter = circuit('LeftShifter', {
-  inputs: { value: bus(8), shift: bus(8) },
-  outputs: { result: bus(8) },
+export const LeftShifter = circuit('LeftShifter', ({ width = 8 }: { width?: number } = {}) => ({
+  inputs: { value: bus(width), shift: bus(width) },
+  outputs: { result: bus(width) },
   meta: { category: 'arithmetic', icon: '≪', description: 'Left bit shifter' },
-  eval: ({ value, shift }) => ({ result: (value << shift) & 0xFF }),
-});
+  eval: ({ value, shift }) => {
+    const mask = width >= 32 ? 0xFFFFFFFF : ((1 << width) - 1) >>> 0;
+    return { result: (value << shift) & mask };
+  },
+}));
 
 /**
  * Right bit shifter (logical / unsigned). Computes `value >>> shift`.
@@ -208,12 +213,15 @@ export const LeftShifter = circuit('LeftShifter', {
  * })
  * ```
  */
-export const RightShifter = circuit('RightShifter', {
-  inputs: { value: bus(8), shift: bus(8) },
-  outputs: { result: bus(8) },
+export const RightShifter = circuit('RightShifter', ({ width = 8 }: { width?: number } = {}) => ({
+  inputs: { value: bus(width), shift: bus(width) },
+  outputs: { result: bus(width) },
   meta: { category: 'arithmetic', icon: '≫', description: 'Right bit shifter' },
-  eval: ({ value, shift }) => ({ result: (value >>> shift) & 0xFF }),
-});
+  eval: ({ value, shift }) => {
+    const mask = width >= 32 ? 0xFFFFFFFF : ((1 << width) - 1) >>> 0;
+    return { result: (value >>> shift) & mask };
+  },
+}));
 
 /**
  * Signed adder with overflow detection. Treats inputs as 8-bit two's-complement
@@ -327,12 +335,12 @@ export const SignedMultiplier = circuit('SignedMultiplier', {
  * })
  * ```
  */
-export const BusAnd = circuit('BusAnd', {
-  inputs: { a: bus(8), b: bus(8) },
-  outputs: { out: bus(8) },
+export const BusAnd = circuit('BusAnd', ({ width = 8 }: { width?: number } = {}) => ({
+  inputs: { a: bus(width), b: bus(width) },
+  outputs: { out: bus(width) },
   meta: { category: 'bus-operations', icon: '&8', description: 'Bitwise AND on buses' },
   eval: ({ a, b }) => ({ out: a & b }),
-});
+}));
 
 /**
  * Bitwise OR on buses. Performs `a | b` per bit position across the 8-bit bus.
@@ -354,12 +362,12 @@ export const BusAnd = circuit('BusAnd', {
  * })
  * ```
  */
-export const BusOr = circuit('BusOr', {
-  inputs: { a: bus(8), b: bus(8) },
-  outputs: { out: bus(8) },
+export const BusOr = circuit('BusOr', ({ width = 8 }: { width?: number } = {}) => ({
+  inputs: { a: bus(width), b: bus(width) },
+  outputs: { out: bus(width) },
   meta: { category: 'bus-operations', icon: '|8', description: 'Bitwise OR on buses' },
-  eval: ({ a, b }) => ({ out: a | b }),
-});
+  eval: ({ a, b }) => ({ out: (a | b) >>> 0 }),
+}));
 
 /**
  * Bitwise NOT on bus. Flips every bit (`~in & 0xFF`).
@@ -408,9 +416,9 @@ export const BusNot = circuit('BusNot', {
  * })
  * ```
  */
-export const BusXor = circuit('BusXor', {
-  inputs: { a: bus(8), b: bus(8) },
-  outputs: { out: bus(8) },
+export const BusXor = circuit('BusXor', ({ width = 8 }: { width?: number } = {}) => ({
+  inputs: { a: bus(width), b: bus(width) },
+  outputs: { out: bus(width) },
   meta: { category: 'bus-operations', icon: '⊕8', description: 'Bitwise XOR on buses' },
-  eval: ({ a, b }) => ({ out: a ^ b }),
-});
+  eval: ({ a, b }) => ({ out: (a ^ b) >>> 0 }),
+}));

@@ -24,8 +24,7 @@ function buildCounter() {
   const Counter = circuit('Counter', {
     inputs: { enable: bit, clear: bit },
     outputs: { count: bus(8) },
-    nodes: { reg: Register, add: Adder, one: Constant, zero: Constant, mux: Mux, weOr: Or },
-    nodeArgs: { one: { value: 1 }, zero: { value: 0 } },
+    nodes: { reg: Register(), add: Adder(), one: Constant({ value: 1 }), zero: Constant({ value: 0 }), mux: Mux(), weOr: Or },
     connect: ({ inputs, outputs, nodes: { reg, add, one, zero, mux, weOr } }) => [
       reg.q.to(add.a, outputs.count),
       one.out.to(add.b),

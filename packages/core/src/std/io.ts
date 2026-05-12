@@ -21,12 +21,17 @@ import { bit, bus } from '../circuit/bit-bus.js';
  *   ],
  * })
  * ```
+ *
+ * Stateless parameterized: `value` flows through `node.arguments` to the
+ * simulator (via `interactiveArg: 'value'` in eval-bridge), so the factory
+ * destructure here is purely for the typed call signature — the body
+ * doesn't need to reference it.
  */
-export const Switch = circuit('Switch', {
+export const Switch = circuit('Switch', (_opts?: { value?: number }) => ({
   outputs: { out: bit },
   eval: ({ value }) => ({ out: value ? 1 : 0 }),
   meta: { category: 'input-output', icon: '⚡', description: 'User-controllable 1-bit toggle', interactiveArg: 'value' },
-});
+}));
 
 /**
  * Push button input (momentary). Outputs 1 only while held down, 0 otherwise.
@@ -44,11 +49,11 @@ export const Switch = circuit('Switch', {
  * })
  * ```
  */
-export const Button = circuit('Button', {
+export const Button = circuit('Button', (_opts?: { value?: number }) => ({
   outputs: { out: bit },
   eval: ({ value }) => ({ out: value ? 1 : 0 }),
   meta: { category: 'input-output', icon: '🔘', description: 'Push button input (momentary)', interactiveArg: 'value' },
-});
+}));
 
 /**
  * Visual output LED indicator. Lights up on the canvas when its input is 1.
@@ -92,11 +97,11 @@ export const Led = circuit('Led', {
  * })
  * ```
  */
-export const Input = circuit('Input', {
+export const Input = circuit('Input', (_opts?: { value?: number }) => ({
   outputs: { out: bus(8) },
   eval: ({ value }) => ({ out: typeof value === 'number' ? value : 0 }),
   meta: { category: 'input-output', icon: '🔢', description: 'Multi-bit numeric input', interactiveArg: 'value' },
-});
+}));
 
 /**
  * Multi-bit output sink. Passive observer for an 8-bit bus — the canvas
@@ -142,8 +147,8 @@ export const Output = circuit('Output', {
  * })
  * ```
  */
-export const Constant = circuit('Constant', {
-  outputs: { out: bit },
+export const Constant = circuit('Constant', ({ width = 1 }: { value?: number; width?: number } = {}) => ({
+  outputs: { out: width === 1 ? bit : bus(width) },
   eval: ({ value }) => ({ out: typeof value === 'number' ? value : 0 }),
   meta: { category: 'utilities', icon: 'K', description: 'Fixed value source', interactiveArg: 'value' },
-});
+}));

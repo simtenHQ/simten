@@ -105,7 +105,7 @@ These components have **clocked state** that updates on the rising edge of `clk`
 | Primitive | Inputs | Outputs | Parameters | Description |
 |-----------|--------|---------|------------|-------------|
 | <PrimitiveLink name="DFlipFlop" /> | `d: Bit` | `q: Bit`, `q_bar: Bit` | — | 1-bit register, captures `d` on clock edge |
-| <PrimitiveLink name="Register" /> | `data: Bus[N]`, `we: Bit` | `q: Bus[N]` | `width` (8), `initial` (0) | N-bit register, writes when `we` is high |
+| <PrimitiveLink name="Register" /> | `data: Bus[N]`, `we: Bit` | `q: Bus[N]` | `width` (8), `value` (0) | N-bit register, writes when `we` is high |
 
 **Key difference:** DFlipFlop always captures its input on every clock edge. Register only writes when `we` (write enable) is high — this lets you hold a value across multiple cycles.
 
@@ -118,15 +118,16 @@ These components have **clocked state** that updates on the rising edge of `clk`
 | <PrimitiveLink name="DualPortRAM" /> | `addrA`, `dataA`, `weA: Bit`, `addrB` | `outA`, `outB` | `addressWidth` (8), `dataWidth` (8) | Port A reads/writes, port B read-only |
 | `DualPortROM` | `addrA: Bus[32]`, `addrB: Bus[32]` | `dataA: Bus[32]`, `dataB: Bus[32]` | — | Two independent read ports, one shared memory. Byte-addressable, returns 32-bit little-endian words. Used for architectures that need simultaneous instruction fetch and data read (e.g. `rv32i-board.circuit.ts`). |
 
-Memory is initialized with the `init` parameter in `nodeArgs`:
+Memory is initialized by calling the component factory with the `memory` parameter:
 
 ```typescript
-nodes:    { ram: DualPortRAM },
-nodeArgs: { ram: { init: {
-  0: 42,    // address 0 = 42
-  1: 100,   // address 1 = 100
-  64: 33,   // address 64 = 33
-} } },
+nodes: {
+  ram: DualPortRAM({ memory: {
+    0: 42,    // address 0 = 42
+    1: 100,   // address 1 = 100
+    64: 33,   // address 64 = 33
+  } }),
+},
 ```
 
 Reads are **combinational** (address in → data out immediately). Writes happen on the **rising clock edge** when `we` is high.

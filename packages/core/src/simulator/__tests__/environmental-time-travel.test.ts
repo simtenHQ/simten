@@ -47,7 +47,7 @@ function captureFlatEnv(flat: FlatCircuit, library: CircuitLibrary): Map<string,
 
 const SwitchedFF = circuit('SwitchedFF', {
   outputs: { q: bit },
-  nodes: { sw: Switch, dff: DFlipFlop },
+  nodes: { sw: Switch(), dff: DFlipFlop() },
   connect: ({ outputs, nodes: { sw, dff } }) => [
     sw.out.to(dff.d),
     dff.q.to(outputs.q),
@@ -65,8 +65,8 @@ function buildSim() {
     addCircuit: (c) => { circuitMap.set(c.name, c); },
   };
   library.addCircuit(SwitchedFF.circuit);
-  library.addCircuit(Switch.circuit);
-  library.addCircuit(DFlipFlop.circuit);
+  library.addCircuit(Switch().circuit);
+  library.addCircuit(DFlipFlop().circuit);
   for (const [, dep] of SwitchedFF._dependencies) {
     library.addCircuit(dep.circuit);
   }

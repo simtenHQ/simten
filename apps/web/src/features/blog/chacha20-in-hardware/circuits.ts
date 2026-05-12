@@ -18,8 +18,12 @@ import {
 export const RotateLeft16 = circuit('RotateLeft16', {
   inputs: { x: bus(32) },
   outputs: { out: bus(32) },
-  nodes: { sh_left: LeftShifter, sh_right: RightShifter, c16: Constant, combine: BusOr },
-  nodeArgs: { sh_left: { width: 32 }, sh_right: { width: 32 }, c16: { value: 16, width: 32 }, combine: { width: 32 } },
+  nodes: {
+    sh_left: LeftShifter({ width: 32 }),
+    sh_right: RightShifter({ width: 32 }),
+    c16: Constant({ value: 16, width: 32 }),
+    combine: BusOr({ width: 32 }),
+  },
   connect: ({ inputs, outputs, nodes: { sh_left, sh_right, c16, combine } }) => [
     inputs.x.to(sh_left.value, sh_right.value),
     c16.out.to(sh_left.shift, sh_right.shift),
@@ -32,8 +36,13 @@ export const RotateLeft16 = circuit('RotateLeft16', {
 export const RotateLeft12 = circuit('RotateLeft12', {
   inputs: { x: bus(32) },
   outputs: { out: bus(32) },
-  nodes: { sh_left: LeftShifter, sh_right: RightShifter, c12: Constant, c20: Constant, combine: BusOr },
-  nodeArgs: { sh_left: { width: 32 }, sh_right: { width: 32 }, c12: { value: 12, width: 32 }, c20: { value: 20, width: 32 }, combine: { width: 32 } },
+  nodes: {
+    sh_left: LeftShifter({ width: 32 }),
+    sh_right: RightShifter({ width: 32 }),
+    c12: Constant({ value: 12, width: 32 }),
+    c20: Constant({ value: 20, width: 32 }),
+    combine: BusOr({ width: 32 }),
+  },
   connect: ({ inputs, outputs, nodes: { sh_left, sh_right, c12, c20, combine } }) => [
     inputs.x.to(sh_left.value, sh_right.value),
     c12.out.to(sh_left.shift),
@@ -47,8 +56,13 @@ export const RotateLeft12 = circuit('RotateLeft12', {
 export const RotateLeft8 = circuit('RotateLeft8', {
   inputs: { x: bus(32) },
   outputs: { out: bus(32) },
-  nodes: { sh_left: LeftShifter, sh_right: RightShifter, c8: Constant, c24: Constant, combine: BusOr },
-  nodeArgs: { sh_left: { width: 32 }, sh_right: { width: 32 }, c8: { value: 8, width: 32 }, c24: { value: 24, width: 32 }, combine: { width: 32 } },
+  nodes: {
+    sh_left: LeftShifter({ width: 32 }),
+    sh_right: RightShifter({ width: 32 }),
+    c8: Constant({ value: 8, width: 32 }),
+    c24: Constant({ value: 24, width: 32 }),
+    combine: BusOr({ width: 32 }),
+  },
   connect: ({ inputs, outputs, nodes: { sh_left, sh_right, c8, c24, combine } }) => [
     inputs.x.to(sh_left.value, sh_right.value),
     c8.out.to(sh_left.shift),
@@ -62,8 +76,13 @@ export const RotateLeft8 = circuit('RotateLeft8', {
 export const RotateLeft7 = circuit('RotateLeft7', {
   inputs: { x: bus(32) },
   outputs: { out: bus(32) },
-  nodes: { sh_left: LeftShifter, sh_right: RightShifter, c7: Constant, c25: Constant, combine: BusOr },
-  nodeArgs: { sh_left: { width: 32 }, sh_right: { width: 32 }, c7: { value: 7, width: 32 }, c25: { value: 25, width: 32 }, combine: { width: 32 } },
+  nodes: {
+    sh_left: LeftShifter({ width: 32 }),
+    sh_right: RightShifter({ width: 32 }),
+    c7: Constant({ value: 7, width: 32 }),
+    c25: Constant({ value: 25, width: 32 }),
+    combine: BusOr({ width: 32 }),
+  },
   connect: ({ inputs, outputs, nodes: { sh_left, sh_right, c7, c25, combine } }) => [
     inputs.x.to(sh_left.value, sh_right.value),
     c7.out.to(sh_left.shift),
@@ -79,8 +98,21 @@ export const RotateLeft7 = circuit('RotateLeft7', {
 export const ChaCha20QuarterRound = circuit('ChaCha20QuarterRound', {
   inputs: { a: bus(32), b: bus(32), c: bus(32), d: bus(32) },
   outputs: { a_out: bus(32), b_out: bus(32), c_out: bus(32), d_out: bus(32) },
-  nodes: { gnd: Constant, add1: Adder, xor1: BusXor, rot16: RotateLeft16, add2: Adder, xor2: BusXor, rot12: RotateLeft12, add3: Adder, xor3: BusXor, rot8: RotateLeft8, add4: Adder, xor4: BusXor, rot7: RotateLeft7 },
-  nodeArgs: { gnd: { value: 0 }, add1: { width: 32 }, xor1: { width: 32 }, add2: { width: 32 }, xor2: { width: 32 }, add3: { width: 32 }, xor3: { width: 32 }, add4: { width: 32 }, xor4: { width: 32 } },
+  nodes: {
+    gnd: Constant({ value: 0 }),
+    add1: Adder({ width: 32 }),
+    xor1: BusXor({ width: 32 }),
+    rot16: RotateLeft16,
+    add2: Adder({ width: 32 }),
+    xor2: BusXor({ width: 32 }),
+    rot12: RotateLeft12,
+    add3: Adder({ width: 32 }),
+    xor3: BusXor({ width: 32 }),
+    rot8: RotateLeft8,
+    add4: Adder({ width: 32 }),
+    xor4: BusXor({ width: 32 }),
+    rot7: RotateLeft7,
+  },
   connect: ({ inputs, outputs, nodes: { gnd, add1, xor1, rot16, add2, xor2, rot12, add3, xor3, rot8, add4, xor4, rot7 } }) => [
     inputs.a.to(add1.a),
     inputs.b.to(add1.b, xor2.a),
@@ -105,8 +137,15 @@ export const ChaCha20QuarterRound = circuit('ChaCha20QuarterRound', {
 // ── Self-contained demo circuits ──
 
 export const ARXDemo = circuit('ARXDemo', {
-  nodes: { a: Input, b: Input, gnd: Constant, add: Adder, sum: HexDisplay, xor: BusXor, xor_out: HexDisplay },
-  nodeArgs: { a: { value: 100, width: 32 }, b: { value: 42, width: 32 }, gnd: { value: 0 }, add: { width: 32 }, sum: { width: 32 }, xor: { width: 32 }, xor_out: { width: 32 } },
+  nodes: {
+    a: Input({ value: 100 }),
+    b: Input({ value: 42 }),
+    gnd: Constant({ value: 0 }),
+    add: Adder({ width: 32 }),
+    sum: HexDisplay,
+    xor: BusXor({ width: 32 }),
+    xor_out: HexDisplay,
+  },
   connect: ({ nodes: { a, b, gnd, add, sum, xor, xor_out } }) => [
     a.out.to(add.a, xor.a),
     b.out.to(add.b, xor.b),
@@ -117,8 +156,13 @@ export const ARXDemo = circuit('ARXDemo', {
 });
 
 export const RotateDemo = circuit('RotateDemo', {
-  nodes: { val: Input, rot16: RotateLeft16, disp16: HexDisplay, rot7: RotateLeft7, disp7: HexDisplay },
-  nodeArgs: { val: { value: 1, width: 32 }, disp16: { width: 32 }, disp7: { width: 32 } },
+  nodes: {
+    val: Input({ value: 1 }),
+    rot16: RotateLeft16,
+    disp16: HexDisplay,
+    rot7: RotateLeft7,
+    disp7: HexDisplay,
+  },
   connect: ({ nodes: { val, rot16, disp16, rot7, disp7 } }) => [
     val.out.to(rot16.x, rot7.x),
     rot16.out.to(disp16.in),
@@ -127,8 +171,17 @@ export const RotateDemo = circuit('RotateDemo', {
 });
 
 export const ARXStep = circuit('ARXStep', {
-  nodes: { a: Input, b: Input, d: Input, gnd: Constant, add: Adder, xor: BusXor, rot: RotateLeft16, disp_a: HexDisplay, disp_d: HexDisplay },
-  nodeArgs: { a: { value: 100, width: 32 }, b: { value: 42, width: 32 }, d: { value: 255, width: 32 }, gnd: { value: 0 }, add: { width: 32 }, xor: { width: 32 }, disp_a: { width: 32 }, disp_d: { width: 32 } },
+  nodes: {
+    a: Input({ value: 100 }),
+    b: Input({ value: 42 }),
+    d: Input({ value: 255 }),
+    gnd: Constant({ value: 0 }),
+    add: Adder({ width: 32 }),
+    xor: BusXor({ width: 32 }),
+    rot: RotateLeft16,
+    disp_a: HexDisplay,
+    disp_d: HexDisplay,
+  },
   connect: ({ nodes: { a, b, d, gnd, add, xor, rot, disp_a, disp_d } }) => [
     a.out.to(add.a),
     b.out.to(add.b),
@@ -141,8 +194,17 @@ export const ARXStep = circuit('ARXStep', {
 });
 
 export const ChaCha20Demo = circuit('ChaCha20Demo', {
-  nodes: { in_a: Input, in_b: Input, in_c: Input, in_d: Input, qr: ChaCha20QuarterRound, out_a: HexDisplay, out_b: HexDisplay, out_c: HexDisplay, out_d: HexDisplay },
-  nodeArgs: { in_a: { value: 0x11111111, width: 32 }, in_b: { value: 0x01020304, width: 32 }, in_c: { value: 0x9b8d6f43, width: 32 }, in_d: { value: 0x01234567, width: 32 }, out_a: { width: 32 }, out_b: { width: 32 }, out_c: { width: 32 }, out_d: { width: 32 } },
+  nodes: {
+    in_a: Input({ value: 0x11111111 }),
+    in_b: Input({ value: 0x01020304 }),
+    in_c: Input({ value: 0x9b8d6f43 }),
+    in_d: Input({ value: 0x01234567 }),
+    qr: ChaCha20QuarterRound,
+    out_a: HexDisplay,
+    out_b: HexDisplay,
+    out_c: HexDisplay,
+    out_d: HexDisplay,
+  },
   connect: ({ nodes: { in_a, in_b, in_c, in_d, qr, out_a, out_b, out_c, out_d } }) => [
     in_a.out.to(qr.a),
     in_b.out.to(qr.b),

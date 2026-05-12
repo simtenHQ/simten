@@ -150,7 +150,7 @@ export const useCircuitPreviewStore = create<CircuitPreviewStore>()(
 
       // Ensure harness components (Switch, Led, etc.) are in the library
       const libStore = useCircuitLibraryStore.getState();
-      for (const c of [Switch, Button, Led, Input, Output, HexDisplay]) {
+      for (const c of [Switch(), Button(), Led, Input(), Output, HexDisplay]) {
         if (!libStore.resolveCircuit(c.circuit.name)) libStore.addCircuit(c.circuit);
       }
 

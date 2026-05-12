@@ -161,8 +161,7 @@ describe('VCD export — Counter (sequential)', () => {
   const source = `
     const Counter = circuit('Counter', {
       outputs: { count: bus(8) },
-      nodes: { reg: Register, adder: Adder, one: Constant, we: Constant, zero: Constant },
-      nodeArgs: { reg: { width: 8 }, adder: { width: 8 }, one: { value: 1 }, we: { value: 1 }, zero: { value: 0 } },
+      nodes: { reg: Register({ width: 8 }), adder: Adder({ width: 8 }), one: Constant({ value: 1 }), we: Constant({ value: 1 }), zero: Constant({ value: 0 }) },
       connect: ({ outputs, nodes: { reg, adder, one, we, zero } }) => [
         reg.q.to(adder.a),
         one.out.to(adder.b),

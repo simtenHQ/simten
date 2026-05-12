@@ -49,8 +49,10 @@ TypeScript circuit() ──→ Circuit IR ──→ Elaborate ──→ Fast Sim
 | `packages/mcp` (`simten-mcp`) | User's machine | Local MCP server. Bridges an MCP client (e.g. Claude Code) to the running browser over WebSocket; no Anthropic calls happen on our infrastructure |
 | `apps/compiler` | Cloudflare Container | RISC-V cross-compiler (GCC + Rust). Compiles C/C++/Rust/asm → rv32i machine code for the simulated CPU |
 | `apps/verifier` | Cloudflare Container | Icarus Verilog runner. Cross-validates exported Verilog against our simulator's trace |
+| `apps/synth` | Cloudflare Container | Yosys synthesis runner. Returns gate-level stats and netlist for exported Verilog |
+| `apps/sandbox` | Browser iframe | CSP-isolated origin where user circuit code executes; never runs in the main frame |
 
-Both containers are addressed via Durable Objects and sleep after 2 minutes idle. The Cloudflare Worker itself only dispatches `/api/compile` and `/api/verify` — everything else is served by TanStack Start's SSR handler.
+All container services are addressed via Durable Objects and sleep after 2 minutes idle. The Cloudflare Worker dispatches `/api/compile` and `/api/verify` — everything else is served by TanStack Start's SSR handler.
 
 ## Your First Circuit
 
@@ -105,7 +107,8 @@ apps/
 ├── web/         # Main web app (TanStack Start + Vite + Cloudflare Workers)
 ├── sandbox/     # Iframe-isolated sandbox for running user circuit code
 ├── compiler/    # RISC-V cross-compiler service (Cloudflare Container)
-└── verifier/    # Verilog verification service (Cloudflare Container + Icarus Verilog)
+├── verifier/    # Verilog verification service (Cloudflare Container + Icarus Verilog)
+└── synth/       # Verilog synthesis service (Cloudflare Container + Yosys)
 ```
 
 ## Tech Stack
@@ -115,10 +118,11 @@ apps/
 - **Canvas:** React Flow
 - **Styling:** Tailwind CSS 4 + shadcn/ui
 - **Language:** TypeScript 5
-- **Testing:** Vitest (398 tests across simulator, circuit IR, stdlib, Verilog exporter)
-- **AI:** Anthropic SDK with server-side `tool_use` loop
+- **Testing:** Vitest (490+ tests across simulator, circuit IR, stdlib, Verilog exporter)
+- **AI:** Local MCP server (`@simten/mcp`) bridging any MCP client (e.g. Claude Code) to the running browser — no AI calls happen on Simten's infrastructure
 - **Infrastructure:** Cloudflare Workers, Cloudflare Containers, Durable Objects, Hono
-- **Verification:** Icarus Verilog (via Go container service)
+- **Verification:** Icarus Verilog (via Cloudflare Container)
+- **Synthesis:** Yosys (via Cloudflare Container)
 
 ## Quick Start
 
@@ -194,3 +198,7 @@ tar -xzf /tmp/simten-core-*.tgz -O package/package.json | jq .exports
 - Full docs (rendered): **[simten.dev/docs](https://simten.dev/docs)**
 - Markdown source: [`apps/web/content/docs/`](./apps/web/content/docs/) — readable on GitHub
 - Blog posts demonstrating real circuits: [simten.dev/blog](https://simten.dev/blog)
+
+## License
+
+Licensed under the [Apache License 2.0](./LICENSE).

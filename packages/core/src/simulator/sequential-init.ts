@@ -9,6 +9,8 @@ import type {
   BitValue,
   BusValue,
   CircuitLibrary,
+  StateBlock,
+  ArgumentValue,
 } from '../types/circuit.js';
 import type {
   FlatCircuit,
@@ -47,82 +49,22 @@ export function initializeFlatSequentialState(
     const component = library.resolveCircuit(node.primitiveType);
     if (!component) continue;
 
-    // Check if this primitive has state
+    // Per-block init: for each state block, the initial value is the block's
+    // declared default, overridden by `node.arguments[block.name]` if present.
+    // Field-names-always: no magic `initial`/`init` keywords — the factory
+    // option name === the state field name.
     if (component.implementation.kind === 'primitive' && component.state.length > 0) {
+      const blockValues = component.state.map(block =>
+        resolveBlockInitial(block, node.id, node.arguments, node.primitiveType, memoryData)
+      );
 
-      // Multi-block state: build a composite plain object (e.g. hybrid Map + scalars)
-      if (component.state.length > 1) {
-        const stateObj: Record<string, any> = {};
-        for (const block of component.state) {
-          const iv = block.initialValue;
-          if (typeof iv === 'object' && iv !== null && 'data' in iv) {
-            // Memory block — store the Map directly
-            stateObj[block.name] = (iv as { data: Map<number, number> }).data;
-          } else {
-            stateObj[block.name] = iv;
-          }
-        }
-        currentState.set(node.id, stateObj as PrimitiveState);
-        nextState.set(node.id, stateObj as PrimitiveState);
-        continue;
-      }
-
-      const stateBlock = component.state[0];
-
-      // Check for instance-specific initial value in node.arguments
-      let initialValue = stateBlock.initialValue;
-
-      if ('initial' in node.arguments && node.arguments.initial !== undefined) {
-        // Register/DFlipFlop scalar initial value
-        initialValue = node.arguments.initial as number | boolean;
-      } else if (stateBlock.stateType.kind === 'memory') {
-        // Memory init: build a Map from `init:` (sparse Record or dense array)
-        // and overlay any runtime-injected `memoryData` on top. Single canonical
-        // path — applies to ROM, RAM, DualPortRAM, RV32I_InstrMem, etc.
-        const memory = new Map<number, number>();
-
-        const initData = node.arguments.init;
-        if (initData !== undefined) {
-          if (Array.isArray(initData)) {
-            initData.forEach((value, index) => {
-              if (typeof value === 'number') memory.set(index, value);
-            });
-          } else if (typeof initData === 'object') {
-            for (const [key, value] of Object.entries(initData)) {
-              const addr = parseInt(key, 10);
-              if (!isNaN(addr) && typeof value === 'number') memory.set(addr, value);
-            }
-          }
-        }
-
-        // Runtime overlay takes precedence — allows patching node-arg ROM contents.
-        if (memoryData) {
-          const loadedData = getMemoryDataForNode(node.id, memoryData, node.primitiveType);
-          if (loadedData) {
-            for (const [addr, value] of loadedData.entries()) {
-              memory.set(addr, value);
-            }
-          }
-        }
-
-        const stType = stateBlock.stateType;
-        initialValue = {
-          data: memory,
-          addressWidth: stType.addressWidth,
-          dataWidth: stType.dataWidth,
-        };
-      }
-
-      // Convert StateValue to PrimitiveState
-      let primitiveState: PrimitiveState;
-      if (typeof initialValue === 'object' && 'data' in initialValue) {
-        primitiveState = initialValue.data;
-      } else if (typeof initialValue === 'string') {
-        // Console state is a string
-        primitiveState = initialValue;
-      } else {
-        primitiveState = initialValue as BitValue | BusValue;
-      }
+      const primitiveState: PrimitiveState = (
+        component.state.length === 1
+          ? blockValues[0]
+          : Object.fromEntries(
+              component.state.map((block, i) => [block.name, blockValues[i]])
+            )
+      ) as PrimitiveState;
 
       currentState.set(node.id, primitiveState);
       nextState.set(node.id, primitiveState);
@@ -143,6 +85,74 @@ export function initializeFlatSequentialState(
     clocks,
     cycleCount: 0
   };
+}
+
+/**
+ * Resolve the initial value for one state block on one node.
+ *
+ * Default = block.initialValue. Override = `node.arguments[block.name]` if set
+ * (the "field-names-always" rule — factory option name === state field name).
+ * Memory blocks additionally overlay any runtime-injected `memoryData`.
+ */
+function resolveBlockInitial(
+  block: StateBlock,
+  nodeId: string,
+  args: Record<string, ArgumentValue>,
+  primitiveType: string,
+  memoryData?: Map<string, Map<number, number>>,
+): BitValue | BusValue | Map<number, number> | string {
+  const kind = block.stateType.kind;
+  const override = args[block.name];
+
+  if (kind === 'memory') {
+    const memory = new Map<number, number>();
+    // Seed from the block's declared initial (if any). `data` is a Map in
+    // the original BuiltCircuit IR, but the sandbox worker round-trips IR
+    // through JSON before postMessage, which turns Maps into plain objects
+    // — handle both.
+    const blockInit = block.initialValue as { data?: Map<number, number> | Record<string, number> } | undefined;
+    if (blockInit?.data) {
+      if (blockInit.data instanceof Map) {
+        for (const [addr, value] of blockInit.data) memory.set(addr, value);
+      } else if (typeof blockInit.data === 'object') {
+        for (const [key, value] of Object.entries(blockInit.data)) {
+          const addr = parseInt(key, 10);
+          if (!isNaN(addr) && typeof value === 'number') memory.set(addr, value);
+        }
+      }
+    }
+    // Apply node.arguments override (array | sparse object | Map).
+    if (override !== undefined) {
+      if (Array.isArray(override)) {
+        override.forEach((value, index) => {
+          if (typeof value === 'number') memory.set(index, value);
+        });
+      } else if (override instanceof Map) {
+        for (const [addr, value] of override as Map<number, number>) memory.set(addr, value);
+      } else if (typeof override === 'object' && override !== null) {
+        for (const [key, value] of Object.entries(override)) {
+          const addr = parseInt(key, 10);
+          if (!isNaN(addr) && typeof value === 'number') memory.set(addr, value);
+        }
+      }
+    }
+    // Runtime memoryData overlay (e.g. user-uploaded ROM) wins.
+    if (memoryData) {
+      const loadedData = getMemoryDataForNode(nodeId, memoryData, primitiveType);
+      if (loadedData) {
+        for (const [addr, value] of loadedData.entries()) memory.set(addr, value);
+      }
+    }
+    return memory;
+  }
+
+  // Scalar (bit | bus). Default from block, override from node.arguments.
+  if (override !== undefined && (typeof override === 'number' || typeof override === 'boolean')) {
+    return override;
+  }
+  const declared = block.initialValue;
+  if (typeof declared === 'string') return declared; // text-buffer state (Console)
+  return declared as BitValue | BusValue;
 }
 
 /**

@@ -58,7 +58,7 @@ const FullAdder = circuit('FullAdder', {
 
 const Counter2Bit = circuit('Counter2Bit', {
   outputs: { bit0: bit, bit1: bit },
-  nodes: { dff0: DFlipFlop, dff1: DFlipFlop, inv: Not, xor1: Xor },
+  nodes: { dff0: DFlipFlop(), dff1: DFlipFlop(), inv: Not, xor1: Xor },
   connect: ({ outputs, nodes: { dff0, dff1, inv, xor1 } }) => [
     dff0.q.to(inv.in, xor1.b, outputs.bit0),
     inv.out.to(dff0.d),
@@ -70,8 +70,7 @@ const Counter2Bit = circuit('Counter2Bit', {
 const Accumulator = circuit('Accumulator', {
   inputs: { addend: 8, we: bit },
   outputs: { q: 8, carry: bit },
-  nodes: { reg: Register, add: Adder },
-  nodeArgs: { add: { carry_in: 0 } },
+  nodes: { reg: Register(), add: Adder({ carry_in: 0 }) },
   connect: ({ inputs, outputs, nodes: { reg, add } }) => [
     reg.q.to(add.a, outputs.q),
     inputs.addend.to(add.b),

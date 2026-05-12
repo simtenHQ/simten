@@ -17,7 +17,7 @@ describe('composite elaboration', () => {
     })
 
     const Demo = circuit('Demo', {
-      nodes: { sw_a: Switch, sw_b: Switch, dut: HalfAdder, led_sum: Led, led_carry: Led },
+      nodes: { sw_a: Switch(), sw_b: Switch(), dut: HalfAdder, led_sum: Led, led_carry: Led },
       connect: ({ nodes: { sw_a, sw_b, dut, led_sum, led_carry } }) => [
         sw_a.out.to(dut.a), sw_b.out.to(dut.b),
         dut.sum.to(led_sum.in), dut.carry.to(led_carry.in),

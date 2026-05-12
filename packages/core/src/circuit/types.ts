@@ -11,6 +11,7 @@
  */
 
 import type { PortType, Circuit, ArgumentValue, PortDescriptor, Node } from '../types/circuit.js';
+export type { ArgumentValue };
 
 // ============================================================================
 // Port types
@@ -174,6 +175,15 @@ export interface BuiltCircuit<
    *  map to collect every component needed to register in a `CircuitLibrary`
    *  before simulating or rendering this circuit. */
   readonly _dependencies: ReadonlyMap<string, BuiltCircuit>;
+  /** @internal Per-instance arguments baked in by a factory call. Populated
+   *  when this BuiltCircuit was produced by calling a parameterized factory
+   *  (e.g. `Register({ width: 16, value: 100 })`); undefined for bare
+   *  singletons. The parent `circuit()` reads this to populate
+   *  `irNodes[i].arguments` — the same slot that `nodeArgs` used to fill.
+   *  Structural args (e.g. `width`) have already done their job by the time
+   *  this is read (port widths baked in); state-initial / interactive args
+   *  (`value`, `init`, etc.) flow through to the simulator. */
+  readonly _args?: Record<string, ArgumentValue>;
 }
 
 // ============================================================================
@@ -195,12 +205,11 @@ export interface CircuitConfig<
   outputs?: Outs;
   /** Sub-components used inside this circuit. Map a local name to a
    *  `BuiltCircuit` (from the stdlib or another `circuit(...)` call), then
-   *  wire them up in `connect`. Use this for composite circuits. */
+   *  wire them up in `connect`. Parameterized components (e.g. `Register`,
+   *  `ROM`, `Constant`) are factories — call them with options to specialize:
+   *  `nodes: { reg: Register({ width: 16, value: 100 }) }`. Singletons
+   *  (e.g. gates) are used bare: `nodes: { g: And }`. */
   nodes?: Nodes;
-  /** Per-node constant arguments (e.g. `init` for a ROM, `value` for a
-   *  Constant). Keyed by the local node name from `nodes`; each entry is
-   *  a record of argument name → value. */
-  nodeArgs?: { [K in keyof Nodes]?: Record<string, ArgumentValue> };
   /** Wire sub-nodes and ports together. Receives `{ inputs, outputs, nodes }`
    *  with destructurable port refs and returns an array of connections built
    *  via `port.to(...targets)`. Use this for composite circuits — the

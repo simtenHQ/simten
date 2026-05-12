@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useCircuitSimulator, CircuitEmbed } from "@simten/embed";
 import { circuit, bit } from "@simten/core/circuit";
-import { Xor, And, Or, DFlipFlop, Constant, romFromBytes } from "@simten/core/std";
+import { Xor, And, Or, DFlipFlop, Constant } from "@simten/core/std";
 import { Eth_FrameInput, Eth_FrameParser, Eth_CRC32, Eth_ProtocolDecoder, Eth_AddrClassifier } from "@simten/core/std";
 import { HighlightedCode } from "@/components/HighlightedCode";
 import { Section, SectionHeading } from "@/components/SectionHeading";
@@ -45,7 +45,7 @@ const DrilldownFullAdder = circuit('FullAdder', {
 const ShiftRegister4 = circuit('ShiftRegister4', {
   inputs: { din: bit },
   outputs: { q0: bit, q1: bit, q2: bit, q3: bit },
-  nodes: { ff0: DFlipFlop, ff1: DFlipFlop, ff2: DFlipFlop, ff3: DFlipFlop },
+  nodes: { ff0: DFlipFlop(), ff1: DFlipFlop(), ff2: DFlipFlop(), ff3: DFlipFlop() },
   connect: ({ inputs, outputs, nodes: { ff0, ff1, ff2, ff3 } }) => [
     inputs.din.to(ff0.d),
     ff0.q.to(ff1.d, outputs.q0),
@@ -840,8 +840,7 @@ function useEthernetParser() {
     [frame],
   );
   const ethernetCircuit = useMemo(() => circuit('Eth_802_3_Parser', {
-    nodes: { frame_in: Eth_FrameInput, enable: Constant, parser: Eth_FrameParser, crc: Eth_CRC32, proto: Eth_ProtocolDecoder, addr: Eth_AddrClassifier },
-    nodeArgs: { enable: { value: 1 }, frame_in: { init: romFromBytes(frameBytes) } },
+    nodes: { frame_in: Eth_FrameInput, enable: Constant({ value: 1 }), parser: Eth_FrameParser, crc: Eth_CRC32, proto: Eth_ProtocolDecoder, addr: Eth_AddrClassifier },
     connect: ({ nodes: { frame_in, enable, parser, crc, proto, addr } }) => [
       enable.out.to(frame_in.enable),
       frame_in.tdata.to(parser.tdata, crc.data),

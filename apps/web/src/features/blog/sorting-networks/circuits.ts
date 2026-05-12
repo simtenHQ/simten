@@ -22,7 +22,7 @@ import {
 const CompareSwap = circuit("CompareSwap", {
   inputs: { a: bus(8), b: bus(8) },
   outputs: { lo: bus(8), hi: bus(8) },
-  nodes: { cmp: Comparator, muxLo: Mux, muxHi: Mux },
+  nodes: { cmp: Comparator(), muxLo: Mux(), muxHi: Mux() },
   connect: ({ inputs, outputs, nodes: { cmp, muxLo, muxHi } }) => [
     inputs.a.to(cmp.a, muxLo.in1, muxHi.in0),
     inputs.b.to(cmp.b, muxLo.in0, muxHi.in1),
@@ -35,13 +35,12 @@ const CompareSwap = circuit("CompareSwap", {
 // ── Standalone demo: single compare-and-swap ──
 export const CompareSwapDemo = circuit("CompareSwapDemo", {
   nodes: {
-    a: Input,
-    b: Input,
+    a: Input({ value: 7 }),
+    b: Input({ value: 3 }),
     cs: CompareSwap,
     loDisplay: HexDisplay,
     hiDisplay: HexDisplay,
   },
-  nodeArgs: { a: { value: 7 }, b: { value: 3 } },
   connect: ({ nodes: { a, b, cs, loDisplay, hiDisplay } }) => [
     a.out.to(cs.a),
     b.out.to(cs.b),
@@ -94,21 +93,15 @@ export const SortNet4 = circuit("SortNet4", {
 // ── Top-level demo: SortNet4 with Inputs and HexDisplays ──
 export const SortDemo = circuit("SortDemo", {
   nodes: {
-    v0: Input,
-    v1: Input,
-    v2: Input,
-    v3: Input,
+    v0: Input({ value: 42 }),
+    v1: Input({ value: 7 }),
+    v2: Input({ value: 200 }),
+    v3: Input({ value: 13 }),
     sorter: SortNet4,
     d0: HexDisplay,
     d1: HexDisplay,
     d2: HexDisplay,
     d3: HexDisplay,
-  },
-  nodeArgs: {
-    v0: { value: 42 },
-    v1: { value: 7 },
-    v2: { value: 200 },
-    v3: { value: 13 },
   },
   connect: ({ nodes: { v0, v1, v2, v3, sorter, d0, d1, d2, d3 } }) => [
     v0.out.to(sorter.v0),
@@ -134,33 +127,22 @@ export const PipelinedSortNet4 = circuit("PipelinedSortNet4", {
     cs01: CompareSwap,
     cs23: CompareSwap,
     // Registers between stage 1 and 2 (4 wires)
-    r1_0: Register,
-    r1_1: Register,
-    r1_2: Register,
-    r1_3: Register,
+    r1_0: Register({ width: 8 }),
+    r1_1: Register({ width: 8 }),
+    r1_2: Register({ width: 8 }),
+    r1_3: Register({ width: 8 }),
     // Stage 2 comparators
     cs02: CompareSwap,
     cs13: CompareSwap,
     // Registers between stage 2 and 3 (4 wires)
-    r2_0: Register,
-    r2_1: Register,
-    r2_2: Register,
-    r2_3: Register,
+    r2_0: Register({ width: 8 }),
+    r2_1: Register({ width: 8 }),
+    r2_2: Register({ width: 8 }),
+    r2_3: Register({ width: 8 }),
     // Stage 3 comparator
     cs12: CompareSwap,
     // Write-enable constant (always 1)
-    we: Constant,
-  },
-  nodeArgs: {
-    r1_0: { width: 8 },
-    r1_1: { width: 8 },
-    r1_2: { width: 8 },
-    r1_3: { width: 8 },
-    r2_0: { width: 8 },
-    r2_1: { width: 8 },
-    r2_2: { width: 8 },
-    r2_3: { width: 8 },
-    we: { value: 1 },
+    we: Constant({ value: 1 }),
   },
   connect: ({ inputs, outputs, nodes: { cs01, cs23, r1_0, r1_1, r1_2, r1_3, cs02, cs13, r2_0, r2_1, r2_2, r2_3, cs12, we } }) => [
     // Stage 1
@@ -199,21 +181,15 @@ export const PipelinedSortNet4 = circuit("PipelinedSortNet4", {
 // ── Top-level demo: PipelinedSortNet4 with Inputs and HexDisplays ──
 export const PipelinedSortDemo = circuit("PipelinedSortDemo", {
   nodes: {
-    v0: Input,
-    v1: Input,
-    v2: Input,
-    v3: Input,
+    v0: Input({ value: 42 }),
+    v1: Input({ value: 7 }),
+    v2: Input({ value: 200 }),
+    v3: Input({ value: 13 }),
     sorter: PipelinedSortNet4,
     d0: HexDisplay,
     d1: HexDisplay,
     d2: HexDisplay,
     d3: HexDisplay,
-  },
-  nodeArgs: {
-    v0: { value: 42 },
-    v1: { value: 7 },
-    v2: { value: 200 },
-    v3: { value: 13 },
   },
   connect: ({ nodes: { v0, v1, v2, v3, sorter, d0, d1, d2, d3 } }) => [
     v0.out.to(sorter.v0),

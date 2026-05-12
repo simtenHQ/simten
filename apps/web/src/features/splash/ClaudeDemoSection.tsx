@@ -40,7 +40,7 @@ const HalfAdder = circuit('HalfAdder', {
 
 const Toggle = circuit('Toggle', {
   outputs: { q: bit, q_bar: bit },
-  nodes: { dff: DFlipFlop, inv: Not },
+  nodes: { dff: DFlipFlop(), inv: Not },
   connect: ({ outputs, nodes: { dff, inv } }) => [
     dff.q.to(inv.in, outputs.q),
     dff.q_bar.to(outputs.q_bar),
@@ -66,7 +66,7 @@ const GateFullAdder = circuit('FullAdder', {
 
 const Counter2Bit = circuit('Counter2Bit', {
   outputs: { bit0: bit, bit1: bit },
-  nodes: { dff0: DFlipFlop, dff1: DFlipFlop, inv: Not, xor1: Xor },
+  nodes: { dff0: DFlipFlop(), dff1: DFlipFlop(), inv: Not, xor1: Xor },
   connect: ({ outputs, nodes: { dff0, dff1, inv, xor1 } }) => [
     dff0.q.to(inv.in, xor1.b, outputs.bit0),
     inv.out.to(dff0.d),
@@ -223,7 +223,7 @@ const PROMPT_OPTIONS: PromptOption[] = [
     circuit: Counter2Bit,
     displayCode: `const Counter2Bit = circuit('Counter2Bit', {
   outputs: { bit0: bit, bit1: bit },
-  nodes: { dff0: DFlipFlop, dff1: DFlipFlop, inv: Not, xor1: Xor },
+  nodes: { dff0: DFlipFlop(), dff1: DFlipFlop(), inv: Not, xor1: Xor },
   connect: ({ outputs, nodes: { dff0, dff1, inv, xor1 } }) => [
     dff0.q.to(inv.in, xor1.b, outputs.bit0),
     inv.out.to(dff0.d),
@@ -283,7 +283,7 @@ const PROMPT_OPTIONS: PromptOption[] = [
     circuit: Toggle,
     displayCode: `const Toggle = circuit('Toggle', {
   outputs: { q: bit, q_bar: bit },
-  nodes: { dff: DFlipFlop, inv: Not },
+  nodes: { dff: DFlipFlop(), inv: Not },
   connect: ({ outputs, nodes: { dff, inv } }) => [
     dff.q.to(inv.in, outputs.q),
     dff.q_bar.to(outputs.q_bar),

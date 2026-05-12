@@ -34,7 +34,7 @@ function buildShiftRegister4() {
   const SR4 = circuit('ShiftRegister4', {
     inputs: { d: bit },
     outputs: { q0: bit, q1: bit, q2: bit, q3: bit },
-    nodes: { ff0: DFlipFlop, ff1: DFlipFlop, ff2: DFlipFlop, ff3: DFlipFlop },
+    nodes: { ff0: DFlipFlop(), ff1: DFlipFlop(), ff2: DFlipFlop(), ff3: DFlipFlop() },
     connect: ({ inputs, outputs, nodes: { ff0, ff1, ff2, ff3 } }) => [
       inputs.d.to(ff0.d),
       ff0.q.to(ff1.d, outputs.q0),
@@ -55,17 +55,13 @@ function buildUpDownCounter() {
     inputs: { enable: bit, dir: bit },
     outputs: { count: bus(8) },
     nodes: {
-      reg: Register,
-      add: Adder,
-      sub: Subtractor,
-      one: Constant,
-      zero: Constant,
-      muxResult: Mux,
+      reg: Register(),
+      add: Adder(),
+      sub: Subtractor(),
+      one: Constant({ value: 1 }),
+      zero: Constant({ value: 0 }),
+      muxResult: Mux(),
       weOr: Or,
-    },
-    nodeArgs: {
-      one: { value: 1 },
-      zero: { value: 0 },
     },
     connect: ({ inputs, outputs, nodes: { reg, add, sub, one, zero, muxResult, weOr } }) => [
       // Feed current count to both adder and subtractor
@@ -93,15 +89,11 @@ function buildPipelineStage() {
     inputs: { data: bus(8), we: bit },
     outputs: { result: bus(8) },
     nodes: {
-      reg1: Register,
-      reg2: Register,
-      add: Adder,
-      one: Constant,
-      zero: Constant,
-    },
-    nodeArgs: {
-      one: { value: 1 },
-      zero: { value: 0 },
+      reg1: Register(),
+      reg2: Register(),
+      add: Adder(),
+      one: Constant({ value: 1 }),
+      zero: Constant({ value: 0 }),
     },
     connect: ({ inputs, outputs, nodes: { reg1, reg2, add, one, zero } }) => [
       inputs.data.to(reg1.data),

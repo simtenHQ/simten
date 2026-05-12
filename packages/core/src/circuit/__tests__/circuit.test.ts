@@ -254,26 +254,6 @@ describe('parameterized', () => {
 });
 
 // ============================================================================
-// Node arguments
-// ============================================================================
-
-describe('node arguments', () => {
-  it('passes arguments to nodes via nodeArgs', () => {
-    const Constant = circuit('Constant', {
-      outputs: { out: bit },
-      eval: () => ({ out: 0 }),
-    });
-
-    const Demo = circuit('Demo', {
-      nodes: { c: Constant },
-      nodeArgs: { c: { value: 42 } },
-    });
-
-    expect(Demo.circuit.nodes[0].arguments).toEqual({ value: 42 });
-  });
-});
-
-// ============================================================================
 // Metadata
 // ============================================================================
 

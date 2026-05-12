@@ -8,13 +8,11 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { createSimulatorFromCircuit, type CircuitLibrary } from '@simten/core/simulator';
 import { useCircuitLibraryStore } from '../../stores/circuit-library-store';
-import * as std from '@simten/core/std';
-import type { BuiltCircuit } from '@simten/core/circuit';
+import { STDLIB_CIRCUITS } from '@simten/core/std';
 import { bitType, busType, type Circuit } from '../../types/circuit';
 
-const PRIMITIVES = Object.values(std)
-  .filter((v): v is BuiltCircuit => !!v && typeof v === 'object' && 'circuit' in v)
-  .map((v) => v.circuit)
+const PRIMITIVES = STDLIB_CIRCUITS
+  .map((c) => c.circuit)
   .filter(c => c.implementation.kind === 'primitive');
 
 function getLibrary(): CircuitLibrary {
@@ -909,7 +907,7 @@ describe('Simulator', () => {
             id: 'reg1',
             label: 'Register',
             componentRef: 'Register',
-            arguments: { initial: 42 }, // Custom initial value
+            arguments: { value: 42 }, // Custom initial value
             inputs: [
               { id: 'reg1.d', name: 'd', portType: busType(8) },
               { id: 'reg1.we', name: 'we', portType: bitType() },
@@ -965,7 +963,7 @@ describe('Simulator', () => {
             label: 'RAM',
             componentRef: 'RAM',
             arguments: {
-              init: { 64: 3, 65: 4, 66: 5 }, // Initialize specific addresses
+              memory: { 64: 3, 65: 4, 66: 5 }, // Initialize specific addresses
             },
             inputs: [
               { id: 'ram1.addr', name: 'addr', portType: busType(8) },
@@ -1027,7 +1025,7 @@ describe('Simulator', () => {
             label: 'RAM',
             componentRef: 'RAM',
             arguments: {
-              init: [10, 20, 30, 40], // Initialize addresses 0-3
+              memory: [10, 20, 30, 40], // Initialize addresses 0-3
             },
             inputs: [
               { id: 'ram1.addr', name: 'addr', portType: busType(8) },

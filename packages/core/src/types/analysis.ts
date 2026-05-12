@@ -121,24 +121,29 @@ const HalfAdder = circuit('HalfAdder', {
 // Sequential circuit — Register + Adder feedback loop:
 const Counter = circuit('Counter', {
   outputs: { count: bus(8) },
-  nodes:    { reg: Register, adder: Adder, one: Constant, we: Constant, zero: Constant },
-  nodeArgs: { reg: { width: 8 }, adder: { width: 8 }, one: { value: 1 }, we: { value: 1 }, zero: { value: 0 } },
+  nodes: {
+    reg: Register({ width: 8 }),
+    adder: Adder({ width: 8 }),
+    one: Constant({ value: 1 }),
+    we: Constant({ value: 1 }),
+    zero: Constant({ value: 0 }),
+  },
   connect: ({ outputs, nodes: { reg, adder, one, we, zero } }) => [
     reg.q.to(adder.a),
     one.out.to(adder.b),
     zero.out.to(adder.carry_in),
     adder.sum.to(reg.data),
-    we.out.to(reg.we),  // write-enable must be wired — use Constant({ value: 1 }) for always-on
+    we.out.to(reg.we),  // write-enable must be wired — Constant({ value: 1 }) for always-on
     reg.q.to(outputs.count),
   ],
 });
 
-// Nodes with arguments — use nodeArgs:
+// Parameterized components are factory calls — call them with the options
+// you want to specialize:
 const Adder8 = circuit('Adder8', {
   inputs:  { a: bus(8), b: bus(8) },
   outputs: { sum: bus(8), carry: bit },
-  nodes:    { add: Adder },
-  nodeArgs: { add: { width: 8 } },
+  nodes:   { add: Adder({ width: 8 }) },
   connect: ({ inputs, outputs, nodes: { add } }) => [
     inputs.a.to(add.a),
     inputs.b.to(add.b),

@@ -36,7 +36,7 @@ export const SRLatch = circuit('SRLatch', {
 export const Reg4 = circuit('Reg4', {
   inputs: { d0: bit, d1: bit, d2: bit, d3: bit },
   outputs: { q0: bit, q1: bit, q2: bit, q3: bit },
-  nodes: { ff0: DFlipFlop, ff1: DFlipFlop, ff2: DFlipFlop, ff3: DFlipFlop },
+  nodes: { ff0: DFlipFlop(), ff1: DFlipFlop(), ff2: DFlipFlop(), ff3: DFlipFlop() },
   connect: ({ inputs, outputs, nodes: { ff0, ff1, ff2, ff3 } }) => [
     inputs.d0.to(ff0.d),
     inputs.d1.to(ff1.d),
@@ -51,7 +51,7 @@ export const Reg4 = circuit('Reg4', {
 
 export const Counter4 = circuit('Counter4', {
   outputs: { q0: bit, q1: bit, q2: bit, q3: bit },
-  nodes: { ff0: DFlipFlop, ff1: DFlipFlop, ff2: DFlipFlop, ff3: DFlipFlop, inv0: Not, xor1: Xor, and01: And, xor2: Xor, and012: And, xor3: Xor },
+  nodes: { ff0: DFlipFlop(), ff1: DFlipFlop(), ff2: DFlipFlop(), ff3: DFlipFlop(), inv0: Not, xor1: Xor, and01: And, xor2: Xor, and012: And, xor3: Xor },
   connect: ({ outputs, nodes: { ff0, ff1, ff2, ff3, inv0, xor1, and01, xor2, and012, xor3 } }) => [
     ff0.q.to(inv0.in, xor1.b, and01.a, outputs.q0),
     inv0.out.to(ff0.d),
@@ -93,7 +93,7 @@ export const Adder4 = circuit('Adder4', {
 export const ALU1 = circuit('ALU1', {
   inputs: { a: bit, b: bit, cin: bit, op0: bit, op1: bit },
   outputs: { result: bit, cout: bit },
-  nodes: { add: FullAdder, op_and: And, op_or: Or, op_xor: Xor, mux_lo: Mux, mux_hi: Mux, mux_out: Mux },
+  nodes: { add: FullAdder, op_and: And, op_or: Or, op_xor: Xor, mux_lo: Mux(), mux_hi: Mux(), mux_out: Mux() },
   connect: ({ inputs, outputs, nodes: { add, op_and, op_or, op_xor, mux_lo, mux_hi, mux_out } }) => [
     inputs.a.to(add.a, op_and.a, op_or.a, op_xor.a),
     inputs.b.to(add.b, op_and.b, op_or.b, op_xor.b),
@@ -113,8 +113,7 @@ export const ALU1 = circuit('ALU1', {
 
 // RAM demo is self-contained (no ports) — auto-harness skips it
 export const DemoRAM = circuit('DemoRAM', {
-  nodes: { addr: Input, data_in: Input, we: Switch, mem: RAM, data_out: HexDisplay },
-  nodeArgs: { addr: { width: 8 }, data_in: { width: 8 }, we: { value: 0 }, mem: { width: 8 }, data_out: { width: 8 } },
+  nodes: { addr: Input(), data_in: Input(), we: Switch({ value: 0 }), mem: RAM(), data_out: HexDisplay },
   connect: ({ nodes: { addr, data_in, we, mem, data_out } }) => [
     addr.out.to(mem.addr),
     data_in.out.to(mem.data_in),
@@ -125,7 +124,7 @@ export const DemoRAM = circuit('DemoRAM', {
 
 // D flip-flop demo is self-contained
 export const DemoFlipFlop = circuit('DemoFlipFlop', {
-  nodes: { sw_d: Switch, dff: DFlipFlop, led_q: Led },
+  nodes: { sw_d: Switch(), dff: DFlipFlop(), led_q: Led },
   connect: ({ nodes: { sw_d, dff, led_q } }) => [
     sw_d.out.to(dff.d),
     dff.q.to(led_q.in),

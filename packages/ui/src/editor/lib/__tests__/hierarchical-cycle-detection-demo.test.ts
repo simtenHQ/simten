@@ -7,13 +7,11 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { createSimulatorFromCircuit, type CircuitLibrary } from '@simten/core/simulator';
 import { useCircuitLibraryStore } from '../../stores/circuit-library-store';
-import * as std from '@simten/core/std';
-import type { BuiltCircuit } from '@simten/core/circuit';
+import { STDLIB_CIRCUITS } from '@simten/core/std';
 import { bitType, busType, type Circuit } from '../../types/circuit';
 
-const PRIMITIVES = Object.values(std)
-  .filter((v): v is BuiltCircuit => !!v && typeof v === 'object' && 'circuit' in v)
-  .map((v) => v.circuit)
+const PRIMITIVES = STDLIB_CIRCUITS
+  .map((c) => c.circuit)
   .filter(c => c.implementation.kind === 'primitive');
 
 function getLibrary(): CircuitLibrary {
@@ -63,7 +61,7 @@ describe('Hierarchical Cycle Detection - Real World Scenarios', () => {
           id: 'state_reg',
           label: 'State',
           componentRef: 'Register',
-          arguments: { initial: 0 },
+          arguments: { value: 0 },
           inputs: [
             { id: 'state_reg.data', name: 'data', portType: busType(8) },
             { id: 'state_reg.we', name: 'we', portType: bitType() },
@@ -263,7 +261,7 @@ describe('Hierarchical Cycle Detection - Real World Scenarios', () => {
           id: 'buf_reg',
           label: 'BufferReg',
           componentRef: 'Register',
-          arguments: { initial: 0 },
+          arguments: { value: 0 },
           inputs: [
             { id: 'buf_reg.data', name: 'data', portType: busType(8) },
             { id: 'buf_reg.we', name: 'we', portType: bitType() },
@@ -317,7 +315,7 @@ describe('Hierarchical Cycle Detection - Real World Scenarios', () => {
           id: 'state_reg',
           label: 'StateReg',
           componentRef: 'Register',
-          arguments: { initial: 0 },
+          arguments: { value: 0 },
           inputs: [
             { id: 'state_reg.data', name: 'data', portType: busType(8) },
             { id: 'state_reg.we', name: 'we', portType: bitType() },
@@ -371,7 +369,7 @@ describe('Hierarchical Cycle Detection - Real World Scenarios', () => {
           id: 'fwd_reg',
           label: 'ForwardReg',
           componentRef: 'Register',
-          arguments: { initial: 0 },
+          arguments: { value: 0 },
           inputs: [
             { id: 'fwd_reg.data', name: 'data', portType: busType(8) },
             { id: 'fwd_reg.we', name: 'we', portType: bitType() },

@@ -9,7 +9,7 @@
  * Supported:
  * - Composite circuits that compose stdlib components and other user circuits
  * - bit / bus(N) ports
- * - nodeArgs (constants, ROM/RAM init dicts)
+ * - Per-node factory args inlined as `Comp({ ... })` calls
  * - Simple state (bit / bus / memory with default widths)
  *
  * NOT supported (throws with a clear message — Fork button surfaces it):
@@ -130,8 +130,6 @@ function emitCircuit(c: Circuit): string {
   if (c.outputs.length > 0) parts.push(`  outputs: ${emitPortMap(c.outputs)},`);
   if (c.state.length > 0) parts.push(`  state: ${emitState(c.state, c.name)},`);
   if (c.nodes.length > 0) parts.push(`  nodes: ${emitNodes(c.nodes)},`);
-  const nodeArgsBlock = emitNodeArgs(c.nodes);
-  if (nodeArgsBlock) parts.push(`  nodeArgs: ${nodeArgsBlock},`);
   if (c.connections.length > 0) {
     parts.push(`  connect: ${emitConnect(c)},`);
   }
@@ -182,15 +180,33 @@ function emitInitMap(data: Map<number, number>): string {
   return `new Map([${entries.join(", ")}])`;
 }
 
-function emitNodes(nodes: Node[]): string {
-  const entries = nodes.map((n) => `${n.id}: ${n.componentRef}`);
-  return `{ ${entries.join(", ")} }`;
-}
+// Soft callable convention: parameterized stdlib components must be called
+// (factory invocation form). The serializer doesn't know which user-defined
+// components are parameterized — for those, we emit the bare ref when args
+// are empty and a call when args are present.
+const PARAMETERIZED_STDLIB = new Set<string>([
+  'Constant', 'Switch', 'Button', 'Input',
+  'Register', 'DFlipFlop',
+  'ROM', 'RAM', 'DualPortRAM', 'DualPortROM',
+  'BitSlice', 'Adder', 'Subtractor', 'Comparator',
+  'LeftShifter', 'RightShifter',
+  'BusAnd', 'BusOr', 'BusXor',
+  'Mux', 'Screen', 'RasterDisplay',
+]);
 
-function emitNodeArgs(nodes: Node[]): string | null {
-  const filled = nodes.filter((n) => n.arguments && Object.keys(n.arguments).length > 0);
-  if (filled.length === 0) return null;
-  const entries = filled.map((n) => `${n.id}: ${emitArgs(n.arguments)}`);
+function emitNodes(nodes: Node[]): string {
+  const entries = nodes.map((n) => {
+    const hasArgs = n.arguments && Object.keys(n.arguments).length > 0;
+    if (hasArgs) {
+      return `${n.id}: ${n.componentRef}(${emitArgs(n.arguments)})`;
+    }
+    // Parameterized stdlib components must always be called, even when no
+    // args were specified — bare refs would be a TS error.
+    if (PARAMETERIZED_STDLIB.has(n.componentRef)) {
+      return `${n.id}: ${n.componentRef}()`;
+    }
+    return `${n.id}: ${n.componentRef}`;
+  });
   return `{ ${entries.join(", ")} }`;
 }
 

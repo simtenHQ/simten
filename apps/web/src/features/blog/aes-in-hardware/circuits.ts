@@ -41,8 +41,7 @@ AES_SBOX.forEach((val, idx) => { AES_SBOX_INIT[idx] = val; });
 export const XTime = circuit('XTime', {
   inputs: { x: bus(8) },
   outputs: { out: bus(8) },
-  nodes: { c1: Constant, shl: LeftShifter, split: Splitter8to8, poly: Constant, zero8: Constant, mux: Mux, xor: BusXor },
-  nodeArgs: { c1: { value: 1, width: 8 }, shl: { width: 8 }, poly: { value: 27, width: 8 }, zero8: { value: 0, width: 8 }, mux: { width: 8 }, xor: { width: 8 } },
+  nodes: { c1: Constant({ value: 1, width: 8 }), shl: LeftShifter({ width: 8 }), split: Splitter8to8, poly: Constant({ value: 27, width: 8 }), zero8: Constant({ value: 0, width: 8 }), mux: Mux({ width: 8 }), xor: BusXor({ width: 8 }) },
   connect: ({ inputs, outputs, nodes: { c1, shl, split, poly, zero8, mux, xor } }) => [
     inputs.x.to(shl.value, split.in),
     c1.out.to(shl.shift),
@@ -57,8 +56,7 @@ export const XTime = circuit('XTime', {
 
 // Self-contained demos
 export const SubByteDemo = circuit('SubByteDemo', {
-  nodes: { s: Input, rom: ROM, disp: HexDisplay },
-  nodeArgs: { s: { value: 83, width: 8 }, rom: { init: AES_SBOX_INIT }, disp: { width: 8 } },
+  nodes: { s: Input({ value: 83 }), rom: ROM({ memory: AES_SBOX_INIT }), disp: HexDisplay },
   connect: ({ nodes: { s, rom, disp } }) => [
     s.out.to(rom.addr),
     rom.data_out.to(disp.in),
@@ -66,8 +64,7 @@ export const SubByteDemo = circuit('SubByteDemo', {
 });
 
 export const XTimeDemo = circuit('XTimeDemo', {
-  nodes: { val: Input, xt: XTime, disp: HexDisplay },
-  nodeArgs: { val: { value: 87, width: 8 }, disp: { width: 8 } },
+  nodes: { val: Input({ value: 87 }), xt: XTime, disp: HexDisplay },
   connect: ({ nodes: { val, xt, disp } }) => [
     val.out.to(xt.x),
     xt.out.to(disp.in),
@@ -79,8 +76,7 @@ export const MixColumn = circuit('MixColumn', {
   inputs: { s0: bus(8), s1: bus(8), s2: bus(8), s3: bus(8) },
   outputs: { r0: bus(8), r1: bus(8), r2: bus(8), r3: bus(8) },
   meta: { description: 'AES MixColumns on one 4-byte column over GF(2^8)' },
-  nodes: { xt0: XTime, xt1: XTime, xt2: XTime, xt3: XTime, m3_0: BusXor, m3_1: BusXor, m3_2: BusXor, m3_3: BusXor, r0a: BusXor, r0b: BusXor, r0c: BusXor, r1a: BusXor, r1b: BusXor, r1c: BusXor, r2a: BusXor, r2b: BusXor, r2c: BusXor, r3a: BusXor, r3b: BusXor, r3c: BusXor },
-  nodeArgs: { xt0: {}, xt1: {}, xt2: {}, xt3: {}, m3_0: { width: 8 }, m3_1: { width: 8 }, m3_2: { width: 8 }, m3_3: { width: 8 }, r0a: { width: 8 }, r0b: { width: 8 }, r0c: { width: 8 }, r1a: { width: 8 }, r1b: { width: 8 }, r1c: { width: 8 }, r2a: { width: 8 }, r2b: { width: 8 }, r2c: { width: 8 }, r3a: { width: 8 }, r3b: { width: 8 }, r3c: { width: 8 } },
+  nodes: { xt0: XTime, xt1: XTime, xt2: XTime, xt3: XTime, m3_0: BusXor({ width: 8 }), m3_1: BusXor({ width: 8 }), m3_2: BusXor({ width: 8 }), m3_3: BusXor({ width: 8 }), r0a: BusXor({ width: 8 }), r0b: BusXor({ width: 8 }), r0c: BusXor({ width: 8 }), r1a: BusXor({ width: 8 }), r1b: BusXor({ width: 8 }), r1c: BusXor({ width: 8 }), r2a: BusXor({ width: 8 }), r2b: BusXor({ width: 8 }), r2c: BusXor({ width: 8 }), r3a: BusXor({ width: 8 }), r3b: BusXor({ width: 8 }), r3c: BusXor({ width: 8 }) },
   connect: ({ inputs, outputs, nodes: { xt0, xt1, xt2, xt3, m3_0, m3_1, m3_2, m3_3, r0a, r0b, r0c, r1a, r1b, r1c, r2a, r2b, r2c, r3a, r3b, r3c } }) => [
     inputs.s0.to(xt0.x, m3_0.b, r1a.a, r2a.a),
     inputs.s1.to(xt1.x, m3_1.b, r2a.b, r3a.b),
@@ -102,8 +98,7 @@ export const MixColumn = circuit('MixColumn', {
 });
 
 export const MixColumnDemo = circuit('MixColumnDemo', {
-  nodes: { s0: Input, s1: Input, s2: Input, s3: Input, mc: MixColumn, r0: HexDisplay, r1: HexDisplay, r2: HexDisplay, r3: HexDisplay },
-  nodeArgs: { s0: { value: 219, width: 8 }, s1: { value: 19, width: 8 }, s2: { value: 83, width: 8 }, s3: { value: 69, width: 8 }, r0: { width: 8 }, r1: { width: 8 }, r2: { width: 8 }, r3: { width: 8 } },
+  nodes: { s0: Input({ value: 219 }), s1: Input({ value: 19 }), s2: Input({ value: 83 }), s3: Input({ value: 69 }), mc: MixColumn, r0: HexDisplay, r1: HexDisplay, r2: HexDisplay, r3: HexDisplay },
   connect: ({ nodes: { s0, s1, s2, s3, mc, r0, r1, r2, r3 } }) => [
     s0.out.to(mc.s0), s1.out.to(mc.s1),
     s2.out.to(mc.s2), s3.out.to(mc.s3),

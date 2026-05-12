@@ -27,12 +27,12 @@ import { bit, bus } from '../circuit/bit-bus.js';
  * })
  * ```
  */
-export const Mux = circuit('Mux', {
-  inputs: { in0: bit, in1: bit, sel: bit },
-  outputs: { out: bit },
+export const Mux = circuit('Mux', ({ width = 1 }: { width?: number } = {}) => ({
+  inputs: { in0: width === 1 ? bit : bus(width), in1: width === 1 ? bit : bus(width), sel: bit },
+  outputs: { out: width === 1 ? bit : bus(width) },
   meta: { category: 'plexers', icon: 'MUX', description: 'Multiplexer — sel=0 picks in0, sel=1 picks in1' },
   eval: ({ in0, in1, sel }) => ({ out: sel ? in1 : in0 }),
-});
+}));
 
 /**
  * 2-to-4 decoder. Activates exactly one of four outputs based on the
@@ -220,12 +220,12 @@ export const Concat = circuit('Concat', {
  * })
  * ```
  */
-export const BitSlice = circuit('BitSlice', {
+export const BitSlice = circuit('BitSlice', (_opts?: { low?: number; high?: number }) => ({
   inputs: { in: bus(8) },
   outputs: { out: bus(8) },
   meta: { category: 'utilities', icon: '[]', description: 'Extract bits [low..high] from input' },
   eval: ({ in: val }) => ({ out: val }),
-});
+}));
 
 /**
  * Combines two 8-bit buses into 16-bit. `hi` is the high byte, `lo` is

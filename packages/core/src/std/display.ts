@@ -75,13 +75,13 @@ export const HexDisplay = circuit('HexDisplay', {
  * })
  * ```
  */
-export const Screen = circuit('Screen', {
+export const Screen = circuit('Screen', (_opts?: { width?: number; height?: number }) => ({
   inputs: { dataIn: bus(8) },
   outputs: { addrB: bus(16) },
   state: { memory: new Map<number, number>() },
   meta: { category: 'display', icon: '🖥️', description: 'Pixel display', synthesizable: false },
   eval: () => ({ addrB: 0 }),
-});
+}));
 
 /**
  * Hardware-accurate raster display with scan counters. Like `Screen`, but
@@ -94,13 +94,13 @@ export const Screen = circuit('Screen', {
  * **Outputs:** `addrB` — `bus(16)`; `scanX`, `scanY` — `bus(8)`;
  * `hblank`, `vblank` — `bit`
  */
-export const RasterDisplay = circuit('RasterDisplay', {
+export const RasterDisplay = circuit('RasterDisplay', (_opts?: { width?: number; height?: number }) => ({
   inputs: { dataIn: bus(8) },
   outputs: { addrB: bus(16), scanX: bus(8), scanY: bus(8), hblank: bit, vblank: bit },
   state: { memory: new Map<number, number>() },
   meta: { category: 'display', icon: '📺', description: 'Hardware-accurate raster display with scan counters', synthesizable: false },
   eval: () => ({ addrB: 0, scanX: 0, scanY: 0, hblank: 0, vblank: 0 }),
-});
+}));
 
 /**
  * Text console output. Append-only ASCII terminal — write a byte with

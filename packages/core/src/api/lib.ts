@@ -6,8 +6,7 @@
  */
 
 import type { Circuit, CircuitLibrary, MutableCircuitLibrary } from '../types/circuit.js';
-import type { BuiltCircuit } from '../circuit/types.js';
-import * as std from '../std/index.js';
+import { STDLIB_CIRCUITS } from '../std/index.js';
 
 let cachedLibrary: CircuitLibrary | null = null;
 
@@ -19,16 +18,11 @@ export function getLibrary(): CircuitLibrary {
 
   const { library } = createMutableLibrary();
 
-  for (const value of Object.values(std)) {
-    if (value && typeof value === 'object' && 'circuit' in value) {
-      const built = value as BuiltCircuit;
-      if (built.circuit) {
-        library.addCircuit(built.circuit);
-        if (built._dependencies) {
-          for (const [, dep] of built._dependencies) {
-            library.addCircuit(dep.circuit);
-          }
-        }
+  for (const built of STDLIB_CIRCUITS) {
+    library.addCircuit(built.circuit);
+    if (built._dependencies) {
+      for (const [, dep] of built._dependencies) {
+        library.addCircuit(dep.circuit);
       }
     }
   }

@@ -53,15 +53,14 @@ describe("circuitToSource", () => {
     expect(result.circuit?.inputs[0].portType).toEqual({ kind: "bus", width: 8 });
   });
 
-  it("preserves nodeArgs", () => {
+  it("preserves node arguments via factory-call form", () => {
     const WithArgs = circuit("WithArgs", {
       outputs: { q: bit },
-      nodes: { r: Register },
-      nodeArgs: { r: { initial: 42 } },
+      nodes: { r: Register({ value: 42 }) },
       connect: ({ outputs, nodes: { r } }) => [r.q.to(outputs.q)],
     });
     const source = circuitToSource(WithArgs);
-    expect(source).toContain("nodeArgs: { r: { initial: 42 } }");
+    expect(source).toContain("r: Register({ value: 42 })");
   });
 
   it("emits state with reg() / mem()", () => {

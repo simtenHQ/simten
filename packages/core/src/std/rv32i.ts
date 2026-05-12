@@ -514,19 +514,18 @@ export const RV32I_HazardUnit = circuit('RV32I_HazardUnit', {
  * **Inputs:** `addrA`, `addrB` — `bus(32)`
  * **Outputs:** `dataA`, `dataB` — `bus(32)`
  */
-export const DualPortROM = circuit('DualPortROM', {
+export const DualPortROM = circuit('DualPortROM', (_opts?: { memory?: Record<number, number> | number[] }) => ({
   inputs: { addrA: bus(32), addrB: bus(32) },
   outputs: { dataA: bus(32), dataB: bus(32) },
   state: { memory: mem(65536, 8) },
   eval: ({ addrA, addrB, memory }) => {
     const aA = (addrA as number) >>> 0;
     const aB = (addrB as number) >>> 0;
-    const m = memory!;
     return {
-      dataA: ((m[aA + 3] << 24) | (m[aA + 2] << 16) | (m[aA + 1] << 8) | m[aA]) >>> 0,
-      dataB: ((m[aB + 3] << 24) | (m[aB + 2] << 16) | (m[aB + 1] << 8) | m[aB]) >>> 0,
+      dataA: ((memory[aA + 3] << 24) | (memory[aA + 2] << 16) | (memory[aA + 1] << 8) | memory[aA]) >>> 0,
+      dataB: ((memory[aB + 3] << 24) | (memory[aB + 2] << 16) | (memory[aB + 1] << 8) | memory[aB]) >>> 0,
     };
   },
   onTick: ({ memory }) => ({ memory }),  // read-only
   meta: { category: 'memory', description: 'Dual-port read-only memory' },
-});
+}));

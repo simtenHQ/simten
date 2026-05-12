@@ -75,8 +75,7 @@ function buildRippleCarryAdder4() {
   const RCA = circuit('RippleCarryAdder4', {
     inputs: { a: bus(4), b: bus(4), carry_in: bit },
     outputs: { sum: bus(4), carry_out: bit },
-    nodes: { add: Adder },
-    nodeArgs: { add: { width: 4 } },
+    nodes: { add: Adder({ width: 4 }) },
     connect: ({ inputs, outputs, nodes: { add } }) => [
       inputs.a.to(add.a),
       inputs.b.to(add.b),
@@ -94,7 +93,7 @@ function buildStdlibAdder() {
   const Adder8 = circuit('Adder8', {
     inputs: { a: bus(8), b: bus(8), carry_in: bit },
     outputs: { sum: bus(8), carry_out: bit },
-    nodes: { add: Adder },
+    nodes: { add: Adder() },
     connect: ({ inputs, outputs, nodes: { add } }) => [
       inputs.a.to(add.a),
       inputs.b.to(add.b),
@@ -126,8 +125,8 @@ function buildSimpleALU() {
   const ALU = circuit('SimpleALU', {
     inputs: { a: bus(8), b: bus(8), op: bit },
     outputs: { result: bus(8) },
-    nodes: { add: Adder, band: BusAnd, mux0: Mux, mux1: Mux, mux2: Mux,
-             mux3: Mux, mux4: Mux, mux5: Mux, mux6: Mux, mux7: Mux },
+    nodes: { add: Adder(), band: BusAnd(), mux0: Mux(), mux1: Mux(), mux2: Mux(),
+             mux3: Mux(), mux4: Mux(), mux5: Mux(), mux6: Mux(), mux7: Mux() },
     connect: () => [],
   });
 
@@ -136,7 +135,7 @@ function buildSimpleALU() {
   const ALU2 = circuit('SimpleALU', {
     inputs: { a: bus(8), b: bus(8), carry_in: bit, op: bit },
     outputs: { result: bus(8), carry_out: bit },
-    nodes: { add: Adder, band: BusAnd },
+    nodes: { add: Adder(), band: BusAnd() },
     connect: ({ inputs, outputs, nodes: { add, band } }) => [
       inputs.a.to(add.a, band.a),
       inputs.b.to(add.b, band.b),

@@ -17,8 +17,7 @@ import {
 export const ProgramCounter = circuit('ProgramCounter', {
   inputs: { stall: bit },
   outputs: { pc_out: bus(32) },
-  nodes: { pc: Register, four: Constant, adder: Adder, stall_inv: Not },
-  nodeArgs: { pc: { width: 32 }, four: { value: 4, width: 32 }, adder: { width: 32 } },
+  nodes: { pc: Register({ width: 32 }), four: Constant({ value: 4, width: 32 }), adder: Adder({ width: 32 }), stall_inv: Not },
   connect: ({ inputs, outputs, nodes: { pc, four, adder, stall_inv } }) => [
     pc.q.to(adder.a, outputs.pc_out),
     four.out.to(adder.b),
@@ -31,8 +30,7 @@ export const ProgramCounter = circuit('ProgramCounter', {
 export const PCWithMux = circuit('PCWithMux', {
   inputs: { stall: bit, branch_taken: bit, jump: bit, branch_target: bus(32), jump_target: bus(32) },
   outputs: { pc_out: bus(32) },
-  nodes: { pc: Register, four: Constant, adder: Adder, stall_inv: Not, branch_mux: Mux, jump_mux: Mux },
-  nodeArgs: { pc: { width: 32 }, four: { value: 4, width: 32 }, adder: { width: 32 }, branch_mux: { width: 32 }, jump_mux: { width: 32 } },
+  nodes: { pc: Register({ width: 32 }), four: Constant({ value: 4, width: 32 }), adder: Adder({ width: 32 }), stall_inv: Not, branch_mux: Mux({ width: 32 }), jump_mux: Mux({ width: 32 }) },
   connect: ({ inputs, outputs, nodes: { pc, four, adder, stall_inv, branch_mux, jump_mux } }) => [
     pc.q.to(adder.a, outputs.pc_out),
     four.out.to(adder.b),
@@ -51,8 +49,7 @@ export const PCWithMux = circuit('PCWithMux', {
 export const PipelineReg = circuit('PipelineReg', {
   inputs: { data_in: bus(8), flush: bit },
   outputs: { data_out: bus(8) },
-  nodes: { zero: Constant, mux: Mux, reg: Register, one: Constant },
-  nodeArgs: { zero: { value: 0, width: 8 }, mux: { width: 8 }, reg: { width: 8 }, one: { value: 1, width: 1 } },
+  nodes: { zero: Constant({ value: 0, width: 8 }), mux: Mux({ width: 8 }), reg: Register({ width: 8 }), one: Constant({ value: 1, width: 1 }) },
   connect: ({ inputs, outputs, nodes: { zero, mux, reg, one } }) => [
     inputs.data_in.to(mux.in0),
     zero.out.to(mux.in1),
@@ -66,8 +63,7 @@ export const PipelineReg = circuit('PipelineReg', {
 export const ForwardingMux = circuit('ForwardingMux', {
   inputs: { reg_val: bus(32), ex_val: bus(32), mem_val: bus(32), sel: bus(2) },
   outputs: { out: bus(32) },
-  nodes: { bit0: BitSlice, bit1: BitSlice, mux1: Mux, mux2: Mux },
-  nodeArgs: { bit0: { low: 0, high: 0 }, bit1: { low: 1, high: 1 }, mux1: { width: 32 }, mux2: { width: 32 } },
+  nodes: { bit0: BitSlice({ low: 0, high: 0 }), bit1: BitSlice({ low: 1, high: 1 }), mux1: Mux({ width: 32 }), mux2: Mux({ width: 32 }) },
   connect: ({ inputs, outputs, nodes: { bit0, bit1, mux1, mux2 } }) => [
     inputs.sel.to(bit0.in, bit1.in),
     inputs.reg_val.to(mux1.in0),
@@ -83,8 +79,7 @@ export const ForwardingMux = circuit('ForwardingMux', {
 export const SimpleALU = circuit('SimpleALU', {
   inputs: { a: bus(8), b: bus(8), op: bus(2) },
   outputs: { result: bus(8) },
-  nodes: { adder: Adder, sub: Subtractor, and_gate: BusAnd, or_gate: BusOr, mux_lo: Mux, mux_hi: Mux, op0: BitSlice, op1: BitSlice, mux_final: Mux },
-  nodeArgs: { adder: { width: 8 }, sub: { width: 8 }, and_gate: { width: 8 }, or_gate: { width: 8 }, mux_lo: { width: 8 }, mux_hi: { width: 8 }, op0: { low: 0, high: 0 }, op1: { low: 1, high: 1 }, mux_final: { width: 8 } },
+  nodes: { adder: Adder({ width: 8 }), sub: Subtractor({ width: 8 }), and_gate: BusAnd({ width: 8 }), or_gate: BusOr({ width: 8 }), mux_lo: Mux({ width: 8 }), mux_hi: Mux({ width: 8 }), op0: BitSlice({ low: 0, high: 0 }), op1: BitSlice({ low: 1, high: 1 }), mux_final: Mux({ width: 8 }) },
   connect: ({ inputs, outputs, nodes: { adder, sub, and_gate, or_gate, mux_lo, mux_hi, op0, op1, mux_final } }) => [
     inputs.a.to(adder.a, sub.a, and_gate.a, or_gate.a),
     inputs.b.to(adder.b, sub.b, and_gate.b, or_gate.b),
