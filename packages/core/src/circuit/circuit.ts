@@ -164,6 +164,30 @@ export function circuit(
       const innerConfig = factory(opts);
       const built = circuit(name, innerConfig as any) as any;
       built._args = opts ?? {};
+      // Strip per-instance state initials baked in by ES6-shorthand
+      // declarations like `state: { value }`. Dep-merging in this same
+      // function picks the FIRST node's BuiltCircuit as the canonical
+      // library entry; if state initials varied per instance, every
+      // instance without an explicit args override would inherit whichever
+      // value happened to come first. Per-instance values flow through
+      // `node.arguments[block.name]` and are applied by sequential-init.ts;
+      // here we normalize the IR's state initials to type defaults.
+      for (const sb of built.circuit.state) {
+        if (sb.stateType.kind === 'bit') {
+          sb.initialValue = false;
+        } else if (sb.stateType.kind === 'bus') {
+          // Preserve string state (e.g. Console buffers) — only numeric
+          // bus initials get reset to 0.
+          if (typeof sb.initialValue === 'number') sb.initialValue = 0;
+        } else if (sb.stateType.kind === 'memory') {
+          const iv = sb.initialValue as { addressWidth: number; dataWidth: number } | undefined;
+          sb.initialValue = {
+            data: new Map<number, number>(),
+            addressWidth: iv?.addressWidth ?? sb.stateType.addressWidth,
+            dataWidth: iv?.dataWidth ?? sb.stateType.dataWidth,
+          };
+        }
+      }
       return built;
     };
   }
