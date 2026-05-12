@@ -2,13 +2,11 @@
 import { useState, useMemo, useRef, useEffect } from "react";
 import type { BuiltCircuit } from "@simten/core/circuit";
 import type { PortDescriptor } from "@simten/core";
-import * as std from "@simten/core/std";
+import { STDLIB_CIRCUITS } from "@simten/core/std";
 import { CircuitEmbed } from "@simten/embed";
 
-// Collect all stdlib BuiltCircuit objects
-const ALL_STD: BuiltCircuit[] = (Object.values(std) as unknown[]).filter(
-  (v): v is BuiltCircuit => !!v && typeof v === 'object' && 'name' in v && 'circuit' in v,
-);
+// All stdlib BuiltCircuit objects (singletons + materialized factory defaults).
+const ALL_STD: readonly BuiltCircuit[] = STDLIB_CIRCUITS;
 
 // Category display order and labels
 const CATEGORY_ORDER = [

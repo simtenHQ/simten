@@ -7,13 +7,11 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { createSimulatorFromCircuit, type CircuitLibrary } from '@simten/core/simulator';
 import { useCircuitLibraryStore } from '../../stores/circuit-library-store';
-import * as std from '@simten/core/std';
-import type { BuiltCircuit } from '@simten/core/circuit';
+import { STDLIB_CIRCUITS } from '@simten/core/std';
 import { bitType, busType, type Circuit } from '../../types/circuit';
 
-const PRIMITIVES = Object.values(std)
-  .filter((v): v is BuiltCircuit => !!v && typeof v === 'object' && 'circuit' in v)
-  .map((v) => v.circuit)
+const PRIMITIVES = STDLIB_CIRCUITS
+  .map((c) => c.circuit)
   .filter(c => c.implementation.kind === 'primitive');
 
 function getLibrary(): CircuitLibrary {
