@@ -14,6 +14,7 @@ import { forwardRef, useState, type CSSProperties, type ForwardedRef, type React
 import { CircuitViewer, type CircuitViewerHandle, type HarnessedLayout } from "./CircuitViewer";
 import { circuitToSource, type BuiltCircuit } from "@simten/core/circuit";
 import { encodeSourceForUrl } from "@simten/ui/share";
+import { useShareCircuit } from "./share-context";
 
 /**
  * Where Fork links open. simten.dev for everything except local dev of the
@@ -125,15 +126,28 @@ const CircuitEmbedImpl = forwardRef<CircuitEmbedHandle, CircuitEmbedProps>(
   }, ref) {
     const hasInfoBar = title || description;
     const [forkError, setForkError] = useState<string | null>(null);
+    const [forkPending, setForkPending] = useState(false);
+    const shareCircuit = useShareCircuit();
 
-    const onFork = () => {
+    const onFork = async () => {
+      if (forkPending) return;
       try {
         const source = forkSource ?? circuitToSource(circuit);
-        const encoded = encodeSourceForUrl(source);
-        window.open(`${simtenHost()}/circuit/${encoded}`, "_blank", "noopener");
+        // Use the KV shortener when available (simten.dev). Outside simten.dev
+        // — embeds on third-party pages — fall back to the inline-encoded URL.
+        if (shareCircuit) {
+          setForkPending(true);
+          const { hash } = await shareCircuit(source);
+          window.open(`${simtenHost()}/circuit/s/${hash}`, "_blank", "noopener");
+        } else {
+          const encoded = encodeSourceForUrl(source);
+          window.open(`${simtenHost()}/circuit/${encoded}`, "_blank", "noopener");
+        }
       } catch (err) {
         setForkError(err instanceof Error ? err.message : "Couldn't fork this circuit");
         setTimeout(() => setForkError(null), 3000);
+      } finally {
+        setForkPending(false);
       }
     };
 
