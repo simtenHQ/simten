@@ -9,3 +9,4 @@ export type { CircuitCanvasProps } from '@simten/ui/canvas';
 export { ErrorBoundary } from './components/ErrorBoundary';
 export { ErrorDisplay } from './components/ErrorDisplay';
 export type { SimulatorError } from './components/ErrorDisplay';
+export { ShareCircuitProvider, useShareCircuit, type ShareCircuitFn } from './share-context';

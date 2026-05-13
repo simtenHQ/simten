@@ -6,8 +6,14 @@ import { SiteNavLinks } from '../components/SiteNavLinks'
 import { SiteFooter } from '../components/SiteFooter'
 import { RootProvider } from 'fumadocs-ui/provider/tanstack'
 import { SandboxProvider } from '@simten/ui/sandbox'
+import { ShareCircuitProvider } from '@simten/embed'
+import { shareCircuit } from '@/features/share/server'
 
 import appCss from '../styles.css?url'
+
+// Bridge the TanStack Start server fn to the CircuitEmbed Fork button via
+// context. Every Fork click goes through KV → short `/circuit/s/<hash>` URLs.
+const shareCircuitFn = (source: string) => shareCircuit({ data: { source } })
 
 // Tool routes render their own SiteHeader with custom right-slot content
 // (the editor and the RV32I debugger pass tool controls instead of nav
@@ -76,9 +82,11 @@ function RootComponent() {
         <RootProvider search={{ preload: false }}>
           <ThemeProvider defaultTheme="dark">
             <SandboxProvider>
-              {!skipDefaultChrome && <SiteHeader right={<SiteNavLinks />} />}
-              <Outlet />
-              {!skipDefaultChrome && <SiteFooter />}
+              <ShareCircuitProvider value={shareCircuitFn}>
+                {!skipDefaultChrome && <SiteHeader right={<SiteNavLinks />} />}
+                <Outlet />
+                {!skipDefaultChrome && <SiteFooter />}
+              </ShareCircuitProvider>
             </SandboxProvider>
           </ThemeProvider>
         </RootProvider>
