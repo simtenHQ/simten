@@ -86,7 +86,10 @@ function projectCircuitToNodes(
 
   for (const node of circuit.nodes) {
     const nodeMetadata = metadata.components[node.id];
-    if (!nodeMetadata) continue;
+    if (!nodeMetadata) {
+      console.warn(`[projection] node '${node.id}' (${node.componentRef}) has no layout metadata, skipping render`);
+      continue;
+    }
 
     const componentDef = library.resolveCircuit(node.componentRef);
     if (!componentDef) continue;
