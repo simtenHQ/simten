@@ -199,6 +199,13 @@ tar -xzf /tmp/simten-core-*.tgz -O package/package.json | jq .exports
 - Markdown source: [`apps/web/content/docs/`](./apps/web/content/docs/) — readable on GitHub
 - Blog posts demonstrating real circuits: [simten.dev/blog](https://simten.dev/blog)
 
+## Community
+
+- **Bugs and feature requests:** [GitHub Issues](https://github.com/simtenHQ/simten/issues)
+- **Questions and design discussion:** [GitHub Discussions](https://github.com/simtenHQ/simten/discussions)
+- **Security:** see [SECURITY.md](./SECURITY.md)
+- **Anything else:** `hello@simten.dev`
+
 ## License
 
 Licensed under the [Apache License 2.0](./LICENSE).

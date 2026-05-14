@@ -8,6 +8,8 @@ Please report security vulnerabilities privately via GitHub's security advisory 
 
 Do not open a public issue or discussion for security reports.
 
+If you can't use GitHub's flow (no account, or you'd prefer email), send a report to `security@simten.dev` instead. Please don't include exploit details in the first email — we'll reply with a way to share them securely.
+
 We aim to acknowledge new reports within a few days. Once a fix is ready, we publish a coordinated security advisory to the GitHub Advisory Database so that downstream consumers of `@simten/*` packages are notified via Dependabot.
 
 ## Scope
