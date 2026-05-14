@@ -279,6 +279,51 @@ export function circuit(
     }
   }
 
+  // Multi-driver detection. Every driver of every node-port pair is declared
+  // inside one circuit's connect callback — flattening never introduces a new
+  // driver — so per-circuit scanning is complete. (If parameterized
+  // instantiation lands, this check would need to re-run post-substitution.)
+  //
+  // Identical (target, source) triples → silently dedupe.
+  // Same target with different source → multi-driver error.
+  const formatPath = (p: { nodeId: string; portName: string }) =>
+    p.nodeId === '' ? p.portName : `${p.nodeId}.${p.portName}`;
+  const seenByTarget = new Map<string, { nodeId: string; portName: string }>();
+  const conflictsByTarget = new Map<string, Set<string>>();
+  const dedupedDefs: ConnectionDef[] = [];
+  for (const def of connectionDefs) {
+    const newTargets: typeof def.targets = [];
+    for (const target of def.targets) {
+      const targetKey = formatPath(target);
+      const existing = seenByTarget.get(targetKey);
+      if (existing) {
+        if (existing.nodeId === def.source.nodeId && existing.portName === def.source.portName) {
+          continue; // identical duplicate
+        }
+        let set = conflictsByTarget.get(targetKey);
+        if (!set) {
+          set = new Set([formatPath(existing)]);
+          conflictsByTarget.set(targetKey, set);
+        }
+        set.add(formatPath(def.source));
+        continue; // drop conflicting target; error pushed below
+      }
+      seenByTarget.set(targetKey, { nodeId: def.source.nodeId, portName: def.source.portName });
+      newTargets.push(target);
+    }
+    if (newTargets.length > 0) {
+      dedupedDefs.push({ ...def, targets: newTargets });
+    }
+  }
+  connectionDefs = dedupedDefs;
+
+  // Sort conflict keys for deterministic error ordering across runs.
+  const sortedConflictKeys = [...conflictsByTarget.keys()].sort();
+  for (const key of sortedConflictKeys) {
+    const sources = [...conflictsByTarget.get(key)!].join(', ');
+    errors.push(`${key} has multiple drivers: ${sources}`);
+  }
+
   // ── Validate read/write config ──
 
   if (errors.length > 0) {
