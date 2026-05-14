@@ -10,22 +10,55 @@
  * so TypeScript resolves everything in one pass — fast at any circuit size.
  */
 
-import type { PortType, Circuit, ArgumentValue, PortDescriptor, Node } from '../types/circuit.js';
+import type { PortType, BusType, Circuit, ArgumentValue, PortDescriptor, Node } from '../types/circuit.js';
 export type { ArgumentValue };
 
 // ============================================================================
 // Port types
 // ============================================================================
 
-/** A typed port reference used in connect() callbacks */
-export interface PortRef<_T extends PortType = PortType> {
-  /** Connect this port to one or more destination ports */
-  to(...targets: PortRef[]): ConnectionDef;
+/** Brand keeping SourcePortRef and SinkPortRef disjoint at the type level
+ *  even though they share structural fields. Erased at runtime. */
+declare const __portDir: unique symbol;
+
+/** A source-direction port reference — values flow OUT of it.
+ *  Outer-circuit inputs and inner-node outputs are sources.
+ *  Has `.to(...)` to connect downstream into sinks.
+ *
+ *  NOTE: `.to()` accepts any `SinkPortRef` regardless of `T` to permit bit↔bus
+ *  connections (e.g. tying a 1-bit signal into a wider control word). Width
+ *  mismatch checking is deferred to #108 — once `BusType<W>` carries a literal
+ *  width, this signature can tighten to `SinkPortRef<T>[]` for free. */
+export interface SourcePortRef<T extends PortType = PortType> {
+  /** Direction brand — keeps SourcePortRef and SinkPortRef disjoint at the
+   *  type level. Must survive `stripInternal` in the published `.d.ts` or the
+   *  empty bundled SinkPortRef becomes structurally assignable from SourcePortRef. */
+  readonly [__portDir]: 'source';
+  /** Connect this source to one or more sink ports */
+  to(...targets: SinkPortRef[]): ConnectionDef;
   /** @internal port path for IR generation */
   readonly _path: { nodeId: string; portName: string };
   /** @internal port type for validation */
-  readonly _type: PortType;
+  readonly _type: T;
 }
+
+/** A sink-direction port reference — values flow INTO it.
+ *  Outer-circuit outputs and inner-node inputs are sinks.
+ *  Sinks are passive: they appear as `.to(...)` arguments, never as receivers. */
+export interface SinkPortRef<T extends PortType = PortType> {
+  /** Direction brand — see SourcePortRef. Must survive `stripInternal` so
+   *  bundled SinkPortRef stays distinguishable from SourcePortRef. */
+  readonly [__portDir]: 'sink';
+  /** @internal port path for IR generation */
+  readonly _path: { nodeId: string; portName: string };
+  /** @internal port type for validation */
+  readonly _type: T;
+}
+
+/** Unnarrowable at runtime by design — every port object carries `.to`,
+ *  so duck-typing would silently invert direction. Refine via the
+ *  `ConnectArg`-typed slots in your `connect` callback instead. */
+export type PortRef<T extends PortType = PortType> = SourcePortRef<T> | SinkPortRef<T>;
 
 /** A connection definition produced by PortRef.to() */
 export interface ConnectionDef {
@@ -51,10 +84,17 @@ export interface CircuitShape {
 // Connect callback types (generic)
 // ============================================================================
 
-/** Convert a port map to PortRef accessors */
-type PortRefs<M> = {
-  readonly [K in keyof M]: PortRef;
-};
+/** Resolve a port-map value (PortType or legacy `number` bus-width shorthand)
+ *  to a concrete PortType. Single source of truth for port-map normalization;
+ *  also re-used by circuit.ts for the public `circuit()` signature. */
+export type NormalizePort<T> =
+  T extends number ? BusType :
+  T extends PortType ? T :
+  PortType;
+export type NormalizePorts<M> = { [K in keyof M]: NormalizePort<M[K]> };
+
+type SourceRefs<M> = { readonly [K in keyof M]: SourcePortRef<NormalizePort<M[K]>> };
+type SinkRefs<M>   = { readonly [K in keyof M]: SinkPortRef<NormalizePort<M[K]>> };
 
 /** The connect callback argument — typed from the config's inputs/outputs/nodes.
  *
@@ -62,23 +102,26 @@ type PortRefs<M> = {
  * Destructure `nodes` inline (`nodes: { xor1, and1 }`) for terseness on small
  * circuits, or access via `nodes.xor1` for clarity on larger ones.
  *
+ * Direction is encoded in the types so that `inputs.a.to(xor1.a, and1.out)`
+ * is rejected (and1.out is a source, not a sink) and `xor1.a.to(...)` is
+ * rejected (xor1.a is a sink, has no `.to`). See SourcePortRef / SinkPortRef.
+ *
  * The conditional on `Nodes[K]` is inlined inside the mapped type so the
  * `infer` substitution happens per-key. Hoisting the conditional out into a
- * named alias (e.g. `NodePortRefs<Nodes[K]>`) causes TS to evaluate the
- * `infer` against `BuiltCircuit`'s default generic constraints — yielding
- * `PortRefs<PortMap>`, i.e. an open `{ [k: string]: PortRef }` index signature.
- * That made `nodes.xor1.bogusPort` silently typecheck.
+ * named alias causes TS to evaluate the `infer` against `BuiltCircuit`'s
+ * default generic constraints — yielding an open index signature that made
+ * `nodes.xor1.bogusPort` silently typecheck.
  */
 export type ConnectArg<
   Ins extends Record<string, PortType | number>,
   Outs extends Record<string, PortType | number>,
   Nodes extends Record<string, BuiltCircuit>,
 > = {
-  readonly inputs: PortRefs<Ins>;
-  readonly outputs: PortRefs<Outs>;
+  readonly inputs: SourceRefs<Ins>;
+  readonly outputs: SinkRefs<Outs>;
   readonly nodes: {
     readonly [K in keyof Nodes]: Nodes[K] extends BuiltCircuit<infer NIns, infer NOuts, infer _NNs>
-      ? PortRefs<NIns> & PortRefs<NOuts>
+      ? SinkRefs<NIns> & SourceRefs<NOuts>
       : never;
   };
 };

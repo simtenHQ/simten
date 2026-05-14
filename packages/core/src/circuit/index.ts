@@ -21,6 +21,8 @@ export type {
   CircuitConfig,
   CircuitShape,
   PortRef,
+  SourcePortRef,
+  SinkPortRef,
   ConnectionDef,
   PortMap,
   StateShape,
