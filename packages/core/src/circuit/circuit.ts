@@ -37,7 +37,9 @@ import type {
   PortMap,
   ConnectionDef,
   ConnectArg,
-  PortRef,
+  SourcePortRef,
+  SinkPortRef,
+  NormalizePorts,
   StateShape,
   BuiltCircuit,
   CircuitConfig,
@@ -47,22 +49,28 @@ import type {
 // Port reference creation (for connect callbacks)
 // ============================================================================
 
-function createPortRef(nodeId: string, portName: string, portType: PortType): PortRef {
+// IMPORTANT runtime/type asymmetry: every port object carries `.to` at
+// runtime, including the ones the type system presents as SinkPortRef
+// (via ConnectArg's mapped types). A `(sink as any).to(…)` would silently
+// produce an inverted connection. Don't add such casts; runtime direction
+// validation is deliberately deferred — the type system catches it at edit
+// time, which is the whole point of #110.
+function createPortRef(nodeId: string, portName: string, portType: PortType): SourcePortRef {
   return {
     _path: { nodeId, portName },
     _type: portType,
-    to(...targets: PortRef[]): ConnectionDef {
+    to(...targets: SinkPortRef[]): ConnectionDef {
       return {
         source: { nodeId, portName },
         targets: targets.map(t => ({ nodeId: t._path.nodeId, portName: t._path.portName })),
         portType,
       };
     },
-  };
+  } as SourcePortRef;
 }
 
-function createNodeProxy(nodeId: string, ports: Map<string, PortType>, componentName?: string): Record<string, PortRef> {
-  const refs: Record<string, PortRef> = {};
+function createNodeProxy(nodeId: string, ports: Map<string, PortType>, componentName?: string): Record<string, SourcePortRef> {
+  const refs: Record<string, SourcePortRef> = {};
   for (const [name, type] of ports) {
     refs[name] = createPortRef(nodeId, name, type);
   }
@@ -82,10 +90,6 @@ function createNodeProxy(nodeId: string, ports: Map<string, PortType>, component
 // ============================================================================
 // circuit() — single entry point
 // ============================================================================
-
-/** Normalize port type at the type level: number → BusType, PortType → PortType */
-type NormalizePort<T> = T extends number ? import('../types/circuit.js').BusType : T extends PortType ? T : PortType;
-type NormalizePorts<M> = { [K in keyof M]: NormalizePort<M[K]> };
 
 /**
  * Create a hardware circuit from a single object configuration.
@@ -250,7 +254,7 @@ export function circuit(
 
   let connectionDefs: ConnectionDef[] = [];
   if (config.connect) {
-    const nodeRefs: Record<string, Record<string, PortRef>> = {};
+    const nodeRefs: Record<string, Record<string, SourcePortRef>> = {};
     for (const [nodeName, comp] of Object.entries(nodes) as [string, BuiltCircuit][]) {
       const allPorts = new Map<string, PortType>();
       for (const pd of comp.circuit.inputs) allPorts.set(pd.name, pd.portType);
