@@ -7,6 +7,7 @@ import {
   ReactFlow,
   ReactFlowProvider,
   useReactFlow,
+  useUpdateNodeInternals,
   type Edge,
   type EdgeTypes,
   type Node,
@@ -38,6 +39,13 @@ import { useLayout } from "./useLayout";
 import { useIsMobile } from "./hooks/useIsMobile";
 import { useDetectTheme } from "./hooks/useDetectTheme";
 import { CompositeInspectorDialog } from "./CompositeInspectorDialog";
+
+function portNamesEqual(a: readonly string[] | undefined, b: readonly string[] | undefined): boolean {
+  if (a === b) return true;
+  if (!a || !b || a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return false;
+  return true;
+}
 
 function CanvasControls() {
   const { fitView, zoomIn, zoomOut } = useReactFlow();
@@ -287,6 +295,7 @@ function CircuitCanvasInner({
   const [edges, setEdges] = useState<Edge[]>([]);
 
   const { fitView } = useReactFlow();
+  const updateNodeInternals = useUpdateNodeInternals();
   const prevCircuitIdRef = useRef<string | null>(null);
   const prevNodeCountRef = useRef<number>(0);
 
@@ -298,11 +307,25 @@ function CircuitCanvasInner({
     const wasBlank = prevNodeCountRef.current === 0;
     prevNodeCountRef.current = projectedNodes.length;
 
+    // Track ids whose handle set changed across this rebuild so we can ask
+    // React Flow to re-measure their handles after setNodes commits. Without
+    // this, renaming a port leaves stale handle bounds in the React Flow
+    // store and edges to the new handle render unconnected.
+    const idsToUpdate: string[] = [];
+
     setNodes((currentNodes) => {
       const prevById = new Map(currentNodes.map((n) => [n.id, n]));
       return projectedNodes.map((node) => {
         const prev = prevById.get(node.id);
         if (prev && !circuitChanged) {
+          const prevData = prev.data as NodeData;
+          const newData = node.data as NodeData;
+          if (
+            !portNamesEqual(prevData.inputNames, newData.inputNames) ||
+            !portNamesEqual(prevData.outputNames, newData.outputNames)
+          ) {
+            idsToUpdate.push(node.id);
+          }
           // Same circuit — keep React Flow's internal fields (measured, handles)
           // and the user-dragged position; only refresh data/type from projection.
           return {
@@ -316,6 +339,11 @@ function CircuitCanvasInner({
         return node;
       });
     });
+
+    if (idsToUpdate.length > 0) {
+      // Defer to after the BaseNode children re-render with the new Handle ids.
+      requestAnimationFrame(() => updateNodeInternals(idsToUpdate));
+    }
 
     // Fit view when circuit changes OR when nodes appear after a blank state
     if (projectedNodes.length > 0 && (circuitChanged || wasBlank)) {
