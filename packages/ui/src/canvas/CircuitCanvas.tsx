@@ -17,7 +17,7 @@ import {
 import "@xyflow/react/dist/style.css";
 import React, {
   useCallback,
-  useEffect,
+  useLayoutEffect,
   useRef,
   useMemo,
   useState,
@@ -39,13 +39,6 @@ import { useLayout } from "./useLayout";
 import { useIsMobile } from "./hooks/useIsMobile";
 import { useDetectTheme } from "./hooks/useDetectTheme";
 import { CompositeInspectorDialog } from "./CompositeInspectorDialog";
-
-function portNamesEqual(a: readonly string[] | undefined, b: readonly string[] | undefined): boolean {
-  if (a === b) return true;
-  if (!a || !b || a.length !== b.length) return false;
-  for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return false;
-  return true;
-}
 
 function CanvasControls() {
   const { fitView, zoomIn, zoomOut } = useReactFlow();
@@ -161,7 +154,8 @@ function CircuitCanvasInner({
   glowUnconnected,
   theme: themeProp,
   panOnMobile = false,
-}: CircuitCanvasProps) {
+  onRequestRemount,
+}: CircuitCanvasProps & { onRequestRemount?: () => void }) {
   const detectedTheme = useDetectTheme();
   const theme = themeProp ?? detectedTheme;
   const isMobile = useIsMobile();
@@ -297,36 +291,69 @@ function CircuitCanvasInner({
   const { fitView } = useReactFlow();
   const updateNodeInternals = useUpdateNodeInternals();
   const prevCircuitIdRef = useRef<string | null>(null);
+  const prevNodeIdSetRef = useRef<Set<string>>(new Set());
+  const prevPortShapeRef = useRef<Map<string, string>>(new Map());
   const prevNodeCountRef = useRef<number>(0);
 
-  useEffect(() => {
-    const newId = cleanedCircuit?.name ?? null;
-    const circuitChanged = newId !== prevCircuitIdRef.current;
-    prevCircuitIdRef.current = newId;
+  useLayoutEffect(() => {
+    const prevName = prevCircuitIdRef.current;
+    const prevIdSet = prevNodeIdSetRef.current;
+    const prevPortShape = prevPortShapeRef.current;
+
+    const newName = cleanedCircuit?.name ?? null;
+    const newIdSet = new Set(projectedNodes.map((n) => n.id));
+
+    // Per-node port shape signature, computed synchronously so the
+    // updateNodeInternals call below doesn't depend on React's setState
+    // batching to populate change lists.
+    const newPortShape = new Map<string, string>();
+    for (const node of projectedNodes) {
+      const d = node.data as NodeData;
+      const sig = `${(d.inputNames ?? []).join("|")}>${(d.outputNames ?? []).join("|")}`;
+      newPortShape.set(node.id, sig);
+    }
+
+    prevCircuitIdRef.current = newName;
+    prevNodeIdSetRef.current = newIdSet;
+    prevPortShapeRef.current = newPortShape;
+
+    const nameChanged = newName !== prevName;
+
+    // Surviving fraction = |prev ∩ new| / max(|prev|, |new|). Topology is
+    // considered "replaced" if less than half the node ids survive on
+    // either side of the change. Using max() makes the signal symmetric:
+    // a small→big swap (e.g. cmd-z restoring a larger circuit) scores
+    // the same as the matching big→small swap, so the position-merge
+    // path doesn't preserve stale dagre positions for the few survivors
+    // while new nodes land in the fresh layout — that mismatch is what
+    // produced overlapping switches on undo. Single/double renames stay
+    // above the threshold so #111's position preservation still applies.
+    // Guards the 0/0 case on first mount — wasBlank handles it.
+    let survived = 0;
+    for (const id of newIdSet) if (prevIdSet.has(id)) survived++;
+    const denom = Math.max(prevIdSet.size, newIdSet.size);
+    const topologyReplaced = denom > 0 && survived / denom < 0.5;
+
+    const fullReset = nameChanged || topologyReplaced;
+
+    // Ids whose port set changed, computed synchronously from the ref.
+    const idsToUpdate: string[] = [];
+    if (!fullReset) {
+      for (const [id, sig] of newPortShape) {
+        const prevSig = prevPortShape.get(id);
+        if (prevSig !== undefined && prevSig !== sig) idsToUpdate.push(id);
+      }
+    }
 
     const wasBlank = prevNodeCountRef.current === 0;
     prevNodeCountRef.current = projectedNodes.length;
-
-    // Track ids whose handle set changed across this rebuild so we can ask
-    // React Flow to re-measure their handles after setNodes commits. Without
-    // this, renaming a port leaves stale handle bounds in the React Flow
-    // store and edges to the new handle render unconnected.
-    const idsToUpdate: string[] = [];
 
     setNodes((currentNodes) => {
       const prevById = new Map(currentNodes.map((n) => [n.id, n]));
       return projectedNodes.map((node) => {
         const prev = prevById.get(node.id);
-        if (prev && !circuitChanged) {
-          const prevData = prev.data as NodeData;
-          const newData = node.data as NodeData;
-          if (
-            !portNamesEqual(prevData.inputNames, newData.inputNames) ||
-            !portNamesEqual(prevData.outputNames, newData.outputNames)
-          ) {
-            idsToUpdate.push(node.id);
-          }
-          // Same circuit — keep React Flow's internal fields (measured, handles)
+        if (prev && !fullReset) {
+          // Light edit — keep React Flow's internal fields (measured handles)
           // and the user-dragged position; only refresh data/type from projection.
           return {
             ...prev,
@@ -340,20 +367,31 @@ function CircuitCanvasInner({
       });
     });
 
-    if (idsToUpdate.length > 0) {
-      // Defer to after the BaseNode children re-render with the new Handle ids.
+    // Edges must be set in the same commit as nodes so a key-bump remount
+    // mounts the new React Flow with both fresh — otherwise the remount
+    // happens with stale edges still in state and the in-place edge update
+    // arrives on the next render (the bug this fix exists to avoid).
+    setEdges(projectedEdges);
+
+    // Topology replacement: ask the outer wrapper to remount the entire
+    // <ReactFlowProvider>. Keying only <ReactFlow> leaves the provider's
+    // Zustand store intact and stale handle ids from the previous circuit
+    // survive, producing bent wires when paste-over shares node ids with
+    // the previous circuit. Skipped on first mount (prevIdSet empty).
+    if (fullReset && prevIdSet.size > 0) {
+      onRequestRemount?.();
+    } else if (idsToUpdate.length > 0) {
+      // Light edit with handle changes — refresh just those nodes.
       requestAnimationFrame(() => updateNodeInternals(idsToUpdate));
     }
 
-    // Fit view when circuit changes OR when nodes appear after a blank state
-    if (projectedNodes.length > 0 && (circuitChanged || wasBlank)) {
+    // After a paste-over the remount handles fitView via React Flow's
+    // own `fitView` prop. The remaining case is wasBlank without a
+    // remount (nodes appeared after an empty state on a stable canvas).
+    if (projectedNodes.length > 0 && wasBlank && !fullReset) {
       requestAnimationFrame(() => fitView({ padding: 0.3 }));
     }
-  }, [projectedNodes]);
-
-  useEffect(() => {
-    setEdges(projectedEdges);
-  }, [projectedEdges]);
+  }, [projectedNodes, projectedEdges]);
 
   const onNodesChange: OnNodesChange = useCallback((changes) => {
     setNodes((nds) => applyNodeChanges(changes, nds));
@@ -478,9 +516,18 @@ function CircuitCanvasInner({
 }
 
 export function CircuitCanvas(props: CircuitCanvasProps) {
+  // Keyed at the provider level so a topology-replacement remount also wipes
+  // React Flow's Zustand store (handle registry, cached edge routes). Keying
+  // <ReactFlow> alone leaves the store intact and stale handle ids from the
+  // previous circuit survive, which is what was producing the bent wires
+  // when paste-over shared input/output names with the previous circuit.
+  const [resetGeneration, setResetGeneration] = useState(0);
+  const requestRemount = useCallback(() => {
+    setResetGeneration((g) => g + 1);
+  }, []);
   return (
-    <ReactFlowProvider>
-      <CircuitCanvasInner {...props} />
+    <ReactFlowProvider key={resetGeneration}>
+      <CircuitCanvasInner {...props} onRequestRemount={requestRemount} />
     </ReactFlowProvider>
   );
 }
