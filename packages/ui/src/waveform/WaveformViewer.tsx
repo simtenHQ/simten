@@ -378,10 +378,10 @@ export function WaveformViewer({ vcd, inputs: inputOverride, circuit: circuitOve
   }
 
   const containerStyle: CSSProperties = {
-    background: '#0f172a',
-    borderTop: '1px solid #334155',
+    background: 'var(--card, #0f172a)',
+    borderTop: '1px solid var(--border, #334155)',
     fontSize: 12,
-    color: '#94a3b8',
+    color: 'var(--muted-foreground, #94a3b8)',
     userSelect: 'none',
     height: '100%',
     display: 'flex',
@@ -394,7 +394,7 @@ export function WaveformViewer({ vcd, inputs: inputOverride, circuit: circuitOve
     display: 'flex',
     alignItems: 'center',
     gap: 8,
-    borderBottom: '1px solid #1e293b',
+    borderBottom: '1px solid var(--border, #1e293b)',
     fontSize: 11,
     fontWeight: 600,
   };
@@ -402,15 +402,15 @@ export function WaveformViewer({ vcd, inputs: inputOverride, circuit: circuitOve
   return (
     <div style={containerStyle}>
       <style>{`
-        .wf-scroll { scrollbar-width: thin; scrollbar-color: #334155 transparent; }
+        .wf-scroll { scrollbar-width: thin; scrollbar-color: var(--border, #334155) transparent; }
         .wf-scroll::-webkit-scrollbar { height: 6px; }
         .wf-scroll::-webkit-scrollbar-track { background: transparent; }
-        .wf-scroll::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
-        .wf-scroll::-webkit-scrollbar-thumb:hover { background: #475569; }
-        .wf-btn { background: #1e293b; border: 1px solid #334155; color: #94a3b8; padding: 2px 8px; border-radius: 4px; font-size: 11px; cursor: pointer; }
-        .wf-btn:hover { background: #334155; }
-        .wf-scope-hdr { display: flex; align-items: center; gap: 4px; padding: 0 8px; background: #0d1929; border-bottom: 1px solid #1e293b; border-top: 1px solid #1e293b; cursor: pointer; font-family: monospace; font-size: 10px; color: #64748b; }
-        .wf-scope-hdr:hover { color: #94a3b8; }
+        .wf-scroll::-webkit-scrollbar-thumb { background: var(--border, #334155); border-radius: 3px; }
+        .wf-scroll::-webkit-scrollbar-thumb:hover { background: var(--muted-foreground, #475569); }
+        .wf-btn { background: var(--muted, #1e293b); border: 1px solid var(--border, #334155); color: var(--muted-foreground, #94a3b8); padding: 2px 8px; border-radius: 4px; font-size: 11px; cursor: pointer; }
+        .wf-btn:hover { background: var(--accent, #334155); color: var(--accent-foreground, inherit); }
+        .wf-scope-hdr { display: flex; align-items: center; gap: 4px; padding: 0 8px; background: var(--muted, #0d1929); border-bottom: 1px solid var(--border, #1e293b); border-top: 1px solid var(--border, #1e293b); cursor: pointer; font-family: monospace; font-size: 10px; color: var(--muted-foreground, #64748b); opacity: 0.85; }
+        .wf-scope-hdr:hover { color: var(--foreground, #94a3b8); opacity: 1; }
       `}</style>
 
       <div style={headerStyle}>
@@ -437,7 +437,7 @@ export function WaveformViewer({ vcd, inputs: inputOverride, circuit: circuitOve
 
       <div style={{ display: 'flex', flex: 1, minHeight: 0, overflowY: 'auto' }}>
         {/* Fixed label column */}
-        <div style={{ width: LABEL_WIDTH, flexShrink: 0, borderRight: '1px solid #1e293b' }}>
+        <div style={{ width: LABEL_WIDTH, flexShrink: 0, borderRight: '1px solid var(--border, #1e293b)' }}>
           <div style={{ height: HEADER_HEIGHT }} />
           {labelRows.map((row, i) => {
             if (row.type === 'scope-header') {
@@ -471,7 +471,7 @@ export function WaveformViewer({ vcd, inputs: inputOverride, circuit: circuitOve
                   whiteSpace: 'nowrap',
                   height: ROW_HEIGHT,
                   lineHeight: `${ROW_HEIGHT}px`,
-                  borderBottom: '1px solid #0d1929',
+                  borderBottom: '1px solid var(--border, #0d1929)',
                 }}
                 title={row.signal.key}
               >
@@ -487,9 +487,9 @@ export function WaveformViewer({ vcd, inputs: inputOverride, circuit: circuitOve
           <svg width={waveWidth} height={HEADER_HEIGHT} style={{ display: 'block' }}>
             {Array.from({ length: parsed.ticks }, (_, i) => (
               <g key={i}>
-                <line x1={i * CYCLE_WIDTH} y1={0} x2={i * CYCLE_WIDTH} y2={HEADER_HEIGHT} stroke="#1e293b" strokeWidth={1} />
+                <line x1={i * CYCLE_WIDTH} y1={0} x2={i * CYCLE_WIDTH} y2={HEADER_HEIGHT} stroke="var(--border, #1e293b)" strokeWidth={1} />
                 {i % 2 === 0 && (
-                  <text x={i * CYCLE_WIDTH + CYCLE_WIDTH / 2} y={14} textAnchor="middle" fill="#475569" fontSize={9} fontFamily="monospace">
+                  <text x={i * CYCLE_WIDTH + CYCLE_WIDTH / 2} y={14} textAnchor="middle" fill="var(--muted-foreground, #475569)" fontSize={9} fontFamily="monospace">
                     {i}
                   </text>
                 )}
@@ -506,7 +506,7 @@ export function WaveformViewer({ vcd, inputs: inputOverride, circuit: circuitOve
               return (
                 <div
                   key={`wsh-${i}`}
-                  style={{ height: SCOPE_ROW_HEIGHT, background: '#0d1929', borderBottom: '1px solid #1e293b', borderTop: '1px solid #1e293b' }}
+                  style={{ height: SCOPE_ROW_HEIGHT, background: 'var(--muted, #0d1929)', borderBottom: '1px solid var(--border, #1e293b)', borderTop: '1px solid var(--border, #1e293b)' }}
                 />
               );
             }
@@ -514,14 +514,14 @@ export function WaveformViewer({ vcd, inputs: inputOverride, circuit: circuitOve
             const { signal, color } = row;
             const isBit = isBitSignal(signal.values);
             return (
-              <div key={`wav-${i}`} style={{ position: 'relative', height: ROW_HEIGHT, borderBottom: '1px solid #0d1929' }}>
+              <div key={`wav-${i}`} style={{ position: 'relative', height: ROW_HEIGHT, borderBottom: '1px solid var(--border, #0d1929)' }}>
                 {isBit
                   ? <BitWaveform values={signal.values} color={color} width={waveWidth} />
                   : <BusWaveform values={signal.values} color={color} width={waveWidth} />}
                 {/* Grid lines */}
                 <svg width={waveWidth} height={ROW_HEIGHT} style={{ position: 'absolute', top: 0, left: 0, pointerEvents: 'none' }}>
                   {Array.from({ length: parsed.ticks }, (_, t) => (
-                    <line key={t} x1={t * CYCLE_WIDTH} y1={0} x2={t * CYCLE_WIDTH} y2={ROW_HEIGHT} stroke="#1e293b" strokeWidth={1} />
+                    <line key={t} x1={t * CYCLE_WIDTH} y1={0} x2={t * CYCLE_WIDTH} y2={ROW_HEIGHT} stroke="var(--border, #1e293b)" strokeWidth={1} />
                   ))}
                   {steadyStateAt != null && (
                     <line x1={steadyStateAt * CYCLE_WIDTH} y1={0} x2={steadyStateAt * CYCLE_WIDTH} y2={ROW_HEIGHT} stroke="#34d399" strokeWidth={2} strokeDasharray="3,3" />
