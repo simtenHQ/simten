@@ -117,7 +117,7 @@ export function MessageList({
                 {message.suggestedFollowUps.map((followUp, i) => (
                   <button
                     key={i}
-                    className="rounded-full border border-gray-200 bg-white px-3 py-1 text-xs text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition-colors"
+                    className="rounded-full border border-border bg-card px-3 py-1 text-xs text-muted-foreground hover:bg-accent hover:border-border/70 transition-colors"
                   >
                     {followUp}
                   </button>
