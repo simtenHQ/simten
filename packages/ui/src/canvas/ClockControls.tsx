@@ -16,6 +16,8 @@ import {
   RotateCcw,
   ChevronLeft,
   ChevronRight,
+  Gauge,
+  History,
 } from "lucide-react";
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "../primitives/tooltip";
 import { Button } from "../primitives/button";
@@ -119,6 +121,7 @@ export function ClockControls({
           {/* Speed slider */}
           {onSpeedChange && (
             <div className="flex items-center gap-2 border-l border-border pl-2 ml-0.5">
+              <Gauge className="h-3.5 w-3.5 text-muted-foreground/70" aria-hidden />
               <input
                 type="range"
                 min="1"
@@ -165,7 +168,8 @@ export function ClockControls({
 
           {/* Scrubber */}
           {showScrubber && onSeek && historyLength > 1 && (
-            <div className="flex items-center border-l border-border pl-1.5 ml-0.5">
+            <div className="flex items-center gap-2 border-l border-border pl-2 ml-0.5">
+              <History className="h-3.5 w-3.5 text-muted-foreground/70" aria-hidden />
               <input
                 type="range"
                 min="0"
