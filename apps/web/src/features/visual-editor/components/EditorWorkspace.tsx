@@ -21,7 +21,7 @@ import type { Circuit } from "@simten/ui/editor/types";
 import { Button } from "@/components/ui/button";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { TSEditor, type TSEditorRef } from "@/features/code-editor/TSEditor";
-import { Bot, Download, Share2 } from "lucide-react";
+import { Bot, Download, Share2, Loader2 } from "lucide-react";
 import { exportVerilog } from "@simten/core/verilog";
 import { SiteHeader } from "@/components/SiteHeader";
 import { encodeSourceForUrl, shouldUseShortLink } from "@simten/ui/share";
@@ -90,6 +90,18 @@ export function EditorWorkspace({ theme = "light", initialSource }: EditorWorksp
 
   // Sandbox-based simulation — uses same hook as embeds
   const [compileResult, setCompileResult] = useState<import("@simten/ui/sandbox").CompileResult | null>(null);
+  // Track whether the editor source is effectively empty so we only show the
+  // "Load an example" picker when the user has actually cleared their code —
+  // not during the boot window between mount and first compile.
+  const [codeEmpty, setCodeEmpty] = useState(false);
+  // Don't render the picker during the boot window — the resizable panels and
+  // Monaco haven't laid out yet so the picker would render at near-zero width
+  // (squished column on the left).
+  const [bootDone, setBootDone] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setBootDone(true), 400);
+    return () => clearTimeout(t);
+  }, []);
 
   // Build a BuiltCircuit-like object from the compile result for useCircuitSimulator.
   // When the editor's source was compiled via sandbox.compile(), evals are already
@@ -438,7 +450,12 @@ export function EditorWorkspace({ theme = "light", initialSource }: EditorWorksp
         />
 
         {/* Main Content Area - Unified Workspace */}
-        <div className="flex flex-1 overflow-hidden">
+        <div className="relative flex flex-1 overflow-hidden">
+          {!bootDone && (
+            <div className="absolute inset-0 z-20 flex items-center justify-center bg-background">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+          )}
           <ResizablePanelGroup orientation="horizontal">
             {/* Left: Code Editor */}
             <ResizablePanel defaultSize={40} minSize={20} className="overflow-hidden">
@@ -448,6 +465,7 @@ export function EditorWorkspace({ theme = "light", initialSource }: EditorWorksp
                 initialCode={initialSource ?? ""}
                 autoCompileEnabled={true}
                 onCompileSuccess={handleCompile}
+                onCodeChange={(code) => setCodeEmpty(code.trim() === "")}
                 showHeader={false}
               />
             </ResizablePanel>
@@ -462,7 +480,7 @@ export function EditorWorkspace({ theme = "light", initialSource }: EditorWorksp
                       componentLibrary={componentLibrary}
                       theme={theme}
                       showControls
-                      renderEmptyState={renderEmptyState}
+                      renderEmptyState={bootDone && codeEmpty ? renderEmptyState : undefined}
                       portValues={sim.portValues}
                       sequentialState={sim.sequentialState}
                       onToggleNode={onToggleNode}
@@ -487,7 +505,7 @@ export function EditorWorkspace({ theme = "light", initialSource }: EditorWorksp
                   componentLibrary={componentLibrary}
                   theme={theme}
                   showControls
-                  renderEmptyState={renderEmptyState}
+                  renderEmptyState={bootDone && codeEmpty ? renderEmptyState : undefined}
                   portValues={sim.portValues}
                   sequentialState={sim.sequentialState}
                   onToggleNode={onToggleNode}
@@ -500,7 +518,7 @@ export function EditorWorkspace({ theme = "light", initialSource }: EditorWorksp
         </div>
 
         {/* Conditional Bottom Bar: Clock Controls (only for sequential circuits) */}
-        {showClockControls && (
+        {bootDone && showClockControls && (
           <div className="flex items-center gap-4 border-t border-border bg-card/95 px-6 py-1.5">
             <ClockControls
               cycle={sim.cycleCount}
