@@ -129,8 +129,8 @@ export function ClockControls({
                 disabled={isViewingPast}
                 aria-label="Simulation speed"
               />
-              <span className="min-w-[45px] text-[10px] text-muted-foreground font-mono tabular-nums">
-                {speed} t/s
+              <span className="min-w-[55px] text-[10px] text-muted-foreground font-mono tabular-nums">
+                {speed} tick/s
               </span>
             </div>
           )}
@@ -165,7 +165,7 @@ export function ClockControls({
 
           {/* Scrubber */}
           {showScrubber && onSeek && historyLength > 1 && (
-            <div className="border-l border-border pl-1.5 ml-0.5">
+            <div className="flex items-center border-l border-border pl-1.5 ml-0.5">
               <input
                 type="range"
                 min="0"
