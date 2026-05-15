@@ -75,7 +75,7 @@ const config = defineConfig(({ command }) => ({
       },
       pages: [
         { path: '/' },
-        { path: '/editor', prerender: { enabled: false } },
+        { path: '/circuit', prerender: { enabled: false } },
         { path: '/blog' },
         { path: '/learn' },
         { path: '/learn/rv32i-cpu' },
