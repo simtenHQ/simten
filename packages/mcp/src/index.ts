@@ -17,8 +17,9 @@ import { registerShowTools } from './tools/show.js';
 import { registerStateTool } from './tools/state.js';
 import { registerRunOnFpgaTool } from './tools/run_on_fpga.js';
 import { registerReadWaveformTool } from './tools/read_waveform.js';
-import { setOnSendToClaude, getOrCreateServer } from './lib/preview-singleton.js';
+import { setOnSendToClaude, getOrCreateServer, getPreviewServer } from './lib/preview-singleton.js';
 import { getGrammarHandler, getPrimitivesHandler, getLibrary } from '@simten/core/api';
+import { z } from 'zod';
 
 const builderAPI = getGrammarHandler();
 const primitivesList = getPrimitivesHandler({ compact: true }, getLibrary());
@@ -44,6 +45,11 @@ ${primitivesList}
 - \`list_sessions\` — list connected browser tabs
 - \`run_on_fpga\` — build, flash, and UART-capture a project on a connected ULX3S FPGA (projects: cpu, snake, uart_test)
 - \`read_waveform\` — query VCD waveform files (iverilog cross-validation, future ILA captures, etc.) for specific signals over a cycle window. Returns transitions + carry-in (changes), per-cycle values (raw), or filtered transitions (edges). Use \`test_name\` for the CPU verify-suite (e.g. "R-Type ADD basic") or \`vcd_path\` for arbitrary VCDs.
+- \`push_chat_response\` — send a text response back to the in-app chat panel in the user's browser. Markdown supported.
+
+## Talking to the user via the editor chat
+
+Messages from the user typed into the in-app chat panel arrive as \`<channel source="simten" ...>\` events. After handling a channel message, **always call \`push_chat_response\` with your reply** — it is the only way the user sees your response, because they're in the browser, not at the terminal. Keep responses concise. You can also call other simten tools (e.g. \`show_circuit\`, \`simulate_circuit\`) as part of your response before pushing the final chat reply.
 `;
 
 const server = new McpServer(
@@ -65,6 +71,24 @@ registerShowTools(server);
 registerStateTool(server);
 registerRunOnFpgaTool(server);
 registerReadWaveformTool(server);
+
+// push_chat_response — reply path for channel messages from the editor chat panel
+server.tool(
+  'push_chat_response',
+  'Send a response to the in-app chat panel in the user\'s browser. Call this after handling a channel message — it is the only way the user sees your reply. Markdown supported.',
+  { text: z.string().describe('The response text to display in the chat panel (markdown supported)') },
+  async ({ text }) => {
+    const preview = getPreviewServer();
+    if (!preview) {
+      return {
+        isError: true,
+        content: [{ type: 'text' as const, text: 'No preview server running — open the editor at /circuit first.' }],
+      };
+    }
+    preview.pushChatMessage(text);
+    return { content: [{ type: 'text' as const, text: 'Response sent to chat panel.' }] };
+  },
+);
 
 // Wire browser → Claude channel notifications
 const rawServer = server.server;
