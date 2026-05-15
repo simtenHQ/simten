@@ -47,9 +47,9 @@ export function MessageBubble({ message, onNodeMention }: MessageBubbleProps) {
           'max-w-[85%] rounded-lg px-3 py-2 text-sm',
           role === 'user'
             ? 'bg-blue-600 text-white'
-            : 'bg-gray-100 text-gray-900',
-          role === 'system' && 'bg-yellow-50 text-yellow-800 italic',
-          error && 'bg-red-50 text-red-800 border border-red-200'
+            : 'bg-muted text-foreground',
+          role === 'system' && 'bg-yellow-100 text-yellow-900 italic dark:bg-yellow-950/40 dark:text-yellow-200',
+          error && 'bg-red-100 text-red-900 border border-red-300 dark:bg-red-950/40 dark:text-red-200 dark:border-red-900'
         )}
       >
         {/* Message content */}
@@ -59,14 +59,14 @@ export function MessageBubble({ message, onNodeMention }: MessageBubbleProps) {
 
         {/* Streaming indicator */}
         {isStreaming && (
-          <div className="mt-1 flex items-center gap-1 text-gray-500">
-            <span className="h-1 w-1 animate-pulse rounded-full bg-gray-400" />
+          <div className="mt-1 flex items-center gap-1 text-muted-foreground">
+            <span className="h-1 w-1 animate-pulse rounded-full bg-muted-foreground/70" />
             <span
-              className="h-1 w-1 animate-pulse rounded-full bg-gray-400"
+              className="h-1 w-1 animate-pulse rounded-full bg-muted-foreground/70"
               style={{ animationDelay: '0.2s' }}
             />
             <span
-              className="h-1 w-1 animate-pulse rounded-full bg-gray-400"
+              className="h-1 w-1 animate-pulse rounded-full bg-muted-foreground/70"
               style={{ animationDelay: '0.4s' }}
             />
           </div>
@@ -74,7 +74,7 @@ export function MessageBubble({ message, onNodeMention }: MessageBubbleProps) {
 
         {/* Error display */}
         {error && (
-          <div className="mt-2 text-xs text-red-600">Error: {error}</div>
+          <div className="mt-2 text-xs text-red-700 dark:text-red-300">Error: {error}</div>
         )}
       </div>
     </div>
