@@ -175,7 +175,7 @@ export function registerShowTools(server: McpServer): void {
       // 6. Open browser only if no sessions are connected
       // With persistent tokens, an existing tab will reconnect automatically on MCP restart
       if (studio.sessions.size === 0) {
-        const editorUrl = `${TI_URL}/editor#token=${studio.token}&port=${studio.port}`;
+        const editorUrl = `${TI_URL}/circuit#token=${studio.token}&port=${studio.port}`;
         openBrowser(editorUrl);
       }
 

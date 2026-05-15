@@ -9,7 +9,6 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as EditorRouteImport } from './routes/editor'
 import { Route as CircuitRouteImport } from './routes/circuit'
 import { Route as BlogRouteImport } from './routes/blog'
 import { Route as IndexRouteImport } from './routes/index'
@@ -34,11 +33,6 @@ import { Route as BlogAesInHardwareRouteImport } from './routes/blog/aes-in-hard
 import { Route as ApiSearchRouteImport } from './routes/api/search'
 import { Route as CircuitSHashRouteImport } from './routes/circuit_.s.$hash'
 
-const EditorRoute = EditorRouteImport.update({
-  id: '/editor',
-  path: '/editor',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const CircuitRoute = CircuitRouteImport.update({
   id: '/circuit',
   path: '/circuit',
@@ -162,7 +156,6 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/blog': typeof BlogRouteWithChildren
   '/circuit': typeof CircuitRoute
-  '/editor': typeof EditorRoute
   '/api/search': typeof ApiSearchRoute
   '/blog/aes-in-hardware': typeof BlogAesInHardwareRoute
   '/blog/breakout-in-hardware': typeof BlogBreakoutInHardwareRoute
@@ -187,7 +180,6 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/circuit': typeof CircuitRoute
-  '/editor': typeof EditorRoute
   '/api/search': typeof ApiSearchRoute
   '/blog/aes-in-hardware': typeof BlogAesInHardwareRoute
   '/blog/breakout-in-hardware': typeof BlogBreakoutInHardwareRoute
@@ -214,7 +206,6 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/blog': typeof BlogRouteWithChildren
   '/circuit': typeof CircuitRoute
-  '/editor': typeof EditorRoute
   '/api/search': typeof ApiSearchRoute
   '/blog/aes-in-hardware': typeof BlogAesInHardwareRoute
   '/blog/breakout-in-hardware': typeof BlogBreakoutInHardwareRoute
@@ -242,7 +233,6 @@ export interface FileRouteTypes {
     | '/'
     | '/blog'
     | '/circuit'
-    | '/editor'
     | '/api/search'
     | '/blog/aes-in-hardware'
     | '/blog/breakout-in-hardware'
@@ -267,7 +257,6 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/circuit'
-    | '/editor'
     | '/api/search'
     | '/blog/aes-in-hardware'
     | '/blog/breakout-in-hardware'
@@ -293,7 +282,6 @@ export interface FileRouteTypes {
     | '/'
     | '/blog'
     | '/circuit'
-    | '/editor'
     | '/api/search'
     | '/blog/aes-in-hardware'
     | '/blog/breakout-in-hardware'
@@ -320,7 +308,6 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   BlogRoute: typeof BlogRouteWithChildren
   CircuitRoute: typeof CircuitRoute
-  EditorRoute: typeof EditorRoute
   ApiSearchRoute: typeof ApiSearchRoute
   CircuitEncodedRoute: typeof CircuitEncodedRoute
   DocsSplatRoute: typeof DocsSplatRoute
@@ -331,13 +318,6 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/editor': {
-      id: '/editor'
-      path: '/editor'
-      fullPath: '/editor'
-      preLoaderRoute: typeof EditorRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/circuit': {
       id: '/circuit'
       path: '/circuit'
@@ -542,7 +522,6 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   BlogRoute: BlogRouteWithChildren,
   CircuitRoute: CircuitRoute,
-  EditorRoute: EditorRoute,
   ApiSearchRoute: ApiSearchRoute,
   CircuitEncodedRoute: CircuitEncodedRoute,
   DocsSplatRoute: DocsSplatRoute,
