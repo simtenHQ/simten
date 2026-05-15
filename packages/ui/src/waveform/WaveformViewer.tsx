@@ -297,9 +297,10 @@ export interface WaveformViewerProps {
   circuit?: string;
   steadyStateAt?: number;
   onLoadVCD?: (vcd: string) => void;
+  onClose?: () => void;
 }
 
-export function WaveformViewer({ vcd, inputs: inputOverride, circuit: circuitOverride, steadyStateAt, onLoadVCD }: WaveformViewerProps) {
+export function WaveformViewer({ vcd, inputs: inputOverride, circuit: circuitOverride, steadyStateAt, onLoadVCD, onClose }: WaveformViewerProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [collapsedScopes, setCollapsedScopes] = useState<Set<string>>(new Set());
@@ -382,6 +383,10 @@ export function WaveformViewer({ vcd, inputs: inputOverride, circuit: circuitOve
     fontSize: 12,
     color: '#94a3b8',
     userSelect: 'none',
+    height: '100%',
+    display: 'flex',
+    flexDirection: 'column',
+    minHeight: 0,
   };
 
   const headerStyle: CSSProperties = {
@@ -423,9 +428,14 @@ export function WaveformViewer({ vcd, inputs: inputOverride, circuit: circuitOve
           Load VCD
         </button>
         <input ref={fileInputRef} type="file" accept=".vcd" style={{ display: 'none' }} onChange={handleFileChange} />
+        {onClose && (
+          <button className="wf-btn" onClick={onClose} title="Close waveform panel" aria-label="Close waveform panel">
+            ×
+          </button>
+        )}
       </div>
 
-      <div style={{ display: 'flex' }}>
+      <div style={{ display: 'flex', flex: 1, minHeight: 0, overflowY: 'auto' }}>
         {/* Fixed label column */}
         <div style={{ width: LABEL_WIDTH, flexShrink: 0, borderRight: '1px solid #1e293b' }}>
           <div style={{ height: HEADER_HEIGHT }} />

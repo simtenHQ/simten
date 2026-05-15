@@ -34,6 +34,7 @@ import { ChatPanel, useChatStore } from "@/features/chat";
 import { hashSourceCode } from "@/features/chat/actions";
 import { useMCPConnection } from "@/hooks/useMCPConnection";
 import { WaveformViewer } from "@simten/ui/waveform";
+import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { EXAMPLES, CATEGORY_COLORS, CATEGORY_LABELS, type Example } from "../examples";
 
 const SCAN_CODES: Record<string, number> = {
@@ -438,47 +439,65 @@ export function EditorWorkspace({ theme = "light", initialSource }: EditorWorksp
 
         {/* Main Content Area - Unified Workspace */}
         <div className="flex flex-1 overflow-hidden">
-          {/* Left: Code Editor (40%) - Full Height */}
-          <div className="w-[40%] border-r border-gray-200 dark:border-[#2a2a2e]">
-            <TSEditor
-              ref={editorRef}
-              storageKey={null}
-              initialCode={initialSource ?? ""}
-              autoCompileEnabled={true}
-              onCompileSuccess={handleCompile}
-              showHeader={false}
-            />
-          </div>
-
-          {/* Right: Circuit Canvas (60%) - Full Height */}
-          <div className="flex flex-1 flex-col">
-            <div className="flex-1">
-              <CircuitCanvas
-                circuit={circuit}
-                componentLibrary={componentLibrary}
-                theme={theme}
-                showControls
-                renderEmptyState={renderEmptyState}
-                portValues={sim.portValues}
-                sequentialState={sim.sequentialState}
-                onToggleNode={onToggleNode}
-                onSetNodeValue={onSetNodeValue}
-                onLoadMemory={onLoadMemory}
+          <ResizablePanelGroup orientation="horizontal">
+            {/* Left: Code Editor */}
+            <ResizablePanel defaultSize={40} minSize={20} className="overflow-hidden">
+              <TSEditor
+                ref={editorRef}
+                storageKey={null}
+                initialCode={initialSource ?? ""}
+                autoCompileEnabled={true}
+                onCompileSuccess={handleCompile}
+                showHeader={false}
               />
-            </div>
-          </div>
+            </ResizablePanel>
+            <ResizableHandle withHandle />
+            {/* Right: Circuit Canvas, optionally split with Waveform below */}
+            <ResizablePanel defaultSize={60} minSize={30} className="overflow-hidden">
+              {waveformData ? (
+                <ResizablePanelGroup orientation="vertical">
+                  <ResizablePanel defaultSize={65} minSize={20} className="overflow-hidden">
+                    <CircuitCanvas
+                      circuit={circuit}
+                      componentLibrary={componentLibrary}
+                      theme={theme}
+                      showControls
+                      renderEmptyState={renderEmptyState}
+                      portValues={sim.portValues}
+                      sequentialState={sim.sequentialState}
+                      onToggleNode={onToggleNode}
+                      onSetNodeValue={onSetNodeValue}
+                      onLoadMemory={onLoadMemory}
+                    />
+                  </ResizablePanel>
+                  <ResizableHandle withHandle />
+                  <ResizablePanel defaultSize={35} minSize={10} className="flex flex-col overflow-hidden">
+                    <WaveformViewer
+                      vcd={waveformData.vcd}
+                      circuit={waveformData.circuit}
+                      steadyStateAt={waveformData.steadyStateAt}
+                      onLoadVCD={(vcd) => setWaveformData((prev) => prev ? { ...prev, vcd } : null)}
+                      onClose={() => setWaveformData(null)}
+                    />
+                  </ResizablePanel>
+                </ResizablePanelGroup>
+              ) : (
+                <CircuitCanvas
+                  circuit={circuit}
+                  componentLibrary={componentLibrary}
+                  theme={theme}
+                  showControls
+                  renderEmptyState={renderEmptyState}
+                  portValues={sim.portValues}
+                  sequentialState={sim.sequentialState}
+                  onToggleNode={onToggleNode}
+                  onSetNodeValue={onSetNodeValue}
+                  onLoadMemory={onLoadMemory}
+                />
+              )}
+            </ResizablePanel>
+          </ResizablePanelGroup>
         </div>
-
-
-        {/* Waveform viewer — shown when traces arrive via MCP */}
-        {waveformData && (
-          <WaveformViewer
-            vcd={waveformData.vcd}
-            circuit={waveformData.circuit}
-            steadyStateAt={waveformData.steadyStateAt}
-            onLoadVCD={(vcd) => setWaveformData((prev) => prev ? { ...prev, vcd } : null)}
-          />
-        )}
 
         {/* Conditional Bottom Bar: Clock Controls (only for sequential circuits) */}
         {showClockControls && (

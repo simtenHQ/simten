@@ -321,7 +321,7 @@ export const TSEditor = forwardRef<TSEditorRef, TSEditorProps>(
     // ── Render ──
 
     return (
-      <div className="flex flex-col h-full">
+      <div className="flex flex-col h-full overflow-hidden">
         {showHeader && (
           <div className="flex items-center justify-between px-3 py-1.5 border-b bg-muted/30">
             <span className="text-xs font-medium text-muted-foreground">
@@ -339,7 +339,7 @@ export const TSEditor = forwardRef<TSEditorRef, TSEditorProps>(
           </div>
         )}
 
-        <div className="flex-1 min-h-0">
+        <div className="flex-1 min-h-0 overflow-hidden">
           <Editor
             language="typescript"
             theme={resolvedTheme === "dark" ? "simten-dark" : "simten-light"}
