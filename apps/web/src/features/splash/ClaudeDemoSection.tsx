@@ -849,7 +849,7 @@ const HeroBrowserWindow = forwardRef<HeroBrowserWindowHandle, {}>(
                   Click switches to interact
                 </span>
                 <Link
-                  to="/editor"
+                  to="/circuit"
                   className="text-[11px] text-muted-foreground/60 hover:text-foreground transition-colors"
                 >
                   Open in full editor

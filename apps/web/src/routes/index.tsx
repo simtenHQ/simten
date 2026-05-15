@@ -544,7 +544,7 @@ title="Export to Verilog"
           </p>
           <div className="flex items-center gap-4">
             <Link
-              to="/editor"
+              to="/circuit"
               className="text-[13px] text-muted-foreground hover:text-foreground transition-colors"
             >
               Open editor →

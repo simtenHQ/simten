@@ -23,7 +23,7 @@ export function CTASection() {
             Try the CPU debugger &rarr;
           </Link>
           <Link
-            to="/editor"
+            to="/circuit"
             className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-gray-200 dark:bg-gray-800 hover:bg-gray-300 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 font-medium transition-colors border border-gray-300 dark:border-gray-700"
           >
             Build from scratch

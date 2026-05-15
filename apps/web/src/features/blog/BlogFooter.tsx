@@ -21,7 +21,7 @@ export function BlogFooter({ slug }: BlogFooterProps) {
     <div className="mt-16 pt-8 border-t border-gray-200 dark:border-gray-800 text-center">
       <div className="flex items-center justify-center gap-4">
         <Link
-          to="/editor"
+          to="/circuit"
           className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium transition-colors"
         >
           Open the editor &rarr;

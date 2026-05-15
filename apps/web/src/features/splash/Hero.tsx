@@ -439,7 +439,7 @@ export function Hero() {
 
           <div className="mt-6 flex items-center gap-3">
             <Link
-              to="/editor"
+              to="/circuit"
               className="inline-flex items-center rounded-full bg-foreground text-background hover:bg-foreground/90 transition-colors px-4 py-2 text-sm font-medium"
             >
               Open the editor →
@@ -505,7 +505,7 @@ export function Hero() {
 
         <div className="mt-6 flex items-center gap-3">
           <Link
-            to="/editor"
+            to="/circuit"
             className="inline-flex items-center rounded-full bg-foreground text-background hover:bg-foreground/90 transition-colors px-4 py-2 text-sm font-medium"
           >
             Open the editor →

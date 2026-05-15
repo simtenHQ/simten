@@ -109,7 +109,7 @@ export async function createStudioServer(
           const session: Session = {
             id: sessionId!,
             ws,
-            page: msg.page || '/editor',
+            page: msg.page || '/circuit',
             circuitName: null,
           };
           sessions.set(sessionId!, session);
