@@ -404,6 +404,7 @@ export const TSEditor = forwardRef<TSEditorRef, TSEditorProps>(
               wordWrap: "on",
               tabSize: 2,
               "semanticHighlighting.enabled": true,
+              fixedOverflowWidgets: true,
             }}
           />
         </div>
