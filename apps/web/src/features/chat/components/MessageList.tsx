@@ -52,9 +52,9 @@ export function MessageList({
       <div className="flex-1 flex flex-col items-center justify-center p-6 gap-4">
         <Bot className="h-10 w-10 text-blue-500" />
         <div className="text-center">
-          <p className="text-sm font-medium text-gray-700">Describe a circuit and I&apos;ll build it</p>
+          <p className="text-sm font-medium text-foreground">Describe a circuit and I&apos;ll build it</p>
           {onSendStarter && (
-            <p className="text-xs text-gray-400 mt-1">Or try one of these:</p>
+            <p className="text-xs text-muted-foreground mt-1">Or try one of these:</p>
           )}
         </div>
         {onSendStarter && (
@@ -63,7 +63,7 @@ export function MessageList({
               <button
                 key={prompt}
                 onClick={() => onSendStarter(prompt)}
-                className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:border-blue-300 transition-colors text-left"
+                className="rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground hover:bg-accent hover:border-blue-400/60 transition-colors text-left"
               >
                 {prompt}
               </button>
