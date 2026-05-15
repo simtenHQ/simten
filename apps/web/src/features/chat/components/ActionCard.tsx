@@ -32,13 +32,13 @@ const ACTION_ICONS = {
 } as const;
 
 const ACTION_COLORS = {
-  SET_INPUT: 'bg-amber-50 border-amber-200 hover:border-amber-400',
-  RUN_SIMULATION: 'bg-green-50 border-green-200 hover:border-green-400',
-  SHOW_DIFF: 'bg-blue-50 border-blue-200 hover:border-blue-400',
-  WRITE_CIRCUIT: 'bg-blue-50 border-blue-200 hover:border-blue-400',
-  INSERT_NODE: 'bg-purple-50 border-purple-200 hover:border-purple-400',
-  GENERATE_HARNESS: 'bg-teal-50 border-teal-200 hover:border-teal-400',
-  VERIFY_ASSERTION: 'bg-emerald-50 border-emerald-200 hover:border-emerald-400',
+  SET_INPUT: 'bg-amber-50 border-amber-200 hover:border-amber-400 dark:bg-amber-950/30 dark:border-amber-900 dark:hover:border-amber-700',
+  RUN_SIMULATION: 'bg-green-50 border-green-200 hover:border-green-400 dark:bg-green-950/30 dark:border-green-900 dark:hover:border-green-700',
+  SHOW_DIFF: 'bg-blue-50 border-blue-200 hover:border-blue-400 dark:bg-blue-950/30 dark:border-blue-900 dark:hover:border-blue-700',
+  WRITE_CIRCUIT: 'bg-blue-50 border-blue-200 hover:border-blue-400 dark:bg-blue-950/30 dark:border-blue-900 dark:hover:border-blue-700',
+  INSERT_NODE: 'bg-purple-50 border-purple-200 hover:border-purple-400 dark:bg-purple-950/30 dark:border-purple-900 dark:hover:border-purple-700',
+  GENERATE_HARNESS: 'bg-teal-50 border-teal-200 hover:border-teal-400 dark:bg-teal-950/30 dark:border-teal-900 dark:hover:border-teal-700',
+  VERIFY_ASSERTION: 'bg-emerald-50 border-emerald-200 hover:border-emerald-400 dark:bg-emerald-950/30 dark:border-emerald-900 dark:hover:border-emerald-700',
 } as const;
 
 export function ActionCard({
@@ -48,7 +48,7 @@ export function ActionCard({
   onShowDiff,
 }: ActionCardProps) {
   const Icon = ACTION_ICONS[action.type] ?? Play;
-  const colorClass = ACTION_COLORS[action.type] ?? 'bg-gray-50 border-gray-200';
+  const colorClass = ACTION_COLORS[action.type] ?? 'bg-muted/50 border-border';
   const safetyLevel = ACTION_SAFETY[action.type] ?? 'confirm';
 
   const isExecuting = status === 'executing';
@@ -74,7 +74,7 @@ export function ActionCard({
         'rounded-lg border p-3 transition-colors',
         colorClass,
         isCompleted && 'opacity-60',
-        (isFailed || isStale) && 'border-red-200 bg-red-50'
+        (isFailed || isStale) && 'border-red-200 bg-red-50 dark:border-red-900 dark:bg-red-950/30'
       )}
     >
       <div className="flex items-start gap-3">
@@ -82,11 +82,11 @@ export function ActionCard({
         <div
           className={cn(
             'flex h-8 w-8 shrink-0 items-center justify-center rounded-full',
-            action.type === 'SET_INPUT' && 'bg-amber-100 text-amber-600',
-            action.type === 'RUN_SIMULATION' && 'bg-green-100 text-green-600',
-            (action.type === 'SHOW_DIFF' || action.type === 'WRITE_CIRCUIT') && 'bg-blue-100 text-blue-600',
-            action.type === 'INSERT_NODE' && 'bg-purple-100 text-purple-600',
-            action.type === 'GENERATE_HARNESS' && 'bg-teal-100 text-teal-600'
+            action.type === 'SET_INPUT' && 'bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300',
+            action.type === 'RUN_SIMULATION' && 'bg-green-100 text-green-700 dark:bg-green-950/50 dark:text-green-300',
+            (action.type === 'SHOW_DIFF' || action.type === 'WRITE_CIRCUIT') && 'bg-blue-100 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300',
+            action.type === 'INSERT_NODE' && 'bg-purple-100 text-purple-700 dark:bg-purple-950/50 dark:text-purple-300',
+            action.type === 'GENERATE_HARNESS' && 'bg-teal-100 text-teal-700 dark:bg-teal-950/50 dark:text-teal-300'
           )}
         >
           {isExecuting ? (
@@ -100,31 +100,31 @@ export function ActionCard({
         <div className="flex-1 min-w-0">
           {/* Action type label */}
           <div className="flex items-center gap-2">
-            <span className="text-xs font-medium uppercase text-gray-500">
+            <span className="text-xs font-medium uppercase text-muted-foreground">
               {action.type.replace('_', ' ')}
             </span>
             {safetyLevel === 'confirm' && (
-              <span className="rounded bg-yellow-100 px-1.5 py-0.5 text-xs text-yellow-700">
+              <span className="rounded bg-yellow-100 px-1.5 py-0.5 text-xs text-yellow-800 dark:bg-yellow-950/50 dark:text-yellow-300">
                 Requires confirmation
               </span>
             )}
           </div>
 
           {/* Action preview */}
-          <p className="mt-1 text-sm text-gray-700">{getActionPreview(action)}</p>
+          <p className="mt-1 text-sm text-foreground">{getActionPreview(action)}</p>
 
           {/* Status message */}
           {isCompleted && (
-            <p className="mt-1 text-xs text-green-600">Completed</p>
+            <p className="mt-1 text-xs text-green-700 dark:text-green-400">Completed</p>
           )}
           {isFailed && (
-            <p className="mt-1 text-xs text-red-600">Failed</p>
+            <p className="mt-1 text-xs text-red-700 dark:text-red-400">Failed</p>
           )}
           {isSkipped && (
-            <p className="mt-1 text-xs text-gray-500">Skipped</p>
+            <p className="mt-1 text-xs text-muted-foreground">Skipped</p>
           )}
           {isStale && (
-            <p className="mt-1 text-xs text-red-600">
+            <p className="mt-1 text-xs text-red-700 dark:text-red-400">
               Circuit modified - re-ask for updated suggestion
             </p>
           )}
