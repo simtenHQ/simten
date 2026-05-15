@@ -75,6 +75,8 @@ export interface ClockControlsProps {
   showScrubber?: boolean;
   /** Render as a floating pill (inspector/canvas overlay) vs inline bar (editor/embed bottom bar) */
   floating?: boolean;
+  /** Drop the inner border + background when the parent already provides them */
+  chromeless?: boolean;
 }
 
 export function ClockControls({
@@ -95,15 +97,19 @@ export function ClockControls({
   maxSpeed = 100,
   showScrubber,
   floating,
+  chromeless,
 }: ClockControlsProps) {
   const wrapper = floating
     ? "absolute top-3 left-1/2 -translate-x-1/2 z-10"
     : "";
+  const inner = chromeless
+    ? "flex items-center gap-1.5"
+    : "flex items-center gap-1.5 border-t border-border bg-card/95 px-3 py-1.5";
 
   return (
     <TooltipProvider>
       <div className={wrapper}>
-        <div className="flex items-center gap-1.5 border-t border-border bg-card/95 px-3 py-1.5">
+        <div className={inner}>
           <IconBtn label="Tick" icon={SkipForward} onClick={onStep} disabled={isRunning || isViewingPast} />
           {isRunning
             ? <IconBtn label="Pause" icon={Pause} onClick={onPause} />
