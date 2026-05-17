@@ -12,6 +12,67 @@ ripple through the circuit:
 
 <PropagationDemo />
 
+## Why this architecture
+
+simten makes two architectural choices worth naming explicitly: a hierarchical-to-flat
+**elaboration step** before simulation, and **event-driven** rather than compiled-code
+dispatch. Both are well-established in production digital logic simulators, though the
+event-driven vs compiled-code choice splits the field.
+
+Circuits are authored as hierarchical TypeScript values — composites containing sub-nodes
+and port connections (`Circuit` in `packages/core/src/types/circuit.ts`). Before simulation,
+elaboration (`packages/core/src/simulator/elaboration.ts`) recursively flattens the
+hierarchy; the result is then compiled to a `NumericCircuit`
+(`packages/core/src/simulator/numeric-types.ts`) — typed arrays of port indices, dependency
+lists, and an evaluator dispatch table. The flat numeric form is what the hot loop actually
+executes. The split between authoring representation and execution representation lets each
+one specialize: the edit IR maps directly to the user's mental model of a schematic, while
+the runtime IR is built around what's fast on modern CPUs.
+
+**Event-driven vs compiled-code.** simten only re-evaluates gates whose inputs changed since
+the last tick; an event queue propagates the change set until it settles. The alternative —
+used by Verilator — is *compiled-code* style: evaluate every gate every cycle, no queue.
+Compiled-code wins on batch verification of a fixed netlist where steady-state throughput
+dominates; event-driven scales better when most of the circuit is stable at any given
+moment, which is the common case during interactive editing. Most commercial event-driven
+simulators (VCS, Questa, Xcelium) sit in the same family as simten — with vastly more
+sophisticated scheduling — and event-driven is the dominant style in commercial EDA for the
+same workload reason. The choice isn't a quality difference, it's a workload difference.
+
+**Where this pattern comes from.** Event-driven logic simulation goes back to the late
+1960s; the data structures simten uses (integer arrays indexed by node, an event queue, a
+typed dispatch table) are recognizable across the literature, with much of the optimization
+work — levelization, compiled hybrids — developed in the 1980s and 90s and listed below as
+future work. Verilator's docs make the same case for the abstraction-vs-execution split:
+they note that using their abstract SystemC port interface internally everywhere, rather
+than their packed internal representation, "would reduce performance by an order of
+magnitude." That's their version of the same trade — abstract representation for authoring,
+packed integer-indexed representation for execution. The pattern recurs in compilers — V8
+parses JavaScript to an AST, lowers to bytecode, then compiles hot paths to machine code —
+for the same reason: a representation good for humans to author and analyze is poor for
+machines to execute fast.
+
+**Optimizations not yet implemented.** Each item below is a known elaboration-time
+optimization with a concrete slot in the existing pipeline; none is required for the current
+target — interactive circuits up to thousands of gates — but each is a viable pickup if
+propagation throughput becomes a bottleneck at larger scales.
+
+- **Levelization** — topological sort at elaboration time so events propagate in dependency
+  order without re-firing. Slots into `elaboration.ts` after flattening; the propagate loop
+  walks levels in order rather than draining a queue.
+- **SCC detection for feedback loops** — identify strongly-connected regions during
+  elaboration so fixed-point iteration is isolated to those regions instead of running
+  across the whole circuit. Also in `elaboration.ts`.
+- **Constant propagation** — pre-fold nodes whose inputs are all known constants at
+  elaboration time, eliminating their runtime dispatch entirely. New pass adjacent to
+  flattening.
+- **Dead-gate elimination** — reachability sweep from outputs at elaboration time, drop
+  unreachable nodes. Pairs naturally with constant propagation.
+- **JIT codegen of straight-line dispatch** — emit one propagate function per circuit via
+  `new Function(...)`, replacing the event-queue loop with unrolled gate evaluations. Slots
+  into `compile-circuit.ts` as an alternative compilation path. Caveat: `new Function` is
+  blocked under strict CSP, so this is deployment-context-dependent.
+
 ## Compilation Pipeline
 
 Click through the tabs to see a FullAdder circuit at each stage — from TypeScript source to typed arrays to running simulation:
