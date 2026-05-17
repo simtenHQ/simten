@@ -163,7 +163,7 @@ export type { NumericPortValues } from './numeric-values.js';
 export { createNumericPortValues, resetChangeFlags, copyPortValues } from './numeric-values.js';
 export { compileForSimulation, createNumericSequentialState, toFlatSequentialState } from './compile-circuit.js';
 export {
-  fastPropagate,
+  propagate,
   seedInitialQueue,
   seedStateOutputNodes,
   updateClockStates,
@@ -172,7 +172,7 @@ export {
   toFlatPortValueMap,
   fromFlatPortValueMap,
   propagateToTopLevelOutputs,
-} from './fast-simulator.js';
+} from './propagate.js';
 
 export type { PropagationStep } from './trace.js';
 export { tracePropagation } from './trace.js';
@@ -206,14 +206,14 @@ import {
 
 import { elaborate } from './elaboration.js';
 
-// Fast simulator imports
+// Numeric simulator imports
 import type { NumericCircuit, NumericSequentialState } from './numeric-types.js';
 import type { NumericPortValues } from './numeric-values.js';
 import { createNumericPortValues } from './numeric-values.js';
 import { NumericEventQueue } from './numeric-event-queue.js';
 import { compileForSimulation, createNumericSequentialState, toFlatSequentialState } from './compile-circuit.js';
 import {
-  fastPropagate,
+  propagate,
   seedInitialQueue,
   seedStateOutputNodes,
   updateClockStates,
@@ -222,15 +222,15 @@ import {
   toFlatPortValueMap,
   fromFlatPortValueMap,
   propagateToTopLevelOutputs,
-} from './fast-simulator.js';
+} from './propagate.js';
 
 /**
- * Fast simulator engine implementation using numeric circuits.
+ * Simulator engine implementation.
  *
- * Uses typed arrays and numeric indices for 2-5x performance improvement.
- * Maintains API compatibility with SimulatorEngine interface.
+ * Uses typed arrays and numeric indices in the hot loop for speed.
+ * Implements the SimulatorEngine interface from types/simulator.ts.
  */
-class FastSimulatorEngineImpl implements SimulatorEngine {
+class SimulatorEngineImpl implements SimulatorEngine {
   private flatCircuit: FlatCircuit | null = null;
   private options: InitOptions | null = null;
 
@@ -288,7 +288,7 @@ class FastSimulatorEngineImpl implements SimulatorEngine {
     // Run initial propagation
     this.eventQueue.clear();
     seedInitialQueue(this.numericCircuit, this.eventQueue);
-    fastPropagate(
+    propagate(
       this.numericCircuit,
       this.eventQueue,
       this.numericValues,
@@ -355,7 +355,7 @@ class FastSimulatorEngineImpl implements SimulatorEngine {
     this.eventQueue.clear();
     seedInitialQueue(this.numericCircuit, this.eventQueue);
 
-    const phase1Evals = fastPropagate(
+    const phase1Evals = propagate(
       this.numericCircuit,
       this.eventQueue,
       this.numericValues,
@@ -381,7 +381,7 @@ class FastSimulatorEngineImpl implements SimulatorEngine {
     this.eventQueue.clear();
     seedStateOutputNodes(this.numericCircuit, this.eventQueue);
 
-    const phase2Evals = fastPropagate(
+    const phase2Evals = propagate(
       this.numericCircuit,
       this.eventQueue,
       this.numericValues,
@@ -440,7 +440,7 @@ class FastSimulatorEngineImpl implements SimulatorEngine {
     seedInitialQueue(this.numericCircuit, this.eventQueue);
 
     try {
-      fastPropagate(
+      propagate(
         this.numericCircuit,
         this.eventQueue,
         this.numericValues,
@@ -552,7 +552,7 @@ class FastSimulatorEngineImpl implements SimulatorEngine {
     // Re-run initial propagation
     this.eventQueue!.clear();
     seedInitialQueue(this.numericCircuit, this.eventQueue!);
-    fastPropagate(
+    propagate(
       this.numericCircuit,
       this.eventQueue!,
       this.numericValues,
@@ -579,7 +579,7 @@ class FastSimulatorEngineImpl implements SimulatorEngine {
 /**
  * Create a new simulator engine instance.
  *
- * Uses the fast numeric simulator with typed arrays for optimal performance.
+ * Uses a numeric simulator with typed arrays for optimal performance.
  *
  * **Registration contract:** every primitive type in the flattened circuit
  * must have an eval lambda registered with the eval-bridge before its first
@@ -602,7 +602,7 @@ export function createSimulator(
   circuit: FlatCircuit,
   options: InitOptions
 ): SimulatorEngine {
-  const engine = new FastSimulatorEngineImpl();
+  const engine = new SimulatorEngineImpl();
   engine.initialize(circuit, options);
   return engine;
 }
