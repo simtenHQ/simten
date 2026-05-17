@@ -1,8 +1,8 @@
 /**
- * Fast Simulation Engine
+ * Simulation propagation loop.
  *
- * High-performance simulation using numeric circuits and typed arrays.
- * Hot path uses evaluator table lookup - no switch statements or Map allocations.
+ * Uses numeric circuits and typed arrays for performance.
+ * Hot path uses evaluator table lookup — no switch statements, no Map allocations.
  */
 
 import type { BitValue, BusValue } from '../types/circuit.js';
@@ -52,12 +52,12 @@ function wrapMapForOnTick(map: Map<number, number>): any {
 const oldValuesScratch = new Int32Array(64);
 
 /**
- * Fast propagation using numeric circuit with evaluator table.
+ * Propagation loop using the numeric circuit and the evaluator table.
  * No string operations or Map allocations in the hot path.
  *
  * @returns Number of node evaluations performed
  */
-export function fastPropagate(
+export function propagate(
   circuit: NumericCircuit,
   queue: NumericEventQueue,
   values: NumericPortValues,
@@ -123,10 +123,11 @@ export function fastPropagate(
     const evaluator = EVALUATORS[typeIdx];
 
     if (evaluator) {
-      // Fast path: use evaluator table (no Map allocation)
+      // Dispatch via the evaluator table — no Map allocation, no string keys.
       evaluator(ctx);
     } else {
-      // Fallback for unknown primitives (should not happen)
+      // Slot is null: registration contract was violated. The fallback throws
+      // with a useful error naming the primitive.
       evaluateNodeFallback(circuit, nodeIndex, values, seqState, topLevelInputs);
     }
 
@@ -146,7 +147,7 @@ export function fastPropagate(
   }
 
   if (DEBUG_STATE_UPDATE) {
-    console.log(`[fastPropagate] ${evalCount} evals, ${changedCount} changed`);
+    console.log(`[propagate] ${evalCount} evals, ${changedCount} changed`);
   }
 
   return evalCount;

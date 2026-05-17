@@ -4,7 +4,7 @@
  * Runs a combinational propagation and records every step:
  * which node evaluated, whether its output changed, what dependents were enqueued.
  *
- * This uses its own propagation loop (not fastPropagate) so the hot path
+ * This uses its own propagation loop (not propagate) so the hot path
  * has zero tracing overhead.
  */
 
@@ -15,7 +15,7 @@ import type { NumericPortValues } from './numeric-values.js';
 import { compileForSimulation } from './compile-circuit.js';
 import { NumericEventQueue } from './numeric-event-queue.js';
 import { createNumericPortValues } from './numeric-values.js';
-import { seedInitialQueue } from './fast-simulator.js';
+import { seedInitialQueue } from './propagate.js';
 import { EVALUATORS, type EvalContext } from './evaluators/index.js';
 
 /** A single step in the propagation trace */
@@ -36,8 +36,8 @@ const MAX_ITERATIONS = 10000;
 const oldValuesScratch = new Int32Array(64);
 
 /**
- * Run a propagation loop identical to fastPropagate, but recording every step.
- * This is a separate function to keep the hot path (fastPropagate) clean.
+ * Run a propagation loop identical to propagate, but recording every step.
+ * This is a separate function to keep the hot path (propagate) clean.
  */
 function propagateWithTrace(
   circuit: NumericCircuit,
