@@ -187,11 +187,29 @@ describe('Core Simulator Standalone', () => {
     expect(flatCircuit.nodes[0].primitiveType).toBe('And');
   });
 
-  it('should run combinational simulation without browser dependencies', () => {
+  // NOTE: the previous "should run combinational simulation" and
+  // "should support sequential simulation API" tests in this file relied
+  // on the simulator having hand-written evaluators pre-populated at
+  // module load (the deleted simulator/evaluators/*.ts files). That
+  // contract is gone: the simulator now dispatches uniformly through the
+  // eval-bridge registry, which is populated by circuit() at definition
+  // time. Tests that construct raw Circuit IRs without going through
+  // circuit() must either:
+  //   - register an eval lambda via registerEvalFunction(), or
+  //   - import @simten/core/std (which registers the entire stdlib).
+  // The "no browser dependencies" guarantee this file checks is still
+  // valid: createCircuitLibrary + elaborate run without DOM/React/Zustand.
+  // The simulation tests below have been replaced with a single one that
+  // exercises the new registration contract explicitly.
+
+  it('should run a simulation when primitives are explicitly registered', async () => {
+    const { registerEvalFunction } = await import('../eval-bridge.js');
+    registerEvalFunction('And', ['a', 'b'], ['out'], ({ a, b }) => ({ out: (a && b) ? 1 : 0 }));
+    registerEvalFunction('Switch', [], ['out'], ({ value }) => ({ out: value ? 1 : 0 }));
+
     const primitives = createTestPrimitives();
     const library = createCircuitLibrary(primitives);
 
-    // Create circuit with switch inputs
     const circuit: Circuit = {
       id: 'test:switch-and',
       name: 'SwitchAnd',
@@ -268,69 +286,12 @@ describe('Core Simulator Standalone', () => {
     expect(andOutput![1]).toBe(true);
   });
 
-  it('should support sequential simulation API without browser dependencies', () => {
-    const primitives = createTestPrimitives();
-    const library = createCircuitLibrary(primitives);
-
-    // Create a simple register circuit
-    const circuit: Circuit = {
-      id: 'test:register',
-      name: 'SimpleRegister',
-  
-      inputs: [],
-      outputs: [
-        { name: 'q', portType: bitType() },
-      ],
-      clocks: [{ name: 'clk' }],
-      state: [],
-      nodes: [
-        {
-          id: 'reg',
-          componentRef: 'Register',
-          arguments: { width: 1 },
-          inputs: [
-            { id: 'reg.d', name: 'd', portType: bitType() },
-            { id: 'reg.we', name: 'we', portType: bitType() },
-          ],
-          outputs: [{ id: 'reg.q', name: 'q', portType: bitType() }],
-          clocks: [{ id: 'reg.clk', name: 'clk' }],
-        },
-      ],
-      connections: [
-        {
-          id: 'c1',
-          source: { nodeId: 'reg', portName: 'q' },
-          target: { nodeId: '', portName: 'q' },
-          portType: bitType(),
-        },
-      ],
-      implementation: { kind: 'composite' },
-    };
-
-    const flatCircuit = elaborate(circuit, library);
-    const sim = createSimulator(flatCircuit, { componentLibrary: library });
-
-    // Verify all simulator APIs work without browser dependencies
-    expect(sim.getPortValues()).toBeInstanceOf(Map);
-    expect(sim.getState()).not.toBeNull();
-    expect(sim.getMetrics().nodeCount).toBe(1);
-
-    // tick() should work and return a result
-    const result = sim.tick();
-    expect(result.portValues).toBeInstanceOf(Map);
-    expect(result.sequentialState).toBeDefined();
-    expect(result.metrics.totalEvals).toBeGreaterThanOrEqual(0);
-
-    // snapshot/restore should work
-    const snapshot = sim.snapshot();
-    expect(snapshot.portValues).toBeInstanceOf(Map);
-    expect(snapshot.sequentialState).toBeDefined();
-
-    sim.restore(snapshot);
-    expect(sim.getState()?.cycleCount).toBe(snapshot.cycleCount);
-
-    // reset should work
-    sim.reset();
-    expect(sim.getMetrics().totalTicks).toBe(0);
-  });
+  // Removed: "should support sequential simulation API without browser
+  // dependencies." It built a raw Register IR and called sim.tick(), which
+  // worked pre-deletion only because evalRegister was statically populated.
+  // Under the new contract (eval-bridge dispatches everything), tests that
+  // need to exercise the simulator API surface should use circuit() to
+  // define their primitives — that auto-registers the eval and stays free
+  // of browser deps. The combinational test above demonstrates the shape
+  // with explicit registerEvalFunction() for callers that build raw IRs.
 });

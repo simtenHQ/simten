@@ -164,14 +164,21 @@ function evaluateNodeFallback(
   _topLevelInputs: FlatPortValueMap | undefined
 ): void {
   const node = circuit.flatCircuit.nodes[nodeIndex];
-  const portStart = circuit.nodePortStart[nodeIndex];
-  const inputCount = circuit.nodeInputCount[nodeIndex];
-  const outputCount = circuit.nodeOutputCount[nodeIndex];
-  const outputStart = portStart + inputCount;
-  console.warn(`[fastSimulator] No evaluator for '${node.primitiveType}' — outputs zeroed`);
-  for (let i = 0; i < outputCount; i++) {
-    values.values[outputStart + i] = 0;
-  }
+  void values;
+  // Contract: every primitive type must have an evaluator registered before
+  // simulation. Built-ins are registered when `@simten/core/std` is imported
+  // (or any module that uses circuit() to define them); user primitives are
+  // registered automatically by circuit() at definition time. A missing slot
+  // almost always means "forgot to import std" or "constructed a raw IR
+  // without going through circuit()". Throwing is far more useful than
+  // silently zeroing outputs and producing nonsense state.
+  throw new Error(
+    `Primitive '${node.primitiveType}' has no registered evaluator. ` +
+    `Either import '@simten/core/std' to register the standard library, ` +
+    `or register the primitive's eval lambda explicitly via registerEvalFunction(). ` +
+    `If you constructed a Circuit IR by hand (rather than via circuit()), ` +
+    `you must register its evaluator yourself.`
+  );
 }
 
 /**
