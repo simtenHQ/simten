@@ -149,10 +149,11 @@ export function compileForSimulation(
 
   for (let i = 0; i < nodeCount; i++) {
     const node = flatCircuit.nodes[i];
-    // Ensure eval is registered for this component (no-op if already done or none exists)
-    const typeIdx = PRIMITIVE_TYPE_INDICES[node.primitiveType]
-      ?? ensureEvaluatorRegistered(node.primitiveType);
-    primitiveTypeIndex[i] = typeIdx;
+    // Always call ensureEvaluatorRegistered: for built-ins it returns the
+    // static index and lazily populates the EVALUATORS slot from the registry
+    // if it's null; for user primitives it allocates a dynamic index and
+    // wraps their eval lambda. Idempotent — no-op when the slot is already set.
+    primitiveTypeIndex[i] = ensureEvaluatorRegistered(node.primitiveType);
   }
 
   // ============================================================================
