@@ -293,16 +293,28 @@ describe('registerEvalFunction', () => {
     expect(values[2]).toBe(1);
   });
 
-  it('does not overwrite existing static evaluators', () => {
-    const originalEval = EVALUATORS[PRIMITIVE_TYPE_INDICES.And];
-    const idx = registerEvalFunction(
-      'And',
-      ['a', 'b'],
-      ['out'],
-      ({ a, b }) => ({ out: 999 }), // Wrong on purpose
-    );
+  it('does not overwrite an existing populated slot', () => {
+    // Set up the precondition explicitly: install a sentinel evaluator into
+    // the And slot. (Pre-deletion this was populated at module load by the
+    // hand-written evalAnd; post-deletion slots are populated lazily by the
+    // bridge, so the test installs its own sentinel to assert the
+    // no-overwrite invariant directly.)
+    const idx = PRIMITIVE_TYPE_INDICES.And;
+    const sentinel: (typeof EVALUATORS)[number] = () => { /* sentinel */ };
+    const saved = EVALUATORS[idx];
+    EVALUATORS[idx] = sentinel;
 
-    expect(idx).toBe(PRIMITIVE_TYPE_INDICES.And);
-    expect(EVALUATORS[idx]).toBe(originalEval); // Not overwritten
+    try {
+      const returnedIdx = registerEvalFunction(
+        'And',
+        ['a', 'b'],
+        ['out'],
+        () => ({ out: 999 }), // would be wrong if it ran
+      );
+      expect(returnedIdx).toBe(idx);
+      expect(EVALUATORS[idx]).toBe(sentinel); // not overwritten
+    } finally {
+      EVALUATORS[idx] = saved;
+    }
   });
 });

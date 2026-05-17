@@ -224,7 +224,16 @@ export const BitSlice = circuit('BitSlice', (_opts?: { low?: number; high?: numb
   inputs: { in: bus(8) },
   outputs: { out: bus(8) },
   meta: { category: 'utilities', icon: '[]', description: 'Extract bits [low..high] from input' },
-  eval: ({ in: val }) => ({ out: val }),
+  // `low` / `high` come from node.arguments via the bridge merge — must be
+  // read from inputs at eval time, not closed over (factory args bake one
+  // pair into the registered closure regardless of per-instance values).
+  eval: ({ in: val, low = 0, high = 7 }) => {
+    const lo = low as number;
+    const hi = high as number;
+    const numBits = hi - lo + 1;
+    const mask = numBits >= 32 ? 0xFFFFFFFF : (1 << numBits) - 1;
+    return { out: ((val as number) >> lo) & mask };
+  },
 }));
 
 /**

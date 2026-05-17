@@ -581,6 +581,19 @@ class FastSimulatorEngineImpl implements SimulatorEngine {
  *
  * Uses the fast numeric simulator with typed arrays for optimal performance.
  *
+ * **Registration contract:** every primitive type in the flattened circuit
+ * must have an eval lambda registered with the eval-bridge before its first
+ * dispatch. Two ways to satisfy this:
+ *   1. Define primitives via `circuit()` — registers automatically.
+ *   2. Construct IRs by hand — call `registerEvalFunction(name, ...)` for
+ *      each primitive type used.
+ *
+ * Importing `@simten/core/std` registers the entire standard library as a
+ * side effect; most callers want that and don't need to think about it.
+ * Calling `createSimulator` with a circuit referencing an unregistered
+ * primitive will throw on first encounter of that primitive during
+ * propagation, with a message naming the missing primitive.
+ *
  * @param circuit - The flattened circuit to simulate
  * @param options - Initialization options
  * @returns A new simulator engine instance
