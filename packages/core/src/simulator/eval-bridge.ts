@@ -1,7 +1,7 @@
 /**
- * Eval Bridge — connects user-defined .eval() functions to the fast simulation path.
+ * Eval Bridge — connects user-defined .eval() functions to the simulator.
  *
- * The fast simulator dispatches evaluators via:
+ * The simulator dispatches evaluators via:
  *   EVALUATORS[primitiveTypeIndex[nodeIndex]](ctx)
  *
  * User .eval() functions work with named plain objects:
