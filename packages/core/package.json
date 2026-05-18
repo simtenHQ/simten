@@ -19,7 +19,10 @@
     "simulator"
   ],
   "type": "module",
-  "sideEffects": false,
+  "sideEffects": [
+    "./src/std/**",
+    "./dist/std/**"
+  ],
   "exports": {
     ".": "./src/index.ts",
     "./simulator": "./src/simulator/index.ts",
