@@ -78,7 +78,9 @@ const config = defineConfig(({ command }) => ({
         { path: '/circuit', prerender: { enabled: false } },
         { path: '/blog' },
         { path: '/learn' },
-        { path: '/learn/rv32i-cpu' },
+        { path: '/learn/adders' },
+        { path: '/cpu' },
+        { path: '/cpu/rv32i' },
         // Blog posts — auto-discovered from src/routes/blog/<slug>.tsx.
         ...blogPages,
         // Docs — auto-discovered from content/docs/*.mdx. Prerender bakes
