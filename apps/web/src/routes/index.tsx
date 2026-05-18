@@ -337,7 +337,7 @@ title="Scale to real-world complexity"
               title="RV32I CPU Debugger"
               subtitle="~300 lines of TypeScript"
               description="Write C, C++, or Rust, compile it with the GCC RISC-V toolchain, and watch it execute instruction by instruction on a real 5-stage pipelined RISC-V CPU."
-              href="/learn/rv32i-cpu"
+              href="/cpu/rv32i"
               accent="blue"
               preview={<RV32IDebuggerPreview />}
             />

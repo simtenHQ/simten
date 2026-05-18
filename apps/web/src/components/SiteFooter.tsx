@@ -6,7 +6,7 @@ import { Logo } from '@/components/Logo'
  *
  * Mirrors SiteHeader's left/right structure: brand mark on the left,
  * nav links on the right, with a small © line below. Tool routes
- * (/editor, /learn/rv32i-cpu) suppress this just like they suppress the
+ * (/editor, /cpu/rv32i) suppress this just like they suppress the
  * default SiteHeader.
  */
 export function SiteFooter() {
