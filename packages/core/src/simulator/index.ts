@@ -28,6 +28,17 @@
  * ```
  */
 
+// Side-effect import: every primitive in std/* registers its eval lambda via
+// circuit() at module init. After 2c586d9 deleted the hand-written numeric
+// evaluators in simulator/evaluators/* that used to pre-populate EVALUATORS,
+// std is the sole registration mechanism — importing the simulator now
+// requires std to be loaded, or compile-circuit.ts throws "Primitive 'X' has
+// no registered evaluator" on the first non-trivial circuit. The bare import
+// here makes that dependency explicit and bundler-proof. (The sideEffects
+// glob in packages/core/package.json still prevents intra-std DCE from
+// dropping individual primitive declarations.)
+import '../std/index.js';
+
 // ============================================================================
 // Type Exports
 // ============================================================================
