@@ -3,6 +3,7 @@ import { CPUDebugger } from "@/features/learn/cpu-debugger/CPUDebugger";
 import { pageHead, breadcrumbLd } from "@/lib/seo";
 
 export const Route = createFileRoute("/learn/rv32i-cpu")({
+  staticData: { skipDefaultChrome: true },
   head: () => ({
     ...pageHead({
       title: "RV32I CPU Debugger — RISC-V in the browser",

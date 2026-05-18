@@ -17,13 +17,11 @@ const shareCircuitFn = (source: string) => shareCircuit({ data: { source } })
 
 // Tool routes render their own SiteHeader with custom right-slot content
 // (the editor and the RV32I debugger pass tool controls instead of nav
-// links). They also have no SiteFooter — tool pages stay focused.
-const ROUTES_WITHOUT_DEFAULT_CHROME = new Set([
-  '/circuit',
-  '/circuit_/$encoded',
-  '/circuit_/s/$hash',
-  '/learn/rv32i-cpu',
-])
+// links). They also have no SiteFooter — tool pages stay focused. Routes
+// opt out by setting `staticData: { skipDefaultChrome: true }`. We avoid a
+// central route-ID list here because the literal $-placeholder strings
+// (`/circuit_/$encoded`, etc.) would ship in the minified bundle and
+// crawlers occasionally try to fetch them as URLs.
 
 const SITE_URL = 'https://simten.dev'
 const SITE_NAME = 'Simten'
@@ -71,7 +69,9 @@ export const Route = createRootRoute({
 
 function RootComponent() {
   const matches = useMatches()
-  const skipDefaultChrome = matches.some((m) => ROUTES_WITHOUT_DEFAULT_CHROME.has(m.routeId))
+  const skipDefaultChrome = matches.some(
+    (m) => (m.staticData as { skipDefaultChrome?: boolean } | undefined)?.skipDefaultChrome === true,
+  )
 
   return (
     <html lang="en" className="dark" suppressHydrationWarning>

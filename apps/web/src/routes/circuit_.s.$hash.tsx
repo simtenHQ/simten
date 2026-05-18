@@ -5,7 +5,16 @@ import { extractCircuitName } from '@/lib/extract-circuit-name'
 import { getSharedCircuit } from '@/features/share/server'
 
 export const Route = createFileRoute('/circuit_/s/$hash')({
+  staticData: { skipDefaultChrome: true },
   loader: async ({ params }) => {
+    // See circuit_.$encoded.tsx — same defense against crawled route-ID
+    // placeholder strings ($hash etc.). Real share hashes never start with $.
+    if (params.hash.startsWith('$')) {
+      throw new Response(null, {
+        status: 410,
+        headers: { 'X-Robots-Tag': 'noindex' },
+      })
+    }
     const result = await getSharedCircuit({ data: params.hash }).catch(() => null)
     const source = result?.source ?? null
     return {

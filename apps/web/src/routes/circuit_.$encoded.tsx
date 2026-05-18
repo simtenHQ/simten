@@ -5,7 +5,19 @@ import { decodeSourceFromUrl } from '@simten/ui/share'
 import { extractCircuitName } from '@/lib/extract-circuit-name'
 
 export const Route = createFileRoute('/circuit_/$encoded')({
+  staticData: { skipDefaultChrome: true },
   loader: ({ params }) => {
+    // Defense against crawlers that find the raw route-ID string
+    // (`/circuit_/$encoded`) in JS bundles or the TanStack manifest and try
+    // to fetch it literally. A real share URL never has a $-prefixed
+    // encoded value — those are TanStack route-ID placeholders, not user
+    // input. Return 410 Gone + noindex so Google drops the URL fast.
+    if (params.encoded.startsWith('$')) {
+      throw new Response(null, {
+        status: 410,
+        headers: { 'X-Robots-Tag': 'noindex' },
+      })
+    }
     const source = decodeSourceFromUrl(params.encoded)
     return {
       source,
