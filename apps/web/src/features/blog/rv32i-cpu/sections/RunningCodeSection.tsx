@@ -44,7 +44,7 @@ export function RunningCodeSection() {
 
       <div className="mt-6 text-center">
         <Link
-          to="/learn/rv32i-cpu"
+          to="/cpu/rv32i"
           className="text-sm text-blue-400 hover:text-blue-300 underline underline-offset-2"
         >
           Open full-screen debugger &rarr;
