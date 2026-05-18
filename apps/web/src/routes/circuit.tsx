@@ -3,6 +3,7 @@ import EditorShell from '@/components/EditorShell'
 import { pageHead } from '@/lib/seo'
 
 export const Route = createFileRoute('/circuit')({
+  staticData: { skipDefaultChrome: true },
   head: () =>
     pageHead({
       title: 'Editor',
