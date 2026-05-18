@@ -6,7 +6,7 @@ export const Route = createFileRoute("/learn/")({
     pageHead({
       title: "Learn",
       description:
-        "Guided lessons on how hardware works — from logic gates to a full RISC-V CPU. Every circuit is live: tick it, poke it, break it.",
+        "Concept-level walkthroughs of digital design fundamentals. Every embedded circuit is live and editable in place.",
       path: "/learn",
     }),
   component: LearnIndexPage,
@@ -21,8 +21,8 @@ function LearnIndexPage() {
             Learn
           </h1>
           <p className="mt-6 text-xl text-gray-400 leading-relaxed max-w-2xl">
-            Guided lessons that explain how hardware works, one scrollable step
-            at a time. Every circuit is live — tick it, poke it, break it.
+            Concept-level walkthroughs of digital design fundamentals.
+            Embedded circuits are live and editable in place.
           </p>
         </section>
 
