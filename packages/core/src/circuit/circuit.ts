@@ -541,17 +541,19 @@ export function circuit(
   });
 
   // Register eval/onTick in the shared registry at definition time.
-  // This means any circuit with eval just works in simulation — no manual registration.
-  if (config.eval || config.onTick) {
-    const stateKeys = config.state ? Object.keys(config.state) : undefined;
-    registerCircuitEval(name, {
-      inputNames: circuitIR.inputs.map(p => p.name),
-      outputNames: circuitIR.outputs.map(p => p.name),
-      evalFn: (config.eval ?? (() => ({}))) as (inputs: Record<string, any>) => Record<string, any>,
-      stateKeys,
-      onTickFn: config.onTick as ((inputs: Record<string, any>) => Record<string, any>) | undefined,
-    });
-  }
+  // Every primitive defined via circuit() gets an entry — display-only
+  // primitives like HexDisplay/Screen have no `eval` of their own (no
+  // computation, no outputs) but still need a registered no-op so the
+  // simulator's eval-bridge can dispatch through them instead of falling
+  // into evaluateNodeFallback and throwing "no registered evaluator".
+  const stateKeys = config.state ? Object.keys(config.state) : undefined;
+  registerCircuitEval(name, {
+    inputNames: circuitIR.inputs.map(p => p.name),
+    outputNames: circuitIR.outputs.map(p => p.name),
+    evalFn: (config.eval ?? (() => ({}))) as (inputs: Record<string, any>) => Record<string, any>,
+    stateKeys,
+    onTickFn: config.onTick as ((inputs: Record<string, any>) => Record<string, any>) | undefined,
+  });
 
   return built;
 }
