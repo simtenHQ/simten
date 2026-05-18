@@ -2,4 +2,11 @@
 User-agent: *
 Allow: /
 
+# TanStack route-ID placeholders that occasionally leak into Google's crawl
+# discovery from minified JS bundles. The dynamic routes also return 410 +
+# X-Robots-Tag: noindex when the param value starts with $, so this is
+# belt-and-braces.
+Disallow: /circuit_/$encoded
+Disallow: /circuit_/s/$hash
+
 Sitemap: https://simten.dev/sitemap.xml
