@@ -27,36 +27,9 @@ function LearnIndexPage() {
         </section>
 
         <div className="space-y-4">
-          {/* CPU Debugger — featured tool */}
-          <Link
-            to="/learn/rv32i-cpu"
-            className="block p-6 rounded-xl bg-gray-900 border border-gray-800 hover:border-blue-700/50 hover:bg-gray-900/80 transition-colors group"
-          >
-            <div className="flex items-start justify-between">
-              <div>
-                <h2 className="text-xl font-bold text-white group-hover:text-blue-300 transition-colors">
-                  RV32I CPU Debugger
-                </h2>
-                <p className="mt-2 text-gray-400 leading-relaxed">
-                  Write C, C++, Rust, or assembly — compile it and watch it
-                  execute instruction by instruction on a real 5-stage pipelined
-                  RISC-V CPU. See every pipeline stage, register, and clock cycle.
-                </p>
-              </div>
-              <span className="text-gray-600 group-hover:text-blue-400 transition-colors text-2xl ml-4">
-                &rarr;
-              </span>
-            </div>
-            <div className="mt-4 flex items-center gap-4 text-sm text-gray-500">
-              <span className="px-2 py-0.5 rounded-full bg-purple-900/50 text-purple-300 text-xs font-medium">
-                Debugger
-              </span>
-              <span className="px-2 py-0.5 rounded-full bg-blue-900/50 text-blue-300 text-xs font-medium">
-                Interactive
-              </span>
-            </div>
-          </Link>
-
+          <p className="text-gray-500">
+            Foundational lessons coming soon &mdash; adders, registers, FSMs.
+          </p>
         </div>
 
         <footer className="mt-16 pt-8 border-t border-gray-800 text-center">

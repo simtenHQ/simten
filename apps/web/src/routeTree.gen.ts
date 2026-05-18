@@ -13,9 +13,10 @@ import { Route as CircuitRouteImport } from './routes/circuit'
 import { Route as BlogRouteImport } from './routes/blog'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as LearnIndexRouteImport } from './routes/learn/index'
+import { Route as CpuIndexRouteImport } from './routes/cpu/index'
 import { Route as BlogIndexRouteImport } from './routes/blog/index'
-import { Route as LearnRv32iCpuRouteImport } from './routes/learn/rv32i-cpu'
 import { Route as DocsSplatRouteImport } from './routes/docs/$'
+import { Route as CpuRv32iRouteImport } from './routes/cpu/rv32i'
 import { Route as CircuitEncodedRouteImport } from './routes/circuit_.$encoded'
 import { Route as BlogSortingNetworksRouteImport } from './routes/blog/sorting-networks'
 import { Route as BlogSnakeInHardwareRouteImport } from './routes/blog/snake-in-hardware'
@@ -53,19 +54,24 @@ const LearnIndexRoute = LearnIndexRouteImport.update({
   path: '/learn/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CpuIndexRoute = CpuIndexRouteImport.update({
+  id: '/cpu/',
+  path: '/cpu/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const BlogIndexRoute = BlogIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => BlogRoute,
 } as any)
-const LearnRv32iCpuRoute = LearnRv32iCpuRouteImport.update({
-  id: '/learn/rv32i-cpu',
-  path: '/learn/rv32i-cpu',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const DocsSplatRoute = DocsSplatRouteImport.update({
   id: '/docs/$',
   path: '/docs/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CpuRv32iRoute = CpuRv32iRouteImport.update({
+  id: '/cpu/rv32i',
+  path: '/cpu/rv32i',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CircuitEncodedRoute = CircuitEncodedRouteImport.update({
@@ -171,9 +177,10 @@ export interface FileRoutesByFullPath {
   '/blog/snake-in-hardware': typeof BlogSnakeInHardwareRoute
   '/blog/sorting-networks': typeof BlogSortingNetworksRoute
   '/circuit/$encoded': typeof CircuitEncodedRoute
+  '/cpu/rv32i': typeof CpuRv32iRoute
   '/docs/$': typeof DocsSplatRoute
-  '/learn/rv32i-cpu': typeof LearnRv32iCpuRoute
   '/blog/': typeof BlogIndexRoute
+  '/cpu/': typeof CpuIndexRoute
   '/learn/': typeof LearnIndexRoute
   '/circuit/s/$hash': typeof CircuitSHashRoute
 }
@@ -195,9 +202,10 @@ export interface FileRoutesByTo {
   '/blog/snake-in-hardware': typeof BlogSnakeInHardwareRoute
   '/blog/sorting-networks': typeof BlogSortingNetworksRoute
   '/circuit/$encoded': typeof CircuitEncodedRoute
+  '/cpu/rv32i': typeof CpuRv32iRoute
   '/docs/$': typeof DocsSplatRoute
-  '/learn/rv32i-cpu': typeof LearnRv32iCpuRoute
   '/blog': typeof BlogIndexRoute
+  '/cpu': typeof CpuIndexRoute
   '/learn': typeof LearnIndexRoute
   '/circuit/s/$hash': typeof CircuitSHashRoute
 }
@@ -221,9 +229,10 @@ export interface FileRoutesById {
   '/blog/snake-in-hardware': typeof BlogSnakeInHardwareRoute
   '/blog/sorting-networks': typeof BlogSortingNetworksRoute
   '/circuit_/$encoded': typeof CircuitEncodedRoute
+  '/cpu/rv32i': typeof CpuRv32iRoute
   '/docs/$': typeof DocsSplatRoute
-  '/learn/rv32i-cpu': typeof LearnRv32iCpuRoute
   '/blog/': typeof BlogIndexRoute
+  '/cpu/': typeof CpuIndexRoute
   '/learn/': typeof LearnIndexRoute
   '/circuit_/s/$hash': typeof CircuitSHashRoute
 }
@@ -248,9 +257,10 @@ export interface FileRouteTypes {
     | '/blog/snake-in-hardware'
     | '/blog/sorting-networks'
     | '/circuit/$encoded'
+    | '/cpu/rv32i'
     | '/docs/$'
-    | '/learn/rv32i-cpu'
     | '/blog/'
+    | '/cpu/'
     | '/learn/'
     | '/circuit/s/$hash'
   fileRoutesByTo: FileRoutesByTo
@@ -272,9 +282,10 @@ export interface FileRouteTypes {
     | '/blog/snake-in-hardware'
     | '/blog/sorting-networks'
     | '/circuit/$encoded'
+    | '/cpu/rv32i'
     | '/docs/$'
-    | '/learn/rv32i-cpu'
     | '/blog'
+    | '/cpu'
     | '/learn'
     | '/circuit/s/$hash'
   id:
@@ -297,9 +308,10 @@ export interface FileRouteTypes {
     | '/blog/snake-in-hardware'
     | '/blog/sorting-networks'
     | '/circuit_/$encoded'
+    | '/cpu/rv32i'
     | '/docs/$'
-    | '/learn/rv32i-cpu'
     | '/blog/'
+    | '/cpu/'
     | '/learn/'
     | '/circuit_/s/$hash'
   fileRoutesById: FileRoutesById
@@ -310,8 +322,9 @@ export interface RootRouteChildren {
   CircuitRoute: typeof CircuitRoute
   ApiSearchRoute: typeof ApiSearchRoute
   CircuitEncodedRoute: typeof CircuitEncodedRoute
+  CpuRv32iRoute: typeof CpuRv32iRoute
   DocsSplatRoute: typeof DocsSplatRoute
-  LearnRv32iCpuRoute: typeof LearnRv32iCpuRoute
+  CpuIndexRoute: typeof CpuIndexRoute
   LearnIndexRoute: typeof LearnIndexRoute
   CircuitSHashRoute: typeof CircuitSHashRoute
 }
@@ -346,6 +359,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LearnIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/cpu/': {
+      id: '/cpu/'
+      path: '/cpu'
+      fullPath: '/cpu/'
+      preLoaderRoute: typeof CpuIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/blog/': {
       id: '/blog/'
       path: '/'
@@ -353,18 +373,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BlogIndexRouteImport
       parentRoute: typeof BlogRoute
     }
-    '/learn/rv32i-cpu': {
-      id: '/learn/rv32i-cpu'
-      path: '/learn/rv32i-cpu'
-      fullPath: '/learn/rv32i-cpu'
-      preLoaderRoute: typeof LearnRv32iCpuRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/docs/$': {
       id: '/docs/$'
       path: '/docs/$'
       fullPath: '/docs/$'
       preLoaderRoute: typeof DocsSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/cpu/rv32i': {
+      id: '/cpu/rv32i'
+      path: '/cpu/rv32i'
+      fullPath: '/cpu/rv32i'
+      preLoaderRoute: typeof CpuRv32iRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/circuit_/$encoded': {
@@ -524,8 +544,9 @@ const rootRouteChildren: RootRouteChildren = {
   CircuitRoute: CircuitRoute,
   ApiSearchRoute: ApiSearchRoute,
   CircuitEncodedRoute: CircuitEncodedRoute,
+  CpuRv32iRoute: CpuRv32iRoute,
   DocsSplatRoute: DocsSplatRoute,
-  LearnRv32iCpuRoute: LearnRv32iCpuRoute,
+  CpuIndexRoute: CpuIndexRoute,
   LearnIndexRoute: LearnIndexRoute,
   CircuitSHashRoute: CircuitSHashRoute,
 }

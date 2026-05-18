@@ -8,7 +8,7 @@ import { ThemeToggle } from '@/components/ThemeToggle'
  * Brand mark + "Simten" wordmark always at the top-left edge, linking home.
  * Theme toggle always at the far right (every page has it). The `right` slot
  * sits between them and is page-determined: nav links on content pages, tool
- * controls on /editor and /learn/rv32i-cpu.
+ * controls on /editor and /cpu/rv32i.
  */
 export function SiteHeader({ right, sticky = true }: { right?: React.ReactNode; sticky?: boolean }) {
   return (
