@@ -5,9 +5,9 @@ import { circuit, bit } from "@simten/core/circuit";
 import { Xor, And, Or, DFlipFlop, Constant } from "@simten/core/std";
 import { Eth_FrameInput, Eth_FrameParser, Eth_CRC32, Eth_ProtocolDecoder, Eth_AddrClassifier } from "@simten/core/std";
 import { HighlightedCode } from "@/components/HighlightedCode";
+import { Container } from "@/components/Container";
 import { Section, SectionHeading } from "@/components/SectionHeading";
 import { RV32IDebuggerPreview } from "@/features/learn/cpu-debugger/RV32IDebuggerPreview";
-import { ClaudeCTA } from "@/features/splash/ClaudeCTA";
 import { ClaudeDemoSection } from "@/features/splash/ClaudeDemoSection";
 import { Hero } from "@/features/splash/Hero";
 import { useSnakeSimulator } from "@/features/blog/snake-in-hardware/useSnakeSimulator";
@@ -82,10 +82,33 @@ export const Route = createFileRoute("/")({
 function Splash5Page() {
   return (
     <div className="bg-background text-foreground">
-      <Hero />
+      <MobileAIHero />
+      <ClaudeDemoSection autoPlay />
       <DemoGallery />
-      <ClaudeDemoSection />
     </div>
+  );
+}
+
+function MobileAIHero() {
+  return (
+    <section className="md:hidden px-5 pt-10 pb-2">
+      <div className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1 text-[10px] text-muted-foreground mb-4">
+        <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+        Works with Claude + MCP
+      </div>
+      <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight leading-[1.05] text-foreground">
+        Natural-language hardware design that actually runs.
+      </h1>
+      <p className="mt-4 text-sm text-muted-foreground">
+        Describe a circuit in English. Claude writes the TypeScript. You watch it simulate, live in your browser.
+      </p>
+      <div className="mt-5 rounded-lg border border-border bg-muted px-4 py-3">
+        <code className="font-mono text-[12px] text-foreground/80">
+          <span className="text-muted-foreground/60 select-none">$ </span>
+          claude mcp add simten npx @simten/mcp
+        </code>
+      </div>
+    </section>
   );
 }
 
@@ -155,15 +178,18 @@ function PackageManagerTabs({ package: pkg }: { package: string }) {
 
 function DemoGallery() {
   return (
-    <div className="relative px-6 py-16 md:py-24 md:animate-in md:fade-in md:duration-700 overflow-hidden">
+    <div className="relative py-16 md:py-24 md:animate-in md:fade-in md:duration-700 overflow-hidden">
 
-      <div className="relative max-w-6xl mx-auto">
-        {/* Bridge headline — umbrella for Act 1 (demos) */}
-        <div className="mb-20 max-w-5xl">
+      <Container className="relative">
+        {/* Bridge headline — proof the AI loop scales past toys */}
+        <div className="mb-12 max-w-5xl">
           <h2 className="text-4xl sm:text-5xl font-semibold tracking-tight leading-[1.05]">
-            <span className="text-foreground">Text in. Live circuit out.</span>{" "}
-            <span className="text-muted-foreground">All in your browser.</span>
+            <span className="text-foreground">Not toy demos.</span>{" "}
+            <span className="text-muted-foreground">Real circuits, all in your browser.</span>
           </h2>
+          <p className="mt-5 text-base text-muted-foreground max-w-2xl">
+            Every demo below is a working simulation — not a screenshot, not a video, not a transpiled black box. Same engine Claude drives via MCP.
+          </p>
         </div>
 
         {/* Row 1: Featured games — Pong on the left, Snake on the right */}
@@ -172,44 +198,9 @@ function DemoGallery() {
           <SnakeCard />
         </div>
 
-        {/* Row 1.1: Embed CTA — every demo on this page is a <CircuitEmbed /> */}
-        <Section>
-          <SectionHeading
-            title="Drop it in your blog or docs"
-            description={
-              <>
-                Every demo on this page is a{" "}
-                <code className="font-mono text-[0.9em] px-1.5 py-0.5 rounded bg-muted text-foreground/90">
-                  &lt;CircuitEmbed /&gt;
-                </code>
-                {" "}— live, interactive hardware in 3 lines.
-              </>
-            }
-          />
-          <PackageManagerTabs package="@simten/embed" />
-          <div className="rounded-lg border border-border bg-card overflow-hidden mt-4">
-            <pre className="px-4 py-3 text-[12px] font-mono text-muted-foreground leading-relaxed overflow-x-auto">
-              <span className="text-violet-400">{"import"}</span>{" { CircuitEmbed } "}
-              <span className="text-violet-400">{"from"}</span>{" "}
-              <span className="text-green-400">{"'@simten/embed'"}</span>
-              {"\n"}
-              <span className="text-violet-400">{"import"}</span>{" { myCircuit } "}
-              <span className="text-violet-400">{"from"}</span>{" "}
-              <span className="text-green-400">{"'./my-circuit'"}</span>
-              {"\n\n"}
-              <span className="text-muted-foreground">{"// Compiles, simulates, and renders — in one component"}</span>
-              {"\n"}
-              {"<"}
-              <span className="text-blue-400">{"CircuitEmbed"}</span>
-              {"\n  "}
-              <span className="text-cyan-400">{"circuit"}</span>
-              {"={myCircuit}"}
-              {"\n/>"}
-            </pre>
-          </div>
-        </Section>
-
-        {/* Row 1.5: Drill-down showcase */}
+        {/* Row 1.5: removed — drilldown showcase relocated below for tightness */}
+        <div className="hidden">
+          {/* placeholder kept so the diff stays small */}
         <div className="mt-32 rounded-lg border border-border overflow-hidden bg-card">
           <div className="grid grid-cols-1 sm:grid-cols-[1fr_1.5fr]">
             {/* Left: explanation */}
@@ -325,12 +316,14 @@ function DemoGallery() {
             </div>
           </div>
         </div>
+        </div>
+        {/* end hidden wrapper */}
 
         {/* Row 2: complex demo */}
         <Section>
           <SectionHeading
-title="Scale to real-world complexity"
-            description="A full RISC-V CPU running compiled C, C++, and Rust — hundreds of nodes, all in your browser."
+title="A working RISC-V CPU in 300 lines of TypeScript"
+            description="5-stage pipelined RV32I, executing real GCC-compiled C, C++, and Rust — instruction by instruction, in your browser. The same TypeScript that runs here is what Claude reads and edits when iterating on a CPU design."
           />
           <div className="grid grid-cols-1 gap-4">
             <ComplexDemoCard
@@ -348,60 +341,17 @@ title="Scale to real-world complexity"
         <Section>
           <SectionHeading
 title="Real protocols, simulated from gates"
-            description="IEEE 802.3 Ethernet frame parsing — MAC addresses, EtherType, CRC-32, all running live."
+            description="IEEE 802.3 Ethernet frame parsing — MAC addresses, EtherType, CRC-32 — all running live. Nothing here is faked at the JavaScript layer; every signal comes out of the simulator."
           />
           <EthernetParserCard />
         </Section>
 
-        {/* Row 4: Featured deep dives */}
+        {/* Row 4: the architecture pillar — why the AI loop works */}
         <Section>
           <SectionHeading
-title="Interactive deep dives"
-            description="Not diagrams. Live circuits verified against real specifications."
+            title="Circuits are TypeScript. That changes everything."
+            description="The IR is a language LLMs are already fluent in. The same source compiles for the browser simulator, headless CI, and Verilog export — so Claude can write, run, and verify in one round trip."
           />
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            {[
-              {
-                slug: "aes-in-hardware",
-                title: "AES in Hardware",
-                hook: "Why Intel built AES-NI into the CPU",
-                accent: "violet",
-              },
-              {
-                slug: "chacha20-in-hardware",
-                title: "ChaCha20 in Hardware",
-                hook: "The cipher designed to avoid hardware — elegant in gates anyway",
-                accent: "amber",
-              },
-              {
-                slug: "building-a-cpu",
-                title: "Building a CPU",
-                hook: "From NAND gates to a working RISC-V processor",
-                accent: "blue",
-              },
-            ].map((post) => (
-              <Link
-                key={post.slug}
-                to={`/blog/${post.slug}` as string}
-                className="group rounded-lg border border-border hover:border-border bg-card hover:bg-muted transition-all px-4 py-3.5"
-              >
-                <h4 className="text-sm font-semibold text-foreground group-hover:text-foreground transition-colors">
-                  {post.title}
-                </h4>
-                <p className="text-xs text-muted-foreground mt-1.5 leading-relaxed">
-                  {post.hook}
-                </p>
-                <span className="inline-block mt-2.5 text-[11px] text-blue-400 group-hover:text-blue-300 transition-colors">
-                  Read &rarr;
-                </span>
-              </Link>
-            ))}
-          </div>
-          <div className="mt-3 text-right">
-            <Link to="/blog" className="text-[12px] text-muted-foreground/60 hover:text-foreground/80 transition-colors">
-              All articles &rarr;
-            </Link>
-          </div>
         </Section>
 
         {/* Row 5.5: Headless simulation */}
@@ -481,16 +431,57 @@ fc.assert(
           <p className="text-[11px] text-muted-foreground/60 mt-3">No testbench language. No waveform files. Just TypeScript and whatever libraries you already know.</p>
         </Section>
 
-        {/* Row 6: Build with AI */}
+      </Container>
+
+      {/* ============================================================ */}
+      {/* Or write it yourself — the editor + interactive demo picker  */}
+      {/* ============================================================ */}
+      <Hero />
+
+      <Container className="relative">
+
+        {/* Embed CTA */}
         <Section>
-          <ClaudeCTA />
+          <SectionHeading
+            title="Drop it in your blog or docs"
+            description={
+              <>
+                Every demo on this page is a{" "}
+                <code className="font-mono text-[0.9em] px-1.5 py-0.5 rounded bg-muted text-foreground/90">
+                  &lt;CircuitEmbed /&gt;
+                </code>
+                {" "}— live, interactive hardware in 3 lines.
+              </>
+            }
+          />
+          <PackageManagerTabs package="@simten/embed" />
+          <div className="rounded-lg border border-border bg-card overflow-hidden mt-4">
+            <pre className="px-4 py-3 text-[12px] font-mono text-muted-foreground leading-relaxed overflow-x-auto">
+              <span className="text-violet-400">{"import"}</span>{" { CircuitEmbed } "}
+              <span className="text-violet-400">{"from"}</span>{" "}
+              <span className="text-green-400">{"'@simten/embed'"}</span>
+              {"\n"}
+              <span className="text-violet-400">{"import"}</span>{" { myCircuit } "}
+              <span className="text-violet-400">{"from"}</span>{" "}
+              <span className="text-green-400">{"'./my-circuit'"}</span>
+              {"\n\n"}
+              <span className="text-muted-foreground">{"// Compiles, simulates, and renders — in one component"}</span>
+              {"\n"}
+              {"<"}
+              <span className="text-blue-400">{"CircuitEmbed"}</span>
+              {"\n  "}
+              <span className="text-cyan-400">{"circuit"}</span>
+              {"={myCircuit}"}
+              {"\n/>"}
+            </pre>
+          </div>
         </Section>
 
-        {/* Row 7: Verilog Export */}
+        {/* Verilog Export — honest framing */}
         <Section>
           <SectionHeading
 title="Export to Verilog"
-            description="Design in TypeScript. Export synthesisable Verilog. Verified cycle-by-cycle against Icarus Verilog."
+            description="Any circuit compiles down to structural Verilog and is cross-validated against Icarus Verilog cycle-by-cycle. FPGA synthesis works today for the demos shipped with the repo (Snake, RV32I); broader coverage is a work in progress."
           />
           <div className="grid grid-cols-2 gap-4">
             {/* TypeScript side */}
@@ -535,12 +526,63 @@ title="Export to Verilog"
               </pre>
             </div>
           </div>
-          <p className="text-[11px] text-muted-foreground/60 mt-3">Any circuit you build exports to synthesisable Verilog — verified cycle-by-cycle against Icarus Verilog.</p>
+          <p className="text-[11px] text-muted-foreground/60 mt-3">Structural Verilog out of the box, verified against Icarus. Full FPGA flow lives in <code className="font-mono text-[0.95em] px-1 rounded bg-muted">hardware/ulx3s</code> and currently ships working bitstreams for Snake and RV32I.</p>
+        </Section>
+
+        {/* Deep dives — long-form companion posts */}
+        <Section>
+          <SectionHeading
+            title="Long-form deep dives"
+            description="Not diagrams. Live circuits verified against real specifications."
+          />
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {[
+              {
+                slug: "aes-in-hardware",
+                title: "AES in Hardware",
+                hook: "Why Intel built AES-NI into the CPU",
+                accent: "violet",
+              },
+              {
+                slug: "chacha20-in-hardware",
+                title: "ChaCha20 in Hardware",
+                hook: "The cipher designed to avoid hardware — elegant in gates anyway",
+                accent: "amber",
+              },
+              {
+                slug: "building-a-cpu",
+                title: "Building a CPU",
+                hook: "From NAND gates to a working RISC-V processor",
+                accent: "blue",
+              },
+            ].map((post) => (
+              <Link
+                key={post.slug}
+                to={`/blog/${post.slug}` as string}
+                className="group rounded-lg border border-border hover:border-border bg-card hover:bg-muted transition-all px-4 py-3.5"
+              >
+                <h4 className="text-sm font-semibold text-foreground group-hover:text-foreground transition-colors">
+                  {post.title}
+                </h4>
+                <p className="text-xs text-muted-foreground mt-1.5 leading-relaxed">
+                  {post.hook}
+                </p>
+                <span className="inline-block mt-2.5 text-[11px] text-blue-400 group-hover:text-blue-300 transition-colors">
+                  Read &rarr;
+                </span>
+              </Link>
+            ))}
+          </div>
+          <div className="mt-3 text-right">
+            <Link to="/blog" className="text-[12px] text-muted-foreground/60 hover:text-foreground/80 transition-colors">
+              All articles &rarr;
+            </Link>
+          </div>
         </Section>
 
         <div className="mt-28 md:mt-36 flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:justify-between">
           <p className="text-[13px] text-muted-foreground/60">
-            Or build circuits yourself — no Claude needed.
+            Or open the editor and start from scratch.
           </p>
           <div className="flex items-center gap-4">
             <Link
@@ -557,7 +599,7 @@ title="Export to Verilog"
             </Link>
           </div>
         </div>
-      </div>
+      </Container>
 
       {/* SiteFooter is rendered globally in __root.tsx */}
     </div>

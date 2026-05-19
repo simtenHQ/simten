@@ -21,6 +21,7 @@ import { circuit, bit } from "@simten/core/circuit";
 import type { BuiltCircuit } from "@simten/core/circuit";
 import { Xor, And, Or, Not, DFlipFlop } from "@simten/core/std";
 import { HighlightedCode } from "@/components/HighlightedCode";
+import { Container } from "@/components/Container";
 
 // ============================================================================
 // Demo circuits (self-contained — the gallery has its own copies of shared ones)
@@ -955,20 +956,19 @@ export function ClaudeDemoSection({
   }, []);
 
   return (
-    <section className="hidden md:block px-6 py-16 border-t border-border">
-      <div className="max-w-6xl mx-auto">
+    <section className="hidden md:block pt-20 pb-16">
+      <Container>
         {/* Section label */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1 text-[11px] text-muted-foreground">
+        <div className="mb-10 max-w-3xl">
+          <div className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1 text-[11px] text-muted-foreground mb-5">
             <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-            Works with Claude + MCP
+            Live demo · MCP scripted
           </div>
-          <h2 className="mt-4 text-2xl md:text-3xl font-semibold tracking-tight text-foreground">
-            Let Claude build circuits for you.
-          </h2>
-          <p className="mt-3 text-sm text-muted-foreground max-w-xl mx-auto">
-            Install the MCP server and Claude can write, simulate, and iterate
-            on hardware directly in your chat.
+          <h1 className="text-5xl md:text-6xl lg:text-7xl font-semibold tracking-tight leading-[1.05] text-foreground">
+            Natural-language hardware design that actually runs.
+          </h1>
+          <p className="mt-5 text-base md:text-lg text-muted-foreground max-w-2xl">
+            Describe a circuit in English. Claude writes it in TypeScript. You watch it simulate — live, in your browser, every wire pokeable.
           </p>
         </div>
 
@@ -1021,7 +1021,7 @@ export function ClaudeDemoSection({
         <div className="mt-6 flex justify-center">
           <CopyCommand command="claude mcp add simten npx @simten/mcp" />
         </div>
-      </div>
+      </Container>
     </section>
   );
 }

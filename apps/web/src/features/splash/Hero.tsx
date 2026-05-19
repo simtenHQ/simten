@@ -20,6 +20,7 @@ import { circuit, bit, bus } from "@simten/core/circuit";
 import type { BuiltCircuit } from "@simten/core/circuit";
 import { Xor, And, Or, Not, DFlipFlop, Register, Adder, ROM, Constant, Console as ConsolePrimitive, romFromBytes } from "@simten/core/std";
 import { HighlightedCode } from "@/components/HighlightedCode";
+import { Container } from "@/components/Container";
 
 type HeroLayout = Record<string, { x: number; y: number }>;
 
@@ -376,15 +377,14 @@ export function Hero() {
   return (
     <section className="bg-background text-foreground">
       {/* Desktop layout */}
-      <div className="hidden md:block px-6 pb-10">
-        <div className="max-w-6xl mx-auto">
-          <div className="mb-8 pt-20 md:pt-28">
-            <h1 className="text-5xl md:text-6xl lg:text-7xl font-semibold tracking-tight leading-[1.05] text-foreground">
-              Hardware simulation in your JavaScript runtime.
-            </h1>
+      <div className="hidden md:block pb-10">
+        <Container>
+          <div className="mb-8">
+            <h2 className="text-4xl sm:text-5xl font-semibold tracking-tight leading-[1.05] text-foreground">
+              Or write it yourself.
+            </h2>
             <p className="mt-5 text-base md:text-lg text-muted-foreground max-w-2xl">
-              Write circuits in TypeScript. Simulate them live in the browser.
-              Import any npm library to drive, verify, or visualize them.
+              The same simulator Claude uses is open to you directly. Pick a circuit, edit the TypeScript, watch it run.
             </p>
           </div>
 
@@ -452,17 +452,17 @@ export function Hero() {
               How it works →
             </Link>
           </div>
-        </div>
+        </Container>
       </div>
 
       {/* Mobile layout: stacked */}
       <div className="md:hidden px-5 pb-8">
-        <div className="mb-6 pt-2">
-          <h1 className="text-4xl font-semibold tracking-tight leading-[1.05] text-foreground">
-            Hardware simulation in your JavaScript runtime.
-          </h1>
+        <div className="mb-6">
+          <h2 className="text-3xl font-semibold tracking-tight leading-[1.05] text-foreground">
+            Or write it yourself.
+          </h2>
           <p className="mt-3 text-sm text-muted-foreground">
-            Write circuits in TypeScript. Simulate them live. Import any npm library.
+            The same simulator Claude uses is open to you. Pick a circuit and start editing.
           </p>
         </div>
 
