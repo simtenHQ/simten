@@ -13,6 +13,7 @@
 import { forwardRef, useState, type CSSProperties, type ForwardedRef, type ReactElement } from "react";
 import { CircuitViewer, type CircuitViewerHandle, type HarnessedLayout } from "./CircuitViewer";
 import { circuitToSource, type BuiltCircuit } from "@simten/core/circuit";
+import type { FlatPortValueMap } from "@simten/core/simulator";
 import { encodeSourceForUrl } from "@simten/ui/share";
 import { useShareCircuit } from "./share-context";
 
@@ -84,6 +85,17 @@ export interface CircuitEmbedProps<C extends BuiltCircuit = BuiltCircuit> {
   autoRunSpeed?: number;
   /** Initial values for input ports (set on harness Switch/Input nodes) */
   initialInputs?: Record<string, number | boolean>;
+  /**
+   * Called when the embed's internal simulator settles on a new set of
+   * port values — once on first settle, then on every subsequent settled
+   * change (e.g. when the user toggles a switch on the canvas). Forwarded
+   * verbatim to CircuitViewer; see its docs for full firing semantics.
+   *
+   * Use this to drive sibling UI (truth-table highlights, external value
+   * readouts) without giving up the embed's chrome. The callback is
+   * ref-stabilized inside the embed, so inline functions are safe.
+   */
+  onPortValuesChange?: (portValues: FlatPortValueMap) => void;
 }
 
 export type CircuitEmbedHandle = CircuitViewerHandle;
@@ -123,6 +135,7 @@ const CircuitEmbedImpl = forwardRef<CircuitEmbedHandle, CircuitEmbedProps>(
     autoRunSpeed = 500,
     initialInputs,
     forkSource,
+    onPortValuesChange,
   }, ref) {
     const hasInfoBar = title || description;
     const [forkError, setForkError] = useState<string | null>(null);
@@ -200,6 +213,7 @@ const CircuitEmbedImpl = forwardRef<CircuitEmbedHandle, CircuitEmbedProps>(
             onPortClick={onPortClick}
             glowUnconnected={glowUnconnected}
             autoRunSpeed={autoRunSpeed}
+            onPortValuesChange={onPortValuesChange}
           />
         </div>
         {hasInfoBar && (

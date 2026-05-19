@@ -6,11 +6,12 @@
  * is a thin wrapper around this.
  */
 
-import { useCallback, forwardRef, useImperativeHandle, type ForwardedRef, type ReactElement } from "react";
+import { useCallback, useEffect, useRef, forwardRef, useImperativeHandle, type ForwardedRef, type ReactElement } from "react";
 import { useCircuitSimulator } from "./hooks/useCircuitSimulator";
 import type { BuiltCircuit } from "@simten/core/circuit";
 import { CircuitCanvas, ClockControls, useDetectTheme } from "@simten/ui/canvas";
 import type { CircuitLayout } from "@simten/ui/canvas";
+import type { FlatPortValueMap } from "@simten/core/simulator";
 
 /**
  * Type-level model of what `autoHarness` produces at runtime: it wraps the
@@ -67,6 +68,26 @@ export interface CircuitViewerProps<C extends BuiltCircuit = BuiltCircuit> {
   renderEmptyState?: () => React.ReactNode;
   /** Render custom overlay on top of the canvas */
   renderOverlay?: () => React.ReactNode;
+  /**
+   * Called when the simulator's port values settle. Fires once on first
+   * settled state (after the circuit compiles and propagates) and on every
+   * subsequent settled change (e.g. when the user toggles a switch). Use
+   * this to drive sibling UI that needs to react to live simulator state
+   * — a truth-table highlight, an external value readout, etc.
+   *
+   * Firing semantics:
+   *   - Does NOT fire before `ready` or while `portValues` is empty.
+   *   - Fires only on settled (post-propagation) states; the simulator
+   *     never exposes intermediate propagation states.
+   *   - The map reference is NOT guaranteed stable across no-op ticks
+   *     (sequential auto-run loops can produce new Map instances with
+   *     unchanged contents). Memoize derived state if perf matters.
+   *
+   * The callback is captured in a ref internally so inline functions
+   * (e.g. `onPortValuesChange={(pv) => setX(pv)}`) don't cause spurious
+   * re-fires — pass whatever shape is convenient for the caller.
+   */
+  onPortValuesChange?: (portValues: FlatPortValueMap) => void;
 }
 
 export interface CircuitViewerHandle {
@@ -95,10 +116,31 @@ const CircuitViewerImpl = forwardRef<CircuitViewerHandle, CircuitViewerProps>(
     glowUnconnected,
     renderEmptyState,
     renderOverlay,
+    onPortValuesChange,
   }, ref) {
     const sim = useCircuitSimulator(circuit, { autoHarness, initialInputs });
     const detectedTheme = useDetectTheme();
     const resolvedTheme = theme ?? detectedTheme;
+
+    // Capture the callback in a ref so inline functions don't cause the
+    // firing effect below to re-run on every parent render. The effect
+    // depends only on [sim.ready, sim.portValues], not on the callback
+    // identity, so passing `onPortValuesChange={(pv) => setX(pv)}` is
+    // safe even though it creates a new function reference each render.
+    const onPortValuesChangeRef = useRef(onPortValuesChange);
+    useEffect(() => {
+      onPortValuesChangeRef.current = onPortValuesChange;
+    });
+
+    // Fire once the sim is ready and port values have first settled; then
+    // fire on every subsequent settled change. The empty-map guard avoids
+    // a spurious fire during the initial compile-but-not-yet-propagated
+    // window. The hook only exposes settled states, so no debouncing is
+    // needed for intermediate propagation steps.
+    useEffect(() => {
+      if (!sim.ready || sim.portValues.size === 0) return;
+      onPortValuesChangeRef.current?.(sim.portValues);
+    }, [sim.ready, sim.portValues]);
 
     const handleTick = useCallback(() => {
       sim.tick();
