@@ -185,13 +185,12 @@ For most pages, tier 2 is enough.
 
 ## Security
 
-You don't need to think about it for any tier. `useCircuitSimulator`
-routes all simulation work through the cross-origin sandbox iframe
-internally — whether the circuit came from a build-time TypeScript
-file (your case) or a user-typed string in the in-browser editor.
-Eval lambdas run inside the iframe with `sandbox="allow-scripts
-allow-same-origin"`, isolated from your main page's cookies, storage,
-and DOM. Composing the primitives yourself doesn't bypass any of that.
+Composing the primitives directly doesn't bypass anything —
+`useCircuitSimulator` routes every tier's simulation work through
+the same cross-origin sandbox iframe that `<CircuitEmbed />` uses
+internally. See [Security architecture](/docs/security) for the
+full picture (origin isolation, Web Worker thread isolation, CSP,
+postMessage boundary).
 
 ## Which tier do I pick?
 
