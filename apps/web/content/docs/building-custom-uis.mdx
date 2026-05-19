@@ -138,12 +138,11 @@ side.
 
 ## Tier 4 — Full composition
 
-When you want to break out of the embed's chrome entirely — no card,
-no canvas, no schematic — and build your own frontend on top of the
-simulator, drop down to the underlying primitives. `useCircuitSimulator`
-gives you the live state and the actions; render whatever React you
-want with them. The circuit becomes your engine, your component is
-the UI.
+When you want to break out of the embed's chrome entirely and build
+your own frontend on top of the simulator, drop down to the underlying
+primitives. `useCircuitSimulator` gives you the live state and the
+actions; render whatever React you want with them. The circuit becomes
+your engine, your component is the UI.
 
 ```tsx
 import { useCircuitSimulator } from '@simten/embed'
@@ -184,15 +183,14 @@ custom toggle buttons and LED indicators instead of a schematic. No
 
 The single `useCircuitSimulator(HalfAdder)` call creates one simulator
 instance. Custom UI reads from `sim.portValues` and writes via
-`sim.setNodeValue` — there's no canvas to speak of. The truth table
-reads from the same map. One sim, many consumers, all of them yours.
+`sim.setNodeValue`; the truth table reads from the same map. One sim,
+many consumers, all of them yours.
 
-The simulator is still running — compiling, propagating, exposing port
-values through the sandbox iframe like every other tier. The schematic
-just isn't being rendered. You could equally render nothing at all and
-use the sim purely as a background computation engine (a headless test
-harness, a checksum verifier, an audio-rate signal generator wired to
-WebAudio) — the engine doesn't care whether anything is showing it.
+The simulator is still doing real work — compiling, propagating,
+exposing port values through the sandbox iframe like every other
+tier. You could equally render nothing at all and use it purely as a
+background computation engine (a headless test harness, a checksum
+verifier, an audio-rate signal generator wired to WebAudio).
 
 Tier 4 is the right choice when:
 
