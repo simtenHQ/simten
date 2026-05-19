@@ -47,7 +47,7 @@ export function HalfAdderSection() {
         </p>
       </div>
 
-      <div className="mt-8 flex flex-col lg:flex-row lg:items-center gap-6">
+      <div className="mt-8 flex flex-col lg:flex-row lg:items-center gap-4">
         <div className="flex-1 min-w-0">
           <CircuitEmbed
             circuit={HalfAdder}
@@ -56,7 +56,7 @@ export function HalfAdderSection() {
             onPortValuesChange={setPortValues}
           />
         </div>
-        <div className="flex-1 flex justify-center">
+        <div className="shrink-0">
           <TruthTable
             title="Half adder truth table"
             columns={HA_COLUMNS}
