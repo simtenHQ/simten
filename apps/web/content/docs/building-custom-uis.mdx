@@ -35,6 +35,9 @@ import { CircuitEmbed } from '@simten/embed'
 No state out, no imperative control — just a self-contained
 interactive embed.
 
+Every page in [Examples](/docs/examples) uses this pattern, as do
+most inline circuits across the `/blog/*` posts.
+
 ## Tier 2 — Read sim state with `onPortValuesChange`
 
 When you want a sibling component to react to the embed's live state
@@ -93,6 +96,10 @@ A few things worth knowing about *when* the callback fires:
   you're doing expensive derived work, memoize on the actual values
   you care about rather than on the `Map` reference itself.
 
+The [`/learn/adders`](/learn/adders) page uses this for its live truth
+tables — toggle switches on the half-adder or full-adder, watch the
+matching row in the table light up.
+
 ## Tier 3 — Write into the sim with the imperative handle
 
 When a sibling needs to *drive* the embed (e.g. clicking a row in a
@@ -124,64 +131,98 @@ function HalfAdderDrivenByTable() {
 Pair tier 2 (read out) and tier 3 (write in) to get bidirectional
 binding between the embed and any sibling UI you write.
 
+No page on simten.dev currently needs tier 3 — the API is available
+but nothing's using it yet. The most likely first consumer would be a
+clickable truth table that drives the embed's switches from the table
+side.
+
 ## Tier 4 — Full composition
 
-When you want full control over the chrome (no `CircuitEmbed` card,
-your own layout, multiple circuits sharing one panel, a debugger UI,
-etc.), compose the primitives directly. The embed is just a
-convenience wrapper around exactly this composition.
+When you want to break out of the embed's chrome entirely — no card,
+no canvas, no schematic — and build your own frontend on top of the
+simulator, drop down to the underlying primitives. `useCircuitSimulator`
+gives you the live state and the actions; render whatever React you
+want with them. The circuit becomes your engine, your component is
+the UI.
 
 ```tsx
-import { useCircuitSimulator, CircuitCanvas } from '@simten/embed'
+import { useCircuitSimulator } from '@simten/embed'
 import { TruthTable, computeActiveRow } from '@/components/TruthTable'
 
-function HalfAdderFullyCustom() {
+function HalfAdderWithCustomControls() {
   const sim = useCircuitSimulator(HalfAdder, { autoHarness: true })
-  const activeRow = computeActiveRow(sim.portValues, COLUMNS, ROWS)
+  const a = readPortBit(sim.portValues, 'a')
+  const b = readPortBit(sim.portValues, 'b')
+  const sum = readPortBit(sim.portValues, 'sum')
+  const carry = readPortBit(sim.portValues, 'carry')
 
   return (
     <>
-      {/* Your own canvas chrome — no border, custom background, whatever. */}
-      <div style={{ height: 320 }}>
-        {sim.ready && (
-          <CircuitCanvas
-            circuit={sim.circuit}
-            componentLibrary={sim.componentLibrary ?? undefined}
-            portValues={sim.portValues}
-            sequentialState={sim.sequentialState}
-            onToggleNode={sim.toggleNode}
-            onSetNodeValue={sim.setNodeValue}
-            height={320}
-          />
-        )}
-      </div>
-      <TruthTable columns={COLUMNS} rows={ROWS} highlightRow={activeRow} />
+      {/* Custom toggle buttons drive sim.setNodeValue */}
+      <ToggleControl value={a} onToggle={() => sim.setNodeValue('a', a ? 0 : 1)} />
+      <ToggleControl value={b} onToggle={() => sim.setNodeValue('b', b ? 0 : 1)} />
+
+      {/* Styled LED readouts pull from sim.portValues */}
+      <LedReadout lit={sum === 1} label="sum" />
+      <LedReadout lit={carry === 1} label="carry" />
+
+      <TruthTable
+        columns={COLUMNS}
+        rows={ROWS}
+        highlightRow={computeActiveRow(sim.portValues, COLUMNS, ROWS)}
+      />
     </>
   )
 }
 ```
 
-**Live demo** — same behavior as tier 2, different plumbing:
+**Live demo** — same `HalfAdder` circuit as tier 2, but rendered as
+custom toggle buttons and LED indicators instead of a schematic. No
+`CircuitCanvas` anywhere in this tree:
 
 <Tier4FullComposition />
 
 The single `useCircuitSimulator(HalfAdder)` call creates one simulator
-instance. The canvas reads its state via props (`portValues`,
-`sequentialState`) and writes to it via callbacks (`onToggleNode`,
-`onSetNodeValue`). The truth table reads from the same `portValues`.
-One sim, two consumers.
+instance. Custom UI reads from `sim.portValues` and writes via
+`sim.setNodeValue` — there's no canvas to speak of. The truth table
+reads from the same map. One sim, many consumers, all of them yours.
+
+The simulator is still running — compiling, propagating, exposing port
+values through the sandbox iframe like every other tier. The schematic
+just isn't being rendered. You could equally render nothing at all and
+use the sim purely as a background computation engine (a headless test
+harness, a checksum verifier, an audio-rate signal generator wired to
+WebAudio) — the engine doesn't care whether anything is showing it.
 
 Tier 4 is the right choice when:
 
+- The schematic isn't what you want to show. A game frontend, a
+  calculator UI, a hex memory editor, an animated state-machine
+  diagram — anything where the canvas would be the wrong artifact.
 - You want chrome that's meaningfully different from `CircuitEmbed`'s
-  card (e.g. no border, a custom toolbar, a different aspect ratio
-  treatment).
+  card and you'd rather render `<CircuitCanvas>` directly with no
+  wrapping (it's also a public export — same composition, with the
+  canvas).
 - You're rendering multiple circuits in a single composed panel where
   layout coordination matters.
-- You're building a debugger / IDE-like surface where you want to
-  expose sim actions to many sibling UIs.
+- You're building a debugger / IDE-like surface that wants to expose
+  sim actions to many sibling UIs.
 
 For most pages, tier 2 is enough.
+
+Two examples of tier 4 on simten.dev itself:
+
+- [Snake](/blog/snake-in-hardware) — the circuit *is* the game
+  engine (`DualPortRAM` framebuffer, 4-phase pipeline, collision
+  detection); the React component renders a custom 8×8 pixel grid +
+  D-pad + speed slider on top of the sim. No `CircuitCanvas` shown
+  at all — the schematic is invisible to the player. Pure proof that
+  the simulator can drive any frontend.
+- [RV32I CPU debugger](/cpu/rv32i) — a 5-stage pipelined RISC-V
+  processor on the engine side, with a bespoke debugger UI on top:
+  register file, memory view, pipeline-stage indicators, instruction
+  stream. Compile C / Rust / asm in-browser and step through
+  execution cycle by cycle.
 
 ## Security
 
