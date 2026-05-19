@@ -13,6 +13,7 @@ import { And, Xor } from "@simten/core/std";
 import type { FlatPortValueMap } from "@simten/core/simulator";
 import { CircuitEmbed, useCircuitSimulator } from "@simten/embed";
 import { TruthTable, computeActiveRow } from "@/components/TruthTable";
+import { readPortBit } from "@/lib/port-values";
 
 const HalfAdder = circuit("HalfAdderDocsDemo", {
   inputs: { a: bit, b: bit },
@@ -176,32 +177,3 @@ function LedReadout({ label, lit }: { label: string; lit: boolean }) {
   );
 }
 
-/**
- * Pull a single-bit value out of the live port-values map by port name.
- * Tries every shape the auto-harness produces:
- *   - `<port>.out`  — Switch node wrapping an input (id matches port name)
- *   - `dut.<port>`  — value coming out of the original (DUT) circuit's
- *                    output port, before it reaches the Led
- *   - `<port>.in`   — Led node consuming the output (id matches port name)
- *   - `__top__.<port>` and bare `<port>` for non-harness layouts
- * Returns null if no candidate matches.
- */
-function readPortBit(
-  portValues: ReadonlyMap<string, number | boolean | bigint> | null | undefined,
-  portName: string,
-): number | null {
-  if (!portValues) return null;
-  const candidates = [
-    `${portName}.out`,
-    `dut.${portName}`,
-    `${portName}.in`,
-    `__top__.${portName}`,
-    portName,
-  ];
-  for (const key of candidates) {
-    const v = portValues.get(key);
-    if (v === undefined) continue;
-    return typeof v === "boolean" ? (v ? 1 : 0) : Number(v) & 1;
-  }
-  return null;
-}
