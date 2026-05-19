@@ -20,7 +20,7 @@ import { cn } from "@/lib/utils";
 const containerVariants = cva("mx-auto w-full", {
   variants: {
     size: {
-      default: "max-w-7xl px-4 sm:px-6 lg:px-8",
+      default: "max-w-[1360px] px-4 sm:px-6 lg:px-8",
       bleed: "max-w-none px-0",
     },
   },
