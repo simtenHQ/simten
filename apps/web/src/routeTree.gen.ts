@@ -16,6 +16,7 @@ import { Route as LearnIndexRouteImport } from './routes/learn/index'
 import { Route as CpuIndexRouteImport } from './routes/cpu/index'
 import { Route as BlogIndexRouteImport } from './routes/blog/index'
 import { Route as LearnAddersRouteImport } from './routes/learn/adders'
+import { Route as LearnAbstractionRouteImport } from './routes/learn/abstraction'
 import { Route as DocsSplatRouteImport } from './routes/docs/$'
 import { Route as CpuRv32iRouteImport } from './routes/cpu/rv32i'
 import { Route as CircuitEncodedRouteImport } from './routes/circuit_.$encoded'
@@ -68,6 +69,11 @@ const BlogIndexRoute = BlogIndexRouteImport.update({
 const LearnAddersRoute = LearnAddersRouteImport.update({
   id: '/learn/adders',
   path: '/learn/adders',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LearnAbstractionRoute = LearnAbstractionRouteImport.update({
+  id: '/learn/abstraction',
+  path: '/learn/abstraction',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DocsSplatRoute = DocsSplatRouteImport.update({
@@ -185,6 +191,7 @@ export interface FileRoutesByFullPath {
   '/circuit/$encoded': typeof CircuitEncodedRoute
   '/cpu/rv32i': typeof CpuRv32iRoute
   '/docs/$': typeof DocsSplatRoute
+  '/learn/abstraction': typeof LearnAbstractionRoute
   '/learn/adders': typeof LearnAddersRoute
   '/blog/': typeof BlogIndexRoute
   '/cpu/': typeof CpuIndexRoute
@@ -211,6 +218,7 @@ export interface FileRoutesByTo {
   '/circuit/$encoded': typeof CircuitEncodedRoute
   '/cpu/rv32i': typeof CpuRv32iRoute
   '/docs/$': typeof DocsSplatRoute
+  '/learn/abstraction': typeof LearnAbstractionRoute
   '/learn/adders': typeof LearnAddersRoute
   '/blog': typeof BlogIndexRoute
   '/cpu': typeof CpuIndexRoute
@@ -239,6 +247,7 @@ export interface FileRoutesById {
   '/circuit_/$encoded': typeof CircuitEncodedRoute
   '/cpu/rv32i': typeof CpuRv32iRoute
   '/docs/$': typeof DocsSplatRoute
+  '/learn/abstraction': typeof LearnAbstractionRoute
   '/learn/adders': typeof LearnAddersRoute
   '/blog/': typeof BlogIndexRoute
   '/cpu/': typeof CpuIndexRoute
@@ -268,6 +277,7 @@ export interface FileRouteTypes {
     | '/circuit/$encoded'
     | '/cpu/rv32i'
     | '/docs/$'
+    | '/learn/abstraction'
     | '/learn/adders'
     | '/blog/'
     | '/cpu/'
@@ -294,6 +304,7 @@ export interface FileRouteTypes {
     | '/circuit/$encoded'
     | '/cpu/rv32i'
     | '/docs/$'
+    | '/learn/abstraction'
     | '/learn/adders'
     | '/blog'
     | '/cpu'
@@ -321,6 +332,7 @@ export interface FileRouteTypes {
     | '/circuit_/$encoded'
     | '/cpu/rv32i'
     | '/docs/$'
+    | '/learn/abstraction'
     | '/learn/adders'
     | '/blog/'
     | '/cpu/'
@@ -336,6 +348,7 @@ export interface RootRouteChildren {
   CircuitEncodedRoute: typeof CircuitEncodedRoute
   CpuRv32iRoute: typeof CpuRv32iRoute
   DocsSplatRoute: typeof DocsSplatRoute
+  LearnAbstractionRoute: typeof LearnAbstractionRoute
   LearnAddersRoute: typeof LearnAddersRoute
   CpuIndexRoute: typeof CpuIndexRoute
   LearnIndexRoute: typeof LearnIndexRoute
@@ -391,6 +404,13 @@ declare module '@tanstack/react-router' {
       path: '/learn/adders'
       fullPath: '/learn/adders'
       preLoaderRoute: typeof LearnAddersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/learn/abstraction': {
+      id: '/learn/abstraction'
+      path: '/learn/abstraction'
+      fullPath: '/learn/abstraction'
+      preLoaderRoute: typeof LearnAbstractionRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/docs/$': {
@@ -566,6 +586,7 @@ const rootRouteChildren: RootRouteChildren = {
   CircuitEncodedRoute: CircuitEncodedRoute,
   CpuRv32iRoute: CpuRv32iRoute,
   DocsSplatRoute: DocsSplatRoute,
+  LearnAbstractionRoute: LearnAbstractionRoute,
   LearnAddersRoute: LearnAddersRoute,
   CpuIndexRoute: CpuIndexRoute,
   LearnIndexRoute: LearnIndexRoute,
