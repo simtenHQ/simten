@@ -13,10 +13,10 @@ export function HalfAdderSection() {
         {/* TODO: prose */}
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
           The smallest possible adder takes two bits and produces two bits: a{" "}
-          <strong>sum</strong> and a <strong>carry</strong>. Truth-table it and
-          there are exactly four cases &mdash; the sum is 1 when exactly one
-          input is 1 (the definition of XOR), and the carry is 1 only when
-          both inputs are 1 (the definition of AND).
+          <strong>sum</strong> and a <strong>carry</strong>. With two
+          single-bit inputs there are four cases &mdash; the sum is 1 when
+          exactly one input is 1 (that&rsquo;s XOR), and the carry is 1
+          only when both inputs are 1 (that&rsquo;s AND).
         </p>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
           Toggle the two switches below. The first LED is the sum bit, the
