@@ -53,7 +53,7 @@ export function FullAdderSection() {
         </p>
       </div>
 
-      <div className="mt-8 flex flex-col lg:flex-row lg:items-center gap-6">
+      <div className="mt-8 flex flex-col lg:flex-row lg:items-center gap-4">
         <div className="flex-1 min-w-0">
           <CircuitEmbed
             circuit={FullAdder}
@@ -62,7 +62,7 @@ export function FullAdderSection() {
             onPortValuesChange={setPortValues}
           />
         </div>
-        <div className="flex-1 flex justify-center">
+        <div className="shrink-0">
           <TruthTable
             title="Full adder truth table"
             columns={FA_COLUMNS}
