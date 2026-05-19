@@ -1,0 +1,208 @@
+---
+title: Building custom UIs
+description: Four tiers — from drop-in <CircuitEmbed /> to full composition with useCircuitSimulator + CircuitCanvas.
+---
+
+import { Tier2EmbedWithCallback, Tier4FullComposition } from '../../src/features/docs/CustomCompositionDemo'
+
+Most simten pages just want to drop a circuit on a page and let the
+reader poke at it. `<CircuitEmbed />` is the right tool for that. But
+sometimes you need more — a sibling component that reacts to switch
+toggles, a custom HUD over the canvas, a debugger that drives the
+simulator imperatively. The same primitives are available; you just
+pull them apart instead of using the canned wrapper.
+
+There are four progressively-lower-level ways to render a circuit,
+each opening up a bit more control. Pick the highest tier that gives
+you what you need.
+
+## Tier 1 — Drop-in `<CircuitEmbed />`
+
+The default. One component, sensible defaults, identical look across
+every page on simten.dev. Use this unless you need something it
+doesn't give you.
+
+```tsx
+import { CircuitEmbed } from '@simten/embed'
+
+<CircuitEmbed
+  circuit={MyCircuit}
+  title="Half adder"
+  description="Two switches → XOR for the sum, AND for the carry."
+/>
+```
+
+No state out, no imperative control — just a self-contained
+interactive embed.
+
+## Tier 2 — Read sim state with `onPortValuesChange`
+
+When you want a sibling component to react to the embed's live state
+(e.g. a truth-table highlight that follows the user's switch toggles,
+or an external readout of a specific port value), pass an
+`onPortValuesChange` callback. The embed fires it once when the sim
+first settles, then again on every subsequent settled change.
+
+```tsx
+import { useState } from 'react'
+import { CircuitEmbed } from '@simten/embed'
+import type { FlatPortValueMap } from '@simten/core/simulator'
+import { TruthTable, computeActiveRow } from '@/components/TruthTable'
+
+function HalfAdderWithLiveTable() {
+  const [portValues, setPortValues] = useState<FlatPortValueMap | null>(null)
+  const activeRow = computeActiveRow(portValues, COLUMNS, ROWS)
+
+  return (
+    <>
+      <CircuitEmbed
+        circuit={HalfAdder}
+        title="Half adder"
+        onPortValuesChange={setPortValues}
+      />
+      <TruthTable columns={COLUMNS} rows={ROWS} highlightRow={activeRow} />
+    </>
+  )
+}
+```
+
+**Live demo** — toggle the switches:
+
+<Tier2EmbedWithCallback />
+
+The callback is captured in a ref inside the embed, so inline
+functions like `onPortValuesChange={(pv) => setX(pv)}` are safe — they
+won't cause spurious re-fires across parent renders.
+
+### Firing semantics
+
+A few things worth knowing about *when* the callback fires:
+
+- **First fire** — once the embed's internal simulator becomes ready
+  and port values have first settled. Before that, the callback
+  doesn't fire and your `useState<FlatPortValueMap | null>(null)`
+  stays at `null` for one paint. Plan for that initial frame in your
+  rendering (e.g. `computeActiveRow` returns `undefined` cleanly when
+  port values are absent).
+- **Subsequent fires** — only on settled (post-propagation) states.
+  The simulator never exposes intermediate propagation states, so
+  there's no risk of flicker from mid-propagation values.
+- **Reference identity** — the port-values `Map` is *not* guaranteed
+  to be a stable reference across no-op ticks. Sequential auto-run
+  loops can emit new `Map` instances with unchanged contents. If
+  you're doing expensive derived work, memoize on the actual values
+  you care about rather than on the `Map` reference itself.
+
+## Tier 3 — Write into the sim with the imperative handle
+
+When a sibling needs to *drive* the embed (e.g. clicking a row in a
+truth table should set the canvas switches to that combination), use
+the existing `ref` handle. No new API required.
+
+```tsx
+import { useRef } from 'react'
+import { CircuitEmbed, type CircuitEmbedHandle } from '@simten/embed'
+
+function HalfAdderDrivenByTable() {
+  const embedRef = useRef<CircuitEmbedHandle>(null)
+
+  return (
+    <>
+      <CircuitEmbed ref={embedRef} circuit={HalfAdder} />
+      <TruthTable
+        ...
+        onRowClick={(row) => {
+          embedRef.current?.setNodeValue('a', row[0])
+          embedRef.current?.setNodeValue('b', row[1])
+        }}
+      />
+    </>
+  )
+}
+```
+
+Pair tier 2 (read out) and tier 3 (write in) to get bidirectional
+binding between the embed and any sibling UI you write.
+
+## Tier 4 — Full composition
+
+When you want full control over the chrome (no `CircuitEmbed` card,
+your own layout, multiple circuits sharing one panel, a debugger UI,
+etc.), compose the primitives directly. The embed is just a
+convenience wrapper around exactly this composition.
+
+```tsx
+import { useCircuitSimulator, CircuitCanvas } from '@simten/embed'
+import { TruthTable, computeActiveRow } from '@/components/TruthTable'
+
+function HalfAdderFullyCustom() {
+  const sim = useCircuitSimulator(HalfAdder, { autoHarness: true })
+  const activeRow = computeActiveRow(sim.portValues, COLUMNS, ROWS)
+
+  return (
+    <>
+      {/* Your own canvas chrome — no border, custom background, whatever. */}
+      <div style={{ height: 320 }}>
+        {sim.ready && (
+          <CircuitCanvas
+            circuit={sim.circuit}
+            componentLibrary={sim.componentLibrary ?? undefined}
+            portValues={sim.portValues}
+            sequentialState={sim.sequentialState}
+            onToggleNode={sim.toggleNode}
+            onSetNodeValue={sim.setNodeValue}
+            height={320}
+          />
+        )}
+      </div>
+      <TruthTable columns={COLUMNS} rows={ROWS} highlightRow={activeRow} />
+    </>
+  )
+}
+```
+
+**Live demo** — same behavior as tier 2, different plumbing:
+
+<Tier4FullComposition />
+
+The single `useCircuitSimulator(HalfAdder)` call creates one simulator
+instance. The canvas reads its state via props (`portValues`,
+`sequentialState`) and writes to it via callbacks (`onToggleNode`,
+`onSetNodeValue`). The truth table reads from the same `portValues`.
+One sim, two consumers.
+
+Tier 4 is the right choice when:
+
+- You want chrome that's meaningfully different from `CircuitEmbed`'s
+  card (e.g. no border, a custom toolbar, a different aspect ratio
+  treatment).
+- You're rendering multiple circuits in a single composed panel where
+  layout coordination matters.
+- You're building a debugger / IDE-like surface where you want to
+  expose sim actions to many sibling UIs.
+
+For most pages, tier 2 is enough.
+
+## Security
+
+You don't need to think about it for any tier. `useCircuitSimulator`
+routes all simulation work through the cross-origin sandbox iframe
+internally — whether the circuit came from a build-time TypeScript
+file (your case) or a user-typed string in the in-browser editor.
+Eval lambdas run inside the iframe with `sandbox="allow-scripts
+allow-same-origin"`, isolated from your main page's cookies, storage,
+and DOM. Composing the primitives yourself doesn't bypass any of that.
+
+## Which tier do I pick?
+
+| Tier | Pick when | API |
+|---|---|---|
+| 1 | You just want a circuit on a page | `<CircuitEmbed circuit={X} />` |
+| 2 | A sibling reacts to switch toggles | `<CircuitEmbed onPortValuesChange={...} />` |
+| 3 | A sibling drives the switches | `ref={...}` + `setNodeValue` |
+| 4 | You want fully custom chrome / layout | `useCircuitSimulator` + `CircuitCanvas` |
+
+Most production simten.dev pages use tier 1. The `/learn/adders` half-
+and full-adder sections use tier 2 (live truth tables). Tier 3 isn't
+currently used in the public site but the API is there. Tier 4 is the
+escape hatch — keep it in mind for when you outgrow the canned embed.

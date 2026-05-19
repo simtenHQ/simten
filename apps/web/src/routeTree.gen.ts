@@ -15,7 +15,6 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as LearnIndexRouteImport } from './routes/learn/index'
 import { Route as CpuIndexRouteImport } from './routes/cpu/index'
 import { Route as BlogIndexRouteImport } from './routes/blog/index'
-import { Route as LearnTruthTableDemoRouteImport } from './routes/learn/truth-table-demo'
 import { Route as LearnAddersRouteImport } from './routes/learn/adders'
 import { Route as LearnAbstractionRouteImport } from './routes/learn/abstraction'
 import { Route as DocsSplatRouteImport } from './routes/docs/$'
@@ -66,11 +65,6 @@ const BlogIndexRoute = BlogIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => BlogRoute,
-} as any)
-const LearnTruthTableDemoRoute = LearnTruthTableDemoRouteImport.update({
-  id: '/learn/truth-table-demo',
-  path: '/learn/truth-table-demo',
-  getParentRoute: () => rootRouteImport,
 } as any)
 const LearnAddersRoute = LearnAddersRouteImport.update({
   id: '/learn/adders',
@@ -199,7 +193,6 @@ export interface FileRoutesByFullPath {
   '/docs/$': typeof DocsSplatRoute
   '/learn/abstraction': typeof LearnAbstractionRoute
   '/learn/adders': typeof LearnAddersRoute
-  '/learn/truth-table-demo': typeof LearnTruthTableDemoRoute
   '/blog/': typeof BlogIndexRoute
   '/cpu/': typeof CpuIndexRoute
   '/learn/': typeof LearnIndexRoute
@@ -227,7 +220,6 @@ export interface FileRoutesByTo {
   '/docs/$': typeof DocsSplatRoute
   '/learn/abstraction': typeof LearnAbstractionRoute
   '/learn/adders': typeof LearnAddersRoute
-  '/learn/truth-table-demo': typeof LearnTruthTableDemoRoute
   '/blog': typeof BlogIndexRoute
   '/cpu': typeof CpuIndexRoute
   '/learn': typeof LearnIndexRoute
@@ -257,7 +249,6 @@ export interface FileRoutesById {
   '/docs/$': typeof DocsSplatRoute
   '/learn/abstraction': typeof LearnAbstractionRoute
   '/learn/adders': typeof LearnAddersRoute
-  '/learn/truth-table-demo': typeof LearnTruthTableDemoRoute
   '/blog/': typeof BlogIndexRoute
   '/cpu/': typeof CpuIndexRoute
   '/learn/': typeof LearnIndexRoute
@@ -288,7 +279,6 @@ export interface FileRouteTypes {
     | '/docs/$'
     | '/learn/abstraction'
     | '/learn/adders'
-    | '/learn/truth-table-demo'
     | '/blog/'
     | '/cpu/'
     | '/learn/'
@@ -316,7 +306,6 @@ export interface FileRouteTypes {
     | '/docs/$'
     | '/learn/abstraction'
     | '/learn/adders'
-    | '/learn/truth-table-demo'
     | '/blog'
     | '/cpu'
     | '/learn'
@@ -345,7 +334,6 @@ export interface FileRouteTypes {
     | '/docs/$'
     | '/learn/abstraction'
     | '/learn/adders'
-    | '/learn/truth-table-demo'
     | '/blog/'
     | '/cpu/'
     | '/learn/'
@@ -362,7 +350,6 @@ export interface RootRouteChildren {
   DocsSplatRoute: typeof DocsSplatRoute
   LearnAbstractionRoute: typeof LearnAbstractionRoute
   LearnAddersRoute: typeof LearnAddersRoute
-  LearnTruthTableDemoRoute: typeof LearnTruthTableDemoRoute
   CpuIndexRoute: typeof CpuIndexRoute
   LearnIndexRoute: typeof LearnIndexRoute
   CircuitSHashRoute: typeof CircuitSHashRoute
@@ -411,13 +398,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/blog/'
       preLoaderRoute: typeof BlogIndexRouteImport
       parentRoute: typeof BlogRoute
-    }
-    '/learn/truth-table-demo': {
-      id: '/learn/truth-table-demo'
-      path: '/learn/truth-table-demo'
-      fullPath: '/learn/truth-table-demo'
-      preLoaderRoute: typeof LearnTruthTableDemoRouteImport
-      parentRoute: typeof rootRouteImport
     }
     '/learn/adders': {
       id: '/learn/adders'
@@ -608,7 +588,6 @@ const rootRouteChildren: RootRouteChildren = {
   DocsSplatRoute: DocsSplatRoute,
   LearnAbstractionRoute: LearnAbstractionRoute,
   LearnAddersRoute: LearnAddersRoute,
-  LearnTruthTableDemoRoute: LearnTruthTableDemoRoute,
   CpuIndexRoute: CpuIndexRoute,
   LearnIndexRoute: LearnIndexRoute,
   CircuitSHashRoute: CircuitSHashRoute,
