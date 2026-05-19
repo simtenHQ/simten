@@ -10,6 +10,7 @@
  */
 
 import type { ReactNode } from "react";
+import { readPortBit, type PortValuesMap } from "@/lib/port-values";
 
 // Reusing the embed CSS variables (light/dark theming via --embed-*).
 
@@ -209,10 +210,7 @@ function BitCell({
  * size (worst practical case ~16 × 5 = 80 comparisons).
  */
 export function computeActiveRow(
-  portValues:
-    | ReadonlyMap<string, number | boolean | bigint>
-    | null
-    | undefined,
+  portValues: PortValuesMap | null | undefined,
   columns: TruthTableColumn[],
   rows: Array<Array<number | string>>,
 ): number | undefined {
@@ -226,7 +224,7 @@ export function computeActiveRow(
   // control flow — .some() doesn't propagate the null-narrowing.
   const currentBits: number[] = [];
   for (const { col } of inputCols) {
-    const bit = readBit(portValues, col.name);
+    const bit = readPortBit(portValues, col.name);
     if (bit === null) return undefined;
     currentBits.push(bit);
   }
@@ -235,23 +233,4 @@ export function computeActiveRow(
     inputCols.every(({ i }, k) => row[i] === currentBits[k]),
   );
   return found === -1 ? undefined : found;
-}
-
-/**
- * Pull a single-bit value out of the live port-values map by port name.
- * The auto-harness names its switches after the input port names by
- * convention; we also try a couple of less-likely shapes for robustness.
- * Returns null if no candidate matches.
- */
-function readBit(
-  portValues: ReadonlyMap<string, number | boolean | bigint>,
-  portName: string,
-): number | null {
-  const candidates = [`${portName}.out`, `__top__.${portName}`, portName];
-  for (const key of candidates) {
-    const v = portValues.get(key);
-    if (v === undefined) continue;
-    return typeof v === "boolean" ? (v ? 1 : 0) : Number(v) & 1;
-  }
-  return null;
 }
