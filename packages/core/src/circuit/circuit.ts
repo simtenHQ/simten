@@ -157,6 +157,30 @@ export function circuit(
   name: string,
   configOrFactory: any = {} as any,
 ): any {
+  // Runtime guard: typescript would catch `circuit(SomeObject, {...})` at
+  // typecheck time, but in the in-browser editor user code is type-stripped
+  // and run via new Function() — types are gone by the time it executes, so
+  // a misspelled / mis-pasted import like `circuit(React, {...})` just
+  // accepts the object and stashes it as the circuit's name. That object
+  // then percolates through to UI render paths that expect a string, where
+  // React eventually throws a cryptic "Objects are not valid as a React
+  // child" error with no hint that the actual problem is in the user's
+  // circuit() call. Catch it at the call site with a useful message.
+  if (typeof name !== 'string') {
+    const got =
+      name === null
+        ? 'null'
+        : Array.isArray(name)
+          ? 'array'
+          : typeof name;
+    throw new Error(
+      `circuit() expects a string name as the first argument, got ${got}. ` +
+        `Usage: circuit('MyCircuit', { inputs, outputs, nodes, connect }). ` +
+        `(A common cause is a stray import / variable being passed by mistake, ` +
+        `e.g. circuit(React, {...}) — the first argument must be a literal string name.)`,
+    );
+  }
+
   // Factory form: return a callable that builds a per-instance BuiltCircuit
   // with `_args` attached. The factory closes over the original `name`, so
   // every specialized instance shares the same component name (and registry
