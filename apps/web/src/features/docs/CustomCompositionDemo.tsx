@@ -107,11 +107,6 @@ export function Tier4FullComposition() {
             <LedReadout label="sum" lit={sum === 1} />
             <LedReadout label="carry" lit={carry === 1} />
           </div>
-          <p className="mt-6 text-xs text-[var(--embed-text-muted)] text-center">
-            No canvas. The simulator is driving the LEDs directly via the
-            same <code>portValues</code> map; <code>setNodeValue</code>
-            writes the toggles back.
-          </p>
         </div>
       </div>
       <div className="shrink-0">
