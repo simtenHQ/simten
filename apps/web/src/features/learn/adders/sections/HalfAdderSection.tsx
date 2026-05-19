@@ -1,5 +1,6 @@
 import { CircuitEmbed } from "@simten/embed";
 import { ADDER_CIRCUITS } from "../circuits";
+import { TruthTable } from "@/components/TruthTable";
 
 export function HalfAdderSection() {
   const entry = ADDER_CIRCUITS.halfAdder;
@@ -10,7 +11,6 @@ export function HalfAdderSection() {
         The half adder
       </h2>
       <div className="prose-invert space-y-6">
-        {/* TODO: prose */}
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
           The smallest possible adder takes two bits and produces two bits: a{" "}
           <strong>sum</strong> and a <strong>carry</strong>. With two
@@ -20,8 +20,7 @@ export function HalfAdderSection() {
         </p>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
           Toggle the two switches below. The first LED is the sum bit, the
-          second is the carry. Watch all four combinations to see the truth
-          table play out.
+          second is the carry.
         </p>
       </div>
 
@@ -31,6 +30,24 @@ export function HalfAdderSection() {
           showControls={false}
           title={entry.name}
           description={entry.description}
+        />
+      </div>
+
+      <div className="mt-8">
+        <TruthTable
+          title="Half adder truth table"
+          columns={[
+            { name: "a", group: "input" },
+            { name: "b", group: "input" },
+            { name: "sum", group: "output" },
+            { name: "carry", group: "output" },
+          ]}
+          rows={[
+            [0, 0, 0, 0],
+            [0, 1, 1, 0],
+            [1, 0, 1, 0],
+            [1, 1, 0, 1],
+          ]}
         />
       </div>
     </section>
