@@ -5,16 +5,15 @@ description: Four tiers — from drop-in <CircuitEmbed /> to full composition wi
 
 import { Tier2EmbedWithCallback, Tier4FullComposition } from '../../src/features/docs/CustomCompositionDemo'
 
-Most simten pages just want to drop a circuit on a page and let the
-reader poke at it. `<CircuitEmbed />` is the right tool for that. But
-sometimes you need more — a sibling component that reacts to switch
-toggles, a custom HUD over the canvas, a debugger that drives the
-simulator imperatively. The same primitives are available; you just
-pull them apart instead of using the canned wrapper.
+`<CircuitEmbed />` is the default for putting an interactive circuit
+on a page. When you need more — a sibling that reacts to switch
+toggles, a custom HUD, a debugger driving the sim — the same
+primitives are available; you compose them yourself.
 
-There are four progressively-lower-level ways to render a circuit,
-each opening up a bit more control. Pick the highest tier that gives
-you what you need.
+The simulator runs in pure JavaScript inside the sandbox iframe,
+independent of any rendering. Each tier below is a different way for
+your React UI to subscribe to its state and write inputs back. Pick
+the highest one that gives you what you need.
 
 ## Tier 1 — Drop-in `<CircuitEmbed />`
 
