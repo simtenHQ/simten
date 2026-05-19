@@ -15,7 +15,6 @@ import {
   And,
   Xor,
   Or,
-  Switch,
   Led,
   Input,
   HexDisplay,
@@ -24,8 +23,9 @@ import {
 } from "@simten/core/std";
 
 // ── Half adder ─────────────────────────────────────────────────────────
-// TODO: A + B → (sum, carry) using XOR + AND. The simplest possible adder.
-const HalfAdder = circuit("HalfAdder", {
+// Exported so HalfAdderSection can drive it directly via the composition
+// pattern (useCircuitSimulator + CircuitCanvas + the live truth table).
+export const HalfAdder = circuit("HalfAdder", {
   inputs: { a: bit, b: bit },
   outputs: { sum: bit, carry: bit },
   nodes: { xorGate: Xor, andGate: And },
@@ -37,25 +37,10 @@ const HalfAdder = circuit("HalfAdder", {
   ],
 });
 
-const HalfAdderDemo = circuit("HalfAdderDemo", {
-  nodes: {
-    a: Switch(),
-    b: Switch(),
-    ha: HalfAdder,
-    sumLed: Led,
-    carryLed: Led,
-  },
-  connect: ({ nodes: { a, b, ha, sumLed, carryLed } }) => [
-    a.out.to(ha.a),
-    b.out.to(ha.b),
-    ha.sum.to(sumLed.in),
-    ha.carry.to(carryLed.in),
-  ],
-});
-
 // ── Full adder ─────────────────────────────────────────────────────────
-// TODO: A + B + carry_in → (sum, carry_out). Two half-adders + an OR.
-const FullAdder = circuit("FullAdder", {
+// Exported for the same reason as HalfAdder. Also used internally by
+// RippleCarryDemo below.
+export const FullAdder = circuit("FullAdder", {
   inputs: { a: bit, b: bit, cin: bit },
   outputs: { sum: bit, cout: bit },
   nodes: {
@@ -72,24 +57,6 @@ const FullAdder = circuit("FullAdder", {
     ha1.carry.to(orGate.a),
     ha2.carry.to(orGate.b),
     orGate.out.to(outputs.cout),
-  ],
-});
-
-const FullAdderDemo = circuit("FullAdderDemo", {
-  nodes: {
-    a: Switch(),
-    b: Switch(),
-    cin: Switch(),
-    fa: FullAdder,
-    sumLed: Led,
-    coutLed: Led,
-  },
-  connect: ({ nodes: { a, b, cin, fa, sumLed, coutLed } }) => [
-    a.out.to(fa.a),
-    b.out.to(fa.b),
-    cin.out.to(fa.cin),
-    fa.sum.to(sumLed.in),
-    fa.cout.to(coutLed.in),
   ],
 });
 
@@ -131,18 +98,10 @@ const CarryLookaheadDemo = RippleCarryDemo; // placeholder
 // ── Export ─────────────────────────────────────────────────────────────
 
 export const ADDER_CIRCUITS = {
-  halfAdder: {
-    name: "Half adder",
-    description:
-      "Two switches → XOR for the sum, AND for the carry. The smallest unit that adds.",
-    circuit: HalfAdderDemo,
-  },
-  fullAdder: {
-    name: "Full adder",
-    description:
-      "Adds three bits — A, B, and carry-in — to produce one sum bit and one carry-out bit.",
-    circuit: FullAdderDemo,
-  },
+  // halfAdder / fullAdder used to live here as standalone Demo wrappers.
+  // The half-adder and full-adder sections now drive HalfAdder / FullAdder
+  // directly via useCircuitSimulator + autoHarness, so those entries are
+  // gone — the bare circuits are exported above for that composition.
   rippleCarry: {
     name: "8-bit ripple-carry adder",
     description:
