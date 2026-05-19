@@ -11,6 +11,8 @@
 
 import type { ReactNode } from "react";
 
+// Reusing the embed CSS variables (light/dark theming via --embed-*).
+
 export interface TruthTableColumn {
   name: string;
   /** Visually groups columns into "causes" vs "effects" via header tint. */
@@ -32,6 +34,12 @@ export interface TruthTableProps {
    * element for screen readers, positioned at the bottom via CSS.
    */
   caption?: string;
+  /**
+   * Index of the row to visually highlight (e.g. "the input combination
+   * the canvas is currently showing"). The caller computes which row to
+   * highlight from whatever state they're tracking.
+   */
+  highlightRow?: number;
   className?: string;
 }
 
@@ -40,6 +48,7 @@ export function TruthTable({
   rows,
   title,
   caption,
+  highlightRow,
   className,
 }: TruthTableProps) {
   // Runtime guard: every row must have one cell per declared column.
@@ -70,34 +79,29 @@ export function TruthTable({
           {title}
         </div>
       )}
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto px-4 py-4 flex justify-center">
         <table
-          className="w-full border-collapse text-left"
+          className="border-collapse text-center"
           style={{ captionSide: "bottom" }}
           aria-label={tableAriaLabel}
         >
           {caption && (
-            <caption className="px-4 py-2 text-left text-xs text-[var(--embed-text-muted)]">
+            <caption className="pt-3 text-center text-xs text-[var(--embed-text-muted)]">
               {caption}
             </caption>
           )}
-          <thead className="bg-[var(--embed-bg-tertiary)]">
+          <thead>
             <tr>
               {columns.map((col, i) => {
                 const isLastInput =
                   col.group === "input" &&
                   columns[i + 1]?.group === "output";
-                const tintForGroup =
-                  col.group === "output"
-                    ? "bg-[var(--embed-bg-secondary)]"
-                    : "";
                 return (
                   <th
                     key={col.name + i}
                     scope="col"
                     className={
-                      "px-3 py-2 text-xs font-medium uppercase tracking-wide text-[var(--embed-text-secondary)] " +
-                      tintForGroup +
+                      "px-4 py-2 text-xs font-medium uppercase tracking-wide text-[var(--embed-text-secondary)]" +
                       (isLastInput
                         ? " border-r border-[var(--embed-border)]"
                         : "")
@@ -110,32 +114,40 @@ export function TruthTable({
             </tr>
           </thead>
           <tbody>
-            {rows.map((row, ri) => (
-              <tr
-                key={ri}
-                className="border-t border-[var(--embed-border)]/40"
-              >
-                {row.map((cell, ci) => {
-                  const col = columns[ci];
-                  const isLastInput =
-                    col.group === "input" &&
-                    columns[ci + 1]?.group === "output";
-                  return (
-                    <td
-                      key={ci}
-                      className={
-                        "px-3 py-1.5 font-mono text-sm text-[var(--embed-text-primary)]" +
-                        (isLastInput
-                          ? " border-r border-[var(--embed-border)]"
-                          : "")
-                      }
-                    >
-                      {renderCell(cell)}
-                    </td>
-                  );
-                })}
-              </tr>
-            ))}
+            {rows.map((row, ri) => {
+              const isHighlighted = ri === highlightRow;
+              return (
+                <tr
+                  key={ri}
+                  className={
+                    isHighlighted
+                      ? "bg-blue-500/10 ring-1 ring-inset ring-blue-500/40"
+                      : ""
+                  }
+                  aria-current={isHighlighted ? "row" : undefined}
+                >
+                  {row.map((cell, ci) => {
+                    const col = columns[ci];
+                    const isLastInput =
+                      col.group === "input" &&
+                      columns[ci + 1]?.group === "output";
+                    return (
+                      <td
+                        key={ci}
+                        className={
+                          "px-4 py-1.5 font-mono text-sm" +
+                          (isLastInput
+                            ? " border-r border-[var(--embed-border)]"
+                            : "")
+                        }
+                      >
+                        <BitCell value={cell} active={col.group === "output"} />
+                      </td>
+                    );
+                  })}
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
@@ -143,6 +155,103 @@ export function TruthTable({
   );
 }
 
-function renderCell(value: string | number): ReactNode {
-  return value;
+/**
+ * Render a single truth-table cell. For 0/1 bit values we style the "1"
+ * as a tinted badge — output 1s use a brighter accent so the pattern of
+ * which inputs produce a 1 at each output reads at a glance. 0s are
+ * dimmed so the active cells stand out instead of every cell carrying
+ * equal weight.
+ */
+function BitCell({
+  value,
+  active,
+}: {
+  value: string | number;
+  active: boolean;
+}): ReactNode {
+  if (value === 1 || value === "1") {
+    return (
+      <span
+        className={
+          "inline-flex h-6 w-6 items-center justify-center rounded font-semibold " +
+          (active
+            ? "bg-blue-500/20 text-blue-300 ring-1 ring-inset ring-blue-500/40"
+            : "bg-[var(--embed-bg-tertiary)] text-[var(--embed-text-primary)]")
+        }
+      >
+        1
+      </span>
+    );
+  }
+  if (value === 0 || value === "0") {
+    return (
+      <span className="inline-flex h-6 w-6 items-center justify-center text-[var(--embed-text-muted)]">
+        0
+      </span>
+    );
+  }
+  // Non-binary cell (string label, multi-bit value) — render plain.
+  return <span className="text-[var(--embed-text-primary)]">{value}</span>;
+}
+
+/**
+ * Given the live port-values map from a simulator and the columns + rows
+ * of a truth table, find the index of the row whose input cells match
+ * the simulator's current input port values. Returns `undefined` when no
+ * match exists (or when the sim isn't ready yet).
+ *
+ * Uses value-matching rather than positional bit-packing, so:
+ *   - rows can be declared in any order
+ *   - rows can be omitted (e.g., for pedagogical simplification)
+ *   - no hidden "first input is MSB" invariant for a future author to violate
+ *
+ * Linear scan over rows × inputs, which is free at any realistic table
+ * size (worst practical case ~16 × 5 = 80 comparisons).
+ */
+export function computeActiveRow(
+  portValues:
+    | ReadonlyMap<string, number | boolean | bigint>
+    | null
+    | undefined,
+  columns: TruthTableColumn[],
+  rows: Array<Array<number | string>>,
+): number | undefined {
+  if (!portValues || portValues.size === 0) return undefined;
+
+  const inputCols = columns
+    .map((col, i) => ({ col, i }))
+    .filter(({ col }) => col.group === "input");
+
+  // Walk the inputs imperatively so currentBits narrows to number[] via
+  // control flow — .some() doesn't propagate the null-narrowing.
+  const currentBits: number[] = [];
+  for (const { col } of inputCols) {
+    const bit = readBit(portValues, col.name);
+    if (bit === null) return undefined;
+    currentBits.push(bit);
+  }
+
+  const found = rows.findIndex((row) =>
+    inputCols.every(({ i }, k) => row[i] === currentBits[k]),
+  );
+  return found === -1 ? undefined : found;
+}
+
+/**
+ * Pull a single-bit value out of the live port-values map by port name.
+ * The auto-harness names its switches after the input port names by
+ * convention; we also try a couple of less-likely shapes for robustness.
+ * Returns null if no candidate matches.
+ */
+function readBit(
+  portValues: ReadonlyMap<string, number | boolean | bigint>,
+  portName: string,
+): number | null {
+  const candidates = [`${portName}.out`, `__top__.${portName}`, portName];
+  for (const key of candidates) {
+    const v = portValues.get(key);
+    if (v === undefined) continue;
+    return typeof v === "boolean" ? (v ? 1 : 0) : Number(v) & 1;
+  }
+  return null;
 }
