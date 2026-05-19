@@ -792,8 +792,11 @@ const HALF_ADDER_DISPLAY = `const HalfAdder = circuit('HalfAdder', {
   ],
 });`;
 
-const HeroBrowserWindow = forwardRef<HeroBrowserWindowHandle, {}>(
-  function HeroBrowserWindow(_, ref) {
+const HeroBrowserWindow = forwardRef<
+  HeroBrowserWindowHandle,
+  { canvasReady?: boolean }
+>(
+  function HeroBrowserWindow({ canvasReady = false }, ref) {
     const [codeTyping, setCodeTyping] = useState(false);
     const [showCircuit, setShowCircuit] = useState(false);
     const [targetCircuit, setTargetCircuit] = useState<BuiltCircuit>(HalfAdder);
@@ -816,6 +819,14 @@ const HeroBrowserWindow = forwardRef<HeroBrowserWindowHandle, {}>(
         setShowCircuit(false);
       },
     }), []);
+
+    // CircuitEmbed only mounts once the parent has confirmed the
+    // column-collapse animation finished (canvasReady=true), so React
+    // Flow measures at the final expanded width on its very first
+    // render instead of reflowing during the animation. The fade-in
+    // softens the discrete mount moment so it reads as a reveal rather
+    // than a pop.
+    const mountCanvas = showCircuit && canvasReady;
 
     return (
       <BrowserWindow className="flex-1" showMcp={codeTyping || showCircuit}>
@@ -844,16 +855,18 @@ const HeroBrowserWindow = forwardRef<HeroBrowserWindowHandle, {}>(
           </div>
           <div className="flex-1 flex flex-col min-w-0">
             <div className="flex-1 min-h-0 relative">
-              {showCircuit ? (
-                <CircuitEmbed circuit={targetCircuit} height="100%" />
+              {mountCanvas ? (
+                <div className="h-full animate-in fade-in duration-500">
+                  <CircuitEmbed circuit={targetCircuit} height="100%" />
+                </div>
               ) : (
                 <div className="h-full flex items-center justify-center text-muted-foreground/40 text-sm font-mono">
-                  {codeTyping ? "Compiling..." : ""}
+                  {codeTyping || showCircuit ? "Compiling..." : ""}
                 </div>
               )}
             </div>
-            {showCircuit && (
-              <div className="flex-shrink-0 border-t border-border px-4 py-2 flex items-center justify-between">
+            {mountCanvas && (
+              <div className="flex-shrink-0 border-t border-border px-4 py-2 flex items-center justify-between animate-in fade-in duration-500">
                 <span className="text-[11px] text-muted-foreground/60">
                   Click switches to interact
                 </span>
@@ -894,14 +907,31 @@ export function ClaudeDemoSection({
 }: ClaudeDemoSectionProps) {
   const [demoComplete, setDemoComplete] = useState(false);
   const [expanded, setExpanded] = useState(false);
-  const [extraLines, setExtraLines] = useState<TermLine[]>([]);
-  const [pickedPrompt, setPickedPrompt] = useState(false);
+  // Gates the canvas mount inside HeroBrowserWindow: stays false until
+  // the column-collapse animation has finished, so CircuitEmbed measures
+  // at its final (expanded) width on first render rather than mounting
+  // at the narrow build-phase width and then reflowing partway through
+  // the collapse animation.
+  const [canvasReady, setCanvasReady] = useState(false);
+  // The picker UI ("Try another demo …") was removed; ScriptedTerminal
+  // still needs an `extraLines` prop but the section never appends to it,
+  // so a stable empty array is fine.
+  const extraLines: TermLine[] = [];
 
-  // Duration (ms) of the terminal-column collapse animation. Used both as
+  // Reading buffer: after the typewriter finishes, hold the fully-typed
+  // terminal visible for a beat so the user can actually finish reading
+  // the last lines before the column slides away. Then the column
+  // collapses (COLLAPSE_MS), then the canvas mounts (post-animation).
+  const READING_BUFFER_MS = 800;
+  // Duration of the terminal-column collapse animation. Used both as
   // the CSS transition duration on the grid columns and as the timeout
-  // before mounting the canvas — so the canvas measures at the final
-  // expanded width on first render rather than reflowing partway through.
-  const COLLAPSE_MS = 700;
+  // between expanded=true firing and canvasReady=true firing. Decoupled
+  // from the terminal's text fade-out (duration-500 on TerminalWindow's
+  // opacity transition) — the text fades quickly while the column itself
+  // slides more deliberately, so the reader's attention is freed from
+  // the transcript before the column finishes giving its space to the
+  // canvas.
+  const COLLAPSE_MS = 1200;
 
   // Scroll-into-view gating for the scripted terminal animation.
   // Starts true if autoPlay was requested, otherwise waits for IO.
@@ -955,28 +985,33 @@ export function ClaudeDemoSection({
     heroRef.current?.startTyping();
   }, []);
 
-  const handlePickPrompt = useCallback((option: PromptOption) => {
-    setPickedPrompt(true);
-    setDemoComplete(false);
-    // Pull the terminal back in so the user can see the next demo's
-    // transcript before it animates away again.
-    setExpanded(false);
-    heroRef.current?.pickPrompt(option);
-    const separator: TermLine = { type: "blank", content: "", delay: 300 };
-    setExtraLines([separator, ...option.script]);
-  }, []);
-
   const onCompleteRef = useRef(onComplete);
   onCompleteRef.current = onComplete;
   const handleComplete = useCallback(() => {
     setDemoComplete(true);
     onCompleteRef.current?.();
-    // Trigger the column-collapse animation: terminal shrinks, canvas
-    // column grows. The canvas is already mounted (CircuitEmbed renders
-    // as soon as the code finishes typing) so React Flow handles the
-    // resize itself — no remount.
-    setExpanded(true);
   }, []);
+
+  // Post-completion sequence:
+  //   typewriter done → wait READING_BUFFER_MS so the user can read
+  //   → trigger column-collapse animation (expanded=true, CSS handles
+  //     the transition over COLLAPSE_MS)
+  //   → after the animation completes, mount the canvas (canvasReady=true)
+  //     so CircuitEmbed measures at its final width on first render.
+  // Both timers cancel on unmount or when demoComplete resets (e.g.
+  // user clicks "Try another demo" mid-run).
+  useEffect(() => {
+    if (!demoComplete) return;
+    const expandT = setTimeout(() => setExpanded(true), READING_BUFFER_MS);
+    const mountT = setTimeout(
+      () => setCanvasReady(true),
+      READING_BUFFER_MS + COLLAPSE_MS,
+    );
+    return () => {
+      clearTimeout(expandT);
+      clearTimeout(mountT);
+    };
+  }, [demoComplete]);
 
   return (
     <section className="hidden md:block pt-20 pb-16">
@@ -1012,7 +1047,7 @@ export function ClaudeDemoSection({
           }}
         >
           <TerminalWindow
-            className={`min-w-0 transition-opacity duration-500 ${
+            className={`min-w-0 transition-opacity duration-300 ${
               expanded ? "opacity-0 pointer-events-none" : "opacity-100"
             }`}
           >
@@ -1026,35 +1061,10 @@ export function ClaudeDemoSection({
                 />
               </div>
 
-              {demoComplete && (
-                <div className="flex-shrink-0 border-t border-[#30363d] px-5 py-4 space-y-3 animate-in fade-in duration-500">
-                  {!pickedPrompt && (
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2 font-mono text-[13px]">
-                        <span className="text-gray-200">&gt;</span>
-                        <span className="text-gray-600">
-                          Try another demo...
-                        </span>
-                      </div>
-                      <div className="flex flex-col gap-1.5 pl-5">
-                        {PROMPT_OPTIONS.map((option) => (
-                          <button
-                            key={option.label}
-                            onClick={() => handlePickPrompt(option)}
-                            className="text-left text-[13px] font-mono text-blue-400 hover:text-blue-300 hover:bg-[#161b22] rounded px-2 py-1.5 -mx-2 transition-colors"
-                          >
-                            {option.label}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
             </div>
           </TerminalWindow>
 
-          <HeroBrowserWindow ref={heroRef} />
+          <HeroBrowserWindow ref={heroRef} canvasReady={canvasReady} />
         </div>
       </Container>
     </section>
