@@ -1,5 +1,6 @@
 import { CircuitEmbed } from "@simten/embed";
 import { ADDER_CIRCUITS } from "../circuits";
+import { TruthTable } from "@/components/TruthTable";
 
 export function FullAdderSection() {
   const entry = ADDER_CIRCUITS.fullAdder;
@@ -36,6 +37,29 @@ export function FullAdderSection() {
           showControls={false}
           title={entry.name}
           description={entry.description}
+        />
+      </div>
+
+      <div className="mt-8">
+        <TruthTable
+          title="Full adder truth table"
+          columns={[
+            { name: "a", group: "input" },
+            { name: "b", group: "input" },
+            { name: "cin", group: "input" },
+            { name: "sum", group: "output" },
+            { name: "cout", group: "output" },
+          ]}
+          rows={[
+            [0, 0, 0, 0, 0],
+            [0, 0, 1, 1, 0],
+            [0, 1, 0, 1, 0],
+            [0, 1, 1, 0, 1],
+            [1, 0, 0, 1, 0],
+            [1, 0, 1, 0, 1],
+            [1, 1, 0, 0, 1],
+            [1, 1, 1, 1, 1],
+          ]}
         />
       </div>
     </section>
