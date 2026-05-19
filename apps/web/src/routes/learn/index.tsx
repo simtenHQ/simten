@@ -79,8 +79,34 @@ function LearnIndexPage() {
             </div>
           </Link>
 
+          <Link
+            to="/learn/registers"
+            className="block p-6 rounded-xl bg-gray-900 border border-gray-800 hover:border-blue-700/50 hover:bg-gray-900/80 transition-colors group"
+          >
+            <div className="flex items-start justify-between">
+              <div>
+                <h2 className="text-xl font-bold text-white group-hover:text-blue-300 transition-colors">
+                  Registers
+                </h2>
+                <p className="mt-2 text-gray-400 leading-relaxed">
+                  How a circuit remembers. From the single-bit D flip-flop
+                  to multi-bit registers with write-enable, ending with a
+                  counter &mdash; the first useful sequential circuit.
+                </p>
+              </div>
+              <span className="text-gray-600 group-hover:text-blue-400 transition-colors text-2xl ml-4">
+                &rarr;
+              </span>
+            </div>
+            <div className="mt-4 flex items-center gap-4 text-sm text-gray-500">
+              <span className="px-2 py-0.5 rounded-full bg-emerald-900/50 text-emerald-300 text-xs font-medium">
+                Sequential
+              </span>
+            </div>
+          </Link>
+
           <p className="text-gray-500 pt-4">
-            More coming &mdash; registers, FSMs, multiplexers.
+            More coming &mdash; FSMs, multiplexers.
           </p>
         </div>
 

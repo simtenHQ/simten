@@ -80,6 +80,7 @@ const config = defineConfig(({ command }) => ({
         { path: '/learn' },
         { path: '/learn/adders' },
         { path: '/learn/abstraction' },
+        { path: '/learn/registers' },
         { path: '/cpu' },
         { path: '/cpu/rv32i' },
         // Blog posts — auto-discovered from src/routes/blog/<slug>.tsx.
