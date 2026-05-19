@@ -15,6 +15,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as LearnIndexRouteImport } from './routes/learn/index'
 import { Route as CpuIndexRouteImport } from './routes/cpu/index'
 import { Route as BlogIndexRouteImport } from './routes/blog/index'
+import { Route as LearnRegistersRouteImport } from './routes/learn/registers'
 import { Route as LearnAddersRouteImport } from './routes/learn/adders'
 import { Route as LearnAbstractionRouteImport } from './routes/learn/abstraction'
 import { Route as DocsSplatRouteImport } from './routes/docs/$'
@@ -65,6 +66,11 @@ const BlogIndexRoute = BlogIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => BlogRoute,
+} as any)
+const LearnRegistersRoute = LearnRegistersRouteImport.update({
+  id: '/learn/registers',
+  path: '/learn/registers',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const LearnAddersRoute = LearnAddersRouteImport.update({
   id: '/learn/adders',
@@ -193,6 +199,7 @@ export interface FileRoutesByFullPath {
   '/docs/$': typeof DocsSplatRoute
   '/learn/abstraction': typeof LearnAbstractionRoute
   '/learn/adders': typeof LearnAddersRoute
+  '/learn/registers': typeof LearnRegistersRoute
   '/blog/': typeof BlogIndexRoute
   '/cpu/': typeof CpuIndexRoute
   '/learn/': typeof LearnIndexRoute
@@ -220,6 +227,7 @@ export interface FileRoutesByTo {
   '/docs/$': typeof DocsSplatRoute
   '/learn/abstraction': typeof LearnAbstractionRoute
   '/learn/adders': typeof LearnAddersRoute
+  '/learn/registers': typeof LearnRegistersRoute
   '/blog': typeof BlogIndexRoute
   '/cpu': typeof CpuIndexRoute
   '/learn': typeof LearnIndexRoute
@@ -249,6 +257,7 @@ export interface FileRoutesById {
   '/docs/$': typeof DocsSplatRoute
   '/learn/abstraction': typeof LearnAbstractionRoute
   '/learn/adders': typeof LearnAddersRoute
+  '/learn/registers': typeof LearnRegistersRoute
   '/blog/': typeof BlogIndexRoute
   '/cpu/': typeof CpuIndexRoute
   '/learn/': typeof LearnIndexRoute
@@ -279,6 +288,7 @@ export interface FileRouteTypes {
     | '/docs/$'
     | '/learn/abstraction'
     | '/learn/adders'
+    | '/learn/registers'
     | '/blog/'
     | '/cpu/'
     | '/learn/'
@@ -306,6 +316,7 @@ export interface FileRouteTypes {
     | '/docs/$'
     | '/learn/abstraction'
     | '/learn/adders'
+    | '/learn/registers'
     | '/blog'
     | '/cpu'
     | '/learn'
@@ -334,6 +345,7 @@ export interface FileRouteTypes {
     | '/docs/$'
     | '/learn/abstraction'
     | '/learn/adders'
+    | '/learn/registers'
     | '/blog/'
     | '/cpu/'
     | '/learn/'
@@ -350,6 +362,7 @@ export interface RootRouteChildren {
   DocsSplatRoute: typeof DocsSplatRoute
   LearnAbstractionRoute: typeof LearnAbstractionRoute
   LearnAddersRoute: typeof LearnAddersRoute
+  LearnRegistersRoute: typeof LearnRegistersRoute
   CpuIndexRoute: typeof CpuIndexRoute
   LearnIndexRoute: typeof LearnIndexRoute
   CircuitSHashRoute: typeof CircuitSHashRoute
@@ -398,6 +411,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/blog/'
       preLoaderRoute: typeof BlogIndexRouteImport
       parentRoute: typeof BlogRoute
+    }
+    '/learn/registers': {
+      id: '/learn/registers'
+      path: '/learn/registers'
+      fullPath: '/learn/registers'
+      preLoaderRoute: typeof LearnRegistersRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/learn/adders': {
       id: '/learn/adders'
@@ -588,6 +608,7 @@ const rootRouteChildren: RootRouteChildren = {
   DocsSplatRoute: DocsSplatRoute,
   LearnAbstractionRoute: LearnAbstractionRoute,
   LearnAddersRoute: LearnAddersRoute,
+  LearnRegistersRoute: LearnRegistersRoute,
   CpuIndexRoute: CpuIndexRoute,
   LearnIndexRoute: LearnIndexRoute,
   CircuitSHashRoute: CircuitSHashRoute,
