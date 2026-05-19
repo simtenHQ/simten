@@ -157,7 +157,11 @@ const PROMPT_OPTIONS: PromptOption[] = [
   inputs: { a: bit, b: bit, cin: bit },
   outputs: { sum: bit, cout: bit },
   nodes: { xor1: Xor, xor2: Xor, and1: And, and2: And, or1: Or },
-  connect: ({ inputs, outputs, nodes: { xor1, xor2, and1, and2, or1 } }) => [
+  connect: ({
+    inputs,
+    outputs,
+    nodes: { xor1, xor2, and1, and2, or1 },
+  }) => [
     inputs.a.to(xor1.a, and1.a),
     inputs.b.to(xor1.b, and1.b),
     xor1.out.to(xor2.a, and2.a),
@@ -776,7 +780,11 @@ const HALF_ADDER_DISPLAY = `const HalfAdder = circuit('HalfAdder', {
   inputs: { a: bit, b: bit },
   outputs: { sum: bit, carry: bit },
   nodes: { xor1: Xor, and1: And },
-  connect: ({ inputs, outputs, nodes: { xor1, and1 } }) => [
+  connect: ({
+    inputs,
+    outputs,
+    nodes: { xor1, and1 },
+  }) => [
     inputs.a.to(xor1.a, and1.a),
     inputs.b.to(xor1.b, and1.b),
     xor1.out.to(outputs.sum),
@@ -812,11 +820,11 @@ const HeroBrowserWindow = forwardRef<HeroBrowserWindowHandle, {}>(
     return (
       <BrowserWindow className="flex-1" showMcp={codeTyping || showCircuit}>
         <div className="flex h-full">
-          <div className="w-[250px] shrink-0 border-r border-border overflow-y-auto">
+          <div className="w-[340px] shrink-0 border-r border-border overflow-auto">
             {codeTyping ? (
               <HighlightedCode
                 code={codeTw.displayed}
-                className="text-[12px] font-mono leading-relaxed whitespace-pre-wrap py-3 px-4 m-0"
+                className="text-[12px] font-mono leading-relaxed whitespace-pre py-3 px-4 m-0"
                 trailing={
                   <span className="inline-block w-[2px] h-[12px] bg-green-500 ml-0.5 animate-pulse align-text-bottom" />
                 }
@@ -824,7 +832,7 @@ const HeroBrowserWindow = forwardRef<HeroBrowserWindowHandle, {}>(
             ) : showCircuit ? (
               <HighlightedCode
                 code={displayCode}
-                className="text-[12px] font-mono leading-relaxed whitespace-pre-wrap py-3 px-4 m-0"
+                className="text-[12px] font-mono leading-relaxed whitespace-pre py-3 px-4 m-0"
               />
             ) : (
               <div className="text-[12px] font-mono py-3 px-4">
@@ -885,8 +893,15 @@ export function ClaudeDemoSection({
   autoPlay = false,
 }: ClaudeDemoSectionProps) {
   const [demoComplete, setDemoComplete] = useState(false);
+  const [expanded, setExpanded] = useState(false);
   const [extraLines, setExtraLines] = useState<TermLine[]>([]);
   const [pickedPrompt, setPickedPrompt] = useState(false);
+
+  // Duration (ms) of the terminal-column collapse animation. Used both as
+  // the CSS transition duration on the grid columns and as the timeout
+  // before mounting the canvas — so the canvas measures at the final
+  // expanded width on first render rather than reflowing partway through.
+  const COLLAPSE_MS = 700;
 
   // Scroll-into-view gating for the scripted terminal animation.
   // Starts true if autoPlay was requested, otherwise waits for IO.
@@ -943,6 +958,9 @@ export function ClaudeDemoSection({
   const handlePickPrompt = useCallback((option: PromptOption) => {
     setPickedPrompt(true);
     setDemoComplete(false);
+    // Pull the terminal back in so the user can see the next demo's
+    // transcript before it animates away again.
+    setExpanded(false);
     heroRef.current?.pickPrompt(option);
     const separator: TermLine = { type: "blank", content: "", delay: 300 };
     setExtraLines([separator, ...option.script]);
@@ -953,6 +971,11 @@ export function ClaudeDemoSection({
   const handleComplete = useCallback(() => {
     setDemoComplete(true);
     onCompleteRef.current?.();
+    // Trigger the column-collapse animation: terminal shrinks, canvas
+    // column grows. The canvas is already mounted (CircuitEmbed renders
+    // as soon as the code finishes typing) so React Flow handles the
+    // resize itself — no remount.
+    setExpanded(true);
   }, []);
 
   return (
@@ -960,23 +983,39 @@ export function ClaudeDemoSection({
       <Container>
         {/* Section label */}
         <div className="mb-10 max-w-3xl">
-          <div className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1 text-[11px] text-muted-foreground mb-5">
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-            Live demo · MCP scripted
-          </div>
-          <h1 className="text-5xl md:text-6xl lg:text-7xl font-semibold tracking-tight leading-[1.05] text-foreground">
+          <h1 className="text-4xl md:text-5xl lg:text-6xl font-semibold tracking-tight leading-[1.05] text-foreground">
             Natural-language hardware design that actually runs.
           </h1>
           <p className="mt-5 text-base md:text-lg text-muted-foreground max-w-2xl">
-            Describe a circuit in English. Claude writes it in TypeScript. You watch it simulate — live, in your browser, every wire pokeable.
+            Describe a circuit in English. Claude writes it in TypeScript. You watch it simulate — live, in your browser.
           </p>
+          <div className="mt-6">
+            <CopyCommand command="claude mcp add simten npx @simten/mcp" />
+          </div>
         </div>
 
         <div
           ref={desktopContainerRef}
-          className="h-[560px] flex gap-4 min-h-0"
+          className="h-[560px] grid min-h-0 ease-in-out"
+          style={{
+            // Use matching fr units on both endpoints so CSS can actually
+            // interpolate. Mixing units (% on one side, fr on the other)
+            // makes the browser snap-to instead of animate.
+            gridTemplateColumns: expanded ? "0fr 100fr" : "38fr 62fr",
+            // Gap also collapses to 0 in expanded state — otherwise the
+            // canvas column sits 16px right of where the rest of the
+            // hero content's left edge is, misaligning with the rest of
+            // the page after the terminal slides away.
+            columnGap: expanded ? "0" : "1rem",
+            transitionProperty: "grid-template-columns, column-gap",
+            transitionDuration: `${COLLAPSE_MS}ms`,
+          }}
         >
-          <TerminalWindow className="w-[38%] flex-shrink-0">
+          <TerminalWindow
+            className={`min-w-0 transition-opacity duration-500 ${
+              expanded ? "opacity-0 pointer-events-none" : "opacity-100"
+            }`}
+          >
             <div className="flex flex-col h-full">
               <div className="flex-1 overflow-y-auto px-5 py-4">
                 <ScriptedTerminal
@@ -1016,10 +1055,6 @@ export function ClaudeDemoSection({
           </TerminalWindow>
 
           <HeroBrowserWindow ref={heroRef} />
-        </div>
-
-        <div className="mt-6 flex justify-center">
-          <CopyCommand command="claude mcp add simten npx @simten/mcp" />
         </div>
       </Container>
     </section>
