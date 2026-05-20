@@ -22,6 +22,7 @@ import type { BuiltCircuit } from "@simten/core/circuit";
 import { Xor, And, Or, Not, DFlipFlop } from "@simten/core/std";
 import { HighlightedCode } from "@/components/HighlightedCode";
 import { Container } from "@/components/Container";
+import { CodeWithHovers } from "./CodeWithHovers";
 
 // ============================================================================
 // Demo circuits (self-contained — the gallery has its own copies of shared ones)
@@ -841,9 +842,10 @@ const HeroBrowserWindow = forwardRef<
                 }
               />
             ) : showCircuit ? (
-              <HighlightedCode
+              <CodeWithHovers
                 code={displayCode}
                 className="text-[12px] font-mono leading-relaxed whitespace-pre py-3 px-4 m-0"
+                enabled={canvasReady}
               />
             ) : (
               <div className="text-[12px] font-mono py-3 px-4">
