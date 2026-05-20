@@ -21,6 +21,11 @@
 /* Activated by data-embed-theme attribute (web components) OR by       */
 /* .dark/.light class on <html> (React apps with ThemeProvider).        */
 
+/* Bespoke embed tokens — consumed directly by the embed's own components
+   (canvas chrome, switch/LED rendering, React Flow node styling). Fire
+   under either trigger: the data attribute set by CircuitViewer's root
+   <div>, or a host app's html.dark class. Safe to set under both because
+   no host app defines --embed-* tokens. */
 [data-embed-theme="dark"], .dark {
   --embed-bg-primary: #141418;
   --embed-bg-secondary: #1a1a1e;
@@ -34,8 +39,16 @@
   --embed-text-secondary: #a1a1aa;
   --embed-text-muted: #71717a;
   --embed-dot-color: #2a2a2e;
+}
 
-  /* Tailwind/shadcn theme variables — needed for bg-card, border-border, etc. */
+/* Shadcn-style token fallbacks for standalone embed consumers. Scoped to
+   the data-embed-theme attribute only (NOT html.dark) so host apps that
+   toggle html.dark keep their own --background/--card/--border tokens —
+   the embed inherits the page palette via the cascade instead of being
+   forced to its own values. CircuitViewer + WebComponentEmbed both set
+   data-embed-theme on their root element when they mount, so standalone
+   usage still gets these tokens. */
+[data-embed-theme="dark"] {
   --background: #141418;
   --foreground: #e5e5e5;
   --card: #1a1a1e;
@@ -68,6 +81,7 @@
   border-color: var(--color-border, rgba(55, 55, 65, 0.5));
 }
 
+/* Bespoke embed tokens — see comment on the dark block above. */
 [data-embed-theme="light"], html.light {
   --embed-bg-primary: #f8f9fb;
   --embed-bg-secondary: #f3f4f6;
@@ -81,7 +95,10 @@
   --embed-text-secondary: #4b5563;
   --embed-text-muted: #9ca3af;
   --embed-dot-color: #e5e7eb;
+}
 
+/* Shadcn fallbacks — scoped to data-embed-theme only; see dark block above. */
+[data-embed-theme="light"] {
   --background: #f8f9fb;
   --foreground: #1a1a2e;
   --card: #ffffff;
