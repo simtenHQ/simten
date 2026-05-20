@@ -83,6 +83,15 @@ const HOVER_DICT: Record<string, HoverEntry> = {
     description:
       "Built-in OR gate. Output is 1 when either input is 1.",
   },
+  Not: {
+    signature: "const Not: BuiltCircuit",
+    description: "Built-in NOT gate. Inverts the input bit.",
+  },
+  DFlipFlop: {
+    signature: "DFlipFlop(opts?: { value?: boolean | number }): BuiltCircuit",
+    description:
+      "Edge-triggered D flip-flop. Captures d on every rising clock edge; q holds the captured value, q_bar is the inverse.",
+  },
   to: {
     signature: "port.to(...targets: PortRef[]): ConnectionDef",
     description:

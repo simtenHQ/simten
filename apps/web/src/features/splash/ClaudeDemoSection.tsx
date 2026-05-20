@@ -157,7 +157,13 @@ const PROMPT_OPTIONS: PromptOption[] = [
     displayCode: `const FullAdder = circuit('FullAdder', {
   inputs: { a: bit, b: bit, cin: bit },
   outputs: { sum: bit, cout: bit },
-  nodes: { xor1: Xor, xor2: Xor, and1: And, and2: And, or1: Or },
+  nodes: {
+    xor1: Xor,
+    xor2: Xor,
+    and1: And,
+    and2: And,
+    or1: Or,
+  },
   connect: ({
     inputs,
     outputs,
@@ -229,8 +235,16 @@ const PROMPT_OPTIONS: PromptOption[] = [
     circuit: Counter2Bit,
     displayCode: `const Counter2Bit = circuit('Counter2Bit', {
   outputs: { bit0: bit, bit1: bit },
-  nodes: { dff0: DFlipFlop(), dff1: DFlipFlop(), inv: Not, xor1: Xor },
-  connect: ({ outputs, nodes: { dff0, dff1, inv, xor1 } }) => [
+  nodes: {
+    dff0: DFlipFlop(),
+    dff1: DFlipFlop(),
+    inv: Not,
+    xor1: Xor,
+  },
+  connect: ({
+    outputs,
+    nodes: { dff0, dff1, inv, xor1 },
+  }) => [
     dff0.q.to(inv.in, xor1.b, outputs.bit0),
     inv.out.to(dff0.d),
     dff1.q.to(xor1.a, outputs.bit1),
@@ -290,7 +304,10 @@ const PROMPT_OPTIONS: PromptOption[] = [
     displayCode: `const Toggle = circuit('Toggle', {
   outputs: { q: bit, q_bar: bit },
   nodes: { dff: DFlipFlop(), inv: Not },
-  connect: ({ outputs, nodes: { dff, inv } }) => [
+  connect: ({
+    outputs,
+    nodes: { dff, inv },
+  }) => [
     dff.q.to(inv.in, outputs.q),
     dff.q_bar.to(outputs.q_bar),
     inv.out.to(dff.d),
@@ -349,8 +366,17 @@ const PROMPT_OPTIONS: PromptOption[] = [
     displayCode: `const Mux2to1 = circuit('Mux2to1', {
   inputs: { a: bit, b: bit, sel: bit },
   outputs: { out: bit },
-  nodes: { not1: Not, and1: And, and2: And, or1: Or },
-  connect: ({ inputs, outputs, nodes: { not1, and1, and2, or1 } }) => [
+  nodes: {
+    not1: Not,
+    and1: And,
+    and2: And,
+    or1: Or,
+  },
+  connect: ({
+    inputs,
+    outputs,
+    nodes: { not1, and1, and2, or1 },
+  }) => [
     inputs.sel.to(not1.in, and2.b),
     inputs.a.to(and1.a),
     not1.out.to(and1.b),
@@ -775,6 +801,14 @@ function ScriptedTerminal({
 interface HeroBrowserWindowHandle {
   startTyping: () => void;
   pickPrompt: (option: PromptOption) => void;
+  swapCircuit: (demo: HeroDemo) => void;
+}
+
+interface HeroDemo {
+  key: string;
+  label: string;
+  circuit: BuiltCircuit;
+  displayCode: string;
 }
 
 const HALF_ADDER_DISPLAY = `const HalfAdder = circuit('HalfAdder', {
@@ -793,6 +827,28 @@ const HALF_ADDER_DISPLAY = `const HalfAdder = circuit('HalfAdder', {
   ],
 });`;
 
+// Toggleable demos surfaced once the canvas has fully revealed.
+// HalfAdder is the default (matches the scripted intro); the rest let the
+// user explore the same set of small primitives the PROMPT_OPTIONS picker
+// used to drive, now reachable via side arrows + pills below the hero.
+const HERO_DEMOS: HeroDemo[] = [
+  {
+    key: "half-adder",
+    label: "Half adder",
+    circuit: HalfAdder,
+    displayCode: HALF_ADDER_DISPLAY,
+  },
+  ...PROMPT_OPTIONS.map((opt) => ({
+    key: opt.label.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+    label: opt.label
+      .replace(/^Build (a |an )?/i, "")
+      .replace(/^Make (a |an )?/i, "")
+      .replace(/^./, (c) => c.toUpperCase()),
+    circuit: opt.circuit,
+    displayCode: opt.displayCode,
+  })),
+];
+
 const HeroBrowserWindow = forwardRef<
   HeroBrowserWindowHandle,
   { canvasReady?: boolean }
@@ -802,6 +858,10 @@ const HeroBrowserWindow = forwardRef<
     const [showCircuit, setShowCircuit] = useState(false);
     const [targetCircuit, setTargetCircuit] = useState<BuiltCircuit>(HalfAdder);
     const [displayCode, setDisplayCode] = useState(HALF_ADDER_DISPLAY);
+    // Stable identity per demo so CircuitEmbed remounts cleanly when the
+    // user cycles through HERO_DEMOS post-reveal (React Flow doesn't
+    // gracefully swap a different circuit on the same instance).
+    const [embedKey, setEmbedKey] = useState("half-adder");
 
     const codeTw = useTypewriter(displayCode, 12, 0, codeTyping);
 
@@ -818,6 +878,11 @@ const HeroBrowserWindow = forwardRef<
         setTargetCircuit(option.circuit);
         setDisplayCode(option.displayCode);
         setShowCircuit(false);
+      },
+      swapCircuit(demo: HeroDemo) {
+        setTargetCircuit(demo.circuit);
+        setDisplayCode(demo.displayCode);
+        setEmbedKey(demo.key);
       },
     }), []);
 
@@ -858,7 +923,7 @@ const HeroBrowserWindow = forwardRef<
           <div className="flex-1 flex flex-col min-w-0">
             <div className="flex-1 min-h-0 relative">
               {mountCanvas ? (
-                <div className="h-full animate-in fade-in duration-500">
+                <div key={embedKey} className="h-full animate-in fade-in duration-500">
                   <CircuitEmbed circuit={targetCircuit} height="100%" />
                 </div>
               ) : (
@@ -983,6 +1048,42 @@ export function ClaudeDemoSection({
 
   const heroRef = useRef<HeroBrowserWindowHandle>(null);
 
+  // Index into HERO_DEMOS — HalfAdder (index 0) is what the scripted intro
+  // builds, so we start there. Cycling fires swapCircuit on the hero handle.
+  const [demoIndex, setDemoIndex] = useState(0);
+  const cycleDemo = useCallback((delta: number) => {
+    setDemoIndex((prev) => {
+      const next = (prev + delta + HERO_DEMOS.length) % HERO_DEMOS.length;
+      heroRef.current?.swapCircuit(HERO_DEMOS[next]);
+      return next;
+    });
+  }, []);
+  const pickDemo = useCallback((index: number) => {
+    setDemoIndex(index);
+    heroRef.current?.swapCircuit(HERO_DEMOS[index]);
+  }, []);
+
+  // Keyboard arrows cycle through demos once the picker is live. Mirrors
+  // Hero.tsx's behaviour so the affordance is consistent across the page.
+  useEffect(() => {
+    if (!canvasReady) return;
+    const onKey = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (
+        target &&
+        (target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.isContentEditable)
+      ) {
+        return;
+      }
+      if (e.key === "ArrowRight") cycleDemo(1);
+      else if (e.key === "ArrowLeft") cycleDemo(-1);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [canvasReady, cycleDemo]);
+
   const handleCodeStage = useCallback(() => {
     heroRef.current?.startTyping();
   }, []);
@@ -1031,6 +1132,7 @@ export function ClaudeDemoSection({
           </div>
         </div>
 
+        <div className="relative">
         <div
           ref={desktopContainerRef}
           className="h-[560px] grid min-h-0 ease-in-out"
@@ -1067,7 +1169,65 @@ export function ClaudeDemoSection({
           </TerminalWindow>
 
           <HeroBrowserWindow ref={heroRef} canvasReady={canvasReady} />
+
+          {/* Side cycle arrows — pinned to the canvas's vertical centre and
+              tucked against the left/right edges. Hero is full-width post-
+              collapse, so the arrows naturally land far apart, hinting at
+              side-to-side navigation. Pointer-events stay off the wrapper
+              so the canvas underneath is interactive; only the buttons
+              themselves capture clicks. */}
+          {canvasReady && (
+            <div className="pointer-events-none absolute inset-y-0 -left-14 -right-14 z-10 flex items-center justify-between">
+              <button
+                type="button"
+                onClick={() => cycleDemo(-1)}
+                aria-label="Previous circuit"
+                className="pointer-events-auto flex h-10 w-10 items-center justify-center rounded-full border border-border bg-card/90 text-muted-foreground shadow-sm backdrop-blur transition-all hover:text-foreground hover:border-foreground/30 animate-in fade-in slide-in-from-left-2 duration-500"
+              >
+                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="15 18 9 12 15 6" />
+                </svg>
+              </button>
+              <button
+                type="button"
+                onClick={() => cycleDemo(1)}
+                aria-label="Next circuit"
+                className="pointer-events-auto flex h-10 w-10 items-center justify-center rounded-full border border-border bg-card/90 text-muted-foreground shadow-sm backdrop-blur transition-all hover:text-foreground hover:border-foreground/30 animate-in fade-in slide-in-from-right-2 duration-500"
+              >
+                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="9 18 15 12 9 6" />
+                </svg>
+              </button>
+            </div>
+          )}
         </div>
+        </div>
+
+        {/* Demo picker pills — animates in below the hero once the canvas
+            is live, mirroring the figlet demo's picker further down. */}
+        {canvasReady && (
+          <div className="mt-6 flex items-center justify-center gap-2 flex-wrap animate-in fade-in slide-in-from-bottom-2 duration-500">
+            <span className="text-[11px] text-muted-foreground/60 mr-2 font-mono">
+              // try another
+            </span>
+            {HERO_DEMOS.map((d, i) => (
+              <button
+                key={d.key}
+                onClick={() => pickDemo(i)}
+                className={`text-[13px] px-3.5 py-1.5 rounded-full border transition-colors ${
+                  i === demoIndex
+                    ? "border-foreground/30 bg-foreground/10 text-foreground"
+                    : "border-border text-muted-foreground hover:text-foreground hover:border-foreground/30 hover:bg-muted/50"
+                }`}
+              >
+                {d.label}
+              </button>
+            ))}
+            <span className="text-[10px] text-muted-foreground/40 ml-2 hidden lg:inline font-mono">
+              ← → to cycle
+            </span>
+          </div>
+        )}
       </Container>
     </section>
   );
