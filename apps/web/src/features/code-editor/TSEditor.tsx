@@ -392,7 +392,15 @@ export const TSEditor = forwardRef<TSEditorRef, TSEditorProps>(
                   { token: "delimiter.curly", foreground: "000000" },
                   { token: "operator", foreground: "000000" },
                 ],
-                colors: {},
+                // Warm off-white to harmonise with the host's page background
+                // (oklch(0.975 0.003 85), ≈ #faf9f4) — pure-white from `vs`
+                // base reads as a cold panel inside the warmed-up page.
+                // Gutter matches so the line-number column doesn't seam.
+                colors: {
+                  "editor.background": "#faf9f4",
+                  "editorGutter.background": "#faf9f4",
+                  "editorLineNumber.background": "#faf9f4",
+                },
               });
             }}
             onMount={handleEditorMount}
