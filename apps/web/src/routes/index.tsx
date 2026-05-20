@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo, type ReactNode } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useCircuitSimulator, CircuitEmbed } from "@simten/embed";
 import { circuit, bit } from "@simten/core/circuit";
@@ -9,6 +9,7 @@ import { Container } from "@/components/Container";
 import { Section, SectionHeading } from "@/components/SectionHeading";
 import { RV32IDebuggerPreview } from "@/features/learn/cpu-debugger/RV32IDebuggerPreview";
 import { ClaudeDemoSection } from "@/features/splash/ClaudeDemoSection";
+import { CodeWithHovers } from "@/features/splash/CodeWithHovers";
 import { Hero } from "@/features/splash/Hero";
 import { useSnakeSimulator } from "@/features/blog/snake-in-hardware/useSnakeSimulator";
 import { usePongSimulator } from "@/features/blog/pong-in-hardware/usePongSimulator";
@@ -84,7 +85,617 @@ function Splash5Page() {
     <div className="bg-background text-foreground">
       <MobileAIHero />
       <ClaudeDemoSection autoPlay />
+      <BentoFeatures />
       <DemoGallery />
+    </div>
+  );
+}
+
+// ============================================================================
+// BentoFeatures
+// ----------------------------------------------------------------------------
+// 3×2 grid of "what does this thing do" cells, slotted between the hero and
+// the heavy demo gallery. Modeled on Vercel/Linear/Anthropic landing bento
+// grids — each cell is title + one-line description + subtle arrow link +
+// a visual area at the bottom. Visuals are placeholder boxes for now; the
+// plan is to drop in real little mockups (stripped CircuitEmbed, waveform
+// timeline, terminal snippet, code snippet, etc.) cell-by-cell once the
+// layout is approved.
+// ============================================================================
+function BentoFeatures() {
+  return (
+    <section className="hidden md:block py-20 lg:py-28 border-t border-border">
+      <Container>
+        <div className="max-w-2xl mb-10 lg:mb-12">
+          <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight leading-[1.1]">
+            <span className="text-foreground">A real framework, not a toy.</span>{" "}
+            <span className="text-muted-foreground">Here&apos;s what comes in the box.</span>
+          </h2>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-px bg-border rounded-lg overflow-hidden border border-border">
+          <BentoCell
+            title="Type-safe end to end"
+            description="Circuits are TypeScript. The simulator runs natively in Node, Bun, or browser — no testbench language, no codegen step."
+            visual={<TypesafeBentoVisual />}
+          />
+          <BentoCell
+            title="Bring any npm package"
+            description="fast-check for property testing, D3 for visualization, the GCC RISC-V toolchain — your circuit code is just code."
+            visual={<NpmBentoVisual />}
+          />
+          <BentoCell
+            title="Drop-in embeds"
+            description="One component renders a fully interactive circuit anywhere — blogs, docs, MDX. Same engine as the editor."
+            visual={<EmbedsBentoVisual />}
+          />
+          <BentoCell
+            title="Composable to the gate"
+            description="Double-click any composite to see its internals. CPU → decoder → multiplexer → NAND, all the way down."
+            visual={<DrilldownBentoVisual />}
+          />
+          <BentoCell
+            title="Wire it to Claude"
+            description="An MCP server lets Claude write, simulate, and debug circuits live in your browser — describe, generate, fix, ship."
+            visual={<MCPBentoVisual />}
+          />
+          <BentoCell
+            title="Rewind any cycle"
+            description="Sequential circuits record every state. Step forward, spot the bug, jump back to the exact cycle it happened."
+            visual={<TimeTravelBentoVisual />}
+          />
+        </div>
+      </Container>
+    </section>
+  );
+}
+
+function BentoCell({
+  title,
+  description,
+  visual,
+  href,
+}: {
+  title: string;
+  description: string;
+  visual: ReactNode;
+  href?: string;
+}) {
+  return (
+    <div className="bg-card p-6 lg:p-8 flex flex-col">
+      <h3 className="text-xl lg:text-2xl font-semibold tracking-tight text-foreground">
+        {title}
+      </h3>
+      <p className="mt-3 text-[14px] text-muted-foreground leading-snug">
+        {description}
+      </p>
+      <div className="mt-5">
+        {href ? (
+          <Link
+            to={href}
+            className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-border text-muted-foreground hover:text-foreground hover:border-foreground/40 transition-colors"
+            aria-label={`Learn more about ${title}`}
+          >
+            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+              <line x1="5" y1="12" x2="19" y2="12" />
+              <polyline points="12 5 19 12 12 19" />
+            </svg>
+          </Link>
+        ) : (
+          <span className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-border text-muted-foreground/60">
+            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+              <line x1="5" y1="12" x2="19" y2="12" />
+              <polyline points="12 5 19 12 12 19" />
+            </svg>
+          </span>
+        )}
+      </div>
+      <div className="mt-6 lg:mt-8 flex-1 min-h-[200px] rounded-lg border border-border/60 bg-muted/40 overflow-hidden relative">
+        {visual}
+      </div>
+    </div>
+  );
+}
+
+// "Type-safe end to end" — small IDE-style card with the HalfAdder source.
+// Card is wider than the cell and anchored bottom-left, so the right edge
+// and top get cropped by the cell's overflow-hidden, giving the
+// "you're peeking at a real editor" look from Cursor's bento. Identifiers
+// inside the code body get the same hover popups as the hero block.
+const TYPESAFE_SNIPPET = `import { circuit, bit } from '@simten/core';
+import { Xor, And, Or } from '@simten/core/std';
+import { simulate } from '@simten/core/sim';
+
+const HalfAdder = circuit('HalfAdder', {
+  inputs:  { a: bit, b: bit },
+  outputs: { sum: bit, carry: bit },
+  nodes:   { xor1: Xor, and1: And },
+  connect: ({ inputs, outputs, nodes: { xor1, and1 } }) => [
+    inputs.a.to(xor1.a, and1.a),
+    inputs.b.to(xor1.b, and1.b),
+    xor1.out.to(outputs.sum),
+    and1.out.to(outputs.carry),
+  ],
+});
+
+const FullAdder = circuit('FullAdder', {
+  inputs:  { a: bit, b: bit, cin: bit },
+  outputs: { sum: bit, cout: bit },
+  nodes:   { ha1: HalfAdder, ha2: HalfAdder, or1: Or },
+  connect: ({ inputs, outputs, nodes: { ha1, ha2, or1 } }) => [
+    inputs.a.to(ha1.a),
+    inputs.b.to(ha1.b),
+    ha1.sum.to(ha2.a),
+    inputs.cin.to(ha2.b),
+    ha2.sum.to(outputs.sum),
+    ha1.carry.to(or1.a),
+    ha2.carry.to(or1.b),
+    or1.out.to(outputs.cout),
+  ],
+});
+
+// Same engine in Node — no codegen, no testbench.
+const sim = simulate(FullAdder);
+sim.set({ a: 1, b: 1, cin: 1 });
+console.log(sim.get('sum'), sim.get('cout')); // 1, 1`;
+
+// "Bring any npm package" — same IDE card chrome as the type-safe cell, but
+// the file content swaps every ~3.5s through a handful of real npm-package
+// snippets (figlet, fast-check, d3-force, GCC). All snippets render stacked
+// with opacity transitions so the crossfade is smooth — only the active one
+// is interactive (pointer-events-none on the rest). CodeWithHovers powers
+// each snippet so the simten-API identifiers (ROM, simulate, etc.) light up
+// the hover popups; non-API names (fc, figlet, forceSimulation) stay inert.
+const NPM_SNIPPETS: { filename: string; code: string }[] = [
+  {
+    filename: "logo-rom.ts",
+    code: `// figlet — ASCII art baked into a hardware ROM
+import figlet from 'figlet';
+import smallFont from 'figlet/fonts/Small';
+import { ROM, romFromBytes } from '@simten/core/std';
+
+figlet.parseFont('Small', smallFont);
+const banner = figlet.textSync('Simten', { font: 'Small' });
+const bytes = [...banner].map(c => c.charCodeAt(0));
+
+const Logo = ROM({ memory: romFromBytes(bytes) });`,
+  },
+  {
+    filename: "adder.test.ts",
+    code: `// fast-check — property-test the half adder
+import * as fc from 'fast-check';
+import { simulate } from '@simten/core/sim';
+
+fc.assert(
+  fc.property(fc.boolean(), fc.boolean(), (a, b) => {
+    const sim = simulate(HalfAdder);
+    sim.set({ a, b });
+    return sim.get('sum') === (a !== b);
+  })
+);  // ✓ 100 random inputs passed`,
+  },
+  {
+    filename: "layout.ts",
+    code: `// d3-force — auto-layout the circuit graph
+import { forceSimulation, forceLink, forceManyBody } from 'd3-force';
+
+const layout = forceSimulation(nodes)
+  .force('link', forceLink(edges).distance(80))
+  .force('charge', forceManyBody().strength(-220))
+  .stop()
+  .tick(300);
+
+for (const n of layout.nodes()) editor.move(n.id, n.x, n.y);`,
+  },
+  {
+    filename: "boot.ts",
+    code: `// GCC — compile Rust to RISC-V bytes, drop into ROM
+import { execSync } from 'child_process';
+import { ROM, romFromBytes } from '@simten/core/std';
+
+execSync('cargo build --target riscv32i-unknown-none-elf');
+const bin = readFileSync('target/.../boot.bin');
+
+const Boot = ROM({ memory: romFromBytes([...bin]) });`,
+  },
+];
+
+function NpmBentoVisual() {
+  const [index, setIndex] = useState(0);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    // Respect reduced-motion: hold the first snippet, no cycling.
+    if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
+    const id = window.setInterval(
+      () => setIndex((i) => (i + 1) % NPM_SNIPPETS.length),
+      3500,
+    );
+    return () => window.clearInterval(id);
+  }, []);
+
+  return (
+    <div className="absolute inset-0 flex items-start p-4">
+      <div className="relative w-[540px] flex-shrink-0 rounded-md border border-border bg-card shadow-md -mr-8">
+        {/* Tab bar — filename swaps with the snippet. Single mount, content
+            switches in place (no opacity tricks needed — the swap is fast
+            enough that the bar just feels like a tab change). */}
+        <div className="flex items-center h-7 px-3 border-b border-border bg-muted/60 gap-2">
+          <div className="flex gap-1 shrink-0">
+            <span className="w-2 h-2 rounded-full bg-[#ff5f57]" />
+            <span className="w-2 h-2 rounded-full bg-[#febc2e]" />
+            <span className="w-2 h-2 rounded-full bg-[#28c840]" />
+          </div>
+          <span className="text-[10px] font-mono text-muted-foreground transition-opacity duration-300">
+            {NPM_SNIPPETS[index].filename}
+          </span>
+        </div>
+
+        {/* Stacked snippets — all rendered, only the active one is visible
+            and interactive. Min-height locks the card so the layout doesn't
+            jump as snippets of different lengths cycle through. */}
+        <div className="relative" style={{ minHeight: 200 }}>
+          {NPM_SNIPPETS.map((snip, i) => (
+            <div
+              key={i}
+              className={`absolute inset-0 transition-opacity duration-700 ease-in-out ${
+                i === index ? "opacity-100" : "opacity-0 pointer-events-none"
+              }`}
+              aria-hidden={i !== index}
+            >
+              <CodeWithHovers
+                code={snip.code}
+                enabled={i === index}
+                className="text-[10.5px] font-mono leading-relaxed whitespace-pre py-2.5 px-3 m-0"
+              />
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// "Drop-in embeds" — static IDE card showing the import + the JSX usage.
+// Mirrors the snippet in the embed CTA section further down the page so
+// the reader sees the same shape in both places.
+const EMBED_SNIPPET = `import { CircuitEmbed } from '@simten/embed';
+import { HalfAdder } from './half-adder';
+
+// Live, interactive hardware — three lines.
+export default function Post() {
+  return (
+    <article>
+      <p>Here's a half adder you can poke at:</p>
+      <CircuitEmbed circuit={HalfAdder} />
+    </article>
+  );
+}`;
+
+function EmbedsBentoVisual() {
+  return (
+    <div className="absolute inset-0 flex items-start p-4">
+      <div className="w-[520px] flex-shrink-0 rounded-md border border-border bg-card shadow-md -mr-8">
+        <div className="flex items-center h-7 px-3 border-b border-border bg-muted/60 gap-2">
+          <div className="flex gap-1 shrink-0">
+            <span className="w-2 h-2 rounded-full bg-[#ff5f57]" />
+            <span className="w-2 h-2 rounded-full bg-[#febc2e]" />
+            <span className="w-2 h-2 rounded-full bg-[#28c840]" />
+          </div>
+          <span className="text-[10px] font-mono text-muted-foreground">
+            blog/post.tsx
+          </span>
+        </div>
+        <CodeWithHovers
+          code={EMBED_SNIPPET}
+          className="text-[10.5px] font-mono leading-relaxed whitespace-pre py-2.5 px-3 m-0"
+        />
+      </div>
+    </div>
+  );
+}
+
+// "Composable to the gate" — nested cards illustrating drilldown. The
+// outermost is a FullAdder; you "open it" to see a HalfAdder inside; open
+// THAT to see an Xor; open Xor to see the underlying Nand gate. Each
+// layer carries the same pulsing inspect badge used on real composite
+// nodes in the editor, so the visual reuses the page's vocabulary.
+function DrilldownBentoVisual() {
+  return (
+    <div className="absolute inset-0 flex items-center justify-center p-4">
+      <DrilldownLayer name="FullAdder" depth={0}>
+        <DrilldownLayer name="HalfAdder" depth={1}>
+          <DrilldownLayer name="Xor" depth={2}>
+            <DrilldownLayer name="Nand" depth={3} leaf />
+          </DrilldownLayer>
+        </DrilldownLayer>
+      </DrilldownLayer>
+    </div>
+  );
+}
+
+function DrilldownLayer({
+  name,
+  depth,
+  leaf,
+  children,
+}: {
+  name: string;
+  depth: number;
+  leaf?: boolean;
+  children?: ReactNode;
+}) {
+  // Outer layers are larger and more muted; the innermost gate is the
+  // saturated focus point so the eye lands on the primitive at the bottom
+  // of the drilldown.
+  const muting = `${100 - depth * 18}%`;
+
+  return (
+    <div
+      className="relative rounded-lg border border-border bg-card shadow-sm w-full"
+      style={{
+        padding: depth === 3 ? "10px 14px" : depth === 2 ? 12 : depth === 1 ? 14 : 16,
+        opacity: muting,
+      }}
+    >
+      <div className="flex items-center justify-between mb-2">
+        <span
+          className={`font-mono ${
+            leaf
+              ? "text-[12px] text-foreground font-semibold"
+              : "text-[11px] text-foreground/80"
+          }`}
+        >
+          {name}
+        </span>
+        {!leaf && (
+          <span className="relative inline-flex h-4 w-4 items-center justify-center">
+            <span className="absolute inset-0 rounded-full bg-blue-400/30 animate-[ping_2s_cubic-bezier(0,0,0.2,1)_infinite]" />
+            <span className="relative flex h-3 w-3 items-center justify-center rounded-full bg-blue-500">
+              <svg className="h-2 w-2 text-white" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
+                <circle cx="6.5" cy="6.5" r="4.5" />
+                <line x1="10" y1="10" x2="14" y2="14" />
+              </svg>
+            </span>
+          </span>
+        )}
+      </div>
+      {children}
+      {leaf && (
+        <div className="mt-1 text-[9px] font-mono uppercase tracking-wider text-muted-foreground">
+          primitive · NAND gate
+        </div>
+      )}
+    </div>
+  );
+}
+
+// "Wire it to Claude" — dark terminal card snapshotting the MCP install +
+// a tiny scripted Claude exchange (one prompt, two tool calls, a result).
+// Intentionally dark so it stands out against the light cell background;
+// mirrors the hero's TerminalWindow palette so the page reads as one
+// design language. Same anchoring as the other code cells.
+function MCPBentoVisual() {
+  return (
+    <div className="absolute inset-0 flex items-start p-4">
+      <div className="w-[520px] flex-shrink-0 rounded-md border border-[#30363d] shadow-md -mr-8 overflow-hidden bg-[#0d1117]">
+        <div className="flex items-center h-7 px-3 border-b border-[#30363d] bg-[#161b22] gap-2">
+          <div className="flex gap-1 shrink-0">
+            <span className="w-2 h-2 rounded-full bg-[#ff5f57]" />
+            <span className="w-2 h-2 rounded-full bg-[#febc2e]" />
+            <span className="w-2 h-2 rounded-full bg-[#28c840]" />
+          </div>
+          <span className="text-[10px] font-mono text-gray-500">terminal</span>
+          <div className="ml-auto inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 text-[9px] text-emerald-400">
+            <span className="h-1 w-1 rounded-full bg-emerald-400" />
+            MCP connected
+          </div>
+        </div>
+        <div className="px-3 py-3 font-mono text-[11px] leading-relaxed text-gray-300 space-y-0.5">
+          <div className="text-gray-500">$ <span className="text-gray-200">claude mcp add simten npx @simten/mcp</span></div>
+          <div className="text-emerald-400">✓ added simten</div>
+          <div className="h-2" />
+          <div className="flex items-start gap-2">
+            <span className="text-gray-500 shrink-0">&gt;</span>
+            <span className="text-gray-100">Build me a 2-bit counter with a reset.</span>
+          </div>
+          <div className="h-1" />
+          <div className="flex items-start gap-2 text-gray-500">
+            <span className="text-blue-400 shrink-0">&gt;</span>
+            <span>write_circuit (simten)</span>
+          </div>
+          <div className="pl-5 text-gray-500">5 nodes, 9 connections, 0 errors</div>
+          <div className="flex items-start gap-2 text-gray-500">
+            <span className="text-blue-400 shrink-0">&gt;</span>
+            <span>simulate_circuit (simten)</span>
+          </div>
+          <div className="pl-5 text-gray-500">simulation ready · counts 00 → 01 → 10 → 11</div>
+          <div className="h-1" />
+          <div className="text-gray-400">Your counter is live. Click <span className="text-gray-200">Tick</span> to advance.</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// "Rewind any cycle" — mini waveform viewer with a scrubbing playhead.
+// Four signals (clk, count[0], count[1], q) drawn as SVG polylines over
+// 16 cycles. The playhead is an absolute vertical line that slides with
+// the cycle state, and the cycle counter above updates in sync.
+const WAVEFORM_CYCLES = 16;
+const CYCLE_WIDTH = 20;
+const ROW_HEIGHT = 22;
+const TRACE_TOP = 5;
+const TRACE_BOT = 17;
+const WAVEFORM_W = WAVEFORM_CYCLES * CYCLE_WIDTH; // 320
+
+function squareTrace(period: number): string {
+  // Build a proper square-wave polyline: horizontal segment for each
+  // half-period, with a vertical transition at each boundary. Yields
+  // pairs of (x,y) describing the alternating high/low corners.
+  const pts: string[] = [];
+  let high = true;
+  let y = TRACE_TOP;
+  pts.push(`0,${y}`);
+  for (let c = 1; c <= WAVEFORM_CYCLES; c++) {
+    const x = c * CYCLE_WIDTH;
+    // Walk to the end of this cycle at the current level.
+    pts.push(`${x},${y}`);
+    // Transition at boundaries that are multiples of `period`.
+    if (c % period === 0 && c < WAVEFORM_CYCLES) {
+      high = !high;
+      y = high ? TRACE_TOP : TRACE_BOT;
+      pts.push(`${x},${y}`);
+    }
+  }
+  return pts.join(" ");
+}
+
+const WAVEFORM_SIGNALS = [
+  { name: "clk",      points: squareTrace(1) },
+  { name: "count[0]", points: squareTrace(2) },
+  { name: "count[1]", points: squareTrace(4) },
+  { name: "q",        points: squareTrace(8) },
+];
+
+function TimeTravelBentoVisual() {
+  const [cycle, setCycle] = useState(8);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
+    let dir = 1;
+    const id = window.setInterval(() => {
+      setCycle((c) => {
+        if (c >= 13) dir = -1;
+        else if (c <= 3) dir = 1;
+        return c + dir;
+      });
+    }, 320);
+    return () => window.clearInterval(id);
+  }, []);
+
+  const LABEL_W = 52;
+  const GAP = 12;
+  const PAD = 12;
+
+  return (
+    <div className="absolute inset-0 flex items-center justify-center p-4">
+      <div className="w-[420px] rounded-md border border-border bg-card shadow-md overflow-hidden">
+        <div className="flex items-center justify-between h-7 px-3 border-b border-border bg-muted/60">
+          <span className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">
+            Waveform
+          </span>
+          <span className="text-[10px] font-mono text-muted-foreground tabular-nums">
+            Cycle <span className="text-foreground">{cycle}</span> / {WAVEFORM_CYCLES}
+          </span>
+        </div>
+
+        <div className="relative" style={{ padding: PAD }}>
+          {/* Signal traces */}
+          {WAVEFORM_SIGNALS.map((sig) => (
+            <div
+              key={sig.name}
+              className="flex items-center"
+              style={{ gap: GAP, height: ROW_HEIGHT }}
+            >
+              <span
+                className="shrink-0 text-[10px] font-mono text-muted-foreground tabular-nums"
+                style={{ width: LABEL_W }}
+              >
+                {sig.name}
+              </span>
+              <svg width={WAVEFORM_W} height={ROW_HEIGHT} className="block">
+                {/* Faint cycle gridlines */}
+                {Array.from({ length: WAVEFORM_CYCLES + 1 }).map((_, i) => (
+                  <line
+                    key={i}
+                    x1={i * CYCLE_WIDTH}
+                    y1={0}
+                    x2={i * CYCLE_WIDTH}
+                    y2={ROW_HEIGHT}
+                    stroke="currentColor"
+                    strokeWidth={0.5}
+                    className="text-border/50"
+                  />
+                ))}
+                <polyline
+                  points={sig.points}
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={1.5}
+                  className="text-blue-500 dark:text-blue-400"
+                  strokeLinejoin="miter"
+                />
+              </svg>
+            </div>
+          ))}
+
+          {/* Playhead — absolutely positioned relative to this container.
+              `left` is computed: container padding + label width + gap +
+              cycle offset. Animates with `transition: left`. */}
+          <div
+            className="absolute pointer-events-none transition-[left] duration-200 ease-linear"
+            style={{
+              left: PAD + LABEL_W + GAP + cycle * CYCLE_WIDTH,
+              top: PAD - 2,
+              height: WAVEFORM_SIGNALS.length * ROW_HEIGHT + 4,
+              width: 1,
+            }}
+          >
+            <div className="w-px h-full bg-foreground/80" />
+            <span className="absolute -top-1 left-1/2 -translate-x-1/2 h-1.5 w-1.5 rounded-full bg-foreground" />
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between h-7 px-3 border-t border-border bg-muted/60">
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <ScrubberBtn>{"⏮"}</ScrubberBtn>
+            <ScrubberBtn>{"◀"}</ScrubberBtn>
+            <ScrubberBtn>{"▶"}</ScrubberBtn>
+            <ScrubberBtn>{"⏭"}</ScrubberBtn>
+          </div>
+          <span className="text-[9px] font-mono uppercase tracking-wider text-muted-foreground/70">
+            time-travel
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ScrubberBtn({ children }: { children: ReactNode }) {
+  return (
+    <span className="inline-flex items-center justify-center h-4 w-4 rounded text-[9px] hover:bg-muted hover:text-foreground transition-colors">
+      {children}
+    </span>
+  );
+}
+
+function TypesafeBentoVisual() {
+  return (
+    <div className="absolute inset-0 flex items-start p-4">
+      {/* Inner "editor" card — fixed width wider than the cell and anchored
+          top-left, with a negative right margin to extend further past the
+          right edge. The snippet is long enough that the bottom of the
+          card spills past the cell floor too, so both edges visibly clip
+          (the Cursor "peek-through-the-frame" effect). */}
+      <div className="w-[540px] flex-shrink-0 rounded-md border border-border bg-card shadow-md -mr-8">
+        <div className="flex items-center h-7 px-3 border-b border-border bg-muted/60 gap-2">
+          <div className="flex gap-1 shrink-0">
+            <span className="w-2 h-2 rounded-full bg-[#ff5f57]" />
+            <span className="w-2 h-2 rounded-full bg-[#febc2e]" />
+            <span className="w-2 h-2 rounded-full bg-[#28c840]" />
+          </div>
+          <span className="text-[10px] font-mono text-muted-foreground">
+            adders.ts
+          </span>
+        </div>
+        <CodeWithHovers
+          code={TYPESAFE_SNIPPET}
+          className="text-[10.5px] font-mono leading-relaxed whitespace-pre py-2.5 px-3 m-0"
+        />
+      </div>
     </div>
   );
 }
@@ -319,31 +930,44 @@ function DemoGallery() {
         </div>
         {/* end hidden wrapper */}
 
-        {/* Row 2: complex demo */}
+        {/* Row 2: "Scale to real-world complexity" — one section heading
+            framing both heavy demos as examples (not flagship features).
+            Each demo card sits full-width with a small caption underneath
+            instead of its own headline+paragraph+CTA treatment. */}
         <Section>
-          <SectionHeading
-title="A working RISC-V CPU in 300 lines of TypeScript"
-            description="5-stage pipelined RV32I, executing real GCC-compiled C, C++, and Rust — instruction by instruction, in your browser. The same TypeScript that runs here is what Claude reads and edits when iterating on a CPU design."
-          />
-          <div className="grid grid-cols-1 gap-4">
-            <ComplexDemoCard
-              title="RV32I CPU Debugger"
-              subtitle="~300 lines of TypeScript"
-              description="Write C, C++, or Rust, compile it with the GCC RISC-V toolchain, and watch it execute instruction by instruction on a real 5-stage pipelined RISC-V CPU."
-              href="/cpu/rv32i"
-              accent="blue"
-              preview={<RV32IDebuggerPreview />}
-            />
+          <div className="max-w-2xl mb-10 lg:mb-12">
+            <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight leading-[1.1]">
+              Scale to real-world complexity
+            </h2>
+            <p className="mt-4 text-base lg:text-lg text-muted-foreground">
+              The framework already runs heavy systems in the browser — for example, a 5-stage pipelined RISC-V CPU executing GCC-compiled C, C++, and Rust, or an IEEE 802.3 Ethernet parser turning wire bytes into protocol fields. Two of the demos shipping in the repo today.
+            </p>
           </div>
-        </Section>
 
-        {/* Row 3: Ethernet parser — full width */}
-        <Section>
-          <SectionHeading
-title="Real protocols, simulated from gates"
-            description="IEEE 802.3 Ethernet frame parsing — MAC addresses, EtherType, CRC-32 — all running live. Nothing here is faked at the JavaScript layer; every signal comes out of the simulator."
-          />
-          <EthernetParserCard />
+          <div className="rounded-2xl bg-muted/60 p-3 lg:p-4">
+            <div
+              className="rounded-xl border border-border bg-card shadow-sm overflow-hidden"
+              style={{ height: 520 }}
+            >
+              <RV32IDebuggerPreview />
+            </div>
+          </div>
+          <div className="mt-3 flex items-center justify-between px-1 text-[12px] text-muted-foreground">
+            <span>RV32I CPU debugger — bare-metal Rust, instruction by instruction.</span>
+            <Link
+              to="/cpu/rv32i"
+              className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
+            >
+              Open →
+            </Link>
+          </div>
+
+          <div className="mt-10 lg:mt-12 rounded-2xl bg-muted/60 p-3 lg:p-4">
+            <EthernetParserCard />
+          </div>
+          <div className="mt-3 px-1 text-[12px] text-muted-foreground">
+            Ethernet Parser — MAC RX pipeline, IEEE 802.3, every signal out of the simulator.
+          </div>
         </Section>
 
         {/* Row 4: the architecture pillar — why the AI loop works */}
@@ -1007,7 +1631,7 @@ function EthernetParserCard() {
   const progress  = Math.min((byteOff / 64) * 100, 100);
 
   return (
-    <div className="rounded-lg border border-border overflow-hidden bg-card mt-4">
+    <div className="rounded-lg border border-border overflow-hidden bg-card">
       <div className="flex flex-col sm:flex-row" style={{ minHeight: 200 }}>
         {/* Left: raw frame bytes */}
         <div className="sm:w-[42%] shrink-0 border-b sm:border-b-0 sm:border-r border-border px-5 py-4 font-mono">
@@ -1082,50 +1706,3 @@ function EthernetParserCard() {
 }
 
 
-function ComplexDemoCard({
-  title,
-  subtitle,
-  description,
-  href,
-  accent,
-  preview,
-}: {
-  title: string;
-  subtitle: string;
-  description: string;
-  href: string;
-  accent: "blue" | "violet";
-  preview: React.ReactNode;
-}) {
-  const borderColor =
-    accent === "blue" ? "border-blue-200 dark:border-blue-900/30" : "border-violet-200 dark:border-violet-900/30";
-  const bgColor =
-    accent === "blue" ? "from-blue-50 dark:from-blue-950/20" : "from-violet-50 dark:from-violet-950/20";
-
-  return (
-    <div
-      className={`flex flex-col rounded-lg border ${borderColor} overflow-hidden bg-gradient-to-br ${bgColor} to-card`}
-    >
-      <Link to={href} aria-label={title} className="block bg-card overflow-hidden" style={{ height: 480 }}>
-        {preview}
-      </Link>
-      <div className="border-t border-border px-4 py-3 flex items-end justify-between gap-4">
-        <div>
-          <div className="text-[13px] font-semibold text-foreground">{title}</div>
-          <div className="text-[11px] text-muted-foreground/60 font-mono mt-0.5">
-            {subtitle}
-          </div>
-          <p className="text-[11px] text-muted-foreground mt-1.5 leading-relaxed">
-            {description}
-          </p>
-        </div>
-        <Link
-          to={href}
-          className="shrink-0 px-3 py-1.5 rounded border border-border text-[11px] text-foreground/80 hover:border-foreground/30 hover:text-foreground transition-colors"
-        >
-          Open demo →
-        </Link>
-      </div>
-    </div>
-  );
-}

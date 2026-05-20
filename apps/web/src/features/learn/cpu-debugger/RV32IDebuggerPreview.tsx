@@ -7,6 +7,12 @@
  */
 
 import { HighlightedCode } from "@/components/HighlightedCode";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 const PIPELINE_COLORS = {
   IF:  "bg-purple-100 text-purple-800 border-purple-300 dark:bg-purple-500/20 dark:text-purple-300 dark:border-purple-500/40",
@@ -23,6 +29,17 @@ const STAGES: { key: keyof typeof PIPELINE_COLORS; label: string; pc: string; in
   { key: "MEM", label: "Memory",  pc: "0x00000010", instr: "Load immediate: set a0 = 55" },
   { key: "WB",  label: "Save",    pc: "0x0000000c", instr: "Jump: unconditionally jump to 0xc" },
 ];
+
+// Per-stage explainer text shown on hover. Mirrors the dynamism of the
+// hero's CodeWithHovers — visitors can poke each pipeline badge to learn
+// what that stage does, without leaving the landing page.
+const STAGE_DESCRIPTIONS: Record<keyof typeof PIPELINE_COLORS, string> = {
+  IF: "Instruction Fetch — read the next instruction word from memory at the program counter.",
+  ID: "Instruction Decode — split the instruction into opcode, register operands, and immediate; read source registers.",
+  EX: "Execute — ALU computes results, branches evaluate, and memory addresses are calculated.",
+  MEM: "Memory Access — load from or store to data memory.",
+  WB: "Write Back — write the result into the destination register.",
+};
 
 const NARRATIVE =
   "Add upper immediate to PC: sp = PC + (0x20 << 12). Used to compute addresses relative to the current instruction.";
@@ -63,14 +80,23 @@ const DISASM: DisasmRow[] = [
 function PipelineBadge({ stage }: { stage: typeof STAGES[number] }) {
   const color = PIPELINE_COLORS[stage.key];
   return (
-    <div className={`flex flex-col rounded-lg border px-3 py-2 min-w-0 flex-1 ${color}`}>
-      <div className="flex items-center gap-1.5">
-        <span className="text-[12px] font-semibold">{stage.label}</span>
-        <span className="text-[10px] font-mono opacity-50">{stage.key}</span>
-      </div>
-      <span className="font-mono text-[11px] tabular-nums opacity-60 mt-0.5">{stage.pc}</span>
-      <span className="mt-1 text-[11px] leading-tight truncate">{stage.instr}</span>
-    </div>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <div
+          className={`flex flex-col rounded-lg border px-3 py-2 min-w-0 flex-1 cursor-help ${color}`}
+        >
+          <div className="flex items-center gap-1.5">
+            <span className="text-[12px] font-semibold">{stage.label}</span>
+            <span className="text-[10px] font-mono opacity-50">{stage.key}</span>
+          </div>
+          <span className="font-mono text-[11px] tabular-nums opacity-60 mt-0.5">{stage.pc}</span>
+          <span className="mt-1 text-[11px] leading-tight truncate">{stage.instr}</span>
+        </div>
+      </TooltipTrigger>
+      <TooltipContent side="top" className="max-w-[280px]">
+        {STAGE_DESCRIPTIONS[stage.key]}
+      </TooltipContent>
+    </Tooltip>
   );
 }
 
@@ -86,9 +112,9 @@ function StageTag({ stage }: { stage: DisasmTag }) {
 
 export function RV32IDebuggerPreview() {
   return (
+    <TooltipProvider delayDuration={300}>
     <div
-      className="select-none pointer-events-none flex flex-col h-full bg-card text-foreground"
-      aria-hidden="true"
+      className="select-none flex flex-col h-full bg-card text-foreground"
     >
       {/* Pipeline strip */}
       <div className="px-4 pt-4 pb-2">
@@ -163,5 +189,6 @@ export function RV32IDebuggerPreview() {
         </div>
       </div>
     </div>
+    </TooltipProvider>
   );
 }
