@@ -1161,7 +1161,7 @@ export function ClaudeDemoSection({
             Natural-language hardware design that actually runs.
           </h1>
           <p className="mt-5 text-base md:text-lg text-muted-foreground max-w-2xl">
-            Describe a circuit in English. Claude writes it in TypeScript. You watch it simulate — live, in your browser.
+            Describe a circuit in English. Claude writes it in TypeScript. You watch it simulate live, in your browser.
           </p>
           <div className="mt-6">
             <CopyCommand command="claude mcp add simten npx @simten/mcp" />
@@ -1218,9 +1218,9 @@ export function ClaudeDemoSection({
                 type="button"
                 onClick={() => cycleDemo(-1)}
                 aria-label="Previous circuit"
-                className="pointer-events-auto flex h-10 w-10 items-center justify-center rounded-full border border-border bg-card/90 text-muted-foreground shadow-sm backdrop-blur transition-all hover:text-foreground hover:border-foreground/30 animate-in fade-in slide-in-from-left-2 duration-500"
+                className="pointer-events-auto flex h-12 w-12 items-center justify-center rounded-full bg-muted text-foreground/80 border border-foreground/10 shadow-md transition-all hover:bg-muted hover:text-foreground hover:scale-110 hover:shadow-lg animate-in fade-in slide-in-from-left-2 duration-500"
               >
-                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
                   <polyline points="15 18 9 12 15 6" />
                 </svg>
               </button>
@@ -1228,9 +1228,9 @@ export function ClaudeDemoSection({
                 type="button"
                 onClick={() => cycleDemo(1)}
                 aria-label="Next circuit"
-                className="pointer-events-auto flex h-10 w-10 items-center justify-center rounded-full border border-border bg-card/90 text-muted-foreground shadow-sm backdrop-blur transition-all hover:text-foreground hover:border-foreground/30 animate-in fade-in slide-in-from-right-2 duration-500"
+                className="pointer-events-auto flex h-12 w-12 items-center justify-center rounded-full bg-muted text-foreground/80 border border-foreground/10 shadow-md transition-all hover:bg-muted hover:text-foreground hover:scale-110 hover:shadow-lg animate-in fade-in slide-in-from-right-2 duration-500"
               >
-                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
                   <polyline points="9 18 15 12 9 6" />
                 </svg>
               </button>
@@ -1243,9 +1243,6 @@ export function ClaudeDemoSection({
             is live, mirroring the figlet demo's picker further down. */}
         {canvasReady && (
           <div className="mt-6 flex items-center justify-center gap-2 flex-wrap animate-in fade-in slide-in-from-bottom-2 duration-500">
-            <span className="text-[11px] text-muted-foreground/60 mr-2 font-mono">
-              // try another
-            </span>
             {HERO_DEMOS.map((d, i) => (
               <button
                 key={d.key}
@@ -1259,7 +1256,7 @@ export function ClaudeDemoSection({
                 {d.label}
               </button>
             ))}
-            <span className="text-[10px] text-muted-foreground/40 ml-2 hidden lg:inline font-mono">
+            <span className="text-[13px] text-muted-foreground ml-3 font-mono">
               ← → to cycle
             </span>
           </div>
