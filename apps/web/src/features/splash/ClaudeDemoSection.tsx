@@ -16,13 +16,14 @@ import {
   type ReactNode,
 } from "react";
 import { Link } from "@tanstack/react-router";
-import { CircuitEmbed } from "@simten/embed";
+import { CircuitEmbed, type CircuitEmbedHandle } from "@simten/embed";
 import { circuit, bit } from "@simten/core/circuit";
 import type { BuiltCircuit } from "@simten/core/circuit";
 import { Xor, And, Or, Not, DFlipFlop } from "@simten/core/std";
 import { HighlightedCode } from "@/components/HighlightedCode";
 import { Container } from "@/components/Container";
 import { CodeWithHovers } from "./CodeWithHovers";
+import { FigletDemo, FIGLET_DEMO_CODE } from "./Hero";
 
 // ============================================================================
 // Demo circuits (self-contained — the gallery has its own copies of shared ones)
@@ -838,6 +839,17 @@ const HERO_DEMOS: HeroDemo[] = [
     circuit: HalfAdder,
     displayCode: HALF_ADDER_DISPLAY,
   },
+  // Figlet → ROM: the showcase from further down the page, lifted up so users
+  // see the "npm packages compile straight into hardware" pitch right in the
+  // hero. Self-driving (auto-runs once selected — see effect in HeroBrowserWindow).
+  // Code is intentionally wider than the 340px panel so the wider definitions
+  // (factory calls + the npm imports) read naturally — the panel scrolls.
+  {
+    key: "figlet",
+    label: "Figlet → ROM",
+    circuit: FigletDemo,
+    displayCode: FIGLET_DEMO_CODE,
+  },
   ...PROMPT_OPTIONS.map((opt) => ({
     key: opt.label.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
     label: opt.label
@@ -862,6 +874,21 @@ const HeroBrowserWindow = forwardRef<
     // user cycles through HERO_DEMOS post-reveal (React Flow doesn't
     // gracefully swap a different circuit on the same instance).
     const [embedKey, setEmbedKey] = useState("half-adder");
+    const embedRef = useRef<CircuitEmbedHandle>(null);
+
+    // Figlet streams bytes through a Register+Adder feedback loop, so it
+    // only does anything once the clock is ticking. Auto-run whenever the
+    // figlet demo is the selected one; stop when the user switches away.
+    // setTimeout(0) gives the new embed instance (remounted via key change)
+    // a tick to attach its imperative handle before we call into it.
+    useEffect(() => {
+      if (embedKey !== "figlet") return;
+      const id = setTimeout(() => embedRef.current?.startAutoRun(5), 0);
+      return () => {
+        clearTimeout(id);
+        embedRef.current?.stopAutoRun();
+      };
+    }, [embedKey]);
 
     const codeTw = useTypewriter(displayCode, 12, 0, codeTyping);
 
@@ -924,7 +951,16 @@ const HeroBrowserWindow = forwardRef<
             <div className="flex-1 min-h-0 relative">
               {mountCanvas ? (
                 <div key={embedKey} className="h-full animate-in fade-in duration-500">
-                  <CircuitEmbed circuit={targetCircuit} height="100%" />
+                  {/* forkSource hands the embed the human-readable source so
+                      the Fork button opens the editor with the nice version,
+                      not the IR-derived one (which for figlet would inline
+                      romFromBytes(...) as a 256-entry literal byte map). */}
+                  <CircuitEmbed
+                    ref={embedRef}
+                    circuit={targetCircuit}
+                    forkSource={displayCode}
+                    height="100%"
+                  />
                 </div>
               ) : (
                 <div className="h-full flex items-center justify-center text-muted-foreground/40 text-sm font-mono">

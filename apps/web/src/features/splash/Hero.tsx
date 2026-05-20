@@ -68,13 +68,59 @@ const FigletStream = circuit('FigletStream', {
   ],
 });
 
-const FigletDemo = circuit('FigletDemo', {
+export const FigletDemo = circuit('FigletDemo', {
   nodes: { src: FigletStream, term: ConsolePrimitive },
   connect: ({ nodes: { src, term } }) => [
     src.byte.to(term.data),
     src.strobe.to(term.we),
   ],
 });
+
+// Source string used by the splash hero picker — same content as DEMOS[0].code
+// below, exported so ClaudeDemoSection can render it without duplicating the
+// figlet ROM-generation logic. Kept as a free const rather than read out of
+// DEMOS at runtime to avoid a circular-feeling self-reference.
+export const FIGLET_DEMO_CODE = `import figlet from 'figlet';
+import smallFont from 'figlet/fonts/Small.js';
+figlet.parseFont('Small', smallFont);
+
+// Render ASCII-art at compile time with a real npm package,
+// then stream the bytes through hardware — letter by letter.
+const banner = figlet.textSync('Simten', { font: 'Small' });
+const ascii = [...banner].map(c => c.charCodeAt(0));
+const bannerBytes = Array.from({ length: 256 }, (_, i) =>
+  i === 0 ? 12 : i <= ascii.length ? ascii[i - 1] : 0
+);
+
+const FigletStream = circuit('FigletStream', {
+  outputs: { byte: bus(8), strobe: bit },
+  nodes: {
+    reg: Register({ width: 8 }),
+    adder: Adder({ width: 8 }),
+    rom: ROM({ memory: romFromBytes(bannerBytes) }),
+    one: Constant({ value: 1 }),
+    we: Constant({ value: 1 }),
+    zero: Constant({ value: 0 }),
+  },
+  connect: ({ outputs, nodes: { reg, adder, rom, one, we, zero } }) => [
+    reg.q.to(adder.a),
+    one.out.to(adder.b),
+    zero.out.to(adder.carry_in),
+    adder.sum.to(reg.data),
+    we.out.to(reg.we),
+    reg.q.to(rom.addr),
+    rom.data_out.to(outputs.byte),
+    we.out.to(outputs.strobe),
+  ],
+});
+
+const FigletDemo = circuit('FigletDemo', {
+  nodes: { src: FigletStream, term: Console },
+  connect: ({ nodes: { src, term } }) => [
+    src.byte.to(term.data),
+    src.strobe.to(term.we),
+  ],
+});`;
 
 const HalfAdder = circuit('HalfAdder', {
   inputs: { a: bit, b: bit },
