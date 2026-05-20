@@ -1163,7 +1163,18 @@ export function ClaudeDemoSection({
           <p className="mt-5 text-base md:text-lg text-muted-foreground max-w-2xl">
             Describe a circuit in English. Claude writes it in TypeScript. You watch it simulate live, in your browser.
           </p>
-          <div className="mt-6">
+          <div className="mt-6 flex items-center gap-3 flex-wrap">
+            {/* Primary action — keeps the hero framed around "this is a
+                hardware framework", not "this is an MCP install". The
+                MCP CopyCommand sits second so power users still see it
+                without it visually dominating. */}
+            <Link
+              to="/docs/$"
+              params={{ _splat: "" }}
+              className="inline-flex items-center rounded-lg bg-foreground text-background hover:bg-foreground/90 transition-colors px-4 py-3 text-sm font-medium"
+            >
+              Learn more →
+            </Link>
             <CopyCommand command="claude mcp add simten npx @simten/mcp" />
           </div>
         </div>
@@ -1218,7 +1229,7 @@ export function ClaudeDemoSection({
                 type="button"
                 onClick={() => cycleDemo(-1)}
                 aria-label="Previous circuit"
-                className="pointer-events-auto flex h-12 w-12 items-center justify-center rounded-full bg-muted text-foreground/80 border border-foreground/10 shadow-md transition-all hover:bg-muted hover:text-foreground hover:scale-110 hover:shadow-lg animate-in fade-in slide-in-from-left-2 duration-500"
+                className="pointer-events-auto flex h-12 w-12 items-center justify-center rounded-full bg-foreground text-background shadow-lg transition-all hover:scale-110 hover:shadow-xl animate-in fade-in slide-in-from-left-2 duration-500"
               >
                 <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
                   <polyline points="15 18 9 12 15 6" />
@@ -1228,7 +1239,7 @@ export function ClaudeDemoSection({
                 type="button"
                 onClick={() => cycleDemo(1)}
                 aria-label="Next circuit"
-                className="pointer-events-auto flex h-12 w-12 items-center justify-center rounded-full bg-muted text-foreground/80 border border-foreground/10 shadow-md transition-all hover:bg-muted hover:text-foreground hover:scale-110 hover:shadow-lg animate-in fade-in slide-in-from-right-2 duration-500"
+                className="pointer-events-auto flex h-12 w-12 items-center justify-center rounded-full bg-foreground text-background shadow-lg transition-all hover:scale-110 hover:shadow-xl animate-in fade-in slide-in-from-right-2 duration-500"
               >
                 <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
                   <polyline points="9 18 15 12 9 6" />
