@@ -10,7 +10,6 @@ import { Section, SectionHeading } from "@/components/SectionHeading";
 import { RV32IDebuggerPreview } from "@/features/learn/cpu-debugger/RV32IDebuggerPreview";
 import { ClaudeDemoSection } from "@/features/splash/ClaudeDemoSection";
 import { CodeWithHovers } from "@/features/splash/CodeWithHovers";
-import { Hero } from "@/features/splash/Hero";
 import { useSnakeSimulator } from "@/features/blog/snake-in-hardware/useSnakeSimulator";
 import { usePongSimulator } from "@/features/blog/pong-in-hardware/usePongSimulator";
 
@@ -106,13 +105,6 @@ function BentoFeatures() {
   return (
     <section className="hidden md:block py-20 lg:py-28 border-t border-border">
       <Container>
-        <div className="max-w-2xl mb-10 lg:mb-12">
-          <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight leading-[1.1]">
-            <span className="text-foreground">A real framework, not a toy.</span>{" "}
-            <span className="text-muted-foreground">Here&apos;s what comes in the box.</span>
-          </h2>
-        </div>
-
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-px bg-border rounded-lg overflow-hidden border border-border">
           <BentoCell
             title="Type-safe end to end"
@@ -940,166 +932,62 @@ function DemoGallery() {
               Scale to real-world complexity
             </h2>
             <p className="mt-4 text-base lg:text-lg text-muted-foreground">
-              The framework already runs heavy systems in the browser — for example, a 5-stage pipelined RISC-V CPU executing GCC-compiled C, C++, and Rust, or an IEEE 802.3 Ethernet parser turning wire bytes into protocol fields. Two of the demos shipping in the repo today.
+              The framework already runs heavy systems in the browser — for example, a 5-stage pipelined RISC-V CPU executing GCC-compiled C, C++, and Rust, or an IEEE 802.3 Ethernet parser turning wire bytes into protocol fields.
             </p>
           </div>
 
-          <div className="rounded-2xl bg-muted/60 p-3 lg:p-4">
-            <div
-              className="rounded-xl border border-border bg-card shadow-sm overflow-hidden"
-              style={{ height: 520 }}
-            >
-              <RV32IDebuggerPreview />
+          {/* Diagonally overlapping card stack — RV32I is the primary,
+              forward card; the Ethernet parser peeks out from behind in
+              the bottom-right, implying "and more like this". Container
+              uses padding-bottom to reserve room for the offset card
+              hanging off the bottom-right corner. No per-demo captions —
+              the intro paragraph already names what each one is. */}
+          <div className="relative pb-24 lg:pb-32">
+            {/* RV32I — behind, partially covered by the Ethernet card */}
+            <div className="relative z-0 rounded-2xl bg-muted/60 p-3 lg:p-4 w-full lg:w-[78%] shadow-sm">
+              <div
+                className="rounded-xl border border-border bg-card shadow-sm overflow-hidden"
+                style={{ height: 520 }}
+              >
+                <RV32IDebuggerPreview />
+              </div>
+              <div className="absolute -top-3 left-6 inline-flex items-center gap-2 rounded-full bg-card border border-border px-3 py-1 text-[11px] font-medium text-foreground shadow-sm">
+                <span className="h-1.5 w-1.5 rounded-full bg-blue-500" />
+                RV32I CPU debugger
+                <Link
+                  to="/cpu/rv32i"
+                  className="ml-1 text-blue-600 dark:text-blue-400 hover:underline"
+                >
+                  Open →
+                </Link>
+              </div>
+            </div>
+
+            {/* Ethernet — in front, offset to the bottom-right */}
+            <div className="hidden lg:block absolute right-0 -bottom-4 z-10 w-[62%] rounded-2xl bg-muted/60 p-3 lg:p-4 shadow-md">
+              <EthernetParserCard />
+              <div className="absolute -top-3 left-6 inline-flex items-center gap-2 rounded-full bg-card border border-border px-3 py-1 text-[11px] font-medium text-foreground shadow-sm">
+                <span className="h-1.5 w-1.5 rounded-full bg-violet-500" />
+                Ethernet parser
+              </div>
+            </div>
+
+            {/* Mobile / narrow: stack the Ethernet card under the RV32I
+                instead of overlapping (the overlap doesn't have room to
+                breathe below the lg breakpoint). */}
+            <div className="lg:hidden mt-8 rounded-2xl bg-muted/60 p-3 lg:p-4 relative">
+              <EthernetParserCard />
+              <div className="absolute -top-3 left-6 inline-flex items-center gap-2 rounded-full bg-card border border-border px-3 py-1 text-[11px] font-medium text-foreground shadow-sm">
+                <span className="h-1.5 w-1.5 rounded-full bg-violet-500" />
+                Ethernet parser
+              </div>
             </div>
           </div>
-          <div className="mt-3 flex items-center justify-between px-1 text-[12px] text-muted-foreground">
-            <span>RV32I CPU debugger — bare-metal Rust, instruction by instruction.</span>
-            <Link
-              to="/cpu/rv32i"
-              className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
-            >
-              Open →
-            </Link>
-          </div>
-
-          <div className="mt-10 lg:mt-12 rounded-2xl bg-muted/60 p-3 lg:p-4">
-            <EthernetParserCard />
-          </div>
-          <div className="mt-3 px-1 text-[12px] text-muted-foreground">
-            Ethernet Parser — MAC RX pipeline, IEEE 802.3, every signal out of the simulator.
-          </div>
-        </Section>
-
-        {/* Row 4: the architecture pillar — why the AI loop works */}
-        <Section>
-          <SectionHeading
-            title="Circuits are TypeScript. That changes everything."
-            description="The IR is a language LLMs are already fluent in. The same source compiles for the browser simulator, headless CI, and Verilog export — so Claude can write, run, and verify in one round trip."
-          />
-        </Section>
-
-        {/* Row 5.5: Headless simulation */}
-        <Section>
-          <SectionHeading
-title="Run headless — no browser needed"
-            description="The same engine runs in Node.js, CI pipelines, and MCP tools at 20,000+ ticks/sec."
-          />
-          <div className="rounded-lg border border-border bg-card overflow-hidden">
-            <div className="flex items-center gap-1.5 px-4 h-9 border-b border-border bg-muted">
-              <span className="w-2.5 h-2.5 rounded-full bg-[#ff5f57]" />
-              <span className="w-2.5 h-2.5 rounded-full bg-[#febc2e]" />
-              <span className="w-2.5 h-2.5 rounded-full bg-[#28c840]" />
-              <span className="flex-1 text-center text-[11px] text-muted-foreground font-mono">terminal</span>
-            </div>
-            <pre className="px-5 py-4 text-[12px] font-mono leading-relaxed overflow-x-auto">
-<span className="text-muted-foreground">{"$ "}</span><span className="text-foreground">{"npx @simten/core simulate rv32i-board.circuit.ts --ticks 1000"}</span>{"\n"}
-{"\n"}
-<span className="text-muted-foreground/60">{"Compiling..."}</span><span className="text-muted-foreground">{" 2 circuits (RV32I_Core, RV32I_Board)"}</span>{"\n"}
-<span className="text-muted-foreground/60">{"Elaborating..."}</span><span className="text-muted-foreground">{" 117 primitive nodes"}</span>{"\n"}
-<span className="text-muted-foreground/60">{"Simulating..."}</span><span className="text-muted-foreground">{" 1,000 ticks in 52ms "}</span><span className="text-emerald-500 dark:text-emerald-400">{"(19,200 ticks/sec)"}</span>{"\n"}
-{"\n"}
-<span className="text-muted-foreground/60">{"UART output:"}</span>{"\n"}
-<span className="text-emerald-500 dark:text-emerald-400">{"  Hello, World!"}</span>{"\n"}
-{"\n"}
-<span className="text-emerald-500 dark:text-emerald-400">{"✓"}</span><span className="text-muted-foreground">{" All assertions passed"}</span>{"\n"}
-<span className="text-muted-foreground/60">{"  PC = 0x30 (halted at infinite loop)"}</span>
-            </pre>
-          </div>
-        </Section>
-
-        {/* Row 5.6: npm interop */}
-        <Section>
-          <SectionHeading
-title="Import any npm package"
-            description="Circuits are TypeScript. Use fast-check for property testing, D3 for visualization, or your own libraries to drive simulations."
-          />
-          <div className="rounded-lg border border-border bg-card overflow-hidden">
-            <div className="flex items-center gap-1.5 px-4 h-9 border-b border-border bg-muted">
-              <span className="w-2.5 h-2.5 rounded-full bg-[#ff5f57]" />
-              <span className="w-2.5 h-2.5 rounded-full bg-[#febc2e]" />
-              <span className="w-2.5 h-2.5 rounded-full bg-[#28c840]" />
-              <span className="flex-1 text-center text-[11px] text-muted-foreground font-mono">verify-adder.test.ts</span>
-            </div>
-            <HighlightedCode
-              code={`import { circuit, bit } from '@simten/core/circuit'
-import { Xor, And } from '@simten/core/std'
-import { simulate } from '@simten/core/sim'
-import * as fc from 'fast-check'
-
-const HalfAdder = circuit('HalfAdder', {
-  inputs: { a: bit, b: bit },
-  outputs: { sum: bit, carry: bit },
-  nodes: { xor1: Xor, and1: And },
-  connect: ({ inputs, outputs, nodes: { xor1, and1 } }) => [
-    inputs.a.to(xor1.a, and1.a),
-    inputs.b.to(xor1.b, and1.b),
-    xor1.out.to(outputs.sum),
-    and1.out.to(outputs.carry),
-  ],
-})
-
-// Property: sum + 2·carry always equals a + b
-fc.assert(
-  fc.property(fc.boolean(), fc.boolean(), (a, b) => {
-    const sim = simulate(HalfAdder)
-    sim.set({ a: a ? 1 : 0, b: b ? 1 : 0 })
-    const result = sim.get('sum') + 2 * sim.get('carry')
-    sim.dispose()
-    return result === (a ? 1 : 0) + (b ? 1 : 0)
-  })
-)
-// ✓ Passed 100 random inputs`}
-              className="px-5 py-4 text-[12px] font-mono leading-relaxed overflow-x-auto m-0"
-            />
-          </div>
-          <p className="text-[11px] text-muted-foreground/60 mt-3">No testbench language. No waveform files. Just TypeScript and whatever libraries you already know.</p>
         </Section>
 
       </Container>
 
-      {/* ============================================================ */}
-      {/* Or write it yourself — the editor + interactive demo picker  */}
-      {/* ============================================================ */}
-      <Hero />
-
       <Container className="relative">
-
-        {/* Embed CTA */}
-        <Section>
-          <SectionHeading
-            title="Drop it in your blog or docs"
-            description={
-              <>
-                Every demo on this page is a{" "}
-                <code className="font-mono text-[0.9em] px-1.5 py-0.5 rounded bg-muted text-foreground/90">
-                  &lt;CircuitEmbed /&gt;
-                </code>
-                {" "}— live, interactive hardware in 3 lines.
-              </>
-            }
-          />
-          <PackageManagerTabs package="@simten/embed" />
-          <div className="rounded-lg border border-border bg-card overflow-hidden mt-4">
-            <pre className="px-4 py-3 text-[12px] font-mono text-muted-foreground leading-relaxed overflow-x-auto">
-              <span className="text-violet-400">{"import"}</span>{" { CircuitEmbed } "}
-              <span className="text-violet-400">{"from"}</span>{" "}
-              <span className="text-green-400">{"'@simten/embed'"}</span>
-              {"\n"}
-              <span className="text-violet-400">{"import"}</span>{" { myCircuit } "}
-              <span className="text-violet-400">{"from"}</span>{" "}
-              <span className="text-green-400">{"'./my-circuit'"}</span>
-              {"\n\n"}
-              <span className="text-muted-foreground">{"// Compiles, simulates, and renders — in one component"}</span>
-              {"\n"}
-              {"<"}
-              <span className="text-blue-400">{"CircuitEmbed"}</span>
-              {"\n  "}
-              <span className="text-cyan-400">{"circuit"}</span>
-              {"={myCircuit}"}
-              {"\n/>"}
-            </pre>
-          </div>
-        </Section>
 
         {/* Verilog Export — honest framing */}
         <Section>
