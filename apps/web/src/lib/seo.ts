@@ -60,7 +60,7 @@ export function softwareApplicationLd() {
     applicationCategory: 'DeveloperApplication',
     operatingSystem: 'Web',
     description:
-      'Build and simulate digital circuits in TypeScript. From single gates to full RISC-V CPUs — all running live in the browser.',
+      'Design and simulate digital hardware in TypeScript. From single gates to RISC-V CPUs, synthesizable to Verilog, running live in your browser.',
     offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
   })
 }

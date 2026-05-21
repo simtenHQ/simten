@@ -1,6 +1,6 @@
 # @simten/embed
 
-Embeddable interactive circuit simulator. Drop live hardware simulations into any React app.
+Embeddable interactive hardware circuits. Drop live, cycle-accurate simulations into any React app.
 
 ## Install
 

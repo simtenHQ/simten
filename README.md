@@ -4,13 +4,13 @@
 
 # Simten
 
-**A TypeScript-native digital circuit simulator.**
+**A TypeScript-native HDL — simulates in the browser, synthesizes to Verilog.**
 
-Build digital hardware that scales from a single gate to a full pipelined CPU
-— all in TypeScript, simulated live in the browser. Drive your circuits with
-any npm package: `fast-check` for property testing, `pcap-parser` to replay
-real network traffic through your Ethernet parser. Export to synthesisable
-Verilog when you're done.
+Build digital hardware in TypeScript, from single gates to pipelined CPUs.
+Drive your circuits with any npm package — `fast-check` for property testing,
+`pcap-parser` to replay real network traffic through your Ethernet parser.
+Wire it to Claude via MCP for natural-language design. The generated Verilog
+runs on real FPGAs (Yosys, nextpnr, ULX3S).
 
 [**Live Demo →**](https://simten.dev) &nbsp;·&nbsp; [Docs](https://simten.dev/docs) &nbsp;·&nbsp; [Blog](https://simten.dev/blog)
 

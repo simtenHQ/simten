@@ -1,7 +1,7 @@
 {
   "name": "@simten/embed",
   "version": "0.1.0",
-  "description": "Embeddable interactive circuit simulator. Drop live hardware simulations into any React app or HTML page.",
+  "description": "Embeddable interactive hardware circuits. Drop live, cycle-accurate simulations into any React app or HTML page.",
   "license": "Apache-2.0",
   "author": "Charles Harris",
   "repository": {
