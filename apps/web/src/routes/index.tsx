@@ -711,6 +711,15 @@ function MobileAIHero() {
           claude mcp add simten npx @simten/mcp
         </code>
       </div>
+      <div className="mt-4 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-muted-foreground">
+        <span>Synthesizable Verilog</span>
+        <span className="text-muted-foreground/40">·</span>
+        <span>Runs on ULX3S</span>
+        <span className="text-muted-foreground/40">·</span>
+        <span>Cycle-accurate</span>
+        <span className="text-muted-foreground/40">·</span>
+        <span>Yosys + nextpnr</span>
+      </div>
     </section>
   );
 }
