@@ -1177,6 +1177,15 @@ export function ClaudeDemoSection({
             </Link>
             <CopyCommand command="claude mcp add simten npx @simten/mcp" />
           </div>
+          <div className="mt-5 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[12px] text-muted-foreground">
+            <span>Synthesizable Verilog</span>
+            <span className="text-muted-foreground/40">·</span>
+            <span>Runs on real FPGAs (ULX3S)</span>
+            <span className="text-muted-foreground/40">·</span>
+            <span>Cycle-accurate</span>
+            <span className="text-muted-foreground/40">·</span>
+            <span>Open toolchain (Yosys + nextpnr)</span>
+          </div>
         </div>
 
         <div className="relative">
