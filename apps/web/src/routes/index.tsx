@@ -68,10 +68,10 @@ import { pageHead, softwareApplicationLd } from "@/lib/seo";
 export const Route = createFileRoute("/")({
   head: () => ({
     ...pageHead({
-      title: "Simten — Hardware simulation in TypeScript",
+      title: "Simten — Hardware design in TypeScript",
       titleExact: true,
       description:
-        "Build and simulate digital circuits in TypeScript. From single gates to full RISC-V CPUs — all running live in the browser.",
+        "Design and simulate digital hardware in TypeScript. From single gates to RISC-V CPUs, synthesizable to Verilog, running live in your browser.",
       path: "/",
     }),
     scripts: [softwareApplicationLd()],
@@ -108,7 +108,7 @@ function BentoFeatures() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-px bg-border rounded-lg overflow-hidden border border-border">
           <BentoCell
             title="Type-safe end to end"
-            description="Circuits are TypeScript. The simulator runs natively in Node, Bun, or browser — no testbench language, no codegen step."
+            description="Circuits are TypeScript. Runs natively in Node, Bun, or browser — no testbench language, no codegen step."
             visual={<TypesafeBentoVisual />}
           />
           <BentoCell
@@ -700,10 +700,10 @@ function MobileAIHero() {
         Works with Claude + MCP
       </div>
       <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight leading-[1.05] text-foreground">
-        Natural-language hardware design that actually runs.
+        A TypeScript HDL that runs in your browser.
       </h1>
       <p className="mt-4 text-sm text-muted-foreground">
-        Describe a circuit in English. Claude writes the TypeScript. You watch it simulate, live in your browser.
+        Wire up a circuit in seconds. Watch every cycle tick. Ship Verilog when you're done.
       </p>
       <div className="mt-5 rounded-lg border border-border bg-muted px-4 py-3">
         <code className="font-mono text-[12px] text-foreground/80">
