@@ -27,7 +27,7 @@ export function PipelineStage({ number, title, subtitle, children, last }) {
 
 <div className="my-8">
 <PipelineStage number={1} title="Export" subtitle="TypeScript circuit → Verilog">
-  `exportVerilog()` flattens the circuit to primitives and emits synthesisable Verilog. Every node becomes a wire or register assignment. No simulation-only constructs remain.
+  `exportVerilog()` flattens the circuit to primitives and emits synthesisable Verilog. Every node becomes a wire or register assignment. Any module containing sequential logic gets `clk` and `rst_n` ports auto-emitted — synchronous active-low reset; your wrapper must drive both. No simulation-only constructs remain.
 </PipelineStage>
 
 <PipelineStage number={2} title="Synthesise" subtitle="Yosys synth_ecp5 → netlist JSON">
@@ -82,6 +82,8 @@ Everything needed to actually show the game on a monitor lives in `snake_top.v`:
 **TMDS serialiser** — each 10-bit TMDS word must be sent as 10 serial bits at 250 Mbps (125 MHz × 2 via DDR). Two 5-bit shift registers feed a pair of `ODDRX1F` primitives — ECP5's double-data-rate output flip-flop, which outputs one bit on the rising edge and one on the falling edge of `clk_shift`.
 
 **Direction latch** — buttons are sampled on the slow game clock and mapped to the 2-bit encoding `SnakeAdvanced` expects.
+
+**Reset driver** — the wrapper must drive the `rst_n` input on the generated module. Typical pattern: a small power-on-reset counter that holds `rst_n` low for the first ~256 cycles after bitstream load, optionally combined with a physical button (active-high pressed → `rst_n` low) for runtime restart. The `hardware/ulx3s/projects/cpu/cpu_top.v` wrapper has a worked example.
 
 ### The pin constraint file
 
@@ -164,7 +166,7 @@ The next demo after Snake is a soft RV32I CPU. Same board, same toolchain, but n
 
 `hardware/ulx3s/projects/cpu/` contains:
 
-- `cpu_top.v` — the RV32I core, BRAM-backed instruction memory (IMEM), data memory (DMEM), and a small UART TX peripheral, wrapped with the ULX3S clock pin and TX pin assignments.
+- `cpu_top.v` — the RV32I core, BRAM-backed instruction memory (IMEM), data memory (DMEM), and a small UART TX peripheral, wrapped with the ULX3S clock pin, the `BTN_F1` reset button (pin `R1`), and TX pin assignments. The wrapper combines a power-on-reset counter and the button to drive the core's `rst_n` input — press the button to restart the CPU live.
 - `firmware/` — example programs in C (`hello.c`, `fibonacci.c`, `snake.c`) and Rust (`hello.rs`).
 - `index.ts` — the project descriptor that the build pipeline auto-discovers.
 
