@@ -22,7 +22,7 @@ Circuits that export to Verilog can go all the way to a physical FPGA bitstream.
 
 ## Verilog export
 
-Circuits export to synthesizable Verilog. The exporter maps 60+ primitives to standard RTL constructs — `assign` for combinational logic, `always @(posedge clk)` with non-blocking assignments for sequential logic. The output is verified against [Icarus Verilog](https://steveicarus.github.io/iverilog/) via a containerized verification service.
+Circuits export to synthesizable Verilog. The exporter maps 60+ primitives to standard RTL constructs — `assign` for combinational logic, `always @(posedge clk)` with synchronous active-low reset (`rst_n`) for sequential logic. Every module containing sequential primitives gets `input clk` and `input rst_n` ports auto-emitted (no clock or reset wiring in your `circuit()` definitions); on `rst_n` low, registers snap to their `value` arg, memories preserve contents, RV32I register files zero. The output is verified against [Icarus Verilog](https://steveicarus.github.io/iverilog/) via a containerized verification service.
 
 ```typescript
 import { exportVerilog } from '@simten/core/verilog';

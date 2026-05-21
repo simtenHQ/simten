@@ -110,6 +110,8 @@ const { verilog, files } = exportVerilog(HalfAdder, library, { target: 'synthesi
 
 The `synthesis` target strips simulation-only constructs. Memories above 2k words are emitted as `$readmemh` with the hex contents returned alongside — matching the Yosys/Vivado/Quartus convention.
 
+Every emitted module that contains sequential logic also gets `clk` and `rst_n` ports — the exporter auto-plumbs both (your `circuit()` definitions don't reference clock or reset). `rst_n` is active-low and synchronous: when held low, registers reset to their `value` arg, memories preserve their contents, and RV32I register files zero. Your board wrapper must drive both pins.
+
 See [Hardware & FPGA](/docs/hardware) for the full pipeline (Yosys → nextpnr → ecppack → flash) using Snake on a ULX3S as the worked example.
 
 ---

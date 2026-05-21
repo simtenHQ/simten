@@ -103,7 +103,7 @@ Common parameters across the stdlib:
 | Parameter | Used by | Description |
 |-----------|---------|-------------|
 | `width` | Adder, Subtractor, Comparator, Mux, BusAnd/Or/Xor, LeftShifter, RightShifter, Register | Bus width (default: 8) |
-| `value` | Constant, Input, Switch, Button, Register, DFlipFlop | Fixed or initial state value (matches state/eval field) |
+| `value` | Constant, Input, Switch, Button, Register, DFlipFlop | Fixed or initial state value (matches state/eval field). For Register and DFlipFlop this is also the reset target — when the exporter's auto-plumbed `rst_n` goes low, the register snaps back to `value`. |
 | `memory` | RAM, DualPortRAM, ROM, DualPortROM | Memory initialization map `{ addr: value, ... }` |
 | `low`, `high` | BitSlice | Bit range to extract (inclusive) |
 | `baseAddress` | ROM | Memory-mapped base address |
