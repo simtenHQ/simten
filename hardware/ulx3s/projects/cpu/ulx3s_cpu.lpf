@@ -8,3 +8,7 @@ IOBUF  PORT "uart_tx" IO_TYPE=LVCMOS33;
 # LEDs for debug
 LOCATE COMP "led[0]" SITE "B2"; IOBUF PORT "led[0]" IO_TYPE=LVCMOS33 DRIVE=4;
 LOCATE COMP "led[1]" SITE "C2"; IOBUF PORT "led[1]" IO_TYPE=LVCMOS33 DRIVE=4;
+
+# Reset button (BTN_F1 / FIRE1 on ULX3S V3.0.x = pin R1, active-high when pressed)
+LOCATE COMP "btn_reset" SITE "R1";
+IOBUF  PORT "btn_reset" IO_TYPE=LVCMOS33 PULLMODE=DOWN;

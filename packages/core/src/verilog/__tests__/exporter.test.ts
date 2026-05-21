@@ -224,6 +224,61 @@ describe('exportVerilog', () => {
       expect(lines[9]).toBe('1c'); // i=9 → 28 = 0x1c
     });
 
+    it('emits rst_n port and reset arm on every sequential always-block', () => {
+      // Sequential circuit exercising Register, DFlipFlop, and RAM in one
+      // module so the test fails if any of the three reset-arm sites
+      // regresses. (Pure-combinational circuits must NOT get rst_n — that
+      // case is covered separately below.)
+      const Mixed = circuit('Mixed', {
+        inputs: { a: bit, b: bit, addr: bus(8), wdata: bus(8), we: bit },
+        outputs: { d_q: bit, ram_q: bus(8) },
+        nodes: { d: DFlipFlop(), r: Register({ width: 1 }), m: RAM() },
+        connect: ({ inputs, outputs, nodes: { d, r, m } }) => [
+          inputs.a.to(d.d),
+          inputs.b.to(r.data),
+          inputs.b.to(r.we),
+          inputs.addr.to(m.addr),
+          inputs.wdata.to(m.data_in),
+          inputs.we.to(m.we),
+          d.q.to(outputs.d_q),
+          m.data_out.to(outputs.ram_q),
+        ],
+      });
+
+      const { verilog } = exportVerilog(Mixed.circuit, libraryFor(Mixed));
+
+      // Module declares rst_n as a port.
+      expect(verilog).toMatch(/input rst_n/);
+
+      // Every `always @(posedge clk)` block has a reset arm — either an
+      // `if (!rst_n)` reset-load (DFlipFlop, Register, RV32I_RegisterFile)
+      // or a combined-guard write (RAM, DualPortRAM, RV32I_DataMem).
+      const alwaysBlocks = verilog.match(/always @\(posedge clk\)[\s\S]*?end/g) ?? [];
+      expect(alwaysBlocks.length).toBeGreaterThan(0);
+      for (const block of alwaysBlocks) {
+        const hasResetLoad = /if \(!rst_n\)/.test(block);
+        const hasGuardedWrite = /&& rst_n/.test(block);
+        expect(hasResetLoad || hasGuardedWrite).toBe(true);
+      }
+    });
+
+    it('does not emit rst_n when no sequential primitives are present', () => {
+      const Combo = circuit('Combo', {
+        inputs: { a: bit, b: bit },
+        outputs: { s: bit, c: bit },
+        nodes: { x: Xor, a1: And },
+        connect: ({ inputs, outputs, nodes: { x, a1 } }) => [
+          inputs.a.to(x.a, a1.a),
+          inputs.b.to(x.b, a1.b),
+          x.out.to(outputs.s),
+          a1.out.to(outputs.c),
+        ],
+      });
+      const { verilog } = exportVerilog(Combo.circuit, libraryFor(Combo));
+      expect(verilog).not.toMatch(/input rst_n/);
+      expect(verilog).not.toMatch(/input clk/);
+    });
+
     it('emits initial for stdlib ROM via factory memory arg', () => {
       const PreloadedROM = circuit('PreloadedROM', {
         inputs: { addr: bus(16) },

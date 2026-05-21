@@ -35,6 +35,8 @@ const DEFAULT_OPTIONS: Required<VerilogExportOptions> = {
   inlineMemoryThreshold: INLINE_MEMORY_THRESHOLD,
 };
 
+const RESET_NAME = 'rst_n';
+
 function sanitizeId(id: string): string {
   return id.replace(/[.\-]/g, '_').replace(/[^a-zA-Z0-9_]/g, '');
 }
@@ -126,8 +128,11 @@ function emitFlatModule(
 
   const TOP = '__top__';
 
-  // Detect if circuit needs a clock
+  // Detect if circuit needs a clock (and matching reset).
+  // Kept as separate flags so they can diverge later (e.g. clock-only debug
+  // wrappers) without splitting the call site.
   const needsClock = flat.nodes.some(n => isSequentialPrimitive(n.primitiveType));
+  const needsReset = needsClock;
 
   // Filter to logic nodes only (I/O becomes module ports via topLevelInputs/Outputs)
   const logicNodes = flat.nodes.filter(n => !isSinkPrimitive(n.primitiveType));
@@ -269,6 +274,9 @@ function emitFlatModule(
   if (needsClock) {
     ports.push(`input ${opts.clockName}`);
   }
+  if (needsReset) {
+    ports.push(`input ${RESET_NAME}`);
+  }
 
   for (const input of flat.topLevelInputs) {
     const widthStr = portTypeToVerilog(input.portType);
@@ -322,6 +330,7 @@ function emitFlatModule(
       args: node.arguments as Record<string, any>,
       wires,
       clockName: opts.clockName,
+      resetName: RESET_NAME,
       target: opts.target,
       stateInits: collectStateInits(node, library),
       inlineMemoryThreshold,
