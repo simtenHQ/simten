@@ -46,6 +46,12 @@ export interface PrimitiveContext {
   args: Record<string, ArgumentValue>;
   wires: PrimitiveWires;
   clockName: string;
+  /**
+   * Name of the active-low synchronous reset port emitted at the top of
+   * every module that contains sequential logic. Used by every primitive
+   * that emits an `always @(posedge clk)` block to gate the reset arm.
+   */
+  resetName: string;
   target: 'simulation' | 'synthesis';
   /** Preloaded memory state from the component definition (if any). */
   stateInits?: StateInit[];
@@ -170,7 +176,7 @@ function sanitizeId(id: string): string {
  * - declarations: reg/wire declarations needed for this primitive
  */
 export function emitPrimitive(ctx: PrimitiveContext): { lines: string[]; declarations: string[] } {
-  const { primitiveType, args, wires, clockName, nodeId } = ctx;
+  const { primitiveType, args, wires, clockName, resetName, nodeId } = ctx;
   const w = getWidth(args);
   const id = sanitizeId(nodeId);
 
@@ -325,13 +331,15 @@ export function emitPrimitive(ctx: PrimitiveContext): { lines: string[]; declara
     // ── Sequential: DFlipFlop ────────────────────────────────────────
     case 'DFlipFlop': {
       const regName = `reg_${id}`;
-      const initLines = [`initial ${regName} = 1'b0;`];
+      const initialBit = args.value ? 1 : 0;
+      const initLines = [`initial ${regName} = 1'b${initialBit};`];
       return {
         declarations: [`reg ${regName};`],
         lines: [
           ...initLines,
           `always @(posedge ${clockName}) begin`,
-          `  ${regName} <= ${i('d')};`,
+          `  if (!${resetName}) ${regName} <= 1'b${initialBit};`,
+          `  else ${regName} <= ${i('d')};`,
           `end`,
           `assign ${o('q')} = ${regName};`,
           ...(isConnected(wires, 'q_bar', 'output') ? [`assign ${o('q_bar')} = ~${regName};`] : []),
@@ -344,13 +352,15 @@ export function emitPrimitive(ctx: PrimitiveContext): { lines: string[]; declara
       const regName = `reg_${id}`;
       const widthStr = w > 1 ? `[${w - 1}:0] ` : '';
       const initialValue = typeof args.value === 'number' ? args.value : 0;
-      const initLines = [`initial ${regName} = ${w > 1 ? `${w}'d` : "1'b"}${initialValue};`];
+      const initialLiteral = w > 1 ? `${w}'d${initialValue}` : `1'b${initialValue ? 1 : 0}`;
+      const initLines = [`initial ${regName} = ${initialLiteral};`];
       return {
         declarations: [`reg ${widthStr}${regName};`],
         lines: [
           ...initLines,
           `always @(posedge ${clockName}) begin`,
-          `  if (${i('we')}) ${regName} <= ${i('data')};`,
+          `  if (!${resetName}) ${regName} <= ${initialLiteral};`,
+          `  else if (${i('we')}) ${regName} <= ${i('data')};`,
           `end`,
           `assign ${o('q')} = ${regName};`,
         ],
@@ -407,9 +417,9 @@ export function emitPrimitive(ctx: PrimitiveContext): { lines: string[]; declara
         declarations: [`reg [${dw - 1}:0] ${memName} [0:${(1 << aw) - 1}];`],
         lines: [
           ...initLines,
-          `// Write-first RAM`,
+          `// Write-first RAM (writes suppressed during reset; contents preserved)`,
           `always @(posedge ${clockName}) begin`,
-          `  if (${i('we')}) ${memName}[${i('addr')}] <= ${i('data_in')};`,
+          `  if (${i('we')} && ${resetName}) ${memName}[${i('addr')}] <= ${i('data_in')};`,
           `end`,
           `assign ${o('data_out')} = ${memName}[${i('addr')}];`,
         ],
@@ -441,9 +451,9 @@ export function emitPrimitive(ctx: PrimitiveContext): { lines: string[]; declara
         declarations: [`reg [${dw - 1}:0] ${memName} [0:${(1 << aw) - 1}];`],
         lines: [
           ...initLines,
-          `// Write-first DualPortRAM`,
+          `// Write-first DualPortRAM (writes suppressed during reset; contents preserved)`,
           `always @(posedge ${clockName}) begin`,
-          `  if (${i('weA')}) ${memName}[${i('addrA')}] <= ${i('dataA')};`,
+          `  if (${i('weA')} && ${resetName}) ${memName}[${i('addrA')}] <= ${i('dataA')};`,
           `end`,
           `assign ${o('outA')} = ${memName}[${i('addrA')}];`,
           `assign ${o('outB')} = ${memName}[${i('addrB')}];`,
@@ -637,8 +647,11 @@ export function emitPrimitive(ctx: PrimitiveContext): { lines: string[]; declara
         ],
         lines: [
           ...initLines,
+          `integer ${rfName}_i;`,
           `always @(posedge ${clockName}) begin`,
-          `  if (${i('we')} && ${i('rd')} != 5'd0) ${rfName}[${i('rd')}] <= ${i('write_data')};`,
+          `  if (!${resetName}) begin`,
+          `    for (${rfName}_i = 0; ${rfName}_i < 32; ${rfName}_i = ${rfName}_i + 1) ${rfName}[${rfName}_i] <= 32'd0;`,
+          `  end else if (${i('we')} && ${i('rd')} != 5'd0) ${rfName}[${i('rd')}] <= ${i('write_data')};`,
           `end`,
           `assign ${o('read1')} = (${i('rs1')} == 5'd0) ? 32'd0 : ${rfName}[${i('rs1')}];`,
           `assign ${o('read2')} = (${i('rs2')} == 5'd0) ? 32'd0 : ${rfName}[${i('rs2')}];`,
@@ -680,8 +693,9 @@ export function emitPrimitive(ctx: PrimitiveContext): { lines: string[]; declara
         declarations: [`reg [31:0] ${dmemName} [0:${(1 << aw) - 1}];`],
         lines: [
           ...initLines,
+          `// Data memory (writes suppressed during reset; contents preserved)`,
           `always @(posedge ${clockName}) begin`,
-          `  if (${i('mem_write')}) ${dmemName}[${i('addr')}[${aw + 1}:2]] <= ${i('write_data')};`,
+          `  if (${i('mem_write')} && ${resetName}) ${dmemName}[${i('addr')}[${aw + 1}:2]] <= ${i('write_data')};`,
           `end`,
           `assign ${o('read_data')} = ${i('mem_read')} ? ${dmemName}[${i('addr')}[${aw + 1}:2]] : 32'd0;`,
         ],
@@ -907,6 +921,7 @@ export function isBasePrimitive(primitiveType: string): boolean {
     args: {},
     wires: dummyWires,
     clockName: 'clk',
+    resetName: 'rst_n',
     target: 'simulation',
   });
   return !result.lines.some(l => l.includes('WARNING: Unsupported primitive'));

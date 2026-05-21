@@ -87,9 +87,21 @@ endmodule
 // ─────────────────────────────────────────────────────────────────────────────
 module cpu_top (
     input  clk_25mhz,
+    input  btn_reset,       // BTN_F1 / FIRE1 (R1): active-high when pressed → assert rst_n low
     output uart_tx,         // to ftdi_rxd (L4)
     output [1:0] led        // led[0]=blink ~0.75Hz alive, led[1]=uart_write
 );
+
+    // ── Reset generation ──────────────────────────────────────────────────
+    // Power-on reset: 8-bit counter holds rst_n low for the first 256
+    // cycles after bitstream load (~10us at 25 MHz), then releases.
+    // The button (active-high) ORs into the reset path: press → rst_n low.
+    reg [7:0] por_counter = 8'd0;
+    wire por_done = (por_counter == 8'hFF);
+    always @(posedge clk_25mhz) begin
+        if (!por_done) por_counter <= por_counter + 8'd1;
+    end
+    wire rst_n = por_done & ~btn_reset;
 
     // ── Instruction memory (2KB = 512 × 32-bit words) ──────────────────────
     reg [31:0] imem [0:511];
@@ -110,6 +122,7 @@ module cpu_top (
 
     RV32I_CPU_Core cpu (
         .clk           (clk_25mhz),
+        .rst_n         (rst_n),
         .instruction   (instruction),
         .data_read     (data_read),
         .instr_addr    (instr_addr),
@@ -137,13 +150,23 @@ module cpu_top (
     wire uart_ready;
     wire uart_write = data_mem_write & sel_uart;
 
-    // Diagnostic: latch when CPU performs a UART read (lw from 0x80000000)
-    // led[1] = 1 → data_mem_read was asserted for UART address at least once
-    // led[1] = 0 → data_mem_read never fires for UART reads (bug in pipeline)
-    reg uart_read_fired = 1'b0;
-    always @(posedge clk_25mhz)
-        if (sel_uart & data_mem_read) uart_read_fired <= 1'b1;
-    assign led[1] = uart_read_fired;
+    // CPU-alive heartbeat: counts UART writes from the CPU. The CPU only
+    // performs UART writes if its entire pipeline is correctly out of reset
+    // and executing instructions — so a blinking led[1] proves the reset
+    // arms inside RV32I_CPU_Core successfully released every sequential
+    // primitive (Register, RV32I_RegisterFile, RV32I_DataMem, the pipeline
+    // stage registers, etc.) from reset.
+    //
+    // Reset semantics:
+    //   B1 held  → rst_n=0 → heartbeat resets to 0 → led[1] off
+    //   B1 free  → rst_n=1 → CPU runs hello.c, ~11kHz UART writes →
+    //              heartbeat[10] blinks at ~1.5 Hz (visible)
+    reg [24:0] cpu_heartbeat = 25'd0;
+    always @(posedge clk_25mhz) begin
+        if (!rst_n)        cpu_heartbeat <= 25'd0;
+        else if (uart_write) cpu_heartbeat <= cpu_heartbeat + 25'd1;
+    end
+    assign led[1] = cpu_heartbeat[10];
 
     uart_tx_bb uart_inst (
         .clk       (clk_25mhz),

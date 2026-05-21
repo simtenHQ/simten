@@ -66,9 +66,10 @@ export function generateTestbench(
   lines.push('');
   lines.push('module tb;');
 
-  // Clock
+  // Clock + reset (when the DUT has sequential elements; exporter emits both)
   if (hasClocks) {
     lines.push('  reg clk;');
+    lines.push('  reg rst_n;');
   }
 
   // Input registers
@@ -89,6 +90,7 @@ export function generateTestbench(
   const ports: string[] = [];
   if (hasClocks) {
     ports.push('.clk(clk)');
+    ports.push('.rst_n(rst_n)');
   }
   for (const input of circuit.inputs) {
     ports.push(`.${input.name}(${input.name})`);
@@ -117,6 +119,7 @@ export function generateTestbench(
 
   if (hasClocks) {
     lines.push('    clk = 0;');
+    lines.push('    rst_n = 0;');
     lines.push('    cycle_num = 0;');
   }
 
@@ -126,6 +129,15 @@ export function generateTestbench(
     lines.push(`    ${input.name} = ${formatValue(0, w)};`);
   }
   lines.push('');
+
+  // Deassert reset on clocked designs: hold rst_n low across two posedges
+  // so synchronous reset arms in the DUT actually fire, then release.
+  if (hasClocks) {
+    lines.push('    @(posedge clk);');
+    lines.push('    @(posedge clk);');
+    lines.push('    rst_n = 1;');
+    lines.push('');
+  }
 
   for (const tv of testVectors) {
     lines.push(`    // Test ${tv.id}${tv.description ? ': ' + tv.description : ''}`);
@@ -211,6 +223,14 @@ export interface SequentialTestVector {
   setInputs?: Record<string, number | boolean>;
   /** Outputs to sample after posedge + sampleDelay; emit as RESULT line. */
   expect?: Record<string, number | boolean>;
+  /**
+   * Drive rst_n to this value at this cycle. Sticky: once set, the value
+   * persists until another vector overrides it. Useful for testing
+   * mid-execution reset behavior (set 0 at cycle K, set 1 at cycle K+1).
+   * If omitted, rst_n holds its previous value (high by default after the
+   * startup reset pulse).
+   */
+  setRstN?: 0 | 1;
 }
 
 /**
@@ -252,6 +272,7 @@ export function generateSequentialTestbench(
   lines.push('');
   lines.push('module tb;');
   lines.push('  reg clk;');
+  lines.push('  reg rst_n;');
 
   for (const input of circuit.inputs) {
     const w = portWidthDecl(input.portType);
@@ -264,7 +285,7 @@ export function generateSequentialTestbench(
   lines.push('');
 
   // DUT
-  const ports: string[] = ['.clk(clk)'];
+  const ports: string[] = ['.clk(clk)', '.rst_n(rst_n)'];
   for (const input of circuit.inputs) ports.push(`.${input.name}(${input.name})`);
   for (const output of circuit.outputs) ports.push(`.${output.name}(${output.name})`);
   lines.push(`  ${moduleName} dut (`);
@@ -276,11 +297,20 @@ export function generateSequentialTestbench(
   lines.push('');
   lines.push('  initial begin');
   lines.push('    clk = 0;');
+  lines.push('    rst_n = 0;');
 
   // Initialize all inputs to 0
   for (const input of circuit.inputs) {
     lines.push(`    ${input.name} = ${formatValue(0, portWidth(input.portType))};`);
   }
+  lines.push('');
+  // Hold rst_n low across two posedges so synchronous reset arms actually
+  // fire (clk must be toggling, not just `#delay`). Then release. Stimulus
+  // begins on the next posedge — golden-comparison cycle numbers are
+  // unchanged: vector cycle N is the Nth posedge after reset deassertion.
+  lines.push('    @(posedge clk);');
+  lines.push('    @(posedge clk);');
+  lines.push('    rst_n = 1;');
   lines.push('');
 
   // Walk vectors in order, advancing the clock between each.
@@ -297,6 +327,10 @@ export function generateSequentialTestbench(
         const w = inputWidth.get(name) ?? 1;
         lines.push(`    ${name} = ${formatValue(value, w)};`);
       }
+    }
+
+    if (v.setRstN !== undefined) {
+      lines.push(`    rst_n = 1'b${v.setRstN};`);
     }
 
     // Advance one posedge to land on this cycle.

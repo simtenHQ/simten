@@ -878,13 +878,25 @@ export function tryEmitFromEval(
 
   const evalResult = emitVerilogFromEval(parsed, entry.evalFn, ctx, entry.inputNames, entry.outputNames, { memStateNames });
 
-  // Emit reg declarations for scalar state keys
+  // Emit reg declarations + initial-zero blocks for scalar state keys.
+  // The user's declared initializer (`state: { foo: 42 }`) is not yet
+  // threaded through this path — see #131. For now, default to literal 0
+  // for both the `initial` block and the reset arm below. This is a strict
+  // improvement over the prior behavior (state regs came up as X on
+  // hardware); circuits with a non-zero declared initializer reset to 0
+  // here until #131 lands.
+  const scalarRegNames: string[] = [];
   if (entry.stateKeys && entry.stateKeys.length > 0) {
     const nodeId = ctx.nodeId.replace(/[.\-]/g, '_').replace(/[^a-zA-Z0-9_]/g, '');
     const w = typeof ctx.args.width === 'number' ? ctx.args.width : 8;
     for (const key of entry.stateKeys) {
+      if (memStateNames.includes(key)) continue; // memory-kind state handled elsewhere
       const widthStr = w > 1 ? `[${w - 1}:0] ` : '';
-      evalResult.declarations.push(`reg ${widthStr}${nodeId}_${key};`);
+      const regName = `${nodeId}_${key}`;
+      scalarRegNames.push(regName);
+      evalResult.declarations.push(`reg ${widthStr}${regName};`);
+      const initLiteral = w > 1 ? `${w}'d0` : `1'b0`;
+      evalResult.lines.push(`initial ${regName} = ${initLiteral};`);
     }
   }
 
@@ -904,11 +916,27 @@ export function tryEmitFromEval(
       isOnTick: true,
     });
 
-    // Wrap onTick output in always @(posedge clk)
+    // Wrap onTick output in always @(posedge clk) with a synchronous reset
+    // arm that zeros every scalar state reg. See #131 — the user's declared
+    // `state: { foo: 42 }` initializer is not yet threaded through, so the
+    // reset arm uses literal 0 (matching the `initial` block above) rather
+    // than the user's declared value.
     const onTickLines = onTickResult.lines.filter(l => l.trim().length > 0);
     if (onTickLines.length > 0) {
       evalResult.lines.push(`always @(posedge ${ctx.clockName}) begin`);
-      evalResult.lines.push(...onTickLines.map(l => `  ${l}`));
+      if (scalarRegNames.length > 0) {
+        const w = typeof ctx.args.width === 'number' ? ctx.args.width : 8;
+        const resetLiteral = w > 1 ? `${w}'d0` : `1'b0`;
+        evalResult.lines.push(`  if (!${ctx.resetName}) begin`);
+        for (const regName of scalarRegNames) {
+          evalResult.lines.push(`    ${regName} <= ${resetLiteral};`);
+        }
+        evalResult.lines.push(`  end else begin`);
+        evalResult.lines.push(...onTickLines.map(l => `    ${l}`));
+        evalResult.lines.push(`  end`);
+      } else {
+        evalResult.lines.push(...onTickLines.map(l => `  ${l}`));
+      }
       evalResult.lines.push(`end`);
     }
     evalResult.declarations.push(...onTickResult.declarations);
