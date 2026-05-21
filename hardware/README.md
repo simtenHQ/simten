@@ -78,6 +78,12 @@ export const project: Project = {
 Snake demonstrates building Verilog from a TypeScript `circuit()` graph via
 `exportVerilog` — useful when you want a Simten-built design on real silicon.
 
+> **Wrappers must drive `rst_n`.** The exporter auto-emits a synchronous
+> active-low `rst_n` input port on every module containing sequential logic.
+> A typical wrapper combines a power-on-reset counter (holds `rst_n` low for
+> the first ~256 cycles after bitstream load) with an optional physical
+> button. See `projects/cpu/cpu_top.v` for a worked example.
+
 ## Demo status
 
 | Project       | Firmware              | Result               | Notes                                       |

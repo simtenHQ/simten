@@ -11,6 +11,10 @@ import { bit, bus } from '../circuit/bit-bus.js';
  *
  * **Input:** `d` — `bit`
  * **Outputs:** `q` (stored value), `q_bar` (its complement) — `bit`
+ * **Reset:** on Verilog export, the exporter auto-emits a synchronous
+ * active-low `rst_n` port at the module level; when low, `q` snaps to
+ * the constructor-time `value` arg. In simulation, `sim.reset()` does
+ * the same.
  *
  * D flip-flops are the basic unit of state. Chains of them make shift
  * registers; arrays of them make multi-bit registers (see `Register`).
@@ -45,6 +49,10 @@ export const DFlipFlop = circuit('DFlipFlop', ({ value = false }: { value?: bool
  *
  * **Inputs:** `data` — `bus(8)`; `we` (write-enable) — `bit`
  * **Output:** `q` (stored value) — `bus(8)`
+ * **Reset:** on Verilog export, the exporter auto-emits a synchronous
+ * active-low `rst_n` port at the module level; when low, `q` snaps to
+ * the constructor-time `value` arg (regardless of `we`). In simulation,
+ * `sim.reset()` does the same.
  *
  * **Example:** simple accumulator
  * ```ts

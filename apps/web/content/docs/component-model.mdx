@@ -109,6 +109,8 @@ These components have **clocked state** that updates on the rising edge of `clk`
 
 **Key difference:** DFlipFlop always captures its input on every clock edge. Register only writes when `we` (write enable) is high — this lets you hold a value across multiple cycles.
 
+**Reset behavior (Verilog export):** when the exporter's auto-plumbed `rst_n` is low, both DFlipFlop and Register snap back to their `value` arg. In simulation, `sim.reset()` produces the same effect. Memory primitives (RAM, DualPortRAM) preserve their contents during reset — only writes are suppressed.
+
 ### Memory
 
 | Primitive | Inputs | Outputs | Parameters | Description |
