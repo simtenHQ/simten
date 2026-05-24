@@ -222,7 +222,7 @@ export interface BuiltCircuit<
    *  when this BuiltCircuit was produced by calling a parameterized factory
    *  (e.g. `Register({ width: 16, value: 100 })`); undefined for bare
    *  singletons. The parent `circuit()` reads this to populate
-   *  `irNodes[i].arguments` — the same slot that `nodeArgs` used to fill.
+   *  `irNodes[i].arguments`, where the simulator picks it up.
    *  Structural args (e.g. `width`) have already done their job by the time
    *  this is read (port widths baked in); state-initial / interactive args
    *  (`value`, `init`, etc.) flow through to the simulator. */
