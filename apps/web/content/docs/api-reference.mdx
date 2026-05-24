@@ -109,15 +109,6 @@ Common parameters across the stdlib:
 | `baseAddress` | ROM | Memory-mapped base address |
 | `width`, `height` | Screen, RasterDisplay | Pixel grid dimensions |
 
-### Migrating from `nodeArgs`
-
-Earlier versions of simten used a separate `nodeArgs: { id: { ... } }` block on the parent circuit, with three different keywords (`initial`/`init`/`value`) depending on the component. That's gone — args flow through the factory call. Renames during migration:
-
-- `Register({ initial: N })` → `Register({ value: N })`
-- `DFlipFlop({ initial: N })` → `DFlipFlop({ value: N })`
-- `ROM({ init: data })` → `ROM({ memory: data })`
-- `RAM({ init: data })` → `RAM({ memory: data })`
-
 ## Composition
 
 Circuits compose by using one circuit as a node in another:
