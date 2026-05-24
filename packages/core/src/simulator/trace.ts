@@ -34,6 +34,7 @@ export interface PropagationStep {
 
 const MAX_ITERATIONS = 10000;
 const oldValuesScratch = new Int32Array(64);
+const wasInitializedScratch = new Uint8Array(64);
 
 /**
  * Run a propagation loop identical to propagate, but recording every step.
@@ -73,10 +74,15 @@ function propagateWithTrace(
     ctx.inputCount = inputCount;
     ctx.outputCount = outputCount;
 
-    // Capture old outputs
+    // Capture old outputs AND their initialized flags. Mirrors propagate.ts
+    // change detection: a port counts as changed on value diff OR on the
+    // first eval (uninit → init transition), so Int32Array zero defaults
+    // never accidentally swallow a real zero output.
     const oldValues = outputCount <= 64 ? oldValuesScratch : new Int32Array(outputCount);
+    const wasInitialized = outputCount <= 64 ? wasInitializedScratch : new Uint8Array(outputCount);
     for (let i = 0; i < outputCount; i++) {
       oldValues[i] = values.values[outputStart + i];
+      wasInitialized[i] = values.initialized[outputStart + i];
     }
 
     // Evaluate
@@ -87,7 +93,11 @@ function propagateWithTrace(
     // Check for changes
     let anyChanged = false;
     for (let i = 0; i < outputCount; i++) {
-      if (values.values[outputStart + i] !== oldValues[i]) {
+      const idx = outputStart + i;
+      if (
+        values.values[idx] !== oldValues[i] ||
+        (values.initialized[idx] && !wasInitialized[i])
+      ) {
         anyChanged = true;
         break;
       }

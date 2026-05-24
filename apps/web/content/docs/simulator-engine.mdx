@@ -156,12 +156,13 @@ All port values stored in a single `Int32Array`:
 
 ```typescript
 interface NumericPortValues {
-  values: Int32Array;   // One entry per port (bits stored as 0/1, buses as numbers)
-  changed: Uint8Array;  // Change flags for optimization
+  values: Int32Array;       // One entry per port (bits stored as 0/1, buses as numbers)
+  changed: Uint8Array;      // Per-wave change flag for the propagation queue
+  initialized: Uint8Array;  // 1 once a port has been written by any evaluator
 }
 ```
 
-Initialized to `UNINITIALIZED_VALUE` (-2147483648) so the first evaluation always detects changes.
+`values` defaults to 0. The `initialized` flag tracks whether each port has been written; change detection treats the first eval of every port as a "change" so propagation reaches downstream nodes even when an output's canonical value matches the zero default.
 
 ## Event Queue
 
