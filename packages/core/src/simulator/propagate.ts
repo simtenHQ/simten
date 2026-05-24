@@ -10,7 +10,6 @@ import type { FlatPortValueMap, PrimitiveState } from '../types/simulator.js';
 import { TOP_LEVEL_NODE } from '../types/simulator.js';
 import type { NumericCircuit, NumericSequentialState } from './numeric-types.js';
 import type { NumericPortValues } from './numeric-values.js';
-import { UNINITIALIZED_VALUE } from './numeric-values.js';
 import { NumericEventQueue } from './numeric-event-queue.js';
 import { getOnTickFunction } from './eval-bridge.js';
 import type { ClockEdges } from './primitive-interface.js';
@@ -48,8 +47,13 @@ function wrapMapForOnTick(map: Map<number, number>): any {
   return proxy;
 }
 
-/** Scratch buffer for old output values (reused to avoid allocation) */
+/** Scratch buffers for old output values + initialized flags (reused per
+ *  propagate call to avoid allocation). The `wasInitialized` snapshot is
+ *  taken alongside `oldValues` so first-eval propagation always fires —
+ *  even when an evaluator's canonical output happens to equal the zero
+ *  default that Int32Array gives us. */
 const oldValuesScratch = new Int32Array(64);
+const wasInitializedScratch = new Uint8Array(64);
 
 /**
  * Propagation loop using the numeric circuit and the evaluator table.
@@ -67,13 +71,16 @@ export function propagate(
   let evalCount = 0;
   let changedCount = 0;
 
-  // Sync top-level inputs into numeric values array
-  // This is required for readInput() to see the current input values
+  // Sync top-level inputs into numeric values array.
+  // This is required for readInput() to see the current input values.
+  // Also mark them initialized so downstream change-detection treats them
+  // as real values rather than pending zeros.
   if (topLevelInputs) {
     for (const [key, value] of topLevelInputs) {
       const portIdx = circuit.portKeyToIndex.get(key);
       if (portIdx !== undefined) {
         values.values[portIdx] = typeof value === 'boolean' ? (value ? 1 : 0) : value;
+        values.initialized[portIdx] = 1;
       }
     }
   }
@@ -111,11 +118,17 @@ export function propagate(
     ctx.inputCount = inputCount;
     ctx.outputCount = outputCount;
 
-    // Capture old output values for change detection
-    // Use scratch buffer if possible, otherwise allocate
+    // Capture old output values AND their initialized flags for change
+    // detection. Re-use scratch buffers when the node fits, otherwise
+    // allocate fresh ones. The initialized snapshot lets us treat the
+    // first eval of any port as a "change" so propagation reaches its
+    // dependents — necessary because Int32Array zero-defaults can't be
+    // distinguished from a real zero output by value comparison alone.
     const oldValues = outputCount <= 64 ? oldValuesScratch : new Int32Array(outputCount);
+    const wasInitialized = outputCount <= 64 ? wasInitializedScratch : new Uint8Array(outputCount);
     for (let i = 0; i < outputCount; i++) {
       oldValues[i] = values.values[outputStart + i];
+      wasInitialized[i] = values.initialized[outputStart + i];
     }
 
     // Get evaluator from table
@@ -131,10 +144,16 @@ export function propagate(
       evaluateNodeFallback(circuit, nodeIndex, values, seqState, topLevelInputs);
     }
 
-    // Check for changes and enqueue dependents
+    // Check for changes and enqueue dependents. A port counts as "changed"
+    // if its value differs from before OR if this is the first time it has
+    // been written (transition from uninitialized → initialized).
     let anyChanged = false;
     for (let i = 0; i < outputCount; i++) {
-      if (values.values[outputStart + i] !== oldValues[i]) {
+      const idx = outputStart + i;
+      if (
+        values.values[idx] !== oldValues[i] ||
+        (values.initialized[idx] && !wasInitialized[i])
+      ) {
         anyChanged = true;
         break;
       }
@@ -369,21 +388,28 @@ export function toFlatPortValueMap(
     const isBit = circuit.portIsBus[i] === 0;
 
     let numVal: number;
+    let initialized: boolean;
     if (isOutput) {
       // Output port - read directly from values array
       numVal = values.values[i];
+      initialized = values.initialized[i] !== 0;
     } else {
       // Input port - look up from source output port
       const srcPortIdx = circuit.inputSourcePort[i];
       if (srcPortIdx >= 0) {
         numVal = values.values[srcPortIdx];
+        initialized = values.initialized[srcPortIdx] !== 0;
       } else {
-        numVal = 0; // Unconnected input defaults to 0
+        // Unconnected input — no source to read from
+        numVal = 0;
+        initialized = false;
       }
     }
 
-    // Safety: treat uninitialized as 0
-    if (numVal === UNINITIALIZED_VALUE) {
+    // Safety: report uninitialized ports as 0 in the exported map.
+    // (Pre-fix, this was a `=== UNINITIALIZED_VALUE` check against a magic
+    // sentinel, which collided with the legitimate value 0x80000000.)
+    if (!initialized) {
       numVal = 0;
     }
 
@@ -408,6 +434,10 @@ export function fromFlatPortValueMap(
     const portIdx = circuit.portKeyToIndex.get(key);
     if (portIdx !== undefined) {
       values.values[portIdx] = typeof value === 'boolean' ? (value ? 1 : 0) : value;
+      // A restored value is, by definition, initialized — otherwise
+      // change detection and getPortValues would mistakenly treat it
+      // as still-pending.
+      values.initialized[portIdx] = 1;
     }
   }
 }

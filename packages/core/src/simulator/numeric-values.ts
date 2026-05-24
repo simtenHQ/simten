@@ -20,29 +20,41 @@ export interface NumericPortValues {
   /**
    * Change tracking for event-driven propagation.
    * 1 if value changed during current propagation wave, 0 otherwise.
+   * Reset per-wave by `resetChangeFlags`.
    */
   changed: Uint8Array;
+
+  /**
+   * Tracks whether each port has ever been written by an evaluator.
+   * Persistent across propagation waves; only reset on full simulator reset
+   * (via a fresh `createNumericPortValues` call). Used to:
+   *   1. Force change detection to fire on the *first* eval of every node,
+   *      even when the canonical output happens to equal the zero default.
+   *   2. Let `getPortValues` report "uninitialized" without a magic sentinel
+   *      value that could collide with a legitimate circuit output.
+   *
+   * The old approach was to fill `values` with INT32_MIN (-2147483648) as a
+   * sentinel, but that's the signed-32 representation of 0x80000000 — a
+   * perfectly valid bus value (e.g. the immediate from `lui rX, 0x80000`).
+   * The collision silently swallowed the first eval whose output landed
+   * exactly there, since change detection saw "no change" against the
+   * sentinel. A separate Uint8Array flag avoids the collision entirely.
+   */
+  initialized: Uint8Array;
 }
 
 /**
- * Sentinel value used to initialize port values.
- * This ensures the first evaluation always detects a change,
- * triggering proper propagation to all dependents.
- * Using -2147483648 (MIN_INT32) as it's an invalid circuit value.
- */
-export const UNINITIALIZED_VALUE = -2147483648;
-
-/**
- * Create a new numeric port values container.
+ * Create a new numeric port values container. `values` defaults to 0
+ * (Int32Array's standard zero-init); `initialized` starts all zeros so
+ * the first write to each port is correctly detected as a change.
+ *
  * @param portCount - Total number of ports
  */
 export function createNumericPortValues(portCount: number): NumericPortValues {
-  const values = new Int32Array(portCount);
-  // Initialize to sentinel value so first evaluation always triggers change detection
-  values.fill(UNINITIALIZED_VALUE);
   return {
-    values,
+    values: new Int32Array(portCount),
     changed: new Uint8Array(portCount),
+    initialized: new Uint8Array(portCount),
   };
 }
 
@@ -63,4 +75,5 @@ export function resetChangeFlags(values: NumericPortValues): void {
 export function copyPortValues(dest: NumericPortValues, src: NumericPortValues): void {
   dest.values.set(src.values);
   dest.changed.set(src.changed);
+  dest.initialized.set(src.initialized);
 }

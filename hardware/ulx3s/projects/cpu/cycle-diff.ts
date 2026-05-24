@@ -19,6 +19,13 @@
  *
  * Usage: bun hardware/ulx3s/projects/cpu/cycle-diff.ts [cycles]
  *        Output: cycle-diff.log + cycle-diff.vcd in this directory.
+ *
+ * Bug located on first use: TS sim's UNINITIALIZED_VALUE sentinel
+ * (-2147483648 = 0x80000000 signed) collides with the legitimate U-type
+ * immediate produced by `lui rX, 0x80000`. Change detection sees "no change"
+ * and never propagates, so a5 ends up as 0 and every downstream UART poll
+ * targets address 0 instead of 0x80000000. See
+ * packages/core/src/simulator/numeric-values.ts for the bad sentinel.
  */
 
 import { writeFileSync } from 'node:fs';
@@ -31,26 +38,21 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const N_CYCLES = parseInt(process.argv[2] ?? '20', 10);
 const VERIFIER_URL = process.env.VERIFIER_URL ?? 'http://localhost:55002/verify';
 
-// Minimal firmware that reproduces the bug: lui s0,0x10 followed by SW/SB and LBU.
-// iverilog reads back 0x41/0x42/0x43/0x44; TS sim reads 0x41/0x00/0x00/0x00
-// because the SW/SB instructions see s0 = 0 instead of 0x10000.
+// The exact firmware from tests.ts "Load / LBU all byte offsets" — one of
+// the 2 tests where TS sim and iverilog diverge in verify.ts --suite.
+// Dumped via dump-failing-fw.ts; expected UART output is [0x41, 0x42, 0x43, 0x44].
 const FIRMWARE: number[] = [
-  0x000104b7, // [0x00] lui  s0, 0x10
-  0x04100513, // [0x04] addi a0, x0, 0x41
-  0x00a42023, // [0x08] sw   0(s0), a0
-  0x04200513, // [0x0C] addi a0, x0, 0x42
-  0x00a400a3, // [0x10] sb   1(s0), a0
-  0x00000013, // [0x14] nop
-  0x00000013, // [0x18] nop
-  0x00000013, // [0x1C] nop
-  0x00045703, // [0x20] lbu  a4, 0(s0)
-  0x00000013, // [0x24] nop
-  0x00000013, // [0x28] nop
-  0x00145703, // [0x2C] lbu  a4, 1(s0)
-  0x00000013, // [0x30] nop
-  0x00000013, // [0x34] nop
-  0x00000013, // [0x38] nop
-  0x0006f06f, // [0x3C] j 0
+  0x800007b7, 0x00010437, 0x04100513, 0x00a42023,
+  0x04200513, 0x00a400a3, 0x04300513, 0x00a40123,
+  0x04400513, 0x00a401a3, 0x00044703, 0x00000013,
+  0x00000013, 0x00000013, 0x0007a283, 0x0012f293,
+  0xfe028ce3, 0x00e7a023, 0x00144703, 0x00000013,
+  0x00000013, 0x00000013, 0x0007a283, 0x0012f293,
+  0xfe028ce3, 0x00e7a023, 0x00244703, 0x00000013,
+  0x00000013, 0x00000013, 0x0007a283, 0x0012f293,
+  0xfe028ce3, 0x00e7a023, 0x00344703, 0x00000013,
+  0x00000013, 0x00000013, 0x0007a283, 0x0012f293,
+  0xfe028ce3, 0x00e7a023, 0x0000006f,
 ];
 
 // Signals to track each cycle. Keys are TS-sim portValues identifiers.
@@ -61,9 +63,11 @@ const TRACKED_SIGNALS = [
   'cpu.pc.q',
   'cpu.ifid_instr.q',
   'cpu.idex_rs1.q',
+  'cpu.idex_read1.q',  // actual rs1 VALUE going into EX
+  'cpu.idex_read2.q',  // actual rs2 VALUE going into EX
   'cpu.idex_imm.q',
-  'cpu.forward.fwd_a_sel',
-  'cpu.forward.fwd_b_sel',
+  'cpu.immgen.instruction',  // input to immgen
+  'cpu.immgen.immediate',    // output of immgen
   'cpu.fwd_a_mux1.out',
   'cpu.fwd_a_mux2.out',
   'cpu.fwd_b_mux1.out',
@@ -71,6 +75,12 @@ const TRACKED_SIGNALS = [
   'cpu.alu_src_mux.out',
   'cpu.alu.result',
   'cpu.exmem_alu_result.q',
+  'cpu.exmem_mem_write.q',
+  'cpu.exmem_funct3.q',
+  'instr_addr',  // top-level outputs
+  'data_addr',
+  'data_write',
+  'data_mem_write',
 ];
 
 // Convert a TS-sim portValue key (`cpu.fwd_a_mux2.out`) to the matching
@@ -97,7 +107,11 @@ function runTsSim(): Array<Map<string, number>> {
     const portValues = cpu.session.getState().portValues;
     for (const [key, val] of portValues) {
       const cleanKey = key.startsWith('__top__.') ? key.slice('__top__.'.length) : key;
-      const num = typeof val === 'boolean' ? (val ? 1 : 0) : (val as number);
+      // Normalize to unsigned so cross-side `===` works regardless of JS's
+      // bitwise-int sign convention. iverilog's parser always produces
+      // non-negative values, but TS sim may carry signed-32 internally
+      // (e.g. lui imm with bit 31 set comes back as -2147483648).
+      const num = typeof val === 'boolean' ? (val ? 1 : 0) : ((val as number) >>> 0);
       snapshot.set(cleanKey, num);
     }
     trace.push(snapshot);
