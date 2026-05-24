@@ -134,9 +134,9 @@ export function generateEvalWrapper(
 
       // Merge node.arguments first so eval functions can read parameters (value, width, etc.)
       // Port inputs below will overwrite any same-named argument (ports take precedence).
-      const nodeArgs = ctx.circuit.flatCircuit.nodes[ctx.nodeIndex]?.arguments;
-      if (nodeArgs) {
-        for (const key in nodeArgs) inputs[key] = (nodeArgs as Record<string, any>)[key];
+      const args = ctx.circuit.flatCircuit.nodes[ctx.nodeIndex]?.arguments;
+      if (args) {
+        for (const key in args) inputs[key] = (args as Record<string, any>)[key];
       }
 
       for (let i = 0; i < numInputs; i++) {
@@ -157,9 +157,9 @@ export function generateEvalWrapper(
     const inputs: Record<string, any> = {};
 
     // Merge node.arguments (parameters like value, width)
-    const nodeArgs = ctx.circuit.flatCircuit.nodes[ctx.nodeIndex]?.arguments;
-    if (nodeArgs) {
-      for (const key in nodeArgs) inputs[key] = (nodeArgs as Record<string, any>)[key];
+    const args = ctx.circuit.flatCircuit.nodes[ctx.nodeIndex]?.arguments;
+    if (args) {
+      for (const key in args) inputs[key] = (args as Record<string, any>)[key];
     }
 
     // Port inputs overwrite arguments

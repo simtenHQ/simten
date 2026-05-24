@@ -78,20 +78,3 @@ export function writeOutput(ctx: EvalContext, outputIndex: number, value: number
 export function bitMask(width: number): number {
   return width >= 32 ? 0xFFFFFFFF : (1 << width) - 1;
 }
-
-/**
- * Structured args per primitive type (discriminated union).
- * Used for primitives that need compile-time parameters.
- */
-export type NodeArgs =
-  | { type: 'none' }
-  | { type: 'constant'; value: number }
-  | { type: 'input'; value: number }
-  | { type: 'width'; width: number }
-  | { type: 'register'; width: number; initial: number }
-  | { type: 'mux'; inputCount: number; width: number }
-  | { type: 'decoder'; inputWidth: number }
-  | { type: 'splitter'; widthsOut: number[] }
-  | { type: 'bitslice'; low: number; high: number }
-  | { type: 'rom'; baseAddress: number }
-  | { type: 'rasterDisplay' };
