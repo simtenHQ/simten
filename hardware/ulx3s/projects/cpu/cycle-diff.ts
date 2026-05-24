@@ -77,6 +77,15 @@ const TRACKED_SIGNALS = [
   'cpu.exmem_alu_result.q',
   'cpu.exmem_mem_write.q',
   'cpu.exmem_funct3.q',
+  'cpu.regfile.rd',           // which register the WB stage targets
+  'cpu.regfile.we',           // write enable
+  'cpu.regfile.write_data',   // value being written back
+  'cpu.regfile.read2',        // a4's current value when rs2=14
+  'cpu.memwb_load_data.q',    // LBU/LW loaded value in WB stage
+  'cpu.memwb_load_data.data', // input to that register (= data_read)
+  'data_read',                // top-level input
+  'cpu.memwb_rd.q',           // WB stage's target register
+  'cpu.memwb_reg_write.q',    // WB stage's write-enable
   'instr_addr',  // top-level outputs
   'data_addr',
   'data_write',
@@ -123,14 +132,28 @@ function runTsSim(): Array<Map<string, number>> {
     const f3        = cpu.get('data_funct3') as unknown as number;
     const instr     = FIRMWARE[(instrAddr >>> 2) & 0x1ff] ?? 0;
 
+    // Matches the iverilog testbench's data_read mux: UART poll returns 1,
+    // DMEM returns the raw aligned word (CPU's LoadAlignFull does the slicing),
+    // IMEM range falls back to instruction word. Without this, the CPU's UART
+    // poll loop stalls in TS sim while iverilog charges ahead — the two sides
+    // would diverge in pipeline state purely because of the testbench mismatch.
+    // Mirror the iverilog testbench's data_read mux EXACTLY: the CPU core
+    // has its own LoadAlignFull on the load path, so the testbench returns
+    // the full aligned 32-bit word for both DMEM and IMEM accesses (no
+    // pre-slicing for LBU). The earlier version's `(word >> byteOff*8) & 0xFF`
+    // double-applied alignment and silently broke matching.
     let dataRead = 0;
-    if (dataAddr >= DMEM_BASE && dataAddr < DMEM_BASE + 0x1000) {
+    const UART_ADDR = 0x80000000;
+    if (dataAddr === UART_ADDR) {
+      dataRead = 1;
+    } else if (dataAddr >= DMEM_BASE && dataAddr < DMEM_BASE + 0x1000) {
       const ao = (dataAddr - DMEM_BASE) & ~3;
-      const word = (dmem[ao] | (dmem[ao+1]<<8) | (dmem[ao+2]<<16) | (dmem[ao+3]<<24)) >>> 0;
-      const byteOff = dataAddr & 3;
-      if ((f3 & 7) === 4) dataRead = (word >>> (byteOff * 8)) & 0xFF;
-      else dataRead = word;
+      dataRead = (dmem[ao] | (dmem[ao+1]<<8) | (dmem[ao+2]<<16) | (dmem[ao+3]<<24)) >>> 0;
+    } else if ((dataAddr >>> 12) === 0x00000) {
+      const wi = (dataAddr >>> 2) & 0x1ff;
+      dataRead = (FIRMWARE[wi] ?? 0) >>> 0;
     }
+    void f3;
     if (memW && dataAddr >= DMEM_BASE && dataAddr < DMEM_BASE + 0x1000) {
       const off = dataAddr - DMEM_BASE;
       const f = f3 & 7;
