@@ -176,6 +176,20 @@ module snake_top (
         .locked (pll_locked)
     );
 
+    // ── Reset generation ────────────────────────────────────
+    // Power-on reset: 8-bit counter on clk_25mhz holds rst_n low for the
+    // first 256 cycles (~10us) after bitstream load. Gated by pll_locked
+    // so registers don't sample snake_clk until the PLL is stable.
+    // SnakeAdvanced's generated Verilog uses synchronous active-low rst_n
+    // on every sequential primitive — without driving it the registers
+    // never leave their initial state.
+    reg [7:0] por_counter = 8'd0;
+    wire por_done = (por_counter == 8'hFF);
+    always @(posedge clk_25mhz) begin
+        if (!por_done) por_counter <= por_counter + 8'd1;
+    end
+    wire rst_n = por_done & pll_locked;
+
     // ── VGA timing (640×480 @ 60 Hz, 25 MHz pixel clock) ───
     // H: 640 active + 16 FP + 96 sync + 48 BP = 800
     // V: 480 active + 10 FP +  2 sync + 33 BP = 525
@@ -262,6 +276,7 @@ module snake_top (
 
     SnakeAdvanced snake_inst (
         .clk       (snake_clk),
+        .rst_n     (rst_n),
         .dir       (dir),
         .scan_addr (scan_addr),
         .pixel_out (pixel_out)
