@@ -110,31 +110,37 @@ function BentoFeatures() {
             title="Type-safe end to end"
             description="Circuits are TypeScript. Runs natively in Node, Bun, or browser — no testbench language, no codegen step."
             visual={<TypesafeBentoVisual />}
+            href="/docs/component-model"
           />
           <BentoCell
             title="Bring any npm package"
             description="fast-check for property testing, D3 for visualization, the GCC RISC-V toolchain — your circuit code is just code."
             visual={<NpmBentoVisual />}
+            href="/docs/examples"
           />
           <BentoCell
             title="Drop-in embeds"
             description="One component renders a fully interactive circuit anywhere — blogs, docs, MDX. Same engine as the editor."
             visual={<EmbedsBentoVisual />}
+            href="/docs/building-custom-uis"
           />
           <BentoCell
             title="Composable to the gate"
             description="Double-click any composite to see its internals. CPU → decoder → multiplexer → NAND, all the way down."
             visual={<DrilldownBentoVisual />}
+            href="/cpu/rv32i"
           />
           <BentoCell
             title="Wire it to Claude"
             description="An MCP server lets Claude write, simulate, and debug circuits live in your browser — describe, generate, fix, ship."
             visual={<MCPBentoVisual />}
+            href="/docs/claude-code"
           />
           <BentoCell
             title="Rewind any cycle"
             description="Sequential circuits record every state. Step forward, spot the bug, jump back to the exact cycle it happened."
             visual={<TimeTravelBentoVisual />}
+            href="/circuit"
           />
         </div>
       </Container>
@@ -793,22 +799,87 @@ function DemoGallery() {
     <div className="relative py-16 md:py-24 md:animate-in md:fade-in md:duration-700 overflow-hidden">
 
       <Container className="relative">
-        {/* Bridge headline — proof the AI loop scales past toys */}
-        <div className="mb-12 max-w-5xl">
-          <h2 className="text-4xl sm:text-5xl font-semibold tracking-tight leading-[1.05]">
-            <span className="text-foreground">Not toy demos.</span>{" "}
-            <span className="text-muted-foreground">Real circuits, all in your browser.</span>
-          </h2>
-          <p className="mt-5 text-base text-muted-foreground max-w-2xl">
-            Every demo below is a working simulation — not a screenshot, not a video, not a transpiled black box. Same engine Claude drives via MCP.
-          </p>
-        </div>
+        {/* Lead with the heavy proof — RV32I + Ethernet — to show the
+            framework's range up front. Lighter playable demos follow.
+            First Section overrides the default top margin since the
+            DemoGallery wrapper already provides top padding. */}
+        <Section className="mt-0">
+          <div className="max-w-2xl mb-10 lg:mb-12">
+            <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight leading-[1.1]">
+              Scale to real-world complexity
+            </h2>
+            <p className="mt-4 text-base lg:text-lg text-muted-foreground">
+              The framework already runs heavy systems in the browser — for example, a 5-stage pipelined RISC-V CPU executing GCC-compiled C, C++, and Rust, or an IEEE 802.3 Ethernet parser turning wire bytes into protocol fields.
+            </p>
+          </div>
 
-        {/* Row 1: Featured games — Pong on the left, Snake on the right */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-          <PongCard />
-          <SnakeCard />
-        </div>
+          {/* Diagonally overlapping card stack — RV32I is the primary,
+              forward card; the Ethernet parser peeks out from behind in
+              the bottom-right, implying "and more like this". Container
+              uses padding-bottom to reserve room for the offset card
+              hanging off the bottom-right corner. */}
+          <div className="relative pb-24 lg:pb-32">
+            {/* RV32I — behind, partially covered by the Ethernet card */}
+            <div className="relative z-0 rounded-2xl bg-muted/60 p-3 lg:p-4 w-full lg:w-[78%] shadow-sm">
+              <div
+                className="rounded-xl border border-border bg-card shadow-sm overflow-hidden"
+                style={{ height: 520 }}
+              >
+                <RV32IDebuggerPreview />
+              </div>
+              <div className="absolute -top-3 left-6 inline-flex items-center gap-2 rounded-full bg-card border border-border px-3 py-1 text-[11px] font-medium text-foreground shadow-sm">
+                <span className="h-1.5 w-1.5 rounded-full bg-blue-500" />
+                RV32I CPU debugger
+                <Link
+                  to="/cpu/rv32i"
+                  className="ml-1 text-blue-600 dark:text-blue-400 hover:underline"
+                >
+                  Open →
+                </Link>
+              </div>
+            </div>
+
+            {/* Ethernet — in front, offset to the bottom-right */}
+            <div className="hidden lg:block absolute right-0 -bottom-4 z-10 w-[62%] rounded-2xl bg-muted/60 p-3 lg:p-4 shadow-md">
+              <EthernetParserCard />
+              <div className="absolute -top-3 left-6 inline-flex items-center gap-2 rounded-full bg-card border border-border px-3 py-1 text-[11px] font-medium text-foreground shadow-sm">
+                <span className="h-1.5 w-1.5 rounded-full bg-violet-500" />
+                Ethernet parser
+              </div>
+            </div>
+
+            {/* Mobile / narrow: stack the Ethernet card under the RV32I
+                instead of overlapping (the overlap doesn't have room to
+                breathe below the lg breakpoint). */}
+            <div className="lg:hidden mt-8 rounded-2xl bg-muted/60 p-3 lg:p-4 relative">
+              <EthernetParserCard />
+              <div className="absolute -top-3 left-6 inline-flex items-center gap-2 rounded-full bg-card border border-border px-3 py-1 text-[11px] font-medium text-foreground shadow-sm">
+                <span className="h-1.5 w-1.5 rounded-full bg-violet-500" />
+                Ethernet parser
+              </div>
+            </div>
+          </div>
+        </Section>
+
+        {/* And the lighter side — same engine, more fun. Wrapped in
+            Section so it picks up the standard inter-section margin
+            (mt-28 md:mt-36) below the Scale block. */}
+        <Section>
+          <div className="mb-10 max-w-2xl">
+            <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight leading-[1.1]">
+              Same engine, just more fun.
+            </h2>
+            <p className="mt-3 text-sm text-muted-foreground">
+              Toggle inputs and play. Same simulator, same Verilog export — Snake also runs on a real ULX3S board.
+            </p>
+          </div>
+
+          {/* Featured games — Pong on the left, Snake on the right */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+            <PongCard />
+            <SnakeCard />
+          </div>
+        </Section>
 
         {/* Row 1.5: removed — drilldown showcase relocated below for tightness */}
         <div className="hidden">
@@ -930,69 +1001,6 @@ function DemoGallery() {
         </div>
         </div>
         {/* end hidden wrapper */}
-
-        {/* Row 2: "Scale to real-world complexity" — one section heading
-            framing both heavy demos as examples (not flagship features).
-            Each demo card sits full-width with a small caption underneath
-            instead of its own headline+paragraph+CTA treatment. */}
-        <Section>
-          <div className="max-w-2xl mb-10 lg:mb-12">
-            <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight leading-[1.1]">
-              Scale to real-world complexity
-            </h2>
-            <p className="mt-4 text-base lg:text-lg text-muted-foreground">
-              The framework already runs heavy systems in the browser — for example, a 5-stage pipelined RISC-V CPU executing GCC-compiled C, C++, and Rust, or an IEEE 802.3 Ethernet parser turning wire bytes into protocol fields.
-            </p>
-          </div>
-
-          {/* Diagonally overlapping card stack — RV32I is the primary,
-              forward card; the Ethernet parser peeks out from behind in
-              the bottom-right, implying "and more like this". Container
-              uses padding-bottom to reserve room for the offset card
-              hanging off the bottom-right corner. No per-demo captions —
-              the intro paragraph already names what each one is. */}
-          <div className="relative pb-24 lg:pb-32">
-            {/* RV32I — behind, partially covered by the Ethernet card */}
-            <div className="relative z-0 rounded-2xl bg-muted/60 p-3 lg:p-4 w-full lg:w-[78%] shadow-sm">
-              <div
-                className="rounded-xl border border-border bg-card shadow-sm overflow-hidden"
-                style={{ height: 520 }}
-              >
-                <RV32IDebuggerPreview />
-              </div>
-              <div className="absolute -top-3 left-6 inline-flex items-center gap-2 rounded-full bg-card border border-border px-3 py-1 text-[11px] font-medium text-foreground shadow-sm">
-                <span className="h-1.5 w-1.5 rounded-full bg-blue-500" />
-                RV32I CPU debugger
-                <Link
-                  to="/cpu/rv32i"
-                  className="ml-1 text-blue-600 dark:text-blue-400 hover:underline"
-                >
-                  Open →
-                </Link>
-              </div>
-            </div>
-
-            {/* Ethernet — in front, offset to the bottom-right */}
-            <div className="hidden lg:block absolute right-0 -bottom-4 z-10 w-[62%] rounded-2xl bg-muted/60 p-3 lg:p-4 shadow-md">
-              <EthernetParserCard />
-              <div className="absolute -top-3 left-6 inline-flex items-center gap-2 rounded-full bg-card border border-border px-3 py-1 text-[11px] font-medium text-foreground shadow-sm">
-                <span className="h-1.5 w-1.5 rounded-full bg-violet-500" />
-                Ethernet parser
-              </div>
-            </div>
-
-            {/* Mobile / narrow: stack the Ethernet card under the RV32I
-                instead of overlapping (the overlap doesn't have room to
-                breathe below the lg breakpoint). */}
-            <div className="lg:hidden mt-8 rounded-2xl bg-muted/60 p-3 lg:p-4 relative">
-              <EthernetParserCard />
-              <div className="absolute -top-3 left-6 inline-flex items-center gap-2 rounded-full bg-card border border-border px-3 py-1 text-[11px] font-medium text-foreground shadow-sm">
-                <span className="h-1.5 w-1.5 rounded-full bg-violet-500" />
-                Ethernet parser
-              </div>
-            </div>
-          </div>
-        </Section>
 
       </Container>
 
