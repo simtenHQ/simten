@@ -1238,9 +1238,9 @@ export function ClaudeDemoSection({
                 type="button"
                 onClick={() => cycleDemo(-1)}
                 aria-label="Previous circuit"
-                className="pointer-events-auto flex h-12 w-12 items-center justify-center rounded-full bg-foreground text-background shadow-lg transition-all hover:scale-110 hover:shadow-xl animate-in fade-in slide-in-from-left-2 duration-500"
+                className="pointer-events-auto flex h-10 w-10 items-center justify-center rounded-full border border-border bg-card text-foreground/70 shadow-sm transition-all hover:bg-muted hover:text-foreground hover:border-foreground/40 hover:scale-105 animate-in fade-in slide-in-from-left-2 duration-500"
               >
-                <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
+                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
                   <polyline points="15 18 9 12 15 6" />
                 </svg>
               </button>
@@ -1248,9 +1248,9 @@ export function ClaudeDemoSection({
                 type="button"
                 onClick={() => cycleDemo(1)}
                 aria-label="Next circuit"
-                className="pointer-events-auto flex h-12 w-12 items-center justify-center rounded-full bg-foreground text-background shadow-lg transition-all hover:scale-110 hover:shadow-xl animate-in fade-in slide-in-from-right-2 duration-500"
+                className="pointer-events-auto flex h-10 w-10 items-center justify-center rounded-full border border-border bg-card text-foreground/70 shadow-sm transition-all hover:bg-muted hover:text-foreground hover:border-foreground/40 hover:scale-105 animate-in fade-in slide-in-from-right-2 duration-500"
               >
-                <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
+                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
                   <polyline points="9 18 15 12 9 6" />
                 </svg>
               </button>
