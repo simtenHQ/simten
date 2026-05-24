@@ -433,7 +433,7 @@ export function buildCPUCore() {
     ],
   };
 
-  return { circuit: RV32I_CPU_Core.circuit, lib };
+  return { circuit: RV32I_CPU_Core.circuit, built: RV32I_CPU_Core, lib };
 }
 
 // ── Project descriptor ─────────────────────────────────────────────────────
