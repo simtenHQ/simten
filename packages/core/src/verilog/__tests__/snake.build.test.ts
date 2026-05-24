@@ -55,7 +55,12 @@ function buildSnakeAdvanced() {
       isPhase0: Comparator(), isPhase1: Comparator(), isPhase2: Comparator(), isPhase3: Comparator(),
       latchKeyboard: And,
       isUp: Comparator(), isDown: Comparator(), isLeft: Comparator(), isRight: Comparator(),
-      deltaXTemp: Mux(), deltaX: Mux(), deltaYTemp: Mux(), deltaY: Mux(),
+      // 8-bit Muxes for the X/Y delta data path. Carry minus1 (8'd255 =
+      // -1 in two's complement) when going left/up; without the width
+      // override the Mux defaults to 1-bit and the exporter truncates
+      // minus1's output to its LSB (1), so left/up mirror right/down.
+      deltaXTemp: Mux({ width: 8 }), deltaX: Mux({ width: 8 }),
+      deltaYTemp: Mux({ width: 8 }), deltaY: Mux({ width: 8 }),
       nextHeadXCalc: Adder(), nextHeadYCalc: Adder(),
       nextHeadX: BitSlice({ low: 0, high: 2 }), nextHeadY: BitSlice({ low: 0, high: 2 }),
       nextHeadY2: Adder(), nextHeadY4: Adder(), nextHeadY8: Adder(),
