@@ -89,18 +89,13 @@ const IMEM_BASE = 0x00000000;
 const DMEM_BASE = 0x00010000;
 const DMEM_SIZE = 0x1000; // 4KB
 
-function loadAlign(word: number, byteOff: number, f3: number): number {
-  // f3: 0=LB 1=LH 2=LW 4=LBU 5=LHU
-  if (f3 === 2) return word >>> 0;
-  if (f3 === 4 || f3 === 0) {
-    const b = (word >>> (byteOff * 8)) & 0xFF;
-    return f3 === 4 ? b : (b | (b & 0x80 ? 0xFFFFFF00 : 0)) >>> 0; // LBU or LB
-  }
-  // LHU / LH
-  const halfOff = byteOff & ~1;
-  const h = (word >>> (halfOff * 8)) & 0xFFFF;
-  return f3 === 5 ? h : (h | (h & 0x8000 ? 0xFFFF0000 : 0)) >>> 0;
-}
+// The CPU core embeds its own RV32I_LoadAlignFull on the load path, so the
+// memory model here must return the raw aligned 32-bit word — matching the
+// iverilog testbench (verify.ts). Earlier this code pre-aligned via a local
+// loadAlign() helper, which silently double-aligned LBU/LH loads (the byte
+// got shifted into the LSB twice for byte_offset > 0, blanking it out).
+// The "LBU all byte offsets" suite test exposed this once the upstream
+// sentinel bug was fixed and execution actually reached the second LBU.
 
 export function runFirmware(imem: number[], maxCycles = 200): number[] {
   const { built } = buildCPUCore();
@@ -125,12 +120,12 @@ export function runFirmware(imem: number[], maxCycles = 200): number[] {
       dataRead = 1;
     } else if (dataAddr >= DMEM_BASE && dataAddr < DMEM_BASE + DMEM_SIZE) {
       const alignedOff = (dataAddr - DMEM_BASE) & ~3;
-      const rawWord = (dmem[alignedOff] | (dmem[alignedOff+1] << 8) | (dmem[alignedOff+2] << 16) | (dmem[alignedOff+3] << 24)) >>> 0;
-      dataRead = loadAlign(rawWord, dataAddr & 3, funct3 & 0x7);
+      dataRead = (dmem[alignedOff] | (dmem[alignedOff+1] << 8) | (dmem[alignedOff+2] << 16) | (dmem[alignedOff+3] << 24)) >>> 0;
     } else if (dataAddr < 0x800) {
       const wi = (dataAddr >>> 2) & 0x1ff;
-      dataRead = loadAlign((imem[wi] ?? 0) >>> 0, dataAddr & 3, funct3 & 0x7);
+      dataRead = (imem[wi] ?? 0) >>> 0;
     }
+    void funct3;  // CPU's LoadAlignFull uses funct3 internally; we just pass the raw word.
 
     if (memWrite && dataAddr >= DMEM_BASE && dataAddr < DMEM_BASE + DMEM_SIZE) {
       const off = dataAddr - DMEM_BASE;
@@ -188,12 +183,12 @@ function runSim(name: string, imem: number[], maxCycles = 200): void {
       dataRead = 1;
     } else if (dataAddr >= DMEM_BASE && dataAddr < DMEM_BASE + DMEM_SIZE) {
       const alignedOff = (dataAddr - DMEM_BASE) & ~3;
-      const rawWord = (dmem[alignedOff] | (dmem[alignedOff+1] << 8) | (dmem[alignedOff+2] << 16) | (dmem[alignedOff+3] << 24)) >>> 0;
-      dataRead = loadAlign(rawWord, dataAddr & 3, funct3 & 0x7);
+      dataRead = (dmem[alignedOff] | (dmem[alignedOff+1] << 8) | (dmem[alignedOff+2] << 16) | (dmem[alignedOff+3] << 24)) >>> 0;
     } else if (dataAddr < 0x800) {
       const wi = (dataAddr >>> 2) & 0x1ff;
-      dataRead = loadAlign((imem[wi] ?? 0) >>> 0, dataAddr & 3, funct3 & 0x7);
+      dataRead = (imem[wi] ?? 0) >>> 0;
     }
+    // Raw word out — CPU's LoadAlignFull handles byte/halfword selection.
 
     if (memWrite && dataAddr >= DMEM_BASE && dataAddr < DMEM_BASE + DMEM_SIZE) {
       const off = dataAddr - DMEM_BASE;

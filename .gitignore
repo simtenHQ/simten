@@ -77,3 +77,7 @@ examples/cpu6502/cc65/*-mac
 
 # FPGA bitstream / config cache for the ecpbram fast path (see #39)
 hardware/ulx3s/.cache/
+
+# cycle-diff cosim outputs (regenerated on every run)
+hardware/ulx3s/projects/cpu/cycle-diff.log
+hardware/ulx3s/projects/cpu/cycle-diff.vcd
