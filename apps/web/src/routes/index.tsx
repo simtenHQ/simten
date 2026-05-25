@@ -71,7 +71,7 @@ export const Route = createFileRoute("/")({
       title: "Simten — Hardware design in TypeScript",
       titleExact: true,
       description:
-        "Design and simulate digital hardware in TypeScript. From single gates to RISC-V CPUs, synthesizable to Verilog, running live in your browser.",
+        "A TypeScript HDL where npm is your testbench — from logic gates to a RISC-V CPU. Test circuits against real packets and firmware, then synthesize to Verilog.",
       path: "/",
     }),
     scripts: [softwareApplicationLd()],
@@ -706,10 +706,10 @@ function MobileAIHero() {
         Works with Claude + MCP
       </div>
       <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight leading-[1.05] text-foreground">
-        A TypeScript HDL that runs in your browser.
+        Describe hardware. Claude builds it. Test it like software.
       </h1>
       <p className="mt-4 text-sm text-muted-foreground">
-        Wire up a circuit in seconds. Watch every cycle tick. Ship Verilog when you're done.
+        A TypeScript HDL where the whole npm ecosystem is your testbench — drive a circuit with real packets, real firmware, any library you can <code>npm install</code>, and watch it run cycle-by-cycle. Synthesizable to Verilog.
       </p>
       <div className="mt-5 rounded-lg border border-border bg-muted px-4 py-3">
         <code className="font-mono text-[12px] text-foreground/80">
