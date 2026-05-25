@@ -1158,10 +1158,10 @@ export function ClaudeDemoSection({
         {/* Section label */}
         <div className="mb-10 max-w-3xl">
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-semibold tracking-tight leading-[1.05] text-foreground">
-            A TypeScript HDL that runs in your browser.
+            Describe hardware. Claude builds it. Test it like software.
           </h1>
           <p className="mt-5 text-base md:text-lg text-muted-foreground max-w-2xl">
-            Wire up a circuit in seconds. Watch every cycle tick. Ship Verilog when you're done.
+            A TypeScript HDL where the whole npm ecosystem is your testbench — drive a circuit with real packets, real firmware, any library you can <code>npm install</code>, and watch it run cycle-by-cycle. Synthesizable to Verilog.
           </p>
           <div className="mt-6 flex items-center gap-3 flex-wrap">
             {/* Primary action — keeps the hero framed around "this is a
