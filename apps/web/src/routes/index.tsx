@@ -1009,8 +1009,19 @@ function DemoGallery() {
         {/* Verilog Export — honest framing */}
         <Section>
           <SectionHeading
-title="Export to Verilog"
-            description="Any circuit compiles down to structural Verilog and is cross-validated against Icarus Verilog cycle-by-cycle. FPGA synthesis works today for the demos shipped with the repo (Snake, RV32I); broader coverage is a work in progress."
+            title="Export to Verilog"
+            description={
+              <>
+                Synthesizable primitives export to structural Verilog. The RV32I CPU and Snake both flash to a ULX3S; the CPU is cross-validated against iverilog cycle-by-cycle.{" "}
+                <Link
+                  to="/docs/$"
+                  params={{ _splat: "hardware" }}
+                  className="text-blue-600 dark:text-blue-400 hover:underline"
+                >
+                  How it works →
+                </Link>
+              </>
+            }
           />
           <div className="grid grid-cols-2 gap-4">
             {/* TypeScript side */}
@@ -1055,7 +1066,6 @@ title="Export to Verilog"
               </pre>
             </div>
           </div>
-          <p className="text-[11px] text-muted-foreground/60 mt-3">Structural Verilog out of the box, verified against Icarus. Full FPGA flow lives in <code className="font-mono text-[0.95em] px-1 rounded bg-muted">hardware/ulx3s</code> and currently ships working bitstreams for Snake and RV32I.</p>
         </Section>
 
         {/* Deep dives — long-form companion posts */}
