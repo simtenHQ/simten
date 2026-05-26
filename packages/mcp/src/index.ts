@@ -13,20 +13,28 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 
 import { registerCheckTool } from './tools/check.js';
 import { registerSimulateTool } from './tools/simulate.js';
+import { registerVerifyTool } from './tools/verify.js';
 import { registerShowTools } from './tools/show.js';
 import { registerStateTool } from './tools/state.js';
 import { registerRunOnFpgaTool } from './tools/run_on_fpga.js';
 import { registerReadWaveformTool } from './tools/read_waveform.js';
 import { setOnSendToClaude, getOrCreateServer, getPreviewServer } from './lib/preview-singleton.js';
 import { getGrammarHandler, getPrimitivesHandler, getLibrary } from '@simten/core/api';
+import { getFactoryOptionSignatures, annotatePrimitivesWithOptions } from './lib/primitive-params.js';
 import { z } from 'zod';
 
 const builderAPI = getGrammarHandler();
-const primitivesList = getPrimitivesHandler({ compact: true }, getLibrary());
+// Annotate parameterized components with their constructor options (e.g.
+// `Register ctor({ width?, value? })`) so the agent can parameterize them
+// without guessing — ports alone don't reveal factory options.
+const primitivesList = annotatePrimitivesWithOptions(
+  getPrimitivesHandler({ compact: true }, getLibrary()),
+  getFactoryOptionSignatures(),
+);
 
-const instructions = `You help developers simulate and explore hardware systems using circuit simulation.
+const instructions = `You help developers design, simulate, and verify hardware systems from TypeScript. Circuits are files the host edits (write to \`circuits/<name>.circuit.ts\` in the project unless the user says otherwise); the simten tools then check, simulate, verify, and visualize them.
 
-Build circuits from TypeScript, run simulations, and push live visualizations to a connected browser tab. When someone asks about a hardware concept, build a circuit that demonstrates it and simulate it so they can see it running.
+Write each circuit file as a **standalone TS module with real imports** — \`import { circuit, bit, bus } from '@simten/core/circuit'\` and stdlib components from \`@simten/core/std\`. This keeps the file valid in the user's editor and runnable with \`tsx\`; the simten tools strip the imports at execution and resolve from the stdlib, so they cost nothing to keep. Do not write import-free circuit code.
 
 ## Circuit API
 
@@ -36,20 +44,28 @@ ${builderAPI}
 
 ${primitivesList}
 
+## The contract (read this)
+
+- **Done = correct, at a declared tier.** A non-trivial design is complete only when \`verify_circuit\` passes at the highest feasible oracle tier (its description defines the tiers and the rule). \`simulate_circuit\` shows what a circuit *does*; it does NOT establish correctness — don't stop at a plausible-looking waveform.
+- **A named spec is the oracle.** If the prompt states the spec, verify against it; don't re-elicit. Only block to confirm acceptance criteria on vague prompts for non-trivial designs.
+- **Surface what you checked.** When you verify, lead your chat reply with the oracle (what was checked, against what, at what tier), not just pass/fail.
+
 ## Tools
 
-- \`simulate_circuit\` — compile, simulate, and push waveforms to the browser (show: true by default)
-- \`show_circuit\` — push circuit source for a live interactive view; supports file watching for editor workflows
-- \`check_circuit\` — fast validation before simulating
-- \`get_circuit_state\` — read current port values from the live browser preview
-- \`list_sessions\` — list connected browser tabs
-- \`run_on_fpga\` — build, flash, and UART-capture a project on a connected ULX3S FPGA (projects: cpu, snake, uart_test)
-- \`read_waveform\` — query VCD waveform files (iverilog cross-validation, future ILA captures, etc.) for specific signals over a cycle window. Returns transitions + carry-in (changes), per-cycle values (raw), or filtered transitions (edges). Use \`test_name\` for the CPU verify-suite (e.g. "R-Type ADD basic") or \`vcd_path\` for arbitrary VCDs.
-- \`push_chat_response\` — send a text response back to the in-app chat panel in the user's browser. Markdown supported.
+- \`check_circuit\` — fast well-formedness validation (syntax/semantic/type/structural).
+- \`simulate_circuit\` — run it, return traces. Observation only; does not paint the canvas unless \`show: true\`.
+- \`verify_circuit\` — run a self-checking testbench; reports pass/fail + counterexample at a declared oracle tier. See its description for tiers, the done rule, and how to write the testbench.
+- \`show_circuit\` — paint/update the live canvas (call with no source to list connected tabs; \`close: true\` to close). The only tool that draws.
+- \`get_circuit_state\` — read port values from the tab the user is currently watching.
+- \`run_on_fpga\` — build, flash, and UART-capture a project on a connected ULX3S FPGA (projects: cpu, snake, uart_test).
+- \`read_waveform\` — query VCD files (iverilog cross-validation, ILA captures) for signals over a cycle window. Use \`test_name\` for the CPU verify-suite or \`vcd_path\` for arbitrary VCDs.
+- \`push_chat_response\` — send a reply to the in-app chat panel. Markdown supported.
 
-## Talking to the user via the editor chat
+## Canvas + chat
 
-Messages from the user typed into the in-app chat panel arrive as \`<channel source="simten" ...>\` events. After handling a channel message, **always call \`push_chat_response\` with your reply** — it is the only way the user sees your response, because they're in the browser, not at the terminal. Keep responses concise. You can also call other simten tools (e.g. \`show_circuit\`, \`simulate_circuit\`) as part of your response before pushing the final chat reply.
+The canvas only paints via \`show_circuit\` (or \`simulate_circuit\` with \`show: true\`). Don't paint during tight iteration — paint at a verify tier-pass, or for a specific failure worth inspecting. Headless (no canvas connected): paint calls simply no-op.
+
+Messages the user types into the in-app chat arrive as \`<channel source="simten" ...>\` events. After handling one, **always call \`push_chat_response\`** — it's the only way the user sees your reply (they're in the browser, not the terminal). Keep it concise.
 `;
 
 const server = new McpServer(
@@ -67,6 +83,7 @@ const server = new McpServer(
 
 registerCheckTool(server);
 registerSimulateTool(server);
+registerVerifyTool(server);
 registerShowTools(server);
 registerStateTool(server);
 registerRunOnFpgaTool(server);
