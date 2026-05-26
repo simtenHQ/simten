@@ -83,11 +83,11 @@
   },
   "dependencies": {
     "acorn": "^8.14.1",
+    "fast-check": "^4.5.3",
     "sucrase": "^3.35.1"
   },
   "devDependencies": {
     "@types/node": "^20",
-    "fast-check": "^4.5.3",
     "rollup": "^4.60.3",
     "rollup-plugin-dts": "^6.4.1",
     "typescript": "^5",

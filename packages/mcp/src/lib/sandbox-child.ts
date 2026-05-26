@@ -5,20 +5,25 @@
  * no PATH). All circuit code execution happens here, isolated from the MCP
  * parent process.
  *
- * Security guarantees:
+ * Security guarantees (spawn flags live in mcp-sandbox.ts):
  *   env: {}       — process.env has no API keys, tokens, or credentials
+ *   --permission  — Node permission model on; fs reads allowed ONLY for this
+ *                   bundle (--allow-fs-read=<bundle>), so out-of-bundle reads are
+ *                   denied (verified: process.permission.has('fs.read', other) === false).
+ *                   No --allow-fs-write (writes blocked) and no --allow-child-process
+ *                   (exec/spawn blocked) at the OS level.
  *   net overrides — fetch / http.request / https.request throw immediately,
  *                   blocking common HTTP exfiltration and cryptomining patterns
  *   30s timeout   — parent kills this process if it hangs (see mcp-sandbox.ts)
  *
- * Note: filesystem reads are NOT restricted (--permission requires listing every
- * module path including pnpm symlink targets, which is fragile). This will be
- * addressed before shared circuit files are added. For now, the empty env means
- * there are no credentials to read, and network overrides block exfiltration.
+ * (The old "fs reads are not restricted" caveat is obsolete: bundling everything
+ * into a single .cjs means only one path needs --allow-fs-read, which sidesteps
+ * the per-module-path / pnpm-symlink fragility that originally blocked it.)
  */
 
 import { simulateCircuit } from '@simten/core/api';
 import { checkCircuit } from '@simten/core/api';
+import { verifyCircuit, type OracleDecl } from '@simten/core/api';
 import http from 'http';
 import https from 'https';
 
@@ -56,7 +61,19 @@ type CheckMsg = {
   sourceName?: string;
 };
 
-type IncomingMsg = SimulateMsg | CheckMsg;
+type VerifyMsg = {
+  id: string;
+  type: 'verify';
+  source: string;
+  testbench: string;
+  oracle: OracleDecl;
+  sourceName?: string;
+  circuitName?: string;
+  numRuns?: number;
+  timeoutMs?: number;
+};
+
+type IncomingMsg = SimulateMsg | CheckMsg | VerifyMsg;
 
 // ── Message handler ────────────────────────────────────────────────────────
 
@@ -96,6 +113,24 @@ process.on('message', (msg: IncomingMsg) => {
   if (type === 'check') {
     try {
       const result = checkCircuit({ source: msg.source, sourceName: msg.sourceName });
+      process.send!({ id, type: 'result', result });
+    } catch (e) {
+      process.send!({ id, type: 'error', error: e instanceof Error ? e.message : String(e) });
+    }
+    return;
+  }
+
+  if (type === 'verify') {
+    try {
+      const result = verifyCircuit({
+        source: msg.source,
+        testbench: msg.testbench,
+        oracle: msg.oracle,
+        sourceName: msg.sourceName,
+        circuitName: msg.circuitName,
+        numRuns: msg.numRuns,
+        timeoutMs: msg.timeoutMs,
+      });
       process.send!({ id, type: 'result', result });
     } catch (e) {
       process.send!({ id, type: 'error', error: e instanceof Error ? e.message : String(e) });

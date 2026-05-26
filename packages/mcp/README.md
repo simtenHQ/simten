@@ -40,18 +40,14 @@ npm install -g @simten/mcp
 
 | Tool | Description |
 |------|-------------|
-| `show_circuit` | Push circuit file to browser, open live visual editor |
-| `hide_circuit` | Close preview, stop WebSocket server |
-| `simulate_circuit` | Compile and simulate, return signal traces |
-| `check_circuit` | Validate circuit (semantic, type, structural) |
-| `run_testbench` | Run testbench assertions against circuit |
-| `get_circuit_state` | Pull current port values from browser (live read) |
-| `get_primitives` | List available primitive components |
-| `get_grammar` | Return component reference and circuit() API |
-| `show_traces` | Push simulation waveforms to browser |
-| `show_test_results` | Push test results to browser |
-| `list_sessions` | List connected browser tabs |
-| `push_chat_response` | Send message to in-app chat panel |
+| `check_circuit` | Validate circuit well-formedness (syntax, semantic, type, structural) |
+| `simulate_circuit` | Compile and simulate, return signal traces (observation only; does not establish correctness) |
+| `verify_circuit` | Run a self-checking testbench; reports pass/fail + counterexample at a declared oracle tier |
+| `read_waveform` | Query VCD waveform files (iverilog cross-validation, ILA captures) over a cycle window |
+| `run_on_fpga` | Build, flash, and UART-capture a project on a connected ULX3S FPGA |
+| `show_circuit` | Paint/update the live canvas (no args = list tabs; `close: true` = close). The only tool that draws |
+| `get_circuit_state` | Inspect the live tab the user is watching (current port values) |
+| `push_chat_response` | Send a reply to the in-app chat panel |
 
 ## How it works
 

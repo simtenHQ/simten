@@ -41,67 +41,21 @@ function openBrowser(url: string) {
 }
 
 export function registerShowTools(server: McpServer): void {
-  // hide_circuit — close the preview server and browser tab
-  server.tool(
-    'hide_circuit',
-    'Close the live circuit preview and stop the server.',
-    {},
-    async () => {
-      const preview = getPreviewServer();
-      if (!preview) {
-        return {
-          content: [{ type: 'text' as const, text: 'No preview is running.' }],
-        };
-      }
-      preview.close();
-      setPreviewServer(null);
-      setBrowserOpened(false);
-      return {
-        content: [{ type: 'text' as const, text: 'Preview closed.' }],
-      };
-    }
-  );
-
-  // list_sessions — show all connected browser tabs
-  server.tool(
-    'list_sessions',
-    'List all connected browser tabs with their session IDs, page URLs, and current circuit names. Use this to discover which tabs are available for show_circuit or get_circuit_state.',
-    {},
-    async () => {
-      const preview = getPreviewServer();
-      if (!preview) {
-        return {
-          content: [{ type: 'text' as const, text: 'No studio server is running. Call show_circuit to start one.' }],
-        };
-      }
-
-      const sessionList = Array.from(preview.sessions.values()).map(s => ({
-        id: s.id,
-        page: s.page,
-        circuitName: s.circuitName,
-      }));
-
-      return {
-        content: [{
-          type: 'text' as const,
-          text: sessionList.length > 0
-            ? JSON.stringify(sessionList, null, 2)
-            : 'No browser tabs are connected.',
-        }],
-      };
-    }
-  );
-
-  // show_circuit — open or update the live preview
+  // show_circuit — the only tool that paints the canvas. Also handles closing
+  // the preview (close:true) and discovering connected tabs (no source/filePath).
   server.tool(
     'show_circuit',
-    'Open a live circuit preview in the browser. Updates automatically when the file changes. Optionally target a specific browser tab by session ID.',
+    'Paint or update the live circuit canvas in the browser — the only tool that draws. Watches the file for changes when filePath is given. Call with NO source/filePath to list connected browser tabs (discovery). Pass close:true to close the preview and stop the server. Canvas policy: don\'t paint during tight iteration — paint at a verify tier-pass or for a specific result worth showing.',
     {
       source: z.string().optional().describe('TypeScript circuit code as a string'),
       filePath: z
         .string()
         .optional()
         .describe('Path to a .circuit.ts file (will be watched for changes)'),
+      close: z
+        .boolean()
+        .optional()
+        .describe('Close the live preview and stop the server.'),
       inputs: z
         .record(z.union([z.number(), z.boolean()]))
         .optional()
@@ -117,7 +71,40 @@ export function registerShowTools(server: McpServer): void {
         .optional()
         .describe('Target a specific browser tab by session ID. If omitted, uses the most recently active tab or opens a new one.'),
     },
-    async ({ source, filePath, inputs, memoryData, session }) => {
+    async ({ source, filePath, close, inputs, memoryData, session }) => {
+      // close:true — tear down the preview (absorbs the old hide_circuit tool)
+      if (close) {
+        const preview = getPreviewServer();
+        if (!preview) {
+          return { content: [{ type: 'text' as const, text: 'No preview is running.' }] };
+        }
+        preview.close();
+        setPreviewServer(null);
+        setBrowserOpened(false);
+        return { content: [{ type: 'text' as const, text: 'Preview closed.' }] };
+      }
+
+      // No source/filePath — discovery: list connected tabs (absorbs list_sessions)
+      if (!source && !filePath) {
+        const preview = getPreviewServer();
+        if (!preview) {
+          return { content: [{ type: 'text' as const, text: 'No studio server is running. Call show_circuit with a circuit to start one.' }] };
+        }
+        const sessionList = Array.from(preview.sessions.values()).map(s => ({
+          id: s.id,
+          page: s.page,
+          circuitName: s.circuitName,
+        }));
+        return {
+          content: [{
+            type: 'text' as const,
+            text: sessionList.length > 0
+              ? JSON.stringify(sessionList, null, 2)
+              : 'No browser tabs are connected.',
+          }],
+        };
+      }
+
       // 1. Read circuit source
       const read = readCircuitSource({ source, filePath });
       if (read.error) {

@@ -13,6 +13,7 @@ import type { ChildProcess } from 'child_process';
 import { fileURLToPath } from 'url';
 import path from 'path';
 import type { CheckResult, SimulateResult, SimulateError } from '@simten/core/api';
+import type { VerifyParams, VerifyResult, VerifyError } from '@simten/core/api';
 
 // ── Config ─────────────────────────────────────────────────────────────────
 
@@ -198,4 +199,34 @@ export async function sandboxCheck(params: {
 
   if (response.type === 'error') return { error: response.error ?? 'Unknown sandbox error' };
   return response.result ?? { error: 'No result from sandbox' };
+}
+
+export async function sandboxVerify(params: VerifyParams): Promise<VerifyResult | VerifyError> {
+  await ensureChild();
+
+  const response = await send({
+    type: 'verify',
+    source: params.source,
+    testbench: params.testbench,
+    oracle: params.oracle,
+    sourceName: params.sourceName,
+    circuitName: params.circuitName,
+    numRuns: params.numRuns,
+    timeoutMs: params.timeoutMs,
+  }) as { type: string; error?: string; result?: VerifyResult | VerifyError };
+
+  // Child-level failure (hard kill). This is where 'oom' is set — core only
+  // ever returns compile/runtime/timeout; an unexpected child death (memory
+  // kill, crash) surfaces here. The graceful in-core budget normally fires
+  // first, but if the child is killed we classify by the harness message.
+  if (response.type === 'error') {
+    const error = response.error ?? 'Unknown sandbox error';
+    const phase = /timed out/i.test(error)
+      ? 'timeout'
+      : /exited unexpectedly/i.test(error)
+        ? 'oom'
+        : 'runtime';
+    return { error, phase };
+  }
+  return response.result ?? { error: 'No result from sandbox', phase: 'runtime' };
 }

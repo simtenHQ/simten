@@ -11,7 +11,7 @@ import { sandboxSimulate } from '../lib/mcp-sandbox.js';
 export function registerSimulateTool(server: McpServer): void {
   server.tool(
     'simulate_circuit',
-    'Compile and simulate a circuit. Automatically pushes waveforms to the browser preview if one is open (set show: false to suppress). Returns signal traces and steady-state cycle.',
+    'Compile and simulate a circuit and return signal traces + steady-state cycle. OBSERVATION ONLY — this shows what the circuit does, NOT whether it is correct; use verify_circuit to establish correctness. Does not touch the browser canvas unless show:true. Canvas policy: do not paint during tight iteration; paint at a verify tier-pass, or for a specific failure worth inspecting (pass show:true with a reason).',
     {
       source: z.string().optional().describe('TypeScript circuit code as a string'),
       filePath: z.string().optional().describe('Path to a .circuit.ts file'),
@@ -40,10 +40,20 @@ export function registerSimulateTool(server: McpServer): void {
       show: z
         .boolean()
         .optional()
-        .default(true)
-        .describe('Push waveforms to the browser preview after simulating (default: true)'),
+        .default(false)
+        .describe('Paint the waveforms onto the browser canvas after simulating (default: false). Requires `reason`.'),
+      reason: z
+        .string()
+        .optional()
+        .describe('Why you are painting the canvas (required when show:true), e.g. "counterexample at a=255,b=1".'),
     },
-    async ({ source, filePath, circuitName, ticks, inputs, memoryData: memoryDataJson, show }) => {
+    async ({ source, filePath, circuitName, ticks, inputs, memoryData: memoryDataJson, show, reason }) => {
+      if (show && !reason) {
+        return {
+          content: [{ type: 'text' as const, text: 'Error: `reason` is required when show:true — state why you are painting the canvas (e.g. a tier-pass or a specific failure worth inspecting).' }],
+          isError: true,
+        };
+      }
       const read = readCircuitSource({ source, filePath });
       if (read.error) {
         return {

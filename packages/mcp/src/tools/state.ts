@@ -12,7 +12,7 @@ import { getPreviewServer } from '../lib/preview-singleton.js';
 export function registerStateTool(server: McpServer): void {
   server.tool(
     'get_circuit_state',
-    'Read current port values and cycle count from a connected browser tab. Requires show_circuit to have been called first. If the browser tab is unresponsive, returns null after 3 seconds.',
+    'Inspect the live tab the user is watching: read current port values and cycle count from a connected browser tab. For "what is this showing right now?" — not a correctness check (use verify_circuit) and not history (use read_waveform). Requires show_circuit to have been called first. Returns null if the tab is unresponsive after 3 seconds.',
     {
       session: z
         .string()
@@ -40,7 +40,7 @@ export function registerStateTool(server: McpServer): void {
           content: [
             {
               type: 'text' as const,
-              text: 'No response from browser. The tab may be closed, suspended, or unresponsive. Try calling list_sessions to check connected tabs.',
+              text: 'No response from browser. The tab may be closed, suspended, or unresponsive. Call show_circuit with no arguments to list connected tabs.',
             },
           ],
           isError: true,
