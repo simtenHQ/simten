@@ -99,6 +99,29 @@ export function stripTypes(code: string): string {
   }).code;
 }
 
+/**
+ * Strip ES `import` statements from circuit code.
+ *
+ * Circuit code runs inside `new Function(...)` with the stdlib injected as scope
+ * (see buildScope), so an `import` statement is both unnecessary and fatal —
+ * `new Function` bodies can't contain `import` ("Cannot use import statement
+ * outside a module"). Removing them lets a file carry real imports for the
+ * benefit of editors / `tsc` / `tsx` (where `@simten/core` is a real package)
+ * while still executing here against the injected scope. `@simten/core` symbols
+ * resolve from scope; an unresolved import (e.g. an npm package) surfaces as a
+ * normal ReferenceError rather than a cryptic syntax crash.
+ *
+ * Handles: `import x from 'm'`, `import {a, b} from 'm'` (incl. multiline),
+ * `import * as ns from 'm'`, and side-effect `import 'm'` — single or double
+ * quotes, optional trailing semicolon.
+ */
+export function stripImports(code: string): string {
+  return code.replace(
+    /^[ \t]*import\b[\s\S]*?(?:from[ \t]*['"][^'"]+['"]|['"][^'"]+['"])[ \t]*;?[ \t]*$/gm,
+    '',
+  );
+}
+
 // ============================================================================
 // Execute
 // ============================================================================
@@ -198,7 +221,7 @@ export function executeJsCode(jsCode: string, extraScope?: Record<string, unknow
 export function executeCircuitCode(code: string): ExecuteResult {
   let stripped: string;
   try {
-    stripped = stripTypes(code);
+    stripped = stripImports(stripTypes(code));
   } catch (e) {
     // sucrase parse failure — return an error result without running anything.
     // Reuse executeJsCode's empty-library shape by passing a no-op snippet.
