@@ -11,7 +11,6 @@ import { exec } from 'node:child_process';
 import { resolve } from 'node:path';
 import { readCircuitSource } from '../lib/file-reader.js';
 import { TI_URL } from '../lib/config.js';
-import { checkCircuit } from '@simten/core/api';
 import {
   getOrCreateServer,
   getPreviewServer,
@@ -114,22 +113,10 @@ export function registerShowTools(server: McpServer): void {
         };
       }
 
-      // 2. Validate circuit source before pushing to browser
-      const check = checkCircuit(
-        { source: read.source, sourceName: read.sourceName },
-      );
-      if (!check.valid) {
-        const msgs = check.diagnostics
-          .filter((d) => d.severity === 'error')
-          .map((d) => d.message)
-          .join('\n');
-        return {
-          content: [{ type: 'text' as const, text: `Validation failed:\n${msgs}` }],
-          isError: true,
-        };
-      }
-
-      // 3. Start or get existing studio server
+      // 2. Start or get existing studio server. There is no server-side
+      // pre-flight: the browser is the real execution environment (incl. npm
+      // via esm.sh), so its render acknowledgment — not a Node-side check that
+      // can't resolve npm — is the source of truth for whether it rendered.
       let studio;
       try {
         studio = await getOrCreateServer();
@@ -146,53 +133,42 @@ export function registerShowTools(server: McpServer): void {
         };
       }
 
-      const hadSession = studio.sessions.size > 0;
+      // 3. Pre-load memory + arm file watching before the push, so a freshly
+      // connecting tab receives them alongside its first render.
+      if (memoryData) studio.pushMemoryData(memoryData, session);
+      if (filePath) studio.watchFile(resolve(filePath));
 
-      // 4. Push source. If a tab is already connected, await its render
-      // acknowledgment so the result reflects whether it actually rendered
-      // (no polling/sleep). For a fresh open, push without awaiting — the tab
-      // will render on connect (the await would just time out).
-      let render: Awaited<ReturnType<typeof studio.updateSourceAndAwait>> | null = null;
-      if (hadSession) {
+      // 4. Push the source and AWAIT the render acknowledgment.
+      //   - Connected tab: await its render directly.
+      //   - Fresh open: arm the ack, open the browser, await the new tab's first render.
+      let render: Awaited<ReturnType<typeof studio.updateSourceAndAwait>>;
+      if (studio.sessions.size > 0) {
         render = await studio.updateSourceAndAwait(read.source, session);
       } else {
-        studio.updateSource(read.source, session);
+        const pending = studio.updateSourceAndAwaitConnect(read.source);
+        openBrowser(`${TI_URL}/circuit#token=${studio.token}&port=${studio.port}`);
+        render = await pending;
       }
 
-      // 4b. Push memory data if provided
-      if (memoryData) {
-        studio.pushMemoryData(memoryData, session);
-      }
-
-      // 5. Watch file for changes if path provided
-      if (filePath) {
-        studio.watchFile(resolve(filePath));
-      }
-
-      // 6. Open browser only if no sessions are connected
-      // With persistent tokens, an existing tab will reconnect automatically on MCP restart
-      if (!hadSession) {
-        const editorUrl = `${TI_URL}/circuit#token=${studio.token}&port=${studio.port}`;
-        openBrowser(editorUrl);
-      }
-
-      // 7. Return confirmation, including the render acknowledgment when we have one
+      // 5. Report, leading with the render acknowledgment.
       const watchingNote = filePath ? ` Watching ${resolve(filePath)} for changes.` : '';
       const sessionNote = session ? ` (session: ${session})` : '';
-      if (render && !render.ok) {
+      if (!render.ok && !render.timedOut) {
+        // The browser actually reported an error — surface the real reason so
+        // the agent can fix the circuit and retry.
         return {
-          content: [{ type: 'text' as const, text: `Pushed to the browser, but render was not confirmed: ${render.error ?? 'unknown'}.${render.timedOut ? '' : ' (The circuit may have a compile error — check the editor.)'}` }],
+          content: [{ type: 'text' as const, text: `Pushed to the browser, but it failed to render: ${render.error ?? 'unknown error'}. Fix the circuit and call show_circuit again.` }],
           isError: true,
         };
       }
-      const renderedNote = render?.ok ? ` Rendered as "${render.circuitName ?? 'circuit'}".` : ' Opening browser; it will render on connect.';
+      if (!render.ok && render.timedOut) {
+        // Never heard back (slow or no browser) — not necessarily an error.
+        return {
+          content: [{ type: 'text' as const, text: `Circuit pushed; render not yet confirmed (${render.error ?? 'timed out'}). The tab may still be loading — check the browser.${watchingNote}${sessionNote}` }],
+        };
+      }
       return {
-        content: [
-          {
-            type: 'text' as const,
-            text: `Circuit preview running.${renderedNote}${watchingNote}${sessionNote}`,
-          },
-        ],
+        content: [{ type: 'text' as const, text: `Circuit preview running. Rendered as "${render.circuitName ?? 'circuit'}".${watchingNote}${sessionNote}` }],
       };
     }
   );

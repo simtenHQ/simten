@@ -35,6 +35,8 @@ export interface StudioServer {
   updateSource(source: string, sessionId?: string): void;
   /** Push source AND await the browser's render acknowledgment (success + circuitName, or error/timeout). */
   updateSourceAndAwait(source: string, sessionId?: string, timeoutMs?: number): Promise<RenderResult>;
+  /** Push source and await the render ack from a not-yet-connected tab (fresh open). */
+  updateSourceAndAwaitConnect(source: string, timeoutMs?: number): Promise<RenderResult>;
   watchFile(filePath: string): void;
   getState(sessionId?: string): Promise<CircuitState | null>;
   pushTraces(data: TracesPayload, sessionId?: string): void;
@@ -47,6 +49,10 @@ export interface StudioServer {
 
 /** Timeout for request/response calls to the browser (ms) */
 const STATE_REQUEST_TIMEOUT = 3000;
+
+/** Timeout for awaiting the first render after opening a fresh browser tab (ms).
+ *  Generous: covers browser launch + page load + esm.sh fetch + compile. */
+const CONNECT_RENDER_TIMEOUT = 20000;
 
 /** Dedup window: ignore file watcher events within this many ms of an explicit push */
 const DEDUP_WINDOW_MS = 500;
@@ -69,6 +75,10 @@ export async function createStudioServer(
 
   // Track the most recently active session for default targeting
   let lastActiveSessionId: string | null = null;
+
+  // When a render is awaited but no tab is connected yet, hold the requestId so
+  // the next tab to register receives the source WITH that id and acks it.
+  let pendingConnectRender: string | null = null;
 
   const wss = new WebSocketServer({ port, host: '127.0.0.1' });
 
@@ -117,9 +127,16 @@ export async function createStudioServer(
           sessions.set(sessionId!, session);
           lastActiveSessionId = sessionId;
 
-          // Send cached state to late-joining client
+          // Send cached state to late-joining client. If a render is being
+          // awaited for a freshly-opening tab, attach the requestId so this tab
+          // acks it (resolving updateSourceAndAwaitConnect).
           if (currentSource) {
-            send(ws, { type: 'source', source: currentSource });
+            if (pendingConnectRender) {
+              send(ws, { type: 'source', source: currentSource, requestId: pendingConnectRender });
+              pendingConnectRender = null;
+            } else {
+              send(ws, { type: 'source', source: currentSource });
+            }
           }
           if (cachedTraces) {
             send(ws, { type: 'traces', data: cachedTraces });
@@ -288,6 +305,31 @@ export async function createStudioServer(
     });
   }
 
+  /**
+   * Push source and await the render ack from a tab that is not yet connected.
+   * Stashes the source and arms a pending render requestId; when the next tab
+   * registers it receives the source WITH that id and acks via 'render-result'
+   * (resolving this promise). Used by show_circuit on a fresh open so the tool
+   * result reflects the actual render once the new tab finishes loading.
+   */
+  function updateSourceAndAwaitConnect(
+    source: string,
+    timeoutMs: number = CONNECT_RENDER_TIMEOUT,
+  ): Promise<RenderResult> {
+    currentSource = source;
+    lastExplicitPushAt = Date.now();
+    const requestId = randomUUID();
+    return new Promise((resolveReq) => {
+      const timer = setTimeout(() => {
+        pendingRequests.delete(requestId);
+        if (pendingConnectRender === requestId) pendingConnectRender = null;
+        resolveReq({ ok: false, timedOut: true, error: `no render confirmed within ${timeoutMs}ms (browser may still be opening)` });
+      }, timeoutMs);
+      pendingRequests.set(requestId, { resolve: resolveReq as (v: unknown) => void, timer });
+      pendingConnectRender = requestId;
+    });
+  }
+
   function watchFile(filePath: string) {
     const absPath = resolve(filePath);
 
@@ -368,6 +410,7 @@ export async function createStudioServer(
     sessions,
     updateSource,
     updateSourceAndAwait,
+    updateSourceAndAwaitConnect,
     watchFile,
     getState,
     pushTraces,
