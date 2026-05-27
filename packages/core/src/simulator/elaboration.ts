@@ -451,6 +451,16 @@ function stitchCompositeConnections(
 
 /**
  * Resolve connections through composite ports via transitive closure.
+ *
+ * A connection's endpoints are either "real" (a leaf primitive, or the
+ * top-level node) or "virtual" (a composite-instance port that only forwards a
+ * signal). Every signal originates at a real source and ends at real sinks, so
+ * we anchor on each real source and walk *forward* through virtual ports until
+ * reaching real endpoints — emitting one direct real→real connection per
+ * endpoint reached. This must follow chains of arbitrary length: a signal that
+ * passes through N composites in series (e.g. an input→output feedthrough wire
+ * repeated through chained composites) crosses N virtual ports, and a single
+ * hop per connection would drop it after the first boundary.
  */
 function resolveThroughComposites(
   connections: FlatConnection[],
@@ -458,81 +468,71 @@ function resolveThroughComposites(
   _compositeInstances: Set<string>,
   debug: boolean
 ): FlatConnection[] {
+  const primitiveIds = new Set(flatNodes.map(n => n.id));
   const isPrimitive = (port: PortPath): boolean =>
-    port.nodeId === TOP_LEVEL_NODE || flatNodes.some(n => n.id === port.nodeId);
+    port.nodeId === TOP_LEVEL_NODE || primitiveIds.has(port.nodeId);
 
-  const connectionsToPort = new Map<string, FlatConnection[]>();
-  const connectionsFromPort = new Map<string, FlatConnection[]>();
-
+  // Outgoing edges keyed by source port.
+  const fromPort = new Map<string, FlatConnection[]>();
   for (const conn of connections) {
-    const targetKey = `${conn.target.nodeId}.${conn.target.portName}`;
-    if (!connectionsToPort.has(targetKey)) {
-      connectionsToPort.set(targetKey, []);
-    }
-    connectionsToPort.get(targetKey)!.push(conn);
-
     const sourceKey = `${conn.source.nodeId}.${conn.source.portName}`;
-    if (!connectionsFromPort.has(sourceKey)) {
-      connectionsFromPort.set(sourceKey, []);
+    if (!fromPort.has(sourceKey)) {
+      fromPort.set(sourceKey, []);
     }
-    connectionsFromPort.get(sourceKey)!.push(conn);
+    fromPort.get(sourceKey)!.push(conn);
   }
 
-  const result: FlatConnection[] = [];
-  const processed = new Set<string>();
+  // From a (possibly virtual) target port, walk forward to every real endpoint
+  // it ultimately feeds. The per-walk `seen` set makes cycles terminate.
+  const reachRealTargets = (start: PortPath): PortPath[] => {
+    const results: PortPath[] = [];
+    const seen = new Set<string>();
+    const stack: PortPath[] = [start];
 
-  for (const conn of connections) {
-    if (isPrimitive(conn.source) && isPrimitive(conn.target)) {
-      result.push(conn);
-      continue;
+    while (stack.length > 0) {
+      const current = stack.pop()!;
+      const key = `${current.nodeId}.${current.portName}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+
+      if (isPrimitive(current)) {
+        results.push(current);
+        continue;
+      }
+
+      for (const next of fromPort.get(key) ?? []) {
+        stack.push(next.target);
+      }
     }
 
-    if (!isPrimitive(conn.target)) {
-      const targetKey = `${conn.target.nodeId}.${conn.target.portName}`;
-      const outgoing = connectionsFromPort.get(targetKey) || [];
+    return results;
+  };
 
-      for (const nextConn of outgoing) {
-        const transitiveConn: FlatConnection = {
-          id: `${conn.source.nodeId}.${conn.source.portName}->${nextConn.target.nodeId}.${nextConn.target.portName}`,
-          source: conn.source,
-          target: nextConn.target,
-          portType: conn.portType
-        };
+  const result: FlatConnection[] = [];
+  const emitted = new Set<string>();
 
-        if (!processed.has(transitiveConn.id)) {
-          processed.add(transitiveConn.id);
+  for (const conn of connections) {
+    // Only anchor on real sources; virtual-source edges are interior hops that
+    // get collapsed by the forward walk from their upstream real source.
+    if (!isPrimitive(conn.source)) continue;
 
-          if (isPrimitive(transitiveConn.source) && isPrimitive(transitiveConn.target)) {
-            if (debug) {
-              console.log(`  TRANSITIVE: ${transitiveConn.source.nodeId}.${transitiveConn.source.portName} -> ${transitiveConn.target.nodeId}.${transitiveConn.target.portName}`);
-            }
-            result.push(transitiveConn);
-          }
-        }
+    const targets = isPrimitive(conn.target)
+      ? [conn.target]
+      : reachRealTargets(conn.target);
+
+    for (const target of targets) {
+      const isSelfLoop = conn.source.nodeId === target.nodeId &&
+                         conn.source.portName === target.portName;
+      if (isSelfLoop) continue;
+
+      const id = `${conn.source.nodeId}.${conn.source.portName}->${target.nodeId}.${target.portName}`;
+      if (emitted.has(id)) continue;
+      emitted.add(id);
+
+      if (debug) {
+        console.log(`  RESOLVED: ${conn.source.nodeId}.${conn.source.portName} -> ${target.nodeId}.${target.portName}`);
       }
-    } else if (!isPrimitive(conn.source)) {
-      const sourceKey = `${conn.source.nodeId}.${conn.source.portName}`;
-      const incoming = connectionsToPort.get(sourceKey) || [];
-
-      for (const prevConn of incoming) {
-        const transitiveConn: FlatConnection = {
-          id: `${prevConn.source.nodeId}.${prevConn.source.portName}->${conn.target.nodeId}.${conn.target.portName}`,
-          source: prevConn.source,
-          target: conn.target,
-          portType: conn.portType
-        };
-
-        if (!processed.has(transitiveConn.id)) {
-          processed.add(transitiveConn.id);
-
-          if (isPrimitive(transitiveConn.source) && isPrimitive(transitiveConn.target)) {
-            if (debug) {
-              console.log(`  TRANSITIVE: ${transitiveConn.source.nodeId}.${transitiveConn.source.portName} -> ${transitiveConn.target.nodeId}.${transitiveConn.target.portName}`);
-            }
-            result.push(transitiveConn);
-          }
-        }
-      }
+      result.push({ id, source: conn.source, target, portType: conn.portType });
     }
   }
 
