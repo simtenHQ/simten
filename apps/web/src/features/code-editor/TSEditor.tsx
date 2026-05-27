@@ -78,6 +78,8 @@ interface TSEditorProps {
     },
     sandboxResult?: { circuits: Circuit[]; libraryCircuits: Circuit[]; portValues: Record<string, number | boolean> },
   ) => void;
+  /** Called when a (manual) compile fails — used for the show_circuit render ack. */
+  onCompileError?: (message: string) => void;
   autoCompileEnabled?: boolean;
   showHeader?: boolean;
   storageKey?: string | null;
@@ -93,6 +95,7 @@ export const TSEditor = forwardRef<TSEditorRef, TSEditorProps>(
   function TSEditor(
     {
       onCompileSuccess,
+      onCompileError,
       autoCompileEnabled = false,
       showHeader = true,
       storageKey = DEFAULT_STORAGE_KEY,
@@ -176,18 +179,14 @@ export const TSEditor = forwardRef<TSEditorRef, TSEditorProps>(
                 column: lineMatch ? parseInt(lineMatch[2]) : 0,
               },
             ]);
+            onCompileError?.(result.error);
             return;
           }
 
           if (result.circuits.length === 0) {
-            setErrors([
-              {
-                message:
-                  "No circuits found. Use circuit('Name', { ... }) to define a circuit.",
-                line: 0,
-                column: 0,
-              },
-            ]);
+            const message = "No circuits found. Use circuit('Name', { ... }) to define a circuit.";
+            setErrors([{ message, line: 0, column: 0 }]);
+            onCompileError?.(message);
             return;
           }
 
@@ -215,18 +214,14 @@ export const TSEditor = forwardRef<TSEditorRef, TSEditorProps>(
 
           onCompileSuccess?.(result.circuits, code, library, result);
         } catch (e) {
-          setErrors([
-            {
-              message: e instanceof Error ? e.message : String(e),
-              line: 0,
-              column: 0,
-            },
-          ]);
+          const message = e instanceof Error ? e.message : String(e);
+          setErrors([{ message, line: 0, column: 0 }]);
+          onCompileError?.(message);
         } finally {
           setIsCompiling(false);
         }
       },
-      [code, onCompileSuccess, sandbox],
+      [code, onCompileSuccess, onCompileError, sandbox],
     );
 
     // ── Auto-compile ──

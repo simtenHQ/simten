@@ -124,6 +124,9 @@ export function EditorWorkspace({ theme = "light", initialSource }: EditorWorksp
 
   // Editor ref for ChatPanel integration
   const editorRef = useRef<TSEditorRef>(null);
+  // requestId of an in-flight show_circuit render-ack (set in onSource, cleared
+  // when the resulting compile succeeds/fails — see handleCompile / handleCompileError).
+  const pendingRenderRef = useRef<string | null>(null);
 
   // Track whether we've loaded content so we can skip the first MCP cache replay
   const hasLoadedContentRef = useRef(false);
@@ -252,12 +255,13 @@ export function EditorWorkspace({ theme = "light", initialSource }: EditorWorksp
   }, []);
 
   // Studio connection (WebSocket to MCP server)
-  const { status: mcpStatus, sendToClaudePrompt } = useMCPConnection({
+  const { status: mcpStatus, sendToClaudePrompt, sendRenderResult } = useMCPConnection({
     onTraces: useCallback((data: unknown) => {
       const payload = data as { vcd: string; circuit: string; ticks: number; steadyStateAt?: number };
       if (payload?.vcd) setWaveformData(payload);
     }, []),
-    onSource: useCallback((source: string) => {
+    onSource: useCallback((source: string, requestId?: string) => {
+      pendingRenderRef.current = requestId ?? null;
       editorRef.current?.setCode(source);
       setTimeout(() => editorRef.current?.compile(), 100);
     }, []),
@@ -313,9 +317,26 @@ export function EditorWorkspace({ theme = "light", initialSource }: EditorWorksp
       if (sandboxResult) {
         setCompileResult(sandboxResult);
       }
+
+      // Acknowledge an in-flight show_circuit render request (success).
+      if (pendingRenderRef.current) {
+        const reqId = pendingRenderRef.current;
+        pendingRenderRef.current = null;
+        const name = useCircuitStore.getState().circuit?.name ?? circuits[circuits.length - 1]?.name ?? null;
+        sendRenderResult(reqId, { ok: true, circuitName: name });
+      }
     },
-    [setCompiledCircuits],
+    [setCompiledCircuits, sendRenderResult],
   );
+
+  // Acknowledge an in-flight show_circuit render request (compile failure).
+  const handleCompileError = useCallback((message: string) => {
+    if (pendingRenderRef.current) {
+      const reqId = pendingRenderRef.current;
+      pendingRenderRef.current = null;
+      sendRenderResult(reqId, { ok: false, error: message });
+    }
+  }, [sendRenderResult]);
 
   // Load an example into the editor
   const loadExample = useCallback((example: Example) => {
@@ -465,6 +486,7 @@ export function EditorWorkspace({ theme = "light", initialSource }: EditorWorksp
                 initialCode={initialSource ?? ""}
                 autoCompileEnabled={true}
                 onCompileSuccess={handleCompile}
+                onCompileError={handleCompileError}
                 onCodeChange={(code) => setCodeEmpty(code.trim() === "")}
                 showHeader={false}
               />

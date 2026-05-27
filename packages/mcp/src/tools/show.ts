@@ -146,8 +146,18 @@ export function registerShowTools(server: McpServer): void {
         };
       }
 
-      // 4. Push source to the target session
-      studio.updateSource(read.source, session);
+      const hadSession = studio.sessions.size > 0;
+
+      // 4. Push source. If a tab is already connected, await its render
+      // acknowledgment so the result reflects whether it actually rendered
+      // (no polling/sleep). For a fresh open, push without awaiting — the tab
+      // will render on connect (the await would just time out).
+      let render: Awaited<ReturnType<typeof studio.updateSourceAndAwait>> | null = null;
+      if (hadSession) {
+        render = await studio.updateSourceAndAwait(read.source, session);
+      } else {
+        studio.updateSource(read.source, session);
+      }
 
       // 4b. Push memory data if provided
       if (memoryData) {
@@ -161,21 +171,26 @@ export function registerShowTools(server: McpServer): void {
 
       // 6. Open browser only if no sessions are connected
       // With persistent tokens, an existing tab will reconnect automatically on MCP restart
-      if (studio.sessions.size === 0) {
+      if (!hadSession) {
         const editorUrl = `${TI_URL}/circuit#token=${studio.token}&port=${studio.port}`;
         openBrowser(editorUrl);
       }
 
-      // 7. Return confirmation
-      const watchingNote = filePath
-        ? ` Watching ${resolve(filePath)} for changes.`
-        : '';
+      // 7. Return confirmation, including the render acknowledgment when we have one
+      const watchingNote = filePath ? ` Watching ${resolve(filePath)} for changes.` : '';
       const sessionNote = session ? ` (session: ${session})` : '';
+      if (render && !render.ok) {
+        return {
+          content: [{ type: 'text' as const, text: `Pushed to the browser, but render was not confirmed: ${render.error ?? 'unknown'}.${render.timedOut ? '' : ' (The circuit may have a compile error — check the editor.)'}` }],
+          isError: true,
+        };
+      }
+      const renderedNote = render?.ok ? ` Rendered as "${render.circuitName ?? 'circuit'}".` : ' Opening browser; it will render on connect.';
       return {
         content: [
           {
             type: 'text' as const,
-            text: `Circuit preview running.${watchingNote}${sessionNote}`,
+            text: `Circuit preview running.${renderedNote}${watchingNote}${sessionNote}`,
           },
         ],
       };
