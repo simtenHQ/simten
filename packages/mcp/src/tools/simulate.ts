@@ -6,7 +6,7 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import { readCircuitSource } from '../lib/file-reader.js';
 import { getPreviewServer } from '../lib/preview-singleton.js';
-import { sandboxSimulate } from '../lib/mcp-sandbox.js';
+import { simulateCircuit } from '@simten/core/api';
 
 export function registerSimulateTool(server: McpServer): void {
   server.tool(
@@ -75,7 +75,10 @@ export function registerSimulateTool(server: McpServer): void {
         }
       }
 
-      const result = await sandboxSimulate({
+      // Direct in-process call — the local agent's compute is trusted (same
+      // model as the agent running tsx/npm test); no sandbox. Hangs are bounded
+      // by core's tick cap (max 10000) and unstable-loop guard.
+      const result = simulateCircuit({
         source: read.source,
         sourceName: read.sourceName,
         circuitName,

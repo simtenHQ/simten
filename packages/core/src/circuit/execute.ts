@@ -122,6 +122,23 @@ export function stripImports(code: string): string {
   );
 }
 
+/**
+ * Strip ES `export` keywords from circuit code.
+ *
+ * Circuit files `export` their top-level circuit so a testbench (.verify.ts) can
+ * `import` it under tsx/vitest. But the same file is also run via `new Function`
+ * (executeJsCode — simulate, check, the web /circuit worker), whose body can't
+ * contain `export`. We drop the `export` keyword (the `const`/`function` survives
+ * and the circuit() call is still collected); `export { … }` re-export lines are
+ * removed entirely. The tsx/import path keeps the real export.
+ */
+export function stripExports(code: string): string {
+  return code
+    .replace(/^[ \t]*export\s+\{[\s\S]*?\}[ \t]*(?:from[ \t]*['"][^'"]+['"])?[ \t]*;?[ \t]*$/gm, '')
+    .replace(/^([ \t]*)export\s+default\s+/gm, '$1')
+    .replace(/^([ \t]*)export\s+(?=(?:const|let|var|function|class|async)\b)/gm, '$1');
+}
+
 // ============================================================================
 // Execute
 // ============================================================================
@@ -155,6 +172,9 @@ export function executeJsCode(jsCode: string, extraScope?: Record<string, unknow
   const circuits: Circuit[] = [];
 
   try {
+    // new Function bodies can't contain import/export — strip both defensively
+    // (callers may pass code that carries real imports/exports for tsx/editor use).
+    const cleaned = stripExports(stripImports(jsCode));
     // Wrap: intercept circuit()/component() calls to collect all created circuits
     const wrappedCode = `
       "use strict";
@@ -168,7 +188,7 @@ export function executeJsCode(jsCode: string, extraScope?: Record<string, unknow
       {
         const circuit = __trackingCircuit;
         const component = __trackingCircuit;
-        ${jsCode}
+        ${cleaned}
       }
       return __collector;
     `;

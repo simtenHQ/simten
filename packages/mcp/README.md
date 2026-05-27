@@ -42,12 +42,18 @@ npm install -g @simten/mcp
 |------|-------------|
 | `check_circuit` | Validate circuit well-formedness (syntax, semantic, type, structural) |
 | `simulate_circuit` | Compile and simulate, return signal traces (observation only; does not establish correctness) |
-| `verify_circuit` | Run a self-checking testbench; reports pass/fail + counterexample at a declared oracle tier |
+| `verify_circuit` | Run a self-checking testbench *file* (`.verify.ts`) on the host via `tsx`; reports pass/fail + counterexample at a declared oracle tier |
 | `read_waveform` | Query VCD waveform files (iverilog cross-validation, ILA captures) over a cycle window |
 | `run_on_fpga` | Build, flash, and UART-capture a project on a connected ULX3S FPGA |
 | `show_circuit` | Paint/update the live canvas (no args = list tabs; `close: true` = close). The only tool that draws |
 | `get_circuit_state` | Inspect the live tab the user is watching (current port values) |
 | `push_chat_response` | Send a reply to the in-app chat panel |
+
+## Trust model
+
+`verify_circuit` runs the testbench on the host via `tsx` — full Node + npm resolution, **no sandbox**, under the same trust model as the agent running `npm test`. This is intentional: sandboxing one tool while the coding agent freely runs your build, tests, and arbitrary Bash is incoherent. It's appropriate for circuits you authored or trust.
+
+**Unfamiliar or shared circuits should be opened in the web `/circuit` editor**, which runs them in a sandboxed worker (esm.sh, isolated) built for untrusted browser-user code — not run locally via `tsx`.
 
 ## How it works
 

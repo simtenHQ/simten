@@ -101,15 +101,15 @@ export function detectSteadyState(trace: SimulationTrace): number | undefined {
 // ============================================================================
 
 export function getCircuitAPISummary(): string {
-  return `// Circuit API — write circuit files as standalone TS modules with imports
-// (valid in your editor, runnable with tsx; the simten tools strip the imports
-// at execution and resolve from the stdlib, so they're free to keep).
+  return `// Circuit API — write circuit files as standalone TS modules with imports,
+// and EXPORT the top-level circuit so a testbench (.verify.ts) can import it.
+// Valid in your editor, runnable with tsx/vitest.
 
 import { circuit, bit, bus } from '@simten/core/circuit';
 import { Xor, And, Register, Adder, Constant } from '@simten/core/std';
 
-// Composite circuit — wire stdlib components together:
-const HalfAdder = circuit('HalfAdder', {
+// Composite circuit — wire stdlib components together (export it):
+export const HalfAdder = circuit('HalfAdder', {
   inputs:  { a: bit, b: bit },
   outputs: { sum: bit, carry: bit },
   nodes:   { xor1: Xor, and1: And },
