@@ -14,6 +14,15 @@ export interface TracesPayload {
   steadyStateAt?: number;
 }
 
+/** Browser's acknowledgment that it executed a pushed source (render round-trip). */
+export interface RenderResult {
+  ok: boolean;
+  circuitName?: string | null;
+  error?: string;
+  /** True when the browser never replied within the timeout. */
+  timedOut?: boolean;
+}
+
 export interface TestResultsPayload {
   results: Array<{
     name: string;

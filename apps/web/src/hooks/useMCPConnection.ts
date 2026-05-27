@@ -22,8 +22,10 @@ export interface MCPMessage {
 }
 
 export interface MCPCallbacks {
-  /** Called when new circuit source is pushed from Claude Code */
-  onSource?: (source: string) => void;
+  /** Called when new circuit source is pushed from Claude Code. `requestId` is
+   *  present when the server is awaiting a render acknowledgment — call
+   *  `sendRenderResult(requestId, …)` once compile finishes. */
+  onSource?: (source: string, requestId?: string) => void;
   /** Called when a file-deleted event is received */
   onFileDeleted?: () => void;
   /** Called when an error message is received */
@@ -133,7 +135,7 @@ export function useMCPConnection(callbacks: MCPCallbacks) {
 
         switch (msg.type) {
           case 'source':
-            cb.onSource?.(msg.source as string);
+            cb.onSource?.(msg.source as string, msg.requestId as string | undefined);
             break;
           case 'file-deleted':
             cb.onFileDeleted?.();
@@ -240,10 +242,21 @@ export function useMCPConnection(callbacks: MCPCallbacks) {
     ws.send(JSON.stringify({ type: 'send-to-claude', content: text, meta: meta ?? {} }));
   }, []);
 
+  /** Acknowledge a render request (from onSource's requestId) back to the server. */
+  const sendRenderResult = useCallback(
+    (requestId: string, result: { ok: boolean; circuitName?: string | null; error?: string }) => {
+      const ws = wsRef.current;
+      if (!ws || ws.readyState !== WebSocket.OPEN) return;
+      ws.send(JSON.stringify({ type: 'render-result', requestId, ...result }));
+    },
+    [],
+  );
+
   return {
     status,
     sessionId: sessionIdRef.current,
     isConnected: status === 'connected',
     sendToClaudePrompt,
+    sendRenderResult,
   };
 }

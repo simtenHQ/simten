@@ -13,7 +13,7 @@ import { WebSocketServer, WebSocket } from 'ws';
 import { watchFile as fsWatchFile, unwatchFile, existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { randomUUID } from 'node:crypto';
-import type { CircuitState, TracesPayload, TestResultsPayload } from './types.js';
+import type { CircuitState, TracesPayload, TestResultsPayload, RenderResult } from './types.js';
 
 export type { CircuitState, TracesPayload, TestResultsPayload };
 
@@ -33,6 +33,8 @@ export interface StudioServer {
   sessions: Map<string, Session>;
 
   updateSource(source: string, sessionId?: string): void;
+  /** Push source AND await the browser's render acknowledgment (success + circuitName, or error/timeout). */
+  updateSourceAndAwait(source: string, sessionId?: string, timeoutMs?: number): Promise<RenderResult>;
   watchFile(filePath: string): void;
   getState(sessionId?: string): Promise<CircuitState | null>;
   pushTraces(data: TracesPayload, sessionId?: string): void;
@@ -142,6 +144,17 @@ export async function createStudioServer(
           return;
         }
 
+        // Browser acknowledges it rendered a pushed source (render round-trip)
+        if (msg.type === 'render-result') {
+          const pending = pendingRequests.get(msg.requestId);
+          if (pending) {
+            clearTimeout(pending.timer);
+            pendingRequests.delete(msg.requestId);
+            pending.resolve({ ok: !!msg.ok, circuitName: msg.circuitName ?? null, error: msg.error });
+          }
+          return;
+        }
+
         // Browser reports it is focused — use this session for next push
         if (msg.type === 'focus' && sessionId) {
           lastActiveSessionId = sessionId;
@@ -247,6 +260,34 @@ export async function createStudioServer(
     broadcast({ type: 'source', source }, sessionId);
   }
 
+  /**
+   * Push source with a requestId and await the browser's render acknowledgment.
+   * Mirrors the getState round-trip: send → browser executes → posts back
+   * { type:'render-result', requestId, ok, circuitName | error }. Resolves with a
+   * timeout marker if the browser never replies. Used by show_circuit so the tool
+   * result reflects whether the push actually rendered (no polling/sleep needed).
+   */
+  function updateSourceAndAwait(
+    source: string,
+    sessionId?: string,
+    timeoutMs: number = STATE_REQUEST_TIMEOUT,
+  ): Promise<RenderResult> {
+    currentSource = source;
+    lastExplicitPushAt = Date.now();
+    const target = getTargetSession(sessionId);
+    if (!target) return Promise.resolve({ ok: false, error: 'no browser tab connected' });
+
+    const requestId = randomUUID();
+    return new Promise((resolveReq) => {
+      const timer = setTimeout(() => {
+        pendingRequests.delete(requestId);
+        resolveReq({ ok: false, timedOut: true, error: `render not confirmed within ${timeoutMs}ms` });
+      }, timeoutMs);
+      pendingRequests.set(requestId, { resolve: resolveReq as (v: unknown) => void, timer });
+      send(target.ws, { type: 'source', source, requestId });
+    });
+  }
+
   function watchFile(filePath: string) {
     const absPath = resolve(filePath);
 
@@ -326,6 +367,7 @@ export async function createStudioServer(
     token,
     sessions,
     updateSource,
+    updateSourceAndAwait,
     watchFile,
     getState,
     pushTraces,
