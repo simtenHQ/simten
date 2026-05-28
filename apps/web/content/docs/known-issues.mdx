@@ -1,0 +1,71 @@
+---
+title: Known issues
+description: What doesn't work yet, how to recognize it, and what to do about it.
+---
+
+This page is the **open** list — things that may still affect you. Fixed bugs live on closed GitHub issues; pull the latest `main` to pick them up.
+
+If you hit something not listed here, please file an issue at [simtenHQ/simten](https://github.com/simtenHQ/simten/issues) — concrete repros are gold.
+
+## Correctness
+
+### 11 pre-existing test failures in `@simten/core`
+
+Running `pnpm -r test` against `main` produces 11 failing tests:
+
+- `simulator/__tests__/eval-bridge.test.ts` — 9 failures (write-output indexing into `undefined`)
+- `circuit/__tests__/circuit-to-source.test.ts` — 2 failures (state/`reg()`/`mem()` emission, bus-port serialisation)
+
+These failures are not caused by user circuits — they live entirely in core test fixtures and don't affect simulation of circuits you write. They are documented here rather than hidden because shipping with red tests is its own signal: **treat the test-pass rate as "all but these 11"** until they're fixed.
+
+## Sim-only primitives (not synthesizable)
+
+Some stdlib primitives exist for visualisation/debugging and are not part of the Verilog export. They simulate fine, but they will be excluded from any synthesized output. They are marked `meta: { synthesizable: false }` in `@simten/core/std`:
+
+- `Console` — text output (display)
+- `HexDisplay`, `SevenSegment` — numeric readouts
+- `Screen`, `RasterDisplay` — framebuffer surfaces
+- `Probe` — debug observation
+
+**How to recognize it:** the circuit simulates and renders, but `verilog_export` (or the FPGA build) either omits the node or errors. **Workaround:** wrap simulation-only display logic behind a top-level signal you can leave unwired on synthesis, or mark the wrapper circuit `meta: { synthesizable: false }` so it's expected.
+
+## Browser sandbox limits
+
+The `/circuit` page (and the `show_circuit` MCP canvas) runs your code inside a cross-origin sandbox iframe (see [Architecture](/docs/architecture)). A few things follow from that:
+
+### npm imports require network (esm.sh)
+
+`import { x } from 'some-pkg'` in a circuit is resolved at elaboration time via [esm.sh](https://esm.sh). If you're offline, or esm.sh is unreachable, or the package isn't published in an esm-compatible shape, the binding will be undefined and you'll see `x is not defined` in the editor.
+
+**How to recognize it:** ReferenceError on the imported binding. **Workaround:** check the package on esm.sh directly (e.g. `https://esm.sh/<pkg>`); use a known-good version pin (`'pkg@4.3.2'`); for Node-only packages, fall back to baking the data into a `Constant`/`ROM` outside the browser path.
+
+### `Buffer` is Node-only
+
+A common gotcha when porting a verify testbench to a browser demo: `Buffer.from([...])` works under `tsx`/`node` but is not defined in the browser sandbox. Use `Uint8Array.of(...)` / `new Uint8Array([...])` instead — most npm crypto/hash packages accept it at runtime even when their TypeScript types only declare `Buffer`.
+
+### Worker compile timeout (5s)
+
+Every circuit compile/elaborate runs inside a worker that the sandbox will kill after ~5 seconds. An infinite loop or runaway computation inside a `connect` callback (e.g. a `for` that builds an unbounded number of connections) will surface as a `Worker restarted` error rather than hanging the tab.
+
+**How to recognize it:** the editor shows `Worker restarted` after a few seconds. **Workaround:** check the loops in your `connect` for bounds; remember `connect` runs at elaboration, so all its iteration must terminate.
+
+## Simulator limits
+
+### 10 000-iteration propagation cap
+
+Each `set()` / clock tick drives an event-driven propagation queue. After 10 000 node evaluations in a single propagation pass, the simulator throws:
+
+```
+Propagation did not stabilize after 10000 iterations. Possible unstable feedback loop in circuit.
+```
+
+This is a safety net for **combinational feedback loops with no register breaking them** (an inverter whose output feeds its own input, etc.). It is not a depth/size limit — feed-forward circuits of any practical size settle well below the cap.
+
+**How to recognize it:** the error message above. **Workaround:** find the combinational loop; break it with a `Register` or `DFlipFlop`.
+
+### `get()` only reads top-level output ports
+
+`simulate(C).get('foo')` reads top-level outputs of `C` reliably. Reading an *internal node's* port (`'subModule.out'`) returns 0 / uninitialised values regardless of the actual signal — it is not a supported observation API.
+
+**How to recognize it:** an internal port reads 0 even when wiring and logic say otherwise. **Workaround:** expose the value you need as a top-level output of the circuit under test (wrap it in a probe harness with the signal piped out).
+
