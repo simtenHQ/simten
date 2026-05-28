@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { executeCircuitCode } from '../../circuit/execute.js';
 import { elaborate } from '../index.js';
+import { assertFlatCircuitInvariants } from './_invariants.js';
 
 describe('composite elaboration', () => {
   it('elaborates HalfAdder composite', () => {
@@ -30,6 +31,8 @@ describe('composite elaboration', () => {
     
     const flat = elaborate(result.circuit!, result.library);
     expect(flat.nodes.length).toBeGreaterThan(0);
+    // #140 audit: structural net on every elaboration this test exercises.
+    assertFlatCircuitInvariants(flat);
     console.log('flat nodes:', flat.nodes.length);
   });
 });
