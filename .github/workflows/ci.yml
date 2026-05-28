@@ -25,18 +25,6 @@ name: CI
 #
 # Deferred coverage (TODO before this is "real" CI):
 #
-#   • apps/tanstack vitest tests
-#       Status: vitest startup crashes with
-#         ReferenceError: module is not defined at tiny-warning.cjs.js:22
-#       Root cause: tanstack's vitest config uses @cloudflare/vitest-pool-workers
-#       (Workerd runtime, strict ESM-only). A transitive CJS dependency
-#       (`tiny-warning`, pulled in by react-router/radix) escapes vite's
-#       optimizer and crashes the worker. Fix path is one of:
-#         a) switch the default pool to "forks" and reserve the workers pool
-#            only for tests that actually exercise edge APIs (recommended)
-#         b) add `tiny-warning` to deps.optimizer.ssr.include in vitest.config
-#         c) alias tiny-warning to an ESM shim via vite resolve.alias
-#
 #   • packages/embed Playwright e2e tests
 #       Status: not run in CI yet. Needs `pnpm exec playwright install` step
 #       and a separate job (slower, browser-based). Add when we want
