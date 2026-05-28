@@ -19,6 +19,16 @@
  * tick / reset / set-node → run directly on the main thread (no user code,
  *   just advancing the already-compiled simulator — safe and fast).
  *
+ *   ⚠ Known gap (tracked separately): when a circuit uses `eval:` / `onTick:`
+ *   lambdas, registerCircuitEval() reconstructs them via new Function() and
+ *   the simulator invokes them during tick — on THIS thread, not the worker.
+ *   A user lambda containing `while(1){}` will hang iframe-main and escape
+ *   the 5s WORKER_TIMEOUT_MS / terminate() recovery. The fix requires either
+ *   moving sim+tick into the worker (blocked on canvas-state recovery, #51)
+ *   or routing each eval invocation through the worker per-tick. Until then,
+ *   the threat model for eval/onTick lambdas is "trusted code" — not the same
+ *   guarantee as the rest of the sandbox.
+ *
  * Security guarantees:
  *   IN:  arbitrary untrusted TypeScript string
  *   OUT: plain JSON only — no functions, no Maps, no class instances

