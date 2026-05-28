@@ -123,6 +123,38 @@ Snake demonstrates building Verilog from a TypeScript `circuit()` graph via
 
 ## Toolchain prerequisites
 
-Local machine needs: `openFPGALoader`, `picocom` (optional, for live monitoring), Node
-with `serialport`. Synth and compile happen in remote Cloudflare Container services
-(`apps/synth`, `apps/compiler`) so you don't need yosys/nextpnr/riscv-gcc locally.
+### On your machine
+
+- **`openFPGALoader`** — flashes the bitstream to the board over JTAG.
+- **`picocom`** *(optional)* — live UART monitoring outside the CLI (`pnpm fpga:console`).
+- **Node + `serialport`** — already pulled in by the repo's `package.json`.
+- **Docker** — required for the synth / verify / compile services below (each `wrangler dev` invocation builds and runs a container).
+- **Linux only:** `openFPGALoader` typically needs udev rules to access the FT232 without `sudo`. See [openFPGALoader README](https://github.com/trabucayre/openFPGALoader#udev-rules).
+
+The heavyweight EDA toolchain — Yosys, nextpnr-ecp5, ecppack, riscv-gcc, Icarus Verilog — runs **inside three container services** (`apps/synth`, `apps/verifier`, `apps/compiler`), so you do *not* install them on your machine. You do need to run those services locally.
+
+### Running the services
+
+`apps/synth`, `apps/verifier`, and `apps/compiler` are private Cloudflare workers — their public `*.workers.dev` URL is disabled (they're only reachable via service binding from `@simten/web` in production; see issue [#59](https://github.com/simtenHQ/simten/issues/59)). To use the FPGA flow from a fresh clone, start them locally in three terminals:
+
+```bash
+pnpm dev:synth       # Yosys + nextpnr-ecp5 + ecppack    (port 8792)
+pnpm dev:verifier    # Icarus Verilog                     (port 55002)
+pnpm dev:compiler    # riscv32-unknown-elf-gcc + rustc    (port 55001)
+```
+
+Each runs under `wrangler dev` and brings up its Docker container on first hit.
+
+### Environment variables
+
+`run_on_fpga.ts` and the verify scripts read these (defaults shown line up with the local-services ports above):
+
+| Variable        | Default                            | Used by                                       |
+|-----------------|------------------------------------|-----------------------------------------------|
+| `SYNTH_URL`     | `http://localhost:8792/synth`      | `lib/synth-client.ts` → Yosys                 |
+| `BUILD_URL`     | `http://localhost:8792/build`      | `lib/synth-client.ts` → nextpnr + ecppack     |
+| `PATCH_URL`     | `http://localhost:8792/patch`      | `lib/synth-client.ts` → ecpbram patch path    |
+| `VERIFIER_URL`  | `http://localhost:55002/verify`    | `projects/cpu/verify.ts`, `cycle-diff.ts`     |
+| `COMPILER_URL`  | `http://localhost:55001/compile`   | `projects/cpu/{verify,run_c,index}.ts`        |
+
+Override any of these to point at a self-hosted deployment of the same containers.
