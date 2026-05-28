@@ -18,6 +18,34 @@ Running `pnpm -r test` against `main` produces 11 failing tests:
 
 These failures are not caused by user circuits — they live entirely in core test fixtures and don't affect simulation of circuits you write. They are documented here rather than hidden because shipping with red tests is its own signal: **treat the test-pass rate as "all but these 11"** until they're fixed.
 
+### Elaboration edge cases surfaced by audit [#140](https://github.com/simtenHQ/simten/issues/140)
+
+A focused audit of `elaboration.ts` (after fixing [#138](https://github.com/simtenHQ/simten/issues/138)) surfaced five narrow-but-real silent-correctness gaps. They are deferred to post-beta because they only bite specific unusual patterns; none affect typical circuits (gates, adders, registers, regular composites with internal nodes and gated outputs). Each is locked in by an `it.fails(...)` test in `composite-patterns.test.ts` that flips green when the fix lands.
+
+#### Post-stitch multi-driver silently accepted ([#143](https://github.com/simtenHQ/simten/issues/143))
+
+The multi-driver check runs per-circuit at `circuit()` definition time, not on the flattened netlist. If two primitives end up driving the same target through a feedthrough boundary, the conflict surfaces only after stitching and isn't caught.
+
+**How to recognize it:** wrong outputs in a circuit that drives a composite's output port from outside the composite (e.g. `inputs.B.to(p.y)` where `y` is `p`'s output). **Workaround:** don't drive a composite output port externally — the convention is that composite outputs are produced by the composite, not consumed as targets. The TS port-direction guard and the per-circuit multi-driver check together steer you away from this shape; the runtime gap only matters at API edge cases.
+
+#### Width mismatches silently accepted at elaboration ([#144](https://github.com/simtenHQ/simten/issues/144), [#145](https://github.com/simtenHQ/simten/issues/145))
+
+Elaboration never validates port-type or width compatibility between source and target. A `bit` source driving a `bus(N)` target (#144) or a `bus(M)` source driving a `bus(N)` target with M ≠ N (#145) passes silently; downstream evaluators coerce inconsistently.
+
+**How to recognize it:** wrong values when a `Constant({ value: 1 })` (default width 1) drives a wider bus, or a narrower bus drives a wider one. **Workaround:** the TypeScript port-direction types reject these mismatches at compile time in typical use — the runtime gap mostly bites hand-constructed IR or `as any` escapes. Use the `width` argument on `Constant` (e.g. `Constant({ value: 1, width: 8 })`) and prefer width-matching primitives so the source and target agree.
+
+#### Deeply nested feedthrough composites produce a malformed netlist ([#146](https://github.com/simtenHQ/simten/issues/146))
+
+At three or more levels of composites whose *only* output mechanism is a feedthrough (`inputs.x.to(outputs.y)`, no gate at any level), elaboration produces a flat netlist where an internal primitive *input* port appears as a connection source and the top output has two drivers. Silent wrong values at simulation. Sibling class to [#138](https://github.com/simtenHQ/simten/issues/138) — depth-2 was fixed; depth ≥ 3 wasn't covered.
+
+**How to recognize it:** wrong outputs in a circuit that stacks ≥ 3 levels of pure-feedthrough composites (board-of-board-of-board layering, repeated abstraction wrappers without internal logic). **Workaround:** include at least one gate (`Not` → `Not`, `Buffer`, anything non-trivial) at one of the inner levels, or flatten the wrapping to ≤ 2 nested levels. Gated nesting at any depth elaborates correctly.
+
+#### Node-less composite with only a passthrough drops the signal ([#147](https://github.com/simtenHQ/simten/issues/147))
+
+A composite with `nodes: {}` and only an `inputs.x.to(outputs.y)` connection — essentially a "labeled wire" composite — elaborates without error but the simulator returns 0 instead of the input value.
+
+**How to recognize it:** a passthrough composite with no internal nodes produces 0 at its output regardless of input. **Workaround:** add at least one internal node to any composite, even a dummy gate wired off to one side. The `Passthrough` fixture in `chained-passthrough.test.ts` uses the canonical workaround pattern — `inputs.x.to(d.in)` against a `Not` whose output is unused.
+
 ## Verilog export
 
 ### Hierarchical mode not yet implemented
