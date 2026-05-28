@@ -1012,13 +1012,13 @@ function DemoGallery() {
             title="Export to Verilog"
             description={
               <>
-                Synthesizable primitives export to structural Verilog. The RV32I CPU and Snake both flash to a ULX3S; the CPU is cross-validated against iverilog cycle-by-cycle.{" "}
+                Synthesizable primitives export to structural Verilog. The RV32I CPU and Snake both flash to a ULX3S; the CPU is cross-validated against iverilog cycle-by-cycle. Running it from a clone needs the synth / verify / compile services started locally (Docker; <code className="text-xs">pnpm dev:synth</code>, <code className="text-xs">dev:verifier</code>, <code className="text-xs">dev:compiler</code>).{" "}
                 <Link
                   to="/docs/$"
                   params={{ _splat: "hardware" }}
                   className="text-blue-600 dark:text-blue-400 hover:underline"
                 >
-                  How it works →
+                  Setup & how it works →
                 </Link>
               </>
             }
