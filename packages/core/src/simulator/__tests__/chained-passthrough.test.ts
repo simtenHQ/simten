@@ -11,6 +11,7 @@ import { describe, it, expect } from 'vitest';
 import { simulate } from '../../sim/simulate.js';
 import { circuit, bit } from '../../circuit/index.js';
 import { Not } from '../../std/index.js';
+import { assertFlatCircuitInvariants, elaborateBuilt } from './_invariants.js';
 
 // Composite whose output is a DIRECT wire from its input (plus a dummy gate so
 // it isn't a degenerate node-less composite — mirrors a real combinational
@@ -44,7 +45,16 @@ function makePassthroughChain(n: number) {
 describe('chained composite passthrough wires (#138)', () => {
   for (const depth of [1, 2, 3, 4, 8]) {
     it(`propagates a feedthrough through ${depth} chained composite(s)`, () => {
-      const sim = simulate(makePassthroughChain(depth));
+      const chain = makePassthroughChain(depth);
+
+      // Structural net: the helper from #140 also runs on the #138 regression
+      // surface. Sanity-checks that adding the invariants helper doesn't
+      // regress the #138 fix — if we silently broke the elaborator and the
+      // behavioural test still happened to pass, the invariants would catch
+      // dangling composite paths or zero-driver outputs.
+      assertFlatCircuitInvariants(elaborateBuilt(chain));
+
+      const sim = simulate(chain);
       try {
         sim.set({ x: 1 });
         expect(sim.get('y')).toBe(1);
