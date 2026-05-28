@@ -32,6 +32,12 @@ export function SiteFooter() {
           <a href="/docs" className="transition-colors hover:text-foreground">
             Docs
           </a>
+          <Link to="/privacy" className="transition-colors hover:text-foreground">
+            Privacy
+          </Link>
+          <Link to="/terms" className="transition-colors hover:text-foreground">
+            Terms
+          </Link>
           <a
             href="https://github.com/simtenHQ/simten"
             target="_blank"

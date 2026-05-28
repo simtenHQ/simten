@@ -9,6 +9,8 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as TermsRouteImport } from './routes/terms'
+import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as CircuitRouteImport } from './routes/circuit'
 import { Route as BlogRouteImport } from './routes/blog'
 import { Route as IndexRouteImport } from './routes/index'
@@ -37,6 +39,16 @@ import { Route as BlogAesInHardwareRouteImport } from './routes/blog/aes-in-hard
 import { Route as ApiSearchRouteImport } from './routes/api/search'
 import { Route as CircuitSHashRouteImport } from './routes/circuit_.s.$hash'
 
+const TermsRoute = TermsRouteImport.update({
+  id: '/terms',
+  path: '/terms',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrivacyRoute = PrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const CircuitRoute = CircuitRouteImport.update({
   id: '/circuit',
   path: '/circuit',
@@ -180,6 +192,8 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/blog': typeof BlogRouteWithChildren
   '/circuit': typeof CircuitRoute
+  '/privacy': typeof PrivacyRoute
+  '/terms': typeof TermsRoute
   '/api/search': typeof ApiSearchRoute
   '/blog/aes-in-hardware': typeof BlogAesInHardwareRoute
   '/blog/breakout-in-hardware': typeof BlogBreakoutInHardwareRoute
@@ -208,6 +222,8 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/circuit': typeof CircuitRoute
+  '/privacy': typeof PrivacyRoute
+  '/terms': typeof TermsRoute
   '/api/search': typeof ApiSearchRoute
   '/blog/aes-in-hardware': typeof BlogAesInHardwareRoute
   '/blog/breakout-in-hardware': typeof BlogBreakoutInHardwareRoute
@@ -238,6 +254,8 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/blog': typeof BlogRouteWithChildren
   '/circuit': typeof CircuitRoute
+  '/privacy': typeof PrivacyRoute
+  '/terms': typeof TermsRoute
   '/api/search': typeof ApiSearchRoute
   '/blog/aes-in-hardware': typeof BlogAesInHardwareRoute
   '/blog/breakout-in-hardware': typeof BlogBreakoutInHardwareRoute
@@ -269,6 +287,8 @@ export interface FileRouteTypes {
     | '/'
     | '/blog'
     | '/circuit'
+    | '/privacy'
+    | '/terms'
     | '/api/search'
     | '/blog/aes-in-hardware'
     | '/blog/breakout-in-hardware'
@@ -297,6 +317,8 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/circuit'
+    | '/privacy'
+    | '/terms'
     | '/api/search'
     | '/blog/aes-in-hardware'
     | '/blog/breakout-in-hardware'
@@ -326,6 +348,8 @@ export interface FileRouteTypes {
     | '/'
     | '/blog'
     | '/circuit'
+    | '/privacy'
+    | '/terms'
     | '/api/search'
     | '/blog/aes-in-hardware'
     | '/blog/breakout-in-hardware'
@@ -356,6 +380,8 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   BlogRoute: typeof BlogRouteWithChildren
   CircuitRoute: typeof CircuitRoute
+  PrivacyRoute: typeof PrivacyRoute
+  TermsRoute: typeof TermsRoute
   ApiSearchRoute: typeof ApiSearchRoute
   CircuitEncodedRoute: typeof CircuitEncodedRoute
   CpuRv32iRoute: typeof CpuRv32iRoute
@@ -370,6 +396,20 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/terms': {
+      id: '/terms'
+      path: '/terms'
+      fullPath: '/terms'
+      preLoaderRoute: typeof TermsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/privacy': {
+      id: '/privacy'
+      path: '/privacy'
+      fullPath: '/privacy'
+      preLoaderRoute: typeof PrivacyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/circuit': {
       id: '/circuit'
       path: '/circuit'
@@ -602,6 +642,8 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   BlogRoute: BlogRouteWithChildren,
   CircuitRoute: CircuitRoute,
+  PrivacyRoute: PrivacyRoute,
+  TermsRoute: TermsRoute,
   ApiSearchRoute: ApiSearchRoute,
   CircuitEncodedRoute: CircuitEncodedRoute,
   CpuRv32iRoute: CpuRv32iRoute,
