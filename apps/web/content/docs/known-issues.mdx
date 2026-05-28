@@ -18,6 +18,22 @@ Running `pnpm -r test` against `main` produces 11 failing tests:
 
 These failures are not caused by user circuits — they live entirely in core test fixtures and don't affect simulation of circuits you write. They are documented here rather than hidden because shipping with red tests is its own signal: **treat the test-pass rate as "all but these 11"** until they're fixed.
 
+## Verilog export
+
+### Hierarchical mode not yet implemented
+
+`verilog_export` currently emits a single flat module. The `mode: 'hierarchical'` option is accepted but not yet implemented (see `packages/core/src/verilog/exporter.ts`) — composite circuits are inlined into the top module rather than emitted as separate `module` declarations.
+
+**How to recognize it:** the exported Verilog contains a single top-level module regardless of how deeply nested the source circuit is. **Workaround:** flat export is fully functional for synthesis (Yosys and nextpnr accept it); use it as-is. If you need hierarchical Verilog for readability or third-party tool consumption, post-process the output or open an issue.
+
+## VCD parsing
+
+### `$dumpoff` not handled per spec
+
+The MCP VCD parser (`packages/mcp/src/lib/vcd-parser.ts`) does not yet drive all signals to `x` on `$dumpoff`. Most simulators we trace from (including our own) do not emit `$dumpoff`, so this is rarely observable, but VCD files produced by Icarus Verilog or commercial tools with `$dumpoff` directives will read back missing the `x` transitions.
+
+**How to recognize it:** waveforms re-imported via `read_waveform` show the last-known value across a `$dumpoff` window instead of `x`. **Workaround:** none currently; file an issue if this affects your flow.
+
 ## Sim-only primitives (not synthesizable)
 
 Some stdlib primitives exist for visualisation/debugging and are not part of the Verilog export. They simulate fine, but they will be excluded from any synthesized output. They are marked `meta: { synthesizable: false }` in `@simten/core/std`:
