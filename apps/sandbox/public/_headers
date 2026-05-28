@@ -1,2 +1,2 @@
 /*
-  Content-Security-Policy: connect-src 'self' https://esm.sh;
+  Content-Security-Policy: default-src 'none'; script-src 'self' 'unsafe-eval' blob: https://esm.sh; connect-src 'self' https://esm.sh; worker-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none';

