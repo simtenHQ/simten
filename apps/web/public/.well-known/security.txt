@@ -1,0 +1,12 @@
+# Security contact for simten.dev — RFC 9116 (https://www.rfc-editor.org/rfc/rfc9116)
+#
+# Preferred channel is GitHub's private vulnerability advisory flow. Email
+# fallback is available if you don't have a GitHub account or prefer email.
+# See SECURITY.md in the repository for the full policy.
+
+Contact: https://github.com/simtenHQ/simten/security/advisories/new
+Contact: mailto:security@simten.dev
+Expires: 2027-05-29T00:00:00.000Z
+Preferred-Languages: en
+Canonical: https://simten.dev/.well-known/security.txt
+Policy: https://github.com/simtenHQ/simten/blob/main/SECURITY.md
