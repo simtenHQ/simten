@@ -54,6 +54,7 @@ function createTestContext(
 
   const portValues = {
     values,
+    initialized: new Uint8Array(totalPorts),
   } as unknown as NumericPortValues;
 
   const ctx: EvalContext = {
