@@ -47,13 +47,33 @@ const _checks: CheckSummary[] = [];
 const _failures: VerifyFailure[] = [];
 let _ran = false;
 let _reported = false;
+let _hookArmed = false;
 
 const hasProcess = typeof process !== 'undefined';
 const underVitest = hasProcess && !!process.env.VITEST;
 
+/**
+ * Arm the beforeExit safety net that emits a contract error if the testbench
+ * forgets `verify.run()`. Called the first time the harness is genuinely
+ * engaged (declareOracle / verify.check / verify.exhaustive). Importing the
+ * module without calling any of these — e.g. consumers using only types or
+ * helpers — leaves the hook un-armed, so bare imports don't poison stdout
+ * or force exit 1. Critical because the MCP server speaks JSON-RPC over
+ * stdout and any extra JSON would corrupt the protocol.
+ */
+function armExitHook(): void {
+  if (_hookArmed || !hasProcess || underVitest) return;
+  _hookArmed = true;
+  process.on('beforeExit', () => {
+    if (_ran || _reported) return;
+    emitError('verify.run() was never called — end your testbench with verify.run().');
+  });
+}
+
 /** Declare the oracle for this testbench (the human/vitest path). */
 export function declareOracle(o: OracleDecl): void {
   _oracle = o;
+  armExitHook();
 }
 
 /** Optional: label the circuit under test for the report. */
@@ -69,6 +89,7 @@ interface CheckOpts {
 export const verify = {
   /** Property-based check. Uses fc.check (never throws) for structured results. */
   check(name: string, property: fc.IRawProperty<unknown>, opts?: CheckOpts): void {
+    armExitHook();
     if (opts?.oracle) _oracle = opts.oracle;
     const runs = opts?.numRuns ?? DEFAULT_NUM_RUNS;
     // fc.check is sync for sync properties; narrow away the async union member.
@@ -102,6 +123,7 @@ export const verify = {
     predicate: (...vals: number[]) => boolean | void,
     opts?: { oracle?: OracleDecl },
   ): void {
+    armExitHook();
     if (opts?.oracle) _oracle = opts.oracle;
     const total = spaces.reduce((a, b) => a * b, 1);
     if (total > EXHAUSTIVE_CUTOFF) {
@@ -195,12 +217,8 @@ function setExit(code: number): void {
   if (hasProcess) process.exitCode = code;
 }
 
-// Safety net: if the testbench forgot to call verify.run(), emit a precise
-// contract error instead of exiting 0 with no JSON block (which would otherwise
-// be an unclassifiable "crash" for the tool).
-if (hasProcess && !underVitest) {
-  process.on('beforeExit', () => {
-    if (_ran || _reported) return;
-    emitError('verify.run() was never called — end your testbench with verify.run().');
-  });
-}
+// Safety net (forgot-verify.run) is now armed lazily inside declareOracle/
+// verify.check/verify.exhaustive — see armExitHook() above. Arming at top
+// level would fire for any consumer that imports this module for types or
+// helpers without engaging the harness, poisoning their stdout and forcing
+// exit 1. See round-3 cold-test feedback.
