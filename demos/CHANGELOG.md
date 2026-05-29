@@ -1,5 +1,13 @@
 # @simten/demos
 
+## 0.0.5
+
+### Patch Changes
+
+- Updated dependencies [3e4aaeb]
+- Updated dependencies [3e4aaeb]
+  - @simten/core@0.2.3
+
 ## 0.0.4
 
 ### Patch Changes
