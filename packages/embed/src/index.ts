@@ -5,7 +5,7 @@ export type { CircuitEmbedProps, CircuitEmbedHandle } from './CircuitEmbed';
 export { useCircuitSimulator, builtFromIR } from './hooks/useCircuitSimulator';
 export type { SimulatorState, SimulatorActions, UseCircuitSimulatorOptions } from './hooks/useCircuitSimulator';
 export { CircuitCanvas } from '@simten/ui/canvas';
-export type { CircuitCanvasProps } from '@simten/ui/canvas';
+export type { CircuitCanvasProps, CircuitLayout } from '@simten/ui/canvas';
 export { ErrorBoundary } from './components/ErrorBoundary';
 export { ErrorDisplay } from './components/ErrorDisplay';
 export type { SimulatorError } from './components/ErrorDisplay';
