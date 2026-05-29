@@ -79,7 +79,8 @@
       "./share": {
         "types": "./dist/share/index.d.ts",
         "import": "./dist/share/index.js"
-      }
+      },
+      "./package.json": "./package.json"
     },
     "access": "public"
   },
@@ -119,5 +120,8 @@
     "fast-check": "^4.5.3",
     "typescript": "^5",
     "vitest": "^4.0.17"
+  },
+  "engines": {
+    "node": ">=20"
   }
 }

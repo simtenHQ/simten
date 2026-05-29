@@ -47,7 +47,8 @@
       "./styles.css": "./dist/styles.css",
       "./webcomponent": {
         "default": "./dist/circuit-embed.js"
-      }
+      },
+      "./package.json": "./package.json"
     },
     "access": "public"
   },
@@ -88,5 +89,8 @@
     "tailwindcss": "^4",
     "typescript": "^5",
     "vite": "^7.1.7"
+  },
+  "engines": {
+    "node": ">=20"
   }
 }

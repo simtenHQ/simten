@@ -85,4 +85,4 @@ Claude: [calls get_circuit_state to read live values]
 
 ## License
 
-Business Source License 1.1 — free to use, cannot be offered as a competing commercial service. Converts to Apache 2.0 after 4 years.
+Apache-2.0

@@ -165,4 +165,4 @@ Components are skipped on the server and render only on the client. The layout e
 
 ## License
 
-Business Source License 1.1
+Apache-2.0
