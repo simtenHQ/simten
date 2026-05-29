@@ -14,8 +14,12 @@
 
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
-import { runTsx, extractDelimitedJson } from '../lib/host-run.js';
+import { dirname, resolve } from 'node:path';
+import { runTsx, extractDelimitedJson, checkDepsResolvable, detectPackageManager, installCommand } from '../lib/host-run.js';
 import { VERIFY_JSON_BEGIN, VERIFY_JSON_END, type VerifyResult, type VerifyContractError } from '@simten/core/verify';
+
+/** Deps the testbench's tsx subprocess needs in the user's project node_modules. */
+const REQUIRED_DEPS = ['@simten/core', 'fast-check'] as const;
 
 const DESCRIPTION = `Run a self-checking testbench FILE against a circuit and report the result AT A DECLARED ORACLE TIER. simulate_circuit shows what a circuit does; verify_circuit tells you whether it's correct — a design isn't "done" until it passes at the highest feasible tier.
 
@@ -61,6 +65,22 @@ export function registerVerifyTool(server: McpServer): void {
       timeoutMs: z.number().int().min(1).optional().describe('Wall-clock budget in ms (default 30000); the subprocess is killed past it'),
     },
     async ({ testbench, oracle, timeoutMs }) => {
+      // Pre-flight: check that @simten/core + fast-check resolve from the
+      // testbench's directory. The MCP itself bundles them but the tsx
+      // subprocess runs in the user's project context, so Node's resolver
+      // only walks up from the testbench file. Cryptic ERR_MODULE_NOT_FOUND
+      // from tsx is the failure mode otherwise; this turns it into an
+      // actionable install command with the correct package manager.
+      const absoluteTestbench = resolve(testbench);
+      const missing = checkDepsResolvable(absoluteTestbench, [...REQUIRED_DEPS]);
+      if (missing.length > 0) {
+        const pm = detectPackageManager(dirname(absoluteTestbench));
+        return errorResult(
+          `verify_circuit needs ${missing.map((m) => `\`${m}\``).join(' and ')} installed in this project. Run this once and verify_circuit will work for every future call in this project:\n\n    ${installCommand(pm, missing)}\n\nIf this directory isn't part of a Node project yet, create one first: \`cd ${dirname(absoluteTestbench)} && npm init -y\` (or whichever package manager you use).`,
+          { missing_dependencies: missing, suggested_command: installCommand(pm, missing), package_manager_detected: pm },
+        );
+      }
+
       const run = await runTsx(testbench, {
         env: { SIMTEN_VERIFY_ORACLE: JSON.stringify(oracle) },
         timeoutMs: timeoutMs ?? 30_000,

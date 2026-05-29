@@ -27,6 +27,16 @@ That's it. `--scope user` makes simten available across every project; drop the 
 
 (If you prefer global installs over `npx`: `npm install -g @simten/mcp`, then `claude mcp add --scope user simten simten-mcp`.)
 
+### Project setup for `verify_circuit`
+
+`verify_circuit` spawns your testbench in your project's `node_modules` context — the MCP bundles `@simten/core` and `fast-check` for its own use, but Node's resolver only walks up from the testbench file, never into the MCP's install. The first time you use `verify_circuit` in a new project, install the runtime deps:
+
+```bash
+pnpm add -D @simten/core fast-check    # or npm/yarn/bun equivalent
+```
+
+If you forget, the tool returns the exact install command (auto-detecting your package manager) — no cryptic resolution errors.
+
 ### Port
 
 The server listens on `127.0.0.1:19847` for the browser WebSocket bridge. The port is currently hardcoded — running two MCP instances simultaneously will fail the second one on `EADDRINUSE`. Tracked as a follow-up; for now, only run one instance at a time.
