@@ -45,13 +45,21 @@ The `SimulationHandle` returned by `simulate()` has a plain `dispose()` method i
 
 ### Running it
 
-The snippet above is TypeScript and uses ES module syntax. Save it as `halfadder.ts` and run with [tsx](https://github.com/privatenumber/tsx):
+The snippet above is TypeScript and uses ES module syntax. `@simten/core` is ESM-only, so the consuming project needs to be in ESM mode too. Either:
 
 ```bash
+# package.json with `"type": "module"`, then:
 npx tsx halfadder.ts
 ```
 
-If you're running plain Node, you'd otherwise need `"type": "module"` in your `package.json` and a separate compile step — `tsx` skips both.
+or skip the package.json entirely by using the `.mts` extension:
+
+```bash
+# save as halfadder.mts
+npx tsx halfadder.mts
+```
+
+[tsx](https://github.com/privatenumber/tsx) handles the TypeScript transform; the ESM signal comes from `"type": "module"` or the `.mts` extension. Plain `node halfadder.ts` won't work — Node needs both the TypeScript transform and the ESM signal.
 
 ## Subpath exports
 
