@@ -6,7 +6,7 @@
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import { createSimulatorFromCircuit, type CircuitLibrary } from '@simten/core/simulator';
-import { registerEvalFunction } from '@simten/core/circuit';
+import { registerCircuitEval } from '@simten/core/circuit';
 import { useCircuitLibraryStore } from '../../stores/circuit-library-store';
 import { STDLIB_CIRCUITS } from '@simten/core/std';
 import { bitType, busType, type Circuit } from '../../types/circuit';
@@ -18,12 +18,11 @@ import { bitType, busType, type Circuit } from '../../types/circuit';
 // outputs for unregistered primitives, which let this test pass on a
 // fluke while computing nonsense. Registering the eval makes the test
 // honest about what it's testing.)
-registerEvalFunction(
-  'Add',
-  ['a', 'b'],
-  ['out'],
-  ({ a, b }) => ({ out: (((a as number) >>> 0) + ((b as number) >>> 0)) & 0xff }),
-);
+registerCircuitEval('Add', {
+  inputNames: ['a', 'b'],
+  outputNames: ['out'],
+  evalFn: ({ a, b }) => ({ out: (((a as number) >>> 0) + ((b as number) >>> 0)) & 0xff }),
+});
 
 const PRIMITIVES = STDLIB_CIRCUITS
   .map((c) => c.circuit)
