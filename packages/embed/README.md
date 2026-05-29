@@ -5,7 +5,7 @@ Embeddable interactive hardware circuits. Drop live, cycle-accurate simulations 
 ## Install
 
 ```bash
-npm install @simten/embed @simten/core
+npm install @simten/embed @simten/core react react-dom
 ```
 
 ## Usage

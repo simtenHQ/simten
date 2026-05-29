@@ -17,24 +17,19 @@ The browser can also talk back. Channel notifications let the visual editor send
 
 ## Setup
 
-Add to your Claude Code MCP config (`~/.claude/settings.json`):
-
-```json
-{
-  "mcpServers": {
-    "simten": {
-      "command": "npx",
-      "args": ["@simten/mcp"]
-    }
-  }
-}
-```
-
-Or install globally:
+Register the server with Claude Code:
 
 ```bash
-npm install -g @simten/mcp
+claude mcp add --scope user simten npx @simten/mcp
 ```
+
+That's it. `--scope user` makes simten available across every project; drop the flag for a project-local install. Verify with `claude mcp list`.
+
+(If you prefer global installs over `npx`: `npm install -g @simten/mcp`, then `claude mcp add --scope user simten simten-mcp`.)
+
+### Port
+
+The server listens on `127.0.0.1:19847` for the browser WebSocket bridge. The port is currently hardcoded — running two MCP instances simultaneously will fail the second one on `EADDRINUSE`. Tracked as a follow-up; for now, only run one instance at a time.
 
 ## Tools
 
