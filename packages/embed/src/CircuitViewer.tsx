@@ -138,7 +138,7 @@ const CircuitViewerImpl = forwardRef<CircuitViewerHandle, CircuitViewerProps>(
     // window. The hook only exposes settled states, so no debouncing is
     // needed for intermediate propagation steps.
     useEffect(() => {
-      if (!sim.ready || sim.portValues.size === 0) return;
+      if (!sim.ready || !sim.portValues || sim.portValues.size === 0) return;
       onPortValuesChangeRef.current?.(sim.portValues);
     }, [sim.ready, sim.portValues]);
 
