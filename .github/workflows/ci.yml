@@ -106,11 +106,15 @@ jobs:
         # with the build because it's checking the produced artifact.
         #
         # arethetypeswrong/cli is the natural companion check (types
-        # resolve correctly in CJS/ESM/bundler/Node10 modes) but at the
-        # time of writing v0.15.4 errors with an internal "Cannot read
-        # properties of undefined" against every input — including known-
-        # good public packages like zod — so it's deferred until that
-        # upstream bug is fixed.
+        # resolve correctly in CJS/ESM/bundler/Node10 modes) but current
+        # attw versions are broken by fflate@0.8.3 — attw's tarball
+        # extractor uses fflate's streaming Gunzip incorrectly (overwrites
+        # on each callback instead of concatenating), so the trailing
+        # empty-flush chunk fflate started emitting in 0.8.3 clobbers the
+        # decompressed data and every tarball comes out empty.
+        # Upstream: issue #258, fix #263 merged but not yet released —
+        # https://github.com/arethetypeswrong/arethetypeswrong.github.io/pull/263
+        # Re-enable here once a new attw release ships.
         run: |
           for pkg in core ui embed mcp; do
             pnpm dlx publint "packages/$pkg"
