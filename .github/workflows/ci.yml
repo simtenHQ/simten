@@ -20,7 +20,10 @@ name: CI
 #                                              the post-refactor evaluator API)
 #   6. workspace package builds               — sequential `tsc -b` + vite for
 #                                              core/ui/embed/mcp
-#   7. web production build                   — proves the web app + Cloudflare
+#   7. publish-readiness lint (publint)        — validates package.json shape +
+#                                              exports paths against the built
+#                                              dist/ for each publishable package
+#   8. web production build                   — proves the web app + Cloudflare
 #                                              Workers bundle compiles end to end
 #
 # Deferred coverage (TODO before this is "real" CI):
@@ -91,6 +94,27 @@ jobs:
         # ordering for `run` scripts by default — see issue tracker for plans
         # to evaluate turbo / nx / lage as a proper build orchestrator.
         run: pnpm --filter "./packages/*" --workspace-concurrency=1 build
+
+      - name: Publish-readiness lint (publint)
+        # Validates each publishable package's package.json shape against
+        # the built dist/: exports paths resolve to real files, types
+        # entries are correct, no deprecated patterns. Catches the
+        # "publishConfig says ./dist/foo.js but dist/foo.js doesn't exist"
+        # class of bug — which is exactly what surfaced for @simten/embed
+        # when CircuitViewer.tsx had a type error blocking the build.
+        # Runs after the workspace build (publint reads dist/) and pairs
+        # with the build because it's checking the produced artifact.
+        #
+        # arethetypeswrong/cli is the natural companion check (types
+        # resolve correctly in CJS/ESM/bundler/Node10 modes) but at the
+        # time of writing v0.15.4 errors with an internal "Cannot read
+        # properties of undefined" against every input — including known-
+        # good public packages like zod — so it's deferred until that
+        # upstream bug is fixed.
+        run: |
+          for pkg in core ui embed mcp; do
+            pnpm dlx publint "packages/$pkg"
+          done
 
       - name: Typecheck
         run: pnpm typecheck
