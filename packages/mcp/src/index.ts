@@ -41,6 +41,8 @@ const instructions = `You help developers design, simulate, and verify hardware 
 
 Write each circuit file as a **standalone TS module**: \`import { circuit, bit, bus } from '@simten/core/circuit'\`, stdlib from \`@simten/core/std\`, and **\`export\` the top-level circuit** so a testbench can import it. Real imports keep the file valid in the editor and runnable with \`tsx\`/\`vitest\`. (Tests run on the host via \`tsx\`, so npm packages resolve from \`node_modules\` — you can import a reference implementation as an oracle. Don't write import-free circuit code.)
 
+**Project setup for verify_circuit (first time per project):** the testbench's tsx subprocess needs \`@simten/core\` and \`fast-check\` resolvable from the project containing the testbench. The MCP itself bundles these but Node's resolver only walks up from the testbench file, never into the MCP's install. If you're working in a new project that doesn't have them yet, install them once up front (\`pnpm add -D @simten/core fast-check\` or your project's equivalent) — verify_circuit will give you the exact command in its error message if you forget. After that, no further setup is needed.
+
 ## Circuit API
 
 ${builderAPI}
