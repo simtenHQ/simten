@@ -75,7 +75,8 @@
         "import": "./dist/util/test-name.js"
       },
       "./bundle": "./dist/bundle.d.ts",
-      "./editor-globals": "./dist/editor-globals.dts.txt"
+      "./editor-globals": "./dist/editor-globals.dts.txt",
+      "./package.json": "./package.json"
     },
     "access": "public"
   },

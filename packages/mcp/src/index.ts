@@ -11,6 +11,11 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 
+// Read version from package.json at runtime so the MCP `initialize` response
+// reports the actual published version rather than a hand-maintained constant.
+// `with { type: 'json' }` is the standard import-attribute form (Node 20+, TS 5.3+).
+import pkg from '../package.json' with { type: 'json' };
+
 import { registerCheckTool } from './tools/check.js';
 import { registerSimulateTool } from './tools/simulate.js';
 import { registerVerifyTool } from './tools/verify.js';
@@ -76,7 +81,7 @@ Messages the user types into the in-app chat arrive as \`<channel source="simten
 const server = new McpServer(
   {
     name: 'simten',
-    version: '0.1.0',
+    version: pkg.version,
   },
   {
     capabilities: {
