@@ -34,13 +34,14 @@ const HalfAdder = circuit('HalfAdder', {
   ],
 });
 
-using sim = simulate(HalfAdder);
-sim.setInput('a', 1);
-sim.setInput('b', 1);
+const sim = simulate(HalfAdder);
+sim.set({ a: 1, b: 1 });
 sim.tick();
-console.log(sim.getOutput('sum'));   // 0
-console.log(sim.getOutput('carry')); // 1
+console.log(sim.get('sum'));    // 0
+console.log(sim.get('carry'));  // 1
 ```
+
+The `SimulationHandle` returned by `simulate()` has a plain `dispose()` method if you need explicit cleanup; explicit-resource-management (`using`) is not currently supported.
 
 ## Subpath exports
 
