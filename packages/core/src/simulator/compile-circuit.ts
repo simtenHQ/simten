@@ -9,7 +9,6 @@ import type { CircuitLibrary } from '../types/circuit.js';
 import type { FlatCircuit, PrimitiveState } from '../types/simulator.js';
 import { TOP_LEVEL_NODE } from '../types/simulator.js';
 import type { NumericCircuit, NumericSequentialState } from './numeric-types.js';
-import { PRIMITIVE_TYPE_INDICES } from './numeric-types.js';
 import { ensureEvaluatorRegistered } from './eval-bridge.js';
 
 /**
