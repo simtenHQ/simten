@@ -125,7 +125,7 @@ export function TruthTable({
                       ? "bg-blue-500/10 ring-1 ring-inset ring-blue-500/40"
                       : ""
                   }
-                  aria-current={isHighlighted ? "row" : undefined}
+                  aria-current={isHighlighted ? "true" : undefined}
                 >
                   {row.map((cell, ci) => {
                     const col = columns[ci];

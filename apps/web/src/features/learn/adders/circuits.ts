@@ -9,7 +9,7 @@
  * that exercises the concept the corresponding section is teaching.
  */
 
-import { circuit, bit, bus } from "@simten/core/circuit";
+import { circuit, bit } from "@simten/core/circuit";
 import type { BlogCircuit } from "@/features/blog/types";
 import {
   And,
