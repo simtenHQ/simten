@@ -25,6 +25,8 @@ claude mcp add --scope user simten npx @simten/mcp
 
 That's it. `--scope user` makes simten available across every project; drop the flag for a project-local install. Verify with `claude mcp list`.
 
+`verify_circuit`'s testbench runs in your project's `node_modules` context, so the project needs `@simten/core` and `fast-check` installed (the tool tells you the exact command if you forget).
+
 (If you prefer global installs over `npx`: `npm install -g @simten/mcp`, then `claude mcp add --scope user simten simten-mcp`.)
 
 ### Port
