@@ -92,7 +92,7 @@ AI assistance is opt-in.
 
 ![Claude generates a half-adder circuit and runs it live in the browser](docs/assets/claude-demo.gif)
 
-See `packages/mcp/README.md` for setup.
+**Setup:** see [`packages/mcp/README.md`](packages/mcp/README.md) — one `claude mcp add` command, then you're talking to your circuits.
 
 ## Project Structure
 
