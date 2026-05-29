@@ -6,7 +6,7 @@
   "author": "Charles Harris",
   "repository": {
     "type": "git",
-    "url": "https://github.com/simtenHQ/simten.git",
+    "url": "git+https://github.com/simtenHQ/simten.git",
     "directory": "packages/mcp"
   },
   "keywords": [
