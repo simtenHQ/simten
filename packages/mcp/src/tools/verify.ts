@@ -76,8 +76,17 @@ export function registerVerifyTool(server: McpServer): void {
       const parsed = extractDelimitedJson<VerifyResult | VerifyContractError>(run.stdout, VERIFY_JSON_BEGIN, VERIFY_JSON_END);
       if (!parsed) {
         // Nonzero exit with no JSON block = crash/compile error in the testbench.
+        // The single most common cause for first-time users is missing deps in
+        // the project — the MCP bundles @simten/core + fast-check for its own
+        // use but Node only walks up from the testbench file. If stderr shows
+        // a module-resolution error, suggest the install. Cheap hint, no
+        // detection plumbing.
+        const looksLikeMissingDeps = /Cannot find (module|package)|ERR_MODULE_NOT_FOUND/.test(run.stderr);
+        const hint = looksLikeMissingDeps
+          ? ' Looks like a missing dep — try `pnpm add -D @simten/core fast-check` (or npm/yarn/bun equivalent) in this project.'
+          : '';
         return errorResult(
-          `Testbench produced no verify result (exit ${run.exitCode}). Likely a crash or compile error.`,
+          `Testbench produced no verify result (exit ${run.exitCode}). Likely a crash or compile error.${hint}`,
           { stderr_tail: run.stderr.slice(-2000), stdout_tail: run.stdout.slice(-1000) },
         );
       }
