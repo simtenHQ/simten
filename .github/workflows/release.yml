@@ -1,0 +1,88 @@
+name: Release
+
+# Tier 2 publish flow via @changesets/action + npm Trusted Publishing (OIDC).
+#
+# On every push to main:
+#   1. If `.changeset/*.md` files exist, the action opens (or updates) a
+#      "Version Packages" PR that consumes them and bumps versions.
+#   2. If no pending changesets exist (i.e. a Version Packages PR was just
+#      merged), the action runs `pnpm changeset publish`, which publishes
+#      each newly-versioned package to npm via OIDC.
+#
+# No long-lived NPM_TOKEN secret is needed — Trusted Publishing is configured
+# per-package on npmjs.com (Settings → Publishing → Trusted publisher) to
+# trust this workflow file in this repo. The OIDC handshake happens at
+# publish time and produces a single-use credential scoped to that run.
+#
+# Setup steps for first-time enablement (one-shot):
+#   1. Bootstrap-publish each package manually with `npm login` so the
+#      packages exist on npm (Trusted Publishing can't be configured on
+#      a package that doesn't yet exist).
+#   2. On each package page on npmjs.com, configure a Trusted Publisher:
+#      provider GitHub Actions, repo simtenHQ/simten, workflow filename
+#      release.yml, environment blank.
+#   3. After that, every subsequent release happens via this workflow.
+
+on:
+  push:
+    branches: [main]
+
+# Prevent two release workflows racing on a fast push burst.
+concurrency: ${{ github.workflow }}-${{ github.ref }}
+
+jobs:
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write       # to push version bumps + create tags
+      pull-requests: write  # to open / update the Version Packages PR
+      id-token: write       # mandatory for npm Trusted Publishing OIDC
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # Changesets diffs against history to know which packages
+          # changed; a shallow clone confuses it.
+          fetch-depth: 0
+
+      - name: Setup pnpm
+        # Version inferred from `packageManager` in package.json
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Upgrade npm for Trusted Publishing OIDC support
+        # `npm publish` only supports OIDC-based Trusted Publishing from
+        # npm CLI 11.5.1 onward. actions/setup-node@v4 with node-version: 20
+        # ships with npm 10.x; upgrading here is the smallest valid fix.
+        run: npm install -g npm@latest
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build packages
+        # Same build step as ci.yml — sequential because @simten/mcp has a
+        # composite project reference to @simten/core and would race on
+        # default workspace concurrency. The publish step below ships dist/
+        # so the build has to complete cleanly first.
+        run: pnpm --filter "./packages/*" --workspace-concurrency=1 build
+
+      - name: Create Release PR or publish
+        # When .changeset/*.md exists: opens/updates the Version Packages PR.
+        # When the PR is merged (no pending changesets): runs `publish:`
+        # below, which invokes `pnpm changeset publish` → `npm publish` for
+        # each package via OIDC.
+        uses: changesets/action@v1
+        with:
+          publish: pnpm changeset publish
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Sign published tarballs with a cryptographic attestation tying
+          # them to this workflow run. Surfaces as a "Provenance" badge on
+          # the package page on npmjs.com — free supply-chain signal.
+          NPM_CONFIG_PROVENANCE: true
