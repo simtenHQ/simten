@@ -43,6 +43,16 @@ console.log(sim.get('carry'));  // 1
 
 The `SimulationHandle` returned by `simulate()` has a plain `dispose()` method if you need explicit cleanup; explicit-resource-management (`using`) is not currently supported.
 
+### Running it
+
+The snippet above is TypeScript and uses ES module syntax. Save it as `halfadder.ts` and run with [tsx](https://github.com/privatenumber/tsx):
+
+```bash
+npx tsx halfadder.ts
+```
+
+If you're running plain Node, you'd otherwise need `"type": "module"` in your `package.json` and a separate compile step — `tsx` skips both.
+
 ## Subpath exports
 
 | Subpath | What's in it |
