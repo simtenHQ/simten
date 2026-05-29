@@ -76,7 +76,8 @@
       },
       "./bundle": "./dist/bundle.d.ts",
       "./editor-globals": "./dist/editor-globals.dts.txt"
-    }
+    },
+    "access": "public"
   },
   "files": [
     "dist"

@@ -36,7 +36,8 @@
         "types": "./dist/schemas/index.d.ts",
         "import": "./dist/schemas/index.js"
       }
-    }
+    },
+    "access": "public"
   },
   "files": [
     "dist",
