@@ -80,7 +80,8 @@
         "types": "./dist/share/index.d.ts",
         "import": "./dist/share/index.js"
       }
-    }
+    },
+    "access": "public"
   },
   "files": [
     "dist"

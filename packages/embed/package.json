@@ -48,7 +48,8 @@
       "./webcomponent": {
         "default": "./dist/circuit-embed.js"
       }
-    }
+    },
+    "access": "public"
   },
   "files": [
     "dist"
