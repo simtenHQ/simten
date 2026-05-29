@@ -1,5 +1,12 @@
 # @simten/demos
 
+## 0.0.6
+
+### Patch Changes
+
+- Updated dependencies [e87c2a5]
+  - @simten/core@0.2.4
+
 ## 0.0.5
 
 ### Patch Changes
