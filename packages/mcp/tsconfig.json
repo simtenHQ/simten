@@ -16,8 +16,16 @@
     "resolveJsonModule": true
   },
   "references": [
-    { "path": "../core" }
+    {
+      "path": "../core"
+    }
   ],
-  "include": ["src/**/*.ts"],
-  "exclude": ["node_modules", "dist"]
+  "include": [
+    "src/**/*.ts"
+  ],
+  "exclude": [
+    "**/*.test.ts",
+    "dist",
+    "node_modules"
+  ]
 }

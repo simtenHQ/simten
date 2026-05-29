@@ -44,7 +44,7 @@
     "bin"
   ],
   "scripts": {
-    "build": "tsc -b",
+    "build": "rm -rf dist *.tsbuildinfo && tsc -b",
     "dev": "tsc -b --watch",
     "test": "vitest run",
     "test:watch": "vitest"

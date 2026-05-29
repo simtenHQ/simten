@@ -83,7 +83,7 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsc -b && rollup -c rollup.dts.config.mjs && node scripts/build-editor-globals.mjs",
+    "build": "rm -rf dist *.tsbuildinfo && tsc -b && rollup -c rollup.dts.config.mjs && node scripts/build-editor-globals.mjs",
     "test": "pnpm run build && vitest run",
     "test:watch": "vitest"
   },
