@@ -34,7 +34,7 @@
     "fpga:console": "TTY=$(ls /dev/cu.usbserial-* 2>/dev/null | head -1); [ -z \"$TTY\" ] && TTY=/dev/ttyUSB0; echo \"Opening $TTY (exit: Ctrl-A Ctrl-X)\"; picocom --nolock --noreset -b 115200 $TTY"
   },
   "devDependencies": {
-    "@changesets/cli": "^2.29.8",
+    "@changesets/cli": "^2.31.0",
     "dotenv-cli": "^11.0.0",
     "ts-morph": "^28.0.0",
     "tsx": "^4.19.2",
