@@ -26,6 +26,10 @@ name: Release
 on:
   push:
     branches: [main]
+  # Enables `gh workflow run release.yml --ref main` for manual re-runs when
+  # something needs replaying without a fresh commit (e.g. transient infra
+  # failure during publish).
+  workflow_dispatch:
 
 # Prevent two release workflows racing on a fast push burst.
 concurrency: ${{ github.workflow }}-${{ github.ref }}
