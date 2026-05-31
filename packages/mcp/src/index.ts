@@ -139,3 +139,42 @@ getOrCreateServer()
   .catch((err: unknown) => {
     process.stderr.write(`[simten-mcp] WS server failed to start: ${err instanceof Error ? err.message : String(err)}\n`);
   });
+
+// --- Lifecycle: exit when the parent (Claude Code) goes away ----------------
+// The eagerly-started WS server keeps a listening socket (and per-connection
+// ping intervals) on the event loop, so this process will NOT terminate on its
+// own when stdin closes. Without an explicit exit it orphans — outliving its
+// Claude session and holding its studio port — which is how dozens of stale
+// instances pile up. Wire every parent-death signal to one shutdown that closes
+// the studio server and exits.
+let shuttingDown = false;
+function shutdown(reason: string): void {
+  if (shuttingDown) return;
+  shuttingDown = true;
+  process.stderr.write(`[simten-mcp] shutting down (${reason})\n`);
+  try {
+    getPreviewServer()?.close();
+  } catch {
+    /* best effort — exit regardless */
+  }
+  process.exit(0);
+}
+
+// stdin EOF/close is the reliable lifeline: when the MCP client closes the pipe
+// (or the wrapper chain dies), our stdin ends even if no signal is delivered.
+process.stdin.on('end', () => shutdown('stdin end'));
+process.stdin.on('close', () => shutdown('stdin close'));
+
+// The MCP transport closing means the client disconnected; chain any handler the
+// SDK already installed, then shut down.
+const prevOnClose = transport.onclose;
+transport.onclose = () => {
+  prevOnClose?.();
+  shutdown('transport close');
+};
+
+// Make signals actually terminate. (preview-singleton also closes the studio on
+// these, but its handlers don't exit — which overrides Node's default and leaves
+// the process alive; this guarantees termination so `kill` works without -9.)
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT', () => shutdown('SIGINT'));
