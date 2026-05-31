@@ -44,6 +44,10 @@ export interface MCPCallbacks {
 }
 
 const RETRY_INTERVAL = 5000;
+/** Reconnect a bounded number of times before giving up. The MCP's port can move
+ *  (dynamic port) and its token is per-process, so a dropped socket may mean the
+ *  server is gone or has a new identity — don't loop on a stale port forever. */
+const MAX_RECONNECT_ATTEMPTS = 5;
 const LS_KEY = 'simten:mcp-connection';
 
 function saveConnectionParams(params: { token: string; port: number }) {
@@ -96,6 +100,7 @@ export function useMCPConnection(callbacks: MCPCallbacks) {
   // Store connection params (from fragment or auto-discovery)
   const connectionRef = useRef<{ token: string; port: number } | null>(null);
   const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const reconnectAttemptsRef = useRef(0);
 
   const connect = useCallback((port: number, token: string) => {
     // Close existing connection
@@ -111,6 +116,7 @@ export function useMCPConnection(callbacks: MCPCallbacks) {
 
     ws.onopen = () => {
       setStatus('connected');
+      reconnectAttemptsRef.current = 0; // fresh budget for the next disconnect
       // Register this tab as a session
       ws.send(JSON.stringify({
         type: 'register',
@@ -182,14 +188,24 @@ export function useMCPConnection(callbacks: MCPCallbacks) {
         setStatus('disconnected');
         return;
       }
-      if (connectionRef.current) {
-        // We had a valid connection — try to reconnect
+      if (connectionRef.current && reconnectAttemptsRef.current < MAX_RECONNECT_ATTEMPTS) {
+        // We had a valid connection — retry a bounded number of times against the
+        // last-known port. Covers a transient drop or an MCP that restarted on the
+        // same (preferred) port. Don't loop forever: the port may have moved.
+        reconnectAttemptsRef.current += 1;
         setStatus('reconnecting');
         retryTimerRef.current = setTimeout(() => {
           const conn = connectionRef.current;
           if (conn) connect(conn.port, conn.token);
         }, RETRY_INTERVAL);
       } else {
+        // No prior connection, or retries exhausted: drop the stale params so a
+        // returning tab can't keep hammering — or silently mis-attach to — a port
+        // that has moved. The next show_circuit delivers a fresh fragment and
+        // reconnects cleanly.
+        try { localStorage.removeItem(LS_KEY); } catch { /* ignore */ }
+        connectionRef.current = null;
+        reconnectAttemptsRef.current = 0;
         setStatus('disconnected');
       }
     };
