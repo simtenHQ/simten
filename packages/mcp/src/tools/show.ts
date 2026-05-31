@@ -10,7 +10,7 @@ import { z } from 'zod';
 import { exec } from 'node:child_process';
 import { resolve } from 'node:path';
 import { readCircuitSource } from '../lib/file-reader.js';
-import { TI_URL } from '../lib/config.js';
+import { SIMTEN_URL } from '../lib/config.js';
 import {
   getOrCreateServer,
   getPreviewServer,
@@ -146,7 +146,7 @@ export function registerShowTools(server: McpServer): void {
         render = await studio.updateSourceAndAwait(read.source, session);
       } else {
         const pending = studio.updateSourceAndAwaitConnect(read.source);
-        openBrowser(`${TI_URL}/circuit#token=${studio.token}&port=${studio.port}`);
+        openBrowser(`${SIMTEN_URL}/circuit#token=${studio.token}&port=${studio.port}`);
         render = await pending;
       }
 

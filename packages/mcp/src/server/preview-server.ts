@@ -2,7 +2,7 @@ import { createServer, type IncomingMessage, type ServerResponse } from 'node:ht
 import { watchFile as fsWatchFile, unwatchFile, existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import type { CircuitState, TracesPayload, TestResultsPayload } from './types.js';
-import { TI_URL } from '../lib/config.js';
+import { SIMTEN_URL } from '../lib/config.js';
 
 export type { CircuitState, TracesPayload, TestResultsPayload };
 
@@ -24,7 +24,7 @@ export async function createPreviewServer(
   options?: { port?: number }
 ): Promise<PreviewServer> {
   const port = options?.port ?? 0;
-  const allowedOrigin = TI_URL;
+  const allowedOrigin = SIMTEN_URL;
 
   let currentSource: string | null = null;
   let cachedState: CircuitState | null = null;
