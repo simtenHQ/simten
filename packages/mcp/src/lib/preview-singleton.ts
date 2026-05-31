@@ -5,9 +5,6 @@
  * (show, state, traces, test-results).
  */
 
-import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
-import { join } from 'node:path';
-import { homedir } from 'node:os';
 import { randomUUID } from 'node:crypto';
 import type { StudioServer, CircuitState, TracesPayload, TestResultsPayload } from '../server/ws-server.js';
 
@@ -18,20 +15,20 @@ let studioServer: StudioServer | null = null;
 let browserOpened = false;
 
 /**
- * Load the persistent token from ~/.simten/token, creating it if absent.
- * Survives MCP restarts — browser's localStorage stays valid.
+ * Per-process auth token: a fresh identity each time the MCP starts. Together
+ * with the port, it uniquely identifies THIS server instance; show_circuit hands
+ * both to the browser via the URL fragment. A tab that reconnects to a different
+ * instance — a stale cached port now held by another project's MCP, or this
+ * instance after a restart — presents a token that no longer matches and is
+ * cleanly rejected (WebSocket close code 4001) instead of silently attaching to
+ * the wrong server.
+ *
+ * Previously this was persisted to ~/.simten/token so a tab survived an MCP
+ * restart, but that persistence is precisely what let a stale tab authenticate
+ * against the wrong instance (cross-instance bleed). The fragment from the next
+ * show_circuit is the authoritative way to (re)establish a tab.
  */
-function getOrCreateToken(): string {
-  const tokenPath = join(homedir(), '.simten', 'token');
-  if (existsSync(tokenPath)) {
-    const stored = readFileSync(tokenPath, 'utf8').trim();
-    if (stored) return stored;
-  }
-  const token = randomUUID();
-  mkdirSync(join(homedir(), '.simten'), { recursive: true });
-  writeFileSync(tokenPath, token, { mode: 0o600 });
-  return token;
-}
+const PROCESS_TOKEN = randomUUID();
 
 // Callback for browser → Claude channel notifications
 let onSendToClaudeCallback: ((content: string, meta: Record<string, string>) => void) | null = null;
@@ -62,7 +59,7 @@ export async function getOrCreateServer(): Promise<StudioServer> {
 
   studioServer = await createStudioServer({
     port: DEFAULT_PORT,
-    token: getOrCreateToken(),
+    token: PROCESS_TOKEN,
     onSendToClaude: (content, meta) => {
       onSendToClaudeCallback?.(content, meta);
     },
