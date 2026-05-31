@@ -28,7 +28,8 @@
     "./nodes": "./src/components/nodes/index.ts",
     "./canvas": "./src/canvas/index.ts",
     "./styles.css": "./dist/styles.css",
-    "./webcomponent": "./src/webcomponent/index.ts"
+    "./webcomponent": "./src/webcomponent/index.ts",
+    "./package.json": "./package.json"
   },
   "publishConfig": {
     "exports": {
