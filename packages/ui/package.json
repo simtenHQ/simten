@@ -32,7 +32,8 @@
     "./canvas": "./src/canvas/index.ts",
     "./waveform": "./src/waveform/WaveformViewer.tsx",
     "./sandbox": "./src/sandbox/index.ts",
-    "./share": "./src/share/index.ts"
+    "./share": "./src/share/index.ts",
+    "./package.json": "./package.json"
   },
   "publishConfig": {
     "exports": {

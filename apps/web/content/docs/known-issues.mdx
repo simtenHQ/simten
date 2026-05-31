@@ -9,15 +9,6 @@ If you hit something not listed here, please file an issue at [simtenHQ/simten](
 
 ## Correctness
 
-### 11 pre-existing test failures in `@simten/core`
-
-Running `pnpm -r test` against `main` produces 11 failing tests:
-
-- `simulator/__tests__/eval-bridge.test.ts` — 9 failures (write-output indexing into `undefined`)
-- `circuit/__tests__/circuit-to-source.test.ts` — 2 failures (state/`reg()`/`mem()` emission, bus-port serialisation)
-
-These failures are not caused by user circuits — they live entirely in core test fixtures and don't affect simulation of circuits you write. They are documented here rather than hidden because shipping with red tests is its own signal: **treat the test-pass rate as "all but these 11"** until they're fixed.
-
 ### Elaboration edge cases surfaced by audit [#140](https://github.com/simtenHQ/simten/issues/140)
 
 A focused audit of `elaboration.ts` (after fixing [#138](https://github.com/simtenHQ/simten/issues/138)) surfaced five narrow-but-real silent-correctness gaps. They are deferred to post-beta because they only bite specific unusual patterns; none affect typical circuits (gates, adders, registers, regular composites with internal nodes and gated outputs). Each is locked in by an `it.fails(...)` test in `composite-patterns.test.ts` that flips green when the fix lands.
