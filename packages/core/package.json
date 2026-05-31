@@ -34,7 +34,8 @@
     "./verify": "./src/verify/index.ts",
     "./util/test-name": "./src/util/test-name.ts",
     "./bundle": "./dist/bundle.d.ts",
-    "./editor-globals": "./dist/editor-globals.dts.txt"
+    "./editor-globals": "./dist/editor-globals.dts.txt",
+    "./package.json": "./package.json"
   },
   "publishConfig": {
     "exports": {
