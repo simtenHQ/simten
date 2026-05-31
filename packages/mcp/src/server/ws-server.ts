@@ -60,7 +60,7 @@ const DEDUP_WINDOW_MS = 500;
 export async function createStudioServer(
   options?: { port?: number; token?: string; onSendToClaude?: (content: string, meta: Record<string, string>) => void }
 ): Promise<StudioServer> {
-  const port = options?.port ?? 0;
+  const preferredPort = options?.port ?? 0;
   const token = options?.token ?? randomUUID();
 
   const sessions = new Map<string, Session>();
@@ -80,25 +80,44 @@ export async function createStudioServer(
   // the next tab to register receives the source WITH that id and acks it.
   let pendingConnectRender: string | null = null;
 
-  const wss = new WebSocketServer({ port, host: '127.0.0.1' });
-
-  const assignedPort = await new Promise<number>((resolvePort, reject) => {
-    wss.on('listening', () => {
-      const addr = wss.address();
-      if (typeof addr === 'object' && addr) {
-        resolvePort(addr.port);
-      } else {
-        reject(new Error('Failed to get server address'));
-      }
-    });
-    wss.on('error', (err) => {
-      if ((err as NodeJS.ErrnoException).code === 'EADDRINUSE') {
-        reject(new Error(`Port ${port} is already in use. Another MCP server or process may be running on this port.`));
-      } else {
+  // Bind to a single port, resolving the actual port the OS assigned.
+  // Rejects on EADDRINUSE (so the caller can fall back) and any other error.
+  function tryListen(p: number): Promise<{ wss: WebSocketServer; port: number }> {
+    return new Promise((resolveBind, reject) => {
+      const server = new WebSocketServer({ port: p, host: '127.0.0.1' });
+      server.on('listening', () => {
+        const addr = server.address();
+        if (typeof addr === 'object' && addr) {
+          resolveBind({ wss: server, port: addr.port });
+        } else {
+          server.close();
+          reject(new Error('Failed to get server address'));
+        }
+      });
+      server.on('error', (err) => {
+        // Close the half-open server before surfacing the error so it can't leak.
+        server.close();
         reject(err);
-      }
+      });
     });
-  });
+  }
+
+  // Prefer the well-known port (so a browser tab's persisted localStorage
+  // reconnects across MCP restarts), but when it's already taken — e.g. another
+  // project's MCP instance is running — fall back to an OS-assigned free port
+  // instead of failing. show_circuit advertises the real port to the browser via
+  // the URL fragment, so any port works end-to-end.
+  let wss: WebSocketServer;
+  let assignedPort: number;
+  try {
+    ({ wss, port: assignedPort } = await tryListen(preferredPort));
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code === 'EADDRINUSE' && preferredPort !== 0) {
+      ({ wss, port: assignedPort } = await tryListen(0));
+    } else {
+      throw err;
+    }
+  }
 
   wss.on('connection', (ws, req) => {
     // Validate token from query string: ws://localhost:19847?token=xxx

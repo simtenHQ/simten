@@ -2,7 +2,8 @@
  * useMCPConnection — WebSocket connection to the MCP server.
  *
  * Handles:
- * - Auto-discovery: tries ws://localhost:19847 on mount, retries every 5s
+ * - Connects using the token + port from the URL fragment (show_circuit sets
+ *   these; the port is OS-assigned and may not be the default 19847)
  * - Token auth from URL fragment (cleaned immediately)
  * - Session registration with a stable UUID
  * - Incoming messages: circuit source, traces, test results, memory data
