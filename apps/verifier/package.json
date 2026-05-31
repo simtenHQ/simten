@@ -3,7 +3,7 @@
 	"description": "Verilog verification service — cross-validates exported Verilog against Icarus Verilog (Cloudflare Container)",
 	"dependencies": {
 		"@cloudflare/containers": "0.0.30",
-		"hono": "4.11.1"
+		"hono": "4.12.18"
 	},
 	"devDependencies": {
 		"@types/node": "^20",
