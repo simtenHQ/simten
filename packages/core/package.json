@@ -97,10 +97,10 @@
   "devDependencies": {
     "@noble/hashes": "^2.2.0",
     "@types/node": "^20",
-    "rollup": "^4.60.3",
+    "rollup": "^4.60.4",
     "rollup-plugin-dts": "^6.4.1",
     "typescript": "^5",
-    "vitest": "^4.0.17"
+    "vitest": "^4.1.0"
   },
   "engines": {
     "node": ">=20"
