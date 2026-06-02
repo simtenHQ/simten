@@ -69,11 +69,21 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Build web editor (bundled into @simten/mcp)
+        # @simten/mcp bundles the built editor (dist/public) so it can serve it
+        # from localhost. This BUILD only — it does not deploy (deploy is a
+        # separate `wrangler deploy` script); MCP releases stay decoupled from
+        # the hosted site. The token is for the prerender preview, not a deploy.
+        run: pnpm --filter ./apps/web build
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+
       - name: Build packages
         # Same build step as ci.yml — sequential because @simten/mcp has a
         # composite project reference to @simten/core and would race on
         # default workspace concurrency. The publish step below ships dist/
-        # so the build has to complete cleanly first.
+        # so the build has to complete cleanly first. The mcp build's
+        # copy-editor step copies the web build above into dist/public.
         run: pnpm --filter "./packages/*" --workspace-concurrency=1 build
 
       - name: Create Release PR or publish

@@ -10,7 +10,7 @@ import { z } from 'zod';
 import { exec } from 'node:child_process';
 import { resolve } from 'node:path';
 import { readCircuitSource } from '../lib/file-reader.js';
-import { SIMTEN_URL } from '../lib/config.js';
+import { SIMTEN_URL, LOCAL_SERVE } from '../lib/config.js';
 import {
   getOrCreateServer,
   getPreviewServer,
@@ -18,6 +18,13 @@ import {
   getBrowserOpened,
   setBrowserOpened,
 } from '../lib/preview-singleton.js';
+
+/** Extract the first circuit name from source the MCP pushed (trusted), so the
+ *  tool result never depends on a browser-reported name (viewer-only). */
+function circuitNameFromSource(src: string): string {
+  const m = src.match(/circuit\(\s*['"`]([A-Za-z0-9_$]+)['"`]/);
+  return m ? m[1] : 'circuit';
+}
 
 function openBrowser(url: string) {
   if (getBrowserOpened()) return;
@@ -89,16 +96,15 @@ export function registerShowTools(server: McpServer): void {
         if (!preview) {
           return { content: [{ type: 'text' as const, text: 'No studio server is running. Call show_circuit with a circuit to start one.' }] };
         }
-        const sessionList = Array.from(preview.sessions.values()).map(s => ({
-          id: s.id,
-          page: s.page,
-          circuitName: s.circuitName,
-        }));
+        // VIEWER-ONLY: report only a count. Session fields (id/page) are
+        // browser-supplied and untrusted — never echo them into a tool result
+        // (see the security note in ws-server.ts).
+        const count = preview.sessions.size;
         return {
           content: [{
             type: 'text' as const,
-            text: sessionList.length > 0
-              ? JSON.stringify(sessionList, null, 2)
+            text: count > 0
+              ? `${count} browser tab${count === 1 ? '' : 's'} connected.`
               : 'No browser tabs are connected.',
           }],
         };
@@ -146,7 +152,23 @@ export function registerShowTools(server: McpServer): void {
         render = await studio.updateSourceAndAwait(read.source, session);
       } else {
         const pending = studio.updateSourceAndAwaitConnect(read.source);
-        openBrowser(`${SIMTEN_URL}/circuit#token=${studio.token}&port=${studio.port}`);
+        // Prefer the same-origin localhost page (page + WS share one origin →
+        // no Local Network Access block). Fall back to SIMTEN_URL when the user
+        // set it, or when the editor wasn't bundled into this build (dev/source).
+        const fragment = `#token=${studio.token}&port=${studio.port}`;
+        let pageUrl: string;
+        if (LOCAL_SERVE && studio.servesStatic) {
+          pageUrl = `http://localhost:${studio.port}/circuit${fragment}`;
+        } else {
+          if (LOCAL_SERVE && !studio.servesStatic) {
+            process.stderr.write(
+              '[simten-mcp] bundled editor not found (dist/public missing); opening ' +
+                `${SIMTEN_URL} instead. A hosted origin needs the browser to grant Local Network Access.\n`,
+            );
+          }
+          pageUrl = `${SIMTEN_URL}/circuit${fragment}`;
+        }
+        openBrowser(pageUrl);
         render = await pending;
       }
 
@@ -154,10 +176,11 @@ export function registerShowTools(server: McpServer): void {
       const watchingNote = filePath ? ` Watching ${resolve(filePath)} for changes.` : '';
       const sessionNote = session ? ` (session: ${session})` : '';
       if (!render.ok && !render.timedOut) {
-        // The browser actually reported an error — surface the real reason so
-        // the agent can fix the circuit and retry.
+        // The browser reported a render failure (boolean ack). VIEWER-ONLY: do
+        // NOT echo the browser's error string — it is untrusted. Report the
+        // failure only (see the security note in ws-server.ts).
         return {
-          content: [{ type: 'text' as const, text: `Pushed to the browser, but it failed to render: ${render.error ?? 'unknown error'}. Fix the circuit and call show_circuit again.` }],
+          content: [{ type: 'text' as const, text: `Pushed to the browser, but it reported a render failure. Check the circuit compiles (try check_circuit), then call show_circuit again.` }],
           isError: true,
         };
       }
@@ -168,7 +191,9 @@ export function registerShowTools(server: McpServer): void {
         };
       }
       return {
-        content: [{ type: 'text' as const, text: `Circuit preview running. Rendered as "${render.circuitName ?? 'circuit'}".${watchingNote}${sessionNote}` }],
+        // Name derived from the source the MCP pushed — NOT from the browser
+        // (viewer-only: browser-reported names are untrusted).
+        content: [{ type: 'text' as const, text: `Circuit preview running. Rendered as "${circuitNameFromSource(read.source)}".${watchingNote}${sessionNote}` }],
       };
     }
   );

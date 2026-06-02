@@ -111,6 +111,14 @@ export function EditorWorkspace({ theme = "light", initialSource }: EditorWorksp
     return builtFromIR(circuit, [...compileResult.libraryCircuits, ...compileResult.circuits]);
   }, [compileResult, circuit]);
 
+  // Served by the local MCP viewer? The flag `window.__simten_local__` is
+  // injected into the shell by serve-static.ts in @simten/mcp. The local viewer
+  // is one-way (no server), so Share — which POSTs to a server function — can't
+  // work there and is hidden. (Cross-package contract; keep both sides in sync.)
+  const isLocalViewer =
+    typeof window !== 'undefined' &&
+    (window as Window & { __simten_local__?: boolean }).__simten_local__ === true;
+
   // Share button state
   const [shareStatus, setShareStatus] = useState<
     | { kind: 'idle' }
@@ -419,27 +427,31 @@ export function EditorWorkspace({ theme = "light", initialSource }: EditorWorksp
                 <Bot className="h-4 w-4" />
               </Button>
 
-              <div className="h-5 w-px bg-border" />
+              {!isLocalViewer && (
+                <>
+                  <div className="h-5 w-px bg-border" />
 
-              <Button
-                onClick={handleShare}
-                variant="outline"
-                size="sm"
-                className="gap-2"
-                title="Copy a shareable link to this circuit"
-                disabled={shareStatus.kind === 'sharing'}
-              >
-                <Share2 className="h-4 w-4" />
-                <span className="hidden sm:inline text-xs">
-                  {shareStatus.kind === 'sharing'
-                    ? 'Sharing…'
-                    : shareStatus.kind === 'copied'
-                      ? 'Copied!'
-                      : shareStatus.kind === 'error'
-                        ? shareStatus.message
-                        : 'Share'}
-                </span>
-              </Button>
+                  <Button
+                    onClick={handleShare}
+                    variant="outline"
+                    size="sm"
+                    className="gap-2"
+                    title="Copy a shareable link to this circuit"
+                    disabled={shareStatus.kind === 'sharing'}
+                  >
+                    <Share2 className="h-4 w-4" />
+                    <span className="hidden sm:inline text-xs">
+                      {shareStatus.kind === 'sharing'
+                        ? 'Sharing…'
+                        : shareStatus.kind === 'copied'
+                          ? 'Copied!'
+                          : shareStatus.kind === 'error'
+                            ? shareStatus.message
+                            : 'Share'}
+                    </span>
+                  </Button>
+                </>
+              )}
 
               <Button
                 onClick={handleExportVerilog}

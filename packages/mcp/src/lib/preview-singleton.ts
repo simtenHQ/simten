@@ -30,13 +30,6 @@ let browserOpened = false;
  */
 const PROCESS_TOKEN = randomUUID();
 
-// Callback for browser → Claude channel notifications
-let onSendToClaudeCallback: ((content: string, meta: Record<string, string>) => void) | null = null;
-
-export function setOnSendToClaude(callback: (content: string, meta: Record<string, string>) => void) {
-  onSendToClaudeCallback = callback;
-}
-
 // Register cleanup
 let cleanupRegistered = false;
 function ensureCleanup() {
@@ -60,9 +53,6 @@ export async function getOrCreateServer(): Promise<StudioServer> {
   studioServer = await createStudioServer({
     port: DEFAULT_PORT,
     token: PROCESS_TOKEN,
-    onSendToClaude: (content, meta) => {
-      onSendToClaudeCallback?.(content, meta);
-    },
   });
   ensureCleanup();
 
