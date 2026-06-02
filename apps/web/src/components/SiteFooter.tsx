@@ -49,7 +49,15 @@ export function SiteFooter() {
         </nav>
       </div>
       <div className="px-4 pb-6 pt-1 text-[11px] text-muted-foreground/60">
-        © {year} Simten
+        © {year} Simten · Open source, licensed under{' '}
+        <a
+          href="https://github.com/simtenHQ/simten/blob/main/LICENSE"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="underline-offset-2 transition-colors hover:text-foreground hover:underline"
+        >
+          Apache-2.0
+        </a>
       </div>
     </footer>
   )
