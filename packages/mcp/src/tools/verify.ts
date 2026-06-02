@@ -19,28 +19,16 @@ import { VERIFY_JSON_BEGIN, VERIFY_JSON_END, type VerifyResult, type VerifyContr
 
 const DESCRIPTION = `Run a self-checking testbench FILE against a circuit and report the result AT A DECLARED ORACLE TIER. simulate_circuit shows what a circuit does; verify_circuit tells you whether it's correct — a design isn't "done" until it passes at the highest feasible tier.
 
-There is no global pass/fail verdict, on purpose: you usually write both the circuit and the testbench, so a self-authored test inherits the implementation's blind spots. What matters is how INDEPENDENT the expected values are from the implementation. Declare that with the required \`oracle\` block — the gate refuses a passed result without it.
+You usually write both the circuit and its testbench, so what matters is how INDEPENDENT the expected values are from the implementation. The required \`oracle\` block declares that; the gate refuses a passed result without it. Don't weaken the oracle to pass — \`independence_basis\` makes that visible.
 
-ORACLE TIERS (highest → lowest independence):
-- A — External ground truth: expected outputs come from a source OTHER than this circuit (compiled programs with known results, captured real-world data, spec/RFC reference vectors, or an npm reference implementation — e.g. \`import { sha256 } from '@noble/hashes/sha2'\`). What makes it Tier A is the externality of the expected values, NOT the execution path.
-- B — Paradigm-diverse reference: a behavioral model written in a different style than the implementation (structural adder vs (a+b)&0xff; pipelined CPU vs a single-cycle reference). Standard golden-model differential testing.
-- C — Domain invariants: properties the spec implies regardless of implementation (commutativity, identity, monotonicity, bit-width bounds).
-- D — Property tests against your own understanding of the spec. Low independence.
-- E — Round-trip / smoke tests, no independent oracle. Lowest.
+ORACLE TIERS (highest → lowest independence) for the \`oracle.tier\` field:
+- A — external ground truth: expected values from a source OTHER than this circuit (npm reference impl, RFC/spec vectors, captured data, known program output).
+- B — paradigm-diverse reference model, written in a different style than the implementation (golden-model differential testing).
+- C — domain invariants the spec implies regardless of implementation (commutativity, identity, bounds).
+- D — property tests against your own understanding of the spec. Low independence.
+- E — round-trip / smoke; no independent oracle.
 
-WRITING THE TESTBENCH (a \`circuits/<name>.verify.ts\` file, run on the host via tsx):
-  import { simulate } from '@simten/core/sim';
-  import * as fc from 'fast-check';
-  import { verify, declareOracle } from '@simten/core/verify';
-  import { MyCircuit } from './my_circuit.circuit.js';   // import your DUT (it must be exported)
-  declareOracle({ tier: 'B', type: '...', independence_basis: '...' });
-  verify.check('name', fc.property(fc.nat(255), (x) => { const s = simulate(MyCircuit); try { ... } finally { s.dispose(); } }));
-  // or verify.exhaustive('name', [256], (x) => ...);   // full sweep, input space <= 2^20
-  verify.run();   // required — flushes the structured result
-
-- Real npm packages work as oracles (the host resolves them from node_modules).
-- The testbench imports its DUT; only what the circuit file EXPORTS is reachable.
-- It also runs under \`vitest\` (wrap as test('verify', () => verify.run())) — so verification drops into CI.
+To WRITE the testbench (the \`simulate()\` stepper API, \`verify.exhaustive\`/\`verify.check\`, \`declareOracle\`, worked examples), call the \`get_verify_api\` tool — it's kept there because this description is capped at 2KB by clients. The testbench is a \`circuits/<name>.verify.ts\` that imports its exported DUT and ends with \`verify.run()\`.
 
 Result carries a fixed caveat: TS simulation only; FPGA synthesis/timing not guaranteed.`;
 
