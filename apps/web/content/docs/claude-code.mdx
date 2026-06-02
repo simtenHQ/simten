@@ -41,6 +41,7 @@ Once the MCP server is registered, Claude has access to these tools:
 |------|-------------|
 | `get_grammar` | Return the `circuit()` builder API (inputs/outputs, nodes, connect) with worked examples. |
 | `list_components` | Return the full catalog of stdlib components — each with its ports and constructor options (e.g. `Register({ width })`). |
+| `get_verify_api` | Return how to write a `.verify.ts` testbench — the `simulate()` stepper API, `verify.exhaustive`/`verify.check`, `declareOracle`, and worked examples. |
 | `show_circuit` | Push a circuit file to the browser viewer and open a live preview. Watches the file for changes. |
 | `check_circuit` | Validate circuit source (syntax, semantic, type, structural) without running it. |
 | `simulate_circuit` | Compile and simulate; return signal traces and the steady-state cycle. Observation only — shows what the circuit does, not whether it's correct. |
@@ -48,7 +49,7 @@ Once the MCP server is registered, Claude has access to these tools:
 | `read_waveform` | Query a VCD waveform for specific signals over a cycle window. |
 | `run_on_fpga` | Build and run the circuit on a connected FPGA board. |
 
-`get_grammar` and `list_components` exist because clients cap an MCP server's instructions (Claude Code truncates them at 2 KB), which is too small to inline the full circuit API and component catalog. Claude calls these on demand to get the authoritative part names and signatures rather than guessing.
+`get_grammar`, `list_components`, and `get_verify_api` exist because clients cap an MCP server's instructions *and each tool description* at 2 KB — too small to inline the circuit API, the component catalog, or the testbench-writing guide. Claude calls these on demand to get the authoritative part names, signatures, and `simulate()` API rather than guessing.
 
 ## How the connection works
 
