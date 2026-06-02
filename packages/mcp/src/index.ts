@@ -22,54 +22,32 @@ import { registerVerifyTool } from './tools/verify.js';
 import { registerShowTools } from './tools/show.js';
 import { registerRunOnFpgaTool } from './tools/run_on_fpga.js';
 import { registerReadWaveformTool } from './tools/read_waveform.js';
+import { registerReferenceTools } from './tools/reference.js';
 import { getOrCreateServer, getPreviewServer } from './lib/preview-singleton.js';
-import { getGrammarHandler, getPrimitivesHandler, getLibrary } from '@simten/core/api';
-import { getFactoryOptionSignatures, annotatePrimitivesWithOptions } from './lib/primitive-params.js';
 
-const builderAPI = getGrammarHandler();
-// Annotate parameterized components with their constructor options (e.g.
-// `Register ctor({ width?, value? })`) so the agent can parameterize them
-// without guessing — ports alone don't reveal factory options.
-const primitivesList = annotatePrimitivesWithOptions(
-  getPrimitivesHandler({ compact: true }, getLibrary()),
-  getFactoryOptionSignatures(),
-);
+// NOTE: clients truncate an MCP server's `instructions` at ~2KB (Claude Code
+// does — https://code.claude.com/docs/en/mcp.md), so this MUST stay small and
+// front-load what matters. The circuit-builder API and the ~10KB component
+// catalog deliberately do NOT live here — they'd be cut — and are exposed via
+// the `get_grammar` / `list_components` tools instead (tool results aren't
+// capped). Keep critical guidance (the verify contract, the reference pointer)
+// near the top so it survives truncation.
+const instructions = `You help developers design, simulate, and verify hardware from TypeScript. Circuits are files the host edits (write to \`circuits/<name>.circuit.ts\` unless told otherwise); the simten tools check, simulate, verify, and visualize them.
 
-const instructions = `You help developers design, simulate, and verify hardware systems from TypeScript. Circuits are files the host edits (write to \`circuits/<name>.circuit.ts\` in the project unless the user says otherwise); the simten tools then check, simulate, verify, and visualize them.
+## Reference (call these — don't guess)
+This server's instructions are truncated by clients at ~2KB, so the full reference lives in tools:
+- \`get_grammar\` — the \`circuit()\` API (inputs/outputs, nodes, connect) with examples. Read before writing a circuit.
+- \`list_components\` — every available component with its ports and constructor options (e.g. \`Register({ width })\`).
 
-Write each circuit file as a **standalone TS module**: \`import { circuit, bit, bus } from '@simten/core/circuit'\`, stdlib from \`@simten/core/std\`, and **\`export\` the top-level circuit** so a testbench can import it. Real imports keep the file valid in the editor and runnable with \`tsx\`/\`vitest\`. (Tests run on the host via \`tsx\`, so npm packages resolve from \`node_modules\` — you can import a reference implementation as an oracle. Don't write import-free circuit code.)
+## The contract
+- **Done = correct, at a declared tier.** A non-trivial design is complete only when \`verify_circuit\` passes at the highest feasible oracle tier (its description defines the tiers), sibling \`.verify.ts\` still pass (re-run them for any circuit you touched), and integrated changes have a system-level verify. \`simulate_circuit\` shows what a circuit *does*, not that it's correct — don't stop at a plausible waveform.
+- **Don't weaken the oracle to pass** — the \`independence_basis\` makes that visible. Lead with what you checked, against what, at what tier.
 
-## Circuit API
+## Writing circuits
+Write each circuit as a standalone TS module: \`import { circuit, bit, bus } from '@simten/core/circuit'\`, stdlib from \`@simten/core/std\`, and **\`export\`** the top-level circuit so a testbench can import it. Don't write import-free code.
 
-${builderAPI}
-
-## Available Components
-
-${primitivesList}
-
-## The contract (read this)
-
-- **Done = correct, at a declared tier.** A non-trivial design is complete only when \`verify_circuit\` passes at the highest feasible oracle tier (its description defines the tiers), **AND** existing sibling \`.verify.ts\` still pass (no regression — re-run them for any circuit you touched), **AND** for integrated/multi-module changes a system-level verify exists. \`simulate_circuit\` shows what a circuit *does*; it does NOT establish correctness — don't stop at a plausible-looking waveform.
-- **A named spec is the oracle.** If the prompt states the spec, verify against it; don't re-elicit. Surface acceptance criteria before building only on vague prompts for non-trivial designs.
-- **The gate enforces the oracle regardless of the order you wrote things in.** Testbench-first is recommended (harder to retrofit a softball), not required. Don't weaken the oracle to pass — the \`independence_basis\` makes that visible.
-- **Surface what you checked.** Lead with the oracle (what was checked, against what, at what tier), not just pass/fail.
-
-## Tools
-
-- \`check_circuit\` — fast well-formedness validation (syntax/semantic/type/structural).
-- \`simulate_circuit\` — run it, return traces. Observation only; does not paint the canvas unless \`show: true\`.
-- \`verify_circuit\` — run a self-checking testbench *file* (a \`circuits/<name>.verify.ts\` that imports its DUT) on the host; reports pass/fail + counterexample at a declared oracle tier. See its description for tiers and how to write the testbench.
-- \`show_circuit\` — paint/update the live canvas (call with no source to list connected tabs; \`close: true\` to close). The only tool that draws.
-- \`run_on_fpga\` — build, flash, and UART-capture a project on a connected ULX3S FPGA (projects: cpu, snake, uart_test).
-- \`read_waveform\` — query VCD files (iverilog cross-validation, ILA captures) for signals over a cycle window. Use \`test_name\` for the CPU verify-suite or \`vcd_path\` for arbitrary VCDs.
-
-## Canvas
-
-The canvas only paints via \`show_circuit\` (or \`simulate_circuit\` with \`show: true\`). Don't paint during tight iteration — paint at a verify tier-pass, or for a specific failure worth inspecting. Headless (no canvas connected): paint calls simply no-op. The canvas is a **viewer**: it displays and simulates what you push; it does not send anything back.
-
-## Trust
-
-\`verify_circuit\` runs the testbench on the host via \`tsx\` — full node/npm, under your own trust model (same as the agent running \`npm test\`). Appropriate for circuits you authored or trust. **Unfamiliar or shared circuits should be opened in the web \`/circuit\` editor** (a sandboxed worker), not run locally.
+## Canvas & trust
+\`show_circuit\` is the only tool that paints; the canvas is a one-way **viewer** (it displays/simulates what you push and sends nothing back). Don't paint during tight iteration — paint at a verify pass. \`verify_circuit\` runs the testbench on the host via \`tsx\` (full node/npm, your trust level — like \`npm test\`); open unfamiliar or shared circuits in the sandboxed web \`/circuit\` editor, not locally.
 `;
 
 const server = new McpServer(
@@ -89,6 +67,7 @@ registerVerifyTool(server);
 registerShowTools(server);
 registerRunOnFpgaTool(server);
 registerReadWaveformTool(server);
+registerReferenceTools(server);
 
 // The local studio is VIEWER-ONLY: the MCP pushes circuits to the browser for
 // display/simulation and accepts nothing actionable back. The browser→Claude
