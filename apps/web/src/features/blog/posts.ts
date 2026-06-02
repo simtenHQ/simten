@@ -105,14 +105,6 @@ export const posts: BlogPost[] = [
     category: 'cpu',
     nodes: '~200 nodes',
   },
-  {
-    slug: "mcp-bidirectional-bridge",
-    title: "MCP Bidirectional Bridge",
-    description:
-      "How the MCP WebSocket bridge connects AI models to live circuit simulations — bidirectional tool calls, state synchronization, and real-time collaboration.",
-    category: 'architecture',
-    nodes: 'N/A',
-  },
 ];
 
 export function getPost(slug: string): BlogPost {

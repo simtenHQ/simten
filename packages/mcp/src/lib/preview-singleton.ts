@@ -53,6 +53,9 @@ export async function getOrCreateServer(): Promise<StudioServer> {
   studioServer = await createStudioServer({
     port: DEFAULT_PORT,
     token: PROCESS_TOKEN,
+    // When the last tab closes, clear the open-once latch so a subsequent
+    // show_circuit reopens a tab — no MCP reconnect needed.
+    onSessionsEmpty: () => { browserOpened = false; },
   });
   ensureCleanup();
 

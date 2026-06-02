@@ -3,18 +3,20 @@
 // page can't reach ws://localhost). The pinned-in-package editor (not live CDN
 // code) is also what keeps a simten.dev compromise out of the privileged page.
 //
-// Robust copy: take index.html (the SPA shell — the Step 0 spike confirmed it
-// cold-mounts /circuit) + assets/ + fonts/ + favicon, and DROP the other site
-// routes (blog/docs/learn/cpu prerendered HTML) and SEO/PWA cruft. We copy ALL of
-// assets/ rather than computing a per-route chunk closure: ~4.6 MB vs ~2.3 MB, but
-// every chunk the editor lazily needs is guaranteed present (no silent 404s). A
-// precise trim is a deferred optimization; the E2E zero-404 assertion guards this.
+// Source is the standalone, client-only viewer build (apps/web/dist/viewer) — a
+// plain Vite SPA that mounts the editor at the root path, NOT the full TanStack
+// Start site build. Robust copy: take index.html (the genuine Vite shell) +
+// assets/ + fonts/ + favicon, and DROP the SEO/PWA cruft that the shared
+// publicDir drags in (blog-assets/, og-*.png, logo*.png, manifest.json,
+// robots.txt, _headers, .well-known/). We copy ALL of assets/ rather than
+// computing a per-route chunk closure, so every chunk the editor lazily needs is
+// guaranteed present (no silent 404s); the E2E zero-404 assertion guards this.
 //
 // Because index.html is the genuine Vite output, its `import("/assets/main-<hash>.js")`
 // is always self-consistent with the copied assets — no hand-authored shell, no
 // stale-hash trap.
 //
-// Default warns-and-skips if the web build is absent (keeps a bare `tsc` build
+// Default warns-and-skips if the viewer build is absent (keeps a bare `tsc` build
 // working in dev/CI); --require fails loudly (used at publish via prepack).
 import { cp, rm, mkdir } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
@@ -23,11 +25,11 @@ import { fileURLToPath } from 'node:url';
 
 const REQUIRE = process.argv.includes('--require');
 const here = dirname(fileURLToPath(import.meta.url)); // packages/mcp/scripts
-const SRC = join(here, '..', '..', '..', 'apps', 'web', 'dist', 'client');
+const SRC = join(here, '..', '..', '..', 'apps', 'web', 'dist', 'viewer');
 const DEST = join(here, '..', 'dist', 'public');
 
 if (!existsSync(join(SRC, 'index.html'))) {
-  const msg = `[copy-editor] web editor build not found at ${SRC}\n  Build it first:  pnpm --filter ./apps/web build`;
+  const msg = `[copy-editor] viewer build not found at ${SRC}\n  Build it first:  pnpm --filter ./apps/web build:viewer`;
   if (REQUIRE) { console.error(msg + '\n  (--require) refusing to continue without the bundled editor.'); process.exit(1); }
   console.warn(msg + '\n  Skipping bundle (the MCP will fall back to SIMTEN_URL at runtime).');
   process.exit(0);
@@ -37,11 +39,11 @@ if (!existsSync(join(here, '..', 'dist'))) {
   process.exit(REQUIRE ? 1 : 0);
 }
 
-// Only what the /circuit editor needs to boot and run. assets/ + fonts/ are the
-// editor; index.html is the shell; favicon for the tab. Everything else in the
-// web build (blog/, docs/, learn/, cpu/ prerendered pages, sitemap.xml, robots.txt,
-// og-*.png, logo*.png, manifest.json, _headers, pages.json, blog-assets/) is the
-// public website, not the editor — left out.
+// Only what the viewer needs to boot and run. assets/ + fonts/ are the editor;
+// index.html is the shell; favicon for the tab. Everything else the shared
+// publicDir copies into the build (og-*.png, logo*.png, manifest.json,
+// robots.txt, _headers, blog-assets/, .well-known/) is public-site cruft, not
+// the editor — left out.
 const INCLUDE = ['index.html', 'assets', 'fonts', 'favicon.svg'];
 
 await rm(DEST, { recursive: true, force: true });

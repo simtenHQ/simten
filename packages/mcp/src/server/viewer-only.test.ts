@@ -48,3 +48,33 @@ describe('viewer-only inbound surface', () => {
     studio.close();
   });
 });
+
+// Defense-in-depth on top of the token: a cross-site page you visit can't open a
+// studio socket even though browsers happily attempt ws://localhost. Browsers
+// always send Origin on the handshake; non-browser clients (no Origin) still pass
+// and remain token-gated.
+describe('origin allowlist', () => {
+  it('refuses a cross-site Origin with 4003, even with the correct token', async () => {
+    const studio = await createStudioServer({ port: 0, token: 't' });
+    const ws = new WebSocket(`ws://localhost:${studio.port}/?token=t`, {
+      headers: { origin: 'https://evil.example' },
+    });
+    const code = await new Promise<number>((r) => ws.on('close', (c) => r(c)));
+    expect(code).toBe(4003);
+    studio.close();
+  });
+
+  it('allows a same-origin localhost connection', async () => {
+    const studio = await createStudioServer({ port: 0, token: 't' });
+    const ws = new WebSocket(`ws://localhost:${studio.port}/?token=t`, {
+      headers: { origin: `http://localhost:${studio.port}` },
+    });
+    await new Promise<void>((resolve, reject) => {
+      ws.on('open', () => resolve());
+      ws.on('close', () => reject(new Error('closed instead of opening')));
+    });
+    expect(ws.readyState).toBe(WebSocket.OPEN);
+    ws.close();
+    studio.close();
+  });
+});

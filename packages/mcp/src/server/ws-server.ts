@@ -7,6 +7,9 @@
  * - Requests circuit state on demand (pull model)
  * - File watching with dedup (skips watcher events within 500ms of explicit push)
  * - Token auth: connections must provide the server's token to be accepted
+ * - Origin allowlist: browser connections must originate from localhost (a
+ *   cross-site page you visit is refused); non-browser clients (no Origin) pass
+ *   and are still token-gated. Defense-in-depth on top of the token.
  */
 
 import { WebSocketServer, WebSocket } from 'ws';
@@ -61,7 +64,14 @@ const CONNECT_RENDER_TIMEOUT = 20000;
 const DEDUP_WINDOW_MS = 500;
 
 export async function createStudioServer(
-  options?: { port?: number; token?: string }
+  options?: {
+    port?: number;
+    token?: string;
+    /** Called when the last connected tab disconnects (session count hits 0).
+     *  Lets the caller reset its "browser already opened" latch so a later
+     *  show_circuit can reopen a tab without restarting the MCP. */
+    onSessionsEmpty?: () => void;
+  }
 ): Promise<StudioServer> {
   const preferredPort = options?.port ?? 0;
   const token = options?.token ?? randomUUID();
@@ -157,6 +167,27 @@ export async function createStudioServer(
     // A new inbound handler that echoes browser fields would reopen a prompt-
     // injection path into a shell-capable agent. Don't add one without sanitizing.
 
+    // Reject cross-site WebSocket connections (defense-in-depth atop the token).
+    // Browsers always send Origin on the WS handshake, so a malicious page you
+    // visit carries its own origin and is refused here — even before the token is
+    // checked. Same-origin localhost connections (the real viewer) and
+    // non-browser clients (no Origin header, e.g. tooling) are allowed; the token
+    // still gates those.
+    const origin = req.headers.origin;
+    if (origin) {
+      let allowedOrigin = false;
+      try {
+        const host = new URL(origin).hostname;
+        allowedOrigin = host === 'localhost' || host === '127.0.0.1' || host === '::1' || host === '[::1]';
+      } catch {
+        allowedOrigin = false;
+      }
+      if (!allowedOrigin) {
+        ws.close(4003, 'Forbidden origin');
+        return;
+      }
+    }
+
     // Validate token from query string: ws://localhost:19847?token=xxx
     const url = new URL(req.url || '/', `http://localhost:${assignedPort}`);
     const clientToken = url.searchParams.get('token');
@@ -237,6 +268,8 @@ export async function createStudioServer(
           const remaining = Array.from(sessions.keys());
           lastActiveSessionId = remaining.length > 0 ? remaining[remaining.length - 1] : null;
         }
+        // Last tab gone — let the caller reopen on the next show_circuit.
+        if (sessions.size === 0) options?.onSessionsEmpty?.();
       }
     });
 

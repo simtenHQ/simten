@@ -84,6 +84,12 @@ Every circuit compile/elaborate runs inside a worker that the sandbox will kill 
 
 **How to recognize it:** the editor shows `Worker restarted` after a few seconds. **Workaround:** check the loops in your `connect` for bounds; remember `connect` runs at elaboration, so all its iteration must terminate.
 
+### `postMessage … could not be cloned` console warning
+
+You may see a `postMessage` warning in the browser console — something the iframe sandbox tried to post wasn't structured-cloneable. It's benign: it appears on both the hosted `/circuit` page and the local MCP viewer (it isn't introduced by either), and it doesn't affect compilation, simulation, or rendering.
+
+**How to recognize it:** a one-off `… could not be cloned` warning in DevTools, with no visible effect on the canvas. **Workaround:** none needed; safe to ignore. Tracked as low-priority.
+
 ## Simulator limits
 
 ### 10 000-iteration propagation cap

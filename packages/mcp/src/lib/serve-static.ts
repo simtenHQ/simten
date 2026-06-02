@@ -7,8 +7,8 @@
  * which forbids a public page (https://simten.dev) from reaching ws://localhost.
  *
  * SPA fallback: any path without a file extension serves index.html, so the
- * client router cold-mounts /circuit (validated by the Step 0 spike). Hashed
- * asset requests that miss return 404 (never masked by the shell).
+ * standalone viewer mounts at the root path. Hashed asset requests that miss
+ * return 404 (never masked by the shell).
  */
 import { createReadStream, existsSync, statSync, readFileSync } from 'node:fs';
 import { join, extname, normalize, sep } from 'node:path';
@@ -51,24 +51,29 @@ const MIME: Record<string, string> = {
  * extensioned file returns 404 so a stale asset hash fails loudly, not blank.
  */
 /**
- * The index.html shell, with the local-viewer flag injected once and cached.
- * `window.__simten_local__` is read by the web app (EditorWorkspace.tsx) to hide
- * the Share button — sharing requires a server the local viewer doesn't have.
- * This is a cross-package contract carried only by this string; keep both sides
- * in sync. (Injected early in <head>, so it runs before React renders.)
+ * The index.html shell, read once and cached. The viewer is a purpose-built
+ * standalone bundle (it omits Share/chat by construction), so the shell is
+ * served verbatim — no flag injection, no cross-package contract.
  */
 let cachedShell: Buffer | null = null;
 function shellHtml(): Buffer {
   if (cachedShell) return cachedShell;
-  let html = readFileSync(join(PUBLIC_DIR, 'index.html'), 'utf8');
-  const flag = '<script>window.__simten_local__=true</script>';
-  html = /<head[^>]*>/.test(html) ? html.replace(/<head[^>]*>/, (m) => m + flag) : flag + html;
-  cachedShell = Buffer.from(html, 'utf8');
+  cachedShell = readFileSync(join(PUBLIC_DIR, 'index.html'));
   return cachedShell;
 }
 
 export function serveStatic(req: IncomingMessage, res: ServerResponse): void {
-  const reqPath = decodeURIComponent((req.url || '/').split('?')[0].split('#')[0]);
+  // decodeURIComponent throws URIError on a malformed escape (e.g. `GET /%`).
+  // This runs in the synchronous HTTP listener, so an uncaught throw would crash
+  // the whole MCP process — answer with 400 instead.
+  let reqPath: string;
+  try {
+    reqPath = decodeURIComponent((req.url || '/').split('?')[0].split('#')[0]);
+  } catch {
+    res.writeHead(400, { 'content-type': 'text/plain' });
+    res.end('Bad request');
+    return;
+  }
 
   // Resolve within PUBLIC_DIR; strip leading traversal and confirm containment.
   const safeRel = normalize(reqPath).replace(/^(\.\.(\/|\\|$))+/, '');
@@ -78,7 +83,7 @@ export function serveStatic(req: IncomingMessage, res: ServerResponse): void {
   const indexPath = join(PUBLIC_DIR, 'index.html');
 
   // The HTML shell (root, /index.html, or any SPA route) is served from the
-  // flag-injected cache, not streamed raw.
+  // cached read, not streamed raw.
   if (candidate === indexPath || candidate === PUBLIC_DIR) {
     res.writeHead(200, { 'content-type': 'text/html', 'cache-control': 'no-cache' });
     res.end(shellHtml());
@@ -102,8 +107,7 @@ export function serveStatic(req: IncomingMessage, res: ServerResponse): void {
     return;
   }
 
-  // No extension → SPA route → serve the flag-injected shell so the client
-  // router mounts it.
+  // No extension → SPA route → serve the shell so the client mounts it.
   res.writeHead(200, { 'content-type': 'text/html', 'cache-control': 'no-cache' });
   res.end(shellHtml());
 }

@@ -158,7 +158,9 @@ export function registerShowTools(server: McpServer): void {
         const fragment = `#token=${studio.token}&port=${studio.port}`;
         let pageUrl: string;
         if (LOCAL_SERVE && studio.servesStatic) {
-          pageUrl = `http://localhost:${studio.port}/circuit${fragment}`;
+          // The standalone viewer is served at the root path (not /circuit,
+          // which is the deployed route on simten.dev).
+          pageUrl = `http://localhost:${studio.port}/${fragment}`;
         } else {
           if (LOCAL_SERVE && !studio.servesStatic) {
             process.stderr.write(
