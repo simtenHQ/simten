@@ -69,11 +69,20 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Build standalone viewer (bundled into @simten/mcp)
+        # @simten/mcp bundles the standalone, client-only viewer (dist/viewer)
+        # and serves it from localhost. This is a plain Vite SPA build — no SSR,
+        # no prerender, so no CLOUDFLARE_API_TOKEN needed. It does not deploy
+        # (deploy is a separate `wrangler deploy`); MCP releases stay decoupled
+        # from the hosted site.
+        run: pnpm --filter ./apps/web build:viewer
+
       - name: Build packages
         # Same build step as ci.yml — sequential because @simten/mcp has a
         # composite project reference to @simten/core and would race on
         # default workspace concurrency. The publish step below ships dist/
-        # so the build has to complete cleanly first.
+        # so the build has to complete cleanly first. The mcp build's
+        # copy-editor step copies the web build above into dist/public.
         run: pnpm --filter "./packages/*" --workspace-concurrency=1 build
 
       - name: Create Release PR or publish

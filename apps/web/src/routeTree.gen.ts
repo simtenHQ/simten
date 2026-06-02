@@ -27,7 +27,6 @@ import { Route as BlogSortingNetworksRouteImport } from './routes/blog/sorting-n
 import { Route as BlogSnakeInHardwareRouteImport } from './routes/blog/snake-in-hardware'
 import { Route as BlogRv32iCpuRouteImport } from './routes/blog/rv32i-cpu'
 import { Route as BlogPongInHardwareRouteImport } from './routes/blog/pong-in-hardware'
-import { Route as BlogMcpBidirectionalBridgeRouteImport } from './routes/blog/mcp-bidirectional-bridge'
 import { Route as BlogHowTpusWorkRouteImport } from './routes/blog/how-tpus-work'
 import { Route as BlogHowNetworkSwitchesWorkRouteImport } from './routes/blog/how-network-switches-work'
 import { Route as BlogCrc32InHardwareRouteImport } from './routes/blog/crc32-in-hardware'
@@ -129,12 +128,6 @@ const BlogPongInHardwareRoute = BlogPongInHardwareRouteImport.update({
   path: '/pong-in-hardware',
   getParentRoute: () => BlogRoute,
 } as any)
-const BlogMcpBidirectionalBridgeRoute =
-  BlogMcpBidirectionalBridgeRouteImport.update({
-    id: '/mcp-bidirectional-bridge',
-    path: '/mcp-bidirectional-bridge',
-    getParentRoute: () => BlogRoute,
-  } as any)
 const BlogHowTpusWorkRoute = BlogHowTpusWorkRouteImport.update({
   id: '/how-tpus-work',
   path: '/how-tpus-work',
@@ -203,7 +196,6 @@ export interface FileRoutesByFullPath {
   '/blog/crc32-in-hardware': typeof BlogCrc32InHardwareRoute
   '/blog/how-network-switches-work': typeof BlogHowNetworkSwitchesWorkRoute
   '/blog/how-tpus-work': typeof BlogHowTpusWorkRoute
-  '/blog/mcp-bidirectional-bridge': typeof BlogMcpBidirectionalBridgeRoute
   '/blog/pong-in-hardware': typeof BlogPongInHardwareRoute
   '/blog/rv32i-cpu': typeof BlogRv32iCpuRoute
   '/blog/snake-in-hardware': typeof BlogSnakeInHardwareRoute
@@ -233,7 +225,6 @@ export interface FileRoutesByTo {
   '/blog/crc32-in-hardware': typeof BlogCrc32InHardwareRoute
   '/blog/how-network-switches-work': typeof BlogHowNetworkSwitchesWorkRoute
   '/blog/how-tpus-work': typeof BlogHowTpusWorkRoute
-  '/blog/mcp-bidirectional-bridge': typeof BlogMcpBidirectionalBridgeRoute
   '/blog/pong-in-hardware': typeof BlogPongInHardwareRoute
   '/blog/rv32i-cpu': typeof BlogRv32iCpuRoute
   '/blog/snake-in-hardware': typeof BlogSnakeInHardwareRoute
@@ -265,7 +256,6 @@ export interface FileRoutesById {
   '/blog/crc32-in-hardware': typeof BlogCrc32InHardwareRoute
   '/blog/how-network-switches-work': typeof BlogHowNetworkSwitchesWorkRoute
   '/blog/how-tpus-work': typeof BlogHowTpusWorkRoute
-  '/blog/mcp-bidirectional-bridge': typeof BlogMcpBidirectionalBridgeRoute
   '/blog/pong-in-hardware': typeof BlogPongInHardwareRoute
   '/blog/rv32i-cpu': typeof BlogRv32iCpuRoute
   '/blog/snake-in-hardware': typeof BlogSnakeInHardwareRoute
@@ -298,7 +288,6 @@ export interface FileRouteTypes {
     | '/blog/crc32-in-hardware'
     | '/blog/how-network-switches-work'
     | '/blog/how-tpus-work'
-    | '/blog/mcp-bidirectional-bridge'
     | '/blog/pong-in-hardware'
     | '/blog/rv32i-cpu'
     | '/blog/snake-in-hardware'
@@ -328,7 +317,6 @@ export interface FileRouteTypes {
     | '/blog/crc32-in-hardware'
     | '/blog/how-network-switches-work'
     | '/blog/how-tpus-work'
-    | '/blog/mcp-bidirectional-bridge'
     | '/blog/pong-in-hardware'
     | '/blog/rv32i-cpu'
     | '/blog/snake-in-hardware'
@@ -359,7 +347,6 @@ export interface FileRouteTypes {
     | '/blog/crc32-in-hardware'
     | '/blog/how-network-switches-work'
     | '/blog/how-tpus-work'
-    | '/blog/mcp-bidirectional-bridge'
     | '/blog/pong-in-hardware'
     | '/blog/rv32i-cpu'
     | '/blog/snake-in-hardware'
@@ -522,13 +509,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BlogPongInHardwareRouteImport
       parentRoute: typeof BlogRoute
     }
-    '/blog/mcp-bidirectional-bridge': {
-      id: '/blog/mcp-bidirectional-bridge'
-      path: '/mcp-bidirectional-bridge'
-      fullPath: '/blog/mcp-bidirectional-bridge'
-      preLoaderRoute: typeof BlogMcpBidirectionalBridgeRouteImport
-      parentRoute: typeof BlogRoute
-    }
     '/blog/how-tpus-work': {
       id: '/blog/how-tpus-work'
       path: '/how-tpus-work'
@@ -611,7 +591,6 @@ interface BlogRouteChildren {
   BlogCrc32InHardwareRoute: typeof BlogCrc32InHardwareRoute
   BlogHowNetworkSwitchesWorkRoute: typeof BlogHowNetworkSwitchesWorkRoute
   BlogHowTpusWorkRoute: typeof BlogHowTpusWorkRoute
-  BlogMcpBidirectionalBridgeRoute: typeof BlogMcpBidirectionalBridgeRoute
   BlogPongInHardwareRoute: typeof BlogPongInHardwareRoute
   BlogRv32iCpuRoute: typeof BlogRv32iCpuRoute
   BlogSnakeInHardwareRoute: typeof BlogSnakeInHardwareRoute
@@ -628,7 +607,6 @@ const BlogRouteChildren: BlogRouteChildren = {
   BlogCrc32InHardwareRoute: BlogCrc32InHardwareRoute,
   BlogHowNetworkSwitchesWorkRoute: BlogHowNetworkSwitchesWorkRoute,
   BlogHowTpusWorkRoute: BlogHowTpusWorkRoute,
-  BlogMcpBidirectionalBridgeRoute: BlogMcpBidirectionalBridgeRoute,
   BlogPongInHardwareRoute: BlogPongInHardwareRoute,
   BlogRv32iCpuRoute: BlogRv32iCpuRoute,
   BlogSnakeInHardwareRoute: BlogSnakeInHardwareRoute,

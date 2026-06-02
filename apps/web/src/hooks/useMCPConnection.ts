@@ -37,8 +37,6 @@ export interface MCPCallbacks {
   onTestResults?: (data: unknown) => void;
   /** Called when memory data is pushed */
   onMemoryData?: (data: unknown) => void;
-  /** Called when Claude pushes a chat message via push_chat_response */
-  onChatMessage?: (text: string) => void;
   /** Called to get current circuit state for MCP server requests */
   getCircuitState?: () => unknown;
 }
@@ -159,9 +157,6 @@ export function useMCPConnection(callbacks: MCPCallbacks) {
           case 'memory-data':
             cb.onMemoryData?.(msg.data);
             break;
-          case 'chat-message':
-            cb.onChatMessage?.(msg.text as string);
-            break;
 
           // Pull model: MCP server is requesting state
           case 'request-state': {
@@ -253,12 +248,6 @@ export function useMCPConnection(callbacks: MCPCallbacks) {
     };
   }, [connect, tryAutoDiscover]);
 
-  const sendToClaudePrompt = useCallback((text: string, meta?: Record<string, string>) => {
-    const ws = wsRef.current;
-    if (!ws || ws.readyState !== WebSocket.OPEN) return;
-    ws.send(JSON.stringify({ type: 'send-to-claude', content: text, meta: meta ?? {} }));
-  }, []);
-
   /** Acknowledge a render request (from onSource's requestId) back to the server. */
   const sendRenderResult = useCallback(
     (requestId: string, result: { ok: boolean; circuitName?: string | null; error?: string }) => {
@@ -273,7 +262,6 @@ export function useMCPConnection(callbacks: MCPCallbacks) {
     status,
     sessionId: sessionIdRef.current,
     isConnected: status === 'connected',
-    sendToClaudePrompt,
     sendRenderResult,
   };
 }

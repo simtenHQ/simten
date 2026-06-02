@@ -46,7 +46,9 @@
     "bin"
   ],
   "scripts": {
-    "build": "rm -rf dist *.tsbuildinfo && tsc -b",
+    "build": "rm -rf dist *.tsbuildinfo && tsc -b && node scripts/copy-editor.mjs",
+    "bundle-editor": "node scripts/copy-editor.mjs",
+    "prepack": "node scripts/copy-editor.mjs --require",
     "dev": "tsc -b --watch",
     "test": "vitest run",
     "test:watch": "vitest"

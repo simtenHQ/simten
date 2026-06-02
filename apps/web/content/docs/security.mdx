@@ -181,6 +181,21 @@ The model above is the default and matches what `npm test` does. If your threat 
 
 ---
 
+## Local studio server
+
+Separate from the host-execution model above (which governs running *your* code), the MCP also runs a small server that drives a **viewer** in your browser: when Claude calls `show_circuit`, the MCP serves a bundled, standalone editor build and pushes circuits, waveforms, and test results to it for display. The page and its WebSocket share one `localhost` origin, which sidesteps the browser's Local Network Access block (a public page may not reach `ws://localhost`).
+
+Because that server is browser-facing, its security rests on four properties:
+
+- **Loopback-only bind.** The HTTP + WebSocket server binds `127.0.0.1`, so it is not reachable from your network or LAN — only processes on your own machine can connect.
+- **Per-process token.** Each MCP start mints a fresh random token, delivered to the viewer only via the URL fragment (which the browser never sends to the server in a request, and which is never embedded in served content). A connection whose token doesn't match is closed immediately. The token is not persisted to disk, so a stale tab can't authenticate against a later instance.
+- **Origin allowlist.** A browser WebSocket handshake whose `Origin` isn't `localhost` is refused before the token is even checked — so a cross-site page you happen to visit cannot open a studio socket even if it guesses the port. Non-browser clients (which send no `Origin`) remain token-gated.
+- **Viewer-only inbound surface.** The server accepts exactly two messages from the browser: a session `register`, and a `render-result` that is reduced to a **boolean acknowledgment**. Browser-supplied strings (circuit names, error text) are discarded and never surfaced to a tool result, an MCP notification, or anything an agent reads. The circuit name shown to Claude is derived from the source the *MCP* pushed, not from the browser. This is why the older browser→Claude chat bridge and the `get_circuit_state` read-back were removed: a rendered, possibly-hostile page must not be able to feed a shell-capable agent or read host state.
+
+The served content is just the public editor bundle (no secrets); path requests are traversal-guarded and contained to the bundle directory. The only sensitive data — your circuit source — travels over the token-gated WebSocket, never the static file server. Circuit code rendered in that viewer still executes inside the [browser sandbox](#browser-sandbox), exactly as on the hosted site.
+
+---
+
 ## Automated invariant tests
 
 To prevent accidental re-introduction of unsafe code execution patterns in the main frame, the test suite includes invariant checks that scan all source files in `apps/web/src` and `packages/embed/src`:
