@@ -924,7 +924,10 @@ const HeroBrowserWindow = forwardRef<
     return (
       <BrowserWindow className="flex-1" showMcp={codeTyping || showCircuit}>
         <div className="flex h-full">
-          <div className="w-[340px] shrink-0 border-r border-border overflow-auto">
+          {/* Widen on larger screens so full-width comments (~63 chars) stay
+              legible without horizontal clipping; the canvas (flex-1) absorbs
+              the difference where there's room. */}
+          <div className="w-[360px] lg:w-[440px] xl:w-[500px] shrink-0 border-r border-border overflow-auto">
             {codeTyping ? (
               <HighlightedCode
                 code={codeTw.displayed}
