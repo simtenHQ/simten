@@ -74,6 +74,14 @@ The `/circuit` page (and the `show_circuit` MCP canvas) runs your code inside a 
 
 **How to recognize it:** ReferenceError on the imported binding. **Workaround:** check the package on esm.sh directly (e.g. `https://esm.sh/<pkg>`); use a known-good version pin (`'pkg@4.3.2'`); for Node-only packages, fall back to baking the data into a `Constant`/`ROM` outside the browser path.
 
+### Cross-file (multi-file) imports aren't resolved — only `@simten/core/*`
+
+Circuit code submitted to the `/circuit` editor and `show_circuit` is executed by **stripping its `import` statements** and injecting the `@simten/core` stdlib into scope (browser: `apps/sandbox/src/rewrite-imports.ts`). So a circuit may import from `@simten/core/*` (resolved from injected scope) and — in the browser — bare npm specifiers (resolved via esm.sh), but it **cannot** import another local file (`./helper.ts`, `../shared.circuit.ts`): the relative specifier passes through and resolves to nothing (no filesystem in the sandbox), so the binding is `undefined`. The host tools `check_circuit` and `simulate_circuit` share this limitation — they run the same import-stripping executor (`executeCircuitCode` in `packages/core/src/circuit/execute.ts`).
+
+`verify_circuit` is the exception: it runs the file under real `tsx` with full Node module resolution, so multi-file testbenches (relative imports, workspace packages, npm) work there exactly like `npm test`.
+
+**How to recognize it:** `X is not defined` / `undefined` for a binding imported from a relative path, in the `/circuit` editor or via `check_circuit` / `simulate_circuit` — while the same file runs fine under `verify_circuit`. **Workaround:** keep canvas/simulate circuits single-file, importing only from `@simten/core/*`; promote shared circuits into `@simten/core/std` so they resolve via injected scope. For genuinely multi-file work, use `verify_circuit`. A real fix would add a bundling/module-resolution step before execution — esbuild-bundling the entry plus its local files on the host, and a virtual-FS (or bundling) step in the sandbox — so `/circuit` and the host tools could accept multi-file circuits; tracked as a future enhancement.
+
 ### `Buffer` is Node-only
 
 A common gotcha when porting a verify testbench to a browser demo: `Buffer.from([...])` works under `tsx`/`node` but is not defined in the browser sandbox. Use `Uint8Array.of(...)` / `new Uint8Array([...])` instead — most npm crypto/hash packages accept it at runtime even when their TypeScript types only declare `Buffer`.
