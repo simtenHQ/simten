@@ -307,7 +307,7 @@ A blog-post `<circuit-embed>` is "production" but uses the sandbox path. A throw
 
 ## MCP Integration
 
-The MCP server creates a bidirectional bridge between Claude Code and the browser:
+The MCP server drives a viewer in the browser: Claude Code calls MCP tools, and the server pushes the results over a WebSocket for display and in-browser simulation. The browser is display-only — it sends back nothing but a render acknowledgment.
 
 export function FlowDiagram() {
   return (
@@ -319,7 +319,7 @@ export function FlowDiagram() {
       <div className="rounded-lg border border-blue-700/50 bg-blue-900/30 px-4 py-2 text-blue-300">
         MCP Server (localhost)
       </div>
-      <div className="text-gray-600">↕ WebSocket</div>
+      <div className="text-gray-600">↓ WebSocket push</div>
       <div className="rounded-lg border border-gray-700 bg-gray-900 px-4 py-2 text-gray-300">
         Browser App
       </div>
@@ -331,10 +331,9 @@ export function FlowDiagram() {
 
 | Direction | Mechanism | Examples |
 |-----------|-----------|----------|
-| Claude → Browser | WebSocket push | Circuit updates, waveforms, test results, chat messages |
-| Browser → Claude | Channel notifications | User prompts with circuit context |
-| Claude reads state | Pull request/response | Current port values, cycle count, user's circuit code |
+| Claude → Browser | WebSocket push | Circuit updates, waveforms, test results |
+| Browser → Claude | Render acknowledgment | Boolean ack that a pushed circuit rendered |
 
-The MCP server provides tools, not inference — users bring their own Claude subscription. Zero AI API cost for the app developer.
+The browser viewer is intentionally one-way: it accepts nothing actionable back, so a rendered page can't drive Claude or read its state. The MCP server provides tools, not inference — users bring their own Claude subscription. Zero AI API cost for the app developer.
 
-See the [Claude Code Integration](/docs/claude-code) guide for setup and available tools, or the [MCP architecture blog post](/blog/mcp-bidirectional-bridge) for the full design.
+See the [Claude Code Integration](/docs/claude-code) guide for setup and available tools.

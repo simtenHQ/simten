@@ -7,13 +7,18 @@
  * - Requests circuit state on demand (pull model)
  * - File watching with dedup (skips watcher events within 500ms of explicit push)
  * - Token auth: connections must provide the server's token to be accepted
+ * - Origin allowlist: browser connections must originate from localhost (a
+ *   cross-site page you visit is refused); non-browser clients (no Origin) pass
+ *   and are still token-gated. Defense-in-depth on top of the token.
  */
 
 import { WebSocketServer, WebSocket } from 'ws';
 import { watchFile as fsWatchFile, unwatchFile, existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { randomUUID } from 'node:crypto';
+import { createServer } from 'node:http';
 import type { CircuitState, TracesPayload, TestResultsPayload, RenderResult } from './types.js';
+import { serveStatic, publicDirExists } from '../lib/serve-static.js';
 
 export type { CircuitState, TracesPayload, TestResultsPayload };
 
@@ -30,6 +35,9 @@ export interface Session {
 export interface StudioServer {
   port: number;
   token: string;
+  /** True when this server is also serving the bundled editor SPA on `port`
+   *  (so the browser page and the WS share one localhost origin). */
+  servesStatic: boolean;
   sessions: Map<string, Session>;
 
   updateSource(source: string, sessionId?: string): void;
@@ -38,11 +46,9 @@ export interface StudioServer {
   /** Push source and await the render ack from a not-yet-connected tab (fresh open). */
   updateSourceAndAwaitConnect(source: string, timeoutMs?: number): Promise<RenderResult>;
   watchFile(filePath: string): void;
-  getState(sessionId?: string): Promise<CircuitState | null>;
   pushTraces(data: TracesPayload, sessionId?: string): void;
   pushTestResults(data: TestResultsPayload, sessionId?: string): void;
   pushMemoryData(data: MemoryDataPayload, sessionId?: string): void;
-  pushChatMessage(text: string, sessionId?: string): void;
   getActiveSession(): Session | null;
   close(): void;
 }
@@ -58,7 +64,14 @@ const CONNECT_RENDER_TIMEOUT = 20000;
 const DEDUP_WINDOW_MS = 500;
 
 export async function createStudioServer(
-  options?: { port?: number; token?: string; onSendToClaude?: (content: string, meta: Record<string, string>) => void }
+  options?: {
+    port?: number;
+    token?: string;
+    /** Called when the last connected tab disconnects (session count hits 0).
+     *  Lets the caller reset its "browser already opened" latch so a later
+     *  show_circuit can reopen a tab without restarting the MCP. */
+    onSessionsEmpty?: () => void;
+  }
 ): Promise<StudioServer> {
   const preferredPort = options?.port ?? 0;
   const token = options?.token ?? randomUUID();
@@ -80,25 +93,52 @@ export async function createStudioServer(
   // the next tab to register receives the source WITH that id and acks it.
   let pendingConnectRender: string | null = null;
 
-  // Bind to a single port, resolving the actual port the OS assigned.
+  // One HTTP server serves the bundled editor SPA AND hosts the WebSocket
+  // (via the `upgrade` event), so the browser page and its studio socket share
+  // a single localhost origin — which is what sidesteps Chrome's Local Network
+  // Access block (a public page may not reach ws://localhost). The WS is
+  // `noServer` and attached to the HTTP server's upgrades.
+  const servesStatic = publicDirExists();
+  const wss = new WebSocketServer({ noServer: true });
+  const httpServer = createServer((req, res) => {
+    if (servesStatic) {
+      serveStatic(req, res);
+    } else {
+      // No bundled editor (e.g. running from source/dev). The WS still works;
+      // the page is loaded from SIMTEN_URL instead. Nothing to serve here.
+      res.writeHead(404, { 'content-type': 'text/plain' });
+      res.end('Not found');
+    }
+  });
+  httpServer.on('upgrade', (req, socket, head) => {
+    // Hand the upgrade to ws; token validation happens in the connection
+    // handler below (so a bad token still completes the handshake and gets a
+    // clean 4001 close, which the web client treats specially).
+    wss.handleUpgrade(req, socket, head, (ws) => {
+      wss.emit('connection', ws, req);
+    });
+  });
+
+  // Bind the HTTP server to a single port, resolving the actual assigned port.
   // Rejects on EADDRINUSE (so the caller can fall back) and any other error.
-  function tryListen(p: number): Promise<{ wss: WebSocketServer; port: number }> {
+  function tryListen(p: number): Promise<number> {
     return new Promise((resolveBind, reject) => {
-      const server = new WebSocketServer({ port: p, host: '127.0.0.1' });
-      server.on('listening', () => {
-        const addr = server.address();
+      const onError = (err: NodeJS.ErrnoException) => {
+        httpServer.removeListener('listening', onListening);
+        reject(err);
+      };
+      const onListening = () => {
+        httpServer.removeListener('error', onError);
+        const addr = httpServer.address();
         if (typeof addr === 'object' && addr) {
-          resolveBind({ wss: server, port: addr.port });
+          resolveBind(addr.port);
         } else {
-          server.close();
           reject(new Error('Failed to get server address'));
         }
-      });
-      server.on('error', (err) => {
-        // Close the half-open server before surfacing the error so it can't leak.
-        server.close();
-        reject(err);
-      });
+      };
+      httpServer.once('error', onError);
+      httpServer.once('listening', onListening);
+      httpServer.listen(p, '127.0.0.1');
     });
   }
 
@@ -107,19 +147,47 @@ export async function createStudioServer(
   // project's MCP instance is running — fall back to an OS-assigned free port
   // instead of failing. show_circuit advertises the real port to the browser via
   // the URL fragment, so any port works end-to-end.
-  let wss: WebSocketServer;
   let assignedPort: number;
   try {
-    ({ wss, port: assignedPort } = await tryListen(preferredPort));
+    assignedPort = await tryListen(preferredPort);
   } catch (err) {
     if ((err as NodeJS.ErrnoException).code === 'EADDRINUSE' && preferredPort !== 0) {
-      ({ wss, port: assignedPort } = await tryListen(0));
+      assignedPort = await tryListen(0);
     } else {
       throw err;
     }
   }
 
   wss.on('connection', (ws, req) => {
+    // VIEWER-ONLY SECURITY INVARIANT: this is a one-way push surface. ALL inbound
+    // browser data is untrusted — never surface it verbatim in a tool result, an
+    // MCP notification, or anything actionable/agent-readable. This is why
+    // `render-result` is reduced to a boolean ack and the circuit name shown to
+    // the agent is derived from the source the MCP pushed, not from the browser.
+    // A new inbound handler that echoes browser fields would reopen a prompt-
+    // injection path into a shell-capable agent. Don't add one without sanitizing.
+
+    // Reject cross-site WebSocket connections (defense-in-depth atop the token).
+    // Browsers always send Origin on the WS handshake, so a malicious page you
+    // visit carries its own origin and is refused here — even before the token is
+    // checked. Same-origin localhost connections (the real viewer) and
+    // non-browser clients (no Origin header, e.g. tooling) are allowed; the token
+    // still gates those.
+    const origin = req.headers.origin;
+    if (origin) {
+      let allowedOrigin = false;
+      try {
+        const host = new URL(origin).hostname;
+        allowedOrigin = host === 'localhost' || host === '127.0.0.1' || host === '::1' || host === '[::1]';
+      } catch {
+        allowedOrigin = false;
+      }
+      if (!allowedOrigin) {
+        ws.close(4003, 'Forbidden origin');
+        return;
+      }
+    }
+
     // Validate token from query string: ws://localhost:19847?token=xxx
     const url = new URL(req.url || '/', `http://localhost:${assignedPort}`);
     const clientToken = url.searchParams.get('token');
@@ -169,48 +237,24 @@ export async function createStudioServer(
           return;
         }
 
-        // Handle responses to state requests
-        if (msg.type === 'state-response') {
-          const pending = pendingRequests.get(msg.requestId);
-          if (pending) {
-            clearTimeout(pending.timer);
-            pendingRequests.delete(msg.requestId);
-            pending.resolve(msg.state ?? null);
-          }
-          return;
-        }
-
-        // Browser acknowledges it rendered a pushed source (render round-trip)
+        // Browser acknowledges it rendered a pushed source (render round-trip).
+        // VIEWER-ONLY: this is treated as a BOOLEAN ack only. The browser's
+        // reported circuitName/error are deliberately NOT propagated — they are
+        // untrusted and would otherwise flow into a tool result (see the
+        // untrusted-inbound note at the top of this handler).
         if (msg.type === 'render-result') {
           const pending = pendingRequests.get(msg.requestId);
           if (pending) {
             clearTimeout(pending.timer);
             pendingRequests.delete(msg.requestId);
-            pending.resolve({ ok: !!msg.ok, circuitName: msg.circuitName ?? null, error: msg.error });
+            pending.resolve({ ok: !!msg.ok });
           }
           return;
         }
 
-        // Browser reports it is focused — use this session for next push
-        if (msg.type === 'focus' && sessionId) {
-          lastActiveSessionId = sessionId;
-          return;
-        }
-
-        // Browser sends a message to Claude via channel notification
-        if (msg.type === 'send-to-claude' && options?.onSendToClaude) {
-          options.onSendToClaude(msg.content ?? '', msg.meta ?? {});
-          return;
-        }
-
-        // Update circuit name when browser reports it
-        if (msg.type === 'circuit-info' && sessionId) {
-          const session = sessions.get(sessionId);
-          if (session) {
-            session.circuitName = msg.circuitName ?? null;
-          }
-          return;
-        }
+        // No other inbound message types are handled — see the viewer-only note
+        // at the top of this handler. `register` (above) and `render-result`
+        // (above) are the entire accepted inbound surface.
       } catch {
         // Ignore malformed messages
       }
@@ -224,6 +268,8 @@ export async function createStudioServer(
           const remaining = Array.from(sessions.keys());
           lastActiveSessionId = remaining.length > 0 ? remaining[remaining.length - 1] : null;
         }
+        // Last tab gone — let the caller reopen on the next show_circuit.
+        if (sessions.size === 0) options?.onSessionsEmpty?.();
       }
     });
 
@@ -270,24 +316,6 @@ export async function createStudioServer(
     if (target) {
       send(target.ws, data);
     }
-  }
-
-  function requestFromBrowser(type: string, sessionId?: string): Promise<unknown> {
-    const target = getTargetSession(sessionId);
-    if (!target) {
-      return Promise.resolve(null);
-    }
-
-    const requestId = randomUUID();
-    return new Promise((resolveReq) => {
-      const timer = setTimeout(() => {
-        pendingRequests.delete(requestId);
-        resolveReq(null);
-      }, STATE_REQUEST_TIMEOUT);
-
-      pendingRequests.set(requestId, { resolve: resolveReq, timer });
-      send(target.ws, { type, requestId });
-    });
   }
 
   function updateSource(source: string, sessionId?: string) {
@@ -380,10 +408,6 @@ export async function createStudioServer(
     });
   }
 
-  async function getState(sessionId?: string): Promise<CircuitState | null> {
-    return requestFromBrowser('request-state', sessionId) as Promise<CircuitState | null>;
-  }
-
   function pushTraces(data: TracesPayload, sessionId?: string) {
     cachedTraces = data;
     broadcast({ type: 'traces', data }, sessionId);
@@ -397,10 +421,6 @@ export async function createStudioServer(
   function pushMemoryData(data: MemoryDataPayload, sessionId?: string) {
     cachedMemoryData = data;
     broadcast({ type: 'memory-data', data }, sessionId);
-  }
-
-  function pushChatMessage(text: string, sessionId?: string) {
-    broadcast({ type: 'chat-message', text }, sessionId);
   }
 
   function getActiveSession(): Session | null {
@@ -421,21 +441,21 @@ export async function createStudioServer(
     }
     sessions.clear();
     wss.close();
+    httpServer.close();
   }
 
   return {
     port: assignedPort,
     token,
+    servesStatic,
     sessions,
     updateSource,
     updateSourceAndAwait,
     updateSourceAndAwaitConnect,
     watchFile,
-    getState,
     pushTraces,
     pushTestResults,
     pushMemoryData,
-    pushChatMessage,
     getActiveSession,
     close,
   };

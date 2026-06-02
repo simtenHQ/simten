@@ -7,7 +7,9 @@
 	},
 	"scripts": {
 		"dev": "pnpm --filter @simten/core build && vite dev --port 3001",
+		"dev:viewer": "pnpm --filter @simten/core build && vite dev -c vite.viewer.config.ts --port 3002",
 		"build": "pnpm --filter @simten/core build && node scripts/build.mjs",
+		"build:viewer": "pnpm --filter @simten/core build && vite build -c vite.viewer.config.ts",
 		"analyze": "pnpm --filter @simten/core build && ANALYZE=true node scripts/build.mjs",
 		"preview": "pnpm run build && vite preview",
 		"test": "vitest run",

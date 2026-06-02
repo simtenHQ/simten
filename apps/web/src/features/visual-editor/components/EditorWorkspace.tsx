@@ -1,7 +1,7 @@
 /**
  * EditorWorkspace — the full /editor page shell.
  *
- * Combines Monaco code editor, CircuitCanvas, AI chat, clock controls,
+ * Combines Monaco code editor, CircuitCanvas, clock controls,
  * Verilog export, MCP connection, and example picker.
  */
 
@@ -21,17 +21,14 @@ import type { Circuit } from "@simten/ui/editor/types";
 import { Button } from "@/components/ui/button";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { TSEditor, type TSEditorRef } from "@/features/code-editor/TSEditor";
-import { Bot, Download, Share2, Loader2 } from "lucide-react";
+import { Download, Share2, Loader2 } from "lucide-react";
 import { exportVerilog } from "@simten/core/verilog";
 import { SiteHeader } from "@/components/SiteHeader";
 import { encodeSourceForUrl, shouldUseShortLink } from "@simten/ui/share";
-import { shareCircuit } from "@/features/share/server";
 /** Check if a circuit name is an auto-generated harness (autoHarness appends 'Demo') */
 function isHarnessName(name: string): boolean {
   return name.endsWith('Demo') || name.endsWith('Harness');
 }
-import { ChatPanel, useChatStore } from "@/features/chat";
-import { hashSourceCode } from "@/features/chat/actions";
 import { useMCPConnection } from "@/hooks/useMCPConnection";
 import { WaveformViewer } from "@simten/ui/waveform";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
@@ -80,9 +77,16 @@ interface EditorWorkspaceProps {
    * shared link doesn't clobber the user's saved work.
    */
   initialSource?: string;
+  /**
+   * Running as the standalone local MCP viewer (a separate client-only build,
+   * not a route on simten.dev). In this mode there's no server, so Share — which
+   * POSTs to a server function — is omitted, and the brand links out to the
+   * marketing site rather than through the (absent) router.
+   */
+  standalone?: boolean;
 }
 
-export function EditorWorkspace({ theme = "light", initialSource }: EditorWorkspaceProps) {
+export function EditorWorkspace({ theme = "light", initialSource, standalone = false }: EditorWorkspaceProps) {
   const setCompiledCircuits = useCircuitPreviewStore(
     (state) => state.setCompiledCircuits,
   );
@@ -122,7 +126,7 @@ export function EditorWorkspace({ theme = "light", initialSource }: EditorWorksp
   // Drawer state
   const [waveformData, setWaveformData] = useState<{ vcd: string; circuit: string; ticks: number; steadyStateAt?: number } | null>(null);
 
-  // Editor ref for ChatPanel integration
+  // Editor ref for imperative get/set of the Monaco source.
   const editorRef = useRef<TSEditorRef>(null);
   // requestId of an in-flight show_circuit render-ack (set in onSource, cleared
   // when the resulting compile succeeds/fails — see handleCompile / handleCompileError).
@@ -130,12 +134,6 @@ export function EditorWorkspace({ theme = "light", initialSource }: EditorWorksp
 
   // Track whether we've loaded content so we can skip the first MCP cache replay
   const hasLoadedContentRef = useRef(false);
-
-  // Chat store
-  const { setOpen: setChatOpen, toggle: toggleChat, addAssistantMessage } = useChatStore();
-
-  // Channel thinking state (separate from the API streaming system)
-  const [channelThinking, setChannelThinking] = useState(false);
 
   // Export to Verilog — uses library store
   const handleExportVerilog = useCallback(() => {
@@ -191,6 +189,9 @@ export function EditorWorkspace({ theme = "light", initialSource }: EditorWorksp
     } else {
       setShareStatus({ kind: 'sharing' });
       try {
+        // Dynamic import keeps the `cloudflare:workers`-backed server fn out of
+        // the standalone client-only viewer build's module graph.
+        const { shareCircuit } = await import("@/features/share/server");
         const { hash } = await shareCircuit({ data: { source } });
         url = `${window.location.origin}/circuit/s/${hash}`;
       } catch (err) {
@@ -255,7 +256,7 @@ export function EditorWorkspace({ theme = "light", initialSource }: EditorWorksp
   }, []);
 
   // Studio connection (WebSocket to MCP server)
-  const { status: mcpStatus, sendToClaudePrompt, sendRenderResult } = useMCPConnection({
+  const { status: mcpStatus, sendRenderResult } = useMCPConnection({
     onTraces: useCallback((data: unknown) => {
       const payload = data as { vcd: string; circuit: string; ticks: number; steadyStateAt?: number };
       if (payload?.vcd) setWaveformData(payload);
@@ -265,11 +266,6 @@ export function EditorWorkspace({ theme = "light", initialSource }: EditorWorksp
       editorRef.current?.setCode(source);
       setTimeout(() => editorRef.current?.compile(), 100);
     }, []),
-    onChatMessage: useCallback((text: string) => {
-      addAssistantMessage(text);
-      setChannelThinking(false);
-      setChatOpen(true);
-    }, [addAssistantMessage, setChatOpen]),
     getCircuitState: useCallback(() => {
       const currentCircuit = useCircuitStore.getState().circuit;
       const sim = simRef.current;
@@ -283,24 +279,6 @@ export function EditorWorkspace({ theme = "light", initialSource }: EditorWorksp
       };
     }, []),
   });
-
-  // Source-code hash for chat staleness detection.
-  const code = editorRef.current?.getCode() ?? "";
-  const sourceCodeHash = useMemo(() => hashSourceCode(code), [code]);
-
-  // Keyboard shortcuts
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Cmd+K / Ctrl+K - Toggle chat panel
-      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
-        e.preventDefault();
-        toggleChat();
-      }
-    };
-
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [toggleChat]);
 
   // Handle compilation in split mode
   const handleCompile = useCallback(
@@ -379,22 +357,9 @@ export function EditorWorkspace({ theme = "light", initialSource }: EditorWorksp
             </button>
           ))}
         </div>
-        <div className="mt-4 flex items-center justify-between">
-          <p className="text-xs text-gray-400">
-            or press{' '}
-            <kbd className="rounded border border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 font-mono text-[10px]">
-              ⌘K
-            </kbd>
-            {' '}to build with AI
-          </p>
-          <Button onClick={() => setChatOpen(true)} variant="outline" size="sm" className="gap-1.5 text-xs">
-            <Bot className="h-3.5 w-3.5" />
-            AI Chat
-          </Button>
-        </div>
       </div>
     </div>
-  ), [setChatOpen, loadExample]);
+  ), [loadExample]);
 
   return (
     <ReactFlowProvider>
@@ -403,43 +368,38 @@ export function EditorWorkspace({ theme = "light", initialSource }: EditorWorksp
         {/* SiteHeader (brand on left) + editor controls on the right */}
         <SiteHeader
           sticky={false}
+          brandHref={standalone ? "https://simten.dev" : undefined}
           right={
             <div className="flex flex-1 items-center gap-2 justify-end pl-3">
               <span className="text-sm font-semibold text-foreground/80 mr-auto pl-2 border-l border-border">
                 Editor
               </span>
 
-              <Button
-                onClick={() => setChatOpen(true)}
-                variant="outline"
-                size="sm"
-                className="gap-2"
-                title="Open AI Assistant (Cmd+K)"
-              >
-                <Bot className="h-4 w-4" />
-              </Button>
+              {!standalone && (
+                <>
+                  <div className="h-5 w-px bg-border" />
 
-              <div className="h-5 w-px bg-border" />
-
-              <Button
-                onClick={handleShare}
-                variant="outline"
-                size="sm"
-                className="gap-2"
-                title="Copy a shareable link to this circuit"
-                disabled={shareStatus.kind === 'sharing'}
-              >
-                <Share2 className="h-4 w-4" />
-                <span className="hidden sm:inline text-xs">
-                  {shareStatus.kind === 'sharing'
-                    ? 'Sharing…'
-                    : shareStatus.kind === 'copied'
-                      ? 'Copied!'
-                      : shareStatus.kind === 'error'
-                        ? shareStatus.message
-                        : 'Share'}
-                </span>
-              </Button>
+                  <Button
+                    onClick={handleShare}
+                    variant="outline"
+                    size="sm"
+                    className="gap-2"
+                    title="Copy a shareable link to this circuit"
+                    disabled={shareStatus.kind === 'sharing'}
+                  >
+                    <Share2 className="h-4 w-4" />
+                    <span className="hidden sm:inline text-xs">
+                      {shareStatus.kind === 'sharing'
+                        ? 'Sharing…'
+                        : shareStatus.kind === 'copied'
+                          ? 'Copied!'
+                          : shareStatus.kind === 'error'
+                            ? shareStatus.message
+                            : 'Share'}
+                    </span>
+                  </Button>
+                </>
+              )}
 
               <Button
                 onClick={handleExportVerilog}
@@ -567,47 +527,6 @@ export function EditorWorkspace({ theme = "light", initialSource }: EditorWorksp
             <SignalOutputPanel portValues={sim.portValues ?? undefined} />
           </div>
         )}
-
-        {/* AI Chat Panel */}
-        <ChatPanel
-          getCurrentCode={() => editorRef.current?.getCode() ?? ""}
-          setCode={(code) => {
-            editorRef.current?.setCode(code);
-            // Trigger recompile after setting code
-            setTimeout(() => editorRef.current?.compile(), 100);
-          }}
-          setNode={(nodeName, value) => {
-            // Read circuit from store at call time to avoid stale closures.
-            const currentCircuit = useCircuitStore.getState().circuit;
-            if (currentCircuit) {
-              const node = currentCircuit.nodes.find(n =>
-                n.id === nodeName ||
-                n.label === nodeName ||
-                n.id.includes(`_${nodeName}_`) ||
-                n.id.endsWith(`_${nodeName}`)
-              );
-              if (node) {
-                useCircuitStore.getState().updateNode(node.id, { arguments: { ...node.arguments, value } });
-                sim.setNode(node.id, value);
-              } else {
-                console.warn('[setNode] Node not found:', nodeName, 'in circuit with', currentCircuit.nodes.length, 'nodes');
-              }
-            }
-          }}
-          runSimulation={async (cycles) => {
-            for (let i = 0; i < cycles; i++) {
-              sim.tick();
-            }
-          }}
-          insertNode={(componentRef, label) => {
-            console.log("[Chat] Insert node:", componentRef, label);
-          }}
-          sourceCodeHash={sourceCodeHash}
-          onSendToChannel={mcpStatus === 'connected' ? sendToClaudePrompt : undefined}
-          channelThinking={channelThinking}
-          setChannelThinking={setChannelThinking}
-          mcpStatus={mcpStatus}
-        />
       </div>
       </TooltipProvider>
     </ReactFlowProvider>
