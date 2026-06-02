@@ -1178,6 +1178,15 @@ export function ClaudeDemoSection({
             <CopyCommand command="claude mcp add simten npx @simten/mcp" />
           </div>
           <div className="mt-5 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[12px] text-muted-foreground">
+            <a
+              href="https://github.com/simtenHQ/simten"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="transition-colors hover:text-foreground"
+            >
+              Open source · Apache-2.0
+            </a>
+            <span className="text-muted-foreground/40">·</span>
             <span>Synthesizable Verilog</span>
             <span className="text-muted-foreground/40">·</span>
             <span>Runs on real FPGAs (ULX3S)</span>
