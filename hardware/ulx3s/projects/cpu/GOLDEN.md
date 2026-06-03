@@ -33,12 +33,9 @@ thing it certifies. A red guard with no hardware re-verify behind it stays red.
 
 | Date | Commit | What ran on the board | Result |
 |------|--------|------------------------|--------|
-| _pending_ | _this branch (RV32I_Core consolidation)_ | `fpga:run --firmware=fibonacci.c --match=514229` + `fpga:verify --suite` | **pending board flash** |
+| 2026-06-03 | `332a4dd` (RV32I_Core consolidation) | `fpga:run --project=cpu --firmware=fibonacci.c --match=514229` on a ULX3S 85F | ✅ matched `514229` (UART pos 186); `fpga:verify --suite` 69/69 |
 
-> Provenance note: this golden is **byte-identical** to the pre-consolidation FPGA
-> netlist (verified by an empty `dump-netlist` diff across the refactor) and passes
-> `fpga:test` (69/69, sim). Its hardware authority therefore *inherits* from
-> whatever last flashed `main` — but the fresh board re-verify above is still
-> pending and should be recorded here once done. Until then, treat the hardware
-> guarantee as "byte-identical to the previously-shipped netlist," not "re-flashed
-> on this commit."
+> This golden is also **byte-identical** to the pre-consolidation FPGA netlist
+> (empty `dump-netlist` diff across the refactor) and passes `fpga:test` (69/69,
+> sim) — but the row above is first-hand: the pinned netlist was synthesized,
+> flashed, and ran correct firmware on real silicon at that commit.
