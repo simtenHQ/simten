@@ -1,5 +1,12 @@
 # @simten/demos
 
+## 0.0.7
+
+### Patch Changes
+
+- Updated dependencies [d51b424]
+  - @simten/core@0.3.0
+
 ## 0.0.6
 
 ### Patch Changes
