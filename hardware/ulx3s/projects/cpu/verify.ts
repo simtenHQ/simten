@@ -29,10 +29,10 @@ import { tests, type Test } from './tests.js';
 const VERIFIER_URL = process.env.VERIFIER_URL ?? 'http://localhost:55002/verify';
 
 // Load the CPU's Verilog — already exported to combined.v
-const combinedV = readFileSync(resolve(import.meta.dir, 'combined.v'), 'utf8');
+const combinedV = readFileSync(resolve(import.meta.dirname, 'combined.v'), 'utf8');
 
 // Where iverilog VCDs land. Created lazily on first write.
-const VCD_DIR = resolve(import.meta.dir, '.vcd');
+const VCD_DIR = resolve(import.meta.dirname, '.vcd');
 
 function writeVcd(name: string, vcdBase64: string | undefined): string | null {
   if (!vcdBase64) return null;
@@ -186,7 +186,7 @@ async function verify(firmware: number[], maxCycles: number): Promise<{ ok: bool
 
 async function loadHelloFirmware(): Promise<number[]> {
   // Use existing compile logic: invoke the compiler service
-  const helloSrc = readFileSync(resolve(import.meta.dir, 'firmware/hello.c'), 'utf8');
+  const helloSrc = readFileSync(resolve(import.meta.dirname, 'firmware/hello.c'), 'utf8');
   const LINKER_SCRIPT = `
 OUTPUT_ARCH(riscv)
 ENTRY(_start)

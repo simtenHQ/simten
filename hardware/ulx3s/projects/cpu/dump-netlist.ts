@@ -21,7 +21,7 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { elaborate } from '../../../../packages/core/src/simulator/elaboration.js';
+import { elaborate } from '@simten/core/simulator';
 import { buildCPUCore } from './index.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));

@@ -82,7 +82,7 @@ if (arg?.endsWith('.c')) {
     .map(l => parseInt(l, 16) >>> 0);
 } else {
   // Default: compile hello.c
-  const src = readFileSync(resolve(import.meta.dir, 'firmware/hello.c'), 'utf8');
+  const src = readFileSync(resolve(import.meta.dirname, 'firmware/hello.c'), 'utf8');
   words = await compileC(src);
 }
 
