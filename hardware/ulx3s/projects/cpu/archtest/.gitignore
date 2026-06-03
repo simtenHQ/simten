@@ -1,0 +1,2 @@
+# Build artifacts: compiled ELFs, disassembly, signatures, generated link scripts.
+build/
