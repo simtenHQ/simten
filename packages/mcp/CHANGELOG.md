@@ -1,5 +1,12 @@
 # @simten/mcp
 
+## 0.4.1
+
+### Patch Changes
+
+- Updated dependencies [d51b424]
+  - @simten/core@0.3.0
+
 ## 0.4.0
 
 ### Minor Changes
