@@ -156,13 +156,16 @@ export function useRV32IDebugger() {
     sim.reset();
   }, [sim.reset]);
 
-  // Extract pipeline stage PCs from portValues
+  // Pipeline-stage PCs read from RV32I_Core's debug outputs (top-level ports) —
+  // the pipeline registers now live inside the `cpu` sub-node, so we no longer
+  // reach internal node labels. MEM/WB outputs are PC+4 of the in-flight
+  // instruction; subtract 4 to recover the stage PC.
   const pipelineStages: PipelineStages = {
-    IF:  readPort(sim.portValues, "pc",         "q"),
-    ID:  readPort(sim.portValues, "ifid_pc",    "q"),
-    EX:  readPort(sim.portValues, "idex_pc",    "q"),
-    MEM: (() => { const v = readPort(sim.portValues, "exmem_pc4",  "q"); return v != null ? (v - 4) >>> 0 : null; })(),
-    WB:  (() => { const v = readPort(sim.portValues, "memwb_pc4",  "q"); return v != null ? (v - 4) >>> 0 : null; })(),
+    IF:  readPort(sim.portValues, "__top__", "if_pc"),
+    ID:  readPort(sim.portValues, "__top__", "id_pc"),
+    EX:  readPort(sim.portValues, "__top__", "ex_pc"),
+    MEM: (() => { const v = readPort(sim.portValues, "__top__", "mem_pc4"); return v != null ? (v - 4) >>> 0 : null; })(),
+    WB:  (() => { const v = readPort(sim.portValues, "__top__", "wb_pc4"); return v != null ? (v - 4) >>> 0 : null; })(),
   };
 
   // Scan the regfile via the JTAG-style debug port in one sandbox round-trip.
