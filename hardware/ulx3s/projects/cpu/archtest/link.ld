@@ -17,10 +17,12 @@ OUTPUT_ARCH(riscv)
 ENTRY(rvtest_entry_point)
 
 MEMORY {
-    /* IMEM ends at 0x0FFFF, abutting DMEM at 0x10000 — no overlap. 64K easily
-       holds the largest arch-test's code; the DUT's reset vector is 0x0. */
-    IMEM (rx)  : ORIGIN = 0x00000000, LENGTH = 64K
-    DMEM (rwx) : ORIGIN = 0x00010000, LENGTH = 256K
+    /* IMEM is large because branch/jump arch-tests emit megabytes of nop
+       padding to span displacement ranges (jal-01 .text ~1.75MB). DMEM starts
+       above the largest .text so the two never overlap. The DUT's reset vector
+       is 0x0; enlarging sim memory is netlist-neutral. */
+    IMEM (rx)  : ORIGIN = 0x00000000, LENGTH = 4M
+    DMEM (rwx) : ORIGIN = 0x00400000, LENGTH = 1M
 }
 
 SECTIONS {

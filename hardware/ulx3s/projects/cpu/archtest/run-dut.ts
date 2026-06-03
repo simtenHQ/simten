@@ -18,13 +18,16 @@
  */
 
 import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { simulate } from '@simten/core/sim';
 import { buildCPUCore } from '../index.js';
 
+// Must match link.ld: IMEM 4M @ 0x0, DMEM 1M @ 0x400000. IMEM is large because
+// branch/jump arch-tests emit megabytes of nop padding (jal-01 .text ~1.75MB).
 const IMEM_BASE = 0x00000000;
-const IMEM_END = 0x00010000; // 64K — abuts DMEM
-const DMEM_BASE = 0x00010000;
-const DMEM_END = 0x00050000; // 256K
+const IMEM_END = 0x00400000; // 4M — abuts DMEM
+const DMEM_BASE = 0x00400000;
+const DMEM_END = 0x00500000; // 1M
 
 const u32 = (n: number) => n >>> 0;
 
@@ -67,8 +70,10 @@ function fetchWord(mem: Uint8Array, base: number, addr: number): number {
   return u32(mem[o] | (mem[o + 1] << 8) | (mem[o + 2] << 16) | (mem[o + 3] << 24));
 }
 
-function run(elf: string, beginSig: number, endSig: number, tohostAddr: number, maxCycles: number): string[] {
+export function runDut(elf: string, beginSig: number, endSig: number, tohostAddr: number,
+  maxCycles = 200000, mutate?: (imem: Uint8Array) => void): string[] {
   const { imem, dmem } = loadElf(elf, tohostAddr);
+  if (mutate) mutate(imem); // fault injection: perturb the DUT's instruction memory
 
   const { built } = buildCPUCore();
   const cpu = simulate(built);
@@ -121,10 +126,13 @@ function run(elf: string, beginSig: number, endSig: number, tohostAddr: number, 
   return out;
 }
 
-const [elf, beginHex, endHex, tohostHex, cyclesArg] = process.argv.slice(2);
-if (!elf || !beginHex || !endHex || !tohostHex) {
-  console.error('usage: tsx run-dut.ts <elf> <begin_sig_hex> <end_sig_hex> <tohost_hex> [maxCycles]');
-  process.exit(2);
+// CLI entry — only when invoked directly (not when imported by run-suite.ts).
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  const [elf, beginHex, endHex, tohostHex, cyclesArg] = process.argv.slice(2);
+  if (!elf || !beginHex || !endHex || !tohostHex) {
+    console.error('usage: tsx run-dut.ts <elf> <begin_sig_hex> <end_sig_hex> <tohost_hex> [maxCycles]');
+    process.exit(2);
+  }
+  const sig = runDut(elf, parseInt(beginHex, 16), parseInt(endHex, 16), parseInt(tohostHex, 16), cyclesArg ? Number(cyclesArg) : 200000);
+  process.stdout.write(sig.join('\n') + '\n');
 }
-const sig = run(elf, parseInt(beginHex, 16), parseInt(endHex, 16), parseInt(tohostHex, 16), cyclesArg ? Number(cyclesArg) : 200000);
-process.stdout.write(sig.join('\n') + '\n');
