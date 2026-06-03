@@ -1,0 +1,4474 @@
+{
+  "top": "RV32I_CPU_Core",
+  "nodes": [
+    {
+      "id": "cpu.four",
+      "primitiveType": "Constant",
+      "arguments": {
+        "value": 4,
+        "width": 32
+      }
+    },
+    {
+      "id": "cpu.zero32",
+      "primitiveType": "Constant",
+      "arguments": {
+        "value": 0,
+        "width": 32
+      }
+    },
+    {
+      "id": "cpu.zero5",
+      "primitiveType": "Constant",
+      "arguments": {
+        "value": 0,
+        "width": 5
+      }
+    },
+    {
+      "id": "cpu.zero4",
+      "primitiveType": "Constant",
+      "arguments": {
+        "value": 0,
+        "width": 4
+      }
+    },
+    {
+      "id": "cpu.zero3",
+      "primitiveType": "Constant",
+      "arguments": {
+        "value": 0,
+        "width": 3
+      }
+    },
+    {
+      "id": "cpu.zero1",
+      "primitiveType": "Constant",
+      "arguments": {
+        "value": 0,
+        "width": 1
+      }
+    },
+    {
+      "id": "cpu.one1",
+      "primitiveType": "Constant",
+      "arguments": {
+        "value": 1,
+        "width": 1
+      }
+    },
+    {
+      "id": "cpu.hazard",
+      "primitiveType": "RV32I_HazardUnit",
+      "arguments": {}
+    },
+    {
+      "id": "cpu.stall_inv",
+      "primitiveType": "Not",
+      "arguments": {}
+    },
+    {
+      "id": "cpu.pc",
+      "primitiveType": "Register",
+      "arguments": {
+        "width": 32
+      }
+    },
+    {
+      "id": "cpu.pc_plus4",
+      "primitiveType": "Adder",
+      "arguments": {
+        "width": 32
+      }
+    },
+    {
+      "id": "cpu.ifid_instr_mux",
+      "primitiveType": "Mux",
+      "arguments": {
+        "width": 32
+      }
+    },
+    {
+      "id": "cpu.ifid_instr",
+      "primitiveType": "Register",
+      "arguments": {
+        "width": 32
+      }
+    },
+    {
+      "id": "cpu.ifid_pc_mux",
+      "primitiveType": "Mux",
+      "arguments": {
+        "width": 32
+      }
+    },
+    {
+      "id": "cpu.ifid_pc",
+      "primitiveType": "Register",
+      "arguments": {
+        "width": 32
+      }
+    },
+    {
+      "id": "cpu.ifid_pc4_mux",
+      "primitiveType": "Mux",
+      "arguments": {
+        "width": 32
+      }
+    },
+    {
+      "id": "cpu.ifid_pc4",
+      "primitiveType": "Register",
+      "arguments": {
+        "width": 32
+      }
+    },
+    {
+      "id": "cpu.decode",
+      "primitiveType": "RV32I_Decode",
+      "arguments": {}
+    },
+    {
+      "id": "cpu.immgen",
+      "primitiveType": "RV32I_ImmGen",
+      "arguments": {}
+    },
+    {
+      "id": "cpu.control",
+      "primitiveType": "RV32I_Control",
+      "arguments": {}
+    },
+    {
+      "id": "cpu.funct7_splitter",
+      "primitiveType": "BitSlice",
+      "arguments": {
+        "low": 5,
+        "high": 5
+      }
+    },
+    {
+      "id": "cpu.regfile",
+      "primitiveType": "RV32I_RegisterFile",
+      "arguments": {}
+    },
+    {
+      "id": "cpu.ifid_decode_for_hazard",
+      "primitiveType": "RV32I_Decode",
+      "arguments": {}
+    },
+    {
+      "id": "cpu.idex_flush",
+      "primitiveType": "Or",
+      "arguments": {}
+    },
+    {
+      "id": "cpu.idex_pc",
+      "primitiveType": "Register",
+      "arguments": {
+        "width": 32
+      }
+    },
+    {
+      "id": "cpu.idex_pc4",
+      "primitiveType": "Register",
+      "arguments": {
+        "width": 32
+      }
+    },
+    {
+      "id": "cpu.wb_bypass1",
+      "primitiveType": "RV32I_WBBypass",
+      "arguments": {}
+    },
+    {
+      "id": "cpu.wb_bypass2",
+      "primitiveType": "RV32I_WBBypass",
+      "arguments": {}
+    },
+    {
+      "id": "cpu.idex_read1",
+      "primitiveType": "Register",
+      "arguments": {
+        "width": 32
+      }
+    },
+    {
+      "id": "cpu.idex_read2",
+      "primitiveType": "Register",
+      "arguments": {
+        "width": 32
+      }
+    },
+    {
+      "id": "cpu.idex_imm",
+      "primitiveType": "Register",
+      "arguments": {
+        "width": 32
+      }
+    },
+    {
+      "id": "cpu.idex_rs1_mux",
+      "primitiveType": "Mux",
+      "arguments": {
+        "width": 5
+      }
+    },
+    {
+      "id": "cpu.idex_rs1",
+      "primitiveType": "Register",
+      "arguments": {
+        "width": 5
+      }
+    },
+    {
+      "id": "cpu.idex_rs2_mux",
+      "primitiveType": "Mux",
+      "arguments": {
+        "width": 5
+      }
+    },
+    {
+      "id": "cpu.idex_rs2",
+      "primitiveType": "Register",
+      "arguments": {
+        "width": 5
+      }
+    },
+    {
+      "id": "cpu.idex_rd_mux",
+      "primitiveType": "Mux",
+      "arguments": {
+        "width": 5
+      }
+    },
+    {
+      "id": "cpu.idex_rd",
+      "primitiveType": "Register",
+      "arguments": {
+        "width": 5
+      }
+    },
+    {
+      "id": "cpu.idex_funct3_mux",
+      "primitiveType": "Mux",
+      "arguments": {
+        "width": 3
+      }
+    },
+    {
+      "id": "cpu.idex_funct3",
+      "primitiveType": "Register",
+      "arguments": {
+        "width": 3
+      }
+    },
+    {
+      "id": "cpu.idex_alu_op_mux",
+      "primitiveType": "Mux",
+      "arguments": {
+        "width": 4
+      }
+    },
+    {
+      "id": "cpu.idex_alu_op",
+      "primitiveType": "Register",
+      "arguments": {
+        "width": 4
+      }
+    },
+    {
+      "id": "cpu.idex_alu_src_mux",
+      "primitiveType": "Mux",
+      "arguments": {
+        "width": 1
+      }
+    },
+    {
+      "id": "cpu.idex_alu_src",
+      "primitiveType": "Register",
+      "arguments": {
+        "width": 1
+      }
+    },
+    {
+      "id": "cpu.idex_mem_read_mux",
+      "primitiveType": "Mux",
+      "arguments": {
+        "width": 1
+      }
+    },
+    {
+      "id": "cpu.idex_mem_read",
+      "primitiveType": "Register",
+      "arguments": {
+        "width": 1
+      }
+    },
+    {
+      "id": "cpu.idex_mem_write_mux",
+      "primitiveType": "Mux",
+      "arguments": {
+        "width": 1
+      }
+    },
+    {
+      "id": "cpu.idex_mem_write",
+      "primitiveType": "Register",
+      "arguments": {
+        "width": 1
+      }
+    },
+    {
+      "id": "cpu.idex_reg_write_mux",
+      "primitiveType": "Mux",
+      "arguments": {
+        "width": 1
+      }
+    },
+    {
+      "id": "cpu.idex_reg_write",
+      "primitiveType": "Register",
+      "arguments": {
+        "width": 1
+      }
+    },
+    {
+      "id": "cpu.idex_mem_to_reg_mux",
+      "primitiveType": "Mux",
+      "arguments": {
+        "width": 1
+      }
+    },
+    {
+      "id": "cpu.idex_mem_to_reg",
+      "primitiveType": "Register",
+      "arguments": {
+        "width": 1
+      }
+    },
+    {
+      "id": "cpu.idex_branch_mux",
+      "primitiveType": "Mux",
+      "arguments": {
+        "width": 1
+      }
+    },
+    {
+      "id": "cpu.idex_branch",
+      "primitiveType": "Register",
+      "arguments": {
+        "width": 1
+      }
+    },
+    {
+      "id": "cpu.idex_jump_mux",
+      "primitiveType": "Mux",
+      "arguments": {
+        "width": 1
+      }
+    },
+    {
+      "id": "cpu.idex_jump",
+      "primitiveType": "Register",
+      "arguments": {
+        "width": 1
+      }
+    },
+    {
+      "id": "cpu.idex_lui_mux",
+      "primitiveType": "Mux",
+      "arguments": {
+        "width": 1
+      }
+    },
+    {
+      "id": "cpu.idex_lui",
+      "primitiveType": "Register",
+      "arguments": {
+        "width": 1
+      }
+    },
+    {
+      "id": "cpu.idex_auipc_mux",
+      "primitiveType": "Mux",
+      "arguments": {
+        "width": 1
+      }
+    },
+    {
+      "id": "cpu.idex_auipc",
+      "primitiveType": "Register",
+      "arguments": {
+        "width": 1
+      }
+    },
+    {
+      "id": "cpu.idex_is_jalr_mux",
+      "primitiveType": "Mux",
+      "arguments": {
+        "width": 1
+      }
+    },
+    {
+      "id": "cpu.idex_is_jalr",
+      "primitiveType": "Register",
+      "arguments": {
+        "width": 1
+      }
+    },
+    {
+      "id": "cpu.forward",
+      "primitiveType": "RV32I_ForwardingUnit",
+      "arguments": {}
+    },
+    {
+      "id": "cpu.fwd_a_bit0",
+      "primitiveType": "BitSlice",
+      "arguments": {
+        "low": 0,
+        "high": 0
+      }
+    },
+    {
+      "id": "cpu.fwd_a_bit1",
+      "primitiveType": "BitSlice",
+      "arguments": {
+        "low": 1,
+        "high": 1
+      }
+    },
+    {
+      "id": "cpu.fwd_a_mux1",
+      "primitiveType": "Mux",
+      "arguments": {
+        "width": 32
+      }
+    },
+    {
+      "id": "cpu.fwd_a_mux2",
+      "primitiveType": "Mux",
+      "arguments": {
+        "width": 32
+      }
+    },
+    {
+      "id": "cpu.fwd_b_bit0",
+      "primitiveType": "BitSlice",
+      "arguments": {
+        "low": 0,
+        "high": 0
+      }
+    },
+    {
+      "id": "cpu.fwd_b_bit1",
+      "primitiveType": "BitSlice",
+      "arguments": {
+        "low": 1,
+        "high": 1
+      }
+    },
+    {
+      "id": "cpu.fwd_b_mux1",
+      "primitiveType": "Mux",
+      "arguments": {
+        "width": 32
+      }
+    },
+    {
+      "id": "cpu.fwd_b_mux2",
+      "primitiveType": "Mux",
+      "arguments": {
+        "width": 32
+      }
+    },
+    {
+      "id": "cpu.alu_src_mux",
+      "primitiveType": "Mux",
+      "arguments": {
+        "width": 32
+      }
+    },
+    {
+      "id": "cpu.alu",
+      "primitiveType": "RV32I_ALU",
+      "arguments": {}
+    },
+    {
+      "id": "cpu.branch_comp",
+      "primitiveType": "RV32I_BranchComp",
+      "arguments": {}
+    },
+    {
+      "id": "cpu.branch_target",
+      "primitiveType": "Adder",
+      "arguments": {
+        "width": 32
+      }
+    },
+    {
+      "id": "cpu.jalr_target",
+      "primitiveType": "BusAnd",
+      "arguments": {
+        "width": 32
+      }
+    },
+    {
+      "id": "cpu.jalr_mask",
+      "primitiveType": "Constant",
+      "arguments": {
+        "value": 4294967294,
+        "width": 32
+      }
+    },
+    {
+      "id": "cpu.pc_plus_imm",
+      "primitiveType": "Adder",
+      "arguments": {
+        "width": 32
+      }
+    },
+    {
+      "id": "cpu.ex_result",
+      "primitiveType": "RV32I_WritebackMux",
+      "arguments": {}
+    },
+    {
+      "id": "cpu.branch_and",
+      "primitiveType": "And",
+      "arguments": {}
+    },
+    {
+      "id": "cpu.next_pc",
+      "primitiveType": "RV32I_NextPCMux",
+      "arguments": {}
+    },
+    {
+      "id": "cpu.pc_src_taken",
+      "primitiveType": "Or",
+      "arguments": {}
+    },
+    {
+      "id": "cpu.pc_next_mux",
+      "primitiveType": "Mux",
+      "arguments": {
+        "width": 32
+      }
+    },
+    {
+      "id": "cpu.exmem_alu_result",
+      "primitiveType": "Register",
+      "arguments": {
+        "width": 32
+      }
+    },
+    {
+      "id": "cpu.exmem_result",
+      "primitiveType": "Register",
+      "arguments": {
+        "width": 32
+      }
+    },
+    {
+      "id": "cpu.exmem_read2",
+      "primitiveType": "Register",
+      "arguments": {
+        "width": 32
+      }
+    },
+    {
+      "id": "cpu.exmem_rd",
+      "primitiveType": "Register",
+      "arguments": {
+        "width": 5
+      }
+    },
+    {
+      "id": "cpu.exmem_funct3",
+      "primitiveType": "Register",
+      "arguments": {
+        "width": 3
+      }
+    },
+    {
+      "id": "cpu.exmem_pc4",
+      "primitiveType": "Register",
+      "arguments": {
+        "width": 32
+      }
+    },
+    {
+      "id": "cpu.exmem_imm",
+      "primitiveType": "Register",
+      "arguments": {
+        "width": 32
+      }
+    },
+    {
+      "id": "cpu.exmem_pc_plus_imm",
+      "primitiveType": "Register",
+      "arguments": {
+        "width": 32
+      }
+    },
+    {
+      "id": "cpu.exmem_mem_read",
+      "primitiveType": "Register",
+      "arguments": {
+        "width": 1
+      }
+    },
+    {
+      "id": "cpu.exmem_mem_write",
+      "primitiveType": "Register",
+      "arguments": {
+        "width": 1
+      }
+    },
+    {
+      "id": "cpu.exmem_reg_write",
+      "primitiveType": "Register",
+      "arguments": {
+        "width": 1
+      }
+    },
+    {
+      "id": "cpu.exmem_mem_to_reg",
+      "primitiveType": "Register",
+      "arguments": {
+        "width": 1
+      }
+    },
+    {
+      "id": "cpu.exmem_lui",
+      "primitiveType": "Register",
+      "arguments": {
+        "width": 1
+      }
+    },
+    {
+      "id": "cpu.exmem_auipc",
+      "primitiveType": "Register",
+      "arguments": {
+        "width": 1
+      }
+    },
+    {
+      "id": "cpu.exmem_jump",
+      "primitiveType": "Register",
+      "arguments": {
+        "width": 1
+      }
+    },
+    {
+      "id": "cpu.memwb_alu_result",
+      "primitiveType": "Register",
+      "arguments": {
+        "width": 32
+      }
+    },
+    {
+      "id": "cpu.memwb_load_data",
+      "primitiveType": "Register",
+      "arguments": {
+        "width": 32
+      }
+    },
+    {
+      "id": "cpu.memwb_rd",
+      "primitiveType": "Register",
+      "arguments": {
+        "width": 5
+      }
+    },
+    {
+      "id": "cpu.memwb_pc4",
+      "primitiveType": "Register",
+      "arguments": {
+        "width": 32
+      }
+    },
+    {
+      "id": "cpu.memwb_imm",
+      "primitiveType": "Register",
+      "arguments": {
+        "width": 32
+      }
+    },
+    {
+      "id": "cpu.memwb_pc_plus_imm",
+      "primitiveType": "Register",
+      "arguments": {
+        "width": 32
+      }
+    },
+    {
+      "id": "cpu.memwb_reg_write",
+      "primitiveType": "Register",
+      "arguments": {
+        "width": 1
+      }
+    },
+    {
+      "id": "cpu.memwb_mem_to_reg",
+      "primitiveType": "Register",
+      "arguments": {
+        "width": 1
+      }
+    },
+    {
+      "id": "cpu.memwb_lui",
+      "primitiveType": "Register",
+      "arguments": {
+        "width": 1
+      }
+    },
+    {
+      "id": "cpu.memwb_auipc",
+      "primitiveType": "Register",
+      "arguments": {
+        "width": 1
+      }
+    },
+    {
+      "id": "cpu.memwb_jump",
+      "primitiveType": "Register",
+      "arguments": {
+        "width": 1
+      }
+    },
+    {
+      "id": "cpu.exmem_lo2",
+      "primitiveType": "BitSlice",
+      "arguments": {
+        "low": 0,
+        "high": 1
+      }
+    },
+    {
+      "id": "cpu.memwb_byte_offset",
+      "primitiveType": "Register",
+      "arguments": {
+        "width": 2
+      }
+    },
+    {
+      "id": "cpu.memwb_funct3",
+      "primitiveType": "Register",
+      "arguments": {
+        "width": 3
+      }
+    },
+    {
+      "id": "cpu.load_align",
+      "primitiveType": "RV32I_LoadAlignFull",
+      "arguments": {}
+    },
+    {
+      "id": "cpu.wb_mux",
+      "primitiveType": "RV32I_WritebackMux",
+      "arguments": {}
+    },
+    {
+      "id": "zero32",
+      "primitiveType": "Constant",
+      "arguments": {
+        "value": 0,
+        "width": 32
+      }
+    },
+    {
+      "id": "zero1",
+      "primitiveType": "Constant",
+      "arguments": {
+        "value": 0,
+        "width": 1
+      }
+    }
+  ],
+  "connections": [
+    {
+      "source": {
+        "nodeId": "cpu.hazard",
+        "portName": "stall"
+      },
+      "target": {
+        "nodeId": "cpu.stall_inv",
+        "portName": "in"
+      },
+      "portType": {
+        "kind": "bit"
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.hazard",
+        "portName": "stall"
+      },
+      "target": {
+        "nodeId": "cpu.idex_flush",
+        "portName": "b"
+      },
+      "portType": {
+        "kind": "bit"
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.pc",
+        "portName": "q"
+      },
+      "target": {
+        "nodeId": "cpu.pc_plus4",
+        "portName": "a"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 32
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.pc",
+        "portName": "q"
+      },
+      "target": {
+        "nodeId": "cpu.ifid_pc_mux",
+        "portName": "in0"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 32
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.four",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.pc_plus4",
+        "portName": "b"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 32
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.stall_inv",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.pc",
+        "portName": "we"
+      },
+      "portType": {
+        "kind": "bit"
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.stall_inv",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.ifid_instr",
+        "portName": "we"
+      },
+      "portType": {
+        "kind": "bit"
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.stall_inv",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.ifid_pc",
+        "portName": "we"
+      },
+      "portType": {
+        "kind": "bit"
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.stall_inv",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.ifid_pc4",
+        "portName": "we"
+      },
+      "portType": {
+        "kind": "bit"
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.zero32",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.ifid_instr_mux",
+        "portName": "in1"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 32
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.zero32",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.ifid_pc_mux",
+        "portName": "in1"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 32
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.zero32",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.ifid_pc4_mux",
+        "portName": "in1"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 32
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.zero32",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.ex_result",
+        "portName": "load_data"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 32
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.hazard",
+        "portName": "flush"
+      },
+      "target": {
+        "nodeId": "cpu.ifid_instr_mux",
+        "portName": "sel"
+      },
+      "portType": {
+        "kind": "bit"
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.hazard",
+        "portName": "flush"
+      },
+      "target": {
+        "nodeId": "cpu.ifid_pc_mux",
+        "portName": "sel"
+      },
+      "portType": {
+        "kind": "bit"
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.hazard",
+        "portName": "flush"
+      },
+      "target": {
+        "nodeId": "cpu.ifid_pc4_mux",
+        "portName": "sel"
+      },
+      "portType": {
+        "kind": "bit"
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.hazard",
+        "portName": "flush"
+      },
+      "target": {
+        "nodeId": "cpu.idex_flush",
+        "portName": "a"
+      },
+      "portType": {
+        "kind": "bit"
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.ifid_instr_mux",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.ifid_instr",
+        "portName": "data"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 32
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.ifid_pc_mux",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.ifid_pc",
+        "portName": "data"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 32
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.pc_plus4",
+        "portName": "sum"
+      },
+      "target": {
+        "nodeId": "cpu.ifid_pc4_mux",
+        "portName": "in0"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 32
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.pc_plus4",
+        "portName": "sum"
+      },
+      "target": {
+        "nodeId": "cpu.pc_next_mux",
+        "portName": "in0"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 32
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.ifid_pc4_mux",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.ifid_pc4",
+        "portName": "data"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 32
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.ifid_instr",
+        "portName": "q"
+      },
+      "target": {
+        "nodeId": "cpu.decode",
+        "portName": "instruction"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 32
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.ifid_instr",
+        "portName": "q"
+      },
+      "target": {
+        "nodeId": "cpu.immgen",
+        "portName": "instruction"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 32
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.ifid_instr",
+        "portName": "q"
+      },
+      "target": {
+        "nodeId": "cpu.ifid_decode_for_hazard",
+        "portName": "instruction"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 32
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.decode",
+        "portName": "opcode"
+      },
+      "target": {
+        "nodeId": "cpu.control",
+        "portName": "opcode"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 7
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.decode",
+        "portName": "funct3"
+      },
+      "target": {
+        "nodeId": "cpu.control",
+        "portName": "funct3"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 3
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.decode",
+        "portName": "funct3"
+      },
+      "target": {
+        "nodeId": "cpu.idex_funct3_mux",
+        "portName": "in0"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 3
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.decode",
+        "portName": "funct7"
+      },
+      "target": {
+        "nodeId": "cpu.funct7_splitter",
+        "portName": "in"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 7
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.funct7_splitter",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.control",
+        "portName": "funct7_bit"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 8
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.decode",
+        "portName": "rs1"
+      },
+      "target": {
+        "nodeId": "cpu.regfile",
+        "portName": "rs1"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 5
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.decode",
+        "portName": "rs1"
+      },
+      "target": {
+        "nodeId": "cpu.wb_bypass1",
+        "portName": "rs_addr"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 5
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.decode",
+        "portName": "rs1"
+      },
+      "target": {
+        "nodeId": "cpu.idex_rs1_mux",
+        "portName": "in0"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 5
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.decode",
+        "portName": "rs2"
+      },
+      "target": {
+        "nodeId": "cpu.regfile",
+        "portName": "rs2"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 5
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.decode",
+        "portName": "rs2"
+      },
+      "target": {
+        "nodeId": "cpu.wb_bypass2",
+        "portName": "rs_addr"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 5
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.decode",
+        "portName": "rs2"
+      },
+      "target": {
+        "nodeId": "cpu.idex_rs2_mux",
+        "portName": "in0"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 5
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.ifid_decode_for_hazard",
+        "portName": "rs1"
+      },
+      "target": {
+        "nodeId": "cpu.hazard",
+        "portName": "if_rs1"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 5
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.ifid_decode_for_hazard",
+        "portName": "rs2"
+      },
+      "target": {
+        "nodeId": "cpu.hazard",
+        "portName": "if_rs2"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 5
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.ifid_pc",
+        "portName": "q"
+      },
+      "target": {
+        "nodeId": "cpu.idex_pc",
+        "portName": "data"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 32
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.one1",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.idex_pc",
+        "portName": "we"
+      },
+      "portType": {
+        "kind": "bit"
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.one1",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.idex_pc4",
+        "portName": "we"
+      },
+      "portType": {
+        "kind": "bit"
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.one1",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.idex_read1",
+        "portName": "we"
+      },
+      "portType": {
+        "kind": "bit"
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.one1",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.idex_read2",
+        "portName": "we"
+      },
+      "portType": {
+        "kind": "bit"
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.one1",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.idex_imm",
+        "portName": "we"
+      },
+      "portType": {
+        "kind": "bit"
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.one1",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.idex_rs1",
+        "portName": "we"
+      },
+      "portType": {
+        "kind": "bit"
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.one1",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.idex_rs2",
+        "portName": "we"
+      },
+      "portType": {
+        "kind": "bit"
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.one1",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.idex_rd",
+        "portName": "we"
+      },
+      "portType": {
+        "kind": "bit"
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.one1",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.idex_funct3",
+        "portName": "we"
+      },
+      "portType": {
+        "kind": "bit"
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.one1",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.idex_alu_op",
+        "portName": "we"
+      },
+      "portType": {
+        "kind": "bit"
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.one1",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.idex_alu_src",
+        "portName": "we"
+      },
+      "portType": {
+        "kind": "bit"
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.one1",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.idex_mem_read",
+        "portName": "we"
+      },
+      "portType": {
+        "kind": "bit"
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.one1",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.idex_mem_write",
+        "portName": "we"
+      },
+      "portType": {
+        "kind": "bit"
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.one1",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.idex_reg_write",
+        "portName": "we"
+      },
+      "portType": {
+        "kind": "bit"
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.one1",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.idex_mem_to_reg",
+        "portName": "we"
+      },
+      "portType": {
+        "kind": "bit"
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.one1",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.idex_branch",
+        "portName": "we"
+      },
+      "portType": {
+        "kind": "bit"
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.one1",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.idex_jump",
+        "portName": "we"
+      },
+      "portType": {
+        "kind": "bit"
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.one1",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.idex_lui",
+        "portName": "we"
+      },
+      "portType": {
+        "kind": "bit"
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.one1",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.idex_auipc",
+        "portName": "we"
+      },
+      "portType": {
+        "kind": "bit"
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.one1",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.idex_is_jalr",
+        "portName": "we"
+      },
+      "portType": {
+        "kind": "bit"
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.one1",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.exmem_alu_result",
+        "portName": "we"
+      },
+      "portType": {
+        "kind": "bit"
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.one1",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.exmem_result",
+        "portName": "we"
+      },
+      "portType": {
+        "kind": "bit"
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.one1",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.exmem_read2",
+        "portName": "we"
+      },
+      "portType": {
+        "kind": "bit"
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.one1",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.exmem_rd",
+        "portName": "we"
+      },
+      "portType": {
+        "kind": "bit"
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.one1",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.exmem_funct3",
+        "portName": "we"
+      },
+      "portType": {
+        "kind": "bit"
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.one1",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.exmem_pc4",
+        "portName": "we"
+      },
+      "portType": {
+        "kind": "bit"
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.one1",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.exmem_imm",
+        "portName": "we"
+      },
+      "portType": {
+        "kind": "bit"
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.one1",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.exmem_pc_plus_imm",
+        "portName": "we"
+      },
+      "portType": {
+        "kind": "bit"
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.one1",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.exmem_mem_read",
+        "portName": "we"
+      },
+      "portType": {
+        "kind": "bit"
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.one1",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.exmem_mem_write",
+        "portName": "we"
+      },
+      "portType": {
+        "kind": "bit"
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.one1",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.exmem_reg_write",
+        "portName": "we"
+      },
+      "portType": {
+        "kind": "bit"
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.one1",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.exmem_mem_to_reg",
+        "portName": "we"
+      },
+      "portType": {
+        "kind": "bit"
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.one1",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.exmem_lui",
+        "portName": "we"
+      },
+      "portType": {
+        "kind": "bit"
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.one1",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.exmem_auipc",
+        "portName": "we"
+      },
+      "portType": {
+        "kind": "bit"
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.one1",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.exmem_jump",
+        "portName": "we"
+      },
+      "portType": {
+        "kind": "bit"
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.one1",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.memwb_alu_result",
+        "portName": "we"
+      },
+      "portType": {
+        "kind": "bit"
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.one1",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.memwb_load_data",
+        "portName": "we"
+      },
+      "portType": {
+        "kind": "bit"
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.one1",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.memwb_rd",
+        "portName": "we"
+      },
+      "portType": {
+        "kind": "bit"
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.one1",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.memwb_pc4",
+        "portName": "we"
+      },
+      "portType": {
+        "kind": "bit"
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.one1",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.memwb_imm",
+        "portName": "we"
+      },
+      "portType": {
+        "kind": "bit"
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.one1",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.memwb_pc_plus_imm",
+        "portName": "we"
+      },
+      "portType": {
+        "kind": "bit"
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.one1",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.memwb_reg_write",
+        "portName": "we"
+      },
+      "portType": {
+        "kind": "bit"
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.one1",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.memwb_mem_to_reg",
+        "portName": "we"
+      },
+      "portType": {
+        "kind": "bit"
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.one1",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.memwb_lui",
+        "portName": "we"
+      },
+      "portType": {
+        "kind": "bit"
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.one1",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.memwb_auipc",
+        "portName": "we"
+      },
+      "portType": {
+        "kind": "bit"
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.one1",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.memwb_jump",
+        "portName": "we"
+      },
+      "portType": {
+        "kind": "bit"
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.one1",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.memwb_byte_offset",
+        "portName": "we"
+      },
+      "portType": {
+        "kind": "bit"
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.one1",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.memwb_funct3",
+        "portName": "we"
+      },
+      "portType": {
+        "kind": "bit"
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.ifid_pc4",
+        "portName": "q"
+      },
+      "target": {
+        "nodeId": "cpu.idex_pc4",
+        "portName": "data"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 32
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.regfile",
+        "portName": "read1"
+      },
+      "target": {
+        "nodeId": "cpu.wb_bypass1",
+        "portName": "rs_val"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 32
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.wb_mux",
+        "portName": "write_data"
+      },
+      "target": {
+        "nodeId": "cpu.wb_bypass1",
+        "portName": "wb_val"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 32
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.wb_mux",
+        "portName": "write_data"
+      },
+      "target": {
+        "nodeId": "cpu.wb_bypass2",
+        "portName": "wb_val"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 32
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.wb_mux",
+        "portName": "write_data"
+      },
+      "target": {
+        "nodeId": "cpu.regfile",
+        "portName": "write_data"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 32
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.wb_mux",
+        "portName": "write_data"
+      },
+      "target": {
+        "nodeId": "cpu.fwd_a_mux2",
+        "portName": "in1"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 32
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.wb_mux",
+        "portName": "write_data"
+      },
+      "target": {
+        "nodeId": "cpu.fwd_b_mux2",
+        "portName": "in1"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 32
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.memwb_rd",
+        "portName": "q"
+      },
+      "target": {
+        "nodeId": "cpu.wb_bypass1",
+        "portName": "wb_rd"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 5
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.memwb_rd",
+        "portName": "q"
+      },
+      "target": {
+        "nodeId": "cpu.wb_bypass2",
+        "portName": "wb_rd"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 5
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.memwb_rd",
+        "portName": "q"
+      },
+      "target": {
+        "nodeId": "cpu.forward",
+        "portName": "mem_rd"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 5
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.memwb_rd",
+        "portName": "q"
+      },
+      "target": {
+        "nodeId": "cpu.regfile",
+        "portName": "rd"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 5
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.memwb_reg_write",
+        "portName": "q"
+      },
+      "target": {
+        "nodeId": "cpu.wb_bypass1",
+        "portName": "wb_we"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 1
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.memwb_reg_write",
+        "portName": "q"
+      },
+      "target": {
+        "nodeId": "cpu.wb_bypass2",
+        "portName": "wb_we"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 1
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.memwb_reg_write",
+        "portName": "q"
+      },
+      "target": {
+        "nodeId": "cpu.forward",
+        "portName": "mem_reg_write"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 1
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.memwb_reg_write",
+        "portName": "q"
+      },
+      "target": {
+        "nodeId": "cpu.regfile",
+        "portName": "we"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 1
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.regfile",
+        "portName": "read2"
+      },
+      "target": {
+        "nodeId": "cpu.wb_bypass2",
+        "portName": "rs_val"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 32
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.wb_bypass1",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.idex_read1",
+        "portName": "data"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 32
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.wb_bypass2",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.idex_read2",
+        "portName": "data"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 32
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.immgen",
+        "portName": "immediate"
+      },
+      "target": {
+        "nodeId": "cpu.idex_imm",
+        "portName": "data"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 32
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.zero5",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.idex_rs1_mux",
+        "portName": "in1"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 5
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.zero5",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.idex_rs2_mux",
+        "portName": "in1"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 5
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.zero5",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.idex_rd_mux",
+        "portName": "in1"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 5
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.idex_flush",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.idex_rs1_mux",
+        "portName": "sel"
+      },
+      "portType": {
+        "kind": "bit"
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.idex_flush",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.idex_rs2_mux",
+        "portName": "sel"
+      },
+      "portType": {
+        "kind": "bit"
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.idex_flush",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.idex_rd_mux",
+        "portName": "sel"
+      },
+      "portType": {
+        "kind": "bit"
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.idex_flush",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.idex_funct3_mux",
+        "portName": "sel"
+      },
+      "portType": {
+        "kind": "bit"
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.idex_flush",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.idex_alu_op_mux",
+        "portName": "sel"
+      },
+      "portType": {
+        "kind": "bit"
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.idex_flush",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.idex_alu_src_mux",
+        "portName": "sel"
+      },
+      "portType": {
+        "kind": "bit"
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.idex_flush",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.idex_mem_read_mux",
+        "portName": "sel"
+      },
+      "portType": {
+        "kind": "bit"
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.idex_flush",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.idex_mem_write_mux",
+        "portName": "sel"
+      },
+      "portType": {
+        "kind": "bit"
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.idex_flush",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.idex_reg_write_mux",
+        "portName": "sel"
+      },
+      "portType": {
+        "kind": "bit"
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.idex_flush",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.idex_mem_to_reg_mux",
+        "portName": "sel"
+      },
+      "portType": {
+        "kind": "bit"
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.idex_flush",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.idex_branch_mux",
+        "portName": "sel"
+      },
+      "portType": {
+        "kind": "bit"
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.idex_flush",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.idex_jump_mux",
+        "portName": "sel"
+      },
+      "portType": {
+        "kind": "bit"
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.idex_flush",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.idex_lui_mux",
+        "portName": "sel"
+      },
+      "portType": {
+        "kind": "bit"
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.idex_flush",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.idex_auipc_mux",
+        "portName": "sel"
+      },
+      "portType": {
+        "kind": "bit"
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.idex_flush",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.idex_is_jalr_mux",
+        "portName": "sel"
+      },
+      "portType": {
+        "kind": "bit"
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.idex_rs1_mux",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.idex_rs1",
+        "portName": "data"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 5
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.idex_rs2_mux",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.idex_rs2",
+        "portName": "data"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 5
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.decode",
+        "portName": "rd"
+      },
+      "target": {
+        "nodeId": "cpu.idex_rd_mux",
+        "portName": "in0"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 5
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.idex_rd_mux",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.idex_rd",
+        "portName": "data"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 5
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.zero3",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.idex_funct3_mux",
+        "portName": "in1"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 3
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.idex_funct3_mux",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.idex_funct3",
+        "portName": "data"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 3
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.control",
+        "portName": "alu_op"
+      },
+      "target": {
+        "nodeId": "cpu.idex_alu_op_mux",
+        "portName": "in0"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 4
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.zero4",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.idex_alu_op_mux",
+        "portName": "in1"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 4
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.idex_alu_op_mux",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.idex_alu_op",
+        "portName": "data"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 4
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.control",
+        "portName": "alu_src"
+      },
+      "target": {
+        "nodeId": "cpu.idex_alu_src_mux",
+        "portName": "in0"
+      },
+      "portType": {
+        "kind": "bit"
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.zero1",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.idex_alu_src_mux",
+        "portName": "in1"
+      },
+      "portType": {
+        "kind": "bit"
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.zero1",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.idex_mem_read_mux",
+        "portName": "in1"
+      },
+      "portType": {
+        "kind": "bit"
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.zero1",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.idex_mem_write_mux",
+        "portName": "in1"
+      },
+      "portType": {
+        "kind": "bit"
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.zero1",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.idex_reg_write_mux",
+        "portName": "in1"
+      },
+      "portType": {
+        "kind": "bit"
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.zero1",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.idex_mem_to_reg_mux",
+        "portName": "in1"
+      },
+      "portType": {
+        "kind": "bit"
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.zero1",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.idex_branch_mux",
+        "portName": "in1"
+      },
+      "portType": {
+        "kind": "bit"
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.zero1",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.idex_jump_mux",
+        "portName": "in1"
+      },
+      "portType": {
+        "kind": "bit"
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.zero1",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.idex_lui_mux",
+        "portName": "in1"
+      },
+      "portType": {
+        "kind": "bit"
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.zero1",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.idex_auipc_mux",
+        "portName": "in1"
+      },
+      "portType": {
+        "kind": "bit"
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.zero1",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.idex_is_jalr_mux",
+        "portName": "in1"
+      },
+      "portType": {
+        "kind": "bit"
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.idex_alu_src_mux",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.idex_alu_src",
+        "portName": "data"
+      },
+      "portType": {
+        "kind": "bit"
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.control",
+        "portName": "mem_read"
+      },
+      "target": {
+        "nodeId": "cpu.idex_mem_read_mux",
+        "portName": "in0"
+      },
+      "portType": {
+        "kind": "bit"
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.idex_mem_read_mux",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.idex_mem_read",
+        "portName": "data"
+      },
+      "portType": {
+        "kind": "bit"
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.control",
+        "portName": "mem_write"
+      },
+      "target": {
+        "nodeId": "cpu.idex_mem_write_mux",
+        "portName": "in0"
+      },
+      "portType": {
+        "kind": "bit"
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.idex_mem_write_mux",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.idex_mem_write",
+        "portName": "data"
+      },
+      "portType": {
+        "kind": "bit"
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.control",
+        "portName": "reg_write"
+      },
+      "target": {
+        "nodeId": "cpu.idex_reg_write_mux",
+        "portName": "in0"
+      },
+      "portType": {
+        "kind": "bit"
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.idex_reg_write_mux",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.idex_reg_write",
+        "portName": "data"
+      },
+      "portType": {
+        "kind": "bit"
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.control",
+        "portName": "mem_to_reg"
+      },
+      "target": {
+        "nodeId": "cpu.idex_mem_to_reg_mux",
+        "portName": "in0"
+      },
+      "portType": {
+        "kind": "bit"
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.idex_mem_to_reg_mux",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.idex_mem_to_reg",
+        "portName": "data"
+      },
+      "portType": {
+        "kind": "bit"
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.control",
+        "portName": "branch"
+      },
+      "target": {
+        "nodeId": "cpu.idex_branch_mux",
+        "portName": "in0"
+      },
+      "portType": {
+        "kind": "bit"
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.idex_branch_mux",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.idex_branch",
+        "portName": "data"
+      },
+      "portType": {
+        "kind": "bit"
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.control",
+        "portName": "jump"
+      },
+      "target": {
+        "nodeId": "cpu.idex_jump_mux",
+        "portName": "in0"
+      },
+      "portType": {
+        "kind": "bit"
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.idex_jump_mux",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.idex_jump",
+        "portName": "data"
+      },
+      "portType": {
+        "kind": "bit"
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.control",
+        "portName": "lui"
+      },
+      "target": {
+        "nodeId": "cpu.idex_lui_mux",
+        "portName": "in0"
+      },
+      "portType": {
+        "kind": "bit"
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.idex_lui_mux",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.idex_lui",
+        "portName": "data"
+      },
+      "portType": {
+        "kind": "bit"
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.control",
+        "portName": "auipc"
+      },
+      "target": {
+        "nodeId": "cpu.idex_auipc_mux",
+        "portName": "in0"
+      },
+      "portType": {
+        "kind": "bit"
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.idex_auipc_mux",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.idex_auipc",
+        "portName": "data"
+      },
+      "portType": {
+        "kind": "bit"
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.control",
+        "portName": "is_jalr"
+      },
+      "target": {
+        "nodeId": "cpu.idex_is_jalr_mux",
+        "portName": "in0"
+      },
+      "portType": {
+        "kind": "bit"
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.idex_is_jalr_mux",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.idex_is_jalr",
+        "portName": "data"
+      },
+      "portType": {
+        "kind": "bit"
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.idex_rs1",
+        "portName": "q"
+      },
+      "target": {
+        "nodeId": "cpu.forward",
+        "portName": "id_rs1"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 5
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.idex_rs2",
+        "portName": "q"
+      },
+      "target": {
+        "nodeId": "cpu.forward",
+        "portName": "id_rs2"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 5
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.forward",
+        "portName": "forward_a"
+      },
+      "target": {
+        "nodeId": "cpu.fwd_a_bit0",
+        "portName": "in"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 2
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.forward",
+        "portName": "forward_a"
+      },
+      "target": {
+        "nodeId": "cpu.fwd_a_bit1",
+        "portName": "in"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 2
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.idex_read1",
+        "portName": "q"
+      },
+      "target": {
+        "nodeId": "cpu.fwd_a_mux1",
+        "portName": "in0"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 32
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.fwd_a_bit0",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.fwd_a_mux1",
+        "portName": "sel"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 8
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.fwd_a_mux1",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.fwd_a_mux2",
+        "portName": "in0"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 32
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.fwd_a_bit1",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.fwd_a_mux2",
+        "portName": "sel"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 8
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.forward",
+        "portName": "forward_b"
+      },
+      "target": {
+        "nodeId": "cpu.fwd_b_bit0",
+        "portName": "in"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 2
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.forward",
+        "portName": "forward_b"
+      },
+      "target": {
+        "nodeId": "cpu.fwd_b_bit1",
+        "portName": "in"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 2
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.idex_read2",
+        "portName": "q"
+      },
+      "target": {
+        "nodeId": "cpu.fwd_b_mux1",
+        "portName": "in0"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 32
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.fwd_b_bit0",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.fwd_b_mux1",
+        "portName": "sel"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 8
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.fwd_b_mux1",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.fwd_b_mux2",
+        "portName": "in0"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 32
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.fwd_b_bit1",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.fwd_b_mux2",
+        "portName": "sel"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 8
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.fwd_b_mux2",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.alu_src_mux",
+        "portName": "in0"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 32
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.fwd_b_mux2",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.branch_comp",
+        "portName": "b"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 32
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.fwd_b_mux2",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.exmem_read2",
+        "portName": "data"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 32
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.idex_imm",
+        "portName": "q"
+      },
+      "target": {
+        "nodeId": "cpu.alu_src_mux",
+        "portName": "in1"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 32
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.idex_imm",
+        "portName": "q"
+      },
+      "target": {
+        "nodeId": "cpu.branch_target",
+        "portName": "b"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 32
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.idex_imm",
+        "portName": "q"
+      },
+      "target": {
+        "nodeId": "cpu.pc_plus_imm",
+        "portName": "b"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 32
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.idex_imm",
+        "portName": "q"
+      },
+      "target": {
+        "nodeId": "cpu.ex_result",
+        "portName": "immediate"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 32
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.idex_imm",
+        "portName": "q"
+      },
+      "target": {
+        "nodeId": "cpu.exmem_imm",
+        "portName": "data"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 32
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.idex_alu_src",
+        "portName": "q"
+      },
+      "target": {
+        "nodeId": "cpu.alu_src_mux",
+        "portName": "sel"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 1
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.fwd_a_mux2",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.alu",
+        "portName": "a"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 32
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.fwd_a_mux2",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.branch_comp",
+        "portName": "a"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 32
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.alu_src_mux",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.alu",
+        "portName": "b"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 32
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.idex_alu_op",
+        "portName": "q"
+      },
+      "target": {
+        "nodeId": "cpu.alu",
+        "portName": "alu_op"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 4
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.idex_funct3",
+        "portName": "q"
+      },
+      "target": {
+        "nodeId": "cpu.branch_comp",
+        "portName": "funct3"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 3
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.idex_funct3",
+        "portName": "q"
+      },
+      "target": {
+        "nodeId": "cpu.exmem_funct3",
+        "portName": "data"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 3
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.idex_pc",
+        "portName": "q"
+      },
+      "target": {
+        "nodeId": "cpu.branch_target",
+        "portName": "a"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 32
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.idex_pc",
+        "portName": "q"
+      },
+      "target": {
+        "nodeId": "cpu.pc_plus_imm",
+        "portName": "a"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 32
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.alu",
+        "portName": "result"
+      },
+      "target": {
+        "nodeId": "cpu.jalr_target",
+        "portName": "a"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 32
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.alu",
+        "portName": "result"
+      },
+      "target": {
+        "nodeId": "cpu.ex_result",
+        "portName": "alu_result"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 32
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.alu",
+        "portName": "result"
+      },
+      "target": {
+        "nodeId": "cpu.exmem_alu_result",
+        "portName": "data"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 32
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.jalr_mask",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.jalr_target",
+        "portName": "b"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 32
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.idex_pc4",
+        "portName": "q"
+      },
+      "target": {
+        "nodeId": "cpu.ex_result",
+        "portName": "pc_plus4"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 32
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.idex_pc4",
+        "portName": "q"
+      },
+      "target": {
+        "nodeId": "cpu.next_pc",
+        "portName": "pc_plus4"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 32
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.idex_pc4",
+        "portName": "q"
+      },
+      "target": {
+        "nodeId": "cpu.exmem_pc4",
+        "portName": "data"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 32
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.pc_plus_imm",
+        "portName": "sum"
+      },
+      "target": {
+        "nodeId": "cpu.ex_result",
+        "portName": "pc_plus_imm"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 32
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.pc_plus_imm",
+        "portName": "sum"
+      },
+      "target": {
+        "nodeId": "cpu.exmem_pc_plus_imm",
+        "portName": "data"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 32
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.idex_mem_to_reg",
+        "portName": "q"
+      },
+      "target": {
+        "nodeId": "cpu.ex_result",
+        "portName": "mem_to_reg"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 1
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.idex_mem_to_reg",
+        "portName": "q"
+      },
+      "target": {
+        "nodeId": "cpu.exmem_mem_to_reg",
+        "portName": "data"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 1
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.idex_lui",
+        "portName": "q"
+      },
+      "target": {
+        "nodeId": "cpu.ex_result",
+        "portName": "lui"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 1
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.idex_lui",
+        "portName": "q"
+      },
+      "target": {
+        "nodeId": "cpu.exmem_lui",
+        "portName": "data"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 1
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.idex_auipc",
+        "portName": "q"
+      },
+      "target": {
+        "nodeId": "cpu.ex_result",
+        "portName": "auipc"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 1
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.idex_auipc",
+        "portName": "q"
+      },
+      "target": {
+        "nodeId": "cpu.exmem_auipc",
+        "portName": "data"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 1
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.idex_jump",
+        "portName": "q"
+      },
+      "target": {
+        "nodeId": "cpu.ex_result",
+        "portName": "jump"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 1
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.idex_jump",
+        "portName": "q"
+      },
+      "target": {
+        "nodeId": "cpu.next_pc",
+        "portName": "jump"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 1
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.idex_jump",
+        "portName": "q"
+      },
+      "target": {
+        "nodeId": "cpu.pc_src_taken",
+        "portName": "b"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 1
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.idex_jump",
+        "portName": "q"
+      },
+      "target": {
+        "nodeId": "cpu.hazard",
+        "portName": "jump"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 1
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.idex_jump",
+        "portName": "q"
+      },
+      "target": {
+        "nodeId": "cpu.exmem_jump",
+        "portName": "data"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 1
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.idex_branch",
+        "portName": "q"
+      },
+      "target": {
+        "nodeId": "cpu.branch_and",
+        "portName": "a"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 1
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.idex_branch",
+        "portName": "q"
+      },
+      "target": {
+        "nodeId": "cpu.next_pc",
+        "portName": "branch"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 1
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.branch_comp",
+        "portName": "take_branch"
+      },
+      "target": {
+        "nodeId": "cpu.branch_and",
+        "portName": "b"
+      },
+      "portType": {
+        "kind": "bit"
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.branch_comp",
+        "portName": "take_branch"
+      },
+      "target": {
+        "nodeId": "cpu.next_pc",
+        "portName": "take_branch"
+      },
+      "portType": {
+        "kind": "bit"
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.branch_target",
+        "portName": "sum"
+      },
+      "target": {
+        "nodeId": "cpu.next_pc",
+        "portName": "branch_target"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 32
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.branch_target",
+        "portName": "sum"
+      },
+      "target": {
+        "nodeId": "cpu.next_pc",
+        "portName": "jal_target"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 32
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.jalr_target",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.next_pc",
+        "portName": "jalr_target"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 32
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.idex_is_jalr",
+        "portName": "q"
+      },
+      "target": {
+        "nodeId": "cpu.next_pc",
+        "portName": "is_jalr"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 1
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.branch_and",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.pc_src_taken",
+        "portName": "a"
+      },
+      "portType": {
+        "kind": "bit"
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.branch_and",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.hazard",
+        "portName": "branch_taken"
+      },
+      "portType": {
+        "kind": "bit"
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.next_pc",
+        "portName": "next_pc"
+      },
+      "target": {
+        "nodeId": "cpu.pc_next_mux",
+        "portName": "in1"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 32
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.pc_src_taken",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.pc_next_mux",
+        "portName": "sel"
+      },
+      "portType": {
+        "kind": "bit"
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.pc_next_mux",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.pc",
+        "portName": "data"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 32
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.idex_rd",
+        "portName": "q"
+      },
+      "target": {
+        "nodeId": "cpu.hazard",
+        "portName": "id_rd"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 5
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.idex_rd",
+        "portName": "q"
+      },
+      "target": {
+        "nodeId": "cpu.exmem_rd",
+        "portName": "data"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 5
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.idex_mem_read",
+        "portName": "q"
+      },
+      "target": {
+        "nodeId": "cpu.hazard",
+        "portName": "id_mem_read"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 1
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.idex_mem_read",
+        "portName": "q"
+      },
+      "target": {
+        "nodeId": "cpu.exmem_mem_read",
+        "portName": "data"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 1
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.ex_result",
+        "portName": "write_data"
+      },
+      "target": {
+        "nodeId": "cpu.exmem_result",
+        "portName": "data"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 32
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.idex_mem_write",
+        "portName": "q"
+      },
+      "target": {
+        "nodeId": "cpu.exmem_mem_write",
+        "portName": "data"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 1
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.idex_reg_write",
+        "portName": "q"
+      },
+      "target": {
+        "nodeId": "cpu.exmem_reg_write",
+        "portName": "data"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 1
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.exmem_rd",
+        "portName": "q"
+      },
+      "target": {
+        "nodeId": "cpu.forward",
+        "portName": "ex_rd"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 5
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.exmem_rd",
+        "portName": "q"
+      },
+      "target": {
+        "nodeId": "cpu.memwb_rd",
+        "portName": "data"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 5
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.exmem_reg_write",
+        "portName": "q"
+      },
+      "target": {
+        "nodeId": "cpu.forward",
+        "portName": "ex_reg_write"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 1
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.exmem_reg_write",
+        "portName": "q"
+      },
+      "target": {
+        "nodeId": "cpu.memwb_reg_write",
+        "portName": "data"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 1
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.exmem_result",
+        "portName": "q"
+      },
+      "target": {
+        "nodeId": "cpu.fwd_a_mux1",
+        "portName": "in1"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 32
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.exmem_result",
+        "portName": "q"
+      },
+      "target": {
+        "nodeId": "cpu.fwd_b_mux1",
+        "portName": "in1"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 32
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.exmem_alu_result",
+        "portName": "q"
+      },
+      "target": {
+        "nodeId": "cpu.memwb_alu_result",
+        "portName": "data"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 32
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.exmem_alu_result",
+        "portName": "q"
+      },
+      "target": {
+        "nodeId": "cpu.exmem_lo2",
+        "portName": "in"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 32
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.exmem_lo2",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.memwb_byte_offset",
+        "portName": "data"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 8
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.exmem_funct3",
+        "portName": "q"
+      },
+      "target": {
+        "nodeId": "cpu.memwb_funct3",
+        "portName": "data"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 3
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.exmem_pc4",
+        "portName": "q"
+      },
+      "target": {
+        "nodeId": "cpu.memwb_pc4",
+        "portName": "data"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 32
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.exmem_imm",
+        "portName": "q"
+      },
+      "target": {
+        "nodeId": "cpu.memwb_imm",
+        "portName": "data"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 32
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.exmem_pc_plus_imm",
+        "portName": "q"
+      },
+      "target": {
+        "nodeId": "cpu.memwb_pc_plus_imm",
+        "portName": "data"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 32
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.exmem_mem_to_reg",
+        "portName": "q"
+      },
+      "target": {
+        "nodeId": "cpu.memwb_mem_to_reg",
+        "portName": "data"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 1
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.exmem_lui",
+        "portName": "q"
+      },
+      "target": {
+        "nodeId": "cpu.memwb_lui",
+        "portName": "data"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 1
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.exmem_auipc",
+        "portName": "q"
+      },
+      "target": {
+        "nodeId": "cpu.memwb_auipc",
+        "portName": "data"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 1
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.exmem_jump",
+        "portName": "q"
+      },
+      "target": {
+        "nodeId": "cpu.memwb_jump",
+        "portName": "data"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 1
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.memwb_alu_result",
+        "portName": "q"
+      },
+      "target": {
+        "nodeId": "cpu.wb_mux",
+        "portName": "alu_result"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 32
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.memwb_load_data",
+        "portName": "q"
+      },
+      "target": {
+        "nodeId": "cpu.load_align",
+        "portName": "data"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 32
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.memwb_byte_offset",
+        "portName": "q"
+      },
+      "target": {
+        "nodeId": "cpu.load_align",
+        "portName": "byte_offset"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 2
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.memwb_funct3",
+        "portName": "q"
+      },
+      "target": {
+        "nodeId": "cpu.load_align",
+        "portName": "funct3"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 3
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.load_align",
+        "portName": "out"
+      },
+      "target": {
+        "nodeId": "cpu.wb_mux",
+        "portName": "load_data"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 32
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.memwb_pc4",
+        "portName": "q"
+      },
+      "target": {
+        "nodeId": "cpu.wb_mux",
+        "portName": "pc_plus4"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 32
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.memwb_imm",
+        "portName": "q"
+      },
+      "target": {
+        "nodeId": "cpu.wb_mux",
+        "portName": "immediate"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 32
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.memwb_pc_plus_imm",
+        "portName": "q"
+      },
+      "target": {
+        "nodeId": "cpu.wb_mux",
+        "portName": "pc_plus_imm"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 32
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.memwb_mem_to_reg",
+        "portName": "q"
+      },
+      "target": {
+        "nodeId": "cpu.wb_mux",
+        "portName": "mem_to_reg"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 1
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.memwb_lui",
+        "portName": "q"
+      },
+      "target": {
+        "nodeId": "cpu.wb_mux",
+        "portName": "lui"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 1
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.memwb_auipc",
+        "portName": "q"
+      },
+      "target": {
+        "nodeId": "cpu.wb_mux",
+        "portName": "auipc"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 1
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.memwb_jump",
+        "portName": "q"
+      },
+      "target": {
+        "nodeId": "cpu.wb_mux",
+        "portName": "jump"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 1
+      }
+    },
+    {
+      "source": {
+        "nodeId": "__top__",
+        "portName": "instruction"
+      },
+      "target": {
+        "nodeId": "cpu.ifid_instr_mux",
+        "portName": "in0"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 32
+      }
+    },
+    {
+      "source": {
+        "nodeId": "__top__",
+        "portName": "data_read"
+      },
+      "target": {
+        "nodeId": "cpu.memwb_load_data",
+        "portName": "data"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 32
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.pc",
+        "portName": "q"
+      },
+      "target": {
+        "nodeId": "__top__",
+        "portName": "instr_addr"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 32
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.exmem_alu_result",
+        "portName": "q"
+      },
+      "target": {
+        "nodeId": "__top__",
+        "portName": "data_addr"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 32
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.exmem_read2",
+        "portName": "q"
+      },
+      "target": {
+        "nodeId": "__top__",
+        "portName": "data_write"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 32
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.exmem_mem_read",
+        "portName": "q"
+      },
+      "target": {
+        "nodeId": "__top__",
+        "portName": "data_mem_read"
+      },
+      "portType": {
+        "kind": "bit"
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.exmem_mem_write",
+        "portName": "q"
+      },
+      "target": {
+        "nodeId": "__top__",
+        "portName": "data_mem_write"
+      },
+      "portType": {
+        "kind": "bit"
+      }
+    },
+    {
+      "source": {
+        "nodeId": "cpu.exmem_funct3",
+        "portName": "q"
+      },
+      "target": {
+        "nodeId": "__top__",
+        "portName": "data_funct3"
+      },
+      "portType": {
+        "kind": "bus",
+        "width": 3
+      }
+    }
+  ]
+}
