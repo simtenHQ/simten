@@ -22,10 +22,9 @@ declareOracle({
   independence_basis:
     'Reference signatures come from Spike — an independent third-party ISA ' +
     'simulator — run on the official vectors, decorrelated from this HDL. ' +
-    'Accepted gap: the shared boot/halt env macros (model_test.h) are eaten ' +
-    'identically by DUT and Spike, so they are NOT independently covered ' +
-    '(no upstream reference sigs at this SHA). jalr-01 is skipped (binutils ' +
-    '2.45 rejects its `la x0`); logged, not silently dropped.',
+    'All 38 rv32i_m/I tests covered. Accepted gap: the shared boot/halt env ' +
+    'macros (model_test.h) are eaten identically by DUT and Spike, so they ' +
+    'are NOT independently covered (no upstream reference sigs at this SHA).',
 });
 
 for (const t of TESTS) {

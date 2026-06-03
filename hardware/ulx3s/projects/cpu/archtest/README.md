@@ -6,22 +6,22 @@ diffs the resulting signature against a **Spike** reference, in simulation.
 
 > **Honest claim:** *a CPU built in this HDL, evaluated on its structural
 > elaborated netlist, passes the official riscv-arch-test RV32I-I suite vs
-> Spike, in simulation* (37/38 tests; `jalr-01` is skipped for a toolchain
-> reason below, not a DUT failure). Not "certified"; not run on silicon.
+> Spike, in simulation* (all 38 tests). Not "certified"; not run on silicon.
 
 ## Result
 
 `tsx run-suite.ts` (or the Tier-A `conformance.verify.ts`):
 
 ```
-37/37 attempted pass vs Spike · 37/37 trap-free (pure RV32I) · 1 skipped (logged)
+38/38 attempted pass vs Spike · 38/38 trap-free (pure RV32I) · 0 skipped
 ```
 
-- **37/38 official RV32I-I tests** pass byte-for-byte vs Spike on the **unchanged**
+- **All 38 official RV32I-I tests** pass byte-for-byte vs Spike on the **unchanged**
   `{zicsr:false}` core (no hardware changes — see "Scope finding").
-- **`jalr-01` skipped:** binutils 2.45 rejects the test's `la x0, 5b` (inst_7 uses
-  `rd=x0`; newer gas disallows `la`/`li` to x0). Toolchain-vintage issue, **not a
-  DUT failure** — logged loudly, never silently dropped.
+- **Toolchain pin:** we use gcc 13.2.0 / binutils **2.41**, which assembles the
+  2022-vintage tests. binutils 2.45 (gcc 15) rejects `jalr-01`'s `la x0, 5b`
+  (inst_7 uses `rd=x0`; newer gas disallows `la`/`li` to x0) — a toolchain
+  issue, never a DUT one.
 - **Harness validity:** `tsx fault-check.ts` injects a real `add→sub` into the
   DUT's instruction stream and asserts the signature **diverges** from Spike, so
   the green result is not vacuous.
@@ -33,7 +33,7 @@ containers are used as-is elsewhere and deliberately *not* extended for this.
 
 | Tool | Version | Install (macOS arm64) |
 |------|---------|------------------------|
-| `riscv-none-elf-gcc` (+ binutils `objdump`/`nm`/`ld`/`as`) | xPack GCC **15.2.0**, binutils **2.45** | `npm i -g xpm && xpm install --global @xpack-dev-tools/riscv-none-elf-gcc@latest` → `~/Library/xPacks/@xpack-dev-tools/riscv-none-elf-gcc/<ver>/.content/bin` (override dir via `ARCHTEST_GCC_BIN`) |
+| `riscv-none-elf-gcc` (+ binutils `objdump`/`nm`/`ld`/`as`) | xPack GCC **13.2.0**, binutils **2.41** (pinned — see Result) | `npm i -g xpm && xpm install --global @xpack-dev-tools/riscv-none-elf-gcc@13.2.0-2.1` → `~/Library/xPacks/@xpack-dev-tools/riscv-none-elf-gcc/13.2.0-2.1/.content/bin` (override dir via `ARCHTEST_GCC_BIN`) |
 | `spike` (riscv-isa-sim) | **1.1.1-dev** | `brew tap riscv-software-src/riscv && brew install riscv-isa-sim` (override via `SPIKE`) |
 
 Not a default CI job: per-PR CI keeps the 69-test `pnpm fpga:test` + netlist
@@ -55,7 +55,7 @@ framework we don't use). License: **BSD-3-Clause** (`vendor/COPYING.BSD`).
 ## Scope finding (settled by objdump, not assumption)
 
 The base RV32I-**I** tests compile to **pure RV32I — zero CSR/trap
-instructions** (the harness asserts this per-test; all 37 are trap-free). All of
+instructions** (the harness asserts this per-test; all 38 are trap-free). All of
 `arch_test.h`'s CSR/trap trampoline is gated behind `#ifdef rvtest_mtrap_routine`,
 a macro defined by the *target's* `model_test.h` — which we leave undefined. So
 this is **outcome (a): no core changes** — no `zicsr` flag, no `rv32i-csr.ts`, no
@@ -77,7 +77,7 @@ would break its reset vector and the netlist golden guard). Instead Spike runs a
 copy linked at `0x80000000`. The signatures still match because **arch-test
 signatures are position-independent by construction** (`TEST_AUIPC`/`TEST_JAL_OP`/
 `TEST_JALR_OP` subtract a local label so stored values don't depend on link
-address) — empirically confirmed by all 37 passing across the two bases.
+address) — empirically confirmed by all 38 passing across the two bases.
 
 ## Locked formats
 
@@ -101,7 +101,7 @@ address) — empirically confirmed by all 37 passing across the two bases.
 ## Running
 
 ```sh
-export PATH="$HOME/Library/xPacks/@xpack-dev-tools/riscv-none-elf-gcc/15.2.0-1.1/.content/bin:$PATH"
+export PATH="$HOME/Library/xPacks/@xpack-dev-tools/riscv-none-elf-gcc/13.2.0-2.1/.content/bin:$PATH"
 cd hardware/ulx3s/projects/cpu/archtest
 tsx run-suite.ts        # full suite, human-readable table
 tsx conformance.verify.ts   # Tier-A, emits structured verify JSON

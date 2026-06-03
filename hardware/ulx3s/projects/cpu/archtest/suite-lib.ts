@@ -23,8 +23,11 @@ const ENVDIR = resolve(HERE, 'vendor/env');
 const SRC = resolve(HERE, 'vendor/rv32i_m/I/src');
 export const BUILD = resolve(HERE, 'build');
 
+// gcc 13.2.0 bundles binutils 2.41, which assembles the 2022-vintage tests
+// (incl. jalr-01's `la x0`). binutils 2.45 (gcc 15) rejects `la x0`. Override
+// the dir via ARCHTEST_GCC_BIN.
 const GCC_BIN = process.env.ARCHTEST_GCC_BIN ??
-  `${process.env.HOME}/Library/xPacks/@xpack-dev-tools/riscv-none-elf-gcc/15.2.0-1.1/.content/bin`;
+  `${process.env.HOME}/Library/xPacks/@xpack-dev-tools/riscv-none-elf-gcc/13.2.0-2.1/.content/bin`;
 const GCC = `${GCC_BIN}/riscv-none-elf-gcc`;
 const NM = `${GCC_BIN}/riscv-none-elf-nm`;
 const OBJDUMP = `${GCC_BIN}/riscv-none-elf-objdump`;
@@ -42,13 +45,10 @@ export const TESTS = [
   'srl-01', 'srli-01', 'sub-01', 'sw-align-01', 'xor-01', 'xori-01',
 ];
 
-// Tests we cannot assemble with the local toolchain (logged, never silently
-// dropped). jalr-01 inst_7 uses rd=x0 → the macro emits `la x0, 5b`, which
-// binutils 2.45 rejects (newer gas disallows la/li to x0). Toolchain vintage,
-// NOT a DUT failure.
-export const SKIP: Record<string, string> = {
-  'jalr-01': 'binutils 2.45 rejects `la x0,5b` (inst_7 rd=x0); toolchain vintage, not a DUT failure',
-};
+// Tests we cannot assemble with the pinned toolchain (logged, never silently
+// dropped). Empty with gcc 13.2.0 / binutils 2.41 — all 38 assemble. (binutils
+// 2.45 would reject jalr-01's `la x0`; that's why we pin 13.2.0.)
+export const SKIP: Record<string, string> = {};
 
 let spikeLdReady = false;
 function spikeLd(): string {

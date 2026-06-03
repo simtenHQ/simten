@@ -23,7 +23,7 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 const BUILD = resolve(HERE, 'build');
 mkdirSync(BUILD, { recursive: true });
 const GCC_BIN = process.env.ARCHTEST_GCC_BIN ??
-  `${process.env.HOME}/Library/xPacks/@xpack-dev-tools/riscv-none-elf-gcc/15.2.0-1.1/.content/bin`;
+  `${process.env.HOME}/Library/xPacks/@xpack-dev-tools/riscv-none-elf-gcc/13.2.0-2.1/.content/bin`;
 const GCC = `${GCC_BIN}/riscv-none-elf-gcc`;
 const NM = `${GCC_BIN}/riscv-none-elf-nm`;
 const SPIKE = process.env.SPIKE ?? 'spike';
