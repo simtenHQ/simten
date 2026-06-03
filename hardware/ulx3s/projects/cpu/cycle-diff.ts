@@ -31,7 +31,7 @@
 import { writeFileSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { simulate } from '../../../../packages/core/src/sim/simulate.js';
+import { simulate } from '@simten/core/sim';
 import { buildCPUCore } from './index.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));

@@ -12,13 +12,13 @@ import { readFileSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { exportVerilog } from '../../../../packages/core/src/verilog/exporter.js';
-import { circuit, bit, bus } from '../../../../packages/core/src/circuit/index.js';
+import { exportVerilog } from '@simten/core/verilog';
+import { circuit, bit, bus } from '@simten/core/circuit';
 import {
   Constant,
   RV32I_Core as RV32I_CoreDef,
-} from '../../../../packages/core/src/std/index.js';
-import type { CircuitLibrary } from '../../../../packages/core/src/types/circuit.js';
+} from '@simten/core/std';
+import type { CircuitLibrary } from '@simten/core/simulator';
 
 import type { Project, FirmwareBuild } from '../../lib/types.js';
 

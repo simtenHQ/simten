@@ -3,6 +3,16 @@
   "version": "0.0.6",
   "private": true,
   "type": "module",
+  "scripts": {
+    "test": "tsx projects/cpu/tests.ts",
+    "verify": "tsx projects/cpu/verify.ts --suite",
+    "sim": "tsx projects/cpu/run_c.ts",
+    "regen-verilog": "tsx projects/cpu/regen_verilog.ts",
+    "netlist:check": "tsx projects/cpu/dump-netlist.ts --check",
+    "build": "tsx cpu_build.ts",
+    "flash": "tsx cpu_build.ts --flash",
+    "run-on-fpga": "tsx run_on_fpga.ts"
+  },
   "dependencies": {
     "@simten/core": "workspace:*"
   }

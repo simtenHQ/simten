@@ -18,8 +18,9 @@
  * duplicating ~200 lines of node wiring.
  */
 
-import { simulate } from '../../../../packages/core/src/sim/simulate.js';
+import { simulate } from '@simten/core/sim';
 import { buildCPUCore } from './index.js';
+import { fileURLToPath } from 'node:url';
 
 // ── raw5 firmware ─────────────────────────────────────────────────────────────
 // lui a5, 0x80000
@@ -293,7 +294,7 @@ const RAW34: number[] = [
 // ── Main ──────────────────────────────────────────────────────────────────────
 
 // Only run CLI when invoked directly (not when imported from cpu_tests.ts)
-if (import.meta.main) {
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const mode = process.argv[2];
   if (mode === '--raw7') {
     runSim('raw7 (li before poll, sw immediately after beqz)', RAW7, 300);
