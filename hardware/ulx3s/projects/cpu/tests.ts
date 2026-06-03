@@ -9,6 +9,7 @@
  */
 
 import { runFirmware } from './sim.js';
+import { fileURLToPath } from 'node:url';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -1199,7 +1200,7 @@ test('Misalign', 'Misaligned LH does not corrupt pipeline', fw(
 
 // ── Run (CLI only — not executed when imported) ──────────────────────────────
 
-if (import.meta.main) {
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const filter = process.argv[2]?.startsWith('--filter=')
     ? process.argv[2].slice('--filter='.length).toLowerCase()
     : null;

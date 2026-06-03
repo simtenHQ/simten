@@ -129,6 +129,12 @@ jobs:
       - name: Run ui tests
         run: pnpm --filter @simten/ui test
 
+      - name: FPGA CPU tests (RV32I ISA suite)
+        # Pure-sim RV32I suite (no board), run via tsx. Keeps the FPGA path from
+        # drifting unnoticed — the gap that let the load-align bug diverge across
+        # the three copies before consolidation.
+        run: pnpm fpga:test
+
       - name: FPGA netlist byte-identity guard
         # Locks the synthesized RV32I_CPU_Core netlist (the flat IR fed to the
         # Verilog exporter — pre-codegen, so stable against exporter/toolchain
@@ -136,7 +142,7 @@ jobs:
         # @simten/core RV32I_Core that silently perturbs the FPGA design.
         # Updating the golden is gated on a real board re-verify — see
         # hardware/ulx3s/projects/cpu/GOLDEN.md.
-        run: pnpm exec tsx hardware/ulx3s/projects/cpu/dump-netlist.ts --check
+        run: pnpm fpga:netlist-check
 
       - name: Build web app
         # Cloudflare API creds are required for the prerender step — the
