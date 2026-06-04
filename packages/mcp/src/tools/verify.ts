@@ -14,7 +14,8 @@
 
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
-import { runTsx, extractDelimitedJson } from '../lib/host-run.js';
+import { runTsx, findRepoRoot, extractDelimitedJson } from '../lib/host-run.js';
+import { isProjectReady, detectPackageManager, installCommand } from '../lib/project-setup.js';
 import { VERIFY_JSON_BEGIN, VERIFY_JSON_END, type VerifyResult, type VerifyContractError } from '@simten/core/verify';
 
 const DESCRIPTION = `Run a self-checking testbench FILE against a circuit and report the result AT A DECLARED ORACLE TIER. simulate_circuit shows what a circuit does; verify_circuit tells you whether it's correct — a design isn't "done" until it passes at the highest feasible tier.
@@ -49,6 +50,19 @@ export function registerVerifyTool(server: McpServer): void {
       timeoutMs: z.number().int().min(1).optional().describe('Wall-clock budget in ms (default 30000); the subprocess is killed past it'),
     },
     async ({ testbench, oracle, timeoutMs }) => {
+      // Preflight: verify runs the testbench via tsx and resolves @simten/core +
+      // fast-check from the PROJECT. In an unconfigured folder that fails with a
+      // cryptic module-not-found; instead, detect it up front and point the agent
+      // at setup_project (which writes package.json and installs the deps).
+      const root = findRepoRoot();
+      if (!isProjectReady(root)) {
+        const pm = detectPackageManager(root);
+        return errorResult(
+          "This folder isn't set up for verify yet. Call setup_project (writes package.json, installs @simten/core + fast-check + tsx), then retry.",
+          { status: 'setup_required', root, manual: installCommand(pm) },
+        );
+      }
+
       const run = await runTsx(testbench, {
         env: { SIMTEN_VERIFY_ORACLE: JSON.stringify(oracle) },
         timeoutMs: timeoutMs ?? 30_000,
@@ -64,14 +78,12 @@ export function registerVerifyTool(server: McpServer): void {
       const parsed = extractDelimitedJson<VerifyResult | VerifyContractError>(run.stdout, VERIFY_JSON_BEGIN, VERIFY_JSON_END);
       if (!parsed) {
         // Nonzero exit with no JSON block = crash/compile error in the testbench.
-        // The single most common cause for first-time users is missing deps in
-        // the project — the MCP bundles @simten/core + fast-check for its own
-        // use but Node only walks up from the testbench file. If stderr shows
-        // a module-resolution error, suggest the install. Cheap hint, no
-        // detection plumbing.
+        // The framework deps are guaranteed present (preflight), so a module-not-
+        // found here means an EXTERNAL package the testbench imports — typically a
+        // Tier-A oracle (e.g. @noble/hashes). Point at installing that, not core.
         const looksLikeMissingDeps = /Cannot find (module|package)|ERR_MODULE_NOT_FOUND/.test(run.stderr);
         const hint = looksLikeMissingDeps
-          ? ' Looks like a missing dep — try `pnpm add -D @simten/core fast-check` (or npm/yarn/bun equivalent) in this project.'
+          ? ' Looks like a missing dep — if the testbench imports an external oracle package (e.g. @noble/hashes), install it in this project (npm install <pkg>).'
           : '';
         return errorResult(
           `Testbench produced no verify result (exit ${run.exitCode}). Likely a crash or compile error.${hint}`,
