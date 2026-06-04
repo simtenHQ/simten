@@ -62,6 +62,8 @@ The server listens on `127.0.0.1:19847` for the browser WebSocket bridge. The po
 
 Multiple browser tabs can connect simultaneously. State is cached for late-joining clients.
 
+**`show_circuit` is the sole canvas trigger.** Editing the `.circuit.ts` does *not* auto-update the browser — re-call `show_circuit` to repaint. The web editor mirrors the file as a **sandbox view**: the file you (or Claude) edit is the source of truth; edits made directly in the browser editor are local experiments, not written back to the file.
+
 ## Example session
 
 ```
