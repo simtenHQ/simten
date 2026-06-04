@@ -25,7 +25,7 @@ claude mcp add --scope user simten npx @simten/mcp
 
 That's it. `--scope user` makes simten available across every project; drop the flag for a project-local install. Verify with `claude mcp list`.
 
-`verify_circuit`'s testbench runs in your project's `node_modules` context, so the project needs `@simten/core` and `fast-check` installed (the tool tells you the exact command if you forget).
+Designing and simulating need nothing else. `verify_circuit` runs the testbench on the host via `tsx`, so it needs `@simten/core` + `fast-check` + `tsx` installed in the project — Claude runs `setup_project` automatically on first use to write a `package.json` and install them (or run it yourself; it's idempotent). Existing projects with those deps already work as-is.
 
 (If you prefer global installs over `npx`: `npm install -g @simten/mcp`, then `claude mcp add --scope user simten simten-mcp`.)
 
@@ -37,6 +37,7 @@ The server listens on `127.0.0.1:19847` for the browser WebSocket bridge. The po
 
 | Tool | Description |
 |------|-------------|
+| `setup_project` | Make an empty/new folder ready for `verify_circuit`: write an ESM `package.json` + tsconfig, install `@simten/core`/`fast-check`/`tsx`. Idempotent |
 | `check_circuit` | Validate circuit well-formedness (syntax, semantic, type, structural) |
 | `simulate_circuit` | Compile and simulate, return signal traces (observation only; does not establish correctness) |
 | `verify_circuit` | Run a self-checking testbench *file* (`.verify.ts`) on the host via `tsx`; reports pass/fail + counterexample at a declared oracle tier |

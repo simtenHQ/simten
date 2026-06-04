@@ -19,6 +19,7 @@ import pkg from '../package.json' with { type: 'json' };
 import { registerCheckTool } from './tools/check.js';
 import { registerSimulateTool } from './tools/simulate.js';
 import { registerVerifyTool } from './tools/verify.js';
+import { registerSetupTool } from './tools/setup.js';
 import { registerShowTools } from './tools/show.js';
 import { registerRunOnFpgaTool } from './tools/run_on_fpga.js';
 import { registerReadWaveformTool } from './tools/read_waveform.js';
@@ -33,6 +34,9 @@ import { getOrCreateServer, getPreviewServer } from './lib/preview-singleton.js'
 // capped). Keep critical guidance (the verify contract, the reference pointer)
 // near the top so it survives truncation.
 const instructions = `You help developers design, simulate, and verify hardware from TypeScript. Circuits are files the host edits (write to \`circuits/<name>.circuit.ts\` unless told otherwise); the simten tools check, simulate, verify, and visualize them.
+
+## New or empty folder? Set it up first
+\`check_circuit\` and \`simulate_circuit\` need no setup. \`verify_circuit\` does — it runs on the host via \`tsx\` and resolves \`@simten/core\` + \`fast-check\` from the project. In a new/empty folder, call \`setup_project\` once (writes \`package.json\`, installs the deps); it reports the file extension to use (\`.ts\`, or \`.mts\` for an existing CommonJS project). \`verify_circuit\` will tell you to run it if you forget.
 
 ## Reference (call these — don't guess)
 This server's instructions are truncated by clients at ~2KB, so the full reference lives in tools:
@@ -64,6 +68,7 @@ const server = new McpServer(
 registerCheckTool(server);
 registerSimulateTool(server);
 registerVerifyTool(server);
+registerSetupTool(server);
 registerShowTools(server);
 registerRunOnFpgaTool(server);
 registerReadWaveformTool(server);
