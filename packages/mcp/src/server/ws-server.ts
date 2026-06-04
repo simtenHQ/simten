@@ -5,7 +5,6 @@
  * - Manages sessions (one per browser tab, identified by UUID)
  * - Pushes circuit source, traces, test results, memory data to connected tabs
  * - Requests circuit state on demand (pull model)
- * - File watching with dedup (skips watcher events within 500ms of explicit push)
  * - Token auth: connections must provide the server's token to be accepted
  * - Origin allowlist: browser connections must originate from localhost (a
  *   cross-site page you visit is refused); non-browser clients (no Origin) pass
