@@ -8,7 +8,6 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import { exec } from 'node:child_process';
-import { resolve } from 'node:path';
 import { readCircuitSource } from '../lib/file-reader.js';
 import { SIMTEN_URL, LOCAL_SERVE } from '../lib/config.js';
 import {
@@ -51,13 +50,13 @@ export function registerShowTools(server: McpServer): void {
   // the preview (close:true) and discovering connected tabs (no source/filePath).
   server.tool(
     'show_circuit',
-    'Paint or update the live circuit canvas in the browser — the only tool that draws. Watches the file for changes when filePath is given. Call with NO source/filePath to list connected browser tabs (discovery). Pass close:true to close the preview and stop the server. Canvas policy: don\'t paint during tight iteration — paint at a verify tier-pass or for a specific result worth showing.',
+    'Paint or update the live circuit canvas in the browser — the only tool that draws. This is the ONLY thing that updates the canvas: editing the .circuit.ts file does NOT auto-update the browser, so re-call show_circuit (typically after a verify tier-pass) to repaint. Call with NO source/filePath to list connected browser tabs (discovery). Pass close:true to close the preview and stop the server. Canvas policy: don\'t paint during tight iteration — paint at a verify tier-pass or for a specific result worth showing.',
     {
       source: z.string().optional().describe('TypeScript circuit code as a string'),
       filePath: z
         .string()
         .optional()
-        .describe('Path to a .circuit.ts file (will be watched for changes)'),
+        .describe('Path to a .circuit.ts file (read once; not watched — re-call show_circuit to repaint)'),
       close: z
         .boolean()
         .optional()
@@ -139,10 +138,10 @@ export function registerShowTools(server: McpServer): void {
         };
       }
 
-      // 3. Pre-load memory + arm file watching before the push, so a freshly
-      // connecting tab receives them alongside its first render.
+      // 3. Pre-load memory before the push, so a freshly connecting tab
+      // receives it alongside its first render. (The file is read once for its
+      // source above — NOT watched; show_circuit is the sole canvas trigger.)
       if (memoryData) studio.pushMemoryData(memoryData, session);
-      if (filePath) studio.watchFile(resolve(filePath));
 
       // 4. Push the source and AWAIT the render acknowledgment.
       //   - Connected tab: await its render directly.
@@ -175,7 +174,6 @@ export function registerShowTools(server: McpServer): void {
       }
 
       // 5. Report, leading with the render acknowledgment.
-      const watchingNote = filePath ? ` Watching ${resolve(filePath)} for changes.` : '';
       const sessionNote = session ? ` (session: ${session})` : '';
       if (!render.ok && !render.timedOut) {
         // The browser reported a render failure (boolean ack). VIEWER-ONLY: do
@@ -189,13 +187,13 @@ export function registerShowTools(server: McpServer): void {
       if (!render.ok && render.timedOut) {
         // Never heard back (slow or no browser) — not necessarily an error.
         return {
-          content: [{ type: 'text' as const, text: `Circuit pushed; render not yet confirmed (${render.error ?? 'timed out'}). The tab may still be loading — check the browser.${watchingNote}${sessionNote}` }],
+          content: [{ type: 'text' as const, text: `Circuit pushed; render not yet confirmed (${render.error ?? 'timed out'}). The tab may still be loading — check the browser.${sessionNote}` }],
         };
       }
       return {
         // Name derived from the source the MCP pushed — NOT from the browser
         // (viewer-only: browser-reported names are untrusted).
-        content: [{ type: 'text' as const, text: `Circuit preview running. Rendered as "${circuitNameFromSource(read.source)}".${watchingNote}${sessionNote}` }],
+        content: [{ type: 'text' as const, text: `Circuit preview running. Rendered as "${circuitNameFromSource(read.source)}".${sessionNote}` }],
       };
     }
   );

@@ -21,7 +21,7 @@ import type { Circuit } from "@simten/ui/editor/types";
 import { Button } from "@/components/ui/button";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { TSEditor, type TSEditorRef } from "@/features/code-editor/TSEditor";
-import { Download, Share2, Loader2, RefreshCw } from "lucide-react";
+import { Download, Share2, Loader2 } from "lucide-react";
 import { exportVerilog } from "@simten/core/verilog";
 import { SiteHeader } from "@/components/SiteHeader";
 import { encodeSourceForUrl, shouldUseShortLink } from "@simten/ui/share";
@@ -134,16 +134,6 @@ export function EditorWorkspace({ theme = "light", initialSource, standalone = f
 
   // Track whether we've loaded content so we can skip the first MCP cache replay
   const hasLoadedContentRef = useRef(false);
-
-  // The last source applied to the editor from the server (an explicit
-  // show_circuit push or a file-watcher update). Used to tell whether the user
-  // has unsaved sandbox edits, so a passive file-watch update doesn't clobber
-  // their experiments. See #194 — the editor is a sandbox VIEW of the file
-  // (which Claude edits from the terminal); the file is the source of truth.
-  const lastAppliedSourceRef = useRef<string | null>(null);
-  // A file-watch update deferred because the sandbox had unsaved edits — drives
-  // the non-destructive "Claude updated this — Reload?" prompt.
-  const [pendingFileUpdate, setPendingFileUpdate] = useState<string | null>(null);
 
   // Export to Verilog — uses library store
   const handleExportVerilog = useCallback(() => {
@@ -272,23 +262,7 @@ export function EditorWorkspace({ theme = "light", initialSource, standalone = f
       if (payload?.vcd) setWaveformData(payload);
     }, []),
     onSource: useCallback((source: string, requestId?: string) => {
-      // A `requestId` marks an explicit show_circuit push (intentional); no
-      // requestId means a passive file-watcher update. A passive update must
-      // not clobber unsaved sandbox experiments — defer it behind a Reload
-      // prompt. Explicit pushes always apply (the user/agent asked to re-show).
-      const isExplicit = !!requestId;
-      const current = editorRef.current?.getCode() ?? null;
-      const hasLocalEdits =
-        current != null &&
-        lastAppliedSourceRef.current != null &&
-        current !== lastAppliedSourceRef.current;
-      if (!isExplicit && hasLocalEdits) {
-        setPendingFileUpdate(source);
-        return;
-      }
       pendingRenderRef.current = requestId ?? null;
-      lastAppliedSourceRef.current = source;
-      setPendingFileUpdate(null);
       editorRef.current?.setCode(source);
       setTimeout(() => editorRef.current?.compile(), 100);
     }, []),
@@ -341,16 +315,6 @@ export function EditorWorkspace({ theme = "light", initialSource, standalone = f
       sendRenderResult(reqId, { ok: false, error: message });
     }
   }, [sendRenderResult]);
-
-  // Apply a deferred file-watch update — discards the sandbox experiments in
-  // favour of the file Claude changed (the user explicitly chose to reload).
-  const reloadFromFile = useCallback(() => {
-    if (pendingFileUpdate == null) return;
-    lastAppliedSourceRef.current = pendingFileUpdate;
-    editorRef.current?.setCode(pendingFileUpdate);
-    setTimeout(() => editorRef.current?.compile(), 100);
-    setPendingFileUpdate(null);
-  }, [pendingFileUpdate]);
 
   // Load an example into the editor
   const loadExample = useCallback((example: Example) => {
@@ -448,20 +412,6 @@ export function EditorWorkspace({ theme = "light", initialSource, standalone = f
                 <Download className="h-4 w-4" />
                 <span className="hidden sm:inline text-xs">Verilog</span>
               </Button>
-
-              {/* Deferred file-watch update — non-destructive reload prompt (#194) */}
-              {pendingFileUpdate != null && (
-                <Button
-                  onClick={reloadFromFile}
-                  variant="outline"
-                  size="sm"
-                  className="gap-2 border-amber-400 text-amber-600 dark:text-amber-400"
-                  title="Claude changed the circuit file on disk. Reload to discard your sandbox experiments and show the file's version."
-                >
-                  <RefreshCw className="h-4 w-4" />
-                  <span className="hidden sm:inline text-xs">Claude updated — Reload</span>
-                </Button>
-              )}
 
               {/* Sandbox indicator — when MCP-linked, the file is the source of truth */}
               {mcpStatus === 'connected' && (

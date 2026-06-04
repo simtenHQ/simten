@@ -13,7 +13,6 @@
  */
 
 import { WebSocketServer, WebSocket } from 'ws';
-import { watchFile as fsWatchFile, unwatchFile, existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { createServer } from 'node:http';
@@ -45,7 +44,6 @@ export interface StudioServer {
   updateSourceAndAwait(source: string, sessionId?: string, timeoutMs?: number): Promise<RenderResult>;
   /** Push source and await the render ack from a not-yet-connected tab (fresh open). */
   updateSourceAndAwaitConnect(source: string, timeoutMs?: number): Promise<RenderResult>;
-  watchFile(filePath: string): void;
   pushTraces(data: TracesPayload, sessionId?: string): void;
   pushTestResults(data: TestResultsPayload, sessionId?: string): void;
   pushMemoryData(data: MemoryDataPayload, sessionId?: string): void;
@@ -59,9 +57,6 @@ const STATE_REQUEST_TIMEOUT = 3000;
 /** Timeout for awaiting the first render after opening a fresh browser tab (ms).
  *  Generous: covers browser launch + page load + esm.sh fetch + compile. */
 const CONNECT_RENDER_TIMEOUT = 20000;
-
-/** Dedup window: ignore file watcher events within this many ms of an explicit push */
-const DEDUP_WINDOW_MS = 500;
 
 export async function createStudioServer(
   options?: {
@@ -83,8 +78,6 @@ export async function createStudioServer(
   let cachedTraces: TracesPayload | null = null;
   let cachedTestResults: TestResultsPayload | null = null;
   let cachedMemoryData: MemoryDataPayload | null = null;
-  let watchedPath: string | null = null;
-  let lastExplicitPushAt = 0;
 
   // Track the most recently active session for default targeting
   let lastActiveSessionId: string | null = null;
@@ -320,7 +313,6 @@ export async function createStudioServer(
 
   function updateSource(source: string, sessionId?: string) {
     currentSource = source;
-    lastExplicitPushAt = Date.now();
     broadcast({ type: 'source', source }, sessionId);
   }
 
@@ -337,7 +329,6 @@ export async function createStudioServer(
     timeoutMs: number = STATE_REQUEST_TIMEOUT,
   ): Promise<RenderResult> {
     currentSource = source;
-    lastExplicitPushAt = Date.now();
     const target = getTargetSession(sessionId);
     if (!target) return Promise.resolve({ ok: false, error: 'no browser tab connected' });
 
@@ -364,7 +355,6 @@ export async function createStudioServer(
     timeoutMs: number = CONNECT_RENDER_TIMEOUT,
   ): Promise<RenderResult> {
     currentSource = source;
-    lastExplicitPushAt = Date.now();
     const requestId = randomUUID();
     return new Promise((resolveReq) => {
       const timer = setTimeout(() => {
@@ -374,37 +364,6 @@ export async function createStudioServer(
       }, timeoutMs);
       pendingRequests.set(requestId, { resolve: resolveReq as (v: unknown) => void, timer });
       pendingConnectRender = requestId;
-    });
-  }
-
-  function watchFile(filePath: string) {
-    const absPath = resolve(filePath);
-
-    if (watchedPath === absPath) return;
-
-    if (watchedPath) {
-      unwatchFile(watchedPath);
-    }
-
-    watchedPath = absPath;
-
-    fsWatchFile(absPath, { interval: 200 }, (curr, prev) => {
-      if (curr.mtimeMs === prev.mtimeMs) return;
-
-      // Dedup: skip if we just did an explicit push
-      if (Date.now() - lastExplicitPushAt < DEDUP_WINDOW_MS) return;
-
-      if (curr.size === 0 && !existsSync(absPath)) {
-        broadcast({ type: 'file-deleted' });
-        return;
-      }
-
-      try {
-        const content = readFileSync(absPath, 'utf-8');
-        updateSource(content);
-      } catch {
-        broadcast({ type: 'error', message: `Failed to read ${absPath}` });
-      }
     });
   }
 
@@ -428,10 +387,6 @@ export async function createStudioServer(
   }
 
   function close() {
-    if (watchedPath) {
-      unwatchFile(watchedPath);
-      watchedPath = null;
-    }
     for (const pending of pendingRequests.values()) {
       clearTimeout(pending.timer);
     }
@@ -452,7 +407,6 @@ export async function createStudioServer(
     updateSource,
     updateSourceAndAwait,
     updateSourceAndAwaitConnect,
-    watchFile,
     pushTraces,
     pushTestResults,
     pushMemoryData,
