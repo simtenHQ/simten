@@ -971,19 +971,6 @@ const HeroBrowserWindow = forwardRef<
                 </div>
               )}
             </div>
-            {mountCanvas && (
-              <div className="flex-shrink-0 border-t border-border px-4 py-2 flex items-center justify-between animate-in fade-in duration-500">
-                <span className="text-[11px] text-muted-foreground/60">
-                  Click switches to interact
-                </span>
-                <Link
-                  to="/circuit"
-                  className="text-[11px] text-muted-foreground/60 hover:text-foreground transition-colors"
-                >
-                  Open in full editor
-                </Link>
-              </div>
-            )}
           </div>
         </div>
       </BrowserWindow>
@@ -1156,15 +1143,15 @@ export function ClaudeDemoSection({
   }, [demoComplete]);
 
   return (
-    <section className="hidden md:block pt-20 pb-16">
+    <section className="hidden md:block pt-10 pb-16">
       <Container>
         {/* Section label */}
-        <div className="mb-10 max-w-3xl">
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-semibold tracking-tight leading-[1.05] text-foreground">
+        <div className="mb-6">
+          <h1 className="text-3xl md:text-4xl font-semibold tracking-tight leading-[1.1] text-foreground">
             Describe hardware. Claude builds it. Test it like software.
           </h1>
-          <p className="mt-5 text-base md:text-lg text-muted-foreground max-w-2xl">
-            A TypeScript HDL where the whole npm ecosystem is your testbench — drive a circuit with real packets, real firmware, any library you can <code>npm install</code>, and watch it run cycle-by-cycle. Synthesizable to Verilog.
+          <p className="mt-4 text-base text-muted-foreground max-w-2xl">
+            A TypeScript HDL where any npm package is your testbench. Drive circuits with real packets and firmware, watch them run cycle-by-cycle, and synthesize to Verilog.
           </p>
           <div className="mt-6 flex items-center gap-3 flex-wrap">
             {/* Primary action — keeps the hero framed around "this is a
@@ -1180,30 +1167,12 @@ export function ClaudeDemoSection({
             </Link>
             <CopyCommand command="claude mcp add simten npx @simten/mcp" />
           </div>
-          <div className="mt-5 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[12px] text-muted-foreground">
-            <a
-              href="https://github.com/simtenHQ/simten"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="transition-colors hover:text-foreground"
-            >
-              Open source · Apache-2.0
-            </a>
-            <span className="text-muted-foreground/40">·</span>
-            <span>Synthesizable Verilog</span>
-            <span className="text-muted-foreground/40">·</span>
-            <span>Runs on real FPGAs (ULX3S)</span>
-            <span className="text-muted-foreground/40">·</span>
-            <span>Cycle-accurate</span>
-            <span className="text-muted-foreground/40">·</span>
-            <span>Open toolchain (Yosys + nextpnr)</span>
-          </div>
         </div>
 
         <div className="relative">
         <div
           ref={desktopContainerRef}
-          className="h-[560px] grid min-h-0 ease-in-out"
+          className="h-[460px] grid min-h-0 ease-in-out"
           style={{
             // Use matching fr units on both endpoints so CSS can actually
             // interpolate. Mixing units (% on one side, fr on the other)
