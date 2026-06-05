@@ -403,9 +403,7 @@ function DrilldownBentoVisual() {
     <div className="absolute inset-0 flex items-center justify-center p-4">
       <DrilldownLayer name="FullAdder" depth={0}>
         <DrilldownLayer name="HalfAdder" depth={1}>
-          <DrilldownLayer name="Xor" depth={2}>
-            <DrilldownLayer name="Nand" depth={3} leaf />
-          </DrilldownLayer>
+          <DrilldownLayer name="Xor" depth={2} />
         </DrilldownLayer>
       </DrilldownLayer>
     </div>
@@ -446,7 +444,7 @@ function DrilldownLayer({
         >
           {name}
         </span>
-        {!leaf && (
+        {children && (
           <span className="relative inline-flex h-4 w-4 items-center justify-center">
             <span className="absolute inset-0 rounded-full bg-blue-400/30 animate-[ping_2s_cubic-bezier(0,0,0.2,1)_infinite]" />
             <span className="relative flex h-3 w-3 items-center justify-center rounded-full bg-blue-500">
@@ -753,14 +751,12 @@ function DemoGallery() {
             </p>
           </div>
 
-          {/* Diagonally overlapping card stack — RV32I is the primary,
-              forward card; the Ethernet parser peeks out from behind in
-              the bottom-right, implying "and more like this". Container
-              uses padding-bottom to reserve room for the offset card
-              hanging off the bottom-right corner. */}
-          <div className="relative pb-24 lg:pb-32">
-            {/* RV32I — behind, partially covered by the Ethernet card */}
-            <div className="relative z-0 rounded-2xl bg-muted/60 p-3 lg:p-4 w-full lg:w-[78%] shadow-sm">
+          {/* Two flagship systems, stacked. RV32I leads, the Ethernet parser
+              follows. (Was a diagonal overlap, which buried each card's content
+              behind the other.) */}
+          <div className="space-y-8">
+            {/* RV32I CPU debugger */}
+            <div className="relative w-full rounded-2xl bg-muted/60 p-3 lg:p-4 shadow-sm">
               <div
                 className="rounded-xl border border-border bg-card shadow-sm overflow-hidden"
                 style={{ height: 520 }}
@@ -806,19 +802,8 @@ function DemoGallery() {
               </a>
             </div>
 
-            {/* Ethernet — in front, offset to the bottom-right */}
-            <div className="hidden lg:block absolute right-0 -bottom-4 z-10 w-[62%] rounded-2xl bg-muted/60 p-3 lg:p-4 shadow-md">
-              <EthernetParserCard />
-              <div className="absolute -top-3 left-6 inline-flex items-center gap-2 rounded-full bg-card border border-border px-3 py-1 text-[11px] font-medium text-foreground shadow-sm">
-                <span className="h-1.5 w-1.5 rounded-full bg-violet-500" />
-                Ethernet parser
-              </div>
-            </div>
-
-            {/* Mobile / narrow: stack the Ethernet card under the RV32I
-                instead of overlapping (the overlap doesn't have room to
-                breathe below the lg breakpoint). */}
-            <div className="lg:hidden mt-8 rounded-2xl bg-muted/60 p-3 lg:p-4 relative">
+            {/* Ethernet parser */}
+            <div className="relative w-full rounded-2xl bg-muted/60 p-3 lg:p-4 shadow-sm">
               <EthernetParserCard />
               <div className="absolute -top-3 left-6 inline-flex items-center gap-2 rounded-full bg-card border border-border px-3 py-1 text-[11px] font-medium text-foreground shadow-sm">
                 <span className="h-1.5 w-1.5 rounded-full bg-violet-500" />
@@ -834,10 +819,10 @@ function DemoGallery() {
         <Section>
           <div className="mb-10 max-w-2xl">
             <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight leading-[1.1]">
-              Same engine, just more fun.
+              No CPU. No code. Just gates.
             </h2>
             <p className="mt-3 text-sm text-muted-foreground">
-              Toggle inputs and play. Same simulator, same Verilog export — Snake also runs on a real ULX3S board.
+              Pong and Snake, built entirely from logic gates with no processor and no software. Play them here, then watch Snake run on a real ULX3S FPGA.
             </p>
           </div>
 
@@ -1202,10 +1187,10 @@ function PongCard() {
             <button
               onClick={() => setIsRunning(!isRunning)}
               disabled={!sim.ready}
-              className={`px-2.5 py-1 rounded text-[10px] font-medium transition-colors disabled:opacity-40 ${
+              className={`px-4 py-1.5 rounded-md text-xs font-semibold shadow-sm transition-colors disabled:opacity-40 ${
                 isRunning
-                  ? "bg-amber-100 hover:bg-amber-200 text-amber-800 dark:bg-amber-800 dark:hover:bg-amber-700 dark:text-amber-200"
-                  : "bg-green-100 hover:bg-green-200 text-green-800 dark:bg-green-900 dark:hover:bg-green-800 dark:text-green-300"
+                  ? "bg-amber-500 hover:bg-amber-400 text-white"
+                  : "bg-green-600 hover:bg-green-500 text-white"
               }`}
             >
               {isRunning ? "Pause" : "Play"}
@@ -1289,10 +1274,10 @@ function SnakeCard() {
             <button
               onClick={() => setIsRunning(!isRunning)}
               disabled={!sim.ready}
-              className={`px-2.5 py-1 rounded text-[10px] font-medium transition-colors disabled:opacity-40 ${
+              className={`px-4 py-1.5 rounded-md text-xs font-semibold shadow-sm transition-colors disabled:opacity-40 ${
                 isRunning
-                  ? "bg-amber-100 hover:bg-amber-200 text-amber-800 dark:bg-amber-800 dark:hover:bg-amber-700 dark:text-amber-200"
-                  : "bg-green-100 hover:bg-green-200 text-green-800 dark:bg-green-900 dark:hover:bg-green-800 dark:text-green-300"
+                  ? "bg-amber-500 hover:bg-amber-400 text-white"
+                  : "bg-green-600 hover:bg-green-500 text-white"
               }`}
             >
               {isRunning ? "Pause" : "Play"}
