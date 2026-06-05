@@ -1,12 +1,14 @@
 # RV32I arch-test conformance (simulation)
 
-Drives the simten RV32I core against the official
-[`riscv/riscv-arch-test`](https://github.com/riscv/riscv-arch-test) vectors and
-diffs the resulting signature against a **Spike** reference, in simulation.
+This runs the Simten RV32I core against the official
+[riscv-arch-test](https://github.com/riscv/riscv-arch-test) suite and compares
+its signature against [Spike](https://github.com/riscv-software-src/riscv-isa-sim),
+the reference RISC-V simulator. Everything here runs in simulation.
 
-> **Honest claim:** *a CPU built in this HDL, evaluated on its structural
-> elaborated netlist, passes the official riscv-arch-test RV32I-I suite vs
-> Spike, in simulation* (all 38 tests). Not "certified"; not run on silicon.
+What that lets us claim: a CPU built in this HDL, run as its elaborated
+gate-level netlist, passes all 38 of the official RV32I-I conformance tests
+against Spike. It is not certified, and it has not been run through this suite
+on silicon.
 
 ## Result
 
@@ -16,97 +18,99 @@ diffs the resulting signature against a **Spike** reference, in simulation.
 38/38 attempted pass vs Spike · 38/38 trap-free (pure RV32I) · 0 skipped
 ```
 
-- **All 38 official RV32I-I tests** pass byte-for-byte vs Spike on the **unchanged**
-  `{zicsr:false}` core (no hardware changes — see "Scope finding").
-- **Toolchain pin:** we use gcc 13.2.0 / binutils **2.41**, which assembles the
-  2022-vintage tests. binutils 2.45 (gcc 15) rejects `jalr-01`'s `la x0, 5b`
-  (inst_7 uses `rd=x0`; newer gas disallows `la`/`li` to x0) — a toolchain
-  issue, never a DUT one.
-- **Harness validity:** `tsx fault-check.ts` injects a real `add→sub` into the
-  DUT's instruction stream and asserts the signature **diverges** from Spike, so
-  the green result is not vacuous.
+All 38 tests pass byte-for-byte against Spike on the unchanged `{zicsr:false}`
+core. No hardware changes were needed (see [Scope](#scope-why-no-csrtrap-support-was-needed)).
 
-## Local dev toolchain (not containers)
+The harness can actually fail. `tsx fault-check.ts` patches an `add` into a
+`sub` in the DUT's instruction stream and checks that the signature then
+diverges from Spike, so a green run isn't vacuous.
 
-Shells out to a **local** RISC-V toolchain + ISA simulator. The product
-containers are used as-is elsewhere and deliberately *not* extended for this.
+One toolchain caveat: we pin gcc 13.2.0 / binutils 2.41, which assemble the
+2022-era test sources. binutils 2.45 (gcc 15) rejects `jalr-01`'s `la x0, 5b`,
+because newer gas disallows `la`/`li` into `x0`. That's a toolchain quirk, not a
+core bug.
+
+## Toolchain
+
+The harness shells out to a local RISC-V toolchain and ISA simulator. The
+product's container services aren't involved.
 
 | Tool | Version | Install (macOS arm64) |
 |------|---------|------------------------|
-| `riscv-none-elf-gcc` (+ binutils `objdump`/`nm`/`ld`/`as`) | xPack GCC **13.2.0**, binutils **2.41** (pinned — see Result) | `npm i -g xpm && xpm install --global @xpack-dev-tools/riscv-none-elf-gcc@13.2.0-2.1` → `~/Library/xPacks/@xpack-dev-tools/riscv-none-elf-gcc/13.2.0-2.1/.content/bin` (override dir via `ARCHTEST_GCC_BIN`) |
-| `spike` (riscv-isa-sim) | **1.1.1-dev** | `brew tap riscv-software-src/riscv && brew install riscv-isa-sim` (override via `SPIKE`) |
+| `riscv-none-elf-gcc` (+ binutils `objdump`/`nm`/`ld`/`as`) | xPack GCC 13.2.0, binutils 2.41 (pinned, see Result) | `npm i -g xpm && xpm install --global @xpack-dev-tools/riscv-none-elf-gcc@13.2.0-2.1`, then add `~/Library/xPacks/@xpack-dev-tools/riscv-none-elf-gcc/13.2.0-2.1/.content/bin` to PATH (or set `ARCHTEST_GCC_BIN`) |
+| `spike` (riscv-isa-sim) | 1.1.1-dev | `brew tap riscv-software-src/riscv && brew install riscv-isa-sim` (or set `SPIKE`) |
 
-Not a default CI job: per-PR CI keeps the 69-test `pnpm fpga:test` + netlist
-guard; conformance-in-CI later would be a toolchain-install step, not committed
-infra.
+This isn't a default CI job. Per-PR CI runs the 69-test `pnpm fpga:test` plus the
+netlist guard; wiring conformance into CI would mean installing the toolchain
+there, which we haven't done yet.
 
-## Vendored material
+## What's vendored
 
-`vendor/` is copied verbatim from `riscv/riscv-arch-test`, branch
-**`old-framework-2.x`**, pinned at commit **`6f7f47b`** (the classic
-signature-region suite; the default `act4` branch is the self-checking
-framework we don't use). License: **BSD-3-Clause** (`vendor/COPYING.BSD`).
+`vendor/` is a verbatim copy of
+[riscv-arch-test](https://github.com/riscv/riscv-arch-test) at branch
+`old-framework-2.x`, commit `6f7f47b`. That's the classic signature-region
+suite, not the newer self-checking `act4` framework. License: BSD-3-Clause
+(`vendor/COPYING.BSD`).
 
-- `vendor/env/{arch_test.h,encoding.h}` — upstream macros/encodings.
-- `vendor/rv32i_m/I/src/*.S` — all 38 RV32I-I tests.
+- `vendor/env/{arch_test.h,encoding.h}`: upstream macros and encodings.
+- `vendor/rv32i_m/I/src/*.S`: all 38 RV32I-I tests.
 
-`model_test.h` and `link.ld` are **ours** (the DUT target definition).
+`model_test.h` and `link.ld` are ours; they define the DUT target.
 
-## Scope finding (settled by objdump, not assumption)
+## Scope: why no CSR/trap support was needed
 
-The base RV32I-**I** tests compile to **pure RV32I — zero CSR/trap
-instructions** (the harness asserts this per-test; all 38 are trap-free). All of
-`arch_test.h`'s CSR/trap trampoline is gated behind `#ifdef rvtest_mtrap_routine`,
-a macro defined by the *target's* `model_test.h` — which we leave undefined. So
-this is **outcome (a): no core changes** — no `zicsr` flag, no `rv32i-csr.ts`, no
-trap unit. CSR/trap would only be needed to target the separate
-**Zicsr/privileged** arch-test suite (a deliberate future capability; re-scope it
-from a fresh objdump of *those* tests if pursued).
+The base RV32I-I tests assemble to pure RV32I, with no CSR or trap instructions.
+The harness verifies this per test, and all 38 come out trap-free. The CSR/trap
+trampoline in `arch_test.h` is gated behind `rvtest_mtrap_routine`, a macro the
+target's `model_test.h` defines, and we leave it undefined. So the core needs no
+changes: no `zicsr` flag, no `rv32i-csr.ts`, no trap unit. Those would only matter
+for the separate Zicsr/privileged suite, which is a possible later step.
 
-## Memory map & why the DUT and Spike use different bases
+## Memory map
 
-The DUT resets to **PC = 0x0**, so its ELF is linked at `0x0` (IMEM) / `0x400000`
-(DMEM) — see `link.ld`. IMEM is large (4 MB) because branch/jump arch-tests emit
-**megabytes** of nop padding to span displacement ranges (`jal-01` `.text` ≈
-1.75 MB); DMEM starts above the largest `.text` so they never overlap. Enlarging
-sim memory is netlist-neutral — the core is address-bare.
+The DUT resets to PC `0x0`, so its ELF links at `0x0` (IMEM) and `0x400000`
+(DMEM); see `link.ld`. IMEM is 4 MB because the branch and jump tests emit
+megabytes of nop padding to cover their displacement ranges (`jal-01`'s `.text`
+is about 1.75 MB), and DMEM sits above the largest `.text` so the two never
+overlap. Growing simulated memory doesn't touch the netlist; the core is
+address-agnostic.
 
-Spike **cannot** map `[0, 0x1000)` (it reserves that for its debug-module ROM
-and has no flag to relocate it). We do **not** relink the DUT to suit Spike (that
-would break its reset vector and the netlist golden guard). Instead Spike runs a
-copy linked at `0x80000000`. The signatures still match because **arch-test
-signatures are position-independent by construction** (`TEST_AUIPC`/`TEST_JAL_OP`/
-`TEST_JALR_OP` subtract a local label so stored values don't depend on link
-address) — empirically confirmed by all 38 passing across the two bases.
+Spike can't map `[0, 0x1000)`: it reserves that range for its debug-module ROM
+and has no flag to relocate it. Rather than relink the DUT (which would break its
+reset vector and the netlist golden guard), Spike runs a copy linked at
+`0x80000000`. The signatures still match because arch-test signatures are
+position-independent by construction. `TEST_AUIPC`, `TEST_JAL_OP`, and
+`TEST_JALR_OP` subtract a local label, so the stored values don't depend on link
+address. All 38 passing across the two base addresses confirms it.
 
-## Locked formats
+## Formats
 
-- **Signature:** one 4-byte little-endian word per line, lowercase 8-hex-digit,
-  `+signature-granularity=4`, region `[begin_signature, end_signature)`.
-- **Spike ISA string:** `rv32i` (no `Zicsr` — none emitted for base-I).
-- **Halt:** `RVMODEL_HALT` stores to HTIF `tohost` then spins. Spike stops + dumps
-  on the tohost write; the DUT runner treats the same store as its done signal.
+- Signature: one 4-byte little-endian word per line, lowercase 8-hex-digit,
+  `+signature-granularity=4`, over `[begin_signature, end_signature)`.
+- Spike ISA string: `rv32i` (no Zicsr, since base-I emits none).
+- Halt: `RVMODEL_HALT` stores to HTIF `tohost` and spins. Spike stops and dumps
+  on that write; the DUT runner treats the same store as its done signal.
 
 ## Files
 
 | File | Role |
 |------|------|
-| `conformance.verify.ts` | **Tier-A testbench** (declareOracle: Spike; loops the suite) |
-| `run-suite.ts` | dev CLI — prints a per-test pass/trap-free table |
-| `suite-lib.ts` | shared engine: compile → objdump trap-check → Spike → DUT → diff |
+| `conformance.verify.ts` | Tier-A testbench (declares Spike as the oracle, loops the suite) |
+| `run-suite.ts` | dev CLI; prints a per-test pass/trap-free table |
+| `suite-lib.ts` | the engine: compile, objdump trap-check, run Spike, run the DUT, diff |
 | `run-dut.ts` | loads an ELF, runs the unchanged core, dumps the signature region |
-| `fault-check.ts` | harness-validity: inject `add→sub`, assert divergence |
-| `model_test.h`, `link.ld` | DUT target (machine-mode-free) + 0x0-based memory map |
+| `fault-check.ts` | harness check: inject `add`→`sub`, assert the signature diverges |
+| `model_test.h`, `link.ld` | DUT target (machine-mode-free) and the `0x0`-based memory map |
 
 ## Running
 
 ```sh
 export PATH="$HOME/Library/xPacks/@xpack-dev-tools/riscv-none-elf-gcc/13.2.0-2.1/.content/bin:$PATH"
 cd hardware/ulx3s/projects/cpu/archtest
-tsx run-suite.ts        # full suite, human-readable table
-tsx conformance.verify.ts   # Tier-A, emits structured verify JSON
-tsx fault-check.ts      # prove the harness can fail
+tsx run-suite.ts          # full suite, human-readable table
+tsx conformance.verify.ts # Tier-A, emits structured verify JSON
+tsx fault-check.ts        # prove the harness can fail
 ```
 
-`build/` (compiled ELFs, signatures, generated Spike link script) is gitignored.
-Per-test signature symbol addresses come from `riscv-none-elf-nm`.
+Per-test signature addresses come from `riscv-none-elf-nm`. `build/` (compiled
+ELFs, signatures, the generated Spike link script) is gitignored.
