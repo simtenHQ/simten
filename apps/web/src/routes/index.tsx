@@ -777,6 +777,33 @@ function DemoGallery() {
                   Open →
                 </Link>
               </div>
+
+              {/* Conformance receipts. Honest framing per the harness README —
+                  simulation vs Spike, not silicon certification. The link is the
+                  proof and doubles as the "what is Spike" gloss. */}
+              <a
+                href="https://github.com/simtenHQ/simten/blob/main/hardware/ulx3s/projects/cpu/archtest/README.md"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-3 inline-flex items-center gap-2 rounded-full border border-border bg-card px-3.5 py-1.5 text-[13px] font-medium text-foreground/90 shadow-sm transition-colors hover:border-emerald-500/40 hover:text-foreground"
+              >
+                <svg
+                  className="h-3.5 w-3.5 shrink-0 text-emerald-500"
+                  viewBox="0 0 12 12"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M2.5 6.4 5 8.9 9.5 3.4" />
+                </svg>
+                Passes 38/38 RISC-V RV32I conformance tests vs Spike (in sim)
+                <span aria-hidden="true" className="text-muted-foreground/70">
+                  ↗
+                </span>
+              </a>
             </div>
 
             {/* Ethernet — in front, offset to the bottom-right */}
