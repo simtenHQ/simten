@@ -33,10 +33,15 @@ const bundlePath = join(here, '..', 'dist', 'bundle.d.ts');
 // global binding's hover.
 function extractJsDocBySymbol(dtsSource) {
   const out = new Map();
-  // Matches an (optional) JSDoc block immediately before
-  // `declare const X` / `declare function X`. The `[\s\S]*?` keeps it non-greedy
-  // so back-to-back declarations don't collapse into one match.
-  const re = /(\/\*\*[\s\S]*?\*\/)\s*\ndeclare (?:const|function) (\w+)\b/g;
+  // Matches a JSDoc block IMMEDIATELY before `declare const X` /
+  // `declare function X`. The comment body is `(?:[^*]|\*(?!\/))*` — it cannot
+  // cross a `*/`, so the capture is exactly one comment block. A lazy
+  // `[\s\S]*?` here would, for symbols whose declaration is separated from
+  // their doc by intervening `type` declarations (e.g. the RV32I_Core cast
+  // pattern), swallow those declarations into the "JSDoc" and paste them
+  // into `declare global {}` — where names like `Node` resolve to DOM types
+  // and silently poison the editor's circuit() overload resolution.
+  const re = /(\/\*\*(?:[^*]|\*(?!\/))*\*\/)\s*\ndeclare (?:const|function) (\w+)\b/g;
   let m;
   while ((m = re.exec(dtsSource)) !== null) {
     const [, jsdoc, name] = m;
