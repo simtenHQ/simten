@@ -11,7 +11,7 @@
     {
       "class_name": "CompilerContainer",
       "image": "./Dockerfile",
-      "max_instances": 5
+      "max_instances": 2
     }
   ],
   "durable_objects": {
