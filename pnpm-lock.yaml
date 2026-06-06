@@ -286,6 +286,10 @@ importers:
       '@simten/core':
         specifier: workspace:*
         version: link:../../packages/core
+    devDependencies:
+      fast-check:
+        specifier: ^4.5.3
+        version: 4.5.3
 
   packages/core:
     dependencies:

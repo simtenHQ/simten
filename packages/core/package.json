@@ -32,6 +32,7 @@
     "./std": "./src/std/index.ts",
     "./sim": "./src/sim/index.ts",
     "./verify": "./src/verify/index.ts",
+    "./examples": "./src/examples/index.ts",
     "./util/test-name": "./src/util/test-name.ts",
     "./bundle": "./dist/bundle.d.ts",
     "./editor-globals": "./dist/editor-globals.dts.txt",
@@ -70,6 +71,10 @@
       "./verify": {
         "types": "./dist/verify/index.d.ts",
         "import": "./dist/verify/index.js"
+      },
+      "./examples": {
+        "types": "./dist/examples/index.d.ts",
+        "import": "./dist/examples/index.js"
       },
       "./util/test-name": {
         "types": "./dist/util/test-name.d.ts",

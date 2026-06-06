@@ -6,6 +6,7 @@
   "scripts": {
     "test": "tsx projects/cpu/tests.ts",
     "verify": "tsx projects/cpu/verify.ts --suite",
+    "verify:snake": "tsx projects/snake/gameplay.verify.ts && tsx projects/snake/parity-check.ts && tsx projects/snake/playable-check.ts && tsx projects/snake/fault-check.ts",
     "sim": "tsx projects/cpu/run_c.ts",
     "regen-verilog": "tsx projects/cpu/regen_verilog.ts",
     "netlist:check": "tsx projects/cpu/dump-netlist.ts --check",
@@ -15,5 +16,8 @@
   },
   "dependencies": {
     "@simten/core": "workspace:*"
+  },
+  "devDependencies": {
+    "fast-check": "^4.5.3"
   }
 }
