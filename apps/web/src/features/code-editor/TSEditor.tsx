@@ -35,26 +35,6 @@ import { useCorePreload } from "./useCorePreload";
 // Default code
 // ============================================================================
 
-const DEFAULT_CODE = `// Circuit Editor — TypeScript Mode
-//
-// Build circuits using the circuit() API.
-// All standard components are available: And, Or, Xor, Not, Mux, Register, etc.
-//
-// Example: Half Adder
-
-const HalfAdder = circuit('HalfAdder', {
-  inputs:  { a: bit, b: bit },
-  outputs: { sum: bit, carry: bit },
-  nodes:   { xor1: Xor, and1: And },
-  connect: ({ inputs, outputs, nodes: { xor1, and1 } }) => [
-    inputs.a.to(xor1.a, and1.a),
-    inputs.b.to(xor1.b, and1.b),
-    xor1.out.to(outputs.sum),
-    and1.out.to(outputs.carry),
-  ],
-})
-`;
-
 const DEFAULT_STORAGE_KEY = "simten-ts-code";
 
 // ============================================================================
@@ -110,15 +90,26 @@ export const TSEditor = forwardRef<TSEditorRef, TSEditorProps>(
     const monacoRef = useRef<Monaco | null>(null);
     const [monacoInstance, setMonacoInstance] = useState<Monaco | null>(null);
 
-    // Code state
+    // Code state. No default circuit: a first visit (nothing in localStorage)
+    // starts empty so the workspace shows the example picker instead.
     const [code, setCode] = useState<string>(() => {
       if (initialCode) return initialCode;
       if (storageKey) {
         const saved = localStorage.getItem(storageKey);
         if (saved) return saved;
       }
-      return DEFAULT_CODE;
+      return "";
     });
+
+    // Report the resolved initial code once, so the workspace's empty-state
+    // (example picker) logic sees the truth on mount — onCodeChange otherwise
+    // only fires on user edits.
+    const reportedInitial = useRef(false);
+    useEffect(() => {
+      if (reportedInitial.current) return;
+      reportedInitial.current = true;
+      onCodeChange?.(code);
+    }, [code, onCodeChange]);
 
     // Fetch + inject TypeScript declarations for npm imports
     useTypeAcquisition(code, monacoInstance);
