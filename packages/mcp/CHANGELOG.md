@@ -1,5 +1,18 @@
 # @simten/mcp
 
+## 0.7.0
+
+### Minor Changes
+
+- b32514c: The preview server now proxies `POST /api/compile` to the deployed compiler endpoint (override with `SIMTEN_COMPILE_URL`), so the IMEM node's Compile & Load button works on the MCP canvas with no local services running.
+
+### Patch Changes
+
+- Updated dependencies [b32514c]
+- Updated dependencies [b32514c]
+- Updated dependencies [b32514c]
+  - @simten/core@0.4.0
+
 ## 0.6.0
 
 ### Minor Changes

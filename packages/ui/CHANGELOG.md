@@ -1,5 +1,15 @@
 # @simten/ui
 
+## 0.1.7
+
+### Patch Changes
+
+- b32514c: IMEM node code templates define `main()` instead of `_start()` (the compiler links a crt0 that provides `_start`; the old templates failed with a duplicate-symbol link error). Default simulation speed raised from 5 to 15 ticks/s in the embed viewer.
+- Updated dependencies [b32514c]
+- Updated dependencies [b32514c]
+- Updated dependencies [b32514c]
+  - @simten/core@0.4.0
+
 ## 0.1.6
 
 ### Patch Changes
