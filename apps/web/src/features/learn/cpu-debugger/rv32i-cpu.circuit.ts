@@ -2,7 +2,7 @@ import { circuit, bit, bus } from "@simten/core/circuit";
 import {
   Constant,
   RV32I_Core,
-  RV32I_InstrMem, RV32I_DataMem, RV32I_LoadAlign,
+  RV32I_InstrMem, RV32I_DataMem,
   MemBusMux, UART_TX, NIC_FIFO,
 } from "@simten/core/std";
 
@@ -28,11 +28,10 @@ export const RV32I_CPU = circuit('RV32I_CPU', {
     uart: UART_TX,
     nic: NIC_FIFO,
     imem_data: RV32I_InstrMem,   // data-side reads of the instruction region
-    imem_load_align: RV32I_LoadAlign,
     zero32: Constant({ value: 0, width: 32 }),
     zero1: Constant({ value: 0, width: 1 }),
   },
-  connect: ({ inputs, outputs, nodes: { cpu, imem, bus_mux, dmem, uart, nic, imem_data, imem_load_align, zero32, zero1 } }) => [
+  connect: ({ inputs, outputs, nodes: { cpu, imem, bus_mux, dmem, uart, nic, imem_data, zero32, zero1 } }) => [
     // instruction fetch
     cpu.instr_addr.to(imem.addr),
     imem.instruction.to(cpu.instruction),
@@ -42,7 +41,7 @@ export const RV32I_CPU = circuit('RV32I_CPU', {
     cpu.data_write.to(bus_mux.write_data),
     cpu.data_mem_read.to(bus_mux.mem_read),
     cpu.data_mem_write.to(bus_mux.mem_write),
-    cpu.data_funct3.to(bus_mux.funct3, imem_load_align.funct3),
+    cpu.data_funct3.to(bus_mux.funct3),
     bus_mux.read_data.to(cpu.data_read),
 
     // CPU's vestigial net inputs tied off (networking is the NIC peripheral below)
@@ -65,8 +64,9 @@ export const RV32I_CPU = circuit('RV32I_CPU', {
     bus_mux.p3_read.to(nic.rx_mem_read),
     bus_mux.p3_write.to(nic.rx_mem_write),
     nic.rx_read_data.to(bus_mux.read_data_3),
-    imem_data.instruction.to(imem_load_align.data),
-    imem_load_align.out.to(bus_mux.read_data_4),
+    // IMEM data port returns the raw aligned word; the CPU's WB-stage aligner
+    // does byte/half extraction (an extra aligner here would extract twice).
+    imem_data.instruction.to(bus_mux.read_data_4),
 
     // NIC network I/O (top level)
     inputs.net_rx_data.to(nic.net_rx_data),

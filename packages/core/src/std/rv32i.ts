@@ -264,7 +264,7 @@ export const RV32I_InstrMem = circuit('RV32I_InstrMem', {
   outputs: { instruction: bus(32) },
   state: { memory: mem(65536, 8) },
   eval: ({ addr, memory }) => {
-    const a = (addr as number) >>> 0;
+    const a = ((addr as number) >>> 0) & ~3; // word-aligned, like real IMEM
     const b0 = memory[a];
     const b1 = memory[a + 1];
     const b2 = memory[a + 2];
@@ -277,9 +277,10 @@ export const RV32I_InstrMem = circuit('RV32I_InstrMem', {
 
 /**
  * RISC-V data memory with byte/half/word access. 64 KB byte-addressable
- * RAM supporting all RV32I load/store sizes via `funct3` (LB/LH/LW/LBU/LHU
- * for reads; SB/SH/SW for writes). Drives `misalign` high when the access
- * size requires alignment the address doesn't satisfy.
+ * RAM. Reads return the raw aligned word at `addr & ~3` (the CPU's WB-stage
+ * aligner extracts bytes/halves via `addr[1:0]` + `funct3`, matching the
+ * FPGA DMEM); writes are byte-lane SB/SH/SW via `funct3`. Drives `misalign`
+ * high when the access size requires alignment the address doesn't satisfy.
  *
  * **Inputs:** `addr`, `write_data` — `bus(32)`;
  * `mem_read`, `mem_write` — `bit`; `funct3` — `bus(3)`
@@ -297,15 +298,12 @@ export const RV32I_DataMem = circuit('RV32I_DataMem', {
     if ((f3 === 1 || f3 === 5) && (a & 1) !== 0) misalign = 1;
     else if (f3 === 2 && (a & 3) !== 0) misalign = 1;
     if (!mem_read) return { read_data: 0, misalign };
-    let data: number;
-    switch (f3) {
-      case 0: { const b = memory[a]; data = ((b << 24) >> 24) >>> 0; break; }                                       // LB
-      case 1: { const lo = memory[a]; const hi = memory[a + 1]; const hw = (hi << 8) | lo; data = ((hw << 16) >> 16) >>> 0; break; } // LH
-      case 2: { const b0 = memory[a], b1 = memory[a + 1], b2 = memory[a + 2], b3 = memory[a + 3]; data = ((b3 << 24) | (b2 << 16) | (b1 << 8) | b0) >>> 0; break; } // LW
-      case 4: data = memory[a]; break;                                                                                // LBU
-      case 5: { const lo = memory[a], hi = memory[a + 1]; data = ((hi << 8) | lo) >>> 0; break; }                   // LHU
-      default: data = 0;
-    }
+    // Reads return the RAW ALIGNED WORD at addr & ~3 — byte/half extraction
+    // (and sign/zero extension) happens inside the CPU's WB-stage aligner
+    // using addr[1:0] + funct3. This mirrors real memory (and the FPGA DMEM):
+    // pre-extracting here would make the core's aligner shift the value away.
+    const w = a & ~3;
+    const data = ((memory[w + 3] << 24) | (memory[w + 2] << 16) | (memory[w + 1] << 8) | memory[w]) >>> 0;
     return { read_data: data, misalign };
   },
   onTick: ({ addr, write_data, mem_write, funct3, memory }) => {
@@ -519,8 +517,12 @@ export const DualPortROM = circuit('DualPortROM', (_opts?: { memory?: Record<num
   outputs: { dataA: bus(32), dataB: bus(32) },
   state: { memory: mem(65536, 8) },
   eval: ({ addrA, addrB, memory }) => {
-    const aA = (addrA as number) >>> 0;
-    const aB = (addrB as number) >>> 0;
+    // Word-aligned reads, like real memory: the CPU's WB-stage aligner picks
+    // bytes/halves out of the word via addr[1:0], so the data port must NOT
+    // pre-shift (returning the word *starting at* a byte address would make
+    // unaligned rodata byte loads extract twice and come back 0).
+    const aA = (((addrA as number) >>> 0) & ~3);
+    const aB = (((addrB as number) >>> 0) & ~3);
     return {
       dataA: ((memory[aA + 3] << 24) | (memory[aA + 2] << 16) | (memory[aA + 1] << 8) | memory[aA]) >>> 0,
       dataB: ((memory[aB + 3] << 24) | (memory[aB + 2] << 16) | (memory[aB + 1] << 8) | memory[aB]) >>> 0,
