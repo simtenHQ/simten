@@ -62,6 +62,56 @@ function shellHtml(): Buffer {
   return cachedShell;
 }
 
+/**
+ * Proxy `POST /api/compile` to the deployed compiler endpoint, so the IMEM
+ * node's "Compile & Load" works on the MCP-served canvas without any local
+ * service. The endpoint is the same public, rate-limited one the production
+ * /circuit page uses; this proxy exists only because the canvas fetches the
+ * path relative to its own (localhost) origin.
+ */
+const COMPILE_UPSTREAM = process.env.SIMTEN_COMPILE_URL ?? 'https://simten.dev/api/compile';
+const COMPILE_MAX_BODY = 100 * 1024; // matches upstream caps; fail fast locally
+
+export function isCompileRequest(req: IncomingMessage): boolean {
+  return req.method === 'POST' && (req.url || '').split('?')[0] === '/api/compile';
+}
+
+export function proxyCompile(req: IncomingMessage, res: ServerResponse): void {
+  const chunks: Buffer[] = [];
+  let size = 0;
+  req.on('data', (c: Buffer) => {
+    size += c.length;
+    if (size > COMPILE_MAX_BODY) {
+      res.writeHead(413, { 'content-type': 'application/json' });
+      res.end(JSON.stringify({ success: false, error: 'Source too large' }));
+      req.destroy();
+      return;
+    }
+    chunks.push(c);
+  });
+  req.on('end', () => {
+    if (res.writableEnded) return;
+    fetch(COMPILE_UPSTREAM, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: Buffer.concat(chunks),
+      signal: AbortSignal.timeout(60_000), // cold container start can take a while
+    })
+      .then(async (upstream) => {
+        const body = await upstream.text();
+        res.writeHead(upstream.status, { 'content-type': 'application/json' });
+        res.end(body);
+      })
+      .catch((e) => {
+        res.writeHead(502, { 'content-type': 'application/json' });
+        res.end(JSON.stringify({
+          success: false,
+          error: `Compiler unreachable: ${e instanceof Error ? e.message : String(e)}`,
+        }));
+      });
+  });
+}
+
 export function serveStatic(req: IncomingMessage, res: ServerResponse): void {
   // decodeURIComponent throws URIError on a malformed escape (e.g. `GET /%`).
   // This runs in the synchronous HTTP listener, so an uncaught throw would crash
