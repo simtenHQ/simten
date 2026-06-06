@@ -495,12 +495,12 @@ describe('RV32I_DataMem', () => {
     expect(val).toBe(0xDEADBEEF);
   });
 
-  it('store byte and load byte with sign extension (LB)', () => {
+  it('store byte; read returns the raw aligned word (LB extraction happens in the CPU aligner)', () => {
     const out = simTicks(c, 2, {
       addr: 0, write_data: 0x80, mem_read: true, mem_write: true, funct3: 0,
     });
     const val = (out.read_data[1] as number) >>> 0;
-    expect(val).toBe(0xFFFFFF80);
+    expect(val).toBe(0x00000080);
   });
 
   it('load byte unsigned (LBU, funct3=4)', () => {
