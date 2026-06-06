@@ -1301,10 +1301,11 @@ function SnakeCard() {
           </div>
         </div>
         <Link
-          to="/blog/snake-in-hardware"
+          to="/circuit"
+          search={{ example: "snake" }}
           className="shrink-0 px-3 py-1.5 rounded border border-border text-[11px] text-foreground/80 hover:border-foreground/30 hover:text-foreground transition-colors"
         >
-          Read post →
+          Try in the editor →
         </Link>
       </div>
     </div>
