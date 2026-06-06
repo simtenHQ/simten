@@ -11,7 +11,7 @@
  * reusable for any future TS-sim ↔ Verilog divergence. Swap in different
  * firmware bytes via the FIRMWARE array; add/remove signals in
  * TRACKED_SIGNALS. The Verilog VCD lookup turns each TS-sim portValues key
- * (e.g. `cpu.fwd_a_mux2.out`) into the matching VCD var (`w_cpu_fwd_a_mux2_out`).
+ * (e.g. `cpu.EX.fwd_a_mux2.out`) into the matching VCD var (`w_cpu_EX_fwd_a_mux2_out`).
  *
  * Requires the verifier service at $VERIFIER_URL (defaults to
  * http://localhost:55002/verify). Reads combined.v from this directory —
@@ -60,32 +60,32 @@ const FIRMWARE: number[] = [
 // `cpu`, so internal CPU signals live at `cpu.<nodeId>.<port>`. The matching
 // Verilog VCD signal is `w_cpu_<nodeId>_<port>` (dots → underscores, w_ prefix).
 const TRACKED_SIGNALS = [
-  'cpu.pc.q',
-  'cpu.ifid_instr.q',
-  'cpu.idex_rs1.q',
-  'cpu.idex_read1.q',  // actual rs1 VALUE going into EX
-  'cpu.idex_read2.q',  // actual rs2 VALUE going into EX
-  'cpu.idex_imm.q',
-  'cpu.immgen.instruction',  // input to immgen
-  'cpu.immgen.immediate',    // output of immgen
-  'cpu.fwd_a_mux1.out',
-  'cpu.fwd_a_mux2.out',
-  'cpu.fwd_b_mux1.out',
-  'cpu.fwd_b_mux2.out',
-  'cpu.alu_src_mux.out',
-  'cpu.alu.result',
-  'cpu.exmem_alu_result.q',
-  'cpu.exmem_mem_write.q',
-  'cpu.exmem_funct3.q',
-  'cpu.regfile.rd',           // which register the WB stage targets
-  'cpu.regfile.we',           // write enable
-  'cpu.regfile.write_data',   // value being written back
-  'cpu.regfile.read2',        // a4's current value when rs2=14
-  'cpu.memwb_load_data.q',    // LBU/LW loaded value in WB stage
-  'cpu.memwb_load_data.data', // input to that register (= data_read)
+  'cpu.IF.pc.q',
+  'cpu.IFID.instr.q',
+  'cpu.IDEX.rs1.q',
+  'cpu.IDEX.read1.q',  // actual rs1 VALUE going into EX
+  'cpu.IDEX.read2.q',  // actual rs2 VALUE going into EX
+  'cpu.IDEX.imm.q',
+  'cpu.ID.immgen.instruction',  // input to immgen
+  'cpu.ID.immgen.immediate',    // output of immgen
+  'cpu.EX.fwd_a_mux1.out',
+  'cpu.EX.fwd_a_mux2.out',
+  'cpu.EX.fwd_b_mux1.out',
+  'cpu.EX.fwd_b_mux2.out',
+  'cpu.EX.alu_src_mux.out',
+  'cpu.EX.alu.result',
+  'cpu.EXMEM.alu_result.q',
+  'cpu.EXMEM.mem_write.q',
+  'cpu.EXMEM.funct3.q',
+  'cpu.ID.regfile.rd',           // which register the WB stage targets
+  'cpu.ID.regfile.we',           // write enable
+  'cpu.ID.regfile.write_data',   // value being written back
+  'cpu.ID.regfile.read2',        // a4's current value when rs2=14
+  'cpu.MEMWB.load_data.q',    // LBU/LW loaded value in WB stage
+  'cpu.MEMWB.load_data.data', // input to that register (= data_read)
   'data_read',                // top-level input
-  'cpu.memwb_rd.q',           // WB stage's target register
-  'cpu.memwb_reg_write.q',    // WB stage's write-enable
+  'cpu.MEMWB.rd.q',           // WB stage's target register
+  'cpu.MEMWB.reg_write.q',    // WB stage's write-enable
   'instr_addr',  // top-level outputs
   'data_addr',
   'data_write',

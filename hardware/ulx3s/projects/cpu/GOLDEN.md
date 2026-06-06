@@ -34,6 +34,7 @@ thing it certifies. A red guard with no hardware re-verify behind it stays red.
 | Date | Commit | What ran on the board | Result |
 |------|--------|------------------------|--------|
 | 2026-06-03 | `332a4dd` (RV32I_Core consolidation) | `fpga:run --project=cpu --firmware=fibonacci.c --match=514229` on a ULX3S 85F | ✅ matched `514229` (UART pos 186); `fpga:verify --suite` 69/69 |
+| 2026-06-06 | _(stage-composite refactor, this commit)_ | `fpga:run --project=cpu --firmware=fibonacci.c --match=514229` on a ULX3S 85F | ✅ matched `514229` (UART pos 163); `fpga:verify --suite` 69/69; arch-test 38/38 vs Spike; flat netlist isomorphic to previous golden (+3 folded `Constant`s, same 271 connections) |
 
 > This golden is also **byte-identical** to the pre-consolidation FPGA netlist
 > (empty `dump-netlist` diff across the refactor) and passes `fpga:test` (69/69,
