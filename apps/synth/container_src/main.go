@@ -23,11 +23,22 @@ import (
 // Max source size: 100KB
 const maxSourceSize = 100 * 1024
 
-// Synthesis timeout — longer than iverilog since Yosys does more work
-const synthTimeout = 30 * time.Second
+// Synthesis timeout — longer than iverilog since Yosys does more work.
+// 30s default (DoS guard for the public service); override with
+// SYNTH_TIMEOUT_SECONDS for local runs where big designs brush the limit.
+var synthTimeout = timeoutFromEnv("SYNTH_TIMEOUT_SECONDS", 30*time.Second)
 
 // P&R timeout — nextpnr can be slow on large designs
 const buildTimeout = 120 * time.Second
+
+func timeoutFromEnv(key string, fallback time.Duration) time.Duration {
+	if v := os.Getenv(key); v != "" {
+		if n, err := strconv.Atoi(v); err == nil && n > 0 {
+			return time.Duration(n) * time.Second
+		}
+	}
+	return fallback
+}
 
 type SynthRequest struct {
 	Verilog string            `json:"verilog"`
