@@ -203,7 +203,7 @@ export function useCircuitSimulator(
   const [cycle, setCycle] = useState(0);
   const [ready, setReady] = useState(false);
   const [isRunning, setIsRunning] = useState(false);
-  const [speed, setSpeedState] = useState(5);
+  const [speed, setSpeedState] = useState(15);
   const autoRunRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // ── Time-travel history ──

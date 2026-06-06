@@ -216,7 +216,7 @@ const CircuitViewerImpl = forwardRef<CircuitViewerHandle, CircuitViewerProps>(
             isRunning={sim.isRunning}
             isViewingPast={sim.isViewingPast ?? false}
             onStep={handleTick}
-            onRun={() => sim.startAutoRun(5)}
+            onRun={() => sim.startAutoRun(15)}
             onPause={() => sim.stopAutoRun()}
             onReset={handleReset}
             onStepBack={() => sim.stepBack()}

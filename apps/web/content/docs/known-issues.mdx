@@ -98,6 +98,14 @@ You may see a `postMessage` warning in the browser console — something the ifr
 
 **How to recognize it:** a one-off `… could not be cloned` warning in DevTools, with no visible effect on the canvas. **Workaround:** none needed; safe to ignore. Tracked as low-priority.
 
+## Editor type checking
+
+### `Screen` squiggles — lib.dom's `Screen` shadows the stdlib component
+
+The `/circuit` editor type-checks with TypeScript's full default lib, which includes `lib.dom` — and lib.dom declares a global `var Screen` (the `window.Screen` constructor). That shadows the stdlib `Screen` component's global typing, so `Screen` in a node list shows a type error even though the circuit compiles and simulates fine (execution strips types and injects the real component; the editor's diagnostics are cosmetic here). `Screen` is the only stdlib name with this value-level collision — `Console`, `Input`, etc. only collide with DOM *interfaces*, which is harmless.
+
+**How to recognize it:** a squiggle on `Screen` while the circuit runs normally. **Workaround:** ignore it — runtime is unaffected. Don't try to fix it by dropping `lib.dom` from the editor's compiler options: Monaco's worker fails to load replacement libs and you lose `Array`/string typing entirely, which is far worse.
+
 ## Simulator limits
 
 ### 10 000-iteration propagation cap

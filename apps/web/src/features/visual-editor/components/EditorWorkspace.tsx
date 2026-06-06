@@ -518,10 +518,10 @@ export function EditorWorkspace({ theme = "light", initialSource, standalone = f
               historyIndex={sim.historyIndex}
               isRunning={sim.isRunning}
               isViewingPast={sim.isViewingPast}
-              speed={sim.speed || 5}
+              speed={sim.speed || 15}
               maxSpeed={1000}
               onStep={sim.tick}
-              onRun={() => sim.startAutoRun(sim.speed || 5, { displayRate: 30 })}
+              onRun={() => sim.startAutoRun(sim.speed || 15, { displayRate: 30 })}
               onPause={() => sim.stopAutoRun()}
               onReset={sim.reset}
               onStepBack={() => sim.stepBack()}
