@@ -20,14 +20,16 @@ const LANGUAGES = [
   { value: 'asm', label: 'ASM' },
 ] as const;
 
+// The compiler links a crt0 that provides `_start` (stack setup) and calls
+// `main` — templates define `main`, not `_start` (which collides at link).
 const PLACEHOLDER_CODE: Record<string, string> = {
-  c: `void _start() {
+  c: `void main() {
     volatile int *uart = (volatile int *)0x80000000;
     const char *msg = "Hello from C!\\n";
     while (*msg) *uart = *msg++;
     while (1);
 }`,
-  cpp: `extern "C" void _start() {
+  cpp: `extern "C" void main() {
     volatile int *uart = (volatile int *)0x80000000;
     const char *msg = "Hello from C++!\\n";
     while (*msg) *uart = *msg++;
@@ -37,7 +39,7 @@ const PLACEHOLDER_CODE: Record<string, string> = {
 #![no_main]
 
 #[no_mangle]
-pub extern "C" fn _start() -> ! {
+pub extern "C" fn main() -> ! {
     let uart = 0x80000000 as *mut u32;
     for &b in b"Hello from Rust!\\n" {
         unsafe { core::ptr::write_volatile(uart, b as u32); }
@@ -47,9 +49,9 @@ pub extern "C" fn _start() -> ! {
 
 #[panic_handler]
 fn panic(_: &core::panic::PanicInfo) -> ! { loop {} }`,
-  asm: `.global _start
+  asm: `.global main
 .text
-_start:
+main:
     # Write 'H' to UART
     li   t0, 0x80000000
     li   a0, 72

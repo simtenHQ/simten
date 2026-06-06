@@ -16,7 +16,7 @@ import { resolve } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { createServer } from 'node:http';
 import type { CircuitState, TracesPayload, TestResultsPayload, RenderResult } from './types.js';
-import { serveStatic, publicDirExists } from '../lib/serve-static.js';
+import { serveStatic, publicDirExists, isCompileRequest, proxyCompile } from '../lib/serve-static.js';
 
 export type { CircuitState, TracesPayload, TestResultsPayload };
 
@@ -93,7 +93,11 @@ export async function createStudioServer(
   const servesStatic = publicDirExists();
   const wss = new WebSocketServer({ noServer: true });
   const httpServer = createServer((req, res) => {
-    if (servesStatic) {
+    if (isCompileRequest(req)) {
+      // Relative fetch from the canvas IMEM node — forward to the deployed
+      // compiler (see proxyCompile). Works with or without bundled assets.
+      proxyCompile(req, res);
+    } else if (servesStatic) {
       serveStatic(req, res);
     } else {
       // No bundled editor (e.g. running from source/dev). The WS still works;
