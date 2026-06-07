@@ -1,9 +1,8 @@
 import { useState, useEffect, useCallback, useRef, useMemo, type ReactNode } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useCircuitSimulator, CircuitEmbed } from "@simten/embed";
+import { CircuitEmbed } from "@simten/embed";
 import { circuit, bit } from "@simten/core/circuit";
-import { Xor, And, Or, DFlipFlop, Constant } from "@simten/core/std";
-import { Eth_FrameInput, Eth_FrameParser, Eth_CRC32, Eth_ProtocolDecoder, Eth_AddrClassifier } from "@simten/core/std";
+import { Xor, And, Or, DFlipFlop } from "@simten/core/std";
 import { HighlightedCode } from "@/components/HighlightedCode";
 import { Container } from "@/components/Container";
 import { Section, SectionHeading } from "@/components/SectionHeading";
@@ -71,7 +70,7 @@ export const Route = createFileRoute("/")({
       title: "Simten — Hardware design in TypeScript",
       titleExact: true,
       description:
-        "A TypeScript HDL where npm is your testbench — from logic gates to a RISC-V CPU. Test circuits against real packets and firmware, then synthesize to Verilog.",
+        "A TypeScript HDL where npm is your testbench — from logic gates to a RISC-V CPU. Test circuits against real firmware, then synthesize to Verilog.",
       path: "/",
     }),
     scripts: [softwareApplicationLd()],
@@ -103,7 +102,7 @@ function Splash5Page() {
 // ============================================================================
 function BentoFeatures() {
   return (
-    <section className="hidden md:block py-20 lg:py-28 border-t border-border">
+    <section className="py-12 md:py-20 lg:py-28">
       <Container>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-px bg-border rounded-lg overflow-hidden border border-border">
           <BentoCell
@@ -707,22 +706,20 @@ function MobileAIHero() {
         Describe hardware. Claude builds it. Test it like software.
       </h1>
       <p className="mt-4 text-sm text-muted-foreground">
-        A TypeScript HDL where the whole npm ecosystem is your testbench — drive a circuit with real packets, real firmware, any library you can <code>npm install</code>, and watch it run cycle-by-cycle. Synthesizable to Verilog.
+        A TypeScript HDL where the whole npm ecosystem is your testbench — drive a circuit with real firmware, any library you can <code>npm install</code>, and watch it run cycle-by-cycle. Synthesizable to Verilog.
       </p>
-      <div className="mt-5 rounded-lg border border-border bg-muted px-4 py-3">
+      <Link
+        to="/docs/$"
+        params={{ _splat: "" }}
+        className="mt-5 flex w-fit items-center rounded-lg bg-foreground text-background hover:bg-foreground/90 transition-colors px-4 py-3 text-sm font-medium"
+      >
+        Learn more →
+      </Link>
+      <div className="mt-3 rounded-lg border border-border bg-muted px-4 py-3">
         <code className="font-mono text-[12px] text-foreground/80">
           <span className="text-muted-foreground/60 select-none">$ </span>
           claude mcp add simten npx @simten/mcp
         </code>
-      </div>
-      <div className="mt-4 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-muted-foreground">
-        <span>Synthesizable Verilog</span>
-        <span className="text-muted-foreground/40">·</span>
-        <span>Runs on ULX3S</span>
-        <span className="text-muted-foreground/40">·</span>
-        <span>Cycle-accurate</span>
-        <span className="text-muted-foreground/40">·</span>
-        <span>Yosys + nextpnr</span>
       </div>
     </section>
   );
@@ -737,7 +734,7 @@ function DemoGallery() {
     <div className="relative py-16 md:py-24 md:animate-in md:fade-in md:duration-700 overflow-hidden">
 
       <Container className="relative">
-        {/* Lead with the heavy proof — RV32I + Ethernet — to show the
+        {/* Lead with the heavy proof — the RV32I CPU — to show the
             framework's range up front. Lighter playable demos follow.
             First Section overrides the default top margin since the
             DemoGallery wrapper already provides top padding. */}
@@ -747,13 +744,10 @@ function DemoGallery() {
               Scale to real-world complexity
             </h2>
             <p className="mt-4 text-base lg:text-lg text-muted-foreground">
-              The framework already runs heavy systems in the browser — for example, a 5-stage pipelined RISC-V CPU executing GCC-compiled C, C++, and Rust, or an IEEE 802.3 Ethernet parser turning wire bytes into protocol fields.
+              The framework already runs heavy systems in the browser — for example, a 5-stage pipelined RISC-V CPU executing GCC-compiled C, C++, and Rust.
             </p>
           </div>
 
-          {/* Two flagship systems, stacked. RV32I leads, the Ethernet parser
-              follows. (Was a diagonal overlap, which buried each card's content
-              behind the other.) */}
           <div className="space-y-8">
             {/* RV32I CPU debugger */}
             <div className="relative w-full rounded-2xl bg-muted/60 p-3 lg:p-4 shadow-sm">
@@ -802,14 +796,6 @@ function DemoGallery() {
               </a>
             </div>
 
-            {/* Ethernet parser */}
-            <div className="relative w-full rounded-2xl bg-muted/60 p-3 lg:p-4 shadow-sm">
-              <EthernetParserCard />
-              <div className="absolute -top-3 left-6 inline-flex items-center gap-2 rounded-full bg-card border border-border px-3 py-1 text-[11px] font-medium text-foreground shadow-sm">
-                <span className="h-1.5 w-1.5 rounded-full bg-violet-500" />
-                Ethernet parser
-              </div>
-            </div>
           </div>
         </Section>
 
@@ -1020,76 +1006,6 @@ function DemoGallery() {
           </div>
         </Section>
 
-        {/* Deep dives — long-form companion posts */}
-        <Section>
-          <SectionHeading
-            title="Long-form deep dives"
-            description="Not diagrams. Live circuits verified against real specifications."
-          />
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            {[
-              {
-                slug: "aes-in-hardware",
-                title: "AES in Hardware",
-                hook: "Why Intel built AES-NI into the CPU",
-                accent: "violet",
-              },
-              {
-                slug: "chacha20-in-hardware",
-                title: "ChaCha20 in Hardware",
-                hook: "The cipher designed to avoid hardware — elegant in gates anyway",
-                accent: "amber",
-              },
-              {
-                slug: "building-a-cpu",
-                title: "Building a CPU",
-                hook: "From NAND gates to a working RISC-V processor",
-                accent: "blue",
-              },
-            ].map((post) => (
-              <Link
-                key={post.slug}
-                to={`/blog/${post.slug}` as string}
-                className="group rounded-lg border border-border hover:border-border bg-card hover:bg-muted transition-all px-4 py-3.5"
-              >
-                <h4 className="text-sm font-semibold text-foreground group-hover:text-foreground transition-colors">
-                  {post.title}
-                </h4>
-                <p className="text-xs text-muted-foreground mt-1.5 leading-relaxed">
-                  {post.hook}
-                </p>
-                <span className="inline-block mt-2.5 text-[11px] text-blue-400 group-hover:text-blue-300 transition-colors">
-                  Read &rarr;
-                </span>
-              </Link>
-            ))}
-          </div>
-          <div className="mt-3 text-right">
-            <Link to="/blog" className="text-[12px] text-muted-foreground/60 hover:text-foreground/80 transition-colors">
-              All articles &rarr;
-            </Link>
-          </div>
-        </Section>
-
-        <div className="mt-28 md:mt-36 flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:justify-between">
-          <p className="text-[13px] text-muted-foreground/60">
-            Or open the editor and start from scratch.
-          </p>
-          <div className="flex items-center gap-4">
-            <Link
-              to="/circuit"
-              className="text-[13px] text-muted-foreground hover:text-foreground transition-colors"
-            >
-              Open editor →
-            </Link>
-            <Link
-              to="/learn"
-              className="text-[13px] text-muted-foreground hover:text-foreground transition-colors"
-            >
-              Learn →
-            </Link>
-          </div>
-        </div>
       </Container>
 
       {/* SiteFooter is rendered globally in __root.tsx */}
@@ -1311,266 +1227,3 @@ function SnakeCard() {
     </div>
   );
 }
-
-// ============================================================================
-// Ethernet Parser Card
-// ============================================================================
-
-const CRC32_ETH = (() => {
-  const t = new Array(256);
-  for (let i = 0; i < 256; i++) {
-    let c = i;
-    for (let j = 0; j < 8; j++) c = (c & 1) ? ((c >>> 1) ^ 0xEDB88320) >>> 0 : (c >>> 1) >>> 0;
-    t[i] = c;
-  }
-  return t;
-})();
-
-function ethCRC32(data: number[]): number {
-  let crc = 0xFFFFFFFF;
-  for (const b of data) crc = (CRC32_ETH[(crc ^ b) & 0xFF] ^ (crc >>> 8)) >>> 0;
-  return (~crc) >>> 0;
-}
-
-function buildEthFrame(dst: number[], src: number[], ethertype: number): number[] {
-  const payload = Array(46).fill(0x42);
-  const frame = [...dst, ...src, (ethertype >> 8) & 0xFF, ethertype & 0xFF, ...payload];
-  const crc = ethCRC32(frame);
-  frame.push(crc & 0xFF, (crc >> 8) & 0xFF, (crc >> 16) & 0xFF, (crc >> 24) & 0xFF);
-  return frame;
-}
-
-const ETH_FRAMES = [
-  { label: "IPv4 unicast",    dst: [0x00,0x1A,0x2B,0x3C,0x4D,0x5E], src: [0xDE,0xAD,0xBE,0xEF,0xCA,0xFE], ethertype: 0x0800 },
-  { label: "ARP broadcast",   dst: [0xFF,0xFF,0xFF,0xFF,0xFF,0xFF],   src: [0xAA,0xBB,0xCC,0xDD,0xEE,0xFF], ethertype: 0x0806 },
-  { label: "IPv6 multicast",  dst: [0x33,0x33,0x00,0x00,0x00,0x01],  src: [0xFE,0xDC,0xBA,0x98,0x76,0x54], ethertype: 0x86DD },
-] as const;
-
-
-function readEthPort(
-  pv: ReadonlyMap<string, boolean | number> | null,
-  nodeLabel: string,
-  portName: string,
-): number | boolean | null {
-  if (!pv) return null;
-  return pv.get(`${nodeLabel}.${portName}`) ?? null;
-}
-
-function formatMac(hi: number, lo: number): string {
-  return [
-    (lo >>> 24) & 0xFF, (lo >>> 16) & 0xFF, (lo >>> 8) & 0xFF, lo & 0xFF,
-    (hi >>> 8) & 0xFF, hi & 0xFF,
-  ].map(b => b.toString(16).padStart(2, "0")).join(":");
-}
-
-function useEthernetParser() {
-  const [frameIndex, setFrameIndex] = useState(0);
-  const frameDoneSeenRef = useRef(false);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  const frame = ETH_FRAMES[frameIndex];
-  const frameBytes = useMemo(
-    () => buildEthFrame([...frame.dst], [...frame.src], frame.ethertype),
-    [frame],
-  );
-  const ethernetCircuit = useMemo(() => circuit('Eth_802_3_Parser', {
-    nodes: { frame_in: Eth_FrameInput, enable: Constant({ value: 1 }), parser: Eth_FrameParser, crc: Eth_CRC32, proto: Eth_ProtocolDecoder, addr: Eth_AddrClassifier },
-    connect: ({ nodes: { frame_in, enable, parser, crc, proto, addr } }) => [
-      enable.out.to(frame_in.enable),
-      frame_in.tdata.to(parser.tdata, crc.data),
-      frame_in.tkeep.to(parser.tkeep, crc.tkeep),
-      frame_in.tvalid.to(parser.tvalid, crc.data_valid),
-      frame_in.tlast.to(parser.tlast, crc.tlast),
-      parser.ethertype.to(proto.ethertype),
-      parser.dst_mac_hi.to(addr.dst_mac_hi),
-      parser.dst_mac_lo.to(addr.dst_mac_lo),
-    ],
-  }), [frameBytes]);
-  const sim = useCircuitSimulator(ethernetCircuit);
-
-  useEffect(() => {
-    if (!sim.ready) return;
-    intervalRef.current = setInterval(() => sim.tick(), 600);
-    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
-  }, [sim.ready, sim.tick]);
-
-  useEffect(() => {
-    if (!sim.portValues) return;
-    const done   = !!readEthPort(sim.portValues, "parser",   "frame_done");
-    const tvalid = !!readEthPort(sim.portValues, "frame_in", "tvalid");
-
-    // Reset guard once the new frame is actually streaming
-    if (tvalid && frameDoneSeenRef.current) {
-      frameDoneSeenRef.current = false;
-      return;
-    }
-
-    if (done && !tvalid && !frameDoneSeenRef.current) {
-      frameDoneSeenRef.current = true;
-      setTimeout(() => {
-        setFrameIndex(i => (i + 1) % ETH_FRAMES.length);
-      }, 3000);
-    }
-  }, [sim.cycleCount, sim.portValues]);
-
-  return { sim, frameIndex, frame, frameBytes };
-}
-
-function EthFrameRow({ label, bytes, color, active, valid }: {
-  label: string; bytes: string; color: string; active: boolean; valid: boolean;
-}) {
-  const palette: Record<string, { border: string; text: string }> = {
-    blue:   { border: "border-blue-500",   text: "text-blue-600 dark:text-blue-400"   },
-    violet: { border: "border-violet-500", text: "text-violet-600 dark:text-violet-400" },
-    amber:  { border: "border-amber-500",  text: "text-amber-600 dark:text-amber-400"  },
-    gray:   { border: "border-muted-foreground/40",   text: "text-muted-foreground"   },
-    green:  { border: "border-green-600",  text: "text-green-600 dark:text-green-400"  },
-  };
-  const c = palette[color] ?? palette.gray;
-  return (
-    <div className={`flex items-center gap-2 py-0.5 border-l-2 pl-2 transition-all duration-150 ${active ? c.border : "border-transparent"}`}>
-      <span className={`w-14 text-[9px] uppercase tracking-wide shrink-0 transition-colors ${active ? c.text : "text-muted-foreground/40"}`}>
-        {label}
-      </span>
-      <span className={`font-mono text-[10px] transition-colors ${active ? "text-foreground" : valid ? "text-muted-foreground/60" : "text-muted-foreground/20"}`}>
-        {bytes}
-      </span>
-    </div>
-  );
-}
-
-function EthParsedField({ label, value, tag, tagColor, valid }: {
-  label: string; value: string; tag?: string; tagColor?: string; valid: boolean;
-}) {
-  const tagCls: Record<string, string> = {
-    blue:    "text-blue-700 bg-blue-100 dark:text-blue-300 dark:bg-blue-950/70",
-    orange:  "text-orange-700 bg-orange-100 dark:text-orange-300 dark:bg-orange-950/70",
-    emerald: "text-emerald-700 bg-emerald-100 dark:text-emerald-300 dark:bg-emerald-950/70",
-    violet:  "text-violet-700 bg-violet-100 dark:text-violet-300 dark:bg-violet-950/70",
-  };
-  return (
-    <div className={`flex items-center gap-3 transition-opacity duration-300 ${valid ? "opacity-100" : "opacity-20"}`}>
-      <div className={`w-1.5 h-1.5 rounded-full shrink-0 transition-colors ${valid ? "bg-emerald-400" : "bg-muted"}`} />
-      <span className="text-[11px] text-muted-foreground font-mono w-20 shrink-0">{label}</span>
-      <span className={`font-mono text-[11px] ${valid ? "text-foreground" : "text-muted-foreground/40"}`}>{value}</span>
-      {tag && valid && (
-        <span className={`text-[9px] px-1.5 py-0.5 rounded font-semibold ${tagCls[tagColor ?? "blue"] ?? tagCls.blue}`}>
-          {tag}
-        </span>
-      )}
-    </div>
-  );
-}
-
-function EthernetParserCard() {
-  const { sim, frameIndex, frame, frameBytes } = useEthernetParser();
-  const pv = sim.portValues;
-
-  const byteOff   = ((readEthPort(pv, "frame_in", "byte_offset") as number) ?? 0);
-  const dstValid  = !!readEthPort(pv, "parser", "dst_mac_valid");
-  const srcValid  = !!readEthPort(pv, "parser", "src_mac_valid");
-  const typeValid = !!readEthPort(pv, "parser", "ethertype_valid");
-  const frameDone = !!readEthPort(pv, "parser", "frame_done");
-  const crcOk     = !!readEthPort(pv, "crc",    "crc_ok");
-  const isIpv4    = !!readEthPort(pv, "proto",  "is_ipv4");
-  const isArp     = !!readEthPort(pv, "proto",  "is_arp");
-  const isIpv6    = !!readEthPort(pv, "proto",  "is_ipv6");
-  const isBcast   = !!readEthPort(pv, "addr",   "is_broadcast");
-  const isUcast   = !!readEthPort(pv, "addr",   "is_unicast");
-
-  const dstHi  = ((readEthPort(pv, "parser", "dst_mac_hi") as number) ?? 0) >>> 0;
-  const dstLo  = ((readEthPort(pv, "parser", "dst_mac_lo") as number) ?? 0) >>> 0;
-  const srcHi  = ((readEthPort(pv, "parser", "src_mac_hi") as number) ?? 0) >>> 0;
-  const srcLo  = ((readEthPort(pv, "parser", "src_mac_lo") as number) ?? 0) >>> 0;
-  const etype  = ((readEthPort(pv, "parser", "ethertype")  as number) ?? 0) >>> 0;
-
-  const hex = (start: number, end: number) =>
-    frameBytes.slice(start, end).map(b => b.toString(16).padStart(2, "0")).join(" ");
-
-  const active =
-    byteOff < 6  ? "dst"     :
-    byteOff < 12 ? "src"     :
-    byteOff < 14 ? "type"    :
-    byteOff < 60 ? "payload" : "fcs";
-
-  const proto     = isIpv4 ? "IPv4" : isArp ? "ARP" : isIpv6 ? "IPv6" : "";
-  const addrClass = isBcast ? "BROADCAST" : isUcast ? "UNICAST" : "";
-  const addrColor = isBcast ? "orange" : "blue";
-  const progress  = Math.min((byteOff / 64) * 100, 100);
-
-  return (
-    <div className="rounded-lg border border-border overflow-hidden bg-card">
-      <div className="flex flex-col sm:flex-row" style={{ minHeight: 200 }}>
-        {/* Left: raw frame bytes */}
-        <div className="sm:w-[42%] shrink-0 border-b sm:border-b-0 sm:border-r border-border px-5 py-4 font-mono">
-          <div className="text-[9px] text-muted-foreground/60 uppercase tracking-widest mb-3 flex items-center gap-2">
-            <span>incoming frame</span>
-            <span className={`px-1.5 py-0.5 rounded text-[8px] font-semibold ${
-              frameIndex === 0 ? "bg-blue-100 text-blue-700 dark:bg-blue-950/60 dark:text-blue-400" :
-              frameIndex === 1 ? "bg-orange-100 text-orange-700 dark:bg-orange-950/60 dark:text-orange-400" :
-              "bg-violet-100 text-violet-700 dark:bg-violet-950/60 dark:text-violet-400"
-            }`}>
-              {frame.label.toUpperCase()}
-            </span>
-          </div>
-          <EthFrameRow label="dst mac" bytes={hex(0, 6)}   color="blue"   active={active === "dst"}     valid={dstValid}  />
-          <EthFrameRow label="src mac" bytes={hex(6, 12)}  color="violet" active={active === "src"}     valid={srcValid}  />
-          <EthFrameRow label="etype"   bytes={hex(12, 14)} color="amber"  active={active === "type"}    valid={typeValid} />
-          <EthFrameRow label="payload" bytes={`${hex(14, 18)} …`} color="gray" active={active === "payload"} valid={false} />
-          <EthFrameRow label="fcs"     bytes={hex(60, 64)} color="green"  active={active === "fcs"}     valid={crcOk}     />
-          <div className="mt-4">
-            <div className="h-0.5 bg-card rounded-full overflow-hidden">
-              <div className="h-full bg-blue-600 transition-all duration-150" style={{ width: `${progress}%` }} />
-            </div>
-            <div className="flex justify-between mt-1 text-[9px] text-muted-foreground/40 font-mono">
-              <span>{byteOff} / 64 bytes</span>
-              <span>{sim.cycleCount} cycles</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Right: parsed output */}
-        <div className="flex-1 px-6 py-4 flex flex-col justify-center gap-3.5">
-          <EthParsedField
-            label="dst_mac"
-            value={dstValid ? formatMac(dstHi, dstLo) : "??:??:??:??:??:??"}
-            tag={addrClass} tagColor={addrColor}
-            valid={dstValid}
-          />
-          <EthParsedField
-            label="src_mac"
-            value={srcValid ? formatMac(srcHi, srcLo) : "??:??:??:??:??:??"}
-            valid={srcValid}
-          />
-          <EthParsedField
-            label="ethertype"
-            value={typeValid ? `0x${etype.toString(16).padStart(4, "0")}` : "0x????"}
-            tag={proto} tagColor="emerald"
-            valid={typeValid}
-          />
-          <EthParsedField
-            label="crc32"
-            value={frameDone ? (crcOk ? "valid" : "invalid") : "..."}
-            tag={crcOk ? "\u2713" : undefined} tagColor="emerald"
-            valid={crcOk}
-          />
-        </div>
-      </div>
-
-      {/* Info strip */}
-      <div className="border-t border-border px-5 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <span className="text-[13px] font-semibold text-foreground">Ethernet Parser</span>
-          <span className="text-[11px] text-muted-foreground/60 font-mono">MAC RX pipeline · Layer 2 · IEEE 802.3</span>
-        </div>
-        <div className="flex items-center gap-2">
-          {ETH_FRAMES.map((_, i) => (
-            <div key={i} className={`w-1.5 h-1.5 rounded-full transition-colors duration-300 ${i === frameIndex ? "bg-blue-400" : "bg-muted"}`} />
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-

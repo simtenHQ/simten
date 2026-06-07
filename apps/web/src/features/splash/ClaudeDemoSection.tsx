@@ -1151,7 +1151,7 @@ export function ClaudeDemoSection({
             Describe hardware. Claude builds it. Test it like software.
           </h1>
           <p className="mt-4 text-base text-muted-foreground max-w-2xl">
-            A TypeScript HDL where any npm package is your testbench. Drive circuits with real packets and firmware, watch them run cycle-by-cycle, and synthesize to Verilog.
+            A TypeScript HDL where any npm package is your testbench. Drive circuits with real firmware, watch them run cycle-by-cycle, and synthesize to Verilog.
           </p>
           <div className="mt-6 flex items-center gap-3 flex-wrap">
             {/* Primary action — keeps the hero framed around "this is a
