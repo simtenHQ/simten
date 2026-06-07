@@ -42,8 +42,12 @@ ENV PATH="/opt/oss-cad-suite/bin:$PATH"
 # Copy the Go server
 COPY --from=build-server /server /server
 
-# Create temp directory for synthesis runs
-RUN mkdir -p /tmp/synth
+# Run as non-root so user-supplied Verilog run through yosys/nextpnr can't write
+# to the root-owned toolchain. Cloudflare does NOT inject a non-root UID. The
+# synth working dir (/tmp/synth/<id>) is the only writable path.
+# Debian base: useradd, NOT Alpine's `adduser -D`.
+RUN useradd -u 10001 -m builder && mkdir -p /tmp/synth && chown builder /tmp/synth
+USER builder
 
 EXPOSE 8080
 

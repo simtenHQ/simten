@@ -52,8 +52,14 @@ RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | \
 # Copy the Go server
 COPY --from=build-server /server /server
 
-# Create temp directory for compilations
-RUN mkdir -p /tmp/compile
+# Run as a non-root user so a compile (which transforms attacker-supplied
+# source) cannot write to the root-owned toolchain. Cloudflare does NOT inject
+# a non-root UID — without this, the server and every gcc/rustc child run as
+# root and could rewrite /usr/bin, /usr/lib/gcc, rustc, etc., contaminating
+# later compiles on the same warm instance. The compile working dir
+# (/tmp/compile/<id>) is the only thing the process can write.
+RUN adduser -D -u 10001 builder && mkdir -p /tmp/compile && chown builder /tmp/compile
+USER builder
 
 EXPOSE 8080
 
