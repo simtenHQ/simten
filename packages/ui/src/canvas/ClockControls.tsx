@@ -33,11 +33,14 @@ function IconBtn({
   icon: Icon,
   onClick,
   disabled,
+  pulse,
 }: {
   label: string;
   icon: ComponentType<SVGProps<SVGSVGElement>>;
   onClick: () => void;
   disabled?: boolean;
+  /** Draw attention to this control (first-run "press Run" hint). */
+  pulse?: boolean;
 }) {
   return (
     <Tooltip>
@@ -48,7 +51,11 @@ function IconBtn({
           onClick={onClick}
           disabled={disabled}
           aria-label={label}
-          className="h-7 w-7 text-muted-foreground disabled:opacity-40 [&_svg]:size-3.5"
+          className={`h-7 w-7 text-muted-foreground disabled:opacity-40 [&_svg]:size-3.5${
+            pulse
+              ? " animate-pulse text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/40 ring-2 ring-blue-500/40"
+              : ""
+          }`}
         >
           <Icon />
         </Button>
@@ -79,6 +86,8 @@ export interface ClockControlsProps {
   floating?: boolean;
   /** Drop the inner border + background when the parent already provides them */
   chromeless?: boolean;
+  /** Pulse the Run button to hint "press this to simulate" (editor first-run only). */
+  pulseRun?: boolean;
 }
 
 export function ClockControls({
@@ -100,6 +109,7 @@ export function ClockControls({
   showScrubber,
   floating,
   chromeless,
+  pulseRun,
 }: ClockControlsProps) {
   const wrapper = floating
     ? "absolute top-3 left-1/2 -translate-x-1/2 z-10"
@@ -115,7 +125,7 @@ export function ClockControls({
           <IconBtn label="Tick" icon={SkipForward} onClick={onStep} disabled={isRunning || isViewingPast} />
           {isRunning
             ? <IconBtn label="Pause" icon={Pause} onClick={onPause} />
-            : <IconBtn label="Run"   icon={Play}  onClick={onRun} disabled={isViewingPast} />}
+            : <IconBtn label="Run"   icon={Play}  onClick={onRun} disabled={isViewingPast} pulse={pulseRun && !isViewingPast} />}
           <IconBtn label="Reset" icon={RotateCcw} onClick={onReset} />
 
           {/* Speed slider */}

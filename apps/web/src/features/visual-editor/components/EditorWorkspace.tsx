@@ -323,10 +323,25 @@ export function EditorWorkspace({ theme = "light", initialSource, standalone = f
     setTimeout(() => editorRef.current?.compile(), 100);
   }, []);
 
+  // First-run hint: pulse the Run button so a new user knows to press it to
+  // start the clock. The clock bar only renders for sequential circuits, so a
+  // combinational first circuit (e.g. a half adder) never shows it and never
+  // burns the hint. Default to "seen" (no pulse) for SSR, then read the flag on
+  // the client; mark it seen the first time the user actually runs.
+  const RUN_PULSE_KEY = "simten:seen-run-pulse";
+  const [runPulseSeen, setRunPulseSeen] = useState(true);
+  useEffect(() => {
+    if (localStorage.getItem(RUN_PULSE_KEY) !== "1") setRunPulseSeen(false);
+  }, []);
+  const markRunPulseSeen = useCallback(() => {
+    setRunPulseSeen(true);
+    try { localStorage.setItem(RUN_PULSE_KEY, "1"); } catch { /* private mode */ }
+  }, []);
+
   // Empty state with example picker
   const renderEmptyState = useCallback(() => (
-    <div className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none">
-      <div className="pointer-events-auto rounded-xl border border-gray-200 dark:border-[#2a2a2e] bg-white dark:bg-[#1a1a1e] p-6 shadow-lg max-w-md w-full">
+    <div className="fixed inset-0 z-10 flex items-center justify-center pointer-events-none">
+      <div className="pointer-events-auto rounded-xl border border-gray-200 dark:border-[#2a2a2e] bg-white dark:bg-[#1a1a1e] p-6 shadow-lg max-w-2xl w-full">
         <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-1">Load an example</h2>
         <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">
           Pick a circuit to explore, or write your own on the left.
@@ -336,14 +351,14 @@ export function EditorWorkspace({ theme = "light", initialSource, standalone = f
             <button
               key={ex.id}
               onClick={() => loadExample(ex)}
-              className="w-full text-left rounded-lg border border-gray-200 dark:border-[#2a2a2e] hover:border-blue-400 dark:hover:border-blue-500 bg-gray-50 dark:bg-[#161618] hover:bg-blue-50 dark:hover:bg-blue-950/20 px-4 py-2.5 transition-colors group"
+              className="w-full text-left cursor-pointer rounded-lg border border-gray-200 dark:border-[#2a2a2e] hover:border-blue-400 dark:hover:border-blue-500 bg-gray-50 dark:bg-[#161618] hover:bg-blue-50 dark:hover:bg-blue-950/20 px-4 py-2.5 transition-colors group"
             >
               <div className="flex items-center justify-between gap-3">
                 <div className="min-w-0">
                   <div className="text-sm font-medium text-gray-900 dark:text-gray-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                     {ex.title}
                   </div>
-                  <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-1">
+                  <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                     {ex.description}
                   </div>
                 </div>
@@ -351,7 +366,6 @@ export function EditorWorkspace({ theme = "light", initialSource, standalone = f
                   <span className={`inline-flex items-center rounded-full border px-1.5 py-0.5 text-[10px] font-medium ${CATEGORY_COLORS[ex.category]}`}>
                     {CATEGORY_LABELS[ex.category]}
                   </span>
-                  <span className="text-[10px] text-gray-500 font-mono">{ex.nodes}</span>
                 </div>
               </div>
             </button>
@@ -521,8 +535,12 @@ export function EditorWorkspace({ theme = "light", initialSource, standalone = f
               speed={sim.speed || 15}
               maxSpeed={1000}
               onStep={sim.tick}
-              onRun={() => sim.startAutoRun(sim.speed || 15, { displayRate: 30 })}
+              onRun={() => {
+                markRunPulseSeen();
+                sim.startAutoRun(sim.speed || 15, { displayRate: 30 });
+              }}
               onPause={() => sim.stopAutoRun()}
+              pulseRun={!runPulseSeen && !sim.isRunning}
               onReset={sim.reset}
               onStepBack={() => sim.stepBack()}
               onStepForward={() => sim.stepForward()}

@@ -1155,15 +1155,22 @@ export function ClaudeDemoSection({
           </p>
           <div className="mt-6 flex items-center gap-3 flex-wrap">
             {/* Primary action — keeps the hero framed around "this is a
-                hardware framework", not "this is an MCP install". The
-                MCP CopyCommand sits second so power users still see it
-                without it visually dominating. */}
+                hardware framework", not "this is an MCP install". The editor
+                is a secondary, zero-friction "try it now" path; the MCP
+                CopyCommand sits last so power users still see it without it
+                visually dominating. */}
             <Link
               to="/docs/$"
               params={{ _splat: "" }}
               className="inline-flex items-center rounded-lg bg-foreground text-background hover:bg-foreground/90 transition-colors px-4 py-3 text-sm font-medium"
             >
               Learn more →
+            </Link>
+            <Link
+              to="/circuit"
+              className="inline-flex items-center rounded-lg border border-border hover:bg-muted transition-colors px-4 py-3 text-sm font-medium text-foreground"
+            >
+              Open the editor →
             </Link>
             <CopyCommand command="claude mcp add simten npx @simten/mcp" />
           </div>
