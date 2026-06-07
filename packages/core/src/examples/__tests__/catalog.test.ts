@@ -1,0 +1,40 @@
+/**
+ * Example Catalog Tests
+ *
+ * Drift guard for the bundled example catalog: every example's source must
+ * compile cleanly via checkCircuit, so the editor empty state and the MCP
+ * server never ship a broken example.
+ */
+
+import { describe, it, expect } from 'vitest';
+import { EXAMPLES } from '../catalog.js';
+import { checkCircuit } from '../../api/check.js';
+
+describe('example catalog', () => {
+  it('has examples', () => {
+    expect(EXAMPLES.length).toBeGreaterThan(0);
+  });
+
+  it('has unique ids', () => {
+    const ids = EXAMPLES.map(e => e.id);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+
+  it('has non-empty metadata', () => {
+    for (const ex of EXAMPLES) {
+      expect(ex.title.length, ex.id).toBeGreaterThan(0);
+      expect(ex.description.length, ex.id).toBeGreaterThan(0);
+      expect(ex.code.trim().length, ex.id).toBeGreaterThan(0);
+    }
+  });
+
+  for (const ex of EXAMPLES) {
+    it(`"${ex.id}" passes checkCircuit`, () => {
+      const result = checkCircuit({ source: ex.code, sourceName: ex.id });
+      expect(result.diagnostics).toEqual([]);
+      expect(result.valid).toBe(true);
+      expect(result.analysis.unresolvedReferences).toEqual([]);
+      expect(result.analysis.circuitsDefined.length).toBeGreaterThan(0);
+    });
+  }
+});

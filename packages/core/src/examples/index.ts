@@ -4,3 +4,4 @@
  */
 
 export { SnakeAdvanced, buildSnakeAdvanced } from './snake.js';
+export { EXAMPLES, type Example } from './catalog.js';

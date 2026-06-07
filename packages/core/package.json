@@ -33,6 +33,7 @@
     "./sim": "./src/sim/index.ts",
     "./verify": "./src/verify/index.ts",
     "./examples": "./src/examples/index.ts",
+    "./examples/catalog": "./src/examples/catalog.ts",
     "./util/test-name": "./src/util/test-name.ts",
     "./bundle": "./dist/bundle.d.ts",
     "./editor-globals": "./dist/editor-globals.dts.txt",
@@ -75,6 +76,10 @@
       "./examples": {
         "types": "./dist/examples/index.d.ts",
         "import": "./dist/examples/index.js"
+      },
+      "./examples/catalog": {
+        "types": "./dist/examples/catalog.d.ts",
+        "import": "./dist/examples/catalog.js"
       },
       "./util/test-name": {
         "types": "./dist/util/test-name.d.ts",
