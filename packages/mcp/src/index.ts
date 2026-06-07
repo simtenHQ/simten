@@ -16,6 +16,7 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 // `with { type: 'json' }` is the standard import-attribute form (Node 20+, TS 5.3+).
 import pkg from '../package.json' with { type: 'json' };
 
+import { registerGetStartedTool } from './tools/get_started.js';
 import { registerCheckTool } from './tools/check.js';
 import { registerSimulateTool } from './tools/simulate.js';
 import { registerVerifyTool } from './tools/verify.js';
@@ -33,10 +34,10 @@ import { getOrCreateServer, getPreviewServer } from './lib/preview-singleton.js'
 // the `get_grammar` / `list_components` tools instead (tool results aren't
 // capped). Keep critical guidance (the verify contract, the reference pointer)
 // near the top so it survives truncation.
-const instructions = `You help developers design, simulate, and verify hardware from TypeScript. Circuits are files the host edits (write to \`circuits/<name>.circuit.ts\` unless told otherwise); the simten tools check, simulate, verify, and visualize them.
+const instructions = `You help developers design, simulate, and verify hardware from TypeScript. Circuits are files the host edits (write to \`circuits/<name>.circuit.ts\` unless told otherwise); the simten tools check, simulate, verify, and visualize them. If the user asks what simten is, wants a demo, or doesn't know where to start, call \`get_started\` (orientation + bundled examples, zero setup); if they ask for a specific circuit, skip it and build.
 
-## New or empty folder? Set it up first
-\`check_circuit\` and \`simulate_circuit\` need no setup. \`verify_circuit\` does — it runs on the host via \`tsx\` and resolves \`@simten/core\` + \`fast-check\` from the project. In a new/empty folder, call \`setup_project\` once (writes \`package.json\`, installs the deps); it reports the file extension to use (\`.ts\`, or \`.mts\` for an existing CommonJS project). \`verify_circuit\` will tell you to run it if you forget.
+## Setup — only needed for verify
+\`check_circuit\`, \`simulate_circuit\`, \`show_circuit\`, and \`get_started\` need no setup. \`verify_circuit\` does — it runs on the host via \`tsx\` and resolves \`@simten/core\` + \`fast-check\` from the project. Before a project's first verify, call \`setup_project\` once (writes \`package.json\`, installs the deps); it reports the file extension to use (\`.ts\`, or \`.mts\` for an existing CommonJS project). \`verify_circuit\` will tell you to run it if you forget.
 
 ## Reference (call these — don't guess)
 This server's instructions are truncated by clients at ~2KB, so the full reference lives in tools:
@@ -65,6 +66,7 @@ const server = new McpServer(
   },
 );
 
+registerGetStartedTool(server);
 registerCheckTool(server);
 registerSimulateTool(server);
 registerVerifyTool(server);
