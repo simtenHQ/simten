@@ -18,7 +18,7 @@ export const EXAMPLES: Example[] = [
   {
     id: "snake",
     title: "Snake",
-    description: "A playable Snake game in pure logic — no CPU. Press Run and steer with the arrow keys. Double-click SnakeCore to drill into the 4-phase pipeline. The same core runs on a real FPGA.",
+    description: "A playable Snake game in pure logic, no CPU. Press Play, then steer with the arrow keys. Drillable to the gates, and runs on a real FPGA.",
     category: "game",
     nodes: "5 nodes, drillable",
     code: `
@@ -432,7 +432,7 @@ const SnakePlayable = circuit('SnakePlayable', {
   {
     id: "rv32i-computer",
     title: "RV32I Computer",
-    description: "A full RISC-V computer: program ROM, 5-stage pipelined CPU, memory bus, UART console. Ships with a program that prints to the console; paste C or Rust into the ROM node to run your own code. The same core passes riscv-arch-test (38/38 vs Spike) and runs on a ULX3S FPGA.",
+    description: "A 5-stage pipelined RISC-V CPU running real C or Rust. Verified against Spike, runs on a ULX3S FPGA.",
     category: "cpu",
     nodes: "5 blocks, ~150 nodes inside",
     code: `
@@ -561,9 +561,57 @@ const RV32I_Computer = circuit('RV32I_Computer', {
 `,
   },
   {
+    id: "figlet",
+    title: "npm → ROM",
+    description: "Runs the figlet npm package at build time to bake ASCII art into a ROM, then streams it to a console.",
+    category: "basics",
+    nodes: "npm → ROM → console",
+    code: `import figlet from 'figlet';
+import smallFont from 'figlet/fonts/Small.js';
+figlet.parseFont('Small', smallFont);
+
+// Render ASCII-art at compile time with a real npm package,
+// then stream the bytes through hardware — letter by letter.
+const banner = figlet.textSync('Simten', { font: 'Small' });
+const ascii = [...banner].map(c => c.charCodeAt(0));
+const bannerBytes = Array.from({ length: 256 }, (_, i) =>
+  i === 0 ? 12 : i <= ascii.length ? ascii[i - 1] : 0
+);
+
+const FigletStream = circuit('FigletStream', {
+  outputs: { byte: bus(8), strobe: bit },
+  nodes: {
+    reg: Register({ width: 8 }),
+    adder: Adder({ width: 8 }),
+    rom: ROM({ memory: romFromBytes(bannerBytes) }),
+    one: Constant({ value: 1 }),
+    we: Constant({ value: 1 }),
+    zero: Constant({ value: 0 }),
+  },
+  connect: ({ outputs, nodes: { reg, adder, rom, one, we, zero } }) => [
+    reg.q.to(adder.a),
+    one.out.to(adder.b),
+    zero.out.to(adder.carry_in),
+    adder.sum.to(reg.data),
+    we.out.to(reg.we),
+    reg.q.to(rom.addr),
+    rom.data_out.to(outputs.byte),
+    we.out.to(outputs.strobe),
+  ],
+});
+
+const FigletDemo = circuit('FigletDemo', {
+  nodes: { src: FigletStream, term: Console },
+  connect: ({ nodes: { src, term } }) => [
+    src.byte.to(term.data),
+    src.strobe.to(term.we),
+  ],
+});`,
+  },
+  {
     id: "tpu-3x3",
     title: "3x3 Systolic Array (TPU)",
-    description: "Google's TPU architecture — 9 processing elements doing matrix multiplication in a wavefront pattern. Watch A*B compute one cycle at a time.",
+    description: "Google's TPU architecture: 9 processing elements multiplying a matrix in a wavefront, one cycle at a time.",
     category: "cpu",
     nodes: "~120 nodes",
     code: `
@@ -711,7 +759,7 @@ const TestSystolic3x3 = circuit('TestSystolic3x3', {
   {
     id: "fibonacci",
     title: "Fibonacci Generator",
-    description: "Pure datapath — two registers and one adder produce the Fibonacci sequence every clock tick. No software, no ROM, no instructions.",
+    description: "Two registers and an adder produce the Fibonacci sequence every clock tick. No software, no instructions.",
     category: "math",
     nodes: "~12 nodes",
     code: `
@@ -746,7 +794,7 @@ const FibonacciDemo = circuit('FibonacciDemo', {
   {
     id: "rule30",
     title: "Rule 30 Cellular Automaton",
-    description: "Wolfram's famous Rule 30 — the simplest known source of cryptographic randomness. 8 cells in a ring, two gates per cell, chaos from one seed.",
+    description: "Wolfram's Rule 30 cellular automaton: 8 cells, two gates each, chaos from a single seed.",
     category: "math",
     nodes: "~40 nodes",
     code: `
@@ -793,7 +841,7 @@ const Rule30 = circuit('Rule30', {
   {
     id: "alu",
     title: "8-Bit ALU",
-    description: "The heart of every CPU — 8 operations (ADD, SUB, AND, OR, XOR, NOT, SHL, SHR) selected by a 3-bit opcode, with zero/carry/negative flags.",
+    description: "Eight operations on a 3-bit opcode (ADD, SUB, AND, OR, XOR, NOT, SHL, SHR), with zero, carry, and negative flags.",
     category: "cpu",
     nodes: "~30 nodes",
     code: `
@@ -862,7 +910,7 @@ const ALUDemo = circuit('ALUDemo', {
   {
     id: "half-adder",
     title: "Half Adder",
-    description: "The simplest arithmetic circuit — XOR for sum, AND for carry. The building block of every adder in every CPU ever made.",
+    description: "The simplest arithmetic circuit: XOR for sum, AND for carry. The building block of every adder.",
     category: "basics",
     nodes: "4 nodes",
     code: `
