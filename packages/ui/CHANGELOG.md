@@ -1,5 +1,13 @@
 # @simten/ui
 
+## 0.1.9
+
+### Patch Changes
+
+- 62597a1: ClockControls: add optional `pulseRun` prop that pulses the Run button as a first-run hint (used by the editor's empty-state onboarding; off by default for embeds).
+- Updated dependencies [62597a1]
+  - @simten/core@0.5.1
+
 ## 0.1.8
 
 ### Patch Changes
