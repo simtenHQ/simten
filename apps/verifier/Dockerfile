@@ -22,8 +22,11 @@ RUN apk add --no-cache iverilog && rm -rf /var/cache/apk/*
 # Copy the Go server
 COPY --from=build-server /server /server
 
-# Create temp directory for verifications
-RUN mkdir -p /tmp/verify
+# Run as non-root so user-supplied Verilog run through iverilog can't write to
+# the root-owned toolchain. Cloudflare does NOT inject a non-root UID. The
+# verify working dir (/tmp/verify/<id>) is the only writable path.
+RUN adduser -D -u 10001 builder && mkdir -p /tmp/verify && chown builder /tmp/verify
+USER builder
 
 EXPOSE 8080
 
