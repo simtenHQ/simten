@@ -28,7 +28,7 @@ import {
 
 const DESCRIPTION = `Make the current folder ready to RUN verify_circuit. check_circuit and simulate_circuit need no setup; verify_circuit does, because it runs the testbench on the host via tsx and resolves @simten/core + fast-check from this project.
 
-Call this once when starting in a new/empty folder (or whenever verify_circuit reports "setup_required"). It is idempotent — safe to re-run. It writes an ESM package.json (never clobbering an explicit CommonJS one), a minimal tsconfig for editor IntelliSense, a circuits/ dir, and installs @simten/core, fast-check, and tsx with your package manager.
+Call this once before a project's first verify_circuit (or whenever it reports "setup_required") — it is NOT needed just to check, simulate, or show circuits, including the get_started examples. It is idempotent — safe to re-run. It writes an ESM package.json (never clobbering an explicit CommonJS one), a minimal tsconfig for editor IntelliSense, a circuits/ dir, and installs @simten/core, fast-check, and tsx with your package manager.
 
 The result reports the extension to use for circuit/testbench files: ".ts" normally, ".mts" only if you already have a type:commonjs package.json.`;
 
