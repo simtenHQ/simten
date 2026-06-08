@@ -33,6 +33,7 @@
     "./waveform": "./src/waveform/WaveformViewer.tsx",
     "./sandbox": "./src/sandbox/index.ts",
     "./share": "./src/share/index.ts",
+    "./primitives/tooltip": "./src/primitives/tooltip.tsx",
     "./package.json": "./package.json"
   },
   "publishConfig": {
@@ -80,6 +81,10 @@
       "./share": {
         "types": "./dist/share/index.d.ts",
         "import": "./dist/share/index.js"
+      },
+      "./primitives/tooltip": {
+        "types": "./dist/primitives/tooltip.d.ts",
+        "import": "./dist/primitives/tooltip.js"
       },
       "./package.json": "./package.json"
     },

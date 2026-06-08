@@ -15,6 +15,7 @@ import { CircuitViewer, type CircuitViewerHandle, type HarnessedLayout } from ".
 import { circuitToSource, type BuiltCircuit } from "@simten/core/circuit";
 import type { FlatPortValueMap } from "@simten/core/simulator";
 import { encodeSourceForUrl } from "@simten/ui/share";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@simten/ui/primitives/tooltip";
 import { useShareCircuit } from "./share-context";
 
 /**
@@ -116,6 +117,41 @@ function inferAspectFromLayout(layout: Record<string, { x: number; y: number }> 
   return w / h;
 }
 
+/**
+ * The Fork action, rendered in two placements (floating corner when there's no
+ * info bar, inline in the info bar otherwise). One component so the onFork /
+ * error / tooltip logic lives in a single place. Uses the shared shadcn tooltip
+ * (same one ClockControls uses) instead of the native `title` attribute.
+ */
+function ForkButton({
+  onFork,
+  forkError,
+  forkPending,
+  className,
+  tooltipSide = "top",
+}: {
+  onFork: () => void;
+  forkError: string | null;
+  forkPending: boolean;
+  className: string;
+  tooltipSide?: "top" | "bottom";
+}) {
+  return (
+    <TooltipProvider delayDuration={300}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button type="button" onClick={onFork} className={`cursor-pointer ${className}`}>
+            {forkError ? "Fork failed" : forkPending ? "Forking…" : "Fork →"}
+          </button>
+        </TooltipTrigger>
+        <TooltipContent side={tooltipSide}>
+          {forkError ?? "Open and modify this circuit in the Simten editor"}
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+}
+
 const CircuitEmbedImpl = forwardRef<CircuitEmbedHandle, CircuitEmbedProps>(
   function CircuitEmbed({
     circuit,
@@ -189,14 +225,13 @@ const CircuitEmbedImpl = forwardRef<CircuitEmbedHandle, CircuitEmbedProps>(
     return (
       <div style={outerStyle} className={`relative flex flex-col ${hasInfoBar ? 'rounded-xl border border-[var(--embed-border)] overflow-hidden bg-[var(--embed-bg-secondary)]' : ''}`}>
         {!hasInfoBar && !href && (
-          <button
-            type="button"
-            onClick={onFork}
-            title={forkError ?? "Open and modify this circuit in the Simten editor"}
+          <ForkButton
+            onFork={onFork}
+            forkError={forkError}
+            forkPending={forkPending}
+            tooltipSide="bottom"
             className="absolute top-2 right-2 z-10 hidden md:flex items-center px-2.5 py-1 rounded border border-[var(--embed-border)] bg-[var(--embed-bg-secondary)] text-[11px] text-[var(--embed-text-primary)] hover:opacity-80 transition-colors shadow-sm"
-          >
-            {forkError ? "Fork failed" : "Fork →"}
-          </button>
+          />
         )}
         <div style={canvasStyle} className="min-h-0">
           <CircuitViewer
@@ -228,14 +263,13 @@ const CircuitEmbedImpl = forwardRef<CircuitEmbedHandle, CircuitEmbedProps>(
                 Open →
               </a>
             ) : (
-              <button
-                type="button"
-                onClick={onFork}
-                title={forkError ?? "Open and modify this circuit in the Simten editor"}
+              <ForkButton
+                onFork={onFork}
+                forkError={forkError}
+                forkPending={forkPending}
+                tooltipSide="top"
                 className="hidden md:flex items-center shrink-0 px-3 py-1.5 rounded border border-[var(--embed-border)] text-xs text-[var(--embed-text-primary)] hover:opacity-80 transition-colors"
-              >
-                {forkError ? `Can't fork: ${forkError.slice(0, 40)}` : "Fork →"}
-              </button>
+              />
             )}
           </div>
         )}
