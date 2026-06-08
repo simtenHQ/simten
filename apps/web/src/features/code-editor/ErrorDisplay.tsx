@@ -47,11 +47,11 @@ export function ErrorDisplay({ errors }: ErrorDisplayProps) {
           <span>
             {errors.length === 1 ? '1 error' : `${errors.length} errors`}
           </span>
-          <span className="text-red-400 text-xs ml-1">↓</span>
+          <span className="text-red-500 text-xs ml-1">↓</span>
         </button>
         <button
           onClick={() => setHidden(true)}
-          className="text-red-400 hover:text-red-600 text-xs px-2"
+          className="text-red-500 hover:text-red-600 text-xs px-2"
           title="Hide panel (errors remain in editor)"
         >
           hide
@@ -74,11 +74,11 @@ export function ErrorDisplay({ errors }: ErrorDisplayProps) {
           <span>
             {errors.length === 1 ? '1 error' : `${errors.length} errors`}
           </span>
-          <span className="text-red-400 text-xs ml-1">↑</span>
+          <span className="text-red-500 text-xs ml-1">↑</span>
         </button>
         <button
           onClick={() => setHidden(true)}
-          className="text-red-400 hover:text-red-600 text-xs px-2"
+          className="text-red-500 hover:text-red-600 text-xs px-2"
           title="Hide panel (errors remain in editor)"
         >
           hide
