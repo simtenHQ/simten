@@ -950,7 +950,7 @@ function DemoGallery() {
               Setup & how it works →
             </Link>
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* TypeScript side */}
             <div className="rounded-lg border border-border bg-card overflow-hidden">
               <div className="px-3 py-1.5 border-b border-border text-[10px] text-muted-foreground font-mono">circuit.ts</div>
