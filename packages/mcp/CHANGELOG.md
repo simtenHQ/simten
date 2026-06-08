@@ -1,5 +1,11 @@
 # @simten/mcp
 
+## 0.8.2
+
+### Patch Changes
+
+- 3d0a301: Bump ws from ^8.19.0 to ^8.21.0 to clear a security advisory affecting ws < 8.20.1.
+
 ## 0.8.1
 
 ### Patch Changes
