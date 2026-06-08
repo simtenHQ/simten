@@ -5,7 +5,7 @@ import { circuit, bit } from "@simten/core/circuit";
 import { Xor, And, Or, DFlipFlop } from "@simten/core/std";
 import { HighlightedCode } from "@/components/HighlightedCode";
 import { Container } from "@/components/Container";
-import { Section, SectionHeading } from "@/components/SectionHeading";
+import { Section } from "@/components/SectionHeading";
 import { RV32IDebuggerPreview } from "@/features/learn/cpu-debugger/RV32IDebuggerPreview";
 import { ClaudeDemoSection } from "@/features/splash/ClaudeDemoSection";
 import { CodeWithHovers } from "@/features/splash/CodeWithHovers";
@@ -731,7 +731,7 @@ function MobileAIHero() {
 
 function DemoGallery() {
   return (
-    <div className="relative py-16 md:py-24 md:animate-in md:fade-in md:duration-700 overflow-hidden">
+    <div className="relative pb-16 md:pb-24 md:animate-in md:fade-in md:duration-700 overflow-hidden">
 
       <Container className="relative">
         {/* Lead with the heavy proof — the RV32I CPU — to show the
@@ -746,56 +746,45 @@ function DemoGallery() {
             <p className="mt-4 text-base lg:text-lg text-muted-foreground">
               The framework already runs heavy systems in the browser — for example, a 5-stage pipelined RISC-V CPU executing GCC-compiled C, C++, and Rust.
             </p>
+            <Link
+              to="/cpu/rv32i"
+              className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline"
+            >
+              Open the RV32I debugger →
+            </Link>
           </div>
 
-          <div className="space-y-8">
-            {/* RV32I CPU debugger */}
-            <div className="relative w-full rounded-2xl bg-muted/60 p-3 lg:p-4 shadow-sm">
-              <div
-                className="rounded-xl border border-border bg-card shadow-sm overflow-hidden"
-                style={{ height: 520 }}
-              >
-                <RV32IDebuggerPreview />
-              </div>
-              <div className="absolute -top-3 left-6 inline-flex items-center gap-2 rounded-full bg-card border border-border px-3 py-1 text-[11px] font-medium text-foreground shadow-sm">
-                <span className="h-1.5 w-1.5 rounded-full bg-blue-500" />
-                RV32I CPU debugger
-                <Link
-                  to="/cpu/rv32i"
-                  className="ml-1 text-blue-600 dark:text-blue-400 hover:underline"
-                >
-                  Open →
-                </Link>
-              </div>
-
-              {/* Conformance receipts. Honest framing per the harness README —
-                  simulation vs Spike, not silicon certification. The link is the
-                  proof and doubles as the "what is Spike" gloss. */}
-              <a
-                href="https://github.com/simtenHQ/simten/blob/main/hardware/ulx3s/projects/cpu/archtest/README.md"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="mt-3 inline-flex items-center gap-2 rounded-full border border-border bg-card px-3.5 py-1.5 text-[13px] font-medium text-foreground/90 shadow-sm transition-colors hover:border-emerald-500/40 hover:text-foreground"
-              >
-                <svg
-                  className="h-3.5 w-3.5 shrink-0 text-emerald-500"
-                  viewBox="0 0 12 12"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden="true"
-                >
-                  <path d="M2.5 6.4 5 8.9 9.5 3.4" />
-                </svg>
-                Passes 38/38 RISC-V RV32I conformance tests vs Spike (in sim)
-                <span aria-hidden="true" className="text-muted-foreground/70">
-                  ↗
-                </span>
-              </a>
+          {/* RV32I CPU debugger demo */}
+          <div>
+            <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden h-auto sm:h-[520px]">
+              <RV32IDebuggerPreview />
             </div>
 
+            {/* Conformance receipt. Honest framing per the harness README —
+                simulation vs Spike, not silicon certification. */}
+            <a
+              href="https://github.com/simtenHQ/simten/blob/main/hardware/ulx3s/projects/cpu/archtest/README.md"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-3 inline-flex items-center gap-2 rounded-full border border-border bg-card px-3.5 py-1.5 text-[13px] font-medium text-foreground/90 shadow-sm transition-colors hover:border-emerald-500/40 hover:text-foreground"
+            >
+              <svg
+                className="h-3.5 w-3.5 shrink-0 text-emerald-500"
+                viewBox="0 0 12 12"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M2.5 6.4 5 8.9 9.5 3.4" />
+              </svg>
+              Passes the official riscv-arch-test RV32I suite (38/38), signature-matched against Spike (in sim)
+              <span aria-hidden="true" className="text-muted-foreground/70">
+                ↗
+              </span>
+            </a>
           </div>
         </Section>
 
@@ -946,21 +935,21 @@ function DemoGallery() {
 
         {/* Verilog Export — honest framing */}
         <Section>
-          <SectionHeading
-            title="Export to Verilog"
-            description={
-              <>
-                Synthesizable primitives export to structural Verilog. The RV32I CPU and Snake both flash to a ULX3S; the CPU is cross-validated against iverilog cycle-by-cycle. Running it from a clone needs the synth / verify / compile services started locally (Docker; <code className="text-xs">pnpm dev:synth</code>, <code className="text-xs">dev:verifier</code>, <code className="text-xs">dev:compiler</code>).{" "}
-                <Link
-                  to="/docs/$"
-                  params={{ _splat: "hardware" }}
-                  className="text-blue-600 dark:text-blue-400 hover:underline"
-                >
-                  Setup & how it works →
-                </Link>
-              </>
-            }
-          />
+          <div className="max-w-2xl mb-10 lg:mb-12">
+            <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight leading-[1.1]">
+              Export to Verilog
+            </h2>
+            <p className="mt-4 text-base lg:text-lg text-muted-foreground">
+              Synthesizable primitives export to structural Verilog. The RV32I CPU and Snake both run on a real ULX3S FPGA, with the CPU cross-validated against Icarus Verilog cycle-by-cycle.
+            </p>
+            <Link
+              to="/docs/$"
+              params={{ _splat: "hardware" }}
+              className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline"
+            >
+              Setup & how it works →
+            </Link>
+          </div>
           <div className="grid grid-cols-2 gap-4">
             {/* TypeScript side */}
             <div className="rounded-lg border border-border bg-card overflow-hidden">
