@@ -1,5 +1,11 @@
 # @simten/ui
 
+## 0.1.10
+
+### Patch Changes
+
+- 6cb2f13: Expose the shadcn tooltip via a new `@simten/ui/primitives/tooltip` export, and add `cursor-pointer` to the `Button` base so all buttons show the pointer on hover (disabled ones excluded).
+
 ## 0.1.9
 
 ### Patch Changes
