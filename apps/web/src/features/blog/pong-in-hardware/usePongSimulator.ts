@@ -43,39 +43,59 @@ export function usePongSimulator() {
     }
   }, [sim.ready, sim.toggleNode, nodeIds]);
 
-  // Keyboard listener
+  // Each paddle gets its own keyboard input node so both can be held at once
+  const sendLeftDirection = useCallback(
+    (code: number) => {
+      if (nodeIds.keyboard0) sim.setNodeValue(nodeIds.keyboard0, code);
+    },
+    [nodeIds, sim.setNodeValue],
+  );
+
+  const sendRightDirection = useCallback(
+    (code: number) => {
+      if (nodeIds.keyboard1) sim.setNodeValue(nodeIds.keyboard1, code);
+    },
+    [nodeIds, sim.setNodeValue],
+  );
+
+  // Keyboard listener — W/S drive the left paddle, arrows the right
   useEffect(() => {
     if (!sim.ready) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      let code = 0;
       switch (e.key) {
         case "w":
         case "W":
-          code = 17;
+          sendLeftDirection(17);
           break;
         case "s":
         case "S":
-          code = 31;
+          sendLeftDirection(31);
           break;
         case "ArrowUp":
-          code = 72;
           e.preventDefault();
+          sendRightDirection(72);
           break;
         case "ArrowDown":
-          code = 80;
           e.preventDefault();
+          sendRightDirection(80);
           break;
-        default:
-          return;
       }
-      if (nodeIds.keyboard0) sim.setNodeValue(nodeIds.keyboard0, code);
-      if (nodeIds.keyboard1) sim.setNodeValue(nodeIds.keyboard1, code);
     };
 
-    const handleKeyUp = () => {
-      if (nodeIds.keyboard0) sim.setNodeValue(nodeIds.keyboard0, 0);
-      if (nodeIds.keyboard1) sim.setNodeValue(nodeIds.keyboard1, 0);
+    const handleKeyUp = (e: KeyboardEvent) => {
+      switch (e.key) {
+        case "w":
+        case "W":
+        case "s":
+        case "S":
+          sendLeftDirection(0);
+          break;
+        case "ArrowUp":
+        case "ArrowDown":
+          sendRightDirection(0);
+          break;
+      }
     };
 
     window.addEventListener("keydown", handleKeyDown);
@@ -84,7 +104,7 @@ export function usePongSimulator() {
       window.removeEventListener("keydown", handleKeyDown);
       window.removeEventListener("keyup", handleKeyUp);
     };
-  }, [sim.ready, sim.setNodeValue, nodeIds]);
+  }, [sim.ready, sendLeftDirection, sendRightDirection]);
 
   // Auto-run interval — run a complete 14-phase game frame each time.
   // Speed controls how often frames run (higher = slower ball + paddles).
@@ -117,5 +137,7 @@ export function usePongSimulator() {
     speed,
     setSpeed,
     handleReset,
+    sendLeftDirection,
+    sendRightDirection,
   };
 }
