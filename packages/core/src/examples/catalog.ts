@@ -609,6 +609,77 @@ const FigletDemo = circuit('FigletDemo', {
 });`,
   },
   {
+    id: "hack-alu",
+    title: "Hack ALU (nand2tetris)",
+    description: "The nand2tetris Hack ALU: two 16-bit inputs and six control bits (zx nx zy ny f no) that compose into 18 operations. Flip the control bits and watch out, zr, and ng update.",
+    category: "math",
+    nodes: "16 nodes",
+    code: `
+// The nand2tetris Hack ALU, built in Simten — the same chip from Project 2.
+// Two 16-bit inputs x, y and six control bits compose into 18 operations:
+//   if (zx) x = 0      if (nx) x = !x      // zero / negate x
+//   if (zy) y = 0      if (ny) y = !y      // zero / negate y
+//   if (f)  out = x + y   else   out = x & y
+//   if (no) out = !out
+//   zr = (out == 0)    ng = (out < 0)      // sign bit
+// Flip the control-bit switches and watch out / zr / ng. NOT is done as
+// XOR with 0xFFFF so it's a true 16-bit invert.
+
+const HackALU = circuit('HackALU', {
+  inputs: {
+    x: bus(16), y: bus(16),
+    zx: bit, nx: bit, zy: bit, ny: bit, f: bit, no: bit,
+  },
+  outputs: { out: bus(16), zr: bit, ng: bit },
+  nodes: {
+    zero16: Constant({ value: 0, width: 16 }),
+    ones16: Constant({ value: 65535, width: 16 }),
+    carry0: Constant({ value: 0 }),
+    muxZX: Mux({ width: 16 }), notX: BusXor({ width: 16 }), muxNX: Mux({ width: 16 }),
+    muxZY: Mux({ width: 16 }), notY: BusXor({ width: 16 }), muxNY: Mux({ width: 16 }),
+    add16: Adder({ width: 16 }), and16: BusAnd({ width: 16 }), muxF: Mux({ width: 16 }),
+    notOut: BusXor({ width: 16 }), muxNO: Mux({ width: 16 }),
+    zrCmp: Comparator({ width: 16 }), sign: BitSlice({ low: 15, high: 15 }),
+  },
+  connect: ({ inputs, outputs, nodes }) => [
+    // x: zero then negate
+    inputs.x.to(nodes.muxZX.in0),
+    nodes.zero16.out.to(nodes.muxZX.in1),
+    inputs.zx.to(nodes.muxZX.sel),
+    nodes.muxZX.out.to(nodes.notX.a, nodes.muxNX.in0),
+    nodes.ones16.out.to(nodes.notX.b),
+    nodes.notX.out.to(nodes.muxNX.in1),
+    inputs.nx.to(nodes.muxNX.sel),
+    // y: zero then negate
+    inputs.y.to(nodes.muxZY.in0),
+    nodes.zero16.out.to(nodes.muxZY.in1),
+    inputs.zy.to(nodes.muxZY.sel),
+    nodes.muxZY.out.to(nodes.notY.a, nodes.muxNY.in0),
+    nodes.ones16.out.to(nodes.notY.b),
+    nodes.notY.out.to(nodes.muxNY.in1),
+    inputs.ny.to(nodes.muxNY.sel),
+    // function: f ? (x + y) : (x & y)
+    nodes.muxNX.out.to(nodes.add16.a, nodes.and16.a),
+    nodes.muxNY.out.to(nodes.add16.b, nodes.and16.b),
+    nodes.carry0.out.to(nodes.add16.carry_in),
+    nodes.and16.out.to(nodes.muxF.in0),
+    nodes.add16.sum.to(nodes.muxF.in1),
+    inputs.f.to(nodes.muxF.sel),
+    // output negate
+    nodes.muxF.out.to(nodes.notOut.a, nodes.muxNO.in0),
+    nodes.ones16.out.to(nodes.notOut.b),
+    nodes.notOut.out.to(nodes.muxNO.in1),
+    inputs.no.to(nodes.muxNO.sel),
+    // final out + flags
+    nodes.muxNO.out.to(outputs.out, nodes.zrCmp.a, nodes.sign.in),
+    nodes.zero16.out.to(nodes.zrCmp.b),
+    nodes.zrCmp.eq.to(outputs.zr),
+    nodes.sign.out.to(outputs.ng),
+  ],
+});
+`,
+  },
+  {
     id: "tpu-3x3",
     title: "3x3 Systolic Array (TPU)",
     description: "Google's TPU architecture: 9 processing elements multiplying a matrix in a wavefront, one cycle at a time.",
