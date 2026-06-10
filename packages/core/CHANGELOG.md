@@ -1,5 +1,11 @@
 # @simten/core
 
+## 0.5.2
+
+### Patch Changes
+
+- d271692: Add the nand2tetris Hack ALU as a bundled interactive example (`/circuit?example=hack-alu`).
+
 ## 0.5.1
 
 ### Patch Changes
