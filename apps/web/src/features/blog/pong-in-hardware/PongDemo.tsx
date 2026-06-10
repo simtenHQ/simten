@@ -33,6 +33,49 @@ function usePixels(sequentialState: unknown): number[] {
   }, [sequentialState]);
 }
 
+function PaddlePad({
+  label,
+  upCode,
+  downCode,
+  onDirection,
+}: {
+  label: string;
+  upCode: number;
+  downCode: number;
+  onDirection: (code: number) => void;
+}) {
+  const btn =
+    "flex items-center justify-center w-16 h-16 rounded-xl bg-gray-700 active:bg-gray-500 text-gray-200 text-xl select-none transition-colors touch-manipulation";
+
+  return (
+    <div
+      className="flex flex-col items-center gap-2"
+      role="group"
+      aria-label={`${label} paddle controls`}
+    >
+      <button
+        className={btn}
+        onPointerDown={() => onDirection(upCode)}
+        onPointerUp={() => onDirection(0)}
+        onPointerLeave={() => onDirection(0)}
+        aria-label={`${label} paddle up`}
+      >
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor"><path d="M10 4l6 8H4z" /></svg>
+      </button>
+      <button
+        className={btn}
+        onPointerDown={() => onDirection(downCode)}
+        onPointerUp={() => onDirection(0)}
+        onPointerLeave={() => onDirection(0)}
+        aria-label={`${label} paddle down`}
+      >
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor"><path d="M10 16l-6-8h12z" /></svg>
+      </button>
+      <span className="text-xs text-gray-500 dark:text-gray-400">{label}</span>
+    </div>
+  );
+}
+
 export function PongDemo() {
   const {
     sim,
@@ -41,6 +84,8 @@ export function PongDemo() {
     speed,
     setSpeed,
     handleReset,
+    sendLeftDirection,
+    sendRightDirection,
   } = usePongSimulator();
 
   const pixels = usePixels(sim.sequentialState);
@@ -66,8 +111,8 @@ export function PongDemo() {
 
   return (
     <div className="rounded-xl border border-gray-700/50 bg-gray-100 dark:bg-gray-900/80 overflow-hidden">
-      {/* Controls header */}
-      <div className="px-4 py-3 border-b border-gray-700/50 flex items-center gap-3">
+      {/* Keyboard instructions — hidden on mobile */}
+      <div className="hidden sm:flex px-4 py-3 border-b border-gray-700/50 items-center gap-3">
         <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
           Controls
         </span>
@@ -87,11 +132,12 @@ export function PongDemo() {
       </div>
 
       {/* Game screen */}
-      <div className="flex justify-center py-8 bg-gray-50 dark:bg-gray-950">
+      <div className="flex justify-center px-4 py-8 bg-gray-50 dark:bg-gray-950">
         <svg
           width={TOTAL_SIZE}
           height={TOTAL_SIZE}
-          className="border-2 border-gray-700 rounded-lg bg-black"
+          viewBox={`0 0 ${TOTAL_SIZE} ${TOTAL_SIZE}`}
+          className="max-w-full h-auto border-2 border-gray-700 rounded-lg bg-black"
           style={{ imageRendering: "pixelated" }}
         >
           {pixels.map((value, index) => {
@@ -110,6 +156,12 @@ export function PongDemo() {
             );
           })}
         </svg>
+      </div>
+
+      {/* Touch controls — mobile only */}
+      <div className="sm:hidden flex justify-around py-4 border-t border-gray-700/50 bg-gray-100 dark:bg-gray-900/90">
+        <PaddlePad label="Left" upCode={17} downCode={31} onDirection={sendLeftDirection} />
+        <PaddlePad label="Right" upCode={72} downCode={80} onDirection={sendRightDirection} />
       </div>
 
       {/* Controls bar */}
