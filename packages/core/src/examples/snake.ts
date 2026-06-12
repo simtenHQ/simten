@@ -1,5 +1,5 @@
 /**
- * SnakeAdvanced — the canonical Snake game circuit.
+ * Snake — the canonical Snake game circuit.
  *
  * Single source of truth for every copy in the repo: the ULX3S FPGA project
  * (hardware/ulx3s/projects/snake), the "Snake in Hardware" blog post and
@@ -10,7 +10,7 @@
  * A complete 8×8 Snake game in pure logic — no CPU. Structured like the
  * RV32I core: a textbook diagram, drillable level by level.
  *
- *   SnakeAdvanced            FPGA top: SnakeCore + DualPortRAM
+ *   Snake            FPGA top: SnakeCore + DualPortRAM
  *   └─ SnakeCore             game logic, memory external (like the CPU)
  *      ├─ PhaseSequencer     free-running 2-bit phase counter → one-hot p0–p3
  *      ├─ DirectionUnit      latch dir at p0, decode to ±1 deltas
@@ -43,7 +43,7 @@ import {
 } from '../std/index.js';
 import type { CircuitLibrary } from '../types/circuit.js';
 
-export function buildSnakeAdvanced() {
+export function buildSnake() {
   /**
    * Free-running phase counter. Increments every clock, wraps mod 4, and
    * decodes to one-hot phase strobes. Everything else in the core is
@@ -402,7 +402,7 @@ export function buildSnakeAdvanced() {
    * are the starting snake (row y=4, x=1..4); body buffer entries 64–67
    * hold those pixel addresses (tail at index 0, head at 3).
    */
-  const SnakeAdvanced = circuit('SnakeAdvanced', {
+  const Snake = circuit('Snake', {
     inputs: { dir: bus(2), scan_addr: bus(6) },
     outputs: { pixel_out: bus(8) },
     nodes: {
@@ -422,18 +422,18 @@ export function buildSnakeAdvanced() {
 
   const lib: CircuitLibrary = {
     resolveCircuit: (name) => {
-      if (name === 'SnakeAdvanced') return SnakeAdvanced.circuit;
-      return SnakeAdvanced._dependencies.get(name)?.circuit;
+      if (name === 'Snake') return Snake.circuit;
+      return Snake._dependencies.get(name)?.circuit;
     },
-    getAllPrimitiveNames: () => [...SnakeAdvanced._dependencies.keys()],
+    getAllPrimitiveNames: () => [...Snake._dependencies.keys()],
   };
 
-  return { circuit: SnakeAdvanced.circuit, lib, built: SnakeAdvanced, core: SnakeCore };
+  return { circuit: Snake.circuit, lib, built: Snake, core: SnakeCore };
 }
 
 /**
  * Shared built instance for read-only consumers (simulation, embedding).
  * Anything that mutates the circuit IR (fault injection, layout experiments)
- * must call buildSnakeAdvanced() for a private copy instead.
+ * must call buildSnake() for a private copy instead.
  */
-export const SnakeAdvanced = /* @__PURE__ */ buildSnakeAdvanced().built;
+export const Snake = /* @__PURE__ */ buildSnake().built;

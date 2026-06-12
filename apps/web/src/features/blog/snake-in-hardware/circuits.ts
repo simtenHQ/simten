@@ -3,7 +3,7 @@
  *
  * Each circuit builds toward the final Snake game, from framebuffers
  * and address computation to direction decoding, movement, phased
- * operations, collision detection, and the full SnakeAdvanced circuit.
+ * operations, collision detection, and the full Snake circuit.
  */
 
 import { circuit } from "@simten/core/circuit";
@@ -246,7 +246,7 @@ const CollisionDetector = circuit("CollisionDetector", {
 // @simten/core/examples — the same circuit the ULX3S FPGA project synthesizes.
 // Drift between the copies in this repo is pinned by
 // hardware/ulx3s/projects/snake/parity-check.ts.
-export { SnakeAdvanced } from "@simten/core/examples";
+export { Snake } from "@simten/core/examples";
 
 export const SNAKE_CIRCUITS: Record<string, BlogCircuit> = {
   simpleFramebuffer: {

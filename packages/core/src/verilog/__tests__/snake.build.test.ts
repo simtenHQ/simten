@@ -1,10 +1,10 @@
 /**
- * SnakeAdvanced end-to-end bitstream test.
+ * Snake end-to-end bitstream test.
  *
- * SnakeAdvanced → exportVerilog (synth_ecp5) → /synth → netlist JSON
+ * Snake → exportVerilog (synth_ecp5) → /synth → netlist JSON
  *               → /build (nextpnr-ecp5 + ecppack) → base64 bitstream
  *
- * SnakeAdvanced is a complete 8×8 Snake game implemented entirely in logic
+ * Snake is a complete 8×8 Snake game implemented entirely in logic
  * gates. It has a 4-phase pipeline, circular buffer body storage, DualPortRAM
  * framebuffer, and a VGA-style scan interface:
  *   in:  dir[2]       — 2-bit direction (0=up 1=right 2=down 3=left)
@@ -21,22 +21,22 @@
 
 import { describe, it, expect } from 'vitest';
 import { exportVerilog } from '../exporter.js';
-import { buildSnakeAdvanced } from '../../examples/snake.js';
+import { buildSnake } from '../../examples/snake.js';
 import { synthesizeVerilog, hasSynth } from './synth.js';
 import { buildBitstream, hasBuild } from './build.js';
 
 const d = describe.skipIf(!hasSynth() || !hasBuild());
 
-d('SnakeAdvanced — full pipeline to ECP5 bitstream', () => {
+d('Snake — full pipeline to ECP5 bitstream', () => {
   it(
     'synth_ecp5 → nextpnr-ecp5 → ecppack → bitstream',
     { timeout: 300_000 }, // nextpnr is slower on a ~100-node circuit
     async () => {
-      const { circuit, lib } = buildSnakeAdvanced();
+      const { circuit, lib } = buildSnake();
       const exportResult = exportVerilog(circuit, lib, { target: 'synthesis' });
 
       // Step 1: Synthesise for ECP5 target
-      const synthResp = await synthesizeVerilog(exportResult, 'SnakeAdvanced', 'ecp5');
+      const synthResp = await synthesizeVerilog(exportResult, 'Snake', 'ecp5');
       if (!synthResp.success) {
         console.error('synth failed:', JSON.stringify(
           { error: synthResp.error, log: synthResp.log?.slice(-1000) }, null, 2,
@@ -46,7 +46,7 @@ d('SnakeAdvanced — full pipeline to ECP5 bitstream', () => {
       expect(synthResp.netlist).toBeTruthy();
 
       // Step 2: Place-and-route + bitstream
-      const buildResp = await buildBitstream(synthResp.netlist!, 'SnakeAdvanced');
+      const buildResp = await buildBitstream(synthResp.netlist!, 'Snake');
       if (!buildResp.success) {
         console.error('build failed:', JSON.stringify(
           { error: buildResp.error, log: buildResp.log?.slice(-1500) }, null, 2,
@@ -60,7 +60,7 @@ d('SnakeAdvanced — full pipeline to ECP5 bitstream', () => {
       const decoded = Buffer.from(buildResp.bitstream!, 'base64');
       expect(decoded.length).toBeGreaterThan(100_000);
 
-      // nextpnr reports ~99 MHz for SnakeAdvanced on ECP5 85K
+      // nextpnr reports ~99 MHz for Snake on ECP5 85K
       expect(buildResp.timing).toBeDefined();
       expect(buildResp.timing!.achieved_mhz).toBeGreaterThan(50);
 

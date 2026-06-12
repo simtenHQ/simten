@@ -10,25 +10,23 @@ export function AddressingSection() {
       </h2>
       <div className="prose-invert space-y-6">
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
-          The snake moves on a 2D grid, but our framebuffer is a flat array of
-          64 bytes. We need to convert{" "}
-          <strong className="text-gray-900 dark:text-white">(X,&nbsp;Y)</strong> coordinates into a
-          linear address. The formula is simple:{" "}
+          The snake moves on a 2D grid, but the framebuffer is a flat array of
+          64 bytes. We convert{" "}
+          <strong className="text-gray-900 dark:text-white">(X,&nbsp;Y)</strong> to a linear
+          address:{" "}
           <code className="text-blue-300">address = (Y &laquo; 3) + X</code>.
         </p>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
-          Multiplying by 8 is the same as shifting left by 3 bits, and in real
-          hardware a left shift by a constant costs{" "}
-          <strong className="text-gray-900 dark:text-white">zero gates</strong> &mdash; it&rsquo;s
-          just wiring. Each bit of Y connects to a position three places higher,
-          with the low three bits tied to zero. The only actual logic gate is the
-          final{" "}
-          <strong className="text-gray-900 dark:text-white">Adder</strong> that adds X.
+          Multiplying by 8 is a left shift by 3, and in hardware a constant
+          shift costs{" "}
+          <strong className="text-gray-900 dark:text-white">zero gates</strong>: it&rsquo;s just
+          wiring. Each bit of Y connects three places higher, the low three bits
+          tied to zero. The only real gate is the final{" "}
+          <strong className="text-gray-900 dark:text-white">Adder</strong> for X.
         </p>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
-          Change the X and Y inputs below to see how the address changes. For
-          example, (3,&nbsp;2) gives address&nbsp;19, which is row&nbsp;2,
-          column&nbsp;3 of the screen.
+          Change X and Y below: (3,&nbsp;2) gives address&nbsp;19, row&nbsp;2
+          column&nbsp;3.
         </p>
       </div>
 
@@ -38,7 +36,7 @@ export function AddressingSection() {
           layout={SNAKE_CIRCUITS.coordToPixel.layout}
           showControls
           title="Coordinate to Pixel Address"
-          description="(Y << 3) + X — the shift is just wiring, only the final add is a real gate"
+          description="(Y << 3) + X. The shift is just wiring; only the final add is a real gate"
         />
       </div>
     </section>

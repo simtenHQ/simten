@@ -10,26 +10,22 @@ export function DirectionSection() {
       </h2>
       <div className="prose-invert space-y-6">
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
-          Arrow keys produce scan codes: Up&nbsp;=&nbsp;72,
-          Down&nbsp;=&nbsp;80, Left&nbsp;=&nbsp;75, Right&nbsp;=&nbsp;77. The
-          circuit needs to turn these into movement deltas:{" "}
+          Arrow keys produce scan codes: Up&nbsp;72, Down&nbsp;80, Left&nbsp;75,
+          Right&nbsp;77. The circuit turns these into movement deltas{" "}
           <strong className="text-gray-900 dark:text-white">deltaX</strong> and{" "}
-          <strong className="text-gray-900 dark:text-white">deltaY</strong>, each either
+          <strong className="text-gray-900 dark:text-white">deltaY</strong>, each
           &minus;1,&nbsp;0, or&nbsp;+1.
         </p>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
-          Four <strong className="text-gray-900 dark:text-white">Comparator</strong> nodes check
-          the key code against each direction constant. The results feed into a{" "}
-          <strong className="text-gray-900 dark:text-white">Mux tree</strong> &mdash; a cascade of
-          multiplexers that selects the right delta. If the Left comparator
-          fires, deltaX becomes 255 (which is &minus;1 in unsigned 8-bit
-          arithmetic). If Right fires, deltaX becomes 1. Otherwise it stays 0.
-          The same logic applies to deltaY for Up and Down.
+          Four <strong className="text-gray-900 dark:text-white">Comparators</strong> check the
+          code against each direction. Their outputs feed a{" "}
+          <strong className="text-gray-900 dark:text-white">Mux tree</strong> that picks the
+          delta: Left sets deltaX to 255 (&minus;1 in unsigned 8-bit), Right
+          sets it to 1, otherwise 0. deltaY works the same for Up and Down.
         </p>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
-          Try changing the key code input below. Set it to 72 for Up, 75 for
-          Left, 77 for Right, or 80 for Down, and watch the delta displays
-          update.
+          Set the key code below to 72, 75, 77, or 80 and watch the two delta
+          displays flip between &minus;1, 0, and&nbsp;+1.
         </p>
       </div>
 
@@ -39,7 +35,7 @@ export function DirectionSection() {
           layout={SNAKE_CIRCUITS.directionDecoder.layout}
           showControls
           title="Direction Decoder"
-          description="Key code to deltaX/deltaY — try 72 (Up), 75 (Left), 77 (Right), 80 (Down)"
+          description="Key code to deltaX/deltaY. Try 72 (Up), 75 (Left), 77 (Right), 80 (Down)"
         />
       </div>
     </section>

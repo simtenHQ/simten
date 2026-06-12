@@ -23,27 +23,21 @@ export function SnakeSection() {
       </h2>
       <div className="prose-invert space-y-6">
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
-          Everything we&rsquo;ve built &mdash; framebuffer memory, coordinate
-          addressing, direction decoding, pixel movement, phased operations,
-          and collision detection &mdash; comes together in one circuit. The
-          full <strong className="text-gray-900 dark:text-white">SnakeAdvanced</strong> circuit is
-          over 300 lines of TypeScript, compiled and running in your browser.
+          Everything we&rsquo;ve built comes together in one circuit:
+          framebuffer, addressing, direction decoding, movement, phases,
+          collision. The full{" "}
+          <strong className="text-gray-900 dark:text-white">Snake</strong> circuit is
+          about 300 lines of TypeScript, compiled and running in your browser.
         </p>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
-          The snake body is stored as a circular buffer of pixel addresses in
-          RAM addresses 64&ndash;127. A 4-phase pipeline coordinates all the
-          memory operations: phase&nbsp;0 reads the tail address from the body
-          buffer, phase&nbsp;1 clears the tail pixel from the framebuffer,
-          phase&nbsp;2 writes the new head address to the body buffer, and
-          phase&nbsp;3 draws the new head pixel. When the snake eats food, the
-          tail clear is suppressed &mdash; making the snake grow by one
-          segment.
+          The body is a circular buffer of pixel addresses in RAM
+          64&ndash;127. The four phases: phase&nbsp;0 reads the tail address,
+          phase&nbsp;1 clears the tail pixel, phase&nbsp;2 writes the new head
+          address, phase&nbsp;3 draws the new head. Eating food suppresses the
+          tail clear, so the snake grows.
         </p>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
-          Click <strong>Run</strong> and use the arrow keys to play. There is
-          no CPU executing instructions here &mdash; every decision is made by
-          comparators, muxes, and gates, all evaluated in parallel on each
-          clock tick.
+          In case you want to play again&hellip;
         </p>
       </div>
 
@@ -57,20 +51,21 @@ export function SnakeSection() {
 
       <div className="mt-8 prose-invert space-y-6">
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
-          What you just played is a game that runs without any software. No
-          instruction fetch, no decode, no execute cycle. The &ldquo;program&rdquo;
-          is the circuit topology itself &mdash; wires carry data, gates make
-          decisions, registers remember state, and the clock drives it all
-          forward. It&rsquo;s the same principle behind dedicated hardware
-          accelerators, GPU shader pipelines, and FPGA designs.
+          Fair warning: it has bugs. The snake can turn back the way it came and
+          run straight into itself, and you&rsquo;ll find other rough edges if
+          you go looking. That&rsquo;s part of the charm of building a game out
+          of gates instead of code.
         </p>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
-          The difference between this and a CPU-based Snake game? A CPU is
-          general-purpose &mdash; it can run <em>any</em> program but needs
-          many cycles per decision. This circuit is special-purpose &mdash; it
-          can <em>only</em> play Snake, but it makes every decision in a
-          single combinational pass. That&rsquo;s the fundamental trade-off in
-          computing: flexibility versus efficiency.
+          Want to take it apart? Open the whole circuit in the{" "}
+          <a
+            href="/circuit?example=snake"
+            className="text-blue-400 hover:text-blue-300 underline underline-offset-2"
+          >
+            editor
+          </a>{" "}
+          to trace every wire, change it, and break it in new and interesting
+          ways.
         </p>
       </div>
     </section>

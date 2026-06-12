@@ -1,7 +1,7 @@
 /**
  * Snake/HDMI project descriptor (no firmware).
  *
- * The SnakeAdvanced circuit itself lives in @simten/core/examples (single
+ * The Snake circuit itself lives in @simten/core/examples (single
  * source of truth, shared with the blog demo and the exporter's bitstream
  * test); this file wraps it with snake_top.v + ulx3s_snake.lpf for the
  * ULX3S 85K. Gameplay is pinned by gameplay.verify.ts, copy drift by
@@ -13,11 +13,11 @@ import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { exportVerilog } from '@simten/core/verilog';
-import { buildSnakeAdvanced } from '@simten/core/examples';
+import { buildSnake } from '@simten/core/examples';
 
 import type { Project } from '../../lib/types.js';
 
-export { buildSnakeAdvanced };
+export { buildSnake };
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -27,10 +27,10 @@ export const project: Project = {
   bitFile: 'snake.bit',
 
   async buildVerilog(ctx) {
-    const { circuit: snakeCircuit, lib } = buildSnakeAdvanced();
+    const { circuit: snakeCircuit, lib } = buildSnake();
     const { verilog: snakeVerilog, files } = exportVerilog(snakeCircuit, lib, {
       target: 'synthesis',
-      topModuleName: 'SnakeAdvanced',
+      topModuleName: 'Snake',
     });
 
     const wrapperVerilog = readFileSync(resolve(__dirname, 'snake_top.v'), 'utf8');

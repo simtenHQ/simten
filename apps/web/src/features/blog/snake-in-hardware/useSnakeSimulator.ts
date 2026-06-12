@@ -1,10 +1,10 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useCircuitSimulator } from "@simten/embed";
-import { SnakeAdvanced } from "./circuits";
+import { Snake } from "./circuits";
 
 export function useSnakeSimulator() {
-  const sim = useCircuitSimulator(SnakeAdvanced);
+  const sim = useCircuitSimulator(Snake);
   const [isRunning, setIsRunning] = useState(false);
   const [speed, setSpeed] = useState(60);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
