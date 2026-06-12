@@ -10,26 +10,24 @@ export function PixelsSection() {
       </h2>
       <div className="prose-invert space-y-6">
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
-          Every game needs a screen, and every screen needs memory. We use a{" "}
-          <strong className="text-gray-900 dark:text-white">DualPortRAM</strong> as our
-          framebuffer: port A is where game logic reads and writes pixel data,
-          while port B is dedicated to the{" "}
-          <strong className="text-gray-900 dark:text-white">Screen</strong> node, which
-          continuously scans through addresses to display an 8&times;8 grid.
+          The screen is just memory. One byte per pixel across an 8&times;8
+          grid, and setting a byte to 1 lights that pixel up. The catch: the
+          game has to write pixels while the display reads them, at the same
+          time. A{" "}
+          <strong className="text-gray-900 dark:text-white">DualPortRAM</strong> gives us
+          exactly that, two independent windows into one block of memory. Port A
+          is where game logic reads and writes; port B feeds the{" "}
+          <strong className="text-gray-900 dark:text-white">Screen</strong>, which scans the
+          addresses to draw the grid.
         </p>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
-          The init pattern below draws a border around the screen &mdash; a
-          rectangle of lit pixels. Each RAM address maps to one pixel:
-          address&nbsp;0 is the top-left, address&nbsp;7 is the top-right,
-          address&nbsp;63 is the bottom-right. A value of&nbsp;1 means the
-          pixel is on.
+          Addresses run left to right, top to bottom: 0 is top-left, 7 is
+          top-right, 63 is bottom-right. The pattern below draws a border.
         </p>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
-          Toggle the <strong>write-enable</strong> switch, set an address and
-          data value using the Input nodes, then click{" "}
-          <strong>Tick</strong> to write a pixel. The HexDisplay shows what was
-          read back from that address. This is the same read/write cycle that
-          the Snake game will use on every frame.
+          Toggle <strong>write-enable</strong>, set an address and data, then{" "}
+          <strong>Tick</strong> to write a pixel; the HexDisplay shows what
+          reads back. Snake runs this same cycle every frame.
         </p>
       </div>
 

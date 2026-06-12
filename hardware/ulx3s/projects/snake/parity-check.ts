@@ -22,8 +22,8 @@
 
 import type { Circuit } from '@simten/core/simulator';
 import { executeCircuitCode } from '@simten/core/circuit';
-import { buildSnakeAdvanced } from './index.js';
-import { SnakeAdvanced as BlogSnake } from '../../../../apps/web/src/features/blog/snake-in-hardware/circuits.js';
+import { buildSnake } from './index.js';
+import { Snake as BlogSnake } from '../../../../apps/web/src/features/blog/snake-in-hardware/circuits.js';
 import { EXAMPLES } from '../../../../apps/web/src/features/visual-editor/examples.js';
 
 interface CanonNode {
@@ -89,7 +89,7 @@ function diff(name: string, ref: CanonCircuit, other: CanonCircuit): string[] {
   return problems.map((p) => `[${name}] ${p}`);
 }
 
-const { built } = buildSnakeAdvanced();
+const { built } = buildSnake();
 
 /** Canonical circuits by name: the FPGA top plus its whole dependency tree. */
 const canonical = new Map<string, Circuit>([[built.circuit.name, built.circuit]]);
@@ -103,7 +103,7 @@ const SHARED = ['SnakeCore', ...[...canonical.keys()].filter((n) => n.startsWith
 const problems: string[] = [];
 
 // Copy 1: blog post / landing page demo — full tree against canonical.
-problems.push(...diff('blog:SnakeAdvanced', canon(canonical.get('SnakeAdvanced')!), canon(BlogSnake.circuit)));
+problems.push(...diff('blog:Snake', canon(canonical.get('Snake')!), canon(BlogSnake.circuit)));
 for (const [name, dep] of BlogSnake._dependencies) {
   if (dep.circuit.implementation.kind !== 'composite') continue;
   const ref = canonical.get(name);

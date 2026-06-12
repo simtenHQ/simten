@@ -1,6 +1,6 @@
 #!/usr/bin/env tsx
 /**
- * gameplay.verify.ts — Tier-B testbench: SnakeAdvanced plays the same game as
+ * gameplay.verify.ts — Tier-B testbench: Snake plays the same game as
  * a plain-JS reference model, framebuffer-equal after every game tick.
  *
  * Each game tick is 4 clock cycles (phases 0–3). After every tick the full
@@ -21,7 +21,7 @@ import { verify, declareOracle, describe } from '@simten/core/verify';
 import { buildSim, coSim, chaseDir, assertFbEqual } from './cosim-lib.js';
 import { SnakeRefModel } from './ref-model.js';
 
-describe('SnakeAdvanced');
+describe('Snake');
 declareOracle({
   tier: 'B',
   type: 'imperative plain-JS snake model (arrays + circular buffer), framebuffer compared every game tick',

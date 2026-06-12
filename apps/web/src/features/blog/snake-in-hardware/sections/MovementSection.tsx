@@ -10,27 +10,28 @@ export function MovementSection() {
       </h2>
       <div className="prose-invert space-y-6">
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
-          With direction decoding solved, we can make a pixel actually move.
-          Two <strong className="text-gray-900 dark:text-white">Register</strong> nodes store the
-          current head position &mdash;{" "}
+          Now make a pixel move. Two{" "}
+          <strong className="text-gray-900 dark:text-white">Registers</strong> hold the head
+          position,{" "}
           <code className="text-blue-300">headX</code> and{" "}
-          <code className="text-blue-300">headY</code>, both starting at 4.
-          Each clock tick, the deltas are added to produce the next position.
+          <code className="text-blue-300">headY</code>, both starting at 4. Each
+          tick adds the deltas to get the next position.
         </p>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
-          The key trick is{" "}
-          <strong className="text-gray-900 dark:text-white">BitSlice(low=0, high=2)</strong>,
-          which extracts the lowest 3 bits. This wraps the coordinate to
-          0&ndash;7 automatically: moving right from column 7 wraps to
-          column&nbsp;0, and moving left from column 0 wraps to column&nbsp;7
-          (since 0&nbsp;&minus;&nbsp;1&nbsp;=&nbsp;255, and{" "}
-          <code className="text-blue-300">255 &amp; 0b111 = 7</code>).
+          The grid wraps: walk off the right edge and you reappear on the left.
+          That comes for free by keeping only the lowest 3 bits of each
+          coordinate, which forces it back into the 0&ndash;7 range. Column 7 +
+          1 wraps to&nbsp;0; column 0 &minus; 1 wraps to&nbsp;7
+          (0&nbsp;&minus;&nbsp;1&nbsp;=&nbsp;255, and{" "}
+          <code className="text-blue-300">255 &amp; 0b111 = 7</code>). The part
+          doing it is a{" "}
+          <strong className="text-gray-900 dark:text-white">BitSlice</strong>, and there&rsquo;s
+          no edge-case check anywhere; the wrap falls out of the arithmetic.
         </p>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
-          The wrapped coordinates are then converted to a pixel address
-          (Y&times;8+X) and written to the DualPortRAM framebuffer. Toggle the{" "}
-          <strong>enable</strong> switch, set a direction code on the keyboard
-          input, and tick to see the pixel move across the screen.
+          The wrapped coordinates become a pixel address (Y&times;8+X) written
+          to the framebuffer. Flip <strong>enable</strong> on, set a direction
+          code, and tick to walk the pixel across the screen.
         </p>
       </div>
 

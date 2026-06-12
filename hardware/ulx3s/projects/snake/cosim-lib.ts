@@ -1,7 +1,7 @@
 /**
  * cosim-lib.ts — shared engine for gameplay.verify.ts and fault-check.ts.
  *
- * Drives the SnakeAdvanced circuit and the plain-JS reference model through
+ * Drives the Snake circuit and the plain-JS reference model through
  * the same direction sequence, scanning the circuit's framebuffer through its
  * own scan port (scan_addr → pixel_out, the path the VGA wrapper uses on the
  * FPGA) and comparing against the model after every game tick (4 clock
@@ -11,14 +11,14 @@
 
 import { simulate } from '@simten/core/sim';
 import type { Circuit } from '@simten/core/simulator';
-import { buildSnakeAdvanced } from './index.js';
+import { buildSnake } from './index.js';
 import { SnakeRefModel, FB_SIZE, GRID } from './ref-model.js';
 
-export type SnakeBuilt = ReturnType<typeof buildSnakeAdvanced>['built'];
+export type SnakeBuilt = ReturnType<typeof buildSnake>['built'];
 export type SnakeSim = ReturnType<typeof buildSim>;
 
 export function buildSim(mutate?: (built: SnakeBuilt) => void) {
-  const { built } = buildSnakeAdvanced();
+  const { built } = buildSnake();
   mutate?.(built);
   return simulate(built);
 }
@@ -26,7 +26,7 @@ export function buildSim(mutate?: (built: SnakeBuilt) => void) {
 /**
  * Overwrite one argument of a named node in the circuit IR (fault injection).
  * `circuitName` addresses the composite the node lives in — the top circuit
- * or any dependency (e.g. 'Snake_FoodUnit'). buildSnakeAdvanced() constructs
+ * or any dependency (e.g. 'Snake_FoodUnit'). buildSnake() constructs
  * fresh circuit objects per call, so mutations never leak between builds.
  */
 export function setNodeArg(built: SnakeBuilt, circuitName: string, nodeId: string, key: string, value: number): void {

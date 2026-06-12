@@ -30,8 +30,11 @@ export function HeroSection() {
 
       <div className="max-w-3xl">
         <p className="text-xl text-gray-500 dark:text-gray-300 leading-relaxed">
-          ~100 nodes of logic gates, registers, and memory — compiled
-          and simulated live in your browser. Here&rsquo;s how it works.
+          There&rsquo;s no program running here. No CPU, no instructions, no
+          software: every move the snake makes is decided by wires and gates,
+          all at once, on each clock tick. About 100 nodes of logic, registers,
+          and memory, compiled and simulated live in your browser. Here&rsquo;s
+          how it works.
         </p>
         <div className="mt-6 flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
           <span>Interactive tutorial</span>

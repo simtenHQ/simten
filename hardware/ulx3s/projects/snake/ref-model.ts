@@ -1,5 +1,5 @@
 /**
- * Plain-JS reference model of the SnakeAdvanced game rules.
+ * Plain-JS reference model of the Snake game rules.
  *
  * Tier-B oracle for gameplay.verify.ts: sequential statements over arrays and
  * a circular buffer — no muxes, adders, or phase pipeline. It restates the
