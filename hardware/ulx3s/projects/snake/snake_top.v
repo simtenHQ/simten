@@ -158,7 +158,7 @@ module ecp5pll (
 endmodule
 
 // ============================================================
-// Top-level: VGA timing + game clock + SnakeAdvanced + TMDS out
+// Top-level: VGA timing + game clock + Snake + TMDS out
 // ============================================================
 module snake_top (
     input  wire       clk_25mhz,
@@ -180,7 +180,7 @@ module snake_top (
     // Power-on reset: 8-bit counter on clk_25mhz holds rst_n low for the
     // first 256 cycles (~10us) after bitstream load. Gated by pll_locked
     // so registers don't sample snake_clk until the PLL is stable.
-    // SnakeAdvanced's generated Verilog uses synchronous active-low rst_n
+    // Snake's generated Verilog uses synchronous active-low rst_n
     // on every sequential primitive — without driving it the registers
     // never leave their initial state.
     reg [7:0] por_counter = 8'd0;
@@ -271,10 +271,10 @@ module snake_top (
         else if (btn[5]) dir <= 2'd3;  // left
     end
 
-    // ── SnakeAdvanced game circuit ──────────────────────────
+    // ── Snake game circuit ──────────────────────────
     wire [7:0] pixel_out;
 
-    SnakeAdvanced snake_inst (
+    Snake snake_inst (
         .clk       (snake_clk),
         .rst_n     (rst_n),
         .dir       (dir),
