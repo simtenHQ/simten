@@ -541,7 +541,15 @@ class SimulatorEngineImpl implements SimulatorEngine {
     fromFlatPortValueMap(this.numericCircuit, this.numericValues, snapshot.portValues);
 
     this.cacheValid = false;
-
+    // Force getState() to rebuild from the restored sequential state. cacheValid
+    // is shared with getPortValues(); if a getPortValues() call lands between
+    // this restore and the next getState() (as it does in the session's seekTo),
+    // it re-validates cacheValid without rebuilding cachedFlatSeqState, so
+    // getState() would otherwise hand back the pre-restore (latest) snapshot —
+    // which is why memory/console state failed to rewind under time-travel while
+    // registers (read via port values) rewound fine. The tick and reset paths
+    // already null this; restore must too.
+    this.cachedFlatSeqState = null;
   }
 
   reset(): void {
