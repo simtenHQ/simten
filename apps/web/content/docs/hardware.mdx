@@ -53,13 +53,13 @@ The whole pipeline runs through a Docker container exposing `/synth` (Yosys) and
 
 ## Snake on the ULX3S
 
-The first end-to-end hardware demo is Snake — the same `SnakeAdvanced` circuit that runs in the browser simulator, exported to Verilog and wrapped with VGA timing and HDMI output, running on a [ULX3S 85K](https://ulx3s.github.io/) FPGA board.
+The first end-to-end hardware demo is Snake — the same `Snake` circuit that runs in the browser simulator, exported to Verilog and wrapped with VGA timing and HDMI output, running on a [ULX3S 85K](https://ulx3s.github.io/) FPGA board.
 
 The ULX3S carries a **Lattice ECP5 LFE5U-85F** — 84K LUTs, 130 DSP blocks, 3.5 Mb of block RAM. The Snake game uses 774 of those LUTs and 203 flip-flops. The other 83,000+ LUTs are idle.
 
 ### What the TypeScript circuit provides
 
-`SnakeAdvanced` is a pure register-transfer circuit — registers, adders, comparators, muxes, and a dual-port block RAM used as a framebuffer. It exposes two ports:
+`Snake` is a pure register-transfer circuit — registers, adders, comparators, muxes, and a dual-port block RAM used as a framebuffer. It exposes two ports:
 
 ```
 in:  dir[2]       — 2-bit direction (0=up 1=right 2=down 3=left)
@@ -81,7 +81,7 @@ Everything needed to actually show the game on a monitor lives in `snake_top.v`:
 
 **TMDS serialiser** — each 10-bit TMDS word must be sent as 10 serial bits at 250 Mbps (125 MHz × 2 via DDR). Two 5-bit shift registers feed a pair of `ODDRX1F` primitives — ECP5's double-data-rate output flip-flop, which outputs one bit on the rising edge and one on the falling edge of `clk_shift`.
 
-**Direction latch** — buttons are sampled on the slow game clock and mapped to the 2-bit encoding `SnakeAdvanced` expects.
+**Direction latch** — buttons are sampled on the slow game clock and mapped to the 2-bit encoding `Snake` expects.
 
 **Reset driver** — the wrapper must drive the `rst_n` input on the generated module. Typical pattern: a small power-on-reset counter that holds `rst_n` low for the first ~256 cycles after bitstream load, optionally combined with a physical button (active-high pressed → `rst_n` low) for runtime restart. The `hardware/ulx3s/projects/cpu/cpu_top.v` wrapper has a worked example.
 
@@ -150,11 +150,11 @@ The fix highlights a general rule for synthesis: the simulator is lenient about 
 
 The `snake_top.v` wrapper has two distinct layers:
 
-**Board-agnostic HDMI output** — `tmds_encoder`, `tmds_serializer`, `ecp5pll`, and the VGA timing counters are identical for any ULX3S display project. You could replace `SnakeAdvanced` with any circuit that implements the `scan_addr → pixel_out` interface and get a working display.
+**Board-agnostic HDMI output** — `tmds_encoder`, `tmds_serializer`, `ecp5pll`, and the VGA timing counters are identical for any ULX3S display project. You could replace `Snake` with any circuit that implements the `scan_addr → pixel_out` interface and get a working display.
 
 **Snake-specific glue** — the cell grid counters, game clock divider, direction latch, and colour mapping (~80 lines) are the only parts that know about the game.
 
-The natural next step is a **board abstraction**: a TypeScript `board()` definition that encodes the PLL configuration, HDMI pin assignments, and peripheral interfaces, so the exporter can generate both the wrapper Verilog and the `.lpf` automatically. A circuit would only need to implement a standard display interface — the board handles everything physical. The same `SnakeAdvanced` circuit, targeting a different board object, would produce a bitstream for a different FPGA family without any manual Verilog changes.
+The natural next step is a **board abstraction**: a TypeScript `board()` definition that encodes the PLL configuration, HDMI pin assignments, and peripheral interfaces, so the exporter can generate both the wrapper Verilog and the `.lpf` automatically. A circuit would only need to implement a standard display interface — the board handles everything physical. The same `Snake` circuit, targeting a different board object, would produce a bitstream for a different FPGA family without any manual Verilog changes.
 
 ---
 
