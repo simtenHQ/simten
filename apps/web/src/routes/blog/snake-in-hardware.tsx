@@ -42,6 +42,11 @@ const SnakeSection = lazy(() =>
     default: m.SnakeSection,
   }))
 );
+const FpgaSection = lazy(() =>
+  import("@/features/blog/snake-in-hardware/sections/FpgaSection").then((m) => ({
+    default: m.FpgaSection,
+  }))
+);
 
 function SectionSkeleton() {
   return (
@@ -116,6 +121,14 @@ function SnakeInHardwarePage() {
           <ErrorBoundary>
             <Suspense fallback={<SectionSkeleton />}>
               <SnakeSection />
+            </Suspense>
+          </ErrorBoundary>
+
+          <hr className="border-gray-200 dark:border-gray-800" />
+
+          <ErrorBoundary>
+            <Suspense fallback={<SectionSkeleton />}>
+              <FpgaSection />
             </Suspense>
           </ErrorBoundary>
         </div>
