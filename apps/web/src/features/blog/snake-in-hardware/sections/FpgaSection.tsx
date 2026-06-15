@@ -36,7 +36,7 @@ export function FpgaSection() {
           drift apart. Same logic, on silicon.
         </p>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
-          There&rsquo;s no display chip doing the video either. A{" "}
+          The video is generated logic too, no display chip in the path. A{" "}
           <a
             href="https://en.wikipedia.org/wiki/Transition-minimized_differential_signaling"
             target="_blank"
@@ -45,8 +45,8 @@ export function FpgaSection() {
           >
             TMDS encoder
           </a>{" "}
-          turns each pixel into the 10-bit DVI signaling the monitor expects,
-          generated right on the FPGA. That, plus the pixel clock and button inputs, is{" "}
+          turns each pixel into the 10-bit DVI signaling the monitor expects.
+          That, plus the pixel clock and button inputs, is{" "}
           <a
             href="https://github.com/simtenHQ/simten/blob/main/hardware/ulx3s/projects/snake/snake_top.v"
             target="_blank"

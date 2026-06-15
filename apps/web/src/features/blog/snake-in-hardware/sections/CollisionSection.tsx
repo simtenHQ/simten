@@ -11,8 +11,8 @@ export function CollisionSection() {
       <div className="prose-invert space-y-6">
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
           When the head lands on the food, the snake grows by one segment and
-          the food respawns. Detection: compare head X to food X and head Y to
-          food Y. If <em>both</em> match, it&rsquo;s a hit.
+          the food respawns. To catch that, compare head X to food X and head Y
+          to food Y. If <em>both</em> match, it&rsquo;s a hit.
         </p>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
           Two <strong className="text-gray-900 dark:text-white">Comparators</strong> produce

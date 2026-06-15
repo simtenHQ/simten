@@ -18,8 +18,8 @@ export function PhaseSection() {
           <strong className="text-gray-900 dark:text-white">phases</strong>.
         </p>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
-          A counter tracks which phase we&rsquo;re in: a 2-bit register that
-          ticks 0 &rarr; 1 &rarr; 2 &rarr; 3 and back to 0. It only holds two
+          A 2-bit register counts the phase, ticking 0 &rarr; 1 &rarr; 2 &rarr;
+          3 and back to 0. It only holds two
           bits, so it wraps after 3 on its own (a{" "}
           <strong className="text-gray-900 dark:text-white">BitSlice</strong> keeping the low
           two bits). Comparators watch the count and switch on the right RAM

@@ -23,9 +23,8 @@ export function SnakeSection() {
       </h2>
       <div className="prose-invert space-y-6">
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
-          Everything we&rsquo;ve built comes together in one circuit:
-          framebuffer, addressing, direction decoding, movement, phases,
-          collision. The full{" "}
+          Everything from the sections above is one circuit now: framebuffer,
+          addressing, the phase pipeline, collision detection, the lot. The full{" "}
           <strong className="text-gray-900 dark:text-white">Snake</strong> circuit is
           about 300 lines of TypeScript, compiled and running in your browser.
         </p>

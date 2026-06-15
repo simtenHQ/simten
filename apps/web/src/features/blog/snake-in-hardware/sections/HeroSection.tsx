@@ -30,9 +30,8 @@ export function HeroSection() {
 
       <div className="max-w-3xl">
         <p className="text-xl text-gray-500 dark:text-gray-300 leading-relaxed">
-          There&rsquo;s no program running here. No CPU, no instructions, no
-          software: every move the snake makes is decided by wires and gates,
-          all at once, on each clock tick. About 100 nodes of logic, registers,
+          This whole thing runs without a CPU. Every move the snake makes is
+          decided by wires and gates, all at once, on each clock tick. About 100 nodes of logic, registers,
           and memory, compiled and simulated live in your browser. Here&rsquo;s
           how it works.
         </p>
