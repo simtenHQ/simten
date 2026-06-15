@@ -34,7 +34,7 @@ export function HeroSection() {
           decided by wires and gates, all at once, on each clock tick. It&rsquo;s
           about 100 nodes of logic, registers, and memory, all written in
           TypeScript and simulated live in your browser. The same code exports to
-          Verilog, so it runs on a real FPGA too. Here&rsquo;s how it works.
+          Verilog. Here&rsquo;s how it works.
         </p>
         <div className="mt-6 flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
           <span>Interactive tutorial</span>
