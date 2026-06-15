@@ -7,10 +7,11 @@ export function FpgaSection() {
       </h2>
       <div className="prose-invert space-y-6">
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
-          The circuit isn&rsquo;t stuck in the browser. Export it to Verilog,
-          synthesize it, and it runs on an actual FPGA. Here it is on a{" "}
+          The same TypeScript you&rsquo;ve been poking at runs on silicon too.
+          Export it to Verilog, synthesize it, and it runs on an actual FPGA.
+          Here it is on a{" "}
           <strong className="text-gray-900 dark:text-white">ULX3S</strong>{" "}
-          (Lattice ECP5) drawing to a monitor over HDMI, steered with the
+          (Lattice ECP5), drawing to a monitor over HDMI, steered with the
           board&rsquo;s buttons.
         </p>
       </div>
@@ -33,7 +34,7 @@ export function FpgaSection() {
           This isn&rsquo;t a Verilog rewrite of Snake. The game logic and
           framebuffer are byte-for-byte the circuit you just played, and a CI
           check fails the build if the browser version and the bitstream ever
-          drift apart. Same logic, on silicon.
+          drift apart.
         </p>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
           The video is generated logic too, no display chip in the path. A{" "}
@@ -55,9 +56,9 @@ export function FpgaSection() {
           >
             plain Verilog
           </a>{" "}
-          wrapped around the generated core, and none of it is snake-specific.
-          The game is the generated part; this is the standard board wiring to
-          get it on a screen.
+          wrapped around the generated core, the same plumbing any ULX3S video
+          project uses. The game is the generated part; this is just the wiring
+          to get it on a screen.
         </p>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
           The flow is open the whole way: Verilog &rarr; Yosys

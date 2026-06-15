@@ -63,8 +63,7 @@ export function SnakeSection() {
           >
             editor
           </a>{" "}
-          to trace every wire, change it, and break it in new and interesting
-          ways.
+          to trace every wire, change it, and break it however you like.
         </p>
       </div>
     </section>

@@ -19,13 +19,13 @@ export function AddressingSection() {
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
           Multiplying by 8 is a left shift by 3, and in hardware a constant
           shift costs{" "}
-          <strong className="text-gray-900 dark:text-white">zero gates</strong>: it&rsquo;s just
+          <strong className="text-gray-900 dark:text-white">zero gates</strong>. It&rsquo;s just
           wiring. Each bit of Y connects three places higher, the low three bits
           tied to zero. The only real gate is the final{" "}
           <strong className="text-gray-900 dark:text-white">Adder</strong> for X.
         </p>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
-          Change X and Y below: (3,&nbsp;2) gives address&nbsp;19, row&nbsp;2
+          Change X and Y below. At (3,&nbsp;2) you get address&nbsp;19, row&nbsp;2
           column&nbsp;3.
         </p>
       </div>
