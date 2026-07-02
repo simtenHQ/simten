@@ -1,5 +1,4 @@
 
-import { useMemo } from "react";
 import { useBreakoutSimulator } from "./useBreakoutSimulator";
 
 const GRID_W = 32;
@@ -38,33 +37,6 @@ function LRPad({ onDirection }: { onDirection: (code: number) => void }) {
 }
 
 /**
- * Extract pixel data from the simulator's sequential state.
- * Breakout stores framebuffer in DualPortRAM at addresses 0-63.
- */
-function usePixels(sequentialState: unknown): number[] {
-  const TOTAL_PIXELS = GRID_W * GRID_H;
-  return useMemo(() => {
-    const pixels = new Array(TOTAL_PIXELS).fill(0);
-    const state = sequentialState as {
-      currentState?: Map<string, unknown>;
-    } | null;
-    if (!state?.currentState) return pixels;
-
-    for (const [nodeId, nodeState] of state.currentState) {
-      // RasterDisplay stores pixels in its internal state map
-      if (nodeState instanceof Map && nodeId.toLowerCase().includes("display")) {
-        const mem = nodeState as Map<number, number>;
-        for (let addr = 0; addr < TOTAL_PIXELS; addr++) {
-          pixels[addr] = mem.get(addr) ?? 0;
-        }
-        break;
-      }
-    }
-    return pixels;
-  }, [sequentialState]);
-}
-
-/**
  * Color pixels by row: bricks are orange, paddle is blue, ball is white.
  */
 function pixelColor(value: number, index: number): string {
@@ -78,13 +50,13 @@ function pixelColor(value: number, index: number): string {
 export function BreakoutDemo() {
   const {
     sim,
+    pixels,
     isRunning,
     setIsRunning,
+    stepFrame,
     handleReset,
     sendDirection,
   } = useBreakoutSimulator();
-
-  const pixels = usePixels(sim.sequentialState);
 
   if (!sim.ready) {
     return (
@@ -170,7 +142,7 @@ export function BreakoutDemo() {
           {isRunning ? "Pause" : "Run"}
         </button>
         <button
-          onClick={sim.tick}
+          onClick={stepFrame}
           disabled={isRunning}
           className="px-3 py-2 text-sm font-medium rounded-md bg-gray-700 hover:bg-gray-600 text-gray-200 transition-colors disabled:opacity-40"
         >
