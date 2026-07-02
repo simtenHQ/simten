@@ -81,8 +81,15 @@ export const RAM = circuit('RAM', (_opts?: { memory?: Record<number, number> | n
  * for read/write (`addrA` + `weA` + `dataA`) and port B for a simultaneous
  * independent read (`addrB`). Classic register-file shape.
  *
- * **Inputs:** `addrA`, `dataA`, `addrB` — `bus(8)`; `weA` — `bit`
- * **Outputs:** `outA`, `outB` — `bus(8)`
+ * **Inputs:** `addrA`, `addrB` — `bus(addressWidth)`; `dataA` — `bus(dataWidth)`;
+ * `weA` — `bit`
+ * **Outputs:** `outA`, `outB` — `bus(dataWidth)`
+ *
+ * **Options:** `addressWidth` (default 8 → 256 words), `dataWidth` (default 8).
+ * A wider `addressWidth` grows the memory to `2 ** addressWidth` words — e.g.
+ * `DualPortRAM({ addressWidth: 9 })` gives a 512-word framebuffer. The Verilog
+ * exporter reads the same `addressWidth`/`dataWidth` arguments, so the emitted
+ * memory depth/width match simulation.
  *
  * **Example:** two-port register file
  * ```ts
@@ -101,10 +108,12 @@ export const RAM = circuit('RAM', (_opts?: { memory?: Record<number, number> | n
  * })
  * ```
  */
-export const DualPortRAM = circuit('DualPortRAM', (_opts?: { memory?: Record<number, number> | number[] }) => ({
-  inputs: { addrA: bus(8), dataA: bus(8), weA: bit, addrB: bus(8) },
-  outputs: { outA: bus(8), outB: bus(8) },
-  state: { memory: mem(256, 8) },
+export const DualPortRAM = circuit('DualPortRAM', (
+  { addressWidth = 8, dataWidth = 8 }: { addressWidth?: number; dataWidth?: number; memory?: Record<number, number> | number[] } = {},
+) => ({
+  inputs: { addrA: bus(addressWidth), dataA: bus(dataWidth), weA: bit, addrB: bus(addressWidth) },
+  outputs: { outA: bus(dataWidth), outB: bus(dataWidth) },
+  state: { memory: mem(2 ** addressWidth, dataWidth) },
   meta: { category: 'memory', icon: '📝×2', description: 'Dual-port RAM' },
   eval: ({ addrA, addrB, memory }) => ({
     outA: memory[addrA],
