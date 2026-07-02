@@ -28,6 +28,13 @@ export function useBreakoutSimulator() {
     };
   }, [sim.cycleCount, sim.ready, sim.scanPort]);
 
+  // Hold the game-clock enable high: in the browser the game advances one step
+  // per tick (we throttle the tick rate). On the FPGA this input is pulsed at
+  // ~30 Hz instead, while the clock — and the wall-fill FSM — run at full speed.
+  useEffect(() => {
+    if (sim.ready) sim.setNode("game_en", 1);
+  }, [sim.ready, sim.setNode]);
+
   // Paddle input on the top-level `keyboard` bus: 75 = left, 77 = right, 0 = released.
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {

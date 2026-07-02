@@ -57,7 +57,7 @@ const brickCount = (s: Sim) => scanRows(s, 0, 3).length;
 verify.exhaustive("ball moves and stays on the 32x16 field", [1], () => {
   const s = simulate(Breakout);
   try {
-    s.set({ scan_addr: 0, keyboard: 0 });
+    s.set({ scan_addr: 0, keyboard: 0, game_en: 1 });
     settle(s);
     const positions = new Set<string>();
     for (let k = 0; k < 12; k++) {
@@ -77,7 +77,7 @@ verify.exhaustive("ball moves and stays on the 32x16 field", [1], () => {
 verify.exhaustive("wall is drawn; ball rebounds off the face without tunnelling", [1], () => {
   const s = simulate(Breakout);
   try {
-    s.set({ scan_addr: 0, keyboard: 0 });
+    s.set({ scan_addr: 0, keyboard: 0, game_en: 1 });
     settle(s);
     if (brickCount(s) < 120) return false;                       // full wall drawn (~128)
     let missing = 0;
@@ -95,7 +95,7 @@ verify.exhaustive("wall is drawn; ball rebounds off the face without tunnelling"
 verify.exhaustive("holding LEFT moves paddle left and clamps", [1], () => {
   const s = simulate(Breakout);
   try {
-    s.set({ scan_addr: 0, keyboard: 0 });
+    s.set({ scan_addr: 0, keyboard: 0, game_en: 1 });
     settle(s);
     const home = Math.min(...paddleXs(s));
     s.set({ keyboard: 75 });
@@ -109,7 +109,7 @@ verify.exhaustive("holding LEFT moves paddle left and clamps", [1], () => {
 verify.exhaustive("holding RIGHT moves paddle right and clamps", [1], () => {
   const s = simulate(Breakout);
   try {
-    s.set({ scan_addr: 0, keyboard: 0 });
+    s.set({ scan_addr: 0, keyboard: 0, game_en: 1 });
     settle(s);
     s.set({ keyboard: 75 });
     advance(s, 120);
@@ -127,7 +127,7 @@ verify.exhaustive("holding RIGHT moves paddle right and clamps", [1], () => {
 verify.exhaustive("death refills the wall fully and respawns the ball", [1], () => {
   const s = simulate(Breakout);
   try {
-    s.set({ scan_addr: 0, keyboard: 0 });                        // paddle parked; the ball will miss
+    s.set({ scan_addr: 0, keyboard: 0, game_en: 1 });                        // paddle parked; the ball will miss
     settle(s);                                                   // past the power-on draw
     let died = false;
     for (let k = 0; k < 600 && !died; k++) {

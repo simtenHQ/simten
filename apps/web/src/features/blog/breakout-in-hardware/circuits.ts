@@ -26,7 +26,11 @@ const FULL_WALL: Record<number, number> = {};
 for (let i = 0; i < 128; i++) FULL_WALL[i] = 1;
 
 export const Breakout = circuit('Breakout', {
-  inputs: { scan_addr: bus(9), keyboard: bus(8) },
+  // game_en is a clock enable for the game logic: high advances the ball/paddle
+  // one step. The fill FSM ignores it and runs at the full clock. On the FPGA
+  // the clock runs fast (so the wall redraw is instant) and game_en is pulsed at
+  // ~30 Hz; the browser holds game_en high and ticks at the game rate instead.
+  inputs: { scan_addr: bus(9), keyboard: bus(8), game_en: bit },
   // `is_filling` is a status/"busy" output: high while the fill FSM is redrawing
   // the wall after a death. The browser bursts the clock while it's high so the
   // ~128-cycle redraw (instant on the FPGA) is instant in the demo too.
@@ -34,9 +38,8 @@ export const Breakout = circuit('Breakout', {
   nodes: {
     brickRAM: DualPortRAM({ memory: FULL_WALL }),
     // Combinational raster render: scan_addr → scanX/scanY → pixel_out (no
-    // framebuffer). gameEn=1 advances the game one step per clock tick.
+    // framebuffer).
     scanX: BitSlice({ low: 0, high: 4 }), scanY: RightShifter({ width: 9 }),
-    gameEn: Constant({ value: 1 }),
     c0: Constant({ value: 0 }), c1: Constant({ value: 1 }), c2: Constant({ value: 2 }), c3: Constant({ value: 3 }), c4: Constant({ value: 4 }), c5: Constant({ value: 5 }),
     c14: Constant({ value: 14 }), c15: Constant({ value: 15 }), c16: Constant({ value: 16 }), c28: Constant({ value: 28 }), c29: Constant({ value: 29 }), c30: Constant({ value: 30 }),
     c31: Constant({ value: 31 }), c32: Constant({ value: 32 }), c253: Constant({ value: 253 }), c254: Constant({ value: 254 }), c255: Constant({ value: 255 }),
@@ -87,9 +90,9 @@ export const Breakout = circuit('Breakout', {
     // Ball is held still while the wall redraws (isFilling) after a death, then
     // launches once the wall is complete. The miss itself still writes (resets
     // the ball to center) via the `ballMissed` term so the hold can't deadlock.
-    notFilling: Not, ballAndFill: And, ballWrite: Or,
+    notFilling: Not, ballAndFill: And,
   },
-  connect: ({ inputs, outputs, nodes: { brickRAM, scanX, scanY, gameEn, c0, c1, c2, c3, c4, c5, c14, c15, c28, c30, c253, c254, c255, ballX, ballY, ballDX, ballDY, paddleX, leftCode, rightCode, isLeftCmp, isRightCmp, scanYsh, scanBrickAddr, scanInBrickArea, brickAlive, brickPixel, cmpBallX, cmpBallY, ballPixel, scanYsplit, notScanY4, notScanY5, notScanY6, notScanY7, isScanY15a, isScanY15b, isScanY15c, isScanY15d, isScanY15e, isScanY15f, isScanY15, padMinRaw, padMaxRaw, cmpScanGteMin, notLtPadMin, cmpScanLteMax, notGtPadMax, inPadRange, paddlePixel, pixOr1, pixOr2, pixelBus, ballSpeedCtr, ballSpeedInc, ballSpeedMax, ballSpeedAtMax, nextBallSpeed, ballUpdate, padSpeedCtr, padSpeedInc, padSpeedMax, padSpeedAtMax, nextPadSpeed, paddleUpdate, movingLeftCmp, c127, movingLeft, notMovingLeft, movingUpCmp, movingUp, movingDown, ballAtLeft, hitLeft, ballAtRight, notBallLtRight, hitRight, flipDX, ballAtTop, hitTop, dxNegated, newDXbeforePaddle, nextBallXraw, dyNegated, topBouncedDY, nextBallYraw, nextYsh, nextBrickAddr, nextInBrickArea, brickAtNext, hitBrickRaw, hitBrick, nextYis14, cmpNextGteMin, notNextLtMin, cmpNextLteMax, notNextGtMax, nextInPadRange, paddleHitCheck, hitPaddle, padOffset, isFarLeft, offsetLt254, isMidLeft, isMidRight, isFarRight, paddleDXa, paddleDXb, paddleDXc, newDX, flipDYa, flipDY, newDY, topDYneg, paddleBrickFlipDY, finalDY, nextYlt15, nextYge15, ballAtBottom, notHitPaddle, ballMissed, resetX, resetY, resetDX, resetDY, actualBallX, actualBallY, actualDX, actualDY, paddleDelta, paddleDelta2, paddleXnewRaw, paddleAtMin, paddleAtMax, paddleClamped1, newPaddleX, brickDY, reflectY, notFilling, ballAndFill, ballWrite, fillCtr, fillCtrInc, isFilling, c128, fillNext, onMissVblank, fillCtrData, fillCtrWe, brickHitWe, fillWe, brickRAMweA, brickRAMaddrA, brickRAMdataA } }) => [
+  connect: ({ inputs, outputs, nodes: { brickRAM, scanX, scanY, c0, c1, c2, c3, c4, c5, c14, c15, c28, c30, c253, c254, c255, ballX, ballY, ballDX, ballDY, paddleX, leftCode, rightCode, isLeftCmp, isRightCmp, scanYsh, scanBrickAddr, scanInBrickArea, brickAlive, brickPixel, cmpBallX, cmpBallY, ballPixel, scanYsplit, notScanY4, notScanY5, notScanY6, notScanY7, isScanY15a, isScanY15b, isScanY15c, isScanY15d, isScanY15e, isScanY15f, isScanY15, padMinRaw, padMaxRaw, cmpScanGteMin, notLtPadMin, cmpScanLteMax, notGtPadMax, inPadRange, paddlePixel, pixOr1, pixOr2, pixelBus, ballSpeedCtr, ballSpeedInc, ballSpeedMax, ballSpeedAtMax, nextBallSpeed, ballUpdate, padSpeedCtr, padSpeedInc, padSpeedMax, padSpeedAtMax, nextPadSpeed, paddleUpdate, movingLeftCmp, c127, movingLeft, notMovingLeft, movingUpCmp, movingUp, movingDown, ballAtLeft, hitLeft, ballAtRight, notBallLtRight, hitRight, flipDX, ballAtTop, hitTop, dxNegated, newDXbeforePaddle, nextBallXraw, dyNegated, topBouncedDY, nextBallYraw, nextYsh, nextBrickAddr, nextInBrickArea, brickAtNext, hitBrickRaw, hitBrick, nextYis14, cmpNextGteMin, notNextLtMin, cmpNextLteMax, notNextGtMax, nextInPadRange, paddleHitCheck, hitPaddle, padOffset, isFarLeft, offsetLt254, isMidLeft, isMidRight, isFarRight, paddleDXa, paddleDXb, paddleDXc, newDX, flipDYa, flipDY, newDY, topDYneg, paddleBrickFlipDY, finalDY, nextYlt15, nextYge15, ballAtBottom, notHitPaddle, ballMissed, resetX, resetY, resetDX, resetDY, actualBallX, actualBallY, actualDX, actualDY, paddleDelta, paddleDelta2, paddleXnewRaw, paddleAtMin, paddleAtMax, paddleClamped1, newPaddleX, brickDY, reflectY, notFilling, ballAndFill, fillCtr, fillCtrInc, isFilling, c128, fillNext, onMissVblank, fillCtrData, fillCtrWe, brickHitWe, fillWe, brickRAMweA, brickRAMaddrA, brickRAMdataA } }) => [
     // --- Combinational raster render: scan_addr → scanX/scanY → pixel_out ---
     // scanX = scan_addr[4:0] (0..31), scanY = scan_addr >> 5 (0..15)
     inputs.scan_addr.to(scanX.in, scanY.value),
@@ -152,7 +155,7 @@ export const Breakout = circuit('Breakout', {
     ballSpeedInc.sum.to(nextBallSpeed.in0),
     ballSpeedAtMax.eq.to(nextBallSpeed.sel, ballUpdate.b),
     nextBallSpeed.out.to(ballSpeedCtr.data),
-    gameEn.out.to(ballSpeedCtr.we, ballUpdate.a, padSpeedCtr.we, paddleUpdate.a, onMissVblank.a),
+    inputs.game_en.to(ballSpeedCtr.we, ballUpdate.a, padSpeedCtr.we, paddleUpdate.a),
     padSpeedCtr.q.to(padSpeedInc.a, padSpeedAtMax.a),
     padSpeedMax.out.to(padSpeedAtMax.b),
     padSpeedInc.sum.to(nextPadSpeed.in0),
@@ -218,7 +221,7 @@ export const Breakout = circuit('Breakout', {
     ballAtBottom.out.to(ballMissed.a),
     notHitPaddle.out.to(ballMissed.b),
     resetX.out.to(actualBallX.in1),
-    ballMissed.out.to(actualBallX.sel, actualBallY.sel, actualDX.sel, actualDY.sel, onMissVblank.b, ballWrite.b),
+    ballMissed.out.to(actualBallX.sel, actualBallY.sel, actualDX.sel, actualDY.sel, onMissVblank.b),
     resetY.out.to(actualBallY.in1),
     newDX.out.to(actualDX.in0),
     resetDX.out.to(actualDX.in1),
@@ -228,10 +231,13 @@ export const Breakout = circuit('Breakout', {
     actualBallY.out.to(ballY.data),
     actualDX.out.to(ballDX.data),
     actualDY.out.to(ballDY.data),
-    ballUpdate.out.to(ballAndFill.a),
+    // A miss is handled on the ball's move pulse: onMissVblank = ballUpdate AND
+    // ballMissed, so the reset and the wall refill fire together on the same
+    // step — for both game_en=1 (browser) and a pulsed game_en (FPGA). The ball
+    // is reset via ballAndFill on that pulse (before the fill's hold engages).
+    ballUpdate.out.to(ballAndFill.a, onMissVblank.a),
     notFilling.out.to(ballAndFill.b),
-    ballAndFill.out.to(ballWrite.a),
-    ballWrite.out.to(ballX.we, ballY.we, ballDX.we, ballDY.we, brickHitWe.a),
+    ballAndFill.out.to(ballX.we, ballY.we, ballDX.we, ballDY.we, brickHitWe.a),
     isLeftCmp.eq.to(paddleDelta.sel),
     paddleDelta.out.to(paddleDelta2.in0),
     isRightCmp.eq.to(paddleDelta2.sel),
