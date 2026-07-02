@@ -8,9 +8,9 @@ export function HeroSection() {
         </h1>
         <p className="mt-6 text-xl text-gray-500 dark:text-gray-300 leading-relaxed">
           A complete Breakout game built entirely from logic gates, registers,
-          and memory &mdash; a 3-pixel paddle, a bouncing ball, 16 destructible
-          bricks, and a 10-phase rendering pipeline. No CPU, no software, just
-          digital circuits.
+          and memory &mdash; a 6-pixel paddle, a bouncing ball, and 128
+          destructible bricks, drawn by a combinational raster scan the way a
+          real display works. No CPU, no software, just digital circuits.
         </p>
         <div className="mt-8 flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
           <span>Interactive tutorial</span>

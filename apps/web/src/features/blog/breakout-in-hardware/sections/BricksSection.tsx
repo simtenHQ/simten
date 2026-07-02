@@ -7,23 +7,25 @@ export function BricksSection() {
       </h2>
       <div className="prose-invert space-y-6">
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
-          The 16 bricks live in the first two rows of the framebuffer RAM
-          (addresses 0&ndash;15). A brick is &ldquo;alive&rdquo; if its RAM
-          cell contains 1, and &ldquo;destroyed&rdquo; if 0.
+          The 128 bricks fill the top four rows (Y &lt; 4). Each one is a single
+          bit in a DualPortRAM &mdash; 1 if the brick is alive, 0 if it has been
+          destroyed. That one bit per cell is the entire game state for the wall.
         </p>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
-          Collision detection reads the RAM at the ball&rsquo;s next position
-          during phase 0 of the pipeline. If the value is non-zero and the
-          next Y position is in the brick rows (Y &lt; 2), it&rsquo;s a brick
-          hit. The Y velocity flips, and during phase 4, the brick&rsquo;s RAM
-          cell is written to 0 &mdash; the brick disappears from the screen.
+          Collision reads the RAM at the ball&rsquo;s <em>next</em> position. If
+          that cell is alive and in the brick rows, it&rsquo;s a hit: the Y
+          velocity flips and the same cell is written to 0, so the brick vanishes.
+          The bounce is applied to the position on the same clock, so the ball
+          reflects off the face of the wall instead of sinking into it &mdash; it
+          only eats a row deeper once the bricks in front of it are gone.
         </p>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
-          This is elegant because the framebuffer <em>is</em> the collision
-          map. There&rsquo;s no separate data structure tracking which bricks
-          are alive &mdash; the same RAM that the screen reads for display is
-          the RAM that the ball reads for collision. One DualPortRAM serves
-          both purposes: port B for the screen, port A for game logic.
+          One DualPortRAM does double duty. Port A serves the game logic &mdash;
+          reading the ball&rsquo;s next cell for collision and clearing hit
+          bricks. Port B serves the picture &mdash; the raster scan reads the
+          brick under the current pixel to decide whether to light it. The
+          alive-bits are both the state and the image; there&rsquo;s no separate
+          structure tracking which bricks are left.
         </p>
       </div>
     </section>
