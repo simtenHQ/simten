@@ -3,7 +3,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useCircuitSimulator } from "@simten/embed";
 import { Breakout } from "./circuits";
 
-const PIXELS = 512;                 // 32x16 combinational framebuffer readout
+const PIXELS = 512;                 // 32x16 combinational raster readout
 // ms between game ticks. The ball moves every 4 ticks and the paddle every 2,
 // so a smaller value = faster play. ~35ms → ball ≈ 7 cells/s, paddle ≈ 14.
 const TICK_MS = 35;

@@ -8,16 +8,16 @@ export function BallSection() {
       <div className="prose-invert space-y-6">
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
           The ball has four registers: X position, Y position, X velocity (1 or
-          255 for right/left), and Y velocity (1 or 255 for down/up). Each frame,
+          255 for right/left), and Y velocity (1 or 255 for down/up). Each clock,
           the next position is computed by adding velocity to position.
         </p>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
-          But the ball would be impossibly fast if it moved every frame. A{" "}
+          But the ball would be impossibly fast if it moved every clock. A{" "}
           <strong className="text-gray-900 dark:text-white">clock divider</strong> &mdash; a counter
           that counts 0, 1, 2, 3, then resets &mdash; generates an enable signal
-          that fires once every 4 frames. The ball&rsquo;s position registers
-          only update when this enable signal is high. The paddle updates every
-          frame, giving the player a speed advantage.
+          that fires once every 4 clocks. The ball&rsquo;s position registers
+          only update when this enable signal is high. The paddle runs off its
+          own divider at twice the rate, giving the player a speed advantage.
         </p>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
           Clock dividers are fundamental hardware. Every digital system uses them:
