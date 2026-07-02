@@ -1,23 +1,47 @@
 /**
  * Circuit definitions for the "Breakout in Hardware" blog post.
  * 32x16 raster-scan architecture with DualPortRAM brick storage.
+ *
+ * Synthesizable, snake-style I/O with a combinational raster render (like a real
+ * raster display): the browser drives `scan_addr`, which splits into
+ * `scanX`/`scanY` and feeds the pixel logic straight to `pixel_out` — no
+ * framebuffer, so a render is one combinational sweep and never advances the
+ * clock. Game state advances one step per clock tick (throttled by the ball/
+ * paddle speed counters), so a game step is a single tick — the browser ticks a
+ * handful of times per animation frame, exactly like snake. Paddle input arrives
+ * on the top-level `keyboard` bus.
  */
 
-import { circuit } from "@simten/core/circuit";
+import { circuit, bit, bus } from "@simten/core/circuit";
 import {
-  RasterDisplay, Constant, Register, Input, Switch,
+  Constant, Register,
   Adder, Subtractor, Comparator, Mux, And, Or, Not, Buffer,
-  LeftShifter, Splitter8to8, DualPortRAM,
+  LeftShifter, RightShifter, BitSlice, Splitter8to8, DualPortRAM,
 } from "@simten/core/std";
 
+// Full brick wall at power-on: rows 0-3 (128 cells) all alive. Seeded into
+// brickRAM's memory so the wall is present on the first frame instead of
+// streaming in over the fill counter's 128 ticks.
+const FULL_WALL: Record<number, number> = {};
+for (let i = 0; i < 128; i++) FULL_WALL[i] = 1;
+
 export const Breakout = circuit('Breakout', {
+  inputs: { scan_addr: bus(9), keyboard: bus(8) },
+  // `is_filling` is a status/"busy" output: high while the fill FSM is redrawing
+  // the wall after a death. The browser bursts the clock while it's high so the
+  // ~128-cycle redraw (instant on the FPGA) is instant in the demo too.
+  outputs: { pixel_out: bus(8), is_filling: bit },
   nodes: {
-    display: RasterDisplay({ width: 32, height: 16 }), brickRAM: DualPortRAM(),
+    brickRAM: DualPortRAM({ memory: FULL_WALL }),
+    // Combinational raster render: scan_addr → scanX/scanY → pixel_out (no
+    // framebuffer). gameEn=1 advances the game one step per clock tick.
+    scanX: BitSlice({ low: 0, high: 4 }), scanY: RightShifter({ width: 9 }),
+    gameEn: Constant({ value: 1 }),
     c0: Constant({ value: 0 }), c1: Constant({ value: 1 }), c2: Constant({ value: 2 }), c3: Constant({ value: 3 }), c4: Constant({ value: 4 }), c5: Constant({ value: 5 }),
     c14: Constant({ value: 14 }), c15: Constant({ value: 15 }), c16: Constant({ value: 16 }), c28: Constant({ value: 28 }), c29: Constant({ value: 29 }), c30: Constant({ value: 30 }),
     c31: Constant({ value: 31 }), c32: Constant({ value: 32 }), c253: Constant({ value: 253 }), c254: Constant({ value: 254 }), c255: Constant({ value: 255 }),
     ballX: Register({ value: 16 }), ballY: Register({ value: 8 }), ballDX: Register({ value: 1 }), ballDY: Register({ value: 255 }), paddleX: Register({ value: 15 }),
-    keyboard: Input(), leftCode: Constant({ value: 75 }), rightCode: Constant({ value: 77 }),
+    leftCode: Constant({ value: 75 }), rightCode: Constant({ value: 77 }),
     isLeftCmp: Comparator(), isRightCmp: Comparator(),
     scanYsh: LeftShifter({ width: 8 }), scanBrickAddr: Adder({ width: 8 }),
     scanInBrickArea: Comparator(), brickAlive: Comparator(), brickPixel: And,
@@ -27,7 +51,6 @@ export const Breakout = circuit('Breakout', {
     padMinRaw: Adder({ width: 8 }), padMaxRaw: Adder({ width: 8 }),
     cmpScanGteMin: Comparator(), notLtPadMin: Not, cmpScanLteMax: Comparator(), notGtPadMax: Not,
     inPadRange: And, paddlePixel: And, pixOr1: Or, pixOr2: Or, pixelBus: Mux({ width: 8 }),
-    prevVblank: Register({ value: 0 }), alwaysHigh: Switch({ value: 1 }), notPrevVblank: Not, onVblank: And,
     ballSpeedCtr: Register({ value: 0 }), ballSpeedInc: Adder({ width: 8 }), ballSpeedMax: Constant({ value: 3 }),
     ballSpeedAtMax: Comparator(), nextBallSpeed: Mux({ width: 8 }), ballUpdate: And,
     padSpeedCtr: Register({ value: 0 }), padSpeedInc: Adder({ width: 8 }), padSpeedMax: Constant({ value: 1 }),
@@ -49,28 +72,43 @@ export const Breakout = circuit('Breakout', {
     nextYlt15: Comparator(), nextYge15: Not, ballAtBottom: And, notHitPaddle: Not, ballMissed: And,
     resetX: Constant({ value: 16 }), resetY: Constant({ value: 8 }), resetDX: Constant({ value: 1 }), resetDY: Constant({ value: 255 }),
     actualBallX: Mux({ width: 8 }), actualBallY: Mux({ width: 8 }), actualDX: Mux({ width: 8 }), actualDY: Mux({ width: 8 }),
+    // On a brick hit, reflect the Y position THIS frame so the ball bounces off
+    // the brick face instead of stepping into the cell (paddle already bounces
+    // one row early, so it keeps its own position path).
+    brickDY: Mux({ width: 8 }), reflectY: Adder({ width: 8 }),
     paddleDelta: Mux({ width: 8 }), paddleDelta2: Mux({ width: 8 }), paddleXnewRaw: Adder({ width: 8 }),
     paddleAtMin: Comparator(), paddleAtMax: Comparator(), paddleClamped1: Mux({ width: 8 }), newPaddleX: Mux({ width: 8 }),
-    fillCtr: Register({ value: 128 }), fillCtrInc: Adder({ width: 8 }), isFilling: Comparator(), c128: Constant({ value: 128 }),
+    // fillCtr starts at 0 so the fill FSM draws the wall on power-on/reset (this
+    // is what runs on the FPGA, where rst_n can't restore RAM). brickRAM's memory
+    // init models the FPGA's $readmemh so the wall shows before the FSM even runs.
+    fillCtr: Register({ value: 0 }), fillCtrInc: Adder({ width: 8 }), isFilling: Comparator(), c128: Constant({ value: 128 }),
     fillNext: Mux({ width: 8 }), onMissVblank: And, fillCtrData: Mux({ width: 8 }), fillCtrWe: Or,
     brickHitWe: And, fillWe: And, brickRAMweA: Or, brickRAMaddrA: Mux({ width: 8 }), brickRAMdataA: Mux({ width: 8 }),
+    // Ball is held still while the wall redraws (isFilling) after a death, then
+    // launches once the wall is complete. The miss itself still writes (resets
+    // the ball to center) via the `ballMissed` term so the hold can't deadlock.
+    notFilling: Not, ballAndFill: And, ballWrite: Or,
   },
-  connect: ({ nodes: { display, brickRAM, c0, c1, c2, c3, c4, c5, c14, c15, c28, c30, c253, c254, c255, ballX, ballY, ballDX, ballDY, paddleX, keyboard, leftCode, rightCode, isLeftCmp, isRightCmp, scanYsh, scanBrickAddr, scanInBrickArea, brickAlive, brickPixel, cmpBallX, cmpBallY, ballPixel, scanYsplit, notScanY4, notScanY5, notScanY6, notScanY7, isScanY15a, isScanY15b, isScanY15c, isScanY15d, isScanY15e, isScanY15f, isScanY15, padMinRaw, padMaxRaw, cmpScanGteMin, notLtPadMin, cmpScanLteMax, notGtPadMax, inPadRange, paddlePixel, pixOr1, pixOr2, pixelBus, prevVblank, alwaysHigh, notPrevVblank, onVblank, ballSpeedCtr, ballSpeedInc, ballSpeedMax, ballSpeedAtMax, nextBallSpeed, ballUpdate, padSpeedCtr, padSpeedInc, padSpeedMax, padSpeedAtMax, nextPadSpeed, paddleUpdate, movingLeftCmp, c127, movingLeft, notMovingLeft, movingUpCmp, movingUp, movingDown, ballAtLeft, hitLeft, ballAtRight, notBallLtRight, hitRight, flipDX, ballAtTop, hitTop, dxNegated, newDXbeforePaddle, nextBallXraw, dyNegated, topBouncedDY, nextBallYraw, nextYsh, nextBrickAddr, nextInBrickArea, brickAtNext, hitBrickRaw, hitBrick, nextYis14, cmpNextGteMin, notNextLtMin, cmpNextLteMax, notNextGtMax, nextInPadRange, paddleHitCheck, hitPaddle, padOffset, isFarLeft, offsetLt254, isMidLeft, isMidRight, isFarRight, paddleDXa, paddleDXb, paddleDXc, newDX, flipDYa, flipDY, newDY, topDYneg, paddleBrickFlipDY, finalDY, nextYlt15, nextYge15, ballAtBottom, notHitPaddle, ballMissed, resetX, resetY, resetDX, resetDY, actualBallX, actualBallY, actualDX, actualDY, paddleDelta, paddleDelta2, paddleXnewRaw, paddleAtMin, paddleAtMax, paddleClamped1, newPaddleX, fillCtr, fillCtrInc, isFilling, c128, fillNext, onMissVblank, fillCtrData, fillCtrWe, brickHitWe, fillWe, brickRAMweA, brickRAMaddrA, brickRAMdataA } }) => [
-    keyboard.out.to(isLeftCmp.a, isRightCmp.a),
+  connect: ({ inputs, outputs, nodes: { brickRAM, scanX, scanY, gameEn, c0, c1, c2, c3, c4, c5, c14, c15, c28, c30, c253, c254, c255, ballX, ballY, ballDX, ballDY, paddleX, leftCode, rightCode, isLeftCmp, isRightCmp, scanYsh, scanBrickAddr, scanInBrickArea, brickAlive, brickPixel, cmpBallX, cmpBallY, ballPixel, scanYsplit, notScanY4, notScanY5, notScanY6, notScanY7, isScanY15a, isScanY15b, isScanY15c, isScanY15d, isScanY15e, isScanY15f, isScanY15, padMinRaw, padMaxRaw, cmpScanGteMin, notLtPadMin, cmpScanLteMax, notGtPadMax, inPadRange, paddlePixel, pixOr1, pixOr2, pixelBus, ballSpeedCtr, ballSpeedInc, ballSpeedMax, ballSpeedAtMax, nextBallSpeed, ballUpdate, padSpeedCtr, padSpeedInc, padSpeedMax, padSpeedAtMax, nextPadSpeed, paddleUpdate, movingLeftCmp, c127, movingLeft, notMovingLeft, movingUpCmp, movingUp, movingDown, ballAtLeft, hitLeft, ballAtRight, notBallLtRight, hitRight, flipDX, ballAtTop, hitTop, dxNegated, newDXbeforePaddle, nextBallXraw, dyNegated, topBouncedDY, nextBallYraw, nextYsh, nextBrickAddr, nextInBrickArea, brickAtNext, hitBrickRaw, hitBrick, nextYis14, cmpNextGteMin, notNextLtMin, cmpNextLteMax, notNextGtMax, nextInPadRange, paddleHitCheck, hitPaddle, padOffset, isFarLeft, offsetLt254, isMidLeft, isMidRight, isFarRight, paddleDXa, paddleDXb, paddleDXc, newDX, flipDYa, flipDY, newDY, topDYneg, paddleBrickFlipDY, finalDY, nextYlt15, nextYge15, ballAtBottom, notHitPaddle, ballMissed, resetX, resetY, resetDX, resetDY, actualBallX, actualBallY, actualDX, actualDY, paddleDelta, paddleDelta2, paddleXnewRaw, paddleAtMin, paddleAtMax, paddleClamped1, newPaddleX, brickDY, reflectY, notFilling, ballAndFill, ballWrite, fillCtr, fillCtrInc, isFilling, c128, fillNext, onMissVblank, fillCtrData, fillCtrWe, brickHitWe, fillWe, brickRAMweA, brickRAMaddrA, brickRAMdataA } }) => [
+    // --- Combinational raster render: scan_addr → scanX/scanY → pixel_out ---
+    // scanX = scan_addr[4:0] (0..31), scanY = scan_addr >> 5 (0..15)
+    inputs.scan_addr.to(scanX.in, scanY.value),
+    scanX.out.to(scanBrickAddr.b, cmpBallX.a, cmpScanGteMin.a, cmpScanLteMax.b),
+    scanY.result.to(scanYsh.value, scanInBrickArea.a, cmpBallY.a, scanYsplit.in),
+    // --- Input (top-level ports) ---
+    inputs.keyboard.to(isLeftCmp.a, isRightCmp.a),
     leftCode.out.to(isLeftCmp.b),
     rightCode.out.to(isRightCmp.b),
-    display.scanY.to(scanYsh.value, scanInBrickArea.a, cmpBallY.a, scanYsplit.in),
-    c5.out.to(scanYsh.shift, nextYsh.shift),
+    c5.out.to(scanYsh.shift, nextYsh.shift, scanY.shift),
     scanYsh.result.to(scanBrickAddr.a),
-    display.scanX.to(scanBrickAddr.b, cmpBallX.a, cmpScanGteMin.a, cmpScanLteMax.b),
-    c0.out.to(scanBrickAddr.carry_in, brickAlive.b, padMinRaw.carry_in, padMaxRaw.carry_in, pixelBus.in0, ballSpeedInc.carry_in, nextBallSpeed.in1, padSpeedInc.carry_in, nextPadSpeed.in1, ballAtTop.b, dxNegated.a, dxNegated.borrow_in, nextBallXraw.carry_in, dyNegated.a, dyNegated.borrow_in, nextBallYraw.carry_in, nextBrickAddr.carry_in, brickAtNext.b, padOffset.borrow_in, topDYneg.a, topDYneg.borrow_in, paddleDelta.in0, paddleXnewRaw.carry_in, fillCtrInc.carry_in, fillCtrData.in1, brickRAMdataA.in0),
+    c0.out.to(scanBrickAddr.carry_in, brickAlive.b, padMinRaw.carry_in, padMaxRaw.carry_in, pixelBus.in0, ballSpeedInc.carry_in, nextBallSpeed.in1, padSpeedInc.carry_in, nextPadSpeed.in1, ballAtTop.b, dxNegated.a, dxNegated.borrow_in, nextBallXraw.carry_in, dyNegated.a, dyNegated.borrow_in, nextBallYraw.carry_in, nextBrickAddr.carry_in, brickAtNext.b, padOffset.borrow_in, topDYneg.a, topDYneg.borrow_in, paddleDelta.in0, paddleXnewRaw.carry_in, fillCtrInc.carry_in, fillCtrData.in1, brickRAMdataA.in0, reflectY.carry_in),
     scanBrickAddr.sum.to(brickRAM.addrB),
     c4.out.to(scanInBrickArea.b, nextInBrickArea.b),
     brickRAM.outB.to(brickAlive.a),
     scanInBrickArea.lt.to(brickPixel.a),
     brickAlive.gt.to(brickPixel.b),
     ballX.q.to(cmpBallX.b, ballAtLeft.a, ballAtRight.a, nextBallXraw.a),
-    ballY.q.to(cmpBallY.b, ballAtTop.a, nextBallYraw.a),
+    ballY.q.to(cmpBallY.b, ballAtTop.a, nextBallYraw.a, reflectY.a),
     cmpBallX.eq.to(ballPixel.a),
     cmpBallY.eq.to(ballPixel.b),
     scanYsplit.bit4.to(notScanY4.in),
@@ -106,19 +144,15 @@ export const Breakout = circuit('Breakout', {
     paddlePixel.out.to(pixOr1.b),
     pixOr1.out.to(pixOr2.a),
     brickPixel.out.to(pixOr2.b),
-    c1.out.to(pixelBus.in1, ballSpeedInc.b, padSpeedInc.b, paddleDXa.in0, paddleDelta2.in1, fillCtrInc.b, brickRAMdataA.in1),
+    c1.out.to(pixelBus.in1, ballSpeedInc.b, padSpeedInc.b, paddleDXa.in0, paddleDelta2.in1, fillCtrInc.b, brickRAMdataA.in1, fillWe.b),
     pixOr2.out.to(pixelBus.sel),
-    pixelBus.out.to(display.dataIn),
-    display.vblank.to(prevVblank.data, onVblank.a),
-    alwaysHigh.out.to(prevVblank.we),
-    prevVblank.q.to(notPrevVblank.in),
-    notPrevVblank.out.to(onVblank.b),
+    pixelBus.out.to(outputs.pixel_out),
     ballSpeedCtr.q.to(ballSpeedInc.a, ballSpeedAtMax.a),
     ballSpeedMax.out.to(ballSpeedAtMax.b),
     ballSpeedInc.sum.to(nextBallSpeed.in0),
     ballSpeedAtMax.eq.to(nextBallSpeed.sel, ballUpdate.b),
     nextBallSpeed.out.to(ballSpeedCtr.data),
-    onVblank.out.to(ballSpeedCtr.we, ballUpdate.a, padSpeedCtr.we, paddleUpdate.a, onMissVblank.a, fillWe.b),
+    gameEn.out.to(ballSpeedCtr.we, ballUpdate.a, padSpeedCtr.we, paddleUpdate.a, onMissVblank.a),
     padSpeedCtr.q.to(padSpeedInc.a, padSpeedAtMax.a),
     padSpeedMax.out.to(padSpeedAtMax.b),
     padSpeedInc.sum.to(nextPadSpeed.in0),
@@ -144,8 +178,10 @@ export const Breakout = circuit('Breakout', {
     newDXbeforePaddle.out.to(nextBallXraw.b, newDX.in0),
     dyNegated.difference.to(topBouncedDY.in1, newDY.in1),
     hitTop.out.to(topBouncedDY.sel, flipDYa.a),
-    topBouncedDY.out.to(nextBallYraw.b, newDY.in0, topDYneg.b, finalDY.in0),
-    nextBallYraw.sum.to(nextYsh.value, nextInBrickArea.a, nextYis14.a, nextYlt15.a, actualBallY.in0),
+    topBouncedDY.out.to(nextBallYraw.b, newDY.in0, topDYneg.b, finalDY.in0, brickDY.in0),
+    nextBallYraw.sum.to(nextYsh.value, nextInBrickArea.a, nextYis14.a, nextYlt15.a),
+    brickDY.out.to(reflectY.b),
+    reflectY.sum.to(actualBallY.in0),
     nextYsh.result.to(nextBrickAddr.a),
     nextBallXraw.sum.to(nextBrickAddr.b, cmpNextGteMin.a, cmpNextLteMax.b, padOffset.a, actualBallX.in0),
     brickRAM.outA.to(brickAtNext.a),
@@ -173,8 +209,8 @@ export const Breakout = circuit('Breakout', {
     paddleDXc.out.to(newDX.in1),
     hitPaddle.out.to(newDX.sel, flipDYa.b, newDY.sel, paddleBrickFlipDY.a, notHitPaddle.in),
     flipDYa.out.to(flipDY.a),
-    hitBrick.out.to(flipDY.b, paddleBrickFlipDY.b, brickHitWe.b),
-    topDYneg.difference.to(finalDY.in1),
+    hitBrick.out.to(flipDY.b, paddleBrickFlipDY.b, brickHitWe.b, brickDY.sel),
+    topDYneg.difference.to(finalDY.in1, brickDY.in1),
     paddleBrickFlipDY.out.to(finalDY.sel),
     c15.out.to(nextYlt15.b),
     nextYlt15.lt.to(nextYge15.in),
@@ -182,7 +218,7 @@ export const Breakout = circuit('Breakout', {
     ballAtBottom.out.to(ballMissed.a),
     notHitPaddle.out.to(ballMissed.b),
     resetX.out.to(actualBallX.in1),
-    ballMissed.out.to(actualBallX.sel, actualBallY.sel, actualDX.sel, actualDY.sel, onMissVblank.b),
+    ballMissed.out.to(actualBallX.sel, actualBallY.sel, actualDX.sel, actualDY.sel, onMissVblank.b, ballWrite.b),
     resetY.out.to(actualBallY.in1),
     newDX.out.to(actualDX.in0),
     resetDX.out.to(actualDX.in1),
@@ -192,7 +228,10 @@ export const Breakout = circuit('Breakout', {
     actualBallY.out.to(ballY.data),
     actualDX.out.to(ballDX.data),
     actualDY.out.to(ballDY.data),
-    ballUpdate.out.to(ballX.we, ballY.we, ballDX.we, ballDY.we, brickHitWe.a),
+    ballUpdate.out.to(ballAndFill.a),
+    notFilling.out.to(ballAndFill.b),
+    ballAndFill.out.to(ballWrite.a),
+    ballWrite.out.to(ballX.we, ballY.we, ballDX.we, ballDY.we, brickHitWe.a),
     isLeftCmp.eq.to(paddleDelta.sel),
     paddleDelta.out.to(paddleDelta2.in0),
     isRightCmp.eq.to(paddleDelta2.sel),
@@ -205,10 +244,15 @@ export const Breakout = circuit('Breakout', {
     paddleAtMax.gt.to(newPaddleX.sel),
     newPaddleX.out.to(paddleX.data),
     paddleUpdate.out.to(paddleX.we),
-    fillCtr.q.to(fillCtrInc.a, isFilling.a, fillNext.in1, brickRAMaddrA.in1),
+    fillCtr.q.to(fillCtrInc.a, isFilling.a, fillNext.in0, brickRAMaddrA.in1),
+    // On a miss, onMissVblank drives fillCtrData.sel → in1 (= 0), which restarts
+    // the fill FSM: it rewrites all 128 bricks over the next 128 clocks. On the
+    // FPGA that's microseconds (instant); the browser bursts those clocks so the
+    // wall redraws instantly in the demo too. The ball is held (see ballWrite)
+    // while it redraws so it can't tunnel through half-drawn bricks.
     c128.out.to(isFilling.b),
-    fillCtrInc.sum.to(fillNext.in0),
-    isFilling.lt.to(fillNext.sel, fillCtrWe.a, fillWe.a, brickRAMaddrA.sel, brickRAMdataA.sel),
+    fillCtrInc.sum.to(fillNext.in1),
+    isFilling.lt.to(fillNext.sel, fillCtrWe.a, fillWe.a, brickRAMaddrA.sel, brickRAMdataA.sel, notFilling.in, outputs.is_filling),
     fillNext.out.to(fillCtrData.in0),
     onMissVblank.out.to(fillCtrData.sel, fillCtrWe.b),
     fillCtrData.out.to(fillCtr.data),
