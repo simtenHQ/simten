@@ -1,5 +1,11 @@
 # @simten/core
 
+## 0.7.0
+
+### Minor Changes
+
+- 40194ac: `DualPortRAM` now takes `addressWidth` and `dataWidth` options (both default 8, so existing uses are unchanged). A wider `addressWidth` grows the memory to `2 ** addressWidth` words — e.g. `DualPortRAM({ addressWidth: 9 })` for a 512-word memory. The Verilog exporter already read these arguments, so the emitted memory depth/width now match simulation.
+
 ## 0.6.1
 
 ### Patch Changes
