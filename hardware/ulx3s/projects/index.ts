@@ -8,8 +8,8 @@
  * Folders starting with `_` or `.` are skipped (useful for scratch / WIP).
  */
 
-import { readdirSync, existsSync } from 'node:fs';
-import { resolve, dirname } from 'node:path';
+import { existsSync, readdirSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import type { Project } from '../lib/types.js';
@@ -30,7 +30,9 @@ export async function loadProjects(): Promise<Record<string, Project>> {
     try {
       const mod = (await import(`./${entry.name}/index.js`)) as { project?: Project };
       if (!mod.project) {
-        console.error(`[projects] ${entry.name}/index.ts missing named export \`project\` — skipping`);
+        console.error(
+          `[projects] ${entry.name}/index.ts missing named export \`project\` — skipping`,
+        );
         continue;
       }
       if (!mod.project.name) {

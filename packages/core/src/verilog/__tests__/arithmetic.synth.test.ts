@@ -12,19 +12,21 @@
  * FullAdder must have fewer cells than the ripple carry adder, etc.
  */
 
-import { describe, it, expect } from 'vitest';
-import { exportVerilog } from '../exporter.js';
-import { circuit, bit, bus } from '../../circuit/index.js';
-import { And, Or, Xor, Adder, Multiplier, Mux, BusAnd, BusOr } from '../../std/index.js';
+import { describe, expect, it } from 'vitest';
+import { bit, bus, circuit } from '../../circuit/index.js';
+import { Adder, And, BusAnd, BusOr, Multiplier, Mux, Or, Xor } from '../../std/index.js';
 import type { CircuitLibrary } from '../../types/circuit.js';
-import { synthesizeVerilog, hasSynth } from './synth.js';
+import { exportVerilog } from '../exporter.js';
+import { hasSynth, synthesizeVerilog } from './synth.js';
 
 // ---- helpers ----------------------------------------------------------------
 
-function makeLib<T extends { circuit: import('../../types/circuit.js').Circuit; _dependencies: Map<string, { circuit: import('../../types/circuit.js').Circuit }> }>(
-  top: T,
-  name: string,
-): CircuitLibrary {
+function makeLib<
+  T extends {
+    circuit: import('../../types/circuit.js').Circuit;
+    _dependencies: Map<string, { circuit: import('../../types/circuit.js').Circuit }>;
+  },
+>(top: T, name: string): CircuitLibrary {
   return {
     resolveCircuit: (n) => (n === name ? top.circuit : top._dependencies.get(n)?.circuit),
     getAllPrimitiveNames: () => [...top._dependencies.keys()],
@@ -58,15 +60,24 @@ function buildRippleCarryAdder4() {
   const { circuit: FullAdder, lib: faLib } = buildFullAdder();
 
   // Re-export FullAdder as a built circuit so we can use it as a node
-  const FA = { circuit: FullAdder, _dependencies: new Map(faLib.getAllPrimitiveNames!().map(n => [n, { circuit: faLib.resolveCircuit(n)! }])) };
+  const FA = {
+    circuit: FullAdder,
+    _dependencies: new Map(
+      faLib.getAllPrimitiveNames!().map((n) => [n, { circuit: faLib.resolveCircuit(n)! }]),
+    ),
+  };
   FA._dependencies.set('FullAdder', { circuit: FullAdder });
 
   const RCA4 = circuit('RippleCarryAdder4', {
     inputs: { a: bus(4), b: bus(4), carry_in: bit },
     outputs: { sum: bus(4), carry_out: bit },
-    nodes: { fa0: FA as any, fa1: FA as any, fa2: FA as any, fa3: FA as any,
-             // bit splitters inline via And/Or chains — use Adder instead for simplicity
-           },
+    nodes: {
+      fa0: FA as any,
+      fa1: FA as any,
+      fa2: FA as any,
+      fa3: FA as any,
+      // bit splitters inline via And/Or chains — use Adder instead for simplicity
+    },
     // For a clean 4-bit ripple carry we use the stdlib Adder which handles width
     connect: () => [],
   });
@@ -125,8 +136,18 @@ function buildSimpleALU() {
   const ALU = circuit('SimpleALU', {
     inputs: { a: bus(8), b: bus(8), op: bit },
     outputs: { result: bus(8) },
-    nodes: { add: Adder(), band: BusAnd(), mux0: Mux(), mux1: Mux(), mux2: Mux(),
-             mux3: Mux(), mux4: Mux(), mux5: Mux(), mux6: Mux(), mux7: Mux() },
+    nodes: {
+      add: Adder(),
+      band: BusAnd(),
+      mux0: Mux(),
+      mux1: Mux(),
+      mux2: Mux(),
+      mux3: Mux(),
+      mux4: Mux(),
+      mux5: Mux(),
+      mux6: Mux(),
+      mux7: Mux(),
+    },
     connect: () => [],
   });
 
@@ -168,7 +189,9 @@ d('FullAdder — synthesis', () => {
 });
 
 d('RippleCarryAdder4 — synthesis', () => {
-  it('synthesizes 4-bit adder and has more cells than a FullAdder', { timeout: 30000 }, async () => {
+  it('synthesizes 4-bit adder and has more cells than a FullAdder', {
+    timeout: 30000,
+  }, async () => {
     const { circuit: faCkt, lib: faLib } = buildFullAdder();
     const faResult = exportVerilog(faCkt, faLib, { target: 'synthesis' });
     const faResp = await synthesizeVerilog(faResult, 'FullAdder');

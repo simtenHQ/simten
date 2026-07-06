@@ -1,5 +1,5 @@
-import { useCircuitSimulator } from "@simten/embed";
-import { SortDemo } from "./circuits";
+import { useCircuitSimulator } from '@simten/embed';
+import { SortDemo } from './circuits';
 
 /**
  * Hook for the sorting networks demo circuit.
@@ -10,10 +10,10 @@ export function useSortingSimulator() {
   const sim = useCircuitSimulator(SortDemo);
 
   function getSortedValues(): number[] {
-    const keys = ["s0", "s1", "s2", "s3"];
+    const keys = ['s0', 's1', 's2', 's3'];
     return keys.map((k) => {
       const v = sim.portValues?.get(`sorter.${k}`);
-      return typeof v === "number" ? v : 0;
+      return typeof v === 'number' ? v : 0;
     });
   }
 

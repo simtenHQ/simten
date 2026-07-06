@@ -1,51 +1,51 @@
-import { createFileRoute } from '@tanstack/react-router'
-import { blogPostHead } from '@/lib/seo'
-import { getPost } from '@/features/blog/posts'
-import { Suspense, lazy } from "react";
-import { HeroSection } from "@/features/blog/snake-in-hardware/sections/HeroSection";
-import { BlogFooter } from "@/features/blog/BlogFooter";
-import { ErrorBoundary } from "@/features/blog/building-a-cpu/ErrorBoundary";
+import { createFileRoute } from '@tanstack/react-router';
+import { lazy, Suspense } from 'react';
+import { BlogFooter } from '@/features/blog/BlogFooter';
+import { ErrorBoundary } from '@/features/blog/building-a-cpu/ErrorBoundary';
+import { getPost } from '@/features/blog/posts';
+import { HeroSection } from '@/features/blog/snake-in-hardware/sections/HeroSection';
+import { blogPostHead } from '@/lib/seo';
 
 // Lazy-load heavier sections so the page renders fast
 const PixelsSection = lazy(() =>
-  import("@/features/blog/snake-in-hardware/sections/PixelsSection").then((m) => ({
+  import('@/features/blog/snake-in-hardware/sections/PixelsSection').then((m) => ({
     default: m.PixelsSection,
-  }))
+  })),
 );
 const AddressingSection = lazy(() =>
-  import("@/features/blog/snake-in-hardware/sections/AddressingSection").then((m) => ({
+  import('@/features/blog/snake-in-hardware/sections/AddressingSection').then((m) => ({
     default: m.AddressingSection,
-  }))
+  })),
 );
 const DirectionSection = lazy(() =>
-  import("@/features/blog/snake-in-hardware/sections/DirectionSection").then((m) => ({
+  import('@/features/blog/snake-in-hardware/sections/DirectionSection').then((m) => ({
     default: m.DirectionSection,
-  }))
+  })),
 );
 const MovementSection = lazy(() =>
-  import("@/features/blog/snake-in-hardware/sections/MovementSection").then((m) => ({
+  import('@/features/blog/snake-in-hardware/sections/MovementSection').then((m) => ({
     default: m.MovementSection,
-  }))
+  })),
 );
 const PhaseSection = lazy(() =>
-  import("@/features/blog/snake-in-hardware/sections/PhaseSection").then((m) => ({
+  import('@/features/blog/snake-in-hardware/sections/PhaseSection').then((m) => ({
     default: m.PhaseSection,
-  }))
+  })),
 );
 const CollisionSection = lazy(() =>
-  import("@/features/blog/snake-in-hardware/sections/CollisionSection").then((m) => ({
+  import('@/features/blog/snake-in-hardware/sections/CollisionSection').then((m) => ({
     default: m.CollisionSection,
-  }))
+  })),
 );
 const SnakeSection = lazy(() =>
-  import("@/features/blog/snake-in-hardware/sections/SnakeSection").then((m) => ({
+  import('@/features/blog/snake-in-hardware/sections/SnakeSection').then((m) => ({
     default: m.SnakeSection,
-  }))
+  })),
 );
 const FpgaSection = lazy(() =>
-  import("@/features/blog/snake-in-hardware/sections/FpgaSection").then((m) => ({
+  import('@/features/blog/snake-in-hardware/sections/FpgaSection').then((m) => ({
     default: m.FpgaSection,
-  }))
+  })),
 );
 
 function SectionSkeleton() {
@@ -65,75 +65,75 @@ function SectionSkeleton() {
 function SnakeInHardwarePage() {
   return (
     <>
-        <HeroSection />
+      <HeroSection />
 
-        <div className="space-y-4">
-          <hr className="border-gray-200 dark:border-gray-800" />
+      <div className="space-y-4">
+        <hr className="border-gray-200 dark:border-gray-800" />
 
-          <ErrorBoundary>
-            <Suspense fallback={<SectionSkeleton />}>
-              <PixelsSection />
-            </Suspense>
-          </ErrorBoundary>
+        <ErrorBoundary>
+          <Suspense fallback={<SectionSkeleton />}>
+            <PixelsSection />
+          </Suspense>
+        </ErrorBoundary>
 
-          <hr className="border-gray-200 dark:border-gray-800" />
+        <hr className="border-gray-200 dark:border-gray-800" />
 
-          <ErrorBoundary>
-            <Suspense fallback={<SectionSkeleton />}>
-              <AddressingSection />
-            </Suspense>
-          </ErrorBoundary>
+        <ErrorBoundary>
+          <Suspense fallback={<SectionSkeleton />}>
+            <AddressingSection />
+          </Suspense>
+        </ErrorBoundary>
 
-          <hr className="border-gray-200 dark:border-gray-800" />
+        <hr className="border-gray-200 dark:border-gray-800" />
 
-          <ErrorBoundary>
-            <Suspense fallback={<SectionSkeleton />}>
-              <DirectionSection />
-            </Suspense>
-          </ErrorBoundary>
+        <ErrorBoundary>
+          <Suspense fallback={<SectionSkeleton />}>
+            <DirectionSection />
+          </Suspense>
+        </ErrorBoundary>
 
-          <hr className="border-gray-200 dark:border-gray-800" />
+        <hr className="border-gray-200 dark:border-gray-800" />
 
-          <ErrorBoundary>
-            <Suspense fallback={<SectionSkeleton />}>
-              <MovementSection />
-            </Suspense>
-          </ErrorBoundary>
+        <ErrorBoundary>
+          <Suspense fallback={<SectionSkeleton />}>
+            <MovementSection />
+          </Suspense>
+        </ErrorBoundary>
 
-          <hr className="border-gray-200 dark:border-gray-800" />
+        <hr className="border-gray-200 dark:border-gray-800" />
 
-          <ErrorBoundary>
-            <Suspense fallback={<SectionSkeleton />}>
-              <PhaseSection />
-            </Suspense>
-          </ErrorBoundary>
+        <ErrorBoundary>
+          <Suspense fallback={<SectionSkeleton />}>
+            <PhaseSection />
+          </Suspense>
+        </ErrorBoundary>
 
-          <hr className="border-gray-200 dark:border-gray-800" />
+        <hr className="border-gray-200 dark:border-gray-800" />
 
-          <ErrorBoundary>
-            <Suspense fallback={<SectionSkeleton />}>
-              <CollisionSection />
-            </Suspense>
-          </ErrorBoundary>
+        <ErrorBoundary>
+          <Suspense fallback={<SectionSkeleton />}>
+            <CollisionSection />
+          </Suspense>
+        </ErrorBoundary>
 
-          <hr className="border-gray-200 dark:border-gray-800" />
+        <hr className="border-gray-200 dark:border-gray-800" />
 
-          <ErrorBoundary>
-            <Suspense fallback={<SectionSkeleton />}>
-              <SnakeSection />
-            </Suspense>
-          </ErrorBoundary>
+        <ErrorBoundary>
+          <Suspense fallback={<SectionSkeleton />}>
+            <SnakeSection />
+          </Suspense>
+        </ErrorBoundary>
 
-          <hr className="border-gray-200 dark:border-gray-800" />
+        <hr className="border-gray-200 dark:border-gray-800" />
 
-          <ErrorBoundary>
-            <Suspense fallback={<SectionSkeleton />}>
-              <FpgaSection />
-            </Suspense>
-          </ErrorBoundary>
-        </div>
+        <ErrorBoundary>
+          <Suspense fallback={<SectionSkeleton />}>
+            <FpgaSection />
+          </Suspense>
+        </ErrorBoundary>
+      </div>
 
-        <BlogFooter slug="snake-in-hardware" />
+      <BlogFooter slug="snake-in-hardware" />
     </>
   );
 }
@@ -141,4 +141,4 @@ function SnakeInHardwarePage() {
 export const Route = createFileRoute('/blog/snake-in-hardware')({
   head: () => blogPostHead(getPost('snake-in-hardware')),
   component: SnakeInHardwarePage,
-})
+});

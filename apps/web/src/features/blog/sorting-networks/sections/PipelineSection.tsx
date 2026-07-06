@@ -1,7 +1,6 @@
-
-import { useCircuitSimulator } from "@simten/embed";
-import { CircuitCanvas } from "@simten/ui/canvas";
-import { PipelinedSortDemo } from "../circuits";
+import { useCircuitSimulator } from '@simten/embed';
+import { CircuitCanvas } from '@simten/ui/canvas';
+import { PipelinedSortDemo } from '../circuits';
 
 export function PipelineSection() {
   const sim = useCircuitSimulator(PipelinedSortDemo);
@@ -10,51 +9,45 @@ export function PipelineSection() {
   const getOutputValue = (key: string): number => {
     if (!sim.portValues) return 0;
     const direct = sim.portValues.get(key);
-    if (direct !== undefined && typeof direct === "number") return direct;
+    if (direct !== undefined && typeof direct === 'number') return direct;
     // Fallback: scan for a key ending with the suffix
     for (const [k, v] of sim.portValues) {
-      if (k.endsWith(key)) return typeof v === "number" ? v : 0;
+      if (k.endsWith(key)) return typeof v === 'number' ? v : 0;
     }
     return 0;
   };
 
-  const s0 = getOutputValue("sorter.s0");
-  const s1 = getOutputValue("sorter.s1");
-  const s2 = getOutputValue("sorter.s2");
-  const s3 = getOutputValue("sorter.s3");
+  const s0 = getOutputValue('sorter.s0');
+  const s1 = getOutputValue('sorter.s1');
+  const s2 = getOutputValue('sorter.s2');
+  const s3 = getOutputValue('sorter.s3');
 
   return (
     <section className="py-12">
-      <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
-        Adding a Pipeline
-      </h2>
+      <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">Adding a Pipeline</h2>
       <div className="prose-invert space-y-6">
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
-          The combinational network above sorts instantly &mdash; but it can only
-          process one set of inputs at a time. While the comparators are busy
-          evaluating one frame of values, no new data can enter.
+          The combinational network above sorts instantly &mdash; but it can only process one set of
+          inputs at a time. While the comparators are busy evaluating one frame of values, no new
+          data can enter.
         </p>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
-          The fix is straightforward: insert a <strong>register bank</strong>{" "}
-          between each comparator stage. Registers capture the intermediate
-          results on every clock edge, so the three stages become independent.
-          Stage 1 can start sorting a new set of inputs at the same moment Stage
-          2 is processing the previous set and Stage 3 is finishing the one
-          before that.
+          The fix is straightforward: insert a <strong>register bank</strong> between each
+          comparator stage. Registers capture the intermediate results on every clock edge, so the
+          three stages become independent. Stage 1 can start sorting a new set of inputs at the same
+          moment Stage 2 is processing the previous set and Stage 3 is finishing the one before
+          that.
         </p>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
-          The first sorted result takes 3 clock cycles to emerge &mdash; one
-          per stage. But after that initial latency, a new sorted result
-          arrives <strong>every single cycle</strong>. Throughput is 1
-          sort/cycle regardless of how long the combinational logic inside each
-          stage takes. This is exactly how real FPGA and ASIC sort engines are
-          built.
+          The first sorted result takes 3 clock cycles to emerge &mdash; one per stage. But after
+          that initial latency, a new sorted result arrives <strong>every single cycle</strong>.
+          Throughput is 1 sort/cycle regardless of how long the combinational logic inside each
+          stage takes. This is exactly how real FPGA and ASIC sort engines are built.
         </p>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
-          Step through the circuit below and watch the values propagate stage by
-          stage. After 3 ticks the outputs stabilize into ascending order; every
-          tick after that could carry a completely different input batch through
-          the same pipeline.
+          Step through the circuit below and watch the values propagate stage by stage. After 3
+          ticks the outputs stabilize into ascending order; every tick after that could carry a
+          completely different input batch through the same pipeline.
         </p>
       </div>
 
@@ -78,10 +71,18 @@ export function PipelineSection() {
                     Sorted outputs
                   </span>
                   <div className="font-mono text-gray-700 dark:text-gray-300 mt-1 flex gap-4">
-                    <span>s0 = <span className="text-blue-600 dark:text-blue-400">{s0}</span></span>
-                    <span>s1 = <span className="text-blue-600 dark:text-blue-400">{s1}</span></span>
-                    <span>s2 = <span className="text-blue-600 dark:text-blue-400">{s2}</span></span>
-                    <span>s3 = <span className="text-blue-600 dark:text-blue-400">{s3}</span></span>
+                    <span>
+                      s0 = <span className="text-blue-600 dark:text-blue-400">{s0}</span>
+                    </span>
+                    <span>
+                      s1 = <span className="text-blue-600 dark:text-blue-400">{s1}</span>
+                    </span>
+                    <span>
+                      s2 = <span className="text-blue-600 dark:text-blue-400">{s2}</span>
+                    </span>
+                    <span>
+                      s3 = <span className="text-blue-600 dark:text-blue-400">{s3}</span>
+                    </span>
                   </div>
                 </div>
                 {sim.cycleCount >= 3 && (
@@ -121,7 +122,8 @@ export function PipelineSection() {
                 Cycle {sim.cycleCount}
                 {sim.cycleCount < 3 && (
                   <span className="ml-2 text-amber-600 dark:text-amber-400">
-                    ({3 - sim.cycleCount} cycle{3 - sim.cycleCount !== 1 ? "s" : ""} until first result)
+                    ({3 - sim.cycleCount} cycle{3 - sim.cycleCount !== 1 ? 's' : ''} until first
+                    result)
                   </span>
                 )}
               </span>

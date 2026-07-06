@@ -2,10 +2,10 @@
  * Component Utility Functions - Unit Tests
  */
 
-import { describe, it, expect } from 'vitest';
-import { containsSequentialCircuit, hasSequentialCircuits } from '../utils/component-utils';
+import { describe, expect, it } from 'vitest';
 import type { Component } from '../../types';
 import type { Circuit } from '../../types/circuit';
+import { containsSequentialCircuit, hasSequentialCircuits } from '../utils/component-utils';
 
 describe('containsSequentialCircuit', () => {
   const mockResolveCircuit = (name: string): Circuit | undefined => {
@@ -138,9 +138,7 @@ describe('containsSequentialCircuit', () => {
 
   it('should return true for composite components containing sequential primitives', () => {
     const components: Record<string, Component> = {};
-    expect(containsSequentialCircuit('DFlipFlopTest', components, mockResolveCircuit)).toBe(
-      true
-    );
+    expect(containsSequentialCircuit('DFlipFlopTest', components, mockResolveCircuit)).toBe(true);
   });
 
   it('should return false for composite components with only combinational logic', () => {
@@ -155,9 +153,9 @@ describe('containsSequentialCircuit', () => {
 
   it('should return false for undefined components', () => {
     const components: Record<string, Component> = {};
-    expect(
-      containsSequentialCircuit('NonExistentComponent', components, mockResolveCircuit)
-    ).toBe(false);
+    expect(containsSequentialCircuit('NonExistentComponent', components, mockResolveCircuit)).toBe(
+      false,
+    );
   });
 
   it('should handle circular references without infinite recursion', () => {

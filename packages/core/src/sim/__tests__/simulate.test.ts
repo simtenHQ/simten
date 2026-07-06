@@ -5,11 +5,11 @@
  * running through the real simulation pipeline.
  */
 
-import { describe, it, expect, afterEach } from 'vitest';
-import { simulate } from '../simulate.js';
-import { circuit, bit, bus } from '../../circuit/index.js';
-import { And, Or, Xor, Not, Register, DFlipFlop, Led, Switch } from '../../std/index.js';
+import { afterEach, describe, expect, it } from 'vitest';
+import { bit, bus, circuit } from '../../circuit/index.js';
+import { And, DFlipFlop, Led, Not, Or, Register, Switch, Xor } from '../../std/index.js';
 import type { SimulationHandle } from '../simulate.js';
+import { simulate } from '../simulate.js';
 
 // Track handles for cleanup
 const handles: SimulationHandle[] = [];
@@ -18,7 +18,7 @@ function tracked<I, O>(h: SimulationHandle<I, O>): SimulationHandle<I, O> {
   return h;
 }
 afterEach(() => {
-  handles.forEach(h => h.dispose());
+  handles.forEach((h) => h.dispose());
   handles.length = 0;
 });
 
@@ -204,7 +204,9 @@ describe('watch', () => {
   it('notifies on state changes', () => {
     const sim = tracked(simulate(DFlipFlop()));
     let callCount = 0;
-    const unsub = sim.watch(() => { callCount++; });
+    const unsub = sim.watch(() => {
+      callCount++;
+    });
 
     sim.set({ d: 1 });
     sim.tick();
@@ -216,7 +218,9 @@ describe('watch', () => {
   it('watchPort notifies when specific port changes', () => {
     const sim = tracked(simulate(DFlipFlop()));
     const values: number[] = [];
-    const unsub = sim.watchPort('q', (v) => { values.push(v); });
+    const unsub = sim.watchPort('q', (v) => {
+      values.push(v);
+    });
 
     sim.set({ d: 1 });
     sim.tick(); // q changes 0→1

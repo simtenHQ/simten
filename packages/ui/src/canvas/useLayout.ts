@@ -6,10 +6,10 @@
  * circuits.
  */
 
-import { useMemo } from "react";
-import type { Circuit } from "@simten/core";
-import type { MetadataState } from "./types";
-import { computeDagreLayout, type DagreLayoutOptions } from "./dagre-layout";
+import type { Circuit } from '@simten/core';
+import { useMemo } from 'react';
+import { computeDagreLayout, type DagreLayoutOptions } from './dagre-layout';
+import type { MetadataState } from './types';
 
 export type { DagreLayoutOptions };
 

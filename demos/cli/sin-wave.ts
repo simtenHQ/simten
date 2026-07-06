@@ -7,13 +7,9 @@
  * Run: pnpm --filter @simten/demos sin-wave
  */
 
-import { circuit, bus } from "@simten/core/circuit";
-import { Register, Adder, ROM, Constant, romFromBytes } from "@simten/core/std";
-import {
-  createSimulatorFromCircuit,
-  createCircuitLibrary,
-  TOP_LEVEL_NODE,
-} from "@simten/core";
+import { createCircuitLibrary, createSimulatorFromCircuit, TOP_LEVEL_NODE } from '@simten/core';
+import { bus, circuit } from '@simten/core/circuit';
+import { Adder, Constant, Register, ROM, romFromBytes } from '@simten/core/std';
 
 // ── Circuit ──────────────────────────────────────────────────────────────────
 
@@ -22,7 +18,7 @@ const sinLUT = Array.from({ length: 256 }, (_, i) =>
   Math.round((Math.sin((i / 256) * 2 * Math.PI) + 1) * 127.5),
 );
 
-const SinWave = circuit("SinWave", {
+const SinWave = circuit('SinWave', {
   outputs: { value: bus(8), addr: bus(8) },
   nodes: {
     reg: Register({ width: 8 }),
@@ -47,7 +43,7 @@ const SinWave = circuit("SinWave", {
 // ── Library + Simulator ───────────────────────────────────────────────────────
 
 // Build library from SinWave's transitive dependencies
-const circuits: import("@simten/core").Circuit[] = [SinWave.circuit];
+const circuits: import('@simten/core').Circuit[] = [SinWave.circuit];
 for (const [, dep] of SinWave._dependencies) {
   if (dep?.circuit) circuits.push(dep.circuit);
 }
@@ -64,10 +60,10 @@ const TICK_MS = 40;
 const history: number[] = [];
 
 // Block characters for smooth half-row resolution
-const UPPER = "▀";
-const LOWER = "▄";
-const FULL = "█";
-const EMPTY = " ";
+const UPPER = '▀';
+const LOWER = '▄';
+const FULL = '█';
+const EMPTY = ' ';
 
 function render(values: number[]) {
   const cols = Math.min(values.length, COLS);
@@ -76,9 +72,7 @@ function render(values: number[]) {
   // Build a grid: each cell is true/false (signal present)
   // Use double-resolution rows (ROWS*2 logical rows → ROWS printed rows via half-blocks)
   const logicalRows = ROWS * 2;
-  const grid: boolean[][] = Array.from({ length: logicalRows }, () =>
-    Array(cols).fill(false),
-  );
+  const grid: boolean[][] = Array.from({ length: logicalRows }, () => Array(cols).fill(false));
 
   for (let col = 0; col < cols; col++) {
     const v = slice[col];
@@ -97,14 +91,14 @@ function render(values: number[]) {
     const logicalVal = Math.round(255 - (r / (ROWS - 1)) * 255);
     const label =
       r === 0
-        ? "255"
+        ? '255'
         : r === ROWS - 1
-        ? "  0"
-        : r % 5 === 0
-        ? String(logicalVal).padStart(3)
-        : "   ";
+          ? '  0'
+          : r % 5 === 0
+            ? String(logicalVal).padStart(3)
+            : '   ';
 
-    let row = "";
+    let row = '';
     for (let c = 0; c < cols; c++) {
       const u = upper[c],
         l = lower[c];
@@ -114,7 +108,7 @@ function render(values: number[]) {
       else {
         // Midline axis marker
         const midRow = ROWS - 1;
-        row += r === midRow ? "\x1b[2m·\x1b[0m" : EMPTY;
+        row += r === midRow ? '\x1b[2m·\x1b[0m' : EMPTY;
       }
     }
 
@@ -123,35 +117,32 @@ function render(values: number[]) {
 
   // X-axis
   const currentAddr = values[values.length - 1];
-  const xAxis = "    └" + "─".repeat(cols);
-  const info = `\x1b[36m  addr: ${String(currentAddr ?? 0).padStart(
-    3,
-  )}/255   value: ${String(history[history.length - 1] ?? 0).padStart(
-    3,
-  )}   cycle: ${String(history.length).padStart(5)}\x1b[0m`;
+  const xAxis = '    └' + '─'.repeat(cols);
+  const info = `\x1b[36m  addr: ${String(currentAddr ?? 0).padStart(3)}/255   value: ${String(
+    history[history.length - 1] ?? 0,
+  ).padStart(3)}   cycle: ${String(history.length).padStart(5)}\x1b[0m`;
 
   // Move cursor to top, redraw
-  process.stdout.write("\x1b[H");
-  process.stdout.write(lines.join("\n") + "\n");
-  process.stdout.write(xAxis + "\n");
-  process.stdout.write(info + "\n");
+  process.stdout.write('\x1b[H');
+  process.stdout.write(lines.join('\n') + '\n');
+  process.stdout.write(xAxis + '\n');
+  process.stdout.write(info + '\n');
 }
 
 // ── Run ───────────────────────────────────────────────────────────────────────
 
 // Hide cursor, clear screen
-process.stdout.write("\x1b[?25l\x1b[2J\x1b[H");
+process.stdout.write('\x1b[?25l\x1b[2J\x1b[H');
 
 // Restore cursor on exit
-process.on("SIGINT", () => {
-  process.stdout.write("\x1b[?25h\n");
+process.on('SIGINT', () => {
+  process.stdout.write('\x1b[?25h\n');
   process.exit(0);
 });
 
 const interval = setInterval(() => {
   const result = sim.tick();
-  const value =
-    (result.portValues.get(`${TOP_LEVEL_NODE}.value`) as number) ?? 0;
+  const value = (result.portValues.get(`${TOP_LEVEL_NODE}.value`) as number) ?? 0;
   const addr = (result.portValues.get(`${TOP_LEVEL_NODE}.addr`) as number) ?? 0;
 
   history.push(value);

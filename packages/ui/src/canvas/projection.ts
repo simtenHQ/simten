@@ -4,11 +4,11 @@
  * No stores, no caches, no globals — explicit params only.
  */
 
-import type { Node as ReactFlowNode, Edge } from '@xyflow/react';
 import type { Circuit, PortPath } from '@simten/core';
 import type { CircuitLibrary, FlatPortValueMap, FlatSequentialState } from '@simten/core/simulator';
-import type { MetadataState } from './types';
+import type { Edge, Node as ReactFlowNode } from '@xyflow/react';
 import type { NodeData } from '../nodes';
+import type { MetadataState } from './types';
 
 export type { NodeData };
 
@@ -87,7 +87,9 @@ function projectCircuitToNodes(
   for (const node of circuit.nodes) {
     const nodeMetadata = metadata.components[node.id];
     if (!nodeMetadata) {
-      console.warn(`[projection] node '${node.id}' (${node.componentRef}) has no layout metadata, skipping render`);
+      console.warn(
+        `[projection] node '${node.id}' (${node.componentRef}) has no layout metadata, skipping render`,
+      );
       continue;
     }
 
@@ -99,15 +101,20 @@ function projectCircuitToNodes(
     const inputNames = node.inputs.map((p) => p.name);
     const outputNames = node.outputs.map((p) => p.name);
     const isComposite = componentDef.implementation.kind === 'composite';
-    const nodeType = getNodeTypeForComponent(node.componentRef, inputCount, outputCount, isComposite);
+    const nodeType = getNodeTypeForComponent(
+      node.componentRef,
+      inputCount,
+      outputCount,
+      isComposite,
+    );
 
-    let value: boolean | undefined = undefined;
-    let numericValue: number | undefined = undefined;
-    let width: number | undefined = undefined;
-    let pixels: number[] | undefined = undefined;
-    let consoleText: string | undefined = undefined;
-    let uartText: string | undefined = undefined;
-    let nicState: { txCount: number; rxCount: number; draining: boolean } | undefined = undefined;
+    let value: boolean | undefined;
+    let numericValue: number | undefined;
+    let width: number | undefined;
+    let pixels: number[] | undefined;
+    let consoleText: string | undefined;
+    let uartText: string | undefined;
+    let nicState: { txCount: number; rxCount: number; draining: boolean } | undefined;
 
     if (node.componentRef === 'Switch' || node.componentRef === 'Led') {
       let resolved = false;
@@ -115,11 +122,17 @@ function projectCircuitToNodes(
         if (node.componentRef === 'Led' && node.inputs.length > 0) {
           const inputKey = portPathKey({ nodeId: node.id, portName: node.inputs[0].name });
           const portValue = portValues.get(inputKey);
-          if (portValue !== undefined) { value = Boolean(portValue); resolved = true; }
+          if (portValue !== undefined) {
+            value = Boolean(portValue);
+            resolved = true;
+          }
         } else if (node.componentRef === 'Switch' && node.outputs.length > 0) {
           const outputKey = portPathKey({ nodeId: node.id, portName: node.outputs[0].name });
           const portValue = portValues.get(outputKey);
-          if (portValue !== undefined) { value = Boolean(portValue); resolved = true; }
+          if (portValue !== undefined) {
+            value = Boolean(portValue);
+            resolved = true;
+          }
         }
       }
       if (!resolved && 'value' in node.arguments) {
@@ -153,10 +166,10 @@ function projectCircuitToNodes(
 
       if (seqState && portValues) {
         const dataInConnection = Array.from(circuit.connections).find(
-          conn => conn.target.nodeId === node.id && conn.target.portName === 'dataIn'
+          (conn) => conn.target.nodeId === node.id && conn.target.portName === 'dataIn',
         );
         if (dataInConnection) {
-          const sourceNode = circuit.nodes.find(n => n.id === dataInConnection.source.nodeId);
+          const sourceNode = circuit.nodes.find((n) => n.id === dataInConnection.source.nodeId);
           if (sourceNode?.componentRef === 'DualPortRAM') {
             const ramState = seqState.currentState.get(sourceNode.id);
             if (ramState instanceof Map) {
@@ -169,10 +182,11 @@ function projectCircuitToNodes(
             const selValue = portValues.get(selKey);
             const selectedInputPort = selValue === 0 ? 'in0' : 'in1';
             const muxInputConnection = Array.from(circuit.connections).find(
-              conn => conn.target.nodeId === sourceNode.id && conn.target.portName === selectedInputPort
+              (conn) =>
+                conn.target.nodeId === sourceNode.id && conn.target.portName === selectedInputPort,
             );
             if (muxInputConnection) {
-              const ramNode = circuit.nodes.find(n => n.id === muxInputConnection.source.nodeId);
+              const ramNode = circuit.nodes.find((n) => n.id === muxInputConnection.source.nodeId);
               if (ramNode?.componentRef === 'DualPortRAM') {
                 const ramState = seqState.currentState.get(ramNode.id);
                 if (ramState instanceof Map) {
@@ -251,7 +265,7 @@ function projectCircuitToNodes(
 
   // Surface nested console/UART nodes
   if (seqState) {
-    const existingNodeIds = new Set(reactFlowNodes.map(n => n.id));
+    const existingNodeIds = new Set(reactFlowNodes.map((n) => n.id));
     let consoleIndex = 0;
 
     for (const [nodeId, state] of seqState.currentState.entries()) {
@@ -264,7 +278,7 @@ function projectCircuitToNodes(
         reactFlowNodes.push({
           id: `__virtual_console_${consoleIndex}`,
           type: isUart ? 'uartTxNode' : 'consoleNode',
-          position: { x: 600, y: 50 + (consoleIndex * 250) },
+          position: { x: 600, y: 50 + consoleIndex * 250 },
           data: {
             nodeId,
             componentRef: isUart ? 'UART_TX' : 'Console',
@@ -295,20 +309,19 @@ function projectCircuitToNodes(
  * Project Circuit connections to ReactFlow edges.
  * Pure function — no hidden state.
  */
-function projectCircuitToEdges(
-  circuit: Circuit,
-  portValues?: FlatPortValueMap,
-): Edge[] {
+function projectCircuitToEdges(circuit: Circuit, portValues?: FlatPortValueMap): Edge[] {
   const edges: Edge[] = [];
 
   for (const connection of circuit.connections) {
     let edgeColor = WIRE_COLORS.UNDEFINED;
     if (portValues) {
-      const value = portValues.get(portPathKey(connection.source))
-        ?? portValues.get(portPathKey(connection.target));
+      const value =
+        portValues.get(portPathKey(connection.source)) ??
+        portValues.get(portPathKey(connection.target));
       if (value !== undefined) {
         edgeColor = (typeof value === 'boolean' ? value : value !== 0)
-          ? WIRE_COLORS.TRUE : WIRE_COLORS.FALSE;
+          ? WIRE_COLORS.TRUE
+          : WIRE_COLORS.FALSE;
       }
     }
 

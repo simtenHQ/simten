@@ -8,7 +8,7 @@
  * executeJsCode — banning it here covers both and any future variants.
  */
 
-import { readFileSync, readdirSync, statSync } from 'fs';
+import { readdirSync, readFileSync, statSync } from 'fs';
 import { join } from 'path';
 
 const APP_SRC = join(__dirname, '..');
@@ -41,10 +41,7 @@ const BANNED: Array<{ pattern: RegExp; reason: string }> = [
 ];
 
 describe('sandbox invariants', () => {
-  const files = [
-    ...collectSourceFiles(APP_SRC),
-    ...collectSourceFiles(EMBED_SRC),
-  ];
+  const files = [...collectSourceFiles(APP_SRC), ...collectSourceFiles(EMBED_SRC)];
 
   for (const { pattern, reason } of BANNED) {
     it(`no source file matches: ${pattern}`, () => {

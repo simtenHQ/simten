@@ -19,12 +19,12 @@
  * stdlib names the source actually uses) and exports each `circuit()` const.
  */
 
-import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { z } from 'zod';
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { EXAMPLES, type Example } from '@simten/core/examples/catalog';
 import * as std from '@simten/core/std';
+import { z } from 'zod';
 
 const DESCRIPTION = `Start here when the user is new to simten, asks what it is, or wants a demo. With no arguments: a short orientation plus the menu of bundled example circuits (Snake, a RISC-V computer, a systolic array, an ALU, ...). With example:"<id>": writes that example to circuits/<id>.circuit.ts, ready for show_circuit — works in an empty folder, no setup or install needed. If the user asked for a specific circuit of their own, skip this tool and build it.`;
 
@@ -69,9 +69,9 @@ export function materializeExample(example: Example): string {
 
 /** The no-argument response: orientation + example menu. */
 export function buildOrientation(): string {
-  const menu = EXAMPLES.map(
-    (e) => `- ${e.id} (${e.category}) — ${e.title}: ${e.description}`,
-  ).join('\n');
+  const menu = EXAMPLES.map((e) => `- ${e.id} (${e.category}) — ${e.title}: ${e.description}`).join(
+    '\n',
+  );
 
   return `SIMTEN IN 30 SECONDS
 Simten is hardware design in TypeScript. You write circuits as code — gates, registers, memories, up to a full RISC-V CPU — then simulate them instantly, paint them on a live browser canvas, prove them correct against a declared oracle, and synthesize the same TypeScript onto a real FPGA.
@@ -98,9 +98,15 @@ export function registerGetStartedTool(server: McpServer): void {
     'get_started',
     DESCRIPTION,
     {
-      example: z.string().optional()
-        .describe(`Example id to write to circuits/<id>.circuit.ts (one of: ${EXAMPLES.map((e) => e.id).join(', ')}). Omit to get the orientation and example menu.`),
-      dir: z.string().optional()
+      example: z
+        .string()
+        .optional()
+        .describe(
+          `Example id to write to circuits/<id>.circuit.ts (one of: ${EXAMPLES.map((e) => e.id).join(', ')}). Omit to get the orientation and example menu.`,
+        ),
+      dir: z
+        .string()
+        .optional()
         .describe('Project root to write the example under (default: the MCP working directory)'),
     },
     async ({ example, dir }) => {
@@ -111,10 +117,19 @@ export function registerGetStartedTool(server: McpServer): void {
       const match = EXAMPLES.find((e) => e.id === example);
       if (!match) {
         return {
-          content: [{ type: 'text' as const, text: JSON.stringify({
-            error: `Unknown example "${example}".`,
-            available: EXAMPLES.map((e) => ({ id: e.id, title: e.title })),
-          }, null, 2) }],
+          content: [
+            {
+              type: 'text' as const,
+              text: JSON.stringify(
+                {
+                  error: `Unknown example "${example}".`,
+                  available: EXAMPLES.map((e) => ({ id: e.id, title: e.title })),
+                },
+                null,
+                2,
+              ),
+            },
+          ],
           isError: true,
         };
       }
@@ -125,23 +140,45 @@ export function registerGetStartedTool(server: McpServer): void {
 
       // Never clobber: the file may hold the user's edits to a previous load.
       if (existsSync(filePath)) {
-        return { content: [{ type: 'text' as const, text: JSON.stringify({
-          written: false,
-          path: filePath,
-          note: 'File already exists (possibly with local edits) — left untouched. show_circuit it as-is, or pass dir to write elsewhere.',
-        }, null, 2) }] };
+        return {
+          content: [
+            {
+              type: 'text' as const,
+              text: JSON.stringify(
+                {
+                  written: false,
+                  path: filePath,
+                  note: 'File already exists (possibly with local edits) — left untouched. show_circuit it as-is, or pass dir to write elsewhere.',
+                },
+                null,
+                2,
+              ),
+            },
+          ],
+        };
       }
 
       mkdirSync(circuitsDir, { recursive: true });
       writeFileSync(filePath, materializeExample(match), 'utf8');
 
-      return { content: [{ type: 'text' as const, text: JSON.stringify({
-        written: true,
-        path: filePath,
-        example: { id: match.id, title: match.title, description: match.description },
-        next: `show_circuit({ filePath: "${filePath}" }) paints it on the canvas; simulate_circuit runs it headless. This bundled example is maintained and tested in the simten repo — no need to verify it just to view it. If the user modifies or extends it, the normal verify contract applies.`,
-        webAlternative: `https://simten.dev/circuit?example=${match.id}`,
-      }, null, 2) }] };
+      return {
+        content: [
+          {
+            type: 'text' as const,
+            text: JSON.stringify(
+              {
+                written: true,
+                path: filePath,
+                example: { id: match.id, title: match.title, description: match.description },
+                next: `show_circuit({ filePath: "${filePath}" }) paints it on the canvas; simulate_circuit runs it headless. This bundled example is maintained and tested in the simten repo — no need to verify it just to view it. If the user modifies or extends it, the normal verify contract applies.`,
+                webAlternative: `https://simten.dev/circuit?example=${match.id}`,
+              },
+              null,
+              2,
+            ),
+          },
+        ],
+      };
     },
   );
 }

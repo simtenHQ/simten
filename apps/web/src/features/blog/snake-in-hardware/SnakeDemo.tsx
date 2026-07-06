@@ -1,6 +1,5 @@
-
-import { useCallback } from "react";
-import { useSnakeSimulator } from "./useSnakeSimulator";
+import { useCallback } from 'react';
+import { useSnakeSimulator } from './useSnakeSimulator';
 
 const GRID_SIZE = 8;
 const PIXEL_SIZE = 40;
@@ -19,25 +18,37 @@ function DPad({ onDirection }: { onDirection: (code: number) => void }) {
   );
 
   const btn =
-    "flex items-center justify-center w-14 h-14 rounded-xl bg-gray-700 active:bg-gray-500 text-gray-200 text-xl select-none transition-colors touch-manipulation";
+    'flex items-center justify-center w-14 h-14 rounded-xl bg-gray-700 active:bg-gray-500 text-gray-200 text-xl select-none transition-colors touch-manipulation';
 
   return (
-    <div className="grid grid-cols-3 gap-1.5 w-fit mx-auto" role="group" aria-label="Direction controls">
+    <div
+      className="grid grid-cols-3 gap-1.5 w-fit mx-auto"
+      role="group"
+      aria-label="Direction controls"
+    >
       <div />
-      <button className={btn} onPointerDown={() => press("up")} aria-label="Up">
-        <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor"><path d="M10 4l6 8H4z" /></svg>
+      <button className={btn} onPointerDown={() => press('up')} aria-label="Up">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+          <path d="M10 4l6 8H4z" />
+        </svg>
       </button>
       <div />
-      <button className={btn} onPointerDown={() => press("left")} aria-label="Left">
-        <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor"><path d="M4 10l8-6v12z" /></svg>
+      <button className={btn} onPointerDown={() => press('left')} aria-label="Left">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+          <path d="M4 10l8-6v12z" />
+        </svg>
       </button>
       <div className="w-14 h-14" />
-      <button className={btn} onPointerDown={() => press("right")} aria-label="Right">
-        <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor"><path d="M16 10l-8 6V4z" /></svg>
+      <button className={btn} onPointerDown={() => press('right')} aria-label="Right">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+          <path d="M16 10l-8 6V4z" />
+        </svg>
       </button>
       <div />
-      <button className={btn} onPointerDown={() => press("down")} aria-label="Down">
-        <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor"><path d="M10 16l-6-8h12z" /></svg>
+      <button className={btn} onPointerDown={() => press('down')} aria-label="Down">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+          <path d="M10 16l-6-8h12z" />
+        </svg>
       </button>
       <div />
     </div>
@@ -45,16 +56,8 @@ function DPad({ onDirection }: { onDirection: (code: number) => void }) {
 }
 
 export function SnakeDemo() {
-  const {
-    sim,
-    pixels,
-    isRunning,
-    setIsRunning,
-    speed,
-    setSpeed,
-    handleReset,
-    sendDirection,
-  } = useSnakeSimulator();
+  const { sim, pixels, isRunning, setIsRunning, speed, setSpeed, handleReset, sendDirection } =
+    useSnakeSimulator();
 
   if (!sim.ready) {
     return (
@@ -86,7 +89,7 @@ export function SnakeDemo() {
           Use arrow keys to control the snake
         </span>
         <div className="ml-auto flex gap-1">
-          {["\u2191", "\u2190", "\u2193", "\u2192"].map((key) => (
+          {['\u2191', '\u2190', '\u2193', '\u2192'].map((key) => (
             <kbd
               key={key}
               className="px-1.5 py-0.5 text-xs font-mono bg-gray-200 dark:bg-gray-800 text-gray-500 dark:text-gray-300 rounded border border-gray-600"
@@ -102,7 +105,7 @@ export function SnakeDemo() {
         <svg
           viewBox={`0 0 ${TOTAL_SIZE} ${TOTAL_SIZE}`}
           className="border-2 border-gray-700 rounded-lg bg-black w-[min(100%-2rem,355px)]"
-          style={{ imageRendering: "pixelated" }}
+          style={{ imageRendering: 'pixelated' }}
         >
           {pixels.map((value, index) => {
             const x = index % GRID_SIZE;
@@ -114,7 +117,7 @@ export function SnakeDemo() {
                 y={y * (PIXEL_SIZE + PIXEL_GAP)}
                 width={PIXEL_SIZE}
                 height={PIXEL_SIZE}
-                fill={value !== 0 ? "#22c55e" : "#1a1a2e"}
+                fill={value !== 0 ? '#22c55e' : '#1a1a2e'}
                 rx={3}
               />
             );
@@ -133,11 +136,11 @@ export function SnakeDemo() {
           onClick={() => setIsRunning(!isRunning)}
           className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
             isRunning
-              ? "bg-amber-600 hover:bg-amber-500 text-gray-900 dark:text-white"
-              : "bg-green-600 hover:bg-green-500 text-white"
+              ? 'bg-amber-600 hover:bg-amber-500 text-gray-900 dark:text-white'
+              : 'bg-green-600 hover:bg-green-500 text-white'
           }`}
         >
-          {isRunning ? "Pause" : "Run"}
+          {isRunning ? 'Pause' : 'Run'}
         </button>
         <button
           onClick={sim.tick}

@@ -22,41 +22,58 @@
  * not a per-primitive guarantee.
  */
 
-import { describe, it, expect } from 'vitest';
 import { createHash } from 'node:crypto';
-import { writeFileSync, readFileSync, mkdirSync, existsSync } from 'node:fs';
-import { resolve, dirname } from 'node:path';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { exportVerilog } from '../exporter.js';
-import { circuit, bit, bus } from '../../circuit/index.js';
+import { describe, expect, it } from 'vitest';
+import { bit, bus, circuit } from '../../circuit/index.js';
 import {
-  // Logic
-  And, Or, Not, Nand, Xor,
   // Arithmetic (composites — these have `connect` and are touched by codemod)
-  Adder, Subtractor, Comparator, Multiplier,
-  // Routing
-  Mux, Decoder, BitSlice,
+  Adder,
+  // Logic
+  And,
+  BitSlice,
+  Comparator,
+  Decoder,
   // Sequential
-  DFlipFlop, Register,
+  DFlipFlop,
+  Multiplier,
+  // Routing
+  Mux,
+  Nand,
+  Not,
+  Or,
+  RAM,
+  Register,
   // Memory
-  ROM, RAM,
+  ROM,
+  RV32I_ALU,
+  RV32I_BranchComp,
+  RV32I_Control,
   // RV32I
-  RV32I_Decode, RV32I_ALU, RV32I_ImmGen, RV32I_Control,
-  RV32I_BranchComp, RV32I_RegisterFile,
+  RV32I_Decode,
+  RV32I_ImmGen,
+  RV32I_RegisterFile,
+  Subtractor,
+  Xor,
 } from '../../std/index.js';
 import type { Circuit, CircuitLibrary } from '../../types/circuit.js';
+import { exportVerilog } from '../exporter.js';
 
 const GOLDEN_FILE_REL = '../../../../../tools/codemod/golden-verilog-hashes.json';
 
-function libraryFor(c: { circuit: Circuit; _dependencies: ReadonlyMap<string, { circuit: Circuit }> }): CircuitLibrary {
+function libraryFor(c: {
+  circuit: Circuit;
+  _dependencies: ReadonlyMap<string, { circuit: Circuit }>;
+}): CircuitLibrary {
   const map = new Map<string, Circuit>();
   map.set(c.circuit.name, c.circuit);
   for (const [, dep] of c._dependencies) map.set(dep.circuit.name, dep.circuit);
   return {
     resolveCircuit: (name) => map.get(name),
-    getAllPrimitiveNames: () => [...map.entries()]
-      .filter(([, c]) => c.implementation.kind === 'primitive')
-      .map(([n]) => n),
+    getAllPrimitiveNames: () =>
+      [...map.entries()].filter(([, c]) => c.implementation.kind === 'primitive').map(([n]) => n),
   };
 }
 
@@ -64,7 +81,10 @@ function hash(s: string): string {
   return createHash('sha256').update(s).digest('hex');
 }
 
-function tryHash(name: string, c: { circuit: Circuit; _dependencies: ReadonlyMap<string, any> }): string | null {
+function tryHash(
+  name: string,
+  c: { circuit: Circuit; _dependencies: ReadonlyMap<string, any> },
+): string | null {
   try {
     const { verilog } = exportVerilog(c.circuit, libraryFor(c));
     return hash(verilog);
@@ -80,7 +100,7 @@ function tryHash(name: string, c: { circuit: Circuit; _dependencies: ReadonlyMap
 
 function buildHalfAdder() {
   return circuit('HalfAdder_Golden', {
-    inputs:  { a: bit, b: bit },
+    inputs: { a: bit, b: bit },
     outputs: { sum: bit, carry: bit },
     nodes: { x1: Xor, a1: And },
     connect: ({ inputs, outputs, nodes: { x1, a1 } }) => [
@@ -95,7 +115,7 @@ function buildHalfAdder() {
 function buildFullAdder() {
   const HalfAdder = buildHalfAdder();
   return circuit('FullAdder_Golden', {
-    inputs:  { a: bit, b: bit, cin: bit },
+    inputs: { a: bit, b: bit, cin: bit },
     outputs: { sum: bit, cout: bit },
     nodes: { ha1: HalfAdder, ha2: HalfAdder, or1: Or },
     connect: ({ inputs, outputs, nodes: { ha1, ha2, or1 } }) => [
@@ -115,9 +135,7 @@ function buildBusPassthrough() {
   return circuit('BusPassthrough_Golden', {
     inputs: { x: bus(8) },
     outputs: { y: bus(8) },
-    connect: ({ inputs, outputs }) => [
-      inputs.x.to(outputs.y),
-    ],
+    connect: ({ inputs, outputs }) => [inputs.x.to(outputs.y)],
   });
 }
 
@@ -125,10 +143,7 @@ function buildSimpleSequential() {
   return circuit('Counter_Golden', {
     outputs: { q: bit },
     nodes: { dff: DFlipFlop(), n: Not },
-    connect: ({ outputs, nodes: { dff, n } }) => [
-      dff.q.to(n.in, outputs.q),
-      n.out.to(dff.d),
-    ],
+    connect: ({ outputs, nodes: { dff, n } }) => [dff.q.to(n.in, outputs.q), n.out.to(dff.d)],
   });
 }
 
@@ -138,38 +153,38 @@ const subjects: Array<{ name: string; build: () => any }> = [
   // Stdlib — singletons are bare BuiltCircuits; parameterized components are
   // invoked with default args to capture the canonical (default-width) shape.
   // Widths are exercised through the synthetic composites further down.
-  { name: 'And',                 build: () => And },
-  { name: 'Or',                  build: () => Or },
-  { name: 'Not',                 build: () => Not },
-  { name: 'Nand',                build: () => Nand },
-  { name: 'Xor',                 build: () => Xor },
-  { name: 'Adder',               build: () => Adder() },
-  { name: 'Subtractor',          build: () => Subtractor() },
-  { name: 'Comparator',          build: () => Comparator() },
-  { name: 'Multiplier',          build: () => Multiplier },
-  { name: 'Mux',                 build: () => Mux() },
-  { name: 'Decoder',             build: () => Decoder },
-  { name: 'BitSlice',            build: () => BitSlice() },
-  { name: 'DFlipFlop',           build: () => DFlipFlop() },
-  { name: 'Register',            build: () => Register() },
-  { name: 'ROM',                 build: () => ROM() },
-  { name: 'RAM',                 build: () => RAM() },
+  { name: 'And', build: () => And },
+  { name: 'Or', build: () => Or },
+  { name: 'Not', build: () => Not },
+  { name: 'Nand', build: () => Nand },
+  { name: 'Xor', build: () => Xor },
+  { name: 'Adder', build: () => Adder() },
+  { name: 'Subtractor', build: () => Subtractor() },
+  { name: 'Comparator', build: () => Comparator() },
+  { name: 'Multiplier', build: () => Multiplier },
+  { name: 'Mux', build: () => Mux() },
+  { name: 'Decoder', build: () => Decoder },
+  { name: 'BitSlice', build: () => BitSlice() },
+  { name: 'DFlipFlop', build: () => DFlipFlop() },
+  { name: 'Register', build: () => Register() },
+  { name: 'ROM', build: () => ROM() },
+  { name: 'RAM', build: () => RAM() },
 
   // RV32I (real-world composites, dense usage of connect)
-  { name: 'RV32I_Decode',        build: () => RV32I_Decode },
-  { name: 'RV32I_ALU',           build: () => RV32I_ALU },
-  { name: 'RV32I_ImmGen',        build: () => RV32I_ImmGen },
-  { name: 'RV32I_Control',       build: () => RV32I_Control },
-  { name: 'RV32I_BranchComp',    build: () => RV32I_BranchComp },
-  { name: 'RV32I_RegisterFile',  build: () => RV32I_RegisterFile },
+  { name: 'RV32I_Decode', build: () => RV32I_Decode },
+  { name: 'RV32I_ALU', build: () => RV32I_ALU },
+  { name: 'RV32I_ImmGen', build: () => RV32I_ImmGen },
+  { name: 'RV32I_Control', build: () => RV32I_Control },
+  { name: 'RV32I_BranchComp', build: () => RV32I_BranchComp },
+  { name: 'RV32I_RegisterFile', build: () => RV32I_RegisterFile },
 
   // Synthetic composites that exercise the connect callback shape directly
   // (these write the same shape the codemod will rewrite, so any IR drift
   // shows up here even if stdlib stays stable)
-  { name: 'GOLDEN_HalfAdder',      build: buildHalfAdder },
-  { name: 'GOLDEN_FullAdder',      build: buildFullAdder },
+  { name: 'GOLDEN_HalfAdder', build: buildHalfAdder },
+  { name: 'GOLDEN_FullAdder', build: buildFullAdder },
   { name: 'GOLDEN_BusPassthrough', build: buildBusPassthrough },
-  { name: 'GOLDEN_Counter',        build: buildSimpleSequential },
+  { name: 'GOLDEN_Counter', build: buildSimpleSequential },
 ];
 
 function computeAllHashes(): Record<string, string | null> {
@@ -215,7 +230,10 @@ if (process.env.CAPTURE === '1') {
         );
         return;
       }
-      const goldens = JSON.parse(readFileSync(goldenPath, 'utf-8')).hashes as Record<string, string | null>;
+      const goldens = JSON.parse(readFileSync(goldenPath, 'utf-8')).hashes as Record<
+        string,
+        string | null
+      >;
       const current = computeAllHashes();
 
       const mismatches: string[] = [];

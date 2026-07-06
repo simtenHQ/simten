@@ -9,8 +9,8 @@
  * the fast-simulator refactor. Needs porting before re-enabling.
  */
 
-import { describe as _describe, it, expect } from 'vitest';
 import * as fc from 'fast-check';
+import { describe as _describe, expect, it } from 'vitest';
 
 const PRIMITIVE_EVALUATORS: any = {};
 const describe = _describe.skip;
@@ -47,7 +47,7 @@ describe('DFlipFlop - Stateful Property Tests', () => {
             d: fc.boolean(),
             edge: fc.constantFrom('rising' as const, 'falling' as const, 'none' as const),
           }),
-          { minLength: 1, maxLength: 50 }
+          { minLength: 1, maxLength: 50 },
         ),
         (operations) => {
           const model = new DFlipFlopModel(false);
@@ -63,7 +63,7 @@ describe('DFlipFlop - Stateful Property Tests', () => {
             currentState = PRIMITIVE_EVALUATORS.DFlipFlop.updateState!(
               inputs,
               currentState,
-              clockEdges
+              clockEdges,
             ) as boolean;
 
             // Verify outputs match
@@ -75,9 +75,9 @@ describe('DFlipFlop - Stateful Property Tests', () => {
           }
 
           return true;
-        }
+        },
       ),
-      { numRuns: 500 }
+      { numRuns: 500 },
     );
   });
 
@@ -88,33 +88,27 @@ describe('DFlipFlop - Stateful Property Tests', () => {
 
         // Falling edge should not update
         const inputs1 = new Map<string, boolean>([['d', newValue]]);
-        state = PRIMITIVE_EVALUATORS.DFlipFlop.updateState!(
-          inputs1,
-          state,
-          { clk: 'falling' }
-        ) as boolean;
+        state = PRIMITIVE_EVALUATORS.DFlipFlop.updateState!(inputs1, state, {
+          clk: 'falling',
+        }) as boolean;
 
         if (state !== initial) return false;
 
         // No edge should not update
-        state = PRIMITIVE_EVALUATORS.DFlipFlop.updateState!(
-          inputs1,
-          state,
-          { clk: 'none' }
-        ) as boolean;
+        state = PRIMITIVE_EVALUATORS.DFlipFlop.updateState!(inputs1, state, {
+          clk: 'none',
+        }) as boolean;
 
         if (state !== initial) return false;
 
         // Rising edge should update
-        state = PRIMITIVE_EVALUATORS.DFlipFlop.updateState!(
-          inputs1,
-          state,
-          { clk: 'rising' }
-        ) as boolean;
+        state = PRIMITIVE_EVALUATORS.DFlipFlop.updateState!(inputs1, state, {
+          clk: 'rising',
+        }) as boolean;
 
         return state === newValue;
       }),
-      { numRuns: 300 }
+      { numRuns: 300 },
     );
   });
 });
@@ -152,7 +146,7 @@ describe('Register - Stateful Property Tests', () => {
             we: fc.boolean(),
             edge: fc.constantFrom('rising' as const, 'falling' as const, 'none' as const),
           }),
-          { minLength: 1, maxLength: 50 }
+          { minLength: 1, maxLength: 50 },
         ),
         (operations) => {
           const model = new RegisterModel(0);
@@ -171,7 +165,7 @@ describe('Register - Stateful Property Tests', () => {
             currentState = PRIMITIVE_EVALUATORS.Register.updateState!(
               inputs,
               currentState,
-              clockEdges
+              clockEdges,
             ) as number;
 
             // Verify outputs match
@@ -182,9 +176,9 @@ describe('Register - Stateful Property Tests', () => {
           }
 
           return true;
-        }
+        },
       ),
-      { numRuns: 500 }
+      { numRuns: 500 },
     );
   });
 
@@ -201,11 +195,9 @@ describe('Register - Stateful Property Tests', () => {
             ['data', newValue],
             ['we', false],
           ]);
-          state = PRIMITIVE_EVALUATORS.Register.updateState!(
-            inputs1,
-            state,
-            { clk: 'rising' }
-          ) as number;
+          state = PRIMITIVE_EVALUATORS.Register.updateState!(inputs1, state, {
+            clk: 'rising',
+          }) as number;
 
           if (state !== initial) return false;
 
@@ -214,57 +206,55 @@ describe('Register - Stateful Property Tests', () => {
             ['data', newValue],
             ['we', true],
           ]);
-          state = PRIMITIVE_EVALUATORS.Register.updateState!(
-            inputs2,
-            state,
-            { clk: 'falling' }
-          ) as number;
+          state = PRIMITIVE_EVALUATORS.Register.updateState!(inputs2, state, {
+            clk: 'falling',
+          }) as number;
 
           if (state !== initial) return false;
 
           // Write with WE=true on rising edge should update
-          state = PRIMITIVE_EVALUATORS.Register.updateState!(
-            inputs2,
-            state,
-            { clk: 'rising' }
-          ) as number;
+          state = PRIMITIVE_EVALUATORS.Register.updateState!(inputs2, state, {
+            clk: 'rising',
+          }) as number;
 
           return state === newValue;
-        }
+        },
       ),
-      { numRuns: 300 }
+      { numRuns: 300 },
     );
   });
 
   it('should preserve written value across multiple read operations', () => {
     fc.assert(
-      fc.property(fc.integer({ min: 0, max: 255 }), fc.integer({ min: 1, max: 10 }), (value, readCount) => {
-        // Write value
-        let state = 0;
-        const writeInputs = new Map<string, boolean | number>([
-          ['data', value],
-          ['we', true],
-        ]);
-        state = PRIMITIVE_EVALUATORS.Register.updateState!(
-          writeInputs,
-          state,
-          { clk: 'rising' }
-        ) as number;
-
-        // Read multiple times - should always return same value
-        for (let i = 0; i < readCount; i++) {
-          const readInputs = new Map<string, boolean | number>([
-            ['data', 0],
-            ['we', false],
+      fc.property(
+        fc.integer({ min: 0, max: 255 }),
+        fc.integer({ min: 1, max: 10 }),
+        (value, readCount) => {
+          // Write value
+          let state = 0;
+          const writeInputs = new Map<string, boolean | number>([
+            ['data', value],
+            ['we', true],
           ]);
-          const output = PRIMITIVE_EVALUATORS.Register.evaluate(readInputs, state);
+          state = PRIMITIVE_EVALUATORS.Register.updateState!(writeInputs, state, {
+            clk: 'rising',
+          }) as number;
 
-          if (output.get('q') !== value) return false;
-        }
+          // Read multiple times - should always return same value
+          for (let i = 0; i < readCount; i++) {
+            const readInputs = new Map<string, boolean | number>([
+              ['data', 0],
+              ['we', false],
+            ]);
+            const output = PRIMITIVE_EVALUATORS.Register.evaluate(readInputs, state);
 
-        return true;
-      }),
-      { numRuns: 300 }
+            if (output.get('q') !== value) return false;
+          }
+
+          return true;
+        },
+      ),
+      { numRuns: 300 },
     );
   });
 });
@@ -303,7 +293,7 @@ describe('RAM - Stateful Property Tests', () => {
             we: fc.boolean(),
             edge: fc.constantFrom('rising' as const, 'falling' as const, 'none' as const),
           }),
-          { minLength: 1, maxLength: 100 }
+          { minLength: 1, maxLength: 100 },
         ),
         (operations) => {
           const model = new RAMModel();
@@ -323,7 +313,7 @@ describe('RAM - Stateful Property Tests', () => {
             currentState = PRIMITIVE_EVALUATORS.RAM.updateState!(
               inputs,
               currentState,
-              clockEdges
+              clockEdges,
             ) as Map<number, number>;
 
             // Verify read outputs match
@@ -334,9 +324,9 @@ describe('RAM - Stateful Property Tests', () => {
           }
 
           return true;
-        }
+        },
       ),
-      { numRuns: 300 }
+      { numRuns: 300 },
     );
   });
 
@@ -359,11 +349,10 @@ describe('RAM - Stateful Property Tests', () => {
             ['data_in', value1],
             ['we', true],
           ]);
-          state = PRIMITIVE_EVALUATORS.RAM.updateState!(
-            write1,
-            state,
-            { clk: 'rising' }
-          ) as Map<number, number>;
+          state = PRIMITIVE_EVALUATORS.RAM.updateState!(write1, state, { clk: 'rising' }) as Map<
+            number,
+            number
+          >;
 
           // Write value2 to addr2
           const write2 = new Map<string, boolean | number>([
@@ -371,11 +360,10 @@ describe('RAM - Stateful Property Tests', () => {
             ['data_in', value2],
             ['we', true],
           ]);
-          state = PRIMITIVE_EVALUATORS.RAM.updateState!(
-            write2,
-            state,
-            { clk: 'rising' }
-          ) as Map<number, number>;
+          state = PRIMITIVE_EVALUATORS.RAM.updateState!(write2, state, { clk: 'rising' }) as Map<
+            number,
+            number
+          >;
 
           // Read both addresses - should get independent values
           const read1 = new Map<string, boolean | number>([
@@ -393,9 +381,9 @@ describe('RAM - Stateful Property Tests', () => {
           const output2 = PRIMITIVE_EVALUATORS.RAM.evaluate(read2, state);
 
           return output1.get('data_out') === value1 && output2.get('data_out') === value2;
-        }
+        },
       ),
-      { numRuns: 500 }
+      { numRuns: 500 },
     );
   });
 
@@ -413,7 +401,7 @@ describe('RAM - Stateful Property Tests', () => {
 
         return output.get('data_out') === 0;
       }),
-      { numRuns: 300 }
+      { numRuns: 300 },
     );
   });
 
@@ -432,11 +420,10 @@ describe('RAM - Stateful Property Tests', () => {
             ['data_in', value1],
             ['we', true],
           ]);
-          state = PRIMITIVE_EVALUATORS.RAM.updateState!(
-            write1,
-            state,
-            { clk: 'rising' }
-          ) as Map<number, number>;
+          state = PRIMITIVE_EVALUATORS.RAM.updateState!(write1, state, { clk: 'rising' }) as Map<
+            number,
+            number
+          >;
 
           // Write value2 to same address
           const write2 = new Map<string, boolean | number>([
@@ -444,11 +431,10 @@ describe('RAM - Stateful Property Tests', () => {
             ['data_in', value2],
             ['we', true],
           ]);
-          state = PRIMITIVE_EVALUATORS.RAM.updateState!(
-            write2,
-            state,
-            { clk: 'rising' }
-          ) as Map<number, number>;
+          state = PRIMITIVE_EVALUATORS.RAM.updateState!(write2, state, { clk: 'rising' }) as Map<
+            number,
+            number
+          >;
 
           // Read - should get value2, not value1
           const readInputs = new Map<string, boolean | number>([
@@ -459,9 +445,9 @@ describe('RAM - Stateful Property Tests', () => {
           const output = PRIMITIVE_EVALUATORS.RAM.evaluate(readInputs, state);
 
           return output.get('data_out') === value2;
-        }
+        },
       ),
-      { numRuns: 300 }
+      { numRuns: 300 },
     );
   });
 });

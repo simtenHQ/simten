@@ -1,8 +1,8 @@
-import { createFileRoute } from '@tanstack/react-router'
-import EditorShell from '@/components/EditorShell'
-import { pageHead } from '@/lib/seo'
-import { extractCircuitName } from '@/lib/extract-circuit-name'
-import { getSharedCircuit } from '@/features/share/server'
+import { createFileRoute } from '@tanstack/react-router';
+import EditorShell from '@/components/EditorShell';
+import { getSharedCircuit } from '@/features/share/server';
+import { extractCircuitName } from '@/lib/extract-circuit-name';
+import { pageHead } from '@/lib/seo';
 
 export const Route = createFileRoute('/circuit_/s/$hash')({
   staticData: { skipDefaultChrome: true },
@@ -13,29 +13,29 @@ export const Route = createFileRoute('/circuit_/s/$hash')({
       throw new Response(null, {
         status: 410,
         headers: { 'X-Robots-Tag': 'noindex' },
-      })
+      });
     }
-    const result = await getSharedCircuit({ data: params.hash }).catch(() => null)
-    const source = result?.source ?? null
+    const result = await getSharedCircuit({ data: params.hash }).catch(() => null);
+    const source = result?.source ?? null;
     return {
       source,
       circuitName: source ? extractCircuitName(source) : null,
-    }
+    };
   },
   head: ({ loaderData }) => {
-    const name = loaderData?.circuitName
+    const name = loaderData?.circuitName;
     return pageHead({
       title: name ? `${name} — Shared circuit` : 'Shared circuit',
       description: name
         ? `Open and modify the ${name} circuit in the Simten editor.`
         : 'Open and modify a shared Simten circuit.',
       path: '/circuit',
-    })
+    });
   },
   component: SharedCircuitHashRoute,
-})
+});
 
 function SharedCircuitHashRoute() {
-  const { source } = Route.useLoaderData()
-  return <EditorShell initialSource={source ?? undefined} />
+  const { source } = Route.useLoaderData();
+  return <EditorShell initialSource={source ?? undefined} />;
 }

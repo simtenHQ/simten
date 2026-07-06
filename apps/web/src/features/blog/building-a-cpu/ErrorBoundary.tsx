@@ -1,5 +1,4 @@
-
-import React from "react";
+import React from 'react';
 
 interface ErrorBoundaryState {
   hasError: boolean;
@@ -23,12 +22,8 @@ export class ErrorBoundary extends React.Component<
     if (this.state.hasError) {
       return (
         <div className="py-8 px-4 rounded-xl border border-red-800/30 bg-red-950/20 my-4">
-          <p className="text-red-400 text-sm font-medium">
-            This circuit failed to load.
-          </p>
-          <p className="text-red-400/60 text-xs font-mono mt-1">
-            {this.state.error?.message}
-          </p>
+          <p className="text-red-400 text-sm font-medium">This circuit failed to load.</p>
+          <p className="text-red-400/60 text-xs font-mono mt-1">{this.state.error?.message}</p>
         </div>
       );
     }

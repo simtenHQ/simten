@@ -1,6 +1,5 @@
-
-import { CircuitEmbed } from "@simten/embed";
-import { CORDIC_CIRCUITS } from "../circuits";
+import { CircuitEmbed } from '@simten/embed';
+import { CORDIC_CIRCUITS } from '../circuits';
 
 export function LookupSection() {
   const entry = CORDIC_CIRCUITS.angleLookup;
@@ -13,17 +12,14 @@ export function LookupSection() {
       <div className="prose-invert space-y-6">
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
           Each CORDIC iteration rotates by a pre-computed angle: atan(2
-          <sup>&minus;i</sup>). These values are baked into{" "}
-          <code>Constant</code> nodes and selected by a cascaded{" "}
-          <code>Mux</code> tree that uses the iteration index bits as selectors.
+          <sup>&minus;i</sup>). These values are baked into <code>Constant</code> nodes and selected
+          by a cascaded <code>Mux</code> tree that uses the iteration index bits as selectors.
         </p>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
-          The table starts at 32 (representing 45&deg;) and shrinks: 19
-          (&asymp;&nbsp;26.6&deg;), 10 (&asymp;&nbsp;14&deg;), 5
-          (&asymp;&nbsp;7.1&deg;), 3, 1, 1, 0. Change the{" "}
-          <strong>iteration</strong> input from 0 to 7 and watch the selected
-          angle change. Three layers of muxes select one of eight values using
-          just three bits.
+          The table starts at 32 (representing 45&deg;) and shrinks: 19 (&asymp;&nbsp;26.6&deg;), 10
+          (&asymp;&nbsp;14&deg;), 5 (&asymp;&nbsp;7.1&deg;), 3, 1, 1, 0. Change the{' '}
+          <strong>iteration</strong> input from 0 to 7 and watch the selected angle change. Three
+          layers of muxes select one of eight values using just three bits.
         </p>
       </div>
 

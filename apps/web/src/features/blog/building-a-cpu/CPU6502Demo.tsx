@@ -1,8 +1,7 @@
-
-import { useRef, useEffect, useState, useCallback } from "react";
-import { use6502Simulator } from "./use6502Simulator";
-import { useCC65Compiler } from "./useCC65Compiler";
-import type { StageStatus } from "@/lib/cc65-compiler";
+import { useCallback, useEffect, useRef, useState } from 'react';
+import type { StageStatus } from '@/lib/cc65-compiler';
+import { use6502Simulator } from './use6502Simulator';
+import { useCC65Compiler } from './useCC65Compiler';
 
 const STARTER_TEMPLATE = `\
 /*
@@ -26,21 +25,21 @@ function StageIndicator({ label, status }: { label: string; status: StageStatus 
   return (
     <span
       className={`inline-flex items-center gap-1 text-xs font-mono ${
-        status === "done"
-          ? "text-green-400"
-          : status === "error"
-            ? "text-red-400"
-            : status === "running"
-              ? "text-blue-400"
-              : "text-gray-500"
+        status === 'done'
+          ? 'text-green-400'
+          : status === 'error'
+            ? 'text-red-400'
+            : status === 'running'
+              ? 'text-blue-400'
+              : 'text-gray-500'
       }`}
     >
-      {status === "running" && (
+      {status === 'running' && (
         <span className="inline-block h-3 w-3 animate-spin rounded-full border border-blue-400 border-t-transparent" />
       )}
-      {status === "done" && "✓"}
-      {status === "error" && "✗"}
-      {status === "pending" && "○"}
+      {status === 'done' && '✓'}
+      {status === 'error' && '✗'}
+      {status === 'pending' && '○'}
       {label}
     </span>
   );
@@ -121,8 +120,8 @@ export function CPU6502Demo() {
           <div>
             <span className="text-sm">
               {loading
-                ? "Loading 6502 system (5,574 lines of TypeScript)..."
-                : "Compiling 6502 CPU..."}
+                ? 'Loading 6502 system (5,574 lines of TypeScript)...'
+                : 'Compiling 6502 CPU...'}
             </span>
             {!loading && (
               <span className="block text-xs text-gray-500 dark:text-gray-500 mt-1">
@@ -146,7 +145,7 @@ export function CPU6502Demo() {
               disabled={compiler.compiling}
               className="px-4 py-1.5 text-xs font-medium rounded-md bg-blue-600 hover:bg-blue-500 text-white transition-colors disabled:opacity-50"
             >
-              {compiler.compiling ? "Compiling..." : "Compile & Run"}
+              {compiler.compiling ? 'Compiling...' : 'Compile & Run'}
             </button>
             {compiler.compiling && (
               <div className="flex items-center gap-2">
@@ -176,8 +175,8 @@ export function CPU6502Demo() {
                   onClick={() => selectProgram(prog.id)}
                   className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
                     currentProgram.id === prog.id
-                      ? "bg-blue-600 text-white"
-                      : "bg-gray-200 dark:bg-gray-800 text-gray-500 dark:text-gray-300 hover:bg-gray-700"
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-200 dark:bg-gray-800 text-gray-500 dark:text-gray-300 hover:bg-gray-700'
                   }`}
                 >
                   {prog.name}
@@ -208,8 +207,8 @@ export function CPU6502Demo() {
             {consoleText || (
               <span className="text-gray-600">
                 {editMode
-                  ? "// Click Compile & Run to execute your code"
-                  : "// Click Run to start the program"}
+                  ? '// Click Compile & Run to execute your code'
+                  : '// Click Run to start the program'}
               </span>
             )}
           </pre>
@@ -218,7 +217,7 @@ export function CPU6502Demo() {
         {/* C source / editor */}
         <div className="p-4">
           <div className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
-            {editMode ? "C Editor" : `C Source (${currentProgram.name})`}
+            {editMode ? 'C Editor' : `C Source (${currentProgram.name})`}
           </div>
 
           {editMode ? (
@@ -231,14 +230,15 @@ export function CPU6502Demo() {
               />
               {compiler.errors.length > 0 && (
                 <pre className="max-h-24 overflow-auto rounded-lg border border-red-800/50 bg-red-950/30 text-red-400 font-mono text-xs p-3">
-                  {compiler.errors.join("\n")}
+                  {compiler.errors.join('\n')}
                 </pre>
               )}
               <div className="text-[10px] text-gray-500 dark:text-gray-500 leading-snug">
-                No standard library (printf, etc.) — use{" "}
-                <code className="text-gray-500 dark:text-gray-400">CONSOLE = &apos;c&apos;;</code> for output.
-                Program must end with <code className="text-gray-500 dark:text-gray-400">while(1);</code> to
-                halt. ROM size: 16KB max.
+                No standard library (printf, etc.) — use{' '}
+                <code className="text-gray-500 dark:text-gray-400">CONSOLE = &apos;c&apos;;</code>{' '}
+                for output. Program must end with{' '}
+                <code className="text-gray-500 dark:text-gray-400">while(1);</code> to halt. ROM
+                size: 16KB max.
               </div>
             </div>
           ) : (
@@ -256,11 +256,11 @@ export function CPU6502Demo() {
           onClick={() => setIsRunning(!isRunning)}
           className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
             isRunning
-              ? "bg-amber-600 hover:bg-amber-500 text-gray-900 dark:text-white"
-              : "bg-green-600 hover:bg-green-500 text-white"
+              ? 'bg-amber-600 hover:bg-amber-500 text-gray-900 dark:text-white'
+              : 'bg-green-600 hover:bg-green-500 text-white'
           }`}
         >
-          {isRunning ? "Pause" : "Run"}
+          {isRunning ? 'Pause' : 'Run'}
         </button>
 
         {/* Step */}

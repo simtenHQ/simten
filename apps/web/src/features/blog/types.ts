@@ -1,4 +1,4 @@
-import type { BuiltCircuit } from "@simten/core/circuit";
+import type { BuiltCircuit } from '@simten/core/circuit';
 
 export interface BlogCircuit {
   name: string;

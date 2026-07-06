@@ -10,24 +10,24 @@
  * a features/learn/_shared/ module. For now the page is self-contained.
  */
 
-import { circuit, bit, bus } from "@simten/core/circuit";
-import type { BlogCircuit } from "@/features/blog/types";
+import { bit, bus, circuit } from '@simten/core/circuit';
 import {
   And,
-  Xor,
-  Or,
-  Switch,
-  Led,
-  Input,
-  HexDisplay,
-  Constant,
-  Splitter8to8,
   Combiner8to8,
-} from "@simten/core/std";
+  Constant,
+  HexDisplay,
+  Input,
+  Led,
+  Or,
+  Splitter8to8,
+  Switch,
+  Xor,
+} from '@simten/core/std';
+import type { BlogCircuit } from '@/features/blog/types';
 
 // ── Subcircuits (the "abstracted" building blocks) ─────────────────────
 
-const HalfAdder = circuit("HalfAdder", {
+const HalfAdder = circuit('HalfAdder', {
   inputs: { a: bit, b: bit },
   outputs: { sum: bit, carry: bit },
   nodes: { xorGate: Xor, andGate: And },
@@ -39,7 +39,7 @@ const HalfAdder = circuit("HalfAdder", {
   ],
 });
 
-const FullAdder = circuit("FullAdder", {
+const FullAdder = circuit('FullAdder', {
   inputs: { a: bit, b: bit, cin: bit },
   outputs: { sum: bit, cout: bit },
   nodes: {
@@ -62,7 +62,7 @@ const FullAdder = circuit("FullAdder", {
 // ── Section 2: same circuit, two ways ──────────────────────────────────
 // Flat half-adder — XOR and AND wired directly. No subcircuit.
 
-const FlatHalfAdderDemo = circuit("FlatHalfAdderDemo", {
+const FlatHalfAdderDemo = circuit('FlatHalfAdderDemo', {
   nodes: {
     a: Switch(),
     b: Switch(),
@@ -81,7 +81,7 @@ const FlatHalfAdderDemo = circuit("FlatHalfAdderDemo", {
 
 // Encapsulated half-adder — uses the named HalfAdder subcircuit.
 
-const EncapsulatedHalfAdderDemo = circuit("EncapsulatedHalfAdderDemo", {
+const EncapsulatedHalfAdderDemo = circuit('EncapsulatedHalfAdderDemo', {
   nodes: {
     a: Switch(),
     b: Switch(),
@@ -100,7 +100,7 @@ const EncapsulatedHalfAdderDemo = circuit("EncapsulatedHalfAdderDemo", {
 // ── Section 3: building up — full adder, two ways ──────────────────────
 // Flat full adder — all five gates exposed (two XOR, two AND, one OR).
 
-const FlatFullAdderDemo = circuit("FlatFullAdderDemo", {
+const FlatFullAdderDemo = circuit('FlatFullAdderDemo', {
   nodes: {
     a: Switch(),
     b: Switch(),
@@ -113,9 +113,7 @@ const FlatFullAdderDemo = circuit("FlatFullAdderDemo", {
     sumLed: Led,
     coutLed: Led,
   },
-  connect: ({
-    nodes: { a, b, cin, xor1, xor2, and1, and2, orGate, sumLed, coutLed },
-  }) => [
+  connect: ({ nodes: { a, b, cin, xor1, xor2, and1, and2, orGate, sumLed, coutLed } }) => [
     // First half-adder (flattened): a + b
     a.out.to(xor1.a, and1.a),
     b.out.to(xor1.b, and1.b),
@@ -133,7 +131,7 @@ const FlatFullAdderDemo = circuit("FlatFullAdderDemo", {
 
 // Composed full adder — two HalfAdder subcircuits + an OR. Same behavior.
 
-const ComposedFullAdderDemo = circuit("ComposedFullAdderDemo", {
+const ComposedFullAdderDemo = circuit('ComposedFullAdderDemo', {
   nodes: {
     a: Switch(),
     b: Switch(),
@@ -158,14 +156,20 @@ const ComposedFullAdderDemo = circuit("ComposedFullAdderDemo", {
 // is the proof. Uses Splitter8to8/Combiner8to8 to bridge the bus(8)
 // external ports to/from the bit-level full-adder chain inside.
 
-const EightBitAdder = circuit("EightBitAdder", {
+const EightBitAdder = circuit('EightBitAdder', {
   inputs: { a: bus(8), b: bus(8), cin: bit },
   outputs: { sum: bus(8), cout: bit },
   nodes: {
     splitA: Splitter8to8,
     splitB: Splitter8to8,
-    fa0: FullAdder, fa1: FullAdder, fa2: FullAdder, fa3: FullAdder,
-    fa4: FullAdder, fa5: FullAdder, fa6: FullAdder, fa7: FullAdder,
+    fa0: FullAdder,
+    fa1: FullAdder,
+    fa2: FullAdder,
+    fa3: FullAdder,
+    fa4: FullAdder,
+    fa5: FullAdder,
+    fa6: FullAdder,
+    fa7: FullAdder,
     combineSum: Combiner8to8,
   },
   connect: ({ inputs, outputs, nodes }) => [
@@ -218,7 +222,7 @@ const EightBitAdder = circuit("EightBitAdder", {
   ],
 });
 
-const EightBitAdderDemo = circuit("EightBitAdderDemo", {
+const EightBitAdderDemo = circuit('EightBitAdderDemo', {
   nodes: {
     a: Input({ value: 0b00001111 }),
     b: Input({ value: 0b00000101 }),
@@ -240,33 +244,29 @@ const EightBitAdderDemo = circuit("EightBitAdderDemo", {
 
 export const ABSTRACTION_CIRCUITS = {
   flatHalfAdder: {
-    name: "Half adder — gates exposed",
-    description:
-      "XOR and AND wired directly. Same behavior as the encapsulated version below.",
+    name: 'Half adder — gates exposed',
+    description: 'XOR and AND wired directly. Same behavior as the encapsulated version below.',
     circuit: FlatHalfAdderDemo,
   },
   encapsulatedHalfAdder: {
-    name: "Half adder — encapsulated",
-    description:
-      "Same circuit, named as a single 'HalfAdder' node. Behavior identical.",
+    name: 'Half adder — encapsulated',
+    description: "Same circuit, named as a single 'HalfAdder' node. Behavior identical.",
     circuit: EncapsulatedHalfAdderDemo,
   },
   flatFullAdder: {
-    name: "Full adder — five gates exposed",
-    description:
-      "Two XORs, two ANDs, one OR. The whole structure visible at once.",
+    name: 'Full adder — five gates exposed',
+    description: 'Two XORs, two ANDs, one OR. The whole structure visible at once.',
     circuit: FlatFullAdderDemo,
   },
   composedFullAdder: {
-    name: "Full adder — composed from half adders",
+    name: 'Full adder — composed from half adders',
     description:
-      "Two HalfAdder subcircuits and one OR gate. Same five gates inside, organized into three named pieces.",
+      'Two HalfAdder subcircuits and one OR gate. Same five gates inside, organized into three named pieces.',
     circuit: ComposedFullAdderDemo,
   },
   eightBitAdder: {
-    name: "8-bit adder built from full adders",
-    description:
-      "Eight FullAdder nodes chained tail-to-head. The flat equivalent has 40+ gates.",
+    name: '8-bit adder built from full adders',
+    description: 'Eight FullAdder nodes chained tail-to-head. The flat equivalent has 40+ gates.',
     circuit: EightBitAdderDemo,
   },
 } satisfies Record<string, BlogCircuit>;

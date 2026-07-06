@@ -7,15 +7,15 @@
  * /learn-page modules. Keeps the docs page reproducible in isolation.
  */
 
-import { useState } from "react";
-import { circuit, bit } from "@simten/core/circuit";
-import { And, Xor } from "@simten/core/std";
-import type { FlatPortValueMap } from "@simten/core/simulator";
-import { CircuitEmbed, useCircuitSimulator } from "@simten/embed";
-import { TruthTable, computeActiveRow } from "@/components/TruthTable";
-import { readPortBit } from "@/lib/port-values";
+import { bit, circuit } from '@simten/core/circuit';
+import type { FlatPortValueMap } from '@simten/core/simulator';
+import { And, Xor } from '@simten/core/std';
+import { CircuitEmbed, useCircuitSimulator } from '@simten/embed';
+import { useState } from 'react';
+import { computeActiveRow, TruthTable } from '@/components/TruthTable';
+import { readPortBit } from '@/lib/port-values';
 
-const HalfAdder = circuit("HalfAdderDocsDemo", {
+const HalfAdder = circuit('HalfAdderDocsDemo', {
   inputs: { a: bit, b: bit },
   outputs: { sum: bit, carry: bit },
   nodes: { xorGate: Xor, andGate: And },
@@ -28,10 +28,10 @@ const HalfAdder = circuit("HalfAdderDocsDemo", {
 });
 
 const HA_COLUMNS = [
-  { name: "a", group: "input" as const },
-  { name: "b", group: "input" as const },
-  { name: "sum", group: "output" as const },
-  { name: "carry", group: "output" as const },
+  { name: 'a', group: 'input' as const },
+  { name: 'b', group: 'input' as const },
+  { name: 'sum', group: 'output' as const },
+  { name: 'carry', group: 'output' as const },
 ];
 
 const HA_ROWS: Array<Array<number | string>> = [
@@ -84,10 +84,10 @@ export function Tier2EmbedWithCallback() {
  */
 export function Tier4FullComposition() {
   const sim = useCircuitSimulator(HalfAdder, { autoHarness: true });
-  const a = readPortBit(sim.portValues, "a");
-  const b = readPortBit(sim.portValues, "b");
-  const sum = readPortBit(sim.portValues, "sum");
-  const carry = readPortBit(sim.portValues, "carry");
+  const a = readPortBit(sim.portValues, 'a');
+  const b = readPortBit(sim.portValues, 'b');
+  const sum = readPortBit(sim.portValues, 'sum');
+  const carry = readPortBit(sim.portValues, 'carry');
   const activeRow = computeActiveRow(sim.portValues, HA_COLUMNS, HA_ROWS);
 
   return (
@@ -98,12 +98,12 @@ export function Tier4FullComposition() {
             <ToggleControl
               label="a"
               value={a ?? 0}
-              onToggle={() => sim.setNodeValue("a", a ? 0 : 1)}
+              onToggle={() => sim.setNodeValue('a', a ? 0 : 1)}
             />
             <ToggleControl
               label="b"
               value={b ?? 0}
-              onToggle={() => sim.setNodeValue("b", b ? 0 : 1)}
+              onToggle={() => sim.setNodeValue('b', b ? 0 : 1)}
             />
             <LedReadout label="sum" lit={sum === 1} />
             <LedReadout label="carry" lit={carry === 1} />
@@ -141,16 +141,16 @@ function ToggleControl({
         onClick={onToggle}
         aria-pressed={value === 1}
         className={
-          "w-16 h-9 rounded-full px-1 flex items-center transition-colors " +
+          'w-16 h-9 rounded-full px-1 flex items-center transition-colors ' +
           (value === 1
-            ? "bg-blue-500/70 justify-end"
-            : "bg-[var(--embed-bg-tertiary)] justify-start")
+            ? 'bg-blue-500/70 justify-end'
+            : 'bg-[var(--embed-bg-tertiary)] justify-start')
         }
       >
         <span className="w-7 h-7 rounded-full bg-white shadow" />
       </button>
       <span className="text-xs font-mono text-[var(--embed-text-muted)]">
-        {value === 1 ? "1" : "0"}
+        {value === 1 ? '1' : '0'}
       </span>
     </div>
   );
@@ -164,16 +164,13 @@ function LedReadout({ label, lit }: { label: string; lit: boolean }) {
       </span>
       <div
         className={
-          "w-9 h-9 rounded-full transition-all " +
+          'w-9 h-9 rounded-full transition-all ' +
           (lit
-            ? "bg-blue-400 ring-4 ring-blue-400/30 shadow-[0_0_12px_rgba(96,165,250,0.6)]"
-            : "bg-[var(--embed-bg-tertiary)] ring-1 ring-inset ring-[var(--embed-border)]")
+            ? 'bg-blue-400 ring-4 ring-blue-400/30 shadow-[0_0_12px_rgba(96,165,250,0.6)]'
+            : 'bg-[var(--embed-bg-tertiary)] ring-1 ring-inset ring-[var(--embed-border)]')
         }
       />
-      <span className="text-xs font-mono text-[var(--embed-text-muted)]">
-        {lit ? "1" : "0"}
-      </span>
+      <span className="text-xs font-mono text-[var(--embed-text-muted)]">{lit ? '1' : '0'}</span>
     </div>
   );
 }
-

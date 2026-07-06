@@ -1,6 +1,5 @@
-
-import { useMemo } from "react";
-import { usePongSimulator } from "./usePongSimulator";
+import { useMemo } from 'react';
+import { usePongSimulator } from './usePongSimulator';
 
 const GRID_SIZE = 16;
 const PIXEL_SIZE = 24;
@@ -21,7 +20,7 @@ function usePixels(sequentialState: unknown): number[] {
     if (!state?.currentState) return pixels;
 
     for (const [nodeId, nodeState] of state.currentState) {
-      if (nodeState instanceof Map && nodeId.toLowerCase().includes("ram")) {
+      if (nodeState instanceof Map && nodeId.toLowerCase().includes('ram')) {
         const mem = nodeState as Map<number, number>;
         for (let addr = 0; addr < GRID_SIZE * GRID_SIZE; addr++) {
           pixels[addr] = mem.get(addr) ?? 0;
@@ -45,7 +44,7 @@ function PaddlePad({
   onDirection: (code: number) => void;
 }) {
   const btn =
-    "flex items-center justify-center w-16 h-16 rounded-xl bg-gray-700 active:bg-gray-500 text-gray-200 text-xl select-none transition-colors touch-manipulation";
+    'flex items-center justify-center w-16 h-16 rounded-xl bg-gray-700 active:bg-gray-500 text-gray-200 text-xl select-none transition-colors touch-manipulation';
 
   return (
     <div
@@ -60,7 +59,9 @@ function PaddlePad({
         onPointerLeave={() => onDirection(0)}
         aria-label={`${label} paddle up`}
       >
-        <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor"><path d="M10 4l6 8H4z" /></svg>
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+          <path d="M10 4l6 8H4z" />
+        </svg>
       </button>
       <button
         className={btn}
@@ -69,7 +70,9 @@ function PaddlePad({
         onPointerLeave={() => onDirection(0)}
         aria-label={`${label} paddle down`}
       >
-        <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor"><path d="M10 16l-6-8h12z" /></svg>
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+          <path d="M10 16l-6-8h12z" />
+        </svg>
       </button>
       <span className="text-xs text-gray-500 dark:text-gray-400">{label}</span>
     </div>
@@ -120,7 +123,7 @@ export function PongDemo() {
           W/S = left paddle &middot; &uarr;/&darr; = right paddle
         </span>
         <div className="ml-auto flex gap-1">
-          {["W", "S", "\u2191", "\u2193"].map((key) => (
+          {['W', 'S', '\u2191', '\u2193'].map((key) => (
             <kbd
               key={key}
               className="px-1.5 py-0.5 text-xs font-mono bg-gray-200 dark:bg-gray-800 text-gray-500 dark:text-gray-300 rounded border border-gray-600"
@@ -138,7 +141,7 @@ export function PongDemo() {
           height={TOTAL_SIZE}
           viewBox={`0 0 ${TOTAL_SIZE} ${TOTAL_SIZE}`}
           className="max-w-full h-auto border-2 border-gray-700 rounded-lg bg-black"
-          style={{ imageRendering: "pixelated" }}
+          style={{ imageRendering: 'pixelated' }}
         >
           {pixels.map((value, index) => {
             const x = index % GRID_SIZE;
@@ -150,7 +153,7 @@ export function PongDemo() {
                 y={y * (PIXEL_SIZE + PIXEL_GAP)}
                 width={PIXEL_SIZE}
                 height={PIXEL_SIZE}
-                fill={value !== 0 ? "#3b82f6" : "#1a1a2e"}
+                fill={value !== 0 ? '#3b82f6' : '#1a1a2e'}
                 rx={3}
               />
             );
@@ -170,11 +173,11 @@ export function PongDemo() {
           onClick={() => setIsRunning(!isRunning)}
           className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
             isRunning
-              ? "bg-amber-600 hover:bg-amber-500 text-gray-900 dark:text-white"
-              : "bg-green-600 hover:bg-green-500 text-white"
+              ? 'bg-amber-600 hover:bg-amber-500 text-gray-900 dark:text-white'
+              : 'bg-green-600 hover:bg-green-500 text-white'
           }`}
         >
-          {isRunning ? "Pause" : "Run"}
+          {isRunning ? 'Pause' : 'Run'}
         </button>
         <button
           onClick={sim.tick}

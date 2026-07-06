@@ -4,11 +4,11 @@
  * Demonstrates that composites with internal registers no longer trigger false cycle detection
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
-import { createSimulatorFromCircuit, type CircuitLibrary } from '@simten/core/simulator';
 import { registerCircuitEval } from '@simten/core/circuit';
-import { useCircuitLibraryStore } from '../../stores/circuit-library-store';
+import { type CircuitLibrary, createSimulatorFromCircuit } from '@simten/core/simulator';
 import { STDLIB_CIRCUITS } from '@simten/core/std';
+import { beforeEach, describe, expect, it } from 'vitest';
+import { useCircuitLibraryStore } from '../../stores/circuit-library-store';
 import { bitType, busType, type Circuit } from '../../types/circuit';
 
 // Register an eval for the local 'Add' primitive defined below. The
@@ -24,9 +24,9 @@ registerCircuitEval('Add', {
   evalFn: ({ a, b }) => ({ out: (((a as number) >>> 0) + ((b as number) >>> 0)) & 0xff }),
 });
 
-const PRIMITIVES = STDLIB_CIRCUITS
-  .map((c) => c.circuit)
-  .filter(c => c.implementation.kind === 'primitive');
+const PRIMITIVES = STDLIB_CIRCUITS.map((c) => c.circuit).filter(
+  (c) => c.implementation.kind === 'primitive',
+);
 
 function getLibrary(): CircuitLibrary {
   const store = useCircuitLibraryStore.getState();
@@ -44,7 +44,10 @@ describe('Hierarchical Cycle Detection - Real World Scenarios', () => {
     id: 'add',
     name: 'Add',
     parameters: [],
-    inputs: [{ name: 'a', portType: busType(8) }, { name: 'b', portType: busType(8) }],
+    inputs: [
+      { name: 'a', portType: busType(8) },
+      { name: 'b', portType: busType(8) },
+    ],
     outputs: [{ name: 'out', portType: busType(8) }],
     clocks: [],
     state: [],

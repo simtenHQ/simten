@@ -1,6 +1,5 @@
-
-import { useState, useCallback } from "react";
-import { useSwitchSimulator } from "./useSwitchSimulator";
+import { useCallback, useState } from 'react';
+import { useSwitchSimulator } from './useSwitchSimulator';
 
 /**
  * Pre-defined Ethernet frame: 7 preamble bytes (0x55), 1 SFD (0xD5), 8 data bytes.
@@ -11,16 +10,8 @@ const PAYLOAD_0 = [0x10, 0x20, 0x30, 0x40, 0x50, 0x60, 0x70, 0x80]; // packet fr
 const PAYLOAD_1 = [0xa1, 0xb2, 0xc3, 0xd4, 0xe5, 0xf6, 0x07, 0x18]; // packet from port 1
 
 export function SwitchDemo() {
-  const {
-    sim,
-    isRunning,
-    setIsRunning,
-    speed,
-    setSpeed,
-    handleReset,
-    injectByte,
-    clearValid,
-  } = useSwitchSimulator();
+  const { sim, isRunning, setIsRunning, speed, setSpeed, handleReset, injectByte, clearValid } =
+    useSwitchSimulator();
 
   const [log, setLog] = useState<string[]>([]);
   const [injecting, setInjecting] = useState(false);
@@ -46,13 +37,9 @@ export function SwitchDemo() {
         injectByte(port, frame[i]);
         sim.tick();
         if (i < PREAMBLE.length) {
-          addLog(
-            `  [${i}] Preamble: 0x${frame[i].toString(16).padStart(2, "0")}`
-          );
+          addLog(`  [${i}] Preamble: 0x${frame[i].toString(16).padStart(2, '0')}`);
         } else {
-          addLog(
-            `  [${i}] Data: 0x${frame[i].toString(16).padStart(2, "0")}`
-          );
+          addLog(`  [${i}] Data: 0x${frame[i].toString(16).padStart(2, '0')}`);
         }
       }
       // Clear valid after frame
@@ -66,7 +53,7 @@ export function SwitchDemo() {
       addLog(`Port ${port}: Forwarding complete.`);
       setInjecting(false);
     },
-    [sim, injectByte, clearValid, addLog]
+    [sim, injectByte, clearValid, addLog],
   );
 
   if (!sim.ready) {
@@ -132,30 +119,11 @@ export function SwitchDemo() {
             <div className="text-xs text-gray-500 dark:text-gray-500 uppercase tracking-wider">
               Crossbar
             </div>
-            <svg
-              width={120}
-              height={80}
-              className="text-gray-500"
-              viewBox="0 0 120 80"
-            >
+            <svg width={120} height={80} className="text-gray-500" viewBox="0 0 120 80">
               {/* Port 0 → Port 1 */}
-              <line
-                x1={10}
-                y1={20}
-                x2={110}
-                y2={60}
-                stroke="currentColor"
-                strokeWidth={2}
-              />
+              <line x1={10} y1={20} x2={110} y2={60} stroke="currentColor" strokeWidth={2} />
               {/* Port 1 → Port 0 */}
-              <line
-                x1={10}
-                y1={60}
-                x2={110}
-                y2={20}
-                stroke="currentColor"
-                strokeWidth={2}
-              />
+              <line x1={10} y1={60} x2={110} y2={20} stroke="currentColor" strokeWidth={2} />
               {/* Dots at endpoints */}
               <circle cx={10} cy={20} r={4} fill="#3b82f6" />
               <circle cx={10} cy={60} r={4} fill="#a855f7" />
@@ -167,9 +135,7 @@ export function SwitchDemo() {
 
           {/* Port 1 input */}
           <div className="space-y-2">
-            <h4 className="text-sm font-medium text-purple-400">
-              Port 1 (In)
-            </h4>
+            <h4 className="text-sm font-medium text-purple-400">Port 1 (In)</h4>
             <button
               onClick={() => injectFrame(1)}
               disabled={injecting}
@@ -188,13 +154,13 @@ export function SwitchDemo() {
           <div className="rounded-lg border border-gray-700/50 bg-gray-50 dark:bg-gray-950/50 p-3">
             <h5 className="text-xs text-gray-500 dark:text-gray-500 mb-1">Port 0 Output</h5>
             <div className="font-mono text-sm text-blue-300">
-              Data: 0x{(getVal("p0_out") & 0xff).toString(16).padStart(2, "0")}
+              Data: 0x{(getVal('p0_out') & 0xff).toString(16).padStart(2, '0')}
             </div>
           </div>
           <div className="rounded-lg border border-gray-700/50 bg-gray-50 dark:bg-gray-950/50 p-3">
             <h5 className="text-xs text-gray-500 dark:text-gray-500 mb-1">Port 1 Output</h5>
             <div className="font-mono text-sm text-purple-300">
-              Data: 0x{(getVal("p1_out") & 0xff).toString(16).padStart(2, "0")}
+              Data: 0x{(getVal('p1_out') & 0xff).toString(16).padStart(2, '0')}
             </div>
           </div>
         </div>
@@ -222,11 +188,11 @@ export function SwitchDemo() {
           onClick={() => setIsRunning(!isRunning)}
           className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
             isRunning
-              ? "bg-amber-600 hover:bg-amber-500 text-gray-900 dark:text-white"
-              : "bg-green-600 hover:bg-green-500 text-white"
+              ? 'bg-amber-600 hover:bg-amber-500 text-gray-900 dark:text-white'
+              : 'bg-green-600 hover:bg-green-500 text-white'
           }`}
         >
-          {isRunning ? "Pause" : "Free Run"}
+          {isRunning ? 'Pause' : 'Free Run'}
         </button>
         <button
           onClick={sim.tick}

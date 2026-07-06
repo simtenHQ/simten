@@ -17,9 +17,9 @@
 // typecheck. We hand the string to Monaco's TS worker only, so the file
 // extension is irrelevant to consumption.
 
-import { writeFileSync, readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
+import { readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const outPath = join(here, '..', 'dist', 'editor-globals.dts.txt');
@@ -103,7 +103,9 @@ for (const [exportName, value] of Object.entries(std)) {
     if (runtimeName !== exportName) {
       // Sanity: stdlib convention is `export const Foo = circuit('Foo', ...)`.
       // If this fires, the codegen + execute.ts agreement has drifted.
-      console.warn(`[editor-globals] export name "${exportName}" ≠ circuit name "${runtimeName}" — using export name for type lookup`);
+      console.warn(
+        `[editor-globals] export name "${exportName}" ≠ circuit name "${runtimeName}" — using export name for type lookup`,
+      );
     }
     circuits.push({ exportName, runtimeName });
   } else if (typeof value === 'function') {
@@ -114,7 +116,10 @@ for (const [exportName, value] of Object.entries(std)) {
 
 // Indent a (possibly multi-line) JSDoc block to sit inside `declare global {`.
 function indentJsDoc(jsdoc) {
-  return jsdoc.split('\n').map(l => '  ' + l).join('\n');
+  return jsdoc
+    .split('\n')
+    .map((l) => '  ' + l)
+    .join('\n');
 }
 
 if (circuits.length > 0) {
@@ -144,4 +149,6 @@ lines.push('');
 
 writeFileSync(outPath, lines.join('\n'));
 
-console.log(`editor-globals: ${circuits.length} components + ${helpers.length} helpers → ${outPath}`);
+console.log(
+  `editor-globals: ${circuits.length} components + ${helpers.length} helpers → ${outPath}`,
+);

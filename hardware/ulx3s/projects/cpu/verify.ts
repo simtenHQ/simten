@@ -1,4 +1,5 @@
 #!/usr/bin/env bun
+
 /**
  * Cross-validate the Verilog-exported CPU against the TypeScript simulator.
  *
@@ -19,11 +20,11 @@
  *        bun hardware/ulx3s/cpu_verify.ts --filter ADD (ISA test by substring)
  */
 
+import { slugify } from '@simten/core/util/test-name';
 import { mkdirSync, readFileSync, writeFileSync } from 'fs';
 import { resolve } from 'path';
-import { slugify } from '@simten/core/util/test-name';
 import { runFirmware } from './sim.js';
-import { tests, type Test } from './tests.js';
+import { type Test, tests } from './tests.js';
 
 // Run `pnpm --filter @simten/verifier dev` first, or override with VERIFIER_URL.
 const VERIFIER_URL = process.env.VERIFIER_URL ?? 'http://localhost:55002/verify';
@@ -53,7 +54,9 @@ function generateTestbench(firmware: number[], maxCycles: number): string {
   // `>>> 0` ensures unsigned hex output — otherwise instructions with bit 31 set
   // serialize as negative numbers (e.g., "-7ffff849" instead of "800007b7").
   const imemInit = words
-    .map((w, i) => w === 0 ? null : `      imem[${i}] = 32'h${(w >>> 0).toString(16).padStart(8, '0')};`)
+    .map((w, i) =>
+      w === 0 ? null : `      imem[${i}] = 32'h${(w >>> 0).toString(16).padStart(8, '0')};`,
+    )
     .filter(Boolean)
     .join('\n');
 
@@ -157,7 +160,10 @@ function parseUartFromLog(log: string): number[] {
 
 // ── POST to verifier ─────────────────────────────────────────────────────────
 
-async function verify(firmware: number[], maxCycles: number): Promise<{ ok: boolean; bytes: number[]; log: string; vcdBase64?: string; error?: string }> {
+async function verify(
+  firmware: number[],
+  maxCycles: number,
+): Promise<{ ok: boolean; bytes: number[]; log: string; vcdBase64?: string; error?: string }> {
   const testbench = generateTestbench(firmware, maxCycles);
   const resp = await fetch(VERIFIER_URL, {
     method: 'POST',
@@ -165,7 +171,7 @@ async function verify(firmware: number[], maxCycles: number): Promise<{ ok: bool
     body: JSON.stringify({ verilog: combinedV, testbench }),
   });
 
-  const json = await resp.json() as {
+  const json = (await resp.json()) as {
     success: boolean;
     compileError?: string;
     simError?: string;
@@ -175,11 +181,18 @@ async function verify(firmware: number[], maxCycles: number): Promise<{ ok: bool
   };
 
   if (!json.success) {
-    const err = [json.compileError, json.simError, json.iverilogStderr].filter(Boolean).join('\n---\n');
+    const err = [json.compileError, json.simError, json.iverilogStderr]
+      .filter(Boolean)
+      .join('\n---\n');
     return { ok: false, bytes: [], log: '', error: err || 'unknown' };
   }
 
-  return { ok: true, bytes: parseUartFromLog(json.simulationLog ?? ''), log: json.simulationLog ?? '', vcdBase64: json.vcdBase64 };
+  return {
+    ok: true,
+    bytes: parseUartFromLog(json.simulationLog ?? ''),
+    log: json.simulationLog ?? '',
+    vcdBase64: json.vcdBase64,
+  };
 }
 
 // ── Test cases ───────────────────────────────────────────────────────────────
@@ -199,22 +212,33 @@ SECTIONS {
 }`;
   // Run `pnpm --filter @simten/compiler dev` first, or override with COMPILER_URL.
   const COMPILER_URL = process.env.COMPILER_URL ?? 'http://localhost:55001/compile';
-  const resp = await fetch(COMPILER_URL, {
+  const resp = (await fetch(COMPILER_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ source: helloSrc, language: 'c', linkerScript: LINKER_SCRIPT }),
-  }).then(r => r.json()) as { success: boolean; binary?: string; error?: string; stderr?: string };
+  }).then((r) => r.json())) as {
+    success: boolean;
+    binary?: string;
+    error?: string;
+    stderr?: string;
+  };
 
   if (!resp.success || !resp.binary) {
     throw new Error(`hello.c compile failed: ${resp.error ?? resp.stderr}`);
   }
 
-  const bin = Uint8Array.from(atob(resp.binary), c => c.charCodeAt(0));
+  const bin = Uint8Array.from(atob(resp.binary), (c) => c.charCodeAt(0));
   const words: number[] = [];
   const padded = new Uint8Array(512 * 4);
   padded.set(bin.slice(0, Math.min(bin.length, 512 * 4)));
   for (let i = 0; i < 512; i++) {
-    words.push(((padded[i*4+3] << 24) | (padded[i*4+2] << 16) | (padded[i*4+1] << 8) | padded[i*4]) >>> 0);
+    words.push(
+      ((padded[i * 4 + 3] << 24) |
+        (padded[i * 4 + 2] << 16) |
+        (padded[i * 4 + 1] << 8) |
+        padded[i * 4]) >>>
+        0,
+    );
   }
   return words;
 }
@@ -235,9 +259,17 @@ const SMOKE_FIRMWARE: number[] = [
 const args = process.argv.slice(2);
 const helloMode = args.includes('--hello');
 const suiteMode = args.includes('--suite');
-const filterArg = args.find(a => a.startsWith('--filter='))?.slice('--filter='.length).toLowerCase();
+const filterArg = args
+  .find((a) => a.startsWith('--filter='))
+  ?.slice('--filter='.length)
+  .toLowerCase();
 
-async function compareFirmware(name: string, firmware: number[], maxCycles: number, expectedPrefix?: string) {
+async function compareFirmware(
+  name: string,
+  firmware: number[],
+  maxCycles: number,
+  expectedPrefix?: string,
+) {
   console.log(`\n▶ ${name}`);
   console.log('  Running TS sim...');
   const tsBytes = runFirmware(firmware, maxCycles);
@@ -267,14 +299,27 @@ async function compareFirmware(name: string, firmware: number[], maxCycles: numb
   if (matchedUpTo === tsBytes.length && vResult.bytes.length >= tsBytes.length) {
     console.log(`  ✓ Verilog matches TS sim (first ${matchedUpTo} bytes agree)`);
     if (expectedPrefix) {
-      const asStr = vResult.bytes.map(b => String.fromCharCode(b)).join('');
-      if (asStr.startsWith(expectedPrefix)) console.log(`  ✓ Output starts with "${expectedPrefix.replace(/\r/g,'\\r').replace(/\n/g,'\\n')}"`);
+      const asStr = vResult.bytes.map((b) => String.fromCharCode(b)).join('');
+      if (asStr.startsWith(expectedPrefix))
+        console.log(
+          `  ✓ Output starts with "${expectedPrefix.replace(/\r/g, '\\r').replace(/\n/g, '\\n')}"`,
+        );
     }
     return true;
   } else {
     console.log(`  ✗ MISMATCH at byte ${matchedUpTo}`);
-    console.log(`    TS sim:    ${tsBytes.slice(0, matchedUpTo + 8).map(b => '0x'+b.toString(16).padStart(2,'0')).join(' ')}`);
-    console.log(`    iverilog:  ${vResult.bytes.slice(0, matchedUpTo + 8).map(b => '0x'+b.toString(16).padStart(2,'0')).join(' ')}`);
+    console.log(
+      `    TS sim:    ${tsBytes
+        .slice(0, matchedUpTo + 8)
+        .map((b) => '0x' + b.toString(16).padStart(2, '0'))
+        .join(' ')}`,
+    );
+    console.log(
+      `    iverilog:  ${vResult.bytes
+        .slice(0, matchedUpTo + 8)
+        .map((b) => '0x' + b.toString(16).padStart(2, '0'))
+        .join(' ')}`,
+    );
     return false;
   }
 }
@@ -305,8 +350,10 @@ async function runOneTestViaVerilog(t: Test): Promise<Verdict> {
 
   // Compare up to the expected length (suite tests define what matters)
   const expectedLen = t.expected.length;
-  const tsMatchesExpected = tsBytes.length >= expectedLen && t.expected.every((b, i) => tsBytes[i] === b);
-  const vMatchesExpected  = v.bytes.length >= expectedLen && t.expected.every((b, i) => v.bytes[i] === b);
+  const tsMatchesExpected =
+    tsBytes.length >= expectedLen && t.expected.every((b, i) => tsBytes[i] === b);
+  const vMatchesExpected =
+    v.bytes.length >= expectedLen && t.expected.every((b, i) => v.bytes[i] === b);
 
   if (tsMatchesExpected && vMatchesExpected) {
     return { test: t, verdict: 'match', tsBytes, vBytes: v.bytes };
@@ -317,7 +364,7 @@ async function runOneTestViaVerilog(t: Test): Promise<Verdict> {
 
 async function runSuite() {
   const selected = filterArg
-    ? tests.filter(t => `${t.category} ${t.name}`.toLowerCase().includes(filterArg))
+    ? tests.filter((t) => `${t.category} ${t.name}`.toLowerCase().includes(filterArg))
     : tests;
 
   console.log(`\nCross-validating ${selected.length} tests (TS sim vs iverilog)…`);
@@ -338,8 +385,14 @@ async function runSuite() {
       if (r.verdict === 'match') {
         console.log(line);
       } else if (r.verdict === 'divergent') {
-        const ts = r.tsBytes.slice(0, 6).map(b => '0x'+b.toString(16).padStart(2,'0')).join(' ');
-        const vv = r.vBytes.slice(0, 6).map(b => '0x'+b.toString(16).padStart(2,'0')).join(' ');
+        const ts = r.tsBytes
+          .slice(0, 6)
+          .map((b) => '0x' + b.toString(16).padStart(2, '0'))
+          .join(' ');
+        const vv = r.vBytes
+          .slice(0, 6)
+          .map((b) => '0x' + b.toString(16).padStart(2, '0'))
+          .join(' ');
         console.log(`${line}   TS:[${ts}] VERILOG:[${vv}]`);
       } else {
         console.log(`${line}   VERILOG-ERROR: ${(r.error ?? '').split('\n')[0].slice(0, 80)}`);
@@ -351,9 +404,9 @@ async function runSuite() {
   }
 
   // Summary
-  const matches     = results.filter(r => r.verdict === 'match').length;
-  const divergent   = results.filter(r => r.verdict === 'divergent');
-  const errors      = results.filter(r => r.verdict === 'verilog-error');
+  const matches = results.filter((r) => r.verdict === 'match').length;
+  const divergent = results.filter((r) => r.verdict === 'divergent');
+  const errors = results.filter((r) => r.verdict === 'verilog-error');
 
   console.log('═══════════════════════════════════════════════════════════════');
   console.log(`MATCH:      ${matches}/${results.length}`);
@@ -365,8 +418,18 @@ async function runSuite() {
     console.log('\n🔥 Divergences — these tests pinpoint the Verilog exporter bug:');
     for (const d of divergent) {
       console.log(`\n  ${d.test.category} / ${d.test.name}`);
-      console.log(`    TS sim:   ${d.tsBytes.slice(0,10).map(b => '0x'+b.toString(16).padStart(2,'0')).join(' ')}`);
-      console.log(`    iverilog: ${d.vBytes.slice(0,10).map(b => '0x'+b.toString(16).padStart(2,'0')).join(' ')}`);
+      console.log(
+        `    TS sim:   ${d.tsBytes
+          .slice(0, 10)
+          .map((b) => '0x' + b.toString(16).padStart(2, '0'))
+          .join(' ')}`,
+      );
+      console.log(
+        `    iverilog: ${d.vBytes
+          .slice(0, 10)
+          .map((b) => '0x' + b.toString(16).padStart(2, '0'))
+          .join(' ')}`,
+      );
     }
   }
 

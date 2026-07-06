@@ -60,10 +60,7 @@ export function verifierUrl(): string | null {
  * Throws only on network failures — compile/sim errors come back as
  * `{ success: false, compileError | simError }` on the response.
  */
-export async function verifyVerilog(
-  verilog: string,
-  testbench: string,
-): Promise<VerifyResponse> {
+export async function verifyVerilog(verilog: string, testbench: string): Promise<VerifyResponse> {
   const url = verifierUrl();
   if (!url) {
     throw new Error(

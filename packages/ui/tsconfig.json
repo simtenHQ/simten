@@ -19,17 +19,9 @@
     "resolveJsonModule": true,
     "types": ["node"]
   },
-  "references": [
-    { "path": "../core" }
-  ],
+  "references": [{ "path": "../core" }],
   "include": ["src/**/*.ts", "src/**/*.tsx"],
   // Tests are excluded from the build surface; vitest typechecks them at
   // run time. See follow-up issue for resolving pre-existing test type debt.
-  "exclude": [
-    "node_modules",
-    "dist",
-    "**/__tests__/**",
-    "**/*.test.ts",
-    "**/*.test.tsx"
-  ]
+  "exclude": ["node_modules", "dist", "**/__tests__/**", "**/*.test.ts", "**/*.test.tsx"]
 }

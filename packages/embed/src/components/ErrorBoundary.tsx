@@ -1,6 +1,5 @@
-
-import React, { type ErrorInfo, type ReactNode } from "react";
-import { ErrorDisplay } from "./ErrorDisplay";
+import React, { type ErrorInfo, type ReactNode } from 'react';
+import { ErrorDisplay } from './ErrorDisplay';
 
 interface ErrorBoundaryProps {
   children: ReactNode;
@@ -38,14 +37,14 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
   render() {
     if (this.state.error) {
       if (this.props.fallback) {
-        return typeof this.props.fallback === "function"
+        return typeof this.props.fallback === 'function'
           ? this.props.fallback(this.state.error)
           : this.props.fallback;
       }
       return (
         <ErrorDisplay
           error={this.state.error.message}
-          title={this.props.title ?? "Render Error"}
+          title={this.props.title ?? 'Render Error'}
           onRetry={this.handleRetry}
         />
       );

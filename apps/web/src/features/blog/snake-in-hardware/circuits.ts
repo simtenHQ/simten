@@ -6,28 +6,28 @@
  * operations, collision detection, and the full Snake circuit.
  */
 
-import { circuit } from "@simten/core/circuit";
-import type { BlogCircuit } from "../types";
+import { circuit } from '@simten/core/circuit';
 import {
-  Screen,
-  Input,
-  Switch,
-  HexDisplay,
-  Constant,
-  Register,
-  Comparator,
-  Mux,
   Adder,
-  BitSlice,
-  LeftShifter,
   And,
-  Led,
+  BitSlice,
+  Comparator,
+  Constant,
   DualPortRAM,
-} from "@simten/core/std";
+  HexDisplay,
+  Input,
+  Led,
+  LeftShifter,
+  Mux,
+  Register,
+  Screen,
+  Switch,
+} from '@simten/core/std';
+import type { BlogCircuit } from '../types';
 
 // ── Module-level circuit definitions ──
 
-const SimpleFramebuffer = circuit("SimpleFramebuffer", {
+const SimpleFramebuffer = circuit('SimpleFramebuffer', {
   nodes: {
     ram: DualPortRAM(),
     screen: Screen(),
@@ -46,7 +46,7 @@ const SimpleFramebuffer = circuit("SimpleFramebuffer", {
   ],
 });
 
-const CoordToPixel = circuit("CoordToPixel", {
+const CoordToPixel = circuit('CoordToPixel', {
   nodes: {
     x: Input({ value: 3 }),
     y: Input({ value: 2 }),
@@ -64,7 +64,7 @@ const CoordToPixel = circuit("CoordToPixel", {
   ],
 });
 
-const DirectionDecoder = circuit("DirectionDecoder", {
+const DirectionDecoder = circuit('DirectionDecoder', {
   nodes: {
     keyCode: Input({ value: 77 }),
     upCode: Constant({ value: 72 }),
@@ -85,7 +85,28 @@ const DirectionDecoder = circuit("DirectionDecoder", {
     displayDX: HexDisplay,
     displayDY: HexDisplay,
   },
-  connect: ({ nodes: { keyCode, upCode, downCode, leftCode, rightCode, zero, one, minus1, isUp, isDown, isLeft, isRight, deltaXTemp, deltaX, deltaYTemp, deltaY, displayDX, displayDY } }) => [
+  connect: ({
+    nodes: {
+      keyCode,
+      upCode,
+      downCode,
+      leftCode,
+      rightCode,
+      zero,
+      one,
+      minus1,
+      isUp,
+      isDown,
+      isLeft,
+      isRight,
+      deltaXTemp,
+      deltaX,
+      deltaYTemp,
+      deltaY,
+      displayDX,
+      displayDY,
+    },
+  }) => [
     keyCode.out.to(isUp.a, isDown.a, isLeft.a, isRight.a),
     upCode.out.to(isUp.b),
     downCode.out.to(isDown.b),
@@ -105,7 +126,7 @@ const DirectionDecoder = circuit("DirectionDecoder", {
   ],
 });
 
-const PixelMover = circuit("PixelMover", {
+const PixelMover = circuit('PixelMover', {
   nodes: {
     ram: DualPortRAM(),
     screen: Screen(),
@@ -138,7 +159,40 @@ const PixelMover = circuit("PixelMover", {
     displayX: HexDisplay,
     displayY: HexDisplay,
   },
-  connect: ({ nodes: { ram, screen, keyboard, headX, headY, upCode, downCode, leftCode, rightCode, zero, one, minus1, isUp, isDown, isLeft, isRight, deltaXTemp, deltaX, deltaYTemp, deltaY, nextX, nextY, wrapX, wrapY, enable, shiftAmt, y8, pixelAddr, displayX, displayY } }) => [
+  connect: ({
+    nodes: {
+      ram,
+      screen,
+      keyboard,
+      headX,
+      headY,
+      upCode,
+      downCode,
+      leftCode,
+      rightCode,
+      zero,
+      one,
+      minus1,
+      isUp,
+      isDown,
+      isLeft,
+      isRight,
+      deltaXTemp,
+      deltaX,
+      deltaYTemp,
+      deltaY,
+      nextX,
+      nextY,
+      wrapX,
+      wrapY,
+      enable,
+      shiftAmt,
+      y8,
+      pixelAddr,
+      displayX,
+      displayY,
+    },
+  }) => [
     screen.addrB.to(ram.addrB),
     ram.outB.to(screen.dataIn),
     keyboard.out.to(isUp.a, isDown.a, isLeft.a, isRight.a),
@@ -170,7 +224,7 @@ const PixelMover = circuit("PixelMover", {
   ],
 });
 
-const PhaseDemo = circuit("PhaseDemo", {
+const PhaseDemo = circuit('PhaseDemo', {
   nodes: {
     phase: Register({ value: 0 }),
     one: Constant({ value: 1 }),
@@ -190,15 +244,28 @@ const PhaseDemo = circuit("PhaseDemo", {
     led3: Led,
     display: HexDisplay,
   },
-  connect: ({ nodes: { phase, one, zero, two, three, phaseInc, phaseWrap, enable, isPhase0, isPhase1, isPhase2, isPhase3, led0, led1, led2, led3, display } }) => [
-    phase.q.to(
-      phaseInc.a,
-      isPhase0.a,
-      isPhase1.a,
-      isPhase2.a,
-      isPhase3.a,
-      display.in,
-    ),
+  connect: ({
+    nodes: {
+      phase,
+      one,
+      zero,
+      two,
+      three,
+      phaseInc,
+      phaseWrap,
+      enable,
+      isPhase0,
+      isPhase1,
+      isPhase2,
+      isPhase3,
+      led0,
+      led1,
+      led2,
+      led3,
+      display,
+    },
+  }) => [
+    phase.q.to(phaseInc.a, isPhase0.a, isPhase1.a, isPhase2.a, isPhase3.a, display.in),
     one.out.to(phaseInc.b, isPhase1.b),
     phaseInc.sum.to(phaseWrap.in),
     phaseWrap.out.to(phase.data),
@@ -213,7 +280,7 @@ const PhaseDemo = circuit("PhaseDemo", {
   ],
 });
 
-const CollisionDetector = circuit("CollisionDetector", {
+const CollisionDetector = circuit('CollisionDetector', {
   nodes: {
     headX: Input({ value: 3 }),
     headY: Input({ value: 5 }),
@@ -228,7 +295,22 @@ const CollisionDetector = circuit("CollisionDetector", {
     growMux: Mux(),
     growDisplay: HexDisplay,
   },
-  connect: ({ nodes: { headX, headY, foodX, foodY, matchX, matchY, collision, collisionLed, zero, one, growMux, growDisplay } }) => [
+  connect: ({
+    nodes: {
+      headX,
+      headY,
+      foodX,
+      foodY,
+      matchX,
+      matchY,
+      collision,
+      collisionLed,
+      zero,
+      one,
+      growMux,
+      growDisplay,
+    },
+  }) => [
     headX.out.to(matchX.a),
     foodX.out.to(matchX.b),
     headY.out.to(matchY.a),
@@ -246,13 +328,13 @@ const CollisionDetector = circuit("CollisionDetector", {
 // @simten/core/examples — the same circuit the ULX3S FPGA project synthesizes.
 // Drift between the copies in this repo is pinned by
 // hardware/ulx3s/projects/snake/parity-check.ts.
-export { Snake } from "@simten/core/examples";
+export { Snake } from '@simten/core/examples';
 
 export const SNAKE_CIRCUITS: Record<string, BlogCircuit> = {
   simpleFramebuffer: {
-    name: "Simple Framebuffer",
+    name: 'Simple Framebuffer',
     description:
-      "DualPortRAM as a screen framebuffer. Port A reads/writes data, port B is used by the Screen to display pixels.",
+      'DualPortRAM as a screen framebuffer. Port A reads/writes data, port B is used by the Screen to display pixels.',
     circuit: SimpleFramebuffer,
     layout: {
       // Inputs (left)
@@ -268,9 +350,9 @@ export const SNAKE_CIRCUITS: Record<string, BlogCircuit> = {
   },
 
   coordToPixel: {
-    name: "Coordinate to Pixel Address",
+    name: 'Coordinate to Pixel Address',
     description:
-      "Converts (X, Y) coordinates to a linear pixel address using (Y << 3) + X. A left shift by 3 is just wiring in real hardware — zero gates.",
+      'Converts (X, Y) coordinates to a linear pixel address using (Y << 3) + X. A left shift by 3 is just wiring in real hardware — zero gates.',
     circuit: CoordToPixel,
     layout: {
       x: { x: 0, y: 0 },
@@ -283,9 +365,9 @@ export const SNAKE_CIRCUITS: Record<string, BlogCircuit> = {
   },
 
   directionDecoder: {
-    name: "Direction Decoder",
+    name: 'Direction Decoder',
     description:
-      "Decodes keyboard scan codes into deltaX/deltaY movement values using Comparators and a Mux tree.",
+      'Decodes keyboard scan codes into deltaX/deltaY movement values using Comparators and a Mux tree.',
     circuit: DirectionDecoder,
     layout: {
       // Input (left)
@@ -316,9 +398,9 @@ export const SNAKE_CIRCUITS: Record<string, BlogCircuit> = {
   },
 
   pixelMover: {
-    name: "Pixel Mover",
+    name: 'Pixel Mover',
     description:
-      "Position registers with delta addition and BitSlice wraparound, drawing the result to a Screen via DualPortRAM.",
+      'Position registers with delta addition and BitSlice wraparound, drawing the result to a Screen via DualPortRAM.',
     circuit: PixelMover,
     layout: {
       // Input
@@ -364,9 +446,9 @@ export const SNAKE_CIRCUITS: Record<string, BlogCircuit> = {
   },
 
   phaseDemo: {
-    name: "4-Phase Counter",
+    name: '4-Phase Counter',
     description:
-      "A 2-bit counter cycling through phases 0-3, with LED indicators showing the active phase.",
+      'A 2-bit counter cycling through phases 0-3, with LED indicators showing the active phase.',
     circuit: PhaseDemo,
     layout: {
       // Control (left)
@@ -395,9 +477,9 @@ export const SNAKE_CIRCUITS: Record<string, BlogCircuit> = {
   },
 
   collisionDetector: {
-    name: "Collision Detector",
+    name: 'Collision Detector',
     description:
-      "Compares head and food X/Y coordinates to detect collision, outputting a grow signal when they match.",
+      'Compares head and food X/Y coordinates to detect collision, outputting a grow signal when they match.',
     circuit: CollisionDetector,
     layout: {
       // Inputs (left, 2x2 grid)

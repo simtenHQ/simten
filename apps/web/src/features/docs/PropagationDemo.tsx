@@ -1,15 +1,10 @@
-
-import { useState, useEffect, useCallback, useMemo, useRef } from "react";
-import { useCircuitSimulator } from "@simten/embed";
-import { CircuitCanvas } from "@simten/ui/canvas";
-import { circuit, bit } from "@simten/core/circuit";
-import { Switch, Led, Xor, And } from "@simten/core/std";
-import {
-  elaborate,
-  tracePropagation,
-  type PropagationStep,
-} from "@simten/core/simulator";
-import type { Circuit, CircuitLibrary } from "@simten/core";
+import type { Circuit, CircuitLibrary } from '@simten/core';
+import { bit, circuit } from '@simten/core/circuit';
+import { elaborate, type PropagationStep, tracePropagation } from '@simten/core/simulator';
+import { And, Led, Switch, Xor } from '@simten/core/std';
+import { useCircuitSimulator } from '@simten/embed';
+import { CircuitCanvas } from '@simten/ui/canvas';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 const HalfAdder = circuit('HalfAdder', {
   inputs: { a: bit, b: bit },
@@ -39,16 +34,16 @@ const HalfAdderDemo = circuit('HalfAdderDemo', {
  * "HalfAdderDemo_dut_1234_abcd.HalfAdder_xor1_5678_efgh" → "dut.xor1"
  */
 function cleanNodeId(id: string): string {
-  const parts = id.split(".");
+  const parts = id.split('.');
   return parts
     .map((part) => {
-      const segs = part.split("_");
+      const segs = part.split('_');
       // Skip first segment (circuit name) and last two (timestamp, random)
-      if (segs.length >= 4) return segs.slice(1, -2).join("_");
+      if (segs.length >= 4) return segs.slice(1, -2).join('_');
       if (segs.length >= 2) return segs[1];
       return segs[0];
     })
-    .join(".");
+    .join('.');
 }
 
 function describeStep(step: PropagationStep): string {
@@ -58,22 +53,22 @@ function describeStep(step: PropagationStep): string {
     return `Scanning circuit for source nodes (no inputs). Found ${step.enqueued.length} nodes to seed the queue.`;
   }
 
-  if (id.includes("switch")) {
+  if (id.includes('switch')) {
     return `Source node — outputs initial value. No inputs to read.`;
   }
-  if (id.includes("led")) {
-    return `Reads input value and updates display.${!step.changed ? " Output unchanged — no dependents enqueued." : ""}`;
+  if (id.includes('led')) {
+    return `Reads input value and updates display.${!step.changed ? ' Output unchanged — no dependents enqueued.' : ''}`;
   }
-  if (id.includes("xor")) {
-    return `Reads two inputs, computes XOR.${step.changed ? " Output changed — enqueuing dependents." : " Output unchanged."}`;
+  if (id.includes('xor')) {
+    return `Reads two inputs, computes XOR.${step.changed ? ' Output changed — enqueuing dependents.' : ' Output unchanged.'}`;
   }
-  if (id.includes("and")) {
-    return `Reads two inputs, computes AND.${step.changed ? " Output changed — enqueuing dependents." : " Output unchanged."}`;
+  if (id.includes('and')) {
+    return `Reads two inputs, computes AND.${step.changed ? ' Output changed — enqueuing dependents.' : ' Output unchanged.'}`;
   }
-  if (id.includes("or")) {
-    return `Reads two inputs, computes OR.${step.changed ? " Output changed — enqueuing dependents." : " Output unchanged."}`;
+  if (id.includes('or')) {
+    return `Reads two inputs, computes OR.${step.changed ? ' Output changed — enqueuing dependents.' : ' Output unchanged.'}`;
   }
-  return `Evaluating node.${step.changed ? " Output changed." : " Output unchanged."}`;
+  return `Evaluating node.${step.changed ? ' Output changed.' : ' Output unchanged.'}`;
 }
 
 export function PropagationDemo() {
@@ -88,8 +83,13 @@ export function PropagationDemo() {
       const circuitMap = new Map<string, Circuit>();
       const library: CircuitLibrary & { addCircuit(c: Circuit): void } = {
         resolveCircuit: (name) => circuitMap.get(name),
-        getAllPrimitiveNames: () => [...circuitMap.entries()].filter(([, c]) => c.implementation.kind === 'primitive').map(([n]) => n),
-        addCircuit: (c) => { circuitMap.set(c.name, c); },
+        getAllPrimitiveNames: () =>
+          [...circuitMap.entries()]
+            .filter(([, c]) => c.implementation.kind === 'primitive')
+            .map(([n]) => n),
+        addCircuit: (c) => {
+          circuitMap.set(c.name, c);
+        },
       };
       library.addCircuit(HalfAdderDemo.circuit);
       for (const [, dep] of HalfAdderDemo._dependencies) library.addCircuit(dep.circuit);
@@ -97,7 +97,7 @@ export function PropagationDemo() {
       const flat = elaborate(HalfAdderDemo.circuit, library);
       return tracePropagation(flat, library);
     } catch (e) {
-      console.error("Trace failed:", e);
+      console.error('Trace failed:', e);
       return [];
     }
   }, []);
@@ -167,11 +167,11 @@ export function PropagationDemo() {
           onClick={isPlaying ? stop : play}
           className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors shrink-0 ${
             isPlaying
-              ? "bg-amber-600 hover:bg-amber-500 text-white"
-              : "bg-blue-600 hover:bg-blue-500 text-white"
+              ? 'bg-amber-600 hover:bg-amber-500 text-white'
+              : 'bg-blue-600 hover:bg-blue-500 text-white'
           }`}
         >
-          {isPlaying ? "Stop" : "Watch propagation"}
+          {isPlaying ? 'Stop' : 'Watch propagation'}
         </button>
 
         <span className="text-xs text-gray-500 shrink-0">
@@ -184,7 +184,9 @@ export function PropagationDemo() {
       {/* Queue visualization */}
       {activeStep >= 0 && (
         <div className="px-4 py-2 border-b border-gray-700/30 flex items-center gap-2 overflow-x-auto">
-          <span className="text-[10px] uppercase tracking-wider text-gray-600 shrink-0">Queue:</span>
+          <span className="text-[10px] uppercase tracking-wider text-gray-600 shrink-0">
+            Queue:
+          </span>
           {currentStep && currentStep.queueSnapshot.length > 0 ? (
             currentStep.queueSnapshot.map((nodeId, i) => (
               <span
@@ -195,7 +197,9 @@ export function PropagationDemo() {
               </span>
             ))
           ) : (
-            <span className="text-[10px] text-gray-600 font-mono">empty — propagation complete</span>
+            <span className="text-[10px] text-gray-600 font-mono">
+              empty — propagation complete
+            </span>
           )}
           {currentStep && currentStep.changed && currentStep.enqueued.length > 0 && (
             <>
@@ -223,9 +227,9 @@ export function PropagationDemo() {
             {description}
           </>
         ) : isPlaying ? (
-          "Starting..."
+          'Starting...'
         ) : (
-          "Click \"Watch propagation\" to see the real simulator event queue in action. Source nodes are seeded first, then each evaluation may enqueue dependents."
+          'Click "Watch propagation" to see the real simulator event queue in action. Source nodes are seeded first, then each evaluation may enqueue dependents.'
         )}
       </div>
 
@@ -238,7 +242,9 @@ export function PropagationDemo() {
                 <span
                   key={i}
                   className={`px-1.5 py-0.5 rounded text-[10px] font-mono ${
-                    i === activeStep ? "bg-purple-600 text-white" : "bg-purple-900/40 text-purple-400"
+                    i === activeStep
+                      ? 'bg-purple-600 text-white'
+                      : 'bg-purple-900/40 text-purple-400'
                   }`}
                 >
                   seed ({step.enqueued.length})
@@ -251,14 +257,14 @@ export function PropagationDemo() {
                 key={i}
                 className={`px-1.5 py-0.5 rounded text-[10px] font-mono transition-all ${
                   i === activeStep
-                    ? "bg-blue-600 text-white"
+                    ? 'bg-blue-600 text-white'
                     : step.changed
-                    ? "bg-green-900/40 text-green-400"
-                    : "bg-gray-800 text-gray-500"
+                      ? 'bg-green-900/40 text-green-400'
+                      : 'bg-gray-800 text-gray-500'
                 }`}
               >
                 {label}
-                {step.changed ? " ✓" : " ·"}
+                {step.changed ? ' ✓' : ' ·'}
               </span>
             );
           })}

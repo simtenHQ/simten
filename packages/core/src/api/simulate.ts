@@ -5,15 +5,11 @@
  * Accepts TypeScript circuit builder code.
  */
 
-import {
-  elaborate,
-  createSimulator,
-  TOP_LEVEL_NODE,
-} from '../simulator/index.js';
+import { createSimulator, elaborate, TOP_LEVEL_NODE } from '../simulator/index.js';
+import type { SimulationTrace } from '../types/analysis.js';
+import { compressTrace, detectSteadyState } from '../types/analysis.js';
 import type { BitValue, BusValue } from '../types/circuit.js';
 import { compileSource } from './compile-source.js';
-import { compressTrace, detectSteadyState } from '../types/analysis.js';
-import type { SimulationTrace } from '../types/analysis.js';
 import { exportVCD } from './vcd.js';
 
 export type RLEValue = { value: BitValue | BusValue; count: number };
@@ -32,16 +28,14 @@ export interface SimulateError {
   error: string;
 }
 
-export function simulateCircuit(
-  params: {
-    source: string;
-    sourceName?: string;
-    circuitName?: string;
-    ticks?: number;
-    inputs?: Record<string, number | boolean>;
-    memoryData?: Map<string, Map<number, number>>;
-  },
-): SimulateResult | SimulateError {
+export function simulateCircuit(params: {
+  source: string;
+  sourceName?: string;
+  circuitName?: string;
+  ticks?: number;
+  inputs?: Record<string, number | boolean>;
+  memoryData?: Map<string, Map<number, number>>;
+}): SimulateResult | SimulateError {
   const ticks = params.ticks ?? 10;
 
   // Compile TypeScript circuit code

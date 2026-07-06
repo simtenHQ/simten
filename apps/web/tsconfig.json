@@ -10,12 +10,7 @@
       "collections/*": ["./.source/*"]
     },
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
-    "types": [
-        "./worker-configuration.d.ts",
-        "node",
-        "vite/client",
-        "vitest/globals"
-    ],
+    "types": ["./worker-configuration.d.ts", "node", "vite/client", "vitest/globals"],
 
     /* Bundler mode */
     "moduleResolution": "bundler",

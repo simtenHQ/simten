@@ -5,11 +5,11 @@
  * using the circuit() API.
  */
 
-import { describe, it, expect } from 'vitest';
-import { simulate } from '../../sim/simulate.js';
-import { circuit, bit, bus } from '../../circuit/index.js';
+import { describe, expect, it } from 'vitest';
 import type { BuiltCircuit } from '../../circuit/index.js';
-import { MemBusMux, UART_TX, NIC_FIFO } from '../../std/index.js';
+import { bit, bus, circuit } from '../../circuit/index.js';
+import { simulate } from '../../sim/simulate.js';
+import { MemBusMux, NIC_FIFO, UART_TX } from '../../std/index.js';
 
 /** Helper: simulate combinational circuit, return output values */
 function sim<C extends BuiltCircuit>(
@@ -108,20 +108,36 @@ describe('MemBusMux', () => {
 
   it('routes DataMem range (0x10000) to p0', () => {
     const out = sim(c, {
-      addr: 0x10004, mem_read: true, mem_write: false, funct3: 2,
-      write_data: 0, rd0: 0xDEADBEEF, rd1: 0, rd2: 0, rd3: 0, rd4: 0,
+      addr: 0x10004,
+      mem_read: true,
+      mem_write: false,
+      funct3: 2,
+      write_data: 0,
+      rd0: 0xdeadbeef,
+      rd1: 0,
+      rd2: 0,
+      rd3: 0,
+      rd4: 0,
     });
     expect(out.p0_read).toBe(true);
     expect(out.p0_write).toBe(false);
     expect(out.p1_read).toBe(false);
     expect(out.local_addr).toBe(4);
-    expect((out.read_data as number) >>> 0).toBe(0xDEADBEEF >>> 0);
+    expect((out.read_data as number) >>> 0).toBe(0xdeadbeef >>> 0);
   });
 
   it('routes UART range (0x80000000) to p1', () => {
     const out = sim(c, {
-      addr: 0x80000000, mem_write: true, mem_read: false, funct3: 0,
-      write_data: 0x41, rd0: 0, rd1: 42, rd2: 0, rd3: 0, rd4: 0,
+      addr: 0x80000000,
+      mem_write: true,
+      mem_read: false,
+      funct3: 0,
+      write_data: 0x41,
+      rd0: 0,
+      rd1: 42,
+      rd2: 0,
+      rd3: 0,
+      rd4: 0,
     });
     expect(out.p1_write).toBe(true);
     expect(out.p1_read).toBe(false);
@@ -131,8 +147,16 @@ describe('MemBusMux', () => {
 
   it('routes NIC TX range (0x80001000) to p2', () => {
     const out = sim(c, {
-      addr: 0x80001008, mem_read: true, mem_write: false, funct3: 2,
-      write_data: 0, rd0: 0, rd1: 0, rd2: 99, rd3: 0, rd4: 0,
+      addr: 0x80001008,
+      mem_read: true,
+      mem_write: false,
+      funct3: 2,
+      write_data: 0,
+      rd0: 0,
+      rd1: 0,
+      rd2: 99,
+      rd3: 0,
+      rd4: 0,
     });
     expect(out.p2_read).toBe(true);
     expect(out.local_addr).toBe(8);
@@ -141,8 +165,16 @@ describe('MemBusMux', () => {
 
   it('routes NIC RX range (0x80002000) to p3', () => {
     const out = sim(c, {
-      addr: 0x80002008, mem_read: true, mem_write: false, funct3: 2,
-      write_data: 0, rd0: 0, rd1: 0, rd2: 0, rd3: 77, rd4: 0,
+      addr: 0x80002008,
+      mem_read: true,
+      mem_write: false,
+      funct3: 2,
+      write_data: 0,
+      rd0: 0,
+      rd1: 0,
+      rd2: 0,
+      rd3: 77,
+      rd4: 0,
     });
     expect(out.p3_read).toBe(true);
     expect(out.local_addr).toBe(8);
@@ -151,8 +183,16 @@ describe('MemBusMux', () => {
 
   it('routes nothing when addr is out of range', () => {
     const out = sim(c, {
-      addr: 0x50000000, mem_read: true, mem_write: false, funct3: 2,
-      write_data: 0, rd0: 1, rd1: 2, rd2: 3, rd3: 4, rd4: 0,
+      addr: 0x50000000,
+      mem_read: true,
+      mem_write: false,
+      funct3: 2,
+      write_data: 0,
+      rd0: 1,
+      rd1: 2,
+      rd2: 3,
+      rd3: 4,
+      rd4: 0,
     });
     expect(out.p0_read).toBe(false);
     expect(out.p1_read).toBe(false);
@@ -188,13 +228,21 @@ describe('UART_TX', () => {
   it('is a sink that accepts writes without error', () => {
     expect(() => {
       simAfterTicks(uartCircuit, 4, {
-        addr: 0, write_data: 0x48, mem_write: true, mem_read: false,
+        addr: 0,
+        write_data: 0x48,
+        mem_write: true,
+        mem_read: false,
       });
     }).not.toThrow();
   });
 
   it('returns tx_ready=1 on read', () => {
-    const out = simAfterTicks(uartCircuit, 1, { addr: 0, write_data: 0, mem_read: true, mem_write: false });
+    const out = simAfterTicks(uartCircuit, 1, {
+      addr: 0,
+      write_data: 0,
+      mem_read: true,
+      mem_write: false,
+    });
     expect(out.read_data).toBe(1);
   });
 });
@@ -246,27 +294,48 @@ describe('NIC_FIFO', () => {
 
   it('receives network data into RX FIFO', () => {
     const out = simAfterTicks(c, 4, {
-      tx_addr: 0, tx_write_data: 0, tx_mem_read: false, tx_mem_write: false,
-      rx_addr: 0x8, rx_mem_read: true, rx_mem_write: false,
-      net_rx_data: 0xCAFEBABE, net_rx_valid: true, net_rx_frame: false,
+      tx_addr: 0,
+      tx_write_data: 0,
+      tx_mem_read: false,
+      tx_mem_write: false,
+      rx_addr: 0x8,
+      rx_mem_read: true,
+      rx_mem_write: false,
+      net_rx_data: 0xcafebabe,
+      net_rx_valid: true,
+      net_rx_frame: false,
     });
     expect(out.rx_read_data as number).toBeGreaterThan(0);
   });
 
   it('starts with zero rx count', () => {
     const out = sim(c, {
-      tx_addr: 0, tx_write_data: 0, tx_mem_read: false, tx_mem_write: false,
-      rx_addr: 0x8, rx_mem_read: true, rx_mem_write: false,
-      net_rx_data: 0, net_rx_valid: false, net_rx_frame: false,
+      tx_addr: 0,
+      tx_write_data: 0,
+      tx_mem_read: false,
+      tx_mem_write: false,
+      rx_addr: 0x8,
+      rx_mem_read: true,
+      rx_mem_write: false,
+      net_rx_data: 0,
+      net_rx_valid: false,
+      net_rx_frame: false,
     });
     expect(out.rx_read_data).toBe(0);
   });
 
   it('outputs nothing on network TX before frame-end', () => {
     const out = sim(c, {
-      tx_addr: 0, tx_write_data: 0xDEAD, tx_mem_read: false, tx_mem_write: true,
-      rx_addr: 0, rx_mem_read: false, rx_mem_write: false,
-      net_rx_data: 0, net_rx_valid: false, net_rx_frame: false,
+      tx_addr: 0,
+      tx_write_data: 0xdead,
+      tx_mem_read: false,
+      tx_mem_write: true,
+      rx_addr: 0,
+      rx_mem_read: false,
+      rx_mem_write: false,
+      net_rx_data: 0,
+      net_rx_valid: false,
+      net_rx_frame: false,
     });
     expect(out.net_tx_valid).toBe(false);
   });

@@ -1,7 +1,6 @@
-
-import { useState, useEffect, useRef, useCallback } from "react";
-import { useCircuitSimulator } from "@simten/embed";
-import { Snake } from "./circuits";
+import { useCircuitSimulator } from '@simten/embed';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Snake } from './circuits';
 
 export function useSnakeSimulator() {
   const sim = useCircuitSimulator(Snake);
@@ -15,7 +14,7 @@ export function useSnakeSimulator() {
   useEffect(() => {
     if (!sim.ready) return;
     let cancelled = false;
-    sim.scanPort("scan_addr", "__top__.pixel_out", 64).then((result) => {
+    sim.scanPort('scan_addr', '__top__.pixel_out', 64).then((result) => {
       if (!cancelled && result) setPixels(result);
     });
     return () => {
@@ -36,11 +35,11 @@ export function useSnakeSimulator() {
       const code = keyMap[e.key];
       if (code !== undefined) {
         e.preventDefault();
-        sim.setNode("dir", code);
+        sim.setNode('dir', code);
       }
     };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
   }, [sim.setNode]);
 
   // Auto-run interval
@@ -66,7 +65,7 @@ export function useSnakeSimulator() {
 
   const sendDirection = useCallback(
     (code: number) => {
-      sim.setNode("dir", code);
+      sim.setNode('dir', code);
     },
     [sim.setNode],
   );

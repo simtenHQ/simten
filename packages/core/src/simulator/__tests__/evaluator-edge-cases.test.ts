@@ -8,14 +8,25 @@
  * Catches bugs like BusNot returning -43 instead of 213 for ~42.
  */
 
-import { describe, it, expect } from 'vitest';
-import { simulate } from '../../sim/simulate.js';
-import { circuit, bit, bus } from '../../circuit/index.js';
+import { describe, expect, it } from 'vitest';
 import type { BuiltCircuit } from '../../circuit/index.js';
+import { bit, bus, circuit } from '../../circuit/index.js';
+import { simulate } from '../../sim/simulate.js';
 import {
-  BusNot, BusAnd, BusOr, BusXor,
-  Adder, Subtractor, LeftShifter, RightShifter,
-  Incrementer, Comparator, Multiplier, Mux, Xor, Constant,
+  Adder,
+  BusAnd,
+  BusNot,
+  BusOr,
+  BusXor,
+  Comparator,
+  Constant,
+  Incrementer,
+  LeftShifter,
+  Multiplier,
+  Mux,
+  RightShifter,
+  Subtractor,
+  Xor,
 } from '../../std/index.js';
 
 /** Helper: simulate a 1-tick combinational circuit, return output values */
@@ -38,7 +49,6 @@ function sim<C extends BuiltCircuit>(
 }
 
 describe('Evaluator Edge Cases', () => {
-
   // --- Bitwise bus operations ---
 
   describe('BusNot', () => {
@@ -46,10 +56,7 @@ describe('Evaluator Edge Cases', () => {
       inputs: { a: bus(8) },
       outputs: { z: bus(8) },
       nodes: { n: BusNot },
-      connect: ({ inputs, outputs, nodes: { n } }) => [
-        inputs.a.to(n.in),
-        n.out.to(outputs.z),
-      ],
+      connect: ({ inputs, outputs, nodes: { n } }) => [inputs.a.to(n.in), n.out.to(outputs.z)],
     });
 
     it('~42 = 213 (not -43)', () => {
@@ -86,7 +93,7 @@ describe('Evaluator Edge Cases', () => {
     });
 
     it('0xAA & 0x55 = 0', () => {
-      expect(sim(c, { a: 0xAA, b: 0x55 }).z).toBe(0);
+      expect(sim(c, { a: 0xaa, b: 0x55 }).z).toBe(0);
     });
 
     it('0xFF & 0xFF = 255', () => {
@@ -107,7 +114,7 @@ describe('Evaluator Edge Cases', () => {
     });
 
     it('0xAA | 0x55 = 0xFF', () => {
-      expect(sim(c, { a: 0xAA, b: 0x55 }).z).toBe(0xFF);
+      expect(sim(c, { a: 0xaa, b: 0x55 }).z).toBe(0xff);
     });
 
     it('0 | 0 = 0', () => {
@@ -136,7 +143,7 @@ describe('Evaluator Edge Cases', () => {
     });
 
     it('0xAA ^ 0x55 = 0xFF', () => {
-      expect(sim(c, { a: 0xAA, b: 0x55 }).z).toBe(0xFF);
+      expect(sim(c, { a: 0xaa, b: 0x55 }).z).toBe(0xff);
     });
   });
 
@@ -273,10 +280,7 @@ describe('Evaluator Edge Cases', () => {
       inputs: { a: bus(8) },
       outputs: { z: bus(8) },
       nodes: { n: Incrementer },
-      connect: ({ inputs, outputs, nodes: { n } }) => [
-        inputs.a.to(n.in),
-        n.out.to(outputs.z),
-      ],
+      connect: ({ inputs, outputs, nodes: { n } }) => [inputs.a.to(n.in), n.out.to(outputs.z)],
     });
 
     it('255 + 1 = 0 (wraps)', () => {

@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest';
 import type { IncomingMessage, ServerResponse } from 'node:http';
+import { describe, expect, it } from 'vitest';
 import { serveStatic } from './serve-static.js';
 
 function mockRes() {
@@ -23,7 +23,11 @@ describe('serveStatic', () => {
     // `GET /%` makes decodeURIComponent throw URIError; the malformed-path
     // branch returns before any filesystem access, so no bundle is required.
     expect(() => serveStatic({ url: '/%' } as IncomingMessage, res)).not.toThrow();
-    expect((res as unknown as { calls: { status: number; ended: boolean } }).calls.status).toBe(400);
-    expect((res as unknown as { calls: { status: number; ended: boolean } }).calls.ended).toBe(true);
+    expect((res as unknown as { calls: { status: number; ended: boolean } }).calls.status).toBe(
+      400,
+    );
+    expect((res as unknown as { calls: { status: number; ended: boolean } }).calls.ended).toBe(
+      true,
+    );
   });
 });

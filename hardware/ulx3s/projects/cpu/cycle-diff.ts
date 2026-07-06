@@ -29,7 +29,7 @@
  */
 
 import { writeFileSync } from 'node:fs';
-import { resolve, dirname } from 'node:path';
+import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { simulate } from '@simten/core/sim';
 import { buildCPUCore } from './index.js';
@@ -42,16 +42,11 @@ const VERIFIER_URL = process.env.VERIFIER_URL ?? 'http://localhost:55002/verify'
 // the 2 tests where TS sim and iverilog diverge in verify.ts --suite.
 // Dumped via dump-failing-fw.ts; expected UART output is [0x41, 0x42, 0x43, 0x44].
 const FIRMWARE: number[] = [
-  0x800007b7, 0x00010437, 0x04100513, 0x00a42023,
-  0x04200513, 0x00a400a3, 0x04300513, 0x00a40123,
-  0x04400513, 0x00a401a3, 0x00044703, 0x00000013,
-  0x00000013, 0x00000013, 0x0007a283, 0x0012f293,
-  0xfe028ce3, 0x00e7a023, 0x00144703, 0x00000013,
-  0x00000013, 0x00000013, 0x0007a283, 0x0012f293,
-  0xfe028ce3, 0x00e7a023, 0x00244703, 0x00000013,
-  0x00000013, 0x00000013, 0x0007a283, 0x0012f293,
-  0xfe028ce3, 0x00e7a023, 0x00344703, 0x00000013,
-  0x00000013, 0x00000013, 0x0007a283, 0x0012f293,
+  0x800007b7, 0x00010437, 0x04100513, 0x00a42023, 0x04200513, 0x00a400a3, 0x04300513, 0x00a40123,
+  0x04400513, 0x00a401a3, 0x00044703, 0x00000013, 0x00000013, 0x00000013, 0x0007a283, 0x0012f293,
+  0xfe028ce3, 0x00e7a023, 0x00144703, 0x00000013, 0x00000013, 0x00000013, 0x0007a283, 0x0012f293,
+  0xfe028ce3, 0x00e7a023, 0x00244703, 0x00000013, 0x00000013, 0x00000013, 0x0007a283, 0x0012f293,
+  0xfe028ce3, 0x00e7a023, 0x00344703, 0x00000013, 0x00000013, 0x00000013, 0x0007a283, 0x0012f293,
   0xfe028ce3, 0x00e7a023, 0x0000006f,
 ];
 
@@ -63,11 +58,11 @@ const TRACKED_SIGNALS = [
   'cpu.IF.pc.q',
   'cpu.IFID.instr.q',
   'cpu.IDEX.rs1.q',
-  'cpu.IDEX.read1.q',  // actual rs1 VALUE going into EX
-  'cpu.IDEX.read2.q',  // actual rs2 VALUE going into EX
+  'cpu.IDEX.read1.q', // actual rs1 VALUE going into EX
+  'cpu.IDEX.read2.q', // actual rs2 VALUE going into EX
   'cpu.IDEX.imm.q',
-  'cpu.ID.immgen.instruction',  // input to immgen
-  'cpu.ID.immgen.immediate',    // output of immgen
+  'cpu.ID.immgen.instruction', // input to immgen
+  'cpu.ID.immgen.immediate', // output of immgen
   'cpu.EX.fwd_a_mux1.out',
   'cpu.EX.fwd_a_mux2.out',
   'cpu.EX.fwd_b_mux1.out',
@@ -77,16 +72,16 @@ const TRACKED_SIGNALS = [
   'cpu.EXMEM.alu_result.q',
   'cpu.EXMEM.mem_write.q',
   'cpu.EXMEM.funct3.q',
-  'cpu.ID.regfile.rd',           // which register the WB stage targets
-  'cpu.ID.regfile.we',           // write enable
-  'cpu.ID.regfile.write_data',   // value being written back
-  'cpu.ID.regfile.read2',        // a4's current value when rs2=14
-  'cpu.MEMWB.load_data.q',    // LBU/LW loaded value in WB stage
+  'cpu.ID.regfile.rd', // which register the WB stage targets
+  'cpu.ID.regfile.we', // write enable
+  'cpu.ID.regfile.write_data', // value being written back
+  'cpu.ID.regfile.read2', // a4's current value when rs2=14
+  'cpu.MEMWB.load_data.q', // LBU/LW loaded value in WB stage
   'cpu.MEMWB.load_data.data', // input to that register (= data_read)
-  'data_read',                // top-level input
-  'cpu.MEMWB.rd.q',           // WB stage's target register
-  'cpu.MEMWB.reg_write.q',    // WB stage's write-enable
-  'instr_addr',  // top-level outputs
+  'data_read', // top-level input
+  'cpu.MEMWB.rd.q', // WB stage's target register
+  'cpu.MEMWB.reg_write.q', // WB stage's write-enable
+  'instr_addr', // top-level outputs
   'data_addr',
   'data_write',
   'data_mem_write',
@@ -120,17 +115,17 @@ function runTsSim(): Array<Map<string, number>> {
       // bitwise-int sign convention. iverilog's parser always produces
       // non-negative values, but TS sim may carry signed-32 internally
       // (e.g. lui imm with bit 31 set comes back as -2147483648).
-      const num = typeof val === 'boolean' ? (val ? 1 : 0) : ((val as number) >>> 0);
+      const num = typeof val === 'boolean' ? (val ? 1 : 0) : (val as number) >>> 0;
       snapshot.set(cleanKey, num);
     }
     trace.push(snapshot);
 
-    const instrAddr = ((cpu.get('instr_addr') as number) >>> 0);
-    const dataAddr  = ((cpu.get('data_addr')  as number) >>> 0);
-    const memW      = cpu.get('data_mem_write') as unknown as number;
-    const dataWrite = ((cpu.get('data_write') as number) >>> 0);
-    const f3        = cpu.get('data_funct3') as unknown as number;
-    const instr     = FIRMWARE[(instrAddr >>> 2) & 0x1ff] ?? 0;
+    const instrAddr = (cpu.get('instr_addr') as number) >>> 0;
+    const dataAddr = (cpu.get('data_addr') as number) >>> 0;
+    const memW = cpu.get('data_mem_write') as unknown as number;
+    const dataWrite = (cpu.get('data_write') as number) >>> 0;
+    const f3 = cpu.get('data_funct3') as unknown as number;
+    const instr = FIRMWARE[(instrAddr >>> 2) & 0x1ff] ?? 0;
 
     // Matches the iverilog testbench's data_read mux: UART poll returns 1,
     // DMEM returns the raw aligned word (CPU's LoadAlignFull does the slicing),
@@ -148,8 +143,9 @@ function runTsSim(): Array<Map<string, number>> {
       dataRead = 1;
     } else if (dataAddr >= DMEM_BASE && dataAddr < DMEM_BASE + 0x1000) {
       const ao = (dataAddr - DMEM_BASE) & ~3;
-      dataRead = (dmem[ao] | (dmem[ao+1]<<8) | (dmem[ao+2]<<16) | (dmem[ao+3]<<24)) >>> 0;
-    } else if ((dataAddr >>> 12) === 0x00000) {
+      dataRead =
+        (dmem[ao] | (dmem[ao + 1] << 8) | (dmem[ao + 2] << 16) | (dmem[ao + 3] << 24)) >>> 0;
+    } else if (dataAddr >>> 12 === 0x00000) {
       const wi = (dataAddr >>> 2) & 0x1ff;
       dataRead = (FIRMWARE[wi] ?? 0) >>> 0;
     }
@@ -157,9 +153,16 @@ function runTsSim(): Array<Map<string, number>> {
     if (memW && dataAddr >= DMEM_BASE && dataAddr < DMEM_BASE + 0x1000) {
       const off = dataAddr - DMEM_BASE;
       const f = f3 & 7;
-      if (f === 0)      dmem[off] = dataWrite & 0xFF;
-      else if (f === 1) { dmem[off]=dataWrite&0xFF; dmem[off+1]=(dataWrite>>8)&0xFF; }
-      else              { dmem[off]=dataWrite&0xFF; dmem[off+1]=(dataWrite>>8)&0xFF; dmem[off+2]=(dataWrite>>16)&0xFF; dmem[off+3]=(dataWrite>>24)&0xFF; }
+      if (f === 0) dmem[off] = dataWrite & 0xff;
+      else if (f === 1) {
+        dmem[off] = dataWrite & 0xff;
+        dmem[off + 1] = (dataWrite >> 8) & 0xff;
+      } else {
+        dmem[off] = dataWrite & 0xff;
+        dmem[off + 1] = (dataWrite >> 8) & 0xff;
+        dmem[off + 2] = (dataWrite >> 16) & 0xff;
+        dmem[off + 3] = (dataWrite >> 24) & 0xff;
+      }
     }
 
     cpu.set({ instruction: instr, data_read: dataRead });
@@ -179,9 +182,11 @@ async function runIverilog(): Promise<{ vcd: string; log: string } | null> {
 
   // Match verify.ts's testbench layout: instantiate RV32I_CPU_Core directly
   // (no cpu_top wrapper / POR delay), drive IMEM/DMEM in the testbench.
-  const imemInit = FIRMWARE
-    .map((w, i) => w === 0 ? null : `      imem[${i}] = 32'h${(w >>> 0).toString(16).padStart(8, '0')};`)
-    .filter(Boolean).join('\n');
+  const imemInit = FIRMWARE.map((w, i) =>
+    w === 0 ? null : `      imem[${i}] = 32'h${(w >>> 0).toString(16).padStart(8, '0')};`,
+  )
+    .filter(Boolean)
+    .join('\n');
   const tb = `\`timescale 1ns / 1ps
 module tb;
   reg clk = 0;
@@ -269,12 +274,20 @@ endmodule
     console.error('Verifier request failed:', resp.status, await resp.text());
     return null;
   }
-  const json = await resp.json() as { success: boolean; vcdBase64?: string; simulationLog?: string; error?: string };
+  const json = (await resp.json()) as {
+    success: boolean;
+    vcdBase64?: string;
+    simulationLog?: string;
+    error?: string;
+  };
   if (!json.success || !json.vcdBase64) {
     console.error('Verifier returned error:', json.error ?? '(no error)');
     return null;
   }
-  return { vcd: Buffer.from(json.vcdBase64, 'base64').toString('utf8'), log: json.simulationLog ?? '' };
+  return {
+    vcd: Buffer.from(json.vcdBase64, 'base64').toString('utf8'),
+    log: json.simulationLog ?? '',
+  };
 }
 
 // ─── Minimal VCD parser ────────────────────────────────────────────────────
@@ -294,7 +307,10 @@ function parseVcd(vcd: string): VcdData {
 
   while (i < lines.length) {
     const line = lines[i].trim();
-    if (line.startsWith('$enddefinitions')) { i++; break; }
+    if (line.startsWith('$enddefinitions')) {
+      i++;
+      break;
+    }
     if (line.startsWith('$scope')) {
       const parts = line.split(/\s+/);
       scope.push(parts[2]);
@@ -344,7 +360,10 @@ async function main() {
 
   console.log('Running iverilog via verifier…');
   const ivResult = await runIverilog();
-  if (!ivResult) { console.error('iverilog run failed; abort.'); process.exit(1); }
+  if (!ivResult) {
+    console.error('iverilog run failed; abort.');
+    process.exit(1);
+  }
   console.log(`  log length: ${ivResult.log.length}, vcd length: ${ivResult.vcd.length}`);
 
   console.log('Parsing VCD…');
@@ -399,7 +418,9 @@ async function main() {
       const iv = ivTrace[c].get(sig);
       const match = ts === iv;
       const marker = match ? '  ' : '⚠ ';
-      outLines.push(`${marker}${sig.padEnd(28)} ts=${ts !== undefined ? hex(ts) : '   undef   '}  iv=${iv !== undefined ? hex(iv) : '   undef   '}${match ? '' : '   ← DIVERGE'}\n`);
+      outLines.push(
+        `${marker}${sig.padEnd(28)} ts=${ts !== undefined ? hex(ts) : '   undef   '}  iv=${iv !== undefined ? hex(iv) : '   undef   '}${match ? '' : '   ← DIVERGE'}\n`,
+      );
       if (!match && firstDiverge < 0) firstDiverge = c;
       if (!match) mismatch = true;
     }

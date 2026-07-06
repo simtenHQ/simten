@@ -1,19 +1,18 @@
-import { HeadContent, Scripts, createRootRoute, useMatches } from '@tanstack/react-router'
-import { Outlet } from '@tanstack/react-router'
-import { ThemeProvider } from '../components/ThemeProvider'
-import { SiteHeader } from '../components/SiteHeader'
-import { SiteNavLinks } from '../components/SiteNavLinks'
-import { SiteFooter } from '../components/SiteFooter'
-import { RootProvider } from 'fumadocs-ui/provider/tanstack'
-import { SandboxProvider } from '@simten/ui/sandbox'
-import { ShareCircuitProvider } from '@simten/embed'
-import { shareCircuit } from '@/features/share/server'
+import { ShareCircuitProvider } from '@simten/embed';
+import { SandboxProvider } from '@simten/ui/sandbox';
+import { createRootRoute, HeadContent, Outlet, Scripts, useMatches } from '@tanstack/react-router';
+import { RootProvider } from 'fumadocs-ui/provider/tanstack';
+import { shareCircuit } from '@/features/share/server';
+import { SiteFooter } from '../components/SiteFooter';
+import { SiteHeader } from '../components/SiteHeader';
+import { SiteNavLinks } from '../components/SiteNavLinks';
+import { ThemeProvider } from '../components/ThemeProvider';
 
-import appCss from '../styles.css?url'
+import appCss from '../styles.css?url';
 
 // Bridge the TanStack Start server fn to the CircuitEmbed Fork button via
 // context. Every Fork click goes through KV → short `/circuit/s/<hash>` URLs.
-const shareCircuitFn = (source: string) => shareCircuit({ data: { source } })
+const shareCircuitFn = (source: string) => shareCircuit({ data: { source } });
 
 // Tool routes render their own SiteHeader with custom right-slot content
 // (the editor and the RV32I debugger pass tool controls instead of nav
@@ -23,12 +22,12 @@ const shareCircuitFn = (source: string) => shareCircuit({ data: { source } })
 // (`/circuit_/$encoded`, etc.) would ship in the minified bundle and
 // crawlers occasionally try to fetch them as URLs.
 
-const SITE_URL = 'https://simten.dev'
-const SITE_NAME = 'Simten'
-const DEFAULT_TITLE = 'Simten — Hardware design in TypeScript'
+const SITE_URL = 'https://simten.dev';
+const SITE_NAME = 'Simten';
+const DEFAULT_TITLE = 'Simten — Hardware design in TypeScript';
 const DEFAULT_DESCRIPTION =
-  'Design and simulate digital hardware in TypeScript. From single gates to RISC-V CPUs, synthesizable to Verilog, running live in your browser.'
-const DEFAULT_OG_IMAGE = `${SITE_URL}/og-default.png`
+  'Design and simulate digital hardware in TypeScript. From single gates to RISC-V CPUs, synthesizable to Verilog, running live in your browser.';
+const DEFAULT_OG_IMAGE = `${SITE_URL}/og-default.png`;
 
 export const Route = createRootRoute({
   head: () => ({
@@ -60,18 +59,31 @@ export const Route = createRootRoute({
       // Geist + Geist Mono are self-hosted — see /public/fonts and the
       // @font-face rules in styles.css. Preload both so they're fetched in
       // parallel with the HTML rather than discovered after CSS parses.
-      { rel: 'preload', href: '/fonts/Geist-Variable.woff2', as: 'font', type: 'font/woff2', crossOrigin: 'anonymous' },
-      { rel: 'preload', href: '/fonts/GeistMono-Variable.woff2', as: 'font', type: 'font/woff2', crossOrigin: 'anonymous' },
+      {
+        rel: 'preload',
+        href: '/fonts/Geist-Variable.woff2',
+        as: 'font',
+        type: 'font/woff2',
+        crossOrigin: 'anonymous',
+      },
+      {
+        rel: 'preload',
+        href: '/fonts/GeistMono-Variable.woff2',
+        as: 'font',
+        type: 'font/woff2',
+        crossOrigin: 'anonymous',
+      },
     ],
   }),
   component: RootComponent,
-})
+});
 
 function RootComponent() {
-  const matches = useMatches()
+  const matches = useMatches();
   const skipDefaultChrome = matches.some(
-    (m) => (m.staticData as { skipDefaultChrome?: boolean } | undefined)?.skipDefaultChrome === true,
-  )
+    (m) =>
+      (m.staticData as { skipDefaultChrome?: boolean } | undefined)?.skipDefaultChrome === true,
+  );
 
   return (
     <html lang="en" className="dark" suppressHydrationWarning>
@@ -93,5 +105,5 @@ function RootComponent() {
         <Scripts />
       </body>
     </html>
-  )
+  );
 }

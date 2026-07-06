@@ -41,7 +41,7 @@ export function readPortBit(
   for (const key of candidates) {
     const v = portValues.get(key);
     if (v === undefined) continue;
-    return typeof v === "boolean" ? (v ? 1 : 0) : Number(v) & 1;
+    return typeof v === 'boolean' ? (v ? 1 : 0) : Number(v) & 1;
   }
   return null;
 }

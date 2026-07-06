@@ -18,8 +18,8 @@
  * before commit <pending> for examples of the previous hand-written form.
  */
 
-import type { NumericEvaluator } from './types.js';
 import { PRIMITIVE_TYPE_INDICES } from '../numeric-types.js';
+import type { NumericEvaluator } from './types.js';
 
 const maxIndex = Math.max(...Object.values(PRIMITIVE_TYPE_INDICES)) + 1;
 export const EVALUATORS: (NumericEvaluator | null)[] = new Array(maxIndex).fill(null);

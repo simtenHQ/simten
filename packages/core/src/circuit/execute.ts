@@ -23,11 +23,11 @@
  */
 
 import { transform } from 'sucrase';
-import { circuit } from './circuit.js';
-import { bit, bus, reg, mem } from './bit-bus.js';
-import type { BuiltCircuit } from './types.js';
-import type { Circuit, CircuitLibrary } from '../types/circuit.js';
 import * as std from '../std/index.js';
+import type { Circuit, CircuitLibrary } from '../types/circuit.js';
+import { bit, bus, mem, reg } from './bit-bus.js';
+import { circuit } from './circuit.js';
+import type { BuiltCircuit } from './types.js';
 
 // ============================================================================
 // Execution result
@@ -162,12 +162,18 @@ export function executeJsCode(jsCode: string, extraScope?: Record<string, unknow
   const allValues = extraScope ? [...values, ...Object.values(extraScope)] : values;
 
   const circuitMap = new Map<string, Circuit>();
-  const library: CircuitLibrary & { addCircuit(c: Circuit): void; getAllCircuitNames(): string[] } = {
-    resolveCircuit: (name) => circuitMap.get(name),
-    getAllPrimitiveNames: () => [...circuitMap.entries()].filter(([, c]) => c.implementation.kind === 'primitive').map(([n]) => n),
-    addCircuit: (c) => { circuitMap.set(c.name, c); },
-    getAllCircuitNames: () => [...circuitMap.keys()],
-  };
+  const library: CircuitLibrary & { addCircuit(c: Circuit): void; getAllCircuitNames(): string[] } =
+    {
+      resolveCircuit: (name) => circuitMap.get(name),
+      getAllPrimitiveNames: () =>
+        [...circuitMap.entries()]
+          .filter(([, c]) => c.implementation.kind === 'primitive')
+          .map(([n]) => n),
+      addCircuit: (c) => {
+        circuitMap.set(c.name, c);
+      },
+      getAllCircuitNames: () => [...circuitMap.keys()],
+    };
   const builtCircuits: BuiltCircuit[] = [];
   const circuits: Circuit[] = [];
 
@@ -250,4 +256,3 @@ export function executeCircuitCode(code: string): ExecuteResult {
   }
   return executeJsCode(stripped);
 }
-

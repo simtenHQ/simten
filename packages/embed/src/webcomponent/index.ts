@@ -14,30 +14,30 @@
  * Style isolation via class prefix.
  */
 
-import "../styles/embed.css";
-import r2wc from "@r2wc/react-to-web-component";
-import { WebComponentEmbed, type WebComponentEmbedProps } from "./WebComponentEmbed";
+import '../styles/embed.css';
+import r2wc from '@r2wc/react-to-web-component';
+import { WebComponentEmbed, type WebComponentEmbedProps } from './WebComponentEmbed';
 
 // --- <circuit-embed> ---
 
 const CircuitEmbedWC = r2wc<WebComponentEmbedProps>(WebComponentEmbed, {
   props: {
-    code: "string",
-    height: "number",
-    showControls: "boolean",
-    title: "string",
-    subtitle: "string",
-    description: "string",
-    href: "string",
-    autoRunSpeed: "number",
-    theme: "string",
+    code: 'string',
+    height: 'number',
+    showControls: 'boolean',
+    title: 'string',
+    subtitle: 'string',
+    description: 'string',
+    href: 'string',
+    autoRunSpeed: 'number',
+    theme: 'string',
   },
 });
 
 // --- Register ---
 
-if (!customElements.get("circuit-embed")) {
-  customElements.define("circuit-embed", CircuitEmbedWC);
+if (!customElements.get('circuit-embed')) {
+  customElements.define('circuit-embed', CircuitEmbedWC);
 }
 
 export { CircuitEmbedWC };

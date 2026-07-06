@@ -1,49 +1,51 @@
-import { createFileRoute } from '@tanstack/react-router'
-import { blogPostHead } from '@/lib/seo'
-import { getPost } from '@/features/blog/posts'
-import { Suspense, lazy } from "react";
-import { HeroSection } from "@/features/blog/building-a-cpu/sections/HeroSection";
-import { BlogFooter } from "@/features/blog/BlogFooter";
-import { ErrorBoundary } from "@/features/blog/building-a-cpu/ErrorBoundary";
+import { createFileRoute } from '@tanstack/react-router';
+import { lazy, Suspense } from 'react';
+import { BlogFooter } from '@/features/blog/BlogFooter';
+import { ErrorBoundary } from '@/features/blog/building-a-cpu/ErrorBoundary';
+import { HeroSection } from '@/features/blog/building-a-cpu/sections/HeroSection';
+import { getPost } from '@/features/blog/posts';
+import { blogPostHead } from '@/lib/seo';
 
 // Lazy-load heavier sections so the page renders fast
 const GatesSection = lazy(() =>
-  import("@/features/blog/building-a-cpu/sections/GatesSection").then((m) => ({ default: m.GatesSection }))
+  import('@/features/blog/building-a-cpu/sections/GatesSection').then((m) => ({
+    default: m.GatesSection,
+  })),
 );
 const CompositionSection = lazy(() =>
-  import("@/features/blog/building-a-cpu/sections/CompositionSection").then((m) => ({
+  import('@/features/blog/building-a-cpu/sections/CompositionSection').then((m) => ({
     default: m.CompositionSection,
-  }))
+  })),
 );
 const MemorySection = lazy(() =>
-  import("@/features/blog/building-a-cpu/sections/MemorySection").then((m) => ({
+  import('@/features/blog/building-a-cpu/sections/MemorySection').then((m) => ({
     default: m.MemorySection,
-  }))
+  })),
 );
 const CounterSection = lazy(() =>
-  import("@/features/blog/building-a-cpu/sections/CounterSection").then((m) => ({
+  import('@/features/blog/building-a-cpu/sections/CounterSection').then((m) => ({
     default: m.CounterSection,
-  }))
+  })),
 );
 const AdderSection = lazy(() =>
-  import("@/features/blog/building-a-cpu/sections/AdderSection").then((m) => ({
+  import('@/features/blog/building-a-cpu/sections/AdderSection').then((m) => ({
     default: m.AdderSection,
-  }))
+  })),
 );
 const ALUSection = lazy(() =>
-  import("@/features/blog/building-a-cpu/sections/ALUSection").then((m) => ({
+  import('@/features/blog/building-a-cpu/sections/ALUSection').then((m) => ({
     default: m.ALUSection,
-  }))
+  })),
 );
 const RAMSection = lazy(() =>
-  import("@/features/blog/building-a-cpu/sections/RAMSection").then((m) => ({
+  import('@/features/blog/building-a-cpu/sections/RAMSection').then((m) => ({
     default: m.RAMSection,
-  }))
+  })),
 );
 const CPU6502Section = lazy(() =>
-  import("@/features/blog/building-a-cpu/sections/CPU6502Section").then((m) => ({
+  import('@/features/blog/building-a-cpu/sections/CPU6502Section').then((m) => ({
     default: m.CPU6502Section,
-  }))
+  })),
 );
 
 function SectionSkeleton() {
@@ -63,76 +65,75 @@ function SectionSkeleton() {
 function BuildingACPUPage() {
   return (
     <>
+      <HeroSection />
 
-        <HeroSection />
+      <div className="space-y-4">
+        <hr className="border-gray-200 dark:border-gray-800" />
 
-        <div className="space-y-4">
-          <hr className="border-gray-200 dark:border-gray-800" />
+        <ErrorBoundary>
+          <Suspense fallback={<SectionSkeleton />}>
+            <GatesSection />
+          </Suspense>
+        </ErrorBoundary>
 
-          <ErrorBoundary>
-            <Suspense fallback={<SectionSkeleton />}>
-              <GatesSection />
-            </Suspense>
-          </ErrorBoundary>
+        <hr className="border-gray-200 dark:border-gray-800" />
 
-          <hr className="border-gray-200 dark:border-gray-800" />
+        <ErrorBoundary>
+          <Suspense fallback={<SectionSkeleton />}>
+            <CompositionSection />
+          </Suspense>
+        </ErrorBoundary>
 
-          <ErrorBoundary>
-            <Suspense fallback={<SectionSkeleton />}>
-              <CompositionSection />
-            </Suspense>
-          </ErrorBoundary>
+        <hr className="border-gray-200 dark:border-gray-800" />
 
-          <hr className="border-gray-200 dark:border-gray-800" />
+        <ErrorBoundary>
+          <Suspense fallback={<SectionSkeleton />}>
+            <MemorySection />
+          </Suspense>
+        </ErrorBoundary>
 
-          <ErrorBoundary>
-            <Suspense fallback={<SectionSkeleton />}>
-              <MemorySection />
-            </Suspense>
-          </ErrorBoundary>
+        <hr className="border-gray-200 dark:border-gray-800" />
 
-          <hr className="border-gray-200 dark:border-gray-800" />
+        <ErrorBoundary>
+          <Suspense fallback={<SectionSkeleton />}>
+            <CounterSection />
+          </Suspense>
+        </ErrorBoundary>
 
-          <ErrorBoundary>
-            <Suspense fallback={<SectionSkeleton />}>
-              <CounterSection />
-            </Suspense>
-          </ErrorBoundary>
+        <hr className="border-gray-200 dark:border-gray-800" />
 
-          <hr className="border-gray-200 dark:border-gray-800" />
+        <ErrorBoundary>
+          <Suspense fallback={<SectionSkeleton />}>
+            <AdderSection />
+          </Suspense>
+        </ErrorBoundary>
 
-          <ErrorBoundary>
-            <Suspense fallback={<SectionSkeleton />}>
-              <AdderSection />
-            </Suspense>
-          </ErrorBoundary>
+        <hr className="border-gray-200 dark:border-gray-800" />
 
-          <hr className="border-gray-200 dark:border-gray-800" />
+        <ErrorBoundary>
+          <Suspense fallback={<SectionSkeleton />}>
+            <ALUSection />
+          </Suspense>
+        </ErrorBoundary>
 
-          <ErrorBoundary>
-            <Suspense fallback={<SectionSkeleton />}>
-              <ALUSection />
-            </Suspense>
-          </ErrorBoundary>
+        <hr className="border-gray-200 dark:border-gray-800" />
 
-          <hr className="border-gray-200 dark:border-gray-800" />
+        <ErrorBoundary>
+          <Suspense fallback={<SectionSkeleton />}>
+            <RAMSection />
+          </Suspense>
+        </ErrorBoundary>
 
-          <ErrorBoundary>
-            <Suspense fallback={<SectionSkeleton />}>
-              <RAMSection />
-            </Suspense>
-          </ErrorBoundary>
+        <hr className="border-gray-200 dark:border-gray-800" />
 
-          <hr className="border-gray-200 dark:border-gray-800" />
+        <ErrorBoundary>
+          <Suspense fallback={<SectionSkeleton />}>
+            <CPU6502Section />
+          </Suspense>
+        </ErrorBoundary>
+      </div>
 
-          <ErrorBoundary>
-            <Suspense fallback={<SectionSkeleton />}>
-              <CPU6502Section />
-            </Suspense>
-          </ErrorBoundary>
-        </div>
-
-        <BlogFooter slug="building-a-cpu" />
+      <BlogFooter slug="building-a-cpu" />
     </>
   );
 }
@@ -140,4 +141,4 @@ function BuildingACPUPage() {
 export const Route = createFileRoute('/blog/building-a-cpu')({
   head: () => blogPostHead(getPost('building-a-cpu')),
   component: BuildingACPUPage,
-})
+});

@@ -17,20 +17,20 @@
  * See: apps/web/content/docs/architecture.mdx → "Runtime topology".
  */
 
-import { useState, useEffect, useCallback, useRef, useMemo } from "react";
-import {
-  type SimulatorEngine,
-  type CircuitLibrary,
-  type FlatPortValueMap,
-  type FlatSequentialState,
-} from "@simten/core/simulator";
-import type { Circuit, BitValue, BusValue } from "@simten/core";
-import type { BuiltCircuit } from "@simten/core/circuit";
-import { getCircuitEval, autoHarness, isSequentialCircuit } from "@simten/core/circuit";
-import { Switch, Button, Led, Input, Output, HexDisplay } from "@simten/core/std";
-import { useSandboxContext, type EvalSource } from "@simten/ui/sandbox";
+import type { BitValue, BusValue, Circuit } from '@simten/core';
+import type { BuiltCircuit } from '@simten/core/circuit';
+import { autoHarness, getCircuitEval, isSequentialCircuit } from '@simten/core/circuit';
+import type {
+  CircuitLibrary,
+  FlatPortValueMap,
+  FlatSequentialState,
+  SimulatorEngine,
+} from '@simten/core/simulator';
+import { Button, HexDisplay, Input, Led, Output, Switch } from '@simten/core/std';
+import { type EvalSource, useSandboxContext } from '@simten/ui/sandbox';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-const TOP_LEVEL_NODE = "__top__";
+const TOP_LEVEL_NODE = '__top__';
 
 export interface SimulatorState {
   outputs: Record<string, boolean | number>;
@@ -59,7 +59,10 @@ export interface SimulatorActions {
    * callers can read debug outputs without waiting for a React re-render),
    * or null if the sandbox isn't ready / errored.
    */
-  setNodeValue: (nodeId: string, value: number | boolean | Map<number, number>) => Promise<ReadonlyMap<string, boolean | number> | null>;
+  setNodeValue: (
+    nodeId: string,
+    value: number | boolean | Map<number, number>,
+  ) => Promise<ReadonlyMap<string, boolean | number> | null>;
   tick: () => void;
   /** Advance N ticks in a single sandbox round-trip; one React update. */
   tickN: (n: number) => Promise<void>;
@@ -73,7 +76,10 @@ export interface SimulatorActions {
   stepBack: () => void;
   stepForward: () => void;
   seek: (index: number) => void;
-  startAutoRun: (ticksPerSecond: number, options?: { displayRate?: number; onBeforeTick?: () => void }) => void;
+  startAutoRun: (
+    ticksPerSecond: number,
+    options?: { displayRate?: number; onBeforeTick?: () => void },
+  ) => void;
   stopAutoRun: () => void;
   setSpeed: (ticksPerSecond: number) => void;
   runCombinational: () => void;
@@ -142,6 +148,28 @@ export function builtFromIR(circuit: Circuit, dependencies: Circuit[]): BuiltCir
 }
 
 /**
+ * Resolves once the sandbox iframe reports ready (or the caller cancels).
+ * Polls because the sandbox handle exposes readiness as isReady() with no event.
+ */
+function waitForSandboxReady(
+  sandbox: { isReady(): boolean },
+  cancelled: () => boolean,
+): Promise<void> {
+  return new Promise((resolve) => {
+    if (sandbox.isReady() || cancelled()) {
+      resolve();
+      return;
+    }
+    const id = setInterval(() => {
+      if (sandbox.isReady() || cancelled()) {
+        clearInterval(id);
+        resolve();
+      }
+    }, 50);
+  });
+}
+
+/**
  * Circuit simulator hook — runs simulation in the sandbox iframe.
  *
  * Takes a BuiltCircuit and returns reactive simulation state + actions.
@@ -153,8 +181,9 @@ export function useCircuitSimulator(
   options?: UseCircuitSimulatorOptions,
 ): SimulatorState & SimulatorActions {
   const sandbox = useSandboxContext();
-  const slotId = useMemo(() =>
-    `embed-${typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2)}`,
+  const slotId = useMemo(
+    () =>
+      `embed-${typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2)}`,
     [],
   );
 
@@ -163,8 +192,13 @@ export function useCircuitSimulator(
     const circuitMap = new Map<string, Circuit>();
     const lib: CircuitLibrary & { addCircuit(c: Circuit): void } = {
       resolveCircuit: (name) => circuitMap.get(name),
-      getAllPrimitiveNames: () => [...circuitMap.entries()].filter(([, c]) => c.implementation.kind === 'primitive').map(([n]) => n),
-      addCircuit: (c) => { circuitMap.set(c.name, c); },
+      getAllPrimitiveNames: () =>
+        [...circuitMap.entries()]
+          .filter(([, c]) => c.implementation.kind === 'primitive')
+          .map(([n]) => n),
+      addCircuit: (c) => {
+        circuitMap.set(c.name, c);
+      },
     };
     for (const c of [Switch(), Button(), Led, Input(), Output, HexDisplay]) {
       lib.addCircuit(c.circuit);
@@ -248,7 +282,9 @@ export function useCircuitSimulator(
   // Mirror of inputs in a ref so tick/tickN can snapshot the latest value
   // synchronously without waiting for setState → re-render.
   const inputsRef = useRef(inputs);
-  useEffect(() => { inputsRef.current = inputs; }, [inputs]);
+  useEffect(() => {
+    inputsRef.current = inputs;
+  }, [inputs]);
 
   // ── Compile to sandbox on mount / circuit change ──
   useEffect(() => {
@@ -262,6 +298,15 @@ export function useCircuitSimulator(
 
     async function initSandbox() {
       if (!circuit || !harnessedCircuit) return;
+
+      // compileIR does not queue — calling it before the sandbox iframe has
+      // finished loading returns "Sandbox not ready" with no recovery. Wait for
+      // readiness first so consumers mounting a circuit immediately (fresh apps
+      // where the SandboxProvider mounts alongside them) don't have to gate on
+      // isReady() themselves.
+      await waitForSandboxReady(sandbox, () => cancelled);
+      if (cancelled) return;
+
       // Extract eval sources from the BuiltCircuit and its dependencies
       const evalSources = extractEvalSources(circuit);
 
@@ -318,9 +363,10 @@ export function useCircuitSimulator(
       // Seed history with the initial snapshot (if any). Fresh compile means
       // the previous history (if any) is invalid anyway — sandbox already
       // cleared its own snapshots on the recompile.
-      historyRef.current = result.snapshotId !== undefined
-        ? [{ snapshotId: result.snapshotId, cycle: 0, inputs: { ...defaultInputs } }]
-        : [];
+      historyRef.current =
+        result.snapshotId !== undefined
+          ? [{ snapshotId: result.snapshotId, cycle: 0, inputs: { ...defaultInputs } }]
+          : [];
       setHistoryIndex(result.snapshotId !== undefined ? 0 : -1);
       setHistoryLen(historyRef.current.length);
 
@@ -364,98 +410,115 @@ export function useCircuitSimulator(
   // The `inputsSnapshot` is what the user-visible inputs (switches, buttons,
   // etc.) looked like at this moment — used on rewind so the UI restores not
   // just the simulator state but the user inputs too.
-  const recordSnapshot = useCallback((
-    snapshotId: number | undefined,
-    newCycle: number,
-    inputsSnapshot: Record<string, boolean | number>,
-  ) => {
-    if (snapshotId === undefined) return; // combinational circuit — nothing to record
+  const recordSnapshot = useCallback(
+    (
+      snapshotId: number | undefined,
+      newCycle: number,
+      inputsSnapshot: Record<string, boolean | number>,
+    ) => {
+      if (snapshotId === undefined) return; // combinational circuit — nothing to record
 
-    const hist = historyRef.current;
-    const currentIdx = historyIndexRef.current;
+      const hist = historyRef.current;
+      const currentIdx = historyIndexRef.current;
 
-    // If the user was viewing the past and just made a mutating action,
-    // we branch: discard everything after their current position, then
-    // append the new snapshot as the new head. The orphaned sandbox
-    // snapshots leak until the next cap-prune or slot disposal.
-    if (currentIdx >= 0 && currentIdx < hist.length - 1) {
-      hist.length = currentIdx + 1;
-    }
+      // If the user was viewing the past and just made a mutating action,
+      // we branch: discard everything after their current position, then
+      // append the new snapshot as the new head. The orphaned sandbox
+      // snapshots leak until the next cap-prune or slot disposal.
+      if (currentIdx >= 0 && currentIdx < hist.length - 1) {
+        hist.length = currentIdx + 1;
+      }
 
-    hist.push({ snapshotId, cycle: newCycle, inputs: { ...inputsSnapshot } });
+      hist.push({ snapshotId, cycle: newCycle, inputs: { ...inputsSnapshot } });
 
-    // Cap at HISTORY_CAP: drop oldest entries and tell the sandbox to
-    // free their snapshots. `keepAfterId` is the highest snapshotId we
-    // DO NOT want to keep — anything <= that gets freed in the sandbox.
-    if (hist.length > HISTORY_CAP) {
-      const drop = hist.length - HISTORY_CAP;
-      const keepAfterId = hist[drop - 1].snapshotId;
-      hist.splice(0, drop);
-      sandbox.pruneSnapshots(keepAfterId, slotId).catch(() => {});
-    }
+      // Cap at HISTORY_CAP: drop oldest entries and tell the sandbox to
+      // free their snapshots. `keepAfterId` is the highest snapshotId we
+      // DO NOT want to keep — anything <= that gets freed in the sandbox.
+      if (hist.length > HISTORY_CAP) {
+        const drop = hist.length - HISTORY_CAP;
+        const keepAfterId = hist[drop - 1].snapshotId;
+        hist.splice(0, drop);
+        sandbox.pruneSnapshots(keepAfterId, slotId).catch(() => {});
+      }
 
-    historyIndexRef.current = hist.length - 1;
-    setHistoryIndex(hist.length - 1);
-    setHistoryLen(hist.length);
-  }, [sandbox, slotId]);
+      historyIndexRef.current = hist.length - 1;
+      setHistoryIndex(hist.length - 1);
+      setHistoryLen(hist.length);
+    },
+    [sandbox, slotId],
+  );
 
   // Mirror historyIndex in a ref so the helper above can see its live value
   // without recompiling on every change (avoids rebuilding every callback).
   const historyIndexRef = useRef(-1);
-  useEffect(() => { historyIndexRef.current = historyIndex; }, [historyIndex]);
+  useEffect(() => {
+    historyIndexRef.current = historyIndex;
+  }, [historyIndex]);
 
   // ── Actions ──
 
-  const setNode = useCallback(async (name: string, value: boolean | number) => {
-    // Input changes (switch toggles, button presses) don't create a new
-    // history entry — history tracks CYCLES (post-tick states), not every
-    // input edit. The current cycle's "inputs" stay live: the next tick
-    // will snapshot them as part of its history entry. If the user is
-    // viewing the past when they toggle, the next tick branches from there.
-    const newInputs = { ...inputsRef.current, [name]: value };
-    inputsRef.current = newInputs;
-    setInputs(newInputs);
-    if (!ready) return;
-    const result = await sandbox.setNode(name, value, slotId);
-    if ('error' in result) return;
-    const pvMap = new Map<string, BitValue | BusValue>();
-    for (const [k, v] of Object.entries(result.portValues)) pvMap.set(k, v);
-    setPortValues(pvMap);
-    if (result.peripheralState) setPeripheralState(result.peripheralState);
-  }, [ready, sandbox, slotId]);
+  const setNode = useCallback(
+    async (name: string, value: boolean | number) => {
+      // Input changes (switch toggles, button presses) don't create a new
+      // history entry — history tracks CYCLES (post-tick states), not every
+      // input edit. The current cycle's "inputs" stay live: the next tick
+      // will snapshot them as part of its history entry. If the user is
+      // viewing the past when they toggle, the next tick branches from there.
+      const newInputs = { ...inputsRef.current, [name]: value };
+      inputsRef.current = newInputs;
+      setInputs(newInputs);
+      if (!ready) return;
+      const result = await sandbox.setNode(name, value, slotId);
+      if ('error' in result) return;
+      const pvMap = new Map<string, BitValue | BusValue>();
+      for (const [k, v] of Object.entries(result.portValues)) pvMap.set(k, v);
+      setPortValues(pvMap);
+      if (result.peripheralState) setPeripheralState(result.peripheralState);
+    },
+    [ready, sandbox, slotId],
+  );
 
-  const toggleInput = useCallback((name: string) => {
-    const current = inputs[name];
-    const newValue = typeof current === 'boolean' ? !current : (current === 0 ? 1 : 0);
-    setNode(name, newValue);
-  }, [inputs, setNode]);
+  const toggleInput = useCallback(
+    (name: string) => {
+      const current = inputs[name];
+      const newValue = typeof current === 'boolean' ? !current : current === 0 ? 1 : 0;
+      setNode(name, newValue);
+    },
+    [inputs, setNode],
+  );
 
-  const toggleNode = useCallback(async (nodeId: string) => {
-    if (!ready) return;
-    const outKey = `${nodeId}.out`;
-    const current = portValues.get(outKey);
-    const newValue = typeof current === 'boolean' ? !current : (current === 1 ? 0 : 1);
-    // Same reasoning as setNode: no new history entry on input edit.
-    const result = await sandbox.setNode(nodeId, newValue, slotId);
-    if ('error' in result) return;
-    const pvMap = new Map<string, BitValue | BusValue>();
-    for (const [k, v] of Object.entries(result.portValues)) pvMap.set(k, v);
-    setPortValues(pvMap);
-    if (result.peripheralState) setPeripheralState(result.peripheralState);
-  }, [ready, portValues, sandbox, slotId]);
+  const toggleNode = useCallback(
+    async (nodeId: string) => {
+      if (!ready) return;
+      const outKey = `${nodeId}.out`;
+      const current = portValues.get(outKey);
+      const newValue = typeof current === 'boolean' ? !current : current === 1 ? 0 : 1;
+      // Same reasoning as setNode: no new history entry on input edit.
+      const result = await sandbox.setNode(nodeId, newValue, slotId);
+      if ('error' in result) return;
+      const pvMap = new Map<string, BitValue | BusValue>();
+      for (const [k, v] of Object.entries(result.portValues)) pvMap.set(k, v);
+      setPortValues(pvMap);
+      if (result.peripheralState) setPeripheralState(result.peripheralState);
+    },
+    [ready, portValues, sandbox, slotId],
+  );
 
-  const setNodeValue = useCallback(async (nodeId: string, value: number | boolean | Map<number, number>) => {
-    if (!ready) return null;
-    // Map values (for ROM/RAM loading) are supported via structured clone in postMessage.
-    // Same reasoning as setNode: no history entry on this path.
-    const result = await sandbox.setNode(nodeId, value as any, slotId);
-    if ('error' in result) return null;
-    const pvMap = new Map<string, BitValue | BusValue>();
-    for (const [k, v] of Object.entries(result.portValues)) pvMap.set(k, v);
-    setPortValues(pvMap);
-    if (result.peripheralState) setPeripheralState(result.peripheralState);
-    return pvMap as ReadonlyMap<string, boolean | number>;
-  }, [ready, sandbox, slotId]);
+  const setNodeValue = useCallback(
+    async (nodeId: string, value: number | boolean | Map<number, number>) => {
+      if (!ready) return null;
+      // Map values (for ROM/RAM loading) are supported via structured clone in postMessage.
+      // Same reasoning as setNode: no history entry on this path.
+      const result = await sandbox.setNode(nodeId, value as any, slotId);
+      if ('error' in result) return null;
+      const pvMap = new Map<string, BitValue | BusValue>();
+      for (const [k, v] of Object.entries(result.portValues)) pvMap.set(k, v);
+      setPortValues(pvMap);
+      if (result.peripheralState) setPeripheralState(result.peripheralState);
+      return pvMap as ReadonlyMap<string, boolean | number>;
+    },
+    [ready, sandbox, slotId],
+  );
 
   const tick = useCallback(async () => {
     if (!ready) return;
@@ -474,24 +537,30 @@ export function useCircuitSimulator(
   // Batched tick — advances N cycles in one round-trip; one React update.
   // Only snapshots the final state (not every intermediate cycle) — time-travel
   // through a batched tick jumps straight to pre-batch.
-  const tickN = useCallback(async (n: number) => {
-    if (!ready || n <= 0) return;
-    const result = await sandbox.tickN(n, undefined, slotId, { snapshot: isSequential });
-    if ('error' in result) return;
-    const pvMap = new Map<string, BitValue | BusValue>();
-    for (const [k, v] of Object.entries(result.portValues)) pvMap.set(k, v);
-    setPortValues(pvMap);
-    setCycle(result.cycle);
-    if (result.peripheralState) setPeripheralState(result.peripheralState);
-    recordSnapshot(result.snapshotId, result.cycle, inputsRef.current);
-  }, [ready, sandbox, slotId, isSequential, recordSnapshot]);
+  const tickN = useCallback(
+    async (n: number) => {
+      if (!ready || n <= 0) return;
+      const result = await sandbox.tickN(n, undefined, slotId, { snapshot: isSequential });
+      if ('error' in result) return;
+      const pvMap = new Map<string, BitValue | BusValue>();
+      for (const [k, v] of Object.entries(result.portValues)) pvMap.set(k, v);
+      setPortValues(pvMap);
+      setCycle(result.cycle);
+      if (result.peripheralState) setPeripheralState(result.peripheralState);
+      recordSnapshot(result.snapshotId, result.cycle, inputsRef.current);
+    },
+    [ready, sandbox, slotId, isSequential, recordSnapshot],
+  );
 
-  const scanPort = useCallback(async (addrNodeId: string, valuePortKey: string, count: number): Promise<number[] | null> => {
-    if (!ready || count <= 0) return null;
-    const result = await sandbox.scanPort(addrNodeId, valuePortKey, count, slotId);
-    if ('error' in result) return null;
-    return result.values;
-  }, [ready, sandbox, slotId]);
+  const scanPort = useCallback(
+    async (addrNodeId: string, valuePortKey: string, count: number): Promise<number[] | null> => {
+      if (!ready || count <= 0) return null;
+      const result = await sandbox.scanPort(addrNodeId, valuePortKey, count, slotId);
+      if ('error' in result) return null;
+      return result.values;
+    },
+    [ready, sandbox, slotId],
+  );
 
   const reset = useCallback(async () => {
     const result = await sandbox.reset(slotId);
@@ -511,7 +580,9 @@ export function useCircuitSimulator(
     if (isSequential) {
       const snap = await sandbox.snapshot(slotId);
       if (!('error' in snap) && snap.snapshotId !== undefined) {
-        historyRef.current = [{ snapshotId: snap.snapshotId, cycle: 0, inputs: { ...defaultInputs } }];
+        historyRef.current = [
+          { snapshotId: snap.snapshotId, cycle: 0, inputs: { ...defaultInputs } },
+        ];
       }
     }
     historyIndexRef.current = historyRef.current.length > 0 ? 0 : -1;
@@ -527,23 +598,26 @@ export function useCircuitSimulator(
   // input values, circuit state. Omitting inputs would leave the UI showing
   // a stale switch while the circuit actually runs with the restored value —
   // see environmental-state.ts in packages/core for the same distinction.
-  const applyHistoryEntry = useCallback(async (entry: HistoryEntry, targetIndex: number) => {
-    const result = await sandbox.restore(entry.snapshotId, slotId);
-    if ('error' in result) return;
-    const pvMap = new Map<string, BitValue | BusValue>();
-    for (const [k, v] of Object.entries(result.portValues)) pvMap.set(k, v);
-    setPortValues(pvMap);
-    setCycle(result.cycle);
-    if (result.peripheralState) setPeripheralState(result.peripheralState);
-    else setPeripheralState({});
-    // Restore user inputs too. Keep inputsRef in lockstep so that any
-    // immediately-following setNode sees the restored values as its base.
-    const restoredInputs = { ...entry.inputs };
-    inputsRef.current = restoredInputs;
-    setInputs(restoredInputs);
-    historyIndexRef.current = targetIndex;
-    setHistoryIndex(targetIndex);
-  }, [sandbox, slotId]);
+  const applyHistoryEntry = useCallback(
+    async (entry: HistoryEntry, targetIndex: number) => {
+      const result = await sandbox.restore(entry.snapshotId, slotId);
+      if ('error' in result) return;
+      const pvMap = new Map<string, BitValue | BusValue>();
+      for (const [k, v] of Object.entries(result.portValues)) pvMap.set(k, v);
+      setPortValues(pvMap);
+      setCycle(result.cycle);
+      if (result.peripheralState) setPeripheralState(result.peripheralState);
+      else setPeripheralState({});
+      // Restore user inputs too. Keep inputsRef in lockstep so that any
+      // immediately-following setNode sees the restored values as its base.
+      const restoredInputs = { ...entry.inputs };
+      inputsRef.current = restoredInputs;
+      setInputs(restoredInputs);
+      historyIndexRef.current = targetIndex;
+      setHistoryIndex(targetIndex);
+    },
+    [sandbox, slotId],
+  );
 
   const stepBack = useCallback(async () => {
     if (!ready) return;
@@ -564,27 +638,37 @@ export function useCircuitSimulator(
     await applyHistoryEntry(hist[idx + 1], idx + 1);
   }, [ready, applyHistoryEntry]);
 
-  const seek = useCallback(async (index: number) => {
-    if (!ready) return;
-    const hist = historyRef.current;
-    if (index < 0 || index >= hist.length) return;
-    await applyHistoryEntry(hist[index], index);
-  }, [ready, applyHistoryEntry]);
+  const seek = useCallback(
+    async (index: number) => {
+      if (!ready) return;
+      const hist = historyRef.current;
+      if (index < 0 || index >= hist.length) return;
+      await applyHistoryEntry(hist[index], index);
+    },
+    [ready, applyHistoryEntry],
+  );
 
   // Stable indirection so setInterval always calls the latest tick(). Without
   // this, an auto-run started before `ready` flips true would capture the
   // bail-early version of tick and never recover, even after the sandbox
   // becomes ready — the interval would fire forever calling a stale closure.
   const tickRef = useRef(tick);
-  useEffect(() => { tickRef.current = tick; }, [tick]);
+  useEffect(() => {
+    tickRef.current = tick;
+  }, [tick]);
 
-  const startAutoRun = useCallback((ticksPerSecond: number, _opts?: { displayRate?: number; onBeforeTick?: () => void }) => {
-    if (autoRunRef.current) clearInterval(autoRunRef.current);
-    setSpeedState(ticksPerSecond);
-    setIsRunning(true);
-    const interval = Math.max(1, Math.floor(1000 / ticksPerSecond));
-    autoRunRef.current = setInterval(() => { tickRef.current(); }, interval);
-  }, []);
+  const startAutoRun = useCallback(
+    (ticksPerSecond: number, _opts?: { displayRate?: number; onBeforeTick?: () => void }) => {
+      if (autoRunRef.current) clearInterval(autoRunRef.current);
+      setSpeedState(ticksPerSecond);
+      setIsRunning(true);
+      const interval = Math.max(1, Math.floor(1000 / ticksPerSecond));
+      autoRunRef.current = setInterval(() => {
+        tickRef.current();
+      }, interval);
+    },
+    [],
+  );
 
   const stopAutoRun = useCallback(() => {
     if (autoRunRef.current) {
@@ -600,7 +684,9 @@ export function useCircuitSimulator(
       // Restart with new speed
       clearInterval(autoRunRef.current);
       const interval = Math.max(1, Math.floor(1000 / ticksPerSecond));
-      autoRunRef.current = setInterval(() => { tickRef.current(); }, interval);
+      autoRunRef.current = setInterval(() => {
+        tickRef.current();
+      }, interval);
     }
   }, []);
 
@@ -631,7 +717,10 @@ export function useCircuitSimulator(
   // showing the `N/M` counter and the ◀ ▶ enable logic. historyLen drives
   // re-renders; the array identity is intentionally stable per-slot.
   const historyForUi = useMemo(
-    () => historyRef.current.slice(0, historyLen).map(h => ({ engineSnapshot: h.snapshotId, metadata: h.cycle })),
+    () =>
+      historyRef.current
+        .slice(0, historyLen)
+        .map((h) => ({ engineSnapshot: h.snapshotId, metadata: h.cycle })),
     [historyLen],
   );
 

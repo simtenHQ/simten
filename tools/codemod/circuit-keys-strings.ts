@@ -67,14 +67,11 @@ function transformConnects(content: string): { result: string; changes: number }
   );
 
   // 4. `{ out, <nodes>... }` — no inputs, out shorthand
-  result = result.replace(
-    /connect:\s*\(\{\s*out\s*,\s*([\s\S]*?)\}\)/g,
-    (_, rest: string) => {
-      changes++;
-      const cleanRest = rest.replace(/\s+/g, ' ').replace(/,\s*$/, '').trim();
-      return `connect: ({ outputs, nodes: { ${cleanRest} } })[[ALIAS:OUT:out]]`;
-    },
-  );
+  result = result.replace(/connect:\s*\(\{\s*out\s*,\s*([\s\S]*?)\}\)/g, (_, rest: string) => {
+    changes++;
+    const cleanRest = rest.replace(/\s+/g, ' ').replace(/,\s*$/, '').trim();
+    return `connect: ({ outputs, nodes: { ${cleanRest} } })[[ALIAS:OUT:out]]`;
+  });
 
   // 5. `{ <nodes only> }` — top-level demos with no in/out config keys.
   //    Skip destructures we already rewrote (they start with inputs/outputs/nodes:).
@@ -116,10 +113,7 @@ function rewriteBodyAliases(content: string): string {
 
     // Only rewrite when alias isn't chained off another identifier.
     const replacement = kind === 'IN' ? 'inputs.' : 'outputs.';
-    const rewritten = scope.replace(
-      new RegExp(`(?<![.\\w])${alias}\\.`, 'g'),
-      replacement,
-    );
+    const rewritten = scope.replace(new RegExp(`(?<![.\\w])${alias}\\.`, 'g'), replacement);
 
     content = before + rewritten + after;
   }

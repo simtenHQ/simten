@@ -1,14 +1,14 @@
-import { useState } from "react";
-import { CircuitEmbed } from "@simten/embed";
-import type { FlatPortValueMap } from "@simten/core/simulator";
-import { HalfAdder } from "../circuits";
-import { TruthTable, computeActiveRow } from "@/components/TruthTable";
+import type { FlatPortValueMap } from '@simten/core/simulator';
+import { CircuitEmbed } from '@simten/embed';
+import { useState } from 'react';
+import { computeActiveRow, TruthTable } from '@/components/TruthTable';
+import { HalfAdder } from '../circuits';
 
 const HA_COLUMNS = [
-  { name: "a", group: "input" as const },
-  { name: "b", group: "input" as const },
-  { name: "sum", group: "output" as const },
-  { name: "carry", group: "output" as const },
+  { name: 'a', group: 'input' as const },
+  { name: 'b', group: 'input' as const },
+  { name: 'sum', group: 'output' as const },
+  { name: 'carry', group: 'output' as const },
 ];
 
 const HA_ROWS: Array<Array<number | string>> = [
@@ -29,21 +29,17 @@ export function HalfAdderSection() {
 
   return (
     <section className="py-12">
-      <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
-        The half adder
-      </h2>
+      <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">The half adder</h2>
       <div className="prose-invert space-y-6">
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
-          The smallest possible adder takes two bits and produces two bits: a{" "}
-          <strong>sum</strong> and a <strong>carry</strong>. With two
-          single-bit inputs there are four cases &mdash; the sum is 1 when
-          exactly one input is 1 (that&rsquo;s XOR), and the carry is 1
-          only when both inputs are 1 (that&rsquo;s AND).
+          The smallest possible adder takes two bits and produces two bits: a <strong>sum</strong>{' '}
+          and a <strong>carry</strong>. With two single-bit inputs there are four cases &mdash; the
+          sum is 1 when exactly one input is 1 (that&rsquo;s XOR), and the carry is 1 only when both
+          inputs are 1 (that&rsquo;s AND).
         </p>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
-          Toggle the two switches. The first LED is the sum bit, the
-          second is the carry. The highlighted row in the truth table
-          follows whichever combination you&rsquo;ve set.
+          Toggle the two switches. The first LED is the sum bit, the second is the carry. The
+          highlighted row in the truth table follows whichever combination you&rsquo;ve set.
         </p>
       </div>
 

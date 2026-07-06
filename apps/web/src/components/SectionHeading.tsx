@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import type { ReactNode } from 'react';
 
 type SectionHeadingProps = {
   eyebrow?: ReactNode;
@@ -13,12 +13,10 @@ export function SectionHeading({
   title,
   description,
   cta,
-  className = "",
+  className = '',
 }: SectionHeadingProps) {
   return (
-    <div
-      className={`flex flex-col md:flex-row md:gap-12 lg:gap-16 mb-8 md:mb-12 ${className}`}
-    >
+    <div className={`flex flex-col md:flex-row md:gap-12 lg:gap-16 mb-8 md:mb-12 ${className}`}>
       <div className="md:flex-1">
         {eyebrow ? (
           <div className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground/70 mb-3">
@@ -32,9 +30,7 @@ export function SectionHeading({
       {(description || cta) && (
         <div className="md:flex-1 mt-4 md:mt-0">
           {description ? (
-            <p className="text-lg text-foreground/75 leading-snug">
-              {description}
-            </p>
+            <p className="text-lg text-foreground/75 leading-snug">{description}</p>
           ) : null}
           {cta ? <div className="mt-5">{cta}</div> : null}
         </div>
@@ -48,6 +44,6 @@ type SectionProps = {
   className?: string;
 };
 
-export function Section({ children, className = "" }: SectionProps) {
+export function Section({ children, className = '' }: SectionProps) {
   return <section className={`mt-28 md:mt-36 ${className}`}>{children}</section>;
 }

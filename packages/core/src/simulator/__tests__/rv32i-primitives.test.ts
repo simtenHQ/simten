@@ -4,13 +4,19 @@
  * Tests each RV32I primitive in isolation using the circuit() API.
  */
 
-import { describe, it, expect } from 'vitest';
-import { simulate } from '../../sim/simulate.js';
-import { circuit, bit, bus } from '../../circuit/index.js';
+import { describe, expect, it } from 'vitest';
 import type { BuiltCircuit } from '../../circuit/index.js';
+import { bit, bus, circuit } from '../../circuit/index.js';
+import { simulate } from '../../sim/simulate.js';
 import {
-  RV32I_Decode, RV32I_ALU, RV32I_ImmGen, RV32I_Control,
-  RV32I_BranchComp, RV32I_RegisterFile, RV32I_InstrMem, RV32I_DataMem,
+  RV32I_ALU,
+  RV32I_BranchComp,
+  RV32I_Control,
+  RV32I_DataMem,
+  RV32I_Decode,
+  RV32I_ImmGen,
+  RV32I_InstrMem,
+  RV32I_RegisterFile,
 } from '../../std/index.js';
 
 /** Helper: simulate a 1-tick combinational circuit, return output values */
@@ -88,32 +94,32 @@ describe('RV32I_Decode', () => {
 
   it('decodes R-type ADD x3, x1, x2 (0x002080B3)', () => {
     // add x3, x1, x2 = 0000000 00010 00001 000 00011 0110011
-    const instr = 0x002080B3;
+    const instr = 0x002080b3;
     const out = sim(c, { instruction: instr });
-    expect(out.opcode).toBe(0x33);  // R-type
-    expect(out.rd).toBe(1);         // x1... wait, let me recalculate
+    expect(out.opcode).toBe(0x33); // R-type
+    expect(out.rd).toBe(1); // x1... wait, let me recalculate
   });
 
   it('decodes ADDI x1, x0, 5 (0x00500093)', () => {
     // addi x1, x0, 5 = 000000000101 00000 000 00001 0010011
     const instr = 0x00500093;
     const out = sim(c, { instruction: instr });
-    expect(out.opcode).toBe(0x13);  // I-type
-    expect(out.rd).toBe(1);         // x1
-    expect(out.funct3).toBe(0);     // ADDI
-    expect(out.rs1).toBe(0);        // x0
+    expect(out.opcode).toBe(0x13); // I-type
+    expect(out.rd).toBe(1); // x1
+    expect(out.funct3).toBe(0); // ADDI
+    expect(out.rs1).toBe(0); // x0
   });
 
   it('decodes fields from arbitrary instruction', () => {
     // Build instruction: funct7=0x7F, rs2=0x1F, rs1=0x1F, funct3=0x7, rd=0x1F, opcode=0x7F
-    const instr = (0x7F << 25) | (0x1F << 20) | (0x1F << 15) | (0x7 << 12) | (0x1F << 7) | 0x7F;
+    const instr = (0x7f << 25) | (0x1f << 20) | (0x1f << 15) | (0x7 << 12) | (0x1f << 7) | 0x7f;
     const out = sim(c, { instruction: instr >>> 0 });
-    expect(out.opcode).toBe(0x7F);
-    expect(out.rd).toBe(0x1F);
+    expect(out.opcode).toBe(0x7f);
+    expect(out.rd).toBe(0x1f);
     expect(out.funct3).toBe(0x7);
-    expect(out.rs1).toBe(0x1F);
-    expect(out.rs2).toBe(0x1F);
-    expect(out.funct7).toBe(0x7F);
+    expect(out.rs1).toBe(0x1f);
+    expect(out.rs2).toBe(0x1f);
+    expect(out.funct7).toBe(0x7f);
   });
 });
 
@@ -142,7 +148,7 @@ describe('RV32I_ALU', () => {
   });
 
   it('ADD: overflow wraps to 32-bit', () => {
-    const out = sim(c, { a: 0xFFFFFFFF, b: 1, alu_op: 0 });
+    const out = sim(c, { a: 0xffffffff, b: 1, alu_op: 0 });
     expect(out.result).toBe(0);
     expect(out.zero).toBe(true);
   });
@@ -154,21 +160,21 @@ describe('RV32I_ALU', () => {
 
   it('SUB: 0 - 1 = 0xFFFFFFFF', () => {
     const out = sim(c, { a: 0, b: 1, alu_op: 1 });
-    expect((out.result as number) >>> 0).toBe(0xFFFFFFFF);
+    expect((out.result as number) >>> 0).toBe(0xffffffff);
   });
 
   it('AND: 0xFF00 & 0x0FF0 = 0x0F00', () => {
-    const out = sim(c, { a: 0xFF00, b: 0x0FF0, alu_op: 2 });
-    expect(out.result).toBe(0x0F00);
+    const out = sim(c, { a: 0xff00, b: 0x0ff0, alu_op: 2 });
+    expect(out.result).toBe(0x0f00);
   });
 
   it('OR: 0xFF00 | 0x00FF = 0xFFFF', () => {
-    const out = sim(c, { a: 0xFF00, b: 0x00FF, alu_op: 3 });
-    expect(out.result).toBe(0xFFFF);
+    const out = sim(c, { a: 0xff00, b: 0x00ff, alu_op: 3 });
+    expect(out.result).toBe(0xffff);
   });
 
   it('XOR: 0xFF ^ 0xFF = 0', () => {
-    const out = sim(c, { a: 0xFF, b: 0xFF, alu_op: 4 });
+    const out = sim(c, { a: 0xff, b: 0xff, alu_op: 4 });
     expect(out.result).toBe(0);
     expect(out.zero).toBe(true);
   });
@@ -185,21 +191,21 @@ describe('RV32I_ALU', () => {
 
   it('SRA: 0x80000000 >> 31 = 0xFFFFFFFF (sign extension)', () => {
     const out = sim(c, { a: 0x80000000, b: 31, alu_op: 7 });
-    expect((out.result as number) >>> 0).toBe(0xFFFFFFFF);
+    expect((out.result as number) >>> 0).toBe(0xffffffff);
   });
 
   it('SLT: -1 < 1 (signed) = 1', () => {
-    const out = sim(c, { a: 0xFFFFFFFF, b: 1, alu_op: 8 });
+    const out = sim(c, { a: 0xffffffff, b: 1, alu_op: 8 });
     expect(out.result).toBe(1);
   });
 
   it('SLTU: 1 < 0xFFFFFFFF (unsigned) = 1', () => {
-    const out = sim(c, { a: 1, b: 0xFFFFFFFF, alu_op: 9 });
+    const out = sim(c, { a: 1, b: 0xffffffff, alu_op: 9 });
     expect(out.result).toBe(1);
   });
 
   it('SLTU: 0xFFFFFFFF < 1 (unsigned) = 0', () => {
-    const out = sim(c, { a: 0xFFFFFFFF, b: 1, alu_op: 9 });
+    const out = sim(c, { a: 0xffffffff, b: 1, alu_op: 9 });
     expect(out.result).toBe(0);
   });
 });
@@ -225,8 +231,8 @@ describe('RV32I_ImmGen', () => {
   });
 
   it('I-type: ADDI x1, x0, -1 → imm=-1', () => {
-    const out = sim(c, { instruction: 0xFFF00093 });
-    expect((out.immediate as number) >>> 0).toBe(0xFFFFFFFF);
+    const out = sim(c, { instruction: 0xfff00093 });
+    expect((out.immediate as number) >>> 0).toBe(0xffffffff);
   });
 
   it('S-type: SW x1, 4(x0) → imm=4', () => {
@@ -240,12 +246,12 @@ describe('RV32I_ImmGen', () => {
   });
 
   it('U-type: LUI x1, 0x12345 → imm=0x12345000', () => {
-    const out = sim(c, { instruction: 0x123450B7 });
+    const out = sim(c, { instruction: 0x123450b7 });
     expect(out.immediate).toBe(0x12345000);
   });
 
   it('J-type: JAL x1, 0 → imm=0', () => {
-    const out = sim(c, { instruction: 0x000000EF });
+    const out = sim(c, { instruction: 0x000000ef });
     expect(out.immediate).toBe(0);
   });
 });
@@ -329,7 +335,7 @@ describe('RV32I_Control', () => {
   });
 
   it('JAL (opcode=0x6F)', () => {
-    const out = sim(c, { opcode: 0x6F, funct3: 0, funct7_bit: false });
+    const out = sim(c, { opcode: 0x6f, funct3: 0, funct7_bit: false });
     expect(out.jump).toBe(true);
     expect(out.reg_write).toBe(true);
   });
@@ -377,19 +383,19 @@ describe('RV32I_BranchComp', () => {
   });
 
   it('BLT: -1 < 1 (signed) → true', () => {
-    expect(sim(c, { a: 0xFFFFFFFF, b: 1, funct3: 4 }).take_branch).toBe(true);
+    expect(sim(c, { a: 0xffffffff, b: 1, funct3: 4 }).take_branch).toBe(true);
   });
 
   it('BGE: 1 >= -1 (signed) → true', () => {
-    expect(sim(c, { a: 1, b: 0xFFFFFFFF, funct3: 5 }).take_branch).toBe(true);
+    expect(sim(c, { a: 1, b: 0xffffffff, funct3: 5 }).take_branch).toBe(true);
   });
 
   it('BLTU: 1 < 0xFFFFFFFF (unsigned) → true', () => {
-    expect(sim(c, { a: 1, b: 0xFFFFFFFF, funct3: 6 }).take_branch).toBe(true);
+    expect(sim(c, { a: 1, b: 0xffffffff, funct3: 6 }).take_branch).toBe(true);
   });
 
   it('BGEU: 0xFFFFFFFF >= 1 (unsigned) → true', () => {
-    expect(sim(c, { a: 0xFFFFFFFF, b: 1, funct3: 7 }).take_branch).toBe(true);
+    expect(sim(c, { a: 0xffffffff, b: 1, funct3: 7 }).take_branch).toBe(true);
   });
 });
 
@@ -450,7 +456,12 @@ describe('RV32I_InstrMem', () => {
 
     const s = simulate(c);
     try {
-      const memory = new Map<number, number>([[0, 0x93], [1, 0x00], [2, 0x50], [3, 0x00]]);
+      const memory = new Map<number, number>([
+        [0, 0x93],
+        [1, 0x00],
+        [2, 0x50],
+        [3, 0x00],
+      ]);
       s.setNode('im', memory);
       s.set({ addr: 0 } as any);
       // setNode invalidates the cache; tick to re-propagate combinational outputs
@@ -489,15 +500,23 @@ describe('RV32I_DataMem', () => {
 
   it('store word then load word', () => {
     const out = simTicks(c, 2, {
-      addr: 0, write_data: 0xDEADBEEF, mem_read: true, mem_write: true, funct3: 2,
+      addr: 0,
+      write_data: 0xdeadbeef,
+      mem_read: true,
+      mem_write: true,
+      funct3: 2,
     });
     const val = (out.read_data[1] as number) >>> 0;
-    expect(val).toBe(0xDEADBEEF);
+    expect(val).toBe(0xdeadbeef);
   });
 
   it('store byte; read returns the raw aligned word (LB extraction happens in the CPU aligner)', () => {
     const out = simTicks(c, 2, {
-      addr: 0, write_data: 0x80, mem_read: true, mem_write: true, funct3: 0,
+      addr: 0,
+      write_data: 0x80,
+      mem_read: true,
+      mem_write: true,
+      funct3: 0,
     });
     const val = (out.read_data[1] as number) >>> 0;
     expect(val).toBe(0x00000080);
@@ -505,7 +524,11 @@ describe('RV32I_DataMem', () => {
 
   it('load byte unsigned (LBU, funct3=4)', () => {
     const out = sim(c, {
-      addr: 0, write_data: 0, mem_read: true, mem_write: false, funct3: 4,
+      addr: 0,
+      write_data: 0,
+      mem_read: true,
+      mem_write: false,
+      funct3: 4,
     });
     expect(out.read_data).toBe(0);
   });

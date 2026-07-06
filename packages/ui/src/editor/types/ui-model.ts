@@ -14,11 +14,13 @@ import { STDLIB_CIRCUITS } from '@simten/core/std';
 // parameterized factories (Register, Switch, etc.) with their default options
 // so they appear here as concrete `BuiltCircuit` instances alongside the
 // singleton primitives.
-const STD_CIRCUIT_MAP: Map<string, Circuit> = new Map(STDLIB_CIRCUITS.map((b) => [b.circuit.name, b.circuit]));
+const STD_CIRCUIT_MAP: Map<string, Circuit> = new Map(
+  STDLIB_CIRCUITS.map((b) => [b.circuit.name, b.circuit]),
+);
 const PRIMITIVE_NAMES: Set<string> = new Set(
-  STDLIB_CIRCUITS
-    .filter((b) => b.circuit.implementation.kind === 'primitive')
-    .map((b) => b.circuit.name),
+  STDLIB_CIRCUITS.filter((b) => b.circuit.implementation.kind === 'primitive').map(
+    (b) => b.circuit.name,
+  ),
 );
 const isPrimitive = (name: string) => PRIMITIVE_NAMES.has(name);
 

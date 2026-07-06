@@ -5,8 +5,8 @@
  */
 
 import type { Component } from '../../types';
-import type { Circuit } from '../../types/circuit';
 import { isSequentialComponent } from '../../types';
+import type { Circuit } from '../../types/circuit';
 
 /**
  * Check if a circuit type is sequential.
@@ -30,7 +30,7 @@ export function containsSequentialCircuit(
   componentType: string,
   components: Record<string, Component>,
   resolveCircuit: (name: string) => Circuit | undefined,
-  visited: Set<string> = new Set()
+  visited: Set<string> = new Set(),
 ): boolean {
   // Prevent infinite recursion for circular references
   if (visited.has(componentType)) {
@@ -79,7 +79,7 @@ export function containsSequentialCircuit(
  */
 export function hasSequentialCircuits(
   components: Record<string, Component>,
-  resolveCircuit: (name: string) => Circuit | undefined
+  resolveCircuit: (name: string) => Circuit | undefined,
 ): boolean {
   for (const component of Object.values(components)) {
     if (containsSequentialCircuit(component.type, components, resolveCircuit)) {

@@ -42,9 +42,16 @@ export function getFactoryOptionSignatures(): Map<string, string> {
     let i = open;
     for (; i < dts.length; i++) {
       if (dts[i] === '{') depth++;
-      else if (dts[i] === '}' && --depth === 0) { i++; break; }
+      else if (dts[i] === '}' && --depth === 0) {
+        i++;
+        break;
+      }
     }
-    const body = dts.slice(open + 1, i - 1).replace(/\s+/g, ' ').replace(/;\s*$/, '').trim();
+    const body = dts
+      .slice(open + 1, i - 1)
+      .replace(/\s+/g, ' ')
+      .replace(/;\s*$/, '')
+      .trim();
     if (body) out.set(name, `{ ${body} }`);
   }
 
@@ -56,7 +63,10 @@ export function getFactoryOptionSignatures(): Map<string, string> {
  * Each line looks like `Name(ports...) -> (outs...) [timing] // desc`; for any
  * parameterized factory we insert ` ctor(<opts>)` before the trailing comment.
  */
-export function annotatePrimitivesWithOptions(primitives: string, opts: Map<string, string>): string {
+export function annotatePrimitivesWithOptions(
+  primitives: string,
+  opts: Map<string, string>,
+): string {
   if (opts.size === 0) return primitives;
   return primitives
     .split('\n')

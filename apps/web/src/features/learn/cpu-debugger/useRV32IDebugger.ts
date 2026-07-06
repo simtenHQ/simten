@@ -1,18 +1,41 @@
-
-import { useState, useEffect, useCallback, useRef } from "react";
-import { useCircuitSimulator } from "@simten/embed";
-import { RV32I_CPU } from "./rv32i-cpu.circuit";
+import { useCircuitSimulator } from '@simten/embed';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { RV32I_CPU } from './rv32i-cpu.circuit';
 
 // ABI register names for RV32I
 export const ABI_NAMES: Record<number, string> = {
-  0: "zero", 1: "ra",   2: "sp",   3: "gp",
-  4: "tp",   5: "t0",   6: "t1",   7: "t2",
-  8: "s0",   9: "s1",   10: "a0",  11: "a1",
-  12: "a2",  13: "a3",  14: "a4",  15: "a5",
-  16: "a6",  17: "a7",  18: "s2",  19: "s3",
-  20: "s4",  21: "s5",  22: "s6",  23: "s7",
-  24: "s8",  25: "s9",  26: "s10", 27: "s11",
-  28: "t3",  29: "t4",  30: "t5",  31: "t6",
+  0: 'zero',
+  1: 'ra',
+  2: 'sp',
+  3: 'gp',
+  4: 'tp',
+  5: 't0',
+  6: 't1',
+  7: 't2',
+  8: 's0',
+  9: 's1',
+  10: 'a0',
+  11: 'a1',
+  12: 'a2',
+  13: 'a3',
+  14: 'a4',
+  15: 'a5',
+  16: 'a6',
+  17: 'a7',
+  18: 's2',
+  19: 's3',
+  20: 's4',
+  21: 's5',
+  22: 's6',
+  23: 's7',
+  24: 's8',
+  25: 's9',
+  26: 's10',
+  27: 's11',
+  28: 't3',
+  29: 't4',
+  30: 't5',
+  31: 't6',
 };
 
 export interface DisasmLine {
@@ -22,24 +45,24 @@ export interface DisasmLine {
 }
 
 export interface PipelineStages {
-  IF: number | null;  // pc.q (the PC being fetched)
-  ID: number | null;  // ifid_pc.q
-  EX: number | null;  // idex_pc.q
+  IF: number | null; // pc.q (the PC being fetched)
+  ID: number | null; // ifid_pc.q
+  EX: number | null; // idex_pc.q
   MEM: number | null; // exmem_pc4.q - 4
-  WB: number | null;  // memwb_pc4.q - 4
+  WB: number | null; // memwb_pc4.q - 4
 }
 
 /** Parse objdump -d output into structured lines */
 export function parseDisassembly(text: string): DisasmLine[] {
   const lines: DisasmLine[] = [];
-  for (const raw of text.split("\n")) {
+  for (const raw of text.split('\n')) {
     // Label line: "00000000 <main>:"
     const labelMatch = raw.match(/^([0-9a-f]+)\s+<([^>]+)>:/);
     if (labelMatch) {
       lines.push({
         address: parseInt(labelMatch[1], 16),
         label: labelMatch[2],
-        instruction: "",
+        instruction: '',
       });
       continue;
     }
@@ -73,12 +96,12 @@ function binaryToROM(base64: string): Map<number, number> {
 function readPort(
   portValues: ReadonlyMap<string, boolean | number> | null,
   nodeLabel: string,
-  portName: string
+  portName: string,
 ): number | null {
   if (!portValues) return null;
   const val = portValues.get(`${nodeLabel}.${portName}`);
   if (val === undefined) return null;
-  return typeof val === "number" ? (val >>> 0) : null;
+  return typeof val === 'number' ? val >>> 0 : null;
 }
 
 export interface CompileResult {
@@ -100,7 +123,7 @@ export function useRV32IDebugger() {
   // Load ROM data into imem via setNodeValue when ready
   useEffect(() => {
     if (!sim.ready || !romData) return;
-    sim.setNodeValue("imem", romData);
+    sim.setNodeValue('imem', romData);
     sim.runCombinational();
   }, [sim.ready, romData]);
 
@@ -122,12 +145,12 @@ export function useRV32IDebugger() {
     setCompileError(null);
     setIsRunning(false);
     try {
-      const resp = await fetch("/api/compile", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const resp = await fetch('/api/compile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ source, language, disassemble: true }),
       });
-      const data = await resp.json() as {
+      const data = (await resp.json()) as {
         success: boolean;
         binary?: string; // Go []byte → base64 in JSON
         disassembly?: string;
@@ -135,12 +158,12 @@ export function useRV32IDebugger() {
         error?: string;
       };
       if (!data.success || !data.binary) {
-        setCompileError(data.stderr ?? data.error ?? "Compilation failed");
+        setCompileError(data.stderr ?? data.error ?? 'Compilation failed');
         return;
       }
       const result: CompileResult = {
         binary: data.binary,
-        disassembly: data.disassembly ?? "",
+        disassembly: data.disassembly ?? '',
       };
       setCompiled(result);
       setRomData(binaryToROM(data.binary));
@@ -161,11 +184,17 @@ export function useRV32IDebugger() {
   // reach internal node labels. MEM/WB outputs are PC+4 of the in-flight
   // instruction; subtract 4 to recover the stage PC.
   const pipelineStages: PipelineStages = {
-    IF:  readPort(sim.portValues, "__top__", "if_pc"),
-    ID:  readPort(sim.portValues, "__top__", "id_pc"),
-    EX:  readPort(sim.portValues, "__top__", "ex_pc"),
-    MEM: (() => { const v = readPort(sim.portValues, "__top__", "mem_pc4"); return v != null ? (v - 4) >>> 0 : null; })(),
-    WB:  (() => { const v = readPort(sim.portValues, "__top__", "wb_pc4"); return v != null ? (v - 4) >>> 0 : null; })(),
+    IF: readPort(sim.portValues, '__top__', 'if_pc'),
+    ID: readPort(sim.portValues, '__top__', 'id_pc'),
+    EX: readPort(sim.portValues, '__top__', 'ex_pc'),
+    MEM: (() => {
+      const v = readPort(sim.portValues, '__top__', 'mem_pc4');
+      return v != null ? (v - 4) >>> 0 : null;
+    })(),
+    WB: (() => {
+      const v = readPort(sim.portValues, '__top__', 'wb_pc4');
+      return v != null ? (v - 4) >>> 0 : null;
+    })(),
   };
 
   // Scan the regfile via the JTAG-style debug port in one sandbox round-trip.
@@ -179,13 +208,15 @@ export function useRV32IDebugger() {
     if (!sim.ready) return;
     let cancelled = false;
     (async () => {
-      const values = await sim.scanPort("debug_addr", "__top__.debug_value", 32);
+      const values = await sim.scanPort('debug_addr', '__top__.debug_value', 32);
       if (cancelled || !values) return;
       const map = new Map<number, number>();
       for (let i = 0; i < values.length; i++) map.set(i, values[i] >>> 0);
       setRegisters(map);
     })();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [sim.ready, sim.cycleCount, sim.scanPort]);
 
   // Track which registers changed last tick

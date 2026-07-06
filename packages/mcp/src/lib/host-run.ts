@@ -11,8 +11,8 @@
  */
 
 import { spawn } from 'node:child_process';
-import { resolve } from 'node:path';
 import { existsSync } from 'node:fs';
+import { resolve } from 'node:path';
 
 /** Project root: explicit env, else walk up from cwd for node_modules, else cwd. */
 export function findRepoRoot(): string {

@@ -18,7 +18,7 @@
  */
 
 import { readFileSync, writeFileSync } from 'node:fs';
-import { resolve, dirname } from 'node:path';
+import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { elaborate } from '@simten/core/simulator';
@@ -57,13 +57,19 @@ function main() {
     try {
       golden = readFileSync(GOLDEN_PATH, 'utf8');
     } catch {
-      console.error(`No golden at ${GOLDEN_PATH}. Generate it with: bun ${process.argv[1]} > netlist.golden.json`);
+      console.error(
+        `No golden at ${GOLDEN_PATH}. Generate it with: bun ${process.argv[1]} > netlist.golden.json`,
+      );
       process.exit(1);
     }
     if (json !== golden) {
       console.error('✗ FPGA netlist drifted from netlist.golden.json.');
-      console.error('  If unintentional: a node/connection order or argument changed in the shared core.');
-      console.error('  If intentional: follow the update ritual in hardware/ulx3s/projects/cpu/GOLDEN.md');
+      console.error(
+        '  If unintentional: a node/connection order or argument changed in the shared core.',
+      );
+      console.error(
+        '  If intentional: follow the update ritual in hardware/ulx3s/projects/cpu/GOLDEN.md',
+      );
       console.error('  (re-flash + run firmware on a real ULX3S, then regenerate the golden).');
       process.exit(1);
     }
@@ -80,6 +86,7 @@ function main() {
   process.stdout.write(json);
 }
 
-const isMain = (import.meta as { main?: boolean }).main
-  ?? (typeof process !== 'undefined' && process.argv[1] === fileURLToPath(import.meta.url));
+const isMain =
+  (import.meta as { main?: boolean }).main ??
+  (typeof process !== 'undefined' && process.argv[1] === fileURLToPath(import.meta.url));
 if (isMain) main();

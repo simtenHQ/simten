@@ -1,5 +1,4 @@
-
-import { useBreakoutSimulator } from "./useBreakoutSimulator";
+import { useBreakoutSimulator } from './useBreakoutSimulator';
 
 const GRID_W = 32;
 const GRID_H = 16;
@@ -10,7 +9,7 @@ const TOTAL_H = GRID_H * PIXEL_SIZE + (GRID_H - 1) * PIXEL_GAP;
 
 function LRPad({ onDirection }: { onDirection: (code: number) => void }) {
   const btn =
-    "flex items-center justify-center w-16 h-16 rounded-xl bg-gray-700 active:bg-gray-500 text-gray-200 text-xl select-none transition-colors touch-manipulation";
+    'flex items-center justify-center w-16 h-16 rounded-xl bg-gray-700 active:bg-gray-500 text-gray-200 text-xl select-none transition-colors touch-manipulation';
 
   return (
     <div className="flex gap-4 justify-center" role="group" aria-label="Direction controls">
@@ -21,7 +20,9 @@ function LRPad({ onDirection }: { onDirection: (code: number) => void }) {
         onPointerLeave={() => onDirection(0)}
         aria-label="Left"
       >
-        <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor"><path d="M4 10l8-6v12z" /></svg>
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+          <path d="M4 10l8-6v12z" />
+        </svg>
       </button>
       <button
         className={btn}
@@ -30,7 +31,9 @@ function LRPad({ onDirection }: { onDirection: (code: number) => void }) {
         onPointerLeave={() => onDirection(0)}
         aria-label="Right"
       >
-        <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor"><path d="M16 10l-8 6V4z" /></svg>
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+          <path d="M16 10l-8 6V4z" />
+        </svg>
       </button>
     </div>
   );
@@ -40,23 +43,16 @@ function LRPad({ onDirection }: { onDirection: (code: number) => void }) {
  * Color pixels by row: bricks are orange, paddle is blue, ball is white.
  */
 function pixelColor(value: number, index: number): string {
-  if (value === 0) return "#1a1a2e";
+  if (value === 0) return '#1a1a2e';
   const row = Math.floor(index / GRID_W);
-  if (row <= 3) return "#f97316"; // bricks: orange
-  if (row === 15) return "#3b82f6"; // paddle: blue
-  return "#ffffff"; // ball: white
+  if (row <= 3) return '#f97316'; // bricks: orange
+  if (row === 15) return '#3b82f6'; // paddle: blue
+  return '#ffffff'; // ball: white
 }
 
 export function BreakoutDemo() {
-  const {
-    sim,
-    pixels,
-    isRunning,
-    setIsRunning,
-    stepFrame,
-    handleReset,
-    sendDirection,
-  } = useBreakoutSimulator();
+  const { sim, pixels, isRunning, setIsRunning, stepFrame, handleReset, sendDirection } =
+    useBreakoutSimulator();
 
   if (!sim.ready) {
     return (
@@ -88,7 +84,7 @@ export function BreakoutDemo() {
           Arrow keys to move the paddle
         </span>
         <div className="ml-auto flex gap-1">
-          {["\u2190", "\u2192"].map((key) => (
+          {['\u2190', '\u2192'].map((key) => (
             <kbd
               key={key}
               className="px-1.5 py-0.5 text-xs font-mono bg-gray-200 dark:bg-gray-800 text-gray-500 dark:text-gray-300 rounded border border-gray-600"
@@ -104,7 +100,7 @@ export function BreakoutDemo() {
         <svg
           viewBox={`0 0 ${TOTAL_W} ${TOTAL_H}`}
           className="border-2 border-gray-700 rounded-lg bg-black w-[min(100%-2rem,500px)]"
-          style={{ imageRendering: "pixelated" }}
+          style={{ imageRendering: 'pixelated' }}
         >
           {pixels.map((value, index) => {
             const x = index % GRID_W;
@@ -135,11 +131,11 @@ export function BreakoutDemo() {
           onClick={() => setIsRunning(!isRunning)}
           className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
             isRunning
-              ? "bg-amber-600 hover:bg-amber-500 text-gray-900 dark:text-white"
-              : "bg-green-600 hover:bg-green-500 text-white"
+              ? 'bg-amber-600 hover:bg-amber-500 text-gray-900 dark:text-white'
+              : 'bg-green-600 hover:bg-green-500 text-white'
           }`}
         >
-          {isRunning ? "Pause" : "Run"}
+          {isRunning ? 'Pause' : 'Run'}
         </button>
         <button
           onClick={stepFrame}

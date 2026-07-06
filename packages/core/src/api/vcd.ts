@@ -8,8 +8,8 @@
  * all internal node ports — equivalent to Verilog's $dumpvars(0, top).
  */
 
-import type { FlatNode } from '../types/simulator.js';
 import type { BitValue, BusValue } from '../types/circuit.js';
+import type { FlatNode } from '../types/simulator.js';
 
 export interface VCDExportParams {
   /** Top-level circuit name */
@@ -56,7 +56,10 @@ function makeScope(name: string): ScopeTree {
  * If all values are 0/1/true/false → 1-bit wire.
  * Otherwise → 32-bit wire.
  */
-function inferWidth(key: string, portValuesByTick: Array<ReadonlyMap<string, BitValue | BusValue>>): { isBit: boolean; width: number } {
+function inferWidth(
+  key: string,
+  portValuesByTick: Array<ReadonlyMap<string, BitValue | BusValue>>,
+): { isBit: boolean; width: number } {
   for (const tick of portValuesByTick) {
     const v = tick.get(key);
     if (v === undefined) continue;
@@ -66,8 +69,13 @@ function inferWidth(key: string, portValuesByTick: Array<ReadonlyMap<string, Bit
   return { isBit: true, width: 1 };
 }
 
-function formatValue(v: BitValue | BusValue | undefined, isBit: boolean, width: number, id: string): string {
-  const num = v === undefined ? 0 : (typeof v === 'boolean' ? (v ? 1 : 0) : v);
+function formatValue(
+  v: BitValue | BusValue | undefined,
+  isBit: boolean,
+  width: number,
+  id: string,
+): string {
+  const num = v === undefined ? 0 : typeof v === 'boolean' ? (v ? 1 : 0) : v;
   if (isBit) return `${num ? 1 : 0}${id}`;
   return `b${(num >>> 0).toString(2).padStart(width, '0')} ${id}`;
 }
@@ -178,7 +186,14 @@ export function exportVCD({
   ticks,
 }: VCDExportParams): string {
   const nextId = makeIdGenerator();
-  const root = buildScopeTree(circuit, nodes, topLevelInputs, topLevelOutputs, portValuesByTick, nextId);
+  const root = buildScopeTree(
+    circuit,
+    nodes,
+    topLevelInputs,
+    topLevelOutputs,
+    portValuesByTick,
+    nextId,
+  );
 
   // Collect all vars in declaration order (for value lookup)
   const allVars: VCDVar[] = [];

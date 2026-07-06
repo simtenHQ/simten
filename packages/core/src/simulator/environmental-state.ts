@@ -7,7 +7,7 @@
  * state (switch positions, input values) must be restored separately via callbacks.
  */
 
-import type { Circuit, CircuitLibrary, Node, ArgumentValue } from '../types/circuit.js';
+import type { ArgumentValue, Circuit, CircuitLibrary, Node } from '../types/circuit.js';
 
 /**
  * Allowed environmental state value types.

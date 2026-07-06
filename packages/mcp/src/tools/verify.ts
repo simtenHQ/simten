@@ -13,10 +13,15 @@
  */
 
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import {
+  VERIFY_JSON_BEGIN,
+  VERIFY_JSON_END,
+  type VerifyContractError,
+  type VerifyResult,
+} from '@simten/core/verify';
 import { z } from 'zod';
-import { runTsx, findRepoRoot, extractDelimitedJson } from '../lib/host-run.js';
-import { isProjectReady, detectPackageManager, installCommand } from '../lib/project-setup.js';
-import { VERIFY_JSON_BEGIN, VERIFY_JSON_END, type VerifyResult, type VerifyContractError } from '@simten/core/verify';
+import { extractDelimitedJson, findRepoRoot, runTsx } from '../lib/host-run.js';
+import { detectPackageManager, installCommand, isProjectReady } from '../lib/project-setup.js';
 
 const DESCRIPTION = `Run a self-checking testbench FILE against a circuit and report the result AT A DECLARED ORACLE TIER. simulate_circuit shows what a circuit does; verify_circuit tells you whether it's correct — a design isn't "done" until it passes at the highest feasible tier.
 
@@ -36,7 +41,9 @@ Result carries a fixed caveat: TS simulation only; FPGA synthesis/timing not gua
 const oracleSchema = z.object({
   tier: z.enum(['A', 'B', 'C', 'D', 'E']).describe('Oracle independence tier (see description)'),
   type: z.string().describe('What the oracle is, e.g. "@noble/hashes sha256 reference"'),
-  independence_basis: z.string().describe('Why this oracle is not a restatement of the implementation'),
+  independence_basis: z
+    .string()
+    .describe('Why this oracle is not a restatement of the implementation'),
   evidence: z.string().optional().describe('Optional: suite size, invariants checked, etc.'),
 });
 
@@ -45,9 +52,20 @@ export function registerVerifyTool(server: McpServer): void {
     'verify_circuit',
     DESCRIPTION,
     {
-      testbench: z.string().describe('Path to the .verify.ts testbench file (it imports its own DUT). Relative to the project root.'),
-      oracle: oracleSchema.describe('Required declaration of the oracle tier and its independence basis — the contract gate'),
-      timeoutMs: z.number().int().min(1).optional().describe('Wall-clock budget in ms (default 30000); the subprocess is killed past it'),
+      testbench: z
+        .string()
+        .describe(
+          'Path to the .verify.ts testbench file (it imports its own DUT). Relative to the project root.',
+        ),
+      oracle: oracleSchema.describe(
+        'Required declaration of the oracle tier and its independence basis — the contract gate',
+      ),
+      timeoutMs: z
+        .number()
+        .int()
+        .min(1)
+        .optional()
+        .describe('Wall-clock budget in ms (default 30000); the subprocess is killed past it'),
     },
     async ({ testbench, oracle, timeoutMs }) => {
       // Preflight: verify runs the testbench via tsx and resolves @simten/core +
@@ -69,19 +87,29 @@ export function registerVerifyTool(server: McpServer): void {
       });
 
       if (run.spawnError) {
-        return errorResult(`Could not run tsx: ${run.spawnError}. Ensure tsx is installed (pnpm add -D tsx) or set SIMTEN_TSX.`);
+        return errorResult(
+          `Could not run tsx: ${run.spawnError}. Ensure tsx is installed (pnpm add -D tsx) or set SIMTEN_TSX.`,
+        );
       }
       if (run.timedOut) {
-        return errorResult(`verify timed out after ${timeoutMs ?? 30_000}ms (subprocess killed). Reduce numRuns or the exhaustive space.`);
+        return errorResult(
+          `verify timed out after ${timeoutMs ?? 30_000}ms (subprocess killed). Reduce numRuns or the exhaustive space.`,
+        );
       }
 
-      const parsed = extractDelimitedJson<VerifyResult | VerifyContractError>(run.stdout, VERIFY_JSON_BEGIN, VERIFY_JSON_END);
+      const parsed = extractDelimitedJson<VerifyResult | VerifyContractError>(
+        run.stdout,
+        VERIFY_JSON_BEGIN,
+        VERIFY_JSON_END,
+      );
       if (!parsed) {
         // Nonzero exit with no JSON block = crash/compile error in the testbench.
         // The framework deps are guaranteed present (preflight), so a module-not-
         // found here means an EXTERNAL package the testbench imports — typically a
         // Tier-A oracle (e.g. @noble/hashes). Point at installing that, not core.
-        const looksLikeMissingDeps = /Cannot find (module|package)|ERR_MODULE_NOT_FOUND/.test(run.stderr);
+        const looksLikeMissingDeps = /Cannot find (module|package)|ERR_MODULE_NOT_FOUND/.test(
+          run.stderr,
+        );
         const hint = looksLikeMissingDeps
           ? ' Looks like a missing dep — if the testbench imports an external oracle package (e.g. @noble/hashes), install it in this project (npm install <pkg>).'
           : '';

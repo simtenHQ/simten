@@ -1,21 +1,21 @@
 {
-	"name": "@simten/verifier",
-	"description": "Verilog verification service — cross-validates exported Verilog against Icarus Verilog (Cloudflare Container)",
-	"dependencies": {
-		"@cloudflare/containers": "0.0.30",
-		"hono": "4.12.23"
-	},
-	"devDependencies": {
-		"@types/node": "^20",
-		"typescript": "5.9.3",
-		"wrangler": "4.72.0"
-	},
-	"private": true,
-	"scripts": {
-		"cf-typegen": "wrangler types",
-		"build:container": "docker build -t simten-verifier .",
-		"deploy": "wrangler deploy",
-		"dev": "wrangler dev",
-		"start": "wrangler dev"
-	}
+  "name": "@simten/verifier",
+  "description": "Verilog verification service — cross-validates exported Verilog against Icarus Verilog (Cloudflare Container)",
+  "dependencies": {
+    "@cloudflare/containers": "0.0.30",
+    "hono": "4.12.23"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "typescript": "5.9.3",
+    "wrangler": "4.72.0"
+  },
+  "private": true,
+  "scripts": {
+    "cf-typegen": "wrangler types",
+    "build:container": "docker build -t simten-verifier .",
+    "deploy": "wrangler deploy",
+    "dev": "wrangler dev",
+    "start": "wrangler dev"
+  }
 }

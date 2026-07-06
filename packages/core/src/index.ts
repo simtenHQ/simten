@@ -10,61 +10,61 @@
 // ============================================================================
 
 export type {
+  ArgumentValue,
   BitType,
-  BusType,
-  PortType,
   BitValue,
+  BusType,
   BusValue,
-  CircuitLibrary,
-  MutableCircuitLibrary,
   Circuit,
-  PortDescriptor,
-  ClockDescriptor,
-  ClockState,
-  ClockInstance,
-  StateBlock,
-  StateValue,
-  PortPath,
-  Connection,
-  Node,
-  Implementation,
+  CircuitLibrary,
   CircuitMetadata,
+  CircuitTiming,
+  ClockDescriptor,
+  ClockInstance,
+  ClockState,
+  Connection,
+  Implementation,
   MemoryType,
   MemoryValue,
+  MutableCircuitLibrary,
+  Node,
+  PortDescriptor,
   PortInstance,
-  CircuitTiming,
-  ArgumentValue,
+  PortPath,
+  PortType,
+  StateBlock,
+  StateValue,
   TestCase,
 } from './types/circuit.js';
 
 export {
-  TOP_LEVEL_NODE,
   bitType,
   busType,
-  memoryType,
   createPortPath,
-  portPathKey,
-  isPortTypeCompatible,
   getDefaultValue,
+  isPortTypeCompatible,
+  memoryType,
+  portPathKey,
+  TOP_LEVEL_NODE,
 } from './types/circuit.js';
 
 export type {
+  CombinationalResult,
   FlatCircuit,
-  FlatNode,
   FlatConnection,
-  HierarchyNode,
-  InputSource,
+  FlatNode,
   FlatPortValueMap,
   FlatSequentialState,
   FlatSimulationResult,
+  HierarchyNode,
+  InitOptions,
+  InputSource,
   PrimitiveState,
   SimulatorEngine,
-  InitOptions,
-  TickResult,
-  TickMetrics,
-  CombinationalResult,
-  SimulatorSnapshot,
   SimulatorMetrics,
+  SimulatorSnapshot,
+  TickMetrics,
+  TickResult,
 } from './types/simulator.js';
 
 // ============================================================================
@@ -72,8 +72,8 @@ export type {
 // ============================================================================
 
 export {
-  createSimulator,
   createCircuitLibrary,
+  createSimulator,
   createSimulatorFromCircuit,
   elaborate,
 } from './simulator/index.js';
@@ -82,30 +82,23 @@ export {
 // Builder (TypeScript circuit API)
 // ============================================================================
 
-export { executeCircuitCode } from './circuit/execute.js';
-export type { ExecuteResult } from './circuit/execute.js';
-export { circuit } from './circuit/circuit.js';
-export { bit, bus, reg, mem } from './circuit/bit-bus.js';
-export type { BuiltCircuit, CircuitConfig } from './circuit/types.js';
 export { autoHarness } from './circuit/auto-harness.js';
-export { isSequentialCircuit } from './circuit/is-sequential.js';
-export { getCircuitEval, registerCircuitEval, getAllCircuitEvals } from './circuit/eval-registry.js';
+export { bit, bus, mem, reg } from './circuit/bit-bus.js';
+export { circuit } from './circuit/circuit.js';
 export type { EvalEntry } from './circuit/eval-registry.js';
+export {
+  getAllCircuitEvals,
+  getCircuitEval,
+  registerCircuitEval,
+} from './circuit/eval-registry.js';
+export type { ExecuteResult } from './circuit/execute.js';
+export { executeCircuitCode } from './circuit/execute.js';
+export { isSequentialCircuit } from './circuit/is-sequential.js';
+export type { BuiltCircuit, CircuitConfig } from './circuit/types.js';
 
 // ============================================================================
 // Analysis Types
 // ============================================================================
-
-export {
-  compressTrace,
-  detectSteadyState,
-  getCircuitAPISummary,
-} from './types/analysis.js';
-
-export type {
-  SimulationTrace,
-  SignalMetrics,
-} from './types/analysis.js';
 
 // ============================================================================
 // Standard Library (flat re-export)
@@ -117,3 +110,13 @@ export type {
 // root entrypoint. Subpath `@simten/core/std` continues to work for granular
 // consumers.
 export * from './std/index.js';
+
+export type {
+  SignalMetrics,
+  SimulationTrace,
+} from './types/analysis.js';
+export {
+  compressTrace,
+  detectSteadyState,
+  getCircuitAPISummary,
+} from './types/analysis.js';

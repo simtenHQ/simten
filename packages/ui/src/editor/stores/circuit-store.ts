@@ -8,16 +8,16 @@
  * During migration, both stores coexist with conversion between formats.
  */
 
+import { nanoid } from 'nanoid';
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
-import { nanoid } from 'nanoid';
 import type {
-  Circuit,
-  Node,
-  Connection,
-  PortPath,
-  PortDescriptor,
   ArgumentValue,
+  Circuit,
+  Connection,
+  Node,
+  PortDescriptor,
+  PortPath,
 } from '../types/circuit';
 import { useCircuitLibraryStore } from './circuit-library-store';
 
@@ -139,7 +139,7 @@ export const useCircuitStore = create<CircuitStore>()(
 
         // Remove all connections involving this node
         state.circuit.connections = state.circuit.connections.filter(
-          (conn) => conn.source.nodeId !== nodeId && conn.target.nodeId !== nodeId
+          (conn) => conn.source.nodeId !== nodeId && conn.target.nodeId !== nodeId,
         );
       });
     },
@@ -214,7 +214,7 @@ export const useCircuitStore = create<CircuitStore>()(
           conn.source.nodeId === source.nodeId &&
           conn.source.portName === source.portName &&
           conn.target.nodeId === target.nodeId &&
-          conn.target.portName === target.portName
+          conn.target.portName === target.portName,
       );
 
       if (existingConnection) {
@@ -224,7 +224,7 @@ export const useCircuitStore = create<CircuitStore>()(
 
       // Validation: check if target port is already connected
       const targetAlreadyConnected = circuit.connections.some(
-        (conn) => conn.target.nodeId === target.nodeId && conn.target.portName === target.portName
+        (conn) => conn.target.nodeId === target.nodeId && conn.target.portName === target.portName,
       );
 
       if (targetAlreadyConnected) {
@@ -235,7 +235,7 @@ export const useCircuitStore = create<CircuitStore>()(
       // Validation: check port type compatibility
       if (sourcePort.portType.kind !== targetPort.portType.kind) {
         console.warn(
-          `Port type mismatch: ${sourcePort.portType.kind} -> ${targetPort.portType.kind}`
+          `Port type mismatch: ${sourcePort.portType.kind} -> ${targetPort.portType.kind}`,
         );
         return null;
       }
@@ -246,7 +246,7 @@ export const useCircuitStore = create<CircuitStore>()(
         sourcePort.portType.width !== targetPort.portType.width
       ) {
         console.warn(
-          `Bus width mismatch: ${sourcePort.portType.width} -> ${targetPort.portType.width}`
+          `Bus width mismatch: ${sourcePort.portType.width} -> ${targetPort.portType.width}`,
         );
         return null;
       }
@@ -284,7 +284,7 @@ export const useCircuitStore = create<CircuitStore>()(
       const circuit = get().circuit;
       if (!circuit) return [];
       return circuit.connections.filter(
-        (conn) => conn.source.nodeId === nodeId || conn.target.nodeId === nodeId
+        (conn) => conn.source.nodeId === nodeId || conn.target.nodeId === nodeId,
       );
     },
 
@@ -305,5 +305,5 @@ export const useCircuitStore = create<CircuitStore>()(
         portType: p.portType,
       }));
     },
-  }))
+  })),
 );

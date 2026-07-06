@@ -6,17 +6,13 @@
  */
 
 import type {
+  ArgumentValue,
   BitValue,
   BusValue,
   CircuitLibrary,
   StateBlock,
-  ArgumentValue,
 } from '../types/circuit.js';
-import type {
-  FlatCircuit,
-  FlatSequentialState,
-  PrimitiveState,
-} from '../types/simulator.js';
+import type { FlatCircuit, FlatSequentialState, PrimitiveState } from '../types/simulator.js';
 
 /**
  * Create port key from node ID and port name
@@ -35,7 +31,7 @@ function portKey(nodeId: string, portName: string): string {
 export function initializeFlatSequentialState(
   flatCircuit: FlatCircuit,
   library: CircuitLibrary,
-  memoryData?: Map<string, Map<number, number>>
+  memoryData?: Map<string, Map<number, number>>,
 ): FlatSequentialState {
   const currentState = new Map<string, PrimitiveState>();
   const nextState = new Map<string, PrimitiveState>();
@@ -54,16 +50,14 @@ export function initializeFlatSequentialState(
     // Field-names-always: no magic `initial`/`init` keywords — the factory
     // option name === the state field name.
     if (component.implementation.kind === 'primitive' && component.state.length > 0) {
-      const blockValues = component.state.map(block =>
-        resolveBlockInitial(block, node.id, node.arguments, node.primitiveType, memoryData)
+      const blockValues = component.state.map((block) =>
+        resolveBlockInitial(block, node.id, node.arguments, node.primitiveType, memoryData),
       );
 
       const primitiveState: PrimitiveState = (
         component.state.length === 1
           ? blockValues[0]
-          : Object.fromEntries(
-              component.state.map((block, i) => [block.name, blockValues[i]])
-            )
+          : Object.fromEntries(component.state.map((block, i) => [block.name, blockValues[i]]))
       ) as PrimitiveState;
 
       currentState.set(node.id, primitiveState);
@@ -74,7 +68,7 @@ export function initializeFlatSequentialState(
     for (const clock of node.clocks) {
       clocks.set(portKey(node.id, clock.name), {
         value: false,
-        edge: 'none'
+        edge: 'none',
       });
     }
   }
@@ -83,7 +77,7 @@ export function initializeFlatSequentialState(
     currentState,
     nextState,
     clocks,
-    cycleCount: 0
+    cycleCount: 0,
   };
 }
 
@@ -110,7 +104,9 @@ function resolveBlockInitial(
     // the original BuiltCircuit IR, but the sandbox worker round-trips IR
     // through JSON before postMessage, which turns Maps into plain objects
     // — handle both.
-    const blockInit = block.initialValue as { data?: Map<number, number> | Record<string, number> } | undefined;
+    const blockInit = block.initialValue as
+      | { data?: Map<number, number> | Record<string, number> }
+      | undefined;
     if (blockInit?.data) {
       if (blockInit.data instanceof Map) {
         for (const [addr, value] of blockInit.data) memory.set(addr, value);
@@ -174,7 +170,7 @@ function globToRegex(pattern: string): RegExp {
 function getMemoryDataForNode(
   nodeId: string,
   memoryData: Map<string, Map<number, number>>,
-  primitiveType?: string
+  primitiveType?: string,
 ): Map<number, number> | undefined {
   for (const [pattern, data] of memoryData) {
     const regex = globToRegex(pattern);

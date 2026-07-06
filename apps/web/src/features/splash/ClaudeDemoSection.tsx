@@ -6,24 +6,24 @@
  * Extracted so it can be relocated on the page and gated on scroll.
  */
 
+import type { BuiltCircuit } from '@simten/core/circuit';
+import { bit, circuit } from '@simten/core/circuit';
+import { And, DFlipFlop, Not, Or, Xor } from '@simten/core/std';
+import { CircuitEmbed, type CircuitEmbedHandle } from '@simten/embed';
+import { Link } from '@tanstack/react-router';
 import {
-  useState,
-  useEffect,
-  useCallback,
-  useRef,
   forwardRef,
-  useImperativeHandle,
   type ReactNode,
-} from "react";
-import { Link } from "@tanstack/react-router";
-import { CircuitEmbed, type CircuitEmbedHandle } from "@simten/embed";
-import { circuit, bit } from "@simten/core/circuit";
-import type { BuiltCircuit } from "@simten/core/circuit";
-import { Xor, And, Or, Not, DFlipFlop } from "@simten/core/std";
-import { HighlightedCode } from "@/components/HighlightedCode";
-import { Container } from "@/components/Container";
-import { CodeWithHovers } from "./CodeWithHovers";
-import { FigletDemo, FIGLET_DEMO_CODE } from "./Hero";
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+  useState,
+} from 'react';
+import { Container } from '@/components/Container';
+import { HighlightedCode } from '@/components/HighlightedCode';
+import { CodeWithHovers } from './CodeWithHovers';
+import { FIGLET_DEMO_CODE, FigletDemo } from './Hero';
 
 // ============================================================================
 // Demo circuits (self-contained — the gallery has its own copies of shared ones)
@@ -98,7 +98,7 @@ const Mux2to1 = circuit('Mux2to1', {
 // ============================================================================
 
 type TermLine = {
-  type: "input" | "text" | "tool" | "result" | "blank";
+  type: 'input' | 'text' | 'tool' | 'result' | 'blank';
   content: string;
   delay: number;
   typewriter?: boolean;
@@ -107,37 +107,36 @@ type TermLine = {
 
 const DEMO_SCRIPT: TermLine[] = [
   {
-    type: "input",
-    content: "Build me a half adder",
+    type: 'input',
+    content: 'Build me a half adder',
     delay: 600,
     typewriter: true,
     typeSpeed: 35,
   },
-  { type: "blank", content: "", delay: 400 },
+  { type: 'blank', content: '', delay: 400 },
   {
-    type: "text",
-    content:
-      "I'll create a half adder circuit. XOR for the sum, AND for the carry.",
+    type: 'text',
+    content: "I'll create a half adder circuit. XOR for the sum, AND for the carry.",
     delay: 300,
     typewriter: true,
     typeSpeed: 12,
   },
-  { type: "blank", content: "", delay: 200 },
-  { type: "tool", content: "write_circuit (simten)", delay: 100 },
+  { type: 'blank', content: '', delay: 200 },
+  { type: 'tool', content: 'write_circuit (simten)', delay: 100 },
   {
-    type: "result",
-    content: "Writing HalfAdder to simten.dev...",
+    type: 'result',
+    content: 'Writing HalfAdder to simten.dev...',
     delay: 400,
   },
-  { type: "result", content: "4 nodes, 6 connections, 0 errors", delay: 0 },
-  { type: "blank", content: "", delay: 200 },
-  { type: "tool", content: "simulate_circuit (simten)", delay: 100 },
-  { type: "result", content: "Simulation ready", delay: 600 },
-  { type: "blank", content: "", delay: 200 },
+  { type: 'result', content: '4 nodes, 6 connections, 0 errors', delay: 0 },
+  { type: 'blank', content: '', delay: 200 },
+  { type: 'tool', content: 'simulate_circuit (simten)', delay: 100 },
+  { type: 'result', content: 'Simulation ready', delay: 600 },
+  { type: 'blank', content: '', delay: 200 },
   {
-    type: "text",
+    type: 'text',
     content:
-      "Your half adder is live. Toggle the switches to try all four input combinations — sum is XOR(a,b), carry is AND(a,b).",
+      'Your half adder is live. Toggle the switches to try all four input combinations — sum is XOR(a,b), carry is AND(a,b).',
     delay: 300,
     typewriter: true,
     typeSpeed: 12,
@@ -153,7 +152,7 @@ type PromptOption = {
 
 const PROMPT_OPTIONS: PromptOption[] = [
   {
-    label: "Build a full adder",
+    label: 'Build a full adder',
     circuit: GateFullAdder,
     displayCode: `const FullAdder = circuit('FullAdder', {
   inputs: { a: bit, b: bit, cin: bit },
@@ -182,49 +181,49 @@ const PROMPT_OPTIONS: PromptOption[] = [
 });`,
     script: [
       {
-        type: "input",
-        content: "Build a full adder",
+        type: 'input',
+        content: 'Build a full adder',
         delay: 0,
         typewriter: true,
         typeSpeed: 30,
       },
-      { type: "blank", content: "", delay: 400 },
+      { type: 'blank', content: '', delay: 400 },
       {
-        type: "text",
+        type: 'text',
         content:
-          "A full adder adds three bits — a, b, and carry-in — producing sum and carry-outputs. Chain four of these and you have the ALU inside a CPU.",
+          'A full adder adds three bits — a, b, and carry-in — producing sum and carry-outputs. Chain four of these and you have the ALU inside a CPU.',
         delay: 300,
         typewriter: true,
         typeSpeed: 12,
       },
-      { type: "blank", content: "", delay: 200 },
+      { type: 'blank', content: '', delay: 200 },
       {
-        type: "tool",
-        content: "write_circuit (simten)",
+        type: 'tool',
+        content: 'write_circuit (simten)',
         delay: 100,
       },
       {
-        type: "result",
-        content: "Writing FullAdder to simten.dev...",
+        type: 'result',
+        content: 'Writing FullAdder to simten.dev...',
         delay: 400,
       },
       {
-        type: "result",
-        content: "5 nodes, 10 connections, 0 errors",
+        type: 'result',
+        content: '5 nodes, 10 connections, 0 errors',
         delay: 0,
       },
-      { type: "blank", content: "", delay: 200 },
+      { type: 'blank', content: '', delay: 200 },
       {
-        type: "tool",
-        content: "simulate_circuit (simten)",
+        type: 'tool',
+        content: 'simulate_circuit (simten)',
         delay: 100,
       },
-      { type: "result", content: "Simulation ready", delay: 600 },
-      { type: "blank", content: "", delay: 200 },
+      { type: 'result', content: 'Simulation ready', delay: 600 },
+      { type: 'blank', content: '', delay: 200 },
       {
-        type: "text",
+        type: 'text',
         content:
-          "Your full adder is live. Toggle switches to try all eight input combinations — carry-out lights when two or more inputs are high.",
+          'Your full adder is live. Toggle switches to try all eight input combinations — carry-out lights when two or more inputs are high.',
         delay: 300,
         typewriter: true,
         typeSpeed: 12,
@@ -232,7 +231,7 @@ const PROMPT_OPTIONS: PromptOption[] = [
     ],
   },
   {
-    label: "Make a 2-bit binary counter",
+    label: 'Make a 2-bit binary counter',
     circuit: Counter2Bit,
     displayCode: `const Counter2Bit = circuit('Counter2Bit', {
   outputs: { bit0: bit, bit1: bit },
@@ -254,45 +253,45 @@ const PROMPT_OPTIONS: PromptOption[] = [
 });`,
     script: [
       {
-        type: "input",
-        content: "Make a 2-bit binary counter",
+        type: 'input',
+        content: 'Make a 2-bit binary counter',
         delay: 0,
         typewriter: true,
         typeSpeed: 30,
       },
-      { type: "blank", content: "", delay: 400 },
+      { type: 'blank', content: '', delay: 400 },
       {
-        type: "text",
+        type: 'text',
         content:
-          "A synchronous 2-bit counter — two D flip-flops with toggle logic. Bit 0 flips every cycle, bit 1 flips when bit 0 is high. Counts 0, 1, 2, 3, repeat.",
+          'A synchronous 2-bit counter — two D flip-flops with toggle logic. Bit 0 flips every cycle, bit 1 flips when bit 0 is high. Counts 0, 1, 2, 3, repeat.',
         delay: 300,
         typewriter: true,
         typeSpeed: 12,
       },
-      { type: "blank", content: "", delay: 200 },
+      { type: 'blank', content: '', delay: 200 },
       {
-        type: "tool",
-        content: "write_circuit (simten)",
+        type: 'tool',
+        content: 'write_circuit (simten)',
         delay: 100,
       },
       {
-        type: "result",
-        content: "Writing Counter2Bit to simten.dev...",
+        type: 'result',
+        content: 'Writing Counter2Bit to simten.dev...',
         delay: 400,
       },
-      { type: "result", content: "4 nodes, 8 connections, 0 errors", delay: 0 },
-      { type: "blank", content: "", delay: 200 },
+      { type: 'result', content: '4 nodes, 8 connections, 0 errors', delay: 0 },
+      { type: 'blank', content: '', delay: 200 },
       {
-        type: "tool",
-        content: "simulate_circuit (simten)",
+        type: 'tool',
+        content: 'simulate_circuit (simten)',
         delay: 100,
       },
-      { type: "result", content: "Simulation ready", delay: 600 },
-      { type: "blank", content: "", delay: 200 },
+      { type: 'result', content: 'Simulation ready', delay: 600 },
+      { type: 'blank', content: '', delay: 200 },
       {
-        type: "text",
+        type: 'text',
         content:
-          "Your counter is live. Click Tick to advance — the LEDs count in binary: 00 → 01 → 10 → 11 → 00.",
+          'Your counter is live. Click Tick to advance — the LEDs count in binary: 00 → 01 → 10 → 11 → 00.',
         delay: 300,
         typewriter: true,
         typeSpeed: 12,
@@ -300,7 +299,7 @@ const PROMPT_OPTIONS: PromptOption[] = [
     ],
   },
   {
-    label: "Make a toggle flip-flop",
+    label: 'Make a toggle flip-flop',
     circuit: Toggle,
     displayCode: `const Toggle = circuit('Toggle', {
   outputs: { q: bit, q_bar: bit },
@@ -316,45 +315,44 @@ const PROMPT_OPTIONS: PromptOption[] = [
 });`,
     script: [
       {
-        type: "input",
-        content: "Make a toggle flip-flop",
+        type: 'input',
+        content: 'Make a toggle flip-flop',
         delay: 0,
         typewriter: true,
         typeSpeed: 30,
       },
-      { type: "blank", content: "", delay: 400 },
+      { type: 'blank', content: '', delay: 400 },
       {
-        type: "text",
-        content:
-          "A DFlipFlop with inverted feedback — Q toggles on every rising clock edge.",
+        type: 'text',
+        content: 'A DFlipFlop with inverted feedback — Q toggles on every rising clock edge.',
         delay: 300,
         typewriter: true,
         typeSpeed: 12,
       },
-      { type: "blank", content: "", delay: 200 },
+      { type: 'blank', content: '', delay: 200 },
       {
-        type: "tool",
-        content: "write_circuit (simten)",
+        type: 'tool',
+        content: 'write_circuit (simten)',
         delay: 100,
       },
       {
-        type: "result",
-        content: "Writing Toggle to simten.dev...",
+        type: 'result',
+        content: 'Writing Toggle to simten.dev...',
         delay: 400,
       },
-      { type: "result", content: "2 nodes, 4 connections, 0 errors", delay: 0 },
-      { type: "blank", content: "", delay: 200 },
+      { type: 'result', content: '2 nodes, 4 connections, 0 errors', delay: 0 },
+      { type: 'blank', content: '', delay: 200 },
       {
-        type: "tool",
-        content: "simulate_circuit (simten)",
+        type: 'tool',
+        content: 'simulate_circuit (simten)',
         delay: 100,
       },
-      { type: "result", content: "Simulation ready", delay: 600 },
-      { type: "blank", content: "", delay: 200 },
+      { type: 'result', content: 'Simulation ready', delay: 600 },
+      { type: 'blank', content: '', delay: 200 },
       {
-        type: "text",
+        type: 'text',
         content:
-          "Your toggle is live. Click the Tick button to advance the clock — Q flips on every rising edge.",
+          'Your toggle is live. Click the Tick button to advance the clock — Q flips on every rising edge.',
         delay: 300,
         typewriter: true,
         typeSpeed: 12,
@@ -362,7 +360,7 @@ const PROMPT_OPTIONS: PromptOption[] = [
     ],
   },
   {
-    label: "Build a 2-to-1 multiplexer",
+    label: 'Build a 2-to-1 multiplexer',
     circuit: Mux2to1,
     displayCode: `const Mux2to1 = circuit('Mux2to1', {
   inputs: { a: bit, b: bit, sel: bit },
@@ -389,45 +387,44 @@ const PROMPT_OPTIONS: PromptOption[] = [
 });`,
     script: [
       {
-        type: "input",
-        content: "Build a 2-to-1 multiplexer",
+        type: 'input',
+        content: 'Build a 2-to-1 multiplexer',
         delay: 0,
         typewriter: true,
         typeSpeed: 30,
       },
-      { type: "blank", content: "", delay: 400 },
+      { type: 'blank', content: '', delay: 400 },
       {
-        type: "text",
+        type: 'text',
         content:
-          "A mux selects between two inputs using a selector bit: out = (a AND NOT sel) OR (b AND sel).",
+          'A mux selects between two inputs using a selector bit: out = (a AND NOT sel) OR (b AND sel).',
         delay: 300,
         typewriter: true,
         typeSpeed: 12,
       },
-      { type: "blank", content: "", delay: 200 },
+      { type: 'blank', content: '', delay: 200 },
       {
-        type: "tool",
-        content: "write_circuit (simten)",
+        type: 'tool',
+        content: 'write_circuit (simten)',
         delay: 100,
       },
       {
-        type: "result",
-        content: "Writing Mux2to1 to simten.dev...",
+        type: 'result',
+        content: 'Writing Mux2to1 to simten.dev...',
         delay: 400,
       },
-      { type: "result", content: "4 nodes, 7 connections, 0 errors", delay: 0 },
-      { type: "blank", content: "", delay: 200 },
+      { type: 'result', content: '4 nodes, 7 connections, 0 errors', delay: 0 },
+      { type: 'blank', content: '', delay: 200 },
       {
-        type: "tool",
-        content: "simulate_circuit (simten)",
+        type: 'tool',
+        content: 'simulate_circuit (simten)',
         delay: 100,
       },
-      { type: "result", content: "Simulation ready", delay: 600 },
-      { type: "blank", content: "", delay: 200 },
+      { type: 'result', content: 'Simulation ready', delay: 600 },
+      { type: 'blank', content: '', delay: 200 },
       {
-        type: "text",
-        content:
-          "Your multiplexer is live. Flip sel to switch which input drives the output.",
+        type: 'text',
+        content: 'Your multiplexer is live. Flip sel to switch which input drives the output.',
         delay: 300,
         typewriter: true,
         typeSpeed: 12,
@@ -440,13 +437,8 @@ const PROMPT_OPTIONS: PromptOption[] = [
 // Typewriter hook
 // ============================================================================
 
-function useTypewriter(
-  text: string,
-  speed: number,
-  startDelay: number,
-  active: boolean,
-) {
-  const [displayed, setDisplayed] = useState("");
+function useTypewriter(text: string, speed: number, startDelay: number, active: boolean) {
+  const [displayed, setDisplayed] = useState('');
   const [done, setDone] = useState(false);
 
   const prevText = useRef(text);
@@ -454,7 +446,7 @@ function useTypewriter(
     if (text !== prevText.current) {
       prevText.current = text;
       if (!active) {
-        setDisplayed("");
+        setDisplayed('');
         setDone(false);
       }
     }
@@ -462,7 +454,7 @@ function useTypewriter(
 
   useEffect(() => {
     if (!active) return;
-    setDisplayed("");
+    setDisplayed('');
     setDone(false);
 
     const startTimer = setTimeout(() => {
@@ -490,17 +482,11 @@ function useTypewriter(
 // Window chrome
 // ============================================================================
 
-function TerminalWindow({
-  children,
-  className,
-}: {
-  children: ReactNode;
-  className?: string;
-}) {
+function TerminalWindow({ children, className }: { children: ReactNode; className?: string }) {
   return (
     <div
       className={`flex flex-col rounded-lg overflow-hidden border border-[#30363d] ${
-        className ?? ""
+        className ?? ''
       }`}
     >
       <div className="flex-shrink-0 bg-[#161b22] px-4 h-11 flex items-center border-b border-[#30363d]">
@@ -509,9 +495,7 @@ function TerminalWindow({
           <span className="w-3 h-3 rounded-full bg-[#febc2e]" />
           <span className="w-3 h-3 rounded-full bg-[#28c840]" />
         </div>
-        <span className="flex-1 text-center text-[12px] text-gray-500 font-mono">
-          terminal
-        </span>
+        <span className="flex-1 text-center text-[12px] text-gray-500 font-mono">terminal</span>
         <div className="w-[52px]" />
       </div>
       <div className="flex-1 min-h-0 bg-[#0d1117] text-gray-200">{children}</div>
@@ -530,9 +514,7 @@ function BrowserWindow({
 }) {
   return (
     <div
-      className={`flex flex-col rounded-lg overflow-hidden border border-border ${
-        className ?? ""
-      }`}
+      className={`flex flex-col rounded-lg overflow-hidden border border-border ${className ?? ''}`}
     >
       <div className="flex-shrink-0 bg-muted px-4 h-11 flex items-center gap-3 border-b border-border">
         <div className="flex gap-1.5 shrink-0">
@@ -554,9 +536,7 @@ function BrowserWindow({
               d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
             />
           </svg>
-          <span className="text-[12px] text-muted-foreground font-mono truncate">
-            simten.dev
-          </span>
+          <span className="text-[12px] text-muted-foreground font-mono truncate">simten.dev</span>
         </div>
         {showMcp && (
           <div className="inline-flex items-center gap-1.5 rounded-full bg-card/80 border border-border px-2.5 py-1 text-[11px] text-muted-foreground shrink-0">
@@ -593,12 +573,28 @@ function CopyCommand({ command }: { command: string }) {
         aria-label="Copy to clipboard"
       >
         {copied ? (
-          <svg className="w-4 h-4 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <svg
+            className="w-4 h-4 text-green-400"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2}
+          >
             <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
           </svg>
         ) : (
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+          <svg
+            className="w-4 h-4"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2}
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+            />
           </svg>
         )}
       </button>
@@ -610,24 +606,13 @@ function CopyCommand({ command }: { command: string }) {
 // Terminal line
 // ============================================================================
 
-function TerminalLine({
-  line,
-  onDone,
-}: {
-  line: TermLine;
-  onDone: () => void;
-}) {
+function TerminalLine({ line, onDone }: { line: TermLine; onDone: () => void }) {
   const onDoneRef = useRef(onDone);
   onDoneRef.current = onDone;
   const signalled = useRef(false);
 
   const isTypewriter = line.typewriter ?? false;
-  const { displayed, done } = useTypewriter(
-    line.content,
-    line.typeSpeed ?? 12,
-    0,
-    isTypewriter,
-  );
+  const { displayed, done } = useTypewriter(line.content, line.typeSpeed ?? 12, 0, isTypewriter);
 
   useEffect(() => {
     if (signalled.current) return;
@@ -637,7 +622,7 @@ function TerminalLine({
     }
   }, [isTypewriter, done]);
 
-  if (line.type === "blank") return <div className="h-3" />;
+  if (line.type === 'blank') return <div className="h-3" />;
 
   const text = line.typewriter ? displayed : line.content;
   const showCursor = line.typewriter && !done;
@@ -645,7 +630,7 @@ function TerminalLine({
     <span className="inline-block w-[7px] h-[15px] bg-gray-400 ml-[1px] animate-[pulse_1s_steps(1)_infinite] align-text-bottom" />
   );
 
-  if (line.type === "input") {
+  if (line.type === 'input') {
     return (
       <div className="flex items-start gap-2">
         <span className="text-gray-200 select-none shrink-0">&gt;</span>
@@ -657,16 +642,16 @@ function TerminalLine({
     );
   }
 
-  if (line.type === "tool") {
+  if (line.type === 'tool') {
     return (
       <div className="flex items-start gap-2 text-gray-500">
-        <span className="text-blue-400 shrink-0">{">"}</span>
+        <span className="text-blue-400 shrink-0">{'>'}</span>
         <span>{text}</span>
       </div>
     );
   }
 
-  if (line.type === "result") {
+  if (line.type === 'result') {
     return <div className="pl-5 text-gray-600">{text}</div>;
   }
 
@@ -744,10 +729,7 @@ function ScriptedTerminal({
   useEffect(() => {
     if (visibleCount === 0) return;
     const lastShown = allLines.current[visibleCount - 1];
-    if (
-      lastShown?.type === "tool" &&
-      lastShown.content.includes("write_circuit")
-    ) {
+    if (lastShown?.type === 'tool' && lastShown.content.includes('write_circuit')) {
       onCodeStageRef.current();
     }
   }, [visibleCount]);
@@ -773,7 +755,7 @@ function ScriptedTerminal({
     let parent: HTMLElement | null = el.parentElement;
     while (parent) {
       const overflowY = getComputedStyle(parent).overflowY;
-      if (overflowY === "auto" || overflowY === "scroll") {
+      if (overflowY === 'auto' || overflowY === 'scroll') {
         parent.scrollTop = parent.scrollHeight;
         return;
       }
@@ -784,11 +766,7 @@ function ScriptedTerminal({
   return (
     <div className="font-mono text-[13px] leading-relaxed space-y-[2px]">
       {allLines.current.slice(0, visibleCount).map((line, i) => (
-        <TerminalLine
-          key={i}
-          line={line}
-          onDone={i === visibleCount - 1 ? handleLineDone : noop}
-        />
+        <TerminalLine key={i} line={line} onDone={i === visibleCount - 1 ? handleLineDone : noop} />
       ))}
       <div ref={bottomRef} />
     </div>
@@ -834,8 +812,8 @@ const HALF_ADDER_DISPLAY = `const HalfAdder = circuit('HalfAdder', {
 // used to drive, now reachable via side arrows + pills below the hero.
 const HERO_DEMOS: HeroDemo[] = [
   {
-    key: "half-adder",
-    label: "Half adder",
+    key: 'half-adder',
+    label: 'Half adder',
     circuit: HalfAdder,
     displayCode: HALF_ADDER_DISPLAY,
   },
@@ -845,26 +823,23 @@ const HERO_DEMOS: HeroDemo[] = [
   // Code is intentionally wider than the 340px panel so the wider definitions
   // (factory calls + the npm imports) read naturally — the panel scrolls.
   {
-    key: "figlet",
-    label: "Figlet → ROM",
+    key: 'figlet',
+    label: 'Figlet → ROM',
     circuit: FigletDemo,
     displayCode: FIGLET_DEMO_CODE,
   },
   ...PROMPT_OPTIONS.map((opt) => ({
-    key: opt.label.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+    key: opt.label.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
     label: opt.label
-      .replace(/^Build (a |an )?/i, "")
-      .replace(/^Make (a |an )?/i, "")
+      .replace(/^Build (a |an )?/i, '')
+      .replace(/^Make (a |an )?/i, '')
       .replace(/^./, (c) => c.toUpperCase()),
     circuit: opt.circuit,
     displayCode: opt.displayCode,
   })),
 ];
 
-const HeroBrowserWindow = forwardRef<
-  HeroBrowserWindowHandle,
-  { canvasReady?: boolean }
->(
+const HeroBrowserWindow = forwardRef<HeroBrowserWindowHandle, { canvasReady?: boolean }>(
   function HeroBrowserWindow({ canvasReady = false }, ref) {
     const [codeTyping, setCodeTyping] = useState(false);
     const [showCircuit, setShowCircuit] = useState(false);
@@ -873,7 +848,7 @@ const HeroBrowserWindow = forwardRef<
     // Stable identity per demo so CircuitEmbed remounts cleanly when the
     // user cycles through HERO_DEMOS post-reveal (React Flow doesn't
     // gracefully swap a different circuit on the same instance).
-    const [embedKey, setEmbedKey] = useState("half-adder");
+    const [embedKey, setEmbedKey] = useState('half-adder');
     const embedRef = useRef<CircuitEmbedHandle>(null);
 
     // Figlet streams bytes through a Register+Adder feedback loop, so it
@@ -882,7 +857,7 @@ const HeroBrowserWindow = forwardRef<
     // setTimeout(0) gives the new embed instance (remounted via key change)
     // a tick to attach its imperative handle before we call into it.
     useEffect(() => {
-      if (embedKey !== "figlet") return;
+      if (embedKey !== 'figlet') return;
       const id = setTimeout(() => embedRef.current?.startAutoRun(5), 0);
       return () => {
         clearTimeout(id);
@@ -899,19 +874,25 @@ const HeroBrowserWindow = forwardRef<
       }
     }, [codeTyping, codeTw.done]);
 
-    useImperativeHandle(ref, () => ({
-      startTyping() { setCodeTyping(true); },
-      pickPrompt(option: PromptOption) {
-        setTargetCircuit(option.circuit);
-        setDisplayCode(option.displayCode);
-        setShowCircuit(false);
-      },
-      swapCircuit(demo: HeroDemo) {
-        setTargetCircuit(demo.circuit);
-        setDisplayCode(demo.displayCode);
-        setEmbedKey(demo.key);
-      },
-    }), []);
+    useImperativeHandle(
+      ref,
+      () => ({
+        startTyping() {
+          setCodeTyping(true);
+        },
+        pickPrompt(option: PromptOption) {
+          setTargetCircuit(option.circuit);
+          setDisplayCode(option.displayCode);
+          setShowCircuit(false);
+        },
+        swapCircuit(demo: HeroDemo) {
+          setTargetCircuit(demo.circuit);
+          setDisplayCode(demo.displayCode);
+          setEmbedKey(demo.key);
+        },
+      }),
+      [],
+    );
 
     // CircuitEmbed only mounts once the parent has confirmed the
     // column-collapse animation finished (canvasReady=true), so React
@@ -967,7 +948,7 @@ const HeroBrowserWindow = forwardRef<
                 </div>
               ) : (
                 <div className="h-full flex items-center justify-center text-muted-foreground/40 text-sm font-mono">
-                  {codeTyping || showCircuit ? "Compiling..." : ""}
+                  {codeTyping || showCircuit ? 'Compiling...' : ''}
                 </div>
               )}
             </div>
@@ -975,7 +956,7 @@ const HeroBrowserWindow = forwardRef<
         </div>
       </BrowserWindow>
     );
-  }
+  },
 );
 
 // ============================================================================
@@ -994,10 +975,7 @@ export interface ClaudeDemoSectionProps {
   autoPlay?: boolean;
 }
 
-export function ClaudeDemoSection({
-  onComplete,
-  autoPlay = false,
-}: ClaudeDemoSectionProps) {
+export function ClaudeDemoSection({ onComplete, autoPlay = false }: ClaudeDemoSectionProps) {
   const [demoComplete, setDemoComplete] = useState(false);
   const [expanded, setExpanded] = useState(false);
   // Gates the canvas mount inside HeroBrowserWindow: stays false until
@@ -1034,19 +1012,19 @@ export function ClaudeDemoSection({
 
   useEffect(() => {
     if (hasPlayedRef.current) return;
-    if (typeof window === "undefined") return;
+    if (typeof window === 'undefined') return;
 
     // Reduced-motion users: activate immediately so content isn't hidden,
     // but the typewriter still runs (it's short). Simpler than building a
     // separate "static final state" render path.
-    if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) {
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
       hasPlayedRef.current = true;
       setInView(true);
       return;
     }
 
     // Old browsers without IntersectionObserver: fall back to auto-play.
-    if (typeof IntersectionObserver === "undefined") {
+    if (typeof IntersectionObserver === 'undefined') {
       hasPlayedRef.current = true;
       setInView(true);
       return;
@@ -1097,17 +1075,15 @@ export function ClaudeDemoSection({
       const target = e.target as HTMLElement | null;
       if (
         target &&
-        (target.tagName === "INPUT" ||
-          target.tagName === "TEXTAREA" ||
-          target.isContentEditable)
+        (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)
       ) {
         return;
       }
-      if (e.key === "ArrowRight") cycleDemo(1);
-      else if (e.key === "ArrowLeft") cycleDemo(-1);
+      if (e.key === 'ArrowRight') cycleDemo(1);
+      else if (e.key === 'ArrowLeft') cycleDemo(-1);
     };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
   }, [canvasReady, cycleDemo]);
 
   const handleCodeStage = useCallback(() => {
@@ -1132,10 +1108,7 @@ export function ClaudeDemoSection({
   useEffect(() => {
     if (!demoComplete) return;
     const expandT = setTimeout(() => setExpanded(true), READING_BUFFER_MS);
-    const mountT = setTimeout(
-      () => setCanvasReady(true),
-      READING_BUFFER_MS + COLLAPSE_MS,
-    );
+    const mountT = setTimeout(() => setCanvasReady(true), READING_BUFFER_MS + COLLAPSE_MS);
     return () => {
       clearTimeout(expandT);
       clearTimeout(mountT);
@@ -1151,7 +1124,8 @@ export function ClaudeDemoSection({
             Describe hardware. Claude builds it. Test it like software.
           </h1>
           <p className="mt-4 text-base text-muted-foreground max-w-2xl">
-            A TypeScript HDL where any npm package is your testbench. Drive circuits with real firmware, watch them run cycle-by-cycle, and synthesize to Verilog.
+            A TypeScript HDL where any npm package is your testbench. Drive circuits with real
+            firmware, watch them run cycle-by-cycle, and synthesize to Verilog.
           </p>
           <div className="mt-6 flex items-center gap-3 flex-wrap">
             {/* Primary action — keeps the hero framed around "this is a
@@ -1161,7 +1135,7 @@ export function ClaudeDemoSection({
                 visually dominating. */}
             <Link
               to="/docs/$"
-              params={{ _splat: "" }}
+              params={{ _splat: '' }}
               className="inline-flex items-center rounded-lg bg-foreground text-background hover:bg-foreground/90 transition-colors px-4 py-3 text-sm font-medium"
             >
               Learn more →
@@ -1177,74 +1151,89 @@ export function ClaudeDemoSection({
         </div>
 
         <div className="relative">
-        <div
-          ref={desktopContainerRef}
-          className="h-[460px] grid min-h-0 ease-in-out"
-          style={{
-            // Use matching fr units on both endpoints so CSS can actually
-            // interpolate. Mixing units (% on one side, fr on the other)
-            // makes the browser snap-to instead of animate.
-            gridTemplateColumns: expanded ? "0fr 100fr" : "38fr 62fr",
-            // Gap also collapses to 0 in expanded state — otherwise the
-            // canvas column sits 16px right of where the rest of the
-            // hero content's left edge is, misaligning with the rest of
-            // the page after the terminal slides away.
-            columnGap: expanded ? "0" : "1rem",
-            transitionProperty: "grid-template-columns, column-gap",
-            transitionDuration: `${COLLAPSE_MS}ms`,
-          }}
-        >
-          <TerminalWindow
-            className={`min-w-0 transition-opacity duration-300 ${
-              expanded ? "opacity-0 pointer-events-none" : "opacity-100"
-            }`}
+          <div
+            ref={desktopContainerRef}
+            className="h-[460px] grid min-h-0 ease-in-out"
+            style={{
+              // Use matching fr units on both endpoints so CSS can actually
+              // interpolate. Mixing units (% on one side, fr on the other)
+              // makes the browser snap-to instead of animate.
+              gridTemplateColumns: expanded ? '0fr 100fr' : '38fr 62fr',
+              // Gap also collapses to 0 in expanded state — otherwise the
+              // canvas column sits 16px right of where the rest of the
+              // hero content's left edge is, misaligning with the rest of
+              // the page after the terminal slides away.
+              columnGap: expanded ? '0' : '1rem',
+              transitionProperty: 'grid-template-columns, column-gap',
+              transitionDuration: `${COLLAPSE_MS}ms`,
+            }}
           >
-            <div className="flex flex-col h-full">
-              <div className="flex-1 overflow-y-auto px-5 py-4">
-                <ScriptedTerminal
-                  onCodeStage={handleCodeStage}
-                  onComplete={handleComplete}
-                  extraLines={extraLines}
-                  active={inView}
-                />
+            <TerminalWindow
+              className={`min-w-0 transition-opacity duration-300 ${
+                expanded ? 'opacity-0 pointer-events-none' : 'opacity-100'
+              }`}
+            >
+              <div className="flex flex-col h-full">
+                <div className="flex-1 overflow-y-auto px-5 py-4">
+                  <ScriptedTerminal
+                    onCodeStage={handleCodeStage}
+                    onComplete={handleComplete}
+                    extraLines={extraLines}
+                    active={inView}
+                  />
+                </div>
               </div>
+            </TerminalWindow>
 
-            </div>
-          </TerminalWindow>
+            <HeroBrowserWindow ref={heroRef} canvasReady={canvasReady} />
 
-          <HeroBrowserWindow ref={heroRef} canvasReady={canvasReady} />
-
-          {/* Side cycle arrows — pinned to the canvas's vertical centre and
+            {/* Side cycle arrows — pinned to the canvas's vertical centre and
               tucked against the left/right edges. Hero is full-width post-
               collapse, so the arrows naturally land far apart, hinting at
               side-to-side navigation. Pointer-events stay off the wrapper
               so the canvas underneath is interactive; only the buttons
               themselves capture clicks. */}
-          {canvasReady && (
-            <div className="pointer-events-none absolute inset-y-0 -left-14 -right-14 z-10 flex items-center justify-between">
-              <button
-                type="button"
-                onClick={() => cycleDemo(-1)}
-                aria-label="Previous circuit"
-                className="pointer-events-auto flex h-10 w-10 items-center justify-center rounded-full border border-border bg-card text-foreground/70 shadow-sm transition-all hover:bg-muted hover:text-foreground hover:border-foreground/40 hover:scale-105 animate-in fade-in slide-in-from-left-2 duration-500"
-              >
-                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="15 18 9 12 15 6" />
-                </svg>
-              </button>
-              <button
-                type="button"
-                onClick={() => cycleDemo(1)}
-                aria-label="Next circuit"
-                className="pointer-events-auto flex h-10 w-10 items-center justify-center rounded-full border border-border bg-card text-foreground/70 shadow-sm transition-all hover:bg-muted hover:text-foreground hover:border-foreground/40 hover:scale-105 animate-in fade-in slide-in-from-right-2 duration-500"
-              >
-                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="9 18 15 12 9 6" />
-                </svg>
-              </button>
-            </div>
-          )}
-        </div>
+            {canvasReady && (
+              <div className="pointer-events-none absolute inset-y-0 -left-14 -right-14 z-10 flex items-center justify-between">
+                <button
+                  type="button"
+                  onClick={() => cycleDemo(-1)}
+                  aria-label="Previous circuit"
+                  className="pointer-events-auto flex h-10 w-10 items-center justify-center rounded-full border border-border bg-card text-foreground/70 shadow-sm transition-all hover:bg-muted hover:text-foreground hover:border-foreground/40 hover:scale-105 animate-in fade-in slide-in-from-left-2 duration-500"
+                >
+                  <svg
+                    className="h-4 w-4"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <polyline points="15 18 9 12 15 6" />
+                  </svg>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => cycleDemo(1)}
+                  aria-label="Next circuit"
+                  className="pointer-events-auto flex h-10 w-10 items-center justify-center rounded-full border border-border bg-card text-foreground/70 shadow-sm transition-all hover:bg-muted hover:text-foreground hover:border-foreground/40 hover:scale-105 animate-in fade-in slide-in-from-right-2 duration-500"
+                >
+                  <svg
+                    className="h-4 w-4"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <polyline points="9 18 15 12 9 6" />
+                  </svg>
+                </button>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Demo picker pills — animates in below the hero once the canvas
@@ -1257,16 +1246,14 @@ export function ClaudeDemoSection({
                 onClick={() => pickDemo(i)}
                 className={`text-[13px] px-3.5 py-1.5 rounded-full border transition-colors ${
                   i === demoIndex
-                    ? "border-foreground/30 bg-foreground/10 text-foreground"
-                    : "border-border text-muted-foreground hover:text-foreground hover:border-foreground/30 hover:bg-muted/50"
+                    ? 'border-foreground/30 bg-foreground/10 text-foreground'
+                    : 'border-border text-muted-foreground hover:text-foreground hover:border-foreground/30 hover:bg-muted/50'
                 }`}
               >
                 {d.label}
               </button>
             ))}
-            <span className="text-[13px] text-muted-foreground ml-3 font-mono">
-              ← → to cycle
-            </span>
+            <span className="text-[13px] text-muted-foreground ml-3 font-mono">← → to cycle</span>
           </div>
         )}
       </Container>

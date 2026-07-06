@@ -3,9 +3,9 @@
  */
 
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { checkCircuit } from '@simten/core/api';
 import { z } from 'zod';
 import { readCircuitSource } from '../lib/file-reader.js';
-import { checkCircuit } from '@simten/core/api';
 
 export function registerCheckTool(server: McpServer): void {
   server.tool(
@@ -27,10 +27,8 @@ export function registerCheckTool(server: McpServer): void {
       const result = checkCircuit({ source: read.source, sourceName: read.sourceName });
 
       return {
-        content: [
-          { type: 'text' as const, text: JSON.stringify(result, null, 2) },
-        ],
+        content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }],
       };
-    }
+    },
   );
 }

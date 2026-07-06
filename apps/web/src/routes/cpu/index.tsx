@@ -1,13 +1,13 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { pageHead } from "@/lib/seo";
+import { createFileRoute, Link } from '@tanstack/react-router';
+import { pageHead } from '@/lib/seo';
 
-export const Route = createFileRoute("/cpu/")({
+export const Route = createFileRoute('/cpu/')({
   head: () =>
     pageHead({
-      title: "CPUs",
+      title: 'CPUs',
       description:
-        "Interactive CPU debuggers built in simten. Pick a processor and step through execution cycle by cycle, with every register and pipeline stage visible.",
-      path: "/cpu",
+        'Interactive CPU debuggers built in simten. Pick a processor and step through execution cycle by cycle, with every register and pipeline stage visible.',
+      path: '/cpu',
     }),
   component: CPUIndexPage,
 });
@@ -21,8 +21,8 @@ function CPUIndexPage() {
             CPUs
           </h1>
           <p className="mt-6 text-xl text-gray-400 leading-relaxed max-w-2xl">
-            Interactive CPU debuggers built in simten. Pick a processor and
-            step through execution cycle by cycle.
+            Interactive CPU debuggers built in simten. Pick a processor and step through execution
+            cycle by cycle.
           </p>
         </section>
 
@@ -37,9 +37,9 @@ function CPUIndexPage() {
                   RV32I
                 </h2>
                 <p className="mt-2 text-gray-400 leading-relaxed">
-                  Write C, C++, Rust, or assembly — compile it and watch it
-                  execute instruction by instruction on a real 5-stage pipelined
-                  RISC-V CPU. See every pipeline stage, register, and clock cycle.
+                  Write C, C++, Rust, or assembly — compile it and watch it execute instruction by
+                  instruction on a real 5-stage pipelined RISC-V CPU. See every pipeline stage,
+                  register, and clock cycle.
                 </p>
               </div>
               <span className="text-gray-600 group-hover:text-blue-400 transition-colors text-2xl ml-4">
@@ -58,10 +58,7 @@ function CPUIndexPage() {
         </div>
 
         <footer className="mt-16 pt-8 border-t border-gray-800 text-center">
-          <Link
-            to="/"
-            className="text-blue-400 hover:text-blue-300 underline underline-offset-2"
-          >
+          <Link to="/" className="text-blue-400 hover:text-blue-300 underline underline-offset-2">
             Simten
           </Link>
         </footer>

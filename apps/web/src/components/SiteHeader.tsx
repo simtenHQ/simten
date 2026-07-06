@@ -1,6 +1,6 @@
-import { Link } from '@tanstack/react-router'
-import { Logo } from '@/components/Logo'
-import { ThemeToggle } from '@/components/ThemeToggle'
+import { Link } from '@tanstack/react-router';
+import { Logo } from '@/components/Logo';
+import { ThemeToggle } from '@/components/ThemeToggle';
 
 /**
  * Edge-aligned site header used on every page.
@@ -18,18 +18,18 @@ export function SiteHeader({
   sticky = true,
   brandHref,
 }: {
-  right?: React.ReactNode
-  sticky?: boolean
-  brandHref?: string
+  right?: React.ReactNode;
+  sticky?: boolean;
+  brandHref?: string;
 }) {
   const brandClassName =
-    'flex items-center gap-2 text-foreground transition-colors hover:text-foreground/80'
+    'flex items-center gap-2 text-foreground transition-colors hover:text-foreground/80';
   const brand = (
     <>
       <Logo size={26} />
       <span className="text-lg font-semibold tracking-tight">Simten</span>
     </>
-  )
+  );
   return (
     <header
       className={`${sticky ? 'sticky top-0 z-40' : ''} flex h-14 w-full shrink-0 items-center justify-between gap-3 bg-background/90 px-4 backdrop-blur`}
@@ -48,5 +48,5 @@ export function SiteHeader({
         <ThemeToggle />
       </div>
     </header>
-  )
+  );
 }

@@ -5,10 +5,10 @@
  * the evaluator table. No Map allocations in the hot path.
  */
 
+import type { PrimitiveState } from '../../types/simulator.js';
+import type { NumericEventQueue } from '../numeric-event-queue.js';
 import type { NumericCircuit } from '../numeric-types.js';
 import type { NumericPortValues } from '../numeric-values.js';
-import type { NumericEventQueue } from '../numeric-event-queue.js';
-import type { PrimitiveState } from '../../types/simulator.js';
 
 /**
  * Numeric sequential state for fast simulation.
@@ -80,5 +80,5 @@ export function writeOutput(ctx: EvalContext, outputIndex: number, value: number
  * Create a bitmask for the given width. Handles width=32 where (1 << 32) === 0 in JS.
  */
 export function bitMask(width: number): number {
-  return width >= 32 ? 0xFFFFFFFF : (1 << width) - 1;
+  return width >= 32 ? 0xffffffff : (1 << width) - 1;
 }

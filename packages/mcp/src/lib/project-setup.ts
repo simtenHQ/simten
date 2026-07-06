@@ -16,7 +16,7 @@
 
 import { spawn } from 'node:child_process';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
-import { resolve, basename } from 'node:path';
+import { basename, resolve } from 'node:path';
 
 export type PackageManager = 'npm' | 'pnpm' | 'yarn' | 'bun';
 
@@ -38,8 +38,10 @@ export const DEV_DEPS = ['tsx', 'typescript'] as const;
 
 /** `verify` is runnable here iff the framework deps resolve from the project. */
 export function isProjectReady(root: string): boolean {
-  return existsSync(resolve(root, 'node_modules', '@simten', 'core')) &&
-    existsSync(resolve(root, 'node_modules', 'fast-check'));
+  return (
+    existsSync(resolve(root, 'node_modules', '@simten', 'core')) &&
+    existsSync(resolve(root, 'node_modules', 'fast-check'))
+  );
 }
 
 /** The exact manual install command, for docs / offline fallback. */
@@ -180,6 +182,9 @@ export function runInstall(
 
 /** npm package names must be lowercase and url-safe; fall back to a default. */
 function sanitizeName(raw: string): string {
-  const name = raw.toLowerCase().replace(/[^a-z0-9._-]+/g, '-').replace(/^[-_.]+|[-_.]+$/g, '');
+  const name = raw
+    .toLowerCase()
+    .replace(/[^a-z0-9._-]+/g, '-')
+    .replace(/^[-_.]+|[-_.]+$/g, '');
   return name || 'simten-circuits';
 }

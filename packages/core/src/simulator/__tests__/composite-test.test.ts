@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { executeCircuitCode } from '../../circuit/execute.js';
 import { elaborate } from '../index.js';
 import { assertFlatCircuitInvariants } from './_invariants.js';
@@ -28,7 +28,7 @@ describe('composite elaboration', () => {
     const result = executeCircuitCode(code);
     expect(result.error).toBeNull();
     expect(result.circuits).toHaveLength(2);
-    
+
     const flat = elaborate(result.circuit!, result.library);
     expect(flat.nodes.length).toBeGreaterThan(0);
     // #140 audit: structural net on every elaboration this test exercises.

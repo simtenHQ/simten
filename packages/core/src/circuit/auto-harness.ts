@@ -9,11 +9,14 @@
  * No code execution — pure Circuit IR construction.
  */
 
-import type { Circuit, Connection, Node, ArgumentValue } from '../types/circuit.js';
+import type { ArgumentValue, Circuit, Connection, Node } from '../types/circuit.js';
 
 export function autoHarness(
   circuit: Circuit,
-  library: { resolveCircuit: (name: string) => Circuit | undefined; addCircuit: (c: Circuit) => void },
+  library: {
+    resolveCircuit: (name: string) => Circuit | undefined;
+    addCircuit: (c: Circuit) => void;
+  },
   initialInputs?: Record<string, number | boolean>,
 ): Circuit {
   // No ports = already a self-contained harness
@@ -37,9 +40,17 @@ export function autoHarness(
     id: 'dut',
     componentRef: circuit.name,
     arguments: {},
-    inputs: circuit.inputs.map(p => ({ id: `dut.${p.name}`, name: p.name, portType: p.portType })),
-    outputs: circuit.outputs.map(p => ({ id: `dut.${p.name}`, name: p.name, portType: p.portType })),
-    clocks: circuit.clocks.map(c => ({ id: `dut.${c.name}`, name: c.name })),
+    inputs: circuit.inputs.map((p) => ({
+      id: `dut.${p.name}`,
+      name: p.name,
+      portType: p.portType,
+    })),
+    outputs: circuit.outputs.map((p) => ({
+      id: `dut.${p.name}`,
+      name: p.name,
+      portType: p.portType,
+    })),
+    clocks: circuit.clocks.map((c) => ({ id: `dut.${c.name}`, name: c.name })),
   });
 
   // Switch / Input node for each input port

@@ -14,8 +14,8 @@
  * - GTKWave documentation
  */
 
-import { CaptureData, TraceData, SignalRef } from '../../types/testbench';
-import { BitValue, BusValue } from '../../types/circuit';
+import type { BitValue, BusValue } from '../../types/circuit';
+import { type CaptureData, SignalRef, TraceData } from '../../types/testbench';
 
 // ============================================================================
 // VCD Generator
@@ -28,10 +28,7 @@ import { BitValue, BusValue } from '../../types/circuit';
  * @param timescale - Time unit (default: "1 ns" - 1 nanosecond per cycle)
  * @returns VCD file content as string
  */
-export function generateVCD(
-  captureData: CaptureData,
-  timescale = '1 ns'
-): string {
+export function generateVCD(captureData: CaptureData, timescale = '1 ns'): string {
   const lines: string[] = [];
 
   // Generate header
@@ -80,7 +77,7 @@ function generateVCDHeader(timescale: string): string[] {
  */
 function generateVariableDeclarations(
   captureData: CaptureData,
-  lines: string[]
+  lines: string[],
 ): Map<string, string> {
   const signalIds = new Map<string, string>();
 
@@ -113,7 +110,8 @@ function generateVariableDeclarations(
  * Examples: 0 → !, 1 → ", 2 → #, ..., 93 → ~, 94 → !!, 95 → !"
  */
 function generateVCDIdentifier(index: number): string {
-  const chars = '!"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~';
+  const chars =
+    '!"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~';
   if (index < chars.length) {
     return chars[index];
   }
@@ -140,7 +138,7 @@ function generateVCDIdentifier(index: number): string {
 function generateValueChanges(
   captureData: CaptureData,
   signalIds: Map<string, string>,
-  lines: string[]
+  lines: string[],
 ): void {
   // Collect all value changes across all signals
   const changes: Array<{
@@ -177,7 +175,8 @@ function generateValueChanges(
 
     if (change.width === 1) {
       // Bit signal: "0!" or "1!"
-      const bitValue = typeof change.value === 'boolean' ? (change.value ? '1' : '0') : (change.value ? '1' : '0');
+      const bitValue =
+        typeof change.value === 'boolean' ? (change.value ? '1' : '0') : change.value ? '1' : '0';
       lines.push(`${bitValue}${vcdId}`);
     } else {
       // Bus signal: "b00101010 !"
@@ -220,7 +219,7 @@ function formatBusValueAsBinary(value: number, width: number): string {
 export function writeVCDToFile(
   captureData: CaptureData,
   filename: string,
-  timescale = '1 ns'
+  timescale = '1 ns',
 ): void {
   const vcdContent = generateVCD(captureData, timescale);
   downloadVCD(vcdContent, filename);
@@ -268,7 +267,7 @@ export function parseVCDHeader(vcdContent: string): {
   const signals: VCDSignalInfo[] = [];
 
   let inTimescale = false;
-  let inVars = false;
+  const inVars = false;
 
   for (const line of lines) {
     const trimmed = line.trim();

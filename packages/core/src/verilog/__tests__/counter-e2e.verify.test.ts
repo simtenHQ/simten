@@ -16,14 +16,14 @@
  * cycle's output between the JS simulator and iverilog.
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
+import { bit, bus, circuit } from '../../circuit/index.js';
+import { createSimulatorFromCircuit } from '../../simulator/index.js';
+import { Adder, Constant, Mux, Or, Register } from '../../std/index.js';
+import type { CircuitLibrary } from '../../types/circuit.js';
 import { exportVerilog } from '../exporter.js';
 import { generateSequentialTestbench, type SequentialTestVector } from '../testbench-gen.js';
-import { circuit, bit, bus } from '../../circuit/index.js';
-import { Adder, Register, Constant, Mux, Or } from '../../std/index.js';
-import { createSimulatorFromCircuit } from '../../simulator/index.js';
-import type { CircuitLibrary } from '../../types/circuit.js';
-import { verifyVerilog, hasVerifier } from './verify.js';
+import { hasVerifier, verifyVerilog } from './verify.js';
 
 interface Step {
   enable: number;
@@ -107,7 +107,7 @@ function runSimulator(steps: Step[]): number[] {
     sim.setNode('clear', step.clear);
     sim.tick();
     const v = sim.getPortValues().get('__top__.count');
-    outputs.push(typeof v === 'number' ? (v >>> 0) & 0xFF : 0);
+    outputs.push(typeof v === 'number' ? (v >>> 0) & 0xff : 0);
   }
   return outputs;
 }
@@ -123,17 +123,19 @@ function buildVectors(steps: Step[]): SequentialTestVector[] {
 const d = describe.skipIf(!hasVerifier());
 
 d('Counter (Register+Adder+Mux+Or) — end-to-end co-simulation', () => {
-  it('counts, holds, and clears across 20 cycles; JS sim and iverilog agree', { timeout: 30000 }, async () => {
+  it('counts, holds, and clears across 20 cycles; JS sim and iverilog agree', {
+    timeout: 30000,
+  }, async () => {
     const simOutputs = runSimulator(SEQUENCE);
 
     // Sanity-check the JS sim produced the expected behavior before we
     // pay the verifier round-trip.
-    expect(simOutputs[0]).toBe(1);    // first increment
-    expect(simOutputs[3]).toBe(4);    // 4 enables
-    expect(simOutputs[4]).toBe(4);    // hold
-    expect(simOutputs[5]).toBe(4);    // hold
-    expect(simOutputs[9]).toBe(0);    // clear
-    expect(simOutputs[19]).toBe(10);  // 10 increments after clear
+    expect(simOutputs[0]).toBe(1); // first increment
+    expect(simOutputs[3]).toBe(4); // 4 enables
+    expect(simOutputs[4]).toBe(4); // hold
+    expect(simOutputs[5]).toBe(4); // hold
+    expect(simOutputs[9]).toBe(0); // clear
+    expect(simOutputs[19]).toBe(10); // 10 increments after clear
 
     const { circuit, lib } = buildCounter();
     const { verilog } = exportVerilog(circuit, lib);
@@ -150,9 +152,9 @@ d('Counter (Register+Adder+Mux+Or) — end-to-end co-simulation', () => {
     expect(result.results).toBeDefined();
     expect(result.results!.length).toBe(SEQUENCE.length);
 
-    const veriOutputs = result.results!
-      .sort((a, b) => a.testCase - b.testCase)
-      .map((r) => r.outputs.count & 0xFF);
+    const veriOutputs = result
+      .results!.sort((a, b) => a.testCase - b.testCase)
+      .map((r) => r.outputs.count & 0xff);
 
     expect(veriOutputs).toEqual(simOutputs);
   });

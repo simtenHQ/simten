@@ -5,18 +5,14 @@
  * Use `useSandboxContext()` to get the SandboxHandle.
  */
 
-import { createContext, useContext, type ReactNode } from 'react';
-import { useSandbox, type SandboxHandle } from './useSandbox.js';
+import { createContext, type ReactNode, useContext } from 'react';
+import { type SandboxHandle, useSandbox } from './useSandbox.js';
 
 const SandboxContext = createContext<SandboxHandle | null>(null);
 
 export function SandboxProvider({ children }: { children: ReactNode }) {
   const sandbox = useSandbox();
-  return (
-    <SandboxContext.Provider value={sandbox}>
-      {children}
-    </SandboxContext.Provider>
-  );
+  return <SandboxContext.Provider value={sandbox}>{children}</SandboxContext.Provider>;
 }
 
 // No-op handle returned before the sandbox iframe is ready (SSR / pre-mount)

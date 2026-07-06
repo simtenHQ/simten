@@ -18,9 +18,10 @@
 //
 // Default warns-and-skips if the viewer build is absent (keeps a bare `tsc` build
 // working in dev/CI); --require fails loudly (used at publish via prepack).
-import { cp, rm, mkdir } from 'node:fs/promises';
+
 import { existsSync } from 'node:fs';
-import { join, dirname } from 'node:path';
+import { cp, mkdir, rm } from 'node:fs/promises';
+import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const REQUIRE = process.argv.includes('--require');
@@ -30,7 +31,10 @@ const DEST = join(here, '..', 'dist', 'public');
 
 if (!existsSync(join(SRC, 'index.html'))) {
   const msg = `[copy-editor] viewer build not found at ${SRC}\n  Build it first:  pnpm --filter ./apps/web build:viewer`;
-  if (REQUIRE) { console.error(msg + '\n  (--require) refusing to continue without the bundled editor.'); process.exit(1); }
+  if (REQUIRE) {
+    console.error(msg + '\n  (--require) refusing to continue without the bundled editor.');
+    process.exit(1);
+  }
   console.warn(msg + '\n  Skipping bundle (the MCP will fall back to SIMTEN_URL at runtime).');
   process.exit(0);
 }
@@ -52,4 +56,6 @@ for (const entry of INCLUDE) {
   const from = join(SRC, entry);
   if (existsSync(from)) await cp(from, join(DEST, entry), { recursive: true });
 }
-console.log(`[copy-editor] bundled editor → ${DEST} (${INCLUDE.filter((e) => existsSync(join(SRC, e))).join(', ')})`);
+console.log(
+  `[copy-editor] bundled editor → ${DEST} (${INCLUDE.filter((e) => existsSync(join(SRC, e))).join(', ')})`,
+);

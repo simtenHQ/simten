@@ -1,13 +1,13 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { mkdtempSync, rmSync, writeFileSync, readFileSync, existsSync, mkdirSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { resolve, join } from 'node:path';
+import { join, resolve } from 'node:path';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
   detectPackageManager,
   ensurePackageJson,
   ensureTsconfig,
-  isProjectReady,
   installCommand,
+  isProjectReady,
 } from './project-setup.js';
 
 let dir: string;
@@ -89,7 +89,10 @@ describe('isProjectReady', () => {
 describe('ensureTsconfig', () => {
   it('writes a NodeNext tsconfig when absent, no-ops when present', () => {
     expect(ensureTsconfig(dir)).toBe(true);
-    expect(JSON.parse(readFileSync(resolve(dir, 'tsconfig.json'), 'utf-8')).compilerOptions.moduleResolution).toBe('NodeNext');
+    expect(
+      JSON.parse(readFileSync(resolve(dir, 'tsconfig.json'), 'utf-8')).compilerOptions
+        .moduleResolution,
+    ).toBe('NodeNext');
     expect(ensureTsconfig(dir)).toBe(false);
   });
 });

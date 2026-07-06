@@ -1,28 +1,40 @@
-import { createFileRoute } from '@tanstack/react-router'
-import { blogPostHead } from '@/lib/seo'
-import { getPost } from '@/features/blog/posts'
-import { Suspense, lazy } from "react";
-import { HeroSection } from "@/features/blog/pong-in-hardware/sections/HeroSection";
-import { BlogFooter } from "@/features/blog/BlogFooter";
-import { ErrorBoundary } from "@/features/blog/building-a-cpu/ErrorBoundary";
+import { createFileRoute } from '@tanstack/react-router';
+import { lazy, Suspense } from 'react';
+import { BlogFooter } from '@/features/blog/BlogFooter';
+import { ErrorBoundary } from '@/features/blog/building-a-cpu/ErrorBoundary';
+import { HeroSection } from '@/features/blog/pong-in-hardware/sections/HeroSection';
+import { getPost } from '@/features/blog/posts';
+import { blogPostHead } from '@/lib/seo';
 
 const BallSection = lazy(() =>
-  import("@/features/blog/pong-in-hardware/sections/BallSection").then((m) => ({ default: m.BallSection }))
+  import('@/features/blog/pong-in-hardware/sections/BallSection').then((m) => ({
+    default: m.BallSection,
+  })),
 );
 const BounceSection = lazy(() =>
-  import("@/features/blog/pong-in-hardware/sections/BounceSection").then((m) => ({ default: m.BounceSection }))
+  import('@/features/blog/pong-in-hardware/sections/BounceSection').then((m) => ({
+    default: m.BounceSection,
+  })),
 );
 const PaddleSection = lazy(() =>
-  import("@/features/blog/pong-in-hardware/sections/PaddleSection").then((m) => ({ default: m.PaddleSection }))
+  import('@/features/blog/pong-in-hardware/sections/PaddleSection').then((m) => ({
+    default: m.PaddleSection,
+  })),
 );
 const PhaseSection = lazy(() =>
-  import("@/features/blog/pong-in-hardware/sections/PhaseSection").then((m) => ({ default: m.PhaseSection }))
+  import('@/features/blog/pong-in-hardware/sections/PhaseSection').then((m) => ({
+    default: m.PhaseSection,
+  })),
 );
 const AddressSection = lazy(() =>
-  import("@/features/blog/pong-in-hardware/sections/AddressSection").then((m) => ({ default: m.AddressSection }))
+  import('@/features/blog/pong-in-hardware/sections/AddressSection').then((m) => ({
+    default: m.AddressSection,
+  })),
 );
 const PongSection = lazy(() =>
-  import("@/features/blog/pong-in-hardware/sections/PongSection").then((m) => ({ default: m.PongSection }))
+  import('@/features/blog/pong-in-hardware/sections/PongSection').then((m) => ({
+    default: m.PongSection,
+  })),
 );
 
 function SectionSkeleton() {
@@ -42,53 +54,52 @@ function SectionSkeleton() {
 function PongInHardwarePage() {
   return (
     <>
+      <HeroSection />
 
-        <HeroSection />
+      <ErrorBoundary>
+        <Suspense fallback={<SectionSkeleton />}>
+          <PongSection />
+        </Suspense>
+      </ErrorBoundary>
 
+      <div className="space-y-4">
+        <hr className="border-gray-200 dark:border-gray-800" />
         <ErrorBoundary>
           <Suspense fallback={<SectionSkeleton />}>
-            <PongSection />
+            <BallSection />
           </Suspense>
         </ErrorBoundary>
 
-        <div className="space-y-4">
-          <hr className="border-gray-200 dark:border-gray-800" />
-          <ErrorBoundary>
-            <Suspense fallback={<SectionSkeleton />}>
-              <BallSection />
-            </Suspense>
-          </ErrorBoundary>
+        <hr className="border-gray-200 dark:border-gray-800" />
+        <ErrorBoundary>
+          <Suspense fallback={<SectionSkeleton />}>
+            <BounceSection />
+          </Suspense>
+        </ErrorBoundary>
 
-          <hr className="border-gray-200 dark:border-gray-800" />
-          <ErrorBoundary>
-            <Suspense fallback={<SectionSkeleton />}>
-              <BounceSection />
-            </Suspense>
-          </ErrorBoundary>
+        <hr className="border-gray-200 dark:border-gray-800" />
+        <ErrorBoundary>
+          <Suspense fallback={<SectionSkeleton />}>
+            <PaddleSection />
+          </Suspense>
+        </ErrorBoundary>
 
-          <hr className="border-gray-200 dark:border-gray-800" />
-          <ErrorBoundary>
-            <Suspense fallback={<SectionSkeleton />}>
-              <PaddleSection />
-            </Suspense>
-          </ErrorBoundary>
+        <hr className="border-gray-200 dark:border-gray-800" />
+        <ErrorBoundary>
+          <Suspense fallback={<SectionSkeleton />}>
+            <PhaseSection />
+          </Suspense>
+        </ErrorBoundary>
 
-          <hr className="border-gray-200 dark:border-gray-800" />
-          <ErrorBoundary>
-            <Suspense fallback={<SectionSkeleton />}>
-              <PhaseSection />
-            </Suspense>
-          </ErrorBoundary>
+        <hr className="border-gray-200 dark:border-gray-800" />
+        <ErrorBoundary>
+          <Suspense fallback={<SectionSkeleton />}>
+            <AddressSection />
+          </Suspense>
+        </ErrorBoundary>
+      </div>
 
-          <hr className="border-gray-200 dark:border-gray-800" />
-          <ErrorBoundary>
-            <Suspense fallback={<SectionSkeleton />}>
-              <AddressSection />
-            </Suspense>
-          </ErrorBoundary>
-        </div>
-
-        <BlogFooter slug="pong-in-hardware" />
+      <BlogFooter slug="pong-in-hardware" />
     </>
   );
 }
@@ -96,4 +107,4 @@ function PongInHardwarePage() {
 export const Route = createFileRoute('/blog/pong-in-hardware')({
   head: () => blogPostHead(getPost('pong-in-hardware')),
   component: PongInHardwarePage,
-})
+});

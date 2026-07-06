@@ -5,11 +5,9 @@
  * principle) to a full CRC-32 byte-at-a-time processing circuit.
  */
 
-import { circuit, bus } from "@simten/core/circuit";
+import { bus, circuit } from '@simten/core/circuit';
+import { Constant, DFlipFlop, HexDisplay, Input, Led, Register, Xor } from '@simten/core/std';
 import type { BlogCircuit } from '../types';
-import {
-  Input, HexDisplay, Constant, Led, DFlipFlop, Xor, Register,
-} from "@simten/core/std";
 
 // ── LFSR4 ──
 // A 4-bit maximal-length LFSR using polynomial x^4 + x + 1
@@ -58,15 +56,15 @@ export const CRC32Step = circuit('CRC32Step', {
     // Full 32-bit CRC step — we receive only the low 8 bits of crc here
     // (the register passes one byte at a time in the demo circuit).
     // For the demo, we do the full 8-bit polynomial step on the low byte.
-    let c = ((crc as number) ^ (data as number)) & 0xFF;
+    let c = ((crc as number) ^ (data as number)) & 0xff;
     for (let i = 0; i < 8; i++) {
-      c = (c & 1) ? (0xED ^ (c >>> 1)) : (c >>> 1);
+      c = c & 1 ? 0xed ^ (c >>> 1) : c >>> 1;
     }
     return {
-      crc_lo: c & 0xFF,
-      crc_hi: (c >>> 8) & 0xFF,
-      crc_b2: (c >>> 16) & 0xFF,
-      crc_b3: (c >>> 24) & 0xFF,
+      crc_lo: c & 0xff,
+      crc_hi: (c >>> 8) & 0xff,
+      crc_b2: (c >>> 16) & 0xff,
+      crc_b3: (c >>> 24) & 0xff,
     };
   },
 });
@@ -77,8 +75,8 @@ export const CRC32Step = circuit('CRC32Step', {
 // the running CRC. Register starts at 0xFF (truncated from 0xFFFFFFFF init).
 export const CRC32ByteDemo = circuit('CRC32ByteDemo', {
   nodes: {
-    data: Input({ value: 49 }),       // ASCII '1' — first byte of "123456789"
-    crcReg: Register({ value: 0xFF }), // CRC-32 initialises to 0xFFFFFFFF; we track low byte
+    data: Input({ value: 49 }), // ASCII '1' — first byte of "123456789"
+    crcReg: Register({ value: 0xff }), // CRC-32 initialises to 0xFFFFFFFF; we track low byte
     step: CRC32Step,
     display: HexDisplay,
     we: Constant({ value: 1 }),
@@ -94,16 +92,16 @@ export const CRC32ByteDemo = circuit('CRC32ByteDemo', {
 
 export const CRC32_CIRCUITS: Record<string, BlogCircuit> = {
   lfsr4: {
-    name: "4-bit LFSR",
+    name: '4-bit LFSR',
     description:
-      "A 4-bit shift register with XOR feedback at taps 0 and 3 (polynomial x\u2074 + x + 1). Cycles through 15 distinct states before repeating. Click Step to advance the clock.",
+      'A 4-bit shift register with XOR feedback at taps 0 and 3 (polynomial x\u2074 + x + 1). Cycles through 15 distinct states before repeating. Click Step to advance the clock.',
     circuit: LFSR4,
   },
 
   crc32ByteDemo: {
-    name: "CRC-32 Byte Step",
+    name: 'CRC-32 Byte Step',
     description:
-      "One byte of CRC-32 processing. The Input node holds the data byte; the Register accumulates the running CRC. Change the data byte and step to see the CRC evolve.",
+      'One byte of CRC-32 processing. The Input node holds the data byte; the Register accumulates the running CRC. Change the data byte and step to see the CRC evolve.',
     circuit: CRC32ByteDemo,
   },
 };

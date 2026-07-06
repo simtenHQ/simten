@@ -1,41 +1,41 @@
-import { createFileRoute } from '@tanstack/react-router'
-import { blogPostHead } from '@/lib/seo'
-import { getPost } from '@/features/blog/posts'
-import { Suspense, lazy } from "react";
-import { HeroSection } from "@/features/blog/how-network-switches-work/sections/HeroSection";
-import { BlogFooter } from "@/features/blog/BlogFooter";
-import { ErrorBoundary } from "@/features/blog/building-a-cpu/ErrorBoundary";
+import { createFileRoute } from '@tanstack/react-router';
+import { lazy, Suspense } from 'react';
+import { BlogFooter } from '@/features/blog/BlogFooter';
+import { ErrorBoundary } from '@/features/blog/building-a-cpu/ErrorBoundary';
+import { HeroSection } from '@/features/blog/how-network-switches-work/sections/HeroSection';
+import { getPost } from '@/features/blog/posts';
+import { blogPostHead } from '@/lib/seo';
 
 // Lazy-load heavier sections so the page renders fast
 const FrameSection = lazy(() =>
-  import("@/features/blog/how-network-switches-work/sections/FrameSection").then((m) => ({
+  import('@/features/blog/how-network-switches-work/sections/FrameSection').then((m) => ({
     default: m.FrameSection,
-  }))
+  })),
 );
 const BufferSection = lazy(() =>
-  import("@/features/blog/how-network-switches-work/sections/BufferSection").then((m) => ({
+  import('@/features/blog/how-network-switches-work/sections/BufferSection').then((m) => ({
     default: m.BufferSection,
-  }))
+  })),
 );
 const ArbiterSection = lazy(() =>
-  import("@/features/blog/how-network-switches-work/sections/ArbiterSection").then((m) => ({
+  import('@/features/blog/how-network-switches-work/sections/ArbiterSection').then((m) => ({
     default: m.ArbiterSection,
-  }))
+  })),
 );
 const RouterSection = lazy(() =>
-  import("@/features/blog/how-network-switches-work/sections/RouterSection").then((m) => ({
+  import('@/features/blog/how-network-switches-work/sections/RouterSection').then((m) => ({
     default: m.RouterSection,
-  }))
+  })),
 );
 const EgressSection = lazy(() =>
-  import("@/features/blog/how-network-switches-work/sections/EgressSection").then((m) => ({
+  import('@/features/blog/how-network-switches-work/sections/EgressSection').then((m) => ({
     default: m.EgressSection,
-  }))
+  })),
 );
 const SwitchSection = lazy(() =>
-  import("@/features/blog/how-network-switches-work/sections/SwitchSection").then((m) => ({
+  import('@/features/blog/how-network-switches-work/sections/SwitchSection').then((m) => ({
     default: m.SwitchSection,
-  }))
+  })),
 );
 
 function SectionSkeleton() {
@@ -55,60 +55,59 @@ function SectionSkeleton() {
 function HowNetworkSwitchesWorkPage() {
   return (
     <>
+      <HeroSection />
 
-        <HeroSection />
+      <div className="space-y-4">
+        <hr className="border-gray-200 dark:border-gray-800" />
 
-        <div className="space-y-4">
-          <hr className="border-gray-200 dark:border-gray-800" />
+        <ErrorBoundary>
+          <Suspense fallback={<SectionSkeleton />}>
+            <FrameSection />
+          </Suspense>
+        </ErrorBoundary>
 
-          <ErrorBoundary>
-            <Suspense fallback={<SectionSkeleton />}>
-              <FrameSection />
-            </Suspense>
-          </ErrorBoundary>
+        <hr className="border-gray-200 dark:border-gray-800" />
 
-          <hr className="border-gray-200 dark:border-gray-800" />
+        <ErrorBoundary>
+          <Suspense fallback={<SectionSkeleton />}>
+            <BufferSection />
+          </Suspense>
+        </ErrorBoundary>
 
-          <ErrorBoundary>
-            <Suspense fallback={<SectionSkeleton />}>
-              <BufferSection />
-            </Suspense>
-          </ErrorBoundary>
+        <hr className="border-gray-200 dark:border-gray-800" />
 
-          <hr className="border-gray-200 dark:border-gray-800" />
+        <ErrorBoundary>
+          <Suspense fallback={<SectionSkeleton />}>
+            <ArbiterSection />
+          </Suspense>
+        </ErrorBoundary>
 
-          <ErrorBoundary>
-            <Suspense fallback={<SectionSkeleton />}>
-              <ArbiterSection />
-            </Suspense>
-          </ErrorBoundary>
+        <hr className="border-gray-200 dark:border-gray-800" />
 
-          <hr className="border-gray-200 dark:border-gray-800" />
+        <ErrorBoundary>
+          <Suspense fallback={<SectionSkeleton />}>
+            <RouterSection />
+          </Suspense>
+        </ErrorBoundary>
 
-          <ErrorBoundary>
-            <Suspense fallback={<SectionSkeleton />}>
-              <RouterSection />
-            </Suspense>
-          </ErrorBoundary>
+        <hr className="border-gray-200 dark:border-gray-800" />
 
-          <hr className="border-gray-200 dark:border-gray-800" />
+        <ErrorBoundary>
+          <Suspense fallback={<SectionSkeleton />}>
+            <EgressSection />
+          </Suspense>
+        </ErrorBoundary>
 
-          <ErrorBoundary>
-            <Suspense fallback={<SectionSkeleton />}>
-              <EgressSection />
-            </Suspense>
-          </ErrorBoundary>
+        <hr className="border-gray-200 dark:border-gray-800" />
 
-          <hr className="border-gray-200 dark:border-gray-800" />
+        <ErrorBoundary>
+          <Suspense fallback={<SectionSkeleton />}>
+            <SwitchSection />
+          </Suspense>
+        </ErrorBoundary>
+      </div>
 
-          <ErrorBoundary>
-            <Suspense fallback={<SectionSkeleton />}>
-              <SwitchSection />
-            </Suspense>
-          </ErrorBoundary>
-        </div>
-
-        <BlogFooter slug="how-network-switches-work" />
+      <BlogFooter slug="how-network-switches-work" />
     </>
   );
 }
@@ -116,4 +115,4 @@ function HowNetworkSwitchesWorkPage() {
 export const Route = createFileRoute('/blog/how-network-switches-work')({
   head: () => blogPostHead(getPost('how-network-switches-work')),
   component: HowNetworkSwitchesWorkPage,
-})
+});

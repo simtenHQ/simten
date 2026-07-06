@@ -22,15 +22,15 @@ export interface TimingStats {
 }
 
 export interface UtilStats {
-  comb: number;  // TRELLIS_COMB (combinational LUTs)
-  ff: number;    // TRELLIS_FF (flip-flops)
-  bram: number;  // TRELLIS_BRAM
-  io: number;    // TRELLIS_IO
+  comb: number; // TRELLIS_COMB (combinational LUTs)
+  ff: number; // TRELLIS_FF (flip-flops)
+  bram: number; // TRELLIS_BRAM
+  io: number; // TRELLIS_IO
 }
 
 export interface BuildResponse {
   success: boolean;
-  bitstream?: string;       // base64-encoded .bit file
+  bitstream?: string; // base64-encoded .bit file
   timing?: TimingStats;
   utilization?: UtilStats;
   log: string;
@@ -38,9 +38,9 @@ export interface BuildResponse {
 }
 
 export interface BuildOptions {
-  lpf?: string;             // LPF pin constraint file content
-  device?: string;          // default: "LFE5U-85F"
-  package?: string;         // default: "CABGA381"
+  lpf?: string; // LPF pin constraint file content
+  device?: string; // default: "LFE5U-85F"
+  package?: string; // default: "CABGA381"
 }
 
 /** True when SYNTH_URL is set (build endpoint lives on the same service). */
@@ -71,9 +71,7 @@ export async function buildBitstream(
 ): Promise<BuildResponse> {
   const url = buildUrl();
   if (!url) {
-    throw new Error(
-      'SYNTH_URL is not set. Skip build tests with `describe.skipIf(!hasBuild())`.',
-    );
+    throw new Error('SYNTH_URL is not set. Skip build tests with `describe.skipIf(!hasBuild())`.');
   }
 
   const resp = await fetch(url, {

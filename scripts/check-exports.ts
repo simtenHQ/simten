@@ -15,8 +15,8 @@
  *   4. `files` includes "dist" if any publishConfig.exports path points there
  */
 
-import { readFileSync, existsSync } from 'node:fs';
-import { join, dirname, resolve } from 'node:path';
+import { existsSync, readFileSync } from 'node:fs';
+import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -38,7 +38,10 @@ function fail(pkg: string, msg: string): void {
   failures.push(`${pkg}: ${msg}`);
 }
 
-function entryPath(entry: ExportEntry, key: 'import' | 'default' | 'types' = 'import'): string | undefined {
+function entryPath(
+  entry: ExportEntry,
+  key: 'import' | 'default' | 'types' = 'import',
+): string | undefined {
   if (typeof entry === 'string') return entry;
   return entry[key] ?? entry.default ?? entry.import;
 }
@@ -108,7 +111,10 @@ function checkPackage(relPath: string): void {
     return p?.startsWith('./dist/');
   });
   if (referencesDist && !files.includes('dist')) {
-    fail(name, `publishConfig.exports references ./dist/* but 'files' (${JSON.stringify(files)}) does not include 'dist'`);
+    fail(
+      name,
+      `publishConfig.exports references ./dist/* but 'files' (${JSON.stringify(files)}) does not include 'dist'`,
+    );
   }
 }
 

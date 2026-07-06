@@ -9,18 +9,19 @@ export interface Example {
   id: string;
   title: string;
   description: string;
-  category: "game" | "math" | "cpu" | "basics";
+  category: 'game' | 'math' | 'cpu' | 'basics';
   nodes: string;
   code: string;
 }
 
 export const EXAMPLES: Example[] = [
   {
-    id: "snake",
-    title: "Snake",
-    description: "A playable Snake game in pure logic, no CPU. Press Play, then steer with the arrow keys. Drillable to the gates, and runs on a real FPGA.",
-    category: "game",
-    nodes: "5 nodes, drillable",
+    id: 'snake',
+    title: 'Snake',
+    description:
+      'A playable Snake game in pure logic, no CPU. Press Play, then steer with the arrow keys. Drillable to the gates, and runs on a real FPGA.',
+    category: 'game',
+    nodes: '5 nodes, drillable',
     code: `
 // A complete 8x8 Snake game in pure logic - no CPU.
 // Press Run, then steer with the arrow keys.
@@ -430,11 +431,12 @@ const SnakePlayable = circuit('SnakePlayable', {
 `,
   },
   {
-    id: "rv32i-computer",
-    title: "RV32I Computer",
-    description: "A 5-stage pipelined RISC-V CPU running real C or Rust. Verified against Spike, runs on a ULX3S FPGA.",
-    category: "cpu",
-    nodes: "5 blocks, ~150 nodes inside",
+    id: 'rv32i-computer',
+    title: 'RV32I Computer',
+    description:
+      'A 5-stage pipelined RISC-V CPU running real C or Rust. Verified against Spike, runs on a ULX3S FPGA.',
+    category: 'cpu',
+    nodes: '5 blocks, ~150 nodes inside',
     code: `
 // The preloaded program — prints "HELLO FROM RISC-V" in a loop:
 //   lui  a0, 0x80000          # a0 = UART (memory-mapped at 0x80000000)
@@ -561,11 +563,12 @@ const RV32I_Computer = circuit('RV32I_Computer', {
 `,
   },
   {
-    id: "figlet",
-    title: "npm → ROM",
-    description: "Runs the figlet npm package at build time to bake ASCII art into a ROM, then streams it to a console.",
-    category: "basics",
-    nodes: "npm → ROM → console",
+    id: 'figlet',
+    title: 'npm → ROM',
+    description:
+      'Runs the figlet npm package at build time to bake ASCII art into a ROM, then streams it to a console.',
+    category: 'basics',
+    nodes: 'npm → ROM → console',
     code: `import figlet from 'figlet';
 import smallFont from 'figlet/fonts/Small.js';
 figlet.parseFont('Small', smallFont);
@@ -609,11 +612,12 @@ const FigletDemo = circuit('FigletDemo', {
 });`,
   },
   {
-    id: "hack-alu",
-    title: "Hack ALU (nand2tetris)",
-    description: "The nand2tetris Hack ALU: two 16-bit inputs and six control bits (zx nx zy ny f no) that compose into 18 operations. Flip the control bits and watch out, zr, and ng update.",
-    category: "math",
-    nodes: "16 nodes",
+    id: 'hack-alu',
+    title: 'Hack ALU (nand2tetris)',
+    description:
+      'The nand2tetris Hack ALU: two 16-bit inputs and six control bits (zx nx zy ny f no) that compose into 18 operations. Flip the control bits and watch out, zr, and ng update.',
+    category: 'math',
+    nodes: '16 nodes',
     code: `
 // The nand2tetris Hack ALU, built in Simten — the same chip from Project 2.
 // Two 16-bit inputs x, y and six control bits compose into 18 operations:
@@ -680,11 +684,12 @@ const HackALU = circuit('HackALU', {
 `,
   },
   {
-    id: "tpu-3x3",
-    title: "3x3 Systolic Array (TPU)",
-    description: "Google's TPU architecture: 9 processing elements multiplying a matrix in a wavefront, one cycle at a time.",
-    category: "cpu",
-    nodes: "~120 nodes",
+    id: 'tpu-3x3',
+    title: '3x3 Systolic Array (TPU)',
+    description:
+      "Google's TPU architecture: 9 processing elements multiplying a matrix in a wavefront, one cycle at a time.",
+    category: 'cpu',
+    nodes: '~120 nodes',
     code: `
 const PE_Systolic = circuit('PE_Systolic', {
   inputs: { dataIn: bus(8), weightIn: bus(8), partialSumIn: bus(16), weightValid: bit },
@@ -828,11 +833,12 @@ const TestSystolic3x3 = circuit('TestSystolic3x3', {
 `,
   },
   {
-    id: "fibonacci",
-    title: "Fibonacci Generator",
-    description: "Two registers and an adder produce the Fibonacci sequence every clock tick. No software, no instructions.",
-    category: "math",
-    nodes: "~12 nodes",
+    id: 'fibonacci',
+    title: 'Fibonacci Generator',
+    description:
+      'Two registers and an adder produce the Fibonacci sequence every clock tick. No software, no instructions.',
+    category: 'math',
+    nodes: '~12 nodes',
     code: `
 const Fibonacci = circuit('Fibonacci', {
   outputs: { fib: bus(8) },
@@ -863,11 +869,12 @@ const FibonacciDemo = circuit('FibonacciDemo', {
 `,
   },
   {
-    id: "rule30",
-    title: "Rule 30 Cellular Automaton",
-    description: "Wolfram's Rule 30 cellular automaton: 8 cells, two gates each, chaos from a single seed.",
-    category: "math",
-    nodes: "~40 nodes",
+    id: 'rule30',
+    title: 'Rule 30 Cellular Automaton',
+    description:
+      "Wolfram's Rule 30 cellular automaton: 8 cells, two gates each, chaos from a single seed.",
+    category: 'math',
+    nodes: '~40 nodes',
     code: `
 const Rule30Cell = circuit('Rule30Cell', {
   inputs: { left: bit, center: bit, right: bit },
@@ -910,11 +917,12 @@ const Rule30 = circuit('Rule30', {
 `,
   },
   {
-    id: "alu",
-    title: "8-Bit ALU",
-    description: "Eight operations on a 3-bit opcode (ADD, SUB, AND, OR, XOR, NOT, SHL, SHR), with zero, carry, and negative flags.",
-    category: "cpu",
-    nodes: "~30 nodes",
+    id: 'alu',
+    title: '8-Bit ALU',
+    description:
+      'Eight operations on a 3-bit opcode (ADD, SUB, AND, OR, XOR, NOT, SHL, SHR), with zero, carry, and negative flags.',
+    category: 'cpu',
+    nodes: '~30 nodes',
     code: `
 const ALU = circuit('ALU', {
   inputs: { a: bus(8), b: bus(8), op0: bit, op1: bit, op2: bit },
@@ -979,11 +987,12 @@ const ALUDemo = circuit('ALUDemo', {
 `,
   },
   {
-    id: "half-adder",
-    title: "Half Adder",
-    description: "The simplest arithmetic circuit: XOR for sum, AND for carry. The building block of every adder.",
-    category: "basics",
-    nodes: "4 nodes",
+    id: 'half-adder',
+    title: 'Half Adder',
+    description:
+      'The simplest arithmetic circuit: XOR for sum, AND for carry. The building block of every adder.',
+    category: 'basics',
+    nodes: '4 nodes',
     code: `
 const HalfAdder = circuit('HalfAdder', {
   inputs: { a: bit, b: bit },

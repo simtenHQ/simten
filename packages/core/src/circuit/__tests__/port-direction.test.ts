@@ -1,6 +1,6 @@
-import { describe, it, expect } from 'vitest';
-import { circuit } from '../circuit.js';
+import { describe, expect, it } from 'vitest';
 import { bit } from '../bit-bus.js';
+import { circuit } from '../circuit.js';
 
 // Type-level negative tests for #110. The bodies don't need to run — the
 // assertion is that each `@ts-expect-error` line is rejected by the
@@ -12,13 +12,13 @@ import { bit } from '../bit-bus.js';
 const And = circuit('And', {
   inputs: { a: bit, b: bit },
   outputs: { out: bit },
-  eval: ({ a, b }) => ({ out: (a && b) ? 1 : 0 }),
+  eval: ({ a, b }) => ({ out: a && b ? 1 : 0 }),
 });
 
 const Xor = circuit('Xor', {
   inputs: { a: bit, b: bit },
   outputs: { out: bit },
-  eval: ({ a, b }) => ({ out: (a !== b) ? 1 : 0 }),
+  eval: ({ a, b }) => ({ out: a !== b ? 1 : 0 }),
 });
 
 describe('port direction is enforced at the type level (#110)', () => {

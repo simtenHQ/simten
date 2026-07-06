@@ -1,36 +1,36 @@
 {
-	"$schema": "node_modules/wrangler/config-schema.json",
-	"name": "verifier",
-	"main": "src/index.ts",
-	"compatibility_date": "2025-10-08",
-	"compatibility_flags": ["nodejs_compat"],
-	"observability": {
-		"enabled": true
-	},
-	"containers": [
-		{
-			"class_name": "VerifierContainer",
-			"image": "./Dockerfile",
-			"max_instances": 2
-		}
-	],
-	"durable_objects": {
-		"bindings": [
-			{
-				"class_name": "VerifierContainer",
-				"name": "VERIFIER_CONTAINER"
-			}
-		]
-	},
-	"migrations": [
-		{
-			"new_sqlite_classes": ["VerifierContainer"],
-			"tag": "v1"
-		}
-	],
-	// Disable the public *.workers.dev URL — this service is only callable via
-	// service binding from @simten/web. See issue #59.
-	"workers_dev": false,
-	"upload_source_maps": true,
-	"dev": { "port": 55002 }
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "verifier",
+  "main": "src/index.ts",
+  "compatibility_date": "2025-10-08",
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": {
+    "enabled": true
+  },
+  "containers": [
+    {
+      "class_name": "VerifierContainer",
+      "image": "./Dockerfile",
+      "max_instances": 2
+    }
+  ],
+  "durable_objects": {
+    "bindings": [
+      {
+        "class_name": "VerifierContainer",
+        "name": "VERIFIER_CONTAINER"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "new_sqlite_classes": ["VerifierContainer"],
+      "tag": "v1"
+    }
+  ],
+  // Disable the public *.workers.dev URL — this service is only callable via
+  // service binding from @simten/web. See issue #59.
+  "workers_dev": false,
+  "upload_source_maps": true,
+  "dev": { "port": 55002 }
 }

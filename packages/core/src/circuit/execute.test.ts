@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest';
-import { stripExports, stripImports, executeJsCode } from './execute.js';
+import { describe, expect, it } from 'vitest';
+import { executeJsCode, stripExports, stripImports } from './execute.js';
 
 describe('stripExports', () => {
   it('drops the export keyword but keeps the declaration', () => {
