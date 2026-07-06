@@ -9,11 +9,11 @@
  * random inputs, catching edge cases that hand-written truth tables miss.
  */
 
-import { describe, it, expect } from 'vitest';
 import * as fc from 'fast-check';
+import { describe, expect, it } from 'vitest';
+import { bit, bus, circuit } from '../../circuit/index.js';
 import { simulate } from '../../sim/simulate.js';
-import { circuit, bit, bus } from '../../circuit/index.js';
-import { And, Or, Xor, Not, Adder, Comparator } from '../../std/index.js';
+import { Adder, And, Comparator, Not, Or, Xor } from '../../std/index.js';
 
 // ============================================================================
 // Fixtures

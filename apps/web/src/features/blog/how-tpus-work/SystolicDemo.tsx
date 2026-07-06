@@ -1,7 +1,7 @@
-import { useMemo } from 'react';
-import { useSystolicSimulator } from './useSystolicSimulator';
 import { CircuitCanvas } from '@simten/ui/canvas';
+import { useMemo } from 'react';
 import { TooltipProvider } from '@/components/ui/tooltip';
+import { useSystolicSimulator } from './useSystolicSimulator';
 
 /**
  * Custom layout for the TestSystolic3x3 circuit.

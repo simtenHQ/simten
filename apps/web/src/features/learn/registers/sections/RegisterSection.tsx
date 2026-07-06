@@ -1,5 +1,5 @@
-import { CircuitEmbed } from '@simten/embed';
 import { Register } from '@simten/core/std';
+import { CircuitEmbed } from '@simten/embed';
 
 export function RegisterSection() {
   return (

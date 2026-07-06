@@ -12,10 +12,10 @@
  * the /circuit route, so there's no extra HTTP fetch at editor mount.
  */
 
-import { useEffect } from 'react';
 import type { Monaco } from '@monaco-editor/react';
 import simtenCoreTypes from '@simten/core/bundle?raw';
 import simtenGlobals from '@simten/core/editor-globals?raw';
+import { useEffect } from 'react';
 
 // Importable `@simten/core` subpaths. The bundle is a flat aggregate of all of
 // them, registered below as the bare `@simten/core` module — but circuit files

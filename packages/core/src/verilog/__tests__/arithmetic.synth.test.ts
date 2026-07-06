@@ -12,12 +12,12 @@
  * FullAdder must have fewer cells than the ripple carry adder, etc.
  */
 
-import { describe, it, expect } from 'vitest';
-import { exportVerilog } from '../exporter.js';
-import { circuit, bit, bus } from '../../circuit/index.js';
-import { And, Or, Xor, Adder, Multiplier, Mux, BusAnd, BusOr } from '../../std/index.js';
+import { describe, expect, it } from 'vitest';
+import { bit, bus, circuit } from '../../circuit/index.js';
+import { Adder, And, BusAnd, BusOr, Multiplier, Mux, Or, Xor } from '../../std/index.js';
 import type { CircuitLibrary } from '../../types/circuit.js';
-import { synthesizeVerilog, hasSynth } from './synth.js';
+import { exportVerilog } from '../exporter.js';
+import { hasSynth, synthesizeVerilog } from './synth.js';
 
 // ---- helpers ----------------------------------------------------------------
 

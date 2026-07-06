@@ -4,10 +4,10 @@
  * test a fresh module state, which the module-singleton harness needs.
  */
 
-import { describe, it, expect } from 'vitest';
 import { spawnSync } from 'node:child_process';
-import { resolve, dirname } from 'node:path';
+import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { describe, expect, it } from 'vitest';
 import { VERIFY_JSON_BEGIN, VERIFY_JSON_END } from './index.js';
 
 const here = dirname(fileURLToPath(import.meta.url));

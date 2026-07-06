@@ -1,5 +1,5 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
 import { useCircuitSimulator } from '@simten/embed';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { CRC32ByteDemo } from '../circuits';
 
 // CRC-32 software reference for verification display

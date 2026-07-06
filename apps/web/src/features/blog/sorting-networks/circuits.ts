@@ -5,9 +5,9 @@
  * starting from a single compare-and-swap primitive.
  */
 
-import { circuit, bus } from '@simten/core/circuit';
+import { bus, circuit } from '@simten/core/circuit';
+import { Comparator, Constant, HexDisplay, Input, Mux, Register } from '@simten/core/std';
 import type { BlogCircuit } from '../types';
-import { Input, HexDisplay, Comparator, Mux, Register, Constant } from '@simten/core/std';
 
 // ── Compare-and-swap subcircuit ──
 // Outputs min on `lo`, max on `hi` — unconditionally, no branching.

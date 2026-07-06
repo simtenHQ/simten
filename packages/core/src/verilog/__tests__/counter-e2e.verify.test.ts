@@ -16,14 +16,14 @@
  * cycle's output between the JS simulator and iverilog.
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
+import { bit, bus, circuit } from '../../circuit/index.js';
+import { createSimulatorFromCircuit } from '../../simulator/index.js';
+import { Adder, Constant, Mux, Or, Register } from '../../std/index.js';
+import type { CircuitLibrary } from '../../types/circuit.js';
 import { exportVerilog } from '../exporter.js';
 import { generateSequentialTestbench, type SequentialTestVector } from '../testbench-gen.js';
-import { circuit, bit, bus } from '../../circuit/index.js';
-import { Adder, Register, Constant, Mux, Or } from '../../std/index.js';
-import { createSimulatorFromCircuit } from '../../simulator/index.js';
-import type { CircuitLibrary } from '../../types/circuit.js';
-import { verifyVerilog, hasVerifier } from './verify.js';
+import { hasVerifier, verifyVerilog } from './verify.js';
 
 interface Step {
   enable: number;

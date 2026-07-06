@@ -10,7 +10,7 @@
  */
 
 import type { ReactNode } from 'react';
-import { readPortBit, type PortValuesMap } from '@/lib/port-values';
+import { type PortValuesMap, readPortBit } from '@/lib/port-values';
 
 // Reusing the embed CSS variables (light/dark theming via --embed-*).
 

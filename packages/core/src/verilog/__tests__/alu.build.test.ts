@@ -12,13 +12,13 @@
  * Requires SYNTH_URL to be set. Skipped otherwise.
  */
 
-import { describe, it, expect } from 'vitest';
-import { exportVerilog } from '../exporter.js';
-import { circuit, bus, bit } from '../../circuit/index.js';
+import { describe, expect, it } from 'vitest';
+import { bit, bus, circuit } from '../../circuit/index.js';
 import { RV32I_ALU } from '../../std/index.js';
 import type { CircuitLibrary } from '../../types/circuit.js';
-import { synthesizeVerilog, hasSynth } from './synth.js';
+import { exportVerilog } from '../exporter.js';
 import { buildBitstream, hasBuild } from './build.js';
+import { hasSynth, synthesizeVerilog } from './synth.js';
 
 function buildALU() {
   const ALU = circuit('RV32I_ALU_Top', {

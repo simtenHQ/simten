@@ -23,11 +23,11 @@
  */
 
 import { transform } from 'sucrase';
-import { circuit } from './circuit.js';
-import { bit, bus, reg, mem } from './bit-bus.js';
-import type { BuiltCircuit } from './types.js';
-import type { Circuit, CircuitLibrary } from '../types/circuit.js';
 import * as std from '../std/index.js';
+import type { Circuit, CircuitLibrary } from '../types/circuit.js';
+import { bit, bus, mem, reg } from './bit-bus.js';
+import { circuit } from './circuit.js';
+import type { BuiltCircuit } from './types.js';
 
 // ============================================================================
 // Execution result

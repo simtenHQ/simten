@@ -1,12 +1,12 @@
-import { circuit, bit, bus } from '@simten/core/circuit';
+import { bit, bus, circuit } from '@simten/core/circuit';
 import {
   Constant,
-  RV32I_Core,
-  RV32I_InstrMem,
-  RV32I_DataMem,
   MemBusMux,
-  UART_TX,
   NIC_FIFO,
+  RV32I_Core,
+  RV32I_DataMem,
+  RV32I_InstrMem,
+  UART_TX,
 } from '@simten/core/std';
 
 // Debugger board: the canonical pipelined CPU (`RV32I_Core`) plus the memory and

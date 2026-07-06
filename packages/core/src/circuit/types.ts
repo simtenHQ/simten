@@ -11,13 +11,14 @@
  */
 
 import type {
-  PortType,
+  ArgumentValue,
   BusType,
   Circuit,
-  ArgumentValue,
-  PortDescriptor,
   Node,
+  PortDescriptor,
+  PortType,
 } from '../types/circuit.js';
+
 export type { ArgumentValue };
 
 // ============================================================================

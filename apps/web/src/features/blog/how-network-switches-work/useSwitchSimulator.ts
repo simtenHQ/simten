@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useCircuitSimulator } from '@simten/embed';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { MiniSwitch2Port } from './circuits';
 
 export function useSwitchSimulator() {

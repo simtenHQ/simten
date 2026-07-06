@@ -8,19 +8,19 @@
 
 'use client';
 
-import type { ComponentType, SVGProps } from 'react';
 import {
-  SkipForward,
-  Play,
-  Pause,
-  RotateCcw,
   ChevronLeft,
   ChevronRight,
   Gauge,
   History,
+  Pause,
+  Play,
+  RotateCcw,
+  SkipForward,
 } from 'lucide-react';
-import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '../primitives/tooltip';
+import type { ComponentType, SVGProps } from 'react';
 import { Button } from '../primitives/button';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../primitives/tooltip';
 
 /**
  * Dense icon button used throughout this toolbar. Wraps shadcn `Button`

@@ -6,24 +6,24 @@
  * Extracted so it can be relocated on the page and gated on scroll.
  */
 
-import {
-  useState,
-  useEffect,
-  useCallback,
-  useRef,
-  forwardRef,
-  useImperativeHandle,
-  type ReactNode,
-} from 'react';
-import { Link } from '@tanstack/react-router';
-import { CircuitEmbed, type CircuitEmbedHandle } from '@simten/embed';
-import { circuit, bit } from '@simten/core/circuit';
 import type { BuiltCircuit } from '@simten/core/circuit';
-import { Xor, And, Or, Not, DFlipFlop } from '@simten/core/std';
-import { HighlightedCode } from '@/components/HighlightedCode';
+import { bit, circuit } from '@simten/core/circuit';
+import { And, DFlipFlop, Not, Or, Xor } from '@simten/core/std';
+import { CircuitEmbed, type CircuitEmbedHandle } from '@simten/embed';
+import { Link } from '@tanstack/react-router';
+import {
+  forwardRef,
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+  useState,
+} from 'react';
 import { Container } from '@/components/Container';
+import { HighlightedCode } from '@/components/HighlightedCode';
 import { CodeWithHovers } from './CodeWithHovers';
-import { FigletDemo, FIGLET_DEMO_CODE } from './Hero';
+import { FIGLET_DEMO_CODE, FigletDemo } from './Hero';
 
 // ============================================================================
 // Demo circuits (self-contained — the gallery has its own copies of shared ones)

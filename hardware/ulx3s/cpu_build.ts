@@ -10,7 +10,7 @@
  *   tsx hardware/ulx3s/cpu_build.ts --flash   — also flash via openFPGALoader
  */
 
-import { resolve, dirname } from 'node:path';
+import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { runPipeline } from './lib/pipeline.js';

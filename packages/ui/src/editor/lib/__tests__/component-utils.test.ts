@@ -2,10 +2,10 @@
  * Component Utility Functions - Unit Tests
  */
 
-import { describe, it, expect } from 'vitest';
-import { containsSequentialCircuit, hasSequentialCircuits } from '../utils/component-utils';
+import { describe, expect, it } from 'vitest';
 import type { Component } from '../../types';
 import type { Circuit } from '../../types/circuit';
+import { containsSequentialCircuit, hasSequentialCircuits } from '../utils/component-utils';
 
 describe('containsSequentialCircuit', () => {
   const mockResolveCircuit = (name: string): Circuit | undefined => {

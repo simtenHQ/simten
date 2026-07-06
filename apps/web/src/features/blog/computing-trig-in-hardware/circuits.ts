@@ -6,23 +6,23 @@
  * and the complete iterative rotation engine.
  */
 
-import { circuit, bit, bus } from '@simten/core/circuit';
-import type { BlogCircuit } from '../types';
+import { bit, bus, circuit } from '@simten/core/circuit';
 import {
-  Input,
-  HexDisplay,
-  Constant,
-  Led,
-  RightShifter,
-  SignedAdder,
+  BitSlice,
   BusNot,
-  SignedComparator,
+  Comparator,
+  Constant,
+  HexDisplay,
+  Incrementer,
+  Input,
+  Led,
   Mux,
   Register,
-  Incrementer,
-  Comparator,
-  BitSlice,
+  RightShifter,
+  SignedAdder,
+  SignedComparator,
 } from '@simten/core/std';
+import type { BlogCircuit } from '../types';
 
 // ── Self-contained circuit definitions ──
 

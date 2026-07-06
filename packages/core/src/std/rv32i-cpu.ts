@@ -31,28 +31,28 @@
  * sets `debug: true`, and it's the only consumer that touches them.
  */
 
-import { circuit } from '../circuit/circuit.js';
 import { bit, bus } from '../circuit/bit-bus.js';
+import { circuit } from '../circuit/circuit.js';
 import type { BuiltCircuit } from '../circuit/types.js';
-import { Constant } from './io.js';
-import { Register } from './sequential.js';
 import { Adder, BusAnd } from './arithmetic.js';
+import { Constant } from './io.js';
+import { And, Not, Or } from './logic.js';
 import { BitSlice, Mux } from './routing.js';
-import { And, Or, Not } from './logic.js';
 import {
-  RV32I_HazardUnit,
-  RV32I_Decode,
-  RV32I_ImmGen,
-  RV32I_Control,
-  RV32I_RegisterFile,
-  RV32I_WBBypass,
-  RV32I_ForwardingUnit,
   RV32I_ALU,
   RV32I_BranchComp,
-  RV32I_WritebackMux,
-  RV32I_NextPCMux,
+  RV32I_Control,
+  RV32I_Decode,
+  RV32I_ForwardingUnit,
+  RV32I_HazardUnit,
+  RV32I_ImmGen,
   RV32I_LoadAlignFull,
+  RV32I_NextPCMux,
+  RV32I_RegisterFile,
+  RV32I_WBBypass,
+  RV32I_WritebackMux,
 } from './rv32i.js';
+import { Register } from './sequential.js';
 
 type B = ReturnType<typeof bus>;
 type Bit = typeof bit;

@@ -2,9 +2,10 @@
 // reason verify runs on the host — `@noble/hashes` resolves from node_modules,
 // no esbuild/stripImports. Tier A: the expected bytes come from an external
 // crypto library, independent of the circuit.
-import { simulate } from '@simten/core/sim';
-import { verify, declareOracle } from '@simten/core/verify';
+
 import { sha256 } from '@noble/hashes/sha2.js';
+import { simulate } from '@simten/core/sim';
+import { declareOracle, verify } from '@simten/core/verify';
 import { HashRom } from './flagship-rom.circuit.js';
 
 const expected = sha256(new Uint8Array(0)); // independent reference vector

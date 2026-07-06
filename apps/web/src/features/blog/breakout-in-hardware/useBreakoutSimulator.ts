@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
 import { useCircuitSimulator } from '@simten/embed';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Breakout } from './circuits';
 
 const PIXELS = 512; // 32x16 combinational raster readout

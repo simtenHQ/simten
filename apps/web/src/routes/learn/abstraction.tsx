@@ -1,8 +1,8 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { pageHead, breadcrumbLd } from '@/lib/seo';
-import { Suspense, lazy } from 'react';
-import { HeroSection } from '@/features/learn/abstraction/sections/HeroSection';
+import { lazy, Suspense } from 'react';
 import { ErrorBoundary } from '@/features/blog/building-a-cpu/ErrorBoundary';
+import { HeroSection } from '@/features/learn/abstraction/sections/HeroSection';
+import { breadcrumbLd, pageHead } from '@/lib/seo';
 
 const TwoWaysSection = lazy(() =>
   import('@/features/learn/abstraction/sections/TwoWaysSection').then((m) => ({

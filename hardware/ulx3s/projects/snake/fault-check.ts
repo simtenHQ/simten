@@ -12,7 +12,7 @@
  * FPGA (left/up mirrored to right/down because 8'd255 was truncated to 1).
  */
 
-import { coSim, setNodeArg, type SnakeBuilt } from './cosim-lib.js';
+import { coSim, type SnakeBuilt, setNodeArg } from './cosim-lib.js';
 
 // Eats the first food at tick 3, sees the respawn redraw at tick 4, and uses
 // every direction — exercises movement, growth, and the food cycle.

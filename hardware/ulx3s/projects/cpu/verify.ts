@@ -1,4 +1,5 @@
 #!/usr/bin/env bun
+
 /**
  * Cross-validate the Verilog-exported CPU against the TypeScript simulator.
  *
@@ -19,11 +20,11 @@
  *        bun hardware/ulx3s/cpu_verify.ts --filter ADD (ISA test by substring)
  */
 
+import { slugify } from '@simten/core/util/test-name';
 import { mkdirSync, readFileSync, writeFileSync } from 'fs';
 import { resolve } from 'path';
-import { slugify } from '@simten/core/util/test-name';
 import { runFirmware } from './sim.js';
-import { tests, type Test } from './tests.js';
+import { type Test, tests } from './tests.js';
 
 // Run `pnpm --filter @simten/verifier dev` first, or override with VERIFIER_URL.
 const VERIFIER_URL = process.env.VERIFIER_URL ?? 'http://localhost:55002/verify';

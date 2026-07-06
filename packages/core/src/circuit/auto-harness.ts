@@ -9,7 +9,7 @@
  * No code execution — pure Circuit IR construction.
  */
 
-import type { Circuit, Connection, Node, ArgumentValue } from '../types/circuit.js';
+import type { ArgumentValue, Circuit, Connection, Node } from '../types/circuit.js';
 
 export function autoHarness(
   circuit: Circuit,

@@ -7,12 +7,12 @@
  * /learn-page modules. Keeps the docs page reproducible in isolation.
  */
 
-import { useState } from 'react';
-import { circuit, bit } from '@simten/core/circuit';
-import { And, Xor } from '@simten/core/std';
+import { bit, circuit } from '@simten/core/circuit';
 import type { FlatPortValueMap } from '@simten/core/simulator';
+import { And, Xor } from '@simten/core/std';
 import { CircuitEmbed, useCircuitSimulator } from '@simten/embed';
-import { TruthTable, computeActiveRow } from '@/components/TruthTable';
+import { useState } from 'react';
+import { computeActiveRow, TruthTable } from '@/components/TruthTable';
 import { readPortBit } from '@/lib/port-values';
 
 const HalfAdder = circuit('HalfAdderDocsDemo', {

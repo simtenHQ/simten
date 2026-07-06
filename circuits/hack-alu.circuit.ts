@@ -16,8 +16,8 @@
  *   ng = (out < 0)         // i.e. out[15], the sign bit
  */
 
-import { circuit, bit, bus } from '@simten/core/circuit';
-import { Mux, Adder, BusAnd, BusXor, Comparator, BitSlice, Constant } from '@simten/core/std';
+import { bit, bus, circuit } from '@simten/core/circuit';
+import { Adder, BitSlice, BusAnd, BusXor, Comparator, Constant, Mux } from '@simten/core/std';
 
 export const HackALU = circuit('HackALU', {
   inputs: {

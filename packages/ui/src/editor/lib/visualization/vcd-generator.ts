@@ -14,8 +14,8 @@
  * - GTKWave documentation
  */
 
-import { CaptureData, TraceData, SignalRef } from '../../types/testbench';
-import { BitValue, BusValue } from '../../types/circuit';
+import type { BitValue, BusValue } from '../../types/circuit';
+import { type CaptureData, SignalRef, TraceData } from '../../types/testbench';
 
 // ============================================================================
 // VCD Generator
@@ -267,7 +267,7 @@ export function parseVCDHeader(vcdContent: string): {
   const signals: VCDSignalInfo[] = [];
 
   let inTimescale = false;
-  let inVars = false;
+  const inVars = false;
 
   for (const line of lines) {
     const trimmed = line.trim();

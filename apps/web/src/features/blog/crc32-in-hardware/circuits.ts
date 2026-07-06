@@ -5,9 +5,9 @@
  * principle) to a full CRC-32 byte-at-a-time processing circuit.
  */
 
-import { circuit, bus } from '@simten/core/circuit';
+import { bus, circuit } from '@simten/core/circuit';
+import { Constant, DFlipFlop, HexDisplay, Input, Led, Register, Xor } from '@simten/core/std';
 import type { BlogCircuit } from '../types';
-import { Input, HexDisplay, Constant, Led, DFlipFlop, Xor, Register } from '@simten/core/std';
 
 // ── LFSR4 ──
 // A 4-bit maximal-length LFSR using polynomial x^4 + x + 1

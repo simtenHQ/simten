@@ -1,6 +1,6 @@
-import { useCORDICSimulator } from './useCORDICSimulator';
 import { CircuitCanvas } from '@simten/ui/canvas';
 import { TooltipProvider } from '@/components/ui/tooltip';
+import { useCORDICSimulator } from './useCORDICSimulator';
 
 const CORDIC_LAYOUT: Record<string, { x: number; y: number }> = {
   x: { x: 30, y: 30 },

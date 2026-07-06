@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useCircuitSimulator } from '@simten/embed';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { TestSystolic3x3 } from './circuits';
 
 export function useSystolicSimulator() {

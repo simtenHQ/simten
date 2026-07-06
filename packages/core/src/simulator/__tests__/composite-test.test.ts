@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { executeCircuitCode } from '../../circuit/execute.js';
 import { elaborate } from '../index.js';
 import { assertFlatCircuitInvariants } from './_invariants.js';

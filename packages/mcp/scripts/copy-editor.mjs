@@ -18,9 +18,10 @@
 //
 // Default warns-and-skips if the viewer build is absent (keeps a bare `tsc` build
 // working in dev/CI); --require fails loudly (used at publish via prepack).
-import { cp, rm, mkdir } from 'node:fs/promises';
+
 import { existsSync } from 'node:fs';
-import { join, dirname } from 'node:path';
+import { cp, mkdir, rm } from 'node:fs/promises';
+import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const REQUIRE = process.argv.includes('--require');

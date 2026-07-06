@@ -7,8 +7,8 @@
 
 'use client';
 
-import { useCircuitPreviewStore } from '../stores/circuit-preview-store';
 import { cn } from '../../lib/utils';
+import { useCircuitPreviewStore } from '../stores/circuit-preview-store';
 
 export function CircuitTabBar() {
   const compiledCircuits = useCircuitPreviewStore((state) => state.compiledCircuits);

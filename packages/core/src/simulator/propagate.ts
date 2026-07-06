@@ -8,12 +8,12 @@
 import type { BitValue, BusValue } from '../types/circuit.js';
 import type { FlatPortValueMap, PrimitiveState } from '../types/simulator.js';
 import { TOP_LEVEL_NODE } from '../types/simulator.js';
+import { getOnTickFunction } from './eval-bridge.js';
+import { EVALUATORS, type EvalContext } from './evaluators/index.js';
+import type { NumericEventQueue } from './numeric-event-queue.js';
 import type { NumericCircuit, NumericSequentialState } from './numeric-types.js';
 import type { NumericPortValues } from './numeric-values.js';
-import { NumericEventQueue } from './numeric-event-queue.js';
-import { getOnTickFunction } from './eval-bridge.js';
 import type { ClockEdges } from './primitive-interface.js';
-import { EVALUATORS, type EvalContext } from './evaluators/index.js';
 
 /** Maximum iterations before assuming unstable feedback loop */
 const MAX_PROPAGATION_ITERATIONS = 10000;

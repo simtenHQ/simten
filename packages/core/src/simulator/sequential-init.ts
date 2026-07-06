@@ -6,11 +6,11 @@
  */
 
 import type {
+  ArgumentValue,
   BitValue,
   BusValue,
   CircuitLibrary,
   StateBlock,
-  ArgumentValue,
 } from '../types/circuit.js';
 import type { FlatCircuit, FlatSequentialState, PrimitiveState } from '../types/simulator.js';
 

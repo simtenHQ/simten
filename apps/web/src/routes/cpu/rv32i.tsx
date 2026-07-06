@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { CPUDebugger } from '@/features/learn/cpu-debugger/CPUDebugger';
-import { pageHead, breadcrumbLd } from '@/lib/seo';
+import { breadcrumbLd, pageHead } from '@/lib/seo';
 
 export const Route = createFileRoute('/cpu/rv32i')({
   staticData: { skipDefaultChrome: true },

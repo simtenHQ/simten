@@ -4,11 +4,11 @@
  * No stores, no caches, no globals — explicit params only.
  */
 
-import type { Node as ReactFlowNode, Edge } from '@xyflow/react';
 import type { Circuit, PortPath } from '@simten/core';
 import type { CircuitLibrary, FlatPortValueMap, FlatSequentialState } from '@simten/core/simulator';
-import type { MetadataState } from './types';
+import type { Edge, Node as ReactFlowNode } from '@xyflow/react';
 import type { NodeData } from '../nodes';
+import type { MetadataState } from './types';
 
 export type { NodeData };
 
@@ -108,13 +108,13 @@ function projectCircuitToNodes(
       isComposite,
     );
 
-    let value: boolean | undefined = undefined;
-    let numericValue: number | undefined = undefined;
-    let width: number | undefined = undefined;
-    let pixels: number[] | undefined = undefined;
-    let consoleText: string | undefined = undefined;
-    let uartText: string | undefined = undefined;
-    let nicState: { txCount: number; rxCount: number; draining: boolean } | undefined = undefined;
+    let value: boolean | undefined;
+    let numericValue: number | undefined;
+    let width: number | undefined;
+    let pixels: number[] | undefined;
+    let consoleText: string | undefined;
+    let uartText: string | undefined;
+    let nicState: { txCount: number; rxCount: number; draining: boolean } | undefined;
 
     if (node.componentRef === 'Switch' || node.componentRef === 'Led') {
       let resolved = false;

@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react';
 import type { Circuit, FlatCircuit } from '@simten/core';
-import { elaborate, compileForSimulation } from '@simten/core/simulator';
 import { buildFromIR } from '@simten/core/circuit';
+import { compileForSimulation, elaborate } from '@simten/core/simulator';
 import { STDLIB_CIRCUITS } from '@simten/core/std';
-import { useSandboxContext } from '@simten/ui/sandbox';
 import { CircuitEmbed } from '@simten/embed';
+import { useSandboxContext } from '@simten/ui/sandbox';
+import { useEffect, useState } from 'react';
 
 const FULL_ADDER_SOURCE = `
 const HalfAdder = circuit('HalfAdder', {

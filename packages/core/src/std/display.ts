@@ -2,8 +2,8 @@
  * Standard Library — Display Components
  */
 
-import { circuit } from '../circuit/circuit.js';
 import { bit, bus } from '../circuit/bit-bus.js';
+import { circuit } from '../circuit/circuit.js';
 
 // All components in this file model simulation-only peripherals. They're tagged
 // `meta.synthesizable: false` so the synth checker skips their eval bodies and

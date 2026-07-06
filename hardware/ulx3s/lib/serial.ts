@@ -5,8 +5,8 @@
  * bytes until the regex matches, the timeout fires, or the port closes.
  */
 
-import { SerialPort } from 'serialport';
 import { readdirSync } from 'node:fs';
+import { SerialPort } from 'serialport';
 
 export interface OpenAndCaptureOpts {
   baud: number;

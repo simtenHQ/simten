@@ -3,9 +3,9 @@
  * Each section tells part of the story and has an interactive circuit.
  */
 
-import { circuit, bit } from '@simten/core/circuit';
 import type { BuiltCircuit } from '@simten/core/circuit';
-import { Switch, Led, Nand, Xor, And, Or, DFlipFlop } from '@simten/core/std';
+import { bit, circuit } from '@simten/core/circuit';
+import { And, DFlipFlop, Led, Nand, Or, Switch, Xor } from '@simten/core/std';
 
 export interface SectionDef {
   id: string;

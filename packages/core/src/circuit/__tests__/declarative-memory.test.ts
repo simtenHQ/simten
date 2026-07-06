@@ -6,8 +6,8 @@
  * (eval-synth extension — tested separately).
  */
 
-import { describe, it, expect } from 'vitest';
-import { circuit, bit, bus, reg, mem } from '../index.js';
+import { describe, expect, it } from 'vitest';
+import { bit, bus, circuit, mem, reg } from '../index.js';
 
 // ── reg() and mem() helpers ──────────────────────────────────────────────
 

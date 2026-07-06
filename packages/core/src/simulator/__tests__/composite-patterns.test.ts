@@ -17,10 +17,10 @@
  * property), so the structural test is intentionally omitted there.
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
+import { bit, bus, circuit } from '../../circuit/index.js';
 import { simulate } from '../../sim/simulate.js';
-import { circuit, bit, bus } from '../../circuit/index.js';
-import { And, Or, Xor, Not, Constant, Register, DFlipFlop, Adder } from '../../std/index.js';
+import { Adder, And, Constant, DFlipFlop, Not, Or, Register, Xor } from '../../std/index.js';
 import { assertFlatCircuitInvariants, elaborateBuilt } from './_invariants.js';
 
 // ╔════════════════════════════════════════════════════════════════════════╗

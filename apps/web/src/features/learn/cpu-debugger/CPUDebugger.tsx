@@ -1,13 +1,13 @@
-import { useState, useRef, useEffect, lazy, Suspense } from 'react';
-import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
-import {
-  useRV32IDebugger,
-  ABI_NAMES,
-  type PipelineStages,
-  type DisasmLine,
-} from './useRV32IDebugger';
-import { explainInstruction } from './rv32i-explain';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { SiteHeader } from '@/components/SiteHeader';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { explainInstruction } from './rv32i-explain';
+import {
+  ABI_NAMES,
+  type DisasmLine,
+  type PipelineStages,
+  useRV32IDebugger,
+} from './useRV32IDebugger';
 
 const MonacoEditor = lazy(() => import('@monaco-editor/react'));
 

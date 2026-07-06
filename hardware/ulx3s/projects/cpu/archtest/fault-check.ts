@@ -14,8 +14,8 @@
  */
 
 import { execFileSync } from 'node:child_process';
-import { writeFileSync, readFileSync, mkdirSync } from 'node:fs';
-import { resolve, dirname } from 'node:path';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { runDut } from './run-dut.js';
 

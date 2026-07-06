@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
 import { useCircuitSimulator } from '@simten/embed';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { RV32I_CPU } from './rv32i-cpu.circuit';
 
 // ABI register names for RV32I

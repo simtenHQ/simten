@@ -12,23 +12,23 @@
  * on the top-level `keyboard` bus.
  */
 
-import { circuit, bit, bus } from '@simten/core/circuit';
+import { bit, bus, circuit } from '@simten/core/circuit';
 import {
-  Constant,
-  Register,
   Adder,
-  Subtractor,
-  Comparator,
-  Mux,
   And,
-  Or,
-  Not,
-  Buffer,
-  LeftShifter,
-  RightShifter,
   BitSlice,
-  Splitter8to8,
+  Buffer,
+  Comparator,
+  Constant,
   DualPortRAM,
+  LeftShifter,
+  Mux,
+  Not,
+  Or,
+  Register,
+  RightShifter,
+  Splitter8to8,
+  Subtractor,
 } from '@simten/core/std';
 
 // Full brick wall at power-on: rows 0-3 (128 cells) all alive. Seeded into

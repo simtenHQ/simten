@@ -7,13 +7,13 @@
 
 import { randomUUID } from 'node:crypto';
 import type {
-  StudioServer,
   CircuitState,
-  TracesPayload,
+  StudioServer,
   TestResultsPayload,
+  TracesPayload,
 } from '../server/ws-server.js';
 
-export type { StudioServer, CircuitState, TracesPayload, TestResultsPayload };
+export type { CircuitState, StudioServer, TestResultsPayload, TracesPayload };
 
 // Module-level singleton
 let studioServer: StudioServer | null = null;

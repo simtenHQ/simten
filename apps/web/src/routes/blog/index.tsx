@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from '@tanstack/react-router';
-import { posts, type PostCategory } from '@/features/blog/posts';
+import { type PostCategory, posts } from '@/features/blog/posts';
 import { pageHead } from '@/lib/seo';
 
 export const Route = createFileRoute('/blog/')({

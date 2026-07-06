@@ -18,11 +18,11 @@
  */
 
 import type {
-  SimulatorEngine,
-  SimulatorSnapshot,
-  FlatSequentialState,
   BitValue,
   BusValue,
+  FlatSequentialState,
+  SimulatorEngine,
+  SimulatorSnapshot,
 } from '../types/simulator.js';
 
 // ============================================================================

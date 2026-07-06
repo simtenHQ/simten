@@ -1,4 +1,5 @@
 #!/usr/bin/env tsx
+
 /**
  * Unified flash + UART capture tool for tighter Claude/FPGA loops.
  *
@@ -17,14 +18,14 @@
  *   tsx hardware/ulx3s/run_on_fpga.ts --project=cpu --firmware=... --match=...
  */
 
+import { spawnSync } from 'node:child_process';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { spawnSync } from 'node:child_process';
 
 import { runPipeline } from './lib/pipeline.js';
 import { openAndCapture } from './lib/serial.js';
-import { loadProjects, listProjects } from './projects/index.js';
 import type { Project, RunResult } from './lib/types.js';
+import { listProjects, loadProjects } from './projects/index.js';
 
 // ── Argv parsing ───────────────────────────────────────────────────────────
 

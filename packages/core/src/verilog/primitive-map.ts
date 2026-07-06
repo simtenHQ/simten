@@ -13,9 +13,9 @@
  * All operations are unsigned. Signed tracking is a future enhancement.
  */
 
+import { getCircuitEval } from '../circuit/eval-registry.js';
 import type { ArgumentValue } from '../types/circuit.js';
 import { tryEmitFromEval } from './eval-synth.js';
-import { getCircuitEval } from '../circuit/eval-registry.js';
 
 export interface PrimitiveWires {
   /** Map of input port name → wire/port name in Verilog */
@@ -158,7 +158,7 @@ function isConnected(wires: PrimitiveWires, port: string, type: 'input' | 'outpu
 }
 
 function sanitizeId(id: string): string {
-  return id.replace(/[.\-]/g, '_').replace(/[^a-zA-Z0-9_]/g, '');
+  return id.replace(/[.-]/g, '_').replace(/[^a-zA-Z0-9_]/g, '');
 }
 
 /**

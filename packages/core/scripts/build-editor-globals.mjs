@@ -17,9 +17,9 @@
 // typecheck. We hand the string to Monaco's TS worker only, so the file
 // extension is irrelevant to consumption.
 
-import { writeFileSync, readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
+import { readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const outPath = join(here, '..', 'dist', 'editor-globals.dts.txt');

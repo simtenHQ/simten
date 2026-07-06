@@ -1,8 +1,8 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { pageHead, breadcrumbLd } from '@/lib/seo';
-import { Suspense, lazy } from 'react';
-import { HeroSection } from '@/features/learn/adders/sections/HeroSection';
+import { lazy, Suspense } from 'react';
 import { ErrorBoundary } from '@/features/blog/building-a-cpu/ErrorBoundary';
+import { HeroSection } from '@/features/learn/adders/sections/HeroSection';
+import { breadcrumbLd, pageHead } from '@/lib/seo';
 
 const HalfAdderSection = lazy(() =>
   import('@/features/learn/adders/sections/HalfAdderSection').then((m) => ({

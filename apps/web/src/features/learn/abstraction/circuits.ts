@@ -10,20 +10,20 @@
  * a features/learn/_shared/ module. For now the page is self-contained.
  */
 
-import { circuit, bit, bus } from '@simten/core/circuit';
-import type { BlogCircuit } from '@/features/blog/types';
+import { bit, bus, circuit } from '@simten/core/circuit';
 import {
   And,
-  Xor,
-  Or,
-  Switch,
-  Led,
-  Input,
-  HexDisplay,
-  Constant,
-  Splitter8to8,
   Combiner8to8,
+  Constant,
+  HexDisplay,
+  Input,
+  Led,
+  Or,
+  Splitter8to8,
+  Switch,
+  Xor,
 } from '@simten/core/std';
+import type { BlogCircuit } from '@/features/blog/types';
 
 // ── Subcircuits (the "abstracted" building blocks) ─────────────────────
 

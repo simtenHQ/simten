@@ -5,18 +5,18 @@
  * full quarter-round that powers TLS encryption across the internet.
  */
 
-import { circuit, bus } from '@simten/core/circuit';
-import type { BlogCircuit } from '../types';
+import { bus, circuit } from '@simten/core/circuit';
 import {
-  Input,
-  HexDisplay,
-  Constant,
   Adder,
-  BusXor,
   BusOr,
+  BusXor,
+  Constant,
+  HexDisplay,
+  Input,
   LeftShifter,
   RightShifter,
 } from '@simten/core/std';
+import type { BlogCircuit } from '../types';
 
 // ── Rotation sub-circuits ──
 

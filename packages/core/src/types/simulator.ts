@@ -11,16 +11,13 @@ import type {
   ArgumentValue,
   BitValue,
   BusValue,
-  ClockInstance,
   CircuitLibrary,
+  ClockInstance,
   PortDescriptor,
   PortInstance,
   PortPath,
   PortType,
 } from './circuit.js';
-
-// Re-export TOP_LEVEL_NODE so consumers can import it from either file.
-export { TOP_LEVEL_NODE } from './circuit.js';
 
 // Re-export the types that simulator consumers typically need alongside the
 // engine interface, so they can import everything from one place.
@@ -28,13 +25,15 @@ export type {
   ArgumentValue,
   BitValue,
   BusValue,
-  ClockInstance,
   CircuitLibrary,
+  ClockInstance,
   PortDescriptor,
   PortInstance,
   PortPath,
   PortType,
 } from './circuit.js';
+// Re-export TOP_LEVEL_NODE so consumers can import it from either file.
+export { TOP_LEVEL_NODE } from './circuit.js';
 
 // ============================================================================
 // Sequential Port Classification

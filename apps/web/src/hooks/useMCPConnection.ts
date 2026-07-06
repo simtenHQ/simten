@@ -10,7 +10,7 @@
  * - Responding to state requests from the MCP server (pull model)
  */
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { randomUUID } from '@/lib/uuid';
 
 // --- Types ---

@@ -21,12 +21,12 @@
  * desyncs from actual circuit behavior.
  */
 
-import { describe, it, expect } from 'vitest';
-import { createSimulator, elaborate, captureEnvironmentalState } from '../index.js';
-import { circuit, bit } from '../../circuit/index.js';
-import { Switch, DFlipFlop } from '../../std/index.js';
+import { describe, expect, it } from 'vitest';
+import { bit, circuit } from '../../circuit/index.js';
+import { DFlipFlop, Switch } from '../../std/index.js';
 import type { Circuit, CircuitLibrary } from '../../types/circuit.js';
 import type { FlatCircuit } from '../../types/simulator.js';
+import { captureEnvironmentalState, createSimulator, elaborate } from '../index.js';
 
 /**
  * Walk a FlatCircuit's nodes and capture every interactive-arg value (Switch/

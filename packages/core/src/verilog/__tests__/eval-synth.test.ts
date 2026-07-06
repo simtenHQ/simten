@@ -4,20 +4,20 @@
  * Tests for parsing, validating, and transpiling eval functions to Verilog.
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
+import { getCircuitEval } from '../../circuit/eval-registry.js';
+import { bit, bus, circuit } from '../../circuit/index.js';
+import { Adder, And, Xor } from '../../std/index.js';
+import type { Circuit, CircuitLibrary } from '../../types/circuit.js';
 import {
-  parseEvalSource,
-  validateSynthAST,
   checkSynthesizable,
   emitVerilogFromEval,
+  parseEvalSource,
   tryEmitFromEval,
+  validateSynthAST,
 } from '../eval-synth.js';
-import type { PrimitiveContext } from '../primitive-map.js';
 import { exportVerilog } from '../exporter.js';
-import { circuit, bit, bus } from '../../circuit/index.js';
-import { And, Xor, Adder } from '../../std/index.js';
-import { getCircuitEval } from '../../circuit/eval-registry.js';
-import type { Circuit, CircuitLibrary } from '../../types/circuit.js';
+import type { PrimitiveContext } from '../primitive-map.js';
 
 // ── Helpers ──────────────────────────────────────────────────────────────
 
@@ -208,7 +208,7 @@ describe('validateSynthAST', () => {
   it('rejects loops', () => {
     // Can't directly test loop in an arrow fn that returns, but we can test
     // the validator against a parsed function with a loop
-    const fn = function ({ a }: any) {
+    const fn = ({ a }: any) => {
       let sum = 0;
       for (let i = 0; i < 8; i++) {
         sum += a;
@@ -236,7 +236,7 @@ describe('validateSynthAST', () => {
 
   it('rejects var declarations', () => {
     // Use a function expression to get 'var'
-    const fn = function ({ a }: any) {
+    const fn = ({ a }: any) => {
       var x = a + 1;
       return { out: x };
     };

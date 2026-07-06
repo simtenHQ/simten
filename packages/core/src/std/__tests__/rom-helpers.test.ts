@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest';
-import { romFromBytes, romFromWords, romFromEntries } from '../memory.js';
+import { describe, expect, it } from 'vitest';
+import { romFromBytes, romFromEntries, romFromWords } from '../memory.js';
 
 describe('romFromBytes', () => {
   it('omits zero entries (sparse)', () => {

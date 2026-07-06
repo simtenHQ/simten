@@ -4,8 +4,8 @@
  * Uses mem() state with array-indexed eval/onTick for auto-synthesizable Verilog.
  */
 
-import { circuit } from '../circuit/circuit.js';
 import { bit, bus, mem } from '../circuit/bit-bus.js';
+import { circuit } from '../circuit/circuit.js';
 
 /**
  * Read-only memory with address decoding. 64K × 8-bit by default. Initialize

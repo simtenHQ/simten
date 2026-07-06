@@ -5,8 +5,8 @@
  */
 
 import type { Component } from '../../types';
-import type { Circuit } from '../../types/circuit';
 import { isSequentialComponent } from '../../types';
+import type { Circuit } from '../../types/circuit';
 
 /**
  * Check if a circuit type is sequential.

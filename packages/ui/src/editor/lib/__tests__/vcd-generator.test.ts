@@ -4,14 +4,14 @@
  * Tests VCD file generation and formatting.
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
+import { type CaptureData, type SignalRef, TraceData } from '../../types/testbench';
 import {
-  generateVCD,
-  parseVCDHeader,
-  getVCDStats,
   formatVCDStats,
+  generateVCD,
+  getVCDStats,
+  parseVCDHeader,
 } from '../visualization/vcd-generator';
-import { CaptureData, TraceData, SignalRef } from '../../types/testbench';
 
 describe('VCD Generator', () => {
   describe('Basic VCD Generation', () => {

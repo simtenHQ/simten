@@ -1,5 +1,5 @@
-import { Link } from '@tanstack/react-router';
 import { CircuitEmbed } from '@simten/embed';
+import { Link } from '@tanstack/react-router';
 import { RV32I_Board } from '../rv32i-board.circuit';
 
 export function RunningCodeSection() {

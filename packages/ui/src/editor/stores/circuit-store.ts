@@ -8,16 +8,16 @@
  * During migration, both stores coexist with conversion between formats.
  */
 
+import { nanoid } from 'nanoid';
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
-import { nanoid } from 'nanoid';
 import type {
-  Circuit,
-  Node,
-  Connection,
-  PortPath,
-  PortDescriptor,
   ArgumentValue,
+  Circuit,
+  Connection,
+  Node,
+  PortDescriptor,
+  PortPath,
 } from '../types/circuit';
 import { useCircuitLibraryStore } from './circuit-library-store';
 

@@ -1,10 +1,10 @@
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import type { Circuit, CircuitLibrary } from '@simten/core';
+import { bit, circuit } from '@simten/core/circuit';
+import { elaborate, type PropagationStep, tracePropagation } from '@simten/core/simulator';
+import { And, Led, Switch, Xor } from '@simten/core/std';
 import { useCircuitSimulator } from '@simten/embed';
 import { CircuitCanvas } from '@simten/ui/canvas';
-import { circuit, bit } from '@simten/core/circuit';
-import { Switch, Led, Xor, And } from '@simten/core/std';
-import { elaborate, tracePropagation, type PropagationStep } from '@simten/core/simulator';
-import type { Circuit, CircuitLibrary } from '@simten/core';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 const HalfAdder = circuit('HalfAdder', {
   inputs: { a: bit, b: bit },

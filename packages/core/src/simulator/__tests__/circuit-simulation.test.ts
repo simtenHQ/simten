@@ -5,20 +5,20 @@
  * runs circuits correctly when defined with circuit().
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
+import { bit, bus, circuit } from '../../circuit/index.js';
 import { simulate } from '../../sim/simulate.js';
-import { circuit, bit, bus } from '../../circuit/index.js';
 import {
-  And,
-  Or,
-  Xor,
-  Not,
   Adder,
-  Register,
-  DFlipFlop,
-  Mux,
+  And,
   Comparator,
   Constant,
+  DFlipFlop,
+  Mux,
+  Not,
+  Or,
+  Register,
+  Xor,
 } from '../../std/index.js';
 
 // ============================================================================

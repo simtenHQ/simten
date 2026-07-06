@@ -1,8 +1,8 @@
-import { useState, useMemo, useRef, useEffect } from 'react';
-import type { BuiltCircuit } from '@simten/core/circuit';
 import type { PortDescriptor } from '@simten/core';
+import type { BuiltCircuit } from '@simten/core/circuit';
 import { STDLIB_CIRCUITS } from '@simten/core/std';
 import { CircuitEmbed } from '@simten/embed';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 // All stdlib BuiltCircuit objects (singletons + materialized factory defaults).
 const ALL_STD: readonly BuiltCircuit[] = STDLIB_CIRCUITS;

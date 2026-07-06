@@ -5,11 +5,11 @@
  * Accepts TypeScript circuit builder code.
  */
 
-import { elaborate, createSimulator, TOP_LEVEL_NODE } from '../simulator/index.js';
+import { createSimulator, elaborate, TOP_LEVEL_NODE } from '../simulator/index.js';
+import type { SimulationTrace } from '../types/analysis.js';
+import { compressTrace, detectSteadyState } from '../types/analysis.js';
 import type { BitValue, BusValue } from '../types/circuit.js';
 import { compileSource } from './compile-source.js';
-import { compressTrace, detectSteadyState } from '../types/analysis.js';
-import type { SimulationTrace } from '../types/analysis.js';
 import { exportVCD } from './vcd.js';
 
 export type RLEValue = { value: BitValue | BusValue; count: number };

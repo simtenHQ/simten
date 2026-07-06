@@ -8,7 +8,7 @@
  * 3. Scope port values so internal node IDs match simulation keys
  */
 
-import type { Circuit, Node, Connection, BitValue, BusValue } from '@simten/core';
+import type { BitValue, BusValue, Circuit, Connection, Node } from '@simten/core';
 import type { FlatPortValueMap } from '@simten/core/simulator';
 
 /** Prefix for synthetic boundary input nodes */

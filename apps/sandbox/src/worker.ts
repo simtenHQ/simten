@@ -26,18 +26,18 @@
  *   isolation. Don't expose `simulate` until #51 lands.
  */
 
+import type { Circuit } from '@simten/core';
+import { simulateCircuit } from '@simten/core/api';
 import {
   executeCircuitCode,
   executeJsCode,
-  stripTypes,
   getAllCircuitEvals,
+  stripTypes,
 } from '@simten/core/circuit';
-import { simulateCircuit } from '@simten/core/api';
-import type { Circuit } from '@simten/core';
 import {
-  hasImportStatements,
-  extractAndRewriteImports,
   containsDynamicImport,
+  extractAndRewriteImports,
+  hasImportStatements,
 } from './rewrite-imports.js';
 
 /**

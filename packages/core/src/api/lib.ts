@@ -5,8 +5,8 @@
  * Circuits + their dependencies are added by callers.
  */
 
-import type { Circuit, CircuitLibrary, MutableCircuitLibrary } from '../types/circuit.js';
 import { STDLIB_CIRCUITS } from '../std/index.js';
+import type { Circuit, CircuitLibrary, MutableCircuitLibrary } from '../types/circuit.js';
 
 let cachedLibrary: CircuitLibrary | null = null;
 

@@ -1,4 +1,5 @@
 #!/usr/bin/env tsx
+
 /**
  * parity-check.ts — every SnakeCore copy in the repo is structurally
  * identical to the one that ships to the FPGA.
@@ -20,11 +21,11 @@
  * and this check exists to catch exactly that class of drift.
  */
 
-import type { Circuit } from '@simten/core/simulator';
 import { executeCircuitCode } from '@simten/core/circuit';
-import { buildSnake } from './index.js';
+import type { Circuit } from '@simten/core/simulator';
 import { Snake as BlogSnake } from '../../../../apps/web/src/features/blog/snake-in-hardware/circuits.js';
 import { EXAMPLES } from '../../../../apps/web/src/features/visual-editor/examples.js';
+import { buildSnake } from './index.js';
 
 interface CanonNode {
   id: string;

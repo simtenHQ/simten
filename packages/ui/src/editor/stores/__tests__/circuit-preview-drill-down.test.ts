@@ -2,12 +2,12 @@
  * Tests for CircuitPreviewStore drill-down navigation
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
-import { useCircuitPreviewStore } from '../circuit-preview-store';
-import { useCircuitLibraryStore } from '../circuit-library-store';
-import { useCircuitStore } from '../circuit-store';
-import type { Circuit } from '../../types/circuit';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { BOUNDARY_IN_PREFIX, BOUNDARY_OUT_PREFIX } from '../../../canvas/drill-down-view';
+import type { Circuit } from '../../types/circuit';
+import { useCircuitLibraryStore } from '../circuit-library-store';
+import { useCircuitPreviewStore } from '../circuit-preview-store';
+import { useCircuitStore } from '../circuit-store';
 
 /** Re-read store state after mutations */
 const getState = () => useCircuitPreviewStore.getState();

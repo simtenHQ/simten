@@ -10,10 +10,10 @@
  * the main frame. Only plain Circuit IR (JSON) crosses the boundary.
  */
 
-import { useState, useEffect } from 'react';
-import { SandboxProvider, useSandboxContext } from '@simten/ui/sandbox';
-import { buildFromIR } from '@simten/core/circuit';
 import type { BuiltCircuit } from '@simten/core/circuit';
+import { buildFromIR } from '@simten/core/circuit';
+import { SandboxProvider, useSandboxContext } from '@simten/ui/sandbox';
+import { useEffect, useState } from 'react';
 import { CircuitEmbed, type CircuitEmbedProps } from '../CircuitEmbed';
 
 export interface WebComponentEmbedProps {

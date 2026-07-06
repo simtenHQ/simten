@@ -6,20 +6,20 @@
  * is a thin wrapper around this.
  */
 
+import type { BuiltCircuit } from '@simten/core/circuit';
+import type { FlatPortValueMap } from '@simten/core/simulator';
+import type { CircuitLayout } from '@simten/ui/canvas';
+import { CircuitCanvas, ClockControls, useDetectTheme } from '@simten/ui/canvas';
 import {
+  type ForwardedRef,
+  forwardRef,
+  type ReactElement,
   useCallback,
   useEffect,
-  useRef,
-  forwardRef,
   useImperativeHandle,
-  type ForwardedRef,
-  type ReactElement,
+  useRef,
 } from 'react';
 import { useCircuitSimulator } from './hooks/useCircuitSimulator';
-import type { BuiltCircuit } from '@simten/core/circuit';
-import { CircuitCanvas, ClockControls, useDetectTheme } from '@simten/ui/canvas';
-import type { CircuitLayout } from '@simten/ui/canvas';
-import type { FlatPortValueMap } from '@simten/core/simulator';
 
 /**
  * Type-level model of what `autoHarness` produces at runtime: it wraps the

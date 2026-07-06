@@ -6,9 +6,9 @@
  * server never ship a broken example.
  */
 
-import { describe, it, expect } from 'vitest';
-import { EXAMPLES } from '../catalog.js';
+import { describe, expect, it } from 'vitest';
 import { checkCircuit } from '../../api/check.js';
+import { EXAMPLES } from '../catalog.js';
 
 // Examples that import a non-@simten package (e.g. figlet) resolve via esm.sh
 // in the editor/canvas. checkCircuit runs in-process and can't fetch those, so

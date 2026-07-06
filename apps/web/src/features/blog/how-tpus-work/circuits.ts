@@ -12,24 +12,24 @@
  *   - Both partial sums and data are registered (1 cycle per PE in each direction)
  */
 
-import { circuit, bit, bus } from '@simten/core/circuit';
-import type { BlogCircuit } from '../types';
+import { bit, bus, circuit } from '@simten/core/circuit';
 import {
-  Input,
-  Switch,
-  HexDisplay,
-  Constant,
-  Led,
-  Register,
-  DFlipFlop,
   Adder,
-  Multiplier,
-  Comparator,
-  Mux,
-  Incrementer,
   And,
+  Comparator,
+  Constant,
+  DFlipFlop,
+  HexDisplay,
+  Incrementer,
+  Input,
+  Led,
+  Multiplier,
+  Mux,
   Or,
+  Register,
+  Switch,
 } from '@simten/core/std';
+import type { BlogCircuit } from '../types';
 
 /** The PE definition used by all circuits — registered partial-sum output */
 const PE_Systolic = circuit('PE_Systolic', {

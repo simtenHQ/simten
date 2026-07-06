@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { registerReferenceTools } from './reference.js';
 
 type Handler = () => Promise<{ content: { type: string; text: string }[] }>;

@@ -5,23 +5,23 @@
  * (SR Latch, D Flip-Flop, Register, Counter) for the memory sections.
  */
 
-import { circuit, bit } from '@simten/core/circuit';
-import type { BlogCircuit } from '../types';
+import { bit, circuit } from '@simten/core/circuit';
 import {
+  And,
+  DFlipFlop,
+  HexDisplay,
+  Input,
+  Led,
+  Mux,
   Nor,
   Not,
-  Xor,
-  And,
   Or,
-  Mux,
-  DFlipFlop,
-  Switch,
-  Led,
-  Input,
-  HexDisplay,
   RAM,
+  Switch,
+  Xor,
 } from '@simten/core/std';
 import { FullAdder } from '@/features/splash/circuits';
+import type { BlogCircuit } from '../types';
 
 // Re-export gate circuits from splash
 export { CIRCUITS as GATE_CIRCUITS } from '@/features/splash/circuits';

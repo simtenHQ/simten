@@ -20,15 +20,15 @@
  * drop both the bridge helper and the invariant test itself.
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
+import { bus, circuit } from '../../circuit/index.js';
+import { createSimulatorFromCircuit } from '../../simulator/index.js';
+import { Adder, Constant, Register } from '../../std/index.js';
+import type { Circuit, CircuitLibrary } from '../../types/circuit.js';
 import { exportVerilog } from '../exporter.js';
 import { generateSequentialTestbench, type SequentialTestVector } from '../testbench-gen.js';
-import { circuit, bus } from '../../circuit/index.js';
-import { Register, Adder, Constant } from '../../std/index.js';
-import { createSimulatorFromCircuit } from '../../simulator/index.js';
-import type { Circuit, CircuitLibrary } from '../../types/circuit.js';
-import { verifyVerilog, hasVerifier } from './verify.js';
-import { buildParityTraceAcrossReset, buildNaiveTraceAcrossReset } from './parity-helpers.js';
+import { buildNaiveTraceAcrossReset, buildParityTraceAcrossReset } from './parity-helpers.js';
+import { hasVerifier, verifyVerilog } from './verify.js';
 
 function buildCounter() {
   const Counter = circuit('Counter', {

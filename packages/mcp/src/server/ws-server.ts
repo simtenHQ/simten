@@ -11,19 +11,19 @@
  *   and are still token-gated. Defense-in-depth on top of the token.
  */
 
-import { WebSocketServer, WebSocket } from 'ws';
-import { resolve } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { createServer } from 'node:http';
-import type { CircuitState, TracesPayload, TestResultsPayload, RenderResult } from './types.js';
+import { resolve } from 'node:path';
+import { WebSocket, WebSocketServer } from 'ws';
 import {
-  serveStatic,
-  publicDirExists,
   isCompileRequest,
   proxyCompile,
+  publicDirExists,
+  serveStatic,
 } from '../lib/serve-static.js';
+import type { CircuitState, RenderResult, TestResultsPayload, TracesPayload } from './types.js';
 
-export type { CircuitState, TracesPayload, TestResultsPayload };
+export type { CircuitState, TestResultsPayload, TracesPayload };
 
 /** JSON-serializable memory data: { nodePattern: { address: value } } */
 export type MemoryDataPayload = Record<string, Record<string, number>>;

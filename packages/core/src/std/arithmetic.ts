@@ -2,8 +2,8 @@
  * Standard Library — Arithmetic Operations
  */
 
-import { circuit } from '../circuit/circuit.js';
 import { bit, bus } from '../circuit/bit-bus.js';
+import { circuit } from '../circuit/circuit.js';
 
 /**
  * Adds 1 to the input. 8-bit value, wraps at 256 (`(in + 1) & 0xFF`).

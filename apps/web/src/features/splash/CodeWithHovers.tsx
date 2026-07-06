@@ -23,9 +23,9 @@
  *   GitHub palette automatically.
  */
 
+import { Tooltip as TooltipPrimitive } from 'radix-ui';
 import { useMemo } from 'react';
 import { tokenize } from 'sugar-high';
-import { Tooltip as TooltipPrimitive } from 'radix-ui';
 import { cn } from '@/lib/utils';
 
 type HoverEntry = {

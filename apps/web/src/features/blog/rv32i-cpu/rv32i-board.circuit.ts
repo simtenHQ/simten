@@ -1,12 +1,12 @@
 import { circuit } from '@simten/core/circuit';
 import {
   Constant,
-  HexDisplay,
   DualPortROM,
-  RV32I_DataMem,
+  HexDisplay,
   MemBusMux,
-  UART_TX,
   RV32I_Core,
+  RV32I_DataMem,
+  UART_TX,
 } from '@simten/core/std';
 
 export const RV32I_Board = circuit('RV32I_Board', {

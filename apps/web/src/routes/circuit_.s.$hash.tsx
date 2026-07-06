@@ -1,8 +1,8 @@
 import { createFileRoute } from '@tanstack/react-router';
 import EditorShell from '@/components/EditorShell';
-import { pageHead } from '@/lib/seo';
-import { extractCircuitName } from '@/lib/extract-circuit-name';
 import { getSharedCircuit } from '@/features/share/server';
+import { extractCircuitName } from '@/lib/extract-circuit-name';
+import { pageHead } from '@/lib/seo';
 
 export const Route = createFileRoute('/circuit_/s/$hash')({
   staticData: { skipDefaultChrome: true },

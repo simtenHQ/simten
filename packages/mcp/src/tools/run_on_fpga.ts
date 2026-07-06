@@ -7,11 +7,11 @@
  * Claude a structured return value.
  */
 
+import { spawn } from 'node:child_process';
+import { existsSync } from 'node:fs';
+import { resolve } from 'node:path';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
-import { spawn } from 'node:child_process';
-import { resolve } from 'node:path';
-import { existsSync } from 'node:fs';
 
 const BEGIN = '--- BEGIN JSON ---';
 const END = '--- END JSON ---';

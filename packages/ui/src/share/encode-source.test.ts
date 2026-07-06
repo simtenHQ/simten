@@ -1,10 +1,10 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import {
-  encodeSourceForUrl,
   decodeSourceFromUrl,
-  shouldUseShortLink,
+  encodeSourceForUrl,
   hashSource,
   INLINE_URL_THRESHOLD,
+  shouldUseShortLink,
 } from './encode-source.js';
 
 describe('encode-source', () => {

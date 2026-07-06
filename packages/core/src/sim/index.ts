@@ -5,4 +5,4 @@
  *   import { simulate } from '@simten/core/sim'
  */
 
-export { simulate, type SimulationHandle } from './simulate.js';
+export { type SimulationHandle, simulate } from './simulate.js';

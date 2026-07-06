@@ -1,5 +1,5 @@
-import { useState, useCallback, useRef } from 'react';
-import { compileC, preloadWasm, type CompileResult, type StageStatus } from '@/lib/cc65-compiler';
+import { useCallback, useRef, useState } from 'react';
+import { type CompileResult, compileC, preloadWasm, type StageStatus } from '@/lib/cc65-compiler';
 
 interface UseCC65CompilerReturn {
   compile: (source: string) => Promise<CompileResult>;

@@ -9,7 +9,8 @@
 
 'use client';
 
-import React, { useCallback, useState, useRef } from 'react';
+import type React from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { BaseNode, type PortConfig } from './BaseNode';
 import type { NodeData } from './NodeData';
 

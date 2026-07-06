@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest';
 import type { IncomingMessage, ServerResponse } from 'node:http';
+import { describe, expect, it } from 'vitest';
 import { serveStatic } from './serve-static.js';
 
 function mockRes() {

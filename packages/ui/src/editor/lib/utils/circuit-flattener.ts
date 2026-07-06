@@ -12,9 +12,9 @@
  * - Compatible with IR v0.1 Circuit/Node format
  */
 
-import type { Circuit, Node, Connection, PortPath } from '../../types/circuit';
-import { useCircuitLibraryStore } from '../../stores/circuit-library-store';
 import { nanoid } from 'nanoid';
+import { useCircuitLibraryStore } from '../../stores/circuit-library-store';
+import type { Circuit, Connection, Node, PortPath } from '../../types/circuit';
 
 /**
  * Flattened circuit contains only primitive nodes

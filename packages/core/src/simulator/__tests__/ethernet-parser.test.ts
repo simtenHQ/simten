@@ -5,15 +5,15 @@
  * with real Ethernet frame data, using the circuit() API.
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
+import { bit, bus, circuit } from '../../circuit/index.js';
 import { simulate } from '../../sim/simulate.js';
-import { circuit, bit, bus } from '../../circuit/index.js';
 import {
+  Eth_AddrClassifier,
+  Eth_CRC32,
   Eth_FrameInput,
   Eth_FrameParser,
-  Eth_CRC32,
   Eth_ProtocolDecoder,
-  Eth_AddrClassifier,
 } from '../../std/index.js';
 
 // ============================================================================

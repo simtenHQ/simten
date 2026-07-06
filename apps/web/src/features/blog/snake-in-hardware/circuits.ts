@@ -7,23 +7,23 @@
  */
 
 import { circuit } from '@simten/core/circuit';
-import type { BlogCircuit } from '../types';
 import {
-  Screen,
-  Input,
-  Switch,
-  HexDisplay,
-  Constant,
-  Register,
-  Comparator,
-  Mux,
   Adder,
-  BitSlice,
-  LeftShifter,
   And,
-  Led,
+  BitSlice,
+  Comparator,
+  Constant,
   DualPortRAM,
+  HexDisplay,
+  Input,
+  Led,
+  LeftShifter,
+  Mux,
+  Register,
+  Screen,
+  Switch,
 } from '@simten/core/std';
+import type { BlogCircuit } from '../types';
 
 // ── Module-level circuit definitions ──
 

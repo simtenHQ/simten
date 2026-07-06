@@ -26,9 +26,9 @@
  *   const tick = await sandbox.tick({ a: true });
  */
 
-import { useRef, useEffect, useCallback } from 'react';
 import type { Circuit } from '@simten/core';
 import type { RLEValue } from '@simten/core/api';
+import { useCallback, useEffect, useRef } from 'react';
 
 // ============================================================================
 // Config

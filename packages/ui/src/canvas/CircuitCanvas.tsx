@@ -2,37 +2,37 @@ import {
   applyNodeChanges,
   Background,
   BackgroundVariant,
-  Panel,
-  ReactFlow,
-  ReactFlowProvider,
-  useReactFlow,
-  useUpdateNodeInternals,
   type Edge,
   type EdgeTypes,
   type Node,
   type NodeTypes,
   type OnNodesChange,
+  Panel,
+  ReactFlow,
+  ReactFlowProvider,
+  useReactFlow,
+  useUpdateNodeInternals,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import React, {
-  useCallback,
-  useLayoutEffect,
-  useRef,
-  useMemo,
-  useState,
-  type ReactNode,
-} from 'react';
 
 import type { Circuit, CircuitLibrary, FlatPortValueMap, FlatSequentialState } from '@simten/core';
+import React, {
+  type ReactNode,
+  useCallback,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import type { NodeData } from '../nodes';
+import { CompositeInspectorDialog } from './CompositeInspectorDialog';
+import { useDetectTheme } from './hooks/useDetectTheme';
+import { useIsMobile } from './hooks/useIsMobile';
 import { cleanCircuitLabels } from './label-utils';
 import { EDGE_TYPES, NODE_TYPES } from './node-types';
 import { projectCircuitToReactFlow } from './projection';
 import type { CircuitLayout, InspectorFrame, MetadataState } from './types';
 import { useLayout } from './useLayout';
-import { useIsMobile } from './hooks/useIsMobile';
-import { useDetectTheme } from './hooks/useDetectTheme';
-import { CompositeInspectorDialog } from './CompositeInspectorDialog';
 
 function CanvasControls() {
   const { fitView, zoomIn, zoomOut } = useReactFlow();

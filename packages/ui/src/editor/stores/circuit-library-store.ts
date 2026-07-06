@@ -7,9 +7,9 @@
  * All circuits are equal — no primitives/standard/user split.
  */
 
+import type { CircuitLibrary } from '@simten/core/simulator';
 import { create } from 'zustand';
 import type { Circuit } from '../types/circuit';
-import type { CircuitLibrary } from '@simten/core/simulator';
 
 interface CircuitLibraryStore {
   // Stable CircuitLibrary reference — changes identity only when circuits change.

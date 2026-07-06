@@ -1,8 +1,8 @@
+import { decodeSourceFromUrl } from '@simten/ui/share';
 import { createFileRoute } from '@tanstack/react-router';
 import EditorShell from '@/components/EditorShell';
-import { pageHead } from '@/lib/seo';
-import { decodeSourceFromUrl } from '@simten/ui/share';
 import { extractCircuitName } from '@/lib/extract-circuit-name';
+import { pageHead } from '@/lib/seo';
 
 export const Route = createFileRoute('/circuit_/$encoded')({
   staticData: { skipDefaultChrome: true },

@@ -8,25 +8,25 @@
  * Catches bugs like BusNot returning -43 instead of 213 for ~42.
  */
 
-import { describe, it, expect } from 'vitest';
-import { simulate } from '../../sim/simulate.js';
-import { circuit, bit, bus } from '../../circuit/index.js';
+import { describe, expect, it } from 'vitest';
 import type { BuiltCircuit } from '../../circuit/index.js';
+import { bit, bus, circuit } from '../../circuit/index.js';
+import { simulate } from '../../sim/simulate.js';
 import {
-  BusNot,
+  Adder,
   BusAnd,
+  BusNot,
   BusOr,
   BusXor,
-  Adder,
-  Subtractor,
-  LeftShifter,
-  RightShifter,
-  Incrementer,
   Comparator,
+  Constant,
+  Incrementer,
+  LeftShifter,
   Multiplier,
   Mux,
+  RightShifter,
+  Subtractor,
   Xor,
-  Constant,
 } from '../../std/index.js';
 
 /** Helper: simulate a 1-tick combinational circuit, return output values */

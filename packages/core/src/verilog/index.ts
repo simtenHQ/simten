@@ -1,19 +1,19 @@
+export type { ParsedEval, SynthValidation } from './eval-synth.js';
+export { checkSynthesizable, tryEmitFromEval } from './eval-synth.js';
 export { exportVerilog, exportVerilogFlat } from './exporter.js';
-export { generateTestbench, generateExhaustiveVectors } from './testbench-gen.js';
 export {
   emitPrimitive,
   isIOPrimitive,
-  isSinkPrimitive,
   isSequentialPrimitive,
+  isSinkPrimitive,
 } from './primitive-map.js';
-export { checkSynthesizable, tryEmitFromEval } from './eval-synth.js';
-export type { SynthValidation, ParsedEval } from './eval-synth.js';
+export { generateExhaustiveVectors, generateTestbench } from './testbench-gen.js';
 export type {
-  VerilogExportOptions,
-  VerilogTestbenchOptions,
   TestVector,
-  VerilogLintResult,
+  VerificationCycle,
   VerificationResult,
   VerificationTestResult,
-  VerificationCycle,
+  VerilogExportOptions,
+  VerilogLintResult,
+  VerilogTestbenchOptions,
 } from './types.js';

@@ -13,15 +13,15 @@
  */
 
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { z } from 'zod';
-import { runTsx, findRepoRoot, extractDelimitedJson } from '../lib/host-run.js';
-import { isProjectReady, detectPackageManager, installCommand } from '../lib/project-setup.js';
 import {
   VERIFY_JSON_BEGIN,
   VERIFY_JSON_END,
-  type VerifyResult,
   type VerifyContractError,
+  type VerifyResult,
 } from '@simten/core/verify';
+import { z } from 'zod';
+import { extractDelimitedJson, findRepoRoot, runTsx } from '../lib/host-run.js';
+import { detectPackageManager, installCommand, isProjectReady } from '../lib/project-setup.js';
 
 const DESCRIPTION = `Run a self-checking testbench FILE against a circuit and report the result AT A DECLARED ORACLE TIER. simulate_circuit shows what a circuit does; verify_circuit tells you whether it's correct — a design isn't "done" until it passes at the highest feasible tier.
 

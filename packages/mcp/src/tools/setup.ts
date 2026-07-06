@@ -10,20 +10,20 @@
  * discovering each requirement through a failed-verify error chain.
  */
 
-import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { z } from 'zod';
 import { existsSync, mkdirSync } from 'node:fs';
 import { resolve } from 'node:path';
+import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { z } from 'zod';
 import {
+  DEV_DEPS,
   detectPackageManager,
   ensurePackageJson,
   ensureTsconfig,
-  runInstall,
-  isProjectReady,
   installCommand,
-  RUNTIME_DEPS,
-  DEV_DEPS,
+  isProjectReady,
   type PackageManager,
+  RUNTIME_DEPS,
+  runInstall,
 } from '../lib/project-setup.js';
 
 const DESCRIPTION = `Make the current folder ready to RUN verify_circuit. check_circuit and simulate_circuit need no setup; verify_circuit does, because it runs the testbench on the host via tsx and resolves @simten/core + fast-check from this project.

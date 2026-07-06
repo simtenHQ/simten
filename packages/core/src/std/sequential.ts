@@ -2,8 +2,8 @@
  * Standard Library — Sequential Components
  */
 
-import { circuit } from '../circuit/circuit.js';
 import { bit, bus } from '../circuit/bit-bus.js';
+import { circuit } from '../circuit/circuit.js';
 
 /**
  * D Flip-Flop — stores 1 bit on rising clock edge. Whatever value is on

@@ -8,8 +8,8 @@
  * all internal node ports — equivalent to Verilog's $dumpvars(0, top).
  */
 
-import type { FlatNode } from '../types/simulator.js';
 import type { BitValue, BusValue } from '../types/circuit.js';
+import type { FlatNode } from '../types/simulator.js';
 
 export interface VCDExportParams {
   /** Top-level circuit name */

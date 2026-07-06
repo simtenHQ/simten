@@ -3,7 +3,7 @@
  * produce correct outputs when wrapped and run through the fast simulation path.
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import {
   generateEvalWrapper,
   getOrAllocateTypeIndex,
@@ -11,10 +11,10 @@ import {
   resetDynamicIndices,
   resolveTypeIndex,
 } from '../eval-bridge.js';
-import { PRIMITIVE_TYPE_INDICES } from '../numeric-types.js';
 import { EVALUATORS } from '../evaluators/index.js';
-import { readInput, writeOutput, type EvalContext } from '../evaluators/types.js';
+import { type EvalContext, readInput, writeOutput } from '../evaluators/types.js';
 import type { NumericCircuit } from '../numeric-types.js';
+import { PRIMITIVE_TYPE_INDICES } from '../numeric-types.js';
 import type { NumericPortValues } from '../numeric-values.js';
 
 // ============================================================================

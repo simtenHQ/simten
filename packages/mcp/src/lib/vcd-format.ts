@@ -93,8 +93,8 @@ function binToHex(bin: string): string | undefined {
       .padStart(Math.ceil(bin.length / 4), '0');
   }
   // Chunk by 4 bits from the right, then assemble.
-  let pad = bin.length % 4;
-  let head = pad === 0 ? '' : bin.slice(0, pad);
+  const pad = bin.length % 4;
+  const head = pad === 0 ? '' : bin.slice(0, pad);
   let out = '';
   if (head) out += parseInt(head, 2).toString(16);
   for (let i = pad; i < bin.length; i += 4) {
@@ -241,7 +241,7 @@ function buildRawValues(
   const [from, to] = range;
   const values: string[] = [];
   // Walk cycles, advancing a pointer into changes[] as we go.
-  let idx = lastChangeAtOrBefore(changes, cycleMap.timeAtCycle(from));
+  const idx = lastChangeAtOrBefore(changes, cycleMap.timeAtCycle(from));
   let current = idx < 0 ? uninitializedValue(width) : changes[idx].value;
   // Index of the next change yet to be applied.
   let nextIdx = idx + 1;

@@ -10,10 +10,10 @@
  * `pretest` script runs the build, so this test works on a fresh clone.
  */
 
-import { describe, it, expect } from 'vitest';
 import { readFileSync, statSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { describe, expect, it } from 'vitest';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const bundlePath = join(here, '..', '..', '..', 'dist', 'bundle.d.ts');

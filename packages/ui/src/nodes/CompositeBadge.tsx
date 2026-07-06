@@ -1,4 +1,4 @@
-import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '../primitives/tooltip';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../primitives/tooltip';
 
 /**
  * Badge shown on composite nodes indicating they can be drilled into.

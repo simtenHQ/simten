@@ -7,7 +7,7 @@
  * The Tier-A testbench is conformance.verify.ts (same engine, via suite-lib).
  */
 
-import { TESTS, SKIP, runOneTest } from './suite-lib.js';
+import { runOneTest, SKIP, TESTS } from './suite-lib.js';
 
 let pass = 0,
   trapFree = 0,

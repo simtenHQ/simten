@@ -8,8 +8,8 @@
 
 'use client';
 
-import { useCircuitPreviewStore } from '../stores/circuit-preview-store';
 import { cn } from '../../lib/utils';
+import { useCircuitPreviewStore } from '../stores/circuit-preview-store';
 
 export function CircuitSelector() {
   const compiledCircuits = useCircuitPreviewStore((state) => state.compiledCircuits);

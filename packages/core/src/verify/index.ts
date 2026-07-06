@@ -22,11 +22,11 @@
 
 import * as fc from 'fast-check';
 import type {
-  OracleDecl,
-  VerifyResult,
-  VerifyFailure,
   CheckSummary,
+  OracleDecl,
   VerifyContractError,
+  VerifyFailure,
+  VerifyResult,
 } from './types.js';
 
 export * from './types.js';

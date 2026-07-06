@@ -1,6 +1,6 @@
 import { BaseNode, type PortConfig } from './BaseNode';
-import type { NodeData } from './NodeData';
 import { CompositeBadge } from './CompositeBadge';
+import type { NodeData } from './NodeData';
 
 const SIMPLE_GATES = new Set(['And', 'Or', 'Not', 'Nand', 'Nor', 'Xor', 'Xnor', 'Buffer']);
 

@@ -19,30 +19,30 @@
  */
 
 import type {
+  ArgumentValue,
   Circuit,
-  PortDescriptor,
-  PortType,
-  Node,
-  Connection,
-  ClockDescriptor,
-  StateBlock,
-  Implementation,
   CircuitMetadata,
   CircuitTiming,
-  ArgumentValue,
+  ClockDescriptor,
+  Connection,
+  Implementation,
+  Node,
+  PortDescriptor,
+  PortType,
+  StateBlock,
 } from '../types/circuit.js';
-import { normalizePortType, isRegState, isMemState } from './bit-bus.js';
+import { isMemState, isRegState, normalizePortType } from './bit-bus.js';
 import { registerCircuitEval } from './eval-registry.js';
 import type {
-  PortMap,
-  ConnectionDef,
-  ConnectArg,
-  SourcePortRef,
-  SinkPortRef,
-  NormalizePorts,
-  StateShape,
   BuiltCircuit,
   CircuitConfig,
+  ConnectArg,
+  ConnectionDef,
+  NormalizePorts,
+  PortMap,
+  SinkPortRef,
+  SourcePortRef,
+  StateShape,
 } from './types.js';
 
 // ============================================================================

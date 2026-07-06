@@ -5,18 +5,18 @@
  * to MixColumns -- the operation so complex Intel built it into the CPU.
  */
 
-import { circuit, bus } from '@simten/core/circuit';
-import type { BlogCircuit } from '../types';
+import { bus, circuit } from '@simten/core/circuit';
 import {
-  Input,
-  HexDisplay,
-  Constant,
-  LeftShifter,
-  Splitter8to8,
-  Mux,
   BusXor,
+  Constant,
+  HexDisplay,
+  Input,
+  LeftShifter,
+  Mux,
   ROM,
+  Splitter8to8,
 } from '@simten/core/std';
+import type { BlogCircuit } from '../types';
 
 // FIPS 197, Figure 7 -- the AES forward S-box
 export const AES_SBOX: number[] = [

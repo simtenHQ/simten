@@ -1,7 +1,7 @@
 import { Link } from '@tanstack/react-router';
 import { ArrowUpRight } from 'lucide-react';
-import { Logo } from '@/components/Logo';
 import { Container } from '@/components/Container';
+import { Logo } from '@/components/Logo';
 
 /**
  * Multi-column site footer used on every content page.

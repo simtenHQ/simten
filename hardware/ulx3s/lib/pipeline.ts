@@ -4,22 +4,21 @@
  * project-specific flows through the Project descriptor in types.ts.
  */
 
-import { readFileSync, writeFileSync } from 'node:fs';
-import { resolve, dirname } from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
-
+import { readFileSync, writeFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { computeVerilogHash, readCache, writeCache } from './ecpbram.js';
+import { runBuild, runPatch, runSynth } from './synth-client.js';
 import type {
+  CompileStageResult,
+  FirmwareBuild,
+  FlashStageResult,
   PipelineOptions,
   PipelineResult,
   StageError,
   SynthStageResult,
-  CompileStageResult,
-  FlashStageResult,
-  FirmwareBuild,
 } from './types.js';
-import { runSynth, runBuild, runPatch } from './synth-client.js';
-import { computeVerilogHash, readCache, writeCache } from './ecpbram.js';
 
 export const HARDWARE_DIR = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 

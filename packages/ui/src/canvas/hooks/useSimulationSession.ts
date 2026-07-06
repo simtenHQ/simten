@@ -8,13 +8,14 @@
 
 'use client';
 
-import { useSyncExternalStore, useCallback, useMemo } from 'react';
 import type {
+  BitValue,
+  BusValue,
+  SessionSnapshot,
   SimulationSession,
   SimulationSessionState,
-  SessionSnapshot,
 } from '@simten/core/simulator';
-import type { BitValue, BusValue } from '@simten/core/simulator';
+import { useCallback, useMemo, useSyncExternalStore } from 'react';
 
 const EMPTY_STATE: SimulationSessionState = {
   portValues: new Map(),

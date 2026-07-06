@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
 import { useCircuitSimulator } from '@simten/embed';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Snake } from './circuits';
 
 export function useSnakeSimulator() {

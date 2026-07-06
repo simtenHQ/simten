@@ -5,11 +5,11 @@
  * running through the real simulation pipeline.
  */
 
-import { describe, it, expect, afterEach } from 'vitest';
-import { simulate } from '../simulate.js';
-import { circuit, bit, bus } from '../../circuit/index.js';
-import { And, Or, Xor, Not, Register, DFlipFlop, Led, Switch } from '../../std/index.js';
+import { afterEach, describe, expect, it } from 'vitest';
+import { bit, bus, circuit } from '../../circuit/index.js';
+import { And, DFlipFlop, Led, Not, Or, Register, Switch, Xor } from '../../std/index.js';
 import type { SimulationHandle } from '../simulate.js';
+import { simulate } from '../simulate.js';
 
 // Track handles for cleanup
 const handles: SimulationHandle[] = [];

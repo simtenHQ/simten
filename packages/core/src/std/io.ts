@@ -2,8 +2,8 @@
  * Standard Library — I/O Components
  */
 
-import { circuit } from '../circuit/circuit.js';
 import { bit, bus } from '../circuit/bit-bus.js';
+import { circuit } from '../circuit/circuit.js';
 
 /**
  * User-controllable 1-bit toggle. Stays in the chosen state until clicked

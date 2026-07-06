@@ -488,7 +488,7 @@ export function emitVerilogFromEval(
 
   // Map state keys to reg names so eval/onTick can reference them.
   // Both mem state (array-indexed) and scalar state (reg) get mapped.
-  const nodeId = ctx.nodeId.replace(/[.\-]/g, '_').replace(/[^a-zA-Z0-9_]/g, '');
+  const nodeId = ctx.nodeId.replace(/[.-]/g, '_').replace(/[^a-zA-Z0-9_]/g, '');
   for (const stateKey of options?.memStateNames ?? []) {
     inputWires.set(stateKey, `${nodeId}_${stateKey}`);
   }
@@ -512,7 +512,7 @@ export function emitVerilogFromEval(
     paramMapping,
     localWires: new Map(),
     memStateNames: new Set(options?.memStateNames ?? []),
-    nodeId: ctx.nodeId.replace(/[.\-]/g, '_').replace(/[^a-zA-Z0-9_]/g, ''),
+    nodeId: ctx.nodeId.replace(/[.-]/g, '_').replace(/[^a-zA-Z0-9_]/g, ''),
     defaultWidth,
     isOnTick: options?.isOnTick ?? false,
     lines: [],
@@ -950,7 +950,7 @@ export function tryEmitFromEval(
   // here until #131 lands.
   const scalarRegNames: string[] = [];
   if (entry.stateKeys && entry.stateKeys.length > 0) {
-    const nodeId = ctx.nodeId.replace(/[.\-]/g, '_').replace(/[^a-zA-Z0-9_]/g, '');
+    const nodeId = ctx.nodeId.replace(/[.-]/g, '_').replace(/[^a-zA-Z0-9_]/g, '');
     const w = typeof ctx.args.width === 'number' ? ctx.args.width : 8;
     for (const key of entry.stateKeys) {
       if (memStateNames.includes(key)) continue; // memory-kind state handled elsewhere

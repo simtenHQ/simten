@@ -1,8 +1,8 @@
-import { describe, expect, it } from 'vitest';
 import { resolve } from 'node:path';
-import { parseVcd, resolveSignals, type ResolvedSignal } from './vcd-parser.js';
-import { detectClock, buildCycleMap } from './vcd-cycles.js';
+import { describe, expect, it } from 'vitest';
+import { buildCycleMap, detectClock } from './vcd-cycles.js';
 import { formatSignals } from './vcd-format.js';
+import { parseVcd, type ResolvedSignal, resolveSignals } from './vcd-parser.js';
 
 const FIX = (name: string) => resolve(__dirname, '../__fixtures__/vcd', name);
 

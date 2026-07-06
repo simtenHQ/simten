@@ -1,20 +1,20 @@
-import { SmoothStepEdge, type NodeTypes, type EdgeTypes } from '@xyflow/react';
+import { type EdgeTypes, type NodeTypes, SmoothStepEdge } from '@xyflow/react';
 
 import {
+  ConsoleNode,
+  EthFrameInputNode,
   InputNode,
+  LogicGateNode,
+  NicFifoNode,
   NumericInputNode,
   OutputNode,
-  LogicGateNode,
-  ConsoleNode,
-  ScreenNode,
+  RAMNode,
   RasterDisplayNode,
   RegisterNode,
-  RAMNode,
   ROMNode,
-  UartTxNode,
-  NicFifoNode,
   RV32IInstrMemNode,
-  EthFrameInputNode,
+  ScreenNode,
+  UartTxNode,
 } from '../nodes';
 
 /**

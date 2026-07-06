@@ -8,8 +8,8 @@
  * Folders starting with `_` or `.` are skipped (useful for scratch / WIP).
  */
 
-import { readdirSync, existsSync } from 'node:fs';
-import { resolve, dirname } from 'node:path';
+import { existsSync, readdirSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import type { Project } from '../lib/types.js';

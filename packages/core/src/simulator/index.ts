@@ -44,96 +44,94 @@ import '../std/index.js';
 // ============================================================================
 
 export type {
+  ArgumentValue,
   // Core types
   BitType,
-  BusType,
-  PortType,
   BitValue,
+  BusType,
   BusValue,
-  // Circuit library
-  CircuitLibrary,
-  MutableCircuitLibrary,
   // Circuit types
   Circuit,
-  PortDescriptor,
-  ClockDescriptor,
-  ClockState,
-  ClockInstance,
-  StateBlock,
-  StateValue,
-  PortPath,
-  Connection,
-  Node,
-  Implementation,
+  // Circuit library
+  CircuitLibrary,
   CircuitMetadata,
+  CircuitTiming,
+  ClockDescriptor,
+  ClockInstance,
+  ClockState,
+  Connection,
+  Implementation,
   MemoryType,
   MemoryValue,
+  MutableCircuitLibrary,
+  Node,
+  PortDescriptor,
   PortInstance,
-  CircuitTiming,
-  ArgumentValue,
+  PortPath,
+  PortType,
+  StateBlock,
+  StateValue,
   TestCase,
 } from '../types/circuit.js';
 
 export {
-  TOP_LEVEL_NODE,
   bitType,
   busType,
-  memoryType,
   createPortPath,
-  portPathKey,
-  isPortTypeCompatible,
   getDefaultValue,
+  isPortTypeCompatible,
+  memoryType,
+  portPathKey,
+  TOP_LEVEL_NODE,
 } from '../types/circuit.js';
 
 export type {
+  CombinationalResult,
   // Flat circuit types
   FlatCircuit,
-  FlatNode,
   FlatConnection,
-  HierarchyNode,
-  InputSource,
+  FlatNode,
   FlatPortValueMap,
   FlatSequentialState,
   FlatSimulationResult,
+  HierarchyNode,
+  InitOptions,
+  InputSource,
   PrimitiveState,
   // Simulator engine
   SimulatorEngine,
-  InitOptions,
-  TickResult,
-  TickMetrics,
-  CombinationalResult,
-  SimulatorSnapshot,
   SimulatorMetrics,
+  SimulatorSnapshot,
+  TickMetrics,
+  TickResult,
 } from '../types/simulator.js';
 
 // ============================================================================
 // Simulation Session
 // ============================================================================
 
-export { SimulationSession } from './simulation-session.js';
-
 export {
   captureEnvironmentalState,
-  restoreEnvironmentalState,
   type EnvironmentalStateValue,
+  restoreEnvironmentalState,
 } from './environmental-state.js';
-
 export type {
   SessionSnapshot,
-  SimulationSessionState,
   SimulationSessionOptions,
+  SimulationSessionState,
 } from './simulation-session.js';
+export { SimulationSession } from './simulation-session.js';
 
 // ============================================================================
 // Primitive Interface Exports
 // ============================================================================
 
 export type {
-  PrimitiveEvaluator,
-  InputValue,
   ClockEdges,
-  ParameterValue,
   EvaluationContext,
+  InputValue,
+  ParameterValue,
+  PrimitiveEvaluator,
   SequentialState,
 } from './primitive-interface.js';
 
@@ -162,26 +160,26 @@ export { initializeFlatSequentialState } from './sequential-init.js';
 // Numeric Simulator Exports (Performance Optimized)
 // ============================================================================
 
-export type { NumericCircuit, NumericSequentialState } from './numeric-types.js';
-export { PRIMITIVE_TYPE_INDICES, PRIMITIVE_INDEX_TO_NAME } from './numeric-types.js';
-export { NumericEventQueue } from './numeric-event-queue.js';
-export type { NumericPortValues } from './numeric-values.js';
-export { createNumericPortValues, resetChangeFlags, copyPortValues } from './numeric-values.js';
 export {
   compileForSimulation,
   createNumericSequentialState,
   toFlatSequentialState,
 } from './compile-circuit.js';
+export { NumericEventQueue } from './numeric-event-queue.js';
+export type { NumericCircuit, NumericSequentialState } from './numeric-types.js';
+export { PRIMITIVE_INDEX_TO_NAME, PRIMITIVE_TYPE_INDICES } from './numeric-types.js';
+export type { NumericPortValues } from './numeric-values.js';
+export { copyPortValues, createNumericPortValues, resetChangeFlags } from './numeric-values.js';
 export {
+  commitSequentialState,
+  fromFlatPortValueMap,
   propagate,
+  propagateToTopLevelOutputs,
   seedInitialQueue,
   seedStateOutputNodes,
+  toFlatPortValueMap,
   updateClockStates,
   updateSequentialStates,
-  commitSequentialState,
-  toFlatPortValueMap,
-  fromFlatPortValueMap,
-  propagateToTopLevelOutputs,
 } from './propagate.js';
 
 export type { PropagationStep } from './trace.js';
@@ -191,45 +189,43 @@ export { tracePropagation } from './trace.js';
 // Simulator Engine Implementation
 // ============================================================================
 
+import type { BitValue, BusValue, Circuit, CircuitLibrary } from '../types/circuit.js';
+import { TOP_LEVEL_NODE } from '../types/circuit.js';
 import type {
+  CombinationalResult,
   FlatCircuit,
   FlatSequentialState,
+  InitOptions,
   PrimitiveState,
   SimulatorEngine,
-  InitOptions,
-  TickResult,
-  CombinationalResult,
-  SimulatorSnapshot,
   SimulatorMetrics,
+  SimulatorSnapshot,
+  TickResult,
 } from '../types/simulator.js';
-import type { CircuitLibrary, BitValue, BusValue, Circuit } from '../types/circuit.js';
-import { TOP_LEVEL_NODE } from '../types/circuit.js';
-
-import { initializeFlatSequentialState } from './sequential-init.js';
-
-import { elaborate } from './elaboration.js';
-
-// Numeric simulator imports
-import type { NumericCircuit, NumericSequentialState } from './numeric-types.js';
-import type { NumericPortValues } from './numeric-values.js';
-import { createNumericPortValues } from './numeric-values.js';
-import { NumericEventQueue } from './numeric-event-queue.js';
 import {
   compileForSimulation,
   createNumericSequentialState,
   toFlatSequentialState,
 } from './compile-circuit.js';
+
+import { elaborate } from './elaboration.js';
+import { NumericEventQueue } from './numeric-event-queue.js';
+// Numeric simulator imports
+import type { NumericCircuit, NumericSequentialState } from './numeric-types.js';
+import type { NumericPortValues } from './numeric-values.js';
+import { createNumericPortValues } from './numeric-values.js';
 import {
+  commitSequentialState,
+  fromFlatPortValueMap,
   propagate,
+  propagateToTopLevelOutputs,
   seedInitialQueue,
   seedStateOutputNodes,
+  toFlatPortValueMap,
   updateClockStates,
   updateSequentialStates,
-  commitSequentialState,
-  toFlatPortValueMap,
-  fromFlatPortValueMap,
-  propagateToTopLevelOutputs,
 } from './propagate.js';
+import { initializeFlatSequentialState } from './sequential-init.js';
 
 /**
  * Simulator engine implementation.

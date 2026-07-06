@@ -1,8 +1,8 @@
 #!/usr/bin/env bun
-/** Regenerate combined.v from the TS DSL — no flash, no synth. */
-import { writeFileSync, readFileSync } from 'fs';
-import { resolve } from 'path';
 import { exportVerilog } from '@simten/core/verilog';
+/** Regenerate combined.v from the TS DSL — no flash, no synth. */
+import { readFileSync, writeFileSync } from 'fs';
+import { resolve } from 'path';
 import { buildCPUCore } from './index.js';
 
 const { circuit: cpuCircuit, lib } = buildCPUCore();

@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react';
-import { createPortal } from 'react-dom';
 import { Link } from '@tanstack/react-router';
 import { ArrowUpRight, Menu, X } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 
 /**
  * Standard nav rendered on the right of SiteHeader for content pages.

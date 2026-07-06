@@ -4,19 +4,19 @@
  * Small, focused circuits that illustrate individual pipeline concepts.
  */
 
-import { circuit, bit, bus } from '@simten/core/circuit';
-import type { BlogCircuit } from '../types';
+import { bit, bus, circuit } from '@simten/core/circuit';
 import {
-  Not,
-  Mux,
-  Register,
-  Constant,
   Adder,
-  Subtractor,
+  BitSlice,
   BusAnd,
   BusOr,
-  BitSlice,
+  Constant,
+  Mux,
+  Not,
+  Register,
+  Subtractor,
 } from '@simten/core/std';
+import type { BlogCircuit } from '../types';
 
 // ── Circuit Definitions ──
 

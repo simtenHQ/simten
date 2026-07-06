@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useCircuitSimulator } from '@simten/embed';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { PongSimple } from './circuits';
 
 export function usePongSimulator() {

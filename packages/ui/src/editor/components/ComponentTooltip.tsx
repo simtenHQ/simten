@@ -8,7 +8,8 @@
  * Shows component name, description, and input/output states.
  */
 
-import React, { useState, useRef, useEffect } from 'react';
+import type React from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { cn } from '../../lib/utils';
 

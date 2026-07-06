@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { WebSocket } from 'ws';
 import { createStudioServer } from './ws-server.js';
 

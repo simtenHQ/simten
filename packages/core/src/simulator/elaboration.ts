@@ -11,9 +11,9 @@
  * - Eliminates runtime composite evaluation complexity
  */
 
-import type { Circuit, PortPath, CircuitLibrary } from '../types/circuit.js';
-import type { FlatCircuit, FlatNode, FlatConnection, HierarchyNode } from '../types/simulator.js';
-import { TOP_LEVEL_NODE, SEQUENTIAL_INPUT_PORTS } from '../types/simulator.js';
+import type { Circuit, CircuitLibrary, PortPath } from '../types/circuit.js';
+import type { FlatCircuit, FlatConnection, FlatNode, HierarchyNode } from '../types/simulator.js';
+import { SEQUENTIAL_INPUT_PORTS, TOP_LEVEL_NODE } from '../types/simulator.js';
 
 export interface ElaborateOptions {
   /** Expand primitives that have referenceCircuit definitions into base primitives.

@@ -7,9 +7,9 @@
  * 0, because connection resolution only collapsed a single composite-port hop
  * instead of the full transitive chain across composite boundaries.
  */
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
+import { bit, circuit } from '../../circuit/index.js';
 import { simulate } from '../../sim/simulate.js';
-import { circuit, bit } from '../../circuit/index.js';
 import { Not } from '../../std/index.js';
 import { assertFlatCircuitInvariants, elaborateBuilt } from './_invariants.js';
 

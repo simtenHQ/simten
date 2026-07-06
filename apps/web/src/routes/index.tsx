@@ -1,16 +1,16 @@
-import { useState, useEffect, useCallback, useRef, useMemo, type ReactNode } from 'react';
-import { createFileRoute, Link } from '@tanstack/react-router';
+import { bit, circuit } from '@simten/core/circuit';
+import { And, DFlipFlop, Or, Xor } from '@simten/core/std';
 import { CircuitEmbed } from '@simten/embed';
-import { circuit, bit } from '@simten/core/circuit';
-import { Xor, And, Or, DFlipFlop } from '@simten/core/std';
-import { HighlightedCode } from '@/components/HighlightedCode';
+import { createFileRoute, Link } from '@tanstack/react-router';
+import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Container } from '@/components/Container';
+import { HighlightedCode } from '@/components/HighlightedCode';
 import { Section } from '@/components/SectionHeading';
+import { usePongSimulator } from '@/features/blog/pong-in-hardware/usePongSimulator';
+import { useSnakeSimulator } from '@/features/blog/snake-in-hardware/useSnakeSimulator';
 import { RV32IDebuggerPreview } from '@/features/learn/cpu-debugger/RV32IDebuggerPreview';
 import { ClaudeDemoSection } from '@/features/splash/ClaudeDemoSection';
 import { CodeWithHovers } from '@/features/splash/CodeWithHovers';
-import { useSnakeSimulator } from '@/features/blog/snake-in-hardware/useSnakeSimulator';
-import { usePongSimulator } from '@/features/blog/pong-in-hardware/usePongSimulator';
 
 // ============================================================================
 // Demo circuits

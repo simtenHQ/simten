@@ -4,11 +4,11 @@
  * Tests for the IR v0.1 Circuit store implementation.
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
-import { useCircuitStore } from './circuit-store';
-import { useCircuitLibraryStore } from './circuit-library-store';
+import { beforeEach, describe, expect, it } from 'vitest';
 import type { Circuit } from '../types/circuit';
 import { bitType, busType } from '../types/circuit';
+import { useCircuitLibraryStore } from './circuit-library-store';
+import { useCircuitStore } from './circuit-store';
 
 describe('CircuitStore', () => {
   beforeEach(() => {

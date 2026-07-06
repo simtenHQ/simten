@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
+import { bus, circuit } from '@simten/core/circuit';
+import { Adder, Constant, DFlipFlop, HexDisplay, Register } from '@simten/core/std';
 import { useCircuitSimulator } from '@simten/embed';
 import { CircuitCanvas } from '@simten/ui/canvas';
-import { circuit, bus } from '@simten/core/circuit';
-import { Register, Adder, Constant, DFlipFlop, HexDisplay } from '@simten/core/std';
+import { useEffect, useState } from 'react';
 
 // --- Live Fibonacci circuit (auto-ticking) ---
 

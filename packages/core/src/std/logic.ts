@@ -6,8 +6,8 @@
  * for these — the eval functions here are fallbacks and documentation.
  */
 
-import { circuit } from '../circuit/circuit.js';
 import { bit } from '../circuit/bit-bus.js';
+import { circuit } from '../circuit/circuit.js';
 
 /**
  * Logical AND gate. Output is 1 when both inputs are 1, otherwise 0.

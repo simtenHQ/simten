@@ -9,8 +9,8 @@
  * sequential circuit" idea.
  */
 
-import { circuit, bus } from '@simten/core/circuit';
-import { Register, Adder, Constant } from '@simten/core/std';
+import { bus, circuit } from '@simten/core/circuit';
+import { Adder, Constant, Register } from '@simten/core/std';
 
 // ── Counter: Register + Adder loop ─────────────────────────────────────
 // Each tick, the register's current value flows through the adder

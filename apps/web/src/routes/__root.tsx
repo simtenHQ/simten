@@ -1,13 +1,12 @@
-import { HeadContent, Scripts, createRootRoute, useMatches } from '@tanstack/react-router';
-import { Outlet } from '@tanstack/react-router';
-import { ThemeProvider } from '../components/ThemeProvider';
+import { ShareCircuitProvider } from '@simten/embed';
+import { SandboxProvider } from '@simten/ui/sandbox';
+import { createRootRoute, HeadContent, Outlet, Scripts, useMatches } from '@tanstack/react-router';
+import { RootProvider } from 'fumadocs-ui/provider/tanstack';
+import { shareCircuit } from '@/features/share/server';
+import { SiteFooter } from '../components/SiteFooter';
 import { SiteHeader } from '../components/SiteHeader';
 import { SiteNavLinks } from '../components/SiteNavLinks';
-import { SiteFooter } from '../components/SiteFooter';
-import { RootProvider } from 'fumadocs-ui/provider/tanstack';
-import { SandboxProvider } from '@simten/ui/sandbox';
-import { ShareCircuitProvider } from '@simten/embed';
-import { shareCircuit } from '@/features/share/server';
+import { ThemeProvider } from '../components/ThemeProvider';
 
 import appCss from '../styles.css?url';
 

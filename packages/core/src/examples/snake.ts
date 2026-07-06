@@ -36,18 +36,18 @@
  * exact logic was verified on the ULX3S over HDMI.
  */
 
-import { circuit, bit, bus } from '../circuit/index.js';
+import { bit, bus, circuit } from '../circuit/index.js';
 import {
-  DualPortRAM,
-  Register,
-  Constant,
-  Comparator,
-  Mux,
   Adder,
-  BitSlice,
   And,
-  Or,
+  BitSlice,
+  Comparator,
+  Constant,
+  DualPortRAM,
+  Mux,
   Not,
+  Or,
+  Register,
 } from '../std/index.js';
 import type { CircuitLibrary } from '../types/circuit.js';
 

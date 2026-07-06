@@ -1,10 +1,10 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { blogPostHead } from '@/lib/seo';
-import { getPost } from '@/features/blog/posts';
-import { Suspense, lazy } from 'react';
-import { HeroSection } from '@/features/blog/sorting-networks/sections/HeroSection';
+import { lazy, Suspense } from 'react';
 import { BlogFooter } from '@/features/blog/BlogFooter';
 import { ErrorBoundary } from '@/features/blog/building-a-cpu/ErrorBoundary';
+import { getPost } from '@/features/blog/posts';
+import { HeroSection } from '@/features/blog/sorting-networks/sections/HeroSection';
+import { blogPostHead } from '@/lib/seo';
 
 const CompareSwapSection = lazy(() =>
   import('@/features/blog/sorting-networks/sections/CompareSwapSection').then((m) => ({

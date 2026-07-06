@@ -5,17 +5,17 @@
  * When a filePath is provided, watches the file for changes and pushes updates.
  */
 
+import { exec } from 'node:child_process';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
-import { exec } from 'node:child_process';
+import { LOCAL_SERVE, SIMTEN_URL } from '../lib/config.js';
 import { readCircuitSource } from '../lib/file-reader.js';
-import { SIMTEN_URL, LOCAL_SERVE } from '../lib/config.js';
 import {
+  getBrowserOpened,
   getOrCreateServer,
   getPreviewServer,
-  setPreviewServer,
-  getBrowserOpened,
   setBrowserOpened,
+  setPreviewServer,
 } from '../lib/preview-singleton.js';
 
 /** Extract the first circuit name from source the MCP pushed (trusted), so the

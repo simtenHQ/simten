@@ -1,4 +1,5 @@
 #!/usr/bin/env tsx
+
 /**
  * gameplay.verify.ts — Tier-B testbench: Snake plays the same game as
  * a plain-JS reference model, framebuffer-equal after every game tick.
@@ -16,9 +17,9 @@
  * Run: tsx projects/snake/gameplay.verify.ts  (or pnpm fpga:verify:snake)
  */
 
+import { declareOracle, describe, verify } from '@simten/core/verify';
 import * as fc from 'fast-check';
-import { verify, declareOracle, describe } from '@simten/core/verify';
-import { buildSim, coSim, chaseDir, assertFbEqual } from './cosim-lib.js';
+import { assertFbEqual, buildSim, chaseDir, coSim } from './cosim-lib.js';
 import { SnakeRefModel } from './ref-model.js';
 
 describe('Snake');

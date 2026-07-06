@@ -15,17 +15,16 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 // reports the actual published version rather than a hand-maintained constant.
 // `with { type: 'json' }` is the standard import-attribute form (Node 20+, TS 5.3+).
 import pkg from '../package.json' with { type: 'json' };
-
-import { registerGetStartedTool } from './tools/get_started.js';
+import { getOrCreateServer, getPreviewServer } from './lib/preview-singleton.js';
 import { registerCheckTool } from './tools/check.js';
-import { registerSimulateTool } from './tools/simulate.js';
-import { registerVerifyTool } from './tools/verify.js';
-import { registerSetupTool } from './tools/setup.js';
-import { registerShowTools } from './tools/show.js';
-import { registerRunOnFpgaTool } from './tools/run_on_fpga.js';
+import { registerGetStartedTool } from './tools/get_started.js';
 import { registerReadWaveformTool } from './tools/read_waveform.js';
 import { registerReferenceTools } from './tools/reference.js';
-import { getOrCreateServer, getPreviewServer } from './lib/preview-singleton.js';
+import { registerRunOnFpgaTool } from './tools/run_on_fpga.js';
+import { registerSetupTool } from './tools/setup.js';
+import { registerShowTools } from './tools/show.js';
+import { registerSimulateTool } from './tools/simulate.js';
+import { registerVerifyTool } from './tools/verify.js';
 
 // NOTE: clients truncate an MCP server's `instructions` at ~2KB (Claude Code
 // does — https://code.claude.com/docs/en/mcp.md), so this MUST stay small and

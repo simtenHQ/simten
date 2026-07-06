@@ -1,7 +1,7 @@
-import { useRef, useEffect, useState, useCallback } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import type { StageStatus } from '@/lib/cc65-compiler';
 import { use6502Simulator } from './use6502Simulator';
 import { useCC65Compiler } from './useCC65Compiler';
-import type { StageStatus } from '@/lib/cc65-compiler';
 
 const STARTER_TEMPLATE = `\
 /*

@@ -17,18 +17,18 @@
  * See: apps/web/content/docs/architecture.mdx → "Runtime topology".
  */
 
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import {
-  type SimulatorEngine,
-  type CircuitLibrary,
-  type FlatPortValueMap,
-  type FlatSequentialState,
-} from '@simten/core/simulator';
-import type { Circuit, BitValue, BusValue } from '@simten/core';
+import type { BitValue, BusValue, Circuit } from '@simten/core';
 import type { BuiltCircuit } from '@simten/core/circuit';
-import { getCircuitEval, autoHarness, isSequentialCircuit } from '@simten/core/circuit';
-import { Switch, Button, Led, Input, Output, HexDisplay } from '@simten/core/std';
-import { useSandboxContext, type EvalSource } from '@simten/ui/sandbox';
+import { autoHarness, getCircuitEval, isSequentialCircuit } from '@simten/core/circuit';
+import type {
+  CircuitLibrary,
+  FlatPortValueMap,
+  FlatSequentialState,
+  SimulatorEngine,
+} from '@simten/core/simulator';
+import { Button, HexDisplay, Input, Led, Output, Switch } from '@simten/core/std';
+import { type EvalSource, useSandboxContext } from '@simten/ui/sandbox';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 const TOP_LEVEL_NODE = '__top__';
 

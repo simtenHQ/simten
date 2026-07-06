@@ -4,11 +4,11 @@
  * Demonstrates that composites with internal registers no longer trigger false cycle detection
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
-import { createSimulatorFromCircuit, type CircuitLibrary } from '@simten/core/simulator';
 import { registerCircuitEval } from '@simten/core/circuit';
-import { useCircuitLibraryStore } from '../../stores/circuit-library-store';
+import { type CircuitLibrary, createSimulatorFromCircuit } from '@simten/core/simulator';
 import { STDLIB_CIRCUITS } from '@simten/core/std';
+import { beforeEach, describe, expect, it } from 'vitest';
+import { useCircuitLibraryStore } from '../../stores/circuit-library-store';
 import { bitType, busType, type Circuit } from '../../types/circuit';
 
 // Register an eval for the local 'Add' primitive defined below. The

@@ -16,7 +16,7 @@
 
 import { spawn } from 'node:child_process';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
-import { resolve, basename } from 'node:path';
+import { basename, resolve } from 'node:path';
 
 export type PackageManager = 'npm' | 'pnpm' | 'yarn' | 'bun';
 

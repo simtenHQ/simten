@@ -9,8 +9,8 @@
  * the fast-simulator refactor. Needs porting before re-enabling.
  */
 
-import { describe as _describe, it, expect } from 'vitest';
 import * as fc from 'fast-check';
+import { describe as _describe, expect, it } from 'vitest';
 
 const PRIMITIVE_EVALUATORS: any = {};
 const describe = _describe.skip;

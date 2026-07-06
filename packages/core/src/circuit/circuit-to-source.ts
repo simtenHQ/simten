@@ -20,17 +20,17 @@
  * Comments and any code outside `circuit()` calls are not preserved.
  */
 
+import { STDLIB_CIRCUITS } from '../std/index.js';
 import type {
+  ArgumentValue,
   Circuit,
   Node,
-  PortType,
   PortDescriptor,
+  PortType,
   StateBlock,
-  ArgumentValue,
 } from '../types/circuit.js';
-import type { BuiltCircuit } from './types.js';
-import { STDLIB_CIRCUITS } from '../std/index.js';
 import { getCircuitEval } from './eval-registry.js';
+import type { BuiltCircuit } from './types.js';
 
 const STDLIB_NAMES: ReadonlySet<string> = new Set(STDLIB_CIRCUITS.map((c) => c.circuit.name));
 

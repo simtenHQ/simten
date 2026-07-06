@@ -12,8 +12,8 @@
  * Requires the local toolchain (riscv-none-elf-gcc + spike) — see README.md.
  */
 
-import { verify, declareOracle, describe } from '@simten/core/verify';
-import { TESTS, SKIP, runOneTest } from './suite-lib.js';
+import { declareOracle, describe, verify } from '@simten/core/verify';
+import { runOneTest, SKIP, TESTS } from './suite-lib.js';
 
 describe('RV32I_Core');
 declareOracle({

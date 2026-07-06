@@ -3,14 +3,13 @@
  * Defines layout metadata types and re-exports simulator types from core.
  */
 
+export type { Circuit } from '@simten/core';
 // Re-export simulator types from core so embed consumers don't need to install core separately
 export type {
   FlatCircuit,
   FlatPortValueMap,
   FlatSequentialState,
 } from '@simten/core/simulator';
-
-export type { Circuit } from '@simten/core';
 
 // --- Inspector types (used by the canvas-level drill-down inspector) ---
 

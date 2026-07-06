@@ -9,8 +9,8 @@
  * checks). We do the same, then hand it to setupTypeAcquisition.
  */
 
-import { useEffect, useRef } from 'react';
 import type { Monaco } from '@monaco-editor/react';
+import { useEffect, useRef } from 'react';
 import type ts from 'typescript';
 
 const TS_CDN = `https://cdn.jsdelivr.net/npm/typescript@5/lib/typescript.js`;

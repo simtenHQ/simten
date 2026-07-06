@@ -19,11 +19,11 @@
  * Requires SYNTH_URL to be set. Skipped automatically when unset.
  */
 
-import { describe, it, expect } from 'vitest';
-import { exportVerilog } from '../exporter.js';
+import { describe, expect, it } from 'vitest';
 import { buildSnake } from '../../examples/snake.js';
-import { synthesizeVerilog, hasSynth } from './synth.js';
+import { exportVerilog } from '../exporter.js';
 import { buildBitstream, hasBuild } from './build.js';
+import { hasSynth, synthesizeVerilog } from './synth.js';
 
 const d = describe.skipIf(!hasSynth() || !hasBuild());
 

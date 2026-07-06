@@ -11,21 +11,20 @@
 
 'use client';
 
-import React, { useMemo, useState, useCallback, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-
-import type { InspectorFrame } from './types';
-import { createDrillDownViewCircuit } from './drill-down-view';
+import type { BitValue, BusValue, Circuit } from '@simten/core';
+import { isSequentialCircuit } from '@simten/core/circuit';
 import type { CircuitLibrary, SimulatorEngine } from '@simten/core/simulator';
 import { createSimulatorFromCircuit } from '@simten/core/simulator';
-import type { Circuit, BitValue, BusValue } from '@simten/core';
-import { isSequentialCircuit } from '@simten/core/circuit';
+import { AnimatePresence, motion } from 'framer-motion';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { NodeData } from '../nodes';
+import { useSandboxContext } from '../sandbox/SandboxProvider';
 
 import { CircuitCanvas } from './CircuitCanvas';
 import { ClockControls } from './ClockControls';
-import { NODE_TYPES, EDGE_TYPES } from './node-types';
-import type { NodeData } from '../nodes';
-import { useSandboxContext } from '../sandbox/SandboxProvider';
+import { createDrillDownViewCircuit } from './drill-down-view';
+import { EDGE_TYPES, NODE_TYPES } from './node-types';
+import type { InspectorFrame } from './types';
 
 // ── Inner canvas for a single inspector level ──
 

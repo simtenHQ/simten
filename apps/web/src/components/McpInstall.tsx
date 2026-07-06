@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
 import { Check, Copy } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
 // Single source of truth for how each agent CLI registers the Simten MCP
 // server. Add a new client by appending one entry — the tab UI and both the

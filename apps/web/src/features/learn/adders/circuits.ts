@@ -9,9 +9,9 @@
  * that exercises the concept the corresponding section is teaching.
  */
 
-import { circuit, bit } from '@simten/core/circuit';
+import { bit, circuit } from '@simten/core/circuit';
+import { Adder, And, Constant, HexDisplay, Input, Led, Or, Xor } from '@simten/core/std';
 import type { BlogCircuit } from '@/features/blog/types';
-import { And, Xor, Or, Led, Input, HexDisplay, Adder, Constant } from '@simten/core/std';
 
 // ── Half adder ─────────────────────────────────────────────────────────
 // Exported so HalfAdderSection can drive it directly via the composition

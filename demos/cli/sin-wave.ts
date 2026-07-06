@@ -7,9 +7,9 @@
  * Run: pnpm --filter @simten/demos sin-wave
  */
 
-import { circuit, bus } from '@simten/core/circuit';
-import { Register, Adder, ROM, Constant, romFromBytes } from '@simten/core/std';
-import { createSimulatorFromCircuit, createCircuitLibrary, TOP_LEVEL_NODE } from '@simten/core';
+import { createCircuitLibrary, createSimulatorFromCircuit, TOP_LEVEL_NODE } from '@simten/core';
+import { bus, circuit } from '@simten/core/circuit';
+import { Adder, Constant, Register, ROM, romFromBytes } from '@simten/core/std';
 
 // ── Circuit ──────────────────────────────────────────────────────────────────
 

@@ -1,8 +1,8 @@
-import { useState } from 'react';
-import { CircuitEmbed } from '@simten/embed';
 import type { FlatPortValueMap } from '@simten/core/simulator';
+import { CircuitEmbed } from '@simten/embed';
+import { useState } from 'react';
+import { computeActiveRow, TruthTable } from '@/components/TruthTable';
 import { FullAdder } from '../circuits';
-import { TruthTable, computeActiveRow } from '@/components/TruthTable';
 
 const FA_COLUMNS = [
   { name: 'a', group: 'input' as const },

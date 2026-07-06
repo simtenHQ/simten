@@ -42,9 +42,9 @@
  *     circuits the project already depends on)
  */
 
-import type { FlatCircuit, FlatNode } from '../../types/simulator.js';
 import type { Circuit, CircuitLibrary } from '../../types/circuit.js';
 import { TOP_LEVEL_NODE } from '../../types/circuit.js';
+import type { FlatCircuit, FlatNode } from '../../types/simulator.js';
 import { elaborate } from '../elaboration.js';
 
 /**

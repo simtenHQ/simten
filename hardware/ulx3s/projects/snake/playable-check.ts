@@ -1,4 +1,5 @@
 #!/usr/bin/env tsx
+
 /**
  * playable-check.ts — the /circuit editor's playable snake actually plays.
  *
@@ -14,11 +15,11 @@
  * hold across non-arrow keys, and the core-to-RAM wiring of the harness.
  */
 
-import { simulate } from '@simten/core/sim';
 import { executeCircuitCode } from '@simten/core/circuit';
+import { simulate } from '@simten/core/sim';
 import { EXAMPLES } from '../../../../apps/web/src/features/visual-editor/examples.js';
-import { SnakeRefModel, FB_SIZE } from './ref-model.js';
 import { renderFb } from './cosim-lib.js';
+import { FB_SIZE, SnakeRefModel } from './ref-model.js';
 
 const SCAN: Record<string, number> = { up: 72, right: 77, down: 80, left: 75 };
 const DIR: Record<string, number> = { up: 0, right: 1, down: 2, left: 3 };

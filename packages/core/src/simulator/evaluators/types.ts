@@ -5,10 +5,10 @@
  * the evaluator table. No Map allocations in the hot path.
  */
 
+import type { PrimitiveState } from '../../types/simulator.js';
+import type { NumericEventQueue } from '../numeric-event-queue.js';
 import type { NumericCircuit } from '../numeric-types.js';
 import type { NumericPortValues } from '../numeric-values.js';
-import type { NumericEventQueue } from '../numeric-event-queue.js';
-import type { PrimitiveState } from '../../types/simulator.js';
 
 /**
  * Numeric sequential state for fast simulation.

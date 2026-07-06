@@ -50,9 +50,8 @@
  * serialization cost per tick — see SlotState.snapshots.
  */
 
+import type { BitValue, BusValue, Circuit, SimulatorSnapshot } from '@simten/core';
 import { createSimulator, elaborate } from '@simten/core';
-import type { Circuit, BitValue, BusValue } from '@simten/core';
-import type { SimulatorSnapshot } from '@simten/core';
 import { registerCircuitEval } from '@simten/core/circuit';
 import { captureEnvironmentalState, type EnvironmentalStateValue } from '@simten/core/simulator';
 

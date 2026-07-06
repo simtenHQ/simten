@@ -2,8 +2,8 @@
  * Standard Library — Routing / Plexers / Utilities
  */
 
-import { circuit } from '../circuit/circuit.js';
 import { bit, bus } from '../circuit/bit-bus.js';
+import { circuit } from '../circuit/circuit.js';
 
 /**
  * Multiplexer — sel=0 picks in0, sel=1 picks in1. The fundamental

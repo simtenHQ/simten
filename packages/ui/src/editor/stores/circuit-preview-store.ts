@@ -11,14 +11,14 @@
  * - Apply selected circuit to canvas
  */
 
+import { autoHarness } from '@simten/core/circuit';
+import { Button, HexDisplay, Input, Led, Output, Switch } from '@simten/core/std';
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
-import type { Circuit } from '../types/circuit';
-import { useCircuitStore } from './circuit-store';
-import { useCircuitLibraryStore } from './circuit-library-store';
 import { createDrillDownViewCircuit } from '../../canvas/drill-down-view';
-import { autoHarness } from '@simten/core/circuit';
-import { Switch, Button, Led, Input, Output, HexDisplay } from '@simten/core/std';
+import type { Circuit } from '../types/circuit';
+import { useCircuitLibraryStore } from './circuit-library-store';
+import { useCircuitStore } from './circuit-store';
 
 /**
  * Hash function for circuit code version tracking

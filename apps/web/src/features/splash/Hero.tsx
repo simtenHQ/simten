@@ -11,28 +11,28 @@
  * The goal is "what is this?" answered in under 3 seconds.
  */
 
-import { useState, useCallback, useEffect, useRef, type ReactNode } from 'react';
+import type { BuiltCircuit } from '@simten/core/circuit';
+import { bit, bus, circuit } from '@simten/core/circuit';
+import {
+  Adder,
+  And,
+  Console as ConsolePrimitive,
+  Constant,
+  DFlipFlop,
+  Not,
+  Or,
+  Register,
+  ROM,
+  romFromBytes,
+  Xor,
+} from '@simten/core/std';
+import { CircuitEmbed, type CircuitEmbedHandle } from '@simten/embed';
 import { Link } from '@tanstack/react-router';
 import figlet from 'figlet';
 import smallFont from 'figlet/fonts/Small';
-import { CircuitEmbed, type CircuitEmbedHandle } from '@simten/embed';
-import { circuit, bit, bus } from '@simten/core/circuit';
-import type { BuiltCircuit } from '@simten/core/circuit';
-import {
-  Xor,
-  And,
-  Or,
-  Not,
-  DFlipFlop,
-  Register,
-  Adder,
-  ROM,
-  Constant,
-  Console as ConsolePrimitive,
-  romFromBytes,
-} from '@simten/core/std';
-import { HighlightedCode } from '@/components/HighlightedCode';
+import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
 import { Container } from '@/components/Container';
+import { HighlightedCode } from '@/components/HighlightedCode';
 
 type HeroLayout = Record<string, { x: number; y: number }>;
 

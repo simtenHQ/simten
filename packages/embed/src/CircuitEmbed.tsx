@@ -10,23 +10,23 @@
  * web component bridge which sandboxes compilation via an iframe.
  */
 
-import {
-  forwardRef,
-  useState,
-  type CSSProperties,
-  type ForwardedRef,
-  type ReactElement,
-} from 'react';
-import { CircuitViewer, type CircuitViewerHandle, type HarnessedLayout } from './CircuitViewer';
-import { circuitToSource, type BuiltCircuit } from '@simten/core/circuit';
+import { type BuiltCircuit, circuitToSource } from '@simten/core/circuit';
 import type { FlatPortValueMap } from '@simten/core/simulator';
-import { encodeSourceForUrl } from '@simten/ui/share';
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from '@simten/ui/primitives/tooltip';
+import { encodeSourceForUrl } from '@simten/ui/share';
+import {
+  type CSSProperties,
+  type ForwardedRef,
+  forwardRef,
+  type ReactElement,
+  useState,
+} from 'react';
+import { CircuitViewer, type CircuitViewerHandle, type HarnessedLayout } from './CircuitViewer';
 import { useShareCircuit } from './share-context';
 
 /**

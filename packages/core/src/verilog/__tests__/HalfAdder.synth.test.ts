@@ -6,12 +6,12 @@
  * that the returned stats match what we'd expect from first principles.
  */
 
-import { describe, it, expect } from 'vitest';
-import { exportVerilog } from '../exporter.js';
-import { circuit, bit } from '../../circuit/index.js';
+import { describe, expect, it } from 'vitest';
+import { bit, circuit } from '../../circuit/index.js';
 import { And, Xor } from '../../std/index.js';
 import type { CircuitLibrary } from '../../types/circuit.js';
-import { synthesizeVerilog, hasSynth } from './synth.js';
+import { exportVerilog } from '../exporter.js';
+import { hasSynth, synthesizeVerilog } from './synth.js';
 
 function buildHalfAdder() {
   const HalfAdder = circuit('HalfAdder', {

@@ -11,20 +11,19 @@
  * - No combinational loops
  */
 
-import type { Circuit, PortType } from '../types/circuit.js';
-import type { FlatCircuit, FlatNode, FlatConnection } from '../types/simulator.js';
-import type { CircuitLibrary } from '../types/simulator.js';
 import { elaborate } from '../simulator/elaboration.js';
-import type { VerilogExportOptions, ExportResult } from './types.js';
-import { INLINE_MEMORY_THRESHOLD } from './types.js';
+import type { Circuit, PortType } from '../types/circuit.js';
+import type { CircuitLibrary, FlatCircuit, FlatConnection, FlatNode } from '../types/simulator.js';
 import {
   emitPrimitive,
-  isSinkPrimitive,
   isSequentialPrimitive,
-  type PrimitiveWires,
+  isSinkPrimitive,
   type PrimitiveContext,
+  type PrimitiveWires,
   type StateInit,
 } from './primitive-map.js';
+import type { ExportResult, VerilogExportOptions } from './types.js';
+import { INLINE_MEMORY_THRESHOLD } from './types.js';
 
 const DEFAULT_OPTIONS: Required<VerilogExportOptions> = {
   mode: 'flat',
@@ -38,7 +37,7 @@ const DEFAULT_OPTIONS: Required<VerilogExportOptions> = {
 const RESET_NAME = 'rst_n';
 
 function sanitizeId(id: string): string {
-  return id.replace(/[.\-]/g, '_').replace(/[^a-zA-Z0-9_]/g, '');
+  return id.replace(/[.-]/g, '_').replace(/[^a-zA-Z0-9_]/g, '');
 }
 
 function portTypeToVerilog(pt: PortType): string {

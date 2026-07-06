@@ -2,8 +2,8 @@
  * Standard Library — RISC-V (RV32I) Components
  */
 
-import { circuit } from '../circuit/circuit.js';
 import { bit, bus, mem } from '../circuit/bit-bus.js';
+import { circuit } from '../circuit/circuit.js';
 
 /**
  * RISC-V instruction decoder. Splits a 32-bit RV32I instruction word into

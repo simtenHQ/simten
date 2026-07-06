@@ -1,4 +1,5 @@
 #!/usr/bin/env tsx
+
 /**
  * Systematic RV32I ISA test suite.
  * Each test runs firmware through the TypeScript RTL simulator and checks UART output.
@@ -8,8 +9,8 @@
  *        pnpm fpga:test --filter "ADD"   (run matching tests only)
  */
 
-import { runFirmware } from './sim.js';
 import { fileURLToPath } from 'node:url';
+import { runFirmware } from './sim.js';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 

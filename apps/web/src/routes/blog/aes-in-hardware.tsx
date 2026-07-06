@@ -1,10 +1,10 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { blogPostHead } from '@/lib/seo';
-import { getPost } from '@/features/blog/posts';
-import { Suspense, lazy } from 'react';
+import { lazy, Suspense } from 'react';
 import { HeroSection } from '@/features/blog/aes-in-hardware/sections/HeroSection';
 import { BlogFooter } from '@/features/blog/BlogFooter';
 import { ErrorBoundary } from '@/features/blog/building-a-cpu/ErrorBoundary';
+import { getPost } from '@/features/blog/posts';
+import { blogPostHead } from '@/lib/seo';
 
 const SubBytesSection = lazy(() =>
   import('@/features/blog/aes-in-hardware/sections/SubBytesSection').then((m) => ({

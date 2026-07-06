@@ -1,6 +1,6 @@
-import { describe, it, expect } from 'vitest';
-import { circuit } from '../circuit.js';
+import { describe, expect, it } from 'vitest';
 import { bit, bus } from '../bit-bus.js';
+import { circuit } from '../circuit.js';
 import { getCircuitEval } from '../eval-registry.js';
 import type { BuiltCircuit } from '../types.js';
 

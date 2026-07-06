@@ -1,10 +1,10 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { blogPostHead } from '@/lib/seo';
-import { getPost } from '@/features/blog/posts';
-import { Suspense, lazy } from 'react';
-import { HeroSection } from '@/features/blog/snake-in-hardware/sections/HeroSection';
+import { lazy, Suspense } from 'react';
 import { BlogFooter } from '@/features/blog/BlogFooter';
 import { ErrorBoundary } from '@/features/blog/building-a-cpu/ErrorBoundary';
+import { getPost } from '@/features/blog/posts';
+import { HeroSection } from '@/features/blog/snake-in-hardware/sections/HeroSection';
+import { blogPostHead } from '@/lib/seo';
 
 // Lazy-load heavier sections so the page renders fast
 const PixelsSection = lazy(() =>

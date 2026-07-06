@@ -12,18 +12,18 @@
  *   sim.get('sum')  // 0
  */
 
+import { isSequentialCircuit } from '../circuit/is-sequential.js';
+import type { BuiltCircuit, PortMap } from '../circuit/types.js';
+import { createSimulatorFromCircuit } from '../simulator/index.js';
+import { SimulationSession } from '../simulator/simulation-session.js';
 import type {
+  BitValue,
+  BusValue,
   Circuit,
   CircuitLibrary,
   MutableCircuitLibrary,
-  BitValue,
-  BusValue,
 } from '../types/circuit.js';
 import type { SimulatorSnapshot } from '../types/simulator.js';
-import { SimulationSession } from '../simulator/simulation-session.js';
-import { createSimulatorFromCircuit } from '../simulator/index.js';
-import type { BuiltCircuit, PortMap } from '../circuit/types.js';
-import { isSequentialCircuit } from '../circuit/is-sequential.js';
 
 function isMutable(lib: CircuitLibrary): lib is MutableCircuitLibrary {
   return 'addCircuit' in lib && typeof (lib as MutableCircuitLibrary).addCircuit === 'function';

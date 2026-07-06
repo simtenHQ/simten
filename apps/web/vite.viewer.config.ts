@@ -1,9 +1,8 @@
-import { defineConfig } from 'vite';
 import { resolve } from 'node:path';
-
-import tsconfigPaths from 'vite-tsconfig-paths';
-import viteReact from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
+import viteReact from '@vitejs/plugin-react';
+import { defineConfig } from 'vite';
+import tsconfigPaths from 'vite-tsconfig-paths';
 
 // Standalone, client-only build of the visual editor for the local MCP viewer.
 //

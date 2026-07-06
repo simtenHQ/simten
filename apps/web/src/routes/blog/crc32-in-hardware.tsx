@@ -1,10 +1,10 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { blogPostHead } from '@/lib/seo';
-import { getPost } from '@/features/blog/posts';
-import { Suspense, lazy } from 'react';
-import { HeroSection } from '@/features/blog/crc32-in-hardware/sections/HeroSection';
+import { lazy, Suspense } from 'react';
 import { BlogFooter } from '@/features/blog/BlogFooter';
 import { ErrorBoundary } from '@/features/blog/building-a-cpu/ErrorBoundary';
+import { HeroSection } from '@/features/blog/crc32-in-hardware/sections/HeroSection';
+import { getPost } from '@/features/blog/posts';
+import { blogPostHead } from '@/lib/seo';
 
 const LFSRSection = lazy(() =>
   import('@/features/blog/crc32-in-hardware/sections/LFSRSection').then((m) => ({

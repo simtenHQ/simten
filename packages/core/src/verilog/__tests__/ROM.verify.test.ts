@@ -13,14 +13,14 @@
  * they agree.
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
+import { bit, bus, circuit } from '../../circuit/index.js';
+import { createSimulatorFromCircuit } from '../../simulator/index.js';
+import { ROM } from '../../std/index.js';
+import type { Circuit, CircuitLibrary } from '../../types/circuit.js';
 import { exportVerilog } from '../exporter.js';
 import { generateSequentialTestbench, type SequentialTestVector } from '../testbench-gen.js';
-import { circuit, bit, bus } from '../../circuit/index.js';
-import { ROM } from '../../std/index.js';
-import { createSimulatorFromCircuit } from '../../simulator/index.js';
-import type { Circuit, CircuitLibrary } from '../../types/circuit.js';
-import { verifyVerilog, hasVerifier } from './verify.js';
+import { hasVerifier, verifyVerilog } from './verify.js';
 
 // Preloaded ROM contents: a handful of distinct values at scattered
 // addresses. Lets us assert the init block is emitted with correct

@@ -9,13 +9,13 @@
  * was accidentally introduced into the core simulator.
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import {
-  createSimulator,
-  createCircuitLibrary,
-  elaborate,
-  type Circuit,
   bitType,
+  type Circuit,
+  createCircuitLibrary,
+  createSimulator,
+  elaborate,
 } from '../index.js';
 
 // Define test circuits using only core types (no store dependencies)

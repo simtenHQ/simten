@@ -14,11 +14,11 @@
  * 4. Write output object properties back to typed arrays by index
  */
 
-import type { NumericEvaluator, EvalContext } from './evaluators/types.js';
-import { readInput, writeOutput } from './evaluators/types.js';
+import { getAllCircuitEvals, getCircuitEval } from '../circuit/eval-registry.js';
 import { EVALUATORS } from './evaluators/index.js';
-import { PRIMITIVE_TYPE_INDICES, PRIMITIVE_INDEX_TO_NAME } from './numeric-types.js';
-import { getCircuitEval, getAllCircuitEvals } from '../circuit/eval-registry.js';
+import type { EvalContext, NumericEvaluator } from './evaluators/types.js';
+import { readInput, writeOutput } from './evaluators/types.js';
+import { PRIMITIVE_INDEX_TO_NAME, PRIMITIVE_TYPE_INDICES } from './numeric-types.js';
 
 // ============================================================================
 // Map-as-array Proxy for memory state

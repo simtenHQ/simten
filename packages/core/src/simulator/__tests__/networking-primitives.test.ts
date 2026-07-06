@@ -5,11 +5,11 @@
  * using the circuit() API.
  */
 
-import { describe, it, expect } from 'vitest';
-import { simulate } from '../../sim/simulate.js';
-import { circuit, bit, bus } from '../../circuit/index.js';
+import { describe, expect, it } from 'vitest';
 import type { BuiltCircuit } from '../../circuit/index.js';
-import { MemBusMux, UART_TX, NIC_FIFO } from '../../std/index.js';
+import { bit, bus, circuit } from '../../circuit/index.js';
+import { simulate } from '../../sim/simulate.js';
+import { MemBusMux, NIC_FIFO, UART_TX } from '../../std/index.js';
 
 /** Helper: simulate combinational circuit, return output values */
 function sim<C extends BuiltCircuit>(

@@ -1,4 +1,4 @@
-import { Suspense, lazy } from 'react';
+import { lazy, Suspense } from 'react';
 
 const BreakoutDemo = lazy(() =>
   import('../BreakoutDemo').then((m) => ({ default: m.BreakoutDemo })),

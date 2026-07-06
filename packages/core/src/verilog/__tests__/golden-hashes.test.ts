@@ -22,44 +22,44 @@
  * not a per-primitive guarantee.
  */
 
-import { describe, it, expect } from 'vitest';
 import { createHash } from 'node:crypto';
-import { writeFileSync, readFileSync, mkdirSync, existsSync } from 'node:fs';
-import { resolve, dirname } from 'node:path';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { exportVerilog } from '../exporter.js';
-import { circuit, bit, bus } from '../../circuit/index.js';
+import { describe, expect, it } from 'vitest';
+import { bit, bus, circuit } from '../../circuit/index.js';
 import {
-  // Logic
-  And,
-  Or,
-  Not,
-  Nand,
-  Xor,
   // Arithmetic (composites — these have `connect` and are touched by codemod)
   Adder,
-  Subtractor,
+  // Logic
+  And,
+  BitSlice,
   Comparator,
+  Decoder,
+  // Sequential
+  DFlipFlop,
   Multiplier,
   // Routing
   Mux,
-  Decoder,
-  BitSlice,
-  // Sequential
-  DFlipFlop,
+  Nand,
+  Not,
+  Or,
+  RAM,
   Register,
   // Memory
   ROM,
-  RAM,
+  RV32I_ALU,
+  RV32I_BranchComp,
+  RV32I_Control,
   // RV32I
   RV32I_Decode,
-  RV32I_ALU,
   RV32I_ImmGen,
-  RV32I_Control,
-  RV32I_BranchComp,
   RV32I_RegisterFile,
+  Subtractor,
+  Xor,
 } from '../../std/index.js';
 import type { Circuit, CircuitLibrary } from '../../types/circuit.js';
+import { exportVerilog } from '../exporter.js';
 
 const GOLDEN_FILE_REL = '../../../../../tools/codemod/golden-verilog-hashes.json';
 

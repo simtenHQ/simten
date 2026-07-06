@@ -23,8 +23,8 @@
  */
 
 import { describe, it } from 'vitest';
-import { circuit, bit, bus } from '../../circuit/index.js';
-import { And, Or, Xor, Not, Adder, Register, DFlipFlop, Constant } from '../../std/index.js';
+import { bit, bus, circuit } from '../../circuit/index.js';
+import { Adder, And, Constant, DFlipFlop, Not, Or, Register, Xor } from '../../std/index.js';
 import { assertFlatCircuitInvariants, elaborateBuilt } from './_invariants.js';
 
 // ── 1. HalfAdder — two primitives, no nesting. Trivial baseline. ──────────────

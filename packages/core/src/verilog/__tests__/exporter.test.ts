@@ -4,23 +4,23 @@
  * Verifies that circuits defined with circuit() can be exported to Verilog.
  */
 
-import { describe, it, expect } from 'vitest';
-import { exportVerilog } from '../exporter.js';
-import { circuit, bit, bus, mem } from '../../circuit/index.js';
+import { describe, expect, it } from 'vitest';
+import { bit, bus, circuit, mem } from '../../circuit/index.js';
 import {
-  And,
-  Or,
-  Xor,
-  Not,
   Adder,
-  Register,
+  And,
   DFlipFlop,
-  ROM,
-  RAM,
   DualPortRAM,
+  Not,
+  Or,
+  RAM,
+  Register,
+  ROM,
   RV32I_InstrMem,
+  Xor,
 } from '../../std/index.js';
 import type { Circuit, CircuitLibrary } from '../../types/circuit.js';
+import { exportVerilog } from '../exporter.js';
 
 function libraryFor(c: { circuit: any; _dependencies: ReadonlyMap<string, any> }) {
   const circuitMap = new Map<string, Circuit>();

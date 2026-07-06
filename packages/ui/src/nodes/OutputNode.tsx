@@ -1,7 +1,7 @@
-import { BaseNode, type PortConfig } from './BaseNode';
-import type { NodeData } from './NodeData';
-import { CompositeBadge } from './CompositeBadge';
 import { cn } from '../lib/utils';
+import { BaseNode, type PortConfig } from './BaseNode';
+import { CompositeBadge } from './CompositeBadge';
+import type { NodeData } from './NodeData';
 
 interface OutputNodeProps {
   data: NodeData;

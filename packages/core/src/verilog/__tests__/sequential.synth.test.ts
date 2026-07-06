@@ -7,12 +7,12 @@
  *   - FIFO-style pipeline (multiple registers) — multi-stage sequential
  */
 
-import { describe, it, expect } from 'vitest';
-import { exportVerilog } from '../exporter.js';
-import { circuit, bit, bus } from '../../circuit/index.js';
-import { DFlipFlop, Register, Adder, Subtractor, Mux, Constant, Or } from '../../std/index.js';
+import { describe, expect, it } from 'vitest';
+import { bit, bus, circuit } from '../../circuit/index.js';
+import { Adder, Constant, DFlipFlop, Mux, Or, Register, Subtractor } from '../../std/index.js';
 import type { CircuitLibrary } from '../../types/circuit.js';
-import { synthesizeVerilog, hasSynth } from './synth.js';
+import { exportVerilog } from '../exporter.js';
+import { hasSynth, synthesizeVerilog } from './synth.js';
 
 // ---- helpers ----------------------------------------------------------------
 

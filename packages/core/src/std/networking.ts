@@ -2,8 +2,8 @@
  * Standard Library — Networking / Ethernet Components
  */
 
-import { circuit } from '../circuit/circuit.js';
 import { bit, bus } from '../circuit/bit-bus.js';
+import { circuit } from '../circuit/circuit.js';
 
 // CRC-32 lookup table (IEEE 802.3, polynomial 0xEDB88320 reflected)
 const CRC32_TABLE: number[] = (() => {
@@ -234,7 +234,7 @@ export const Eth_FrameParser = circuit('Eth_FrameParser', {
       PAYLOAD = 6,
       DONE = 7;
     const newRegs = new Map(regs);
-    let state = regs.get(R_STATE) ?? IDLE;
+    const state = regs.get(R_STATE) ?? IDLE;
     const byteCount = ((tk >> 3) & 1) + ((tk >> 2) & 1) + ((tk >> 1) & 1) + (tk & 1);
     const prevCounter = regs.get(R_BYTE_COUNTER) ?? 0;
     newRegs.set(R_BYTE_COUNTER, prevCounter + byteCount);

@@ -8,15 +8,15 @@
  * has zero tracing overhead.
  */
 
-import type { FlatCircuit } from '../types/simulator.js';
 import type { CircuitLibrary } from '../types/circuit.js';
+import type { FlatCircuit } from '../types/simulator.js';
+import { compileForSimulation } from './compile-circuit.js';
+import { EVALUATORS, type EvalContext } from './evaluators/index.js';
+import { NumericEventQueue } from './numeric-event-queue.js';
 import type { NumericCircuit } from './numeric-types.js';
 import type { NumericPortValues } from './numeric-values.js';
-import { compileForSimulation } from './compile-circuit.js';
-import { NumericEventQueue } from './numeric-event-queue.js';
 import { createNumericPortValues } from './numeric-values.js';
 import { seedInitialQueue } from './propagate.js';
-import { EVALUATORS, type EvalContext } from './evaluators/index.js';
 
 /** A single step in the propagation trace */
 export interface PropagationStep {

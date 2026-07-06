@@ -12,15 +12,15 @@
  * your own code. This is the same CPU core that passes riscv-arch-test
  * (38/38 vs Spike) and runs on a ULX3S FPGA.
  */
-import { circuit, bit, bus } from '@simten/core/circuit';
+import { bit, bus, circuit } from '@simten/core/circuit';
 import {
   Constant,
-  HexDisplay,
   DualPortROM,
-  RV32I_DataMem,
+  HexDisplay,
   MemBusMux,
-  UART_TX,
   RV32I_Core,
+  RV32I_DataMem,
+  UART_TX,
 } from '@simten/core/std';
 
 // The preloaded program — prints "HELLO FROM RISC-V" in a loop:

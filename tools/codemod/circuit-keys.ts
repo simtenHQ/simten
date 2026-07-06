@@ -15,18 +15,18 @@
  *     c. Rewrite body references: <inAlias>.X → inputs.X, <outAlias>.X → outputs.X
  */
 
-import {
-  Project,
-  SyntaxKind,
-  Node,
-  type ObjectLiteralExpression,
-  type ArrowFunction,
-  type ObjectBindingPattern,
-  type CallExpression,
-} from 'ts-morph';
+import { execSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { execSync } from 'node:child_process';
+import {
+  type ArrowFunction,
+  type CallExpression,
+  Node,
+  type ObjectBindingPattern,
+  type ObjectLiteralExpression,
+  Project,
+  SyntaxKind,
+} from 'ts-morph';
 
 // ── CLI ─────────────────────────────────────────────────────────────────────
 

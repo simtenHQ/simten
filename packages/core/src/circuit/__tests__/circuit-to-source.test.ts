@@ -1,8 +1,8 @@
-import { describe, it, expect } from 'vitest';
-import { circuit, bit, bus, reg } from '../index.js';
-import { circuitToSource, CircuitToSourceError } from '../circuit-to-source.js';
-import { And, Or, Not, Xor, Register } from '../../std/index.js';
+import { describe, expect, it } from 'vitest';
+import { And, Not, Or, Register, Xor } from '../../std/index.js';
+import { CircuitToSourceError, circuitToSource } from '../circuit-to-source.js';
 import { executeCircuitCode } from '../execute.js';
+import { bit, bus, circuit, reg } from '../index.js';
 
 /** Strip imports so executeCircuitCode (which runs in a Function scope with
  *  stdlib pre-injected) doesn't choke on module syntax. The serializer no

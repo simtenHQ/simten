@@ -14,10 +14,10 @@ import { createRoot } from 'react-dom/client';
 
 import '../src/styles.css';
 
-import { ThemeProvider } from '@/components/ThemeProvider';
-import { SandboxProvider } from '@simten/ui/sandbox';
 import { ShareCircuitProvider } from '@simten/embed';
+import { SandboxProvider } from '@simten/ui/sandbox';
 import EditorShell from '@/components/EditorShell';
+import { ThemeProvider } from '@/components/ThemeProvider';
 
 const rootEl = document.getElementById('root');
 if (!rootEl) throw new Error('viewer: #root not found');

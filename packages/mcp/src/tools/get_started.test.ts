@@ -6,10 +6,10 @@
  * top-level circuits — and must still compile cleanly via checkCircuit.
  */
 
-import { describe, it, expect } from 'vitest';
-import { EXAMPLES } from '@simten/core/examples/catalog';
 import { checkCircuit } from '@simten/core/api';
-import { materializeExample, buildOrientation } from './get_started.js';
+import { EXAMPLES } from '@simten/core/examples/catalog';
+import { describe, expect, it } from 'vitest';
+import { buildOrientation, materializeExample } from './get_started.js';
 
 describe('materializeExample', () => {
   for (const ex of EXAMPLES) {

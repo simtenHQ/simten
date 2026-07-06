@@ -12,7 +12,7 @@
 import { simulate } from '@simten/core/sim';
 import type { Circuit } from '@simten/core/simulator';
 import { buildSnake } from './index.js';
-import { SnakeRefModel, FB_SIZE, GRID } from './ref-model.js';
+import { FB_SIZE, GRID, SnakeRefModel } from './ref-model.js';
 
 export type SnakeBuilt = ReturnType<typeof buildSnake>['built'];
 export type SnakeSim = ReturnType<typeof buildSim>;

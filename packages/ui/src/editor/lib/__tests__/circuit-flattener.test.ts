@@ -2,11 +2,11 @@
  * Tests for Circuit Flattener (IR v0.1)
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
-import { flattenCircuit, hasCompositeComponents } from '../utils/circuit-flattener';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { useCircuitLibraryStore } from '../../stores/circuit-library-store';
 import type { Circuit } from '../../types/circuit';
 import { bitType } from '../../types/circuit';
+import { flattenCircuit, hasCompositeComponents } from '../utils/circuit-flattener';
 
 describe('Circuit Flattener (IR v0.1)', () => {
   beforeEach(() => {

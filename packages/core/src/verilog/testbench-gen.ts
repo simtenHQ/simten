@@ -12,10 +12,10 @@
  */
 
 import type { Circuit, PortType } from '../types/circuit.js';
-import type { VerilogTestbenchOptions, TestVector } from './types.js';
+import type { TestVector, VerilogTestbenchOptions } from './types.js';
 
 function sanitizeId(id: string): string {
-  return id.replace(/[.\-]/g, '_').replace(/[^a-zA-Z0-9_]/g, '');
+  return id.replace(/[.-]/g, '_').replace(/[^a-zA-Z0-9_]/g, '');
 }
 
 function portWidth(pt: PortType): number {

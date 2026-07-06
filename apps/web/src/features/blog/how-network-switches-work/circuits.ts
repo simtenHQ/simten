@@ -5,24 +5,24 @@
  * detection and buffering to arbitration, routing, and serialization.
  */
 
-import { circuit, bit, bus } from '@simten/core/circuit';
-import type { BlogCircuit } from '../types';
+import { bit, bus, circuit } from '@simten/core/circuit';
 import {
-  Input,
-  Switch,
-  HexDisplay,
-  Led,
-  Constant,
-  Register,
   Adder,
-  Comparator,
-  Mux,
   And,
-  Or,
-  Not,
-  LeftShifter,
+  Comparator,
+  Constant,
   DualPortRAM,
+  HexDisplay,
+  Input,
+  Led,
+  LeftShifter,
+  Mux,
+  Not,
+  Or,
+  Register,
+  Switch,
 } from '@simten/core/std';
+import type { BlogCircuit } from '../types';
 
 // ── Simple demo circuits ──
 

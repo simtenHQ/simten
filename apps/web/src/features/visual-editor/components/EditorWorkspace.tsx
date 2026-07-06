@@ -7,32 +7,34 @@
 
 'use client';
 
-import { useCallback, useState, useEffect, useRef, useMemo } from 'react';
-import { ReactFlowProvider, ClockControls, SignalOutputPanel } from '@simten/ui/editor/components';
+import { exportVerilog } from '@simten/core/verilog';
+import { builtFromIR, useCircuitSimulator } from '@simten/embed';
 import { CircuitCanvas } from '@simten/ui/canvas';
-import { useCircuitSimulator, builtFromIR } from '@simten/embed';
+import { ClockControls, ReactFlowProvider, SignalOutputPanel } from '@simten/ui/editor/components';
 
 import {
-  useCircuitStore,
-  useCircuitPreviewStore,
   useCircuitLibraryStore,
+  useCircuitPreviewStore,
+  useCircuitStore,
 } from '@simten/ui/editor/stores';
 import type { Circuit } from '@simten/ui/editor/types';
+import { encodeSourceForUrl, shouldUseShortLink } from '@simten/ui/share';
+import { Download, Loader2, Share2 } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { SiteHeader } from '@/components/SiteHeader';
 import { Button } from '@/components/ui/button';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { TSEditor, type TSEditorRef } from '@/features/code-editor/TSEditor';
-import { Download, Share2, Loader2 } from 'lucide-react';
-import { exportVerilog } from '@simten/core/verilog';
-import { SiteHeader } from '@/components/SiteHeader';
-import { encodeSourceForUrl, shouldUseShortLink } from '@simten/ui/share';
+
 /** Check if a circuit name is an auto-generated harness (autoHarness appends 'Demo') */
 function isHarnessName(name: string): boolean {
   return name.endsWith('Demo') || name.endsWith('Harness');
 }
-import { useMCPConnection } from '@/hooks/useMCPConnection';
+
 import { WaveformViewer } from '@simten/ui/waveform';
-import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
-import { EXAMPLES, CATEGORY_COLORS, CATEGORY_LABELS, type Example } from '../examples';
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable';
+import { useMCPConnection } from '@/hooks/useMCPConnection';
+import { CATEGORY_COLORS, CATEGORY_LABELS, EXAMPLES, type Example } from '../examples';
 
 const SCAN_CODES: Record<string, number> = {
   ArrowUp: 0x48,

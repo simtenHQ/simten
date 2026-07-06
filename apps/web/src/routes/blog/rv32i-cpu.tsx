@@ -1,10 +1,10 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { blogPostHead } from '@/lib/seo';
-import { getPost } from '@/features/blog/posts';
-import { Suspense, lazy } from 'react';
-import { HeroSection } from '@/features/blog/rv32i-cpu/sections/HeroSection';
+import { lazy, Suspense } from 'react';
 import { BlogFooter } from '@/features/blog/BlogFooter';
 import { ErrorBoundary } from '@/features/blog/building-a-cpu/ErrorBoundary';
+import { getPost } from '@/features/blog/posts';
+import { HeroSection } from '@/features/blog/rv32i-cpu/sections/HeroSection';
+import { blogPostHead } from '@/lib/seo';
 
 const WhyRiscVSection = lazy(() =>
   import('@/features/blog/rv32i-cpu/sections/WhyRiscVSection').then((m) => ({

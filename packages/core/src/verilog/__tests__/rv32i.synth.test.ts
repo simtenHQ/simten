@@ -22,25 +22,25 @@
  * (synth_ecp5 / synth_ice40) where Yosys maps them to block RAM.
  */
 
-import { describe, it, expect } from 'vitest';
-import { exportVerilog } from '../exporter.js';
-import { circuit, bit, bus } from '../../circuit/index.js';
+import { describe, expect, it } from 'vitest';
+import { bit, bus, circuit } from '../../circuit/index.js';
 import {
-  RV32I_Decode,
   RV32I_ALU,
-  RV32I_ImmGen,
-  RV32I_Control,
   RV32I_BranchComp,
-  RV32I_WritebackMux,
-  RV32I_NextPCMux,
+  RV32I_Control,
+  RV32I_Decode,
   RV32I_ForwardingUnit,
-  RV32I_WBBypass,
-  RV32I_LoadAlign,
   RV32I_HazardUnit,
+  RV32I_ImmGen,
+  RV32I_LoadAlign,
+  RV32I_NextPCMux,
   RV32I_RegisterFile,
+  RV32I_WBBypass,
+  RV32I_WritebackMux,
 } from '../../std/index.js';
 import type { CircuitLibrary } from '../../types/circuit.js';
-import { synthesizeVerilog, hasSynth } from './synth.js';
+import { exportVerilog } from '../exporter.js';
+import { hasSynth, synthesizeVerilog } from './synth.js';
 
 // ---- helpers ----------------------------------------------------------------
 

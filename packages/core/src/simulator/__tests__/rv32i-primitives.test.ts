@@ -4,19 +4,19 @@
  * Tests each RV32I primitive in isolation using the circuit() API.
  */
 
-import { describe, it, expect } from 'vitest';
-import { simulate } from '../../sim/simulate.js';
-import { circuit, bit, bus } from '../../circuit/index.js';
+import { describe, expect, it } from 'vitest';
 import type { BuiltCircuit } from '../../circuit/index.js';
+import { bit, bus, circuit } from '../../circuit/index.js';
+import { simulate } from '../../sim/simulate.js';
 import {
-  RV32I_Decode,
   RV32I_ALU,
-  RV32I_ImmGen,
-  RV32I_Control,
   RV32I_BranchComp,
-  RV32I_RegisterFile,
-  RV32I_InstrMem,
+  RV32I_Control,
   RV32I_DataMem,
+  RV32I_Decode,
+  RV32I_ImmGen,
+  RV32I_InstrMem,
+  RV32I_RegisterFile,
 } from '../../std/index.js';
 
 /** Helper: simulate a 1-tick combinational circuit, return output values */

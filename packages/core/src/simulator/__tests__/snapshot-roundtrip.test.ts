@@ -36,10 +36,10 @@
  *      on cycle and input restoration too.
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
+import { bit, circuit } from '../../circuit/index.js';
 import { simulate } from '../../sim/simulate.js';
-import { circuit, bit } from '../../circuit/index.js';
-import { Xor, Not, Adder, Register, DFlipFlop } from '../../std/index.js';
+import { Adder, DFlipFlop, Not, Register, Xor } from '../../std/index.js';
 
 // ============================================================================
 // Fixtures
@@ -78,9 +78,7 @@ const Accumulator = circuit('Accumulator', {
 // Helpers
 // ============================================================================
 
-interface OutputReader<T> {
-  (): T;
-}
+type OutputReader<T> = () => T;
 
 function recordTrace<T>(sim: { tick(): void }, ticks: number, read: OutputReader<T>): T[] {
   const trace: T[] = [];

@@ -1,6 +1,6 @@
 import { CircuitEmbed } from '@simten/embed';
-import { ABSTRACTION_CIRCUITS } from '../circuits';
 import { HighlightedCode } from '@/components/HighlightedCode';
+import { ABSTRACTION_CIRCUITS } from '../circuits';
 
 export function TwoWaysSection() {
   const flat = ABSTRACTION_CIRCUITS.flatHalfAdder;

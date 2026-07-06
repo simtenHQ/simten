@@ -1,4 +1,5 @@
 #!/usr/bin/env tsx
+
 /**
  * RTL simulation of RV32I CPU with raw5/raw7 firmware.
  *
@@ -18,9 +19,9 @@
  * duplicating ~200 lines of node wiring.
  */
 
+import { fileURLToPath } from 'node:url';
 import { simulate } from '@simten/core/sim';
 import { buildCPUCore } from './index.js';
-import { fileURLToPath } from 'node:url';
 
 // ── raw5 firmware ─────────────────────────────────────────────────────────────
 // lui a5, 0x80000
@@ -171,7 +172,7 @@ function runSim(name: string, imem: number[], maxCycles = 200): void {
   const dmem = new Uint8Array(DMEM_SIZE);
   cpu.set({ instruction: 0, data_read: 0 });
 
-  let uartWrites: { cycle: number; byte: number }[] = [];
+  const uartWrites: { cycle: number; byte: number }[] = [];
 
   for (let cycle = 0; cycle < maxCycles; cycle++) {
     const instrAddr = toU32(cpu.get('instr_addr'));

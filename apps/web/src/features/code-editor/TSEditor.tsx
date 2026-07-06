@@ -11,18 +11,18 @@
 
 'use client';
 
-import { useState, useCallback, useRef, useEffect, useImperativeHandle, forwardRef } from 'react';
-import { useTheme } from '@/components/ThemeProvider';
+import type { Monaco, OnMount } from '@monaco-editor/react';
 import Editor from '@monaco-editor/react';
-import type { OnMount, Monaco } from '@monaco-editor/react';
-import type { editor } from 'monaco-editor';
 import type { Circuit } from '@simten/core';
 import { useSandboxContext } from '@simten/ui/sandbox';
+import type { editor } from 'monaco-editor';
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
+import { useTheme } from '@/components/ThemeProvider';
 import { CompileButton } from './CompileButton';
-import { ErrorDisplay } from './ErrorDisplay';
 import type { CompilationError } from './ErrorDisplay';
-import { useTypeAcquisition } from './useTypeAcquisition';
+import { ErrorDisplay } from './ErrorDisplay';
 import { useCorePreload } from './useCorePreload';
+import { useTypeAcquisition } from './useTypeAcquisition';
 
 // ============================================================================
 // Default code

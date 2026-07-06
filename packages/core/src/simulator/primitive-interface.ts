@@ -16,7 +16,7 @@
  * 5. Performance: Efficient evaluation for thousands of nodes
  */
 
-import type { BitValue, BusValue, PrimitiveState, ClockEdge } from '../types/simulator.js';
+import type { BitValue, BusValue, ClockEdge, PrimitiveState } from '../types/simulator.js';
 
 /**
  * Parameter value types for component configuration

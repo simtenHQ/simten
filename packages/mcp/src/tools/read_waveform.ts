@@ -15,15 +15,15 @@
  *   4. Format per request (changes / raw / edges) with output caps.
  */
 
-import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
+import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
-import { parseVcd } from '../lib/vcd-parser.js';
-import { detectClock, buildCycleMap } from '../lib/vcd-cycles.js';
-import { formatSignals, type FormatKind, type EdgeKind } from '../lib/vcd-format.js';
-import { resolveTestName } from '../lib/vcd-resolve-test.js';
 import { findRepoRoot } from '../lib/repo-root.js';
+import { buildCycleMap, detectClock } from '../lib/vcd-cycles.js';
+import { type EdgeKind, type FormatKind, formatSignals } from '../lib/vcd-format.js';
+import { parseVcd } from '../lib/vcd-parser.js';
+import { resolveTestName } from '../lib/vcd-resolve-test.js';
 
 const CYCLE_RANGE_HARD_CAP = 50_000;
 const PER_SIGNAL_TXN_CAP = 200;

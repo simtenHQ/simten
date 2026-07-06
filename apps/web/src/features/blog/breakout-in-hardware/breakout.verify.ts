@@ -18,7 +18,7 @@
  * Run: `tsx breakout.verify.ts`, or via the simten `verify_circuit` tool.
  */
 import { simulate } from '@simten/core/sim';
-import { verify, declareOracle } from '@simten/core/verify';
+import { declareOracle, verify } from '@simten/core/verify';
 import { Breakout } from './circuits.js';
 
 const W = 32;
