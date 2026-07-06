@@ -34,17 +34,17 @@ const { verilog, files } = exportVerilog(circuit, library, { target: 'synthesis'
 
 The `target: 'synthesis'` option strips simulation-only constructs (`initial` blocks) for FPGA-ready output. Memories above `inlineMemoryThreshold` (default 2048 words) are emitted as `$readmemh("<file>.hex", reg)` with the hex contents returned alongside — matching the Yosys/Vivado/Quartus convention for large ROM/RAM initialization.
 
-## AI tutor with Claude Code
+## AI tutor over MCP
 
-Connect Claude Code to get an AI tutor that can see your circuit, push changes to the browser, run simulations, and answer questions in real time:
+Connect an MCP-capable assistant — Claude Code, Codex CLI, Gemini CLI, Cursor, and others — to get an AI tutor that can see your circuit, push changes to the browser, run simulations, and answer questions in real time:
 
 ```bash
 claude mcp add simten npx @simten/mcp
 ```
 
-Ask Claude to build a counter or debug your ALU — it writes the TypeScript and the circuit appears on your canvas instantly.
+Ask it to build a counter or debug your ALU — it writes the TypeScript and the circuit appears on your canvas instantly.
 
-See the [Claude Code Integration](/docs/claude-code) guide for the full setup, available tools, and how the MCP viewer works.
+See the [MCP Integration](/docs/mcp-integration) guide for per-client setup, available tools, and how the MCP viewer works.
 
 Circuit code runs in an isolated sandbox — see [Security Architecture](/docs/security) for how Simten protects your credentials and filesystem from untrusted circuits.
 

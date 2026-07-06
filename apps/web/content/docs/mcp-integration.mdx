@@ -1,41 +1,43 @@
 ---
-title: Claude Code Integration
-description: How to use Claude as an AI tutor for building circuits
+title: MCP Integration
+description: Drive Simten from any MCP-compatible AI assistant — build, simulate, and verify circuits from your terminal
 ---
 
-Simten integrates with [Claude Code](https://claude.ai/claude-code) via MCP (Model Context Protocol). You talk to Claude in your terminal; Claude writes TypeScript circuit files, pushes them to a live viewer in your browser, and runs simulations and verification — so you watch the circuit take shape on a canvas as Claude builds it.
+Simten ships an MCP server (`@simten/mcp`) that any MCP-compatible AI assistant can drive — Claude Code, Codex CLI, Gemini CLI, Cursor, and others. You talk to your assistant in the terminal; it writes TypeScript circuit files, pushes them to a live viewer in your browser, and runs simulations and verification — so you watch the circuit take shape on a canvas as it's built.
+
+It's a standard stdio MCP server, so the tools below are the same whatever client you point at it. The examples on this page use [Claude Code](https://claude.ai/claude-code) as the reference client.
 
 ## What it looks like
 
-You run Claude Code in your terminal. When you ask Claude to build something, it:
+You run your assistant in the terminal. When you ask it to build something, it:
 
 1. Writes the TypeScript circuit definition to a file
 2. Pushes it to a live viewer in your browser — the circuit appears on the canvas instantly
 3. Runs a simulation, or a self-checking testbench, to confirm it behaves correctly
 
-The browser is a **viewer**: Claude pushes circuits, waveforms, and test results to it for display. It is one-way by design — the page shows what Claude built and sends nothing actionable back (see [Security](/docs/security#local-studio-server)). You drive the conversation from the terminal, where Claude Code already lives.
+The browser is a **viewer**: the assistant pushes circuits, waveforms, and test results to it for display. It is one-way by design — the page shows what was built and sends nothing actionable back (see [Security](/docs/security#local-studio-server)). You drive the conversation from the terminal, where your assistant already lives.
 
 ## Setup
 
-### 1. Install Claude Code
+### 1. Install a client
 
-Follow the [Claude Code installation guide](https://docs.anthropic.com/en/docs/claude-code/overview) if you haven't already.
+If you don't already have one, install an MCP-capable assistant. Any of these work; the rest of this page uses Claude Code.
 
 ### 2. Add the MCP server
 
-```bash
-claude mcp add simten npx @simten/mcp
-```
+Pick your client:
 
-This registers the Simten MCP server with your Claude Code installation. Claude now has access to circuit design tools.
+<McpInstall />
+
+This registers the Simten MCP server with your assistant, which now has access to the circuit design tools.
 
 ### 3. That's it — the viewer opens itself
 
-When Claude calls `show_circuit`, the MCP serves a small bundled editor from `localhost` and opens it in your browser automatically. Because the page and its WebSocket share a single localhost origin, there's no "Local Network Access" prompt and it works in every browser (including Safari). You don't need to visit simten.dev.
+When the assistant calls `show_circuit`, the MCP serves a small bundled editor from `localhost` and opens it in your browser automatically. Because the page and its WebSocket share a single localhost origin, there's no "Local Network Access" prompt and it works in every browser (including Safari). You don't need to visit simten.dev.
 
 ## Available tools
 
-Once the MCP server is registered, Claude has access to these tools:
+Once the MCP server is registered, your assistant has access to these tools:
 
 | Tool | What it does |
 |------|-------------|
@@ -49,19 +51,19 @@ Once the MCP server is registered, Claude has access to these tools:
 | `read_waveform` | Query a VCD waveform for specific signals over a cycle window. |
 | `run_on_fpga` | Build and run the circuit on a connected FPGA board. |
 
-`get_grammar`, `list_components`, and `get_verify_api` exist because clients cap an MCP server's instructions *and each tool description* at 2 KB — too small to inline the circuit API, the component catalog, or the testbench-writing guide. Claude calls these on demand to get the authoritative part names, signatures, and `simulate()` API rather than guessing.
+`get_grammar`, `list_components`, and `get_verify_api` exist because clients cap an MCP server's instructions *and each tool description* at 2 KB — too small to inline the circuit API, the component catalog, or the testbench-writing guide. The assistant calls these on demand to get the authoritative part names, signatures, and `simulate()` API rather than guessing.
 
 ## How the connection works
 
-The MCP server runs locally alongside Claude Code and serves two roles:
+The MCP server runs locally alongside your assistant and serves two roles:
 
-1. **MCP tool provider** — Claude calls tools via the standard MCP protocol (stdio transport).
+1. **MCP tool provider** — the assistant calls tools via the standard MCP protocol (stdio transport).
 2. **Local studio** — a single HTTP + WebSocket server on `localhost:19847` serves the bundled viewer *and* hosts the socket the viewer connects back on. The page and the socket share one origin, which is what sidesteps the browser's Local Network Access block.
 
-When Claude calls `show_circuit` (or pushes traces / test results), the data flows **one way** to the viewer for display. The viewer sends back only a boolean render acknowledgment — there is no channel for the page to drive Claude or read host state.
+When the assistant calls `show_circuit` (or pushes traces / test results), the data flows **one way** to the viewer for display. The viewer sends back only a boolean render acknowledgment — there is no channel for the page to drive the assistant or read host state.
 
 ```
-Claude Code (terminal)
+Assistant (terminal)
     ↕ MCP (stdio)
 MCP Server (local)
     ↓ WebSocket push
@@ -80,7 +82,7 @@ Browser viewer
 
 **You:** "Build me a 4-bit counter with a hex display"
 
-**Claude:**
+**The assistant:**
 1. Writes the circuit: Register + Adder + Constant + HexDisplay
 2. Calls `show_circuit` — the circuit appears in your browser viewer
 3. Calls `simulate_circuit` (or `verify_circuit`) to confirm it counts correctly
@@ -88,17 +90,17 @@ Browser viewer
 
 **You:** "Can you add a reset button?"
 
-**Claude:**
+**The assistant:**
 1. Edits the circuit file it already wrote
 2. Adds a Switch and Mux for reset logic
 3. Calls `show_circuit` again — the viewer updates live, and you see the reset switch appear
 
-## Running without Claude
+## Running without an assistant
 
-The app works without Claude Code. You can:
+The app works without any AI assistant. You can:
 
 - Write circuit code directly in the editor
 - Explore the interactive blog posts
 - Embed circuits in your own React app
 
-Claude is an enhancement, not a requirement. The MCP server adds an AI tutor to the experience, but all the tools and content work standalone.
+An assistant is an enhancement, not a requirement. The MCP server adds an AI tutor to the experience, but all the tools and content work standalone.

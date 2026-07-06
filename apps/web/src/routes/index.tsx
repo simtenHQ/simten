@@ -130,10 +130,10 @@ function BentoFeatures() {
             href="/cpu/rv32i"
           />
           <BentoCell
-            title="Wire it to Claude"
-            description="An MCP server lets Claude write, simulate, and debug circuits live in your browser — describe, generate, fix, ship."
+            title="Wire it to your assistant"
+            description="An MCP server lets Claude, Codex, Gemini, or Cursor write, simulate, and debug circuits live in your browser — describe, generate, fix, ship."
             visual={<MCPBentoVisual />}
-            href="/docs/claude-code"
+            href="/docs/mcp-integration"
           />
           <BentoCell
             title="Rewind any cycle"
