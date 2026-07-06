@@ -143,10 +143,23 @@ function buildParamMapping(fn: Function): Map<string, string> | null {
 
 /** Operators allowed in synthesizable expressions */
 const ALLOWED_BINARY_OPS = new Set([
-  '&', '|', '^', '<<', '>>', '>>>',  // bitwise
-  '+', '-', '*',                       // arithmetic
-  '===', '!==', '<', '>', '<=', '>=', // comparison
-  '==', '!=',                          // loose comparison (some compiled JS uses these)
+  '&',
+  '|',
+  '^',
+  '<<',
+  '>>',
+  '>>>', // bitwise
+  '+',
+  '-',
+  '*', // arithmetic
+  '===',
+  '!==',
+  '<',
+  '>',
+  '<=',
+  '>=', // comparison
+  '==',
+  '!=', // loose comparison (some compiled JS uses these)
 ]);
 
 const ALLOWED_LOGICAL_OPS = new Set(['&&', '||', '??']);
@@ -235,13 +248,20 @@ export function validateSynthAST(
           if (left?.type === 'Identifier' && declaredLetResults.has(left.name)) {
             // switch-result pattern: let result; switch { case: result = ...; }
             validateExpr(node.expression.right);
-          } else if (isOnTick && left?.type === 'MemberExpression' && left.computed
-            && left.object?.type === 'Identifier' && memNames.has(left.object.name)) {
+          } else if (
+            isOnTick &&
+            left?.type === 'MemberExpression' &&
+            left.computed &&
+            left.object?.type === 'Identifier' &&
+            memNames.has(left.object.name)
+          ) {
             // onTick memory write: memory[addr] = value
             validateExpr(left.property); // validate index
             validateExpr(node.expression.right);
           } else {
-            errors.push(`Assignment to '${left?.name ?? describeMember(left)}' is not synthesizable`);
+            errors.push(
+              `Assignment to '${left?.name ?? describeMember(left)}' is not synthesizable`,
+            );
           }
         } else {
           errors.push(`Expression statement is not synthesizable: ${node.expression?.type}`);
@@ -295,13 +315,17 @@ export function validateSynthAST(
 
       case 'Identifier':
         if (!allowedIdents.has(node.name)) {
-          errors.push(`Reference to '${node.name}' is not synthesizable — not an input or declared const`);
+          errors.push(
+            `Reference to '${node.name}' is not synthesizable — not an input or declared const`,
+          );
         }
         break;
 
       case 'Literal':
         if (typeof node.value !== 'number' && typeof node.value !== 'boolean') {
-          errors.push(`Literal type '${typeof node.value}' is not synthesizable — only numbers and booleans allowed`);
+          errors.push(
+            `Literal type '${typeof node.value}' is not synthesizable — only numbers and booleans allowed`,
+          );
         }
         break;
 
@@ -442,7 +466,10 @@ export function emitVerilogFromEval(
 ): { lines: string[]; declarations: string[] } {
   const paramMapping = buildParamMapping(evalFn);
   if (!paramMapping) {
-    return { lines: [`// ERROR: could not parse eval parameter mapping for "${ctx.primitiveType}"`], declarations: [] };
+    return {
+      lines: [`// ERROR: could not parse eval parameter mapping for "${ctx.primitiveType}"`],
+      declarations: [],
+    };
   }
 
   // Build input wire mapping: local binding name → Verilog wire
@@ -542,8 +569,12 @@ function emitStatement(tc: TranspileContext, node: any): void {
       // Handle memory write: memory[addr] = value
       if (tc.isOnTick && node.expression?.type === 'AssignmentExpression') {
         const left = node.expression.left;
-        if (left?.type === 'MemberExpression' && left.computed
-          && left.object?.type === 'Identifier' && tc.memStateNames.has(left.object.name)) {
+        if (
+          left?.type === 'MemberExpression' &&
+          left.computed &&
+          left.object?.type === 'Identifier' &&
+          tc.memStateNames.has(left.object.name)
+        ) {
           const memName = `${tc.nodeId}_${left.object.name}`;
           const index = emitExpr(tc, left.property);
           const value = emitExpr(tc, node.expression.right);
@@ -615,7 +646,10 @@ function emitSwitch(tc: TranspileContext, node: any): void {
       }
 
       for (const stmt of c.consequent) {
-        if (stmt.type === 'ExpressionStatement' && stmt.expression?.type === 'AssignmentExpression') {
+        if (
+          stmt.type === 'ExpressionStatement' &&
+          stmt.expression?.type === 'AssignmentExpression'
+        ) {
           const target = tc.localWires.get(stmt.expression.left.name);
           const value = emitExpr(tc, stmt.expression.right);
           if (target) tc.lines.push(`      ${target} = ${value};`);
@@ -687,8 +721,12 @@ function emitIfBody(tc: TranspileContext, node: any): void {
         const target = tc.localWires.get(left.name);
         const value = emitExpr(tc, stmt.expression.right);
         if (target) tc.lines.push(`    ${target} = ${value};`);
-      } else if (left?.type === 'MemberExpression' && left.computed
-        && left.object?.type === 'Identifier' && tc.memStateNames.has(left.object.name)) {
+      } else if (
+        left?.type === 'MemberExpression' &&
+        left.computed &&
+        left.object?.type === 'Identifier' &&
+        tc.memStateNames.has(left.object.name)
+      ) {
         // memory write: memory[addr] = value → memory[addr] <= value
         const memName = `${tc.nodeId}_${left.object.name}`;
         const index = emitExpr(tc, left.property);
@@ -715,8 +753,12 @@ function collectAssignTargets(node: any, targets: Set<string>, tc: TranspileCont
     const left = node.expression.left;
     if (left?.type === 'Identifier' && tc.localWires.has(left.name)) {
       targets.add(left.name);
-    } else if (left?.type === 'MemberExpression' && left.computed
-      && left.object?.type === 'Identifier' && tc.memStateNames.has(left.object.name)) {
+    } else if (
+      left?.type === 'MemberExpression' &&
+      left.computed &&
+      left.object?.type === 'Identifier' &&
+      tc.memStateNames.has(left.object.name)
+    ) {
       hasMemWrite = true;
     }
   }
@@ -739,9 +781,9 @@ function collectAssignTargets(node: any, targets: Set<string>, tc: TranspileCont
 const JS_TO_VERILOG_OP: Record<string, string> = {
   '===': '==',
   '!==': '!=',
-  '>>>': '>>',  // Verilog >> on unsigned is logical shift
-  '&&': '&',    // for 1-bit logical AND → bitwise
-  '||': '|',    // for 1-bit logical OR → bitwise
+  '>>>': '>>', // Verilog >> on unsigned is logical shift
+  '&&': '&', // for 1-bit logical AND → bitwise
+  '||': '|', // for 1-bit logical OR → bitwise
 };
 
 function emitExpr(tc: TranspileContext, node: any): string {
@@ -801,7 +843,11 @@ function emitExpr(tc: TranspileContext, node: any): string {
 
     case 'MemberExpression': {
       // memory[addr] → mem_name[addr_expr]
-      if (node.computed && node.object?.type === 'Identifier' && tc.memStateNames.has(node.object.name)) {
+      if (
+        node.computed &&
+        node.object?.type === 'Identifier' &&
+        tc.memStateNames.has(node.object.name)
+      ) {
         const memName = `${tc.nodeId}_${node.object.name}`;
         const index = emitExpr(tc, node.property);
         return `${memName}[${index}]`;
@@ -848,7 +894,15 @@ function formatNumericLiteral(value: number, raw?: string): string {
  */
 export function tryEmitFromEval(
   ctx: PrimitiveContext,
-  getEval: (name: string) => { evalFn: Function; inputNames: string[]; outputNames: string[]; stateKeys?: string[]; onTickFn?: Function } | undefined,
+  getEval: (name: string) =>
+    | {
+        evalFn: Function;
+        inputNames: string[];
+        outputNames: string[];
+        stateKeys?: string[];
+        onTickFn?: Function;
+      }
+    | undefined,
 ): { lines: string[]; declarations: string[] } | null {
   const entry = getEval(ctx.primitiveType);
   if (!entry) return null;
@@ -873,10 +927,19 @@ export function tryEmitFromEval(
   const parsed = parseEvalSource(entry.evalFn);
   if (!parsed) return null;
 
-  const validation = validateSynthAST(parsed, entry.inputNames, entry.outputNames, { memStateNames });
+  const validation = validateSynthAST(parsed, entry.inputNames, entry.outputNames, {
+    memStateNames,
+  });
   if (!validation.valid) return null;
 
-  const evalResult = emitVerilogFromEval(parsed, entry.evalFn, ctx, entry.inputNames, entry.outputNames, { memStateNames });
+  const evalResult = emitVerilogFromEval(
+    parsed,
+    entry.evalFn,
+    ctx,
+    entry.inputNames,
+    entry.outputNames,
+    { memStateNames },
+  );
 
   // Emit reg declarations + initial-zero blocks for scalar state keys.
   // The user's declared initializer (`state: { foo: 42 }`) is not yet
@@ -911,17 +974,24 @@ export function tryEmitFromEval(
     });
     if (!onTickValidation.valid) return null;
 
-    const onTickResult = emitVerilogFromEval(onTickParsed, entry.onTickFn, ctx, entry.inputNames, entry.outputNames, {
-      memStateNames,
-      isOnTick: true,
-    });
+    const onTickResult = emitVerilogFromEval(
+      onTickParsed,
+      entry.onTickFn,
+      ctx,
+      entry.inputNames,
+      entry.outputNames,
+      {
+        memStateNames,
+        isOnTick: true,
+      },
+    );
 
     // Wrap onTick output in always @(posedge clk) with a synchronous reset
     // arm that zeros every scalar state reg. See #131 — the user's declared
     // `state: { foo: 42 }` initializer is not yet threaded through, so the
     // reset arm uses literal 0 (matching the `initial` block above) rather
     // than the user's declared value.
-    const onTickLines = onTickResult.lines.filter(l => l.trim().length > 0);
+    const onTickLines = onTickResult.lines.filter((l) => l.trim().length > 0);
     if (onTickLines.length > 0) {
       evalResult.lines.push(`always @(posedge ${ctx.clockName}) begin`);
       if (scalarRegNames.length > 0) {
@@ -932,10 +1002,10 @@ export function tryEmitFromEval(
           evalResult.lines.push(`    ${regName} <= ${resetLiteral};`);
         }
         evalResult.lines.push(`  end else begin`);
-        evalResult.lines.push(...onTickLines.map(l => `    ${l}`));
+        evalResult.lines.push(...onTickLines.map((l) => `    ${l}`));
         evalResult.lines.push(`  end`);
       } else {
-        evalResult.lines.push(...onTickLines.map(l => `  ${l}`));
+        evalResult.lines.push(...onTickLines.map((l) => `  ${l}`));
       }
       evalResult.lines.push(`end`);
     }

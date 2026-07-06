@@ -176,7 +176,7 @@ describe('VCD Generator', () => {
               values: [false],
               changes: [{ cycle: 0, value: false }],
             },
-          ])
+          ]),
         ),
       };
 
@@ -280,8 +280,8 @@ describe('VCD Generator', () => {
             'wide_bus',
             {
               signal: { nodeId: '', portName: 'wide_bus', displayName: 'wide_bus', width: 32 },
-              values: [0xDEADBEEF],
-              changes: [{ cycle: 0, value: 0xDEADBEEF }],
+              values: [0xdeadbeef],
+              changes: [{ cycle: 0, value: 0xdeadbeef }],
             },
           ],
         ]),

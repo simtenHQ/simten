@@ -28,10 +28,7 @@ import { Register, Adder, Constant } from '../../std/index.js';
 import { createSimulatorFromCircuit } from '../../simulator/index.js';
 import type { Circuit, CircuitLibrary } from '../../types/circuit.js';
 import { verifyVerilog, hasVerifier } from './verify.js';
-import {
-  buildParityTraceAcrossReset,
-  buildNaiveTraceAcrossReset,
-} from './parity-helpers.js';
+import { buildParityTraceAcrossReset, buildNaiveTraceAcrossReset } from './parity-helpers.js';
 
 function buildCounter() {
   const Counter = circuit('Counter', {
@@ -89,7 +86,7 @@ function buildResetVectors(): SequentialTestVector[] {
 
 function readCount(sim: ReturnType<typeof createSimulatorFromCircuit>): number {
   const v = sim.getPortValues().get('__top__.count');
-  return typeof v === 'number' ? (v >>> 0) & 0xFF : 0;
+  return typeof v === 'number' ? (v >>> 0) & 0xff : 0;
 }
 
 async function runVerilogTrace(): Promise<number[]> {
@@ -105,15 +102,15 @@ async function runVerilogTrace(): Promise<number[]> {
   expect(result.success).toBe(true);
   expect(result.results).toBeDefined();
 
-  return result.results!
-    .sort((a, b) => a.testCase - b.testCase)
-    .map((r) => r.outputs.count & 0xFF);
+  return result.results!.sort((a, b) => a.testCase - b.testCase).map((r) => r.outputs.count & 0xff);
 }
 
 const d = describe.skipIf(!hasVerifier());
 
 d('reset — JS simulator vs iverilog co-simulation under rst_n', () => {
-  it('mid-execution rst_n pulse: sim (via bridge) and hardware agree cycle-by-cycle', { timeout: 30000 }, async () => {
+  it('mid-execution rst_n pulse: sim (via bridge) and hardware agree cycle-by-cycle', {
+    timeout: 30000,
+  }, async () => {
     const { circuit, lib } = buildCounter();
     const sim = createSimulatorFromCircuit(circuit, lib);
 
@@ -146,7 +143,9 @@ d('reset — JS simulator vs iverilog co-simulation under rst_n', () => {
   // drop this test, and rewrite the parity test above to compare
   // traces straight without any bridge.
   // ───────────────────────────────────────────────────────────────────
-  it('bridge invariant: naive trace mismatches Verilog by exactly one element at the reset cycle (proves bridge is necessary; drop this when #132 lands)', { timeout: 30000 }, async () => {
+  it('bridge invariant: naive trace mismatches Verilog by exactly one element at the reset cycle (proves bridge is necessary; drop this when #132 lands)', {
+    timeout: 30000,
+  }, async () => {
     const { circuit, lib } = buildCounter();
     const sim = createSimulatorFromCircuit(circuit, lib);
 

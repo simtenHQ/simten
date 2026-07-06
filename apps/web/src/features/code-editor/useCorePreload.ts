@@ -30,10 +30,7 @@ export function useCorePreload(monaco: Monaco | null) {
   useEffect(() => {
     if (!monaco) return;
     const ts = monaco.languages.typescript.typescriptDefaults;
-    ts.addExtraLib(
-      simtenCoreTypes,
-      'file:///node_modules/@simten/core/index.d.ts',
-    );
+    ts.addExtraLib(simtenCoreTypes, 'file:///node_modules/@simten/core/index.d.ts');
     ts.addExtraLib(simtenGlobals, 'file:///simten-globals.d.ts');
     ts.addExtraLib(
       CORE_SUBPATHS.map(

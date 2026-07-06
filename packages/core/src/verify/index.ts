@@ -166,14 +166,26 @@ export const verify = {
     const oracle = resolveOracle();
 
     if (underVitest) {
-      if (!oracle) throw new Error('verify.run(): no oracle declared — declareOracle({ tier, type, independence_basis }) is required.');
+      if (!oracle)
+        throw new Error(
+          'verify.run(): no oracle declared — declareOracle({ tier, type, independence_basis }) is required.',
+        );
       if (_checks.length === 0) throw new Error('verify.run(): no checks were run.');
-      if (_failures.length > 0) throw new Error(`verify: ${_failures.length} failure(s): ${JSON.stringify(_failures, null, 2)}`);
+      if (_failures.length > 0)
+        throw new Error(
+          `verify: ${_failures.length} failure(s): ${JSON.stringify(_failures, null, 2)}`,
+        );
       return;
     }
 
-    if (!oracle) return emitError('no oracle declared — declareOracle({ tier, type, independence_basis }) or pass one via the verify_circuit tool.');
-    if (_checks.length === 0) return emitError('no checks were run — call verify.check / verify.exhaustive before verify.run().');
+    if (!oracle)
+      return emitError(
+        'no oracle declared — declareOracle({ tier, type, independence_basis }) or pass one via the verify_circuit tool.',
+      );
+    if (_checks.length === 0)
+      return emitError(
+        'no checks were run — call verify.check / verify.exhaustive before verify.run().',
+      );
 
     const result: VerifyResult = {
       circuit: _circuit,

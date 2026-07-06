@@ -1,4 +1,3 @@
-
 import {
   applyNodeChanges,
   Background,
@@ -13,8 +12,8 @@ import {
   type Node,
   type NodeTypes,
   type OnNodesChange,
-} from "@xyflow/react";
-import "@xyflow/react/dist/style.css";
+} from '@xyflow/react';
+import '@xyflow/react/dist/style.css';
 import React, {
   useCallback,
   useLayoutEffect,
@@ -22,37 +21,44 @@ import React, {
   useMemo,
   useState,
   type ReactNode,
-} from "react";
+} from 'react';
 
-import type {
-  Circuit,
-  CircuitLibrary,
-  FlatPortValueMap,
-  FlatSequentialState,
-} from "@simten/core";
-import type { NodeData } from "../nodes";
-import { cleanCircuitLabels } from "./label-utils";
-import { EDGE_TYPES, NODE_TYPES } from "./node-types";
-import { projectCircuitToReactFlow } from "./projection";
-import type { CircuitLayout, InspectorFrame, MetadataState } from "./types";
-import { useLayout } from "./useLayout";
-import { useIsMobile } from "./hooks/useIsMobile";
-import { useDetectTheme } from "./hooks/useDetectTheme";
-import { CompositeInspectorDialog } from "./CompositeInspectorDialog";
+import type { Circuit, CircuitLibrary, FlatPortValueMap, FlatSequentialState } from '@simten/core';
+import type { NodeData } from '../nodes';
+import { cleanCircuitLabels } from './label-utils';
+import { EDGE_TYPES, NODE_TYPES } from './node-types';
+import { projectCircuitToReactFlow } from './projection';
+import type { CircuitLayout, InspectorFrame, MetadataState } from './types';
+import { useLayout } from './useLayout';
+import { useIsMobile } from './hooks/useIsMobile';
+import { useDetectTheme } from './hooks/useDetectTheme';
+import { CompositeInspectorDialog } from './CompositeInspectorDialog';
 
 function CanvasControls() {
   const { fitView, zoomIn, zoomOut } = useReactFlow();
   const btn =
-    "bg-[var(--embed-bg-tertiary)] hover:opacity-80 text-[var(--embed-text-secondary)] p-1.5 rounded border border-[var(--embed-border)] transition-colors";
+    'bg-[var(--embed-bg-tertiary)] hover:opacity-80 text-[var(--embed-text-secondary)] p-1.5 rounded border border-[var(--embed-border)] transition-colors';
   return (
     <div className="flex items-center gap-1">
       <button onClick={() => zoomOut()} className={btn} title="Zoom out" aria-label="Zoom out">
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+        <svg
+          className="w-4 h-4"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+          strokeWidth={1.5}
+        >
           <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14" />
         </svg>
       </button>
       <button onClick={() => zoomIn()} className={btn} title="Zoom in" aria-label="Zoom in">
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+        <svg
+          className="w-4 h-4"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+          strokeWidth={1.5}
+        >
           <path strokeLinecap="round" strokeLinejoin="round" d="M12 5v14M5 12h14" />
         </svg>
       </button>
@@ -62,7 +68,13 @@ function CanvasControls() {
         title="Fit view"
         aria-label="Fit view"
       >
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+        <svg
+          className="w-4 h-4"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+          strokeWidth={1.5}
+        >
           <path
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -99,14 +111,10 @@ export interface CircuitCanvasProps {
   edgeTypes?: EdgeTypes;
   showControls?: boolean;
   showPortLabels?: boolean;
-  onPortClick?: (
-    nodeLabel: string,
-    portName: string,
-    portType: "input" | "output",
-  ) => void;
+  onPortClick?: (nodeLabel: string, portName: string, portType: 'input' | 'output') => void;
   glowUnconnected?: boolean;
   /** Theme for the canvas. Defaults to "dark". */
-  theme?: "light" | "dark";
+  theme?: 'light' | 'dark';
   /**
    * Allow single-finger pan on mobile. Default false — inline embeds need
    * the page to scroll naturally over them. Set to true inside modal/full-
@@ -123,8 +131,13 @@ function getDefaultLibrary(): CircuitLibrary {
     const circuitMap = new Map<string, Circuit>();
     _defaultLibrary = {
       resolveCircuit: (name) => circuitMap.get(name),
-      getAllPrimitiveNames: () => [...circuitMap.entries()].filter(([, c]) => c.implementation.kind === 'primitive').map(([n]) => n),
-      addCircuit: (c: Circuit) => { circuitMap.set(c.name, c); },
+      getAllPrimitiveNames: () =>
+        [...circuitMap.entries()]
+          .filter(([, c]) => c.implementation.kind === 'primitive')
+          .map(([n]) => n),
+      addCircuit: (c: Circuit) => {
+        circuitMap.set(c.name, c);
+      },
     } as CircuitLibrary & { addCircuit(c: Circuit): void };
   }
   return _defaultLibrary;
@@ -141,7 +154,7 @@ function CircuitCanvasInner({
   onSetNodeValue,
   onLoadMemory,
   onNodeDoubleClick: onNodeDoubleClickProp,
-  height = "100%",
+  height = '100%',
   focus,
   className,
   renderEmptyState,
@@ -176,8 +189,7 @@ function CircuitCanvasInner({
   const { metadata: computedMetadata } = useLayout(layout ? null : cleanedCircuit);
 
   const metadata = useMemo(() => {
-    if (!cleanedCircuit)
-      return { components: {}, connections: {} } as MetadataState;
+    if (!cleanedCircuit) return { components: {}, connections: {} } as MetadataState;
 
     if (!layout) return computedMetadata;
 
@@ -213,20 +225,17 @@ function CircuitCanvasInner({
       if (glowUnconnected) data.glowUnconnected = true;
       if (onPortClickProp) {
         const label = nodeData.label || nodeData.componentRef;
-        data.onPortClick = (portName: string, portType: "input" | "output") =>
+        data.onPortClick = (portName: string, portType: 'input' | 'output') =>
           onPortClickProp(label, portName, portType);
       }
 
-      if (componentRef === "Input" && onSetNodeValue) {
+      if (componentRef === 'Input' && onSetNodeValue) {
         data.onValueChange = (value: number) => onSetNodeValue(node.id, value);
       }
-      if (
-        onToggleNode &&
-        (componentRef === "Switch" || componentRef === "Button")
-      ) {
+      if (onToggleNode && (componentRef === 'Switch' || componentRef === 'Button')) {
         data.onToggle = () => onToggleNode(node.id);
       }
-      if (onLoadMemory && (componentRef === "RV32I_InstrMem" || componentRef === "DualPortROM")) {
+      if (onLoadMemory && (componentRef === 'RV32I_InstrMem' || componentRef === 'DualPortROM')) {
         data.onLoadMemory = (memData: Map<number, number>) => onLoadMemory(node.id, memData);
       }
 
@@ -248,7 +257,7 @@ function CircuitCanvasInner({
             style: {
               ...node.style,
               opacity: focusLabels.has(label) ? 1 : 0.15,
-              transition: "opacity 0.2s",
+              transition: 'opacity 0.2s',
             },
           };
         }),
@@ -256,11 +265,8 @@ function CircuitCanvasInner({
           ...edge,
           style: {
             ...edge.style,
-            opacity:
-              focusedNodeIds.has(edge.source) || focusedNodeIds.has(edge.target)
-                ? 1
-                : 0.15,
-            transition: "opacity 0.2s",
+            opacity: focusedNodeIds.has(edge.source) || focusedNodeIds.has(edge.target) ? 1 : 0.15,
+            transition: 'opacity 0.2s',
           },
         })),
       };
@@ -309,7 +315,7 @@ function CircuitCanvasInner({
     const newPortShape = new Map<string, string>();
     for (const node of projectedNodes) {
       const d = node.data as NodeData;
-      const sig = `${(d.inputNames ?? []).join("|")}>${(d.outputNames ?? []).join("|")}`;
+      const sig = `${(d.inputNames ?? []).join('|')}>${(d.outputNames ?? []).join('|')}`;
       newPortShape.set(node.id, sig);
     }
 
@@ -401,7 +407,10 @@ function CircuitCanvasInner({
   const [inspectorStack, setInspectorStack] = useState<InspectorFrame[]>([]);
 
   const pushInspectorLevel = useCallback((name: string, def: Circuit, label: string) => {
-    setInspectorStack((prev) => [...prev, { componentName: name, componentDef: def, nodeLabel: label }]);
+    setInspectorStack((prev) => [
+      ...prev,
+      { componentName: name, componentDef: def, nodeLabel: label },
+    ]);
   }, []);
 
   const popInspectorLevel = useCallback(() => {
@@ -417,15 +426,24 @@ function CircuitCanvasInner({
   }, []);
 
   // Default double-click handler: opens inspector for composites
-  const defaultNodeDoubleClick = useCallback((nodeData: NodeData) => {
-    if (!nodeData.isComposite) return;
-    const componentDef = library.resolveCircuit(nodeData.componentRef);
-    if (!componentDef) return;
+  const defaultNodeDoubleClick = useCallback(
+    (nodeData: NodeData) => {
+      if (!nodeData.isComposite) return;
+      const componentDef = library.resolveCircuit(nodeData.componentRef);
+      if (!componentDef) return;
 
-    if (componentDef.implementation.kind === "composite" && componentDef.nodes.length > 0) {
-      setInspectorStack([{ componentName: nodeData.componentRef, componentDef, nodeLabel: nodeData.label ?? nodeData.componentRef }]);
-    }
-  }, [library]);
+      if (componentDef.implementation.kind === 'composite' && componentDef.nodes.length > 0) {
+        setInspectorStack([
+          {
+            componentName: nodeData.componentRef,
+            componentDef,
+            nodeLabel: nodeData.label ?? nodeData.componentRef,
+          },
+        ]);
+      }
+    },
+    [library],
+  );
 
   // Use caller's handler if provided, otherwise use built-in inspector
   const effectiveNodeDoubleClick = onNodeDoubleClickProp ?? defaultNodeDoubleClick;
@@ -440,9 +458,7 @@ function CircuitCanvasInner({
   return (
     <div
       data-embed-theme={theme}
-      className={`bg-[var(--embed-bg-primary)] overflow-hidden relative ${
-        className ?? ""
-      }`}
+      className={`bg-[var(--embed-bg-primary)] overflow-hidden relative ${className ?? ''}`}
       style={{ height }}
       aria-label="Circuit diagram"
     >
@@ -492,13 +508,14 @@ function CircuitCanvasInner({
       </ReactFlow>
       {renderOverlay?.()}
       {/* Empty state overlay — rendered on top of ReactFlow when no circuit */}
-      {!circuit && (
-        renderEmptyState ? renderEmptyState() : (
+      {!circuit &&
+        (renderEmptyState ? (
+          renderEmptyState()
+        ) : (
           <div className="absolute inset-0 flex items-center justify-center text-[var(--embed-text-muted)]">
             No circuit
           </div>
-        )
-      )}
+        ))}
       {/* Built-in inspector (only when no external onNodeDoubleClick) */}
       {!onNodeDoubleClickProp && inspectorStack.length > 0 && (
         <CompositeInspectorDialog

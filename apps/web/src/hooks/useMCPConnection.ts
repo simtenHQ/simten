@@ -15,7 +15,12 @@ import { randomUUID } from '@/lib/uuid';
 
 // --- Types ---
 
-export type ConnectionStatus = 'idle' | 'connecting' | 'connected' | 'reconnecting' | 'disconnected';
+export type ConnectionStatus =
+  | 'idle'
+  | 'connecting'
+  | 'connected'
+  | 'reconnecting'
+  | 'disconnected';
 
 export interface MCPMessage {
   type: string;
@@ -49,7 +54,11 @@ const MAX_RECONNECT_ATTEMPTS = 5;
 const LS_KEY = 'simten:mcp-connection';
 
 function saveConnectionParams(params: { token: string; port: number }) {
-  try { localStorage.setItem(LS_KEY, JSON.stringify(params)); } catch { /* ignore */ }
+  try {
+    localStorage.setItem(LS_KEY, JSON.stringify(params));
+  } catch {
+    /* ignore */
+  }
 }
 
 function loadConnectionParams(): { token: string; port: number } | null {
@@ -58,7 +67,9 @@ function loadConnectionParams(): { token: string; port: number } | null {
     if (!raw) return null;
     const parsed = JSON.parse(raw);
     if (parsed?.token && parsed?.port) return parsed;
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
   return null;
 }
 
@@ -116,11 +127,13 @@ export function useMCPConnection(callbacks: MCPCallbacks) {
       setStatus('connected');
       reconnectAttemptsRef.current = 0; // fresh budget for the next disconnect
       // Register this tab as a session
-      ws.send(JSON.stringify({
-        type: 'register',
-        sessionId: sessionIdRef.current,
-        page: window.location.pathname,
-      }));
+      ws.send(
+        JSON.stringify({
+          type: 'register',
+          sessionId: sessionIdRef.current,
+          page: window.location.pathname,
+        }),
+      );
       // Tell the server when this tab is focused so simulate_circuit targets the right tab
       const sendFocus = () => {
         if (ws.readyState === WebSocket.OPEN) {
@@ -161,11 +174,13 @@ export function useMCPConnection(callbacks: MCPCallbacks) {
           // Pull model: MCP server is requesting state
           case 'request-state': {
             const state = cb.getCircuitState?.();
-            ws.send(JSON.stringify({
-              type: 'state-response',
-              requestId: msg.requestId,
-              state: state ?? null,
-            }));
+            ws.send(
+              JSON.stringify({
+                type: 'state-response',
+                requestId: msg.requestId,
+                state: state ?? null,
+              }),
+            );
             break;
           }
         }
@@ -178,7 +193,11 @@ export function useMCPConnection(callbacks: MCPCallbacks) {
       wsRef.current = null;
       // 4001 = invalid token (stale localStorage) — clear and stop retrying
       if (event.code === 4001) {
-        try { localStorage.removeItem(LS_KEY); } catch { /* ignore */ }
+        try {
+          localStorage.removeItem(LS_KEY);
+        } catch {
+          /* ignore */
+        }
         connectionRef.current = null;
         setStatus('disconnected');
         return;
@@ -198,7 +217,11 @@ export function useMCPConnection(callbacks: MCPCallbacks) {
         // returning tab can't keep hammering — or silently mis-attach to — a port
         // that has moved. The next show_circuit delivers a fresh fragment and
         // reconnects cleanly.
-        try { localStorage.removeItem(LS_KEY); } catch { /* ignore */ }
+        try {
+          localStorage.removeItem(LS_KEY);
+        } catch {
+          /* ignore */
+        }
         connectionRef.current = null;
         reconnectAttemptsRef.current = 0;
         setStatus('disconnected');

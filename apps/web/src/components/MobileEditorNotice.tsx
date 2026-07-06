@@ -1,5 +1,5 @@
-import { Link } from '@tanstack/react-router'
-import { SiteHeader } from '@/components/SiteHeader'
+import { Link } from '@tanstack/react-router';
+import { SiteHeader } from '@/components/SiteHeader';
 
 export function MobileEditorNotice() {
   return (
@@ -19,13 +19,10 @@ export function MobileEditorNotice() {
               <path strokeLinecap="round" d="M8 20h8M12 16v4" />
             </svg>
           </div>
-          <h1 className="mb-2 text-xl font-semibold tracking-tight">
-            The editor needs a desktop
-          </h1>
+          <h1 className="mb-2 text-xl font-semibold tracking-tight">The editor needs a desktop</h1>
           <p className="mb-6 text-sm text-muted-foreground leading-relaxed">
-            Building circuits relies on hover, drag, and a wide canvas — it
-            isn&apos;t comfortable on a small touchscreen yet. Please open
-            this page on a laptop or desktop browser.
+            Building circuits relies on hover, drag, and a wide canvas — it isn&apos;t comfortable
+            on a small touchscreen yet. Please open this page on a laptop or desktop browser.
           </p>
           <div className="flex flex-col gap-2">
             <Link
@@ -36,7 +33,11 @@ export function MobileEditorNotice() {
             </Link>
             <div className="mt-2 text-xs text-muted-foreground">
               Or browse on mobile:{' '}
-              <Link to="/docs/$" params={{ _splat: '' }} className="text-foreground underline-offset-2 hover:underline">
+              <Link
+                to="/docs/$"
+                params={{ _splat: '' }}
+                className="text-foreground underline-offset-2 hover:underline"
+              >
                 docs
               </Link>
               {' · '}
@@ -48,5 +49,5 @@ export function MobileEditorNotice() {
         </div>
       </main>
     </div>
-  )
+  );
 }

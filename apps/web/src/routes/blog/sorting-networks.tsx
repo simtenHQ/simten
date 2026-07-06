@@ -1,30 +1,30 @@
-import { createFileRoute } from '@tanstack/react-router'
-import { blogPostHead } from '@/lib/seo'
-import { getPost } from '@/features/blog/posts'
-import { Suspense, lazy } from "react";
-import { HeroSection } from "@/features/blog/sorting-networks/sections/HeroSection";
-import { BlogFooter } from "@/features/blog/BlogFooter";
-import { ErrorBoundary } from "@/features/blog/building-a-cpu/ErrorBoundary";
+import { createFileRoute } from '@tanstack/react-router';
+import { blogPostHead } from '@/lib/seo';
+import { getPost } from '@/features/blog/posts';
+import { Suspense, lazy } from 'react';
+import { HeroSection } from '@/features/blog/sorting-networks/sections/HeroSection';
+import { BlogFooter } from '@/features/blog/BlogFooter';
+import { ErrorBoundary } from '@/features/blog/building-a-cpu/ErrorBoundary';
 
 const CompareSwapSection = lazy(() =>
-  import("@/features/blog/sorting-networks/sections/CompareSwapSection").then((m) => ({
+  import('@/features/blog/sorting-networks/sections/CompareSwapSection').then((m) => ({
     default: m.CompareSwapSection,
-  }))
+  })),
 );
 const NetworkSection = lazy(() =>
-  import("@/features/blog/sorting-networks/sections/NetworkSection").then((m) => ({
+  import('@/features/blog/sorting-networks/sections/NetworkSection').then((m) => ({
     default: m.NetworkSection,
-  }))
+  })),
 );
 const PipelineSection = lazy(() =>
-  import("@/features/blog/sorting-networks/sections/PipelineSection").then((m) => ({
+  import('@/features/blog/sorting-networks/sections/PipelineSection').then((m) => ({
     default: m.PipelineSection,
-  }))
+  })),
 );
 const WhyHardwareSection = lazy(() =>
-  import("@/features/blog/sorting-networks/sections/WhyHardwareSection").then((m) => ({
+  import('@/features/blog/sorting-networks/sections/WhyHardwareSection').then((m) => ({
     default: m.WhyHardwareSection,
-  }))
+  })),
 );
 
 function SectionSkeleton() {
@@ -88,4 +88,4 @@ function SortingNetworksPage() {
 export const Route = createFileRoute('/blog/sorting-networks')({
   head: () => blogPostHead(getPost('sorting-networks')),
   component: SortingNetworksPage,
-})
+});

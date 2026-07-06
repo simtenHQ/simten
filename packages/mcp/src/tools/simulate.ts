@@ -35,22 +35,40 @@ export function registerSimulateTool(server: McpServer): void {
         .record(z.record(z.number()))
         .optional()
         .describe(
-          'Pre-load memory into sequential nodes. Keys are substring patterns matched against node IDs (e.g. "imem" matches any node containing "imem"). Values are { address: data } maps. Architecture-agnostic — works with any ROM/RAM primitive.'
+          'Pre-load memory into sequential nodes. Keys are substring patterns matched against node IDs (e.g. "imem" matches any node containing "imem"). Values are { address: data } maps. Architecture-agnostic — works with any ROM/RAM primitive.',
         ),
       show: z
         .boolean()
         .optional()
         .default(false)
-        .describe('Paint the waveforms onto the browser canvas after simulating (default: false). Requires `reason`.'),
+        .describe(
+          'Paint the waveforms onto the browser canvas after simulating (default: false). Requires `reason`.',
+        ),
       reason: z
         .string()
         .optional()
-        .describe('Why you are painting the canvas (required when show:true), e.g. "counterexample at a=255,b=1".'),
+        .describe(
+          'Why you are painting the canvas (required when show:true), e.g. "counterexample at a=255,b=1".',
+        ),
     },
-    async ({ source, filePath, circuitName, ticks, inputs, memoryData: memoryDataJson, show, reason }) => {
+    async ({
+      source,
+      filePath,
+      circuitName,
+      ticks,
+      inputs,
+      memoryData: memoryDataJson,
+      show,
+      reason,
+    }) => {
       if (show && !reason) {
         return {
-          content: [{ type: 'text' as const, text: 'Error: `reason` is required when show:true — state why you are painting the canvas (e.g. a tier-pass or a specific failure worth inspecting).' }],
+          content: [
+            {
+              type: 'text' as const,
+              text: 'Error: `reason` is required when show:true — state why you are painting the canvas (e.g. a tier-pass or a specific failure worth inspecting).',
+            },
+          ],
           isError: true,
         };
       }
@@ -109,10 +127,8 @@ export function registerSimulateTool(server: McpServer): void {
       }
 
       return {
-        content: [
-          { type: 'text' as const, text: JSON.stringify(result, null, 2) },
-        ],
+        content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }],
       };
-    }
+    },
   );
 }

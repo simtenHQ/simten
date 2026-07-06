@@ -9,29 +9,23 @@
  * so it can be used anywhere a CircuitCanvas renders (editor, embeds, blog, etc.).
  */
 
-"use client";
+'use client';
 
-import React, {
-  useMemo,
-  useState,
-  useCallback,
-  useEffect,
-  useRef,
-} from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import React, { useMemo, useState, useCallback, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 
-import type { InspectorFrame } from "./types";
-import { createDrillDownViewCircuit } from "./drill-down-view";
-import type { CircuitLibrary, SimulatorEngine } from "@simten/core/simulator";
-import { createSimulatorFromCircuit } from "@simten/core/simulator";
-import type { Circuit, BitValue, BusValue } from "@simten/core";
-import { isSequentialCircuit } from "@simten/core/circuit";
+import type { InspectorFrame } from './types';
+import { createDrillDownViewCircuit } from './drill-down-view';
+import type { CircuitLibrary, SimulatorEngine } from '@simten/core/simulator';
+import { createSimulatorFromCircuit } from '@simten/core/simulator';
+import type { Circuit, BitValue, BusValue } from '@simten/core';
+import { isSequentialCircuit } from '@simten/core/circuit';
 
-import { CircuitCanvas } from "./CircuitCanvas";
-import { ClockControls } from "./ClockControls";
-import { NODE_TYPES, EDGE_TYPES } from "./node-types";
-import type { NodeData } from "../nodes";
-import { useSandboxContext } from "../sandbox/SandboxProvider";
+import { CircuitCanvas } from './CircuitCanvas';
+import { ClockControls } from './ClockControls';
+import { NODE_TYPES, EDGE_TYPES } from './node-types';
+import type { NodeData } from '../nodes';
+import { useSandboxContext } from '../sandbox/SandboxProvider';
 
 // ── Inner canvas for a single inspector level ──
 
@@ -39,14 +33,14 @@ interface InspectorCanvasProps {
   frame: InspectorFrame;
   componentLibrary: CircuitLibrary;
   onPushLevel: (name: string, def: Circuit, label: string) => void;
-  theme?: "light" | "dark";
+  theme?: 'light' | 'dark';
 }
 
 function InspectorCanvas({
   frame,
   componentLibrary,
   onPushLevel,
-  theme = "dark",
+  theme = 'dark',
 }: InspectorCanvasProps) {
   const viewCircuit = useMemo(
     () => createDrillDownViewCircuit(frame.componentDef),
@@ -61,20 +55,11 @@ function InspectorCanvas({
   const handleNodeDoubleClick = useCallback(
     (nodeData: NodeData) => {
       if (!nodeData.isComposite) return;
-      const componentDef = componentLibrary.resolveCircuit(
-        nodeData.componentRef,
-      );
+      const componentDef = componentLibrary.resolveCircuit(nodeData.componentRef);
       if (!componentDef) return;
 
-      if (
-        componentDef.implementation.kind === "composite" &&
-        componentDef.nodes.length > 0
-      ) {
-        onPushLevel(
-          nodeData.componentRef,
-          componentDef,
-          nodeData.label ?? nodeData.componentRef,
-        );
+      if (componentDef.implementation.kind === 'composite' && componentDef.nodes.length > 0) {
+        onPushLevel(nodeData.componentRef, componentDef, nodeData.label ?? nodeData.componentRef);
       }
     },
     [componentLibrary, onPushLevel],
@@ -117,7 +102,10 @@ function InspectorCanvas({
     const seen = new Set<string>();
     for (const name of componentLibrary.getAllPrimitiveNames()) {
       const c = componentLibrary.resolveCircuit(name);
-      if (c && !seen.has(name)) { seen.add(name); allLib.push(c); }
+      if (c && !seen.has(name)) {
+        seen.add(name);
+        allLib.push(c);
+      }
     }
     const walk = (c: Circuit) => {
       for (const node of c.nodes) {
@@ -131,7 +119,7 @@ function InspectorCanvas({
     };
     walk(viewCircuit);
 
-    sandbox.compileIR(viewCircuit, allLib, slotId, { snapshot: isSequential }).then(result => {
+    sandbox.compileIR(viewCircuit, allLib, slotId, { snapshot: isSequential }).then((result) => {
       if ('error' in result) {
         // Fall back to local simulator (for embed contexts where no source was compiled)
         try {
@@ -145,7 +133,7 @@ function InspectorCanvas({
           }
           setPortValues(pvMap);
         } catch (e) {
-          console.warn("[InspectorCanvas] Both sandbox and local failed:", e);
+          console.warn('[InspectorCanvas] Both sandbox and local failed:', e);
         }
         return;
       }
@@ -156,9 +144,8 @@ function InspectorCanvas({
       }
       setPortValues(pvMap);
       // Seed history with the initial snapshot (sequential circuits only).
-      historyRef.current = result.snapshotId !== undefined
-        ? [{ snapshotId: result.snapshotId, cycle: 0 }]
-        : [];
+      historyRef.current =
+        result.snapshotId !== undefined ? [{ snapshotId: result.snapshotId, cycle: 0 }] : [];
       setHistoryLen(historyRef.current.length);
       setHistoryIndex(historyRef.current.length === 0 ? -1 : 0);
       setCycle(0);
@@ -169,7 +156,7 @@ function InspectorCanvas({
     (nodeId: string) => {
       const outKey = `${nodeId}.out`;
       const currentValue = portValues.get(outKey);
-      sandbox.setNode(nodeId, !currentValue as number | boolean, slotId).then(result => {
+      sandbox.setNode(nodeId, !currentValue as number | boolean, slotId).then((result) => {
         if ('error' in result) return;
         const pvMap = new Map<string, BitValue | BusValue>();
         for (const [k, v] of Object.entries(result.portValues)) pvMap.set(k, v);
@@ -181,7 +168,7 @@ function InspectorCanvas({
 
   const handleNumericChange = useCallback(
     (nodeId: string, newValue: number) => {
-      sandbox.setNode(nodeId, newValue, slotId).then(result => {
+      sandbox.setNode(nodeId, newValue, slotId).then((result) => {
         if ('error' in result) return;
         const pvMap = new Map<string, BitValue | BusValue>();
         for (const [k, v] of Object.entries(result.portValues)) pvMap.set(k, v);
@@ -196,7 +183,7 @@ function InspectorCanvas({
   // If we're currently viewing the past, ticking truncates future entries
   // (mirrors the embed's history semantics).
   const handleTick = useCallback(() => {
-    sandbox.tick(undefined, slotId, { snapshot: isSequential }).then(result => {
+    sandbox.tick(undefined, slotId, { snapshot: isSequential }).then((result) => {
       if ('error' in result) return;
       const pvMap = new Map<string, BitValue | BusValue>();
       for (const [k, v] of Object.entries(result.portValues)) pvMap.set(k, v);
@@ -214,7 +201,7 @@ function InspectorCanvas({
 
   const handleReset = useCallback(() => {
     setIsRunning(false);
-    sandbox.reset(slotId).then(result => {
+    sandbox.reset(slotId).then((result) => {
       if ('error' in result) return;
       const pvMap = new Map<string, BitValue | BusValue>();
       for (const [k, v] of Object.entries(result.portValues)) pvMap.set(k, v);
@@ -226,7 +213,7 @@ function InspectorCanvas({
       setHistoryLen(0);
       setHistoryIndex(-1);
       if (isSequential) {
-        sandbox.snapshot(slotId).then(snap => {
+        sandbox.snapshot(slotId).then((snap) => {
           if ('error' in snap || snap.snapshotId === undefined) return;
           historyRef.current = [{ snapshotId: snap.snapshotId, cycle: 0 }];
           setHistoryLen(1);
@@ -236,18 +223,21 @@ function InspectorCanvas({
     });
   }, [sandbox, slotId, isSequential]);
 
-  const restoreTo = useCallback((index: number) => {
-    const entry = historyRef.current[index];
-    if (!entry) return;
-    sandbox.restore(entry.snapshotId, slotId).then(result => {
-      if ('error' in result) return;
-      const pvMap = new Map<string, BitValue | BusValue>();
-      for (const [k, v] of Object.entries(result.portValues)) pvMap.set(k, v);
-      setPortValues(pvMap);
-      setCycle(entry.cycle);
-      setHistoryIndex(index);
-    });
-  }, [sandbox, slotId]);
+  const restoreTo = useCallback(
+    (index: number) => {
+      const entry = historyRef.current[index];
+      if (!entry) return;
+      sandbox.restore(entry.snapshotId, slotId).then((result) => {
+        if ('error' in result) return;
+        const pvMap = new Map<string, BitValue | BusValue>();
+        for (const [k, v] of Object.entries(result.portValues)) pvMap.set(k, v);
+        setPortValues(pvMap);
+        setCycle(entry.cycle);
+        setHistoryIndex(index);
+      });
+    },
+    [sandbox, slotId],
+  );
 
   const handleStepBack = useCallback(() => {
     setIsRunning(false);
@@ -262,7 +252,9 @@ function InspectorCanvas({
   // Auto-run loop while isRunning.
   useEffect(() => {
     if (!isRunning) return;
-    const id = window.setInterval(() => { handleTick(); }, 200);
+    const id = window.setInterval(() => {
+      handleTick();
+    }, 200);
     return () => window.clearInterval(id);
   }, [isRunning, handleTick]);
 
@@ -309,45 +301,31 @@ function InspectorCanvas({
 interface BreadcrumbProps {
   stack: InspectorFrame[];
   onNavigate: (index: number) => void;
-  theme?: "light" | "dark";
+  theme?: 'light' | 'dark';
 }
 
-function InspectorBreadcrumb({
-  stack,
-  onNavigate,
-  theme = "dark",
-}: BreadcrumbProps) {
+function InspectorBreadcrumb({ stack, onNavigate, theme = 'dark' }: BreadcrumbProps) {
   const topFrame = stack[stack.length - 1];
   const description = topFrame?.componentDef.metadata?.description;
-  const dark = theme === "dark";
+  const dark = theme === 'dark';
   return (
     <div className="flex items-center gap-1 text-sm min-w-0">
       {stack.map((frame, index) => (
         <React.Fragment key={index}>
           {index > 0 && (
-            <span
-              className={`${dark ? "text-gray-500" : "text-gray-400"} shrink-0`}
-            >
-              &gt;
-            </span>
+            <span className={`${dark ? 'text-gray-500' : 'text-gray-400'} shrink-0`}>&gt;</span>
           )}
           {index < stack.length - 1 ? (
             <button
               onClick={() => onNavigate(index)}
               className={`${
-                dark
-                  ? "text-blue-400 hover:text-blue-300"
-                  : "text-blue-600 hover:text-blue-800"
+                dark ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-800'
               } hover:underline font-medium shrink-0`}
             >
               {frame.nodeLabel} ({frame.componentName})
             </button>
           ) : (
-            <span
-              className={`font-semibold shrink-0 ${
-                dark ? "text-gray-100" : "text-gray-900"
-              }`}
-            >
+            <span className={`font-semibold shrink-0 ${dark ? 'text-gray-100' : 'text-gray-900'}`}>
               {frame.nodeLabel} ({frame.componentName})
             </span>
           )}
@@ -355,16 +333,8 @@ function InspectorBreadcrumb({
       ))}
       {description && (
         <>
-          <span
-            className={`${dark ? "text-gray-600" : "text-gray-300"} shrink-0`}
-          >
-            —
-          </span>
-          <span
-            className={`${
-              dark ? "text-gray-400" : "text-gray-500"
-            } text-xs italic truncate`}
-          >
+          <span className={`${dark ? 'text-gray-600' : 'text-gray-300'} shrink-0`}>—</span>
+          <span className={`${dark ? 'text-gray-400' : 'text-gray-500'} text-xs italic truncate`}>
             {description}
           </span>
         </>
@@ -375,7 +345,7 @@ function InspectorBreadcrumb({
 
 // ── Level transition direction ──
 
-type Direction = "in" | "out";
+type Direction = 'in' | 'out';
 
 const levelVariants = {
   enterIn: { opacity: 0 },
@@ -390,7 +360,7 @@ const levelVariants = {
 export interface CompositeInspectorDialogProps {
   stack: InspectorFrame[];
   componentLibrary: CircuitLibrary;
-  theme?: "light" | "dark";
+  theme?: 'light' | 'dark';
   onClose: () => void;
   onPopLevel: () => void;
   onPushLevel: (name: string, def: Circuit, label: string) => void;
@@ -400,7 +370,7 @@ export interface CompositeInspectorDialogProps {
 export function CompositeInspectorDialog({
   stack,
   componentLibrary,
-  theme = "dark",
+  theme = 'dark',
   onClose,
   onPopLevel,
   onPushLevel,
@@ -409,13 +379,13 @@ export function CompositeInspectorDialog({
   const isOpen = stack.length > 0;
 
   const prevDepthRef = useRef(0);
-  const [direction, setDirection] = useState<Direction>("in");
+  const [direction, setDirection] = useState<Direction>('in');
 
   useEffect(() => {
     if (stack.length > prevDepthRef.current) {
-      setDirection("in");
+      setDirection('in');
     } else if (stack.length < prevDepthRef.current) {
-      setDirection("out");
+      setDirection('out');
     }
     prevDepthRef.current = stack.length;
   }, [stack.length]);
@@ -427,7 +397,7 @@ export function CompositeInspectorDialog({
   useEffect(() => {
     if (!isOpen) return;
     const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
+    document.body.style.overflow = 'hidden';
     return () => {
       document.body.style.overflow = previousOverflow;
     };
@@ -442,7 +412,7 @@ export function CompositeInspectorDialog({
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
-      if (e.key === "Escape") {
+      if (e.key === 'Escape') {
         e.stopPropagation();
         if (stack.length > 1) {
           onPopLevel();
@@ -480,7 +450,7 @@ export function CompositeInspectorDialog({
           >
             <motion.div
               className={`flex h-[80vh] w-full max-w-5xl flex-col rounded-lg shadow-xl pointer-events-auto overflow-hidden ${
-                theme === "dark" ? "bg-gray-900" : "bg-white"
+                theme === 'dark' ? 'bg-gray-900' : 'bg-white'
               }`}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -490,29 +460,20 @@ export function CompositeInspectorDialog({
               {/* Header */}
               <div
                 className={`flex items-center justify-between border-b px-4 py-3 ${
-                  theme === "dark" ? "border-gray-700" : "border-gray-200"
+                  theme === 'dark' ? 'border-gray-700' : 'border-gray-200'
                 }`}
               >
-                <InspectorBreadcrumb
-                  stack={stack}
-                  onNavigate={onNavigate}
-                  theme={theme}
-                />
+                <InspectorBreadcrumb stack={stack} onNavigate={onNavigate} theme={theme} />
                 <button
                   onClick={onClose}
                   className={`rounded p-1 ${
-                    theme === "dark"
-                      ? "text-gray-400 hover:bg-gray-800 hover:text-gray-300"
-                      : "text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+                    theme === 'dark'
+                      ? 'text-gray-400 hover:bg-gray-800 hover:text-gray-300'
+                      : 'text-gray-400 hover:bg-gray-100 hover:text-gray-600'
                   }`}
                   aria-label="Close inspector"
                 >
-                  <svg
-                    className="h-5 w-5"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
+                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path
                       strokeLinecap="round"
                       strokeLinejoin="round"
@@ -529,11 +490,11 @@ export function CompositeInspectorDialog({
                   <motion.div
                     key={`${stack.length}-${topFrame.componentName}`}
                     className="absolute inset-0"
-                    initial={direction === "in" ? "enterIn" : "enterOut"}
+                    initial={direction === 'in' ? 'enterIn' : 'enterOut'}
                     animate="center"
-                    exit={direction === "in" ? "exitIn" : "exitOut"}
+                    exit={direction === 'in' ? 'exitIn' : 'exitOut'}
                     variants={levelVariants}
-                    transition={{ duration: 0.2, ease: "easeInOut" }}
+                    transition={{ duration: 0.2, ease: 'easeInOut' }}
                   >
                     <InspectorCanvas
                       frame={topFrame}

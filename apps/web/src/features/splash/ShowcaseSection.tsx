@@ -1,14 +1,20 @@
-import { useState, useEffect } from "react";
-import { useCircuitSimulator } from "@simten/embed";
-import { CircuitCanvas } from "@simten/ui/canvas";
-import { circuit, bus } from "@simten/core/circuit";
-import { Register, Adder, Constant, DFlipFlop, HexDisplay } from "@simten/core/std";
+import { useState, useEffect } from 'react';
+import { useCircuitSimulator } from '@simten/embed';
+import { CircuitCanvas } from '@simten/ui/canvas';
+import { circuit, bus } from '@simten/core/circuit';
+import { Register, Adder, Constant, DFlipFlop, HexDisplay } from '@simten/core/std';
 
 // --- Live Fibonacci circuit (auto-ticking) ---
 
 const Fibonacci = circuit('Fibonacci', {
   outputs: { fib: bus(8) },
-  nodes: { reg_a: Register(), reg_b: Register(), adder: Adder(), one_bit: Constant({ value: 1 }), init: DFlipFlop() },
+  nodes: {
+    reg_a: Register(),
+    reg_b: Register(),
+    adder: Adder(),
+    one_bit: Constant({ value: 1 }),
+    init: DFlipFlop(),
+  },
   connect: ({ outputs, nodes: { reg_a, reg_b, adder, one_bit, init } }) => [
     one_bit.out.to(init.d, reg_a.we, reg_b.we),
     init.q_bar.to(adder.carry_in),
@@ -20,9 +26,7 @@ const Fibonacci = circuit('Fibonacci', {
 
 const FibonacciDemo = circuit('FibonacciDemo', {
   nodes: { fib: Fibonacci, display: HexDisplay },
-  connect: ({ nodes: { fib, display } }) => [
-    fib.fib.to(display.in),
-  ],
+  connect: ({ nodes: { fib, display } }) => [fib.fib.to(display.in)],
 });
 
 function LiveFibonacci() {
@@ -48,7 +52,7 @@ function LiveFibonacci() {
       <div className="h-[220px]">
         <CircuitCanvas
           circuit={sim.circuit}
-        componentLibrary={sim.componentLibrary ?? undefined}
+          componentLibrary={sim.componentLibrary ?? undefined}
           portValues={sim.portValues}
           sequentialState={sim.sequentialState}
           onToggleNode={sim.toggleNode}
@@ -60,11 +64,11 @@ function LiveFibonacci() {
           onClick={() => setRunning(!running)}
           className={`px-3 py-1.5 rounded text-xs font-medium transition-colors ${
             running
-              ? "bg-amber-600 hover:bg-amber-500 text-white"
-              : "bg-blue-600 hover:bg-blue-500 text-white"
+              ? 'bg-amber-600 hover:bg-amber-500 text-white'
+              : 'bg-blue-600 hover:bg-blue-500 text-white'
           }`}
         >
-          {running ? "Pause" : "Run"}
+          {running ? 'Pause' : 'Run'}
         </button>
         <button
           onClick={() => {
@@ -87,30 +91,30 @@ function LiveFibonacci() {
 
 const SHOWCASE_ITEMS = [
   {
-    title: "8-bit ALU",
+    title: '8-bit ALU',
     description:
-      "ADD, SUB, AND, OR, XOR, NOT, SHL, SHR — selected by a 3-bit opcode. Zero, carry, and negative flags.",
-    stats: "145 lines · 8 operations · 3 flags",
+      'ADD, SUB, AND, OR, XOR, NOT, SHL, SHR — selected by a 3-bit opcode. Zero, carry, and negative flags.',
+    stats: '145 lines · 8 operations · 3 flags',
   },
   {
-    title: "6502 CPU",
+    title: '6502 CPU',
     description:
-      "A working replica of the processor that powered the Apple II and NES. ALU, registers, instruction decode, memory bus.",
-    stats: "3,000+ lines · 35 stages · full test suite",
+      'A working replica of the processor that powered the Apple II and NES. ALU, registers, instruction decode, memory bus.',
+    stats: '3,000+ lines · 35 stages · full test suite',
   },
   {
-    title: "Snake",
+    title: 'Snake',
     description:
-      "A complete game running on a simulated screen. No software, no ROM — pure hardware state machines driving an 8x8 display.",
-    stats: "157 lines · raster display · keyboard input",
+      'A complete game running on a simulated screen. No software, no ROM — pure hardware state machines driving an 8x8 display.',
+    stats: '157 lines · raster display · keyboard input',
   },
 ];
 
 const SPECS = [
-  { value: "50+", label: "primitives" },
-  { value: "Cycle-accurate", label: "simulation" },
-  { value: "Testbench", label: "assertions" },
-  { value: "Waveforms", label: "built in" },
+  { value: '50+', label: 'primitives' },
+  { value: 'Cycle-accurate', label: 'simulation' },
+  { value: 'Testbench', label: 'assertions' },
+  { value: 'Waveforms', label: 'built in' },
 ];
 
 // --- Main ---
@@ -130,13 +134,10 @@ export function ShowcaseSection() {
                 Two registers, one adder, Fibonacci
               </h2>
               <p className="text-base text-gray-400 leading-relaxed mb-3">
-                No software, no instructions. Two registers shift values through
-                an adder every clock tick. The sequence emerges from the
-                datapath.
+                No software, no instructions. Two registers shift values through an adder every
+                clock tick. The sequence emerges from the datapath.
               </p>
-              <p className="text-sm text-gray-600">
-                Running live in your browser.
-              </p>
+              <p className="text-sm text-gray-600">Running live in your browser.</p>
             </div>
             <div className="flex-1 w-full max-w-lg">
               <div className="bg-gray-900/60 rounded-xl border border-gray-800 p-4">
@@ -152,9 +153,7 @@ export function ShowcaseSection() {
         <div className="max-w-4xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-6">
           {SPECS.map((spec) => (
             <div key={spec.label} className="text-center">
-              <div className="text-xl md:text-2xl font-bold text-white">
-                {spec.value}
-              </div>
+              <div className="text-xl md:text-2xl font-bold text-white">{spec.value}</div>
               <div className="text-xs text-gray-500 mt-0.5">{spec.label}</div>
             </div>
           ))}
@@ -179,12 +178,8 @@ export function ShowcaseSection() {
                 className="bg-gray-900/40 rounded-lg border border-gray-800 p-5"
               >
                 <h3 className="text-base font-semibold mb-1.5">{item.title}</h3>
-                <p className="text-sm text-gray-400 leading-relaxed mb-3">
-                  {item.description}
-                </p>
-                <div className="text-xs text-gray-600 font-mono">
-                  {item.stats}
-                </div>
+                <p className="text-sm text-gray-400 leading-relaxed mb-3">{item.description}</p>
+                <div className="text-xs text-gray-600 font-mono">{item.stats}</div>
               </div>
             ))}
           </div>

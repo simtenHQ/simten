@@ -5,16 +5,26 @@
  * (SR Latch, D Flip-Flop, Register, Counter) for the memory sections.
  */
 
-import { circuit, bit } from "@simten/core/circuit";
+import { circuit, bit } from '@simten/core/circuit';
 import type { BlogCircuit } from '../types';
 import {
-  Nor, Not, Xor, And, Or, Mux,
-  DFlipFlop, Switch, Led, Input, HexDisplay, RAM,
-} from "@simten/core/std";
-import { FullAdder } from "@/features/splash/circuits";
+  Nor,
+  Not,
+  Xor,
+  And,
+  Or,
+  Mux,
+  DFlipFlop,
+  Switch,
+  Led,
+  Input,
+  HexDisplay,
+  RAM,
+} from '@simten/core/std';
+import { FullAdder } from '@/features/splash/circuits';
 
 // Re-export gate circuits from splash
-export { CIRCUITS as GATE_CIRCUITS } from "@/features/splash/circuits";
+export { CIRCUITS as GATE_CIRCUITS } from '@/features/splash/circuits';
 
 // ── Circuit Definitions ──
 
@@ -51,7 +61,18 @@ export const Reg4 = circuit('Reg4', {
 
 export const Counter4 = circuit('Counter4', {
   outputs: { q0: bit, q1: bit, q2: bit, q3: bit },
-  nodes: { ff0: DFlipFlop(), ff1: DFlipFlop(), ff2: DFlipFlop(), ff3: DFlipFlop(), inv0: Not, xor1: Xor, and01: And, xor2: Xor, and012: And, xor3: Xor },
+  nodes: {
+    ff0: DFlipFlop(),
+    ff1: DFlipFlop(),
+    ff2: DFlipFlop(),
+    ff3: DFlipFlop(),
+    inv0: Not,
+    xor1: Xor,
+    and01: And,
+    xor2: Xor,
+    and012: And,
+    xor3: Xor,
+  },
   connect: ({ outputs, nodes: { ff0, ff1, ff2, ff3, inv0, xor1, and01, xor2, and012, xor3 } }) => [
     ff0.q.to(inv0.in, xor1.b, and01.a, outputs.q0),
     inv0.out.to(ff0.d),
@@ -93,8 +114,20 @@ export const Adder4 = circuit('Adder4', {
 export const ALU1 = circuit('ALU1', {
   inputs: { a: bit, b: bit, cin: bit, op0: bit, op1: bit },
   outputs: { result: bit, cout: bit },
-  nodes: { add: FullAdder, op_and: And, op_or: Or, op_xor: Xor, mux_lo: Mux(), mux_hi: Mux(), mux_out: Mux() },
-  connect: ({ inputs, outputs, nodes: { add, op_and, op_or, op_xor, mux_lo, mux_hi, mux_out } }) => [
+  nodes: {
+    add: FullAdder,
+    op_and: And,
+    op_or: Or,
+    op_xor: Xor,
+    mux_lo: Mux(),
+    mux_hi: Mux(),
+    mux_out: Mux(),
+  },
+  connect: ({
+    inputs,
+    outputs,
+    nodes: { add, op_and, op_or, op_xor, mux_lo, mux_hi, mux_out },
+  }) => [
     inputs.a.to(add.a, op_and.a, op_or.a, op_xor.a),
     inputs.b.to(add.b, op_and.b, op_or.b, op_xor.b),
     inputs.cin.to(add.cin),
@@ -113,7 +146,13 @@ export const ALU1 = circuit('ALU1', {
 
 // RAM demo is self-contained (no ports) — auto-harness skips it
 export const DemoRAM = circuit('DemoRAM', {
-  nodes: { addr: Input(), data_in: Input(), we: Switch({ value: 0 }), mem: RAM(), data_out: HexDisplay },
+  nodes: {
+    addr: Input(),
+    data_in: Input(),
+    we: Switch({ value: 0 }),
+    mem: RAM(),
+    data_out: HexDisplay,
+  },
   connect: ({ nodes: { addr, data_in, we, mem, data_out } }) => [
     addr.out.to(mem.addr),
     data_in.out.to(mem.data_in),
@@ -125,59 +164,50 @@ export const DemoRAM = circuit('DemoRAM', {
 // D flip-flop demo is self-contained
 export const DemoFlipFlop = circuit('DemoFlipFlop', {
   nodes: { sw_d: Switch(), dff: DFlipFlop(), led_q: Led },
-  connect: ({ nodes: { sw_d, dff, led_q } }) => [
-    sw_d.out.to(dff.d),
-    dff.q.to(led_q.in),
-  ],
+  connect: ({ nodes: { sw_d, dff, led_q } }) => [sw_d.out.to(dff.d), dff.q.to(led_q.in)],
 });
 
 export const BLOG_CIRCUITS: Record<string, BlogCircuit> = {
   srLatch: {
-    name: "SR Latch",
-    description:
-      "The simplest memory element. Set (S) stores a 1, Reset (R) clears to 0.",
+    name: 'SR Latch',
+    description: 'The simplest memory element. Set (S) stores a 1, Reset (R) clears to 0.',
     circuit: SRLatch,
   },
 
   dFlipFlop: {
-    name: "D Flip-Flop",
-    description:
-      "Captures the input value on each clock edge. The building block of registers.",
+    name: 'D Flip-Flop',
+    description: 'Captures the input value on each clock edge. The building block of registers.',
     circuit: DemoFlipFlop,
   },
 
   register4bit: {
-    name: "4-Bit Register",
-    description:
-      "Four flip-flops in parallel store a nibble (4 bits) of data.",
+    name: '4-Bit Register',
+    description: 'Four flip-flops in parallel store a nibble (4 bits) of data.',
     circuit: Reg4,
   },
 
   counter4bit: {
-    name: "4-Bit Counter",
-    description:
-      "Counts from 0 to 15 using a synchronous binary counter.",
+    name: '4-Bit Counter',
+    description: 'Counts from 0 to 15 using a synchronous binary counter.',
     circuit: Counter4,
   },
 
   adder4bit: {
-    name: "4-Bit Adder",
-    description:
-      "Chains four full adders to add two 4-bit numbers with carry propagation.",
+    name: '4-Bit Adder',
+    description: 'Chains four full adders to add two 4-bit numbers with carry propagation.',
     circuit: Adder4,
   },
 
   alu1bit: {
-    name: "1-Bit ALU Slice",
-    description:
-      "Performs ADD, AND, OR, or XOR on one bit, selected by a 2-bit control signal.",
+    name: '1-Bit ALU Slice',
+    description: 'Performs ADD, AND, OR, or XOR on one bit, selected by a 2-bit control signal.',
     circuit: ALU1,
   },
 
   ram: {
-    name: "RAM",
+    name: 'RAM',
     description:
-      "256x8 memory. Reads are instant (combinational). Writes happen on the clock edge when write-enable is on.",
+      '256x8 memory. Reads are instant (combinational). Writes happen on the clock edge when write-enable is on.',
     circuit: DemoRAM,
   },
 };

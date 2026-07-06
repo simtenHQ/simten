@@ -1,40 +1,40 @@
-import { createFileRoute } from '@tanstack/react-router'
-import { blogPostHead } from '@/lib/seo'
-import { getPost } from '@/features/blog/posts'
-import { Suspense, lazy } from "react";
-import { HeroSection } from "@/features/blog/computing-trig-in-hardware/sections/HeroSection";
-import { BlogFooter } from "@/features/blog/BlogFooter";
-import { ErrorBoundary } from "@/features/blog/building-a-cpu/ErrorBoundary";
+import { createFileRoute } from '@tanstack/react-router';
+import { blogPostHead } from '@/lib/seo';
+import { getPost } from '@/features/blog/posts';
+import { Suspense, lazy } from 'react';
+import { HeroSection } from '@/features/blog/computing-trig-in-hardware/sections/HeroSection';
+import { BlogFooter } from '@/features/blog/BlogFooter';
+import { ErrorBoundary } from '@/features/blog/building-a-cpu/ErrorBoundary';
 
 const ShiftSection = lazy(() =>
-  import("@/features/blog/computing-trig-in-hardware/sections/ShiftSection").then((m) => ({
+  import('@/features/blog/computing-trig-in-hardware/sections/ShiftSection').then((m) => ({
     default: m.ShiftSection,
-  }))
+  })),
 );
 const RotationSection = lazy(() =>
-  import("@/features/blog/computing-trig-in-hardware/sections/RotationSection").then((m) => ({
+  import('@/features/blog/computing-trig-in-hardware/sections/RotationSection').then((m) => ({
     default: m.RotationSection,
-  }))
+  })),
 );
 const DirectionSection = lazy(() =>
-  import("@/features/blog/computing-trig-in-hardware/sections/DirectionSection").then((m) => ({
+  import('@/features/blog/computing-trig-in-hardware/sections/DirectionSection').then((m) => ({
     default: m.DirectionSection,
-  }))
+  })),
 );
 const IterationSection = lazy(() =>
-  import("@/features/blog/computing-trig-in-hardware/sections/IterationSection").then((m) => ({
+  import('@/features/blog/computing-trig-in-hardware/sections/IterationSection').then((m) => ({
     default: m.IterationSection,
-  }))
+  })),
 );
 const LookupSection = lazy(() =>
-  import("@/features/blog/computing-trig-in-hardware/sections/LookupSection").then((m) => ({
+  import('@/features/blog/computing-trig-in-hardware/sections/LookupSection').then((m) => ({
     default: m.LookupSection,
-  }))
+  })),
 );
 const CORDICSection = lazy(() =>
-  import("@/features/blog/computing-trig-in-hardware/sections/CORDICSection").then((m) => ({
+  import('@/features/blog/computing-trig-in-hardware/sections/CORDICSection').then((m) => ({
     default: m.CORDICSection,
-  }))
+  })),
 );
 
 function SectionSkeleton() {
@@ -54,60 +54,59 @@ function SectionSkeleton() {
 function ComputingTrigPage() {
   return (
     <>
+      <HeroSection />
 
-        <HeroSection />
+      <div className="space-y-4">
+        <hr className="border-gray-200 dark:border-gray-800" />
 
-        <div className="space-y-4">
-          <hr className="border-gray-200 dark:border-gray-800" />
+        <ErrorBoundary>
+          <Suspense fallback={<SectionSkeleton />}>
+            <ShiftSection />
+          </Suspense>
+        </ErrorBoundary>
 
-          <ErrorBoundary>
-            <Suspense fallback={<SectionSkeleton />}>
-              <ShiftSection />
-            </Suspense>
-          </ErrorBoundary>
+        <hr className="border-gray-200 dark:border-gray-800" />
 
-          <hr className="border-gray-200 dark:border-gray-800" />
+        <ErrorBoundary>
+          <Suspense fallback={<SectionSkeleton />}>
+            <RotationSection />
+          </Suspense>
+        </ErrorBoundary>
 
-          <ErrorBoundary>
-            <Suspense fallback={<SectionSkeleton />}>
-              <RotationSection />
-            </Suspense>
-          </ErrorBoundary>
+        <hr className="border-gray-200 dark:border-gray-800" />
 
-          <hr className="border-gray-200 dark:border-gray-800" />
+        <ErrorBoundary>
+          <Suspense fallback={<SectionSkeleton />}>
+            <DirectionSection />
+          </Suspense>
+        </ErrorBoundary>
 
-          <ErrorBoundary>
-            <Suspense fallback={<SectionSkeleton />}>
-              <DirectionSection />
-            </Suspense>
-          </ErrorBoundary>
+        <hr className="border-gray-200 dark:border-gray-800" />
 
-          <hr className="border-gray-200 dark:border-gray-800" />
+        <ErrorBoundary>
+          <Suspense fallback={<SectionSkeleton />}>
+            <IterationSection />
+          </Suspense>
+        </ErrorBoundary>
 
-          <ErrorBoundary>
-            <Suspense fallback={<SectionSkeleton />}>
-              <IterationSection />
-            </Suspense>
-          </ErrorBoundary>
+        <hr className="border-gray-200 dark:border-gray-800" />
 
-          <hr className="border-gray-200 dark:border-gray-800" />
+        <ErrorBoundary>
+          <Suspense fallback={<SectionSkeleton />}>
+            <LookupSection />
+          </Suspense>
+        </ErrorBoundary>
 
-          <ErrorBoundary>
-            <Suspense fallback={<SectionSkeleton />}>
-              <LookupSection />
-            </Suspense>
-          </ErrorBoundary>
+        <hr className="border-gray-200 dark:border-gray-800" />
 
-          <hr className="border-gray-200 dark:border-gray-800" />
+        <ErrorBoundary>
+          <Suspense fallback={<SectionSkeleton />}>
+            <CORDICSection />
+          </Suspense>
+        </ErrorBoundary>
+      </div>
 
-          <ErrorBoundary>
-            <Suspense fallback={<SectionSkeleton />}>
-              <CORDICSection />
-            </Suspense>
-          </ErrorBoundary>
-        </div>
-
-        <BlogFooter slug="computing-trig-in-hardware" />
+      <BlogFooter slug="computing-trig-in-hardware" />
     </>
   );
 }
@@ -115,4 +114,4 @@ function ComputingTrigPage() {
 export const Route = createFileRoute('/blog/computing-trig-in-hardware')({
   head: () => blogPostHead(getPost('computing-trig-in-hardware')),
   component: ComputingTrigPage,
-})
+});

@@ -24,9 +24,9 @@ registerCircuitEval('Add', {
   evalFn: ({ a, b }) => ({ out: (((a as number) >>> 0) + ((b as number) >>> 0)) & 0xff }),
 });
 
-const PRIMITIVES = STDLIB_CIRCUITS
-  .map((c) => c.circuit)
-  .filter(c => c.implementation.kind === 'primitive');
+const PRIMITIVES = STDLIB_CIRCUITS.map((c) => c.circuit).filter(
+  (c) => c.implementation.kind === 'primitive',
+);
 
 function getLibrary(): CircuitLibrary {
   const store = useCircuitLibraryStore.getState();
@@ -44,7 +44,10 @@ describe('Hierarchical Cycle Detection - Real World Scenarios', () => {
     id: 'add',
     name: 'Add',
     parameters: [],
-    inputs: [{ name: 'a', portType: busType(8) }, { name: 'b', portType: busType(8) }],
+    inputs: [
+      { name: 'a', portType: busType(8) },
+      { name: 'b', portType: busType(8) },
+    ],
     outputs: [{ name: 'out', portType: busType(8) }],
     clocks: [],
     state: [],

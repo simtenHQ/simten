@@ -6,9 +6,9 @@
  * Floating style — position via parent container.
  */
 
-"use client";
+'use client';
 
-import type { ComponentType, SVGProps } from "react";
+import type { ComponentType, SVGProps } from 'react';
 import {
   SkipForward,
   Play,
@@ -18,9 +18,9 @@ import {
   ChevronRight,
   Gauge,
   History,
-} from "lucide-react";
-import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "../primitives/tooltip";
-import { Button } from "../primitives/button";
+} from 'lucide-react';
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '../primitives/tooltip';
+import { Button } from '../primitives/button';
 
 /**
  * Dense icon button used throughout this toolbar. Wraps shadcn `Button`
@@ -53,8 +53,8 @@ function IconBtn({
           aria-label={label}
           className={`h-7 w-7 text-muted-foreground disabled:opacity-40 [&_svg]:size-3.5${
             pulse
-              ? " animate-pulse text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/40 ring-2 ring-blue-500/40"
-              : ""
+              ? ' animate-pulse text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/40 ring-2 ring-blue-500/40'
+              : ''
           }`}
         >
           <Icon />
@@ -111,21 +111,32 @@ export function ClockControls({
   chromeless,
   pulseRun,
 }: ClockControlsProps) {
-  const wrapper = floating
-    ? "absolute top-3 left-1/2 -translate-x-1/2 z-10"
-    : "";
+  const wrapper = floating ? 'absolute top-3 left-1/2 -translate-x-1/2 z-10' : '';
   const inner = chromeless
-    ? "flex items-center gap-1.5"
-    : "flex items-center gap-1.5 border-t border-border bg-card/95 px-3 py-1.5";
+    ? 'flex items-center gap-1.5'
+    : 'flex items-center gap-1.5 border-t border-border bg-card/95 px-3 py-1.5';
 
   return (
     <TooltipProvider>
       <div className={wrapper}>
         <div className={inner}>
-          <IconBtn label="Tick" icon={SkipForward} onClick={onStep} disabled={isRunning || isViewingPast} />
-          {isRunning
-            ? <IconBtn label="Pause" icon={Pause} onClick={onPause} />
-            : <IconBtn label="Run"   icon={Play}  onClick={onRun} disabled={isViewingPast} pulse={pulseRun && !isViewingPast} />}
+          <IconBtn
+            label="Tick"
+            icon={SkipForward}
+            onClick={onStep}
+            disabled={isRunning || isViewingPast}
+          />
+          {isRunning ? (
+            <IconBtn label="Pause" icon={Pause} onClick={onPause} />
+          ) : (
+            <IconBtn
+              label="Run"
+              icon={Play}
+              onClick={onRun}
+              disabled={isViewingPast}
+              pulse={pulseRun && !isViewingPast}
+            />
+          )}
           <IconBtn label="Reset" icon={RotateCcw} onClick={onReset} />
 
           {/* Speed slider */}
@@ -158,7 +169,12 @@ export function ClockControls({
           {/* Time-travel */}
           {historyLength > 1 && (
             <div className="flex items-center gap-0.5 border-l border-border pl-1.5 ml-0.5">
-              <IconBtn label="Step back" icon={ChevronLeft} onClick={onStepBack} disabled={historyIndex <= 0 || isRunning} />
+              <IconBtn
+                label="Step back"
+                icon={ChevronLeft}
+                onClick={onStepBack}
+                disabled={historyIndex <= 0 || isRunning}
+              />
 
               <span className="min-w-[40px] text-center text-[11px] text-muted-foreground">
                 {isViewingPast ? (
@@ -172,7 +188,12 @@ export function ClockControls({
                 )}
               </span>
 
-              <IconBtn label="Step forward" icon={ChevronRight} onClick={onStepForward} disabled={!isViewingPast || isRunning} />
+              <IconBtn
+                label="Step forward"
+                icon={ChevronRight}
+                onClick={onStepForward}
+                disabled={!isViewingPast || isRunning}
+              />
             </div>
           )}
 

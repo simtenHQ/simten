@@ -11,9 +11,9 @@ import { useCircuitLibraryStore } from '../../stores/circuit-library-store';
 import { STDLIB_CIRCUITS } from '@simten/core/std';
 import { bitType, busType, type Circuit } from '../../types/circuit';
 
-const PRIMITIVES = STDLIB_CIRCUITS
-  .map((c) => c.circuit)
-  .filter(c => c.implementation.kind === 'primitive');
+const PRIMITIVES = STDLIB_CIRCUITS.map((c) => c.circuit).filter(
+  (c) => c.implementation.kind === 'primitive',
+);
 
 function getLibrary(): CircuitLibrary {
   const store = useCircuitLibraryStore.getState();

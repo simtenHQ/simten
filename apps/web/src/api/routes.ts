@@ -8,7 +8,10 @@
 import { handleCompile } from './compile';
 import { handleVerify } from './verify';
 
-export async function handleApiRoute(request: Request, env: Record<string, unknown>): Promise<Response | null> {
+export async function handleApiRoute(
+  request: Request,
+  env: Record<string, unknown>,
+): Promise<Response | null> {
   const url = new URL(request.url);
 
   if (url.pathname === '/api/compile' && request.method === 'POST') {

@@ -90,18 +90,21 @@ function extractLocalNames(bindingsPart: string): string[] {
   if (namedBlockMatch) {
     const namedNames = namedBlockMatch[1]
       .split(',')
-      .map(s => s.trim())
+      .map((s) => s.trim())
       .filter(Boolean)
-      .map(s => {
+      .map((s) => {
         const asMatch = s.match(/\bas\s+(\w+)/);
-        return asMatch ? asMatch[1] : (s.match(/^(\w+)/) ?? [])[1] ?? '';
+        return asMatch ? asMatch[1] : ((s.match(/^(\w+)/) ?? [])[1] ?? '');
       })
-      .filter(n => n && /^\w+$/.test(n));
+      .filter((n) => n && /^\w+$/.test(n));
     names.push(...namedNames);
   }
 
   // Default import: identifier before any comma, not { or *
-  const withoutNamed = trimmed.replace(/\{[\s\S]*?\}/, '').replace(/,/g, '').trim();
+  const withoutNamed = trimmed
+    .replace(/\{[\s\S]*?\}/, '')
+    .replace(/,/g, '')
+    .trim();
   if (withoutNamed && withoutNamed !== '*') {
     const defaultMatch = withoutNamed.match(/^(\w+)$/);
     if (defaultMatch) names.push(defaultMatch[1]);
@@ -124,7 +127,11 @@ function parseImports(jsCode: string): ParsedImport[] {
   while (i < lines.length) {
     const trimmed = lines[i].trimStart();
     // Must start with 'import' keyword
-    if (!trimmed.startsWith('import ') && !trimmed.startsWith("import'") && !trimmed.startsWith('import"')) {
+    if (
+      !trimmed.startsWith('import ') &&
+      !trimmed.startsWith("import'") &&
+      !trimmed.startsWith('import"')
+    ) {
       i++;
       continue;
     }
@@ -146,10 +153,11 @@ function parseImports(jsCode: string): ParsedImport[] {
       if (fromMatch) {
         const specifier = fromMatch[2];
         // Bindings part: everything between 'import ' and ' from'
-        const bindingsPart = raw
-          .replace(/^[ \t]*import\s+/, '')
-          .replace(/\s*\bfrom\s+(['"])[^'"]+\1\s*;?\s*$/, '')
-          .trim() || null;
+        const bindingsPart =
+          raw
+            .replace(/^[ \t]*import\s+/, '')
+            .replace(/\s*\bfrom\s+(['"])[^'"]+\1\s*;?\s*$/, '')
+            .trim() || null;
         const localNames = bindingsPart ? extractLocalNames(bindingsPart) : [];
         results.push({ raw, specifier, bindingsPart, localNames });
         i = j + 1;
@@ -198,18 +206,14 @@ export function extractAndRewriteImports(jsCode: string): ExtractedImports {
     const url = rewriteSpecifier(imp.specifier);
 
     // Reconstruct the import statement with the rewritten URL
-    const rewritten = imp.raw.replace(
-      /(['"])[^'"]+\1(\s*;?\s*)$/,
-      `'${url}'$2`,
-    );
+    const rewritten = imp.raw.replace(/(['"])[^'"]+\1(\s*;?\s*)$/, `'${url}'$2`);
     loaderLines.push(rewritten.trim());
     allLocalNames.push(...imp.localNames);
   }
 
   // Re-export all collected local names so they're accessible after import()
-  loaderLines.push(allLocalNames.length > 0
-    ? `export { ${allLocalNames.join(', ')} };`
-    : 'export {};',
+  loaderLines.push(
+    allLocalNames.length > 0 ? `export { ${allLocalNames.join(', ')} };` : 'export {};',
   );
 
   return {

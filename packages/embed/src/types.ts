@@ -8,9 +8,9 @@ export type {
   FlatCircuit,
   FlatPortValueMap,
   FlatSequentialState,
-} from "@simten/core/simulator";
+} from '@simten/core/simulator';
 
-export type { Circuit } from "@simten/core";
+export type { Circuit } from '@simten/core';
 
 // --- Layout metadata types (extracted from packages/ui/src/editor/types/visual.ts) ---
 

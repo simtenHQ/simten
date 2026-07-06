@@ -1,7 +1,7 @@
-import { Link } from '@tanstack/react-router'
-import { ArrowUpRight } from 'lucide-react'
-import { Logo } from '@/components/Logo'
-import { Container } from '@/components/Container'
+import { Link } from '@tanstack/react-router';
+import { ArrowUpRight } from 'lucide-react';
+import { Logo } from '@/components/Logo';
+import { Container } from '@/components/Container';
 
 /**
  * Multi-column site footer used on every content page.
@@ -13,10 +13,9 @@ import { Container } from '@/components/Container'
  * /cpu/rv32i) suppress this just like they suppress the default SiteHeader.
  */
 
-const headingClass =
-  'text-xs font-medium uppercase tracking-[0.15em] text-muted-foreground/70'
+const headingClass = 'text-xs font-medium uppercase tracking-[0.15em] text-muted-foreground/70';
 const linkClass =
-  'text-base text-muted-foreground transition-colors hover:text-foreground sm:text-[15px]'
+  'text-base text-muted-foreground transition-colors hover:text-foreground sm:text-[15px]';
 
 function Col({ heading, children }: { heading: string; children: React.ReactNode }) {
   return (
@@ -24,7 +23,7 @@ function Col({ heading, children }: { heading: string; children: React.ReactNode
       <h3 className={headingClass}>{heading}</h3>
       <ul className="mt-5 space-y-3.5">{children}</ul>
     </div>
-  )
+  );
 }
 
 /** External link with the trailing ↗ affordance. */
@@ -44,11 +43,11 @@ function ExtLink({ href, children }: { href: string; children: React.ReactNode }
         />
       </a>
     </li>
-  )
+  );
 }
 
 export function SiteFooter() {
-  const year = new Date().getFullYear()
+  const year = new Date().getFullYear();
   return (
     <footer className="mt-32 border-t border-border bg-background">
       <Container className="py-16">
@@ -129,18 +128,10 @@ export function SiteFooter() {
             </Col>
 
             <Col heading="Packages">
-              <ExtLink href="https://www.npmjs.com/package/@simten/core">
-                @simten/core
-              </ExtLink>
-              <ExtLink href="https://www.npmjs.com/package/@simten/mcp">
-                @simten/mcp
-              </ExtLink>
-              <ExtLink href="https://www.npmjs.com/package/@simten/embed">
-                @simten/embed
-              </ExtLink>
-              <ExtLink href="https://www.npmjs.com/package/@simten/ui">
-                @simten/ui
-              </ExtLink>
+              <ExtLink href="https://www.npmjs.com/package/@simten/core">@simten/core</ExtLink>
+              <ExtLink href="https://www.npmjs.com/package/@simten/mcp">@simten/mcp</ExtLink>
+              <ExtLink href="https://www.npmjs.com/package/@simten/embed">@simten/embed</ExtLink>
+              <ExtLink href="https://www.npmjs.com/package/@simten/ui">@simten/ui</ExtLink>
             </Col>
           </div>
         </div>
@@ -169,5 +160,5 @@ export function SiteFooter() {
         </div>
       </Container>
     </footer>
-  )
+  );
 }

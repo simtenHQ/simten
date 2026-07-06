@@ -48,10 +48,7 @@ function captureFlatEnv(flat: FlatCircuit, library: CircuitLibrary): Map<string,
 const SwitchedFF = circuit('SwitchedFF', {
   outputs: { q: bit },
   nodes: { sw: Switch(), dff: DFlipFlop() },
-  connect: ({ outputs, nodes: { sw, dff } }) => [
-    sw.out.to(dff.d),
-    dff.q.to(outputs.q),
-  ],
+  connect: ({ outputs, nodes: { sw, dff } }) => [sw.out.to(dff.d), dff.q.to(outputs.q)],
 });
 
 function buildSim() {
@@ -62,7 +59,9 @@ function buildSim() {
       [...circuitMap.entries()]
         .filter(([, c]) => c.implementation.kind === 'primitive')
         .map(([n]) => n),
-    addCircuit: (c) => { circuitMap.set(c.name, c); },
+    addCircuit: (c) => {
+      circuitMap.set(c.name, c);
+    },
   };
   library.addCircuit(SwitchedFF.circuit);
   library.addCircuit(Switch().circuit);
@@ -98,10 +97,7 @@ describe('environmental state time-travel', () => {
     // reads componentRef and finds nothing. This is the behaviour that broke
     // the sandbox; assert it so future refactors don't mistakenly believe the
     // core helper works on FlatCircuits.
-    const wrongWay = captureEnvironmentalState(
-      flat as unknown as Circuit,
-      library,
-    );
+    const wrongWay = captureEnvironmentalState(flat as unknown as Circuit, library);
     expect(wrongWay.size).toBe(0);
 
     // The correct walk (primitiveType, the pattern in our captureFlatEnv
@@ -109,7 +105,6 @@ describe('environmental state time-travel', () => {
     const rightWay = captureFlatEnv(flat, library);
     expect(rightWay.get('sw')).toBe(true);
   });
-
 
   it('engine-only restore leaves stale Switch value (the bug)', () => {
     const { sim } = buildSim();

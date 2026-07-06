@@ -6,7 +6,12 @@
  */
 
 import { randomUUID } from 'node:crypto';
-import type { StudioServer, CircuitState, TracesPayload, TestResultsPayload } from '../server/ws-server.js';
+import type {
+  StudioServer,
+  CircuitState,
+  TracesPayload,
+  TestResultsPayload,
+} from '../server/ws-server.js';
 
 export type { StudioServer, CircuitState, TracesPayload, TestResultsPayload };
 
@@ -55,7 +60,9 @@ export async function getOrCreateServer(): Promise<StudioServer> {
     token: PROCESS_TOKEN,
     // When the last tab closes, clear the open-once latch so a subsequent
     // show_circuit reopens a tab — no MCP reconnect needed.
-    onSessionsEmpty: () => { browserOpened = false; },
+    onSessionsEmpty: () => {
+      browserOpened = false;
+    },
   });
   ensureCleanup();
 

@@ -16,10 +16,12 @@ import { synthesizeVerilog, hasSynth } from './synth.js';
 
 // ---- helpers ----------------------------------------------------------------
 
-function makeLib<T extends { circuit: import('../../types/circuit.js').Circuit; _dependencies: Map<string, { circuit: import('../../types/circuit.js').Circuit }> }>(
-  top: T,
-  name: string,
-): CircuitLibrary {
+function makeLib<
+  T extends {
+    circuit: import('../../types/circuit.js').Circuit;
+    _dependencies: Map<string, { circuit: import('../../types/circuit.js').Circuit }>;
+  },
+>(top: T, name: string): CircuitLibrary {
   return {
     resolveCircuit: (n) => (n === name ? top.circuit : top._dependencies.get(n)?.circuit),
     getAllPrimitiveNames: () => [...top._dependencies.keys()],
@@ -155,7 +157,9 @@ d('UpDownCounter (Register + Adder + Subtractor + Mux) — synthesis', () => {
 });
 
 d('Pipeline2Stage (2x Register + Adder) — synthesis', () => {
-  it('synthesizes 2-stage pipeline with combinational logic between stages', { timeout: 30000 }, async () => {
+  it('synthesizes 2-stage pipeline with combinational logic between stages', {
+    timeout: 30000,
+  }, async () => {
     const { circuit, lib } = buildPipelineStage();
     const result = exportVerilog(circuit, lib, { target: 'synthesis' });
     const resp = await synthesizeVerilog(result, 'Pipeline2Stage');

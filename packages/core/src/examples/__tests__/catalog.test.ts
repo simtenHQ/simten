@@ -22,7 +22,7 @@ describe('example catalog', () => {
   });
 
   it('has unique ids', () => {
-    const ids = EXAMPLES.map(e => e.id);
+    const ids = EXAMPLES.map((e) => e.id);
     expect(new Set(ids).size).toBe(ids.length);
   });
 

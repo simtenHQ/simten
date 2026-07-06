@@ -11,16 +11,28 @@
  * The goal is "what is this?" answered in under 3 seconds.
  */
 
-import { useState, useCallback, useEffect, useRef, type ReactNode } from "react";
-import { Link } from "@tanstack/react-router";
-import figlet from "figlet";
-import smallFont from "figlet/fonts/Small";
-import { CircuitEmbed, type CircuitEmbedHandle } from "@simten/embed";
-import { circuit, bit, bus } from "@simten/core/circuit";
-import type { BuiltCircuit } from "@simten/core/circuit";
-import { Xor, And, Or, Not, DFlipFlop, Register, Adder, ROM, Constant, Console as ConsolePrimitive, romFromBytes } from "@simten/core/std";
-import { HighlightedCode } from "@/components/HighlightedCode";
-import { Container } from "@/components/Container";
+import { useState, useCallback, useEffect, useRef, type ReactNode } from 'react';
+import { Link } from '@tanstack/react-router';
+import figlet from 'figlet';
+import smallFont from 'figlet/fonts/Small';
+import { CircuitEmbed, type CircuitEmbedHandle } from '@simten/embed';
+import { circuit, bit, bus } from '@simten/core/circuit';
+import type { BuiltCircuit } from '@simten/core/circuit';
+import {
+  Xor,
+  And,
+  Or,
+  Not,
+  DFlipFlop,
+  Register,
+  Adder,
+  ROM,
+  Constant,
+  Console as ConsolePrimitive,
+  romFromBytes,
+} from '@simten/core/std';
+import { HighlightedCode } from '@/components/HighlightedCode';
+import { Container } from '@/components/Container';
 
 type HeroLayout = Record<string, { x: number; y: number }>;
 
@@ -70,10 +82,7 @@ const FigletStream = circuit('FigletStream', {
 
 export const FigletDemo = circuit('FigletDemo', {
   nodes: { src: FigletStream, term: ConsolePrimitive },
-  connect: ({ nodes: { src, term } }) => [
-    src.byte.to(term.data),
-    src.strobe.to(term.we),
-  ],
+  connect: ({ nodes: { src, term } }) => [src.byte.to(term.data), src.strobe.to(term.we)],
 });
 
 // Source string used by the splash hero picker — same content as DEMOS[0].code
@@ -192,8 +201,8 @@ interface HeroDemo {
 
 const DEMOS: HeroDemo[] = [
   {
-    key: "figlet",
-    label: "Figlet → ROM",
+    key: 'figlet',
+    label: 'Figlet → ROM',
     circuit: FigletDemo,
     code: `import figlet from 'figlet';
 import smallFont from 'figlet/fonts/Small.js';
@@ -238,13 +247,13 @@ const FigletDemo = circuit('FigletDemo', {
   ],
 });`,
     layout: {
-      src:  { x: 0,   y: 50 },
+      src: { x: 0, y: 50 },
       term: { x: 240, y: 50 },
     },
   },
   {
-    key: "half-adder",
-    label: "Half adder",
+    key: 'half-adder',
+    label: 'Half adder',
     circuit: HalfAdder,
     code: `// Adds two 1-bit numbers. sum = a XOR b, carry = a AND b.
 const HalfAdder = circuit('HalfAdder', {
@@ -259,16 +268,16 @@ const HalfAdder = circuit('HalfAdder', {
   ],
 });`,
     layout: {
-      a:     { x: 10,  y: 0   },
-      b:     { x: 10,  y: 130 },
-      dut:   { x: 220, y: 65  },
-      sum:   { x: 430, y: 0   },
+      a: { x: 10, y: 0 },
+      b: { x: 10, y: 130 },
+      dut: { x: 220, y: 65 },
+      sum: { x: 430, y: 0 },
       carry: { x: 430, y: 130 },
     },
   },
   {
-    key: "full-adder",
-    label: "Full adder",
+    key: 'full-adder',
+    label: 'Full adder',
     circuit: FullAdder,
     code: `// Adds two bits plus a carry-in. Chain N of these to build an N-bit adder.
 const FullAdder = circuit('FullAdder', {
@@ -287,17 +296,17 @@ const FullAdder = circuit('FullAdder', {
   ],
 });`,
     layout: {
-      a:    { x: 10,  y: 0   },
-      b:    { x: 10,  y: 95  },
-      cin:  { x: 10,  y: 190 },
-      dut:  { x: 220, y: 95  },
-      sum:  { x: 430, y: 30  },
+      a: { x: 10, y: 0 },
+      b: { x: 10, y: 95 },
+      cin: { x: 10, y: 190 },
+      dut: { x: 220, y: 95 },
+      sum: { x: 430, y: 30 },
       cout: { x: 430, y: 160 },
     },
   },
   {
-    key: "counter",
-    label: "2-bit counter",
+    key: 'counter',
+    label: '2-bit counter',
     circuit: Counter2Bit,
     code: `// Counts 0 → 1 → 2 → 3 → 0 on every clock tick using two flip-flops.
 const Counter2Bit = circuit('Counter2Bit', {
@@ -311,14 +320,14 @@ const Counter2Bit = circuit('Counter2Bit', {
   ],
 });`,
     layout: {
-      dut:  { x: 10,  y: 60  },
-      bit0: { x: 220, y: 0   },
+      dut: { x: 10, y: 60 },
+      bit0: { x: 220, y: 0 },
       bit1: { x: 220, y: 130 },
     },
   },
   {
-    key: "mux",
-    label: "2-to-1 mux",
+    key: 'mux',
+    label: '2-to-1 mux',
     circuit: Mux2to1,
     code: `// Picks input a or b based on sel. The basic building block for routing data.
 const Mux2to1 = circuit('Mux2to1', {
@@ -336,11 +345,11 @@ const Mux2to1 = circuit('Mux2to1', {
   ],
 });`,
     layout: {
-      a:   { x: 10,  y: 0   },
-      b:   { x: 10,  y: 95  },
-      sel: { x: 10,  y: 190 },
-      dut: { x: 220, y: 95  },
-      out: { x: 430, y: 95  },
+      a: { x: 10, y: 0 },
+      b: { x: 10, y: 95 },
+      sel: { x: 10, y: 190 },
+      dut: { x: 220, y: 95 },
+      out: { x: 430, y: 95 },
     },
   },
 ];
@@ -359,9 +368,7 @@ function HeroWindow({ children }: { children: ReactNode }) {
           <span className="w-3 h-3 rounded-full bg-[#28c840]" />
         </div>
         <div className="flex-1 flex items-center bg-card rounded-full border border-border px-3 h-6 gap-2 min-w-0">
-          <span className="text-[12px] text-muted-foreground font-mono truncate">
-            simten.dev
-          </span>
+          <span className="text-[12px] text-muted-foreground font-mono truncate">simten.dev</span>
         </div>
         <div className="w-[52px]" />
       </div>
@@ -389,7 +396,7 @@ export function Hero() {
   const desktopEmbedRef = useRef<CircuitEmbedHandle>(null);
   const mobileEmbedRef = useRef<CircuitEmbedHandle>(null);
   useEffect(() => {
-    if (demoKey !== "figlet") return;
+    if (demoKey !== 'figlet') return;
     // Wait one tick for the embed to mount its handle.
     const id = setTimeout(() => {
       desktopEmbedRef.current?.startAutoRun(5);
@@ -406,18 +413,21 @@ export function Hero() {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement | null;
-      if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable)) {
+      if (
+        target &&
+        (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)
+      ) {
         return;
       }
-      if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
+      if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
         const idx = DEMOS.findIndex((d) => d.key === demoKey);
-        const delta = e.key === "ArrowRight" ? 1 : -1;
+        const delta = e.key === 'ArrowRight' ? 1 : -1;
         const next = (idx + delta + DEMOS.length) % DEMOS.length;
         setDemoKey(DEMOS[next].key);
       }
     };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
   }, [demoKey]);
 
   return (
@@ -430,7 +440,8 @@ export function Hero() {
               Or write it yourself.
             </h2>
             <p className="mt-5 text-base md:text-lg text-muted-foreground max-w-2xl">
-              The same simulator Claude uses is open to you directly. Pick a circuit, edit the TypeScript, watch it run.
+              The same simulator Claude uses is open to you directly. Pick a circuit, edit the
+              TypeScript, watch it run.
             </p>
           </div>
 
@@ -471,8 +482,8 @@ export function Hero() {
                 onClick={() => pickDemo(d.key)}
                 className={`text-[13px] px-3.5 py-1.5 rounded-full border transition-colors ${
                   d.key === demoKey
-                    ? "border-foreground/30 bg-foreground/10 text-foreground"
-                    : "border-border text-muted-foreground hover:text-foreground hover:border-foreground/30 hover:bg-muted/50"
+                    ? 'border-foreground/30 bg-foreground/10 text-foreground'
+                    : 'border-border text-muted-foreground hover:text-foreground hover:border-foreground/30 hover:bg-muted/50'
                 }`}
               >
                 {d.label}
@@ -540,8 +551,8 @@ export function Hero() {
               onClick={() => pickDemo(d.key)}
               className={`text-[12px] px-3 py-1 rounded-full border transition-colors ${
                 d.key === demoKey
-                  ? "border-foreground/30 bg-foreground/10 text-foreground"
-                  : "border-border text-muted-foreground hover:text-foreground hover:border-foreground/30"
+                  ? 'border-foreground/30 bg-foreground/10 text-foreground'
+                  : 'border-border text-muted-foreground hover:text-foreground hover:border-foreground/30'
               }`}
             >
               {d.label}

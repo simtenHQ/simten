@@ -89,7 +89,10 @@ describe('isProjectReady', () => {
 describe('ensureTsconfig', () => {
   it('writes a NodeNext tsconfig when absent, no-ops when present', () => {
     expect(ensureTsconfig(dir)).toBe(true);
-    expect(JSON.parse(readFileSync(resolve(dir, 'tsconfig.json'), 'utf-8')).compilerOptions.moduleResolution).toBe('NodeNext');
+    expect(
+      JSON.parse(readFileSync(resolve(dir, 'tsconfig.json'), 'utf-8')).compilerOptions
+        .moduleResolution,
+    ).toBe('NodeNext');
     expect(ensureTsconfig(dir)).toBe(false);
   });
 });

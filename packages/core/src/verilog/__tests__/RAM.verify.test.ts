@@ -29,8 +29,8 @@ interface Step {
 }
 
 const SEQUENCE: Step[] = [
-  { addr: 5, data_in: 0xAB, we: 1 }, // write 0xAB to [5]
-  { addr: 7, data_in: 0xCD, we: 1 }, // write 0xCD to [7]
+  { addr: 5, data_in: 0xab, we: 1 }, // write 0xAB to [5]
+  { addr: 7, data_in: 0xcd, we: 1 }, // write 0xCD to [7]
   { addr: 5, data_in: 0x00, we: 0 }, // read [5]
   { addr: 7, data_in: 0x00, we: 0 }, // read [7]
   { addr: 3, data_in: 0x00, we: 0 }, // read [3] — untouched, should be 0
@@ -51,9 +51,11 @@ function buildRam() {
 
   const lib: CircuitLibrary = {
     resolveCircuit: (name) =>
-      name === 'RamWrapper' ? RamWrapper.circuit :
-      name === 'RAM' ? (RAM.circuit as Circuit) :
-      undefined,
+      name === 'RamWrapper'
+        ? RamWrapper.circuit
+        : name === 'RAM'
+          ? (RAM.circuit as Circuit)
+          : undefined,
     getAllPrimitiveNames: () => ['RAM'],
   };
 
@@ -71,7 +73,7 @@ function runSimulator(steps: Step[]): number[] {
     sim.setNode('we', step.we);
     sim.tick();
     const v = sim.getPortValues().get('__top__.data_out');
-    outputs.push(typeof v === 'number' ? (v >>> 0) & 0xFF : 0);
+    outputs.push(typeof v === 'number' ? (v >>> 0) & 0xff : 0);
   }
   return outputs;
 }
@@ -107,9 +109,9 @@ d('RAM — JS simulator vs iverilog co-simulation', () => {
     expect(result.results).toBeDefined();
     expect(result.results!.length).toBe(SEQUENCE.length);
 
-    const veriOutputs = result.results!
-      .sort((a, b) => a.testCase - b.testCase)
-      .map((r) => r.outputs.data_out & 0xFF);
+    const veriOutputs = result
+      .results!.sort((a, b) => a.testCase - b.testCase)
+      .map((r) => r.outputs.data_out & 0xff);
 
     // Ground truth: the JS simulator. iverilog must agree at every cycle.
     expect(veriOutputs).toEqual(simOutputs);

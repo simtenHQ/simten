@@ -8,7 +8,18 @@
 import { describe, it, expect } from 'vitest';
 import { simulate } from '../../sim/simulate.js';
 import { circuit, bit, bus } from '../../circuit/index.js';
-import { And, Or, Xor, Not, Adder, Register, DFlipFlop, Mux, Comparator, Constant } from '../../std/index.js';
+import {
+  And,
+  Or,
+  Xor,
+  Not,
+  Adder,
+  Register,
+  DFlipFlop,
+  Mux,
+  Comparator,
+  Constant,
+} from '../../std/index.js';
 
 // ============================================================================
 // Combinational circuits

@@ -40,10 +40,10 @@ function hashCode(code: string): string {
  * Each frame represents one level of composite hierarchy.
  */
 export interface DrillDownFrame {
-  nodeId: string;        // Instance node ID in the parent circuit (e.g., "ha1_abc")
-  nodeLabel: string;     // Human-readable label (e.g., "ha1")
+  nodeId: string; // Instance node ID in the parent circuit (e.g., "ha1_abc")
+  nodeLabel: string; // Human-readable label (e.g., "ha1")
   componentName: string; // Component type name (e.g., "HalfAdder")
-  circuit: Circuit;      // The view circuit (with boundary nodes) for this level
+  circuit: Circuit; // The view circuit (with boundary nodes) for this level
 }
 
 interface CircuitPreviewActions {
@@ -162,7 +162,6 @@ export const useCircuitPreviewStore = create<CircuitPreviewStore>()(
 
       // Apply to CircuitStore (auto-layout handled by CircuitCanvas)
       useCircuitStore.getState().setCircuit(harnessed);
-
     },
 
     updateVersion: (code) => {
@@ -241,7 +240,7 @@ export const useCircuitPreviewStore = create<CircuitPreviewStore>()(
       }
 
       // Find the node
-      const node = activeCircuit.nodes.find(n => n.id === nodeId);
+      const node = activeCircuit.nodes.find((n) => n.id === nodeId);
       if (!node) {
         console.warn('[CircuitPreviewStore] drillInto: node not found:', nodeId);
         return;
@@ -250,7 +249,10 @@ export const useCircuitPreviewStore = create<CircuitPreviewStore>()(
       // Resolve the component definition
       const componentDef = useCircuitLibraryStore.getState().resolveCircuit(node.componentRef);
       if (!componentDef || componentDef.implementation.kind !== 'composite') {
-        console.warn('[CircuitPreviewStore] drillInto: not a composite component:', node.componentRef);
+        console.warn(
+          '[CircuitPreviewStore] drillInto: not a composite component:',
+          node.componentRef,
+        );
         return;
       }
 
@@ -316,7 +318,7 @@ export const useCircuitPreviewStore = create<CircuitPreviewStore>()(
       if (drillDownStack.length === 0) return '';
 
       // Build prefix by concatenating all frame node IDs with dots
-      return drillDownStack.map(f => f.nodeId).join('.') + '.';
+      return drillDownStack.map((f) => f.nodeId).join('.') + '.';
     },
-  }))
+  })),
 );

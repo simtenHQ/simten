@@ -1,28 +1,36 @@
-import { createFileRoute } from '@tanstack/react-router'
-import { blogPostHead } from '@/lib/seo'
-import { getPost } from '@/features/blog/posts'
-import { Suspense, lazy } from "react";
-import { HeroSection } from "@/features/blog/crc32-in-hardware/sections/HeroSection";
-import { BlogFooter } from "@/features/blog/BlogFooter";
-import { ErrorBoundary } from "@/features/blog/building-a-cpu/ErrorBoundary";
+import { createFileRoute } from '@tanstack/react-router';
+import { blogPostHead } from '@/lib/seo';
+import { getPost } from '@/features/blog/posts';
+import { Suspense, lazy } from 'react';
+import { HeroSection } from '@/features/blog/crc32-in-hardware/sections/HeroSection';
+import { BlogFooter } from '@/features/blog/BlogFooter';
+import { ErrorBoundary } from '@/features/blog/building-a-cpu/ErrorBoundary';
 
 const LFSRSection = lazy(() =>
-  import("@/features/blog/crc32-in-hardware/sections/LFSRSection").then((m) => ({ default: m.LFSRSection }))
+  import('@/features/blog/crc32-in-hardware/sections/LFSRSection').then((m) => ({
+    default: m.LFSRSection,
+  })),
 );
 const PolynomialSection = lazy(() =>
-  import("@/features/blog/crc32-in-hardware/sections/PolynomialSection").then((m) => ({ default: m.PolynomialSection }))
+  import('@/features/blog/crc32-in-hardware/sections/PolynomialSection').then((m) => ({
+    default: m.PolynomialSection,
+  })),
 );
 const CRC32Section = lazy(() =>
-  import("@/features/blog/crc32-in-hardware/sections/CRC32Section").then((m) => ({ default: m.CRC32Section }))
+  import('@/features/blog/crc32-in-hardware/sections/CRC32Section').then((m) => ({
+    default: m.CRC32Section,
+  })),
 );
 const VerifySection = lazy(() =>
-  import("@/features/blog/crc32-in-hardware/sections/VerifySection").then((m) => ({ default: m.VerifySection }))
+  import('@/features/blog/crc32-in-hardware/sections/VerifySection').then((m) => ({
+    default: m.VerifySection,
+  })),
 );
 
 export const Route = createFileRoute('/blog/crc32-in-hardware')({
   head: () => blogPostHead(getPost('crc32-in-hardware')),
   component: CRC32InHardwarePage,
-})
+});
 
 function SectionSkeleton() {
   return (
@@ -41,40 +49,39 @@ function SectionSkeleton() {
 function CRC32InHardwarePage() {
   return (
     <>
+      <HeroSection />
 
-        <HeroSection />
+      <div className="space-y-4">
+        <hr className="border-gray-200 dark:border-gray-800" />
+        <ErrorBoundary>
+          <Suspense fallback={<SectionSkeleton />}>
+            <LFSRSection />
+          </Suspense>
+        </ErrorBoundary>
 
-        <div className="space-y-4">
-          <hr className="border-gray-200 dark:border-gray-800" />
-          <ErrorBoundary>
-            <Suspense fallback={<SectionSkeleton />}>
-              <LFSRSection />
-            </Suspense>
-          </ErrorBoundary>
+        <hr className="border-gray-200 dark:border-gray-800" />
+        <ErrorBoundary>
+          <Suspense fallback={<SectionSkeleton />}>
+            <PolynomialSection />
+          </Suspense>
+        </ErrorBoundary>
 
-          <hr className="border-gray-200 dark:border-gray-800" />
-          <ErrorBoundary>
-            <Suspense fallback={<SectionSkeleton />}>
-              <PolynomialSection />
-            </Suspense>
-          </ErrorBoundary>
+        <hr className="border-gray-200 dark:border-gray-800" />
+        <ErrorBoundary>
+          <Suspense fallback={<SectionSkeleton />}>
+            <CRC32Section />
+          </Suspense>
+        </ErrorBoundary>
 
-          <hr className="border-gray-200 dark:border-gray-800" />
-          <ErrorBoundary>
-            <Suspense fallback={<SectionSkeleton />}>
-              <CRC32Section />
-            </Suspense>
-          </ErrorBoundary>
+        <hr className="border-gray-200 dark:border-gray-800" />
+        <ErrorBoundary>
+          <Suspense fallback={<SectionSkeleton />}>
+            <VerifySection />
+          </Suspense>
+        </ErrorBoundary>
+      </div>
 
-          <hr className="border-gray-200 dark:border-gray-800" />
-          <ErrorBoundary>
-            <Suspense fallback={<SectionSkeleton />}>
-              <VerifySection />
-            </Suspense>
-          </ErrorBoundary>
-        </div>
-
-        <BlogFooter slug="crc32-in-hardware" />
+      <BlogFooter slug="crc32-in-hardware" />
     </>
-  )
+  );
 }

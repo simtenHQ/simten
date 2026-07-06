@@ -9,15 +9,15 @@
  * sequential circuit" idea.
  */
 
-import { circuit, bus } from "@simten/core/circuit";
-import { Register, Adder, Constant } from "@simten/core/std";
+import { circuit, bus } from '@simten/core/circuit';
+import { Register, Adder, Constant } from '@simten/core/std';
 
 // ── Counter: Register + Adder loop ─────────────────────────────────────
 // Each tick, the register's current value flows through the adder
 // (+1, with carry-in tied low), and the result feeds back into the
 // register's data input. write-enable is held high so every tick
 // captures the new value.
-export const Counter = circuit("Counter", {
+export const Counter = circuit('Counter', {
   outputs: { count: bus(8) },
   nodes: {
     reg: Register({ width: 8 }),

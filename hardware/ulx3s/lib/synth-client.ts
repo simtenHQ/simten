@@ -28,16 +28,20 @@ export interface BuildResponse {
   success: boolean;
   bitstream?: string; // base64
   config?: string; // base64-encoded .config (for later ecpbram patching)
-  timing?: {
-    achieved_mhz?: number;
-    target_mhz?: number;
-  } | Record<string, unknown>;
-  utilization?: {
-    lut?: number;
-    ff?: number;
-    bram?: number;
-    io?: number;
-  } | Record<string, unknown>;
+  timing?:
+    | {
+        achieved_mhz?: number;
+        target_mhz?: number;
+      }
+    | Record<string, unknown>;
+  utilization?:
+    | {
+        lut?: number;
+        ff?: number;
+        bram?: number;
+        io?: number;
+      }
+    | Record<string, unknown>;
   log: string;
   error?: string;
 }

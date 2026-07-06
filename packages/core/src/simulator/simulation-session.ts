@@ -54,7 +54,6 @@ export interface SimulationSessionOptions {
   isSequential?: boolean;
 }
 
-
 // ============================================================================
 // SimulationSession
 // ============================================================================
@@ -202,11 +201,14 @@ export class SimulationSession<TMeta = unknown> {
   // Auto-run (batched ticks at engine speed, notify at display rate)
   // ============================================================================
 
-  startAutoRun(ticksPerSecond: number, options?: {
-    displayRate?: number;
-    onBeforeTick?: () => void;
-    metadataFn?: () => TMeta;
-  }): void {
+  startAutoRun(
+    ticksPerSecond: number,
+    options?: {
+      displayRate?: number;
+      onBeforeTick?: () => void;
+      metadataFn?: () => TMeta;
+    },
+  ): void {
     this.stopAutoRun();
     if (!this.engine || !this.state.isSequential) return;
 
@@ -290,7 +292,8 @@ export class SimulationSession<TMeta = unknown> {
   }
 
   stepForward(): SessionSnapshot<TMeta> | null {
-    if (this.state.historyIndex >= this.state.history.length - 1 || this.state.isRunning) return null;
+    if (this.state.historyIndex >= this.state.history.length - 1 || this.state.isRunning)
+      return null;
     return this.seekTo(this.state.historyIndex + 1);
   }
 
@@ -305,7 +308,9 @@ export class SimulationSession<TMeta = unknown> {
 
   subscribe(listener: () => void): () => void {
     this.listeners.add(listener);
-    return () => { this.listeners.delete(listener); };
+    return () => {
+      this.listeners.delete(listener);
+    };
   }
 
   // ============================================================================
@@ -354,9 +359,12 @@ export class SimulationSession<TMeta = unknown> {
    * Does NOT notify — caller must call notifyListeners() explicitly.
    */
   private commitSession(
-    changes: Partial<Pick<SimulationSessionState<TMeta>,
-      'history' | 'historyIndex' | 'isViewingPast' | 'isRunning' | 'speed'
-    >>
+    changes: Partial<
+      Pick<
+        SimulationSessionState<TMeta>,
+        'history' | 'historyIndex' | 'isViewingPast' | 'isRunning' | 'speed'
+      >
+    >,
   ): void {
     this.state = { ...this.state, ...changes };
   }

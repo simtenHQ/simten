@@ -29,15 +29,27 @@ export function buildSim(mutate?: (built: SnakeBuilt) => void) {
  * or any dependency (e.g. 'Snake_FoodUnit'). buildSnake() constructs
  * fresh circuit objects per call, so mutations never leak between builds.
  */
-export function setNodeArg(built: SnakeBuilt, circuitName: string, nodeId: string, key: string, value: number): void {
+export function setNodeArg(
+  built: SnakeBuilt,
+  circuitName: string,
+  nodeId: string,
+  key: string,
+  value: number,
+): void {
   const circuit: Circuit | undefined =
-    built.circuit.name === circuitName ? built.circuit : built._dependencies.get(circuitName)?.circuit;
+    built.circuit.name === circuitName
+      ? built.circuit
+      : built._dependencies.get(circuitName)?.circuit;
   if (!circuit) {
-    throw new Error(`setNodeArg: circuit '${circuitName}' not found (have: ${[...built._dependencies.keys()].join(', ')})`);
+    throw new Error(
+      `setNodeArg: circuit '${circuitName}' not found (have: ${[...built._dependencies.keys()].join(', ')})`,
+    );
   }
   const node = circuit.nodes.find((n) => n.id === nodeId);
   if (!node) {
-    throw new Error(`setNodeArg: node '${nodeId}' not in ${circuitName} (have: ${circuit.nodes.map((n) => n.id).join(', ')})`);
+    throw new Error(
+      `setNodeArg: node '${nodeId}' not in ${circuitName} (have: ${circuit.nodes.map((n) => n.id).join(', ')})`,
+    );
   }
   node.arguments = { ...node.arguments, [key]: value };
 }

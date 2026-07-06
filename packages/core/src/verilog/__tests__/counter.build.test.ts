@@ -24,7 +24,14 @@ function buildCounter() {
   const Counter = circuit('Counter', {
     inputs: { enable: bit, clear: bit },
     outputs: { count: bus(8) },
-    nodes: { reg: Register(), add: Adder(), one: Constant({ value: 1 }), zero: Constant({ value: 0 }), mux: Mux(), weOr: Or },
+    nodes: {
+      reg: Register(),
+      add: Adder(),
+      one: Constant({ value: 1 }),
+      zero: Constant({ value: 0 }),
+      mux: Mux(),
+      weOr: Or,
+    },
     connect: ({ inputs, outputs, nodes: { reg, add, one, zero, mux, weOr } }) => [
       reg.q.to(add.a, outputs.count),
       one.out.to(add.b),
@@ -51,41 +58,43 @@ function buildCounter() {
 const d = describe.skipIf(!hasSynth() || !hasBuild());
 
 d('Counter — full pipeline to ECP5 bitstream', () => {
-  it(
-    'synth_ecp5 → nextpnr-ecp5 → ecppack → bitstream',
-    { timeout: 180000 },
-    async () => {
-      const { circuit, lib } = buildCounter();
-      const exportResult = exportVerilog(circuit, lib, { target: 'synthesis' });
+  it('synth_ecp5 → nextpnr-ecp5 → ecppack → bitstream', { timeout: 180000 }, async () => {
+    const { circuit, lib } = buildCounter();
+    const exportResult = exportVerilog(circuit, lib, { target: 'synthesis' });
 
-      // Step 1: Synthesise for ECP5 target
-      const synthResp = await synthesizeVerilog(exportResult, 'Counter', 'ecp5');
-      if (!synthResp.success) {
-        console.error('synth failed:', JSON.stringify({ error: synthResp.error, log: synthResp.log?.slice(-500) }, null, 2));
-      }
-      expect(synthResp.success).toBe(true);
-      expect(synthResp.netlist).toBeTruthy();
+    // Step 1: Synthesise for ECP5 target
+    const synthResp = await synthesizeVerilog(exportResult, 'Counter', 'ecp5');
+    if (!synthResp.success) {
+      console.error(
+        'synth failed:',
+        JSON.stringify({ error: synthResp.error, log: synthResp.log?.slice(-500) }, null, 2),
+      );
+    }
+    expect(synthResp.success).toBe(true);
+    expect(synthResp.netlist).toBeTruthy();
 
-      // Step 2: Place-and-route + bitstream
-      const buildResp = await buildBitstream(synthResp.netlist!, 'Counter');
-      if (!buildResp.success) {
-        console.error('build failed:', JSON.stringify({ error: buildResp.error, log: buildResp.log?.slice(-1000) }, null, 2));
-      }
+    // Step 2: Place-and-route + bitstream
+    const buildResp = await buildBitstream(synthResp.netlist!, 'Counter');
+    if (!buildResp.success) {
+      console.error(
+        'build failed:',
+        JSON.stringify({ error: buildResp.error, log: buildResp.log?.slice(-1000) }, null, 2),
+      );
+    }
 
-      expect(buildResp.success).toBe(true);
-      expect(buildResp.bitstream).toBeTruthy();
+    expect(buildResp.success).toBe(true);
+    expect(buildResp.bitstream).toBeTruthy();
 
-      // Bitstream should decode to a non-trivial file
-      const decoded = Buffer.from(buildResp.bitstream!, 'base64');
-      expect(decoded.length).toBeGreaterThan(100_000); // ECP5 85K ~7MB
+    // Bitstream should decode to a non-trivial file
+    const decoded = Buffer.from(buildResp.bitstream!, 'base64');
+    expect(decoded.length).toBeGreaterThan(100_000); // ECP5 85K ~7MB
 
-      // Timing: nextpnr should report a plausible clock frequency
-      expect(buildResp.timing).toBeDefined();
-      expect(buildResp.timing!.achieved_mhz).toBeGreaterThan(0);
+    // Timing: nextpnr should report a plausible clock frequency
+    expect(buildResp.timing).toBeDefined();
+    expect(buildResp.timing!.achieved_mhz).toBeGreaterThan(0);
 
-      // Utilization: counter must use at least some combinational cells
-      expect(buildResp.utilization).toBeDefined();
-      expect(buildResp.utilization!.comb).toBeGreaterThan(0);
-    },
-  );
+    // Utilization: counter must use at least some combinational cells
+    expect(buildResp.utilization).toBeDefined();
+    expect(buildResp.utilization!.comb).toBeGreaterThan(0);
+  });
 });

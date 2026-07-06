@@ -1,4 +1,3 @@
-
 import React, { useCallback, useState } from 'react';
 import { BaseNode, type PortConfig } from './BaseNode';
 import type { NodeData } from './NodeData';
@@ -17,29 +16,35 @@ export function NumericInputNode({ data, selected }: NumericInputNodeProps) {
   const [editValue, setEditValue] = useState(value.toString());
   const [displayMode, setDisplayMode] = useState<'dec' | 'hex'>('dec');
 
-  const handleValueClick = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation();
-    setEditValue(value.toString());
-    setIsEditingValue(true);
-  }, [value]);
-
-  const handleValueKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
+  const handleValueClick = useCallback(
+    (e: React.MouseEvent) => {
       e.stopPropagation();
-      const trimmed = editValue.trim();
-      let parsed = trimmed.toLowerCase().startsWith('0x')
-        ? parseInt(trimmed, 16)
-        : parseInt(trimmed, 10);
-      if (isNaN(parsed)) parsed = 0;
-      parsed = Math.max(0, Math.min(maxValue, parsed));
-      data.onValueChange?.(parsed);
-      setIsEditingValue(false);
-    } else if (e.key === 'Escape') {
-      e.preventDefault();
-      setIsEditingValue(false);
-    }
-  }, [editValue, maxValue, data]);
+      setEditValue(value.toString());
+      setIsEditingValue(true);
+    },
+    [value],
+  );
+
+  const handleValueKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLInputElement>) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        e.stopPropagation();
+        const trimmed = editValue.trim();
+        let parsed = trimmed.toLowerCase().startsWith('0x')
+          ? parseInt(trimmed, 16)
+          : parseInt(trimmed, 10);
+        if (isNaN(parsed)) parsed = 0;
+        parsed = Math.max(0, Math.min(maxValue, parsed));
+        data.onValueChange?.(parsed);
+        setIsEditingValue(false);
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        setIsEditingValue(false);
+      }
+    },
+    [editValue, maxValue, data],
+  );
 
   const toggleDisplayMode = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
@@ -47,15 +52,29 @@ export function NumericInputNode({ data, selected }: NumericInputNodeProps) {
   }, []);
 
   const outputPorts: PortConfig[] = data.outputNames.map((name, index) => ({
-    name, index, type: 'output', value: true,
+    name,
+    index,
+    type: 'output',
+    value: true,
   }));
 
-  const displayValue = displayMode === 'hex'
-    ? `0x${value.toString(16).toUpperCase().padStart(Math.ceil(width / 4), '0')}`
-    : value.toString();
+  const displayValue =
+    displayMode === 'hex'
+      ? `0x${value
+          .toString(16)
+          .toUpperCase()
+          .padStart(Math.ceil(width / 4), '0')}`
+      : value.toString();
 
   return (
-    <BaseNode outputPorts={outputPorts} selected={selected} className="min-w-[100px]" showPortLabels={data.showPortLabels} onPortClick={data.onPortClick} glowUnconnected={data.glowUnconnected}>
+    <BaseNode
+      outputPorts={outputPorts}
+      selected={selected}
+      className="min-w-[100px]"
+      showPortLabels={data.showPortLabels}
+      onPortClick={data.onPortClick}
+      glowUnconnected={data.glowUnconnected}
+    >
       <div className="flex flex-col items-center gap-2">
         <div className="px-2 py-1 text-xs font-medium text-[var(--embed-text-primary)]">
           {data.label || data.componentRef}

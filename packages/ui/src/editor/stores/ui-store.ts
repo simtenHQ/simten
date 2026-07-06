@@ -139,5 +139,5 @@ export const useUIStore = create<UIStore>()(
         state.canvas.panY = y;
       });
     },
-  }))
+  })),
 );

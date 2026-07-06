@@ -1,42 +1,46 @@
-import { createFileRoute } from '@tanstack/react-router'
-import { blogPostHead } from '@/lib/seo'
-import { getPost } from '@/features/blog/posts'
-import { Suspense, lazy } from "react";
-import { HeroSection } from "@/features/blog/how-tpus-work/sections/HeroSection";
-import { BlogFooter } from "@/features/blog/BlogFooter";
-import { ErrorBoundary } from "@/features/blog/building-a-cpu/ErrorBoundary";
+import { createFileRoute } from '@tanstack/react-router';
+import { blogPostHead } from '@/lib/seo';
+import { getPost } from '@/features/blog/posts';
+import { Suspense, lazy } from 'react';
+import { HeroSection } from '@/features/blog/how-tpus-work/sections/HeroSection';
+import { BlogFooter } from '@/features/blog/BlogFooter';
+import { ErrorBoundary } from '@/features/blog/building-a-cpu/ErrorBoundary';
 
 // Lazy-load heavier sections so the page renders fast
 const MACSection = lazy(() =>
-  import("@/features/blog/how-tpus-work/sections/MACSection").then((m) => ({ default: m.MACSection }))
+  import('@/features/blog/how-tpus-work/sections/MACSection').then((m) => ({
+    default: m.MACSection,
+  })),
 );
 const WeightSection = lazy(() =>
-  import("@/features/blog/how-tpus-work/sections/WeightSection").then((m) => ({
+  import('@/features/blog/how-tpus-work/sections/WeightSection').then((m) => ({
     default: m.WeightSection,
-  }))
+  })),
 );
 const PESection = lazy(() =>
-  import("@/features/blog/how-tpus-work/sections/PESection").then((m) => ({ default: m.PESection }))
+  import('@/features/blog/how-tpus-work/sections/PESection').then((m) => ({
+    default: m.PESection,
+  })),
 );
 const DataFlowSection = lazy(() =>
-  import("@/features/blog/how-tpus-work/sections/DataFlowSection").then((m) => ({
+  import('@/features/blog/how-tpus-work/sections/DataFlowSection').then((m) => ({
     default: m.DataFlowSection,
-  }))
+  })),
 );
 const WeightFlowSection = lazy(() =>
-  import("@/features/blog/how-tpus-work/sections/WeightFlowSection").then((m) => ({
+  import('@/features/blog/how-tpus-work/sections/WeightFlowSection').then((m) => ({
     default: m.WeightFlowSection,
-  }))
+  })),
 );
 const PhaseSection = lazy(() =>
-  import("@/features/blog/how-tpus-work/sections/PhaseSection").then((m) => ({
+  import('@/features/blog/how-tpus-work/sections/PhaseSection').then((m) => ({
     default: m.PhaseSection,
-  }))
+  })),
 );
 const SystolicSection = lazy(() =>
-  import("@/features/blog/how-tpus-work/sections/SystolicSection").then((m) => ({
+  import('@/features/blog/how-tpus-work/sections/SystolicSection').then((m) => ({
     default: m.SystolicSection,
-  }))
+  })),
 );
 
 function SectionSkeleton() {
@@ -56,68 +60,67 @@ function SectionSkeleton() {
 function HowTPUsWorkPage() {
   return (
     <>
+      <HeroSection />
 
-        <HeroSection />
+      <div className="space-y-4">
+        <hr className="border-gray-200 dark:border-gray-800" />
 
-        <div className="space-y-4">
-          <hr className="border-gray-200 dark:border-gray-800" />
+        <ErrorBoundary>
+          <Suspense fallback={<SectionSkeleton />}>
+            <MACSection />
+          </Suspense>
+        </ErrorBoundary>
 
-          <ErrorBoundary>
-            <Suspense fallback={<SectionSkeleton />}>
-              <MACSection />
-            </Suspense>
-          </ErrorBoundary>
+        <hr className="border-gray-200 dark:border-gray-800" />
 
-          <hr className="border-gray-200 dark:border-gray-800" />
+        <ErrorBoundary>
+          <Suspense fallback={<SectionSkeleton />}>
+            <WeightSection />
+          </Suspense>
+        </ErrorBoundary>
 
-          <ErrorBoundary>
-            <Suspense fallback={<SectionSkeleton />}>
-              <WeightSection />
-            </Suspense>
-          </ErrorBoundary>
+        <hr className="border-gray-200 dark:border-gray-800" />
 
-          <hr className="border-gray-200 dark:border-gray-800" />
+        <ErrorBoundary>
+          <Suspense fallback={<SectionSkeleton />}>
+            <PESection />
+          </Suspense>
+        </ErrorBoundary>
 
-          <ErrorBoundary>
-            <Suspense fallback={<SectionSkeleton />}>
-              <PESection />
-            </Suspense>
-          </ErrorBoundary>
+        <hr className="border-gray-200 dark:border-gray-800" />
 
-          <hr className="border-gray-200 dark:border-gray-800" />
+        <ErrorBoundary>
+          <Suspense fallback={<SectionSkeleton />}>
+            <DataFlowSection />
+          </Suspense>
+        </ErrorBoundary>
 
-          <ErrorBoundary>
-            <Suspense fallback={<SectionSkeleton />}>
-              <DataFlowSection />
-            </Suspense>
-          </ErrorBoundary>
+        <hr className="border-gray-200 dark:border-gray-800" />
 
-          <hr className="border-gray-200 dark:border-gray-800" />
+        <ErrorBoundary>
+          <Suspense fallback={<SectionSkeleton />}>
+            <WeightFlowSection />
+          </Suspense>
+        </ErrorBoundary>
 
-          <ErrorBoundary>
-            <Suspense fallback={<SectionSkeleton />}>
-              <WeightFlowSection />
-            </Suspense>
-          </ErrorBoundary>
+        <hr className="border-gray-200 dark:border-gray-800" />
 
-          <hr className="border-gray-200 dark:border-gray-800" />
+        <ErrorBoundary>
+          <Suspense fallback={<SectionSkeleton />}>
+            <PhaseSection />
+          </Suspense>
+        </ErrorBoundary>
 
-          <ErrorBoundary>
-            <Suspense fallback={<SectionSkeleton />}>
-              <PhaseSection />
-            </Suspense>
-          </ErrorBoundary>
+        <hr className="border-gray-200 dark:border-gray-800" />
 
-          <hr className="border-gray-200 dark:border-gray-800" />
+        <ErrorBoundary>
+          <Suspense fallback={<SectionSkeleton />}>
+            <SystolicSection />
+          </Suspense>
+        </ErrorBoundary>
+      </div>
 
-          <ErrorBoundary>
-            <Suspense fallback={<SectionSkeleton />}>
-              <SystolicSection />
-            </Suspense>
-          </ErrorBoundary>
-        </div>
-
-        <BlogFooter slug="how-tpus-work" />
+      <BlogFooter slug="how-tpus-work" />
     </>
   );
 }
@@ -125,4 +128,4 @@ function HowTPUsWorkPage() {
 export const Route = createFileRoute('/blog/how-tpus-work')({
   head: () => blogPostHead(getPost('how-tpus-work')),
   component: HowTPUsWorkPage,
-})
+});

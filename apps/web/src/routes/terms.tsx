@@ -13,7 +13,10 @@ export const Route = createFileRoute('/terms')({
   head: () => ({
     meta: [
       { title: 'Terms of Service — Simten' },
-      { name: 'description', content: 'Acceptance, acceptable use, warranty disclaimer, and liability terms for Simten.' },
+      {
+        name: 'description',
+        content: 'Acceptance, acceptable use, warranty disclaimer, and liability terms for Simten.',
+      },
     ],
   }),
 });
@@ -30,9 +33,9 @@ function TermsPage() {
         <H2>1. Acceptance</H2>
         <p>
           By using simten.dev, the <code>@simten/*</code> npm packages, the MCP server, the embed
-          library, or any other service or software made available under the &ldquo;Simten&rdquo; name
-          (collectively, &ldquo;the Service&rdquo;), you agree to these Terms. If you don&apos;t agree,
-          don&apos;t use the Service.
+          library, or any other service or software made available under the &ldquo;Simten&rdquo;
+          name (collectively, &ldquo;the Service&rdquo;), you agree to these Terms. If you
+          don&apos;t agree, don&apos;t use the Service.
         </p>
 
         <H2>2. What Simten is</H2>
@@ -51,7 +54,9 @@ function TermsPage() {
             applicable law (this includes the circuit-sharing feature at{' '}
             <code>/circuit/s/&lt;hash&gt;</code>).
           </li>
-          <li>Attempt to defeat or abuse rate limits, the sandbox, or other technical protections.</li>
+          <li>
+            Attempt to defeat or abuse rate limits, the sandbox, or other technical protections.
+          </li>
           <li>
             Use automated means (scripts, bots) to overwhelm the Service or any of its endpoints.
           </li>
@@ -68,16 +73,22 @@ function TermsPage() {
 
         <H2>4. User content (shared circuits)</H2>
         <p>
-          When you press &ldquo;Share&rdquo; on a circuit, you (a) confirm you have the right to share
-          that content, and (b) grant Simten a non-exclusive, worldwide, royalty-free licence to store
-          the source in our infrastructure and serve it to anyone with the link, for as long as the
-          link remains active. You retain all other rights.
+          When you press &ldquo;Share&rdquo; on a circuit, you (a) confirm you have the right to
+          share that content, and (b) grant Simten a non-exclusive, worldwide, royalty-free licence
+          to store the source in our infrastructure and serve it to anyone with the link, for as
+          long as the link remains active. You retain all other rights.
         </p>
         <p>
           We may remove shared content at our discretion — for example, if it&apos;s reported as
           illegal or abusive, or if it appears to be used to circumvent acceptable-use rules. Email{' '}
-          <a href="mailto:security@simten.dev" className="text-foreground underline underline-offset-2 hover:text-foreground/80">security@simten.dev</a> with the hash (the part after <code>/circuit/s/</code>) to
-          request removal of a specific entry.
+          <a
+            href="mailto:security@simten.dev"
+            className="text-foreground underline underline-offset-2 hover:text-foreground/80"
+          >
+            security@simten.dev
+          </a>{' '}
+          with the hash (the part after <code>/circuit/s/</code>) to request removal of a specific
+          entry.
         </p>
 
         <H2>5. Open source</H2>
@@ -86,34 +97,34 @@ function TermsPage() {
           <ExternalLink href="https://github.com/simtenHQ/simten/blob/main/LICENSE">
             the licence in the repository
           </ExternalLink>
-          . These Terms govern your use of the hosted Service at simten.dev and any official binaries
-          we distribute; the licence governs the source. Where the two might conflict regarding the
-          source code itself, the licence wins.
+          . These Terms govern your use of the hosted Service at simten.dev and any official
+          binaries we distribute; the licence governs the source. Where the two might conflict
+          regarding the source code itself, the licence wins.
         </p>
 
         <H2>6. Warranty disclaimer</H2>
         <p>
-          The Service is provided <strong>&ldquo;as is&rdquo; and &ldquo;as available,&rdquo; without
-          warranty of any kind</strong>, express or implied — including without limitation any warranty
-          of merchantability, fitness for a particular purpose, accuracy, non-infringement, or
-          availability.
+          The Service is provided{' '}
+          <strong>
+            &ldquo;as is&rdquo; and &ldquo;as available,&rdquo; without warranty of any kind
+          </strong>
+          , express or implied — including without limitation any warranty of merchantability,
+          fitness for a particular purpose, accuracy, non-infringement, or availability.
         </p>
-        <p>
-          In particular, and without limiting the generality of the above:
-        </p>
+        <p>In particular, and without limiting the generality of the above:</p>
         <ul>
           <li>
             <strong>Hardware outputs are not guaranteed.</strong> Verilog, bitstreams,
-            place-and-route reports, and similar artifacts generated by the Service may contain bugs.{' '}
-            <strong>Synthesize, flash, and run at your own risk.</strong> Do not use Simten&apos;s
-            output in safety-critical systems, medical devices, financial systems, or any application
-            where failure could cause harm, loss, or significant damage without performing your own
-            independent verification.
+            place-and-route reports, and similar artifacts generated by the Service may contain
+            bugs. <strong>Synthesize, flash, and run at your own risk.</strong> Do not use
+            Simten&apos;s output in safety-critical systems, medical devices, financial systems, or
+            any application where failure could cause harm, loss, or significant damage without
+            performing your own independent verification.
           </li>
           <li>
             <strong>Simulation results may not match hardware.</strong> Simten&apos;s TypeScript
-            simulator is an engineering approximation. Behavioural equivalence to a particular silicon
-            target is not guaranteed.
+            simulator is an engineering approximation. Behavioural equivalence to a particular
+            silicon target is not guaranteed.
           </li>
           <li>
             <strong>The Service may change, break, or disappear at any time</strong> with no advance
@@ -123,16 +134,16 @@ function TermsPage() {
 
         <H2>7. Limitation of liability</H2>
         <p>
-          To the maximum extent permitted by law, Simten and its contributors shall not be liable for
-          any indirect, incidental, special, consequential, exemplary, or punitive damages — including
-          loss of profits, data, use, goodwill, or other intangible losses — arising out of or relating
-          to your use of (or inability to use) the Service, even if advised of the possibility of such
-          damages.
+          To the maximum extent permitted by law, Simten and its contributors shall not be liable
+          for any indirect, incidental, special, consequential, exemplary, or punitive damages —
+          including loss of profits, data, use, goodwill, or other intangible losses — arising out
+          of or relating to your use of (or inability to use) the Service, even if advised of the
+          possibility of such damages.
         </p>
         <p>
-          Where law prohibits exclusion of liability, our aggregate liability is limited to the amount
-          you have paid us for the Service in the twelve months preceding the claim — which, for a
-          free Service, is zero.
+          Where law prohibits exclusion of liability, our aggregate liability is limited to the
+          amount you have paid us for the Service in the twelve months preceding the claim — which,
+          for a free Service, is zero.
         </p>
 
         <H2>8. Indemnity</H2>
@@ -144,21 +155,26 @@ function TermsPage() {
 
         <H2>9. Governing law and disputes</H2>
         <p>
-          These Terms are governed by the laws of England and Wales, without regard to conflict-of-laws
-          rules. Disputes will be resolved in the courts of England and Wales, unless mandatory
-          consumer-protection law in your jurisdiction requires otherwise.
+          These Terms are governed by the laws of England and Wales, without regard to
+          conflict-of-laws rules. Disputes will be resolved in the courts of England and Wales,
+          unless mandatory consumer-protection law in your jurisdiction requires otherwise.
         </p>
 
         <H2>10. Changes</H2>
         <p>
-          We may update these Terms. The &ldquo;Effective&rdquo; date at the top reflects the current
-          version. Material changes will be noted in the repository changelog. Continued use of the
-          Service after a change constitutes acceptance.
+          We may update these Terms. The &ldquo;Effective&rdquo; date at the top reflects the
+          current version. Material changes will be noted in the repository changelog. Continued use
+          of the Service after a change constitutes acceptance.
         </p>
 
         <H2>11. Contact</H2>
         <p>
-          <a href="mailto:security@simten.dev" className="text-foreground underline underline-offset-2 hover:text-foreground/80">security@simten.dev</a>
+          <a
+            href="mailto:security@simten.dev"
+            className="text-foreground underline underline-offset-2 hover:text-foreground/80"
+          >
+            security@simten.dev
+          </a>
         </p>
         <p className="text-sm text-muted-foreground">
           For source of truth: this content lives at{' '}
@@ -177,7 +193,9 @@ function Prose({ children }: { children: React.ReactNode }) {
 }
 
 function H2({ children }: { children: React.ReactNode }) {
-  return <h2 className="mt-10 mb-3 text-xl font-semibold tracking-tight text-foreground">{children}</h2>;
+  return (
+    <h2 className="mt-10 mb-3 text-xl font-semibold tracking-tight text-foreground">{children}</h2>
+  );
 }
 
 function ExternalLink({ href, children }: { href: string; children: React.ReactNode }) {

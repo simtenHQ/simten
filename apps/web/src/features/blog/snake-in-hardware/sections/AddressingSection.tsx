@@ -1,6 +1,5 @@
-
-import { CircuitEmbed } from "@simten/embed";
-import { SNAKE_CIRCUITS } from "../circuits";
+import { CircuitEmbed } from '@simten/embed';
+import { SNAKE_CIRCUITS } from '../circuits';
 
 export function AddressingSection() {
   return (
@@ -10,23 +9,19 @@ export function AddressingSection() {
       </h2>
       <div className="prose-invert space-y-6">
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
-          The snake moves on a 2D grid, but the framebuffer is a flat array of
-          64 bytes. We convert{" "}
+          The snake moves on a 2D grid, but the framebuffer is a flat array of 64 bytes. We convert{' '}
           <strong className="text-gray-900 dark:text-white">(X,&nbsp;Y)</strong> to a linear
-          address:{" "}
-          <code className="text-blue-300">address = (Y &laquo; 3) + X</code>.
+          address: <code className="text-blue-300">address = (Y &laquo; 3) + X</code>.
         </p>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
-          Multiplying by 8 is a left shift by 3, and in hardware a constant
-          shift costs{" "}
+          Multiplying by 8 is a left shift by 3, and in hardware a constant shift costs{' '}
           <strong className="text-gray-900 dark:text-white">zero gates</strong>. It&rsquo;s just
-          wiring. Each bit of Y connects three places higher, the low three bits
-          tied to zero. The only real gate is the final{" "}
+          wiring. Each bit of Y connects three places higher, the low three bits tied to zero. The
+          only real gate is the final{' '}
           <strong className="text-gray-900 dark:text-white">Adder</strong> for X.
         </p>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
-          Change X and Y below. At (3,&nbsp;2) you get address&nbsp;19, row&nbsp;2
-          column&nbsp;3.
+          Change X and Y below. At (3,&nbsp;2) you get address&nbsp;19, row&nbsp;2 column&nbsp;3.
         </p>
       </div>
 

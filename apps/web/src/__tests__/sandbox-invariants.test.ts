@@ -41,10 +41,7 @@ const BANNED: Array<{ pattern: RegExp; reason: string }> = [
 ];
 
 describe('sandbox invariants', () => {
-  const files = [
-    ...collectSourceFiles(APP_SRC),
-    ...collectSourceFiles(EMBED_SRC),
-  ];
+  const files = [...collectSourceFiles(APP_SRC), ...collectSourceFiles(EMBED_SRC)];
 
   for (const { pattern, reason } of BANNED) {
     it(`no source file matches: ${pattern}`, () => {

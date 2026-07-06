@@ -26,12 +26,12 @@ import { verifyVerilog, hasVerifier } from './verify.js';
 // addresses. Lets us assert the init block is emitted with correct
 // data AND that addressing works for the non-contiguous pattern.
 const ROM_CONTENTS: Array<[number, number]> = [
-  [0x0000, 0xDE],
-  [0x0001, 0xAD],
-  [0x0002, 0xBE],
-  [0x0003, 0xEF],
-  [0x0010, 0xCA],
-  [0x0011, 0xFE],
+  [0x0000, 0xde],
+  [0x0001, 0xad],
+  [0x0002, 0xbe],
+  [0x0003, 0xef],
+  [0x0010, 0xca],
+  [0x0011, 0xfe],
 ];
 
 // Addresses to read back in the test. Covers populated AND unpopulated
@@ -69,9 +69,7 @@ function buildRom() {
 
   const lib: CircuitLibrary = {
     resolveCircuit: (name) =>
-      name === 'RomWrapper' ? RomWrapper.circuit :
-      name === 'ROM' ? romDefWithData :
-      undefined,
+      name === 'RomWrapper' ? RomWrapper.circuit : name === 'ROM' ? romDefWithData : undefined,
     getAllPrimitiveNames: () => ['ROM'],
   };
 
@@ -94,7 +92,7 @@ function runSimulator(addrs: number[]): number[] {
     sim.setNode('addr', addr);
     sim.tick();
     const v = sim.getPortValues().get('__top__.data_out');
-    outputs.push(typeof v === 'number' ? (v >>> 0) & 0xFF : 0);
+    outputs.push(typeof v === 'number' ? (v >>> 0) & 0xff : 0);
   }
   return outputs;
 }
@@ -116,9 +114,7 @@ d('ROM — JS simulator vs iverilog co-simulation (preloaded contents)', () => {
     // Sanity: simulator should match ROM_CONTENTS exactly for the
     // populated addresses (catches accidental preload failures before
     // we even call the verifier).
-    const expected = READ_SEQUENCE.map((a) =>
-      ROM_CONTENTS.find(([k]) => k === a)?.[1] ?? 0,
-    );
+    const expected = READ_SEQUENCE.map((a) => ROM_CONTENTS.find(([k]) => k === a)?.[1] ?? 0);
     expect(simOutputs).toEqual(expected);
 
     const { circuit, lib } = buildRom();
@@ -135,9 +131,9 @@ d('ROM — JS simulator vs iverilog co-simulation (preloaded contents)', () => {
     expect(result.success).toBe(true);
     expect(result.results).toBeDefined();
 
-    const veriOutputs = result.results!
-      .sort((a, b) => a.testCase - b.testCase)
-      .map((r) => r.outputs.data_out & 0xFF);
+    const veriOutputs = result
+      .results!.sort((a, b) => a.testCase - b.testCase)
+      .map((r) => r.outputs.data_out & 0xff);
 
     expect(veriOutputs).toEqual(simOutputs);
   });

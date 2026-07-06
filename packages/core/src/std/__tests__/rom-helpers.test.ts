@@ -46,7 +46,13 @@ describe('romFromWords', () => {
 
 describe('romFromEntries', () => {
   it('builds sparse data from address/value pairs', () => {
-    expect(romFromEntries([[0, 1], [100, 2], [0xffff, 3]])).toEqual({
+    expect(
+      romFromEntries([
+        [0, 1],
+        [100, 2],
+        [0xffff, 3],
+      ]),
+    ).toEqual({
       0: 1,
       100: 2,
       [0xffff]: 3,
@@ -54,7 +60,13 @@ describe('romFromEntries', () => {
   });
 
   it('omits zero values', () => {
-    expect(romFromEntries([[0, 1], [1, 0], [2, 3]])).toEqual({ 0: 1, 2: 3 });
+    expect(
+      romFromEntries([
+        [0, 1],
+        [1, 0],
+        [2, 3],
+      ]),
+    ).toEqual({ 0: 1, 2: 3 });
   });
 
   it('rejects negative or non-integer addresses', () => {
@@ -63,7 +75,10 @@ describe('romFromEntries', () => {
   });
 
   it('accepts a Map', () => {
-    const m = new Map<number, number>([[0, 1], [5, 2]]);
+    const m = new Map<number, number>([
+      [0, 1],
+      [5, 2],
+    ]);
     expect(romFromEntries(m)).toEqual({ 0: 1, 5: 2 });
   });
 });

@@ -28,7 +28,7 @@ export const Incrementer = circuit('Incrementer', {
   inputs: { in: bus(8) },
   outputs: { out: bus(8) },
   meta: { category: 'arithmetic', icon: '+1', description: 'Adds 1 to the input' },
-  eval: ({ in: a }) => ({ out: (a + 1) & 0xFF }),
+  eval: ({ in: a }) => ({ out: (a + 1) & 0xff }),
 });
 
 /**
@@ -57,21 +57,24 @@ export const Incrementer = circuit('Incrementer', {
  * })
  * ```
  */
-export const Adder = circuit('Adder', ({ width = 8 }: { width?: number; carry_in?: number } = {}) => ({
-  inputs: { a: bus(width), b: bus(width), carry_in: bit },
-  outputs: { sum: bus(width), carry_out: bit },
-  meta: { category: 'arithmetic', icon: '+', description: 'N-bit adder with carry' },
-  // `width` is read from inputs (bridge merges node.arguments) so a single
-  // registered lambda works for every Adder({width: N}) instance.
-  eval: ({ a, b, carry_in, width: w = width }) => {
-    const wn = w as number;
-    const mask = wn >= 32 ? 0xFFFFFFFF : (1 << wn) - 1;
-    // a, b arrive as signed int32 from the typed-array store; coerce to
-    // unsigned before adding so the carry comparison sees the right magnitude.
-    const result = ((a as number) >>> 0) + ((b as number) >>> 0) + (carry_in as number);
-    return { sum: result & mask, carry_out: result > mask ? 1 : 0 };
-  },
-}));
+export const Adder = circuit(
+  'Adder',
+  ({ width = 8 }: { width?: number; carry_in?: number } = {}) => ({
+    inputs: { a: bus(width), b: bus(width), carry_in: bit },
+    outputs: { sum: bus(width), carry_out: bit },
+    meta: { category: 'arithmetic', icon: '+', description: 'N-bit adder with carry' },
+    // `width` is read from inputs (bridge merges node.arguments) so a single
+    // registered lambda works for every Adder({width: N}) instance.
+    eval: ({ a, b, carry_in, width: w = width }) => {
+      const wn = w as number;
+      const mask = wn >= 32 ? 0xffffffff : (1 << wn) - 1;
+      // a, b arrive as signed int32 from the typed-array store; coerce to
+      // unsigned before adding so the carry comparison sees the right magnitude.
+      const result = ((a as number) >>> 0) + ((b as number) >>> 0) + (carry_in as number);
+      return { sum: result & mask, carry_out: result > mask ? 1 : 0 };
+    },
+  }),
+);
 
 /**
  * N-bit subtractor with borrow. Computes `a - b - borrow_in` and produces
@@ -103,7 +106,7 @@ export const Subtractor = circuit('Subtractor', ({ width = 8 }: { width?: number
   meta: { category: 'arithmetic', icon: '−', description: 'N-bit subtractor with borrow' },
   eval: ({ a, b, borrow_in, width: w = width }) => {
     const wn = w as number;
-    const mask = wn >= 32 ? 0xFFFFFFFF : (1 << wn) - 1;
+    const mask = wn >= 32 ? 0xffffffff : (1 << wn) - 1;
     const result = ((a as number) >>> 0) - ((b as number) >>> 0) - (borrow_in as number);
     return { difference: result & mask, borrow_out: result < 0 ? 1 : 0 };
   },
@@ -134,7 +137,7 @@ export const Multiplier = circuit('Multiplier', {
   inputs: { a: bus(8), b: bus(8) },
   outputs: { product: bus(16) },
   meta: { category: 'arithmetic', icon: '×', description: 'N-bit multiplier' },
-  eval: ({ a, b }) => ({ product: (a * b) & 0xFFFF }),
+  eval: ({ a, b }) => ({ product: (a * b) & 0xffff }),
 });
 
 /**
@@ -200,7 +203,7 @@ export const LeftShifter = circuit('LeftShifter', ({ width = 8 }: { width?: numb
   eval: ({ value, shift, width: w = width }) => {
     const wn = w as number;
     const sn = shift as number;
-    const mask = wn >= 32 ? 0xFFFFFFFF : (1 << wn) - 1;
+    const mask = wn >= 32 ? 0xffffffff : (1 << wn) - 1;
     return { result: sn >= wn ? 0 : ((value as number) << sn) & mask };
   },
 }));
@@ -268,7 +271,7 @@ export const SignedAdder = circuit('SignedAdder', {
   meta: { category: 'arithmetic', icon: '±+', description: 'Signed adder with overflow detection' },
   eval: ({ a, b, carry_in }) => {
     const signBit = 0x80;
-    const mask = 0xFF;
+    const mask = 0xff;
     const an = (a as number) >>> 0;
     const bn = (b as number) >>> 0;
     const result = an + bn + (carry_in as number);
@@ -310,10 +313,10 @@ export const SignedComparator = circuit('SignedComparator', {
   eval: ({ a, b }) => {
     const signBit = 0x80;
     const maxValue = 0x100;
-    const an = (a as number) & 0xFF;
-    const bn = (b as number) & 0xFF;
-    const aSigned = (an & signBit) ? an - maxValue : an;
-    const bSigned = (bn & signBit) ? bn - maxValue : bn;
+    const an = (a as number) & 0xff;
+    const bn = (b as number) & 0xff;
+    const aSigned = an & signBit ? an - maxValue : an;
+    const bSigned = bn & signBit ? bn - maxValue : bn;
     return {
       eq: aSigned === bSigned ? 1 : 0,
       lt: aSigned < bSigned ? 1 : 0,
@@ -352,10 +355,10 @@ export const SignedMultiplier = circuit('SignedMultiplier', {
   eval: ({ a, b }) => {
     const signBit = 0x80;
     const maxValue = 0x100;
-    const an = (a as number) & 0xFF;
-    const bn = (b as number) & 0xFF;
-    const aSigned = (an & signBit) ? an - maxValue : an;
-    const bSigned = (bn & signBit) ? bn - maxValue : bn;
+    const an = (a as number) & 0xff;
+    const bn = (b as number) & 0xff;
+    const aSigned = an & signBit ? an - maxValue : an;
+    const bSigned = bn & signBit ? bn - maxValue : bn;
     const productSigned = aSigned * bSigned;
     const outputRange = 0x10000;
     return { product: productSigned >= 0 ? productSigned : productSigned + outputRange };
@@ -440,7 +443,7 @@ export const BusNot = circuit('BusNot', {
   inputs: { in: bus(8) },
   outputs: { out: bus(8) },
   meta: { category: 'bus-operations', icon: '¬8', description: 'Bitwise NOT on bus' },
-  eval: ({ in: a }) => ({ out: (~a) & 0xFF }),
+  eval: ({ in: a }) => ({ out: ~a & 0xff }),
 });
 
 /**

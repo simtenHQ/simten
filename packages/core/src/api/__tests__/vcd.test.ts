@@ -6,9 +6,10 @@ import { simulateCircuit } from '../simulate.js';
 // ============================================================================
 
 function parseScopes(vcd: string): string[] {
-  return vcd.split('\n')
-    .filter(l => l.startsWith('$scope module'))
-    .map(l => l.replace('$scope module ', '').replace(' $end', '').trim());
+  return vcd
+    .split('\n')
+    .filter((l) => l.startsWith('$scope module'))
+    .map((l) => l.replace('$scope module ', '').replace(' $end', '').trim());
 }
 
 function parseVars(vcd: string): Array<{ scope: string; name: string; width: number; id: string }> {
@@ -36,15 +37,16 @@ function parseVars(vcd: string): Array<{ scope: string; name: string; width: num
 }
 
 function getChangeTicks(vcd: string): number[] {
-  return vcd.split('\n')
-    .filter(l => /^#\d+$/.test(l))
-    .map(l => parseInt(l.slice(1), 10));
+  return vcd
+    .split('\n')
+    .filter((l) => /^#\d+$/.test(l))
+    .map((l) => parseInt(l.slice(1), 10));
 }
 
 function getSignalValues(vcd: string, signalName: string): Array<{ tick: number; value: number }> {
   const lines = vcd.split('\n');
   const vars = parseVars(vcd);
-  const varEntry = vars.find(v => v.name === signalName);
+  const varEntry = vars.find((v) => v.name === signalName);
   if (!varEntry) return [];
 
   const id = varEntry.id;
@@ -117,7 +119,7 @@ describe('VCD export — HalfAdder (combinational)', () => {
     if ('error' in result) return;
 
     const vars = parseVars(result.vcd);
-    const topVars = vars.filter(v => v.scope === 'HalfAdder').map(v => v.name);
+    const topVars = vars.filter((v) => v.scope === 'HalfAdder').map((v) => v.name);
     expect(topVars).toContain('a');
     expect(topVars).toContain('b');
     expect(topVars).toContain('sum');
@@ -129,7 +131,7 @@ describe('VCD export — HalfAdder (combinational)', () => {
     if ('error' in result) return;
 
     const vars = parseVars(result.vcd);
-    const xVars = vars.filter(v => v.scope === 'x').map(v => v.name);
+    const xVars = vars.filter((v) => v.scope === 'x').map((v) => v.name);
     expect(xVars.length).toBeGreaterThan(0);
     expect(xVars).toContain('out');
   });
@@ -139,7 +141,7 @@ describe('VCD export — HalfAdder (combinational)', () => {
     if ('error' in result) return;
 
     const vars = parseVars(result.vcd);
-    const ids = vars.map(v => v.id);
+    const ids = vars.map((v) => v.id);
     const uniqueIds = new Set(ids);
     expect(uniqueIds.size).toBe(ids.length);
   });
@@ -153,7 +155,7 @@ describe('VCD export — HalfAdder (combinational)', () => {
     expect(ticks).toContain(0);
     expect(ticks).toContain(10); // final timestamp
     // Should not have intermediate ticks since inputs don't change
-    expect(ticks.filter(t => t > 0 && t < 10).length).toBe(0);
+    expect(ticks.filter((t) => t > 0 && t < 10).length).toBe(0);
   });
 });
 
@@ -196,7 +198,7 @@ describe('VCD export — Counter (sequential)', () => {
     if ('error' in result) return;
 
     const changes = getSignalValues(result.vcd, 'count');
-    const values = changes.map(c => c.value);
+    const values = changes.map((c) => c.value);
     expect(values).toContain(1);
     expect(values).toContain(2);
     expect(values).toContain(3);
@@ -220,7 +222,7 @@ describe('VCD export — Counter (sequential)', () => {
     if ('error' in result) return;
 
     const vars = parseVars(result.vcd);
-    const regVars = vars.filter(v => v.scope === 'reg').map(v => v.name);
+    const regVars = vars.filter((v) => v.scope === 'reg').map((v) => v.name);
     expect(regVars).toContain('q');
   });
 
@@ -229,7 +231,7 @@ describe('VCD export — Counter (sequential)', () => {
     if ('error' in result) return;
 
     const vars = parseVars(result.vcd);
-    const countVar = vars.find(v => v.name === 'count' && v.scope === 'Counter');
+    const countVar = vars.find((v) => v.name === 'count' && v.scope === 'Counter');
     expect(countVar).toBeDefined();
     expect(countVar!.width).toBe(32);
   });
@@ -297,7 +299,7 @@ describe('VCD export — nested composite (FullAdder)', () => {
 
     const vars = parseVars(result.vcd);
     // ha1.x is the Xor inside ha1; its out port is what drives ha1's sum output
-    const xVars = vars.filter(v => v.scope === 'x').map(v => v.name);
+    const xVars = vars.filter((v) => v.scope === 'x').map((v) => v.name);
     expect(xVars).toContain('out');
   });
 });

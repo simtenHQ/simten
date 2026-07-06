@@ -10,16 +10,53 @@
 
 import { describe, it, expect } from 'vitest';
 import {
-  And, Or, Not, Xor, Nand, Nor, Xnor, Buffer,
-  Adder, Subtractor, Multiplier, Comparator,
-  Incrementer, LeftShifter, RightShifter,
-  SignedAdder, SignedComparator, SignedMultiplier,
-  BusAnd, BusOr, BusNot, BusXor,
-  Mux, Decoder, Splitter, Splitter8to8, Combiner8to8, Concat, BitSlice, AddressCombiner, Probe,
-  DFlipFlop, Register,
-  ROM, RAM, DualPortRAM,
-  Switch, Button, Led, Input, Output, Constant,
-  SevenSegment, HexDisplay, Screen, RasterDisplay, Console,
+  And,
+  Or,
+  Not,
+  Xor,
+  Nand,
+  Nor,
+  Xnor,
+  Buffer,
+  Adder,
+  Subtractor,
+  Multiplier,
+  Comparator,
+  Incrementer,
+  LeftShifter,
+  RightShifter,
+  SignedAdder,
+  SignedComparator,
+  SignedMultiplier,
+  BusAnd,
+  BusOr,
+  BusNot,
+  BusXor,
+  Mux,
+  Decoder,
+  Splitter,
+  Splitter8to8,
+  Combiner8to8,
+  Concat,
+  BitSlice,
+  AddressCombiner,
+  Probe,
+  DFlipFlop,
+  Register,
+  ROM,
+  RAM,
+  DualPortRAM,
+  Switch,
+  Button,
+  Led,
+  Input,
+  Output,
+  Constant,
+  SevenSegment,
+  HexDisplay,
+  Screen,
+  RasterDisplay,
+  Console,
 } from '../index.js';
 import type { Circuit, CircuitLibrary } from '../../types/circuit.js';
 import type { BuiltCircuit } from '../../circuit/types.js';
@@ -31,30 +68,59 @@ import type { BuiltCircuit } from '../../circuit/types.js';
 describe('stdlib circuits load', () => {
   const allCircuits: [string, BuiltCircuit][] = [
     // Logic
-    ['And', And], ['Or', Or], ['Not', Not], ['Xor', Xor],
-    ['Nand', Nand], ['Nor', Nor], ['Xnor', Xnor], ['Buffer', Buffer],
+    ['And', And],
+    ['Or', Or],
+    ['Not', Not],
+    ['Xor', Xor],
+    ['Nand', Nand],
+    ['Nor', Nor],
+    ['Xnor', Xnor],
+    ['Buffer', Buffer],
     // Arithmetic
-    ['Adder', Adder()], ['Subtractor', Subtractor()], ['Multiplier', Multiplier],
-    ['Comparator', Comparator()], ['Incrementer', Incrementer],
-    ['LeftShifter', LeftShifter()], ['RightShifter', RightShifter()],
-    ['SignedAdder', SignedAdder], ['SignedComparator', SignedComparator],
+    ['Adder', Adder()],
+    ['Subtractor', Subtractor()],
+    ['Multiplier', Multiplier],
+    ['Comparator', Comparator()],
+    ['Incrementer', Incrementer],
+    ['LeftShifter', LeftShifter()],
+    ['RightShifter', RightShifter()],
+    ['SignedAdder', SignedAdder],
+    ['SignedComparator', SignedComparator],
     ['SignedMultiplier', SignedMultiplier],
-    ['BusAnd', BusAnd()], ['BusOr', BusOr()], ['BusNot', BusNot], ['BusXor', BusXor()],
+    ['BusAnd', BusAnd()],
+    ['BusOr', BusOr()],
+    ['BusNot', BusNot],
+    ['BusXor', BusXor()],
     // Routing
-    ['Mux', Mux()], ['Decoder', Decoder],
-    ['Splitter', Splitter], ['Splitter8to8', Splitter8to8],
-    ['Combiner8to8', Combiner8to8], ['Concat', Concat],
-    ['BitSlice', BitSlice()], ['AddressCombiner', AddressCombiner], ['Probe', Probe],
+    ['Mux', Mux()],
+    ['Decoder', Decoder],
+    ['Splitter', Splitter],
+    ['Splitter8to8', Splitter8to8],
+    ['Combiner8to8', Combiner8to8],
+    ['Concat', Concat],
+    ['BitSlice', BitSlice()],
+    ['AddressCombiner', AddressCombiner],
+    ['Probe', Probe],
     // Sequential
-    ['DFlipFlop', DFlipFlop()], ['Register', Register()],
+    ['DFlipFlop', DFlipFlop()],
+    ['Register', Register()],
     // Memory
-    ['ROM', ROM()], ['RAM', RAM()], ['DualPortRAM', DualPortRAM()],
+    ['ROM', ROM()],
+    ['RAM', RAM()],
+    ['DualPortRAM', DualPortRAM()],
     // I/O
-    ['Switch', Switch()], ['Button', Button()], ['Led', Led],
-    ['Input', Input()], ['Output', Output], ['Constant', Constant()],
+    ['Switch', Switch()],
+    ['Button', Button()],
+    ['Led', Led],
+    ['Input', Input()],
+    ['Output', Output],
+    ['Constant', Constant()],
     // Display
-    ['SevenSegment', SevenSegment], ['HexDisplay', HexDisplay],
-    ['Screen', Screen()], ['RasterDisplay', RasterDisplay()], ['Console', Console],
+    ['SevenSegment', SevenSegment],
+    ['HexDisplay', HexDisplay],
+    ['Screen', Screen()],
+    ['RasterDisplay', RasterDisplay()],
+    ['Console', Console],
   ];
 
   it.each(allCircuits)('%s has correct name', (name, comp) => {
@@ -76,7 +142,6 @@ describe('stdlib circuits load', () => {
       expect(port.portType.kind).toMatch(/^(bit|bus)$/);
     }
   });
-
 });
 
 // ============================================================================
@@ -156,8 +221,13 @@ describe('circuit._dependencies', () => {
     const circuitMap = new Map<string, Circuit>();
     const lib: CircuitLibrary & { addCircuit(c: Circuit): void } = {
       resolveCircuit: (name) => circuitMap.get(name),
-      getAllPrimitiveNames: () => [...circuitMap.entries()].filter(([, c]) => c.implementation.kind === 'primitive').map(([n]) => n),
-      addCircuit: (c) => { circuitMap.set(c.name, c); },
+      getAllPrimitiveNames: () =>
+        [...circuitMap.entries()]
+          .filter(([, c]) => c.implementation.kind === 'primitive')
+          .map(([n]) => n),
+      addCircuit: (c) => {
+        circuitMap.set(c.name, c);
+      },
     };
     const adder = Adder();
     lib.addCircuit(adder.circuit);

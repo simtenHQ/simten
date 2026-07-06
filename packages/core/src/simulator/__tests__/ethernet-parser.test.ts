@@ -9,8 +9,11 @@ import { describe, it, expect } from 'vitest';
 import { simulate } from '../../sim/simulate.js';
 import { circuit, bit, bus } from '../../circuit/index.js';
 import {
-  Eth_FrameInput, Eth_FrameParser, Eth_CRC32,
-  Eth_ProtocolDecoder, Eth_AddrClassifier,
+  Eth_FrameInput,
+  Eth_FrameParser,
+  Eth_CRC32,
+  Eth_ProtocolDecoder,
+  Eth_AddrClassifier,
 } from '../../std/index.js';
 
 // ============================================================================
@@ -22,7 +25,7 @@ const CRC32_TABLE: number[] = (() => {
   for (let i = 0; i < 256; i++) {
     let crc = i;
     for (let j = 0; j < 8; j++) {
-      crc = (crc & 1) ? ((crc >>> 1) ^ 0xEDB88320) >>> 0 : (crc >>> 1) >>> 0;
+      crc = crc & 1 ? ((crc >>> 1) ^ 0xedb88320) >>> 0 : (crc >>> 1) >>> 0;
     }
     table[i] = crc >>> 0;
   }
@@ -30,12 +33,12 @@ const CRC32_TABLE: number[] = (() => {
 })();
 
 function computeCRC32(data: number[]): number {
-  let crc = 0xFFFFFFFF;
+  let crc = 0xffffffff;
   for (const byte of data) {
-    const idx = (crc ^ byte) & 0xFF;
+    const idx = (crc ^ byte) & 0xff;
     crc = (CRC32_TABLE[idx] ^ (crc >>> 8)) >>> 0;
   }
-  return (~crc) >>> 0;
+  return ~crc >>> 0;
 }
 
 /**
@@ -48,15 +51,10 @@ function buildEthernetFrame(
   ethertype: number,
   payload: number[],
 ): Map<number, number> {
-  const frame = [
-    ...dstMac,
-    ...srcMac,
-    (ethertype >> 8) & 0xFF, ethertype & 0xFF,
-    ...payload,
-  ];
+  const frame = [...dstMac, ...srcMac, (ethertype >> 8) & 0xff, ethertype & 0xff, ...payload];
   while (frame.length < 60) frame.push(0x00);
   const crc = computeCRC32(frame);
-  frame.push(crc & 0xFF, (crc >> 8) & 0xFF, (crc >> 16) & 0xFF, (crc >> 24) & 0xFF);
+  frame.push(crc & 0xff, (crc >> 8) & 0xff, (crc >> 16) & 0xff, (crc >> 24) & 0xff);
 
   const memory = new Map<number, number>();
   frame.forEach((b, i) => memory.set(i, b));
@@ -71,18 +69,21 @@ function buildVlanFrame(
   ethertype: number,
   payload: number[],
 ): Map<number, number> {
-  const vlanTci = vlanId & 0xFFF;
+  const vlanTci = vlanId & 0xfff;
   const frame = [
     ...dstMac,
     ...srcMac,
-    0x81, 0x00,  // VLAN TPID
-    (vlanTci >> 8) & 0xFF, vlanTci & 0xFF,
-    (ethertype >> 8) & 0xFF, ethertype & 0xFF,
+    0x81,
+    0x00, // VLAN TPID
+    (vlanTci >> 8) & 0xff,
+    vlanTci & 0xff,
+    (ethertype >> 8) & 0xff,
+    ethertype & 0xff,
     ...payload,
   ];
   while (frame.length < 60) frame.push(0x00);
   const crc = computeCRC32(frame);
-  frame.push(crc & 0xFF, (crc >> 8) & 0xFF, (crc >> 16) & 0xFF, (crc >> 24) & 0xFF);
+  frame.push(crc & 0xff, (crc >> 8) & 0xff, (crc >> 16) & 0xff, (crc >> 24) & 0xff);
 
   const memory = new Map<number, number>();
   frame.forEach((b, i) => memory.set(i, b));
@@ -184,10 +185,10 @@ function runPipeline(
 
 describe('Ethernet Parser Pipeline', () => {
   // Standard test MACs
-  const DST_MAC = [0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF];
+  const DST_MAC = [0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff];
   const SRC_MAC = [0x11, 0x22, 0x33, 0x44, 0x55, 0x66];
-  const BROADCAST_MAC = [0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF];
-  const MULTICAST_MAC = [0x01, 0x00, 0x5E, 0x00, 0x00, 0x01];
+  const BROADCAST_MAC = [0xff, 0xff, 0xff, 0xff, 0xff, 0xff];
+  const MULTICAST_MAC = [0x01, 0x00, 0x5e, 0x00, 0x00, 0x01];
 
   it('parses minimum untagged IPv4 frame (64 bytes)', () => {
     const payload = new Array(46).fill(0x42);
@@ -203,8 +204,8 @@ describe('Ethernet Parser Pipeline', () => {
     expect(out.is_broadcast[doneTick]).toBe(false);
     expect(out.is_unicast[doneTick]).toBe(true);
 
-    expect((out.dst_mac_lo[doneTick] as number) >>> 0).toBe(0xAABBCCDD);
-    expect(out.dst_mac_hi[doneTick]).toBe(0xEEFF);
+    expect((out.dst_mac_lo[doneTick] as number) >>> 0).toBe(0xaabbccdd);
+    expect(out.dst_mac_hi[doneTick]).toBe(0xeeff);
 
     expect(out.src_mac_hi[doneTick]).toBe(0x1122);
     expect((out.src_mac_lo[doneTick] as number) >>> 0).toBe(0x33445566);
@@ -260,7 +261,7 @@ describe('Ethernet Parser Pipeline', () => {
     const payload = new Array(46).fill(0x42);
     const frame = buildEthernetFrame(DST_MAC, SRC_MAC, 0x0800, payload);
 
-    frame.set(20, (frame.get(20) ?? 0) ^ 0xFF);
+    frame.set(20, (frame.get(20) ?? 0) ^ 0xff);
 
     const out = runPipeline(frame, 20);
     const doneTick = out.frame_done.indexOf(true);

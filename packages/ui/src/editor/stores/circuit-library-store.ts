@@ -17,7 +17,10 @@ interface CircuitLibraryStore {
   library: CircuitLibrary | null;
 
   // Set all circuits from a compiled result (production path)
-  setLibrary: (lib: { resolveCircuit(name: string): Circuit | undefined; getAllCircuitNames(): string[] }) => void;
+  setLibrary: (lib: {
+    resolveCircuit(name: string): Circuit | undefined;
+    getAllCircuitNames(): string[];
+  }) => void;
 
   // Add circuits directly (used by tests)
   addCircuit: (circuit: Circuit) => void;

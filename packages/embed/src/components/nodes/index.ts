@@ -14,4 +14,4 @@ export {
   EmbedScreenNode,
   CompositeBadge,
   type NodeData,
-} from "@simten/ui/nodes";
+} from '@simten/ui/nodes';

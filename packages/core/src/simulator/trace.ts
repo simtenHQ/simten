@@ -94,10 +94,7 @@ function propagateWithTrace(
     let anyChanged = false;
     for (let i = 0; i < outputCount; i++) {
       const idx = outputStart + i;
-      if (
-        values.values[idx] !== oldValues[i] ||
-        (values.initialized[idx] && !wasInitialized[i])
-      ) {
+      if (values.values[idx] !== oldValues[i] || (values.initialized[idx] && !wasInitialized[i])) {
         anyChanged = true;
         break;
       }
@@ -110,9 +107,9 @@ function propagateWithTrace(
 
     // Record step
     const enqueued = anyChanged
-      ? Array.from(circuit.dependents[nodeIndex]).map(idx => circuit.indexToNodeId[idx])
+      ? Array.from(circuit.dependents[nodeIndex]).map((idx) => circuit.indexToNodeId[idx])
       : [];
-    const queueSnapshot = queue.toArray().map(idx => circuit.indexToNodeId[idx]);
+    const queueSnapshot = queue.toArray().map((idx) => circuit.indexToNodeId[idx]);
 
     trace.push({
       nodeIndex,
@@ -140,7 +137,7 @@ export function tracePropagation(
   seedInitialQueue(numeric, queue);
 
   // Insert a "seed" step showing the initial queue before any evaluation
-  const seededNodes = queue.toArray().map(idx => numeric.indexToNodeId[idx]);
+  const seededNodes = queue.toArray().map((idx) => numeric.indexToNodeId[idx]);
   const seedStep: PropagationStep = {
     nodeIndex: -1,
     nodeId: '__seed__',

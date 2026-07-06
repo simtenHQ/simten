@@ -28,16 +28,19 @@ import { bit, bus, mem } from '../circuit/bit-bus.js';
  * })
  * ```
  */
-export const ROM = circuit('ROM', (_opts?: { memory?: Record<number, number> | number[]; baseAddress?: number }) => ({
-  inputs: { addr: bus(16) },
-  outputs: { data_out: bus(8) },
-  state: { memory: mem(65536, 8) },
-  meta: { category: 'memory', icon: '📀', description: 'Read-only memory with address decoding' },
-  eval: ({ addr, memory }) => ({
-    data_out: memory[addr],
+export const ROM = circuit(
+  'ROM',
+  (_opts?: { memory?: Record<number, number> | number[]; baseAddress?: number }) => ({
+    inputs: { addr: bus(16) },
+    outputs: { data_out: bus(8) },
+    state: { memory: mem(65536, 8) },
+    meta: { category: 'memory', icon: '📀', description: 'Read-only memory with address decoding' },
+    eval: ({ addr, memory }) => ({
+      data_out: memory[addr],
+    }),
+    onTick: ({ memory }) => ({ memory }),
   }),
-  onTick: ({ memory }) => ({ memory }),
-}));
+);
 
 /**
  * Random access memory. 256 × 8-bit synchronous read/write. Reads
@@ -108,22 +111,30 @@ export const RAM = circuit('RAM', (_opts?: { memory?: Record<number, number> | n
  * })
  * ```
  */
-export const DualPortRAM = circuit('DualPortRAM', (
-  { addressWidth = 8, dataWidth = 8 }: { addressWidth?: number; dataWidth?: number; memory?: Record<number, number> | number[] } = {},
-) => ({
-  inputs: { addrA: bus(addressWidth), dataA: bus(dataWidth), weA: bit, addrB: bus(addressWidth) },
-  outputs: { outA: bus(dataWidth), outB: bus(dataWidth) },
-  state: { memory: mem(2 ** addressWidth, dataWidth) },
-  meta: { category: 'memory', icon: '📝×2', description: 'Dual-port RAM' },
-  eval: ({ addrA, addrB, memory }) => ({
-    outA: memory[addrA],
-    outB: memory[addrB],
+export const DualPortRAM = circuit(
+  'DualPortRAM',
+  ({
+    addressWidth = 8,
+    dataWidth = 8,
+  }: {
+    addressWidth?: number;
+    dataWidth?: number;
+    memory?: Record<number, number> | number[];
+  } = {}) => ({
+    inputs: { addrA: bus(addressWidth), dataA: bus(dataWidth), weA: bit, addrB: bus(addressWidth) },
+    outputs: { outA: bus(dataWidth), outB: bus(dataWidth) },
+    state: { memory: mem(2 ** addressWidth, dataWidth) },
+    meta: { category: 'memory', icon: '📝×2', description: 'Dual-port RAM' },
+    eval: ({ addrA, addrB, memory }) => ({
+      outA: memory[addrA],
+      outB: memory[addrB],
+    }),
+    onTick: ({ addrA, dataA, weA, memory }) => {
+      if (weA) memory[addrA] = dataA;
+      return { memory };
+    },
   }),
-  onTick: ({ addrA, dataA, weA, memory }) => {
-    if (weA) memory[addrA] = dataA;
-    return { memory };
-  },
-}));
+);
 
 // ============================================================================
 // ROM init helpers

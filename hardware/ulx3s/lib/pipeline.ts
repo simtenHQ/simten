@@ -19,11 +19,7 @@ import type {
   FirmwareBuild,
 } from './types.js';
 import { runSynth, runBuild, runPatch } from './synth-client.js';
-import {
-  computeVerilogHash,
-  readCache,
-  writeCache,
-} from './ecpbram.js';
+import { computeVerilogHash, readCache, writeCache } from './ecpbram.js';
 
 export const HARDWARE_DIR = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -53,8 +49,12 @@ export async function runPipeline(opts: PipelineOptions): Promise<PipelineResult
 
   if (project.firmware) {
     if (!opts.firmwareSourcePath) {
-      return fail('compile', 'project requires firmware but no --firmware given', '',
-        'pass --firmware=<path> to a C/Rust source file');
+      return fail(
+        'compile',
+        'project requires firmware but no --firmware given',
+        '',
+        'pass --firmware=<path> to a C/Rust source file',
+      );
     }
     const source = readFileSync(opts.firmwareSourcePath, 'utf8');
     const language = opts.firmwareLanguage ?? inferLanguage(opts.firmwareSourcePath);
@@ -149,8 +149,12 @@ export async function runPipeline(opts: PipelineOptions): Promise<PipelineResult
         top: built.topModule,
       });
       if (!synthResp.success) {
-        return fail('synth', synthResp.error ?? 'synth failed', (synthResp.log ?? '').slice(-1000),
-          suggestForSynthError(synthResp.error ?? synthResp.log ?? ''));
+        return fail(
+          'synth',
+          synthResp.error ?? 'synth failed',
+          (synthResp.log ?? '').slice(-1000),
+          suggestForSynthError(synthResp.error ?? synthResp.log ?? ''),
+        );
       }
 
       const buildResp = await runBuild({
@@ -160,8 +164,12 @@ export async function runPipeline(opts: PipelineOptions): Promise<PipelineResult
         device: built.device,
       });
       if (!buildResp.success) {
-        return fail('synth', buildResp.error ?? 'build failed', (buildResp.log ?? '').slice(-1000),
-          suggestForSynthError(buildResp.error ?? buildResp.log ?? ''));
+        return fail(
+          'synth',
+          buildResp.error ?? 'build failed',
+          (buildResp.log ?? '').slice(-1000),
+          suggestForSynthError(buildResp.error ?? buildResp.log ?? ''),
+        );
       }
 
       bitstream = Buffer.from(buildResp.bitstream!, 'base64');

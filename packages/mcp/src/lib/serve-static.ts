@@ -104,10 +104,12 @@ export function proxyCompile(req: IncomingMessage, res: ServerResponse): void {
       })
       .catch((e) => {
         res.writeHead(502, { 'content-type': 'application/json' });
-        res.end(JSON.stringify({
-          success: false,
-          error: `Compiler unreachable: ${e instanceof Error ? e.message : String(e)}`,
-        }));
+        res.end(
+          JSON.stringify({
+            success: false,
+            error: `Compiler unreachable: ${e instanceof Error ? e.message : String(e)}`,
+          }),
+        );
       });
   });
 }

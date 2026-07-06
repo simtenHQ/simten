@@ -32,7 +32,7 @@ describe('Time Travel - State Consistency Properties', () => {
             data: fc.integer({ min: 0, max: 255 }),
             we: fc.boolean(),
           }),
-          { minLength: 3, maxLength: 10 }
+          { minLength: 3, maxLength: 10 },
         ),
         (operations) => {
           // Simulate a sequence of register writes
@@ -43,7 +43,7 @@ describe('Time Travel - State Consistency Properties', () => {
           }> = [];
 
           let registerState = 0; // Register starts at 0
-          let displayState = 0;   // HexDisplay starts showing 0
+          let displayState = 0; // HexDisplay starts showing 0
 
           // Step 0: Initial state
           stateHistory.push({
@@ -67,14 +67,11 @@ describe('Time Travel - State Consistency Properties', () => {
             registerState = PRIMITIVE_EVALUATORS.Register.updateState!(
               inputs,
               registerState,
-              clockEdges
+              clockEdges,
             ) as number;
 
             // HexDisplay should show whatever the register outputs
-            const registerOutput = PRIMITIVE_EVALUATORS.Register.evaluate(
-              inputs,
-              registerState
-            );
+            const registerOutput = PRIMITIVE_EVALUATORS.Register.evaluate(inputs, registerState);
             displayState = registerOutput.get('q') as number;
 
             // Record this state
@@ -98,23 +95,23 @@ describe('Time Travel - State Consistency Properties', () => {
             // Verify states match
             if (actualRegisterState !== expectedState.registerState) {
               console.error(
-                `Step ${checkStep}: Register state mismatch. Expected ${expectedState.registerState}, got ${actualRegisterState}`
+                `Step ${checkStep}: Register state mismatch. Expected ${expectedState.registerState}, got ${actualRegisterState}`,
               );
               return false;
             }
 
             if (actualDisplayState !== expectedState.displayState) {
               console.error(
-                `Step ${checkStep}: Display state mismatch. Expected ${expectedState.displayState}, got ${actualDisplayState}`
+                `Step ${checkStep}: Display state mismatch. Expected ${expectedState.displayState}, got ${actualDisplayState}`,
               );
               return false;
             }
           }
 
           return true;
-        }
+        },
       ),
-      { numRuns: 300 }
+      { numRuns: 300 },
     );
   });
 
@@ -142,11 +139,9 @@ describe('Time Travel - State Consistency Properties', () => {
               ['data', writeValue],
               ['we', false],
             ]);
-            registerState = PRIMITIVE_EVALUATORS.Register.updateState!(
-              inputs,
-              registerState,
-              { clk: 'rising' }
-            ) as number;
+            registerState = PRIMITIVE_EVALUATORS.Register.updateState!(inputs, registerState, {
+              clk: 'rising',
+            }) as number;
 
             history.push(registerState);
 
@@ -161,18 +156,16 @@ describe('Time Travel - State Consistency Properties', () => {
             ['data', writeValue],
             ['we', true],
           ]);
-          registerState = PRIMITIVE_EVALUATORS.Register.updateState!(
-            writeInputs,
-            registerState,
-            { clk: 'rising' }
-          ) as number;
+          registerState = PRIMITIVE_EVALUATORS.Register.updateState!(writeInputs, registerState, {
+            clk: 'rising',
+          }) as number;
 
           history.push(registerState);
           const finalStep = history.length - 1;
 
           if (registerState !== writeValue) {
             console.error(
-              `Register didn't update when WE=true. Expected ${writeValue}, got ${registerState}`
+              `Register didn't update when WE=true. Expected ${writeValue}, got ${registerState}`,
             );
             return false;
           }
@@ -203,15 +196,15 @@ describe('Time Travel - State Consistency Properties', () => {
           // Jump forward to final step: should be writeValue
           if (history[finalStep] !== writeValue) {
             console.error(
-              `Final step after time travel wrong: expected ${writeValue}, got ${history[finalStep]}`
+              `Final step after time travel wrong: expected ${writeValue}, got ${history[finalStep]}`,
             );
             return false;
           }
 
           return true;
-        }
+        },
       ),
-      { numRuns: 300 }
+      { numRuns: 300 },
     );
   });
 
@@ -235,11 +228,9 @@ describe('Time Travel - State Consistency Properties', () => {
               ['we', true], // Always write
             ]);
 
-            registerState = PRIMITIVE_EVALUATORS.Register.updateState!(
-              inputs,
-              registerState,
-              { clk: 'rising' }
-            ) as number;
+            registerState = PRIMITIVE_EVALUATORS.Register.updateState!(inputs, registerState, {
+              clk: 'rising',
+            }) as number;
 
             // Display should update to show new value
             displayStates.push(registerState);
@@ -255,16 +246,16 @@ describe('Time Travel - State Consistency Properties', () => {
 
             if (actualDisplay !== expectedDisplay) {
               console.error(
-                `Time travel to step ${step} failed. Expected display ${expectedDisplay}, got ${actualDisplay}`
+                `Time travel to step ${step} failed. Expected display ${expectedDisplay}, got ${actualDisplay}`,
               );
               return false;
             }
           }
 
           return true;
-        }
+        },
       ),
-      { numRuns: 300 }
+      { numRuns: 300 },
     );
   });
 });
@@ -294,11 +285,9 @@ describe('Time Travel - Metamorphic Properties', () => {
                 ['data', value],
                 ['we', i === 5],
               ]);
-              state = PRIMITIVE_EVALUATORS.Register.updateState!(
-                inputs,
-                state,
-                { clk: 'rising' }
-              ) as number;
+              state = PRIMITIVE_EVALUATORS.Register.updateState!(inputs, state, {
+                clk: 'rising',
+              }) as number;
             }
           }
 
@@ -310,9 +299,9 @@ describe('Time Travel - Metamorphic Properties', () => {
 
           // Should be the same (intermediate travel doesn't matter)
           return stateAfterT1ThenT2 === stateDirectlyT2;
-        }
+        },
       ),
-      { numRuns: 300 }
+      { numRuns: 300 },
     );
   });
 
@@ -330,11 +319,9 @@ describe('Time Travel - Metamorphic Properties', () => {
               ['data', value],
               ['we', i === 5],
             ]);
-            state = PRIMITIVE_EVALUATORS.Register.updateState!(
-              inputs,
-              state,
-              { clk: 'rising' }
-            ) as number;
+            state = PRIMITIVE_EVALUATORS.Register.updateState!(inputs, state, {
+              clk: 'rising',
+            }) as number;
             history.push(state);
           }
 
@@ -347,9 +334,9 @@ describe('Time Travel - Metamorphic Properties', () => {
           const secondTravel = history[targetStep];
 
           return firstTravel === secondTravel;
-        }
+        },
       ),
-      { numRuns: 300 }
+      { numRuns: 300 },
     );
   });
 });

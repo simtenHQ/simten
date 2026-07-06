@@ -30,7 +30,7 @@ function fingerprint(cpu: ReturnType<typeof simulate>): string {
   const parts: string[] = [];
   for (const k of [...snap.portValues.keys()].sort()) {
     const v = snap.portValues.get(k) as number | boolean;
-    const n = typeof v === 'boolean' ? (v ? 1 : 0) : ((v as number) >>> 0);
+    const n = typeof v === 'boolean' ? (v ? 1 : 0) : (v as number) >>> 0;
     parts.push(`P|${k}=${n}`);
   }
   const serializeState = (s: unknown): string => {
@@ -40,7 +40,10 @@ function fingerprint(cpu: ReturnType<typeof simulate>): string {
     }
     if (typeof s === 'object' && s !== null) {
       const o = s as Record<string, unknown>;
-      return `{${Object.keys(o).sort().map(k => `${k}=${serializeState(o[k])}`).join(',')}}`;
+      return `{${Object.keys(o)
+        .sort()
+        .map((k) => `${k}=${serializeState(o[k])}`)
+        .join(',')}}`;
     }
     return String(s);
   };
@@ -73,7 +76,7 @@ function main() {
     saved.set(idx, EVALUATORS[idx]);
     EVALUATORS[idx] = null;
   }
-  const nulledCount = builtInIndices.filter(i => saved.get(i) != null).length;
+  const nulledCount = builtInIndices.filter((i) => saved.get(i) != null).length;
   console.log(`zeroed ${nulledCount} pre-populated built-in slots`);
 
   // Now build the CPU. If the lazy path is broken, this should crash either
@@ -106,7 +109,7 @@ function main() {
   console.log(`fingerprint match: ${match ? '✓' : '✗'}`);
 
   // Check that slots got refilled
-  const filledAfter = builtInIndices.filter(i => EVALUATORS[i] != null).length;
+  const filledAfter = builtInIndices.filter((i) => EVALUATORS[i] != null).length;
   console.log(`slots filled after run: ${filledAfter}/${builtInIndices.length}`);
 
   if (!match) {

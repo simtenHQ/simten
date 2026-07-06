@@ -26,33 +26,32 @@ export async function handleVerify(
   try {
     body = await request.json();
   } catch {
+    return Response.json({ success: false, compileError: 'Invalid JSON' }, { status: 400 });
+  }
+
+  if (typeof body.verilog !== 'string' || body.verilog.length === 0) {
     return Response.json(
-      { success: false, compileError: "Invalid JSON" },
+      { success: false, compileError: 'verilog source is required' },
       { status: 400 },
     );
   }
 
-  if (typeof body.verilog !== "string" || body.verilog.length === 0) {
+  if (typeof body.testbench !== 'string' || body.testbench.length === 0) {
     return Response.json(
-      { success: false, compileError: "verilog source is required" },
+      { success: false, compileError: 'testbench source is required' },
       { status: 400 },
     );
   }
 
-  if (typeof body.testbench !== "string" || body.testbench.length === 0) {
-    return Response.json(
-      { success: false, compileError: "testbench source is required" },
-      { status: 400 },
-    );
-  }
-
-  const rl = (env as { VERIFY_RL?: { limit: (k: { key: string }) => Promise<{ success: boolean }> } }).VERIFY_RL;
+  const rl = (
+    env as { VERIFY_RL?: { limit: (k: { key: string }) => Promise<{ success: boolean }> } }
+  ).VERIFY_RL;
   if (rl) {
-    const ip = request.headers.get("CF-Connecting-IP") ?? "unknown";
+    const ip = request.headers.get('CF-Connecting-IP') ?? 'unknown';
     const { success } = await rl.limit({ key: ip });
     if (!success) {
       return Response.json(
-        { success: false, compileError: "Rate limit exceeded — try again in a minute" },
+        { success: false, compileError: 'Rate limit exceeded — try again in a minute' },
         { status: 429 },
       );
     }
@@ -61,8 +60,8 @@ export async function handleVerify(
   const payload = { verilog: body.verilog, testbench: body.testbench };
 
   const reqInit: RequestInit = {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
   };
 
@@ -71,8 +70,8 @@ export async function handleVerify(
 
   try {
     const resp = verifier
-      ? await verifier.fetch("https://verifier/verify", reqInit)
-      : await fetch("http://localhost:55002/verify", reqInit);
+      ? await verifier.fetch('https://verifier/verify', reqInit)
+      : await fetch('http://localhost:55002/verify', reqInit);
 
     const result: VerifyResponse = await resp.json();
     return Response.json(result, { status: resp.status });

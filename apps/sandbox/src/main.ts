@@ -50,10 +50,7 @@
  * serialization cost per tick — see SlotState.snapshots.
  */
 
-import {
-  createSimulator,
-  elaborate,
-} from '@simten/core';
+import { createSimulator, elaborate } from '@simten/core';
 import type { Circuit, BitValue, BusValue } from '@simten/core';
 import type { SimulatorSnapshot } from '@simten/core';
 import { registerCircuitEval } from '@simten/core/circuit';
@@ -75,13 +72,56 @@ interface EvalSource {
 /** Each simulation lives in a named slot. Slots are independent (own simulator, library, source). */
 type SandboxRequest =
   | { id: string; type: 'compile'; source: string; slot?: string }
-  | { id: string; type: 'compile-ir'; circuit: Circuit; libraryCircuits: Circuit[]; slot: string; evalSources?: Record<string, EvalSource>; snapshot?: boolean }
-  | { id: string; type: 'tick'; inputs?: Record<string, number | boolean>; slot?: string; snapshot?: boolean }
-  | { id: string; type: 'tick-n'; n: number; inputs?: Record<string, number | boolean>; slot?: string; snapshot?: boolean }
-  | { id: string; type: 'scan-port'; addrNodeId: string; valuePortKey: string; count: number; slot?: string }
-  | { id: string; type: 'simulate'; source?: string; ticks: number; inputs?: Record<string, number | boolean>; memoryData?: Record<string, Record<string, number>>; slot?: string }
+  | {
+      id: string;
+      type: 'compile-ir';
+      circuit: Circuit;
+      libraryCircuits: Circuit[];
+      slot: string;
+      evalSources?: Record<string, EvalSource>;
+      snapshot?: boolean;
+    }
+  | {
+      id: string;
+      type: 'tick';
+      inputs?: Record<string, number | boolean>;
+      slot?: string;
+      snapshot?: boolean;
+    }
+  | {
+      id: string;
+      type: 'tick-n';
+      n: number;
+      inputs?: Record<string, number | boolean>;
+      slot?: string;
+      snapshot?: boolean;
+    }
+  | {
+      id: string;
+      type: 'scan-port';
+      addrNodeId: string;
+      valuePortKey: string;
+      count: number;
+      slot?: string;
+    }
+  | {
+      id: string;
+      type: 'simulate';
+      source?: string;
+      ticks: number;
+      inputs?: Record<string, number | boolean>;
+      memoryData?: Record<string, Record<string, number>>;
+      slot?: string;
+    }
   | { id: string; type: 'reset'; slot?: string }
-  | { id: string; type: 'set-node'; nodeId: string; value: number | boolean | Map<number, number>; slot?: string; snapshot?: boolean }
+  | {
+      id: string;
+      type: 'set-node';
+      nodeId: string;
+      value: number | boolean | Map<number, number>;
+      slot?: string;
+      snapshot?: boolean;
+    }
   | { id: string; type: 'snapshot'; slot?: string }
   | { id: string; type: 'restore'; slot?: string; snapshotId: number }
   | { id: string; type: 'prune-snapshots'; slot?: string; keepAfterId: number }
@@ -165,14 +205,19 @@ interface FullSnapshot {
 
 interface SlotState {
   simulator: ReturnType<typeof createSimulator> | null;
-  library: { resolveCircuit(name: string): Circuit | undefined; addCircuit?(c: Circuit): void } | null;
+  library: {
+    resolveCircuit(name: string): Circuit | undefined;
+    addCircuit?(c: Circuit): void;
+  } | null;
   source: string;
   /**
    * The elaborated flat circuit. Kept so we can capture/restore environmental
    * state (node.arguments for Switch/Button/Input) on snapshot/restore —
    * environmental-state.ts walks these nodes to find interactive args.
    */
-  flatCircuit: { nodes: Array<{ id: string; primitiveType: string; arguments: Record<string, unknown> }> } | null;
+  flatCircuit: {
+    nodes: Array<{ id: string; primitiveType: string; arguments: Record<string, unknown> }>;
+  } | null;
   /**
    * Set of nodeIds whose simulation state is exposed across the sandbox
    * boundary every tick. A node qualifies if it has at least one direct
@@ -233,7 +278,8 @@ function takeSnapshot(slot: SlotState): number | undefined {
     if (slot.flatCircuit && slot.library) {
       for (const node of slot.flatCircuit.nodes) {
         const def = slot.library.resolveCircuit(node.primitiveType);
-        const interactiveArg = (def as { metadata?: { interactiveArg?: string } } | undefined)?.metadata?.interactiveArg;
+        const interactiveArg = (def as { metadata?: { interactiveArg?: string } } | undefined)
+          ?.metadata?.interactiveArg;
         if (!interactiveArg) continue;
         env.set(node.id, node.arguments[interactiveArg] as EnvironmentalStateValue);
       }
@@ -256,7 +302,10 @@ function takeSnapshot(slot: SlotState): number | undefined {
  * circuit this is microseconds.
  */
 function computePeripheralBusNodes(
-  flatCircuit: { nodes: { id: string; primitiveType: string }[]; connections: { source: { nodeId: string }; target: { nodeId: string } }[] },
+  flatCircuit: {
+    nodes: { id: string; primitiveType: string }[];
+    connections: { source: { nodeId: string }; target: { nodeId: string } }[];
+  },
   library: { resolveCircuit(name: string): Circuit | undefined },
 ): Set<string> {
   const isPeripheral = (primitiveType: string): boolean => {
@@ -345,18 +394,21 @@ function respondError(id: string, error: string) {
 
 async function handleCompile(id: string, source: string, slotId: string = DEFAULT_SLOT) {
   // Worker compiles source (handles imports via esm.sh) → returns Circuit IR + eval sources
-  const workerResult = await delegateToWorker({ id, type: 'compile', source }) as {
+  const workerResult = (await delegateToWorker({ id, type: 'compile', source })) as {
     type: string;
     error?: string;
     circuits?: Circuit[];
     libraryCircuits?: Circuit[];
-    evalSources?: Record<string, {
-      evalSource: string;
-      onTickSource?: string;
-      inputNames: string[];
-      outputNames: string[];
-      stateKeys?: string[];
-    }>;
+    evalSources?: Record<
+      string,
+      {
+        evalSource: string;
+        onTickSource?: string;
+        inputNames: string[];
+        outputNames: string[];
+        stateKeys?: string[];
+      }
+    >;
   };
 
   if (workerResult.type === 'error' || workerResult.error) {
@@ -379,9 +431,13 @@ async function handleCompile(id: string, source: string, slotId: string = DEFAUL
     // the worker can load via esm.sh) on the main thread.
     for (const [name, info] of Object.entries(evalSources)) {
       try {
-        const evalFn = new Function('return (' + info.evalSource + ')')() as (inputs: Record<string, any>) => Record<string, any>;
+        const evalFn = new Function('return (' + info.evalSource + ')')() as (
+          inputs: Record<string, any>,
+        ) => Record<string, any>;
         const onTickFn = info.onTickSource
-          ? new Function('return (' + info.onTickSource + ')')() as (inputs: Record<string, any>) => Record<string, any>
+          ? (new Function('return (' + info.onTickSource + ')')() as (
+              inputs: Record<string, any>,
+            ) => Record<string, any>)
           : undefined;
         registerCircuitEval(name, {
           inputNames: info.inputNames,
@@ -399,8 +455,13 @@ async function handleCompile(id: string, source: string, slotId: string = DEFAUL
     const circuitMap = new Map<string, Circuit>();
     const library = {
       resolveCircuit: (name: string) => circuitMap.get(name),
-      getAllPrimitiveNames: () => [...circuitMap.values()].filter(c => c.implementation?.kind === 'primitive').map(c => c.name),
-      addCircuit: (c: Circuit) => { circuitMap.set(c.name, c); },
+      getAllPrimitiveNames: () =>
+        [...circuitMap.values()]
+          .filter((c) => c.implementation?.kind === 'primitive')
+          .map((c) => c.name),
+      addCircuit: (c: Circuit) => {
+        circuitMap.set(c.name, c);
+      },
     };
     for (const c of [...circuits, ...libraryCircuits]) {
       library.addCircuit(c);
@@ -433,7 +494,12 @@ async function handleCompile(id: string, source: string, slotId: string = DEFAUL
   }
 }
 
-function handleTick(id: string, inputs?: Record<string, number | boolean>, slotId: string = DEFAULT_SLOT, snapshot?: boolean) {
+function handleTick(
+  id: string,
+  inputs?: Record<string, number | boolean>,
+  slotId: string = DEFAULT_SLOT,
+  snapshot?: boolean,
+) {
   const slot = slots.get(slotId);
   const sim = slot?.simulator;
   if (!sim || !slot) {
@@ -465,7 +531,13 @@ function handleTick(id: string, inputs?: Record<string, number | boolean>, slotI
 // how real debug hardware observes architectural state while the core is
 // halted (and how it can interleave with normal execution in a properly
 // dual-ported regfile).
-function handleScanPort(id: string, addrNodeId: string, valuePortKey: string, count: number, slotId: string = DEFAULT_SLOT) {
+function handleScanPort(
+  id: string,
+  addrNodeId: string,
+  valuePortKey: string,
+  count: number,
+  slotId: string = DEFAULT_SLOT,
+) {
   const slot = slots.get(slotId);
   const sim = slot?.simulator;
   if (!sim || !slot) {
@@ -479,7 +551,7 @@ function handleScanPort(id: string, addrNodeId: string, valuePortKey: string, co
       sim.setNode(addrNodeId, i);
       sim.runCombinational();
       const v = sim.getPortValues().get(valuePortKey);
-      values[i] = typeof v === 'number' ? v : (v ? 1 : 0);
+      values[i] = typeof v === 'number' ? v : v ? 1 : 0;
     }
     respond(id, { type: 'scanned-port', values });
   } catch (e) {
@@ -490,7 +562,13 @@ function handleScanPort(id: string, addrNodeId: string, valuePortKey: string, co
 // Advance the simulator by N cycles in one round-trip. Returns only the final
 // port values and one peripheral-state snapshot. Used by demos that need high
 // tick rates (raster frames) — one postMessage instead of N.
-function handleTickN(id: string, n: number, inputs?: Record<string, number | boolean>, slotId: string = DEFAULT_SLOT, snapshot?: boolean) {
+function handleTickN(
+  id: string,
+  n: number,
+  inputs?: Record<string, number | boolean>,
+  slotId: string = DEFAULT_SLOT,
+  snapshot?: boolean,
+) {
   const slot = slots.get(slotId);
   const sim = slot?.simulator;
   if (!sim || !slot) {
@@ -505,7 +583,9 @@ function handleTickN(id: string, n: number, inputs?: Record<string, number | boo
     const snapshotId = snapshot ? takeSnapshot(slot) : undefined;
     respond(id, {
       type: 'ticked-n',
-      portValues: last ? portValuesToObject(last.portValues) : portValuesToObject(sim.getPortValues()),
+      portValues: last
+        ? portValuesToObject(last.portValues)
+        : portValuesToObject(sim.getPortValues()),
       cycle: sim.getMetrics().totalTicks,
       peripheralState: snapshotPeripheralState(slot),
       snapshotId,
@@ -561,7 +641,13 @@ function handleReset(id: string, slotId: string = DEFAULT_SLOT) {
   }
 }
 
-function handleSetNode(id: string, nodeId: string, value: number | boolean | Map<number, number>, slotId: string = DEFAULT_SLOT, snapshot?: boolean) {
+function handleSetNode(
+  id: string,
+  nodeId: string,
+  value: number | boolean | Map<number, number>,
+  slotId: string = DEFAULT_SLOT,
+  snapshot?: boolean,
+) {
   const slot = slots.get(slotId);
   const sim = slot?.simulator;
   if (!sim || !slot) {
@@ -574,7 +660,12 @@ function handleSetNode(id: string, nodeId: string, value: number | boolean | Map
     sim.runCombinational();
     const portValues = portValuesToObject(sim.getPortValues());
     const snapshotId = snapshot ? takeSnapshot(slot) : undefined;
-    respond(id, { type: 'set-node', portValues, peripheralState: snapshotPeripheralState(slot), snapshotId });
+    respond(id, {
+      type: 'set-node',
+      portValues,
+      peripheralState: snapshotPeripheralState(slot),
+      snapshotId,
+    });
   } catch (e) {
     respondError(id, e instanceof Error ? e.message : String(e));
   }
@@ -630,7 +721,8 @@ function handleRestore(id: string, snapshotId: number, slotId: string = DEFAULT_
     if (slot.flatCircuit && slot.library) {
       for (const node of slot.flatCircuit.nodes) {
         const def = slot.library.resolveCircuit(node.primitiveType);
-        const interactiveArg = (def as { metadata?: { interactiveArg?: string } } | undefined)?.metadata?.interactiveArg;
+        const interactiveArg = (def as { metadata?: { interactiveArg?: string } } | undefined)
+          ?.metadata?.interactiveArg;
         if (!interactiveArg) continue;
         const saved = full.env.get(node.id);
         const value = saved === undefined ? 0 : saved;
@@ -671,16 +763,27 @@ function handlePruneSnapshots(id: string, keepAfterId: number, slotId: string = 
  * as Circuit IR and sent here for simulation.
  * Uses the library from the last executeCircuitCode (has eval functions).
  */
-function handleCompileIR(id: string, circuit: Circuit, libraryCircuits: Circuit[], slotId: string, evalSources?: Record<string, EvalSource>, snapshot?: boolean) {
+function handleCompileIR(
+  id: string,
+  circuit: Circuit,
+  libraryCircuits: Circuit[],
+  slotId: string,
+  evalSources?: Record<string, EvalSource>,
+  snapshot?: boolean,
+) {
   try {
     // If evalSources are provided, reconstruct the functions and register them.
     // This is how the embed transfers eval functions from the main frame to the sandbox.
     if (evalSources) {
       for (const [name, info] of Object.entries(evalSources)) {
         try {
-          const evalFn = new Function('return (' + info.evalSource + ')')() as (inputs: Record<string, any>) => Record<string, any>;
+          const evalFn = new Function('return (' + info.evalSource + ')')() as (
+            inputs: Record<string, any>,
+          ) => Record<string, any>;
           const onTickFn = info.onTickSource
-            ? new Function('return (' + info.onTickSource + ')')() as (inputs: Record<string, any>) => Record<string, any>
+            ? (new Function('return (' + info.onTickSource + ')')() as (
+                inputs: Record<string, any>,
+              ) => Record<string, any>)
             : undefined;
           registerCircuitEval(name, {
             inputNames: info.inputNames,
@@ -697,16 +800,24 @@ function handleCompileIR(id: string, circuit: Circuit, libraryCircuits: Circuit[
 
     // Find or build a library. If any slot has one (from source compile), reuse it.
     // Otherwise build a fresh library just for this compile.
-    let lib: { resolveCircuit(name: string): Circuit | undefined; addCircuit?(c: Circuit): void } | null = null;
+    let lib: {
+      resolveCircuit(name: string): Circuit | undefined;
+      addCircuit?(c: Circuit): void;
+    } | null = null;
     for (const s of slots.values()) {
-      if (s.library) { lib = s.library; break; }
+      if (s.library) {
+        lib = s.library;
+        break;
+      }
     }
     if (!lib) {
       // Build a library from the provided circuits
       const circuitMap = new Map<string, Circuit>();
       lib = {
         resolveCircuit: (name) => circuitMap.get(name),
-        addCircuit: (c: Circuit) => { circuitMap.set(c.name, c); },
+        addCircuit: (c: Circuit) => {
+          circuitMap.set(c.name, c);
+        },
       };
     }
 
@@ -730,7 +841,12 @@ function handleCompileIR(id: string, circuit: Circuit, libraryCircuits: Circuit[
 
     const portValues = portValuesToObject(sim.getPortValues());
     const snapshotId = snapshot ? takeSnapshot(slot) : undefined;
-    respond(id, { type: 'compiled-ir', portValues, peripheralState: snapshotPeripheralState(slot), snapshotId });
+    respond(id, {
+      type: 'compiled-ir',
+      portValues,
+      peripheralState: snapshotPeripheralState(slot),
+      snapshotId,
+    });
   } catch (e) {
     respondError(id, e instanceof Error ? e.message : String(e));
   }
@@ -758,7 +874,14 @@ self.addEventListener('message', (event: MessageEvent) => {
       handleCompile(req.id, req.source, req.slot);
       break;
     case 'compile-ir':
-      handleCompileIR(req.id, req.circuit, req.libraryCircuits, req.slot, req.evalSources, req.snapshot);
+      handleCompileIR(
+        req.id,
+        req.circuit,
+        req.libraryCircuits,
+        req.slot,
+        req.evalSources,
+        req.snapshot,
+      );
       break;
     case 'tick':
       handleTick(req.id, req.inputs, req.slot, req.snapshot);

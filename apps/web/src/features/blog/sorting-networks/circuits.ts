@@ -5,21 +5,14 @@
  * starting from a single compare-and-swap primitive.
  */
 
-import { circuit, bus } from "@simten/core/circuit";
+import { circuit, bus } from '@simten/core/circuit';
 import type { BlogCircuit } from '../types';
-import {
-  Input,
-  HexDisplay,
-  Comparator,
-  Mux,
-  Register,
-  Constant,
-} from "@simten/core/std";
+import { Input, HexDisplay, Comparator, Mux, Register, Constant } from '@simten/core/std';
 
 // ── Compare-and-swap subcircuit ──
 // Outputs min on `lo`, max on `hi` — unconditionally, no branching.
 // cmp.lt=1 means a < b, so lo=a (in1), hi=b (in1).
-const CompareSwap = circuit("CompareSwap", {
+const CompareSwap = circuit('CompareSwap', {
   inputs: { a: bus(8), b: bus(8) },
   outputs: { lo: bus(8), hi: bus(8) },
   nodes: { cmp: Comparator(), muxLo: Mux(), muxHi: Mux() },
@@ -33,7 +26,7 @@ const CompareSwap = circuit("CompareSwap", {
 });
 
 // ── Standalone demo: single compare-and-swap ──
-export const CompareSwapDemo = circuit("CompareSwapDemo", {
+export const CompareSwapDemo = circuit('CompareSwapDemo', {
   nodes: {
     a: Input({ value: 7 }),
     b: Input({ value: 3 }),
@@ -55,7 +48,7 @@ export const CompareSwapDemo = circuit("CompareSwapDemo", {
 // Stage 1: (0,1) (2,3)
 // Stage 2: (0,2) (1,3)
 // Stage 3:    (1,2)
-export const SortNet4 = circuit("SortNet4", {
+export const SortNet4 = circuit('SortNet4', {
   inputs: { v0: bus(8), v1: bus(8), v2: bus(8), v3: bus(8) },
   outputs: { s0: bus(8), s1: bus(8), s2: bus(8), s3: bus(8) },
   nodes: {
@@ -91,7 +84,7 @@ export const SortNet4 = circuit("SortNet4", {
 });
 
 // ── Top-level demo: SortNet4 with Inputs and HexDisplays ──
-export const SortDemo = circuit("SortDemo", {
+export const SortDemo = circuit('SortDemo', {
   nodes: {
     v0: Input({ value: 42 }),
     v1: Input({ value: 7 }),
@@ -119,7 +112,7 @@ export const SortDemo = circuit("SortDemo", {
 // Same 5 comparators as SortNet4, but register banks between each stage
 // make inputs and outputs independent — a new result emerges every clock cycle
 // after 3 cycles of initial latency.
-export const PipelinedSortNet4 = circuit("PipelinedSortNet4", {
+export const PipelinedSortNet4 = circuit('PipelinedSortNet4', {
   inputs: { v0: bus(8), v1: bus(8), v2: bus(8), v3: bus(8) },
   outputs: { s0: bus(8), s1: bus(8), s2: bus(8), s3: bus(8) },
   nodes: {
@@ -144,7 +137,11 @@ export const PipelinedSortNet4 = circuit("PipelinedSortNet4", {
     // Write-enable constant (always 1)
     we: Constant({ value: 1 }),
   },
-  connect: ({ inputs, outputs, nodes: { cs01, cs23, r1_0, r1_1, r1_2, r1_3, cs02, cs13, r2_0, r2_1, r2_2, r2_3, cs12, we } }) => [
+  connect: ({
+    inputs,
+    outputs,
+    nodes: { cs01, cs23, r1_0, r1_1, r1_2, r1_3, cs02, cs13, r2_0, r2_1, r2_2, r2_3, cs12, we },
+  }) => [
     // Stage 1
     inputs.v0.to(cs01.a),
     inputs.v1.to(cs01.b),
@@ -179,7 +176,7 @@ export const PipelinedSortNet4 = circuit("PipelinedSortNet4", {
 });
 
 // ── Top-level demo: PipelinedSortNet4 with Inputs and HexDisplays ──
-export const PipelinedSortDemo = circuit("PipelinedSortDemo", {
+export const PipelinedSortDemo = circuit('PipelinedSortDemo', {
   nodes: {
     v0: Input({ value: 42 }),
     v1: Input({ value: 7 }),
@@ -205,23 +202,23 @@ export const PipelinedSortDemo = circuit("PipelinedSortDemo", {
 
 export const SORTING_CIRCUITS: Record<string, BlogCircuit> = {
   compareSwapDemo: {
-    name: "Compare-and-Swap",
+    name: 'Compare-and-Swap',
     description:
-      "Two inputs enter, the smaller exits on `lo` and the larger on `hi`. No branches — a Comparator drives two Muxes.",
+      'Two inputs enter, the smaller exits on `lo` and the larger on `hi`. No branches — a Comparator drives two Muxes.',
     circuit: CompareSwapDemo,
   },
 
   sortDemo: {
-    name: "4-Element Batcher Sort Network",
+    name: '4-Element Batcher Sort Network',
     description:
-      "Three stages, five comparators. Any four 8-bit values emerge sorted in ascending order. Change the inputs and the result updates instantly.",
+      'Three stages, five comparators. Any four 8-bit values emerge sorted in ascending order. Change the inputs and the result updates instantly.',
     circuit: SortDemo,
   },
 
   pipelinedSortDemo: {
-    name: "Pipelined Sort Network",
+    name: 'Pipelined Sort Network',
     description:
-      "Register banks between stages decouple inputs from outputs. After 3 cycles of latency, a new sorted result emerges every single clock cycle. Step through cycles to watch values propagate.",
+      'Register banks between stages decouple inputs from outputs. After 3 cycles of latency, a new sorted result emerges every single clock cycle. Step through cycles to watch values propagate.',
     circuit: PipelinedSortDemo,
   },
 };

@@ -82,11 +82,7 @@ interface OutputReader<T> {
   (): T;
 }
 
-function recordTrace<T>(
-  sim: { tick(): void },
-  ticks: number,
-  read: OutputReader<T>,
-): T[] {
+function recordTrace<T>(sim: { tick(): void }, ticks: number, read: OutputReader<T>): T[] {
   const trace: T[] = [];
   for (let i = 0; i < ticks; i++) {
     sim.tick();

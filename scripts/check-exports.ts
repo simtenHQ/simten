@@ -38,7 +38,10 @@ function fail(pkg: string, msg: string): void {
   failures.push(`${pkg}: ${msg}`);
 }
 
-function entryPath(entry: ExportEntry, key: 'import' | 'default' | 'types' = 'import'): string | undefined {
+function entryPath(
+  entry: ExportEntry,
+  key: 'import' | 'default' | 'types' = 'import',
+): string | undefined {
   if (typeof entry === 'string') return entry;
   return entry[key] ?? entry.default ?? entry.import;
 }
@@ -108,7 +111,10 @@ function checkPackage(relPath: string): void {
     return p?.startsWith('./dist/');
   });
   if (referencesDist && !files.includes('dist')) {
-    fail(name, `publishConfig.exports references ./dist/* but 'files' (${JSON.stringify(files)}) does not include 'dist'`);
+    fail(
+      name,
+      `publishConfig.exports references ./dist/* but 'files' (${JSON.stringify(files)}) does not include 'dist'`,
+    );
   }
 }
 

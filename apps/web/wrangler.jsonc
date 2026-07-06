@@ -8,9 +8,7 @@
   "compatibility_date": "2025-09-02",
   "compatibility_flags": ["nodejs_compat"],
   "main": "app/server.ts",
-  "routes": [
-    { "pattern": "simten.dev", "custom_domain": true }
-  ],
+  "routes": [{ "pattern": "simten.dev", "custom_domain": true }],
   "observability": {
     "enabled": true
   },
@@ -20,8 +18,8 @@
   ],
   "ratelimits": [
     { "name": "COMPILE_RL", "namespace_id": "1001", "simple": { "limit": 5, "period": 60 } },
-    { "name": "VERIFY_RL",  "namespace_id": "1002", "simple": { "limit": 3, "period": 60 } },
-    { "name": "SHARE_RL",   "namespace_id": "1003", "simple": { "limit": 30, "period": 60 } }
+    { "name": "VERIFY_RL", "namespace_id": "1002", "simple": { "limit": 3, "period": 60 } },
+    { "name": "SHARE_RL", "namespace_id": "1003", "simple": { "limit": 30, "period": 60 } }
   ],
   "kv_namespaces": [
     {
@@ -30,9 +28,7 @@
       "preview_id": "de858145af144c8d9deadac6b93f10bb"
     }
   ],
-  "analytics_engine_datasets": [
-    { "binding": "ANALYTICS", "dataset": "simten_analytics" }
-  ],
+  "analytics_engine_datasets": [{ "binding": "ANALYTICS", "dataset": "simten_analytics" }],
   "assets": {
     // Static assets directory is auto-set to "../client" by the Cloudflare
     // vite plugin at build time — don't set "directory" here.

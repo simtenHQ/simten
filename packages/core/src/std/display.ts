@@ -30,7 +30,12 @@ import { bit, bus } from '../circuit/bit-bus.js';
  */
 export const SevenSegment = circuit('SevenSegment', {
   inputs: { in: bus(4) },
-  meta: { category: 'display', icon: '7', description: '4-bit seven-segment display', synthesizable: false },
+  meta: {
+    category: 'display',
+    icon: '7',
+    description: '4-bit seven-segment display',
+    synthesizable: false,
+  },
 });
 
 /**
@@ -52,7 +57,12 @@ export const SevenSegment = circuit('SevenSegment', {
  */
 export const HexDisplay = circuit('HexDisplay', {
   inputs: { in: bus(8) },
-  meta: { category: 'display', icon: '0xFF', description: 'Hexadecimal display', synthesizable: false },
+  meta: {
+    category: 'display',
+    icon: '0xFF',
+    description: 'Hexadecimal display',
+    synthesizable: false,
+  },
 });
 
 /**
@@ -94,13 +104,21 @@ export const Screen = circuit('Screen', (_opts?: { width?: number; height?: numb
  * **Outputs:** `addrB` — `bus(16)`; `scanX`, `scanY` — `bus(8)`;
  * `hblank`, `vblank` — `bit`
  */
-export const RasterDisplay = circuit('RasterDisplay', (_opts?: { width?: number; height?: number }) => ({
-  inputs: { dataIn: bus(8) },
-  outputs: { addrB: bus(16), scanX: bus(8), scanY: bus(8), hblank: bit, vblank: bit },
-  state: { memory: new Map<number, number>() },
-  meta: { category: 'display', icon: '📺', description: 'Hardware-accurate raster display with scan counters', synthesizable: false },
-  eval: () => ({ addrB: 0, scanX: 0, scanY: 0, hblank: 0, vblank: 0 }),
-}));
+export const RasterDisplay = circuit(
+  'RasterDisplay',
+  (_opts?: { width?: number; height?: number }) => ({
+    inputs: { dataIn: bus(8) },
+    outputs: { addrB: bus(16), scanX: bus(8), scanY: bus(8), hblank: bit, vblank: bit },
+    state: { memory: new Map<number, number>() },
+    meta: {
+      category: 'display',
+      icon: '📺',
+      description: 'Hardware-accurate raster display with scan counters',
+      synthesizable: false,
+    },
+    eval: () => ({ addrB: 0, scanX: 0, scanY: 0, hblank: 0, vblank: 0 }),
+  }),
+);
 
 /**
  * Text console output. Append-only ASCII terminal — write a byte with
@@ -127,7 +145,7 @@ export const Console = circuit('Console', {
   state: { text: '' as any },
   onTick: ({ data, we, text }) => {
     if (!we) return { text };
-    const byte = (data as number) & 0xFF;
+    const byte = (data as number) & 0xff;
     // ASCII control bytes that don't append a printable character:
     //   0  (NUL) — no-op, lets ROMs use 0 as a safe filler
     //   12 (FF)  — form feed, clears the terminal (one-shot redraw pattern)
@@ -136,5 +154,10 @@ export const Console = circuit('Console', {
     const next = ((text as string) ?? '') + String.fromCharCode(byte);
     return { text: next.length > 4096 ? next.slice(-4096) : next };
   },
-  meta: { category: 'display', icon: '📟', description: 'Text console output', synthesizable: false },
+  meta: {
+    category: 'display',
+    icon: '📟',
+    description: 'Text console output',
+    synthesizable: false,
+  },
 });

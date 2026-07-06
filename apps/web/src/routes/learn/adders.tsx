@@ -1,31 +1,31 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { pageHead, breadcrumbLd } from "@/lib/seo";
-import { Suspense, lazy } from "react";
-import { HeroSection } from "@/features/learn/adders/sections/HeroSection";
-import { ErrorBoundary } from "@/features/blog/building-a-cpu/ErrorBoundary";
+import { createFileRoute } from '@tanstack/react-router';
+import { pageHead, breadcrumbLd } from '@/lib/seo';
+import { Suspense, lazy } from 'react';
+import { HeroSection } from '@/features/learn/adders/sections/HeroSection';
+import { ErrorBoundary } from '@/features/blog/building-a-cpu/ErrorBoundary';
 
 const HalfAdderSection = lazy(() =>
-  import("@/features/learn/adders/sections/HalfAdderSection").then((m) => ({
+  import('@/features/learn/adders/sections/HalfAdderSection').then((m) => ({
     default: m.HalfAdderSection,
   })),
 );
 const FullAdderSection = lazy(() =>
-  import("@/features/learn/adders/sections/FullAdderSection").then((m) => ({
+  import('@/features/learn/adders/sections/FullAdderSection').then((m) => ({
     default: m.FullAdderSection,
   })),
 );
 const RippleCarrySection = lazy(() =>
-  import("@/features/learn/adders/sections/RippleCarrySection").then((m) => ({
+  import('@/features/learn/adders/sections/RippleCarrySection').then((m) => ({
     default: m.RippleCarrySection,
   })),
 );
 const DepthSection = lazy(() =>
-  import("@/features/learn/adders/sections/DepthSection").then((m) => ({
+  import('@/features/learn/adders/sections/DepthSection').then((m) => ({
     default: m.DepthSection,
   })),
 );
 const CarryLookaheadSection = lazy(() =>
-  import("@/features/learn/adders/sections/CarryLookaheadSection").then((m) => ({
+  import('@/features/learn/adders/sections/CarryLookaheadSection').then((m) => ({
     default: m.CarryLookaheadSection,
   })),
 );
@@ -96,19 +96,19 @@ function AddersPage() {
   );
 }
 
-export const Route = createFileRoute("/learn/adders")({
+export const Route = createFileRoute('/learn/adders')({
   head: () => ({
     ...pageHead({
-      title: "How adders work (and why ripple-carry is slow)",
+      title: 'How adders work (and why ripple-carry is slow)',
       description:
-        "Adders are how digital circuits do addition. The naive design — chaining single-bit adders together — has a problem that gets worse as inputs widen. This is a concept-level walkthrough of why, with live editable circuits.",
-      path: "/learn/adders",
+        'Adders are how digital circuits do addition. The naive design — chaining single-bit adders together — has a problem that gets worse as inputs widen. This is a concept-level walkthrough of why, with live editable circuits.',
+      path: '/learn/adders',
     }),
     scripts: [
       breadcrumbLd([
-        { name: "Home", path: "/" },
-        { name: "Learn", path: "/learn" },
-        { name: "Adders", path: "/learn/adders" },
+        { name: 'Home', path: '/' },
+        { name: 'Learn', path: '/learn' },
+        { name: 'Adders', path: '/learn/adders' },
       ]),
     ],
   }),

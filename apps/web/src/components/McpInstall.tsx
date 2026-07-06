@@ -135,9 +135,7 @@ export function McpInstall() {
             {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
           </button>
         </div>
-        {active.note && (
-          <p className="mt-2 text-xs text-muted-foreground">{active.note}</p>
-        )}
+        {active.note && <p className="mt-2 text-xs text-muted-foreground">{active.note}</p>}
       </div>
     </div>
   );

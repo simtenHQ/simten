@@ -30,9 +30,7 @@ describe('CircuitStore', () => {
         { name: 'a', portType: bitType() },
         { name: 'b', portType: bitType() },
       ],
-      outputs: [
-        { name: 'out', portType: bitType() },
-      ],
+      outputs: [{ name: 'out', portType: bitType() }],
       clocks: [],
       state: [],
       nodes: [],
@@ -45,9 +43,7 @@ describe('CircuitStore', () => {
       id: 'primitive_led',
       name: 'Led',
       parameters: [],
-      inputs: [
-        { name: 'in', portType: bitType() },
-      ],
+      inputs: [{ name: 'in', portType: bitType() }],
       outputs: [],
       clocks: [],
       state: [],
@@ -215,7 +211,7 @@ describe('CircuitStore', () => {
 
       const connectionId = store.addConnection(
         { nodeId: andNodeId, portName: 'out' },
-        { nodeId: ledNodeId, portName: 'in' }
+        { nodeId: ledNodeId, portName: 'in' },
       );
 
       expect(connectionId).toBeTruthy();
@@ -233,12 +229,12 @@ describe('CircuitStore', () => {
 
       const conn1Id = store.addConnection(
         { nodeId: andNodeId, portName: 'out' },
-        { nodeId: ledNodeId, portName: 'in' }
+        { nodeId: ledNodeId, portName: 'in' },
       );
 
       const conn2Id = store.addConnection(
         { nodeId: andNodeId, portName: 'out' },
-        { nodeId: ledNodeId, portName: 'in' }
+        { nodeId: ledNodeId, portName: 'in' },
       );
 
       // Should return existing connection ID
@@ -254,12 +250,12 @@ describe('CircuitStore', () => {
 
       const conn1Id = store.addConnection(
         { nodeId: andNodeId, portName: 'out' },
-        { nodeId: ledNodeId, portName: 'in' }
+        { nodeId: ledNodeId, portName: 'in' },
       );
 
       const conn2Id = store.addConnection(
         { nodeId: and2NodeId, portName: 'out' },
-        { nodeId: ledNodeId, portName: 'in' }
+        { nodeId: ledNodeId, portName: 'in' },
       );
 
       expect(conn1Id).toBeTruthy();
@@ -274,7 +270,7 @@ describe('CircuitStore', () => {
 
       const connectionId = store.addConnection(
         { nodeId: andNodeId, portName: 'out' },
-        { nodeId: ledNodeId, portName: 'in' }
+        { nodeId: ledNodeId, portName: 'in' },
       );
 
       expect(store.getConnection(connectionId!)).toBeDefined();
@@ -288,7 +284,7 @@ describe('CircuitStore', () => {
 
       const connectionId = store.addConnection(
         { nodeId: andNodeId, portName: 'out' },
-        { nodeId: ledNodeId, portName: 'in' }
+        { nodeId: ledNodeId, portName: 'in' },
       );
 
       expect(store.getConnection(connectionId!)).toBeDefined();
@@ -304,7 +300,7 @@ describe('CircuitStore', () => {
 
       store.addConnection(
         { nodeId: andNodeId, portName: 'out' },
-        { nodeId: ledNodeId, portName: 'in' }
+        { nodeId: ledNodeId, portName: 'in' },
       );
 
       const andConnections = store.getNodeConnections(andNodeId);
@@ -320,7 +316,7 @@ describe('CircuitStore', () => {
       // Try to connect to non-existent port
       const connectionId = store.addConnection(
         { nodeId: andNodeId, portName: 'invalid_port' },
-        { nodeId: ledNodeId, portName: 'in' }
+        { nodeId: ledNodeId, portName: 'in' },
       );
 
       expect(connectionId).toBeNull();
@@ -336,9 +332,7 @@ describe('CircuitStore', () => {
         name: 'BusSource',
         parameters: [],
         inputs: [],
-        outputs: [
-          { name: 'out', portType: busType(8) },
-        ],
+        outputs: [{ name: 'out', portType: busType(8) }],
         clocks: [],
         state: [],
         nodes: [],
@@ -351,7 +345,7 @@ describe('CircuitStore', () => {
       // Try to connect bus to bit port (should fail)
       const connectionId = store.addConnection(
         { nodeId: busNodeId, portName: 'out' },
-        { nodeId: ledNodeId, portName: 'in' }
+        { nodeId: ledNodeId, portName: 'in' },
       );
 
       expect(connectionId).toBeNull();

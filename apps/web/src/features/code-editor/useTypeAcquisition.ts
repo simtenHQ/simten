@@ -77,8 +77,12 @@ export function useTypeAcquisition(code: string, monaco: Monaco | null): void {
     if (!monaco) return;
     if (timer.current) clearTimeout(timer.current);
     timer.current = setTimeout(() => {
-      getAta(monaco).then(ata => ata(code)).catch(() => {});
+      getAta(monaco)
+        .then((ata) => ata(code))
+        .catch(() => {});
     }, 500);
-    return () => { if (timer.current) clearTimeout(timer.current); };
+    return () => {
+      if (timer.current) clearTimeout(timer.current);
+    };
   }, [code, monaco]);
 }

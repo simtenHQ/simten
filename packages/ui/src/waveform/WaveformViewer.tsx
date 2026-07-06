@@ -1,4 +1,12 @@
-import { useMemo, useRef, useEffect, useCallback, useState, type CSSProperties, type ChangeEvent } from 'react';
+import {
+  useMemo,
+  useRef,
+  useEffect,
+  useCallback,
+  useState,
+  type CSSProperties,
+  type ChangeEvent,
+} from 'react';
 
 // ============================================================================
 // VCD Parser — scope-aware
@@ -78,7 +86,11 @@ export function parseVCD(vcd: string): ParsedVCD {
       continue;
     }
 
-    if ((line.startsWith('0') || line.startsWith('1')) && line.length >= 2 && !line.startsWith('$')) {
+    if (
+      (line.startsWith('0') || line.startsWith('1')) &&
+      line.length >= 2 &&
+      !line.startsWith('$')
+    ) {
       const val = line[0] === '1';
       const id = line.slice(1);
       if (idMeta[id]) rawChanges.push({ tick: currentTick, id, value: val });
@@ -175,7 +187,15 @@ function isBitSignal(values: (number | boolean)[]): boolean {
   return values.every((v) => v === 0 || v === 1 || v === true || v === false);
 }
 
-function BitWaveform({ values, color, width }: { values: (number | boolean)[]; color: string; width: number }) {
+function BitWaveform({
+  values,
+  color,
+  width,
+}: {
+  values: (number | boolean)[];
+  color: string;
+  width: number;
+}) {
   const h = ROW_HEIGHT;
   const high = 5;
   const low = h - 5;
@@ -203,7 +223,15 @@ function BitWaveform({ values, color, width }: { values: (number | boolean)[]; c
   );
 }
 
-function BusWaveform({ values, color, width }: { values: (number | boolean)[]; color: string; width: number }) {
+function BusWaveform({
+  values,
+  color,
+  width,
+}: {
+  values: (number | boolean)[];
+  color: string;
+  width: number;
+}) {
   const h = ROW_HEIGHT;
   const pad = 4;
   const top = pad;
@@ -217,7 +245,8 @@ function BusWaveform({ values, color, width }: { values: (number | boolean)[]; c
   function pushRun(start: number, end: number, val: number | boolean) {
     const x1 = start * CYCLE_WIDTH;
     const x2 = end * CYCLE_WIDTH;
-    const hex = typeof val === 'number' ? `0x${(val >>> 0).toString(16).toUpperCase()}` : String(val);
+    const hex =
+      typeof val === 'number' ? `0x${(val >>> 0).toString(16).toUpperCase()}` : String(val);
     const runWidth = x2 - x1;
     const points = [
       `${x1 + Math.min(slant, runWidth / 2)},${top}`,
@@ -229,9 +258,24 @@ function BusWaveform({ values, color, width }: { values: (number | boolean)[]; c
     ].join(' ');
     rects.push(
       <g key={start}>
-        <polygon points={points} fill={color} fillOpacity={0.08} stroke={color} strokeWidth={1.5} strokeOpacity={0.6} />
+        <polygon
+          points={points}
+          fill={color}
+          fillOpacity={0.08}
+          stroke={color}
+          strokeWidth={1.5}
+          strokeOpacity={0.6}
+        />
         {runWidth >= 24 && (
-          <text x={(x1 + x2) / 2} y={h / 2} textAnchor="middle" dominantBaseline="central" fill={color} fontSize={10} fontFamily="monospace">
+          <text
+            x={(x1 + x2) / 2}
+            y={h / 2}
+            textAnchor="middle"
+            dominantBaseline="central"
+            fill={color}
+            fontSize={10}
+            fontFamily="monospace"
+          >
             {hex}
           </text>
         )}
@@ -264,7 +308,13 @@ function BusWaveform({ values, color, width }: { values: (number | boolean)[]; c
  * Group signals into scope sections.
  * Root-level signals come first (no heading), then each sub-scope gets a header.
  */
-function groupByScope(signals: VCDSignal[], _circuit: string): Array<{ type: 'root'; signals: VCDSignal[] } | { type: 'scope'; label: string; depth: number; signals: VCDSignal[] }> {
+function groupByScope(
+  signals: VCDSignal[],
+  _circuit: string,
+): Array<
+  | { type: 'root'; signals: VCDSignal[] }
+  | { type: 'scope'; label: string; depth: number; signals: VCDSignal[] }
+> {
   const rootSignals = signals.filter((s) => s.scope.length <= 1);
 
   // Group by immediate child scope under root
@@ -281,7 +331,12 @@ function groupByScope(signals: VCDSignal[], _circuit: string): Array<{ type: 'ro
 
   for (const [scopePath, sigs] of scopeMap) {
     const parts = scopePath.split('/');
-    result.push({ type: 'scope', label: parts.join(' › '), depth: parts.length - 1, signals: sigs });
+    result.push({
+      type: 'scope',
+      label: parts.join(' › '),
+      depth: parts.length - 1,
+      signals: sigs,
+    });
   }
 
   return result;
@@ -300,7 +355,14 @@ export interface WaveformViewerProps {
   onClose?: () => void;
 }
 
-export function WaveformViewer({ vcd, inputs: inputOverride, circuit: circuitOverride, steadyStateAt, onLoadVCD, onClose }: WaveformViewerProps) {
+export function WaveformViewer({
+  vcd,
+  inputs: inputOverride,
+  circuit: circuitOverride,
+  steadyStateAt,
+  onLoadVCD,
+  onClose,
+}: WaveformViewerProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [collapsedScopes, setCollapsedScopes] = useState<Set<string>>(new Set());
@@ -314,17 +376,20 @@ export function WaveformViewer({ vcd, inputs: inputOverride, circuit: circuitOve
     setCollapsedScopes(new Set());
   }, [vcd]);
 
-  const handleFileChange = useCallback((e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      const text = ev.target?.result as string;
-      if (text) onLoadVCD?.(text);
-    };
-    reader.readAsText(file);
-    e.target.value = '';
-  }, [onLoadVCD]);
+  const handleFileChange = useCallback(
+    (e: ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const text = ev.target?.result as string;
+        if (text) onLoadVCD?.(text);
+      };
+      reader.readAsText(file);
+      e.target.value = '';
+    },
+    [onLoadVCD],
+  );
 
   const handleDownload = useCallback(() => {
     const blob = new Blob([vcd], { type: 'text/plain' });
@@ -350,7 +415,9 @@ export function WaveformViewer({ vcd, inputs: inputOverride, circuit: circuitOve
   const waveWidth = Math.max(parsed.ticks * CYCLE_WIDTH, 100);
 
   // Collect ordered rows for the scrollable waveform column
-  type Row = { type: 'signal'; signal: VCDSignal; color: string } | { type: 'scope-header'; label: string; height: number };
+  type Row =
+    | { type: 'signal'; signal: VCDSignal; color: string }
+    | { type: 'scope-header'; label: string; height: number };
   const rows: Row[] = [];
   const labelRows: Row[] = [];
 
@@ -427,9 +494,20 @@ export function WaveformViewer({ vcd, inputs: inputOverride, circuit: circuitOve
         <button className="wf-btn" onClick={() => fileInputRef.current?.click()}>
           Load VCD
         </button>
-        <input ref={fileInputRef} type="file" accept=".vcd" style={{ display: 'none' }} onChange={handleFileChange} />
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".vcd"
+          style={{ display: 'none' }}
+          onChange={handleFileChange}
+        />
         {onClose && (
-          <button className="wf-btn" onClick={onClose} title="Close waveform panel" aria-label="Close waveform panel">
+          <button
+            className="wf-btn"
+            onClick={onClose}
+            title="Close waveform panel"
+            aria-label="Close waveform panel"
+          >
             ×
           </button>
         )}
@@ -437,7 +515,13 @@ export function WaveformViewer({ vcd, inputs: inputOverride, circuit: circuitOve
 
       <div style={{ display: 'flex', flex: 1, minHeight: 0, overflowY: 'auto' }}>
         {/* Fixed label column */}
-        <div style={{ width: LABEL_WIDTH, flexShrink: 0, borderRight: '1px solid var(--border, #1e293b)' }}>
+        <div
+          style={{
+            width: LABEL_WIDTH,
+            flexShrink: 0,
+            borderRight: '1px solid var(--border, #1e293b)',
+          }}
+        >
           <div style={{ height: HEADER_HEIGHT }} />
           {labelRows.map((row, i) => {
             if (row.type === 'scope-header') {
@@ -482,21 +566,47 @@ export function WaveformViewer({ vcd, inputs: inputOverride, circuit: circuitOve
         </div>
 
         {/* Scrollable waveform area */}
-        <div ref={scrollRef} className="wf-scroll" style={{ overflowX: 'auto', overflowY: 'hidden', flex: 1 }}>
+        <div
+          ref={scrollRef}
+          className="wf-scroll"
+          style={{ overflowX: 'auto', overflowY: 'hidden', flex: 1 }}
+        >
           {/* Tick header */}
           <svg width={waveWidth} height={HEADER_HEIGHT} style={{ display: 'block' }}>
             {Array.from({ length: parsed.ticks }, (_, i) => (
               <g key={i}>
-                <line x1={i * CYCLE_WIDTH} y1={0} x2={i * CYCLE_WIDTH} y2={HEADER_HEIGHT} stroke="var(--border, #1e293b)" strokeWidth={1} />
+                <line
+                  x1={i * CYCLE_WIDTH}
+                  y1={0}
+                  x2={i * CYCLE_WIDTH}
+                  y2={HEADER_HEIGHT}
+                  stroke="var(--border, #1e293b)"
+                  strokeWidth={1}
+                />
                 {i % 2 === 0 && (
-                  <text x={i * CYCLE_WIDTH + CYCLE_WIDTH / 2} y={14} textAnchor="middle" fill="var(--muted-foreground, #475569)" fontSize={9} fontFamily="monospace">
+                  <text
+                    x={i * CYCLE_WIDTH + CYCLE_WIDTH / 2}
+                    y={14}
+                    textAnchor="middle"
+                    fill="var(--muted-foreground, #475569)"
+                    fontSize={9}
+                    fontFamily="monospace"
+                  >
                     {i}
                   </text>
                 )}
               </g>
             ))}
             {steadyStateAt != null && (
-              <line x1={steadyStateAt * CYCLE_WIDTH} y1={0} x2={steadyStateAt * CYCLE_WIDTH} y2={HEADER_HEIGHT} stroke="#34d399" strokeWidth={2} strokeDasharray="3,3" />
+              <line
+                x1={steadyStateAt * CYCLE_WIDTH}
+                y1={0}
+                x2={steadyStateAt * CYCLE_WIDTH}
+                y2={HEADER_HEIGHT}
+                stroke="#34d399"
+                strokeWidth={2}
+                strokeDasharray="3,3"
+              />
             )}
           </svg>
 
@@ -506,7 +616,12 @@ export function WaveformViewer({ vcd, inputs: inputOverride, circuit: circuitOve
               return (
                 <div
                   key={`wsh-${i}`}
-                  style={{ height: SCOPE_ROW_HEIGHT, background: 'var(--muted, #0d1929)', borderBottom: '1px solid var(--border, #1e293b)', borderTop: '1px solid var(--border, #1e293b)' }}
+                  style={{
+                    height: SCOPE_ROW_HEIGHT,
+                    background: 'var(--muted, #0d1929)',
+                    borderBottom: '1px solid var(--border, #1e293b)',
+                    borderTop: '1px solid var(--border, #1e293b)',
+                  }}
                 />
               );
             }
@@ -514,17 +629,46 @@ export function WaveformViewer({ vcd, inputs: inputOverride, circuit: circuitOve
             const { signal, color } = row;
             const isBit = isBitSignal(signal.values);
             return (
-              <div key={`wav-${i}`} style={{ position: 'relative', height: ROW_HEIGHT, borderBottom: '1px solid var(--border, #0d1929)' }}>
-                {isBit
-                  ? <BitWaveform values={signal.values} color={color} width={waveWidth} />
-                  : <BusWaveform values={signal.values} color={color} width={waveWidth} />}
+              <div
+                key={`wav-${i}`}
+                style={{
+                  position: 'relative',
+                  height: ROW_HEIGHT,
+                  borderBottom: '1px solid var(--border, #0d1929)',
+                }}
+              >
+                {isBit ? (
+                  <BitWaveform values={signal.values} color={color} width={waveWidth} />
+                ) : (
+                  <BusWaveform values={signal.values} color={color} width={waveWidth} />
+                )}
                 {/* Grid lines */}
-                <svg width={waveWidth} height={ROW_HEIGHT} style={{ position: 'absolute', top: 0, left: 0, pointerEvents: 'none' }}>
+                <svg
+                  width={waveWidth}
+                  height={ROW_HEIGHT}
+                  style={{ position: 'absolute', top: 0, left: 0, pointerEvents: 'none' }}
+                >
                   {Array.from({ length: parsed.ticks }, (_, t) => (
-                    <line key={t} x1={t * CYCLE_WIDTH} y1={0} x2={t * CYCLE_WIDTH} y2={ROW_HEIGHT} stroke="var(--border, #1e293b)" strokeWidth={1} />
+                    <line
+                      key={t}
+                      x1={t * CYCLE_WIDTH}
+                      y1={0}
+                      x2={t * CYCLE_WIDTH}
+                      y2={ROW_HEIGHT}
+                      stroke="var(--border, #1e293b)"
+                      strokeWidth={1}
+                    />
                   ))}
                   {steadyStateAt != null && (
-                    <line x1={steadyStateAt * CYCLE_WIDTH} y1={0} x2={steadyStateAt * CYCLE_WIDTH} y2={ROW_HEIGHT} stroke="#34d399" strokeWidth={2} strokeDasharray="3,3" />
+                    <line
+                      x1={steadyStateAt * CYCLE_WIDTH}
+                      y1={0}
+                      x2={steadyStateAt * CYCLE_WIDTH}
+                      y2={ROW_HEIGHT}
+                      stroke="#34d399"
+                      strokeWidth={2}
+                      strokeDasharray="3,3"
+                    />
                   )}
                 </svg>
               </div>

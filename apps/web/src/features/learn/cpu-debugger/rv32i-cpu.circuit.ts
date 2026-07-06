@@ -1,10 +1,13 @@
-import { circuit, bit, bus } from "@simten/core/circuit";
+import { circuit, bit, bus } from '@simten/core/circuit';
 import {
   Constant,
   RV32I_Core,
-  RV32I_InstrMem, RV32I_DataMem,
-  MemBusMux, UART_TX, NIC_FIFO,
-} from "@simten/core/std";
+  RV32I_InstrMem,
+  RV32I_DataMem,
+  MemBusMux,
+  UART_TX,
+  NIC_FIFO,
+} from '@simten/core/std';
 
 // Debugger board: the canonical pipelined CPU (`RV32I_Core`) plus the memory and
 // memory-mapped peripherals the debugger UI needs. `debug: true` exposes:
@@ -17,21 +20,33 @@ import {
 export const RV32I_CPU = circuit('RV32I_CPU', {
   inputs: { net_rx_data: bus(32), net_rx_valid: bit, net_rx_frame: bit, debug_addr: bus(5) },
   outputs: {
-    net_tx_data: bus(32), net_tx_valid: bit, net_tx_frame: bit, pc_out: bus(32), debug_value: bus(32),
-    if_pc: bus(32), id_pc: bus(32), ex_pc: bus(32), mem_pc4: bus(32), wb_pc4: bus(32),
+    net_tx_data: bus(32),
+    net_tx_valid: bit,
+    net_tx_frame: bit,
+    pc_out: bus(32),
+    debug_value: bus(32),
+    if_pc: bus(32),
+    id_pc: bus(32),
+    ex_pc: bus(32),
+    mem_pc4: bus(32),
+    wb_pc4: bus(32),
   },
   nodes: {
     cpu: RV32I_Core({ debug: true }),
-    imem: RV32I_InstrMem,        // instruction fetch (hook loads the program here via setNodeValue("imem", …))
+    imem: RV32I_InstrMem, // instruction fetch (hook loads the program here via setNodeValue("imem", …))
     bus_mux: MemBusMux,
     dmem: RV32I_DataMem,
     uart: UART_TX,
     nic: NIC_FIFO,
-    imem_data: RV32I_InstrMem,   // data-side reads of the instruction region
+    imem_data: RV32I_InstrMem, // data-side reads of the instruction region
     zero32: Constant({ value: 0, width: 32 }),
     zero1: Constant({ value: 0, width: 1 }),
   },
-  connect: ({ inputs, outputs, nodes: { cpu, imem, bus_mux, dmem, uart, nic, imem_data, zero32, zero1 } }) => [
+  connect: ({
+    inputs,
+    outputs,
+    nodes: { cpu, imem, bus_mux, dmem, uart, nic, imem_data, zero32, zero1 },
+  }) => [
     // instruction fetch
     cpu.instr_addr.to(imem.addr),
     imem.instruction.to(cpu.instruction),
@@ -86,4 +101,4 @@ export const RV32I_CPU = circuit('RV32I_CPU', {
     cpu.mem_pc4.to(outputs.mem_pc4),
     cpu.wb_pc4.to(outputs.wb_pc4),
   ],
-})
+});

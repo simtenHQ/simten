@@ -30,7 +30,9 @@ export async function loadProjects(): Promise<Record<string, Project>> {
     try {
       const mod = (await import(`./${entry.name}/index.js`)) as { project?: Project };
       if (!mod.project) {
-        console.error(`[projects] ${entry.name}/index.ts missing named export \`project\` — skipping`);
+        console.error(
+          `[projects] ${entry.name}/index.ts missing named export \`project\` — skipping`,
+        );
         continue;
       }
       if (!mod.project.name) {

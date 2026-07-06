@@ -22,7 +22,7 @@ const Passthrough = circuit('Passthrough', {
   nodes: { d: Not },
   connect: ({ inputs, outputs, nodes: { d } }) => [
     inputs.x.to(outputs.y), // direct passthrough (the suspect)
-    inputs.x.to(d.in),      // dummy gate, output unused
+    inputs.x.to(d.in), // dummy gate, output unused
   ],
 });
 

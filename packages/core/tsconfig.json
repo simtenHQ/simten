@@ -17,14 +17,6 @@
     "resolveJsonModule": true,
     "stripInternal": true
   },
-  "include": [
-    "src/**/*.ts"
-  ],
-  "exclude": [
-    "**/*.test.ts",
-    "**/__fixtures__/**",
-    "**/__tests__/**",
-    "dist",
-    "node_modules"
-  ]
+  "include": ["src/**/*.ts"],
+  "exclude": ["**/*.test.ts", "**/__fixtures__/**", "**/__tests__/**", "dist", "node_modules"]
 }

@@ -71,12 +71,42 @@ function makeHalfAdderDef(): Circuit {
       },
     ],
     connections: [
-      { id: 'c1', source: { nodeId: '', portName: 'a' }, target: { nodeId: 'xor1', portName: 'a' }, portType: { kind: 'bit' } },
-      { id: 'c2', source: { nodeId: '', portName: 'b' }, target: { nodeId: 'xor1', portName: 'b' }, portType: { kind: 'bit' } },
-      { id: 'c3', source: { nodeId: '', portName: 'a' }, target: { nodeId: 'and1', portName: 'a' }, portType: { kind: 'bit' } },
-      { id: 'c4', source: { nodeId: '', portName: 'b' }, target: { nodeId: 'and1', portName: 'b' }, portType: { kind: 'bit' } },
-      { id: 'c5', source: { nodeId: 'xor1', portName: 'out' }, target: { nodeId: '', portName: 'sum' }, portType: { kind: 'bit' } },
-      { id: 'c6', source: { nodeId: 'and1', portName: 'out' }, target: { nodeId: '', portName: 'carry' }, portType: { kind: 'bit' } },
+      {
+        id: 'c1',
+        source: { nodeId: '', portName: 'a' },
+        target: { nodeId: 'xor1', portName: 'a' },
+        portType: { kind: 'bit' },
+      },
+      {
+        id: 'c2',
+        source: { nodeId: '', portName: 'b' },
+        target: { nodeId: 'xor1', portName: 'b' },
+        portType: { kind: 'bit' },
+      },
+      {
+        id: 'c3',
+        source: { nodeId: '', portName: 'a' },
+        target: { nodeId: 'and1', portName: 'a' },
+        portType: { kind: 'bit' },
+      },
+      {
+        id: 'c4',
+        source: { nodeId: '', portName: 'b' },
+        target: { nodeId: 'and1', portName: 'b' },
+        portType: { kind: 'bit' },
+      },
+      {
+        id: 'c5',
+        source: { nodeId: 'xor1', portName: 'out' },
+        target: { nodeId: '', portName: 'sum' },
+        portType: { kind: 'bit' },
+      },
+      {
+        id: 'c6',
+        source: { nodeId: 'and1', portName: 'out' },
+        target: { nodeId: '', portName: 'carry' },
+        portType: { kind: 'bit' },
+      },
     ],
     implementation: { kind: 'composite' },
   };
@@ -144,9 +174,24 @@ function makeFullAdder(): Circuit {
       },
     ],
     connections: [
-      { id: 'fc1', source: { nodeId: 'sw_a', portName: 'out' }, target: { nodeId: 'ha1', portName: 'a' }, portType: { kind: 'bit' } },
-      { id: 'fc2', source: { nodeId: 'sw_b', portName: 'out' }, target: { nodeId: 'ha1', portName: 'b' }, portType: { kind: 'bit' } },
-      { id: 'fc3', source: { nodeId: 'ha1', portName: 'sum' }, target: { nodeId: 'led_sum', portName: 'in' }, portType: { kind: 'bit' } },
+      {
+        id: 'fc1',
+        source: { nodeId: 'sw_a', portName: 'out' },
+        target: { nodeId: 'ha1', portName: 'a' },
+        portType: { kind: 'bit' },
+      },
+      {
+        id: 'fc2',
+        source: { nodeId: 'sw_b', portName: 'out' },
+        target: { nodeId: 'ha1', portName: 'b' },
+        portType: { kind: 'bit' },
+      },
+      {
+        id: 'fc3',
+        source: { nodeId: 'ha1', portName: 'sum' },
+        target: { nodeId: 'led_sum', portName: 'in' },
+        portType: { kind: 'bit' },
+      },
     ],
     implementation: { kind: 'composite' },
   };
@@ -203,12 +248,8 @@ describe('CircuitPreviewStore drill-down navigation', () => {
       expect(circuit).not.toBeNull();
 
       // Should have boundary nodes + internal nodes
-      const boundaryInputs = circuit!.nodes.filter(
-        (n) => n.id.startsWith(BOUNDARY_IN_PREFIX),
-      );
-      const boundaryOutputs = circuit!.nodes.filter(
-        (n) => n.id.startsWith(BOUNDARY_OUT_PREFIX),
-      );
+      const boundaryInputs = circuit!.nodes.filter((n) => n.id.startsWith(BOUNDARY_IN_PREFIX));
+      const boundaryOutputs = circuit!.nodes.filter((n) => n.id.startsWith(BOUNDARY_OUT_PREFIX));
 
       expect(boundaryInputs).toHaveLength(2); // a, b
       expect(boundaryOutputs).toHaveLength(2); // sum, carry

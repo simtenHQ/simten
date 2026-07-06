@@ -42,9 +42,7 @@ export function SignalOutputPanel({ portValues }: SignalOutputPanelProps) {
             key={output.name}
             className="flex items-center gap-1.5 rounded bg-gray-100 dark:bg-[#2a2a2e] px-2 py-1"
           >
-            <span className="text-xs text-gray-500 dark:text-gray-400">
-              {output.name}:
-            </span>
+            <span className="text-xs text-gray-500 dark:text-gray-400">{output.name}:</span>
             <span className="font-mono text-xs font-semibold text-emerald-600 dark:text-emerald-400">
               {formatValue(value)}
             </span>

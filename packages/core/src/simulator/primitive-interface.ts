@@ -126,7 +126,7 @@ export interface PrimitiveEvaluator {
   evaluate(
     inputs: Map<string, InputValue>,
     currentState?: PrimitiveState,
-    context?: EvaluationContext
+    context?: EvaluationContext,
   ): Map<string, BitValue | BusValue>;
 
   /**
@@ -152,7 +152,7 @@ export interface PrimitiveEvaluator {
   updateState?(
     inputs: Map<string, InputValue>,
     currentState: PrimitiveState,
-    clockEdges: ClockEdges
+    clockEdges: ClockEdges,
   ): PrimitiveState;
 
   /**
@@ -181,8 +181,8 @@ export function createCombinationalEvaluator(
   evaluateFn: (
     inputs: Map<string, InputValue>,
     currentState?: PrimitiveState,
-    context?: EvaluationContext
-  ) => Map<string, BitValue | BusValue>
+    context?: EvaluationContext,
+  ) => Map<string, BitValue | BusValue>,
 ): PrimitiveEvaluator {
   return {
     evaluate: evaluateFn,
@@ -203,13 +203,13 @@ export function createCombinationalEvaluator(
 export function createSequentialEvaluator(
   evaluateFn: (
     inputs: Map<string, InputValue>,
-    currentState?: PrimitiveState
+    currentState?: PrimitiveState,
   ) => Map<string, BitValue | BusValue>,
   updateStateFn: (
     inputs: Map<string, InputValue>,
     currentState: PrimitiveState,
-    clockEdges: ClockEdges
-  ) => PrimitiveState
+    clockEdges: ClockEdges,
+  ) => PrimitiveState,
 ): PrimitiveEvaluator {
   return {
     evaluate: evaluateFn,

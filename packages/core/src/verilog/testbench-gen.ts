@@ -145,7 +145,7 @@ export function generateTestbench(
 
     // Set inputs
     for (const [name, value] of Object.entries(tv.inputs)) {
-      const inputDef = circuit.inputs.find(i => i.name === name);
+      const inputDef = circuit.inputs.find((i) => i.name === name);
       const w = inputDef ? portWidth(inputDef.portType) : 1;
       lines.push(`    ${name} = ${formatValue(value, w)};`);
     }

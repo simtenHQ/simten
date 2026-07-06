@@ -92,7 +92,9 @@ getOrCreateServer()
     process.stderr.write(`[simten-mcp] WS server started on port ${s.port}\n`);
   })
   .catch((err: unknown) => {
-    process.stderr.write(`[simten-mcp] WS server failed to start: ${err instanceof Error ? err.message : String(err)}\n`);
+    process.stderr.write(
+      `[simten-mcp] WS server failed to start: ${err instanceof Error ? err.message : String(err)}\n`,
+    );
   });
 
 // --- Lifecycle: exit when the parent (Claude Code) goes away ----------------

@@ -1,4 +1,4 @@
-import { createContext, useContext, type ReactNode } from "react";
+import { createContext, useContext, type ReactNode } from 'react';
 
 /**
  * Function that persists a circuit source to KV and returns a content-addressed
@@ -19,11 +19,7 @@ export function ShareCircuitProvider({
   value: ShareCircuitFn;
   children: ReactNode;
 }) {
-  return (
-    <ShareCircuitContext.Provider value={value}>
-      {children}
-    </ShareCircuitContext.Provider>
-  );
+  return <ShareCircuitContext.Provider value={value}>{children}</ShareCircuitContext.Provider>;
 }
 
 export function useShareCircuit(): ShareCircuitFn | null {

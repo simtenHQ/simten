@@ -170,7 +170,12 @@ export function generateEvalWrapper(
     // State overwrites everything (current stored value)
     if (ctx.state) {
       const nodeState = ctx.state.currentState[ctx.nodeIndex];
-      if (nodeState != null && typeof nodeState === 'object' && !Array.isArray(nodeState) && !(nodeState instanceof Map)) {
+      if (
+        nodeState != null &&
+        typeof nodeState === 'object' &&
+        !Array.isArray(nodeState) &&
+        !(nodeState instanceof Map)
+      ) {
         const stateObj = nodeState as Record<string, unknown>;
         for (const key of stateKeys!) {
           const val = stateObj[key];
@@ -209,12 +214,19 @@ export function ensureEvaluatorRegistered(name: string): number {
 
   const entry = getCircuitEval(name);
   if (!entry) {
-    console.warn(`[eval-bridge] No eval-registry entry for '${name}' — getAllCircuitEvals:`, [...(getAllCircuitEvals() as Map<string, any>).keys()]);
+    console.warn(`[eval-bridge] No eval-registry entry for '${name}' — getAllCircuitEvals:`, [
+      ...(getAllCircuitEvals() as Map<string, any>).keys(),
+    ]);
     return idx;
   }
 
   while (EVALUATORS.length <= idx) EVALUATORS.push(null);
-  EVALUATORS[idx] = generateEvalWrapper(entry.inputNames, entry.outputNames, entry.evalFn, entry.stateKeys);
+  EVALUATORS[idx] = generateEvalWrapper(
+    entry.inputNames,
+    entry.outputNames,
+    entry.evalFn,
+    entry.stateKeys,
+  );
 
   return idx;
 }

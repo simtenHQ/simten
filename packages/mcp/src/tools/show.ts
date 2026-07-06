@@ -50,17 +50,16 @@ export function registerShowTools(server: McpServer): void {
   // the preview (close:true) and discovering connected tabs (no source/filePath).
   server.tool(
     'show_circuit',
-    'Paint or update the live circuit canvas in the browser — the only tool that draws. This is the ONLY thing that updates the canvas: editing the .circuit.ts file does NOT auto-update the browser, so re-call show_circuit (typically after a verify tier-pass) to repaint. Call with NO source/filePath to list connected browser tabs (discovery). Pass close:true to close the preview and stop the server. Canvas policy: don\'t paint during tight iteration — paint at a verify tier-pass or for a specific result worth showing.',
+    "Paint or update the live circuit canvas in the browser — the only tool that draws. This is the ONLY thing that updates the canvas: editing the .circuit.ts file does NOT auto-update the browser, so re-call show_circuit (typically after a verify tier-pass) to repaint. Call with NO source/filePath to list connected browser tabs (discovery). Pass close:true to close the preview and stop the server. Canvas policy: don't paint during tight iteration — paint at a verify tier-pass or for a specific result worth showing.",
     {
       source: z.string().optional().describe('TypeScript circuit code as a string'),
       filePath: z
         .string()
         .optional()
-        .describe('Path to a .circuit.ts file (read once; not watched — re-call show_circuit to repaint)'),
-      close: z
-        .boolean()
-        .optional()
-        .describe('Close the live preview and stop the server.'),
+        .describe(
+          'Path to a .circuit.ts file (read once; not watched — re-call show_circuit to repaint)',
+        ),
+      close: z.boolean().optional().describe('Close the live preview and stop the server.'),
       inputs: z
         .record(z.union([z.number(), z.boolean()]))
         .optional()
@@ -69,12 +68,14 @@ export function registerShowTools(server: McpServer): void {
         .record(z.record(z.number()))
         .optional()
         .describe(
-          'Pre-load memory into sequential nodes. Keys are glob patterns matched against node IDs (e.g. "imem" matches any node containing "imem", "cpu0*imem" targets cpu0\'s imem only). Values are { address: data } maps. Architecture-agnostic.'
+          'Pre-load memory into sequential nodes. Keys are glob patterns matched against node IDs (e.g. "imem" matches any node containing "imem", "cpu0*imem" targets cpu0\'s imem only). Values are { address: data } maps. Architecture-agnostic.',
         ),
       session: z
         .string()
         .optional()
-        .describe('Target a specific browser tab by session ID. If omitted, uses the most recently active tab or opens a new one.'),
+        .describe(
+          'Target a specific browser tab by session ID. If omitted, uses the most recently active tab or opens a new one.',
+        ),
     },
     async ({ source, filePath, close, inputs, memoryData, session }) => {
       // close:true — tear down the preview (absorbs the old hide_circuit tool)
@@ -93,19 +94,29 @@ export function registerShowTools(server: McpServer): void {
       if (!source && !filePath) {
         const preview = getPreviewServer();
         if (!preview) {
-          return { content: [{ type: 'text' as const, text: 'No studio server is running. Call show_circuit with a circuit to start one.' }] };
+          return {
+            content: [
+              {
+                type: 'text' as const,
+                text: 'No studio server is running. Call show_circuit with a circuit to start one.',
+              },
+            ],
+          };
         }
         // VIEWER-ONLY: report only a count. Session fields (id/page) are
         // browser-supplied and untrusted — never echo them into a tool result
         // (see the security note in ws-server.ts).
         const count = preview.sessions.size;
         return {
-          content: [{
-            type: 'text' as const,
-            text: count > 0
-              ? `${count} browser tab${count === 1 ? '' : 's'} connected.`
-              : 'No browser tabs are connected.',
-          }],
+          content: [
+            {
+              type: 'text' as const,
+              text:
+                count > 0
+                  ? `${count} browser tab${count === 1 ? '' : 's'} connected.`
+                  : 'No browser tabs are connected.',
+            },
+          ],
         };
       }
 
@@ -180,21 +191,36 @@ export function registerShowTools(server: McpServer): void {
         // NOT echo the browser's error string — it is untrusted. Report the
         // failure only (see the security note in ws-server.ts).
         return {
-          content: [{ type: 'text' as const, text: `Pushed to the browser, but it reported a render failure. Check the circuit compiles (try check_circuit), then call show_circuit again.` }],
+          content: [
+            {
+              type: 'text' as const,
+              text: `Pushed to the browser, but it reported a render failure. Check the circuit compiles (try check_circuit), then call show_circuit again.`,
+            },
+          ],
           isError: true,
         };
       }
       if (!render.ok && render.timedOut) {
         // Never heard back (slow or no browser) — not necessarily an error.
         return {
-          content: [{ type: 'text' as const, text: `Circuit pushed; render not yet confirmed (${render.error ?? 'timed out'}). The tab may still be loading — check the browser.${sessionNote}` }],
+          content: [
+            {
+              type: 'text' as const,
+              text: `Circuit pushed; render not yet confirmed (${render.error ?? 'timed out'}). The tab may still be loading — check the browser.${sessionNote}`,
+            },
+          ],
         };
       }
       return {
         // Name derived from the source the MCP pushed — NOT from the browser
         // (viewer-only: browser-reported names are untrusted).
-        content: [{ type: 'text' as const, text: `Circuit preview running. Rendered as "${circuitNameFromSource(read.source)}".${sessionNote}` }],
+        content: [
+          {
+            type: 'text' as const,
+            text: `Circuit preview running. Rendered as "${circuitNameFromSource(read.source)}".${sessionNote}`,
+          },
+        ],
       };
-    }
+    },
   );
 }

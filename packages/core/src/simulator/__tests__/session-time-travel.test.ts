@@ -42,8 +42,12 @@ function makeSession(built: BuiltCircuit<any, any>): SimulationSession {
   const lib: CircuitLibrary & { addCircuit(c: Circuit): void } = {
     resolveCircuit: (name) => circuitMap.get(name),
     getAllPrimitiveNames: () =>
-      [...circuitMap.entries()].filter(([, c]) => c.implementation.kind === 'primitive').map(([n]) => n),
-    addCircuit: (c) => { circuitMap.set(c.name, c); },
+      [...circuitMap.entries()]
+        .filter(([, c]) => c.implementation.kind === 'primitive')
+        .map(([n]) => n),
+    addCircuit: (c) => {
+      circuitMap.set(c.name, c);
+    },
   };
   lib.addCircuit(built.circuit);
   if (built._dependencies) for (const [, dep] of built._dependencies) lib.addCircuit(dep.circuit);
@@ -57,7 +61,10 @@ function ramFrame(session: SimulationSession): number[] {
   const seq = session.getState().sequentialState;
   let mem: Map<number, number> | null = null;
   for (const [, v] of seq?.currentState ?? []) {
-    if (v instanceof Map) { mem = v as Map<number, number>; break; }
+    if (v instanceof Map) {
+      mem = v as Map<number, number>;
+      break;
+    }
   }
   return Array.from({ length: 8 }, (_, i) => mem?.get(i) ?? 0);
 }

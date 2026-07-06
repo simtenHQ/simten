@@ -21,7 +21,10 @@ export function CircuitSelector() {
 
   return (
     <div className="flex items-center gap-4 px-4 py-2 border-b bg-gray-50 dark:bg-gray-900">
-      <label htmlFor="circuit-select" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+      <label
+        htmlFor="circuit-select"
+        className="text-sm font-medium text-gray-700 dark:text-gray-300"
+      >
         Circuit:
       </label>
       <select
@@ -35,7 +38,7 @@ export function CircuitSelector() {
           'border-gray-300 dark:border-gray-600',
           'text-gray-900 dark:text-gray-100',
           'focus:outline-none focus:ring-2 focus:ring-blue-500',
-          'disabled:opacity-50 disabled:cursor-not-allowed'
+          'disabled:opacity-50 disabled:cursor-not-allowed',
         )}
       >
         {!hasCircuits && <option value={-1}>No circuits compiled</option>}

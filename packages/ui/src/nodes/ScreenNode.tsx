@@ -1,4 +1,3 @@
-
 import { BaseNode } from './BaseNode';
 import type { NodeData } from './NodeData';
 
@@ -19,7 +18,11 @@ export function ScreenNode({ data, selected }: ScreenNodeProps) {
     <BaseNode
       selected={selected}
       inputPorts={data.inputNames.map((name, index) => ({ name, index, type: 'input' as const }))}
-      outputPorts={data.outputNames.map((name, index) => ({ name, index, type: 'output' as const }))}
+      outputPorts={data.outputNames.map((name, index) => ({
+        name,
+        index,
+        type: 'output' as const,
+      }))}
       className="min-w-[160px]"
       showPortLabels={data.showPortLabels}
       onPortClick={data.onPortClick}

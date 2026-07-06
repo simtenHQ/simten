@@ -1,11 +1,25 @@
-import { circuit } from "@simten/core/circuit";
+import { circuit } from '@simten/core/circuit';
 import {
-  Constant, HexDisplay, DualPortROM, RV32I_DataMem, MemBusMux, UART_TX,
+  Constant,
+  HexDisplay,
+  DualPortROM,
+  RV32I_DataMem,
+  MemBusMux,
+  UART_TX,
   RV32I_Core,
-} from "@simten/core/std";
+} from '@simten/core/std';
 
 export const RV32I_Board = circuit('RV32I_Board', {
-  nodes: { cpu: RV32I_Core(), rom: DualPortROM(), mem_bus: MemBusMux, dmem: RV32I_DataMem, uart: UART_TX, zero32: Constant({ value: 0, width: 32 }), zero1: Constant({ value: 0, width: 1 }), pc_display: HexDisplay },
+  nodes: {
+    cpu: RV32I_Core(),
+    rom: DualPortROM(),
+    mem_bus: MemBusMux,
+    dmem: RV32I_DataMem,
+    uart: UART_TX,
+    zero32: Constant({ value: 0, width: 32 }),
+    zero1: Constant({ value: 0, width: 1 }),
+    pc_display: HexDisplay,
+  },
   connect: ({ nodes: { cpu, rom, mem_bus, dmem, uart, zero32, zero1, pc_display } }) => [
     cpu.instr_addr.to(rom.addrA),
     rom.dataA.to(cpu.instruction),
@@ -31,4 +45,4 @@ export const RV32I_Board = circuit('RV32I_Board', {
     mem_bus.read_data.to(cpu.data_read),
     cpu.pc_out.to(pc_display.in),
   ],
-})
+});

@@ -131,11 +131,11 @@ function emitFlatModule(
   // Detect if circuit needs a clock (and matching reset).
   // Kept as separate flags so they can diverge later (e.g. clock-only debug
   // wrappers) without splitting the call site.
-  const needsClock = flat.nodes.some(n => isSequentialPrimitive(n.primitiveType));
+  const needsClock = flat.nodes.some((n) => isSequentialPrimitive(n.primitiveType));
   const needsReset = needsClock;
 
   // Filter to logic nodes only (I/O becomes module ports via topLevelInputs/Outputs)
-  const logicNodes = flat.nodes.filter(n => !isSinkPrimitive(n.primitiveType));
+  const logicNodes = flat.nodes.filter((n) => !isSinkPrimitive(n.primitiveType));
 
   // ── Build wire map (connection source → wire name) ─────────────────
   const wireMap = new Map<string, string>(); // "nodeId.portName" → wire name
@@ -162,9 +162,9 @@ function emitFlatModule(
   // `~hazard_stall` into 32'hFFFFFFFE instead of 1'b0 and silently breaks
   // `if (wire)` pipeline stall/flush tests.
   const CONTROL_PORTS = new Set([
-    'we',        // Register write-enable
-    'sel',       // Mux select
-    'carry_in',  // Adder carry input
+    'we', // Register write-enable
+    'sel', // Mux select
+    'carry_in', // Adder carry input
     'carry_out', // Adder carry output
   ]);
 
@@ -201,8 +201,12 @@ function emitFlatModule(
   while (widthChanged) {
     widthChanged = false;
     for (const node of flat.nodes) {
-      if (node.primitiveType === 'Mux' || node.primitiveType === 'Mux2' ||
-          node.primitiveType === 'Buffer' || node.primitiveType === 'Probe') {
+      if (
+        node.primitiveType === 'Mux' ||
+        node.primitiveType === 'Mux2' ||
+        node.primitiveType === 'Buffer' ||
+        node.primitiveType === 'Probe'
+      ) {
         // Find max width among data inputs (exclude sel)
         let maxInputWidth = 1;
         for (const conn of flat.connections) {
@@ -220,7 +224,10 @@ function emitFlatModule(
           const current = resolvedPortTypes.get(key);
           const currentWidth = current?.kind === 'bus' ? current.width : 1;
           if (maxInputWidth > currentWidth) {
-            resolvedPortTypes.set(key, maxInputWidth <= 1 ? { kind: 'bit' } : { kind: 'bus', width: maxInputWidth });
+            resolvedPortTypes.set(
+              key,
+              maxInputWidth <= 1 ? { kind: 'bit' } : { kind: 'bus', width: maxInputWidth },
+            );
             widthChanged = true;
           }
         }
@@ -232,8 +239,10 @@ function emitFlatModule(
   // This handles cases where the simulator is lenient about width mismatches
   // (e.g., Constant(value=4) connecting to an 8-bit input).
   function inferWidth(conn: FlatConnection): PortType {
-    const sourceType = resolvedPortTypes.get(`${conn.source.nodeId}.${conn.source.portName}`) ?? conn.portType;
-    const targetType = resolvedPortTypes.get(`${conn.target.nodeId}.${conn.target.portName}`) ?? conn.portType;
+    const sourceType =
+      resolvedPortTypes.get(`${conn.source.nodeId}.${conn.source.portName}`) ?? conn.portType;
+    const targetType =
+      resolvedPortTypes.get(`${conn.target.nodeId}.${conn.target.portName}`) ?? conn.portType;
 
     const sourceWidth = sourceType.kind === 'bus' ? sourceType.width : 1;
     const targetWidth = targetType.kind === 'bus' ? targetType.width : 1;
@@ -342,7 +351,7 @@ function emitFlatModule(
     allDeclarations.push(...result.declarations);
     if (result.lines.length > 0) {
       allLogicLines.push(`  // ${node.primitiveType} "${sanitizeId(node.id)}"`);
-      allLogicLines.push(...result.lines.map(l => `  ${l}`));
+      allLogicLines.push(...result.lines.map((l) => `  ${l}`));
       allLogicLines.push('');
     }
   }
@@ -361,7 +370,7 @@ function emitFlatModule(
   for (const output of flat.topLevelOutputs) {
     // Find the connection whose target is this output
     const conn = flat.connections.find(
-      c => c.target.nodeId === TOP && c.target.portName === output.name
+      (c) => c.target.nodeId === TOP && c.target.portName === output.name,
     );
     if (conn) {
       const sourceKey = `${conn.source.nodeId}.${conn.source.portName}`;
@@ -378,4 +387,3 @@ function emitFlatModule(
 
   return { verilog: lines.join('\n'), files: sidecarFiles };
 }
-

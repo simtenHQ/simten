@@ -48,9 +48,23 @@ export function flattenCircuit(circuit: Circuit): FlattenedCircuit {
 
   // Known primitive component types (don't need to be expanded)
   const knownPrimitives = new Set([
-    'And', 'Or', 'Not', 'Nand', 'Nor', 'Xor', 'Xnor', 'Buffer',
-    'Switch', 'Button', 'Input', 'Led', 'HexDisplay', 'SevenSegment',
-    'DFlipFlop', 'Register', 'RAM'
+    'And',
+    'Or',
+    'Not',
+    'Nand',
+    'Nor',
+    'Xor',
+    'Xnor',
+    'Buffer',
+    'Switch',
+    'Button',
+    'Input',
+    'Led',
+    'HexDisplay',
+    'SevenSegment',
+    'DFlipFlop',
+    'Register',
+    'RAM',
   ]);
 
   // Recursively expand each node
@@ -86,11 +100,14 @@ export function flattenCircuit(circuit: Circuit): FlattenedCircuit {
         node,
         componentDef,
         library.resolveCircuit.bind(library),
-        knownPrimitives
+        knownPrimitives,
       );
 
       flatNodes.push(...expansionResult.nodes);
-      nodeMapping.set(node.id, expansionResult.nodes.map(n => n.id));
+      nodeMapping.set(
+        node.id,
+        expansionResult.nodes.map((n) => n.id),
+      );
 
       // Merge port mappings
       for (const [key, values] of expansionResult.portMapping.entries()) {
@@ -131,7 +148,7 @@ function expandCompositeNode(
   componentDef: Circuit,
   resolveCircuit: (name: string) => Circuit | undefined,
   knownPrimitives: Set<string>,
-  visited: Set<string> = new Set()
+  visited: Set<string> = new Set(),
 ): ExpansionResult {
   const nodes: Node[] = [];
   const connections: Connection[] = [];
@@ -147,11 +164,11 @@ function expandCompositeNode(
       const expandedNode: Node = {
         ...internalNode,
         id: expandedId,
-        inputs: internalNode.inputs.map(inp => ({
+        inputs: internalNode.inputs.map((inp) => ({
           ...inp,
           id: `${expandedId}.${inp.name}`,
         })),
-        outputs: internalNode.outputs.map(out => ({
+        outputs: internalNode.outputs.map((out) => ({
           ...out,
           id: `${expandedId}.${out.name}`,
         })),
@@ -167,7 +184,9 @@ function expandCompositeNode(
     if (internalComponentDef?.implementation.kind === 'composite') {
       // Guard against recursive circuit definitions
       if (visited.has(internalNode.componentRef)) {
-        console.warn(`[FLATTEN] Recursive circuit reference: ${internalNode.componentRef}, skipping`);
+        console.warn(
+          `[FLATTEN] Recursive circuit reference: ${internalNode.componentRef}, skipping`,
+        );
         continue;
       }
       const childVisited = new Set(visited);
@@ -178,7 +197,7 @@ function expandCompositeNode(
         internalComponentDef,
         resolveCircuit,
         knownPrimitives,
-        childVisited
+        childVisited,
       );
 
       nodes.push(...nestedExpansion.nodes);
@@ -196,11 +215,11 @@ function expandCompositeNode(
       const expandedNode: Node = {
         ...internalNode,
         id: expandedId,
-        inputs: internalNode.inputs.map(inp => ({
+        inputs: internalNode.inputs.map((inp) => ({
           ...inp,
           id: `${expandedId}.${inp.name}`,
         })),
-        outputs: internalNode.outputs.map(out => ({
+        outputs: internalNode.outputs.map((out) => ({
           ...out,
           id: `${expandedId}.${out.name}`,
         })),
@@ -258,10 +277,7 @@ function expandCompositeNode(
  * Remap a connection through port mappings (for composite component ports)
  * Returns an array to handle fan-out (one source to multiple targets)
  */
-function remapConnection(
-  conn: Connection,
-  portMapping: Map<string, PortPath[]>
-): Connection[] {
+function remapConnection(conn: Connection, portMapping: Map<string, PortPath[]>): Connection[] {
   // Try to remap source
   const sourceKey = portMapKey(conn.source.nodeId, conn.source.portName);
   const remappedSources = portMapping.get(sourceKey) || [conn.source];

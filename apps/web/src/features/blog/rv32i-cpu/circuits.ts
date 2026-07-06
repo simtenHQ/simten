@@ -4,20 +4,31 @@
  * Small, focused circuits that illustrate individual pipeline concepts.
  */
 
-import { circuit, bit, bus } from "@simten/core/circuit";
+import { circuit, bit, bus } from '@simten/core/circuit';
 import type { BlogCircuit } from '../types';
 import {
-  Not, Mux,
-  Register, Constant, Adder, Subtractor,
-  BusAnd, BusOr, BitSlice,
-} from "@simten/core/std";
+  Not,
+  Mux,
+  Register,
+  Constant,
+  Adder,
+  Subtractor,
+  BusAnd,
+  BusOr,
+  BitSlice,
+} from '@simten/core/std';
 
 // ── Circuit Definitions ──
 
 export const ProgramCounter = circuit('ProgramCounter', {
   inputs: { stall: bit },
   outputs: { pc_out: bus(32) },
-  nodes: { pc: Register({ width: 32 }), four: Constant({ value: 4, width: 32 }), adder: Adder({ width: 32 }), stall_inv: Not },
+  nodes: {
+    pc: Register({ width: 32 }),
+    four: Constant({ value: 4, width: 32 }),
+    adder: Adder({ width: 32 }),
+    stall_inv: Not,
+  },
   connect: ({ inputs, outputs, nodes: { pc, four, adder, stall_inv } }) => [
     pc.q.to(adder.a, outputs.pc_out),
     four.out.to(adder.b),
@@ -28,9 +39,22 @@ export const ProgramCounter = circuit('ProgramCounter', {
 });
 
 export const PCWithMux = circuit('PCWithMux', {
-  inputs: { stall: bit, branch_taken: bit, jump: bit, branch_target: bus(32), jump_target: bus(32) },
+  inputs: {
+    stall: bit,
+    branch_taken: bit,
+    jump: bit,
+    branch_target: bus(32),
+    jump_target: bus(32),
+  },
   outputs: { pc_out: bus(32) },
-  nodes: { pc: Register({ width: 32 }), four: Constant({ value: 4, width: 32 }), adder: Adder({ width: 32 }), stall_inv: Not, branch_mux: Mux({ width: 32 }), jump_mux: Mux({ width: 32 }) },
+  nodes: {
+    pc: Register({ width: 32 }),
+    four: Constant({ value: 4, width: 32 }),
+    adder: Adder({ width: 32 }),
+    stall_inv: Not,
+    branch_mux: Mux({ width: 32 }),
+    jump_mux: Mux({ width: 32 }),
+  },
   connect: ({ inputs, outputs, nodes: { pc, four, adder, stall_inv, branch_mux, jump_mux } }) => [
     pc.q.to(adder.a, outputs.pc_out),
     four.out.to(adder.b),
@@ -49,7 +73,12 @@ export const PCWithMux = circuit('PCWithMux', {
 export const PipelineReg = circuit('PipelineReg', {
   inputs: { data_in: bus(8), flush: bit },
   outputs: { data_out: bus(8) },
-  nodes: { zero: Constant({ value: 0, width: 8 }), mux: Mux({ width: 8 }), reg: Register({ width: 8 }), one: Constant({ value: 1, width: 1 }) },
+  nodes: {
+    zero: Constant({ value: 0, width: 8 }),
+    mux: Mux({ width: 8 }),
+    reg: Register({ width: 8 }),
+    one: Constant({ value: 1, width: 1 }),
+  },
   connect: ({ inputs, outputs, nodes: { zero, mux, reg, one } }) => [
     inputs.data_in.to(mux.in0),
     zero.out.to(mux.in1),
@@ -63,7 +92,12 @@ export const PipelineReg = circuit('PipelineReg', {
 export const ForwardingMux = circuit('ForwardingMux', {
   inputs: { reg_val: bus(32), ex_val: bus(32), mem_val: bus(32), sel: bus(2) },
   outputs: { out: bus(32) },
-  nodes: { bit0: BitSlice({ low: 0, high: 0 }), bit1: BitSlice({ low: 1, high: 1 }), mux1: Mux({ width: 32 }), mux2: Mux({ width: 32 }) },
+  nodes: {
+    bit0: BitSlice({ low: 0, high: 0 }),
+    bit1: BitSlice({ low: 1, high: 1 }),
+    mux1: Mux({ width: 32 }),
+    mux2: Mux({ width: 32 }),
+  },
   connect: ({ inputs, outputs, nodes: { bit0, bit1, mux1, mux2 } }) => [
     inputs.sel.to(bit0.in, bit1.in),
     inputs.reg_val.to(mux1.in0),
@@ -79,8 +113,22 @@ export const ForwardingMux = circuit('ForwardingMux', {
 export const SimpleALU = circuit('SimpleALU', {
   inputs: { a: bus(8), b: bus(8), op: bus(2) },
   outputs: { result: bus(8) },
-  nodes: { adder: Adder({ width: 8 }), sub: Subtractor({ width: 8 }), and_gate: BusAnd({ width: 8 }), or_gate: BusOr({ width: 8 }), mux_lo: Mux({ width: 8 }), mux_hi: Mux({ width: 8 }), op0: BitSlice({ low: 0, high: 0 }), op1: BitSlice({ low: 1, high: 1 }), mux_final: Mux({ width: 8 }) },
-  connect: ({ inputs, outputs, nodes: { adder, sub, and_gate, or_gate, mux_lo, mux_hi, op0, op1, mux_final } }) => [
+  nodes: {
+    adder: Adder({ width: 8 }),
+    sub: Subtractor({ width: 8 }),
+    and_gate: BusAnd({ width: 8 }),
+    or_gate: BusOr({ width: 8 }),
+    mux_lo: Mux({ width: 8 }),
+    mux_hi: Mux({ width: 8 }),
+    op0: BitSlice({ low: 0, high: 0 }),
+    op1: BitSlice({ low: 1, high: 1 }),
+    mux_final: Mux({ width: 8 }),
+  },
+  connect: ({
+    inputs,
+    outputs,
+    nodes: { adder, sub, and_gate, or_gate, mux_lo, mux_hi, op0, op1, mux_final },
+  }) => [
     inputs.a.to(adder.a, sub.a, and_gate.a, or_gate.a),
     inputs.b.to(adder.b, sub.b, and_gate.b, or_gate.b),
     inputs.op.to(op0.in, op1.in),
@@ -98,37 +146,37 @@ export const SimpleALU = circuit('SimpleALU', {
 
 export const BLOG_CIRCUITS: Record<string, BlogCircuit> = {
   programCounter: {
-    name: "Program Counter",
+    name: 'Program Counter',
     description:
-      "A register that holds the current instruction address, incrementing by 4 each cycle.",
+      'A register that holds the current instruction address, incrementing by 4 each cycle.',
     circuit: ProgramCounter,
   },
 
   pcWithMux: {
-    name: "PC with Next-PC Mux",
+    name: 'PC with Next-PC Mux',
     description:
-      "The full program counter with a mux selecting between PC+4, branch target, and jump target. Stall freezes the PC.",
+      'The full program counter with a mux selecting between PC+4, branch target, and jump target. Stall freezes the PC.',
     circuit: PCWithMux,
   },
 
   pipelineRegister: {
-    name: "Pipeline Register",
+    name: 'Pipeline Register',
     description:
-      "A register between pipeline stages. It latches data on each clock edge so each stage works on a different instruction.",
+      'A register between pipeline stages. It latches data on each clock edge so each stage works on a different instruction.',
     circuit: PipelineReg,
   },
 
   forwardingMux: {
-    name: "Forwarding Mux",
+    name: 'Forwarding Mux',
     description:
       "When a later instruction needs a result that hasn't been written back yet, the forwarding mux bypasses the register file.",
     circuit: ForwardingMux,
   },
 
   aluSlice: {
-    name: "ALU",
+    name: 'ALU',
     description:
-      "The arithmetic logic unit. It performs addition, subtraction, shifts, and comparisons based on a 4-bit control signal.",
+      'The arithmetic logic unit. It performs addition, subtraction, shifts, and comparisons based on a 4-bit control signal.',
     circuit: SimpleALU,
   },
 };

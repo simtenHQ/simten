@@ -7,15 +7,32 @@
 import { describe, it, expect } from 'vitest';
 import { exportVerilog } from '../exporter.js';
 import { circuit, bit, bus, mem } from '../../circuit/index.js';
-import { And, Or, Xor, Not, Adder, Register, DFlipFlop, ROM, RAM, DualPortRAM, RV32I_InstrMem } from '../../std/index.js';
+import {
+  And,
+  Or,
+  Xor,
+  Not,
+  Adder,
+  Register,
+  DFlipFlop,
+  ROM,
+  RAM,
+  DualPortRAM,
+  RV32I_InstrMem,
+} from '../../std/index.js';
 import type { Circuit, CircuitLibrary } from '../../types/circuit.js';
 
 function libraryFor(c: { circuit: any; _dependencies: ReadonlyMap<string, any> }) {
   const circuitMap = new Map<string, Circuit>();
   const lib: CircuitLibrary & { addCircuit(c: Circuit): void } = {
     resolveCircuit: (name) => circuitMap.get(name),
-    getAllPrimitiveNames: () => [...circuitMap.entries()].filter(([, c]) => c.implementation.kind === 'primitive').map(([n]) => n),
-    addCircuit: (c) => { circuitMap.set(c.name, c); },
+    getAllPrimitiveNames: () =>
+      [...circuitMap.entries()]
+        .filter(([, c]) => c.implementation.kind === 'primitive')
+        .map(([n]) => n),
+    addCircuit: (c) => {
+      circuitMap.set(c.name, c);
+    },
   };
   lib.addCircuit(c.circuit);
   for (const [, dep] of c._dependencies) lib.addCircuit(dep.circuit ?? dep);
@@ -84,9 +101,7 @@ describe('exportVerilog', () => {
       inputs: { data: bus(8) },
       outputs: { data_out: bus(8) },
       nodes: {},
-      connect: ({ inputs, outputs }) => [
-        inputs.data.to(outputs.data_out),
-      ],
+      connect: ({ inputs, outputs }) => [inputs.data.to(outputs.data_out)],
     });
 
     const { verilog } = exportVerilog(BusPassthrough.circuit, libraryFor(BusPassthrough));
@@ -139,7 +154,11 @@ describe('exportVerilog', () => {
           {
             ...RAM().circuit.state[0],
             initialValue: {
-              data: new Map<number, number>([[2, 0xAB], [0, 0xCD], [1, 0xEF]]),
+              data: new Map<number, number>([
+                [2, 0xab],
+                [0, 0xcd],
+                [1, 0xef],
+              ]),
               addressWidth: 8,
               dataWidth: 8,
             },
@@ -283,7 +302,7 @@ describe('exportVerilog', () => {
       const PreloadedROM = circuit('PreloadedROM', {
         inputs: { addr: bus(16) },
         outputs: { data_out: bus(8) },
-        nodes: { r: ROM({ memory: { 0: 0xAA, 1: 0xBB } }) },
+        nodes: { r: ROM({ memory: { 0: 0xaa, 1: 0xbb } }) },
         connect: ({ inputs, outputs, nodes: { r } }) => [
           inputs.addr.to(r.addr),
           r.data_out.to(outputs.data_out),

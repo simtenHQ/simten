@@ -62,14 +62,18 @@ function createPortRef(nodeId: string, portName: string, portType: PortType): So
     to(...targets: SinkPortRef[]): ConnectionDef {
       return {
         source: { nodeId, portName },
-        targets: targets.map(t => ({ nodeId: t._path.nodeId, portName: t._path.portName })),
+        targets: targets.map((t) => ({ nodeId: t._path.nodeId, portName: t._path.portName })),
         portType,
       };
     },
   } as SourcePortRef;
 }
 
-function createNodeProxy(nodeId: string, ports: Map<string, PortType>, componentName?: string): Record<string, SourcePortRef> {
+function createNodeProxy(
+  nodeId: string,
+  ports: Map<string, PortType>,
+  componentName?: string,
+): Record<string, SourcePortRef> {
   const refs: Record<string, SourcePortRef> = {};
   for (const [name, type] of ports) {
     refs[name] = createPortRef(nodeId, name, type);
@@ -78,10 +82,11 @@ function createNodeProxy(nodeId: string, ports: Map<string, PortType>, component
     get(target, prop: string) {
       if (prop in target) return target[prop];
       if (typeof prop === 'symbol' || prop.startsWith('_')) return undefined;
-      const label = nodeId === '' ? 'circuit' : `node '${nodeId}'${componentName ? ` (${componentName})` : ''}`;
+      const label =
+        nodeId === '' ? 'circuit' : `node '${nodeId}'${componentName ? ` (${componentName})` : ''}`;
       const available = Object.keys(target).join(', ');
       throw new Error(
-        `Port '${prop}' does not exist on ${label}. Available ports: ${available || 'none'}`
+        `Port '${prop}' does not exist on ${label}. Available ports: ${available || 'none'}`,
       );
     },
   });
@@ -153,10 +158,7 @@ export function circuit<
   name: string,
   config?: CircuitConfig<Ins, Outs, Nodes, S>,
 ): BuiltCircuit<NormalizePorts<Ins>, NormalizePorts<Outs>, Nodes>;
-export function circuit(
-  name: string,
-  configOrFactory: any = {} as any,
-): any {
+export function circuit(name: string, configOrFactory: any = {} as any): any {
   // Runtime guard: typescript would catch `circuit(SomeObject, {...})` at
   // typecheck time, but in the in-browser editor user code is type-stripped
   // and run via new Function() — types are gone by the time it executes, so
@@ -167,12 +169,7 @@ export function circuit(
   // child" error with no hint that the actual problem is in the user's
   // circuit() call. Catch it at the call site with a useful message.
   if (typeof name !== 'string') {
-    const got =
-      name === null
-        ? 'null'
-        : Array.isArray(name)
-          ? 'array'
-          : typeof name;
+    const got = name === null ? 'null' : Array.isArray(name) ? 'array' : typeof name;
     throw new Error(
       `circuit() expects a string name as the first argument, got ${got}. ` +
         `Usage: circuit('MyCircuit', { inputs, outputs, nodes, connect }). ` +
@@ -400,7 +397,11 @@ export function circuit(
           id: `${name}-${key}`,
           name: key,
           stateType: { kind: 'memory', addressWidth: addrWidth, dataWidth: value.width },
-          initialValue: { data: new Map(value.initial), addressWidth: addrWidth, dataWidth: value.width },
+          initialValue: {
+            data: new Map(value.initial),
+            addressWidth: addrWidth,
+            dataWidth: value.width,
+          },
           clockRef: 'clk',
           edge: 'rising',
         });
@@ -458,13 +459,18 @@ export function circuit(
       componentRef: comp.circuit.name,
       arguments: args,
       inputs: comp.circuit.inputs.map((p: PortDescriptor) => ({
-        id: `${nodeId}.${p.name}`, name: p.name, portType: p.portType,
+        id: `${nodeId}.${p.name}`,
+        name: p.name,
+        portType: p.portType,
       })),
       outputs: comp.circuit.outputs.map((p: PortDescriptor) => ({
-        id: `${nodeId}.${p.name}`, name: p.name, portType: p.portType,
+        id: `${nodeId}.${p.name}`,
+        name: p.name,
+        portType: p.portType,
       })),
       clocks: comp.circuit.clocks.map((c: ClockDescriptor) => ({
-        id: `${nodeId}.${c.name}`, name: c.name,
+        id: `${nodeId}.${c.name}`,
+        name: c.name,
       })),
     });
   }
@@ -572,8 +578,8 @@ export function circuit(
   // into evaluateNodeFallback and throwing "no registered evaluator".
   const stateKeys = config.state ? Object.keys(config.state) : undefined;
   registerCircuitEval(name, {
-    inputNames: circuitIR.inputs.map(p => p.name),
-    outputNames: circuitIR.outputs.map(p => p.name),
+    inputNames: circuitIR.inputs.map((p) => p.name),
+    outputNames: circuitIR.outputs.map((p) => p.name),
     evalFn: (config.eval ?? (() => ({}))) as (inputs: Record<string, any>) => Record<string, any>,
     stateKeys,
     onTickFn: config.onTick as ((inputs: Record<string, any>) => Record<string, any>) | undefined,
@@ -603,10 +609,13 @@ function validatePortRef(
       errors.push(`Node '${ref.nodeId}' does not exist`);
       return;
     }
-    const hasPort = comp.circuit.inputs.some(p => p.name === ref.portName)
-      || comp.circuit.outputs.some(p => p.name === ref.portName);
+    const hasPort =
+      comp.circuit.inputs.some((p) => p.name === ref.portName) ||
+      comp.circuit.outputs.some((p) => p.name === ref.portName);
     if (!hasPort) {
-      errors.push(`Port '${ref.portName}' does not exist on node '${ref.nodeId}' (${comp.circuit.name})`);
+      errors.push(
+        `Port '${ref.portName}' does not exist on node '${ref.nodeId}' (${comp.circuit.name})`,
+      );
     }
   }
 }
@@ -618,5 +627,3 @@ function detectSequential(nodes: Record<string, BuiltCircuit>, state?: StateShap
   }
   return false;
 }
-
-

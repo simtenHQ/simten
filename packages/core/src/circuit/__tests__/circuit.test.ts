@@ -11,19 +11,19 @@ import type { BuiltCircuit } from '../types.js';
 const And = circuit('And', {
   inputs: { a: bit, b: bit },
   outputs: { out: bit },
-  eval: ({ a, b }) => ({ out: (a && b) ? 1 : 0 }),
+  eval: ({ a, b }) => ({ out: a && b ? 1 : 0 }),
 });
 
 const Or = circuit('Or', {
   inputs: { a: bit, b: bit },
   outputs: { out: bit },
-  eval: ({ a, b }) => ({ out: (a || b) ? 1 : 0 }),
+  eval: ({ a, b }) => ({ out: a || b ? 1 : 0 }),
 });
 
 const Xor = circuit('Xor', {
   inputs: { a: bit, b: bit },
   outputs: { out: bit },
-  eval: ({ a, b }) => ({ out: (a !== b) ? 1 : 0 }),
+  eval: ({ a, b }) => ({ out: a !== b ? 1 : 0 }),
 });
 
 const Not = circuit('Not', {
@@ -75,7 +75,7 @@ describe('combinational leaf', () => {
     const Adder = circuit('Adder', {
       inputs: { a: bus(8), b: bus(8) },
       outputs: { sum: bus(8), carry: bit },
-      eval: ({ a, b }) => ({ sum: (a + b) & 0xFF, carry: (a + b) >> 8 }),
+      eval: ({ a, b }) => ({ sum: (a + b) & 0xff, carry: (a + b) >> 8 }),
     });
 
     expect(Adder.circuit.inputs[0].portType).toEqual({ kind: 'bus', width: 8 });
@@ -115,7 +115,7 @@ describe('sequential leaf', () => {
       state: { total: 0 },
       eval: ({ total }) => ({ count: total as number }),
       onTick: ({ enable, total }) => ({
-        total: enable ? ((total as number) + 1) & 0xFF : (total as number),
+        total: enable ? ((total as number) + 1) & 0xff : (total as number),
       }),
     });
 
@@ -219,10 +219,7 @@ describe('composite', () => {
       inputs: { data: bus(8) },
       outputs: { result: bus(8) },
       nodes: { r: Reg },
-      connect: ({ inputs, outputs, nodes: { r } }) => [
-        inputs.data.to(r.d),
-        r.q.to(outputs.result),
-      ],
+      connect: ({ inputs, outputs, nodes: { r } }) => [inputs.data.to(r.d), r.q.to(outputs.result)],
     });
 
     expect(Pipeline.circuit.metadata?.timing).toBe('sequential');
@@ -235,13 +232,14 @@ describe('composite', () => {
 
 describe('parameterized', () => {
   it('creates components via factory function', () => {
-    const Register = (width: number) => circuit(`Register${width}`, {
-      inputs: { d: bus(width) },
-      outputs: { q: bus(width) },
-      state: { stored: 0 },
-      eval: ({ stored }) => ({ q: stored as number }),
-      onTick: ({ d }) => ({ stored: d as number }),
-    });
+    const Register = (width: number) =>
+      circuit(`Register${width}`, {
+        inputs: { d: bus(width) },
+        outputs: { q: bus(width) },
+        state: { stored: 0 },
+        eval: ({ stored }) => ({ q: stored as number }),
+        onTick: ({ d }) => ({ stored: d as number }),
+      });
 
     const r8 = Register(8);
     const r16 = Register(16);
@@ -283,8 +281,8 @@ describe('validation', () => {
         inputs: { x: bit },
         outputs: { x: bit },
         eval: ({ x }) => ({ x }),
-      })
-    ).toThrow("used for both input and output");
+      }),
+    ).toThrow('used for both input and output');
   });
 
   it('rejects state name colliding with input', () => {
@@ -294,8 +292,8 @@ describe('validation', () => {
         outputs: { out: bus(8) },
         state: { count: 0 },
         eval: ({ count }) => ({ out: count as number }),
-      })
-    ).toThrow("collides with input");
+      }),
+    ).toThrow('collides with input');
   });
 
   it('rejects reserved node names', () => {
@@ -304,8 +302,8 @@ describe('validation', () => {
         inputs: { a: bit },
         outputs: { b: bit },
         nodes: { inputs: And },
-      })
-    ).toThrow("reserved");
+      }),
+    ).toThrow('reserved');
   });
 
   it('rejects onTick without state', () => {
@@ -314,7 +312,7 @@ describe('validation', () => {
         inputs: { d: bit },
         outputs: { q: bit },
         onTick: ({ d }) => ({ value: d }),
-      })
+      }),
     ).toThrow('requires state');
   });
 
@@ -324,10 +322,8 @@ describe('validation', () => {
         inputs: { a: bit },
         outputs: { b: bit },
         nodes: { x: And },
-        connect: ({ inputs, outputs, nodes: { x } }) => [
-          inputs.a.to((x as any).nonexistent),
-        ],
-      })
+        connect: ({ inputs, outputs, nodes: { x } }) => [inputs.a.to((x as any).nonexistent)],
+      }),
     ).toThrow("does not exist on node 'x'");
   });
 });

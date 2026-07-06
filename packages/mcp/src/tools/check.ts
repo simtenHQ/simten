@@ -27,10 +27,8 @@ export function registerCheckTool(server: McpServer): void {
       const result = checkCircuit({ source: read.source, sourceName: read.sourceName });
 
       return {
-        content: [
-          { type: 'text' as const, text: JSON.stringify(result, null, 2) },
-        ],
+        content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }],
       };
-    }
+    },
   );
 }

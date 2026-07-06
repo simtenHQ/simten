@@ -28,7 +28,10 @@ declareOracle({
 });
 
 for (const t of TESTS) {
-  if (SKIP[t]) { console.error(`SKIP ${t}: ${SKIP[t]}`); continue; }
+  if (SKIP[t]) {
+    console.error(`SKIP ${t}: ${SKIP[t]}`);
+    continue;
+  }
   verify.exhaustive(`${t}: DUT signature == Spike (pure RV32I)`, [1], () => {
     const r = runOneTest(t);
     return r.pass && r.trapFree;

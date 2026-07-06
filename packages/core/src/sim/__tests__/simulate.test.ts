@@ -18,7 +18,7 @@ function tracked<I, O>(h: SimulationHandle<I, O>): SimulationHandle<I, O> {
   return h;
 }
 afterEach(() => {
-  handles.forEach(h => h.dispose());
+  handles.forEach((h) => h.dispose());
   handles.length = 0;
 });
 
@@ -204,7 +204,9 @@ describe('watch', () => {
   it('notifies on state changes', () => {
     const sim = tracked(simulate(DFlipFlop()));
     let callCount = 0;
-    const unsub = sim.watch(() => { callCount++; });
+    const unsub = sim.watch(() => {
+      callCount++;
+    });
 
     sim.set({ d: 1 });
     sim.tick();
@@ -216,7 +218,9 @@ describe('watch', () => {
   it('watchPort notifies when specific port changes', () => {
     const sim = tracked(simulate(DFlipFlop()));
     const values: number[] = [];
-    const unsub = sim.watchPort('q', (v) => { values.push(v); });
+    const unsub = sim.watchPort('q', (v) => {
+      values.push(v);
+    });
 
     sim.set({ d: 1 });
     sim.tick(); // q changes 0→1

@@ -89,7 +89,11 @@ export { bit, bus, reg, mem } from './circuit/bit-bus.js';
 export type { BuiltCircuit, CircuitConfig } from './circuit/types.js';
 export { autoHarness } from './circuit/auto-harness.js';
 export { isSequentialCircuit } from './circuit/is-sequential.js';
-export { getCircuitEval, registerCircuitEval, getAllCircuitEvals } from './circuit/eval-registry.js';
+export {
+  getCircuitEval,
+  registerCircuitEval,
+  getAllCircuitEvals,
+} from './circuit/eval-registry.js';
 export type { EvalEntry } from './circuit/eval-registry.js';
 
 // ============================================================================

@@ -14,10 +14,7 @@ import { fileURLToPath } from 'node:url';
 
 import { exportVerilog } from '@simten/core/verilog';
 import { circuit, bit, bus } from '@simten/core/circuit';
-import {
-  Constant,
-  RV32I_Core as RV32I_CoreDef,
-} from '@simten/core/std';
+import { Constant, RV32I_Core as RV32I_CoreDef } from '@simten/core/std';
 import type { CircuitLibrary } from '@simten/core/simulator';
 
 import type { Project, FirmwareBuild } from '../../lib/types.js';
@@ -64,11 +61,11 @@ const IMEM_BYTES = IMEM_WORDS * 4;
 
 async function compileFirmware(source: string, opts: { language: string }): Promise<FirmwareBuild> {
   const { language } = opts;
-  const resp = await fetch(COMPILER_URL, {
+  const resp = (await fetch(COMPILER_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ source, language, linkerScript: LINKER_SCRIPT, disassemble: true }),
-  }).then((r) => r.json()) as {
+  }).then((r) => r.json())) as {
     success: boolean;
     binary?: string;
     disassembly?: string;
@@ -170,10 +167,7 @@ export function buildCPUCore() {
       );
     },
     getAllPrimitiveNames: () => [
-      ...new Set([
-        ...RV32I_CPU_Core._dependencies.keys(),
-        ...RV32I_Core._dependencies.keys(),
-      ]),
+      ...new Set([...RV32I_CPU_Core._dependencies.keys(), ...RV32I_Core._dependencies.keys()]),
     ],
   };
 
@@ -222,9 +216,8 @@ export const project: Project = {
     // pipeline cache can key on Verilog-with-firmware-zeroed (future fast
     // path via a /patch endpoint that regenerates the inline init).
     const initStart = combinedVerilog.indexOf(inlineInit);
-    const firmwareInitRange = initStart >= 0
-      ? { start: initStart, end: initStart + inlineInit.length }
-      : undefined;
+    const firmwareInitRange =
+      initStart >= 0 ? { start: initStart, end: initStart + inlineInit.length } : undefined;
 
     return {
       verilog: combinedVerilog,

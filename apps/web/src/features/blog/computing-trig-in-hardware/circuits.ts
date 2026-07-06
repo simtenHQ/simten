@@ -6,7 +6,7 @@
  * and the complete iterative rotation engine.
  */
 
-import { circuit, bit, bus } from "@simten/core/circuit";
+import { circuit, bit, bus } from '@simten/core/circuit';
 import type { BlogCircuit } from '../types';
 import {
   Input,
@@ -22,11 +22,11 @@ import {
   Incrementer,
   Comparator,
   BitSlice,
-} from "@simten/core/std";
+} from '@simten/core/std';
 
 // ── Self-contained circuit definitions ──
 
-export const RightShiftDemo = circuit("RightShiftDemo", {
+export const RightShiftDemo = circuit('RightShiftDemo', {
   nodes: {
     value: Input({ value: 80 }),
     shift: Input({ value: 1 }),
@@ -40,7 +40,7 @@ export const RightShiftDemo = circuit("RightShiftDemo", {
   ],
 });
 
-export const RotationStep = circuit("RotationStep", {
+export const RotationStep = circuit('RotationStep', {
   nodes: {
     x: Input({ value: 80 }),
     y: Input({ value: 0 }),
@@ -54,7 +54,9 @@ export const RotationStep = circuit("RotationStep", {
     displaySub: HexDisplay,
     displayAdd: HexDisplay,
   },
-  connect: ({ nodes: { x, y, shift, one, zero, yShifted, yNeg, xMinusY, xPlusY, displaySub, displayAdd } }) => [
+  connect: ({
+    nodes: { x, y, shift, one, zero, yShifted, yNeg, xMinusY, xPlusY, displaySub, displayAdd },
+  }) => [
     y.out.to(yShifted.value),
     shift.out.to(yShifted.shift),
     yShifted.result.to(yNeg.in, xPlusY.b),
@@ -67,7 +69,7 @@ export const RotationStep = circuit("RotationStep", {
   ],
 });
 
-export const SignDetection = circuit("SignDetection", {
+export const SignDetection = circuit('SignDetection', {
   nodes: {
     angle: Input({ value: 32 }),
     zero: Constant({ value: 0 }),
@@ -88,7 +90,7 @@ export const SignDetection = circuit("SignDetection", {
   ],
 });
 
-export const IterationControl = circuit("IterationControl", {
+export const IterationControl = circuit('IterationControl', {
   nodes: {
     iter: Register({ value: 0 }),
     eight: Constant({ value: 8 }),
@@ -106,7 +108,7 @@ export const IterationControl = circuit("IterationControl", {
   ],
 });
 
-export const AngleLookup = circuit("AngleLookup", {
+export const AngleLookup = circuit('AngleLookup', {
   nodes: {
     iteration: Input({ value: 0 }),
     angle0: Constant({ value: 32 }),
@@ -129,7 +131,30 @@ export const AngleLookup = circuit("AngleLookup", {
     angleSel: Mux(),
     display: HexDisplay,
   },
-  connect: ({ nodes: { iteration, angle0, angle1, angle2, angle3, angle4, angle5, angle6, angle7, bit0, bit1, bit2, mux01, mux23, mux45, mux67, mux0123, mux4567, angleSel, display } }) => [
+  connect: ({
+    nodes: {
+      iteration,
+      angle0,
+      angle1,
+      angle2,
+      angle3,
+      angle4,
+      angle5,
+      angle6,
+      angle7,
+      bit0,
+      bit1,
+      bit2,
+      mux01,
+      mux23,
+      mux45,
+      mux67,
+      mux0123,
+      mux4567,
+      angleSel,
+      display,
+    },
+  }) => [
     iteration.out.to(bit0.in, bit1.in, bit2.in),
     bit0.out.to(mux01.sel, mux23.sel, mux45.sel, mux67.sel),
     angle0.out.to(mux01.in0),
@@ -154,37 +179,37 @@ export const AngleLookup = circuit("AngleLookup", {
 
 export const CORDIC_CIRCUITS: Record<string, BlogCircuit> = {
   rightShiftDemo: {
-    name: "Right Shift = Divide by Power of 2",
+    name: 'Right Shift = Divide by Power of 2',
     description:
       "A RightShifter divides its input by 2^shift. This is the only 'multiplication' CORDIC needs.",
     circuit: RightShiftDemo,
   },
 
   rotationStep: {
-    name: "One Rotation Step",
+    name: 'One Rotation Step',
     description:
       "The core CORDIC operation: x_next = x - (y >> i). A right-shifted value is subtracted using two's complement.",
     circuit: RotationStep,
   },
 
   signDetection: {
-    name: "Rotation Direction",
+    name: 'Rotation Direction',
     description:
-      "CORDIC decides which way to rotate by checking the sign of the remaining angle z. If z >= 0, rotate counterclockwise; if z < 0, rotate clockwise.",
+      'CORDIC decides which way to rotate by checking the sign of the remaining angle z. If z >= 0, rotate counterclockwise; if z < 0, rotate clockwise.',
     circuit: SignDetection,
   },
 
   iterationControl: {
-    name: "Iteration Counter",
+    name: 'Iteration Counter',
     description:
-      "CORDIC runs for a fixed number of iterations (8 in our case). A register counts up and a comparator stops when done.",
+      'CORDIC runs for a fixed number of iterations (8 in our case). A register counts up and a comparator stops when done.',
     circuit: IterationControl,
   },
 
   angleLookup: {
-    name: "Angle Lookup Table",
+    name: 'Angle Lookup Table',
     description:
-      "CORDIC uses a pre-computed table of atan(2^-i) values. A cascaded mux tree selects the right angle for each iteration.",
+      'CORDIC uses a pre-computed table of atan(2^-i) values. A cascaded mux tree selects the right angle for each iteration.',
     circuit: AngleLookup,
   },
 };
@@ -199,7 +224,7 @@ export const CORDIC_CIRCUITS: Record<string, BlogCircuit> = {
  * shows just the four state registers + this single block on canvas, with
  * a drilldown badge to inspect the full iteration math.
  */
-const CORDICStep = circuit("CORDICStep", {
+const CORDICStep = circuit('CORDICStep', {
   inputs: { x_in: bus(8), y_in: bus(8), z_in: bus(8), iter_in: bus(8) },
   outputs: {
     x_next: bus(8),
@@ -250,7 +275,51 @@ const CORDICStep = circuit("CORDICStep", {
     shouldContinue: Comparator(),
     doneCheck: Comparator(),
   },
-  connect: ({ inputs, outputs, nodes: { zero, one, eight, zPositive, xShifted, yShifted, yShiftedNeg, xSubtract, xAdd, xUpdate, xShiftedNeg, yAdd, ySubtract, yUpdate, angle0, angle1, angle2, angle3, angle4, angle5, angle6, angle7, bit0, bit1, bit2, mux01, mux23, mux45, mux67, mux0123, mux4567, angleSel, angleNeg, zSubtract, zAdd, zUpdate, iterInc, shouldContinue, doneCheck } }) => [
+  connect: ({
+    inputs,
+    outputs,
+    nodes: {
+      zero,
+      one,
+      eight,
+      zPositive,
+      xShifted,
+      yShifted,
+      yShiftedNeg,
+      xSubtract,
+      xAdd,
+      xUpdate,
+      xShiftedNeg,
+      yAdd,
+      ySubtract,
+      yUpdate,
+      angle0,
+      angle1,
+      angle2,
+      angle3,
+      angle4,
+      angle5,
+      angle6,
+      angle7,
+      bit0,
+      bit1,
+      bit2,
+      mux01,
+      mux23,
+      mux45,
+      mux67,
+      mux0123,
+      mux4567,
+      angleSel,
+      angleNeg,
+      zSubtract,
+      zAdd,
+      zUpdate,
+      iterInc,
+      shouldContinue,
+      doneCheck,
+    },
+  }) => [
     inputs.z_in.to(zPositive.a, zSubtract.a, zAdd.a),
     zero.out.to(zPositive.b, xAdd.carry_in, yAdd.carry_in, zAdd.carry_in),
     inputs.x_in.to(xShifted.value, xSubtract.a, xAdd.a),
@@ -315,7 +384,7 @@ const CORDICStep = circuit("CORDICStep", {
  * next-cycle values. Double-click `step` on the canvas to inspect the
  * full iteration math (shifters, signed adders, angle ROM, mux tree).
  */
-export const CORDICCircuit = circuit("CORDICIteration", {
+export const CORDICCircuit = circuit('CORDICIteration', {
   outputs: { done: bit },
   nodes: {
     x: Register({ value: 80 }),
@@ -329,7 +398,10 @@ export const CORDICCircuit = circuit("CORDICIteration", {
     iterDisplay: HexDisplay,
     doneLed: Led,
   },
-  connect: ({ outputs, nodes: { x, y, z, iteration, step, xDisplay, yDisplay, zDisplay, iterDisplay, doneLed } }) => [
+  connect: ({
+    outputs,
+    nodes: { x, y, z, iteration, step, xDisplay, yDisplay, zDisplay, iterDisplay, doneLed },
+  }) => [
     x.q.to(step.x_in, xDisplay.in),
     y.q.to(step.y_in, yDisplay.in),
     z.q.to(step.z_in, zDisplay.in),

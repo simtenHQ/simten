@@ -4,4 +4,4 @@ export {
   decodeSourceFromUrl,
   shouldUseShortLink,
   hashSource,
-} from "./encode-source.js";
+} from './encode-source.js';

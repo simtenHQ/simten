@@ -1,40 +1,40 @@
-import { defineConfig } from "vite";
-import { readdirSync } from "node:fs";
-import { resolve } from "node:path";
+import { defineConfig } from 'vite';
+import { readdirSync } from 'node:fs';
+import { resolve } from 'node:path';
 
-import tsconfigPaths from "vite-tsconfig-paths";
+import tsconfigPaths from 'vite-tsconfig-paths';
 
-import { tanstackStart } from "@tanstack/react-start/plugin/vite";
+import { tanstackStart } from '@tanstack/react-start/plugin/vite';
 
-import viteReact from "@vitejs/plugin-react";
-import tailwindcss from "@tailwindcss/vite";
-import { cloudflare } from "@cloudflare/vite-plugin";
-import fumadocsMdx from "fumadocs-mdx/vite";
-import { visualizer } from "rollup-plugin-visualizer";
-import * as MdxConfig from "./source.config";
+import viteReact from '@vitejs/plugin-react';
+import tailwindcss from '@tailwindcss/vite';
+import { cloudflare } from '@cloudflare/vite-plugin';
+import fumadocsMdx from 'fumadocs-mdx/vite';
+import { visualizer } from 'rollup-plugin-visualizer';
+import * as MdxConfig from './source.config';
 
-const isAnalyze = process.env.ANALYZE === "true";
+const isAnalyze = process.env.ANALYZE === 'true';
 
 // Auto-discover doc pages from content/docs/*.mdx so adding a new file
 // doesn't require touching this config. `index.mdx` becomes `/docs`,
 // everything else becomes `/docs/<slug>`.
-const docsPages = readdirSync(resolve(__dirname, "content/docs"))
-  .filter((f) => f.endsWith(".mdx") || f.endsWith(".md"))
+const docsPages = readdirSync(resolve(__dirname, 'content/docs'))
+  .filter((f) => f.endsWith('.mdx') || f.endsWith('.md'))
   .map((f) => {
-    const slug = f.replace(/\.(mdx|md)$/, "");
-    return { path: slug === "index" ? "/docs" : `/docs/${slug}` };
+    const slug = f.replace(/\.(mdx|md)$/, '');
+    return { path: slug === 'index' ? '/docs' : `/docs/${slug}` };
   });
 
 // Auto-discover blog post routes from src/routes/blog/<slug>.tsx so adding
 // a new post just means dropping in a route file — no vite.config edit.
-const blogPages = readdirSync(resolve(__dirname, "src/routes/blog"))
-  .filter((f) => f.endsWith(".tsx") && f !== "index.tsx")
-  .map((f) => ({ path: `/blog/${f.replace(/\.tsx$/, "")}` }));
+const blogPages = readdirSync(resolve(__dirname, 'src/routes/blog'))
+  .filter((f) => f.endsWith('.tsx') && f !== 'index.tsx')
+  .map((f) => ({ path: `/blog/${f.replace(/\.tsx$/, '')}` }));
 
 const config = defineConfig(({ command }) => ({
   plugins: [
     cloudflare({
-      viteEnvironment: { name: "ssr" },
+      viteEnvironment: { name: 'ssr' },
       // During `vite build`, prerender starts a Vite preview server. With
       // remote bindings on, that preview proxies the COMPILER service to the
       // live worker — which (a) requires CLOUDFLARE_API_TOKEN to set up, and
@@ -44,7 +44,7 @@ const config = defineConfig(({ command }) => ({
       // Dev (`vite dev`) and the deployed worker keep remote bindings.
       remoteBindings: command !== 'build',
     }),
-    tsconfigPaths({ projects: ["./tsconfig.json"] }),
+    tsconfigPaths({ projects: ['./tsconfig.json'] }),
     tailwindcss(),
     fumadocsMdx(MdxConfig),
     tanstackStart({
@@ -96,11 +96,11 @@ const config = defineConfig(({ command }) => ({
     ...(isAnalyze
       ? [
           visualizer({
-            filename: "dist/bundle-stats.html",
+            filename: 'dist/bundle-stats.html',
             open: true,
             gzipSize: true,
             brotliSize: true,
-            template: "treemap",
+            template: 'treemap',
           }),
         ]
       : []),

@@ -16,7 +16,12 @@ import { resolve } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { createServer } from 'node:http';
 import type { CircuitState, TracesPayload, TestResultsPayload, RenderResult } from './types.js';
-import { serveStatic, publicDirExists, isCompileRequest, proxyCompile } from '../lib/serve-static.js';
+import {
+  serveStatic,
+  publicDirExists,
+  isCompileRequest,
+  proxyCompile,
+} from '../lib/serve-static.js';
 
 export type { CircuitState, TracesPayload, TestResultsPayload };
 
@@ -40,7 +45,11 @@ export interface StudioServer {
 
   updateSource(source: string, sessionId?: string): void;
   /** Push source AND await the browser's render acknowledgment (success + circuitName, or error/timeout). */
-  updateSourceAndAwait(source: string, sessionId?: string, timeoutMs?: number): Promise<RenderResult>;
+  updateSourceAndAwait(
+    source: string,
+    sessionId?: string,
+    timeoutMs?: number,
+  ): Promise<RenderResult>;
   /** Push source and await the render ack from a not-yet-connected tab (fresh open). */
   updateSourceAndAwaitConnect(source: string, timeoutMs?: number): Promise<RenderResult>;
   pushTraces(data: TracesPayload, sessionId?: string): void;
@@ -57,21 +66,22 @@ const STATE_REQUEST_TIMEOUT = 3000;
  *  Generous: covers browser launch + page load + esm.sh fetch + compile. */
 const CONNECT_RENDER_TIMEOUT = 20000;
 
-export async function createStudioServer(
-  options?: {
-    port?: number;
-    token?: string;
-    /** Called when the last connected tab disconnects (session count hits 0).
-     *  Lets the caller reset its "browser already opened" latch so a later
-     *  show_circuit can reopen a tab without restarting the MCP. */
-    onSessionsEmpty?: () => void;
-  }
-): Promise<StudioServer> {
+export async function createStudioServer(options?: {
+  port?: number;
+  token?: string;
+  /** Called when the last connected tab disconnects (session count hits 0).
+   *  Lets the caller reset its "browser already opened" latch so a later
+   *  show_circuit can reopen a tab without restarting the MCP. */
+  onSessionsEmpty?: () => void;
+}): Promise<StudioServer> {
   const preferredPort = options?.port ?? 0;
   const token = options?.token ?? randomUUID();
 
   const sessions = new Map<string, Session>();
-  const pendingRequests = new Map<string, { resolve: (value: unknown) => void; timer: ReturnType<typeof setTimeout> }>();
+  const pendingRequests = new Map<
+    string,
+    { resolve: (value: unknown) => void; timer: ReturnType<typeof setTimeout> }
+  >();
 
   let currentSource: string | null = null;
   let cachedTraces: TracesPayload | null = null;
@@ -174,7 +184,8 @@ export async function createStudioServer(
       let allowedOrigin = false;
       try {
         const host = new URL(origin).hostname;
-        allowedOrigin = host === 'localhost' || host === '127.0.0.1' || host === '::1' || host === '[::1]';
+        allowedOrigin =
+          host === 'localhost' || host === '127.0.0.1' || host === '::1' || host === '[::1]';
       } catch {
         allowedOrigin = false;
       }
@@ -339,7 +350,11 @@ export async function createStudioServer(
     return new Promise((resolveReq) => {
       const timer = setTimeout(() => {
         pendingRequests.delete(requestId);
-        resolveReq({ ok: false, timedOut: true, error: `render not confirmed within ${timeoutMs}ms` });
+        resolveReq({
+          ok: false,
+          timedOut: true,
+          error: `render not confirmed within ${timeoutMs}ms`,
+        });
       }, timeoutMs);
       pendingRequests.set(requestId, { resolve: resolveReq as (v: unknown) => void, timer });
       send(target.ws, { type: 'source', source, requestId });
@@ -363,7 +378,11 @@ export async function createStudioServer(
       const timer = setTimeout(() => {
         pendingRequests.delete(requestId);
         if (pendingConnectRender === requestId) pendingConnectRender = null;
-        resolveReq({ ok: false, timedOut: true, error: `no render confirmed within ${timeoutMs}ms (browser may still be opening)` });
+        resolveReq({
+          ok: false,
+          timedOut: true,
+          error: `no render confirmed within ${timeoutMs}ms (browser may still be opening)`,
+        });
       }, timeoutMs);
       pendingRequests.set(requestId, { resolve: resolveReq as (v: unknown) => void, timer });
       pendingConnectRender = requestId;

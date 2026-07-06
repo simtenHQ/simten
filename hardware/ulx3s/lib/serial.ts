@@ -48,7 +48,12 @@ export function discoverUsbSerial(): string | null {
   return null;
 }
 
-async function openWithRetry(path: string, baud: number, retries: number, backoffMs: number): Promise<SerialPort> {
+async function openWithRetry(
+  path: string,
+  baud: number,
+  retries: number,
+  backoffMs: number,
+): Promise<SerialPort> {
   let lastErr: unknown;
   for (let i = 0; i <= retries; i++) {
     try {
@@ -67,7 +72,9 @@ async function openWithRetry(path: string, baud: number, retries: number, backof
 export async function openAndCapture(opts: OpenAndCaptureOpts): Promise<CaptureResult> {
   const device = opts.device ?? discoverUsbSerial();
   if (!device) {
-    const err = new Error('no serial device found (looked for /dev/cu.usbserial-*, /dev/ttyUSB*, /dev/tty.usbserial-*)');
+    const err = new Error(
+      'no serial device found (looked for /dev/cu.usbserial-*, /dev/ttyUSB*, /dev/tty.usbserial-*)',
+    );
     (err as NodeJS.ErrnoException).code = 'ENOENT';
     throw err;
   }

@@ -1,7 +1,6 @@
-
-import { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { useCircuitSimulator } from "@simten/embed";
-import { MiniSwitch2Port } from "./circuits";
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useCircuitSimulator } from '@simten/embed';
+import { MiniSwitch2Port } from './circuits';
 
 export function useSwitchSimulator() {
   const sim = useCircuitSimulator(MiniSwitch2Port);
@@ -17,11 +16,11 @@ export function useSwitchSimulator() {
     for (const node of sim.circuit.nodes) {
       const label = node.label ?? node.id;
       if (
-        label === "always_ready" ||
-        label === "p0_byte" ||
-        label === "p0_valid" ||
-        label === "p1_byte" ||
-        label === "p1_valid"
+        label === 'always_ready' ||
+        label === 'p0_byte' ||
+        label === 'p0_valid' ||
+        label === 'p1_byte' ||
+        label === 'p1_valid'
       ) {
         ids[label] = node.id;
       }
@@ -69,7 +68,7 @@ export function useSwitchSimulator() {
       if (byteNode) sim.setNodeValue(byteNode, byte);
       if (validNode) sim.setNodeValue(validNode, 1);
     },
-    [nodeIds, sim.setNodeValue]
+    [nodeIds, sim.setNodeValue],
   );
 
   const clearValid = useCallback(
@@ -78,7 +77,7 @@ export function useSwitchSimulator() {
       const validNode = port === 0 ? nodeIds.p0_valid : nodeIds.p1_valid;
       if (validNode) sim.setNodeValue(validNode, 0);
     },
-    [nodeIds, sim.setNodeValue]
+    [nodeIds, sim.setNodeValue],
   );
 
   return {

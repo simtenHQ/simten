@@ -108,10 +108,10 @@ export function runFirmware(imem: number[], maxCycles = 200): number[] {
 
   for (let cycle = 0; cycle < maxCycles; cycle++) {
     const instrAddr = toU32(cpu.get('instr_addr'));
-    const dataAddr  = toU32(cpu.get('data_addr'));
-    const memWrite  = cpu.get('data_mem_write') as unknown as number;
+    const dataAddr = toU32(cpu.get('data_addr'));
+    const memWrite = cpu.get('data_mem_write') as unknown as number;
     const dataWrite = toU32(cpu.get('data_write'));
-    const funct3    = cpu.get('data_funct3') as unknown as number;
+    const funct3 = cpu.get('data_funct3') as unknown as number;
 
     const wordIdx = (instrAddr >>> 2) & 0x1ff;
     const instr = imem[wordIdx] ?? 0;
@@ -121,26 +121,31 @@ export function runFirmware(imem: number[], maxCycles = 200): number[] {
       dataRead = 1;
     } else if (dataAddr >= DMEM_BASE && dataAddr < DMEM_BASE + DMEM_SIZE) {
       const alignedOff = (dataAddr - DMEM_BASE) & ~3;
-      dataRead = (dmem[alignedOff] | (dmem[alignedOff+1] << 8) | (dmem[alignedOff+2] << 16) | (dmem[alignedOff+3] << 24)) >>> 0;
+      dataRead =
+        (dmem[alignedOff] |
+          (dmem[alignedOff + 1] << 8) |
+          (dmem[alignedOff + 2] << 16) |
+          (dmem[alignedOff + 3] << 24)) >>>
+        0;
     } else if (dataAddr < 0x800) {
       const wi = (dataAddr >>> 2) & 0x1ff;
       dataRead = (imem[wi] ?? 0) >>> 0;
     }
-    void funct3;  // CPU's LoadAlignFull uses funct3 internally; we just pass the raw word.
+    void funct3; // CPU's LoadAlignFull uses funct3 internally; we just pass the raw word.
 
     if (memWrite && dataAddr >= DMEM_BASE && dataAddr < DMEM_BASE + DMEM_SIZE) {
       const off = dataAddr - DMEM_BASE;
       const f3 = funct3 & 0x7;
       if (f3 === 0) {
-        dmem[off] = dataWrite & 0xFF;
+        dmem[off] = dataWrite & 0xff;
       } else if (f3 === 1) {
-        dmem[off]   = dataWrite & 0xFF;
-        dmem[off+1] = (dataWrite >> 8) & 0xFF;
+        dmem[off] = dataWrite & 0xff;
+        dmem[off + 1] = (dataWrite >> 8) & 0xff;
       } else {
-        dmem[off]   = dataWrite & 0xFF;
-        dmem[off+1] = (dataWrite >> 8)  & 0xFF;
-        dmem[off+2] = (dataWrite >> 16) & 0xFF;
-        dmem[off+3] = (dataWrite >> 24) & 0xFF;
+        dmem[off] = dataWrite & 0xff;
+        dmem[off + 1] = (dataWrite >> 8) & 0xff;
+        dmem[off + 2] = (dataWrite >> 16) & 0xff;
+        dmem[off + 3] = (dataWrite >> 24) & 0xff;
       }
     }
 
@@ -170,11 +175,11 @@ function runSim(name: string, imem: number[], maxCycles = 200): void {
 
   for (let cycle = 0; cycle < maxCycles; cycle++) {
     const instrAddr = toU32(cpu.get('instr_addr'));
-    const dataAddr  = toU32(cpu.get('data_addr'));
-    const memRead   = cpu.get('data_mem_read') as unknown as number;
-    const memWrite  = cpu.get('data_mem_write') as unknown as number;
+    const dataAddr = toU32(cpu.get('data_addr'));
+    const memRead = cpu.get('data_mem_read') as unknown as number;
+    const memWrite = cpu.get('data_mem_write') as unknown as number;
     const dataWrite = toU32(cpu.get('data_write'));
-    const funct3    = cpu.get('data_funct3') as unknown as number;
+    const funct3 = cpu.get('data_funct3') as unknown as number;
 
     const wordIdx = (instrAddr >>> 2) & 0x1ff;
     const instr = imem[wordIdx] ?? 0;
@@ -184,7 +189,12 @@ function runSim(name: string, imem: number[], maxCycles = 200): void {
       dataRead = 1;
     } else if (dataAddr >= DMEM_BASE && dataAddr < DMEM_BASE + DMEM_SIZE) {
       const alignedOff = (dataAddr - DMEM_BASE) & ~3;
-      dataRead = (dmem[alignedOff] | (dmem[alignedOff+1] << 8) | (dmem[alignedOff+2] << 16) | (dmem[alignedOff+3] << 24)) >>> 0;
+      dataRead =
+        (dmem[alignedOff] |
+          (dmem[alignedOff + 1] << 8) |
+          (dmem[alignedOff + 2] << 16) |
+          (dmem[alignedOff + 3] << 24)) >>>
+        0;
     } else if (dataAddr < 0x800) {
       const wi = (dataAddr >>> 2) & 0x1ff;
       dataRead = (imem[wi] ?? 0) >>> 0;
@@ -195,26 +205,30 @@ function runSim(name: string, imem: number[], maxCycles = 200): void {
       const off = dataAddr - DMEM_BASE;
       const f3 = funct3 & 0x7;
       if (f3 === 0) {
-        dmem[off] = dataWrite & 0xFF;
+        dmem[off] = dataWrite & 0xff;
       } else if (f3 === 1) {
-        dmem[off]   = dataWrite & 0xFF;
-        dmem[off+1] = (dataWrite >> 8) & 0xFF;
+        dmem[off] = dataWrite & 0xff;
+        dmem[off + 1] = (dataWrite >> 8) & 0xff;
       } else {
-        dmem[off]   = dataWrite & 0xFF;
-        dmem[off+1] = (dataWrite >> 8)  & 0xFF;
-        dmem[off+2] = (dataWrite >> 16) & 0xFF;
-        dmem[off+3] = (dataWrite >> 24) & 0xFF;
+        dmem[off] = dataWrite & 0xff;
+        dmem[off + 1] = (dataWrite >> 8) & 0xff;
+        dmem[off + 2] = (dataWrite >> 16) & 0xff;
+        dmem[off + 3] = (dataWrite >> 24) & 0xff;
       }
     }
 
     if (memWrite && toU32(dataAddr) === UART_ADDR) {
-      console.log(`  [cycle ${cycle}] UART WRITE: 0x${(dataWrite & 0xff).toString(16).padStart(2,'0')} ('${String.fromCharCode(dataWrite & 0xff)}')`);
+      console.log(
+        `  [cycle ${cycle}] UART WRITE: 0x${(dataWrite & 0xff).toString(16).padStart(2, '0')} ('${String.fromCharCode(dataWrite & 0xff)}')`,
+      );
       uartWrites.push({ cycle, byte: dataWrite & 0xff });
     }
 
     const h = (v: number) => '0x' + v.toString(16).padStart(8, '0');
     if (cycle < 80) {
-      console.log(`  [${cycle}] PC=${h(instrAddr)} instr=${h(instr)} data_addr=${h(dataAddr)} mem_r=${memRead} mem_w=${memWrite} data_write=${h(dataWrite & 0xff)} data_read=${h(dataRead)}`);
+      console.log(
+        `  [${cycle}] PC=${h(instrAddr)} instr=${h(instr)} data_addr=${h(dataAddr)} mem_r=${memRead} mem_w=${memWrite} data_write=${h(dataWrite & 0xff)} data_read=${h(dataRead)}`,
+      );
     }
 
     cpu.set({ instruction: instr, data_read: dataRead });
@@ -224,7 +238,9 @@ function runSim(name: string, imem: number[], maxCycles = 200): void {
   console.log(`\nResult: ${uartWrites.length} UART write(s)`);
   if (uartWrites.length > 0) {
     for (const w of uartWrites.slice(0, 5)) {
-      console.log(`  cycle ${w.cycle}: 0x${w.byte.toString(16).padStart(2,'0')} (${w.byte === 65 ? 'CORRECT' : 'WRONG - expected 65'})`);
+      console.log(
+        `  cycle ${w.cycle}: 0x${w.byte.toString(16).padStart(2, '0')} (${w.byte === 65 ? 'CORRECT' : 'WRONG - expected 65'})`,
+      );
     }
   } else {
     console.log('  (no UART writes — sw was skipped)');

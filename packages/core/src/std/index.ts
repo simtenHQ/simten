@@ -16,16 +16,32 @@ export { And, Or, Not, Nand, Nor, Xor, Xnor, Buffer } from './logic.js';
 
 // Arithmetic
 export {
-  Incrementer, Adder, Subtractor, Multiplier, Comparator,
-  LeftShifter, RightShifter,
-  SignedAdder, SignedComparator, SignedMultiplier,
-  BusAnd, BusOr, BusNot, BusXor,
+  Incrementer,
+  Adder,
+  Subtractor,
+  Multiplier,
+  Comparator,
+  LeftShifter,
+  RightShifter,
+  SignedAdder,
+  SignedComparator,
+  SignedMultiplier,
+  BusAnd,
+  BusOr,
+  BusNot,
+  BusXor,
 } from './arithmetic.js';
 
 // Routing / Plexers / Utilities
 export {
-  Mux, Decoder,
-  Splitter, Splitter8to8, Combiner8to8, Concat, BitSlice, AddressCombiner,
+  Mux,
+  Decoder,
+  Splitter,
+  Splitter8to8,
+  Combiner8to8,
+  Concat,
+  BitSlice,
+  AddressCombiner,
   Probe,
 } from './routing.js';
 
@@ -43,10 +59,21 @@ export { SevenSegment, HexDisplay, Screen, RasterDisplay, Console } from './disp
 
 // RV32I
 export {
-  RV32I_Decode, RV32I_ALU, RV32I_ImmGen, RV32I_Control,
-  RV32I_BranchComp, RV32I_RegisterFile, RV32I_InstrMem, RV32I_DataMem,
-  RV32I_WritebackMux, RV32I_NextPCMux, RV32I_ForwardingUnit,
-  RV32I_WBBypass, RV32I_LoadAlign, RV32I_LoadAlignFull, RV32I_HazardUnit,
+  RV32I_Decode,
+  RV32I_ALU,
+  RV32I_ImmGen,
+  RV32I_Control,
+  RV32I_BranchComp,
+  RV32I_RegisterFile,
+  RV32I_InstrMem,
+  RV32I_DataMem,
+  RV32I_WritebackMux,
+  RV32I_NextPCMux,
+  RV32I_ForwardingUnit,
+  RV32I_WBBypass,
+  RV32I_LoadAlign,
+  RV32I_LoadAlignFull,
+  RV32I_HazardUnit,
   DualPortROM,
 } from './rv32i.js';
 
@@ -55,9 +82,14 @@ export { RV32I_Core } from './rv32i-cpu.js';
 
 // Networking
 export {
-  Eth_ProtocolDecoder, Eth_AddrClassifier, Eth_FrameInput,
-  Eth_FrameParser, Eth_CRC32,
-  MemBusMux, UART_TX, NIC_FIFO,
+  Eth_ProtocolDecoder,
+  Eth_AddrClassifier,
+  Eth_FrameInput,
+  Eth_FrameParser,
+  Eth_CRC32,
+  MemBusMux,
+  UART_TX,
+  NIC_FIFO,
 } from './networking.js';
 
 // ============================================================================
@@ -115,5 +147,3 @@ const _materialize = (v: unknown): BuiltCircuit | null => {
 export const STDLIB_CIRCUITS: readonly BuiltCircuit[] = Object.freeze(
   _allExports.map(_materialize).filter((c): c is BuiltCircuit => c !== null),
 );
-
-

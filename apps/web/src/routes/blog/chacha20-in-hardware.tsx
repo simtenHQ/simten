@@ -1,31 +1,41 @@
-import { createFileRoute } from '@tanstack/react-router'
-import { blogPostHead } from '@/lib/seo'
-import { getPost } from '@/features/blog/posts'
-import { Suspense, lazy } from "react";
-import { HeroSection } from "@/features/blog/chacha20-in-hardware/sections/HeroSection";
-import { BlogFooter } from "@/features/blog/BlogFooter";
-import { ErrorBoundary } from "@/features/blog/building-a-cpu/ErrorBoundary";
+import { createFileRoute } from '@tanstack/react-router';
+import { blogPostHead } from '@/lib/seo';
+import { getPost } from '@/features/blog/posts';
+import { Suspense, lazy } from 'react';
+import { HeroSection } from '@/features/blog/chacha20-in-hardware/sections/HeroSection';
+import { BlogFooter } from '@/features/blog/BlogFooter';
+import { ErrorBoundary } from '@/features/blog/building-a-cpu/ErrorBoundary';
 
 const ARXSection = lazy(() =>
-  import("@/features/blog/chacha20-in-hardware/sections/ARXSection").then((m) => ({ default: m.ARXSection }))
+  import('@/features/blog/chacha20-in-hardware/sections/ARXSection').then((m) => ({
+    default: m.ARXSection,
+  })),
 );
 const RotateSection = lazy(() =>
-  import("@/features/blog/chacha20-in-hardware/sections/RotateSection").then((m) => ({ default: m.RotateSection }))
+  import('@/features/blog/chacha20-in-hardware/sections/RotateSection').then((m) => ({
+    default: m.RotateSection,
+  })),
 );
 const StepSection = lazy(() =>
-  import("@/features/blog/chacha20-in-hardware/sections/StepSection").then((m) => ({ default: m.StepSection }))
+  import('@/features/blog/chacha20-in-hardware/sections/StepSection').then((m) => ({
+    default: m.StepSection,
+  })),
 );
 const QuarterRoundSection = lazy(() =>
-  import("@/features/blog/chacha20-in-hardware/sections/QuarterRoundSection").then((m) => ({ default: m.QuarterRoundSection }))
+  import('@/features/blog/chacha20-in-hardware/sections/QuarterRoundSection').then((m) => ({
+    default: m.QuarterRoundSection,
+  })),
 );
 const BigPictureSection = lazy(() =>
-  import("@/features/blog/chacha20-in-hardware/sections/BigPictureSection").then((m) => ({ default: m.BigPictureSection }))
+  import('@/features/blog/chacha20-in-hardware/sections/BigPictureSection').then((m) => ({
+    default: m.BigPictureSection,
+  })),
 );
 
 export const Route = createFileRoute('/blog/chacha20-in-hardware')({
   head: () => blogPostHead(getPost('chacha20-in-hardware')),
   component: ChaCha20InHardwarePage,
-})
+});
 
 function SectionSkeleton() {
   return (
@@ -44,47 +54,46 @@ function SectionSkeleton() {
 function ChaCha20InHardwarePage() {
   return (
     <>
+      <HeroSection />
 
-        <HeroSection />
+      <div className="space-y-4">
+        <hr className="border-gray-200 dark:border-gray-800" />
+        <ErrorBoundary>
+          <Suspense fallback={<SectionSkeleton />}>
+            <ARXSection />
+          </Suspense>
+        </ErrorBoundary>
 
-        <div className="space-y-4">
-          <hr className="border-gray-200 dark:border-gray-800" />
-          <ErrorBoundary>
-            <Suspense fallback={<SectionSkeleton />}>
-              <ARXSection />
-            </Suspense>
-          </ErrorBoundary>
+        <hr className="border-gray-200 dark:border-gray-800" />
+        <ErrorBoundary>
+          <Suspense fallback={<SectionSkeleton />}>
+            <RotateSection />
+          </Suspense>
+        </ErrorBoundary>
 
-          <hr className="border-gray-200 dark:border-gray-800" />
-          <ErrorBoundary>
-            <Suspense fallback={<SectionSkeleton />}>
-              <RotateSection />
-            </Suspense>
-          </ErrorBoundary>
+        <hr className="border-gray-200 dark:border-gray-800" />
+        <ErrorBoundary>
+          <Suspense fallback={<SectionSkeleton />}>
+            <StepSection />
+          </Suspense>
+        </ErrorBoundary>
 
-          <hr className="border-gray-200 dark:border-gray-800" />
-          <ErrorBoundary>
-            <Suspense fallback={<SectionSkeleton />}>
-              <StepSection />
-            </Suspense>
-          </ErrorBoundary>
+        <hr className="border-gray-200 dark:border-gray-800" />
+        <ErrorBoundary>
+          <Suspense fallback={<SectionSkeleton />}>
+            <QuarterRoundSection />
+          </Suspense>
+        </ErrorBoundary>
 
-          <hr className="border-gray-200 dark:border-gray-800" />
-          <ErrorBoundary>
-            <Suspense fallback={<SectionSkeleton />}>
-              <QuarterRoundSection />
-            </Suspense>
-          </ErrorBoundary>
+        <hr className="border-gray-200 dark:border-gray-800" />
+        <ErrorBoundary>
+          <Suspense fallback={<SectionSkeleton />}>
+            <BigPictureSection />
+          </Suspense>
+        </ErrorBoundary>
+      </div>
 
-          <hr className="border-gray-200 dark:border-gray-800" />
-          <ErrorBoundary>
-            <Suspense fallback={<SectionSkeleton />}>
-              <BigPictureSection />
-            </Suspense>
-          </ErrorBoundary>
-        </div>
-
-        <BlogFooter slug="chacha20-in-hardware" />
+      <BlogFooter slug="chacha20-in-hardware" />
     </>
-  )
+  );
 }

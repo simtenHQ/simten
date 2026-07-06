@@ -11,9 +11,9 @@ import { createSimulatorFromCircuit, type CircuitLibrary } from '@simten/core/si
 import { useCircuitLibraryStore } from '../../stores/circuit-library-store';
 import { STDLIB_CIRCUITS } from '@simten/core/std';
 
-const PRIMITIVES = STDLIB_CIRCUITS
-  .map((c) => c.circuit)
-  .filter(c => c.implementation.kind === 'primitive');
+const PRIMITIVES = STDLIB_CIRCUITS.map((c) => c.circuit).filter(
+  (c) => c.implementation.kind === 'primitive',
+);
 
 function getLibrary(): CircuitLibrary {
   const store = useCircuitLibraryStore.getState();
@@ -48,21 +48,15 @@ describe('Nested Sequential Components', () => {
             { id: 'reg_data', name: 'data', portType: busType(8) },
             { id: 'reg_we', name: 'we', portType: bitType() },
           ],
-          outputs: [
-            { id: 'reg_q', name: 'q', portType: busType(8) },
-          ],
-          clocks: [
-            { id: 'reg_clk', name: 'clk' },
-          ],
+          outputs: [{ id: 'reg_q', name: 'q', portType: busType(8) }],
+          clocks: [{ id: 'reg_clk', name: 'clk' }],
         },
         {
           id: 'we_const',
           componentRef: 'Constant',
           arguments: { value: 1 },
           inputs: [],
-          outputs: [
-            { id: 'we_out', name: 'out', portType: bitType() },
-          ],
+          outputs: [{ id: 'we_out', name: 'out', portType: bitType() }],
           clocks: [],
         },
       ],
@@ -112,9 +106,7 @@ describe('Nested Sequential Components', () => {
             { id: 'reg_data', name: 'data', portType: busType(8) },
             { id: 'reg_we', name: 'we', portType: bitType() },
           ],
-          outputs: [
-            { id: 'reg_q', name: 'q', portType: busType(8) },
-          ],
+          outputs: [{ id: 'reg_q', name: 'q', portType: busType(8) }],
           clocks: [{ id: 'reg_clk', name: 'clk' }],
         },
         {
@@ -125,9 +117,7 @@ describe('Nested Sequential Components', () => {
             { id: 'adder_a', name: 'a', portType: busType(8) },
             { id: 'adder_b', name: 'b', portType: busType(8) },
           ],
-          outputs: [
-            { id: 'adder_sum', name: 'sum', portType: busType(8) },
-          ],
+          outputs: [{ id: 'adder_sum', name: 'sum', portType: busType(8) }],
           clocks: [],
         },
         {
@@ -215,24 +205,16 @@ describe('Nested Sequential Components', () => {
           componentRef: 'Constant',
           arguments: { value: 42 },
           inputs: [],
-          outputs: [
-            { id: 'input_out', name: 'out', portType: busType(8) },
-          ],
+          outputs: [{ id: 'input_out', name: 'out', portType: busType(8) }],
           clocks: [],
         },
         {
           id: 'reg_instance',
           componentRef: 'SimpleReg', // Reference to the nested circuit
           arguments: {},
-          inputs: [
-            { id: 'reg_in', name: 'dataIn', portType: busType(8) },
-          ],
-          outputs: [
-            { id: 'reg_out', name: 'dataOut', portType: busType(8) },
-          ],
-          clocks: [
-            { id: 'reg_clk2', name: 'clk' },
-          ],
+          inputs: [{ id: 'reg_in', name: 'dataIn', portType: busType(8) }],
+          outputs: [{ id: 'reg_out', name: 'dataOut', portType: busType(8) }],
+          clocks: [{ id: 'reg_clk2', name: 'clk' }],
         },
       ],
       connections: [

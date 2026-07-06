@@ -21,16 +21,13 @@ import {
 // Define test circuits using only core types (no store dependencies)
 function createTestPrimitives(): Circuit[] {
   const andGate: Circuit = {
-
     name: 'And',
 
     inputs: [
       { name: 'a', portType: bitType() },
       { name: 'b', portType: bitType() },
     ],
-    outputs: [
-      { name: 'out', portType: bitType() },
-    ],
+    outputs: [{ name: 'out', portType: bitType() }],
     clocks: [],
     state: [],
     nodes: [],
@@ -40,16 +37,13 @@ function createTestPrimitives(): Circuit[] {
   };
 
   const orGate: Circuit = {
-
     name: 'Or',
 
     inputs: [
       { name: 'a', portType: bitType() },
       { name: 'b', portType: bitType() },
     ],
-    outputs: [
-      { name: 'out', portType: bitType() },
-    ],
+    outputs: [{ name: 'out', portType: bitType() }],
     clocks: [],
     state: [],
     nodes: [],
@@ -59,15 +53,10 @@ function createTestPrimitives(): Circuit[] {
   };
 
   const notGate: Circuit = {
-
     name: 'Not',
 
-    inputs: [
-      { name: 'in', portType: bitType() },
-    ],
-    outputs: [
-      { name: 'out', portType: bitType() },
-    ],
+    inputs: [{ name: 'in', portType: bitType() }],
+    outputs: [{ name: 'out', portType: bitType() }],
     clocks: [],
     state: [],
     nodes: [],
@@ -77,13 +66,10 @@ function createTestPrimitives(): Circuit[] {
   };
 
   const switchPrim: Circuit = {
-
     name: 'Switch',
 
     inputs: [],
-    outputs: [
-      { name: 'out', portType: bitType() },
-    ],
+    outputs: [{ name: 'out', portType: bitType() }],
     clocks: [],
     state: [],
     nodes: [],
@@ -93,16 +79,13 @@ function createTestPrimitives(): Circuit[] {
   };
 
   const register: Circuit = {
-
     name: 'Register',
 
     inputs: [
       { name: 'd', portType: bitType() },
       { name: 'we', portType: bitType() },
     ],
-    outputs: [
-      { name: 'q', portType: bitType() },
-    ],
+    outputs: [{ name: 'q', portType: bitType() }],
     clocks: [{ name: 'clk' }],
     state: [],
     nodes: [],
@@ -133,14 +116,12 @@ describe('Core Simulator Standalone', () => {
     const circuit: Circuit = {
       id: 'test:simple-and',
       name: 'SimpleAnd',
-  
+
       inputs: [
         { name: 'x', portType: bitType() },
         { name: 'y', portType: bitType() },
       ],
-      outputs: [
-        { name: 'z', portType: bitType() },
-      ],
+      outputs: [{ name: 'z', portType: bitType() }],
       clocks: [],
       state: [],
       nodes: [
@@ -152,9 +133,7 @@ describe('Core Simulator Standalone', () => {
             { id: 'and1.a', name: 'a', portType: bitType() },
             { id: 'and1.b', name: 'b', portType: bitType() },
           ],
-          outputs: [
-            { id: 'and1.out', name: 'out', portType: bitType() },
-          ],
+          outputs: [{ id: 'and1.out', name: 'out', portType: bitType() }],
           clocks: [],
         },
       ],
@@ -204,7 +183,7 @@ describe('Core Simulator Standalone', () => {
 
   it('should run a simulation when primitives are explicitly registered', async () => {
     const { registerEvalFunction } = await import('../eval-bridge.js');
-    registerEvalFunction('And', ['a', 'b'], ['out'], ({ a, b }) => ({ out: (a && b) ? 1 : 0 }));
+    registerEvalFunction('And', ['a', 'b'], ['out'], ({ a, b }) => ({ out: a && b ? 1 : 0 }));
     registerEvalFunction('Switch', [], ['out'], ({ value }) => ({ out: value ? 1 : 0 }));
 
     const primitives = createTestPrimitives();
@@ -213,11 +192,9 @@ describe('Core Simulator Standalone', () => {
     const circuit: Circuit = {
       id: 'test:switch-and',
       name: 'SwitchAnd',
-  
+
       inputs: [],
-      outputs: [
-        { name: 'result', portType: bitType() },
-      ],
+      outputs: [{ name: 'result', portType: bitType() }],
       clocks: [],
       state: [],
       nodes: [
@@ -279,8 +256,9 @@ describe('Core Simulator Standalone', () => {
     const result = sim.runCombinational();
 
     // Find the AND gate output in the port values
-    const andOutput = Array.from(result.portValues.entries())
-      .find(([key]) => key.includes('and1') && key.endsWith('.out'));
+    const andOutput = Array.from(result.portValues.entries()).find(
+      ([key]) => key.includes('and1') && key.endsWith('.out'),
+    );
 
     expect(andOutput).toBeDefined();
     expect(andOutput![1]).toBe(true);

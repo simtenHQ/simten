@@ -1,7 +1,6 @@
-
-import { useRef, useEffect } from "react";
-import { BaseNode } from "./BaseNode";
-import type { NodeData } from "./NodeData";
+import { useRef, useEffect } from 'react';
+import { BaseNode } from './BaseNode';
+import type { NodeData } from './NodeData';
 
 interface EmbedConsoleNodeProps {
   data: NodeData;
@@ -10,7 +9,7 @@ interface EmbedConsoleNodeProps {
 
 export function EmbedConsoleNode({ data, selected }: EmbedConsoleNodeProps) {
   const textAreaRef = useRef<HTMLPreElement>(null);
-  const text = (data.__consoleText as string) ?? (data.__uartText as string) ?? "";
+  const text = (data.__consoleText as string) ?? (data.__uartText as string) ?? '';
 
   useEffect(() => {
     if (textAreaRef.current) {
@@ -18,7 +17,7 @@ export function EmbedConsoleNode({ data, selected }: EmbedConsoleNodeProps) {
     }
   }, [text]);
 
-  const lineCount = text ? text.split("\n").length : 0;
+  const lineCount = text ? text.split('\n').length : 0;
   const charCount = text.length;
 
   return (
@@ -27,27 +26,27 @@ export function EmbedConsoleNode({ data, selected }: EmbedConsoleNodeProps) {
       inputPorts={data.inputNames.map((name, index) => ({
         name,
         index,
-        type: "input" as const,
+        type: 'input' as const,
       }))}
       outputPorts={data.outputNames.map((name, index) => ({
         name,
         index,
-        type: "output" as const,
+        type: 'output' as const,
       }))}
       className="w-[380px]"
     >
       <div className="flex flex-col items-center gap-2">
         <div className="px-2 py-1 rounded text-xs font-medium text-[var(--embed-text-primary)]">
-          {data.label || "Console"}
+          {data.label || 'Console'}
         </div>
         <pre
           ref={textAreaRef}
           className="w-full h-32 overflow-auto rounded border-2 border-[var(--embed-border-node)] bg-black text-green-400 font-mono text-xs leading-none p-2 whitespace-pre"
-          style={{ maxHeight: "200px" }}
+          style={{ maxHeight: '200px' }}
         >
           {text || (
             <span className="text-[var(--embed-text-muted)]">
-              {"// Console output will appear here"}
+              {'// Console output will appear here'}
             </span>
           )}
         </pre>

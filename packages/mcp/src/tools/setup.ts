@@ -37,8 +37,13 @@ export function registerSetupTool(server: McpServer): void {
     'setup_project',
     DESCRIPTION,
     {
-      dir: z.string().optional().describe('Project root to set up (default: the MCP working directory)'),
-      packageManager: z.enum(['npm', 'pnpm', 'yarn', 'bun']).optional()
+      dir: z
+        .string()
+        .optional()
+        .describe('Project root to set up (default: the MCP working directory)'),
+      packageManager: z
+        .enum(['npm', 'pnpm', 'yarn', 'bun'])
+        .optional()
         .describe('Override the package manager (default: detect from lockfile, else npm)'),
     },
     async ({ dir, packageManager }) => {

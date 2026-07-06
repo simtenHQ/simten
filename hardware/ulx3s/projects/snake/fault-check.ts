@@ -20,7 +20,7 @@ const SCRIPT = [1, 1, 0, 0, 1, 1, 2, 2, 3, 3, 0, 0];
 
 const FAULTS: Array<{ name: string; why: string; mutate: (b: SnakeBuilt) => void }> = [
   {
-    name: "DirectionUnit.minus1: Constant 255 → 1 (the historical FPGA Mux-width bug)",
+    name: 'DirectionUnit.minus1: Constant 255 → 1 (the historical FPGA Mux-width bug)',
     why: 'left/up deltas become +1, mirroring movement to right/down',
     mutate: (b) => setNodeArg(b, 'Snake_DirectionUnit', 'minus1', 'value', 1),
   },

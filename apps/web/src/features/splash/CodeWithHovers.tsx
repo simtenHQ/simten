@@ -23,10 +23,10 @@
  *   GitHub palette automatically.
  */
 
-import { useMemo } from "react";
-import { tokenize } from "sugar-high";
-import { Tooltip as TooltipPrimitive } from "radix-ui";
-import { cn } from "@/lib/utils";
+import { useMemo } from 'react';
+import { tokenize } from 'sugar-high';
+import { Tooltip as TooltipPrimitive } from 'radix-ui';
+import { cn } from '@/lib/utils';
 
 type HoverEntry = {
   /** Mono-styled top line — a short signature or type form. */
@@ -41,61 +41,58 @@ type HoverEntry = {
 // Keep these in sync if the public CircuitConfig API changes.
 const HOVER_DICT: Record<string, HoverEntry> = {
   circuit: {
-    signature: "circuit(name, config): BuiltCircuit",
+    signature: 'circuit(name, config): BuiltCircuit',
     description:
-      "Defines a reusable hardware component. The returned BuiltCircuit can be used as a node inside other circuits.",
+      'Defines a reusable hardware component. The returned BuiltCircuit can be used as a node inside other circuits.',
   },
   inputs: {
-    signature: "inputs?: Record<string, PortType>",
+    signature: 'inputs?: Record<string, PortType>',
     description:
-      "Input ports — a map of port names to types (bit, bus(n)). Port names autocomplete in connect.",
+      'Input ports — a map of port names to types (bit, bus(n)). Port names autocomplete in connect.',
   },
   outputs: {
-    signature: "outputs?: Record<string, PortType>",
-    description: "Output ports — same shape as inputs.",
+    signature: 'outputs?: Record<string, PortType>',
+    description: 'Output ports — same shape as inputs.',
   },
   nodes: {
-    signature: "nodes?: Record<string, BuiltCircuit>",
+    signature: 'nodes?: Record<string, BuiltCircuit>',
     description:
-      "Sub-components used inside this circuit. Map a local name to a BuiltCircuit, then wire them in connect.",
+      'Sub-components used inside this circuit. Map a local name to a BuiltCircuit, then wire them in connect.',
   },
   connect: {
-    signature: "connect?: (arg) => ConnectionDef[]",
+    signature: 'connect?: (arg) => ConnectionDef[]',
     description:
-      "Wires sub-nodes and ports together. Receives { inputs, outputs, nodes } and returns connections built via port.to(...).",
+      'Wires sub-nodes and ports together. Receives { inputs, outputs, nodes } and returns connections built via port.to(...).',
   },
   bit: {
-    signature: "const bit: PortType",
+    signature: 'const bit: PortType',
     description:
-      "A single-bit signal type. Use bus(N) for multi-bit, or pass a raw number N as shorthand.",
+      'A single-bit signal type. Use bus(N) for multi-bit, or pass a raw number N as shorthand.',
   },
   Xor: {
-    signature: "const Xor: BuiltCircuit",
-    description:
-      "Built-in XOR gate. Output is 1 when exactly one input is 1.",
+    signature: 'const Xor: BuiltCircuit',
+    description: 'Built-in XOR gate. Output is 1 when exactly one input is 1.',
   },
   And: {
-    signature: "const And: BuiltCircuit",
-    description: "Built-in AND gate. Output is 1 when both inputs are 1.",
+    signature: 'const And: BuiltCircuit',
+    description: 'Built-in AND gate. Output is 1 when both inputs are 1.',
   },
   Or: {
-    signature: "const Or: BuiltCircuit",
-    description:
-      "Built-in OR gate. Output is 1 when either input is 1.",
+    signature: 'const Or: BuiltCircuit',
+    description: 'Built-in OR gate. Output is 1 when either input is 1.',
   },
   Not: {
-    signature: "const Not: BuiltCircuit",
-    description: "Built-in NOT gate. Inverts the input bit.",
+    signature: 'const Not: BuiltCircuit',
+    description: 'Built-in NOT gate. Inverts the input bit.',
   },
   DFlipFlop: {
-    signature: "DFlipFlop(opts?: { value?: boolean | number }): BuiltCircuit",
+    signature: 'DFlipFlop(opts?: { value?: boolean | number }): BuiltCircuit',
     description:
-      "Edge-triggered D flip-flop. Captures d on every rising clock edge; q holds the captured value, q_bar is the inverse.",
+      'Edge-triggered D flip-flop. Captures d on every rising clock edge; q holds the captured value, q_bar is the inverse.',
   },
   to: {
-    signature: "port.to(...targets: PortRef[]): ConnectionDef",
-    description:
-      "Wires this port to one or more target node ports. Used inside connect.",
+    signature: 'port.to(...targets: PortRef[]): ConnectionDef',
+    description: 'Wires this port to one or more target node ports. Used inside connect.',
   },
 };
 
@@ -103,15 +100,15 @@ const HOVER_DICT: Record<string, HoverEntry> = {
 // sugar-high/lib/index.js (1.1.0). Whitespace / break tokens have no
 // color override (use inherited).
 const TYPE_TO_COLOR: Record<number, string | undefined> = {
-  0: "var(--sh-identifier)",
-  1: "var(--sh-keyword)",
-  2: "var(--sh-string)",
-  3: "var(--sh-class)",
-  4: "var(--sh-property)",
-  5: "var(--sh-entity)",
-  6: "var(--sh-jsxliterals)",
-  7: "var(--sh-sign)",
-  8: "var(--sh-comment)",
+  0: 'var(--sh-identifier)',
+  1: 'var(--sh-keyword)',
+  2: 'var(--sh-string)',
+  3: 'var(--sh-class)',
+  4: 'var(--sh-property)',
+  5: 'var(--sh-entity)',
+  6: 'var(--sh-jsxliterals)',
+  7: 'var(--sh-sign)',
+  8: 'var(--sh-comment)',
   9: undefined,
   10: undefined,
 };
@@ -119,25 +116,25 @@ const TYPE_TO_COLOR: Record<number, string | undefined> = {
 // GitHub light/dark palette as Tailwind arbitrary CSS properties —
 // identical to HighlightedCode so themes match across both renderers.
 const SH_THEME_CLASSES = [
-  "[--sh-keyword:#d73a49]",
-  "[--sh-identifier:#24292e]",
-  "[--sh-string:#032f62]",
-  "[--sh-class:#005cc5]",
-  "[--sh-property:#6f42c1]",
-  "[--sh-entity:#6f42c1]",
-  "[--sh-jsxliterals:#005cc5]",
-  "[--sh-sign:#586069]",
-  "[--sh-comment:#6a737d]",
-  "dark:[--sh-keyword:#ff7b72]",
-  "dark:[--sh-identifier:#c9d1d9]",
-  "dark:[--sh-string:#a5d6ff]",
-  "dark:[--sh-class:#79c0ff]",
-  "dark:[--sh-property:#d2a8ff]",
-  "dark:[--sh-entity:#d2a8ff]",
-  "dark:[--sh-jsxliterals:#79c0ff]",
-  "dark:[--sh-sign:#8b949e]",
-  "dark:[--sh-comment:#6a9955]",
-].join(" ");
+  '[--sh-keyword:#d73a49]',
+  '[--sh-identifier:#24292e]',
+  '[--sh-string:#032f62]',
+  '[--sh-class:#005cc5]',
+  '[--sh-property:#6f42c1]',
+  '[--sh-entity:#6f42c1]',
+  '[--sh-jsxliterals:#005cc5]',
+  '[--sh-sign:#586069]',
+  '[--sh-comment:#6a737d]',
+  'dark:[--sh-keyword:#ff7b72]',
+  'dark:[--sh-identifier:#c9d1d9]',
+  'dark:[--sh-string:#a5d6ff]',
+  'dark:[--sh-class:#79c0ff]',
+  'dark:[--sh-property:#d2a8ff]',
+  'dark:[--sh-entity:#d2a8ff]',
+  'dark:[--sh-jsxliterals:#79c0ff]',
+  'dark:[--sh-sign:#8b949e]',
+  'dark:[--sh-comment:#6a9955]',
+].join(' ');
 
 interface CodeWithHoversProps {
   code: string;
@@ -150,11 +147,7 @@ interface CodeWithHoversProps {
   enabled?: boolean;
 }
 
-export function CodeWithHovers({
-  code,
-  className,
-  enabled = true,
-}: CodeWithHoversProps) {
+export function CodeWithHovers({ code, className, enabled = true }: CodeWithHoversProps) {
   const tokens = useMemo(() => tokenize(code), [code]);
 
   return (
@@ -201,9 +194,7 @@ export function CodeWithHovers({
                         {entry.signature}
                       </div>
                     )}
-                    <div className="mt-1.5 text-[12px] leading-snug">
-                      {entry.description}
-                    </div>
+                    <div className="mt-1.5 text-[12px] leading-snug">{entry.description}</div>
                   </TooltipPrimitive.Content>
                 </TooltipPrimitive.Portal>
               </TooltipPrimitive.Root>

@@ -1,6 +1,6 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { useCircuitSimulator } from "@simten/embed";
-import { TestSystolic3x3 } from "./circuits";
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useCircuitSimulator } from '@simten/embed';
+import { TestSystolic3x3 } from './circuits';
 
 export function useSystolicSimulator() {
   const sim = useCircuitSimulator(TestSystolic3x3);
@@ -14,7 +14,7 @@ export function useSystolicSimulator() {
   const startNodeId = useMemo(() => {
     if (!sim.circuit?.nodes) return null;
     for (const node of sim.circuit.nodes) {
-      if (node.label === "start" || node.id === "start") return node.id;
+      if (node.label === 'start' || node.id === 'start') return node.id;
     }
     return null;
   }, [sim.circuit]);
@@ -23,7 +23,7 @@ export function useSystolicSimulator() {
   // substring scan over portValues looking for a node named "done_led" —
   // replaced with a declared top-level port).
   useEffect(() => {
-    const done = sim.portValues?.get("__top__.done");
+    const done = sim.portValues?.get('__top__.done');
     if (done) {
       setIsDone(true);
       setIsRunning(false);

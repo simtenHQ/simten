@@ -20,9 +20,12 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const CPU_FIRMWARE_DIR = resolve(__dirname, 'projects/cpu/firmware');
 
 function resolveFirmware(argv: string[]): { path: string; language: string } {
-  if (argv.includes('--rust')) return { path: resolve(CPU_FIRMWARE_DIR, 'hello.rs'), language: 'rust' };
-  if (argv.includes('--fib')) return { path: resolve(CPU_FIRMWARE_DIR, 'fibonacci.c'), language: 'c' };
-  if (argv.includes('--snake')) return { path: resolve(CPU_FIRMWARE_DIR, 'snake.c'), language: 'c' };
+  if (argv.includes('--rust'))
+    return { path: resolve(CPU_FIRMWARE_DIR, 'hello.rs'), language: 'rust' };
+  if (argv.includes('--fib'))
+    return { path: resolve(CPU_FIRMWARE_DIR, 'fibonacci.c'), language: 'c' };
+  if (argv.includes('--snake'))
+    return { path: resolve(CPU_FIRMWARE_DIR, 'snake.c'), language: 'c' };
   return { path: resolve(CPU_FIRMWARE_DIR, 'hello.c'), language: 'c' };
 }
 
@@ -44,7 +47,9 @@ async function main() {
   });
 
   if (result.compile) {
-    console.log(`  Firmware: ${result.compile.firmware_bytes} bytes (fits IMEM: ${result.compile.fits_imem})`);
+    console.log(
+      `  Firmware: ${result.compile.firmware_bytes} bytes (fits IMEM: ${result.compile.fits_imem})`,
+    );
     if (result.compile.disassembly_first_40_lines) {
       console.log('\n--- Disassembly (first 40 lines) ---');
       console.log(result.compile.disassembly_first_40_lines);
@@ -66,11 +71,15 @@ async function main() {
     console.log(`\nSynth: ${result.synth.cached ? 'CACHED (ecpbram fast path)' : 'full rebuild'}`);
     console.log(`  Bitstream: ${result.synth.bitstream_kb} KB`);
     if (result.synth.timing_achieved_mhz) {
-      console.log(`  Timing: ${result.synth.timing_achieved_mhz} MHz (target ${result.synth.timing_target_mhz})`);
+      console.log(
+        `  Timing: ${result.synth.timing_achieved_mhz} MHz (target ${result.synth.timing_target_mhz})`,
+      );
     }
     if (result.synth.utilization) {
       const u = result.synth.utilization;
-      console.log(`  Utilization: LUT=${u.lut} FF=${u.ff} BRAM=${u.bram}${u.io !== undefined ? ` IO=${u.io}` : ''}`);
+      console.log(
+        `  Utilization: LUT=${u.lut} FF=${u.ff} BRAM=${u.bram}${u.io !== undefined ? ` IO=${u.io}` : ''}`,
+      );
     }
     if (result.synth.warnings.length) {
       console.log('  Warnings:');
@@ -81,15 +90,18 @@ async function main() {
   console.log(`\nBitstream written to ${resolve(cpuProject.projectDir, cpuProject.bitFile)}`);
 
   if (result.flash) {
-    console.log(`Flashed in ${result.flash.flash_duration_ms} ms. Connect to UART: screen /dev/cu.usbserial-* 115200`);
+    console.log(
+      `Flashed in ${result.flash.flash_duration_ms} ms. Connect to UART: screen /dev/cu.usbserial-* 115200`,
+    );
   }
 
   for (const w of result.warnings) console.log('WARNING: ' + w);
 }
 
 // Bun/tsx entry check (import.meta.main is Bun-specific; use require.main fallback).
-const isMainModule = (import.meta as { main?: boolean }).main
-  ?? (typeof process !== 'undefined' && process.argv[1] === fileURLToPath(import.meta.url));
+const isMainModule =
+  (import.meta as { main?: boolean }).main ??
+  (typeof process !== 'undefined' && process.argv[1] === fileURLToPath(import.meta.url));
 if (isMainModule) {
   main().catch((e) => {
     console.error(e);

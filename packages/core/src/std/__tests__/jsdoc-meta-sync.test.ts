@@ -12,7 +12,7 @@ import { join } from 'node:path';
 
 const STD_DIR = new URL('../', import.meta.url).pathname;
 
-const files = readdirSync(STD_DIR).filter(f => f.endsWith('.ts') && f !== 'index.ts');
+const files = readdirSync(STD_DIR).filter((f) => f.endsWith('.ts') && f !== 'index.ts');
 
 describe('stdlib JSDoc ↔ meta.description sync', () => {
   for (const file of files) {

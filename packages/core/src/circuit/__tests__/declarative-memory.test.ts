@@ -42,7 +42,10 @@ describe('mem() helper', () => {
   });
 
   it('accepts initial data', () => {
-    const init = new Map([[0, 42], [1, 99]]);
+    const init = new Map([
+      [0, 42],
+      [1, 99],
+    ]);
     const m = mem(256, 8, init);
     expect(m.initial.get(0)).toBe(42);
     expect(m.initial.get(1)).toBe(99);

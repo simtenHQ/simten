@@ -10,11 +10,11 @@
  * the main frame. Only plain Circuit IR (JSON) crosses the boundary.
  */
 
-import { useState, useEffect } from "react";
-import { SandboxProvider, useSandboxContext } from "@simten/ui/sandbox";
-import { buildFromIR } from "@simten/core/circuit";
-import type { BuiltCircuit } from "@simten/core/circuit";
-import { CircuitEmbed, type CircuitEmbedProps } from "../CircuitEmbed";
+import { useState, useEffect } from 'react';
+import { SandboxProvider, useSandboxContext } from '@simten/ui/sandbox';
+import { buildFromIR } from '@simten/core/circuit';
+import type { BuiltCircuit } from '@simten/core/circuit';
+import { CircuitEmbed, type CircuitEmbedProps } from '../CircuitEmbed';
 
 export interface WebComponentEmbedProps {
   code?: string;
@@ -25,7 +25,7 @@ export interface WebComponentEmbedProps {
   description?: string;
   href?: string;
   autoRunSpeed?: number;
-  theme?: "light" | "dark";
+  theme?: 'light' | 'dark';
 }
 
 function WebComponentEmbedInner({
@@ -72,7 +72,9 @@ function WebComponentEmbedInner({
       setBuiltCircuit(buildFromIR(circuit, result.libraryCircuits));
     });
 
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [code, sandbox]);
 
   if (!code) {
@@ -103,7 +105,7 @@ function WebComponentEmbedInner({
   }
 
   return (
-    <div data-embed-theme={theme ?? "dark"}>
+    <div data-embed-theme={theme ?? 'dark'}>
       <CircuitEmbed
         circuit={builtCircuit}
         height={height}

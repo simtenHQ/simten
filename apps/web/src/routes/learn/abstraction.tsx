@@ -1,28 +1,28 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { pageHead, breadcrumbLd } from "@/lib/seo";
-import { Suspense, lazy } from "react";
-import { HeroSection } from "@/features/learn/abstraction/sections/HeroSection";
-import { ErrorBoundary } from "@/features/blog/building-a-cpu/ErrorBoundary";
+import { createFileRoute } from '@tanstack/react-router';
+import { pageHead, breadcrumbLd } from '@/lib/seo';
+import { Suspense, lazy } from 'react';
+import { HeroSection } from '@/features/learn/abstraction/sections/HeroSection';
+import { ErrorBoundary } from '@/features/blog/building-a-cpu/ErrorBoundary';
 
 const TwoWaysSection = lazy(() =>
-  import("@/features/learn/abstraction/sections/TwoWaysSection").then((m) => ({
+  import('@/features/learn/abstraction/sections/TwoWaysSection').then((m) => ({
     default: m.TwoWaysSection,
   })),
 );
 const BuildingUpSection = lazy(() =>
-  import("@/features/learn/abstraction/sections/BuildingUpSection").then(
-    (m) => ({ default: m.BuildingUpSection }),
-  ),
+  import('@/features/learn/abstraction/sections/BuildingUpSection').then((m) => ({
+    default: m.BuildingUpSection,
+  })),
 );
 const ScalingSection = lazy(() =>
-  import("@/features/learn/abstraction/sections/ScalingSection").then((m) => ({
+  import('@/features/learn/abstraction/sections/ScalingSection').then((m) => ({
     default: m.ScalingSection,
   })),
 );
 const WhenToEncapsulateSection = lazy(() =>
-  import(
-    "@/features/learn/abstraction/sections/WhenToEncapsulateSection"
-  ).then((m) => ({ default: m.WhenToEncapsulateSection })),
+  import('@/features/learn/abstraction/sections/WhenToEncapsulateSection').then((m) => ({
+    default: m.WhenToEncapsulateSection,
+  })),
 );
 
 function SectionSkeleton() {
@@ -83,19 +83,19 @@ function AbstractionPage() {
   );
 }
 
-export const Route = createFileRoute("/learn/abstraction")({
+export const Route = createFileRoute('/learn/abstraction')({
   head: () => ({
     ...pageHead({
-      title: "Abstraction in circuit design",
+      title: 'Abstraction in circuit design',
       description:
-        "How a cluster of gates becomes a named block you can reuse, and how the same move scales from a half-adder up to a CPU. Why nobody designs chips by drawing individual gates.",
-      path: "/learn/abstraction",
+        'How a cluster of gates becomes a named block you can reuse, and how the same move scales from a half-adder up to a CPU. Why nobody designs chips by drawing individual gates.',
+      path: '/learn/abstraction',
     }),
     scripts: [
       breadcrumbLd([
-        { name: "Home", path: "/" },
-        { name: "Learn", path: "/learn" },
-        { name: "Abstraction", path: "/learn/abstraction" },
+        { name: 'Home', path: '/' },
+        { name: 'Learn', path: '/learn' },
+        { name: 'Abstraction', path: '/learn/abstraction' },
       ]),
     ],
   }),

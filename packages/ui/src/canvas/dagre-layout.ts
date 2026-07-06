@@ -7,26 +7,26 @@
  * convert to top-left to match React Flow's expected convention.
  */
 
-import dagre from "@dagrejs/dagre";
-import type { Circuit } from "@simten/core";
-import type { MetadataState } from "./types";
+import dagre from '@dagrejs/dagre';
+import type { Circuit } from '@simten/core';
+import type { MetadataState } from './types';
 
 /** Node size constants by component type. Used to feed dagre. */
 export const NODE_DIMENSIONS: Record<string, { width: number; height: number }> = {
-  Switch:        { width: 140, height: 110 },
-  Button:        { width: 120, height: 80 },
-  Input:         { width: 140, height: 80 },
-  Led:           { width: 100, height: 110 },
-  Output:        { width: 100, height: 80 },
-  HexDisplay:    { width: 100, height: 80 },
-  SevenSegment:  { width: 100, height: 80 },
-  Screen:        { width: 200, height: 200 },
+  Switch: { width: 140, height: 110 },
+  Button: { width: 120, height: 80 },
+  Input: { width: 140, height: 80 },
+  Led: { width: 100, height: 110 },
+  Output: { width: 100, height: 80 },
+  HexDisplay: { width: 100, height: 80 },
+  SevenSegment: { width: 100, height: 80 },
+  Screen: { width: 200, height: 200 },
   RasterDisplay: { width: 200, height: 200 },
-  Console:       { width: 380, height: 220 },
-  Register:      { width: 120, height: 80 },
-  RAM:           { width: 120, height: 80 },
-  ROM:           { width: 120, height: 80 },
-  DualPortRAM:   { width: 140, height: 100 },
+  Console: { width: 380, height: 220 },
+  Register: { width: 120, height: 80 },
+  RAM: { width: 120, height: 80 },
+  ROM: { width: 120, height: 80 },
+  DualPortRAM: { width: 140, height: 100 },
 };
 
 export const DEFAULT_DIMENSIONS = { width: 160, height: 80 };
@@ -37,7 +37,7 @@ export function getDimensions(componentRef: string) {
 
 export interface DagreLayoutOptions {
   /** Layout direction. "LR" = left-to-right (default), "TB" = top-to-bottom. */
-  direction?: "LR" | "TB" | "RL" | "BT";
+  direction?: 'LR' | 'TB' | 'RL' | 'BT';
   /** Inter-node spacing in the same rank. */
   nodeSpacing?: number;
   /** Spacing between ranks. */
@@ -51,11 +51,8 @@ export interface DagreLayoutOptions {
  * Synchronous — dagre.layout() does no I/O. Callers can use the result
  * immediately on first render.
  */
-export function computeDagreLayout(
-  circuit: Circuit,
-  options?: DagreLayoutOptions,
-): MetadataState {
-  const direction = options?.direction ?? "LR";
+export function computeDagreLayout(circuit: Circuit, options?: DagreLayoutOptions): MetadataState {
+  const direction = options?.direction ?? 'LR';
   const nodeSpacing = options?.nodeSpacing ?? 60;
   const rankSpacing = options?.rankSpacing ?? 90;
 

@@ -10,7 +10,14 @@
  * so TypeScript resolves everything in one pass — fast at any circuit size.
  */
 
-import type { PortType, BusType, Circuit, ArgumentValue, PortDescriptor, Node } from '../types/circuit.js';
+import type {
+  PortType,
+  BusType,
+  Circuit,
+  ArgumentValue,
+  PortDescriptor,
+  Node,
+} from '../types/circuit.js';
 export type { ArgumentValue };
 
 // ============================================================================
@@ -87,14 +94,11 @@ export interface CircuitShape {
 /** Resolve a port-map value (PortType or legacy `number` bus-width shorthand)
  *  to a concrete PortType. Single source of truth for port-map normalization;
  *  also re-used by circuit.ts for the public `circuit()` signature. */
-export type NormalizePort<T> =
-  T extends number ? BusType :
-  T extends PortType ? T :
-  PortType;
+export type NormalizePort<T> = T extends number ? BusType : T extends PortType ? T : PortType;
 export type NormalizePorts<M> = { [K in keyof M]: NormalizePort<M[K]> };
 
 type SourceRefs<M> = { readonly [K in keyof M]: SourcePortRef<NormalizePort<M[K]>> };
-type SinkRefs<M>   = { readonly [K in keyof M]: SinkPortRef<NormalizePort<M[K]>> };
+type SinkRefs<M> = { readonly [K in keyof M]: SinkPortRef<NormalizePort<M[K]>> };
 
 /** The connect callback argument — typed from the config's inputs/outputs/nodes.
  *
@@ -136,7 +140,13 @@ export type PortValues<M> = {
 };
 
 /** State value types: number (bus), boolean (bit), Map (memory), string (text buffers), or new declarative types */
-export type StateValue = number | boolean | Map<number, number> | string | import('./bit-bus.js').RegState | import('./bit-bus.js').MemState;
+export type StateValue =
+  | number
+  | boolean
+  | Map<number, number>
+  | string
+  | import('./bit-bus.js').RegState
+  | import('./bit-bus.js').MemState;
 
 /** State shape — plain object where each field is a state value */
 export type StateShape = Record<string, StateValue>;
@@ -275,4 +285,3 @@ export interface CircuitConfig<
    *  canvas component picker and by tooling. See `CircuitMeta` for fields. */
   meta?: CircuitMeta;
 }
-

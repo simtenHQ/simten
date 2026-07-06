@@ -1,4 +1,4 @@
-import { SmoothStepEdge, type NodeTypes, type EdgeTypes } from "@xyflow/react";
+import { SmoothStepEdge, type NodeTypes, type EdgeTypes } from '@xyflow/react';
 
 import {
   InputNode,
@@ -15,7 +15,7 @@ import {
   NicFifoNode,
   RV32IInstrMemNode,
   EthFrameInputNode,
-} from "../nodes";
+} from '../nodes';
 
 /**
  * Default node type map — all rich components, no fallbacks.

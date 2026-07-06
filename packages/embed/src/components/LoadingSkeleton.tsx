@@ -1,5 +1,4 @@
-
-import React from "react";
+import React from 'react';
 
 interface LoadingSkeletonProps {
   height?: number | string;
@@ -22,23 +21,41 @@ export function LoadingSkeleton({ height = 300 }: LoadingSkeletonProps) {
         {/* Input nodes */}
         <div className="flex flex-col gap-4">
           <div className="w-20 h-14 rounded-lg bg-[var(--embed-bg-tertiary)]/60 animate-pulse" />
-          <div className="w-20 h-14 rounded-lg bg-[var(--embed-bg-tertiary)]/60 animate-pulse" style={{ animationDelay: "150ms" }} />
+          <div
+            className="w-20 h-14 rounded-lg bg-[var(--embed-bg-tertiary)]/60 animate-pulse"
+            style={{ animationDelay: '150ms' }}
+          />
         </div>
 
         {/* Connecting lines */}
         <div className="flex flex-col gap-6 items-center">
-          <div className="w-12 h-0.5 bg-[var(--embed-border)]/40 animate-pulse" style={{ animationDelay: "300ms" }} />
-          <div className="w-12 h-0.5 bg-[var(--embed-border)]/40 animate-pulse" style={{ animationDelay: "350ms" }} />
+          <div
+            className="w-12 h-0.5 bg-[var(--embed-border)]/40 animate-pulse"
+            style={{ animationDelay: '300ms' }}
+          />
+          <div
+            className="w-12 h-0.5 bg-[var(--embed-border)]/40 animate-pulse"
+            style={{ animationDelay: '350ms' }}
+          />
         </div>
 
         {/* Logic node */}
-        <div className="w-24 h-20 rounded-lg bg-[var(--embed-bg-tertiary)]/60 animate-pulse" style={{ animationDelay: "200ms" }} />
+        <div
+          className="w-24 h-20 rounded-lg bg-[var(--embed-bg-tertiary)]/60 animate-pulse"
+          style={{ animationDelay: '200ms' }}
+        />
 
         {/* Connecting line */}
-        <div className="w-12 h-0.5 bg-[var(--embed-border)]/40 animate-pulse" style={{ animationDelay: "400ms" }} />
+        <div
+          className="w-12 h-0.5 bg-[var(--embed-border)]/40 animate-pulse"
+          style={{ animationDelay: '400ms' }}
+        />
 
         {/* Output node */}
-        <div className="w-20 h-14 rounded-lg bg-[var(--embed-bg-tertiary)]/60 animate-pulse" style={{ animationDelay: "250ms" }} />
+        <div
+          className="w-20 h-14 rounded-lg bg-[var(--embed-bg-tertiary)]/60 animate-pulse"
+          style={{ animationDelay: '250ms' }}
+        />
       </div>
 
       {/* Screen reader text */}

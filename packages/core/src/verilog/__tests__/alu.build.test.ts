@@ -26,13 +26,17 @@ function buildALU() {
     outputs: { result: bus(32), zero: bit },
     nodes: { alu: RV32I_ALU },
     connect: ({ inputs, outputs, nodes: { alu } }) => [
-      inputs.a.to(alu.a), inputs.b.to(alu.b), inputs.alu_op.to(alu.alu_op),
-      alu.result.to(outputs.result), alu.zero.to(outputs.zero),
+      inputs.a.to(alu.a),
+      inputs.b.to(alu.b),
+      inputs.alu_op.to(alu.alu_op),
+      alu.result.to(outputs.result),
+      alu.zero.to(outputs.zero),
     ],
   });
 
   const lib: CircuitLibrary = {
-    resolveCircuit: (name) => name === 'RV32I_ALU_Top' ? ALU.circuit : ALU._dependencies.get(name)?.circuit,
+    resolveCircuit: (name) =>
+      name === 'RV32I_ALU_Top' ? ALU.circuit : ALU._dependencies.get(name)?.circuit,
     getAllPrimitiveNames: () => [...ALU._dependencies.keys()],
   };
 
@@ -42,38 +46,40 @@ function buildALU() {
 const d = describe.skipIf(!hasSynth() || !hasBuild());
 
 d('RV32I_ALU — full pipeline to ECP5 bitstream (combinational)', () => {
-  it(
-    'synth_ecp5 → nextpnr-ecp5 → ecppack → bitstream',
-    { timeout: 180000 },
-    async () => {
-      const { circuit, lib } = buildALU();
-      const exportResult = exportVerilog(circuit, lib, { target: 'synthesis' });
+  it('synth_ecp5 → nextpnr-ecp5 → ecppack → bitstream', { timeout: 180000 }, async () => {
+    const { circuit, lib } = buildALU();
+    const exportResult = exportVerilog(circuit, lib, { target: 'synthesis' });
 
-      // Step 1: Synthesise for ECP5
-      const synthResp = await synthesizeVerilog(exportResult, 'RV32I_ALU_Top', 'ecp5');
-      if (!synthResp.success) {
-        console.error('synth failed:', JSON.stringify({ error: synthResp.error, log: synthResp.log?.slice(-500) }, null, 2));
-      }
-      expect(synthResp.success).toBe(true);
-      expect(synthResp.netlist).toBeTruthy();
+    // Step 1: Synthesise for ECP5
+    const synthResp = await synthesizeVerilog(exportResult, 'RV32I_ALU_Top', 'ecp5');
+    if (!synthResp.success) {
+      console.error(
+        'synth failed:',
+        JSON.stringify({ error: synthResp.error, log: synthResp.log?.slice(-500) }, null, 2),
+      );
+    }
+    expect(synthResp.success).toBe(true);
+    expect(synthResp.netlist).toBeTruthy();
 
-      // Step 2: Place-and-route + bitstream
-      const buildResp = await buildBitstream(synthResp.netlist!, 'RV32I_ALU_Top');
-      if (!buildResp.success) {
-        console.error('build failed:', JSON.stringify({ error: buildResp.error, log: buildResp.log?.slice(-1000) }, null, 2));
-      }
+    // Step 2: Place-and-route + bitstream
+    const buildResp = await buildBitstream(synthResp.netlist!, 'RV32I_ALU_Top');
+    if (!buildResp.success) {
+      console.error(
+        'build failed:',
+        JSON.stringify({ error: buildResp.error, log: buildResp.log?.slice(-1000) }, null, 2),
+      );
+    }
 
-      expect(buildResp.success).toBe(true);
-      expect(buildResp.bitstream).toBeTruthy();
+    expect(buildResp.success).toBe(true);
+    expect(buildResp.bitstream).toBeTruthy();
 
-      // Valid ECP5 bitstream
-      const decoded = Buffer.from(buildResp.bitstream!, 'base64');
-      expect(decoded.length).toBeGreaterThan(100_000);
+    // Valid ECP5 bitstream
+    const decoded = Buffer.from(buildResp.bitstream!, 'base64');
+    expect(decoded.length).toBeGreaterThan(100_000);
 
-      // Combinational design — may have no clocked timing report, that's fine
-      // Utilization must show combinational cells
-      expect(buildResp.utilization).toBeDefined();
-      expect(buildResp.utilization!.comb).toBeGreaterThan(0);
-    },
-  );
+    // Combinational design — may have no clocked timing report, that's fine
+    // Utilization must show combinational cells
+    expect(buildResp.utilization).toBeDefined();
+    expect(buildResp.utilization!.comb).toBeGreaterThan(0);
+  });
 });

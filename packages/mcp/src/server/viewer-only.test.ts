@@ -19,7 +19,15 @@ describe('viewer-only inbound surface', () => {
       // The register below makes the server push `source` with a requestId; ack it
       // hostilely, smuggling injection in the browser-reported fields.
       if (msg.type === 'source' && msg.requestId) {
-        ws.send(JSON.stringify({ type: 'render-result', requestId: msg.requestId, ok: true, circuitName: INJ, error: INJ }));
+        ws.send(
+          JSON.stringify({
+            type: 'render-result',
+            requestId: msg.requestId,
+            ok: true,
+            circuitName: INJ,
+            error: INJ,
+          }),
+        );
       }
     });
     ws.send(JSON.stringify({ type: 'register', sessionId: INJ, page: INJ }));

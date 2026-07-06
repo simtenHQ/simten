@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Handle, Position } from '@xyflow/react';
 import { cn } from '../lib/utils';
@@ -22,13 +21,22 @@ export interface BaseNodeProps {
   glowUnconnected?: boolean;
 }
 
-export function BaseNode({ children, inputPorts = [], outputPorts = [], selected, className, showPortLabels, onPortClick, glowUnconnected }: BaseNodeProps) {
+export function BaseNode({
+  children,
+  inputPorts = [],
+  outputPorts = [],
+  selected,
+  className,
+  showPortLabels,
+  onPortClick,
+  glowUnconnected,
+}: BaseNodeProps) {
   return (
     <div
       className={cn(
         'relative rounded-lg border-2 bg-[var(--embed-bg-secondary)] shadow-md transition-all',
         selected ? 'border-blue-500 shadow-lg' : 'border-[var(--embed-border-node)]',
-        className
+        className,
       )}
     >
       {/* Input Ports (Left Side) */}
@@ -54,13 +62,22 @@ export function BaseNode({ children, inputPorts = [], outputPorts = [], selected
               id={`in-${port.name}`}
               className={cn(
                 'h-3 w-3 rounded-full border-2 transition-all duration-200',
-                port.connected ? 'bg-blue-500 border-blue-600' : 'bg-[var(--embed-bg-tertiary)] border-[var(--embed-border-node)]',
+                port.connected
+                  ? 'bg-blue-500 border-blue-600'
+                  : 'bg-[var(--embed-bg-tertiary)] border-[var(--embed-border-node)]',
                 unconnected && 'border-blue-400',
                 onPortClick && 'cursor-pointer hover:scale-150',
-                'hover:bg-blue-300 hover:border-blue-500'
+                'hover:bg-blue-300 hover:border-blue-500',
               )}
               style={{ top: topPct, left: '-6px' }}
-              onClick={onPortClick ? (e) => { e.stopPropagation(); onPortClick(port.name, 'input'); } : undefined}
+              onClick={
+                onPortClick
+                  ? (e) => {
+                      e.stopPropagation();
+                      onPortClick(port.name, 'input');
+                    }
+                  : undefined
+              }
             />
             {showPortLabels && (
               <div
@@ -100,20 +117,34 @@ export function BaseNode({ children, inputPorts = [], outputPorts = [], selected
               id={`out-${port.name}`}
               className={cn(
                 'h-3 w-3 rounded-full border-2 transition-all duration-200',
-                port.connected ? 'bg-green-500 border-green-600' : 'bg-[var(--embed-bg-tertiary)] border-[var(--embed-border-node)]',
+                port.connected
+                  ? 'bg-green-500 border-green-600'
+                  : 'bg-[var(--embed-bg-tertiary)] border-[var(--embed-border-node)]',
                 port.value === true && 'bg-green-500 border-green-600',
                 port.value === false && 'bg-gray-300 border-gray-400',
                 unconnected && 'border-green-400',
                 onPortClick && 'cursor-pointer hover:scale-150',
-                'hover:bg-green-300 hover:border-green-500'
+                'hover:bg-green-300 hover:border-green-500',
               )}
               style={{ top: topPct, right: '-6px' }}
-              onClick={onPortClick ? (e) => { e.stopPropagation(); onPortClick(port.name, 'output'); } : undefined}
+              onClick={
+                onPortClick
+                  ? (e) => {
+                      e.stopPropagation();
+                      onPortClick(port.name, 'output');
+                    }
+                  : undefined
+              }
             />
             {showPortLabels && (
               <div
                 className="absolute text-[9px] font-mono text-[var(--embed-text-secondary)] pointer-events-none select-none"
-                style={{ top: topPct, right: '10px', transform: 'translateY(-50%)', textAlign: 'right' }}
+                style={{
+                  top: topPct,
+                  right: '10px',
+                  transform: 'translateY(-50%)',
+                  textAlign: 'right',
+                }}
               >
                 {port.name}
               </div>

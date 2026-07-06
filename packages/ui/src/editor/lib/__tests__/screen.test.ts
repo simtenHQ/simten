@@ -10,9 +10,9 @@ import { useCircuitLibraryStore } from '../../stores/circuit-library-store';
 import { STDLIB_CIRCUITS } from '@simten/core/std';
 import { bitType, busType, type Circuit } from '../../types/circuit';
 
-const PRIMITIVES = STDLIB_CIRCUITS
-  .map((c) => c.circuit)
-  .filter(c => c.implementation.kind === 'primitive');
+const PRIMITIVES = STDLIB_CIRCUITS.map((c) => c.circuit).filter(
+  (c) => c.implementation.kind === 'primitive',
+);
 
 function getLibrary(): CircuitLibrary {
   const store = useCircuitLibraryStore.getState();
@@ -81,9 +81,7 @@ describe('Screen Integration', () => {
             { id: 'ram1.data_in', name: 'data_in', portType: busType(8) },
             { id: 'ram1.we', name: 'we', portType: bitType() },
           ],
-          outputs: [
-            { id: 'ram1.data_out', name: 'data_out', portType: busType(8) },
-          ],
+          outputs: [{ id: 'ram1.data_out', name: 'data_out', portType: busType(8) }],
           clocks: [],
         },
         {
@@ -127,9 +125,7 @@ describe('Screen Integration', () => {
             { id: 'ram1.data_in', name: 'data_in', portType: busType(8) },
             { id: 'ram1.we', name: 'we', portType: bitType() },
           ],
-          outputs: [
-            { id: 'ram1.data_out', name: 'data_out', portType: busType(8) },
-          ],
+          outputs: [{ id: 'ram1.data_out', name: 'data_out', portType: busType(8) }],
           clocks: [],
         },
         {
@@ -147,7 +143,7 @@ describe('Screen Integration', () => {
     };
 
     // Verify circuit structure
-    const screenNode = circuit.nodes.find(n => n.componentRef === 'Screen');
+    const screenNode = circuit.nodes.find((n) => n.componentRef === 'Screen');
     expect(screenNode).toBeDefined();
     expect(screenNode?.id).toBe('screen1');
     expect(screenNode?.inputs.length).toBe(0);

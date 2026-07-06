@@ -24,11 +24,11 @@ interface Step {
 // Each cycle, we drive (data, we) and sample q after the clock edge.
 // Register q updates only when we=1.
 const SEQUENCE: Step[] = [
-  { data: 0xAA, we: 1 }, // write 0xAA → q = 0xAA after this cycle
-  { data: 0xBB, we: 0 }, // we=0 → q holds at 0xAA
-  { data: 0xCC, we: 1 }, // write 0xCC → q = 0xCC
+  { data: 0xaa, we: 1 }, // write 0xAA → q = 0xAA after this cycle
+  { data: 0xbb, we: 0 }, // we=0 → q holds at 0xAA
+  { data: 0xcc, we: 1 }, // write 0xCC → q = 0xCC
   { data: 0x00, we: 0 }, // hold 0xCC
-  { data: 0xFF, we: 1 }, // write 0xFF
+  { data: 0xff, we: 1 }, // write 0xFF
 ];
 
 function buildRegister() {
@@ -45,9 +45,11 @@ function buildRegister() {
 
   const lib: CircuitLibrary = {
     resolveCircuit: (name) =>
-      name === 'RegWrapper' ? RegWrapper.circuit :
-      name === 'Register' ? (Register.circuit as Circuit) :
-      undefined,
+      name === 'RegWrapper'
+        ? RegWrapper.circuit
+        : name === 'Register'
+          ? (Register.circuit as Circuit)
+          : undefined,
     getAllPrimitiveNames: () => ['Register'],
   };
 
@@ -64,7 +66,7 @@ function runSimulator(steps: Step[]): number[] {
     sim.setNode('we', step.we);
     sim.tick();
     const v = sim.getPortValues().get('__top__.q');
-    outputs.push(typeof v === 'number' ? (v >>> 0) & 0xFF : 0);
+    outputs.push(typeof v === 'number' ? (v >>> 0) & 0xff : 0);
   }
   return outputs;
 }
@@ -98,9 +100,9 @@ d('Register — JS simulator vs iverilog co-simulation', () => {
     expect(result.results).toBeDefined();
     expect(result.results!.length).toBe(SEQUENCE.length);
 
-    const veriOutputs = result.results!
-      .sort((a, b) => a.testCase - b.testCase)
-      .map((r) => r.outputs.q & 0xFF);
+    const veriOutputs = result
+      .results!.sort((a, b) => a.testCase - b.testCase)
+      .map((r) => r.outputs.q & 0xff);
 
     expect(veriOutputs).toEqual(simOutputs);
   });

@@ -26,23 +26,35 @@
  *   isolation. Don't expose `simulate` until #51 lands.
  */
 
-import { executeCircuitCode, executeJsCode, stripTypes, getAllCircuitEvals } from '@simten/core/circuit';
+import {
+  executeCircuitCode,
+  executeJsCode,
+  stripTypes,
+  getAllCircuitEvals,
+} from '@simten/core/circuit';
 import { simulateCircuit } from '@simten/core/api';
 import type { Circuit } from '@simten/core';
-import { hasImportStatements, extractAndRewriteImports, containsDynamicImport } from './rewrite-imports.js';
+import {
+  hasImportStatements,
+  extractAndRewriteImports,
+  containsDynamicImport,
+} from './rewrite-imports.js';
 
 /**
  * Extract all registered evals as source strings (via fn.toString()) so they can
  * be sent to the iframe main thread and reconstructed there. This bridges the
  * closure boundary that postMessage can't cross directly.
  */
-function extractEvalSources(): Record<string, {
-  evalSource: string;
-  onTickSource?: string;
-  inputNames: string[];
-  outputNames: string[];
-  stateKeys?: string[];
-}> {
+function extractEvalSources(): Record<
+  string,
+  {
+    evalSource: string;
+    onTickSource?: string;
+    inputNames: string[];
+    outputNames: string[];
+    stateKeys?: string[];
+  }
+> {
   const sources: Record<string, ReturnType<typeof extractEvalSources>[string]> = {};
   const registry = getAllCircuitEvals();
   for (const [name, entry] of registry) {
@@ -59,7 +71,14 @@ function extractEvalSources(): Record<string, {
 
 type WorkerRequest =
   | { id: string; type: 'compile'; source: string }
-  | { id: string; type: 'simulate'; source: string; ticks: number; inputs?: Record<string, number | boolean>; memoryData?: Record<string, Record<string, number>> };
+  | {
+      id: string;
+      type: 'simulate';
+      source: string;
+      ticks: number;
+      inputs?: Record<string, number | boolean>;
+      memoryData?: Record<string, Record<string, number>>;
+    };
 
 function circuitToSerializable(c: Circuit): object {
   return JSON.parse(JSON.stringify(c));
@@ -78,7 +97,8 @@ async function handleRequest(req: WorkerRequest): Promise<void> {
         self.postMessage({
           id: req.id,
           type: 'error',
-          error: "Dynamic import() is not allowed in circuit code. Use a static `import` statement at the top of the file instead.",
+          error:
+            'Dynamic import() is not allowed in circuit code. Use a static `import` statement at the top of the file instead.',
         });
         return;
       }
@@ -96,15 +116,13 @@ async function handleRequest(req: WorkerRequest): Promise<void> {
           const blob = new Blob([loaderModule], { type: 'text/javascript' });
           const blobUrl = URL.createObjectURL(blob);
           try {
-            importedMod = await import(/* @vite-ignore */ blobUrl) as Record<string, unknown>;
+            importedMod = (await import(/* @vite-ignore */ blobUrl)) as Record<string, unknown>;
           } finally {
             URL.revokeObjectURL(blobUrl);
           }
         }
 
-        const extraScope = Object.fromEntries(
-          localNames.map(n => [n, importedMod[n]])
-        );
+        const extraScope = Object.fromEntries(localNames.map((n) => [n, importedMod[n]]));
         result = executeJsCode(codeWithoutImports, extraScope);
       }
 
@@ -136,7 +154,11 @@ async function handleRequest(req: WorkerRequest): Promise<void> {
         evalSources,
       });
     } catch (e) {
-      self.postMessage({ id: req.id, type: 'error', error: e instanceof Error ? e.message : String(e) });
+      self.postMessage({
+        id: req.id,
+        type: 'error',
+        error: e instanceof Error ? e.message : String(e),
+      });
     }
     return;
   }
@@ -177,14 +199,22 @@ async function handleRequest(req: WorkerRequest): Promise<void> {
         steadyStateAt: simResult.steadyStateAt,
       });
     } catch (e) {
-      self.postMessage({ id: req.id, type: 'error', error: e instanceof Error ? e.message : String(e) });
+      self.postMessage({
+        id: req.id,
+        type: 'error',
+        error: e instanceof Error ? e.message : String(e),
+      });
     }
   }
 }
 
 self.onmessage = (event: MessageEvent) => {
   const req = event.data as WorkerRequest;
-  handleRequest(req).catch(e => {
-    self.postMessage({ id: req.id, type: 'error', error: e instanceof Error ? e.message : String(e) });
+  handleRequest(req).catch((e) => {
+    self.postMessage({
+      id: req.id,
+      type: 'error',
+      error: e instanceof Error ? e.message : String(e),
+    });
   });
 };

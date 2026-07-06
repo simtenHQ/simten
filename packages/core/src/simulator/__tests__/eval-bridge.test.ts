@@ -126,11 +126,9 @@ describe('dynamic type index allocation', () => {
 
 describe('generateEvalWrapper (combinational)', () => {
   it('wraps a simple AND gate', () => {
-    const wrapper = generateEvalWrapper(
-      ['a', 'b'],
-      ['out'],
-      ({ a, b }) => ({ out: (a && b) ? 1 : 0 }),
-    );
+    const wrapper = generateEvalWrapper(['a', 'b'], ['out'], ({ a, b }) => ({
+      out: a && b ? 1 : 0,
+    }));
 
     const { ctx, values } = createTestContext([1, 1], 1);
     wrapper(ctx);
@@ -144,27 +142,19 @@ describe('generateEvalWrapper (combinational)', () => {
   });
 
   it('wraps an adder with bus values', () => {
-    const wrapper = generateEvalWrapper(
-      ['a', 'b'],
-      ['sum', 'carry'],
-      ({ a, b }) => ({
-        sum: (a + b) & 0xFF,
-        carry: ((a + b) >> 8) & 1,
-      }),
-    );
+    const wrapper = generateEvalWrapper(['a', 'b'], ['sum', 'carry'], ({ a, b }) => ({
+      sum: (a + b) & 0xff,
+      carry: ((a + b) >> 8) & 1,
+    }));
 
     const { ctx, values } = createTestContext([200, 100], 2);
     wrapper(ctx);
-    expect(values[2]).toBe(44);  // (200 + 100) & 0xFF = 300 & 255 = 44
-    expect(values[3]).toBe(1);   // carry
+    expect(values[2]).toBe(44); // (200 + 100) & 0xFF = 300 & 255 = 44
+    expect(values[3]).toBe(1); // carry
   });
 
   it('wraps a component with no inputs', () => {
-    const wrapper = generateEvalWrapper(
-      [],
-      ['value'],
-      () => ({ value: 42 }),
-    );
+    const wrapper = generateEvalWrapper([], ['value'], () => ({ value: 42 }));
 
     const { ctx, values } = createTestContext([], 1);
     wrapper(ctx);
@@ -173,11 +163,7 @@ describe('generateEvalWrapper (combinational)', () => {
 
   it('merges node.arguments into eval inputs', () => {
     // Simulates Switch/Input/Constant — value comes from arguments, not a port
-    const wrapper = generateEvalWrapper(
-      [],
-      ['out'],
-      ({ value }) => ({ out: value ? 1 : 0 }),
-    );
+    const wrapper = generateEvalWrapper([], ['out'], ({ value }) => ({ out: value ? 1 : 0 }));
 
     const { ctx, values } = createTestContext([], 1);
     // Set the node argument (normally set when user clicks Switch)
@@ -192,11 +178,9 @@ describe('generateEvalWrapper (combinational)', () => {
 
   it('port inputs take precedence over node.arguments', () => {
     // If a port and an argument have the same name, the port wins
-    const wrapper = generateEvalWrapper(
-      ['value'],
-      ['out'],
-      ({ value }) => ({ out: value as number }),
-    );
+    const wrapper = generateEvalWrapper(['value'], ['out'], ({ value }) => ({
+      out: value as number,
+    }));
 
     const { ctx, values } = createTestContext([99], 1);
     (ctx.circuit.flatCircuit.nodes[0] as any).arguments = { value: 7 };
@@ -205,11 +189,7 @@ describe('generateEvalWrapper (combinational)', () => {
   });
 
   it('wraps a ReLU activation', () => {
-    const wrapper = generateEvalWrapper(
-      ['x'],
-      ['y'],
-      ({ x }) => ({ y: x > 0 ? x : 0 }),
-    );
+    const wrapper = generateEvalWrapper(['x'], ['y'], ({ x }) => ({ y: x > 0 ? x : 0 }));
 
     const { ctx: ctx1, values: v1 } = createTestContext([5], 1);
     wrapper(ctx1);
@@ -278,12 +258,7 @@ describe('registerEvalFunction', () => {
   });
 
   it('registers a user-defined component and assigns a type index', () => {
-    const idx = registerEvalFunction(
-      'MyGate',
-      ['a', 'b'],
-      ['out'],
-      ({ a, b }) => ({ out: a ^ b }),
-    );
+    const idx = registerEvalFunction('MyGate', ['a', 'b'], ['out'], ({ a, b }) => ({ out: a ^ b }));
 
     expect(idx).toBe(200);
     expect(EVALUATORS[idx]).toBeDefined();
@@ -301,7 +276,9 @@ describe('registerEvalFunction', () => {
     // bridge, so the test installs its own sentinel to assert the
     // no-overwrite invariant directly.)
     const idx = PRIMITIVE_TYPE_INDICES.And;
-    const sentinel: (typeof EVALUATORS)[number] = () => { /* sentinel */ };
+    const sentinel: (typeof EVALUATORS)[number] = () => {
+      /* sentinel */
+    };
     const saved = EVALUATORS[idx];
     EVALUATORS[idx] = sentinel;
 

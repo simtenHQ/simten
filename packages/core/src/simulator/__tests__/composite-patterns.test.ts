@@ -20,9 +20,7 @@
 import { describe, it, expect } from 'vitest';
 import { simulate } from '../../sim/simulate.js';
 import { circuit, bit, bus } from '../../circuit/index.js';
-import {
-  And, Or, Xor, Not, Constant, Register, DFlipFlop, Adder,
-} from '../../std/index.js';
+import { And, Or, Xor, Not, Constant, Register, DFlipFlop, Adder } from '../../std/index.js';
 import { assertFlatCircuitInvariants, elaborateBuilt } from './_invariants.js';
 
 // ╔════════════════════════════════════════════════════════════════════════╗
@@ -31,8 +29,9 @@ import { assertFlatCircuitInvariants, elaborateBuilt } from './_invariants.js';
 
 describe('P-bus-feedthrough-chain — bus(N) feedthrough across chained composites', () => {
   const BusPass = circuit('BusPass', {
-    inputs: { x: bus(8) }, outputs: { y: bus(8) },
-    nodes: { d: Not },  // dummy gate (Not is bit-wide but unused — kept to avoid degenerate-empty-composite shape)
+    inputs: { x: bus(8) },
+    outputs: { y: bus(8) },
+    nodes: { d: Not }, // dummy gate (Not is bit-wide but unused — kept to avoid degenerate-empty-composite shape)
     connect: ({ inputs, outputs, nodes: { d } }) => [
       inputs.x.to(outputs.y),
       // Tap one bit into a dummy gate so the composite isn't node-less. The
@@ -45,7 +44,8 @@ describe('P-bus-feedthrough-chain — bus(N) feedthrough across chained composit
     const nodes: Record<string, typeof BusPass> = {};
     for (let k = 0; k < n; k++) nodes['p' + k] = BusPass;
     return circuit('BusChain' + n, {
-      inputs: { x: bus(8) }, outputs: { y: bus(8) },
+      inputs: { x: bus(8) },
+      outputs: { y: bus(8) },
       nodes,
       connect: ({ inputs, outputs, nodes }: any) => {
         const c = [inputs.x.to(nodes.p0.x)];
@@ -61,8 +61,8 @@ describe('P-bus-feedthrough-chain — bus(N) feedthrough across chained composit
       assertFlatCircuitInvariants(elaborateBuilt(c));
       const sim = simulate(c);
       try {
-        sim.set({ x: 0xA5 });
-        expect(sim.get('y')).toBe(0xA5);
+        sim.set({ x: 0xa5 });
+        expect(sim.get('y')).toBe(0xa5);
         sim.set({ x: 0x00 });
         expect(sim.get('y')).toBe(0x00);
       } finally {
@@ -75,7 +75,8 @@ describe('P-bus-feedthrough-chain — bus(N) feedthrough across chained composit
 describe('P-feedthrough-fanout-from-input — one input feeds multiple outputs', () => {
   // inputs.x.to(outputs.y) AND inputs.x.to(outputs.z) — two passthroughs from one input.
   const TwoOut = circuit('TwoOut', {
-    inputs: { x: bit }, outputs: { y: bit, z: bit },
+    inputs: { x: bit },
+    outputs: { y: bit, z: bit },
     nodes: { d: Not },
     connect: ({ inputs, outputs, nodes: { d } }) => [
       inputs.x.to(outputs.y),
@@ -85,7 +86,8 @@ describe('P-feedthrough-fanout-from-input — one input feeds multiple outputs',
   });
   // Use it at top level driving two LED-style sinks (via Not as a primitive sink).
   const Wrap = circuit('Wrap', {
-    inputs: { a: bit }, outputs: { y: bit, z: bit },
+    inputs: { a: bit },
+    outputs: { y: bit, z: bit },
     nodes: { t: TwoOut },
     connect: ({ inputs, outputs, nodes: { t } }) => [
       inputs.a.to(t.x),
@@ -97,29 +99,37 @@ describe('P-feedthrough-fanout-from-input — one input feeds multiple outputs',
     assertFlatCircuitInvariants(elaborateBuilt(Wrap));
     const sim = simulate(Wrap);
     try {
-      sim.set({ a: 1 }); expect(sim.get('y')).toBe(1); expect(sim.get('z')).toBe(1);
-      sim.set({ a: 0 }); expect(sim.get('y')).toBe(0); expect(sim.get('z')).toBe(0);
-    } finally { sim.dispose(); }
+      sim.set({ a: 1 });
+      expect(sim.get('y')).toBe(1);
+      expect(sim.get('z')).toBe(1);
+      sim.set({ a: 0 });
+      expect(sim.get('y')).toBe(0);
+      expect(sim.get('z')).toBe(0);
+    } finally {
+      sim.dispose();
+    }
   });
 });
 
 describe('P-crcstep-shape — mixed gated + feedthrough composite, chained', () => {
   // Two outputs: y_gate = NOT NOT x (gated), y_pass = x (feedthrough).
   const Step = circuit('Step', {
-    inputs: { x: bit }, outputs: { y_gate: bit, y_pass: bit },
+    inputs: { x: bit },
+    outputs: { y_gate: bit, y_pass: bit },
     nodes: { n1: Not, n2: Not },
     connect: ({ inputs, outputs, nodes: { n1, n2 } }) => [
       inputs.x.to(n1.in),
       n1.out.to(n2.in),
       n2.out.to(outputs.y_gate),
-      inputs.x.to(outputs.y_pass),  // feedthrough sibling
+      inputs.x.to(outputs.y_pass), // feedthrough sibling
     ],
   });
   function chain(n: number) {
     const nodes: Record<string, typeof Step> = {};
     for (let k = 0; k < n; k++) nodes['s' + k] = Step;
     return circuit('StepChain' + n, {
-      inputs: { x: bit }, outputs: { y_gate: bit, y_pass: bit },
+      inputs: { x: bit },
+      outputs: { y_gate: bit, y_pass: bit },
       nodes,
       connect: ({ inputs, outputs, nodes }: any) => {
         const c = [inputs.x.to(nodes.s0.x)];
@@ -137,12 +147,14 @@ describe('P-crcstep-shape — mixed gated + feedthrough composite, chained', () 
       const sim = simulate(c);
       try {
         sim.set({ x: 1 });
-        expect(sim.get('y_gate')).toBe(1);  // NOT NOT 1 = 1, chained = 1
-        expect(sim.get('y_pass')).toBe(1);  // final step's feedthrough of the chained gate output
+        expect(sim.get('y_gate')).toBe(1); // NOT NOT 1 = 1, chained = 1
+        expect(sim.get('y_pass')).toBe(1); // final step's feedthrough of the chained gate output
         sim.set({ x: 0 });
         expect(sim.get('y_gate')).toBe(0);
         expect(sim.get('y_pass')).toBe(0);
-      } finally { sim.dispose(); }
+      } finally {
+        sim.dispose();
+      }
     });
   }
 });
@@ -154,19 +166,18 @@ describe('P-crcstep-shape — mixed gated + feedthrough composite, chained', () 
 describe('P-fanout-composite-output — composite output fans out to multiple primitives', () => {
   // Composite that produces a gated output, then top-level fans it out.
   const GateOut = circuit('GateOut', {
-    inputs: { x: bit }, outputs: { y: bit },
+    inputs: { x: bit },
+    outputs: { y: bit },
     nodes: { n: Not },
-    connect: ({ inputs, outputs, nodes: { n } }) => [
-      inputs.x.to(n.in),
-      n.out.to(outputs.y),
-    ],
+    connect: ({ inputs, outputs, nodes: { n } }) => [inputs.x.to(n.in), n.out.to(outputs.y)],
   });
   const Wrap = circuit('FanWrap', {
-    inputs: { a: bit }, outputs: { o1: bit, o2: bit, o3: bit },
+    inputs: { a: bit },
+    outputs: { o1: bit, o2: bit, o3: bit },
     nodes: { g: GateOut, n1: Not, n2: Not, n3: Not },
     connect: ({ inputs, outputs, nodes: { g, n1, n2, n3 } }) => [
       inputs.a.to(g.x),
-      g.y.to(n1.in, n2.in, n3.in),  // fan-out from composite output
+      g.y.to(n1.in, n2.in, n3.in), // fan-out from composite output
       n1.out.to(outputs.o1),
       n2.out.to(outputs.o2),
       n3.out.to(outputs.o3),
@@ -185,23 +196,24 @@ describe('P-fanout-composite-output — composite output fans out to multiple pr
       expect(sim.get('o1')).toBe(1);
       expect(sim.get('o2')).toBe(1);
       expect(sim.get('o3')).toBe(1);
-    } finally { sim.dispose(); }
+    } finally {
+      sim.dispose();
+    }
   });
 });
 
 describe('P-fanout-feedthrough-cross-composite — feedthrough output drives multiple downstream composites', () => {
   // Pass composite: pure feedthrough.
   const Pass = circuit('Pass', {
-    inputs: { x: bit }, outputs: { y: bit },
+    inputs: { x: bit },
+    outputs: { y: bit },
     nodes: { d: Not },
-    connect: ({ inputs, outputs, nodes: { d } }) => [
-      inputs.x.to(outputs.y),
-      inputs.x.to(d.in),
-    ],
+    connect: ({ inputs, outputs, nodes: { d } }) => [inputs.x.to(outputs.y), inputs.x.to(d.in)],
   });
   // p0 feedthrough → both p1 and p2 (two downstream composites consuming the same passthrough output).
   const Cross = circuit('Cross', {
-    inputs: { a: bit }, outputs: { y1: bit, y2: bit },
+    inputs: { a: bit },
+    outputs: { y1: bit, y2: bit },
     nodes: { p0: Pass, p1: Pass, p2: Pass },
     connect: ({ inputs, outputs, nodes: { p0, p1, p2 } }) => [
       inputs.a.to(p0.x),
@@ -215,9 +227,15 @@ describe('P-fanout-feedthrough-cross-composite — feedthrough output drives mul
     assertFlatCircuitInvariants(elaborateBuilt(Cross));
     const sim = simulate(Cross);
     try {
-      sim.set({ a: 1 }); expect(sim.get('y1')).toBe(1); expect(sim.get('y2')).toBe(1);
-      sim.set({ a: 0 }); expect(sim.get('y1')).toBe(0); expect(sim.get('y2')).toBe(0);
-    } finally { sim.dispose(); }
+      sim.set({ a: 1 });
+      expect(sim.get('y1')).toBe(1);
+      expect(sim.get('y2')).toBe(1);
+      sim.set({ a: 0 });
+      expect(sim.get('y1')).toBe(0);
+      expect(sim.get('y2')).toBe(0);
+    } finally {
+      sim.dispose();
+    }
   });
 });
 
@@ -228,32 +246,36 @@ describe('P-fanout-feedthrough-cross-composite — feedthrough output drives mul
 describe('P-nesting-feedthrough-3-4-levels — feedthrough threaded through deep nesting', () => {
   // L1 contains L2 contains L3 contains L4 contains a Not; each forwards via feedthrough.
   const L4 = circuit('L4', {
-    inputs: { x: bit }, outputs: { y: bit },
+    inputs: { x: bit },
+    outputs: { y: bit },
     nodes: { d: Not },
-    connect: ({ inputs, outputs, nodes: { d } }) => [
-      inputs.x.to(outputs.y),
-      inputs.x.to(d.in),
-    ],
+    connect: ({ inputs, outputs, nodes: { d } }) => [inputs.x.to(outputs.y), inputs.x.to(d.in)],
   });
   const L3 = circuit('L3', {
-    inputs: { x: bit }, outputs: { y: bit },
+    inputs: { x: bit },
+    outputs: { y: bit },
     nodes: { inner: L4 },
     connect: ({ inputs, outputs, nodes: { inner } }) => [
-      inputs.x.to(inner.x), inner.y.to(outputs.y),
+      inputs.x.to(inner.x),
+      inner.y.to(outputs.y),
     ],
   });
   const L2 = circuit('L2', {
-    inputs: { x: bit }, outputs: { y: bit },
+    inputs: { x: bit },
+    outputs: { y: bit },
     nodes: { inner: L3 },
     connect: ({ inputs, outputs, nodes: { inner } }) => [
-      inputs.x.to(inner.x), inner.y.to(outputs.y),
+      inputs.x.to(inner.x),
+      inner.y.to(outputs.y),
     ],
   });
   const L1 = circuit('L1', {
-    inputs: { x: bit }, outputs: { y: bit },
+    inputs: { x: bit },
+    outputs: { y: bit },
     nodes: { inner: L2 },
     connect: ({ inputs, outputs, nodes: { inner } }) => [
-      inputs.x.to(inner.x), inner.y.to(outputs.y),
+      inputs.x.to(inner.x),
+      inner.y.to(outputs.y),
     ],
   });
   // Newly-discovered audit finding — see #146. Today: invariants fire (the
@@ -265,41 +287,49 @@ describe('P-nesting-feedthrough-3-4-levels — feedthrough threaded through deep
     expect(() => assertFlatCircuitInvariants(elaborateBuilt(L1))).not.toThrow();
     const sim = simulate(L1);
     try {
-      sim.set({ x: 1 }); expect(sim.get('y')).toBe(1);
-      sim.set({ x: 0 }); expect(sim.get('y')).toBe(0);
-    } finally { sim.dispose(); }
+      sim.set({ x: 1 });
+      expect(sim.get('y')).toBe(1);
+      sim.set({ x: 0 });
+      expect(sim.get('y')).toBe(0);
+    } finally {
+      sim.dispose();
+    }
   });
 });
 
 describe('P-nesting-with-inner-gates — deep nesting with a gate at the innermost level', () => {
   const Inner = circuit('Inner', {
-    inputs: { x: bit }, outputs: { y: bit },
+    inputs: { x: bit },
+    outputs: { y: bit },
     nodes: { n: Not },
-    connect: ({ inputs, outputs, nodes: { n } }) => [
-      inputs.x.to(n.in), n.out.to(outputs.y),
-    ],
+    connect: ({ inputs, outputs, nodes: { n } }) => [inputs.x.to(n.in), n.out.to(outputs.y)],
   });
   const Mid = circuit('Mid', {
-    inputs: { x: bit }, outputs: { y: bit },
+    inputs: { x: bit },
+    outputs: { y: bit },
     nodes: { inner: Inner },
     connect: ({ inputs, outputs, nodes: { inner } }) => [
-      inputs.x.to(inner.x), inner.y.to(outputs.y),
+      inputs.x.to(inner.x),
+      inner.y.to(outputs.y),
     ],
   });
   const Outer = circuit('Outer', {
-    inputs: { x: bit }, outputs: { y: bit },
+    inputs: { x: bit },
+    outputs: { y: bit },
     nodes: { mid: Mid },
-    connect: ({ inputs, outputs, nodes: { mid } }) => [
-      inputs.x.to(mid.x), mid.y.to(outputs.y),
-    ],
+    connect: ({ inputs, outputs, nodes: { mid } }) => [inputs.x.to(mid.x), mid.y.to(outputs.y)],
   });
   it('gate at depth 3 inverts the signal', () => {
     assertFlatCircuitInvariants(elaborateBuilt(Outer));
     const sim = simulate(Outer);
     try {
-      sim.set({ x: 1 }); expect(sim.get('y')).toBe(0);
-      sim.set({ x: 0 }); expect(sim.get('y')).toBe(1);
-    } finally { sim.dispose(); }
+      sim.set({ x: 1 });
+      expect(sim.get('y')).toBe(0);
+      sim.set({ x: 0 });
+      expect(sim.get('y')).toBe(1);
+    } finally {
+      sim.dispose();
+    }
   });
 });
 
@@ -310,19 +340,23 @@ describe('P-nesting-with-inner-gates — deep nesting with a gate at the innermo
 describe('P-multi-drive-composite-input — pre-elaboration rejection (per-circuit check)', () => {
   it('two top-level inputs driving the same composite input port is rejected at definition', () => {
     const Sub = circuit('Sub', {
-      inputs: { x: bit }, outputs: { y: bit },
+      inputs: { x: bit },
+      outputs: { y: bit },
       nodes: { n: Not },
       connect: ({ inputs, outputs, nodes: { n } }) => [inputs.x.to(n.in), n.out.to(outputs.y)],
     });
-    expect(() => circuit('BadDef', {
-      inputs: { a: bit, b: bit }, outputs: { y: bit },
-      nodes: { s: Sub },
-      connect: ({ inputs, outputs, nodes: { s } }) => [
-        inputs.a.to(s.x),
-        inputs.b.to(s.x),  // ← second driver of s.x — per-circuit check should fire here
-        s.y.to(outputs.y),
-      ],
-    })).toThrow(/multi.*driv|multiple drivers|already driven/i);
+    expect(() =>
+      circuit('BadDef', {
+        inputs: { a: bit, b: bit },
+        outputs: { y: bit },
+        nodes: { s: Sub },
+        connect: ({ inputs, outputs, nodes: { s } }) => [
+          inputs.a.to(s.x),
+          inputs.b.to(s.x), // ← second driver of s.x — per-circuit check should fire here
+          s.y.to(outputs.y),
+        ],
+      }),
+    ).toThrow(/multi.*driv|multiple drivers|already driven/i);
   });
 });
 
@@ -331,19 +365,18 @@ describe('P-multi-drive-stitch — post-stitch multi-drive silently accepted (#1
   // today (it does — top-level output has 2 drivers post-stitch). Behavioural
   // test pins the future elaboration-time throw via it.fails().
   const Pass = circuit('Pass', {
-    inputs: { x: bit }, outputs: { y: bit },
+    inputs: { x: bit },
+    outputs: { y: bit },
     nodes: { d: Not },
-    connect: ({ inputs, outputs, nodes: { d } }) => [
-      inputs.x.to(outputs.y),
-      inputs.x.to(d.in),
-    ],
+    connect: ({ inputs, outputs, nodes: { d } }) => [inputs.x.to(outputs.y), inputs.x.to(d.in)],
   });
   const Bad = circuit('BadCircuit', {
-    inputs: { A: bit, B: bit }, outputs: { out: bit },
+    inputs: { A: bit, B: bit },
+    outputs: { out: bit },
     nodes: { p: Pass },
     connect: ({ inputs, outputs, nodes: { p } }) => [
       inputs.A.to(p.x),
-      inputs.B.to(p.y),    // ← driver #1 of p.y at top
+      inputs.B.to(p.y), // ← driver #1 of p.y at top
       p.y.to(outputs.out), // ← p.y's downstream is outputs.out
       // After stitching, A's feedthrough through Pass ALSO drives outputs.out
       // (via the resolved feedthrough chain). Multi-drive at outputs.out.
@@ -351,8 +384,9 @@ describe('P-multi-drive-stitch — post-stitch multi-drive silently accepted (#1
   });
   it('structural: invariant 3 catches the multi-driven top output today (or elaborate throws post-fix)', () => {
     // Match either today's invariant message OR a future elaborate-time throw.
-    expect(() => assertFlatCircuitInvariants(elaborateBuilt(Bad)))
-      .toThrow(/invariant 3|multi.*driv|multiple drivers/i);
+    expect(() => assertFlatCircuitInvariants(elaborateBuilt(Bad))).toThrow(
+      /invariant 3|multi.*driv|multiple drivers/i,
+    );
   });
   it.fails('behavioral: elaborate(Bad) throws naming the multi-driver — currently silent, see #143', () => {
     expect(() => elaborateBuilt(Bad)).toThrow(/multi.*driv|multiple drivers/i);
@@ -365,17 +399,22 @@ describe('P-multi-drive-stitch — post-stitch multi-drive silently accepted (#1
 
 describe('P-instance-pathing — same composite type, multiple instance ids', () => {
   const Inv = circuit('Inv', {
-    inputs: { x: bit }, outputs: { y: bit },
+    inputs: { x: bit },
+    outputs: { y: bit },
     nodes: { n: Not },
     connect: ({ inputs, outputs, nodes: { n } }) => [inputs.x.to(n.in), n.out.to(outputs.y)],
   });
   const Triple = circuit('Triple', {
-    inputs: { a: bit, b: bit, c: bit }, outputs: { x: bit, y: bit, z: bit },
+    inputs: { a: bit, b: bit, c: bit },
+    outputs: { x: bit, y: bit, z: bit },
     nodes: { i1: Inv, i2: Inv, i3: Inv },
     connect: ({ inputs, outputs, nodes: { i1, i2, i3 } }) => [
-      inputs.a.to(i1.x), i1.y.to(outputs.x),
-      inputs.b.to(i2.x), i2.y.to(outputs.y),
-      inputs.c.to(i3.x), i3.y.to(outputs.z),
+      inputs.a.to(i1.x),
+      i1.y.to(outputs.x),
+      inputs.b.to(i2.x),
+      i2.y.to(outputs.y),
+      inputs.c.to(i3.x),
+      i3.y.to(outputs.z),
     ],
   });
   it('three instances of the same composite produce independent outputs', () => {
@@ -386,7 +425,9 @@ describe('P-instance-pathing — same composite type, multiple instance ids', ()
       expect(sim.get('x')).toBe(0);
       expect(sim.get('y')).toBe(1);
       expect(sim.get('z')).toBe(0);
-    } finally { sim.dispose(); }
+    } finally {
+      sim.dispose();
+    }
   });
 });
 
@@ -399,7 +440,8 @@ describe('P-recursive-composite — recursive definition rejected with cycle cha
     // Build a circuit whose `nodes` references a component name pointing back
     // to itself. We do this by manually constructing the IR shape.
     const A = circuit('SelfRefA', {
-      inputs: { x: bit }, outputs: { y: bit },
+      inputs: { x: bit },
+      outputs: { y: bit },
       nodes: { n: Not },
       connect: ({ inputs, outputs, nodes: { n } }) => [inputs.x.to(n.in), n.out.to(outputs.y)],
     });
@@ -432,7 +474,8 @@ describe('P-recursive-composite — recursive definition rejected with cycle cha
 describe('P-stateful-feedthrough-clk — composite forwards we through to an internal Register', () => {
   // Composite wraps a Register; we and data come via feedthrough from outside.
   const RegWrap = circuit('RegWrap', {
-    inputs: { data: bus(8), we: bit }, outputs: { q: bus(8) },
+    inputs: { data: bus(8), we: bit },
+    outputs: { q: bus(8) },
     nodes: { r: Register({ width: 8 }) },
     connect: ({ inputs, outputs, nodes: { r } }) => [
       inputs.data.to(r.data),
@@ -459,7 +502,9 @@ describe('P-stateful-feedthrough-clk — composite forwards we through to an int
     try {
       sim.tick();
       expect(sim.get('q')).toBe(5);
-    } finally { sim.dispose(); }
+    } finally {
+      sim.dispose();
+    }
   });
 });
 
@@ -467,12 +512,14 @@ describe('P-self-loop-feedback-through-composite — register feedback crossing 
   // Counter pattern, but the +1 path passes through a composite. Increments by
   // one per tick if the composite is a faithful feedthrough.
   const Plus1 = circuit('Plus1', {
-    inputs: { a: bus(8) }, outputs: { sum: bus(8) },
+    inputs: { a: bus(8) },
+    outputs: { sum: bus(8) },
     // Implement +1 via a tiny gate so the composite isn't pure feedthrough on
     // the operand path; the sum output is gated, not a passthrough.
     nodes: {
       add: Adder({ width: 8 }),
-      one: Constant({ value: 1, width: 8 }), zero: Constant({ value: 0 }),
+      one: Constant({ value: 1, width: 8 }),
+      zero: Constant({ value: 0 }),
     },
     connect: ({ inputs, outputs, nodes: { add, one, zero } }) => [
       inputs.a.to(add.a),
@@ -506,7 +553,9 @@ describe('P-self-loop-feedback-through-composite — register feedback crossing 
       expect(sim.get('q')).toBe(2);
       sim.tick();
       expect(sim.get('q')).toBe(3);
-    } finally { sim.dispose(); }
+    } finally {
+      sim.dispose();
+    }
   });
 });
 
@@ -520,7 +569,7 @@ describe('P-width-bit-bus — bit source driving bus(N) target silently accepted
   // behavioural it.fails() pins the future elaborate-time throw.
   const Bad = circuit('BadWidthBitBus', {
     outputs: { out: bus(8) },
-    nodes: { one: Constant({ value: 1 }) },  // bit-wide
+    nodes: { one: Constant({ value: 1 }) }, // bit-wide
     connect: ({ outputs, nodes: { one } }) => [one.out.to(outputs.out)],
   });
   it.fails('behavioral: elaborate(Bad) throws naming bit→bus(N) width mismatch — currently silent, see #144', () => {
@@ -531,7 +580,7 @@ describe('P-width-bit-bus — bit source driving bus(N) target silently accepted
 describe('P-width-mismatch — bus(M) → bus(N), M ≠ N silently accepted (#145)', () => {
   const Bad = circuit('BadWidthMismatch', {
     outputs: { out: bus(16) },
-    nodes: { eight: Constant({ value: 0xAA, width: 8 }) },
+    nodes: { eight: Constant({ value: 0xaa, width: 8 }) },
     connect: ({ outputs, nodes: { eight } }) => [eight.out.to(outputs.out)],
   });
   it.fails('behavioral: elaborate(Bad) throws naming bus(M)→bus(N) mismatch — currently silent, see #145', () => {
@@ -545,17 +594,16 @@ describe('P-width-mismatch — bus(M) → bus(N), M ≠ N silently accepted (#14
 
 describe('P-empty-composite-passthrough-only — composite with a single passthrough and no gates', () => {
   const Pass = circuit('JustPass', {
-    inputs: { x: bit }, outputs: { y: bit },
-    nodes: {},  // ← deliberately empty: only a passthrough connection
+    inputs: { x: bit },
+    outputs: { y: bit },
+    nodes: {}, // ← deliberately empty: only a passthrough connection
     connect: ({ inputs, outputs }) => [inputs.x.to(outputs.y)],
   });
   const Wrap = circuit('WrapJustPass', {
-    inputs: { a: bit }, outputs: { y: bit },
+    inputs: { a: bit },
+    outputs: { y: bit },
     nodes: { p: Pass },
-    connect: ({ inputs, outputs, nodes: { p } }) => [
-      inputs.a.to(p.x),
-      p.y.to(outputs.y),
-    ],
+    connect: ({ inputs, outputs, nodes: { p } }) => [inputs.a.to(p.x), p.y.to(outputs.y)],
   });
   // Newly-discovered audit finding — see #147. Today: invariants pass (the
   // flat netlist is structurally well-formed), but the simulator returns 0
@@ -566,8 +614,12 @@ describe('P-empty-composite-passthrough-only — composite with a single passthr
     assertFlatCircuitInvariants(elaborateBuilt(Wrap));
     const sim = simulate(Wrap);
     try {
-      sim.set({ a: 1 }); expect(sim.get('y')).toBe(1);
-      sim.set({ a: 0 }); expect(sim.get('y')).toBe(0);
-    } finally { sim.dispose(); }
+      sim.set({ a: 1 });
+      expect(sim.get('y')).toBe(1);
+      sim.set({ a: 0 });
+      expect(sim.get('y')).toBe(0);
+    } finally {
+      sim.dispose();
+    }
   });
 });

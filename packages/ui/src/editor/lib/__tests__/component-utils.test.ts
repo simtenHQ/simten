@@ -138,9 +138,7 @@ describe('containsSequentialCircuit', () => {
 
   it('should return true for composite components containing sequential primitives', () => {
     const components: Record<string, Component> = {};
-    expect(containsSequentialCircuit('DFlipFlopTest', components, mockResolveCircuit)).toBe(
-      true
-    );
+    expect(containsSequentialCircuit('DFlipFlopTest', components, mockResolveCircuit)).toBe(true);
   });
 
   it('should return false for composite components with only combinational logic', () => {
@@ -155,9 +153,9 @@ describe('containsSequentialCircuit', () => {
 
   it('should return false for undefined components', () => {
     const components: Record<string, Component> = {};
-    expect(
-      containsSequentialCircuit('NonExistentComponent', components, mockResolveCircuit)
-    ).toBe(false);
+    expect(containsSequentialCircuit('NonExistentComponent', components, mockResolveCircuit)).toBe(
+      false,
+    );
   });
 
   it('should handle circular references without infinite recursion', () => {

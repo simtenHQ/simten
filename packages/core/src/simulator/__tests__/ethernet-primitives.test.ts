@@ -9,8 +9,11 @@ import { simulate } from '../../sim/simulate.js';
 import { circuit, bit, bus } from '../../circuit/index.js';
 import type { BuiltCircuit } from '../../circuit/index.js';
 import {
-  Eth_ProtocolDecoder, Eth_AddrClassifier, Eth_FrameInput,
-  Eth_FrameParser, Eth_CRC32,
+  Eth_ProtocolDecoder,
+  Eth_AddrClassifier,
+  Eth_FrameInput,
+  Eth_FrameParser,
+  Eth_CRC32,
 } from '../../std/index.js';
 
 /** Helper: simulate combinational circuit, return output values */
@@ -92,7 +95,7 @@ describe('Eth_ProtocolDecoder', () => {
   });
 
   it('decodes IPv6 (0x86DD)', () => {
-    const out = sim(c, { ethertype: 0x86DD });
+    const out = sim(c, { ethertype: 0x86dd });
     expect(out.is_ipv6).toBe(true);
     expect(out.is_ipv4).toBe(false);
   });
@@ -142,21 +145,21 @@ describe('Eth_AddrClassifier', () => {
   });
 
   it('detects broadcast FF:FF:FF:FF:FF:FF', () => {
-    const out = sim(c, { dst_mac_hi: 0xFFFF, dst_mac_lo: 0xFFFFFFFF });
+    const out = sim(c, { dst_mac_hi: 0xffff, dst_mac_lo: 0xffffffff });
     expect(out.is_broadcast).toBe(true);
     expect(out.is_multicast).toBe(false);
     expect(out.is_unicast).toBe(false);
   });
 
   it('detects multicast 01:00:5E:xx:xx:xx (I/G bit set)', () => {
-    const out = sim(c, { dst_mac_hi: 0x0001, dst_mac_lo: 0x01005E00 });
+    const out = sim(c, { dst_mac_hi: 0x0001, dst_mac_lo: 0x01005e00 });
     expect(out.is_multicast).toBe(true);
     expect(out.is_broadcast).toBe(false);
     expect(out.is_unicast).toBe(false);
   });
 
   it('detects unicast 00:1A:2B:3C:4D:5E', () => {
-    const out = sim(c, { dst_mac_hi: 0x4D5E, dst_mac_lo: 0x001A2B3C });
+    const out = sim(c, { dst_mac_hi: 0x4d5e, dst_mac_lo: 0x001a2b3c });
     expect(out.is_unicast).toBe(true);
     expect(out.is_broadcast).toBe(false);
     expect(out.is_multicast).toBe(false);
@@ -201,25 +204,22 @@ describe('Eth_FrameInput', () => {
   }
 
   it('streams 8-byte frame in 2 cycles', () => {
-    const out = simTicks(
-      c,
-      4,
-      { enable: true, reset: false },
-      (s) => loadFrame(s, [0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF, 0x11, 0x22]),
+    const out = simTicks(c, 4, { enable: true, reset: false }, (s) =>
+      loadFrame(s, [0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff, 0x11, 0x22]),
     );
 
     // Tick 0: pre-first-clock, registers not yet populated
     expect(out.tvalid[0]).toBe(false);
 
     // Tick 1: first 4 bytes big-endian
-    expect((out.tdata[1] as number) >>> 0).toBe(0xAABBCCDD);
-    expect(out.tkeep[1]).toBe(0xF);
+    expect((out.tdata[1] as number) >>> 0).toBe(0xaabbccdd);
+    expect(out.tkeep[1]).toBe(0xf);
     expect(out.tvalid[1]).toBe(true);
     expect(out.tlast[1]).toBe(false);
 
     // Tick 2: next 4 bytes, last word
-    expect((out.tdata[2] as number) >>> 0).toBe(0xEEFF1122);
-    expect(out.tkeep[2]).toBe(0xF);
+    expect((out.tdata[2] as number) >>> 0).toBe(0xeeff1122);
+    expect(out.tkeep[2]).toBe(0xf);
     expect(out.tvalid[2]).toBe(true);
     expect(out.tlast[2]).toBe(true);
 
@@ -228,33 +228,25 @@ describe('Eth_FrameInput', () => {
   });
 
   it('handles partial last word (5 bytes = 1 full + 1 partial)', () => {
-    const out = simTicks(
-      c,
-      4,
-      { enable: true, reset: false },
-      (s) => loadFrame(s, [0x01, 0x02, 0x03, 0x04, 0x05]),
+    const out = simTicks(c, 4, { enable: true, reset: false }, (s) =>
+      loadFrame(s, [0x01, 0x02, 0x03, 0x04, 0x05]),
     );
 
     expect(out.tvalid[0]).toBe(false);
 
     expect((out.tdata[1] as number) >>> 0).toBe(0x01020304);
-    expect(out.tkeep[1]).toBe(0xF);
+    expect(out.tkeep[1]).toBe(0xf);
     expect(out.tlast[1]).toBe(false);
 
     expect(out.tkeep[2]).toBe(0x8);
     expect(out.tlast[2]).toBe(true);
-    expect(((out.tdata[2] as number) >>> 24) & 0xFF).toBe(0x05);
+    expect(((out.tdata[2] as number) >>> 24) & 0xff).toBe(0x05);
   });
 
   it('reports byte_offset correctly', () => {
     const bytes: number[] = [];
     for (let i = 0; i < 12; i++) bytes.push(i);
-    const out = simTicks(
-      c,
-      5,
-      { enable: true, reset: false },
-      (s) => loadFrame(s, bytes),
-    );
+    const out = simTicks(c, 5, { enable: true, reset: false }, (s) => loadFrame(s, bytes));
     expect(out.byte_offset[1]).toBe(0);
     expect(out.byte_offset[2]).toBe(4);
     expect(out.byte_offset[3]).toBe(8);
@@ -283,9 +275,9 @@ describe('Eth_CRC32', () => {
 
   it('computes CRC-32 and updates state', () => {
     const out = simTicks(c, 2, {
-      data: 0x49454E44,
+      data: 0x49454e44,
       data_valid: true,
-      tkeep: 0xF,
+      tkeep: 0xf,
       tlast: true,
       reset: false,
     });
@@ -344,8 +336,8 @@ describe('Eth_FrameParser', () => {
 
   it('advances FSM state on valid data', () => {
     const out = simTicks(c, 3, {
-      tdata: 0xAABBCCDD,
-      tkeep: 0xF,
+      tdata: 0xaabbccdd,
+      tkeep: 0xf,
       tvalid: true,
       tlast: false,
     });
@@ -355,7 +347,7 @@ describe('Eth_FrameParser', () => {
 
     // Tick 1: FSM processed first word
     expect(out.parse_state[1]).toBe(2);
-    expect((out.dst_mac_lo[1] as number) >>> 0).toBe(0xAABBCCDD);
+    expect((out.dst_mac_lo[1] as number) >>> 0).toBe(0xaabbccdd);
 
     // Tick 2: FSM processed second word
     expect(out.parse_state[2]).toBe(3);

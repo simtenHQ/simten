@@ -84,13 +84,37 @@ function parseTimescale(text: string): number {
 }
 
 const VAR_TYPES = new Set([
-  'wire', 'reg', 'integer', 'real', 'string', 'time', 'parameter',
-  'realtime', 'supply0', 'supply1', 'tri', 'triand', 'trior', 'trireg',
-  'tri0', 'tri1', 'wand', 'wor', 'event',
+  'wire',
+  'reg',
+  'integer',
+  'real',
+  'string',
+  'time',
+  'parameter',
+  'realtime',
+  'supply0',
+  'supply1',
+  'tri',
+  'triand',
+  'trior',
+  'trireg',
+  'tri0',
+  'tri1',
+  'wand',
+  'wor',
+  'event',
 ]);
 
 function classifyVarType(t: string): SignalInfo['type'] {
-  if (t === 'wire' || t === 'reg' || t === 'integer' || t === 'real' || t === 'string' || t === 'time' || t === 'parameter') {
+  if (
+    t === 'wire' ||
+    t === 'reg' ||
+    t === 'integer' ||
+    t === 'real' ||
+    t === 'string' ||
+    t === 'time' ||
+    t === 'parameter'
+  ) {
     return t;
   }
   return 'other';
@@ -157,7 +181,9 @@ export async function parseVcd(filePath: string, opts: ParseOptions = {}): Promi
       const auto = opts.autoIncludeClock ?? true;
       if (auto !== false) {
         const clockId = detectClockIdInline(
-          signals, byFullPath, byLeaf,
+          signals,
+          byFullPath,
+          byLeaf,
           typeof auto === 'string' ? auto : undefined,
         );
         if (clockId) ids.add(clockId);

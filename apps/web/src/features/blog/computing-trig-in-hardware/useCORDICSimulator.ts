@@ -1,6 +1,6 @@
-import { useState, useEffect, useRef, useCallback } from "react";
-import { useCircuitSimulator } from "@simten/embed";
-import { CORDICCircuit } from "./circuits";
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { useCircuitSimulator } from '@simten/embed';
+import { CORDICCircuit } from './circuits';
 
 export function useCORDICSimulator() {
   const sim = useCircuitSimulator(CORDICCircuit);
@@ -13,7 +13,7 @@ export function useCORDICSimulator() {
   // substring scan over portValues looking for a node named "doneLed" —
   // replaced with a declared top-level port).
   useEffect(() => {
-    const done = sim.portValues?.get("__top__.done");
+    const done = sim.portValues?.get('__top__.done');
     if (done) {
       setIsDone(true);
       setIsRunning(false);

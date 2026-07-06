@@ -10,13 +10,24 @@
  * web component bridge which sandboxes compilation via an iframe.
  */
 
-import { forwardRef, useState, type CSSProperties, type ForwardedRef, type ReactElement } from "react";
-import { CircuitViewer, type CircuitViewerHandle, type HarnessedLayout } from "./CircuitViewer";
-import { circuitToSource, type BuiltCircuit } from "@simten/core/circuit";
-import type { FlatPortValueMap } from "@simten/core/simulator";
-import { encodeSourceForUrl } from "@simten/ui/share";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@simten/ui/primitives/tooltip";
-import { useShareCircuit } from "./share-context";
+import {
+  forwardRef,
+  useState,
+  type CSSProperties,
+  type ForwardedRef,
+  type ReactElement,
+} from 'react';
+import { CircuitViewer, type CircuitViewerHandle, type HarnessedLayout } from './CircuitViewer';
+import { circuitToSource, type BuiltCircuit } from '@simten/core/circuit';
+import type { FlatPortValueMap } from '@simten/core/simulator';
+import { encodeSourceForUrl } from '@simten/ui/share';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@simten/ui/primitives/tooltip';
+import { useShareCircuit } from './share-context';
 
 /**
  * Where Fork links open. simten.dev for everything except local dev of the
@@ -24,10 +35,8 @@ import { useShareCircuit } from "./share-context";
  * because the embed runs on third-party origins we don't control at build time.
  */
 function simtenHost(): string {
-  if (typeof window === "undefined") return "https://simten.dev";
-  return window.location.hostname === "localhost"
-    ? window.location.origin
-    : "https://simten.dev";
+  if (typeof window === 'undefined') return 'https://simten.dev';
+  return window.location.hostname === 'localhost' ? window.location.origin : 'https://simten.dev';
 }
 
 export interface CircuitEmbedProps<C extends BuiltCircuit = BuiltCircuit> {
@@ -54,7 +63,7 @@ export interface CircuitEmbedProps<C extends BuiltCircuit = BuiltCircuit> {
    */
   layout?: HarnessedLayout<C>;
   /** Theme */
-  theme?: "light" | "dark";
+  theme?: 'light' | 'dark';
   /** Title shown in bottom bar */
   title?: string;
   /** Subtitle shown next to title */
@@ -79,7 +88,7 @@ export interface CircuitEmbedProps<C extends BuiltCircuit = BuiltCircuit> {
   /** Show port labels on nodes */
   showPortLabels?: boolean;
   /** Callback when a port is clicked */
-  onPortClick?: (nodeLabel: string, portName: string, portType: "input" | "output") => void;
+  onPortClick?: (nodeLabel: string, portName: string, portType: 'input' | 'output') => void;
   /** Highlight unconnected ports */
   glowUnconnected?: boolean;
   /** Auto-run speed (ms between ticks) */
@@ -107,12 +116,14 @@ export type CircuitEmbedHandle = CircuitViewerHandle;
 const NODE_W = 160;
 const NODE_H = 90;
 
-function inferAspectFromLayout(layout: Record<string, { x: number; y: number }> | undefined): number {
+function inferAspectFromLayout(
+  layout: Record<string, { x: number; y: number }> | undefined,
+): number {
   if (!layout) return 1.5; // default 3:2 — sane for auto-laid-out circuits
   const positions = Object.values(layout);
   if (positions.length === 0) return 1.5;
-  const w = Math.max(...positions.map(p => p.x)) + NODE_W;
-  const h = Math.max(...positions.map(p => p.y)) + NODE_H;
+  const w = Math.max(...positions.map((p) => p.x)) + NODE_W;
+  const h = Math.max(...positions.map((p) => p.y)) + NODE_H;
   if (w <= 0 || h <= 0) return 1.5;
   return w / h;
 }
@@ -128,32 +139,32 @@ function ForkButton({
   forkError,
   forkPending,
   className,
-  tooltipSide = "top",
+  tooltipSide = 'top',
 }: {
   onFork: () => void;
   forkError: string | null;
   forkPending: boolean;
   className: string;
-  tooltipSide?: "top" | "bottom";
+  tooltipSide?: 'top' | 'bottom';
 }) {
   return (
     <TooltipProvider delayDuration={300}>
       <Tooltip>
         <TooltipTrigger asChild>
           <button type="button" onClick={onFork} className={`cursor-pointer ${className}`}>
-            {forkError ? "Fork failed" : forkPending ? "Forking…" : "Fork →"}
+            {forkError ? 'Fork failed' : forkPending ? 'Forking…' : 'Fork →'}
           </button>
         </TooltipTrigger>
         <TooltipContent side={tooltipSide}>
-          {forkError ?? "Open and modify this circuit in the Simten editor"}
+          {forkError ?? 'Open and modify this circuit in the Simten editor'}
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>
   );
 }
 
-const CircuitEmbedImpl = forwardRef<CircuitEmbedHandle, CircuitEmbedProps>(
-  function CircuitEmbed({
+const CircuitEmbedImpl = forwardRef<CircuitEmbedHandle, CircuitEmbedProps>(function CircuitEmbed(
+  {
     circuit,
     height,
     aspectRatio,
@@ -172,111 +183,128 @@ const CircuitEmbedImpl = forwardRef<CircuitEmbedHandle, CircuitEmbedProps>(
     initialInputs,
     forkSource,
     onPortValuesChange,
-  }, ref) {
-    const hasInfoBar = title || description;
-    const [forkError, setForkError] = useState<string | null>(null);
-    const [forkPending, setForkPending] = useState(false);
-    const shareCircuit = useShareCircuit();
+  },
+  ref,
+) {
+  const hasInfoBar = title || description;
+  const [forkError, setForkError] = useState<string | null>(null);
+  const [forkPending, setForkPending] = useState(false);
+  const shareCircuit = useShareCircuit();
 
-    const onFork = async () => {
-      if (forkPending) return;
-      try {
-        const source = forkSource ?? circuitToSource(circuit);
-        // Use the KV shortener when available (simten.dev). Outside simten.dev
-        // — embeds on third-party pages — fall back to the inline-encoded URL.
-        if (shareCircuit) {
-          setForkPending(true);
-          const { hash } = await shareCircuit(source);
-          window.open(`${simtenHost()}/circuit/s/${hash}`, "_blank", "noopener");
-        } else {
-          const encoded = encodeSourceForUrl(source);
-          window.open(`${simtenHost()}/circuit/${encoded}`, "_blank", "noopener");
-        }
-      } catch (err) {
-        setForkError(err instanceof Error ? err.message : "Couldn't fork this circuit");
-        setTimeout(() => setForkError(null), 3000);
-      } finally {
-        setForkPending(false);
+  const onFork = async () => {
+    if (forkPending) return;
+    try {
+      const source = forkSource ?? circuitToSource(circuit);
+      // Use the KV shortener when available (simten.dev). Outside simten.dev
+      // — embeds on third-party pages — fall back to the inline-encoded URL.
+      if (shareCircuit) {
+        setForkPending(true);
+        const { hash } = await shareCircuit(source);
+        window.open(`${simtenHost()}/circuit/s/${hash}`, '_blank', 'noopener');
+      } else {
+        const encoded = encodeSourceForUrl(source);
+        window.open(`${simtenHost()}/circuit/${encoded}`, '_blank', 'noopener');
       }
-    };
+    } catch (err) {
+      setForkError(err instanceof Error ? err.message : "Couldn't fork this circuit");
+      setTimeout(() => setForkError(null), 3000);
+    } finally {
+      setForkPending(false);
+    }
+  };
 
-    // Sizing strategy: if `height` is set, use it (backwards compat).
-    // Otherwise size width-responsively via aspect-ratio with mobile clamps.
-    const useResponsive = height === undefined;
-    const aspect = aspectRatio ?? inferAspectFromLayout(layout as Record<string, { x: number; y: number }> | undefined);
-    const responsiveStyle: CSSProperties = {
-      width: '100%',
-      aspectRatio: String(aspect),
-      minHeight: 240,
-      maxHeight: '70vh',
-    };
+  // Sizing strategy: if `height` is set, use it (backwards compat).
+  // Otherwise size width-responsively via aspect-ratio with mobile clamps.
+  const useResponsive = height === undefined;
+  const aspect =
+    aspectRatio ??
+    inferAspectFromLayout(layout as Record<string, { x: number; y: number }> | undefined);
+  const responsiveStyle: CSSProperties = {
+    width: '100%',
+    aspectRatio: String(aspect),
+    minHeight: 240,
+    maxHeight: '70vh',
+  };
 
-    const outerStyle: CSSProperties | undefined = hasInfoBar
-      ? undefined
-      : useResponsive
-        ? responsiveStyle
-        : { height };
-    const canvasStyle: CSSProperties = hasInfoBar
-      ? useResponsive
-        ? responsiveStyle
-        : { height }
-      : { height: '100%' };
+  const outerStyle: CSSProperties | undefined = hasInfoBar
+    ? undefined
+    : useResponsive
+      ? responsiveStyle
+      : { height };
+  const canvasStyle: CSSProperties = hasInfoBar
+    ? useResponsive
+      ? responsiveStyle
+      : { height }
+    : { height: '100%' };
 
-    return (
-      <div style={outerStyle} className={`relative flex flex-col ${hasInfoBar ? 'rounded-xl border border-[var(--embed-border)] overflow-hidden bg-[var(--embed-bg-secondary)]' : ''}`}>
-        {!hasInfoBar && !href && (
-          <ForkButton
-            onFork={onFork}
-            forkError={forkError}
-            forkPending={forkPending}
-            tooltipSide="bottom"
-            className="absolute top-2 right-2 z-10 hidden md:flex items-center px-2.5 py-1 rounded border border-[var(--embed-border)] bg-[var(--embed-bg-secondary)] text-[11px] text-[var(--embed-text-primary)] hover:opacity-80 transition-colors shadow-sm"
-          />
-        )}
-        <div style={canvasStyle} className="min-h-0">
-          <CircuitViewer
-            ref={ref}
-            circuit={circuit}
-            height="100%"
-            showControls={showControls}
-            autoHarness
-            initialInputs={initialInputs}
-            layout={layout}
-            theme={theme}
-            focus={focus}
-            showPortLabels={showPortLabels}
-            onPortClick={onPortClick}
-            glowUnconnected={glowUnconnected}
-            autoRunSpeed={autoRunSpeed}
-            onPortValuesChange={onPortValuesChange}
-          />
-        </div>
-        {hasInfoBar && (
-          <div className="border-t border-[var(--embed-border)] px-4 py-3 flex items-end justify-between gap-4">
-            <div>
-              <div className="text-base font-semibold text-[var(--embed-text-primary)]">{title}</div>
-              {subtitle && <div className="text-xs text-[var(--embed-text-muted)] font-mono mt-0.5">{subtitle}</div>}
-              {description && <div className="text-sm text-[var(--embed-text-secondary)] mt-1.5 leading-relaxed">{description}</div>}
-            </div>
-            {href ? (
-              <a href={href} className="shrink-0 px-3 py-1.5 rounded border border-[var(--embed-border)] text-xs text-[var(--embed-text-primary)] hover:opacity-80 transition-colors">
-                Open →
-              </a>
-            ) : (
-              <ForkButton
-                onFork={onFork}
-                forkError={forkError}
-                forkPending={forkPending}
-                tooltipSide="top"
-                className="hidden md:flex items-center shrink-0 px-3 py-1.5 rounded border border-[var(--embed-border)] text-xs text-[var(--embed-text-primary)] hover:opacity-80 transition-colors"
-              />
+  return (
+    <div
+      style={outerStyle}
+      className={`relative flex flex-col ${hasInfoBar ? 'rounded-xl border border-[var(--embed-border)] overflow-hidden bg-[var(--embed-bg-secondary)]' : ''}`}
+    >
+      {!hasInfoBar && !href && (
+        <ForkButton
+          onFork={onFork}
+          forkError={forkError}
+          forkPending={forkPending}
+          tooltipSide="bottom"
+          className="absolute top-2 right-2 z-10 hidden md:flex items-center px-2.5 py-1 rounded border border-[var(--embed-border)] bg-[var(--embed-bg-secondary)] text-[11px] text-[var(--embed-text-primary)] hover:opacity-80 transition-colors shadow-sm"
+        />
+      )}
+      <div style={canvasStyle} className="min-h-0">
+        <CircuitViewer
+          ref={ref}
+          circuit={circuit}
+          height="100%"
+          showControls={showControls}
+          autoHarness
+          initialInputs={initialInputs}
+          layout={layout}
+          theme={theme}
+          focus={focus}
+          showPortLabels={showPortLabels}
+          onPortClick={onPortClick}
+          glowUnconnected={glowUnconnected}
+          autoRunSpeed={autoRunSpeed}
+          onPortValuesChange={onPortValuesChange}
+        />
+      </div>
+      {hasInfoBar && (
+        <div className="border-t border-[var(--embed-border)] px-4 py-3 flex items-end justify-between gap-4">
+          <div>
+            <div className="text-base font-semibold text-[var(--embed-text-primary)]">{title}</div>
+            {subtitle && (
+              <div className="text-xs text-[var(--embed-text-muted)] font-mono mt-0.5">
+                {subtitle}
+              </div>
+            )}
+            {description && (
+              <div className="text-sm text-[var(--embed-text-secondary)] mt-1.5 leading-relaxed">
+                {description}
+              </div>
             )}
           </div>
-        )}
-      </div>
-    );
-  }
-);
+          {href ? (
+            <a
+              href={href}
+              className="shrink-0 px-3 py-1.5 rounded border border-[var(--embed-border)] text-xs text-[var(--embed-text-primary)] hover:opacity-80 transition-colors"
+            >
+              Open →
+            </a>
+          ) : (
+            <ForkButton
+              onFork={onFork}
+              forkError={forkError}
+              forkPending={forkPending}
+              tooltipSide="top"
+              className="hidden md:flex items-center shrink-0 px-3 py-1.5 rounded border border-[var(--embed-border)] text-xs text-[var(--embed-text-primary)] hover:opacity-80 transition-colors"
+            />
+          )}
+        </div>
+      )}
+    </div>
+  );
+});
 
 /**
  * CircuitEmbed component with generic inference over the circuit type.

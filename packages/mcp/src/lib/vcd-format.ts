@@ -48,7 +48,7 @@ export interface FormattedSignal {
   width: number;
   initial: InitialValue;
   trace:
-    | Array<[cycle: number, value: string]>            // changes
+    | Array<[cycle: number, value: string]> // changes
     | { start_cycle: number; values: string | string[] } // raw
     | Array<[cycle: number, from: string, to: string]>; // edges
   values_hex?: string[];
@@ -88,7 +88,9 @@ function binToHex(bin: string): string | undefined {
   if (bin.length === 0) return '';
   // parseInt handles up to 32 bits; for wider buses we fall back to chunked.
   if (bin.length <= 30) {
-    return parseInt(bin, 2).toString(16).padStart(Math.ceil(bin.length / 4), '0');
+    return parseInt(bin, 2)
+      .toString(16)
+      .padStart(Math.ceil(bin.length / 4), '0');
   }
   // Chunk by 4 bits from the right, then assemble.
   let pad = bin.length % 4;
@@ -306,9 +308,8 @@ export function formatSignals(
 
     if (sig.unsupported) {
       formatted.warning = `value type "${sig.unsupported}" not supported in v1`;
-      formatted.trace = format === 'raw'
-        ? { start_cycle: from, values: sig.width === 1 ? '' : [] }
-        : [];
+      formatted.trace =
+        format === 'raw' ? { start_cycle: from, values: sig.width === 1 ? '' : [] } : [];
       out.push(formatted);
       continue;
     }
@@ -325,7 +326,13 @@ export function formatSignals(
       }
     } else if (format === 'edges') {
       const { trace, truncated, warning } = formatEdges(
-        changes, cycleMap, [from, to], perSignalCap, edge, sig.width, initial.value,
+        changes,
+        cycleMap,
+        [from, to],
+        perSignalCap,
+        edge,
+        sig.width,
+        initial.value,
       );
       formatted.trace = trace;
       if (truncated) {

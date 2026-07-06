@@ -12,11 +12,7 @@ const SandboxContext = createContext<SandboxHandle | null>(null);
 
 export function SandboxProvider({ children }: { children: ReactNode }) {
   const sandbox = useSandbox();
-  return (
-    <SandboxContext.Provider value={sandbox}>
-      {children}
-    </SandboxContext.Provider>
-  );
+  return <SandboxContext.Provider value={sandbox}>{children}</SandboxContext.Provider>;
 }
 
 // No-op handle returned before the sandbox iframe is ready (SSR / pre-mount)

@@ -1,4 +1,3 @@
-
 import { useRef, useEffect } from 'react';
 import { BaseNode } from './BaseNode';
 import type { NodeData } from './NodeData';
@@ -25,7 +24,11 @@ export function UartTxNode({ data, selected }: UartTxNodeProps) {
     <BaseNode
       selected={selected}
       inputPorts={data.inputNames.map((name, index) => ({ name, index, type: 'input' as const }))}
-      outputPorts={data.outputNames.map((name, index) => ({ name, index, type: 'output' as const }))}
+      outputPorts={data.outputNames.map((name, index) => ({
+        name,
+        index,
+        type: 'output' as const,
+      }))}
       className="min-w-[200px]"
       showPortLabels={data.showPortLabels}
       onPortClick={data.onPortClick}
@@ -40,7 +43,9 @@ export function UartTxNode({ data, selected }: UartTxNodeProps) {
           className="w-full h-32 overflow-auto rounded border-2 border-gray-700 bg-black text-green-400 font-mono text-xs p-2 whitespace-pre-wrap break-all"
           style={{ minWidth: '180px', maxHeight: '200px' }}
         >
-          {text || <span className="text-[var(--embed-text-muted)]">// UART output appears here</span>}
+          {text || (
+            <span className="text-[var(--embed-text-muted)]">// UART output appears here</span>
+          )}
         </pre>
         <div className="text-xs text-[var(--embed-text-secondary)]">
           {charCount} chars, {lineCount} lines

@@ -24,9 +24,7 @@
 
 import { describe, it } from 'vitest';
 import { circuit, bit, bus } from '../../circuit/index.js';
-import {
-  And, Or, Xor, Not, Adder, Register, DFlipFlop, Constant,
-} from '../../std/index.js';
+import { And, Or, Xor, Not, Adder, Register, DFlipFlop, Constant } from '../../std/index.js';
 import { assertFlatCircuitInvariants, elaborateBuilt } from './_invariants.js';
 
 // ── 1. HalfAdder — two primitives, no nesting. Trivial baseline. ──────────────
@@ -84,7 +82,10 @@ const Shift4 = circuit('Shift4', {
   inputs: { din: bit },
   outputs: { q0: bit, q1: bit, q2: bit, q3: bit },
   nodes: {
-    d0: DFlipFlop(), d1: DFlipFlop(), d2: DFlipFlop(), d3: DFlipFlop(),
+    d0: DFlipFlop(),
+    d1: DFlipFlop(),
+    d2: DFlipFlop(),
+    d3: DFlipFlop(),
   },
   connect: ({ inputs, outputs, nodes: { d0, d1, d2, d3 } }) => [
     inputs.din.to(d0.d),

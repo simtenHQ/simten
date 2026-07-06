@@ -8,13 +8,13 @@ export type {
   FlatCircuit,
   FlatPortValueMap,
   FlatSequentialState,
-} from "@simten/core/simulator";
+} from '@simten/core/simulator';
 
-export type { Circuit } from "@simten/core";
+export type { Circuit } from '@simten/core';
 
 // --- Inspector types (used by the canvas-level drill-down inspector) ---
 
-import type { Circuit as CircuitType } from "@simten/core";
+import type { Circuit as CircuitType } from '@simten/core';
 
 export interface InspectorFrame {
   componentName: string;
@@ -65,10 +65,9 @@ export interface MetadataState {
  * When parameterised by a `BuiltCircuit`, the keys are constrained at compile
  * time to the union of input names, output names, and node labels.
  */
-import type { BuiltCircuit } from "@simten/core";
+import type { BuiltCircuit } from '@simten/core';
 
-export type CircuitLayout<
-  C extends BuiltCircuit | undefined = undefined,
-> = C extends BuiltCircuit<infer Ins, infer Outs, infer Ns>
-  ? Record<keyof Ins | keyof Outs | keyof Ns, { x: number; y: number }>
-  : Record<string, { x: number; y: number }>;
+export type CircuitLayout<C extends BuiltCircuit | undefined = undefined> =
+  C extends BuiltCircuit<infer Ins, infer Outs, infer Ns>
+    ? Record<keyof Ins | keyof Outs | keyof Ns, { x: number; y: number }>
+    : Record<string, { x: number; y: number }>;
