@@ -29,16 +29,35 @@
     "enabled": true,
     "rules": {
       "preset": "recommended",
+      "a11y": {
+        "useButtonType": "warn",
+        "noSvgWithoutTitle": "warn",
+        "noLabelWithoutControl": "warn",
+        "noStaticElementInteractions": "warn",
+        "useKeyWithClickEvents": "warn",
+        "useSemanticElements": "warn",
+        "useAriaPropsSupportedByRole": "warn",
+        "noAutofocus": "warn",
+        "useHtmlLang": "warn"
+      },
       "suspicious": {
         "noExplicitAny": "warn",
-        "noArrayIndexKey": "warn"
+        "noArrayIndexKey": "warn",
+        "noCommentText": "warn",
+        "noImplicitAnyLet": "warn",
+        "useIterableCallbackReturn": "warn",
+        "noAssignInExpressions": "warn"
       },
       "style": {
         "noNonNullAssertion": "warn"
       },
       "correctness": {
         "useExhaustiveDependencies": "warn",
-        "useHookAtTopLevel": "warn"
+        "useHookAtTopLevel": "warn",
+        "noVoidTypeReturn": "warn"
+      },
+      "security": {
+        "noDangerouslySetInnerHtml": "warn"
       },
       "nursery": {
         "noFloatingPromises": "warn"
