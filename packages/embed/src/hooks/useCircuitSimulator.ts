@@ -148,6 +148,28 @@ export function builtFromIR(circuit: Circuit, dependencies: Circuit[]): BuiltCir
 }
 
 /**
+ * Resolves once the sandbox iframe reports ready (or the caller cancels).
+ * Polls because the sandbox handle exposes readiness as isReady() with no event.
+ */
+function waitForSandboxReady(
+  sandbox: { isReady(): boolean },
+  cancelled: () => boolean,
+): Promise<void> {
+  return new Promise((resolve) => {
+    if (sandbox.isReady() || cancelled()) {
+      resolve();
+      return;
+    }
+    const id = setInterval(() => {
+      if (sandbox.isReady() || cancelled()) {
+        clearInterval(id);
+        resolve();
+      }
+    }, 50);
+  });
+}
+
+/**
  * Circuit simulator hook — runs simulation in the sandbox iframe.
  *
  * Takes a BuiltCircuit and returns reactive simulation state + actions.
@@ -276,6 +298,15 @@ export function useCircuitSimulator(
 
     async function initSandbox() {
       if (!circuit || !harnessedCircuit) return;
+
+      // compileIR does not queue — calling it before the sandbox iframe has
+      // finished loading returns "Sandbox not ready" with no recovery. Wait for
+      // readiness first so consumers mounting a circuit immediately (fresh apps
+      // where the SandboxProvider mounts alongside them) don't have to gate on
+      // isReady() themselves.
+      await waitForSandboxReady(sandbox, () => cancelled);
+      if (cancelled) return;
+
       // Extract eval sources from the BuiltCircuit and its dependencies
       const evalSources = extractEvalSources(circuit);
 
