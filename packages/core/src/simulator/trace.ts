@@ -8,15 +8,15 @@
  * has zero tracing overhead.
  */
 
-import type { FlatCircuit } from '../types/simulator.js';
 import type { CircuitLibrary } from '../types/circuit.js';
+import type { FlatCircuit } from '../types/simulator.js';
+import { compileForSimulation } from './compile-circuit.js';
+import { EVALUATORS, type EvalContext } from './evaluators/index.js';
+import { NumericEventQueue } from './numeric-event-queue.js';
 import type { NumericCircuit } from './numeric-types.js';
 import type { NumericPortValues } from './numeric-values.js';
-import { compileForSimulation } from './compile-circuit.js';
-import { NumericEventQueue } from './numeric-event-queue.js';
 import { createNumericPortValues } from './numeric-values.js';
 import { seedInitialQueue } from './propagate.js';
-import { EVALUATORS, type EvalContext } from './evaluators/index.js';
 
 /** A single step in the propagation trace */
 export interface PropagationStep {
@@ -94,10 +94,7 @@ function propagateWithTrace(
     let anyChanged = false;
     for (let i = 0; i < outputCount; i++) {
       const idx = outputStart + i;
-      if (
-        values.values[idx] !== oldValues[i] ||
-        (values.initialized[idx] && !wasInitialized[i])
-      ) {
+      if (values.values[idx] !== oldValues[i] || (values.initialized[idx] && !wasInitialized[i])) {
         anyChanged = true;
         break;
       }
@@ -110,9 +107,9 @@ function propagateWithTrace(
 
     // Record step
     const enqueued = anyChanged
-      ? Array.from(circuit.dependents[nodeIndex]).map(idx => circuit.indexToNodeId[idx])
+      ? Array.from(circuit.dependents[nodeIndex]).map((idx) => circuit.indexToNodeId[idx])
       : [];
-    const queueSnapshot = queue.toArray().map(idx => circuit.indexToNodeId[idx]);
+    const queueSnapshot = queue.toArray().map((idx) => circuit.indexToNodeId[idx]);
 
     trace.push({
       nodeIndex,
@@ -140,7 +137,7 @@ export function tracePropagation(
   seedInitialQueue(numeric, queue);
 
   // Insert a "seed" step showing the initial queue before any evaluation
-  const seededNodes = queue.toArray().map(idx => numeric.indexToNodeId[idx]);
+  const seededNodes = queue.toArray().map((idx) => numeric.indexToNodeId[idx]);
   const seedStep: PropagationStep = {
     nodeIndex: -1,
     nodeId: '__seed__',

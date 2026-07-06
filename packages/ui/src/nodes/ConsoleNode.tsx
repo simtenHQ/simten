@@ -1,5 +1,4 @@
-
-import { useRef, useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { BaseNode } from './BaseNode';
 import type { NodeData } from './NodeData';
 
@@ -25,7 +24,11 @@ export function ConsoleNode({ data, selected }: ConsoleNodeProps) {
     <BaseNode
       selected={selected}
       inputPorts={data.inputNames.map((name, index) => ({ name, index, type: 'input' as const }))}
-      outputPorts={data.outputNames.map((name, index) => ({ name, index, type: 'output' as const }))}
+      outputPorts={data.outputNames.map((name, index) => ({
+        name,
+        index,
+        type: 'output' as const,
+      }))}
       className="min-w-[200px]"
       showPortLabels={data.showPortLabels}
       onPortClick={data.onPortClick}

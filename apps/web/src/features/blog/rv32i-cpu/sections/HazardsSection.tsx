@@ -1,6 +1,5 @@
-
-import { CircuitEmbed } from "@simten/embed";
-import { BLOG_CIRCUITS } from "../circuits";
+import { CircuitEmbed } from '@simten/embed';
+import { BLOG_CIRCUITS } from '../circuits';
 
 export function HazardsSection() {
   return (
@@ -10,22 +9,39 @@ export function HazardsSection() {
       </h2>
       <div className="prose-invert space-y-6">
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
-          Pipelining sounds clean in theory. In practice, instructions
-          depend on each other. Consider:
+          Pipelining sounds clean in theory. In practice, instructions depend on each other.
+          Consider:
         </p>
 
         <div className="rounded-lg bg-gray-100 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-4 font-mono text-sm text-gray-500 dark:text-gray-300">
-          <div><span className="text-purple-400">add</span>  a0, a1, a2   <span className="text-gray-600">// a0 = a1 + a2</span></div>
-          <div><span className="text-purple-400">sub</span>  a3, a0, a4   <span className="text-gray-600">// a3 = a0 - a4  &larr; needs a0!</span></div>
+          <div>
+            <span className="text-purple-400">add</span> a0, a1, a2{' '}
+            <span className="text-gray-600">// a0 = a1 + a2</span>
+          </div>
+          <div>
+            <span className="text-purple-400">sub</span> a3, a0, a4{' '}
+            <span className="text-gray-600">// a3 = a0 - a4 &larr; needs a0!</span>
+          </div>
         </div>
 
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
-          The <code className="text-gray-900 dark:text-white bg-gray-200 dark:bg-gray-800 px-1.5 py-0.5 rounded text-sm">sub</code> needs
-          the result of <code className="text-gray-900 dark:text-white bg-gray-200 dark:bg-gray-800 px-1.5 py-0.5 rounded text-sm">add</code>,
-          but in a pipeline, <code className="text-gray-900 dark:text-white bg-gray-200 dark:bg-gray-800 px-1.5 py-0.5 rounded text-sm">sub</code> enters
-          the Decode stage while <code className="text-gray-900 dark:text-white bg-gray-200 dark:bg-gray-800 px-1.5 py-0.5 rounded text-sm">add</code> is
-          still in Execute. The result hasn&rsquo;t been written back to the
-          register file yet.
+          The{' '}
+          <code className="text-gray-900 dark:text-white bg-gray-200 dark:bg-gray-800 px-1.5 py-0.5 rounded text-sm">
+            sub
+          </code>{' '}
+          needs the result of{' '}
+          <code className="text-gray-900 dark:text-white bg-gray-200 dark:bg-gray-800 px-1.5 py-0.5 rounded text-sm">
+            add
+          </code>
+          , but in a pipeline,{' '}
+          <code className="text-gray-900 dark:text-white bg-gray-200 dark:bg-gray-800 px-1.5 py-0.5 rounded text-sm">
+            sub
+          </code>{' '}
+          enters the Decode stage while{' '}
+          <code className="text-gray-900 dark:text-white bg-gray-200 dark:bg-gray-800 px-1.5 py-0.5 rounded text-sm">
+            add
+          </code>{' '}
+          is still in Execute. The result hasn&rsquo;t been written back to the register file yet.
         </p>
 
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
@@ -35,37 +51,32 @@ export function HazardsSection() {
 
         <div className="space-y-4">
           <div className="rounded-lg border border-gray-200 dark:border-gray-800 p-4">
-            <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-1">
-              Stalling
-            </h4>
+            <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-1">Stalling</h4>
             <p className="text-sm text-gray-500 dark:text-gray-400">
-              Freeze the pipeline for a cycle until the result is available.
-              Simple but wastes a cycle. Our hazard unit does this for{" "}
+              Freeze the pipeline for a cycle until the result is available. Simple but wastes a
+              cycle. Our hazard unit does this for{' '}
               <strong className="text-gray-600 dark:text-gray-300">load-use</strong> hazards &mdash;
-              when a value is being loaded from memory, it&rsquo;s not ready
-              until the Memory stage completes.
+              when a value is being loaded from memory, it&rsquo;s not ready until the Memory stage
+              completes.
             </p>
           </div>
 
           <div className="rounded-lg border border-gray-200 dark:border-gray-800 p-4">
-            <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-1">
-              Forwarding
-            </h4>
+            <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-1">Forwarding</h4>
             <p className="text-sm text-gray-500 dark:text-gray-400">
-              Don&rsquo;t wait for writeback. Grab the result directly from
-              whichever stage computed it and feed it back to the Execute stage
-              through a <strong className="text-gray-600 dark:text-gray-300">forwarding mux</strong>.
-              No stall needed &mdash; the pipeline keeps flowing.
+              Don&rsquo;t wait for writeback. Grab the result directly from whichever stage computed
+              it and feed it back to the Execute stage through a{' '}
+              <strong className="text-gray-600 dark:text-gray-300">forwarding mux</strong>. No stall
+              needed &mdash; the pipeline keeps flowing.
             </p>
           </div>
         </div>
 
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
           <strong className="text-gray-900 dark:text-white">Control hazards</strong> are the other
-          problem. When a branch is taken, the instructions that were already
-          fetched after it are wrong. The pipeline flushes them &mdash; replaces
-          them with NOPs &mdash; and restarts from the branch target. That&rsquo;s
-          what the flush input on the pipeline registers does.
+          problem. When a branch is taken, the instructions that were already fetched after it are
+          wrong. The pipeline flushes them &mdash; replaces them with NOPs &mdash; and restarts from
+          the branch target. That&rsquo;s what the flush input on the pipeline registers does.
         </p>
       </div>
 
@@ -75,9 +86,9 @@ export function HazardsSection() {
         </h3>
         <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
           Two bits select the source: 00&nbsp;=&nbsp;register file (no hazard),
-          01&nbsp;=&nbsp;forward from EX stage, 10&nbsp;=&nbsp;forward from MEM
-          stage. The forwarding unit sets these bits automatically by comparing
-          register addresses across pipeline stages.
+          01&nbsp;=&nbsp;forward from EX stage, 10&nbsp;=&nbsp;forward from MEM stage. The
+          forwarding unit sets these bits automatically by comparing register addresses across
+          pipeline stages.
         </p>
         <CircuitEmbed
           circuit={BLOG_CIRCUITS.forwardingMux.circuit}

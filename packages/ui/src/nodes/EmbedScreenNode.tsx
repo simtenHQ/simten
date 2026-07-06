@@ -1,6 +1,5 @@
-
-import { BaseNode } from "./BaseNode";
-import type { NodeData } from "./NodeData";
+import { BaseNode } from './BaseNode';
+import type { NodeData } from './NodeData';
 
 interface EmbedScreenNodeProps {
   data: NodeData;
@@ -23,24 +22,24 @@ export function EmbedScreenNode({ data, selected }: EmbedScreenNodeProps) {
       inputPorts={data.inputNames.map((name, index) => ({
         name,
         index,
-        type: "input" as const,
+        type: 'input' as const,
       }))}
       outputPorts={data.outputNames.map((name, index) => ({
         name,
         index,
-        type: "output" as const,
+        type: 'output' as const,
       }))}
       className="min-w-[160px]"
     >
       <div className="flex flex-col items-center gap-2">
         <div className="px-2 py-1 rounded text-xs font-medium text-[var(--embed-text-primary)]">
-          {data.label || "Screen"}
+          {data.label || 'Screen'}
         </div>
         <svg
           width={GRID_W * PIXEL_SIZE + (GRID_W - 1) * PIXEL_GAP}
           height={GRID_H * PIXEL_SIZE + (GRID_H - 1) * PIXEL_GAP}
           className="border-2 border-[var(--embed-border-node)] rounded bg-black"
-          style={{ imageRendering: "pixelated" }}
+          style={{ imageRendering: 'pixelated' }}
         >
           {pixels.slice(0, TOTAL_PIXELS).map((value, index) => {
             const x = index % GRID_W;
@@ -52,7 +51,7 @@ export function EmbedScreenNode({ data, selected }: EmbedScreenNodeProps) {
                 y={y * (PIXEL_SIZE + PIXEL_GAP)}
                 width={PIXEL_SIZE}
                 height={PIXEL_SIZE}
-                fill={value !== 0 ? "#00ff00" : "#1a1a1a"}
+                fill={value !== 0 ? '#00ff00' : '#1a1a1a'}
               />
             );
           })}

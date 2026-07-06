@@ -1,9 +1,8 @@
+import { useCircuitSimulator } from '@simten/embed';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Breakout } from './circuits';
 
-import { useState, useEffect, useRef, useCallback } from "react";
-import { useCircuitSimulator } from "@simten/embed";
-import { Breakout } from "./circuits";
-
-const PIXELS = 512;                 // 32x16 combinational raster readout
+const PIXELS = 512; // 32x16 combinational raster readout
 // ms between game ticks. The ball moves every 4 ticks and the paddle every 2,
 // so a smaller value = faster play. ~35ms → ball ≈ 7 cells/s, paddle ≈ 14.
 const TICK_MS = 35;
@@ -20,7 +19,7 @@ export function useBreakoutSimulator() {
   useEffect(() => {
     if (!sim.ready) return;
     let cancelled = false;
-    sim.scanPort("scan_addr", "__top__.pixel_out", PIXELS).then((result) => {
+    sim.scanPort('scan_addr', '__top__.pixel_out', PIXELS).then((result) => {
       if (!cancelled && result) setPixels(result);
     });
     return () => {
@@ -32,7 +31,7 @@ export function useBreakoutSimulator() {
   // per tick (we throttle the tick rate). On the FPGA this input is pulsed at
   // ~30 Hz instead, while the clock — and the wall-fill FSM — run at full speed.
   useEffect(() => {
-    if (sim.ready) sim.setNode("game_en", 1);
+    if (sim.ready) sim.setNode('game_en', 1);
   }, [sim.ready, sim.setNode]);
 
   // Paddle input on the top-level `keyboard` bus: 75 = left, 77 = right, 0 = released.
@@ -42,20 +41,20 @@ export function useBreakoutSimulator() {
       const code = keyMap[e.key];
       if (code !== undefined) {
         e.preventDefault();
-        sim.setNode("keyboard", code);
+        sim.setNode('keyboard', code);
       }
     };
     const handleKeyUp = (e: KeyboardEvent) => {
-      if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
         e.preventDefault();
-        sim.setNode("keyboard", 0);
+        sim.setNode('keyboard', 0);
       }
     };
-    window.addEventListener("keydown", handleKeyDown);
-    window.addEventListener("keyup", handleKeyUp);
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
     return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-      window.removeEventListener("keyup", handleKeyUp);
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
     };
   }, [sim.setNode]);
 
@@ -71,7 +70,7 @@ export function useBreakoutSimulator() {
     const loop = async () => {
       if (cancelled) return;
       await sim.tick();
-      const status = await sim.scanPort("scan_addr", "__top__.is_filling", 1);
+      const status = await sim.scanPort('scan_addr', '__top__.is_filling', 1);
       if (!cancelled && status && status[0]) await sim.tickN(140);
       if (!cancelled) intervalRef.current = setTimeout(loop, TICK_MS);
     };
@@ -98,7 +97,7 @@ export function useBreakoutSimulator() {
 
   const sendDirection = useCallback(
     (code: number) => {
-      sim.setNode("keyboard", code);
+      sim.setNode('keyboard', code);
     },
     [sim.setNode],
   );

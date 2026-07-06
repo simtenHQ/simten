@@ -8,7 +8,8 @@
  * Shows component name, description, and input/output states.
  */
 
-import React, { useState, useRef, useEffect } from 'react';
+import type React from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { cn } from '../../lib/utils';
 
@@ -106,7 +107,7 @@ export function ComponentTooltip({
             outputs={outputs}
             position={position}
           />,
-          document.body
+          document.body,
         )}
     </>
   );
@@ -142,7 +143,9 @@ function TooltipContent({ title, description, inputs, outputs, position }: Toolt
         {/* Inputs Section */}
         {inputs.length > 0 && (
           <div className="mb-3">
-            <div className="mb-2 text-xs font-bold uppercase tracking-wider text-gray-600">Inputs:</div>
+            <div className="mb-2 text-xs font-bold uppercase tracking-wider text-gray-600">
+              Inputs:
+            </div>
             <div className="space-y-2 rounded-md bg-gray-100/50 px-3 py-2">
               {inputs.map((input) => (
                 <PortRow key={`input-${input.index}`} port={input} />
@@ -154,7 +157,9 @@ function TooltipContent({ title, description, inputs, outputs, position }: Toolt
         {/* Outputs Section */}
         {outputs.length > 0 && (
           <div>
-            <div className="mb-2 text-xs font-bold uppercase tracking-wider text-gray-600">Outputs:</div>
+            <div className="mb-2 text-xs font-bold uppercase tracking-wider text-gray-600">
+              Outputs:
+            </div>
             <div className="space-y-2 rounded-md bg-gray-100/50 px-3 py-2">
               {outputs.map((output) => (
                 <PortRow key={`output-${output.index}`} port={output} />
@@ -194,7 +199,7 @@ function PortRow({ port }: PortRowProps) {
       <div
         className={cn(
           'h-2.5 w-2.5 rounded-full border transition-colors',
-          getStateColor(port.value)
+          getStateColor(port.value),
         )}
       />
 
@@ -208,7 +213,7 @@ function PortRow({ port }: PortRowProps) {
               className={cn(
                 'font-medium',
                 port.value === true && 'text-green-600',
-                port.value === false && 'text-gray-600'
+                port.value === false && 'text-gray-600',
               )}
             >
               {stateText}

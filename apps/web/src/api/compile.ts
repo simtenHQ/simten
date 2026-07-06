@@ -18,13 +18,15 @@ export async function handleCompile(
   request: Request,
   env: Record<string, unknown>,
 ): Promise<Response> {
-  const rl = (env as { COMPILE_RL?: { limit: (k: { key: string }) => Promise<{ success: boolean }> } }).COMPILE_RL;
+  const rl = (
+    env as { COMPILE_RL?: { limit: (k: { key: string }) => Promise<{ success: boolean }> } }
+  ).COMPILE_RL;
   if (rl) {
-    const ip = request.headers.get("CF-Connecting-IP") ?? "unknown";
+    const ip = request.headers.get('CF-Connecting-IP') ?? 'unknown';
     const { success } = await rl.limit({ key: ip });
     if (!success) {
       return Response.json(
-        { success: false, error: "Rate limit exceeded — try again in a minute" },
+        { success: false, error: 'Rate limit exceeded — try again in a minute' },
         { status: 429 },
       );
     }
@@ -34,21 +36,15 @@ export async function handleCompile(
   try {
     body = await request.json();
   } catch {
-    return Response.json(
-      { success: false, error: "Invalid JSON" },
-      { status: 400 },
-    );
+    return Response.json({ success: false, error: 'Invalid JSON' }, { status: 400 });
   }
 
-  if (typeof body.source !== "string" || body.source.length === 0) {
-    return Response.json(
-      { success: false, error: "source is required" },
-      { status: 400 },
-    );
+  if (typeof body.source !== 'string' || body.source.length === 0) {
+    return Response.json({ success: false, error: 'source is required' }, { status: 400 });
   }
 
-  const language = body.language ?? "c";
-  if (!["c", "cpp", "rust", "asm"].includes(language)) {
+  const language = body.language ?? 'c';
+  if (!['c', 'cpp', 'rust', 'asm'].includes(language)) {
     return Response.json(
       { success: false, error: `Unsupported language: "${language}"` },
       { status: 400 },
@@ -59,8 +55,8 @@ export async function handleCompile(
   if (body.disassemble) payload.disassemble = true;
 
   const reqInit: RequestInit = {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
   };
 
@@ -69,8 +65,8 @@ export async function handleCompile(
 
   try {
     const resp = compiler
-      ? await compiler.fetch("https://compiler/compile", reqInit)
-      : await fetch("http://localhost:55001/compile", reqInit);
+      ? await compiler.fetch('https://compiler/compile', reqInit)
+      : await fetch('http://localhost:55001/compile', reqInit);
 
     const result: CompilerResponse = await resp.json();
     return Response.json(result, { status: resp.status });

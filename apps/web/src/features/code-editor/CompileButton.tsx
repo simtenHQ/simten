@@ -12,7 +12,11 @@ interface CompileButtonProps {
   disabled?: boolean;
 }
 
-export function CompileButton({ onClick, isCompiling = false, disabled = false }: CompileButtonProps) {
+export function CompileButton({
+  onClick,
+  isCompiling = false,
+  disabled = false,
+}: CompileButtonProps) {
   return (
     <button
       onClick={onClick}
@@ -27,12 +31,7 @@ export function CompileButton({ onClick, isCompiling = false, disabled = false }
         </>
       ) : (
         <>
-          <svg
-            className="w-4 h-4"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path
               strokeLinecap="round"
               strokeLinejoin="round"

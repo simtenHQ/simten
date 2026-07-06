@@ -10,10 +10,10 @@
  * standalone viewer mounts at the root path. Hashed asset requests that miss
  * return 404 (never masked by the shell).
  */
-import { createReadStream, existsSync, statSync, readFileSync } from 'node:fs';
-import { join, extname, normalize, sep } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { createReadStream, existsSync, readFileSync, statSync } from 'node:fs';
 import type { IncomingMessage, ServerResponse } from 'node:http';
+import { extname, join, normalize, sep } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 /** Bundled editor assets. dist/lib/serve-static.js -> dist/public */
 export const PUBLIC_DIR = fileURLToPath(new URL('../public', import.meta.url));
@@ -104,10 +104,12 @@ export function proxyCompile(req: IncomingMessage, res: ServerResponse): void {
       })
       .catch((e) => {
         res.writeHead(502, { 'content-type': 'application/json' });
-        res.end(JSON.stringify({
-          success: false,
-          error: `Compiler unreachable: ${e instanceof Error ? e.message : String(e)}`,
-        }));
+        res.end(
+          JSON.stringify({
+            success: false,
+            error: `Compiler unreachable: ${e instanceof Error ? e.message : String(e)}`,
+          }),
+        );
       });
   });
 }

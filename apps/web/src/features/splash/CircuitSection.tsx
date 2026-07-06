@@ -1,6 +1,6 @@
-import { useCircuitSimulator } from "@simten/embed";
-import { CircuitCanvas } from "@simten/ui/canvas";
-import type { SectionDef } from "./sections";
+import { useCircuitSimulator } from '@simten/embed';
+import { CircuitCanvas } from '@simten/ui/canvas';
+import type { SectionDef } from './sections';
 
 interface CircuitSectionProps {
   section: SectionDef;
@@ -9,7 +9,7 @@ interface CircuitSectionProps {
 }
 
 export function CircuitSection({ section }: CircuitSectionProps) {
-  const isLeft = section.align === "left";
+  const isLeft = section.align === 'left';
   const sim = useCircuitSimulator(section.circuit);
 
   return (
@@ -17,7 +17,7 @@ export function CircuitSection({ section }: CircuitSectionProps) {
       <div className="max-w-6xl mx-auto w-full">
         <div
           className={`flex flex-col ${
-            isLeft ? "lg:flex-row" : "lg:flex-row-reverse"
+            isLeft ? 'lg:flex-row' : 'lg:flex-row-reverse'
           } items-center gap-10 lg:gap-16`}
         >
           {/* Text */}
@@ -25,21 +25,15 @@ export function CircuitSection({ section }: CircuitSectionProps) {
             <div className="text-gray-500 text-xs font-medium mb-1.5 tracking-wide uppercase">
               {section.subtitle}
             </div>
-            <h2 className="text-2xl md:text-3xl font-bold mb-3 tracking-tight">
-              {section.title}
-            </h2>
-            <p className="text-base text-gray-400 leading-relaxed">
-              {section.description}
-            </p>
+            <h2 className="text-2xl md:text-3xl font-bold mb-3 tracking-tight">{section.title}</h2>
+            <p className="text-base text-gray-400 leading-relaxed">{section.description}</p>
           </div>
 
           {/* Circuit */}
           <div className="flex-1 w-full max-w-lg">
             <div className="bg-gray-900/60 rounded-xl border border-gray-800 p-4">
               {section.hint && (
-                <div className="text-xs text-gray-500 mb-3 text-center">
-                  {section.hint}
-                </div>
+                <div className="text-xs text-gray-500 mb-3 text-center">{section.hint}</div>
               )}
               <div className="h-[260px] md:h-[300px]">
                 {sim.error ? (
@@ -53,7 +47,7 @@ export function CircuitSection({ section }: CircuitSectionProps) {
                 ) : (
                   <CircuitCanvas
                     circuit={sim.circuit}
-        componentLibrary={sim.componentLibrary ?? undefined}
+                    componentLibrary={sim.componentLibrary ?? undefined}
                     portValues={sim.portValues}
                     sequentialState={sim.sequentialState}
                     onToggleNode={sim.toggleNode}

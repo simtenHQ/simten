@@ -4,10 +4,10 @@
  * test a fresh module state, which the module-singleton harness needs.
  */
 
-import { describe, it, expect } from 'vitest';
 import { spawnSync } from 'node:child_process';
-import { resolve, dirname } from 'node:path';
+import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { describe, expect, it } from 'vitest';
 import { VERIFY_JSON_BEGIN, VERIFY_JSON_END } from './index.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -30,9 +30,10 @@ function runFixture(name: string, env: Record<string, string> = {}) {
   const out = r.stdout ?? '';
   const start = out.lastIndexOf(VERIFY_JSON_BEGIN);
   const end = out.lastIndexOf(VERIFY_JSON_END);
-  const json = start >= 0 && end > start
-    ? JSON.parse(out.slice(start + VERIFY_JSON_BEGIN.length, end).trim())
-    : undefined;
+  const json =
+    start >= 0 && end > start
+      ? JSON.parse(out.slice(start + VERIFY_JSON_BEGIN.length, end).trim())
+      : undefined;
   return { json, status: r.status, stdout: out, stderr: r.stderr ?? '' };
 }
 
@@ -64,7 +65,11 @@ describe('verify harness (via tsx subprocess)', () => {
   });
 
   it('oracle injected via SIMTEN_VERIFY_ORACLE → same file now passes (tool precedence)', () => {
-    const oracle = JSON.stringify({ tier: 'B', type: 'injected', independence_basis: 'tool param' });
+    const oracle = JSON.stringify({
+      tier: 'B',
+      type: 'injected',
+      independence_basis: 'tool param',
+    });
     const { json, status } = runFixture('no-oracle.verify.ts', { SIMTEN_VERIFY_ORACLE: oracle });
     expect(json.testbench_passed).toBe(true);
     expect(json.oracle.type).toBe('injected');

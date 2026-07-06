@@ -1,31 +1,31 @@
-export const SITE_URL = 'https://simten.dev'
-export const SITE_NAME = 'Simten'
+export const SITE_URL = 'https://simten.dev';
+export const SITE_NAME = 'Simten';
 
-type Meta = { title?: string } & Record<string, string>
+type Meta = { title?: string } & Record<string, string>;
 
 export type PageSeo = {
   /** Page title (will be suffixed with " | Simten" unless `titleExact` is true). */
-  title: string
+  title: string;
   /** Set true to use `title` verbatim — e.g. for the landing page. */
-  titleExact?: boolean
+  titleExact?: boolean;
   /** Meta description for search results + social cards. */
-  description: string
+  description: string;
   /** Site-relative path, e.g. "/blog/aes-in-hardware". Used for canonical + og:url. */
-  path: string
+  path: string;
   /** Override the default OG image. Site-relative path or absolute URL. */
-  image?: string
+  image?: string;
   /** og:type — "website" for landing/index pages, "article" for blog posts. */
-  type?: 'website' | 'article'
-}
+  type?: 'website' | 'article';
+};
 
 export function pageHead(seo: PageSeo) {
-  const title = seo.titleExact ? seo.title : `${seo.title} | ${SITE_NAME}`
-  const url = `${SITE_URL}${seo.path}`
+  const title = seo.titleExact ? seo.title : `${seo.title} | ${SITE_NAME}`;
+  const url = `${SITE_URL}${seo.path}`;
   const image = seo.image
     ? seo.image.startsWith('http')
       ? seo.image
       : `${SITE_URL}${seo.image}`
-    : `${SITE_URL}/og-default.png`
+    : `${SITE_URL}/og-default.png`;
 
   return {
     meta: [
@@ -41,14 +41,14 @@ export function pageHead(seo: PageSeo) {
       { name: 'twitter:image', content: image },
     ] satisfies Meta[],
     links: [{ rel: 'canonical', href: url }],
-  }
+  };
 }
 
 export function jsonLdScript(data: Record<string, unknown>) {
   return {
     type: 'application/ld+json',
     children: JSON.stringify(data),
-  }
+  };
 }
 
 export function softwareApplicationLd() {
@@ -62,24 +62,24 @@ export function softwareApplicationLd() {
     description:
       'Design and simulate digital hardware in TypeScript. From single gates to RISC-V CPUs, synthesizable to Verilog, running live in your browser.',
     offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
-  })
+  });
 }
 
 export function blogPostingLd(args: {
-  title: string
-  description: string
-  path: string
-  image?: string
-  datePublished?: string
-  dateModified?: string
-  author?: string
+  title: string;
+  description: string;
+  path: string;
+  image?: string;
+  datePublished?: string;
+  dateModified?: string;
+  author?: string;
 }) {
-  const url = `${SITE_URL}${args.path}`
+  const url = `${SITE_URL}${args.path}`;
   const image = args.image
     ? args.image.startsWith('http')
       ? args.image
       : `${SITE_URL}${args.image}`
-    : `${SITE_URL}/og-default.png`
+    : `${SITE_URL}/og-default.png`;
   return jsonLdScript({
     '@context': 'https://schema.org',
     '@type': 'BlogPosting',
@@ -96,19 +96,15 @@ export function blogPostingLd(args: {
       name: SITE_NAME,
       url: SITE_URL,
     },
-  })
+  });
 }
 
 /**
  * Full head config for a blog post — meta tags, canonical, BlogPosting + BreadcrumbList JSON-LD.
  * Pass the post entry from the blog manifest; everything else is derived.
  */
-export function blogPostHead(post: {
-  slug: string
-  title: string
-  description: string
-}) {
-  const path = `/blog/${post.slug}`
+export function blogPostHead(post: { slug: string; title: string; description: string }) {
+  const path = `/blog/${post.slug}`;
   return {
     ...pageHead({
       title: post.title,
@@ -128,7 +124,7 @@ export function blogPostHead(post: {
         { name: post.title, path },
       ]),
     ],
-  }
+  };
 }
 
 export function breadcrumbLd(items: Array<{ name: string; path: string }>) {
@@ -141,5 +137,5 @@ export function breadcrumbLd(items: Array<{ name: string; path: string }>) {
       name: item.name,
       item: `${SITE_URL}${item.path}`,
     })),
-  })
+  });
 }

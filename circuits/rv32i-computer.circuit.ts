@@ -12,11 +12,16 @@
  * your own code. This is the same CPU core that passes riscv-arch-test
  * (38/38 vs Spike) and runs on a ULX3S FPGA.
  */
-import { circuit, bit, bus } from "@simten/core/circuit";
+import { bit, bus, circuit } from '@simten/core/circuit';
 import {
-  Constant, HexDisplay, DualPortROM, RV32I_DataMem,
-  MemBusMux, UART_TX, RV32I_Core,
-} from "@simten/core/std";
+  Constant,
+  DualPortROM,
+  HexDisplay,
+  MemBusMux,
+  RV32I_Core,
+  RV32I_DataMem,
+  UART_TX,
+} from '@simten/core/std';
 
 // The preloaded program — prints "HELLO FROM RISC-V" in a loop:
 //   lui  a0, 0x80000          # a0 = UART (memory-mapped at 0x80000000)
@@ -29,15 +34,13 @@ import {
 //     bne  a2, x0, delay
 //   jal  x0, loop             # ...and print it again
 const PROGRAM = [
-  55, 5, 0, 128, 147, 5, 128, 4, 35, 32, 181, 0, 147, 5, 80, 4, 35, 32, 181, 0,
-  147, 5, 192, 4, 35, 32, 181, 0, 147, 5, 192, 4, 35, 32, 181, 0, 147, 5, 240, 4,
-  35, 32, 181, 0, 147, 5, 0, 2, 35, 32, 181, 0, 147, 5, 96, 4, 35, 32, 181, 0,
-  147, 5, 32, 5, 35, 32, 181, 0, 147, 5, 240, 4, 35, 32, 181, 0, 147, 5, 208, 4,
-  35, 32, 181, 0, 147, 5, 0, 2, 35, 32, 181, 0, 147, 5, 32, 5, 35, 32, 181, 0,
-  147, 5, 144, 4, 35, 32, 181, 0, 147, 5, 48, 5, 35, 32, 181, 0, 147, 5, 48, 4,
-  35, 32, 181, 0, 147, 5, 208, 2, 35, 32, 181, 0, 147, 5, 96, 5, 35, 32, 181, 0,
-  147, 5, 208, 0, 35, 32, 181, 0, 147, 5, 160, 0, 35, 32, 181, 0, 19, 6, 192, 18,
-  19, 6, 246, 255, 227, 30, 6, 254, 111, 240, 223, 245,
+  55, 5, 0, 128, 147, 5, 128, 4, 35, 32, 181, 0, 147, 5, 80, 4, 35, 32, 181, 0, 147, 5, 192, 4, 35,
+  32, 181, 0, 147, 5, 192, 4, 35, 32, 181, 0, 147, 5, 240, 4, 35, 32, 181, 0, 147, 5, 0, 2, 35, 32,
+  181, 0, 147, 5, 96, 4, 35, 32, 181, 0, 147, 5, 32, 5, 35, 32, 181, 0, 147, 5, 240, 4, 35, 32, 181,
+  0, 147, 5, 208, 4, 35, 32, 181, 0, 147, 5, 0, 2, 35, 32, 181, 0, 147, 5, 32, 5, 35, 32, 181, 0,
+  147, 5, 144, 4, 35, 32, 181, 0, 147, 5, 48, 5, 35, 32, 181, 0, 147, 5, 48, 4, 35, 32, 181, 0, 147,
+  5, 208, 2, 35, 32, 181, 0, 147, 5, 96, 5, 35, 32, 181, 0, 147, 5, 208, 0, 35, 32, 181, 0, 147, 5,
+  160, 0, 35, 32, 181, 0, 19, 6, 192, 18, 19, 6, 246, 255, 227, 30, 6, 254, 111, 240, 223, 245,
 ];
 
 // The CPU: the canonical 5-stage pipelined RV32I core (the same one that runs
@@ -46,8 +49,13 @@ const PROGRAM = [
 const CPU = circuit('CPU', {
   inputs: { instruction: bus(32), data_read: bus(32) },
   outputs: {
-    instr_addr: bus(32), data_addr: bus(32), data_write: bus(32),
-    data_mem_read: bit, data_mem_write: bit, data_funct3: bus(3), pc: bus(32),
+    instr_addr: bus(32),
+    data_addr: bus(32),
+    data_write: bus(32),
+    data_mem_read: bit,
+    data_mem_write: bit,
+    data_funct3: bus(3),
+    pc: bus(32),
   },
   nodes: {
     core: RV32I_Core(),
@@ -74,12 +82,21 @@ const CPU = circuit('CPU', {
 // Map: RAM at 0x00010000, UART at 0x80000000, program ROM (read-only) at 0x0.
 const Memory = circuit('Memory', {
   inputs: {
-    addr: bus(32), write_data: bus(32), mem_read: bit, mem_write: bit, funct3: bus(3),
-    rom_data: bus(32), uart_read_data: bus(32),
+    addr: bus(32),
+    write_data: bus(32),
+    mem_read: bit,
+    mem_write: bit,
+    funct3: bus(3),
+    rom_data: bus(32),
+    uart_read_data: bus(32),
   },
   outputs: {
-    read_data: bus(32), rom_addr: bus(32),
-    uart_addr: bus(32), uart_write_data: bus(32), uart_read: bit, uart_write: bit,
+    read_data: bus(32),
+    rom_addr: bus(32),
+    uart_addr: bus(32),
+    uart_write_data: bus(32),
+    uart_read: bit,
+    uart_write: bit,
   },
   nodes: {
     bus_mux: MemBusMux,

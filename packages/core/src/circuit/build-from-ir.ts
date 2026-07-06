@@ -39,11 +39,11 @@ export function buildFromIR(circuit: Circuit, libraryCircuits: Circuit[]): Built
 }
 
 function wrap(c: Circuit, deps: Map<string, BuiltCircuit>): BuiltCircuit {
-  const inputs: Record<string, typeof c.inputs[number]> = {};
+  const inputs: Record<string, (typeof c.inputs)[number]> = {};
   for (const p of c.inputs) inputs[p.name] = p;
-  const outputs: Record<string, typeof c.outputs[number]> = {};
+  const outputs: Record<string, (typeof c.outputs)[number]> = {};
   for (const p of c.outputs) outputs[p.name] = p;
-  const nodes: Record<string, typeof c.nodes[number]> = {};
+  const nodes: Record<string, (typeof c.nodes)[number]> = {};
   for (const n of c.nodes) nodes[n.id] = n;
   return {
     circuit: c,

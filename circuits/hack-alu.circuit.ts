@@ -16,8 +16,8 @@
  *   ng = (out < 0)         // i.e. out[15], the sign bit
  */
 
-import { circuit, bit, bus } from '@simten/core/circuit';
-import { Mux, Adder, BusAnd, BusXor, Comparator, BitSlice, Constant } from '@simten/core/std';
+import { bit, bus, circuit } from '@simten/core/circuit';
+import { Adder, BitSlice, BusAnd, BusXor, Comparator, Constant, Mux } from '@simten/core/std';
 
 export const HackALU = circuit('HackALU', {
   inputs: {
@@ -36,9 +36,9 @@ export const HackALU = circuit('HackALU', {
     ng: bit,
   },
   nodes: {
-    zero16: Constant({ value: 0, width: 16 }),     // 16-bit false constant
+    zero16: Constant({ value: 0, width: 16 }), // 16-bit false constant
     ones16: Constant({ value: 65535, width: 16 }), // 0xFFFF — XOR mask for 16-bit NOT
-    carry0: Constant({ value: 0 }),                // adder carry-in = 0
+    carry0: Constant({ value: 0 }), // adder carry-in = 0
 
     // x preprocessing: zero then negate (NOT via XOR with 0xFFFF)
     muxZX: Mux({ width: 16 }),

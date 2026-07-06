@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { simulate } from '../../sim/simulate.js';
 import { RV32I_Core } from '../rv32i-cpu.js';
 
@@ -21,10 +21,24 @@ const NOP = 0x00000013; // addi x0, x0, 0
 describe('RV32I_Core debug pipeline-PC outputs', () => {
   it('flow IF→ID→EX→MEM→WB, one stage per cycle (correct .q mapping)', () => {
     const sim = simulate(RV32I_Core({ debug: true }));
-    sim.set({ instruction: NOP, data_read: 0, net_rx_data: 0, net_rx_valid: 0, net_rx_frame: 0, debug_addr: 0 });
+    sim.set({
+      instruction: NOP,
+      data_read: 0,
+      net_rx_data: 0,
+      net_rx_valid: 0,
+      net_rx_frame: 0,
+      debug_addr: 0,
+    });
 
     const u = (n: number) => n >>> 0;
-    type Snap = { instr_addr: number; if_pc: number; id_pc: number; ex_pc: number; mem: number; wb: number };
+    type Snap = {
+      instr_addr: number;
+      if_pc: number;
+      id_pc: number;
+      ex_pc: number;
+      mem: number;
+      wb: number;
+    };
     const snaps: Snap[] = [];
 
     for (let cycle = 0; cycle < 24; cycle++) {
@@ -53,8 +67,8 @@ describe('RV32I_Core debug pipeline-PC outputs', () => {
       // one stage per cycle: the value in stage N at t is in stage N+1 at t+1.
       expect(next.id_pc).toBe(s.if_pc);
       expect(next.ex_pc).toBe(s.id_pc);
-      expect(next.mem).toBe(s.ex_pc);   // EX→MEM: ex_pc[t] == (mem_pc4-4)[t+1]
-      expect(next.wb).toBe(s.mem);      // MEM→WB
+      expect(next.mem).toBe(s.ex_pc); // EX→MEM: ex_pc[t] == (mem_pc4-4)[t+1]
+      expect(next.wb).toBe(s.mem); // MEM→WB
       // sanity: the five stage views are distinct at a steady cycle (no aliased wiring).
       expect(new Set([s.if_pc, s.id_pc, s.ex_pc, s.mem, s.wb]).size).toBe(5);
     }

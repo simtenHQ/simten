@@ -13,7 +13,7 @@ export function getPrimitivesHandler(
     sourceName?: string;
     compact?: boolean;
   },
-  library: CircuitLibrary
+  library: CircuitLibrary,
 ): string {
   const compact = params.compact ?? true;
 

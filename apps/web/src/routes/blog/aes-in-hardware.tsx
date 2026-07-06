@@ -1,28 +1,36 @@
-import { createFileRoute } from '@tanstack/react-router'
-import { blogPostHead } from '@/lib/seo'
-import { getPost } from '@/features/blog/posts'
-import { Suspense, lazy } from "react";
-import { HeroSection } from "@/features/blog/aes-in-hardware/sections/HeroSection";
-import { BlogFooter } from "@/features/blog/BlogFooter";
-import { ErrorBoundary } from "@/features/blog/building-a-cpu/ErrorBoundary";
+import { createFileRoute } from '@tanstack/react-router';
+import { lazy, Suspense } from 'react';
+import { HeroSection } from '@/features/blog/aes-in-hardware/sections/HeroSection';
+import { BlogFooter } from '@/features/blog/BlogFooter';
+import { ErrorBoundary } from '@/features/blog/building-a-cpu/ErrorBoundary';
+import { getPost } from '@/features/blog/posts';
+import { blogPostHead } from '@/lib/seo';
 
 const SubBytesSection = lazy(() =>
-  import("@/features/blog/aes-in-hardware/sections/SubBytesSection").then((m) => ({ default: m.SubBytesSection }))
+  import('@/features/blog/aes-in-hardware/sections/SubBytesSection').then((m) => ({
+    default: m.SubBytesSection,
+  })),
 );
 const XTimeSection = lazy(() =>
-  import("@/features/blog/aes-in-hardware/sections/XTimeSection").then((m) => ({ default: m.XTimeSection }))
+  import('@/features/blog/aes-in-hardware/sections/XTimeSection').then((m) => ({
+    default: m.XTimeSection,
+  })),
 );
 const MixColumnsSection = lazy(() =>
-  import("@/features/blog/aes-in-hardware/sections/MixColumnsSection").then((m) => ({ default: m.MixColumnsSection }))
+  import('@/features/blog/aes-in-hardware/sections/MixColumnsSection').then((m) => ({
+    default: m.MixColumnsSection,
+  })),
 );
 const WhyHardwareSection = lazy(() =>
-  import("@/features/blog/aes-in-hardware/sections/WhyHardwareSection").then((m) => ({ default: m.WhyHardwareSection }))
+  import('@/features/blog/aes-in-hardware/sections/WhyHardwareSection').then((m) => ({
+    default: m.WhyHardwareSection,
+  })),
 );
 
 export const Route = createFileRoute('/blog/aes-in-hardware')({
   head: () => blogPostHead(getPost('aes-in-hardware')),
   component: AESInHardwarePage,
-})
+});
 
 function SectionSkeleton() {
   return (
@@ -41,40 +49,39 @@ function SectionSkeleton() {
 function AESInHardwarePage() {
   return (
     <>
+      <HeroSection />
 
-        <HeroSection />
+      <div className="space-y-4">
+        <hr className="border-gray-200 dark:border-gray-800" />
+        <ErrorBoundary>
+          <Suspense fallback={<SectionSkeleton />}>
+            <SubBytesSection />
+          </Suspense>
+        </ErrorBoundary>
 
-        <div className="space-y-4">
-          <hr className="border-gray-200 dark:border-gray-800" />
-          <ErrorBoundary>
-            <Suspense fallback={<SectionSkeleton />}>
-              <SubBytesSection />
-            </Suspense>
-          </ErrorBoundary>
+        <hr className="border-gray-200 dark:border-gray-800" />
+        <ErrorBoundary>
+          <Suspense fallback={<SectionSkeleton />}>
+            <XTimeSection />
+          </Suspense>
+        </ErrorBoundary>
 
-          <hr className="border-gray-200 dark:border-gray-800" />
-          <ErrorBoundary>
-            <Suspense fallback={<SectionSkeleton />}>
-              <XTimeSection />
-            </Suspense>
-          </ErrorBoundary>
+        <hr className="border-gray-200 dark:border-gray-800" />
+        <ErrorBoundary>
+          <Suspense fallback={<SectionSkeleton />}>
+            <MixColumnsSection />
+          </Suspense>
+        </ErrorBoundary>
 
-          <hr className="border-gray-200 dark:border-gray-800" />
-          <ErrorBoundary>
-            <Suspense fallback={<SectionSkeleton />}>
-              <MixColumnsSection />
-            </Suspense>
-          </ErrorBoundary>
+        <hr className="border-gray-200 dark:border-gray-800" />
+        <ErrorBoundary>
+          <Suspense fallback={<SectionSkeleton />}>
+            <WhyHardwareSection />
+          </Suspense>
+        </ErrorBoundary>
+      </div>
 
-          <hr className="border-gray-200 dark:border-gray-800" />
-          <ErrorBoundary>
-            <Suspense fallback={<SectionSkeleton />}>
-              <WhyHardwareSection />
-            </Suspense>
-          </ErrorBoundary>
-        </div>
-
-        <BlogFooter slug="aes-in-hardware" />
+      <BlogFooter slug="aes-in-hardware" />
     </>
-  )
+  );
 }

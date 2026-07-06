@@ -1,14 +1,14 @@
-export { useSandbox } from './useSandbox.js';
 export { SandboxProvider, useSandboxContext } from './SandboxProvider.js';
 export type {
-  SandboxHandle,
-  CompileResult,
   CompileIRResult,
-  TickResult,
-  SimulateResult,
-  ResetResult,
-  SetNodeResult,
-  SandboxError,
+  CompileResult,
   EvalSource,
+  ResetResult,
+  SandboxError,
+  SandboxHandle,
+  SetNodeResult,
   SimSlot,
+  SimulateResult,
+  TickResult,
 } from './useSandbox.js';
+export { useSandbox } from './useSandbox.js';

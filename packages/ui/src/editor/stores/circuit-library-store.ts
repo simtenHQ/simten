@@ -7,9 +7,9 @@
  * All circuits are equal — no primitives/standard/user split.
  */
 
+import type { CircuitLibrary } from '@simten/core/simulator';
 import { create } from 'zustand';
 import type { Circuit } from '../types/circuit';
-import type { CircuitLibrary } from '@simten/core/simulator';
 
 interface CircuitLibraryStore {
   // Stable CircuitLibrary reference — changes identity only when circuits change.
@@ -17,7 +17,10 @@ interface CircuitLibraryStore {
   library: CircuitLibrary | null;
 
   // Set all circuits from a compiled result (production path)
-  setLibrary: (lib: { resolveCircuit(name: string): Circuit | undefined; getAllCircuitNames(): string[] }) => void;
+  setLibrary: (lib: {
+    resolveCircuit(name: string): Circuit | undefined;
+    getAllCircuitNames(): string[];
+  }) => void;
 
   // Add circuits directly (used by tests)
   addCircuit: (circuit: Circuit) => void;

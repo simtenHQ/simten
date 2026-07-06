@@ -44,99 +44,94 @@ import '../std/index.js';
 // ============================================================================
 
 export type {
+  ArgumentValue,
   // Core types
   BitType,
-  BusType,
-  PortType,
   BitValue,
+  BusType,
   BusValue,
-
-  // Circuit library
-  CircuitLibrary,
-  MutableCircuitLibrary,
-
   // Circuit types
   Circuit,
-  PortDescriptor,
-  ClockDescriptor,
-  ClockState,
-  ClockInstance,
-  StateBlock,
-  StateValue,
-  PortPath,
-  Connection,
-  Node,
-  Implementation,
+  // Circuit library
+  CircuitLibrary,
   CircuitMetadata,
+  CircuitTiming,
+  ClockDescriptor,
+  ClockInstance,
+  ClockState,
+  Connection,
+  Implementation,
   MemoryType,
   MemoryValue,
+  MutableCircuitLibrary,
+  Node,
+  PortDescriptor,
   PortInstance,
-  CircuitTiming,
-  ArgumentValue,
+  PortPath,
+  PortType,
+  StateBlock,
+  StateValue,
   TestCase,
 } from '../types/circuit.js';
 
 export {
-  TOP_LEVEL_NODE,
   bitType,
   busType,
-  memoryType,
   createPortPath,
-  portPathKey,
-  isPortTypeCompatible,
   getDefaultValue,
+  isPortTypeCompatible,
+  memoryType,
+  portPathKey,
+  TOP_LEVEL_NODE,
 } from '../types/circuit.js';
 
 export type {
+  CombinationalResult,
   // Flat circuit types
   FlatCircuit,
-  FlatNode,
   FlatConnection,
-  HierarchyNode,
-  InputSource,
+  FlatNode,
   FlatPortValueMap,
   FlatSequentialState,
   FlatSimulationResult,
+  HierarchyNode,
+  InitOptions,
+  InputSource,
   PrimitiveState,
-
   // Simulator engine
   SimulatorEngine,
-  InitOptions,
-  TickResult,
-  TickMetrics,
-  CombinationalResult,
-  SimulatorSnapshot,
   SimulatorMetrics,
+  SimulatorSnapshot,
+  TickMetrics,
+  TickResult,
 } from '../types/simulator.js';
 
 // ============================================================================
 // Simulation Session
 // ============================================================================
 
-export { SimulationSession } from './simulation-session.js';
-
 export {
   captureEnvironmentalState,
-  restoreEnvironmentalState,
   type EnvironmentalStateValue,
+  restoreEnvironmentalState,
 } from './environmental-state.js';
-
 export type {
   SessionSnapshot,
-  SimulationSessionState,
   SimulationSessionOptions,
+  SimulationSessionState,
 } from './simulation-session.js';
+export { SimulationSession } from './simulation-session.js';
 
 // ============================================================================
 // Primitive Interface Exports
 // ============================================================================
 
 export type {
-  PrimitiveEvaluator,
-  InputValue,
   ClockEdges,
-  ParameterValue,
   EvaluationContext,
+  InputValue,
+  ParameterValue,
+  PrimitiveEvaluator,
   SequentialState,
 } from './primitive-interface.js';
 
@@ -159,30 +154,32 @@ export {
 // Flat Simulator Exports
 // ============================================================================
 
-export {
-  initializeFlatSequentialState,
-} from './sequential-init.js';
+export { initializeFlatSequentialState } from './sequential-init.js';
 
 // ============================================================================
 // Numeric Simulator Exports (Performance Optimized)
 // ============================================================================
 
-export type { NumericCircuit, NumericSequentialState } from './numeric-types.js';
-export { PRIMITIVE_TYPE_INDICES, PRIMITIVE_INDEX_TO_NAME } from './numeric-types.js';
-export { NumericEventQueue } from './numeric-event-queue.js';
-export type { NumericPortValues } from './numeric-values.js';
-export { createNumericPortValues, resetChangeFlags, copyPortValues } from './numeric-values.js';
-export { compileForSimulation, createNumericSequentialState, toFlatSequentialState } from './compile-circuit.js';
 export {
+  compileForSimulation,
+  createNumericSequentialState,
+  toFlatSequentialState,
+} from './compile-circuit.js';
+export { NumericEventQueue } from './numeric-event-queue.js';
+export type { NumericCircuit, NumericSequentialState } from './numeric-types.js';
+export { PRIMITIVE_INDEX_TO_NAME, PRIMITIVE_TYPE_INDICES } from './numeric-types.js';
+export type { NumericPortValues } from './numeric-values.js';
+export { copyPortValues, createNumericPortValues, resetChangeFlags } from './numeric-values.js';
+export {
+  commitSequentialState,
+  fromFlatPortValueMap,
   propagate,
+  propagateToTopLevelOutputs,
   seedInitialQueue,
   seedStateOutputNodes,
+  toFlatPortValueMap,
   updateClockStates,
   updateSequentialStates,
-  commitSequentialState,
-  toFlatPortValueMap,
-  fromFlatPortValueMap,
-  propagateToTopLevelOutputs,
 } from './propagate.js';
 
 export type { PropagationStep } from './trace.js';
@@ -192,48 +189,43 @@ export { tracePropagation } from './trace.js';
 // Simulator Engine Implementation
 // ============================================================================
 
+import type { BitValue, BusValue, Circuit, CircuitLibrary } from '../types/circuit.js';
+import { TOP_LEVEL_NODE } from '../types/circuit.js';
 import type {
+  CombinationalResult,
   FlatCircuit,
   FlatSequentialState,
+  InitOptions,
   PrimitiveState,
   SimulatorEngine,
-  InitOptions,
-  TickResult,
-  CombinationalResult,
-  SimulatorSnapshot,
   SimulatorMetrics,
+  SimulatorSnapshot,
+  TickResult,
 } from '../types/simulator.js';
-import type {
-  CircuitLibrary,
-  BitValue,
-  BusValue,
-  Circuit,
-} from '../types/circuit.js';
-import { TOP_LEVEL_NODE } from '../types/circuit.js';
-
 import {
-  initializeFlatSequentialState,
-} from './sequential-init.js';
+  compileForSimulation,
+  createNumericSequentialState,
+  toFlatSequentialState,
+} from './compile-circuit.js';
 
 import { elaborate } from './elaboration.js';
-
+import { NumericEventQueue } from './numeric-event-queue.js';
 // Numeric simulator imports
 import type { NumericCircuit, NumericSequentialState } from './numeric-types.js';
 import type { NumericPortValues } from './numeric-values.js';
 import { createNumericPortValues } from './numeric-values.js';
-import { NumericEventQueue } from './numeric-event-queue.js';
-import { compileForSimulation, createNumericSequentialState, toFlatSequentialState } from './compile-circuit.js';
 import {
+  commitSequentialState,
+  fromFlatPortValueMap,
   propagate,
+  propagateToTopLevelOutputs,
   seedInitialQueue,
   seedStateOutputNodes,
+  toFlatPortValueMap,
   updateClockStates,
   updateSequentialStates,
-  commitSequentialState,
-  toFlatPortValueMap,
-  fromFlatPortValueMap,
-  propagateToTopLevelOutputs,
 } from './propagate.js';
+import { initializeFlatSequentialState } from './sequential-init.js';
 
 /**
  * Simulator engine implementation.
@@ -261,7 +253,6 @@ class SimulatorEngineImpl implements SimulatorEngine {
   private cachedPortValues: Map<string, BitValue | BusValue> | null = null;
   private cacheValid = false;
 
-
   // Metrics
   private totalTicks = 0;
   private totalEvaluations = 0;
@@ -274,10 +265,7 @@ class SimulatorEngineImpl implements SimulatorEngine {
     this.numericCircuit = compileForSimulation(circuit, options.componentLibrary);
 
     // Initialize flat sequential state (memory data loaded later via setNode)
-    const flatSeqState = initializeFlatSequentialState(
-      circuit,
-      options.componentLibrary,
-    );
+    const flatSeqState = initializeFlatSequentialState(circuit, options.componentLibrary);
 
     // Convert to numeric sequential state
     this.numericSeqState = createNumericSequentialState(this.numericCircuit, flatSeqState);
@@ -304,13 +292,12 @@ class SimulatorEngineImpl implements SimulatorEngine {
       this.eventQueue,
       this.numericValues,
       this.numericSeqState,
-      this.topLevelInputs
+      this.topLevelInputs,
     );
 
     this.totalTicks = 0;
     this.totalEvaluations = 0;
     this.cacheValid = false;
-
   }
 
   setNode(name: string, value: PrimitiveState): void {
@@ -326,13 +313,18 @@ class SimulatorEngineImpl implements SimulatorEngine {
 
     // Find the node — prefer exact ID match over suffix match
     // (suffix match can collide, e.g. switch "a" vs internal node "dut.a")
-    const node = this.flatCircuit.nodes.find(n => n.id === name)
-      ?? this.flatCircuit.nodes.find(n => n.id.endsWith('.' + name));
+    const node =
+      this.flatCircuit.nodes.find((n) => n.id === name) ??
+      this.flatCircuit.nodes.find((n) => n.id.endsWith('.' + name));
     if (!node) return;
 
     // If it has sequential state (ROM, RAM, Register, DFlipFlop) → write state
     const idx = this.numericCircuit.nodeIdToIndex.get(node.id);
-    if (idx !== undefined && this.numericSeqState && this.numericSeqState.currentState[idx] !== undefined) {
+    if (
+      idx !== undefined &&
+      this.numericSeqState &&
+      this.numericSeqState.currentState[idx] !== undefined
+    ) {
       this.numericSeqState.currentState[idx] = value;
       this.cacheValid = false;
 
@@ -352,10 +344,8 @@ class SimulatorEngineImpl implements SimulatorEngine {
     if (typeof value === 'boolean' || typeof value === 'number' || typeof value === 'string') {
       node.arguments = { ...node.arguments, value };
       this.cacheValid = false;
-
     }
   }
-
 
   tick(): TickResult {
     if (!this.numericCircuit || !this.numericSeqState || !this.numericValues || !this.eventQueue) {
@@ -371,7 +361,7 @@ class SimulatorEngineImpl implements SimulatorEngine {
       this.eventQueue,
       this.numericValues,
       this.numericSeqState,
-      this.topLevelInputs
+      this.topLevelInputs,
     );
 
     // Phase 2: Clock HIGH
@@ -382,7 +372,7 @@ class SimulatorEngineImpl implements SimulatorEngine {
       this.numericCircuit,
       this.numericValues,
       this.numericSeqState,
-      this.topLevelInputs
+      this.topLevelInputs,
     );
 
     // Phase 4: Commit state (registers update)
@@ -397,7 +387,7 @@ class SimulatorEngineImpl implements SimulatorEngine {
       this.eventQueue,
       this.numericValues,
       this.numericSeqState,
-      this.topLevelInputs
+      this.topLevelInputs,
     );
 
     // ── Observable snapshot: post-commit (Phase 5) ──
@@ -411,7 +401,11 @@ class SimulatorEngineImpl implements SimulatorEngine {
     //
     // For pre-edge inspection (pipeline timing analysis), a future
     // tick({ phase: 1 }) option could expose the Phase 1 snapshot.
-    const portValues = toFlatPortValueMap(this.numericCircuit, this.numericValues, this.topLevelInputs);
+    const portValues = toFlatPortValueMap(
+      this.numericCircuit,
+      this.numericValues,
+      this.topLevelInputs,
+    );
     propagateToTopLevelOutputs(this.numericCircuit, this.numericValues, portValues);
 
     // Cache as the canonical observable state. getPortValues() and
@@ -432,8 +426,8 @@ class SimulatorEngineImpl implements SimulatorEngine {
       metrics: {
         phase1Evals,
         phase2Evals,
-        totalEvals
-      }
+        totalEvals,
+      },
     };
   }
 
@@ -456,18 +450,26 @@ class SimulatorEngineImpl implements SimulatorEngine {
         this.eventQueue,
         this.numericValues,
         this.numericSeqState ?? undefined,
-        this.topLevelInputs
+        this.topLevelInputs,
       );
     } catch (e) {
-      const portValues = toFlatPortValueMap(this.numericCircuit, this.numericValues, this.topLevelInputs);
+      const portValues = toFlatPortValueMap(
+        this.numericCircuit,
+        this.numericValues,
+        this.topLevelInputs,
+      );
       return {
         portValues,
         metrics: { totalEvals: 0 },
-        error: e instanceof Error ? e.message : 'Unknown error'
+        error: e instanceof Error ? e.message : 'Unknown error',
       };
     }
 
-    const portValues = toFlatPortValueMap(this.numericCircuit, this.numericValues, this.topLevelInputs);
+    const portValues = toFlatPortValueMap(
+      this.numericCircuit,
+      this.numericValues,
+      this.topLevelInputs,
+    );
     propagateToTopLevelOutputs(this.numericCircuit, this.numericValues, portValues);
 
     // Cache the result so getPortValues() stays consistent
@@ -476,7 +478,7 @@ class SimulatorEngineImpl implements SimulatorEngine {
 
     return {
       portValues,
-      metrics: { totalEvals: 0 }
+      metrics: { totalEvals: 0 },
     };
   }
 
@@ -497,7 +499,11 @@ class SimulatorEngineImpl implements SimulatorEngine {
       // No tick has run yet — compute from current (initial) state.
       // After tick() runs, this branch is only hit if setNode()
       // invalidated the cache.
-      this.cachedPortValues = toFlatPortValueMap(this.numericCircuit, this.numericValues, this.topLevelInputs);
+      this.cachedPortValues = toFlatPortValueMap(
+        this.numericCircuit,
+        this.numericValues,
+        this.topLevelInputs,
+      );
       propagateToTopLevelOutputs(this.numericCircuit, this.numericValues, this.cachedPortValues);
       this.cacheValid = true;
     }
@@ -520,14 +526,18 @@ class SimulatorEngineImpl implements SimulatorEngine {
       throw new Error('No sequential state to snapshot');
     }
 
-    const portValues = toFlatPortValueMap(this.numericCircuit, this.numericValues, this.topLevelInputs);
+    const portValues = toFlatPortValueMap(
+      this.numericCircuit,
+      this.numericValues,
+      this.topLevelInputs,
+    );
     propagateToTopLevelOutputs(this.numericCircuit, this.numericValues, portValues);
     const seqState = toFlatSequentialState(this.numericCircuit, this.numericSeqState);
 
     return {
       portValues,
       sequentialState: seqState,
-      cycleCount: this.numericSeqState.cycleCount
+      cycleCount: this.numericSeqState.cycleCount,
     };
   }
 
@@ -535,7 +545,10 @@ class SimulatorEngineImpl implements SimulatorEngine {
     if (!this.numericCircuit || !this.numericValues) return;
 
     // Restore sequential state
-    this.numericSeqState = createNumericSequentialState(this.numericCircuit, snapshot.sequentialState);
+    this.numericSeqState = createNumericSequentialState(
+      this.numericCircuit,
+      snapshot.sequentialState,
+    );
 
     // Restore port values
     fromFlatPortValueMap(this.numericCircuit, this.numericValues, snapshot.portValues);
@@ -559,7 +572,7 @@ class SimulatorEngineImpl implements SimulatorEngine {
     const flatSeqState = initializeFlatSequentialState(
       this.flatCircuit,
       this.options.componentLibrary,
-      this.options.initialMemory
+      this.options.initialMemory,
     );
 
     // Convert to numeric
@@ -576,13 +589,12 @@ class SimulatorEngineImpl implements SimulatorEngine {
       this.eventQueue!,
       this.numericValues,
       this.numericSeqState,
-      this.topLevelInputs
+      this.topLevelInputs,
     );
 
     this.totalTicks = 0;
     this.totalEvaluations = 0;
     this.cacheValid = false;
-
   }
 
   getMetrics(): SimulatorMetrics {
@@ -590,7 +602,7 @@ class SimulatorEngineImpl implements SimulatorEngine {
       totalTicks: this.totalTicks,
       totalEvaluations: this.totalEvaluations,
       avgEvalsPerTick: this.totalTicks > 0 ? this.totalEvaluations / this.totalTicks : 0,
-      nodeCount: this.flatCircuit?.nodes.length ?? 0
+      nodeCount: this.flatCircuit?.nodes.length ?? 0,
     };
   }
 }
@@ -617,10 +629,7 @@ class SimulatorEngineImpl implements SimulatorEngine {
  * @param options - Initialization options
  * @returns A new simulator engine instance
  */
-export function createSimulator(
-  circuit: FlatCircuit,
-  options: InitOptions
-): SimulatorEngine {
+export function createSimulator(circuit: FlatCircuit, options: InitOptions): SimulatorEngine {
   const engine = new SimulatorEngineImpl();
   engine.initialize(circuit, options);
   return engine;
@@ -648,7 +657,7 @@ export function createCircuitLibrary(circuits: Circuit[]): CircuitLibrary {
       return Array.from(circuitMap.entries())
         .filter(([_, c]) => c.implementation.kind === 'primitive')
         .map(([name]) => name);
-    }
+    },
   };
 }
 

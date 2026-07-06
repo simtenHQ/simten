@@ -1,15 +1,19 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { registerSetupTool } from './setup.js';
 import { registerVerifyTool } from './verify.js';
 
-type Handler = (args: Record<string, unknown>) => Promise<{ content: { text: string }[]; isError?: boolean }>;
+type Handler = (
+  args: Record<string, unknown>,
+) => Promise<{ content: { text: string }[]; isError?: boolean }>;
 
 function capture(register: (s: never) => void): Map<string, Handler> {
   const tools = new Map<string, Handler>();
-  const server = { tool: (name: string, _d: string, _s: unknown, h: Handler) => tools.set(name, h) };
+  const server = {
+    tool: (name: string, _d: string, _s: unknown, h: Handler) => tools.set(name, h),
+  };
   register(server as never);
   return tools;
 }

@@ -13,9 +13,9 @@
  * All operations are unsigned. Signed tracking is a future enhancement.
  */
 
+import { getCircuitEval } from '../circuit/eval-registry.js';
 import type { ArgumentValue } from '../types/circuit.js';
 import { tryEmitFromEval } from './eval-synth.js';
-import { getCircuitEval } from '../circuit/eval-registry.js';
 
 export interface PrimitiveWires {
   /** Map of input port name → wire/port name in Verilog */
@@ -91,11 +91,7 @@ export interface PrimitiveContext {
  * Keys are sorted for determinism. Pass the full `ctx` so we can reach
  * the sidecar collector and the optional threshold override.
  */
-export function emitMemoryInit(
-  regName: string,
-  init: StateInit,
-  ctx?: PrimitiveContext,
-): string[] {
+export function emitMemoryInit(regName: string, init: StateInit, ctx?: PrimitiveContext): string[] {
   if (init.data.size === 0) return [];
   const w = init.width;
   const hexWidth = Math.max(1, Math.ceil(w / 4));
@@ -117,11 +113,7 @@ export function emitMemoryInit(
       lines[i] = (val >>> 0).toString(16).padStart(hexWidth, '0');
     }
     ctx.sidecarFiles[fileName] = lines.join('\n') + '\n';
-    return [
-      `initial begin`,
-      `  $readmemh("${fileName}", ${regName});`,
-      `end`,
-    ];
+    return [`initial begin`, `  $readmemh("${fileName}", ${regName});`, `end`];
   }
 
   // Inline path.
@@ -166,7 +158,7 @@ function isConnected(wires: PrimitiveWires, port: string, type: 'input' | 'outpu
 }
 
 function sanitizeId(id: string): string {
-  return id.replace(/[.\-]/g, '_').replace(/[^a-zA-Z0-9_]/g, '');
+  return id.replace(/[.-]/g, '_').replace(/[^a-zA-Z0-9_]/g, '');
 }
 
 /**
@@ -217,63 +209,105 @@ export function emitPrimitive(ctx: PrimitiveContext): { lines: string[]; declara
     // ── Arithmetic ───────────────────────────────────────────────────
     case 'Adder': {
       if (isConnected(wires, 'carry_out', 'output')) {
-        return { lines: [`assign {${o('carry_out')}, ${o('sum')}} = ${i('a')} + ${i('b')} + ${i('carry_in')};`], declarations: [] };
+        return {
+          lines: [
+            `assign {${o('carry_out')}, ${o('sum')}} = ${i('a')} + ${i('b')} + ${i('carry_in')};`,
+          ],
+          declarations: [],
+        };
       }
       // carry_out not connected — just assign sum without concatenation
-      return { lines: [`assign ${o('sum')} = ${i('a')} + ${i('b')} + ${i('carry_in')};`], declarations: [] };
+      return {
+        lines: [`assign ${o('sum')} = ${i('a')} + ${i('b')} + ${i('carry_in')};`],
+        declarations: [],
+      };
     }
     case 'SignedAdder': {
       const saLines: string[] = [];
       if (isConnected(wires, 'carry_out', 'output')) {
-        saLines.push(`assign {${o('carry_out')}, ${o('sum')}} = $signed(${i('a')}) + $signed(${i('b')}) + ${i('carry_in')};`);
+        saLines.push(
+          `assign {${o('carry_out')}, ${o('sum')}} = $signed(${i('a')}) + $signed(${i('b')}) + ${i('carry_in')};`,
+        );
       } else {
-        saLines.push(`assign ${o('sum')} = $signed(${i('a')}) + $signed(${i('b')}) + ${i('carry_in')};`);
+        saLines.push(
+          `assign ${o('sum')} = $signed(${i('a')}) + $signed(${i('b')}) + ${i('carry_in')};`,
+        );
       }
       if (isConnected(wires, 'overflow', 'output')) {
-        saLines.push(`assign ${o('overflow')} = (${i('a')}[${w - 1}] == ${i('b')}[${w - 1}]) && (${o('sum')}[${w - 1}] != ${i('a')}[${w - 1}]);`);
+        saLines.push(
+          `assign ${o('overflow')} = (${i('a')}[${w - 1}] == ${i('b')}[${w - 1}]) && (${o('sum')}[${w - 1}] != ${i('a')}[${w - 1}]);`,
+        );
       }
       return { lines: saLines, declarations: [] };
     }
     case 'Subtractor': {
       if (isConnected(wires, 'borrow_out', 'output')) {
-        return { lines: [`assign {${o('borrow_out')}, ${o('difference')}} = ${i('a')} - ${i('b')} - ${i('borrow_in')};`], declarations: [] };
+        return {
+          lines: [
+            `assign {${o('borrow_out')}, ${o('difference')}} = ${i('a')} - ${i('b')} - ${i('borrow_in')};`,
+          ],
+          declarations: [],
+        };
       }
-      return { lines: [`assign ${o('difference')} = ${i('a')} - ${i('b')} - ${i('borrow_in')};`], declarations: [] };
+      return {
+        lines: [`assign ${o('difference')} = ${i('a')} - ${i('b')} - ${i('borrow_in')};`],
+        declarations: [],
+      };
     }
     case 'Multiplier':
       return { lines: [`assign ${o('product')} = ${i('a')} * ${i('b')};`], declarations: [] };
     case 'SignedMultiplier':
-      return { lines: [`assign ${o('product')} = $signed(${i('a')}) * $signed(${i('b')});`], declarations: [] };
+      return {
+        lines: [`assign ${o('product')} = $signed(${i('a')}) * $signed(${i('b')});`],
+        declarations: [],
+      };
     case 'Incrementer':
       return { lines: [`assign ${o('out')} = ${i('in')} + 1;`], declarations: [] };
 
     // ── Shift ────────────────────────────────────────────────────────
     case 'LeftShifter':
-      return { lines: [`assign ${o('result')} = ${i('value')} << ${i('shift')};`], declarations: [] };
+      return {
+        lines: [`assign ${o('result')} = ${i('value')} << ${i('shift')};`],
+        declarations: [],
+      };
     case 'RightShifter':
-      return { lines: [`assign ${o('result')} = ${i('value')} >> ${i('shift')};`], declarations: [] };
+      return {
+        lines: [`assign ${o('result')} = ${i('value')} >> ${i('shift')};`],
+        declarations: [],
+      };
 
     // ── Comparison ───────────────────────────────────────────────────
     case 'Comparator': {
       const cmpLines: string[] = [];
-      if (isConnected(wires, 'eq', 'output')) cmpLines.push(`assign ${o('eq')} = (${i('a')} == ${i('b')});`);
-      if (isConnected(wires, 'lt', 'output')) cmpLines.push(`assign ${o('lt')} = (${i('a')} < ${i('b')});`);
-      if (isConnected(wires, 'gt', 'output')) cmpLines.push(`assign ${o('gt')} = (${i('a')} > ${i('b')});`);
+      if (isConnected(wires, 'eq', 'output'))
+        cmpLines.push(`assign ${o('eq')} = (${i('a')} == ${i('b')});`);
+      if (isConnected(wires, 'lt', 'output'))
+        cmpLines.push(`assign ${o('lt')} = (${i('a')} < ${i('b')});`);
+      if (isConnected(wires, 'gt', 'output'))
+        cmpLines.push(`assign ${o('gt')} = (${i('a')} > ${i('b')});`);
       return { lines: cmpLines, declarations: [] };
     }
     case 'SignedComparator': {
       const scmpLines: string[] = [];
-      if (isConnected(wires, 'eq', 'output')) scmpLines.push(`assign ${o('eq')} = ($signed(${i('a')}) == $signed(${i('b')}));`);
-      if (isConnected(wires, 'lt', 'output')) scmpLines.push(`assign ${o('lt')} = ($signed(${i('a')}) < $signed(${i('b')}));`);
-      if (isConnected(wires, 'gt', 'output')) scmpLines.push(`assign ${o('gt')} = ($signed(${i('a')}) > $signed(${i('b')}));`);
-      if (isConnected(wires, 'lte', 'output')) scmpLines.push(`assign ${o('lte')} = ($signed(${i('a')}) <= $signed(${i('b')}));`);
-      if (isConnected(wires, 'gte', 'output')) scmpLines.push(`assign ${o('gte')} = ($signed(${i('a')}) >= $signed(${i('b')}));`);
+      if (isConnected(wires, 'eq', 'output'))
+        scmpLines.push(`assign ${o('eq')} = ($signed(${i('a')}) == $signed(${i('b')}));`);
+      if (isConnected(wires, 'lt', 'output'))
+        scmpLines.push(`assign ${o('lt')} = ($signed(${i('a')}) < $signed(${i('b')}));`);
+      if (isConnected(wires, 'gt', 'output'))
+        scmpLines.push(`assign ${o('gt')} = ($signed(${i('a')}) > $signed(${i('b')}));`);
+      if (isConnected(wires, 'lte', 'output'))
+        scmpLines.push(`assign ${o('lte')} = ($signed(${i('a')}) <= $signed(${i('b')}));`);
+      if (isConnected(wires, 'gte', 'output'))
+        scmpLines.push(`assign ${o('gte')} = ($signed(${i('a')}) >= $signed(${i('b')}));`);
       return { lines: scmpLines, declarations: [] };
     }
 
     // ── Multiplexing ─────────────────────────────────────────────────
     case 'Mux':
-      return { lines: [`assign ${o('out')} = ${i('sel')} ? ${i('in1')} : ${i('in0')};`], declarations: [] };
+      return {
+        lines: [`assign ${o('out')} = ${i('sel')} ? ${i('in1')} : ${i('in0')};`],
+        declarations: [],
+      };
 
     // ── Bit manipulation ─────────────────────────────────────────────
     case 'BitSlice': {
@@ -286,22 +320,22 @@ export function emitPrimitive(ctx: PrimitiveContext): { lines: string[]; declara
     }
     case 'Splitter':
       return {
-        lines: [
-          `assign ${o('out0')} = ${i('in')}[3:0];`,
-          `assign ${o('out1')} = ${i('in')}[7:4];`,
-        ],
+        lines: [`assign ${o('out0')} = ${i('in')}[3:0];`, `assign ${o('out1')} = ${i('in')}[7:4];`],
         declarations: [],
       };
     case 'Splitter8to8':
       return {
-        lines: Array.from({ length: 8 }, (_, bit) =>
-          `assign ${o(`bit${bit}`)} = ${i('in')}[${bit}];`
+        lines: Array.from(
+          { length: 8 },
+          (_, bit) => `assign ${o(`bit${bit}`)} = ${i('in')}[${bit}];`,
         ),
         declarations: [],
       };
     case 'Combiner8to8':
       return {
-        lines: [`assign ${o('out')} = {${Array.from({ length: 8 }, (_, bit) => i(`bit${7 - bit}`)).join(', ')}};`],
+        lines: [
+          `assign ${o('out')} = {${Array.from({ length: 8 }, (_, bit) => i(`bit${7 - bit}`)).join(', ')}};`,
+        ],
         declarations: [],
       };
     case 'AddressCombiner':
@@ -395,10 +429,7 @@ export function emitPrimitive(ctx: PrimitiveContext): { lines: string[]; declara
 
       return {
         declarations,
-        lines: [
-          ...initLines,
-          `assign ${o('data_out')} = ${memName}[${i('addr')}];`,
-        ],
+        lines: [...initLines, `assign ${o('data_out')} = ${memName}[${i('addr')}];`],
       };
     }
 
@@ -488,12 +519,18 @@ export function emitPrimitive(ctx: PrimitiveContext): { lines: string[]; declara
 
     case 'RV32I_Decode': {
       const decLines: string[] = [];
-      if (isConnected(wires, 'opcode', 'output')) decLines.push(`assign ${o('opcode')} = ${i('instruction')}[6:0];`);
-      if (isConnected(wires, 'rd', 'output')) decLines.push(`assign ${o('rd')} = ${i('instruction')}[11:7];`);
-      if (isConnected(wires, 'funct3', 'output')) decLines.push(`assign ${o('funct3')} = ${i('instruction')}[14:12];`);
-      if (isConnected(wires, 'rs1', 'output')) decLines.push(`assign ${o('rs1')} = ${i('instruction')}[19:15];`);
-      if (isConnected(wires, 'rs2', 'output')) decLines.push(`assign ${o('rs2')} = ${i('instruction')}[24:20];`);
-      if (isConnected(wires, 'funct7', 'output')) decLines.push(`assign ${o('funct7')} = ${i('instruction')}[31:25];`);
+      if (isConnected(wires, 'opcode', 'output'))
+        decLines.push(`assign ${o('opcode')} = ${i('instruction')}[6:0];`);
+      if (isConnected(wires, 'rd', 'output'))
+        decLines.push(`assign ${o('rd')} = ${i('instruction')}[11:7];`);
+      if (isConnected(wires, 'funct3', 'output'))
+        decLines.push(`assign ${o('funct3')} = ${i('instruction')}[14:12];`);
+      if (isConnected(wires, 'rs1', 'output'))
+        decLines.push(`assign ${o('rs1')} = ${i('instruction')}[19:15];`);
+      if (isConnected(wires, 'rs2', 'output'))
+        decLines.push(`assign ${o('rs2')} = ${i('instruction')}[24:20];`);
+      if (isConnected(wires, 'funct7', 'output'))
+        decLines.push(`assign ${o('funct7')} = ${i('instruction')}[31:25];`);
       return { lines: decLines, declarations: [] };
     }
 
@@ -518,7 +555,9 @@ export function emitPrimitive(ctx: PrimitiveContext): { lines: string[]; declara
           `  endcase`,
           `end`,
           `assign ${o('result')} = ${resultWire};`,
-          ...(isConnected(wires, 'zero', 'output') ? [`assign ${o('zero')} = (${resultWire} == 32'd0);`] : []),
+          ...(isConnected(wires, 'zero', 'output')
+            ? [`assign ${o('zero')} = (${resultWire} == 32'd0);`]
+            : []),
         ],
       };
     }
@@ -656,7 +695,9 @@ export function emitPrimitive(ctx: PrimitiveContext): { lines: string[]; declara
           `assign ${o('read1')} = (${i('rs1')} == 5'd0) ? 32'd0 : ${rfName}[${i('rs1')}];`,
           `assign ${o('read2')} = (${i('rs2')} == 5'd0) ? 32'd0 : ${rfName}[${i('rs2')}];`,
           ...(isConnected(wires, 'debug_read', 'output')
-            ? [`assign ${o('debug_read')} = (${i('debug_rs')} == 5'd0) ? 32'd0 : ${rfName}[${i('debug_rs')}];`]
+            ? [
+                `assign ${o('debug_read')} = (${i('debug_rs')} == 5'd0) ? 32'd0 : ${rfName}[${i('debug_rs')}];`,
+              ]
             : []),
         ],
       };
@@ -724,9 +765,13 @@ export function emitPrimitive(ctx: PrimitiveContext): { lines: string[]; declara
     case 'RV32I_LoadAlignFull': {
       const byte_wire = `la2b_${id}`;
       const half_wire = `la2h_${id}`;
-      const out_wire  = `la2_${id}`;
+      const out_wire = `la2_${id}`;
       return {
-        declarations: [`wire [7:0] ${byte_wire};`, `wire [15:0] ${half_wire};`, `reg [31:0] ${out_wire};`],
+        declarations: [
+          `wire [7:0] ${byte_wire};`,
+          `wire [15:0] ${half_wire};`,
+          `reg [31:0] ${out_wire};`,
+        ],
         lines: [
           `assign ${byte_wire} = (${i('byte_offset')} == 2'd3) ? ${i('data')}[31:24] :`,
           `                      (${i('byte_offset')} == 2'd2) ? ${i('data')}[23:16] :`,
@@ -837,8 +882,12 @@ export function emitPrimitive(ctx: PrimitiveContext): { lines: string[]; declara
           `assign ${o('p2_write')} = ${i('mem_write')} & ${busId}_sel[2];`,
           `assign ${o('p3_read')} = ${i('mem_read')} & ${busId}_sel[3];`,
           `assign ${o('p3_write')} = ${i('mem_write')} & ${busId}_sel[3];`,
-          ...(isConnected(wires, 'p4_read', 'output') ? [`assign ${o('p4_read')} = ${i('mem_read')} & ${busId}_sel[4];`] : []),
-          ...(isConnected(wires, 'p4_write', 'output') ? [`assign ${o('p4_write')} = ${i('mem_write')} & ${busId}_sel[4];`] : []),
+          ...(isConnected(wires, 'p4_read', 'output')
+            ? [`assign ${o('p4_read')} = ${i('mem_read')} & ${busId}_sel[4];`]
+            : []),
+          ...(isConnected(wires, 'p4_write', 'output')
+            ? [`assign ${o('p4_write')} = ${i('mem_write')} & ${busId}_sel[4];`]
+            : []),
           `// Read data mux`,
           `always @(*) begin`,
           `  case (${busId}_sel)`,
@@ -857,7 +906,9 @@ export function emitPrimitive(ctx: PrimitiveContext): { lines: string[]; declara
 
     case 'NIC_FIFO':
       return {
-        lines: [`// Stub: NIC_FIFO "${id}" — network interface FIFO (complex stateful peripheral, not yet synthesisable)`],
+        lines: [
+          `// Stub: NIC_FIFO "${id}" — network interface FIFO (complex stateful peripheral, not yet synthesisable)`,
+        ],
         declarations: [],
       };
 
@@ -877,7 +928,9 @@ export function emitPrimitive(ctx: PrimitiveContext): { lines: string[]; declara
  * Check if a primitive type is an I/O component (becomes a module port).
  */
 export function isIOPrimitive(primitiveType: string): boolean {
-  return ['Switch', 'Input', 'Button', 'Led', 'Output', 'HexDisplay', 'SevenSegment'].includes(primitiveType);
+  return ['Switch', 'Input', 'Button', 'Led', 'Output', 'HexDisplay', 'SevenSegment'].includes(
+    primitiveType,
+  );
 }
 
 /**
@@ -897,8 +950,16 @@ export function isSequentialPrimitive(primitiveType: string): boolean {
   // `clk` port. Missing entries cause iverilog "port `clk' is not a
   // port of dut" errors when the testbench tries to drive a clock.
   return [
-    'DFlipFlop', 'Register', 'RAM', 'ROM', 'DualPortRAM', 'Console', 'UART_TX',
-    'RV32I_RegisterFile', 'RV32I_InstrMem', 'RV32I_DataMem',
+    'DFlipFlop',
+    'Register',
+    'RAM',
+    'ROM',
+    'DualPortRAM',
+    'Console',
+    'UART_TX',
+    'RV32I_RegisterFile',
+    'RV32I_InstrMem',
+    'RV32I_DataMem',
   ].includes(primitiveType);
 }
 
@@ -924,5 +985,5 @@ export function isBasePrimitive(primitiveType: string): boolean {
     resetName: 'rst_n',
     target: 'simulation',
   });
-  return !result.lines.some(l => l.includes('WARNING: Unsupported primitive'));
+  return !result.lines.some((l) => l.includes('WARNING: Unsupported primitive'));
 }

@@ -1,9 +1,8 @@
-import { defineConfig } from "vite";
-import { resolve } from "node:path";
-
-import tsconfigPaths from "vite-tsconfig-paths";
-import viteReact from "@vitejs/plugin-react";
-import tailwindcss from "@tailwindcss/vite";
+import { resolve } from 'node:path';
+import tailwindcss from '@tailwindcss/vite';
+import viteReact from '@vitejs/plugin-react';
+import { defineConfig } from 'vite';
+import tsconfigPaths from 'vite-tsconfig-paths';
 
 // Standalone, client-only build of the visual editor for the local MCP viewer.
 //
@@ -16,8 +15,8 @@ import tailwindcss from "@tailwindcss/vite";
 export default defineConfig({
   // `root: viewer` so index.html + main.tsx live there; publicDir/outDir are
   // pulled back up to apps/web so the build reuses the site's /fonts + favicon.
-  root: resolve(__dirname, "viewer"),
-  publicDir: resolve(__dirname, "public"),
+  root: resolve(__dirname, 'viewer'),
+  publicDir: resolve(__dirname, 'public'),
   resolve: {
     // The `viewer/` entry lives outside `src/`, so vite-tsconfig-paths (scoped
     // to the tsconfig include) won't map `@/` for it — alias it explicitly.
@@ -28,18 +27,18 @@ export default defineConfig({
       // it for a stub to keep the server-fn graph out of the client bundle.
       {
         find: /^@\/features\/share\/server$/,
-        replacement: resolve(__dirname, "viewer/stubs/share-server.ts"),
+        replacement: resolve(__dirname, 'viewer/stubs/share-server.ts'),
       },
-      { find: "@", replacement: resolve(__dirname, "src") },
+      { find: '@', replacement: resolve(__dirname, 'src') },
     ],
   },
   plugins: [
-    tsconfigPaths({ projects: [resolve(__dirname, "tsconfig.json")] }),
+    tsconfigPaths({ projects: [resolve(__dirname, 'tsconfig.json')] }),
     tailwindcss(),
     viteReact(),
   ],
   build: {
-    outDir: resolve(__dirname, "dist/viewer"),
+    outDir: resolve(__dirname, 'dist/viewer'),
     emptyOutDir: true,
   },
 });

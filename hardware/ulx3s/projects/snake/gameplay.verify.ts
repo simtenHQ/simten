@@ -1,4 +1,5 @@
 #!/usr/bin/env tsx
+
 /**
  * gameplay.verify.ts — Tier-B testbench: Snake plays the same game as
  * a plain-JS reference model, framebuffer-equal after every game tick.
@@ -16,9 +17,9 @@
  * Run: tsx projects/snake/gameplay.verify.ts  (or pnpm fpga:verify:snake)
  */
 
+import { declareOracle, describe, verify } from '@simten/core/verify';
 import * as fc from 'fast-check';
-import { verify, declareOracle, describe } from '@simten/core/verify';
-import { buildSim, coSim, chaseDir, assertFbEqual } from './cosim-lib.js';
+import { assertFbEqual, buildSim, chaseDir, coSim } from './cosim-lib.js';
 import { SnakeRefModel } from './ref-model.js';
 
 describe('Snake');
@@ -51,7 +52,8 @@ verify.exhaustive('eats the first food, grows, and redraws the respawn', [1], ()
   // Head (4,4) → right, right → (6,4) → up onto food (6,3). Then keep moving
   // through the food-draw tick and beyond.
   const model = coSim([1, 1, 0, 0, 1, 1, 2, 2]);
-  if (model.eaten !== 1) throw new Error(`scenario expected exactly 1 food eaten, got ${model.eaten}`);
+  if (model.eaten !== 1)
+    throw new Error(`scenario expected exactly 1 food eaten, got ${model.eaten}`);
   if (model.len !== 5) throw new Error(`snake should have grown to 5, got ${model.len}`);
 });
 

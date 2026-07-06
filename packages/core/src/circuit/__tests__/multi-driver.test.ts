@@ -1,11 +1,11 @@
-import { describe, it, expect } from 'vitest';
-import { circuit } from '../circuit.js';
+import { describe, expect, it } from 'vitest';
 import { bit } from '../bit-bus.js';
+import { circuit } from '../circuit.js';
 
 const And = circuit('And', {
   inputs: { a: bit, b: bit },
   outputs: { out: bit },
-  eval: ({ a, b }) => ({ out: (a && b) ? 1 : 0 }),
+  eval: ({ a, b }) => ({ out: a && b ? 1 : 0 }),
 });
 
 const Not = circuit('Not', {
@@ -26,7 +26,7 @@ describe('multi-driver detection', () => {
           inputs.b.to(n.in),
           n.out.to(outputs.out),
         ],
-      })
+      }),
     ).toThrow(/n\.in has multiple drivers: a, b/);
   });
 
@@ -42,7 +42,7 @@ describe('multi-driver detection', () => {
           inputs.c.to(n.in),
           n.out.to(outputs.out),
         ],
-      })
+      }),
     ).toThrow(/n\.in has multiple drivers: a, b, c/);
   });
 
@@ -52,11 +52,14 @@ describe('multi-driver detection', () => {
       circuit('Bad', {
         inputs: { x: bit, y: bit },
         outputs: { s: bit, c: bit },
-        nodes: { xor1: circuit('Xor', {
-          inputs: { a: bit, b: bit },
-          outputs: { out: bit },
-          eval: ({ a, b }) => ({ out: (a !== b) ? 1 : 0 }),
-        }), and1: And },
+        nodes: {
+          xor1: circuit('Xor', {
+            inputs: { a: bit, b: bit },
+            outputs: { out: bit },
+            eval: ({ a, b }) => ({ out: a !== b ? 1 : 0 }),
+          }),
+          and1: And,
+        },
         connect: ({ inputs, outputs, nodes: { xor1, and1 } }) => [
           inputs.x.to(xor1.a, and1.a),
           inputs.y.to(xor1.a, and1.a), // multi-driver on both xor1.a and and1.a
@@ -82,11 +85,8 @@ describe('multi-driver detection', () => {
         inputs: { a: bit },
         outputs: { out: bit },
         nodes: { n: Not },
-        connect: ({ inputs, outputs, nodes: { n } }) => [
-          inputs.a.to(n.in),
-          n.out.to(outputs.out),
-        ],
-      })
+        connect: ({ inputs, outputs, nodes: { n } }) => [inputs.a.to(n.in), n.out.to(outputs.out)],
+      }),
     ).not.toThrow();
   });
 
@@ -104,7 +104,7 @@ describe('multi-driver detection', () => {
     // After dedup: one a→n.in edge and one n.out→outputs.out edge.
     expect(c.circuit.connections).toHaveLength(2);
     const edge = c.circuit.connections.find(
-      e => e.target.nodeId === 'n' && e.target.portName === 'in'
+      (e) => e.target.nodeId === 'n' && e.target.portName === 'in',
     );
     expect(edge).toBeDefined();
   });
@@ -115,10 +115,7 @@ describe('multi-driver detection', () => {
       inputs: { x: bit },
       outputs: { y: bit },
       nodes: { n: Not },
-      connect: ({ inputs, outputs, nodes: { n } }) => [
-        inputs.x.to(n.in),
-        n.out.to(outputs.y),
-      ],
+      connect: ({ inputs, outputs, nodes: { n } }) => [inputs.x.to(n.in), n.out.to(outputs.y)],
     });
 
     // Parent drives inner.x from two distinct sources.
@@ -132,7 +129,7 @@ describe('multi-driver detection', () => {
           inputs.q.to(inner.x),
           inner.y.to(outputs.z),
         ],
-      })
+      }),
     ).toThrow(/inner\.x has multiple drivers/);
   });
 });

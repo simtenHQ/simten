@@ -14,17 +14,17 @@
  *               (e.g. full-bleed media, custom multi-column grids)
  */
 
-import { cva, type VariantProps } from "class-variance-authority";
-import { cn } from "@/lib/utils";
+import { cva, type VariantProps } from 'class-variance-authority';
+import { cn } from '@/lib/utils';
 
-const containerVariants = cva("mx-auto w-full", {
+const containerVariants = cva('mx-auto w-full', {
   variants: {
     size: {
-      default: "max-w-[1360px] px-4 sm:px-6 lg:px-8",
-      bleed: "max-w-none px-0",
+      default: 'max-w-[1360px] px-4 sm:px-6 lg:px-8',
+      bleed: 'max-w-none px-0',
     },
   },
-  defaultVariants: { size: "default" },
+  defaultVariants: { size: 'default' },
 });
 
 export interface ContainerProps
@@ -32,7 +32,5 @@ export interface ContainerProps
     VariantProps<typeof containerVariants> {}
 
 export function Container({ className, size, ...props }: ContainerProps) {
-  return (
-    <div className={cn(containerVariants({ size }), className)} {...props} />
-  );
+  return <div className={cn(containerVariants({ size }), className)} {...props} />;
 }

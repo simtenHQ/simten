@@ -1,4 +1,3 @@
-
 import { BaseNode } from './BaseNode';
 import type { NodeData } from './NodeData';
 
@@ -8,7 +7,9 @@ interface NicFifoNodeProps {
 }
 
 export function NicFifoNode({ data, selected }: NicFifoNodeProps) {
-  const nicState = data.__nicState as { txCount: number; rxCount: number; draining: boolean } | undefined;
+  const nicState = data.__nicState as
+    | { txCount: number; rxCount: number; draining: boolean }
+    | undefined;
   const txCount = nicState?.txCount ?? 0;
   const rxCount = nicState?.rxCount ?? 0;
   const draining = nicState?.draining ?? false;
@@ -17,7 +18,11 @@ export function NicFifoNode({ data, selected }: NicFifoNodeProps) {
     <BaseNode
       selected={selected}
       inputPorts={data.inputNames.map((name, index) => ({ name, index, type: 'input' as const }))}
-      outputPorts={data.outputNames.map((name, index) => ({ name, index, type: 'output' as const }))}
+      outputPorts={data.outputNames.map((name, index) => ({
+        name,
+        index,
+        type: 'output' as const,
+      }))}
       className="min-w-[160px]"
       showPortLabels={data.showPortLabels}
       onPortClick={data.onPortClick}
@@ -36,9 +41,7 @@ export function NicFifoNode({ data, selected }: NicFifoNodeProps) {
             <span className="text-[var(--embed-text-secondary)]">RX FIFO:</span>
             <span className="text-green-400">{rxCount} words</span>
           </div>
-          {draining && (
-            <div className="text-center text-yellow-400 font-bold">TRANSMITTING</div>
-          )}
+          {draining && <div className="text-center text-yellow-400 font-bold">TRANSMITTING</div>}
         </div>
       </div>
     </BaseNode>

@@ -1,17 +1,18 @@
-import { createFileRoute, Outlet, useMatches } from '@tanstack/react-router'
+import { createFileRoute, Outlet, useMatches } from '@tanstack/react-router';
 
 export const Route = createFileRoute('/blog')({
   component: BlogLayout,
-})
+});
 
 function BlogLayout() {
-  const matches = useMatches()
-  const isIndex = matches[matches.length - 1]?.pathname === '/blog' ||
-                  matches[matches.length - 1]?.pathname === '/blog/'
+  const matches = useMatches();
+  const isIndex =
+    matches[matches.length - 1]?.pathname === '/blog' ||
+    matches[matches.length - 1]?.pathname === '/blog/';
 
   if (isIndex) {
     // Blog index has its own layout
-    return <Outlet />
+    return <Outlet />;
   }
 
   // Individual blog posts get the shared narrow content wrapper. Site nav now
@@ -22,5 +23,5 @@ function BlogLayout() {
         <Outlet />
       </main>
     </div>
-  )
+  );
 }

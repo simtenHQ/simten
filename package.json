@@ -18,7 +18,10 @@
     "dev:all": "pnpm --filter @simten/web dev & pnpm --filter @simten/sandbox dev",
     "test": "tsx scripts/check-exports.ts && pnpm -r test",
     "check-exports": "tsx scripts/check-exports.ts",
-    "lint": "pnpm -r lint",
+    "lint": "biome check",
+    "lint:fix": "biome check --write",
+    "format": "biome format --write",
+    "format:check": "biome format",
     "typecheck": "pnpm -r exec tsc --noEmit",
     "changeset": "changeset",
     "release": "pnpm build && changeset publish",
@@ -35,6 +38,7 @@
     "fpga:console": "TTY=$(ls /dev/cu.usbserial-* 2>/dev/null | head -1); [ -z \"$TTY\" ] && TTY=/dev/ttyUSB0; echo \"Opening $TTY (exit: Ctrl-A Ctrl-X)\"; picocom --nolock --noreset -b 115200 $TTY"
   },
   "devDependencies": {
+    "@biomejs/biome": "2.5.2",
     "@changesets/cli": "^2.31.0",
     "dotenv-cli": "^11.0.0",
     "ts-morph": "^28.0.0",

@@ -15,34 +15,58 @@
  *   4. Format per request (changes / raw / edges) with output caps.
  */
 
-import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
+import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
-import { parseVcd } from '../lib/vcd-parser.js';
-import { detectClock, buildCycleMap } from '../lib/vcd-cycles.js';
-import { formatSignals, type FormatKind, type EdgeKind } from '../lib/vcd-format.js';
-import { resolveTestName } from '../lib/vcd-resolve-test.js';
 import { findRepoRoot } from '../lib/repo-root.js';
+import { buildCycleMap, detectClock } from '../lib/vcd-cycles.js';
+import { type EdgeKind, type FormatKind, formatSignals } from '../lib/vcd-format.js';
+import { parseVcd } from '../lib/vcd-parser.js';
+import { resolveTestName } from '../lib/vcd-resolve-test.js';
 
 const CYCLE_RANGE_HARD_CAP = 50_000;
 const PER_SIGNAL_TXN_CAP = 200;
 const RAW_CELL_CAP = 20_000;
 
 const schemaShape = {
-  vcd_path: z.string().optional().describe('Absolute or repo-relative path to a .vcd file. Mutually exclusive with test_name.'),
-  test_name: z.string().optional().describe('CPU verify-suite test name (e.g. "R-Type ADD basic"). Resolved via shared slugify to hardware/ulx3s/projects/cpu/.vcd/. Mutually exclusive with vcd_path.'),
-  signals: z.array(z.string()).min(1).describe('Signal paths or unique leaf names. Inputs containing "." are matched as full hierarchical paths; otherwise leaf-name match.'),
-  cycle_range: z.tuple([z.number().int().min(0), z.number().int().min(0)]).describe('Inclusive [from, to] cycle window. Cycle 0 = first rising edge of the clock.'),
-  format: z.enum(['changes', 'raw', 'edges']).optional().default('changes').describe('changes (default): transitions in window + carry-in. raw: value at every cycle. edges: filtered transitions.'),
-  edge: z.enum(['rising', 'falling', 'any']).optional().default('rising').describe('edges-format only.'),
+  vcd_path: z
+    .string()
+    .optional()
+    .describe('Absolute or repo-relative path to a .vcd file. Mutually exclusive with test_name.'),
+  test_name: z
+    .string()
+    .optional()
+    .describe(
+      'CPU verify-suite test name (e.g. "R-Type ADD basic"). Resolved via shared slugify to hardware/ulx3s/projects/cpu/.vcd/. Mutually exclusive with vcd_path.',
+    ),
+  signals: z
+    .array(z.string())
+    .min(1)
+    .describe(
+      'Signal paths or unique leaf names. Inputs containing "." are matched as full hierarchical paths; otherwise leaf-name match.',
+    ),
+  cycle_range: z
+    .tuple([z.number().int().min(0), z.number().int().min(0)])
+    .describe('Inclusive [from, to] cycle window. Cycle 0 = first rising edge of the clock.'),
+  format: z
+    .enum(['changes', 'raw', 'edges'])
+    .optional()
+    .default('changes')
+    .describe(
+      'changes (default): transitions in window + carry-in. raw: value at every cycle. edges: filtered transitions.',
+    ),
+  edge: z
+    .enum(['rising', 'falling', 'any'])
+    .optional()
+    .default('rising')
+    .describe('edges-format only.'),
   clock_signal: z.string().optional().describe('Override clock auto-detection.'),
 };
 
-const schema = z.object(schemaShape).refine(
-  (v) => Boolean(v.vcd_path) !== Boolean(v.test_name),
-  { message: 'exactly one of vcd_path or test_name must be provided' },
-);
+const schema = z.object(schemaShape).refine((v) => Boolean(v.vcd_path) !== Boolean(v.test_name), {
+  message: 'exactly one of vcd_path or test_name must be provided',
+});
 
 type Args = z.infer<typeof schema>;
 
@@ -90,7 +114,11 @@ export async function handleReadWaveform(args: Args) {
   // 1. Sanity-guard cycle range BEFORE any file I/O.
   const [from, to] = args.cycle_range;
   if (to < from) {
-    return errorReturn({ error: 'invalid_cycle_range', cycle_range: [from, to], reason: 'to < from' });
+    return errorReturn({
+      error: 'invalid_cycle_range',
+      cycle_range: [from, to],
+      reason: 'to < from',
+    });
   }
   const span = to - from + 1;
   if (span > CYCLE_RANGE_HARD_CAP) {
@@ -129,7 +157,10 @@ export async function handleReadWaveform(args: Args) {
 
   // Cycle range must also fit within the simulation length.
   if (cycleMap.cycleTimes.length === 0) {
-    return errorReturn({ error: 'no_clock_edges', message: 'clock signal had no rising edges in the trace' });
+    return errorReturn({
+      error: 'no_clock_edges',
+      message: 'clock signal had no rising edges in the trace',
+    });
   }
   if (to >= cycleMap.cycleTimes.length) {
     return errorReturn({

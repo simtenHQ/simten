@@ -7,9 +7,10 @@
  * - Uses onLoadMemory callback to write data via engine.setNode()
  */
 
-"use client";
+'use client';
 
-import React, { useCallback, useState, useRef } from 'react';
+import type React from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { BaseNode, type PortConfig } from './BaseNode';
 import type { NodeData } from './NodeData';
 
@@ -69,42 +70,57 @@ export function RV32IInstrMemNode({ data, selected }: RV32IInstrMemNodeProps) {
   const [showCodeEditor, setShowCodeEditor] = useState(false);
   const [language, setLanguage] = useState<string>('c');
   const [code, setCode] = useState('');
-  const [compileStatus, setCompileStatus] = useState<'idle' | 'compiling' | 'success' | 'error'>('idle');
+  const [compileStatus, setCompileStatus] = useState<'idle' | 'compiling' | 'success' | 'error'>(
+    'idle',
+  );
   const [compileError, setCompileError] = useState('');
   const [loadedFilename, setLoadedFilename] = useState<string | null>(null);
   const [loadedSize, setLoadedSize] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const inputPorts: PortConfig[] = data.inputNames.map((name, index) => ({
-    name, index, type: 'input',
+    name,
+    index,
+    type: 'input',
   }));
 
   const outputPorts: PortConfig[] = data.outputNames.map((name, index) => ({
-    name, index, type: 'output',
+    name,
+    index,
+    type: 'output',
   }));
 
-  const loadBinary = useCallback((binary: Uint8Array, filename: string) => {
-    const memoryMap = new Map<number, number>();
-    for (let i = 0; i < binary.length; i++) {
-      if (binary[i] !== 0) memoryMap.set(i, binary[i]);
-    }
-    setLoadedFilename(filename);
-    setLoadedSize(binary.length);
-    data.onLoadMemory?.(memoryMap);
-  }, [data.onLoadMemory]);
+  const loadBinary = useCallback(
+    (binary: Uint8Array, filename: string) => {
+      const memoryMap = new Map<number, number>();
+      for (let i = 0; i < binary.length; i++) {
+        if (binary[i] !== 0) memoryMap.set(i, binary[i]);
+      }
+      setLoadedFilename(filename);
+      setLoadedSize(binary.length);
+      data.onLoadMemory?.(memoryMap);
+    },
+    [data.onLoadMemory],
+  );
 
-  const handleFileLoad = useCallback(async (file: File) => {
-    const buffer = await file.arrayBuffer();
-    loadBinary(new Uint8Array(buffer), file.name);
-  }, [loadBinary]);
+  const handleFileLoad = useCallback(
+    async (file: File) => {
+      const buffer = await file.arrayBuffer();
+      loadBinary(new Uint8Array(buffer), file.name);
+    },
+    [loadBinary],
+  );
 
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragOver(false);
-    const file = e.dataTransfer.files[0];
-    if (file) handleFileLoad(file);
-  }, [handleFileLoad]);
+  const handleDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setIsDragOver(false);
+      const file = e.dataTransfer.files[0];
+      if (file) handleFileLoad(file);
+    },
+    [handleFileLoad],
+  );
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -123,18 +139,24 @@ export function RV32IInstrMemNode({ data, selected }: RV32IInstrMemNodeProps) {
     fileInputRef.current?.click();
   }, []);
 
-  const handleFileInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) handleFileLoad(file);
-    e.target.value = '';
-  }, [handleFileLoad]);
+  const handleFileInputChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (file) handleFileLoad(file);
+      e.target.value = '';
+    },
+    [handleFileLoad],
+  );
 
-  const handleClear = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation();
-    setLoadedFilename(null);
-    setLoadedSize(0);
-    data.onLoadMemory?.(new Map());
-  }, [data.onLoadMemory]);
+  const handleClear = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      setLoadedFilename(null);
+      setLoadedSize(0);
+      data.onLoadMemory?.(new Map());
+    },
+    [data.onLoadMemory],
+  );
 
   const handleCompile = useCallback(async () => {
     const sourceCode = code || PLACEHOLDER_CODE[language] || '';
@@ -150,7 +172,7 @@ export function RV32IInstrMemNode({ data, selected }: RV32IInstrMemNodeProps) {
         body: JSON.stringify({ source: sourceCode, language }),
       });
 
-      const result = await resp.json() as {
+      const result = (await resp.json()) as {
         success: boolean;
         binary?: string;
         stderr?: string;
@@ -178,7 +200,7 @@ export function RV32IInstrMemNode({ data, selected }: RV32IInstrMemNodeProps) {
 
   const handleToggleCodeEditor = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
-    setShowCodeEditor(prev => !prev);
+    setShowCodeEditor((prev) => !prev);
   }, []);
 
   return (
@@ -190,7 +212,15 @@ export function RV32IInstrMemNode({ data, selected }: RV32IInstrMemNodeProps) {
         onChange={handleFileInputChange}
         className="hidden"
       />
-      <BaseNode inputPorts={inputPorts} outputPorts={outputPorts} selected={selected} className="min-w-[140px]" showPortLabels={data.showPortLabels} onPortClick={data.onPortClick} glowUnconnected={data.glowUnconnected}>
+      <BaseNode
+        inputPorts={inputPorts}
+        outputPorts={outputPorts}
+        selected={selected}
+        className="min-w-[140px]"
+        showPortLabels={data.showPortLabels}
+        onPortClick={data.onPortClick}
+        glowUnconnected={data.glowUnconnected}
+      >
         <div className="flex flex-col items-center gap-2">
           {/* Label */}
           <div className="px-2 py-1 text-xs font-medium text-[var(--embed-text-primary)]">
@@ -206,11 +236,12 @@ export function RV32IInstrMemNode({ data, selected }: RV32IInstrMemNodeProps) {
           <div
             className={`
               flex flex-col items-center gap-1 p-2 rounded border-2 border-dashed cursor-pointer transition-all w-full
-              ${isDragOver
-                ? 'border-blue-500 bg-blue-500/10'
-                : loadedFilename
-                  ? 'border-green-500/50 bg-green-500/10'
-                  : 'border-[var(--embed-border)] hover:border-blue-400 hover:bg-blue-500/5'
+              ${
+                isDragOver
+                  ? 'border-blue-500 bg-blue-500/10'
+                  : loadedFilename
+                    ? 'border-green-500/50 bg-green-500/10'
+                    : 'border-[var(--embed-border)] hover:border-blue-400 hover:bg-blue-500/5'
               }
             `}
             onDrop={handleDrop}
@@ -224,9 +255,7 @@ export function RV32IInstrMemNode({ data, selected }: RV32IInstrMemNodeProps) {
                 <div className="text-xs text-green-400 font-medium truncate max-w-[120px]">
                   {loadedFilename}
                 </div>
-                <div className="text-xs text-[var(--embed-text-muted)]">
-                  {loadedSize} bytes
-                </div>
+                <div className="text-xs text-[var(--embed-text-muted)]">{loadedSize} bytes</div>
                 <button
                   onClick={handleClear}
                   className="text-xs text-red-400 hover:text-red-300 hover:underline"
@@ -247,9 +276,10 @@ export function RV32IInstrMemNode({ data, selected }: RV32IInstrMemNodeProps) {
             onClick={handleToggleCodeEditor}
             className={`
               w-full px-2 py-1 text-xs rounded transition-colors
-              ${showCodeEditor
-                ? 'bg-violet-500/20 text-violet-400'
-                : 'bg-[var(--embed-bg-tertiary)] text-[var(--embed-text-muted)] hover:bg-violet-500/10 hover:text-violet-400'
+              ${
+                showCodeEditor
+                  ? 'bg-violet-500/20 text-violet-400'
+                  : 'bg-[var(--embed-bg-tertiary)] text-[var(--embed-text-muted)] hover:bg-violet-500/10 hover:text-violet-400'
               }
             `}
           >
@@ -264,15 +294,16 @@ export function RV32IInstrMemNode({ data, selected }: RV32IInstrMemNodeProps) {
             >
               {/* Language Selector */}
               <div className="flex gap-1">
-                {LANGUAGES.map(lang => (
+                {LANGUAGES.map((lang) => (
                   <button
                     key={lang.value}
                     onClick={() => setLanguage(lang.value)}
                     className={`
                       px-2 py-0.5 text-xs rounded transition-colors
-                      ${language === lang.value
-                        ? 'bg-violet-500/30 text-violet-300'
-                        : 'bg-[var(--embed-bg-tertiary)] text-[var(--embed-text-muted)] hover:bg-[var(--embed-bg-tertiary)]/80'
+                      ${
+                        language === lang.value
+                          ? 'bg-violet-500/30 text-violet-300'
+                          : 'bg-[var(--embed-bg-tertiary)] text-[var(--embed-text-muted)] hover:bg-[var(--embed-bg-tertiary)]/80'
                       }
                     `}
                   >
@@ -296,17 +327,20 @@ export function RV32IInstrMemNode({ data, selected }: RV32IInstrMemNodeProps) {
                 disabled={compileStatus === 'compiling'}
                 className={`
                   w-full px-3 py-1.5 text-xs font-medium rounded transition-colors
-                  ${compileStatus === 'compiling'
-                    ? 'bg-[var(--embed-bg-tertiary)] text-[var(--embed-text-muted)] cursor-wait'
-                    : compileStatus === 'success'
-                      ? 'bg-green-600 text-white'
-                      : 'bg-violet-600 hover:bg-violet-500 text-white'
+                  ${
+                    compileStatus === 'compiling'
+                      ? 'bg-[var(--embed-bg-tertiary)] text-[var(--embed-text-muted)] cursor-wait'
+                      : compileStatus === 'success'
+                        ? 'bg-green-600 text-white'
+                        : 'bg-violet-600 hover:bg-violet-500 text-white'
                   }
                 `}
               >
-                {compileStatus === 'compiling' ? 'Compiling...'
-                  : compileStatus === 'success' ? 'Loaded!'
-                  : 'Compile & Load'}
+                {compileStatus === 'compiling'
+                  ? 'Compiling...'
+                  : compileStatus === 'success'
+                    ? 'Loaded!'
+                    : 'Compile & Load'}
               </button>
 
               {/* Error Display */}

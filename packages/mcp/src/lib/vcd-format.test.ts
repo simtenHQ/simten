@@ -1,8 +1,8 @@
-import { describe, expect, it } from 'vitest';
 import { resolve } from 'node:path';
-import { parseVcd, resolveSignals, type ResolvedSignal } from './vcd-parser.js';
-import { detectClock, buildCycleMap } from './vcd-cycles.js';
+import { describe, expect, it } from 'vitest';
+import { buildCycleMap, detectClock } from './vcd-cycles.js';
 import { formatSignals } from './vcd-format.js';
+import { parseVcd, type ResolvedSignal, resolveSignals } from './vcd-parser.js';
 
 const FIX = (name: string) => resolve(__dirname, '../__fixtures__/vcd', name);
 
@@ -21,7 +21,8 @@ describe('formatSignals — changes', () => {
     // signal a: dumpvars 0 at t=0, 1 at t=15000 (cycle 1), 0 at t=35000 (cycle 3)
     // Window [2, 4]: start cycle 2 (t=25000). At t=25000 a is 1 (last txn at t=15000).
     const out = formatSignals(ctx.parsed, ctx.cycleMap, ctx.resolved, {
-      format: 'changes', cycleRange: [2, 4],
+      format: 'changes',
+      cycleRange: [2, 4],
     });
     const a = out.signals[0];
     expect(a.initial.cycle).toBe(2);
@@ -35,7 +36,8 @@ describe('formatSignals — changes', () => {
     const ctx = await setup('synthetic-clock.vcd', ['b']);
     // signal b: dumpvars 0 at t=0, never transitions.
     const out = formatSignals(ctx.parsed, ctx.cycleMap, ctx.resolved, {
-      format: 'changes', cycleRange: [0, 4],
+      format: 'changes',
+      cycleRange: [0, 4],
     });
     const b = out.signals[0];
     expect(b.initial.value).toBe('0');
@@ -54,11 +56,10 @@ describe('formatSignals — uninitialized signal carry-in', () => {
     // Pretend signal `a` had no changes by clearing its array.
     const a = parsed.byFullPath.get('tb.a')![0];
     parsed.changes.set(a.id, []);
-    const out = formatSignals(
-      parsed, cycleMap,
-      [{ requested: 'a', resolved: a }],
-      { format: 'changes', cycleRange: [0, 4] },
-    );
+    const out = formatSignals(parsed, cycleMap, [{ requested: 'a', resolved: a }], {
+      format: 'changes',
+      cycleRange: [0, 4],
+    });
     expect(out.signals[0].initial.value).toBe('x');
     expect(out.signals[0].initial.stable_since).toBe(0);
   });
@@ -70,11 +71,10 @@ describe('formatSignals — uninitialized signal carry-in', () => {
     const cycleMap = buildCycleMap(parsed, det.clock);
     const bus4 = parsed.byFullPath.get('tb.bus4')![0];
     parsed.changes.set(bus4.id, []);
-    const out = formatSignals(
-      parsed, cycleMap,
-      [{ requested: 'bus4', resolved: bus4 }],
-      { format: 'changes', cycleRange: [0, 2] },
-    );
+    const out = formatSignals(parsed, cycleMap, [{ requested: 'bus4', resolved: bus4 }], {
+      format: 'changes',
+      cycleRange: [0, 2],
+    });
     expect(out.signals[0].initial.value).toBe('xxxx');
     expect(out.signals[0].initial.value).not.toMatch(/^b/);
     expect(out.signals[0].initial.stable_since).toBe(0);
@@ -85,7 +85,8 @@ describe('formatSignals — value encoding consistency', () => {
   it('1-bit value is single char, multi-bit is width-N string, no "b" prefix anywhere', async () => {
     const ctx = await setup('synthetic-bus.vcd', ['clk', 'bus4', 'bus8']);
     const out = formatSignals(ctx.parsed, ctx.cycleMap, ctx.resolved, {
-      format: 'changes', cycleRange: [0, 3],
+      format: 'changes',
+      cycleRange: [0, 3],
     });
     const clk = out.signals.find((s) => s.resolved === 'tb.clk')!;
     const bus4 = out.signals.find((s) => s.resolved === 'tb.bus4')!;
@@ -104,7 +105,8 @@ describe('formatSignals — value encoding consistency', () => {
     const ctx = await setup('synthetic-bus.vcd', ['bus4']);
     // synthetic-bus has 4 cycles (0..3); bus4 = bxxxx at cycle 1 (t=15000).
     const out = formatSignals(ctx.parsed, ctx.cycleMap, ctx.resolved, {
-      format: 'changes', cycleRange: [0, 3],
+      format: 'changes',
+      cycleRange: [0, 3],
     });
     const tr = out.signals[0].trace as Array<[number, string]>;
     const xxxx = tr.find(([, v]) => v.includes('x'));
@@ -118,7 +120,8 @@ describe('formatSignals — hex mirror', () => {
     const ctx = await setup('synthetic-bus.vcd', ['bus8']);
     // Window starts at cycle 0 (t=5000): bus8 was set to b11110000 at t=5000.
     const out = formatSignals(ctx.parsed, ctx.cycleMap, ctx.resolved, {
-      format: 'changes', cycleRange: [0, 1],
+      format: 'changes',
+      cycleRange: [0, 1],
     });
     const bus8 = out.signals[0];
     expect(bus8.initial.value).toBe('11110000');
@@ -128,7 +131,8 @@ describe('formatSignals — hex mirror', () => {
   it('width ≤ 4 emits no hex mirror', async () => {
     const ctx = await setup('synthetic-bus.vcd', ['bus4']);
     const out = formatSignals(ctx.parsed, ctx.cycleMap, ctx.resolved, {
-      format: 'changes', cycleRange: [1, 3],
+      format: 'changes',
+      cycleRange: [1, 3],
     });
     expect(out.signals[0].initial.value_hex).toBeUndefined();
   });
@@ -137,7 +141,8 @@ describe('formatSignals — hex mirror', () => {
     const ctx = await setup('synthetic-bus.vcd', ['bus8']);
     // Window starts at cycle 1 (t=15000): bus8 set to b1010zzzz at t=15000.
     const out = formatSignals(ctx.parsed, ctx.cycleMap, ctx.resolved, {
-      format: 'changes', cycleRange: [1, 3],
+      format: 'changes',
+      cycleRange: [1, 3],
     });
     expect(out.signals[0].initial.value).toBe('1010zzzz');
     expect(out.signals[0].initial.value_hex).toBeUndefined();
@@ -149,7 +154,9 @@ describe('formatSignals — changes/edges per-signal cap', () => {
     const ctx = await setup('synthetic-clock.vcd', ['clk']);
     // Clock has 10 transitions in [0, 4]. Cap at 3.
     const out = formatSignals(ctx.parsed, ctx.cycleMap, ctx.resolved, {
-      format: 'changes', cycleRange: [0, 4], perSignalCap: 3,
+      format: 'changes',
+      cycleRange: [0, 4],
+      perSignalCap: 3,
     });
     const tr = out.signals[0].trace as Array<[number, string]>;
     expect(tr.length).toBe(3);
@@ -162,7 +169,8 @@ describe('formatSignals — raw', () => {
   it('1-bit signal: trace.values is a packed string of length (to-from+1)', async () => {
     const ctx = await setup('synthetic-clock.vcd', ['a']);
     const out = formatSignals(ctx.parsed, ctx.cycleMap, ctx.resolved, {
-      format: 'raw', cycleRange: [0, 4],
+      format: 'raw',
+      cycleRange: [0, 4],
     });
     const trace = out.signals[0].trace as { start_cycle: number; values: string };
     expect(trace.start_cycle).toBe(0);
@@ -175,7 +183,8 @@ describe('formatSignals — raw', () => {
   it('multi-bit signal: trace.values is string[] of width-N elements', async () => {
     const ctx = await setup('synthetic-bus.vcd', ['bus4']);
     const out = formatSignals(ctx.parsed, ctx.cycleMap, ctx.resolved, {
-      format: 'raw', cycleRange: [0, 3],
+      format: 'raw',
+      cycleRange: [0, 3],
     });
     const trace = out.signals[0].trace as { start_cycle: number; values: string[] };
     expect(Array.isArray(trace.values)).toBe(true);
@@ -187,7 +196,8 @@ describe('formatSignals — raw', () => {
     const ctx = await setup('synthetic-bus.vcd', ['bus8']);
     // synthetic-bus has 4 cycles (0..3). cycle 1 = b1010zzzz (z bits).
     const out = formatSignals(ctx.parsed, ctx.cycleMap, ctx.resolved, {
-      format: 'raw', cycleRange: [0, 3],
+      format: 'raw',
+      cycleRange: [0, 3],
     });
     const sig = out.signals[0];
     expect(sig.values_hex).toBeDefined();
@@ -202,7 +212,9 @@ describe('formatSignals — raw', () => {
     const ctx = await setup('synthetic-clock.vcd', ['a', 'b']);
     // 2 signals × 5 cycles = 10 cells. Cap = 6 → max 3 cycles per signal.
     const out = formatSignals(ctx.parsed, ctx.cycleMap, ctx.resolved, {
-      format: 'raw', cycleRange: [0, 4], rawCellCap: 6,
+      format: 'raw',
+      cycleRange: [0, 4],
+      rawCellCap: 6,
     });
     expect(out.effectiveRange).toEqual([0, 2]);
     for (const s of out.signals) {
@@ -217,7 +229,9 @@ describe('formatSignals — edges', () => {
   it('rising filter returns 0→1 / x→1 transitions only', async () => {
     const ctx = await setup('synthetic-clock.vcd', ['clk']);
     const out = formatSignals(ctx.parsed, ctx.cycleMap, ctx.resolved, {
-      format: 'edges', cycleRange: [0, 4], edge: 'rising',
+      format: 'edges',
+      cycleRange: [0, 4],
+      edge: 'rising',
     });
     const tr = out.signals[0].trace as Array<[number, string, string]>;
     // Carry-in covers cycle 0's rising edge (clk=1 entering window). Trace
@@ -232,7 +246,9 @@ describe('formatSignals — edges', () => {
   it('falling filter returns 1→0 transitions only', async () => {
     const ctx = await setup('synthetic-clock.vcd', ['clk']);
     const out = formatSignals(ctx.parsed, ctx.cycleMap, ctx.resolved, {
-      format: 'edges', cycleRange: [0, 4], edge: 'falling',
+      format: 'edges',
+      cycleRange: [0, 4],
+      edge: 'falling',
     });
     const tr = out.signals[0].trace as Array<[number, string, string]>;
     for (const [, from, to] of tr) {
@@ -244,7 +260,9 @@ describe('formatSignals — edges', () => {
   it('any filter returns all transitions', async () => {
     const ctx = await setup('synthetic-clock.vcd', ['clk']);
     const out = formatSignals(ctx.parsed, ctx.cycleMap, ctx.resolved, {
-      format: 'edges', cycleRange: [0, 4], edge: 'any',
+      format: 'edges',
+      cycleRange: [0, 4],
+      edge: 'any',
     });
     const tr = out.signals[0].trace as Array<[number, string, string]>;
     // 11 transitions total (t=0,5000,...,50000). t=0 and t=5000 fold into
@@ -256,7 +274,9 @@ describe('formatSignals — edges', () => {
   it('multi-bit signal with rising/falling: warns and falls back to any', async () => {
     const ctx = await setup('synthetic-bus.vcd', ['bus4']);
     const out = formatSignals(ctx.parsed, ctx.cycleMap, ctx.resolved, {
-      format: 'edges', cycleRange: [0, 3], edge: 'rising',
+      format: 'edges',
+      cycleRange: [0, 3],
+      edge: 'rising',
     });
     expect(out.signals[0].warning).toMatch(/only meaningful for 1-bit/);
     const tr = out.signals[0].trace as Array<[number, string, string]>;
@@ -268,7 +288,9 @@ describe('formatSignals — clock-on-changes warning', () => {
   it('attaches warning when requested signal IS the clock and format=changes (does not error)', async () => {
     const ctx = await setup('synthetic-clock.vcd', ['clk']);
     const out = formatSignals(ctx.parsed, ctx.cycleMap, ctx.resolved, {
-      format: 'changes', cycleRange: [0, 4], clockId: ctx.clockId,
+      format: 'changes',
+      cycleRange: [0, 4],
+      clockId: ctx.clockId,
     });
     expect(out.signals[0].warning).toMatch(/degenerate.*format=edges or raw/);
     // Trace still populated (not an error path).
@@ -278,7 +300,10 @@ describe('formatSignals — clock-on-changes warning', () => {
   it('does NOT attach warning for non-clock signals or non-changes formats', async () => {
     const ctx = await setup('synthetic-clock.vcd', ['clk', 'a']);
     const out = formatSignals(ctx.parsed, ctx.cycleMap, ctx.resolved, {
-      format: 'edges', cycleRange: [0, 4], edge: 'any', clockId: ctx.clockId,
+      format: 'edges',
+      cycleRange: [0, 4],
+      edge: 'any',
+      clockId: ctx.clockId,
     });
     for (const s of out.signals) expect(s.warning).toBeUndefined();
   });
@@ -297,7 +322,8 @@ describe('formatSignals — unsupported types', () => {
       { requested: 'message', resolved: msg },
     ];
     const out = formatSignals(parsed, cycleMap, resolved, {
-      format: 'changes', cycleRange: [0, 2],
+      format: 'changes',
+      cycleRange: [0, 2],
     });
     expect(out.signals[0].warning).toMatch(/"real" not supported/);
     expect(out.signals[1].warning).toMatch(/"string" not supported/);

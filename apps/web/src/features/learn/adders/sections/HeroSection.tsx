@@ -10,9 +10,8 @@ export function HeroSection() {
               "How digital circuits add two numbers — starting from a single XOR
               gate, ending with why the obvious design gets slower the wider
               your inputs are." */}
-          How digital circuits add two numbers &mdash; starting from a single
-          XOR gate, ending with why the obvious design gets slower the wider
-          your inputs are.
+          How digital circuits add two numbers &mdash; starting from a single XOR gate, ending with
+          why the obvious design gets slower the wider your inputs are.
         </p>
       </div>
     </section>

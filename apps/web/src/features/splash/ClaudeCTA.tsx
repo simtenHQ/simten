@@ -1,48 +1,36 @@
-
-import { useState, useEffect } from "react";
+import { useEffect, useState } from 'react';
 
 const CYCLING_PHRASES = [
-  "a half adder",
-  "a RISC-V CPU",
-  "Snake in hardware",
-  "a packet sniffer",
-  "a 4-bit ALU",
+  'a half adder',
+  'a RISC-V CPU',
+  'Snake in hardware',
+  'a packet sniffer',
+  'a 4-bit ALU',
 ];
 
-function useCyclingTypewriter(
-  phrases: string[],
-  typeSpeed = 60,
-  deleteSpeed = 30,
-  pauseMs = 1800,
-) {
-  const [displayed, setDisplayed] = useState("");
+function useCyclingTypewriter(phrases: string[], typeSpeed = 60, deleteSpeed = 30, pauseMs = 1800) {
+  const [displayed, setDisplayed] = useState('');
   const [phraseIndex, setPhraseIndex] = useState(0);
-  const [phase, setPhase] = useState<"typing" | "pausing" | "deleting">("typing");
+  const [phase, setPhase] = useState<'typing' | 'pausing' | 'deleting'>('typing');
 
   useEffect(() => {
     const target = phrases[phraseIndex];
     let timeout: ReturnType<typeof setTimeout>;
 
-    if (phase === "typing") {
+    if (phase === 'typing') {
       if (displayed.length < target.length) {
-        timeout = setTimeout(
-          () => setDisplayed(target.slice(0, displayed.length + 1)),
-          typeSpeed,
-        );
+        timeout = setTimeout(() => setDisplayed(target.slice(0, displayed.length + 1)), typeSpeed);
       } else {
-        timeout = setTimeout(() => setPhase("pausing"), pauseMs);
+        timeout = setTimeout(() => setPhase('pausing'), pauseMs);
       }
-    } else if (phase === "pausing") {
-      timeout = setTimeout(() => setPhase("deleting"), 0);
+    } else if (phase === 'pausing') {
+      timeout = setTimeout(() => setPhase('deleting'), 0);
     } else {
       if (displayed.length > 0) {
-        timeout = setTimeout(
-          () => setDisplayed(displayed.slice(0, -1)),
-          deleteSpeed,
-        );
+        timeout = setTimeout(() => setDisplayed(displayed.slice(0, -1)), deleteSpeed);
       } else {
         setPhraseIndex((i) => (i + 1) % phrases.length);
-        setPhase("typing");
+        setPhase('typing');
       }
     }
 
@@ -72,12 +60,28 @@ function CopyCommand({ command }: { command: string }) {
       </code>
       <span className="text-muted-foreground/60 group-hover:text-muted-foreground transition-colors shrink-0">
         {copied ? (
-          <svg className="w-4 h-4 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <svg
+            className="w-4 h-4 text-green-400"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2}
+          >
             <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
           </svg>
         ) : (
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+          <svg
+            className="w-4 h-4"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2}
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+            />
           </svg>
         )}
       </span>

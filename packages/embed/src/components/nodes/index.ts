@@ -5,13 +5,13 @@
  */
 export {
   BaseNode,
-  type PortConfig,
   type BaseNodeProps,
-  InputNode,
-  OutputNode,
-  LogicGateNode,
+  CompositeBadge,
   EmbedConsoleNode,
   EmbedScreenNode,
-  CompositeBadge,
+  InputNode,
+  LogicGateNode,
   type NodeData,
-} from "@simten/ui/nodes";
+  OutputNode,
+  type PortConfig,
+} from '@simten/ui/nodes';

@@ -1,13 +1,13 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { pageHead } from "@/lib/seo";
+import { createFileRoute, Link } from '@tanstack/react-router';
+import { pageHead } from '@/lib/seo';
 
-export const Route = createFileRoute("/learn/")({
+export const Route = createFileRoute('/learn/')({
   head: () =>
     pageHead({
-      title: "Learn",
+      title: 'Learn',
       description:
-        "Concept-level walkthroughs of digital design fundamentals. Every embedded circuit is live and editable in place.",
-      path: "/learn",
+        'Concept-level walkthroughs of digital design fundamentals. Every embedded circuit is live and editable in place.',
+      path: '/learn',
     }),
   component: LearnIndexPage,
 });
@@ -21,8 +21,8 @@ function LearnIndexPage() {
             Learn
           </h1>
           <p className="mt-6 text-xl text-gray-400 leading-relaxed max-w-2xl">
-            Concept-level walkthroughs of digital design fundamentals.
-            Embedded circuits are live and editable in place.
+            Concept-level walkthroughs of digital design fundamentals. Embedded circuits are live
+            and editable in place.
           </p>
         </section>
 
@@ -37,9 +37,8 @@ function LearnIndexPage() {
                   Adders
                 </h2>
                 <p className="mt-2 text-gray-400 leading-relaxed">
-                  How digital circuits add two numbers &mdash; starting from a
-                  single XOR gate, ending with why the obvious design gets
-                  slower the wider your inputs are.
+                  How digital circuits add two numbers &mdash; starting from a single XOR gate,
+                  ending with why the obvious design gets slower the wider your inputs are.
                 </p>
               </div>
               <span className="text-gray-600 group-hover:text-blue-400 transition-colors text-2xl ml-4">
@@ -63,9 +62,8 @@ function LearnIndexPage() {
                   Abstraction
                 </h2>
                 <p className="mt-2 text-gray-400 leading-relaxed">
-                  How a cluster of gates becomes a named block you can
-                  reuse &mdash; and how the same move scales from a
-                  half-adder up to a CPU.
+                  How a cluster of gates becomes a named block you can reuse &mdash; and how the
+                  same move scales from a half-adder up to a CPU.
                 </p>
               </div>
               <span className="text-gray-600 group-hover:text-blue-400 transition-colors text-2xl ml-4">
@@ -89,9 +87,9 @@ function LearnIndexPage() {
                   Registers
                 </h2>
                 <p className="mt-2 text-gray-400 leading-relaxed">
-                  How a circuit remembers. From the single-bit D flip-flop
-                  to multi-bit registers with write-enable, ending with a
-                  counter &mdash; the first useful sequential circuit.
+                  How a circuit remembers. From the single-bit D flip-flop to multi-bit registers
+                  with write-enable, ending with a counter &mdash; the first useful sequential
+                  circuit.
                 </p>
               </div>
               <span className="text-gray-600 group-hover:text-blue-400 transition-colors text-2xl ml-4">
@@ -105,16 +103,11 @@ function LearnIndexPage() {
             </div>
           </Link>
 
-          <p className="text-gray-500 pt-4">
-            More coming &mdash; FSMs, multiplexers.
-          </p>
+          <p className="text-gray-500 pt-4">More coming &mdash; FSMs, multiplexers.</p>
         </div>
 
         <footer className="mt-16 pt-8 border-t border-gray-800 text-center">
-          <Link
-            to="/"
-            className="text-blue-400 hover:text-blue-300 underline underline-offset-2"
-          >
+          <Link to="/" className="text-blue-400 hover:text-blue-300 underline underline-offset-2">
             Simten
           </Link>
         </footer>

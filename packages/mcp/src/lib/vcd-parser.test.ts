@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest';
 import { resolve } from 'node:path';
+import { describe, expect, it } from 'vitest';
 import { parseVcd, resolveSignals } from './vcd-parser.js';
 
 const FIX = (name: string) => resolve(__dirname, '../__fixtures__/vcd', name);

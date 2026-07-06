@@ -1,35 +1,35 @@
 {
-	"name": "@simten/compiler",
-	"description": "RISC-V cross-compiler service (Cloudflare Container)",
-	"cloudflare": {
-		"label": "Containers Starter",
-		"products": [
-			"Workers",
-			"Durable Objects",
-			"Containers"
-		],
-		"categories": [],
-		"docs_url": "https://developers.cloudflare.com/containers/",
-		"preview_image_url": "https://imagedelivery.net/_yJ02hpOMj_EnGvsU2aygw/5aba1fb7-b937-46fd-fa67-138221082200/public",
-		"icon_urls": [
-			"https://imagedelivery.net/wSMYJvS3Xw-n339CbDyDIA/5ca0ca32-e897-4699-d4c1-6b680512f000/public"
-		]
-	},
-	"dependencies": {
-		"@cloudflare/containers": "0.0.30",
-		"hono": "4.12.23"
-	},
-	"devDependencies": {
-		"@types/node": "^20",
-		"typescript": "5.9.3",
-		"wrangler": "4.72.0"
-	},
-	"private": true,
-	"scripts": {
-		"cf-typegen": "wrangler types",
-		"build:container": "docker build -t simten-compiler .",
-		"deploy": "wrangler deploy",
-		"dev": "wrangler dev",
-		"start": "wrangler dev"
-	}
+  "name": "@simten/compiler",
+  "description": "RISC-V cross-compiler service (Cloudflare Container)",
+  "cloudflare": {
+    "label": "Containers Starter",
+    "products": [
+      "Workers",
+      "Durable Objects",
+      "Containers"
+    ],
+    "categories": [],
+    "docs_url": "https://developers.cloudflare.com/containers/",
+    "preview_image_url": "https://imagedelivery.net/_yJ02hpOMj_EnGvsU2aygw/5aba1fb7-b937-46fd-fa67-138221082200/public",
+    "icon_urls": [
+      "https://imagedelivery.net/wSMYJvS3Xw-n339CbDyDIA/5ca0ca32-e897-4699-d4c1-6b680512f000/public"
+    ]
+  },
+  "dependencies": {
+    "@cloudflare/containers": "0.0.30",
+    "hono": "4.12.23"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "typescript": "5.9.3",
+    "wrangler": "4.72.0"
+  },
+  "private": true,
+  "scripts": {
+    "cf-typegen": "wrangler types",
+    "build:container": "docker build -t simten-compiler .",
+    "deploy": "wrangler deploy",
+    "dev": "wrangler dev",
+    "start": "wrangler dev"
+  }
 }

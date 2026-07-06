@@ -8,7 +8,7 @@
  * 3. Scope port values so internal node IDs match simulation keys
  */
 
-import type { Circuit, Node, Connection, BitValue, BusValue } from '@simten/core';
+import type { BitValue, BusValue, Circuit, Connection, Node } from '@simten/core';
 import type { FlatPortValueMap } from '@simten/core/simulator';
 
 /** Prefix for synthetic boundary input nodes */
@@ -36,13 +36,17 @@ export function createDrillDownViewCircuit(composite: Circuit): Circuit {
       id: boundaryId,
       label: port.name,
       componentRef: isBus ? 'Input' : 'Switch',
-      arguments: isBus ? { value: 0, width: (port.portType as { kind: 'bus'; width: number }).width } : { value: false },
+      arguments: isBus
+        ? { value: 0, width: (port.portType as { kind: 'bus'; width: number }).width }
+        : { value: false },
       inputs: [],
-      outputs: [{
-        id: `${boundaryId}_out`,
-        name: 'out',
-        portType: port.portType,
-      }],
+      outputs: [
+        {
+          id: `${boundaryId}_out`,
+          name: 'out',
+          portType: port.portType,
+        },
+      ],
       clocks: [],
     });
   }
@@ -58,11 +62,13 @@ export function createDrillDownViewCircuit(composite: Circuit): Circuit {
       label: port.name,
       componentRef: isBus ? 'HexDisplay' : 'Led',
       arguments: {},
-      inputs: [{
-        id: `${boundaryId}_in`,
-        name: 'in',
-        portType: port.portType,
-      }],
+      inputs: [
+        {
+          id: `${boundaryId}_in`,
+          name: 'in',
+          portType: port.portType,
+        },
+      ],
       outputs: [],
       clocks: [],
     });
@@ -116,7 +122,7 @@ export function createDrillDownViewCircuit(composite: Circuit): Circuit {
 export function scopePortValues(
   portValues: FlatPortValueMap,
   prefix: string,
-  composite?: Circuit
+  composite?: Circuit,
 ): FlatPortValueMap {
   if (!prefix) return portValues;
 
@@ -155,4 +161,3 @@ export function scopePortValues(
 
   return scoped;
 }
-

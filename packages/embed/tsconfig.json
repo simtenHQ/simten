@@ -22,12 +22,5 @@
   "include": ["src/**/*.ts", "src/**/*.tsx"],
   // Tests are excluded from the build surface; vitest typechecks them at
   // run time. See follow-up issue for resolving pre-existing test type debt.
-  "exclude": [
-    "node_modules",
-    "dist",
-    "**/__tests__/**",
-    "**/*.test.ts",
-    "**/*.test.tsx",
-    "e2e"
-  ]
+  "exclude": ["node_modules", "dist", "**/__tests__/**", "**/*.test.ts", "**/*.test.tsx", "e2e"]
 }

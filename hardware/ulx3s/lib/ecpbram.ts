@@ -56,10 +56,7 @@ export function computeVerilogHash(
   let toHash = verilog;
   if (firmwareInitRange) {
     const { start, end } = firmwareInitRange;
-    toHash =
-      verilog.slice(0, start) +
-      '\0'.repeat(Math.max(0, end - start)) +
-      verilog.slice(end);
+    toHash = verilog.slice(0, start) + '\0'.repeat(Math.max(0, end - start)) + verilog.slice(end);
   }
   return createHash('sha256').update(toHash).digest('hex').slice(0, 16);
 }

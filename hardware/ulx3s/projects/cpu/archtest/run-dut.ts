@@ -31,7 +31,11 @@ const DMEM_END = 0x00500000; // 1M
 
 const u32 = (n: number) => n >>> 0;
 
-interface Loaded { imem: Uint8Array; dmem: Uint8Array; tohost: number | null }
+interface Loaded {
+  imem: Uint8Array;
+  dmem: Uint8Array;
+  tohost: number | null;
+}
 
 /** Minimal ELF32 little-endian PT_LOAD loader. */
 function loadElf(path: string, tohostAddr: number | null): Loaded {
@@ -70,8 +74,14 @@ function fetchWord(mem: Uint8Array, base: number, addr: number): number {
   return u32(mem[o] | (mem[o + 1] << 8) | (mem[o + 2] << 16) | (mem[o + 3] << 24));
 }
 
-export function runDut(elf: string, beginSig: number, endSig: number, tohostAddr: number,
-  maxCycles = 200000, mutate?: (imem: Uint8Array) => void): string[] {
+export function runDut(
+  elf: string,
+  beginSig: number,
+  endSig: number,
+  tohostAddr: number,
+  maxCycles = 200000,
+  mutate?: (imem: Uint8Array) => void,
+): string[] {
   const { imem, dmem } = loadElf(elf, tohostAddr);
   if (mutate) mutate(imem); // fault injection: perturb the DUT's instruction memory
 
@@ -104,7 +114,10 @@ export function runDut(elf: string, beginSig: number, endSig: number, tohostAddr
       const o = dataAddr - DMEM_BASE;
       dmem[o] = dataWrite & 0xff;
       if (funct3 >= 1) dmem[o + 1] = (dataWrite >> 8) & 0xff;
-      if (funct3 >= 2) { dmem[o + 2] = (dataWrite >> 16) & 0xff; dmem[o + 3] = (dataWrite >> 24) & 0xff; }
+      if (funct3 >= 2) {
+        dmem[o + 2] = (dataWrite >> 16) & 0xff;
+        dmem[o + 3] = (dataWrite >> 24) & 0xff;
+      }
     }
 
     // Halt detection: RVMODEL_HALT stores to `tohost` then spins (sw; j ...).
@@ -130,9 +143,17 @@ export function runDut(elf: string, beginSig: number, endSig: number, tohostAddr
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const [elf, beginHex, endHex, tohostHex, cyclesArg] = process.argv.slice(2);
   if (!elf || !beginHex || !endHex || !tohostHex) {
-    console.error('usage: tsx run-dut.ts <elf> <begin_sig_hex> <end_sig_hex> <tohost_hex> [maxCycles]');
+    console.error(
+      'usage: tsx run-dut.ts <elf> <begin_sig_hex> <end_sig_hex> <tohost_hex> [maxCycles]',
+    );
     process.exit(2);
   }
-  const sig = runDut(elf, parseInt(beginHex, 16), parseInt(endHex, 16), parseInt(tohostHex, 16), cyclesArg ? Number(cyclesArg) : 200000);
+  const sig = runDut(
+    elf,
+    parseInt(beginHex, 16),
+    parseInt(endHex, 16),
+    parseInt(tohostHex, 16),
+    cyclesArg ? Number(cyclesArg) : 200000,
+  );
   process.stdout.write(sig.join('\n') + '\n');
 }

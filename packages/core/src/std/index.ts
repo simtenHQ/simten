@@ -11,54 +11,80 @@
 
 import type { BuiltCircuit } from '../circuit/types.js';
 
-// Logic Gates
-export { And, Or, Not, Nand, Nor, Xor, Xnor, Buffer } from './logic.js';
-
 // Arithmetic
 export {
-  Incrementer, Adder, Subtractor, Multiplier, Comparator,
-  LeftShifter, RightShifter,
-  SignedAdder, SignedComparator, SignedMultiplier,
-  BusAnd, BusOr, BusNot, BusXor,
+  Adder,
+  BusAnd,
+  BusNot,
+  BusOr,
+  BusXor,
+  Comparator,
+  Incrementer,
+  LeftShifter,
+  Multiplier,
+  RightShifter,
+  SignedAdder,
+  SignedComparator,
+  SignedMultiplier,
+  Subtractor,
 } from './arithmetic.js';
-
-// Routing / Plexers / Utilities
-export {
-  Mux, Decoder,
-  Splitter, Splitter8to8, Combiner8to8, Concat, BitSlice, AddressCombiner,
-  Probe,
-} from './routing.js';
-
-// Sequential
-export { DFlipFlop, Register } from './sequential.js';
+// Display
+export { Console, HexDisplay, RasterDisplay, Screen, SevenSegment } from './display.js';
+// I/O
+export { Button, Constant, Input, Led, Output, Switch } from './io.js';
+// Logic Gates
+export { And, Buffer, Nand, Nor, Not, Or, Xnor, Xor } from './logic.js';
 
 // Memory
-export { ROM, RAM, DualPortRAM, romFromBytes, romFromWords, romFromEntries } from './memory.js';
-
-// I/O
-export { Switch, Button, Led, Input, Output, Constant } from './io.js';
-
-// Display
-export { SevenSegment, HexDisplay, Screen, RasterDisplay, Console } from './display.js';
+export { DualPortRAM, RAM, ROM, romFromBytes, romFromEntries, romFromWords } from './memory.js';
+// Networking
+export {
+  Eth_AddrClassifier,
+  Eth_CRC32,
+  Eth_FrameInput,
+  Eth_FrameParser,
+  Eth_ProtocolDecoder,
+  MemBusMux,
+  NIC_FIFO,
+  UART_TX,
+} from './networking.js';
+// Routing / Plexers / Utilities
+export {
+  AddressCombiner,
+  BitSlice,
+  Combiner8to8,
+  Concat,
+  Decoder,
+  Mux,
+  Probe,
+  Splitter,
+  Splitter8to8,
+} from './routing.js';
 
 // RV32I
 export {
-  RV32I_Decode, RV32I_ALU, RV32I_ImmGen, RV32I_Control,
-  RV32I_BranchComp, RV32I_RegisterFile, RV32I_InstrMem, RV32I_DataMem,
-  RV32I_WritebackMux, RV32I_NextPCMux, RV32I_ForwardingUnit,
-  RV32I_WBBypass, RV32I_LoadAlign, RV32I_LoadAlignFull, RV32I_HazardUnit,
   DualPortROM,
+  RV32I_ALU,
+  RV32I_BranchComp,
+  RV32I_Control,
+  RV32I_DataMem,
+  RV32I_Decode,
+  RV32I_ForwardingUnit,
+  RV32I_HazardUnit,
+  RV32I_ImmGen,
+  RV32I_InstrMem,
+  RV32I_LoadAlign,
+  RV32I_LoadAlignFull,
+  RV32I_NextPCMux,
+  RV32I_RegisterFile,
+  RV32I_WBBypass,
+  RV32I_WritebackMux,
 } from './rv32i.js';
 
 // RV32I assembled CPU core (single source of truth — see ./rv32i-cpu.ts)
 export { RV32I_Core } from './rv32i-cpu.js';
-
-// Networking
-export {
-  Eth_ProtocolDecoder, Eth_AddrClassifier, Eth_FrameInput,
-  Eth_FrameParser, Eth_CRC32,
-  MemBusMux, UART_TX, NIC_FIFO,
-} from './networking.js';
+// Sequential
+export { DFlipFlop, Register } from './sequential.js';
 
 // ============================================================================
 // Aggregate circuit list
@@ -69,16 +95,16 @@ export {
 // elaboration scope) should use this instead of `Object.values(std).filter(...)`,
 // which breaks the moment a non-circuit helper (like romFromBytes) is exported.
 
-import * as Logic from './logic.js';
 import * as Arithmetic from './arithmetic.js';
-import * as Routing from './routing.js';
-import * as Sequential from './sequential.js';
-import * as Memory from './memory.js';
-import * as IO from './io.js';
 import * as Display from './display.js';
+import * as IO from './io.js';
+import * as Logic from './logic.js';
+import * as Memory from './memory.js';
+import * as Networking from './networking.js';
+import * as Routing from './routing.js';
 import * as RV32I from './rv32i.js';
 import * as RV32ICpu from './rv32i-cpu.js';
-import * as Networking from './networking.js';
+import * as Sequential from './sequential.js';
 
 const isBuiltCircuit = (v: unknown): v is BuiltCircuit =>
   !!v && typeof v === 'object' && 'circuit' in v;
@@ -115,5 +141,3 @@ const _materialize = (v: unknown): BuiltCircuit | null => {
 export const STDLIB_CIRCUITS: readonly BuiltCircuit[] = Object.freeze(
   _allExports.map(_materialize).filter((c): c is BuiltCircuit => c !== null),
 );
-
-

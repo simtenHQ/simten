@@ -1,45 +1,45 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { blogPostHead } from '@/lib/seo'
-import { getPost } from '@/features/blog/posts'
-import { Suspense, lazy } from "react";
-import { HeroSection } from "@/features/blog/rv32i-cpu/sections/HeroSection";
-import { BlogFooter } from "@/features/blog/BlogFooter";
-import { ErrorBoundary } from "@/features/blog/building-a-cpu/ErrorBoundary";
+import { createFileRoute } from '@tanstack/react-router';
+import { lazy, Suspense } from 'react';
+import { BlogFooter } from '@/features/blog/BlogFooter';
+import { ErrorBoundary } from '@/features/blog/building-a-cpu/ErrorBoundary';
+import { getPost } from '@/features/blog/posts';
+import { HeroSection } from '@/features/blog/rv32i-cpu/sections/HeroSection';
+import { blogPostHead } from '@/lib/seo';
 
 const WhyRiscVSection = lazy(() =>
-  import("@/features/blog/rv32i-cpu/sections/WhyRiscVSection").then((m) => ({
+  import('@/features/blog/rv32i-cpu/sections/WhyRiscVSection').then((m) => ({
     default: m.WhyRiscVSection,
-  }))
+  })),
 );
 const PipelineSection = lazy(() =>
-  import("@/features/blog/rv32i-cpu/sections/PipelineSection").then((m) => ({
+  import('@/features/blog/rv32i-cpu/sections/PipelineSection').then((m) => ({
     default: m.PipelineSection,
-  }))
+  })),
 );
 const ALUSection = lazy(() =>
-  import("@/features/blog/rv32i-cpu/sections/ALUSection").then((m) => ({
+  import('@/features/blog/rv32i-cpu/sections/ALUSection').then((m) => ({
     default: m.ALUSection,
-  }))
+  })),
 );
 const HazardsSection = lazy(() =>
-  import("@/features/blog/rv32i-cpu/sections/HazardsSection").then((m) => ({
+  import('@/features/blog/rv32i-cpu/sections/HazardsSection').then((m) => ({
     default: m.HazardsSection,
-  }))
+  })),
 );
 const RunningCodeSection = lazy(() =>
-  import("@/features/blog/rv32i-cpu/sections/RunningCodeSection").then((m) => ({
+  import('@/features/blog/rv32i-cpu/sections/RunningCodeSection').then((m) => ({
     default: m.RunningCodeSection,
-  }))
+  })),
 );
 const TryItSection = lazy(() =>
-  import("@/features/blog/rv32i-cpu/sections/TryItSection").then((m) => ({
+  import('@/features/blog/rv32i-cpu/sections/TryItSection').then((m) => ({
     default: m.TryItSection,
-  }))
+  })),
 );
 const CTASection = lazy(() =>
-  import("@/features/blog/rv32i-cpu/sections/CTASection").then((m) => ({
+  import('@/features/blog/rv32i-cpu/sections/CTASection').then((m) => ({
     default: m.CTASection,
-  }))
+  })),
 );
 
 function SectionSkeleton() {
@@ -124,7 +124,7 @@ function RV32ICPUPage() {
   );
 }
 
-export const Route = createFileRoute("/blog/rv32i-cpu")({
+export const Route = createFileRoute('/blog/rv32i-cpu')({
   head: () => blogPostHead(getPost('rv32i-cpu')),
   component: RV32ICPUPage,
 });

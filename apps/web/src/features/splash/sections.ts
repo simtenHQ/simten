@@ -3,11 +3,9 @@
  * Each section tells part of the story and has an interactive circuit.
  */
 
-import { circuit, bit } from "@simten/core/circuit";
-import type { BuiltCircuit } from "@simten/core/circuit";
-import {
-  Switch, Led, Nand, Xor, And, Or, DFlipFlop,
-} from "@simten/core/std";
+import type { BuiltCircuit } from '@simten/core/circuit';
+import { bit, circuit } from '@simten/core/circuit';
+import { And, DFlipFlop, Led, Nand, Or, Switch, Xor } from '@simten/core/std';
 
 export interface SectionDef {
   id: string;
@@ -16,7 +14,7 @@ export interface SectionDef {
   description: string;
   hint?: string;
   circuit: BuiltCircuit;
-  align: "left" | "right";
+  align: 'left' | 'right';
 }
 
 const NandDemo = circuit('NandDemo', {
@@ -30,10 +28,7 @@ const NandDemo = circuit('NandDemo', {
 
 const NotDemo = circuit('NotDemo', {
   nodes: { sw_in: Switch(), gate: Nand, out: Led },
-  connect: ({ nodes: { sw_in, gate, out } }) => [
-    sw_in.out.to(gate.a, gate.b),
-    gate.out.to(out.in),
-  ],
+  connect: ({ nodes: { sw_in, gate, out } }) => [sw_in.out.to(gate.a, gate.b), gate.out.to(out.in)],
 });
 
 const AndDemo = circuit('AndDemo', {
@@ -58,7 +53,15 @@ const OrDemo = circuit('OrDemo', {
 });
 
 const XorDemo = circuit('XorDemo', {
-  nodes: { in_a: Switch(), in_b: Switch(), nand1: Nand, nand2: Nand, nand3: Nand, nand4: Nand, out: Led },
+  nodes: {
+    in_a: Switch(),
+    in_b: Switch(),
+    nand1: Nand,
+    nand2: Nand,
+    nand3: Nand,
+    nand4: Nand,
+    out: Led,
+  },
   connect: ({ nodes: { in_a, in_b, nand1, nand2, nand3, nand4, out } }) => [
     in_a.out.to(nand1.a, nand2.a),
     in_b.out.to(nand1.b, nand3.b),
@@ -92,7 +95,16 @@ const HalfAdder4 = circuit('HalfAdder4', {
 });
 
 const FullAdderDemo = circuit('FullAdderDemo', {
-  nodes: { in_a: Switch(), in_b: Switch(), in_cin: Switch(), ha1: HalfAdder4, ha2: HalfAdder4, or1: Or, sum: Led, cout: Led },
+  nodes: {
+    in_a: Switch(),
+    in_b: Switch(),
+    in_cin: Switch(),
+    ha1: HalfAdder4,
+    ha2: HalfAdder4,
+    or1: Or,
+    sum: Led,
+    cout: Led,
+  },
   connect: ({ nodes: { in_a, in_b, in_cin, ha1, ha2, or1, sum, cout } }) => [
     in_a.out.to(ha1.a),
     in_b.out.to(ha1.b),
@@ -107,87 +119,84 @@ const FullAdderDemo = circuit('FullAdderDemo', {
 
 const MemoryDemo = circuit('MemoryDemo', {
   nodes: { sw_in: Switch(), dff: DFlipFlop(), stored: Led },
-  connect: ({ nodes: { sw_in, dff, stored } }) => [
-    sw_in.out.to(dff.d),
-    dff.q.to(stored.in),
-  ],
+  connect: ({ nodes: { sw_in, dff, stored } }) => [sw_in.out.to(dff.d), dff.q.to(stored.in)],
 });
 
 export const SECTIONS: SectionDef[] = [
   {
-    id: "nand",
-    title: "Everything starts with NAND",
-    subtitle: "The universal gate",
+    id: 'nand',
+    title: 'Everything starts with NAND',
+    subtitle: 'The universal gate',
     description:
       "A NAND gate outputs 0 only when both inputs are 1. That's it. From this simple rule, we can build an entire computer.",
-    hint: "Click the inputs to toggle them",
-    align: "right",
+    hint: 'Click the inputs to toggle them',
+    align: 'right',
     circuit: NandDemo,
   },
   {
-    id: "not",
-    title: "Two inputs, one wire",
-    subtitle: "Building NOT from NAND",
+    id: 'not',
+    title: 'Two inputs, one wire',
+    subtitle: 'Building NOT from NAND',
     description:
       "Connect both inputs of a NAND to the same signal. Now 1 becomes 0, and 0 becomes 1. We've built an inverter.",
-    align: "left",
+    align: 'left',
     circuit: NotDemo,
   },
   {
-    id: "and",
-    title: "Invert the NAND",
-    subtitle: "Building AND",
+    id: 'and',
+    title: 'Invert the NAND',
+    subtitle: 'Building AND',
     description:
-      "NAND gives us the opposite of AND. So put a NOT after it. Two NANDs working together give us AND logic.",
-    align: "right",
+      'NAND gives us the opposite of AND. So put a NOT after it. Two NANDs working together give us AND logic.',
+    align: 'right',
     circuit: AndDemo,
   },
   {
-    id: "or",
-    title: "Flip the logic",
-    subtitle: "Building OR",
+    id: 'or',
+    title: 'Flip the logic',
+    subtitle: 'Building OR',
     description:
-      "Invert each input, then NAND them together. Output is 1 when either input is 1. Three NANDs make an OR gate.",
-    align: "left",
+      'Invert each input, then NAND them together. Output is 1 when either input is 1. Three NANDs make an OR gate.',
+    align: 'left',
     circuit: OrDemo,
   },
   {
-    id: "xor",
-    title: "The odd one out",
-    subtitle: "Building XOR",
+    id: 'xor',
+    title: 'The odd one out',
+    subtitle: 'Building XOR',
     description:
       "XOR outputs 1 when inputs are different. It's trickier to build, but still just four NANDs arranged cleverly.",
-    align: "right",
+    align: 'right',
     circuit: XorDemo,
   },
   {
-    id: "half-adder",
-    title: "Now we can add",
-    subtitle: "The Half Adder",
+    id: 'half-adder',
+    title: 'Now we can add',
+    subtitle: 'The Half Adder',
     description:
-      "XOR tells us if the sum is odd. AND tells us if we need to carry. Together they add two bits. This is arithmetic.",
-    hint: "Try: 0+0=00, 0+1=01, 1+0=01, 1+1=10",
-    align: "left",
+      'XOR tells us if the sum is odd. AND tells us if we need to carry. Together they add two bits. This is arithmetic.',
+    hint: 'Try: 0+0=00, 0+1=01, 1+0=01, 1+1=10',
+    align: 'left',
     circuit: HalfAdderDemo,
   },
   {
-    id: "full-adder",
-    title: "Chain them together",
-    subtitle: "The Full Adder",
+    id: 'full-adder',
+    title: 'Chain them together',
+    subtitle: 'The Full Adder',
     description:
-      "A full adder takes a carry-in from the previous bit. Chain these together and you can add any size numbers.",
-    hint: "Three inputs: A, B, and Carry-in",
-    align: "right",
+      'A full adder takes a carry-in from the previous bit. Chain these together and you can add any size numbers.',
+    hint: 'Three inputs: A, B, and Carry-in',
+    align: 'right',
     circuit: FullAdderDemo,
   },
   {
-    id: "memory",
-    title: "Add memory",
-    subtitle: "The D Flip-Flop",
+    id: 'memory',
+    title: 'Add memory',
+    subtitle: 'The D Flip-Flop',
     description:
-      "So far, circuits forget immediately. A flip-flop remembers. On each clock tick, it captures the input and holds it until the next tick.",
-    hint: "Set input, then click Tick to capture",
-    align: "left",
+      'So far, circuits forget immediately. A flip-flop remembers. On each clock tick, it captures the input and holds it until the next tick.',
+    hint: 'Set input, then click Tick to capture',
+    align: 'left',
     circuit: MemoryDemo,
   },
 ];

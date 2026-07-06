@@ -1,10 +1,10 @@
-import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react";
-import tailwindcss from "@tailwindcss/vite";
-import { visualizer } from "rollup-plugin-visualizer";
-import { resolve } from "path";
+import tailwindcss from '@tailwindcss/vite';
+import react from '@vitejs/plugin-react';
+import { resolve } from 'path';
+import { visualizer } from 'rollup-plugin-visualizer';
+import { defineConfig } from 'vite';
 
-const isAnalyze = process.env.ANALYZE === "true";
+const isAnalyze = process.env.ANALYZE === 'true';
 
 /**
  * Vite config for building the web component bundle.
@@ -17,7 +17,7 @@ const isAnalyze = process.env.ANALYZE === "true";
  */
 export default defineConfig({
   resolve: {
-    dedupe: ["react", "react-dom"],
+    dedupe: ['react', 'react-dom'],
   },
   plugins: [
     tailwindcss(),
@@ -25,7 +25,7 @@ export default defineConfig({
     ...(isAnalyze
       ? [
           visualizer({
-            filename: "dist/bundle-stats.html",
+            filename: 'dist/bundle-stats.html',
             open: true,
             gzipSize: true,
             brotliSize: true,
@@ -34,25 +34,25 @@ export default defineConfig({
       : []),
   ],
   define: {
-    "process.env.NODE_ENV": JSON.stringify("production"),
-    "process.env": JSON.stringify({}),
+    'process.env.NODE_ENV': JSON.stringify('production'),
+    'process.env': JSON.stringify({}),
   },
   build: {
     lib: {
-      entry: resolve(__dirname, "src/webcomponent/index.ts"),
-      formats: ["iife"],
-      name: "SimtenEmbed",
-      fileName: () => "circuit-embed.js",
+      entry: resolve(__dirname, 'src/webcomponent/index.ts'),
+      formats: ['iife'],
+      name: 'SimtenEmbed',
+      fileName: () => 'circuit-embed.js',
     },
-    outDir: "dist",
+    outDir: 'dist',
     emptyOutDir: false,
-    minify: "esbuild",
+    minify: 'esbuild',
     sourcemap: false,
     cssCodeSplit: false,
     cssMinify: true,
     rollupOptions: {
       output: {
-        assetFileNames: "styles[extname]",
+        assetFileNames: 'styles[extname]',
       },
     },
   },

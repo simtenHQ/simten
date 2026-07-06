@@ -1,5 +1,5 @@
-import { CircuitEmbed } from "@simten/embed";
-import { ADDER_CIRCUITS } from "../circuits";
+import { CircuitEmbed } from '@simten/embed';
+import { ADDER_CIRCUITS } from '../circuits';
 
 export function DepthSection() {
   const entry = ADDER_CIRCUITS.depth;
@@ -16,18 +16,17 @@ export function DepthSection() {
             clock speed (longest combinational path) and why an N-bit
             ripple-carry adder has depth proportional to N. */}
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
-          Every gate takes some real, physical time to switch. The clock speed
-          of a chip is bounded by the <strong>longest combinational path</strong>{" "}
-          between any two registers &mdash; whatever signal has to travel
-          farthest sets the upper limit on how fast the clock can tick.
+          Every gate takes some real, physical time to switch. The clock speed of a chip is bounded
+          by the <strong>longest combinational path</strong> between any two registers &mdash;
+          whatever signal has to travel farthest sets the upper limit on how fast the clock can
+          tick.
         </p>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
-          In a ripple-carry adder, the high-bit's sum can't settle until the
-          carry has propagated all the way from bit 0 through every
-          intermediate stage. An 8-bit adder needs the carry to traverse eight
-          full-adders before the answer is valid. A 64-bit adder needs 64.
-          Depth grows linearly with width &mdash; a problem that gets worse
-          exactly as your inputs get wider.
+          In a ripple-carry adder, the high-bit's sum can't settle until the carry has propagated
+          all the way from bit 0 through every intermediate stage. An 8-bit adder needs the carry to
+          traverse eight full-adders before the answer is valid. A 64-bit adder needs 64. Depth
+          grows linearly with width &mdash; a problem that gets worse exactly as your inputs get
+          wider.
         </p>
       </div>
 

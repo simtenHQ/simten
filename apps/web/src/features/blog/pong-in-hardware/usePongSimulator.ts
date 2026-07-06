@@ -1,6 +1,6 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { useCircuitSimulator } from "@simten/embed";
-import { PongSimple } from "./circuits";
+import { useCircuitSimulator } from '@simten/embed';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { PongSimple } from './circuits';
 
 export function usePongSimulator() {
   const sim = useCircuitSimulator(PongSimple);
@@ -13,13 +13,7 @@ export function usePongSimulator() {
   const nodeIds = useMemo(() => {
     const map: Record<string, string> = {};
     if (!sim.circuit?.nodes) return map;
-    const names = [
-      "keyboard0",
-      "keyboard1",
-      "phaseEnable",
-      "updateEnable",
-      "writeEnable",
-    ];
+    const names = ['keyboard0', 'keyboard1', 'phaseEnable', 'updateEnable', 'writeEnable'];
     for (const node of sim.circuit.nodes) {
       for (const name of names) {
         if (node.label === name || node.id === name) {
@@ -64,19 +58,19 @@ export function usePongSimulator() {
 
     const handleKeyDown = (e: KeyboardEvent) => {
       switch (e.key) {
-        case "w":
-        case "W":
+        case 'w':
+        case 'W':
           sendLeftDirection(17);
           break;
-        case "s":
-        case "S":
+        case 's':
+        case 'S':
           sendLeftDirection(31);
           break;
-        case "ArrowUp":
+        case 'ArrowUp':
           e.preventDefault();
           sendRightDirection(72);
           break;
-        case "ArrowDown":
+        case 'ArrowDown':
           e.preventDefault();
           sendRightDirection(80);
           break;
@@ -85,24 +79,24 @@ export function usePongSimulator() {
 
     const handleKeyUp = (e: KeyboardEvent) => {
       switch (e.key) {
-        case "w":
-        case "W":
-        case "s":
-        case "S":
+        case 'w':
+        case 'W':
+        case 's':
+        case 'S':
           sendLeftDirection(0);
           break;
-        case "ArrowUp":
-        case "ArrowDown":
+        case 'ArrowUp':
+        case 'ArrowDown':
           sendRightDirection(0);
           break;
       }
     };
 
-    window.addEventListener("keydown", handleKeyDown);
-    window.addEventListener("keyup", handleKeyUp);
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
     return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-      window.removeEventListener("keyup", handleKeyUp);
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
     };
   }, [sim.ready, sendLeftDirection, sendRightDirection]);
 

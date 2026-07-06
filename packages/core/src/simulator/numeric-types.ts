@@ -87,11 +87,13 @@ export const PRIMITIVE_TYPE_INDICES: Record<string, number> = {
 /**
  * Reverse mapping from index to primitive name (for debugging)
  */
-export const PRIMITIVE_INDEX_TO_NAME: string[] = Object.entries(PRIMITIVE_TYPE_INDICES)
-  .reduce((arr, [name, idx]) => {
+export const PRIMITIVE_INDEX_TO_NAME: string[] = Object.entries(PRIMITIVE_TYPE_INDICES).reduce(
+  (arr, [name, idx]) => {
     arr[idx] = name;
     return arr;
-  }, [] as string[]);
+  },
+  [] as string[],
+);
 
 /**
  * Compiled numeric circuit for fast simulation.

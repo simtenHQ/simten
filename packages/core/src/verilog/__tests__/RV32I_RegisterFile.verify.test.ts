@@ -13,14 +13,14 @@
  * read cycle.
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
+import { bit, bus, circuit } from '../../circuit/index.js';
+import { createSimulatorFromCircuit } from '../../simulator/index.js';
+import { RV32I_RegisterFile } from '../../std/index.js';
+import type { CircuitLibrary } from '../../types/circuit.js';
 import { exportVerilog } from '../exporter.js';
 import { generateSequentialTestbench, type SequentialTestVector } from '../testbench-gen.js';
-import { circuit, bit, bus } from '../../circuit/index.js';
-import { RV32I_RegisterFile } from '../../std/index.js';
-import { createSimulatorFromCircuit } from '../../simulator/index.js';
-import type { CircuitLibrary } from '../../types/circuit.js';
-import { verifyVerilog, hasVerifier } from './verify.js';
+import { hasVerifier, verifyVerilog } from './verify.js';
 
 interface Step {
   rs1: number;
@@ -36,13 +36,13 @@ interface Step {
 //   Cycle 4: try writing to x0 (should be ignored)
 //   Cycles 5-8: read back each register via rs1 AND debug_rs in parallel
 const SEQUENCE: Step[] = [
-  { rs1: 0, rs2: 0, rd: 1,  write_data: 0xAAAAAAAA, we: 1, debug_rs: 0 },
-  { rs1: 0, rs2: 0, rd: 5,  write_data: 0xBEEF0000, we: 1, debug_rs: 0 },
-  { rs1: 0, rs2: 0, rd: 31, write_data: 0xDEADBEEF, we: 1, debug_rs: 0 },
-  { rs1: 0, rs2: 0, rd: 0,  write_data: 0xFFFFFFFF, we: 1, debug_rs: 0 }, // write to x0 — ignored
+  { rs1: 0, rs2: 0, rd: 1, write_data: 0xaaaaaaaa, we: 1, debug_rs: 0 },
+  { rs1: 0, rs2: 0, rd: 5, write_data: 0xbeef0000, we: 1, debug_rs: 0 },
+  { rs1: 0, rs2: 0, rd: 31, write_data: 0xdeadbeef, we: 1, debug_rs: 0 },
+  { rs1: 0, rs2: 0, rd: 0, write_data: 0xffffffff, we: 1, debug_rs: 0 }, // write to x0 — ignored
   { rs1: 1, rs2: 31, rd: 0, write_data: 0, we: 0, debug_rs: 5 },
-  { rs1: 5, rs2: 1,  rd: 0, write_data: 0, we: 0, debug_rs: 31 },
-  { rs1: 0, rs2: 0,  rd: 0, write_data: 0, we: 0, debug_rs: 0 }, // x0 via every port
+  { rs1: 5, rs2: 1, rd: 0, write_data: 0, we: 0, debug_rs: 31 },
+  { rs1: 0, rs2: 0, rd: 0, write_data: 0, we: 0, debug_rs: 0 }, // x0 via every port
   { rs1: 31, rs2: 5, rd: 0, write_data: 0, we: 0, debug_rs: 1 },
 ];
 
@@ -77,9 +77,11 @@ function buildRegfile() {
 
   const lib: CircuitLibrary = {
     resolveCircuit: (name) =>
-      name === 'RegFileWrapper' ? RegFileWrapper.circuit :
-      name === 'RV32I_RegisterFile' ? RV32I_RegisterFile.circuit :
-      undefined,
+      name === 'RegFileWrapper'
+        ? RegFileWrapper.circuit
+        : name === 'RV32I_RegisterFile'
+          ? RV32I_RegisterFile.circuit
+          : undefined,
     getAllPrimitiveNames: () => ['RV32I_RegisterFile'],
   };
 
@@ -107,7 +109,7 @@ function runSimulator(steps: Step[]): SampleOut[] {
     const pv = sim.getPortValues();
     const pick = (name: string) => {
       const v = pv.get(`__top__.${name}`);
-      return typeof v === 'number' ? (v >>> 0) : 0;
+      return typeof v === 'number' ? v >>> 0 : 0;
     };
     outputs.push({
       read1: pick('read1'),
@@ -136,7 +138,9 @@ function buildVectors(steps: Step[]): SequentialTestVector[] {
 const d = describe.skipIf(!hasVerifier());
 
 d('RV32I_RegisterFile — JS simulator vs iverilog co-simulation', () => {
-  it('x0 reads zero; writes visible next cycle; debug_read matches rs-port reads', { timeout: 30000 }, async () => {
+  it('x0 reads zero; writes visible next cycle; debug_read matches rs-port reads', {
+    timeout: 30000,
+  }, async () => {
     const simOutputs = runSimulator(SEQUENCE);
 
     // Extra sanity: x0 reads must always be 0, even after we wrote 0xFF
@@ -162,12 +166,12 @@ d('RV32I_RegisterFile — JS simulator vs iverilog co-simulation', () => {
     expect(result.results).toBeDefined();
     expect(result.results!.length).toBe(SEQUENCE.length);
 
-    const veriOutputs = result.results!
-      .sort((a, b) => a.testCase - b.testCase)
+    const veriOutputs = result
+      .results!.sort((a, b) => a.testCase - b.testCase)
       .map((r) => ({
-        read1: (r.outputs.read1 >>> 0),
-        read2: (r.outputs.read2 >>> 0),
-        debug_read: (r.outputs.debug_read >>> 0),
+        read1: r.outputs.read1 >>> 0,
+        read2: r.outputs.read2 >>> 0,
+        debug_read: r.outputs.debug_read >>> 0,
       }));
 
     expect(veriOutputs).toEqual(simOutputs);

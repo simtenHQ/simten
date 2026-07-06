@@ -12,10 +12,10 @@
  */
 
 import type { Circuit, PortType } from '../types/circuit.js';
-import type { VerilogTestbenchOptions, TestVector } from './types.js';
+import type { TestVector, VerilogTestbenchOptions } from './types.js';
 
 function sanitizeId(id: string): string {
-  return id.replace(/[.\-]/g, '_').replace(/[^a-zA-Z0-9_]/g, '');
+  return id.replace(/[.-]/g, '_').replace(/[^a-zA-Z0-9_]/g, '');
 }
 
 function portWidth(pt: PortType): number {
@@ -145,7 +145,7 @@ export function generateTestbench(
 
     // Set inputs
     for (const [name, value] of Object.entries(tv.inputs)) {
-      const inputDef = circuit.inputs.find(i => i.name === name);
+      const inputDef = circuit.inputs.find((i) => i.name === name);
       const w = inputDef ? portWidth(inputDef.portType) : 1;
       lines.push(`    ${name} = ${formatValue(value, w)};`);
     }

@@ -27,7 +27,8 @@ import { defineConfig } from 'vite';
 // Dev caveat: this tightens dev to match prod. If Vite's HMR error overlay
 // breaks (it uses inline styles which `default-src 'none'` blocks), comment
 // out the headers blocks below temporarily — errors still appear in the console.
-const CSP = "default-src 'none'; script-src 'self' 'unsafe-eval' blob: https://esm.sh; connect-src 'self' https://esm.sh; worker-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none';";
+const CSP =
+  "default-src 'none'; script-src 'self' 'unsafe-eval' blob: https://esm.sh; connect-src 'self' https://esm.sh; worker-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none';";
 
 export default defineConfig({
   server: {

@@ -8,8 +8,8 @@
 import type { CircuitLibrary } from '../types/circuit.js';
 import type { FlatCircuit, PrimitiveState } from '../types/simulator.js';
 import { TOP_LEVEL_NODE } from '../types/simulator.js';
-import type { NumericCircuit, NumericSequentialState } from './numeric-types.js';
 import { ensureEvaluatorRegistered } from './eval-bridge.js';
+import type { NumericCircuit, NumericSequentialState } from './numeric-types.js';
 
 /**
  * Compile a FlatCircuit to a NumericCircuit for fast simulation.
@@ -20,7 +20,7 @@ import { ensureEvaluatorRegistered } from './eval-bridge.js';
  */
 export function compileForSimulation(
   flatCircuit: FlatCircuit,
-  library: CircuitLibrary
+  library: CircuitLibrary,
 ): NumericCircuit {
   const nodeCount = flatCircuit.nodes.length;
 
@@ -164,7 +164,7 @@ export function compileForSimulation(
   for (let i = 0; i < nodeCount; i++) {
     const node = flatCircuit.nodes[i];
     const deps = node.dependents
-      .map(depId => nodeIdToIndex.get(depId))
+      .map((depId) => nodeIdToIndex.get(depId))
       .filter((idx): idx is number => idx !== undefined);
     dependents[i] = new Uint32Array(deps);
   }
@@ -186,7 +186,7 @@ export function compileForSimulation(
 
     for (let i = 0; i < node.inputSources.length; i++) {
       const src = node.inputSources[i];
-      const inputIdx = node.inputs.findIndex(p => p.name === src.portName);
+      const inputIdx = node.inputs.findIndex((p) => p.name === src.portName);
       if (inputIdx === -1) continue;
 
       const portIdx = portStart + inputIdx;
@@ -203,7 +203,7 @@ export function compileForSimulation(
         if (srcNodeIdx === undefined) continue;
 
         const srcNode = flatCircuit.nodes[srcNodeIdx];
-        const srcPortIdx = srcNode.outputs.findIndex(p => p.name === src.sourcePortName);
+        const srcPortIdx = srcNode.outputs.findIndex((p) => p.name === src.sourcePortName);
         if (srcPortIdx === -1) continue;
 
         inputSourceNode[portIdx] = srcNodeIdx;
@@ -278,7 +278,12 @@ export function compileForSimulation(
  */
 export function createNumericSequentialState(
   circuit: NumericCircuit,
-  flatState: { currentState: Map<string, PrimitiveState>; nextState: Map<string, PrimitiveState>; clocks: Map<string, { value: boolean; edge: 'rising' | 'falling' | 'none' }>; cycleCount: number }
+  flatState: {
+    currentState: Map<string, PrimitiveState>;
+    nextState: Map<string, PrimitiveState>;
+    clocks: Map<string, { value: boolean; edge: 'rising' | 'falling' | 'none' }>;
+    cycleCount: number;
+  },
 ): NumericSequentialState {
   const currentState: (PrimitiveState | undefined)[] = new Array(circuit.nodeCount);
   const nextState: (PrimitiveState | undefined)[] = new Array(circuit.nodeCount);
@@ -311,8 +316,13 @@ export function createNumericSequentialState(
  */
 export function toFlatSequentialState(
   circuit: NumericCircuit,
-  numericState: NumericSequentialState
-): { currentState: Map<string, PrimitiveState>; nextState: Map<string, PrimitiveState>; clocks: Map<string, { value: boolean; edge: 'rising' | 'falling' | 'none' }>; cycleCount: number } {
+  numericState: NumericSequentialState,
+): {
+  currentState: Map<string, PrimitiveState>;
+  nextState: Map<string, PrimitiveState>;
+  clocks: Map<string, { value: boolean; edge: 'rising' | 'falling' | 'none' }>;
+  cycleCount: number;
+} {
   const currentState = new Map<string, PrimitiveState>();
   const nextState = new Map<string, PrimitiveState>();
 

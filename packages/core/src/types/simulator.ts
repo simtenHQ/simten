@@ -11,16 +11,13 @@ import type {
   ArgumentValue,
   BitValue,
   BusValue,
-  ClockInstance,
   CircuitLibrary,
+  ClockInstance,
   PortDescriptor,
   PortInstance,
   PortPath,
   PortType,
 } from './circuit.js';
-
-// Re-export TOP_LEVEL_NODE so consumers can import it from either file.
-export { TOP_LEVEL_NODE } from './circuit.js';
 
 // Re-export the types that simulator consumers typically need alongside the
 // engine interface, so they can import everything from one place.
@@ -28,13 +25,15 @@ export type {
   ArgumentValue,
   BitValue,
   BusValue,
-  ClockInstance,
   CircuitLibrary,
+  ClockInstance,
   PortDescriptor,
   PortInstance,
   PortPath,
   PortType,
 } from './circuit.js';
+// Re-export TOP_LEVEL_NODE so consumers can import it from either file.
+export { TOP_LEVEL_NODE } from './circuit.js';
 
 // ============================================================================
 // Sequential Port Classification
@@ -46,14 +45,14 @@ export type {
  * Used by both cycle detection (structural.ts) and topological sort (elaboration.ts).
  */
 export const SEQUENTIAL_INPUT_PORTS = new Set([
-  'd',        // DFlipFlop data input
-  'data',     // Generic data input
-  'data_in',  // RAM/ROM data input
-  'dataA',    // DualPortRAM write data A
-  'dataB',    // DualPortRAM write data B
-  'we',       // Write enable
-  'weA',      // DualPortRAM write enable A
-  'weB',      // DualPortRAM write enable B
+  'd', // DFlipFlop data input
+  'data', // Generic data input
+  'data_in', // RAM/ROM data input
+  'dataA', // DualPortRAM write data A
+  'dataB', // DualPortRAM write data B
+  'we', // Write enable
+  'weA', // DualPortRAM write enable A
+  'weB', // DualPortRAM write enable B
 ]);
 
 // ============================================================================

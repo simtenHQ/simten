@@ -1,4 +1,3 @@
-
 import { BaseNode } from './BaseNode';
 import type { NodeData } from './NodeData';
 
@@ -17,7 +16,11 @@ export function RasterDisplayNode({ data, selected }: RasterDisplayNodeProps) {
     <BaseNode
       selected={selected}
       inputPorts={data.inputNames.map((name, index) => ({ name, index, type: 'input' as const }))}
-      outputPorts={data.outputNames.map((name, index) => ({ name, index, type: 'output' as const }))}
+      outputPorts={data.outputNames.map((name, index) => ({
+        name,
+        index,
+        type: 'output' as const,
+      }))}
       className="min-w-[160px]"
       showPortLabels={data.showPortLabels}
       onPortClick={data.onPortClick}
@@ -48,9 +51,7 @@ export function RasterDisplayNode({ data, selected }: RasterDisplayNodeProps) {
             );
           })}
         </svg>
-        <div className="text-xs text-[var(--embed-text-secondary)]">
-          8&times;8 raster scan
-        </div>
+        <div className="text-xs text-[var(--embed-text-secondary)]">8&times;8 raster scan</div>
       </div>
     </BaseNode>
   );

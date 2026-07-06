@@ -6,8 +6,8 @@
  * (eval-synth extension — tested separately).
  */
 
-import { describe, it, expect } from 'vitest';
-import { circuit, bit, bus, reg, mem } from '../index.js';
+import { describe, expect, it } from 'vitest';
+import { bit, bus, circuit, mem, reg } from '../index.js';
 
 // ── reg() and mem() helpers ──────────────────────────────────────────────
 
@@ -42,7 +42,10 @@ describe('mem() helper', () => {
   });
 
   it('accepts initial data', () => {
-    const init = new Map([[0, 42], [1, 99]]);
+    const init = new Map([
+      [0, 42],
+      [1, 99],
+    ]);
     const m = mem(256, 8, init);
     expect(m.initial.get(0)).toBe(42);
     expect(m.initial.get(1)).toBe(99);

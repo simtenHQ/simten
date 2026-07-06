@@ -6,9 +6,9 @@
  * - circuit: The actual BuiltCircuit for simulation
  */
 
-import { circuit, bit } from "@simten/core/circuit";
-import type { BuiltCircuit } from "@simten/core/circuit";
-import { Nand, Not, And, Or, Xor, DFlipFlop } from "@simten/core/std";
+import type { BuiltCircuit } from '@simten/core/circuit';
+import { bit, circuit } from '@simten/core/circuit';
+import { And, DFlipFlop, Nand, Not, Or, Xor } from '@simten/core/std';
 
 export interface CircuitDefinition {
   name: string;
@@ -124,8 +124,8 @@ export const DelayLine = circuit('DelayLine', {
 
 export const CIRCUITS: Record<string, CircuitDefinition> = {
   inverter: {
-    name: "NOT Gate",
-    description: "Inverts the input signal",
+    name: 'NOT Gate',
+    description: 'Inverts the input signal',
     displayCode: `const NotGate = circuit('NotGate', {
   inputs: { a: bit },
   outputs: { out: bit },
@@ -139,8 +139,8 @@ export const CIRCUITS: Record<string, CircuitDefinition> = {
   },
 
   and: {
-    name: "AND Gate",
-    description: "Output is 1 only when both inputs are 1",
+    name: 'AND Gate',
+    description: 'Output is 1 only when both inputs are 1',
     displayCode: `const AndGate = circuit('AndGate', {
   inputs: { a: bit, b: bit },
   outputs: { out: bit },
@@ -156,8 +156,8 @@ export const CIRCUITS: Record<string, CircuitDefinition> = {
   },
 
   or: {
-    name: "OR Gate",
-    description: "Output is 1 when either input is 1",
+    name: 'OR Gate',
+    description: 'Output is 1 when either input is 1',
     displayCode: `const OrGate = circuit('OrGate', {
   inputs: { a: bit, b: bit },
   outputs: { out: bit },
@@ -174,8 +174,8 @@ export const CIRCUITS: Record<string, CircuitDefinition> = {
   },
 
   xor: {
-    name: "XOR Gate",
-    description: "Output is 1 when inputs are different",
+    name: 'XOR Gate',
+    description: 'Output is 1 when inputs are different',
     displayCode: `const XorGate = circuit('XorGate', {
   inputs: { a: bit, b: bit },
   outputs: { out: bit },
@@ -193,8 +193,8 @@ export const CIRCUITS: Record<string, CircuitDefinition> = {
   },
 
   halfAdder: {
-    name: "Half Adder",
-    description: "Adds two bits, outputs sum and carry",
+    name: 'Half Adder',
+    description: 'Adds two bits, outputs sum and carry',
     displayCode: `const HalfAdder = circuit('HalfAdder', {
   inputs: { a: bit, b: bit },
   outputs: { sum: bit, carry: bit },
@@ -210,8 +210,8 @@ export const CIRCUITS: Record<string, CircuitDefinition> = {
   },
 
   fullAdder: {
-    name: "Full Adder",
-    description: "Adds three bits (a, b, carry-in)",
+    name: 'Full Adder',
+    description: 'Adds three bits (a, b, carry-in)',
     displayCode: `const FullAdder = circuit('FullAdder', {
   inputs: { a: bit, b: bit, cin: bit },
   outputs: { sum: bit, cout: bit },
@@ -231,8 +231,8 @@ export const CIRCUITS: Record<string, CircuitDefinition> = {
   },
 
   mux: {
-    name: "Multiplexer",
-    description: "sel=0 picks a, sel=1 picks b",
+    name: 'Multiplexer',
+    description: 'sel=0 picks a, sel=1 picks b',
     displayCode: `const MuxGate = circuit('MuxGate', {
   inputs: { a: bit, b: bit, sel: bit },
   outputs: { out: bit },
@@ -251,8 +251,8 @@ export const CIRCUITS: Record<string, CircuitDefinition> = {
   },
 
   delayLine: {
-    name: "2-Cycle Delay",
-    description: "Data takes 2 clock ticks to reach output",
+    name: '2-Cycle Delay',
+    description: 'Data takes 2 clock ticks to reach output',
     displayCode: `const DelayLine = circuit('DelayLine', {
   inputs: { d: bit },
   outputs: { q1: bit, q2: bit },

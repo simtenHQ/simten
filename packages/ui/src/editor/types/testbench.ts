@@ -10,7 +10,7 @@
  * - Future-proof for multi-clock and assertions
  */
 
-import { BitValue, BusValue, Circuit } from './circuit';
+import type { BitValue, BusValue, Circuit } from './circuit';
 
 // ============================================================================
 // Testbench (Top Level)
@@ -161,7 +161,7 @@ export function createStimulusSchedule(clockRef: string): StimulusSchedule {
 export function addStimulusAction(
   schedule: StimulusSchedule,
   cycle: number,
-  action: StimulusAction
+  action: StimulusAction,
 ): void {
   if (!schedule.events.has(cycle)) {
     schedule.events.set(cycle, []);
@@ -172,10 +172,7 @@ export function addStimulusAction(
 /**
  * Get stimulus actions for a cycle
  */
-export function getStimulusActions(
-  schedule: StimulusSchedule,
-  cycle: number
-): StimulusAction[] {
+export function getStimulusActions(schedule: StimulusSchedule, cycle: number): StimulusAction[] {
   return schedule.events.get(cycle) || [];
 }
 
@@ -202,24 +199,24 @@ export function createTestbenchState(): TestbenchState {
  * Check if testbench has passed all assertions
  */
 export function hasPassed(state: TestbenchState): boolean {
-  return state.status === 'passed' ||
-    (state.assertionResults.length > 0 &&
-     state.assertionResults.every(r => r.passed));
+  return (
+    state.status === 'passed' ||
+    (state.assertionResults.length > 0 && state.assertionResults.every((r) => r.passed))
+  );
 }
 
 /**
  * Check if testbench has failed any assertions
  */
 export function hasFailed(state: TestbenchState): boolean {
-  return state.status === 'failed' ||
-    state.assertionResults.some(r => !r.passed);
+  return state.status === 'failed' || state.assertionResults.some((r) => !r.passed);
 }
 
 /**
  * Get all failed assertions
  */
 export function getFailedAssertions(state: TestbenchState): AssertionResult[] {
-  return state.assertionResults.filter(r => !r.passed);
+  return state.assertionResults.filter((r) => !r.passed);
 }
 
 /**

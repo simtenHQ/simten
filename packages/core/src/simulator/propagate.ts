@@ -8,12 +8,12 @@
 import type { BitValue, BusValue } from '../types/circuit.js';
 import type { FlatPortValueMap, PrimitiveState } from '../types/simulator.js';
 import { TOP_LEVEL_NODE } from '../types/simulator.js';
+import { getOnTickFunction } from './eval-bridge.js';
+import { EVALUATORS, type EvalContext } from './evaluators/index.js';
+import type { NumericEventQueue } from './numeric-event-queue.js';
 import type { NumericCircuit, NumericSequentialState } from './numeric-types.js';
 import type { NumericPortValues } from './numeric-values.js';
-import { NumericEventQueue } from './numeric-event-queue.js';
-import { getOnTickFunction } from './eval-bridge.js';
 import type { ClockEdges } from './primitive-interface.js';
-import { EVALUATORS, type EvalContext } from './evaluators/index.js';
 
 /** Maximum iterations before assuming unstable feedback loop */
 const MAX_PROPAGATION_ITERATIONS = 10000;
@@ -66,7 +66,7 @@ export function propagate(
   queue: NumericEventQueue,
   values: NumericPortValues,
   seqState: NumericSequentialState | undefined,
-  topLevelInputs?: FlatPortValueMap
+  topLevelInputs?: FlatPortValueMap,
 ): number {
   let evalCount = 0;
   let changedCount = 0;
@@ -101,7 +101,7 @@ export function propagate(
     if (++evalCount > MAX_PROPAGATION_ITERATIONS) {
       throw new Error(
         `Propagation did not stabilize after ${MAX_PROPAGATION_ITERATIONS} iterations. ` +
-        `Possible unstable feedback loop in circuit.`
+          `Possible unstable feedback loop in circuit.`,
       );
     }
 
@@ -150,10 +150,7 @@ export function propagate(
     let anyChanged = false;
     for (let i = 0; i < outputCount; i++) {
       const idx = outputStart + i;
-      if (
-        values.values[idx] !== oldValues[i] ||
-        (values.initialized[idx] && !wasInitialized[i])
-      ) {
+      if (values.values[idx] !== oldValues[i] || (values.initialized[idx] && !wasInitialized[i])) {
         anyChanged = true;
         break;
       }
@@ -181,7 +178,7 @@ function evaluateNodeFallback(
   nodeIndex: number,
   values: NumericPortValues,
   _seqState: NumericSequentialState | undefined,
-  _topLevelInputs: FlatPortValueMap | undefined
+  _topLevelInputs: FlatPortValueMap | undefined,
 ): void {
   const node = circuit.flatCircuit.nodes[nodeIndex];
   void values;
@@ -194,21 +191,20 @@ function evaluateNodeFallback(
   // silently zeroing outputs and producing nonsense state.
   throw new Error(
     `Primitive '${node.primitiveType}' has no registered evaluator. ` +
-    `Either import '@simten/core/std' to register the standard library, ` +
-    `or register the primitive's eval lambda explicitly via registerEvalFunction(). ` +
-    `If you constructed a Circuit IR by hand (rather than via circuit()), ` +
-    `you must register its evaluator yourself.`
+      `Either import '@simten/core/std' to register the standard library, ` +
+      `or register the primitive's eval lambda explicitly via registerEvalFunction(). ` +
+      `If you constructed a Circuit IR by hand (rather than via circuit()), ` +
+      `you must register its evaluator yourself.`,
   );
 }
 
 /**
  * Seed the event queue with initial nodes for full evaluation.
  */
-export function seedInitialQueue(
-  circuit: NumericCircuit,
-  queue: NumericEventQueue
-): void {
-  let sourceCount = 0, stateOutputCount = 0, topLevelCount = 0;
+export function seedInitialQueue(circuit: NumericCircuit, queue: NumericEventQueue): void {
+  let sourceCount = 0,
+    stateOutputCount = 0,
+    topLevelCount = 0;
   for (let i = 0; i < circuit.nodeCount; i++) {
     if (circuit.isSourceNode[i] || circuit.isStateOutputNode[i] || circuit.readsTopLevelInput[i]) {
       queue.enqueue(i);
@@ -218,17 +214,16 @@ export function seedInitialQueue(
     }
   }
   if (DEBUG_STATE_UPDATE) {
-    console.log(`[seedInitialQueue] Seeded ${queue.size()} nodes (source=${sourceCount}, stateOutput=${stateOutputCount}, topLevel=${topLevelCount})`);
+    console.log(
+      `[seedInitialQueue] Seeded ${queue.size()} nodes (source=${sourceCount}, stateOutput=${stateOutputCount}, topLevel=${topLevelCount})`,
+    );
   }
 }
 
 /**
  * Seed the event queue with state-output nodes only.
  */
-export function seedStateOutputNodes(
-  circuit: NumericCircuit,
-  queue: NumericEventQueue
-): void {
+export function seedStateOutputNodes(circuit: NumericCircuit, queue: NumericEventQueue): void {
   for (let i = 0; i < circuit.nodeCount; i++) {
     if (circuit.isStateOutputNode[i]) {
       queue.enqueue(i);
@@ -241,7 +236,7 @@ export function seedStateOutputNodes(
  */
 export function updateClockStates(
   _circuit: NumericCircuit,
-  seqState: NumericSequentialState
+  seqState: NumericSequentialState,
 ): void {
   for (const [_clockKey, clockState] of seqState.clocks) {
     clockState.edge = 'rising';
@@ -262,7 +257,7 @@ export function updateSequentialStates(
   circuit: NumericCircuit,
   values: NumericPortValues,
   seqState: NumericSequentialState,
-  topLevelInputs?: FlatPortValueMap
+  topLevelInputs?: FlatPortValueMap,
 ): void {
   for (let nodeIdx = 0; nodeIdx < circuit.nodeCount; nodeIdx++) {
     if (!circuit.hasState[nodeIdx]) continue;
@@ -295,7 +290,12 @@ export function updateSequentialStates(
         inputs.set(portName, value);
 
         // Debug logging
-        if (DEBUG_STATE_UPDATE && node.id.includes('pc_lo') && !node.id.includes('temp') && portName === 'data') {
+        if (
+          DEBUG_STATE_UPDATE &&
+          node.id.includes('pc_lo') &&
+          !node.id.includes('temp') &&
+          portName === 'data'
+        ) {
           const srcKey = circuit.indexToPortKey[srcPortIdx];
           console.log(`  [data input] srcPortIdx=${srcPortIdx}, srcKey=${srcKey}, value=${value}`);
         }
@@ -323,7 +323,11 @@ export function updateSequentialStates(
     const currentState = seqState.currentState[nodeIdx];
     const obj: Record<string, any> = {};
     for (const [k, v] of inputs) obj[k] = v;
-    if (currentState != null && typeof currentState === 'object' && !(currentState instanceof Map)) {
+    if (
+      currentState != null &&
+      typeof currentState === 'object' &&
+      !(currentState instanceof Map)
+    ) {
       for (const key of onTick.stateKeys) obj[key] = (currentState as any)[key];
     } else if (currentState != null && onTick.stateKeys.length === 1) {
       // Wrap Map in Proxy for array-indexable access in onTick: memory[addr] = value
@@ -334,7 +338,8 @@ export function updateSequentialStates(
       }
     }
     const result = onTick.fn(obj);
-    let nextState: PrimitiveState = onTick.stateKeys.length === 1 ? result[onTick.stateKeys[0]] : result;
+    let nextState: PrimitiveState =
+      onTick.stateKeys.length === 1 ? result[onTick.stateKeys[0]] : result;
     // Unwrap Proxy back to Map if needed
     if (nextState != null && typeof nextState === 'object' && PROXY_TO_MAP.has(nextState)) {
       nextState = PROXY_TO_MAP.get(nextState)!;
@@ -369,7 +374,7 @@ export function commitSequentialState(seqState: NumericSequentialState): void {
 export function toFlatPortValueMap(
   circuit: NumericCircuit,
   values: NumericPortValues,
-  topLevelInputs?: FlatPortValueMap
+  topLevelInputs?: FlatPortValueMap,
 ): Map<string, BitValue | BusValue> {
   const result = new Map<string, BitValue | BusValue>();
 
@@ -416,7 +421,7 @@ export function toFlatPortValueMap(
     // Return boolean for true 1-bit values, number for multi-bit values
     // If value > 1 or < 0, it needs more than 1 bit, so return as number
     const needsMultiBit = numVal > 1 || numVal < 0;
-    result.set(key, (isBit && !needsMultiBit) ? (numVal !== 0) : numVal);
+    result.set(key, isBit && !needsMultiBit ? numVal !== 0 : numVal);
   }
 
   return result;
@@ -428,7 +433,7 @@ export function toFlatPortValueMap(
 export function fromFlatPortValueMap(
   circuit: NumericCircuit,
   values: NumericPortValues,
-  flatValues: FlatPortValueMap
+  flatValues: FlatPortValueMap,
 ): void {
   for (const [key, value] of flatValues) {
     const portIdx = circuit.portKeyToIndex.get(key);
@@ -448,7 +453,7 @@ export function fromFlatPortValueMap(
 export function propagateToTopLevelOutputs(
   circuit: NumericCircuit,
   values: NumericPortValues,
-  result: Map<string, BitValue | BusValue>
+  result: Map<string, BitValue | BusValue>,
 ): void {
   for (const conn of circuit.flatCircuit.connections) {
     if (conn.target.nodeId === TOP_LEVEL_NODE || conn.target.nodeId === '') {
@@ -458,7 +463,7 @@ export function propagateToTopLevelOutputs(
         const targetKey = `${conn.target.nodeId || TOP_LEVEL_NODE}.${conn.target.portName}`;
         const isBit = circuit.portIsBus[sourcePortIdx] === 0;
         const numVal = values.values[sourcePortIdx];
-        result.set(targetKey, isBit ? (numVal !== 0) : numVal);
+        result.set(targetKey, isBit ? numVal !== 0 : numVal);
       }
     }
   }

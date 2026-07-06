@@ -1,19 +1,16 @@
 {
-	"compilerOptions": {
-		"target": "es2024",
-		"module": "esnext",
-		"moduleResolution": "bundler",
-		"strict": true,
-		"esModuleInterop": true,
-		"skipLibCheck": true,
-		"noEmit": true,
-		"isolatedModules": true,
-		"resolveJsonModule": true
-	},
-	"references": [
-		{ "path": "./packages/core" },
-		{ "path": "./apps/web" }
-	],
-	"include": [],
-	"exclude": ["node_modules"]
+  "compilerOptions": {
+    "target": "es2024",
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "noEmit": true,
+    "isolatedModules": true,
+    "resolveJsonModule": true
+  },
+  "references": [{ "path": "./packages/core" }, { "path": "./apps/web" }],
+  "include": [],
+  "exclude": ["node_modules"]
 }

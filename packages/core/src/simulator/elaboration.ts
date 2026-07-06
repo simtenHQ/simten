@@ -11,18 +11,9 @@
  * - Eliminates runtime composite evaluation complexity
  */
 
-import type {
-  Circuit,
-  PortPath,
-  CircuitLibrary,
-} from '../types/circuit.js';
-import type {
-  FlatCircuit,
-  FlatNode,
-  FlatConnection,
-  HierarchyNode,
-} from '../types/simulator.js';
-import { TOP_LEVEL_NODE, SEQUENTIAL_INPUT_PORTS } from '../types/simulator.js';
+import type { Circuit, CircuitLibrary, PortPath } from '../types/circuit.js';
+import type { FlatCircuit, FlatConnection, FlatNode, HierarchyNode } from '../types/simulator.js';
+import { SEQUENTIAL_INPUT_PORTS, TOP_LEVEL_NODE } from '../types/simulator.js';
 
 export interface ElaborateOptions {
   /** Expand primitives that have referenceCircuit definitions into base primitives.
@@ -58,7 +49,7 @@ export function elaborate(
     path: '',
     componentName: circuit.name,
     children: [],
-    primitives: []
+    primitives: [],
   };
 
   /**
@@ -68,16 +59,14 @@ export function elaborate(
     circ: Circuit,
     pathPrefix: string,
     parentHierarchy: HierarchyNode,
-    elaborationStack: Set<string> = new Set()
+    elaborationStack: Set<string> = new Set(),
   ): void {
     for (const node of circ.nodes) {
       const fullPath = pathPrefix + node.id;
       const component = library.resolveCircuit(node.componentRef);
 
       if (!component) {
-        throw new Error(
-          `Unknown component: ${node.componentRef} (referenced by node ${fullPath})`
-        );
+        throw new Error(`Unknown component: ${node.componentRef} (referenced by node ${fullPath})`);
       }
 
       if (component.implementation.kind === 'primitive') {
@@ -90,20 +79,19 @@ export function elaborate(
           id: fullPath,
           primitiveType: node.componentRef,
           arguments: node.arguments,
-          inputs: node.inputs.map(p => ({...p, nodeId: fullPath})),
-          outputs: node.outputs.map(p => ({...p, nodeId: fullPath})),
-          clocks: node.clocks.map(c => ({...c, nodeId: fullPath})),
+          inputs: node.inputs.map((p) => ({ ...p, nodeId: fullPath })),
+          outputs: node.outputs.map((p) => ({ ...p, nodeId: fullPath })),
+          clocks: node.clocks.map((c) => ({ ...c, nodeId: fullPath })),
           dependents: [],
           inputSources: [],
         });
         parentHierarchy.primitives.push(fullPath);
-
       } else if (component.implementation.kind === 'composite') {
         // Guard against recursive circuit definitions
         if (elaborationStack.has(node.componentRef)) {
           throw new Error(
             `Recursive circuit definition detected: '${node.componentRef}' references itself ` +
-            `(cycle: ${[...elaborationStack, node.componentRef].join(' → ')})`
+              `(cycle: ${[...elaborationStack, node.componentRef].join(' → ')})`,
           );
         }
 
@@ -112,7 +100,7 @@ export function elaborate(
           path: fullPath,
           componentName: node.componentRef,
           children: [],
-          primitives: []
+          primitives: [],
         };
         parentHierarchy.children.push(childHierarchy);
 
@@ -120,19 +108,18 @@ export function elaborate(
         const childStack = new Set(elaborationStack);
         childStack.add(node.componentRef);
         flattenCircuit(component, fullPath + '.', childHierarchy, childStack);
-
       } else {
         // Intrinsic components are treated like primitives
         console.warn(
-          `Intrinsic component ${node.componentRef} treated as primitive during elaboration`
+          `Intrinsic component ${node.componentRef} treated as primitive during elaboration`,
         );
         nodes.push({
           id: fullPath,
           primitiveType: node.componentRef,
           arguments: node.arguments,
-          inputs: node.inputs.map(p => ({...p, nodeId: fullPath})),
-          outputs: node.outputs.map(p => ({...p, nodeId: fullPath})),
-          clocks: node.clocks.map(c => ({...c, nodeId: fullPath})),
+          inputs: node.inputs.map((p) => ({ ...p, nodeId: fullPath })),
+          outputs: node.outputs.map((p) => ({ ...p, nodeId: fullPath })),
+          clocks: node.clocks.map((c) => ({ ...c, nodeId: fullPath })),
           dependents: [],
           inputSources: [],
         });
@@ -142,25 +129,31 @@ export function elaborate(
 
     // Flatten connections with full paths
     for (const conn of circ.connections) {
-      const sourceId = conn.source.nodeId === ''
-        ? (pathPrefix === '' ? TOP_LEVEL_NODE : pathPrefix.slice(0, -1))
-        : pathPrefix + conn.source.nodeId;
+      const sourceId =
+        conn.source.nodeId === ''
+          ? pathPrefix === ''
+            ? TOP_LEVEL_NODE
+            : pathPrefix.slice(0, -1)
+          : pathPrefix + conn.source.nodeId;
 
-      const targetId = conn.target.nodeId === ''
-        ? (pathPrefix === '' ? TOP_LEVEL_NODE : pathPrefix.slice(0, -1))
-        : pathPrefix + conn.target.nodeId;
+      const targetId =
+        conn.target.nodeId === ''
+          ? pathPrefix === ''
+            ? TOP_LEVEL_NODE
+            : pathPrefix.slice(0, -1)
+          : pathPrefix + conn.target.nodeId;
 
       connections.push({
         id: `${sourceId}.${conn.source.portName}->${targetId}.${conn.target.portName}`,
         source: {
           nodeId: sourceId,
-          portName: conn.source.portName
+          portName: conn.source.portName,
         },
         target: {
           nodeId: targetId,
-          portName: conn.target.portName
+          portName: conn.target.portName,
         },
-        portType: conn.portType
+        portType: conn.portType,
       });
     }
   }
@@ -176,14 +169,22 @@ export function elaborate(
       id: nodeId,
       primitiveType: circuit.name,
       arguments: {},
-      inputs: circuit.inputs.map(p => ({
-        id: `${nodeId}.${p.name}`, name: p.name, portType: p.portType, nodeId: nodeId,
+      inputs: circuit.inputs.map((p) => ({
+        id: `${nodeId}.${p.name}`,
+        name: p.name,
+        portType: p.portType,
+        nodeId: nodeId,
       })),
-      outputs: circuit.outputs.map(p => ({
-        id: `${nodeId}.${p.name}`, name: p.name, portType: p.portType, nodeId: nodeId,
+      outputs: circuit.outputs.map((p) => ({
+        id: `${nodeId}.${p.name}`,
+        name: p.name,
+        portType: p.portType,
+        nodeId: nodeId,
       })),
-      clocks: circuit.clocks.map(c => ({
-        id: `${nodeId}.${c.name}`, name: c.name, nodeId: nodeId,
+      clocks: circuit.clocks.map((c) => ({
+        id: `${nodeId}.${c.name}`,
+        name: c.name,
+        nodeId: nodeId,
       })),
       dependents: [],
       inputSources: [],
@@ -219,7 +220,7 @@ export function elaborate(
     nodes,
     library,
     '',
-    debug
+    debug,
   );
 
   // Build the flat circuit
@@ -247,7 +248,7 @@ function stitchCompositeConnections(
   flatNodes: FlatNode[],
   library: CircuitLibrary,
   pathPrefix: string,
-  debug: boolean = false
+  debug: boolean = false,
 ): FlatConnection[] {
   // Build a map of composite port forwarding rules
   const portForwarding = new Map<string, PortPath[]>();
@@ -256,7 +257,11 @@ function stitchCompositeConnections(
   const compositeInstances = new Set<string>();
 
   // Build forwarding map for each composite instance
-  function buildForwardingMap(circ: Circuit, prefix: string, elaborationStack: Set<string> = new Set()): void {
+  function buildForwardingMap(
+    circ: Circuit,
+    prefix: string,
+    elaborationStack: Set<string> = new Set(),
+  ): void {
     for (const node of circ.nodes) {
       const fullPath = prefix + node.id;
       const component = library.resolveCircuit(node.componentRef);
@@ -299,23 +304,25 @@ function stitchCompositeConnections(
     const targetIsComposite = compositeInstances.has(conn.target.nodeId);
 
     // Skip internal port forwarding connections
-    const sourceInsideTarget = targetIsComposite &&
-                                conn.source.nodeId.startsWith(conn.target.nodeId + '.');
-    const targetInsideSource = sourceIsComposite &&
-                                conn.target.nodeId.startsWith(conn.source.nodeId + '.');
+    const sourceInsideTarget =
+      targetIsComposite && conn.source.nodeId.startsWith(conn.target.nodeId + '.');
+    const targetInsideSource =
+      sourceIsComposite && conn.target.nodeId.startsWith(conn.source.nodeId + '.');
 
     if (sourceInsideTarget || targetInsideSource) {
       if (debug) {
-        console.log(`  SKIP PORT FORWARDING: ${conn.source.nodeId}.${conn.source.portName} -> ${conn.target.nodeId}.${conn.target.portName}`);
+        console.log(
+          `  SKIP PORT FORWARDING: ${conn.source.nodeId}.${conn.source.portName} -> ${conn.target.nodeId}.${conn.target.portName}`,
+        );
       }
       continue;
     }
 
-    const isInternalConnection = sourceIsComposite && targetIsComposite &&
-                                 conn.source.nodeId === conn.target.nodeId;
+    const isInternalConnection =
+      sourceIsComposite && targetIsComposite && conn.source.nodeId === conn.target.nodeId;
 
     const isPrimitive = (port: PortPath): boolean =>
-      port.nodeId === TOP_LEVEL_NODE || flatNodes.some(n => n.id === port.nodeId);
+      port.nodeId === TOP_LEVEL_NODE || flatNodes.some((n) => n.id === port.nodeId);
 
     const resolveToEndpoints = (start: PortPath): PortPath[] => {
       const results: PortPath[] = [];
@@ -352,7 +359,9 @@ function stitchCompositeConnections(
       sources = resolveToEndpoints(conn.source);
       if (debug && sources.length > 0) {
         for (const src of sources) {
-          console.log(`  FORWARD SOURCE: ${conn.source.nodeId}.${conn.source.portName} -> ${src.nodeId}.${src.portName}`);
+          console.log(
+            `  FORWARD SOURCE: ${conn.source.nodeId}.${conn.source.portName} -> ${src.nodeId}.${src.portName}`,
+          );
         }
       }
     }
@@ -362,7 +371,9 @@ function stitchCompositeConnections(
       targets = resolveToEndpoints(conn.target);
       if (debug && targets.length > 0) {
         for (const tgt of targets) {
-          console.log(`  FORWARD TARGET: ${conn.target.nodeId}.${conn.target.portName} -> ${tgt.nodeId}.${tgt.portName}`);
+          console.log(
+            `  FORWARD TARGET: ${conn.target.nodeId}.${conn.target.portName} -> ${tgt.nodeId}.${tgt.portName}`,
+          );
         }
       }
     }
@@ -370,15 +381,16 @@ function stitchCompositeConnections(
     // Create connections for all source-target pairs
     for (const finalSource of sources) {
       for (const finalTarget of targets) {
-        const isSelfLoop = finalSource.nodeId === finalTarget.nodeId &&
-                          finalSource.portName === finalTarget.portName;
+        const isSelfLoop =
+          finalSource.nodeId === finalTarget.nodeId &&
+          finalSource.portName === finalTarget.portName;
 
         if (!isSelfLoop) {
           stitchedConnections.push({
             id: `${finalSource.nodeId}.${finalSource.portName}->${finalTarget.nodeId}.${finalTarget.portName}`,
             source: finalSource,
             target: finalTarget,
-            portType: conn.portType
+            portType: conn.portType,
           });
         }
       }
@@ -386,9 +398,9 @@ function stitchCompositeConnections(
   }
 
   // Post-process: Eliminate passthrough connections
-  const passthroughConnections = stitchedConnections.filter(conn =>
-    compositeInstances.has(conn.source.nodeId) &&
-    conn.source.nodeId === conn.target.nodeId
+  const passthroughConnections = stitchedConnections.filter(
+    (conn) =>
+      compositeInstances.has(conn.source.nodeId) && conn.source.nodeId === conn.target.nodeId,
   );
 
   if (passthroughConnections.length > 0) {
@@ -400,25 +412,29 @@ function stitchCompositeConnections(
     const processedPassthroughs = new Set<string>();
 
     for (const conn of stitchedConnections) {
-      const isPassthrough = compositeInstances.has(conn.source.nodeId) &&
-                           conn.source.nodeId === conn.target.nodeId;
+      const isPassthrough =
+        compositeInstances.has(conn.source.nodeId) && conn.source.nodeId === conn.target.nodeId;
 
       if (isPassthrough) {
         processedPassthroughs.add(conn.id);
         if (debug) {
-          console.log(`  PASSTHROUGH: ${conn.source.nodeId}.${conn.source.portName} -> ${conn.target.portName}`);
+          console.log(
+            `  PASSTHROUGH: ${conn.source.nodeId}.${conn.source.portName} -> ${conn.target.portName}`,
+          );
         }
 
-        const inputConnections = stitchedConnections.filter(c =>
-          c.target.nodeId === conn.source.nodeId &&
-          c.target.portName === conn.source.portName &&
-          !processedPassthroughs.has(c.id)
+        const inputConnections = stitchedConnections.filter(
+          (c) =>
+            c.target.nodeId === conn.source.nodeId &&
+            c.target.portName === conn.source.portName &&
+            !processedPassthroughs.has(c.id),
         );
 
-        const outputConnections = stitchedConnections.filter(c =>
-          c.source.nodeId === conn.target.nodeId &&
-          c.source.portName === conn.target.portName &&
-          !processedPassthroughs.has(c.id)
+        const outputConnections = stitchedConnections.filter(
+          (c) =>
+            c.source.nodeId === conn.target.nodeId &&
+            c.source.portName === conn.target.portName &&
+            !processedPassthroughs.has(c.id),
         );
 
         for (const inputConn of inputConnections) {
@@ -427,14 +443,16 @@ function stitchCompositeConnections(
               id: `${inputConn.source.nodeId}.${inputConn.source.portName}->${outputConn.target.nodeId}.${outputConn.target.portName}`,
               source: inputConn.source,
               target: outputConn.target,
-              portType: conn.portType
+              portType: conn.portType,
             };
             finalConnections.push(directConn);
             processedPassthroughs.add(inputConn.id);
             processedPassthroughs.add(outputConn.id);
 
             if (debug) {
-              console.log(`    DIRECT: ${directConn.source.nodeId}.${directConn.source.portName} -> ${directConn.target.nodeId}.${directConn.target.portName}`);
+              console.log(
+                `    DIRECT: ${directConn.source.nodeId}.${directConn.source.portName} -> ${directConn.target.nodeId}.${directConn.target.portName}`,
+              );
             }
           }
         }
@@ -466,9 +484,9 @@ function resolveThroughComposites(
   connections: FlatConnection[],
   flatNodes: FlatNode[],
   _compositeInstances: Set<string>,
-  debug: boolean
+  debug: boolean,
 ): FlatConnection[] {
-  const primitiveIds = new Set(flatNodes.map(n => n.id));
+  const primitiveIds = new Set(flatNodes.map((n) => n.id));
   const isPrimitive = (port: PortPath): boolean =>
     port.nodeId === TOP_LEVEL_NODE || primitiveIds.has(port.nodeId);
 
@@ -516,13 +534,11 @@ function resolveThroughComposites(
     // get collapsed by the forward walk from their upstream real source.
     if (!isPrimitive(conn.source)) continue;
 
-    const targets = isPrimitive(conn.target)
-      ? [conn.target]
-      : reachRealTargets(conn.target);
+    const targets = isPrimitive(conn.target) ? [conn.target] : reachRealTargets(conn.target);
 
     for (const target of targets) {
-      const isSelfLoop = conn.source.nodeId === target.nodeId &&
-                         conn.source.portName === target.portName;
+      const isSelfLoop =
+        conn.source.nodeId === target.nodeId && conn.source.portName === target.portName;
       if (isSelfLoop) continue;
 
       const id = `${conn.source.nodeId}.${conn.source.portName}->${target.nodeId}.${target.portName}`;
@@ -530,7 +546,9 @@ function resolveThroughComposites(
       emitted.add(id);
 
       if (debug) {
-        console.log(`  RESOLVED: ${conn.source.nodeId}.${conn.source.portName} -> ${target.nodeId}.${target.portName}`);
+        console.log(
+          `  RESOLVED: ${conn.source.nodeId}.${conn.source.portName} -> ${target.nodeId}.${target.portName}`,
+        );
       }
       result.push({ id, source: conn.source, target, portType: conn.portType });
     }
@@ -547,25 +565,22 @@ function traceCompositePorts(
   compositePath: string,
   portForwarding: Map<string, PortPath[]>,
   library: CircuitLibrary,
-  debug: boolean = false
+  debug: boolean = false,
 ): void {
   for (const conn of composite.connections) {
     // Case 1: Circuit input connects to internal node
     if (conn.source.nodeId === '' && conn.target.nodeId !== '') {
       const compositeInputKey = `${compositePath}.${conn.source.portName}`;
-      const internalTargets = resolveInternalPorts(
-        compositePath,
-        conn.target,
-        composite,
-        library
-      );
+      const internalTargets = resolveInternalPorts(compositePath, conn.target, composite, library);
       if (!portForwarding.has(compositeInputKey)) {
         portForwarding.set(compositeInputKey, []);
       }
       for (const internalTarget of internalTargets) {
         portForwarding.get(compositeInputKey)!.push(internalTarget);
         if (debug) {
-          console.log(`  INPUT: ${conn.source.portName} -> ${internalTarget.nodeId}.${internalTarget.portName}`);
+          console.log(
+            `  INPUT: ${conn.source.portName} -> ${internalTarget.nodeId}.${internalTarget.portName}`,
+          );
         }
       }
     }
@@ -573,19 +588,16 @@ function traceCompositePorts(
     // Case 2: Internal node connects to circuit output
     if (conn.source.nodeId !== '' && conn.target.nodeId === '') {
       const compositeOutputKey = `${compositePath}.${conn.target.portName}`;
-      const internalSources = resolveInternalPorts(
-        compositePath,
-        conn.source,
-        composite,
-        library
-      );
+      const internalSources = resolveInternalPorts(compositePath, conn.source, composite, library);
       if (!portForwarding.has(compositeOutputKey)) {
         portForwarding.set(compositeOutputKey, []);
       }
       for (const internalSource of internalSources) {
         portForwarding.get(compositeOutputKey)!.push(internalSource);
         if (debug) {
-          console.log(`  OUTPUT: ${conn.target.portName} <- ${internalSource.nodeId}.${internalSource.portName}`);
+          console.log(
+            `  OUTPUT: ${conn.target.portName} <- ${internalSource.nodeId}.${internalSource.portName}`,
+          );
         }
       }
     }
@@ -603,7 +615,9 @@ function traceCompositePorts(
       portForwarding.get(inputKey)!.push({ nodeId: compositePath, portName: conn.target.portName });
 
       if (debug) {
-        console.log(`    -> Added passthrough forwarding: ${inputKey} -> ${compositePath}.${conn.target.portName}`);
+        console.log(
+          `    -> Added passthrough forwarding: ${inputKey} -> ${compositePath}.${conn.target.portName}`,
+        );
       }
     }
   }
@@ -617,7 +631,7 @@ function resolveInternalPorts(
   portRef: PortPath,
   composite: Circuit,
   library: CircuitLibrary,
-  visited: Set<string> = new Set()
+  visited: Set<string> = new Set(),
 ): PortPath[] {
   if (portRef.nodeId === '') {
     return [{ nodeId: compositePath, portName: portRef.portName }];
@@ -625,7 +639,7 @@ function resolveInternalPorts(
 
   const fullPath = compositePath + '.' + portRef.nodeId;
 
-  const node = composite.nodes.find(n => n.id === portRef.nodeId);
+  const node = composite.nodes.find((n) => n.id === portRef.nodeId);
   if (!node) {
     return [{ nodeId: fullPath, portName: portRef.portName }];
   }
@@ -647,12 +661,24 @@ function resolveInternalPorts(
 
   for (const conn of component.connections) {
     if (conn.target.nodeId === '' && conn.target.portName === portRef.portName) {
-      const resolved = resolveInternalPorts(fullPath, conn.source, component, library, childVisited);
+      const resolved = resolveInternalPorts(
+        fullPath,
+        conn.source,
+        component,
+        library,
+        childVisited,
+      );
       results.push(...resolved);
     }
 
     if (conn.source.nodeId === '' && conn.source.portName === portRef.portName) {
-      const resolved = resolveInternalPorts(fullPath, conn.target, component, library, childVisited);
+      const resolved = resolveInternalPorts(
+        fullPath,
+        conn.target,
+        component,
+        library,
+        childVisited,
+      );
       results.push(...resolved);
     }
   }
@@ -671,7 +697,7 @@ function resolveInternalPorts(
  * Build dependency graph for event-driven simulation.
  */
 function buildDependencyGraph(flatCircuit: FlatCircuit): void {
-  flatCircuit.nodeMap = new Map(flatCircuit.nodes.map(n => [n.id, n]));
+  flatCircuit.nodeMap = new Map(flatCircuit.nodes.map((n) => [n.id, n]));
 
   for (const node of flatCircuit.nodes) {
     node.dependents = [];
@@ -711,7 +737,7 @@ export function isFlatCircuit(value: unknown): value is FlatCircuit {
     'connections' in value &&
     'hierarchy' in value &&
     Array.isArray((value as FlatCircuit).nodes) &&
-    (value as FlatCircuit).nodes.every(n => 'primitiveType' in n)
+    (value as FlatCircuit).nodes.every((n) => 'primitiveType' in n)
   );
 }
 
@@ -725,7 +751,7 @@ export function isFlatCircuit(value: unknown): value is FlatCircuit {
 export function topologicalSortFlat(
   nodes: FlatNode[],
   connections: FlatConnection[],
-  library: CircuitLibrary
+  library: CircuitLibrary,
 ): string[] | null {
   const stateOutputNodes = new Set<string>();
   const stateReadNodes = new Set<string>();
@@ -810,9 +836,5 @@ export function topologicalSortFlat(
     return null; // Cycle detected
   }
 
-  return [
-    ...Array.from(stateOutputNodes),
-    ...result,
-    ...Array.from(sinkNodes)
-  ];
+  return [...Array.from(stateOutputNodes), ...result, ...Array.from(sinkNodes)];
 }

@@ -7,7 +7,7 @@
 
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
-import type { UIState, DragOperation, SimulationStatus } from '../types';
+import type { DragOperation, SimulationStatus, UIState } from '../types';
 
 interface UIActions {
   // Drag operations
@@ -139,5 +139,5 @@ export const useUIStore = create<UIStore>()(
         state.canvas.panY = y;
       });
     },
-  }))
+  })),
 );

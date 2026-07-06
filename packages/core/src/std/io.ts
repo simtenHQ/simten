@@ -2,8 +2,8 @@
  * Standard Library — I/O Components
  */
 
-import { circuit } from '../circuit/circuit.js';
 import { bit, bus } from '../circuit/bit-bus.js';
+import { circuit } from '../circuit/circuit.js';
 
 /**
  * User-controllable 1-bit toggle. Stays in the chosen state until clicked
@@ -30,7 +30,12 @@ import { bit, bus } from '../circuit/bit-bus.js';
 export const Switch = circuit('Switch', (_opts?: { value?: number }) => ({
   outputs: { out: bit },
   eval: ({ value }) => ({ out: value ? 1 : 0 }),
-  meta: { category: 'input-output', icon: '⚡', description: 'User-controllable 1-bit toggle', interactiveArg: 'value' },
+  meta: {
+    category: 'input-output',
+    icon: '⚡',
+    description: 'User-controllable 1-bit toggle',
+    interactiveArg: 'value',
+  },
 }));
 
 /**
@@ -52,7 +57,12 @@ export const Switch = circuit('Switch', (_opts?: { value?: number }) => ({
 export const Button = circuit('Button', (_opts?: { value?: number }) => ({
   outputs: { out: bit },
   eval: ({ value }) => ({ out: value ? 1 : 0 }),
-  meta: { category: 'input-output', icon: '🔘', description: 'Push button input (momentary)', interactiveArg: 'value' },
+  meta: {
+    category: 'input-output',
+    icon: '🔘',
+    description: 'Push button input (momentary)',
+    interactiveArg: 'value',
+  },
 }));
 
 /**
@@ -100,7 +110,12 @@ export const Led = circuit('Led', {
 export const Input = circuit('Input', (_opts?: { value?: number }) => ({
   outputs: { out: bus(8) },
   eval: ({ value }) => ({ out: typeof value === 'number' ? value : 0 }),
-  meta: { category: 'input-output', icon: '🔢', description: 'Multi-bit numeric input', interactiveArg: 'value' },
+  meta: {
+    category: 'input-output',
+    icon: '🔢',
+    description: 'Multi-bit numeric input',
+    interactiveArg: 'value',
+  },
 }));
 
 /**
@@ -147,8 +162,16 @@ export const Output = circuit('Output', {
  * })
  * ```
  */
-export const Constant = circuit('Constant', ({ width = 1 }: { value?: number; width?: number } = {}) => ({
-  outputs: { out: width === 1 ? bit : bus(width) },
-  eval: ({ value }) => ({ out: typeof value === 'number' ? value : 0 }),
-  meta: { category: 'utilities', icon: 'K', description: 'Fixed value source', interactiveArg: 'value' },
-}));
+export const Constant = circuit(
+  'Constant',
+  ({ width = 1 }: { value?: number; width?: number } = {}) => ({
+    outputs: { out: width === 1 ? bit : bus(width) },
+    eval: ({ value }) => ({ out: typeof value === 'number' ? value : 0 }),
+    meta: {
+      category: 'utilities',
+      icon: 'K',
+      description: 'Fixed value source',
+      interactiveArg: 'value',
+    },
+  }),
+);

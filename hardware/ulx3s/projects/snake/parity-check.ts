@@ -1,4 +1,5 @@
 #!/usr/bin/env tsx
+
 /**
  * parity-check.ts — every SnakeCore copy in the repo is structurally
  * identical to the one that ships to the FPGA.
@@ -20,11 +21,11 @@
  * and this check exists to catch exactly that class of drift.
  */
 
-import type { Circuit } from '@simten/core/simulator';
 import { executeCircuitCode } from '@simten/core/circuit';
-import { buildSnake } from './index.js';
+import type { Circuit } from '@simten/core/simulator';
 import { Snake as BlogSnake } from '../../../../apps/web/src/features/blog/snake-in-hardware/circuits.js';
 import { EXAMPLES } from '../../../../apps/web/src/features/visual-editor/examples.js';
+import { buildSnake } from './index.js';
 
 interface CanonNode {
   id: string;
@@ -48,10 +49,17 @@ function canon(c: Circuit): CanonCircuit {
     inputs: c.inputs.map(portSig).sort(),
     outputs: c.outputs.map(portSig).sort(),
     nodes: c.nodes
-      .map((n) => ({ id: n.id, ref: n.componentRef, args: (n.arguments ?? {}) as Record<string, unknown> }))
+      .map((n) => ({
+        id: n.id,
+        ref: n.componentRef,
+        args: (n.arguments ?? {}) as Record<string, unknown>,
+      }))
       .sort((a, b) => a.id.localeCompare(b.id)),
     connections: c.connections
-      .map((cn) => `${cn.source.nodeId || '@in'}.${cn.source.portName} -> ${cn.target.nodeId || '@out'}.${cn.target.portName}`)
+      .map(
+        (cn) =>
+          `${cn.source.nodeId || '@in'}.${cn.source.portName} -> ${cn.target.nodeId || '@out'}.${cn.target.portName}`,
+      )
       .sort(),
   };
 }
@@ -59,10 +67,14 @@ function canon(c: Circuit): CanonCircuit {
 function diff(name: string, ref: CanonCircuit, other: CanonCircuit): string[] {
   const problems: string[] = [];
   if (JSON.stringify(ref.inputs) !== JSON.stringify(other.inputs)) {
-    problems.push(`inputs differ: ${JSON.stringify(other.inputs)} (want ${JSON.stringify(ref.inputs)})`);
+    problems.push(
+      `inputs differ: ${JSON.stringify(other.inputs)} (want ${JSON.stringify(ref.inputs)})`,
+    );
   }
   if (JSON.stringify(ref.outputs) !== JSON.stringify(other.outputs)) {
-    problems.push(`outputs differ: ${JSON.stringify(other.outputs)} (want ${JSON.stringify(ref.outputs)})`);
+    problems.push(
+      `outputs differ: ${JSON.stringify(other.outputs)} (want ${JSON.stringify(ref.outputs)})`,
+    );
   }
 
   const refNodes = new Map(ref.nodes.map((n) => [n.id, n]));
@@ -74,7 +86,9 @@ function diff(name: string, ref: CanonCircuit, other: CanonCircuit): string[] {
     } else if (o.ref !== n.ref) {
       problems.push(`node '${id}' is ${o.ref}, want ${n.ref}`);
     } else if (JSON.stringify(o.args) !== JSON.stringify(n.args)) {
-      problems.push(`node '${id}' (${n.ref}) args ${JSON.stringify(o.args)}, want ${JSON.stringify(n.args)}`);
+      problems.push(
+        `node '${id}' (${n.ref}) args ${JSON.stringify(o.args)}, want ${JSON.stringify(n.args)}`,
+      );
     }
   }
   for (const id of otherNodes.keys()) {
@@ -143,7 +157,9 @@ if (!playable) {
     problems.push('[editor:SnakePlayable] does not instantiate SnakeCore');
   }
   if (!playable.nodes.some((n) => n.id === 'keyboard' && n.componentRef === 'Input')) {
-    problems.push("[editor:SnakePlayable] no Input node named 'keyboard' — arrow keys won't reach the game");
+    problems.push(
+      "[editor:SnakePlayable] no Input node named 'keyboard' — arrow keys won't reach the game",
+    );
   }
   if (!playable.nodes.some((n) => n.componentRef === 'Screen')) {
     problems.push('[editor:SnakePlayable] no Screen — the game would be invisible');
@@ -155,4 +171,6 @@ if (problems.length > 0) {
   console.error(`\n${problems.length} drift(s) from the FPGA circuit`);
   process.exit(1);
 }
-console.log(`✅ blog and editor-example snake circuits are structurally identical to the FPGA circuit (${SHARED.length} shared composites checked)`);
+console.log(
+  `✅ blog and editor-example snake circuits are structurally identical to the FPGA circuit (${SHARED.length} shared composites checked)`,
+);

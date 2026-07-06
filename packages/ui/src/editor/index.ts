@@ -3,6 +3,6 @@
  */
 export {
   captureEnvironmentalState,
-  restoreEnvironmentalState,
   type EnvironmentalStateValue,
+  restoreEnvironmentalState,
 } from '@simten/core/simulator';

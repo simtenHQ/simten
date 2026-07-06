@@ -40,11 +40,15 @@ async function main() {
     console.log(`\nSynth: ${result.synth.cached ? 'CACHED (ecpbram fast path)' : 'full rebuild'}`);
     console.log(`  Bitstream: ${result.synth.bitstream_kb} KB`);
     if (result.synth.timing_achieved_mhz) {
-      console.log(`  Timing: ${result.synth.timing_achieved_mhz} MHz (target ${result.synth.timing_target_mhz})`);
+      console.log(
+        `  Timing: ${result.synth.timing_achieved_mhz} MHz (target ${result.synth.timing_target_mhz})`,
+      );
     }
     if (result.synth.utilization) {
       const u = result.synth.utilization;
-      console.log(`  Utilization: LUT=${u.lut} FF=${u.ff} BRAM=${u.bram}${u.io !== undefined ? ` IO=${u.io}` : ''}`);
+      console.log(
+        `  Utilization: LUT=${u.lut} FF=${u.ff} BRAM=${u.bram}${u.io !== undefined ? ` IO=${u.io}` : ''}`,
+      );
     }
   }
 

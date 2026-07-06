@@ -7,8 +7,8 @@
 
 'use client';
 
-import { useCircuitPreviewStore } from '../stores/circuit-preview-store';
 import { cn } from '../../lib/utils';
+import { useCircuitPreviewStore } from '../stores/circuit-preview-store';
 
 export function CircuitTabBar() {
   const compiledCircuits = useCircuitPreviewStore((state) => state.compiledCircuits);
@@ -38,7 +38,7 @@ export function CircuitTabBar() {
             'hover:bg-gray-200 dark:hover:bg-gray-700',
             selectedCircuitIndex === index
               ? 'bg-white dark:bg-gray-800 text-blue-600 dark:text-blue-400 border-t-2 border-x border-blue-600 dark:border-blue-400'
-              : 'bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-transparent'
+              : 'bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-transparent',
           )}
           title={`Switch to ${circuit.name} circuit`}
         >

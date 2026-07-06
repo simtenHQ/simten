@@ -1,7 +1,7 @@
-import { createFileRoute } from '@tanstack/react-router'
-import EditorShell from '@/components/EditorShell'
-import { EXAMPLES } from '@/features/visual-editor/examples'
-import { pageHead } from '@/lib/seo'
+import { createFileRoute } from '@tanstack/react-router';
+import EditorShell from '@/components/EditorShell';
+import { EXAMPLES } from '@/features/visual-editor/examples';
+import { pageHead } from '@/lib/seo';
 
 export const Route = createFileRoute('/circuit')({
   staticData: { skipDefaultChrome: true },
@@ -21,10 +21,10 @@ export const Route = createFileRoute('/circuit')({
       path: '/circuit',
     }),
   component: CircuitPage,
-})
+});
 
 function CircuitPage() {
-  const { example } = Route.useSearch()
-  const match = example ? EXAMPLES.find((e) => e.id === example) : undefined
-  return <EditorShell initialSource={match?.code} />
+  const { example } = Route.useSearch();
+  const match = example ? EXAMPLES.find((e) => e.id === example) : undefined;
+  return <EditorShell initialSource={match?.code} />;
 }

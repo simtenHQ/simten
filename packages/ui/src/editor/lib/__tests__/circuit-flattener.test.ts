@@ -2,11 +2,11 @@
  * Tests for Circuit Flattener (IR v0.1)
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
-import { flattenCircuit, hasCompositeComponents } from '../utils/circuit-flattener';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { useCircuitLibraryStore } from '../../stores/circuit-library-store';
 import type { Circuit } from '../../types/circuit';
 import { bitType } from '../../types/circuit';
+import { flattenCircuit, hasCompositeComponents } from '../utils/circuit-flattener';
 
 describe('Circuit Flattener (IR v0.1)', () => {
   beforeEach(() => {
@@ -33,21 +33,15 @@ describe('Circuit Flattener (IR v0.1)', () => {
             { id: 'and1.a', name: 'a', portType: bitType() },
             { id: 'and1.b', name: 'b', portType: bitType() },
           ],
-          outputs: [
-            { id: 'and1.out', name: 'out', portType: bitType() },
-          ],
+          outputs: [{ id: 'and1.out', name: 'out', portType: bitType() }],
           clocks: [],
         },
         {
           id: 'not1',
           componentRef: 'Not',
           arguments: {},
-          inputs: [
-            { id: 'not1.in', name: 'in', portType: bitType() },
-          ],
-          outputs: [
-            { id: 'not1.out', name: 'out', portType: bitType() },
-          ],
+          inputs: [{ id: 'not1.in', name: 'in', portType: bitType() }],
+          outputs: [{ id: 'not1.out', name: 'out', portType: bitType() }],
           clocks: [],
         },
       ],
@@ -102,9 +96,7 @@ describe('Circuit Flattener (IR v0.1)', () => {
             { id: 'xor1.a', name: 'a', portType: bitType() },
             { id: 'xor1.b', name: 'b', portType: bitType() },
           ],
-          outputs: [
-            { id: 'xor1.out', name: 'out', portType: bitType() },
-          ],
+          outputs: [{ id: 'xor1.out', name: 'out', portType: bitType() }],
           clocks: [],
         },
         {
@@ -115,9 +107,7 @@ describe('Circuit Flattener (IR v0.1)', () => {
             { id: 'and1.a', name: 'a', portType: bitType() },
             { id: 'and1.b', name: 'b', portType: bitType() },
           ],
-          outputs: [
-            { id: 'and1.out', name: 'out', portType: bitType() },
-          ],
+          outputs: [{ id: 'and1.out', name: 'out', portType: bitType() }],
           clocks: [],
         },
       ],
@@ -185,9 +175,7 @@ describe('Circuit Flattener (IR v0.1)', () => {
           componentRef: 'Switch',
           arguments: { value: true },
           inputs: [],
-          outputs: [
-            { id: 'sw1.out', name: 'out', portType: bitType() },
-          ],
+          outputs: [{ id: 'sw1.out', name: 'out', portType: bitType() }],
           clocks: [],
         },
         {
@@ -195,9 +183,7 @@ describe('Circuit Flattener (IR v0.1)', () => {
           componentRef: 'Switch',
           arguments: { value: true },
           inputs: [],
-          outputs: [
-            { id: 'sw2.out', name: 'out', portType: bitType() },
-          ],
+          outputs: [{ id: 'sw2.out', name: 'out', portType: bitType() }],
           clocks: [],
         },
         {
@@ -237,7 +223,7 @@ describe('Circuit Flattener (IR v0.1)', () => {
     // Should have 4 nodes: sw1, sw2, ha1__xor1, ha1__and1
     expect(flattened.nodes.length).toBe(4);
 
-    const nodeIds = flattened.nodes.map(n => n.id).sort();
+    const nodeIds = flattened.nodes.map((n) => n.id).sort();
     expect(nodeIds).toContain('sw1');
     expect(nodeIds).toContain('sw2');
     expect(nodeIds).toContain('ha1__xor1');
@@ -250,10 +236,10 @@ describe('Circuit Flattener (IR v0.1)', () => {
     expect(flattened.connections.length).toBeGreaterThanOrEqual(2);
 
     // Verify connections are remapped correctly
-    const sw1Connections = flattened.connections.filter(c => c.source.nodeId === 'sw1');
+    const sw1Connections = flattened.connections.filter((c) => c.source.nodeId === 'sw1');
     expect(sw1Connections.length).toBeGreaterThan(0);
-    expect(sw1Connections.some(c => c.target.nodeId === 'ha1__xor1')).toBe(true);
-    expect(sw1Connections.some(c => c.target.nodeId === 'ha1__and1')).toBe(true);
+    expect(sw1Connections.some((c) => c.target.nodeId === 'ha1__xor1')).toBe(true);
+    expect(sw1Connections.some((c) => c.target.nodeId === 'ha1__and1')).toBe(true);
   });
 
   it('should handle nested composite components (FullAdder using HalfAdders)', () => {
@@ -283,9 +269,7 @@ describe('Circuit Flattener (IR v0.1)', () => {
             { id: 'xor1.a', name: 'a', portType: bitType() },
             { id: 'xor1.b', name: 'b', portType: bitType() },
           ],
-          outputs: [
-            { id: 'xor1.out', name: 'out', portType: bitType() },
-          ],
+          outputs: [{ id: 'xor1.out', name: 'out', portType: bitType() }],
           clocks: [],
         },
         {
@@ -296,9 +280,7 @@ describe('Circuit Flattener (IR v0.1)', () => {
             { id: 'and1.a', name: 'a', portType: bitType() },
             { id: 'and1.b', name: 'b', portType: bitType() },
           ],
-          outputs: [
-            { id: 'and1.out', name: 'out', portType: bitType() },
-          ],
+          outputs: [{ id: 'and1.out', name: 'out', portType: bitType() }],
           clocks: [],
         },
       ],
@@ -398,9 +380,7 @@ describe('Circuit Flattener (IR v0.1)', () => {
             { id: 'or1.a', name: 'a', portType: bitType() },
             { id: 'or1.b', name: 'b', portType: bitType() },
           ],
-          outputs: [
-            { id: 'or1.out', name: 'out', portType: bitType() },
-          ],
+          outputs: [{ id: 'or1.out', name: 'out', portType: bitType() }],
           clocks: [],
         },
       ],
@@ -502,7 +482,7 @@ describe('Circuit Flattener (IR v0.1)', () => {
     // Should have 5 primitive nodes: fa1__ha1__xor1, fa1__ha1__and1, fa1__ha2__xor1, fa1__ha2__and1, fa1__or1
     expect(flattened.nodes.length).toBe(5);
 
-    const nodeIds = flattened.nodes.map(n => n.id).sort();
+    const nodeIds = flattened.nodes.map((n) => n.id).sort();
     expect(nodeIds).toContain('fa1__ha1__xor1');
     expect(nodeIds).toContain('fa1__ha1__and1');
     expect(nodeIds).toContain('fa1__ha2__xor1');
@@ -510,8 +490,8 @@ describe('Circuit Flattener (IR v0.1)', () => {
     expect(nodeIds).toContain('fa1__or1');
 
     // Verify state isolation - each HalfAdder instance has separate XOR and AND gates
-    const ha1Nodes = nodeIds.filter(id => id.startsWith('fa1__ha1__'));
-    const ha2Nodes = nodeIds.filter(id => id.startsWith('fa1__ha2__'));
+    const ha1Nodes = nodeIds.filter((id) => id.startsWith('fa1__ha1__'));
+    const ha2Nodes = nodeIds.filter((id) => id.startsWith('fa1__ha2__'));
     expect(ha1Nodes.length).toBe(2); // xor1, and1
     expect(ha2Nodes.length).toBe(2); // xor1, and1
   });
@@ -525,12 +505,8 @@ describe('Circuit Flattener (IR v0.1)', () => {
       name: 'Counter',
       parameters: [],
       inputs: [],
-      outputs: [
-        { name: 'count', portType: bitType() },
-      ],
-      clocks: [
-        { name: 'clk' },
-      ],
+      outputs: [{ name: 'count', portType: bitType() }],
+      clocks: [{ name: 'clk' }],
       state: [],
       nodes: [
         {
@@ -541,12 +517,8 @@ describe('Circuit Flattener (IR v0.1)', () => {
             { id: 'reg.d', name: 'd', portType: bitType() },
             { id: 'reg.we', name: 'we', portType: bitType() },
           ],
-          outputs: [
-            { id: 'reg.q', name: 'q', portType: bitType() },
-          ],
-          clocks: [
-            { id: 'reg.clk', name: 'clk' },
-          ],
+          outputs: [{ id: 'reg.q', name: 'q', portType: bitType() }],
+          clocks: [{ id: 'reg.clk', name: 'clk' }],
         },
       ],
       connections: [
@@ -577,24 +549,16 @@ describe('Circuit Flattener (IR v0.1)', () => {
           componentRef: 'Counter',
           arguments: {},
           inputs: [],
-          outputs: [
-            { id: 'counter1.count', name: 'count', portType: bitType() },
-          ],
-          clocks: [
-            { id: 'counter1.clk', name: 'clk' },
-          ],
+          outputs: [{ id: 'counter1.count', name: 'count', portType: bitType() }],
+          clocks: [{ id: 'counter1.clk', name: 'clk' }],
         },
         {
           id: 'counter2',
           componentRef: 'Counter',
           arguments: {},
           inputs: [],
-          outputs: [
-            { id: 'counter2.count', name: 'count', portType: bitType() },
-          ],
-          clocks: [
-            { id: 'counter2.clk', name: 'clk' },
-          ],
+          outputs: [{ id: 'counter2.count', name: 'count', portType: bitType() }],
+          clocks: [{ id: 'counter2.clk', name: 'clk' }],
         },
       ],
       connections: [],
@@ -606,7 +570,7 @@ describe('Circuit Flattener (IR v0.1)', () => {
     // Should have 2 register nodes with unique IDs
     expect(flattened.nodes.length).toBe(2);
 
-    const nodeIds = flattened.nodes.map(n => n.id).sort();
+    const nodeIds = flattened.nodes.map((n) => n.id).sort();
     expect(nodeIds).toContain('counter1__reg');
     expect(nodeIds).toContain('counter2__reg');
 
@@ -639,9 +603,7 @@ describe('Circuit Flattener (IR v0.1)', () => {
             { id: 'and1.a', name: 'a', portType: bitType() },
             { id: 'and1.b', name: 'b', portType: bitType() },
           ],
-          outputs: [
-            { id: 'and1.out', name: 'out', portType: bitType() },
-          ],
+          outputs: [{ id: 'and1.out', name: 'out', portType: bitType() }],
           clocks: [],
         },
       ],

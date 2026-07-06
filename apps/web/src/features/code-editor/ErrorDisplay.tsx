@@ -44,9 +44,7 @@ export function ErrorDisplay({ errors }: ErrorDisplayProps) {
           <span className="flex items-center justify-center w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full">
             {errors.length}
           </span>
-          <span>
-            {errors.length === 1 ? '1 error' : `${errors.length} errors`}
-          </span>
+          <span>{errors.length === 1 ? '1 error' : `${errors.length} errors`}</span>
           <span className="text-red-500 text-xs ml-1">↓</span>
         </button>
         <button
@@ -71,9 +69,7 @@ export function ErrorDisplay({ errors }: ErrorDisplayProps) {
           <span className="flex items-center justify-center w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full">
             {errors.length}
           </span>
-          <span>
-            {errors.length === 1 ? '1 error' : `${errors.length} errors`}
-          </span>
+          <span>{errors.length === 1 ? '1 error' : `${errors.length} errors`}</span>
           <span className="text-red-500 text-xs ml-1">↑</span>
         </button>
         <button
@@ -95,9 +91,7 @@ export function ErrorDisplay({ errors }: ErrorDisplayProps) {
             </span>
             <span className="text-red-700">{error.message}</span>
             {error.suggestions && error.suggestions.length > 0 && (
-              <div className="mt-1 text-xs text-blue-600">
-                💡 {error.suggestions[0]}
-              </div>
+              <div className="mt-1 text-xs text-blue-600">💡 {error.suggestions[0]}</div>
             )}
           </div>
         ))}

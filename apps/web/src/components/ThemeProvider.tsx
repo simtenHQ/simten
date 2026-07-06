@@ -1,6 +1,6 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { createContext, type ReactNode, useContext, useEffect, useState } from 'react';
 
-type Theme = "light" | "dark";
+type Theme = 'light' | 'dark';
 
 interface ThemeContextValue {
   theme: Theme;
@@ -9,30 +9,36 @@ interface ThemeContextValue {
 }
 
 const ThemeContext = createContext<ThemeContextValue>({
-  theme: "dark",
-  resolvedTheme: "dark",
+  theme: 'dark',
+  resolvedTheme: 'dark',
   setTheme: () => {},
 });
 
-export function ThemeProvider({ children, defaultTheme = "dark" }: { children: ReactNode; defaultTheme?: Theme }) {
+export function ThemeProvider({
+  children,
+  defaultTheme = 'dark',
+}: {
+  children: ReactNode;
+  defaultTheme?: Theme;
+}) {
   const [theme, setThemeState] = useState<Theme>(defaultTheme);
 
   useEffect(() => {
-    const stored = localStorage.getItem("theme") as Theme | null;
-    if (stored === "light" || stored === "dark") {
+    const stored = localStorage.getItem('theme') as Theme | null;
+    if (stored === 'light' || stored === 'dark') {
       setThemeState(stored);
     }
   }, []);
 
   useEffect(() => {
     const root = document.documentElement;
-    root.classList.toggle("dark", theme === "dark");
-    root.classList.toggle("light", theme === "light");
+    root.classList.toggle('dark', theme === 'dark');
+    root.classList.toggle('light', theme === 'light');
     // Native scrollbars + form controls read `color-scheme` to pick light vs
     // dark styling. Without this, the scrollbar stays in whatever state the
     // page-load theme script set it to and never updates on toggle.
     root.style.colorScheme = theme;
-    localStorage.setItem("theme", theme);
+    localStorage.setItem('theme', theme);
   }, [theme]);
 
   return (

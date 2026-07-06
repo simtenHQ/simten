@@ -5,13 +5,18 @@
  * full quarter-round that powers TLS encryption across the internet.
  */
 
-import { circuit, bus } from "@simten/core/circuit";
-import type { BlogCircuit } from '../types';
+import { bus, circuit } from '@simten/core/circuit';
 import {
-  Input, HexDisplay, Constant,
-  Adder, BusXor, BusOr,
-  LeftShifter, RightShifter,
-} from "@simten/core/std";
+  Adder,
+  BusOr,
+  BusXor,
+  Constant,
+  HexDisplay,
+  Input,
+  LeftShifter,
+  RightShifter,
+} from '@simten/core/std';
+import type { BlogCircuit } from '../types';
 
 // ── Rotation sub-circuits ──
 
@@ -113,7 +118,11 @@ export const ChaCha20QuarterRound = circuit('ChaCha20QuarterRound', {
     xor4: BusXor({ width: 32 }),
     rot7: RotateLeft7,
   },
-  connect: ({ inputs, outputs, nodes: { gnd, add1, xor1, rot16, add2, xor2, rot12, add3, xor3, rot8, add4, xor4, rot7 } }) => [
+  connect: ({
+    inputs,
+    outputs,
+    nodes: { gnd, add1, xor1, rot16, add2, xor2, rot12, add3, xor3, rot8, add4, xor4, rot7 },
+  }) => [
     inputs.a.to(add1.a),
     inputs.b.to(add1.b, xor2.a),
     gnd.out.to(add1.carry_in, add2.carry_in, add3.carry_in, add4.carry_in),
@@ -219,30 +228,29 @@ export const ChaCha20Demo = circuit('ChaCha20Demo', {
 
 export const CHACHA20_CIRCUITS: Record<string, BlogCircuit> = {
   arxDemo: {
-    name: "The Three Operations: ADD, XOR, ROTL",
+    name: 'The Three Operations: ADD, XOR, ROTL',
     description:
-      "The entire ChaCha20 cipher is built from just these three operations on 32-bit words. Try changing a and b.",
+      'The entire ChaCha20 cipher is built from just these three operations on 32-bit words. Try changing a and b.',
     circuit: ARXDemo,
   },
 
   rotateDemo: {
-    name: "Rotation: The Free Operation",
+    name: 'Rotation: The Free Operation',
     description:
       "Left rotation rearranges bits with zero gate delay. In silicon, it's just rewiring.",
     circuit: RotateDemo,
   },
 
   arxStep: {
-    name: "One ARX Step: ADD, XOR, Rotate",
-    description:
-      "Each of the 4 steps in a quarter-round chains ADD -> XOR -> ROTL.",
+    name: 'One ARX Step: ADD, XOR, Rotate',
+    description: 'Each of the 4 steps in a quarter-round chains ADD -> XOR -> ROTL.',
     circuit: ARXStep,
   },
 
   quarterRound: {
-    name: "ChaCha20 Quarter-Round",
+    name: 'ChaCha20 Quarter-Round',
     description:
-      "The complete quarter-round -- 4 chained ARX steps. Verified against RFC 7539 test vector.",
+      'The complete quarter-round -- 4 chained ARX steps. Verified against RFC 7539 test vector.',
     circuit: ChaCha20Demo,
   },
 };

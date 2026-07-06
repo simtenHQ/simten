@@ -5,27 +5,27 @@
  *   import { circuit, bit, bus } from '@simten/core/circuit'
  */
 
-export { circuit } from './circuit.js';
-export { bit, bus, reg, mem } from './bit-bus.js';
-export type { RegState, MemState, StateFieldType } from './bit-bus.js';
-export { executeCircuitCode, executeJsCode, stripTypes, type ExecuteResult } from './execute.js';
-export { buildFromIR } from './build-from-ir.js';
 export { autoHarness } from './auto-harness.js';
-export { isSequentialCircuit } from './is-sequential.js';
-export { registerCircuitEval, getCircuitEval, getAllCircuitEvals } from './eval-registry.js';
+export type { MemState, RegState, StateFieldType } from './bit-bus.js';
+export { bit, bus, mem, reg } from './bit-bus.js';
+export { buildFromIR } from './build-from-ir.js';
+export { circuit } from './circuit.js';
+export { CircuitToSourceError, circuitToSource } from './circuit-to-source.js';
 export type { EvalEntry } from './eval-registry.js';
-export { circuitToSource, CircuitToSourceError } from './circuit-to-source.js';
+export { getAllCircuitEvals, getCircuitEval, registerCircuitEval } from './eval-registry.js';
+export { type ExecuteResult, executeCircuitCode, executeJsCode, stripTypes } from './execute.js';
+export { isSequentialCircuit } from './is-sequential.js';
 export type {
   BuiltCircuit,
-  CircuitMeta,
   CircuitConfig,
+  CircuitMeta,
   CircuitShape,
-  PortRef,
-  SourcePortRef,
-  SinkPortRef,
+  ConnectArg,
   ConnectionDef,
   PortMap,
-  StateShape,
+  PortRef,
   PortValues,
-  ConnectArg,
+  SinkPortRef,
+  SourcePortRef,
+  StateShape,
 } from './types.js';

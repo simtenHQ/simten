@@ -12,12 +12,18 @@
  *   sim.get('sum')  // 0
  */
 
-import type { Circuit, CircuitLibrary, MutableCircuitLibrary, BitValue, BusValue } from '../types/circuit.js';
-import type { SimulatorSnapshot } from '../types/simulator.js';
-import { SimulationSession } from '../simulator/simulation-session.js';
-import { createSimulatorFromCircuit } from '../simulator/index.js';
-import type { BuiltCircuit, PortMap } from '../circuit/types.js';
 import { isSequentialCircuit } from '../circuit/is-sequential.js';
+import type { BuiltCircuit, PortMap } from '../circuit/types.js';
+import { createSimulatorFromCircuit } from '../simulator/index.js';
+import { SimulationSession } from '../simulator/simulation-session.js';
+import type {
+  BitValue,
+  BusValue,
+  Circuit,
+  CircuitLibrary,
+  MutableCircuitLibrary,
+} from '../types/circuit.js';
+import type { SimulatorSnapshot } from '../types/simulator.js';
 
 function isMutable(lib: CircuitLibrary): lib is MutableCircuitLibrary {
   return 'addCircuit' in lib && typeof (lib as MutableCircuitLibrary).addCircuit === 'function';
@@ -27,10 +33,7 @@ function isMutable(lib: CircuitLibrary): lib is MutableCircuitLibrary {
 // Simulation handle type
 // ============================================================================
 
-export interface SimulationHandle<
-  Ins extends PortMap = PortMap,
-  Outs extends PortMap = PortMap,
-> {
+export interface SimulationHandle<Ins extends PortMap = PortMap, Outs extends PortMap = PortMap> {
   /** Set input values. For combinational circuits, outputs update immediately. */
   set(values: Partial<{ [K in keyof Ins]: number }>): void;
 
@@ -74,10 +77,7 @@ export interface SimulationHandle<
   watch(callback: () => void): () => void;
 
   /** Subscribe to a specific output port. Returns unsubscribe function. */
-  watchPort<K extends keyof Outs & string>(
-    name: K,
-    callback: (value: number) => void,
-  ): () => void;
+  watchPort<K extends keyof Outs & string>(name: K, callback: (value: number) => void): () => void;
 
   /** Set a node's internal state (ROM data, register value, switch toggle). */
   setNode(nodeId: string, value: any): void;
@@ -99,10 +99,7 @@ export interface SimulationHandle<
  * @param comp - A BuiltCircuit (from circuit().build() or stdlib)
  * @param options - Optional: custom library, initial memory data
  */
-export function simulate<
-  Ins extends PortMap,
-  Outs extends PortMap,
->(
+export function simulate<Ins extends PortMap, Outs extends PortMap>(
   comp: BuiltCircuit<Ins, Outs>,
   options?: {
     library?: CircuitLibrary;
@@ -114,8 +111,13 @@ export function simulate<
   const circuitMap = new Map<string, Circuit>();
   const defaultLibrary: CircuitLibrary & { addCircuit(c: Circuit): void } = {
     resolveCircuit: (name) => circuitMap.get(name),
-    getAllPrimitiveNames: () => [...circuitMap.entries()].filter(([, c]) => c.implementation.kind === 'primitive').map(([n]) => n),
-    addCircuit: (c) => { circuitMap.set(c.name, c); },
+    getAllPrimitiveNames: () =>
+      [...circuitMap.entries()]
+        .filter(([, c]) => c.implementation.kind === 'primitive')
+        .map(([n]) => n),
+    addCircuit: (c) => {
+      circuitMap.set(c.name, c);
+    },
   };
   const library = options?.library ?? defaultLibrary;
   if (isMutable(library)) {
@@ -126,7 +128,6 @@ export function simulate<
       }
     }
   }
-
 
   // If the component is a primitive (leaf), wrap it in a composite shell
   // so the elaboration pipeline can handle it properly
@@ -144,7 +145,7 @@ export function simulate<
   const session = new SimulationSession(engine, { isSequential });
 
   // Output port names for get/read
-  const outputNames = circuit.outputs.map(p => p.name);
+  const outputNames = circuit.outputs.map((p) => p.name);
 
   // Build the handle
   const handle: SimulationHandle<Ins, Outs> = {
@@ -152,7 +153,7 @@ export function simulate<
       for (const [name, value] of Object.entries(values)) {
         if (value !== undefined) {
           // Convert number to boolean for bit ports
-          const portDef = circuit.inputs.find(p => p.name === name);
+          const portDef = circuit.inputs.find((p) => p.name === name);
           const isBit = portDef?.portType.kind === 'bit';
           const converted = isBit ? Boolean(value) : value;
           session.setNode(name, converted as BitValue | BusValue);
@@ -169,12 +170,12 @@ export function simulate<
       const key = `__top__.${name as string}`;
       const val = portValues.get(key);
       if (val !== undefined) {
-        return typeof val === 'boolean' ? (val ? 1 : 0) : val as number;
+        return typeof val === 'boolean' ? (val ? 1 : 0) : (val as number);
       }
       // Fallback: search port values (for composite circuits where outputs may be nested)
       for (const [k, v] of portValues) {
         if (k.endsWith(`.${name as string}`)) {
-          return typeof v === 'boolean' ? (v ? 1 : 0) : v as number;
+          return typeof v === 'boolean' ? (v ? 1 : 0) : (v as number);
         }
       }
       return 0;
@@ -279,25 +280,27 @@ function wrapIfPrimitive(circuit: Circuit, _library: CircuitLibrary): Circuit {
   if (circuit.implementation.kind !== 'primitive') return circuit;
 
   const nodeId = '_inner';
-  const nodes = [{
-    id: nodeId,
-    componentRef: circuit.name,
-    arguments: {},
-    inputs: circuit.inputs.map(p => ({
-      id: `${nodeId}.${p.name}`,
-      name: p.name,
-      portType: p.portType,
-    })),
-    outputs: circuit.outputs.map(p => ({
-      id: `${nodeId}.${p.name}`,
-      name: p.name,
-      portType: p.portType,
-    })),
-    clocks: circuit.clocks.map(c => ({
-      id: `${nodeId}.${c.name}`,
-      name: c.name,
-    })),
-  }];
+  const nodes = [
+    {
+      id: nodeId,
+      componentRef: circuit.name,
+      arguments: {},
+      inputs: circuit.inputs.map((p) => ({
+        id: `${nodeId}.${p.name}`,
+        name: p.name,
+        portType: p.portType,
+      })),
+      outputs: circuit.outputs.map((p) => ({
+        id: `${nodeId}.${p.name}`,
+        name: p.name,
+        portType: p.portType,
+      })),
+      clocks: circuit.clocks.map((c) => ({
+        id: `${nodeId}.${c.name}`,
+        name: c.name,
+      })),
+    },
+  ];
 
   // Wire circuit inputs → node inputs, node outputs → circuit outputs
   const connections: import('../types/circuit.js').Connection[] = [];
@@ -322,8 +325,8 @@ function wrapIfPrimitive(circuit: Circuit, _library: CircuitLibrary): Circuit {
   return {
     version: 1,
     name: `__sim_${circuit.name}`,
-    inputs: circuit.inputs.map(p => ({ ...p })),
-    outputs: circuit.outputs.map(p => ({ ...p })),
+    inputs: circuit.inputs.map((p) => ({ ...p })),
+    outputs: circuit.outputs.map((p) => ({ ...p })),
     clocks: [],
     state: [],
     nodes,
@@ -332,5 +335,3 @@ function wrapIfPrimitive(circuit: Circuit, _library: CircuitLibrary): Circuit {
     metadata: circuit.metadata,
   };
 }
-
-

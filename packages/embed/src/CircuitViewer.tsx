@@ -6,12 +6,20 @@
  * is a thin wrapper around this.
  */
 
-import { useCallback, useEffect, useRef, forwardRef, useImperativeHandle, type ForwardedRef, type ReactElement } from "react";
-import { useCircuitSimulator } from "./hooks/useCircuitSimulator";
-import type { BuiltCircuit } from "@simten/core/circuit";
-import { CircuitCanvas, ClockControls, useDetectTheme } from "@simten/ui/canvas";
-import type { CircuitLayout } from "@simten/ui/canvas";
-import type { FlatPortValueMap } from "@simten/core/simulator";
+import type { BuiltCircuit } from '@simten/core/circuit';
+import type { FlatPortValueMap } from '@simten/core/simulator';
+import type { CircuitLayout } from '@simten/ui/canvas';
+import { CircuitCanvas, ClockControls, useDetectTheme } from '@simten/ui/canvas';
+import {
+  type ForwardedRef,
+  forwardRef,
+  type ReactElement,
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+} from 'react';
+import { useCircuitSimulator } from './hooks/useCircuitSimulator';
 
 /**
  * Type-level model of what `autoHarness` produces at runtime: it wraps the
@@ -25,9 +33,7 @@ export type HarnessedCircuit<C extends BuiltCircuit> =
     ? BuiltCircuit<
         Ins,
         Outs,
-        & { [K in keyof Ins]: BuiltCircuit }
-        & { [K in keyof Outs]: BuiltCircuit }
-        & { dut: C }
+        { [K in keyof Ins]: BuiltCircuit } & { [K in keyof Outs]: BuiltCircuit } & { dut: C }
       >
     : never;
 
@@ -53,13 +59,13 @@ export interface CircuitViewerProps<C extends BuiltCircuit = BuiltCircuit> {
    */
   layout?: CircuitLayout<C> | HarnessedLayout<C>;
   /** Theme */
-  theme?: "light" | "dark";
+  theme?: 'light' | 'dark';
   /** Focus on specific node(s) */
   focus?: string | string[];
   /** Show port labels on nodes */
   showPortLabels?: boolean;
   /** Callback when a port is clicked */
-  onPortClick?: (nodeLabel: string, portName: string, portType: "input" | "output") => void;
+  onPortClick?: (nodeLabel: string, portName: string, portType: 'input' | 'output') => void;
   /** Highlight unconnected ports */
   glowUnconnected?: boolean;
   /** Auto-run speed (ms between ticks) */
@@ -102,22 +108,25 @@ export interface CircuitViewerHandle {
 }
 
 const CircuitViewerImpl = forwardRef<CircuitViewerHandle, CircuitViewerProps>(
-  function CircuitViewer({
-    circuit,
-    height = 300,
-    showControls = true,
-    autoHarness = false,
-    initialInputs,
-    layout,
-    theme,
-    focus,
-    showPortLabels,
-    onPortClick,
-    glowUnconnected,
-    renderEmptyState,
-    renderOverlay,
-    onPortValuesChange,
-  }, ref) {
+  function CircuitViewer(
+    {
+      circuit,
+      height = 300,
+      showControls = true,
+      autoHarness = false,
+      initialInputs,
+      layout,
+      theme,
+      focus,
+      showPortLabels,
+      onPortClick,
+      glowUnconnected,
+      renderEmptyState,
+      renderOverlay,
+      onPortValuesChange,
+    },
+    ref,
+  ) {
     const sim = useCircuitSimulator(circuit, { autoHarness, initialInputs });
     const detectedTheme = useDetectTheme();
     const resolvedTheme = theme ?? detectedTheme;
@@ -150,13 +159,17 @@ const CircuitViewerImpl = forwardRef<CircuitViewerHandle, CircuitViewerProps>(
       sim.reset();
     }, [sim.reset]);
 
-    useImperativeHandle(ref, () => ({
-      tick: handleTick,
-      reset: handleReset,
-      setNodeValue: sim.setNodeValue,
-      startAutoRun: sim.startAutoRun,
-      stopAutoRun: sim.stopAutoRun,
-    }), [handleTick, handleReset, sim.setNodeValue, sim.startAutoRun, sim.stopAutoRun]);
+    useImperativeHandle(
+      ref,
+      () => ({
+        tick: handleTick,
+        reset: handleReset,
+        setNodeValue: sim.setNodeValue,
+        startAutoRun: sim.startAutoRun,
+        stopAutoRun: sim.stopAutoRun,
+      }),
+      [handleTick, handleReset, sim.setNodeValue, sim.startAutoRun, sim.stopAutoRun],
+    );
 
     if (sim.error) {
       return (
@@ -171,14 +184,17 @@ const CircuitViewerImpl = forwardRef<CircuitViewerHandle, CircuitViewerProps>(
 
     if (!sim.ready) {
       return (
-        <div style={{ height }} className="flex items-center justify-center text-muted-foreground/60 text-sm">
+        <div
+          style={{ height }}
+          className="flex items-center justify-center text-muted-foreground/60 text-sm"
+        >
           Compiling...
         </div>
       );
     }
 
     const controlHeight = sim.isSequential && showControls ? 40 : 0;
-    const canvasHeight = typeof height === "number" ? height - controlHeight : height;
+    const canvasHeight = typeof height === 'number' ? height - controlHeight : height;
 
     return (
       <div style={{ height }} className="flex flex-col" data-embed-theme={resolvedTheme}>
@@ -232,7 +248,7 @@ const CircuitViewerImpl = forwardRef<CircuitViewerHandle, CircuitViewerProps>(
         )}
       </div>
     );
-  }
+  },
 );
 
 /**

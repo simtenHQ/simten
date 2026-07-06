@@ -2,7 +2,7 @@
 // Hardcoded here as if produced offline; the testbench checks it against the
 // real npm sha256 reference — an independent Tier-A oracle (if a byte were
 // wrong, verify would catch it).
-import { circuit, bus } from '@simten/core/circuit';
+import { bus, circuit } from '@simten/core/circuit';
 import { ROM, romFromBytes } from '@simten/core/std';
 
 export const HashRom = circuit('HashRom', {

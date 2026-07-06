@@ -1,10 +1,4 @@
-
-import {
-  Tooltip,
-  TooltipTrigger,
-  TooltipContent,
-  TooltipProvider,
-} from "../primitives/tooltip";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../primitives/tooltip';
 
 /**
  * Badge shown on composite nodes indicating they can be drilled into.
@@ -21,7 +15,14 @@ export function CompositeBadge() {
             {/* Solid badge */}
             <span className="relative flex h-5 w-5 items-center justify-center rounded-full bg-blue-500 group-hover:bg-blue-400 transition-colors shadow-sm shadow-blue-500/30">
               {/* Magnifying glass SVG */}
-              <svg className="h-3 w-3 text-white" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <svg
+                className="h-3 w-3 text-white"
+                viewBox="0 0 16 16"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+              >
                 <circle cx="6.5" cy="6.5" r="4.5" />
                 <line x1="10" y1="10" x2="14" y2="14" />
               </svg>

@@ -14,13 +14,13 @@
  * time-travel but RAM framebuffers and console text did not. These tests drive
  * the real session path and assert both kinds of state rewind.
  */
-import { describe, it, expect } from 'vitest';
-import { circuit, bit, bus } from '../../circuit/index.js';
-import { RAM, Console } from '../../std/index.js';
-import { createSimulatorFromCircuit, SimulationSession } from '../index.js';
-import { isSequentialCircuit } from '../../circuit/is-sequential.js';
-import type { Circuit, CircuitLibrary } from '../../types/circuit.js';
+import { describe, expect, it } from 'vitest';
 import type { BuiltCircuit } from '../../circuit/index.js';
+import { bit, bus, circuit } from '../../circuit/index.js';
+import { isSequentialCircuit } from '../../circuit/is-sequential.js';
+import { Console, RAM } from '../../std/index.js';
+import type { Circuit, CircuitLibrary } from '../../types/circuit.js';
+import { createSimulatorFromCircuit, SimulationSession } from '../index.js';
 
 /** A RAM framebuffer plus a text Console — the two state shapes that broke. */
 const Probe = circuit('TimeTravelProbe', {
@@ -42,8 +42,12 @@ function makeSession(built: BuiltCircuit<any, any>): SimulationSession {
   const lib: CircuitLibrary & { addCircuit(c: Circuit): void } = {
     resolveCircuit: (name) => circuitMap.get(name),
     getAllPrimitiveNames: () =>
-      [...circuitMap.entries()].filter(([, c]) => c.implementation.kind === 'primitive').map(([n]) => n),
-    addCircuit: (c) => { circuitMap.set(c.name, c); },
+      [...circuitMap.entries()]
+        .filter(([, c]) => c.implementation.kind === 'primitive')
+        .map(([n]) => n),
+    addCircuit: (c) => {
+      circuitMap.set(c.name, c);
+    },
   };
   lib.addCircuit(built.circuit);
   if (built._dependencies) for (const [, dep] of built._dependencies) lib.addCircuit(dep.circuit);
@@ -57,7 +61,10 @@ function ramFrame(session: SimulationSession): number[] {
   const seq = session.getState().sequentialState;
   let mem: Map<number, number> | null = null;
   for (const [, v] of seq?.currentState ?? []) {
-    if (v instanceof Map) { mem = v as Map<number, number>; break; }
+    if (v instanceof Map) {
+      mem = v as Map<number, number>;
+      break;
+    }
   }
   return Array.from({ length: 8 }, (_, i) => mem?.get(i) ?? 0);
 }

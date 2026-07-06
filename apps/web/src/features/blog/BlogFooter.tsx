@@ -1,5 +1,5 @@
-import { Link } from "@tanstack/react-router";
-import { posts } from "./posts";
+import { Link } from '@tanstack/react-router';
+import { posts } from './posts';
 
 interface BlogFooterProps {
   slug: string;
@@ -13,9 +13,8 @@ interface BlogFooterProps {
  */
 export function BlogFooter({ slug }: BlogFooterProps) {
   const currentIndex = posts.findIndex((p) => p.slug === slug);
-  const next = currentIndex >= 0 && currentIndex < posts.length - 1
-    ? posts[currentIndex + 1]
-    : null;
+  const next =
+    currentIndex >= 0 && currentIndex < posts.length - 1 ? posts[currentIndex + 1] : null;
 
   return (
     <div className="mt-16 pt-8 border-t border-gray-200 dark:border-gray-800 text-center">

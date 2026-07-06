@@ -37,12 +37,14 @@ export function checkCircuit(
     return {
       valid: false,
       canSimulate: false,
-      diagnostics: [{
-        phase: 'compilation',
-        code: 'compile-error',
-        severity: 'error',
-        message: compiled.error,
-      }],
+      diagnostics: [
+        {
+          phase: 'compilation',
+          code: 'compile-error',
+          severity: 'error',
+          message: compiled.error,
+        },
+      ],
       analysis: {
         circuitsDefined: [],
         componentsUsed: [],
@@ -51,7 +53,7 @@ export function checkCircuit(
     };
   }
 
-  const circuitsDefined = compiled.circuits.map(c => c.name);
+  const circuitsDefined = compiled.circuits.map((c) => c.name);
   const componentsUsed = new Set<string>();
   for (const circuit of compiled.circuits) {
     for (const node of circuit.nodes) {

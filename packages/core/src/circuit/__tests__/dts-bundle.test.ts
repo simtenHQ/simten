@@ -10,10 +10,10 @@
  * `pretest` script runs the build, so this test works on a fresh clone.
  */
 
-import { describe, it, expect } from 'vitest';
 import { readFileSync, statSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { describe, expect, it } from 'vitest';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const bundlePath = join(here, '..', '..', '..', 'dist', 'bundle.d.ts');
@@ -39,11 +39,7 @@ describe('dist/bundle.d.ts', () => {
     expect(bundle).toContain(needle);
   });
 
-  it.each([
-    ['_shape'],
-    ['_path'],
-    ['_type'],
-  ])('does not leak @internal field: %s', (needle) => {
+  it.each([['_shape'], ['_path'], ['_type']])('does not leak @internal field: %s', (needle) => {
     // Use a word boundary so member-like accesses are flagged but unrelated
     // identifiers (e.g. `path` in a name like `portPath`) are not.
     expect(bundle).not.toMatch(new RegExp(`\\b${needle}\\b`));

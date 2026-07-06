@@ -2,8 +2,8 @@
  * Standard Library — RISC-V (RV32I) Components
  */
 
-import { circuit } from '../circuit/circuit.js';
 import { bit, bus, mem } from '../circuit/bit-bus.js';
+import { circuit } from '../circuit/circuit.js';
 
 /**
  * RISC-V instruction decoder. Splits a 32-bit RV32I instruction word into
@@ -20,12 +20,12 @@ export const RV32I_Decode = circuit('RV32I_Decode', {
   eval: ({ instruction }) => {
     const instr = (instruction as number) >>> 0;
     return {
-      opcode: instr & 0x7F,
-      rd:     (instr >>> 7)  & 0x1F,
+      opcode: instr & 0x7f,
+      rd: (instr >>> 7) & 0x1f,
       funct3: (instr >>> 12) & 0x7,
-      rs1:    (instr >>> 15) & 0x1F,
-      rs2:    (instr >>> 20) & 0x1F,
-      funct7: (instr >>> 25) & 0x7F,
+      rs1: (instr >>> 15) & 0x1f,
+      rs2: (instr >>> 20) & 0x1f,
+      funct7: (instr >>> 25) & 0x7f,
     };
   },
   meta: { category: 'rv32i', icon: 'DEC', description: 'RISC-V instruction decoder' },
@@ -46,20 +46,41 @@ export const RV32I_ALU = circuit('RV32I_ALU', {
   eval: ({ a, b, alu_op }) => {
     const au = (a as number) >>> 0;
     const bu = (b as number) >>> 0;
-    const op = (alu_op as number) & 0xF;
+    const op = (alu_op as number) & 0xf;
     let result: number;
     switch (op) {
-      case 0: result = (au + bu) >>> 0; break;                         // ADD
-      case 1: result = (au - bu) >>> 0; break;                         // SUB
-      case 2: result = (au & bu) >>> 0; break;                         // AND
-      case 3: result = (au | bu) >>> 0; break;                         // OR
-      case 4: result = (au ^ bu) >>> 0; break;                         // XOR
-      case 5: result = (au << (bu & 0x1F)) >>> 0; break;               // SLL
-      case 6: result = au >>> (bu & 0x1F); break;                      // SRL
-      case 7: result = ((au | 0) >> (bu & 0x1F)) >>> 0; break;         // SRA
-      case 8: result = ((au | 0) < (bu | 0)) ? 1 : 0; break;          // SLT (signed)
-      case 9: result = au < bu ? 1 : 0; break;                         // SLTU (unsigned)
-      default: result = 0;
+      case 0:
+        result = (au + bu) >>> 0;
+        break; // ADD
+      case 1:
+        result = (au - bu) >>> 0;
+        break; // SUB
+      case 2:
+        result = (au & bu) >>> 0;
+        break; // AND
+      case 3:
+        result = (au | bu) >>> 0;
+        break; // OR
+      case 4:
+        result = (au ^ bu) >>> 0;
+        break; // XOR
+      case 5:
+        result = (au << (bu & 0x1f)) >>> 0;
+        break; // SLL
+      case 6:
+        result = au >>> (bu & 0x1f);
+        break; // SRL
+      case 7:
+        result = ((au | 0) >> (bu & 0x1f)) >>> 0;
+        break; // SRA
+      case 8:
+        result = (au | 0) < (bu | 0) ? 1 : 0;
+        break; // SLT (signed)
+      case 9:
+        result = au < bu ? 1 : 0;
+        break; // SLTU (unsigned)
+      default:
+        result = 0;
     }
     return { result, zero: result === 0 ? 1 : 0 };
   },
@@ -80,38 +101,44 @@ export const RV32I_ImmGen = circuit('RV32I_ImmGen', {
   outputs: { immediate: bus(32) },
   eval: ({ instruction }) => {
     const instr = (instruction as number) >>> 0;
-    const opcode = instr & 0x7F;
+    const opcode = instr & 0x7f;
     let imm: number;
     switch (opcode) {
-      case 0x13: case 0x03: case 0x67: // I-type
+      case 0x13:
+      case 0x03:
+      case 0x67: // I-type
         imm = (instr >> 20) | 0;
         break;
       case 0x23: // S-type
-        imm = (((instr >> 25) << 5) | ((instr >>> 7) & 0x1F)) | 0;
+        imm = ((instr >> 25) << 5) | ((instr >>> 7) & 0x1f) | 0;
         imm = (imm << 20) >> 20;
         break;
-      case 0x63: { // B-type
+      case 0x63: {
+        // B-type
         const b12 = (instr >>> 31) & 1;
-        const b11 = (instr >>> 7)  & 1;
-        const b10_5 = (instr >>> 25) & 0x3F;
-        const b4_1  = (instr >>> 8)  & 0xF;
+        const b11 = (instr >>> 7) & 1;
+        const b10_5 = (instr >>> 25) & 0x3f;
+        const b4_1 = (instr >>> 8) & 0xf;
         imm = (b12 << 12) | (b11 << 11) | (b10_5 << 5) | (b4_1 << 1);
         imm = (imm << 19) >> 19;
         break;
       }
-      case 0x37: case 0x17: // U-type
-        imm = (instr & 0xFFFFF000) | 0;
+      case 0x37:
+      case 0x17: // U-type
+        imm = (instr & 0xfffff000) | 0;
         break;
-      case 0x6F: { // J-type
-        const j20    = (instr >>> 31) & 1;
-        const j19_12 = (instr >>> 12) & 0xFF;
-        const j11    = (instr >>> 20) & 1;
-        const j10_1  = (instr >>> 21) & 0x3FF;
+      case 0x6f: {
+        // J-type
+        const j20 = (instr >>> 31) & 1;
+        const j19_12 = (instr >>> 12) & 0xff;
+        const j11 = (instr >>> 20) & 1;
+        const j10_1 = (instr >>> 21) & 0x3ff;
         imm = (j20 << 20) | (j19_12 << 12) | (j11 << 11) | (j10_1 << 1);
         imm = (imm << 11) >> 11;
         break;
       }
-      default: imm = 0;
+      default:
+        imm = 0;
     }
     return { immediate: imm >>> 0 };
   },
@@ -130,50 +157,143 @@ export const RV32I_ImmGen = circuit('RV32I_ImmGen', {
  */
 export const RV32I_Control = circuit('RV32I_Control', {
   inputs: { opcode: bus(7), funct3: bus(3), funct7_bit: bit },
-  outputs: { alu_op: bus(4), alu_src: bit, mem_read: bit, mem_write: bit, reg_write: bit, mem_to_reg: bit, branch: bit, jump: bit, lui: bit, auipc: bit, is_jalr: bit },
+  outputs: {
+    alu_op: bus(4),
+    alu_src: bit,
+    mem_read: bit,
+    mem_write: bit,
+    reg_write: bit,
+    mem_to_reg: bit,
+    branch: bit,
+    jump: bit,
+    lui: bit,
+    auipc: bit,
+    is_jalr: bit,
+  },
   eval: ({ opcode, funct3, funct7_bit }) => {
-    const op  = (opcode as number) & 0x7F;
-    const f3  = (funct3 as number) & 0x7;
-    const f7  = funct7_bit ? 1 : 0;
-    let alu_op = 0, alu_src = 0, mem_read = 0, mem_write = 0;
-    let reg_write = 0, mem_to_reg = 0, branch = 0, jump = 0;
-    let lui = 0, auipc = 0, is_jalr = 0;
+    const op = (opcode as number) & 0x7f;
+    const f3 = (funct3 as number) & 0x7;
+    const f7 = funct7_bit ? 1 : 0;
+    let alu_op = 0,
+      alu_src = 0,
+      mem_read = 0,
+      mem_write = 0;
+    let reg_write = 0,
+      mem_to_reg = 0,
+      branch = 0,
+      jump = 0;
+    let lui = 0,
+      auipc = 0,
+      is_jalr = 0;
     switch (op) {
       case 0x33: // R-type
         reg_write = 1;
         switch (f3) {
-          case 0: alu_op = f7 ? 1 : 0; break;
-          case 1: alu_op = 5; break;
-          case 2: alu_op = 8; break;
-          case 3: alu_op = 9; break;
-          case 4: alu_op = 4; break;
-          case 5: alu_op = f7 ? 7 : 6; break;
-          case 6: alu_op = 3; break;
-          case 7: alu_op = 2; break;
+          case 0:
+            alu_op = f7 ? 1 : 0;
+            break;
+          case 1:
+            alu_op = 5;
+            break;
+          case 2:
+            alu_op = 8;
+            break;
+          case 3:
+            alu_op = 9;
+            break;
+          case 4:
+            alu_op = 4;
+            break;
+          case 5:
+            alu_op = f7 ? 7 : 6;
+            break;
+          case 6:
+            alu_op = 3;
+            break;
+          case 7:
+            alu_op = 2;
+            break;
         }
         break;
       case 0x13: // I-type ALU
-        reg_write = 1; alu_src = 1;
+        reg_write = 1;
+        alu_src = 1;
         switch (f3) {
-          case 0: alu_op = 0; break;
-          case 1: alu_op = 5; break;
-          case 2: alu_op = 8; break;
-          case 3: alu_op = 9; break;
-          case 4: alu_op = 4; break;
-          case 5: alu_op = f7 ? 7 : 6; break;
-          case 6: alu_op = 3; break;
-          case 7: alu_op = 2; break;
+          case 0:
+            alu_op = 0;
+            break;
+          case 1:
+            alu_op = 5;
+            break;
+          case 2:
+            alu_op = 8;
+            break;
+          case 3:
+            alu_op = 9;
+            break;
+          case 4:
+            alu_op = 4;
+            break;
+          case 5:
+            alu_op = f7 ? 7 : 6;
+            break;
+          case 6:
+            alu_op = 3;
+            break;
+          case 7:
+            alu_op = 2;
+            break;
         }
         break;
-      case 0x03: reg_write = 1; alu_src = 1; mem_read = 1; mem_to_reg = 1; alu_op = 0; break; // Load
-      case 0x23: alu_src = 1; mem_write = 1; alu_op = 0; break;                                // Store
-      case 0x63: branch = 1; alu_op = 1; break;                                                // Branch
-      case 0x6F: reg_write = 1; jump = 1; break;                                               // JAL
-      case 0x67: reg_write = 1; jump = 1; alu_src = 1; is_jalr = 1; alu_op = 0; break;        // JALR
-      case 0x37: reg_write = 1; lui = 1; break;                                                // LUI
-      case 0x17: reg_write = 1; auipc = 1; break;                                              // AUIPC
+      case 0x03:
+        reg_write = 1;
+        alu_src = 1;
+        mem_read = 1;
+        mem_to_reg = 1;
+        alu_op = 0;
+        break; // Load
+      case 0x23:
+        alu_src = 1;
+        mem_write = 1;
+        alu_op = 0;
+        break; // Store
+      case 0x63:
+        branch = 1;
+        alu_op = 1;
+        break; // Branch
+      case 0x6f:
+        reg_write = 1;
+        jump = 1;
+        break; // JAL
+      case 0x67:
+        reg_write = 1;
+        jump = 1;
+        alu_src = 1;
+        is_jalr = 1;
+        alu_op = 0;
+        break; // JALR
+      case 0x37:
+        reg_write = 1;
+        lui = 1;
+        break; // LUI
+      case 0x17:
+        reg_write = 1;
+        auipc = 1;
+        break; // AUIPC
     }
-    return { alu_op, alu_src, mem_read, mem_write, reg_write, mem_to_reg, branch, jump, lui, auipc, is_jalr };
+    return {
+      alu_op,
+      alu_src,
+      mem_read,
+      mem_write,
+      reg_write,
+      mem_to_reg,
+      branch,
+      jump,
+      lui,
+      auipc,
+      is_jalr,
+    };
   },
   meta: { category: 'rv32i', icon: 'CTL', description: 'RISC-V control unit' },
 });
@@ -197,12 +317,24 @@ export const RV32I_BranchComp = circuit('RV32I_BranchComp', {
     const f3 = (funct3 as number) & 0x7;
     let take = 0;
     switch (f3) {
-      case 0: take = au === bu ? 1 : 0; break;  // BEQ
-      case 1: take = au !== bu ? 1 : 0; break;  // BNE
-      case 4: take = sa < sb  ? 1 : 0; break;   // BLT
-      case 5: take = sa >= sb ? 1 : 0; break;   // BGE
-      case 6: take = au < bu  ? 1 : 0; break;   // BLTU
-      case 7: take = au >= bu ? 1 : 0; break;   // BGEU
+      case 0:
+        take = au === bu ? 1 : 0;
+        break; // BEQ
+      case 1:
+        take = au !== bu ? 1 : 0;
+        break; // BNE
+      case 4:
+        take = sa < sb ? 1 : 0;
+        break; // BLT
+      case 5:
+        take = sa >= sb ? 1 : 0;
+        break; // BGE
+      case 6:
+        take = au < bu ? 1 : 0;
+        break; // BLTU
+      case 7:
+        take = au >= bu ? 1 : 0;
+        break; // BGEU
     }
     return { take_branch: take };
   },
@@ -232,17 +364,17 @@ export const RV32I_RegisterFile = circuit('RV32I_RegisterFile', {
   outputs: { read1: bus(32), read2: bus(32), debug_read: bus(32) },
   state: { memory: mem(32, 32) },
   eval: ({ rs1, rs2, debug_rs, memory }) => {
-    const r1 = (rs1 as number) & 0x1F;
-    const r2 = (rs2 as number) & 0x1F;
-    const rd = (debug_rs as number) & 0x1F;
+    const r1 = (rs1 as number) & 0x1f;
+    const r2 = (rs2 as number) & 0x1f;
+    const rd = (debug_rs as number) & 0x1f;
     return {
-      read1: r1 === 0 ? 0 : (memory[r1]) >>> 0,
-      read2: r2 === 0 ? 0 : (memory[r2]) >>> 0,
-      debug_read: rd === 0 ? 0 : (memory[rd]) >>> 0,
+      read1: r1 === 0 ? 0 : memory[r1] >>> 0,
+      read2: r2 === 0 ? 0 : memory[r2] >>> 0,
+      debug_read: rd === 0 ? 0 : memory[rd] >>> 0,
     };
   },
   onTick: ({ rd, write_data, we, memory }) => {
-    const r = (rd as number) & 0x1F;
+    const r = (rd as number) & 0x1f;
     if (we && r !== 0) {
       memory[r] = (write_data as number) >>> 0;
     }
@@ -271,7 +403,7 @@ export const RV32I_InstrMem = circuit('RV32I_InstrMem', {
     const b3 = memory[a + 3];
     return { instruction: ((b3 << 24) | (b2 << 16) | (b1 << 8) | b0) >>> 0 };
   },
-  onTick: ({ memory }) => ({ memory }),  // read-only
+  onTick: ({ memory }) => ({ memory }), // read-only
   meta: { category: 'rv32i', icon: 'IM', description: 'RISC-V instruction memory' },
 });
 
@@ -292,7 +424,7 @@ export const RV32I_DataMem = circuit('RV32I_DataMem', {
   state: { memory: mem(65536, 8) },
   eval: ({ addr, mem_read, mem_write, funct3, memory }) => {
     if (!mem_read && !mem_write) return { read_data: 0, misalign: 0 };
-    const a  = (addr as number) >>> 0;
+    const a = (addr as number) >>> 0;
     const f3 = (funct3 as number) & 0x7;
     let misalign = 0;
     if ((f3 === 1 || f3 === 5) && (a & 1) !== 0) misalign = 1;
@@ -303,22 +435,37 @@ export const RV32I_DataMem = circuit('RV32I_DataMem', {
     // using addr[1:0] + funct3. This mirrors real memory (and the FPGA DMEM):
     // pre-extracting here would make the core's aligner shift the value away.
     const w = a & ~3;
-    const data = ((memory[w + 3] << 24) | (memory[w + 2] << 16) | (memory[w + 1] << 8) | memory[w]) >>> 0;
+    const data =
+      ((memory[w + 3] << 24) | (memory[w + 2] << 16) | (memory[w + 1] << 8) | memory[w]) >>> 0;
     return { read_data: data, misalign };
   },
   onTick: ({ addr, write_data, mem_write, funct3, memory }) => {
     if (!mem_write) return { memory };
-    const a  = (addr as number) >>> 0;
+    const a = (addr as number) >>> 0;
     const wd = (write_data as number) >>> 0;
     const f3 = (funct3 as number) & 0x7;
     switch (f3) {
-      case 0: memory[a] = wd & 0xFF; break;                                                                                       // SB
-      case 1: memory[a] = wd & 0xFF; memory[a + 1] = (wd >>> 8) & 0xFF; break;                                                   // SH
-      case 2: memory[a] = wd & 0xFF; memory[a + 1] = (wd >>> 8) & 0xFF; memory[a + 2] = (wd >>> 16) & 0xFF; memory[a + 3] = (wd >>> 24) & 0xFF; break; // SW
+      case 0:
+        memory[a] = wd & 0xff;
+        break; // SB
+      case 1:
+        memory[a] = wd & 0xff;
+        memory[a + 1] = (wd >>> 8) & 0xff;
+        break; // SH
+      case 2:
+        memory[a] = wd & 0xff;
+        memory[a + 1] = (wd >>> 8) & 0xff;
+        memory[a + 2] = (wd >>> 16) & 0xff;
+        memory[a + 3] = (wd >>> 24) & 0xff;
+        break; // SW
     }
     return { memory };
   },
-  meta: { category: 'rv32i', icon: 'DM', description: 'RISC-V data memory with byte/half/word access' },
+  meta: {
+    category: 'rv32i',
+    icon: 'DM',
+    description: 'RISC-V data memory with byte/half/word access',
+  },
 });
 
 /**
@@ -332,15 +479,35 @@ export const RV32I_DataMem = circuit('RV32I_DataMem', {
  * **Output:** `write_data` — `bus(32)`
  */
 export const RV32I_WritebackMux = circuit('RV32I_WritebackMux', {
-  inputs: { alu_result: bus(32), load_data: bus(32), pc_plus4: bus(32), immediate: bus(32), pc_plus_imm: bus(32), mem_to_reg: bit, lui: bit, auipc: bit, jump: bit },
+  inputs: {
+    alu_result: bus(32),
+    load_data: bus(32),
+    pc_plus4: bus(32),
+    immediate: bus(32),
+    pc_plus_imm: bus(32),
+    mem_to_reg: bit,
+    lui: bit,
+    auipc: bit,
+    jump: bit,
+  },
   outputs: { write_data: bus(32) },
-  eval: ({ alu_result, load_data, pc_plus4, immediate, pc_plus_imm, mem_to_reg, lui, auipc, jump }) => {
+  eval: ({
+    alu_result,
+    load_data,
+    pc_plus4,
+    immediate,
+    pc_plus_imm,
+    mem_to_reg,
+    lui,
+    auipc,
+    jump,
+  }) => {
     let write_data: number;
-    if (jump)      write_data = pc_plus4 as number;
+    if (jump) write_data = pc_plus4 as number;
     else if (auipc) write_data = pc_plus_imm as number;
-    else if (lui)   write_data = immediate as number;
+    else if (lui) write_data = immediate as number;
     else if (mem_to_reg) write_data = load_data as number;
-    else            write_data = alu_result as number;
+    else write_data = alu_result as number;
     return { write_data: (write_data ?? 0) >>> 0 };
   },
   meta: { category: 'rv32i', icon: 'WB', description: 'RISC-V writeback mux' },
@@ -356,13 +523,31 @@ export const RV32I_WritebackMux = circuit('RV32I_WritebackMux', {
  * **Output:** `next_pc` — `bus(32)`
  */
 export const RV32I_NextPCMux = circuit('RV32I_NextPCMux', {
-  inputs: { pc_plus4: bus(32), branch_target: bus(32), jal_target: bus(32), jalr_target: bus(32), branch: bit, take_branch: bit, jump: bit, is_jalr: bit },
+  inputs: {
+    pc_plus4: bus(32),
+    branch_target: bus(32),
+    jal_target: bus(32),
+    jalr_target: bus(32),
+    branch: bit,
+    take_branch: bit,
+    jump: bit,
+    is_jalr: bit,
+  },
   outputs: { next_pc: bus(32) },
-  eval: ({ pc_plus4, branch_target, jal_target, jalr_target, branch, take_branch, jump, is_jalr }) => {
+  eval: ({
+    pc_plus4,
+    branch_target,
+    jal_target,
+    jalr_target,
+    branch,
+    take_branch,
+    jump,
+    is_jalr,
+  }) => {
     let next_pc: number;
-    if (jump)                  next_pc = is_jalr ? ((jalr_target as number) & ~1) : (jal_target as number);
+    if (jump) next_pc = is_jalr ? (jalr_target as number) & ~1 : (jal_target as number);
     else if (branch && take_branch) next_pc = branch_target as number;
-    else                       next_pc = pc_plus4 as number;
+    else next_pc = pc_plus4 as number;
     return { next_pc: (next_pc ?? 0) >>> 0 };
   },
   meta: { category: 'rv32i', icon: 'PC', description: 'RISC-V next PC mux' },
@@ -379,17 +564,25 @@ export const RV32I_NextPCMux = circuit('RV32I_NextPCMux', {
  * **Outputs:** `forward_a`, `forward_b` — `bus(2)`
  */
 export const RV32I_ForwardingUnit = circuit('RV32I_ForwardingUnit', {
-  inputs: { id_rs1: bus(5), id_rs2: bus(5), ex_rd: bus(5), ex_reg_write: bit, mem_rd: bus(5), mem_reg_write: bit },
+  inputs: {
+    id_rs1: bus(5),
+    id_rs2: bus(5),
+    ex_rd: bus(5),
+    ex_reg_write: bit,
+    mem_rd: bus(5),
+    mem_reg_write: bit,
+  },
   outputs: { forward_a: bus(2), forward_b: bus(2) },
   eval: ({ id_rs1, id_rs2, ex_rd, ex_reg_write, mem_rd, mem_reg_write }) => {
-    const rs1   = (id_rs1 as number) & 0x1F;
-    const rs2   = (id_rs2 as number) & 0x1F;
-    const exRd  = (ex_rd  as number) & 0x1F;
-    const memRd = (mem_rd as number) & 0x1F;
-    let forward_a = 0, forward_b = 0;
-    if (ex_reg_write  && exRd  !== 0 && exRd  === rs1) forward_a = 1;
+    const rs1 = (id_rs1 as number) & 0x1f;
+    const rs2 = (id_rs2 as number) & 0x1f;
+    const exRd = (ex_rd as number) & 0x1f;
+    const memRd = (mem_rd as number) & 0x1f;
+    let forward_a = 0,
+      forward_b = 0;
+    if (ex_reg_write && exRd !== 0 && exRd === rs1) forward_a = 1;
     else if (mem_reg_write && memRd !== 0 && memRd === rs1) forward_a = 2;
-    if (ex_reg_write  && exRd  !== 0 && exRd  === rs2) forward_b = 1;
+    if (ex_reg_write && exRd !== 0 && exRd === rs2) forward_b = 1;
     else if (mem_reg_write && memRd !== 0 && memRd === rs2) forward_b = 2;
     return { forward_a, forward_b };
   },
@@ -410,8 +603,8 @@ export const RV32I_WBBypass = circuit('RV32I_WBBypass', {
   inputs: { rs_val: bus(32), rs_addr: bus(5), wb_val: bus(32), wb_rd: bus(5), wb_we: bit },
   outputs: { out: bus(32) },
   eval: ({ rs_val, rs_addr, wb_val, wb_rd, wb_we }) => {
-    const rsAddr = (rs_addr as number) & 0x1F;
-    const wbRd   = (wb_rd   as number) & 0x1F;
+    const rsAddr = (rs_addr as number) & 0x1f;
+    const wbRd = (wb_rd as number) & 0x1f;
     const bypass = wb_we && wbRd !== 0 && wbRd === rsAddr;
     return { out: (bypass ? (wb_val as number) : (rs_val as number)) >>> 0 };
   },
@@ -432,14 +625,27 @@ export const RV32I_LoadAlign = circuit('RV32I_LoadAlign', {
   outputs: { out: bus(32) },
   eval: ({ data, funct3 }) => {
     const raw = (data as number) >>> 0;
-    const f3  = (funct3 as number) & 0x7;
+    const f3 = (funct3 as number) & 0x7;
     let out: number;
     switch (f3) {
-      case 0: { const b = raw & 0xFF; out = ((b << 24) >> 24) >>> 0; break; }    // LB
-      case 1: { const hw = raw & 0xFFFF; out = ((hw << 16) >> 16) >>> 0; break; } // LH
-      case 4: out = raw & 0xFF; break;                                             // LBU
-      case 5: out = raw & 0xFFFF; break;                                           // LHU
-      default: out = raw;                                                           // LW
+      case 0: {
+        const b = raw & 0xff;
+        out = ((b << 24) >> 24) >>> 0;
+        break;
+      } // LB
+      case 1: {
+        const hw = raw & 0xffff;
+        out = ((hw << 16) >> 16) >>> 0;
+        break;
+      } // LH
+      case 4:
+        out = raw & 0xff;
+        break; // LBU
+      case 5:
+        out = raw & 0xffff;
+        break; // LHU
+      default:
+        out = raw; // LW
     }
     return { out };
   },
@@ -461,20 +667,34 @@ export const RV32I_LoadAlignFull = circuit('RV32I_LoadAlignFull', {
   eval: ({ data, byte_offset, funct3 }) => {
     const raw = (data as number) >>> 0;
     const off = (byte_offset as number) & 0x3;
-    const f3  = (funct3 as number) & 0x7;
-    const byte_val = (raw >>> (off * 8)) & 0xFF;
-    const half_val = (raw >>> ((off & 2) * 8)) & 0xFFFF;
+    const f3 = (funct3 as number) & 0x7;
+    const byte_val = (raw >>> (off * 8)) & 0xff;
+    const half_val = (raw >>> ((off & 2) * 8)) & 0xffff;
     let out: number;
     switch (f3) {
-      case 0: out = ((byte_val << 24) >> 24) >>> 0; break;  // LB
-      case 1: out = ((half_val << 16) >> 16) >>> 0; break;  // LH
-      case 4: out = byte_val; break;                         // LBU
-      case 5: out = half_val; break;                         // LHU
-      default: out = raw; break;                             // LW
+      case 0:
+        out = ((byte_val << 24) >> 24) >>> 0;
+        break; // LB
+      case 1:
+        out = ((half_val << 16) >> 16) >>> 0;
+        break; // LH
+      case 4:
+        out = byte_val;
+        break; // LBU
+      case 5:
+        out = half_val;
+        break; // LHU
+      default:
+        out = raw;
+        break; // LW
     }
     return { out };
   },
-  meta: { category: 'rv32i', icon: 'LA2', description: 'RISC-V full load aligner (raw word + byte offset + funct3)' },
+  meta: {
+    category: 'rv32i',
+    icon: 'LA2',
+    description: 'RISC-V full load aligner (raw word + byte offset + funct3)',
+  },
 });
 
 /**
@@ -489,14 +709,21 @@ export const RV32I_LoadAlignFull = circuit('RV32I_LoadAlignFull', {
  * **Outputs:** `stall`, `flush` — `bit`
  */
 export const RV32I_HazardUnit = circuit('RV32I_HazardUnit', {
-  inputs: { if_rs1: bus(5), if_rs2: bus(5), id_rd: bus(5), id_mem_read: bit, branch_taken: bit, jump: bit },
+  inputs: {
+    if_rs1: bus(5),
+    if_rs2: bus(5),
+    id_rd: bus(5),
+    id_mem_read: bit,
+    branch_taken: bit,
+    jump: bit,
+  },
   outputs: { stall: bit, flush: bit },
   eval: ({ if_rs1, if_rs2, id_rd, id_mem_read, branch_taken, jump }) => {
-    const rs1  = (if_rs1 as number) & 0x1F;
-    const rs2  = (if_rs2 as number) & 0x1F;
-    const idRd = (id_rd  as number) & 0x1F;
+    const rs1 = (if_rs1 as number) & 0x1f;
+    const rs2 = (if_rs2 as number) & 0x1f;
+    const idRd = (id_rd as number) & 0x1f;
     const stall = id_mem_read && idRd !== 0 && (idRd === rs1 || idRd === rs2) ? 1 : 0;
-    const flush = (branch_taken || jump) ? 1 : 0;
+    const flush = branch_taken || jump ? 1 : 0;
     return { stall, flush };
   },
   meta: { category: 'rv32i', icon: 'HAZ', description: 'RISC-V hazard detection unit' },
@@ -512,22 +739,29 @@ export const RV32I_HazardUnit = circuit('RV32I_HazardUnit', {
  * **Inputs:** `addrA`, `addrB` — `bus(32)`
  * **Outputs:** `dataA`, `dataB` — `bus(32)`
  */
-export const DualPortROM = circuit('DualPortROM', (_opts?: { memory?: Record<number, number> | number[] }) => ({
-  inputs: { addrA: bus(32), addrB: bus(32) },
-  outputs: { dataA: bus(32), dataB: bus(32) },
-  state: { memory: mem(65536, 8) },
-  eval: ({ addrA, addrB, memory }) => {
-    // Word-aligned reads, like real memory: the CPU's WB-stage aligner picks
-    // bytes/halves out of the word via addr[1:0], so the data port must NOT
-    // pre-shift (returning the word *starting at* a byte address would make
-    // unaligned rodata byte loads extract twice and come back 0).
-    const aA = (((addrA as number) >>> 0) & ~3);
-    const aB = (((addrB as number) >>> 0) & ~3);
-    return {
-      dataA: ((memory[aA + 3] << 24) | (memory[aA + 2] << 16) | (memory[aA + 1] << 8) | memory[aA]) >>> 0,
-      dataB: ((memory[aB + 3] << 24) | (memory[aB + 2] << 16) | (memory[aB + 1] << 8) | memory[aB]) >>> 0,
-    };
-  },
-  onTick: ({ memory }) => ({ memory }),  // read-only
-  meta: { category: 'memory', description: 'Dual-port read-only memory' },
-}));
+export const DualPortROM = circuit(
+  'DualPortROM',
+  (_opts?: { memory?: Record<number, number> | number[] }) => ({
+    inputs: { addrA: bus(32), addrB: bus(32) },
+    outputs: { dataA: bus(32), dataB: bus(32) },
+    state: { memory: mem(65536, 8) },
+    eval: ({ addrA, addrB, memory }) => {
+      // Word-aligned reads, like real memory: the CPU's WB-stage aligner picks
+      // bytes/halves out of the word via addr[1:0], so the data port must NOT
+      // pre-shift (returning the word *starting at* a byte address would make
+      // unaligned rodata byte loads extract twice and come back 0).
+      const aA = ((addrA as number) >>> 0) & ~3;
+      const aB = ((addrB as number) >>> 0) & ~3;
+      return {
+        dataA:
+          ((memory[aA + 3] << 24) | (memory[aA + 2] << 16) | (memory[aA + 1] << 8) | memory[aA]) >>>
+          0,
+        dataB:
+          ((memory[aB + 3] << 24) | (memory[aB + 2] << 16) | (memory[aB + 1] << 8) | memory[aB]) >>>
+          0,
+      };
+    },
+    onTick: ({ memory }) => ({ memory }), // read-only
+    meta: { category: 'memory', description: 'Dual-port read-only memory' },
+  }),
+);

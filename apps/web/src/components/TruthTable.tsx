@@ -9,15 +9,15 @@
  * Plan: ~/.claude/plans/yeah-lets-mae-a-crystalline-cookie.md
  */
 
-import type { ReactNode } from "react";
-import { readPortBit, type PortValuesMap } from "@/lib/port-values";
+import type { ReactNode } from 'react';
+import { type PortValuesMap, readPortBit } from '@/lib/port-values';
 
 // Reusing the embed CSS variables (light/dark theming via --embed-*).
 
 export interface TruthTableColumn {
   name: string;
   /** Visually groups columns into "causes" vs "effects" via header tint. */
-  group?: "input" | "output";
+  group?: 'input' | 'output';
 }
 
 export interface TruthTableProps {
@@ -71,8 +71,8 @@ export function TruthTable({
   return (
     <div
       className={
-        "rounded-xl border border-[var(--embed-border)] bg-[var(--embed-bg-secondary)] overflow-hidden " +
-        (className ?? "")
+        'rounded-xl border border-[var(--embed-border)] bg-[var(--embed-bg-secondary)] overflow-hidden ' +
+        (className ?? '')
       }
     >
       {title && (
@@ -83,7 +83,7 @@ export function TruthTable({
       <div className="overflow-x-auto px-4 py-4 flex justify-center">
         <table
           className="border-collapse text-center"
-          style={{ captionSide: "bottom" }}
+          style={{ captionSide: 'bottom' }}
           aria-label={tableAriaLabel}
         >
           {caption && (
@@ -94,18 +94,14 @@ export function TruthTable({
           <thead>
             <tr>
               {columns.map((col, i) => {
-                const isLastInput =
-                  col.group === "input" &&
-                  columns[i + 1]?.group === "output";
+                const isLastInput = col.group === 'input' && columns[i + 1]?.group === 'output';
                 return (
                   <th
                     key={col.name + i}
                     scope="col"
                     className={
-                      "px-4 py-2 text-xs font-medium uppercase tracking-wide text-[var(--embed-text-secondary)]" +
-                      (isLastInput
-                        ? " border-r border-[var(--embed-border)]"
-                        : "")
+                      'px-4 py-2 text-xs font-medium uppercase tracking-wide text-[var(--embed-text-secondary)]' +
+                      (isLastInput ? ' border-r border-[var(--embed-border)]' : '')
                     }
                   >
                     {col.name}
@@ -121,28 +117,23 @@ export function TruthTable({
                 <tr
                   key={ri}
                   className={
-                    isHighlighted
-                      ? "bg-blue-500/10 ring-1 ring-inset ring-blue-500/40"
-                      : ""
+                    isHighlighted ? 'bg-blue-500/10 ring-1 ring-inset ring-blue-500/40' : ''
                   }
-                  aria-current={isHighlighted ? "true" : undefined}
+                  aria-current={isHighlighted ? 'true' : undefined}
                 >
                   {row.map((cell, ci) => {
                     const col = columns[ci];
                     const isLastInput =
-                      col.group === "input" &&
-                      columns[ci + 1]?.group === "output";
+                      col.group === 'input' && columns[ci + 1]?.group === 'output';
                     return (
                       <td
                         key={ci}
                         className={
-                          "px-4 py-1.5 font-mono text-sm" +
-                          (isLastInput
-                            ? " border-r border-[var(--embed-border)]"
-                            : "")
+                          'px-4 py-1.5 font-mono text-sm' +
+                          (isLastInput ? ' border-r border-[var(--embed-border)]' : '')
                         }
                       >
-                        <BitCell value={cell} active={col.group === "output"} />
+                        <BitCell value={cell} active={col.group === 'output'} />
                       </td>
                     );
                   })}
@@ -163,28 +154,22 @@ export function TruthTable({
  * dimmed so the active cells stand out instead of every cell carrying
  * equal weight.
  */
-function BitCell({
-  value,
-  active,
-}: {
-  value: string | number;
-  active: boolean;
-}): ReactNode {
-  if (value === 1 || value === "1") {
+function BitCell({ value, active }: { value: string | number; active: boolean }): ReactNode {
+  if (value === 1 || value === '1') {
     return (
       <span
         className={
-          "inline-flex h-6 w-6 items-center justify-center rounded font-semibold " +
+          'inline-flex h-6 w-6 items-center justify-center rounded font-semibold ' +
           (active
-            ? "bg-blue-500/20 text-blue-300 ring-1 ring-inset ring-blue-500/40"
-            : "bg-[var(--embed-bg-tertiary)] text-[var(--embed-text-primary)]")
+            ? 'bg-blue-500/20 text-blue-300 ring-1 ring-inset ring-blue-500/40'
+            : 'bg-[var(--embed-bg-tertiary)] text-[var(--embed-text-primary)]')
         }
       >
         1
       </span>
     );
   }
-  if (value === 0 || value === "0") {
+  if (value === 0 || value === '0') {
     return (
       <span className="inline-flex h-6 w-6 items-center justify-center text-[var(--embed-text-muted)]">
         0
@@ -218,7 +203,7 @@ export function computeActiveRow(
 
   const inputCols = columns
     .map((col, i) => ({ col, i }))
-    .filter(({ col }) => col.group === "input");
+    .filter(({ col }) => col.group === 'input');
 
   // Walk the inputs imperatively so currentBits narrows to number[] via
   // control flow — .some() doesn't propagate the null-narrowing.
@@ -229,8 +214,6 @@ export function computeActiveRow(
     currentBits.push(bit);
   }
 
-  const found = rows.findIndex((row) =>
-    inputCols.every(({ i }, k) => row[i] === currentBits[k]),
-  );
+  const found = rows.findIndex((row) => inputCols.every(({ i }, k) => row[i] === currentBits[k]));
   return found === -1 ? undefined : found;
 }

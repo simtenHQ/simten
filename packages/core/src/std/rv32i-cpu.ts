@@ -31,19 +31,28 @@
  * sets `debug: true`, and it's the only consumer that touches them.
  */
 
-import { circuit } from '../circuit/circuit.js';
 import { bit, bus } from '../circuit/bit-bus.js';
+import { circuit } from '../circuit/circuit.js';
 import type { BuiltCircuit } from '../circuit/types.js';
-import { Constant } from './io.js';
-import { Register } from './sequential.js';
 import { Adder, BusAnd } from './arithmetic.js';
+import { Constant } from './io.js';
+import { And, Not, Or } from './logic.js';
 import { BitSlice, Mux } from './routing.js';
-import { And, Or, Not } from './logic.js';
 import {
-  RV32I_HazardUnit, RV32I_Decode, RV32I_ImmGen, RV32I_Control,
-  RV32I_RegisterFile, RV32I_WBBypass, RV32I_ForwardingUnit, RV32I_ALU,
-  RV32I_BranchComp, RV32I_WritebackMux, RV32I_NextPCMux, RV32I_LoadAlignFull,
+  RV32I_ALU,
+  RV32I_BranchComp,
+  RV32I_Control,
+  RV32I_Decode,
+  RV32I_ForwardingUnit,
+  RV32I_HazardUnit,
+  RV32I_ImmGen,
+  RV32I_LoadAlignFull,
+  RV32I_NextPCMux,
+  RV32I_RegisterFile,
+  RV32I_WBBypass,
+  RV32I_WritebackMux,
 } from './rv32i.js';
+import { Register } from './sequential.js';
 
 type B = ReturnType<typeof bus>;
 type Bit = typeof bit;
@@ -110,22 +119,57 @@ const RV32I_IFID_Regs = circuit('RV32I_IFID_Regs', () => ({
 // runtime-conditional pattern as the core's `debug` flag.
 const RV32I_ID_Stage = circuit('RV32I_ID_Stage', ({ debug = false }: { debug?: boolean } = {}) => {
   const inputs = {
-    instruction: bus(32), wb_write_data: bus(32), wb_rd: bus(5), wb_we: bit,
+    instruction: bus(32),
+    wb_write_data: bus(32),
+    wb_rd: bus(5),
+    wb_we: bit,
     ...(debug ? { debug_rs: bus(5) } : {}),
   } as unknown as { instruction: B; wb_write_data: B; wb_rd: B; wb_we: Bit; debug_rs: B };
 
   const outputs = {
-    read1: bus(32), read2: bus(32), imm: bus(32),
-    rs1: bus(5), rs2: bus(5), rd: bus(5), funct3: bus(3),
-    alu_op: bus(4), alu_src: bit, mem_read: bit, mem_write: bit, reg_write: bit,
-    mem_to_reg: bit, branch: bit, jump: bit, lui: bit, auipc: bit, is_jalr: bit,
-    hazard_rs1: bus(5), hazard_rs2: bus(5),
+    read1: bus(32),
+    read2: bus(32),
+    imm: bus(32),
+    rs1: bus(5),
+    rs2: bus(5),
+    rd: bus(5),
+    funct3: bus(3),
+    alu_op: bus(4),
+    alu_src: bit,
+    mem_read: bit,
+    mem_write: bit,
+    reg_write: bit,
+    mem_to_reg: bit,
+    branch: bit,
+    jump: bit,
+    lui: bit,
+    auipc: bit,
+    is_jalr: bit,
+    hazard_rs1: bus(5),
+    hazard_rs2: bus(5),
     ...(debug ? { debug_read: bus(32) } : {}),
   } as unknown as {
-    read1: B; read2: B; imm: B; rs1: B; rs2: B; rd: B; funct3: B;
-    alu_op: B; alu_src: Bit; mem_read: Bit; mem_write: Bit; reg_write: Bit;
-    mem_to_reg: Bit; branch: Bit; jump: Bit; lui: Bit; auipc: Bit; is_jalr: Bit;
-    hazard_rs1: B; hazard_rs2: B; debug_read: B;
+    read1: B;
+    read2: B;
+    imm: B;
+    rs1: B;
+    rs2: B;
+    rd: B;
+    funct3: B;
+    alu_op: B;
+    alu_src: Bit;
+    mem_read: Bit;
+    mem_write: Bit;
+    reg_write: Bit;
+    mem_to_reg: Bit;
+    branch: Bit;
+    jump: Bit;
+    lui: Bit;
+    auipc: Bit;
+    is_jalr: Bit;
+    hazard_rs1: B;
+    hazard_rs2: B;
+    debug_read: B;
   };
 
   return {
@@ -141,7 +185,20 @@ const RV32I_ID_Stage = circuit('RV32I_ID_Stage', ({ debug = false }: { debug?: b
       wb_bypass1: RV32I_WBBypass,
       wb_bypass2: RV32I_WBBypass,
     },
-    connect: ({ inputs, outputs, nodes: { decode, immgen, control, funct7_splitter, regfile, hazard_decode, wb_bypass1, wb_bypass2 } }) => {
+    connect: ({
+      inputs,
+      outputs,
+      nodes: {
+        decode,
+        immgen,
+        control,
+        funct7_splitter,
+        regfile,
+        hazard_decode,
+        wb_bypass1,
+        wb_bypass2,
+      },
+    }) => {
       const rows = [
         inputs.instruction.to(decode.instruction, immgen.instruction, hazard_decode.instruction),
         decode.opcode.to(control.opcode),
@@ -174,10 +231,7 @@ const RV32I_ID_Stage = circuit('RV32I_ID_Stage', ({ debug = false }: { debug?: b
         control.is_jalr.to(outputs.is_jalr),
       ];
       if (debug) {
-        rows.push(
-          inputs.debug_rs.to(regfile.debug_rs),
-          regfile.debug_read.to(outputs.debug_read),
-        );
+        rows.push(inputs.debug_rs.to(regfile.debug_rs), regfile.debug_read.to(outputs.debug_read));
       }
       return rows;
     },
@@ -185,10 +239,27 @@ const RV32I_ID_Stage = circuit('RV32I_ID_Stage', ({ debug = false }: { debug?: b
 }) as unknown as (opts?: { debug?: boolean }) => BuiltCircuit<
   { instruction: B; wb_write_data: B; wb_rd: B; wb_we: Bit; debug_rs: B },
   {
-    read1: B; read2: B; imm: B; rs1: B; rs2: B; rd: B; funct3: B;
-    alu_op: B; alu_src: Bit; mem_read: Bit; mem_write: Bit; reg_write: Bit;
-    mem_to_reg: Bit; branch: Bit; jump: Bit; lui: Bit; auipc: Bit; is_jalr: Bit;
-    hazard_rs1: B; hazard_rs2: B; debug_read: B;
+    read1: B;
+    read2: B;
+    imm: B;
+    rs1: B;
+    rs2: B;
+    rd: B;
+    funct3: B;
+    alu_op: B;
+    alu_src: Bit;
+    mem_read: Bit;
+    mem_write: Bit;
+    reg_write: Bit;
+    mem_to_reg: Bit;
+    branch: Bit;
+    jump: Bit;
+    lui: Bit;
+    auipc: Bit;
+    is_jalr: Bit;
+    hazard_rs1: B;
+    hazard_rs2: B;
+    debug_read: B;
   }
 >;
 
@@ -198,17 +269,50 @@ const RV32I_ID_Stage = circuit('RV32I_ID_Stage', ({ debug = false }: { debug?: b
 // read values, immediate) latch through unmuxed.
 const RV32I_IDEX_Regs = circuit('RV32I_IDEX_Regs', () => ({
   inputs: {
-    pc_in: bus(32), pc4_in: bus(32), read1_in: bus(32), read2_in: bus(32), imm_in: bus(32),
-    rs1_in: bus(5), rs2_in: bus(5), rd_in: bus(5), funct3_in: bus(3),
-    alu_op_in: bus(4), alu_src_in: bit, mem_read_in: bit, mem_write_in: bit, reg_write_in: bit,
-    mem_to_reg_in: bit, branch_in: bit, jump_in: bit, lui_in: bit, auipc_in: bit, is_jalr_in: bit,
-    flush: bit, stall: bit,
+    pc_in: bus(32),
+    pc4_in: bus(32),
+    read1_in: bus(32),
+    read2_in: bus(32),
+    imm_in: bus(32),
+    rs1_in: bus(5),
+    rs2_in: bus(5),
+    rd_in: bus(5),
+    funct3_in: bus(3),
+    alu_op_in: bus(4),
+    alu_src_in: bit,
+    mem_read_in: bit,
+    mem_write_in: bit,
+    reg_write_in: bit,
+    mem_to_reg_in: bit,
+    branch_in: bit,
+    jump_in: bit,
+    lui_in: bit,
+    auipc_in: bit,
+    is_jalr_in: bit,
+    flush: bit,
+    stall: bit,
   },
   outputs: {
-    pc: bus(32), pc4: bus(32), read1: bus(32), read2: bus(32), imm: bus(32),
-    rs1: bus(5), rs2: bus(5), rd: bus(5), funct3: bus(3),
-    alu_op: bus(4), alu_src: bit, mem_read: bit, mem_write: bit, reg_write: bit,
-    mem_to_reg: bit, branch: bit, jump: bit, lui: bit, auipc: bit, is_jalr: bit,
+    pc: bus(32),
+    pc4: bus(32),
+    read1: bus(32),
+    read2: bus(32),
+    imm: bus(32),
+    rs1: bus(5),
+    rs2: bus(5),
+    rd: bus(5),
+    funct3: bus(3),
+    alu_op: bus(4),
+    alu_src: bit,
+    mem_read: bit,
+    mem_write: bit,
+    reg_write: bit,
+    mem_to_reg: bit,
+    branch: bit,
+    jump: bit,
+    lui: bit,
+    auipc: bit,
+    is_jalr: bit,
   },
   nodes: {
     one1: Constant({ value: 1, width: 1 }),
@@ -261,18 +365,78 @@ const RV32I_IDEX_Regs = circuit('RV32I_IDEX_Regs', () => ({
       { mux: nodes.rs1_mux, reg: nodes.rs1, zero: zero5, in: inputs.rs1_in, out: outputs.rs1 },
       { mux: nodes.rs2_mux, reg: nodes.rs2, zero: zero5, in: inputs.rs2_in, out: outputs.rs2 },
       { mux: nodes.rd_mux, reg: nodes.rd, zero: zero5, in: inputs.rd_in, out: outputs.rd },
-      { mux: nodes.funct3_mux, reg: nodes.funct3, zero: zero3, in: inputs.funct3_in, out: outputs.funct3 },
-      { mux: nodes.alu_op_mux, reg: nodes.alu_op, zero: zero4, in: inputs.alu_op_in, out: outputs.alu_op },
-      { mux: nodes.alu_src_mux, reg: nodes.alu_src, zero: zero1, in: inputs.alu_src_in, out: outputs.alu_src },
-      { mux: nodes.mem_read_mux, reg: nodes.mem_read, zero: zero1, in: inputs.mem_read_in, out: outputs.mem_read },
-      { mux: nodes.mem_write_mux, reg: nodes.mem_write, zero: zero1, in: inputs.mem_write_in, out: outputs.mem_write },
-      { mux: nodes.reg_write_mux, reg: nodes.reg_write, zero: zero1, in: inputs.reg_write_in, out: outputs.reg_write },
-      { mux: nodes.mem_to_reg_mux, reg: nodes.mem_to_reg, zero: zero1, in: inputs.mem_to_reg_in, out: outputs.mem_to_reg },
-      { mux: nodes.branch_mux, reg: nodes.branch, zero: zero1, in: inputs.branch_in, out: outputs.branch },
+      {
+        mux: nodes.funct3_mux,
+        reg: nodes.funct3,
+        zero: zero3,
+        in: inputs.funct3_in,
+        out: outputs.funct3,
+      },
+      {
+        mux: nodes.alu_op_mux,
+        reg: nodes.alu_op,
+        zero: zero4,
+        in: inputs.alu_op_in,
+        out: outputs.alu_op,
+      },
+      {
+        mux: nodes.alu_src_mux,
+        reg: nodes.alu_src,
+        zero: zero1,
+        in: inputs.alu_src_in,
+        out: outputs.alu_src,
+      },
+      {
+        mux: nodes.mem_read_mux,
+        reg: nodes.mem_read,
+        zero: zero1,
+        in: inputs.mem_read_in,
+        out: outputs.mem_read,
+      },
+      {
+        mux: nodes.mem_write_mux,
+        reg: nodes.mem_write,
+        zero: zero1,
+        in: inputs.mem_write_in,
+        out: outputs.mem_write,
+      },
+      {
+        mux: nodes.reg_write_mux,
+        reg: nodes.reg_write,
+        zero: zero1,
+        in: inputs.reg_write_in,
+        out: outputs.reg_write,
+      },
+      {
+        mux: nodes.mem_to_reg_mux,
+        reg: nodes.mem_to_reg,
+        zero: zero1,
+        in: inputs.mem_to_reg_in,
+        out: outputs.mem_to_reg,
+      },
+      {
+        mux: nodes.branch_mux,
+        reg: nodes.branch,
+        zero: zero1,
+        in: inputs.branch_in,
+        out: outputs.branch,
+      },
       { mux: nodes.jump_mux, reg: nodes.jump, zero: zero1, in: inputs.jump_in, out: outputs.jump },
       { mux: nodes.lui_mux, reg: nodes.lui, zero: zero1, in: inputs.lui_in, out: outputs.lui },
-      { mux: nodes.auipc_mux, reg: nodes.auipc, zero: zero1, in: inputs.auipc_in, out: outputs.auipc },
-      { mux: nodes.is_jalr_mux, reg: nodes.is_jalr, zero: zero1, in: inputs.is_jalr_in, out: outputs.is_jalr },
+      {
+        mux: nodes.auipc_mux,
+        reg: nodes.auipc,
+        zero: zero1,
+        in: inputs.auipc_in,
+        out: outputs.auipc,
+      },
+      {
+        mux: nodes.is_jalr_mux,
+        reg: nodes.is_jalr,
+        zero: zero1,
+        in: inputs.is_jalr_in,
+        out: outputs.is_jalr,
+      },
     ];
     const plain = [
       { reg: nodes.pc, in: inputs.pc_in, out: outputs.pc },
@@ -293,7 +457,11 @@ const RV32I_IDEX_Regs = circuit('RV32I_IDEX_Regs', () => ({
       ]),
       ...plain.flatMap((p) => [p.in.to(p.reg.data), p.reg.q.to(p.out)]),
       one1.out.to(
-        nodes.pc.we, nodes.pc4.we, nodes.read1.we, nodes.read2.we, nodes.imm.we,
+        nodes.pc.we,
+        nodes.pc4.we,
+        nodes.read1.we,
+        nodes.read2.we,
+        nodes.imm.we,
         ...muxed.map((p) => p.reg.we),
       ),
     ];
@@ -306,14 +474,33 @@ const RV32I_IDEX_Regs = circuit('RV32I_IDEX_Regs', () => ({
 // value, and the branch/jump redirect (target + taken) consumed by IF.
 const RV32I_EX_Stage = circuit('RV32I_EX_Stage', () => ({
   inputs: {
-    pc: bus(32), pc4: bus(32), read1: bus(32), read2: bus(32), imm: bus(32),
-    alu_op: bus(4), alu_src: bit, funct3: bus(3),
-    branch: bit, jump: bit, is_jalr: bit, lui: bit, auipc: bit, mem_to_reg: bit,
-    forward_a: bus(2), forward_b: bus(2), mem_fwd: bus(32), wb_fwd: bus(32),
+    pc: bus(32),
+    pc4: bus(32),
+    read1: bus(32),
+    read2: bus(32),
+    imm: bus(32),
+    alu_op: bus(4),
+    alu_src: bit,
+    funct3: bus(3),
+    branch: bit,
+    jump: bit,
+    is_jalr: bit,
+    lui: bit,
+    auipc: bit,
+    mem_to_reg: bit,
+    forward_a: bus(2),
+    forward_b: bus(2),
+    mem_fwd: bus(32),
+    wb_fwd: bus(32),
   },
   outputs: {
-    alu_result: bus(32), result: bus(32), store_data: bus(32), pc_plus_imm: bus(32),
-    branch_taken: bit, redirect_taken: bit, redirect_target: bus(32),
+    alu_result: bus(32),
+    result: bus(32),
+    store_data: bus(32),
+    pc_plus_imm: bus(32),
+    branch_taken: bit,
+    redirect_taken: bit,
+    redirect_target: bus(32),
   },
   nodes: {
     zero32: Constant({ value: 0, width: 32 }),
@@ -337,7 +524,32 @@ const RV32I_EX_Stage = circuit('RV32I_EX_Stage', () => ({
     next_pc: RV32I_NextPCMux,
     pc_src_taken: Or,
   },
-  connect: ({ inputs, outputs, nodes: { zero32, fwd_a_bit0, fwd_a_bit1, fwd_a_mux1, fwd_a_mux2, fwd_b_bit0, fwd_b_bit1, fwd_b_mux1, fwd_b_mux2, alu_src_mux, alu, branch_comp, branch_target, jalr_target, jalr_mask, pc_plus_imm, ex_result, branch_and, next_pc, pc_src_taken } }) => [
+  connect: ({
+    inputs,
+    outputs,
+    nodes: {
+      zero32,
+      fwd_a_bit0,
+      fwd_a_bit1,
+      fwd_a_mux1,
+      fwd_a_mux2,
+      fwd_b_bit0,
+      fwd_b_bit1,
+      fwd_b_mux1,
+      fwd_b_mux2,
+      alu_src_mux,
+      alu,
+      branch_comp,
+      branch_target,
+      jalr_target,
+      jalr_mask,
+      pc_plus_imm,
+      ex_result,
+      branch_and,
+      next_pc,
+      pc_src_taken,
+    },
+  }) => [
     inputs.forward_a.to(fwd_a_bit0.in, fwd_a_bit1.in),
     inputs.read1.to(fwd_a_mux1.in0),
     inputs.mem_fwd.to(fwd_a_mux1.in1, fwd_b_mux1.in1),
@@ -382,16 +594,38 @@ const RV32I_EX_Stage = circuit('RV32I_EX_Stage', () => ({
 // ─── EX/MEM — execute→memory pipeline registers ─────────────────────────────
 const RV32I_EXMEM_Regs = circuit('RV32I_EXMEM_Regs', () => ({
   inputs: {
-    alu_result_in: bus(32), result_in: bus(32), store_data_in: bus(32), rd_in: bus(5),
-    funct3_in: bus(3), pc4_in: bus(32), imm_in: bus(32), pc_plus_imm_in: bus(32),
-    mem_read_in: bit, mem_write_in: bit, reg_write_in: bit, mem_to_reg_in: bit,
-    lui_in: bit, auipc_in: bit, jump_in: bit,
+    alu_result_in: bus(32),
+    result_in: bus(32),
+    store_data_in: bus(32),
+    rd_in: bus(5),
+    funct3_in: bus(3),
+    pc4_in: bus(32),
+    imm_in: bus(32),
+    pc_plus_imm_in: bus(32),
+    mem_read_in: bit,
+    mem_write_in: bit,
+    reg_write_in: bit,
+    mem_to_reg_in: bit,
+    lui_in: bit,
+    auipc_in: bit,
+    jump_in: bit,
   },
   outputs: {
-    alu_result: bus(32), result: bus(32), store_data: bus(32), rd: bus(5),
-    funct3: bus(3), pc4: bus(32), imm: bus(32), pc_plus_imm: bus(32),
-    mem_read: bit, mem_write: bit, reg_write: bit, mem_to_reg: bit,
-    lui: bit, auipc: bit, jump: bit,
+    alu_result: bus(32),
+    result: bus(32),
+    store_data: bus(32),
+    rd: bus(5),
+    funct3: bus(3),
+    pc4: bus(32),
+    imm: bus(32),
+    pc_plus_imm: bus(32),
+    mem_read: bit,
+    mem_write: bit,
+    reg_write: bit,
+    mem_to_reg: bit,
+    lui: bit,
+    auipc: bit,
+    jump: bit,
   },
   nodes: {
     one1: Constant({ value: 1, width: 1 }),
@@ -442,14 +676,33 @@ const RV32I_EXMEM_Regs = circuit('RV32I_EXMEM_Regs', () => ({
 // for the WB-stage load aligner.
 const RV32I_MEMWB_Regs = circuit('RV32I_MEMWB_Regs', () => ({
   inputs: {
-    alu_result_in: bus(32), load_data_in: bus(32), rd_in: bus(5), funct3_in: bus(3),
-    pc4_in: bus(32), imm_in: bus(32), pc_plus_imm_in: bus(32),
-    reg_write_in: bit, mem_to_reg_in: bit, lui_in: bit, auipc_in: bit, jump_in: bit,
+    alu_result_in: bus(32),
+    load_data_in: bus(32),
+    rd_in: bus(5),
+    funct3_in: bus(3),
+    pc4_in: bus(32),
+    imm_in: bus(32),
+    pc_plus_imm_in: bus(32),
+    reg_write_in: bit,
+    mem_to_reg_in: bit,
+    lui_in: bit,
+    auipc_in: bit,
+    jump_in: bit,
   },
   outputs: {
-    alu_result: bus(32), load_data: bus(32), byte_offset: bus(2), rd: bus(5), funct3: bus(3),
-    pc4: bus(32), imm: bus(32), pc_plus_imm: bus(32),
-    reg_write: bit, mem_to_reg: bit, lui: bit, auipc: bit, jump: bit,
+    alu_result: bus(32),
+    load_data: bus(32),
+    byte_offset: bus(2),
+    rd: bus(5),
+    funct3: bus(3),
+    pc4: bus(32),
+    imm: bus(32),
+    pc_plus_imm: bus(32),
+    reg_write: bit,
+    mem_to_reg: bit,
+    lui: bit,
+    auipc: bit,
+    jump: bit,
   },
   nodes: {
     one1: Constant({ value: 1, width: 1 }),
@@ -498,9 +751,17 @@ const RV32I_MEMWB_Regs = circuit('RV32I_MEMWB_Regs', () => ({
 // selects what actually gets written back to the register file.
 const RV32I_WB_Stage = circuit('RV32I_WB_Stage', () => ({
   inputs: {
-    alu_result: bus(32), load_data: bus(32), byte_offset: bus(2), funct3: bus(3),
-    pc4: bus(32), imm: bus(32), pc_plus_imm: bus(32),
-    mem_to_reg: bit, lui: bit, auipc: bit, jump: bit,
+    alu_result: bus(32),
+    load_data: bus(32),
+    byte_offset: bus(2),
+    funct3: bus(3),
+    pc4: bus(32),
+    imm: bus(32),
+    pc_plus_imm: bus(32),
+    mem_to_reg: bit,
+    lui: bit,
+    auipc: bit,
+    jump: bit,
   },
   outputs: { write_data: bus(32) },
   nodes: {
@@ -529,18 +790,59 @@ const RV32I_CoreFactory = circuit('RV32I_Core', ({ debug = false }: { debug?: bo
   // Runtime-conditional ports (absent when !debug) — cast so the debug ports
   // are always present in the inferred type. See module header.
   const inputs = {
-    instruction: bus(32), data_read: bus(32), net_rx_data: bus(32), net_rx_valid: bit, net_rx_frame: bit,
+    instruction: bus(32),
+    data_read: bus(32),
+    net_rx_data: bus(32),
+    net_rx_valid: bit,
+    net_rx_frame: bit,
     ...(debug ? { debug_addr: bus(5) } : {}),
   } as unknown as {
-    instruction: B; data_read: B; net_rx_data: B; net_rx_valid: Bit; net_rx_frame: Bit; debug_addr: B;
+    instruction: B;
+    data_read: B;
+    net_rx_data: B;
+    net_rx_valid: Bit;
+    net_rx_frame: Bit;
+    debug_addr: B;
   };
 
   const outputs = {
-    instr_addr: bus(32), data_addr: bus(32), data_write: bus(32), data_mem_read: bit, data_mem_write: bit, data_funct3: bus(3), net_tx_data: bus(32), net_tx_valid: bit, net_tx_frame: bit, pc_out: bus(32),
-    ...(debug ? { debug_value: bus(32), if_pc: bus(32), id_pc: bus(32), ex_pc: bus(32), mem_pc4: bus(32), wb_pc4: bus(32) } : {}),
+    instr_addr: bus(32),
+    data_addr: bus(32),
+    data_write: bus(32),
+    data_mem_read: bit,
+    data_mem_write: bit,
+    data_funct3: bus(3),
+    net_tx_data: bus(32),
+    net_tx_valid: bit,
+    net_tx_frame: bit,
+    pc_out: bus(32),
+    ...(debug
+      ? {
+          debug_value: bus(32),
+          if_pc: bus(32),
+          id_pc: bus(32),
+          ex_pc: bus(32),
+          mem_pc4: bus(32),
+          wb_pc4: bus(32),
+        }
+      : {}),
   } as unknown as {
-    instr_addr: B; data_addr: B; data_write: B; data_mem_read: Bit; data_mem_write: Bit; data_funct3: B; net_tx_data: B; net_tx_valid: Bit; net_tx_frame: Bit; pc_out: B;
-    debug_value: B; if_pc: B; id_pc: B; ex_pc: B; mem_pc4: B; wb_pc4: B;
+    instr_addr: B;
+    data_addr: B;
+    data_write: B;
+    data_mem_read: Bit;
+    data_mem_write: Bit;
+    data_funct3: B;
+    net_tx_data: B;
+    net_tx_valid: Bit;
+    net_tx_frame: Bit;
+    pc_out: B;
+    debug_value: B;
+    if_pc: B;
+    id_pc: B;
+    ex_pc: B;
+    mem_pc4: B;
+    wb_pc4: B;
   };
 
   return {
@@ -559,7 +861,11 @@ const RV32I_CoreFactory = circuit('RV32I_Core', ({ debug = false }: { debug?: bo
       forward: RV32I_ForwardingUnit,
       stall_inv: Not,
     },
-    connect: ({ inputs, outputs, nodes: { IF, IFID, ID, IDEX, EX, EXMEM, MEMWB, WB, hazard, forward, stall_inv } }) => {
+    connect: ({
+      inputs,
+      outputs,
+      nodes: { IF, IFID, ID, IDEX, EX, EXMEM, MEMWB, WB, hazard, forward, stall_inv },
+    }) => {
       const rows = [
         // hazard control: stall freezes IF + IF/ID, flush squashes IF/ID,
         // either inserts a bubble at ID/EX
@@ -696,12 +1002,32 @@ const RV32I_CoreFactory = circuit('RV32I_Core', ({ debug = false }: { debug?: bo
 // editor's ambient types, past budget. So annotate the public export with the
 // ports spelled out explicitly (compact) and drop `Nodes` entirely.
 type CoreIns = {
-  instruction: B; data_read: B; net_rx_data: B; net_rx_valid: Bit; net_rx_frame: Bit; debug_addr: B;
+  instruction: B;
+  data_read: B;
+  net_rx_data: B;
+  net_rx_valid: Bit;
+  net_rx_frame: Bit;
+  debug_addr: B;
 };
 type CoreOuts = {
-  instr_addr: B; data_addr: B; data_write: B; data_mem_read: Bit; data_mem_write: Bit; data_funct3: B;
-  net_tx_data: B; net_tx_valid: Bit; net_tx_frame: Bit; pc_out: B;
-  debug_value: B; if_pc: B; id_pc: B; ex_pc: B; mem_pc4: B; wb_pc4: B;
+  instr_addr: B;
+  data_addr: B;
+  data_write: B;
+  data_mem_read: Bit;
+  data_mem_write: Bit;
+  data_funct3: B;
+  net_tx_data: B;
+  net_tx_valid: Bit;
+  net_tx_frame: Bit;
+  pc_out: B;
+  debug_value: B;
+  if_pc: B;
+  id_pc: B;
+  ex_pc: B;
+  mem_pc4: B;
+  wb_pc4: B;
 };
 
-export const RV32I_Core = RV32I_CoreFactory as unknown as (opts?: { debug?: boolean }) => BuiltCircuit<CoreIns, CoreOuts>;
+export const RV32I_Core = RV32I_CoreFactory as unknown as (opts?: {
+  debug?: boolean;
+}) => BuiltCircuit<CoreIns, CoreOuts>;

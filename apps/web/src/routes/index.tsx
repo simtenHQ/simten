@@ -1,16 +1,16 @@
-import { useState, useEffect, useCallback, useRef, useMemo, type ReactNode } from "react";
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { CircuitEmbed } from "@simten/embed";
-import { circuit, bit } from "@simten/core/circuit";
-import { Xor, And, Or, DFlipFlop } from "@simten/core/std";
-import { HighlightedCode } from "@/components/HighlightedCode";
-import { Container } from "@/components/Container";
-import { Section } from "@/components/SectionHeading";
-import { RV32IDebuggerPreview } from "@/features/learn/cpu-debugger/RV32IDebuggerPreview";
-import { ClaudeDemoSection } from "@/features/splash/ClaudeDemoSection";
-import { CodeWithHovers } from "@/features/splash/CodeWithHovers";
-import { useSnakeSimulator } from "@/features/blog/snake-in-hardware/useSnakeSimulator";
-import { usePongSimulator } from "@/features/blog/pong-in-hardware/usePongSimulator";
+import { bit, circuit } from '@simten/core/circuit';
+import { And, DFlipFlop, Or, Xor } from '@simten/core/std';
+import { CircuitEmbed } from '@simten/embed';
+import { createFileRoute, Link } from '@tanstack/react-router';
+import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Container } from '@/components/Container';
+import { HighlightedCode } from '@/components/HighlightedCode';
+import { Section } from '@/components/SectionHeading';
+import { usePongSimulator } from '@/features/blog/pong-in-hardware/usePongSimulator';
+import { useSnakeSimulator } from '@/features/blog/snake-in-hardware/useSnakeSimulator';
+import { RV32IDebuggerPreview } from '@/features/learn/cpu-debugger/RV32IDebuggerPreview';
+import { ClaudeDemoSection } from '@/features/splash/ClaudeDemoSection';
+import { CodeWithHovers } from '@/features/splash/CodeWithHovers';
 
 // ============================================================================
 // Demo circuits
@@ -33,10 +33,13 @@ const DrilldownFullAdder = circuit('FullAdder', {
   outputs: { sum: bit, cout: bit },
   nodes: { ha1: HalfAdder, ha2: HalfAdder, or1: Or },
   connect: ({ inputs, outputs, nodes: { ha1, ha2, or1 } }) => [
-    inputs.a.to(ha1.a), inputs.b.to(ha1.b),
-    ha1.sum.to(ha2.a), inputs.cin.to(ha2.b),
+    inputs.a.to(ha1.a),
+    inputs.b.to(ha1.b),
+    ha1.sum.to(ha2.a),
+    inputs.cin.to(ha2.b),
     ha2.sum.to(outputs.sum),
-    ha1.carry.to(or1.a), ha2.carry.to(or1.b),
+    ha1.carry.to(or1.a),
+    ha2.carry.to(or1.b),
     or1.out.to(outputs.cout),
   ],
 });
@@ -54,24 +57,20 @@ const ShiftRegister4 = circuit('ShiftRegister4', {
   ],
 });
 
-
-
-
-
 // ============================================================================
 // Route + Page
 // ============================================================================
 
-import { pageHead, softwareApplicationLd } from "@/lib/seo";
+import { pageHead, softwareApplicationLd } from '@/lib/seo';
 
-export const Route = createFileRoute("/")({
+export const Route = createFileRoute('/')({
   head: () => ({
     ...pageHead({
-      title: "Simten — Hardware design in TypeScript",
+      title: 'Simten — Hardware design in TypeScript',
       titleExact: true,
       description:
-        "A TypeScript HDL where npm is your testbench — from logic gates to a RISC-V CPU. Test circuits against real firmware, then synthesize to Verilog.",
-      path: "/",
+        'A TypeScript HDL where npm is your testbench — from logic gates to a RISC-V CPU. Test circuits against real firmware, then synthesize to Verilog.',
+      path: '/',
     }),
     scripts: [softwareApplicationLd()],
   }),
@@ -160,12 +159,8 @@ function BentoCell({
 }) {
   return (
     <div className="bg-card p-6 lg:p-8 flex flex-col">
-      <h3 className="text-xl lg:text-2xl font-semibold tracking-tight text-foreground">
-        {title}
-      </h3>
-      <p className="mt-3 text-[14px] text-muted-foreground leading-snug">
-        {description}
-      </p>
+      <h3 className="text-xl lg:text-2xl font-semibold tracking-tight text-foreground">{title}</h3>
+      <p className="mt-3 text-[14px] text-muted-foreground leading-snug">{description}</p>
       <div className="mt-5">
         {href ? (
           <Link
@@ -173,14 +168,30 @@ function BentoCell({
             className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-border text-muted-foreground hover:text-foreground hover:border-foreground/40 transition-colors"
             aria-label={`Learn more about ${title}`}
           >
-            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+            <svg
+              className="h-4 w-4"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={2}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
               <line x1="5" y1="12" x2="19" y2="12" />
               <polyline points="12 5 19 12 12 19" />
             </svg>
           </Link>
         ) : (
           <span className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-border text-muted-foreground/60">
-            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+            <svg
+              className="h-4 w-4"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={2}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
               <line x1="5" y1="12" x2="19" y2="12" />
               <polyline points="12 5 19 12 12 19" />
             </svg>
@@ -245,7 +256,7 @@ console.log(sim.get('sum'), sim.get('cout')); // 1, 1`;
 // the hover popups; non-API names (fc, figlet, forceSimulation) stay inert.
 const NPM_SNIPPETS: { filename: string; code: string }[] = [
   {
-    filename: "logo-rom.ts",
+    filename: 'logo-rom.ts',
     code: `// figlet — ASCII art baked into a hardware ROM
 import figlet from 'figlet';
 import smallFont from 'figlet/fonts/Small';
@@ -258,7 +269,7 @@ const bytes = [...banner].map(c => c.charCodeAt(0));
 const Logo = ROM({ memory: romFromBytes(bytes) });`,
   },
   {
-    filename: "adder.test.ts",
+    filename: 'adder.test.ts',
     code: `// fast-check — property-test the half adder
 import * as fc from 'fast-check';
 import { simulate } from '@simten/core/sim';
@@ -272,7 +283,7 @@ fc.assert(
 );  // ✓ 100 random inputs passed`,
   },
   {
-    filename: "layout.ts",
+    filename: 'layout.ts',
     code: `// d3-force — auto-layout the circuit graph
 import { forceSimulation, forceLink, forceManyBody } from 'd3-force';
 
@@ -285,7 +296,7 @@ const layout = forceSimulation(nodes)
 for (const n of layout.nodes()) editor.move(n.id, n.x, n.y);`,
   },
   {
-    filename: "boot.ts",
+    filename: 'boot.ts',
     code: `// GCC — compile Rust to RISC-V bytes, drop into ROM
 import { execSync } from 'child_process';
 import { ROM, romFromBytes } from '@simten/core/std';
@@ -301,13 +312,10 @@ function NpmBentoVisual() {
   const [index, setIndex] = useState(0);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
+    if (typeof window === 'undefined') return;
     // Respect reduced-motion: hold the first snippet, no cycling.
-    if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
-    const id = window.setInterval(
-      () => setIndex((i) => (i + 1) % NPM_SNIPPETS.length),
-      3500,
-    );
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
+    const id = window.setInterval(() => setIndex((i) => (i + 1) % NPM_SNIPPETS.length), 3500);
     return () => window.clearInterval(id);
   }, []);
 
@@ -336,7 +344,7 @@ function NpmBentoVisual() {
             <div
               key={i}
               className={`absolute inset-0 transition-opacity duration-700 ease-in-out ${
-                i === index ? "opacity-100" : "opacity-0 pointer-events-none"
+                i === index ? 'opacity-100' : 'opacity-0 pointer-events-none'
               }`}
               aria-hidden={i !== index}
             >
@@ -379,9 +387,7 @@ function EmbedsBentoVisual() {
             <span className="w-2 h-2 rounded-full bg-[#febc2e]" />
             <span className="w-2 h-2 rounded-full bg-[#28c840]" />
           </div>
-          <span className="text-[10px] font-mono text-muted-foreground">
-            blog/post.tsx
-          </span>
+          <span className="text-[10px] font-mono text-muted-foreground">blog/post.tsx</span>
         </div>
         <CodeWithHovers
           code={EMBED_SNIPPET}
@@ -429,16 +435,14 @@ function DrilldownLayer({
     <div
       className="relative rounded-lg border border-border bg-card shadow-sm w-full"
       style={{
-        padding: depth === 3 ? "10px 14px" : depth === 2 ? 12 : depth === 1 ? 14 : 16,
+        padding: depth === 3 ? '10px 14px' : depth === 2 ? 12 : depth === 1 ? 14 : 16,
         opacity: muting,
       }}
     >
       <div className="flex items-center justify-between mb-2">
         <span
           className={`font-mono ${
-            leaf
-              ? "text-[12px] text-foreground font-semibold"
-              : "text-[11px] text-foreground/80"
+            leaf ? 'text-[12px] text-foreground font-semibold' : 'text-[11px] text-foreground/80'
           }`}
         >
           {name}
@@ -447,7 +451,14 @@ function DrilldownLayer({
           <span className="relative inline-flex h-4 w-4 items-center justify-center">
             <span className="absolute inset-0 rounded-full bg-blue-400/30 animate-[ping_2s_cubic-bezier(0,0,0.2,1)_infinite]" />
             <span className="relative flex h-3 w-3 items-center justify-center rounded-full bg-blue-500">
-              <svg className="h-2 w-2 text-white" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
+              <svg
+                className="h-2 w-2 text-white"
+                viewBox="0 0 16 16"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2}
+                strokeLinecap="round"
+              >
                 <circle cx="6.5" cy="6.5" r="4.5" />
                 <line x1="10" y1="10" x2="14" y2="14" />
               </svg>
@@ -487,7 +498,9 @@ function MCPBentoVisual() {
           </div>
         </div>
         <div className="px-3 py-3 font-mono text-[11px] leading-relaxed text-gray-300 space-y-0.5">
-          <div className="text-gray-500">$ <span className="text-gray-200">claude mcp add simten npx @simten/mcp</span></div>
+          <div className="text-gray-500">
+            $ <span className="text-gray-200">claude mcp add simten npx @simten/mcp</span>
+          </div>
           <div className="text-emerald-400">✓ added simten</div>
           <div className="h-2" />
           <div className="flex items-start gap-2">
@@ -506,7 +519,9 @@ function MCPBentoVisual() {
           </div>
           <div className="pl-5 text-gray-500">simulation ready · counts 00 → 01 → 10 → 11</div>
           <div className="h-1" />
-          <div className="text-gray-400">Your counter is live. Click <span className="text-gray-200">Tick</span> to advance.</div>
+          <div className="text-gray-400">
+            Your counter is live. Click <span className="text-gray-200">Tick</span> to advance.
+          </div>
         </div>
       </div>
     </div>
@@ -543,22 +558,22 @@ function squareTrace(period: number): string {
       pts.push(`${x},${y}`);
     }
   }
-  return pts.join(" ");
+  return pts.join(' ');
 }
 
 const WAVEFORM_SIGNALS = [
-  { name: "clk",      points: squareTrace(1) },
-  { name: "count[0]", points: squareTrace(2) },
-  { name: "count[1]", points: squareTrace(4) },
-  { name: "q",        points: squareTrace(8) },
+  { name: 'clk', points: squareTrace(1) },
+  { name: 'count[0]', points: squareTrace(2) },
+  { name: 'count[1]', points: squareTrace(4) },
+  { name: 'q', points: squareTrace(8) },
 ];
 
 function TimeTravelBentoVisual() {
   const [cycle, setCycle] = useState(8);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
+    if (typeof window === 'undefined') return;
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
     let dir = 1;
     const id = window.setInterval(() => {
       setCycle((c) => {
@@ -645,10 +660,10 @@ function TimeTravelBentoVisual() {
 
         <div className="flex items-center justify-between h-7 px-3 border-t border-border bg-muted/60">
           <div className="flex items-center gap-2 text-muted-foreground">
-            <ScrubberBtn>{"⏮"}</ScrubberBtn>
-            <ScrubberBtn>{"◀"}</ScrubberBtn>
-            <ScrubberBtn>{"▶"}</ScrubberBtn>
-            <ScrubberBtn>{"⏭"}</ScrubberBtn>
+            <ScrubberBtn>{'⏮'}</ScrubberBtn>
+            <ScrubberBtn>{'◀'}</ScrubberBtn>
+            <ScrubberBtn>{'▶'}</ScrubberBtn>
+            <ScrubberBtn>{'⏭'}</ScrubberBtn>
           </div>
           <span className="text-[9px] font-mono uppercase tracking-wider text-muted-foreground/70">
             time-travel
@@ -682,9 +697,7 @@ function TypesafeBentoVisual() {
             <span className="w-2 h-2 rounded-full bg-[#febc2e]" />
             <span className="w-2 h-2 rounded-full bg-[#28c840]" />
           </div>
-          <span className="text-[10px] font-mono text-muted-foreground">
-            adders.ts
-          </span>
+          <span className="text-[10px] font-mono text-muted-foreground">adders.ts</span>
         </div>
         <CodeWithHovers
           code={TYPESAFE_SNIPPET}
@@ -706,11 +719,13 @@ function MobileAIHero() {
         Describe hardware. Claude builds it. Test it like software.
       </h1>
       <p className="mt-4 text-sm text-muted-foreground">
-        A TypeScript HDL where the whole npm ecosystem is your testbench — drive a circuit with real firmware, any library you can <code>npm install</code>, and watch it run cycle-by-cycle. Synthesizable to Verilog.
+        A TypeScript HDL where the whole npm ecosystem is your testbench — drive a circuit with real
+        firmware, any library you can <code>npm install</code>, and watch it run cycle-by-cycle.
+        Synthesizable to Verilog.
       </p>
       <Link
         to="/docs/$"
-        params={{ _splat: "" }}
+        params={{ _splat: '' }}
         className="mt-5 flex w-fit items-center rounded-lg bg-foreground text-background hover:bg-foreground/90 transition-colors px-4 py-3 text-sm font-medium"
       >
         Learn more →
@@ -732,7 +747,6 @@ function MobileAIHero() {
 function DemoGallery() {
   return (
     <div className="relative pb-16 md:pb-24 md:animate-in md:fade-in md:duration-700 overflow-hidden">
-
       <Container className="relative">
         {/* Lead with the heavy proof — the RV32I CPU — to show the
             framework's range up front. Lighter playable demos follow.
@@ -744,7 +758,8 @@ function DemoGallery() {
               Scale to real-world complexity
             </h2>
             <p className="mt-4 text-base lg:text-lg text-muted-foreground">
-              The framework already runs heavy systems in the browser — for example, a 5-stage pipelined RISC-V CPU executing GCC-compiled C, C++, and Rust.
+              The framework already runs heavy systems in the browser — for example, a 5-stage
+              pipelined RISC-V CPU executing GCC-compiled C, C++, and Rust.
             </p>
             <Link
               to="/cpu/rv32i"
@@ -780,7 +795,8 @@ function DemoGallery() {
               >
                 <path d="M2.5 6.4 5 8.9 9.5 3.4" />
               </svg>
-              Passes the official riscv-arch-test RV32I suite (38/38), signature-matched against Spike (in sim)
+              Passes the official riscv-arch-test RV32I suite (38/38), signature-matched against
+              Spike (in sim)
               <span aria-hidden="true" className="text-muted-foreground/70">
                 ↗
               </span>
@@ -797,7 +813,8 @@ function DemoGallery() {
               No CPU. No code. Just gates.
             </h2>
             <p className="mt-3 text-sm text-muted-foreground">
-              Pong and Snake, built entirely from logic gates with no processor and no software. Play them here, then watch Snake run on a real ULX3S FPGA.
+              Pong and Snake, built entirely from logic gates with no processor and no software.
+              Play them here, then watch Snake run on a real ULX3S FPGA.
             </p>
           </div>
 
@@ -811,128 +828,164 @@ function DemoGallery() {
         {/* Row 1.5: removed — drilldown showcase relocated below for tightness */}
         <div className="hidden">
           {/* placeholder kept so the diff stays small */}
-        <div className="mt-32 rounded-lg border border-border overflow-hidden bg-card">
-          <div className="grid grid-cols-1 sm:grid-cols-[1fr_1.5fr]">
-            {/* Left: explanation */}
-            <div className="flex flex-col justify-center px-6 py-8 sm:px-8 sm:border-r border-border">
-              <div className="inline-flex items-center gap-2 mb-4">
-                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-500 shadow-sm shadow-blue-500/30">
-                  <svg className="h-3.5 w-3.5 text-white" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                    <circle cx="6.5" cy="6.5" r="4.5" />
-                    <line x1="10" y1="10" x2="14" y2="14" />
-                  </svg>
-                </span>
-                <span className="text-[11px] font-medium text-blue-400 uppercase tracking-wider">Drill-down</span>
-              </div>
-              <h3 className="text-2xl sm:text-3xl font-semibold text-foreground tracking-tight leading-[1.15] mb-4">
-                Explore inside any component
-              </h3>
-              <p className="text-[15px] text-foreground/75 leading-snug mb-5">
-                Every composite is explorable. Double-click the pulsing
-                {" "}<span className="relative inline-flex align-middle h-5 w-5 items-center justify-center">
-                  <span className="absolute inset-0 rounded-full bg-blue-400/30 animate-[ping_2s_cubic-bezier(0,0,0.2,1)_infinite]" />
-                  <span className="relative flex h-4 w-4 items-center justify-center rounded-full bg-blue-500">
-                    <svg className="h-2.5 w-2.5 text-white" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+          <div className="mt-32 rounded-lg border border-border overflow-hidden bg-card">
+            <div className="grid grid-cols-1 sm:grid-cols-[1fr_1.5fr]">
+              {/* Left: explanation */}
+              <div className="flex flex-col justify-center px-6 py-8 sm:px-8 sm:border-r border-border">
+                <div className="inline-flex items-center gap-2 mb-4">
+                  <span className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-500 shadow-sm shadow-blue-500/30">
+                    <svg
+                      className="h-3.5 w-3.5 text-white"
+                      viewBox="0 0 16 16"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                    >
                       <circle cx="6.5" cy="6.5" r="4.5" />
                       <line x1="10" y1="10" x2="14" y2="14" />
                     </svg>
                   </span>
-                </span>{" "}
-                badge to open its internals — with full simulation and nested drill-down.
-              </p>
-              <div className="space-y-2 text-[12px] text-muted-foreground">
-                <div className="flex items-start gap-2">
-                  <span className="text-blue-400 mt-0.5">1.</span>
-                  <span>Double-click <strong className="text-foreground/80">fa</strong> (FullAdder) to see its two HalfAdders</span>
+                  <span className="text-[11px] font-medium text-blue-400 uppercase tracking-wider">
+                    Drill-down
+                  </span>
                 </div>
-                <div className="flex items-start gap-2">
-                  <span className="text-blue-400 mt-0.5">2.</span>
-                  <span>Double-click a <strong className="text-foreground/80">HalfAdder</strong> to see its XOR + AND gates</span>
-                </div>
-                <div className="flex items-start gap-2">
-                  <span className="text-blue-400 mt-0.5">3.</span>
-                  <span>Toggle switches — signals propagate through every level</span>
+                <h3 className="text-2xl sm:text-3xl font-semibold text-foreground tracking-tight leading-[1.15] mb-4">
+                  Explore inside any component
+                </h3>
+                <p className="text-[15px] text-foreground/75 leading-snug mb-5">
+                  Every composite is explorable. Double-click the pulsing{' '}
+                  <span className="relative inline-flex align-middle h-5 w-5 items-center justify-center">
+                    <span className="absolute inset-0 rounded-full bg-blue-400/30 animate-[ping_2s_cubic-bezier(0,0,0.2,1)_infinite]" />
+                    <span className="relative flex h-4 w-4 items-center justify-center rounded-full bg-blue-500">
+                      <svg
+                        className="h-2.5 w-2.5 text-white"
+                        viewBox="0 0 16 16"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                      >
+                        <circle cx="6.5" cy="6.5" r="4.5" />
+                        <line x1="10" y1="10" x2="14" y2="14" />
+                      </svg>
+                    </span>
+                  </span>{' '}
+                  badge to open its internals — with full simulation and nested drill-down.
+                </p>
+                <div className="space-y-2 text-[12px] text-muted-foreground">
+                  <div className="flex items-start gap-2">
+                    <span className="text-blue-400 mt-0.5">1.</span>
+                    <span>
+                      Double-click <strong className="text-foreground/80">fa</strong> (FullAdder) to
+                      see its two HalfAdders
+                    </span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <span className="text-blue-400 mt-0.5">2.</span>
+                    <span>
+                      Double-click a <strong className="text-foreground/80">HalfAdder</strong> to
+                      see its XOR + AND gates
+                    </span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <span className="text-blue-400 mt-0.5">3.</span>
+                    <span>Toggle switches — signals propagate through every level</span>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            {/* Right: live circuit */}
-            <div style={{ height: 320 }}>
+              {/* Right: live circuit */}
+              <div style={{ height: 320 }}>
+                <CircuitEmbed
+                  circuit={DrilldownFullAdder}
+                  height={320}
+                  layout={{
+                    a: { x: 10, y: 10 },
+                    b: { x: 10, y: 110 },
+                    cin: { x: 10, y: 210 },
+                    dut: { x: 200, y: 100 },
+                    sum: { x: 400, y: 40 },
+                    cout: { x: 400, y: 200 },
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Row 1.6: Time-travel showcase */}
+          <div className="mt-24 rounded-lg border border-border overflow-hidden bg-card">
+            <div className="grid grid-cols-1 sm:grid-cols-[1.5fr_1fr]">
+              {/* Left: live circuit with full clock controls + time-travel */}
               <CircuitEmbed
-                circuit={DrilldownFullAdder}
-                height={320}
+                circuit={ShiftRegister4}
+                height={340}
+                initialInputs={{ din: 1 }}
                 layout={{
-                  a:    { x: 10,  y: 10 },
-                  b:    { x: 10,  y: 110 },
-                  cin:  { x: 10,  y: 210 },
-                  dut:  { x: 200, y: 100 },
-                  sum:  { x: 400, y: 40 },
-                  cout: { x: 400, y: 200 },
+                  din: { x: 10, y: 140 },
+                  dut: { x: 160, y: 120 },
+                  q0: { x: 310, y: 20 },
+                  q1: { x: 310, y: 100 },
+                  q2: { x: 310, y: 180 },
+                  q3: { x: 310, y: 260 },
                 }}
               />
-            </div>
-          </div>
-        </div>
 
-        {/* Row 1.6: Time-travel showcase */}
-        <div className="mt-24 rounded-lg border border-border overflow-hidden bg-card">
-          <div className="grid grid-cols-1 sm:grid-cols-[1.5fr_1fr]">
-            {/* Left: live circuit with full clock controls + time-travel */}
-            <CircuitEmbed
-              circuit={ShiftRegister4}
-              height={340}
-              initialInputs={{ din: 1 }}
-              layout={{
-                din: { x: 10, y: 140 },
-                dut: { x: 160, y: 120 },
-                q0:  { x: 310, y: 20 },
-                q1:  { x: 310, y: 100 },
-                q2:  { x: 310, y: 180 },
-                q3:  { x: 310, y: 260 },
-              }}
-            />
-
-            {/* Right: explanation */}
-            <div className="flex flex-col justify-center px-6 py-8 sm:px-8 sm:border-l border-border">
-              <div className="inline-flex items-center gap-2 mb-4">
-                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-amber-500 shadow-sm shadow-amber-500/30">
-                  <svg className="h-3.5 w-3.5 text-white" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                    <circle cx="8" cy="8" r="6" />
-                    <polyline points="8 4 8 8 11 10" />
-                  </svg>
-                </span>
-                <span className="text-[11px] font-medium text-amber-600 dark:text-amber-400 uppercase tracking-wider">Time-travel</span>
-              </div>
-              <h3 className="text-2xl sm:text-3xl font-semibold text-foreground tracking-tight leading-[1.15] mb-4">
-                Rewind any clock cycle
-              </h3>
-              <p className="text-[15px] text-foreground/75 leading-snug mb-5">
-                Sequential circuits record every state. Step forward, spot something wrong, step back to the exact cycle it happened. No printf debugging — just rewind.
-              </p>
-              <div className="space-y-2 text-[12px] text-muted-foreground/80">
-                <div className="flex items-start gap-2">
-                  <span className="text-amber-600 dark:text-amber-400 mt-0.5">1.</span>
-                  <span>Toggle the <strong className="text-foreground">switch</strong> on, then <strong className="text-foreground">Tick</strong> a few times</span>
+              {/* Right: explanation */}
+              <div className="flex flex-col justify-center px-6 py-8 sm:px-8 sm:border-l border-border">
+                <div className="inline-flex items-center gap-2 mb-4">
+                  <span className="flex h-6 w-6 items-center justify-center rounded-full bg-amber-500 shadow-sm shadow-amber-500/30">
+                    <svg
+                      className="h-3.5 w-3.5 text-white"
+                      viewBox="0 0 16 16"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                    >
+                      <circle cx="8" cy="8" r="6" />
+                      <polyline points="8 4 8 8 11 10" />
+                    </svg>
+                  </span>
+                  <span className="text-[11px] font-medium text-amber-600 dark:text-amber-400 uppercase tracking-wider">
+                    Time-travel
+                  </span>
                 </div>
-                <div className="flex items-start gap-2">
-                  <span className="text-amber-600 dark:text-amber-400 mt-0.5">2.</span>
-                  <span>Watch the bit ripple through the four flip-flop stages</span>
-                </div>
-                <div className="flex items-start gap-2">
-                  <span className="text-amber-600 dark:text-amber-400 mt-0.5">3.</span>
-                  <span>Use <strong className="text-foreground">◀ ▶</strong> to scrub back and forth — every cycle is preserved</span>
+                <h3 className="text-2xl sm:text-3xl font-semibold text-foreground tracking-tight leading-[1.15] mb-4">
+                  Rewind any clock cycle
+                </h3>
+                <p className="text-[15px] text-foreground/75 leading-snug mb-5">
+                  Sequential circuits record every state. Step forward, spot something wrong, step
+                  back to the exact cycle it happened. No printf debugging — just rewind.
+                </p>
+                <div className="space-y-2 text-[12px] text-muted-foreground/80">
+                  <div className="flex items-start gap-2">
+                    <span className="text-amber-600 dark:text-amber-400 mt-0.5">1.</span>
+                    <span>
+                      Toggle the <strong className="text-foreground">switch</strong> on, then{' '}
+                      <strong className="text-foreground">Tick</strong> a few times
+                    </span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <span className="text-amber-600 dark:text-amber-400 mt-0.5">2.</span>
+                    <span>Watch the bit ripple through the four flip-flop stages</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <span className="text-amber-600 dark:text-amber-400 mt-0.5">3.</span>
+                    <span>
+                      Use <strong className="text-foreground">◀ ▶</strong> to scrub back and forth —
+                      every cycle is preserved
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
         </div>
         {/* end hidden wrapper */}
-
       </Container>
 
       <Container className="relative">
-
         {/* Verilog Export — honest framing */}
         <Section>
           <div className="max-w-2xl mb-10 lg:mb-12">
@@ -940,11 +993,13 @@ function DemoGallery() {
               Export to Verilog
             </h2>
             <p className="mt-4 text-base lg:text-lg text-muted-foreground">
-              Synthesizable primitives export to structural Verilog. The RV32I CPU and Snake both run on a real ULX3S FPGA, with the CPU cross-validated against Icarus Verilog cycle-by-cycle.
+              Synthesizable primitives export to structural Verilog. The RV32I CPU and Snake both
+              run on a real ULX3S FPGA, with the CPU cross-validated against Icarus Verilog
+              cycle-by-cycle.
             </p>
             <Link
               to="/docs/$"
-              params={{ _splat: "hardware" }}
+              params={{ _splat: 'hardware' }}
               className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline"
             >
               Setup & how it works →
@@ -953,7 +1008,9 @@ function DemoGallery() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* TypeScript side */}
             <div className="rounded-lg border border-border bg-card overflow-hidden">
-              <div className="px-3 py-1.5 border-b border-border text-[10px] text-muted-foreground font-mono">circuit.ts</div>
+              <div className="px-3 py-1.5 border-b border-border text-[10px] text-muted-foreground font-mono">
+                circuit.ts
+              </div>
               <HighlightedCode
                 code={`const HalfAdder = circuit('HalfAdder', {
   inputs: { a: bit, b: bit },
@@ -973,28 +1030,50 @@ function DemoGallery() {
             <div className="rounded-lg border border-border bg-card overflow-hidden">
               <div className="px-3 py-1.5 border-b border-border flex items-center justify-between">
                 <span className="text-[10px] text-muted-foreground font-mono">HalfAdder.v</span>
-                <span className="text-[9px] text-emerald-500 font-medium">✓ verified against Icarus Verilog</span>
+                <span className="text-[9px] text-emerald-500 font-medium">
+                  ✓ verified against Icarus Verilog
+                </span>
               </div>
               <pre className="px-4 py-3 text-[11px] font-mono text-muted-foreground leading-relaxed overflow-x-auto">
-<span className="text-muted-foreground/60">{"`timescale 1ns / 1ps\n\n"}</span>
-<span className="text-violet-400">{"module"}</span>{" HalfAdder (\n"}
-{"  "}<span className="text-violet-400">{"input"}</span>{" a,\n"}
-{"  "}<span className="text-violet-400">{"input"}</span>{" b,\n"}
-{"  "}<span className="text-violet-400">{"output"}</span>{" sum,\n"}
-{"  "}<span className="text-violet-400">{"output"}</span>{" carry\n"}
-{");\n\n"}
-{"  "}<span className="text-violet-400">{"wire"}</span>{" w_xor1_out;\n"}
-{"  "}<span className="text-violet-400">{"wire"}</span>{" w_and1_out;\n\n"}
-{"  "}<span className="text-blue-400">{"assign"}</span>{" w_xor1_out = a ^ b;\n"}
-{"  "}<span className="text-blue-400">{"assign"}</span>{" w_and1_out = a & b;\n\n"}
-{"  "}<span className="text-blue-400">{"assign"}</span>{" sum = w_xor1_out;\n"}
-{"  "}<span className="text-blue-400">{"assign"}</span>{" carry = w_and1_out;\n\n"}
-<span className="text-violet-400">{"endmodule"}</span>
+                <span className="text-muted-foreground/60">{'`timescale 1ns / 1ps\n\n'}</span>
+                <span className="text-violet-400">{'module'}</span>
+                {' HalfAdder (\n'}
+                {'  '}
+                <span className="text-violet-400">{'input'}</span>
+                {' a,\n'}
+                {'  '}
+                <span className="text-violet-400">{'input'}</span>
+                {' b,\n'}
+                {'  '}
+                <span className="text-violet-400">{'output'}</span>
+                {' sum,\n'}
+                {'  '}
+                <span className="text-violet-400">{'output'}</span>
+                {' carry\n'}
+                {');\n\n'}
+                {'  '}
+                <span className="text-violet-400">{'wire'}</span>
+                {' w_xor1_out;\n'}
+                {'  '}
+                <span className="text-violet-400">{'wire'}</span>
+                {' w_and1_out;\n\n'}
+                {'  '}
+                <span className="text-blue-400">{'assign'}</span>
+                {' w_xor1_out = a ^ b;\n'}
+                {'  '}
+                <span className="text-blue-400">{'assign'}</span>
+                {' w_and1_out = a & b;\n\n'}
+                {'  '}
+                <span className="text-blue-400">{'assign'}</span>
+                {' sum = w_xor1_out;\n'}
+                {'  '}
+                <span className="text-blue-400">{'assign'}</span>
+                {' carry = w_and1_out;\n\n'}
+                <span className="text-violet-400">{'endmodule'}</span>
               </pre>
             </div>
           </div>
         </Section>
-
       </Container>
 
       {/* SiteFooter is rendered globally in __root.tsx */}
@@ -1020,7 +1099,7 @@ function usePongPixels(sequentialState: unknown): number[] {
     const state = sequentialState as { currentState?: Map<string, unknown> } | null;
     if (!state?.currentState) return pixels;
     for (const [nodeId, nodeState] of state.currentState) {
-      if (nodeState instanceof Map && nodeId.toLowerCase().includes("ram")) {
+      if (nodeState instanceof Map && nodeId.toLowerCase().includes('ram')) {
         const mem = nodeState as Map<number, number>;
         for (let addr = 0; addr < PONG_GRID * PONG_GRID; addr++) {
           pixels[addr] = mem.get(addr) ?? 0;
@@ -1039,21 +1118,24 @@ function PongCard() {
 
   // Map a key code into the pong simulator's keyboard inputs.
   // Codes match the values usePongSimulator listens for on the global keydown.
-  const sendKey = useCallback((code: number) => {
-    const nodes = sim.circuit?.nodes ?? [];
-    const ids: Record<string, string> = {};
-    for (const node of nodes) {
-      if (node.label === "keyboard0" || node.id === "keyboard0") ids.k0 = node.id;
-      if (node.label === "keyboard1" || node.id === "keyboard1") ids.k1 = node.id;
-    }
-    if (ids.k0) sim.setNodeValue(ids.k0, code);
-    if (ids.k1) sim.setNodeValue(ids.k1, code);
-    // Release after a brief moment so it acts as a tap, not a hold.
-    setTimeout(() => {
-      if (ids.k0) sim.setNodeValue(ids.k0, 0);
-      if (ids.k1) sim.setNodeValue(ids.k1, 0);
-    }, 80);
-  }, [sim]);
+  const sendKey = useCallback(
+    (code: number) => {
+      const nodes = sim.circuit?.nodes ?? [];
+      const ids: Record<string, string> = {};
+      for (const node of nodes) {
+        if (node.label === 'keyboard0' || node.id === 'keyboard0') ids.k0 = node.id;
+        if (node.label === 'keyboard1' || node.id === 'keyboard1') ids.k1 = node.id;
+      }
+      if (ids.k0) sim.setNodeValue(ids.k0, code);
+      if (ids.k1) sim.setNodeValue(ids.k1, code);
+      // Release after a brief moment so it acts as a tap, not a hold.
+      setTimeout(() => {
+        if (ids.k0) sim.setNodeValue(ids.k0, 0);
+        if (ids.k1) sim.setNodeValue(ids.k1, 0);
+      }, 80);
+    },
+    [sim],
+  );
 
   return (
     <div className="flex flex-col rounded-lg border border-border overflow-hidden bg-card">
@@ -1063,7 +1145,7 @@ function PongCard() {
             viewBox={`0 0 ${total} ${total}`}
             preserveAspectRatio="xMidYMid meet"
             className="w-full h-full"
-            style={{ imageRendering: "pixelated" }}
+            style={{ imageRendering: 'pixelated' }}
           >
             {pixels.map((val, i) => (
               <rect
@@ -1072,7 +1154,7 @@ function PongCard() {
                 y={Math.floor(i / PONG_GRID) * (PONG_PX + PONG_GAP)}
                 width={PONG_PX}
                 height={PONG_PX}
-                fill={val !== 0 ? "#22c55e" : "#111"}
+                fill={val !== 0 ? '#22c55e' : '#111'}
                 rx={2}
               />
             ))}
@@ -1094,16 +1176,16 @@ function PongCard() {
               disabled={!sim.ready}
               className={`px-4 py-1.5 rounded-md text-xs font-semibold shadow-sm transition-colors disabled:opacity-40 ${
                 isRunning
-                  ? "bg-amber-500 hover:bg-amber-400 text-white"
-                  : "bg-green-600 hover:bg-green-500 text-white"
+                  ? 'bg-amber-500 hover:bg-amber-400 text-white'
+                  : 'bg-green-600 hover:bg-green-500 text-white'
               }`}
             >
-              {isRunning ? "Pause" : "Play"}
+              {isRunning ? 'Pause' : 'Play'}
             </button>
             {(
               [
-                ["↑", 17], // W
-                ["↓", 31], // S
+                ['↑', 17], // W
+                ['↓', 31], // S
               ] as [string, number][]
             ).map(([arrow, code]) => (
               <button
@@ -1149,7 +1231,7 @@ function SnakeCard() {
             viewBox={`0 0 ${total} ${total}`}
             preserveAspectRatio="xMidYMid meet"
             className="w-full h-full"
-            style={{ imageRendering: "pixelated" }}
+            style={{ imageRendering: 'pixelated' }}
           >
             {pixels.map((val, i) => (
               <rect
@@ -1158,7 +1240,7 @@ function SnakeCard() {
                 y={Math.floor(i / GRID) * (PX + GAP)}
                 width={PX}
                 height={PX}
-                fill={val !== 0 ? "#22c55e" : "#111"}
+                fill={val !== 0 ? '#22c55e' : '#111'}
                 rx={2}
               />
             ))}
@@ -1181,18 +1263,18 @@ function SnakeCard() {
               disabled={!sim.ready}
               className={`px-4 py-1.5 rounded-md text-xs font-semibold shadow-sm transition-colors disabled:opacity-40 ${
                 isRunning
-                  ? "bg-amber-500 hover:bg-amber-400 text-white"
-                  : "bg-green-600 hover:bg-green-500 text-white"
+                  ? 'bg-amber-500 hover:bg-amber-400 text-white'
+                  : 'bg-green-600 hover:bg-green-500 text-white'
               }`}
             >
-              {isRunning ? "Pause" : "Play"}
+              {isRunning ? 'Pause' : 'Play'}
             </button>
             {(
               [
-                ["↑", 0],
-                ["←", 3],
-                ["↓", 2],
-                ["→", 1],
+                ['↑', 0],
+                ['←', 3],
+                ['↓', 2],
+                ['→', 1],
               ] as [string, number][]
             ).map(([arrow, code]) => (
               <button
@@ -1207,7 +1289,7 @@ function SnakeCard() {
         </div>
         <Link
           to="/circuit"
-          search={{ example: "snake" }}
+          search={{ example: 'snake' }}
           className="shrink-0 px-3 py-1.5 rounded border border-border text-[11px] text-foreground/80 hover:border-foreground/30 hover:text-foreground transition-colors"
         >
           Try in the editor →

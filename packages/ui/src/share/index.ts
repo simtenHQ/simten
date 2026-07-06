@@ -1,7 +1,7 @@
 export {
-  INLINE_URL_THRESHOLD,
-  encodeSourceForUrl,
   decodeSourceFromUrl,
-  shouldUseShortLink,
+  encodeSourceForUrl,
   hashSource,
-} from "./encode-source.js";
+  INLINE_URL_THRESHOLD,
+  shouldUseShortLink,
+} from './encode-source.js';

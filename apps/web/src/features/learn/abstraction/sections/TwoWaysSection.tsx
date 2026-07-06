@@ -1,6 +1,6 @@
-import { CircuitEmbed } from "@simten/embed";
-import { ABSTRACTION_CIRCUITS } from "../circuits";
-import { HighlightedCode } from "@/components/HighlightedCode";
+import { CircuitEmbed } from '@simten/embed';
+import { HighlightedCode } from '@/components/HighlightedCode';
+import { ABSTRACTION_CIRCUITS } from '../circuits';
 
 export function TwoWaysSection() {
   const flat = ABSTRACTION_CIRCUITS.flatHalfAdder;
@@ -13,23 +13,21 @@ export function TwoWaysSection() {
       </h2>
       <div className="prose-invert space-y-6">
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
-          A half adder is two gates &mdash; an XOR for the sum, an AND for
-          the carry. The version below collapses those two gates into a
-          single labeled <code>HalfAdder</code> node with the same external
-          ports. Both produce identical outputs because they <em>are</em>{" "}
-          the same circuit.
+          A half adder is two gates &mdash; an XOR for the sum, an AND for the carry. The version
+          below collapses those two gates into a single labeled <code>HalfAdder</code> node with the
+          same external ports. Both produce identical outputs because they <em>are</em> the same
+          circuit.
         </p>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
-          That collapse is abstraction. Nothing is hidden &mdash; the gates
-          are still there, doing the same work &mdash; but once a structure
-          has a name, you can stop thinking about its parts.
+          That collapse is abstraction. Nothing is hidden &mdash; the gates are still there, doing
+          the same work &mdash; but once a structure has a name, you can stop thinking about its
+          parts.
         </p>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
-          In code, the rule is: declaring <code>inputs</code> and/or{" "}
-          <code>outputs</code> on a <code>circuit()</code> is what turns it
-          into a block you can drop into another circuit as a node. Without
-          either, you have a self-contained simulation &mdash; runnable on
-          its own but not composable.
+          In code, the rule is: declaring <code>inputs</code> and/or <code>outputs</code> on a{' '}
+          <code>circuit()</code> is what turns it into a block you can drop into another circuit as
+          a node. Without either, you have a self-contained simulation &mdash; runnable on its own
+          but not composable.
         </p>
       </div>
 

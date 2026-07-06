@@ -15,17 +15,25 @@
  *     c. Rewrite body references: <inAlias>.X → inputs.X, <outAlias>.X → outputs.X
  */
 
-import { Project, SyntaxKind, Node, type ObjectLiteralExpression, type ArrowFunction, type ObjectBindingPattern, type CallExpression } from 'ts-morph';
+import { execSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { execSync } from 'node:child_process';
+import {
+  type ArrowFunction,
+  type CallExpression,
+  Node,
+  type ObjectBindingPattern,
+  type ObjectLiteralExpression,
+  Project,
+  SyntaxKind,
+} from 'ts-morph';
 
 // ── CLI ─────────────────────────────────────────────────────────────────────
 
 const args = process.argv.slice(2);
 const apply = args.includes('--apply');
 const check = args.includes('--check') || !apply;
-const explicitFiles = args.filter(a => !a.startsWith('--'));
+const explicitFiles = args.filter((a) => !a.startsWith('--'));
 
 if (!apply && !check) {
   console.error('Usage: codemod --check | --apply [files...]');
@@ -35,7 +43,7 @@ if (!apply && !check) {
 // ── File discovery ──────────────────────────────────────────────────────────
 
 function discoverFiles(): string[] {
-  if (explicitFiles.length > 0) return explicitFiles.map(f => resolve(f));
+  if (explicitFiles.length > 0) return explicitFiles.map((f) => resolve(f));
 
   // grep for files containing `circuit(` invocations across known dirs.
   const dirs = [
@@ -47,12 +55,21 @@ function discoverFiles(): string[] {
     'demos/cli',
   ];
   const out = execSync(
-    `grep -rlE --include='*.ts' --include='*.tsx' "circuit\\(" ${dirs.filter(d => {
-      try { return readFileSync; } catch { return false; }
-    }).join(' ')} 2>/dev/null || true`,
+    `grep -rlE --include='*.ts' --include='*.tsx' "circuit\\(" ${dirs
+      .filter((d) => {
+        try {
+          return readFileSync;
+        } catch {
+          return false;
+        }
+      })
+      .join(' ')} 2>/dev/null || true`,
     { encoding: 'utf8' },
   );
-  return out.split('\n').filter(Boolean).map(p => resolve(p));
+  return out
+    .split('\n')
+    .filter(Boolean)
+    .map((p) => resolve(p));
 }
 
 // ── Pass 1: sanity check ────────────────────────────────────────────────────
@@ -69,17 +86,29 @@ function checkConnectArrow(arrow: ArrowFunction, file: string, issues: SanityIss
   // still get renamed; there's no destructure to rewrite.
   if (params.length === 0) return;
   if (params.length !== 1) {
-    issues.push({ file, line: arrow.getStartLineNumber(), reason: `connect arrow has ${params.length} params, expected 1` });
+    issues.push({
+      file,
+      line: arrow.getStartLineNumber(),
+      reason: `connect arrow has ${params.length} params, expected 1`,
+    });
     return;
   }
   const binding = params[0].getNameNode();
   if (!Node.isObjectBindingPattern(binding)) {
-    issues.push({ file, line: arrow.getStartLineNumber(), reason: 'connect param is not an object destructure' });
+    issues.push({
+      file,
+      line: arrow.getStartLineNumber(),
+      reason: 'connect param is not an object destructure',
+    });
     return;
   }
   for (const elem of binding.getElements()) {
     if (elem.getDotDotDotToken()) {
-      issues.push({ file, line: elem.getStartLineNumber(), reason: 'connect destructure uses spread (...rest), not supported' });
+      issues.push({
+        file,
+        line: elem.getStartLineNumber(),
+        reason: 'connect destructure uses spread (...rest), not supported',
+      });
     }
     const nameNode = elem.getNameNode();
     if (Node.isObjectBindingPattern(nameNode) || Node.isArrayBindingPattern(nameNode)) {
@@ -88,7 +117,11 @@ function checkConnectArrow(arrow: ArrowFunction, file: string, issues: SanityIss
       // migrated and we should skip it. Detect by looking at the property name.
       const propNameNode = elem.getPropertyNameNode();
       if (propNameNode && propNameNode.getText() === 'nodes') continue;
-      issues.push({ file, line: elem.getStartLineNumber(), reason: 'connect destructure has nested pattern, not supported' });
+      issues.push({
+        file,
+        line: elem.getStartLineNumber(),
+        reason: 'connect destructure has nested pattern, not supported',
+      });
     }
   }
 }
@@ -127,9 +160,16 @@ function readConfig(call: CallExpression): {
   return { obj: arg, inProp, outProp, connectArrow };
 }
 
-function renameConfigKey(prop: ReturnType<ObjectLiteralExpression['getProperty']>, newName: string): void {
+function renameConfigKey(
+  prop: ReturnType<ObjectLiteralExpression['getProperty']>,
+  newName: string,
+): void {
   if (!prop) return;
-  if (Node.isPropertyAssignment(prop) || Node.isShorthandPropertyAssignment(prop) || Node.isMethodDeclaration(prop)) {
+  if (
+    Node.isPropertyAssignment(prop) ||
+    Node.isShorthandPropertyAssignment(prop) ||
+    Node.isMethodDeclaration(prop)
+  ) {
     prop.rename(newName);
   }
 }
@@ -211,7 +251,9 @@ function rewriteConnectArrow(
   if (nodeNames.length > 0) parts.push(`nodes: { ${nodeNames.join(', ')} }`);
 
   if (process.env.TRACE === '1') {
-    console.error(`    rewrite: inAlias=${inAlias} outAlias=${outAlias} nodeNames=[${nodeNames.join(',')}] → { ${parts.join(', ')} }`);
+    console.error(
+      `    rewrite: inAlias=${inAlias} outAlias=${outAlias} nodeNames=[${nodeNames.join(',')}] → { ${parts.join(', ')} }`,
+    );
   }
 
   const newDestructure = `{ ${parts.join(', ')} }`;
@@ -264,7 +306,9 @@ function transformCircuitCall(call: CallExpression): boolean {
   if (process.env.TRACE === '1') {
     const nameArg = call.getArguments()[0];
     const circuitName = nameArg ? nameArg.getText() : '?';
-    console.error(`  [trace] ${circuitName}: hasInputs=${hasInputs} hasOutputs=${hasOutputs} connect=${!!connectArrow}`);
+    console.error(
+      `  [trace] ${circuitName}: hasInputs=${hasInputs} hasOutputs=${hasOutputs} connect=${!!connectArrow}`,
+    );
   }
 
   // Skip circuits already in the new shape — they have neither `in:` nor `out:`.
@@ -279,7 +323,7 @@ function transformCircuitCall(call: CallExpression): boolean {
     if (param) {
       const binding = param.getNameNode();
       if (Node.isObjectBindingPattern(binding)) {
-        const hasNodesKey = binding.getElements().some(e => {
+        const hasNodesKey = binding.getElements().some((e) => {
           const prop = e.getPropertyNameNode();
           return prop && prop.getText() === 'nodes';
         });
@@ -320,7 +364,7 @@ function processFile(project: Project, filePath: string, issues: SanityIssue[]):
       if (connectArrow) checkConnectArrow(connectArrow, filePath, issues);
     }
   });
-  if (issues.some(i => i.file === filePath)) return { rewrittenCircuits: 0 };
+  if (issues.some((i) => i.file === filePath)) return { rewrittenCircuits: 0 };
 
   // Pass 2 — transform
   source.forEachDescendant((node) => {
@@ -372,7 +416,9 @@ function main() {
     process.exit(1);
   }
 
-  console.log(`\n${apply ? 'Applied' : 'Would apply'}: ${totalRewritten} circuits across ${filesChanged} files`);
+  console.log(
+    `\n${apply ? 'Applied' : 'Would apply'}: ${totalRewritten} circuits across ${filesChanged} files`,
+  );
 
   if (apply) {
     project.saveSync();

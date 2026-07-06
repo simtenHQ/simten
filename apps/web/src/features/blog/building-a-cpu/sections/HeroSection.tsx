@@ -1,4 +1,3 @@
-
 export function HeroSection() {
   return (
     <section className="py-16 md:py-24">
@@ -7,10 +6,9 @@ export function HeroSection() {
           Building a CPU from Scratch
         </h1>
         <p className="mt-6 text-xl text-gray-500 dark:text-gray-300 leading-relaxed">
-          From a single NAND gate to a working 6502 processor running C code
-          &mdash; every circuit is live and interactive. Click the switches.
-          Watch the signals propagate. Build intuition for how computers
-          actually work.
+          From a single NAND gate to a working 6502 processor running C code &mdash; every circuit
+          is live and interactive. Click the switches. Watch the signals propagate. Build intuition
+          for how computers actually work.
         </p>
         <div className="mt-8 flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
           <span>Interactive tutorial</span>
@@ -18,7 +16,7 @@ export function HeroSection() {
           <span>~15 min read</span>
           <span className="text-gray-600">/</span>
           <span>
-            Built with{" "}
+            Built with{' '}
             <a href="/" className="text-blue-400 hover:text-blue-300 underline underline-offset-2">
               Simten
             </a>

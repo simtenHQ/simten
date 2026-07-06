@@ -5,15 +5,15 @@
  * Focus on end-to-end circuit simulation, edge cases, and critical behaviors.
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
-import { createSimulatorFromCircuit, type CircuitLibrary } from '@simten/core/simulator';
-import { useCircuitLibraryStore } from '../../stores/circuit-library-store';
+import { type CircuitLibrary, createSimulatorFromCircuit } from '@simten/core/simulator';
 import { STDLIB_CIRCUITS } from '@simten/core/std';
+import { beforeEach, describe, expect, it } from 'vitest';
+import { useCircuitLibraryStore } from '../../stores/circuit-library-store';
 import { bitType, busType, type Circuit } from '../../types/circuit';
 
-const PRIMITIVES = STDLIB_CIRCUITS
-  .map((c) => c.circuit)
-  .filter(c => c.implementation.kind === 'primitive');
+const PRIMITIVES = STDLIB_CIRCUITS.map((c) => c.circuit).filter(
+  (c) => c.implementation.kind === 'primitive',
+);
 
 function getLibrary(): CircuitLibrary {
   const store = useCircuitLibraryStore.getState();

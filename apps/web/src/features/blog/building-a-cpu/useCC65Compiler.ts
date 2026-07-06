@@ -1,11 +1,5 @@
-
-import { useState, useCallback, useRef } from "react";
-import {
-  compileC,
-  preloadWasm,
-  type CompileResult,
-  type StageStatus,
-} from "@/lib/cc65-compiler";
+import { useCallback, useRef, useState } from 'react';
+import { type CompileResult, compileC, preloadWasm, type StageStatus } from '@/lib/cc65-compiler';
 
 interface UseCC65CompilerReturn {
   compile: (source: string) => Promise<CompileResult>;
@@ -18,10 +12,10 @@ interface UseCC65CompilerReturn {
 
 export function useCC65Compiler(): UseCC65CompilerReturn {
   const [compiling, setCompiling] = useState(false);
-  const [stages, setStages] = useState<CompileResult["stages"]>({
-    cc65: "pending",
-    ca65: "pending",
-    ld65: "pending",
+  const [stages, setStages] = useState<CompileResult['stages']>({
+    cc65: 'pending',
+    ca65: 'pending',
+    ld65: 'pending',
   });
   const [errors, setErrors] = useState<string[]>([]);
   const [loaded, setLoaded] = useState(false);
@@ -41,7 +35,7 @@ export function useCC65Compiler(): UseCC65CompilerReturn {
   const compile = useCallback(async (source: string): Promise<CompileResult> => {
     setCompiling(true);
     setErrors([]);
-    setStages({ cc65: "pending", ca65: "pending", ld65: "pending" });
+    setStages({ cc65: 'pending', ca65: 'pending', ld65: 'pending' });
 
     try {
       const result = await compileC(source, (s) => setStages(s));

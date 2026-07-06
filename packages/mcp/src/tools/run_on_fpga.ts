@@ -7,11 +7,11 @@
  * Claude a structured return value.
  */
 
+import { spawn } from 'node:child_process';
+import { existsSync } from 'node:fs';
+import { resolve } from 'node:path';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
-import { spawn } from 'node:child_process';
-import { resolve } from 'node:path';
-import { existsSync } from 'node:fs';
 
 const BEGIN = '--- BEGIN JSON ---';
 const END = '--- END JSON ---';
@@ -63,7 +63,9 @@ interface RunArgs {
   full_rebuild?: boolean;
 }
 
-async function invokeCli(args: RunArgs): Promise<{ stdout: string; stderr: string; exitCode: number }> {
+async function invokeCli(
+  args: RunArgs,
+): Promise<{ stdout: string; stderr: string; exitCode: number }> {
   const root = findRepoRoot();
   const cliArgs = ['hardware/ulx3s/run_on_fpga.ts', `--project=${args.project}`];
   if (args.firmware) cliArgs.push(`--firmware=${args.firmware}`);
@@ -91,12 +93,34 @@ export function registerRunOnFpgaTool(server: McpServer): void {
     'run_on_fpga',
     'Build, flash, and UART-capture a project on a connected ULX3S FPGA. Known projects at the time of writing: cpu (RV32I CPU, requires firmware), snake (HDMI hardware Snake), uart_test (standalone UART). New projects can be added by dropping a descriptor in hardware/ulx3s/projects/ and registering it in projects/index.ts — they become callable here without editing this tool. The CLI will reject unknown names with a clear error listing what is registered. Returns a structured RunResult covering every stage (compile, synth, flash, run, match). Kills any active picocom before flashing.',
     {
-      project: z.string().min(1).describe('Project name as registered in hardware/ulx3s/projects/index.ts (e.g. "cpu", "snake", "uart_test", or any newer one).'),
-      firmware: z.string().optional().describe('Path to firmware source (.c or .rs) — required for cpu; relative to repo root.'),
-      timeout_ms: z.number().int().positive().optional().describe('UART capture timeout in ms (default: 5000).'),
-      match: z.string().optional().describe('Regex matched against UART output; capture early-exits on hit.'),
-      no_flash: z.boolean().optional().describe('Build only, skip flashing (rarely useful from MCP).'),
-      full_rebuild: z.boolean().optional().describe('Skip bitstream cache, force full synth + PnR.'),
+      project: z
+        .string()
+        .min(1)
+        .describe(
+          'Project name as registered in hardware/ulx3s/projects/index.ts (e.g. "cpu", "snake", "uart_test", or any newer one).',
+        ),
+      firmware: z
+        .string()
+        .optional()
+        .describe('Path to firmware source (.c or .rs) — required for cpu; relative to repo root.'),
+      timeout_ms: z
+        .number()
+        .int()
+        .positive()
+        .optional()
+        .describe('UART capture timeout in ms (default: 5000).'),
+      match: z
+        .string()
+        .optional()
+        .describe('Regex matched against UART output; capture early-exits on hit.'),
+      no_flash: z
+        .boolean()
+        .optional()
+        .describe('Build only, skip flashing (rarely useful from MCP).'),
+      full_rebuild: z
+        .boolean()
+        .optional()
+        .describe('Skip bitstream cache, force full synth + PnR.'),
     },
     async (args) => {
       const { stdout, stderr, exitCode } = await invokeCli(args);

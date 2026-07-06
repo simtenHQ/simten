@@ -1,6 +1,6 @@
-import { useTheme } from "@/components/ThemeProvider";
+import { useTheme } from '@/components/ThemeProvider';
 
-export function useCircuitTheme(): "light" | "dark" {
+export function useCircuitTheme(): 'light' | 'dark' {
   const { resolvedTheme } = useTheme();
-  return resolvedTheme === "dark" ? "dark" : "light";
+  return resolvedTheme === 'dark' ? 'dark' : 'light';
 }

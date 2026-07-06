@@ -9,23 +9,14 @@
  * that exercises the concept the corresponding section is teaching.
  */
 
-import { circuit, bit } from "@simten/core/circuit";
-import type { BlogCircuit } from "@/features/blog/types";
-import {
-  And,
-  Xor,
-  Or,
-  Led,
-  Input,
-  HexDisplay,
-  Adder,
-  Constant,
-} from "@simten/core/std";
+import { bit, circuit } from '@simten/core/circuit';
+import { Adder, And, Constant, HexDisplay, Input, Led, Or, Xor } from '@simten/core/std';
+import type { BlogCircuit } from '@/features/blog/types';
 
 // ── Half adder ─────────────────────────────────────────────────────────
 // Exported so HalfAdderSection can drive it directly via the composition
 // pattern (useCircuitSimulator + CircuitCanvas + the live truth table).
-export const HalfAdder = circuit("HalfAdder", {
+export const HalfAdder = circuit('HalfAdder', {
   inputs: { a: bit, b: bit },
   outputs: { sum: bit, carry: bit },
   nodes: { xorGate: Xor, andGate: And },
@@ -40,7 +31,7 @@ export const HalfAdder = circuit("HalfAdder", {
 // ── Full adder ─────────────────────────────────────────────────────────
 // Exported for the same reason as HalfAdder. Also used internally by
 // RippleCarryDemo below.
-export const FullAdder = circuit("FullAdder", {
+export const FullAdder = circuit('FullAdder', {
   inputs: { a: bit, b: bit, cin: bit },
   outputs: { sum: bit, cout: bit },
   nodes: {
@@ -65,7 +56,7 @@ export const FullAdder = circuit("FullAdder", {
 // which is the whole pedagogical point. Replace this with a hand-wired
 // chain of 8 FullAdders rather than the stdlib Adder, so the depth is
 // visible in the canvas.
-const RippleCarryDemo = circuit("RippleCarry8", {
+const RippleCarryDemo = circuit('RippleCarry8', {
   nodes: {
     a: Input({ value: 0b00001111 }),
     b: Input({ value: 0b00000001 }),
@@ -103,21 +94,21 @@ export const ADDER_CIRCUITS = {
   // directly via useCircuitSimulator + autoHarness, so those entries are
   // gone — the bare circuits are exported above for that composition.
   rippleCarry: {
-    name: "8-bit ripple-carry adder",
+    name: '8-bit ripple-carry adder',
     description:
-      "Eight full-adders chained tail-to-head. The carry from each stage feeds the next.",
+      'Eight full-adders chained tail-to-head. The carry from each stage feeds the next.',
     circuit: RippleCarryDemo,
   },
   depth: {
-    name: "The critical path",
+    name: 'The critical path',
     description:
-      "The longest path from any input to any output — the depth that bounds clock speed.",
+      'The longest path from any input to any output — the depth that bounds clock speed.',
     circuit: DepthDemo,
   },
   carryLookahead: {
-    name: "Carry-lookahead adder",
+    name: 'Carry-lookahead adder',
     description:
-      "Generate-and-propagate signals compute every carry in parallel, collapsing depth from O(n) to O(log n).",
+      'Generate-and-propagate signals compute every carry in parallel, collapsing depth from O(n) to O(log n).',
     circuit: CarryLookaheadDemo,
   },
 } satisfies Record<string, BlogCircuit>;

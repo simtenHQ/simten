@@ -1,0 +1,6 @@
+# Commits to skip in `git blame` — mechanical, whole-repo changes with no logic.
+# GitHub honors this file automatically. Locally, enable it once with:
+#   git config blame.ignoreRevsFile .git-blame-ignore-revs
+
+# style: apply biome formatting repo-wide (no logic changes)
+1ace1750ea153afff4b3e6f6109c8d65ef75a7e6

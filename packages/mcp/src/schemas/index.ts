@@ -4,5 +4,5 @@
  * Zod schemas and Anthropic conversion utility.
  */
 
-export { checkSchema, type CheckParams } from './check.js';
-export { simulateSchema, type SimulateParams } from './simulate.js';
+export { type CheckParams, checkSchema } from './check.js';
+export { type SimulateParams, simulateSchema } from './simulate.js';

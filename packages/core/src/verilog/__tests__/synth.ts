@@ -68,9 +68,7 @@ export async function synthesizeVerilog(
 ): Promise<SynthResponse> {
   const url = synthUrl();
   if (!url) {
-    throw new Error(
-      'SYNTH_URL is not set. Skip synth tests with `describe.skipIf(!hasSynth())`.',
-    );
+    throw new Error('SYNTH_URL is not set. Skip synth tests with `describe.skipIf(!hasSynth())`.');
   }
 
   const resp = await fetch(url, {

@@ -12,37 +12,37 @@
  * actually terminate; local builds previously needed a manual Ctrl-C.
  */
 
-import { spawn } from 'node:child_process'
+import { spawn } from 'node:child_process';
 
-const SITEMAP_DONE_MARKER = '[sitemap] Writing pages data'
-const SIGTERM_GRACE_MS = 1500
-const SIGKILL_GRACE_MS = 4000
+const SITEMAP_DONE_MARKER = '[sitemap] Writing pages data';
+const SIGTERM_GRACE_MS = 1500;
+const SIGKILL_GRACE_MS = 4000;
 
-const args = ['build', ...process.argv.slice(2)]
+const args = ['build', ...process.argv.slice(2)];
 const child = spawn('vite', args, {
   stdio: ['inherit', 'pipe', 'inherit'],
   env: process.env,
-})
+});
 
-let prerenderDone = false
-let exitTimer
+let prerenderDone = false;
+let exitTimer;
 
 child.stdout.on('data', (chunk) => {
-  process.stdout.write(chunk)
+  process.stdout.write(chunk);
   if (!prerenderDone && chunk.toString().includes(SITEMAP_DONE_MARKER)) {
-    prerenderDone = true
+    prerenderDone = true;
     exitTimer = setTimeout(() => {
-      child.kill('SIGTERM')
-      setTimeout(() => child.kill('SIGKILL'), SIGKILL_GRACE_MS)
-    }, SIGTERM_GRACE_MS)
+      child.kill('SIGTERM');
+      setTimeout(() => child.kill('SIGKILL'), SIGKILL_GRACE_MS);
+    }, SIGTERM_GRACE_MS);
   }
-})
+});
 
 child.on('exit', (code, signal) => {
-  if (exitTimer) clearTimeout(exitTimer)
+  if (exitTimer) clearTimeout(exitTimer);
   // SIGTERM after a successful prerender is our intended exit — treat as success.
   if (prerenderDone && (signal === 'SIGTERM' || signal === 'SIGKILL')) {
-    process.exit(0)
+    process.exit(0);
   }
-  process.exit(code ?? 1)
-})
+  process.exit(code ?? 1);
+});

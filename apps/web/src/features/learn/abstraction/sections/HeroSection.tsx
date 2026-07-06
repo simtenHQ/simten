@@ -6,9 +6,8 @@ export function HeroSection() {
           Abstraction
         </h1>
         <p className="mt-6 text-xl text-gray-500 dark:text-gray-300 leading-relaxed">
-          How a cluster of gates becomes a named block you can reuse
-          &mdash; and how the same move scales from a half-adder up to a
-          CPU.
+          How a cluster of gates becomes a named block you can reuse &mdash; and how the same move
+          scales from a half-adder up to a CPU.
         </p>
       </div>
     </section>

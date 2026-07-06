@@ -9,7 +9,11 @@ import handler from '@tanstack/react-start/server-entry';
 import { handleApiRoute } from '../src/api/routes';
 
 export default {
-  async fetch(request: Request, env: Record<string, unknown>, _ctx: ExecutionContext): Promise<Response> {
+  async fetch(
+    request: Request,
+    env: Record<string, unknown>,
+    _ctx: ExecutionContext,
+  ): Promise<Response> {
     const url = new URL(request.url);
 
     // Handle /api/* routes with our custom handlers
