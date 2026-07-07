@@ -24,16 +24,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Download OSS CAD Suite (yosys + nextpnr-ecp5 + ecppack + all ECP5 databases).
-# Fetches the latest release from YosysHQ automatically.
-# To pin a version, replace the curl+jq approach with a direct URL:
-#   https://github.com/YosysHQ/oss-cad-suite-build/releases/download/YYYY-MM-DD/oss-cad-suite-linux-x64-YYYYMMDD.tgz
-RUN LATEST_URL=$(curl -fsSL "https://api.github.com/repos/YosysHQ/oss-cad-suite-build/releases/latest" \
-      | grep '"browser_download_url"' \
-      | grep 'linux-x64' \
-      | grep -v '\.sha256' \
-      | head -1 \
-      | cut -d'"' -f4) \
-    && curl -fsSL "$LATEST_URL" -o /tmp/oss-cad-suite.tgz \
+# Pinned to a dated release so image contents/size are deterministic across
+# rebuilds — the old `releases/latest` pulled a new (and larger) build every
+# time. Bump OSS_CAD_SUITE_DATE to upgrade deliberately.
+# Releases: https://github.com/YosysHQ/oss-cad-suite-build/releases
+ARG OSS_CAD_SUITE_DATE=2026-07-07
+RUN COMPACT=$(echo "$OSS_CAD_SUITE_DATE" | tr -d '-') \
+    && curl -fsSL "https://github.com/YosysHQ/oss-cad-suite-build/releases/download/${OSS_CAD_SUITE_DATE}/oss-cad-suite-linux-x64-${COMPACT}.tgz" -o /tmp/oss-cad-suite.tgz \
     && tar -xzf /tmp/oss-cad-suite.tgz -C /opt \
     && rm /tmp/oss-cad-suite.tgz
 
