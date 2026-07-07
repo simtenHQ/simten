@@ -1,2 +1,15 @@
 /*
   Content-Security-Policy: default-src 'none'; script-src 'self' 'unsafe-eval' blob: https://esm.sh; connect-src 'self' https://esm.sh; worker-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none';
+
+# Never cache the SPA entry document. Without this it inherits a cacheable
+# default, so a transient 403 during a deploy can get stuck in the browser/edge
+# (the iframe keeps 403ing until cache is cleared). no-store forces a fresh
+# fetch every load. Hashed assets are safe to cache forever — the hash changes
+# when the content does.
+/
+  Cache-Control: no-store
+/index.html
+  Cache-Control: no-store
+
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
