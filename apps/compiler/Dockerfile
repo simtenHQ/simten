@@ -27,18 +27,23 @@ RUN apk add --no-cache \
 
 # Strip unused RV32 multilib variants (keep only rv32i/ilp32 which we target)
 # This saves ~600MB — newlib ships pre-compiled libs for every RV32 sub-extension combo
-RUN cd /usr/riscv-none-elf/lib && \
-    find . -maxdepth 1 -type d -name 'rv32*' ! -name 'rv32i' -exec rm -rf {} + && \
-    cd /usr/lib/gcc/riscv-none-elf/14.2.0 && \
-    find . -maxdepth 1 -type d -name 'rv32*' ! -name 'rv32i' -exec rm -rf {} + 2>/dev/null; \
+# Iterate over the gcc version dir with a glob instead of hardcoding it, so an
+# apk gcc bump (e.g. 14.2.0 → 14.x) doesn't silently skip the strip.
+RUN for libdir in /usr/riscv-none-elf/lib /usr/lib/gcc/riscv-none-elf/*/; do \
+      find "$libdir" -maxdepth 1 -type d -name 'rv32*' ! -name 'rv32i' -exec rm -rf {} + 2>/dev/null; \
+    done; \
     true
 
 # Install Rust with riscv32i target (minimal profile — no cargo, clippy, etc.)
+# Pinned: unpinned `stable` rolls every 6 weeks, making image contents/size
+# non-deterministic (this is what grew the image past the container disk).
+# Bump RUST_VERSION to upgrade deliberately.
+ARG RUST_VERSION=1.96.1
 ENV RUSTUP_HOME=/usr/local/rustup \
     CARGO_HOME=/usr/local/cargo \
     PATH=/usr/local/cargo/bin:$PATH
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | \
-    sh -s -- -y --default-toolchain stable --profile minimal && \
+    sh -s -- -y --default-toolchain ${RUST_VERSION} --profile minimal && \
     rustup target add riscv32i-unknown-none-elf && \
     rm -rf /usr/local/cargo/registry /tmp/* && \
     # Remove host target stdlib (we only cross-compile, never run on host)
