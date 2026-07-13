@@ -4,7 +4,8 @@ export type PostCategory =
   | 'accelerator'
   | 'networking'
   | 'architecture'
-  | 'interactive';
+  | 'interactive'
+  | 'engineering';
 
 export interface BlogPost {
   slug: string;
@@ -15,6 +16,14 @@ export interface BlogPost {
 }
 
 export const posts: BlogPost[] = [
+  {
+    slug: 'infer-from-one-literal',
+    title: 'Infer everything from one object literal',
+    description:
+      "How one generic call lets a callback know the types of the keys next to it. It's what Zod and tRPC do, and two parts of it are genuinely fiddly to get right.",
+    category: 'engineering',
+    nodes: 'TypeScript',
+  },
   {
     slug: 'pong-in-hardware',
     title: 'Pong in Hardware',
