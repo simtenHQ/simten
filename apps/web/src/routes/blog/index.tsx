@@ -24,6 +24,8 @@ const CATEGORY_COLORS: Record<PostCategory, string> = {
     'bg-cyan-100 text-cyan-700 border-cyan-200 dark:bg-cyan-900/50 dark:text-cyan-400 dark:border-cyan-800/50',
   interactive:
     'bg-pink-100 text-pink-700 border-pink-200 dark:bg-pink-900/50 dark:text-pink-400 dark:border-pink-800/50',
+  engineering:
+    'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800/50 dark:text-slate-300 dark:border-slate-700/50',
 };
 
 const CATEGORY_LABELS: Record<PostCategory, string> = {
@@ -33,6 +35,7 @@ const CATEGORY_LABELS: Record<PostCategory, string> = {
   networking: 'Networking',
   architecture: 'Architecture',
   interactive: 'Interactive',
+  engineering: 'Engineering',
 };
 
 function BlogIndex() {

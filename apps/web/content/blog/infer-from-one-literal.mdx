@@ -1,0 +1,119 @@
+---
+title: Infer everything from one object literal
+description: How one generic call lets a callback know the types of the keys next to it. It's what Zod and tRPC do, and two parts of it are genuinely fiddly to get right.
+---
+
+You've used this even if you've never built it. Call `z.object({ id: z.string() }).refine((v) => v.id.length > 0)` and the `v` inside already knows it has a string `id`. A tRPC resolver gets handed the exact input shape you declared right above it. React Hook Form's `handleSubmit` gives you back an object with your own field names on it. Every time, one part of an object literal got typed against another part of the same literal, and some callback ended up knowing names you only typed once. That's the thing I want to take apart.
+
+I ran into it building [Simten](/), which lets you design hardware in TypeScript. A circuit is a single object. Inside it is a `connect` callback, and that callback has to know about the ports you declared in the keys next to it:
+
+```ts
+const HalfAdder = circuit('HalfAdder', {
+  inputs:  { a: bit, b: bit },
+  outputs: { sum: bit, carry: bit },
+  nodes:   { xor1: Xor, and1: And },
+  connect: ({ inputs, outputs, nodes: { xor1, and1 } }) => [
+    inputs.a.to(xor1.a, and1.a),
+    inputs.b.to(xor1.b, and1.b),
+    xor1.out.to(outputs.sum),
+    and1.out.to(outputs.carry),
+  ],
+})
+```
+
+Inside `connect`, `inputs.a` autocompletes. `inputs.c` doesn't, because there's no `c`. Less obvious: `xor1.a.to(...)` is an error too, because `xor1.a` is an input you feed into, not something you draw a wire from. Nothing there got declared twice. The names and the directions both fell out of that one literal.
+
+## The one-pass part
+
+The signature is generic over the three port maps:
+
+```ts
+function circuit<
+  Ins   extends Record<string, PortType>,
+  Outs  extends Record<string, PortType>,
+  Nodes extends Record<string, BuiltCircuit>,
+>(name: string, config: {
+  inputs?:  Ins
+  outputs?: Outs
+  nodes?:   Nodes
+  connect?: (arg: ConnectArg<Ins, Outs, Nodes>) => Connection[]
+}): BuiltCircuit<Ins, Outs>
+```
+
+Pass an object literal and TypeScript pins `Ins`, `Outs`, and `Nodes` from the `inputs`, `outputs`, and `nodes` keys. Then look at the `connect` line: its argument is typed in terms of those same generics. So the moment TypeScript knows what's in `inputs`, it knows what `connect` gets. It all resolves in one pass, which is why it doesn't get slow on a big circuit. And nothing has to stay in sync, because you only wrote the ports down once.
+
+That part comes basically for free. The rest of it didn't.
+
+## Trap 1: structural typing will wire your signals backwards
+
+A port reference has a direction. A source is something values come out of, and you connect it by calling `.to(...)`. A sink is where values go in; it just sits there and receives. The obvious first attempt is two interfaces:
+
+```ts
+interface Source { to(...targets: Sink[]): Connection }
+interface Sink {}
+
+declare const out: Source  // an adder's output
+declare const in_: Sink    // a register's input
+
+out.to(in_)   // correct: source into sink
+out.to(out)   // ??
+```
+
+That last line compiles, and it shouldn't. `Sink` has no members, so it's `{}`, and in a structural type system everything non-null is assignable to `{}`. Which makes a `Source` a perfectly valid `Sink`. You've wired an output into a slot that wanted an input, backwards, and nothing said a word. In real hardware that's a short.
+
+To fix it you have to make the two types genuinely distinct, even though they carry the same fields. A `unique symbol` brand does that:
+
+```ts
+declare const dir: unique symbol
+
+interface Source { readonly [dir]: 'source'; to(...targets: Sink[]): Connection }
+interface Sink   { readonly [dir]: 'sink' }
+
+out.to(in_)   // still fine
+out.to(out)   // Error: 'source' is not assignable to 'sink'
+in_.to(out)   // Error: Property 'to' does not exist on type 'Sink'
+```
+
+The brand is a phantom. `declare const dir: unique symbol` never exists at runtime, and there's no way for user code to name it or fake it. But it's enough to make `Source` and `Sink` disjoint, so handing one to something that wanted the other finally fails. I ran both versions through TypeScript 5.9 to check: without the brand the backwards wire compiles, with it you get an error on the backwards wire and on calling `.to` on a sink.
+
+The two objects are identical at runtime, for what it's worth. Both have a `.to` method. Direction only lives in the types, so the check only happens in your editor. For something people write by hand that's exactly where you want it.
+
+## Trap 2: the brand can disappear when you publish
+
+This is the one that could ship a broken build with every local test still passing. When you build with `stripInternal`, members marked `@internal` get cut out of the generated `.d.ts`. Usually that's what you want. Here it breaks the whole thing.
+
+Strip the brand key out of the published types and anyone who installs the package sees `Sink` as `{}` again. You're back to Trap 1, except only downstream, only in the built package, and never in your own repo where the source still has the brand. It passes every test you run, then breaks for everyone who installs it.
+
+So the brand has to be marked as an exception to the stripping. It's the one internal detail that has to survive into the published types, and it needs a comment next to it saying so, because otherwise it reads like something dead that somebody will tidy away.
+
+## Trap 3: a warning I couldn't reproduce
+
+There was a comment in the codebase, sitting next to the mapped type that builds the `connect` argument. The type is roughly this:
+
+```ts
+type ConnectArg<Ins, Outs, Nodes> = {
+  inputs:  { readonly [K in keyof Ins]:  Source<Ins[K]> }
+  outputs: { readonly [K in keyof Outs]: Sink<Outs[K]> }
+  nodes: {
+    readonly [K in keyof Nodes]: Nodes[K] extends BuiltCircuit<infer NIns, infer NOuts>
+      ? SinkRefs<NIns> & SourceRefs<NOuts>
+      : never
+  }
+}
+```
+
+The direction flips between the two levels. The outer circuit's inputs are sources you drive from; a child node's inputs are sinks you drive into. So a node's reference is an intersection: sinks for its inputs, sources for its outputs. That flip does most of the work of making the API feel obvious to write.
+
+The comment warned that if you pulled the conditional out into its own named alias, the kind of cleanup a linter nudges you toward, port-name checking would quietly break and `nodes.xor1.bogusPort` would start compiling when it shouldn't. I didn't want to write that down without checking it, so I built the smallest version of both shapes and compiled them. On 5.9 both of them reject `bogusPort` the way they should. I couldn't get it to fail.
+
+That doesn't mean the comment was wrong. These type-level bugs shift around between compiler versions and with the exact generics in play, and my stripped-down case might just miss whatever the original hit. Or a later release fixed it. The inlined version stays either way, since it costs nothing and whoever left the note clearly ran into something. Mostly it reminded me that a comment like that is a claim, and this one took about ten minutes to check.
+
+## What it doesn't catch
+
+There's one thing this doesn't do yet, on purpose. A bus has a width, but on the port type that width is just a `number`, not a literal. So the compiler can tell a single bit from a bus, but it can't tell an 8-bit bus from a 16-bit one, and `.to()` will connect any width to any other. Catching that would mean threading a literal `Width` type through every one of these mapped types, and the port type doesn't carry one, so the check isn't there. The same setup that gets names and directions right just stops at widths.
+
+## Why it's shaped this way
+
+All the hard parts trace back to one decision: everything gets inferred from a single object literal, so that `connect` callback lights up with the right names and directions. That's what drags in the generics, the mapped types, the phantom brand, all the care about what makes it into the published `.d.ts`. How I wanted it to feel to write is what decided how the types had to be built.
+
+If you've ever wondered how Zod or tRPC make a callback know about the keys around it, that's roughly how it works, brand and all.

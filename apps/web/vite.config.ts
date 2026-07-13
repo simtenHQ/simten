@@ -27,8 +27,15 @@ const docsPages = readdirSync(resolve(__dirname, 'content/docs'))
 // Auto-discover blog post routes from src/routes/blog/<slug>.tsx so adding
 // a new post just means dropping in a route file — no vite.config edit.
 const blogPages = readdirSync(resolve(__dirname, 'src/routes/blog'))
-  .filter((f) => f.endsWith('.tsx') && f !== 'index.tsx')
+  .filter((f) => f.endsWith('.tsx') && f !== 'index.tsx' && f !== '$.tsx')
   .map((f) => ({ path: `/blog/${f.replace(/\.tsx$/, '')}` }));
+
+// Auto-discover MDX blog posts from content/blog/*.mdx. These render through
+// the /blog/$ splat route; index.mdx is excluded (it would map to /blog, which
+// the TSX blog index already owns).
+const blogMdxPages = readdirSync(resolve(__dirname, 'content/blog'))
+  .filter((f) => (f.endsWith('.mdx') || f.endsWith('.md')) && f !== 'index.mdx')
+  .map((f) => ({ path: `/blog/${f.replace(/\.(mdx|md)$/, '')}` }));
 
 const config = defineConfig(({ command }) => ({
   plugins: [
@@ -82,8 +89,10 @@ const config = defineConfig(({ command }) => ({
         { path: '/learn/registers' },
         { path: '/cpu' },
         { path: '/cpu/rv32i' },
-        // Blog posts — auto-discovered from src/routes/blog/<slug>.tsx.
+        // Blog posts — auto-discovered from src/routes/blog/<slug>.tsx (TSX)
+        // and content/blog/*.mdx (MDX, via the /blog/$ splat route).
         ...blogPages,
+        ...blogMdxPages,
         // Docs — auto-discovered from content/docs/*.mdx. Prerender bakes
         // each MDX body into static HTML at build time — TanStack's SSR
         // pass waits for the clientLoader Suspense boundary to resolve,

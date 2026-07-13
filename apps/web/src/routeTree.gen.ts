@@ -35,6 +35,7 @@ import { Route as BlogChacha20InHardwareRouteImport } from './routes/blog/chacha
 import { Route as BlogBuildingACpuRouteImport } from './routes/blog/building-a-cpu'
 import { Route as BlogBreakoutInHardwareRouteImport } from './routes/blog/breakout-in-hardware'
 import { Route as BlogAesInHardwareRouteImport } from './routes/blog/aes-in-hardware'
+import { Route as BlogSplatRouteImport } from './routes/blog/$'
 import { Route as ApiSearchRouteImport } from './routes/api/search'
 import { Route as CircuitSHashRouteImport } from './routes/circuit_.s.$hash'
 
@@ -170,6 +171,11 @@ const BlogAesInHardwareRoute = BlogAesInHardwareRouteImport.update({
   path: '/aes-in-hardware',
   getParentRoute: () => BlogRoute,
 } as any)
+const BlogSplatRoute = BlogSplatRouteImport.update({
+  id: '/$',
+  path: '/$',
+  getParentRoute: () => BlogRoute,
+} as any)
 const ApiSearchRoute = ApiSearchRouteImport.update({
   id: '/api/search',
   path: '/api/search',
@@ -188,6 +194,7 @@ export interface FileRoutesByFullPath {
   '/privacy': typeof PrivacyRoute
   '/terms': typeof TermsRoute
   '/api/search': typeof ApiSearchRoute
+  '/blog/$': typeof BlogSplatRoute
   '/blog/aes-in-hardware': typeof BlogAesInHardwareRoute
   '/blog/breakout-in-hardware': typeof BlogBreakoutInHardwareRoute
   '/blog/building-a-cpu': typeof BlogBuildingACpuRoute
@@ -217,6 +224,7 @@ export interface FileRoutesByTo {
   '/privacy': typeof PrivacyRoute
   '/terms': typeof TermsRoute
   '/api/search': typeof ApiSearchRoute
+  '/blog/$': typeof BlogSplatRoute
   '/blog/aes-in-hardware': typeof BlogAesInHardwareRoute
   '/blog/breakout-in-hardware': typeof BlogBreakoutInHardwareRoute
   '/blog/building-a-cpu': typeof BlogBuildingACpuRoute
@@ -248,6 +256,7 @@ export interface FileRoutesById {
   '/privacy': typeof PrivacyRoute
   '/terms': typeof TermsRoute
   '/api/search': typeof ApiSearchRoute
+  '/blog/$': typeof BlogSplatRoute
   '/blog/aes-in-hardware': typeof BlogAesInHardwareRoute
   '/blog/breakout-in-hardware': typeof BlogBreakoutInHardwareRoute
   '/blog/building-a-cpu': typeof BlogBuildingACpuRoute
@@ -280,6 +289,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/terms'
     | '/api/search'
+    | '/blog/$'
     | '/blog/aes-in-hardware'
     | '/blog/breakout-in-hardware'
     | '/blog/building-a-cpu'
@@ -309,6 +319,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/terms'
     | '/api/search'
+    | '/blog/$'
     | '/blog/aes-in-hardware'
     | '/blog/breakout-in-hardware'
     | '/blog/building-a-cpu'
@@ -339,6 +350,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/terms'
     | '/api/search'
+    | '/blog/$'
     | '/blog/aes-in-hardware'
     | '/blog/breakout-in-hardware'
     | '/blog/building-a-cpu'
@@ -565,6 +577,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BlogAesInHardwareRouteImport
       parentRoute: typeof BlogRoute
     }
+    '/blog/$': {
+      id: '/blog/$'
+      path: '/$'
+      fullPath: '/blog/$'
+      preLoaderRoute: typeof BlogSplatRouteImport
+      parentRoute: typeof BlogRoute
+    }
     '/api/search': {
       id: '/api/search'
       path: '/api/search'
@@ -583,6 +602,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface BlogRouteChildren {
+  BlogSplatRoute: typeof BlogSplatRoute
   BlogAesInHardwareRoute: typeof BlogAesInHardwareRoute
   BlogBreakoutInHardwareRoute: typeof BlogBreakoutInHardwareRoute
   BlogBuildingACpuRoute: typeof BlogBuildingACpuRoute
@@ -599,6 +619,7 @@ interface BlogRouteChildren {
 }
 
 const BlogRouteChildren: BlogRouteChildren = {
+  BlogSplatRoute: BlogSplatRoute,
   BlogAesInHardwareRoute: BlogAesInHardwareRoute,
   BlogBreakoutInHardwareRoute: BlogBreakoutInHardwareRoute,
   BlogBuildingACpuRoute: BlogBuildingACpuRoute,
