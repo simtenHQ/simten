@@ -64,7 +64,14 @@ jobs:
         # `npm publish` only supports OIDC-based Trusted Publishing from
         # npm CLI 11.5.1 onward. actions/setup-node@v4 with node-version: 20
         # ships with npm 10.x; upgrading here is the smallest valid fix.
-        run: npm install -g npm@latest
+        #
+        # Pinned to the 11.x line, not @latest. npm 12 requires node
+        # >=22.22.2 and refuses to install on node 20, which silently broke
+        # every release the moment it shipped — the job died here, before
+        # changesets/action could open a Version Packages PR or publish.
+        # Pinning the major keeps a future npm from doing that again; bump
+        # this deliberately alongside node-version above.
+        run: npm install -g npm@^11.5.1
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
