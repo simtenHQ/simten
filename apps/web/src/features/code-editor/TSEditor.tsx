@@ -14,6 +14,7 @@
 import type { Monaco, OnMount } from '@monaco-editor/react';
 import Editor from '@monaco-editor/react';
 import type { Circuit } from '@simten/core';
+import { setupSimtenIntellisense, useTypeAcquisition } from '@simten/ui/monaco';
 import { useSandboxContext } from '@simten/ui/sandbox';
 import type { editor } from 'monaco-editor';
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
@@ -21,8 +22,6 @@ import { useTheme } from '@/components/ThemeProvider';
 import { CompileButton } from './CompileButton';
 import type { CompilationError } from './ErrorDisplay';
 import { ErrorDisplay } from './ErrorDisplay';
-import { useCorePreload } from './useCorePreload';
-import { useTypeAcquisition } from './useTypeAcquisition';
 
 // ============================================================================
 // Default code
@@ -107,11 +106,10 @@ export const TSEditor = forwardRef<TSEditorRef, TSEditorProps>(function TSEditor
     onCodeChange?.(code);
   }, [code, onCodeChange]);
 
-  // Fetch + inject TypeScript declarations for npm imports
+  // Fetch + inject TypeScript declarations for npm imports. The @simten/core
+  // types and ambient globals are injected by setupSimtenIntellisense in
+  // beforeMount below.
   useTypeAcquisition(code, monacoInstance);
-
-  // Preload bundled @simten/core types + ambient globals shim
-  useCorePreload(monacoInstance);
 
   // Compilation state
   const [errors, setErrors] = useState<CompilationError[]>([]);
@@ -222,32 +220,8 @@ export const TSEditor = forwardRef<TSEditorRef, TSEditorProps>(function TSEditor
     monacoRef.current = monaco;
     setMonacoInstance(monaco);
 
-    // Configure TypeScript compiler options for the editor
-    monaco.languages.typescript.typescriptDefaults.setCompilerOptions({
-      target: monaco.languages.typescript.ScriptTarget.ESNext,
-      module: monaco.languages.typescript.ModuleKind.ESNext,
-      moduleResolution: monaco.languages.typescript.ModuleResolutionKind.NodeJs,
-      strict: false, // Don't require strict types — user code is casual
-      noEmit: true,
-      allowJs: true,
-      esModuleInterop: true,
-      // Tell TypeScript where to find injected @types/* declarations
-      typeRoots: ['file:///node_modules/@types'],
-    });
-
-    // Suppress module-not-found errors for npm imports — packages are resolved
-    // at runtime via esm.sh, not locally installed. Users can import anything.
-    monaco.languages.typescript.typescriptDefaults.setDiagnosticsOptions({
-      diagnosticCodesToIgnore: [
-        2307, // Cannot find module 'X' or its corresponding type declarations
-        2792, // Cannot find module 'X'. Did you mean to set moduleResolution...
-      ],
-    });
-
-    // Type declarations for circuit(), BuiltCircuit, stdlib, and the
-    // ambient globals injected by executeCircuitCode are loaded by
-    // useCorePreload above — sourced from `@simten/core/bundle?raw` and
-    // `@simten/core/editor-globals?raw`, both produced by core's build.
+    // Compiler options, diagnostics, and the @simten/core type payloads are all
+    // configured by setupSimtenIntellisense in beforeMount below.
 
     // Set editor options
     editor.updateOptions({
@@ -318,7 +292,10 @@ export const TSEditor = forwardRef<TSEditorRef, TSEditorProps>(function TSEditor
           value={code}
           onChange={handleCodeChange}
           beforeMount={(monaco) => {
-            monaco.languages.typescript.typescriptDefaults.setEagerModelSync(true);
+            // Compiler options, module resolution, diagnostics, eager model
+            // sync, and the @simten/core type payloads. Type acquisition for
+            // npm imports rides on top via useTypeAcquisition above.
+            setupSimtenIntellisense(monaco);
 
             // Custom themes — Monaco's vs-dark / vs leave most identifiers
             // uncolored. These give variable names, types, and keywords
