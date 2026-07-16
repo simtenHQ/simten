@@ -1,0 +1,154 @@
+---
+title: Code Editor
+description: Drop a Monaco editor with full IntelliSense for circuit source into your own app, and turn that source into a live simulation.
+---
+
+`@simten/ui/monaco` is the Monaco editor that powers `simten.dev/circuit`, packaged for your own apps. It gives circuit source typed completions and hovers for the Simten stdlib, plus automatic type acquisition so third-party imports (`react`, `zod`, …) resolve to real types instead of `any`.
+
+Pair it with the compile hooks in `@simten/embed` and you have the whole "editor with a live circuit next to it" experience.
+
+```bash
+pnpm add @simten/ui @monaco-editor/react
+```
+
+`@monaco-editor/react` and `monaco-editor` are **optional** peers — only this subpath needs them, so every other `@simten/ui` import stays Monaco-free. pnpm (v8+) and npm (v7+) install peers automatically, so that one command is usually enough. Monaco itself is loaded from a CDN at runtime, not bundled.
+
+## Quick start
+
+```tsx
+import { SimtenCodeEditor } from '@simten/ui/monaco';
+
+<SimtenCodeEditor value={source} onChange={setSource} />;
+```
+
+That's the whole setup. Compiler options, the virtual `node_modules` tree, the `file:///` model URI, diagnostics, and type acquisition are all configured for you.
+
+## What you get
+
+| Capability | How |
+|---|---|
+| Typed completions for the Simten stdlib | The `@simten/core` type payloads are inlined — no import, works offline |
+| Types for third-party imports | `@typescript/ata` fetches `.d.ts` from jsDelivr at runtime, same as the TypeScript playground |
+| Error squiggles | The `diagnostics` prop (see below) |
+| Simten editor themes | `registerSimtenThemes` + the `SIMTEN_DARK` / `SIMTEN_LIGHT` constants |
+
+`SimtenCodeEditor` accepts every [`@monaco-editor/react`](https://www.npmjs.com/package/@monaco-editor/react) prop (`value`, `defaultValue`, `onChange`, `onMount`, `options`, …) plus the Simten-specific ones below.
+
+### Diagnostics
+
+Pass a monaco-free list of diagnostics; the editor renders them as squiggles. You never import `monaco-editor` to show an error.
+
+```tsx
+<SimtenCodeEditor
+  value={source}
+  onChange={setSource}
+  diagnostics={[{ message: 'Cannot find name "foo"', line: 3, column: 12 }]}
+/>;
+```
+
+A diagnostic with `line < 1` (a whole-file error) still carries a message for your own error panel but produces no squiggle.
+
+### Themes
+
+```tsx
+import { SimtenCodeEditor, registerSimtenThemes, SIMTEN_DARK, SIMTEN_LIGHT } from '@simten/ui/monaco';
+
+<SimtenCodeEditor
+  value={source}
+  onChange={setSource}
+  theme={dark ? SIMTEN_DARK : SIMTEN_LIGHT}
+  beforeMount={(monaco) => registerSimtenThemes(monaco)}
+/>;
+```
+
+Register from `beforeMount` so the theme exists at first paint. Pass `{ lightBackground: '#faf9f4' }` to tint the light theme's background to match a warm page.
+
+### Imperative handle
+
+The `ref` exposes `getEditor()`, `getMonaco()`, `getValue()`, and `setValue()` — useful for loading an example or reading the source for a share link.
+
+```tsx
+const editor = useRef<SimtenCodeEditorHandle>(null);
+// …
+editor.current?.setValue(example.code);
+```
+
+## Source → live circuit
+
+The editor produces a string. To turn that string into a running simulation, use the compile hooks from `@simten/embed`. Both require a [`SandboxProvider`](/docs/security) ancestor — user code compiles and runs in the sandbox iframe, never the main frame.
+
+### useCompiledCircuit
+
+The turnkey hook: source in, a running simulator out. It composes the compile bridge with `builtFromIR` + [`useCircuitSimulator`](/docs/building-custom-uis).
+
+```tsx
+import { SandboxProvider } from '@simten/ui/sandbox';
+import { useCompiledCircuit } from '@simten/embed';
+import { CircuitCanvas } from '@simten/ui/canvas';
+
+function Playground() {
+  const [source, setSource] = useState(SEED);
+  const sim = useCompiledCircuit(source, { autoHarness: true });
+
+  return (
+    <div className="split">
+      <SimtenCodeEditor value={source} onChange={setSource} diagnostics={/* from your compiler */ []} />
+      <CircuitCanvas
+        circuit={sim.circuit}
+        portValues={sim.portValues}
+        sequentialState={sim.sequentialState}
+      />
+    </div>
+  );
+}
+
+// Wrap once, high up:
+<SandboxProvider><Playground /></SandboxProvider>;
+```
+
+It debounces edits, keeps the last good circuit when a compile fails, picks the last-defined circuit (override with `select`), and returns the full [`useCircuitSimulator`](/docs/building-custom-uis) surface plus `compileError` and `compiling`.
+
+### useCircuitCompiler
+
+The lower-level hook, for when you need to route the compile result somewhere custom rather than straight into a simulator — the `/circuit` editor uses it to feed its own selection stores. It owns only the compile mechanics and takes no opinion about what happens next.
+
+```tsx
+const { result, library, diagnostics, compiling, compile } = useCircuitCompiler(source, {
+  autoCompile: true,
+  debounceMs: 500,
+});
+```
+
+| Returns | |
+|---|---|
+| `result` | Last successful compile (`circuits`, `libraryCircuits`, `portValues`), retained across a later failure |
+| `library` | Component lookup (`resolveCircuit`, `getAllPrimitiveNames`, `getAllCircuitNames`) |
+| `diagnostics` | Compile errors — pass straight to `SimtenCodeEditor`'s `diagnostics` prop |
+| `compiling` | True while a compile is in flight |
+| `compile()` | Trigger a compile now, bypassing the debounce |
+
+## Owning your own Monaco
+
+If you already have a Monaco instance — a collaborative editor with a [Yjs](https://github.com/yjs/yjs) binding, say, whose source of truth is a `Y.Text` rather than a `value`/`onChange` — use the headless primitives and keep your own `<Editor>`:
+
+```tsx
+import { setupSimtenIntellisense, useTypeAcquisition } from '@simten/ui/monaco';
+
+useTypeAcquisition(source, monaco); // resolves third-party imports
+
+<Editor
+  path="file:///circuit.ts" // required — see below
+  beforeMount={setupSimtenIntellisense}
+  onMount={(editor) => bindYjs(editor)}
+/>;
+```
+
+`SimtenCodeEditor` is a thin wrapper over exactly these two.
+
+The model **must** have a real `file:///` URI. TypeScript resolves modules by walking up from the containing file looking for `node_modules`, and Monaco's default `inmemory://` scheme has nothing to walk — get this wrong and every import silently resolves to `any`. `SimtenCodeEditor` sets `file:///circuit.ts` for you.
+
+## Types vs execution
+
+This subpath handles **types only**. Circuit source *executes* in the [sandbox iframe](/docs/security), which resolves imports independently. The two halves never talk: code can run while its types are still loading, and an import with no published types still runs. That's why module-not-found diagnostics are suppressed while semantic validation stays on — a red squiggle on a line that works is worse than a missing completion.
+
+Type acquisition fetches from jsDelivr at runtime. Pass `typeAcquisition={{ enabled: false }}` to opt out, or `{ typescriptCdn }` to self-host; every failure degrades to "no completions", never a broken editor.

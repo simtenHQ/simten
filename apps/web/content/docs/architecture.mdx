@@ -215,6 +215,8 @@ A single hook, `useCircuitSimulator`, handles the simulation lifecycle for every
 | Hook | Input | Purpose | Used by |
 |------|-------|---------|---------|
 | `useCircuitSimulator(builtCircuit)` | `BuiltCircuit` | Builds library from dependencies, optional auto-harness, compiles + ticks via sandbox | `EditorWorkspace`, `CircuitViewer` → `CircuitEmbed` → landing page, blog demos, drill-down |
+| `useCircuitCompiler(source)` | source string | Compile mechanics only — debounce, `sandbox.compile`, retry, error extraction, `library` lookup. Takes no opinion about the result. | `EditorWorkspace` (feeds its selection stores) |
+| `useCompiledCircuit(source)` | source string | `useCircuitCompiler` + `builtFromIR` + `useCircuitSimulator` — source straight to a running sim. | External editors/playgrounds; see [Code Editor](/docs/code-editor) |
 
 Each consumer gets an isolated sandbox slot (`Map<slotId, SlotState>`) so simulation state never leaks across embeds or between the editor and a preview.
 
@@ -236,9 +238,9 @@ The `/editor` page uses [Zustand](https://zustand-demo.pmnd.rs/) with Immer midd
 
 | Store | What it holds | Written by | Read by |
 |-------|--------------|------------|---------|
-| `useCircuitPreviewStore` | List of compiled `Circuit` objects from the last successful compilation | Monaco `onCompileSuccess` callback | Circuit selector UI |
+| `useCircuitPreviewStore` | List of compiled `Circuit` objects from the last successful compilation | The compile effect (fed by `useCircuitCompiler`) | Circuit selector UI |
 | `useCircuitStore` | The currently active `Circuit` (selected from the preview list) | Preview store / circuit selector | Canvas, ChatPanel, Verilog export, MCP state callbacks |
-| `useCircuitLibraryStore` | The `CircuitLibrary` that resolves component names to definitions | Monaco `onCompileSuccess` callback | Canvas, ChatPanel, Verilog export |
+| `useCircuitLibraryStore` | The `CircuitLibrary` that resolves component names to definitions | The compile effect (fed by `useCircuitCompiler`) | Canvas, ChatPanel, Verilog export |
 
 The data flows in one direction:
 
@@ -270,6 +272,7 @@ useCircuitStore         (the active circuit)
 | `@simten/ui/canvas` | `CircuitCanvas`, `ClockControls` — shared simulation UI |
 | `@simten/ui/sandbox` | `useSandbox`, `SandboxProvider` — sandbox iframe context used by `useCircuitSimulator` |
 | `@simten/ui/nodes` | `BaseNode`, `InputNode`, `OutputNode`, `LogicGateNode`, `NodeData` — canonical node components (props-driven, store-free) |
+| `@simten/ui/monaco` | `SimtenCodeEditor`, `setupSimtenIntellisense`, `useTypeAcquisition`, `registerSimtenThemes` — Monaco editor with circuit IntelliSense. See [Code Editor](/docs/code-editor) |
 
 Node components live in `@simten/ui/nodes` and are the single source of truth — both the embed and the editor use them.
 
