@@ -1,8 +1,10 @@
 /**
- * Code editor exports
+ * Code editor exports.
+ *
+ * The Monaco editor + compile mechanics now live in the library
+ * (`@simten/ui/monaco` + `@simten/embed`); what remains here is the
+ * app-styled error panel.
  */
 
-export { CompileButton } from './CompileButton';
 export type { CompilationError } from './ErrorDisplay';
 export { ErrorDisplay } from './ErrorDisplay';
-export { TSEditor } from './TSEditor';

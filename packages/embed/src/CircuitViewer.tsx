@@ -11,9 +11,8 @@ import type { FlatPortValueMap } from '@simten/core/simulator';
 import type { CircuitLayout } from '@simten/ui/canvas';
 import { CircuitCanvas, ClockControls, useDetectTheme } from '@simten/ui/canvas';
 import {
-  type ForwardedRef,
-  forwardRef,
   type ReactElement,
+  type Ref,
   useCallback,
   useEffect,
   useImperativeHandle,
@@ -107,154 +106,142 @@ export interface CircuitViewerHandle {
   stopAutoRun: () => void;
 }
 
-const CircuitViewerImpl = forwardRef<CircuitViewerHandle, CircuitViewerProps>(
-  function CircuitViewer(
-    {
-      circuit,
-      height = 300,
-      showControls = true,
-      autoHarness = false,
-      initialInputs,
-      layout,
-      theme,
-      focus,
-      showPortLabels,
-      onPortClick,
-      glowUnconnected,
-      renderEmptyState,
-      renderOverlay,
-      onPortValuesChange,
-    },
+export function CircuitViewer<C extends BuiltCircuit = BuiltCircuit>({
+  circuit,
+  height = 300,
+  showControls = true,
+  autoHarness = false,
+  initialInputs,
+  layout,
+  theme,
+  focus,
+  showPortLabels,
+  onPortClick,
+  glowUnconnected,
+  renderEmptyState,
+  renderOverlay,
+  onPortValuesChange,
+  ref,
+}: CircuitViewerProps<C> & { ref?: Ref<CircuitViewerHandle> }): ReactElement {
+  const sim = useCircuitSimulator(circuit, { autoHarness, initialInputs });
+  const detectedTheme = useDetectTheme();
+  const resolvedTheme = theme ?? detectedTheme;
+
+  // Capture the callback in a ref so inline functions don't cause the
+  // firing effect below to re-run on every parent render. The effect
+  // depends only on [sim.ready, sim.portValues], not on the callback
+  // identity, so passing `onPortValuesChange={(pv) => setX(pv)}` is
+  // safe even though it creates a new function reference each render.
+  const onPortValuesChangeRef = useRef(onPortValuesChange);
+  useEffect(() => {
+    onPortValuesChangeRef.current = onPortValuesChange;
+  });
+
+  // Fire once the sim is ready and port values have first settled; then
+  // fire on every subsequent settled change. The empty-map guard avoids
+  // a spurious fire during the initial compile-but-not-yet-propagated
+  // window. The hook only exposes settled states, so no debouncing is
+  // needed for intermediate propagation steps.
+  useEffect(() => {
+    if (!sim.ready || !sim.portValues || sim.portValues.size === 0) return;
+    onPortValuesChangeRef.current?.(sim.portValues);
+  }, [sim.ready, sim.portValues]);
+
+  const handleTick = useCallback(() => {
+    sim.tick();
+  }, [sim.tick]);
+
+  const handleReset = useCallback(() => {
+    sim.reset();
+  }, [sim.reset]);
+
+  useImperativeHandle(
     ref,
-  ) {
-    const sim = useCircuitSimulator(circuit, { autoHarness, initialInputs });
-    const detectedTheme = useDetectTheme();
-    const resolvedTheme = theme ?? detectedTheme;
+    () => ({
+      tick: handleTick,
+      reset: handleReset,
+      setNodeValue: sim.setNodeValue,
+      startAutoRun: sim.startAutoRun,
+      stopAutoRun: sim.stopAutoRun,
+    }),
+    [handleTick, handleReset, sim.setNodeValue, sim.startAutoRun, sim.stopAutoRun],
+  );
 
-    // Capture the callback in a ref so inline functions don't cause the
-    // firing effect below to re-run on every parent render. The effect
-    // depends only on [sim.ready, sim.portValues], not on the callback
-    // identity, so passing `onPortValuesChange={(pv) => setX(pv)}` is
-    // safe even though it creates a new function reference each render.
-    const onPortValuesChangeRef = useRef(onPortValuesChange);
-    useEffect(() => {
-      onPortValuesChangeRef.current = onPortValuesChange;
-    });
-
-    // Fire once the sim is ready and port values have first settled; then
-    // fire on every subsequent settled change. The empty-map guard avoids
-    // a spurious fire during the initial compile-but-not-yet-propagated
-    // window. The hook only exposes settled states, so no debouncing is
-    // needed for intermediate propagation steps.
-    useEffect(() => {
-      if (!sim.ready || !sim.portValues || sim.portValues.size === 0) return;
-      onPortValuesChangeRef.current?.(sim.portValues);
-    }, [sim.ready, sim.portValues]);
-
-    const handleTick = useCallback(() => {
-      sim.tick();
-    }, [sim.tick]);
-
-    const handleReset = useCallback(() => {
-      sim.reset();
-    }, [sim.reset]);
-
-    useImperativeHandle(
-      ref,
-      () => ({
-        tick: handleTick,
-        reset: handleReset,
-        setNodeValue: sim.setNodeValue,
-        startAutoRun: sim.startAutoRun,
-        stopAutoRun: sim.stopAutoRun,
-      }),
-      [handleTick, handleReset, sim.setNodeValue, sim.startAutoRun, sim.stopAutoRun],
-    );
-
-    if (sim.error) {
-      return (
-        <div style={{ height }} className="flex items-center justify-center p-4">
-          <div className="text-sm text-red-400 bg-red-500/10 rounded p-3 border border-red-500/20">
-            <div className="font-medium mb-1">Compilation Error</div>
-            <div className="font-mono text-xs">{sim.error}</div>
-          </div>
-        </div>
-      );
-    }
-
-    if (!sim.ready) {
-      return (
-        <div
-          style={{ height }}
-          className="flex items-center justify-center text-muted-foreground/60 text-sm"
-        >
-          Compiling...
-        </div>
-      );
-    }
-
-    const controlHeight = sim.isSequential && showControls ? 40 : 0;
-    const canvasHeight = typeof height === 'number' ? height - controlHeight : height;
-
+  if (sim.error) {
     return (
-      <div style={{ height }} className="flex flex-col" data-embed-theme={resolvedTheme}>
-        <div className="flex-1 min-h-0">
-          <CircuitCanvas
-            circuit={sim.circuit}
-            componentLibrary={sim.componentLibrary ?? undefined}
-            portValues={sim.portValues}
-            sequentialState={sim.sequentialState}
-            onToggleNode={sim.toggleNode}
-            onSetNodeValue={sim.setNodeValue}
-            onLoadMemory={(nodeId, memData) => {
-              const engine = sim.getSimulator();
-              if (engine) {
-                engine.setNode(nodeId, memData);
-                sim.runCombinational();
-              }
-            }}
-            height={canvasHeight}
-            focus={focus}
-            showPortLabels={showPortLabels}
-            onPortClick={onPortClick}
-            glowUnconnected={glowUnconnected}
-            renderEmptyState={renderEmptyState}
-            renderOverlay={renderOverlay}
-            {...(layout ? { layout } : {})}
-            {...(theme ? { theme } : {})}
-          />
+      <div style={{ height }} className="flex items-center justify-center p-4">
+        <div className="text-sm text-red-400 bg-red-500/10 rounded p-3 border border-red-500/20">
+          <div className="font-medium mb-1">Compilation Error</div>
+          <div className="font-mono text-xs">{sim.error}</div>
         </div>
-        {sim.isSequential && showControls && (
-          <ClockControls
-            cycle={sim.cycleCount}
-            historyLength={sim.history?.length ?? 0}
-            historyIndex={sim.historyIndex ?? -1}
-            isRunning={sim.isRunning}
-            isViewingPast={sim.isViewingPast ?? false}
-            onStep={handleTick}
-            onRun={() => sim.startAutoRun(15)}
-            onPause={() => sim.stopAutoRun()}
-            onReset={handleReset}
-            onStepBack={() => sim.stepBack()}
-            onStepForward={() => {
-              if (sim.isViewingPast) {
-                sim.stepForward();
-              } else {
-                handleTick();
-              }
-            }}
-            speed={5}
-          />
-        )}
       </div>
     );
-  },
-);
+  }
 
-/**
- * CircuitViewer with generic inference over the circuit type.
- * Cast preserves the generic so `layout` keys are constrained at compile time.
- */
-export const CircuitViewer = CircuitViewerImpl as <C extends BuiltCircuit>(
-  props: CircuitViewerProps<C> & { ref?: ForwardedRef<CircuitViewerHandle> },
-) => ReactElement;
+  if (!sim.ready) {
+    return (
+      <div
+        style={{ height }}
+        className="flex items-center justify-center text-muted-foreground/60 text-sm"
+      >
+        Compiling...
+      </div>
+    );
+  }
+
+  const controlHeight = sim.isSequential && showControls ? 40 : 0;
+  const canvasHeight = typeof height === 'number' ? height - controlHeight : height;
+
+  return (
+    <div style={{ height }} className="flex flex-col" data-embed-theme={resolvedTheme}>
+      <div className="flex-1 min-h-0">
+        <CircuitCanvas
+          circuit={sim.circuit}
+          componentLibrary={sim.componentLibrary ?? undefined}
+          portValues={sim.portValues}
+          sequentialState={sim.sequentialState}
+          onToggleNode={sim.toggleNode}
+          onSetNodeValue={sim.setNodeValue}
+          onLoadMemory={(nodeId, memData) => {
+            const engine = sim.getSimulator();
+            if (engine) {
+              engine.setNode(nodeId, memData);
+              sim.runCombinational();
+            }
+          }}
+          height={canvasHeight}
+          focus={focus}
+          showPortLabels={showPortLabels}
+          onPortClick={onPortClick}
+          glowUnconnected={glowUnconnected}
+          renderEmptyState={renderEmptyState}
+          renderOverlay={renderOverlay}
+          {...(layout ? { layout } : {})}
+          {...(theme ? { theme } : {})}
+        />
+      </div>
+      {sim.isSequential && showControls && (
+        <ClockControls
+          cycle={sim.cycleCount}
+          historyLength={sim.history?.length ?? 0}
+          historyIndex={sim.historyIndex ?? -1}
+          isRunning={sim.isRunning}
+          isViewingPast={sim.isViewingPast ?? false}
+          onStep={handleTick}
+          onRun={() => sim.startAutoRun(15)}
+          onPause={() => sim.stopAutoRun()}
+          onReset={handleReset}
+          onStepBack={() => sim.stepBack()}
+          onStepForward={() => {
+            if (sim.isViewingPast) {
+              sim.stepForward();
+            } else {
+              handleTick();
+            }
+          }}
+          speed={5}
+        />
+      )}
+    </div>
+  );
+}
