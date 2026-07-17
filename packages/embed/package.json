@@ -67,8 +67,8 @@
   },
   "dependencies": {
     "@r2wc/react-to-web-component": "^2.1.1",
-    "@simten/core": "workspace:*",
-    "@simten/ui": "workspace:*",
+    "@simten/core": "workspace:^",
+    "@simten/ui": "workspace:^",
     "@xyflow/react": "^12.10.0",
     "clsx": "^2.1.1",
     "elkjs": "^0.9.3",

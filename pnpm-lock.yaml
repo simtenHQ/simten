@@ -328,10 +328,10 @@ importers:
         specifier: ^2.1.1
         version: 2.1.1(react-dom@19.2.0)(react@19.2.0)
       '@simten/core':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../core
       '@simten/ui':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../ui
       '@xyflow/react':
         specifier: ^12.10.0
@@ -392,7 +392,7 @@ importers:
         specifier: ^1.12.0
         version: 1.26.0(zod@3.25.76)
       '@simten/core':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../core
       ws:
         specifier: ^8.21.0
@@ -426,7 +426,7 @@ importers:
         specifier: ^1.1.15
         version: 1.1.15(@types/react-dom@19.2.3)(@types/react@19.2.14)(react-dom@19.2.0)(react@19.2.0)
       '@simten/core':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../core
       '@typescript/ata':
         specifier: ^0.9.8

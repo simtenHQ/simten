@@ -107,7 +107,7 @@
   "dependencies": {
     "@dagrejs/dagre": "^3.0.0",
     "@radix-ui/react-dialog": "^1.1.15",
-    "@simten/core": "workspace:*",
+    "@simten/core": "workspace:^",
     "@xyflow/react": "^12.10.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
