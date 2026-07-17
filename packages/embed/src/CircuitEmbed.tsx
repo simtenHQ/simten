@@ -19,13 +19,7 @@ import {
   TooltipTrigger,
 } from '@simten/ui/primitives/tooltip';
 import { encodeSourceForUrl } from '@simten/ui/share';
-import {
-  type CSSProperties,
-  type ForwardedRef,
-  forwardRef,
-  type ReactElement,
-  useState,
-} from 'react';
+import { type CSSProperties, type ReactElement, type Ref, useState } from 'react';
 import { CircuitViewer, type CircuitViewerHandle, type HarnessedLayout } from './CircuitViewer';
 import { useShareCircuit } from './share-context';
 
@@ -163,29 +157,27 @@ function ForkButton({
   );
 }
 
-const CircuitEmbedImpl = forwardRef<CircuitEmbedHandle, CircuitEmbedProps>(function CircuitEmbed(
-  {
-    circuit,
-    height,
-    aspectRatio,
-    showControls = true,
-    layout,
-    theme,
-    title,
-    subtitle,
-    description,
-    href,
-    focus,
-    showPortLabels,
-    onPortClick,
-    glowUnconnected,
-    autoRunSpeed = 500,
-    initialInputs,
-    forkSource,
-    onPortValuesChange,
-  },
+export function CircuitEmbed<C extends BuiltCircuit = BuiltCircuit>({
+  circuit,
+  height,
+  aspectRatio,
+  showControls = true,
+  layout,
+  theme,
+  title,
+  subtitle,
+  description,
+  href,
+  focus,
+  showPortLabels,
+  onPortClick,
+  glowUnconnected,
+  autoRunSpeed = 500,
+  initialInputs,
+  forkSource,
+  onPortValuesChange,
   ref,
-) {
+}: CircuitEmbedProps<C> & { ref?: Ref<CircuitEmbedHandle> }): ReactElement {
   const hasInfoBar = title || description;
   const [forkError, setForkError] = useState<string | null>(null);
   const [forkPending, setForkPending] = useState(false);
@@ -304,12 +296,4 @@ const CircuitEmbedImpl = forwardRef<CircuitEmbedHandle, CircuitEmbedProps>(funct
       )}
     </div>
   );
-});
-
-/**
- * CircuitEmbed component with generic inference over the circuit type.
- * Cast preserves the generic so `layout` keys are constrained at compile time.
- */
-export const CircuitEmbed = CircuitEmbedImpl as <C extends BuiltCircuit>(
-  props: CircuitEmbedProps<C> & { ref?: ForwardedRef<CircuitEmbedHandle> },
-) => ReactElement;
+}
