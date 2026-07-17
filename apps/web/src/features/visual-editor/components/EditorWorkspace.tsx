@@ -8,7 +8,7 @@
 'use client';
 
 import { exportVerilog } from '@simten/core/verilog';
-import { builtFromIR, useCircuitSimulator } from '@simten/embed';
+import { builtFromIR, useCircuitCompiler, useCircuitSimulator } from '@simten/embed';
 import { CircuitCanvas } from '@simten/ui/canvas';
 import { ClockControls, ReactFlowProvider, SignalOutputPanel } from '@simten/ui/editor/components';
 
@@ -18,13 +18,21 @@ import {
   useCircuitStore,
 } from '@simten/ui/editor/stores';
 import type { Circuit } from '@simten/ui/editor/types';
+import {
+  registerSimtenThemes,
+  SIMTEN_DARK,
+  SIMTEN_LIGHT,
+  SimtenCodeEditor,
+  type SimtenCodeEditorHandle,
+} from '@simten/ui/monaco';
 import { encodeSourceForUrl, shouldUseShortLink } from '@simten/ui/share';
 import { Download, Loader2, Share2 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { SiteHeader } from '@/components/SiteHeader';
+import { useTheme } from '@/components/ThemeProvider';
 import { Button } from '@/components/ui/button';
 import { TooltipProvider } from '@/components/ui/tooltip';
-import { TSEditor, type TSEditorRef } from '@/features/code-editor/TSEditor';
+import { ErrorDisplay } from '@/features/code-editor';
 
 /** Check if a circuit name is an auto-generated harness (autoHarness appends 'Demo') */
 function isHarnessName(name: string): boolean {
@@ -139,15 +147,27 @@ export function EditorWorkspace({
 }: EditorWorkspaceProps) {
   const setCompiledCircuits = useCircuitPreviewStore((state) => state.setCompiledCircuits);
   const circuit = useCircuitStore((state) => state.circuit);
+  const { resolvedTheme } = useTheme();
 
-  // Sandbox-based simulation — uses same hook as embeds
-  const [compileResult, setCompileResult] = useState<
-    import('@simten/ui/sandbox').CompileResult | null
-  >(null);
+  // Editor source — lifted here from the (now-deleted) TSEditor so the compile
+  // hook and the store-wiring effects can read it.
+  const [code, setCode] = useState(initialSource ?? '');
+  const codeRef = useRef(code);
+  codeRef.current = code;
+
+  // Compile mechanics live in @simten/embed; we own only what to do with the
+  // result (the store-wiring effects below). 'editor-main' slot + 500ms debounce
+  // preserve the previous TSEditor behaviour.
+  const compiler = useCircuitCompiler(code, {
+    autoCompile: true,
+    debounceMs: 500,
+    slot: 'editor-main',
+  });
+
   // Track whether the editor source is effectively empty so we only show the
   // "Load an example" picker when the user has actually cleared their code —
   // not during the boot window between mount and first compile.
-  const [codeEmpty, setCodeEmpty] = useState(false);
+  const [codeEmpty, setCodeEmpty] = useState((initialSource ?? '').trim() === '');
   // Don't render the picker during the boot window — the resizable panels and
   // Monaco haven't laid out yet so the picker would render at near-zero width
   // (squished column on the left).
@@ -161,9 +181,9 @@ export function EditorWorkspace({
   // When the editor's source was compiled via sandbox.compile(), evals are already
   // registered in the sandbox — no need to transfer them via evalSources.
   const editorBuiltCircuit = useMemo<import('@simten/core/circuit').BuiltCircuit | null>(() => {
-    if (!compileResult || !circuit) return null;
-    return builtFromIR(circuit, [...compileResult.libraryCircuits, ...compileResult.circuits]);
-  }, [compileResult, circuit]);
+    if (!compiler.result || !circuit) return null;
+    return builtFromIR(circuit, [...compiler.result.libraryCircuits, ...compiler.result.circuits]);
+  }, [compiler.result, circuit]);
 
   // Share button state
   const [shareStatus, setShareStatus] = useState<
@@ -178,8 +198,8 @@ export function EditorWorkspace({
     steadyStateAt?: number;
   } | null>(null);
 
-  // Editor ref for imperative get/set of the Monaco source.
-  const editorRef = useRef<TSEditorRef>(null);
+  // Editor handle for imperative get/set of the Monaco source.
+  const editorRef = useRef<SimtenCodeEditorHandle>(null);
   // requestId of an in-flight show_circuit render-ack (set in onSource, cleared
   // when the resulting compile succeeds/fails — see handleCompile / handleCompileError).
   const pendingRenderRef = useRef<string | null>(null);
@@ -228,7 +248,7 @@ export function EditorWorkspace({
 
   // ── Share button ──
   const handleShare = useCallback(async () => {
-    const source = editorRef.current?.getCode() ?? '';
+    const source = editorRef.current?.getValue() ?? '';
     if (!source.trim()) {
       setShareStatus({ kind: 'error', message: 'Nothing to share' });
       setTimeout(() => setShareStatus({ kind: 'idle' }), 2000);
@@ -327,11 +347,14 @@ export function EditorWorkspace({
       };
       if (payload?.vcd) setWaveformData(payload);
     }, []),
-    onSource: useCallback((source: string, requestId?: string) => {
-      pendingRenderRef.current = requestId ?? null;
-      editorRef.current?.setCode(source);
-      setTimeout(() => editorRef.current?.compile(), 100);
-    }, []),
+    onSource: useCallback(
+      (source: string, requestId?: string) => {
+        pendingRenderRef.current = requestId ?? null;
+        editorRef.current?.setValue(source);
+        setTimeout(() => void compiler.compile(), 100);
+      },
+      [compiler.compile],
+    ),
     getCircuitState: useCallback(() => {
       const currentCircuit = useCircuitStore.getState().circuit;
       const sim = simRef.current;
@@ -346,65 +369,47 @@ export function EditorWorkspace({
     }, []),
   });
 
-  // Handle compilation in split mode
-  const handleCompile = useCallback(
-    (
-      circuits: Circuit[],
-      code: string,
-      library?: {
-        resolveCircuit(name: string): Circuit | undefined;
-        getAllPrimitiveNames(): string[];
-        getAllCircuitNames(): string[];
-      },
-      sandboxResult?: {
-        circuits: Circuit[];
-        libraryCircuits: Circuit[];
-        portValues: Record<string, number | boolean>;
-      },
-    ) => {
-      // Set library FIRST — applyToCanvas fires inside setCompiledCircuits and needs
-      // the full library (including user circuits) before adding harness components.
-      if (library) {
-        useCircuitLibraryStore.getState().setLibrary(library);
-      }
+  // On each successful compile, push the result into the selection stores. Set
+  // the library FIRST — applyToCanvas fires inside setCompiledCircuits and needs
+  // the full library (including user circuits) before adding harness components.
+  // Also acknowledges an in-flight show_circuit render request (success).
+  useEffect(() => {
+    const result = compiler.result;
+    if (!result) return;
+    if (compiler.library) {
+      useCircuitLibraryStore.getState().setLibrary(compiler.library);
+    }
+    setCompiledCircuits(result.circuits, codeRef.current);
+    if (pendingRenderRef.current) {
+      const reqId = pendingRenderRef.current;
+      pendingRenderRef.current = null;
+      const name =
+        useCircuitStore.getState().circuit?.name ??
+        result.circuits[result.circuits.length - 1]?.name ??
+        null;
+      sendRenderResult(reqId, { ok: true, circuitName: name });
+    }
+  }, [compiler.result, compiler.library, setCompiledCircuits, sendRenderResult]);
 
-      setCompiledCircuits(circuits, code);
-
-      // Feed sandbox compile result to simulation session (no double compile)
-      if (sandboxResult) {
-        setCompileResult(sandboxResult);
-      }
-
-      // Acknowledge an in-flight show_circuit render request (success).
-      if (pendingRenderRef.current) {
-        const reqId = pendingRenderRef.current;
-        pendingRenderRef.current = null;
-        const name =
-          useCircuitStore.getState().circuit?.name ?? circuits[circuits.length - 1]?.name ?? null;
-        sendRenderResult(reqId, { ok: true, circuitName: name });
-      }
-    },
-    [setCompiledCircuits, sendRenderResult],
-  );
-
-  // Acknowledge an in-flight show_circuit render request (compile failure).
-  const handleCompileError = useCallback(
-    (message: string) => {
-      if (pendingRenderRef.current) {
-        const reqId = pendingRenderRef.current;
-        pendingRenderRef.current = null;
-        sendRenderResult(reqId, { ok: false, error: message });
-      }
-    },
-    [sendRenderResult],
-  );
+  // On a compile failure, acknowledge an in-flight show_circuit render request.
+  useEffect(() => {
+    if (compiler.diagnostics.length === 0) return;
+    if (pendingRenderRef.current) {
+      const reqId = pendingRenderRef.current;
+      pendingRenderRef.current = null;
+      sendRenderResult(reqId, { ok: false, error: compiler.diagnostics[0].message });
+    }
+  }, [compiler.diagnostics, sendRenderResult]);
 
   // Load an example into the editor
-  const loadExample = useCallback((example: Example) => {
-    editorRef.current?.setCode(example.code);
-    hasLoadedContentRef.current = true;
-    setTimeout(() => editorRef.current?.compile(), 100);
-  }, []);
+  const loadExample = useCallback(
+    (example: Example) => {
+      editorRef.current?.setValue(example.code);
+      hasLoadedContentRef.current = true;
+      setTimeout(() => void compiler.compile(), 100);
+    },
+    [compiler.compile],
+  );
 
   // First-run hint: pulse the Run button so a new user knows to press it to
   // start the clock. The clock bar only renders for sequential circuits, so a
@@ -558,16 +563,32 @@ export function EditorWorkspace({
             <ResizablePanelGroup orientation="horizontal">
               {/* Left: Code Editor */}
               <ResizablePanel defaultSize={40} minSize={20} className="overflow-hidden">
-                <TSEditor
-                  ref={editorRef}
-                  storageKey={null}
-                  initialCode={initialSource ?? ''}
-                  autoCompileEnabled={true}
-                  onCompileSuccess={handleCompile}
-                  onCompileError={handleCompileError}
-                  onCodeChange={(code) => setCodeEmpty(code.trim() === '')}
-                  showHeader={false}
-                />
+                <div className="flex h-full flex-col">
+                  <div className="min-h-0 flex-1">
+                    <SimtenCodeEditor
+                      ref={editorRef}
+                      value={code}
+                      onChange={(value) => {
+                        const v = value ?? '';
+                        setCode(v);
+                        setCodeEmpty(v.trim() === '');
+                      }}
+                      theme={resolvedTheme === 'dark' ? SIMTEN_DARK : SIMTEN_LIGHT}
+                      diagnostics={compiler.diagnostics}
+                      beforeMount={(m) => registerSimtenThemes(m, { lightBackground: '#faf9f4' })}
+                      options={{
+                        lineNumbers: 'on',
+                        wordWrap: 'on',
+                        tabSize: 2,
+                        'semanticHighlighting.enabled': true,
+                        fixedOverflowWidgets: true,
+                      }}
+                    />
+                  </div>
+                  {compiler.diagnostics.length > 0 && (
+                    <ErrorDisplay errors={compiler.diagnostics} />
+                  )}
+                </div>
               </ResizablePanel>
               <ResizableHandle withHandle />
               {/* Right: Circuit Canvas, optionally split with Waveform below */}

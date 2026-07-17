@@ -15,6 +15,11 @@ independent of any rendering. Each tier below is a different way for
 your React UI to subscribe to its state and write inputs back. Pick
 the highest one that gives you what you need.
 
+These tiers all take a circuit you already have. If instead you want
+users to *edit source* and watch it simulate live — an editor beside a
+canvas — see [Code Editor](/docs/code-editor), which pairs
+`SimtenCodeEditor` with `useCompiledCircuit`.
+
 ## Tier 1 — Drop-in `<CircuitEmbed />`
 
 The default. One component, sensible defaults, identical look across

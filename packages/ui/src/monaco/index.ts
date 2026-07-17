@@ -17,6 +17,17 @@
  * (`monaco-editor` follows automatically as a peer of `@monaco-editor/react`.)
  */
 
-export { SimtenCodeEditor, type SimtenCodeEditorProps } from './SimtenCodeEditor';
+export {
+  SimtenCodeEditor,
+  type SimtenCodeEditorHandle,
+  type SimtenCodeEditorProps,
+  type SimtenDiagnostic,
+} from './SimtenCodeEditor';
 export { type IntellisenseOptions, setupSimtenIntellisense } from './setup';
+export {
+  type RegisterThemesOptions,
+  registerSimtenThemes,
+  SIMTEN_DARK,
+  SIMTEN_LIGHT,
+} from './themes';
 export { type TypeAcquisitionOptions, useTypeAcquisition } from './useTypeAcquisition';
