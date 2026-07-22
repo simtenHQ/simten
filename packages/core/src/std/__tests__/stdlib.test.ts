@@ -89,7 +89,7 @@ describe('stdlib circuits load', () => {
     ['SignedMultiplier', SignedMultiplier],
     ['BusAnd', BusAnd()],
     ['BusOr', BusOr()],
-    ['BusNot', BusNot],
+    ['BusNot', BusNot()],
     ['BusXor', BusXor()],
     // Routing
     ['Mux', Mux()],

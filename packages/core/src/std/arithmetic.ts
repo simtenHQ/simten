@@ -431,7 +431,7 @@ export const BusOr = circuit('BusOr', ({ width = 8 }: { width?: number } = {}) =
  * circuit('Invert', {
  *   inputs:  { x: bus(8) },
  *   outputs: { y: bus(8) },
- *   nodes:   { inv: BusNot },
+ *   nodes:   { inv: BusNot() },
  *   connect: ({ inputs, outputs, nodes: { inv } }) => [
  *     inputs.x.to(inv.in),
  *     inv.out.to(outputs.y),
@@ -439,12 +439,16 @@ export const BusOr = circuit('BusOr', ({ width = 8 }: { width?: number } = {}) =
  * })
  * ```
  */
-export const BusNot = circuit('BusNot', {
-  inputs: { in: bus(8) },
-  outputs: { out: bus(8) },
+export const BusNot = circuit('BusNot', ({ width = 8 }: { width?: number } = {}) => ({
+  inputs: { in: bus(width) },
+  outputs: { out: bus(width) },
   meta: { category: 'bus-operations', icon: '¬8', description: 'Bitwise NOT on bus' },
-  eval: ({ in: a }) => ({ out: ~a & 0xff }),
-});
+  // width read from the bag so per-instance widths mask correctly (default 8).
+  eval: ({ in: a, width: w = width }) => {
+    const m = ((w as number) >= 32 ? 0xffffffff : (1 << (w as number)) - 1) >>> 0;
+    return { out: (~(a as number) >>> 0) & m };
+  },
+}));
 
 /**
  * Bitwise XOR on buses. Performs `a ^ b` per bit position. Useful for

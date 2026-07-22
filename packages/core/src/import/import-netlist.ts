@@ -20,8 +20,6 @@
 
 import type { BuiltCircuit } from '../circuit/types.js';
 import {
-  RtlAdd,
-  RtlAnd,
   RtlDlatch,
   RtlGe,
   RtlGt,
@@ -32,8 +30,6 @@ import {
   RtlLt,
   RtlMem,
   RtlNe,
-  RtlNot,
-  RtlOr,
   RtlPmux,
   RtlReduceAnd,
   RtlReduceBool,
@@ -42,11 +38,13 @@ import {
   RtlShl,
   RtlShr,
   RtlSshr,
-  RtlSub,
-  RtlXor,
 } from '../rtl/index.js';
 import {
   Adder,
+  BusAnd,
+  BusNot,
+  BusOr,
+  BusXor,
   Comparator,
   Concat,
   Constant,
@@ -118,13 +116,15 @@ interface LiftRule {
   tie?: Record<string, number>;
   /** does this component carry simten's implicit clock? */
   sequential?: boolean;
+  /**
+   * Adapt each operand to the component's port width before connecting: narrow
+   * operands are `ZeroExtend`/`SignExtend`-ed (per `<PORT>_SIGNED`), wide ones
+   * `Slice`-truncated. Lets a symmetric stdlib component (Adder/BusAnd/…) at
+   * `Y_WIDTH` cover yosys's independent A/B/Y widths with no `Rtl*` fallback —
+   * correct because add/sub/bitwise depend only on the low `Y_WIDTH` bits.
+   */
+  adaptOperands?: boolean;
 }
-
-const symmetricUnsigned = (c: YosysCell) =>
-  param(c, 'A_WIDTH') === param(c, 'B_WIDTH') &&
-  param(c, 'A_WIDTH') === param(c, 'Y_WIDTH') &&
-  !param(c, 'A_SIGNED') &&
-  !param(c, 'B_SIGNED');
 
 // A/B/Y width bundle and signedness — read straight off the cell parameters.
 const w3 = (c: YosysCell) => ({
@@ -144,43 +144,24 @@ const un = (comp: (c: YosysCell) => BuiltCircuit): LiftRule[] => [
 ];
 
 const LIFT: Record<string, LiftRule[]> = {
-  // symmetric unsigned → the familiar stdlib component; else the rtl primitive.
+  // Arithmetic → stdlib at Y_WIDTH with operand adaptation (independent A/B/Y
+  // widths handled by ZeroExtend/SignExtend/Slice, never an Rtl* fallback).
   $add: [
     {
-      when: symmetricUnsigned,
       comp: (c) => Adder({ width: param(c, 'Y_WIDTH') }),
       inMap: { A: 'a', B: 'b' },
       outMap: { Y: 'sum' },
       tie: { carry_in: 0 },
-    },
-    {
-      comp: (c) =>
-        RtlAdd({
-          aWidth: param(c, 'A_WIDTH'),
-          bWidth: param(c, 'B_WIDTH'),
-          yWidth: param(c, 'Y_WIDTH'),
-        }),
-      inMap: { A: 'a', B: 'b' },
-      outMap: { Y: 'out' },
+      adaptOperands: true,
     },
   ],
   $sub: [
     {
-      when: symmetricUnsigned,
       comp: (c) => Subtractor({ width: param(c, 'Y_WIDTH') }),
       inMap: { A: 'a', B: 'b' },
       outMap: { Y: 'difference' },
       tie: { borrow_in: 0 },
-    },
-    {
-      comp: (c) =>
-        RtlSub({
-          aWidth: param(c, 'A_WIDTH'),
-          bWidth: param(c, 'B_WIDTH'),
-          yWidth: param(c, 'Y_WIDTH'),
-        }),
-      inMap: { A: 'a', B: 'b' },
-      outMap: { Y: 'out' },
+      adaptOperands: true,
     },
   ],
   $eq: [
@@ -215,11 +196,19 @@ const LIFT: Record<string, LiftRule[]> = {
     },
   ],
 
-  // bitwise
-  $and: bin((c) => RtlAnd(w3(c))),
-  $or: bin((c) => RtlOr(w3(c))),
-  $xor: bin((c) => RtlXor(w3(c))),
-  $not: un((c) => RtlNot({ aWidth: param(c, 'A_WIDTH'), yWidth: param(c, 'Y_WIDTH') })),
+  // bitwise → stdlib Bus ops at Y_WIDTH with operand adaptation
+  $and: [
+    { comp: (c) => BusAnd({ width: param(c, 'Y_WIDTH') }), inMap: { A: 'a', B: 'b' }, outMap: { Y: 'out' }, adaptOperands: true },
+  ],
+  $or: [
+    { comp: (c) => BusOr({ width: param(c, 'Y_WIDTH') }), inMap: { A: 'a', B: 'b' }, outMap: { Y: 'out' }, adaptOperands: true },
+  ],
+  $xor: [
+    { comp: (c) => BusXor({ width: param(c, 'Y_WIDTH') }), inMap: { A: 'a', B: 'b' }, outMap: { Y: 'out' }, adaptOperands: true },
+  ],
+  $not: [
+    { comp: (c) => BusNot({ width: param(c, 'Y_WIDTH') }), inMap: { A: 'in' }, outMap: { Y: 'out' }, adaptOperands: true },
+  ],
 
   // reductions
   $reduce_or: un((c) => RtlReduceOr({ aWidth: param(c, 'A_WIDTH') })),
@@ -370,6 +359,13 @@ function makeIdSanitizer(): (raw: string) => string {
 
 function instancesFrom(descs: readonly PortDescriptor[], nodeId: string): PortInstance[] {
   return descs.map((p) => ({ id: `${nodeId}.${p.name}`, name: p.name, portType: p.portType }));
+}
+
+/** Width of a built component's input port (1 for a bit port). */
+function portWidth(built: BuiltCircuit, portName: string): number {
+  const p = built.circuit.inputs.find((d) => d.name === portName);
+  if (!p) throw new Error(`${built.circuit.name}: no input port '${portName}'`);
+  return p.portType.kind === 'bus' ? p.portType.width : 1;
 }
 
 function nodeFromBuilt(id: string, built: BuiltCircuit, args: Record<string, number>): Node {
@@ -569,6 +565,32 @@ function translateModule(
     return acc.src;
   }
 
+  // Adapt a resolved source to a target operand width: ZeroExtend/SignExtend if
+  // narrower, Slice-truncate if wider, identity if equal. Emits ≤1 node.
+  function adaptWidth(
+    src: { nodeId: string; portName: string },
+    srcW: number,
+    targetW: number,
+    signed: boolean,
+  ): { nodeId: string; portName: string } {
+    if (srcW === targetW) return src;
+    const id = `_w${helperId++}`;
+    if (srcW < targetW) {
+      const comp = signed
+        ? SignExtend({ inWidth: srcW, outWidth: targetW })
+        : ZeroExtend({ inWidth: srcW, outWidth: targetW });
+      pushBuilt(id, comp, { inWidth: srcW, outWidth: targetW });
+    } else {
+      pushBuilt(id, Slice({ inWidth: srcW, offset: 0, width: targetW }), {
+        inWidth: srcW,
+        offset: 0,
+        width: targetW,
+      });
+    }
+    connect(src.nodeId, src.portName, id, 'in', portTypeOf(srcW));
+    return { nodeId: id, portName: 'out' };
+  }
+
   function connect(
     srcNode: string,
     srcPort: string,
@@ -656,8 +678,15 @@ function translateModule(
     for (const [cellPort, compPort] of Object.entries(rule.inMap)) {
       const bits = cell.connections[cellPort];
       if (!bits) continue;
-      const src = resolveBits(bits);
-      connect(src.nodeId, src.portName, cid, compPort, portTypeOf(bits.length));
+      let src = resolveBits(bits);
+      let w = bits.length;
+      if (rule.adaptOperands) {
+        // Extend/truncate the operand to the component's port width, per the
+        // operand's own signedness (`<PORT>_SIGNED`).
+        w = portWidth(built, compPort);
+        src = adaptWidth(src, bits.length, w, !!param(cell, `${cellPort}_SIGNED`));
+      }
+      connect(src.nodeId, src.portName, cid, compPort, portTypeOf(w));
     }
     if (rule.tie) {
       for (const [compPort, value] of Object.entries(rule.tie)) {

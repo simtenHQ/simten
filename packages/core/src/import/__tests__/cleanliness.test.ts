@@ -65,7 +65,9 @@ describe('cleanliness — RV32I_CPU_Core scale guard (measured-then-ratcheted)',
   });
 
   it('residual Rtl* count does not regress (ratchets to 0 as A lifts ops to stdlib)', () => {
-    expect(m.rtl).toBeLessThanOrEqual(66);
+    // 66 → 57 after lifting bitwise ($and/$or/$xor) and $add to stdlib with
+    // operand adaptation. Ratchets toward 0 as the remaining ops are lifted.
+    expect(m.rtl).toBeLessThanOrEqual(57);
   });
 
   it('still builds and simulates (structure valid)', () => {

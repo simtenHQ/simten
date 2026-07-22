@@ -55,7 +55,7 @@ describe('Evaluator Edge Cases', () => {
     const c = circuit('TestBusNot', {
       inputs: { a: bus(8) },
       outputs: { z: bus(8) },
-      nodes: { n: BusNot },
+      nodes: { n: BusNot() },
       connect: ({ inputs, outputs, nodes: { n } }) => [inputs.a.to(n.in), n.out.to(outputs.z)],
     });
 
