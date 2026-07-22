@@ -326,6 +326,45 @@ function detectExtension(segs: Segment[]): ExtInfo | null {
 }
 
 // ---------------------------------------------------------------------------
+// Node-id sanitization (Known hard problems #1)
+// ---------------------------------------------------------------------------
+
+/**
+ * Turn a yosys id (`$add$demo.v:33$2`, `$procdff$5`, `\genblk[0].u`, `u_sub`)
+ * into a valid, unique JS identifier — used as a node id and in `nodes.<id>.<port>`
+ * refs by the serializer. Uniqueness is **guaranteed** (a counter suffix on
+ * collision); readability is best-effort (the op token and source line are kept).
+ * Sanitized cell ids never start with `_`, keeping them disjoint from the
+ * importer's `_k`/`_s`/`_c`/`_x` helper ids so the two id spaces cannot collide.
+ *
+ * Run this AFTER any matcher that keys on the raw id (parameter sets, memory
+ * names) — sanitizing first would destroy that semantic information.
+ */
+function makeIdSanitizer(): (raw: string) => string {
+  const used = new Set<string>();
+  return (raw: string): string => {
+    let s = raw.replace(/^\\/, ''); // strip yosys public-name backslash
+    if (s.startsWith('$')) {
+      // auto-generated `$<op>$<file>:<line>$<serial>` — keep op (+ source line)
+      const parts = s.split('$').filter(Boolean);
+      const op = parts[0] ?? 'n';
+      const line = parts.slice(1).join('$').match(/:(\d+)/)?.[1];
+      s = line ? `${op}_${line}` : op;
+    }
+    s = s
+      .replace(/[^A-Za-z0-9_]/g, '_')
+      .replace(/_+/g, '_')
+      .replace(/^_+|_+$/g, '');
+    if (!s) s = 'n';
+    if (/^[0-9]/.test(s)) s = `n_${s}`;
+    let id = s;
+    for (let k = 2; used.has(id); k++) id = `${s}_${k}`;
+    used.add(id);
+    return id;
+  };
+}
+
+// ---------------------------------------------------------------------------
 // Node construction from a BuiltCircuit (harvest exact port descriptors)
 // ---------------------------------------------------------------------------
 
@@ -402,6 +441,13 @@ function translateModule(
     nodes.push(nodeFromBuilt(id, built, args));
   };
 
+  // Sanitize every cell name → a valid, unique node id up front (before the
+  // driver map), so the driver map and every connection/node ref use the same
+  // clean id. `nid` maps a raw yosys cell name to its sanitized node id.
+  const idOf = makeIdSanitizer();
+  const cellId = new Map<string, string>(Object.keys(mod.cells).map((cn) => [cn, idOf(cn)]));
+  const nid = (cn: string) => cellId.get(cn) ?? cn;
+
   // --- driver map: bit id → who drives it -------------------------------
   const drivers = new Map<number, BitDriver>();
   const sourceWidth = new Map<string, number>(); // `${nodeId}\0${port}` → width
@@ -420,14 +466,15 @@ function translateModule(
   // lifted cells rename yosys output ports (Y→sum, Q→q…) via outMap; submodule
   // ports keep their names.
   for (const [cn, cell] of Object.entries(mod.cells)) {
+    const id = nid(cn);
     if (cell.type === '$mem_v2') {
       // each read port drives a WIDTH-bit lane of the packed RD_DATA output
       const { rdPorts, width } = memLayout(cell);
       for (let i = 0; i < rdPorts; i++) {
         const port = `rd_data_${i}`;
-        sourceWidth.set(key(cn, port), width);
+        sourceWidth.set(key(id, port), width);
         lane(cell.connections.RD_DATA, i, width).forEach((b, j) => {
-          if (typeof b === 'number') drivers.set(b, { nodeId: cn, portName: port, index: j });
+          if (typeof b === 'number') drivers.set(b, { nodeId: id, portName: port, index: j });
         });
       }
       continue;
@@ -435,9 +482,9 @@ function translateModule(
     if (cell.type === '$pmux') {
       // Y output (WIDTH bits) is driven by RtlPmux.out
       const w = param(cell, 'WIDTH');
-      sourceWidth.set(key(cn, 'out'), w);
+      sourceWidth.set(key(id, 'out'), w);
       (cell.connections.Y ?? []).forEach((b, j) => {
-        if (typeof b === 'number') drivers.set(b, { nodeId: cn, portName: 'out', index: j });
+        if (typeof b === 'number') drivers.set(b, { nodeId: id, portName: 'out', index: j });
       });
       continue;
     }
@@ -449,9 +496,9 @@ function translateModule(
     for (const [pn, bits] of Object.entries(cell.connections)) {
       if (!outs.has(pn)) continue;
       const sPort = rename(pn);
-      sourceWidth.set(key(cn, sPort), bits.length);
+      sourceWidth.set(key(id, sPort), bits.length);
       bits.forEach((b, idx) => {
-        if (typeof b === 'number') drivers.set(b, { nodeId: cn, portName: sPort, index: idx });
+        if (typeof b === 'number') drivers.set(b, { nodeId: id, portName: sPort, index: idx });
       });
     }
   }
@@ -539,20 +586,21 @@ function translateModule(
 
   // --- emit a node per cell, wiring its inputs --------------------------
   for (const [cn, cell] of Object.entries(mod.cells)) {
+    const cid = nid(cn); // sanitized node id (see makeIdSanitizer)
     if (cell.type === '$mem_v2') {
       const { rdPorts, wrPorts, abits, width, size } = memLayout(cell);
-      pushBuilt(cn, RtlMem({ rdPorts, wrPorts, abits, width, size }), {});
+      pushBuilt(cid, RtlMem({ rdPorts, wrPorts, abits, width, size }), {});
       for (let i = 0; i < rdPorts; i++) {
         const s = resolveBits(lane(cell.connections.RD_ADDR, i, abits));
-        connect(s.nodeId, s.portName, cn, `rd_addr_${i}`, portTypeOf(abits));
+        connect(s.nodeId, s.portName, cid, `rd_addr_${i}`, portTypeOf(abits));
       }
       for (let i = 0; i < wrPorts; i++) {
         const sa = resolveBits(lane(cell.connections.WR_ADDR, i, abits));
-        connect(sa.nodeId, sa.portName, cn, `wr_addr_${i}`, portTypeOf(abits));
+        connect(sa.nodeId, sa.portName, cid, `wr_addr_${i}`, portTypeOf(abits));
         const sd = resolveBits(lane(cell.connections.WR_DATA, i, width));
-        connect(sd.nodeId, sd.portName, cn, `wr_data_${i}`, portTypeOf(width));
+        connect(sd.nodeId, sd.portName, cid, `wr_data_${i}`, portTypeOf(width));
         const se = resolveBits(lane(cell.connections.WR_EN, i, width));
-        connect(se.nodeId, se.portName, cn, `wr_en_${i}`, portTypeOf(width));
+        connect(se.nodeId, se.portName, cid, `wr_en_${i}`, portTypeOf(width));
       }
       continue;
     }
@@ -562,14 +610,14 @@ function translateModule(
       // WIDTH bits each, packed. Slice B into per-lane b_i ports (≤32 bits).
       const w = param(cell, 'WIDTH');
       const sWidth = param(cell, 'S_WIDTH');
-      pushBuilt(cn, RtlPmux({ width: w, sWidth }), {});
+      pushBuilt(cid, RtlPmux({ width: w, sWidth }), {});
       const a = resolveBits(cell.connections.A ?? []);
-      connect(a.nodeId, a.portName, cn, 'a', portTypeOf(w));
+      connect(a.nodeId, a.portName, cid, 'a', portTypeOf(w));
       const s = resolveBits(cell.connections.S ?? []);
-      connect(s.nodeId, s.portName, cn, 's', portTypeOf(sWidth));
+      connect(s.nodeId, s.portName, cid, 's', portTypeOf(sWidth));
       for (let i = 0; i < sWidth; i++) {
         const bi = resolveBits(lane(cell.connections.B, i, w));
-        connect(bi.nodeId, bi.portName, cn, `b_${i}`, portTypeOf(w));
+        connect(bi.nodeId, bi.portName, cid, `b_${i}`, portTypeOf(w));
       }
       continue;
     }
@@ -580,18 +628,18 @@ function translateModule(
       const shape = shapes.get(cell.type)!;
       const inSet = new Set(shape.inputs.map((p) => p.name));
       const node: Node = {
-        id: cn,
+        id: cid,
         componentRef: cell.type,
         arguments: {},
-        inputs: instancesFrom(shape.inputs, cn),
-        outputs: instancesFrom(shape.outputs, cn),
-        clocks: shape.sequential ? [{ id: `${cn}.clk`, name: 'clk' }] : [],
+        inputs: instancesFrom(shape.inputs, cid),
+        outputs: instancesFrom(shape.outputs, cid),
+        clocks: shape.sequential ? [{ id: `${cid}.clk`, name: 'clk' }] : [],
       };
       nodes.push(node);
       for (const [pn, bits] of Object.entries(cell.connections)) {
         if (!inSet.has(pn)) continue; // skip outputs and CLK
         const src = resolveBits(bits);
-        connect(src.nodeId, src.portName, cn, pn, portTypeOf(bits.length));
+        connect(src.nodeId, src.portName, cid, pn, portTypeOf(bits.length));
       }
       continue;
     }
@@ -603,19 +651,19 @@ function translateModule(
     // bake width arg for lifted comps that carry it
     if (built._args)
       for (const [k, v] of Object.entries(built._args)) if (typeof v === 'number') args[k] = v;
-    pushBuilt(cn, built, args);
+    pushBuilt(cid, built, args);
 
     for (const [cellPort, compPort] of Object.entries(rule.inMap)) {
       const bits = cell.connections[cellPort];
       if (!bits) continue;
       const src = resolveBits(bits);
-      connect(src.nodeId, src.portName, cn, compPort, portTypeOf(bits.length));
+      connect(src.nodeId, src.portName, cid, compPort, portTypeOf(bits.length));
     }
     if (rule.tie) {
       for (const [compPort, value] of Object.entries(rule.tie)) {
         const id = `_k${helperId++}`;
         pushBuilt(id, Constant({ width: 1, value }), { width: 1, value });
-        connect(id, 'out', cn, compPort, bitType());
+        connect(id, 'out', cid, compPort, bitType());
       }
     }
   }
