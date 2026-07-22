@@ -65,6 +65,7 @@ const EXACT: Record<string, Classification> = {
   BusNot: S_STD,
   LeftShifter: S_STD,
   RightShifter: S_STD,
+  SignedRightShifter: S_STD,
   LogicAnd: S_STD,
   LogicOr: S_STD,
   LogicNot: S_STD,

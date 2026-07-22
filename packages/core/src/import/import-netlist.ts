@@ -19,7 +19,7 @@
  */
 
 import type { BuiltCircuit } from '../circuit/types.js';
-import { RtlDlatch, RtlMem, RtlPmux, RtlShl, RtlShr, RtlSshr } from '../rtl/index.js';
+import { RtlDlatch, RtlMem, RtlPmux } from '../rtl/index.js';
 import {
   Adder,
   BusAnd,
@@ -29,6 +29,7 @@ import {
   Comparator,
   Concat,
   Constant,
+  LeftShifter,
   LogicAnd,
   LogicNot,
   LogicOr,
@@ -37,7 +38,9 @@ import {
   ReduceOr,
   ReduceXor,
   Register,
+  RightShifter,
   SignedComparator,
+  SignedRightShifter,
   SignExtend,
   Slice,
   Subtractor,
@@ -115,11 +118,6 @@ interface LiftRule {
 }
 
 // A/B/Y width bundle and signedness — read straight off the cell parameters.
-const w3 = (c: YosysCell) => ({
-  aWidth: param(c, 'A_WIDTH'),
-  bWidth: param(c, 'B_WIDTH'),
-  yWidth: param(c, 'Y_WIDTH'),
-});
 
 /** binary A,B → Y (rtl primitive). */
 const bin = (comp: (c: YosysCell) => BuiltCircuit): LiftRule[] => [
@@ -225,10 +223,17 @@ const LIFT: Record<string, LiftRule[]> = {
   $logic_or: bin((c) => LogicOr({ aWidth: param(c, 'A_WIDTH'), bWidth: param(c, 'B_WIDTH') })),
   $logic_not: un((c) => LogicNot({ width: param(c, 'A_WIDTH') })),
 
-  // shifts
-  $shl: bin((c) => RtlShl(w3(c))),
-  $shr: bin((c) => RtlShr(w3(c))),
-  $sshr: bin((c) => RtlSshr({ ...w3(c), aSigned: param(c, 'A_SIGNED') })),
+  // shifts → stdlib shifters at Y_WIDTH; value/shift adapted (shift is unsigned,
+  // value per A_SIGNED). $sshr is the arithmetic (sign-replicating) right shift.
+  $shl: [
+    { comp: (c) => LeftShifter({ width: param(c, 'Y_WIDTH') }), inMap: { A: 'value', B: 'shift' }, outMap: { Y: 'result' }, adaptOperands: true },
+  ],
+  $shr: [
+    { comp: (c) => RightShifter({ width: param(c, 'Y_WIDTH') }), inMap: { A: 'value', B: 'shift' }, outMap: { Y: 'result' }, adaptOperands: true },
+  ],
+  $sshr: [
+    { comp: (c) => SignedRightShifter({ width: param(c, 'Y_WIDTH') }), inMap: { A: 'value', B: 'shift' }, outMap: { Y: 'result' }, adaptOperands: true },
+  ],
 
   // $pmux is handled specially (per-lane candidate ports) — see translateModule.
 };

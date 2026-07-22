@@ -26,6 +26,7 @@ export {
   SignedAdder,
   SignedComparator,
   SignedMultiplier,
+  SignedRightShifter,
   Subtractor,
 } from './arithmetic.js';
 // Display

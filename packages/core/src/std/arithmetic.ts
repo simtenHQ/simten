@@ -249,6 +249,34 @@ export const RightShifter = circuit('RightShifter', ({ width = 8 }: { width?: nu
 }));
 
 /**
+ * Arithmetic (signed) right shifter. Computes `$signed(value) >>> shift`,
+ * replicating the sign bit into the vacated top bits — Verilog `>>>` on a
+ * signed operand. Shifts ≥ width saturate to all-0 (value ≥ 0) or all-1
+ * (value < 0).
+ *
+ * **Inputs:** `value`, `shift` — `bus(width)`  **Output:** `result` — `bus(width)`
+ */
+export const SignedRightShifter = circuit(
+  'SignedRightShifter',
+  ({ width = 8 }: { width?: number } = {}) => ({
+    inputs: { value: bus(width), shift: bus(width) },
+    outputs: { result: bus(width) },
+    meta: { category: 'arithmetic', icon: '≫±', description: 'Arithmetic (signed) right shifter' },
+    eval: ({ value, shift, width: w = width }) => {
+      const wn = w as number;
+      const mask = wn >= 32 ? 0xffffffff : (1 << wn) - 1;
+      const half = 2 ** (wn - 1);
+      const u = (value as number) >>> 0;
+      const signed = u >= half ? u - 2 ** wn : u; // interpret as two's-complement
+      const sn = shift as number;
+      // arithmetic shift; saturates to the sign fill once shift ≥ width
+      const shifted = sn >= wn ? (signed < 0 ? -1 : 0) : Math.floor(signed / 2 ** sn);
+      return { result: (shifted & mask) >>> 0 };
+    },
+  }),
+);
+
+/**
  * Signed adder with overflow detection. Treats inputs as 8-bit two's-complement
  * (range -128..127). `overflow` flags signed overflow — when the result's
  * sign bit doesn't match what it should given the operand signs.

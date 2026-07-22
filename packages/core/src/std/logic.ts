@@ -364,7 +364,8 @@ export const ReduceAnd = circuit('ReduceAnd', ({ width = 8 }: { width?: number }
   meta: { category: 'bus-operations', icon: '&a', description: 'Reduction AND (&a) — 1 iff all bits set' },
   eval: ({ a, width: w = width }) => {
     const m = maskOf(w as number);
-    return { out: ((a as number) >>> 0 & m) === m ? 1 : 0 };
+    // `& m` is a signed 32-bit op; coerce back to unsigned before comparing.
+    return { out: (((a as number) >>> 0) & m) >>> 0 === m ? 1 : 0 };
   },
 }));
 
