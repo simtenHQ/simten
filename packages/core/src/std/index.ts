@@ -81,6 +81,8 @@ export {
   RV32I_WritebackMux,
 } from './rv32i.js';
 
+// Reconstruction / bit-manipulation (importer authoring constructs)
+export { SignExtend, Slice, ZeroExtend } from './reconstruction.js';
 // RV32I assembled CPU core (single source of truth — see ./rv32i-cpu.ts)
 export { RV32I_Core } from './rv32i-cpu.js';
 // Sequential
@@ -101,6 +103,7 @@ import * as IO from './io.js';
 import * as Logic from './logic.js';
 import * as Memory from './memory.js';
 import * as Networking from './networking.js';
+import * as Reconstruction from './reconstruction.js';
 import * as Routing from './routing.js';
 import * as RV32I from './rv32i.js';
 import * as RV32ICpu from './rv32i-cpu.js';
@@ -113,6 +116,7 @@ const _allExports: unknown[] = [
   ...Object.values(Logic),
   ...Object.values(Arithmetic),
   ...Object.values(Routing),
+  ...Object.values(Reconstruction),
   ...Object.values(Sequential),
   ...Object.values(Memory),
   ...Object.values(IO),

@@ -97,7 +97,7 @@ describe('stdlib circuits load', () => {
     ['Splitter', Splitter],
     ['Splitter8to8', Splitter8to8],
     ['Combiner8to8', Combiner8to8],
-    ['Concat', Concat],
+    ['Concat', Concat()],
     ['BitSlice', BitSlice()],
     ['AddressCombiner', AddressCombiner],
     ['Probe', Probe],

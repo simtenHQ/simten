@@ -22,7 +22,6 @@ import type { BuiltCircuit } from '../circuit/types.js';
 import {
   RtlAdd,
   RtlAnd,
-  RtlConcat2,
   RtlDlatch,
   RtlGe,
   RtlGt,
@@ -42,12 +41,22 @@ import {
   RtlReduceXor,
   RtlShl,
   RtlShr,
-  RtlSlice,
   RtlSshr,
   RtlSub,
   RtlXor,
 } from '../rtl/index.js';
-import { Adder, Comparator, Constant, Mux, Register, Subtractor } from '../std/index.js';
+import {
+  Adder,
+  Comparator,
+  Concat,
+  Constant,
+  Mux,
+  Register,
+  SignExtend,
+  Slice,
+  Subtractor,
+  ZeroExtend,
+} from '../std/index.js';
 import type {
   Circuit,
   Connection,
@@ -57,7 +66,7 @@ import type {
   PortType,
 } from '../types/circuit.js';
 import { bitType, busType } from '../types/circuit.js';
-import { type BitDriver, segmentBits, type YosysBit } from './net-map.js';
+import { type BitDriver, type Segment, segmentBits, type YosysBit } from './net-map.js';
 
 // ---------------------------------------------------------------------------
 // Yosys JSON shape
@@ -271,6 +280,52 @@ function cellOutputPorts(cell: YosysCell, subOutputs?: Set<string>): Set<string>
 }
 
 // ---------------------------------------------------------------------------
+// Sign/zero-extension recognition (clean reconstruction, Workstream B1)
+// ---------------------------------------------------------------------------
+
+type NetSegment = Extract<Segment, { kind: 'net' }>;
+interface ExtInfo {
+  base: NetSegment;
+  kind: 'sign' | 'zero';
+  toWidth: number;
+}
+
+/**
+ * Recognize a widening: a single net run followed only by its high padding.
+ * yosys lowers `$signed` widening into MSB replication (the run's top bit,
+ * `offset+width-1`, repeated 1 bit at a time) and unsigned widening into a
+ * constant-zero pad. Either collapses to one `SignExtend`/`ZeroExtend` node
+ * instead of a slice + N×concat chain. Anything else (a genuine multi-field
+ * concat) returns null and folds normally.
+ */
+function detectExtension(segs: Segment[]): ExtInfo | null {
+  if (segs.length < 2) return null;
+  const base = segs[0];
+  if (base.kind !== 'net') return null;
+  const rest = segs.slice(1);
+
+  // zero-extension: the high segments are all constant 0
+  if (rest.every((s) => s.kind === 'const' && s.value === 0)) {
+    const pad = rest.reduce((a, s) => a + s.width, 0);
+    return { base, kind: 'zero', toWidth: base.width + pad };
+  }
+
+  // sign-extension: the high bits replicate the run's MSB, one bit at a time
+  const msb = base.offset + base.width - 1;
+  const isMsbRepeat = rest.every(
+    (s) =>
+      s.kind === 'net' &&
+      s.width === 1 &&
+      s.nodeId === base.nodeId &&
+      s.portName === base.portName &&
+      s.offset === msb,
+  );
+  if (isMsbRepeat) return { base, kind: 'sign', toWidth: base.width + rest.length };
+
+  return null;
+}
+
+// ---------------------------------------------------------------------------
 // Node construction from a BuiltCircuit (harvest exact port descriptors)
 // ---------------------------------------------------------------------------
 
@@ -424,7 +479,7 @@ function translateModule(
         return { nodeId: seg.nodeId, portName: seg.portName };
       // partial → slice
       const id = `_s${helperId++}`;
-      pushBuilt(id, RtlSlice({ inWidth: whole!, offset: seg.offset, width: seg.width }), {
+      pushBuilt(id, Slice({ inWidth: whole!, offset: seg.offset, width: seg.width }), {
         inWidth: whole!,
         offset: seg.offset,
         width: seg.width,
@@ -433,18 +488,35 @@ function translateModule(
       return { nodeId: id, portName: 'out' };
     };
 
+    // Collapse sign/zero extension into ONE node instead of a slice+concat
+    // chain (the plumbing explosion — a single widening is otherwise ~8 nodes).
+    // yosys lowers `$signed` widening into MSB replication (a net run followed
+    // by copies of that run's top bit) and unsigned widening into a zero pad.
+    const ext = detectExtension(segs);
+    if (ext) {
+      const base = emitSeg(ext.base);
+      const id = `_x${helperId++}`;
+      const comp =
+        ext.kind === 'sign'
+          ? SignExtend({ inWidth: ext.base.width, outWidth: ext.toWidth })
+          : ZeroExtend({ inWidth: ext.base.width, outWidth: ext.toWidth });
+      pushBuilt(id, comp, { inWidth: ext.base.width, outWidth: ext.toWidth });
+      connect(base.nodeId, base.portName, id, 'in', portTypeOf(ext.base.width));
+      return { nodeId: id, portName: 'out' };
+    }
+
     const srcs = segs.map((s) => ({ src: emitSeg(s), width: s.width }));
-    // fold LSB-first with RtlConcat2 (lo = low bits, hi above)
+    // fold LSB-first with Concat (low = low bits, high above)
     let acc = srcs[0];
     for (let i = 1; i < srcs.length; i++) {
       const hi = srcs[i];
       const id = `_c${helperId++}`;
-      pushBuilt(id, RtlConcat2({ hiWidth: hi.width, loWidth: acc.width }), {
+      pushBuilt(id, Concat({ hiWidth: hi.width, loWidth: acc.width }), {
         hiWidth: hi.width,
         loWidth: acc.width,
       });
-      connect(hi.src.nodeId, hi.src.portName, id, 'hi', portTypeOf(hi.width));
-      connect(acc.src.nodeId, acc.src.portName, id, 'lo', portTypeOf(acc.width));
+      connect(hi.src.nodeId, hi.src.portName, id, 'high', portTypeOf(hi.width));
+      connect(acc.src.nodeId, acc.src.portName, id, 'low', portTypeOf(acc.width));
       acc = { src: { nodeId: id, portName: 'out' }, width: acc.width + hi.width };
     }
     return acc.src;
