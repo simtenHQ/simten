@@ -167,7 +167,7 @@ describe('rtl shifts (32-bit, amount 0..31)', () => {
 
 describe('rtl dlatch (level-sensitive)', () => {
   it('transparent when EN matches polarity, holds otherwise', () => {
-    const p = rtl.RtlDlatch({ width: 8, enPolarity: 1 }); // active-high
+    const p = rtl.Dlatch({ width: 8, enPolarity: 1 }); // active-high
     const W = circuit('DlWrap', {
       inputs: { en: bit, d: bus(8) },
       outputs: { q: bus(8) },
@@ -191,7 +191,7 @@ describe('rtl dlatch (level-sensitive)', () => {
   });
 
   it('active-low polarity (EN_POLARITY=0): transparent when EN low', () => {
-    const p = rtl.RtlDlatch({ width: 8, enPolarity: 0 });
+    const p = rtl.Dlatch({ width: 8, enPolarity: 0 });
     const W = circuit('DlWrap0', {
       inputs: { en: bit, d: bus(8) },
       outputs: { q: bus(8) },
@@ -214,7 +214,7 @@ describe('rtl dlatch (level-sensitive)', () => {
 
 describe('rtl mem (multi-port, per-bit write enable)', () => {
   // 2 read / 2 write, 5-bit addr, 8-bit data, 32 entries.
-  const m = rtl.RtlMem({ rdPorts: 2, wrPorts: 2, abits: 5, width: 8, size: 32 });
+  const m = rtl.Mem({ rdPorts: 2, wrPorts: 2, abits: 5, width: 8, size: 32 });
   const W = circuit('MemWrap', {
     inputs: {
       ra0: bus(5),
@@ -264,7 +264,7 @@ describe('rtl mem (multi-port, per-bit write enable)', () => {
 
 describe('rtl pmux (one-hot, per-lane candidates)', () => {
   it('selects the set candidate, else default a', () => {
-    const p = rtl.RtlPmux({ width: 8, sWidth: 2 });
+    const p = rtl.Pmux({ width: 8, sWidth: 2 });
     const W = circuit('PmuxWrap', {
       inputs: { a: bus(8), s: bus(2), b0: bus(8), b1: bus(8) },
       outputs: { out: bus(8) },

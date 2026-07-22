@@ -29,6 +29,7 @@ import type {
   PortType,
   StateBlock,
 } from '../types/circuit.js';
+import { importFactoryName, isKnownSerializablePrimitive } from '../import/component-homes.js';
 import { getCircuitEval } from './eval-registry.js';
 import { safeIdentifier } from './reserved-identifiers.js';
 import type { BuiltCircuit } from './types.js';
@@ -49,14 +50,19 @@ export class CircuitToSourceError extends Error {
 export function circuitToSource(built: BuiltCircuit): string {
   // Collect user-defined (non-stdlib) deps. Stdlib is pre-injected into the
   // editor sandbox, so we don't need to track or emit it.
+  // Pre-injected = stdlib OR an import-namespace primitive (Pmux/Mem/Dlatch):
+  // both are available in the editor sandbox by name, so they are emitted by
+  // name (import primitives as a factory call) and never recursed into.
+  const isPreInjected = (name: string) =>
+    STDLIB_NAMES.has(name) || isKnownSerializablePrimitive(name);
   const userCircuits = new Map<string, Circuit>();
   for (const [name, dep] of built._dependencies) {
-    if (!STDLIB_NAMES.has(name)) {
+    if (!isPreInjected(name)) {
       userCircuits.set(name, dep.circuit);
     }
   }
   for (const node of built.circuit.nodes) {
-    if (!STDLIB_NAMES.has(node.componentRef) && !userCircuits.has(node.componentRef)) {
+    if (!isPreInjected(node.componentRef) && !userCircuits.has(node.componentRef)) {
       const dep = built._dependencies.get(node.componentRef);
       if (dep) userCircuits.set(node.componentRef, dep.circuit);
     }
@@ -236,9 +242,12 @@ const PARAMETERIZED_STDLIB = new Set<string>([
 
 function emitNodes(nodes: Node[], idOf: (name: string) => string): string {
   const entries = nodes.map((n) => {
+    // Shape-named import primitives (`Pmux_32w_10s`) emit as a factory call on
+    // their base name (`Pmux({ width, sWidth })`), which reconstructs the shape.
+    const factory = importFactoryName(n.componentRef);
     // A user-circuit ref is remapped (e.g. `top` → `top_`); stdlib/import
     // primitive names are never reserved, so idOf is identity for them.
-    const ref = idOf(n.componentRef);
+    const ref = factory ?? idOf(n.componentRef);
     const hasArgs = n.arguments && Object.keys(n.arguments).length > 0;
     if (hasArgs) {
       return `${n.id}: ${ref}(${emitArgs(n.arguments)})`;

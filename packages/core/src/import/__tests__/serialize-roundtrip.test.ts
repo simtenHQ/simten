@@ -18,9 +18,11 @@
 
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
+import { gunzipSync } from 'node:zlib';
 import { describe, expect, it } from 'vitest';
 import { bit, bus, circuit } from '../../circuit/index.js';
 import { circuitToSource } from '../../circuit/circuit-to-source.js';
+import { executeJsCode } from '../../circuit/execute.js';
 import type { BuiltCircuit } from '../../circuit/types.js';
 import { simulate } from '../../sim/index.js';
 import {
@@ -97,6 +99,35 @@ describe('serializer round-trip (import → source → recompile → simulate)',
         expect(sim.get(k), `${k} for in=${JSON.stringify(v.in)}`).toBe(want);
       }
     }
+    sim.dispose();
+  });
+});
+
+describe('real design (RV32I_CPU_Core) serializes fully clean and re-simulates', () => {
+  it('imports → source with 0 Rtl*, Pmux/Mem as factory calls → recompiles via the sandbox → simulates', () => {
+    const rv32i = JSON.parse(
+      gunzipSync(
+        readFileSync(fileURLToPath(new URL('../__fixtures__/rv32i_cpu.json.gz', import.meta.url))),
+      ).toString('utf8'),
+    ) as YosysNetlist;
+    const { top, library } = importNetlist(rv32i, 'RV32I_CPU_Core');
+    const source = circuitToSource(buildFromIR(top, [...library.values()].filter((c) => c.name !== top.name)));
+
+    // fully clean: no Rtl* anywhere; the import-namespace primitives emit as
+    // factory calls that reconstruct their shape.
+    expect(source).not.toMatch(/\bRtl[A-Z]/);
+    expect(source).toMatch(/Pmux\(\{ width: \d+, sWidth: \d+ \}\)/);
+    expect(source).toMatch(/Mem\(\{ rdPorts: \d+, /);
+
+    // recompile through the actual editor sandbox (Pmux/Mem/Dlatch injected)
+    // and simulate — proves the generated source is executable, not just clean.
+    const res = executeJsCode(source);
+    expect(res.error, res.error ?? '').toBeNull();
+    const entry = res.builtCircuits.find((c) => c.circuit.name === 'RV32I_CPU_Core');
+    expect(entry).toBeDefined();
+    const sim = simulate(entry as BuiltCircuit);
+    sim.tick();
+    sim.tick();
     sim.dispose();
   });
 });

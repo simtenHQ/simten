@@ -19,7 +19,7 @@
  */
 
 import type { BuiltCircuit } from '../circuit/types.js';
-import { RtlDlatch, RtlMem, RtlPmux } from '../rtl/index.js';
+import { Dlatch, Mem, Pmux } from '../rtl/index.js';
 import {
   Adder,
   BusAnd,
@@ -115,6 +115,10 @@ interface LiftRule {
    * correct because add/sub/bitwise depend only on the low `Y_WIDTH` bits.
    */
   adaptOperands?: boolean;
+  /** Explicit node arguments (shape) to store, for import-namespace primitives
+   *  whose `circuit()` config form doesn't carry `_args` (e.g. Dlatch). Lets the
+   *  serializer emit a factory call `Dlatch({ width, enPolarity })`. */
+  nodeArgs?: (cell: YosysCell) => Record<string, number>;
 }
 
 // A/B/Y width bundle and signedness — read straight off the cell parameters.
@@ -191,10 +195,11 @@ const LIFT: Record<string, LiftRule[]> = {
   ],
   $dlatch: [
     {
-      comp: (c) => RtlDlatch({ width: param(c, 'WIDTH'), enPolarity: param(c, 'EN_POLARITY') }),
+      comp: (c) => Dlatch({ width: param(c, 'WIDTH'), enPolarity: param(c, 'EN_POLARITY') }),
       inMap: { D: 'd', EN: 'en' },
       outMap: { Q: 'q' },
       sequential: true,
+      nodeArgs: (c) => ({ width: param(c, 'WIDTH'), enPolarity: param(c, 'EN_POLARITY') }),
     },
   ],
 
@@ -613,7 +618,14 @@ function translateModule(
     const cid = nid(cn); // sanitized node id (see makeIdSanitizer)
     if (cell.type === '$mem_v2') {
       const { rdPorts, wrPorts, abits, width, size } = memLayout(cell);
-      pushBuilt(cid, RtlMem({ rdPorts, wrPorts, abits, width, size }), {});
+      // shape args stored on the node so the serializer can emit Mem({...})
+      pushBuilt(cid, Mem({ rdPorts, wrPorts, abits, width, size }), {
+        rdPorts,
+        wrPorts,
+        abits,
+        width,
+        size,
+      });
       for (let i = 0; i < rdPorts; i++) {
         const s = resolveBits(lane(cell.connections.RD_ADDR, i, abits));
         connect(s.nodeId, s.portName, cid, `rd_addr_${i}`, portTypeOf(abits));
@@ -634,7 +646,7 @@ function translateModule(
       // WIDTH bits each, packed. Slice B into per-lane b_i ports (≤32 bits).
       const w = param(cell, 'WIDTH');
       const sWidth = param(cell, 'S_WIDTH');
-      pushBuilt(cid, RtlPmux({ width: w, sWidth }), {});
+      pushBuilt(cid, Pmux({ width: w, sWidth }), { width: w, sWidth });
       const a = resolveBits(cell.connections.A ?? []);
       connect(a.nodeId, a.portName, cid, 'a', portTypeOf(w));
       const s = resolveBits(cell.connections.S ?? []);
@@ -671,7 +683,7 @@ function translateModule(
     const rule = pickRule(cell);
     if (!rule) throw new Error(`${name}: unsupported cell type ${cell.type}`);
     const built = rule.comp(cell);
-    const args: Record<string, number> = {};
+    const args: Record<string, number> = rule.nodeArgs ? rule.nodeArgs(cell) : {};
     // bake width arg for lifted comps that carry it
     if (built._args)
       for (const [k, v] of Object.entries(built._args)) if (typeof v === 'number') args[k] = v;

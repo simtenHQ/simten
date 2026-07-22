@@ -142,6 +142,21 @@ if (helpers.length > 0) {
   }
 }
 
+// Import-namespace factories (Pmux/Mem/Dlatch) — shape-named primitives that
+// fall out of yosys elaboration and appear in generated Verilog imports.
+// Injected into the sandbox by execute.ts but NOT part of @simten/core's
+// published surface, so their signatures are declared explicitly here.
+lines.push('');
+lines.push('  // Import-namespace factories (from generated Verilog imports)');
+lines.push('  /** One-hot parallel mux — synthesized from a full `case`. */');
+lines.push('  const Pmux: (opts: { width: number; sWidth: number }) => core.BuiltCircuit;');
+lines.push('  /** Multi-port memory — from a `$mem_v2` cell. */');
+lines.push(
+  '  const Mem: (opts: { rdPorts: number; wrPorts: number; abits: number; width: number; size: number }) => core.BuiltCircuit;',
+);
+lines.push('  /** Inferred level-sensitive D-latch. */');
+lines.push('  const Dlatch: (opts: { width: number; enPolarity: number }) => core.BuiltCircuit;');
+
 lines.push('}');
 lines.push('');
 lines.push('export {};');

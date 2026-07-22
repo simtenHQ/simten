@@ -102,7 +102,7 @@ const EXACT: Record<string, Classification> = {
  * port *set* varies per instance, so the shape is baked into the name
  * (RtlPmux_32w_10s, RtlMem_2r1w_8a_8w_256d, RtlDlatch_8w_ep1). Matched by prefix.
  */
-const IMPORT_PREFIXES = ['RtlPmux', 'RtlMem', 'RtlDlatch'] as const;
+const IMPORT_PREFIXES = ['Pmux', 'Mem', 'Dlatch'] as const;
 
 /**
  * Classify a component by name. Returns `undefined` for names that are not
@@ -129,4 +129,14 @@ export function isReconstruction(name: string): boolean {
  */
 export function isKnownSerializablePrimitive(name: string): boolean {
   return classify(name) !== undefined;
+}
+
+/**
+ * For a shape-named import-namespace primitive (`Pmux_32w_10s`), the factory
+ * name to emit in generated source (`Pmux`) — the serializer emits a factory
+ * call `Pmux({ width, sWidth })` that reconstructs the exact shape. Returns
+ * undefined for everything else (emitted by their own name).
+ */
+export function importFactoryName(name: string): string | undefined {
+  return IMPORT_PREFIXES.find((p) => name.startsWith(`${p}_`));
 }

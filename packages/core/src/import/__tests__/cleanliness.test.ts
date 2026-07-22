@@ -64,10 +64,10 @@ describe('cleanliness — RV32I_CPU_Core scale guard (measured-then-ratcheted)',
     expect(m.recon).toBeLessThanOrEqual(275);
   });
 
-  it('residual Rtl* count does not regress (ratchets to 0 as A lifts ops to stdlib)', () => {
+  it('has ZERO residual Rtl* — a real CPU lifts entirely to clean components', () => {
     // 66 → 57 (bitwise+add) → 50 (compares) → 14 (logical+reductions) → 11
-    // (shifts). Remaining: RtlPmux×10, RtlMem×1 — the import-namespace primitives.
-    expect(m.rtl).toBeLessThanOrEqual(11);
+    // (shifts) → 0 (Pmux/Mem/Dlatch renamed + serialized as factory calls).
+    expect(m.rtl).toBe(0);
   });
 
   it('still builds and simulates (structure valid)', () => {

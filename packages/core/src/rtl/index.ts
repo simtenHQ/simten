@@ -252,10 +252,10 @@ export const RtlSshr = circuit(
  * `sWidth` candidates of `width` bits each. Output is the candidate whose `s`
  * bit is set (lowest index wins if several), else the default `a`.
  */
-export function RtlPmux(opts: { width: number; sWidth: number }): BuiltCircuit {
+export function Pmux(opts: { width: number; sWidth: number }): BuiltCircuit {
   const { width, sWidth } = opts;
   const m = maskOf(width);
-  const name = `RtlPmux_${width}w_${sWidth}s`;
+  const name = `Pmux_${width}w_${sWidth}s`;
   // Per-lane candidate ports (b_0..b_{sWidth-1}), each ≤ width bits — NOT one
   // packed `width*sWidth` port, which would exceed simten's 32-bit buses (a
   // 10-way 32-bit mux packs to 320 bits). The importer slices yosys's packed B
@@ -303,12 +303,12 @@ export const RtlConcat2 = circuit(
  * incompletely-assigned combinational `always` block — common in real RTL.
  *
  * Shape-parameterized (width + polarity baked into the name and closure) rather
- * than arg-driven — same pattern as RtlMem/RtlPmux.
+ * than arg-driven — same pattern as Mem/Pmux.
  */
-export function RtlDlatch(opts: { width: number; enPolarity: number }): BuiltCircuit {
+export function Dlatch(opts: { width: number; enPolarity: number }): BuiltCircuit {
   const { width, enPolarity } = opts;
   const m = maskOf(width);
-  const name = `RtlDlatch_${width}w_ep${enPolarity}`;
+  const name = `Dlatch_${width}w_ep${enPolarity}`;
   return circuit(name, {
     inputs: { en: bit, d: bus(width) },
     outputs: { q: bus(width) },
@@ -349,7 +349,7 @@ export function RtlDlatch(opts: { width: number; enPolarity: number }): BuiltCir
  * (all reads async, no transparency). Memory starts zero (correct for a
  * zero-init register file); `$meminit` data is not yet applied.
  */
-export function RtlMem(opts: {
+export function Mem(opts: {
   rdPorts: number;
   wrPorts: number;
   abits: number;
@@ -361,7 +361,7 @@ export function RtlMem(opts: {
   const depth = 1 << addrW;
   const amask = depth - 1;
   const dmask = maskOf(width);
-  const name = `RtlMem_${rdPorts}r${wrPorts}w_${abits}a_${width}w_${depth}d`;
+  const name = `Mem_${rdPorts}r${wrPorts}w_${abits}a_${width}w_${depth}d`;
 
   const inputs: Record<string, ReturnType<typeof bus>> = {};
   const outputs: Record<string, ReturnType<typeof bus>> = {};

@@ -23,7 +23,7 @@ describe('classification principle', () => {
   it('reconstruction = the four bit-wiring constructs (+ their Rtl* precursors)', () => {
     for (const n of ['Slice', 'Concat', 'SignExtend', 'ZeroExtend', 'RtlSlice', 'RtlConcat2'])
       expect(isReconstruction(n), n).toBe(true);
-    for (const n of ['Adder', 'Mux', 'Register', 'Constant', 'RtlAdd', 'RtlPmux_8w_2s'])
+    for (const n of ['Adder', 'Mux', 'Register', 'Constant', 'RtlAdd', 'Pmux_8w_2s'])
       expect(isReconstruction(n), n).toBe(false);
   });
 
@@ -31,7 +31,7 @@ describe('classification principle', () => {
     for (const n of ['Slice', 'Concat', 'SignExtend', 'ZeroExtend', 'Adder', 'Mux', 'Register'])
       expect(classify(n)?.home, n).toBe('stdlib');
     // pure elaboration artifacts — shape-named, matched by prefix
-    for (const n of ['RtlPmux_32w_10s', 'RtlMem_2r1w_8a_8w_256d', 'RtlDlatch_8w_ep1'])
+    for (const n of ['Pmux_32w_10s', 'Mem_2r1w_8a_8w_256d', 'Dlatch_8w_ep1'])
       expect(classify(n)?.home, n).toBe('import');
   });
 
@@ -39,7 +39,7 @@ describe('classification principle', () => {
     expect(classify('top')).toBeUndefined();
     expect(isKnownSerializablePrimitive('top')).toBe(false);
     expect(isKnownSerializablePrimitive('Adder')).toBe(true);
-    expect(isKnownSerializablePrimitive('RtlMem_2r1w_8a_8w_256d')).toBe(true);
+    expect(isKnownSerializablePrimitive('Mem_2r1w_8a_8w_256d')).toBe(true);
   });
 });
 
