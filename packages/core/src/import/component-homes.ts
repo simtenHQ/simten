@@ -65,6 +65,12 @@ const EXACT: Record<string, Classification> = {
   BusNot: S_STD,
   LeftShifter: S_STD,
   RightShifter: S_STD,
+  LogicAnd: S_STD,
+  LogicOr: S_STD,
+  LogicNot: S_STD,
+  ReduceOr: S_STD,
+  ReduceAnd: S_STD,
+  ReduceXor: S_STD,
 
   // ── semantic — internal Rtl* (transitional; → stdlib via Workstream A) ─────
   RtlAdd: S_IMP,

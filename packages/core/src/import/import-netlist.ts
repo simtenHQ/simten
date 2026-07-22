@@ -19,21 +19,7 @@
  */
 
 import type { BuiltCircuit } from '../circuit/types.js';
-import {
-  RtlDlatch,
-  RtlLogicAnd,
-  RtlLogicNot,
-  RtlLogicOr,
-  RtlMem,
-  RtlPmux,
-  RtlReduceAnd,
-  RtlReduceBool,
-  RtlReduceOr,
-  RtlReduceXor,
-  RtlShl,
-  RtlShr,
-  RtlSshr,
-} from '../rtl/index.js';
+import { RtlDlatch, RtlMem, RtlPmux, RtlShl, RtlShr, RtlSshr } from '../rtl/index.js';
 import {
   Adder,
   BusAnd,
@@ -43,7 +29,13 @@ import {
   Comparator,
   Concat,
   Constant,
+  LogicAnd,
+  LogicNot,
+  LogicOr,
   Mux,
+  ReduceAnd,
+  ReduceOr,
+  ReduceXor,
   Register,
   SignedComparator,
   SignExtend,
@@ -222,16 +214,16 @@ const LIFT: Record<string, LiftRule[]> = {
     { comp: (c) => BusNot({ width: param(c, 'Y_WIDTH') }), inMap: { A: 'in' }, outMap: { Y: 'out' }, adaptOperands: true },
   ],
 
-  // reductions
-  $reduce_or: un((c) => RtlReduceOr({ aWidth: param(c, 'A_WIDTH') })),
-  $reduce_bool: un((c) => RtlReduceBool({ aWidth: param(c, 'A_WIDTH') })),
-  $reduce_and: un((c) => RtlReduceAnd({ aWidth: param(c, 'A_WIDTH') })),
-  $reduce_xor: un((c) => RtlReduceXor({ aWidth: param(c, 'A_WIDTH') })),
+  // reductions → stdlib bus→bit (reduce_bool ≡ reduce_or: both are `a != 0`)
+  $reduce_or: un((c) => ReduceOr({ width: param(c, 'A_WIDTH') })),
+  $reduce_bool: un((c) => ReduceOr({ width: param(c, 'A_WIDTH') })),
+  $reduce_and: un((c) => ReduceAnd({ width: param(c, 'A_WIDTH') })),
+  $reduce_xor: un((c) => ReduceXor({ width: param(c, 'A_WIDTH') })),
 
-  // logical
-  $logic_and: bin((c) => RtlLogicAnd({ aWidth: param(c, 'A_WIDTH'), bWidth: param(c, 'B_WIDTH') })),
-  $logic_or: bin((c) => RtlLogicOr({ aWidth: param(c, 'A_WIDTH'), bWidth: param(c, 'B_WIDTH') })),
-  $logic_not: un((c) => RtlLogicNot({ aWidth: param(c, 'A_WIDTH') })),
+  // logical → stdlib bus→bit
+  $logic_and: bin((c) => LogicAnd({ aWidth: param(c, 'A_WIDTH'), bWidth: param(c, 'B_WIDTH') })),
+  $logic_or: bin((c) => LogicOr({ aWidth: param(c, 'A_WIDTH'), bWidth: param(c, 'B_WIDTH') })),
+  $logic_not: un((c) => LogicNot({ width: param(c, 'A_WIDTH') })),
 
   // shifts
   $shl: bin((c) => RtlShl(w3(c))),

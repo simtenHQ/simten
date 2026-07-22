@@ -32,8 +32,23 @@ export {
 export { Console, HexDisplay, RasterDisplay, Screen, SevenSegment } from './display.js';
 // I/O
 export { Button, Constant, Input, Led, Output, Switch } from './io.js';
-// Logic Gates
-export { And, Buffer, Nand, Nor, Not, Or, Xnor, Xor } from './logic.js';
+// Logic Gates + bus-width logical / reduction operators
+export {
+  And,
+  Buffer,
+  LogicAnd,
+  LogicNot,
+  LogicOr,
+  Nand,
+  Nor,
+  Not,
+  Or,
+  ReduceAnd,
+  ReduceOr,
+  ReduceXor,
+  Xnor,
+  Xor,
+} from './logic.js';
 
 // Memory
 export { DualPortRAM, RAM, ROM, romFromBytes, romFromEntries, romFromWords } from './memory.js';
