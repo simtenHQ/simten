@@ -23,6 +23,7 @@ import {
   RtlAdd,
   RtlAnd,
   RtlConcat2,
+  RtlDlatch,
   RtlGe,
   RtlGt,
   RtlLe,
@@ -196,6 +197,14 @@ const LIFT: Record<string, LiftRule[]> = {
       sequential: true,
     },
   ],
+  $dlatch: [
+    {
+      comp: (c) => RtlDlatch({ width: param(c, 'WIDTH'), enPolarity: param(c, 'EN_POLARITY') }),
+      inMap: { D: 'd', EN: 'en' },
+      outMap: { Q: 'q' },
+      sequential: true,
+    },
+  ],
 
   // bitwise
   $and: bin((c) => RtlAnd(w3(c))),
@@ -311,6 +320,7 @@ function moduleShapes(netlist: YosysNetlist): Map<string, ModuleShape> {
     const sequential = Object.values(mod.cells).some(
       (c) =>
         c.type === '$dff' ||
+        c.type === '$dlatch' ||
         c.type === '$mem_v2' ||
         (netlist.modules[c.type] && shapes.get(c.type)?.sequential),
     );

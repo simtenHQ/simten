@@ -297,6 +297,37 @@ export const RtlConcat2 = circuit(
   }),
 );
 
+/**
+ * Level-sensitive D-latch. yosys `$dlatch`: transparent (Q follows D) while EN
+ * matches `enPolarity`, holds otherwise. Often an *inferred* latch from an
+ * incompletely-assigned combinational `always` block — common in real RTL.
+ *
+ * Shape-parameterized (width + polarity baked into the name and closure) rather
+ * than arg-driven — same pattern as RtlMem/RtlPmux.
+ */
+export function RtlDlatch(opts: { width: number; enPolarity: number }): BuiltCircuit {
+  const { width, enPolarity } = opts;
+  const m = maskOf(width);
+  const name = `RtlDlatch_${width}w_ep${enPolarity}`;
+  return circuit(name, {
+    inputs: { en: bit, d: bus(width) },
+    outputs: { q: bus(width) },
+    state: { hold: 0 },
+    // biome-ignore lint/suspicious/noExplicitAny: dynamic state access
+    eval: (io: any) => {
+      const transparent = (io.en & 1) === enPolarity;
+      return { q: ((transparent ? io.d : io.hold) >>> 0) & m };
+    },
+    // biome-ignore lint/suspicious/noExplicitAny: dynamic state access
+    onTick: (io: any) => {
+      const transparent = (io.en & 1) === enPolarity;
+      return { hold: transparent ? io.d : io.hold };
+    },
+    meta: { category: 'rtl-import', icon: 'DL', description: 'D-latch (level-sensitive)' },
+    // biome-ignore lint/suspicious/noExplicitAny: fixed-shape config
+  } as any) as unknown as BuiltCircuit;
+}
+
 // ---------------------------------------------------------------------------
 // Multi-port memory. yosys $mem_v2 (async read; sync write; per-bit write EN).
 // ---------------------------------------------------------------------------
