@@ -37,18 +37,7 @@ const sext = (v: number, w: number): number => {
  * **Output:** `out` — `bus(width)` (or `bit` when `width === 1`)
  * **Args:** `inWidth`, `offset`, `width`
  *
- * **Example:** the low 7 bits of a 32-bit instruction (the RV32I opcode)
- * ```ts
- * circuit('Opcode', {
- *   inputs:  { instr: bus(32) },
- *   outputs: { op: bus(7) },
- *   nodes:   { s: Slice({ inWidth: 32, offset: 0, width: 7 }) },
- *   connect: ({ inputs, outputs, nodes: { s } }) => [
- *     inputs.instr.to(s.in),
- *     s.out.to(outputs.op),
- *   ],
- * })
- * ```
+ * e.g. `Slice({ inWidth: 32, offset: 0, width: 7 })` — the low 7 bits (RV32I opcode).
  */
 export const Slice = circuit(
   'Slice',
@@ -72,18 +61,7 @@ export const Slice = circuit(
  * **Output:** `out` — `bus(outWidth)`
  * **Args:** `inWidth`, `outWidth`
  *
- * **Example:** sign-extend a 12-bit immediate to 32 bits
- * ```ts
- * circuit('ImmExt', {
- *   inputs:  { imm12: bus(12) },
- *   outputs: { imm32: bus(32) },
- *   nodes:   { x: SignExtend({ inWidth: 12, outWidth: 32 }) },
- *   connect: ({ inputs, outputs, nodes: { x } }) => [
- *     inputs.imm12.to(x.in),
- *     x.out.to(outputs.imm32),
- *   ],
- * })
- * ```
+ * e.g. `SignExtend({ inWidth: 12, outWidth: 32 })` — a 12-bit immediate to 32 bits.
  */
 export const SignExtend = circuit(
   'SignExtend',
@@ -107,18 +85,7 @@ export const SignExtend = circuit(
  * **Output:** `out` — `bus(outWidth)`
  * **Args:** `inWidth`, `outWidth`
  *
- * **Example:** widen an 8-bit byte to a 32-bit word
- * ```ts
- * circuit('Widen', {
- *   inputs:  { byte: bus(8) },
- *   outputs: { word: bus(32) },
- *   nodes:   { z: ZeroExtend({ inWidth: 8, outWidth: 32 }) },
- *   connect: ({ inputs, outputs, nodes: { z } }) => [
- *     inputs.byte.to(z.in),
- *     z.out.to(outputs.word),
- *   ],
- * })
- * ```
+ * e.g. `ZeroExtend({ inWidth: 8, outWidth: 32 })` — an 8-bit byte to a 32-bit word.
  */
 export const ZeroExtend = circuit(
   'ZeroExtend',

@@ -30,6 +30,7 @@ import type {
   StateBlock,
 } from '../types/circuit.js';
 import { getCircuitEval } from './eval-registry.js';
+import { safeIdentifier } from './reserved-identifiers.js';
 import type { BuiltCircuit } from './types.js';
 
 const STDLIB_NAMES: ReadonlySet<string> = new Set(STDLIB_CIRCUITS.map((c) => c.circuit.name));
@@ -70,14 +71,24 @@ export function circuitToSource(built: BuiltCircuit): string {
 
   // Emit user-defined dependencies in topological order (dep → dependents).
   const ordered = topoSort(userCircuits);
+
+  // Map every emitted circuit name → a safe, unique JS identifier. A circuit
+  // named `top`/`default`/… would otherwise clash with a global or a keyword
+  // when emitted as a top-level `const`. Stdlib/import primitives are referenced
+  // by their real names (never reserved), so only these need remapping.
+  const used = new Set<string>();
+  const idMap = new Map<string, string>();
+  for (const c of [...ordered, built.circuit]) idMap.set(c.name, safeIdentifier(c.name, used));
+  const idOf = (name: string) => idMap.get(name) ?? name;
+
   for (const c of ordered) {
-    lines.push(emitCircuit(c));
+    lines.push(emitCircuit(c, idOf));
     lines.push('');
   }
 
   // Emit entry circuit. No `export` — the editor's sandbox evaluates source as
   // a script body via `new Function(...)`, which rejects ES module syntax.
-  lines.push(emitCircuit(built.circuit));
+  lines.push(emitCircuit(built.circuit, idOf));
 
   return lines.join('\n');
 }
@@ -106,7 +117,7 @@ function topoSort(circuits: Map<string, Circuit>): Circuit[] {
 // ──────────────────────────────────────────────────────────────────────────
 // Per-circuit emission
 // ──────────────────────────────────────────────────────────────────────────
-function emitCircuit(c: Circuit): string {
+function emitCircuit(c: Circuit, idOf: (name: string) => string): string {
   if (c.implementation.kind === 'intrinsic') {
     throw new CircuitToSourceError(
       `Cannot serialize circuit '${c.name}': intrinsic implementations are not supported.`,
@@ -127,12 +138,14 @@ function emitCircuit(c: Circuit): string {
   if (c.inputs.length > 0) parts.push(`  inputs: ${emitPortMap(c.inputs)},`);
   if (c.outputs.length > 0) parts.push(`  outputs: ${emitPortMap(c.outputs)},`);
   if (c.state.length > 0) parts.push(`  state: ${emitState(c.state, c.name)},`);
-  if (c.nodes.length > 0) parts.push(`  nodes: ${emitNodes(c.nodes)},`);
+  if (c.nodes.length > 0) parts.push(`  nodes: ${emitNodes(c.nodes, idOf)},`);
   if (c.connections.length > 0) {
     parts.push(`  connect: ${emitConnect(c)},`);
   }
 
-  return `const ${c.name} = circuit('${c.name}', {\n${parts.join('\n')}\n});`;
+  // The `const` identifier is remapped away from reserved globals/keywords; the
+  // circuit('<name>') string keeps the original module name.
+  return `const ${idOf(c.name)} = circuit('${c.name}', {\n${parts.join('\n')}\n});`;
 }
 
 function emitPortMap(ports: PortDescriptor[]): string {
@@ -209,18 +222,21 @@ const PARAMETERIZED_STDLIB = new Set<string>([
   'RasterDisplay',
 ]);
 
-function emitNodes(nodes: Node[]): string {
+function emitNodes(nodes: Node[], idOf: (name: string) => string): string {
   const entries = nodes.map((n) => {
+    // A user-circuit ref is remapped (e.g. `top` → `top_`); stdlib/import
+    // primitive names are never reserved, so idOf is identity for them.
+    const ref = idOf(n.componentRef);
     const hasArgs = n.arguments && Object.keys(n.arguments).length > 0;
     if (hasArgs) {
-      return `${n.id}: ${n.componentRef}(${emitArgs(n.arguments)})`;
+      return `${n.id}: ${ref}(${emitArgs(n.arguments)})`;
     }
     // Parameterized stdlib components must always be called, even when no
     // args were specified — bare refs would be a TS error.
     if (PARAMETERIZED_STDLIB.has(n.componentRef)) {
-      return `${n.id}: ${n.componentRef}()`;
+      return `${n.id}: ${ref}()`;
     }
-    return `${n.id}: ${n.componentRef}`;
+    return `${n.id}: ${ref}`;
   });
   return `{ ${entries.join(', ')} }`;
 }

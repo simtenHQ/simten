@@ -60,11 +60,16 @@ const INJECT: Record<string, unknown> = {
   ZeroExtend,
 };
 
-/** Compile sandbox-style source and return the named entry circuit. */
-function recompile(source: string, entryName: string): BuiltCircuit {
+/** Compile sandbox-style source and return the entry (last-declared) circuit. */
+function recompile(source: string): BuiltCircuit {
+  // Entry = the last `const <id> = circuit(...)` — robust to reserved-name
+  // remapping (the `top` module is emitted as `const top_`).
+  const decls = [...source.matchAll(/const (\w+) = circuit\(/g)];
+  const entry = decls[decls.length - 1]?.[1];
+  if (!entry) throw new Error('no circuit() declaration found in generated source');
   const names = Object.keys(INJECT);
   // biome-ignore lint/security/noGlobalEval: sandbox-equivalent script-body eval
-  const fn = new Function(...names, `${source}\nreturn ${entryName};`);
+  const fn = new Function(...names, `${source}\nreturn ${entry};`);
   return fn(...names.map((n) => INJECT[n])) as BuiltCircuit;
 }
 
@@ -79,8 +84,11 @@ describe('serializer round-trip (import → source → recompile → simulate)',
     const source = circuitToSource(importedTop());
     // cleanliness gate: no Rtl* primitive leaked into the emitted source
     expect(source).not.toMatch(/\bRtl[A-Z]/);
+    // reserved-name gate: module `top` clashes with the DOM global, so the
+    // emitted `const` is remapped while the circuit('top') name is preserved.
+    expect(source).toContain("const top_ = circuit('top'");
 
-    const top = recompile(source, 'top');
+    const top = recompile(source);
     const sim = simulate(top);
     for (const v of golden.vectors) {
       sim.set(v.in);
@@ -105,8 +113,8 @@ describe('editability (scripted hand-edit → predicted behavioural change)', ()
     );
     expect(edited).not.toBe(source);
 
-    const base = simulate(recompile(source, 'top'));
-    const mod = simulate(recompile(edited, 'top'));
+    const base = simulate(recompile(source));
+    const mod = simulate(recompile(edited));
     for (const v of golden.vectors) {
       base.set(v.in);
       base.tick();
