@@ -229,6 +229,8 @@ const PARAMETERIZED_STDLIB = new Set<string>([
   'SignExtend',
   'ZeroExtend',
   'Slice',
+  'DynamicSlice',
+  'WrappingMultiplier',
   'LogicAnd',
   'LogicOr',
   'LogicNot',

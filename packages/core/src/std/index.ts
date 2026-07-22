@@ -28,6 +28,7 @@ export {
   SignedMultiplier,
   SignedRightShifter,
   Subtractor,
+  WrappingMultiplier,
 } from './arithmetic.js';
 // Display
 export { Console, HexDisplay, RasterDisplay, Screen, SevenSegment } from './display.js';
@@ -98,7 +99,7 @@ export {
 } from './rv32i.js';
 
 // Reconstruction / bit-manipulation (importer authoring constructs)
-export { SignExtend, Slice, ZeroExtend } from './reconstruction.js';
+export { DynamicSlice, SignExtend, Slice, ZeroExtend } from './reconstruction.js';
 // RV32I assembled CPU core (single source of truth — see ./rv32i-cpu.ts)
 export { RV32I_Core } from './rv32i-cpu.js';
 // Sequential

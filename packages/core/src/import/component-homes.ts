@@ -57,6 +57,8 @@ const EXACT: Record<string, Classification> = {
   SignedComparator: S_STD,
   Multiplier: S_STD,
   SignedMultiplier: S_STD,
+  WrappingMultiplier: S_STD,
+  DynamicSlice: S_STD,
   Mux: S_STD,
   Register: S_STD,
   BusAnd: S_STD,

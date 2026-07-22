@@ -141,6 +141,28 @@ export const Multiplier = circuit('Multiplier', {
 });
 
 /**
+ * Wrapping multiplier (low width bits) — `out = (a * b) mod 2^width`, the
+ * product of a Verilog `a * b` assigned to a `width`-bit result. Uses `Math.imul`
+ * so the low 32 bits are exact even when the true product exceeds 2^53. Signed
+ * and unsigned agree on the low bits, so operands are extended per their own
+ * signedness upstream (the importer's operand adapter) and this is sign-agnostic.
+ *
+ * **Inputs:** `a`, `b` — `bus(width)`  **Output:** `out` — `bus(width)`
+ */
+export const WrappingMultiplier = circuit(
+  'WrappingMultiplier',
+  ({ width = 8 }: { width?: number } = {}) => ({
+    inputs: { a: bus(width), b: bus(width) },
+    outputs: { out: bus(width) },
+    meta: { category: 'arithmetic', icon: '×↩', description: 'Wrapping multiplier (low width bits)' },
+    eval: ({ a, b, width: w = width }) => {
+      const m = (w as number) >= 32 ? 0xffffffff : (1 << (w as number)) - 1;
+      return { out: (Math.imul((a as number) >>> 0, (b as number) >>> 0) >>> 0) & m };
+    },
+  }),
+);
+
+/**
  * Unsigned comparator. Emits three one-hot flags relating `a` and `b`.
  * Exactly one of `eq`/`lt`/`gt` is high at any time.
  *

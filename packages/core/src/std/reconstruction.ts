@@ -98,3 +98,27 @@ export const ZeroExtend = circuit(
     meta: { category: 'utilities', icon: '0⊳', description: 'Zero extension (pad high bits with 0)' },
   }),
 );
+
+/**
+ * Dynamic part-select (in[shift +: outWidth]) — a right-shift by a runtime
+ * `shift` then an `outWidth`-bit slice. Backs Verilog `data[idx +: W]` and yosys
+ * `$shiftx`. Out-of-range (`shift >= inWidth`) reads as 0 (the 2-state
+ * resolution of yosys's x-fill).
+ *
+ * **Inputs:** `in` — `bus(inWidth)`, `shift` — `bus(shiftWidth)`
+ * **Output:** `out` — `bus(outWidth)`
+ * **Args:** `inWidth`, `shiftWidth`, `outWidth`
+ */
+export const DynamicSlice = circuit(
+  'DynamicSlice',
+  ({ inWidth = 8, shiftWidth = 8, outWidth = 1 }: { inWidth?: number; shiftWidth?: number; outWidth?: number } = {}) => ({
+    inputs: { in: bus(inWidth), shift: bus(shiftWidth) },
+    outputs: { out: portOf(outWidth) },
+    eval: ({ in: v, shift: s, inWidth: iw = inWidth, outWidth: ow = outWidth }) => {
+      const sh = (s as number) >>> 0;
+      const shifted = sh >= (iw as number) ? 0 : ((v as number) >>> 0) >>> sh;
+      return { out: (shifted & maskOf(ow as number)) >>> 0 };
+    },
+    meta: { category: 'utilities', icon: '⊂?', description: 'Dynamic part-select (in[shift +: outWidth])' },
+  }),
+);

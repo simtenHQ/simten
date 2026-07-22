@@ -29,6 +29,7 @@ import {
   Comparator,
   Concat,
   Constant,
+  DynamicSlice,
   LeftShifter,
   LogicAnd,
   LogicNot,
@@ -44,6 +45,7 @@ import {
   SignExtend,
   Slice,
   Subtractor,
+  WrappingMultiplier,
   ZeroExtend,
 } from '../std/index.js';
 import type {
@@ -227,6 +229,24 @@ const LIFT: Record<string, LiftRule[]> = {
   $logic_and: bin((c) => LogicAnd({ aWidth: param(c, 'A_WIDTH'), bWidth: param(c, 'B_WIDTH') })),
   $logic_or: bin((c) => LogicOr({ aWidth: param(c, 'A_WIDTH'), bWidth: param(c, 'B_WIDTH') })),
   $logic_not: un((c) => LogicNot({ width: param(c, 'A_WIDTH') })),
+
+  // $mul → wrapping multiply at Y_WIDTH (operands adapted per signedness).
+  $mul: [
+    { comp: (c) => WrappingMultiplier({ width: param(c, 'Y_WIDTH') }), inMap: { A: 'a', B: 'b' }, outMap: { Y: 'out' }, adaptOperands: true },
+  ],
+  // $shiftx → dynamic part-select in[shift +: Y_WIDTH] (ports sized to A/B/Y).
+  $shiftx: [
+    {
+      comp: (c) =>
+        DynamicSlice({
+          inWidth: param(c, 'A_WIDTH'),
+          shiftWidth: param(c, 'B_WIDTH'),
+          outWidth: param(c, 'Y_WIDTH'),
+        }),
+      inMap: { A: 'in', B: 'shift' },
+      outMap: { Y: 'out' },
+    },
+  ],
 
   // shifts → stdlib shifters at Y_WIDTH; value/shift adapted (shift is unsigned,
   // value per A_SIGNED). $sshr is the arithmetic (sign-replicating) right shift.
