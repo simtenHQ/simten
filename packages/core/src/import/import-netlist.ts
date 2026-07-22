@@ -21,15 +21,10 @@
 import type { BuiltCircuit } from '../circuit/types.js';
 import {
   RtlDlatch,
-  RtlGe,
-  RtlGt,
-  RtlLe,
   RtlLogicAnd,
   RtlLogicNot,
   RtlLogicOr,
-  RtlLt,
   RtlMem,
-  RtlNe,
   RtlPmux,
   RtlReduceAnd,
   RtlReduceBool,
@@ -50,6 +45,7 @@ import {
   Constant,
   Mux,
   Register,
+  SignedComparator,
   SignExtend,
   Slice,
   Subtractor,
@@ -132,7 +128,6 @@ const w3 = (c: YosysCell) => ({
   bWidth: param(c, 'B_WIDTH'),
   yWidth: param(c, 'Y_WIDTH'),
 });
-const signs = (c: YosysCell) => ({ aSigned: param(c, 'A_SIGNED'), bSigned: param(c, 'B_SIGNED') });
 
 /** binary A,B → Y (rtl primitive). */
 const bin = (comp: (c: YosysCell) => BuiltCircuit): LiftRule[] => [
@@ -141,6 +136,22 @@ const bin = (comp: (c: YosysCell) => BuiltCircuit): LiftRule[] => [
 /** unary A → Y (rtl primitive). */
 const un = (comp: (c: YosysCell) => BuiltCircuit): LiftRule[] => [
   { comp, inMap: { A: 'a' }, outMap: { Y: 'out' } },
+];
+
+/** A ⋚ B → one comparator flag. Signed iff both operands are signed; operands
+ *  adapt to max(A,B) width. Y maps to the requested flag (eq/ne/lt/le/gt/ge). */
+const cmp = (flag: string): LiftRule[] => [
+  {
+    comp: (c) => {
+      const width = Math.max(param(c, 'A_WIDTH'), param(c, 'B_WIDTH'));
+      return param(c, 'A_SIGNED') && param(c, 'B_SIGNED')
+        ? SignedComparator({ width })
+        : Comparator({ width });
+    },
+    inMap: { A: 'a', B: 'b' },
+    outMap: { Y: flag },
+    adaptOperands: true,
+  },
 ];
 
 const LIFT: Record<string, LiftRule[]> = {
@@ -164,13 +175,14 @@ const LIFT: Record<string, LiftRule[]> = {
       adaptOperands: true,
     },
   ],
-  $eq: [
-    {
-      comp: (c) => Comparator({ width: param(c, 'A_WIDTH') }),
-      inMap: { A: 'a', B: 'b' },
-      outMap: { Y: 'eq' },
-    },
-  ],
+  // comparisons → Comparator (unsigned) / SignedComparator (both operands
+  // signed), at max(A,B) width with operand adaptation; Y maps to the flag.
+  $eq: cmp('eq'),
+  $ne: cmp('ne'),
+  $lt: cmp('lt'),
+  $le: cmp('le'),
+  $gt: cmp('gt'),
+  $ge: cmp('ge'),
   $mux: [
     {
       comp: (c) => Mux({ width: param(c, 'WIDTH') }),
@@ -220,13 +232,6 @@ const LIFT: Record<string, LiftRule[]> = {
   $logic_and: bin((c) => RtlLogicAnd({ aWidth: param(c, 'A_WIDTH'), bWidth: param(c, 'B_WIDTH') })),
   $logic_or: bin((c) => RtlLogicOr({ aWidth: param(c, 'A_WIDTH'), bWidth: param(c, 'B_WIDTH') })),
   $logic_not: un((c) => RtlLogicNot({ aWidth: param(c, 'A_WIDTH') })),
-
-  // comparisons (signedness flows via numeric args)
-  $lt: bin((c) => RtlLt({ ...w3(c), ...signs(c) })),
-  $le: bin((c) => RtlLe({ ...w3(c), ...signs(c) })),
-  $gt: bin((c) => RtlGt({ ...w3(c), ...signs(c) })),
-  $ge: bin((c) => RtlGe({ ...w3(c), ...signs(c) })),
-  $ne: bin((c) => RtlNe({ ...w3(c), ...signs(c) })),
 
   // shifts
   $shl: bin((c) => RtlShl(w3(c))),

@@ -212,6 +212,7 @@ const PARAMETERIZED_STDLIB = new Set<string>([
   'Adder',
   'Subtractor',
   'Comparator',
+  'SignedComparator',
   'LeftShifter',
   'RightShifter',
   'BusAnd',

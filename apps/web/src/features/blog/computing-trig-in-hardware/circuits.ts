@@ -73,7 +73,7 @@ export const SignDetection = circuit('SignDetection', {
   nodes: {
     angle: Input({ value: 32 }),
     zero: Constant({ value: 0 }),
-    cmp: SignedComparator,
+    cmp: SignedComparator(),
     positiveLed: Led,
     addVal: Constant({ value: 10 }),
     subVal: Constant({ value: 246 }),
@@ -238,7 +238,7 @@ const CORDICStep = circuit('CORDICStep', {
     zero: Constant({ value: 0 }),
     one: Constant({ value: 1 }),
     eight: Constant({ value: 8 }),
-    zPositive: SignedComparator,
+    zPositive: SignedComparator(),
     xShifted: RightShifter(),
     yShifted: RightShifter(),
     yShiftedNeg: BusNot,

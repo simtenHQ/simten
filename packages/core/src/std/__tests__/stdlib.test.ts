@@ -85,7 +85,7 @@ describe('stdlib circuits load', () => {
     ['LeftShifter', LeftShifter()],
     ['RightShifter', RightShifter()],
     ['SignedAdder', SignedAdder],
-    ['SignedComparator', SignedComparator],
+    ['SignedComparator', SignedComparator()],
     ['SignedMultiplier', SignedMultiplier],
     ['BusAnd', BusAnd()],
     ['BusOr', BusOr()],

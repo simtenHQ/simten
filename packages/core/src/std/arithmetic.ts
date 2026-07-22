@@ -164,14 +164,21 @@ export const Multiplier = circuit('Multiplier', {
  */
 export const Comparator = circuit('Comparator', ({ width = 8 }: { width?: number } = {}) => ({
   inputs: { a: bus(width), b: bus(width) },
-  outputs: { eq: bit, lt: bit, gt: bit },
+  outputs: { eq: bit, ne: bit, lt: bit, le: bit, gt: bit, ge: bit },
   meta: { category: 'arithmetic', icon: '⋚', description: 'Unsigned comparator' },
   // Unsigned: coerce both operands so the comparison treats them as unsigned
   // 32-bit values regardless of how they were stored in the typed-array.
   eval: ({ a, b }) => {
     const au = (a as number) >>> 0;
     const bu = (b as number) >>> 0;
-    return { eq: au === bu ? 1 : 0, lt: au < bu ? 1 : 0, gt: au > bu ? 1 : 0 };
+    return {
+      eq: au === bu ? 1 : 0,
+      ne: au !== bu ? 1 : 0,
+      lt: au < bu ? 1 : 0,
+      le: au <= bu ? 1 : 0,
+      gt: au > bu ? 1 : 0,
+      ge: au >= bu ? 1 : 0,
+    };
   },
 }));
 
@@ -306,26 +313,37 @@ export const SignedAdder = circuit('SignedAdder', {
  * })
  * ```
  */
-export const SignedComparator = circuit('SignedComparator', {
-  inputs: { a: bus(8), b: bus(8) },
-  outputs: { eq: bit, lt: bit, gt: bit, lte: bit, gte: bit },
-  meta: { category: 'arithmetic', icon: '±⋚', description: 'Signed comparator' },
-  eval: ({ a, b }) => {
-    const signBit = 0x80;
-    const maxValue = 0x100;
-    const an = (a as number) & 0xff;
-    const bn = (b as number) & 0xff;
-    const aSigned = an & signBit ? an - maxValue : an;
-    const bSigned = bn & signBit ? bn - maxValue : bn;
-    return {
-      eq: aSigned === bSigned ? 1 : 0,
-      lt: aSigned < bSigned ? 1 : 0,
-      gt: aSigned > bSigned ? 1 : 0,
-      lte: aSigned <= bSigned ? 1 : 0,
-      gte: aSigned >= bSigned ? 1 : 0,
-    };
-  },
-});
+export const SignedComparator = circuit(
+  'SignedComparator',
+  ({ width = 8 }: { width?: number } = {}) => ({
+    inputs: { a: bus(width), b: bus(width) },
+    // eq/ne/lt/le/gt/ge match Comparator; lte/gte kept as back-compat aliases.
+    outputs: { eq: bit, ne: bit, lt: bit, le: bit, gt: bit, ge: bit, lte: bit, gte: bit },
+    meta: { category: 'arithmetic', icon: '±⋚', description: 'Signed comparator' },
+    // width read from the bag so per-instance widths sign-extend correctly.
+    eval: ({ a, b, width: w = width }) => {
+      const wn = w as number;
+      const half = 2 ** (wn - 1);
+      const whole = 2 ** wn;
+      const sgn = (v: number) => {
+        const u = wn >= 32 ? v >>> 0 : (v >>> 0) & (whole - 1);
+        return u >= half ? u - whole : u;
+      };
+      const as = sgn(a as number);
+      const bs = sgn(b as number);
+      return {
+        eq: as === bs ? 1 : 0,
+        ne: as !== bs ? 1 : 0,
+        lt: as < bs ? 1 : 0,
+        le: as <= bs ? 1 : 0,
+        gt: as > bs ? 1 : 0,
+        ge: as >= bs ? 1 : 0,
+        lte: as <= bs ? 1 : 0,
+        gte: as >= bs ? 1 : 0,
+      };
+    },
+  }),
+);
 
 /**
  * Signed multiplier. Treats both inputs as 8-bit two's-complement values
