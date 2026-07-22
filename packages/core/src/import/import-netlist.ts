@@ -30,6 +30,7 @@ import {
   RtlLogicNot,
   RtlLogicOr,
   RtlLt,
+  RtlMem,
   RtlNe,
   RtlNot,
   RtlOr,
@@ -242,6 +243,17 @@ function pickRule(cell: YosysCell): LiftRule | undefined {
   return rules.find((r) => !r.when || r.when(cell));
 }
 
+// $mem_v2 shape and the per-lane sub-array of a packed connection.
+const memLayout = (c: YosysCell) => ({
+  rdPorts: param(c, 'RD_PORTS'),
+  wrPorts: param(c, 'WR_PORTS'),
+  abits: param(c, 'ABITS'),
+  width: param(c, 'WIDTH'),
+  size: param(c, 'SIZE'),
+});
+const lane = (bits: YosysBit[] | undefined, i: number, w: number): YosysBit[] =>
+  (bits ?? []).slice(i * w, (i + 1) * w);
+
 /** Cell output ports, by directions if present else a known-output fallback. */
 const KNOWN_OUTPUTS = new Set(['Y', 'Q', 'CO', 'X', 'dout', 'out']);
 function cellOutputPorts(cell: YosysCell, subOutputs?: Set<string>): Set<string> {
@@ -304,7 +316,10 @@ function moduleShapes(netlist: YosysNetlist): Map<string, ModuleShape> {
       else outputs.push(desc); // treat inout as output for the spike
     }
     const sequential = Object.values(mod.cells).some(
-      (c) => c.type === '$dff' || (netlist.modules[c.type] && shapes.get(c.type)?.sequential),
+      (c) =>
+        c.type === '$dff' ||
+        c.type === '$mem_v2' ||
+        (netlist.modules[c.type] && shapes.get(c.type)?.sequential),
     );
     shapes.set(name, { inputs, outputs, sequential });
   }
@@ -347,6 +362,18 @@ function translateModule(
   // lifted cells rename yosys output ports (Y→sum, Q→q…) via outMap; submodule
   // ports keep their names.
   for (const [cn, cell] of Object.entries(mod.cells)) {
+    if (cell.type === '$mem_v2') {
+      // each read port drives a WIDTH-bit lane of the packed RD_DATA output
+      const { rdPorts, width } = memLayout(cell);
+      for (let i = 0; i < rdPorts; i++) {
+        const port = `rd_data_${i}`;
+        sourceWidth.set(key(cn, port), width);
+        lane(cell.connections.RD_DATA, i, width).forEach((b, j) => {
+          if (typeof b === 'number') drivers.set(b, { nodeId: cn, portName: port, index: j });
+        });
+      }
+      continue;
+    }
     const isSub = !!netlist.modules[cell.type];
     const subOut = isSub ? new Set(shapes.get(cell.type)!.outputs.map((o) => o.name)) : undefined;
     const outs = cellOutputPorts(cell, subOut);
@@ -428,6 +455,24 @@ function translateModule(
 
   // --- emit a node per cell, wiring its inputs --------------------------
   for (const [cn, cell] of Object.entries(mod.cells)) {
+    if (cell.type === '$mem_v2') {
+      const { rdPorts, wrPorts, abits, width, size } = memLayout(cell);
+      pushBuilt(cn, RtlMem({ rdPorts, wrPorts, abits, width, size }), {});
+      for (let i = 0; i < rdPorts; i++) {
+        const s = resolveBits(lane(cell.connections.RD_ADDR, i, abits));
+        connect(s.nodeId, s.portName, cn, `rd_addr_${i}`, portTypeOf(abits));
+      }
+      for (let i = 0; i < wrPorts; i++) {
+        const sa = resolveBits(lane(cell.connections.WR_ADDR, i, abits));
+        connect(sa.nodeId, sa.portName, cn, `wr_addr_${i}`, portTypeOf(abits));
+        const sd = resolveBits(lane(cell.connections.WR_DATA, i, width));
+        connect(sd.nodeId, sd.portName, cn, `wr_data_${i}`, portTypeOf(width));
+        const se = resolveBits(lane(cell.connections.WR_EN, i, width));
+        connect(se.nodeId, se.portName, cn, `wr_en_${i}`, portTypeOf(width));
+      }
+      continue;
+    }
+
     const isSub = !!netlist.modules[cell.type];
 
     if (isSub) {

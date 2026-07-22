@@ -165,6 +165,56 @@ describe('rtl shifts (32-bit, amount 0..31)', () => {
   });
 });
 
+describe('rtl mem (multi-port, per-bit write enable)', () => {
+  // 2 read / 2 write, 5-bit addr, 8-bit data, 32 entries.
+  const m = rtl.RtlMem({ rdPorts: 2, wrPorts: 2, abits: 5, width: 8, size: 32 });
+  const W = circuit('MemWrap', {
+    inputs: {
+      ra0: bus(5),
+      ra1: bus(5),
+      wa0: bus(5),
+      wd0: bus(8),
+      we0: bus(8),
+      wa1: bus(5),
+      wd1: bus(8),
+      we1: bus(8),
+    },
+    outputs: { rd0: bus(8), rd1: bus(8) },
+    nodes: { p: m },
+    connect: ({ inputs: i, outputs: o, nodes: { p } }: any) => [
+      i.ra0.to(p.rd_addr_0),
+      i.ra1.to(p.rd_addr_1),
+      i.wa0.to(p.wr_addr_0),
+      i.wd0.to(p.wr_data_0),
+      i.we0.to(p.wr_en_0),
+      i.wa1.to(p.wr_addr_1),
+      i.wd1.to(p.wr_data_1),
+      i.we1.to(p.wr_en_1),
+      p.rd_data_0.to(o.rd0),
+      p.rd_data_1.to(o.rd1),
+    ],
+  } as any);
+
+  it('writes then reads back; per-bit enable; independent ports', () => {
+    const sim = simulate(W);
+    // write 0xAB @3 (port0) and 0xCD @7 (port1) in one cycle
+    sim.set({ wa0: 3, wd0: 0xab, we0: 0xff, wa1: 7, wd1: 0xcd, we1: 0xff });
+    sim.tick();
+    // reads are async but settle during tick() phase 1 (we=0 → no new write)
+    sim.set({ we0: 0, we1: 0, ra0: 3, ra1: 7 });
+    sim.tick();
+    expect(sim.get('rd0')).toBe(0xab);
+    expect(sim.get('rd1')).toBe(0xcd);
+
+    // per-bit enable: only low nibble of a fresh write lands
+    sim.set({ wa0: 3, wd0: 0xff, we0: 0x0f });
+    sim.tick();
+    sim.set({ we0: 0, ra0: 3 });
+    sim.tick();
+    expect(sim.get('rd0')).toBe(0xaf); // high nibble kept (0xA), low overwritten (0xF)
+  });
+});
+
 describe('rtl pmux (one-hot)', () => {
   it('selects the set candidate, else default a', () => {
     // width 8, sWidth 2: b packs [cand0 (low), cand1 (high)]

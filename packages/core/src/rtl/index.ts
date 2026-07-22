@@ -22,8 +22,9 @@
  * as having side effects so bundlers cannot drop that registration.
  */
 
-import { bit, bus } from '../circuit/bit-bus.js';
+import { bit, bus, mem } from '../circuit/bit-bus.js';
 import { circuit } from '../circuit/circuit.js';
+import type { BuiltCircuit } from '../circuit/types.js';
 
 /** width===1 → bit port, else bus(width). Mirrors the std convention
  *  (Mux/Constant) so 1-bit nets stay `bit` end to end. */
@@ -287,3 +288,84 @@ export const RtlConcat2 = circuit(
     meta: { category: 'rtl-import', icon: '⊃', description: 'Two-part bus concatenation' },
   }),
 );
+
+// ---------------------------------------------------------------------------
+// Multi-port memory. yosys $mem_v2 (async read; sync write; per-bit write EN).
+// ---------------------------------------------------------------------------
+
+/**
+ * Shape-parameterized multi-port memory backing yosys `$mem_v2`.
+ *
+ * The primitive name encodes the shape (read/write port counts, address/data
+ * widths, depth) so every instance of a shape shares a fixed set of port names
+ * — the eval registry keys behaviour by name. Ports are per-lane and narrow
+ * (`rd_addr_i`, `wr_addr_i`, `wr_data_i`, `wr_en_i`, `rd_data_i`), so the
+ * importer slices yosys's wide packed `RD_ADDR`/`WR_DATA`/… bit arrays into
+ * lanes rather than materializing a >32-bit port.
+ *
+ * Modeled: async (combinational) reads; synchronous writes on the shared sim
+ * clock with per-bit write-enable; write ports applied in index order (later
+ * wins on overlap). Not modeled: read clocking/reset, read-during-write
+ * transparency, per-port priority masks — none are exercised by the RV32I core
+ * (all reads async, no transparency). Memory starts zero (correct for a
+ * zero-init register file); `$meminit` data is not yet applied.
+ */
+export function RtlMem(opts: {
+  rdPorts: number;
+  wrPorts: number;
+  abits: number;
+  width: number;
+  size: number;
+}): BuiltCircuit {
+  const { rdPorts, wrPorts, abits, width, size } = opts;
+  const addrW = Math.max(1, Math.ceil(Math.log2(Math.max(2, size))));
+  const depth = 1 << addrW;
+  const amask = depth - 1;
+  const dmask = maskOf(width);
+  const name = `RtlMem_${rdPorts}r${wrPorts}w_${abits}a_${width}w_${depth}d`;
+
+  const inputs: Record<string, ReturnType<typeof bus>> = {};
+  const outputs: Record<string, ReturnType<typeof bus>> = {};
+  for (let i = 0; i < rdPorts; i++) {
+    inputs[`rd_addr_${i}`] = bus(abits);
+    outputs[`rd_data_${i}`] = bus(width);
+  }
+  for (let i = 0; i < wrPorts; i++) {
+    inputs[`wr_addr_${i}`] = bus(abits);
+    inputs[`wr_data_${i}`] = bus(width);
+    inputs[`wr_en_${i}`] = bus(width);
+  }
+
+  // Direct (non-factory) form: ports/shape are fixed for this name, so the
+  // config closes over them. Registration is idempotent for a repeated shape.
+  return circuit(name, {
+    inputs,
+    outputs,
+    state: { store: mem(depth, width) },
+    // biome-ignore lint/suspicious/noExplicitAny: dynamic per-lane port access
+    eval: (io: any) => {
+      const store = io.store;
+      const out: Record<string, number> = {};
+      for (let i = 0; i < rdPorts; i++) {
+        const a = ((io[`rd_addr_${i}`] as number) >>> 0) & amask;
+        out[`rd_data_${i}`] = (store[a] ?? 0) >>> 0;
+      }
+      return out;
+    },
+    // biome-ignore lint/suspicious/noExplicitAny: dynamic per-lane port access
+    onTick: (io: any) => {
+      const store = io.store;
+      for (let i = 0; i < wrPorts; i++) {
+        const en = (io[`wr_en_${i}`] as number) >>> 0;
+        if (en === 0) continue;
+        const a = ((io[`wr_addr_${i}`] as number) >>> 0) & amask;
+        const d = (io[`wr_data_${i}`] as number) >>> 0;
+        const cur = (store[a] ?? 0) >>> 0;
+        store[a] = (((cur & ~en) | (d & en)) & dmask) >>> 0;
+      }
+      return { store };
+    },
+    meta: { category: 'rtl-import', icon: 'MEM', description: 'Multi-port memory' },
+    // biome-ignore lint/suspicious/noExplicitAny: dynamic inputs/outputs shape
+  } as any) as unknown as BuiltCircuit;
+}
