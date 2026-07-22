@@ -252,23 +252,31 @@ export const RtlSshr = circuit(
  * `sWidth` candidates of `width` bits each. Output is the candidate whose `s`
  * bit is set (lowest index wins if several), else the default `a`.
  */
-export const RtlPmux = circuit(
-  'RtlPmux',
-  ({ width = 8, sWidth = 2 }: { width?: number; sWidth?: number } = {}) => ({
-    inputs: { a: bus(width), b: bus(width * sWidth), s: portOf(sWidth) },
+export function RtlPmux(opts: { width: number; sWidth: number }): BuiltCircuit {
+  const { width, sWidth } = opts;
+  const m = maskOf(width);
+  const name = `RtlPmux_${width}w_${sWidth}s`;
+  // Per-lane candidate ports (b_0..b_{sWidth-1}), each ≤ width bits — NOT one
+  // packed `width*sWidth` port, which would exceed simten's 32-bit buses (a
+  // 10-way 32-bit mux packs to 320 bits). The importer slices yosys's packed B
+  // bit-array into these lanes.
+  const inputs: Record<string, ReturnType<typeof bus>> = { a: bus(width), s: bus(sWidth) };
+  for (let i = 0; i < sWidth; i++) inputs[`b_${i}`] = bus(width);
+  return circuit(name, {
+    inputs,
     outputs: { out: bus(width) },
-    eval: ({ a, b, s, width: w = width, sWidth: sw = sWidth }) => {
-      const sv = (s as number) >>> 0;
-      const bv = (b as number) >>> 0;
-      const m = maskOf(w as number);
-      for (let i = 0; i < (sw as number); i++) {
-        if ((sv >>> i) & 1) return { out: (Math.floor(bv / 2 ** (i * (w as number))) & m) >>> 0 };
+    // biome-ignore lint/suspicious/noExplicitAny: dynamic per-lane port access
+    eval: (io: any) => {
+      const sv = (io.s as number) >>> 0;
+      for (let i = 0; i < sWidth; i++) {
+        if ((sv >>> i) & 1) return { out: ((io[`b_${i}`] as number) >>> 0) & m };
       }
-      return { out: ((a as number) >>> 0) & m };
+      return { out: ((io.a as number) >>> 0) & m };
     },
     meta: { category: 'rtl-import', icon: '⇉', description: 'Parallel one-hot mux' },
-  }),
-);
+    // biome-ignore lint/suspicious/noExplicitAny: dynamic inputs shape
+  } as any) as unknown as BuiltCircuit;
+}
 
 /**
  * Two-part concatenation. `out = (hi << loWidth) | lo` — `lo` occupies the low

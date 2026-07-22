@@ -226,14 +226,7 @@ const LIFT: Record<string, LiftRule[]> = {
   $shr: bin((c) => RtlShr(w3(c))),
   $sshr: bin((c) => RtlSshr({ ...w3(c), aSigned: param(c, 'A_SIGNED') })),
 
-  // parallel one-hot mux
-  $pmux: [
-    {
-      comp: (c) => RtlPmux({ width: param(c, 'WIDTH'), sWidth: param(c, 'S_WIDTH') }),
-      inMap: { A: 'a', B: 'b', S: 's' },
-      outMap: { Y: 'out' },
-    },
-  ],
+  // $pmux is handled specially (per-lane candidate ports) — see translateModule.
 };
 
 /** First rule whose `when` guard passes (first match wins). */
@@ -374,6 +367,15 @@ function translateModule(
       }
       continue;
     }
+    if (cell.type === '$pmux') {
+      // Y output (WIDTH bits) is driven by RtlPmux.out
+      const w = param(cell, 'WIDTH');
+      sourceWidth.set(key(cn, 'out'), w);
+      (cell.connections.Y ?? []).forEach((b, j) => {
+        if (typeof b === 'number') drivers.set(b, { nodeId: cn, portName: 'out', index: j });
+      });
+      continue;
+    }
     const isSub = !!netlist.modules[cell.type];
     const subOut = isSub ? new Set(shapes.get(cell.type)!.outputs.map((o) => o.name)) : undefined;
     const outs = cellOutputPorts(cell, subOut);
@@ -469,6 +471,23 @@ function translateModule(
         connect(sd.nodeId, sd.portName, cn, `wr_data_${i}`, portTypeOf(width));
         const se = resolveBits(lane(cell.connections.WR_EN, i, width));
         connect(se.nodeId, se.portName, cn, `wr_en_${i}`, portTypeOf(width));
+      }
+      continue;
+    }
+
+    if (cell.type === '$pmux') {
+      // one-hot mux: A = default, S = one-hot select, B = sWidth candidates of
+      // WIDTH bits each, packed. Slice B into per-lane b_i ports (≤32 bits).
+      const w = param(cell, 'WIDTH');
+      const sWidth = param(cell, 'S_WIDTH');
+      pushBuilt(cn, RtlPmux({ width: w, sWidth }), {});
+      const a = resolveBits(cell.connections.A ?? []);
+      connect(a.nodeId, a.portName, cn, 'a', portTypeOf(w));
+      const s = resolveBits(cell.connections.S ?? []);
+      connect(s.nodeId, s.portName, cn, 's', portTypeOf(sWidth));
+      for (let i = 0; i < sWidth; i++) {
+        const bi = resolveBits(lane(cell.connections.B, i, w));
+        connect(bi.nodeId, bi.portName, cn, `b_${i}`, portTypeOf(w));
       }
       continue;
     }

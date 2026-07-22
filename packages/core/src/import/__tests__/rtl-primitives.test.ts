@@ -215,16 +215,29 @@ describe('rtl mem (multi-port, per-bit write enable)', () => {
   });
 });
 
-describe('rtl pmux (one-hot)', () => {
+describe('rtl pmux (one-hot, per-lane candidates)', () => {
   it('selects the set candidate, else default a', () => {
-    // width 8, sWidth 2: b packs [cand0 (low), cand1 (high)]
     const p = rtl.RtlPmux({ width: 8, sWidth: 2 });
-    const c0 = 0xaa;
-    const c1 = 0x55;
-    const b = c0 | (c1 << 8);
-    expect(run(p, 8, { a: 0x11, b, s: 0b00 })).toBe(0x11); // none set → default
-    expect(run(p, 8, { a: 0x11, b, s: 0b01 })).toBe(c0); // bit0 → cand0
-    expect(run(p, 8, { a: 0x11, b, s: 0b10 })).toBe(c1); // bit1 → cand1
-    expect(run(p, 8, { a: 0x11, b, s: 0b11 })).toBe(c0); // both → lowest wins
+    const W = circuit('PmuxWrap', {
+      inputs: { a: bus(8), s: bus(2), b0: bus(8), b1: bus(8) },
+      outputs: { out: bus(8) },
+      nodes: { p },
+      connect: ({ inputs: i, outputs: o, nodes: { p } }: any) => [
+        i.a.to(p.a),
+        i.s.to(p.s),
+        i.b0.to(p.b_0),
+        i.b1.to(p.b_1),
+        p.out.to(o.out),
+      ],
+    } as any);
+    const sim = simulate(W);
+    const ev = (a: number, s: number, b0: number, b1: number) => {
+      sim.set({ a, s, b0, b1 });
+      return sim.get('out') >>> 0;
+    };
+    expect(ev(0x11, 0b00, 0xaa, 0x55)).toBe(0x11); // none set → default a
+    expect(ev(0x11, 0b01, 0xaa, 0x55)).toBe(0xaa); // bit0 → b_0
+    expect(ev(0x11, 0b10, 0xaa, 0x55)).toBe(0x55); // bit1 → b_1
+    expect(ev(0x11, 0b11, 0xaa, 0x55)).toBe(0xaa); // both → lowest wins
   });
 });
