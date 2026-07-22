@@ -60,7 +60,10 @@ describe('segmentBits', () => {
     ]);
   });
 
-  it('throws on x/z bits', () => {
-    expect(() => segmentBits([100, 'x'] as YosysBit[], driverOf)).toThrow(/2-state/);
+  it("resolves x/z don't-care bits to constant 0", () => {
+    // [x, 1] → const 0b10 = 2 (LSB x→0, then 1)
+    expect(segmentBits(['x', '1'] as YosysBit[], driverOf)).toEqual([
+      { kind: 'const', value: 2, width: 2 },
+    ]);
   });
 });

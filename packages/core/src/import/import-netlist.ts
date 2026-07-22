@@ -19,8 +19,33 @@
  */
 
 import type { BuiltCircuit } from '../circuit/types.js';
-import { RtlConcat2, RtlSlice } from '../rtl/index.js';
-import { Adder, Comparator, Constant, Mux, Register } from '../std/index.js';
+import {
+  RtlAdd,
+  RtlAnd,
+  RtlConcat2,
+  RtlGe,
+  RtlGt,
+  RtlLe,
+  RtlLogicAnd,
+  RtlLogicNot,
+  RtlLogicOr,
+  RtlLt,
+  RtlNe,
+  RtlNot,
+  RtlOr,
+  RtlPmux,
+  RtlReduceAnd,
+  RtlReduceBool,
+  RtlReduceOr,
+  RtlReduceXor,
+  RtlShl,
+  RtlShr,
+  RtlSlice,
+  RtlSshr,
+  RtlSub,
+  RtlXor,
+} from '../rtl/index.js';
+import { Adder, Comparator, Constant, Mux, Register, Subtractor } from '../std/index.js';
 import type {
   Circuit,
   Connection,
@@ -68,6 +93,10 @@ function param(cell: YosysCell, name: string): number {
 // ---------------------------------------------------------------------------
 
 interface LiftRule {
+  /** Guard — this rule applies only if `when` is absent or returns true.
+   *  Rules are tried in order (first match wins), so put the specific
+   *  (lift-to-stdlib) rule before the general (rtl-primitive) fallback. */
+  when?: (cell: YosysCell) => boolean;
   /** Build the component instance from the cell's parameters. */
   comp: (cell: YosysCell) => BuiltCircuit;
   /** cell input port → component input port. */
@@ -76,46 +105,142 @@ interface LiftRule {
   outMap: Record<string, string>;
   /** component input ports tied to a constant. */
   tie?: Record<string, number>;
-  /** guard: throw if the cell shape can't be lifted. */
-  check?: (cell: YosysCell) => void;
   /** does this component carry simten's implicit clock? */
   sequential?: boolean;
 }
 
-const LIFT: Record<string, LiftRule> = {
-  $add: {
-    check: (c) => {
-      if (
-        param(c, 'A_WIDTH') !== param(c, 'B_WIDTH') ||
-        param(c, 'A_WIDTH') !== param(c, 'Y_WIDTH')
-      )
-        throw new Error('$add: asymmetric widths not supported in spike (needs rtl_add)');
-      if (param(c, 'A_SIGNED') || param(c, 'B_SIGNED'))
-        throw new Error('$add: signed operands not supported in spike (needs rtl_add)');
+const symmetricUnsigned = (c: YosysCell) =>
+  param(c, 'A_WIDTH') === param(c, 'B_WIDTH') &&
+  param(c, 'A_WIDTH') === param(c, 'Y_WIDTH') &&
+  !param(c, 'A_SIGNED') &&
+  !param(c, 'B_SIGNED');
+
+// A/B/Y width bundle and signedness — read straight off the cell parameters.
+const w3 = (c: YosysCell) => ({
+  aWidth: param(c, 'A_WIDTH'),
+  bWidth: param(c, 'B_WIDTH'),
+  yWidth: param(c, 'Y_WIDTH'),
+});
+const signs = (c: YosysCell) => ({ aSigned: param(c, 'A_SIGNED'), bSigned: param(c, 'B_SIGNED') });
+
+/** binary A,B → Y (rtl primitive). */
+const bin = (comp: (c: YosysCell) => BuiltCircuit): LiftRule[] => [
+  { comp, inMap: { A: 'a', B: 'b' }, outMap: { Y: 'out' } },
+];
+/** unary A → Y (rtl primitive). */
+const un = (comp: (c: YosysCell) => BuiltCircuit): LiftRule[] => [
+  { comp, inMap: { A: 'a' }, outMap: { Y: 'out' } },
+];
+
+const LIFT: Record<string, LiftRule[]> = {
+  // symmetric unsigned → the familiar stdlib component; else the rtl primitive.
+  $add: [
+    {
+      when: symmetricUnsigned,
+      comp: (c) => Adder({ width: param(c, 'Y_WIDTH') }),
+      inMap: { A: 'a', B: 'b' },
+      outMap: { Y: 'sum' },
+      tie: { carry_in: 0 },
     },
-    comp: (c) => Adder({ width: param(c, 'Y_WIDTH') }),
-    inMap: { A: 'a', B: 'b' },
-    outMap: { Y: 'sum' },
-    tie: { carry_in: 0 },
-  },
-  $eq: {
-    comp: (c) => Comparator({ width: param(c, 'A_WIDTH') }),
-    inMap: { A: 'a', B: 'b' },
-    outMap: { Y: 'eq' },
-  },
-  $mux: {
-    comp: (c) => Mux({ width: param(c, 'WIDTH') }),
-    inMap: { A: 'in0', B: 'in1', S: 'sel' },
-    outMap: { Y: 'out' },
-  },
-  $dff: {
-    comp: (c) => Register({ width: param(c, 'WIDTH') }),
-    inMap: { D: 'data' }, // CLK intentionally dropped (single sim clock)
-    outMap: { Q: 'q' },
-    tie: { we: 1 },
-    sequential: true,
-  },
+    {
+      comp: (c) =>
+        RtlAdd({
+          aWidth: param(c, 'A_WIDTH'),
+          bWidth: param(c, 'B_WIDTH'),
+          yWidth: param(c, 'Y_WIDTH'),
+        }),
+      inMap: { A: 'a', B: 'b' },
+      outMap: { Y: 'out' },
+    },
+  ],
+  $sub: [
+    {
+      when: symmetricUnsigned,
+      comp: (c) => Subtractor({ width: param(c, 'Y_WIDTH') }),
+      inMap: { A: 'a', B: 'b' },
+      outMap: { Y: 'difference' },
+      tie: { borrow_in: 0 },
+    },
+    {
+      comp: (c) =>
+        RtlSub({
+          aWidth: param(c, 'A_WIDTH'),
+          bWidth: param(c, 'B_WIDTH'),
+          yWidth: param(c, 'Y_WIDTH'),
+        }),
+      inMap: { A: 'a', B: 'b' },
+      outMap: { Y: 'out' },
+    },
+  ],
+  $eq: [
+    {
+      comp: (c) => Comparator({ width: param(c, 'A_WIDTH') }),
+      inMap: { A: 'a', B: 'b' },
+      outMap: { Y: 'eq' },
+    },
+  ],
+  $mux: [
+    {
+      comp: (c) => Mux({ width: param(c, 'WIDTH') }),
+      inMap: { A: 'in0', B: 'in1', S: 'sel' },
+      outMap: { Y: 'out' },
+    },
+  ],
+  $dff: [
+    {
+      comp: (c) => Register({ width: param(c, 'WIDTH') }),
+      inMap: { D: 'data' }, // CLK intentionally dropped (single sim clock)
+      outMap: { Q: 'q' },
+      tie: { we: 1 },
+      sequential: true,
+    },
+  ],
+
+  // bitwise
+  $and: bin((c) => RtlAnd(w3(c))),
+  $or: bin((c) => RtlOr(w3(c))),
+  $xor: bin((c) => RtlXor(w3(c))),
+  $not: un((c) => RtlNot({ aWidth: param(c, 'A_WIDTH'), yWidth: param(c, 'Y_WIDTH') })),
+
+  // reductions
+  $reduce_or: un((c) => RtlReduceOr({ aWidth: param(c, 'A_WIDTH') })),
+  $reduce_bool: un((c) => RtlReduceBool({ aWidth: param(c, 'A_WIDTH') })),
+  $reduce_and: un((c) => RtlReduceAnd({ aWidth: param(c, 'A_WIDTH') })),
+  $reduce_xor: un((c) => RtlReduceXor({ aWidth: param(c, 'A_WIDTH') })),
+
+  // logical
+  $logic_and: bin((c) => RtlLogicAnd({ aWidth: param(c, 'A_WIDTH'), bWidth: param(c, 'B_WIDTH') })),
+  $logic_or: bin((c) => RtlLogicOr({ aWidth: param(c, 'A_WIDTH'), bWidth: param(c, 'B_WIDTH') })),
+  $logic_not: un((c) => RtlLogicNot({ aWidth: param(c, 'A_WIDTH') })),
+
+  // comparisons (signedness flows via numeric args)
+  $lt: bin((c) => RtlLt({ ...w3(c), ...signs(c) })),
+  $le: bin((c) => RtlLe({ ...w3(c), ...signs(c) })),
+  $gt: bin((c) => RtlGt({ ...w3(c), ...signs(c) })),
+  $ge: bin((c) => RtlGe({ ...w3(c), ...signs(c) })),
+  $ne: bin((c) => RtlNe({ ...w3(c), ...signs(c) })),
+
+  // shifts
+  $shl: bin((c) => RtlShl(w3(c))),
+  $shr: bin((c) => RtlShr(w3(c))),
+  $sshr: bin((c) => RtlSshr({ ...w3(c), aSigned: param(c, 'A_SIGNED') })),
+
+  // parallel one-hot mux
+  $pmux: [
+    {
+      comp: (c) => RtlPmux({ width: param(c, 'WIDTH'), sWidth: param(c, 'S_WIDTH') }),
+      inMap: { A: 'a', B: 'b', S: 's' },
+      outMap: { Y: 'out' },
+    },
+  ],
 };
+
+/** First rule whose `when` guard passes (first match wins). */
+function pickRule(cell: YosysCell): LiftRule | undefined {
+  const rules = LIFT[cell.type];
+  if (!rules) return undefined;
+  return rules.find((r) => !r.when || r.when(cell));
+}
 
 /** Cell output ports, by directions if present else a known-output fallback. */
 const KNOWN_OUTPUTS = new Set(['Y', 'Q', 'CO', 'X', 'dout', 'out']);
@@ -225,7 +350,7 @@ function translateModule(
     const isSub = !!netlist.modules[cell.type];
     const subOut = isSub ? new Set(shapes.get(cell.type)!.outputs.map((o) => o.name)) : undefined;
     const outs = cellOutputPorts(cell, subOut);
-    const outMap = isSub ? undefined : LIFT[cell.type]?.outMap;
+    const outMap = isSub ? undefined : pickRule(cell)?.outMap;
     const rename = (yPort: string) => (isSub ? yPort : (outMap?.[yPort] ?? yPort));
     for (const [pn, bits] of Object.entries(cell.connections)) {
       if (!outs.has(pn)) continue;
@@ -325,9 +450,8 @@ function translateModule(
       continue;
     }
 
-    const rule = LIFT[cell.type];
+    const rule = pickRule(cell);
     if (!rule) throw new Error(`${name}: unsupported cell type ${cell.type}`);
-    rule.check?.(cell);
     const built = rule.comp(cell);
     const args: Record<string, number> = {};
     // bake width arg for lifted comps that carry it

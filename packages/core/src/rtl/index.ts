@@ -31,6 +31,12 @@ const portOf = (width: number) => (width === 1 ? bit : bus(width));
 
 const maskOf = (w: number) => (w >= 32 ? 0xffffffff : (1 << w) - 1) >>> 0;
 
+/** Interpret an unsigned w-bit value as two's-complement signed. */
+const sext = (v: number, w: number): number => {
+  const u = v >>> 0;
+  return u >= 2 ** (w - 1) ? u - 2 ** w : u;
+};
+
 /**
  * Bus sub-range extract. `out = (in >> offset) & ((1<<width)-1)`.
  *
@@ -48,6 +54,218 @@ export const RtlSlice = circuit(
       return { out: (((v as number) >>> off2) & maskOf(w2)) >>> 0 };
     },
     meta: { category: 'rtl-import', icon: '⊂', description: 'Bus sub-range extract' },
+  }),
+);
+
+/**
+ * Unsigned add with independent operand widths. `out = (a + b) mod 2^yWidth`.
+ * Zero-extension is implicit (a narrower bus already has zero high bits), so
+ * this covers yosys `$add` for any A_WIDTH/B_WIDTH/Y_WIDTH combination. Signed
+ * operands do not reach here — yosys lowers sign extension into MSB replication
+ * in the net array (handled by the importer's net-map), leaving `$add` unsigned.
+ */
+export const RtlAdd = circuit(
+  'RtlAdd',
+  ({
+    aWidth = 8,
+    bWidth = 8,
+    yWidth = 8,
+  }: {
+    aWidth?: number;
+    bWidth?: number;
+    yWidth?: number;
+  } = {}) => ({
+    inputs: { a: bus(aWidth), b: bus(bWidth) },
+    outputs: { out: bus(yWidth) },
+    eval: ({ a, b, yWidth: yw = yWidth }) => {
+      const m = maskOf(yw as number);
+      return { out: ((((a as number) >>> 0) + ((b as number) >>> 0)) & m) >>> 0 };
+    },
+    meta: { category: 'rtl-import', icon: '+', description: 'Unsigned add (independent widths)' },
+  }),
+);
+
+/**
+ * Unsigned subtract with independent operand widths. `out = (a - b) mod 2^yWidth`
+ * (two's-complement wrap). Covers yosys `$sub` for any width combination.
+ */
+export const RtlSub = circuit(
+  'RtlSub',
+  ({
+    aWidth = 8,
+    bWidth = 8,
+    yWidth = 8,
+  }: {
+    aWidth?: number;
+    bWidth?: number;
+    yWidth?: number;
+  } = {}) => ({
+    inputs: { a: bus(aWidth), b: bus(bWidth) },
+    outputs: { out: bus(yWidth) },
+    eval: ({ a, b, yWidth: yw = yWidth }) => {
+      const m = maskOf(yw as number);
+      return { out: ((((a as number) >>> 0) - ((b as number) >>> 0)) & m) >>> 0 };
+    },
+    meta: {
+      category: 'rtl-import',
+      icon: '−',
+      description: 'Unsigned subtract (independent widths)',
+    },
+  }),
+);
+
+// ---------------------------------------------------------------------------
+// Bitwise (elementwise, width-preserving). yosys $and/$or/$xor/$not.
+// Operands zero-extend to Y_WIDTH implicitly (narrow buses have 0 high bits).
+// ---------------------------------------------------------------------------
+
+type BinOpts = { aWidth?: number; bWidth?: number; yWidth?: number };
+type UnOpts = { aWidth?: number; yWidth?: number };
+type CmpOpts = { aWidth?: number; bWidth?: number; aSigned?: number; bSigned?: number };
+
+const bitwiseBin = (name: string, icon: string, op: (a: number, b: number) => number) =>
+  circuit(name, ({ aWidth = 8, bWidth = 8, yWidth = 8 }: BinOpts = {}) => ({
+    inputs: { a: bus(aWidth), b: bus(bWidth) },
+    outputs: { out: bus(yWidth) },
+    eval: ({ a, b, yWidth: yw = yWidth }) => ({
+      out: (op((a as number) >>> 0, (b as number) >>> 0) & maskOf(yw as number)) >>> 0,
+    }),
+    meta: { category: 'rtl-import', icon, description: `Bitwise ${name}` },
+  }));
+
+export const RtlAnd = bitwiseBin('RtlAnd', '&', (a, b) => a & b);
+export const RtlOr = bitwiseBin('RtlOr', '|', (a, b) => a | b);
+export const RtlXor = bitwiseBin('RtlXor', '^', (a, b) => a ^ b);
+
+export const RtlNot = circuit('RtlNot', ({ aWidth = 8, yWidth = 8 }: UnOpts = {}) => ({
+  inputs: { a: bus(aWidth) },
+  outputs: { out: bus(yWidth) },
+  eval: ({ a, yWidth: yw = yWidth }) => ({
+    out: (~((a as number) >>> 0) & maskOf(yw as number)) >>> 0,
+  }),
+  meta: { category: 'rtl-import', icon: '~', description: 'Bitwise NOT' },
+}));
+
+// ---------------------------------------------------------------------------
+// Reductions (unary → 1 bit). yosys $reduce_or/_and/_xor/_bool.
+// ---------------------------------------------------------------------------
+
+const reduce = (name: string, icon: string, fn: (v: number, w: number) => number) =>
+  circuit(name, ({ aWidth = 8 }: { aWidth?: number } = {}) => ({
+    inputs: { a: bus(aWidth) },
+    outputs: { out: bit },
+    eval: ({ a, aWidth: aw = aWidth }) => ({ out: fn((a as number) >>> 0, aw as number) }),
+    meta: { category: 'rtl-import', icon, description: name },
+  }));
+
+export const RtlReduceOr = reduce('RtlReduceOr', '|', (v) => (v !== 0 ? 1 : 0));
+export const RtlReduceBool = reduce('RtlReduceBool', '≠0', (v) => (v !== 0 ? 1 : 0));
+export const RtlReduceAnd = reduce('RtlReduceAnd', '&', (v, w) => (v === maskOf(w) ? 1 : 0));
+export const RtlReduceXor = reduce('RtlReduceXor', '^', (v) => {
+  let p = 0;
+  for (let x = v; x; x >>>= 1) p ^= x & 1;
+  return p;
+});
+
+// ---------------------------------------------------------------------------
+// Logical (→ 1 bit). yosys $logic_and/$logic_or (binary), $logic_not (unary).
+// ---------------------------------------------------------------------------
+
+const logicBin = (name: string, icon: string, op: (a: boolean, b: boolean) => boolean) =>
+  circuit(name, ({ aWidth = 8, bWidth = 8 }: { aWidth?: number; bWidth?: number } = {}) => ({
+    inputs: { a: bus(aWidth), b: bus(bWidth) },
+    outputs: { out: bit },
+    eval: ({ a, b }) => ({ out: op((a as number) >>> 0 !== 0, (b as number) >>> 0 !== 0) ? 1 : 0 }),
+    meta: { category: 'rtl-import', icon, description: name },
+  }));
+
+export const RtlLogicAnd = logicBin('RtlLogicAnd', '&&', (a, b) => a && b);
+export const RtlLogicOr = logicBin('RtlLogicOr', '||', (a, b) => a || b);
+
+export const RtlLogicNot = circuit('RtlLogicNot', ({ aWidth = 8 }: { aWidth?: number } = {}) => ({
+  inputs: { a: bus(aWidth) },
+  outputs: { out: bit },
+  eval: ({ a }) => ({ out: (a as number) >>> 0 === 0 ? 1 : 0 }),
+  meta: { category: 'rtl-import', icon: '!', description: 'Logical NOT' },
+}));
+
+// ---------------------------------------------------------------------------
+// Comparisons (→ 1 bit), signedness via numeric args. yosys $lt/$ge/$ne/…
+// ---------------------------------------------------------------------------
+
+const compare = (name: string, icon: string, cmp: (a: number, b: number) => boolean) =>
+  circuit(name, ({ aWidth = 8, bWidth = 8 }: CmpOpts = {}) => ({
+    inputs: { a: bus(aWidth), b: bus(bWidth) },
+    outputs: { out: bit },
+    eval: ({ a, b, aWidth: aw = aWidth, bWidth: bw = bWidth, aSigned = 0, bSigned = 0 }) => {
+      const av = aSigned ? sext((a as number) >>> 0, aw as number) : (a as number) >>> 0;
+      const bv = bSigned ? sext((b as number) >>> 0, bw as number) : (b as number) >>> 0;
+      return { out: cmp(av, bv) ? 1 : 0 };
+    },
+    meta: { category: 'rtl-import', icon, description: name },
+  }));
+
+export const RtlLt = compare('RtlLt', '<', (a, b) => a < b);
+export const RtlLe = compare('RtlLe', '≤', (a, b) => a <= b);
+export const RtlGt = compare('RtlGt', '>', (a, b) => a > b);
+export const RtlGe = compare('RtlGe', '≥', (a, b) => a >= b);
+export const RtlNe = compare('RtlNe', '≠', (a, b) => a !== b);
+
+// ---------------------------------------------------------------------------
+// Shifts (dynamic amount b). yosys $shl/$shr (logical), $sshr (arithmetic).
+// ---------------------------------------------------------------------------
+
+export const RtlShl = circuit('RtlShl', ({ aWidth = 8, bWidth = 8, yWidth = 8 }: BinOpts = {}) => ({
+  inputs: { a: bus(aWidth), b: bus(bWidth) },
+  outputs: { out: bus(yWidth) },
+  eval: ({ a, b, yWidth: yw = yWidth }) => ({
+    out: ((((a as number) >>> 0) * 2 ** ((b as number) >>> 0)) & maskOf(yw as number)) >>> 0,
+  }),
+  meta: { category: 'rtl-import', icon: '≪', description: 'Logical shift left' },
+}));
+
+export const RtlShr = circuit('RtlShr', ({ aWidth = 8, bWidth = 8, yWidth = 8 }: BinOpts = {}) => ({
+  inputs: { a: bus(aWidth), b: bus(bWidth) },
+  outputs: { out: bus(yWidth) },
+  eval: ({ a, b, yWidth: yw = yWidth }) => ({
+    out: (((a as number) >>> ((b as number) >>> 0)) & maskOf(yw as number)) >>> 0,
+  }),
+  meta: { category: 'rtl-import', icon: '≫', description: 'Logical shift right' },
+}));
+
+export const RtlSshr = circuit(
+  'RtlSshr',
+  ({ aWidth = 8, bWidth = 8, yWidth = 8 }: BinOpts & { aSigned?: number } = {}) => ({
+    inputs: { a: bus(aWidth), b: bus(bWidth) },
+    outputs: { out: bus(yWidth) },
+    eval: ({ a, b, aWidth: aw = aWidth, yWidth: yw = yWidth }) => {
+      const sv = sext((a as number) >>> 0, aw as number);
+      return { out: ((sv >> ((b as number) >>> 0)) & maskOf(yw as number)) >>> 0 };
+    },
+    meta: { category: 'rtl-import', icon: '≫ₛ', description: 'Arithmetic shift right' },
+  }),
+);
+
+/**
+ * Parallel (one-hot) mux. `s` is a one-hot select of width `sWidth`; `b` packs
+ * `sWidth` candidates of `width` bits each. Output is the candidate whose `s`
+ * bit is set (lowest index wins if several), else the default `a`.
+ */
+export const RtlPmux = circuit(
+  'RtlPmux',
+  ({ width = 8, sWidth = 2 }: { width?: number; sWidth?: number } = {}) => ({
+    inputs: { a: bus(width), b: bus(width * sWidth), s: portOf(sWidth) },
+    outputs: { out: bus(width) },
+    eval: ({ a, b, s, width: w = width, sWidth: sw = sWidth }) => {
+      const sv = (s as number) >>> 0;
+      const bv = (b as number) >>> 0;
+      const m = maskOf(w as number);
+      for (let i = 0; i < (sw as number); i++) {
+        if ((sv >>> i) & 1) return { out: (Math.floor(bv / 2 ** (i * (w as number))) & m) >>> 0 };
+      }
+      return { out: ((a as number) >>> 0) & m };
+    },
+    meta: { category: 'rtl-import', icon: '⇉', description: 'Parallel one-hot mux' },
   }),
 );
 

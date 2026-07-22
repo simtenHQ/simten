@@ -27,8 +27,13 @@ export type Segment =
   | { kind: 'const'; value: number; width: number }
   | { kind: 'net'; nodeId: string; portName: string; offset: number; width: number };
 
-function isConst(b: YosysBit): b is '0' | '1' | 0 | 1 {
-  return b === '0' || b === '1' || b === 0 || b === 1;
+// A constant bit is 0/1, or a don't-care (x/z). yosys emits `x` for the
+// unreachable default of a fully-specified case and `z` for un-driven tristate;
+// a 2-state sim resolves both to 0 (synthesis is likewise free to pick any
+// value for a don't-care, and a correct design never selects that branch when
+// it matters).
+function isConst(b: YosysBit): b is '0' | '1' | 'x' | 'z' | 0 | 1 {
+  return b === '0' || b === '1' || b === 'x' || b === 'z' || b === 0 || b === 1;
 }
 
 function constVal(b: YosysBit): number {
@@ -46,16 +51,13 @@ function constVal(b: YosysBit): number {
  * the +1 rule, so the replicated MSB becomes its own 1-wide `net` segments —
  * folded downstream into `RtlConcat2(run, sliceₘₛᵦ, …)`.
  *
- * @throws on `x`/`z` bits (simten is 2-state).
+ * `x`/`z` bits resolve to constant 0 (see `isConst`).
  */
 export function segmentBits(bits: YosysBit[], driverOf: (net: number) => BitDriver): Segment[] {
   const segs: Segment[] = [];
   let i = 0;
   while (i < bits.length) {
     const b = bits[i];
-    if (b === 'x' || b === 'z') {
-      throw new Error(`4-state value '${b}' at bit ${i} is not supported (simten is 2-state)`);
-    }
     if (isConst(b)) {
       let value = 0;
       let k = 0;
