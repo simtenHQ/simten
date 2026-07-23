@@ -25,6 +25,7 @@ import {
   BusAnd,
   BusNot,
   BusOr,
+  BusXnor,
   BusXor,
   Comparator,
   Concat,
@@ -214,6 +215,9 @@ const LIFT: Record<string, LiftRule[]> = {
   ],
   $xor: [
     { comp: (c) => BusXor({ width: param(c, 'Y_WIDTH') }), inMap: { A: 'a', B: 'b' }, outMap: { Y: 'out' }, adaptOperands: true },
+  ],
+  $xnor: [
+    { comp: (c) => BusXnor({ width: param(c, 'Y_WIDTH') }), inMap: { A: 'a', B: 'b' }, outMap: { Y: 'out' }, adaptOperands: true },
   ],
   $not: [
     { comp: (c) => BusNot({ width: param(c, 'Y_WIDTH') }), inMap: { A: 'in' }, outMap: { Y: 'out' }, adaptOperands: true },
@@ -452,6 +456,7 @@ function translateModule(
   shapes: Map<string, ModuleShape>,
   netlist: YosysNetlist,
   libDeps: Map<string, Circuit>,
+  moduleNameOf: (raw: string) => string,
 ): Circuit {
   const nodes: Node[] = [];
   const connections: Connection[] = [];
@@ -685,7 +690,7 @@ function translateModule(
       const inSet = new Set(shape.inputs.map((p) => p.name));
       const node: Node = {
         id: cid,
-        componentRef: cell.type,
+        componentRef: moduleNameOf(cell.type),
         arguments: {},
         inputs: instancesFrom(shape.inputs, cid),
         outputs: instancesFrom(shape.outputs, cid),
@@ -741,7 +746,7 @@ function translateModule(
   const shape = shapes.get(name)!;
   return {
     version: 1,
-    name,
+    name: moduleNameOf(name),
     inputs: shape.inputs,
     outputs: shape.outputs,
     clocks: shape.sequential ? [{ name: 'clk' }] : [],
@@ -770,12 +775,44 @@ export interface ImportResult {
  * @param topName - which module is the top (defaults to the sole/only module
  *                  that nothing else instantiates).
  */
+/**
+ * Sanitize yosys module names → valid, unique JS identifiers for use as circuit
+ * names and submodule `componentRef`s. Parameterized instances arrive mangled
+ * (`$paramod$hash\rom_wozmon`, `$paramod\ClockGen\USE_SAVESTATE=1`); the readable
+ * base module name is extracted (the first `\Name`), then sanitized + uniquified.
+ */
+function makeModuleNameSanitizer(netlist: YosysNetlist): (raw: string) => string {
+  const map = new Map<string, string>();
+  const used = new Set<string>();
+  const sanitize = (raw: string): string => {
+    let base = raw;
+    if (base.startsWith('$paramod')) {
+      const m = base.match(/\\([A-Za-z_][A-Za-z0-9_]*)/); // first `\Name` = base module
+      base = m ? m[1] : base.replace(/^\$paramod\$?/, '');
+    }
+    base = base
+      .replace(/^\\/, '')
+      .replace(/[^A-Za-z0-9_]/g, '_')
+      .replace(/_+/g, '_')
+      .replace(/^_+|_+$/g, '');
+    if (!base) base = 'mod';
+    if (/^[0-9]/.test(base)) base = `m_${base}`;
+    let id = base;
+    for (let k = 2; used.has(id); k++) id = `${base}_${k}`;
+    used.add(id);
+    return id;
+  };
+  for (const raw of Object.keys(netlist.modules)) map.set(raw, sanitize(raw));
+  return (raw) => map.get(raw) ?? raw;
+}
+
 export function importNetlist(netlist: YosysNetlist, topName?: string): ImportResult {
   const shapes = moduleShapes(netlist);
+  const moduleNameOf = makeModuleNameSanitizer(netlist);
   const library = new Map<string, Circuit>();
 
   for (const [name, mod] of Object.entries(netlist.modules)) {
-    library.set(name, translateModule(name, mod, shapes, netlist, library));
+    library.set(moduleNameOf(name), translateModule(name, mod, shapes, netlist, library, moduleNameOf));
   }
 
   // pick top: explicit, else the module no other module instantiates
@@ -791,5 +828,5 @@ export function importNetlist(netlist: YosysNetlist, topName?: string): ImportRe
     top = roots[0];
   }
 
-  return { top: library.get(top)!, library };
+  return { top: library.get(moduleNameOf(top))!, library };
 }

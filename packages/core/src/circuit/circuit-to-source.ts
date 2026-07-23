@@ -225,6 +225,7 @@ const PARAMETERIZED_STDLIB = new Set<string>([
   'BusAnd',
   'BusOr',
   'BusXor',
+  'BusXnor',
   'BusNot',
   'SignExtend',
   'ZeroExtend',

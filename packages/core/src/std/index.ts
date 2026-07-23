@@ -17,6 +17,7 @@ export {
   BusAnd,
   BusNot,
   BusOr,
+  BusXnor,
   BusXor,
   Comparator,
   Incrementer,

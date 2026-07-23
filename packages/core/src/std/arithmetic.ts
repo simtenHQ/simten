@@ -545,3 +545,19 @@ export const BusXor = circuit('BusXor', ({ width = 8 }: { width?: number } = {})
   meta: { category: 'bus-operations', icon: '⊕8', description: 'Bitwise XOR on buses' },
   eval: ({ a, b }) => ({ out: (a ^ b) >>> 0 }),
 }));
+
+/**
+ * Bitwise XNOR on buses — `out = ~(a ^ b)`, 1 where the bits match. The
+ * complement of BusXor; masked to `width`.
+ *
+ * **Inputs:** `a`, `b` — `bus(width)`  **Output:** `out` — `bus(width)`
+ */
+export const BusXnor = circuit('BusXnor', ({ width = 8 }: { width?: number } = {}) => ({
+  inputs: { a: bus(width), b: bus(width) },
+  outputs: { out: bus(width) },
+  meta: { category: 'bus-operations', icon: '⊙8', description: 'Bitwise XNOR on buses' },
+  eval: ({ a, b, width: w = width }) => {
+    const m = ((w as number) >= 32 ? 0xffffffff : (1 << (w as number)) - 1) >>> 0;
+    return { out: ((~((a as number) ^ (b as number)) >>> 0) & m) >>> 0 };
+  },
+}));
