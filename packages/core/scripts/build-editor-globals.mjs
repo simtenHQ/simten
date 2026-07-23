@@ -147,15 +147,22 @@ if (helpers.length > 0) {
 // Injected into the sandbox by execute.ts but NOT part of @simten/core's
 // published surface, so their signatures are declared explicitly here.
 lines.push('');
+// Ports are dynamic (rd_addr_0, b_0, …), so they're typed with template-literal
+// key patterns — this keeps input and output port sets disjoint so the DSL's
+// `SinkRefs<Ins> & SourceRefs<Outs>` proxy doesn't collapse a port to `never`.
 lines.push('  // Import-namespace factories (from generated Verilog imports)');
 lines.push('  /** One-hot parallel mux — synthesized from a full `case`. */');
-lines.push('  const Pmux: (opts: { width: number; sWidth: number }) => core.BuiltCircuit;');
-lines.push('  /** Multi-port memory — from a `$mem_v2` cell. */');
 lines.push(
-  '  const Mem: (opts: { rdPorts: number; wrPorts: number; abits: number; width: number; size: number }) => core.BuiltCircuit;',
+  '  const Pmux: (opts: { width: number; sWidth: number }) => core.BuiltCircuit<Record<`a` | `s` | `b_${number}`, number>, { out: number }>;',
+);
+lines.push('  /** Multi-port memory — from a `$mem_v2` cell. `store` seeds ROM/init data. */');
+lines.push(
+  '  const Mem: (opts: { rdPorts: number; wrPorts: number; abits: number; width: number; size: number; store?: Record<number, number> }) => core.BuiltCircuit<Record<`rd_addr_${number}` | `wr_addr_${number}` | `wr_data_${number}` | `wr_en_${number}`, number>, Record<`rd_data_${number}`, number>>;',
 );
 lines.push('  /** Inferred level-sensitive D-latch. */');
-lines.push('  const Dlatch: (opts: { width: number; enPolarity: number }) => core.BuiltCircuit;');
+lines.push(
+  '  const Dlatch: (opts: { width: number; enPolarity: number }) => core.BuiltCircuit<{ en: number; d: number }, { q: number }>;',
+);
 
 lines.push('}');
 lines.push('');
