@@ -50,6 +50,7 @@ import {
   ZeroExtend,
 } from '../std/index.js';
 import type {
+  ArgumentValue,
   Circuit,
   Connection,
   Node,
@@ -285,6 +286,33 @@ const memLayout = (c: YosysCell) => ({
 const lane = (bits: YosysBit[] | undefined, i: number, w: number): YosysBit[] =>
   (bits ?? []).slice(i * w, (i + 1) * w);
 
+/**
+ * Parse a yosys `$mem_v2` INIT parameter into a sparse `{ addr: value }` map
+ * (the format sequential-init overlays onto a memory state block). yosys packs
+ * the init as a `SIZE*WIDTH` bit-string with **word 0 at the rightmost end**,
+ * MSB-first within each word; `x` bits resolve to 0 (2-state). Only non-zero
+ * words are stored. This applies ROM/`$readmemh` contents on import so an
+ * imported CPU boots its real program instead of empty memory.
+ */
+function parseMemInit(cell: YosysCell, size: number, width: number): Record<number, number> | undefined {
+  const init = cell.parameters?.INIT;
+  if (typeof init !== 'string' || init.length === 0 || width > 32) return undefined;
+  const offset = cell.parameters?.OFFSET !== undefined ? param(cell, 'OFFSET') : 0;
+  const total = size * width;
+  const s = init.length < total ? init.padStart(total, '0') : init;
+  const out: Record<number, number> = {};
+  for (let a = 0; a < size; a++) {
+    const end = total - a * width;
+    const start = end - width;
+    if (start < 0) break;
+    let v = 0;
+    for (let i = start; i < end; i++) v = v * 2 + (s[i] === '1' ? 1 : 0);
+    v = v >>> 0;
+    if (v !== 0) out[a + offset] = v;
+  }
+  return Object.keys(out).length > 0 ? out : undefined;
+}
+
 /** Cell output ports, by directions if present else a known-output fallback. */
 const KNOWN_OUTPUTS = new Set(['Y', 'Q', 'CO', 'X', 'dout', 'out']);
 function cellOutputPorts(cell: YosysCell, subOutputs?: Set<string>): Set<string> {
@@ -399,7 +427,7 @@ function portWidth(built: BuiltCircuit, portName: string): number {
   return p.portType.kind === 'bus' ? p.portType.width : 1;
 }
 
-function nodeFromBuilt(id: string, built: BuiltCircuit, args: Record<string, number>): Node {
+function nodeFromBuilt(id: string, built: BuiltCircuit, args: Record<string, ArgumentValue>): Node {
   const c = built.circuit;
   return {
     id,
@@ -464,7 +492,7 @@ function translateModule(
   let connId = 0;
 
   /** Create a node from a BuiltCircuit and register its dependency circuits. */
-  const pushBuilt = (id: string, built: BuiltCircuit, args: Record<string, number>): void => {
+  const pushBuilt = (id: string, built: BuiltCircuit, args: Record<string, ArgumentValue>): void => {
     collectDeps(built, libDeps);
     nodes.push(nodeFromBuilt(id, built, args));
   };
@@ -643,14 +671,12 @@ function translateModule(
     const cid = nid(cn); // sanitized node id (see makeIdSanitizer)
     if (cell.type === '$mem_v2') {
       const { rdPorts, wrPorts, abits, width, size } = memLayout(cell);
-      // shape args stored on the node so the serializer can emit Mem({...})
-      pushBuilt(cid, Mem({ rdPorts, wrPorts, abits, width, size }), {
-        rdPorts,
-        wrPorts,
-        abits,
-        width,
-        size,
-      });
+      // shape args stored on the node so the serializer can emit Mem({...});
+      // `store` overlays the $mem_v2 INIT ($readmemh/ROM contents) onto the state.
+      const memArgs: Record<string, ArgumentValue> = { rdPorts, wrPorts, abits, width, size };
+      const init = parseMemInit(cell, size, width);
+      if (init) memArgs.store = init;
+      pushBuilt(cid, Mem({ rdPorts, wrPorts, abits, width, size }), memArgs);
       for (let i = 0; i < rdPorts; i++) {
         const s = resolveBits(lane(cell.connections.RD_ADDR, i, abits));
         connect(s.nodeId, s.portName, cid, `rd_addr_${i}`, portTypeOf(abits));
