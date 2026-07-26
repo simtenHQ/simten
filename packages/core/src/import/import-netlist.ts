@@ -41,9 +41,9 @@ import {
   ReduceXor,
   Register,
   RightShifter,
+  SignExtend,
   SignedComparator,
   SignedRightShifter,
-  SignExtend,
   Slice,
   Subtractor,
   WrappingMultiplier,
@@ -209,19 +209,44 @@ const LIFT: Record<string, LiftRule[]> = {
 
   // bitwise → stdlib Bus ops at Y_WIDTH with operand adaptation
   $and: [
-    { comp: (c) => BusAnd({ width: param(c, 'Y_WIDTH') }), inMap: { A: 'a', B: 'b' }, outMap: { Y: 'out' }, adaptOperands: true },
+    {
+      comp: (c) => BusAnd({ width: param(c, 'Y_WIDTH') }),
+      inMap: { A: 'a', B: 'b' },
+      outMap: { Y: 'out' },
+      adaptOperands: true,
+    },
   ],
   $or: [
-    { comp: (c) => BusOr({ width: param(c, 'Y_WIDTH') }), inMap: { A: 'a', B: 'b' }, outMap: { Y: 'out' }, adaptOperands: true },
+    {
+      comp: (c) => BusOr({ width: param(c, 'Y_WIDTH') }),
+      inMap: { A: 'a', B: 'b' },
+      outMap: { Y: 'out' },
+      adaptOperands: true,
+    },
   ],
   $xor: [
-    { comp: (c) => BusXor({ width: param(c, 'Y_WIDTH') }), inMap: { A: 'a', B: 'b' }, outMap: { Y: 'out' }, adaptOperands: true },
+    {
+      comp: (c) => BusXor({ width: param(c, 'Y_WIDTH') }),
+      inMap: { A: 'a', B: 'b' },
+      outMap: { Y: 'out' },
+      adaptOperands: true,
+    },
   ],
   $xnor: [
-    { comp: (c) => BusXnor({ width: param(c, 'Y_WIDTH') }), inMap: { A: 'a', B: 'b' }, outMap: { Y: 'out' }, adaptOperands: true },
+    {
+      comp: (c) => BusXnor({ width: param(c, 'Y_WIDTH') }),
+      inMap: { A: 'a', B: 'b' },
+      outMap: { Y: 'out' },
+      adaptOperands: true,
+    },
   ],
   $not: [
-    { comp: (c) => BusNot({ width: param(c, 'Y_WIDTH') }), inMap: { A: 'in' }, outMap: { Y: 'out' }, adaptOperands: true },
+    {
+      comp: (c) => BusNot({ width: param(c, 'Y_WIDTH') }),
+      inMap: { A: 'in' },
+      outMap: { Y: 'out' },
+      adaptOperands: true,
+    },
   ],
 
   // reductions → stdlib bus→bit (reduce_bool ≡ reduce_or: both are `a != 0`)
@@ -237,7 +262,12 @@ const LIFT: Record<string, LiftRule[]> = {
 
   // $mul → wrapping multiply at Y_WIDTH (operands adapted per signedness).
   $mul: [
-    { comp: (c) => WrappingMultiplier({ width: param(c, 'Y_WIDTH') }), inMap: { A: 'a', B: 'b' }, outMap: { Y: 'out' }, adaptOperands: true },
+    {
+      comp: (c) => WrappingMultiplier({ width: param(c, 'Y_WIDTH') }),
+      inMap: { A: 'a', B: 'b' },
+      outMap: { Y: 'out' },
+      adaptOperands: true,
+    },
   ],
   // $shiftx → dynamic part-select in[shift +: Y_WIDTH] (ports sized to A/B/Y).
   $shiftx: [
@@ -256,13 +286,28 @@ const LIFT: Record<string, LiftRule[]> = {
   // shifts → stdlib shifters at Y_WIDTH; value/shift adapted (shift is unsigned,
   // value per A_SIGNED). $sshr is the arithmetic (sign-replicating) right shift.
   $shl: [
-    { comp: (c) => LeftShifter({ width: param(c, 'Y_WIDTH') }), inMap: { A: 'value', B: 'shift' }, outMap: { Y: 'result' }, adaptOperands: true },
+    {
+      comp: (c) => LeftShifter({ width: param(c, 'Y_WIDTH') }),
+      inMap: { A: 'value', B: 'shift' },
+      outMap: { Y: 'result' },
+      adaptOperands: true,
+    },
   ],
   $shr: [
-    { comp: (c) => RightShifter({ width: param(c, 'Y_WIDTH') }), inMap: { A: 'value', B: 'shift' }, outMap: { Y: 'result' }, adaptOperands: true },
+    {
+      comp: (c) => RightShifter({ width: param(c, 'Y_WIDTH') }),
+      inMap: { A: 'value', B: 'shift' },
+      outMap: { Y: 'result' },
+      adaptOperands: true,
+    },
   ],
   $sshr: [
-    { comp: (c) => SignedRightShifter({ width: param(c, 'Y_WIDTH') }), inMap: { A: 'value', B: 'shift' }, outMap: { Y: 'result' }, adaptOperands: true },
+    {
+      comp: (c) => SignedRightShifter({ width: param(c, 'Y_WIDTH') }),
+      inMap: { A: 'value', B: 'shift' },
+      outMap: { Y: 'result' },
+      adaptOperands: true,
+    },
   ],
 
   // $pmux is handled specially (per-lane candidate ports) — see translateModule.
@@ -294,7 +339,11 @@ const lane = (bits: YosysBit[] | undefined, i: number, w: number): YosysBit[] =>
  * words are stored. This applies ROM/`$readmemh` contents on import so an
  * imported CPU boots its real program instead of empty memory.
  */
-function parseMemInit(cell: YosysCell, size: number, width: number): Record<number, number> | undefined {
+function parseMemInit(
+  cell: YosysCell,
+  size: number,
+  width: number,
+): Record<number, number> | undefined {
   const init = cell.parameters?.INIT;
   if (typeof init !== 'string' || init.length === 0 || width > 32) return undefined;
   const offset = cell.parameters?.OFFSET !== undefined ? param(cell, 'OFFSET') : 0;
@@ -396,7 +445,10 @@ function makeIdSanitizer(): (raw: string) => string {
       // auto-generated `$<op>$<file>:<line>$<serial>` — keep op (+ source line)
       const parts = s.split('$').filter(Boolean);
       const op = parts[0] ?? 'n';
-      const line = parts.slice(1).join('$').match(/:(\d+)/)?.[1];
+      const line = parts
+        .slice(1)
+        .join('$')
+        .match(/:(\d+)/)?.[1];
       s = line ? `${op}_${line}` : op;
     }
     s = s
@@ -492,7 +544,11 @@ function translateModule(
   let connId = 0;
 
   /** Create a node from a BuiltCircuit and register its dependency circuits. */
-  const pushBuilt = (id: string, built: BuiltCircuit, args: Record<string, ArgumentValue>): void => {
+  const pushBuilt = (
+    id: string,
+    built: BuiltCircuit,
+    args: Record<string, ArgumentValue>,
+  ): void => {
     collectDeps(built, libDeps);
     nodes.push(nodeFromBuilt(id, built, args));
   };
@@ -838,7 +894,10 @@ export function importNetlist(netlist: YosysNetlist, topName?: string): ImportRe
   const library = new Map<string, Circuit>();
 
   for (const [name, mod] of Object.entries(netlist.modules)) {
-    library.set(moduleNameOf(name), translateModule(name, mod, shapes, netlist, library, moduleNameOf));
+    library.set(
+      moduleNameOf(name),
+      translateModule(name, mod, shapes, netlist, library, moduleNameOf),
+    );
   }
 
   // pick top: explicit, else the module no other module instantiates

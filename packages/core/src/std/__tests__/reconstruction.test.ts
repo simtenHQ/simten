@@ -20,8 +20,8 @@ import { Concat } from '../routing.js';
 
 let uid = 0;
 const port = (w: number) => (w === 1 ? bit : bus(w));
-const mask = (w: number) => ((w >= 32 ? 0xffffffff : (1 << w) - 1) >>> 0);
-const sext = (v: number, w: number) => ((v >>> 0) >= 2 ** (w - 1) ? (v >>> 0) - 2 ** w : v >>> 0);
+const mask = (w: number) => (w >= 32 ? 0xffffffff : (1 << w) - 1) >>> 0;
+const sext = (v: number, w: number) => (v >>> 0 >= 2 ** (w - 1) ? (v >>> 0) - 2 ** w : v >>> 0);
 const uOf = (w: number) => fc.integer({ min: 0, max: mask(w) }).map((n) => n >>> 0);
 
 /** One-input `in → out` primitive. */
@@ -70,7 +70,7 @@ describe('Slice — in[offset +: width]', () => {
   it.each(cases)('inWidth=%i offset=%i width=%i', (inW, off, wid) => {
     const p = Slice({ inWidth: inW, offset: off, width: wid });
     fc.assert(
-      fc.property(uOf(inW), (v) => run1(p, inW, wid, v) === (((v >>> off) & mask(wid)) >>> 0)),
+      fc.property(uOf(inW), (v) => run1(p, inW, wid, v) === ((v >>> off) & mask(wid)) >>> 0),
     );
   });
 });
@@ -78,7 +78,9 @@ describe('Slice — in[offset +: width]', () => {
 describe('Concat — {high, low}', () => {
   it('default 4+4→8 is backward-compatible ((high<<4)|low)', () => {
     const p = Concat();
-    fc.assert(fc.property(uOf(4), uOf(4), (hi, lo) => run2(p, 4, 4, hi, lo) === (((hi << 4) | lo) >>> 0)));
+    fc.assert(
+      fc.property(uOf(4), uOf(4), (hi, lo) => run2(p, 4, 4, hi, lo) === ((hi << 4) | lo) >>> 0),
+    );
   });
   const cases: [number, number][] = [
     [4, 4],
@@ -90,7 +92,11 @@ describe('Concat — {high, low}', () => {
   it.each(cases)('hiWidth=%i loWidth=%i', (hiW, loW) => {
     const p = Concat({ hiWidth: hiW, loWidth: loW });
     fc.assert(
-      fc.property(uOf(hiW), uOf(loW), (hi, lo) => run2(p, hiW, loW, hi, lo) === ((hi * 2 ** loW + lo) >>> 0)),
+      fc.property(
+        uOf(hiW),
+        uOf(loW),
+        (hi, lo) => run2(p, hiW, loW, hi, lo) === (hi * 2 ** loW + lo) >>> 0,
+      ),
     );
   });
 });
@@ -106,7 +112,7 @@ describe('SignExtend — replicate MSB', () => {
   it.each(cases)('inWidth=%i outWidth=%i', (inW, outW) => {
     const p = SignExtend({ inWidth: inW, outWidth: outW });
     fc.assert(
-      fc.property(uOf(inW), (v) => run1(p, inW, outW, v) === ((sext(v, inW) & mask(outW)) >>> 0)),
+      fc.property(uOf(inW), (v) => run1(p, inW, outW, v) === (sext(v, inW) & mask(outW)) >>> 0),
     );
   });
   it('concrete: 0xF (4-bit −1) → 0xFF (8-bit); 0x7 (4-bit +7) → 0x07', () => {
@@ -126,6 +132,6 @@ describe('ZeroExtend — pad high with 0', () => {
   ];
   it.each(cases)('inWidth=%i outWidth=%i (value unchanged)', (inW, outW) => {
     const p = ZeroExtend({ inWidth: inW, outWidth: outW });
-    fc.assert(fc.property(uOf(inW), (v) => run1(p, inW, outW, v) === (v >>> 0)));
+    fc.assert(fc.property(uOf(inW), (v) => run1(p, inW, outW, v) === v >>> 0));
   });
 });

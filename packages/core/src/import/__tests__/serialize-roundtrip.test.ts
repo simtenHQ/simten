@@ -20,9 +20,9 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { gunzipSync } from 'node:zlib';
 import { describe, expect, it } from 'vitest';
-import { bit, bus, circuit } from '../../circuit/index.js';
 import { circuitToSource } from '../../circuit/circuit-to-source.js';
 import { executeJsCode } from '../../circuit/execute.js';
+import { bit, buildFromIR, bus, circuit } from '../../circuit/index.js';
 import type { BuiltCircuit } from '../../circuit/types.js';
 import { simulate } from '../../sim/index.js';
 import {
@@ -36,7 +36,6 @@ import {
   Slice,
   ZeroExtend,
 } from '../../std/index.js';
-import { buildFromIR } from '../../circuit/index.js';
 import { importNetlist, type YosysNetlist } from '../index.js';
 
 const fix = (name: string) =>
@@ -111,7 +110,12 @@ describe('real design (RV32I_CPU_Core) serializes fully clean and re-simulates',
       ).toString('utf8'),
     ) as YosysNetlist;
     const { top, library } = importNetlist(rv32i, 'RV32I_CPU_Core');
-    const source = circuitToSource(buildFromIR(top, [...library.values()].filter((c) => c.name !== top.name)));
+    const source = circuitToSource(
+      buildFromIR(
+        top,
+        [...library.values()].filter((c) => c.name !== top.name),
+      ),
+    );
 
     // fully clean: no Rtl* anywhere; the import-namespace primitives emit as
     // factory calls that reconstruct their shape.

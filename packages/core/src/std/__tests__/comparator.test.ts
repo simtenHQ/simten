@@ -14,8 +14,8 @@ import { simulate } from '../../sim/index.js';
 import { Comparator, SignedComparator } from '../arithmetic.js';
 
 let uid = 0;
-const mask = (w: number) => ((w >= 32 ? 0xffffffff : (1 << w) - 1) >>> 0);
-const sext = (v: number, w: number) => ((v >>> 0) >= 2 ** (w - 1) ? (v >>> 0) - 2 ** w : v >>> 0);
+const mask = (w: number) => (w >= 32 ? 0xffffffff : (1 << w) - 1) >>> 0;
+const sext = (v: number, w: number) => (v >>> 0 >= 2 ** (w - 1) ? (v >>> 0) - 2 ** w : v >>> 0);
 const uOf = (w: number) => fc.integer({ min: 0, max: mask(w) }).map((n) => n >>> 0);
 
 function flags(prim: BuiltCircuit, w: number, a: number, b: number): Record<string, number> {

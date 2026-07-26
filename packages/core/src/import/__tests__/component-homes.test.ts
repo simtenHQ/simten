@@ -12,11 +12,7 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import {
-  classify,
-  isKnownSerializablePrimitive,
-  isReconstruction,
-} from '../component-homes.js';
+import { classify, isKnownSerializablePrimitive, isReconstruction } from '../component-homes.js';
 import { importNetlist, type YosysNetlist } from '../index.js';
 
 describe('classification principle', () => {

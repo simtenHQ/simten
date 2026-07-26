@@ -30,7 +30,10 @@ const fixGz = (name: string) =>
   gunzipSync(readFileSync(fileURLToPath(new URL(`../__fixtures__/${name}`, import.meta.url))));
 
 function measure(file: string, top: string) {
-  const { top: t, library } = importNetlist(JSON.parse(fixGz(file).toString('utf8')) as YosysNetlist, top);
+  const { top: t, library } = importNetlist(
+    JSON.parse(fixGz(file).toString('utf8')) as YosysNetlist,
+    top,
+  );
   const mods = [...library.values()].filter((c) => c.metadata?.description?.includes('Imported'));
   let recon = 0;
   let semantic = 0;

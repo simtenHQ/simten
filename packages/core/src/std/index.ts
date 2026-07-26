@@ -66,6 +66,8 @@ export {
   NIC_FIFO,
   UART_TX,
 } from './networking.js';
+// Reconstruction / bit-manipulation (importer authoring constructs)
+export { DynamicSlice, SignExtend, Slice, ZeroExtend } from './reconstruction.js';
 // Routing / Plexers / Utilities
 export {
   AddressCombiner,
@@ -78,7 +80,6 @@ export {
   Splitter,
   Splitter8to8,
 } from './routing.js';
-
 // RV32I
 export {
   DualPortROM,
@@ -98,9 +99,6 @@ export {
   RV32I_WBBypass,
   RV32I_WritebackMux,
 } from './rv32i.js';
-
-// Reconstruction / bit-manipulation (importer authoring constructs)
-export { DynamicSlice, SignExtend, Slice, ZeroExtend } from './reconstruction.js';
 // RV32I assembled CPU core (single source of truth — see ./rv32i-cpu.ts)
 export { RV32I_Core } from './rv32i-cpu.js';
 // Sequential

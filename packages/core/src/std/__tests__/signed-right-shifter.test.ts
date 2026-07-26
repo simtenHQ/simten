@@ -11,7 +11,7 @@ import { simulate } from '../../sim/index.js';
 import { SignedRightShifter } from '../arithmetic.js';
 
 let uid = 0;
-const mask = (w: number) => ((w >= 32 ? 0xffffffff : (1 << w) - 1) >>> 0);
+const mask = (w: number) => (w >= 32 ? 0xffffffff : (1 << w) - 1) >>> 0;
 const uOf = (w: number) => fc.integer({ min: 0, max: mask(w) }).map((n) => n >>> 0);
 
 function sshr(width: number, value: number, shift: number): number {
@@ -44,7 +44,11 @@ describe('SignedRightShifter ($sshr, arithmetic)', () => {
   for (const w of [8, 16, 32]) {
     it(`width ${w}`, () => {
       fc.assert(
-        fc.property(uOf(w), fc.integer({ min: 0, max: w + 2 }), (v, sh) => sshr(w, v, sh) === ref(v, sh, w)),
+        fc.property(
+          uOf(w),
+          fc.integer({ min: 0, max: w + 2 }),
+          (v, sh) => sshr(w, v, sh) === ref(v, sh, w),
+        ),
       );
     });
   }

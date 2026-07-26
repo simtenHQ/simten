@@ -21,7 +21,7 @@ import { circuit } from '../circuit/circuit.js';
 /** width===1 → bit port, else bus(width). Mirrors the Mux/Constant convention. */
 const portOf = (width: number) => (width === 1 ? bit : bus(width));
 
-const maskOf = (w: number) => ((w >= 32 ? 0xffffffff : (1 << w) - 1) >>> 0);
+const maskOf = (w: number) => (w >= 32 ? 0xffffffff : (1 << w) - 1) >>> 0;
 
 /** Interpret an unsigned w-bit value as two's-complement signed. */
 const sext = (v: number, w: number): number => {
@@ -47,7 +47,11 @@ export const Slice = circuit(
     eval: ({ in: v, offset: off = 0, width: w = width }) => ({
       out: (((v as number) >>> ((off as number) | 0)) & maskOf((w as number) | 0)) >>> 0,
     }),
-    meta: { category: 'utilities', icon: '⊂', description: 'Bus sub-range extract (in[offset +: width])' },
+    meta: {
+      category: 'utilities',
+      icon: '⊂',
+      description: 'Bus sub-range extract (in[offset +: width])',
+    },
   }),
 );
 
@@ -95,7 +99,11 @@ export const ZeroExtend = circuit(
     eval: ({ in: v, inWidth: iw = inWidth }) => ({
       out: ((v as number) >>> 0) & maskOf(iw as number),
     }),
-    meta: { category: 'utilities', icon: '0⊳', description: 'Zero extension (pad high bits with 0)' },
+    meta: {
+      category: 'utilities',
+      icon: '0⊳',
+      description: 'Zero extension (pad high bits with 0)',
+    },
   }),
 );
 
@@ -111,7 +119,15 @@ export const ZeroExtend = circuit(
  */
 export const DynamicSlice = circuit(
   'DynamicSlice',
-  ({ inWidth = 8, shiftWidth = 8, outWidth = 1 }: { inWidth?: number; shiftWidth?: number; outWidth?: number } = {}) => ({
+  ({
+    inWidth = 8,
+    shiftWidth = 8,
+    outWidth = 1,
+  }: {
+    inWidth?: number;
+    shiftWidth?: number;
+    outWidth?: number;
+  } = {}) => ({
     inputs: { in: bus(inWidth), shift: bus(shiftWidth) },
     outputs: { out: portOf(outWidth) },
     eval: ({ in: v, shift: s, inWidth: iw = inWidth, outWidth: ow = outWidth }) => {
@@ -119,6 +135,10 @@ export const DynamicSlice = circuit(
       const shifted = sh >= (iw as number) ? 0 : ((v as number) >>> 0) >>> sh;
       return { out: (shifted & maskOf(ow as number)) >>> 0 };
     },
-    meta: { category: 'utilities', icon: '⊂?', description: 'Dynamic part-select (in[shift +: outWidth])' },
+    meta: {
+      category: 'utilities',
+      icon: '⊂?',
+      description: 'Dynamic part-select (in[shift +: outWidth])',
+    },
   }),
 );

@@ -296,7 +296,7 @@ export const Buffer = circuit('Buffer', {
 // $logic_and/$logic_or/$logic_not and $reduce_* onto these (authoring stdlib).
 // ============================================================================
 
-const maskOf = (w: number) => ((w >= 32 ? 0xffffffff : (1 << w) - 1) >>> 0);
+const maskOf = (w: number) => (w >= 32 ? 0xffffffff : (1 << w) - 1) >>> 0;
 
 /**
  * Logical AND (&&) — nonzero operands. `out = (a != 0) && (b != 0)`, a single
@@ -309,7 +309,11 @@ export const LogicAnd = circuit(
   ({ aWidth = 8, bWidth = 8 }: { aWidth?: number; bWidth?: number } = {}) => ({
     inputs: { a: bus(aWidth), b: bus(bWidth) },
     outputs: { out: bit },
-    meta: { category: 'logic-gates', icon: '&&', description: 'Logical AND (&&) — nonzero operands' },
+    meta: {
+      category: 'logic-gates',
+      icon: '&&',
+      description: 'Logical AND (&&) — nonzero operands',
+    },
     eval: ({ a, b }) => ({ out: (a as number) >>> 0 && (b as number) >>> 0 ? 1 : 0 }),
   }),
 );
@@ -324,7 +328,11 @@ export const LogicOr = circuit(
   ({ aWidth = 8, bWidth = 8 }: { aWidth?: number; bWidth?: number } = {}) => ({
     inputs: { a: bus(aWidth), b: bus(bWidth) },
     outputs: { out: bit },
-    meta: { category: 'logic-gates', icon: '||', description: 'Logical OR (||) — nonzero operands' },
+    meta: {
+      category: 'logic-gates',
+      icon: '||',
+      description: 'Logical OR (||) — nonzero operands',
+    },
     eval: ({ a, b }) => ({ out: (a as number) >>> 0 || (b as number) >>> 0 ? 1 : 0 }),
   }),
 );
@@ -337,7 +345,11 @@ export const LogicOr = circuit(
 export const LogicNot = circuit('LogicNot', ({ width = 8 }: { width?: number } = {}) => ({
   inputs: { a: bus(width) },
   outputs: { out: bit },
-  meta: { category: 'logic-gates', icon: '!', description: 'Logical NOT (!) — 1 iff input is zero' },
+  meta: {
+    category: 'logic-gates',
+    icon: '!',
+    description: 'Logical NOT (!) — 1 iff input is zero',
+  },
   eval: ({ a }) => ({ out: (a as number) >>> 0 === 0 ? 1 : 0 }),
 }));
 
@@ -349,7 +361,11 @@ export const LogicNot = circuit('LogicNot', ({ width = 8 }: { width?: number } =
 export const ReduceOr = circuit('ReduceOr', ({ width = 8 }: { width?: number } = {}) => ({
   inputs: { a: bus(width) },
   outputs: { out: bit },
-  meta: { category: 'bus-operations', icon: '|a', description: 'Reduction OR (|a) — 1 iff any bit set' },
+  meta: {
+    category: 'bus-operations',
+    icon: '|a',
+    description: 'Reduction OR (|a) — 1 iff any bit set',
+  },
   eval: ({ a }) => ({ out: (a as number) >>> 0 !== 0 ? 1 : 0 }),
 }));
 
@@ -361,7 +377,11 @@ export const ReduceOr = circuit('ReduceOr', ({ width = 8 }: { width?: number } =
 export const ReduceAnd = circuit('ReduceAnd', ({ width = 8 }: { width?: number } = {}) => ({
   inputs: { a: bus(width) },
   outputs: { out: bit },
-  meta: { category: 'bus-operations', icon: '&a', description: 'Reduction AND (&a) — 1 iff all bits set' },
+  meta: {
+    category: 'bus-operations',
+    icon: '&a',
+    description: 'Reduction AND (&a) — 1 iff all bits set',
+  },
   eval: ({ a, width: w = width }) => {
     const m = maskOf(w as number);
     // `& m` is a signed 32-bit op; coerce back to unsigned before comparing.
@@ -377,7 +397,11 @@ export const ReduceAnd = circuit('ReduceAnd', ({ width = 8 }: { width?: number }
 export const ReduceXor = circuit('ReduceXor', ({ width = 8 }: { width?: number } = {}) => ({
   inputs: { a: bus(width) },
   outputs: { out: bit },
-  meta: { category: 'bus-operations', icon: '^a', description: 'Reduction XOR (^a) — parity of all bits' },
+  meta: {
+    category: 'bus-operations',
+    icon: '^a',
+    description: 'Reduction XOR (^a) — parity of all bits',
+  },
   eval: ({ a }) => {
     let x = (a as number) >>> 0;
     let p = 0;

@@ -20,6 +20,7 @@
  * Comments and any code outside `circuit()` calls are not preserved.
  */
 
+import { importFactoryName, isKnownSerializablePrimitive } from '../import/component-homes.js';
 import { STDLIB_CIRCUITS } from '../std/index.js';
 import type {
   ArgumentValue,
@@ -29,7 +30,6 @@ import type {
   PortType,
   StateBlock,
 } from '../types/circuit.js';
-import { importFactoryName, isKnownSerializablePrimitive } from '../import/component-homes.js';
 import { getCircuitEval } from './eval-registry.js';
 import { safeIdentifier } from './reserved-identifiers.js';
 import type { BuiltCircuit } from './types.js';

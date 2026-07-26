@@ -13,7 +13,7 @@ import { simulate } from '../../sim/index.js';
 import { LogicAnd, LogicNot, LogicOr, ReduceAnd, ReduceOr, ReduceXor } from '../logic.js';
 
 let uid = 0;
-const mask = (w: number) => ((w >= 32 ? 0xffffffff : (1 << w) - 1) >>> 0);
+const mask = (w: number) => (w >= 32 ? 0xffffffff : (1 << w) - 1) >>> 0;
 const uOf = (w: number) => fc.integer({ min: 0, max: mask(w) }).map((n) => n >>> 0);
 const parity = (a: number) => {
   let x = a >>> 0;
@@ -60,11 +60,15 @@ function binary(prim: BuiltCircuit, a: number, b: number): number {
 describe('logical (bus → bit)', () => {
   it('LogicAnd = (a!=0) && (b!=0)', () => {
     const p = LogicAnd({ aWidth: 8, bWidth: 16 });
-    fc.assert(fc.property(uOf(8), uOf(16), (a, b) => binary(p, a, b) === (a !== 0 && b !== 0 ? 1 : 0)));
+    fc.assert(
+      fc.property(uOf(8), uOf(16), (a, b) => binary(p, a, b) === (a !== 0 && b !== 0 ? 1 : 0)),
+    );
   });
   it('LogicOr = (a!=0) || (b!=0)', () => {
     const p = LogicOr({ aWidth: 8, bWidth: 16 });
-    fc.assert(fc.property(uOf(8), uOf(16), (a, b) => binary(p, a, b) === (a !== 0 || b !== 0 ? 1 : 0)));
+    fc.assert(
+      fc.property(uOf(8), uOf(16), (a, b) => binary(p, a, b) === (a !== 0 || b !== 0 ? 1 : 0)),
+    );
   });
   it('LogicNot = (a==0)', () => {
     const p = LogicNot({ width: 32 });

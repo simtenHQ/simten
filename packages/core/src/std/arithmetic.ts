@@ -154,7 +154,11 @@ export const WrappingMultiplier = circuit(
   ({ width = 8 }: { width?: number } = {}) => ({
     inputs: { a: bus(width), b: bus(width) },
     outputs: { out: bus(width) },
-    meta: { category: 'arithmetic', icon: '×↩', description: 'Wrapping multiplier (low width bits)' },
+    meta: {
+      category: 'arithmetic',
+      icon: '×↩',
+      description: 'Wrapping multiplier (low width bits)',
+    },
     eval: ({ a, b, width: w = width }) => {
       const m = (w as number) >= 32 ? 0xffffffff : (1 << (w as number)) - 1;
       return { out: (Math.imul((a as number) >>> 0, (b as number) >>> 0) >>> 0) & m };
