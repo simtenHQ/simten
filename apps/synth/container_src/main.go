@@ -82,11 +82,15 @@ func writeJSON(w http.ResponseWriter, status int, v interface{}) {
 // those to gate/tech primitives ($_AND_, LUT4, TRELLIS_FF …), which the
 // importer can't recover into clean source. `hierarchy` (no `flatten`) keeps
 // submodules as separate modules so the importer emits one Circuit per module.
-func buildYosysScript(top, target, netlistPath string) string {
+func buildYosysScript(top, target, netlistPath, dutPath string) string {
 	if target == "import" {
+		// Read with -sv so SystemVerilog sources parse too. -sv is a superset of
+		// Verilog-2005, so plain Verilog reads identically; language detection is
+		// unnecessary. Then stop at the generic RTL netlist (no techmapping) for
+		// @simten/core's importer.
 		return fmt.Sprintf(
-			"hierarchy -top %s; proc; opt_clean; memory_collect; stat; write_json %s",
-			top, netlistPath,
+			"read_verilog -sv %s; hierarchy -top %s; proc; opt_clean; memory_collect; stat; write_json %s",
+			dutPath, top, netlistPath,
 		)
 	}
 
@@ -99,7 +103,9 @@ func buildYosysScript(top, target, netlistPath string) string {
 	default:
 		synthCmd = fmt.Sprintf("synth -top %s", top)
 	}
-	return fmt.Sprintf("%s; write_json %s", synthCmd, netlistPath)
+	// Synthesis targets keep the default (Verilog-2005) read — reading the source
+	// in-script rather than positionally so behavior matches the import path.
+	return fmt.Sprintf("read_verilog %s; %s; write_json %s", dutPath, synthCmd, netlistPath)
 }
 
 // parseStats extracts cell and wire counts from Yosys stdout.
@@ -225,14 +231,15 @@ func synthHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Build and run Yosys
+	// Build and run Yosys. The source is read in-script (see buildYosysScript),
+	// so it is not passed positionally.
 	netlistPath := filepath.Join(dir, "netlist.json")
-	script := buildYosysScript(req.Top, req.Target, netlistPath)
+	script := buildYosysScript(req.Top, req.Target, netlistPath, dutPath)
 
 	ctx, cancel := context.WithTimeout(context.Background(), synthTimeout)
 	defer cancel()
 
-	cmd := exec.CommandContext(ctx, "yosys", "-p", script, dutPath)
+	cmd := exec.CommandContext(ctx, "yosys", "-p", script)
 	cmd.Dir = dir // so $readmemh relative paths resolve correctly
 	out, err := cmd.CombinedOutput()
 	yosysLog := string(out)
