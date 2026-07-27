@@ -1,0 +1,368 @@
+{
+ "source": "iverilog; outputs omitted where undefined (X)",
+ "vectors": [
+  {
+   "in": {
+    "reset": 1,
+    "load": 0,
+    "enable": 0
+   },
+   "out": {
+    "count_out": 8,
+    "count": 8
+   }
+  },
+  {
+   "in": {
+    "reset": 1,
+    "load": 0,
+    "enable": 0
+   },
+   "out": {
+    "count_out": 8,
+    "count": 8
+   }
+  },
+  {
+   "in": {
+    "reset": 1,
+    "load": 0,
+    "enable": 0
+   },
+   "out": {
+    "count_out": 8,
+    "count": 8
+   }
+  },
+  {
+   "in": {
+    "reset": 0,
+    "load": 1,
+    "enable": 1
+   },
+   "out": {
+    "count_out": 8,
+    "count": 7
+   }
+  },
+  {
+   "in": {
+    "reset": 0,
+    "load": 1,
+    "enable": 1
+   },
+   "out": {
+    "count_out": 7,
+    "count": 7
+   }
+  },
+  {
+   "in": {
+    "reset": 0,
+    "load": 1,
+    "enable": 1
+   },
+   "out": {
+    "count_out": 7,
+    "count": 11
+   }
+  },
+  {
+   "in": {
+    "reset": 0,
+    "load": 1,
+    "enable": 1
+   },
+   "out": {
+    "count_out": 11,
+    "count": 11
+   }
+  },
+  {
+   "in": {
+    "reset": 0,
+    "load": 1,
+    "enable": 1
+   },
+   "out": {
+    "count_out": 11,
+    "count": 4
+   }
+  },
+  {
+   "in": {
+    "reset": 0,
+    "load": 1,
+    "enable": 1
+   },
+   "out": {
+    "count_out": 4,
+    "count": 4
+   }
+  },
+  {
+   "in": {
+    "reset": 0,
+    "load": 1,
+    "enable": 1
+   },
+   "out": {
+    "count_out": 4,
+    "count": 9
+   }
+  },
+  {
+   "in": {
+    "reset": 0,
+    "load": 1,
+    "enable": 1
+   },
+   "out": {
+    "count_out": 9,
+    "count": 9
+   }
+  },
+  {
+   "in": {
+    "reset": 0,
+    "load": 1,
+    "enable": 1
+   },
+   "out": {
+    "count_out": 9,
+    "count": 2
+   }
+  },
+  {
+   "in": {
+    "reset": 0,
+    "load": 1,
+    "enable": 1
+   },
+   "out": {
+    "count_out": 2,
+    "count": 2
+   }
+  },
+  {
+   "in": {
+    "reset": 0,
+    "load": 1,
+    "enable": 1
+   },
+   "out": {
+    "count_out": 2,
+    "count": 5
+   }
+  },
+  {
+   "in": {
+    "reset": 0,
+    "load": 1,
+    "enable": 1
+   },
+   "out": {
+    "count_out": 5,
+    "count": 5
+   }
+  },
+  {
+   "in": {
+    "reset": 0,
+    "load": 1,
+    "enable": 1
+   },
+   "out": {
+    "count_out": 5,
+    "count": 12
+   }
+  },
+  {
+   "in": {
+    "reset": 0,
+    "load": 1,
+    "enable": 1
+   },
+   "out": {
+    "count_out": 12,
+    "count": 12
+   }
+  },
+  {
+   "in": {
+    "reset": 0,
+    "load": 1,
+    "enable": 1
+   },
+   "out": {
+    "count_out": 12,
+    "count": 6
+   }
+  },
+  {
+   "in": {
+    "reset": 0,
+    "load": 1,
+    "enable": 1
+   },
+   "out": {
+    "count_out": 6,
+    "count": 6
+   }
+  },
+  {
+   "in": {
+    "reset": 0,
+    "load": 1,
+    "enable": 1
+   },
+   "out": {
+    "count_out": 6,
+    "count": 3
+   }
+  },
+  {
+   "in": {
+    "reset": 0,
+    "load": 1,
+    "enable": 1
+   },
+   "out": {
+    "count_out": 3,
+    "count": 3
+   }
+  },
+  {
+   "in": {
+    "reset": 0,
+    "load": 1,
+    "enable": 1
+   },
+   "out": {
+    "count_out": 3,
+    "count": 15
+   }
+  },
+  {
+   "in": {
+    "reset": 0,
+    "load": 1,
+    "enable": 1
+   },
+   "out": {
+    "count_out": 15,
+    "count": 15
+   }
+  },
+  {
+   "in": {
+    "reset": 0,
+    "load": 0,
+    "enable": 1
+   },
+   "out": {
+    "count_out": 15,
+    "count": 8
+   }
+  },
+  {
+   "in": {
+    "reset": 0,
+    "load": 0,
+    "enable": 1
+   },
+   "out": {
+    "count_out": 8,
+    "count": 8
+   }
+  },
+  {
+   "in": {
+    "reset": 0,
+    "load": 0,
+    "enable": 1
+   },
+   "out": {
+    "count_out": 8,
+    "count": 8
+   }
+  },
+  {
+   "in": {
+    "reset": 1,
+    "load": 1,
+    "enable": 1
+   },
+   "out": {
+    "count_out": 8,
+    "count": 7
+   }
+  },
+  {
+   "in": {
+    "reset": 1,
+    "load": 1,
+    "enable": 1
+   },
+   "out": {
+    "count_out": 8,
+    "count": 7
+   }
+  },
+  {
+   "in": {
+    "reset": 0,
+    "load": 1,
+    "enable": 0
+   },
+   "out": {
+    "count_out": 7,
+    "count": 7
+   }
+  },
+  {
+   "in": {
+    "reset": 0,
+    "load": 1,
+    "enable": 0
+   },
+   "out": {
+    "count_out": 7,
+    "count": 7
+   }
+  },
+  {
+   "in": {
+    "reset": 0,
+    "load": 1,
+    "enable": 0
+   },
+   "out": {
+    "count_out": 7,
+    "count": 7
+   }
+  },
+  {
+   "in": {
+    "reset": 0,
+    "load": 1,
+    "enable": 0
+   },
+   "out": {
+    "count_out": 7,
+    "count": 7
+   }
+  },
+  {
+   "in": {
+    "reset": 0,
+    "load": 1,
+    "enable": 0
+   },
+   "out": {
+    "count_out": 7,
+    "count": 7
+   }
+  }
+ ]
+}

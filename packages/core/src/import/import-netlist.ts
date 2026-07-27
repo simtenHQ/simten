@@ -786,44 +786,58 @@ function translateModule(
       const w = param(cell, 'WIDTH');
       pushBuilt(cid, Register({ width: w }), { width: w });
       const d = resolveBits(cell.connections.D);
-      connect(d.nodeId, d.portName, cid, 'data', portTypeOf(w));
 
-      // Wire a 1-bit control net (rst/we) to the register, inverting through a
-      // Not gate when the source is active-low (Register's rst/we are active-high).
-      const wireCtrl = (bits: YosysBit[], activeHigh: number, dstPort: string): void => {
+      // Wire a 1-bit control net to a target port, inverting through a Not gate
+      // when the source is active-low (Register's rst/we and Mux.sel are active-high).
+      const wireCtrl = (
+        bits: YosysBit[],
+        activeHigh: number,
+        dstNode: string,
+        dstPort: string,
+      ): void => {
         const src = resolveBits(bits);
         if (activeHigh) {
-          connect(src.nodeId, src.portName, cid, dstPort, bitType());
+          connect(src.nodeId, src.portName, dstNode, dstPort, bitType());
         } else {
           const kn = `_n${helperId++}`;
           pushBuilt(kn, Not, {});
           connect(src.nodeId, src.portName, kn, 'in', bitType());
-          connect(kn, 'out', cid, dstPort, bitType());
+          connect(kn, 'out', dstNode, dstPort, bitType());
         }
       };
 
       if (cell.type === '$dffe') {
-        // clock-enable → we (no reset; unconnected rst reads 0)
-        wireCtrl(cell.connections.EN, param(cell, 'EN_POLARITY'), 'we');
+        // clock-enable → we; D → data (no reset; unconnected rst reads 0)
+        connect(d.nodeId, d.portName, cid, 'data', portTypeOf(w));
+        wireCtrl(cell.connections.EN, param(cell, 'EN_POLARITY'), cid, 'we');
       } else {
-        // $adff/$sdff: latch every edge (we tied 1); reset folded into rst.
+        // $adff/$sdff: latch every edge (we tied 1); reset folded in.
         const kWe = `_k${helperId++}`;
         pushBuilt(kWe, Constant({ width: 1, value: 1 }), { width: 1, value: 1 });
         connect(kWe, 'out', cid, 'we', bitType());
         const async = cell.type === '$adff';
         const resetValue = param(cell, async ? 'ARST_VALUE' : 'SRST_VALUE');
-        if (resetValue !== 0) {
-          // Register's rst clears to 0; a non-zero reset target needs a mux
-          // decomposition we don't emit yet.
-          throw new Error(
-            `${name}: ${cell.type} with non-zero reset value (${resetValue}) is not supported`,
-          );
+        const rstBits = cell.connections[async ? 'ARST' : 'SRST'];
+        const rstPol = param(cell, async ? 'ARST_POLARITY' : 'SRST_POLARITY');
+        if (resetValue === 0) {
+          // reset-to-0: the clean path — D → data, reset → Register.rst.
+          connect(d.nodeId, d.portName, cid, 'data', portTypeOf(w));
+          wireCtrl(rstBits, rstPol, cid, 'rst');
+        } else if (Number.isFinite(resetValue)) {
+          // non-zero reset: fold the preset into the data path with a Mux +
+          // Constant — data = reset ? resetValue : D (reset drives Mux.sel).
+          const kc = `_k${helperId++}`;
+          pushBuilt(kc, Constant({ width: w, value: resetValue }), { width: w, value: resetValue });
+          const km = `_rm${helperId++}`;
+          pushBuilt(km, Mux({ width: w }), { width: w });
+          connect(d.nodeId, d.portName, km, 'in0', portTypeOf(w)); // sel=0 → data
+          connect(kc, 'out', km, 'in1', portTypeOf(w)); // sel=1 → reset value
+          wireCtrl(rstBits, rstPol, km, 'sel'); // reset (active-high) selects
+          connect(km, 'out', cid, 'data', portTypeOf(w));
+        } else {
+          // Reset value has undefined (x) bits — refuse rather than guess.
+          throw new Error(`${name}: ${cell.type} has an undefined reset value`);
         }
-        wireCtrl(
-          cell.connections[async ? 'ARST' : 'SRST'],
-          param(cell, async ? 'ARST_POLARITY' : 'SRST_POLARITY'),
-          'rst',
-        );
       }
       continue;
     }
