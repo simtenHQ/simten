@@ -32,6 +32,19 @@ const portOf = (width: number) => (width === 1 ? bit : bus(width));
 
 const maskOf = (w: number) => (w >= 32 ? 0xffffffff : (1 << w) - 1) >>> 0;
 
+/**
+ * Attach shape args so a source-compiled node carries them in `node.arguments`
+ * (the eval reads its shape from `io`, which merges node.arguments). The
+ * object-config circuits below (Pmux/Dlatch/Mem) don't auto-bake `_args` the way
+ * the factory form does, so without this a recompiled `Pmux({ width, sWidth })`
+ * would have empty arguments and its sandbox-rebuilt eval couldn't recover the
+ * shape (surfaces in the editor as "sWidth is not defined").
+ */
+function withArgs<T>(c: T, args: Record<string, number>): T {
+  (c as { _args?: Record<string, number> })._args = args;
+  return c;
+}
+
 /** Interpret an unsigned w-bit value as two's-complement signed. */
 const sext = (v: number, w: number): number => {
   const u = v >>> 0;
@@ -254,7 +267,6 @@ export const RtlSshr = circuit(
  */
 export function Pmux(opts: { width: number; sWidth: number }): BuiltCircuit {
   const { width, sWidth } = opts;
-  const m = maskOf(width);
   const name = `Pmux_${width}w_${sWidth}s`;
   // Per-lane candidate ports (b_0..b_{sWidth-1}), each ≤ width bits — NOT one
   // packed `width*sWidth` port, which would exceed simten's 32-bit buses (a
@@ -262,20 +274,31 @@ export function Pmux(opts: { width: number; sWidth: number }): BuiltCircuit {
   // bit-array into these lanes.
   const inputs: Record<string, ReturnType<typeof bus>> = { a: bus(width), s: bus(sWidth) };
   for (let i = 0; i < sWidth; i++) inputs[`b_${i}`] = bus(width);
-  return circuit(name, {
-    inputs,
-    outputs: { out: bus(width) },
-    // biome-ignore lint/suspicious/noExplicitAny: dynamic per-lane port access
-    eval: (io: any) => {
-      const sv = (io.s as number) >>> 0;
-      for (let i = 0; i < sWidth; i++) {
-        if ((sv >>> i) & 1) return { out: ((io[`b_${i}`] as number) >>> 0) & m };
-      }
-      return { out: ((io.a as number) >>> 0) & m };
-    },
-    meta: { category: 'rtl-import', icon: '⇉', description: 'Parallel one-hot mux' },
-    // biome-ignore lint/suspicious/noExplicitAny: dynamic inputs shape
-  } as any) as unknown as BuiltCircuit;
+  return withArgs(
+    circuit(name, {
+      inputs,
+      outputs: { out: bus(width) },
+      // biome-ignore lint/suspicious/noExplicitAny: dynamic per-lane port access
+      eval: (io: any) => {
+        // Shape read from io first (node.arguments merge into eval inputs), with the
+        // factory value as fallback for direct use. The editor sandbox rebuilds evals
+        // via new Function(fn.toString()), dropping closures — but imported nodes
+        // always carry these args, so `??` short-circuits to io before the lost
+        // closure is referenced. Mask inlined (module-scope maskOf isn't in scope).
+        const sw = (io.sWidth ?? sWidth) as number;
+        const w = (io.width ?? width) as number;
+        const mask = w >= 32 ? 0xffffffff : ((1 << w) - 1) >>> 0;
+        const sv = (io.s as number) >>> 0;
+        for (let i = 0; i < sw; i++) {
+          if ((sv >>> i) & 1) return { out: ((io[`b_${i}`] as number) >>> 0) & mask };
+        }
+        return { out: ((io.a as number) >>> 0) & mask };
+      },
+      meta: { category: 'rtl-import', icon: '⇉', description: 'Parallel one-hot mux' },
+      // biome-ignore lint/suspicious/noExplicitAny: dynamic inputs shape
+    } as any),
+    { width, sWidth },
+  ) as unknown as BuiltCircuit;
 }
 
 /**
@@ -307,25 +330,32 @@ export const RtlConcat2 = circuit(
  */
 export function Dlatch(opts: { width: number; enPolarity: number }): BuiltCircuit {
   const { width, enPolarity } = opts;
-  const m = maskOf(width);
   const name = `Dlatch_${width}w_ep${enPolarity}`;
-  return circuit(name, {
-    inputs: { en: bit, d: bus(width) },
-    outputs: { q: bus(width) },
-    state: { hold: 0 },
-    // biome-ignore lint/suspicious/noExplicitAny: dynamic state access
-    eval: (io: any) => {
-      const transparent = (io.en & 1) === enPolarity;
-      return { q: ((transparent ? io.d : io.hold) >>> 0) & m };
-    },
-    // biome-ignore lint/suspicious/noExplicitAny: dynamic state access
-    onTick: (io: any) => {
-      const transparent = (io.en & 1) === enPolarity;
-      return { hold: transparent ? io.d : io.hold };
-    },
-    meta: { category: 'rtl-import', icon: 'DL', description: 'D-latch (level-sensitive)' },
-    // biome-ignore lint/suspicious/noExplicitAny: fixed-shape config
-  } as any) as unknown as BuiltCircuit;
+  return withArgs(
+    circuit(name, {
+      inputs: { en: bit, d: bus(width) },
+      outputs: { q: bus(width) },
+      state: { hold: 0 },
+      // Shape read from io first, factory value as fallback for direct use — the
+      // editor sandbox rebuilds evals via new Function(fn.toString()), dropping
+      // closures (and maskOf), so io (present on imported nodes) is what works there.
+      // biome-ignore lint/suspicious/noExplicitAny: dynamic state access
+      eval: (io: any) => {
+        const w = (io.width ?? width) as number;
+        const mask = w >= 32 ? 0xffffffff : ((1 << w) - 1) >>> 0;
+        const transparent = (io.en & 1) === ((io.enPolarity ?? enPolarity) as number);
+        return { q: ((transparent ? io.d : io.hold) >>> 0) & mask };
+      },
+      // biome-ignore lint/suspicious/noExplicitAny: dynamic state access
+      onTick: (io: any) => {
+        const transparent = (io.en & 1) === ((io.enPolarity ?? enPolarity) as number);
+        return { hold: transparent ? io.d : io.hold };
+      },
+      meta: { category: 'rtl-import', icon: 'DL', description: 'D-latch (level-sensitive)' },
+      // biome-ignore lint/suspicious/noExplicitAny: fixed-shape config
+    } as any),
+    { width, enPolarity },
+  ) as unknown as BuiltCircuit;
 }
 
 // ---------------------------------------------------------------------------
@@ -359,8 +389,6 @@ export function Mem(opts: {
   const { rdPorts, wrPorts, abits, width, size } = opts;
   const addrW = Math.max(1, Math.ceil(Math.log2(Math.max(2, size))));
   const depth = 1 << addrW;
-  const amask = depth - 1;
-  const dmask = maskOf(width);
   const name = `Mem_${rdPorts}r${wrPorts}w_${abits}a_${width}w_${depth}d`;
 
   const inputs: Record<string, ReturnType<typeof bus>> = {};
@@ -377,34 +405,50 @@ export function Mem(opts: {
 
   // Direct (non-factory) form: ports/shape are fixed for this name, so the
   // config closes over them. Registration is idempotent for a repeated shape.
-  return circuit(name, {
-    inputs,
-    outputs,
-    state: { store: mem(depth, width) },
-    // biome-ignore lint/suspicious/noExplicitAny: dynamic per-lane port access
-    eval: (io: any) => {
-      const store = io.store;
-      const out: Record<string, number> = {};
-      for (let i = 0; i < rdPorts; i++) {
-        const a = ((io[`rd_addr_${i}`] as number) >>> 0) & amask;
-        out[`rd_data_${i}`] = (store[a] ?? 0) >>> 0;
-      }
-      return out;
-    },
-    // biome-ignore lint/suspicious/noExplicitAny: dynamic per-lane port access
-    onTick: (io: any) => {
-      const store = io.store;
-      for (let i = 0; i < wrPorts; i++) {
-        const en = (io[`wr_en_${i}`] as number) >>> 0;
-        if (en === 0) continue;
-        const a = ((io[`wr_addr_${i}`] as number) >>> 0) & amask;
-        const d = (io[`wr_data_${i}`] as number) >>> 0;
-        const cur = (store[a] ?? 0) >>> 0;
-        store[a] = (((cur & ~en) | (d & en)) & dmask) >>> 0;
-      }
-      return { store };
-    },
-    meta: { category: 'rtl-import', icon: 'MEM', description: 'Multi-port memory' },
-    // biome-ignore lint/suspicious/noExplicitAny: dynamic inputs/outputs shape
-  } as any) as unknown as BuiltCircuit;
+  return withArgs(
+    circuit(name, {
+      inputs,
+      outputs,
+      state: { store: mem(depth, width) },
+      // Shape read from io first, factory values as fallback for direct use — the
+      // editor sandbox rebuilds evals via new Function(fn.toString()), dropping
+      // closures (and maskOf), so io (present on imported nodes) is what works there.
+      // Address mask is depth-1 (memory wraps to its allocated depth); depth is
+      // recomputed from size inline so nothing closure-scoped is referenced.
+      // biome-ignore lint/suspicious/noExplicitAny: dynamic per-lane port access
+      eval: (io: any) => {
+        const rd = (io.rdPorts ?? rdPorts) as number;
+        const sz = (io.size ?? size) as number;
+        const amsk = (1 << Math.max(1, Math.ceil(Math.log2(Math.max(2, sz))))) - 1;
+        const store = io.store;
+        const out: Record<string, number> = {};
+        for (let i = 0; i < rd; i++) {
+          const a = ((io[`rd_addr_${i}`] as number) >>> 0) & amsk;
+          out[`rd_data_${i}`] = (store[a] ?? 0) >>> 0;
+        }
+        return out;
+      },
+      // biome-ignore lint/suspicious/noExplicitAny: dynamic per-lane port access
+      onTick: (io: any) => {
+        const wr = (io.wrPorts ?? wrPorts) as number;
+        const sz = (io.size ?? size) as number;
+        const amsk = (1 << Math.max(1, Math.ceil(Math.log2(Math.max(2, sz))))) - 1;
+        const dw = (io.width ?? width) as number;
+        const dmsk = dw >= 32 ? 0xffffffff : ((1 << dw) - 1) >>> 0;
+        const store = io.store;
+        for (let i = 0; i < wr; i++) {
+          const en = (io[`wr_en_${i}`] as number) >>> 0;
+          if (en === 0) continue;
+          const a = ((io[`wr_addr_${i}`] as number) >>> 0) & amsk;
+          const d = (io[`wr_data_${i}`] as number) >>> 0;
+          const cur = (store[a] ?? 0) >>> 0;
+          store[a] = (((cur & ~en) | (d & en)) & dmsk) >>> 0;
+        }
+        return { store };
+      },
+      meta: { category: 'rtl-import', icon: 'MEM', description: 'Multi-port memory' },
+      // biome-ignore lint/suspicious/noExplicitAny: dynamic inputs/outputs shape
+    } as any),
+    { rdPorts, wrPorts, abits, width, size },
+  ) as unknown as BuiltCircuit;
 }
