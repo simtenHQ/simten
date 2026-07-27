@@ -49,9 +49,13 @@ describe('dist/bundle.d.ts', () => {
     expect(bundle).toContain('_dependencies');
   });
 
-  it('stays under the 100 KB headroom budget', () => {
+  it('stays under the 110 KB headroom budget', () => {
+    // Guard on the Monaco type-payload size (affects editor cold-load). Bump
+    // deliberately when the public stdlib grows: raised 100 → 110 KB for the
+    // four import-reconstruction components (Slice/Concat/SignExtend/ZeroExtend).
+    // Trim JSDoc before bumping further.
     const { size } = statSync(bundlePath);
-    expect(size).toBeLessThan(100 * 1024);
+    expect(size).toBeLessThan(110 * 1024);
   });
 });
 

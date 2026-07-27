@@ -21,7 +21,9 @@
   "type": "module",
   "sideEffects": [
     "./src/std/**",
-    "./dist/std/**"
+    "./dist/std/**",
+    "./src/rtl/**",
+    "./dist/rtl/**"
   ],
   "exports": {
     ".": "./src/index.ts",
@@ -30,6 +32,8 @@
     "./verilog": "./src/verilog/index.ts",
     "./circuit": "./src/circuit/index.ts",
     "./std": "./src/std/index.ts",
+    "./rtl": "./src/rtl/index.ts",
+    "./import": "./src/import/index.ts",
     "./sim": "./src/sim/index.ts",
     "./verify": "./src/verify/index.ts",
     "./examples": "./src/examples/index.ts",

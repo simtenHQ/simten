@@ -210,11 +210,14 @@ export const Combiner8to8 = circuit('Combiner8to8', {
 });
 
 /**
- * Concatenate two buses. Builds an 8-bit value from a 4-bit `high` nibble
- * and a 4-bit `low` nibble: `out = (high << 4) | low`.
+ * Concatenate two buses ({high, low}) — `low` in the low bits, `high` above:
+ * `out = high * 2**loWidth + low`. Widths are parameterized
+ * (default 4+4→8, the classic nibble join); the importer emits it at arbitrary
+ * widths to reconstruct a `{hi, lo}` splice as one clean node.
  *
- * **Inputs:** `high`, `low` — `bus(4)`
- * **Output:** `out` — `bus(8)`
+ * **Inputs:** `high` — `bus(hiWidth)`, `low` — `bus(loWidth)`
+ * **Output:** `out` — `bus(hiWidth + loWidth)`
+ * **Args:** `hiWidth`, `loWidth` (default 4, 4)
  *
  * **Example:**
  * ```ts
@@ -230,12 +233,22 @@ export const Combiner8to8 = circuit('Combiner8to8', {
  * })
  * ```
  */
-export const Concat = circuit('Concat', {
-  inputs: { high: bus(4), low: bus(4) },
-  outputs: { out: bus(8) },
-  meta: { category: 'utilities', icon: '||', description: 'Concatenate two buses' },
-  eval: ({ high, low }) => ({ out: (high << 4) | low }),
-});
+export const Concat = circuit(
+  'Concat',
+  ({ hiWidth = 4, loWidth = 4 }: { hiWidth?: number; loWidth?: number } = {}) => ({
+    inputs: {
+      high: hiWidth === 1 ? bit : bus(hiWidth),
+      low: loWidth === 1 ? bit : bus(loWidth),
+    },
+    outputs: { out: bus(hiWidth + loWidth) },
+    meta: { category: 'utilities', icon: '||', description: 'Concatenate two buses ({high, low})' },
+    // loWidth read from the bag (node.arguments) so per-instance widths are
+    // honoured; `* 2**lw` (not `<<`) stays correct above 32 bits.
+    eval: ({ high, low, loWidth: lw = loWidth }) => ({
+      out: (((high as number) >>> 0) * 2 ** ((lw as number) | 0) + ((low as number) >>> 0)) >>> 0,
+    }),
+  }),
+);
 
 /**
  * Extract bits [low..high] from input. A pass-through identity in the

@@ -1,0 +1,111 @@
+{
+  "note": "Independent oracle: iverilog 13.0 on demo.v (pre-yosys). sa fed as unsigned 4-bit. clk-then-sample each vector; regd reflects {hi,lo} clocked this cycle.",
+  "oracle": "iverilog-13.0",
+  "vectors": [
+    {
+      "in": {
+        "sa": 15,
+        "b": 1,
+        "hi": 10,
+        "lo": 5,
+        "sel": 0
+      },
+      "out": {
+        "wide": 0,
+        "regd": 165,
+        "eq": 0,
+        "muxed": 0
+      }
+    },
+    {
+      "in": {
+        "sa": 8,
+        "b": 200,
+        "hi": 15,
+        "lo": 0,
+        "sel": 1
+      },
+      "out": {
+        "wide": 192,
+        "regd": 240,
+        "eq": 0,
+        "muxed": 200
+      }
+    },
+    {
+      "in": {
+        "sa": 7,
+        "b": 7,
+        "hi": 1,
+        "lo": 2,
+        "sel": 0
+      },
+      "out": {
+        "wide": 14,
+        "regd": 18,
+        "eq": 0,
+        "muxed": 14
+      }
+    },
+    {
+      "in": {
+        "sa": 0,
+        "b": 50,
+        "hi": 3,
+        "lo": 4,
+        "sel": 1
+      },
+      "out": {
+        "wide": 50,
+        "regd": 52,
+        "eq": 1,
+        "muxed": 50
+      }
+    },
+    {
+      "in": {
+        "sa": 0,
+        "b": 99,
+        "hi": 12,
+        "lo": 13,
+        "sel": 0
+      },
+      "out": {
+        "wide": 99,
+        "regd": 205,
+        "eq": 1,
+        "muxed": 99
+      }
+    },
+    {
+      "in": {
+        "sa": 15,
+        "b": 255,
+        "hi": 7,
+        "lo": 8,
+        "sel": 1
+      },
+      "out": {
+        "wide": 254,
+        "regd": 120,
+        "eq": 0,
+        "muxed": 255
+      }
+    },
+    {
+      "in": {
+        "sa": 12,
+        "b": 10,
+        "hi": 6,
+        "lo": 9,
+        "sel": 0
+      },
+      "out": {
+        "wide": 6,
+        "regd": 105,
+        "eq": 0,
+        "muxed": 6
+      }
+    }
+  ]
+}
