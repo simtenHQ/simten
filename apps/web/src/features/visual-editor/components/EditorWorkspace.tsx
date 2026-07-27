@@ -43,6 +43,7 @@ import { WaveformViewer } from '@simten/ui/waveform';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable';
 import { useMCPConnection } from '@/hooks/useMCPConnection';
 import { CATEGORY_COLORS, CATEGORY_LABELS, EXAMPLES, type Example } from '../examples';
+import { VerilogImportSheet } from './VerilogImportSheet';
 
 const SCAN_CODES: Record<string, number> = {
   ArrowUp: 0x48,
@@ -513,6 +514,14 @@ export function EditorWorkspace({
                     </Button>
                   </>
                 )}
+
+                <VerilogImportSheet
+                  onImport={(source) => {
+                    editorRef.current?.setValue(source);
+                    hasLoadedContentRef.current = true;
+                    setTimeout(() => void compiler.compile(), 100);
+                  }}
+                />
 
                 <Button
                   onClick={handleExportVerilog}

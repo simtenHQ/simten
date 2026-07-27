@@ -113,6 +113,13 @@ const config = defineConfig(({ command }) => ({
         ]
       : []),
   ],
+  // Pre-bundle Radix Dialog on startup. The Verilog-import Sheet is the first
+  // consumer of @radix-ui/react-dialog, so without this Vite discovers it lazily
+  // on first /circuit load and re-optimizes mid-render — which surfaces as a
+  // spurious "Invalid hook call / duplicate React" error until a dev restart.
+  optimizeDeps: {
+    include: ['@radix-ui/react-dialog'],
+  },
 }));
 
 export default config;
