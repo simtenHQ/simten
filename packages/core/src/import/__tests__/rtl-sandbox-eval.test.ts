@@ -22,6 +22,26 @@ function reconstruct(fn: (...a: any[]) => any): (io: any) => any {
   return new Function(`return (${fn.toString()})`)() as (io: any) => any;
 }
 
+// The reconstructed eval recovers its shape from `io` only because the node
+// carries it in node.arguments. That happens because these object-config
+// primitives bake `_args`; without it a recompiled node has empty arguments and
+// the reconstructed eval can't recover the shape. Guard the baking directly.
+describe('import primitives bake _args (so recompiled nodes carry their shape)', () => {
+  it('Pmux/Dlatch/Mem attach _args', () => {
+    expect((Pmux({ width: 8, sWidth: 3 }) as { _args?: unknown })._args).toEqual({
+      width: 8,
+      sWidth: 3,
+    });
+    expect((Dlatch({ width: 8, enPolarity: 1 }) as { _args?: unknown })._args).toEqual({
+      width: 8,
+      enPolarity: 1,
+    });
+    expect(
+      (Mem({ rdPorts: 1, wrPorts: 1, abits: 4, width: 8, size: 16 }) as { _args?: unknown })._args,
+    ).toEqual({ rdPorts: 1, wrPorts: 1, abits: 4, width: 8, size: 16 });
+  });
+});
+
 describe('import primitives survive sandbox eval reconstruction (new Function(toString))', () => {
   it('Pmux: one-hot select reads sWidth/width from io', () => {
     Pmux({ width: 8, sWidth: 3 });
