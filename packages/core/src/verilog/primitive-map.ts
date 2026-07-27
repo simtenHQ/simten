@@ -388,12 +388,17 @@ export function emitPrimitive(ctx: PrimitiveContext): { lines: string[]; declara
       const initialValue = typeof args.value === 'number' ? args.value : 0;
       const initialLiteral = w > 1 ? `${w}'d${initialValue}` : `1'b${initialValue ? 1 : 0}`;
       const initLines = [`initial ${regName} = ${initialLiteral};`];
+      const zeroLiteral = w > 1 ? `${w}'d0` : `1'b0`;
       return {
         declarations: [`reg ${widthStr}${regName};`],
         lines: [
           ...initLines,
           `always @(posedge ${clockName}) begin`,
+          // Module-level power-on reset (active-low rst_n) → initial value.
           `  if (!${resetName}) ${regName} <= ${initialLiteral};`,
+          // Optional per-register synchronous reset (rst) → clears to 0. When
+          // unconnected, i('rst') is 1'b0, so this arm folds away in synthesis.
+          `  else if (${i('rst')}) ${regName} <= ${zeroLiteral};`,
           `  else if (${i('we')}) ${regName} <= ${i('data')};`,
           `end`,
           `assign ${o('q')} = ${regName};`,

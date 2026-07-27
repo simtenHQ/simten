@@ -1,6 +1,6 @@
 {
   "note": "Pre-migration Verilog hashes. See packages/core/src/verilog/__tests__/golden-hashes.test.ts.",
-  "capturedAt": "2026-07-22T22:20:53.289Z",
+  "capturedAt": "2026-07-27T13:37:38.348Z",
   "hashes": {
     "And": "adf38b97fba788dc2eab31d728191216311314927f43550f416849cea9ceebdd",
     "Or": "85b24de96f3cda0f9a4907d820dbcd4f94d4cc6a5969a54b721d9e2e1e44ef53",
@@ -15,7 +15,7 @@
     "Decoder": "adf52c6c920be0de6b4b2137f0031603842bc0fa95935a16d7ce2931983153e7",
     "BitSlice": "26a18ab033abfc7608ac8eedcc025ad170a98f2dd56d8919944edf6501949d70",
     "DFlipFlop": "818ff0e264bd5bc776ad192021ebcb5371b4681242b366de69ede30735f4fbae",
-    "Register": "aedf53c9ddc114a8e07ade845202ffd926aafb9b7bfa7423c78ec59b9a9a3125",
+    "Register": "11d869fbfc82cd6d9d7595563c201b9125f6842a6f6331cdc21d31b035f57554",
     "ROM": "fe1a7314a2011b003b405b703f5aa70eeac9066cbb1307148a8251a78ac3fde3",
     "RAM": "8fe81ce4225e908419e6a7047d8e18af0551633b6a5c0608c7873f0c3432e331",
     "RV32I_Decode": "a03d2ab7350cdc463c522083a17e5c77e2e76a34b6f2e4f495893aa438fd4b91",
