@@ -74,7 +74,22 @@ func writeJSON(w http.ResponseWriter, status int, v interface{}) {
 }
 
 // buildYosysScript returns the Yosys synthesis script for the given target.
+//
+// The "import" target stops at the coarse-grain RTL netlist: it runs the
+// generic front-end passes but NOT techmapping, so word-level cells ($add,
+// $mux, $dff, $mem_v2, …) survive for @simten/core's Verilog importer to lift
+// into stdlib components. Every synth* target (including plain "synth") lowers
+// those to gate/tech primitives ($_AND_, LUT4, TRELLIS_FF …), which the
+// importer can't recover into clean source. `hierarchy` (no `flatten`) keeps
+// submodules as separate modules so the importer emits one Circuit per module.
 func buildYosysScript(top, target, netlistPath string) string {
+	if target == "import" {
+		return fmt.Sprintf(
+			"hierarchy -top %s; proc; opt_clean; memory_collect; stat; write_json %s",
+			top, netlistPath,
+		)
+	}
+
 	var synthCmd string
 	switch target {
 	case "ice40":
