@@ -430,7 +430,7 @@ describe('tryEmitFromEval', () => {
 
   it('transpiles sequential Register with eval + onTick', () => {
     // Register has stateKeys — now handled by eval-synth
-    const ctx = makeCtx('Register', { data: 'w_d', we: 'w_we' }, { q: 'w_q' });
+    const ctx = makeCtx('Register', { data: 'w_d', we: 'w_we', rst: 'w_rst' }, { q: 'w_q' });
     const result = tryEmitFromEval(ctx, getCircuitEval);
     expect(result).not.toBeNull();
     const text = result!.lines.join('\n');
