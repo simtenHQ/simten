@@ -6,6 +6,7 @@
  */
 
 import { handleCompile } from './compile';
+import { handleVerilogImport } from './synth';
 import { handleVerify } from './verify';
 
 export async function handleApiRoute(
@@ -20,6 +21,10 @@ export async function handleApiRoute(
 
   if (url.pathname === '/api/verify' && request.method === 'POST') {
     return handleVerify(request, env);
+  }
+
+  if (url.pathname === '/api/verilog-import' && request.method === 'POST') {
+    return handleVerilogImport(request, env);
   }
 
   return null;
