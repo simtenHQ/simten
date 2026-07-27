@@ -12,7 +12,10 @@ interface InputNodeProps {
 
 function NumericInputControl({ data }: { data: NodeData }) {
   const width = data.width ?? 8;
-  const maxValue = (1 << Math.min(width, 31)) - 1;
+  // Use 2**width, not (1 << width): JS `<<` is signed 32-bit, so `1 << 31` is
+  // negative and `1 << 32` wraps to 1 — either way maxValue went bad and clamped
+  // every wide input to 0. Cap at 32 (simten's max bus width) → up to 2^32-1.
+  const maxValue = 2 ** Math.min(width, 32) - 1;
   const currentValue = data.numericValue ?? 0;
   const [isEditing, setIsEditing] = useState(false);
   const [editText, setEditText] = useState('');
