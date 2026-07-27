@@ -32,9 +32,37 @@ ARG OSS_CAD_SUITE_DATE=2026-07-07
 RUN COMPACT=$(echo "$OSS_CAD_SUITE_DATE" | tr -d '-') \
     && curl -fsSL "https://github.com/YosysHQ/oss-cad-suite-build/releases/download/${OSS_CAD_SUITE_DATE}/oss-cad-suite-linux-x64-${COMPACT}.tgz" -o /tmp/oss-cad-suite.tgz \
     && tar -xzf /tmp/oss-cad-suite.tgz -C /opt \
-    && rm /tmp/oss-cad-suite.tgz
+    && rm /tmp/oss-cad-suite.tgz \
+    # --- Slim to the ECP5 flow (yosys + nextpnr-ecp5 + ecppack) --------------
+    # The suite ships the whole OSS EDA ecosystem (~2.5 GB extracted), but this
+    # container only ever runs those three tools (see container_src/main.go).
+    # Pruning the unused ~1.6 GB keeps registry pushes resumable and cold starts
+    # fast. MUST stay in this RUN so the bytes never land in a persisted layer.
+    # Kept on purpose: nextpnr-ecp5 is built with an embedded Python interpreter
+    # and Qt, so lib/python3.11 (+ libpython3.11.so) and libQt5*/libicu* are load
+    # -time requirements even headless; trellis/yosys/ecp5 DBs are required. The
+    # smoke test below fails the build if a future suite layout breaks the flow.
+    && cd /opt/oss-cad-suite \
+    && rm -rf lib/python2.7 lib/ghdl lib/ivl lib/dri lib/python3.11/test \
+    && rm -f  lib/libpython2.7.so* lib/libLLVM* lib/libghdl* lib/libvvp* \
+    && rm -rf share/icebox share/icons share/openFPGALoader share/openocd \
+              share/nextpnr/himbaechel examples include super_prove py3bin \
+    && rm -f  libexec/nextpnr-ice40 libexec/nextpnr-machxo2 libexec/nextpnr-nexus \
+              libexec/surfer libexec/ivl libexec/z3 libexec/cvc4 libexec/cvc5 \
+              libexec/pono libexec/prjoxide libexec/verilator_bin_dbg libexec/aigcexmin
 
 ENV PATH="/opt/oss-cad-suite/bin:$PATH"
+
+# Smoke test: run the real ECP5 flow so an over-aggressive prune (or a future
+# suite version that relocates a database) fails the BUILD instead of shipping a
+# broken image. Cheap; produces a bitstream from a trivial design.
+RUN set -eux \
+    && printf 'module smoke(input a,b,output y); assign y=a&b; endmodule\n' > /tmp/smoke.v \
+    && yosys -q -p 'synth_ecp5 -top smoke -json /tmp/smoke.json' /tmp/smoke.v \
+    && nextpnr-ecp5 --85k --json /tmp/smoke.json --textcfg /tmp/smoke.cfg --timing-allow-fail \
+    && ecppack --input /tmp/smoke.cfg --bit /tmp/smoke.bit \
+    && test -s /tmp/smoke.bit \
+    && rm -f /tmp/smoke.*
 
 # Copy the Go server
 COPY --from=build-server /server /server

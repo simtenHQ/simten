@@ -1,0 +1,59 @@
+name: Deploy container app
+
+# Manual deploy for the Cloudflare Container apps (synth / verifier / compiler).
+#
+# Why this exists: these images are large (the synth image bundles the ECP5
+# toolchain), and pushing them from a laptop through Docker Desktop's VM
+# networking is unreliable — large blob uploads get their connection severed
+# mid-push. A GitHub Actions runner builds the image natively on amd64 (no qemu,
+# fast) and pushes straight to Cloudflare's registry over a datacenter uplink,
+# which is what makes the push reliable. Reuses the same CLOUDFLARE_* repo
+# secrets CI already uses (Settings → Secrets and variables → Actions).
+
+on:
+  workflow_dispatch:
+    inputs:
+      app:
+        description: Which Cloudflare container app to deploy
+        type: choice
+        default: synth
+        options:
+          - synth
+          - verifier
+          - compiler
+
+concurrency:
+  # Never cancel a deploy mid-push; queue instead.
+  group: deploy-${{ github.event.inputs.app }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: wrangler deploy (${{ github.event.inputs.app }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        # Version inferred from `packageManager` in package.json
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Deploy ${{ github.event.inputs.app }}
+        # `wrangler deploy` builds the app's Dockerfile with the runner's native
+        # Docker (preinstalled on ubuntu-latest) and pushes to the Cloudflare
+        # registry. Creds come from repo secrets, not .env/dotenv-cli.
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: pnpm --filter @simten/${{ github.event.inputs.app }} run deploy
