@@ -1,6 +1,6 @@
 {
   "name": "@simten/mcp",
-  "version": "0.8.7",
+  "version": "0.8.8",
   "description": "MCP server for Simten. Live circuit simulation with real-time browser push via WebSocket.",
   "license": "Apache-2.0",
   "author": "Charles Harris",
