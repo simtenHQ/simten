@@ -81,3 +81,7 @@ hardware/ulx3s/.cache/
 # cycle-diff cosim outputs (regenerated on every run)
 hardware/ulx3s/projects/cpu/cycle-diff.log
 hardware/ulx3s/projects/cpu/cycle-diff.vcd
+
+# Verilog-import spike scratch/demo artifacts (local only)
+packages/core/import-demo.mts
+packages/core/*.imported.circuit.ts
