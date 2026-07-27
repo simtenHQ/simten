@@ -11,7 +11,9 @@ interface NumericInputNodeProps {
 export function NumericInputNode({ data, selected }: NumericInputNodeProps) {
   const value = data.numericValue ?? 0;
   const width = data.width ?? 8;
-  const maxValue = (1 << Math.min(width, 31)) - 1;
+  // 2**width, not (1 << width): JS `<<` is signed 32-bit, so `1 << 31` is negative
+  // and `1 << 32` wraps to 1 — clamping every wide input to 0. Cap at 32-bit.
+  const maxValue = 2 ** Math.min(width, 32) - 1;
 
   const [isEditingValue, setIsEditingValue] = useState(false);
   const [editValue, setEditValue] = useState(value.toString());
