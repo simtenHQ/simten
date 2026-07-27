@@ -49,16 +49,19 @@ export const DFlipFlop = circuit(
 );
 
 /**
- * N-bit register — stores data on rising clock edge when write-enable is high.
+ * N-bit register — stores data on the rising clock edge when write-enable is high. Optional synchronous reset (rst): when high, q clears to 0 on the next edge, overriding data/we. Leaving rst unconnected (reads 0) gives a plain no-reset register.
+ *
  * Holds its previous value when `we` is low. The workhorse of synchronous
  * digital logic: program counters, accumulators, pipeline stages, all
  * built from registers.
  *
- * **Inputs:** `data` — `bus(8)`; `we` (write-enable) — `bit`
+ * **Inputs:** `data` — `bus(8)`; `we` (write-enable) — `bit`; `rst` (synchronous
+ * reset to 0, optional) — `bit`
  * **Output:** `q` (stored value) — `bus(8)`
- * **Reset:** on Verilog export, the exporter auto-emits a synchronous
- * active-low `rst_n` port at the module level; when low, `q` snaps to
- * the constructor-time `value` arg (regardless of `we`). In simulation,
+ * **Reset:** the optional `rst` input is a per-register synchronous reset to 0 —
+ * wire a design reset signal to it, or leave it unconnected for a plain
+ * no-reset register. Separately, on Verilog export the exporter auto-emits a
+ * module-level active-low `rst_n` that snaps `q` to the constructor `value`;
  * `sim.reset()` does the same.
  *
  * **Example:** simple accumulator
@@ -78,17 +81,20 @@ export const DFlipFlop = circuit(
 export const Register = circuit(
   'Register',
   ({ width = 8, value = 0 }: { width?: number; value?: number } = {}) => ({
-    inputs: { data: bus(width), we: bit },
+    inputs: { data: bus(width), we: bit, rst: bit },
     outputs: { q: bus(width) },
     state: { value },
     meta: {
       category: 'sequential',
       icon: 'REG',
-      description: 'N-bit register — stores data on rising clock edge when write-enable is high',
+      description:
+        'N-bit register — stores data on the rising clock edge when write-enable is high. Optional synchronous reset (rst): when high, q clears to 0 on the next edge, overriding data/we. Leaving rst unconnected (reads 0) gives a plain no-reset register.',
     },
     eval: ({ value }) => ({ q: value as number }),
-    onTick: ({ data, we, value }) => ({
-      value: we ? (data as number) : (value as number),
+    // rst is a synchronous reset to 0, taking priority over the write-enable.
+    // Unconnected rst reads 0, so existing (no-reset) registers are unchanged.
+    onTick: ({ data, we, rst, value }) => ({
+      value: rst ? 0 : we ? (data as number) : (value as number),
     }),
   }),
 );

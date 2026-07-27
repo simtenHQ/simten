@@ -36,6 +36,7 @@ import {
   LogicNot,
   LogicOr,
   Mux,
+  Not,
   ReduceAnd,
   ReduceOr,
   ReduceXor,
@@ -521,6 +522,9 @@ function moduleShapes(netlist: YosysNetlist): Map<string, ModuleShape> {
     const sequential = Object.values(mod.cells).some(
       (c) =>
         c.type === '$dff' ||
+        c.type === '$adff' ||
+        c.type === '$sdff' ||
+        c.type === '$dffe' ||
         c.type === '$dlatch' ||
         c.type === '$mem_v2' ||
         (netlist.modules[c.type] && shapes.get(c.type)?.sequential),
@@ -597,6 +601,15 @@ function translateModule(
       sourceWidth.set(key(id, 'out'), w);
       (cell.connections.Y ?? []).forEach((b, j) => {
         if (typeof b === 'number') drivers.set(b, { nodeId: id, portName: 'out', index: j });
+      });
+      continue;
+    }
+    if (cell.type === '$adff' || cell.type === '$sdff' || cell.type === '$dffe') {
+      // reset/enable flip-flops lift to a Register; Q is driven by the reg's q.
+      const w = param(cell, 'WIDTH');
+      sourceWidth.set(key(id, 'q'), w);
+      (cell.connections.Q ?? []).forEach((b, j) => {
+        if (typeof b === 'number') drivers.set(b, { nodeId: id, portName: 'q', index: j });
       });
       continue;
     }
@@ -761,6 +774,56 @@ function translateModule(
       for (let i = 0; i < sWidth; i++) {
         const bi = resolveBits(lane(cell.connections.B, i, w));
         connect(bi.nodeId, bi.portName, cid, `b_${i}`, portTypeOf(w));
+      }
+      continue;
+    }
+
+    if (cell.type === '$adff' || cell.type === '$sdff' || cell.type === '$dffe') {
+      // Reset/enable flip-flops → stdlib Register. CLK is dropped (single sim
+      // clock). $adff (async) and $sdff (sync) both map to Register's synchronous
+      // rst: in simten's cycle-accurate model an async reset held across an edge
+      // is indistinguishable from a sync one. $dffe's clock-enable maps to `we`.
+      const w = param(cell, 'WIDTH');
+      pushBuilt(cid, Register({ width: w }), { width: w });
+      const d = resolveBits(cell.connections.D);
+      connect(d.nodeId, d.portName, cid, 'data', portTypeOf(w));
+
+      // Wire a 1-bit control net (rst/we) to the register, inverting through a
+      // Not gate when the source is active-low (Register's rst/we are active-high).
+      const wireCtrl = (bits: YosysBit[], activeHigh: number, dstPort: string): void => {
+        const src = resolveBits(bits);
+        if (activeHigh) {
+          connect(src.nodeId, src.portName, cid, dstPort, bitType());
+        } else {
+          const kn = `_n${helperId++}`;
+          pushBuilt(kn, Not, {});
+          connect(src.nodeId, src.portName, kn, 'in', bitType());
+          connect(kn, 'out', cid, dstPort, bitType());
+        }
+      };
+
+      if (cell.type === '$dffe') {
+        // clock-enable → we (no reset; unconnected rst reads 0)
+        wireCtrl(cell.connections.EN, param(cell, 'EN_POLARITY'), 'we');
+      } else {
+        // $adff/$sdff: latch every edge (we tied 1); reset folded into rst.
+        const kWe = `_k${helperId++}`;
+        pushBuilt(kWe, Constant({ width: 1, value: 1 }), { width: 1, value: 1 });
+        connect(kWe, 'out', cid, 'we', bitType());
+        const async = cell.type === '$adff';
+        const resetValue = param(cell, async ? 'ARST_VALUE' : 'SRST_VALUE');
+        if (resetValue !== 0) {
+          // Register's rst clears to 0; a non-zero reset target needs a mux
+          // decomposition we don't emit yet.
+          throw new Error(
+            `${name}: ${cell.type} with non-zero reset value (${resetValue}) is not supported`,
+          );
+        }
+        wireCtrl(
+          cell.connections[async ? 'ARST' : 'SRST'],
+          param(cell, async ? 'ARST_POLARITY' : 'SRST_POLARITY'),
+          'rst',
+        );
       }
       continue;
     }
