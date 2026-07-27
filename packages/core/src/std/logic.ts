@@ -6,7 +6,7 @@
  * for these — the eval functions here are fallbacks and documentation.
  */
 
-import { bit } from '../circuit/bit-bus.js';
+import { bit, bus } from '../circuit/bit-bus.js';
 import { circuit } from '../circuit/circuit.js';
 
 /**
@@ -289,3 +289,126 @@ export const Buffer = circuit('Buffer', {
   },
   eval: ({ in: a }) => ({ out: a }),
 });
+
+// ============================================================================
+// Bus-width logical & reduction operators (bus → bit) — the Verilog `&&`, `||`,
+// `!`, `|a`, `&a`, `^a` an author writes directly. The importer lifts
+// $logic_and/$logic_or/$logic_not and $reduce_* onto these (authoring stdlib).
+// ============================================================================
+
+const maskOf = (w: number) => (w >= 32 ? 0xffffffff : (1 << w) - 1) >>> 0;
+
+/**
+ * Logical AND (&&) — nonzero operands. `out = (a != 0) && (b != 0)`, a single
+ * bit. Operand widths are independent.
+ *
+ * **Inputs:** `a` — `bus(aWidth)`, `b` — `bus(bWidth)`  **Output:** `out` — `bit`
+ */
+export const LogicAnd = circuit(
+  'LogicAnd',
+  ({ aWidth = 8, bWidth = 8 }: { aWidth?: number; bWidth?: number } = {}) => ({
+    inputs: { a: bus(aWidth), b: bus(bWidth) },
+    outputs: { out: bit },
+    meta: {
+      category: 'logic-gates',
+      icon: '&&',
+      description: 'Logical AND (&&) — nonzero operands',
+    },
+    eval: ({ a, b }) => ({ out: (a as number) >>> 0 && (b as number) >>> 0 ? 1 : 0 }),
+  }),
+);
+
+/**
+ * Logical OR (||) — nonzero operands. `out = (a != 0) || (b != 0)`, a single bit.
+ *
+ * **Inputs:** `a` — `bus(aWidth)`, `b` — `bus(bWidth)`  **Output:** `out` — `bit`
+ */
+export const LogicOr = circuit(
+  'LogicOr',
+  ({ aWidth = 8, bWidth = 8 }: { aWidth?: number; bWidth?: number } = {}) => ({
+    inputs: { a: bus(aWidth), b: bus(bWidth) },
+    outputs: { out: bit },
+    meta: {
+      category: 'logic-gates',
+      icon: '||',
+      description: 'Logical OR (||) — nonzero operands',
+    },
+    eval: ({ a, b }) => ({ out: (a as number) >>> 0 || (b as number) >>> 0 ? 1 : 0 }),
+  }),
+);
+
+/**
+ * Logical NOT (!) — 1 iff input is zero. `out = (a == 0)`, a single bit.
+ *
+ * **Input:** `a` — `bus(width)`  **Output:** `out` — `bit`
+ */
+export const LogicNot = circuit('LogicNot', ({ width = 8 }: { width?: number } = {}) => ({
+  inputs: { a: bus(width) },
+  outputs: { out: bit },
+  meta: {
+    category: 'logic-gates',
+    icon: '!',
+    description: 'Logical NOT (!) — 1 iff input is zero',
+  },
+  eval: ({ a }) => ({ out: (a as number) >>> 0 === 0 ? 1 : 0 }),
+}));
+
+/**
+ * Reduction OR (|a) — 1 iff any bit set. `out = |a`, a single bit.
+ *
+ * **Input:** `a` — `bus(width)`  **Output:** `out` — `bit`
+ */
+export const ReduceOr = circuit('ReduceOr', ({ width = 8 }: { width?: number } = {}) => ({
+  inputs: { a: bus(width) },
+  outputs: { out: bit },
+  meta: {
+    category: 'bus-operations',
+    icon: '|a',
+    description: 'Reduction OR (|a) — 1 iff any bit set',
+  },
+  eval: ({ a }) => ({ out: (a as number) >>> 0 !== 0 ? 1 : 0 }),
+}));
+
+/**
+ * Reduction AND (&a) — 1 iff all bits set. `out = &a`, a single bit.
+ *
+ * **Input:** `a` — `bus(width)`  **Output:** `out` — `bit`
+ */
+export const ReduceAnd = circuit('ReduceAnd', ({ width = 8 }: { width?: number } = {}) => ({
+  inputs: { a: bus(width) },
+  outputs: { out: bit },
+  meta: {
+    category: 'bus-operations',
+    icon: '&a',
+    description: 'Reduction AND (&a) — 1 iff all bits set',
+  },
+  eval: ({ a, width: w = width }) => {
+    const m = maskOf(w as number);
+    // `& m` is a signed 32-bit op; coerce back to unsigned before comparing.
+    return { out: (((a as number) >>> 0) & m) >>> 0 === m ? 1 : 0 };
+  },
+}));
+
+/**
+ * Reduction XOR (^a) — parity of all bits. `out = ^a`, a single bit.
+ *
+ * **Input:** `a` — `bus(width)`  **Output:** `out` — `bit`
+ */
+export const ReduceXor = circuit('ReduceXor', ({ width = 8 }: { width?: number } = {}) => ({
+  inputs: { a: bus(width) },
+  outputs: { out: bit },
+  meta: {
+    category: 'bus-operations',
+    icon: '^a',
+    description: 'Reduction XOR (^a) — parity of all bits',
+  },
+  eval: ({ a }) => {
+    let x = (a as number) >>> 0;
+    let p = 0;
+    while (x) {
+      p ^= x & 1;
+      x >>>= 1;
+    }
+    return { out: p };
+  },
+}));

@@ -1,6 +1,6 @@
 {
   "note": "Pre-migration Verilog hashes. See packages/core/src/verilog/__tests__/golden-hashes.test.ts.",
-  "capturedAt": "2026-05-21T07:29:33.969Z",
+  "capturedAt": "2026-07-22T22:20:53.289Z",
   "hashes": {
     "And": "adf38b97fba788dc2eab31d728191216311314927f43550f416849cea9ceebdd",
     "Or": "85b24de96f3cda0f9a4907d820dbcd4f94d4cc6a5969a54b721d9e2e1e44ef53",
@@ -9,7 +9,7 @@
     "Xor": "a143cddedd08a6699949534871f6af9d24d061df08fb8ae00503b7a09c8d9fba",
     "Adder": "8ce2f150b42e227a61b1c649d08dfc621b29881a7bf5bf20e07b13e3a69434e2",
     "Subtractor": "a377f7703aab0aa7777c06d14298272eb90d23af308d3472b990266dc4a36ead",
-    "Comparator": "25aa3dbb5e83f1422888b367f1cbab849fa0e8f59c0aaf05dba9cf725cd94637",
+    "Comparator": "8737917d0b8d6923d4a1277eeaaf13131a9af34d12d62f14518b6c7d4bc17a8b",
     "Multiplier": "e1d84974e3ff153b9f749032e63c3c1c9520ebf16d903c4032f424536b371df0",
     "Mux": "7058883795ee0f6c025ebf8ddd0bedabb4af72837d6e80e3573c69796fa14fb9",
     "Decoder": "adf52c6c920be0de6b4b2137f0031603842bc0fa95935a16d7ce2931983153e7",

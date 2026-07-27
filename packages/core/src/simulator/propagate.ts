@@ -302,13 +302,6 @@ export function updateSequentialStates(
       }
     }
 
-    // Add arguments
-    if (node.arguments) {
-      for (const [key, value] of Object.entries(node.arguments)) {
-        inputs.set(`__${key}`, value as BitValue | BusValue);
-      }
-    }
-
     // Build clock edges
     const clockEdges: ClockEdges = {};
     for (const clockPort of node.clocks) {
@@ -322,6 +315,13 @@ export function updateSequentialStates(
     // Update state via onTick
     const currentState = seqState.currentState[nodeIdx];
     const obj: Record<string, any> = {};
+    // Node arguments first (lowest precedence), under their plain names — this
+    // matches the eval path (eval-bridge.ts) so onTick sees construction params
+    // like `width`/`value` the same way eval does. Ports and state below
+    // override on any name collision.
+    if (node.arguments) {
+      for (const [key, value] of Object.entries(node.arguments)) obj[key] = value;
+    }
     for (const [k, v] of inputs) obj[k] = v;
     if (
       currentState != null &&

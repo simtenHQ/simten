@@ -927,7 +927,7 @@ const Rule30 = circuit('Rule30', {
 const ALU = circuit('ALU', {
   inputs: { a: bus(8), b: bus(8), op0: bit, op1: bit, op2: bit },
   outputs: { result: bus(8), zero: bit, carry: bit, negative: bit },
-  nodes: { gnd: Constant({ value: 0 }), add: Adder(), sub: Subtractor(), band: BusAnd(), bor: BusOr(), bxor: BusXor(), bnot: BusNot, shl: LeftShifter(), shr: RightShifter(), m01: Mux({ width: 8 }), m23: Mux({ width: 8 }), m45: Mux({ width: 8 }), m67: Mux({ width: 8 }), m03: Mux({ width: 8 }), m47: Mux({ width: 8 }), mfinal: Mux({ width: 8 }), split_r: Splitter8to8, or01: Or, or23: Or, or45: Or, or67: Or, or_lo: Or, or_hi: Or, or_all: Or, inv_z: Not },
+  nodes: { gnd: Constant({ value: 0 }), add: Adder(), sub: Subtractor(), band: BusAnd(), bor: BusOr(), bxor: BusXor(), bnot: BusNot(), shl: LeftShifter(), shr: RightShifter(), m01: Mux({ width: 8 }), m23: Mux({ width: 8 }), m45: Mux({ width: 8 }), m67: Mux({ width: 8 }), m03: Mux({ width: 8 }), m47: Mux({ width: 8 }), mfinal: Mux({ width: 8 }), split_r: Splitter8to8, or01: Or, or23: Or, or45: Or, or67: Or, or_lo: Or, or_hi: Or, or_all: Or, inv_z: Not },
   connect: ({ inputs, outputs, nodes: { gnd, add, sub, band, bor, bxor, bnot, shl, shr, m01, m23, m45, m67, m03, m47, mfinal, split_r, or01, or23, or45, or67, or_lo, or_hi, or_all, inv_z } }) => [
     inputs.a.to(add.a, sub.a, band.a, bor.a, bxor.a, bnot.in, shl.value, shr.value),
     inputs.b.to(add.b, sub.b, band.b, bor.b, bxor.b, shl.shift, shr.shift),

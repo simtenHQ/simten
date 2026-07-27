@@ -23,6 +23,7 @@
  */
 
 import { transform } from 'sucrase';
+import { Dlatch, Mem, Pmux } from '../rtl/index.js';
 import * as std from '../std/index.js';
 import type { Circuit, CircuitLibrary } from '../types/circuit.js';
 import { bit, bus, mem, reg } from './bit-bus.js';
@@ -71,6 +72,14 @@ function buildScope(): { names: string[]; values: unknown[] } {
       scope.set(exportName, value);
     }
   }
+
+  // Import-namespace factories — shape-named primitives that fall out of yosys
+  // elaboration (a `case` → Pmux, inferred latch → Dlatch, `$mem_v2` → Mem).
+  // Injected so generated source resolves them, but kept out of STDLIB_CIRCUITS
+  // (so they don't appear in the docs component list).
+  scope.set('Pmux', Pmux);
+  scope.set('Mem', Mem);
+  scope.set('Dlatch', Dlatch);
 
   return {
     names: Array.from(scope.keys()),

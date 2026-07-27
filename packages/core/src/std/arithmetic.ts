@@ -141,6 +141,32 @@ export const Multiplier = circuit('Multiplier', {
 });
 
 /**
+ * Wrapping multiplier (low width bits) — `out = (a * b) mod 2^width`, the
+ * product of a Verilog `a * b` assigned to a `width`-bit result. Uses `Math.imul`
+ * so the low 32 bits are exact even when the true product exceeds 2^53. Signed
+ * and unsigned agree on the low bits, so operands are extended per their own
+ * signedness upstream (the importer's operand adapter) and this is sign-agnostic.
+ *
+ * **Inputs:** `a`, `b` — `bus(width)`  **Output:** `out` — `bus(width)`
+ */
+export const WrappingMultiplier = circuit(
+  'WrappingMultiplier',
+  ({ width = 8 }: { width?: number } = {}) => ({
+    inputs: { a: bus(width), b: bus(width) },
+    outputs: { out: bus(width) },
+    meta: {
+      category: 'arithmetic',
+      icon: '×↩',
+      description: 'Wrapping multiplier (low width bits)',
+    },
+    eval: ({ a, b, width: w = width }) => {
+      const m = (w as number) >= 32 ? 0xffffffff : (1 << (w as number)) - 1;
+      return { out: (Math.imul((a as number) >>> 0, (b as number) >>> 0) >>> 0) & m };
+    },
+  }),
+);
+
+/**
  * Unsigned comparator. Emits three one-hot flags relating `a` and `b`.
  * Exactly one of `eq`/`lt`/`gt` is high at any time.
  *
@@ -164,14 +190,21 @@ export const Multiplier = circuit('Multiplier', {
  */
 export const Comparator = circuit('Comparator', ({ width = 8 }: { width?: number } = {}) => ({
   inputs: { a: bus(width), b: bus(width) },
-  outputs: { eq: bit, lt: bit, gt: bit },
+  outputs: { eq: bit, ne: bit, lt: bit, le: bit, gt: bit, ge: bit },
   meta: { category: 'arithmetic', icon: '⋚', description: 'Unsigned comparator' },
   // Unsigned: coerce both operands so the comparison treats them as unsigned
   // 32-bit values regardless of how they were stored in the typed-array.
   eval: ({ a, b }) => {
     const au = (a as number) >>> 0;
     const bu = (b as number) >>> 0;
-    return { eq: au === bu ? 1 : 0, lt: au < bu ? 1 : 0, gt: au > bu ? 1 : 0 };
+    return {
+      eq: au === bu ? 1 : 0,
+      ne: au !== bu ? 1 : 0,
+      lt: au < bu ? 1 : 0,
+      le: au <= bu ? 1 : 0,
+      gt: au > bu ? 1 : 0,
+      ge: au >= bu ? 1 : 0,
+    };
   },
 }));
 
@@ -242,6 +275,34 @@ export const RightShifter = circuit('RightShifter', ({ width = 8 }: { width?: nu
 }));
 
 /**
+ * Arithmetic (signed) right shifter. Computes `$signed(value) >>> shift`,
+ * replicating the sign bit into the vacated top bits — Verilog `>>>` on a
+ * signed operand. Shifts ≥ width saturate to all-0 (value ≥ 0) or all-1
+ * (value < 0).
+ *
+ * **Inputs:** `value`, `shift` — `bus(width)`  **Output:** `result` — `bus(width)`
+ */
+export const SignedRightShifter = circuit(
+  'SignedRightShifter',
+  ({ width = 8 }: { width?: number } = {}) => ({
+    inputs: { value: bus(width), shift: bus(width) },
+    outputs: { result: bus(width) },
+    meta: { category: 'arithmetic', icon: '≫±', description: 'Arithmetic (signed) right shifter' },
+    eval: ({ value, shift, width: w = width }) => {
+      const wn = w as number;
+      const mask = wn >= 32 ? 0xffffffff : (1 << wn) - 1;
+      const half = 2 ** (wn - 1);
+      const u = (value as number) >>> 0;
+      const signed = u >= half ? u - 2 ** wn : u; // interpret as two's-complement
+      const sn = shift as number;
+      // arithmetic shift; saturates to the sign fill once shift ≥ width
+      const shifted = sn >= wn ? (signed < 0 ? -1 : 0) : Math.floor(signed / 2 ** sn);
+      return { result: (shifted & mask) >>> 0 };
+    },
+  }),
+);
+
+/**
  * Signed adder with overflow detection. Treats inputs as 8-bit two's-complement
  * (range -128..127). `overflow` flags signed overflow — when the result's
  * sign bit doesn't match what it should given the operand signs.
@@ -306,26 +367,37 @@ export const SignedAdder = circuit('SignedAdder', {
  * })
  * ```
  */
-export const SignedComparator = circuit('SignedComparator', {
-  inputs: { a: bus(8), b: bus(8) },
-  outputs: { eq: bit, lt: bit, gt: bit, lte: bit, gte: bit },
-  meta: { category: 'arithmetic', icon: '±⋚', description: 'Signed comparator' },
-  eval: ({ a, b }) => {
-    const signBit = 0x80;
-    const maxValue = 0x100;
-    const an = (a as number) & 0xff;
-    const bn = (b as number) & 0xff;
-    const aSigned = an & signBit ? an - maxValue : an;
-    const bSigned = bn & signBit ? bn - maxValue : bn;
-    return {
-      eq: aSigned === bSigned ? 1 : 0,
-      lt: aSigned < bSigned ? 1 : 0,
-      gt: aSigned > bSigned ? 1 : 0,
-      lte: aSigned <= bSigned ? 1 : 0,
-      gte: aSigned >= bSigned ? 1 : 0,
-    };
-  },
-});
+export const SignedComparator = circuit(
+  'SignedComparator',
+  ({ width = 8 }: { width?: number } = {}) => ({
+    inputs: { a: bus(width), b: bus(width) },
+    // eq/ne/lt/le/gt/ge match Comparator; lte/gte kept as back-compat aliases.
+    outputs: { eq: bit, ne: bit, lt: bit, le: bit, gt: bit, ge: bit, lte: bit, gte: bit },
+    meta: { category: 'arithmetic', icon: '±⋚', description: 'Signed comparator' },
+    // width read from the bag so per-instance widths sign-extend correctly.
+    eval: ({ a, b, width: w = width }) => {
+      const wn = w as number;
+      const half = 2 ** (wn - 1);
+      const whole = 2 ** wn;
+      const sgn = (v: number) => {
+        const u = wn >= 32 ? v >>> 0 : (v >>> 0) & (whole - 1);
+        return u >= half ? u - whole : u;
+      };
+      const as = sgn(a as number);
+      const bs = sgn(b as number);
+      return {
+        eq: as === bs ? 1 : 0,
+        ne: as !== bs ? 1 : 0,
+        lt: as < bs ? 1 : 0,
+        le: as <= bs ? 1 : 0,
+        gt: as > bs ? 1 : 0,
+        ge: as >= bs ? 1 : 0,
+        lte: as <= bs ? 1 : 0,
+        gte: as >= bs ? 1 : 0,
+      };
+    },
+  }),
+);
 
 /**
  * Signed multiplier. Treats both inputs as 8-bit two's-complement values
@@ -431,7 +503,7 @@ export const BusOr = circuit('BusOr', ({ width = 8 }: { width?: number } = {}) =
  * circuit('Invert', {
  *   inputs:  { x: bus(8) },
  *   outputs: { y: bus(8) },
- *   nodes:   { inv: BusNot },
+ *   nodes:   { inv: BusNot() },
  *   connect: ({ inputs, outputs, nodes: { inv } }) => [
  *     inputs.x.to(inv.in),
  *     inv.out.to(outputs.y),
@@ -439,12 +511,16 @@ export const BusOr = circuit('BusOr', ({ width = 8 }: { width?: number } = {}) =
  * })
  * ```
  */
-export const BusNot = circuit('BusNot', {
-  inputs: { in: bus(8) },
-  outputs: { out: bus(8) },
+export const BusNot = circuit('BusNot', ({ width = 8 }: { width?: number } = {}) => ({
+  inputs: { in: bus(width) },
+  outputs: { out: bus(width) },
   meta: { category: 'bus-operations', icon: '¬8', description: 'Bitwise NOT on bus' },
-  eval: ({ in: a }) => ({ out: ~a & 0xff }),
-});
+  // width read from the bag so per-instance widths mask correctly (default 8).
+  eval: ({ in: a, width: w = width }) => {
+    const m = ((w as number) >= 32 ? 0xffffffff : (1 << (w as number)) - 1) >>> 0;
+    return { out: (~(a as number) >>> 0) & m };
+  },
+}));
 
 /**
  * Bitwise XOR on buses. Performs `a ^ b` per bit position. Useful for
@@ -472,4 +548,20 @@ export const BusXor = circuit('BusXor', ({ width = 8 }: { width?: number } = {})
   outputs: { out: bus(width) },
   meta: { category: 'bus-operations', icon: '⊕8', description: 'Bitwise XOR on buses' },
   eval: ({ a, b }) => ({ out: (a ^ b) >>> 0 }),
+}));
+
+/**
+ * Bitwise XNOR on buses — `out = ~(a ^ b)`, 1 where the bits match. The
+ * complement of BusXor; masked to `width`.
+ *
+ * **Inputs:** `a`, `b` — `bus(width)`  **Output:** `out` — `bus(width)`
+ */
+export const BusXnor = circuit('BusXnor', ({ width = 8 }: { width?: number } = {}) => ({
+  inputs: { a: bus(width), b: bus(width) },
+  outputs: { out: bus(width) },
+  meta: { category: 'bus-operations', icon: '⊙8', description: 'Bitwise XNOR on buses' },
+  eval: ({ a, b, width: w = width }) => {
+    const m = ((w as number) >= 32 ? 0xffffffff : (1 << (w as number)) - 1) >>> 0;
+    return { out: ((~((a as number) ^ (b as number)) >>> 0) & m) >>> 0 };
+  },
 }));
