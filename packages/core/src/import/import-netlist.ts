@@ -30,20 +30,25 @@ import {
   Comparator,
   Concat,
   Constant,
+  Divider,
   DynamicSlice,
   LeftShifter,
   LogicAnd,
   LogicNot,
   LogicOr,
+  Modulo,
   Mux,
   Not,
   ReduceAnd,
   ReduceOr,
+  ReduceXnor,
   ReduceXor,
   Register,
   RightShifter,
   SignExtend,
   SignedComparator,
+  SignedDivider,
+  SignedModulo,
   SignedRightShifter,
   Slice,
   Subtractor,
@@ -255,6 +260,7 @@ const LIFT: Record<string, LiftRule[]> = {
   $reduce_bool: un((c) => ReduceOr({ width: param(c, 'A_WIDTH') })),
   $reduce_and: un((c) => ReduceAnd({ width: param(c, 'A_WIDTH') })),
   $reduce_xor: un((c) => ReduceXor({ width: param(c, 'A_WIDTH') })),
+  $reduce_xnor: un((c) => ReduceXnor({ width: param(c, 'A_WIDTH') })),
 
   // logical → stdlib bus→bit
   $logic_and: bin((c) => LogicAnd({ aWidth: param(c, 'A_WIDTH'), bWidth: param(c, 'B_WIDTH') })),
@@ -265,6 +271,31 @@ const LIFT: Record<string, LiftRule[]> = {
   $mul: [
     {
       comp: (c) => WrappingMultiplier({ width: param(c, 'Y_WIDTH') }),
+      inMap: { A: 'a', B: 'b' },
+      outMap: { Y: 'out' },
+      adaptOperands: true,
+    },
+  ],
+  // $div / $mod → divider/modulo at Y_WIDTH (signed iff both operands signed).
+  // yosys computes arithmetic at Y_WIDTH ≥ operand widths, so operand adaptation
+  // only zero/sign-extends (value-preserving) — safe for divide/remainder.
+  $div: [
+    {
+      comp: (c) =>
+        param(c, 'A_SIGNED') && param(c, 'B_SIGNED')
+          ? SignedDivider({ width: param(c, 'Y_WIDTH') })
+          : Divider({ width: param(c, 'Y_WIDTH') }),
+      inMap: { A: 'a', B: 'b' },
+      outMap: { Y: 'out' },
+      adaptOperands: true,
+    },
+  ],
+  $mod: [
+    {
+      comp: (c) =>
+        param(c, 'A_SIGNED') && param(c, 'B_SIGNED')
+          ? SignedModulo({ width: param(c, 'Y_WIDTH') })
+          : Modulo({ width: param(c, 'Y_WIDTH') }),
       inMap: { A: 'a', B: 'b' },
       outMap: { Y: 'out' },
       adaptOperands: true,
