@@ -102,10 +102,23 @@ export async function handleVerilogImport(
   // an `unsupported` flag the UI can special-case.
   try {
     const netlist = JSON.parse(synthResult.netlist) as YosysNetlist;
-    const { top, library } = importNetlist(netlist, body.top);
+    const { top, library, warnings } = importNetlist(netlist, body.top);
     const deps = [...library.values()].filter((c) => c.name !== top.name);
     const source = circuitToSource(buildFromIR(top, deps));
-    return Response.json({ success: true, source, stats: synthResult.stats });
+    // Non-fatal notes: the importer's warnings (e.g. undriven nets) plus yosys's
+    // own warnings from the synth log (e.g. implicit/undeclared wires). Strip the
+    // per-line source location so repeats collapse, dedupe, and cap the list.
+    const yosysWarnings = (synthResult.log ?? '')
+      .split('\n')
+      .filter((l) => /Warning:/i.test(l))
+      .map((l) => l.trim().replace(/\s+at\s+\S+:\d[\d.-]*\s*$/, ''));
+    const allWarnings = [...new Set([...warnings, ...yosysWarnings])].slice(0, 12);
+    return Response.json({
+      success: true,
+      source,
+      stats: synthResult.stats,
+      warnings: allWarnings,
+    });
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     return Response.json(

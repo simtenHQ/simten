@@ -36,6 +36,7 @@ function detectModules(src: string): string[] {
 type Status =
   | { kind: 'idle' }
   | { kind: 'loading' }
+  | { kind: 'warned'; warnings: string[] }
   | { kind: 'error'; message: string; unsupported?: boolean };
 
 const PLACEHOLDER = `module adder8(input [7:0] a, input [7:0] b, output [7:0] y);
@@ -76,6 +77,7 @@ export function VerilogImportSheet({ onImport }: { onImport: (source: string) =>
         source?: string;
         error?: string;
         unsupported?: boolean;
+        warnings?: string[];
       };
       if (!resp.ok || !data.success || !data.source) {
         setStatus({
@@ -88,8 +90,14 @@ export function VerilogImportSheet({ onImport }: { onImport: (source: string) =>
       onImport(data.source);
       setVerilog('');
       topEdited.current = false;
-      setStatus({ kind: 'idle' });
-      setOpen(false);
+      // Import succeeded. If there were non-fatal notes, keep the sheet open so
+      // the user can read them; otherwise close.
+      if (data.warnings && data.warnings.length > 0) {
+        setStatus({ kind: 'warned', warnings: data.warnings });
+      } else {
+        setStatus({ kind: 'idle' });
+        setOpen(false);
+      }
     } catch (e) {
       setStatus({ kind: 'error', message: e instanceof Error ? e.message : 'Network error' });
     }
@@ -148,6 +156,21 @@ export function VerilogImportSheet({ onImport }: { onImport: (source: string) =>
                 or clock-enable). Try a simpler module for now.
               </p>
             )}
+          </div>
+        )}
+
+        {status.kind === 'warned' && (
+          <div className="rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-xs text-amber-700 dark:text-amber-400">
+            <p className="font-medium">Imported with warnings:</p>
+            <ul className="mt-1 list-disc space-y-0.5 pl-4">
+              {status.warnings.map((w) => (
+                <li key={w}>{w}</li>
+              ))}
+            </ul>
+            <p className="mt-1.5 text-muted-foreground">
+              The source is in the editor — these are usually undeclared or misspelled signals in
+              the Verilog.
+            </p>
           </div>
         )}
 
