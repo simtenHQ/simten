@@ -541,6 +541,7 @@ function translateModule(
   netlist: YosysNetlist,
   libDeps: Map<string, Circuit>,
   moduleNameOf: (raw: string) => string,
+  warnings: string[],
 ): Circuit {
   const nodes: Node[] = [];
   const connections: Connection[] = [];
@@ -629,8 +630,18 @@ function translateModule(
   }
   const driverOf = (net: number): BitDriver => {
     const d = drivers.get(net);
-    if (!d) throw new Error(`${name}: net ${net} has no driver`);
-    return d;
+    if (d) return d;
+    // Undriven net: tie to 0 and continue rather than hard-failing. This is
+    // simten's 2-state analog of how yosys/iverilog tolerate an undriven wire
+    // (x/z) — usually an unassigned or misspelled signal in the source. Register
+    // the tie so repeat reads reuse it (and the warning fires once per net).
+    const id = `_u${helperId++}`;
+    pushBuilt(id, Constant({ width: 1, value: 0 }), { width: 1, value: 0 });
+    const tie: BitDriver = { nodeId: id, portName: 'out', index: 0 };
+    drivers.set(net, tie);
+    sourceWidth.set(key(id, 'out'), 1);
+    warnings.push(`${name}: an undriven net was tied to 0 (an unassigned or misspelled signal)`);
+    return tie;
   };
 
   // --- resolve a bit vector to a single {nodeId, portName} source -------
@@ -926,6 +937,8 @@ export interface ImportResult {
   top: Circuit;
   /** Every module circuit + every stdlib/rtl dependency circuit, by name. */
   library: Map<string, Circuit>;
+  /** Non-fatal notes about the import (e.g. undriven nets tied to 0). */
+  warnings: string[];
 }
 
 /**
@@ -969,11 +982,12 @@ export function importNetlist(netlist: YosysNetlist, topName?: string): ImportRe
   const shapes = moduleShapes(netlist);
   const moduleNameOf = makeModuleNameSanitizer(netlist);
   const library = new Map<string, Circuit>();
+  const warnings: string[] = [];
 
   for (const [name, mod] of Object.entries(netlist.modules)) {
     library.set(
       moduleNameOf(name),
-      translateModule(name, mod, shapes, netlist, library, moduleNameOf),
+      translateModule(name, mod, shapes, netlist, library, moduleNameOf, warnings),
     );
   }
 
@@ -990,5 +1004,5 @@ export function importNetlist(netlist: YosysNetlist, topName?: string): ImportRe
     top = roots[0];
   }
 
-  return { top: library.get(moduleNameOf(top))!, library };
+  return { top: library.get(moduleNameOf(top))!, library, warnings: [...new Set(warnings)] };
 }
