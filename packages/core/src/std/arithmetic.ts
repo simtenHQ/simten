@@ -167,6 +167,106 @@ export const WrappingMultiplier = circuit(
 );
 
 /**
+ * Unsigned integer divider (a / b) — `out = floor(a / b)`, truncated to `width` bits.
+ * Division by zero is undefined in Verilog; this returns all-ones (mask), a
+ * common hardware convention — testbenches should treat `b == 0` as don't-care.
+ *
+ * **Inputs:** `a`, `b` — `bus(width)`  **Output:** `out` — `bus(width)`
+ */
+export const Divider = circuit('Divider', ({ width = 8 }: { width?: number } = {}) => ({
+  inputs: { a: bus(width), b: bus(width) },
+  outputs: { out: bus(width) },
+  meta: { category: 'arithmetic', icon: '÷', description: 'Unsigned integer divider (a / b)' },
+  eval: ({ a, b, width: w = width }) => {
+    const m = (w as number) >= 32 ? 0xffffffff : (1 << (w as number)) - 1;
+    const bv = (b as number) >>> 0;
+    const out = bv === 0 ? m : Math.floor(((a as number) >>> 0) / bv);
+    return { out: (out >>> 0) & m };
+  },
+}));
+
+/**
+ * Unsigned integer remainder (a % b) — `out = a % b`, truncated to `width` bits. Modulo
+ * by zero is undefined in Verilog; this returns the dividend `a` — testbenches
+ * should treat `b == 0` as don't-care.
+ *
+ * **Inputs:** `a`, `b` — `bus(width)`  **Output:** `out` — `bus(width)`
+ */
+export const Modulo = circuit('Modulo', ({ width = 8 }: { width?: number } = {}) => ({
+  inputs: { a: bus(width), b: bus(width) },
+  outputs: { out: bus(width) },
+  meta: { category: 'arithmetic', icon: '%', description: 'Unsigned integer remainder (a % b)' },
+  eval: ({ a, b, width: w = width }) => {
+    const m = (w as number) >= 32 ? 0xffffffff : (1 << (w as number)) - 1;
+    const av = (a as number) >>> 0;
+    const bv = (b as number) >>> 0;
+    return { out: (bv === 0 ? av : av % bv) & m };
+  },
+}));
+
+/**
+ * Signed integer divider (a / b, truncates toward zero) — `out = trunc(a / b)`, Verilog signed semantics
+ * (truncates toward zero: `-7 / 2 = -3`). Operands and result are two's
+ * complement over `width` bits. Division by zero returns all-ones — treat as
+ * don't-care.
+ *
+ * **Inputs:** `a`, `b` — `bus(width)`  **Output:** `out` — `bus(width)`
+ */
+export const SignedDivider = circuit('SignedDivider', ({ width = 8 }: { width?: number } = {}) => ({
+  inputs: { a: bus(width), b: bus(width) },
+  outputs: { out: bus(width) },
+  meta: {
+    category: 'arithmetic',
+    icon: '÷±',
+    description: 'Signed integer divider (a / b, truncates toward zero)',
+  },
+  eval: ({ a, b, width: w = width }) => {
+    // Sign interpretation inlined (no named inner fn) so the eval survives the
+    // editor sandbox's new Function(fn.toString()) rebuild — a named arrow gets
+    // wrapped in esbuild's __name(), which isn't defined there.
+    const wn = w as number;
+    const m = wn >= 32 ? 0xffffffff : (1 << wn) - 1;
+    const half = 2 ** (wn - 1);
+    const full = 2 ** wn;
+    const ua = ((a as number) >>> 0) & m;
+    const ub = ((b as number) >>> 0) & m;
+    const sa = ua >= half ? ua - full : ua;
+    const sb = ub >= half ? ub - full : ub;
+    const out = sb === 0 ? m : Math.trunc(sa / sb);
+    return { out: (out >>> 0) & m };
+  },
+}));
+
+/**
+ * Signed integer remainder (a % b, sign of dividend) — `out = a % b`, Verilog signed semantics (the
+ * result takes the sign of the dividend: `-7 % 2 = -1`). Two's complement over
+ * `width` bits. Modulo by zero returns the dividend — treat as don't-care.
+ *
+ * **Inputs:** `a`, `b` — `bus(width)`  **Output:** `out` — `bus(width)`
+ */
+export const SignedModulo = circuit('SignedModulo', ({ width = 8 }: { width?: number } = {}) => ({
+  inputs: { a: bus(width), b: bus(width) },
+  outputs: { out: bus(width) },
+  meta: {
+    category: 'arithmetic',
+    icon: '%±',
+    description: 'Signed integer remainder (a % b, sign of dividend)',
+  },
+  eval: ({ a, b, width: w = width }) => {
+    // Sign interpretation inlined — see SignedDivider (sandbox __name issue).
+    const wn = w as number;
+    const m = wn >= 32 ? 0xffffffff : (1 << wn) - 1;
+    const half = 2 ** (wn - 1);
+    const full = 2 ** wn;
+    const ua = ((a as number) >>> 0) & m;
+    const ub = ((b as number) >>> 0) & m;
+    const sa = ua >= half ? ua - full : ua;
+    const sb = ub >= half ? ub - full : ub;
+    return { out: ((sb === 0 ? sa : sa % sb) >>> 0) & m };
+  },
+}));
+
+/**
  * Unsigned comparator. Emits three one-hot flags relating `a` and `b`.
  * Exactly one of `eq`/`lt`/`gt` is high at any time.
  *

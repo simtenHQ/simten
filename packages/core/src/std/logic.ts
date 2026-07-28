@@ -412,3 +412,28 @@ export const ReduceXor = circuit('ReduceXor', ({ width = 8 }: { width?: number }
     return { out: p };
   },
 }));
+
+/**
+ * Reduction XNOR (~^a) — 1 when an even number of bits are set. `out = ~^a`,
+ * a single bit: the complement of reduction XOR.
+ *
+ * **Input:** `a` — `bus(width)`  **Output:** `out` — `bit`
+ */
+export const ReduceXnor = circuit('ReduceXnor', ({ width = 8 }: { width?: number } = {}) => ({
+  inputs: { a: bus(width) },
+  outputs: { out: bit },
+  meta: {
+    category: 'bus-operations',
+    icon: '~^a',
+    description: 'Reduction XNOR (~^a) — 1 when an even number of bits are set',
+  },
+  eval: ({ a }) => {
+    let x = (a as number) >>> 0;
+    let p = 0;
+    while (x) {
+      p ^= x & 1;
+      x >>>= 1;
+    }
+    return { out: p ^ 1 };
+  },
+}));
