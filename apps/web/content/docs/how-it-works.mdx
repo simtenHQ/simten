@@ -92,6 +92,12 @@ const DelayLine = circuit('DelayLine', {
 
 The DSL is the same shape — `inputs`, `outputs`, `nodes`, `connect`. Sequentiality comes from which primitives you pick (`DFlipFlop`, `Register`, `RAM`), not from a separate sub-language.
 
+Behind that is a single rule: a primitive is sequential when it declares `state`. `DFlipFlop` and `Register` do; `And` and `Adder` don't. There's no `sequential` flag and no base class — the `state` is the whole signal. A composite inherits it: your circuit is sequential the moment it holds something that is.
+
+That same declaration hands the circuit a clock. simten has exactly one. Every stateful element subscribes to a single `clk` the instant it declares `state`, so you never route it — there's no clock port on `Register`, no clock in `connect`. A register's own inputs — `data`, `we`, `rst` — are wires you draw. The clock is a broadcast every register already hears.
+
+So ▶ (or `tick()`) advances that one clock, and every register latches on the same edge. One clock, one tick, nothing to wire. It's also why simten is single-clock: no second domain, no dividers, no crossings. [Export](#5-export-to-verilog) reverses it — the exporter turns that implicit clock back into real `clk` and `rst_n` ports for the synthesizer.
+
 ## 4. The trace is the truth
 
 Every value, every wire, every cycle is recorded. When something goes wrong you scrub backward to the exact cycle the bug appeared — no `printf`, no rerun, no guessing.
