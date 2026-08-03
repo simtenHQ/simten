@@ -5,29 +5,9 @@
  * the evaluator table. No Map allocations in the hot path.
  */
 
-import type { PrimitiveState } from '../../types/simulator.js';
 import type { NumericEventQueue } from '../numeric-event-queue.js';
-import type { NumericCircuit } from '../numeric-types.js';
+import type { NumericCircuit, NumericSequentialState } from '../numeric-types.js';
 import type { NumericPortValues } from '../numeric-values.js';
-
-/**
- * Numeric sequential state for fast simulation.
- * Uses arrays indexed by node index for O(1) access.
- * Memory components still use Map for sparse storage.
- */
-export interface NumericSequentialState {
-  /** Current state values indexed by node index */
-  currentState: (PrimitiveState | undefined)[];
-
-  /** Next state values indexed by node index */
-  nextState: (PrimitiveState | undefined)[];
-
-  /** Clock state for each clock (indexed by clock key string) */
-  clocks: Map<string, { value: boolean; edge: 'rising' | 'falling' | 'none' }>;
-
-  /** Cycle count */
-  cycleCount: number;
-}
 
 /**
  * Evaluation context passed to all evaluators.
