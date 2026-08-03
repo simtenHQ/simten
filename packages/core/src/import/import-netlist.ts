@@ -537,9 +537,37 @@ interface ModuleShape {
   inputs: PortDescriptor[];
   outputs: PortDescriptor[];
   sequential: boolean;
+  /** Input ports dropped as clock-only (see `moduleShapes`). */
+  clockPorts: string[];
 }
 
-/** First pass: derive each module's port interface (needed for cross-refs). */
+/** Is `pin` on `cellType` a clock input we drop (never wire)? */
+function isClockPin(
+  cellType: string,
+  pin: string,
+  clockPortsByModule: Map<string, Set<string>>,
+): boolean {
+  if (cellType === '$dff' || cellType === '$adff' || cellType === '$sdff' || cellType === '$dffe')
+    return pin === 'CLK';
+  if (cellType === '$mem' || cellType === '$mem_v2') return pin === 'RD_CLK' || pin === 'WR_CLK';
+  // Submodule instance: clock iff the child module identified this port as one.
+  return clockPortsByModule.get(cellType)?.has(pin) ?? false;
+}
+
+/**
+ * First pass: derive each module's port interface (needed for cross-refs).
+ *
+ * Clock-only input ports are dropped here. simten sequential primitives run on a
+ * single implicit clock (`$dff` CLK is never lifted — every Register shares it),
+ * so a top-level clock port carries no signal: it lands as a dangling input and,
+ * worse, collides with the `clk` the Verilog exporter re-adds on round-trip. A
+ * port is clock-only when every consumer of its net is a clock pin (`$dff`-family
+ * CLK, memory RD/WR_CLK, or a sequential submodule's own clock port) — computed
+ * to a fixpoint so submodule clock ports propagate up the hierarchy. Reset ports
+ * survive: their nets feed `Register.rst`/`Not`/`Mux.sel`, not clock pins. A net
+ * with any non-clock sink (e.g. a gated clock, or a feedthrough to an output)
+ * stays too.
+ */
 function moduleShapes(netlist: YosysNetlist): Map<string, ModuleShape> {
   const shapes = new Map<string, ModuleShape>();
   for (const [name, mod] of Object.entries(netlist.modules)) {
@@ -560,7 +588,80 @@ function moduleShapes(netlist: YosysNetlist): Map<string, ModuleShape> {
         c.type === '$mem_v2' ||
         (netlist.modules[c.type] && shapes.get(c.type)?.sequential),
     );
-    shapes.set(name, { inputs, outputs, sequential });
+    shapes.set(name, { inputs, outputs, sequential, clockPorts: [] });
+  }
+
+  // Per-module: which cell pins consume each input port's net, and whether the
+  // net also drives a module output (a feedthrough → never clock-only). Built
+  // once; the fixpoint below only re-checks the clock verdict of each consumer.
+  type Consumer = { cellType: string; pin: string };
+  const analysis = new Map<
+    string,
+    { consumers: Map<string, Consumer[]>; feedsOutput: Set<string> }
+  >();
+  for (const [name, mod] of Object.entries(netlist.modules)) {
+    const bitConsumers = new Map<number, Consumer[]>();
+    for (const cell of Object.values(mod.cells)) {
+      for (const [pin, bits] of Object.entries(cell.connections)) {
+        for (const b of bits) {
+          if (typeof b !== 'number') continue;
+          let list = bitConsumers.get(b);
+          if (!list) {
+            list = [];
+            bitConsumers.set(b, list);
+          }
+          list.push({ cellType: cell.type, pin });
+        }
+      }
+    }
+    const outputBits = new Set<number>();
+    for (const p of Object.values(mod.ports)) {
+      if (p.direction === 'input') continue;
+      for (const b of p.bits) if (typeof b === 'number') outputBits.add(b);
+    }
+    const consumers = new Map<string, Consumer[]>();
+    const feedsOutput = new Set<string>();
+    for (const [pn, p] of Object.entries(mod.ports)) {
+      if (p.direction !== 'input') continue;
+      const acc: Consumer[] = [];
+      for (const b of p.bits) {
+        if (typeof b !== 'number') continue;
+        const list = bitConsumers.get(b);
+        if (list) acc.push(...list);
+        if (outputBits.has(b)) feedsOutput.add(pn);
+      }
+      consumers.set(pn, acc);
+    }
+    analysis.set(name, { consumers, feedsOutput });
+  }
+
+  // Fixpoint: a submodule's clock ports aren't known until the child is resolved,
+  // so iterate until no module gains a new clock port.
+  const clockPortsByModule = new Map<string, Set<string>>(
+    Object.keys(netlist.modules).map((n) => [n, new Set<string>()]),
+  );
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (const name of Object.keys(netlist.modules)) {
+      const { consumers, feedsOutput } = analysis.get(name)!;
+      const cp = clockPortsByModule.get(name)!;
+      for (const [pn, cons] of consumers) {
+        if (cp.has(pn) || feedsOutput.has(pn) || cons.length === 0) continue;
+        if (cons.every((c) => isClockPin(c.cellType, c.pin, clockPortsByModule))) {
+          cp.add(pn);
+          changed = true;
+        }
+      }
+    }
+  }
+
+  // Drop the clock-only ports from each module's input interface.
+  for (const [name, shape] of shapes) {
+    const cp = clockPortsByModule.get(name)!;
+    if (cp.size === 0) continue;
+    shape.clockPorts = [...cp];
+    shape.inputs = shape.inputs.filter((d) => !cp.has(d.name));
   }
   return shapes;
 }
@@ -1019,6 +1120,18 @@ export function importNetlist(netlist: YosysNetlist, topName?: string): ImportRe
     library.set(
       moduleNameOf(name),
       translateModule(name, mod, shapes, netlist, library, moduleNameOf, warnings),
+    );
+  }
+
+  // Surface the implicit-clock convention: clock-only ports were dropped because
+  // simten registers share one implicit clock (step it with tick). Leaving them
+  // would add a dangling input that also duplicates on Verilog re-export.
+  const droppedClocks = new Set<string>();
+  for (const shape of shapes.values()) for (const p of shape.clockPorts) droppedClocks.add(p);
+  if (droppedClocks.size > 0) {
+    const names = [...droppedClocks].map((p) => `'${p}'`).join(', ');
+    warnings.push(
+      `Dropped clock port${droppedClocks.size > 1 ? 's' : ''} ${names}: simten sequential logic runs on a single implicit clock (step it with tick), so an imported clock port carries no signal.`,
     );
   }
 
