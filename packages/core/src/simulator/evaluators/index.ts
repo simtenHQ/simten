@@ -24,5 +24,6 @@ import type { NumericEvaluator } from './types.js';
 const maxIndex = Math.max(...Object.values(PRIMITIVE_TYPE_INDICES)) + 1;
 export const EVALUATORS: (NumericEvaluator | null)[] = new Array(maxIndex).fill(null);
 
-export type { EvalContext, NumericEvaluator, NumericSequentialState } from './types.js';
+export type { NumericSequentialState } from '../numeric-types.js';
+export type { EvalContext, NumericEvaluator } from './types.js';
 export { readInput, writeOutput } from './types.js';
