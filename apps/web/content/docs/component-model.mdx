@@ -102,6 +102,8 @@ All support `width` parameter (default: 8).
 
 These components have **clocked state** that updates on the rising edge of `clk`.
 
+"Sequential" isn't a flag you set: a primitive is sequential exactly when it declares `state` (these two do), and a composite is sequential when it contains one. That same `state` declaration is what gives the circuit its single implicit clock, which is why you never wire `clk` yourself — see [How it works](/docs/how-it-works#3-sequential-vs-combinational).
+
 | Primitive | Inputs | Outputs | Parameters | Description |
 |-----------|--------|---------|------------|-------------|
 | <PrimitiveLink name="DFlipFlop" /> | `d: Bit` | `q: Bit`, `q_bar: Bit` | — | 1-bit register, captures `d` on clock edge |
