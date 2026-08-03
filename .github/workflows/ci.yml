@@ -27,7 +27,10 @@ name: CI
 #   8. publish-readiness lint (publint)        — validates package.json shape +
 #                                              exports paths against the built
 #                                              dist/ for each publishable package
-#   9. web production build                   — proves the web app + Cloudflare
+#   9. exports drift check                    — keeps `exports` (src, for dev)
+#                                              and `publishConfig.exports`
+#                                              (dist, for npm) in correspondence
+#  10. web production build                   — proves the web app + Cloudflare
 #                                              Workers bundle compiles end to end
 #
 # Deferred coverage (TODO before this is "real" CI):
@@ -132,6 +135,15 @@ jobs:
           for pkg in core ui embed mcp; do
             pnpm dlx publint "packages/$pkg"
           done
+
+      - name: Exports drift check
+        # Guards the dev/publish export duality: every package's `exports`
+        # points at ./src/*.ts for local dev while `publishConfig.exports`
+        # points at ./dist/*.js. A subpath added to one and not the other
+        # works in-repo and 404s for anyone installing from npm. This is the
+        # first thing root `pnpm test` runs, but CI runs the per-package test
+        # scripts directly, so it needs its own step.
+        run: pnpm check-exports
 
       - name: Typecheck
         run: pnpm typecheck
