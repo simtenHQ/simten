@@ -277,7 +277,7 @@ result is not the snapshot returned to the API — that comes from Phase 5, afte
 updateClockStates(circuit, seqState);
 ```
 
-Sets all clocks to rising edge. Currently all clocks tick simultaneously (single clock domain).
+Sets all clocks to rising edge. Currently all clocks tick simultaneously (single clock domain). There is only ever the one implicit clock every stateful primitive subscribes to — [How it works §3](/docs/how-it-works#3-sequential-vs-combinational) covers where it comes from and why circuits never wire it.
 
 ### Phase 3: Sequential State Computation
 
