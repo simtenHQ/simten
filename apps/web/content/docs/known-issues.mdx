@@ -126,3 +126,9 @@ This is a safety net for **combinational feedback loops with no register breakin
 
 **How to recognize it:** an internal port reads 0 even when wiring and logic say otherwise. **Workaround:** expose the value you need as a top-level output of the circuit under test (wrap it in a probe harness with the signal piped out).
 
+### Buses wider than 32 bits don't simulate
+
+The numeric engine stores every net in an `Int32Array` and evaluates with JavaScript bitwise operators — both 32-bit. A bus wider than 32 bits simulates to wrong values with no error: inputs truncate to their low 32 bits, a `Slice` at offset ≥ 32 aliases back to the low bits (JS shift counts wrap mod 32), and wide `Concat`/arithmetic overflow to 0. Export, import, and FPGA synthesis are unaffected — they carry the full width; only the in-engine simulator has the ceiling.
+
+**How to recognize it:** a circuit with a port or internal net wider than 32 bits (a 512-bit input, a 64-bit datapath) reads plausible-but-wrong values — or 0 — from `simulate()` / `verify_circuit`, while its exported Verilog checks out. Quick tell: a `Slice` at offset 32 returns the same bits as the same slice at offset 0. This is why imports of wide-bus designs (e.g. a matrix-vector unit) lift and export fine but can't be run through the TS simulator. **Workaround:** none in-engine — keep simulated buses ≤ 32 bits (split wide datapaths into ≤ 32-bit lanes), or verify wide designs through the Verilog path (export and cross-check against Icarus Verilog) instead of the TS simulator. A real fix means representing wide nets as `BigInt` or word arrays through the engine and evaluators.
+
