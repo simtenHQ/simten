@@ -69,6 +69,14 @@
         "types": "./dist/std/index.d.ts",
         "import": "./dist/std/index.js"
       },
+      "./rtl": {
+        "types": "./dist/rtl/index.d.ts",
+        "import": "./dist/rtl/index.js"
+      },
+      "./import": {
+        "types": "./dist/import/index.d.ts",
+        "import": "./dist/import/index.js"
+      },
       "./sim": {
         "types": "./dist/sim/index.d.ts",
         "import": "./dist/sim/index.js"
