@@ -59,7 +59,8 @@ packages/
   embed/             ← embeddable React Flow viewer
   mcp/               ← MCP server for Claude Code integration
 hardware/ulx3s/      ← FPGA bitstream build pipeline
-docs/                ← markdown docs (also surfaced in /docs route)
+
+apps/web/content/docs/   ← the MDX behind simten.dev/docs
 ```
 
 ## Workflow
@@ -70,17 +71,40 @@ We use trunk-based development with PRs:
 2. Commit using [Conventional Commits](https://www.conventionalcommits.org/) (see below)
 3. Push the branch: `git push -u origin feat/your-thing`
 4. Open a PR against `main`
-5. CI runs tests + workspace build automatically
+5. CI runs Biome, tests, and the workspace build automatically
 6. After review, merge — the CI deploy workflow will ship to production
 
 ### Before opening a PR
 
 ```bash
+pnpm lint                          # Biome lint + format check (first CI gate)
 pnpm test                          # core unit tests (~480 tests, ~2s)
 pnpm -r exec tsc --noEmit          # type-check across the workspace
 ```
 
-There's no Prettier/ESLint config — just TypeScript type-checking. Match the surrounding code's style (mostly 2-space indent, no semicolons in JSX, semicolons in TS files).
+If `pnpm lint` complains, `pnpm lint:fix` fixes most of it, formatting included.
+
+### Code style
+
+We use [Biome](https://biomejs.dev/) for both linting and formatting. `biome.json` at the repo root is the entire config. Don't match style by eye — run the formatter.
+
+```bash
+pnpm lint          # check (this is what CI runs)
+pnpm lint:fix      # fix lint + format
+pnpm format        # format only
+```
+
+The settings that come up most: single quotes, semicolons everywhere including `.tsx`, 2-space indent, 100-column lines, trailing commas.
+
+CI runs `biome ci` as its first gate. **Errors block the build; warnings don't.** The warnings you'll see are pre-existing a11y and `noExplicitAny` findings being cleaned up incrementally. Leave them alone unless you're already touching that code, and don't add new ones.
+
+VS Code is set up for you: `.vscode/settings.json` makes Biome the default formatter with format-on-save, and `.vscode/extensions.json` recommends the extension. On any other editor, install the Biome plugin or run `pnpm lint:fix` before you commit.
+
+One repo-wide formatting commit is listed in `.git-blame-ignore-revs`. GitHub honors it automatically; to get the same locally:
+
+```bash
+git config blame.ignoreRevsFile .git-blame-ignore-revs
+```
 
 ### Commit messages
 
