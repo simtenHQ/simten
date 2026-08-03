@@ -90,7 +90,7 @@ build, debug, and explain circuits in real time. The MCP server runs locally
 on your machine — no Anthropic calls happen on Simten's infrastructure, and
 AI assistance is opt-in.
 
-![Claude generates a half-adder circuit and runs it live in the browser](docs/assets/claude-demo.gif)
+![Claude generates a half-adder circuit and runs it live in the browser](claude-demo.gif)
 
 **Setup:** see [`packages/mcp/README.md`](packages/mcp/README.md) — one `claude mcp add` command, then you're talking to your circuits.
 
