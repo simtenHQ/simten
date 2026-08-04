@@ -3,7 +3,7 @@
   "description": "Verilog synthesis service — runs Yosys on exported Verilog and returns gate-level stats and netlist (Cloudflare Container)",
   "dependencies": {
     "@cloudflare/containers": "0.0.30",
-    "hono": "4.12.23"
+    "hono": "4.12.34"
   },
   "devDependencies": {
     "@types/node": "^20",
