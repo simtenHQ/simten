@@ -1,0 +1,265 @@
+{
+  "creator": "Yosys 0.64 (git sha1 d8dab5b32666564eca8e18f412973853ce006e61, clang++ 21.0.0 -fPIC -O3)",
+  "modules": {
+    "ripple_counter": {
+      "attributes": {
+        "top": "00000000000000000000000000000001",
+        "src": "ripple.v:1.1-8.10"
+      },
+      "ports": {
+        "clk": {
+          "direction": "input",
+          "bits": [2]
+        },
+        "rst_n": {
+          "direction": "input",
+          "bits": [3]
+        },
+        "q": {
+          "direction": "output",
+          "bits": [4, 5, 6, 7]
+        }
+      },
+      "cells": {
+        "$not$ripple.v:3$3": {
+          "hide_name": 1,
+          "type": "$not",
+          "parameters": {
+            "A_SIGNED": "00000000000000000000000000000000",
+            "A_WIDTH": "00000000000000000000000000000001",
+            "Y_WIDTH": "00000000000000000000000000000001"
+          },
+          "attributes": {
+            "src": "ripple.v:3.79-3.84"
+          },
+          "port_directions": {
+            "A": "input",
+            "Y": "output"
+          },
+          "connections": {
+            "A": [4],
+            "Y": [8]
+          }
+        },
+        "$not$ripple.v:4$6": {
+          "hide_name": 1,
+          "type": "$not",
+          "parameters": {
+            "A_SIGNED": "00000000000000000000000000000000",
+            "A_WIDTH": "00000000000000000000000000000001",
+            "Y_WIDTH": "00000000000000000000000000000001"
+          },
+          "attributes": {
+            "src": "ripple.v:4.79-4.84"
+          },
+          "port_directions": {
+            "A": "input",
+            "Y": "output"
+          },
+          "connections": {
+            "A": [5],
+            "Y": [9]
+          }
+        },
+        "$not$ripple.v:5$9": {
+          "hide_name": 1,
+          "type": "$not",
+          "parameters": {
+            "A_SIGNED": "00000000000000000000000000000000",
+            "A_WIDTH": "00000000000000000000000000000001",
+            "Y_WIDTH": "00000000000000000000000000000001"
+          },
+          "attributes": {
+            "src": "ripple.v:5.79-5.84"
+          },
+          "port_directions": {
+            "A": "input",
+            "Y": "output"
+          },
+          "connections": {
+            "A": [6],
+            "Y": [10]
+          }
+        },
+        "$not$ripple.v:6$12": {
+          "hide_name": 1,
+          "type": "$not",
+          "parameters": {
+            "A_SIGNED": "00000000000000000000000000000000",
+            "A_WIDTH": "00000000000000000000000000000001",
+            "Y_WIDTH": "00000000000000000000000000000001"
+          },
+          "attributes": {
+            "src": "ripple.v:6.79-6.84"
+          },
+          "port_directions": {
+            "A": "input",
+            "Y": "output"
+          },
+          "connections": {
+            "A": [7],
+            "Y": [11]
+          }
+        },
+        "$procdff$17": {
+          "hide_name": 1,
+          "type": "$adff",
+          "parameters": {
+            "ARST_POLARITY": "00000000000000000000000000000000",
+            "ARST_VALUE": "0",
+            "CLK_POLARITY": "1",
+            "WIDTH": "00000000000000000000000000000001"
+          },
+          "attributes": {
+            "src": "ripple.v:6.3-6.85"
+          },
+          "port_directions": {
+            "ARST": "input",
+            "CLK": "input",
+            "D": "input",
+            "Q": "output"
+          },
+          "connections": {
+            "ARST": [3],
+            "CLK": [6],
+            "D": [11],
+            "Q": [7]
+          }
+        },
+        "$procdff$22": {
+          "hide_name": 1,
+          "type": "$adff",
+          "parameters": {
+            "ARST_POLARITY": "00000000000000000000000000000000",
+            "ARST_VALUE": "0",
+            "CLK_POLARITY": "1",
+            "WIDTH": "00000000000000000000000000000001"
+          },
+          "attributes": {
+            "src": "ripple.v:5.3-5.85"
+          },
+          "port_directions": {
+            "ARST": "input",
+            "CLK": "input",
+            "D": "input",
+            "Q": "output"
+          },
+          "connections": {
+            "ARST": [3],
+            "CLK": [5],
+            "D": [10],
+            "Q": [6]
+          }
+        },
+        "$procdff$27": {
+          "hide_name": 1,
+          "type": "$adff",
+          "parameters": {
+            "ARST_POLARITY": "00000000000000000000000000000000",
+            "ARST_VALUE": "0",
+            "CLK_POLARITY": "1",
+            "WIDTH": "00000000000000000000000000000001"
+          },
+          "attributes": {
+            "src": "ripple.v:4.3-4.85"
+          },
+          "port_directions": {
+            "ARST": "input",
+            "CLK": "input",
+            "D": "input",
+            "Q": "output"
+          },
+          "connections": {
+            "ARST": [3],
+            "CLK": [4],
+            "D": [9],
+            "Q": [5]
+          }
+        },
+        "$procdff$32": {
+          "hide_name": 1,
+          "type": "$adff",
+          "parameters": {
+            "ARST_POLARITY": "00000000000000000000000000000000",
+            "ARST_VALUE": "0",
+            "CLK_POLARITY": "1",
+            "WIDTH": "00000000000000000000000000000001"
+          },
+          "attributes": {
+            "src": "ripple.v:3.3-3.85"
+          },
+          "port_directions": {
+            "ARST": "input",
+            "CLK": "input",
+            "D": "input",
+            "Q": "output"
+          },
+          "connections": {
+            "ARST": [3],
+            "CLK": [2],
+            "D": [8],
+            "Q": [4]
+          }
+        }
+      },
+      "netnames": {
+        "$0\\r[0:0]": {
+          "hide_name": 1,
+          "bits": [8],
+          "attributes": {
+            "src": "ripple.v:3.3-3.85"
+          }
+        },
+        "$0\\r[1:1]": {
+          "hide_name": 1,
+          "bits": [9],
+          "attributes": {
+            "src": "ripple.v:4.3-4.85"
+          }
+        },
+        "$0\\r[2:2]": {
+          "hide_name": 1,
+          "bits": [10],
+          "attributes": {
+            "src": "ripple.v:5.3-5.85"
+          }
+        },
+        "$0\\r[3:3]": {
+          "hide_name": 1,
+          "bits": [11],
+          "attributes": {
+            "src": "ripple.v:6.3-6.85"
+          }
+        },
+        "clk": {
+          "hide_name": 0,
+          "bits": [2],
+          "attributes": {
+            "src": "ripple.v:1.29-1.32"
+          }
+        },
+        "q": {
+          "hide_name": 0,
+          "bits": [4, 5, 6, 7],
+          "attributes": {
+            "src": "ripple.v:1.60-1.61"
+          }
+        },
+        "r": {
+          "hide_name": 0,
+          "bits": [4, 5, 6, 7],
+          "attributes": {
+            "src": "ripple.v:2.13-2.14"
+          }
+        },
+        "rst_n": {
+          "hide_name": 0,
+          "bits": [3],
+          "attributes": {
+            "src": "ripple.v:1.40-1.45"
+          }
+        }
+      }
+    }
+  }
+}

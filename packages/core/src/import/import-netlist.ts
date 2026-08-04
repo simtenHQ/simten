@@ -84,6 +84,9 @@ interface YosysCell {
 interface YosysModule {
   ports: Record<string, YosysPort>;
   cells: Record<string, YosysCell>;
+  /** Signal names for nets. Always emitted by `write_json`; used to name
+   *  signals in diagnostics. Optional so a hand-built netlist still parses. */
+  netnames?: Record<string, { bits: (number | string)[] }>;
 }
 export interface YosysNetlist {
   modules: Record<string, YosysModule>;
@@ -541,6 +544,66 @@ interface ModuleShape {
   clockPorts: string[];
 }
 
+const DFF_FAMILY = new Set(['$dff', '$adff', '$sdff', '$dffe']);
+
+/**
+ * Reject flip-flops driven by a clock this model cannot represent.
+ *
+ * simten has exactly one implicit clock: every stateful primitive subscribes to
+ * it the moment it declares state, and clocks are never wired, so `$dff` CLK is
+ * always dropped. That is sound when CLK is the module's own clock port and
+ * unsound otherwise — a flip-flop clocked by a *data* signal (a clock divider's
+ * `div[15]`, the previous stage of a ripple counter, a gated clock) would have
+ * its clock silently discarded and end up latching on the main clock instead.
+ * The result imports cleanly and simulates as a different circuit: a 4-bit
+ * ripple counter becomes four flip-flops toggling together, counting 0, 15, 0.
+ *
+ * Silently mis-lifting is the one outcome this importer refuses everywhere else
+ * (unsupported cell types throw), so derived clocks throw too. The message names
+ * the signal and points at the clock-enable rewrite, which is what synchronous
+ * design methodology prescribes anyway.
+ */
+function assertSingleClockDomain(moduleName: string, mod: YosysModule, shape: ModuleShape): void {
+  const clockBits = new Set<number>();
+  for (const portName of shape.clockPorts) {
+    for (const b of mod.ports[portName]?.bits ?? []) {
+      if (typeof b === 'number') clockBits.add(b);
+    }
+  }
+
+  const nameOfBit = new Map<number, string>();
+  for (const [signal, info] of Object.entries(mod.netnames ?? {})) {
+    info.bits.forEach((b, i) => {
+      if (typeof b !== 'number' || nameOfBit.has(b)) return;
+      nameOfBit.set(b, info.bits.length > 1 ? `${signal}[${i}]` : signal);
+    });
+  }
+
+  for (const [cellName, cell] of Object.entries(mod.cells)) {
+    if (!DFF_FAMILY.has(cell.type)) continue;
+    const derived = (cell.connections.CLK ?? []).filter(
+      (b) => typeof b !== 'number' || !clockBits.has(b),
+    );
+    if (derived.length === 0) continue;
+
+    const clockSignal = typeof derived[0] === 'number' ? nameOfBit.get(derived[0]) : undefined;
+    const target =
+      (cell.connections.Q ?? [])
+        .map((b) => (typeof b === 'number' ? nameOfBit.get(b) : undefined))
+        .find(Boolean) ?? cellName;
+
+    throw new Error(
+      `Module '${moduleName}': flip-flop '${target}' is clocked by ` +
+        `${clockSignal ? `'${clockSignal}'` : 'a derived signal'}, not by the module's clock. ` +
+        `simten models a single synchronous clock domain — every register advances on the same ` +
+        `tick() and clocks are never wired — so a derived clock (clock divider, ripple counter, ` +
+        `gated clock) cannot be represented. Rewrite it in the one clock domain using a clock ` +
+        `enable: register the derived signal, detect its rising edge, and gate the assignment ` +
+        `with that pulse under 'always @(posedge clk)'.`,
+    );
+  }
+}
+
 /** Is `pin` on `cellType` a clock input we drop (never wire)? */
 function isClockPin(
   cellType: string,
@@ -675,6 +738,9 @@ function translateModule(
   moduleNameOf: (raw: string) => string,
   warnings: string[],
 ): Circuit {
+  const shape = shapes.get(name)!;
+  assertSingleClockDomain(name, mod, shape);
+
   const nodes: Node[] = [];
   const connections: Connection[] = [];
   let helperId = 0;
@@ -1045,7 +1111,6 @@ function translateModule(
     connect(src.nodeId, src.portName, '', pn, portTypeOf(p.bits.length));
   }
 
-  const shape = shapes.get(name)!;
   return {
     version: 1,
     name: moduleNameOf(name),
