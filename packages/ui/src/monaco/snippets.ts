@@ -89,24 +89,6 @@ export const SIMTEN_SNIPPETS: readonly SimtenSnippet[] = [
       '});',
     ],
   },
-  {
-    label: 'circuit-factory',
-    detail: 'Parameterised circuit (width, etc.)',
-    documentation:
-      'The factory form: `circuit(name, opts => config)` returns a callable you specialise ' +
-      'at the use site — `MyComponent({ width: 16 })`. Per-instance arguments are recorded ' +
-      'on the node, so instances do not share state.',
-    body: [
-      'export const ${1:MyComponent} = circuit(',
-      "  '${1:MyComponent}',",
-      '  ({ width = ${2:8} }: { width?: number } = {}) => ({',
-      '    inputs: { ${3:a}: bus(width) },',
-      '    outputs: { ${4:out}: bus(width) },',
-      '    eval: ({ ${3:a} }) => ({ ${4:out}: ${0:${3:a}} }),',
-      '  }),',
-      ');',
-    ],
-  },
 ];
 
 /** Languages the provider registers against. */
