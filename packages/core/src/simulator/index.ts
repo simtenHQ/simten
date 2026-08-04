@@ -177,6 +177,7 @@ export {
   propagateToTopLevelOutputs,
   seedInitialQueue,
   seedStateOutputNodes,
+  setDebugStateUpdate,
   toFlatPortValueMap,
   updateClockStates,
   updateSequentialStates,
