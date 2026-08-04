@@ -140,8 +140,17 @@ export type PortValues<M> = {
   [K in keyof M]: number;
 };
 
-/** State value types: number (bus), boolean (bit), Map (memory), string (text buffers), or new declarative types */
-export type StateValue =
+/**
+ * What a `state:` field may hold as authored — number (bus), boolean (bit),
+ * Map (memory), string (text buffers), or a declarative `reg()` / `mem()`.
+ *
+ * Distinct from the `StateValue` in ../types/circuit.ts, which is the same
+ * concept *after* elaboration into the serialized IR: there, memory is a
+ * `MemoryValue` carrying its address/data widths rather than a bare Map, and
+ * the declarative forms have already been resolved. circuit() converts this
+ * into that. Pairs with `StateFieldType` in ./bit-bus.ts.
+ */
+export type StateFieldValue =
   | number
   | boolean
   | Map<number, number>
@@ -150,7 +159,7 @@ export type StateValue =
   | import('./bit-bus.js').MemState;
 
 /** State shape — plain object where each field is a state value */
-export type StateShape = Record<string, StateValue>;
+export type StateShape = Record<string, StateFieldValue>;
 
 // ============================================================================
 // Component metadata
