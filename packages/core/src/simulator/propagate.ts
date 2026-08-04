@@ -244,8 +244,27 @@ export function updateClockStates(
   }
 }
 
-// Debug flag - set to true to enable state update logging
 let DEBUG_STATE_UPDATE = false;
+
+/**
+ * Enable propagation tracing on stderr. Off by default.
+ *
+ * Answers the two questions you need when an output is stale or a register
+ * won't update, neither of which is visible once the circuit has been
+ * flattened to typed arrays:
+ *
+ *   [seedInitialQueue] Seeded 47 nodes (source=12, stateOutput=8, topLevel=27)
+ *   [propagate] 312 evals, 89 changed
+ *
+ * The seed line is the one that catches silent staleness: propagation is
+ * event-driven, so a node that is never seeded and never enqueued by a
+ * changed dependency simply doesn't run. The eval/changed counts show
+ * whether a pass converged — a `changed` that stays high across passes is
+ * oscillation heading for MAX_PROPAGATION_ITERATIONS.
+ *
+ * Global and not thread-safe; intended for a failing test or a one-off
+ * script, not production code.
+ */
 export function setDebugStateUpdate(enabled: boolean) {
   DEBUG_STATE_UPDATE = enabled;
 }
@@ -286,19 +305,7 @@ export function updateSequentialStates(
           }
         }
       } else if (srcPortIdx >= 0) {
-        const value = values.values[srcPortIdx];
-        inputs.set(portName, value);
-
-        // Debug logging
-        if (
-          DEBUG_STATE_UPDATE &&
-          node.id.includes('pc_lo') &&
-          !node.id.includes('temp') &&
-          portName === 'data'
-        ) {
-          const srcKey = circuit.indexToPortKey[srcPortIdx];
-          console.log(`  [data input] srcPortIdx=${srcPortIdx}, srcKey=${srcKey}, value=${value}`);
-        }
+        inputs.set(portName, values.values[srcPortIdx]);
       }
     }
 
