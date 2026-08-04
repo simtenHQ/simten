@@ -247,7 +247,7 @@ export function updateClockStates(
 let DEBUG_STATE_UPDATE = false;
 
 /**
- * Enable propagation tracing on stderr. Off by default.
+ * Enable propagation tracing via console.log. Off by default.
  *
  * Answers the two questions you need when an output is stale or a register
  * won't update, neither of which is visible once the circuit has been
