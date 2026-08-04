@@ -30,6 +30,7 @@
 
 import type { Monaco } from '@monaco-editor/react';
 import { SIMTEN_CORE_GLOBALS, SIMTEN_CORE_TYPES } from './generated/core-types.gen';
+import { registerSimtenSnippets } from './snippets';
 
 /**
  * Importable `@simten/core` subpaths. The bundle is a flat aggregate of all of
@@ -67,6 +68,13 @@ export interface IntellisenseOptions {
    * `file:///node_modules/<pkg>/index.d.ts` path to make a module resolvable.
    */
   extraLibs?: Record<string, string>;
+  /**
+   * Offer the scaffold snippets (`circuit`, `circuit-primitive`, ...). These are
+   * the one thing the TS service can't derive: it already knows a node's ports
+   * and which refs carry `.to()`, but not the shape of an empty circuit.
+   * @default true
+   */
+  snippets?: boolean;
 }
 
 /**
@@ -74,7 +82,7 @@ export interface IntellisenseOptions {
  * Safe to call more than once — addExtraLib overwrites by path.
  */
 export function setupSimtenIntellisense(monaco: Monaco, options: IntellisenseOptions = {}): void {
-  const { globals = true, extraLibs } = options;
+  const { globals = true, extraLibs, snippets = true } = options;
   const ts = monaco.languages.typescript;
   const defaults = ts.typescriptDefaults;
 
@@ -112,4 +120,8 @@ export function setupSimtenIntellisense(monaco: Monaco, options: IntellisenseOpt
   for (const [path, contents] of Object.entries(extraLibs ?? {})) {
     defaults.addExtraLib(contents, path);
   }
+
+  // Idempotent per Monaco instance — unlike addExtraLib, a second
+  // registerCompletionItemProvider would list every snippet twice.
+  if (snippets) registerSimtenSnippets(monaco);
 }

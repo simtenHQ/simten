@@ -25,6 +25,12 @@ export {
 } from './SimtenCodeEditor';
 export { type IntellisenseOptions, setupSimtenIntellisense } from './setup';
 export {
+  registerSimtenSnippets,
+  SIMTEN_SNIPPETS,
+  type SimtenSnippet,
+  type SnippetOptions,
+} from './snippets';
+export {
   type RegisterThemesOptions,
   registerSimtenThemes,
   SIMTEN_DARK,

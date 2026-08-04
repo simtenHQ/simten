@@ -100,6 +100,16 @@
           }
         }
       }
+    },
+    {
+      "includes": ["**/monaco/snippets.ts", "**/monaco/snippets.test.ts"],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "noTemplateCurlyInString": "off"
+          }
+        }
+      }
     }
   ]
 }
