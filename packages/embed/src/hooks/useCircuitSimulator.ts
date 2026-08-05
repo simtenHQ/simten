@@ -26,7 +26,7 @@ import type {
   FlatSequentialState,
   SimulatorEngine,
 } from '@simten/core/simulator';
-import { Button, HexDisplay, Input, Led, Output, Switch } from '@simten/core/std';
+import { HexDisplay, Input, Led, Output, Switch } from '@simten/core/std';
 import { type EvalSource, useSandboxContext } from '@simten/ui/sandbox';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
@@ -200,7 +200,7 @@ export function useCircuitSimulator(
         circuitMap.set(c.name, c);
       },
     };
-    for (const c of [Switch(), Button(), Led, Input(), Output, HexDisplay]) {
+    for (const c of [Switch, Led, Input(), Output, HexDisplay]) {
       lib.addCircuit(c.circuit);
     }
     if (circuit) {
@@ -328,7 +328,7 @@ export function useCircuitSimulator(
         if (dep?.circuit) addCircuit(dep.circuit);
       }
       // Harness components (Switch, Led, etc.)
-      for (const c of [Switch(), Button(), Led, Input(), Output, HexDisplay]) {
+      for (const c of [Switch, Led, Input(), Output, HexDisplay]) {
         addCircuit(c.circuit);
       }
       // Anything else in the library

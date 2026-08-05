@@ -1,5 +1,5 @@
 /**
- * Environmental State — captures/restores user input values (Switch, Button, Input)
+ * Environmental State — captures/restores user input values (Switch, Input)
  * for time-travel debugging.
  *
  * Environmental state = values from outside the circuit (user inputs, sensors).

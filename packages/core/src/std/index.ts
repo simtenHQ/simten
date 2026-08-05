@@ -38,7 +38,7 @@ export {
 // Display
 export { Console, HexDisplay, RasterDisplay, Screen, SevenSegment } from './display.js';
 // I/O
-export { Button, Constant, Input, Led, Output, Switch } from './io.js';
+export { Constant, Input, Led, Output, Switch } from './io.js';
 // Logic Gates + bus-width logical / reduction operators
 export {
   And,

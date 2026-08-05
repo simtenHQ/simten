@@ -149,7 +149,7 @@ export const DemoRAM = circuit('DemoRAM', {
   nodes: {
     addr: Input(),
     data_in: Input(),
-    we: Switch({ value: 0 }),
+    we: Switch,
     mem: RAM(),
     data_out: HexDisplay,
   },
@@ -163,7 +163,7 @@ export const DemoRAM = circuit('DemoRAM', {
 
 // D flip-flop demo is self-contained
 export const DemoFlipFlop = circuit('DemoFlipFlop', {
-  nodes: { sw_d: Switch(), dff: DFlipFlop(), led_q: Led },
+  nodes: { sw_d: Switch, dff: DFlipFlop(), led_q: Led },
   connect: ({ nodes: { sw_d, dff, led_q } }) => [sw_d.out.to(dff.d), dff.q.to(led_q.in)],
 });
 

@@ -232,7 +232,7 @@ function CircuitCanvasInner({
       if (componentRef === 'Input' && onSetNodeValue) {
         data.onValueChange = (value: number) => onSetNodeValue(node.id, value);
       }
-      if (onToggleNode && (componentRef === 'Switch' || componentRef === 'Button')) {
+      if (onToggleNode && componentRef === 'Switch') {
         data.onToggle = () => onToggleNode(node.id);
       }
       if (onLoadMemory && (componentRef === 'RV32I_InstrMem' || componentRef === 'DualPortROM')) {

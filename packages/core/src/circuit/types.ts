@@ -197,7 +197,7 @@ export interface CircuitMeta {
   author?: string;
   /** Component version (informational). */
   version?: string;
-  /** Key in node.arguments that holds the user-interactive value (Switch, Button, Input) */
+  /** Key in node.arguments that holds the user-interactive value (Switch, Input) */
   interactiveArg?: string;
   /**
    * Marks this component as a non-synthesizable peripheral (display, console,

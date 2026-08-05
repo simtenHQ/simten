@@ -14,7 +14,6 @@ import type { MetadataState } from './types';
 /** Node size constants by component type. Used to feed dagre. */
 export const NODE_DIMENSIONS: Record<string, { width: number; height: number }> = {
   Switch: { width: 140, height: 110 },
-  Button: { width: 120, height: 80 },
   Input: { width: 140, height: 80 },
   Led: { width: 100, height: 110 },
   Output: { width: 100, height: 80 },
