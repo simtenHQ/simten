@@ -7,8 +7,8 @@ import { circuit } from '../circuit/circuit.js';
 
 /**
  * User-controllable 1-bit toggle. Stays in the chosen state until clicked
- * again — use `Button` for momentary press behavior. The initial value is
- * controlled via the `value` node argument and the canvas UI.
+ * again. The initial value is controlled via the `value` node argument and
+ * the canvas UI.
  *
  * **Output:** `out` — `bit`
  *
@@ -27,7 +27,7 @@ import { circuit } from '../circuit/circuit.js';
  * destructure here is purely for the typed call signature — the body
  * doesn't need to reference it.
  */
-export const Switch = circuit('Switch', (_opts?: { value?: number }) => ({
+export const Switch = circuit('Switch', {
   outputs: { out: bit },
   eval: ({ value }) => ({ out: value ? 1 : 0 }),
   meta: {
@@ -36,34 +36,7 @@ export const Switch = circuit('Switch', (_opts?: { value?: number }) => ({
     description: 'User-controllable 1-bit toggle',
     interactiveArg: 'value',
   },
-}));
-
-/**
- * Push button input (momentary). Outputs 1 only while held down, 0 otherwise.
- * Use `Switch` if you want a stable toggle that stays after release.
- *
- * **Output:** `out` — `bit`
- *
- * **Example:** reset signal driven by a button
- * ```ts
- * circuit('ButtonReset', {
- *   nodes: { btn: Button, ff: DFlipFlop },
- *   connect: ({ nodes: { btn, ff } }) => [
- *     btn.out.to(ff.d),
- *   ],
- * })
- * ```
- */
-export const Button = circuit('Button', (_opts?: { value?: number }) => ({
-  outputs: { out: bit },
-  eval: ({ value }) => ({ out: value ? 1 : 0 }),
-  meta: {
-    category: 'input-output',
-    icon: '🔘',
-    description: 'Push button input (momentary)',
-    interactiveArg: 'value',
-  },
-}));
+});
 
 /**
  * Visual output LED indicator. Lights up on the canvas when its input is 1.

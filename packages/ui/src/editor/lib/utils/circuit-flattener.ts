@@ -57,7 +57,6 @@ export function flattenCircuit(circuit: Circuit): FlattenedCircuit {
     'Xnor',
     'Buffer',
     'Switch',
-    'Button',
     'Input',
     'Led',
     'HexDisplay',

@@ -205,8 +205,6 @@ function emitInitMap(data: Map<number, number>): string {
 // are empty and a call when args are present.
 const PARAMETERIZED_STDLIB = new Set<string>([
   'Constant',
-  'Switch',
-  'Button',
   'Input',
   'Register',
   'DFlipFlop',

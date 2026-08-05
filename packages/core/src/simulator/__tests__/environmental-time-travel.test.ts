@@ -3,7 +3,7 @@
  *
  * The simulator engine's `snapshot()` / `restore()` round-trips SEQUENTIAL
  * state (registers, flip-flops, memory) and port values — but it does NOT
- * revert `node.arguments`. Switch / Button / Input primitives drive their
+ * revert `node.arguments`. Switch / Input primitives drive their
  * outputs from `node.arguments.value`, which mutates on `setNode`. So a
  * naive time-travel that only restores the engine leaves stale switch
  * positions, and the next tick would use the wrong input.
@@ -30,7 +30,7 @@ import { captureEnvironmentalState, createSimulator, elaborate } from '../index.
 
 /**
  * Walk a FlatCircuit's nodes and capture every interactive-arg value (Switch/
- * Button/Input). Analogous to core's `captureEnvironmentalState` but works on
+ * Input). Analogous to core's `captureEnvironmentalState` but works on
  * post-elaboration FlatNode (`primitiveType`) instead of pre-elaboration Node
  * (`componentRef`). This is the pattern the sandbox uses.
  */
@@ -47,7 +47,7 @@ function captureFlatEnv(flat: FlatCircuit, library: CircuitLibrary): Map<string,
 
 const SwitchedFF = circuit('SwitchedFF', {
   outputs: { q: bit },
-  nodes: { sw: Switch(), dff: DFlipFlop() },
+  nodes: { sw: Switch, dff: DFlipFlop() },
   connect: ({ outputs, nodes: { sw, dff } }) => [sw.out.to(dff.d), dff.q.to(outputs.q)],
 });
 
@@ -64,7 +64,7 @@ function buildSim() {
     },
   };
   library.addCircuit(SwitchedFF.circuit);
-  library.addCircuit(Switch().circuit);
+  library.addCircuit(Switch.circuit);
   library.addCircuit(DFlipFlop().circuit);
   for (const [, dep] of SwitchedFF._dependencies) {
     library.addCircuit(dep.circuit);
@@ -160,7 +160,7 @@ describe('environmental state time-travel', () => {
       //   (b) `captureEnvironmentalState` stores `undefined` when a node's
       //       interactive arg was never set (initial Switch state). We
       //       can't pass undefined to setNode — substitute 0 (universal
-      //       off for Switch/Button/Input primitives).
+      //       off for Switch/Input primitives).
       //
       // These rules are replicated in apps/sandbox/src/main.ts handleRestore.
       sim.restore(simSnap);

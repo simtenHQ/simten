@@ -500,7 +500,6 @@ export function emitPrimitive(ctx: PrimitiveContext): { lines: string[]; declara
     // ── I/O (handled by exporter as module ports) ────────────────────
     case 'Switch':
     case 'Input':
-    case 'Button':
     case 'Led':
     case 'Output':
     case 'HexDisplay':
@@ -933,9 +932,7 @@ export function emitPrimitive(ctx: PrimitiveContext): { lines: string[]; declara
  * Check if a primitive type is an I/O component (becomes a module port).
  */
 export function isIOPrimitive(primitiveType: string): boolean {
-  return ['Switch', 'Input', 'Button', 'Led', 'Output', 'HexDisplay', 'SevenSegment'].includes(
-    primitiveType,
-  );
+  return ['Switch', 'Input', 'Led', 'Output', 'HexDisplay', 'SevenSegment'].includes(primitiveType);
 }
 
 /**

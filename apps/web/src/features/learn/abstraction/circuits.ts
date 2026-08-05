@@ -64,8 +64,8 @@ const FullAdder = circuit('FullAdder', {
 
 const FlatHalfAdderDemo = circuit('FlatHalfAdderDemo', {
   nodes: {
-    a: Switch(),
-    b: Switch(),
+    a: Switch,
+    b: Switch,
     xorGate: Xor,
     andGate: And,
     sumLed: Led,
@@ -83,8 +83,8 @@ const FlatHalfAdderDemo = circuit('FlatHalfAdderDemo', {
 
 const EncapsulatedHalfAdderDemo = circuit('EncapsulatedHalfAdderDemo', {
   nodes: {
-    a: Switch(),
-    b: Switch(),
+    a: Switch,
+    b: Switch,
     ha: HalfAdder,
     sumLed: Led,
     carryLed: Led,
@@ -102,9 +102,9 @@ const EncapsulatedHalfAdderDemo = circuit('EncapsulatedHalfAdderDemo', {
 
 const FlatFullAdderDemo = circuit('FlatFullAdderDemo', {
   nodes: {
-    a: Switch(),
-    b: Switch(),
-    cin: Switch(),
+    a: Switch,
+    b: Switch,
+    cin: Switch,
     xor1: Xor,
     xor2: Xor,
     and1: And,
@@ -133,9 +133,9 @@ const FlatFullAdderDemo = circuit('FlatFullAdderDemo', {
 
 const ComposedFullAdderDemo = circuit('ComposedFullAdderDemo', {
   nodes: {
-    a: Switch(),
-    b: Switch(),
-    cin: Switch(),
+    a: Switch,
+    b: Switch,
+    cin: Switch,
     fa: FullAdder,
     sumLed: Led,
     coutLed: Led,
