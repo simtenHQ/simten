@@ -354,6 +354,21 @@ function CircuitCanvasInner({
     const wasBlank = prevNodeCountRef.current === 0;
     prevNodeCountRef.current = projectedNodes.length;
 
+    // Nodes purely added or purely removed — no rename in the mix. The
+    // preserved positions then belong to a layout computed for a different node
+    // count, while newly projected nodes carry the current one, so mixing the
+    // two put a new node exactly on top of a surviving one (adding an input
+    // landed its switch on the previous input's slot, hiding it entirely).
+    // Take the fresh layout for everything in that case.
+    //
+    // A rename removes an id *and* adds one, so it fails this test and keeps
+    // the preserved positions — which is what #111 asked for.
+    let added = 0;
+    for (const id of newIdSet) if (!prevIdSet.has(id)) added++;
+    let removed = 0;
+    for (const id of prevIdSet) if (!newIdSet.has(id)) removed++;
+    const relayout = (added > 0 && removed === 0) || (removed > 0 && added === 0);
+
     setNodes((currentNodes) => {
       const prevById = new Map(currentNodes.map((n) => [n.id, n]));
       return projectedNodes.map((node) => {
@@ -363,6 +378,7 @@ function CircuitCanvasInner({
           // and the user-dragged position; only refresh data/type from projection.
           return {
             ...prev,
+            position: relayout ? node.position : prev.position,
             type: node.type,
             data: node.data,
             selectable: node.selectable,
