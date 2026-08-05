@@ -136,25 +136,18 @@ export type ConnectArg<
 // Eval function types
 // ============================================================================
 
-/** Convert a port map to numeric values (what `eval` receives). Inputs are read
- *  out of the simulator's typed arrays, so they are always numbers. */
+/** Port map → numeric values. What `eval` receives; always numbers. */
 export type PortValues<M> = {
   [K in keyof M]: number;
 };
 
 /**
- * What `eval` may return: numbers everywhere, and booleans on 1-bit ports.
+ * What `eval` may return: numbers everywhere, booleans on 1-bit ports (they
+ * coerce to 1/0 in the typed array, so `{ out: !(a | b) }` is legal).
  *
- * The runtime has always accepted a boolean — it lands in a typed array, where
- * `true`/`false` coerce to 1/0 — so `eval: ({ a, b }) => ({ out: !(a | b) })`
- * ran correctly while failing to type-check, and the natural way to write a NOR
- * had to be spelled `(a | b) ? 0 : 1`.
- *
- * Widened only for `bit`, deliberately. The Verilog exporter emits JS `!` as
- * `~` (eval-synth), which agrees with logical negation at one bit and diverges
- * above it: `!(2 | 0)` simulates to 0 while `~8'd2` is 253. Keeping the
- * requirement to return a number on `bus` ports is what stops that divergence
- * being reachable — the type error there is load-bearing, not tidiness.
+ * Widened only for `bit`. The exporter emits JS `!` as Verilog `~`, which
+ * matches at one bit and diverges above it, so requiring a number on `bus`
+ * ports is what keeps that unreachable.
  */
 export type PortOutputValues<M> = {
   [K in keyof M]: M[K] extends BitType ? number | boolean : number;
