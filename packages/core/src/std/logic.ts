@@ -296,8 +296,6 @@ export const Buffer = circuit('Buffer', {
 // $logic_and/$logic_or/$logic_not and $reduce_* onto these (authoring stdlib).
 // ============================================================================
 
-const maskOf = (w: number) => (w >= 32 ? 0xffffffff : (1 << w) - 1) >>> 0;
-
 /**
  * Logical AND (&&) — nonzero operands. `out = (a != 0) && (b != 0)`, a single
  * bit. Operand widths are independent.
@@ -382,8 +380,11 @@ export const ReduceAnd = circuit('ReduceAnd', ({ width = 8 }: { width?: number }
     icon: '&a',
     description: 'Reduction AND (&a) — 1 iff all bits set',
   },
-  eval: ({ a, width: w = width }) => {
-    const m = maskOf(w as number);
+  // Literal default and an inlined mask, so nothing here reads the factory
+  // scope — the registry keys by name and last write wins (see Adder).
+  eval: ({ a, width: w = 8 }) => {
+    const wn = w as number;
+    const m = (wn >= 32 ? 0xffffffff : (1 << wn) - 1) >>> 0;
     // `& m` is a signed 32-bit op; coerce back to unsigned before comparing.
     return { out: (((a as number) >>> 0) & m) >>> 0 === m ? 1 : 0 };
   },
