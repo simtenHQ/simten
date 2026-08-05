@@ -52,8 +52,27 @@
 
 import type { BitValue, BusValue, Circuit, SimulatorSnapshot } from '@simten/core';
 import { createSimulator, elaborate } from '@simten/core';
-import { registerCircuitEval } from '@simten/core/circuit';
+import { getAllCircuitEvals, registerCircuitEval } from '@simten/core/circuit';
 import { captureEnvironmentalState, type EnvironmentalStateValue } from '@simten/core/simulator';
+
+/**
+ * Stdlib component names, captured before any user code runs.
+ *
+ * Evals arrive here as source *text* and are rebuilt with `new Function`, which
+ * keeps the body but not the closure. That is fine for user circuits, whose
+ * evals are self-contained, and wrong for the stdlib: `Adder` is written
+ * `({ a, b, carry_in, width: w = width }) => …`, where the default reads the
+ * factory's `width`. Rebuilt from text, `width` is a free variable and the
+ * evaluator throws "width is not defined" the moment it runs.
+ *
+ * Importing `@simten/core` above already registered the real ones, closures and
+ * all, so the rebuilt copies are never needed — they used to be discarded by a
+ * first-write-wins guard inside `registerCircuitEval`, until that guard was
+ * removed so the editor could redefine a primitive. Skipping stdlib names here
+ * keeps both: the stdlib stays intact, and a user circuit still replaces its own
+ * previous definition.
+ */
+const STDLIB_EVAL_NAMES: ReadonlySet<string> = new Set(getAllCircuitEvals().keys());
 
 /** Serialized eval entry — source strings reconstructed via new Function() */
 interface EvalSource {
@@ -429,6 +448,7 @@ async function handleCompile(id: string, source: string, slotId: string = DEFAUL
     // This avoids re-executing the module (which may contain npm imports that only
     // the worker can load via esm.sh) on the main thread.
     for (const [name, info] of Object.entries(evalSources)) {
+      if (STDLIB_EVAL_NAMES.has(name)) continue;
       try {
         const evalFn = new Function('return (' + info.evalSource + ')')() as (
           inputs: Record<string, any>,
@@ -775,6 +795,7 @@ function handleCompileIR(
     // This is how the embed transfers eval functions from the main frame to the sandbox.
     if (evalSources) {
       for (const [name, info] of Object.entries(evalSources)) {
+        if (STDLIB_EVAL_NAMES.has(name)) continue;
         try {
           const evalFn = new Function('return (' + info.evalSource + ')')() as (
             inputs: Record<string, any>,
