@@ -29,7 +29,7 @@ import type { BlogCircuit } from '../types';
 const FrameDetector = circuit('FrameDetector', {
   nodes: {
     byteIn: Input({ value: 85 }),
-    valid: Switch(),
+    valid: Switch,
     state: Register({ value: 0 }),
     PREAMBLE: Constant({ value: 85 }),
     SFD: Constant({ value: 213 }),
@@ -103,7 +103,7 @@ const FrameDetector = circuit('FrameDetector', {
 const PacketBuffer = circuit('PacketBuffer', {
   nodes: {
     dataIn: Input({ value: 42 }),
-    writeCmd: Switch(),
+    writeCmd: Switch,
     writePtr: Register({ value: 0 }),
     one: Constant({ value: 1 }),
     ram: DualPortRAM(),
@@ -127,8 +127,8 @@ const PacketBuffer = circuit('PacketBuffer', {
 
 const PortArbiter = circuit('PortArbiter', {
   nodes: {
-    port0_ready: Switch(),
-    port1_ready: Switch(),
+    port0_ready: Switch,
+    port1_ready: Switch,
     lastPort: Input({ value: 0 }),
     zero: Constant({ value: 0 }),
     one: Constant({ value: 1 }),
@@ -218,7 +218,7 @@ const PacketSerializer = circuit('PacketSerializer', {
     one: Constant({ value: 1 }),
     seven: Constant({ value: 7 }),
     nextPtr: Adder(),
-    enable: Switch(),
+    enable: Switch,
     dataOut: HexDisplay,
     ptrDisplay: HexDisplay,
     isDone: Comparator(),
@@ -1209,7 +1209,7 @@ export const MiniSwitch2Port = circuit('MiniSwitch2Port', {
     egress1_we: And,
     egress0_trigger: And,
     egress1_trigger: And,
-    always_ready: Switch(),
+    always_ready: Switch,
     p0_out: HexDisplay,
     p0_valid_out: Led,
     p0_sof: Led,

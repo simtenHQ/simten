@@ -21,7 +21,6 @@ import {
   BusNot,
   BusOr,
   BusXor,
-  Button,
   Combiner8to8,
   Comparator,
   Concat,
@@ -109,8 +108,7 @@ describe('stdlib circuits load', () => {
     ['RAM', RAM()],
     ['DualPortRAM', DualPortRAM()],
     // I/O
-    ['Switch', Switch()],
-    ['Button', Button()],
+    ['Switch', Switch],
     ['Led', Led],
     ['Input', Input()],
     ['Output', Output],
@@ -182,7 +180,7 @@ describe('sequential components', () => {
 
 describe('I/O circuits', () => {
   it('Switch has no inputs and one output', () => {
-    const s = Switch();
+    const s = Switch;
     expect(s.circuit.inputs).toHaveLength(0);
     expect(s.circuit.outputs).toHaveLength(1);
     expect(s.circuit.outputs[0].name).toBe('out');
@@ -194,15 +192,9 @@ describe('I/O circuits', () => {
   });
 
   it('Switch is a source component (no inputs)', () => {
-    const s = Switch();
+    const s = Switch;
     expect(s.circuit.inputs).toHaveLength(0);
     expect(s.circuit.outputs).toHaveLength(1);
-  });
-
-  it('Button is a source component (no inputs)', () => {
-    const b = Button();
-    expect(b.circuit.inputs).toHaveLength(0);
-    expect(b.circuit.outputs).toHaveLength(1);
   });
 });
 

@@ -224,7 +224,7 @@ export interface CircuitMetadata {
   tags?: string[];
   /** Timing classification: combinational, sequential, or sink. Distinct from `implementation.kind` (primitive vs composite). */
   timing?: CircuitTiming;
-  /** Key in node.arguments that holds the user-interactive value (Switch, Button, Input) */
+  /** Key in node.arguments that holds the user-interactive value (Switch, Input) */
   interactiveArg?: string;
   /**
    * For sequential circuits: how outputs are computed

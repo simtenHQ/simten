@@ -232,7 +232,7 @@ export interface SimulatorEngine {
 
   // Node value control
   /** Set any node's value. The engine dispatches based on node type:
-   *  - Input/Switch/Button → sets arguments.value (combinational)
+   *  - Input/Switch → sets arguments.value (combinational)
    *  - ROM/RAM/Register/DFlipFlop → sets sequential state */
   setNode(name: string, value: PrimitiveState): void;
 

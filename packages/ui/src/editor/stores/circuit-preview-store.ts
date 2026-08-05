@@ -12,7 +12,7 @@
  */
 
 import { autoHarness } from '@simten/core/circuit';
-import { Button, HexDisplay, Input, Led, Output, Switch } from '@simten/core/std';
+import { HexDisplay, Input, Led, Output, Switch } from '@simten/core/std';
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 import { createDrillDownViewCircuit } from '../../canvas/drill-down-view';
@@ -150,7 +150,7 @@ export const useCircuitPreviewStore = create<CircuitPreviewStore>()(
 
       // Ensure harness components (Switch, Led, etc.) are in the library
       const libStore = useCircuitLibraryStore.getState();
-      for (const c of [Switch(), Button(), Led, Input(), Output, HexDisplay]) {
+      for (const c of [Switch, Led, Input(), Output, HexDisplay]) {
         if (!libStore.resolveCircuit(c.circuit.name)) libStore.addCircuit(c.circuit);
       }
 

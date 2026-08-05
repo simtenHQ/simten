@@ -30,7 +30,6 @@ export const PRIMITIVE_TYPE_INDICES: Record<string, number> = {
   Switch: 10,
   Led: 11,
   Output: 12,
-  Button: 13,
   Input: 14,
   Constant: 15,
 

@@ -502,7 +502,7 @@ export function circuit(name: string, configOrFactory: any = {} as any): any {
     if (meta.author !== undefined) metadata.author = meta.author;
     if (meta.version !== undefined) metadata.version = meta.version;
     if (meta.synthesizable !== undefined) metadata.synthesizable = meta.synthesizable;
-    // Needed for time-travel to restore Switch/Button/Input values alongside
+    // Needed for time-travel to restore Switch/Input values alongside
     // engine state — captureEnvironmentalState reads this to know which
     // node.arguments key to snapshot. Omitting silently broke rewind.
     if (meta.interactiveArg !== undefined) metadata.interactiveArg = meta.interactiveArg;

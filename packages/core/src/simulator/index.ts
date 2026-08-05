@@ -341,7 +341,7 @@ class SimulatorEngineImpl implements SimulatorEngine {
       return;
     }
 
-    // Otherwise → write arguments (Switch, Input, Button)
+    // Otherwise → write arguments (Switch, Input)
     if (typeof value === 'boolean' || typeof value === 'number' || typeof value === 'string') {
       node.arguments = { ...node.arguments, value };
       this.cacheValid = false;

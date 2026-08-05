@@ -40,7 +40,7 @@ export function TwoWaysSection() {
             className="px-4 py-3 text-[12px] leading-relaxed overflow-x-auto"
             code={`circuit('FlatDemo', {
   nodes: {
-    a: Switch(), b: Switch(),
+    a: Switch, b: Switch,
     xor: Xor, and: And,
     sum: Led, carry: Led,
   },

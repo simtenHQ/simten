@@ -797,7 +797,7 @@ const Systolic3x3 = circuit('Systolic3x3', {
 })
 
 const TestSystolic3x3 = circuit('TestSystolic3x3', {
-  nodes: { sys: Systolic3x3, a00: Input({ value: 1 }), a01: Input({ value: 2 }), a02: Input({ value: 3 }), a10: Input({ value: 4 }), a11: Input({ value: 5 }), a12: Input({ value: 6 }), a20: Input({ value: 7 }), a21: Input({ value: 8 }), a22: Input({ value: 9 }), b00: Input({ value: 2 }), b01: Input({ value: 0 }), b02: Input({ value: 1 }), b10: Input({ value: 0 }), b11: Input({ value: 2 }), b12: Input({ value: 0 }), b20: Input({ value: 1 }), b21: Input({ value: 0 }), b22: Input({ value: 2 }), start: Switch(), display_c00: HexDisplay, display_c01: HexDisplay, display_c02: HexDisplay, display_c10: HexDisplay, display_c11: HexDisplay, display_c12: HexDisplay, display_c20: HexDisplay, display_c21: HexDisplay, display_c22: HexDisplay, done_led: Led },
+  nodes: { sys: Systolic3x3, a00: Input({ value: 1 }), a01: Input({ value: 2 }), a02: Input({ value: 3 }), a10: Input({ value: 4 }), a11: Input({ value: 5 }), a12: Input({ value: 6 }), a20: Input({ value: 7 }), a21: Input({ value: 8 }), a22: Input({ value: 9 }), b00: Input({ value: 2 }), b01: Input({ value: 0 }), b02: Input({ value: 1 }), b10: Input({ value: 0 }), b11: Input({ value: 2 }), b12: Input({ value: 0 }), b20: Input({ value: 1 }), b21: Input({ value: 0 }), b22: Input({ value: 2 }), start: Switch, display_c00: HexDisplay, display_c01: HexDisplay, display_c02: HexDisplay, display_c10: HexDisplay, display_c11: HexDisplay, display_c12: HexDisplay, display_c20: HexDisplay, display_c21: HexDisplay, display_c22: HexDisplay, done_led: Led },
   connect: ({ inputs, outputs, nodes: { sys, a00, a01, a02, a10, a11, a12, a20, a21, a22, b00, b01, b02, b10, b11, b12, b20, b21, b22, start, display_c00, display_c01, display_c02, display_c10, display_c11, display_c12, display_c20, display_c21, display_c22, done_led } }) => [
     a00.out.to(sys.a00),
     a01.out.to(sys.a01),
@@ -971,7 +971,7 @@ const ALU = circuit('ALU', {
 })
 
 const ALUDemo = circuit('ALUDemo', {
-  nodes: { a: Input({ value: 42 }), b: Input({ value: 13 }), op0: Switch(), op1: Switch(), op2: Switch(), alu: ALU, disp_a: HexDisplay, disp_b: HexDisplay, disp_result: HexDisplay, led_zero: Led, led_carry: Led, led_neg: Led },
+  nodes: { a: Input({ value: 42 }), b: Input({ value: 13 }), op0: Switch, op1: Switch, op2: Switch, alu: ALU, disp_a: HexDisplay, disp_b: HexDisplay, disp_result: HexDisplay, led_zero: Led, led_carry: Led, led_neg: Led },
   connect: ({ inputs, outputs, nodes: { a, b, op0, op1, op2, alu, disp_a, disp_b, disp_result, led_zero, led_carry, led_neg } }) => [
     a.out.to(alu.a, disp_a.in),
     b.out.to(alu.b, disp_b.in),
@@ -1007,7 +1007,7 @@ const HalfAdder = circuit('HalfAdder', {
 })
 
 const HalfAdderDemo = circuit('HalfAdderDemo', {
-  nodes: { sw_a: Switch(), sw_b: Switch(), dut: HalfAdder, led_sum: Led, led_carry: Led },
+  nodes: { sw_a: Switch, sw_b: Switch, dut: HalfAdder, led_sum: Led, led_carry: Led },
   connect: ({ inputs, outputs, nodes: { sw_a, sw_b, dut, led_sum, led_carry } }) => [
     sw_a.out.to(dut.a),
     sw_b.out.to(dut.b),
