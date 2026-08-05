@@ -408,9 +408,13 @@ function CircuitCanvasInner({
     }
 
     // After a paste-over the remount handles fitView via React Flow's
-    // own `fitView` prop. The remaining case is wasBlank without a
-    // remount (nodes appeared after an empty state on a stable canvas).
-    if (projectedNodes.length > 0 && wasBlank && !fullReset) {
+    // own `fitView` prop. The remaining cases are wasBlank without a
+    // remount (nodes appeared after an empty state on a stable canvas),
+    // and `relayout` — adding or removing a node re-runs the layout and
+    // changes the diagram's extent, so the old viewport no longer frames
+    // it (adding an input grows the switch column downward until it
+    // leaves the visible area).
+    if (projectedNodes.length > 0 && !fullReset && (wasBlank || relayout)) {
       requestAnimationFrame(() => fitView({ padding: 0.3 }));
     }
   }, [projectedNodes, projectedEdges]);
