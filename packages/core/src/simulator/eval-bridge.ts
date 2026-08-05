@@ -14,6 +14,7 @@
  * 4. Write output object properties back to typed arrays by index
  */
 
+import type { EvalEntry } from '../circuit/eval-registry.js';
 import { getAllCircuitEvals, getCircuitEval } from '../circuit/eval-registry.js';
 import { EVALUATORS } from './evaluators/index.js';
 import type { EvalContext, NumericEvaluator } from './evaluators/types.js';
@@ -202,23 +203,38 @@ export function generateEvalWrapper(
 // ============================================================================
 
 /**
+ * The registry entry each compiled evaluator was built from, so a redefinition
+ * can be detected. Keyed by type index, matching EVALUATORS.
+ */
+const evaluatorSource = new Map<number, EvalEntry>();
+
+/**
  * Ensure the EVALUATORS table has an entry for the given component name.
  * Reads from the eval-registry (populated at circuit() definition time).
- * No-op if already registered or no eval exists for this name.
+ *
+ * The compiled wrapper closes over the entry's `evalFn`, so it has to be
+ * regenerated when that function changes — otherwise redefining a primitive
+ * (which the browser editor does on every re-run, in the same realm) leaves the
+ * old behaviour compiled in. Identity of the registry entry is the signal:
+ * `circuit()` builds a fresh object per definition, so a differing reference
+ * means the source changed. Same reference is the common case and still costs
+ * only a Map lookup, at compile time rather than per evaluation.
  */
 export function ensureEvaluatorRegistered(name: string): number {
   const idx = getOrAllocateTypeIndex(name);
 
-  // Already registered (static stdlib evaluator or previously resolved)
-  if (EVALUATORS[idx] != null) return idx;
-
   const entry = getCircuitEval(name);
   if (!entry) {
+    // Evaluators registered directly through registerEvalFunction have no
+    // registry entry; keep whatever is already compiled.
+    if (EVALUATORS[idx] != null) return idx;
     console.warn(`[eval-bridge] No eval-registry entry for '${name}' — getAllCircuitEvals:`, [
       ...(getAllCircuitEvals() as Map<string, any>).keys(),
     ]);
     return idx;
   }
+
+  if (EVALUATORS[idx] != null && evaluatorSource.get(idx) === entry) return idx;
 
   while (EVALUATORS.length <= idx) EVALUATORS.push(null);
   EVALUATORS[idx] = generateEvalWrapper(
@@ -227,6 +243,9 @@ export function ensureEvaluatorRegistered(name: string): number {
     entry.evalFn,
     entry.stateKeys,
   );
+  evaluatorSource.set(idx, entry);
+  // Derived from the same entry, so it is stale for the same reason.
+  onTickRegistry.delete(name);
 
   return idx;
 }
