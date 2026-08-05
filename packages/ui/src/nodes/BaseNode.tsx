@@ -98,7 +98,10 @@ export function BaseNode({
       })}
 
       {/* Node Content */}
-      <div className="relative px-3 py-2">{children}</div>
+      {/* Port labels sit inside the node, so the content needs to give them
+          room or they collide with it — on a two-input gate the box is ~88px
+          wide, and a symbol plus `a`/`b`/`out` does not fit in that. */}
+      <div className={cn('relative py-2', showPortLabels ? 'px-8' : 'px-3')}>{children}</div>
 
       {/* Output Ports (Right Side) */}
       {outputPorts.map((port) => {
