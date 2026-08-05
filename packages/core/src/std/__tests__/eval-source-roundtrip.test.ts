@@ -4,19 +4,23 @@
  * The sandbox receives evals as source *text* and rebuilds them with
  * `new Function`, which preserves the body but not the closure. An eval that
  * reads a variable from its factory scope therefore throws the moment it runs
- * there — `Adder` is written `({ a, b, carry_in, width: w = width })`, where
- * the default reads the factory's `width`, and a bare `Adder()` supplies no
- * `width` argument, so the default always fires.
+ * there — `Adder` used to be written `({ a, b, carry_in, width: w = width })`,
+ * where the default reads the factory's `width`, and a bare `Adder()` supplies
+ * no `width` argument, so the default always fires.
  *
  * That crashed Snake and Pong with "width is not defined" once
  * `registerCircuitEval` became last-write-wins: the rebuilt copies started
- * replacing the real ones instead of being discarded. The sandbox now skips
- * stdlib names, so nothing is broken today.
+ * replacing the real ones instead of being discarded. The same last-write-wins
+ * rule made the closure wrong even in-process — one registry entry per name, so
+ * the last `Adder({ width: N })` defined anywhere set the fallback width for
+ * every bare `Adder()`, and importing `std` (which defines a 32-bit Adder in
+ * rv32i-cpu.ts) silently widened them all.
  *
- * This test exists so the hazard cannot grow silently. KNOWN_CLOSURE_DEPS is a
- * list that may only shrink: a new component written in the same style fails
- * here immediately, and fixing an existing one (give the destructure a literal
- * default instead of reading the factory variable) means deleting its line.
+ * This test exists so the hazard cannot come back. KNOWN_CLOSURE_DEPS is a list
+ * that may only shrink: a new component written in the same style fails here
+ * immediately. The fix is to give the destructure a literal default instead of
+ * reading the factory variable, and to inline any module-scope helper the body
+ * calls.
  *
  * A closure dependency surfaces as ReferenceError specifically, which is what
  * separates it from an eval that merely dislikes this test's synthetic inputs.
@@ -28,29 +32,10 @@ import '../index.js';
 
 /**
  * Evals that cannot be rebuilt from their own source because they close over a
- * factory variable (`width`, `inWidth`, `loWidth`, …). May only shrink.
+ * factory variable (`width`, `inWidth`, `loWidth`, …) or a module-scope helper.
+ * May only shrink — it is empty, and adding a name back is a regression.
  */
-const KNOWN_CLOSURE_DEPS = [
-  'Adder',
-  'BusNot',
-  'BusXnor',
-  'Concat',
-  'Divider',
-  'DynamicSlice',
-  'LeftShifter',
-  'Modulo',
-  'ReduceAnd',
-  'RightShifter',
-  'SignExtend',
-  'SignedComparator',
-  'SignedDivider',
-  'SignedModulo',
-  'SignedRightShifter',
-  'Slice',
-  'Subtractor',
-  'WrappingMultiplier',
-  'ZeroExtend',
-];
+const KNOWN_CLOSURE_DEPS: string[] = [];
 
 /** Rebuild an eval the way the sandbox does, and run it. */
 function survivesRoundTrip(entry: {
