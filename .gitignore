@@ -85,3 +85,6 @@ hardware/ulx3s/projects/cpu/cycle-diff.vcd
 # Verilog-import spike scratch/demo artifacts (local only)
 packages/core/import-demo.mts
 packages/core/*.imported.circuit.ts
+
+# Playwright MCP session artifacts (snapshots, console logs)
+.playwright-mcp/

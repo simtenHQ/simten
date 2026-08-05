@@ -61,7 +61,13 @@ export function BaseNode({
               position={Position.Left}
               id={`in-${port.name}`}
               className={cn(
-                'h-3 w-3 rounded-full border-2 transition-all duration-200',
+                // Transition colour and scale only. `transition-all` also animated
+                // `top`, and handles are positioned as a percentage of node
+                // height — so adding a port set every handle moving. React Flow
+                // measures handle bounds once, right after the DOM updates, and
+                // was catching them mid-flight: edges then routed to coordinates
+                // the handles had already left, and nothing re-measured.
+                'h-3 w-3 rounded-full border-2 transition-[background-color,border-color,transform] duration-200',
                 port.connected
                   ? 'bg-blue-500 border-blue-600'
                   : 'bg-[var(--embed-bg-tertiary)] border-[var(--embed-border-node)]',
@@ -116,7 +122,13 @@ export function BaseNode({
               position={Position.Right}
               id={`out-${port.name}`}
               className={cn(
-                'h-3 w-3 rounded-full border-2 transition-all duration-200',
+                // Transition colour and scale only. `transition-all` also animated
+                // `top`, and handles are positioned as a percentage of node
+                // height — so adding a port set every handle moving. React Flow
+                // measures handle bounds once, right after the DOM updates, and
+                // was catching them mid-flight: edges then routed to coordinates
+                // the handles had already left, and nothing re-measured.
+                'h-3 w-3 rounded-full border-2 transition-[background-color,border-color,transform] duration-200',
                 port.connected
                   ? 'bg-green-500 border-green-600'
                   : 'bg-[var(--embed-bg-tertiary)] border-[var(--embed-border-node)]',
