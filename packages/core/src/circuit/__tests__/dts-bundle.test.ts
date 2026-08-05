@@ -49,14 +49,17 @@ describe('dist/bundle.d.ts', () => {
     expect(bundle).toContain('_dependencies');
   });
 
-  it('stays under the 112 KB headroom budget', () => {
+  it('stays under the 116 KB headroom budget', () => {
     // Guard on the Monaco type-payload size (affects editor cold-load). Bump
     // deliberately when the public stdlib grows: raised 100 → 110 KB for the
     // four import-reconstruction components (Slice/Concat/SignExtend/ZeroExtend),
     // then 110 → 112 KB for the divide/remainder family (Divider/Modulo +
-    // Signed*). Trim JSDoc before bumping further.
+    // Signed*), then 112 → 116 KB for `PortOutputValues` — after trimming the
+    // JSDoc that came with it and with `registerCircuitEval`, which together
+    // pushed past 112 and, having landed in separate PRs, were each measured
+    // against a base without the other. Trim JSDoc before bumping further.
     const { size } = statSync(bundlePath);
-    expect(size).toBeLessThan(112 * 1024);
+    expect(size).toBeLessThan(116 * 1024);
   });
 });
 
