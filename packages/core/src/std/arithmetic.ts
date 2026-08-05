@@ -64,8 +64,11 @@ export const Adder = circuit(
     outputs: { sum: bus(width), carry_out: bit },
     meta: { category: 'arithmetic', icon: '+', description: 'N-bit adder with carry' },
     // `width` is read from inputs (bridge merges node.arguments) so a single
-    // registered lambda works for every Adder({width: N}) instance.
-    eval: ({ a, b, carry_in, width: w = width }) => {
+    // registered lambda works for every Adder({width: N}) instance. The
+    // fallback is the literal 8, not the factory's `width`: the registry keys
+    // by name and last write wins, so closing over it would let whichever
+    // Adder({width: N}) was defined last set the width for every bare Adder().
+    eval: ({ a, b, carry_in, width: w = 8 }) => {
       const wn = w as number;
       const mask = wn >= 32 ? 0xffffffff : (1 << wn) - 1;
       // a, b arrive as signed int32 from the typed-array store; coerce to
@@ -104,7 +107,7 @@ export const Subtractor = circuit('Subtractor', ({ width = 8 }: { width?: number
   inputs: { a: bus(width), b: bus(width), borrow_in: bit },
   outputs: { difference: bus(width), borrow_out: bit },
   meta: { category: 'arithmetic', icon: '−', description: 'N-bit subtractor with borrow' },
-  eval: ({ a, b, borrow_in, width: w = width }) => {
+  eval: ({ a, b, borrow_in, width: w = 8 }) => {
     const wn = w as number;
     const mask = wn >= 32 ? 0xffffffff : (1 << wn) - 1;
     const result = ((a as number) >>> 0) - ((b as number) >>> 0) - (borrow_in as number);
@@ -159,7 +162,7 @@ export const WrappingMultiplier = circuit(
       icon: '×↩',
       description: 'Wrapping multiplier (low width bits)',
     },
-    eval: ({ a, b, width: w = width }) => {
+    eval: ({ a, b, width: w = 8 }) => {
       const m = (w as number) >= 32 ? 0xffffffff : (1 << (w as number)) - 1;
       return { out: (Math.imul((a as number) >>> 0, (b as number) >>> 0) >>> 0) & m };
     },
@@ -177,7 +180,7 @@ export const Divider = circuit('Divider', ({ width = 8 }: { width?: number } = {
   inputs: { a: bus(width), b: bus(width) },
   outputs: { out: bus(width) },
   meta: { category: 'arithmetic', icon: '÷', description: 'Unsigned integer divider (a / b)' },
-  eval: ({ a, b, width: w = width }) => {
+  eval: ({ a, b, width: w = 8 }) => {
     const m = (w as number) >= 32 ? 0xffffffff : (1 << (w as number)) - 1;
     const bv = (b as number) >>> 0;
     const out = bv === 0 ? m : Math.floor(((a as number) >>> 0) / bv);
@@ -196,7 +199,7 @@ export const Modulo = circuit('Modulo', ({ width = 8 }: { width?: number } = {})
   inputs: { a: bus(width), b: bus(width) },
   outputs: { out: bus(width) },
   meta: { category: 'arithmetic', icon: '%', description: 'Unsigned integer remainder (a % b)' },
-  eval: ({ a, b, width: w = width }) => {
+  eval: ({ a, b, width: w = 8 }) => {
     const m = (w as number) >= 32 ? 0xffffffff : (1 << (w as number)) - 1;
     const av = (a as number) >>> 0;
     const bv = (b as number) >>> 0;
@@ -220,7 +223,7 @@ export const SignedDivider = circuit('SignedDivider', ({ width = 8 }: { width?: 
     icon: '÷±',
     description: 'Signed integer divider (a / b, truncates toward zero)',
   },
-  eval: ({ a, b, width: w = width }) => {
+  eval: ({ a, b, width: w = 8 }) => {
     // Sign interpretation inlined (no named inner fn) so the eval survives the
     // editor sandbox's new Function(fn.toString()) rebuild — a named arrow gets
     // wrapped in esbuild's __name(), which isn't defined there.
@@ -252,7 +255,7 @@ export const SignedModulo = circuit('SignedModulo', ({ width = 8 }: { width?: nu
     icon: '%±',
     description: 'Signed integer remainder (a % b, sign of dividend)',
   },
-  eval: ({ a, b, width: w = width }) => {
+  eval: ({ a, b, width: w = 8 }) => {
     // Sign interpretation inlined — see SignedDivider (sandbox __name issue).
     const wn = w as number;
     const m = wn >= 32 ? 0xffffffff : (1 << wn) - 1;
@@ -333,7 +336,7 @@ export const LeftShifter = circuit('LeftShifter', ({ width = 8 }: { width?: numb
   inputs: { value: bus(width), shift: bus(width) },
   outputs: { result: bus(width) },
   meta: { category: 'arithmetic', icon: '≪', description: 'Left bit shifter' },
-  eval: ({ value, shift, width: w = width }) => {
+  eval: ({ value, shift, width: w = 8 }) => {
     const wn = w as number;
     const sn = shift as number;
     const mask = wn >= 32 ? 0xffffffff : (1 << wn) - 1;
@@ -367,7 +370,7 @@ export const RightShifter = circuit('RightShifter', ({ width = 8 }: { width?: nu
   inputs: { value: bus(width), shift: bus(width) },
   outputs: { result: bus(width) },
   meta: { category: 'arithmetic', icon: '≫', description: 'Right bit shifter' },
-  eval: ({ value, shift, width: w = width }) => {
+  eval: ({ value, shift, width: w = 8 }) => {
     const wn = w as number;
     const sn = shift as number;
     return { result: sn >= wn ? 0 : (value as number) >>> sn };
@@ -388,7 +391,7 @@ export const SignedRightShifter = circuit(
     inputs: { value: bus(width), shift: bus(width) },
     outputs: { result: bus(width) },
     meta: { category: 'arithmetic', icon: '≫±', description: 'Arithmetic (signed) right shifter' },
-    eval: ({ value, shift, width: w = width }) => {
+    eval: ({ value, shift, width: w = 8 }) => {
       const wn = w as number;
       const mask = wn >= 32 ? 0xffffffff : (1 << wn) - 1;
       const half = 2 ** (wn - 1);
@@ -475,7 +478,7 @@ export const SignedComparator = circuit(
     outputs: { eq: bit, ne: bit, lt: bit, le: bit, gt: bit, ge: bit, lte: bit, gte: bit },
     meta: { category: 'arithmetic', icon: '±⋚', description: 'Signed comparator' },
     // width read from the bag so per-instance widths sign-extend correctly.
-    eval: ({ a, b, width: w = width }) => {
+    eval: ({ a, b, width: w = 8 }) => {
       const wn = w as number;
       const half = 2 ** (wn - 1);
       const whole = 2 ** wn;
@@ -616,7 +619,7 @@ export const BusNot = circuit('BusNot', ({ width = 8 }: { width?: number } = {})
   outputs: { out: bus(width) },
   meta: { category: 'bus-operations', icon: '¬8', description: 'Bitwise NOT on bus' },
   // width read from the bag so per-instance widths mask correctly (default 8).
-  eval: ({ in: a, width: w = width }) => {
+  eval: ({ in: a, width: w = 8 }) => {
     const m = ((w as number) >= 32 ? 0xffffffff : (1 << (w as number)) - 1) >>> 0;
     return { out: (~(a as number) >>> 0) & m };
   },
@@ -660,7 +663,7 @@ export const BusXnor = circuit('BusXnor', ({ width = 8 }: { width?: number } = {
   inputs: { a: bus(width), b: bus(width) },
   outputs: { out: bus(width) },
   meta: { category: 'bus-operations', icon: '⊙8', description: 'Bitwise XNOR on buses' },
-  eval: ({ a, b, width: w = width }) => {
+  eval: ({ a, b, width: w = 8 }) => {
     const m = ((w as number) >= 32 ? 0xffffffff : (1 << (w as number)) - 1) >>> 0;
     return { out: ((~((a as number) ^ (b as number)) >>> 0) & m) >>> 0 };
   },

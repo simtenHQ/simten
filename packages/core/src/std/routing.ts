@@ -243,8 +243,9 @@ export const Concat = circuit(
     outputs: { out: bus(hiWidth + loWidth) },
     meta: { category: 'utilities', icon: '||', description: 'Concatenate two buses ({high, low})' },
     // loWidth read from the bag (node.arguments) so per-instance widths are
-    // honoured; `* 2**lw` (not `<<`) stays correct above 32 bits.
-    eval: ({ high, low, loWidth: lw = loWidth }) => ({
+    // honoured; `* 2**lw` (not `<<`) stays correct above 32 bits. The fallback
+    // is the literal 4 rather than the factory's `loWidth` — see Adder.
+    eval: ({ high, low, loWidth: lw = 4 }) => ({
       out: (((high as number) >>> 0) * 2 ** ((lw as number) | 0) + ((low as number) >>> 0)) >>> 0,
     }),
   }),

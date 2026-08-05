@@ -13,6 +13,13 @@
  * structural args (`inWidth`/`offset`/`width`/`outWidth`) are read from the eval
  * input bag (fed from node.arguments by the bridge merge), never closed over.
  * Same contract as `Adder`/`Register`.
+ *
+ * That extends to the fallbacks and to the bodies: defaults are literals and
+ * mask/sign-extend arithmetic is spelled out inline rather than calling a
+ * module-scope helper. Last write wins in the registry, so a closed-over
+ * `width` would let the last-defined instance set the fallback for every
+ * bare one, and a closed-over helper cannot survive the sandbox's
+ * `new Function(fn.toString())` rebuild.
  */
 
 import { bit, bus } from '../circuit/bit-bus.js';
@@ -20,14 +27,6 @@ import { circuit } from '../circuit/circuit.js';
 
 /** width===1 → bit port, else bus(width). Mirrors the Mux/Constant convention. */
 const portOf = (width: number) => (width === 1 ? bit : bus(width));
-
-const maskOf = (w: number) => (w >= 32 ? 0xffffffff : (1 << w) - 1) >>> 0;
-
-/** Interpret an unsigned w-bit value as two's-complement signed. */
-const sext = (v: number, w: number): number => {
-  const u = v >>> 0;
-  return u >= 2 ** (w - 1) ? u - 2 ** w : u;
-};
 
 /**
  * Bus sub-range extract (in[offset +: width]) — reads bits
@@ -44,9 +43,11 @@ export const Slice = circuit(
   ({ inWidth = 8, width = 1 }: { inWidth?: number; offset?: number; width?: number } = {}) => ({
     inputs: { in: bus(inWidth) },
     outputs: { out: portOf(width) },
-    eval: ({ in: v, offset: off = 0, width: w = width }) => ({
-      out: (((v as number) >>> ((off as number) | 0)) & maskOf((w as number) | 0)) >>> 0,
-    }),
+    eval: ({ in: v, offset: off = 0, width: w = 1 }) => {
+      const wn = (w as number) | 0;
+      const mask = (wn >= 32 ? 0xffffffff : (1 << wn) - 1) >>> 0;
+      return { out: (((v as number) >>> ((off as number) | 0)) & mask) >>> 0 };
+    },
     meta: {
       category: 'utilities',
       icon: '⊂',
@@ -72,9 +73,14 @@ export const SignExtend = circuit(
   ({ inWidth = 8, outWidth = 16 }: { inWidth?: number; outWidth?: number } = {}) => ({
     inputs: { in: bus(inWidth) },
     outputs: { out: bus(outWidth) },
-    eval: ({ in: v, inWidth: iw = inWidth, outWidth: ow = outWidth }) => ({
-      out: (sext((v as number) >>> 0, iw as number) & maskOf(ow as number)) >>> 0,
-    }),
+    eval: ({ in: v, inWidth: iw = 8, outWidth: ow = 16 }) => {
+      const iwn = iw as number;
+      const own = ow as number;
+      const u = (v as number) >>> 0;
+      const signed = u >= 2 ** (iwn - 1) ? u - 2 ** iwn : u;
+      const mask = (own >= 32 ? 0xffffffff : (1 << own) - 1) >>> 0;
+      return { out: (signed & mask) >>> 0 };
+    },
     meta: { category: 'utilities', icon: '±⊳', description: 'Sign extension (replicate MSB)' },
   }),
 );
@@ -96,9 +102,11 @@ export const ZeroExtend = circuit(
   ({ inWidth = 8, outWidth = 16 }: { inWidth?: number; outWidth?: number } = {}) => ({
     inputs: { in: bus(inWidth) },
     outputs: { out: bus(outWidth) },
-    eval: ({ in: v, inWidth: iw = inWidth }) => ({
-      out: ((v as number) >>> 0) & maskOf(iw as number),
-    }),
+    eval: ({ in: v, inWidth: iw = 8 }) => {
+      const iwn = iw as number;
+      const mask = (iwn >= 32 ? 0xffffffff : (1 << iwn) - 1) >>> 0;
+      return { out: ((v as number) >>> 0) & mask };
+    },
     meta: {
       category: 'utilities',
       icon: '0⊳',
@@ -130,10 +138,12 @@ export const DynamicSlice = circuit(
   } = {}) => ({
     inputs: { in: bus(inWidth), shift: bus(shiftWidth) },
     outputs: { out: portOf(outWidth) },
-    eval: ({ in: v, shift: s, inWidth: iw = inWidth, outWidth: ow = outWidth }) => {
+    eval: ({ in: v, shift: s, inWidth: iw = 8, outWidth: ow = 1 }) => {
       const sh = (s as number) >>> 0;
       const shifted = sh >= (iw as number) ? 0 : ((v as number) >>> 0) >>> sh;
-      return { out: (shifted & maskOf(ow as number)) >>> 0 };
+      const own = ow as number;
+      const mask = (own >= 32 ? 0xffffffff : (1 << own) - 1) >>> 0;
+      return { out: (shifted & mask) >>> 0 };
     },
     meta: {
       category: 'utilities',
