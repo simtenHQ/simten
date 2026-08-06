@@ -13,8 +13,9 @@
 import type { BuiltCircuit } from '@simten/core/circuit';
 import { buildFromIR } from '@simten/core/circuit';
 import { SandboxProvider, useSandboxContext } from '@simten/ui/sandbox';
-import { useEffect, useState } from 'react';
+import { useEffect, useId, useState } from 'react';
 import { CircuitEmbed, type CircuitEmbedProps } from '../CircuitEmbed';
+import { ErrorDisplay } from '../components/ErrorDisplay';
 
 export interface WebComponentEmbedProps {
   code?: string;
@@ -40,6 +41,12 @@ function WebComponentEmbedInner({
   theme,
 }: WebComponentEmbedProps) {
   const sandbox = useSandboxContext();
+  // One compile slot per element. `sandbox.compile` with no slot writes to the
+  // shared default, so several <circuit-embed> tags on one page — a blog post
+  // with three diagrams — trampled each other and all rendered whichever
+  // circuit compiled last. `useCircuitSimulator` already does this for the
+  // simulation slot; compilation was the half that was missed.
+  const slotId = `wc-${useId()}`;
   const [builtCircuit, setBuiltCircuit] = useState<BuiltCircuit | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -52,7 +59,7 @@ function WebComponentEmbedInner({
 
     let cancelled = false;
 
-    sandbox.compile(code).then((result) => {
+    sandbox.compile(code, slotId).then((result) => {
       if (cancelled) return;
 
       if ('error' in result) {
@@ -75,7 +82,7 @@ function WebComponentEmbedInner({
     return () => {
       cancelled = true;
     };
-  }, [code, sandbox]);
+  }, [code, sandbox, slotId]);
 
   if (!code) {
     return (
@@ -86,12 +93,12 @@ function WebComponentEmbedInner({
   }
 
   if (error) {
+    // The package's own ErrorDisplay rather than a bespoke div: it carries
+    // role="alert" and aria-live, so a compile failure is announced instead of
+    // silently replacing the diagram for anyone using a screen reader.
     return (
       <div style={{ height }} className="flex items-center justify-center p-4">
-        <div className="text-sm text-red-400 bg-red-500/10 rounded p-3 border border-red-500/20">
-          <div className="font-medium mb-1">Error</div>
-          <div className="font-mono text-xs whitespace-pre-wrap">{error}</div>
-        </div>
+        <ErrorDisplay error={error} />
       </div>
     );
   }

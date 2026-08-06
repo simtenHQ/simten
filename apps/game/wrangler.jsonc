@@ -1,0 +1,16 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "simten-game",
+  "compatibility_date": "2025-09-02",
+  "compatibility_flags": ["nodejs_compat"],
+  "main": "@tanstack/react-start/server-entry",
+  // Own origin rather than a route under simten.dev. A route would work —
+  // routes take precedence over the Custom Domain the web worker holds on
+  // simten.dev — but it would force Vite `base`, the router `basepath`, and
+  // this pattern to agree, and every absolute asset URL to carry the prefix.
+  // Not worth it until there is a shared session to keep same-origin for.
+  "routes": [{ "pattern": "play.simten.dev", "custom_domain": true }],
+  "observability": {
+    "enabled": true
+  }
+}

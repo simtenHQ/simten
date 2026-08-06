@@ -1,0 +1,38 @@
+/**
+ * Tokens, fonts and Tailwind wiring.
+ *
+ * The palette lives in @simten/ui so this app and simten.dev cannot drift —
+ * they are the same product and a divergent border colour reads as two
+ * different sites. Only the things that genuinely belong to this app stay
+ * here: the font files it serves, and the source globs Tailwind must scan.
+ */
+
+@import 'tailwindcss';
+@import '@simten/ui/styles/theme.css';
+@import 'tw-animate-css';
+
+/* Tailwind v4 does not scan linked workspace packages, so the utility classes
+   inside @simten/ui's canvas and node components would never be emitted and
+   every node renders collapsed. */
+@source "../../../packages/ui/src/**/*.tsx";
+@source "../../../packages/embed/src/**/*.tsx";
+@source "./**/*.{ts,tsx}";
+
+/* Served from this app's own public/ — a separate origin needs its own copy. */
+@font-face {
+  font-family: 'Geist';
+  src: url('/fonts/Geist-Variable.woff2') format('woff2-variations');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Geist Mono';
+  src: url('/fonts/GeistMono-Variable.woff2') format('woff2-variations');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@custom-variant dark (&:is(.dark *));
