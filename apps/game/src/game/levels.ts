@@ -37,7 +37,7 @@ export const LEVELS: Level[] = [
 // done except for the last wire: the AND gate has its answer, but nothing
 // carries it to the lamp.
 
-export const And1 = circuit('And1', {
+export default circuit('And1', {
   nodes: {
     a: Switch,
     b: Switch,
@@ -74,7 +74,7 @@ export const And1 = circuit('And1', {
 //
 // Hint: a NAND has two inputs. Nothing says they have to be different.
 
-export const Not1 = circuit('Not1', {
+export default circuit('Not1', {
   nodes: {
     a: Switch,
     out: Led,
@@ -105,7 +105,7 @@ export const Not1 = circuit('Not1', {
 // A signal can drive more than one port:
 //   a.out.to(n1.a, n2.a)
 
-export const Xor1 = circuit('Xor1', {
+export default circuit('Xor1', {
   nodes: {
     a: Switch,
     b: Switch,
@@ -143,7 +143,7 @@ export const Xor1 = circuit('Xor1', {
 // attached. That is the point: it is a component now, and a component is
 // something other circuits can use without knowing how it works.
 
-export const Xor2 = circuit('Xor2', {
+export default circuit('Xor2', {
   inputs: { a: bit, b: bit },
   outputs: { out: bit },
   nodes: {
