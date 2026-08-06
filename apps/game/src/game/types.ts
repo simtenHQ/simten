@@ -67,10 +67,22 @@ export interface Level {
    */
   vectors: Vector[];
   /**
-   * Gate count worth beating. Shown as a target, never enforced. `undefined`
-   * means the level has no interesting optimum.
+   * Gate count worth beating. Used for scoring; not shown on the completion
+   * dialog, where a par figure reads as a mark out of ten rather than an
+   * invitation. `undefined` means the level has no interesting optimum.
    */
   par?: number;
+  /**
+   * What the completion dialog says. Written per level so finishing one names
+   * what you just built and points at what is coming, instead of repeating a
+   * generic "solved" every time.
+   */
+  outro: {
+    /** The reaction, not the fact. Short. */
+    headline: string;
+    /** A sentence or two: what you made, and the hook into the next level. */
+    body: string;
+  };
 }
 
 /** Why a submission was rejected. Each case carries what the player needs to fix it. */

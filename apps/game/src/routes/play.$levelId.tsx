@@ -22,6 +22,7 @@ import { Sheet, SheetContent, SheetTitle } from '@simten/ui/primitives/sheet';
 import { useSandboxContext } from '@simten/ui/sandbox';
 import { createFileRoute, Link, notFound } from '@tanstack/react-router';
 import { useCallback, useMemo, useState } from 'react';
+import { LevelComplete } from '../components/LevelComplete';
 import { SpecPanel } from '../components/SpecPanel';
 import { grade } from '../game/grade';
 import { nameDiagnostics } from '../game/level-name';
@@ -65,6 +66,9 @@ function PlayLevel({ level }: { level: Level }) {
   const [result, setResult] = useState<GradeResult | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [specOpen, setSpecOpen] = useState(true);
+  // Closing the completion dialog must not immediately reopen it, but a fresh
+  // submit should bring it back.
+  const [completeDismissed, setCompleteDismissed] = useState(false);
 
   // Preview the circuit the source describes. Pinned to the level's target by
   // name — the default picks the last circuit defined, which would follow a
@@ -106,6 +110,7 @@ function PlayLevel({ level }: { level: Level }) {
     try {
       const verdict = await grade(sandboxRuntime(sandbox), level, source);
       setResult(verdict);
+      setCompleteDismissed(false);
       // Submit is a request for a verdict, so show it — hidden, the spec sheet
       // swallowed both the failure message and the whole victory run.
       setSpecOpen(true);
@@ -142,20 +147,14 @@ function PlayLevel({ level }: { level: Level }) {
         </p>
 
         <div className="ml-auto flex shrink-0 items-center gap-2">
-          {solved && victory.complete && next && (
-            <Link
-              to="/play/$levelId"
-              params={{ levelId: next.id }}
-              onClick={() => setResult(null)}
-              className="whitespace-nowrap rounded-md border border-border px-3 py-1.5 text-xs font-medium no-underline"
+          {solved && victory.complete && (
+            <button
+              type="button"
+              onClick={() => setCompleteDismissed(false)}
+              className="whitespace-nowrap rounded-md border border-emerald-500/50 px-3 py-1.5 text-xs font-medium text-emerald-600 dark:text-emerald-400"
             >
-              Next: {next.title} →
-            </Link>
-          )}
-          {solved && victory.complete && !next && (
-            <span className="whitespace-nowrap text-xs text-muted-foreground">
-              That is the last one for now — more coming.
-            </span>
+              Solved · {result?.status === 'pass' ? result.gates : 0}
+            </button>
           )}
           <button
             type="button"
@@ -242,6 +241,20 @@ function PlayLevel({ level }: { level: Level }) {
           whatever the modal setting says. Outside interaction does not dismiss
           it either: clicking a switch is not a request to close the spec.
           Focus stays where it was, so opening this never interrupts typing. */}
+      {result?.status === 'pass' && (
+        <LevelComplete
+          // Held back until the victory run has finished demonstrating the
+          // circuit — the run is the proof, this is the receipt.
+          open={victory.complete && !completeDismissed}
+          onOpenChange={(o) => setCompleteDismissed(!o)}
+          level={level}
+          gates={result.gates}
+          next={next}
+          position={position}
+          total={LEVELS.length}
+        />
+      )}
+
       <Sheet modal={false} open={specOpen} onOpenChange={setSpecOpen}>
         <SheetContent
           side="bottom"
