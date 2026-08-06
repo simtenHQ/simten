@@ -1,10 +1,15 @@
 /**
- * The drilldown panel.
+ * The drilldown.
  *
- * Hovering a level on the map opens its circuit here, live and clickable —
- * flip the switches, watch the lamp. It is the same `useCompiledCircuit` +
- * `CircuitCanvas` pair the level page uses, pointed at a finished solution
- * instead of the editor's buffer.
+ * Double-clicking the badge on a level opens its circuit in
+ * `CompositeInspectorDialog` — the same inspector the canvas opens when you
+ * double-click a composite component, so it arrives with a full-size canvas,
+ * its own simulation engine, breadcrumbs and nested drill-down already working.
+ *
+ * The component renders nothing until then. It is mounted on hover rather than
+ * on open purely to warm the compile: you have to hover a badge before you can
+ * double-click it, so by the time the dialog is asked for, the circuit is ready
+ * and it opens instantly instead of flashing empty while the sandbox works.
  *
  * Today it draws the reference answer, because nothing stores the player's
  * (see `solutions.ts`). That makes the interaction judgeable now and is the
@@ -13,13 +18,21 @@
  * drafts persist, only the `source` line below changes.
  */
 
+import type { Circuit } from '@simten/core';
 import { useCompiledCircuit } from '@simten/embed';
-import { CircuitCanvas } from '@simten/ui/canvas';
-import { useCallback } from 'react';
+import { CompositeInspectorDialog, type InspectorFrame } from '@simten/ui/canvas';
+import { useCallback, useEffect, useState } from 'react';
 import { SOLUTIONS } from '../game/solutions';
 import type { Level } from '../game/types';
 
-export function LevelDrilldown({ level }: { level: Level }) {
+export interface LevelDrilldownProps {
+  level: Level;
+  /** Whether the inspector is open. False means this is only prefetching. */
+  expanded?: boolean;
+  onCloseExpanded?: () => void;
+}
+
+export function LevelDrilldown({ level, expanded, onCloseExpanded }: LevelDrilldownProps) {
   const source = SOLUTIONS[level.id];
 
   // `select` is a picker over the compiled circuits, not a name — the default
@@ -36,35 +49,61 @@ export function LevelDrilldown({ level }: { level: Level }) {
     autoHarness: true,
   });
 
+  /**
+   * The inspector's drill-down stack. Seeded with this level's circuit when
+   * expanded, then owned by the dialog — pushing goes deeper into a composite,
+   * popping comes back out, and an empty stack is what "closed" means to it.
+   */
+  const [stack, setStack] = useState<InspectorFrame[]>([]);
+
+  useEffect(() => {
+    if (expanded && preview.circuit) {
+      setStack([
+        {
+          componentName: preview.circuit.name,
+          componentDef: preview.circuit,
+          nodeLabel: level.title,
+        },
+      ]);
+    } else {
+      setStack([]);
+    }
+  }, [expanded, preview.circuit, level.title]);
+
+  const onPushLevel = useCallback((componentName: string, def: Circuit, nodeLabel: string) => {
+    setStack((s) => [...s, { componentName, componentDef: def, nodeLabel }]);
+  }, []);
+
+  const onPopLevel = useCallback(() => setStack((s) => s.slice(0, -1)), []);
+  const onNavigate = useCallback((index: number) => setStack((s) => s.slice(0, index + 1)), []);
+
+  const onClose = useCallback(() => {
+    setStack([]);
+    onCloseExpanded?.();
+  }, [onCloseExpanded]);
+
+  // These are our own reference solutions and the suite proves they compile, so
+  // this should be unreachable — but a drilldown that opens to nothing at all
+  // would be indistinguishable from a broken double-click.
+  if (expanded && preview.compileError) {
+    return (
+      <div className="fixed inset-x-0 bottom-6 mx-auto w-fit rounded-lg border border-border bg-card px-4 py-2 text-sm text-muted-foreground">
+        {level.title} did not compile: {preview.compileError}
+      </div>
+    );
+  }
+
+  if (!preview.componentLibrary) return null;
+
   return (
-    <div className="flex h-full flex-col">
-      <div className="border-b border-border px-4 py-3">
-        <p className="text-xs uppercase tracking-wide text-muted-foreground">Inside</p>
-        <p className="font-medium">{level.title}</p>
-      </div>
-      <div className="min-h-0 flex-1">
-        {preview.compileError ? (
-          <div className="grid h-full place-items-center px-4 text-center text-sm text-muted-foreground">
-            {preview.compileError}
-          </div>
-        ) : (
-          <CircuitCanvas
-            circuit={preview.circuit}
-            componentLibrary={preview.componentLibrary ?? undefined}
-            portValues={preview.portValues}
-            theme="dark"
-            autoLayout
-            showControls={false}
-            onToggleNode={preview.toggleNode}
-            onSetNodeValue={preview.setNodeValue}
-            renderEmptyState={() => (
-              <div className="grid h-full place-items-center text-sm text-muted-foreground">
-                Compiling…
-              </div>
-            )}
-          />
-        )}
-      </div>
-    </div>
+    <CompositeInspectorDialog
+      stack={stack}
+      componentLibrary={preview.componentLibrary}
+      theme="dark"
+      onClose={onClose}
+      onPopLevel={onPopLevel}
+      onPushLevel={onPushLevel}
+      onNavigate={onNavigate}
+    />
   );
 }

@@ -11,6 +11,7 @@
  */
 
 import { Link } from '@tanstack/react-router';
+import { CompositeBadge } from '@simten/ui/nodes';
 import {
   Background,
   BackgroundVariant,
@@ -29,8 +30,11 @@ import { useCallback, useMemo } from 'react';
 import { buildMapGraph, type LevelNodeData, MAP_ROWS, NODE_WIDTH } from '../game/map';
 import { simulateMap } from '../game/map-circuit';
 
-/** Node data plus the hover callback, which is view state rather than map data. */
-type LevelNodeView = LevelNodeData & { onHover?: (levelId: string) => void };
+/** Node data plus the interaction callbacks, which are view state rather than map data. */
+type LevelNodeView = LevelNodeData & {
+  onHover?: (levelId: string) => void;
+  onExpand?: (levelId: string) => void;
+};
 type LevelNode = Node<LevelNodeView, 'level'>;
 
 /**
@@ -73,7 +77,7 @@ function LevelMapNode({ data }: NodeProps<LevelNode>) {
         `nopan` stops a click on a card from being read as a drag of the canvas.
       */}
       <div
-        className={`nopan pointer-events-auto flex items-center rounded-lg border px-4 py-3 transition-colors ${
+        className={`nopan pointer-events-auto relative flex items-center rounded-lg border px-4 py-3 transition-colors ${
           STATE_STYLES[data.state]
         }`}
         style={{ width: NODE_WIDTH }}
@@ -81,18 +85,39 @@ function LevelMapNode({ data }: NodeProps<LevelNode>) {
         {locked ? (
           body
         ) : (
-          <Link
-            to="/play/$levelId"
-            params={{ levelId: data.levelId }}
-            // Opening the drilldown on focus as well as hover is not just for
-            // the linter: it is what gives the panel to anyone tabbing the map
-            // rather than pointing at it.
-            onMouseEnter={() => data.onHover?.(data.levelId)}
-            onFocus={() => data.onHover?.(data.levelId)}
-            className="w-full outline-none focus-visible:underline"
-          >
-            {body}
-          </Link>
+          <>
+            <Link
+              to="/play/$levelId"
+              params={{ levelId: data.levelId }}
+              // Opening the drilldown on focus as well as hover is not just for
+              // the linter: it is what gives the panel to anyone tabbing the map
+              // rather than pointing at it.
+              onMouseEnter={() => data.onHover?.(data.levelId)}
+              onFocus={() => data.onHover?.(data.levelId)}
+              className="w-full outline-none focus-visible:underline"
+            >
+              {body}
+            </Link>
+            {/*
+              The same badge the canvas puts on a composite component, carrying
+              the same gesture and the same tooltip — so "there is something
+              inside this" is a thing you can see rather than a thing you have
+              to guess. It sits outside the Link deliberately: clicking the card
+              still opens the level, and inspecting is its own target.
+
+              `contents` keeps the button boxless, so the badge's own absolute
+              positioning still resolves against the card rather than nesting a
+              second offset inside a wrapper.
+            */}
+            <button
+              type="button"
+              className="contents"
+              aria-label={`Look inside ${data.title}`}
+              onDoubleClick={() => data.onExpand?.(data.levelId)}
+            >
+              <CompositeBadge />
+            </button>
+          </>
         )}
       </div>
       <Handle type="source" position={Position.Top} className="!opacity-0" />
@@ -105,13 +130,15 @@ const NODE_TYPES: NodeTypes = { level: LevelMapNode };
 export interface LevelMapProps {
   /** Completed level ids. Empty until progress is persisted. */
   solved?: ReadonlySet<string>;
-  /** Called when a level is hovered, so the page can open its drilldown. */
+  /** Called when a level is hovered, so the page can preview its drilldown. */
   onHoverLevel?: (levelId: string) => void;
+  /** Called on double-click, to open the full inspector. */
+  onExpandLevel?: (levelId: string) => void;
 }
 
 type LevelMapCanvasProps = LevelMapProps;
 
-function LevelMapCanvas({ solved, onHoverLevel }: LevelMapCanvasProps) {
+function LevelMapCanvas({ solved, onHoverLevel, onExpandLevel }: LevelMapCanvasProps) {
   const { nodes, edges } = useMemo(() => buildMapGraph(solved), [solved]);
 
   /**
@@ -136,9 +163,10 @@ function LevelMapCanvas({ solved, onHoverLevel }: LevelMapCanvasProps) {
                 ? 'available'
                 : 'locked',
           onHover: onHoverLevel,
+          onExpand: onExpandLevel,
         },
       })),
-    [nodes, unlocked, onHoverLevel],
+    [nodes, unlocked, onHoverLevel, onExpandLevel],
   );
 
   const flowEdges = useMemo<Edge[]>(
