@@ -52,7 +52,10 @@ export function SpecPanel({ level, result, activeRow, provenRows, revealVerdict 
         <Field label="Signals">{[...level.inputs, ...level.outputs].join(', ')}</Field>
       </div>
 
-      {result && (
+      {/* Failures only. A pass gets the completion dialog, and the header keeps
+          a persistent "Solved · N" chip that reopens it — repeating the score
+          here as well would be the third place saying the same thing. */}
+      {result && result.status !== 'pass' && (
         <div className="min-w-[260px] shrink-0">
           <GradeReport result={result} level={level} revealed={revealVerdict} />
         </div>

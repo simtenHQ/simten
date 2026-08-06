@@ -58,6 +58,10 @@ export default circuit('And1', {
       { inputs: { a: 1, b: 1 }, expect: { out: 1 } },
     ],
     par: 1,
+    outro: {
+      headline: "That's a circuit",
+      body: 'Two switches, a gate, and a lamp. Everything from here is that same idea repeated. Next you lose the AND gate: you get one gate from now on and build the rest yourself.',
+    },
   },
 
   {
@@ -69,18 +73,23 @@ export default circuit('And1', {
     inputs: ['a'],
     outputs: ['out'],
     allowed: ['Nand'],
-    stub: `// You choose the nodes now. Add what you need to \`nodes\`,
-// then wire it up.
+    stub: `// One gate from here on: NAND.
+// It outputs 0 only when both inputs are 1.
 //
-// Hint: a NAND has two inputs. Nothing says they have to be different.
+// The NAND is placed, and its output already
+// runs to the lamp. What is missing is the input.
+//
+// Hint: it has two inputs. Nothing says they
+// have to come from different places.
 
 export default circuit('Not1', {
   nodes: {
     a: Switch,
+    n1: Nand,
     out: Led,
   },
-  connect: ({ nodes: { a, out } }) => [
-    //
+  connect: ({ nodes: { a, n1, out } }) => [
+    n1.out.to(out.in),
   ],
 });
 `,
@@ -89,6 +98,10 @@ export default circuit('Not1', {
       { inputs: { a: 1 }, expect: { out: 0 } },
     ],
     par: 1,
+    outro: {
+      headline: 'One gate down',
+      body: 'You built NOT out of nothing but NAND. Every other gate works the same way. XOR is next, and it takes four of them.',
+    },
   },
 
   {
@@ -123,6 +136,10 @@ export default circuit('Xor1', {
       { inputs: { a: 1, b: 1 }, expect: { out: 0 } },
     ],
     par: 4,
+    outro: {
+      headline: 'Four NANDs, one XOR',
+      body: "That's the gate an adder is built from, so you'll be reaching for it again. Next you wrap it up so other circuits can use it without seeing inside.",
+    },
   },
 
   {
@@ -161,6 +178,10 @@ export default circuit('Xor2', {
       { inputs: { a: 1, b: 1 }, expect: { out: 0 } },
     ],
     par: 4,
+    outro: {
+      headline: "It's a component now",
+      body: 'Ports instead of switches, and the diagram collapsed into one box. That is what lets circuits build on each other, which is where this goes next.',
+    },
   },
 ];
 
