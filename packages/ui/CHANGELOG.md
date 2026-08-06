@@ -1,5 +1,12 @@
 # @simten/ui
 
+## 0.7.1
+
+### Patch Changes
+
+- Updated dependencies [10994f0]
+  - @simten/core@0.14.0
+
 ## 0.7.0
 
 ### Minor Changes
