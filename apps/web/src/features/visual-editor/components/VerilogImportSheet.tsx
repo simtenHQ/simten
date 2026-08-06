@@ -9,9 +9,6 @@
 
 'use client';
 
-import { FileInput, Loader2 } from 'lucide-react';
-import { useCallback, useRef, useState } from 'react';
-import { Button } from '@/components/ui/button';
 import {
   Sheet,
   SheetClose,
@@ -19,7 +16,10 @@ import {
   SheetHeader,
   SheetTitle,
   SheetTrigger,
-} from '@/components/ui/sheet';
+} from '@simten/ui/primitives/sheet';
+import { FileInput, Loader2 } from 'lucide-react';
+import { useCallback, useRef, useState } from 'react';
+import { Button } from '@/components/ui/button';
 
 /** Pull module names out of Verilog source; the last one is the default top. */
 function detectModules(src: string): string[] {
