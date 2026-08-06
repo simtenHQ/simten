@@ -1,4 +1,20 @@
-@import "tailwindcss";
+/* Tailwind WITHOUT Preflight.
+ *
+ * `@import "tailwindcss"` pulls in Preflight, whose resets are unscoped — and
+ * this stylesheet gets dropped into other people's pages via
+ * <link href=".../@simten/embed/dist/styles.css">. It was shipping
+ * `h1,h2,h3,h4,h5,h6{font-size:inherit;font-weight:inherit}` and
+ * `a{color:inherit;text-decoration:inherit}` globally, so embedding a circuit
+ * in a blog post flattened every heading and stripped every link on the page.
+ *
+ * There is no Shadow DOM to hide behind — ReactFlow needs direct DOM access
+ * (see webcomponent/index.ts) — so isolation has to come from the CSS. The
+ * theme and utility layers are imported directly and Preflight's resets are
+ * re-applied below, scoped to [data-embed-theme]: the root element rendered by
+ * both CircuitViewer and WebComponentEmbed. */
+@layer theme, base, components, utilities;
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities);
 
 @source "../**/*.tsx";
 @source "../../../../packages/ui/src/**/*.tsx";
@@ -73,12 +89,92 @@
   --color-ring: var(--ring);
 }
 
-/* Base defaults — apply border-color so Tailwind's border-border works.
-   Uses unlayered rule to ensure it overrides Tailwind's @layer base defaults. */
+/* ── Scoped Preflight ─────────────────────────────────────────────────
+   Everything Tailwind's utilities assume has been reset, confined to the
+   embed's own subtree. Unlayered so it beats @layer utilities defaults.
+   Widen carefully: any selector here that escapes [data-embed-theme] is a
+   rule applied to somebody else's page. */
+[data-embed-theme],
 [data-embed-theme] *,
 [data-embed-theme] *::before,
 [data-embed-theme] *::after {
+  box-sizing: border-box;
+  /* Tailwind's `border-*` utilities set width only, so the base must supply
+     style and colour or every border silently disappears. */
+  border-width: 0;
+  border-style: solid;
   border-color: var(--color-border, rgba(55, 55, 65, 0.5));
+}
+
+[data-embed-theme] {
+  line-height: 1.5;
+  -webkit-text-size-adjust: 100%;
+  -webkit-font-smoothing: antialiased;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+}
+
+[data-embed-theme] h1,
+[data-embed-theme] h2,
+[data-embed-theme] h3,
+[data-embed-theme] h4,
+[data-embed-theme] h5,
+[data-embed-theme] h6,
+[data-embed-theme] p,
+[data-embed-theme] figure,
+[data-embed-theme] blockquote,
+[data-embed-theme] dl,
+[data-embed-theme] dd,
+[data-embed-theme] pre {
+  margin: 0;
+  font-size: inherit;
+  font-weight: inherit;
+}
+
+[data-embed-theme] ol,
+[data-embed-theme] ul,
+[data-embed-theme] menu {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+[data-embed-theme] a {
+  color: inherit;
+  text-decoration: inherit;
+}
+
+[data-embed-theme] button,
+[data-embed-theme] input,
+[data-embed-theme] optgroup,
+[data-embed-theme] select,
+[data-embed-theme] textarea {
+  font: inherit;
+  color: inherit;
+  margin: 0;
+  padding: 0;
+  background-color: transparent;
+  letter-spacing: inherit;
+}
+
+[data-embed-theme] button {
+  cursor: pointer;
+  -webkit-appearance: button;
+  appearance: button;
+}
+
+[data-embed-theme] img,
+[data-embed-theme] svg,
+[data-embed-theme] video,
+[data-embed-theme] canvas {
+  display: block;
+  vertical-align: middle;
+  max-width: 100%;
+  height: auto;
+}
+
+[data-embed-theme] table {
+  border-collapse: collapse;
+  text-indent: 0;
 }
 
 /* Bespoke embed tokens — see comment on the dark block above. */
