@@ -18,11 +18,11 @@ import {
   ResizablePanel,
   ResizablePanelGroup,
 } from '@simten/ui/primitives/resizable';
+import { Sheet, SheetContent, SheetTitle } from '@simten/ui/primitives/sheet';
 import { useSandboxContext } from '@simten/ui/sandbox';
 import { createFileRoute, Link, notFound } from '@tanstack/react-router';
 import { useCallback, useMemo, useState } from 'react';
-import { GradeReport } from '../components/GradeReport';
-import { TruthTable } from '../components/TruthTable';
+import { SpecPanel } from '../components/SpecPanel';
 import { grade } from '../game/grade';
 import { nameDiagnostics } from '../game/level-name';
 import { LEVELS, LEVELS_BY_ID, levelIndex, nextLevel } from '../game/levels';
@@ -64,6 +64,7 @@ function PlayLevel({ level }: { level: Level }) {
   const [source, setSource] = useState(level.stub);
   const [result, setResult] = useState<GradeResult | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [specOpen, setSpecOpen] = useState(true);
 
   // Preview the circuit the source describes. Pinned to the level's target by
   // name — the default picks the last circuit defined, which would follow a
@@ -105,6 +106,9 @@ function PlayLevel({ level }: { level: Level }) {
     try {
       const verdict = await grade(sandboxRuntime(sandbox), level, source);
       setResult(verdict);
+      // Submit is a request for a verdict, so show it — hidden, the spec sheet
+      // swallowed both the failure message and the whole victory run.
+      setSpecOpen(true);
       if (verdict.status === 'pass') victory.start();
       else victory.reset();
     } finally {
@@ -127,32 +131,44 @@ function PlayLevel({ level }: { level: Level }) {
           Simten
         </Link>
         <div className="h-5 w-px bg-border" />
-        <span className="text-sm font-semibold text-foreground/80">{level.title}</span>
-        <span className="text-xs text-muted-foreground">
+        <span className="shrink-0 text-sm font-semibold text-foreground/80">{level.title}</span>
+        <span className="shrink-0 text-xs text-muted-foreground">
           {position} / {LEVELS.length}
         </span>
+        {/* The brief is read once and then ignored, so it belongs here rather
+            than occupying panel space for the rest of the level. */}
+        <p className="hidden truncate text-xs text-muted-foreground lg:block" title={level.brief}>
+          {level.brief}
+        </p>
 
-        <div className="ml-auto flex items-center gap-2">
+        <div className="ml-auto flex shrink-0 items-center gap-2">
           {solved && victory.complete && next && (
             <Link
               to="/play/$levelId"
               params={{ levelId: next.id }}
               onClick={() => setResult(null)}
-              className="rounded-md border border-border px-3 py-1.5 text-xs font-medium no-underline"
+              className="whitespace-nowrap rounded-md border border-border px-3 py-1.5 text-xs font-medium no-underline"
             >
               Next: {next.title} →
             </Link>
           )}
           {solved && victory.complete && !next && (
-            <span className="text-xs text-muted-foreground">
+            <span className="whitespace-nowrap text-xs text-muted-foreground">
               That is the last one for now — more coming.
             </span>
           )}
           <button
             type="button"
+            onClick={() => setSpecOpen((v) => !v)}
+            className="whitespace-nowrap rounded-md border border-border px-3 py-1.5 text-xs font-medium"
+          >
+            {specOpen ? 'Hide spec' : 'Show spec'}
+          </button>
+          <button
+            type="button"
             onClick={onSubmit}
             disabled={submitting}
-            className="rounded-md bg-primary px-4 py-1.5 text-xs font-semibold text-primary-foreground disabled:opacity-50"
+            className="whitespace-nowrap rounded-md bg-primary px-4 py-1.5 text-xs font-semibold text-primary-foreground disabled:opacity-50"
           >
             {submitting ? 'Checking…' : 'Submit'}
           </button>
@@ -161,48 +177,15 @@ function PlayLevel({ level }: { level: Level }) {
 
       <div className="min-h-0 flex-1">
         <ResizablePanelGroup>
-          <ResizablePanel defaultSize={22} minSize={15} className="overflow-y-auto">
-            <div className="flex flex-col gap-5 p-4">
-              <p className="text-sm leading-relaxed text-muted-foreground">{level.brief}</p>
-
-              <div>
-                <h2 className="mb-2 text-[11px] uppercase tracking-wider text-muted-foreground">
-                  Must produce
-                </h2>
-                <TruthTable level={level} active={victory.active} proven={victory.proven} />
-              </div>
-
-              <div className="space-y-1 text-xs">
-                <div>
-                  <span className="text-muted-foreground">Available: </span>
-                  <span className="font-mono">{level.allowed.join(', ')}</span>
-                </div>
-                <div>
-                  <span className="text-muted-foreground">Must define: </span>
-                  <span className="font-mono">{level.target}</span>
-                </div>
-                <div>
-                  <span className="text-muted-foreground">Signals: </span>
-                  <span className="font-mono">
-                    {[...level.inputs, ...level.outputs].join(', ')}
-                  </span>
-                </div>
-              </div>
-
-              {result && <GradeReport result={result} level={level} revealed={victory.complete} />}
-            </div>
-          </ResizablePanel>
-
-          <ResizableHandle withHandle />
-
-          <ResizablePanel defaultSize={36} minSize={20} className="flex flex-col overflow-hidden">
+          <ResizablePanel defaultSize={45} minSize={20} className="flex flex-col overflow-hidden">
             <div className="min-h-0 flex-1">
               <SimtenCodeEditor
                 value={source}
                 onChange={(v) => {
                   setSource(v ?? '');
-                  // A verdict describes the source that produced it, so an edit
-                  // retires both the verdict and any victory run still sweeping.
+                  // A verdict describes the source that produced it, so an
+                  // edit retires both the verdict and any victory run still
+                  // sweeping.
                   if (result) {
                     setResult(null);
                     victory.reset();
@@ -222,13 +205,13 @@ function PlayLevel({ level }: { level: Level }) {
               />
             </div>
             {/* Diagnostics live under the editor, never over the canvas — a
-                parse error mid-keystroke must not blank the diagram. */}
+              parse error mid-keystroke must not blank the diagram. */}
             {preview.compileError && <ErrorDisplay error={preview.compileError} />}
           </ResizablePanel>
 
           <ResizableHandle withHandle />
 
-          <ResizablePanel defaultSize={42} minSize={20} className="overflow-hidden">
+          <ResizablePanel defaultSize={55} minSize={20} className="overflow-hidden">
             <CircuitCanvas
               circuit={preview.circuit}
               componentLibrary={preview.componentLibrary ?? undefined}
@@ -236,10 +219,9 @@ function PlayLevel({ level }: { level: Level }) {
               theme="dark"
               showControls
               // Re-lay out on every change. The default only re-runs the
-              // layout when nodes appear or disappear, so adding the last wire
-              // — which changes no nodes — left the lamp sitting where it had
-              // been while unconnected, with the new edge detouring to reach
-              // it. A level's diagram should always read as the circuit is now.
+              // layout when nodes appear or disappear, so adding the last
+              // wire — which changes no nodes — left the lamp where it had
+              // been while unconnected.
               autoLayout
               // The harness switches are clickable, so the player can drive
               // their own circuit and see it light up before submitting.
@@ -247,9 +229,6 @@ function PlayLevel({ level }: { level: Level }) {
               onSetNodeValue={preview.setNodeValue}
               renderEmptyState={() => (
                 <div className="grid h-full place-items-center text-sm text-muted-foreground">
-                  {/* A name mismatch no longer lands here — the preview falls
-                      back to the last circuit defined, and the editor carries
-                      the warning. This is only ever an empty source. */}
                   Your circuit appears here as you write it.
                 </div>
               )}
@@ -257,6 +236,31 @@ function PlayLevel({ level }: { level: Level }) {
           </ResizablePanel>
         </ResizablePanelGroup>
       </div>
+
+      {/* Non-modal so the editor and canvas keep working behind it, and the
+          overlay is off — it is `fixed inset-0` and would swallow every click
+          whatever the modal setting says. Outside interaction does not dismiss
+          it either: clicking a switch is not a request to close the spec.
+          Focus stays where it was, so opening this never interrupts typing. */}
+      <Sheet modal={false} open={specOpen} onOpenChange={setSpecOpen}>
+        <SheetContent
+          side="bottom"
+          showOverlay={false}
+          showCloseButton={false}
+          onInteractOutside={(e) => e.preventDefault()}
+          onOpenAutoFocus={(e) => e.preventDefault()}
+          className="max-h-[45vh] gap-0 overflow-y-auto"
+        >
+          <SheetTitle className="sr-only">Level spec</SheetTitle>
+          <SpecPanel
+            level={level}
+            result={result}
+            activeRow={victory.active}
+            provenRows={victory.proven}
+            revealVerdict={victory.complete}
+          />
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }

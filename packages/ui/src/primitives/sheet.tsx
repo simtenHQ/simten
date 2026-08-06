@@ -41,14 +41,21 @@ function SheetContent({
   children,
   side = 'right',
   showCloseButton = true,
+  showOverlay = true,
   ...props
 }: React.ComponentProps<typeof SheetPrimitive.Content> & {
   side?: 'top' | 'right' | 'bottom' | 'left';
   showCloseButton?: boolean;
+  /**
+   * Render the dimming backdrop. Turn it off with `<Sheet modal={false}>` for a
+   * sheet the page keeps working behind — the overlay is `fixed inset-0` and
+   * would swallow every click regardless of the modal setting. @default true
+   */
+  showOverlay?: boolean;
 }) {
   return (
     <SheetPortal>
-      <SheetOverlay />
+      {showOverlay && <SheetOverlay />}
       <SheetPrimitive.Content
         data-slot="sheet-content"
         className={cn(
