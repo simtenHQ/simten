@@ -18,9 +18,22 @@ interface TruthTableProps {
   proven?: number;
 }
 
+/**
+ * Column names, as their own function so the table's read of the level shape
+ * is testable without a DOM.
+ *
+ * `level.inputs` is a list of signal names. It used to be a map, and this was
+ * `Object.keys(level.inputs)` — which on an array returns its indices, so the
+ * table silently rendered headers `0`, `1` and then looked up `v.inputs['0']`
+ * for every cell and found nothing. `Object.keys` on an array is legal
+ * TypeScript, so nothing failed; the table just went blank.
+ */
+export function columnsFor(level: Level): { inputNames: string[]; outputNames: string[] } {
+  return { inputNames: level.inputs, outputNames: level.outputs };
+}
+
 export function TruthTable({ level, active = null, proven = 0 }: TruthTableProps) {
-  const inputNames = Object.keys(level.inputs);
-  const outputNames = Object.keys(level.outputs);
+  const { inputNames, outputNames } = columnsFor(level);
 
   return (
     <table className="w-full font-mono text-sm">
