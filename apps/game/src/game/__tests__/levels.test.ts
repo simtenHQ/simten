@@ -16,8 +16,8 @@
  * with one that does not pass, fails CI rather than stranding a player on an
  * unsolvable puzzle.
  *
- * The suite also spans both circuit shapes on purpose: levels 1–3 are
- * self-contained (Switch/Led nodes) and level 4 uses ports, so the grader's
+ * The suite also spans both circuit shapes on purpose: levels 1–7 are
+ * self-contained (Switch/Led nodes) and level 8 uses ports, so the grader's
  * signal resolution is exercised in both directions.
  */
 
@@ -48,6 +48,42 @@ export const Not1 = circuit('Not1', {
   ],
 });`,
 
+  'and-from-nand': `
+export const And2 = circuit('And2', {
+  nodes: { a: Switch, b: Switch, n1: Nand, n2: Nand, out: Led },
+  connect: ({ nodes: { a, b, n1, n2, out } }) => [
+    a.out.to(n1.a),
+    b.out.to(n1.b),
+    n1.out.to(n2.a, n2.b),
+    n2.out.to(out.in),
+  ],
+});`,
+
+  'or-from-nand': `
+export const Or1 = circuit('Or1', {
+  nodes: { a: Switch, b: Switch, n1: Nand, n2: Nand, n3: Nand, out: Led },
+  connect: ({ nodes: { a, b, n1, n2, n3, out } }) => [
+    a.out.to(n1.a, n1.b),
+    b.out.to(n2.a, n2.b),
+    n1.out.to(n3.a),
+    n2.out.to(n3.b),
+    n3.out.to(out.in),
+  ],
+});`,
+
+  'nor-from-nand': `
+export const Nor1 = circuit('Nor1', {
+  nodes: { a: Switch, b: Switch, n1: Nand, n2: Nand, n3: Nand, n4: Nand, out: Led },
+  connect: ({ nodes: { a, b, n1, n2, n3, n4, out } }) => [
+    a.out.to(n1.a, n1.b),
+    b.out.to(n2.a, n2.b),
+    n1.out.to(n3.a),
+    n2.out.to(n3.b),
+    n3.out.to(n4.a, n4.b),
+    n4.out.to(out.in),
+  ],
+});`,
+
   'xor-from-nand': `
 export const Xor1 = circuit('Xor1', {
   nodes: { a: Switch, b: Switch, n1: Nand, n2: Nand, n3: Nand, n4: Nand, out: Led },
@@ -58,6 +94,20 @@ export const Xor1 = circuit('Xor1', {
     n2.out.to(n4.a),
     n3.out.to(n4.b),
     n4.out.to(out.in),
+  ],
+});`,
+
+  'xnor-from-nand': `
+export const Xnor1 = circuit('Xnor1', {
+  nodes: { a: Switch, b: Switch, n1: Nand, n2: Nand, n3: Nand, n4: Nand, n5: Nand, out: Led },
+  connect: ({ nodes: { a, b, n1, n2, n3, n4, n5, out } }) => [
+    a.out.to(n1.a, n2.a),
+    b.out.to(n1.b, n3.b),
+    n1.out.to(n2.b, n3.a),
+    n2.out.to(n4.a),
+    n3.out.to(n4.b),
+    n4.out.to(n5.a, n5.b),
+    n5.out.to(out.in),
   ],
 });`,
 
