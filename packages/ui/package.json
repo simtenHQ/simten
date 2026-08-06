@@ -37,7 +37,8 @@
     "./primitives/tooltip": "./src/primitives/tooltip.tsx",
     "./package.json": "./package.json",
     "./primitives/resizable": "./src/primitives/resizable.tsx",
-    "./styles/theme.css": "./src/styles/theme.css"
+    "./styles/theme.css": "./src/styles/theme.css",
+    "./primitives/sheet": "./src/primitives/sheet.tsx"
   },
   "publishConfig": {
     "exports": {
@@ -98,7 +99,11 @@
         "types": "./dist/primitives/resizable.d.ts",
         "import": "./dist/primitives/resizable.js"
       },
-      "./styles/theme.css": "./dist/styles/theme.css"
+      "./styles/theme.css": "./dist/styles/theme.css",
+      "./primitives/sheet": {
+        "types": "./dist/primitives/sheet.d.ts",
+        "import": "./dist/primitives/sheet.js"
+      }
     },
     "access": "public"
   },
