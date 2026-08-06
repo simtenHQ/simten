@@ -20,6 +20,9 @@ function LevelList() {
         You get one gate to start with, and everything else gets built out of it. Write the circuit
         in TypeScript; the diagram draws itself.
       </p>
+      <Link to="/map" className="mt-4 inline-block text-sm underline underline-offset-4">
+        See the map
+      </Link>
 
       <ol className="mt-8 space-y-2">
         {LEVELS.map((level, i) => (

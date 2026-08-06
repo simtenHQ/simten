@@ -102,6 +102,18 @@ export type NormalizePorts<M> = { [K in keyof M]: NormalizePort<M[K]> };
 type SourceRefs<M> = { readonly [K in keyof M]: SourcePortRef<NormalizePort<M[K]>> };
 type SinkRefs<M> = { readonly [K in keyof M]: SinkPortRef<NormalizePort<M[K]>> };
 
+/**
+ * One `nodes` entry: a single component, or an array of them.
+ *
+ * An array is expanded at build time into `${key}0`, `${key}1`, … so eight
+ * NANDs can be declared with `Array.from({ length: 8 }, () => Nand)` instead of
+ * eight lines. Arrays are the shape that works because TypeScript *keeps* an
+ * array's element type — a dynamically keyed object built with
+ * `Object.fromEntries` loses it before `circuit()` ever sees it, so `n[i].a`
+ * can autocomplete where `nodes[\`n${i}\`].a` cannot.
+ */
+export type NodeEntry = BuiltCircuit | readonly BuiltCircuit[];
+
 /** The connect callback argument — typed from the config's inputs/outputs/nodes.
  *
  * Shape mirrors the config object the user wrote: `{ inputs, outputs, nodes }`.
@@ -121,14 +133,21 @@ type SinkRefs<M> = { readonly [K in keyof M]: SinkPortRef<NormalizePort<M[K]>> }
 export type ConnectArg<
   Ins extends Record<string, PortType | number>,
   Outs extends Record<string, PortType | number>,
-  Nodes extends Record<string, BuiltCircuit>,
+  Nodes extends Record<string, NodeEntry>,
 > = {
   readonly inputs: SourceRefs<Ins>;
   readonly outputs: SinkRefs<Outs>;
   readonly nodes: {
-    readonly [K in keyof Nodes]: Nodes[K] extends BuiltCircuit<infer NIns, infer NOuts, infer _NNs>
-      ? SinkRefs<NIns> & SourceRefs<NOuts>
-      : never;
+    // The array case is checked first and its conditional is nested rather
+    // than hoisted, for the same reason as below: a named alias would infer
+    // against BuiltCircuit's defaults and open the refs back up.
+    readonly [K in keyof Nodes]: Nodes[K] extends readonly (infer E)[]
+      ? E extends BuiltCircuit<infer EIns, infer EOuts, infer _ENs>
+        ? readonly (SinkRefs<EIns> & SourceRefs<EOuts>)[]
+        : never
+      : Nodes[K] extends BuiltCircuit<infer NIns, infer NOuts, infer _NNs>
+        ? SinkRefs<NIns> & SourceRefs<NOuts>
+        : never;
   };
 };
 
@@ -270,7 +289,7 @@ export interface BuiltCircuit<
 export interface CircuitConfig<
   Ins extends Record<string, PortType | number> = Record<string, PortType | number>,
   Outs extends Record<string, PortType | number> = Record<string, PortType | number>,
-  Nodes extends Record<string, BuiltCircuit> = Record<string, BuiltCircuit>,
+  Nodes extends Record<string, NodeEntry> = Record<string, NodeEntry>,
   S extends StateShape = StateShape,
 > {
   /** Input ports — a map of port names to types (`bit`, `bus(n)`, or a raw
@@ -284,7 +303,11 @@ export interface CircuitConfig<
    *  wire them up in `connect`. Parameterized components (e.g. `Register`,
    *  `ROM`, `Constant`) are factories — call them with options to specialize:
    *  `nodes: { reg: Register({ width: 16, value: 100 }) }`. Singletons
-   *  (e.g. gates) are used bare: `nodes: { g: And }`. */
+   *  (e.g. gates) are used bare: `nodes: { g: And }`.
+   *
+   *  An entry may also be an array, which is expanded into `${key}0`,
+   *  `${key}1`, … — `nodes: { n: Array.from({ length: 8 }, () => Nand) }`
+   *  gives `n0`…`n7`, wired in `connect` as `n[i]`. */
   nodes?: Nodes;
   /** Wire sub-nodes and ports together. Receives `{ inputs, outputs, nodes }`
    *  with destructurable port refs and returns an array of connections built

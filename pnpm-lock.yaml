@@ -86,6 +86,9 @@ importers:
       '@tanstack/react-start':
         specifier: 1.166.11
         version: 1.166.11(react-dom@19.2.0)(react@19.2.0)(vite@7.3.5)
+      '@xyflow/react':
+        specifier: ^12.10.0
+        version: 12.10.1(@types/react@19.2.14)(immer@11.1.4)(react-dom@19.2.0)(react@19.2.0)
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1
@@ -1116,7 +1119,6 @@ packages:
     dependencies:
       unenv: 2.0.0-rc.24
       workerd: 1.20260310.1
-    dev: true
 
   /@cloudflare/unenv-preset@2.15.0(unenv@2.0.0-rc.24)(workerd@1.20260312.1):
     resolution: {integrity: sha512-EGYmJaGZKWl+X8tXxcnx4v2bOZSjQeNI5dWFeXivgX9+YCT69AkzHHwlNbVpqtEUTbew8eQurpyOpeN8fg00nw==}
@@ -1136,7 +1138,7 @@ packages:
       vite: ^6.1.0 || ^7.0.0
       wrangler: ^4.73.0
     dependencies:
-      '@cloudflare/unenv-preset': 2.15.0(unenv@2.0.0-rc.24)(workerd@1.20260312.1)
+      '@cloudflare/unenv-preset': 2.15.0(unenv@2.0.0-rc.24)(workerd@1.20260310.1)
       miniflare: 4.20260312.0
       unenv: 2.0.0-rc.24
       vite: 7.3.5(@types/node@22.20.1)(tsx@4.21.0)
@@ -1153,7 +1155,6 @@ packages:
     cpu: [x64]
     os: [darwin]
     requiresBuild: true
-    dev: true
     optional: true
 
   /@cloudflare/workerd-darwin-64@1.20260312.1:
@@ -1170,7 +1171,6 @@ packages:
     cpu: [arm64]
     os: [darwin]
     requiresBuild: true
-    dev: true
     optional: true
 
   /@cloudflare/workerd-darwin-arm64@1.20260312.1:
@@ -1187,7 +1187,6 @@ packages:
     cpu: [x64]
     os: [linux]
     requiresBuild: true
-    dev: true
     optional: true
 
   /@cloudflare/workerd-linux-64@1.20260312.1:
@@ -1204,7 +1203,6 @@ packages:
     cpu: [arm64]
     os: [linux]
     requiresBuild: true
-    dev: true
     optional: true
 
   /@cloudflare/workerd-linux-arm64@1.20260312.1:
@@ -1221,7 +1219,6 @@ packages:
     cpu: [x64]
     os: [win32]
     requiresBuild: true
-    dev: true
     optional: true
 
   /@cloudflare/workerd-windows-64@1.20260312.1:
@@ -5066,7 +5063,7 @@ packages:
       '@vitest/spy': 4.1.8
       estree-walker: 3.0.3
       magic-string: 0.30.21
-      vite: 7.3.5(@types/node@20.19.33)(tsx@4.21.0)
+      vite: 7.3.5(@types/node@22.20.1)(tsx@4.21.0)
     dev: true
 
   /@vitest/pretty-format@4.1.8:
@@ -10370,7 +10367,6 @@ packages:
       '@cloudflare/workerd-linux-64': 1.20260310.1
       '@cloudflare/workerd-linux-arm64': 1.20260310.1
       '@cloudflare/workerd-windows-64': 1.20260310.1
-    dev: true
 
   /workerd@1.20260312.1:
     resolution: {integrity: sha512-nNpPkw9jaqo79B+iBCOiksx+N62xC+ETIfyzofUEdY3cSOHJg6oNnVSHm7vHevzVblfV76c8Gr0cXHEapYMBEg==}
