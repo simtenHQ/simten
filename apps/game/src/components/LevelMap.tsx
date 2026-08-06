@@ -27,8 +27,22 @@ import {
 import '@xyflow/react/dist/style.css';
 import { useCallback, useMemo } from 'react';
 import { buildMapGraph, type LevelNodeData, MAP_ROWS, NODE_WIDTH } from '../game/map';
+import { simulateMap } from '../game/map-circuit';
 
-type LevelNode = Node<LevelNodeData, 'level'>;
+/** Node data plus the hover callback, which is view state rather than map data. */
+type LevelNodeView = LevelNodeData & { onHover?: (levelId: string) => void };
+type LevelNode = Node<LevelNodeView, 'level'>;
+
+/**
+ * Whether the circuit's verdict is allowed to actually lock a level.
+ *
+ * The map really does compute unlock state — see `map-circuit.ts` — but nothing
+ * persists progress yet, so no level can ever become solved and enforcing the
+ * result would leave every level after the first permanently shut. The gate is
+ * built and wired; this just lets it pass through until there is a save system
+ * for it to read. Flip to `true` the day progress is stored.
+ */
+const ENFORCE_LOCKING = false;
 
 const STATE_STYLES: Record<LevelNodeData['state'], string> = {
   solved: 'border-emerald-500/60 bg-emerald-500/10 hover:border-emerald-400',
@@ -70,6 +84,11 @@ function LevelMapNode({ data }: NodeProps<LevelNode>) {
           <Link
             to="/play/$levelId"
             params={{ levelId: data.levelId }}
+            // Opening the drilldown on focus as well as hover is not just for
+            // the linter: it is what gives the panel to anyone tabbing the map
+            // rather than pointing at it.
+            onMouseEnter={() => data.onHover?.(data.levelId)}
+            onFocus={() => data.onHover?.(data.levelId)}
             className="w-full outline-none focus-visible:underline"
           >
             {body}
@@ -86,24 +105,59 @@ const NODE_TYPES: NodeTypes = { level: LevelMapNode };
 export interface LevelMapProps {
   /** Completed level ids. Empty until progress is persisted. */
   solved?: ReadonlySet<string>;
+  /** Called when a level is hovered, so the page can open its drilldown. */
+  onHoverLevel?: (levelId: string) => void;
 }
 
-function LevelMapCanvas({ solved }: LevelMapProps) {
+type LevelMapCanvasProps = LevelMapProps;
+
+function LevelMapCanvas({ solved, onHoverLevel }: LevelMapCanvasProps) {
   const { nodes, edges } = useMemo(() => buildMapGraph(solved), [solved]);
 
+  /**
+   * Unlock state comes from running the map as a circuit, not from computing it
+   * here. `live` is the set of levels whose switch is on, which is what decides
+   * whether the wire leaving them carries signal.
+   */
+  const { unlocked, live } = useMemo(() => simulateMap(solved), [solved]);
+
   const flowNodes: LevelNode[] = useMemo(
-    () => nodes.map((n) => ({ id: n.id, type: 'level', position: n.position, data: n.data })),
-    [nodes],
+    () =>
+      nodes.map((n) => ({
+        id: n.id,
+        type: 'level' as const,
+        position: n.position,
+        data: {
+          ...n.data,
+          state:
+            n.data.state === 'solved'
+              ? 'solved'
+              : !ENFORCE_LOCKING || unlocked.has(n.id)
+                ? 'available'
+                : 'locked',
+          onHover: onHoverLevel,
+        },
+      })),
+    [nodes, unlocked, onHoverLevel],
   );
 
   const flowEdges = useMemo<Edge[]>(
     () =>
-      edges.map((e) => ({
-        ...e,
-        type: 'smoothstep',
-        style: { stroke: 'var(--color-border)', strokeWidth: 2 },
-      })),
-    [edges],
+      edges.map((e) => {
+        // A wire is hot when the level driving it is solved — the same fact the
+        // simulator used to decide what the gates above it see.
+        const hot = live.has(e.source);
+        return {
+          ...e,
+          type: 'smoothstep',
+          animated: hot,
+          style: {
+            stroke: hot ? 'var(--color-emerald-500, #10b981)' : 'var(--color-border)',
+            strokeWidth: hot ? 2.5 : 2,
+          },
+        };
+      }),
+    [edges, live],
   );
 
   /**
