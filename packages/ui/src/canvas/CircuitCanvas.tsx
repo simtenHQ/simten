@@ -93,6 +93,20 @@ export interface CircuitCanvasProps {
   sequentialState?: FlatSequentialState | null;
   draggable?: boolean;
   /**
+   * Re-run the layout engine on every structural change, instead of only when
+   * nodes are added or removed.
+   *
+   * Positions are preserved by default because the editor lets people drag
+   * nodes, and #111 wanted a rename to leave them where they were. But that
+   * keys on node ids alone, so adding a *wire* between existing nodes leaves
+   * them in a layout computed before the wire existed — the new edge takes a
+   * long detour to a node that should have moved.
+   *
+   * A read-only canvas has no dragged positions worth keeping, so it wants the
+   * fresh layout every time. @default false
+   */
+  autoLayout?: boolean;
+  /**
    * Pre-computed node positions keyed by node label (or id, as fallback).
    * When provided, the layout engine is skipped entirely.
    * When absent, positions are computed by the layout engine on mount.
@@ -149,6 +163,7 @@ function CircuitCanvasInner({
   portValues,
   sequentialState,
   draggable = true,
+  autoLayout = false,
   layout,
   onToggleNode,
   onSetNodeValue,
@@ -367,7 +382,7 @@ function CircuitCanvasInner({
     for (const id of newIdSet) if (!prevIdSet.has(id)) added++;
     let removed = 0;
     for (const id of prevIdSet) if (!newIdSet.has(id)) removed++;
-    const relayout = (added > 0 && removed === 0) || (removed > 0 && added === 0);
+    const relayout = autoLayout || (added > 0 && removed === 0) || (removed > 0 && added === 0);
 
     setNodes((currentNodes) => {
       const prevById = new Map(currentNodes.map((n) => [n.id, n]));
@@ -417,7 +432,7 @@ function CircuitCanvasInner({
     if (projectedNodes.length > 0 && !fullReset && (wasBlank || relayout)) {
       requestAnimationFrame(() => fitView({ padding: 0.3 }));
     }
-  }, [projectedNodes, projectedEdges]);
+  }, [projectedNodes, projectedEdges, autoLayout]);
 
   const onNodesChange: OnNodesChange = useCallback((changes) => {
     setNodes((nds) => applyNodeChanges(changes, nds));
