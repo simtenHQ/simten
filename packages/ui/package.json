@@ -38,7 +38,8 @@
     "./package.json": "./package.json",
     "./primitives/resizable": "./src/primitives/resizable.tsx",
     "./styles/theme.css": "./src/styles/theme.css",
-    "./primitives/sheet": "./src/primitives/sheet.tsx"
+    "./primitives/sheet": "./src/primitives/sheet.tsx",
+    "./primitives/dialog": "./src/primitives/dialog.tsx"
   },
   "publishConfig": {
     "exports": {
@@ -103,6 +104,10 @@
       "./primitives/sheet": {
         "types": "./dist/primitives/sheet.d.ts",
         "import": "./dist/primitives/sheet.js"
+      },
+      "./primitives/dialog": {
+        "types": "./dist/primitives/dialog.d.ts",
+        "import": "./dist/primitives/dialog.js"
       }
     },
     "access": "public"

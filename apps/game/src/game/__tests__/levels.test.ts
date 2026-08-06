@@ -205,4 +205,13 @@ describe('level definitions', () => {
   it('ship a stub that names the target circuit', () => {
     for (const level of LEVELS) expect(level.stub).toContain(`'${level.target}'`);
   });
+
+  it('all carry completion copy', () => {
+    // The dialog reads straight from this, so a level without it finishes on
+    // an empty headline — and the failure would only show on a solve.
+    for (const level of LEVELS) {
+      expect(level.outro.headline.trim().length).toBeGreaterThan(0);
+      expect(level.outro.body.trim().length).toBeGreaterThan(0);
+    }
+  });
 });
