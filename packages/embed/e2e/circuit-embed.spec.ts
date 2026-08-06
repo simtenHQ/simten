@@ -64,24 +64,23 @@ test.describe('<circuit-embed> web component', () => {
     const basicEmbed = page.locator('#test-basic circuit-embed');
     await expect(basicEmbed.locator('.react-flow__node').first()).toBeVisible({ timeout: 10_000 });
 
-    // Change the source attribute
+    const before = await basicEmbed.locator('.react-flow__node').count();
+
+    // The attribute is `code`, and it takes the same TS the editor takes.
     await page.evaluate(() => {
       const el = document.querySelector('#test-basic circuit-embed')!;
       el.setAttribute(
-        'source',
-        `circuit Simple {
-        impl {
-          node A: Switch
-          node light: Led
-          connect A.out -> light.in
-        }
-      }`,
+        'code',
+        `const Simple = circuit('Simple', {
+  nodes: { a: Switch, light: Led },
+  connect: ({ nodes: { a, light } }) => [a.out.to(light.in)],
+})`,
       );
     });
 
-    // Wait for re-render — node count should change (was 4, now 2)
-    await page.waitForTimeout(2000);
-    const nodeCount = await basicEmbed.locator('.react-flow__node').count();
-    expect(nodeCount).toBe(2);
+    // Two nodes now — a switch and a lamp, and no harness because the circuit
+    // declares no ports.
+    await expect(basicEmbed.locator('.react-flow__node')).toHaveCount(2, { timeout: 10_000 });
+    expect(before).not.toBe(2);
   });
 });
