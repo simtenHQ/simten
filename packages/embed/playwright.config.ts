@@ -10,7 +10,11 @@ export default defineConfig({
   },
   projects: [{ name: 'chromium', use: { browserName: 'chromium' } }],
   webServer: {
-    command: 'npx serve dist -l 4173 --no-clipboard --single',
+    // No `--single`: that is an SPA flag telling `serve` to rewrite unmatched
+    // routes to /index.html, and this fixture directory has no index.html. It
+    // turned the clean-URL redirect (/test-page.html -> /test-page) into a 404,
+    // so every test loaded an error page and all six failed.
+    command: 'npx serve dist -l 4173 --no-clipboard',
     port: 4173,
     reuseExistingServer: true,
     timeout: 10_000,

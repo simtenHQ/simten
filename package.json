@@ -5,6 +5,7 @@
   "scripts": {
     "build": "pnpm -r build",
     "dev": "dotenv -- pnpm --filter @simten/web dev",
+    "dev:game": "dotenv -- pnpm --filter @simten/game dev",
     "dev:sandbox": "pnpm --filter @simten/sandbox dev",
     "dev:synth": "pnpm --filter @simten/synth dev",
     "dev:verifier": "pnpm --filter @simten/verifier dev",
@@ -12,6 +13,7 @@
     "deploy": "pnpm run deploy:sandbox && pnpm run deploy:web",
     "deploy:sandbox": "dotenv -- pnpm --filter @simten/sandbox run deploy",
     "deploy:web": "dotenv -- pnpm --filter @simten/web run deploy",
+    "deploy:game": "dotenv -- pnpm --filter @simten/game run deploy",
     "deploy:synth": "dotenv -- pnpm --filter @simten/synth run deploy",
     "deploy:verifier": "dotenv -- pnpm --filter @simten/verifier run deploy",
     "deploy:compiler": "dotenv -- pnpm --filter @simten/compiler run deploy",

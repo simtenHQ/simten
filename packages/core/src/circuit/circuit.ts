@@ -139,21 +139,29 @@ function createNodeProxy(
  * }))
  * ```
  */
+// `Ins`/`Outs` default to `{}` rather than falling back to their constraint.
+// `inputs`/`outputs` are optional, so a port-less component (Switch has no
+// inputs, Led no outputs) gives TypeScript nothing to infer from — and without
+// a default it substitutes the constraint, `Record<string, PortType | number>`.
+// That is an OPEN INDEX SIGNATURE: `sw.banana` type-checks, and inside a
+// `connect` callback the editor can offer no completions on `sw.` because
+// every key is equally valid. `= {}` closes it, so port names autocomplete and
+// a typo is an error. See ConnectArg's note on the same hazard.
 export function circuit<
   Opts extends Record<string, ArgumentValue>,
-  Ins extends Record<string, PortType | number>,
-  Outs extends Record<string, PortType | number>,
-  Nodes extends Record<string, BuiltCircuit>,
-  S extends StateShape,
+  Ins extends Record<string, PortType | number> = Record<never, never>,
+  Outs extends Record<string, PortType | number> = Record<never, never>,
+  Nodes extends Record<string, BuiltCircuit> = Record<string, BuiltCircuit>,
+  S extends StateShape = StateShape,
 >(
   name: string,
   factory: (opts?: Opts) => CircuitConfig<Ins, Outs, Nodes, S>,
 ): (opts?: Opts) => BuiltCircuit<NormalizePorts<Ins>, NormalizePorts<Outs>, Nodes>;
 export function circuit<
-  Ins extends Record<string, PortType | number>,
-  Outs extends Record<string, PortType | number>,
-  Nodes extends Record<string, BuiltCircuit>,
-  S extends StateShape,
+  Ins extends Record<string, PortType | number> = Record<never, never>,
+  Outs extends Record<string, PortType | number> = Record<never, never>,
+  Nodes extends Record<string, BuiltCircuit> = Record<string, BuiltCircuit>,
+  S extends StateShape = StateShape,
 >(
   name: string,
   config?: CircuitConfig<Ins, Outs, Nodes, S>,

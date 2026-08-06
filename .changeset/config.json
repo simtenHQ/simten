@@ -9,6 +9,7 @@
   "updateInternalDependencies": "patch",
   "ignore": [
     "@simten/web",
+    "@simten/game",
     "@simten/sandbox",
     "@simten/compiler",
     "@simten/verifier",

@@ -1,9 +1,15 @@
-'use client';
+/**
+ * Resizable split panes — the shadcn wrapper over `react-resizable-panels`.
+ *
+ * Shared rather than copied per app: the editor at /circuit and the game both
+ * lay out an editor beside a canvas, and two copies drifting apart would show
+ * up as two different drag handles in the same product.
+ */
 
 import { GripVerticalIcon } from 'lucide-react';
 import * as ResizablePrimitive from 'react-resizable-panels';
 
-import { cn } from '@/lib/utils';
+import { cn } from '../lib/utils';
 
 function ResizablePanelGroup({ className, ...props }: ResizablePrimitive.GroupProps) {
   return (
