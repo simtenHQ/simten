@@ -11,7 +11,7 @@
 
 import { describe, expect, it } from 'vitest';
 import { LEVELS } from '../levels';
-import { buildMapGraph, MAP_ROWS } from '../map';
+import { buildMapGraph, MAP_ROWS, NODE_WIDTH } from '../map';
 
 const mapped = MAP_ROWS.flat();
 
@@ -39,6 +39,23 @@ describe('the graph it builds', () => {
     if (!first || !last) throw new Error('missing node');
     // React Flow's Y grows downward, so "lower on screen" means larger Y.
     expect(first.position.y).toBeGreaterThan(last.position.y);
+  });
+
+  it('centres every row on x = 0, measuring from node middles', () => {
+    // Positions are top-left corners, so a row is centred when the midpoint of
+    // its outermost nodes' centres is zero. Getting this wrong shifts the whole
+    // map half a card to the right, which reads as "the camera is off".
+    const { nodes } = buildMapGraph();
+    const byId = new Map(nodes.map((n) => [n.id, n]));
+
+    for (const row of MAP_ROWS) {
+      const centres = row
+        .map((id) => byId.get(id))
+        .filter((n) => n !== undefined)
+        .map((n) => n.position.x + NODE_WIDTH / 2);
+      const midpoint = (Math.min(...centres) + Math.max(...centres)) / 2;
+      expect(midpoint).toBeCloseTo(0);
+    }
   });
 
   it('connects each row to the one above it', () => {

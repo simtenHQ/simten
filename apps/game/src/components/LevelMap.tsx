@@ -10,8 +10,8 @@
  * meaning, so letting a player rearrange it only lets them break it.
  */
 
-import { Link } from '@tanstack/react-router';
 import { CompositeBadge } from '@simten/ui/nodes';
+import { Link } from '@tanstack/react-router';
 import {
   Background,
   BackgroundVariant,
@@ -27,7 +27,7 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { useCallback, useMemo } from 'react';
-import { buildMapGraph, type LevelNodeData, MAP_ROWS, NODE_WIDTH } from '../game/map';
+import { buildMapGraph, type LevelNodeData, MAP_ROWS, NODE_HEIGHT, NODE_WIDTH } from '../game/map';
 import { simulateMap } from '../game/map-circuit';
 
 /** Node data plus the interaction callbacks, which are view state rather than map data. */
@@ -195,10 +195,14 @@ function LevelMapCanvas({ solved, onHoverLevel, onExpandLevel }: LevelMapCanvasP
   const focusStart = useCallback((instance: ReactFlowInstance<LevelNode, Edge>) => {
     const first = MAP_ROWS[0]?.[0];
     const node = first ? instance.getNode(first) : undefined;
-    // Centre well above the first node so it sits near the bottom of the
-    // viewport with the rest of the act climbing away above it, rather than
+    if (!node) return;
+    // `position` is the top-left corner, so half the node is added back to aim
+    // at its middle. Then centre well above it, so it sits near the bottom of
+    // the viewport with the rest of the act climbing away above rather than
     // dead-centre with empty canvas underneath.
-    if (node) instance.setCenter(node.position.x, node.position.y - 240, { zoom: 1 });
+    instance.setCenter(node.position.x + NODE_WIDTH / 2, node.position.y + NODE_HEIGHT / 2 - 240, {
+      zoom: 1,
+    });
   }, []);
 
   return (

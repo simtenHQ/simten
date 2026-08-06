@@ -91,10 +91,13 @@ export function buildMapGraph(solved: ReadonlySet<string> = new Set()): {
       const level = LEVELS_BY_ID.get(levelId);
       if (!level) return; // Guarded by the drift test; ignore rather than crash a page.
 
+      // React Flow positions a node by its top-left corner, so half a node's
+      // width comes off to make x = 0 the row's visual centre rather than its
+      // left edge. Without it every row sits `NODE_WIDTH / 2` right of centre.
       const offset = columnIndex - (row.length - 1) / 2;
       nodes.push({
         id: levelId,
-        position: { x: offset * (NODE_WIDTH + COLUMN_GAP), y },
+        position: { x: offset * (NODE_WIDTH + COLUMN_GAP) - NODE_WIDTH / 2, y },
         data: {
           levelId,
           title: level.title,
