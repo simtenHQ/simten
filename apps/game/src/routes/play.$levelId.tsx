@@ -191,6 +191,12 @@ function PlayLevel() {
               portValues={preview.portValues}
               theme="dark"
               showControls
+              // Re-lay out on every change. The default only re-runs the
+              // layout when nodes appear or disappear, so adding the last wire
+              // — which changes no nodes — left the lamp sitting where it had
+              // been while unconnected, with the new edge detouring to reach
+              // it. A level's diagram should always read as the circuit is now.
+              autoLayout
               // The harness switches are clickable, so the player can drive
               // their own circuit and see it light up before submitting.
               onToggleNode={preview.toggleNode}
