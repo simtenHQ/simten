@@ -26,7 +26,7 @@ import { TruthTable } from '../components/TruthTable';
 import { grade } from '../game/grade';
 import { LEVELS, LEVELS_BY_ID, levelIndex, nextLevel } from '../game/levels';
 import { sandboxRuntime } from '../game/runtime';
-import type { GradeResult } from '../game/types';
+import type { GradeResult, Level } from '../game/types';
 import { useVictoryRun } from '../game/useVictoryRun';
 
 export const Route = createFileRoute('/play/$levelId')({
@@ -36,11 +36,28 @@ export const Route = createFileRoute('/play/$levelId')({
     if (!level) throw notFound();
     return { level };
   },
-  component: PlayLevel,
+  component: PlayLevelRoute,
 });
 
-function PlayLevel() {
+/**
+ * Remount the level on every id change.
+ *
+ * TanStack reuses one component instance across `$levelId`, and almost all of
+ * this screen's state is seeded from the level — `useState(level.stub)` runs
+ * its initialiser only on mount. Without the key, clicking "Next" swapped the
+ * title, brief and truth table while leaving the previous level's solution in
+ * the editor, its circuit on the canvas, and its SOLVED verdict in the panel.
+ *
+ * A key is the right tool here rather than an effect that resets four pieces of
+ * state: every one of them is derived from the level, so the whole component
+ * should simply start again.
+ */
+function PlayLevelRoute() {
   const { level } = Route.useLoaderData();
+  return <PlayLevel key={level.id} level={level} />;
+}
+
+function PlayLevel({ level }: { level: Level }) {
   const sandbox = useSandboxContext();
 
   const [source, setSource] = useState(level.stub);
@@ -90,6 +107,16 @@ function PlayLevel() {
     }
   }, [sandbox, level, source, victory]);
 
+  // Circuit names the source defines right now — used to explain an empty
+  // canvas rather than leaving the player staring at one.
+  const defined = useMemo(
+    () =>
+      [...(source.matchAll(/circuit\(\s*['"]([^'"]+)['"]/g) as Iterable<RegExpMatchArray>)].map(
+        (m) => m[1],
+      ),
+    [source],
+  );
+
   const solved = result?.status === 'pass';
   const next = useMemo(() => nextLevel(level.id), [level.id]);
   const position = levelIndex(level.id) + 1;
@@ -117,6 +144,11 @@ function PlayLevel() {
               Next: {next.title} →
             </Link>
           )}
+          {solved && victory.complete && !next && (
+            <span className="text-xs text-muted-foreground">
+              That is the last one for now — more coming.
+            </span>
+          )}
           <button
             type="button"
             onClick={onSubmit}
@@ -141,9 +173,21 @@ function PlayLevel() {
                 <TruthTable level={level} active={victory.active} proven={victory.proven} />
               </div>
 
-              <div className="text-xs">
-                <span className="text-muted-foreground">Available: </span>
-                <span className="font-mono">{level.allowed.join(', ')}</span>
+              <div className="space-y-1 text-xs">
+                <div>
+                  <span className="text-muted-foreground">Available: </span>
+                  <span className="font-mono">{level.allowed.join(', ')}</span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Must define: </span>
+                  <span className="font-mono">{level.target}</span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Signals: </span>
+                  <span className="font-mono">
+                    {[...level.inputs, ...level.outputs].join(', ')}
+                  </span>
+                </div>
               </div>
 
               {result && <GradeReport result={result} level={level} revealed={victory.complete} />}
@@ -202,8 +246,20 @@ function PlayLevel() {
               onToggleNode={preview.toggleNode}
               onSetNodeValue={preview.setNodeValue}
               renderEmptyState={() => (
-                <div className="grid h-full place-items-center text-sm text-muted-foreground">
-                  Your circuit appears here as you write it.
+                <div className="grid h-full place-items-center px-6 text-center text-sm text-muted-foreground">
+                  {/* The preview is pinned to the level's target by name, so a
+                      correct circuit under a different name renders nothing.
+                      Saying which name is missing beats an empty canvas that
+                      looks like the code is broken. */}
+                  {defined.length > 0 ? (
+                    <span>
+                      Nothing here is called <span className="font-mono">{level.target}</span>.
+                      {' This level previews and grades that name — found '}
+                      <span className="font-mono">{defined.join(', ')}</span>.
+                    </span>
+                  ) : (
+                    'Your circuit appears here as you write it.'
+                  )}
                 </div>
               )}
             />
