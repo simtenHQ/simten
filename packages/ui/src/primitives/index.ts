@@ -1,4 +1,5 @@
 export { Button, type ButtonProps, buttonVariants } from './button';
+export { ResizableHandle, ResizablePanel, ResizablePanelGroup } from './resizable';
 export {
   Sheet,
   SheetClose,

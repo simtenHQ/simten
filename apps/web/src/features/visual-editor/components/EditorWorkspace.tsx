@@ -39,8 +39,12 @@ function isHarnessName(name: string): boolean {
   return name.endsWith('Demo') || name.endsWith('Harness');
 }
 
+import {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+} from '@simten/ui/primitives/resizable';
 import { WaveformViewer } from '@simten/ui/waveform';
-import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable';
 import { useMCPConnection } from '@/hooks/useMCPConnection';
 import { CATEGORY_COLORS, CATEGORY_LABELS, EXAMPLES, type Example } from '../examples';
 import { VerilogImportSheet } from './VerilogImportSheet';

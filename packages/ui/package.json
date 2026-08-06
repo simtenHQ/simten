@@ -35,7 +35,9 @@
     "./sandbox": "./src/sandbox/index.ts",
     "./share": "./src/share/index.ts",
     "./primitives/tooltip": "./src/primitives/tooltip.tsx",
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./primitives/resizable": "./src/primitives/resizable.tsx",
+    "./styles/theme.css": "./src/styles/theme.css"
   },
   "publishConfig": {
     "exports": {
@@ -91,7 +93,12 @@
         "types": "./dist/primitives/tooltip.d.ts",
         "import": "./dist/primitives/tooltip.js"
       },
-      "./package.json": "./package.json"
+      "./package.json": "./package.json",
+      "./primitives/resizable": {
+        "types": "./dist/primitives/resizable.d.ts",
+        "import": "./dist/primitives/resizable.js"
+      },
+      "./styles/theme.css": "./dist/styles/theme.css"
     },
     "access": "public"
   },
@@ -99,7 +106,7 @@
     "dist"
   ],
   "scripts": {
-    "build": "rm -rf dist *.tsbuildinfo && node scripts/build-core-types.mjs && tsc -b",
+    "build": "rm -rf dist *.tsbuildinfo && node scripts/build-core-types.mjs && tsc -b && mkdir -p dist/styles && cp src/styles/theme.css dist/styles/theme.css",
     "test": "vitest run",
     "test:watch": "vitest",
     "lint": "tsc --noEmit"
@@ -108,6 +115,7 @@
     "@dagrejs/dagre": "^3.0.0",
     "@radix-ui/react-dialog": "^1.1.15",
     "@simten/core": "workspace:^",
+    "@typescript/ata": "^0.9.8",
     "@xyflow/react": "^12.10.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -117,9 +125,9 @@
     "lz-string": "^1.5.0",
     "nanoid": "^5.1.6",
     "radix-ui": "^1.4.3",
+    "react-resizable-panels": "^4.11.1",
     "tailwind-merge": "^3.4.0",
-    "zustand": "^5.0.10",
-    "@typescript/ata": "^0.9.8"
+    "zustand": "^5.0.10"
   },
   "peerDependencies": {
     "@monaco-editor/react": "^4.6.0",
