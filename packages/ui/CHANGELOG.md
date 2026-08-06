@@ -1,5 +1,43 @@
 # @simten/ui
 
+## 0.6.0
+
+### Minor Changes
+
+- 7146f9b: Ship the design tokens the components already depend on, as `@simten/ui/styles/theme.css`.
+
+  Every component in this package is written with `bg-card`, `border-border`, `text-muted-foreground` and friends, but nothing in the package defined those custom properties — so a consumer had to reverse-engineer and hand-author the whole palette or the components rendered unstyled. The stylesheet now ships alongside them:
+
+  ```css
+  @import "tailwindcss";
+  @import "@simten/ui/styles/theme.css";
+  @source "../node_modules/@simten/ui/dist";
+  ```
+
+  The `@source` line matters: Tailwind v4 does not scan dependencies, so without it the utility classes the components reference are never emitted and nodes render with no width or padding.
+
+  This does not remove the Tailwind requirement — an app without Tailwind still cannot consume these components from source. `@simten/embed` solves that by compiling its CSS at build time and shipping the result; this package should grow the same, and that is tracked separately.
+
+  Also adds `@simten/ui/primitives/resizable`, the shadcn wrapper over `react-resizable-panels`, which was previously copy-pasted per app.
+
+### Patch Changes
+
+- 7146f9b: Fix multiple sandboxes on one page answering each other's requests.
+
+  Every `<circuit-embed>` mounts its own `SandboxProvider`, so a page with several embeds has several sandbox iframes — and they all `postMessage` to the same parent window, which every `useSandbox` instance listens on. Request ids came from a per-instance counter, so each sandbox's first request was `sb-1`, and `handleMessage` resolved any pending request whose id matched without checking which iframe the message came from.
+
+  The result: the first circuit to compile resolved the pending request in _every_ sandbox on the page. Three embeds in a blog post all rendered the first circuit, and an embed containing invalid code rendered a circuit instead of an error.
+
+  Two changes, either of which would fix it:
+
+  - `handleMessage` ignores messages whose `event.source` is not its own iframe. This is the real fix, and it also means another frame cannot feed a sandbox forged responses.
+  - Request ids come from a module-scoped counter, so they are unique per page rather than per instance.
+
+  Does not affect `simten.dev`: `CircuitEmbed` is given an already-built circuit there and never calls `sandbox.compile`, and `useCircuitSimulator` already derived a unique simulation slot per instance. This only reached consumers of the `<circuit-embed>` web component.
+
+- Updated dependencies [7146f9b]
+  - @simten/core@0.13.2
+
 ## 0.5.1
 
 ### Patch Changes
