@@ -176,8 +176,16 @@ function createIframe(
   return iframe;
 }
 
-function nextId(state: SandboxState): string {
-  return `sb-${++state.idCounter}`;
+// Module-scoped, not per-instance. Several sandboxes can exist on one page —
+// every <circuit-embed> mounts its own SandboxProvider — and they all share the
+// parent window's message bus. Per-instance counters each started at zero, so
+// every sandbox's first request was `sb-1` and one response satisfied all of
+// them. Combined with the event.source check in handleMessage this is belt and
+// braces, but ids that are unique per page are the correct invariant.
+let globalIdCounter = 0;
+
+function nextId(_state: SandboxState): string {
+  return `sb-${++globalIdCounter}`;
 }
 
 // ============================================================================
@@ -313,6 +321,11 @@ export function useSandbox(): SandboxHandle {
     if (event.origin !== SANDBOX_ORIGIN) return;
 
     const state = stateRef.current;
+    // Only answer to our own iframe. Every sandbox on the page listens to the
+    // same window, so without this a response from someone else's iframe
+    // resolves whichever of our pending requests happens to share its id —
+    // which made three embeds on one page all render the first circuit.
+    if (state.iframe && event.source !== state.iframe.contentWindow) return;
     const data = event.data as { type: string; id?: string };
 
     if (data.type === 'ready') {
