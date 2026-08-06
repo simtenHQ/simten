@@ -1,13 +1,18 @@
 /**
- * Best-effort extraction of the first `circuit('Name', ...)` invocation in a
- * source string, for SSR `<title>` / og:title. Brittle on template literals,
- * escaped quotes, multi-line declarations — that's intentional. Callers MUST
- * have a generic fallback for the misses.
+ * Best-effort extraction of the first `circuit('Name', ...)` in a source
+ * string, for SSR `<title>` / og:title.
+ *
+ * Brittle on template literals, escaped quotes and multi-line declarations —
+ * that is intentional, and callers MUST have a generic fallback for the misses.
+ * The scan itself lives in `@simten/core/circuit` so the editor, the game and
+ * this share the one implementation.
  */
+
+import { firstCircuitName } from '@simten/core/circuit';
+
 export function extractCircuitName(source: string): string | null {
   try {
-    const m = source.match(/\bcircuit\s*\(\s*['"]([A-Za-z_$][\w$]*)['"]/);
-    return m?.[1] ?? null;
+    return firstCircuitName(source);
   } catch {
     return null;
   }

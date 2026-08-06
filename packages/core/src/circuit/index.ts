@@ -10,6 +10,7 @@ export type { MemState, RegState, StateFieldType } from './bit-bus.js';
 export { bit, bus, mem, reg } from './bit-bus.js';
 export { buildFromIR } from './build-from-ir.js';
 export { circuit } from './circuit.js';
+export { type CircuitNameSite, circuitNameSites, firstCircuitName } from './circuit-names.js';
 export { CircuitToSourceError, circuitToSource } from './circuit-to-source.js';
 export type { EvalEntry } from './eval-registry.js';
 export { getAllCircuitEvals, getCircuitEval, registerCircuitEval } from './eval-registry.js';

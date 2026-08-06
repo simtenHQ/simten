@@ -24,6 +24,7 @@ import { useCallback, useMemo, useState } from 'react';
 import { GradeReport } from '../components/GradeReport';
 import { TruthTable } from '../components/TruthTable';
 import { grade } from '../game/grade';
+import { nameDiagnostics } from '../game/level-name';
 import { LEVELS, LEVELS_BY_ID, levelIndex, nextLevel } from '../game/levels';
 import { sandboxRuntime } from '../game/runtime';
 import type { GradeResult, Level } from '../game/types';
@@ -68,7 +69,11 @@ function PlayLevel({ level }: { level: Level }) {
   // name — the default picks the last circuit defined, which would follow a
   // player's helper instead of their answer. Same reason the grader does it.
   const select = useCallback(
-    (circuits: { name: string }[]) => circuits.find((c) => c.name === level.target),
+    (circuits: { name: string }[]) =>
+      // Fall back to the last circuit defined when nothing carries the target
+      // name. Only grading depends on the name; taking away the diagram as
+      // well turned a rule into a punishment, with no explanation until Submit.
+      circuits.find((c) => c.name === level.target) ?? circuits[circuits.length - 1],
     [level.target],
   );
 
@@ -107,15 +112,9 @@ function PlayLevel({ level }: { level: Level }) {
     }
   }, [sandbox, level, source, victory]);
 
-  // Circuit names the source defines right now — used to explain an empty
-  // canvas rather than leaving the player staring at one.
-  const defined = useMemo(
-    () =>
-      [...(source.matchAll(/circuit\(\s*['"]([^'"]+)['"]/g) as Iterable<RegExpMatchArray>)].map(
-        (m) => m[1],
-      ),
-    [source],
-  );
+  // Surfaced as a Monaco squiggle rather than a panel note: the problem is on
+  // a specific line, and that is where someone is looking.
+  const diagnostics = useMemo(() => nameDiagnostics(source, level.target), [source, level.target]);
 
   const solved = result?.status === 'pass';
   const next = useMemo(() => nextLevel(level.id), [level.id]);
@@ -209,6 +208,7 @@ function PlayLevel({ level }: { level: Level }) {
                     victory.reset();
                   }
                 }}
+                diagnostics={diagnostics}
                 beforeMount={registerSimtenThemes}
                 theme={SIMTEN_DARK}
                 options={{
@@ -246,20 +246,11 @@ function PlayLevel({ level }: { level: Level }) {
               onToggleNode={preview.toggleNode}
               onSetNodeValue={preview.setNodeValue}
               renderEmptyState={() => (
-                <div className="grid h-full place-items-center px-6 text-center text-sm text-muted-foreground">
-                  {/* The preview is pinned to the level's target by name, so a
-                      correct circuit under a different name renders nothing.
-                      Saying which name is missing beats an empty canvas that
-                      looks like the code is broken. */}
-                  {defined.length > 0 ? (
-                    <span>
-                      Nothing here is called <span className="font-mono">{level.target}</span>.
-                      {' This level previews and grades that name — found '}
-                      <span className="font-mono">{defined.join(', ')}</span>.
-                    </span>
-                  ) : (
-                    'Your circuit appears here as you write it.'
-                  )}
+                <div className="grid h-full place-items-center text-sm text-muted-foreground">
+                  {/* A name mismatch no longer lands here — the preview falls
+                      back to the last circuit defined, and the editor carries
+                      the warning. This is only ever an empty source. */}
+                  Your circuit appears here as you write it.
                 </div>
               )}
             />
