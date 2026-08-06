@@ -9,10 +9,16 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as MapRouteImport } from './routes/map'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as PlayIndexRouteImport } from './routes/play.index'
 import { Route as PlayLevelIdRouteImport } from './routes/play.$levelId'
 
+const MapRoute = MapRouteImport.update({
+  id: '/map',
+  path: '/map',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -31,36 +37,47 @@ const PlayLevelIdRoute = PlayLevelIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/map': typeof MapRoute
   '/play/$levelId': typeof PlayLevelIdRoute
   '/play/': typeof PlayIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/map': typeof MapRoute
   '/play/$levelId': typeof PlayLevelIdRoute
   '/play': typeof PlayIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/map': typeof MapRoute
   '/play/$levelId': typeof PlayLevelIdRoute
   '/play/': typeof PlayIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/play/$levelId' | '/play/'
+  fullPaths: '/' | '/map' | '/play/$levelId' | '/play/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/play/$levelId' | '/play'
-  id: '__root__' | '/' | '/play/$levelId' | '/play/'
+  to: '/' | '/map' | '/play/$levelId' | '/play'
+  id: '__root__' | '/' | '/map' | '/play/$levelId' | '/play/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  MapRoute: typeof MapRoute
   PlayLevelIdRoute: typeof PlayLevelIdRoute
   PlayIndexRoute: typeof PlayIndexRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/map': {
+      id: '/map'
+      path: '/map'
+      fullPath: '/map'
+      preLoaderRoute: typeof MapRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -87,6 +104,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  MapRoute: MapRoute,
   PlayLevelIdRoute: PlayLevelIdRoute,
   PlayIndexRoute: PlayIndexRoute,
 }

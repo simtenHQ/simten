@@ -38,6 +38,7 @@ import type {
   CircuitConfig,
   ConnectArg,
   ConnectionDef,
+  NodeEntry,
   NormalizePorts,
   PortMap,
   SinkPortRef,
@@ -151,7 +152,7 @@ export function circuit<
   Opts extends Record<string, ArgumentValue>,
   Ins extends Record<string, PortType | number> = Record<never, never>,
   Outs extends Record<string, PortType | number> = Record<never, never>,
-  Nodes extends Record<string, BuiltCircuit> = Record<string, BuiltCircuit>,
+  Nodes extends Record<string, NodeEntry> = Record<string, NodeEntry>,
   S extends StateShape = StateShape,
 >(
   name: string,
@@ -160,7 +161,7 @@ export function circuit<
 export function circuit<
   Ins extends Record<string, PortType | number> = Record<never, never>,
   Outs extends Record<string, PortType | number> = Record<never, never>,
-  Nodes extends Record<string, BuiltCircuit> = Record<string, BuiltCircuit>,
+  Nodes extends Record<string, NodeEntry> = Record<string, NodeEntry>,
   S extends StateShape = StateShape,
 >(
   name: string,
@@ -241,11 +242,34 @@ export function circuit(name: string, configOrFactory: any = {} as any): any {
     }
   }
 
-  const nodes = config.nodes ?? {};
+  const declaredNodes = (config.nodes ?? {}) as Record<string, NodeEntry>;
+
+  // ── Expand array entries ──
+  //
+  // `{ n: [Nand, Nand] }` becomes `{ n0: Nand, n1: Nand }`. Everything after
+  // this point — validation, IR, dependencies, sequential detection — sees a
+  // plain flat map and needs no knowledge of arrays. Only `connect` is handed
+  // the original shape, so `n[i]` still resolves to the i-th instance.
+  const nodes: Record<string, BuiltCircuit> = {};
+  const errors: string[] = [];
+
+  for (const [key, entry] of Object.entries(declaredNodes)) {
+    if (!Array.isArray(entry)) {
+      if (key in nodes) errors.push(`Node name '${key}' is declared twice`);
+      nodes[key] = entry as BuiltCircuit;
+      continue;
+    }
+    entry.forEach((comp: BuiltCircuit, i: number) => {
+      const id = `${key}${i}`;
+      // An expanded id can land on a name someone also wrote by hand. Silent
+      // overwrite would drop a node from the netlist with nothing to show for
+      // it, so it is an error rather than a surprise.
+      if (id in nodes) errors.push(`Node name '${id}' is declared twice`);
+      nodes[id] = comp;
+    });
+  }
 
   // ── Validate ──
-
-  const errors: string[] = [];
 
   // Duplicate port names
   const allPortNames = new Set<string>();
@@ -268,7 +292,10 @@ export function circuit(name: string, configOrFactory: any = {} as any): any {
 
   // Reserved node names — these would shadow the connect callback's
   // top-level destructure keys (`inputs`, `outputs`, `nodes`).
-  for (const nodeName of Object.keys(nodes)) {
+  // Checked against the *declared* keys, not the expanded ones: an array named
+  // `inputs` expands to `inputs0`, which is harmless, but `nodes.inputs` is
+  // what the callback would have to destructure.
+  for (const nodeName of Object.keys(declaredNodes)) {
     if (nodeName === 'inputs' || nodeName === 'outputs' || nodeName === 'nodes') {
       errors.push(`Node name '${nodeName}' is reserved`);
     }
@@ -283,12 +310,20 @@ export function circuit(name: string, configOrFactory: any = {} as any): any {
 
   let connectionDefs: ConnectionDef[] = [];
   if (config.connect) {
-    const nodeRefs: Record<string, Record<string, SourcePortRef>> = {};
-    for (const [nodeName, comp] of Object.entries(nodes) as [string, BuiltCircuit][]) {
+    const refsFor = (nodeId: string, comp: BuiltCircuit) => {
       const allPorts = new Map<string, PortType>();
       for (const pd of comp.circuit.inputs) allPorts.set(pd.name, pd.portType);
       for (const pd of comp.circuit.outputs) allPorts.set(pd.name, pd.portType);
-      nodeRefs[nodeName] = createNodeProxy(nodeName, allPorts, comp.circuit.name);
+      return createNodeProxy(nodeId, allPorts, comp.circuit.name);
+    };
+
+    // An array entry hands `connect` an array of refs, each bound to the id it
+    // was expanded to — so `n[3]` writes connections against node `n3`.
+    const nodeRefs: Record<string, unknown> = {};
+    for (const [key, entry] of Object.entries(declaredNodes)) {
+      nodeRefs[key] = Array.isArray(entry)
+        ? entry.map((comp: BuiltCircuit, i: number) => refsFor(`${key}${i}`, comp))
+        : refsFor(key, entry as BuiltCircuit);
     }
 
     const arg = {

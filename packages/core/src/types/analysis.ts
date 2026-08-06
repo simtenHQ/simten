@@ -141,6 +141,22 @@ const Counter = circuit('Counter', {
   ],
 });
 
+// Need N of something? A nodes entry can be an array, expanded to \`n0\`, \`n1\`,
+// … and wired as \`n[i]\`. Ordinary TypeScript — no helper, and \`n[i].a\`
+// autocompletes because an array keeps its element type:
+const ByteNot = circuit('ByteNot', {
+  nodes: {
+    a:   Array.from({ length: 8 }, () => Switch),
+    n:   Array.from({ length: 8 }, () => Nand),
+    out: Array.from({ length: 8 }, () => Led),
+  },
+  connect: ({ nodes: { a, n, out } }) =>
+    a.flatMap((sw, i) => [
+      sw.out.to(n[i].a, n[i].b),
+      n[i].out.to(out[i].in),
+    ]),
+});
+
 // Parameterized components are factory calls — call them with the options
 // you want to specialize:
 const Adder8 = circuit('Adder8', {

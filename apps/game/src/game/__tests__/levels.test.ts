@@ -16,66 +16,17 @@
  * with one that does not pass, fails CI rather than stranding a player on an
  * unsolvable puzzle.
  *
- * The suite also spans both circuit shapes on purpose: levels 1–3 are
- * self-contained (Switch/Led nodes) and level 4 uses ports, so the grader's
+ * The suite also spans both circuit shapes on purpose: levels 1–7 are
+ * self-contained (Switch/Led nodes) and level 8 uses ports, so the grader's
  * signal resolution is exercised in both directions.
  */
 
 import { describe, expect, it } from 'vitest';
 import { grade } from '../grade';
 import { LEVELS, LEVELS_BY_ID } from '../levels';
+import { SOLUTIONS } from '../solutions';
 import type { Level } from '../types';
 import { localRuntime } from './local-runtime';
-
-/** Known-good answers, one per level id. */
-const SOLUTIONS: Record<string, string> = {
-  'first-wire': `
-export const And1 = circuit('And1', {
-  nodes: { a: Switch, b: Switch, and1: And, out: Led },
-  connect: ({ nodes: { a, b, and1, out } }) => [
-    a.out.to(and1.a),
-    b.out.to(and1.b),
-    and1.out.to(out.in),
-  ],
-});`,
-
-  'not-from-nand': `
-export const Not1 = circuit('Not1', {
-  nodes: { a: Switch, n1: Nand, out: Led },
-  connect: ({ nodes: { a, n1, out } }) => [
-    a.out.to(n1.a, n1.b),
-    n1.out.to(out.in),
-  ],
-});`,
-
-  'xor-from-nand': `
-export const Xor1 = circuit('Xor1', {
-  nodes: { a: Switch, b: Switch, n1: Nand, n2: Nand, n3: Nand, n4: Nand, out: Led },
-  connect: ({ nodes: { a, b, n1, n2, n3, n4, out } }) => [
-    a.out.to(n1.a, n2.a),
-    b.out.to(n1.b, n3.b),
-    n1.out.to(n2.b, n3.a),
-    n2.out.to(n4.a),
-    n3.out.to(n4.b),
-    n4.out.to(out.in),
-  ],
-});`,
-
-  'half-adder': `
-export const Xor2 = circuit('Xor2', {
-  inputs: { a: bit, b: bit },
-  outputs: { out: bit },
-  nodes: { n1: Nand, n2: Nand, n3: Nand, n4: Nand },
-  connect: ({ inputs, outputs, nodes: { n1, n2, n3, n4 } }) => [
-    inputs.a.to(n1.a, n2.a),
-    inputs.b.to(n1.b, n3.b),
-    n1.out.to(n2.b, n3.a),
-    n2.out.to(n4.a),
-    n3.out.to(n4.b),
-    n4.out.to(outputs.out),
-  ],
-});`,
-};
 
 /**
  * A degenerate answer: the right signals, no real logic. Wires a Constant
