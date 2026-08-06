@@ -1,0 +1,52 @@
+{
+  "name": "@simten/game",
+  "private": true,
+  "type": "module",
+  "imports": {
+    "#/*": "./src/*"
+  },
+  "scripts": {
+    "dev": "pnpm --filter @simten/core build && vite dev --port 3003",
+    "generate-routes": "tsr generate",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "deploy": "pnpm run build && wrangler deploy",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@monaco-editor/react": "^4.7.0",
+    "@simten/core": "workspace:*",
+    "@simten/embed": "workspace:*",
+    "@simten/ui": "workspace:*",
+    "@tailwindcss/vite": "^4.1.18",
+    "@tanstack/react-devtools": "^0.7.0",
+    "@tanstack/react-router": "1.167.0",
+    "@tanstack/react-router-devtools": "1.166.7",
+    "@tanstack/react-start": "1.166.11",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "lucide-react": "^0.577.0",
+    "monaco-editor": "^0.52.2",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "tailwind-merge": "^3.0.2",
+    "tailwindcss": "^4.1.18",
+    "tw-animate-css": "^1.3.6"
+  },
+  "devDependencies": {
+    "@cloudflare/vite-plugin": "^1.13.8",
+    "@tailwindcss/typography": "^0.5.16",
+    "@tanstack/devtools-vite": "^0.3.11",
+    "@tanstack/router-cli": "^1.166.12",
+    "@types/node": "^22.10.2",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "@vitejs/plugin-react": "^5.0.4",
+    "typescript": "^5.7.2",
+    "vite": "^7.3.5",
+    "vite-tsconfig-paths": "^5.1.4",
+    "vitest": "^4.1.8",
+    "wrangler": "^4.73.0"
+  }
+}
