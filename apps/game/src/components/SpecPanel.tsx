@@ -27,11 +27,10 @@ interface SpecPanelProps {
   revealVerdict: boolean;
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Heading({ children }: { children: React.ReactNode }) {
   return (
-    <div>
-      <div className="text-[11px] uppercase tracking-wider text-muted-foreground">{label}</div>
-      <div className="mt-0.5 font-mono text-sm">{children}</div>
+    <div className="mb-1 text-[11px] uppercase tracking-wider text-muted-foreground">
+      {children}
     </div>
   );
 }
@@ -40,16 +39,13 @@ export function SpecPanel({ level, result, activeRow, provenRows, revealVerdict 
   return (
     <div className="flex h-full items-start gap-8 overflow-x-auto overflow-y-auto px-4 py-3">
       <div className="shrink-0">
-        <div className="mb-1 text-[11px] uppercase tracking-wider text-muted-foreground">
-          Must produce
-        </div>
+        <Heading>Must produce</Heading>
         <TruthTable level={level} active={activeRow} proven={provenRows} />
       </div>
 
-      <div className="flex shrink-0 flex-col gap-3">
-        <Field label="Available">{level.allowed.join(', ')}</Field>
-        <Field label="Must define">{level.target}</Field>
-        <Field label="Signals">{[...level.inputs, ...level.outputs].join(', ')}</Field>
+      <div className="min-w-[220px] max-w-md shrink-0">
+        <Heading>The problem</Heading>
+        <p className="text-sm leading-relaxed text-muted-foreground">{level.brief}</p>
       </div>
 
       {/* Failures only. A pass gets the completion dialog, and the header keeps

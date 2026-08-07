@@ -132,7 +132,8 @@ function PlayLevel({ level }: { level: Level }) {
   return (
     <div className="flex h-screen w-screen flex-col overflow-hidden bg-gray-50 dark:bg-[#111113]">
       <header className="flex shrink-0 items-center gap-3 border-b border-border px-4 py-2">
-        <Link to="/play" className="text-sm font-semibold tracking-tight no-underline">
+        {/* Back to the map — the only way out of a level, and the only way in. */}
+        <Link to="/" className="text-sm font-semibold tracking-tight no-underline">
           Simten
         </Link>
         <div className="h-5 w-px bg-border" />
@@ -259,7 +260,6 @@ function PlayLevel({ level }: { level: Level }) {
         <SheetContent
           side="bottom"
           showOverlay={false}
-          showCloseButton={false}
           onInteractOutside={(e) => e.preventDefault()}
           onOpenAutoFocus={(e) => e.preventDefault()}
           className="max-h-[45vh] gap-0 overflow-y-auto"

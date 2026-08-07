@@ -9,10 +9,10 @@ export default function Header() {
   return (
     <header className="border-b border-border px-6">
       <nav className="mx-auto flex max-w-[1400px] items-center gap-5 py-3">
-        <Link to="/play" className="text-sm font-semibold tracking-tight no-underline">
+        <Link to="/" className="text-sm font-semibold tracking-tight no-underline">
           Simten
         </Link>
-        <Link to="/play" className="text-sm text-muted-foreground no-underline">
+        <Link to="/" className="text-sm text-muted-foreground no-underline">
           Levels
         </Link>
         <a

@@ -84,10 +84,10 @@ export function LevelComplete({
             </Link>
           ) : (
             <Link
-              to="/play"
+              to="/"
               className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground no-underline"
             >
-              That is the last one — back to the levels
+              That is the last one — back to the map
             </Link>
           )}
         </DialogFooter>

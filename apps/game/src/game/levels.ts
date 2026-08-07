@@ -321,7 +321,7 @@ export default circuit('Xnor1', {
     inputs: ['a', 'b'],
     outputs: ['out'],
     allowed: ['Nand'],
-    stub: `// Ports, not switches.
+    stub: `// Ports, not switches. Still NAND only.
 //
 // \`inputs\` and \`outputs\` are the circuit's edges — what it looks like from
 // the outside. Wire them with \`inputs.a.to(...)\` and \`....to(outputs.out)\`.
