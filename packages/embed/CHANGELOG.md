@@ -1,5 +1,15 @@
 # @simten/embed
 
+## 0.3.6
+
+### Patch Changes
+
+- Updated dependencies [1db85ac]
+- Updated dependencies [1b36d7b]
+- Updated dependencies [68f48a1]
+  - @simten/ui@0.10.0
+  - @simten/core@0.15.0
+
 ## 0.3.5
 
 ### Patch Changes

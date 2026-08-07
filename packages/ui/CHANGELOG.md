@@ -1,5 +1,65 @@
 # @simten/ui
 
+## 0.10.0
+
+### Minor Changes
+
+- 1b36d7b: Add `buildGlobalsFor(names)` — an ambient-globals shim carrying only the named components
+
+  `SIMTEN_CORE_GLOBALS` declares every stdlib component at once, which is right
+  for an open editor and wrong for a teaching context that hands components out
+  gradually. `buildGlobalsFor(['Nand', 'Switch', 'Led'])` returns the same shim
+  with only those, JSDoc intact, for use via `setupSimtenIntellisense`'s
+  `extraLibs`:
+
+  ```ts
+  setupSimtenIntellisense(monaco, {
+    globals: false,
+    extraLibs: { "file:///simten-globals.d.ts": buildGlobalsFor(allowed) },
+  });
+  ```
+
+  A component left out does not autocomplete and does not typecheck, rather than
+  being offered and then rejected downstream.
+
+  It filters the existing generated blob rather than adding a second generated
+  artifact, because a second file crossing package boundaries is what previously
+  let Monaco report errors on valid code after `@simten/core` was rebuilt alone.
+  `knownGlobalNames()` and a drift test pin the parse against the generator's
+  format, so a change there fails loudly instead of silently dropping components.
+
+  Also shrinks what Monaco holds: a three-component subset is ~4KB against ~52KB
+  for the full shim.
+
+### Patch Changes
+
+- 1db85ac: Fix wire colour across composite boundaries on the canvas
+
+  A wire running between two composite components rendered as undefined — grey
+  rather than green — even while the simulation carried a 1 along it. Elaboration
+  and simulation were correct throughout; only the styling was wrong.
+
+  Edges are projected from the _unelaborated_ circuit, where a composite is one
+  node with ports. `portValues` comes from the _flattened_ netlist, where that
+  boundary has been dissolved: a `HalfAdder` named `h1` contributes `h1.x1.out`
+  and `h1.a1.out`, and no `h1.carry` at all. The lookup tried the connection's
+  source and then its target, so a wire touching a primitive still resolved on
+  that side — which is why only _some_ composite wires looked dead, and why the
+  bug was easy to miss.
+
+  `resolvePortValue` now walks inward when a port is not in the flat map: for an
+  output, it follows the internal connection that drives it; for an input, one it
+  feeds; and it repeats until the path reaches something the map knows about. The
+  path prefix is rebuilt as it descends (`m1` → `m1.i1` → `m1.i1.g`), which
+  reconstructs exactly the naming the simulator produces, so arbitrary nesting
+  depth resolves — verified against a real three-level elaboration.
+
+  Strictly additive: the direct key is tried first, so every lookup that already
+  worked takes the identical path.
+
+- Updated dependencies [68f48a1]
+  - @simten/core@0.15.0
+
 ## 0.9.0
 
 ### Minor Changes
