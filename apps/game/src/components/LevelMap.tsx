@@ -48,6 +48,17 @@ type LevelNode = Node<LevelNodeView, 'level'>;
  */
 const ENFORCE_LOCKING = false;
 
+/**
+ * Wire and port styling, matched to the circuit canvas rather than invented.
+ *
+ * `WIRE_COLORS` in `packages/ui/src/editor/types/visual.ts`: a live signal is
+ * green-500, a low one slate-400, and the canvas draws every wire at
+ * `strokeWidth: 2` without animation. Matching is not only cosmetic — the map
+ * *is* a circuit, so a wire leaving a solved level carries a real 1, and it
+ * should be the same green a 1 is everywhere else in the product.
+ */
+const WIRE_LIVE = '#22c55e';
+const WIRE_LOW = '#94a3b8';
 const STATE_STYLES: Record<LevelNodeData['state'], string> = {
   solved: 'border-emerald-500/60 bg-emerald-500/10 hover:border-emerald-400',
   available: 'border-border bg-card hover:border-foreground/40',
@@ -68,8 +79,12 @@ function LevelMapNode({ data }: NodeProps<LevelNode>) {
 
   return (
     <>
-      {/* Edges enter from below and leave from the top: the map reads upward. */}
-      <Handle type="target" position={Position.Bottom} className="!opacity-0" />
+      {/*
+        Edges enter from below and leave from the top: the map reads upward.
+        Styled as the canvas styles a connected port — same size, same blue —
+        because these are ports, on a circuit, carrying real signal.
+      */}
+      <Handle type="target" position={Position.Bottom} />
       {/*
         `pointer-events-auto` is load-bearing. A node that is neither draggable
         nor selectable gets `pointer-events: none` from React Flow, so the pane
@@ -120,7 +135,7 @@ function LevelMapNode({ data }: NodeProps<LevelNode>) {
           </>
         )}
       </div>
-      <Handle type="source" position={Position.Top} className="!opacity-0" />
+      <Handle type="source" position={Position.Top} />
     </>
   );
 }
@@ -178,11 +193,8 @@ function LevelMapCanvas({ solved, onHoverLevel, onExpandLevel }: LevelMapCanvasP
         return {
           ...e,
           type: 'smoothstep',
-          animated: hot,
-          style: {
-            stroke: hot ? 'var(--color-emerald-500, #10b981)' : 'var(--color-border)',
-            strokeWidth: hot ? 2.5 : 2,
-          },
+          animated: false,
+          style: { stroke: hot ? WIRE_LIVE : WIRE_LOW, strokeWidth: 2 },
         };
       }),
     [edges, live],

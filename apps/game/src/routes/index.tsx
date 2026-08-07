@@ -16,6 +16,7 @@ import { useCallback, useState } from 'react';
 import { IntroDialog } from '../components/IntroDialog';
 import { LevelDrilldown } from '../components/LevelDrilldown';
 import { LevelMap } from '../components/LevelMap';
+import ThemeToggle from '../components/ThemeToggle';
 import { LEVELS_BY_ID } from '../game/levels';
 
 export const Route = createFileRoute('/')({
@@ -43,12 +44,15 @@ function MapPage() {
         <img src="/favicon.svg" alt="" width={20} height={20} />
         <span className="font-semibold">Simten</span>
         <span className="text-sm text-muted-foreground">Build a computer</span>
-        <a
-          href="https://simten.dev"
-          className="ml-auto text-sm text-muted-foreground hover:text-foreground"
-        >
-          What is this?
-        </a>
+        <div className="ml-auto flex items-center gap-3">
+          <a
+            href="https://simten.dev"
+            className="text-sm text-muted-foreground hover:text-foreground"
+          >
+            What is this?
+          </a>
+          <ThemeToggle />
+        </div>
       </header>
 
       <main className="min-h-0 flex-1">
