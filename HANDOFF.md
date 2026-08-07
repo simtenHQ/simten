@@ -208,6 +208,22 @@ from `allowed ∪ STRUCTURAL ∪ helpers`. On a NAND level `Xor` does not
 autocomplete and does not compile. `STRUCTURAL` is exported from `grade.ts` so
 the editor and grader cannot disagree.
 
+**Stubs open below a given component** — `givenPreambleEnd` in
+`routes/play.$levelId.tsx`. Level 10 hands over a finished half adder, and
+landing on it makes the level look like it starts with someone else's code. It
+fires *only* when a circuit is defined above the target: on every other level the
+text above `export default circuit(` is the hint, and scrolling past it would
+hide the teaching. Keyed off structure rather than a per-level flag, and pinned
+by `__tests__/preamble.test.ts`.
+
+**npm works inside circuits.** `import figlet from 'figlet'` resolves via esm.sh
+in the editor and canvas — there is an `npm → ROM` example in
+`packages/core/src/examples/catalog.ts` that runs figlet at build time and bakes
+the result into a ROM. Static imports only; dynamic `import()` is rejected at
+compile because the URL itself is an exfiltration channel. Note the two paths
+differ: `executeCircuitCode` (tests, headless) strips imports and injects the
+stdlib as globals, while the sandbox rewrites and loads them.
+
 **Reference solutions** — `game/solutions/*.ts`, real files loaded via `?raw`.
 They typecheck: a wrong port name fails `tsc` rather than surviving to a grader
 failure. ⚠️ `?raw` is **Vite-only** — vitest resolves it, a bare `tsx` script
