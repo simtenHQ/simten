@@ -50,13 +50,17 @@ type LevelNode = Node<LevelNodeView, 'level'>;
 /**
  * Whether the circuit's verdict is allowed to actually lock a level.
  *
- * The map really does compute unlock state — see `map-circuit.ts` — but nothing
- * persists progress yet, so no level can ever become solved and enforcing the
- * result would leave every level after the first permanently shut. The gate is
- * built and wired; this just lets it pass through until there is a save system
- * for it to read. Flip to `true` the day progress is stored.
+ * On, now that progress persists — the map computes unlock state by running
+ * itself as a circuit (see `map-circuit.ts`), and a campaign where every level
+ * is open from the start has no shape and no reason to care about the unlock
+ * line the arithmetic band earns.
+ *
+ * It stays a constant rather than disappearing because it is a soft gate and
+ * worth being able to lift: every level is still reachable by URL, so this
+ * shapes the front door rather than enforcing anything. Off is also how you
+ * look at a late level without solving nine first.
  */
-const ENFORCE_LOCKING = false;
+const ENFORCE_LOCKING = true;
 
 /**
  * Wire and port styling, matched to the circuit canvas rather than invented.
@@ -175,7 +179,7 @@ type MapFlowNode = LevelNode | SectionFlowNode;
 const NODE_TYPES: NodeTypes = { level: LevelMapNode, section: SectionBand };
 
 export interface LevelMapProps {
-  /** Completed level ids. Empty until progress is persisted. */
+  /** Completed level ids. Empty for the first frame, before storage is read. */
   solved?: ReadonlySet<string>;
   /** Called when a level is hovered, so the page can preview its drilldown. */
   onHoverLevel?: (levelId: string) => void;

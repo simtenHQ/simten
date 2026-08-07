@@ -61,3 +61,65 @@ export function writeStored<T>(key: string, data: T): void {
 
 /** Whether the player has already been shown what this is. */
 export const INTRO_SEEN_KEY = 'simten:game:intro-seen';
+
+/** Every level's editor contents, whether or not it has ever passed. */
+export const DRAFTS_KEY = 'simten:game:drafts';
+
+/** Every level that has passed, and what it cost. */
+export const PROGRESS_KEY = 'simten:game:progress';
+
+/** What a solved level records. */
+export interface LevelProgress {
+  gates: number;
+}
+
+export type Drafts = Record<string, string>;
+export type Progress = Record<string, LevelProgress>;
+
+/**
+ * Two records, not one, because they are different kinds of data.
+ *
+ * A draft is whatever is in the editor — mid-thought, broken, or finished. It
+ * exists so a refresh does not cost you your work. Progress is a flag and a
+ * score: it is what the map's green nodes, the lit wires, `ENFORCE_LOCKING`
+ * and the completion card read, and none of them need a line of source.
+ *
+ * Progress deliberately holds no source yet. Nothing would read it — no level
+ * imports another level's circuit today, since the full adder's half adder
+ * lives in its own stub. When composition lands, `LevelProgress` gains the
+ * source that last *passed*, and downstream levels read that rather than the
+ * draft: otherwise going back and mangling a solved circuit breaks a later
+ * level, with an error pointing at code you are not looking at.
+ *
+ * Both are stored as one record per key rather than a key per level. The whole
+ * map is read on every page anyway, and a single envelope means one version
+ * number to migrate rather than one per level.
+ */
+export function readDrafts(): Drafts {
+  return readStored<Drafts>(DRAFTS_KEY, {});
+}
+
+/** Store one level's editor contents, leaving every other level alone. */
+export function writeDraft(levelId: string, source: string): void {
+  writeStored<Drafts>(DRAFTS_KEY, { ...readDrafts(), [levelId]: source });
+}
+
+/** Forget one level's draft, so it opens from its stub again. */
+export function clearDraft(levelId: string): void {
+  const drafts = readDrafts();
+  delete drafts[levelId];
+  writeStored<Drafts>(DRAFTS_KEY, drafts);
+}
+
+export function readProgress(): Progress {
+  return readStored<Progress>(PROGRESS_KEY, {});
+}
+
+/**
+ * Record a pass. The latest one wins rather than the cheapest — the score
+ * describes the circuit you have, and a player who refactors to something
+ * slower should see that rather than a number they can no longer reproduce.
+ */
+export function writeProgress(levelId: string, entry: LevelProgress): void {
+  writeStored<Progress>(PROGRESS_KEY, { ...readProgress(), [levelId]: entry });
+}

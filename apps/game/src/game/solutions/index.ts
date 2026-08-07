@@ -22,10 +22,10 @@
  * at these.
  *
  * ⚠️ These are the answers, and this module ships to the browser. Anyone can
- * read them out of the bundle. That is deliberate and temporary: the map's
- * drilldown needs *some* circuit to draw before progress is persisted. Once
- * `simten:game:drafts` exists the drilldown should read the player's own source
- * and this becomes test-only again.
+ * read them out of the bundle. The drilldown now draws the player's own draft
+ * where there is one, so this is only the fallback for levels never opened —
+ * the spoiler is smaller than it was, but it is still there. Making it
+ * test-only means finding something else for an unopened level to inspect to.
  */
 
 import andFromNand from './and-from-nand.ts?raw';

@@ -26,8 +26,8 @@ import {
 import { Sheet, SheetContent, SheetTitle } from '@simten/ui/primitives/sheet';
 import { useSandboxContext } from '@simten/ui/sandbox';
 import { createFileRoute, Link, notFound } from '@tanstack/react-router';
-import { Network } from 'lucide-react';
-import { useCallback, useMemo, useState } from 'react';
+import { Network, RotateCcw } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { LevelComplete } from '../components/LevelComplete';
 import { Logo } from '../components/Logo';
 import { SpecPanel } from '../components/SpecPanel';
@@ -35,8 +35,20 @@ import { grade, STRUCTURAL } from '../game/grade';
 import { nameDiagnostics } from '../game/level-name';
 import { LEVELS_BY_ID, nextLevel } from '../game/levels';
 import { sandboxRuntime } from '../game/runtime';
+import { clearDraft, readDrafts, writeDraft, writeProgress } from '../game/storage';
 import type { GradeResult, Level } from '../game/types';
 import { useVictoryRun } from '../game/useVictoryRun';
+
+/**
+ * How long typing pauses before the draft is stored.
+ *
+ * Writing on every keystroke means a JSON parse, a spread and a serialise per
+ * character, for a record that only matters when the tab goes away. Long enough
+ * to coalesce a burst of typing, short enough that no realistic pause loses
+ * work — and the pending write is flushed on unmount regardless, so leaving the
+ * page mid-keystroke is safe.
+ */
+const DRAFT_DEBOUNCE_MS = 400;
 
 export const Route = createFileRoute('/play/$levelId')({
   staticData: { skipDefaultChrome: true },
@@ -86,13 +98,61 @@ function PlayLevelRoute() {
 function PlayLevel({ level }: { level: Level }) {
   const sandbox = useSandboxContext();
 
-  const [source, setSource] = useState(level.stub);
+  /**
+   * Open on the player's own work, falling back to the stub.
+   *
+   * Read in the initialiser rather than an effect, which is normally the wrong
+   * shape in a server-rendered app. It is safe here for a specific reason:
+   * Monaco renders a placeholder on the server and never puts `source` in the
+   * markup, so the server and client agree on the DOM whatever this returns.
+   * Seeding after mount would instead hand the editor the stub first and swap
+   * it, which flashes and — worse — makes the first change event carry the stub.
+   *
+   * The route remounts per level via `key`, so this runs again on every
+   * navigation rather than sticking on the level it first mounted with.
+   */
+  const [source, setSource] = useState(() => readDrafts()[level.id] ?? level.stub);
   const [result, setResult] = useState<GradeResult | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [specOpen, setSpecOpen] = useState(true);
   // Closing the completion dialog must not immediately reopen it, but a fresh
   // submit should bring it back.
   const [completeDismissed, setCompleteDismissed] = useState(false);
+
+  /**
+   * Store the draft, a beat after typing stops.
+   *
+   * Driven from the editor's change event rather than an effect watching
+   * `source`: an effect also fires on mount, which would write the stub over a
+   * real draft in the moment between seeding and reading it. Only an edit is a
+   * reason to save.
+   */
+  const pendingDraft = useRef<string | null>(null);
+  const draftTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const saveDraft = useCallback(
+    (next: string) => {
+      pendingDraft.current = next;
+      if (draftTimer.current) clearTimeout(draftTimer.current);
+      draftTimer.current = setTimeout(() => {
+        draftTimer.current = null;
+        pendingDraft.current = null;
+        writeDraft(level.id, next);
+      }, DRAFT_DEBOUNCE_MS);
+    },
+    [level.id],
+  );
+
+  // Leaving the page mid-debounce must not cost the last few keystrokes, and
+  // clicking "Map" straight after typing is the obvious way to hit that.
+  useEffect(
+    () => () => {
+      if (!draftTimer.current) return;
+      clearTimeout(draftTimer.current);
+      if (pendingDraft.current !== null) writeDraft(level.id, pendingDraft.current);
+    },
+    [level.id],
+  );
 
   // Preview the circuit the source describes. Pinned to the level's target by
   // name — the default picks the last circuit defined, which would follow a
@@ -138,12 +198,29 @@ function PlayLevel({ level }: { level: Level }) {
       // Submit is a request for a verdict, so show it — hidden, the spec sheet
       // swallowed both the failure message and the whole victory run.
       setSpecOpen(true);
-      if (verdict.status === 'pass') victory.start();
-      else victory.reset();
+      if (verdict.status === 'pass') {
+        // The score, not the source. Nothing reads a passing snapshot yet, and
+        // the map only needs to know this level is done and what it cost.
+        writeProgress(level.id, { gates: verdict.gates });
+        victory.start();
+      } else victory.reset();
     } finally {
       setSubmitting(false);
     }
   }, [sandbox, level, source, victory]);
+
+  /** Back to the level as it was handed over. The draft goes with it. */
+  const onReset = useCallback(() => {
+    if (draftTimer.current) {
+      clearTimeout(draftTimer.current);
+      draftTimer.current = null;
+    }
+    pendingDraft.current = null;
+    clearDraft(level.id);
+    setSource(level.stub);
+    setResult(null);
+    victory.reset();
+  }, [level.id, level.stub, victory]);
 
   // Surfaced as a Monaco squiggle rather than a panel note: the problem is on
   // a specific line, and that is where someone is looking.
@@ -213,6 +290,19 @@ function PlayLevel({ level }: { level: Level }) {
             <Network className="h-3.5 w-3.5 -rotate-90" />
             Map
           </Link>
+          {/* Drafts persist, so the stub is otherwise gone for good — and a
+              player who deletes half of a given preamble has no way back to a
+              level that compiles. Monaco keeps its undo stack across this, so
+              a misclick is one ⌘Z rather than a lost solution. */}
+          <button
+            type="button"
+            onClick={onReset}
+            title="Restore this level's starting code"
+            className="flex items-center gap-1.5 whitespace-nowrap rounded-md border border-border px-3 py-1.5 text-xs font-medium"
+          >
+            <RotateCcw className="h-3.5 w-3.5" />
+            Reset
+          </button>
           <button
             type="button"
             onClick={() => setSpecOpen((v) => !v)}
@@ -238,7 +328,9 @@ function PlayLevel({ level }: { level: Level }) {
               <SimtenCodeEditor
                 value={source}
                 onChange={(v) => {
-                  setSource(v ?? '');
+                  const next = v ?? '';
+                  setSource(next);
+                  saveDraft(next);
                   // A verdict describes the source that produced it, so an
                   // edit retires both the verdict and any victory run still
                   // sweeping.
