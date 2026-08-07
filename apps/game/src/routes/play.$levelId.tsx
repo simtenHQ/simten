@@ -275,7 +275,6 @@ function PlayLevel({ level }: { level: Level }) {
           open={victory.complete && !completeDismissed}
           onOpenChange={(o) => setCompleteDismissed(!o)}
           level={level}
-          gates={result.gates}
           next={next}
           position={position}
           total={LEVELS.length}

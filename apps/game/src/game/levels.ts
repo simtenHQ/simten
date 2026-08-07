@@ -74,7 +74,7 @@ export default circuit('Nand1', {
     par: 1,
     outro: {
       headline: "That's a circuit",
-      body: 'Two switches, a gate, a lamp. Now go build every other gate out of that one NAND.',
+      body: `Nice, you unlocked the NAND gate. Let's use it to build the next gates.`,
     },
   },
 

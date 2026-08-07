@@ -26,7 +26,6 @@ interface LevelCompleteProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   level: Level;
-  gates: number;
   /** The level after this one, or undefined at the end of the campaign. */
   next: Level | undefined;
   /** Position in the campaign, for the "3 of 4" line. */
@@ -38,7 +37,6 @@ export function LevelComplete({
   open,
   onOpenChange,
   level,
-  gates,
   next,
   position,
   total,
@@ -64,15 +62,6 @@ export function LevelComplete({
         </DialogHeader>
 
         <p className="text-sm leading-relaxed text-muted-foreground">{level.outro.body}</p>
-
-        <div className="flex items-baseline gap-2 rounded-lg border border-border bg-card/60 px-4 py-3">
-          <span className="font-mono text-3xl font-semibold tabular-nums leading-none">
-            {gates}
-          </span>
-          <span className="text-xs text-muted-foreground">
-            {gates === 1 ? 'gate' : 'gates'} used
-          </span>
-        </div>
 
         {unlocked.length > 0 && (
           <p className="text-sm text-muted-foreground">
