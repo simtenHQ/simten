@@ -27,7 +27,35 @@ export const MAP_ROWS: string[][] = [
   ['nor-from-nand'],
   ['xor-from-nand'],
   ['xnor-from-nand'],
+  ['making-a-component'],
   ['half-adder'],
+  ['full-adder'],
+];
+
+/**
+ * Bands, labelled where they begin.
+ *
+ * Turing Complete rules its map into `BOOLEAN LOGIC`, `ARITHMETIC`, `CPU
+ * ARCHITECTURE` and so on, and the labels do more than decorate: they turn a
+ * column of nodes into a structure, and they say that what you can see is a
+ * *section* rather than the whole game. That second part matters here, because
+ * eight levels presented as the entire campaign reads as thin, while eight
+ * presented as its first band reads as a start.
+ *
+ * Declared by the row a band opens on rather than by a range, so adding a level
+ * to the middle of a band does not require renumbering the one above it.
+ */
+export interface MapSection {
+  label: string;
+  /** Index into `MAP_ROWS` where this band begins, counting from the bottom. */
+  startRow: number;
+}
+
+export const MAP_SECTIONS: MapSection[] = [
+  { label: 'First circuits', startRow: 0 },
+  { label: 'Every gate from one', startRow: 2 },
+  { label: 'Components', startRow: 7 },
+  { label: 'Arithmetic', startRow: 8 },
 ];
 
 /**
@@ -39,7 +67,7 @@ export const MAP_ROWS: string[][] = [
 export const NODE_WIDTH = 210;
 export const NODE_HEIGHT = 72;
 const COLUMN_GAP = 44;
-const ROW_GAP = 132;
+const ROW_GAP = 150;
 
 /** How a node is drawn. `locked` is unused until progress is persisted. */
 export type LevelNodeState = 'solved' | 'available' | 'locked';
@@ -65,6 +93,36 @@ export interface MapEdge {
 }
 
 /**
+ * A band, positioned and sized like a node so React Flow pans it with the map.
+ *
+ * It covers its rows rather than just captioning them, so a section reads as an
+ * *area* you are inside rather than a line you crossed. Every band is tinted
+ * identically: the gap between them is what separates one from the next, so
+ * alternating shades only added noise.
+ */
+export interface MapSectionNode {
+  id: string;
+  label: string;
+  position: { x: number; y: number };
+  height: number;
+}
+
+/** Width of a band. Wide enough to read as an area, not a caption. */
+export const SECTION_WIDTH = 760;
+
+/**
+ * Vertical budget for a band, spent out of the space between two rows.
+ *
+ * `ROW_GAP - NODE_HEIGHT` is all there is between one row's card and the next
+ * (currently 78px). A band claims `BOTTOM` beneath its lowest card — where the
+ * label sits — and `TOP` above its highest, and whatever is left becomes the
+ * gap between adjacent bands. Overrun the budget and neighbouring bands
+ * overlap instead of separating.
+ */
+const SECTION_PAD_TOP = 24;
+const SECTION_PAD_BOTTOM = 30;
+
+/**
  * Build the graph.
  *
  * Y is inverted because React Flow's axis grows downward and the map reads
@@ -79,13 +137,15 @@ export interface MapEdge {
 export function buildMapGraph(solved: ReadonlySet<string> = new Set()): {
   nodes: MapNode[];
   edges: MapEdge[];
+  sections: MapSectionNode[];
 } {
   const nodes: MapNode[] = [];
   const edges: MapEdge[] = [];
   const lastRow = MAP_ROWS.length - 1;
+  const rowY = (rowIndex: number) => (lastRow - rowIndex) * ROW_GAP;
 
   MAP_ROWS.forEach((row, rowIndex) => {
-    const y = (lastRow - rowIndex) * ROW_GAP;
+    const y = rowY(rowIndex);
 
     row.forEach((levelId, columnIndex) => {
       const level = LEVELS_BY_ID.get(levelId);
@@ -118,5 +178,26 @@ export function buildMapGraph(solved: ReadonlySet<string> = new Set()): {
     }
   });
 
-  return { nodes, edges };
+  /**
+   * Each band spans from the row it opens on up to the row below the next
+   * band's start. Y grows downward while rows climb, so the band's *top* comes
+   * from its last row and its *bottom* from its first — inverted relative to
+   * how it reads.
+   */
+  const inRange = MAP_SECTIONS.filter((s) => s.startRow >= 0 && s.startRow < MAP_ROWS.length);
+
+  const sections: MapSectionNode[] = inRange.map((section, i) => {
+    const endRow = i + 1 < inRange.length ? inRange[i + 1].startRow - 1 : lastRow;
+    const top = rowY(Math.max(endRow, section.startRow)) - SECTION_PAD_TOP;
+    const bottom = rowY(section.startRow) + NODE_HEIGHT + SECTION_PAD_BOTTOM;
+
+    return {
+      id: `section-${section.startRow}`,
+      label: section.label,
+      position: { x: -SECTION_WIDTH / 2, y: top },
+      height: Math.max(bottom - top, NODE_HEIGHT),
+    };
+  });
+
+  return { nodes, edges, sections };
 }

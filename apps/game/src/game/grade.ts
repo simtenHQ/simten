@@ -34,7 +34,7 @@ import type { GradeFailure, GradeResult, Level } from './types';
  * Nothing here computes: a Switch sources a value, an Led consumes one. There
  * is no way to smuggle logic through an exempt node.
  */
-const STRUCTURAL = new Set(['Switch', 'Led', 'Input', 'Output', 'HexDisplay']);
+export const STRUCTURAL = new Set(['Switch', 'Led', 'Input', 'Output', 'HexDisplay']);
 
 /**
  * Does the circuit expose this signal — as a top-level port, or as a node of

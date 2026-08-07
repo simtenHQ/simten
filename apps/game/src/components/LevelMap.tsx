@@ -20,14 +20,24 @@ import {
   type Node,
   type NodeProps,
   type NodeTypes,
+  Panel,
   Position,
   ReactFlow,
   type ReactFlowInstance,
   ReactFlowProvider,
+  useReactFlow,
 } from '@xyflow/react';
+import { Crosshair } from 'lucide-react';
 import '@xyflow/react/dist/style.css';
-import { useCallback, useMemo } from 'react';
-import { buildMapGraph, type LevelNodeData, MAP_ROWS, NODE_HEIGHT, NODE_WIDTH } from '../game/map';
+import { useCallback, useMemo, useState } from 'react';
+import {
+  buildMapGraph,
+  type LevelNodeData,
+  MAP_ROWS,
+  NODE_HEIGHT,
+  NODE_WIDTH,
+  SECTION_WIDTH,
+} from '../game/map';
 import { simulateMap } from '../game/map-circuit';
 
 /** Node data plus the interaction callbacks, which are view state rather than map data. */
@@ -48,6 +58,17 @@ type LevelNode = Node<LevelNodeView, 'level'>;
  */
 const ENFORCE_LOCKING = false;
 
+/**
+ * Wire and port styling, matched to the circuit canvas rather than invented.
+ *
+ * `WIRE_COLORS` in `packages/ui/src/editor/types/visual.ts`: a live signal is
+ * green-500, a low one slate-400, and the canvas draws every wire at
+ * `strokeWidth: 2` without animation. Matching is not only cosmetic — the map
+ * *is* a circuit, so a wire leaving a solved level carries a real 1, and it
+ * should be the same green a 1 is everywhere else in the product.
+ */
+const WIRE_LIVE = '#22c55e';
+const WIRE_LOW = '#94a3b8';
 const STATE_STYLES: Record<LevelNodeData['state'], string> = {
   solved: 'border-emerald-500/60 bg-emerald-500/10 hover:border-emerald-400',
   available: 'border-border bg-card hover:border-foreground/40',
@@ -68,8 +89,12 @@ function LevelMapNode({ data }: NodeProps<LevelNode>) {
 
   return (
     <>
-      {/* Edges enter from below and leave from the top: the map reads upward. */}
-      <Handle type="target" position={Position.Bottom} className="!opacity-0" />
+      {/*
+        Edges enter from below and leave from the top: the map reads upward.
+        Styled as the canvas styles a connected port — same size, same blue —
+        because these are ports, on a circuit, carrying real signal.
+      */}
+      <Handle type="target" position={Position.Bottom} />
       {/*
         `pointer-events-auto` is load-bearing. A node that is neither draggable
         nor selectable gets `pointer-events: none` from React Flow, so the pane
@@ -120,12 +145,34 @@ function LevelMapNode({ data }: NodeProps<LevelNode>) {
           </>
         )}
       </div>
-      <Handle type="source" position={Position.Top} className="!opacity-0" />
+      <Handle type="source" position={Position.Top} />
     </>
   );
 }
 
-const NODE_TYPES: NodeTypes = { level: LevelMapNode };
+/**
+ * A band label: a dashed rule with a caption, drawn as a node so it pans and
+ * zooms with the map rather than floating over it.
+ */
+function SectionBand({ data }: NodeProps<SectionFlowNode>) {
+  return (
+    <div
+      className="pointer-events-none select-none rounded-xl border border-dashed border-border/60 bg-foreground/[0.025]"
+      style={{ width: SECTION_WIDTH, height: data.height }}
+    >
+      <span className="absolute bottom-2 left-4 whitespace-nowrap text-[11px] font-medium uppercase tracking-[0.18em] text-muted-foreground/70">
+        {data.label}
+      </span>
+    </div>
+  );
+}
+
+type SectionFlowNode = Node<{ label: string; height: number }, 'section'>;
+
+/** Everything the map renders: level cards and band labels. */
+type MapFlowNode = LevelNode | SectionFlowNode;
+
+const NODE_TYPES: NodeTypes = { level: LevelMapNode, section: SectionBand };
 
 export interface LevelMapProps {
   /** Completed level ids. Empty until progress is persisted. */
@@ -139,7 +186,7 @@ export interface LevelMapProps {
 type LevelMapCanvasProps = LevelMapProps;
 
 function LevelMapCanvas({ solved, onHoverLevel, onExpandLevel }: LevelMapCanvasProps) {
-  const { nodes, edges } = useMemo(() => buildMapGraph(solved), [solved]);
+  const { nodes, edges, sections } = useMemo(() => buildMapGraph(solved), [solved]);
 
   /**
    * Unlock state comes from running the map as a circuit, not from computing it
@@ -169,6 +216,22 @@ function LevelMapCanvas({ solved, onHoverLevel, onExpandLevel }: LevelMapCanvasP
     [nodes, unlocked, onHoverLevel, onExpandLevel],
   );
 
+  // Band labels are nodes too, so React Flow pans them with everything else.
+  // Not selectable and behind the levels, so they never intercept a click.
+  const sectionNodes = useMemo<SectionFlowNode[]>(
+    () =>
+      sections.map((s) => ({
+        id: s.id,
+        type: 'section' as const,
+        position: s.position,
+        data: { label: s.label, height: s.height },
+        selectable: false,
+        draggable: false,
+        zIndex: -1,
+      })),
+    [sections],
+  );
+
   const flowEdges = useMemo<Edge[]>(
     () =>
       edges.map((e) => {
@@ -178,11 +241,8 @@ function LevelMapCanvas({ solved, onHoverLevel, onExpandLevel }: LevelMapCanvasP
         return {
           ...e,
           type: 'smoothstep',
-          animated: hot,
-          style: {
-            stroke: hot ? 'var(--color-emerald-500, #10b981)' : 'var(--color-border)',
-            strokeWidth: hot ? 2.5 : 2,
-          },
+          animated: false,
+          style: { stroke: hot ? WIRE_LIVE : WIRE_LOW, strokeWidth: 2 },
         };
       }),
     [edges, live],
@@ -192,25 +252,60 @@ function LevelMapCanvas({ solved, onHoverLevel, onExpandLevel }: LevelMapCanvasP
    * Open on the start of the campaign rather than fitting the whole graph,
    * which would shrink it to illegibility and give away how much is left.
    */
-  const focusStart = useCallback((instance: ReactFlowInstance<LevelNode, Edge>) => {
-    const first = MAP_ROWS[0]?.[0];
-    const node = first ? instance.getNode(first) : undefined;
-    if (!node) return;
-    // `position` is the top-left corner, so half the node is added back to aim
-    // at its middle. Then centre well above it, so it sits near the bottom of
-    // the viewport with the rest of the act climbing away above rather than
-    // dead-centre with empty canvas underneath.
-    instance.setCenter(node.position.x + NODE_WIDTH / 2, node.position.y + NODE_HEIGHT / 2 - 240, {
-      zoom: 1,
-    });
-  }, []);
+  /**
+   * Put the start of the campaign back under the viewport.
+   *
+   * Used for the initial view and by the recenter control — the map is larger
+   * than the screen and pans freely, so it is possible to end up looking at
+   * empty grid with no way to tell which direction the levels are in.
+   */
+  const centerOnStart = useCallback(
+    (instance: ReactFlowInstance<MapFlowNode, Edge>, animate = false) => {
+      const first = MAP_ROWS[0]?.[0];
+      const node = first ? instance.getNode(first) : undefined;
+      if (!node) return;
+      // `position` is the top-left corner, so half the node is added back to aim
+      // at its middle. Then centre well above it, so it sits near the bottom of
+      // the viewport with the rest of the act climbing away above rather than
+      // dead-centre with empty canvas underneath.
+      instance.setCenter(
+        node.position.x + NODE_WIDTH / 2,
+        node.position.y + NODE_HEIGHT / 2 - 240,
+        {
+          zoom: 1,
+          duration: animate ? 400 : 0,
+        },
+      );
+    },
+    [],
+  );
+
+  const flow = useReactFlow<MapFlowNode, Edge>();
+  const recenter = useCallback(() => centerOnStart(flow, true), [flow, centerOnStart]);
+
+  /**
+   * Hold the first paint until the map has been positioned.
+   *
+   * React Flow paints once at its default viewport — origin, zoom 1 — which
+   * puts the graph in the top-left corner, and only then does `onInit` fire and
+   * centre it. The result is a visible jump from wrong place to right place.
+   * Centring earlier is not possible: it needs the container's measured size,
+   * which does not exist until after mount, and server rendering has no
+   * viewport at all. So the honest fix is to show nothing for that one frame
+   * rather than show it in the wrong place.
+   */
+  const [positioned, setPositioned] = useState(false);
 
   return (
     <ReactFlow
-      nodes={flowNodes}
+      nodes={[...sectionNodes, ...flowNodes]}
       edges={flowEdges}
       nodeTypes={NODE_TYPES}
-      onInit={focusStart}
+      onInit={(instance) => {
+        centerOnStart(instance);
+        setPositioned(true);
+      }}
+      className={`transition-opacity duration-150 ${positioned ? 'opacity-100' : 'opacity-0'}`}
       nodesDraggable={false}
       nodesConnectable={false}
       elementsSelectable={false}
@@ -219,6 +314,16 @@ function LevelMapCanvas({ solved, onHoverLevel, onExpandLevel }: LevelMapCanvasP
       proOptions={{ hideAttribution: true }}
     >
       <Background variant={BackgroundVariant.Dots} gap={24} size={1} />
+      <Panel position="bottom-left">
+        <button
+          type="button"
+          onClick={recenter}
+          className="flex items-center gap-2 rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground shadow-sm hover:text-foreground"
+        >
+          <Crosshair className="h-3.5 w-3.5" />
+          Recenter
+        </button>
+      </Panel>
     </ReactFlow>
   );
 }

@@ -22,9 +22,32 @@
  * cold. Levels 2 and 3 still place a NAND and wire one side of it. From level 4
  * the `nodes` are the player's to choose — handing them the right number of
  * NANDs would give away both the answer and the point of `par`.
+ *
+ * Level 1 is a NAND rather than a friendlier AND, even though its lesson is
+ * pure syntax. "You get one gate" has to be true from the first screen: handing
+ * over an AND and withdrawing it a level later reads as a confiscation, and it
+ * made the completion card announce NAND as an unlock when it was really a
+ * swap. Nothing is reasoned about here anyway — you add one wire and click —
+ * so the player meets NAND by watching it, which is exactly the setup level 2
+ * needs.
  */
 
 import type { Level } from './types';
+
+/**
+ * What the arithmetic band may use.
+ *
+ * Every gate the player built from NAND, handed back once they have proved they
+ * can make it. This is the first time `allowed` grows, which is what makes the
+ * completion card's unlock line fire — it is derived from exactly this
+ * difference, so it can never promise something the grader would reject.
+ *
+ * The honest version of this is reusing the circuits they actually wrote, which
+ * needs composition. Until then the stdlib equivalents stand in: same logic,
+ * same gate counts, and the lesson — that what you build makes the next thing
+ * cheaper — survives intact.
+ */
+const ARITHMETIC_GATES = ['Nand', 'Not', 'And', 'Or', 'Nor', 'Xor', 'Xnor'];
 
 export const LEVELS: Level[] = [
   {
@@ -32,41 +55,41 @@ export const LEVELS: Level[] = [
     title: 'First Wire',
     brief:
       'This circuit is finished apart from one connection: nothing carries the gate’s result to the lamp. Add that line, then flip the switches.',
-    target: 'And1',
+    target: 'Nand1',
     inputs: ['a', 'b'],
     outputs: ['out'],
-    allowed: ['And'],
+    allowed: ['Nand'],
     stub: `// A circuit is a set of nodes and the wires between them.
 // \`x.to(y)\` sends the value at x into y.
 //
 // Everything here is a node — the switches and the lamp too. This one is
-// done except for the last wire: the AND gate has its answer, but nothing
+// done except for the last wire: the gate has its answer, but nothing
 // carries it to the lamp.
 
-export default circuit('And1', {
+export default circuit('Nand1', {
   nodes: {
     a: Switch,
     b: Switch,
-    and1: And,
+    n1: Nand,
     out: Led,
   },
-  connect: ({ nodes: { a, b, and1, out } }) => [
-    a.out.to(and1.a),
-    b.out.to(and1.b),
-    // One more line. Send and1.out to out.in
+  connect: ({ nodes: { a, b, n1, out } }) => [
+    a.out.to(n1.a),
+    b.out.to(n1.b),
+    // One more line. Send n1.out to out.in
   ],
 });
 `,
     vectors: [
-      { inputs: { a: 0, b: 0 }, expect: { out: 0 } },
-      { inputs: { a: 0, b: 1 }, expect: { out: 0 } },
-      { inputs: { a: 1, b: 0 }, expect: { out: 0 } },
-      { inputs: { a: 1, b: 1 }, expect: { out: 1 } },
+      { inputs: { a: 0, b: 0 }, expect: { out: 1 } },
+      { inputs: { a: 0, b: 1 }, expect: { out: 1 } },
+      { inputs: { a: 1, b: 0 }, expect: { out: 1 } },
+      { inputs: { a: 1, b: 1 }, expect: { out: 0 } },
     ],
     par: 1,
     outro: {
       headline: "That's a circuit",
-      body: 'Two switches, a gate, and a lamp. Everything from here is that same idea repeated. Next you lose the AND gate: you get one gate from now on and build the rest yourself.',
+      body: `Nice, you unlocked the NAND gate. Let's use it to build the next gates.`,
     },
   },
 
@@ -74,13 +97,13 @@ export default circuit('And1', {
     id: 'not-from-nand',
     title: 'NOT from NAND',
     brief:
-      'From here you get one gate: NAND, which outputs 0 only when both its inputs are 1. Every other gate gets built from it. Start with the simplest — turn a 1 into a 0.',
+      'You have seen what NAND does: it outputs 0 only when both its inputs are 1. It is the only gate you get, so every other gate gets built from it. Start with the simplest — turn a 1 into a 0.',
     target: 'Not1',
     inputs: ['a'],
     outputs: ['out'],
     allowed: ['Nand'],
-    stub: `// One gate from here on: NAND.
-// It outputs 0 only when both inputs are 1.
+    stub: `// The same gate as last level, and the only one there is.
+// NAND outputs 0 only when both inputs are 1.
 //
 // The NAND is placed, and its output already
 // runs to the lamp. What is missing is the input.
@@ -313,7 +336,7 @@ export default circuit('Xnor1', {
   },
 
   {
-    id: 'half-adder',
+    id: 'making-a-component',
     title: 'Making a Component',
     brief:
       'The XOR from two levels back, but this time give the circuit `inputs` and `outputs` instead of switches and a lamp. Watch what happens to the diagram: it becomes one box. That is the trade — you can no longer see inside, and in exchange anything can now use it.',
@@ -321,7 +344,7 @@ export default circuit('Xnor1', {
     inputs: ['a', 'b'],
     outputs: ['out'],
     allowed: ['Nand'],
-    stub: `// Ports, not switches.
+    stub: `// Ports, not switches. Still NAND only.
 //
 // \`inputs\` and \`outputs\` are the circuit's edges — what it looks like from
 // the outside. Wire them with \`inputs.a.to(...)\` and \`....to(outputs.out)\`.
@@ -351,6 +374,113 @@ export default circuit('Xor2', {
     outro: {
       headline: "It's a component now",
       body: 'Ports instead of switches, and the diagram collapsed into one box. That is what lets circuits build on each other, which is where this goes next.',
+    },
+  },
+
+  {
+    id: 'half-adder',
+    title: 'Half Adder',
+    brief:
+      'Add two bits. Two of them make 0, 1 or 2, which needs two lamps: sum is the bit you keep, carry is the one that spills over. You have built every gate this needs.',
+    target: 'HalfAdder',
+    inputs: ['a', 'b'],
+    outputs: ['sum', 'carry'],
+    allowed: ARITHMETIC_GATES,
+    stub: `// Adding two bits gives 0, 1 or 2 — and 2 does not fit in
+// one bit, so the answer needs two lamps.
+//
+//   0 + 0 = 0    sum 0, carry 0
+//   0 + 1 = 1    sum 1, carry 0
+//   1 + 1 = 2    sum 0, carry 1
+//
+// You proved you could build these gates, so you have them
+// now. Two of them is enough.
+
+export default circuit('HalfAdder', {
+  nodes: {
+    a: Switch,
+    b: Switch,
+    sum: Led,
+    carry: Led,
+  },
+  connect: ({ nodes: { a, b, sum, carry } }) => [
+    //
+  ],
+});
+`,
+    vectors: [
+      { inputs: { a: 0, b: 0 }, expect: { sum: 0, carry: 0 } },
+      { inputs: { a: 0, b: 1 }, expect: { sum: 1, carry: 0 } },
+      { inputs: { a: 1, b: 0 }, expect: { sum: 1, carry: 0 } },
+      { inputs: { a: 1, b: 1 }, expect: { sum: 0, carry: 1 } },
+    ],
+    par: 2,
+    outro: {
+      headline: 'That is addition',
+      body: 'Sum is XOR, carry is AND, and together they add. It is called half an adder because it cannot take a carry coming in — which is the next problem, and the reason one of these is never enough.',
+    },
+  },
+
+  {
+    id: 'full-adder',
+    title: 'Full Adder',
+    brief:
+      'The same sum, but with a carry arriving from the bit below. Do not build it out of gates — build it out of two of the half adders you just made.',
+    target: 'FullAdder',
+    inputs: ['a', 'b', 'cin'],
+    outputs: ['sum', 'cout'],
+    allowed: ARITHMETIC_GATES,
+    stub: `// Your half adder, wrapped in ports so it can be used as a
+// component. That is what the last level was for — a circuit
+// with ports is one other circuits can build with.
+
+const HalfAdder = circuit('HalfAdder', {
+  inputs: { a: bit, b: bit },
+  outputs: { sum: bit, carry: bit },
+  nodes: { x1: Xor, a1: And },
+  connect: ({ inputs, outputs, nodes: { x1, a1 } }) => [
+    inputs.a.to(x1.a, a1.a),
+    inputs.b.to(x1.b, a1.b),
+    x1.out.to(outputs.sum),
+    a1.out.to(outputs.carry),
+  ],
+});
+
+// Two of them are placed. Add a and b with the first, then add
+// cin to that answer with the second.
+//
+// Either of those additions can carry, and the answer carries
+// out if either did — so you need one more gate for that.
+
+export default circuit('FullAdder', {
+  nodes: {
+    a: Switch,
+    b: Switch,
+    cin: Switch,
+    h1: HalfAdder,
+    h2: HalfAdder,
+    sum: Led,
+    cout: Led,
+  },
+  connect: ({ nodes: { a, b, cin, h1, h2, sum, cout } }) => [
+    //
+  ],
+});
+`,
+    vectors: [
+      { inputs: { a: 0, b: 0, cin: 0 }, expect: { sum: 0, cout: 0 } },
+      { inputs: { a: 0, b: 0, cin: 1 }, expect: { sum: 1, cout: 0 } },
+      { inputs: { a: 0, b: 1, cin: 0 }, expect: { sum: 1, cout: 0 } },
+      { inputs: { a: 0, b: 1, cin: 1 }, expect: { sum: 0, cout: 1 } },
+      { inputs: { a: 1, b: 0, cin: 0 }, expect: { sum: 1, cout: 0 } },
+      { inputs: { a: 1, b: 0, cin: 1 }, expect: { sum: 0, cout: 1 } },
+      { inputs: { a: 1, b: 1, cin: 0 }, expect: { sum: 0, cout: 1 } },
+      { inputs: { a: 1, b: 1, cin: 1 }, expect: { sum: 1, cout: 1 } },
+    ],
+    par: 5,
+    outro: {
+      headline: 'Built from what you built',
+      body: 'Two half adders and an OR, and you never touched a gate. That is the whole point of wrapping something in ports — every adder from here up is these chained together, the carry out of one bit becoming the carry in of the next.',
     },
   },
 ];

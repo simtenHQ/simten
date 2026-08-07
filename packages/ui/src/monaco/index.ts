@@ -17,6 +17,7 @@
  * (`monaco-editor` follows automatically as a peer of `@monaco-editor/react`.)
  */
 
+export { buildGlobalsFor, knownGlobalNames } from './globals-subset';
 export {
   SimtenCodeEditor,
   type SimtenCodeEditorHandle,
