@@ -27,7 +27,9 @@ export const MAP_ROWS: string[][] = [
   ['nor-from-nand'],
   ['xor-from-nand'],
   ['xnor-from-nand'],
+  ['making-a-component'],
   ['half-adder'],
+  ['full-adder'],
 ];
 
 /**
@@ -53,6 +55,7 @@ export const MAP_SECTIONS: MapSection[] = [
   { label: 'First circuits', startRow: 0 },
   { label: 'Every gate from one', startRow: 2 },
   { label: 'Components', startRow: 7 },
+  { label: 'Arithmetic', startRow: 8 },
 ];
 
 /**

@@ -100,6 +100,48 @@ export const Xnor1 = circuit('Xnor1', {
 });`,
 
   'half-adder': `
+export const HalfAdder = circuit('HalfAdder', {
+  nodes: { a: Switch, b: Switch, x1: Xor, a1: And, sum: Led, carry: Led },
+  connect: ({ nodes: { a, b, x1, a1, sum, carry } }) => [
+    a.out.to(x1.a, a1.a),
+    b.out.to(x1.b, a1.b),
+    x1.out.to(sum.in),
+    a1.out.to(carry.in),
+  ],
+});`,
+
+  'full-adder': `
+const HalfAdder = circuit('HalfAdder', {
+  inputs: { a: bit, b: bit },
+  outputs: { sum: bit, carry: bit },
+  nodes: { x1: Xor, a1: And },
+  connect: ({ inputs, outputs, nodes: { x1, a1 } }) => [
+    inputs.a.to(x1.a, a1.a),
+    inputs.b.to(x1.b, a1.b),
+    x1.out.to(outputs.sum),
+    a1.out.to(outputs.carry),
+  ],
+});
+
+export const FullAdder = circuit('FullAdder', {
+  nodes: {
+    a: Switch, b: Switch, cin: Switch,
+    h1: HalfAdder, h2: HalfAdder, o1: Or,
+    sum: Led, cout: Led,
+  },
+  connect: ({ nodes: { a, b, cin, h1, h2, o1, sum, cout } }) => [
+    a.out.to(h1.a),
+    b.out.to(h1.b),
+    h1.sum.to(h2.a),
+    cin.out.to(h2.b),
+    h2.sum.to(sum.in),
+    h1.carry.to(o1.a),
+    h2.carry.to(o1.b),
+    o1.out.to(cout.in),
+  ],
+});`,
+
+  'making-a-component': `
 export const Xor2 = circuit('Xor2', {
   inputs: { a: bit, b: bit },
   outputs: { out: bit },
