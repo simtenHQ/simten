@@ -47,28 +47,35 @@ line fire — once, after level 8: *"Not, And, Or, Nor, Xor, Xnor unlocked"*.
 
 ## The persistence task
 
-This is the next thing to build. Four finished features are inert without it,
-and it is step one of composition rather than a separate feature.
+This is the next thing to build: four finished features are inert without it.
+Composition later builds on top of it — a passing snapshot is a field added to
+`progress` — but that is not part of this task.
 
-### Two stores, and the distinction matters
+### Two records, one copy of the source
 
 ```
-simten:game:progress   per level: the source that last PASSED, + gate count
-simten:game:drafts     per level: what is currently in the editor
+simten:game:drafts     per level: the source currently in the editor
+simten:game:progress   per level: { gates: number }
 ```
 
-A draft is written as you type. Progress is written **only on a pass** and is
-frozen until the next pass.
+These are different *kinds* of data, not two copies of the same thing. The draft
+restores your work on refresh. Progress is a flag and a score — it is what the
+map's green nodes, the lit wires, `ENFORCE_LOCKING` and the header chip read,
+and it needs no source at all.
 
-Downstream levels must read **progress**, never drafts. Otherwise going back and
+Do not store the passing source yet. Nothing reads it: no level imports another
+level's circuit today, since the full adder's half adder lives in its own stub
+rather than being pulled from level 9. Building a snapshot store with no
+consumer is work with nothing to verify it against.
+
+**When composition lands**, `progress` gains a `source` field holding the
+solution that last *passed*, and the split earns its keep. Downstream levels must
+then read that snapshot rather than the draft — otherwise going back and
 mangling your half adder breaks a later level built on it, with an error
 pointing at code you are not looking at. Re-solve it and the better version
-propagates — which is the good version of that behaviour.
-
-The interface is safe by construction: a snapshot only exists because it passed,
-and passing means `grade.ts` already verified it exposes the signals the level
-named. You cannot rename your way into breaking a downstream level, because the
-rename would not have passed.
+propagates, which is the good version of that behaviour. The interface is safe
+by construction there: a snapshot only exists because it passed, and passing
+means `grade.ts` already verified it exposes the signals the level named.
 
 ### What exists already
 
@@ -79,17 +86,18 @@ silently misread. The intro flag is its only caller today.
 
 ### Wiring, file by file
 
-1. **`storage.ts`** — add typed accessors over the generic pair. Something like
-   `readProgress(): Record<string, {source: string; gates: number}>` and
-   `readDrafts(): Record<string, string>` plus writers. Keep the envelope.
+1. **`storage.ts`** — add typed accessors over the generic pair:
+   `readDrafts(): Record<string, string>` and
+   `readProgress(): Record<string, { gates: number }>`, plus writers. Keep the
+   envelope.
 
 2. **`routes/play.$levelId.tsx`**
    - Seed the editor from the draft: `useState(level.stub)` becomes the draft if
      one exists. The route already remounts per level via `key`, so the
      initialiser runs per level — do not add an effect for this.
    - Write the draft on change (debounce; every keystroke is wasteful).
-   - On `verdict.status === 'pass'`, write progress with the source and
-     `verdict.gates`.
+   - On `verdict.status === 'pass'`, write `{ gates: verdict.gates }` to
+     progress. No source — see above.
 
 3. **`routes/index.tsx`** (the map) — read progress, derive a `Set` of solved
    ids, pass it to `<LevelMap solved={…} />`. The prop already exists and is
@@ -101,10 +109,15 @@ silently misread. The intro flag is its only caller today.
    reachable by URL regardless so it is a soft gate.
 
 5. **`components/LevelDrilldown.tsx`** — one line. `SOLUTIONS[level.id]` becomes
-   the player's passing source, falling back to the reference answer for levels
-   they have not solved. This also retires the spoiler: `solutions/` currently
-   ships every answer to the browser, which is documented as temporary in
-   `solutions/index.ts`.
+   the **draft** for that level, falling back to the reference answer for levels
+   never opened. Not a passing snapshot, which will not exist — and the draft is
+   the better source anyway, because the drilldown *shows* you your work rather
+   than depending on it. If you edited a solved level, seeing the edited version
+   is correct.
+
+   This also shrinks the spoiler: `solutions/` currently ships every answer to
+   the browser, documented as temporary in `solutions/index.ts`. It stays as the
+   fallback for unopened levels rather than disappearing.
 
 6. **Add a reset-level button.** Once drafts persist there is no way back to the
    stub, and a player who mangles a given preamble is stuck.
