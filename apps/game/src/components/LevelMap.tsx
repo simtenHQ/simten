@@ -29,7 +29,7 @@ import {
 } from '@xyflow/react';
 import { Crosshair } from 'lucide-react';
 import '@xyflow/react/dist/style.css';
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import {
   buildMapGraph,
   type LevelNodeData,
@@ -283,12 +283,29 @@ function LevelMapCanvas({ solved, onHoverLevel, onExpandLevel }: LevelMapCanvasP
   const flow = useReactFlow<MapFlowNode, Edge>();
   const recenter = useCallback(() => centerOnStart(flow, true), [flow, centerOnStart]);
 
+  /**
+   * Hold the first paint until the map has been positioned.
+   *
+   * React Flow paints once at its default viewport — origin, zoom 1 — which
+   * puts the graph in the top-left corner, and only then does `onInit` fire and
+   * centre it. The result is a visible jump from wrong place to right place.
+   * Centring earlier is not possible: it needs the container's measured size,
+   * which does not exist until after mount, and server rendering has no
+   * viewport at all. So the honest fix is to show nothing for that one frame
+   * rather than show it in the wrong place.
+   */
+  const [positioned, setPositioned] = useState(false);
+
   return (
     <ReactFlow
       nodes={[...sectionNodes, ...flowNodes]}
       edges={flowEdges}
       nodeTypes={NODE_TYPES}
-      onInit={(instance) => centerOnStart(instance)}
+      onInit={(instance) => {
+        centerOnStart(instance);
+        setPositioned(true);
+      }}
+      className={`transition-opacity duration-150 ${positioned ? 'opacity-100' : 'opacity-0'}`}
       nodesDraggable={false}
       nodesConnectable={false}
       elementsSelectable={false}
