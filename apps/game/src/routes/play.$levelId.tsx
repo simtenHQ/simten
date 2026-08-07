@@ -12,7 +12,12 @@
 
 import { ErrorDisplay, useCompiledCircuit } from '@simten/embed';
 import { CircuitCanvas } from '@simten/ui/canvas';
-import { registerSimtenThemes, SIMTEN_DARK, SimtenCodeEditor } from '@simten/ui/monaco';
+import {
+  buildGlobalsFor,
+  registerSimtenThemes,
+  SIMTEN_DARK,
+  SimtenCodeEditor,
+} from '@simten/ui/monaco';
 import {
   ResizableHandle,
   ResizablePanel,
@@ -21,12 +26,14 @@ import {
 import { Sheet, SheetContent, SheetTitle } from '@simten/ui/primitives/sheet';
 import { useSandboxContext } from '@simten/ui/sandbox';
 import { createFileRoute, Link, notFound } from '@tanstack/react-router';
+import { Network } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
 import { LevelComplete } from '../components/LevelComplete';
+import { Logo } from '../components/Logo';
 import { SpecPanel } from '../components/SpecPanel';
-import { grade } from '../game/grade';
+import { grade, STRUCTURAL } from '../game/grade';
 import { nameDiagnostics } from '../game/level-name';
-import { LEVELS, LEVELS_BY_ID, levelIndex, nextLevel } from '../game/levels';
+import { LEVELS_BY_ID, nextLevel } from '../game/levels';
 import { sandboxRuntime } from '../game/runtime';
 import type { GradeResult, Level } from '../game/types';
 import { useVictoryRun } from '../game/useVictoryRun';
@@ -54,6 +61,23 @@ export const Route = createFileRoute('/play/$levelId')({
  * state: every one of them is derived from the level, so the whole component
  * should simply start again.
  */
+/**
+ * The line the player's own work starts on, when the stub hands them a
+ * finished component to build with — otherwise `null`.
+ *
+ * The full adder is given a half adder, and landing on that makes the level
+ * look like it opens with someone else's code. But most stubs open with
+ * comments that *are* the instructions, and scrolling past those would hide the
+ * hint. So this keys off structure — is there a circuit defined above the
+ * target? — rather than a flag somebody has to remember to set.
+ */
+export function givenPreambleEnd(lines: string[]): number | null {
+  const target = lines.findIndex((l) => l.startsWith('export default circuit('));
+  if (target <= 0) return null;
+  if (!lines.slice(0, target).some((l) => l.includes('circuit('))) return null;
+  return target + 1;
+}
+
 function PlayLevelRoute() {
   const { level } = Route.useLoaderData();
   return <PlayLevel key={level.id} level={level} />;
@@ -125,21 +149,43 @@ function PlayLevel({ level }: { level: Level }) {
   // a specific line, and that is where someone is looking.
   const diagnostics = useMemo(() => nameDiagnostics(source, level.target), [source, level.target]);
 
+  /**
+   * Teach the editor only what this level permits, so a component you have not
+   * earned yet does not autocomplete and does not compile. The rule stops being
+   * something you discover by breaking it.
+   *
+   * `STRUCTURAL` comes from the grader rather than a second list here: those are
+   * the pieces that carry no logic and never count toward par, which is exactly
+   * why they are absent from `allowed`. Filtering on `allowed` alone would leave
+   * every level unable to declare a `Switch`.
+   */
+  const intellisense = useMemo(
+    () => ({
+      globals: false,
+      extraLibs: {
+        'file:///simten-globals.d.ts': buildGlobalsFor([...level.allowed, ...STRUCTURAL]),
+      },
+    }),
+    [level.allowed],
+  );
+
   const solved = result?.status === 'pass';
   const next = useMemo(() => nextLevel(level.id), [level.id]);
-  const position = levelIndex(level.id) + 1;
 
   return (
     <div className="flex h-screen w-screen flex-col overflow-hidden bg-gray-50 dark:bg-[#111113]">
       <header className="flex shrink-0 items-center gap-3 border-b border-border px-4 py-2">
-        <Link to="/play" className="text-sm font-semibold tracking-tight no-underline">
-          Simten
+        {/* Same brand lockup as apps/web's SiteHeader: mark, then wordmark. */}
+        <Link
+          to="/"
+          aria-label="Simten — home"
+          className="flex shrink-0 items-center gap-2 text-foreground no-underline transition-colors hover:text-foreground/80"
+        >
+          <Logo size={20} />
+          <span className="text-sm font-semibold tracking-tight">Simten</span>
         </Link>
         <div className="h-5 w-px bg-border" />
         <span className="shrink-0 text-sm font-semibold text-foreground/80">{level.title}</span>
-        <span className="shrink-0 text-xs text-muted-foreground">
-          {position} / {LEVELS.length}
-        </span>
         {/* The brief is read once and then ignored, so it belongs here rather
             than occupying panel space for the rest of the level. */}
         <p className="hidden truncate text-xs text-muted-foreground lg:block" title={level.brief}>
@@ -156,6 +202,17 @@ function PlayLevel({ level }: { level: Level }) {
               Solved · {result?.status === 'pass' ? result.gates : 0}
             </button>
           )}
+          {/* The wordmark also goes back, but that is a convention rather than
+              a signpost — this one says where it leads. */}
+          <Link
+            to="/"
+            title="Back to the map"
+            aria-label="Back to the map"
+            className="flex items-center gap-1.5 whitespace-nowrap rounded-md border border-border px-3 py-1.5 text-xs font-medium no-underline"
+          >
+            <Network className="h-3.5 w-3.5 -rotate-90" />
+            Map
+          </Link>
           <button
             type="button"
             onClick={() => setSpecOpen((v) => !v)}
@@ -191,6 +248,11 @@ function PlayLevel({ level }: { level: Level }) {
                   }
                 }}
                 diagnostics={diagnostics}
+                intellisense={intellisense}
+                onMount={(ed) => {
+                  const at = givenPreambleEnd(ed.getModel()?.getLinesContent() ?? []);
+                  if (at !== null) ed.revealLineNearTop(at, 0);
+                }}
                 beforeMount={registerSimtenThemes}
                 theme={SIMTEN_DARK}
                 options={{
@@ -248,10 +310,7 @@ function PlayLevel({ level }: { level: Level }) {
           open={victory.complete && !completeDismissed}
           onOpenChange={(o) => setCompleteDismissed(!o)}
           level={level}
-          gates={result.gates}
           next={next}
-          position={position}
-          total={LEVELS.length}
         />
       )}
 
@@ -259,7 +318,6 @@ function PlayLevel({ level }: { level: Level }) {
         <SheetContent
           side="bottom"
           showOverlay={false}
-          showCloseButton={false}
           onInteractOutside={(e) => e.preventDefault()}
           onOpenAutoFocus={(e) => e.preventDefault()}
           className="max-h-[45vh] gap-0 overflow-y-auto"
@@ -270,7 +328,6 @@ function PlayLevel({ level }: { level: Level }) {
             result={result}
             activeRow={victory.active}
             provenRows={victory.proven}
-            revealVerdict={victory.complete}
           />
         </SheetContent>
       </Sheet>

@@ -8,25 +8,32 @@ import appCss from '../styles.css?url';
 
 const THEME_INIT_SCRIPT = `(function(){try{var stored=window.localStorage.getItem('theme');var mode=(stored==='light'||stored==='dark'||stored==='auto')?stored:'dark';var prefersDark=window.matchMedia('(prefers-color-scheme: dark)').matches;var resolved=mode==='auto'?(prefersDark?'dark':'light'):mode;var root=document.documentElement;root.classList.remove('light','dark');root.classList.add(resolved);if(mode==='auto'){root.removeAttribute('data-theme')}else{root.setAttribute('data-theme',mode)}root.style.colorScheme=resolved;}catch(e){}})();`;
 
+const TITLE = 'Simten — build a computer';
+const DESCRIPTION = 'Build a computer from one gate, by writing TypeScript.';
+const SITE_URL = 'https://play.simten.dev';
+
 export const Route = createRootRoute({
   head: () => ({
     meta: [
-      {
-        charSet: 'utf-8',
-      },
-      {
-        name: 'viewport',
-        content: 'width=device-width, initial-scale=1',
-      },
-      {
-        title: 'Simten — build a computer',
-      },
+      { charSet: 'utf-8' },
+      { name: 'viewport', content: 'width=device-width, initial-scale=1' },
+      { title: TITLE },
+      { name: 'description', content: DESCRIPTION },
+      // The campaign is meant to be passed around, and a link with no preview
+      // card is a much weaker share than one with a title and an image.
+      { property: 'og:type', content: 'website' },
+      { property: 'og:title', content: TITLE },
+      { property: 'og:description', content: DESCRIPTION },
+      { property: 'og:url', content: SITE_URL },
+      { name: 'twitter:card', content: 'summary' },
+      { name: 'twitter:title', content: TITLE },
+      { name: 'twitter:description', content: DESCRIPTION },
     ],
     links: [
-      {
-        rel: 'stylesheet',
-        href: appCss,
-      },
+      { rel: 'stylesheet', href: appCss },
+      { rel: 'icon', href: '/favicon.svg', type: 'image/svg+xml' },
+      { rel: 'apple-touch-icon', href: '/logo192.png' },
+      { rel: 'manifest', href: '/manifest.json' },
     ],
   }),
   shellComponent: RootDocument,
