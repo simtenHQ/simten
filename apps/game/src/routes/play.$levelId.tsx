@@ -26,8 +26,10 @@ import {
 import { Sheet, SheetContent, SheetTitle } from '@simten/ui/primitives/sheet';
 import { useSandboxContext } from '@simten/ui/sandbox';
 import { createFileRoute, Link, notFound } from '@tanstack/react-router';
+import { Network } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
 import { LevelComplete } from '../components/LevelComplete';
+import { Logo } from '../components/Logo';
 import { SpecPanel } from '../components/SpecPanel';
 import { grade, STRUCTURAL } from '../game/grade';
 import { nameDiagnostics } from '../game/level-name';
@@ -156,9 +158,14 @@ function PlayLevel({ level }: { level: Level }) {
   return (
     <div className="flex h-screen w-screen flex-col overflow-hidden bg-gray-50 dark:bg-[#111113]">
       <header className="flex shrink-0 items-center gap-3 border-b border-border px-4 py-2">
-        {/* Back to the map — the only way out of a level, and the only way in. */}
-        <Link to="/" className="text-sm font-semibold tracking-tight no-underline">
-          Simten
+        {/* Same brand lockup as apps/web's SiteHeader: mark, then wordmark. */}
+        <Link
+          to="/"
+          aria-label="Simten — home"
+          className="flex shrink-0 items-center gap-2 text-foreground no-underline transition-colors hover:text-foreground/80"
+        >
+          <Logo size={20} />
+          <span className="text-sm font-semibold tracking-tight">Simten</span>
         </Link>
         <div className="h-5 w-px bg-border" />
         <span className="shrink-0 text-sm font-semibold text-foreground/80">{level.title}</span>
@@ -178,6 +185,17 @@ function PlayLevel({ level }: { level: Level }) {
               Solved · {result?.status === 'pass' ? result.gates : 0}
             </button>
           )}
+          {/* The wordmark also goes back, but that is a convention rather than
+              a signpost — this one says where it leads. */}
+          <Link
+            to="/"
+            title="Back to the map"
+            aria-label="Back to the map"
+            className="flex items-center gap-1.5 whitespace-nowrap rounded-md border border-border px-3 py-1.5 text-xs font-medium no-underline"
+          >
+            <Network className="h-3.5 w-3.5 -rotate-90" />
+            Map
+          </Link>
           <button
             type="button"
             onClick={() => setSpecOpen((v) => !v)}

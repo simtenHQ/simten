@@ -20,14 +20,24 @@ import {
   type Node,
   type NodeProps,
   type NodeTypes,
+  Panel,
   Position,
   ReactFlow,
   type ReactFlowInstance,
   ReactFlowProvider,
+  useReactFlow,
 } from '@xyflow/react';
+import { Crosshair } from 'lucide-react';
 import '@xyflow/react/dist/style.css';
 import { useCallback, useMemo } from 'react';
-import { buildMapGraph, type LevelNodeData, MAP_ROWS, NODE_HEIGHT, NODE_WIDTH } from '../game/map';
+import {
+  buildMapGraph,
+  type LevelNodeData,
+  MAP_ROWS,
+  NODE_HEIGHT,
+  NODE_WIDTH,
+  SECTION_WIDTH,
+} from '../game/map';
 import { simulateMap } from '../game/map-circuit';
 
 /** Node data plus the interaction callbacks, which are view state rather than map data. */
@@ -140,7 +150,29 @@ function LevelMapNode({ data }: NodeProps<LevelNode>) {
   );
 }
 
-const NODE_TYPES: NodeTypes = { level: LevelMapNode };
+/**
+ * A band label: a dashed rule with a caption, drawn as a node so it pans and
+ * zooms with the map rather than floating over it.
+ */
+function SectionBand({ data }: NodeProps<SectionFlowNode>) {
+  return (
+    <div
+      className="pointer-events-none select-none rounded-xl border border-dashed border-border/60 bg-foreground/[0.025]"
+      style={{ width: SECTION_WIDTH, height: data.height }}
+    >
+      <span className="absolute bottom-2 left-4 whitespace-nowrap text-[11px] font-medium uppercase tracking-[0.18em] text-muted-foreground/70">
+        {data.label}
+      </span>
+    </div>
+  );
+}
+
+type SectionFlowNode = Node<{ label: string; height: number }, 'section'>;
+
+/** Everything the map renders: level cards and band labels. */
+type MapFlowNode = LevelNode | SectionFlowNode;
+
+const NODE_TYPES: NodeTypes = { level: LevelMapNode, section: SectionBand };
 
 export interface LevelMapProps {
   /** Completed level ids. Empty until progress is persisted. */
@@ -154,7 +186,7 @@ export interface LevelMapProps {
 type LevelMapCanvasProps = LevelMapProps;
 
 function LevelMapCanvas({ solved, onHoverLevel, onExpandLevel }: LevelMapCanvasProps) {
-  const { nodes, edges } = useMemo(() => buildMapGraph(solved), [solved]);
+  const { nodes, edges, sections } = useMemo(() => buildMapGraph(solved), [solved]);
 
   /**
    * Unlock state comes from running the map as a circuit, not from computing it
@@ -184,6 +216,22 @@ function LevelMapCanvas({ solved, onHoverLevel, onExpandLevel }: LevelMapCanvasP
     [nodes, unlocked, onHoverLevel, onExpandLevel],
   );
 
+  // Band labels are nodes too, so React Flow pans them with everything else.
+  // Not selectable and behind the levels, so they never intercept a click.
+  const sectionNodes = useMemo<SectionFlowNode[]>(
+    () =>
+      sections.map((s) => ({
+        id: s.id,
+        type: 'section' as const,
+        position: s.position,
+        data: { label: s.label, height: s.height },
+        selectable: false,
+        draggable: false,
+        zIndex: -1,
+      })),
+    [sections],
+  );
+
   const flowEdges = useMemo<Edge[]>(
     () =>
       edges.map((e) => {
@@ -204,25 +252,43 @@ function LevelMapCanvas({ solved, onHoverLevel, onExpandLevel }: LevelMapCanvasP
    * Open on the start of the campaign rather than fitting the whole graph,
    * which would shrink it to illegibility and give away how much is left.
    */
-  const focusStart = useCallback((instance: ReactFlowInstance<LevelNode, Edge>) => {
-    const first = MAP_ROWS[0]?.[0];
-    const node = first ? instance.getNode(first) : undefined;
-    if (!node) return;
-    // `position` is the top-left corner, so half the node is added back to aim
-    // at its middle. Then centre well above it, so it sits near the bottom of
-    // the viewport with the rest of the act climbing away above rather than
-    // dead-centre with empty canvas underneath.
-    instance.setCenter(node.position.x + NODE_WIDTH / 2, node.position.y + NODE_HEIGHT / 2 - 240, {
-      zoom: 1,
-    });
-  }, []);
+  /**
+   * Put the start of the campaign back under the viewport.
+   *
+   * Used for the initial view and by the recenter control — the map is larger
+   * than the screen and pans freely, so it is possible to end up looking at
+   * empty grid with no way to tell which direction the levels are in.
+   */
+  const centerOnStart = useCallback(
+    (instance: ReactFlowInstance<MapFlowNode, Edge>, animate = false) => {
+      const first = MAP_ROWS[0]?.[0];
+      const node = first ? instance.getNode(first) : undefined;
+      if (!node) return;
+      // `position` is the top-left corner, so half the node is added back to aim
+      // at its middle. Then centre well above it, so it sits near the bottom of
+      // the viewport with the rest of the act climbing away above rather than
+      // dead-centre with empty canvas underneath.
+      instance.setCenter(
+        node.position.x + NODE_WIDTH / 2,
+        node.position.y + NODE_HEIGHT / 2 - 240,
+        {
+          zoom: 1,
+          duration: animate ? 400 : 0,
+        },
+      );
+    },
+    [],
+  );
+
+  const flow = useReactFlow<MapFlowNode, Edge>();
+  const recenter = useCallback(() => centerOnStart(flow, true), [flow, centerOnStart]);
 
   return (
     <ReactFlow
-      nodes={flowNodes}
+      nodes={[...sectionNodes, ...flowNodes]}
       edges={flowEdges}
       nodeTypes={NODE_TYPES}
-      onInit={focusStart}
+      onInit={(instance) => centerOnStart(instance)}
       nodesDraggable={false}
       nodesConnectable={false}
       elementsSelectable={false}
@@ -231,6 +297,16 @@ function LevelMapCanvas({ solved, onHoverLevel, onExpandLevel }: LevelMapCanvasP
       proOptions={{ hideAttribution: true }}
     >
       <Background variant={BackgroundVariant.Dots} gap={24} size={1} />
+      <Panel position="bottom-left">
+        <button
+          type="button"
+          onClick={recenter}
+          className="flex items-center gap-2 rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground shadow-sm hover:text-foreground"
+        >
+          <Crosshair className="h-3.5 w-3.5" />
+          Recenter
+        </button>
+      </Panel>
     </ReactFlow>
   );
 }
