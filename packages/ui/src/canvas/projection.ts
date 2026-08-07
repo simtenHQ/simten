@@ -5,7 +5,13 @@
  */
 
 import type { Circuit, PortPath } from '@simten/core';
-import type { CircuitLibrary, FlatPortValueMap, FlatSequentialState } from '@simten/core/simulator';
+import type {
+  BitValue,
+  BusValue,
+  CircuitLibrary,
+  FlatPortValueMap,
+  FlatSequentialState,
+} from '@simten/core/simulator';
 import type { Edge, Node as ReactFlowNode } from '@xyflow/react';
 import type { NodeData } from '../nodes';
 import type { MetadataState } from './types';
@@ -306,18 +312,80 @@ function projectCircuitToNodes(
 }
 
 /**
+ * The value on a port, looking through composite boundaries.
+ *
+ * Edges are drawn from the *unelaborated* circuit, where a composite is one
+ * node with ports. `portValues` comes from the *flattened* netlist, where that
+ * boundary has been dissolved — a `HalfAdder` named `h1` contributes
+ * `h1.x1.out` and `h1.a1.out`, and no `h1.carry` at all.
+ *
+ * So a wire between two composites had neither endpoint in the map and rendered
+ * as undefined, even while the simulation was carrying a perfectly good 1 along
+ * it. Wires touching a primitive escaped the bug, because the primitive's side
+ * of the connection did resolve — which is why only *some* composite wires
+ * looked dead.
+ *
+ * This walks inward instead: for an output port, find the internal connection
+ * that drives it; for an input port, find one it feeds. Repeat until the path
+ * lands on something the flat map knows about. Depth is bounded by nesting, and
+ * `seen` stops a malformed circuit from looping forever.
+ */
+function resolvePortValue(
+  path: PortPath,
+  circuit: Circuit,
+  library: CircuitLibrary,
+  portValues: FlatPortValueMap,
+  prefix = '',
+  seen = new Set<string>(),
+): BitValue | BusValue | undefined {
+  const key = prefix ? `${prefix}.${portPathKey(path)}` : portPathKey(path);
+  const direct = portValues.get(key);
+  if (direct !== undefined) return direct;
+
+  if (seen.has(key)) return undefined;
+  seen.add(key);
+
+  const node = circuit.nodes.find((n) => n.id === path.nodeId);
+  if (!node) return undefined;
+
+  const inner = library.resolveCircuit(node.componentRef);
+  if (!inner || inner.implementation?.kind === 'primitive') return undefined;
+
+  const innerPrefix = prefix ? `${prefix}.${node.id}` : node.id;
+
+  // A circuit's own ports use `nodeId: ''` inside its definition. An output is
+  // driven by an internal source; an input drives internal targets.
+  for (const conn of inner.connections) {
+    if (conn.target.nodeId === '' && conn.target.portName === path.portName) {
+      const value = resolvePortValue(conn.source, inner, library, portValues, innerPrefix, seen);
+      if (value !== undefined) return value;
+    }
+    if (conn.source.nodeId === '' && conn.source.portName === path.portName) {
+      const value = resolvePortValue(conn.target, inner, library, portValues, innerPrefix, seen);
+      if (value !== undefined) return value;
+    }
+  }
+
+  return undefined;
+}
+
+/**
  * Project Circuit connections to ReactFlow edges.
  * Pure function — no hidden state.
  */
-function projectCircuitToEdges(circuit: Circuit, portValues?: FlatPortValueMap): Edge[] {
+function projectCircuitToEdges(
+  circuit: Circuit,
+  library: CircuitLibrary,
+  portValues?: FlatPortValueMap,
+): Edge[] {
   const edges: Edge[] = [];
 
   for (const connection of circuit.connections) {
     let edgeColor = WIRE_COLORS.UNDEFINED;
     if (portValues) {
       const value =
-        portValues.get(portPathKey(connection.source)) ??
-        portValues.get(portPathKey(connection.target));
+        resolvePortValue(connection.source, circuit, library, portValues) ??
+        resolvePortValue(connection.target, circuit, library, portValues);
       if (value !== undefined) {
         edgeColor = (typeof value === 'boolean' ? value : value !== 0)
           ? WIRE_COLORS.TRUE
@@ -356,6 +424,6 @@ export function projectCircuitToReactFlow(
 
   return {
     nodes: projectCircuitToNodes(circuit, metadata, library, portValues, seqState),
-    edges: projectCircuitToEdges(circuit, portValues),
+    edges: projectCircuitToEdges(circuit, library, portValues),
   };
 }
