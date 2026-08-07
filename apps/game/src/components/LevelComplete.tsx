@@ -28,19 +28,9 @@ interface LevelCompleteProps {
   level: Level;
   /** The level after this one, or undefined at the end of the campaign. */
   next: Level | undefined;
-  /** Position in the campaign, for the "3 of 4" line. */
-  position: number;
-  total: number;
 }
 
-export function LevelComplete({
-  open,
-  onOpenChange,
-  level,
-  next,
-  position,
-  total,
-}: LevelCompleteProps) {
+export function LevelComplete({ open, onOpenChange, level, next }: LevelCompleteProps) {
   /**
    * What the next level lets you use that this one did not.
    *
@@ -55,13 +45,15 @@ export function LevelComplete({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogDescription className="text-xs uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
-            {level.title} · {position} of {total}
-          </DialogDescription>
           <DialogTitle className="text-2xl">{level.outro.headline}</DialogTitle>
         </DialogHeader>
 
-        <p className="text-sm leading-relaxed text-muted-foreground">{level.outro.body}</p>
+        {/* The body doubles as the dialog's accessible description. Radix warns
+            when a DialogContent has none, and this is the text that describes
+            it — a separate sr-only line would say the same thing twice. */}
+        <DialogDescription className="text-sm leading-relaxed text-muted-foreground">
+          {level.outro.body}
+        </DialogDescription>
 
         {unlocked.length > 0 && (
           <p className="text-sm text-muted-foreground">

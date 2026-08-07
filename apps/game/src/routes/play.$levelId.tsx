@@ -31,7 +31,7 @@ import { LevelComplete } from '../components/LevelComplete';
 import { SpecPanel } from '../components/SpecPanel';
 import { grade, STRUCTURAL } from '../game/grade';
 import { nameDiagnostics } from '../game/level-name';
-import { LEVELS, LEVELS_BY_ID, levelIndex, nextLevel } from '../game/levels';
+import { LEVELS_BY_ID, nextLevel } from '../game/levels';
 import { sandboxRuntime } from '../game/runtime';
 import type { GradeResult, Level } from '../game/types';
 import { useVictoryRun } from '../game/useVictoryRun';
@@ -152,7 +152,6 @@ function PlayLevel({ level }: { level: Level }) {
 
   const solved = result?.status === 'pass';
   const next = useMemo(() => nextLevel(level.id), [level.id]);
-  const position = levelIndex(level.id) + 1;
 
   return (
     <div className="flex h-screen w-screen flex-col overflow-hidden bg-gray-50 dark:bg-[#111113]">
@@ -163,9 +162,6 @@ function PlayLevel({ level }: { level: Level }) {
         </Link>
         <div className="h-5 w-px bg-border" />
         <span className="shrink-0 text-sm font-semibold text-foreground/80">{level.title}</span>
-        <span className="shrink-0 text-xs text-muted-foreground">
-          {position} / {LEVELS.length}
-        </span>
         {/* The brief is read once and then ignored, so it belongs here rather
             than occupying panel space for the rest of the level. */}
         <p className="hidden truncate text-xs text-muted-foreground lg:block" title={level.brief}>
@@ -276,8 +272,6 @@ function PlayLevel({ level }: { level: Level }) {
           onOpenChange={(o) => setCompleteDismissed(!o)}
           level={level}
           next={next}
-          position={position}
-          total={LEVELS.length}
         />
       )}
 
