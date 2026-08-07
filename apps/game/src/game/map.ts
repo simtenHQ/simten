@@ -129,10 +129,10 @@ const SECTION_PAD_BOTTOM = 30;
  * upward: the first row gets the largest Y so it sits at the bottom. Edges run
  * from a row to the one above it, which is the direction of progress.
  *
- * `solved` is the set of completed level ids. There is no persistence yet, so
- * today it is always empty and every level renders as available — which is
- * honest, since any level is reachable by URL regardless. Locking becomes
- * meaningful the moment progress is stored, and only this function changes.
+ * `solved` is the set of completed level ids, read from stored progress by the
+ * map page. It is empty for the first frame after mount, because storage can
+ * only be read on the client — so this must be safe to call with nothing
+ * solved, which it is: every level renders as available.
  */
 export function buildMapGraph(solved: ReadonlySet<string> = new Set()): {
   nodes: MapNode[];

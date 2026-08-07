@@ -12,22 +12,49 @@
  */
 
 import { createFileRoute } from '@tanstack/react-router';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { IntroDialog } from '../components/IntroDialog';
 import { LevelDrilldown } from '../components/LevelDrilldown';
 import { LevelMap } from '../components/LevelMap';
 import { Logo } from '../components/Logo';
 import ThemeToggle from '../components/ThemeToggle';
 import { LEVELS_BY_ID } from '../game/levels';
+import { type Drafts, readDrafts, readProgress } from '../game/storage';
 
 export const Route = createFileRoute('/')({
   component: MapPage,
   staticData: { skipDefaultChrome: true },
 });
 
+/** Stable identity, so the first render does not invalidate the map's memos. */
+const NOTHING_SOLVED: ReadonlySet<string> = new Set();
+const NO_DRAFTS: Drafts = {};
+
 function MapPage() {
   const [hovered, setHovered] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<string | null>(null);
+
+  /**
+   * Saved state, read after mount rather than during render.
+   *
+   * This page server-renders, and unlike the editor its storage-derived state
+   * is visible DOM — a solved level is a green card and a live wire. Reading in
+   * an initialiser would render one thing on the server and another on the
+   * client and lose the hydration argument. The map is honest for one frame
+   * instead: nothing solved, everything available.
+   *
+   * Both records are read here so the drilldown gets its source without going
+   * to storage itself. It mounts on hover, long after this, so the draft is
+   * already in hand and it compiles the right circuit the first time rather
+   * than compiling the reference answer and then replacing it.
+   */
+  const [solved, setSolved] = useState(NOTHING_SOLVED);
+  const [drafts, setDrafts] = useState(NO_DRAFTS);
+
+  useEffect(() => {
+    setSolved(new Set(Object.keys(readProgress())));
+    setDrafts(readDrafts());
+  }, []);
 
   const onHoverLevel = useCallback((levelId: string) => setHovered(levelId), []);
   const onExpandLevel = useCallback((levelId: string) => setExpanded(levelId), []);
@@ -59,7 +86,7 @@ function MapPage() {
       </header>
 
       <main className="min-h-0 flex-1">
-        <LevelMap onHoverLevel={onHoverLevel} onExpandLevel={onExpandLevel} />
+        <LevelMap solved={solved} onHoverLevel={onHoverLevel} onExpandLevel={onExpandLevel} />
       </main>
 
       {level && (
@@ -68,6 +95,7 @@ function MapPage() {
         <LevelDrilldown
           key={level.id}
           level={level}
+          draft={drafts[level.id]}
           expanded={expanded === level.id}
           onCloseExpanded={onCloseExpanded}
         />
