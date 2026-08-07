@@ -22,6 +22,14 @@
  * cold. Levels 2 and 3 still place a NAND and wire one side of it. From level 4
  * the `nodes` are the player's to choose — handing them the right number of
  * NANDs would give away both the answer and the point of `par`.
+ *
+ * Level 1 is a NAND rather than a friendlier AND, even though its lesson is
+ * pure syntax. "You get one gate" has to be true from the first screen: handing
+ * over an AND and withdrawing it a level later reads as a confiscation, and it
+ * made the completion card announce NAND as an unlock when it was really a
+ * swap. Nothing is reasoned about here anyway — you add one wire and click —
+ * so the player meets NAND by watching it, which is exactly the setup level 2
+ * needs.
  */
 
 import type { Level } from './types';
@@ -32,41 +40,41 @@ export const LEVELS: Level[] = [
     title: 'First Wire',
     brief:
       'This circuit is finished apart from one connection: nothing carries the gate’s result to the lamp. Add that line, then flip the switches.',
-    target: 'And1',
+    target: 'Nand1',
     inputs: ['a', 'b'],
     outputs: ['out'],
-    allowed: ['And'],
+    allowed: ['Nand'],
     stub: `// A circuit is a set of nodes and the wires between them.
 // \`x.to(y)\` sends the value at x into y.
 //
 // Everything here is a node — the switches and the lamp too. This one is
-// done except for the last wire: the AND gate has its answer, but nothing
+// done except for the last wire: the gate has its answer, but nothing
 // carries it to the lamp.
 
-export default circuit('And1', {
+export default circuit('Nand1', {
   nodes: {
     a: Switch,
     b: Switch,
-    and1: And,
+    n1: Nand,
     out: Led,
   },
-  connect: ({ nodes: { a, b, and1, out } }) => [
-    a.out.to(and1.a),
-    b.out.to(and1.b),
-    // One more line. Send and1.out to out.in
+  connect: ({ nodes: { a, b, n1, out } }) => [
+    a.out.to(n1.a),
+    b.out.to(n1.b),
+    // One more line. Send n1.out to out.in
   ],
 });
 `,
     vectors: [
-      { inputs: { a: 0, b: 0 }, expect: { out: 0 } },
-      { inputs: { a: 0, b: 1 }, expect: { out: 0 } },
-      { inputs: { a: 1, b: 0 }, expect: { out: 0 } },
-      { inputs: { a: 1, b: 1 }, expect: { out: 1 } },
+      { inputs: { a: 0, b: 0 }, expect: { out: 1 } },
+      { inputs: { a: 0, b: 1 }, expect: { out: 1 } },
+      { inputs: { a: 1, b: 0 }, expect: { out: 1 } },
+      { inputs: { a: 1, b: 1 }, expect: { out: 0 } },
     ],
     par: 1,
     outro: {
       headline: "That's a circuit",
-      body: 'Two switches, a gate, and a lamp. Everything from here is that same idea repeated. Next you lose the AND gate: you get one gate from now on and build the rest yourself.',
+      body: 'Two switches, a gate, and a lamp. Everything from here is that same idea repeated. The gate is a NAND, and it is the only one you get — every other gate, you build yourself.',
     },
   },
 
@@ -74,13 +82,13 @@ export default circuit('And1', {
     id: 'not-from-nand',
     title: 'NOT from NAND',
     brief:
-      'From here you get one gate: NAND, which outputs 0 only when both its inputs are 1. Every other gate gets built from it. Start with the simplest — turn a 1 into a 0.',
+      'You have seen what NAND does: it outputs 0 only when both its inputs are 1. It is the only gate you get, so every other gate gets built from it. Start with the simplest — turn a 1 into a 0.',
     target: 'Not1',
     inputs: ['a'],
     outputs: ['out'],
     allowed: ['Nand'],
-    stub: `// One gate from here on: NAND.
-// It outputs 0 only when both inputs are 1.
+    stub: `// The same gate as last level, and the only one there is.
+// NAND outputs 0 only when both inputs are 1.
 //
 // The NAND is placed, and its output already
 // runs to the lamp. What is missing is the input.

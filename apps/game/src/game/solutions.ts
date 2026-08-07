@@ -18,12 +18,12 @@
 
 export const SOLUTIONS: Record<string, string> = {
   'first-wire': `
-export const And1 = circuit('And1', {
-  nodes: { a: Switch, b: Switch, and1: And, out: Led },
-  connect: ({ nodes: { a, b, and1, out } }) => [
-    a.out.to(and1.a),
-    b.out.to(and1.b),
-    and1.out.to(out.in),
+export const Nand1 = circuit('Nand1', {
+  nodes: { a: Switch, b: Switch, n1: Nand, out: Led },
+  connect: ({ nodes: { a, b, n1, out } }) => [
+    a.out.to(n1.a),
+    b.out.to(n1.b),
+    n1.out.to(out.in),
   ],
 });`,
 
