@@ -13,18 +13,16 @@
  */
 
 import type { GradeResult, Level } from '../game/types';
-import { GradeReport } from './GradeReport';
 import { TruthTable } from './TruthTable';
 
 interface SpecPanelProps {
   level: Level;
+  /** Read for the failing column only — the table is the whole verdict now. */
   result: GradeResult | null;
   /** Row currently being driven through the circuit by the victory run. */
   activeRow: number | null;
   /** How many rows the victory run has proven so far. */
   provenRows: number;
-  /** Hold the score back until the run has finished demonstrating it. */
-  revealVerdict: boolean;
 }
 
 function Heading({ children }: { children: React.ReactNode }) {
@@ -35,27 +33,34 @@ function Heading({ children }: { children: React.ReactNode }) {
   );
 }
 
-export function SpecPanel({ level, result, activeRow, provenRows, revealVerdict }: SpecPanelProps) {
+export function SpecPanel({ level, result, activeRow, provenRows }: SpecPanelProps) {
+  // Which column the grader stopped on. The failure carries the vector it was
+  // given rather than its position, and matching on the inputs rather than on
+  // object identity keeps this working if a verdict ever crosses postMessage.
+  const failure = result?.status === 'fail' ? result.failure : null;
+  const failedKey = failure?.kind === 'vector' ? JSON.stringify(failure.vector.inputs) : null;
+  const failedAt =
+    failedKey === null
+      ? -1
+      : level.vectors.findIndex((v) => JSON.stringify(v.inputs) === failedKey);
+  const failedIndex = failedAt >= 0 ? failedAt : null;
+
   return (
     <div className="flex h-full items-start gap-8 overflow-x-auto overflow-y-auto px-4 py-3">
       <div className="shrink-0">
-        <Heading>Must produce</Heading>
-        <TruthTable level={level} active={activeRow} proven={provenRows} />
+        <Heading>Truth table</Heading>
+        <TruthTable
+          level={level}
+          active={activeRow}
+          proven={failedIndex ?? provenRows}
+          failed={failedIndex}
+        />
       </div>
 
       <div className="min-w-[220px] max-w-md shrink-0">
         <Heading>The problem</Heading>
         <p className="text-sm leading-relaxed text-muted-foreground">{level.brief}</p>
       </div>
-
-      {/* Failures only. A pass gets the completion dialog, and the header keeps
-          a persistent "Solved · N" chip that reopens it — repeating the score
-          here as well would be the third place saying the same thing. */}
-      {result && result.status !== 'pass' && (
-        <div className="min-w-[260px] shrink-0">
-          <GradeReport result={result} level={level} revealed={revealVerdict} />
-        </div>
-      )}
     </div>
   );
 }

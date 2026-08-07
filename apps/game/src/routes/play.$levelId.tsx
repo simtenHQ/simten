@@ -12,7 +12,12 @@
 
 import { ErrorDisplay, useCompiledCircuit } from '@simten/embed';
 import { CircuitCanvas } from '@simten/ui/canvas';
-import { registerSimtenThemes, SIMTEN_DARK, SimtenCodeEditor } from '@simten/ui/monaco';
+import {
+  buildGlobalsFor,
+  registerSimtenThemes,
+  SIMTEN_DARK,
+  SimtenCodeEditor,
+} from '@simten/ui/monaco';
 import {
   ResizableHandle,
   ResizablePanel,
@@ -24,7 +29,7 @@ import { createFileRoute, Link, notFound } from '@tanstack/react-router';
 import { useCallback, useMemo, useState } from 'react';
 import { LevelComplete } from '../components/LevelComplete';
 import { SpecPanel } from '../components/SpecPanel';
-import { grade } from '../game/grade';
+import { grade, STRUCTURAL } from '../game/grade';
 import { nameDiagnostics } from '../game/level-name';
 import { LEVELS, LEVELS_BY_ID, levelIndex, nextLevel } from '../game/levels';
 import { sandboxRuntime } from '../game/runtime';
@@ -125,6 +130,26 @@ function PlayLevel({ level }: { level: Level }) {
   // a specific line, and that is where someone is looking.
   const diagnostics = useMemo(() => nameDiagnostics(source, level.target), [source, level.target]);
 
+  /**
+   * Teach the editor only what this level permits, so a component you have not
+   * earned yet does not autocomplete and does not compile. The rule stops being
+   * something you discover by breaking it.
+   *
+   * `STRUCTURAL` comes from the grader rather than a second list here: those are
+   * the pieces that carry no logic and never count toward par, which is exactly
+   * why they are absent from `allowed`. Filtering on `allowed` alone would leave
+   * every level unable to declare a `Switch`.
+   */
+  const intellisense = useMemo(
+    () => ({
+      globals: false,
+      extraLibs: {
+        'file:///simten-globals.d.ts': buildGlobalsFor([...level.allowed, ...STRUCTURAL]),
+      },
+    }),
+    [level.allowed],
+  );
+
   const solved = result?.status === 'pass';
   const next = useMemo(() => nextLevel(level.id), [level.id]);
   const position = levelIndex(level.id) + 1;
@@ -192,6 +217,7 @@ function PlayLevel({ level }: { level: Level }) {
                   }
                 }}
                 diagnostics={diagnostics}
+                intellisense={intellisense}
                 beforeMount={registerSimtenThemes}
                 theme={SIMTEN_DARK}
                 options={{
@@ -270,7 +296,6 @@ function PlayLevel({ level }: { level: Level }) {
             result={result}
             activeRow={victory.active}
             provenRows={victory.proven}
-            revealVerdict={victory.complete}
           />
         </SheetContent>
       </Sheet>

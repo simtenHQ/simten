@@ -43,6 +43,16 @@ export function LevelComplete({
   position,
   total,
 }: LevelCompleteProps) {
+  /**
+   * What the next level lets you use that this one did not.
+   *
+   * Derived rather than authored, so it can only ever name something the grader
+   * will actually accept and the editor will actually offer. When no level
+   * grants anything new it renders nothing, which is the honest result — a
+   * hardcoded "unlocked!" would be a promise the game does not keep.
+   */
+  const unlocked = next ? next.allowed.filter((name) => !level.allowed.includes(name)) : [];
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
@@ -63,6 +73,15 @@ export function LevelComplete({
             {gates === 1 ? 'gate' : 'gates'} used
           </span>
         </div>
+
+        {unlocked.length > 0 && (
+          <p className="text-sm text-muted-foreground">
+            <span className="font-mono font-medium text-emerald-600 dark:text-emerald-400">
+              {unlocked.join(', ')}
+            </span>{' '}
+            unlocked — you can use {unlocked.length === 1 ? 'it' : 'them'} from here on.
+          </p>
+        )}
 
         <DialogFooter>
           {/* Closing is a real choice, not a dismissal: it is how you go back
