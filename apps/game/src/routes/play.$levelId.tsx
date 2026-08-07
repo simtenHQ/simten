@@ -61,6 +61,23 @@ export const Route = createFileRoute('/play/$levelId')({
  * state: every one of them is derived from the level, so the whole component
  * should simply start again.
  */
+/**
+ * The line the player's own work starts on, when the stub hands them a
+ * finished component to build with — otherwise `null`.
+ *
+ * The full adder is given a half adder, and landing on that makes the level
+ * look like it opens with someone else's code. But most stubs open with
+ * comments that *are* the instructions, and scrolling past those would hide the
+ * hint. So this keys off structure — is there a circuit defined above the
+ * target? — rather than a flag somebody has to remember to set.
+ */
+export function givenPreambleEnd(lines: string[]): number | null {
+  const target = lines.findIndex((l) => l.startsWith('export default circuit('));
+  if (target <= 0) return null;
+  if (!lines.slice(0, target).some((l) => l.includes('circuit('))) return null;
+  return target + 1;
+}
+
 function PlayLevelRoute() {
   const { level } = Route.useLoaderData();
   return <PlayLevel key={level.id} level={level} />;
@@ -232,6 +249,10 @@ function PlayLevel({ level }: { level: Level }) {
                 }}
                 diagnostics={diagnostics}
                 intellisense={intellisense}
+                onMount={(ed) => {
+                  const at = givenPreambleEnd(ed.getModel()?.getLinesContent() ?? []);
+                  if (at !== null) ed.revealLineNearTop(at, 0);
+                }}
                 beforeMount={registerSimtenThemes}
                 theme={SIMTEN_DARK}
                 options={{
