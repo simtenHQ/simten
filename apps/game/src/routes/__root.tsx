@@ -8,34 +8,10 @@ import appCss from '../styles.css?url';
 
 const THEME_INIT_SCRIPT = `(function(){try{var stored=window.localStorage.getItem('theme');var mode=(stored==='light'||stored==='dark'||stored==='auto')?stored:'dark';var prefersDark=window.matchMedia('(prefers-color-scheme: dark)').matches;var resolved=mode==='auto'?(prefersDark?'dark':'light'):mode;var root=document.documentElement;root.classList.remove('light','dark');root.classList.add(resolved);if(mode==='auto'){root.removeAttribute('data-theme')}else{root.setAttribute('data-theme',mode)}root.style.colorScheme=resolved;}catch(e){}})();`;
 
-/**
- * The share preview is title, description and card, and the card carries no
- * words — so these two do all the work, and they are written to do different
- * jobs. The title is the hook and explains nothing. The description is the
- * reveal: this is not only a game, it is a real HDL you can put to work.
- *
- * "Hardware" rather than "a computer" on purpose. The campaign ends at a full
- * adder today and grows towards FPGA and accelerator work, so a noun that caps
- * the ceiling at one CPU would need rewriting the moment it stops being true.
- *
- * No level count either. It dates the moment a level is added, and nobody
- * searches for it.
- *
- * The claim is deliberately about the platform, not the player's solutions:
- * Simten synthesizes to Verilog, but the game has no export button, so "the
- * gates you wire here run on an FPGA" would be a promise that fails checking.
- */
 const TITLE = 'Simten — build hardware. Bit by bit.';
 const DESCRIPTION =
   'A puzzle campaign built on Simten, a TypeScript HDL that simulates in the browser and synthesizes to Verilog.';
 const SITE_URL = 'https://play.simten.dev';
-/**
- * Absolute, because scrapers do not resolve relative URLs. Byte-identical to
- * apps/web's card, so the two links read as one product rather than two. The
- * card carries no words at all — WhatsApp and iMessage render it as a small
- * thumbnail, where any tagline small enough to fit the layout is unreadable.
- * Source in `scripts/og-card.html`.
- */
 const OG_IMAGE = `${SITE_URL}/og-default.png`;
 
 export const Route = createRootRoute({
