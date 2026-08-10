@@ -4,15 +4,12 @@
 
 # Simten
 
-**A TypeScript-native HDL — simulates in the browser, synthesizes to Verilog.**
+**A TypeScript HDL. Simulates in the browser, synthesizes to Verilog.**
 
-Build digital hardware in TypeScript, from single gates to pipelined CPUs.
-Drive your circuits with any npm package — `fast-check` for property testing,
-`pcap-parser` to replay real network traffic through your Ethernet parser.
-Wire it to Claude via MCP for natural-language design. The generated Verilog
-runs on real FPGAs (Yosys, nextpnr, ULX3S).
+Write circuits as typed TypeScript, from a single NAND gate up to a RISC-V core.
+Simulate them in the browser, export Verilog, run the result on an FPGA.
 
-[**Live Demo →**](https://simten.dev) &nbsp;·&nbsp; [Docs](https://simten.dev/docs) &nbsp;·&nbsp; [Blog](https://simten.dev/blog)
+[**Live demo**](https://simten.dev) &nbsp;·&nbsp; [Play](https://play.simten.dev) &nbsp;·&nbsp; [Docs](https://simten.dev/docs) &nbsp;·&nbsp; [Blog](https://simten.dev/blog)
 
 [![CI](https://github.com/simtenHQ/simten/actions/workflows/ci.yml/badge.svg)](https://github.com/simtenHQ/simten/actions/workflows/ci.yml)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue?logo=typescript)](https://www.typescriptlang.org/)
@@ -20,41 +17,30 @@ runs on real FPGAs (Yosys, nextpnr, ULX3S).
 
 </div>
 
-## Why?
+## Why
 
-Existing tools for learning digital logic fall into two camps: visual-only simulators like Logisim that don't scale past a handful of gates, and industrial HDLs like Verilog that require a full toolchain and offer no interactive feedback. Simten sits in the middle:
+Learning digital logic usually means choosing between visual simulators that stop
+scaling after a few dozen gates, and Verilog, which wants a whole toolchain before
+it shows you anything.
 
-- **Circuits are typed TypeScript.** You get IDE autocomplete, compile-time port checks, and refactoring tools — none of which exist in Verilog or visual drag-and-drop editors.
-- **An IR makes everything possible.** The `circuit()` factory produces a platform-independent intermediate representation. That single IR powers the visual editor, Verilog export, snapshot/restore (time-travel debugging), and the AI tutor — all from one source of truth.
-- **The simulator runs in the browser.** No backend round-trip for simulation; the edge stays stateless. The only server-side work is the two Cloudflare Container services described below. AI assistance is opt-in: users connect their own MCP client (e.g. Claude Code) to the `simten-mcp` server, which bridges to the running browser session over WebSocket.
+Simten circuits are TypeScript. Autocomplete, type errors on mismatched ports and
+rename-refactoring all work the way they do in the rest of your editor, and you can
+drive a circuit with any npm package: `fast-check` for property tests, `pcap-parser`
+to replay real packets through an Ethernet parser.
 
-## Architecture
+`circuit()` builds an intermediate representation rather than running anything.
+Everything else reads that IR: the simulator, the canvas, the Verilog exporter,
+snapshot and restore. Only primitives contain behaviour. Composites are pure
+structure and expand into primitives when elaborated, so any component can be
+opened up and shown as what it is made of.
 
-```
-TypeScript circuit() ──→ Circuit IR ──→ Elaborate ──→ Fast Simulator ──→ Trace
-       │                     │                              │
-       │                     ├── Verilog Export              ├── Snapshot / Restore
-       │                     └── Visual Editor               └── Time-Travel Debugging
-       │
-   Typed API: IDE autocomplete, compile-time port checks
-```
+## Try it
 
-**Core principle:** only primitive components contain executable behavior. Composite circuits are structural — they expand into primitives at elaboration time. This guarantees full transparency, deterministic execution, and the ability to drill into any composite to see its internals.
+- [simten.dev/circuit](https://simten.dev/circuit) is the editor: type on the left, watch the circuit build itself on the right.
+- [play.simten.dev](https://play.simten.dev) is a ten-level campaign that starts with one wire and ends at a full adder, with every gate built out of NAND.
+- `pnpm add @simten/core` if you would rather start in your own project.
 
-### What runs where
-
-| Layer | Runtime | What it does |
-|---|---|---|
-| Visual editor + simulator | Browser | Circuit canvas, tick-based simulation, time-travel, drill-down |
-| `packages/mcp` (`simten-mcp`) | User's machine | Local MCP server. Bridges an MCP client (e.g. Claude Code) to the running browser over WebSocket; no Anthropic calls happen on our infrastructure |
-| `apps/compiler` | Cloudflare Container | RISC-V cross-compiler (GCC + Rust). Compiles C/C++/Rust/asm → rv32i machine code for the simulated CPU |
-| `apps/verifier` | Cloudflare Container | Icarus Verilog runner. Cross-validates exported Verilog against our simulator's trace |
-| `apps/synth` | Cloudflare Container | Yosys synthesis runner. Returns gate-level stats and netlist for exported Verilog |
-| `apps/sandbox` | Browser iframe | CSP-isolated origin where user circuit code executes; never runs in the main frame |
-
-All container services are addressed via Durable Objects and sleep after 2 minutes idle. The Cloudflare Worker dispatches `/api/compile` and `/api/verify` — everything else is served by TanStack Start's SSR handler.
-
-## Your First Circuit
+## Your first circuit
 
 ```typescript
 import { circuit, bit } from '@simten/core/circuit'
@@ -73,139 +59,91 @@ const HalfAdder = circuit('HalfAdder', {
 })
 ```
 
-Embed it in a React app:
-
-```tsx
-import { CircuitEmbed } from '@simten/embed'
-
-<CircuitEmbed circuit={HalfAdder} />
-```
-
-The embed auto-wraps the circuit with switches for inputs and LEDs for outputs.
+Drop it into a React app with `<CircuitEmbed circuit={HalfAdder} />` from
+`@simten/embed`, which wires switches to the inputs and LEDs to the outputs for you.
 
 ## AI assist (optional)
 
-Connect Claude (or any MCP client) to a running browser session and have it
-build, debug, and explain circuits in real time. The MCP server runs locally
-on your machine — no Anthropic calls happen on Simten's infrastructure, and
-AI assistance is opt-in.
+`@simten/mcp` is a local MCP server. Your agent writes circuits as files and calls
+tools to check, simulate, verify and draw them, so the design lives in your repo
+rather than in a chat log. `show_circuit` pushes to a browser tab over a local
+WebSocket, which is why circuits appear and animate while the agent is still working.
+
+```bash
+claude mcp add --scope user simten npx @simten/mcp
+```
 
 ![Claude generates a half-adder circuit and runs it live in the browser](claude-demo.gif)
 
-**Setup:** see [`packages/mcp/README.md`](packages/mcp/README.md) — one `claude mcp add` command, then you're talking to your circuits.
+The server runs on your machine, so no AI calls touch Simten's infrastructure and
+none of this is on unless you set it up. Testbenches run locally under the same
+trust model as `npm test`, with no sandbox, so circuits you did not write belong in
+the web editor instead, where they run in an isolated worker. See
+[`packages/mcp/README.md`](packages/mcp/README.md).
 
-## Project Structure
+## FPGA
+
+Exported Verilog goes through Yosys and nextpnr onto a ULX3S 85F (Lattice ECP5).
+The RV32I core there runs C and Rust firmware over UART, and an HDMI Snake runs as
+pure RTL with no firmware at all.
+
+```bash
+pnpm fpga:run --project=cpu \
+  --firmware=hardware/ulx3s/projects/cpu/firmware/hello.rs \
+  --match='Hello, World!'
+```
+
+Details in [`hardware/README.md`](hardware/README.md).
+
+## Repo layout
 
 ```
 packages/
-├── core/        # Simulator engine, circuit() builder, stdlib, Verilog exporter
-├── ui/          # Canvas components, editor, shadcn primitives
-├── embed/       # <CircuitEmbed /> React component + web component
-└── mcp/         # MCP server for AI integration (WebSocket bridge)
+├── core/        simulator, circuit() builder, stdlib, Verilog exporter
+├── ui/          canvas, Monaco editor setup, shadcn primitives
+├── embed/       <CircuitEmbed /> and a web-component build
+└── mcp/         MCP server
 
 apps/
-├── web/         # Main web app (TanStack Start + Vite + Cloudflare Workers)
-├── sandbox/     # Iframe-isolated sandbox for running user circuit code
-├── compiler/    # RISC-V cross-compiler service (Cloudflare Container)
-├── verifier/    # Verilog verification service (Cloudflare Container + Icarus Verilog)
-└── synth/       # Verilog synthesis service (Cloudflare Container + Yosys)
+├── web/         simten.dev (TanStack Start, Vite, Cloudflare Workers)
+├── game/        play.simten.dev, the level campaign
+├── sandbox/     isolated origin where user circuit code executes
+├── compiler/    RISC-V cross-compiler (GCC + Rust)
+├── verifier/    Icarus Verilog, cross-checks exported Verilog against our trace
+└── synth/       Yosys, returns gate counts and netlists
+
+hardware/ulx3s/  FPGA projects and the build/flash/capture CLI
 ```
 
-## Tech Stack
+TanStack Start, React 19, React Flow, Zustand with Immer, Tailwind 4, Vitest,
+deployed on Cloudflare Workers.
 
-- **Framework:** TanStack Start, React 19, Vite
-- **State:** Zustand with Immer
-- **Canvas:** React Flow
-- **Styling:** Tailwind CSS 4 + shadcn/ui
-- **Language:** TypeScript 5
-- **Testing:** Vitest (490+ tests across simulator, circuit IR, stdlib, Verilog exporter)
-- **AI:** Local MCP server (`@simten/mcp`) bridging any MCP client (e.g. Claude Code) to the running browser — no AI calls happen on Simten's infrastructure
-- **Infrastructure:** Cloudflare Workers, Cloudflare Containers, Durable Objects, Hono
-- **Verification:** Icarus Verilog (via Cloudflare Container)
-- **Synthesis:** Yosys (via Cloudflare Container)
+Simulation happens in the browser, so the edge stays stateless. The three container
+services run on Cloudflare Containers behind Durable Objects and sleep after two
+minutes idle. User circuit code never executes in the main frame: it runs in
+`apps/sandbox`, on its own origin, under CSP.
 
-## Quick Start
+## Running it locally
 
 ```bash
 pnpm install
-pnpm dev
+pnpm dev           # simten.dev on :3001
+pnpm dev:sandbox   # second terminal, on :3002
+pnpm dev:game      # play.simten.dev on :3003
+pnpm test          # 1,000+ tests, plus the exports drift check
 ```
 
-Open `http://localhost:3001`.
+The sandbox is not optional. The canvas runs circuit code in an iframe pointed at
+`localhost:3002` in dev and `sandbox.simten.dev` in production, so without
+`pnpm dev:sandbox` running alongside, nothing crashes and nothing draws either.
 
-## Development
+## Docs and contributing
 
-```bash
-pnpm install      # First time only
-pnpm dev          # Start the web app (http://localhost:3001)
-pnpm test         # Run all package tests + the exports drift lint
-pnpm build        # Build every package (only needed before publishing)
-```
-
-### How the exports work
-
-Each publishable package (`@simten/core`, `@simten/ui`, `@simten/embed`, `@simten/mcp`) has two `exports` blocks in its `package.json`:
-
-```jsonc
-{
-  "exports": {
-    ".":         "./src/index.ts",          // dev: read source directly
-    "./circuit": "./src/circuit/index.ts"
-  },
-  "publishConfig": {
-    "exports": {
-      ".":         { "types": "./dist/index.d.ts",         "import": "./dist/index.js" },
-      "./circuit": { "types": "./dist/circuit/index.d.ts", "import": "./dist/circuit/index.js" }
-    }
-  }
-}
-```
-
-`pnpm` and `npm` rewrite `exports` to the `publishConfig.exports` version at publish time, so consumers installing from the registry receive compiled `.js` + `.d.ts` files in `dist/`. In the monorepo, the `publishConfig` block is inert — you always get source.
-
-The benefit is that there's no custom resolve condition for any tool to know about. Vite (client and Cloudflare Workers SSR), vitest, tsc, and any future tool resolve `@simten/*` the same way: through the standard `default`/`import` keys. There's no fifth config file to forget when adding a new tool.
-
-### Adding a new export subpath
-
-When you add a new entry to a package's `exports`, you must add the matching entry to `publishConfig.exports` too. The `tsx scripts/check-exports.ts` lint runs as part of `pnpm test` and fails CI if the two get out of sync. Four invariants are checked:
-
-1. `exports` and `publishConfig.exports` have identical key sets.
-2. Every dev-export path exists on disk in `src/`.
-3. For entries shaped `./src/<segs>/index.<ext>` ↔ `./dist/<same-segs>/index.<ext'>`, the segments match.
-4. If any `publishConfig.exports` path points at `./dist/...`, `files` includes `"dist"`.
-
-## Publishing
-
-Packages are released via [Changesets](https://github.com/changesets/changesets):
-
-```bash
-pnpm changeset    # Record a changeset for your PR
-pnpm release      # Build all packages and publish (CI)
-```
-
-The release flow runs `pnpm build` first so every package emits its `dist/`, then `changeset publish` invokes `pnpm pack` per package — which is where the `publishConfig.exports` rewrite happens. Inspect what consumers will receive without publishing:
-
-```bash
-cd packages/core && pnpm pack --pack-destination /tmp
-tar -tzf /tmp/simten-core-*.tgz                    # should show dist/, never src/
-tar -xzf /tmp/simten-core-*.tgz -O package/package.json | jq .exports
-```
-
-`@simten/embed` is the one package with a non-trivial build: a `tsc -b` pass for the React surface (`.`, `./nodes`, `./canvas`) plus a Vite IIFE pass for the web-component drop-in (`./webcomponent` → `dist/circuit-embed.js`, `./styles.css` → `dist/styles.css`). The Vite step has `emptyOutDir: false` so it doesn't wipe the tsc output that ran first.
-
-## Documentation
-
-- Full docs (rendered): **[simten.dev/docs](https://simten.dev/docs)**
-- Markdown source: [`apps/web/content/docs/`](./apps/web/content/docs/) — readable on GitHub
-- Blog posts demonstrating real circuits: [simten.dev/blog](https://simten.dev/blog)
-
-## Community
-
-- **Bugs and feature requests:** [GitHub Issues](https://github.com/simtenHQ/simten/issues)
-- **Questions and design discussion:** [GitHub Discussions](https://github.com/simtenHQ/simten/discussions)
-- **Security:** see [SECURITY.md](./SECURITY.md)
-- **Anything else:** `hello@simten.dev`
+- Rendered docs: [simten.dev/docs](https://simten.dev/docs). Markdown source in [`apps/web/content/docs/`](./apps/web/content/docs/).
+- Blog posts working through real circuits: [simten.dev/blog](https://simten.dev/blog).
+- [CONTRIBUTING.md](./CONTRIBUTING.md) covers setup tiers, code style and how publishing works.
+- Bugs and features: [Issues](https://github.com/simtenHQ/simten/issues). Design questions: [Discussions](https://github.com/simtenHQ/simten/discussions). Security: [SECURITY.md](./SECURITY.md). Anything else: `hello@simten.dev`.
 
 ## License
 
-Licensed under the [Apache License 2.0](./LICENSE).
+[Apache 2.0](./LICENSE).
