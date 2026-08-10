@@ -11,6 +11,12 @@ const THEME_INIT_SCRIPT = `(function(){try{var stored=window.localStorage.getIte
 const TITLE = 'Simten — build a computer';
 const DESCRIPTION = 'Build a computer from one gate, by writing TypeScript.';
 const SITE_URL = 'https://play.simten.dev';
+/**
+ * Absolute, because scrapers do not resolve relative URLs. Same lockup and
+ * palette as apps/web's card, different tagline, so the two links read as one
+ * product rather than two. Source in `scripts/og-card.html`.
+ */
+const OG_IMAGE = `${SITE_URL}/og-default.png`;
 
 export const Route = createRootRoute({
   head: () => ({
@@ -25,9 +31,16 @@ export const Route = createRootRoute({
       { property: 'og:title', content: TITLE },
       { property: 'og:description', content: DESCRIPTION },
       { property: 'og:url', content: SITE_URL },
-      { name: 'twitter:card', content: 'summary' },
+      { property: 'og:image', content: OG_IMAGE },
+      { property: 'og:image:width', content: '1200' },
+      { property: 'og:image:height', content: '630' },
+      { property: 'og:image:alt', content: DESCRIPTION },
+      // `summary_large_image` rather than `summary`: with a 1200x630 card the
+      // small variant crops it to a square thumbnail beside the text.
+      { name: 'twitter:card', content: 'summary_large_image' },
       { name: 'twitter:title', content: TITLE },
       { name: 'twitter:description', content: DESCRIPTION },
+      { name: 'twitter:image', content: OG_IMAGE },
     ],
     links: [
       { rel: 'stylesheet', href: appCss },
