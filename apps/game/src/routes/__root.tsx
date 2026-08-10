@@ -10,19 +10,31 @@ const THEME_INIT_SCRIPT = `(function(){try{var stored=window.localStorage.getIte
 
 /**
  * The share preview is title, description and card, and the card carries no
- * words — so these two do all the work. They are written to say different
- * things rather than the same thing twice: the title is the premise, the
- * description is the format and the one detail that separates this from every
- * other drag-a-wire logic game.
+ * words — so these two do all the work, and they are written to do different
+ * jobs. The title is the hook and explains nothing. The description is the
+ * reveal: this is not only a game, it is a real HDL you can put to work.
+ *
+ * "Hardware" rather than "a computer" on purpose. The campaign ends at a full
+ * adder today and grows towards FPGA and accelerator work, so a noun that caps
+ * the ceiling at one CPU would need rewriting the moment it stops being true.
+ *
+ * No level count either. It dates the moment a level is added, and nobody
+ * searches for it.
+ *
+ * The claim is deliberately about the platform, not the player's solutions:
+ * Simten synthesizes to Verilog, but the game has no export button, so "the
+ * gates you wire here run on an FPGA" would be a promise that fails checking.
  */
-const TITLE = 'Simten — build a computer from one gate';
+const TITLE = 'Simten — build hardware. Bit by bit.';
 const DESCRIPTION =
-  'Ten levels, starting with a single NAND gate. You write TypeScript instead of dragging wires, and the circuit draws itself as you type.';
+  'A puzzle campaign built on Simten, a TypeScript HDL that simulates in the browser and synthesizes to Verilog.';
 const SITE_URL = 'https://play.simten.dev';
 /**
- * Absolute, because scrapers do not resolve relative URLs. Same lockup and
- * palette as apps/web's card, different tagline, so the two links read as one
- * product rather than two. Source in `scripts/og-card.html`.
+ * Absolute, because scrapers do not resolve relative URLs. Byte-identical to
+ * apps/web's card, so the two links read as one product rather than two. The
+ * card carries no words at all — WhatsApp and iMessage render it as a small
+ * thumbnail, where any tagline small enough to fit the layout is unreadable.
+ * Source in `scripts/og-card.html`.
  */
 const OG_IMAGE = `${SITE_URL}/og-default.png`;
 
