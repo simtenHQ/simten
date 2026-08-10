@@ -10,7 +10,7 @@
     "dev:synth": "pnpm --filter @simten/synth dev",
     "dev:verifier": "pnpm --filter @simten/verifier dev",
     "dev:compiler": "pnpm --filter @simten/compiler dev",
-    "deploy": "pnpm run deploy:sandbox && pnpm run deploy:web",
+    "deploy": "pnpm run deploy:sandbox && pnpm run deploy:web && pnpm run deploy:game",
     "deploy:sandbox": "dotenv -- pnpm --filter @simten/sandbox run deploy",
     "deploy:web": "dotenv -- pnpm --filter @simten/web run deploy",
     "deploy:game": "dotenv -- pnpm --filter @simten/game run deploy",
