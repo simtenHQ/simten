@@ -116,7 +116,7 @@ function LevelMapNode({ data }: NodeProps<LevelNode>) {
         ) : (
           <>
             <Link
-              to="/play/$levelId"
+              to="/$levelId"
               params={{ levelId: data.levelId }}
               // Opening the drilldown on focus as well as hover is not just for
               // the linter: it is what gives the panel to anyone tabbing the map
