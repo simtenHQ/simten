@@ -2,7 +2,7 @@
 <!--
   Source for public/og-default.png, the social card.
 
-  Identical to apps/web/scripts/og-card.html, and deliberately so: simten.dev
+  Identical to apps/game/scripts/og-card.html, and deliberately so: simten.dev
   and play.simten.dev share one card. The two links are almost never seen side
   by side, and the title and description say which is which.
 
@@ -14,7 +14,7 @@
 
   To re-render, from the repo root:
 
-    cd apps/game/public && python3 -m http.server 3012 &
+    cd apps/web/public && python3 -m http.server 3012 &
     cp ../scripts/og-card.html ./__og.html
     # open http://localhost:3012/__og.html at exactly 1200x630, screenshot it
     rm __og.html
