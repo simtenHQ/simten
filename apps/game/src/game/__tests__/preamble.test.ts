@@ -7,7 +7,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { givenPreambleEnd } from '../../routes/play.$levelId';
+import { givenPreambleEnd } from '../../routes/$levelId';
 import { LEVELS } from '../levels';
 
 describe('given-preamble detection', () => {

@@ -76,7 +76,7 @@ export function LevelComplete({ open, onOpenChange, level, next }: LevelComplete
           </button>
           {next ? (
             <Link
-              to="/play/$levelId"
+              to="/$levelId"
               params={{ levelId: next.id }}
               className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground no-underline"
             >
