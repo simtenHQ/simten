@@ -49,6 +49,7 @@ Add a ULX3S board, [openFPGALoader](https://github.com/trabucayre/openFPGALoader
 ```
 apps/
   web/               ← main React app (editor, blog, learn, chat) — `@simten/web`
+  game/              ← play.simten.dev, the level campaign — `@simten/game`
   sandbox/           ← isolated iframe that runs user circuit code
   compiler/          ← Cloudflare Container — RISC-V cross-compiler
   synth/             ← Cloudflare Container — Yosys synthesis
@@ -141,6 +142,57 @@ Be respectful. We follow the [Contributor Covenant](https://www.contributor-cove
 ## License
 
 Apache 2.0 (see [LICENSE](./LICENSE)). By contributing, you agree your contributions are licensed under the same terms.
+
+## Publishing
+
+Packages are released with [Changesets](https://github.com/changesets/changesets). Record one on any PR that touches `@simten/core`, `@simten/ui`, `@simten/embed` or `@simten/mcp`; apps are in the ignore list.
+
+```bash
+pnpm changeset    # record a changeset for your PR
+pnpm release      # build everything and publish (CI)
+```
+
+### How the exports work
+
+Each publishable package has two `exports` blocks in its `package.json`:
+
+```jsonc
+{
+  "exports": {
+    ".":         "./src/index.ts",          // dev: read source directly
+    "./circuit": "./src/circuit/index.ts"
+  },
+  "publishConfig": {
+    "exports": {
+      ".":         { "types": "./dist/index.d.ts",         "import": "./dist/index.js" },
+      "./circuit": { "types": "./dist/circuit/index.d.ts", "import": "./dist/circuit/index.js" }
+    }
+  }
+}
+```
+
+`pnpm` and `npm` swap in `publishConfig.exports` at publish time, so people installing from the registry get compiled `.js` and `.d.ts` from `dist/`. Inside the monorepo the block is inert and you always get source.
+
+The point is that no tool needs a custom resolve condition. Vite (browser and Workers SSR), vitest and tsc all resolve `@simten/*` through the standard `default`/`import` keys, so adding a new tool does not mean adding a fifth config file.
+
+### Adding an export subpath
+
+A new entry in `exports` needs a matching entry in `publishConfig.exports`. `tsx scripts/check-exports.ts` runs as part of `pnpm test` and fails CI when the two drift. It checks four things:
+
+1. `exports` and `publishConfig.exports` have identical key sets.
+2. Every dev-export path exists on disk in `src/`.
+3. For entries shaped `./src/<segs>/index.<ext>` ↔ `./dist/<same-segs>/index.<ext'>`, the segments match.
+4. If any `publishConfig.exports` path points at `./dist/...`, `files` includes `"dist"`.
+
+To see what consumers will actually receive, without publishing:
+
+```bash
+cd packages/core && pnpm pack --pack-destination /tmp
+tar -tzf /tmp/simten-core-*.tgz                    # dist/, never src/
+tar -xzf /tmp/simten-core-*.tgz -O package/package.json | jq .exports
+```
+
+`@simten/embed` is the one package with a non-trivial build: `tsc -b` for the React surface (`.`, `./nodes`, `./canvas`), then a Vite IIFE pass for the web-component drop-in (`./webcomponent` → `dist/circuit-embed.js`, `./styles.css` → `dist/styles.css`). The Vite step sets `emptyOutDir: false` so it does not wipe the tsc output.
 
 ## Notes for maintainers
 
