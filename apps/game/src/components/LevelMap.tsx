@@ -83,12 +83,7 @@ function LevelMapNode({ data }: NodeProps<LevelNode>) {
   const locked = data.state === 'locked';
 
   const body = (
-    <span className="flex items-baseline gap-3">
-      <span className="font-mono text-xs text-muted-foreground">
-        {String(data.position).padStart(2, '0')}
-      </span>
-      <span className="font-medium leading-tight">{data.title}</span>
-    </span>
+    <span className="block w-full text-center font-medium leading-tight">{data.title}</span>
   );
 
   return (

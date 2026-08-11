@@ -20,7 +20,7 @@ describe('given-preamble detection', () => {
 
   it('leaves instruction comments visible', () => {
     // Every other stub opens with the hint; scrolling past it would hide it.
-    const orLevel = LEVELS.find((l) => l.id === 'or-from-nand');
+    const orLevel = LEVELS.find((l) => l.id === 'or');
     if (!orLevel) throw new Error('missing level');
     expect(givenPreambleEnd(orLevel.stub.split('\n'))).toBeNull();
   });
