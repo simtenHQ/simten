@@ -31,6 +31,11 @@ const RunningCodeSection = lazy(() =>
     default: m.RunningCodeSection,
   })),
 );
+const ConformanceSection = lazy(() =>
+  import('@/features/blog/rv32i-cpu/sections/ConformanceSection').then((m) => ({
+    default: m.ConformanceSection,
+  })),
+);
 const TryItSection = lazy(() =>
   import('@/features/blog/rv32i-cpu/sections/TryItSection').then((m) => ({
     default: m.TryItSection,
@@ -99,6 +104,14 @@ function RV32ICPUPage() {
         <ErrorBoundary>
           <Suspense fallback={<SectionSkeleton />}>
             <RunningCodeSection />
+          </Suspense>
+        </ErrorBoundary>
+
+        <hr className="border-gray-200 dark:border-gray-800" />
+
+        <ErrorBoundary>
+          <Suspense fallback={<SectionSkeleton />}>
+            <ConformanceSection />
           </Suspense>
         </ErrorBoundary>
 

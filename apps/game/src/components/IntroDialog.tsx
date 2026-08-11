@@ -39,22 +39,58 @@ export function IntroDialog() {
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <img src="/favicon.svg" alt="" width={40} height={40} className="mb-3" />
-          <DialogTitle className="text-2xl">Build a computer from one gate</DialogTitle>
+          <DialogTitle className="text-2xl">TypeScript meets hardware</DialogTitle>
           <DialogDescription className="sr-only">What this is, and how it works.</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-3 text-sm text-muted-foreground">
+          <p>Build a computer out of logic gates, one layer of abstraction at a time.</p>
           <p>
-            You get one gate: NAND. Every other gate gets built out of it, and everything after that
-            gets built out of those.
+            Take it as far as you like:{' '}
+            <a
+              href="https://simten.dev/blog/rv32i-cpu"
+              target="_blank"
+              rel="noreferrer"
+              className="underline underline-offset-4 hover:text-foreground"
+            >
+              CPUs that run C
+            </a>
+            ,{' '}
+            <a
+              href="https://simten.dev/blog/how-tpus-work"
+              target="_blank"
+              rel="noreferrer"
+              className="underline underline-offset-4 hover:text-foreground"
+            >
+              accelerators
+            </a>
+            ,{' '}
+            <a
+              href="https://simten.dev/blog/snake-in-hardware"
+              target="_blank"
+              rel="noreferrer"
+              className="underline underline-offset-4 hover:text-foreground"
+            >
+              games
+            </a>
+            , exporting to Verilog and flashing your designs to real silicon on FPGAs.
           </p>
           <p>
-            You build by writing TypeScript rather than dragging wires, and the diagram draws itself
-            as you type. The same code runs on a real FPGA.
+            You do it by writing TypeScript rather than dragging wires. The circuit draws itself as
+            you type.
           </p>
+          <p>Good luck.</p>
         </div>
 
-        <DialogFooter>
+        <DialogFooter className="sm:items-end sm:justify-between">
+          <a
+            href="https://simten.dev"
+            target="_blank"
+            rel="noreferrer"
+            className="text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+          >
+            Built on Simten, a TypeScript HDL ↗
+          </a>
           <button
             type="button"
             onClick={dismiss}

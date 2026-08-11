@@ -12,7 +12,7 @@ export const Route = createFileRoute('/privacy')({
   component: PrivacyPage,
   head: () => ({
     meta: [
-      { title: 'Privacy Policy — Simten' },
+      { title: 'Privacy Policy | Simten' },
       {
         name: 'description',
         content:

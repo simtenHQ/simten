@@ -12,7 +12,7 @@ export const Route = createFileRoute('/terms')({
   component: TermsPage,
   head: () => ({
     meta: [
-      { title: 'Terms of Service — Simten' },
+      { title: 'Terms of Service | Simten' },
       {
         name: 'description',
         content: 'Acceptance, acceptable use, warranty disclaimer, and liability terms for Simten.',
