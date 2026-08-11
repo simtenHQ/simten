@@ -107,10 +107,10 @@ describe('the graded circuit is chosen by name', () => {
    * signal names and the wrong logic follows it, and the level still passes.
    */
   it('ignores a later circuit with the same signals', async () => {
-    const level = LEVELS_BY_ID.get('not-from-nand');
+    const level = LEVELS_BY_ID.get('not');
     if (!level) throw new Error('level missing');
 
-    const withDecoyLast = `${SOLUTIONS['not-from-nand']}
+    const withDecoyLast = `${SOLUTIONS['not']}
 
 export const Decoy = circuit('Decoy', {
   nodes: { a: Switch, b: Buffer, out: Led },

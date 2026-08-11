@@ -21,12 +21,12 @@ import { LEVELS_BY_ID, levelIndex } from './levels';
 /** Bottom to top. Each inner array is one row of siblings. */
 export const MAP_ROWS: string[][] = [
   ['first-wire'],
-  ['not-from-nand'],
-  ['and-from-nand'],
-  ['or-from-nand'],
-  ['nor-from-nand'],
-  ['xor-from-nand'],
-  ['xnor-from-nand'],
+  ['not'],
+  ['and'],
+  ['or'],
+  ['nor'],
+  ['xor'],
+  ['xnor'],
   ['making-a-component'],
   ['half-adder'],
   ['full-adder'],
