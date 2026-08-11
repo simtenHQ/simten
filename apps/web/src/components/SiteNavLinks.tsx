@@ -51,6 +51,11 @@ export function SiteNavLinks() {
           ThemeToggle, matching the gap-6 rhythm between the links themselves
           (so the GitHub icon doesn't look stuck to the toggle). */}
       <nav className="hidden items-center gap-6 text-[15px] text-foreground/70 sm:mr-3 sm:flex">
+        {/* Own subdomain, so a plain anchor rather than a router Link. Same tab:
+            it is the same product, not somewhere you send people away to. */}
+        <a href="https://play.simten.dev" className="transition-colors hover:text-foreground">
+          Play
+        </a>
         <Link to="/blog" className="transition-colors hover:text-foreground">
           Blog
         </Link>
@@ -97,6 +102,9 @@ export function SiteNavLinks() {
               className="fixed inset-x-0 bottom-0 top-14 z-40 bg-background/60 backdrop-blur-sm"
             />
             <nav className="fixed inset-x-0 top-14 z-50 flex flex-col gap-1 border-b border-border bg-background px-4 pb-4 pt-2">
+              <a href="https://play.simten.dev" onClick={close} className={mobileItem}>
+                Play
+              </a>
               <Link to="/blog" onClick={close} className={mobileItem}>
                 Blog
               </Link>
