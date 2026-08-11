@@ -57,7 +57,7 @@ export const LEVELS: Level[] = [
       'This circuit is finished apart from one connection: nothing carries the gate’s result to the lamp. Add that line, then flip the switches.',
     target: 'Nand1',
     inputs: ['a', 'b'],
-    outputs: ['out'],
+    outputs: ['result'],
     allowed: ['Nand'],
     stub: `// A circuit is a set of nodes and the wires between them.
 // \`x.to(y)\` sends the value at x into y.
@@ -71,20 +71,20 @@ export default circuit('Nand1', {
     a: Switch,
     b: Switch,
     n1: Nand,
-    out: Led,
+    result: Led,
   },
-  connect: ({ nodes: { a, b, n1, out } }) => [
+  connect: ({ nodes: { a, b, n1, result } }) => [
     a.out.to(n1.a),
     b.out.to(n1.b),
-    // One more line. Send n1.out to out.in
+    // One more line. Send n1.out to result.in
   ],
 });
 `,
     vectors: [
-      { inputs: { a: 0, b: 0 }, expect: { out: 1 } },
-      { inputs: { a: 0, b: 1 }, expect: { out: 1 } },
-      { inputs: { a: 1, b: 0 }, expect: { out: 1 } },
-      { inputs: { a: 1, b: 1 }, expect: { out: 0 } },
+      { inputs: { a: 0, b: 0 }, expect: { result: 1 } },
+      { inputs: { a: 0, b: 1 }, expect: { result: 1 } },
+      { inputs: { a: 1, b: 0 }, expect: { result: 1 } },
+      { inputs: { a: 1, b: 1 }, expect: { result: 0 } },
     ],
     par: 1,
     outro: {
@@ -100,7 +100,7 @@ export default circuit('Nand1', {
       'You have seen what NAND does: it outputs 0 only when both its inputs are 1. It is the only gate you get, so every other gate gets built from it. Start with the simplest — turn a 1 into a 0.',
     target: 'Not1',
     inputs: ['a'],
-    outputs: ['out'],
+    outputs: ['result'],
     allowed: ['Nand'],
     stub: `// The same gate as last level, and the only one there is.
 // NAND outputs 0 only when both inputs are 1.
@@ -115,16 +115,16 @@ export default circuit('Not1', {
   nodes: {
     a: Switch,
     n1: Nand,
-    out: Led,
+    result: Led,
   },
-  connect: ({ nodes: { a, n1, out } }) => [
-    n1.out.to(out.in),
+  connect: ({ nodes: { a, n1, result } }) => [
+    n1.out.to(result.in),
   ],
 });
 `,
     vectors: [
-      { inputs: { a: 0 }, expect: { out: 1 } },
-      { inputs: { a: 1 }, expect: { out: 0 } },
+      { inputs: { a: 0 }, expect: { result: 1 } },
+      { inputs: { a: 1 }, expect: { result: 0 } },
     ],
     par: 1,
     outro: {
@@ -140,7 +140,7 @@ export default circuit('Not1', {
       'A NAND is an AND gate with its answer flipped. You spent the last level learning to flip an answer. Light the lamp only when both switches are on.',
     target: 'And2',
     inputs: ['a', 'b'],
-    outputs: ['out'],
+    outputs: ['result'],
     allowed: ['Nand'],
     stub: `// The NAND already sees both switches. Its answer
 // is the one you want, upside down.
@@ -156,9 +156,9 @@ export default circuit('And2', {
     a: Switch,
     b: Switch,
     n1: Nand,
-    out: Led,
+    result: Led,
   },
-  connect: ({ nodes: { a, b, n1, out } }) => [
+  connect: ({ nodes: { a, b, n1, result } }) => [
     a.out.to(n1.a),
     b.out.to(n1.b),
     //
@@ -166,10 +166,10 @@ export default circuit('And2', {
 });
 `,
     vectors: [
-      { inputs: { a: 0, b: 0 }, expect: { out: 0 } },
-      { inputs: { a: 0, b: 1 }, expect: { out: 0 } },
-      { inputs: { a: 1, b: 0 }, expect: { out: 0 } },
-      { inputs: { a: 1, b: 1 }, expect: { out: 1 } },
+      { inputs: { a: 0, b: 0 }, expect: { result: 0 } },
+      { inputs: { a: 0, b: 1 }, expect: { result: 0 } },
+      { inputs: { a: 1, b: 0 }, expect: { result: 0 } },
+      { inputs: { a: 1, b: 1 }, expect: { result: 1 } },
     ],
     par: 2,
     outro: {
@@ -185,7 +185,7 @@ export default circuit('And2', {
       'Light the lamp when either switch is on. There is no way to get there by flipping a NAND, so come at it from the other end: work out when the lamp should stay off.',
     target: 'Or1',
     inputs: ['a', 'b'],
-    outputs: ['out'],
+    outputs: ['result'],
     allowed: ['Nand'],
     stub: `// The lamp is off in exactly one case: both switches down.
 //
@@ -200,18 +200,18 @@ export default circuit('Or1', {
   nodes: {
     a: Switch,
     b: Switch,
-    out: Led,
+    result: Led,
   },
-  connect: ({ nodes: { a, b, out } }) => [
+  connect: ({ nodes: { a, b, result } }) => [
     //
   ],
 });
 `,
     vectors: [
-      { inputs: { a: 0, b: 0 }, expect: { out: 0 } },
-      { inputs: { a: 0, b: 1 }, expect: { out: 1 } },
-      { inputs: { a: 1, b: 0 }, expect: { out: 1 } },
-      { inputs: { a: 1, b: 1 }, expect: { out: 1 } },
+      { inputs: { a: 0, b: 0 }, expect: { result: 0 } },
+      { inputs: { a: 0, b: 1 }, expect: { result: 1 } },
+      { inputs: { a: 1, b: 0 }, expect: { result: 1 } },
+      { inputs: { a: 1, b: 1 }, expect: { result: 1 } },
     ],
     par: 3,
     outro: {
@@ -227,10 +227,10 @@ export default circuit('Or1', {
       'NOR is OR with the answer flipped: the lamp is on only when both switches are off. You built OR a minute ago, so most of this is already done.',
     target: 'Nor1',
     inputs: ['a', 'b'],
-    outputs: ['out'],
+    outputs: ['result'],
     allowed: ['Nand'],
     stub: `// Nothing new here. Build the OR you already
-// worked out, then flip what comes out of it.
+// worked result, then flip what comes out of it.
 //
 // Four NANDs is the target.
 
@@ -238,18 +238,18 @@ export default circuit('Nor1', {
   nodes: {
     a: Switch,
     b: Switch,
-    out: Led,
+    result: Led,
   },
-  connect: ({ nodes: { a, b, out } }) => [
+  connect: ({ nodes: { a, b, result } }) => [
     //
   ],
 });
 `,
     vectors: [
-      { inputs: { a: 0, b: 0 }, expect: { out: 1 } },
-      { inputs: { a: 0, b: 1 }, expect: { out: 0 } },
-      { inputs: { a: 1, b: 0 }, expect: { out: 0 } },
-      { inputs: { a: 1, b: 1 }, expect: { out: 0 } },
+      { inputs: { a: 0, b: 0 }, expect: { result: 1 } },
+      { inputs: { a: 0, b: 1 }, expect: { result: 0 } },
+      { inputs: { a: 1, b: 0 }, expect: { result: 0 } },
+      { inputs: { a: 1, b: 1 }, expect: { result: 0 } },
     ],
     par: 4,
     outro: {
@@ -265,7 +265,7 @@ export default circuit('Nor1', {
       'Light the lamp when the two switches disagree. This is the one that takes a minute — and it is the gate an adder is built from, so it pays off twice.',
     target: 'Xor1',
     inputs: ['a', 'b'],
-    outputs: ['out'],
+    outputs: ['result'],
     allowed: ['Nand'],
     stub: `// Work out how many NANDs this needs. Fewer is better.
 //
@@ -276,18 +276,18 @@ export default circuit('Xor1', {
   nodes: {
     a: Switch,
     b: Switch,
-    out: Led,
+    result: Led,
   },
-  connect: ({ nodes: { a, b, out } }) => [
+  connect: ({ nodes: { a, b, result } }) => [
     //
   ],
 });
 `,
     vectors: [
-      { inputs: { a: 0, b: 0 }, expect: { out: 0 } },
-      { inputs: { a: 0, b: 1 }, expect: { out: 1 } },
-      { inputs: { a: 1, b: 0 }, expect: { out: 1 } },
-      { inputs: { a: 1, b: 1 }, expect: { out: 0 } },
+      { inputs: { a: 0, b: 0 }, expect: { result: 0 } },
+      { inputs: { a: 0, b: 1 }, expect: { result: 1 } },
+      { inputs: { a: 1, b: 0 }, expect: { result: 1 } },
+      { inputs: { a: 1, b: 1 }, expect: { result: 0 } },
     ],
     par: 4,
     outro: {
@@ -303,7 +303,7 @@ export default circuit('Xor1', {
       'The last gate in the set, and the opposite of the one you just built: light the lamp when the two switches agree. You already know the move.',
     target: 'Xnor1',
     inputs: ['a', 'b'],
-    outputs: ['out'],
+    outputs: ['result'],
     allowed: ['Nand'],
     stub: `// Your XOR, with the answer flipped.
 //
@@ -315,18 +315,18 @@ export default circuit('Xnor1', {
   nodes: {
     a: Switch,
     b: Switch,
-    out: Led,
+    result: Led,
   },
-  connect: ({ nodes: { a, b, out } }) => [
+  connect: ({ nodes: { a, b, result } }) => [
     //
   ],
 });
 `,
     vectors: [
-      { inputs: { a: 0, b: 0 }, expect: { out: 1 } },
-      { inputs: { a: 0, b: 1 }, expect: { out: 0 } },
-      { inputs: { a: 1, b: 0 }, expect: { out: 0 } },
-      { inputs: { a: 1, b: 1 }, expect: { out: 1 } },
+      { inputs: { a: 0, b: 0 }, expect: { result: 1 } },
+      { inputs: { a: 0, b: 1 }, expect: { result: 0 } },
+      { inputs: { a: 1, b: 0 }, expect: { result: 0 } },
+      { inputs: { a: 1, b: 1 }, expect: { result: 1 } },
     ],
     par: 5,
     outro: {
