@@ -70,10 +70,10 @@ describe('drafts', () => {
     installStorage();
     writeDraft('first-wire', 'one');
     writeDraft('not', 'two');
-    expect(readDrafts()).toEqual({ 'first-wire': 'one', 'not': 'two' });
+    expect(readDrafts()).toEqual({ 'first-wire': 'one', not: 'two' });
 
     writeDraft('first-wire', 'edited');
-    expect(readDrafts()).toEqual({ 'first-wire': 'edited', 'not': 'two' });
+    expect(readDrafts()).toEqual({ 'first-wire': 'edited', not: 'two' });
   });
 
   it('clears one level without disturbing the rest', () => {
@@ -81,7 +81,7 @@ describe('drafts', () => {
     writeDraft('first-wire', 'one');
     writeDraft('not', 'two');
     clearDraft('first-wire');
-    expect(readDrafts()).toEqual({ 'not': 'two' });
+    expect(readDrafts()).toEqual({ not: 'two' });
   });
 
   it('clearing a level that was never drafted is harmless', () => {
@@ -103,7 +103,7 @@ describe('progress', () => {
     installStorage();
     writeProgress('first-wire', { gates: 1 });
     writeProgress('and', { gates: 3 });
-    expect(readProgress()).toEqual({ 'first-wire': { gates: 1 }, 'and': { gates: 3 } });
+    expect(readProgress()).toEqual({ 'first-wire': { gates: 1 }, and: { gates: 3 } });
 
     writeProgress('and', { gates: 2 });
     expect(readProgress()['and']).toEqual({ gates: 2 });
