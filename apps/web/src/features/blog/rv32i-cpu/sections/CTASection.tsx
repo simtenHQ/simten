@@ -8,9 +8,10 @@ export function CTASection() {
           Now build your own
         </h2>
         <p className="text-gray-600 dark:text-gray-400 max-w-xl mx-auto leading-relaxed">
-          Every circuit on this page was designed in Simten &mdash; a visual circuit simulator with
-          an AI tutor. Start from simple components or jump straight to CPU design. The AI helps you
-          wire things up, debug issues, and understand what&rsquo;s happening at every level.
+          Every circuit on this page was designed in Simten, a TypeScript HDL. Circuits are typed
+          code that simulates in the browser and exports to Verilog, so the same design runs on an
+          FPGA. Start from a single gate, or point your own AI assistant at it over MCP and build
+          alongside it.
         </p>
         <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
           <Link
