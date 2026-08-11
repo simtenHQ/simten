@@ -8,14 +8,10 @@ import appCss from '../styles.css?url';
 
 const THEME_INIT_SCRIPT = `(function(){try{var stored=window.localStorage.getItem('theme');var mode=(stored==='light'||stored==='dark'||stored==='auto')?stored:'dark';var prefersDark=window.matchMedia('(prefers-color-scheme: dark)').matches;var resolved=mode==='auto'?(prefersDark?'dark':'light'):mode;var root=document.documentElement;root.classList.remove('light','dark');root.classList.add(resolved);if(mode==='auto'){root.removeAttribute('data-theme')}else{root.setAttribute('data-theme',mode)}root.style.colorScheme=resolved;}catch(e){}})();`;
 
-const TITLE = 'Simten — build a computer';
-const DESCRIPTION = 'Build a computer from one gate, by writing TypeScript.';
+const TITLE = 'Simten — build hardware. Bit by bit.';
+const DESCRIPTION =
+  'A puzzle campaign built on Simten, a TypeScript HDL that simulates in the browser and synthesizes to Verilog.';
 const SITE_URL = 'https://play.simten.dev';
-/**
- * Absolute, because scrapers do not resolve relative URLs. Same lockup and
- * palette as apps/web's card, different tagline, so the two links read as one
- * product rather than two. Source in `scripts/og-card.html`.
- */
 const OG_IMAGE = `${SITE_URL}/og-default.png`;
 
 export const Route = createRootRoute({
@@ -34,7 +30,10 @@ export const Route = createRootRoute({
       { property: 'og:image', content: OG_IMAGE },
       { property: 'og:image:width', content: '1200' },
       { property: 'og:image:height', content: '630' },
-      { property: 'og:image:alt', content: DESCRIPTION },
+      // Describes the image, which is the wordmark and nothing else. Repeating
+      // the description here would make a screen reader say it twice.
+      { property: 'og:image:alt', content: 'Simten' },
+      { property: 'og:site_name', content: 'Simten' },
       // `summary_large_image` rather than `summary`: with a 1200x630 card the
       // small variant crops it to a square thumbnail beside the text.
       { name: 'twitter:card', content: 'summary_large_image' },
