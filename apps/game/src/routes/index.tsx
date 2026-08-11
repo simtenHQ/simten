@@ -63,8 +63,14 @@ function MapPage() {
   // While the inspector is open it wins, so sweeping the pointer across other
   // levels behind the modal cannot swap what is being inspected. Otherwise the
   // hovered level is mounted to warm its compile before it is asked for.
+  // Solved levels only. The drilldown falls back to the reference answer when
+  // the player has no draft, so mounting it for an unattempted level would
+  // compile the solution and hand it over on a double-click. LevelMap hides the
+  // badge for the same reason; this makes it structural rather than cosmetic,
+  // and stops a hover compiling an answer nobody asked for.
   const activeId = expanded ?? hovered;
-  const level = activeId ? LEVELS_BY_ID.get(activeId) : undefined;
+  const candidate = activeId ? LEVELS_BY_ID.get(activeId) : undefined;
+  const level = candidate && solved.has(candidate.id) ? candidate : undefined;
 
   return (
     <div className="flex h-screen flex-col">
