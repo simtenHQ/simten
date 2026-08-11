@@ -44,7 +44,11 @@ export function IntroDialog() {
         </DialogHeader>
 
         <div className="space-y-3 text-sm text-muted-foreground">
-          <p>Build a computer out of logic gates, one layer of abstraction at a time.</p>
+          <p>Build a computer from logic gates, one layer of abstraction at a time.</p>
+          <p>
+            You do this by writing TypeScript rather than dragging wires. The circuit draws itself
+            as you type.
+          </p>
           <p>
             Take it as far as you like:{' '}
             <a
@@ -73,11 +77,7 @@ export function IntroDialog() {
             >
               games
             </a>
-            , exporting to Verilog and flashing your designs to real silicon on FPGAs.
-          </p>
-          <p>
-            You do it by writing TypeScript rather than dragging wires. The circuit draws itself as
-            you type.
+            . Then export to Verilog and flash your designs to real silicon on FPGAs.
           </p>
           <p>Good luck.</p>
         </div>
