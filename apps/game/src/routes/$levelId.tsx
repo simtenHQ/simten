@@ -10,6 +10,7 @@
  * netlist and watch it become hardware you can click.
  */
 
+import { elaborate } from '@simten/core';
 import { ErrorDisplay, useCompiledCircuit } from '@simten/embed';
 import { CircuitCanvas } from '@simten/ui/canvas';
 import {
@@ -31,7 +32,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { LevelComplete } from '../components/LevelComplete';
 import { Logo } from '../components/Logo';
 import { SpecPanel } from '../components/SpecPanel';
-import { grade, STRUCTURAL } from '../game/grade';
+import { forbiddenPrimitives, grade, permittedFor } from '../game/grade';
 import { nameDiagnostics } from '../game/level-name';
 import { LEVELS_BY_ID, nextLevel } from '../game/levels';
 import { sandboxRuntime } from '../game/runtime';
@@ -189,6 +190,62 @@ function PlayLevel({ level }: { level: Level }) {
   // switches flip and the LED lights. The proof is the machine running.
   const victory = useVictoryRun(level.vectors, preview.setNodeValue);
 
+  /**
+   * Gates in the preview that this level forbids.
+   *
+   * The editor filter only removes the type declarations, so a disallowed gate
+   * is a red squiggle and nothing more — the sandbox still executes it, and the
+   * canvas happily drew a component the level bans. That left the diagram
+   * looking like the authority while Submit disagreed.
+   *
+   * Checked here rather than in the sandbox, which has no business knowing a
+   * level's rules: this is the grader's own function run against the preview,
+   * so the canvas and the verdict cannot give different answers.
+   */
+  /**
+   * The last circuit that used only permitted gates.
+   *
+   * While a forbidden gate is present the canvas shows this instead of the
+   * current netlist, so a banned gate simply never appears — no banner, no
+   * fanfare. The editor already squiggles it; the diagram just declines to
+   * pretend it is real, and stops updating until the gate is gone.
+   *
+   * A ref rather than state — it is a cache of a render output, and setting
+   * state from render to track it would just loop.
+   */
+  const lastPermitted = useRef<{
+    circuit: typeof preview.circuit;
+    library: typeof preview.componentLibrary;
+  } | null>(null);
+
+  const forbidden = useMemo(() => {
+    if (!preview.circuit || !preview.componentLibrary) return [];
+    try {
+      return forbiddenPrimitives(
+        elaborate(preview.circuit, preview.componentLibrary),
+        level.allowed,
+      );
+    } catch {
+      // Mid-keystroke the netlist is often unelaboratable. That is the compile
+      // error's story to tell, not this one's.
+      return [];
+    }
+  }, [preview.circuit, preview.componentLibrary, level.allowed]);
+
+  if (forbidden.length === 0 && preview.circuit) {
+    lastPermitted.current = { circuit: preview.circuit, library: preview.componentLibrary };
+  }
+  // Forbidden with a good circuit behind it → keep showing that one. Forbidden
+  // with nothing behind it (a draft that arrived already broken) → show
+  // nothing, because the only alternative is drawing the banned gate.
+  const shown = forbidden.length > 0 ? lastPermitted.current : null;
+  const canvasCircuit = shown ? shown.circuit : forbidden.length > 0 ? null : preview.circuit;
+  const canvasLibrary = shown
+    ? shown.library
+    : forbidden.length > 0
+      ? null
+      : preview.componentLibrary;
+
   const onSubmit = useCallback(async () => {
     setSubmitting(true);
     try {
@@ -231,7 +288,7 @@ function PlayLevel({ level }: { level: Level }) {
    * earned yet does not autocomplete and does not compile. The rule stops being
    * something you discover by breaking it.
    *
-   * `STRUCTURAL` comes from the grader rather than a second list here: those are
+   * `permittedFor` comes from the grader rather than a second list here: those are
    * the pieces that carry no logic and never count toward par, which is exactly
    * why they are absent from `allowed`. Filtering on `allowed` alone would leave
    * every level unable to declare a `Switch`.
@@ -240,7 +297,7 @@ function PlayLevel({ level }: { level: Level }) {
     () => ({
       globals: false,
       extraLibs: {
-        'file:///simten-globals.d.ts': buildGlobalsFor([...level.allowed, ...STRUCTURAL]),
+        'file:///simten-globals.d.ts': buildGlobalsFor(permittedFor(level.allowed)),
       },
     }),
     [level.allowed],
@@ -358,7 +415,10 @@ function PlayLevel({ level }: { level: Level }) {
               />
             </div>
             {/* Diagnostics live under the editor, never over the canvas — a
-              parse error mid-keystroke must not blank the diagram. */}
+              parse error mid-keystroke must not blank the diagram. A forbidden
+              gate is the same class of message, so it lands here too: the
+              canvas keeps showing the last circuit that compiled, which is
+              what you want while you are still typing. */}
             {preview.compileError && <ErrorDisplay error={preview.compileError} />}
           </ResizablePanel>
 
@@ -366,8 +426,8 @@ function PlayLevel({ level }: { level: Level }) {
 
           <ResizablePanel defaultSize={55} minSize={20} className="overflow-hidden">
             <CircuitCanvas
-              circuit={preview.circuit}
-              componentLibrary={preview.componentLibrary ?? undefined}
+              circuit={canvasCircuit}
+              componentLibrary={canvasLibrary ?? undefined}
               portValues={preview.portValues}
               theme="dark"
               showControls

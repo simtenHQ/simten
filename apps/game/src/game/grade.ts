@@ -57,13 +57,25 @@ function interfaceProblems(circuit: Circuit, level: Level): string[] {
   return problems;
 }
 
-function forbiddenPrimitives(flat: FlatCircuit, allowed: string[]): string[] {
-  const permitted = new Set(allowed);
+/**
+ * Everything a level lets you place: its own gates, plus the structural pieces
+ * that carry no logic.
+ *
+ * One definition, three consumers — the editor's ambient globals, the canvas
+ * preview, and this grader. They were each composing `allowed ∪ STRUCTURAL`
+ * separately, which is how an editor that autocompletes a gate the grader then
+ * rejects comes about. `__tests__/permitted.test.ts` pins that they agree.
+ */
+export function permittedFor(allowed: string[]): string[] {
+  return [...allowed, ...STRUCTURAL];
+}
+
+/** Primitives in the elaborated netlist that the level does not permit. */
+export function forbiddenPrimitives(flat: FlatCircuit, allowed: string[]): string[] {
+  const permitted = new Set(permittedFor(allowed));
   const used = new Set<string>();
   for (const node of flat.nodes) {
-    if (!permitted.has(node.primitiveType) && !STRUCTURAL.has(node.primitiveType)) {
-      used.add(node.primitiveType);
-    }
+    if (!permitted.has(node.primitiveType)) used.add(node.primitiveType);
   }
   return [...used].sort();
 }
