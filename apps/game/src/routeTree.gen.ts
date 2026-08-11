@@ -11,7 +11,6 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as LevelIdRouteImport } from './routes/$levelId'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as PlayLevelIdRouteImport } from './routes/play.$levelId'
 
 const LevelIdRoute = LevelIdRouteImport.update({
   id: '/$levelId',
@@ -23,40 +22,31 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const PlayLevelIdRoute = PlayLevelIdRouteImport.update({
-  id: '/play/$levelId',
-  path: '/play/$levelId',
-  getParentRoute: () => rootRouteImport,
-} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/$levelId': typeof LevelIdRoute
-  '/play/$levelId': typeof PlayLevelIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/$levelId': typeof LevelIdRoute
-  '/play/$levelId': typeof PlayLevelIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/$levelId': typeof LevelIdRoute
-  '/play/$levelId': typeof PlayLevelIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/$levelId' | '/play/$levelId'
+  fullPaths: '/' | '/$levelId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/$levelId' | '/play/$levelId'
-  id: '__root__' | '/' | '/$levelId' | '/play/$levelId'
+  to: '/' | '/$levelId'
+  id: '__root__' | '/' | '/$levelId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   LevelIdRoute: typeof LevelIdRoute
-  PlayLevelIdRoute: typeof PlayLevelIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -75,20 +65,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/play/$levelId': {
-      id: '/play/$levelId'
-      path: '/play/$levelId'
-      fullPath: '/play/$levelId'
-      preLoaderRoute: typeof PlayLevelIdRouteImport
-      parentRoute: typeof rootRouteImport
-    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   LevelIdRoute: LevelIdRoute,
-  PlayLevelIdRoute: PlayLevelIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
