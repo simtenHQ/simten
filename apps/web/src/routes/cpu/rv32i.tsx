@@ -6,7 +6,7 @@ export const Route = createFileRoute('/cpu/rv32i')({
   staticData: { skipDefaultChrome: true },
   head: () => ({
     ...pageHead({
-      title: 'RV32I CPU Debugger — RISC-V in the browser',
+      title: 'RV32I CPU Debugger | RISC-V in the browser',
       description:
         'A working 5-stage pipelined RV32I RISC-V processor, built from logic gates. Write C, C++, or Rust, compile it with the GCC RISC-V toolchain, and step through execution cycle by cycle.',
       path: '/cpu/rv32i',
