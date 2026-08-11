@@ -1,7 +1,7 @@
 {
   "short_name": "Simten",
-  "name": "Simten — build a computer",
-  "description": "Build a computer from one gate, by writing TypeScript.",
+  "name": "Simten | Design hardware. Bit by bit.",
+  "description": "A puzzle campaign built on Simten, a TypeScript HDL.",
   "icons": [
     {
       "src": "favicon.svg",
@@ -9,12 +9,12 @@
       "type": "image/svg+xml"
     },
     {
-      "src": "logo192.png",
+      "src": "icon-192.png",
       "type": "image/png",
       "sizes": "192x192"
     },
     {
-      "src": "logo512.png",
+      "src": "icon-512.png",
       "type": "image/png",
       "sizes": "512x512"
     }

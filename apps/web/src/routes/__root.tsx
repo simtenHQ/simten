@@ -53,7 +53,14 @@ export const Route = createRootRoute({
     ],
     links: [
       { rel: 'stylesheet', href: appCss },
+      // `favicon.ico` first: it is the path crawlers try by convention, and
+      // Google Search stopped showing a favicon here after the .ico was
+      // removed in favour of an SVG alone. Browsers that prefer the SVG still
+      // take it from the next line.
+      { rel: 'icon', href: '/favicon.ico', sizes: '48x48' },
       { rel: 'icon', href: '/favicon.svg', type: 'image/svg+xml' },
+      { rel: 'apple-touch-icon', href: '/icon-192.png' },
+      { rel: 'manifest', href: '/manifest.json' },
       // Note: rel="canonical" is set per-route via pageHead() in lib/seo.ts —
       // not here. Two canonical tags would force Google to pick one at random.
       // Geist + Geist Mono are self-hosted — see /public/fonts and the
