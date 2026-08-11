@@ -94,8 +94,8 @@ export default circuit('Nand1', {
   },
 
   {
-    id: 'not-from-nand',
-    title: 'NOT from NAND',
+    id: 'not',
+    title: 'NOT',
     brief:
       'You have seen what NAND does: it outputs 0 only when both its inputs are 1. It is the only gate you get, so every other gate gets built from it. Start with the simplest — turn a 1 into a 0.',
     target: 'Not1',
@@ -134,19 +134,20 @@ export default circuit('Not1', {
   },
 
   {
-    id: 'and-from-nand',
-    title: 'AND from NAND',
+    id: 'and',
+    title: 'AND',
     brief:
       'A NAND is an AND gate with its answer flipped. You spent the last level learning to flip an answer. Light the lamp only when both switches are on.',
     target: 'And2',
     inputs: ['a', 'b'],
     outputs: ['result'],
-    allowed: ['Nand'],
+    allowed: ['Nand', 'Not'],
     stub: `// The NAND already sees both switches. Its answer
 // is the one you want, upside down.
 //
-// You need a second gate, so add one to the list:
-//   n2: Nand,
+// You built NOT last level, so it is yours to use now.
+// Add it to the list:
+//   n: Not,
 //
 // Anything you add to \`nodes\` has to be named in the
 // \`connect\` line below before you can wire it.
@@ -179,14 +180,14 @@ export default circuit('And2', {
   },
 
   {
-    id: 'or-from-nand',
-    title: 'OR from NAND',
+    id: 'or',
+    title: 'OR',
     brief:
       'Light the lamp when either switch is on. There is no way to get there by flipping a NAND, so come at it from the other end: work out when the lamp should stay off.',
     target: 'Or1',
     inputs: ['a', 'b'],
     outputs: ['result'],
-    allowed: ['Nand'],
+    allowed: ['Nand', 'Not', 'And'],
     stub: `// The lamp is off in exactly one case: both switches down.
 //
 // A NAND says "not both". Stop feeding it the switches
@@ -221,18 +222,19 @@ export default circuit('Or1', {
   },
 
   {
-    id: 'nor-from-nand',
-    title: 'NOR from NAND',
+    id: 'nor',
+    title: 'NOR',
     brief:
       'NOR is OR with the answer flipped: the lamp is on only when both switches are off. You built OR a minute ago, so most of this is already done.',
     target: 'Nor1',
     inputs: ['a', 'b'],
     outputs: ['result'],
-    allowed: ['Nand'],
-    stub: `// Nothing new here. Build the OR you already
-// worked result, then flip what comes out of it.
+    allowed: ['Nand', 'Not', 'And', 'Or'],
+    stub: `// Nothing new here. Take the OR you built and flip
+// what comes out of it.
 //
-// Four NANDs is the target.
+// You have both of those now, so this is two gates.
+// Four NANDs if you would rather do it the long way.
 
 export default circuit('Nor1', {
   nodes: {
@@ -259,14 +261,14 @@ export default circuit('Nor1', {
   },
 
   {
-    id: 'xor-from-nand',
-    title: 'XOR from NAND',
+    id: 'xor',
+    title: 'XOR',
     brief:
       'Light the lamp when the two switches disagree. This is the one that takes a minute — and it is the gate an adder is built from, so it pays off twice.',
     target: 'Xor1',
     inputs: ['a', 'b'],
     outputs: ['result'],
-    allowed: ['Nand'],
+    allowed: ['Nand', 'Not', 'And', 'Or', 'Nor'],
     stub: `// Work out how many NANDs this needs. Fewer is better.
 //
 // A signal can drive more than one port:
@@ -297,19 +299,19 @@ export default circuit('Xor1', {
   },
 
   {
-    id: 'xnor-from-nand',
-    title: 'XNOR from NAND',
+    id: 'xnor',
+    title: 'XNOR',
     brief:
       'The last gate in the set, and the opposite of the one you just built: light the lamp when the two switches agree. You already know the move.',
     target: 'Xnor1',
     inputs: ['a', 'b'],
     outputs: ['result'],
-    allowed: ['Nand'],
+    allowed: ['Nand', 'Not', 'And', 'Or', 'Nor', 'Xor'],
     stub: `// Your XOR, with the answer flipped.
 //
-// Five NANDs. Nothing here is new — this level is
-// the one where you find out how much of the last
-// six you actually kept.
+// Two gates, now that XOR is yours. The long way
+// round is five NANDs, if you want to prove you
+// still can.
 
 export default circuit('Xnor1', {
   nodes: {
@@ -343,7 +345,7 @@ export default circuit('Xnor1', {
     target: 'Xor2',
     inputs: ['a', 'b'],
     outputs: ['out'],
-    allowed: ['Nand'],
+    allowed: ['Nand', 'Not', 'And', 'Or', 'Nor', 'Xor', 'Xnor'],
     stub: `// Ports, not switches. Still NAND only.
 //
 // \`inputs\` and \`outputs\` are the circuit's edges — what it looks like from
