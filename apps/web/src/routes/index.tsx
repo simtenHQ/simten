@@ -66,7 +66,7 @@ import { pageHead, softwareApplicationLd } from '@/lib/seo';
 export const Route = createFileRoute('/')({
   head: () => ({
     ...pageHead({
-      title: 'Simten — Hardware design in TypeScript',
+      title: 'Simten | Hardware design in TypeScript',
       titleExact: true,
       description:
         'A TypeScript HDL where npm is your testbench — from logic gates to a RISC-V CPU. Test circuits against real firmware, then synthesize to Verilog.',

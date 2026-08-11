@@ -25,7 +25,7 @@ export const Route = createFileRoute('/circuit_/s/$hash')({
   head: ({ loaderData }) => {
     const name = loaderData?.circuitName;
     return pageHead({
-      title: name ? `${name} — Shared circuit` : 'Shared circuit',
+      title: name ? `${name} | Shared circuit` : 'Shared circuit',
       description: name
         ? `Open and modify the ${name} circuit in the Simten editor.`
         : 'Open and modify a shared Simten circuit.',
