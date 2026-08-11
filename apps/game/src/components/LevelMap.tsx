@@ -134,18 +134,26 @@ function LevelMapNode({ data }: NodeProps<LevelNode>) {
               to guess. It sits outside the Link deliberately: clicking the card
               still opens the level, and inspecting is its own target.
 
+              Solved levels only. On an unsolved one there is nothing of the
+              player's to show, so the drilldown falls back to the reference
+              answer — which hands over the solution to a level they have not
+              attempted. The badge is the affordance, so removing it is what
+              removes the spoiler.
+
               `contents` keeps the button boxless, so the badge's own absolute
               positioning still resolves against the card rather than nesting a
               second offset inside a wrapper.
             */}
-            <button
-              type="button"
-              className="contents"
-              aria-label={`Look inside ${data.title}`}
-              onDoubleClick={() => data.onExpand?.(data.levelId)}
-            >
-              <CompositeBadge />
-            </button>
+            {data.state === 'solved' && (
+              <button
+                type="button"
+                className="contents"
+                aria-label={`Look inside ${data.title}`}
+                onDoubleClick={() => data.onExpand?.(data.levelId)}
+              >
+                <CompositeBadge />
+              </button>
+            )}
           </>
         )}
       </div>
