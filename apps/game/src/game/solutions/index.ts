@@ -28,25 +28,25 @@
  * test-only means finding something else for an unopened level to inspect to.
  */
 
-import andFromNand from './and-from-nand.ts?raw';
+import andGate from './and.ts?raw';
 import firstWire from './first-wire.ts?raw';
 import fullAdder from './full-adder.ts?raw';
 import halfAdder from './half-adder.ts?raw';
 import makingAComponent from './making-a-component.ts?raw';
-import norFromNand from './nor-from-nand.ts?raw';
-import notFromNand from './not-from-nand.ts?raw';
-import orFromNand from './or-from-nand.ts?raw';
-import xnorFromNand from './xnor-from-nand.ts?raw';
-import xorFromNand from './xor-from-nand.ts?raw';
+import norGate from './nor.ts?raw';
+import notGate from './not.ts?raw';
+import orGate from './or.ts?raw';
+import xnorGate from './xnor.ts?raw';
+import xorGate from './xor.ts?raw';
 
 export const SOLUTIONS: Record<string, string> = {
   'first-wire': firstWire,
-  'not-from-nand': notFromNand,
-  'and-from-nand': andFromNand,
-  'or-from-nand': orFromNand,
-  'nor-from-nand': norFromNand,
-  'xor-from-nand': xorFromNand,
-  'xnor-from-nand': xnorFromNand,
+  not: notGate,
+  and: andGate,
+  or: orGate,
+  nor: norGate,
+  xor: xorGate,
+  xnor: xnorGate,
   'making-a-component': makingAComponent,
   'half-adder': halfAdder,
   'full-adder': fullAdder,
