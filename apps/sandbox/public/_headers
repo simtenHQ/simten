@@ -1,3 +1,25 @@
+# Only one block sets `Cache-Control` for any given path. Cloudflare's rules for
+# combining multiple matching blocks are easy to get wrong, and two blocks both
+# claiming a path's cache policy is the way to end up serving
+# `no-store, public, max-age=31536000` and trusting neither.
+
 /*
   Content-Security-Policy: default-src 'none'; script-src 'self' 'unsafe-eval' blob: https://esm.sh; connect-src 'self' https://esm.sh; worker-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none';
   X-Robots-Tag: noindex, nofollow
+
+# The shell names its assets by content hash, so those names change on every
+# deploy. A cached shell points at files that no longer exist, which breaks the
+# sandbox for whoever is holding one — a browser, or Cloudflare's edge, which
+# was serving this as `public` with a cf-cache-status of HIT. The document is
+# tiny and only ever loaded inside an iframe, so caching it gains nothing and
+# costs a working sandbox after each deploy.
+/
+  Cache-Control: no-store
+
+/index.html
+  Cache-Control: no-store
+
+# Safe to cache forever precisely because the names are content-hashed: change
+# a file and it becomes a different URL, so nothing can go stale.
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
