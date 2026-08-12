@@ -1,0 +1,4 @@
+# The sandbox is an execution origin, not content. Nothing here should be
+# indexed; every path returns the same shell.
+User-agent: *
+Disallow: /
