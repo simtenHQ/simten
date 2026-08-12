@@ -17,11 +17,14 @@ We aim to acknowledge new reports within a few days. Once a fix is ready, we pub
 Reports are in scope if they affect any of:
 
 - Published packages: `@simten/core`, `@simten/ui`, `@simten/embed`, `@simten/mcp`
-- The hosted app at [simten.dev](https://simten.dev)
-- The `apps/compiler` and `apps/verifier` Cloudflare Container services
+- The hosted apps at [simten.dev](https://simten.dev) and [play.simten.dev](https://play.simten.dev)
+- [sandbox.simten.dev](https://sandbox.simten.dev), the isolated origin that executes circuit code
+- The `apps/compiler`, `apps/verifier` and `apps/synth` Cloudflare Container services
 - Anything in this repository's CI/CD or release pipeline
 
-Examples of issues we care about: sandbox escape from user-supplied circuit code, XSS in the embed or editor, RCE in the compiler/verifier services, supply-chain risks in the release flow.
+Examples of issues we care about: sandbox escape from user-supplied circuit code, XSS in the embed or editor, RCE in the compiler/verifier/synth services, supply-chain risks in the release flow.
+
+The sandbox is the boundary worth attacking. It runs untrusted circuit code on its own origin under a restrictive CSP, and takes work only over `postMessage` from the page that embeds it. Anything that reaches out of that origin, executes on `simten.dev` or `play.simten.dev`, or persuades the sandbox to accept instructions from somewhere other than its embedding page, is in scope.
 
 ## Out of scope
 
