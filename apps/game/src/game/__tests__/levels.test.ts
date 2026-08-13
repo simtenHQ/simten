@@ -72,11 +72,19 @@ describe.each(LEVELS.map((l) => [l.id, l] as const))('%s', (id, level) => {
     expect(result.status === 'pass' ? 'pass' : JSON.stringify(result)).toBe('pass');
   });
 
-  it('scores at or under par, counting only permitted primitives', async () => {
+  /**
+   * Equality, not `<=`. A par looser than the reference solution passes a `<=`
+   * check while quietly promising the player a target they beat by default,
+   * which is how four levels ended up carrying pars from before gates unlocked
+   * progressively — `xnor` advertised 5 when XOR plus a NOT does it in 2. If
+   * this fails, either the reference solution got cheaper and par should follow,
+   * or par moved and the reference solution has not caught up.
+   */
+  it('scores exactly par, counting only permitted primitives', async () => {
     const result = await grade(localRuntime(), level, SOLUTIONS[id]);
     if (result.status !== 'pass') throw new Error('reference solution did not pass');
     expect(result.gates).toBeGreaterThan(0);
-    if (level.par !== undefined) expect(result.gates).toBeLessThanOrEqual(level.par);
+    if (level.par !== undefined) expect(result.gates).toBe(level.par);
   });
 
   it.each([0, 1] as const)('is not vacuous — a constant %i answer fails', async (value) => {

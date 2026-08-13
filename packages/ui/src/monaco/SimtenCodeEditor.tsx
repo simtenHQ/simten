@@ -58,7 +58,12 @@ export interface SimtenCodeEditorHandle {
 
 export interface SimtenCodeEditorProps
   extends Omit<EditorProps, 'beforeMount' | 'language' | 'defaultLanguage'> {
-  /** Tune or disable Simten's IntelliSense. `false` leaves Monaco untouched. */
+  /**
+   * Tune or disable Simten's IntelliSense. `false` leaves Monaco untouched.
+   *
+   * Re-applied whenever this value changes identity, so give it a stable one
+   * (`useMemo`) unless you want Monaco reconfigured on every render.
+   */
   intellisense?: IntellisenseOptions | false;
   /** Tune or disable network type acquisition for third-party imports. */
   typeAcquisition?: TypeAcquisitionOptions;
@@ -148,6 +153,16 @@ export function SimtenCodeEditor({
     },
     [intellisense, beforeMount],
   );
+
+  // `beforeMount` fires once, so a later change to `intellisense` would never
+  // reach Monaco: the game hands the editor a different set of globals per
+  // level, and navigating between levels left the previous level's set in
+  // place until a full page load. Re-applying is cheap and `addExtraLib`
+  // overwrites by path, so this converges rather than accumulating.
+  useEffect(() => {
+    if (!monaco || intellisense === false) return;
+    setupSimtenIntellisense(monaco, intellisense ?? {});
+  }, [monaco, intellisense]);
 
   const handleMount = useCallback<OnMount>(
     (e, m) => {

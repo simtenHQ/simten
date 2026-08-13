@@ -154,7 +154,8 @@ const PROMPT_OPTIONS: PromptOption[] = [
   {
     label: 'Build a full adder',
     circuit: GateFullAdder,
-    displayCode: `const FullAdder = circuit('FullAdder', {
+    displayCode: `// Adds two bits plus a carry in, so adders chain.
+const FullAdder = circuit('FullAdder', {
   inputs: { a: bit, b: bit, cin: bit },
   outputs: { sum: bit, cout: bit },
   nodes: {
@@ -233,7 +234,8 @@ const PROMPT_OPTIONS: PromptOption[] = [
   {
     label: 'Make a 2-bit binary counter',
     circuit: Counter2Bit,
-    displayCode: `const Counter2Bit = circuit('Counter2Bit', {
+    displayCode: `// Counts 0 to 3, one step per clock tick.
+const Counter2Bit = circuit('Counter2Bit', {
   outputs: { bit0: bit, bit1: bit },
   nodes: {
     dff0: DFlipFlop(),
@@ -301,7 +303,8 @@ const PROMPT_OPTIONS: PromptOption[] = [
   {
     label: 'Make a toggle flip-flop',
     circuit: Toggle,
-    displayCode: `const Toggle = circuit('Toggle', {
+    displayCode: `// Flips between 0 and 1 every clock tick.
+const Toggle = circuit('Toggle', {
   outputs: { q: bit, q_bar: bit },
   nodes: { dff: DFlipFlop(), inv: Not },
   connect: ({
@@ -362,7 +365,8 @@ const PROMPT_OPTIONS: PromptOption[] = [
   {
     label: 'Build a 2-to-1 multiplexer',
     circuit: Mux2to1,
-    displayCode: `const Mux2to1 = circuit('Mux2to1', {
+    displayCode: `// Passes a or b through, whichever sel picks.
+const Mux2to1 = circuit('Mux2to1', {
   inputs: { a: bit, b: bit, sel: bit },
   outputs: { out: bit },
   nodes: {
@@ -790,7 +794,8 @@ interface HeroDemo {
   displayCode: string;
 }
 
-const HALF_ADDER_DISPLAY = `const HalfAdder = circuit('HalfAdder', {
+const HALF_ADDER_DISPLAY = `// Adds two bits, giving sum and carry.
+const HalfAdder = circuit('HalfAdder', {
   inputs: { a: bit, b: bit },
   outputs: { sum: bit, carry: bit },
   nodes: { xor1: Xor, and1: And },

@@ -28,7 +28,7 @@
 
 import type { Circuit } from '@simten/core';
 import type { RLEValue } from '@simten/core/api';
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 // ============================================================================
 // Config
@@ -41,6 +41,18 @@ import { useCallback, useEffect, useRef } from 'react';
 const env = typeof import.meta !== 'undefined' ? (import.meta as any).env : undefined;
 const SANDBOX_ORIGIN: string =
   env?.VITE_SANDBOX_ORIGIN || (env?.PROD ? 'https://sandbox.simten.dev' : 'http://localhost:3002');
+
+// How long to wait for the iframe's `ready` handshake before giving up on it.
+// Nothing else catches a sandbox that never comes up: `iframe.onerror` does not
+// fire for HTTP error statuses (a 403 still loads a document — the error page),
+// so a blocked, blocked-by-extension, or unreachable sandbox used to leave every
+// request queued on `readyQueue` forever, with no rejection and no UI change.
+// Generous enough to cover a cold load on a slow connection.
+const READY_TIMEOUT_MS = 10000;
+
+/** Message given to callers, and shown by the UI, when the sandbox never loads. */
+export const SANDBOX_UNAVAILABLE_ERROR =
+  'Sandbox failed to load. It may be blocked by a browser extension, or unreachable.';
 
 // ============================================================================
 // Types
@@ -56,6 +68,9 @@ const SANDBOX_ORIGIN: string =
  * a node — the sim analog of memory-mapped I/O.
  */
 export type PeripheralState = Record<string, unknown>;
+
+/** Whether the sandbox iframe has completed its handshake, or given up. */
+export type SandboxStatus = 'loading' | 'ready' | 'unavailable';
 
 export interface CompileResult {
   circuits: Circuit[];
@@ -136,6 +151,9 @@ type PendingResolve = (result: SandboxResult) => void;
 interface SandboxState {
   iframe: HTMLIFrameElement | null;
   ready: boolean;
+  /** Set once the ready handshake has timed out. Requests fail fast instead of queueing. */
+  unavailable: boolean;
+  readyTimer: ReturnType<typeof setTimeout> | null;
   pending: Map<string, PendingResolve>;
   readyQueue: Array<() => void>;
   idCounter: number;
@@ -146,6 +164,7 @@ function createIframe(
   container: HTMLElement,
   handleMessage: (event: MessageEvent) => void,
   onCrash: () => void,
+  onReadyTimeout: () => void,
 ): HTMLIFrameElement {
   // Remove old iframe if any
   if (state.iframe) {
@@ -170,6 +189,10 @@ function createIframe(
   container.appendChild(iframe);
   state.iframe = iframe;
   state.ready = false;
+  state.unavailable = false;
+
+  if (state.readyTimer) clearTimeout(state.readyTimer);
+  state.readyTimer = setTimeout(onReadyTimeout, READY_TIMEOUT_MS);
 
   window.addEventListener('message', handleMessage);
 
@@ -285,21 +308,52 @@ export interface SandboxHandle {
   /** Free a slot's simulator + library when no longer needed (e.g. embed unmount). */
   dispose(slot: SimSlot): Promise<void>;
   isReady(): boolean;
+  /**
+   * Reactive load state, for UI that needs to tell the user the sandbox is gone.
+   * `unavailable` is terminal for this iframe: every call resolves to an error
+   * until something recreates it.
+   */
+  status: SandboxStatus;
 }
 
 export function useSandbox(): SandboxHandle {
   const stateRef = useRef<SandboxState>({
     iframe: null,
     ready: false,
+    unavailable: false,
+    readyTimer: null,
     pending: new Map(),
     readyQueue: [],
     idCounter: 0,
   });
 
+  // Mirrors state.ready/state.unavailable into React so consumers can render a
+  // message. The ref stays the source of truth for the message handlers, which
+  // run outside React's lifecycle.
+  const [status, setStatus] = useState<SandboxStatus>('loading');
+
   // Container div injected into document body (avoids React tree)
   const containerRef = useRef<HTMLDivElement | null>(null);
 
   const handleMessageRef = useRef<(event: MessageEvent) => void>(() => {});
+
+  // The iframe never sent `ready`. Fail everything waiting on it — queued sends
+  // are already registered in `pending`, so resolving that map covers both — and
+  // leave `unavailable` set so later calls fail immediately rather than piling
+  // up behind a handshake that is not coming.
+  const markUnavailable = useCallback(() => {
+    const state = stateRef.current;
+    state.readyTimer = null;
+    if (state.ready) return;
+
+    state.unavailable = true;
+    for (const [, resolve] of state.pending) {
+      resolve({ type: 'error', error: SANDBOX_UNAVAILABLE_ERROR });
+    }
+    state.pending.clear();
+    state.readyQueue = [];
+    setStatus('unavailable');
+  }, []);
 
   const recreateIframe = useCallback(() => {
     const state = stateRef.current;
@@ -312,10 +366,17 @@ export function useSandbox(): SandboxHandle {
     }
     state.pending.clear();
     state.readyQueue = [];
+    setStatus('loading');
 
     window.removeEventListener('message', handleMessageRef.current);
-    createIframe(state, container, handleMessageRef.current, recreateIframeRef.current);
-  }, []);
+    createIframe(
+      state,
+      container,
+      handleMessageRef.current,
+      recreateIframeRef.current,
+      markUnavailable,
+    );
+  }, [markUnavailable]);
 
   const handleMessage = useCallback((event: MessageEvent) => {
     if (event.origin !== SANDBOX_ORIGIN) return;
@@ -330,6 +391,12 @@ export function useSandbox(): SandboxHandle {
 
     if (data.type === 'ready') {
       state.ready = true;
+      state.unavailable = false;
+      if (state.readyTimer) {
+        clearTimeout(state.readyTimer);
+        state.readyTimer = null;
+      }
+      setStatus('ready');
       // Flush queued sends
       for (const fn of state.readyQueue) fn();
       state.readyQueue = [];
@@ -357,22 +424,33 @@ export function useSandbox(): SandboxHandle {
     containerRef.current = container;
 
     const state = stateRef.current;
-    createIframe(state, container, handleMessage, recreateIframe);
+    createIframe(state, container, handleMessage, recreateIframe, markUnavailable);
 
     return () => {
       window.removeEventListener('message', handleMessage);
+      if (state.readyTimer) {
+        clearTimeout(state.readyTimer);
+        state.readyTimer = null;
+      }
       container.remove();
       containerRef.current = null;
     };
-  }, [handleMessage]);
+  }, [handleMessage, recreateIframe, markUnavailable]);
 
-  // No timeout here — the sandbox's own 5s worker timeout always sends back an
-  // error response if user code hangs. recreateIframe() is only called by the
-  // iframe's onerror handler (catastrophic crash, failed load, OOM).
+  // No per-request timeout here — the sandbox's own 5s worker timeout always
+  // sends back an error response if user code hangs. The one case that produces
+  // no response at all is an iframe that never loads, and that is covered by the
+  // ready-handshake timeout rather than by timing out each request.
   const send = useCallback(
     <T extends SandboxResult>(message: object): Promise<T | SandboxError> => {
       return new Promise((resolve) => {
         const state = stateRef.current;
+
+        if (state.unavailable) {
+          resolve({ type: 'error', error: SANDBOX_UNAVAILABLE_ERROR } as SandboxError);
+          return;
+        }
+
         const id = nextId(state);
         const msgWithId = { ...message, id };
 
@@ -622,6 +700,7 @@ export function useSandbox(): SandboxHandle {
   const isReady = useCallback(() => stateRef.current.ready, []);
 
   return {
+    status,
     compile,
     compileIR,
     tick,

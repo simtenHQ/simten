@@ -27,7 +27,7 @@ import type {
   SimulatorEngine,
 } from '@simten/core/simulator';
 import { HexDisplay, Input, Led, Output, Switch } from '@simten/core/std';
-import { type EvalSource, useSandboxContext } from '@simten/ui/sandbox';
+import { type EvalSource, SANDBOX_UNAVAILABLE_ERROR, useSandboxContext } from '@simten/ui/sandbox';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 const TOP_LEVEL_NODE = '__top__';
@@ -730,7 +730,10 @@ export function useCircuitSimulator(
     inputs,
     cycleCount: cycle,
     ready,
-    error: null,
+    // A sandbox that never loaded is the one failure the simulator cannot report
+    // through a result, because no call ever completes. Surfacing it here means
+    // the viewer shows a message instead of an empty canvas.
+    error: sandbox.status === 'unavailable' ? SANDBOX_UNAVAILABLE_ERROR : null,
     isSequential,
     circuit: harnessedCircuit,
     portValues: portValues.size > 0 ? portValues : null,
