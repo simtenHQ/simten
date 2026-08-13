@@ -6,9 +6,10 @@ export type {
   ResetResult,
   SandboxError,
   SandboxHandle,
+  SandboxStatus,
   SetNodeResult,
   SimSlot,
   SimulateResult,
   TickResult,
 } from './useSandbox.js';
-export { useSandbox } from './useSandbox.js';
+export { SANDBOX_UNAVAILABLE_ERROR, useSandbox } from './useSandbox.js';
