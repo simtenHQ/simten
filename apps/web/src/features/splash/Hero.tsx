@@ -89,7 +89,8 @@ export const FigletDemo = circuit('FigletDemo', {
 // below, exported so ClaudeDemoSection can render it without duplicating the
 // figlet ROM-generation logic. Kept as a free const rather than read out of
 // DEMOS at runtime to avoid a circular-feeling self-reference.
-export const FIGLET_DEMO_CODE = `import figlet from 'figlet';
+export const FIGLET_DEMO_CODE = `// Bakes an npm package's output into a ROM.
+import figlet from 'figlet';
 import smallFont from 'figlet/fonts/Small.js';
 figlet.parseFont('Small', smallFont);
 

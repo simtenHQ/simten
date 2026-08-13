@@ -253,7 +253,7 @@ export default circuit('Nor1', {
       { inputs: { a: 1, b: 0 }, expect: { result: 0 } },
       { inputs: { a: 1, b: 1 }, expect: { result: 0 } },
     ],
-    par: 4,
+    par: 2,
     outro: {
       headline: 'Four gates deep',
       body: 'Every gate you finish makes the next one cheaper, because you stop solving it from scratch and start bolting a NOT onto something that already works. XOR does not give you that. It needs a shape you have not built yet.',
@@ -291,10 +291,10 @@ export default circuit('Xor1', {
       { inputs: { a: 1, b: 0 }, expect: { result: 1 } },
       { inputs: { a: 1, b: 1 }, expect: { result: 0 } },
     ],
-    par: 4,
+    par: 3,
     outro: {
-      headline: 'Four NANDs, one XOR',
-      body: "That's the gate an adder is built from, so you'll be reaching for it again. One left in the set, and it is XOR with the answer flipped.",
+      headline: 'Three gates, one XOR',
+      body: "Three if you used what you have earned, four if you stuck to NAND alone. Either way it's the gate an adder is built from, so you'll be reaching for it again. One left in the set, and it is XOR with the answer flipped.",
     },
   },
 
@@ -330,10 +330,10 @@ export default circuit('Xnor1', {
       { inputs: { a: 1, b: 0 }, expect: { result: 0 } },
       { inputs: { a: 1, b: 1 }, expect: { result: 1 } },
     ],
-    par: 5,
+    par: 2,
     outro: {
       headline: 'Every gate, from one gate',
-      body: 'NOT, AND, OR, NOR, XOR, XNOR. Six gates out of the only one you were given. What you cannot do yet is use any of them again: each one is sealed inside the level that built it. That is what the last level fixes.',
+      body: 'NOT, AND, OR, NOR, XOR, XNOR. Six gates out of the only one you were given, and each one stayed with you as you went. What none of them can do yet is leave: a circuit made of switches and a lamp is something you look at, not something another circuit can use. That is what the next level fixes.',
     },
   },
 
@@ -341,12 +341,12 @@ export default circuit('Xnor1', {
     id: 'making-a-component',
     title: 'Making a Component',
     brief:
-      'The XOR from two levels back, but this time give the circuit `inputs` and `outputs` instead of switches and a lamp. Watch what happens to the diagram: it becomes one box. That is the trade — you can no longer see inside, and in exchange anything can now use it.',
+      'The XOR from two levels back, but this time give the circuit `inputs` and `outputs` instead of switches and a lamp. You have XOR now, so the inside is a single node: the lesson here is the edges, not the wiring. Watch what happens to the diagram. It becomes one box, and that is the trade: you can no longer see inside, and in exchange anything can now use it.',
     target: 'Xor2',
     inputs: ['a', 'b'],
     outputs: ['out'],
     allowed: ['Nand', 'Not', 'And', 'Or', 'Nor', 'Xor', 'Xnor'],
-    stub: `// Ports, not switches. Still NAND only.
+    stub: `// Ports, not switches. Every gate you have built is available.
 //
 // \`inputs\` and \`outputs\` are the circuit's edges — what it looks like from
 // the outside. Wire them with \`inputs.a.to(...)\` and \`....to(outputs.out)\`.
@@ -372,7 +372,7 @@ export default circuit('Xor2', {
       { inputs: { a: 1, b: 0 }, expect: { out: 1 } },
       { inputs: { a: 1, b: 1 }, expect: { out: 0 } },
     ],
-    par: 4,
+    par: 1,
     outro: {
       headline: "It's a component now",
       body: 'Ports instead of switches, and the diagram collapsed into one box. That is what lets circuits build on each other, which is where this goes next.',

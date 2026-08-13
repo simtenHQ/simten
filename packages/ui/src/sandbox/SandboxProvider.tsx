@@ -30,6 +30,7 @@ const NULL_HANDLE: SandboxHandle = {
   pruneSnapshots: async () => ({ type: 'error', error: 'Sandbox not ready' }),
   dispose: async () => {},
   isReady: () => false,
+  status: 'loading',
 };
 
 export function useSandboxContext(): SandboxHandle {
