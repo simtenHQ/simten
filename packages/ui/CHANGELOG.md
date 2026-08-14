@@ -1,5 +1,15 @@
 # @simten/ui
 
+## 0.11.0
+
+### Minor Changes
+
+- 047b33c: Report a sandbox that never loads instead of hanging forever. Requests made before the iframe's ready handshake used to queue indefinitely if the handshake never arrived, so a blocked or unreachable sandbox left every promise unsettled and the canvas frozen with no error. `useSandbox` now gives up after 10s, fails everything waiting with a real error, and exposes a `status` of `loading | ready | unavailable`. `useCircuitSimulator` surfaces that through `SimulatorState.error`, so `CircuitViewer` shows a message rather than an empty canvas.
+
+### Patch Changes
+
+- 047b33c: Re-apply Monaco IntelliSense when `SimtenCodeEditor`'s `intellisense` prop changes. It was only applied in `beforeMount`, which fires once, so a consumer that varies the available globals at runtime kept the set from first mount until a full page reload.
+
 ## 0.10.0
 
 ### Minor Changes
