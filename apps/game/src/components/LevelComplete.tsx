@@ -95,12 +95,17 @@ export function LevelComplete({ open, onOpenChange, level, next }: LevelComplete
               Next: {next.title} →
             </Link>
           ) : (
-            <Link
-              to="/"
+            /* End of the campaign, and the highest-intent moment the game
+               gets: someone has just built an adder out of NANDs and knows
+               what it cost. Sending them back to a map of levels they have
+               already solved wastes it. The editor is where the same language
+               stops being a puzzle and starts being a tool. */
+            <a
+              href="https://simten.dev/circuit?example=rv32i-computer"
               className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground no-underline"
             >
-              That is the last one — back to the map
-            </Link>
+              See where this goes →
+            </a>
           )}
         </DialogFooter>
       </DialogContent>
