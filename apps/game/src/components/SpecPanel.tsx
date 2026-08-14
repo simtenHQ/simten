@@ -97,6 +97,28 @@ export function SpecPanel({ level, result, activeRow, provenRows }: SpecPanelPro
         <p className="text-sm leading-relaxed text-muted-foreground">{level.brief}</p>
       </div>
 
+      {/* What you may build with, stated up front. It used to appear only in
+          the `forbidden` failure message, so the way to find out what a level
+          permits was to use something it did not. The unlock line on the
+          previous level's completion card promises a gate; this is where that
+          promise is visible on arrival. */}
+      <div className="min-w-[160px] shrink-0">
+        <Heading>Gates</Heading>
+        <ul className="flex max-w-[240px] flex-wrap gap-1.5">
+          {level.allowed.map((name) => (
+            <li
+              key={name}
+              className="rounded border border-border px-1.5 py-0.5 font-mono text-xs text-foreground"
+            >
+              {name}
+            </li>
+          ))}
+        </ul>
+        <p className="mt-1.5 text-[11px] text-muted-foreground">
+          Switches and lamps are always free.
+        </p>
+      </div>
+
       {reason && (
         <div className="min-w-[220px] max-w-md shrink-0">
           <Heading>Not yet</Heading>
