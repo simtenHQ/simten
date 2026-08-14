@@ -23,7 +23,7 @@
 
 import { describe, expect, it } from 'vitest';
 import { grade } from '../grade';
-import { LEVELS, LEVELS_BY_ID } from '../levels';
+import { gatesGainedAfter, LEVELS, LEVELS_BY_ID, nextLevel } from '../levels';
 import { SOLUTIONS } from '../solutions';
 import type { Level } from '../types';
 import { localRuntime } from './local-runtime';
@@ -62,6 +62,21 @@ export const ${level.target} = circuit('${level.target}', {
 describe('every level has a reference solution', () => {
   it('covers each level exactly, with no orphans', () => {
     expect(Object.keys(SOLUTIONS).sort()).toEqual(LEVELS.map((l) => l.id).sort());
+  });
+});
+
+describe('every level rewards the player with something to show', () => {
+  /**
+   * The completion card's reward block used to render only when the next level
+   * added a gate, which was true for six of ten levels: the first (its baseline
+   * is nothing, so nothing is "new") and the last three (they teach composition
+   * rather than hand over a part) showed no block at all, and the card changed
+   * shape partway through the campaign. Either a derived gate or an authored
+   * `outro.reward` has to be there.
+   */
+  it.each(LEVELS.map((l) => [l.id, l] as const))('%s', (_id, level) => {
+    const gained = gatesGainedAfter(level, nextLevel(level.id));
+    expect(gained.length > 0 || Boolean(level.outro.reward)).toBe(true);
   });
 });
 

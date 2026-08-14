@@ -376,6 +376,7 @@ export default circuit('Xor2', {
     outro: {
       headline: "It's a component now",
       body: 'Ports instead of switches, and the diagram collapsed into one box. That is what lets circuits build on each other, which is where this goes next.',
+      reward: 'Composition. Anything can use this XOR now, including you.',
     },
   },
 
@@ -420,6 +421,7 @@ export default circuit('HalfAdder', {
     outro: {
       headline: 'That is addition',
       body: 'Sum is XOR, carry is AND, and together they add. It is called half an adder because it cannot take a carry coming in — which is the next problem, and the reason one of these is never enough.',
+      reward: 'No new parts. The next level is built out of this one.',
     },
   },
 
@@ -483,6 +485,7 @@ export default circuit('FullAdder', {
     outro: {
       headline: 'Built from what you built',
       body: 'Two half adders and an OR, and you never touched a gate. That is the whole point of wrapping something in ports: every adder from here up is these chained together, the carry out of one bit becoming the carry in of the next. Chain enough of them and you have an ALU, then a CPU. Same language, same editor, and it runs on real hardware.',
+      reward: 'Every gate in the set, and the adder they build.',
     },
   },
 ];
@@ -496,4 +499,19 @@ export function levelIndex(id: string): number {
 export function nextLevel(id: string): Level | undefined {
   const i = levelIndex(id);
   return i >= 0 ? LEVELS[i + 1] : undefined;
+}
+
+/**
+ * Gates the player walks away from `level` holding that they did not have on
+ * arrival — what the completion card announces as unlocked.
+ *
+ * Normally that is whatever the next level adds. The first level is the
+ * exception: its baseline is nothing at all, so the gate it hands over is its
+ * own `allowed` set. Without that case the opening card claimed in prose to
+ * have unlocked NAND while showing no unlock at all, which is the one card
+ * every player sees.
+ */
+export function gatesGainedAfter(level: Level, next: Level | undefined): string[] {
+  if (levelIndex(level.id) === 0) return level.allowed;
+  return next ? next.allowed.filter((name) => !level.allowed.includes(name)) : [];
 }
