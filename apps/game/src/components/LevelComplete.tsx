@@ -43,28 +43,40 @@ export function LevelComplete({ open, onOpenChange, level, next }: LevelComplete
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle className="text-2xl">{level.outro.headline}</DialogTitle>
+      <DialogContent className="gap-0 sm:max-w-lg">
+        <DialogHeader className="space-y-2">
+          {/* Names the level that was just finished. The headline speaks about
+              what was learned rather than which puzzle it was, so without this
+              the card never says what you actually completed. */}
+          <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
+            {level.title} solved
+          </p>
+          <DialogTitle className="text-2xl leading-tight">{level.outro.headline}</DialogTitle>
         </DialogHeader>
 
         {/* The body doubles as the dialog's accessible description. Radix warns
             when a DialogContent has none, and this is the text that describes
             it — a separate sr-only line would say the same thing twice. */}
-        <DialogDescription className="text-sm leading-relaxed text-muted-foreground">
+        <DialogDescription className="mt-4 text-sm leading-relaxed text-muted-foreground">
           {level.outro.body}
         </DialogDescription>
 
+        {/* The reward, given its own block rather than trailing the prose as
+            another grey paragraph. Earning a gate is the one thing on this card
+            that changes what you can do next, so it should not read as a
+            footnote to the text above it. */}
         {unlocked.length > 0 && (
-          <p className="text-sm text-muted-foreground">
-            <span className="font-mono font-medium text-emerald-600 dark:text-emerald-400">
-              {unlocked.join(', ')}
-            </span>{' '}
-            unlocked — you can use {unlocked.length === 1 ? 'it' : 'them'} from here on.
-          </p>
+          <div className="mt-5 rounded-md border border-emerald-600/25 bg-emerald-500/[0.06] px-3 py-2.5">
+            <p className="text-sm leading-relaxed text-foreground">
+              <span className="font-mono font-medium text-emerald-600 dark:text-emerald-400">
+                {unlocked.join(', ')}
+              </span>{' '}
+              unlocked. You can use {unlocked.length === 1 ? 'it' : 'them'} from here on.
+            </p>
+          </div>
         )}
 
-        <DialogFooter>
+        <DialogFooter className="mt-6 gap-2">
           {/* Closing is a real choice, not a dismissal: it is how you go back
               and try to beat par. */}
           <button
