@@ -82,19 +82,6 @@ export interface Level {
     headline: string;
     /** A sentence or two: what you made, and the hook into the next level. */
     body: string;
-    /**
-     * What the completion card's reward block says when the level grants no new
-     * gate.
-     *
-     * The gate list is derived, so it can only ever name something the grader
-     * accepts — but four levels gain something that is not a primitive (the
-     * first one, where the baseline is nothing, and the last three, which teach
-     * composition rather than hand over a part). They rendered no block at all,
-     * so the card changed shape halfway through the campaign. Authored prose is
-     * safe here in a way an authored gate name would not be: it promises
-     * nothing the grader could reject.
-     */
-    reward?: string;
   };
 }
 

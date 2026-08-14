@@ -129,7 +129,7 @@ export default circuit('Not1', {
     par: 1,
     outro: {
       headline: 'One gate down',
-      body: 'You built NOT out of nothing but NAND. Every other gate works the same way. AND is next, and it takes two of them.',
+      body: 'You built NOT out of nothing but NAND. Every other gate works the same way. AND is next.',
     },
   },
 
@@ -376,7 +376,6 @@ export default circuit('Xor2', {
     outro: {
       headline: "It's a component now",
       body: 'Ports instead of switches, and the diagram collapsed into one box. That is what lets circuits build on each other, which is where this goes next.',
-      reward: 'Composition. Anything can use this XOR now, including you.',
     },
   },
 
@@ -421,7 +420,6 @@ export default circuit('HalfAdder', {
     outro: {
       headline: 'That is addition',
       body: 'Sum is XOR, carry is AND, and together they add. It is called half an adder because it cannot take a carry coming in — which is the next problem, and the reason one of these is never enough.',
-      reward: 'No new parts. The next level is built out of this one.',
     },
   },
 
@@ -485,7 +483,6 @@ export default circuit('FullAdder', {
     outro: {
       headline: 'Built from what you built',
       body: 'Two half adders and an OR, and you never touched a gate. That is the whole point of wrapping something in ports: every adder from here up is these chained together, the carry out of one bit becoming the carry in of the next. Chain enough of them and you have an ALU, then a CPU. Same language, same editor, and it runs on real hardware.',
-      reward: 'Every gate in the set, and the adder they build.',
     },
   },
 ];

@@ -33,16 +33,15 @@ interface LevelCompleteProps {
 
 export function LevelComplete({ open, onOpenChange, level, next }: LevelCompleteProps) {
   /**
-   * What the next level lets you use that this one did not.
+   * What the next level lets you use that this one did not, and the full set it
+   * joins.
    *
-   * Derived rather than authored, so it can only ever name something the grader
-   * will actually accept and the editor will actually offer — a hardcoded
-   * "unlocked!" would be a promise the game does not keep. Where the level
-   * grants no gate, `outro.reward` says what was gained instead, so the card
-   * keeps its shape for all ten levels rather than for the middle six.
+   * Both derived, so the card can only ever name something the grader accepts
+   * and the editor offers — a hardcoded "unlocked!" would be a promise the game
+   * does not keep.
    */
   const unlocked = gatesGainedAfter(level, next);
-  const reward = unlocked.length > 0 ? null : level.outro.reward;
+  const owned = next?.allowed ?? level.allowed;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -65,26 +64,35 @@ export function LevelComplete({ open, onOpenChange, level, next }: LevelComplete
           {level.outro.body}
         </DialogDescription>
 
-        {/* The reward, given its own block rather than trailing the prose as
-            another grey paragraph. Earning a gate is the one thing on this card
-            that changes what you can do next, so it should not read as a
-            footnote to the text above it. */}
-        {(unlocked.length > 0 || reward) && (
-          <div className="mt-5 rounded-md border border-emerald-600/25 bg-emerald-500/[0.06] px-3 py-2.5">
-            <p className="text-sm leading-relaxed text-foreground">
-              {unlocked.length > 0 ? (
-                <>
-                  <span className="font-mono font-medium text-emerald-600 dark:text-emerald-400">
-                    {unlocked.join(', ')}
-                  </span>{' '}
-                  unlocked. You can use {unlocked.length === 1 ? 'it' : 'them'} from here on.
-                </>
-              ) : (
-                reward
-              )}
-            </p>
-          </div>
-        )}
+        {/* What you leave with, as things rather than a sentence about things.
+            The row grows by one on each of the first seven levels, so the
+            reward is watching the set fill up — which a line of prose saying
+            "Xor unlocked" cannot do.
+
+            The last three levels add no gate; they add a circuit. Showing that
+            keeps the block in place without pretending a part changed hands,
+            and "built" rather than "unlocked" is deliberate: the campaign does
+            not let a later level reuse your HalfAdder, so claiming an unlock
+            would promise something the grader rejects. */}
+        <div className="mt-5">
+          <p className="mb-2 text-[11px] uppercase tracking-wider text-muted-foreground">
+            {unlocked.length > 0 ? 'Your gates' : 'You built'}
+          </p>
+          <ul className="flex flex-wrap gap-1.5">
+            {(unlocked.length > 0 ? owned : [level.target]).map((name) => (
+              <li
+                key={name}
+                className={
+                  unlocked.length === 0 || unlocked.includes(name)
+                    ? 'rounded border border-emerald-600/40 bg-emerald-500/10 px-2 py-1 font-mono text-xs font-medium text-emerald-600 dark:text-emerald-400'
+                    : 'rounded border border-border px-2 py-1 font-mono text-xs text-muted-foreground'
+                }
+              >
+                {name}
+              </li>
+            ))}
+          </ul>
+        </div>
 
         <DialogFooter className="mt-6 gap-2">
           {/* Closing is a real choice, not a dismissal: it is how you go back
