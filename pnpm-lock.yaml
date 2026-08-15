@@ -82,7 +82,7 @@ importers:
         version: 1.167.0(react-dom@19.2.0)(react@19.2.0)
       '@tanstack/react-router-devtools':
         specifier: 1.166.7
-        version: 1.166.7(@tanstack/react-router@1.167.0)(@tanstack/router-core@1.171.17)(csstype@3.2.3)(react-dom@19.2.0)(react@19.2.0)
+        version: 1.166.7(@tanstack/react-router@1.167.0)(@tanstack/router-core@1.171.21)(csstype@3.2.3)(react-dom@19.2.0)(react@19.2.0)
       '@tanstack/react-start':
         specifier: 1.166.11
         version: 1.166.11(react-dom@19.2.0)(react@19.2.0)(vite@7.3.5)
@@ -242,10 +242,10 @@ importers:
         version: 1.167.0(react-dom@19.2.0)(react@19.2.0)
       '@tanstack/react-router-devtools':
         specifier: ^1.132.0
-        version: 1.166.7(@tanstack/react-router@1.167.0)(@tanstack/router-core@1.171.17)(csstype@3.2.3)(react-dom@19.2.0)(react@19.2.0)
+        version: 1.166.7(@tanstack/react-router@1.167.0)(@tanstack/router-core@1.171.21)(csstype@3.2.3)(react-dom@19.2.0)(react@19.2.0)
       '@tanstack/react-router-ssr-query':
         specifier: ^1.131.7
-        version: 1.166.7(@tanstack/query-core@5.101.4)(@tanstack/react-query@5.101.4)(@tanstack/react-router@1.167.0)(@tanstack/router-core@1.171.17)(react-dom@19.2.0)(react@19.2.0)
+        version: 1.166.7(@tanstack/query-core@5.101.4)(@tanstack/react-query@5.101.4)(@tanstack/react-router@1.167.0)(@tanstack/router-core@1.171.21)(react-dom@19.2.0)(react@19.2.0)
       '@tanstack/react-start':
         specifier: ^1.132.0
         version: 1.166.11(react-dom@19.2.0)(react@19.2.0)(vite@7.3.5)
@@ -283,8 +283,8 @@ importers:
         specifier: ^0.55.1
         version: 0.55.1
       nanoid:
-        specifier: ^5.1.6
-        version: 5.1.6
+        specifier: ^5.1.16
+        version: 5.1.16
       radix-ui:
         specifier: ^1.4.3
         version: 1.4.3(@types/react-dom@19.2.3)(@types/react@19.2.14)(react-dom@19.2.0)(react@19.2.0)
@@ -492,8 +492,8 @@ importers:
         specifier: workspace:^
         version: link:../core
       ws:
-        specifier: ^8.21.0
-        version: 8.21.0
+        specifier: ^8.21.1
+        version: 8.21.3
       zod:
         specifier: ^3.24.0
         version: 3.25.76
@@ -550,8 +550,8 @@ importers:
         specifier: ^1.5.0
         version: 1.5.0
       nanoid:
-        specifier: ^5.1.6
-        version: 5.1.6
+        specifier: ^5.1.16
+        version: 5.1.16
       radix-ui:
         specifier: ^1.4.3
         version: 1.4.3(@types/react-dom@19.2.3)(@types/react@19.2.14)(react-dom@19.2.0)(react@19.2.0)
@@ -1119,6 +1119,7 @@ packages:
     dependencies:
       unenv: 2.0.0-rc.24
       workerd: 1.20260310.1
+    dev: true
 
   /@cloudflare/unenv-preset@2.15.0(unenv@2.0.0-rc.24)(workerd@1.20260312.1):
     resolution: {integrity: sha512-EGYmJaGZKWl+X8tXxcnx4v2bOZSjQeNI5dWFeXivgX9+YCT69AkzHHwlNbVpqtEUTbew8eQurpyOpeN8fg00nw==}
@@ -1138,7 +1139,7 @@ packages:
       vite: ^6.1.0 || ^7.0.0
       wrangler: ^4.73.0
     dependencies:
-      '@cloudflare/unenv-preset': 2.15.0(unenv@2.0.0-rc.24)(workerd@1.20260310.1)
+      '@cloudflare/unenv-preset': 2.15.0(unenv@2.0.0-rc.24)(workerd@1.20260312.1)
       miniflare: 4.20260312.0
       unenv: 2.0.0-rc.24
       vite: 7.3.5(@types/node@22.20.1)(tsx@4.21.0)
@@ -1155,6 +1156,7 @@ packages:
     cpu: [x64]
     os: [darwin]
     requiresBuild: true
+    dev: true
     optional: true
 
   /@cloudflare/workerd-darwin-64@1.20260312.1:
@@ -1171,6 +1173,7 @@ packages:
     cpu: [arm64]
     os: [darwin]
     requiresBuild: true
+    dev: true
     optional: true
 
   /@cloudflare/workerd-darwin-arm64@1.20260312.1:
@@ -1187,6 +1190,7 @@ packages:
     cpu: [x64]
     os: [linux]
     requiresBuild: true
+    dev: true
     optional: true
 
   /@cloudflare/workerd-linux-64@1.20260312.1:
@@ -1203,6 +1207,7 @@ packages:
     cpu: [arm64]
     os: [linux]
     requiresBuild: true
+    dev: true
     optional: true
 
   /@cloudflare/workerd-linux-arm64@1.20260312.1:
@@ -1219,6 +1224,7 @@ packages:
     cpu: [x64]
     os: [win32]
     requiresBuild: true
+    dev: true
     optional: true
 
   /@cloudflare/workerd-windows-64@1.20260312.1:
@@ -4283,7 +4289,7 @@ packages:
     resolution: {integrity: sha512-lWl88uLAz7ZhwNdLH6A3tBOSEuBCrvnY9Fzr5JPdzJRFdM5ZFdyNWz1Bf5l/F3GU57VodrN0KCFi9OA26H5Kpg==}
     engines: {node: '>=18'}
     dependencies:
-      ws: 8.21.0
+      ws: 8.21.3
     transitivePeerDependencies:
       - bufferutil
       - utf-8-validate
@@ -4366,8 +4372,8 @@ packages:
     engines: {node: '>=20.19'}
     dev: true
 
-  /@tanstack/history@1.162.0:
-    resolution: {integrity: sha512-79pf/RkhteYZTRgcR4F9kbk84P2N8rugQJswxfIqovlbRiT3yI7eBE+5QorIrZaOKktsgzRlXh1l/du/xpl4iA==}
+  /@tanstack/history@1.162.1:
+    resolution: {integrity: sha512-DR9t6lfLVdrjgCwpglrR9DR7Ok8/HlXjcOE+goWXF3zyuLUO/ug7vMbSFxTqrQTtbRghJfyhmIZ0S6LhPIy44w==}
     engines: {node: '>=20.19'}
     dev: false
 
@@ -4405,7 +4411,7 @@ packages:
       react: 19.2.0
     dev: false
 
-  /@tanstack/react-router-devtools@1.166.7(@tanstack/react-router@1.167.0)(@tanstack/router-core@1.171.17)(csstype@3.2.3)(react-dom@19.2.0)(react@19.2.0):
+  /@tanstack/react-router-devtools@1.166.7(@tanstack/react-router@1.167.0)(@tanstack/router-core@1.171.21)(csstype@3.2.3)(react-dom@19.2.0)(react@19.2.0):
     resolution: {integrity: sha512-sAh3gA3wkMvUI6rRLPW4lfP0XxeEA0wrlv4tW1cinb7eoD3avcdKwiE9jhQ3DgFlhVsHa9fa3AKxH46Y/d/e1g==}
     engines: {node: '>=20.19'}
     peerDependencies:
@@ -4418,15 +4424,15 @@ packages:
         optional: true
     dependencies:
       '@tanstack/react-router': 1.167.0(react-dom@19.2.0)(react@19.2.0)
-      '@tanstack/router-core': 1.171.17
-      '@tanstack/router-devtools-core': 1.166.7(@tanstack/router-core@1.171.17)(csstype@3.2.3)
+      '@tanstack/router-core': 1.171.21
+      '@tanstack/router-devtools-core': 1.166.7(@tanstack/router-core@1.171.21)(csstype@3.2.3)
       react: 19.2.0
       react-dom: 19.2.0(react@19.2.0)
     transitivePeerDependencies:
       - csstype
     dev: false
 
-  /@tanstack/react-router-ssr-query@1.166.7(@tanstack/query-core@5.101.4)(@tanstack/react-query@5.101.4)(@tanstack/react-router@1.167.0)(@tanstack/router-core@1.171.17)(react-dom@19.2.0)(react@19.2.0):
+  /@tanstack/react-router-ssr-query@1.166.7(@tanstack/query-core@5.101.4)(@tanstack/react-query@5.101.4)(@tanstack/react-router@1.167.0)(@tanstack/router-core@1.171.21)(react-dom@19.2.0)(react@19.2.0):
     resolution: {integrity: sha512-GiPV0JuygPlkyH0SYhAzks2FO5Rdym15ScXLQXjOVziaUBum6as6TXYXk486jtdz9JHfxSIoUBgBjCBO1c+XZg==}
     engines: {node: '>=20.19'}
     peerDependencies:
@@ -4439,7 +4445,7 @@ packages:
       '@tanstack/query-core': 5.101.4
       '@tanstack/react-query': 5.101.4(react@19.2.0)
       '@tanstack/react-router': 1.167.0(react-dom@19.2.0)(react@19.2.0)
-      '@tanstack/router-ssr-query-core': 1.166.7(@tanstack/query-core@5.101.4)(@tanstack/router-core@1.171.17)
+      '@tanstack/router-ssr-query-core': 1.166.7(@tanstack/query-core@5.101.4)(@tanstack/router-core@1.171.21)
       react: 19.2.0
       react-dom: 19.2.0(react@19.2.0)
     transitivePeerDependencies:
@@ -4575,17 +4581,17 @@ packages:
       tiny-warning: 1.0.3
     dev: true
 
-  /@tanstack/router-core@1.171.17:
-    resolution: {integrity: sha512-jaW4vGn+S0Txcz4HgARz9VN2BlgcyGJwIrZ2Vzo9FoJje8wzIiRSX+BMts6KGANXB/jWr+vLXJ3fen50ge2ZcA==}
+  /@tanstack/router-core@1.171.21:
+    resolution: {integrity: sha512-t6xUHBO94nQDrPHPh6ag5UuKHWIkVjq9s63q2ctbxgzq3vtSoGKmAIdLD5o+NU6JUS1ppXRHgL0YGzEHvH32Ng==}
     engines: {node: '>=20.19'}
     dependencies:
-      '@tanstack/history': 1.162.0
+      '@tanstack/history': 1.162.1
       cookie-es: 3.1.1
       seroval: 1.6.2
       seroval-plugins: 1.6.2(seroval@1.6.2)
     dev: false
 
-  /@tanstack/router-devtools-core@1.166.7(@tanstack/router-core@1.171.17)(csstype@3.2.3):
+  /@tanstack/router-devtools-core@1.166.7(@tanstack/router-core@1.171.21)(csstype@3.2.3):
     resolution: {integrity: sha512-/OGLZlrw5NSNd9/PTL8vPSpmjxIbXNoeJATMHlU3YLCBVBtLx41CHIRc7OLkjyfVFJ4Sq7Pq+2/YH8PChShefg==}
     engines: {node: '>=20.19'}
     peerDependencies:
@@ -4595,7 +4601,7 @@ packages:
       csstype:
         optional: true
     dependencies:
-      '@tanstack/router-core': 1.171.17
+      '@tanstack/router-core': 1.171.21
       clsx: 2.1.1
       csstype: 3.2.3
       goober: 2.1.18(csstype@3.2.3)
@@ -4674,7 +4680,7 @@ packages:
       - supports-color
     dev: false
 
-  /@tanstack/router-ssr-query-core@1.166.7(@tanstack/query-core@5.101.4)(@tanstack/router-core@1.171.17):
+  /@tanstack/router-ssr-query-core@1.166.7(@tanstack/query-core@5.101.4)(@tanstack/router-core@1.171.21):
     resolution: {integrity: sha512-NXUcZtT5uR67dRPl7s6/17ThXtXERCQN10STO5JRNuvlzwblY9e/QOr04W7Q8IxlhrthL21J1PPuIZTdEBBPEQ==}
     engines: {node: '>=20.19'}
     peerDependencies:
@@ -4682,7 +4688,7 @@ packages:
       '@tanstack/router-core': '>=1.127.0'
     dependencies:
       '@tanstack/query-core': 5.101.4
-      '@tanstack/router-core': 1.171.17
+      '@tanstack/router-core': 1.171.21
     dev: false
 
   /@tanstack/router-utils@1.161.4:
@@ -8286,13 +8292,13 @@ packages:
       thenify-all: 1.6.0
     dev: false
 
-  /nanoid@3.3.11:
-    resolution: {integrity: sha512-N8SpfPUnUp1bK+PMYW8qSWdl9U+wwNWI4QKxOYDy9JAro3WMX7p2OeVRF9v+347pnakNevPmiHhNmZ2HbFA76w==}
+  /nanoid@3.3.18:
+    resolution: {integrity: sha512-DTg4MJbGMWkfi6VZFdNt2/caMbQy4Ou+Op/hJQvGEWcnVfoA1QA+xzRKAzw9jD6+GVOOeYr/mIcuDSdug6F6+w==}
     engines: {node: ^10 || ^12 || ^13.7 || ^14 || >=15.0.1}
     hasBin: true
 
-  /nanoid@5.1.6:
-    resolution: {integrity: sha512-c7+7RQ+dMB5dPwwCp4ee1/iV/q2P6aK1mTZcfr1BTuVlyW9hJYiMPybJCcnBlQtuSmTIWNeazm/zqNoZSSElBg==}
+  /nanoid@5.1.16:
+    resolution: {integrity: sha512-kVrnsrJqMR8+oLJnGEmSWw9BivK5mt7H3FZatVRjrc5wGqFYuBxX1yG7+A7Gi5AefkX6t/oCkizcQgpu0cY1dQ==}
     engines: {node: ^18 || >=20}
     hasBin: true
     dev: false
@@ -8600,7 +8606,7 @@ packages:
     resolution: {integrity: sha512-3Ybi1tAuwAP9s0r1UQ2J4n5Y0G05bJkpUIO0/bI9MhwmD70S5aTWbXGBwxHrelT+XM1k6dM0pk+SwNkpTRN7Pg==}
     engines: {node: ^10 || ^12 || >=14}
     dependencies:
-      nanoid: 3.3.11
+      nanoid: 3.3.18
       picocolors: 1.1.1
       source-map-js: 1.2.1
 
@@ -10367,6 +10373,7 @@ packages:
       '@cloudflare/workerd-linux-64': 1.20260310.1
       '@cloudflare/workerd-linux-arm64': 1.20260310.1
       '@cloudflare/workerd-windows-64': 1.20260310.1
+    dev: true
 
   /workerd@1.20260312.1:
     resolution: {integrity: sha512-nNpPkw9jaqo79B+iBCOiksx+N62xC+ETIfyzofUEdY3cSOHJg6oNnVSHm7vHevzVblfV76c8Gr0cXHEapYMBEg==}
@@ -10485,8 +10492,8 @@ packages:
         optional: true
     dev: true
 
-  /ws@8.21.0:
-    resolution: {integrity: sha512-Vsp28b7DRcimFQvrqu2Wek3z1iYxDCWqHYB8Qsnk/S4RfaCQzPGPyBNuVjJV3cd6UiKtUtp6sNM77gWvzcCH+g==}
+  /ws@8.21.3:
+    resolution: {integrity: sha512-201TZ/kPWxoPr/OKWjquZR1SWKXcvxdH+e1xrx89b3YbmzLMFCLfnaG1HFIgWzJOEWZ7MvpK++odZufgYR50Rw==}
     engines: {node: '>=10.0.0'}
     peerDependencies:
       bufferutil: ^4.0.1
