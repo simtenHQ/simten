@@ -87,7 +87,7 @@ export function BaseNode({
             />
             {showPortLabels && (
               <div
-                className="absolute text-[9px] font-mono text-[var(--embed-text-secondary)] pointer-events-none select-none"
+                className="absolute text-[11px] font-mono text-[var(--embed-text-secondary)] pointer-events-none select-none"
                 style={{ top: topPct, left: '10px', transform: 'translateY(-50%)' }}
               >
                 {port.name}
@@ -153,7 +153,7 @@ export function BaseNode({
             />
             {showPortLabels && (
               <div
-                className="absolute text-[9px] font-mono text-[var(--embed-text-secondary)] pointer-events-none select-none"
+                className="absolute text-[11px] font-mono text-[var(--embed-text-secondary)] pointer-events-none select-none"
                 style={{
                   top: topPct,
                   right: '10px',
