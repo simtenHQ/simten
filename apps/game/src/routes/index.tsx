@@ -19,7 +19,7 @@ import { LevelMap } from '../components/LevelMap';
 import { Logo } from '../components/Logo';
 import ThemeToggle from '../components/ThemeToggle';
 import { LEVELS_BY_ID } from '../game/levels';
-import { type Drafts, readDrafts, readProgress } from '../game/storage';
+import { type Drafts, INTRO_SEEN_KEY, readDrafts, readProgress, readStored } from '../game/storage';
 
 export const Route = createFileRoute('/')({
   component: MapPage,
@@ -51,9 +51,18 @@ function MapPage() {
   const [solved, setSolved] = useState(NOTHING_SOLVED);
   const [drafts, setDrafts] = useState(NO_DRAFTS);
 
+  /**
+   * Owned here rather than inside the dialog, so the header can reopen it.
+   * Starts closed and opens after mount for the same reason as the rest of this
+   * state: reading storage during render would either mismatch hydration or
+   * flash the dialog at someone who has already dismissed it.
+   */
+  const [introOpen, setIntroOpen] = useState(false);
+
   useEffect(() => {
     setSolved(new Set(Object.keys(readProgress())));
     setDrafts(readDrafts());
+    if (!readStored(INTRO_SEEN_KEY, false)) setIntroOpen(true);
   }, []);
 
   const onHoverLevel = useCallback((levelId: string) => setHovered(levelId), []);
@@ -81,12 +90,13 @@ function MapPage() {
         </span>
         <span className="text-sm text-muted-foreground">Build a computer</span>
         <div className="ml-auto flex items-center gap-3">
-          <a
-            href="https://simten.dev"
+          <button
+            type="button"
+            onClick={() => setIntroOpen(true)}
             className="text-sm text-muted-foreground hover:text-foreground"
           >
             What is this?
-          </a>
+          </button>
           <ThemeToggle />
         </div>
       </header>
@@ -107,7 +117,7 @@ function MapPage() {
         />
       )}
 
-      <IntroDialog />
+      <IntroDialog open={introOpen} onOpenChange={setIntroOpen} />
     </div>
   );
 }
