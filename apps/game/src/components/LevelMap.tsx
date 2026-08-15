@@ -73,10 +73,20 @@ const ENFORCE_LOCKING = true;
  */
 const WIRE_LIVE = '#22c55e';
 const WIRE_LOW = '#94a3b8';
+/**
+ * Three states that have to be told apart at a glance, so each gets its own
+ * shape rather than its own opacity. `available` and `locked` used to differ
+ * only by how faint they were, which on a dark map is a difference you notice
+ * by comparing two cards side by side — not by looking at one.
+ *
+ * Solid bright border is the one you can play, dashed and faint is the one you
+ * cannot yet, filled green is done. Dashed carries "not yet" without borrowing
+ * red, which on a card that is fine, just unreachable, would read as an error.
+ */
 const STATE_STYLES: Record<LevelNodeData['state'], string> = {
   solved: 'border-emerald-500/60 bg-emerald-500/10 hover:border-emerald-400',
-  available: 'border-border bg-card hover:border-foreground/40',
-  locked: 'border-border/40 bg-muted/30 text-muted-foreground',
+  available: 'border-foreground/50 bg-card text-foreground hover:border-foreground',
+  locked: 'border-dashed border-border/50 bg-transparent text-muted-foreground/50',
 };
 
 function LevelMapNode({ data }: NodeProps<LevelNode>) {
