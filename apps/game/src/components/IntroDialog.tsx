@@ -1,14 +1,13 @@
 /**
- * First-visit introduction.
+ * The introduction: what this is, in two sentences.
  *
- * Someone arriving cold sees a list of level titles and no reason to care. This
- * says what the thing is in two sentences and gets out of the way.
+ * Opens itself on a first visit, and the map's "What is this?" reopens it after
+ * that. Controlled from the outside for exactly that reason — the answer to
+ * "what is this" is already written here, so the header link pointing at
+ * simten.dev sent people off the site to read a worse version of it.
  *
- * Shown once, then never again — the flag is written on dismissal rather than
- * on open, so closing the tab mid-read brings it back.
- *
- * It renders closed on the server and opens after mount. Reading storage during
- * render would either mismatch hydration or flash the dialog on every visit.
+ * The seen flag is written on dismissal rather than on open, so closing the tab
+ * mid-read brings it back.
  */
 
 import {
@@ -19,19 +18,18 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@simten/ui/primitives/dialog';
-import { useEffect, useState } from 'react';
-import { INTRO_SEEN_KEY, readStored, writeStored } from '../game/storage';
+import { INTRO_SEEN_KEY, writeStored } from '../game/storage';
 
-export function IntroDialog() {
-  const [open, setOpen] = useState(false);
-
-  useEffect(() => {
-    if (!readStored(INTRO_SEEN_KEY, false)) setOpen(true);
-  }, []);
-
+export function IntroDialog({
+  open,
+  onOpenChange,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
   const dismiss = () => {
     writeStored(INTRO_SEEN_KEY, true);
-    setOpen(false);
+    onOpenChange(false);
   };
 
   return (
