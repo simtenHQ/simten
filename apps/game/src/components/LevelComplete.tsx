@@ -114,15 +114,15 @@ export function LevelComplete({ open, onOpenChange, level, next }: LevelComplete
             </Link>
           ) : (
             /* End of the campaign, and the highest-intent moment the game
-               gets: someone has just built an adder out of NANDs and knows
-               what it cost. Sending them back to a map of levels they have
-               already solved wastes it. The editor is where the same language
-               stops being a puzzle and starts being a tool. */
+               gets. Sending them back to a map of levels they have already
+               solved wastes it. `/circuit` opens on the example catalog —
+               Snake, a RISC-V computer, npm output baked into a ROM — so the
+               next thing they see is the range, and they pick. */
             <a
-              href="https://simten.dev/circuit?example=rv32i-computer"
+              href="https://simten.dev/circuit"
               className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground no-underline"
             >
-              See where this goes →
+              More demos →
             </a>
           )}
         </DialogFooter>

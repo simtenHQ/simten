@@ -481,8 +481,8 @@ export default circuit('FullAdder', {
     ],
     par: 5,
     outro: {
-      headline: 'Built from what you built',
-      body: 'Two half adders and an OR, and you never touched a gate. That is the whole point of wrapping something in ports: every adder from here up is these chained together, the carry out of one bit becoming the carry in of the next. Chain enough of them and you have an ALU, then a CPU. Same language, same editor, and it runs on real hardware.',
+      headline: 'Full adder',
+      body: "That's the last level for now. More to come.",
     },
   },
 ];
