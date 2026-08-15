@@ -29,8 +29,10 @@ import { useSandboxContext } from '@simten/ui/sandbox';
 import { createFileRoute, Link, notFound } from '@tanstack/react-router';
 import { Network, RotateCcw } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { DesktopOnly } from '../components/DesktopOnly';
 import { LevelComplete } from '../components/LevelComplete';
 import { Logo } from '../components/Logo';
+import { MobileNotice } from '../components/MobileNotice';
 import { SpecPanel } from '../components/SpecPanel';
 import { forbiddenPrimitives, grade, permittedFor } from '../game/grade';
 import { nameDiagnostics } from '../game/level-name';
@@ -93,7 +95,11 @@ export function givenPreambleEnd(lines: string[]): number | null {
 
 function PlayLevelRoute() {
   const { level } = Route.useLoaderData();
-  return <PlayLevel key={level.id} level={level} />;
+  return (
+    <DesktopOnly fallback={<MobileNotice level={level} />}>
+      <PlayLevel key={level.id} level={level} />
+    </DesktopOnly>
+  );
 }
 
 function PlayLevel({ level }: { level: Level }) {
