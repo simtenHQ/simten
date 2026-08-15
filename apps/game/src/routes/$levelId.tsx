@@ -437,6 +437,14 @@ function PlayLevel({ level }: { level: Level }) {
               portValues={preview.portValues}
               theme="dark"
               showControls
+              // The diagram has to answer "what is this port called", because
+              // the code demands the exact name and nothing else on screen
+              // supplies it. Unlabelled circles leave a beginner guessing at
+              // `.out` and `.in` with the answer sitting right in front of
+              // them. Always on here rather than a toggle: levels are three to
+              // six nodes, so there is no clutter to trade against, and someone
+              // stuck on a port name will not go hunting for a display option.
+              showPortLabels
               // Re-lay out on every change. The default only re-runs the
               // layout when nodes appear or disappear, so adding the last
               // wire — which changes no nodes — left the lamp where it had
