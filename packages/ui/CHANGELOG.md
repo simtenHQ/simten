@@ -1,5 +1,12 @@
 # @simten/ui
 
+## 0.11.1
+
+### Patch Changes
+
+- bf55fff: Make port labels legible. `showPortLabels` rendered them at 9px, which is small enough that the name a beginner is hunting for does not register as text. Now 11px, which stays inside the padding the labels already reserve.
+- 221b9a8: Keep the Monaco model that shadows a planted lib in step with it. `addExtraLib` registers a virtual file, but the first hover or quick fix on a lib makes Monaco materialise it as a model at the same URI, which then shadows the lib for every later update. Consumers that vary the globals at runtime — handing out a different set of components per screen — got the set frozen at whichever one was open when the first hover happened, and any component added afterwards reported "Cannot find name". Writing through the model also revalidates open files, so a stale marker clears immediately rather than on the next keystroke.
+
 ## 0.11.0
 
 ### Minor Changes
