@@ -103,7 +103,6 @@ export default circuit('Nand1', {
     outputs: ['result'],
     allowed: ['Nand'],
     stub: `// The same gate as last level, and the only one there is.
-// NAND outputs 0 only when both inputs are 1.
 //
 // The NAND is placed, and its output already
 // runs to the lamp. What is missing is the input.
@@ -190,10 +189,6 @@ export default circuit('And2', {
     allowed: ['Nand', 'Not', 'And'],
     stub: `// The lamp is off in exactly one case: both switches down.
 //
-// A NAND says "not both". Stop feeding it the switches
-// and feed it their opposites instead, then read what
-// comes out.
-//
 // You know how to make an opposite. You did it two
 // levels ago.
 
@@ -230,11 +225,8 @@ export default circuit('Or1', {
     inputs: ['a', 'b'],
     outputs: ['result'],
     allowed: ['Nand', 'Not', 'And', 'Or'],
-    stub: `// Nothing new here. Take the OR you built and flip
-// what comes out of it.
-//
-// You have both of those now, so this is two gates.
-// Four NANDs if you would rather do it the long way.
+    stub: `// Two gates, or four NANDs if you would rather do it
+// the long way.
 
 export default circuit('Nor1', {
   nodes: {
@@ -307,9 +299,7 @@ export default circuit('Xor1', {
     inputs: ['a', 'b'],
     outputs: ['result'],
     allowed: ['Nand', 'Not', 'And', 'Or', 'Nor', 'Xor'],
-    stub: `// Your XOR, with the answer flipped.
-//
-// Two gates, now that XOR is yours. The long way
+    stub: `// Two gates, now that XOR is yours. The long way
 // round is five NANDs, if you want to prove you
 // still can.
 
@@ -350,10 +340,6 @@ export default circuit('Xnor1', {
 //
 // \`inputs\` and \`outputs\` are the circuit's edges — what it looks like from
 // the outside. Wire them with \`inputs.a.to(...)\` and \`....to(outputs.out)\`.
-//
-// The canvas will collapse this into a single box with a switch and a lamp
-// attached. That is the point: it is a component now, and a component is
-// something other circuits can use without knowing how it works.
 
 export default circuit('Xor2', {
   inputs: { a: bit, b: bit },
@@ -391,12 +377,8 @@ export default circuit('Xor2', {
     stub: `// Adding two bits gives 0, 1 or 2 — and 2 does not fit in
 // one bit, so the answer needs two lamps.
 //
-//   0 + 0 = 0    sum 0, carry 0
-//   0 + 1 = 1    sum 1, carry 0
-//   1 + 1 = 2    sum 0, carry 1
-//
 // You proved you could build these gates, so you have them
-// now. Two of them is enough.
+// now.
 
 export default circuit('HalfAdder', {
   nodes: {
