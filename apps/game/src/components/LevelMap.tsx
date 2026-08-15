@@ -72,7 +72,20 @@ const ENFORCE_LOCKING = true;
  * should be the same green a 1 is everywhere else in the product.
  */
 const WIRE_LIVE = '#22c55e';
-const WIRE_LOW = '#94a3b8';
+/**
+ * Dimmer than the canvas's slate-400, because this map is mostly dark and
+ * mostly unsolved. At full strength a dead wire drew the eye further up the
+ * campaign than the level you can actually play, and read as brighter than the
+ * dashed cards it joins. A wire nobody has energised should recede.
+ */
+const WIRE_LOW = '#3f4756';
+
+/**
+ * Ports, sized and coloured here rather than left to React Flow, whose default
+ * handle is a white-bordered dot — the loudest thing on the map, repeated
+ * twice per level.
+ */
+const PORT_STYLE = { width: 6, height: 6, background: '#475569', border: 'none' } as const;
 /**
  * Three states that have to be told apart at a glance, so each gets its own
  * shape rather than its own opacity. `available` and `locked` used to differ
@@ -100,10 +113,8 @@ function LevelMapNode({ data }: NodeProps<LevelNode>) {
     <>
       {/*
         Edges enter from below and leave from the top: the map reads upward.
-        Styled as the canvas styles a connected port — same size, same blue —
-        because these are ports, on a circuit, carrying real signal.
       */}
-      <Handle type="target" position={Position.Bottom} />
+      <Handle type="target" position={Position.Bottom} style={PORT_STYLE} />
       {/*
         `pointer-events-auto` is load-bearing. A node that is neither draggable
         nor selectable gets `pointer-events: none` from React Flow, so the pane
@@ -162,7 +173,7 @@ function LevelMapNode({ data }: NodeProps<LevelNode>) {
           </>
         )}
       </div>
-      <Handle type="source" position={Position.Top} />
+      <Handle type="source" position={Position.Top} style={PORT_STYLE} />
     </>
   );
 }
