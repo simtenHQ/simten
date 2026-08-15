@@ -6,9 +6,10 @@
  * receipt. Opening a dialog over a circuit still demonstrating itself would
  * step on the better of the two.
  *
- * Dismissible on purpose. `par` only means something if you can close this,
- * go back, and try to beat it — a completion screen whose only exit is "next"
- * quietly says optimising was never the point.
+ * Dismissible on purpose. `par` only means something if you can close this, go
+ * back, and try to beat it, so the X, Escape and a click outside all return to
+ * the circuit. That exit is not a button, though: it competes with the next
+ * level for attention, and the next level is what almost everyone wants.
  */
 
 import {
@@ -94,16 +95,11 @@ export function LevelComplete({ open, onOpenChange, level, next }: LevelComplete
           </ul>
         </div>
 
+        {/* One action. Going back to the circuit to beat par is still there —
+            the dialog closes on its X, on Escape and on a click outside — but
+            it does not need a button competing with the only thing most people
+            want at this point, which is the next level. */}
         <DialogFooter className="mt-6 gap-2">
-          {/* Closing is a real choice, not a dismissal: it is how you go back
-              and try to beat par. */}
-          <button
-            type="button"
-            onClick={() => onOpenChange(false)}
-            className="rounded-md border border-border px-4 py-2 text-sm font-medium"
-          >
-            Back to the circuit
-          </button>
           {next ? (
             <Link
               to="/$levelId"
