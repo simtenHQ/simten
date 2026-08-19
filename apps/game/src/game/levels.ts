@@ -17,9 +17,10 @@
  * of reasoning rather than seven unrelated puzzles, and OR lands De Morgan in
  * the middle where there is enough behind it for the trick to mean something.
  *
- * Stubs taper. Level 1 is everything-but-one-line because its job is to explain
- * the `connect` destructuring, which is the hardest thing in the DSL to read
- * cold. Levels 2 and 3 still place a NAND and wire one side of it. From level 4
+ * Stubs taper. Level 1 is written out in full with two wires commented out,
+ * because its job is to explain the `connect` destructuring — the hardest thing
+ * in the DSL to read cold — and uncommenting a line someone can already see
+ * working asks less of them than writing one from a blank list. Levels 2 and 3 still place a NAND and wire one side of it. From level 4
  * the `nodes` are the player's to choose — handing them the right number of
  * NANDs would give away both the answer and the point of `par`.
  *
@@ -27,9 +28,9 @@
  * pure syntax. "You get one gate" has to be true from the first screen: handing
  * over an AND and withdrawing it a level later reads as a confiscation, and it
  * made the completion card announce NAND as an unlock when it was really a
- * swap. Nothing is reasoned about here anyway — you add one wire and click —
- * so the player meets NAND by watching it, which is exactly the setup level 2
- * needs.
+ * swap. Nothing is reasoned about here anyway — you uncomment two lines and
+ * click — so the player meets NAND by watching it, which is exactly the setup
+ * level 2 needs.
  */
 
 import type { Level } from './types';
@@ -54,7 +55,7 @@ export const LEVELS: Level[] = [
     id: 'first-wire',
     title: 'NAND',
     brief:
-      'This circuit is finished apart from one connection: nothing carries the gate’s result to the lamp. Add that line, then flip the switches.',
+      'Every wire is written for you, but two of them are commented out. Uncomment those two lines and watch the circuit finish itself, then flip the switches.',
     target: 'Nand1',
     inputs: ['a', 'b'],
     outputs: ['result'],
@@ -62,9 +63,9 @@ export const LEVELS: Level[] = [
     stub: `// A circuit is a set of nodes and the wires between them.
 // \`x.to(y)\` sends the value at x into y.
 //
-// Everything here is a node — the switches and the lamp too. This one is
-// done except for the last wire: the gate has its answer, but nothing
-// carries it to the lamp.
+// Everything here is a node — the switches and the lamp too. The first
+// wire is already connected. The other two are written out for you, just
+// commented.
 
 export default circuit('Nand1', {
   nodes: {
@@ -74,9 +75,10 @@ export default circuit('Nand1', {
     result: Led,
   },
   connect: ({ nodes: { a, b, n1, result } }) => [
+    // Uncomment the lines below and see the circuit draw itself
     a.out.to(n1.a),
-    b.out.to(n1.b),
-    // One more line. Send n1.out to result.in
+    // b.out.to(n1.b),
+    // n1.out.to(result.in),
   ],
 });
 `,
