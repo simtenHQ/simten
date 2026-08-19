@@ -328,8 +328,11 @@ function PlayLevel({ level }: { level: Level }) {
         <span className="shrink-0 text-sm font-semibold text-foreground/80">{level.title}</span>
         {/* The brief is read once and then ignored, so it belongs here rather
             than occupying panel space for the rest of the level. */}
-        <p className="hidden truncate text-xs text-muted-foreground lg:block" title={level.brief}>
-          {level.brief}
+        {/* The tagline, not the brief. This truncates, and a truncated problem
+            statement put a half-sentence of instructions in the first thing on
+            screen. The full brief is in the spec panel, under "The problem". */}
+        <p className="hidden truncate text-xs text-muted-foreground lg:block" title={level.tagline}>
+          {level.tagline}
         </p>
 
         <div className="ml-auto flex shrink-0 items-center gap-2">
