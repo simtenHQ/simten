@@ -11,7 +11,7 @@ const THEME_INIT_SCRIPT = `(function(){try{var stored=window.localStorage.getIte
 const TITLE = 'Simten | Design hardware. Bit by bit.';
 const DESCRIPTION =
   'A puzzle campaign built on Simten, a TypeScript HDL that simulates in the browser and synthesizes to Verilog.';
-const SITE_URL = 'https://play.simten.dev';
+export const SITE_URL = 'https://play.simten.dev';
 const OG_IMAGE = `${SITE_URL}/og-default.png`;
 
 export const Route = createRootRoute({
