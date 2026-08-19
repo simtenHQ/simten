@@ -33,6 +33,16 @@ export interface Level {
   id: string;
   title: string;
   /**
+   * One line, in the header beside the title: what this level is about.
+   *
+   * Separate from `brief` because the two are read at different moments. The
+   * header is a glance while you work, and it truncates — putting the problem
+   * statement there meant the first thing on screen was a half-sentence of
+   * instructions. This says what you are making; `brief` says what counts as
+   * done.
+   */
+  tagline: string;
+  /**
    * The problem, in a sentence or two of plain prose. This is player-facing
    * copy on a public site, so it gets written like a human wrote it.
    */

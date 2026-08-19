@@ -165,6 +165,15 @@ describe('level definitions', () => {
     for (const level of LEVELS) expect(level.stub).toContain(`'${level.target}'`);
   });
 
+  it('all carry a tagline', () => {
+    // The header renders this and truncates it, so an empty one leaves the top
+    // of the screen blank and a long one is worse than nothing.
+    for (const level of LEVELS) {
+      expect(level.tagline.trim().length).toBeGreaterThan(0);
+      expect(level.tagline.length).toBeLessThanOrEqual(60);
+    }
+  });
+
   it('all carry completion copy', () => {
     // The dialog reads straight from this, so a level without it finishes on
     // an empty headline — and the failure would only show on a solve.
