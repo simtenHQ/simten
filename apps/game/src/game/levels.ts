@@ -54,7 +54,7 @@ export const LEVELS: Level[] = [
   {
     id: 'first-wire',
     title: 'NAND',
-    tagline: 'Your first circuit: nodes, and the wires between them.',
+    tagline: 'Light the lamp unless both switches are on.',
     brief:
       'Every wire is written for you, but two of them are commented out. Uncomment those two lines and watch the circuit finish itself, then flip the switches.',
     target: 'Nand1',
