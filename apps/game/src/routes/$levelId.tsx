@@ -41,6 +41,7 @@ import { sandboxRuntime } from '../game/runtime';
 import { clearDraft, readDrafts, writeDraft, writeProgress } from '../game/storage';
 import type { GradeResult, Level } from '../game/types';
 import { useVictoryRun } from '../game/useVictoryRun';
+import { SITE_URL } from './__root';
 
 /**
  * How long typing pauses before the draft is stored.
@@ -59,6 +60,35 @@ export const Route = createFileRoute('/$levelId')({
     const level = LEVELS_BY_ID.get(params.levelId);
     if (!level) throw notFound();
     return { level };
+  },
+  /**
+   * Per-level metadata, overriding the root's site-wide set.
+   *
+   * Every page used to ship the root's title, description and `og:url`, so the
+   * eleven URLs were eleven duplicates as far as a crawler is concerned, and
+   * sending someone a level produced a card naming the site and linking to its
+   * front page rather than the level. The tagline is already a one-line
+   * description written for a human, which is exactly what this needs.
+   */
+  head: ({ loaderData }) => {
+    const level = loaderData?.level;
+    if (!level) return {};
+    const title = `${level.title} | Simten`;
+    const url = `${SITE_URL}/${level.id}`;
+    return {
+      meta: [
+        { title },
+        { name: 'description', content: level.tagline },
+        { property: 'og:title', content: title },
+        { property: 'og:description', content: level.tagline },
+        { property: 'og:url', content: url },
+        { name: 'twitter:title', content: title },
+        { name: 'twitter:description', content: level.tagline },
+      ],
+      // Levels are reachable whether or not you have unlocked them, so each one
+      // is a real page and should say which page it is.
+      links: [{ rel: 'canonical', href: url }],
+    };
   },
   component: PlayLevelRoute,
 });
