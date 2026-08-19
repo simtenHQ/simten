@@ -54,6 +54,7 @@ export const LEVELS: Level[] = [
   {
     id: 'first-wire',
     title: 'NAND',
+    tagline: 'Your first circuit: nodes, and the wires between them.',
     brief:
       'Every wire is written for you, but two of them are commented out. Uncomment those two lines and watch the circuit finish itself, then flip the switches.',
     target: 'Nand1',
@@ -98,6 +99,7 @@ export default circuit('Nand1', {
   {
     id: 'not',
     title: 'NOT',
+    tagline: 'Turn a 1 into a 0.',
     brief:
       'You have seen what NAND does: it outputs 0 only when both its inputs are 1. It is the only gate you get, so every other gate gets built from it. Start with the simplest — turn a 1 into a 0.',
     target: 'Not1',
@@ -137,6 +139,7 @@ export default circuit('Not1', {
   {
     id: 'and',
     title: 'AND',
+    tagline: 'Light the lamp only when both switches are on.',
     brief:
       'A NAND is an AND gate with its answer flipped. You spent the last level learning to flip an answer. Light the lamp only when both switches are on.',
     target: 'And2',
@@ -183,6 +186,7 @@ export default circuit('And2', {
   {
     id: 'or',
     title: 'OR',
+    tagline: 'Light the lamp when either switch is on.',
     brief:
       'Light the lamp when either switch is on. There is no way to get there by flipping a NAND, so come at it from the other end: work out when the lamp should stay off.',
     target: 'Or1',
@@ -221,6 +225,7 @@ export default circuit('Or1', {
   {
     id: 'nor',
     title: 'NOR',
+    tagline: 'Light the lamp only when both switches are off.',
     brief:
       'NOR is OR with the answer flipped: the lamp is on only when both switches are off. You built OR a minute ago, so most of this is already done.',
     target: 'Nor1',
@@ -257,6 +262,7 @@ export default circuit('Nor1', {
   {
     id: 'xor',
     title: 'XOR',
+    tagline: 'Light the lamp when the switches disagree.',
     brief:
       'Light the lamp when the two switches disagree. This is the one that takes a minute — and it is the gate an adder is built from, so it pays off twice.',
     target: 'Xor1',
@@ -295,6 +301,7 @@ export default circuit('Xor1', {
   {
     id: 'xnor',
     title: 'XNOR',
+    tagline: 'Light the lamp when the switches agree.',
     brief:
       'The last gate in the set, and the opposite of the one you just built: light the lamp when the two switches agree. You already know the move.',
     target: 'Xnor1',
@@ -332,6 +339,7 @@ export default circuit('Xnor1', {
   {
     id: 'making-a-component',
     title: 'Making a Component',
+    tagline: 'Give a circuit ports, so other circuits can use it.',
     brief:
       'The XOR from two levels back, but this time give the circuit `inputs` and `outputs` instead of switches and a lamp. You have XOR now, so the inside is a single node: the lesson here is the edges, not the wiring. Watch what happens to the diagram. It becomes one box, and that is the trade: you can no longer see inside, and in exchange anything can now use it.',
     target: 'Xor2',
@@ -370,6 +378,7 @@ export default circuit('Xor2', {
   {
     id: 'half-adder',
     title: 'Half Adder',
+    tagline: 'Add two bits, and keep what carries.',
     brief:
       'Add two bits. Two of them make 0, 1 or 2, which needs two lamps: sum is the bit you keep, carry is the one that spills over. You have built every gate this needs.',
     target: 'HalfAdder',
@@ -410,6 +419,7 @@ export default circuit('HalfAdder', {
   {
     id: 'full-adder',
     title: 'Full Adder',
+    tagline: 'Add two bits and a carry coming in.',
     brief:
       'The same sum, but with a carry arriving from the bit below. Do not build it out of gates — build it out of two of the half adders you just made.',
     target: 'FullAdder',
