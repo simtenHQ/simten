@@ -600,8 +600,11 @@ export default circuit('DLatch1', {
     allowed: ['Nand', 'DFlipFlop'],
     sequential: true,
     intro: {
-      headline: 'Now there is a clock',
-      body: 'Everything so far reacted to its switches straight away: flip one and the answer changed. A flip-flop is different. It only reads its input at the moment the clock ticks, and ignores it in between. That moment is called an edge. You never wire the clock up, because every circuit with memory gets one, and the controls under the canvas are it. Tick moves it forward by one edge.',
+      headline: 'Sequential circuits',
+      body:
+        'Everything so far reacted to its inputs straight away: flip one and the output updates instantly.\n\n' +
+        'A flip-flop is different. It only reads its input at the moment the clock ticks, and ignores it in between. That moment is called an edge.\n\n' +
+        'Simten runs on a single clock and implicitly wires it to every sequential component, so there is nothing for you to connect. Use the clock controls at the bottom of the screen to step through clock cycles and check your circuit runs as you expect.',
       link: {
         label: 'Sequential logic',
         href: 'https://en.wikipedia.org/wiki/Sequential_logic',
