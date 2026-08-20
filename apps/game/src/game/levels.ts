@@ -535,7 +535,7 @@ export default circuit('Latch1', {
   {
     id: 'toggle',
     title: 'Toggle',
-    tagline: 'Flip the lamp on every clock tick.',
+    tagline: 'Alternate the lamp between on and off, every tick.',
     brief:
       'This one has no switches. The lamp flips on its own, once per clock tick, forever. Your latch held a value until something changed it; this has to change itself, which means feeding its own output back in through something that flips it.',
     target: 'Toggle1',
