@@ -224,7 +224,7 @@ function PlayLevel({ level }: { level: Level }) {
 
   // On a solve, drive the player's own circuit through the truth table so the
   // switches flip and the LED lights. The proof is the machine running.
-  const victory = useVictoryRun(level.vectors, preview.setNodeValue);
+  const victory = useVictoryRun(level.vectors, preview.setNodeValue, preview.tick);
 
   /**
    * Gates in the preview that this level forbids.
