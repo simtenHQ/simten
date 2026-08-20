@@ -72,10 +72,24 @@ export interface Level {
   /** Starting source in the editor. */
   stub: string;
   /**
-   * The truth table. Exhaustive where the input space allows it — every level
-   * shipped so far is small enough that it is.
+   * The truth table. Exhaustive where the input space allows it — every
+   * combinational level shipped so far is small enough that it is.
+   *
+   * On a `sequential` level these are ordered steps, not independent cases, and
+   * reordering or deduplicating them destroys what they assert.
    */
   vectors: Vector[];
+  /**
+   * Does this level's answer have memory?
+   *
+   * The grader needs no help — it drives one vector per clock tick and does not
+   * reset between them, so state already carries. This exists for the spec
+   * panel, which otherwise presents ordered steps as an unordered truth table
+   * and tells the player the opposite of the lesson: on a latch the same inputs
+   * appear twice with different outputs, which is a contradiction in a truth
+   * table and the definition of memory in a sequence.
+   */
+  sequential?: boolean;
   /**
    * Gate count worth beating. Used for scoring; not shown on the completion
    * dialog, where a par figure reads as a mark out of ten rather than an

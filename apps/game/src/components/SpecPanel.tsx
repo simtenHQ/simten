@@ -83,7 +83,10 @@ export function SpecPanel({ level, result, activeRow, provenRows }: SpecPanelPro
   return (
     <div className="flex h-full items-start gap-8 overflow-x-auto overflow-y-auto px-4 py-3">
       <div className="shrink-0">
-        <Heading>Truth table</Heading>
+        {/* A sequential level's rows are ordered steps, not independent cases.
+            Calling that a truth table would tell the player order does not
+            matter, when order is the entire lesson. */}
+        <Heading>{level.sequential ? 'Sequence' : 'Truth table'}</Heading>
         <TruthTable
           level={level}
           active={activeRow}
