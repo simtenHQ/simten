@@ -528,7 +528,63 @@ export default circuit('Latch1', {
     par: 2,
     outro: {
       headline: 'It remembers',
-      body: "Two NANDs, each reading the other's answer. That loop is what every memory is made of.",
+      body: "Two NANDs, each reading the other's answer. That loop is what every memory is made of — but it has a state you were told to avoid, and the next level gets rid of it.",
+    },
+  },
+
+  {
+    id: 'd-latch',
+    title: 'D Latch',
+    tagline: 'Store one bit, only while you allow it.',
+    brief:
+      'Your latch had a state you had to avoid, and it needed two switches to say one thing. Fix both: `d` is the bit to store, `en` says whether to listen. While `en` is high the lamp follows `d`; while it is low the lamp holds, whatever `d` does.',
+    target: 'DLatch1',
+    inputs: ['d', 'en'],
+    outputs: ['q'],
+    allowed: ['Nand'],
+    sequential: true,
+    stub: `// Keep your latch. Put a gate in front of each input.
+//
+// The pair you built holds when both its inputs are high. So
+// the job of the two new gates is: when \`en\` is low, force
+// both high no matter what \`d\` is — and when \`en\` is high,
+// send \`d\` to one side and its opposite to the other.
+//
+// A NAND already gives you the opposite of something for
+// free. Look at what the first new gate produces before you
+// reach for another one.
+
+export default circuit('DLatch1', {
+  nodes: {
+    d: Switch,
+    en: Switch,
+    n1: Nand,
+    n2: Nand,
+    n3: Nand,
+    n4: Nand,
+    q: Led,
+  },
+  connect: ({ nodes: { d, en, n1, n2, n3, n4, q } }) => [
+    //
+  ],
+});
+`,
+    // Steps 2 and 5 carry identical inputs and demand different answers,
+    // which is the proof no combinational circuit can pass — without a repeat
+    // like that, `XNOR(d, en)` satisfies the whole table with no memory at
+    // all. Step 1 stores deliberately, so the run does not depend on whatever
+    // state the circuit powers up in.
+    vectors: [
+      { inputs: { d: 1, en: 1 }, expect: { q: 1 } },
+      { inputs: { d: 0, en: 0 }, expect: { q: 1 } },
+      { inputs: { d: 0, en: 1 }, expect: { q: 0 } },
+      { inputs: { d: 1, en: 0 }, expect: { q: 0 } },
+      { inputs: { d: 0, en: 0 }, expect: { q: 0 } },
+    ],
+    par: 4,
+    outro: {
+      headline: 'One bit, on demand',
+      body: 'One input to store, one to decide when. A flip-flop is this with an edge instead of a level: it looks at `d` the instant the clock rises rather than the whole time it is high. You get one next level.',
     },
   },
 
