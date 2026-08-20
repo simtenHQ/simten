@@ -30,6 +30,7 @@ export const MAP_ROWS: string[][] = [
   ['making-a-component'],
   ['half-adder'],
   ['full-adder'],
+  ['latch'],
 ];
 
 /**
@@ -56,6 +57,7 @@ export const MAP_SECTIONS: MapSection[] = [
   { label: 'Every gate from one', startRow: 2 },
   { label: 'Components', startRow: 7 },
   { label: 'Arithmetic', startRow: 8 },
+  { label: 'Memory', startRow: 10 },
 ];
 
 /**
