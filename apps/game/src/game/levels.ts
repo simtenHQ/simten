@@ -476,7 +476,110 @@ export default circuit('FullAdder', {
     par: 5,
     outro: {
       headline: 'Full adder',
-      body: "That's the last level for now. More to come.",
+      body: 'Chain these end to end and you can add any width.',
+    },
+  },
+
+  {
+    id: 'latch',
+    title: 'SR Latch',
+    tagline: 'Remember a bit after the input goes away.',
+    brief:
+      'Every circuit so far answered only to its switches. This one has to answer to what happened before: pull `s` low and the lamp comes on, pull `r` low and it goes off, and with both high it holds whatever it was last told. Read the steps left to right — the same inputs appear twice with different answers, and that is the whole point.',
+    target: 'Latch1',
+    inputs: ['s', 'r'],
+    outputs: ['q'],
+    allowed: ['Nand'],
+    sequential: true,
+    stub: `// The lamp has to remember.
+//
+// Everything you have built answers only to its inputs. A
+// circuit that remembers has to answer to its own output too,
+// so the answer has to come back round and feed the thing
+// that produced it.
+//
+// Two gates. Both switches high means hold.
+//
+// Note: both switches low at once is the state to avoid. It
+// forces an answer the circuit cannot hold on to, which is
+// why nothing below asks for it.
+
+export default circuit('Latch1', {
+  nodes: {
+    s: Switch,
+    r: Switch,
+    q: Led,
+  },
+  connect: ({ nodes: { s, r, q } }) => [
+    //
+  ],
+});
+`,
+    // Ordered steps, not a truth table. Steps 2 and 4 carry the same inputs as
+    // each other and expect different answers, which is what proves no
+    // combinational circuit can pass this level. Step 1 sets deliberately, so
+    // the run does not depend on whatever state the circuit powers up in.
+    vectors: [
+      { inputs: { s: 0, r: 1 }, expect: { q: 1 } },
+      { inputs: { s: 1, r: 1 }, expect: { q: 1 } },
+      { inputs: { s: 1, r: 0 }, expect: { q: 0 } },
+      { inputs: { s: 1, r: 1 }, expect: { q: 0 } },
+    ],
+    par: 2,
+    outro: {
+      headline: 'It remembers',
+      body: "Two NANDs, each reading the other's answer. That loop is what every memory is made of.",
+    },
+  },
+
+  {
+    id: 'toggle',
+    title: 'Toggle',
+    tagline: 'Flip the lamp on every clock tick.',
+    brief:
+      'This one has no switches. The lamp flips on its own, once per clock tick, forever. Your latch held a value until something changed it; this has to change itself, which means feeding its own output back in through something that flips it.',
+    target: 'Toggle1',
+    inputs: [],
+    outputs: ['q'],
+    allowed: ['Nand', 'DFlipFlop'],
+    sequential: true,
+    stub: `// A flip-flop is memory with a clock.
+//
+// Your latch changed the instant its inputs did. A D flip-flop
+// only looks at \`d\` on a clock edge, and holds it steady until
+// the next one — so what it stores this tick is what \`d\` was
+// last tick.
+//
+// \`dff.q\` is what it currently holds. \`dff.d\` is what it
+// will hold next. Give it the opposite of what it has and it
+// can never settle.
+//
+// One wire does it. Look at what else the flip-flop already
+// gives you before reaching for a gate.
+
+export default circuit('Toggle1', {
+  nodes: {
+    dff: DFlipFlop(),
+    q: Led,
+  },
+  connect: ({ nodes: { dff, q } }) => [
+    //
+  ],
+});
+`,
+    // No inputs at all, so every step drives nothing and only the clock moves.
+    // Identical inputs with alternating answers is exactly the memory proof the
+    // suite looks for, and here it is the entire level.
+    vectors: [
+      { inputs: {}, expect: { q: 1 } },
+      { inputs: {}, expect: { q: 0 } },
+      { inputs: {}, expect: { q: 1 } },
+      { inputs: {}, expect: { q: 0 } },
+    ],
+    par: 1,
+    outro: {
+      headline: 'A clock, and something that counts it',
+      body: "Nothing drives this but time. Flip a second one every time the first falls and you are counting in binary. That's the last level for now. More to come.",
     },
   },
 ];

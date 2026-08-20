@@ -165,6 +165,31 @@ describe('level definitions', () => {
     for (const level of LEVELS) expect(level.stub).toContain(`'${level.target}'`);
   });
 
+  it('sequential levels cannot be passed by a combinational answer', () => {
+    /**
+     * The guarantee an exhaustive truth table gives for free, restated for
+     * ordered steps.
+     *
+     * A combinational level lists every input combination, so no circuit
+     * without memory can fake it. A sequential level lists a chosen handful,
+     * and a short enough sequence can be satisfied by some function of the
+     * inputs alone — which would make a level about memory passable without
+     * any. The proof it is not: the same inputs appear twice expecting
+     * different answers. No function of the inputs can do that.
+     */
+    for (const level of LEVELS.filter((l) => l.sequential)) {
+      const byInputs = new Map<string, Set<string>>();
+      for (const v of level.vectors) {
+        const key = JSON.stringify(v.inputs);
+        const seen = byInputs.get(key) ?? new Set<string>();
+        seen.add(JSON.stringify(v.expect));
+        byInputs.set(key, seen);
+      }
+      const contradicts = [...byInputs.values()].some((expects) => expects.size > 1);
+      expect(contradicts, `${level.id} has no step pair that requires memory`).toBe(true);
+    }
+  });
+
   it('all carry a tagline', () => {
     // The header renders this and truncates it, so an empty one leaves the top
     // of the screen blank and a long one is worse than nothing.

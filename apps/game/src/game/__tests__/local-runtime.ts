@@ -53,7 +53,14 @@ export function localRuntime(): GradeRuntime {
       // node id second (simulator/index.ts:304), so the same call drives a
       // Switch in a self-contained level and a port in an abstracted one.
       for (const [name, value] of Object.entries(inputs)) engine.setNode(name, value);
-      engine.runCombinational();
+      // A clock cycle, because that is what the browser does: `sandboxRuntime`
+      // grades through `sandbox.tick`. This used `runCombinational`, which
+      // settles the logic without advancing a clock — the two agreed on every
+      // combinational level and silently disagreed on anything clocked, so a
+      // level that graded correctly in the browser could never pass CI. A
+      // latch hides the difference, being combinational feedback; a flip-flop
+      // does not, and simply never advances.
+      engine.tick();
 
       const values: Record<string, number | boolean> = {};
       for (const [k, v] of engine.getPortValues()) values[k] = v;
