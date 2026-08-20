@@ -46,6 +46,20 @@ export function LevelIntro({
           {level.intro.body}
         </DialogDescription>
 
+        {level.intro.link && (
+          <p className="mt-4 text-xs text-muted-foreground">
+            Read more:{' '}
+            <a
+              href={level.intro.link.href}
+              target="_blank"
+              rel="noreferrer"
+              className="text-foreground underline underline-offset-4"
+            >
+              {level.intro.link.label} ↗
+            </a>
+          </p>
+        )}
+
         <DialogFooter className="mt-6">
           <button
             type="button"
