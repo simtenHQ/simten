@@ -17,10 +17,13 @@
  * of reasoning rather than seven unrelated puzzles, and OR lands De Morgan in
  * the middle where there is enough behind it for the trick to mean something.
  *
- * Stubs taper. Level 1 is written out in full with two wires commented out,
- * because its job is to explain the `connect` destructuring — the hardest thing
- * in the DSL to read cold — and uncommenting a line someone can already see
- * working asks less of them than writing one from a blank list. Levels 2 and 3 still place a NAND and wire one side of it. From level 4
+ * Stubs taper, and re-scaffold when the concept changes rather than only at the
+ * start. Level 1 is written out in full with two wires commented out, because
+ * its job is to explain the `connect` destructuring — the hardest thing in the
+ * DSL to read cold — and uncommenting a line someone can already see working
+ * asks less of them than writing one from a blank list. The latch places both
+ * its gates for the same reason: it opens the memory band, and its lesson is
+ * that two gates can read each other, not how many of them there are. Levels 2 and 3 still place a NAND and wire one side of it. From level 4
  * the `nodes` are the player's to choose — handing them the right number of
  * NANDs would give away both the answer and the point of `par`.
  *
@@ -498,19 +501,22 @@ export default circuit('FullAdder', {
 // so the answer has to come back round and feed the thing
 // that produced it.
 //
-// Two gates. Both switches high means hold.
+// Both gates are placed. Neither can decide on its own —
+// each one has to see what the other decided.
 //
-// Note: both switches low at once is the state to avoid. It
-// forces an answer the circuit cannot hold on to, which is
-// why nothing below asks for it.
+// Both switches high means hold. Both low at once is the
+// state to avoid: it forces an answer the pair cannot hold
+// on to, which is why nothing below asks for it.
 
 export default circuit('Latch1', {
   nodes: {
     s: Switch,
     r: Switch,
+    n1: Nand,
+    n2: Nand,
     q: Led,
   },
-  connect: ({ nodes: { s, r, q } }) => [
+  connect: ({ nodes: { s, r, n1, n2, q } }) => [
     //
   ],
 });
