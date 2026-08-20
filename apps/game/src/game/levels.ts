@@ -528,7 +528,59 @@ export default circuit('Latch1', {
     par: 2,
     outro: {
       headline: 'It remembers',
-      body: "Two NANDs, each reading the other's answer. That loop is what every memory is made of. That's the last level for now. More to come.",
+      body: "Two NANDs, each reading the other's answer. That loop is what every memory is made of.",
+    },
+  },
+
+  {
+    id: 'toggle',
+    title: 'Toggle',
+    tagline: 'Flip the lamp on every clock tick.',
+    brief:
+      'This one has no switches. The lamp flips on its own, once per clock tick, forever. Your latch held a value until something changed it; this has to change itself, which means feeding its own output back in through something that flips it.',
+    target: 'Toggle1',
+    inputs: [],
+    outputs: ['q'],
+    allowed: ['Nand', 'DFlipFlop'],
+    sequential: true,
+    stub: `// A flip-flop is memory with a clock.
+//
+// Your latch changed the instant its inputs did. A D flip-flop
+// only looks at \`d\` on a clock edge, and holds it steady until
+// the next one — so what it stores this tick is what \`d\` was
+// last tick.
+//
+// \`dff.q\` is what it currently holds. \`dff.d\` is what it will
+// hold next. Wire one to the other through something that
+// flips the value and it can never settle.
+//
+// You do not need a Not. A NAND with both inputs tied to the
+// same wire is one, which is how you built NOT in the first
+// place.
+
+export default circuit('Toggle1', {
+  nodes: {
+    dff: DFlipFlop(),
+    q: Led,
+  },
+  connect: ({ nodes: { dff, q } }) => [
+    //
+  ],
+});
+`,
+    // No inputs at all, so every step drives nothing and only the clock moves.
+    // Identical inputs with alternating answers is exactly the memory proof the
+    // suite looks for, and here it is the entire level.
+    vectors: [
+      { inputs: {}, expect: { q: 1 } },
+      { inputs: {}, expect: { q: 0 } },
+      { inputs: {}, expect: { q: 1 } },
+      { inputs: {}, expect: { q: 0 } },
+    ],
+    par: 2,
+    outro: {
+      headline: 'A clock, and something that counts it',
+      body: "Nothing drives this but time. Flip a second one every time the first falls and you are counting in binary. That's the last level for now. More to come.",
     },
   },
 ];

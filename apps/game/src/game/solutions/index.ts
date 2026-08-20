@@ -37,6 +37,7 @@ import makingAComponent from './making-a-component.ts?raw';
 import norGate from './nor.ts?raw';
 import notGate from './not.ts?raw';
 import orGate from './or.ts?raw';
+import toggle from './toggle.ts?raw';
 import xnorGate from './xnor.ts?raw';
 import xorGate from './xor.ts?raw';
 
@@ -51,5 +52,6 @@ export const SOLUTIONS: Record<string, string> = {
   'making-a-component': makingAComponent,
   'half-adder': halfAdder,
   latch,
+  toggle,
   'full-adder': fullAdder,
 };

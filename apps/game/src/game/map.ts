@@ -31,6 +31,7 @@ export const MAP_ROWS: string[][] = [
   ['half-adder'],
   ['full-adder'],
   ['latch'],
+  ['toggle'],
 ];
 
 /**
