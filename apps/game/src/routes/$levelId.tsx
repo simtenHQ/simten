@@ -13,6 +13,7 @@
 import { elaborate } from '@simten/core';
 import { ErrorDisplay, useCompiledCircuit } from '@simten/embed';
 import { CircuitCanvas } from '@simten/ui/canvas';
+import { ClockControls } from '@simten/ui/editor/components';
 import {
   buildGlobalsFor,
   registerSimtenThemes,
@@ -463,36 +464,80 @@ function PlayLevel({ level }: { level: Level }) {
 
           <ResizableHandle withHandle />
 
-          <ResizablePanel defaultSize={55} minSize={20} className="overflow-hidden">
-            <CircuitCanvas
-              circuit={canvasCircuit}
-              componentLibrary={canvasLibrary ?? undefined}
-              portValues={preview.portValues}
-              theme="dark"
-              showControls
-              // The diagram has to answer "what is this port called", because
-              // the code demands the exact name and nothing else on screen
-              // supplies it. Unlabelled circles leave a beginner guessing at
-              // `.out` and `.in` with the answer sitting right in front of
-              // them. Always on here rather than a toggle: levels are three to
-              // six nodes, so there is no clutter to trade against, and someone
-              // stuck on a port name will not go hunting for a display option.
-              showPortLabels
-              // Re-lay out on every change. The default only re-runs the
-              // layout when nodes appear or disappear, so adding the last
-              // wire — which changes no nodes — left the lamp where it had
-              // been while unconnected.
-              autoLayout
-              // The harness switches are clickable, so the player can drive
-              // their own circuit and see it light up before submitting.
-              onToggleNode={preview.toggleNode}
-              onSetNodeValue={preview.setNodeValue}
-              renderEmptyState={() => (
-                <div className="grid h-full place-items-center text-sm text-muted-foreground">
-                  Your circuit appears here as you write it.
-                </div>
-              )}
-            />
+          <ResizablePanel defaultSize={55} minSize={20} className="flex flex-col overflow-hidden">
+            {/*
+              A clock, when the player's circuit has one.
+
+              Gated on `preview.isSequential` rather than `level.sequential`,
+              the same way `/circuit` does it: the question is whether the
+              circuit on screen has state, not whether the level expects one. A
+              player reaching for a flip-flop early gets the controls, and a
+              sequential level opened on a blank stub does not get an inert row
+              of buttons.
+
+              Above the canvas rather than below the panels, where `/circuit`
+              puts it. The spec sheet here is a bottom overlay, and anything at
+              the foot of the page sits under it — the controls were rendered,
+              on screen, and unclickable, with the spec open by default.
+
+              Without this the Toggle level has nothing to interact with at all:
+              it declares no inputs, so there is not one switch to click, and
+              the circuit could only be observed by solving it.
+            */}
+            {preview.isSequential && (
+              <div className="flex shrink-0 items-center border-b border-border bg-card/95 px-3 py-1">
+                <ClockControls
+                  cycle={preview.cycleCount}
+                  historyLength={preview.history.length}
+                  historyIndex={preview.historyIndex}
+                  isRunning={preview.isRunning}
+                  isViewingPast={preview.isViewingPast}
+                  speed={preview.speed || 15}
+                  maxSpeed={1000}
+                  onStep={preview.tick}
+                  onRun={() => preview.startAutoRun(preview.speed || 15, { displayRate: 30 })}
+                  onPause={() => preview.stopAutoRun()}
+                  onReset={preview.reset}
+                  onStepBack={() => preview.stepBack()}
+                  onStepForward={() => preview.stepForward()}
+                  onSeek={(i) => preview.seek(i)}
+                  onSpeedChange={(speed) => preview.setSpeed(speed)}
+                  showScrubber={preview.history.length > 1}
+                  chromeless
+                />
+              </div>
+            )}
+            <div className="min-h-0 flex-1">
+              <CircuitCanvas
+                circuit={canvasCircuit}
+                componentLibrary={canvasLibrary ?? undefined}
+                portValues={preview.portValues}
+                theme="dark"
+                showControls
+                // The diagram has to answer "what is this port called", because
+                // the code demands the exact name and nothing else on screen
+                // supplies it. Unlabelled circles leave a beginner guessing at
+                // `.out` and `.in` with the answer sitting right in front of
+                // them. Always on here rather than a toggle: levels are three to
+                // six nodes, so there is no clutter to trade against, and someone
+                // stuck on a port name will not go hunting for a display option.
+                showPortLabels
+                // Re-lay out on every change. The default only re-runs the
+                // layout when nodes appear or disappear, so adding the last
+                // wire — which changes no nodes — left the lamp where it had
+                // been while unconnected.
+                autoLayout
+                // The harness switches are clickable, so the player can drive
+                // their own circuit and see it light up before submitting.
+                onToggleNode={preview.toggleNode}
+                onSetNodeValue={preview.setNodeValue}
+                renderEmptyState={() => (
+                  <div className="grid h-full place-items-center text-sm text-muted-foreground">
+                    Your circuit appears here as you write it.
+                  </div>
+                )}
+              />
+            </div>
           </ResizablePanel>
         </ResizablePanelGroup>
       </div>
