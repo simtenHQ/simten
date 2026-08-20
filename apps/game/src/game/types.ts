@@ -77,7 +77,15 @@ export interface Level {
    * connect and no gate to place, so nothing on screen would otherwise account
    * for it. Shown once, then never again.
    */
-  intro?: { headline: string; body: string };
+  intro?: {
+    headline: string;
+    body: string;
+    /**
+     * Somewhere to read more. Kept as data rather than markup so a level stays
+     * plain JSON — see the note at the top of this file.
+     */
+    link?: { label: string; href: string };
+  };
   /** Starting source in the editor. */
   stub: string;
   /**

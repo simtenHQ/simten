@@ -600,8 +600,12 @@ export default circuit('DLatch1', {
     allowed: ['Nand', 'DFlipFlop'],
     sequential: true,
     intro: {
-      headline: 'You have a clock now',
-      body: 'A flip-flop only changes on a clock edge — and you never wire the clock up, because every sequential circuit gets one. The controls under the canvas are it. Tick advances a single edge, Run does it continuously, and between edges nothing in your circuit moves.',
+      headline: 'Now there is a clock',
+      body: 'Everything so far reacted to its switches straight away: flip one and the answer changed. A flip-flop is different. It only reads its input at the moment the clock ticks, and ignores it in between. That moment is called an edge. You never wire the clock up, because every circuit with memory gets one, and the controls under the canvas are it. Tick moves it forward by one edge.',
+      link: {
+        label: 'Sequential logic',
+        href: 'https://en.wikipedia.org/wiki/Sequential_logic',
+      },
     },
     stub: `// A flip-flop is memory with a clock.
 //
