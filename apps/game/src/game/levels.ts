@@ -550,13 +550,12 @@ export default circuit('Latch1', {
 // the next one — so what it stores this tick is what \`d\` was
 // last tick.
 //
-// \`dff.q\` is what it currently holds. \`dff.d\` is what it will
-// hold next. Wire one to the other through something that
-// flips the value and it can never settle.
+// \`dff.q\` is what it currently holds. \`dff.d\` is what it
+// will hold next. Give it the opposite of what it has and it
+// can never settle.
 //
-// You do not need a Not. A NAND with both inputs tied to the
-// same wire is one, which is how you built NOT in the first
-// place.
+// One wire does it. Look at what else the flip-flop already
+// gives you before reaching for a gate.
 
 export default circuit('Toggle1', {
   nodes: {
@@ -577,7 +576,7 @@ export default circuit('Toggle1', {
       { inputs: {}, expect: { q: 1 } },
       { inputs: {}, expect: { q: 0 } },
     ],
-    par: 2,
+    par: 1,
     outro: {
       headline: 'A clock, and something that counts it',
       body: "Nothing drives this but time. Flip a second one every time the first falls and you are counting in binary. That's the last level for now. More to come.",
