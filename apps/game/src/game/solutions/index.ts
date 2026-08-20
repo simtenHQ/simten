@@ -29,6 +29,7 @@
  */
 
 import andGate from './and.ts?raw';
+import dLatch from './d-latch.ts?raw';
 import firstWire from './first-wire.ts?raw';
 import fullAdder from './full-adder.ts?raw';
 import halfAdder from './half-adder.ts?raw';
@@ -51,6 +52,7 @@ export const SOLUTIONS: Record<string, string> = {
   xnor: xnorGate,
   'making-a-component': makingAComponent,
   'half-adder': halfAdder,
+  'd-latch': dLatch,
   latch,
   toggle,
   'full-adder': fullAdder,
