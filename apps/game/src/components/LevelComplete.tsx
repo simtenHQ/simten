@@ -43,6 +43,7 @@ export function LevelComplete({ open, onOpenChange, level, next }: LevelComplete
    */
   const unlocked = gatesGainedAfter(level, next);
   const owned = next?.allowed ?? level.allowed;
+  const gained = unlocked.length > 0;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -70,30 +71,32 @@ export function LevelComplete({ open, onOpenChange, level, next }: LevelComplete
             reward is watching the set fill up — which a line of prose saying
             "Xor unlocked" cannot do.
 
-            The last three levels add no gate; they add a circuit. Showing that
-            keeps the block in place without pretending a part changed hands,
-            and "built" rather than "unlocked" is deliberate: the campaign does
-            not let a later level reuse your HalfAdder, so claiming an unlock
-            would promise something the grader rejects. */}
-        <div className="mt-5">
-          <p className="mb-2 text-[11px] uppercase tracking-wider text-muted-foreground">
-            {unlocked.length > 0 ? 'Your gates' : 'You built'}
-          </p>
-          <ul className="flex flex-wrap gap-1.5">
-            {(unlocked.length > 0 ? owned : [level.target]).map((name) => (
-              <li
-                key={name}
-                className={
-                  unlocked.length === 0 || unlocked.includes(name)
-                    ? 'rounded border border-emerald-600/40 bg-emerald-500/10 px-2 py-1 font-mono text-xs font-medium text-emerald-600 dark:text-emerald-400'
-                    : 'rounded border border-border px-2 py-1 font-mono text-xs text-muted-foreground'
-                }
-              >
-                {name}
-              </li>
-            ))}
-          </ul>
-        </div>
+            Only when a gate actually changed hands. Levels that add none used
+            to show `level.target` here to keep every card the same shape, which
+            meant printing "You built Toggle1" — a variable name, and no answer
+            to a question anyone was asking. A missing block is better than a
+            block with nothing in it. */}
+        {gained && (
+          <div className="mt-5">
+            <p className="mb-2 text-[11px] uppercase tracking-wider text-muted-foreground">
+              Your gates
+            </p>
+            <ul className="flex flex-wrap gap-1.5">
+              {owned.map((name) => (
+                <li
+                  key={name}
+                  className={
+                    unlocked.includes(name)
+                      ? 'rounded border border-emerald-600/40 bg-emerald-500/10 px-2 py-1 font-mono text-xs font-medium text-emerald-600 dark:text-emerald-400'
+                      : 'rounded border border-border px-2 py-1 font-mono text-xs text-muted-foreground'
+                  }
+                >
+                  {name}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
 
         {/* One action. Going back to the circuit to beat par is still there —
             the dialog closes on its X, on Escape and on a click outside — but
