@@ -32,6 +32,7 @@ import { Network, RotateCcw } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { DesktopOnly } from '../components/DesktopOnly';
 import { LevelComplete } from '../components/LevelComplete';
+import { LevelIntro } from '../components/LevelIntro';
 import { Logo } from '../components/Logo';
 import { MobileNotice } from '../components/MobileNotice';
 import { SpecPanel } from '../components/SpecPanel';
@@ -39,7 +40,14 @@ import { forbiddenPrimitives, grade, permittedFor } from '../game/grade';
 import { nameDiagnostics } from '../game/level-name';
 import { LEVELS_BY_ID, nextLevel } from '../game/levels';
 import { sandboxRuntime } from '../game/runtime';
-import { clearDraft, readDrafts, writeDraft, writeProgress } from '../game/storage';
+import {
+  clearDraft,
+  markIntroSeen,
+  readDrafts,
+  readSeenIntros,
+  writeDraft,
+  writeProgress,
+} from '../game/storage';
 import type { GradeResult, Level } from '../game/types';
 import { useVictoryRun } from '../game/useVictoryRun';
 import { SITE_URL } from './__root';
@@ -166,6 +174,24 @@ function PlayLevel({ level }: { level: Level }) {
   // Closing the completion dialog must not immediately reopen it, but a fresh
   // submit should bring it back.
   const [completeDismissed, setCompleteDismissed] = useState(false);
+
+  /**
+   * The level's one-time explainer, opened after mount.
+   *
+   * Read in an effect rather than an initialiser for the reason the map route
+   * documents for its own storage-derived state: reading during render would
+   * either mismatch hydration or flash the dialog at someone who has already
+   * dismissed it.
+   */
+  const [introOpen, setIntroOpen] = useState(false);
+  useEffect(() => {
+    if (level.intro && !readSeenIntros().includes(level.id)) setIntroOpen(true);
+  }, [level.id, level.intro]);
+
+  const dismissIntro = useCallback(() => {
+    markIntroSeen(level.id);
+    setIntroOpen(false);
+  }, [level.id]);
 
   /**
    * Store the draft, a beat after typing stops.
@@ -561,6 +587,8 @@ function PlayLevel({ level }: { level: Level }) {
           whatever the modal setting says. Outside interaction does not dismiss
           it either: clicking a switch is not a request to close the spec.
           Focus stays where it was, so opening this never interrupts typing. */}
+      <LevelIntro level={level} open={introOpen} onDismiss={dismissIntro} />
+
       {result?.status === 'pass' && (
         <LevelComplete
           // Held back until the victory run has finished demonstrating the

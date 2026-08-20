@@ -69,6 +69,23 @@ export interface Level {
    * never need excluding.
    */
   allowed: string[];
+  /**
+   * A one-time explainer, shown on first arrival at this level.
+   *
+   * For a band that introduces something the player has never met and cannot
+   * discover from the brief — the clock arrives this way, with no wire to
+   * connect and no gate to place, so nothing on screen would otherwise account
+   * for it. Shown once, then never again.
+   */
+  intro?: {
+    headline: string;
+    body: string;
+    /**
+     * Somewhere to read more. Kept as data rather than markup so a level stays
+     * plain JSON — see the note at the top of this file.
+     */
+    link?: { label: string; href: string };
+  };
   /** Starting source in the editor. */
   stub: string;
   /**
