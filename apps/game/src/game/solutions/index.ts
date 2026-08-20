@@ -32,10 +32,12 @@ import andGate from './and.ts?raw';
 import firstWire from './first-wire.ts?raw';
 import fullAdder from './full-adder.ts?raw';
 import halfAdder from './half-adder.ts?raw';
+import latch from './latch.ts?raw';
 import makingAComponent from './making-a-component.ts?raw';
 import norGate from './nor.ts?raw';
 import notGate from './not.ts?raw';
 import orGate from './or.ts?raw';
+import toggle from './toggle.ts?raw';
 import xnorGate from './xnor.ts?raw';
 import xorGate from './xor.ts?raw';
 
@@ -49,5 +51,7 @@ export const SOLUTIONS: Record<string, string> = {
   xnor: xnorGate,
   'making-a-component': makingAComponent,
   'half-adder': halfAdder,
+  latch,
+  toggle,
   'full-adder': fullAdder,
 };

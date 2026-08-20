@@ -28,7 +28,14 @@ export interface GradeRuntime {
    */
   select(target: Circuit, library: Circuit[]): Promise<void>;
   /**
-   * Drive the named input signals, then read the named output signals.
+   * Drive the named input signals, advance one clock cycle, then read the named
+   * output signals.
+   *
+   * The tick is part of the contract, not an implementation detail: a level's
+   * vectors are consecutive cycles, which is what lets a sequential level state
+   * its behaviour as a sequence. An implementation that only settles the logic
+   * would agree on every combinational level and quietly disagree on anything
+   * with a clock in it.
    *
    * Keys in and out are the level's BARE signal names. The contract has to say
    * so: the sandbox reports top-level ports namespaced under `__top__` while

@@ -34,6 +34,7 @@ export interface VictoryRun {
 export function useVictoryRun(
   vectors: Vector[],
   drive: (nodeId: string, value: number) => Promise<unknown> | unknown,
+  tick: () => void,
 ): VictoryRun {
   const [active, setActive] = useState<number | null>(null);
   const [proven, setProven] = useState(0);
@@ -43,6 +44,8 @@ export function useVictoryRun(
   const token = useRef(0);
   const driveRef = useRef(drive);
   driveRef.current = drive;
+  const tickRef = useRef(tick);
+  tickRef.current = tick;
 
   useEffect(() => {
     return () => {
@@ -69,6 +72,16 @@ export function useVictoryRun(
         for (const [name, value] of Object.entries(vectors[i].inputs)) {
           await driveRef.current(name, value);
         }
+        // Then a clock edge, exactly as the grader does for every vector.
+        //
+        // Driving inputs propagates but does not advance a clock, so without
+        // this a clocked circuit would sit frozen while the grader — which
+        // ticks — passed it. The run would contradict the verdict, and it would
+        // read as a broken animation rather than a missing edge. Unconditional
+        // rather than keyed off `sequential`, because matching the grader for
+        // every level is what stops the two drifting apart again; on a
+        // combinational circuit a tick changes nothing anyone can see.
+        tickRef.current();
         if (token.current !== mine) return;
         setProven(i + 1);
         await new Promise((r) => setTimeout(r, STEP_MS));

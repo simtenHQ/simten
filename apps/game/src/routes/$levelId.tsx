@@ -13,6 +13,7 @@
 import { elaborate } from '@simten/core';
 import { ErrorDisplay, useCompiledCircuit } from '@simten/embed';
 import { CircuitCanvas } from '@simten/ui/canvas';
+import { ClockControls } from '@simten/ui/editor/components';
 import {
   buildGlobalsFor,
   registerSimtenThemes,
@@ -53,6 +54,16 @@ import { SITE_URL } from './__root';
  * page mid-keystroke is safe.
  */
 const DRAFT_DEBOUNCE_MS = 400;
+
+/**
+ * Height of the clock bar, in pixels.
+ *
+ * Shared rather than expressed twice, because the spec sheet is lifted by
+ * exactly this much when the bar is showing. Two independent values would drift
+ * and leave either a seam or an overlap, and the overlap is invisible until you
+ * try to click something.
+ */
+const CLOCK_BAR_PX = 40;
 
 export const Route = createFileRoute('/$levelId')({
   staticData: { skipDefaultChrome: true },
@@ -224,7 +235,7 @@ function PlayLevel({ level }: { level: Level }) {
 
   // On a solve, drive the player's own circuit through the truth table so the
   // switches flip and the LED lights. The proof is the machine running.
-  const victory = useVictoryRun(level.vectors, preview.setNodeValue);
+  const victory = useVictoryRun(level.vectors, preview.setNodeValue, preview.tick);
 
   /**
    * Gates in the preview that this level forbids.
@@ -497,6 +508,54 @@ function PlayLevel({ level }: { level: Level }) {
         </ResizablePanelGroup>
       </div>
 
+      {/*
+        A clock, when the player's circuit has one.
+
+        Gated on `preview.isSequential` rather than `level.sequential`, the same
+        way `/circuit` does it: the question is whether the circuit on screen
+        has state, not whether the level expects one. A player reaching for a
+        flip-flop early gets the controls, and a sequential level opened on a
+        blank stub does not get an inert row of buttons.
+
+        It sits at the foot of the page and the spec sheet rises above it —
+        see the sheet's `bottom` offset below. Without that the sheet covered
+        it: the controls rendered, on screen, and unclickable, with the spec
+        open by default.
+
+        Without any of this the Toggle level has nothing to interact with at
+        all. It declares no inputs, so there is not one switch to click, and the
+        circuit could only be observed by solving it.
+      */}
+      {preview.isSequential && (
+        <div
+          // Above the sheet's own z-50, so the spec slides up and down *behind*
+          // the bar rather than across it. The bar is a fixture; the sheet is
+          // the thing that moves.
+          className="relative z-[60] flex shrink-0 items-center border-t border-border bg-card/95 px-3"
+          style={{ height: CLOCK_BAR_PX }}
+        >
+          <ClockControls
+            cycle={preview.cycleCount}
+            historyLength={preview.history.length}
+            historyIndex={preview.historyIndex}
+            isRunning={preview.isRunning}
+            isViewingPast={preview.isViewingPast}
+            speed={preview.speed || 15}
+            maxSpeed={1000}
+            onStep={preview.tick}
+            onRun={() => preview.startAutoRun(preview.speed || 15, { displayRate: 30 })}
+            onPause={() => preview.stopAutoRun()}
+            onReset={preview.reset}
+            onStepBack={() => preview.stepBack()}
+            onStepForward={() => preview.stepForward()}
+            onSeek={(i) => preview.seek(i)}
+            onSpeedChange={(speed) => preview.setSpeed(speed)}
+            showScrubber={preview.history.length > 1}
+            chromeless
+          />
+        </div>
+      )}
+
       {/* Non-modal so the editor and canvas keep working behind it, and the
           overlay is off — it is `fixed inset-0` and would swallow every click
           whatever the modal setting says. Outside interaction does not dismiss
@@ -516,6 +575,10 @@ function PlayLevel({ level }: { level: Level }) {
       <Sheet modal={false} open={specOpen} onOpenChange={setSpecOpen}>
         <SheetContent
           side="bottom"
+          // Inline, so it beats the primitive's `bottom-0` class. The spec
+          // slides up from the bottom as before, just stopping short of the
+          // clock bar instead of sitting on top of it.
+          style={{ bottom: preview.isSequential ? CLOCK_BAR_PX : 0 }}
           showOverlay={false}
           onInteractOutside={(e) => e.preventDefault()}
           onOpenAutoFocus={(e) => e.preventDefault()}
