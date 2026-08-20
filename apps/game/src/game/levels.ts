@@ -599,6 +599,10 @@ export default circuit('DLatch1', {
     outputs: ['q'],
     allowed: ['Nand', 'DFlipFlop'],
     sequential: true,
+    intro: {
+      headline: 'You have a clock now',
+      body: 'A flip-flop only changes on a clock edge — and you never wire the clock up, because every sequential circuit gets one. The controls under the canvas are it. Tick advances a single edge, Run does it continuously, and between edges nothing in your circuit moves.',
+    },
     stub: `// A flip-flop is memory with a clock.
 //
 // Your latch followed \`d\` the whole time \`en\` was high. A D
