@@ -42,7 +42,7 @@ export function LevelIntro({
           <DialogTitle className="text-2xl leading-tight">{level.intro.headline}</DialogTitle>
         </DialogHeader>
 
-        <DialogDescription className="mt-4 text-sm leading-relaxed text-muted-foreground">
+        <DialogDescription className="mt-4 whitespace-pre-line text-sm leading-relaxed text-muted-foreground">
           {level.intro.body}
         </DialogDescription>
 
