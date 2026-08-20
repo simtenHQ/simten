@@ -593,18 +593,34 @@ export default circuit('DLatch1', {
     title: 'Toggle',
     tagline: 'Alternate the lamp between on and off, every tick.',
     brief:
-      'This one has no switches. The lamp flips on its own, once per clock tick, forever. Your latch held a value until something changed it; this has to change itself, which means feeding its own output back in through something that flips it.',
+      'This one has no switches. The lamp alternates on its own, once per clock tick, forever. Your latch held a value until you changed it; this has to change itself, by feeding back the opposite of whatever it currently holds.',
     target: 'Toggle1',
     inputs: [],
     outputs: ['q'],
     allowed: ['Nand', 'DFlipFlop'],
     sequential: true,
+    intro: {
+      headline: 'Sequential circuits',
+      body:
+        'Everything so far reacted to its inputs straight away: flip one and the output updates instantly.\n\n' +
+        'A flip-flop is different. It only reads its input at the moment the clock ticks, and ignores it in between. That moment is called an edge.\n\n' +
+        'Simten runs on a single clock and implicitly wires it to every sequential component, so there is nothing for you to connect. Use the clock controls at the bottom of the screen to step through clock cycles and check your circuit runs as you expect.',
+      link: {
+        label: 'Sequential logic',
+        href: 'https://en.wikipedia.org/wiki/Sequential_logic',
+      },
+    },
     stub: `// A flip-flop is memory with a clock.
 //
-// Your latch changed the instant its inputs did. A D flip-flop
-// only looks at \`d\` on a clock edge, and holds it steady until
-// the next one — so what it stores this tick is what \`d\` was
-// last tick.
+// Your latch followed \`d\` the whole time \`en\` was high. A D
+// flip-flop only looks at \`d\` on a clock edge, and holds it
+// steady until the next one — so what it stores this tick is
+// what \`d\` was last tick.
+//
+// Your latch could not do this. Wire its output back to its
+// own input and, while \`en\` was high, the loop would run as
+// fast as the gates allow. Looking once, on the edge, is what
+// turns that race into a single flip.
 //
 // \`dff.q\` is what it currently holds. \`dff.d\` is what it
 // will hold next. Give it the opposite of what it has and it

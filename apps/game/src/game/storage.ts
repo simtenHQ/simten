@@ -62,6 +62,15 @@ export function writeStored<T>(key: string, data: T): void {
 /** Whether the player has already been shown what this is. */
 export const INTRO_SEEN_KEY = 'simten:game:intro-seen';
 
+/**
+ * Levels whose one-time explainer has been shown.
+ *
+ * Separate from `INTRO_SEEN_KEY`, which is the whole game's front door. This is
+ * per level and per concept: a band that introduces something the player has
+ * never met — a clock, say — says so once and then stops.
+ */
+export const LEVEL_INTROS_KEY = 'simten:game:level-intros-seen';
+
 /** Every level's editor contents, whether or not it has ever passed. */
 export const DRAFTS_KEY = 'simten:game:drafts';
 
@@ -109,6 +118,19 @@ export function clearDraft(levelId: string): void {
   const drafts = readDrafts();
   delete drafts[levelId];
   writeStored<Drafts>(DRAFTS_KEY, drafts);
+}
+
+/** Level ids whose explainer has already been shown. */
+export function readSeenIntros(): string[] {
+  const seen = readStored<string[]>(LEVEL_INTROS_KEY, []);
+  return Array.isArray(seen) ? seen : [];
+}
+
+/** Record that a level's explainer has been shown. Idempotent. */
+export function markIntroSeen(levelId: string): void {
+  const seen = readSeenIntros();
+  if (seen.includes(levelId)) return;
+  writeStored(LEVEL_INTROS_KEY, [...seen, levelId]);
 }
 
 export function readProgress(): Progress {
