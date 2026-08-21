@@ -602,9 +602,10 @@ export default circuit('DLatch1', {
     intro: {
       headline: 'Sequential circuits',
       body:
-        'Everything so far reacted to its inputs straight away: flip one and the output updates instantly.\n\n' +
-        'A flip-flop is different. It only reads its input at the moment the clock ticks, and ignores it in between. That moment is called an edge.\n\n' +
-        'Simten runs on a single clock and implicitly wires it to every sequential component, so there is nothing for you to connect. Use the clock controls at the bottom of the screen to step through clock cycles and check your circuit runs as you expect.',
+        'Everything so far has been **combinational**: the output depends only on the inputs right now. Flip one, the output follows instantly.\n\n' +
+        "A flip-flop is **sequential**. It watches a clock, a signal ticking steadily on and off, and only looks at its input at the instant the clock goes from off to on. That instant is called a rising edge. In between, it ignores its input and holds the value it captured. That's memory: your circuit can now remember something.\n\n" +
+        "Simten runs on a single clock and wires it to every sequential component for you, so there's nothing to connect. The wire is real; it is just handled, the same way it is in real hardware design. Every flip-flop in your circuit ticks on the same edge, at the same moment.\n\n" +
+        'Use the clock controls at the bottom to step one cycle at a time and watch the output change only on the tick.',
       link: {
         label: 'Sequential logic',
         href: 'https://en.wikipedia.org/wiki/Sequential_logic',

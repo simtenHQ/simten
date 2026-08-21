@@ -31,11 +31,12 @@ import { createFileRoute, Link, notFound } from '@tanstack/react-router';
 import { Network, RotateCcw } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { DesktopOnly } from '../components/DesktopOnly';
+import { HeaderBar } from '../components/HeaderBar';
 import { LevelComplete } from '../components/LevelComplete';
 import { LevelIntro } from '../components/LevelIntro';
-import { Logo } from '../components/Logo';
 import { MobileNotice } from '../components/MobileNotice';
 import { SpecPanel } from '../components/SpecPanel';
+import ThemeToggle from '../components/ThemeToggle';
 import { forbiddenPrimitives, grade, permittedFor } from '../game/grade';
 import { nameDiagnostics } from '../game/level-name';
 import { LEVELS_BY_ID, nextLevel } from '../game/levels';
@@ -381,16 +382,7 @@ function PlayLevel({ level }: { level: Level }) {
 
   return (
     <div className="flex h-screen w-screen flex-col overflow-hidden bg-gray-50 dark:bg-[#111113]">
-      <header className="flex shrink-0 items-center gap-3 border-b border-border px-4 py-2">
-        {/* Same brand lockup as apps/web's SiteHeader: mark, then wordmark. */}
-        <Link
-          to="/"
-          aria-label="Simten — home"
-          className="flex shrink-0 items-center gap-2 text-foreground no-underline transition-colors hover:text-foreground/80"
-        >
-          <Logo size={20} />
-          <span className="text-sm font-semibold tracking-tight">Simten</span>
-        </Link>
+      <HeaderBar linkHome>
         <div className="h-5 w-px bg-border" />
         <span className="shrink-0 text-sm font-semibold text-foreground/80">{level.title}</span>
         {/* The brief is read once and then ignored, so it belongs here rather
@@ -439,7 +431,10 @@ function PlayLevel({ level }: { level: Level }) {
           <button
             type="button"
             onClick={() => setSpecOpen((v) => !v)}
-            className="whitespace-nowrap rounded-md border border-border px-3 py-1.5 text-xs font-medium"
+            // A floor wide enough for the longer of its two labels. Without it
+            // the button resizes as the word changes and shoves everything to
+            // its right along, which makes a toggle look like a layout bug.
+            className="min-w-[5.5rem] whitespace-nowrap rounded-md border border-border px-3 py-1.5 text-xs font-medium"
           >
             {specOpen ? 'Hide spec' : 'Show spec'}
           </button>
@@ -451,8 +446,9 @@ function PlayLevel({ level }: { level: Level }) {
           >
             {submitting ? 'Checking…' : 'Submit'}
           </button>
+          <ThemeToggle />
         </div>
-      </header>
+      </HeaderBar>
 
       <div className="min-h-0 flex-1">
         <ResizablePanelGroup>
