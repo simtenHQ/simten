@@ -55,8 +55,11 @@ export interface MapSection {
 }
 
 export const MAP_SECTIONS: MapSection[] = [
-  { label: 'First circuits', startRow: 0 },
-  { label: 'Every gate from one', startRow: 2 },
+  // One band from the first wire to the last gate. It was two — a short
+  // "First circuits" and then "Every gate from one" — which split a single
+  // idea in half and put a rule across the map two levels in, before the
+  // player had done anything worth dividing.
+  { label: 'Logic gates', startRow: 0 },
   { label: 'Components', startRow: 7 },
   { label: 'Arithmetic', startRow: 8 },
   { label: 'Memory', startRow: 10 },
