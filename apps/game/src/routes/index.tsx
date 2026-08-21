@@ -13,10 +13,10 @@
 
 import { createFileRoute } from '@tanstack/react-router';
 import { useCallback, useEffect, useState } from 'react';
+import { HeaderBar } from '../components/HeaderBar';
 import { IntroDialog } from '../components/IntroDialog';
 import { LevelDrilldown } from '../components/LevelDrilldown';
 import { LevelMap } from '../components/LevelMap';
-import { Logo } from '../components/Logo';
 import ThemeToggle from '../components/ThemeToggle';
 import { LEVELS_BY_ID } from '../game/levels';
 import { type Drafts, INTRO_SEEN_KEY, readDrafts, readProgress, readStored } from '../game/storage';
@@ -83,11 +83,7 @@ function MapPage() {
 
   return (
     <div className="flex h-screen flex-col">
-      <header className="flex items-center gap-3 border-b border-border px-4 py-2">
-        <span className="flex items-center gap-2 text-foreground">
-          <Logo size={22} />
-          <span className="font-semibold tracking-tight">Simten</span>
-        </span>
+      <HeaderBar>
         <span className="text-sm text-muted-foreground">Build a computer</span>
         <div className="ml-auto flex items-center gap-3">
           <button
@@ -99,7 +95,7 @@ function MapPage() {
           </button>
           <ThemeToggle />
         </div>
-      </header>
+      </HeaderBar>
 
       <main className="min-h-0 flex-1">
         <LevelMap solved={solved} onHoverLevel={onHoverLevel} onExpandLevel={onExpandLevel} />

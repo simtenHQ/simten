@@ -21,6 +21,29 @@ import {
 } from '@simten/ui/primitives/dialog';
 import type { Level } from '../game/types';
 
+/**
+ * `**bold**`, and nothing else.
+ *
+ * A level is data that could be fetched as plain JSON, so its copy stays a
+ * string rather than becoming markup — but the two words this dialog exists to
+ * teach deserve to stand out from the paragraph explaining them. One delimiter,
+ * parsed here, is cheaper than a markdown dependency and cannot grow into one
+ * by accident.
+ */
+function withEmphasis(text: string) {
+  return text.split(/\*\*(.+?)\*\*/g).map((part, i) =>
+    // Odd indices are the captured groups, so they are the emphasised runs.
+    i % 2 === 1 ? (
+      // biome-ignore lint/suspicious/noArrayIndexKey: position is the identity in a split string
+      <strong key={i} className="font-semibold text-foreground">
+        {part}
+      </strong>
+    ) : (
+      part
+    ),
+  );
+}
+
 export function LevelIntro({
   level,
   open,
@@ -43,7 +66,7 @@ export function LevelIntro({
         </DialogHeader>
 
         <DialogDescription className="mt-4 whitespace-pre-line text-sm leading-relaxed text-muted-foreground">
-          {level.intro.body}
+          {withEmphasis(level.intro.body)}
         </DialogDescription>
 
         {level.intro.link && (
