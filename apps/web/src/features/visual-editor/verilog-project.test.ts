@@ -165,6 +165,9 @@ describe('parseRepoUrl', () => {
       repo: 'serv',
     });
     expect(parseRepoUrl('olofk/serv')).toEqual({ owner: 'olofk', repo: 'serv' });
+    // What the address bar shows, and what the field's placeholder suggests.
+    expect(parseRepoUrl('github.com/olofk/serv')).toEqual({ owner: 'olofk', repo: 'serv' });
+    expect(parseRepoUrl('www.github.com/olofk/serv')).toEqual({ owner: 'olofk', repo: 'serv' });
   });
 
   it('keeps the branch and folder from a browsed URL', () => {
@@ -178,6 +181,8 @@ describe('parseRepoUrl', () => {
 
   it('rejects anything that is not a GitHub repo', () => {
     expect(parseRepoUrl('https://gitlab.com/olofk/serv')).toBeUndefined();
+    expect(parseRepoUrl('gitlab.com/olofk/serv')).toBeUndefined();
+    expect(parseRepoUrl('ssh://github.com/olofk/serv')).toBeUndefined();
     expect(parseRepoUrl('olofk')).toBeUndefined();
     expect(parseRepoUrl('')).toBeUndefined();
   });
