@@ -28,6 +28,7 @@ import type {
 } from '@simten/core/simulator';
 import { HexDisplay, Input, Led, Output, Switch } from '@simten/core/std';
 import { type EvalSource, SANDBOX_UNAVAILABLE_ERROR, useSandboxContext } from '@simten/ui/sandbox';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 /**
  * Frames per second for auto-run. Ticks are batched per frame rather than fired
@@ -35,8 +36,6 @@ import { type EvalSource, SANDBOX_UNAVAILABLE_ERROR, useSandboxContext } from '@
  * requested ticks/s is divided into batches of `tps / DEFAULT_DISPLAY_RATE`.
  */
 const DEFAULT_DISPLAY_RATE = 30;
-
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 const TOP_LEVEL_NODE = '__top__';
 
@@ -656,15 +655,10 @@ export function useCircuitSimulator(
     [ready, applyHistoryEntry],
   );
 
-  // Stable indirection so setInterval always calls the latest tick(). Without
+  // Stable indirection so setInterval always calls the latest tickN(). Without
   // this, an auto-run started before `ready` flips true would capture the
-  // bail-early version of tick and never recover, even after the sandbox
-  // becomes ready — the interval would fire forever calling a stale closure.
-  const tickRef = useRef(tick);
-  useEffect(() => {
-    tickRef.current = tick;
-  }, [tick]);
-
+  // bail-early version and never recover, even after the sandbox becomes ready —
+  // the interval would fire forever calling a stale closure.
   const tickNRef = useRef(tickN);
   useEffect(() => {
     tickNRef.current = tickN;
