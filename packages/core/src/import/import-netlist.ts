@@ -80,6 +80,9 @@ interface YosysCell {
   port_directions?: Record<string, 'input' | 'output' | 'inout'>;
   connections: Record<string, YosysBit[]>;
   parameters?: Record<string, string | number>;
+  /** Emitted by `write_json` for every cell. `src` is "file:line.col-line.col",
+   *  which is how a lifted node can be pointed back at the RTL that produced it. */
+  attributes?: Record<string, string>;
 }
 interface YosysModule {
   ports: Record<string, YosysPort>;
@@ -729,6 +732,22 @@ function moduleShapes(netlist: YosysNetlist): Map<string, ModuleShape> {
   return shapes;
 }
 
+/**
+ * Human-readable source location for a cell, from yosys's `src` attribute.
+ *
+ * The raw value is an absolute path inside the synth container's scratch dir
+ * plus a column span — "/tmp/synth/de8285ed/dut.v:4278.7-4285.10". Neither the
+ * server's temp path nor the columns mean anything to the user, and the path is
+ * an internal detail that should not reach a browser, so keep basename + line.
+ */
+function sourceRef(cell: YosysCell): string | undefined {
+  const src = cell.attributes?.src;
+  if (!src) return undefined;
+  const first = src.split('|')[0]; // yosys joins multiple spans with '|'
+  const base = first.slice(first.lastIndexOf('/') + 1);
+  return base.replace(/\.\d+(-\d+\.\d+)?$/, '');
+}
+
 function translateModule(
   name: string,
   mod: YosysModule,
@@ -944,6 +963,10 @@ function translateModule(
     });
   }
 
+  /** `$display`/`$write` cells lifted to nothing — collected so a design with
+   *  fifty of them produces one warning rather than fifty. */
+  const droppedPrints: string[] = [];
+
   // --- emit a node per cell, wiring its inputs --------------------------
   for (const [cn, cell] of Object.entries(mod.cells)) {
     const cid = nid(cn); // sanitized node id (see makeIdSanitizer)
@@ -1073,6 +1096,19 @@ function translateModule(
       continue;
     }
 
+    // `$display`/`$write` become `$print` cells. They have no hardware meaning,
+    // so lifting them is impossible — but throwing takes a whole design down over
+    // a debug statement, and real RTL is full of them (this is what blocked the
+    // servant SoC outright). Drop the cell and say so, rather than either failing
+    // the import or silently swallowing the user's output.
+    //
+    // TODO: emit a Print node feeding a Console instead. Everything needed is on
+    // the cell already — FORMAT, ARGS and EN — so the fix belongs right here.
+    if (cell.type === '$print') {
+      droppedPrints.push(sourceRef(cell) ?? cn);
+      continue;
+    }
+
     const rule = pickRule(cell);
     if (!rule) throw new Error(`${name}: unsupported cell type ${cell.type}`);
     const built = rule.comp(cell);
@@ -1102,6 +1138,15 @@ function translateModule(
         connect(id, 'out', cid, compPort, bitType());
       }
     }
+  }
+
+  if (droppedPrints.length > 0) {
+    const where = [...new Set(droppedPrints)].slice(0, 3).join(', ');
+    const more = droppedPrints.length > 3 ? ` and ${droppedPrints.length - 3} more` : '';
+    warnings.push(
+      `${moduleNameOf(name)}: dropped ${droppedPrints.length} $display/$write statement(s) ` +
+        `(${where}${more}) — simulation output is not shown yet`,
+    );
   }
 
   // --- wire module outputs ----------------------------------------------

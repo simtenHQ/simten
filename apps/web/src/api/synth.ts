@@ -20,22 +20,119 @@ interface SynthContainerResponse {
   error?: string;
 }
 
+/** One file written into the container's work directory at `path`. */
+interface SourceFile {
+  path: string;
+  content: string;
+}
+
+/** One `chparam -set` assignment applied to the top module before elaboration. */
+interface Param {
+  name: string;
+  value: string;
+  kind: 'string' | 'number';
+}
+
+interface ImportBody {
+  verilog?: string;
+  sources?: SourceFile[];
+  includes?: SourceFile[];
+  files?: Record<string, string>;
+  params?: Param[];
+  top?: string;
+}
+
+// The container interpolates paths, parameter names and parameter values into a
+// single `yosys -p` script and rejects anything outside these charsets. The
+// same checks run here so a typo comes back as one sentence from the worker
+// instead of a yosys parse error relayed through three hops.
+//
+// Sizes are deliberately NOT re-checked here: the container owns that budget
+// (`maxSourceSize`/`maxFilesSize`) and already answers with a clear message, and
+// a third copy of the numbers is the drift `scripts/check-synth-limits.ts`
+// exists to prevent.
+const IDENT = /^[A-Za-z_][A-Za-z0-9_$]*$/;
+const INT_VALUE = /^-?[0-9]+$/;
+const SIZED_VALUE = /^[0-9]*'[sS]?[bBoOdDhH][0-9a-fA-FxXzZ_]+$/;
+const STRING_VALUE = /^[A-Za-z0-9._/+-]{0,128}$/;
+const PATH_SEGMENT = /^[A-Za-z0-9_][A-Za-z0-9._-]*$/;
+const MAX_PATH_DEPTH = 8;
+
+function checkPath(path: unknown, what: string): string | undefined {
+  if (typeof path !== 'string' || path.length === 0) return `${what}: every file needs a path`;
+  if (path.startsWith('/')) return `${what}: absolute paths are not allowed (${path})`;
+  const segments = path.split('/');
+  if (segments.length > MAX_PATH_DEPTH)
+    return `${what}: ${path} is more than ${MAX_PATH_DEPTH} levels deep`;
+  for (const segment of segments) {
+    if (!PATH_SEGMENT.test(segment)) {
+      return `${what}: "${segment}" is not allowed in ${path} — letters, digits, '_', '.' and '-', with no leading dot and no '..'`;
+    }
+  }
+  return undefined;
+}
+
+function checkParam(p: Param): string | undefined {
+  if (!IDENT.test(p.name ?? '')) return `"${p.name}" is not a valid parameter name`;
+  if (p.kind === 'string') {
+    return STRING_VALUE.test(p.value)
+      ? undefined
+      : `parameter ${p.name}: "${p.value}" must be at most 128 characters of letters, digits, '.', '_', '/', '+' and '-'`;
+  }
+  return INT_VALUE.test(p.value) || SIZED_VALUE.test(p.value)
+    ? undefined
+    : `parameter ${p.name}: "${p.value}" is neither an integer nor a Verilog sized constant`;
+}
+
+/** First failing check across the whole request, or undefined if it is clean. */
+function validateImport(body: ImportBody): string | undefined {
+  if (!IDENT.test(body.top ?? '')) return `"${body.top}" is not a valid module name`;
+  for (const [what, list] of [
+    ['source', body.sources],
+    ['include', body.includes],
+  ] as const) {
+    for (const f of list ?? []) {
+      const bad = checkPath(f?.path, what);
+      if (bad) return bad;
+      if (typeof f?.content !== 'string') return `${what} ${f?.path}: missing content`;
+    }
+  }
+  for (const name of Object.keys(body.files ?? {})) {
+    const bad = checkPath(name, 'data file');
+    if (bad) return bad;
+  }
+  for (const p of body.params ?? []) {
+    const bad = checkParam(p);
+    if (bad) return bad;
+  }
+  return undefined;
+}
+
 export async function handleVerilogImport(
   request: Request,
   env: Record<string, unknown>,
 ): Promise<Response> {
-  let body: { verilog?: string; top?: string; files?: Record<string, string> };
+  let body: ImportBody;
   try {
     body = await request.json();
   } catch {
     return Response.json({ success: false, error: 'Invalid JSON' }, { status: 400 });
   }
 
-  if (typeof body.verilog !== 'string' || body.verilog.length === 0) {
+  // A pasted module arrives as `verilog`, a project as `sources`. Either alone
+  // is a complete request.
+  const hasVerilog = typeof body.verilog === 'string' && body.verilog.length > 0;
+  const hasSources = Array.isArray(body.sources) && body.sources.length > 0;
+  if (!hasVerilog && !hasSources) {
     return Response.json({ success: false, error: 'verilog source is required' }, { status: 400 });
   }
   if (typeof body.top !== 'string' || body.top.length === 0) {
     return Response.json({ success: false, error: 'top module name is required' }, { status: 400 });
+  }
+
+  const invalid = validateImport(body);
+  if (invalid) {
+    return Response.json({ success: false, error: invalid }, { status: 400 });
   }
 
   // Rate limit — yosys is CPU-heavy and the container has few instances, so keep
@@ -58,10 +155,13 @@ export async function handleVerilogImport(
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      verilog: body.verilog,
+      verilog: body.verilog ?? '',
+      sources: body.sources ?? [],
+      includes: body.includes ?? [],
+      files: body.files ?? {},
+      params: body.params ?? [],
       top: body.top,
       target: 'import',
-      files: body.files,
     }),
   };
 
@@ -106,13 +206,15 @@ export async function handleVerilogImport(
     const deps = [...library.values()].filter((c) => c.name !== top.name);
     const source = circuitToSource(buildFromIR(top, deps));
     // Non-fatal notes: the importer's warnings (e.g. undriven nets) plus yosys's
-    // own warnings from the synth log (e.g. implicit/undeclared wires). Strip the
-    // per-line source location so repeats collapse, dedupe, and cap the list.
+    // own warnings from the synth log (e.g. implicit/undeclared wires). Drop the
+    // line number so repeats of the same problem collapse, but keep the
+    // filename — across a 27-file project the old strip took the file with it
+    // and merged unrelated warnings from different modules into one entry.
     const yosysWarnings = (synthResult.log ?? '')
       .split('\n')
       .filter((l) => /Warning:/i.test(l))
-      .map((l) => l.trim().replace(/\s+at\s+\S+:\d[\d.-]*\s*$/, ''));
-    const allWarnings = [...new Set([...warnings, ...yosysWarnings])].slice(0, 12);
+      .map((l) => l.trim().replace(/(\s+at\s+\S+?):\d[\d.-]*\s*$/, '$1'));
+    const allWarnings = [...new Set([...warnings, ...yosysWarnings])].slice(0, 25);
     return Response.json({
       success: true,
       source,

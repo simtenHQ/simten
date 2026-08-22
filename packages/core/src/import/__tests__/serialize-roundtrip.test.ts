@@ -24,6 +24,7 @@ import { circuitToSource } from '../../circuit/circuit-to-source.js';
 import { executeJsCode } from '../../circuit/execute.js';
 import { bit, buildFromIR, bus, circuit } from '../../circuit/index.js';
 import type { BuiltCircuit } from '../../circuit/types.js';
+import { Mem } from '../../rtl/index.js';
 import { simulate } from '../../sim/index.js';
 import {
   Adder,
@@ -79,6 +80,48 @@ function importedTop(): BuiltCircuit {
   const deps = [...library.values()].filter((c) => c.name !== top.name);
   return buildFromIR(top, deps);
 }
+
+describe('memory contents survive the round trip through generated source', () => {
+  it('a recompiled Mem still holds the $readmemh image it was imported with', () => {
+    // The editor shows generated source and re-compiles *that*, so anything the
+    // factory call drops is gone by the time the design runs. When `store` was
+    // absent from Mem's args the source still read `Mem({ …, store: {…} })` and
+    // still compiled — it just booted from empty memory, and an imported CPU
+    // fetched zeros instead of its program.
+    const image = { 0: 0x40000437, 1: 0x00100293, 5: 0xdeadbeef };
+    const rom = circuit('RomProbe', {
+      inputs: { addr: bus(4) },
+      outputs: { data: bus(32) },
+      nodes: {
+        m: Mem({ rdPorts: 1, wrPorts: 0, abits: 4, width: 32, size: 16, store: image }),
+      },
+      connect: ({ inputs, outputs, nodes }: any) => [
+        inputs.addr.to(nodes.m.rd_addr_0),
+        nodes.m.rd_data_0.to(outputs.data),
+      ],
+    } as any) as BuiltCircuit;
+
+    const source = circuitToSource(rom);
+    expect(source).toMatch(/Mem\(\{ rdPorts: 1, .*store: \{/);
+
+    const res = executeJsCode(source);
+    expect(res.error, res.error ?? '').toBeNull();
+    const entry = res.builtCircuits.find((c) => c.circuit.name === 'RomProbe');
+    expect(entry).toBeDefined();
+
+    const sim = simulate(entry as BuiltCircuit);
+    for (const [addr, want] of Object.entries(image)) {
+      sim.set({ addr: Number(addr) });
+      sim.tick();
+      // A 32-bit bus reads back signed, so normalise both sides.
+      expect((sim.get('data') as number) | 0, `word ${addr}`).toBe(want | 0);
+    }
+    sim.set({ addr: 7 });
+    sim.tick();
+    expect(sim.get('data')).toBe(0);
+    sim.dispose();
+  });
+});
 
 describe('serializer round-trip (import → source → recompile → simulate)', () => {
   it('generated source is Rtl*-free and re-simulates to the iverilog golden', () => {

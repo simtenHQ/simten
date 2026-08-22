@@ -10,6 +10,41 @@ export class SynthContainer extends Container<Env> {
 
 // --- Worker (API Gateway) ---
 
+// Max request body, mirroring `maxRequestBody` in container_src/main.go. This
+// gateway sits in front of the container, so the SMALLER of the two binds — a
+// generous container limit is invisible if this one is lower.
+//
+// The old 120 KB cap was sized for single-file pastes and rejected real
+// projects: SERV's 14 files are ~85 KB of JSON and squeaked through, but the
+// servant SoC's 18 files are ~136 KB and 413'd here while passing every check
+// downstream. Local dev POSTs straight to the container and bypasses this
+// entirely, so the mismatch only ever showed up in production.
+const MAX_REQUEST_BYTES = 2 * 256 * 1024 + 256 * 1024 + 8 * 1024;
+
+/** One client-supplied file, written into the container's work directory. */
+interface SourceFile {
+  path?: string;
+  content?: string;
+}
+
+/** One `chparam -set` assignment applied to the top module. */
+interface Param {
+  name?: string;
+  value?: string;
+  kind?: string;
+}
+
+/** Mirrors `SynthRequest` in `apps/synth/container_src/main.go`. */
+interface SynthBody {
+  verilog?: string;
+  sources?: SourceFile[];
+  includes?: SourceFile[];
+  files?: Record<string, string>;
+  params?: Param[];
+  top?: string;
+  target?: string;
+}
+
 const app = new Hono<{ Bindings: Env }>();
 
 // CORS middleware
@@ -38,18 +73,29 @@ app.post('/synth', async (c) => {
   }
 
   const contentLength = parseInt(c.req.header('Content-Length') ?? '0', 10);
-  if (contentLength > 120 * 1024) {
-    return c.json({ success: false, error: 'Request too large' }, 413);
+  if (contentLength > MAX_REQUEST_BYTES) {
+    return c.json(
+      {
+        success: false,
+        error: `Request too large: ${contentLength} bytes (limit ${MAX_REQUEST_BYTES})`,
+      },
+      413,
+    );
   }
 
-  let body: { verilog?: string; files?: Record<string, string>; top?: string; target?: string };
+  let body: SynthBody;
   try {
     body = await c.req.json();
   } catch {
     return c.json({ success: false, error: 'Invalid JSON' }, 400);
   }
 
-  if (typeof body.verilog !== 'string' || body.verilog.length === 0) {
+  // A single pasted module arrives as `verilog`; a multi-file project arrives as
+  // `sources`. Either is enough, and requiring both would reject every real
+  // project.
+  const hasVerilog = typeof body.verilog === 'string' && body.verilog.length > 0;
+  const hasSources = Array.isArray(body.sources) && body.sources.length > 0;
+  if (!hasVerilog && !hasSources) {
     return c.json({ success: false, error: 'verilog source is required' }, 400);
   }
 
@@ -61,9 +107,17 @@ app.post('/synth', async (c) => {
   const resp = await container.fetch('http://container/synth', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
+    // Every field of the container's SynthRequest has to be named here. This
+    // re-serialization is not a formality — a field added to the container and
+    // forgotten here is dropped in production and nowhere else, because local
+    // dev POSTs straight to the container and never runs this file.
+    // `scripts/check-synth-limits.ts` fails the build when the two drift.
     body: JSON.stringify({
-      verilog: body.verilog,
+      verilog: body.verilog ?? '',
+      sources: body.sources ?? [],
+      includes: body.includes ?? [],
       files: body.files ?? {},
+      params: body.params ?? [],
       top: body.top,
       target: body.target ?? 'generic',
     }),

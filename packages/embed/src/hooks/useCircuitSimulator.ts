@@ -30,6 +30,13 @@ import { HexDisplay, Input, Led, Output, Switch } from '@simten/core/std';
 import { type EvalSource, SANDBOX_UNAVAILABLE_ERROR, useSandboxContext } from '@simten/ui/sandbox';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
+/**
+ * Frames per second for auto-run. Ticks are batched per frame rather than fired
+ * one per timer, so this sets the *update* cadence, not the cycle rate — the
+ * requested ticks/s is divided into batches of `tps / DEFAULT_DISPLAY_RATE`.
+ */
+const DEFAULT_DISPLAY_RATE = 30;
+
 const TOP_LEVEL_NODE = '__top__';
 
 export interface SimulatorState {
@@ -648,26 +655,60 @@ export function useCircuitSimulator(
     [ready, applyHistoryEntry],
   );
 
-  // Stable indirection so setInterval always calls the latest tick(). Without
+  // Stable indirection so setInterval always calls the latest tickN(). Without
   // this, an auto-run started before `ready` flips true would capture the
-  // bail-early version of tick and never recover, even after the sandbox
-  // becomes ready — the interval would fire forever calling a stale closure.
-  const tickRef = useRef(tick);
+  // bail-early version and never recover, even after the sandbox becomes ready —
+  // the interval would fire forever calling a stale closure.
+  const tickNRef = useRef(tickN);
   useEffect(() => {
-    tickRef.current = tick;
-  }, [tick]);
+    tickNRef.current = tickN;
+  }, [tickN]);
+
+  /** Guards against interval callbacks stacking up — see `scheduleAutoRun`. */
+  const tickInFlightRef = useRef(false);
+
+  /**
+   * Auto-run at `ticksPerSecond`, batching per display frame.
+   *
+   * The obvious implementation — one `tick()` per `setInterval(1000/tps)` — is
+   * bounded by things that have nothing to do with the simulator. Every `tick()`
+   * is a postMessage round trip to the sandbox plus a React render, and browsers
+   * clamp nested interval callbacks to ~4ms, so requesting 1000 tick/s produced
+   * a 1ms interval and delivered a couple of hundred cycles a second. The engine
+   * itself does thousands. `tickN` exists precisely for this: N cycles in one
+   * round trip, one React update.
+   *
+   * So the timer runs at the display rate and each firing advances a batch.
+   * Same drift-free shape `SimulationSession.startAutoRun` already uses in core.
+   * The tradeoff is documented on `tickN`: only the final state of a batch is
+   * snapshotted, so stepping back through a free-run lands on batch boundaries.
+   */
+  const scheduleAutoRun = useCallback((ticksPerSecond: number, displayRate: number) => {
+    const batch = Math.max(1, Math.round(ticksPerSecond / displayRate));
+    const periodMs = Math.max(1, Math.round(1000 / displayRate));
+    return setInterval(() => {
+      // Skip, don't queue. A batch slower than its slot would otherwise pile up
+      // callbacks and the sim would fall further behind the longer it ran.
+      if (tickInFlightRef.current) return;
+      tickInFlightRef.current = true;
+      void Promise.resolve(tickNRef.current(batch)).finally(() => {
+        tickInFlightRef.current = false;
+      });
+    }, periodMs);
+  }, []);
 
   const startAutoRun = useCallback(
-    (ticksPerSecond: number, _opts?: { displayRate?: number; onBeforeTick?: () => void }) => {
+    (ticksPerSecond: number, opts?: { displayRate?: number; onBeforeTick?: () => void }) => {
       if (autoRunRef.current) clearInterval(autoRunRef.current);
       setSpeedState(ticksPerSecond);
       setIsRunning(true);
-      const interval = Math.max(1, Math.floor(1000 / ticksPerSecond));
-      autoRunRef.current = setInterval(() => {
-        tickRef.current();
-      }, interval);
+      tickInFlightRef.current = false;
+      autoRunRef.current = scheduleAutoRun(
+        ticksPerSecond,
+        opts?.displayRate ?? DEFAULT_DISPLAY_RATE,
+      );
     },
-    [],
+    [scheduleAutoRun],
   );
 
   const stopAutoRun = useCallback(() => {
@@ -678,17 +719,17 @@ export function useCircuitSimulator(
     setIsRunning(false);
   }, []);
 
-  const setSpeed = useCallback((ticksPerSecond: number) => {
-    setSpeedState(ticksPerSecond);
-    if (autoRunRef.current) {
-      // Restart with new speed
-      clearInterval(autoRunRef.current);
-      const interval = Math.max(1, Math.floor(1000 / ticksPerSecond));
-      autoRunRef.current = setInterval(() => {
-        tickRef.current();
-      }, interval);
-    }
-  }, []);
+  const setSpeed = useCallback(
+    (ticksPerSecond: number) => {
+      setSpeedState(ticksPerSecond);
+      if (autoRunRef.current) {
+        // Restart with the new batch size
+        clearInterval(autoRunRef.current);
+        autoRunRef.current = scheduleAutoRun(ticksPerSecond, DEFAULT_DISPLAY_RATE);
+      }
+    },
+    [scheduleAutoRun],
+  );
 
   useEffect(() => {
     return () => {

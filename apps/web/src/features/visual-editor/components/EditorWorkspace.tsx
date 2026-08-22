@@ -10,7 +10,12 @@
 import { exportVerilog } from '@simten/core/verilog';
 import { builtFromIR, useCircuitCompiler, useCircuitSimulator } from '@simten/embed';
 import { CircuitCanvas } from '@simten/ui/canvas';
-import { ClockControls, ReactFlowProvider, SignalOutputPanel } from '@simten/ui/editor/components';
+import {
+  ClockControls,
+  DEFAULT_SPEED,
+  ReactFlowProvider,
+  SignalOutputPanel,
+} from '@simten/ui/editor/components';
 
 import {
   useCircuitLibraryStore,
@@ -190,6 +195,13 @@ export function EditorWorkspace({
     return builtFromIR(circuit, [...compiler.result.libraryCircuits, ...compiler.result.circuits]);
   }, [compiler.result, circuit]);
 
+  // Verilog export button state — mirrors shareStatus. Export used to fail into
+  // a bare console.error, which was survivable when the only failure was a throw
+  // but not now that it can also succeed with holes in it (see below).
+  const [exportStatus, setExportStatus] = useState<
+    { kind: 'idle' } | { kind: 'error'; message: string }
+  >({ kind: 'idle' });
+
   // Share button state
   const [shareStatus, setShareStatus] = useState<
     { kind: 'idle' } | { kind: 'sharing' } | { kind: 'copied' } | { kind: 'error'; message: string }
@@ -226,7 +238,24 @@ export function EditorWorkspace({
     }
 
     try {
-      const { verilog, files } = exportVerilog(currentCircuit, lib);
+      const { verilog, files, unsupported } = exportVerilog(currentCircuit, lib);
+
+      // An export with unmapped primitives is the dangerous case: it parses,
+      // it synthesizes, and it does not do what the circuit does. Yosys will
+      // happily read it and an equivalence check finds counterexamples. Imported
+      // designs hit this routinely (Slice/ZeroExtend/Pmux have no mapping), so
+      // downloading it would hand someone a file that looks finished and lies.
+      if (unsupported) {
+        const names = Object.keys(unsupported);
+        const count = Object.values(unsupported).flat().length;
+        setExportStatus({
+          kind: 'error',
+          message: `Can't export: ${count} unsupported ${count === 1 ? 'node' : 'nodes'} (${names.slice(0, 3).join(', ')})`,
+        });
+        console.error('Verilog export blocked — unsupported primitives:', unsupported);
+        return;
+      }
+      setExportStatus({ kind: 'idle' });
 
       // Trigger a download for each file produced by the exporter: the main
       // `.v` plus any sidecar `.hex` files referenced by `$readmemh` for
@@ -247,6 +276,10 @@ export function EditorWorkspace({
         download(name, contents);
       }
     } catch (e) {
+      setExportStatus({
+        kind: 'error',
+        message: e instanceof Error ? e.message.slice(0, 60) : 'Export failed',
+      });
       console.error('Verilog export failed:', e);
     }
   }, []);
@@ -532,11 +565,19 @@ export function EditorWorkspace({
                   variant="outline"
                   size="sm"
                   className="gap-2"
-                  title="Export circuit to Verilog (.v)"
+                  title={
+                    exportStatus.kind === 'error'
+                      ? exportStatus.message
+                      : 'Export circuit to Verilog (.v)'
+                  }
                   disabled={!circuit}
                 >
                   <Download className="h-4 w-4" />
-                  <span className="hidden sm:inline text-xs">Verilog</span>
+                  <span
+                    className={`hidden sm:inline text-xs${exportStatus.kind === 'error' ? ' text-destructive' : ''}`}
+                  >
+                    {exportStatus.kind === 'error' ? "Can't export" : 'Verilog'}
+                  </span>
                 </Button>
 
                 {/* Sandbox indicator — when MCP-linked, the file is the source of truth */}
@@ -666,12 +707,11 @@ export function EditorWorkspace({
                 historyIndex={sim.historyIndex}
                 isRunning={sim.isRunning}
                 isViewingPast={sim.isViewingPast}
-                speed={sim.speed || 15}
-                maxSpeed={1000}
+                speed={sim.speed || DEFAULT_SPEED}
                 onStep={sim.tick}
                 onRun={() => {
                   markRunPulseSeen();
-                  sim.startAutoRun(sim.speed || 15, { displayRate: 30 });
+                  sim.startAutoRun(sim.speed || DEFAULT_SPEED);
                 }}
                 onPause={() => sim.stopAutoRun()}
                 pulseRun={!runPulseSeen && !sim.isRunning}
