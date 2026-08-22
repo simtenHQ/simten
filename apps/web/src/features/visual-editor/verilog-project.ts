@@ -212,8 +212,16 @@ export function parseRepoUrl(input: string): RepoRef | undefined {
     .replace(/\.git$/, '')
     .replace(/\/+$/, '');
   if (!trimmed) return undefined;
-  const withoutHost = trimmed.replace(/^https?:\/\/(www\.)?github\.com\//i, '');
-  if (withoutHost === trimmed && /^https?:\/\//i.test(trimmed)) return undefined;
+  // A scheme other than http(s) is not a repo page.
+  const scheme = /^([A-Za-z][\w+.-]*):\/\//.exec(trimmed);
+  if (scheme && !/^https?$/i.test(scheme[1])) return undefined;
+  const withoutScheme = trimmed.replace(/^https?:\/\//i, '');
+  // Anything with a dot before the first slash is a host; only github's counts.
+  // This is what lets `github.com/olofk/serv` through — the form the address
+  // bar shows, and the one this field's own placeholder suggests.
+  const host = /^([^/]+)\//.exec(withoutScheme)?.[1]?.toLowerCase();
+  if (host?.includes('.') && host !== 'github.com' && host !== 'www.github.com') return undefined;
+  const withoutHost = withoutScheme.replace(/^(www\.)?github\.com\//i, '');
   const parts = withoutHost.split('/').filter(Boolean);
   if (parts.length < 2) return undefined;
   const [owner, repo, kind, ref, ...rest] = parts;
