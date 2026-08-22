@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -20,8 +21,32 @@ import (
 	"time"
 )
 
-// Max source size: 100KB
-const maxSourceSize = 100 * 1024
+// Max size of the single `verilog` field.
+//
+// 100KB was sized for pasting one module and is the wrong bound for a real
+// design: SERV's 14 files concatenate to 81KB, picorv32 is 95KB (92% of the old
+// limit), and the servant SoC's 18 files are 130KB and were rejected outright.
+// Until multi-file `sources` lands, hand-concatenation is the only way to import
+// a project, so this has to fit one. The request-body budget below is the real
+// DoS guard.
+const maxSourceSize = 256 * 1024
+
+// Total sidecar data accepted alongside the source ($readmemh hex files etc).
+const maxFilesSize = 256 * 1024
+
+// Max decoded request body.
+//
+// JSON string escaping inflates the payload well past the source size: every
+// newline, tab and quote costs two bytes instead of one. picorv32 is 94KB of
+// tab-indented Verilog and arrives as a 106KB body — its 8506 tabs and 3049
+// newlines add 11.7KB on their own. The previous budget of maxSourceSize+1024
+// allowed 1KB for that, so real designs tripped the *body* limit before the
+// source limit could be checked, and json.Decode's failure surfaced as a
+// misleading "invalid request body".
+//
+// maxSourceSize remains the advertised limit and is enforced after decoding.
+// This bound exists only to stop an unbounded read.
+const maxRequestBody = 2*maxSourceSize + maxFilesSize + 8*1024
 
 // Synthesis timeout — longer than iverilog since Yosys does more work.
 // 30s default (DoS guard for the public service); override with
@@ -160,14 +185,24 @@ func synthHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	r.Body = http.MaxBytesReader(w, r.Body, maxSourceSize+1024)
+	r.Body = http.MaxBytesReader(w, r.Body, maxRequestBody)
 
 	var req SynthRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		// Distinguish "too big" from "malformed" — they need different fixes,
+		// and conflating them is what made an oversized paste look like a
+		// syntax problem.
+		msg := "invalid request body"
+		var tooLarge *http.MaxBytesError
+		if errors.As(err, &tooLarge) {
+			msg = fmt.Sprintf(
+				"request too large: over %d bytes once JSON-encoded (verilog source limit is %d bytes)",
+				maxRequestBody, maxSourceSize)
+		}
 		writeJSON(w, http.StatusBadRequest, SynthResponse{
 			Success: false,
 			Log:     "",
-			Error:   "invalid request body",
+			Error:   msg,
 		})
 		return
 	}
@@ -186,6 +221,30 @@ func synthHandler(w http.ResponseWriter, r *http.Request) {
 			Success: false,
 			Log:     "",
 			Error:   "top module name is required",
+		})
+		return
+	}
+
+	if len(req.Verilog) > maxSourceSize {
+		writeJSON(w, http.StatusBadRequest, SynthResponse{
+			Success: false,
+			Log:     "",
+			Error: fmt.Sprintf("verilog source too large: %d bytes (limit %d)",
+				len(req.Verilog), maxSourceSize),
+		})
+		return
+	}
+
+	filesTotal := 0
+	for name, content := range req.Files {
+		filesTotal += len(name) + len(content)
+	}
+	if filesTotal > maxFilesSize {
+		writeJSON(w, http.StatusBadRequest, SynthResponse{
+			Success: false,
+			Log:     "",
+			Error: fmt.Sprintf("sidecar files too large: %d bytes (limit %d)",
+				filesTotal, maxFilesSize),
 		})
 		return
 	}
@@ -373,7 +432,12 @@ func buildHandler(w http.ResponseWriter, r *http.Request) {
 
 	var req BuildRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeJSON(w, http.StatusBadRequest, BuildResponse{Error: "invalid request body"})
+		msg := "invalid request body"
+		var tooLarge *http.MaxBytesError
+		if errors.As(err, &tooLarge) {
+			msg = "request too large (netlist limit is 20MB)"
+		}
+		writeJSON(w, http.StatusBadRequest, BuildResponse{Error: msg})
 		return
 	}
 

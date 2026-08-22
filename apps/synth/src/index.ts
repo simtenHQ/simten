@@ -10,6 +10,17 @@ export class SynthContainer extends Container<Env> {
 
 // --- Worker (API Gateway) ---
 
+// Max request body, mirroring `maxRequestBody` in container_src/main.go. This
+// gateway sits in front of the container, so the SMALLER of the two binds — a
+// generous container limit is invisible if this one is lower.
+//
+// The old 120 KB cap was sized for single-file pastes and rejected real
+// projects: SERV's 14 files are ~85 KB of JSON and squeaked through, but the
+// servant SoC's 18 files are ~136 KB and 413'd here while passing every check
+// downstream. Local dev POSTs straight to the container and bypasses this
+// entirely, so the mismatch only ever showed up in production.
+const MAX_REQUEST_BYTES = 2 * 256 * 1024 + 256 * 1024 + 8 * 1024;
+
 const app = new Hono<{ Bindings: Env }>();
 
 // CORS middleware
@@ -38,8 +49,14 @@ app.post('/synth', async (c) => {
   }
 
   const contentLength = parseInt(c.req.header('Content-Length') ?? '0', 10);
-  if (contentLength > 120 * 1024) {
-    return c.json({ success: false, error: 'Request too large' }, 413);
+  if (contentLength > MAX_REQUEST_BYTES) {
+    return c.json(
+      {
+        success: false,
+        error: `Request too large: ${contentLength} bytes (limit ${MAX_REQUEST_BYTES})`,
+      },
+      413,
+    );
   }
 
   let body: { verilog?: string; files?: Record<string, string>; top?: string; target?: string };
