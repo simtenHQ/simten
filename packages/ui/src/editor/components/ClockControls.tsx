@@ -5,4 +5,9 @@
 
 'use client';
 
-export { ClockControls, type ClockControlsProps } from '../../canvas/ClockControls';
+export {
+  ClockControls,
+  type ClockControlsProps,
+  DEFAULT_SPEED,
+  MAX_SPEED,
+} from '../../canvas/ClockControls';

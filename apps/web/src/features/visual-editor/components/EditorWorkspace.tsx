@@ -10,7 +10,12 @@
 import { exportVerilog } from '@simten/core/verilog';
 import { builtFromIR, useCircuitCompiler, useCircuitSimulator } from '@simten/embed';
 import { CircuitCanvas } from '@simten/ui/canvas';
-import { ClockControls, ReactFlowProvider, SignalOutputPanel } from '@simten/ui/editor/components';
+import {
+  ClockControls,
+  DEFAULT_SPEED,
+  ReactFlowProvider,
+  SignalOutputPanel,
+} from '@simten/ui/editor/components';
 
 import {
   useCircuitLibraryStore,
@@ -666,12 +671,11 @@ export function EditorWorkspace({
                 historyIndex={sim.historyIndex}
                 isRunning={sim.isRunning}
                 isViewingPast={sim.isViewingPast}
-                speed={sim.speed || 15}
-                maxSpeed={1000}
+                speed={sim.speed || DEFAULT_SPEED}
                 onStep={sim.tick}
                 onRun={() => {
                   markRunPulseSeen();
-                  sim.startAutoRun(sim.speed || 15, { displayRate: 30 });
+                  sim.startAutoRun(sim.speed || DEFAULT_SPEED);
                 }}
                 onPause={() => sim.stopAutoRun()}
                 pulseRun={!runPulseSeen && !sim.isRunning}
