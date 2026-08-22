@@ -20,6 +20,7 @@
     "dev:all": "pnpm --filter @simten/web dev & pnpm --filter @simten/sandbox dev",
     "test": "tsx scripts/check-exports.ts && pnpm -r test",
     "check-exports": "tsx scripts/check-exports.ts",
+    "analytics": "dotenv -- tsx scripts/analytics.ts",
     "lint": "biome check",
     "lint:fix": "biome check --write",
     "format": "biome format --write",
