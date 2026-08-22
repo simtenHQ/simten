@@ -952,31 +952,61 @@ function translateModule(
     return tie;
   };
 
+  // --- shared reconstruction nodes --------------------------------------
+  //
+  // Every bit vector was rebuilt from scratch, so a module that reads bit 0 of
+  // the same register in nine places got nine identical `Slice` nodes, and one
+  // that needs a zero got a fresh `Constant` each time. They are pure and take
+  // the same inputs, so they are the same node — picorv32 emitted 1270
+  // constants of which 1158 were repeats.
+  //
+  // Keyed on everything that distinguishes the node: what it is, its shape, and
+  // where its inputs come from. Two nodes agreeing on all three compute the
+  // same value from the same wires, and merging them is fan-out, which the IR
+  // already expresses. `_u` ties are excluded — they are keyed per undriven net
+  // by `driverOf` and carry a warning each.
+  const shared = new Map<string, { nodeId: string; portName: string }>();
+  const share = (
+    memoKey: string,
+    make: () => { nodeId: string; portName: string },
+  ): { nodeId: string; portName: string } => {
+    const hit = shared.get(memoKey);
+    if (hit) return hit;
+    const made = make();
+    shared.set(memoKey, made);
+    return made;
+  };
+  const at = (src: { nodeId: string; portName: string }) => `${src.nodeId}.${src.portName}`;
+
   // --- resolve a bit vector to a single {nodeId, portName} source -------
   function resolveBits(bits: YosysBit[]): { nodeId: string; portName: string } {
     const segs = segmentBits(bits, driverOf);
 
     const emitSeg = (seg: (typeof segs)[number]): { nodeId: string; portName: string } => {
       if (seg.kind === 'const') {
-        const id = `_k${helperId++}`;
-        pushBuilt(id, Constant({ width: seg.width, value: seg.value }), {
-          width: seg.width,
-          value: seg.value,
+        return share(`k|${seg.width}|${seg.value}`, () => {
+          const id = `_k${helperId++}`;
+          pushBuilt(id, Constant({ width: seg.width, value: seg.value }), {
+            width: seg.width,
+            value: seg.value,
+          });
+          return { nodeId: id, portName: 'out' };
         });
-        return { nodeId: id, portName: 'out' };
       }
       const whole = sourceWidth.get(key(seg.nodeId, seg.portName));
       if (seg.offset === 0 && whole === seg.width)
         return { nodeId: seg.nodeId, portName: seg.portName };
       // partial → slice
-      const id = `_s${helperId++}`;
-      pushBuilt(id, Slice({ inWidth: whole!, offset: seg.offset, width: seg.width }), {
-        inWidth: whole!,
-        offset: seg.offset,
-        width: seg.width,
+      return share(`s|${seg.nodeId}.${seg.portName}|${whole}|${seg.offset}|${seg.width}`, () => {
+        const id = `_s${helperId++}`;
+        pushBuilt(id, Slice({ inWidth: whole!, offset: seg.offset, width: seg.width }), {
+          inWidth: whole!,
+          offset: seg.offset,
+          width: seg.width,
+        });
+        connect(seg.nodeId, seg.portName, id, 'in', portTypeOf(whole!));
+        return { nodeId: id, portName: 'out' };
       });
-      connect(seg.nodeId, seg.portName, id, 'in', portTypeOf(whole!));
-      return { nodeId: id, portName: 'out' };
     };
 
     // Collapse sign/zero extension into ONE node instead of a slice+concat
@@ -986,14 +1016,16 @@ function translateModule(
     const ext = detectExtension(segs);
     if (ext) {
       const base = emitSeg(ext.base);
-      const id = `_x${helperId++}`;
-      const comp =
-        ext.kind === 'sign'
-          ? SignExtend({ inWidth: ext.base.width, outWidth: ext.toWidth })
-          : ZeroExtend({ inWidth: ext.base.width, outWidth: ext.toWidth });
-      pushBuilt(id, comp, { inWidth: ext.base.width, outWidth: ext.toWidth });
-      connect(base.nodeId, base.portName, id, 'in', portTypeOf(ext.base.width));
-      return { nodeId: id, portName: 'out' };
+      return share(`x|${ext.kind}|${at(base)}|${ext.base.width}|${ext.toWidth}`, () => {
+        const id = `_x${helperId++}`;
+        const comp =
+          ext.kind === 'sign'
+            ? SignExtend({ inWidth: ext.base.width, outWidth: ext.toWidth })
+            : ZeroExtend({ inWidth: ext.base.width, outWidth: ext.toWidth });
+        pushBuilt(id, comp, { inWidth: ext.base.width, outWidth: ext.toWidth });
+        connect(base.nodeId, base.portName, id, 'in', portTypeOf(ext.base.width));
+        return { nodeId: id, portName: 'out' };
+      });
     }
 
     const srcs = segs.map((s) => ({ src: emitSeg(s), width: s.width }));
@@ -1001,14 +1033,18 @@ function translateModule(
     let acc = srcs[0];
     for (let i = 1; i < srcs.length; i++) {
       const hi = srcs[i];
-      const id = `_c${helperId++}`;
-      pushBuilt(id, Concat({ hiWidth: hi.width, loWidth: acc.width }), {
-        hiWidth: hi.width,
-        loWidth: acc.width,
+      const lo = acc;
+      const merged = share(`c|${at(hi.src)}|${at(lo.src)}|${hi.width}|${lo.width}`, () => {
+        const id = `_c${helperId++}`;
+        pushBuilt(id, Concat({ hiWidth: hi.width, loWidth: lo.width }), {
+          hiWidth: hi.width,
+          loWidth: lo.width,
+        });
+        connect(hi.src.nodeId, hi.src.portName, id, 'high', portTypeOf(hi.width));
+        connect(lo.src.nodeId, lo.src.portName, id, 'low', portTypeOf(lo.width));
+        return { nodeId: id, portName: 'out' };
       });
-      connect(hi.src.nodeId, hi.src.portName, id, 'high', portTypeOf(hi.width));
-      connect(acc.src.nodeId, acc.src.portName, id, 'low', portTypeOf(acc.width));
-      acc = { src: { nodeId: id, portName: 'out' }, width: acc.width + hi.width };
+      acc = { src: merged, width: lo.width + hi.width };
     }
     return acc.src;
   }
@@ -1022,21 +1058,23 @@ function translateModule(
     signed: boolean,
   ): { nodeId: string; portName: string } {
     if (srcW === targetW) return src;
-    const id = `_w${helperId++}`;
-    if (srcW < targetW) {
-      const comp = signed
-        ? SignExtend({ inWidth: srcW, outWidth: targetW })
-        : ZeroExtend({ inWidth: srcW, outWidth: targetW });
-      pushBuilt(id, comp, { inWidth: srcW, outWidth: targetW });
-    } else {
-      pushBuilt(id, Slice({ inWidth: srcW, offset: 0, width: targetW }), {
-        inWidth: srcW,
-        offset: 0,
-        width: targetW,
-      });
-    }
-    connect(src.nodeId, src.portName, id, 'in', portTypeOf(srcW));
-    return { nodeId: id, portName: 'out' };
+    return share(`w|${at(src)}|${srcW}|${targetW}|${signed}`, () => {
+      const id = `_w${helperId++}`;
+      if (srcW < targetW) {
+        const comp = signed
+          ? SignExtend({ inWidth: srcW, outWidth: targetW })
+          : ZeroExtend({ inWidth: srcW, outWidth: targetW });
+        pushBuilt(id, comp, { inWidth: srcW, outWidth: targetW });
+      } else {
+        pushBuilt(id, Slice({ inWidth: srcW, offset: 0, width: targetW }), {
+          inWidth: srcW,
+          offset: 0,
+          width: targetW,
+        });
+      }
+      connect(src.nodeId, src.portName, id, 'in', portTypeOf(srcW));
+      return { nodeId: id, portName: 'out' };
+    });
   }
 
   function connect(
