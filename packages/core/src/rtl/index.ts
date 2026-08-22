@@ -24,7 +24,7 @@
 
 import { bit, bus, mem } from '../circuit/bit-bus.js';
 import { circuit } from '../circuit/circuit.js';
-import type { BuiltCircuit } from '../circuit/types.js';
+import type { ArgumentValue, BuiltCircuit } from '../circuit/types.js';
 
 /** width===1 → bit port, else bus(width). Mirrors the std convention
  *  (Mux/Constant) so 1-bit nets stay `bit` end to end. */
@@ -40,8 +40,8 @@ const maskOf = (w: number) => (w >= 32 ? 0xffffffff : (1 << w) - 1) >>> 0;
  * would have empty arguments and its sandbox-rebuilt eval couldn't recover the
  * shape (surfaces in the editor as "sWidth is not defined").
  */
-function withArgs<T>(c: T, args: Record<string, number>): T {
-  (c as { _args?: Record<string, number> })._args = args;
+function withArgs<T>(c: T, args: Record<string, ArgumentValue>): T {
+  (c as { _args?: Record<string, ArgumentValue> })._args = args;
   return c;
 }
 
@@ -385,8 +385,17 @@ export function Mem(opts: {
   abits: number;
   width: number;
   size: number;
+  /**
+   * Initial contents as `{ address: word }` — a `$readmemh` image or ROM
+   * table, sparse (only non-zero words). Carried in `node.arguments` like
+   * every other shape arg, which is what makes it survive the round trip
+   * through generated source: without it here, an imported design boots from
+   * empty memory the moment it is re-compiled from the source the editor
+   * shows, and a CPU fetches zeros instead of its program.
+   */
+  store?: Record<number, number>;
 }): BuiltCircuit {
-  const { rdPorts, wrPorts, abits, width, size } = opts;
+  const { rdPorts, wrPorts, abits, width, size, store } = opts;
   const addrW = Math.max(1, Math.ceil(Math.log2(Math.max(2, size))));
   const depth = 1 << addrW;
   const name = `Mem_${rdPorts}r${wrPorts}w_${abits}a_${width}w_${depth}d`;
@@ -449,6 +458,8 @@ export function Mem(opts: {
       meta: { category: 'rtl-import', icon: 'MEM', description: 'Multi-port memory' },
       // biome-ignore lint/suspicious/noExplicitAny: dynamic inputs/outputs shape
     } as any),
-    { rdPorts, wrPorts, abits, width, size },
+    store
+      ? { rdPorts, wrPorts, abits, width, size, store }
+      : { rdPorts, wrPorts, abits, width, size },
   ) as unknown as BuiltCircuit;
 }
