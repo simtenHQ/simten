@@ -13,6 +13,7 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"path"
 	"path/filepath"
 	"regexp"
 	"strconv"
@@ -65,11 +66,115 @@ func timeoutFromEnv(key string, fallback time.Duration) time.Duration {
 	return fallback
 }
 
+// SourceFile is one client-supplied file written into the work directory at
+// `Path` (relative, '/'-separated). Sources are compiled; Includes are only
+// placed on disk and on the -I search path, not compiled.
+type SourceFile struct {
+	Path    string `json:"path"`
+	Content string `json:"content"`
+}
+
+// Param is one `chparam -set` assignment applied to the top module.
+//
+// Kind is carried explicitly rather than inferred because inference is
+// genuinely ambiguous: a string parameter whose value happens to be all digits
+// (memfile = "1234") would be emitted unquoted and mean something else. The
+// client always knows which it meant.
+type Param struct {
+	Name  string `json:"name"`
+	Value string `json:"value"`
+	Kind  string `json:"kind"` // "string" | "number"
+}
+
+// SynthRequest is the wire format. With Sources, Includes and Params all empty
+// every path below reduces to what it did before they existed, so backwards
+// compatibility is structural rather than promised.
+//
+// Note for anyone adding a field: `apps/synth/src/index.ts` is a gateway in
+// front of this service and re-serializes an explicit field list. A field added
+// here and not there is dropped in production only — local dev POSTs straight
+// to this container. `scripts/check-synth-limits.ts` fails the build on that.
 type SynthRequest struct {
-	Verilog string            `json:"verilog"`
-	Files   map[string]string `json:"files"`
-	Top     string            `json:"top"`
-	Target  string            `json:"target"`
+	Verilog  string            `json:"verilog"`  // single-file paste, written as dut.v
+	Sources  []SourceFile      `json:"sources"`  // compiled, in the order given
+	Includes []SourceFile      `json:"includes"` // on disk and on -I, not compiled
+	Files    map[string]string `json:"files"`    // sidecar data ($readmemh hex etc)
+	Params   []Param           `json:"params"`   // chparam, applied to Top
+	Top      string            `json:"top"`
+	Target   string            `json:"target"`
+}
+
+// The yosys script is one string handed to `yosys -p`, which splits on `;` and
+// honours `"`. Filenames, parameter names and parameter values all come from
+// the client, so each is checked against a rejecting whitelist rather than
+// escaped — a whitelist is auditable in one line, an escaper is somewhere for
+// bugs to hide. A file named `a;write_verilog /etc/x.v` is what this stops.
+var (
+	reIdent      = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_$]*$`)
+	reIntValue   = regexp.MustCompile(`^-?[0-9]+$`)
+	reSizedValue = regexp.MustCompile(`^[0-9]*'[sS]?[bBoOdDhH][0-9a-fA-FxXzZ_]+$`)
+	reStrValue   = regexp.MustCompile(`^[A-Za-z0-9._/+-]*$`)
+	// First character is alphanumeric or '_', which rejects ".", ".." and
+	// dotfiles with the same rule that rejects everything else.
+	rePathSeg = regexp.MustCompile(`^[A-Za-z0-9_][A-Za-z0-9._-]*$`)
+)
+
+const (
+	maxPathDepth      = 8
+	maxParamStringLen = 128
+)
+
+// validRelPath checks a client-supplied path and returns it '/'-separated and
+// relative to the work directory.
+func validRelPath(p string) (string, error) {
+	if p == "" {
+		return "", errors.New("empty file path")
+	}
+	if strings.HasPrefix(p, "/") {
+		return "", fmt.Errorf("absolute paths are not allowed: %s", p)
+	}
+	segs := strings.Split(p, "/")
+	if len(segs) > maxPathDepth {
+		return "", fmt.Errorf("path is more than %d levels deep: %s", maxPathDepth, p)
+	}
+	for _, seg := range segs {
+		if !rePathSeg.MatchString(seg) {
+			return "", fmt.Errorf(
+				"path segment %q is not allowed in %s (letters, digits, '_', '.' and '-'; no leading dot, no '..')",
+				seg, p)
+		}
+	}
+	return strings.Join(segs, "/"), nil
+}
+
+// paramLiteral validates one parameter and returns the literal to interpolate.
+func paramLiteral(p Param) (string, error) {
+	if !reIdent.MatchString(p.Name) {
+		return "", fmt.Errorf("invalid parameter name %q", p.Name)
+	}
+	switch p.Kind {
+	case "number", "":
+		if reIntValue.MatchString(p.Value) || reSizedValue.MatchString(p.Value) {
+			return p.Value, nil
+		}
+		return "", fmt.Errorf(
+			"parameter %s: %q is neither an integer nor a Verilog sized constant", p.Name, p.Value)
+	case "string":
+		if len(p.Value) > maxParamStringLen {
+			return "", fmt.Errorf(
+				"parameter %s: string value is longer than %d characters", p.Name, maxParamStringLen)
+		}
+		// The charset excludes '"', backslash, ';', '$' and whitespace, so the
+		// value can be quoted without any escaping. That is the point of it.
+		if !reStrValue.MatchString(p.Value) {
+			return "", fmt.Errorf(
+				"parameter %s: %q contains characters not allowed in a string parameter "+
+					"(letters, digits, '.', '_', '/', '+' and '-')", p.Name, p.Value)
+		}
+		return `"` + p.Value + `"`, nil
+	default:
+		return "", fmt.Errorf(`parameter %s: kind must be "string" or "number", got %q`, p.Name, p.Kind)
+	}
 }
 
 type SynthStats struct {
@@ -98,6 +203,18 @@ func writeJSON(w http.ResponseWriter, status int, v interface{}) {
 	json.NewEncoder(w).Encode(v)
 }
 
+// yosysOpts is what buildYosysScript interpolates. It is a struct rather than
+// five positional strings because every field but NetlistPath now comes from
+// the client and the order would be easy to get wrong.
+type yosysOpts struct {
+	Top         string
+	Target      string
+	NetlistPath string   // server-generated, absolute
+	Sources     []string // validated relative paths, in read order
+	IncludeDirs []string // validated relative dirs for -I
+	Params      []Param
+}
+
 // buildYosysScript returns the Yosys synthesis script for the given target.
 //
 // The "import" target stops at the coarse-grain RTL netlist: it runs the
@@ -107,30 +224,69 @@ func writeJSON(w http.ResponseWriter, status int, v interface{}) {
 // those to gate/tech primitives ($_AND_, LUT4, TRELLIS_FF …), which the
 // importer can't recover into clean source. `hierarchy` (no `flatten`) keeps
 // submodules as separate modules so the importer emits one Circuit per module.
-func buildYosysScript(top, target, netlistPath, dutPath string) string {
-	if target == "import" {
-		// Read with -sv so SystemVerilog sources parse too. -sv is a superset of
-		// Verilog-2005, so plain Verilog reads identically; language detection is
-		// unnecessary. Then stop at the generic RTL netlist (no techmapping) for
-		// @simten/core's importer.
-		return fmt.Sprintf(
-			"read_verilog -sv %s; hierarchy -top %s; proc; opt_clean; memory_collect; stat; write_json %s",
-			dutPath, top, netlistPath,
-		)
+//
+// Source paths are relative because the command runs with Dir set to the work
+// directory; that also keeps the container's scratch path out of the `src`
+// attributes yosys writes into the netlist.
+//
+// Returns an error rather than panicking so a bad top module or parameter is a
+// 400 with a sentence in it, not a 500.
+func buildYosysScript(o yosysOpts) (string, error) {
+	if !reIdent.MatchString(o.Top) {
+		return "", fmt.Errorf("invalid top module name %q", o.Top)
+	}
+	if len(o.Sources) == 0 {
+		return "", errors.New("no Verilog sources to read")
+	}
+	srcs := strings.Join(o.Sources, " ")
+
+	if o.Target != "import" {
+		var synthCmd string
+		switch o.Target {
+		case "ice40":
+			synthCmd = fmt.Sprintf("synth_ice40 -top %s", o.Top)
+		case "ecp5":
+			synthCmd = fmt.Sprintf("synth_ecp5 -top %s", o.Top)
+		default:
+			synthCmd = fmt.Sprintf("synth -top %s", o.Top)
+		}
+		// Synthesis targets keep the default (Verilog-2005) read — reading the
+		// source in-script rather than positionally so behavior matches import.
+		return fmt.Sprintf("read_verilog %s; %s; write_json %s", srcs, synthCmd, o.NetlistPath), nil
 	}
 
-	var synthCmd string
-	switch target {
-	case "ice40":
-		synthCmd = fmt.Sprintf("synth_ice40 -top %s", top)
-	case "ecp5":
-		synthCmd = fmt.Sprintf("synth_ecp5 -top %s", top)
-	default:
-		synthCmd = fmt.Sprintf("synth -top %s", top)
+	// Read with -sv so SystemVerilog sources parse too. -sv is a superset of
+	// Verilog-2005, so plain Verilog reads identically; language detection is
+	// unnecessary. Then stop at the generic RTL netlist (no techmapping) for
+	// @simten/core's importer.
+	read := "read_verilog -sv"
+	// Without -defer, read_verilog elaborates every module with its *default*
+	// parameters as it reads them, which is too early to override: for servant
+	// that runs $readmemh on the default firmware name before chparam can
+	// change it. Gated on there being parameters at all, so the far more common
+	// no-params path keeps the script this shipped with.
+	if len(o.Params) > 0 {
+		read += " -defer"
 	}
-	// Synthesis targets keep the default (Verilog-2005) read — reading the source
-	// in-script rather than positionally so behavior matches the import path.
-	return fmt.Sprintf("read_verilog %s; %s; write_json %s", dutPath, synthCmd, netlistPath)
+	for _, dir := range o.IncludeDirs {
+		read += " -I" + dir
+	}
+
+	var b strings.Builder
+	b.WriteString(read)
+	b.WriteString(" " + srcs)
+	// chparam has to precede hierarchy: hierarchy is what elaborates the top
+	// module, and a parameter set after that has nothing left to change.
+	for _, p := range o.Params {
+		lit, err := paramLiteral(p)
+		if err != nil {
+			return "", err
+		}
+		fmt.Fprintf(&b, "; chparam -set %s %s %s", p.Name, lit, o.Top)
+	}
+	fmt.Fprintf(&b, "; hierarchy -top %s; proc; opt_clean; memory_collect; stat; write_json %s",
+		o.Top, o.NetlistPath)
+	return b.String(), nil
 }
 
 // parseStats extracts cell and wire counts from Yosys stdout.
@@ -179,6 +335,67 @@ func parseStats(output string) *SynthStats {
 	return stats
 }
 
+// stagedDir writes the client's files into the work directory, keeping their
+// relative layout and refusing anything that would land outside it or collide
+// with a file already written.
+//
+// Collisions used to be silent: sidecars were flattened with filepath.Base, so
+// two files named alu.v in different directories overwrote each other and the
+// design synthesized against whichever arrived last. That is a wrong answer
+// rather than an error, which is the one outcome worth spending code on.
+type stagedDir struct {
+	root        string
+	written     map[string]bool
+	sources     []string
+	includeDirs []string
+}
+
+func newStagedDir(root string) *stagedDir {
+	return &stagedDir{root: root, written: map[string]bool{}}
+}
+
+// writeChecked validates a client-supplied path, then writes the file.
+func (s *stagedDir) writeChecked(path, content string) (string, error) {
+	rel, err := validRelPath(path)
+	if err != nil {
+		return "", err
+	}
+	if err := s.write(rel, content); err != nil {
+		return "", err
+	}
+	return rel, nil
+}
+
+func (s *stagedDir) write(rel, content string) error {
+	if s.written[rel] {
+		return fmt.Errorf("duplicate file %s — two files cannot share a path", rel)
+	}
+	full := filepath.Join(s.root, filepath.FromSlash(rel))
+	if err := os.MkdirAll(filepath.Dir(full), 0755); err != nil {
+		return fmt.Errorf("failed to create directory for %s", rel)
+	}
+	if err := os.WriteFile(full, []byte(content), 0644); err != nil {
+		return fmt.Errorf("failed to write file %s", rel)
+	}
+	s.written[rel] = true
+	return nil
+}
+
+// addIncludeDir records the directory an include file lives in, deduped, so it
+// can be passed to read_verilog as -I.
+func (s *stagedDir) addIncludeDir(rel string) {
+	dir := path.Dir(rel)
+	if dir == "." {
+		return // the work directory is already on the search path
+	}
+	for _, existing := range s.includeDirs {
+		if existing == dir {
+			return
+		}
+	}
+	s.includeDirs = append(s.includeDirs, dir)
+}
+
 func synthHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "POST only", http.StatusMethodNotAllowed)
@@ -207,7 +424,7 @@ func synthHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if len(req.Verilog) == 0 {
+	if len(req.Verilog) == 0 && len(req.Sources) == 0 {
 		writeJSON(w, http.StatusBadRequest, SynthResponse{
 			Success: false,
 			Log:     "",
@@ -225,12 +442,19 @@ func synthHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if len(req.Verilog) > maxSourceSize {
+	// maxSourceSize bounds everything that gets compiled, not just the single
+	// `verilog` field — a project split across 30 files is the same load on
+	// yosys as the same bytes concatenated.
+	sourceTotal := len(req.Verilog)
+	for _, f := range append(append([]SourceFile{}, req.Sources...), req.Includes...) {
+		sourceTotal += len(f.Path) + len(f.Content)
+	}
+	if sourceTotal > maxSourceSize {
 		writeJSON(w, http.StatusBadRequest, SynthResponse{
 			Success: false,
 			Log:     "",
 			Error: fmt.Sprintf("verilog source too large: %d bytes (limit %d)",
-				len(req.Verilog), maxSourceSize),
+				sourceTotal, maxSourceSize),
 		})
 		return
 	}
@@ -265,35 +489,76 @@ func synthHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	defer os.RemoveAll(dir)
 
-	// Write Verilog source
-	dutPath := filepath.Join(dir, "dut.v")
-	if err := os.WriteFile(dutPath, []byte(req.Verilog), 0644); err != nil {
-		writeJSON(w, http.StatusInternalServerError, SynthResponse{
-			Success: false,
-			Log:     "",
-			Error:   "failed to write verilog file",
-		})
-		return
+	stage := newStagedDir(dir)
+
+	// A single pasted module still arrives in the verilog field and is compiled
+	// first, so any macros it defines are visible to everything read after.
+	if len(req.Verilog) > 0 {
+		if err := stage.write("dut.v", req.Verilog); err != nil {
+			writeJSON(w, http.StatusBadRequest, SynthResponse{
+				Success: false, Log: "", Error: err.Error(),
+			})
+			return
+		}
+		stage.sources = append(stage.sources, "dut.v")
 	}
 
-	// Write sidecar files (e.g. $readmemh hex files)
+	// Ordered, because source order is semantic: a macro defined in one file is
+	// visible to files read after it in the same read_verilog.
+	for _, f := range req.Sources {
+		rel, err := stage.writeChecked(f.Path, f.Content)
+		if err != nil {
+			writeJSON(w, http.StatusBadRequest, SynthResponse{
+				Success: false, Log: "", Error: err.Error(),
+			})
+			return
+		}
+		stage.sources = append(stage.sources, rel)
+	}
+
+	// Includes land on disk and on -I, but are not compiled: the preprocessor
+	// pulls them in where the source asks for them.
+	for _, f := range req.Includes {
+		rel, err := stage.writeChecked(f.Path, f.Content)
+		if err != nil {
+			writeJSON(w, http.StatusBadRequest, SynthResponse{
+				Success: false, Log: "", Error: err.Error(),
+			})
+			return
+		}
+		stage.addIncludeDir(rel)
+	}
+
+	// Sidecar data ($readmemh hex files and the like) is written at the path the
+	// client gave, not its basename: flattening made two files called `mem.hex`
+	// in different directories silently overwrite each other, and it broke any
+	// $readmemh whose argument had a directory in it.
 	for name, content := range req.Files {
-		// Sanitise: only allow basename, no path traversal
-		name = filepath.Base(name)
-		if err := os.WriteFile(filepath.Join(dir, name), []byte(content), 0644); err != nil {
-			writeJSON(w, http.StatusInternalServerError, SynthResponse{
-				Success: false,
-				Log:     "",
-				Error:   fmt.Sprintf("failed to write sidecar file %s", name),
+		if _, err := stage.writeChecked(name, content); err != nil {
+			writeJSON(w, http.StatusBadRequest, SynthResponse{
+				Success: false, Log: "", Error: err.Error(),
 			})
 			return
 		}
 	}
 
-	// Build and run Yosys. The source is read in-script (see buildYosysScript),
-	// so it is not passed positionally.
+	// Build and run Yosys. The sources are read in-script (see
+	// buildYosysScript), so they are not passed positionally.
 	netlistPath := filepath.Join(dir, "netlist.json")
-	script := buildYosysScript(req.Top, req.Target, netlistPath, dutPath)
+	script, err := buildYosysScript(yosysOpts{
+		Top:         req.Top,
+		Target:      req.Target,
+		NetlistPath: netlistPath,
+		Sources:     stage.sources,
+		IncludeDirs: stage.includeDirs,
+		Params:      req.Params,
+	})
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, SynthResponse{
+			Success: false, Log: "", Error: err.Error(),
+		})
+		return
+	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), synthTimeout)
 	defer cancel()
