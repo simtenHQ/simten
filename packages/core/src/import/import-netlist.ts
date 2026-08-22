@@ -83,13 +83,22 @@ interface YosysCell {
   /** Emitted by `write_json` for every cell. `src` is "file:line.col-line.col",
    *  which is how a lifted node can be pointed back at the RTL that produced it. */
   attributes?: Record<string, string>;
+  /** 0 when the instance was named in the source, 1 when yosys invented the
+   *  name (`$add$serv_alu.v:45$774`). Only the invented ones get renamed after
+   *  the signal they drive — an instance the author named already reads well. */
+  hide_name?: 0 | 1;
 }
 interface YosysModule {
   ports: Record<string, YosysPort>;
   cells: Record<string, YosysCell>;
   /** Signal names for nets. Always emitted by `write_json`; used to name
-   *  signals in diagnostics. Optional so a hand-built netlist still parses. */
-  netnames?: Record<string, { bits: (number | string)[] }>;
+   *  signals in diagnostics and to name the nodes that drive them. Optional so
+   *  a hand-built netlist still parses.
+   *
+   *  `hide_name` is 0 for a name that came from the RTL and 1 for one yosys
+   *  invented while flattening — the distinction that makes this worth reading:
+   *  `serv_alu` has 41 nets and 24 real names among them. */
+  netnames?: Record<string, { bits: (number | string)[]; hide_name?: 0 | 1 }>;
 }
 export interface YosysNetlist {
   modules: Record<string, YosysModule>;
@@ -733,6 +742,82 @@ function moduleShapes(netlist: YosysNetlist): Map<string, ModuleShape> {
 }
 
 /**
+ * Rename yosys-invented cells after the RTL signal they drive.
+ *
+ * Drilling into an imported design used to land on `add_45`, `_k17`, `mux_92` —
+ * names derived from the operator and the source line, which say what a node is
+ * but nothing about what it means. The netlist already carries better ones:
+ * yosys records every net's source name in `netnames` with `hide_name: 0`, and
+ * `serv_alu` has 24 of them against 17 invented — including every label in
+ * SERV's own block diagram (`result_add`, `result_lt`, `add_cy`, `cmp_r`,
+ * `rs1_sx`, `op_b_sx`). Naming a node after its output net is how a reader
+ * thinks about it anyway: the adder that produces `result_add`.
+ *
+ * Two rules keep this from making things worse:
+ *
+ * - Only cells yosys named itself (`hide_name: 1`) are renamed. A submodule
+ *   instance the author called `cpu` keeps `cpu` — it is already the better
+ *   name, and overwriting it with whatever net it happens to drive would lose
+ *   the RTL's own hierarchy labels.
+ * - The whole output port must belong to one named net. A cell driving half of
+ *   `result_add` is not `result_add`, and saying so would be a lie a reader
+ *   can't check.
+ *
+ * Returns raw cell name → preferred name, for cells that have one. Everything
+ * else falls through to the existing operator-and-line naming.
+ */
+function rtlSignalNames(mod: YosysModule): Map<string, string> {
+  // Net bit → the source-level signal it belongs to, plus each signal's full
+  // bit set. First name wins, matching how diagnostics resolve a bit already.
+  const nameOfBit = new Map<number, string>();
+  const bitsOfSignal = new Map<string, number[]>();
+  for (const [signal, info] of Object.entries(mod.netnames ?? {})) {
+    if (info.hide_name === 1) continue;
+    const owned: number[] = [];
+    for (const b of info.bits) {
+      if (typeof b !== 'number' || nameOfBit.has(b)) continue;
+      nameOfBit.set(b, signal);
+      owned.push(b);
+    }
+    if (owned.length > 0) bitsOfSignal.set(signal, owned);
+  }
+  if (nameOfBit.size === 0) return new Map();
+
+  const preferred = new Map<string, string>();
+  for (const [cellName, cell] of Object.entries(mod.cells)) {
+    if (cell.hide_name !== 1) continue;
+    const outputs = Object.entries(cell.port_directions ?? {}).filter(
+      ([, dir]) => dir === 'output',
+    );
+    if (outputs.length !== 1) continue; // ambiguous: which net would name it?
+
+    const bits = cell.connections[outputs[0][0]] ?? [];
+    const driven = new Set(bits.filter((b): b is number => typeof b === 'number'));
+    if (bits.length === 0 || driven.size !== bits.length) continue;
+
+    // Every bit named, and every signal touched driven here in full — otherwise
+    // the name claims more than the node does.
+    const signals = new Set<string>();
+    for (const b of driven) {
+      const signal = nameOfBit.get(b);
+      if (signal === undefined) break;
+      signals.add(signal);
+    }
+    if (signals.size === 0 || [...driven].some((b) => !nameOfBit.has(b))) continue;
+    const whole = [...signals].every((sig) =>
+      (bitsOfSignal.get(sig) ?? []).every((b) => driven.has(b)),
+    );
+    if (!whole) continue;
+
+    // Bit 0 is the value; a higher bit is the carry or flag riding along with
+    // it, as in `{add_cy, result_add} = a + b`.
+    const lsb = typeof bits[0] === 'number' ? nameOfBit.get(bits[0]) : undefined;
+    if (lsb !== undefined) preferred.set(cellName, lsb);
+  }
+  return preferred;
+}
+
+/**
  * Human-readable source location for a cell, from yosys's `src` attribute.
  *
  * The raw value is an absolute path inside the synth container's scratch dir
@@ -778,8 +863,14 @@ function translateModule(
   // Sanitize every cell name → a valid, unique node id up front (before the
   // driver map), so the driver map and every connection/node ref use the same
   // clean id. `nid` maps a raw yosys cell name to its sanitized node id.
+  //
+  // Cells yosys named itself are renamed after the RTL signal they drive, so
+  // the canvas reads `result_add` instead of `add_45`. See rtlSignalNames.
   const idOf = makeIdSanitizer();
-  const cellId = new Map<string, string>(Object.keys(mod.cells).map((cn) => [cn, idOf(cn)]));
+  const preferredName = rtlSignalNames(mod);
+  const cellId = new Map<string, string>(
+    Object.keys(mod.cells).map((cn) => [cn, idOf(preferredName.get(cn) ?? cn)]),
+  );
   const nid = (cn: string) => cellId.get(cn) ?? cn;
 
   // --- driver map: bit id → who drives it -------------------------------
