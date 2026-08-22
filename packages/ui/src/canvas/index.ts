@@ -8,7 +8,7 @@
 export type { CircuitCanvasProps } from './CircuitCanvas';
 export { CircuitCanvas } from './CircuitCanvas';
 export type { ClockControlsProps } from './ClockControls';
-export { ClockControls } from './ClockControls';
+export { ClockControls, DEFAULT_SPEED, MAX_SPEED } from './ClockControls';
 export type { CompositeInspectorDialogProps } from './CompositeInspectorDialog';
 export { CompositeInspectorDialog } from './CompositeInspectorDialog';
 export { computeDagreLayout } from './dagre-layout';

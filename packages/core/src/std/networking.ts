@@ -480,6 +480,113 @@ export const UART_TX = circuit('UART_TX', {
 });
 
 /**
+ * UART receiver — turns a serial pin into bytes.
+ *
+ * The instrument for watching an imported design talk. A CPU that bit-bangs a
+ * UART (SERV's `servant`, picosoc, most soft cores) exposes one output pin and
+ * nothing else; wiring that pin here and `valid`/`data` into a `Console` prints
+ * what the program is printing, with no glue written per design.
+ *
+ * `cyclesPerBit` is the design's clock rate divided by its baud rate, and you
+ * almost always have to set it — the default of 16 is a placeholder, not a
+ * guess at your design. SERV's `servant` bit-bangs at ~279 cycles per bit at
+ * its default clock, so `UART_RX({ cyclesPerBit: 279 })` reads it.
+ *
+ * The frame is the usual 8-N-1: idle high, one low start bit, eight data bits
+ * least-significant first, one high stop bit. Each bit is sampled once, in the
+ * middle, which is where a sampling error is furthest from either edge. `valid`
+ * pulses for a single tick as the stop bit is sampled.
+ *
+ * **Input:** `rx` — `bit`
+ * **Outputs:** `data` — `bus(8)`; `valid` — `bit`
+ *
+ * **Example:** print what an imported SoC transmits
+ * ```ts
+ * circuit('Listen', {
+ *   inputs:  { serial: bit },
+ *   nodes:   { uart: UART_RX({ cyclesPerBit: 279 }), out: Console },
+ *   connect: ({ inputs, nodes: { uart, out } }) => [
+ *     inputs.serial.to(uart.rx),
+ *     uart.data.to(out.data),
+ *     uart.valid.to(out.we),
+ *   ],
+ * })
+ * ```
+ */
+export const UART_RX = circuit(
+  'UART_RX',
+  ({ cyclesPerBit = 16 }: { cyclesPerBit?: number } = {}) => {
+    const period = Math.max(1, Math.floor(cyclesPerBit));
+    // One and a half bit times from the falling edge lands in the middle of data
+    // bit 0: half a bit to the centre of the start bit, one more to the next.
+    const toFirstSample = period + Math.floor(period / 2);
+    return {
+      inputs: { rx: bit },
+      outputs: { data: bus(8), valid: bit },
+      // `index` is where in the frame the next sample lands: 0 before the line
+      // has ever been seen idle, 1 idle, 2..9 the data bits, 10 the stop bit.
+      // Counting from zero rather than using -1 for idle is not cosmetic — an
+      // instantiated node's state starts at 0 whatever initial value it was
+      // declared with, so a negative sentinel reads back as a real frame
+      // position on the first tick.
+      //
+      // `shift` accumulates the frame; `byte` holds the last complete character
+      // so `data` stays readable after `valid` drops.
+      state: { countdown: 0, index: 0, shift: 0, byte: 0, pulse: 0 },
+      eval: ({ byte, pulse }) => ({ data: (byte as number) & 0xff, valid: pulse as number }),
+      onTick: ({ rx, countdown, index, shift, byte }) => {
+        const level = rx ? 1 : 0;
+        const idx = index as number;
+        const held = byte as number;
+
+        // State 0 exists because simulation is 2-state: an undriven pin reads 0,
+        // which is indistinguishable from a start bit. Refusing to receive until
+        // the line has rested high once means a design whose serial pin only
+        // comes up after boot is read from its first real character rather than
+        // locked to the power-on low and recovered several bytes later.
+        if (idx === 0) {
+          return { countdown: 0, index: level, shift: 0, byte: held, pulse: 0 };
+        }
+
+        if (idx === 1) {
+          // Idle. The line rests high, so a low sample is the start bit.
+          if (level === 1) return { countdown: 0, index: 1, shift: 0, byte: held, pulse: 0 };
+          return { countdown: toFirstSample, index: 2, shift: 0, byte: held, pulse: 0 };
+        }
+
+        const remaining = countdown as number;
+        if (remaining > 0) {
+          return {
+            countdown: remaining - 1,
+            index: idx,
+            shift: shift as number,
+            byte: held,
+            pulse: 0,
+          };
+        }
+
+        if (idx <= 9) {
+          // Least-significant bit first, so the first sample shifts down to bit
+          // 0 by the time the eighth arrives.
+          const next = (((shift as number) >>> 1) | (level << 7)) & 0xff;
+          return { countdown: period - 1, index: idx + 1, shift: next, byte: held, pulse: 0 };
+        }
+
+        // Stop bit. The character is complete whether or not the framing held —
+        // reporting the byte beats dropping it over a stop bit this never saw.
+        return { countdown: 0, index: 1, shift: 0, byte: (shift as number) & 0xff, pulse: 1 };
+      },
+      meta: {
+        category: 'io',
+        icon: 'RX',
+        description: 'UART receiver — turns a serial pin into bytes',
+        synthesizable: false,
+      },
+    };
+  },
+);
+
+/**
  * Network interface FIFO. Memory-mapped Ethernet-style NIC with separate
  * TX and RX queues. Write bytes to the TX queue and trigger a drain to
  * emit a frame onto the network port; receive frames into the RX queue

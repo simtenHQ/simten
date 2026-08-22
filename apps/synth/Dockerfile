@@ -2,7 +2,8 @@
 
 # Multi-stage build:
 # 1. Build the Go synthesis server
-# 2. Final image with server + Yosys
+# 2. Fetch and prune the OSS CAD Suite
+# 3. Final image: server + the pruned toolchain, split across several layers
 
 # --- Stage 1: Build the Go server ---
 FROM golang:1.24-alpine AS build-server
@@ -13,10 +14,13 @@ RUN go mod download
 COPY container_src/*.go ./
 RUN CGO_ENABLED=0 GOOS=linux go build -o /server
 
-# --- Stage 2: Final image with FPGA tools ---
+# --- Stage 2: Fetch and prune the FPGA toolchain ---
 # OSS CAD Suite provides yosys, nextpnr-ecp5, ecppack, and more.
 # Standard Debian/Ubuntu repos don't package nextpnr-ecp5 or prjtrellis.
-FROM debian:bookworm-slim
+#
+# This runs in its own stage so the download and the prune can share one RUN
+# (see below) without the pre-prune bytes reaching anything that gets pushed.
+FROM debian:bookworm-slim AS tools
 
 # Install curl + ca-certs for downloading OSS CAD Suite
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -50,6 +54,27 @@ RUN COMPACT=$(echo "$OSS_CAD_SUITE_DATE" | tr -d '-') \
     && rm -f  libexec/nextpnr-ice40 libexec/nextpnr-machxo2 libexec/nextpnr-nexus \
               libexec/surfer libexec/ivl libexec/z3 libexec/cvc4 libexec/cvc5 \
               libexec/pono libexec/prjoxide libexec/verilator_bin_dbg libexec/aigcexmin
+
+# --- Stage 3: Final image ---
+FROM debian:bookworm-slim
+
+# The toolchain arrives as four layers rather than one. A registry push has no
+# resume — a dropped connection re-uploads that blob from zero — so the unit of
+# loss is one layer. As a single 286MB layer, every retry over a flaky link
+# starts again from nothing; split into 134/128/28/15MB, the chunks that landed
+# come back as "Layer already exists" and only the interrupted one repeats.
+#
+# This is about the cost of a retry, not about any size limit: pushes here have
+# failed 8MB into a 15MB blob as readily as 240MB into a 286MB one.
+#
+# The whole tree still has to be copied; nothing here is optional at runtime
+# (see the prune comment in the tools stage for what was already dropped).
+COPY --from=tools /opt/oss-cad-suite/libexec /opt/oss-cad-suite/libexec
+COPY --from=tools /opt/oss-cad-suite/lib     /opt/oss-cad-suite/lib
+COPY --from=tools /opt/oss-cad-suite/share   /opt/oss-cad-suite/share
+COPY --from=tools /opt/oss-cad-suite/bin     /opt/oss-cad-suite/bin
+COPY --from=tools /opt/oss-cad-suite/etc     /opt/oss-cad-suite/etc
+COPY --from=tools /opt/oss-cad-suite/environment /opt/oss-cad-suite/VERSION /opt/oss-cad-suite/
 
 ENV PATH="/opt/oss-cad-suite/bin:$PATH"
 

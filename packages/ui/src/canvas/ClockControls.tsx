@@ -90,6 +90,22 @@ export interface ClockControlsProps {
   pulseRun?: boolean;
 }
 
+/** Fallback tick rate. Sessions report `speed: 0` when stopped, so call sites
+ *  need a non-zero value to resume at. */
+export const DEFAULT_SPEED = 15;
+
+/** Top of the speed slider. The engine does a few thousand cycles/s on an
+ *  imported netlist and ~16k on a hand-written one, so this is roughly where
+ *  asking for more stops buying anything. */
+export const MAX_SPEED = 10_000;
+
+/** The slider is logarithmic. Linear would be useless here: with a 10k ceiling
+ *  on an 80px track, everything under 100 tick/s — which is the whole range the
+ *  game and any step-through debugging live in — lands in the first half-pixel.
+ *  On a log track each decade gets an equal share. */
+const speedToPos = (v: number) => Math.log10(Math.max(1, v));
+const posToSpeed = (p: number) => Math.round(10 ** p);
+
 export function ClockControls({
   cycle,
   historyLength,
@@ -104,8 +120,8 @@ export function ClockControls({
   onStepForward,
   onSeek,
   onSpeedChange,
-  speed = 1,
-  maxSpeed = 100,
+  speed = DEFAULT_SPEED,
+  maxSpeed = MAX_SPEED,
   showScrubber,
   floating,
   chromeless,
@@ -145,10 +161,11 @@ export function ClockControls({
               <Gauge className="h-3.5 w-3.5 text-muted-foreground/70" aria-hidden />
               <input
                 type="range"
-                min="1"
-                max={maxSpeed}
-                value={speed}
-                onChange={(e) => onSpeedChange(Number(e.target.value))}
+                min={0}
+                max={speedToPos(maxSpeed)}
+                step={0.01}
+                value={speedToPos(speed)}
+                onChange={(e) => onSpeedChange(posToSpeed(Number(e.target.value)))}
                 className="w-20 h-1 rounded-lg appearance-none cursor-pointer accent-blue-600"
                 disabled={isViewingPast}
                 aria-label="Simulation speed"

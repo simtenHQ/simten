@@ -69,6 +69,7 @@ export {
   Eth_ProtocolDecoder,
   MemBusMux,
   NIC_FIFO,
+  UART_RX,
   UART_TX,
 } from './networking.js';
 // Reconstruction / bit-manipulation (importer authoring constructs)

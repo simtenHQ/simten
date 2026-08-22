@@ -40,6 +40,18 @@ export interface ExportResult {
    * Empty when the circuit has no memory that exceeded the threshold.
    */
   files: Record<string, string>;
+  /**
+   * Primitives the exporter had no mapping for, as `primitiveType` → node ids.
+   *
+   * Empty on a clean export. When non-empty the emitted Verilog contains
+   * `// WARNING: Unsupported primitive` comments in place of real logic, so it
+   * parses and synthesizes but does NOT do what the circuit does — a yosys
+   * equivalence check against the original finds counterexamples. Callers that
+   * hand the output to a user or a toolchain must refuse rather than ship it.
+   *
+   * Optional so existing consumers are unaffected.
+   */
+  unsupported?: Record<string, string[]>;
 }
 
 /**

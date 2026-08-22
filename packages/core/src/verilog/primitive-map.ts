@@ -15,6 +15,17 @@
 
 import { getCircuitEval } from '../circuit/eval-registry.js';
 import type { ArgumentValue } from '../types/circuit.js';
+
+/**
+ * Sentinel emitted in place of logic when a primitive has no Verilog mapping.
+ *
+ * Kept as a constant because three places depend on the exact text: the emit
+ * site below, `isBasePrimitive`, and the exporter, which scans for it to report
+ * `ExportResult.unsupported`. A silent divergence here would mean broken Verilog
+ * exporting as if it were clean.
+ */
+export const UNSUPPORTED_MARKER = 'WARNING: Unsupported primitive';
+
 import { tryEmitFromEval } from './eval-synth.js';
 
 export interface PrimitiveWires {
@@ -921,7 +932,7 @@ export function emitPrimitive(ctx: PrimitiveContext): { lines: string[]; declara
       const synthResult = tryEmitFromEval(ctx, getCircuitEval);
       if (synthResult) return synthResult;
       return {
-        lines: [`// WARNING: Unsupported primitive "${primitiveType}" (${id})`],
+        lines: [`// ${UNSUPPORTED_MARKER} "${primitiveType}" (${id})`],
         declarations: [],
       };
     }
@@ -987,5 +998,5 @@ export function isBasePrimitive(primitiveType: string): boolean {
     resetName: 'rst_n',
     target: 'simulation',
   });
-  return !result.lines.some((l) => l.includes('WARNING: Unsupported primitive'));
+  return !result.lines.some((l) => l.includes(UNSUPPORTED_MARKER));
 }

@@ -21,6 +21,7 @@ import {
   type PrimitiveContext,
   type PrimitiveWires,
   type StateInit,
+  UNSUPPORTED_MARKER,
 } from './primitive-map.js';
 import type { ExportResult, VerilogExportOptions } from './types.js';
 import { INLINE_MEMORY_THRESHOLD } from './types.js';
@@ -114,6 +115,8 @@ function emitFlatModule(
   opts: Required<VerilogExportOptions>,
 ): ExportResult {
   const moduleName = opts.topModuleName || sanitizeId(circuit.name);
+  /** primitiveType -> node ids the exporter had no mapping for. */
+  const unsupported: Record<string, string[]> = {};
   // Sidecar files (hex) filled in by primitive-map as it emits memory init
   // above the inline threshold. Drained into ExportResult.files at the end.
   const sidecarFiles: Record<string, string> = {};
@@ -347,6 +350,14 @@ function emitFlatModule(
     };
 
     const result = emitPrimitive(ctx);
+    // Record gaps as they happen rather than probing afterwards: `isBasePrimitive`
+    // tests emitPrimitive with empty wires and no args, which can differ from what
+    // a real node produces. Here the node is the one actually being emitted.
+    if (result.lines.some((l) => l.includes(UNSUPPORTED_MARKER))) {
+      const ids = unsupported[node.primitiveType] ?? [];
+      ids.push(node.id);
+      unsupported[node.primitiveType] = ids;
+    }
     allDeclarations.push(...result.declarations);
     if (result.lines.length > 0) {
       allLogicLines.push(`  // ${node.primitiveType} "${sanitizeId(node.id)}"`);
@@ -384,5 +395,9 @@ function emitFlatModule(
   lines.push('endmodule');
   lines.push('');
 
-  return { verilog: lines.join('\n'), files: sidecarFiles };
+  return {
+    verilog: lines.join('\n'),
+    files: sidecarFiles,
+    ...(Object.keys(unsupported).length > 0 ? { unsupported } : {}),
+  };
 }

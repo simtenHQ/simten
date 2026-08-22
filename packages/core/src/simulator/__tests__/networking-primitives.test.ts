@@ -9,7 +9,7 @@ import { describe, expect, it } from 'vitest';
 import type { BuiltCircuit } from '../../circuit/index.js';
 import { bit, bus, circuit } from '../../circuit/index.js';
 import { simulate } from '../../sim/simulate.js';
-import { MemBusMux, NIC_FIFO, UART_TX } from '../../std/index.js';
+import { MemBusMux, NIC_FIFO, UART_RX, UART_TX } from '../../std/index.js';
 
 /** Helper: simulate combinational circuit, return output values */
 function sim<C extends BuiltCircuit>(
@@ -244,6 +244,122 @@ describe('UART_TX', () => {
       mem_write: false,
     });
     expect(out.read_data).toBe(1);
+  });
+});
+
+// ============================================================================
+// UART_RX
+// ============================================================================
+
+describe('UART_RX', () => {
+  const CYCLES_PER_BIT = 7;
+
+  const rxCircuit = circuit('TestUARTRX', {
+    inputs: { rx: bit },
+    outputs: { data: bus(8), valid: bit },
+    nodes: { uart: UART_RX({ cyclesPerBit: CYCLES_PER_BIT }) },
+    connect: ({ inputs, outputs, nodes: { uart } }) => [
+      inputs.rx.to(uart.rx),
+      uart.data.to(outputs.data),
+      uart.valid.to(outputs.valid),
+    ],
+  });
+
+  /** The 8-N-1 waveform for `text`: idle high, start low, LSB first, stop high. */
+  function waveform(text: string, idleCycles = CYCLES_PER_BIT): number[] {
+    const levels: number[] = new Array(idleCycles).fill(1);
+    const hold = (level: number) => {
+      for (let i = 0; i < CYCLES_PER_BIT; i++) levels.push(level);
+    };
+    for (const char of text) {
+      const byte = char.charCodeAt(0) & 0xff;
+      hold(0); // start
+      for (let b = 0; b < 8; b++) hold((byte >> b) & 1);
+      hold(1); // stop
+    }
+    // Trailing idle so the final stop bit is sampled before the run ends.
+    for (let i = 0; i < CYCLES_PER_BIT * 2; i++) levels.push(1);
+    return levels;
+  }
+
+  /** Drive a waveform through the receiver and collect the bytes it reports. */
+  function receive(levels: number[]): string {
+    const s = simulate(rxCircuit);
+    try {
+      let out = '';
+      for (const level of levels) {
+        s.set({ rx: level } as any);
+        s.tick();
+        if (s.get('valid' as any)) out += String.fromCharCode(s.get('data' as any) as number);
+      }
+      return out;
+    } finally {
+      s.dispose();
+    }
+  }
+
+  it('receives a byte', () => {
+    expect(receive(waveform('K'))).toBe('K');
+  });
+
+  it('receives back-to-back characters with no gap', () => {
+    expect(receive(waveform("Hi, I'm Servant!"))).toBe("Hi, I'm Servant!");
+  });
+
+  it('reports nothing while the line idles high', () => {
+    expect(receive(new Array(CYCLES_PER_BIT * 20).fill(1))).toBe('');
+  });
+
+  it('recovers the next character after a framing error', () => {
+    // Replace the first frame's stop bit with a low level: the byte still
+    // arrives, and the receiver resynchronises on the next start bit.
+    const levels = waveform('AB');
+    const stopBitStart = CYCLES_PER_BIT * 10; // idle + start + 8 data
+    for (let i = 0; i < CYCLES_PER_BIT; i++) levels[stopBitStart + i] = 0;
+    expect(receive(levels)).toBe('AB');
+  });
+
+  it('ignores a line that powers on low instead of locking to it', () => {
+    // Simulation is 2-state, so a serial pin that is undriven until the design
+    // boots reads 0 — indistinguishable from a start bit. The receiver has to
+    // wait for the line to rest high before believing anything, or it locks to
+    // the power-on low and garbles the first several characters.
+    const levels = [...new Array(CYCLES_PER_BIT * 5).fill(0), ...waveform('Hi')];
+    expect(receive(levels)).toBe('Hi');
+  });
+
+  it('samples at the rate it was given, not the default', () => {
+    const slow = circuit('TestUARTRXSlow', {
+      inputs: { rx: bit },
+      outputs: { data: bus(8), valid: bit },
+      nodes: { uart: UART_RX({ cyclesPerBit: 31 }) },
+      connect: ({ inputs, outputs, nodes: { uart } }) => [
+        inputs.rx.to(uart.rx),
+        uart.data.to(outputs.data),
+        uart.valid.to(outputs.valid),
+      ],
+    });
+    const levels: number[] = new Array(31).fill(1);
+    const hold = (level: number) => {
+      for (let i = 0; i < 31; i++) levels.push(level);
+    };
+    hold(0);
+    for (let b = 0; b < 8; b++) hold((0x5a >> b) & 1);
+    hold(1);
+    for (let i = 0; i < 62; i++) levels.push(1);
+
+    const s = simulate(slow);
+    try {
+      const bytes: number[] = [];
+      for (const level of levels) {
+        s.set({ rx: level } as any);
+        s.tick();
+        if (s.get('valid' as any)) bytes.push(s.get('data' as any) as number);
+      }
+      expect(bytes).toEqual([0x5a]);
+    } finally {
+      s.dispose();
+    }
   });
 });
 

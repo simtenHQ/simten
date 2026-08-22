@@ -145,6 +145,14 @@ jobs:
         # scripts directly, so it needs its own step.
         run: pnpm check-exports
 
+      - name: Synth request-size drift check
+        # The Hono gateway (apps/synth/src/index.ts) fronts the Go container
+        # (container_src/main.go) and both cap the request body, so the smaller
+        # limit silently binds. A 130 KB multi-file Verilog import passed every
+        # container check and 413'd at the gateway — invisible in local dev,
+        # which POSTs to the container directly.
+        run: pnpm check-synth-limits
+
       - name: Typecheck
         run: pnpm typecheck
 

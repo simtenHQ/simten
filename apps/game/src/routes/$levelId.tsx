@@ -13,7 +13,7 @@
 import { elaborate } from '@simten/core';
 import { ErrorDisplay, useCompiledCircuit } from '@simten/embed';
 import { CircuitCanvas } from '@simten/ui/canvas';
-import { ClockControls } from '@simten/ui/editor/components';
+import { ClockControls, DEFAULT_SPEED } from '@simten/ui/editor/components';
 import {
   buildGlobalsFor,
   registerSimtenThemes,
@@ -562,10 +562,9 @@ function PlayLevel({ level }: { level: Level }) {
             historyIndex={preview.historyIndex}
             isRunning={preview.isRunning}
             isViewingPast={preview.isViewingPast}
-            speed={preview.speed || 15}
-            maxSpeed={1000}
+            speed={preview.speed || DEFAULT_SPEED}
             onStep={preview.tick}
-            onRun={() => preview.startAutoRun(preview.speed || 15, { displayRate: 30 })}
+            onRun={() => preview.startAutoRun(preview.speed || DEFAULT_SPEED)}
             onPause={() => preview.stopAutoRun()}
             onReset={preview.reset}
             onStepBack={() => preview.stepBack()}
