@@ -21,6 +21,30 @@ export class SynthContainer extends Container<Env> {
 // entirely, so the mismatch only ever showed up in production.
 const MAX_REQUEST_BYTES = 2 * 256 * 1024 + 256 * 1024 + 8 * 1024;
 
+/** One client-supplied file, written into the container's work directory. */
+interface SourceFile {
+  path?: string;
+  content?: string;
+}
+
+/** One `chparam -set` assignment applied to the top module. */
+interface Param {
+  name?: string;
+  value?: string;
+  kind?: string;
+}
+
+/** Mirrors `SynthRequest` in `apps/synth/container_src/main.go`. */
+interface SynthBody {
+  verilog?: string;
+  sources?: SourceFile[];
+  includes?: SourceFile[];
+  files?: Record<string, string>;
+  params?: Param[];
+  top?: string;
+  target?: string;
+}
+
 const app = new Hono<{ Bindings: Env }>();
 
 // CORS middleware
@@ -59,14 +83,19 @@ app.post('/synth', async (c) => {
     );
   }
 
-  let body: { verilog?: string; files?: Record<string, string>; top?: string; target?: string };
+  let body: SynthBody;
   try {
     body = await c.req.json();
   } catch {
     return c.json({ success: false, error: 'Invalid JSON' }, 400);
   }
 
-  if (typeof body.verilog !== 'string' || body.verilog.length === 0) {
+  // A single pasted module arrives as `verilog`; a multi-file project arrives as
+  // `sources`. Either is enough, and requiring both would reject every real
+  // project.
+  const hasVerilog = typeof body.verilog === 'string' && body.verilog.length > 0;
+  const hasSources = Array.isArray(body.sources) && body.sources.length > 0;
+  if (!hasVerilog && !hasSources) {
     return c.json({ success: false, error: 'verilog source is required' }, 400);
   }
 
@@ -78,9 +107,17 @@ app.post('/synth', async (c) => {
   const resp = await container.fetch('http://container/synth', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
+    // Every field of the container's SynthRequest has to be named here. This
+    // re-serialization is not a formality — a field added to the container and
+    // forgotten here is dropped in production and nowhere else, because local
+    // dev POSTs straight to the container and never runs this file.
+    // `scripts/check-synth-limits.ts` fails the build when the two drift.
     body: JSON.stringify({
-      verilog: body.verilog,
+      verilog: body.verilog ?? '',
+      sources: body.sources ?? [],
+      includes: body.includes ?? [],
       files: body.files ?? {},
+      params: body.params ?? [],
       top: body.top,
       target: body.target ?? 'generic',
     }),

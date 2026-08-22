@@ -1,19 +1,27 @@
 #!/usr/bin/env tsx
 /**
- * Drift lint: the synth request-size limit is defined twice, in two languages,
- * and the two copies must agree.
+ * Drift lint: the synth request contract is written down twice, in two
+ * languages, and the two copies must agree.
  *
  * `apps/synth/src/index.ts` is a Hono gateway sitting in front of the Go
- * container in `apps/synth/container_src/main.go`. Both check the request body
- * size, so **the smaller of the two binds** — and a generous container limit is
- * invisible if the gateway's is lower.
+ * container in `apps/synth/container_src/main.go`. It checks two things this
+ * lint watches:
  *
- * That is not hypothetical. The gateway sat at a hardcoded 120 KB, sized for
- * single-file pastes, while the container was raised for multi-file imports.
- * The servant SoC (18 Verilog files, ~136 KB of JSON once escaped) passed every
- * check downstream and 413'd at the gateway. It was invisible in local dev,
- * which POSTs to the container directly and never touches the gateway at all,
- * so it would only ever have surfaced in production.
+ * 1. **The body-size limit.** Both sides cap the request, so the smaller of the
+ *    two binds — a generous container limit is invisible if the gateway's is
+ *    lower. The gateway sat at a hardcoded 120 KB, sized for single-file
+ *    pastes, while the container was raised for multi-file imports; the servant
+ *    SoC (~136 KB of JSON once escaped) passed every check downstream and 413'd
+ *    at the gateway.
+ *
+ * 2. **The field list.** The gateway re-serializes an explicit object rather
+ *    than forwarding the body, so a field added to the container's SynthRequest
+ *    and not to that object is silently dropped — the request succeeds and the
+ *    feature just does nothing.
+ *
+ * Both failures share the same shape: invisible in local dev, which POSTs to
+ * the container directly and never touches the gateway, and visible only in
+ * production.
  *
  * Run via `pnpm test` and CI, next to check-exports.ts.
  */
@@ -88,10 +96,57 @@ if (goValue !== undefined && tsValue !== undefined && goValue !== tsValue) {
   );
 }
 
+// --- The field list -------------------------------------------------------
+
+/** Pull the `json:"…"` tags off a Go struct. */
+function goStructFields(source: string, structName: string): string[] {
+  const m = new RegExp(`type\\s+${structName}\\s+struct\\s*\\{([\\s\\S]*?)\\n\\}`).exec(source);
+  if (!m) return [];
+  return [...m[1].matchAll(/`json:"(\w+)"/g)].map((t) => t[1]);
+}
+
+/**
+ * Pull the keys out of the `JSON.stringify({…})` the gateway forwards to a
+ * container route — the object literal that follows the `fetch` for that path.
+ */
+function gatewayForwardedKeys(source: string, route: string): string[] {
+  const at = source.indexOf(route);
+  if (at === -1) return [];
+  const open = source.indexOf('JSON.stringify({', at);
+  if (open === -1) return [];
+  const close = source.indexOf('})', open);
+  if (close === -1) return [];
+  const literal = source.slice(open + 'JSON.stringify({'.length, close);
+  return [...literal.matchAll(/^\s*(\w+):/gm)].map((k) => k[1]);
+}
+
+const goFields = goStructFields(goSource, 'SynthRequest');
+const gatewayKeys = new Set(gatewayForwardedKeys(tsSource, 'http://container/synth'));
+
+if (goFields.length === 0) {
+  failures.push(`${GO_FILE}: could not find \`type SynthRequest struct\``);
+} else if (gatewayKeys.size === 0) {
+  failures.push(`${TS_FILE}: could not find the JSON.stringify forwarded to /synth`);
+} else {
+  const dropped = goFields.filter((f) => !gatewayKeys.has(f));
+  if (dropped.length > 0) {
+    failures.push(
+      `the gateway drops ${dropped.length} field(s) the container reads: ${dropped.join(', ')}\n` +
+        `    ${GO_FILE}  SynthRequest has ${goFields.join(', ')}\n` +
+        `    ${TS_FILE}  forwards ${[...gatewayKeys].join(', ')}\n` +
+        `  The gateway re-serializes an explicit list, so an unforwarded field is\n` +
+        `  dropped in production only — local dev POSTs to the container directly.`,
+    );
+  }
+}
+
 if (failures.length > 0) {
   console.error('check-synth-limits failed:\n');
   for (const f of failures) console.error(`  ${f}\n`);
   process.exit(1);
 }
 
-console.log(`check-synth-limits: gateway and container agree at ${goValue} bytes`);
+console.log(
+  `check-synth-limits: gateway and container agree at ${goValue} bytes ` +
+    `and on all ${goFields.length} request fields`,
+);
