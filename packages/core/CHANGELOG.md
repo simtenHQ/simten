@@ -1,5 +1,64 @@
 # @simten/core
 
+## 0.15.1
+
+### Patch Changes
+
+- 1402425: Verilog export now reports primitives it has no mapping for.
+
+  `emitPrimitive`'s default case emits `// WARNING: Unsupported primitive` in
+  place of logic and lets the export succeed, so the result parses, synthesizes,
+  and does not do what the circuit does. It was found with a yosys miter/sat
+  equivalence check: round-tripping `RV32I_ALU` through import and back produced a
+  module whose `result` matched but whose `zero` did not, and nothing in the file
+  looked wrong to a reader.
+
+  `ExportResult` gains an optional `unsupported` map of primitive type to node
+  ids, populated during the real emit rather than by probing, and left absent on a
+  clean export so existing consumers are unaffected. Imported designs hit this
+  routinely — `Slice`, `ZeroExtend`, `SignExtend` and `Pmux_*` are all products of
+  yosys elaboration with no exporter mapping.
+
+- 1402425: `Mem` now keeps its initial contents through the source round trip.
+
+  The importer lifts a `$mem_v2` INIT (a `$readmemh` image, or a ROM table) into
+  the node's `store` argument, and `circuitToSource` emits it — but the `Mem`
+  factory dropped `store` on the floor, so the generated source compiled to an
+  empty memory. The IR the importer produced ran the program; the source the
+  editor showed for the same design fetched zeros.
+
+  SERV's `servant` SoC is the case that surfaced it: imported from the IR it
+  prints `Hi, I'm Servant!` on its serial pin, and re-compiled from its own
+  generated source it stalled at the first instruction.
+
+- 1402425: Import: drop `$display`/`$write` with a warning instead of failing the import.
+
+  yosys lifts these to `$print` cells, which have no hardware meaning, so the
+  importer threw `unsupported cell type $print` and took the whole design down
+  over a debug statement. Real RTL is full of them — one `$display` in its RAM
+  preload made SERV's `servant` SoC unimportable.
+
+  The cell is now skipped and reported through the existing warnings channel,
+  naming the module and the source line (`servant_ram: dropped 1 $display/$write
+statement(s) (dut.v:4278)`), so output is visibly missing rather than silently
+  swallowed. Genuinely unsupported cells still throw.
+
+- 1402425: New `UART_RX({ cyclesPerBit })` in the standard library.
+
+  Imported SoCs talk over one bit-banged pin — SERV's `servant`, picosoc and most
+  soft cores expose a serial output and nothing else. Wiring that pin here and
+  `data`/`valid` into a `Console` prints what the program prints, with no glue
+  written per design.
+
+  Standard 8-N-1 framing, one sample per bit taken at the middle of the bit.
+  `cyclesPerBit` is clock rate over baud rate and is worth setting explicitly;
+  `servant` bit-bangs at 279 cycles per bit.
+
+  The receiver waits for the line to rest high before accepting a start bit.
+  Simulation is 2-state, so a pin that is undriven until the design boots reads 0,
+  which is indistinguishable from a start bit — without that wait it locks to the
+  power-on low and garbles the first several characters.
+
 ## 0.15.0
 
 ### Minor Changes
