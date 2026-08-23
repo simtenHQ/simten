@@ -17,6 +17,10 @@
  *   - multiple snapshots taken at different cycles, restored out of order
  *   - snapshot independence: post-snapshot mutations must not leak into
  *     the snapshot itself
+ *   - memory (Map) state specifically: snapshots alias the committed Map
+ *     by reference (see toFlatSequentialState), so the only thing keeping
+ *     them honest is that a write installs a *fresh* Map rather than
+ *     mutating the committed one in place. Nothing else tests that.
  *
  * Scope notes (intentional, observed during test authoring):
  *
@@ -37,9 +41,9 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { bit, circuit } from '../../circuit/index.js';
+import { bit, bus, circuit } from '../../circuit/index.js';
 import { simulate } from '../../sim/simulate.js';
-import { Adder, DFlipFlop, Not, Register, Xor } from '../../std/index.js';
+import { Adder, DFlipFlop, Not, RAM, Register, Xor } from '../../std/index.js';
 
 // ============================================================================
 // Fixtures
@@ -210,6 +214,104 @@ describe('snapshot/restore — sequential bus', () => {
       // Restoring must still land us at q = 20, not at the mutated value.
       sim.restore(snap);
       expect(sim.get('q')).toBe(20);
+    } finally {
+      sim.dispose();
+    }
+  });
+});
+
+// ============================================================================
+// Memory state
+// ============================================================================
+
+/** Scratchpad RAM with its address, data and write-enable driven from above. */
+const Scratchpad = circuit('Scratchpad', {
+  inputs: { address: bus(8), writeData: bus(8), writeEnable: bit },
+  outputs: { readData: bus(8) },
+  nodes: { ram: RAM() },
+  connect: ({ inputs, outputs, nodes: { ram } }) => [
+    inputs.address.to(ram.addr),
+    inputs.writeData.to(ram.data_in),
+    inputs.writeEnable.to(ram.we),
+    ram.data_out.to(outputs.readData),
+  ],
+});
+
+/** Pull the single memory Map out of a snapshot, whatever the node is called. */
+function memoryOf(snap: { sequentialState: { currentState: Map<string, unknown> } }) {
+  for (const value of snap.sequentialState.currentState.values()) {
+    if (value instanceof Map) return value as Map<number, number>;
+  }
+  throw new Error('snapshot contained no memory state');
+}
+
+describe('snapshot/restore — memory', () => {
+  it('RAM contents survive the round-trip', () => {
+    const sim = simulate(Scratchpad);
+    try {
+      sim.set({ address: 0, writeData: 11, writeEnable: 1 });
+      sim.tick();
+      sim.set({ address: 1, writeData: 22, writeEnable: 1 });
+      sim.tick();
+
+      const snap = sim.snapshot();
+
+      // Overwrite address 0 after snapshotting.
+      sim.set({ address: 0, writeData: 99, writeEnable: 1 });
+      sim.tick();
+      sim.set({ address: 0, writeEnable: 0 });
+      sim.tick();
+      expect(sim.get('readData')).toBe(99);
+
+      sim.restore(snap);
+      sim.set({ address: 0, writeEnable: 0 });
+      sim.tick();
+      expect(sim.get('readData')).toBe(11);
+    } finally {
+      sim.dispose();
+    }
+  });
+
+  it('a held snapshot is not mutated by later writes', () => {
+    const sim = simulate(Scratchpad);
+    try {
+      sim.set({ address: 0, writeData: 11, writeEnable: 1 });
+      sim.tick();
+
+      const snap = sim.snapshot();
+      const captured = memoryOf(snap);
+      expect(captured.get(0)).toBe(11);
+
+      // Every subsequent write must land on a different Map than the one
+      // the snapshot is holding. Writing in place here would silently
+      // rewrite history.
+      sim.set({ address: 0, writeData: 99, writeEnable: 1 });
+      sim.tick();
+      sim.set({ address: 7, writeData: 42, writeEnable: 1 });
+      sim.tick();
+
+      expect(captured.get(0)).toBe(11);
+      expect(captured.has(7)).toBe(false);
+    } finally {
+      sim.dispose();
+    }
+  });
+
+  it('a read-only memory is never rewritten across ticks', () => {
+    const sim = simulate(Scratchpad);
+    try {
+      sim.set({ address: 3, writeData: 77, writeEnable: 1 });
+      sim.tick();
+
+      const before = memoryOf(sim.snapshot());
+      sim.set({ writeEnable: 0 });
+      sim.tickN(25);
+      const after = memoryOf(sim.snapshot());
+
+      // No write happened, so copy-on-write should have handed the same
+      // Map straight through rather than cloning it 25 times.
+      expect(after).toBe(before);
+      expect(after.get(3)).toBe(77);
     } finally {
       sim.dispose();
     }
