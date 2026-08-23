@@ -18,32 +18,51 @@ import type { ClockEdges } from './primitive-interface.js';
 /** Maximum iterations before assuming unstable feedback loop */
 const MAX_PROPAGATION_ITERATIONS = 10000;
 
-/** WeakMap to unwrap Proxy back to underlying Map after onTick mutation */
-const PROXY_TO_MAP = new WeakMap<object, Map<number, number>>();
+/** Proxy -> the holder carrying whichever Map that proxy is currently backed by:
+ *  the committed one until a write forces a copy, the copy afterwards. */
+const PROXY_TO_MAP = new WeakMap<object, { current: Map<number, number>; copied: boolean }>();
 
 /**
  * Wrap a Map in a Proxy for array-indexed onTick mutation.
- * Creates a copy so mutations don't affect current state.
+ *
+ * Copy-on-write: reads go straight to the committed Map and the first write
+ * clones it, so an onTick that writes nothing costs nothing. This is what keeps
+ * a read-only memory off the O(entries)-per-tick path — `ROM`'s onTick returns
+ * its memory unchanged, and used to pay for a full clone to do it.
+ *
+ * The clone on write is not an optimisation detail: snapshots alias committed
+ * Maps by reference (`toFlatSequentialState`), so mutating one in place would
+ * rewrite history. Every mutating path here must go through `ensureCopy`.
  */
 function wrapMapForOnTick(map: Map<number, number>): any {
-  const copy = new Map(map);
-  const proxy = new Proxy(copy, {
-    get(target, prop) {
+  const holder = { current: map, copied: false };
+  const ensureCopy = (): Map<number, number> => {
+    if (!holder.copied) {
+      holder.current = new Map(holder.current);
+      holder.copied = true;
+    }
+    return holder.current;
+  };
+  const proxy = new Proxy(map, {
+    get(_target, prop) {
       if (typeof prop === 'string' && /^\d+$/.test(prop)) {
-        return target.get(Number(prop)) ?? 0;
+        return holder.current.get(Number(prop)) ?? 0;
       }
-      const val = (target as any)[prop];
-      return typeof val === 'function' ? val.bind(target) : val;
+      if (prop === 'set' || prop === 'delete' || prop === 'clear') {
+        return (...args: any[]) => (ensureCopy() as any)[prop](...args);
+      }
+      const val = (holder.current as any)[prop];
+      return typeof val === 'function' ? val.bind(holder.current) : val;
     },
-    set(target, prop, value) {
+    set(_target, prop, value) {
       if (typeof prop === 'string' && /^\d+$/.test(prop)) {
-        target.set(Number(prop), value);
+        ensureCopy().set(Number(prop), value);
         return true;
       }
       return false;
     },
   });
-  PROXY_TO_MAP.set(proxy, copy);
+  PROXY_TO_MAP.set(proxy, holder);
   return proxy;
 }
 
@@ -349,7 +368,7 @@ export function updateSequentialStates(
       onTick.stateKeys.length === 1 ? result[onTick.stateKeys[0]] : result;
     // Unwrap Proxy back to Map if needed
     if (nextState != null && typeof nextState === 'object' && PROXY_TO_MAP.has(nextState)) {
-      nextState = PROXY_TO_MAP.get(nextState)!;
+      nextState = PROXY_TO_MAP.get(nextState)!.current;
     }
 
     seqState.nextState[nodeIdx] = nextState;
@@ -364,8 +383,13 @@ export function commitSequentialState(seqState: NumericSequentialState): void {
     const nextVal = seqState.nextState[i];
     if (nextVal !== undefined) {
       if (nextVal instanceof Map) {
-        seqState.currentState[i] = new Map(nextVal);
-        seqState.nextState[i] = new Map(nextVal);
+        // Copy-on-write: an unchanged memory comes back as the very Map we
+        // handed onTick, so there is nothing to isolate. A write already
+        // produced a fresh Map, which we can adopt without copying again.
+        if (nextVal !== seqState.currentState[i]) {
+          seqState.currentState[i] = nextVal;
+        }
+        seqState.nextState[i] = nextVal;
       } else {
         seqState.currentState[i] = nextVal;
         seqState.nextState[i] = nextVal;
