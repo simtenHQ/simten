@@ -4,7 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "sin-wave": "tsx cli/sin-wave.ts"
+    "sin-wave": "tsx cli/sin-wave.ts",
+    "synth-wav": "tsx cli/synth-wav.ts"
   },
   "dependencies": {
     "@simten/core": "workspace:*"

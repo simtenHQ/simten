@@ -88,3 +88,6 @@ packages/core/*.imported.circuit.ts
 
 # Playwright MCP session artifacts (snapshots, console logs)
 .playwright-mcp/
+
+# Rendered demo output
+demos/out/
