@@ -91,7 +91,7 @@ export function OutputNode({ data, selected }: OutputNodeProps) {
       glowUnconnected={data.glowUnconnected}
     >
       <div className="relative">
-        {data.isComposite && <CompositeBadge />}
+        {(data.isComposite || data.hasReference) && <CompositeBadge />}
         {renderDisplay()}
       </div>
     </BaseNode>

@@ -23,6 +23,7 @@ import { useSandboxContext } from '../sandbox/SandboxProvider';
 import { CircuitCanvas } from './CircuitCanvas';
 import { ClockControls } from './ClockControls';
 import { createDrillDownViewCircuit } from './drill-down-view';
+import { resolveDrillTarget } from './drill-target';
 import { EDGE_TYPES, NODE_TYPES } from './node-types';
 import type { InspectorFrame } from './types';
 
@@ -31,7 +32,7 @@ import type { InspectorFrame } from './types';
 interface InspectorCanvasProps {
   frame: InspectorFrame;
   componentLibrary: CircuitLibrary;
-  onPushLevel: (name: string, def: Circuit, label: string) => void;
+  onPushLevel: (frame: InspectorFrame) => void;
   theme?: 'light' | 'dark';
 }
 
@@ -41,27 +42,28 @@ function InspectorCanvas({
   onPushLevel,
   theme = 'dark',
 }: InspectorCanvasProps) {
+  // A reference build brings its own circuits; the page's library has never
+  // heard of them. Everything below — simulation, projection, nested drilling —
+  // must resolve against the frame's library, or internal nodes vanish.
+  const library = frame.library ?? componentLibrary;
+
   const viewCircuit = useMemo(
     () => createDrillDownViewCircuit(frame.componentDef),
     [frame.componentDef],
   );
 
   const isSequential = useMemo(
-    () => isSequentialCircuit(viewCircuit, componentLibrary.resolveCircuit),
-    [viewCircuit, componentLibrary],
+    () => isSequentialCircuit(viewCircuit, library.resolveCircuit),
+    [viewCircuit, library],
   );
 
   const handleNodeDoubleClick = useCallback(
     (nodeData: NodeData) => {
-      if (!nodeData.isComposite) return;
-      const componentDef = componentLibrary.resolveCircuit(nodeData.componentRef);
-      if (!componentDef) return;
-
-      if (componentDef.implementation.kind === 'composite' && componentDef.nodes.length > 0) {
-        onPushLevel(nodeData.componentRef, componentDef, nodeData.label ?? nodeData.componentRef);
-      }
+      if (!nodeData.isComposite && !nodeData.hasReference) return;
+      const next = resolveDrillTarget(nodeData, library);
+      if (next) onPushLevel(next);
     },
-    [componentLibrary, onPushLevel],
+    [library, onPushLevel],
   );
 
   // ── Simulation: prefer sandbox, fall back to local simulator ──
@@ -99,8 +101,8 @@ function InspectorCanvas({
     // composite children and their outputs stay stuck.
     const allLib: Circuit[] = [];
     const seen = new Set<string>();
-    for (const name of componentLibrary.getAllPrimitiveNames()) {
-      const c = componentLibrary.resolveCircuit(name);
+    for (const name of library.getAllPrimitiveNames()) {
+      const c = library.resolveCircuit(name);
       if (c && !seen.has(name)) {
         seen.add(name);
         allLib.push(c);
@@ -109,7 +111,7 @@ function InspectorCanvas({
     const walk = (c: Circuit) => {
       for (const node of c.nodes) {
         if (seen.has(node.componentRef)) continue;
-        const resolved = componentLibrary.resolveCircuit(node.componentRef);
+        const resolved = library.resolveCircuit(node.componentRef);
         if (!resolved) continue;
         seen.add(node.componentRef);
         allLib.push(resolved);
@@ -122,7 +124,7 @@ function InspectorCanvas({
       if ('error' in result) {
         // Fall back to local simulator (for embed contexts where no source was compiled)
         try {
-          const engine = createSimulatorFromCircuit(viewCircuit, componentLibrary);
+          const engine = createSimulatorFromCircuit(viewCircuit, library);
           engine.runCombinational();
           localEngineRef.current = engine;
           setUseSandbox(false);
@@ -149,7 +151,7 @@ function InspectorCanvas({
       setHistoryIndex(historyRef.current.length === 0 ? -1 : 0);
       setCycle(0);
     });
-  }, [viewCircuit, componentLibrary, sandbox, slotId, isSequential]);
+  }, [viewCircuit, library, sandbox, slotId, isSequential]);
 
   const handleToggle = useCallback(
     (nodeId: string) => {
@@ -278,7 +280,7 @@ function InspectorCanvas({
 
       <CircuitCanvas
         circuit={viewCircuit}
-        componentLibrary={componentLibrary}
+        componentLibrary={library}
         portValues={portValues as Map<string, boolean | number>}
         sequentialState={null}
         onToggleNode={handleToggle}
@@ -362,7 +364,7 @@ export interface CompositeInspectorDialogProps {
   theme?: 'light' | 'dark';
   onClose: () => void;
   onPopLevel: () => void;
-  onPushLevel: (name: string, def: Circuit, label: string) => void;
+  onPushLevel: (frame: InspectorFrame) => void;
   onNavigate: (index: number) => void;
 }
 
@@ -445,10 +447,13 @@ export function CompositeInspectorDialog({
           {/* Dialog panel */}
           <motion.div
             key="inspector-dialog"
-            className="fixed inset-0 z-50 flex items-center justify-center p-8 pointer-events-none"
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 pointer-events-none"
           >
             <motion.div
-              className={`flex h-[80vh] w-full max-w-5xl flex-col rounded-lg shadow-xl pointer-events-auto overflow-hidden ${
+              // A reference build is the widest thing this dialog ever shows —
+              // Comparator(8) is an equality tree plus a full subtraction, ~60
+              // nodes laid out left-to-right. max-w-5xl shrank that to specks.
+              className={`flex h-[88vh] w-full max-w-[1600px] flex-col rounded-lg shadow-xl pointer-events-auto overflow-hidden ${
                 theme === 'dark' ? 'bg-gray-900' : 'bg-white'
               }`}
               initial={{ opacity: 0 }}

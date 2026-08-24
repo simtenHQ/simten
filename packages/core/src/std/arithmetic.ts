@@ -4,6 +4,7 @@
 
 import { bit, bus } from '../circuit/bit-bus.js';
 import { circuit } from '../circuit/circuit.js';
+import { And, Or, Xor } from './logic.js';
 
 /**
  * Adds 1 to the input. 8-bit value, wraps at 256 (`(in + 1) & 0xFF`).
@@ -29,6 +30,54 @@ export const Incrementer = circuit('Incrementer', {
   outputs: { out: bus(8) },
   meta: { category: 'arithmetic', icon: '+1', description: 'Adds 1 to the input' },
   eval: ({ in: a }) => ({ out: (a + 1) & 0xff }),
+});
+
+/**
+ * One bit of addition: `sum = a ^ b ^ carry_in`, and a carry out when at
+ * least two of the three inputs are set. Single-bit full adder built from gates.
+ *
+ * Chain `carry_out` -> `carry_in` across N of these and you have the
+ * ripple-carry adder that `Adder({ width: N })` computes in one step.
+ *
+ * **Inputs:** `a`, `b`, `carry_in` — `bit`
+ * **Outputs:** `sum`, `carry_out` — `bit`
+ *
+ * **Example:** two bits of a ripple-carry chain
+ * ```ts
+ * circuit('TwoBitAdd', {
+ *   inputs:  { a0: bit, b0: bit, a1: bit, b1: bit, cin: bit },
+ *   outputs: { s0: bit, s1: bit, cout: bit },
+ *   nodes:   { fa0: FullAdder, fa1: FullAdder },
+ *   connect: ({ inputs, outputs, nodes: { fa0, fa1 } }) => [
+ *     inputs.a0.to(fa0.a), inputs.b0.to(fa0.b), inputs.cin.to(fa0.carry_in),
+ *     inputs.a1.to(fa1.a), inputs.b1.to(fa1.b),
+ *     fa0.carry_out.to(fa1.carry_in),
+ *     fa0.sum.to(outputs.s0),
+ *     fa1.sum.to(outputs.s1),
+ *     fa1.carry_out.to(outputs.cout),
+ *   ],
+ * })
+ * ```
+ */
+export const FullAdder = circuit('FullAdder', {
+  inputs: { a: bit, b: bit, carry_in: bit },
+  outputs: { sum: bit, carry_out: bit },
+  meta: {
+    category: 'arithmetic',
+    icon: 'FA',
+    description: 'Single-bit full adder built from gates',
+  },
+  nodes: { ab: Xor, sum2: Xor, andAB: And, andC: And, carry: Or },
+  connect: ({ inputs, outputs, nodes: { ab, sum2, andAB, andC, carry } }) => [
+    inputs.a.to(ab.a, andAB.a),
+    inputs.b.to(ab.b, andAB.b),
+    ab.out.to(sum2.a, andC.a),
+    inputs.carry_in.to(sum2.b, andC.b),
+    sum2.out.to(outputs.sum),
+    andAB.out.to(carry.a),
+    andC.out.to(carry.b),
+    carry.out.to(outputs.carry_out),
+  ],
 });
 
 /**

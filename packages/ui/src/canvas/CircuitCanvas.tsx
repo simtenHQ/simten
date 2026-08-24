@@ -26,6 +26,7 @@ import React, {
 } from 'react';
 import type { NodeData } from '../nodes';
 import { CompositeInspectorDialog } from './CompositeInspectorDialog';
+import { resolveDrillTarget } from './drill-target';
 import { useDetectTheme } from './hooks/useDetectTheme';
 import { useIsMobile } from './hooks/useIsMobile';
 import { cleanCircuitLabels } from './label-utils';
@@ -441,11 +442,8 @@ function CircuitCanvasInner({
   // ── Inspector stack for automatic drill-down ──
   const [inspectorStack, setInspectorStack] = useState<InspectorFrame[]>([]);
 
-  const pushInspectorLevel = useCallback((name: string, def: Circuit, label: string) => {
-    setInspectorStack((prev) => [
-      ...prev,
-      { componentName: name, componentDef: def, nodeLabel: label },
-    ]);
+  const pushInspectorLevel = useCallback((frame: InspectorFrame) => {
+    setInspectorStack((prev) => [...prev, frame]);
   }, []);
 
   const popInspectorLevel = useCallback(() => {
@@ -463,19 +461,9 @@ function CircuitCanvasInner({
   // Default double-click handler: opens inspector for composites
   const defaultNodeDoubleClick = useCallback(
     (nodeData: NodeData) => {
-      if (!nodeData.isComposite) return;
-      const componentDef = library.resolveCircuit(nodeData.componentRef);
-      if (!componentDef) return;
-
-      if (componentDef.implementation.kind === 'composite' && componentDef.nodes.length > 0) {
-        setInspectorStack([
-          {
-            componentName: nodeData.componentRef,
-            componentDef,
-            nodeLabel: nodeData.label ?? nodeData.componentRef,
-          },
-        ]);
-      }
+      if (!nodeData.isComposite && !nodeData.hasReference) return;
+      const frame = resolveDrillTarget(nodeData, library);
+      if (frame) setInspectorStack([frame]);
     },
     [library],
   );

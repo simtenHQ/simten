@@ -15,6 +15,12 @@ export interface NodeData extends Record<string, unknown> {
   inputNames: string[];
   outputNames: string[];
   isComposite?: boolean;
+  /**
+   * Primitive with a gate-level reference build in `MADE_OF` — drillable, but
+   * what opens is an explanation rather than its actual implementation.
+   * Deliberately separate from `isComposite`, which selects the node type.
+   */
+  hasReference?: boolean;
   arguments?: Record<string, unknown>;
   __pixels?: number[];
   __consoleText?: string;

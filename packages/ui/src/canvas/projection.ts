@@ -12,6 +12,7 @@ import type {
   FlatPortValueMap,
   FlatSequentialState,
 } from '@simten/core/simulator';
+import { hasMadeOf } from '@simten/core/std';
 import type { Edge, Node as ReactFlowNode } from '@xyflow/react';
 import type { NodeData } from '../nodes';
 import type { MetadataState } from './types';
@@ -107,6 +108,9 @@ function projectCircuitToNodes(
     const inputNames = node.inputs.map((p) => p.name);
     const outputNames = node.outputs.map((p) => p.name);
     const isComposite = componentDef.implementation.kind === 'composite';
+    // Eval-only primitives with a gate-level reference build can also be
+    // opened. Kept out of `isComposite` so the node still renders as itself.
+    const hasReference = !isComposite && hasMadeOf(node.componentRef);
     const nodeType = getNodeTypeForComponent(
       node.componentRef,
       inputCount,
@@ -258,6 +262,7 @@ function projectCircuitToNodes(
         inputNames,
         outputNames,
         isComposite,
+        hasReference,
         arguments: node.arguments,
         __pixels: pixels,
         __consoleText: consoleText,
