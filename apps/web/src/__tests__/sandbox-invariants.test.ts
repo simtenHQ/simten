@@ -13,13 +13,25 @@ import { join } from 'path';
 
 const APP_SRC = join(__dirname, '..');
 const EMBED_SRC = join(__dirname, '../../../../packages/embed/src');
+// packages/ui is where useSandbox itself lives, so it is the package most
+// likely to grow a violation — and it was not being scanned.
+const UI_SRC = join(__dirname, '../../../../packages/ui/src');
 
 function collectSourceFiles(dir: string): string[] {
   const files: string[] = [];
   for (const entry of readdirSync(dir)) {
     const full = join(dir, entry);
     if (statSync(full).isDirectory()) {
-      if (entry === 'node_modules' || entry === 'dist' || entry === '__tests__') continue;
+      // 'generated' holds codegen'd .d.ts payloads shipped to Monaco as string
+      // literals. They contain the names of the banned APIs as *text*, not as
+      // calls, so scanning them is pure false positives.
+      if (
+        entry === 'node_modules' ||
+        entry === 'dist' ||
+        entry === '__tests__' ||
+        entry === 'generated'
+      )
+        continue;
       files.push(...collectSourceFiles(full));
     } else if (full.endsWith('.ts') || full.endsWith('.tsx')) {
       files.push(full);
@@ -41,7 +53,11 @@ const BANNED: Array<{ pattern: RegExp; reason: string }> = [
 ];
 
 describe('sandbox invariants', () => {
-  const files = [...collectSourceFiles(APP_SRC), ...collectSourceFiles(EMBED_SRC)];
+  const files = [
+    ...collectSourceFiles(APP_SRC),
+    ...collectSourceFiles(EMBED_SRC),
+    ...collectSourceFiles(UI_SRC),
+  ];
 
   for (const { pattern, reason } of BANNED) {
     it(`no source file matches: ${pattern}`, () => {
