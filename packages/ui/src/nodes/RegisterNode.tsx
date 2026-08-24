@@ -33,7 +33,7 @@ export function RegisterNode({ data, selected }: RegisterNodeProps) {
       glowUnconnected={data.glowUnconnected}
     >
       <div className="relative flex flex-col items-center gap-2">
-        {data.isComposite && <CompositeBadge />}
+        {(data.isComposite || data.hasReference) && <CompositeBadge />}
         <div className="px-2 py-1 text-xs font-medium text-[var(--embed-text-primary)]">
           {data.label || 'Register'}
         </div>

@@ -1,7 +1,7 @@
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../primitives/tooltip';
 
 /**
- * Badge shown on composite nodes indicating they can be drilled into.
+ * Badge shown on nodes that can be drilled into.
  * Renders in the top-right corner with a magnifying glass and pulse ring.
  */
 export function CompositeBadge() {

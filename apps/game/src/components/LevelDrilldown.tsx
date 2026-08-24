@@ -20,7 +20,6 @@
  * shows what the shape of an answer looks like.
  */
 
-import type { Circuit } from '@simten/core';
 import { useCompiledCircuit } from '@simten/embed';
 import { CompositeInspectorDialog, type InspectorFrame } from '@simten/ui/canvas';
 import { useCallback, useEffect, useState } from 'react';
@@ -74,8 +73,8 @@ export function LevelDrilldown({ level, draft, expanded, onCloseExpanded }: Leve
     }
   }, [expanded, preview.circuit, level.title]);
 
-  const onPushLevel = useCallback((componentName: string, def: Circuit, nodeLabel: string) => {
-    setStack((s) => [...s, { componentName, componentDef: def, nodeLabel }]);
+  const onPushLevel = useCallback((frame: InspectorFrame) => {
+    setStack((s) => [...s, frame]);
   }, []);
 
   const onPopLevel = useCallback(() => setStack((s) => s.slice(0, -1)), []);
