@@ -133,6 +133,7 @@ export type SandboxResult =
   | ({ type: 'ticked' } & TickResult)
   | ({ type: 'ticked-n' } & TickResult)
   | ({ type: 'scanned-port' } & { values: number[] })
+  | ({ type: 'rendered-samples' } & { samples: number[]; cycle: number })
   | ({ type: 'simulated' } & SimulateResult)
   | ({ type: 'reset' } & ResetResult)
   | ({ type: 'set-node' } & SetNodeResult)
@@ -271,6 +272,22 @@ export interface SandboxHandle {
    * a value output port after each setting. Returns the array in one
    * round-trip. Clock is NOT advanced. Models JTAG-style halted-mode reads.
    */
+  /**
+   * Tick `count` times and return one port's value after each tick.
+   *
+   * `tickN` gives only the final state, which is all a canvas needs. Audio
+   * needs every intermediate value, and one `tick` call per sample would be
+   * tens of thousands of round trips a second.
+   *
+   * `inputs` are applied once and held for the run, so anything that has to
+   * change mid-run is sequenced by the caller across several calls.
+   */
+  renderSamples(
+    portKey: string,
+    count: number,
+    inputs?: Record<string, number | boolean>,
+    slot?: SimSlot,
+  ): Promise<{ samples: number[]; cycle: number } | SandboxError>;
   scanPort(
     addrNodeId: string,
     valuePortKey: string,
@@ -571,6 +588,26 @@ export function useSandbox(): SandboxHandle {
     [send],
   );
 
+  const renderSamples = useCallback(
+    async (
+      portKey: string,
+      count: number,
+      inputs?: Record<string, number | boolean>,
+      slot: SimSlot = 'default',
+    ): Promise<{ samples: number[]; cycle: number } | SandboxError> => {
+      const result = await send<{ type: 'rendered-samples'; samples: number[]; cycle: number }>({
+        type: 'render-samples',
+        portKey,
+        count,
+        inputs,
+        slot,
+      });
+      if ('error' in result) return result as SandboxError;
+      return { samples: result.samples, cycle: result.cycle };
+    },
+    [send],
+  );
+
   const scanPort = useCallback(
     async (
       addrNodeId: string,
@@ -705,6 +742,7 @@ export function useSandbox(): SandboxHandle {
     compileIR,
     tick,
     tickN,
+    renderSamples,
     scanPort,
     simulate,
     reset,
