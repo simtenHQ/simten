@@ -581,6 +581,49 @@ function handleScanPort(
 // Advance the simulator by N cycles in one round-trip. Returns only the final
 // port values and one peripheral-state snapshot. Used by demos that need high
 // tick rates (raster frames) — one postMessage instead of N.
+/**
+ * Tick `count` times, returning the value of one port after every tick.
+ *
+ * `tick-n` returns only the final state, which is all a canvas needs. Audio
+ * needs every intermediate value — a second of sound is 22,050 of them — and
+ * asking for them one `tick` at a time would be 22,050 postMessage round trips.
+ *
+ * `inputs` are applied once, before the run, and held for its duration. The
+ * caller sequences anything that has to change mid-phrase by splitting it into
+ * several calls, which keeps this generic: it knows nothing about audio.
+ */
+function handleRenderSamples(
+  id: string,
+  portKey: string,
+  count: number,
+  inputs?: Record<string, number | boolean>,
+  slotId: string = DEFAULT_SLOT,
+) {
+  const slot = slots.get(slotId);
+  const sim = slot?.simulator;
+  if (!sim || !slot) {
+    respondError(id, `No circuit compiled for slot '${slotId}'. Call compile first.`);
+    return;
+  }
+  try {
+    if (inputs) applyInputs(sim, inputs);
+    const n = Math.max(0, count | 0);
+    const samples: number[] = new Array(n).fill(0);
+    for (let i = 0; i < n; i++) {
+      const result = sim.tick();
+      const v = result.portValues.get(portKey);
+      samples[i] = typeof v === 'number' ? v : v ? 1 : 0;
+    }
+    respond(id, {
+      type: 'rendered-samples',
+      samples,
+      cycle: sim.getMetrics().totalTicks,
+    });
+  } catch (e) {
+    respondError(id, e instanceof Error ? e.message : String(e));
+  }
+}
+
 function handleTickN(
   id: string,
   n: number,
@@ -905,6 +948,9 @@ self.addEventListener('message', (event: MessageEvent) => {
       break;
     case 'tick':
       handleTick(req.id, req.inputs, req.slot, req.snapshot);
+      break;
+    case 'render-samples':
+      handleRenderSamples(req.id, req.portKey, req.count, req.inputs, req.slot);
       break;
     case 'tick-n':
       handleTickN(req.id, req.n, req.inputs, req.slot, req.snapshot);

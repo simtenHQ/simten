@@ -58,6 +58,19 @@ export interface SimulatorState {
 }
 
 export interface SimulatorActions {
+  /**
+   * Tick `count` times and collect one top-level output port's value after each
+   * tick, in one sandbox round trip. For consumers of the output *stream* — audio, captured
+   * waveforms — where `tickN`'s final-state-only result is not enough.
+   *
+   * `inputs` are applied once and held for the run; sequence anything that has
+   * to change mid-run across several calls.
+   */
+  renderSamples: (
+    portName: string,
+    count: number,
+    inputs?: Record<string, number | boolean>,
+  ) => Promise<number[]>;
   setNode: (name: string, value: boolean | number) => void;
   toggleInput: (name: string) => void;
   toggleNode: (nodeId: string) => void;
@@ -765,6 +778,42 @@ export function useCircuitSimulator(
     [historyLen],
   );
 
+  /**
+   * Tick `count` times and collect one port's value after each tick.
+   *
+   * `tickN` reports only where the circuit ended up, which is all a canvas
+   * needs. Anything that consumes the output *stream* — audio, a captured
+   * waveform — needs every intermediate value, and one `tick` per sample would
+   * be tens of thousands of sandbox round trips a second.
+   *
+   * Runs in the sandbox like everything else here, so a circuit that came from
+   * reader-supplied source is no more trusted than it ever was.
+   */
+  const renderSamples = useCallback(
+    async (
+      portName: string,
+      count: number,
+      inputs?: Record<string, number | boolean>,
+    ): Promise<number[]> => {
+      if (!ready) return [];
+      // Callers name a top-level output port; the flat port map keys those under
+      // the top-level node, the same way `outputs` above resolves them.
+      const result = await sandbox.renderSamples(
+        `${TOP_LEVEL_NODE}.${portName}`,
+        count,
+        inputs,
+        slotId,
+      );
+      if ('error' in result) return [];
+      // Rendering advances the clock like any other tick, so the cycle count
+      // has to follow it — otherwise anything showing progress freezes the
+      // moment playback starts.
+      setCycle(result.cycle);
+      return result.samples;
+    },
+    [ready, sandbox, slotId],
+  );
+
   return {
     // State
     outputs,
@@ -787,6 +836,7 @@ export function useCircuitSimulator(
     speed,
 
     // Actions
+    renderSamples,
     setNode,
     toggleInput,
     toggleNode,

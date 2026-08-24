@@ -23,6 +23,7 @@ import { Route as LearnAbstractionRouteImport } from './routes/learn/abstraction
 import { Route as DocsSplatRouteImport } from './routes/docs/$'
 import { Route as CpuRv32iRouteImport } from './routes/cpu/rv32i'
 import { Route as CircuitEncodedRouteImport } from './routes/circuit_.$encoded'
+import { Route as BlogSynthInHardwareRouteImport } from './routes/blog/synth-in-hardware'
 import { Route as BlogSortingNetworksRouteImport } from './routes/blog/sorting-networks'
 import { Route as BlogSnakeInHardwareRouteImport } from './routes/blog/snake-in-hardware'
 import { Route as BlogRv32iCpuRouteImport } from './routes/blog/rv32i-cpu'
@@ -108,6 +109,11 @@ const CircuitEncodedRoute = CircuitEncodedRouteImport.update({
   id: '/circuit_/$encoded',
   path: '/circuit/$encoded',
   getParentRoute: () => rootRouteImport,
+} as any)
+const BlogSynthInHardwareRoute = BlogSynthInHardwareRouteImport.update({
+  id: '/synth-in-hardware',
+  path: '/synth-in-hardware',
+  getParentRoute: () => BlogRoute,
 } as any)
 const BlogSortingNetworksRoute = BlogSortingNetworksRouteImport.update({
   id: '/sorting-networks',
@@ -207,6 +213,7 @@ export interface FileRoutesByFullPath {
   '/blog/rv32i-cpu': typeof BlogRv32iCpuRoute
   '/blog/snake-in-hardware': typeof BlogSnakeInHardwareRoute
   '/blog/sorting-networks': typeof BlogSortingNetworksRoute
+  '/blog/synth-in-hardware': typeof BlogSynthInHardwareRoute
   '/circuit/$encoded': typeof CircuitEncodedRoute
   '/cpu/rv32i': typeof CpuRv32iRoute
   '/docs/$': typeof DocsSplatRoute
@@ -237,6 +244,7 @@ export interface FileRoutesByTo {
   '/blog/rv32i-cpu': typeof BlogRv32iCpuRoute
   '/blog/snake-in-hardware': typeof BlogSnakeInHardwareRoute
   '/blog/sorting-networks': typeof BlogSortingNetworksRoute
+  '/blog/synth-in-hardware': typeof BlogSynthInHardwareRoute
   '/circuit/$encoded': typeof CircuitEncodedRoute
   '/cpu/rv32i': typeof CpuRv32iRoute
   '/docs/$': typeof DocsSplatRoute
@@ -269,6 +277,7 @@ export interface FileRoutesById {
   '/blog/rv32i-cpu': typeof BlogRv32iCpuRoute
   '/blog/snake-in-hardware': typeof BlogSnakeInHardwareRoute
   '/blog/sorting-networks': typeof BlogSortingNetworksRoute
+  '/blog/synth-in-hardware': typeof BlogSynthInHardwareRoute
   '/circuit_/$encoded': typeof CircuitEncodedRoute
   '/cpu/rv32i': typeof CpuRv32iRoute
   '/docs/$': typeof DocsSplatRoute
@@ -302,6 +311,7 @@ export interface FileRouteTypes {
     | '/blog/rv32i-cpu'
     | '/blog/snake-in-hardware'
     | '/blog/sorting-networks'
+    | '/blog/synth-in-hardware'
     | '/circuit/$encoded'
     | '/cpu/rv32i'
     | '/docs/$'
@@ -332,6 +342,7 @@ export interface FileRouteTypes {
     | '/blog/rv32i-cpu'
     | '/blog/snake-in-hardware'
     | '/blog/sorting-networks'
+    | '/blog/synth-in-hardware'
     | '/circuit/$encoded'
     | '/cpu/rv32i'
     | '/docs/$'
@@ -363,6 +374,7 @@ export interface FileRouteTypes {
     | '/blog/rv32i-cpu'
     | '/blog/snake-in-hardware'
     | '/blog/sorting-networks'
+    | '/blog/synth-in-hardware'
     | '/circuit_/$encoded'
     | '/cpu/rv32i'
     | '/docs/$'
@@ -493,6 +505,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CircuitEncodedRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/blog/synth-in-hardware': {
+      id: '/blog/synth-in-hardware'
+      path: '/synth-in-hardware'
+      fullPath: '/blog/synth-in-hardware'
+      preLoaderRoute: typeof BlogSynthInHardwareRouteImport
+      parentRoute: typeof BlogRoute
+    }
     '/blog/sorting-networks': {
       id: '/blog/sorting-networks'
       path: '/sorting-networks'
@@ -615,6 +634,7 @@ interface BlogRouteChildren {
   BlogRv32iCpuRoute: typeof BlogRv32iCpuRoute
   BlogSnakeInHardwareRoute: typeof BlogSnakeInHardwareRoute
   BlogSortingNetworksRoute: typeof BlogSortingNetworksRoute
+  BlogSynthInHardwareRoute: typeof BlogSynthInHardwareRoute
   BlogIndexRoute: typeof BlogIndexRoute
 }
 
@@ -632,6 +652,7 @@ const BlogRouteChildren: BlogRouteChildren = {
   BlogRv32iCpuRoute: BlogRv32iCpuRoute,
   BlogSnakeInHardwareRoute: BlogSnakeInHardwareRoute,
   BlogSortingNetworksRoute: BlogSortingNetworksRoute,
+  BlogSynthInHardwareRoute: BlogSynthInHardwareRoute,
   BlogIndexRoute: BlogIndexRoute,
 }
 

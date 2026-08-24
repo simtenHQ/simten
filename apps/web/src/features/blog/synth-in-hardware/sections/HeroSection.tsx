@@ -1,0 +1,28 @@
+export function HeroSection() {
+  return (
+    <section className="py-16 md:py-24">
+      <div className="max-w-3xl">
+        <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-gray-900 dark:text-white leading-tight">
+          A Synthesiser Made of Logic Gates
+        </h1>
+        <p className="mt-6 text-xl text-gray-500 dark:text-gray-300 leading-relaxed">
+          A 16-bit counter, a table of numbers and one multiplier. No oscillator object, no filter
+          node &mdash; every sample you hear is computed by a circuit you can open up, and the same
+          netlist runs on an FPGA.
+        </p>
+        <div className="mt-8 flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
+          <span>Interactive tutorial</span>
+          <span className="text-gray-600">/</span>
+          <span>~8 min read</span>
+          <span className="text-gray-600">/</span>
+          <span>
+            Built with{' '}
+            <a href="/" className="text-blue-400 hover:text-blue-300 underline underline-offset-2">
+              Simten
+            </a>
+          </span>
+        </div>
+      </div>
+    </section>
+  );
+}

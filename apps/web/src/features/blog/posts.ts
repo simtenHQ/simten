@@ -25,6 +25,14 @@ export const posts: BlogPost[] = [
     nodes: 'TypeScript',
   },
   {
+    slug: 'synth-in-hardware',
+    title: 'A Synthesiser Made of Logic Gates',
+    description:
+      'A 16-bit counter, a table of numbers and one multiplier. Every sample is computed by a circuit you can open up — and the same netlist runs on an FPGA.',
+    category: 'interactive',
+    nodes: '16 nodes',
+  },
+  {
     slug: 'pong-in-hardware',
     title: 'Pong in Hardware',
     description:
