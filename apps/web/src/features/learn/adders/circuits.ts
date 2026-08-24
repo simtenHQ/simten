@@ -5,12 +5,13 @@
  * works, extending it to a full adder with carry-in, then chaining N of them
  * in a ripple-carry configuration to make the depth problem visible.
  *
- * TODO: every circuit below is a stub. Replace each with a real definition
- * that exercises the concept the corresponding section is teaching.
+ * HalfAdder, FullAdder and RippleCarryDemo are real. DepthDemo and
+ * CarryLookaheadDemo are still stubs aliased to RippleCarryDemo — see the
+ * TODOs on each.
  */
 
 import { bit, circuit } from '@simten/core/circuit';
-import { Adder, And, Constant, HexDisplay, Input, Led, Or, Xor } from '@simten/core/std';
+import { And, Concat, Constant, HexDisplay, Input, Led, Or, Slice, Xor } from '@simten/core/std';
 import type { BlogCircuit } from '@/features/blog/types';
 
 // ── Half adder ─────────────────────────────────────────────────────────
@@ -52,25 +53,41 @@ export const FullAdder = circuit('FullAdder', {
 });
 
 // ── Ripple-carry adder ─────────────────────────────────────────────────
-// TODO: 8 full-adders chained together. The schematic visibly elongates,
-// which is the whole pedagogical point. Replace this with a hand-wired
-// chain of 8 FullAdders rather than the stdlib Adder, so the depth is
-// visible in the canvas.
+// Eight of the FullAdder above, chained tail-to-head. Deliberately NOT the
+// stdlib `Adder`: that one is eval-only, so it draws as a single box and the
+// depth this section is about would be invisible. Wiring the chain by hand
+// makes the schematic elongate, which is the whole point.
+//
+// The Slice/Concat nodes are not gates — they are how this IR spells "take
+// bit i of a bus" and "put these bits back together", because a Connection
+// addresses a port, not a bit within one.
 const RippleCarryDemo = circuit('RippleCarry8', {
   nodes: {
     a: Input({ value: 0b00001111 }),
     b: Input({ value: 0b00000001 }),
-    add: Adder({ width: 8 }),
     zero: Constant({ value: 0 }),
+    aBit: Array.from({ length: 8 }, (_, i) => Slice({ inWidth: 8, offset: i, width: 1 })),
+    bBit: Array.from({ length: 8 }, (_, i) => Slice({ inWidth: 8, offset: i, width: 1 })),
+    fa: Array.from({ length: 8 }, () => FullAdder),
+    join: Array.from({ length: 7 }, (_, i) => Concat({ hiWidth: 1, loWidth: i + 1 })),
     sum: HexDisplay,
     cout: Led,
   },
-  connect: ({ nodes: { a, b, add, zero, sum, cout } }) => [
-    a.out.to(add.a),
-    b.out.to(add.b),
-    zero.out.to(add.carry_in),
-    add.sum.to(sum.in),
-    add.carry_out.to(cout.in),
+  connect: ({ nodes: { a, b, zero, aBit, bBit, fa, join, sum, cout } }) => [
+    ...aBit.map((s) => a.out.to(s.in)),
+    ...bBit.map((s) => b.out.to(s.in)),
+    ...aBit.map((s, i) => s.out.to(fa[i].a)),
+    ...bBit.map((s, i) => s.out.to(fa[i].b)),
+    // The chain: bit 0 starts from a hard zero, every later stage waits on the
+    // stage below it.
+    zero.out.to(fa[0].cin),
+    ...fa.slice(0, -1).map((stage, i) => stage.cout.to(fa[i + 1].cin)),
+    fa[7].cout.to(cout.in),
+    // Fold the sum bits back into one bus, LSB first.
+    fa[0].sum.to(join[0].low),
+    ...join.map((j, i) => fa[i + 1].sum.to(j.high)),
+    ...join.slice(0, -1).map((j, i) => j.out.to(join[i + 1].low)),
+    join[6].out.to(sum.in),
   ],
 });
 

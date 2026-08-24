@@ -21,6 +21,7 @@ export {
   BusXor,
   Comparator,
   Divider,
+  FullAdder,
   Incrementer,
   LeftShifter,
   Modulo,
@@ -57,6 +58,10 @@ export {
   Xnor,
   Xor,
 } from './logic.js';
+// Gate-level reference builds for the canvas drill-down. Display only — never
+// elaborated into a netlist. Re-exported here (not via `_allExports`) so the
+// builders stay out of STDLIB_CIRCUITS; see made-of.ts and its test.
+export { hasMadeOf, MADE_OF, MADE_OF_NAMES, type MadeOfBuilder } from './made-of.js';
 
 // Memory
 export { DualPortRAM, RAM, ROM, romFromBytes, romFromEntries, romFromWords } from './memory.js';
