@@ -558,6 +558,13 @@ interface ModuleShape {
 
 const DFF_FAMILY = new Set(['$dff', '$adff', '$sdff', '$dffe']);
 
+/** Cells that describe simulation output rather than hardware. `$print` is what
+ *  yosys lowers `$display` to, and it is already dropped when lifting — so it
+ *  must not get a say in what counts as a clock either. Its TRG pin hangs off
+ *  the clock net, and counting that as a data consumer stops the port being
+ *  recognised as a clock, which fails the whole import over a debug statement. */
+const SIMULATION_ONLY_CELLS = new Set(['$print', '$check']);
+
 /**
  * Reject flip-flops driven by a clock this model cannot represent.
  *
@@ -621,12 +628,18 @@ function isClockPin(
   cellType: string,
   pin: string,
   clockPortsByModule: Map<string, Set<string>>,
+  unusedPortsByModule?: Map<string, Set<string>>,
 ): boolean {
   if (cellType === '$dff' || cellType === '$adff' || cellType === '$sdff' || cellType === '$dffe')
     return pin === 'CLK';
   if (cellType === '$mem' || cellType === '$mem_v2') return pin === 'RD_CLK' || pin === 'WR_CLK';
   // Submodule instance: clock iff the child module identified this port as one.
-  return clockPortsByModule.get(cellType)?.has(pin) ?? false;
+  if (clockPortsByModule.get(cellType)?.has(pin)) return true;
+  // A port the child never reads argues neither way, so it must not be what
+  // stops the parent's clock from being recognised. NES mappers are the case in
+  // point: the simplest one takes a `clk` it has no use for, and treating that
+  // as a data consumer disqualified the clock of every module above it.
+  return unusedPortsByModule?.get(cellType)?.has(pin) ?? false;
 }
 
 /**
@@ -674,9 +687,13 @@ function moduleShapes(netlist: YosysNetlist): Map<string, ModuleShape> {
     string,
     { consumers: Map<string, Consumer[]>; feedsOutput: Set<string> }
   >();
+  /** Input ports no cell in the module reads. Dead either way, so they are never
+   *  the reason a parent's clock fails to be recognised. */
+  const unusedPortsByModule = new Map<string, Set<string>>();
   for (const [name, mod] of Object.entries(netlist.modules)) {
     const bitConsumers = new Map<number, Consumer[]>();
     for (const cell of Object.values(mod.cells)) {
+      if (SIMULATION_ONLY_CELLS.has(cell.type)) continue;
       for (const [pin, bits] of Object.entries(cell.connections)) {
         for (const b of bits) {
           if (typeof b !== 'number') continue;
@@ -708,6 +725,10 @@ function moduleShapes(netlist: YosysNetlist): Map<string, ModuleShape> {
       consumers.set(pn, acc);
     }
     analysis.set(name, { consumers, feedsOutput });
+    unusedPortsByModule.set(
+      name,
+      new Set([...consumers].filter(([, acc]) => acc.length === 0).map(([pn]) => pn)),
+    );
   }
 
   // Fixpoint: a submodule's clock ports aren't known until the child is resolved,
@@ -723,7 +744,9 @@ function moduleShapes(netlist: YosysNetlist): Map<string, ModuleShape> {
       const cp = clockPortsByModule.get(name)!;
       for (const [pn, cons] of consumers) {
         if (cp.has(pn) || feedsOutput.has(pn) || cons.length === 0) continue;
-        if (cons.every((c) => isClockPin(c.cellType, c.pin, clockPortsByModule))) {
+        if (
+          cons.every((c) => isClockPin(c.cellType, c.pin, clockPortsByModule, unusedPortsByModule))
+        ) {
           cp.add(pn);
           changed = true;
         }
