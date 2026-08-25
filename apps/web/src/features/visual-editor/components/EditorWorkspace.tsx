@@ -1,5 +1,5 @@
 /**
- * EditorWorkspace — the full /editor page shell.
+ * EditorWorkspace: the full /editor page shell.
  *
  * Combines Monaco code editor, CircuitCanvas, clock controls,
  * Verilog export, MCP connection, and example picker.
@@ -143,8 +143,8 @@ interface EditorWorkspaceProps {
   initialSource?: string;
   /**
    * Running as the standalone local MCP viewer (a separate client-only build,
-   * not a route on simten.dev). In this mode there's no server, so Share — which
-   * POSTs to a server function — is omitted, and the brand links out to the
+   * not a route on simten.dev). In this mode there's no server, so Share (which
+   * POSTs to a server function) is omitted, and the brand links out to the
    * marketing site rather than through the (absent) router.
    */
   standalone?: boolean;
@@ -159,7 +159,7 @@ export function EditorWorkspace({
   const circuit = useCircuitStore((state) => state.circuit);
   const { resolvedTheme } = useTheme();
 
-  // Editor source — lifted here from the (now-deleted) TSEditor so the compile
+  // Editor source, lifted here from the (now-deleted) TSEditor so the compile
   // hook and the store-wiring effects can read it.
   const [code, setCode] = useState(initialSource ?? '');
   const codeRef = useRef(code);
@@ -175,10 +175,10 @@ export function EditorWorkspace({
   });
 
   // Track whether the editor source is effectively empty so we only show the
-  // "Load an example" picker when the user has actually cleared their code —
+  // "Load an example" picker when the user has actually cleared their code,
   // not during the boot window between mount and first compile.
   const [codeEmpty, setCodeEmpty] = useState((initialSource ?? '').trim() === '');
-  // Don't render the picker during the boot window — the resizable panels and
+  // Don't render the picker during the boot window; the resizable panels and
   // Monaco haven't laid out yet so the picker would render at near-zero width
   // (squished column on the left).
   const [bootDone, setBootDone] = useState(false);
@@ -189,13 +189,13 @@ export function EditorWorkspace({
 
   // Build a BuiltCircuit-like object from the compile result for useCircuitSimulator.
   // When the editor's source was compiled via sandbox.compile(), evals are already
-  // registered in the sandbox — no need to transfer them via evalSources.
+  // registered in the sandbox, so no need to transfer them via evalSources.
   const editorBuiltCircuit = useMemo<import('@simten/core/circuit').BuiltCircuit | null>(() => {
     if (!compiler.result || !circuit) return null;
     return builtFromIR(circuit, [...compiler.result.libraryCircuits, ...compiler.result.circuits]);
   }, [compiler.result, circuit]);
 
-  // Verilog export button state — mirrors shareStatus. Export used to fail into
+  // Verilog export button state; mirrors shareStatus. Export used to fail into
   // a bare console.error, which was survivable when the only failure was a throw
   // but not now that it can also succeed with holes in it (see below).
   const [exportStatus, setExportStatus] = useState<
@@ -218,13 +218,13 @@ export function EditorWorkspace({
   // Editor handle for imperative get/set of the Monaco source.
   const editorRef = useRef<SimtenCodeEditorHandle>(null);
   // requestId of an in-flight show_circuit render-ack (set in onSource, cleared
-  // when the resulting compile succeeds/fails — see handleCompile / handleCompileError).
+  // when the resulting compile succeeds/fails; see handleCompile / handleCompileError).
   const pendingRenderRef = useRef<string | null>(null);
 
   // Track whether we've loaded content so we can skip the first MCP cache replay
   const hasLoadedContentRef = useRef(false);
 
-  // Export to Verilog — uses library store
+  // Export to Verilog, uses library store
   const handleExportVerilog = useCallback(() => {
     const lib = useCircuitLibraryStore.getState();
     let currentCircuit = useCircuitStore.getState().circuit;
@@ -252,7 +252,7 @@ export function EditorWorkspace({
           kind: 'error',
           message: `Can't export: ${count} unsupported ${count === 1 ? 'node' : 'nodes'} (${names.slice(0, 3).join(', ')})`,
         });
-        console.error('Verilog export blocked — unsupported primitives:', unsupported);
+        console.error('Verilog export blocked, unsupported primitives:', unsupported);
         return;
       }
       setExportStatus({ kind: 'idle' });
@@ -321,7 +321,7 @@ export function EditorWorkspace({
     }
   }, []);
 
-  // ── Simulation — uses same sandbox-backed hook as embeds ──
+  // ── Simulation, uses same sandbox-backed hook as embeds ──
   // The editor already compiled source via sandbox.compile(), so evals exist in the sandbox.
   // useCircuitSimulator sends the harnessed Circuit IR to the sandbox via compileIR.
   // Cast needed because useCircuitSimulator requires a BuiltCircuit; we always
@@ -355,7 +355,7 @@ export function EditorWorkspace({
   const simRef = useRef(sim);
   simRef.current = sim;
 
-  // Stable canvas callbacks — read sim via ref so they never change reference.
+  // Stable canvas callbacks: read sim via ref so they never change reference.
   // Without this, inline lambdas here cause projectedNodes to recompute on every
   // sim tick (portValues changes → EditorWorkspace re-renders → new fn refs →
   // projectedNodes recomputes → setNodes → ReactFlow churns).
@@ -408,7 +408,7 @@ export function EditorWorkspace({
   });
 
   // On each successful compile, push the result into the selection stores. Set
-  // the library FIRST — applyToCanvas fires inside setCompiledCircuits and needs
+  // the library FIRST; applyToCanvas fires inside setCompiledCircuits and needs
   // the full library (including user circuits) before adding harness components.
   // Also acknowledges an in-flight show_circuit render request (success).
   useEffect(() => {
@@ -580,11 +580,11 @@ export function EditorWorkspace({
                   </span>
                 </Button>
 
-                {/* Sandbox indicator — when MCP-linked, the file is the source of truth */}
+                {/* Sandbox indicator: when MCP-linked, the file is the source of truth */}
                 {mcpStatus === 'connected' && (
                   <span
                     className="hidden md:inline text-[11px] leading-tight text-muted-foreground pl-2"
-                    title="This editor is a sandbox view. The file Claude edits (from the terminal) is the source of truth; edits here are local experiments — ask Claude to save them, or use Share."
+                    title="This editor is a sandbox view. The file Claude edits (from the terminal) is the source of truth; edits here are local experiments; ask Claude to save them, or use Share."
                   >
                     Sandbox · file is source of truth
                   </span>

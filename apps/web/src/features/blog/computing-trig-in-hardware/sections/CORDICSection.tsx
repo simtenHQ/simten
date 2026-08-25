@@ -22,16 +22,15 @@ export function CORDICSection() {
       </h2>
       <div className="prose-invert space-y-6">
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
-          Everything we&rsquo;ve built &mdash; right shifters, signed arithmetic, direction
-          detection, iteration control, and the angle lookup table &mdash; comes together in one
-          circuit. The full{' '}
+          Everything we&rsquo;ve built (right shifters, signed arithmetic, direction detection,
+          iteration control, and the angle lookup table) comes together in one circuit. The full{' '}
           <strong className="text-gray-900 dark:text-white">CORDICIteration</strong> engine starts
           with a vector (80,&nbsp;0) pointing right and rotates it 45&deg;.
         </p>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
           Click <strong>Run</strong> or step through the iterations one by one. Watch x decrease and
           y increase as the vector rotates. After 8 iterations, both x and y should be approximately
-          equal &mdash; confirming that cos(45&deg;) &asymp; sin(45&deg;).
+          equal, confirming that cos(45&deg;) &asymp; sin(45&deg;).
         </p>
       </div>
 
@@ -47,13 +46,13 @@ export function CORDICSection() {
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
           The final values are scaled by the CORDIC gain factor (K&nbsp;&asymp;&nbsp;1.647), so the
           raw outputs are larger than the true sine and cosine. In production hardware, a single
-          constant multiplication at the end corrects for this. But the core computation &mdash; 8
-          iterations of shift-and-add &mdash; runs with zero multipliers.
+          constant multiplication at the end corrects for this. But the core computation, 8
+          iterations of shift-and-add, runs with zero multipliers.
         </p>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
           This is the same algorithm inside your scientific calculator, the trigonometric units of
           early GPUs, and every DSP chip that needs fast angle computation. No Taylor series, no
-          lookup table interpolation &mdash; just wires, registers, and a shifter.
+          lookup table interpolation. Just wires, registers, and a shifter.
         </p>
       </div>
     </section>

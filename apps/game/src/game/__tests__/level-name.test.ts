@@ -2,7 +2,7 @@
  * The name warning has to fire while you type, not on Submit.
  *
  * Renaming the circuit used to empty the canvas and say nothing until you
- * submitted — the only way to learn the rule was to trip over it. These cover
+ * submitted; the only way to learn the rule was to trip over it. These cover
  * the cases that decide whether the warning is helpful or just noise.
  */
 
@@ -28,7 +28,7 @@ describe('nameDiagnostics', () => {
     expect(d.line).toBe(1);
   });
 
-  it('is a warning, never an error — the code is valid', () => {
+  it('is a warning, never an error, the code is valid', () => {
     const ds = nameDiagnostics(`circuit('Nope', {})`, 'And1');
     expect(ds.every((d) => d.severity === 'warning')).toBe(true);
   });

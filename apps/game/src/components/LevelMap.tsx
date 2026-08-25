@@ -6,7 +6,7 @@
  * make it look small, and panning up through work you have not done yet is
  * most of what a map is for.
  *
- * Nodes are not draggable. This is a map, not an editor — the layout carries
+ * Nodes are not draggable. This is a map, not an editor; the layout carries
  * meaning, so letting a player rearrange it only lets them break it.
  */
 
@@ -50,7 +50,7 @@ type LevelNode = Node<LevelNodeView, 'level'>;
 /**
  * Whether the circuit's verdict is allowed to actually lock a level.
  *
- * On, now that progress persists — the map computes unlock state by running
+ * On, now that progress persists; the map computes unlock state by running
  * itself as a circuit (see `map-circuit.ts`), and a campaign where every level
  * is open from the start has no shape and no reason to care about the unlock
  * line the arithmetic band earns.
@@ -67,7 +67,7 @@ const ENFORCE_LOCKING = true;
  *
  * `WIRE_COLORS` in `packages/ui/src/editor/types/visual.ts`: a live signal is
  * green-500, a low one slate-400, and the canvas draws every wire at
- * `strokeWidth: 2` without animation. Matching is not only cosmetic — the map
+ * `strokeWidth: 2` without animation. Matching is not only cosmetic; the map
  * *is* a circuit, so a wire leaving a solved level carries a real 1, and it
  * should be the same green a 1 is everywhere else in the product.
  */
@@ -82,7 +82,7 @@ const WIRE_LOW = '#3f4756';
 
 /**
  * Ports, sized and coloured here rather than left to React Flow, whose default
- * handle is a white-bordered dot — the loudest thing on the map, repeated
+ * handle is a white-bordered dot, the loudest thing on the map, repeated
  * twice per level.
  */
 const PORT_STYLE = { width: 6, height: 6, background: '#475569', border: 'none' } as const;
@@ -90,7 +90,7 @@ const PORT_STYLE = { width: 6, height: 6, background: '#475569', border: 'none' 
  * Three states that have to be told apart at a glance, so each gets its own
  * shape rather than its own opacity. `available` and `locked` used to differ
  * only by how faint they were, which on a dark map is a difference you notice
- * by comparing two cards side by side — not by looking at one.
+ * by comparing two cards side by side, not by looking at one.
  *
  * Solid bright border is the one you can play, dashed and faint is the one you
  * cannot yet, filled green is done. Dashed carries "not yet" without borrowing
@@ -145,14 +145,14 @@ function LevelMapNode({ data }: NodeProps<LevelNode>) {
             </Link>
             {/*
               The same badge the canvas puts on a composite component, carrying
-              the same gesture and the same tooltip — so "there is something
+              the same gesture and the same tooltip, so "there is something
               inside this" is a thing you can see rather than a thing you have
               to guess. It sits outside the Link deliberately: clicking the card
               still opens the level, and inspecting is its own target.
 
               Solved levels only. On an unsolved one there is nothing of the
               player's to show, so the drilldown falls back to the reference
-              answer — which hands over the solution to a level they have not
+              answer, which hands over the solution to a level they have not
               attempted. The badge is the affordance, so removing it is what
               removes the spoiler.
 
@@ -263,7 +263,7 @@ function LevelMapCanvas({ solved, onHoverLevel, onExpandLevel }: LevelMapCanvasP
   const flowEdges = useMemo<Edge[]>(
     () =>
       edges.map((e) => {
-        // A wire is hot when the level driving it is solved — the same fact the
+        // A wire is hot when the level driving it is solved, the same fact the
         // simulator used to decide what the gates above it see.
         const hot = live.has(e.source);
         return {
@@ -283,7 +283,7 @@ function LevelMapCanvas({ solved, onHoverLevel, onExpandLevel }: LevelMapCanvasP
   /**
    * Put the start of the campaign back under the viewport.
    *
-   * Used for the initial view and by the recenter control — the map is larger
+   * Used for the initial view and by the recenter control; the map is larger
    * than the screen and pans freely, so it is possible to end up looking at
    * empty grid with no way to tell which direction the levels are in.
    */
@@ -314,7 +314,7 @@ function LevelMapCanvas({ solved, onHoverLevel, onExpandLevel }: LevelMapCanvasP
   /**
    * Hold the first paint until the map has been positioned.
    *
-   * React Flow paints once at its default viewport — origin, zoom 1 — which
+   * React Flow paints once at its default viewport (origin, zoom 1) which
    * puts the graph in the top-left corner, and only then does `onInit` fire and
    * centre it. The result is a visible jump from wrong place to right place.
    * Centring earlier is not possible: it needs the container's measured size,

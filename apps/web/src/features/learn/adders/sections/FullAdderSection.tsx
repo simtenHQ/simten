@@ -46,8 +46,8 @@ export function FullAdderSection() {
           half-adder can produce a carry, and the full adder's carry-out is the OR of both.
         </p>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
-          Try all eight combinations &mdash; the result is the binary encoding of how many of the
-          three inputs are 1.
+          Try all eight combinations: the result is the binary encoding of how many of the three
+          inputs are 1.
         </p>
       </div>
 
@@ -56,7 +56,7 @@ export function FullAdderSection() {
           <CircuitEmbed
             circuit={FullAdder}
             title="Full adder"
-            description="Adds three bits — a, b, and carry-in — to one sum bit and one carry-out."
+            description="Adds three bits (a, b, and carry-in) to one sum bit and one carry-out."
             onPortValuesChange={setPortValues}
           />
         </div>

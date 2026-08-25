@@ -33,8 +33,8 @@ export function HalfAdderSection() {
       <div className="prose-invert space-y-6">
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
           The smallest possible adder takes two bits and produces two bits: a <strong>sum</strong>{' '}
-          and a <strong>carry</strong>. With two single-bit inputs there are four cases &mdash; the
-          sum is 1 when exactly one input is 1 (that&rsquo;s XOR), and the carry is 1 only when both
+          and a <strong>carry</strong>. With two single-bit inputs there are four cases, and the sum
+          is 1 when exactly one input is 1 (that&rsquo;s XOR), and the carry is 1 only when both
           inputs are 1 (that&rsquo;s AND).
         </p>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">

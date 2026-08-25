@@ -55,8 +55,8 @@ export function HazardsSection() {
             <p className="text-sm text-gray-500 dark:text-gray-400">
               Freeze the pipeline for a cycle until the result is available. Simple but wastes a
               cycle. Our hazard unit does this for{' '}
-              <strong className="text-gray-600 dark:text-gray-300">load-use</strong> hazards &mdash;
-              when a value is being loaded from memory, it&rsquo;s not ready until the Memory stage
+              <strong className="text-gray-600 dark:text-gray-300">load-use</strong> hazards: when a
+              value is being loaded from memory, it&rsquo;s not ready until the Memory stage
               completes.
             </p>
           </div>
@@ -67,7 +67,7 @@ export function HazardsSection() {
               Don&rsquo;t wait for writeback. Grab the result directly from whichever stage computed
               it and feed it back to the Execute stage through a{' '}
               <strong className="text-gray-600 dark:text-gray-300">forwarding mux</strong>. No stall
-              needed &mdash; the pipeline keeps flowing.
+              needed, and the pipeline keeps flowing.
             </p>
           </div>
         </div>
@@ -75,8 +75,8 @@ export function HazardsSection() {
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
           <strong className="text-gray-900 dark:text-white">Control hazards</strong> are the other
           problem. When a branch is taken, the instructions that were already fetched after it are
-          wrong. The pipeline flushes them &mdash; replaces them with NOPs &mdash; and restarts from
-          the branch target. That&rsquo;s what the flush input on the pipeline registers does.
+          wrong. The pipeline flushes them, replacing them with NOPs, and restarts from the branch
+          target. That&rsquo;s what the flush input on the pipeline registers does.
         </p>
       </div>
 

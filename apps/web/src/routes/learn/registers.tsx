@@ -75,7 +75,7 @@ export const Route = createFileRoute('/learn/registers')({
     ...pageHead({
       title: 'How registers work',
       description:
-        'How circuits remember. From the single-bit D flip-flop to multi-bit registers with write-enable, ending with a counter — the first useful sequential circuit.',
+        'How circuits remember. From the single-bit D flip-flop to multi-bit registers with write-enable, ending with a counter, the first useful sequential circuit.',
       path: '/learn/registers',
     }),
     scripts: [

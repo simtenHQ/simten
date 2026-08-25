@@ -1,5 +1,5 @@
 /**
- * Reading a Verilog project well enough to import it — no yosys round trip.
+ * Reading a Verilog project well enough to import it, with no yosys round trip.
  *
  * The import sheet's job is to ask as little as possible. yosys already prunes
  * unreachable modules, so "which files" never needs asking; the RTL declares its
@@ -30,7 +30,7 @@ export interface ParamDecl {
   defaultValue: string;
   /**
    * `string` and `number` can be sent as `chparam`. `expression` covers defaults
-   * like `ALIGN = COMPRESSED` that only mean something once elaborated — they
+   * like `ALIGN = COMPRESSED` that only mean something once elaborated; they
    * are shown, but left to the RTL unless the user types over them.
    */
   kind: 'string' | 'number' | 'expression';
@@ -111,17 +111,17 @@ function reachableCount(graph: Map<string, Set<string>>, root: string): number {
 }
 
 /**
- * Modules that nothing else instantiates — the roots of the design — with the
+ * Modules that nothing else instantiates (the roots of the design) with the
  * one that pulls in the most of the file set first.
  *
  * "The last module in the file" is the obvious guess and a bad one across
  * several files: SERV's last module is `serv_state`, a leaf. Its actual roots
  * are `serv_rf_top` and `serv_synth_wrapper`, which is exactly the case where
- * the user has to be asked — but `serv_rf_top` reaches thirteen more modules
+ * the user has to be asked, but `serv_rf_top` reaches thirteen more modules
  * than the wrapper does, so it can at least be offered first.
  *
  * Falls back to every declared module if the scan finds no roots at all, which
- * is what a cyclic or unparsed file set looks like — a long list beats none.
+ * is what a cyclic or unparsed file set looks like, and a long list beats none.
  */
 export function detectTopCandidates(sources: ProjectFile[]): string[] {
   const blocks = moduleBlocks(sources);
@@ -217,7 +217,7 @@ export function parseRepoUrl(input: string): RepoRef | undefined {
   if (scheme && !/^https?$/i.test(scheme[1])) return undefined;
   const withoutScheme = trimmed.replace(/^https?:\/\//i, '');
   // Anything with a dot before the first slash is a host; only github's counts.
-  // This is what lets `github.com/olofk/serv` through — the form the address
+  // This is what lets `github.com/olofk/serv` through: the form the address
   // bar shows, and the one this field's own placeholder suggests.
   const host = /^([^/]+)\//.exec(withoutScheme)?.[1]?.toLowerCase();
   if (host?.includes('.') && host !== 'github.com' && host !== 'www.github.com') return undefined;
@@ -235,8 +235,8 @@ export function parseRepoUrl(input: string): RepoRef | undefined {
 /**
  * Folders that directly contain Verilog, deepest path first with a count, so the
  * picker can lead with `rtl/` rather than the repo root. A repo URL alone is not
- * enough to import — SERV has 77 `.v` files across benches, board wrappers and
- * test data — so the folder is the real unit of choice.
+ * enough to import (SERV has 77 `.v` files across benches, board wrappers and
+ * test data) so the folder is the real unit of choice.
  */
 export function sourceFolders(paths: string[]): { folder: string; count: number }[] {
   const counts = new Map<string, number>();

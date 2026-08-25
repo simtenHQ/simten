@@ -10,7 +10,7 @@
  * That matters beyond tidiness: a `Constant` is hardwired once this is
  * synthesised, so a knob built on one exists only in the simulator and vanishes
  * on the way to an FPGA. As ports they are real signals, identical in the
- * browser, under Verilator, and on the board — and changing one costs nothing,
+ * browser, under Verilator, and on the board. Changing one costs nothing,
  * since inputs are already passed with every render request.
  *
  * That includes the waveform. All four tables live in one ROM, addressed by
@@ -48,7 +48,7 @@ export const DEFAULT_ENV_STEP = 8;
 /**
  * Band-limited wave: summing `1/k · sin(k·θ)` over a fixed harmonic count keeps
  * every partial under Nyquist. That is the difference between "vintage digital"
- * and aliasing mush at 22 kHz — a naive sawtooth folds its upper harmonics back
+ * and aliasing mush at 22 kHz: a naive sawtooth folds its upper harmonics back
  * down as inharmonic clangour.
  *
  * `oddOnly` gives a square/hollow character (odd harmonics only), matching how
@@ -67,7 +67,7 @@ function bandLimited(harmonics: number, oddOnly = false): number[] {
   return raw.map((v) => Math.round(((v / peak) * 0.5 + 0.5) * 255));
 }
 
-/** Order matters — the index is what the `wave` input selects. */
+/** Order matters: the index is what the `wave` input selects. */
 export const WAVES = ['sine', 'triangle', 'square', 'saw'] as const;
 export type WaveName = (typeof WAVES)[number];
 
@@ -83,7 +83,7 @@ function waveBank(): number[] {
   return WAVES.flatMap((name) => GENERATORS[name]());
 }
 
-/** Phase increment for a frequency — the accumulator wraps once per cycle. */
+/** Phase increment for a frequency; the accumulator wraps once per cycle. */
 export const incFor = (hz: number) => Math.round((hz * 65536) / SAMPLE_RATE);
 
 export function buildVoice() {
@@ -93,7 +93,7 @@ export function buildVoice() {
       inc: bus(16),
       /** One tick high restarts the envelope. */
       trig: bit,
-      /** Which of the four tables to read — the bank's high address bits. */
+      /** Which of the four tables to read: the bank's high address bits. */
       wave: bus(2),
       /** Subtracted from the envelope each tick, so bigger decays faster. */
       decay: bus(16),
@@ -106,7 +106,7 @@ export function buildVoice() {
       // Top TABLE_BITS of the phase index within a table; the low bits are the
       // fractional part, discarded (zero-order hold, as the era did it).
       tabAddr: BitSlice({ low: 16 - TABLE_BITS, high: 15 }),
-      // addr = (wave << 12) | phase[15:4] — the selector picks the bank.
+      // addr = (wave << 12) | phase[15:4], so the selector picks the bank.
       bankShift: LeftShifter({ width: 16 }),
       bankAdd: Adder({ width: 16 }),
       rom: ROM({ memory: romFromBytes(waveBank()) }),

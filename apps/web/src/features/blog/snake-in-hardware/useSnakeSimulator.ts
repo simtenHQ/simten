@@ -22,7 +22,7 @@ export function useSnakeSimulator() {
     };
   }, [sim.cycleCount, sim.ready, sim.scanPort]);
 
-  // Keyboard handling — single setNode call, no race window with ticks
+  // Keyboard handling: single setNode call, no race window with ticks
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // 2-bit direction encoding: 0=up, 1=right, 2=down, 3=left

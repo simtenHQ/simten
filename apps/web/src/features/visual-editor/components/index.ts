@@ -1,5 +1,5 @@
 /**
- * Component exports — thin shell only.
+ * Component exports: thin shell only.
  * All editor components are in @simten/ui/editor.
  */
 

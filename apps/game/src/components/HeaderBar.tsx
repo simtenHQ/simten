@@ -44,7 +44,7 @@ export function HeaderBar({
       {linkHome ? (
         <Link
           to="/"
-          aria-label="Simten — home"
+          aria-label="Simten home"
           className="flex shrink-0 items-center gap-2 text-foreground no-underline transition-colors hover:text-foreground/80"
         >
           {brand}

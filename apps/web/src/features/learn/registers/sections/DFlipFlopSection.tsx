@@ -10,14 +10,14 @@ export function DFlipFlopSection() {
           A combinational circuit is a pure function: outputs depend only on current inputs, change
           every input and the output changes immediately. There&rsquo;s nowhere for state to live.
           The smallest piece of hardware that <em>does</em> have a place for state is the{' '}
-          <strong>D flip-flop</strong> &mdash; one bit of memory.
+          <strong>D flip-flop</strong>: one bit of memory.
         </p>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
           It has one input (<code>d</code>), one output (<code>q</code>), and a{' '}
           <strong>clock</strong>. Whatever value is on <code>d</code>
           when the clock ticks is captured and held on <code>q</code>
-          until the next tick. Between ticks the input can change all it wants &mdash;{' '}
-          <code>q</code> doesn&rsquo;t.
+          until the next tick. Between ticks the input can change all it wants, <code>q</code>{' '}
+          doesn&rsquo;t.
         </p>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
           Toggle <code>d</code> below and watch nothing happen. Press the step button to advance the
@@ -29,7 +29,7 @@ export function DFlipFlopSection() {
         <CircuitEmbed
           circuit={DFlipFlop()}
           title="D flip-flop"
-          description="Toggle d, then step the clock — q captures d on the tick."
+          description="Toggle d, then step the clock, and q captures d on the tick."
         />
       </div>
     </section>

@@ -6,7 +6,7 @@ type Meta = { title?: string } & Record<string, string>;
 export type PageSeo = {
   /** Page title (will be suffixed with " | Simten" unless `titleExact` is true). */
   title: string;
-  /** Set true to use `title` verbatim — e.g. for the landing page. */
+  /** Set true to use `title` verbatim, e.g. for the landing page. */
   titleExact?: boolean;
   /** Meta description for search results + social cards. */
   description: string;
@@ -14,7 +14,7 @@ export type PageSeo = {
   path: string;
   /** Override the default OG image. Site-relative path or absolute URL. */
   image?: string;
-  /** og:type — "website" for landing/index pages, "article" for blog posts. */
+  /** og:type: "website" for landing/index pages, "article" for blog posts. */
   type?: 'website' | 'article';
 };
 
@@ -100,7 +100,7 @@ export function blogPostingLd(args: {
 }
 
 /**
- * Full head config for a blog post — meta tags, canonical, BlogPosting + BreadcrumbList JSON-LD.
+ * Full head config for a blog post: meta tags, canonical, BlogPosting + BreadcrumbList JSON-LD.
  * Pass the post entry from the blog manifest; everything else is derived.
  */
 export function blogPostHead(post: { slug: string; title: string; description: string }) {

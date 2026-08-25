@@ -7,22 +7,22 @@ Simten is a browser-based platform for learning digital hardware design. You wri
 
 ## What you can build
 
-Everything runs in the browser — no toolchain, no installation, no FPGA required.
+Everything runs in the browser: no toolchain, no installation, no FPGA required.
 
-- **Logic gates and adders** — start from AND, OR, XOR and build up to full adders and ALUs
-- **Sequential circuits** — counters, shift registers, state machines using registers and flip-flops
-- **Games in hardware** — [Snake](/blog/snake-in-hardware) and [Pong](/blog/pong-in-hardware), built entirely from logic gates with no CPU
-- **A complete CPU** — a [5-stage pipelined RISC-V processor](/blog/rv32i-cpu) that runs compiled C code
-- **Accelerators** — a [TPU systolic array](/blog/how-tpus-work) doing matrix multiplication, a [CORDIC unit](/blog/computing-trig-in-hardware) computing trigonometry
-- **Networking hardware** — an [Ethernet switch](/blog/how-network-switches-work) with frame parsing, buffering, and forwarding
+- **Logic gates and adders**: start from AND, OR, XOR and build up to full adders and ALUs
+- **Sequential circuits**: counters, shift registers, state machines using registers and flip-flops
+- **Games in hardware**: [Snake](/blog/snake-in-hardware) and [Pong](/blog/pong-in-hardware), built entirely from logic gates with no CPU
+- **A complete CPU**: a [5-stage pipelined RISC-V processor](/blog/rv32i-cpu) that runs compiled C code
+- **Accelerators**: a [TPU systolic array](/blog/how-tpus-work) doing matrix multiplication, a [CORDIC unit](/blog/computing-trig-in-hardware) computing trigonometry
+- **Networking hardware**: an [Ethernet switch](/blog/how-network-switches-work) with frame parsing, buffering, and forwarding
 
 ## Hardware & FPGA
 
-Circuits that export to Verilog can go all the way to a physical FPGA bitstream. The [Hardware & FPGA](/docs/hardware) page covers the full pipeline — Yosys synthesis, nextpnr place-and-route, ecppack, and flashing — using Snake running on a ULX3S ECP5 board over HDMI as a worked example.
+Circuits that export to Verilog can go all the way to a physical FPGA bitstream. The [Hardware & FPGA](/docs/hardware) page covers the full pipeline (Yosys synthesis, nextpnr place-and-route, ecppack, and flashing) using Snake running on a ULX3S ECP5 board over HDMI as a worked example.
 
 ## Verilog export
 
-Circuits export to synthesizable Verilog. The exporter maps 60+ primitives to standard RTL constructs — `assign` for combinational logic, `always @(posedge clk)` with synchronous active-low reset (`rst_n`) for sequential logic. Every module containing sequential primitives gets `input clk` and `input rst_n` ports auto-emitted (no clock or reset wiring in your `circuit()` definitions); on `rst_n` low, registers snap to their `value` arg, memories preserve contents, RV32I register files zero. The output is verified against [Icarus Verilog](https://steveicarus.github.io/iverilog/) via a containerized verification service.
+Circuits export to synthesizable Verilog. The exporter maps 60+ primitives to standard RTL constructs: `assign` for combinational logic, `always @(posedge clk)` with synchronous active-low reset (`rst_n`) for sequential logic. Every module containing sequential primitives gets `input clk` and `input rst_n` ports auto-emitted (no clock or reset wiring in your `circuit()` definitions); on `rst_n` low, registers snap to their `value` arg, memories preserve contents, RV32I register files zero. The output is verified against [Icarus Verilog](https://steveicarus.github.io/iverilog/) via a containerized verification service.
 
 ```typescript
 import { exportVerilog } from '@simten/core/verilog';
@@ -32,21 +32,21 @@ const { verilog, files } = exportVerilog(circuit, library, { target: 'synthesis'
 // (hex files referenced by $readmemh for large preloaded memories).
 ```
 
-The `target: 'synthesis'` option strips simulation-only constructs (`initial` blocks) for FPGA-ready output. Memories above `inlineMemoryThreshold` (default 2048 words) are emitted as `$readmemh("<file>.hex", reg)` with the hex contents returned alongside — matching the Yosys/Vivado/Quartus convention for large ROM/RAM initialization.
+The `target: 'synthesis'` option strips simulation-only constructs (`initial` blocks) for FPGA-ready output. Memories above `inlineMemoryThreshold` (default 2048 words) are emitted as `$readmemh("<file>.hex", reg)` with the hex contents returned alongside, matching the Yosys/Vivado/Quartus convention for large ROM/RAM initialization.
 
 ## AI tutor over MCP
 
-Connect an MCP-capable assistant — Claude Code, Codex CLI, Gemini CLI, Cursor, and others — to get an AI tutor that can see your circuit, push changes to the browser, run simulations, and answer questions in real time:
+Connect an MCP-capable assistant (Claude Code, Codex CLI, Gemini CLI, Cursor, and others) to get an AI tutor that can see your circuit, push changes to the browser, run simulations, and answer questions in real time:
 
 ```bash
 claude mcp add simten npx @simten/mcp
 ```
 
-Ask it to build a counter or debug your ALU — it writes the TypeScript and the circuit appears on your canvas instantly.
+Ask it to build a counter or debug your ALU, and it writes the TypeScript and the circuit appears on your canvas instantly.
 
 See the [MCP Integration](/docs/mcp-integration) guide for per-client setup, available tools, and how the MCP viewer works.
 
-Circuit code runs in an isolated sandbox — see [Security Architecture](/docs/security) for how Simten protects your credentials and filesystem from untrusted circuits.
+Circuit code runs in an isolated sandbox. See [Security Architecture](/docs/security) for how Simten protects your credentials and filesystem from untrusted circuits.
 
 ## Packages
 

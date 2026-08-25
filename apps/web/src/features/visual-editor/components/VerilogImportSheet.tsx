@@ -1,5 +1,5 @@
 /**
- * VerilogImportSheet — paste a module, drop a folder, or point at a GitHub repo,
+ * VerilogImportSheet: paste a module, drop a folder, or point at a GitHub repo,
  * and get editable simten source.
  *
  * Posts to /api/verilog-import (the synth container's `import` yosys target +
@@ -104,8 +104,8 @@ export function VerilogImportSheet({ onImport }: { onImport: (source: string) =>
   );
 
   const topCandidates = useMemo(() => detectTopCandidates(allSources), [allSources]);
-  // Follow the detected root — for a single pasted module that is the module
-  // itself, for a folder it is whichever root reaches the most of the file set —
+  // Follow the detected root: for a single pasted module that is the module
+  // itself, for a folder it is whichever root reaches the most of the file set,
   // until the user picks something else.
   const top = chosenTop ?? topCandidates[0] ?? '';
   const params = useMemo(() => (top ? parseParameters(allSources, top) : []), [allSources, top]);
@@ -169,7 +169,7 @@ export function VerilogImportSheet({ onImport }: { onImport: (source: string) =>
           kind: 'error',
           message:
             resp.status === 403
-              ? "GitHub's rate limit (60 requests an hour, per IP) is used up — try again later, or drop the files instead."
+              ? "GitHub's rate limit (60 requests an hour, per IP) is used up; try again later, or drop the files instead."
               : `Couldn't read that repo (HTTP ${resp.status})`,
         });
         return;
@@ -244,7 +244,7 @@ export function VerilogImportSheet({ onImport }: { onImport: (source: string) =>
       if (!path) {
         setStatus({
           kind: 'error',
-          message: `No file named ${wanted} in this repo — attach it, or point ${p.name} at one of the files below.`,
+          message: `No file named ${wanted} in this repo. Attach it, or point ${p.name} at one of the files below.`,
         });
         return;
       }
@@ -400,7 +400,7 @@ export function VerilogImportSheet({ onImport }: { onImport: (source: string) =>
 
         {/* ── Local intake ──────────────────────────────────────────────── */}
         {/* biome-ignore lint/a11y/noStaticElementInteractions: a drop target is
-            not a control — the same files are reachable through the two buttons
+            not a control; the same files are reachable through the two buttons
             inside it, so nothing here is keyboard-only-inaccessible. */}
         <div
           onDrop={handleDrop}
@@ -599,8 +599,8 @@ export function VerilogImportSheet({ onImport }: { onImport: (source: string) =>
               ))}
             </ul>
             <p className="mt-1.5 text-muted-foreground">
-              The source is in the editor — these are usually undeclared or misspelled signals in
-              the Verilog.
+              The source is in the editor; these are usually undeclared or misspelled signals in the
+              Verilog.
             </p>
           </div>
         )}

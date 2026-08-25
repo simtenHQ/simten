@@ -13,8 +13,8 @@ export function WhenToEncapsulateSection() {
           </li>
           <li>
             <strong>It&rsquo;s conceptually one thing.</strong> A half adder isn&rsquo;t &ldquo;an
-            XOR and an AND&rdquo; &mdash; it&rsquo;s an adder. The abstraction matches the level you
-            think at.
+            XOR and an AND&rdquo;; it&rsquo;s an adder. The abstraction matches the level you think
+            at.
           </li>
           <li>
             <strong>It would clutter the parent.</strong> If inlining the cluster would make the
@@ -22,7 +22,7 @@ export function WhenToEncapsulateSection() {
           </li>
         </ul>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
-          The other half of abstraction is <strong>parameterization</strong> &mdash;{' '}
+          The other half of abstraction is <strong>parameterization</strong>:{' '}
           <code>Adder(&#123; width: 8 &#125;)</code> and <code>Adder(&#123; width: 32 &#125;)</code>{' '}
           are the same abstraction specialized differently. One definition, many uses.
         </p>
@@ -30,8 +30,8 @@ export function WhenToEncapsulateSection() {
           This same hierarchy is what <strong>Verilog</strong> and <strong>SystemVerilog</strong>{' '}
           modules express in real chip design. Designers describe modules with named ports,
           parameters, and instances of other modules; a synthesis tool maps that hierarchy down to
-          cells from a foundry library (NAND, NOR, AOI, full adders, flip-flops &mdash; already well
-          above gate level). Nobody, anywhere, is drawing NAND gates by hand.
+          cells from a foundry library (NAND, NOR, AOI, full adders, flip-flops, already well above
+          gate level). Nobody, anywhere, is drawing NAND gates by hand.
         </p>
       </div>
     </section>

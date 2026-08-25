@@ -80,7 +80,7 @@ export function SnakeDemo() {
 
   return (
     <div className="rounded-xl border border-gray-700/50 bg-gray-100 dark:bg-gray-900/80 overflow-hidden">
-      {/* Keyboard instructions — hidden on mobile */}
+      {/* Keyboard instructions, hidden on mobile */}
       <div className="hidden sm:flex px-4 py-3 border-b border-gray-700/50 items-center gap-3">
         <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
           Controls
@@ -100,7 +100,7 @@ export function SnakeDemo() {
         </div>
       </div>
 
-      {/* Game screen — responsive 8×8 pixel grid */}
+      {/* Game screen: responsive 8×8 pixel grid */}
       <div className="flex justify-center py-6 sm:py-8 bg-gray-50 dark:bg-gray-950">
         <svg
           viewBox={`0 0 ${TOTAL_SIZE} ${TOTAL_SIZE}`}
@@ -125,7 +125,7 @@ export function SnakeDemo() {
         </svg>
       </div>
 
-      {/* Touch d-pad — mobile only */}
+      {/* Touch d-pad, mobile only */}
       <div className="sm:hidden py-4 border-t border-gray-700/50 bg-gray-100 dark:bg-gray-900/90">
         <DPad onDirection={sendDirection} />
       </div>

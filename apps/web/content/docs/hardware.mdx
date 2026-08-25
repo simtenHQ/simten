@@ -27,11 +27,11 @@ export function PipelineStage({ number, title, subtitle, children, last }) {
 
 <div className="my-8">
 <PipelineStage number={1} title="Export" subtitle="TypeScript circuit → Verilog">
-  `exportVerilog()` flattens the circuit to primitives and emits synthesisable Verilog. Every node becomes a wire or register assignment. Any module containing sequential logic gets `clk` and `rst_n` ports auto-emitted — synchronous active-low reset; your wrapper must drive both. No simulation-only constructs remain.
+  `exportVerilog()` flattens the circuit to primitives and emits synthesisable Verilog. Every node becomes a wire or register assignment. Any module containing sequential logic gets `clk` and `rst_n` ports auto-emitted: synchronous active-low reset, and your wrapper must drive both. No simulation-only constructs remain.
 </PipelineStage>
 
 <PipelineStage number={2} title="Synthesise" subtitle="Yosys synth_ecp5 → netlist JSON">
-  Yosys parses the Verilog, infers logic, and maps it to ECP5 primitives (LUT4, TRELLIS_FF, TRELLIS_BRAM). The output is a JSON netlist — a complete description of every cell and every connection. For the Snake game this is ~44,000 lines of JSON: 774 combinational cells and 203 flip-flops.
+  Yosys parses the Verilog, infers logic, and maps it to ECP5 primitives (LUT4, TRELLIS_FF, TRELLIS_BRAM). The output is a JSON netlist, a complete description of every cell and every connection. For the Snake game this is ~44,000 lines of JSON: 774 combinational cells and 203 flip-flops.
 </PipelineStage>
 
 <PipelineStage number={3} title="Place & Route" subtitle="nextpnr-ecp5 → routed config">
@@ -39,7 +39,7 @@ export function PipelineStage({ number, title, subtitle, children, last }) {
 </PipelineStage>
 
 <PipelineStage number={4} title="Pack" subtitle="ecppack → .bit bitstream">
-  `ecppack` converts the routed config into a binary `.bit` file — the actual data that gets clocked into the FPGA's SRAM on startup.
+  `ecppack` converts the routed config into a binary `.bit` file, the actual data that gets clocked into the FPGA's SRAM on startup.
 </PipelineStage>
 
 <PipelineStage number={5} title="Flash" subtitle="openFPGALoader → FPGA SRAM" last>
@@ -53,41 +53,41 @@ The whole pipeline runs through a Docker container exposing `/synth` (Yosys) and
 
 ## Snake on the ULX3S
 
-The first end-to-end hardware demo is Snake — the same `Snake` circuit that runs in the browser simulator, exported to Verilog and wrapped with VGA timing and HDMI output, running on a [ULX3S 85K](https://ulx3s.github.io/) FPGA board.
+The first end-to-end hardware demo is Snake, the same `Snake` circuit that runs in the browser simulator, exported to Verilog and wrapped with VGA timing and HDMI output, running on a [ULX3S 85K](https://ulx3s.github.io/) FPGA board.
 
-The ULX3S carries a **Lattice ECP5 LFE5U-85F** — 84K LUTs, 130 DSP blocks, 3.5 Mb of block RAM. The Snake game uses 774 of those LUTs and 203 flip-flops. The other 83,000+ LUTs are idle.
+The ULX3S carries a **Lattice ECP5 LFE5U-85F**: 84K LUTs, 130 DSP blocks, 3.5 Mb of block RAM. The Snake game uses 774 of those LUTs and 203 flip-flops. The other 83,000+ LUTs are idle.
 
 ### What the TypeScript circuit provides
 
-`Snake` is a pure register-transfer circuit — registers, adders, comparators, muxes, and a dual-port block RAM used as a framebuffer. It exposes two ports:
+`Snake` is a pure register-transfer circuit: registers, adders, comparators, muxes, and a dual-port block RAM used as a framebuffer. It exposes two ports:
 
 ```
-in:  dir[2]       — 2-bit direction (0=up 1=right 2=down 3=left)
-     scan_addr[6] — framebuffer read address (driven by VGA counters)
-out: pixel_out[8] — pixel value at that address
+in:  dir[2]       - 2-bit direction (0=up 1=right 2=down 3=left)
+     scan_addr[6] - framebuffer read address (driven by VGA counters)
+out: pixel_out[8] - pixel value at that address
 ```
 
-No display logic, no clock generation, no IO — just game state and a pixel query interface.
+No display logic, no clock generation, no IO, just game state and a pixel query interface.
 
 ### What the Verilog wrapper adds
 
 Everything needed to actually show the game on a monitor lives in `snake_top.v`:
 
-**ECP5 PLL** — the board oscillator runs at 25 MHz. HDMI needs a 125 MHz shift clock (5× pixel clock for 10:1 TMDS serialisation). The `EHXPLLL` primitive is configured as: VCO = 500 MHz, CLKOP = 125 MHz (shift), CLKOS = 25 MHz (pixel).
+**ECP5 PLL**: the board oscillator runs at 25 MHz. HDMI needs a 125 MHz shift clock (5× pixel clock for 10:1 TMDS serialisation). The `EHXPLLL` primitive is configured as: VCO = 500 MHz, CLKOP = 125 MHz (shift), CLKOS = 25 MHz (pixel).
 
-**VGA timing** — standard 640×480 @ 60 Hz counters (`hcnt` 0–799, `vcnt` 0–524). Active area, hsync, and vsync are derived from these. The 8×8 game grid maps to 80×60 pixel cells.
+**VGA timing**: standard 640×480 @ 60 Hz counters (`hcnt` 0–799, `vcnt` 0–524). Active area, hsync, and vsync are derived from these. The 8×8 game grid maps to 80×60 pixel cells.
 
-**TMDS encoder** — the DVI 8b/10b spec encodes each 8-bit colour channel into a 10-bit transition-minimised word with DC balance tracking. This is what lets HDMI carry data reliably over long cables. Three encoders run in parallel (R, G, B). The blue channel carries hsync/vsync during blanking intervals.
+**TMDS encoder**: the DVI 8b/10b spec encodes each 8-bit colour channel into a 10-bit transition-minimised word with DC balance tracking. This is what lets HDMI carry data reliably over long cables. Three encoders run in parallel (R, G, B). The blue channel carries hsync/vsync during blanking intervals.
 
-**TMDS serialiser** — each 10-bit TMDS word must be sent as 10 serial bits at 250 Mbps (125 MHz × 2 via DDR). Two 5-bit shift registers feed a pair of `ODDRX1F` primitives — ECP5's double-data-rate output flip-flop, which outputs one bit on the rising edge and one on the falling edge of `clk_shift`.
+**TMDS serialiser**: each 10-bit TMDS word must be sent as 10 serial bits at 250 Mbps (125 MHz × 2 via DDR). Two 5-bit shift registers feed a pair of `ODDRX1F` primitives, ECP5's double-data-rate output flip-flop, which outputs one bit on the rising edge and one on the falling edge of `clk_shift`.
 
-**Direction latch** — buttons are sampled on the slow game clock and mapped to the 2-bit encoding `Snake` expects.
+**Direction latch**: buttons are sampled on the slow game clock and mapped to the 2-bit encoding `Snake` expects.
 
-**Reset driver** — the wrapper must drive the `rst_n` input on the generated module. Typical pattern: a small power-on-reset counter that holds `rst_n` low for the first ~256 cycles after bitstream load, optionally combined with a physical button (active-high pressed → `rst_n` low) for runtime restart. The `hardware/ulx3s/projects/cpu/cpu_top.v` wrapper has a worked example.
+**Reset driver**: the wrapper must drive the `rst_n` input on the generated module. Typical pattern: a small power-on-reset counter that holds `rst_n` low for the first ~256 cycles after bitstream load, optionally combined with a physical button (active-high pressed → `rst_n` low) for runtime restart. The `hardware/ulx3s/projects/cpu/cpu_top.v` wrapper has a worked example.
 
 ### The pin constraint file
 
-`ulx3s_snake.lpf` maps signal names to physical BGA ball locations. This file would be identical for any ULX3S HDMI project — it's entirely board-specific, not game-specific:
+`ulx3s_snake.lpf` maps signal names to physical BGA ball locations. This file would be identical for any ULX3S HDMI project; it's entirely board-specific, not game-specific:
 
 ```
 LOCATE COMP "clk_25mhz" SITE "G2";
@@ -95,13 +95,13 @@ LOCATE COMP "gpdi_dp[0]" SITE "A16"; IOBUF PORT "gpdi_dp[0]" IO_TYPE=LVCMOS33D D
 LOCATE COMP "gpdi_dn[0]" SITE "B16"; IOBUF PORT "gpdi_dn[0]" IO_TYPE=LVCMOS33  DRIVE=4;
 ```
 
-The `LVCMOS33D` type on the dp pins enables pseudo-differential drive — the FPGA automatically drives the dn pin as the complement without needing an explicit `OLVDS` primitive.
+The `LVCMOS33D` type on the dp pins enables pseudo-differential drive: the FPGA automatically drives the dn pin as the complement without needing an explicit `OLVDS` primitive.
 
 ---
 
 ## The 1-Bit Truncation Bug
 
-During bring-up, the snake could only move right and down. Up and left had no effect — pressing those buttons produced the same movement as their opposites.
+During bring-up, the snake could only move right and down. Up and left had no effect; pressing those buttons produced the same movement as their opposites.
 
 The visual debugger (tinting the background based on the latched direction register) confirmed the buttons were sending the right signals. The bug was deeper: in the generated Verilog, `deltaX` and `deltaY` were always positive.
 
@@ -119,11 +119,11 @@ export const Constant = circuit('Constant', {
 The Verilog exporter infers wire widths by propagating through connections. Because `Constant.out` was typed as `bit`, the `zero` and `minus1` constants both appeared 1-bit to the width inference pass. The Mux nodes computing `deltaXTemp` and `deltaYTemp` saw only 1-bit inputs and declared their outputs as 1-bit wires:
 
 ```verilog
-wire w_deltaXTemp_out;   // inferred as 1-bit — wrong
+wire w_deltaXTemp_out;   // inferred as 1-bit, wrong
 assign w_deltaXTemp_out = w_isLeft_eq ? w_minus1_out : w_zero_out;
 ```
 
-`minus1` has value 255 (`8'hFF`). Truncated to 1 bit: `1'b1`. When this feeds the next Mux — which produces `deltaX` as an 8-bit wire to match the Adder — the 1-bit `1'b1` zero-extends to `8'h01`. Going left gave deltaX = +1, identical to going right.
+`minus1` has value 255 (`8'hFF`). Truncated to 1 bit: `1'b1`. When this feeds the next Mux (which produces `deltaX` as an 8-bit wire to match the Adder), the 1-bit `1'b1` zero-extends to `8'h01`. Going left gave deltaX = +1, identical to going right.
 
 ### Fix
 
@@ -150,11 +150,11 @@ The fix highlights a general rule for synthesis: the simulator is lenient about 
 
 The `snake_top.v` wrapper has two distinct layers:
 
-**Board-agnostic HDMI output** — `tmds_encoder`, `tmds_serializer`, `ecp5pll`, and the VGA timing counters are identical for any ULX3S display project. You could replace `Snake` with any circuit that implements the `scan_addr → pixel_out` interface and get a working display.
+**Board-agnostic HDMI output**: `tmds_encoder`, `tmds_serializer`, `ecp5pll`, and the VGA timing counters are identical for any ULX3S display project. You could replace `Snake` with any circuit that implements the `scan_addr → pixel_out` interface and get a working display.
 
-**Snake-specific glue** — the cell grid counters, game clock divider, direction latch, and colour mapping (~80 lines) are the only parts that know about the game.
+**Snake-specific glue**: the cell grid counters, game clock divider, direction latch, and colour mapping (~80 lines) are the only parts that know about the game.
 
-The natural next step is a **board abstraction**: a TypeScript `board()` definition that encodes the PLL configuration, HDMI pin assignments, and peripheral interfaces, so the exporter can generate both the wrapper Verilog and the `.lpf` automatically. A circuit would only need to implement a standard display interface — the board handles everything physical. The same `Snake` circuit, targeting a different board object, would produce a bitstream for a different FPGA family without any manual Verilog changes.
+The natural next step is a **board abstraction**: a TypeScript `board()` definition that encodes the PLL configuration, HDMI pin assignments, and peripheral interfaces, so the exporter can generate both the wrapper Verilog and the `.lpf` automatically. A circuit would only need to implement a standard display interface, and the board handles everything physical. The same `Snake` circuit, targeting a different board object, would produce a bitstream for a different FPGA family without any manual Verilog changes.
 
 ---
 
@@ -166,9 +166,9 @@ The next demo after Snake is a soft RV32I CPU. Same board, same toolchain, but n
 
 `hardware/ulx3s/projects/cpu/` contains:
 
-- `cpu_top.v` — the RV32I core, BRAM-backed instruction memory (IMEM), data memory (DMEM), and a small UART TX peripheral, wrapped with the ULX3S clock pin, the `BTN_F1` reset button (pin `R1`), and TX pin assignments. The wrapper combines a power-on-reset counter and the button to drive the core's `rst_n` input — press the button to restart the CPU live.
-- `firmware/` — example programs in C (`hello.c`, `fibonacci.c`, `snake.c`) and Rust (`hello.rs`).
-- `index.ts` — the project descriptor that the build pipeline auto-discovers.
+- `cpu_top.v`: the RV32I core, BRAM-backed instruction memory (IMEM), data memory (DMEM), and a small UART TX peripheral, wrapped with the ULX3S clock pin, the `BTN_F1` reset button (pin `R1`), and TX pin assignments. The wrapper combines a power-on-reset counter and the button to drive the core's `rst_n` input; press the button to restart the CPU live.
+- `firmware/`: example programs in C (`hello.c`, `fibonacci.c`, `snake.c`) and Rust (`hello.rs`).
+- `index.ts`: the project descriptor that the build pipeline auto-discovers.
 
 The memory map is intentionally small:
 
@@ -178,7 +178,7 @@ The memory map is intentionally small:
 | DMEM   | `0x0001_0000`–`0x0001_0FFF`  | 4 KB  | Stack lives at the top, growing down                 |
 | UART   | `0x8000_0000`                | 1 reg | `*UART = byte` writes; `*UART & 1` reads TX-ready    |
 
-Software polls bit 0 of the UART register to check transmit availability, then writes the next byte. That's the entire ABI — no FIFOs, no interrupts, no DMA.
+Software polls bit 0 of the UART register to check transmit availability, then writes the next byte. That's the entire ABI: no FIFOs, no interrupts, no DMA.
 
 ### Compiling firmware
 
@@ -232,7 +232,7 @@ Three commands cover the entire develop-build-flash-observe loop. They're all ba
 
 <PipelineStage number={2} title="MCP tool" subtitle="mcp__simten__run_on_fpga">
   Same flow, exposed to Claude Code via the Simten MCP server. Claude can iterate on firmware
-  (or RTL), flash, observe UART output, and adjust — all in a tight loop without leaving the
+  (or RTL), flash, observe UART output, and adjust, all in a tight loop without leaving the
   conversation. The tool returns the same `RunResult` JSON for the agent to reason about.
 </PipelineStage>
 
@@ -246,11 +246,11 @@ Three commands cover the entire develop-build-flash-observe loop. They're all ba
 
 ### Running this yourself
 
-The synth / verify / compile pipeline runs in three container services (`apps/synth`, `apps/verifier`, `apps/compiler`). In production they're private Cloudflare workers reachable only via service binding from `@simten/web`. To use the FPGA flow from a fresh clone you run them locally — `pnpm dev:synth`, `pnpm dev:verifier`, `pnpm dev:compiler` (each starts a Docker container under `wrangler dev` on ports 8792 / 55002 / 55001). Once they're up, `pnpm fpga:run` and the `run_on_fpga` MCP tool work end to end against a connected ULX3S. See [hardware/README.md](https://github.com/simtenHQ/simten/blob/main/hardware/README.md#toolchain-prerequisites) for the env vars, board-side tools (`openFPGALoader`, `picocom`), and the udev rule note for Linux.
+The synth / verify / compile pipeline runs in three container services (`apps/synth`, `apps/verifier`, `apps/compiler`). In production they're private Cloudflare workers reachable only via service binding from `@simten/web`. To use the FPGA flow from a fresh clone you run them locally: `pnpm dev:synth`, `pnpm dev:verifier`, `pnpm dev:compiler` (each starts a Docker container under `wrangler dev` on ports 8792 / 55002 / 55001). Once they're up, `pnpm fpga:run` and the `run_on_fpga` MCP tool work end to end against a connected ULX3S. See [hardware/README.md](https://github.com/simtenHQ/simten/blob/main/hardware/README.md#toolchain-prerequisites) for the env vars, board-side tools (`openFPGALoader`, `picocom`), and the udev rule note for Linux.
 
 ### The cached fast path (in progress)
 
-A full Yosys + nextpnr-ecp5 pass takes ~30–60 seconds. Most of the time you're not changing the RTL — only the firmware blob inside IMEM. In principle the bitstream cache can be keyed on `(verilog, top, lpf, device)` and the prior `.bit` reused when only the firmware has changed, swapping the new blob in via `ecpbram` — dropping firmware-only iterations to ~3 s.
+A full Yosys + nextpnr-ecp5 pass takes ~30–60 seconds. Most of the time you're not changing the RTL, only the firmware blob inside IMEM. In principle the bitstream cache can be keyed on `(verilog, top, lpf, device)` and the prior `.bit` reused when only the firmware has changed, swapping the new blob in via `ecpbram`, dropping firmware-only iterations to ~3 s.
 
 The wiring for this is already in `lib/pipeline.ts` and `lib/ecpbram.ts`, but the path is currently blocked: when the CPU's IMEM is loaded via `$readmemh("firmware.hex")` (which is what `ecpbram` needs in order to patch), the synth container produces a bitstream whose IMEM contents are garbage, so the fast path can't be turned on without rebuilding the IMEM init flow. Until that's resolved, every firmware change pays the full synth cost. See issue #39 for the diagnostic plan.
 
@@ -260,7 +260,7 @@ The wiring for this is already in `lib/pipeline.ts` and `lib/ecpbram.ts`, but th
 
 ## The UART Skid Race
 
-After getting `hello.rs` printing "Hello, World!" reliably, the obvious next demo — `hello.c`, a 5-line C program printing "Hi there\r\n" in a loop — was intermittently flaky. Sometimes a few clean iterations, then permanent gibberish; reflashing and reopening picocom would briefly produce clean output again before drifting back.
+After getting `hello.rs` printing "Hello, World!" reliably, the obvious next demo (`hello.c`, a 5-line C program printing "Hi there\r\n" in a loop) was intermittently flaky. Sometimes a few clean iterations, then permanent gibberish; reflashing and reopening picocom would briefly produce clean output again before drifting back.
 
 ### The shape of the bug
 
@@ -268,22 +268,22 @@ The garbage on the wire was suspiciously structured: bytes appeared in **groups 
 
 Adjacent demos worked perfectly under identical hardware:
 
-- `hello.rs` — same message shape, in Rust, with `uart_putc` as a function call → ✓
-- `fibonacci.c` — many more bytes, via `static void putc()` → ✓
-- `hello.c` — three lines of inlined poll-write, no function call → ✗
+- `hello.rs`: same message shape, in Rust, with `uart_putc` as a function call → ✓
+- `fibonacci.c`: many more bytes, via `static void putc()` → ✓
+- `hello.c`: three lines of inlined poll-write, no function call → ✗
 
 The only structural difference was inter-write *slack*. Rust and `fibonacci.c` had a function call (prologue, epilogue, return) between every UART write; `hello.c` had only a load and a poll loop.
 
 ### Diagnostic spacer
 
-Adding a single tight delay after the write —
+Adding a single tight delay after the write:
 
 ```c
 *UART = c;
 for (volatile int j = 0; j < 50; j++);   // ~150 ns of nothing
 ```
 
-— made the corruption disappear instantly. So the bug was timing-sensitive at the ~150 ns scale, exactly the regime where one or two CPU pipeline cycles matter.
+This made the corruption disappear instantly. So the bug was timing-sensitive at the ~150 ns scale, exactly the regime where one or two CPU pipeline cycles matter.
 
 ### Root cause
 
@@ -293,7 +293,7 @@ for (volatile int j = 0; j < 50; j++);   // ~150 ns of nothing
 assign tx_ready = !busy;   // combinational from a flop
 ```
 
-When the CPU stored a byte, `busy` was set on the *next* clock edge. But the polling load that followed could combinationally read `busy` *during* the same cycle the store was causing it to flip. Verilog non-blocking semantics meant the load saw the old `busy = 0`, decoded `tx_ready = 1`, and the CPU happily issued the next store. The shifter — now mid-byte and `busy = 1` — hit `if (!busy)` in its always block, false, and dropped the second write on the floor. Ten writes per loop iteration, one or more *landing inside an in-flight frame*, splicing bits across UART frame boundaries. The host UART receiver re-locked onto a wrong falling edge and stayed misaligned, which explains both the "10-byte cycle, wrong values" pattern and the "open picocom and sometimes it works for a while" behaviour.
+When the CPU stored a byte, `busy` was set on the *next* clock edge. But the polling load that followed could combinationally read `busy` *during* the same cycle the store was causing it to flip. Verilog non-blocking semantics meant the load saw the old `busy = 0`, decoded `tx_ready = 1`, and the CPU happily issued the next store. The shifter, now mid-byte and `busy = 1`, hit `if (!busy)` in its always block, false, and dropped the second write on the floor. Ten writes per loop iteration, one or more *landing inside an in-flight frame*, splicing bits across UART frame boundaries. The host UART receiver re-locked onto a wrong falling edge and stayed misaligned, which explains both the "10-byte cycle, wrong values" pattern and the "open picocom and sometimes it works for a while" behaviour.
 
 ### Fix
 
@@ -325,13 +325,13 @@ end
 
 Two structural properties fall out:
 
-1. **Drops are impossible.** A `tx_write` always lands in the skid. If the skid is full the new byte overwrites — but software polling `tx_ready` correctly never gets there, because a full skid means `tx_ready = 0`.
+1. **Drops are impossible.** A `tx_write` always lands in the skid. If the skid is full the new byte overwrites, but software polling `tx_ready` correctly never gets there, because a full skid means `tx_ready = 0`.
 2. **The status flag is monotone within a cycle.** `skid_valid` changes only on clock edges, so a combinational read of `tx_ready` is stable for an entire cycle. The CPU pipeline can't catch it mid-flip the way it could with `busy`.
 
 Cost: +9 flip-flops, no change in Fmax. `hello.c` now runs cleanly without the diagnostic spacer; `hello.rs` and `fibonacci.c` were unaffected.
 
 ### The general lesson
 
-Both this story and the 1-bit truncation bug share a shape: the **simulator was lenient where the hardware is strict**. The TS RTL simulator runs every cycle as a discrete step — a polling load reads the latest committed value of `busy`, not "the value during the cycle a store is committing." Real flip-flops and combinational logic don't make that distinction; anything you read combinationally from a register that's about to change can race.
+Both this story and the 1-bit truncation bug share a shape: the **simulator was lenient where the hardware is strict**. The TS RTL simulator runs every cycle as a discrete step: a polling load reads the latest committed value of `busy`, not "the value during the cycle a store is committing." Real flip-flops and combinational logic don't make that distinction; anything you read combinationally from a register that's about to change can race.
 
-The general rule for memory-mapped status flags: **register the read path**, or put a skid (or a FIFO) in the data path so a write that arrives during the racy window is captured rather than dropped. The dumber the peripheral, the harder it is to debug this kind of intermittent corruption — and the more that lazy software (like a tight poll-write loop) will expose it.
+The general rule for memory-mapped status flags: **register the read path**, or put a skid (or a FIFO) in the data path so a write that arrives during the racy window is captured rather than dropped. The dumber the peripheral, the harder it is to debug this kind of intermittent corruption, and the more that lazy software (like a tight poll-write loop) will expose it.

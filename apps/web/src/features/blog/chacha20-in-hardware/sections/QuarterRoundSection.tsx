@@ -21,9 +21,9 @@ a += b;  d ^= a;  d <<<= 8;
 c += d;  b ^= c;  b <<<= 7;`}
         </pre>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
-          Notice how each step feeds the next &mdash; step 1 modifies <code>a</code> and{' '}
-          <code>d</code>, step 2 uses the new <code>d</code> to modify <code>c</code> and{' '}
-          <code>b</code>, and so on. By the end, every input bit has influenced every output bit.
+          Notice how each step feeds the next: step 1 modifies <code>a</code> and <code>d</code>,
+          step 2 uses the new <code>d</code> to modify <code>c</code> and <code>b</code>, and so on.
+          By the end, every input bit has influenced every output bit.
         </p>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
           The circuit below is loaded with the{' '}
@@ -35,7 +35,7 @@ c += d;  b ^= c;  b <<<= 7;`}
           >
             RFC 7539 test vector
           </a>
-          . Change any input and the four output hex displays update instantly &mdash; this entire
+          . Change any input and the four output hex displays update instantly, because this entire
           circuit is pure combinational logic, computed in a single propagation with zero clock
           cycles.
         </p>

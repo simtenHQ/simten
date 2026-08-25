@@ -12,8 +12,8 @@ export function FrameSection() {
       <div className="prose-invert space-y-6">
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
           Raw bytes arrive on a wire, but not every byte is a packet. An Ethernet frame starts with
-          a <strong className="text-gray-900 dark:text-white">preamble</strong> &mdash; a sequence
-          of 0x55 bytes &mdash; followed by a{' '}
+          a <strong className="text-gray-900 dark:text-white">preamble</strong>, a sequence of 0x55
+          bytes, followed by a{' '}
           <strong className="text-gray-900 dark:text-white">Start-of-Frame Delimiter</strong> (SFD,
           0xD5). The switch must detect this pattern to know when real data begins.
         </p>
@@ -25,8 +25,8 @@ export function FrameSection() {
         </p>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
           Set <strong>byteIn</strong> to 85 (0x55), toggle the <strong>valid</strong> switch, and
-          tick &mdash; the state moves to 1 (waiting). Now set <strong>byteIn</strong> to 213 (0xD5)
-          and tick again &mdash; the state jumps to 2 and the <strong>frameLed</strong> lights up:
+          tick, and the state moves to 1 (waiting). Now set <strong>byteIn</strong> to 213 (0xD5)
+          and tick again: the state jumps to 2 and the <strong>frameLed</strong> lights up:
           we&rsquo;re in a frame.
         </p>
       </div>

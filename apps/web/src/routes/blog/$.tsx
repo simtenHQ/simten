@@ -15,7 +15,7 @@ import { blogSource } from '@/lib/source';
 export const Route = createFileRoute('/blog/$')({
   component: Page,
   // SEO comes from the posts manifest (the same source the blog index uses),
-  // keyed by slug — not from loaderData, which TanStack can't type through the
+  // keyed by slug, not from loaderData, which TanStack can't type through the
   // async server fn here. Unregistered slugs (e.g. placeholders) get a generic
   // head rather than throwing.
   head: ({ params }) => {

@@ -9,7 +9,7 @@
  * Level 8 introduces ports, and the black box that comes with them is the
  * lesson rather than a wart: your circuit collapses into a single component
  * precisely because its insides have stopped being anyone else's problem. It
- * is also the gate to composition — a self-contained circuit cannot be reused,
+ * is also the gate to composition: a self-contained circuit cannot be reused,
  * so nothing later can build on your XOR until you have wrapped it.
  *
  * The middle of the act follows NAND → NOT → AND → OR → NOR → XOR → XNOR. Each
@@ -18,18 +18,18 @@
  * the middle where there is enough behind it for the trick to mean something.
  *
  * Stubs taper. Level 1 is written out in full with two wires commented out,
- * because its job is to explain the `connect` destructuring — the hardest thing
- * in the DSL to read cold — and uncommenting a line someone can already see
+ * because its job is to explain the `connect` destructuring (the hardest thing
+ * in the DSL to read cold) and uncommenting a line someone can already see
  * working asks less of them than writing one from a blank list. Levels 2 and 3 still place a NAND and wire one side of it. From level 4
- * the `nodes` are the player's to choose — handing them the right number of
+ * the `nodes` are the player's to choose; handing them the right number of
  * NANDs would give away both the answer and the point of `par`.
  *
  * Level 1 is a NAND rather than a friendlier AND, even though its lesson is
  * pure syntax. "You get one gate" has to be true from the first screen: handing
  * over an AND and withdrawing it a level later reads as a confiscation, and it
  * made the completion card announce NAND as an unlock when it was really a
- * swap. Nothing is reasoned about here anyway — you uncomment two lines and
- * click — so the player meets NAND by watching it, which is exactly the setup
+ * swap. Nothing is reasoned about here anyway (you uncomment two lines and
+ * click) so the player meets NAND by watching it, which is exactly the setup
  * level 2 needs.
  */
 
@@ -40,13 +40,13 @@ import type { Level } from './types';
  *
  * Every gate the player built from NAND, handed back once they have proved they
  * can make it. This is the first time `allowed` grows, which is what makes the
- * completion card's unlock line fire — it is derived from exactly this
+ * completion card's unlock line fire; it is derived from exactly this
  * difference, so it can never promise something the grader would reject.
  *
  * The honest version of this is reusing the circuits they actually wrote, which
  * needs composition. Until then the stdlib equivalents stand in: same logic,
- * same gate counts, and the lesson — that what you build makes the next thing
- * cheaper — survives intact.
+ * same gate counts, and the lesson, that what you build makes the next thing
+ * cheaper, survives intact.
  */
 const ARITHMETIC_GATES = ['Nand', 'Not', 'And', 'Or', 'Nor', 'Xor', 'Xnor'];
 
@@ -64,7 +64,7 @@ export const LEVELS: Level[] = [
     stub: `// A circuit is a set of nodes and the wires between them.
 // \`x.to(y)\` sends the value at x into y.
 //
-// Everything here is a node — the switches and the lamp too. The first
+// Everything here is a node, the switches and the lamp too. The first
 // wire is already connected. The other two are written out for you, just
 // commented.
 
@@ -101,7 +101,7 @@ export default circuit('Nand1', {
     title: 'NOT',
     tagline: 'Turn a 1 into a 0.',
     brief:
-      'You have seen what NAND does: it outputs 0 only when both its inputs are 1. It is the only gate you get, so every other gate gets built from it. Start with the simplest — turn a 1 into a 0.',
+      'You have seen what NAND does: it outputs 0 only when both its inputs are 1. It is the only gate you get, so every other gate gets built from it. Start with the simplest: turn a 1 into a 0.',
     target: 'Not1',
     inputs: ['a'],
     outputs: ['result'],
@@ -264,7 +264,7 @@ export default circuit('Nor1', {
     title: 'XOR',
     tagline: 'Light the lamp when the switches disagree.',
     brief:
-      'Light the lamp when the two switches disagree. This is the one that takes a minute — and it is the gate an adder is built from, so it pays off twice.',
+      'Light the lamp when the two switches disagree. This is the one that takes a minute, and it is the gate an adder is built from, so it pays off twice.',
     target: 'Xor1',
     inputs: ['a', 'b'],
     outputs: ['result'],
@@ -348,7 +348,7 @@ export default circuit('Xnor1', {
     allowed: ['Nand', 'Not', 'And', 'Or', 'Nor', 'Xor', 'Xnor'],
     stub: `// Ports, not switches. Every gate you have built is available.
 //
-// \`inputs\` and \`outputs\` are the circuit's edges — what it looks like from
+// \`inputs\` and \`outputs\` are the circuit's edges: what it looks like from
 // the outside. Wire them with \`inputs.a.to(...)\` and \`....to(outputs.out)\`.
 
 export default circuit('Xor2', {
@@ -385,7 +385,7 @@ export default circuit('Xor2', {
     inputs: ['a', 'b'],
     outputs: ['sum', 'carry'],
     allowed: ARITHMETIC_GATES,
-    stub: `// Adding two bits gives 0, 1 or 2 — and 2 does not fit in
+    stub: `// Adding two bits gives 0, 1 or 2, and 2 does not fit in
 // one bit, so the answer needs two lamps.
 //
 // You proved you could build these gates, so you have them
@@ -412,7 +412,7 @@ export default circuit('HalfAdder', {
     par: 2,
     outro: {
       headline: 'That is addition',
-      body: 'Sum is XOR, carry is AND, and together they add. It is called half an adder because it cannot take a carry coming in — which is the next problem, and the reason one of these is never enough.',
+      body: 'Sum is XOR, carry is AND, and together they add. It is called half an adder because it cannot take a carry coming in, which is the next problem, and the reason one of these is never enough.',
     },
   },
 
@@ -421,13 +421,13 @@ export default circuit('HalfAdder', {
     title: 'Full Adder',
     tagline: 'Add two bits and a carry coming in.',
     brief:
-      'The same sum, but with a carry arriving from the bit below. Do not build it out of gates — build it out of two of the half adders you just made.',
+      'The same sum, but with a carry arriving from the bit below. Do not build it out of gates; build it out of two of the half adders you just made.',
     target: 'FullAdder',
     inputs: ['a', 'b', 'cin'],
     outputs: ['sum', 'cout'],
     allowed: ARITHMETIC_GATES,
     stub: `// Your half adder, wrapped in ports so it can be used as a
-// component. That is what the last level was for — a circuit
+// component. That is what the last level was for: a circuit
 // with ports is one other circuits can build with.
 
 const HalfAdder = circuit('HalfAdder', {
@@ -446,7 +446,7 @@ const HalfAdder = circuit('HalfAdder', {
 // cin to that answer with the second.
 //
 // Either of those additions can carry, and the answer carries
-// out if either did — so you need one more gate for that.
+// out if either did, so you need one more gate for that.
 
 export default circuit('FullAdder', {
   nodes: {
@@ -485,7 +485,7 @@ export default circuit('FullAdder', {
     title: 'SR Latch',
     tagline: 'Remember a bit after the input goes away.',
     brief:
-      'Every circuit so far answered only to its switches. This one has to answer to what happened before: pull `s` low and the lamp comes on, pull `r` low and it goes off, and with both high it holds whatever it was last told. Read the steps left to right — the same inputs appear twice with different answers, and that is the whole point.',
+      'Every circuit so far answered only to its switches. This one has to answer to what happened before: pull `s` low and the lamp comes on, pull `r` low and it goes off, and with both high it holds whatever it was last told. Read the steps left to right: the same inputs appear twice with different answers, and that is the whole point.',
     target: 'Latch1',
     inputs: ['s', 'r'],
     outputs: ['q'],
@@ -528,7 +528,7 @@ export default circuit('Latch1', {
     par: 2,
     outro: {
       headline: 'It remembers',
-      body: "Two NANDs, each reading the other's answer. That loop is what every memory is made of — but it has a state you were told to avoid, and the next level gets rid of it.",
+      body: "Two NANDs, each reading the other's answer. That loop is what every memory is made of, but it has a state you were told to avoid, and the next level gets rid of it.",
     },
   },
 
@@ -547,7 +547,7 @@ export default circuit('Latch1', {
 //
 // The pair you built holds when both its inputs are high. So
 // the job of the two new gates is: when \`en\` is low, force
-// both high no matter what \`d\` is — and when \`en\` is high,
+// both high no matter what \`d\` is, and when \`en\` is high,
 // send \`d\` to one side and its opposite to the other.
 //
 // A NAND already gives you the opposite of something for
@@ -570,7 +570,7 @@ export default circuit('DLatch1', {
 });
 `,
     // Steps 2 and 5 carry identical inputs and demand different answers,
-    // which is the proof no combinational circuit can pass — without a repeat
+    // which is the proof no combinational circuit can pass, without a repeat
     // like that, `XNOR(d, en)` satisfies the whole table with no memory at
     // all. Step 1 stores deliberately, so the run does not depend on whatever
     // state the circuit powers up in.
@@ -615,7 +615,7 @@ export default circuit('DLatch1', {
 //
 // Your latch followed \`d\` the whole time \`en\` was high. A D
 // flip-flop only looks at \`d\` on a clock edge, and holds it
-// steady until the next one — so what it stores this tick is
+// steady until the next one, so what it stores this tick is
 // what \`d\` was last tick.
 //
 // Your latch could not do this. Wire its output back to its
@@ -670,7 +670,7 @@ export function nextLevel(id: string): Level | undefined {
 
 /**
  * Gates the player walks away from `level` holding that they did not have on
- * arrival — what the completion card announces as unlocked.
+ * arrival: what the completion card announces as unlocked.
  *
  * Normally that is whatever the next level adds. The first level is the
  * exception: its baseline is nothing at all, so the gate it hands over is its

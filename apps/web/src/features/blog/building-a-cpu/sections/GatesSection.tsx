@@ -9,8 +9,8 @@ export function GatesSection() {
       </h2>
       <div className="prose-invert space-y-6">
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
-          Every computer ever built &mdash; from the Apollo Guidance Computer to the M4 chip in your
-          MacBook &mdash; can be constructed from a single type of logic gate:{' '}
+          Every computer ever built, from the Apollo Guidance Computer to the M4 chip in your
+          MacBook, can be constructed from a single type of logic gate:{' '}
           <strong className="text-gray-900 dark:text-white">NAND</strong>.
         </p>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
@@ -28,7 +28,7 @@ export function GatesSection() {
         {/* NOT Gate */}
         <div>
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-            NOT &mdash; The Inverter
+            NOT: The Inverter
           </h3>
           <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
             Wire both NAND inputs together. When the input is 1, both NAND inputs are 1, so the
@@ -72,11 +72,11 @@ export function GatesSection() {
         {/* XOR Gate */}
         <div>
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-            XOR &mdash; Exclusive OR
+            XOR: Exclusive OR
           </h3>
           <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
-            The &ldquo;difference detector&rdquo; &mdash; outputs 1 only when inputs are{' '}
-            <em>different</em>. Built from 4 NAND gates. This one is essential for arithmetic.
+            The &ldquo;difference detector&rdquo;: outputs 1 only when inputs are <em>different</em>
+            . Built from 4 NAND gates. This one is essential for arithmetic.
           </p>
           <CircuitEmbed
             circuit={GATE_CIRCUITS.xor.circuit}

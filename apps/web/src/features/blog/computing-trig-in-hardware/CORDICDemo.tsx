@@ -81,7 +81,7 @@ export function CORDICDemo() {
             </div>
             {isDone && (
               <span className="ml-auto text-xs font-medium text-green-400 bg-green-900/30 px-2 py-1 rounded">
-                Done &mdash; cos&thinsp;&asymp;&thinsp;{getDisplayValue('x')},
+                Done &middot; cos&thinsp;&asymp;&thinsp;{getDisplayValue('x')},
                 sin&thinsp;&asymp;&thinsp;{getDisplayValue('y')}
               </span>
             )}

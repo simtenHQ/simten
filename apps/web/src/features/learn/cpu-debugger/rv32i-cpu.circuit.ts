@@ -11,12 +11,12 @@ import {
 
 // Debugger board: the canonical pipelined CPU (`RV32I_Core`) plus the memory and
 // memory-mapped peripherals the debugger UI needs. `debug: true` exposes:
-//   • a JTAG-style register scan port — the UI cycles `debug_addr` 0..31 and
+//   • a JTAG-style register scan port; the UI cycles `debug_addr` 0..31 and
 //     samples `debug_value` to build the register view;
 //   • the five pipeline-stage PCs (`if_pc/id_pc/ex_pc/mem_pc4/wb_pc4`) as outputs,
 //     read by useRV32IDebugger for the IF/ID/EX/MEM/WB view (MEM/WB are PC+4).
-// All synthesizable. The CPU's own `net_*` ports are vestigial — real networking
-// is the `nic` peripheral on the bus — so they're tied off.
+// All synthesizable. The CPU's own `net_*` ports are vestigial (real networking
+// is the `nic` peripheral on the bus) so they're tied off.
 export const RV32I_CPU = circuit('RV32I_CPU', {
   inputs: { net_rx_data: bus(32), net_rx_valid: bit, net_rx_frame: bit, debug_addr: bus(5) },
   outputs: {

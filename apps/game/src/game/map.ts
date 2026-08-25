@@ -1,7 +1,7 @@
 /**
  * The campaign as a map.
  *
- * `MAP_ROWS` is the campaign's shape, listed bottom to top — row 0 is where a
+ * `MAP_ROWS` is the campaign's shape, listed bottom to top; row 0 is where a
  * player starts and the last row is the end of the act. A row holds more than
  * one level when those levels are siblings rather than a sequence: Turing
  * Complete puts AND, NOR and OR side by side precisely so three levels read as
@@ -12,7 +12,7 @@
  * Order lives here rather than in `levels.ts` because it is presentation: a
  * level stays pure data that could be fetched as JSON, and the map decides how
  * that data is arranged. The cost of the split is drift, which is what
- * `__tests__/map.test.ts` exists to catch — every level appears exactly once,
+ * `__tests__/map.test.ts` exists to catch: every level appears exactly once,
  * and no row names a level that does not exist.
  */
 
@@ -55,8 +55,8 @@ export interface MapSection {
 }
 
 export const MAP_SECTIONS: MapSection[] = [
-  // One band from the first wire to the last gate. It was two — a short
-  // "First circuits" and then "Every gate from one" — which split a single
+  // One band from the first wire to the last gate. It was two: a short
+  // "First circuits" and then "Every gate from one", which split a single
   // idea in half and put a rule across the map two levels in, before the
   // player had done anything worth dividing.
   { label: 'Logic gates', startRow: 0 },
@@ -68,7 +68,7 @@ export const MAP_SECTIONS: MapSection[] = [
 /**
  * Layout constants. Node width is fixed so a row can be centred without
  * measuring the DOM, which keeps the graph identical on the server and the
- * client — React Flow renders during SSR here, and a layout that depended on
+ * client, because React Flow renders during SSR here, and a layout that depended on
  * measurement would jump on hydration.
  */
 export const NODE_WIDTH = 210;
@@ -121,8 +121,8 @@ export const SECTION_WIDTH = 760;
  * Vertical budget for a band, spent out of the space between two rows.
  *
  * `ROW_GAP - NODE_HEIGHT` is all there is between one row's card and the next
- * (currently 78px). A band claims `BOTTOM` beneath its lowest card — where the
- * label sits — and `TOP` above its highest, and whatever is left becomes the
+ * (currently 78px). A band claims `BOTTOM` beneath its lowest card (where the
+ * label sits) and `TOP` above its highest, and whatever is left becomes the
  * gap between adjacent bands. Overrun the budget and neighbouring bands
  * overlap instead of separating.
  */
@@ -138,7 +138,7 @@ const SECTION_PAD_BOTTOM = 30;
  *
  * `solved` is the set of completed level ids, read from stored progress by the
  * map page. It is empty for the first frame after mount, because storage can
- * only be read on the client — so this must be safe to call with nothing
+ * only be read on the client, so this must be safe to call with nothing
  * solved, which it is: every level renders as available.
  */
 export function buildMapGraph(solved: ReadonlySet<string> = new Set()): {
@@ -188,7 +188,7 @@ export function buildMapGraph(solved: ReadonlySet<string> = new Set()): {
   /**
    * Each band spans from the row it opens on up to the row below the next
    * band's start. Y grows downward while rows climb, so the band's *top* comes
-   * from its last row and its *bottom* from its first — inverted relative to
+   * from its last row and its *bottom* from its first, inverted relative to
    * how it reads.
    */
   const inRange = MAP_SECTIONS.filter((s) => s.startRow >= 0 && s.startRow < MAP_ROWS.length);

@@ -215,7 +215,7 @@ export const CORDIC_CIRCUITS: Record<string, BlogCircuit> = {
 };
 
 /**
- * Inner CORDIC iteration logic — pure combinational.
+ * Inner CORDIC iteration logic: pure combinational.
  *
  * Takes the current (x, y, z, iter) and produces the next-cycle values plus
  * a write_enable signal (active while iter < 8) and a done flag (iter == 8).
@@ -376,7 +376,7 @@ const CORDICStep = circuit('CORDICStep', {
 });
 
 /**
- * Full CORDIC circuit — computes sin/cos by rotating a vector using only shifts and adds.
+ * Full CORDIC circuit: computes sin/cos by rotating a vector using only shifts and adds.
  * Starts at (80, 0) pointing right and rotates 45 degrees.
  * Expected result: x ~ y ~ 93 after 8 iterations.
  *

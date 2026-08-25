@@ -36,7 +36,7 @@ export const PROGRAMS: Program[] = [
 
 /**
  * Convert a binary ROM file (Uint8Array) into the initialMemory format.
- * The ROM binary maps to addresses starting at 0 — the simulator's ROM nodes
+ * The ROM binary maps to addresses starting at 0, and the simulator's ROM nodes
  * (matched by "rom" substring) receive this data.
  */
 function romToMemoryMap(data: Uint8Array): Map<string, Map<number, number>> {

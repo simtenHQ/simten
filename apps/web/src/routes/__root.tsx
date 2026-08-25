@@ -16,7 +16,7 @@ const shareCircuitFn = (source: string) => shareCircuit({ data: { source } });
 
 // Tool routes render their own SiteHeader with custom right-slot content
 // (the editor and the RV32I debugger pass tool controls instead of nav
-// links). They also have no SiteFooter — tool pages stay focused. Routes
+// links). They also have no SiteFooter; tool pages stay focused. Routes
 // opt out by setting `staticData: { skipDefaultChrome: true }`. We avoid a
 // central route-ID list here because the literal $-placeholder strings
 // (`/circuit_/$encoded`, etc.) would ship in the minified bundle and
@@ -61,9 +61,9 @@ export const Route = createRootRoute({
       { rel: 'icon', href: '/favicon.svg', type: 'image/svg+xml' },
       { rel: 'apple-touch-icon', href: '/icon-192.png' },
       { rel: 'manifest', href: '/manifest.json' },
-      // Note: rel="canonical" is set per-route via pageHead() in lib/seo.ts —
+      // Note: rel="canonical" is set per-route via pageHead() in lib/seo.ts,
       // not here. Two canonical tags would force Google to pick one at random.
-      // Geist + Geist Mono are self-hosted — see /public/fonts and the
+      // Geist + Geist Mono are self-hosted; see /public/fonts and the
       // @font-face rules in styles.css. Preload both so they're fetched in
       // parallel with the HTML rather than discovered after CSS parses.
       {

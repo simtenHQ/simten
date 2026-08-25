@@ -1,5 +1,5 @@
 /**
- * useMCPConnection — WebSocket connection to the MCP server.
+ * useMCPConnection: WebSocket connection to the MCP server.
  *
  * Handles:
  * - Connects using the token + port from the URL fragment (show_circuit sets
@@ -29,7 +29,7 @@ export interface MCPMessage {
 
 export interface MCPCallbacks {
   /** Called when new circuit source is pushed from Claude Code. `requestId` is
-   *  present when the server is awaiting a render acknowledgment — call
+   *  present when the server is awaiting a render acknowledgment; call
    *  `sendRenderResult(requestId, …)` once compile finishes. */
   onSource?: (source: string, requestId?: string) => void;
   /** Called when a file-deleted event is received */
@@ -49,7 +49,7 @@ export interface MCPCallbacks {
 const RETRY_INTERVAL = 5000;
 /** Reconnect a bounded number of times before giving up. The MCP's port can move
  *  (dynamic port) and its token is per-process, so a dropped socket may mean the
- *  server is gone or has a new identity — don't loop on a stale port forever. */
+ *  server is gone or has a new identity, so don't loop on a stale port forever. */
 const MAX_RECONNECT_ATTEMPTS = 5;
 const LS_KEY = 'simten:mcp-connection';
 
@@ -89,7 +89,7 @@ function parseFragmentParams(): { token: string; port: number } | null {
   const port = params.get('port');
 
   if (token && port) {
-    // Clean the URL immediately — remove the fragment
+    // Clean the URL immediately: remove the fragment
     window.history.replaceState(null, '', window.location.pathname + window.location.search);
     const parsed = { token, port: parseInt(port, 10) };
     saveConnectionParams(parsed);
@@ -191,7 +191,7 @@ export function useMCPConnection(callbacks: MCPCallbacks) {
 
     ws.onclose = (event) => {
       wsRef.current = null;
-      // 4001 = invalid token (stale localStorage) — clear and stop retrying
+      // 4001 = invalid token (stale localStorage); clear and stop retrying
       if (event.code === 4001) {
         try {
           localStorage.removeItem(LS_KEY);
@@ -203,7 +203,7 @@ export function useMCPConnection(callbacks: MCPCallbacks) {
         return;
       }
       if (connectionRef.current && reconnectAttemptsRef.current < MAX_RECONNECT_ATTEMPTS) {
-        // We had a valid connection — retry a bounded number of times against the
+        // We had a valid connection, so retry a bounded number of times against the
         // last-known port. Covers a transient drop or an MCP that restarted on the
         // same (preferred) port. Don't loop forever: the port may have moved.
         reconnectAttemptsRef.current += 1;
@@ -214,7 +214,7 @@ export function useMCPConnection(callbacks: MCPCallbacks) {
         }, RETRY_INTERVAL);
       } else {
         // No prior connection, or retries exhausted: drop the stale params so a
-        // returning tab can't keep hammering — or silently mis-attach to — a port
+        // returning tab can't keep hammering (or silently mis-attach to) a port
         // that has moved. The next show_circuit delivers a fresh fragment and
         // reconnects cleanly.
         try {
@@ -229,7 +229,7 @@ export function useMCPConnection(callbacks: MCPCallbacks) {
     };
 
     ws.onerror = () => {
-      // onclose will fire after this — handle reconnection there
+      // onclose will fire after this; handle reconnection there
     };
   }, []);
 
@@ -239,7 +239,7 @@ export function useMCPConnection(callbacks: MCPCallbacks) {
     // Don't auto-discover if we already have a connection
     if (connectionRef.current || wsRef.current) return;
 
-    // Try connecting — if there's no server, this will fail silently
+    // Try connecting; if there's no server, this will fail silently
     // The server will reject us without a token, so this is just a probe
     // For now, auto-discovery only works with fragment params from show_circuit
     // Future: could implement a token-less handshake for discovery
@@ -254,7 +254,7 @@ export function useMCPConnection(callbacks: MCPCallbacks) {
       return;
     }
 
-    // No fragment params — start auto-discovery retry
+    // No fragment params, so start auto-discovery retry
     // For now this is a no-op since we require a token
     // In future, could try well-known port with a discovery protocol
     const discoveryTimer = setInterval(tryAutoDiscover, RETRY_INTERVAL);

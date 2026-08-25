@@ -5,7 +5,7 @@ import { PipelinedSortDemo } from '../circuits';
 export function PipelineSection() {
   const sim = useCircuitSimulator(PipelinedSortDemo);
 
-  // Read output values from portValues — keys are like "sorter.s0", "sorter.s1", etc.
+  // Read output values from portValues; keys are like "sorter.s0", "sorter.s1", etc.
   const getOutputValue = (key: string): number => {
     if (!sim.portValues) return 0;
     const direct = sim.portValues.get(key);
@@ -27,9 +27,9 @@ export function PipelineSection() {
       <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">Adding a Pipeline</h2>
       <div className="prose-invert space-y-6">
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
-          The combinational network above sorts instantly &mdash; but it can only process one set of
-          inputs at a time. While the comparators are busy evaluating one frame of values, no new
-          data can enter.
+          The combinational network above sorts instantly, but it can only process one set of inputs
+          at a time. While the comparators are busy evaluating one frame of values, no new data can
+          enter.
         </p>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
           The fix is straightforward: insert a <strong>register bank</strong> between each
@@ -39,8 +39,8 @@ export function PipelineSection() {
           that.
         </p>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
-          The first sorted result takes 3 clock cycles to emerge &mdash; one per stage. But after
-          that initial latency, a new sorted result arrives <strong>every single cycle</strong>.
+          The first sorted result takes 3 clock cycles to emerge, one per stage. But after that
+          initial latency, a new sorted result arrives <strong>every single cycle</strong>.
           Throughput is 1 sort/cycle regardless of how long the combinational logic inside each
           stage takes. This is exactly how real FPGA and ASIC sort engines are built.
         </p>
@@ -87,7 +87,7 @@ export function PipelineSection() {
                 </div>
                 {sim.cycleCount >= 3 && (
                   <span className="ml-auto text-xs font-medium text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/30 px-2 py-1 rounded">
-                    Pipeline full &mdash; 1 sort/cycle
+                    Pipeline full &middot; 1 sort/cycle
                   </span>
                 )}
               </div>

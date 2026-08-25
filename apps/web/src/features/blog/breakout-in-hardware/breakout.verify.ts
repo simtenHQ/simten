@@ -2,7 +2,7 @@
  * Gameplay testbench for the Breakout circuit.
  *
  * Drives only the top-level ports (`scan_addr`, `keyboard`, `pixel_out`,
- * `is_filling`) — the same surface the browser demo uses — and reads the screen
+ * `is_filling`), the same surface the browser demo uses, and reads the screen
  * back, then asserts behavioural invariants of Breakout: the ball is in motion,
  * a brick wall is drawn and the ball rebounds off its face without tunnelling,
  * the paddle tracks the held key and clamps to the walls, and losing the ball
@@ -27,7 +27,7 @@ declareOracle({
   tier: 'C',
   type: 'Breakout gameplay invariants (motion / wall / rebound / input / death-refill)',
   independence_basis:
-    "Expected behaviour comes from the rules of Breakout — the ball is always in flight and on the field, a brick wall is drawn and the ball rebounds off its face rather than passing through it, the paddle moves toward the held key and stops at the walls, and losing the ball respawns it and redraws the full wall — asserted by driving the public ports and reading pixel_out/is_filling. None of these restate the circuit's internal wiring.",
+    "Expected behaviour comes from the rules of Breakout: the ball is always in flight and on the field, a brick wall is drawn and the ball rebounds off its face rather than passing through it, the paddle moves toward the held key and stops at the walls, and losing the ball respawns it and redraws the full wall. This is asserted by driving the public ports and reading pixel_out/is_filling. None of these restate the circuit's internal wiring.",
   evidence: 'power-on wall draw + trajectory + tunnelling watch + paddle sweep + death-refill',
 });
 
@@ -140,7 +140,7 @@ verify.exhaustive('holding RIGHT moves paddle right and clamps', [1], () => {
 });
 
 // Invariant 5: losing the ball asserts is_filling (the redraw), refills the wall
-// fully, and respawns the ball — real "instant refill on death" (the demo bursts
+// fully, and respawns the ball: real "instant refill on death" (the demo bursts
 // the redraw; here we just tick through it).
 verify.exhaustive('death refills the wall fully and respawns the ball', [1], () => {
   const s = simulate(Breakout);

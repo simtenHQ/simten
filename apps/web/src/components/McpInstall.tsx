@@ -2,14 +2,14 @@ import { Check, Copy } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 // Single source of truth for how each agent CLI registers the Simten MCP
-// server. Add a new client by appending one entry — the tab UI and both the
+// server. Add a new client by appending one entry; the tab UI and both the
 // docs page and any other embed pick it up automatically.
 //
 // Verified against each tool's official MCP docs (July 2026):
-//   Claude Code  — `claude mcp add <name> <cmd>`
-//   Codex CLI    — `codex mcp add <name> -- <cmd>`  (note the `--` separator)
-//   Gemini CLI   — `gemini mcp add <name> <cmd>`
-//   Cursor & co. — no register-via-CLI; a `mcpServers` JSON block, which is
+//   Claude Code  - `claude mcp add <name> <cmd>`
+//   Codex CLI    - `codex mcp add <name> -- <cmd>`  (note the `--` separator)
+//   Gemini CLI   - `gemini mcp add <name> <cmd>`
+//   Cursor & co. - no register-via-CLI; a `mcpServers` JSON block, which is
 //                  the same shape Windsurf, VS Code, Claude Desktop and Zed use.
 type Client = {
   id: string;
@@ -53,7 +53,7 @@ const CLIENTS: Client[] = [
   }
 }`,
     },
-    note: 'Same block works for Windsurf, VS Code, Claude Desktop, and Zed — drop it in that client’s MCP config.',
+    note: 'Same block works for Windsurf, VS Code, Claude Desktop, and Zed; drop it in that client’s MCP config.',
   },
 ];
 
@@ -76,7 +76,7 @@ export function McpInstall() {
     try {
       localStorage.setItem(STORAGE_KEY, id);
     } catch {
-      // private mode / storage disabled — selection just won't persist
+      // private mode / storage disabled; selection just won't persist
     }
   };
 

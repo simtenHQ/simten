@@ -9,7 +9,7 @@ export function ALUSection() {
       </h2>
       <div className="prose-invert space-y-6">
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
-          An adder can only add. A real CPU needs to do logic too &mdash; AND, OR, XOR. The{' '}
+          An adder can only add. A real CPU needs to do logic too: AND, OR, XOR. The{' '}
           <strong className="text-gray-900 dark:text-white">Arithmetic Logic Unit</strong> (ALU)
           computes <em>all</em> of these in parallel and uses a{' '}
           <strong className="text-gray-900 dark:text-white">multiplexer</strong> to pick the result
@@ -23,8 +23,8 @@ export function ALUSection() {
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
           Chain 8 of these slices (with carry linking the adders) and you have the complete ALU of
           the 6502. The CPU&rsquo;s control unit just sets the <strong>op</strong> bits based on
-          which instruction it decoded. Same circuit, different operation &mdash; that&rsquo;s what
-          makes it programmable.
+          which instruction it decoded. Same circuit, different operation. That&rsquo;s what makes
+          it programmable.
         </p>
       </div>
 

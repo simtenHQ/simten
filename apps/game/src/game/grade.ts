@@ -12,8 +12,8 @@
  * and a forbidden primitive is worth reporting even when the answer is correct,
  * so both are settled before anything is simulated.
  *
- * Where the player's code executes is the runtime's business, not this file's
- * — see `runtime.ts`. In the browser it is the sandbox iframe, never this frame.
+ * Where the player's code executes is the runtime's business, not this file's;
+ * see `runtime.ts`. In the browser it is the sandbox iframe, never this frame.
  */
 
 import type { Circuit, FlatCircuit } from '@simten/core';
@@ -26,7 +26,7 @@ import type { GradeFailure, GradeResult, Level } from './types';
  * explicitly. `Switch`/`Led` are how a self-contained level gets its signals;
  * `Input`/`Output` are the port-based equivalent.
  *
- * They need no exemption from the *score* — that is counted positively from
+ * They need no exemption from the *score*; that is counted positively from
  * the level's `allowed` list, so anything absent from it simply does not count.
  * A mistake here therefore fails loudly (a valid solution is rejected with
  * "not available here") rather than quietly skewing par.
@@ -37,7 +37,7 @@ import type { GradeFailure, GradeResult, Level } from './types';
 export const STRUCTURAL = new Set(['Switch', 'Led', 'Input', 'Output', 'HexDisplay']);
 
 /**
- * Does the circuit expose this signal — as a top-level port, or as a node of
+ * Does the circuit expose this signal, either as a top-level port or as a node of
  * that name? Both shapes are valid; which one a level uses is a curriculum
  * decision, not something the grader needs to know.
  */
@@ -61,7 +61,7 @@ function interfaceProblems(circuit: Circuit, level: Level): string[] {
  * Everything a level lets you place: its own gates, plus the structural pieces
  * that carry no logic.
  *
- * One definition, three consumers — the editor's ambient globals, the canvas
+ * One definition, three consumers: the editor's ambient globals, the canvas
  * preview, and this grader. They were each composing `allowed ∪ STRUCTURAL`
  * separately, which is how an editor that autocompletes a gate the grader then
  * rejects comes about. `__tests__/permitted.test.ts` pins that they agree.
@@ -140,7 +140,7 @@ export async function grade(
       for (const [port, want] of Object.entries(vector.expect)) {
         const got = ports[port];
         // Deliberately not `?? 0`. A signal the runtime cannot read is a broken
-        // runtime, not an output of zero — and defaulting it silently passes
+        // runtime, not an output of zero, and defaulting it silently passes
         // every row that happens to expect 0, which is most of them.
         if (got === undefined) {
           return {

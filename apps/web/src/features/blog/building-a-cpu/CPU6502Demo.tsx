@@ -7,7 +7,7 @@ const STARTER_TEMPLATE = `\
 /*
  * Write C code for the 6502 simulator.
  * Console output: write bytes to address $F000
- * No stdlib available — use the CONSOLE macro.
+ * No stdlib available, so use the CONSOLE macro.
  */
 #define CONSOLE (*(volatile unsigned char*)0xF000)
 
@@ -234,7 +234,7 @@ export function CPU6502Demo() {
                 </pre>
               )}
               <div className="text-[10px] text-gray-500 dark:text-gray-500 leading-snug">
-                No standard library (printf, etc.) — use{' '}
+                No standard library (printf, etc.). Use{' '}
                 <code className="text-gray-500 dark:text-gray-400">CONSOLE = &apos;c&apos;;</code>{' '}
                 for output. Program must end with{' '}
                 <code className="text-gray-500 dark:text-gray-400">while(1);</code> to halt. ROM

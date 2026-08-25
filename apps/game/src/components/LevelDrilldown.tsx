@@ -2,7 +2,7 @@
  * The drilldown.
  *
  * Double-clicking the badge on a level opens its circuit in
- * `CompositeInspectorDialog` — the same inspector the canvas opens when you
+ * `CompositeInspectorDialog`, the same inspector the canvas opens when you
  * double-click a composite component, so it arrives with a full-size canvas,
  * its own simulation engine, breadcrumbs and nested drill-down already working.
  *
@@ -13,7 +13,7 @@
  *
  * It draws the player's own circuit, which is the point of the feature: your
  * work, at your gate count, rather than a spoiler. The draft is the right
- * source rather than a passing snapshot — the drilldown *shows* your circuit,
+ * source rather than a passing snapshot; the drilldown *shows* your circuit,
  * it does not depend on it, so a solved level you have since edited should
  * appear as you left it. Levels never opened fall back to the reference answer,
  * because a map where most cards inspect to nothing is worse than one that
@@ -38,7 +38,7 @@ export interface LevelDrilldownProps {
 export function LevelDrilldown({ level, draft, expanded, onCloseExpanded }: LevelDrilldownProps) {
   const source = draft ?? SOLUTIONS[level.id];
 
-  // `select` is a picker over the compiled circuits, not a name — the default
+  // `select` is a picker over the compiled circuits, not a name; the default
   // takes the last circuit defined. Same shape the level page uses.
   const select = useCallback(
     (circuits: { name: string }[]) =>
@@ -54,7 +54,7 @@ export function LevelDrilldown({ level, draft, expanded, onCloseExpanded }: Leve
 
   /**
    * The inspector's drill-down stack. Seeded with this level's circuit when
-   * expanded, then owned by the dialog — pushing goes deeper into a composite,
+   * expanded, then owned by the dialog; pushing goes deeper into a composite,
    * popping comes back out, and an empty stack is what "closed" means to it.
    */
   const [stack, setStack] = useState<InspectorFrame[]>([]);

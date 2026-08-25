@@ -3,7 +3,7 @@ import { SortDemo } from './circuits';
 
 /**
  * Hook for the sorting networks demo circuit.
- * Purely combinational — no clock ticks needed.
+ * Purely combinational, so no clock ticks needed.
  * Exposes `sim` and a helper to read the sorted output values.
  */
 export function useSortingSimulator() {

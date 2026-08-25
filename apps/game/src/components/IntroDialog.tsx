@@ -2,7 +2,7 @@
  * The introduction: what this is, in two sentences.
  *
  * Opens itself on a first visit, and the map's "What is this?" reopens it after
- * that. Controlled from the outside for exactly that reason — the answer to
+ * that. Controlled from the outside for exactly that reason: the answer to
  * "what is this" is already written here, so the header link pointing at
  * simten.dev sent people off the site to read a worse version of it.
  *

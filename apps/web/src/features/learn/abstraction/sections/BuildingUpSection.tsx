@@ -12,9 +12,9 @@ export function BuildingUpSection() {
       </h2>
       <div className="prose-invert space-y-6">
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
-          A full adder adds three bits &mdash; <code>a</code>, <code>b</code>, and a carry-in. Built
+          A full adder adds three bits: <code>a</code>, <code>b</code>, and a carry-in. Built
           directly from gates, it&rsquo;s five: two XORs, two ANDs, and one OR. Built from{' '}
-          <code>HalfAdder</code> blocks, it&rsquo;s two half adders feeding into an OR &mdash; same
+          <code>HalfAdder</code> blocks, it&rsquo;s two half adders feeding into an OR, the same
           five gates inside, but the structure now has a name at every level.
         </p>
       </div>

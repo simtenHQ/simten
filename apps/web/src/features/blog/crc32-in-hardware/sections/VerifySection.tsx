@@ -108,23 +108,23 @@ export function VerifySection() {
           </h3>
           <ul className="space-y-1 text-sm text-gray-500 dark:text-gray-400">
             <li>
-              <strong className="text-gray-900 dark:text-gray-300">Ethernet frames</strong> &mdash;
-              the 4-byte FCS (Frame Check Sequence) field at the end of every packet
+              <strong className="text-gray-900 dark:text-gray-300">Ethernet frames</strong>: the
+              4-byte FCS (Frame Check Sequence) field at the end of every packet
             </li>
             <li>
-              <strong className="text-gray-900 dark:text-gray-300">ZIP archives</strong> &mdash;
-              stored in the local file header and central directory for each file
+              <strong className="text-gray-900 dark:text-gray-300">ZIP archives</strong>: stored in
+              the local file header and central directory for each file
             </li>
             <li>
-              <strong className="text-gray-900 dark:text-gray-300">PNG images</strong> &mdash; each
-              chunk ends with a CRC-32 of the chunk type and data
+              <strong className="text-gray-900 dark:text-gray-300">PNG images</strong>: each chunk
+              ends with a CRC-32 of the chunk type and data
             </li>
             <li>
-              <strong className="text-gray-900 dark:text-gray-300">NVMe / SATA</strong> &mdash;
-              every sector has a CRC computed in the drive controller before writing to flash
+              <strong className="text-gray-900 dark:text-gray-300">NVMe / SATA</strong>: every
+              sector has a CRC computed in the drive controller before writing to flash
             </li>
             <li>
-              <strong className="text-gray-900 dark:text-gray-300">gzip / zlib</strong> &mdash; the
+              <strong className="text-gray-900 dark:text-gray-300">gzip / zlib</strong>: the
               checksum appended to compressed streams
             </li>
           </ul>

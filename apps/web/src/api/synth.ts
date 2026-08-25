@@ -1,5 +1,5 @@
 /**
- * Verilog Import API Handler — Verilog source → clean, editable simten TypeScript.
+ * Verilog Import API Handler: Verilog source → clean, editable simten TypeScript.
  *
  * Runs yosys on the synth container (the `import` target: generic RTL netlist,
  * no techmapping) then lifts that netlist into simten source with
@@ -66,7 +66,7 @@ function checkPath(path: unknown, what: string): string | undefined {
     return `${what}: ${path} is more than ${MAX_PATH_DEPTH} levels deep`;
   for (const segment of segments) {
     if (!PATH_SEGMENT.test(segment)) {
-      return `${what}: "${segment}" is not allowed in ${path} — letters, digits, '_', '.' and '-', with no leading dot and no '..'`;
+      return `${what}: "${segment}" is not allowed in ${path}: letters, digits, '_', '.' and '-', with no leading dot and no '..'`;
     }
   }
   return undefined;
@@ -135,7 +135,7 @@ export async function handleVerilogImport(
     return Response.json({ success: false, error: invalid }, { status: 400 });
   }
 
-  // Rate limit — yosys is CPU-heavy and the container has few instances, so keep
+  // Rate limit: yosys is CPU-heavy and the container has few instances, so keep
   // this modest per IP (5/min). Mirrors the compile/verify handlers.
   const rl = (
     env as { SYNTH_RL?: { limit: (k: { key: string }) => Promise<{ success: boolean }> } }
@@ -145,7 +145,7 @@ export async function handleVerilogImport(
     const { success } = await rl.limit({ key: ip });
     if (!success) {
       return Response.json(
-        { success: false, error: 'Rate limit exceeded — try again in a minute' },
+        { success: false, error: 'Rate limit exceeded, try again in a minute' },
         { status: 429 },
       );
     }
@@ -197,7 +197,7 @@ export async function handleVerilogImport(
   }
 
   // Lift the generic RTL netlist into clean, editable simten source. The
-  // importer throws on cell types outside its scope (e.g. $adff/$sdff/$dffe —
+  // importer throws on cell types outside its scope (e.g. $adff/$sdff/$dffe,
   // see issue #237) rather than mis-translate; surface that as a clean 422 with
   // an `unsupported` flag the UI can special-case.
   try {
@@ -208,7 +208,7 @@ export async function handleVerilogImport(
     // Non-fatal notes: the importer's warnings (e.g. undriven nets) plus yosys's
     // own warnings from the synth log (e.g. implicit/undeclared wires). Drop the
     // line number so repeats of the same problem collapse, but keep the
-    // filename — across a 27-file project the old strip took the file with it
+    // filename; across a 27-file project the old strip took the file with it
     // and merged unrelated warnings from different modules into one entry.
     const yosysWarnings = (synthResult.log ?? '')
       .split('\n')

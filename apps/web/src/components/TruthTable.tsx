@@ -4,7 +4,7 @@
  * Takes column metadata and a positional row matrix; renders a styled,
  * accessible <table> in a card that matches the CircuitEmbed aesthetic
  * (theme tokens from packages/embed/src/styles/embed.css). No simulator
- * coupling — data is hand-coded at the call site.
+ * coupling; data is hand-coded at the call site.
  *
  * Plan: ~/.claude/plans/yeah-lets-mae-a-crystalline-cookie.md
  */
@@ -31,7 +31,7 @@ export interface TruthTableProps {
   /** Optional header band above the table. Not the accessible name. */
   title?: string;
   /**
-   * Optional small text below the table — renders as a real <caption>
+   * Optional small text below the table; renders as a real <caption>
    * element for screen readers, positioned at the bottom via CSS.
    */
   caption?: string;
@@ -149,7 +149,7 @@ export function TruthTable({
 
 /**
  * Render a single truth-table cell. For 0/1 bit values we style the "1"
- * as a tinted badge — output 1s use a brighter accent so the pattern of
+ * as a tinted badge; output 1s use a brighter accent so the pattern of
  * which inputs produce a 1 at each output reads at a glance. 0s are
  * dimmed so the active cells stand out instead of every cell carrying
  * equal weight.
@@ -176,7 +176,7 @@ function BitCell({ value, active }: { value: string | number; active: boolean })
       </span>
     );
   }
-  // Non-binary cell (string label, multi-bit value) — render plain.
+  // Non-binary cell (string label, multi-bit value): render plain.
   return <span className="text-[var(--embed-text-primary)]">{value}</span>;
 }
 
@@ -206,7 +206,7 @@ export function computeActiveRow(
     .filter(({ col }) => col.group === 'input');
 
   // Walk the inputs imperatively so currentBits narrows to number[] via
-  // control flow — .some() doesn't propagate the null-narrowing.
+  // control flow; .some() doesn't propagate the null-narrowing.
   const currentBits: number[] = [];
   for (const { col } of inputCols) {
     const bit = readPortBit(portValues, col.name);

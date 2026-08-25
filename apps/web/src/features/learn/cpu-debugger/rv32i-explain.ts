@@ -8,7 +8,7 @@ import { ABI_NAMES } from './useRV32IDebugger';
 
 /** Format a register name nicely, e.g. "a0", "sp", "zero" */
 function reg(r: string): string {
-  // Already an ABI name (a0, sp, ra, etc.) — just return it
+  // Already an ABI name (a0, sp, ra, etc.), so just return it
   // In case of x0-x31 numeric form, convert
   const numMatch = r.match(/^x(\d+)$/);
   if (numMatch) {
@@ -48,12 +48,12 @@ export function explainInstruction(instruction: string): string | null {
 
 // No-operand instructions
 const NOARG: Record<string, string> = {
-  ret: 'Return from function — jump to the address in ra (return address register).',
-  nop: 'No operation — does nothing for one cycle.',
-  ecall: 'Environment call — requests a service from the operating system.',
-  ebreak: 'Breakpoint — transfers control to the debugger.',
-  fence: 'Memory fence — ensures all memory operations before this complete before those after.',
-  wfi: 'Wait for interrupt — halts the CPU until an interrupt occurs.',
+  ret: 'Return from function: jump to the address in ra (return address register).',
+  nop: 'No operation; does nothing for one cycle.',
+  ecall: 'Environment call: requests a service from the operating system.',
+  ebreak: 'Breakpoint: transfers control to the debugger.',
+  fence: 'Memory fence: ensures all memory operations before this complete before those after.',
+  wfi: 'Wait for interrupt: halts the CPU until an interrupt occurs.',
 };
 
 type Handler = (mnemonic: string, o: string[]) => string;
@@ -151,8 +151,8 @@ const HANDLERS: Record<string, Handler> = {
   jalr: (_, o) => `Jump and link register: set ${reg(o[0])} = PC+4, then jump to ${o[1]}.`,
   j: (_, o) => `Jump: unconditionally jump to ${addr(o[0])}.`,
   jr: (_, o) => `Jump register: jump to the address in ${reg(o[0])}.`,
-  call: (_, o) => `Call function at ${addr(o[0])} — saves return address in ra.`,
-  tail: (_, o) => `Tail call to ${addr(o[0])} — does not save a return address.`,
+  call: (_, o) => `Call function at ${addr(o[0])}, saving the return address in ra.`,
+  tail: (_, o) => `Tail call to ${addr(o[0])}, which does not save a return address.`,
 
   // --- Upper immediates ---
   lui: (_, o) => `Load upper immediate: set ${reg(o[0])} = ${o[1]} shifted left 12 bits.`,
@@ -163,6 +163,6 @@ const HANDLERS: Record<string, Handler> = {
 function findPrefixHandler(mnemonic: string): Handler | null {
   // Handle fence.i, etc.
   if (mnemonic.startsWith('fence'))
-    return () => 'Memory fence — enforces ordering of memory operations.';
+    return () => 'Memory fence: enforces ordering of memory operations.';
   return null;
 }

@@ -1,7 +1,7 @@
 /**
  * Reference solutions, one per level id.
  *
- * These are the validation gate's known-good answers — `__tests__/levels.test.ts`
+ * These are the validation gate's known-good answers; `__tests__/levels.test.ts`
  * asserts every one passes its level, and that the set matches `LEVELS` exactly.
  *
  * Real `.ts` files rather than string literals, loaded as text with Vite's
@@ -16,14 +16,14 @@
  *
  * ⚠️ `?raw` is a Vite feature. Vitest resolves it because it runs through Vite's
  * pipeline; a bare `tsx` script importing this module would fail with "does not
- * provide an export named 'default'". Nothing in the repo does that today —
+ * provide an export named 'default'". Nothing in the repo does that today,
  * `check-exports.ts` is the only `tsx` entry point and it reads package.json
- * files — but it is the reason to reach for vitest rather than tsx when poking
+ * files, but it is the reason to reach for vitest rather than tsx when poking
  * at these.
  *
  * ⚠️ These are the answers, and this module ships to the browser. Anyone can
  * read them out of the bundle. The drilldown now draws the player's own draft
- * where there is one, so this is only the fallback for levels never opened —
+ * where there is one, so this is only the fallback for levels never opened,
  * the spoiler is smaller than it was, but it is still there. Making it
  * test-only means finding something else for an unopened level to inspect to.
  */

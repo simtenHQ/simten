@@ -21,8 +21,8 @@ d <<<= 16; // rotate d left by 16`}
         </pre>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
           The addition creates carry-chain diffusion. The XOR mixes that result into <code>d</code>.
-          The rotation spreads the mixed bits across the entire word. One step alone is weak &mdash;
-          but four steps, repeated across 20 rounds, make the output indistinguishable from random.
+          The rotation spreads the mixed bits across the entire word. One step alone is weak, but
+          four steps, repeated across 20 rounds, make the output indistinguishable from random.
         </p>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
           In the circuit below, follow the data flow from left to right: the <code>Adder</code>{' '}

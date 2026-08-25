@@ -4,13 +4,13 @@
  * The pattern: full-width sections own their own background and vertical
  * rhythm; <Container> goes inside each section to constrain the *content*
  * to a comfortable read width. Same component used everywhere so content
- * edges line up vertically across sections — the visual "single
+ * edges line up vertically across sections; the visual "single
  * container" effect you see on cursor.com / vercel.com / linear.com is
  * actually consistent use of one component, not one literal wrapper.
  *
  * Variants:
- *   - `default` (max-w-7xl) — most landing-page content
- *   - `bleed` — escape hatch for sections that handle their own layout
+ *   - `default` (max-w-7xl): most landing-page content
+ *   - `bleed`: escape hatch for sections that handle their own layout
  *               (e.g. full-bleed media, custom multi-column grids)
  */
 

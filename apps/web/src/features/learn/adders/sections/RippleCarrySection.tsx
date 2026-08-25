@@ -18,9 +18,9 @@ export function RippleCarrySection() {
           the low bit to the high bit, one stage at a time.
         </p>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
-          Change the inputs below and watch the result. It works correctly for every pair of values
-          &mdash; addition is addition. But there's a subtle cost to this structure that doesn't
-          show up in any single-cycle simulation.
+          Change the inputs below and watch the result. It works correctly for every pair of values;
+          addition is addition. But there's a subtle cost to this structure that doesn't show up in
+          any single-cycle simulation.
         </p>
       </div>
 

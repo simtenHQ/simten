@@ -7,8 +7,8 @@ import { Logo } from '@/components/Logo';
  * Multi-column site footer used on every content page.
  *
  * Layout is the standard marketing footer: brand mark on the left, then four
- * link columns. Responsive collapse — 4 columns on desktop (lg), 2 on tablet
- * (sm), 1 stacked on mobile — with the brand stacking above the columns below
+ * link columns. Responsive collapse: 4 columns on desktop (lg), 2 on tablet
+ * (sm), 1 stacked on mobile, with the brand stacking above the columns below
  * lg. A divider + © / legal row sits at the bottom. Tool routes (/circuit,
  * /cpu/rv32i) suppress this just like they suppress the default SiteHeader.
  */
@@ -56,7 +56,7 @@ export function SiteFooter() {
           <div className="lg:w-60 lg:shrink-0">
             <Link
               to="/"
-              aria-label="Simten — home"
+              aria-label="Simten home"
               className="inline-flex items-center gap-2.5 text-foreground transition-colors hover:text-foreground/80"
             >
               <Logo size={28} />

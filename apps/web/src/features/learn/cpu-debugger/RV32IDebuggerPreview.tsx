@@ -1,14 +1,14 @@
 /**
  * Choreographed RV32I CPU debugger teaser for the landing page.
  *
- * Not the real simulator (that lives at /cpu/rv32i) — a lightweight, canned
+ * Not the real simulator (that lives at /cpu/rv32i), just a lightweight canned
  * loop that tells a legible 3-act story so a visitor understands what they're
  * seeing without CPU knowledge:
- *   1. Compile  — Rust → RISC-V (spinner beat)
- *   2. Execute  — instructions step through the 5-stage pipeline; the active
+ *   1. Compile  : Rust → RISC-V (spinner beat)
+ *   2. Execute  : instructions step through the 5-stage pipeline; the active
  *                 disassembly line advances; a plain-English narration line
  *                 says what each instruction does
- *   3. Result   — the payoff: a0 = 55
+ *   3. Result   : the payoff, a0 = 55
  * No Monaco, no simulator hook. Responsive: desktop shows the full debugger
  * (pipeline + Rust source beside the disassembly); mobile drops the source.
  */
@@ -33,23 +33,23 @@ const STAGE_META: { key: StageKey; label: string; desc: string }[] = [
   {
     key: 'IF',
     label: 'Fetch',
-    desc: 'Instruction Fetch — read the next instruction word from memory at the program counter.',
+    desc: 'Instruction Fetch: read the next instruction word from memory at the program counter.',
   },
   {
     key: 'ID',
     label: 'Decode',
-    desc: 'Instruction Decode — split the instruction into opcode, register operands, and immediate; read source registers.',
+    desc: 'Instruction Decode: split the instruction into opcode, register operands, and immediate; read source registers.',
   },
   {
     key: 'EX',
     label: 'Execute',
-    desc: 'Execute — the ALU computes results, branches evaluate, and memory addresses are calculated.',
+    desc: 'Execute: the ALU computes results, branches evaluate, and memory addresses are calculated.',
   },
-  { key: 'MEM', label: 'Memory', desc: 'Memory Access — load from or store to data memory.' },
+  { key: 'MEM', label: 'Memory', desc: 'Memory Access: load from or store to data memory.' },
   {
     key: 'WB',
     label: 'Save',
-    desc: 'Write Back — write the result into the destination register.',
+    desc: 'Write Back: write the result into the destination register.',
   },
 ];
 
@@ -75,13 +75,13 @@ const DISASM: DisasmRow[] = [
   { kind: 'instr', addr: '0000000c', text: 'j c <_start+0xc>', note: 'Loop' },
   { kind: 'label', text: '<main>:' },
   { kind: 'instr', addr: '00000010', text: 'li a0,55', note: 'Load the value 55 into register a0' },
-  { kind: 'instr', addr: '00000014', text: 'ret', note: 'Return — a0 holds the result' },
+  { kind: 'instr', addr: '00000014', text: 'ret', note: 'Return, a0 holds the result' },
 ];
 
 // Execution order: DISASM indices of the instructions actually run, in order.
 const EXEC = [1, 2, 3, 6, 7];
 
-const RUST_SOURCE = `// Bare-metal Rust — no OS, no stdlib.
+const RUST_SOURCE = `// Bare-metal Rust: no OS, no stdlib.
 // This runs directly on the CPU hardware.
 // When done, register a0 = 55 (0x00000037).
 #![no_std]
@@ -130,7 +130,7 @@ export function RV32IDebuggerPreview() {
   const rootRef = useRef<HTMLDivElement>(null);
 
   // Only run while the demo is on screen, and restart the story from act 1
-  // each time it scrolls into view — so a visitor always catches the full
+  // each time it scrolls into view, so a visitor always catches the full
   // compile → execute → result arc rather than landing mid-cycle.
   useEffect(() => {
     const el = rootRef.current;
@@ -178,7 +178,7 @@ export function RV32IDebuggerPreview() {
     phase === 'compiling'
       ? { node: <Spinner />, text: 'Compiling Rust to RISC-V…' }
       : phase === 'done'
-        ? { node: <span className="text-emerald-500">✓</span>, text: 'Done — a0 = 55 (0x00000037)' }
+        ? { node: <span className="text-emerald-500">✓</span>, text: 'Done: a0 = 55 (0x00000037)' }
         : { node: <span className="text-blue-500">▸</span>, text: instrAt(EXEC[step]).note };
 
   return (
@@ -214,7 +214,7 @@ export function RV32IDebuggerPreview() {
               </Tooltip>
             ))}
           </div>
-          {/* Narration line — plain English, what's happening right now */}
+          {/* Narration line: plain English, what's happening right now */}
           <p className="mt-3 flex items-center gap-2 text-[13px] text-muted-foreground/90 leading-snug">
             {narration.node}
             <span>{narration.text}</span>
@@ -244,7 +244,7 @@ export function RV32IDebuggerPreview() {
 
         {/* ---- Body: source (desktop only) + disassembly / compile spinner ---- */}
         <div className="flex-1 grid grid-cols-1 sm:grid-cols-[3fr_2fr] gap-px bg-border/40 sm:mt-2 overflow-hidden">
-          {/* Rust source — desktop only */}
+          {/* Rust source, desktop only */}
           <div className="hidden sm:block bg-card overflow-hidden">
             <div className="flex font-mono text-[12px] leading-6">
               <div className="px-3 py-2 text-right text-muted-foreground/40 tabular-nums shrink-0 select-none">
@@ -259,7 +259,7 @@ export function RV32IDebuggerPreview() {
             </div>
           </div>
 
-          {/* Disassembly — or the compile spinner during act 1 */}
+          {/* Disassembly, or the compile spinner during act 1 */}
           <div className="bg-card overflow-hidden min-h-[180px]">
             <div className="px-4 pt-2 pb-1.5 text-[10px] font-mono uppercase tracking-wider text-muted-foreground/60">
               Disassembly

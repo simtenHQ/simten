@@ -10,10 +10,11 @@
  * 22,050 intermediate values. One `tick` call per sample would be that many
  * round trips a second.
  *
- * The AudioContext has to live here — workers and iframes have no Web Audio —
- * so this asks for chunks and schedules each against `AudioContext.currentTime`
- * rather than a wall-clock timer. Keeping `LEAD_SECONDS` queued means a late
- * frame (GC, a React render, layout) costs nothing.
+ * The AudioContext has to live here, because workers and iframes have no Web
+ * Audio. It asks for chunks and schedules each against
+ * `AudioContext.currentTime` rather than a wall-clock timer. Keeping
+ * `LEAD_SECONDS` queued means a late frame (GC, a React render, layout) costs
+ * nothing.
  */
 
 import type { useCircuitSimulator } from '@simten/embed';
@@ -24,14 +25,14 @@ import { BEAT_SAMPLES, incFor, SAMPLE_RATE, SCORE } from './circuits';
 const FULL_SCALE = 16256;
 /** How far ahead of the playhead to stay queued. */
 const LEAD_SECONDS = 0.2;
-/** Requested chunk — kept under a note's length so inputs are constant for it. */
+/** Requested chunk, kept under a note's length so inputs are constant for it. */
 const CHUNK_SAMPLES = 1024;
 const SCOPE_SAMPLES = 1024;
 
 type Simulator = ReturnType<typeof useCircuitSimulator>;
 
 export interface VoiceControls {
-  /** Index into WAVES — the ROM bank the phase is read from. */
+  /** Index into WAVES: the ROM bank the phase is read from. */
   wave: number;
   /** Subtracted from the envelope each tick; bigger decays faster. */
   decay: number;
@@ -41,7 +42,7 @@ export function useLiveVoice(sim: Simulator, controls: VoiceControls) {
   const ctxRef = useRef<AudioContext | null>(null);
   const nextStartRef = useRef(0);
   /** requestAnimationFrame handle for the pump. rAF rather than a timer
-   *  because it does not fire in a hidden tab — the page stops working when
+   *  because it does not fire in a hidden tab, so the page stops working when
    *  nobody is looking at it, with no event to miss and nothing to poll. */
   const pumpRef = useRef<number | null>(null);
   const playingRef = useRef(false);
@@ -52,7 +53,7 @@ export function useLiveVoice(sim: Simulator, controls: VoiceControls) {
   const [playing, setPlaying] = useState(false);
   const [scope, setScope] = useState<Float32Array<ArrayBuffer>>(new Float32Array(SCOPE_SAMPLES));
 
-  // Controls are plain inputs, so nothing here reacts to them changing — the
+  // Controls are plain inputs, so nothing here reacts to them changing. The
   // next render request simply carries the new values. No rebuild, no ROM
   // flash, no gap. A ref keeps the pump reading current values without
   // restarting it on every slider move.
@@ -65,7 +66,7 @@ export function useLiveVoice(sim: Simulator, controls: VoiceControls) {
     const note = SCORE[pos.note];
     const remaining = note.beats * BEAT_SAMPLES - pos.sample;
 
-    // trig is high for the first sample of a note only — a one-tick gate, so it
+    // trig is high for the first sample of a note only, a one-tick gate, so it
     // gets a run of its own.
     const count = pos.sample === 0 ? 1 : Math.min(CHUNK_SAMPLES, remaining);
     const raw = await sim.renderSamples('audio', count, {
@@ -93,7 +94,7 @@ export function useLiveVoice(sim: Simulator, controls: VoiceControls) {
   const play = useCallback(() => {
     // Cancel any existing pump first. Overwriting `pumpRef` would orphan the
     // old loop, which then reschedules itself forever with nothing holding a
-    // handle to it — two pumps racing on one score position, unstoppable.
+    // handle to it: two pumps racing on one score position, unstoppable.
     if (pumpRef.current !== null) cancelAnimationFrame(pumpRef.current);
     pumpRef.current = null;
 

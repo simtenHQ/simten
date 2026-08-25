@@ -27,7 +27,7 @@ export const LFSR4 = circuit('LFSR4', {
     led3: Led,
   },
   connect: ({ nodes: { ff0, ff1, ff2, ff3, feedback, led0, led1, led2, led3 } }) => [
-    // Feedback: XOR of MSB (ff3) and LSB (ff0) — polynomial x^4 + x + 1
+    // Feedback: XOR of MSB (ff3) and LSB (ff0), polynomial x^4 + x + 1
     ff3.q.to(feedback.a),
     ff0.q.to(feedback.b),
     // The feedback output feeds ff0's next state
@@ -53,7 +53,7 @@ export const CRC32Step = circuit('CRC32Step', {
   outputs: { crc_lo: bus(8), crc_hi: bus(8), crc_b2: bus(8), crc_b3: bus(8) },
   meta: { description: 'Process one byte through CRC-32 (Ethernet polynomial 0xEDB88320)' },
   eval: ({ crc, data }) => {
-    // Full 32-bit CRC step — we receive only the low 8 bits of crc here
+    // Full 32-bit CRC step; we receive only the low 8 bits of crc here
     // (the register passes one byte at a time in the demo circuit).
     // For the demo, we do the full 8-bit polynomial step on the low byte.
     let c = ((crc as number) ^ (data as number)) & 0xff;
@@ -75,7 +75,7 @@ export const CRC32Step = circuit('CRC32Step', {
 // the running CRC. Register starts at 0xFF (truncated from 0xFFFFFFFF init).
 export const CRC32ByteDemo = circuit('CRC32ByteDemo', {
   nodes: {
-    data: Input({ value: 49 }), // ASCII '1' — first byte of "123456789"
+    data: Input({ value: 49 }), // ASCII '1', first byte of "123456789"
     crcReg: Register({ value: 0xff }), // CRC-32 initialises to 0xFFFFFFFF; we track low byte
     step: CRC32Step,
     display: HexDisplay,

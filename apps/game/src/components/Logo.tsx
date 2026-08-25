@@ -7,7 +7,7 @@
  * wordmark in it would make brand art permanent public API for the benefit of
  * two apps we control.
  *
- * If the mark ever changes it has to change in three places — here, `apps/web`,
+ * If the mark ever changes it has to change in three places: here, `apps/web`,
  * and the static `favicon.svg` in both `public/` directories, which the browser
  * fetches directly and cannot import from React.
  */

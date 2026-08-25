@@ -1,5 +1,5 @@
 /**
- * Compile API Handler — proxies to the compiler container.
+ * Compile API Handler: proxies to the compiler container.
  *
  * Production: uses Cloudflare service binding (private, no public access).
  * Local dev:  falls back to wrangler dev on localhost:55001.
@@ -26,7 +26,7 @@ export async function handleCompile(
     const { success } = await rl.limit({ key: ip });
     if (!success) {
       return Response.json(
-        { success: false, error: 'Rate limit exceeded — try again in a minute' },
+        { success: false, error: 'Rate limit exceeded, try again in a minute' },
         { status: 429 },
       );
     }

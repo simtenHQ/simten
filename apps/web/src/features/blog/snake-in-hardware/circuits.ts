@@ -325,7 +325,7 @@ const CollisionDetector = circuit('CollisionDetector', {
 });
 
 // The full Snake game circuit is the canonical, hardware-verified copy from
-// @simten/core/examples — the same circuit the ULX3S FPGA project synthesizes.
+// @simten/core/examples, the same circuit the ULX3S FPGA project synthesizes.
 // Drift between the copies in this repo is pinned by
 // hardware/ulx3s/projects/snake/parity-check.ts.
 export { Snake } from '@simten/core/examples';
@@ -352,7 +352,7 @@ export const SNAKE_CIRCUITS: Record<string, BlogCircuit> = {
   coordToPixel: {
     name: 'Coordinate to Pixel Address',
     description:
-      'Converts (X, Y) coordinates to a linear pixel address using (Y << 3) + X. A left shift by 3 is just wiring in real hardware — zero gates.',
+      'Converts (X, Y) coordinates to a linear pixel address using (Y << 3) + X. A left shift by 3 is just wiring in real hardware, costing zero gates.',
     circuit: CoordToPixel,
     layout: {
       x: { x: 0, y: 0 },

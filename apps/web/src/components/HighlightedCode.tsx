@@ -1,5 +1,5 @@
 /**
- * HighlightedCode — shared TypeScript syntax-highlighted code block.
+ * HighlightedCode: shared TypeScript syntax-highlighted code block.
  *
  * Uses sugar-high, a ~1KB JS/TS tokenizer. Ships two palettes
  * (GitHub-light and GitHub-dark) via Tailwind arbitrary CSS properties
@@ -10,10 +10,10 @@ import type { ReactNode } from 'react';
 import { highlight } from 'sugar-high';
 
 // sugar-high is driven by CSS custom properties (--sh-*). Both palettes
-// below are exposed as arbitrary-property Tailwind classes — the `dark:`
+// below are exposed as arbitrary-property Tailwind classes; the `dark:`
 // variants kick in under class-based dark mode.
 const SH_THEME_CLASSES = [
-  // Light mode — GitHub-light
+  // Light mode: GitHub-light
   '[--sh-keyword:#d73a49]',
   '[--sh-identifier:#24292e]',
   '[--sh-string:#032f62]',
@@ -23,7 +23,7 @@ const SH_THEME_CLASSES = [
   '[--sh-jsxliterals:#005cc5]',
   '[--sh-sign:#586069]',
   '[--sh-comment:#6a737d]',
-  // Dark mode — GitHub-dark
+  // Dark mode: GitHub-dark
   'dark:[--sh-keyword:#ff7b72]',
   'dark:[--sh-identifier:#c9d1d9]',
   'dark:[--sh-string:#a5d6ff]',

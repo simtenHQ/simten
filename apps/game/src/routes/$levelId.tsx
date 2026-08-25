@@ -1,8 +1,8 @@
 /**
  * A level.
  *
- * Laid out like simten.dev/circuit on purpose — full viewport, its own top bar,
- * resizable panels — because it is the same product and should not read as a
+ * Laid out like simten.dev/circuit on purpose: full viewport, its own top bar,
+ * resizable panels, because it is the same product and should not read as a
  * different site. Three panels rather than the editor's two: the brief, the
  * code, and the circuit that code describes.
  *
@@ -59,7 +59,7 @@ import { SITE_URL } from './__root';
  * Writing on every keystroke means a JSON parse, a spread and a serialise per
  * character, for a record that only matters when the tab goes away. Long enough
  * to coalesce a burst of typing, short enough that no realistic pause loses
- * work — and the pending write is flushed on unmount regardless, so leaving the
+ * work, and the pending write is flushed on unmount regardless, so leaving the
  * page mid-keystroke is safe.
  */
 const DRAFT_DEBOUNCE_MS = 400;
@@ -117,7 +117,7 @@ export const Route = createFileRoute('/$levelId')({
  * Remount the level on every id change.
  *
  * TanStack reuses one component instance across `$levelId`, and almost all of
- * this screen's state is seeded from the level — `useState(level.stub)` runs
+ * this screen's state is seeded from the level; `useState(level.stub)` runs
  * its initialiser only on mount. Without the key, clicking "Next" swapped the
  * title, brief and truth table while leaving the previous level's solution in
  * the editor, its circuit on the canvas, and its SOLVED verdict in the panel.
@@ -128,13 +128,13 @@ export const Route = createFileRoute('/$levelId')({
  */
 /**
  * The line the player's own work starts on, when the stub hands them a
- * finished component to build with — otherwise `null`.
+ * finished component to build with, otherwise `null`.
  *
  * The full adder is given a half adder, and landing on that makes the level
  * look like it opens with someone else's code. But most stubs open with
  * comments that *are* the instructions, and scrolling past those would hide the
- * hint. So this keys off structure — is there a circuit defined above the
- * target? — rather than a flag somebody has to remember to set.
+ * hint. So this keys off structure (is there a circuit defined above the
+ * target?) rather than a flag somebody has to remember to set.
  */
 export function givenPreambleEnd(lines: string[]): number | null {
   const target = lines.findIndex((l) => l.startsWith('export default circuit('));
@@ -163,7 +163,7 @@ function PlayLevel({ level }: { level: Level }) {
    * Monaco renders a placeholder on the server and never puts `source` in the
    * markup, so the server and client agree on the DOM whatever this returns.
    * Seeding after mount would instead hand the editor the stub first and swap
-   * it, which flashes and — worse — makes the first change event carry the stub.
+   * it, which flashes and, worse, makes the first change event carry the stub.
    *
    * The route remounts per level via `key`, so this runs again on every
    * navigation rather than sticking on the level it first mounted with.
@@ -230,7 +230,7 @@ function PlayLevel({ level }: { level: Level }) {
   );
 
   // Preview the circuit the source describes. Pinned to the level's target by
-  // name — the default picks the last circuit defined, which would follow a
+  // name; the default picks the last circuit defined, which would follow a
   // player's helper instead of their answer. Same reason the grader does it.
   const select = useCallback(
     (circuits: { name: string }[]) =>
@@ -242,18 +242,18 @@ function PlayLevel({ level }: { level: Level }) {
   );
 
   // autoHarness wraps top-level ports in Switch/Led nodes, so the preview is
-  // playable — click a switch, watch the LED — before ever pressing Submit.
+  // playable (click a switch, watch the LED) before ever pressing Submit.
   // Without it there is nothing to click and nothing to see: the canvas
   // projection only walks `circuit.nodes`, so a level's inputs and outputs are
   // not drawn at all and a one-gate answer renders as a gate with no wires.
   //
   // It is not a commitment. `autoHarness` returns the circuit untouched when it
   // declares no top-level ports (auto-harness.ts:23), so a level that wants the
-  // raw internals shown just authors a self-contained circuit — no flag to flip.
+  // raw internals shown just authors a self-contained circuit, with no flag to flip.
   //
   // The trade it does make: a circuit WITH ports renders as one `dut` box, so
   // the player's own gates sit one level down. The canvas already supports
-  // getting there — the node reads "double-click to inspect".
+  // getting there; the node reads "double-click to inspect".
   const preview = useCompiledCircuit(source, {
     slot: 'preview',
     select: select as never,
@@ -268,7 +268,7 @@ function PlayLevel({ level }: { level: Level }) {
    * Gates in the preview that this level forbids.
    *
    * The editor filter only removes the type declarations, so a disallowed gate
-   * is a red squiggle and nothing more — the sandbox still executes it, and the
+   * is a red squiggle and nothing more; the sandbox still executes it, and the
    * canvas happily drew a component the level bans. That left the diagram
    * looking like the authority while Submit disagreed.
    *
@@ -280,11 +280,11 @@ function PlayLevel({ level }: { level: Level }) {
    * The last circuit that used only permitted gates.
    *
    * While a forbidden gate is present the canvas shows this instead of the
-   * current netlist, so a banned gate simply never appears — no banner, no
+   * current netlist, so a banned gate simply never appears: no banner, no
    * fanfare. The editor already squiggles it; the diagram just declines to
    * pretend it is real, and stops updating until the gate is gone.
    *
-   * A ref rather than state — it is a cache of a render output, and setting
+   * A ref rather than state: it is a cache of a render output, and setting
    * state from render to track it would just loop.
    */
   const lastPermitted = useRef<{
@@ -326,7 +326,7 @@ function PlayLevel({ level }: { level: Level }) {
       const verdict = await grade(sandboxRuntime(sandbox), level, source);
       setResult(verdict);
       setCompleteDismissed(false);
-      // Submit is a request for a verdict, so show it — hidden, the spec sheet
+      // Submit is a request for a verdict, so show it; hidden, the spec sheet
       // swallowed both the failure message and the whole victory run.
       setSpecOpen(true);
       if (verdict.status === 'pass') {
@@ -405,7 +405,7 @@ function PlayLevel({ level }: { level: Level }) {
             </button>
           )}
           {/* The wordmark also goes back, but that is a convention rather than
-              a signpost — this one says where it leads. */}
+              a signpost, and this one says where it leads. */}
           <Link
             to="/"
             title="Back to the map"
@@ -415,7 +415,7 @@ function PlayLevel({ level }: { level: Level }) {
             <Network className="h-3.5 w-3.5 -rotate-90" />
             Map
           </Link>
-          {/* Drafts persist, so the stub is otherwise gone for good — and a
+          {/* Drafts persist, so the stub is otherwise gone for good, and a
               player who deletes half of a given preamble has no way back to a
               level that compiles. Monaco keeps its undo stack across this, so
               a misclick is one ⌘Z rather than a lost solution. */}
@@ -486,7 +486,7 @@ function PlayLevel({ level }: { level: Level }) {
                 }}
               />
             </div>
-            {/* Diagnostics live under the editor, never over the canvas — a
+            {/* Diagnostics live under the editor, never over the canvas; a
               parse error mid-keystroke must not blank the diagram. A forbidden
               gate is the same class of message, so it lands here too: the
               canvas keeps showing the last circuit that compiled, which is
@@ -513,7 +513,7 @@ function PlayLevel({ level }: { level: Level }) {
               showPortLabels
               // Re-lay out on every change. The default only re-runs the
               // layout when nodes appear or disappear, so adding the last
-              // wire — which changes no nodes — left the lamp where it had
+              // wire, which changes no nodes, left the lamp where it had
               // been while unconnected.
               autoLayout
               // The harness switches are clickable, so the player can drive
@@ -539,7 +539,7 @@ function PlayLevel({ level }: { level: Level }) {
         flip-flop early gets the controls, and a sequential level opened on a
         blank stub does not get an inert row of buttons.
 
-        It sits at the foot of the page and the spec sheet rises above it —
+        It sits at the foot of the page and the spec sheet rises above it,
         see the sheet's `bottom` offset below. Without that the sheet covered
         it: the controls rendered, on screen, and unclickable, with the spec
         open by default.
@@ -578,7 +578,7 @@ function PlayLevel({ level }: { level: Level }) {
       )}
 
       {/* Non-modal so the editor and canvas keep working behind it, and the
-          overlay is off — it is `fixed inset-0` and would swallow every click
+          overlay is off; it is `fixed inset-0` and would swallow every click
           whatever the modal setting says. Outside interaction does not dismiss
           it either: clicking a switch is not a request to close the spec.
           Focus stays where it was, so opening this never interrupts typing. */}
@@ -587,7 +587,7 @@ function PlayLevel({ level }: { level: Level }) {
       {result?.status === 'pass' && (
         <LevelComplete
           // Held back until the victory run has finished demonstrating the
-          // circuit — the run is the proof, this is the receipt.
+          // circuit: the run is the proof, this is the receipt.
           open={victory.complete && !completeDismissed}
           onOpenChange={(o) => setCompleteDismissed(!o)}
           level={level}

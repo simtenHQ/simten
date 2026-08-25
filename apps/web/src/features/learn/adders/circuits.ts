@@ -6,7 +6,7 @@
  * in a ripple-carry configuration to make the depth problem visible.
  *
  * HalfAdder, FullAdder and RippleCarryDemo are real. DepthDemo and
- * CarryLookaheadDemo are still stubs aliased to RippleCarryDemo — see the
+ * CarryLookaheadDemo are still stubs aliased to RippleCarryDemo; see the
  * TODOs on each.
  */
 
@@ -58,7 +58,7 @@ export const FullAdder = circuit('FullAdder', {
 // depth this section is about would be invisible. Wiring the chain by hand
 // makes the schematic elongate, which is the whole point.
 //
-// The Slice/Concat nodes are not gates — they are how this IR spells "take
+// The Slice/Concat nodes are not gates; they are how this IR spells "take
 // bit i of a bus" and "put these bits back together", because a Connection
 // addresses a port, not a bit within one.
 const RippleCarryDemo = circuit('RippleCarry8', {
@@ -109,7 +109,7 @@ export const ADDER_CIRCUITS = {
   // halfAdder / fullAdder used to live here as standalone Demo wrappers.
   // The half-adder and full-adder sections now drive HalfAdder / FullAdder
   // directly via useCircuitSimulator + autoHarness, so those entries are
-  // gone — the bare circuits are exported above for that composition.
+  // gone; the bare circuits are exported above for that composition.
   rippleCarry: {
     name: '8-bit ripple-carry adder',
     description:
@@ -119,7 +119,7 @@ export const ADDER_CIRCUITS = {
   depth: {
     name: 'The critical path',
     description:
-      'The longest path from any input to any output — the depth that bounds clock speed.',
+      'The longest path from any input to any output, the depth that bounds clock speed.',
     circuit: DepthDemo,
   },
   carryLookahead: {

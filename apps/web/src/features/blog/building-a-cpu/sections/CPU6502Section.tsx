@@ -22,15 +22,15 @@ export function CPU6502Section() {
       </h2>
       <div className="prose-invert space-y-6">
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
-          Everything we&rsquo;ve built &mdash; gates, adders, registers, counters, and an ALU
-          &mdash; are the building blocks of a real processor. The{' '}
+          Everything we&rsquo;ve built so far (gates, adders, registers, counters, and an ALU) makes
+          up the building blocks of a real processor. The{' '}
           <strong className="text-gray-900 dark:text-white">MOS 6502</strong> (1975) powered the
           Apple II, Commodore 64, and NES. It has just 3,510 transistors and an elegant instruction
           set. Its ALU is wider (8 bits), its program counter longer (16 bits), and it has a control
-          unit that decodes 56&nbsp;instructions &mdash; but the pieces are the same.
+          unit that decodes 56&nbsp;instructions, but the pieces are the same.
         </p>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
-          Below is a complete 6502 system simulated at the gate level &mdash; over 5,500 lines of
+          Below is a complete 6502 system simulated at the gate level: over 5,500 lines of
           TypeScript, compiled and running in your browser. It has a CPU, RAM, ROM, and a
           memory-mapped console output at address <code className="text-blue-300">$F000</code>.
         </p>
@@ -66,8 +66,8 @@ export function CPU6502Section() {
         </p>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
           The only difference between this 6502 and a modern CPU is scale: more transistors, wider
-          buses, deeper pipelines, more cache. But the fundamentals &mdash; NAND gates all the way
-          down &mdash; haven&rsquo;t changed.
+          buses, deeper pipelines, more cache. But the fundamentals, NAND gates all the way down,
+          haven&rsquo;t changed.
         </p>
       </div>
     </section>

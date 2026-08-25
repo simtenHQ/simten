@@ -1,5 +1,5 @@
 /**
- * The campaign map — the front door and the only way in.
+ * The campaign map: the front door and the only way in.
  *
  * Full-bleed under a thin header: the canvas needs the room, and a map that
  * scrolls inside a narrow column is a list with extra steps. There is no list
@@ -38,7 +38,7 @@ function MapPage() {
    * Saved state, read after mount rather than during render.
    *
    * This page server-renders, and unlike the editor its storage-derived state
-   * is visible DOM — a solved level is a green card and a live wire. Reading in
+   * is visible DOM: a solved level is a green card and a live wire. Reading in
    * an initialiser would render one thing on the server and another on the
    * client and lose the hydration argument. The map is honest for one frame
    * instead: nothing solved, everything available.

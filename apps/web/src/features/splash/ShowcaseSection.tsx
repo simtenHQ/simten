@@ -93,7 +93,7 @@ const SHOWCASE_ITEMS = [
   {
     title: '8-bit ALU',
     description:
-      'ADD, SUB, AND, OR, XOR, NOT, SHL, SHR — selected by a 3-bit opcode. Zero, carry, and negative flags.',
+      'ADD, SUB, AND, OR, XOR, NOT, SHL, SHR, selected by a 3-bit opcode. Zero, carry, and negative flags.',
     stats: '145 lines · 8 operations · 3 flags',
   },
   {
@@ -105,7 +105,7 @@ const SHOWCASE_ITEMS = [
   {
     title: 'Snake',
     description:
-      'A complete game running on a simulated screen. No software, no ROM — pure hardware state machines driving an 8x8 display.',
+      'A complete game running on a simulated screen. No software, no ROM, just pure hardware state machines driving an 8x8 display.',
     stats: '157 lines · raster display · keyboard input',
   },
 ];

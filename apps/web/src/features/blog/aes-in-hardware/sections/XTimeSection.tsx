@@ -14,16 +14,16 @@ export function XTimeSection() {
           MixColumns needs to multiply bytes together, but AES uses arithmetic in{' '}
           <strong>
             GF(2<sup>8</sup>)
-          </strong>{' '}
-          — Galois Field of 256 elements. There&rsquo;s no normal multiply here. The core operation
-          is <strong>XTime</strong>: multiplication by 2.
+          </strong>
+          , the Galois Field of 256 elements. There&rsquo;s no normal multiply here. The core
+          operation is <strong>XTime</strong>: multiplication by 2.
         </p>
         <pre className="bg-gray-100 dark:bg-gray-900/80 border border-gray-700/50 rounded-lg p-4 text-sm font-mono text-gray-200 overflow-x-auto">
           {`XTime(x) = (x << 1) XOR (bit7 ? 0x1b : 0)`}
         </pre>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
           Left-shift by one (multiply by 2 in the polynomial ring). If the MSB was set before the
-          shift, the result has overflowed 8 bits — XOR with <code>0x1b</code> to reduce it back.
+          shift, the result has overflowed 8 bits, so XOR with <code>0x1b</code> to reduce it back.
           That value is the AES irreducible polynomial{' '}
           <code>
             x<sup>8</sup> + x<sup>4</sup> + x<sup>3</sup> + x + 1
@@ -33,7 +33,7 @@ export function XTimeSection() {
         </p>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
           In hardware this is just a one-bit shift, a single bit-test, and one conditional XOR. The
-          circuit below does exactly that — follow the path from the left-shifter through the Mux
+          circuit below does exactly that: follow the path from the left-shifter through the Mux
           (controlled by bit 7) to the final XOR.
         </p>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
@@ -54,7 +54,7 @@ export function XTimeSection() {
                 {dec} <span className="text-gray-500">({hex})</span>
               </div>
               <div className="text-gray-600 text-xs mt-1">
-                {note} — {note === 'bit7=0' ? 'no reduction' : 'reduction XOR 0x1b'}
+                {note} &middot; {note === 'bit7=0' ? 'no reduction' : 'reduction XOR 0x1b'}
               </div>
               <div className="text-gray-500 text-xs mt-2 mb-1">output</div>
               <div className="text-emerald-400">

@@ -69,7 +69,7 @@ export const Route = createFileRoute('/')({
       title: 'Simten | Hardware design in TypeScript',
       titleExact: true,
       description:
-        'A TypeScript HDL where npm is your testbench — from logic gates to a RISC-V CPU. Test circuits against real firmware, then synthesize to Verilog.',
+        'A TypeScript HDL where npm is your testbench, from logic gates to a RISC-V CPU. Test circuits against real firmware, then synthesize to Verilog.',
       path: '/',
     }),
     scripts: [softwareApplicationLd()],
@@ -93,7 +93,7 @@ function Splash5Page() {
 // ----------------------------------------------------------------------------
 // 3×2 grid of "what does this thing do" cells, slotted between the hero and
 // the heavy demo gallery. Modeled on Vercel/Linear/Anthropic landing bento
-// grids — each cell is title + one-line description + subtle arrow link +
+// grids: each cell is title + one-line description + subtle arrow link +
 // a visual area at the bottom. Visuals are placeholder boxes for now; the
 // plan is to drop in real little mockups (stripped CircuitEmbed, waveform
 // timeline, terminal snippet, code snippet, etc.) cell-by-cell once the
@@ -106,19 +106,19 @@ function BentoFeatures() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-px bg-border rounded-lg overflow-hidden border border-border">
           <BentoCell
             title="Type-safe end to end"
-            description="Circuits are TypeScript. Runs natively in Node, Bun, or browser — no testbench language, no codegen step."
+            description="Circuits are TypeScript. Runs natively in Node, Bun, or browser: no testbench language, no codegen step."
             visual={<TypesafeBentoVisual />}
             href="/docs/component-model"
           />
           <BentoCell
             title="Bring any npm package"
-            description="fast-check for property testing, D3 for visualization, the GCC RISC-V toolchain — your circuit code is just code."
+            description="fast-check for property testing, D3 for visualization, the GCC RISC-V toolchain. Your circuit code is just code."
             visual={<NpmBentoVisual />}
             href="/docs/examples"
           />
           <BentoCell
             title="Drop-in embeds"
-            description="One component renders a fully interactive circuit anywhere — blogs, docs, MDX. Same engine as the editor."
+            description="One component renders a fully interactive circuit anywhere: blogs, docs, MDX. Same engine as the editor."
             visual={<EmbedsBentoVisual />}
             href="/docs/building-custom-uis"
           />
@@ -130,7 +130,7 @@ function BentoFeatures() {
           />
           <BentoCell
             title="Wire it to your assistant"
-            description="An MCP server lets Claude, Codex, Gemini, or Cursor write, simulate, and debug circuits live in your browser — describe, generate, fix, ship."
+            description="An MCP server lets Claude, Codex, Gemini, or Cursor write, simulate, and debug circuits live in your browser: describe, generate, fix, ship."
             visual={<MCPBentoVisual />}
             href="/docs/mcp-integration"
           />
@@ -205,7 +205,7 @@ function BentoCell({
   );
 }
 
-// "Type-safe end to end" — small IDE-style card with the HalfAdder source.
+// "Type-safe end to end": small IDE-style card with the HalfAdder source.
 // Card is wider than the cell and anchored bottom-left, so the right edge
 // and top get cropped by the cell's overflow-hidden, giving the
 // "you're peeking at a real editor" look from Cursor's bento. Identifiers
@@ -242,22 +242,22 @@ const FullAdder = circuit('FullAdder', {
   ],
 });
 
-// Same engine in Node — no codegen, no testbench.
+// Same engine in Node: no codegen, no testbench.
 const sim = simulate(FullAdder);
 sim.set({ a: 1, b: 1, cin: 1 });
 console.log(sim.get('sum'), sim.get('cout')); // 1, 1`;
 
-// "Bring any npm package" — same IDE card chrome as the type-safe cell, but
+// "Bring any npm package": same IDE card chrome as the type-safe cell, but
 // the file content swaps every ~3.5s through a handful of real npm-package
 // snippets (figlet, fast-check, d3-force, GCC). All snippets render stacked
-// with opacity transitions so the crossfade is smooth — only the active one
+// with opacity transitions so the crossfade is smooth; only the active one
 // is interactive (pointer-events-none on the rest). CodeWithHovers powers
 // each snippet so the simten-API identifiers (ROM, simulate, etc.) light up
 // the hover popups; non-API names (fc, figlet, forceSimulation) stay inert.
 const NPM_SNIPPETS: { filename: string; code: string }[] = [
   {
     filename: 'logo-rom.ts',
-    code: `// figlet — ASCII art baked into a hardware ROM
+    code: `// figlet: ASCII art baked into a hardware ROM
 import figlet from 'figlet';
 import smallFont from 'figlet/fonts/Small';
 import { ROM, romFromBytes } from '@simten/core/std';
@@ -270,7 +270,7 @@ const Logo = ROM({ memory: romFromBytes(bytes) });`,
   },
   {
     filename: 'adder.test.ts',
-    code: `// fast-check — property-test the half adder
+    code: `// fast-check: property-test the half adder
 import * as fc from 'fast-check';
 import { simulate } from '@simten/core/sim';
 
@@ -284,7 +284,7 @@ fc.assert(
   },
   {
     filename: 'layout.ts',
-    code: `// d3-force — auto-layout the circuit graph
+    code: `// d3-force: auto-layout the circuit graph
 import { forceSimulation, forceLink, forceManyBody } from 'd3-force';
 
 const layout = forceSimulation(nodes)
@@ -297,7 +297,7 @@ for (const n of layout.nodes()) editor.move(n.id, n.x, n.y);`,
   },
   {
     filename: 'boot.ts',
-    code: `// GCC — compile Rust to RISC-V bytes, drop into ROM
+    code: `// GCC: compile Rust to RISC-V bytes, drop into ROM
 import { execSync } from 'child_process';
 import { ROM, romFromBytes } from '@simten/core/std';
 
@@ -322,8 +322,8 @@ function NpmBentoVisual() {
   return (
     <div className="absolute inset-0 flex items-start p-4">
       <div className="relative w-[540px] flex-shrink-0 rounded-md border border-border bg-card shadow-md -mr-8">
-        {/* Tab bar — filename swaps with the snippet. Single mount, content
-            switches in place (no opacity tricks needed — the swap is fast
+        {/* Tab bar: filename swaps with the snippet. Single mount, content
+            switches in place (no opacity tricks needed; the swap is fast
             enough that the bar just feels like a tab change). */}
         <div className="flex items-center h-7 px-3 border-b border-border bg-muted/60 gap-2">
           <div className="flex gap-1 shrink-0">
@@ -336,7 +336,7 @@ function NpmBentoVisual() {
           </span>
         </div>
 
-        {/* Stacked snippets — all rendered, only the active one is visible
+        {/* Stacked snippets: all rendered, only the active one is visible
             and interactive. Min-height locks the card so the layout doesn't
             jump as snippets of different lengths cycle through. */}
         <div className="relative" style={{ minHeight: 200 }}>
@@ -361,13 +361,13 @@ function NpmBentoVisual() {
   );
 }
 
-// "Drop-in embeds" — static IDE card showing the import + the JSX usage.
+// "Drop-in embeds": static IDE card showing the import + the JSX usage.
 // Mirrors the snippet in the embed CTA section further down the page so
 // the reader sees the same shape in both places.
 const EMBED_SNIPPET = `import { CircuitEmbed } from '@simten/embed';
 import { HalfAdder } from './half-adder';
 
-// Live, interactive hardware — three lines.
+// Live, interactive hardware in three lines.
 export default function Post() {
   return (
     <article>
@@ -398,7 +398,7 @@ function EmbedsBentoVisual() {
   );
 }
 
-// "Composable to the gate" — nested cards illustrating drilldown. The
+// "Composable to the gate": nested cards illustrating drilldown. The
 // outermost is a FullAdder; you "open it" to see a HalfAdder inside; open
 // THAT to see an Xor; open Xor to see the underlying Nand gate. Each
 // layer carries the same pulsing inspect badge used on real composite
@@ -476,7 +476,7 @@ function DrilldownLayer({
   );
 }
 
-// "Wire it to Claude" — dark terminal card snapshotting the MCP install +
+// "Wire it to Claude": dark terminal card snapshotting the MCP install +
 // a tiny scripted Claude exchange (one prompt, two tool calls, a result).
 // Intentionally dark so it stands out against the light cell background;
 // mirrors the hero's TerminalWindow palette so the page reads as one
@@ -528,7 +528,7 @@ function MCPBentoVisual() {
   );
 }
 
-// "Rewind any cycle" — mini waveform viewer with a scrubbing playhead.
+// "Rewind any cycle": mini waveform viewer with a scrubbing playhead.
 // Four signals (clk, count[0], count[1], q) drawn as SVG polylines over
 // 16 cycles. The playhead is an absolute vertical line that slides with
 // the cycle state, and the cycle counter above updates in sync.
@@ -641,7 +641,7 @@ function TimeTravelBentoVisual() {
             </div>
           ))}
 
-          {/* Playhead — absolutely positioned relative to this container.
+          {/* Playhead, absolutely positioned relative to this container.
               `left` is computed: container padding + label width + gap +
               cycle offset. Animates with `transition: left`. */}
           <div
@@ -685,7 +685,7 @@ function ScrubberBtn({ children }: { children: ReactNode }) {
 function TypesafeBentoVisual() {
   return (
     <div className="absolute inset-0 flex items-start p-4">
-      {/* Inner "editor" card — fixed width wider than the cell and anchored
+      {/* Inner "editor" card, fixed width wider than the cell and anchored
           top-left, with a negative right margin to extend further past the
           right edge. The snippet is long enough that the bottom of the
           card spills past the cell floor too, so both edges visibly clip
@@ -719,7 +719,7 @@ function MobileAIHero() {
         Describe hardware. Claude builds it. Test it like software.
       </h1>
       <p className="mt-4 text-sm text-muted-foreground">
-        A TypeScript HDL where the whole npm ecosystem is your testbench — drive a circuit with real
+        A TypeScript HDL where the whole npm ecosystem is your testbench. Drive a circuit with real
         firmware, any library you can <code>npm install</code>, and watch it run cycle-by-cycle.
         Synthesizable to Verilog.
       </p>
@@ -748,7 +748,7 @@ function DemoGallery() {
   return (
     <div className="relative pb-16 md:pb-24 md:animate-in md:fade-in md:duration-700 overflow-hidden">
       <Container className="relative">
-        {/* Lead with the heavy proof — the RV32I CPU — to show the
+        {/* Lead with the heavy proof, the RV32I CPU, to show the
             framework's range up front. Lighter playable demos follow.
             First Section overrides the default top margin since the
             DemoGallery wrapper already provides top padding. */}
@@ -758,7 +758,7 @@ function DemoGallery() {
               Scale to real-world complexity
             </h2>
             <p className="mt-4 text-base lg:text-lg text-muted-foreground">
-              The framework already runs heavy systems in the browser — for example, a 5-stage
+              The framework already runs heavy systems in the browser: for example, a 5-stage
               pipelined RISC-V CPU executing GCC-compiled C, C++, and Rust.
             </p>
             <Link
@@ -775,7 +775,7 @@ function DemoGallery() {
               <RV32IDebuggerPreview />
             </div>
 
-            {/* Conformance receipt. Honest framing per the harness README —
+            {/* Conformance receipt. Honest framing per the harness README:
                 simulation vs Spike, not silicon certification. */}
             <a
               href="https://github.com/simtenHQ/simten/blob/main/hardware/ulx3s/projects/cpu/archtest/README.md"
@@ -804,7 +804,7 @@ function DemoGallery() {
           </div>
         </Section>
 
-        {/* And the lighter side — same engine, more fun. Wrapped in
+        {/* And the lighter side: same engine, more fun. Wrapped in
             Section so it picks up the standard inter-section margin
             (mt-28 md:mt-36) below the Scale block. */}
         <Section>
@@ -818,14 +818,14 @@ function DemoGallery() {
             </p>
           </div>
 
-          {/* Featured games — Pong on the left, Snake on the right */}
+          {/* Featured games: Pong on the left, Snake on the right */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
             <PongCard />
             <SnakeCard />
           </div>
         </Section>
 
-        {/* Row 1.5: removed — drilldown showcase relocated below for tightness */}
+        {/* Row 1.5: removed, drilldown showcase relocated below for tightness */}
         <div className="hidden">
           {/* placeholder kept so the diff stays small */}
           <div className="mt-32 rounded-lg border border-border overflow-hidden bg-card">
@@ -871,7 +871,7 @@ function DemoGallery() {
                       </svg>
                     </span>
                   </span>{' '}
-                  badge to open its internals — with full simulation and nested drill-down.
+                  badge to open its internals, with full simulation and nested drill-down.
                 </p>
                 <div className="space-y-2 text-[12px] text-muted-foreground">
                   <div className="flex items-start gap-2">
@@ -890,7 +890,7 @@ function DemoGallery() {
                   </div>
                   <div className="flex items-start gap-2">
                     <span className="text-blue-400 mt-0.5">3.</span>
-                    <span>Toggle switches — signals propagate through every level</span>
+                    <span>Toggle switches: signals propagate through every level</span>
                   </div>
                 </div>
               </div>
@@ -956,7 +956,7 @@ function DemoGallery() {
                 </h3>
                 <p className="text-[15px] text-foreground/75 leading-snug mb-5">
                   Sequential circuits record every state. Step forward, spot something wrong, step
-                  back to the exact cycle it happened. No printf debugging — just rewind.
+                  back to the exact cycle it happened. No printf debugging, just rewind.
                 </p>
                 <div className="space-y-2 text-[12px] text-muted-foreground/80">
                   <div className="flex items-start gap-2">
@@ -973,7 +973,7 @@ function DemoGallery() {
                   <div className="flex items-start gap-2">
                     <span className="text-amber-600 dark:text-amber-400 mt-0.5">3.</span>
                     <span>
-                      Use <strong className="text-foreground">◀ ▶</strong> to scrub back and forth —
+                      Use <strong className="text-foreground">◀ ▶</strong> to scrub back and forth;
                       every cycle is preserved
                     </span>
                   </div>
@@ -986,7 +986,7 @@ function DemoGallery() {
       </Container>
 
       <Container className="relative">
-        {/* Verilog Export — honest framing */}
+        {/* Verilog Export, honest framing */}
         <Section>
           <div className="max-w-2xl mb-10 lg:mb-12">
             <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight leading-[1.1]">
@@ -1224,7 +1224,7 @@ function SnakeCard() {
 
   return (
     <div className="flex flex-col rounded-lg border border-border overflow-hidden bg-card">
-      {/* Preview — square so the grid fills the card at any width */}
+      {/* Preview: square so the grid fills the card at any width */}
       <div className="h-[320px] sm:h-[360px] flex items-center justify-center bg-black p-4 sm:p-6">
         {sim.ready ? (
           <svg
@@ -1250,7 +1250,7 @@ function SnakeCard() {
         )}
       </div>
 
-      {/* Info strip — matches CircuitEmbed */}
+      {/* Info strip, matches CircuitEmbed */}
       <div className="border-t border-border px-4 py-3 flex items-end justify-between gap-4">
         <div>
           <div className="text-[13px] font-semibold text-foreground">Snake</div>

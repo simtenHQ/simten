@@ -20,7 +20,7 @@ export function CompareSwapSection() {
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
           There is no branch instruction deciding which path to take. A <code>Comparator</code>{' '}
           asserts its <code>lt</code> output when <code>a &lt; b</code>, and that single bit drives
-          two <code>Mux</code> nodes &mdash; one to route the minimum, one to route the maximum. The
+          two <code>Mux</code> nodes: one to route the minimum, one to route the maximum. The
           circuit evaluates in parallel every cycle regardless of the values flowing through it.
         </p>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">

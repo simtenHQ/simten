@@ -1,5 +1,5 @@
 /**
- * Verify API Handler — proxies to the verifier container.
+ * Verify API Handler: proxies to the verifier container.
  *
  * Production: uses Cloudflare service binding.
  * Local dev:  falls back to wrangler dev on localhost:55002.
@@ -51,7 +51,7 @@ export async function handleVerify(
     const { success } = await rl.limit({ key: ip });
     if (!success) {
       return Response.json(
-        { success: false, compileError: 'Rate limit exceeded — try again in a minute' },
+        { success: false, compileError: 'Rate limit exceeded, try again in a minute' },
         { status: 429 },
       );
     }

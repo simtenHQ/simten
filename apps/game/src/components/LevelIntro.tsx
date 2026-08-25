@@ -7,7 +7,7 @@
  * controls that appear for the first time in the campaign. Everything else in
  * the game is discoverable by reading the diagram; that is not.
  *
- * Shown before the level rather than after, unlike `LevelComplete` — this is
+ * Shown before the level rather than after, unlike `LevelComplete`; this is
  * the thing you need in order to start.
  */
 
@@ -25,7 +25,7 @@ import type { Level } from '../game/types';
  * `**bold**`, and nothing else.
  *
  * A level is data that could be fetched as plain JSON, so its copy stays a
- * string rather than becoming markup — but the two words this dialog exists to
+ * string rather than becoming markup, but the two words this dialog exists to
  * teach deserve to stand out from the paragraph explaining them. One delimiter,
  * parsed here, is cheaper than a markdown dependency and cannot grow into one
  * by accident.

@@ -6,9 +6,9 @@ export function WhyRiscVSection() {
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
           Most CPUs are black boxes. You write code, it runs, and somewhere inside a billion
           transistors do&hellip; something. RISC-V changes that. It&rsquo;s an{' '}
-          <strong className="text-gray-900 dark:text-white">open instruction set</strong> &mdash;
-          anyone can read the spec, build a processor, and understand exactly what happens when your
-          code executes.
+          <strong className="text-gray-900 dark:text-white">open instruction set</strong>: anyone
+          can read the spec, build a processor, and understand exactly what happens when your code
+          executes.
         </p>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
           The base integer instruction set,{' '}
@@ -19,8 +19,8 @@ export function WhyRiscVSection() {
         </p>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
           The CPU on this page implements all of RV32I using a{' '}
-          <strong className="text-gray-900 dark:text-white">classic 5-stage pipeline</strong>{' '}
-          &mdash; the same architecture used in{' '}
+          <strong className="text-gray-900 dark:text-white">classic 5-stage pipeline</strong>, the
+          same architecture used in{' '}
           <a
             href="https://www.sifive.com/cores/e31"
             target="_blank"
@@ -42,17 +42,17 @@ export function WhyRiscVSection() {
           <li className="flex gap-2">
             <span className="text-gray-600 shrink-0">&bull;</span>
             <span>
-              <strong className="text-gray-600 dark:text-gray-300">No branch predictor</strong>{' '}
-              &mdash; we always flush on taken branches. A real core would predict branch outcomes
-              to avoid the penalty.
+              <strong className="text-gray-600 dark:text-gray-300">No branch predictor</strong>: we
+              always flush on taken branches. A real core would predict branch outcomes to avoid the
+              penalty.
             </span>
           </li>
           <li className="flex gap-2">
             <span className="text-gray-600 shrink-0">&bull;</span>
             <span>
-              <strong className="text-gray-600 dark:text-gray-300">No caches</strong> &mdash; we
-              access memory directly. A production CPU would have L1 instruction and data caches to
-              hide memory latency.
+              <strong className="text-gray-600 dark:text-gray-300">No caches</strong>: we access
+              memory directly. A production CPU would have L1 instruction and data caches to hide
+              memory latency.
             </span>
           </li>
           <li className="flex gap-2">
@@ -60,22 +60,22 @@ export function WhyRiscVSection() {
             <span>
               <strong className="text-gray-600 dark:text-gray-300">
                 No interrupts or exceptions
-              </strong>{' '}
-              &mdash; real cores need these for I/O, timers, and error handling.
+              </strong>
+              : real cores need these for I/O, timers, and error handling.
             </span>
           </li>
           <li className="flex gap-2">
             <span className="text-gray-600 shrink-0">&bull;</span>
             <span>
-              <strong className="text-gray-600 dark:text-gray-300">No CSRs</strong> &mdash; control
-              and status registers for privilege levels, counters, and configuration.
+              <strong className="text-gray-600 dark:text-gray-300">No CSRs</strong>: control and
+              status registers for privilege levels, counters, and configuration.
             </span>
           </li>
         </ul>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
           Each of these could be added as an extension to the existing pipeline. The 5-stage
-          structure doesn&rsquo;t change &mdash; branch prediction adds logic to the Fetch stage,
-          caches sit in front of memory, and interrupts add a new control path into Decode.
+          structure doesn&rsquo;t change. Branch prediction adds logic to the Fetch stage, caches
+          sit in front of memory, and interrupts add a new control path into Decode.
         </p>
       </div>
     </section>

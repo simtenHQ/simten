@@ -13,19 +13,19 @@ export function WeightFlowSection() {
           <strong className="text-gray-900 dark:text-white">vertically</strong>. Here we stack two
           PEs in a column. The top PE receives{' '}
           <code className="text-blue-300">partialSumIn = 0</code> and computes{' '}
-          <code className="text-blue-300">0 + data &times; weight0</code>. That result is registered
-          &mdash; it appears at the top PE&rsquo;s{' '}
+          <code className="text-blue-300">0 + data &times; weight0</code>. That result is
+          registered, and it appears at the top PE&rsquo;s{' '}
           <code className="text-blue-300">partialSumOut</code> one cycle later. The bottom PE then
           adds its own <code className="text-blue-300">data &times; weight1</code> to produce the
           full dot product, again registered one cycle later.
         </p>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
           This vertical flow is{' '}
-          <strong className="text-gray-900 dark:text-white">registered</strong> &mdash; partial sums
-          move down one PE per clock cycle, just like data moves right one PE per cycle. This
-          symmetry is critical for timing in real hardware. A 256-deep combinational chain
-          couldn&rsquo;t close timing at TPU clock speeds. Instead, each PE latches its partial sum
-          into a register, giving the signal a full cycle to propagate to the next PE.
+          <strong className="text-gray-900 dark:text-white">registered</strong>: partial sums move
+          down one PE per clock cycle, just like data moves right one PE per cycle. This symmetry is
+          critical for timing in real hardware. A 256-deep combinational chain couldn&rsquo;t close
+          timing at TPU clock speeds. Instead, each PE latches its partial sum into a register,
+          giving the signal a full cycle to propagate to the next PE.
         </p>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
           To compensate for this vertical delay, the systolic array uses{' '}
@@ -44,7 +44,7 @@ export function WeightFlowSection() {
           showControls
           autoRunSpeed={400}
           title="Two-PE Column"
-          description="Partial sums flow down through registers — one PE per clock cycle, matching real TPU hardware."
+          description="Partial sums flow down through registers, one PE per clock cycle, matching real TPU hardware."
         />
       </div>
     </section>

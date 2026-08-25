@@ -20,12 +20,12 @@ export function EgressSection() {
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
           The RAM is pre-loaded with 8 bytes of test data: 0xAA, 0xBB, 0xCC, etc. Toggle the{' '}
           <strong>enable</strong> switch and tick repeatedly to watch the pointer advance through
-          the data. When the pointer reaches 7, the <strong>doneLed</strong> lights up &mdash; the
+          the data. When the pointer reaches 7, the <strong>doneLed</strong> lights up and the
           packet is fully serialized.
         </p>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
-          In the full switch, this same mechanism operates on each output port independently &mdash;
-          both ports can serialize their egress buffers simultaneously.
+          In the full switch, this same mechanism operates on each output port independently: both
+          ports can serialize their egress buffers simultaneously.
         </p>
       </div>
 

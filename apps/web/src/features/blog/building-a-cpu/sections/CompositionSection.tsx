@@ -15,7 +15,7 @@ export function CompositionSection() {
           building blocks for even bigger ones.
         </p>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
-          Let&rsquo;s build an adder &mdash; the circuit that lets a CPU do math.
+          Let&rsquo;s build an adder, the circuit that lets a CPU do math.
         </p>
       </div>
 
@@ -26,7 +26,7 @@ export function CompositionSection() {
           <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
             Adds two single bits. The <strong>sum</strong> output is the XOR (are the bits
             different?), and the <strong>carry</strong> output is the AND (are both bits 1?). Try
-            it: 1+1 = 10 in binary &mdash; sum is 0, carry is 1.
+            it: 1+1 = 10 in binary, so sum is 0 and carry is 1.
           </p>
           <CircuitEmbed
             circuit={GATE_CIRCUITS.halfAdder.circuit}
@@ -55,8 +55,8 @@ export function CompositionSection() {
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Multiplexer</h3>
           <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
             A data selector: the <strong>sel</strong> switch chooses which input (A or B) passes
-            through to the output. Muxes are everywhere in CPUs &mdash; they&rsquo;re how the
-            control unit routes data between components.
+            through to the output. Muxes are everywhere in CPUs: they&rsquo;re how the control unit
+            routes data between components.
           </p>
           <CircuitEmbed
             circuit={GATE_CIRCUITS.mux.circuit}

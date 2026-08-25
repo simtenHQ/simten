@@ -10,7 +10,7 @@ export const Route = createFileRoute('/circuit_/$encoded')({
     // Defense against crawlers that find the raw route-ID string
     // (`/circuit_/$encoded`) in JS bundles or the TanStack manifest and try
     // to fetch it literally. A real share URL never has a $-prefixed
-    // encoded value — those are TanStack route-ID placeholders, not user
+    // encoded value; those are TanStack route-ID placeholders, not user
     // input. Return 410 Gone + noindex so Google drops the URL fast.
     if (params.encoded.startsWith('$')) {
       throw new Response(null, {
@@ -38,7 +38,7 @@ export const Route = createFileRoute('/circuit_/$encoded')({
 });
 
 function SharedCircuitRoute() {
-  // Decode from params directly — don't rely on loader-data hydration, which
+  // Decode from params directly; don't rely on loader-data hydration, which
   // can drop on the client and leave the editor showing DEFAULT_CODE. The
   // loader still runs server-side for SSR meta tags via the head() function.
   const { encoded } = Route.useParams();

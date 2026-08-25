@@ -7,8 +7,8 @@ export function HeroSection() {
         </h1>
         <p className="mt-6 text-xl text-gray-500 dark:text-gray-300 leading-relaxed">
           A 16-bit counter, a table of numbers and one multiplier. No oscillator object, no filter
-          node &mdash; every sample you hear is computed by a circuit you can open up, and the same
-          netlist runs on an FPGA.
+          node. Every sample you hear is computed by a circuit you can open up, and the same netlist
+          runs on an FPGA.
         </p>
         <div className="mt-8 flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
           <span>Interactive tutorial</span>

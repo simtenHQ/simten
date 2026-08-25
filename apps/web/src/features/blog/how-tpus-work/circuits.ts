@@ -31,7 +31,7 @@ import {
 } from '@simten/core/std';
 import type { BlogCircuit } from '../types';
 
-/** The PE definition used by all circuits — registered partial-sum output */
+/** The PE definition used by all circuits, with a registered partial-sum output */
 const PE_Systolic = circuit('PE_Systolic', {
   inputs: {
     dataIn: bus(8),
@@ -864,7 +864,7 @@ const Systolic3x3 = circuit('Systolic3x3', {
 });
 
 export const TestSystolic3x3 = circuit('TestSystolic3x3', {
-  // Formal `done` output port — asserts when the systolic array finishes
+  // Formal `done` output port, asserts when the systolic array finishes
   // its compute pipeline. Replaces a hook-side substring scan over
   // portValues looking for a node named "done_led". The visual done_led
   // stays for on-canvas rendering.
@@ -968,7 +968,7 @@ export const TestSystolic3x3 = circuit('TestSystolic3x3', {
 
 export const TPU_CIRCUITS: Record<string, BlogCircuit> = {
   /**
-   * Section 1: Multiply-Add — the fundamental operation.
+   * Section 1: Multiply-Add, the fundamental operation.
    */
   multiplyAdd: {
     name: 'Multiply-Add Unit',
@@ -1052,7 +1052,7 @@ export const TPU_CIRCUITS: Record<string, BlogCircuit> = {
   twoPEColumn: {
     name: 'Two-PE Column',
     description:
-      'Two PEs stacked vertically. Partial sums flow down through registers — one PE per clock cycle, just like real hardware.',
+      'Two PEs stacked vertically. Partial sums flow down through registers, one PE per clock cycle, just like real hardware.',
     circuit: TwoPEColumn,
     layout: {
       // Inputs (left)

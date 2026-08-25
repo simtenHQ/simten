@@ -2,14 +2,14 @@
  * The moment a level is solved.
  *
  * Rather than asserting "correct", it drives the player's own circuit through
- * the truth table one row at a time — the harness switches flip, the LED
+ * the truth table one row at a time: the harness switches flip, the LED
  * lights, and each row ticks off as it passes. The proof is the machine
  * running, which is the thing they actually built.
  *
  * The harness names each Switch node after the port it feeds
  * (auto-harness.ts:70), so a vector's input names are already the node ids.
  *
- * Runs are cancellable by token because the source can change mid-sequence —
+ * Runs are cancellable by token because the source can change mid-sequence,
  * an edit invalidates the verdict, and a half-finished run writing to state
  * afterwards would leave rows lit under a circuit that no longer passes.
  */
@@ -23,7 +23,7 @@ const STEP_MS = 320;
 export interface VictoryRun {
   /** Row currently being driven, or null when not mid-run. */
   active: number | null;
-  /** Rows proven so far — drives the ticks. */
+  /** Rows proven so far; drives the ticks. */
   proven: number;
   /** True once every row has been driven. */
   complete: boolean;
@@ -75,8 +75,8 @@ export function useVictoryRun(
         // Then a clock edge, exactly as the grader does for every vector.
         //
         // Driving inputs propagates but does not advance a clock, so without
-        // this a clocked circuit would sit frozen while the grader — which
-        // ticks — passed it. The run would contradict the verdict, and it would
+        // this a clocked circuit would sit frozen while the grader, which
+        // ticks, passed it. The run would contradict the verdict, and it would
         // read as a broken animation rather than a missing edge. Unconditional
         // rather than keyed off `sequential`, because matching the grader for
         // every level is what stops the two drifting apart again; on a

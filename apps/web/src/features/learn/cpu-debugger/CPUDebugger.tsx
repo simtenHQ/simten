@@ -19,7 +19,7 @@ const LANGUAGES = [
 ] as const;
 
 const STARTER: Record<string, string> = {
-  c: `// Fibonacci sequence — computes the 10th number.
+  c: `// Fibonacci sequence: computes the 10th number.
 // When done, register a0 = 55 (0x00000037).
 int main() {
     int a = 0;
@@ -31,7 +31,7 @@ int main() {
     }
     return a; // a0 = 55 (0x37)
 }`,
-  cpp: `// Fibonacci sequence — computes the 10th number.
+  cpp: `// Fibonacci sequence: computes the 10th number.
 // When done, register a0 = 55 (0x00000037).
 int main() {
     int a = 0, b = 1;
@@ -52,7 +52,7 @@ _start:
     add a0, a0, a1 # a0 = a0 + a1 = 7 (0x07)
     li a7, 93
     ecall`,
-  rust: `// Bare-metal Rust — no OS, no stdlib.
+  rust: `// Bare-metal Rust: no OS, no stdlib.
 // This runs directly on the CPU hardware.
 // When done, register a0 = 55 (0x00000037).
 #![no_std]
@@ -93,7 +93,7 @@ const PIPELINE_DESCRIPTIONS: Record<
   EX: {
     label: 'Compute',
     title: 'Execute',
-    desc: 'The ALU performs the computation — arithmetic, logic, or address calculation.',
+    desc: 'The ALU performs the computation: arithmetic, logic, or address calculation.',
   },
   MEM: {
     label: 'Memory',
@@ -133,7 +133,7 @@ function describeCurrentCycle(
 
   const parts: string[] = [];
 
-  // Describe EX stage — this is where computation happens
+  // Describe EX stage; this is where computation happens
   if (stages.EX != null) {
     const line = disasmLines.find((l) => l.address === stages.EX && l.instruction);
     if (line) {
@@ -161,9 +161,9 @@ function describeCurrentCycle(
   if (parts.length === 0) {
     // Pipeline is filling or flushing
     const activeCount = Object.values(stages).filter((v) => v != null).length;
-    if (activeCount === 0) return 'Pipeline is empty — all instructions have completed.';
+    if (activeCount === 0) return 'Pipeline is empty; all instructions have completed.';
     if (activeCount < 5)
-      return 'Pipeline is filling — instructions flow through one stage per cycle.';
+      return 'Pipeline is filling; instructions flow through one stage per cycle.';
     return null;
   }
 
@@ -361,19 +361,19 @@ export function CPUDebugger() {
 
   return (
     <div className="flex h-full flex-col bg-gray-950 text-gray-100 overflow-hidden">
-      {/* Intro banner — shown before first compile */}
+      {/* Intro banner, shown before first compile */}
       {!compiled && !compiling && (
         <div className="shrink-0 border-b border-blue-900/30 bg-blue-950/20 px-4 py-3">
           <p className="text-sm text-blue-200/90">
-            <span className="font-semibold text-blue-100">This is a real CPU</span> &mdash; built
-            from registers, ALUs, muxes, and memory, simulated cycle by cycle in your browser. Write
-            code in C, C++, Rust, or assembly, compile it, then step through each clock cycle and
-            watch instructions flow through the pipeline.
+            <span className="font-semibold text-blue-100">This is a real CPU</span>, built from
+            registers, ALUs, muxes, and memory, simulated cycle by cycle in your browser. Write code
+            in C, C++, Rust, or assembly, compile it, then step through each clock cycle and watch
+            instructions flow through the pipeline.
           </p>
         </div>
       )}
 
-      {/* Top bar — SiteHeader (brand on left) + tool controls in the right slot */}
+      {/* Top bar: SiteHeader (brand on left) + tool controls in the right slot */}
       <SiteHeader
         sticky={false}
         right={
@@ -410,7 +410,7 @@ export function CPUDebugger() {
               {compiling ? 'Compiling…' : 'Compile'}
             </button>
 
-            {/* Simulator controls — only when loaded */}
+            {/* Simulator controls, only when loaded */}
             {sim.ready && (
               <>
                 <div className="h-4 w-px bg-border" />
@@ -456,11 +456,11 @@ export function CPUDebugger() {
         }
       />
 
-      {/* Main content — two outer columns: [code + pipeline + disassembly] | [registers] */}
+      {/* Main content: two outer columns: [code + pipeline + disassembly] | [registers] */}
       <div className="flex flex-1 overflow-hidden">
-        {/* Left+middle group — pipeline on top, code|disassembly below */}
+        {/* Left+middle group: pipeline on top, code|disassembly below */}
         <div className="flex flex-1 flex-col overflow-hidden border-r border-gray-800">
-          {/* Pipeline stages — spans full width of this group (not over registers) */}
+          {/* Pipeline stages, spans full width of this group (not over registers) */}
           <div className="shrink-0 border-b border-gray-800 px-3 py-2">
             <div className="mb-1.5 text-[10px] font-semibold uppercase tracking-widest text-gray-600">
               Pipeline
@@ -542,7 +542,7 @@ export function CPUDebugger() {
           </div>
         </div>
 
-        {/* Right column — registers, full height */}
+        {/* Right column: registers, full height */}
         <div className="flex w-[300px] shrink-0 flex-col overflow-hidden">
           <div className="shrink-0 border-b border-gray-800 px-4 py-1.5 text-[10px] font-semibold uppercase tracking-widest text-gray-600">
             Registers

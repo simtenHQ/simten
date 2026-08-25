@@ -12,15 +12,15 @@ export function WeightSection() {
           captures a value only when a{' '}
           <strong className="text-gray-900 dark:text-white">valid bit</strong> is asserted. Once
           latched, the weight stays fixed for the entire computation. This is the{' '}
-          <strong className="text-gray-900 dark:text-white">weight-stationary</strong> approach
-          &mdash; the weight is programmed once, then thousands of activation values stream past it,
-          each getting multiplied by the same weight.
+          <strong className="text-gray-900 dark:text-white">weight-stationary</strong> approach: the
+          weight is programmed once, then thousands of activation values stream past it, each
+          getting multiplied by the same weight.
         </p>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
           The circuit below shows the weight register and a multiplier. Toggle{' '}
           <code className="text-blue-300">weightValid</code> on and click <strong>Tick</strong> to
           latch the weight. The stored weight display captures the value. Now turn valid off and
-          tick again &mdash; the stored weight holds steady. Change{' '}
+          tick again, and the stored weight holds steady. Change{' '}
           <code className="text-blue-300">dataIn</code> and watch the product update instantly: the
           stored weight multiplies whatever data arrives.
         </p>

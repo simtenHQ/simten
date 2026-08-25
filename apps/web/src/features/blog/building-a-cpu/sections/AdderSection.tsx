@@ -18,8 +18,8 @@ export function AdderSection() {
           This is called a{' '}
           <strong className="text-gray-900 dark:text-white">ripple-carry adder</strong> because the
           carry &ldquo;ripples&rdquo; from the least significant bit to the most significant. The
-          6502 uses exactly this pattern, just wider &mdash; 8&nbsp;bits for its ALU, 16&nbsp;bits
-          for address arithmetic.
+          6502 uses exactly this pattern, just wider: 8&nbsp;bits for its ALU, 16&nbsp;bits for
+          address arithmetic.
         </p>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
           Try it: set the <strong>A</strong> switches (a3&ndash;a0) to 0011 (3) and the{' '}

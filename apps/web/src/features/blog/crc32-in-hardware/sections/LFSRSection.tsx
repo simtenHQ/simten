@@ -17,9 +17,9 @@ export function LFSRSection() {
           &ldquo;tap&rdquo; positions.
         </p>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
-          With the right choice of tap positions &mdash; determined by an irreducible polynomial
-          over GF(2) &mdash; an n-bit LFSR cycles through every possible non-zero state exactly once
-          before repeating. A 4-bit LFSR with taps at positions 0 and 3 visits all 2<sup>4</sup>
+          With the right choice of tap positions, determined by an irreducible polynomial over
+          GF(2), an n-bit LFSR cycles through every possible non-zero state exactly once before
+          repeating. A 4-bit LFSR with taps at positions 0 and 3 visits all 2<sup>4</sup>
           &nbsp;&minus;&nbsp;1 &nbsp;=&nbsp;15 states. A 32-bit LFSR visits over 4 billion.
         </p>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
@@ -47,7 +47,7 @@ export function LFSRSection() {
           data before being fed back. Instead of generating a pseudorandom sequence, you&rsquo;re
           computing a checksum: the final register state after clocking in all the data bytes is the
           CRC. The Ethernet polynomial 0xEDB88320 (the reflected form of 0x04C11DB7) specifies
-          exactly which of the 32 flip-flop outputs get XOR&rsquo;d back &mdash; those are the tap
+          exactly which of the 32 flip-flop outputs get XOR&rsquo;d back, and those are the tap
           positions.
         </p>
       </div>

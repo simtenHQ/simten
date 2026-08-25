@@ -32,7 +32,7 @@ export const HalfAdder = circuit('HalfAdder', {
 
 ## Full Adder
 
-Three bits (a + b + carry in) → sum + carry out. Reuses HalfAdder as a composite — the simulator expands it to primitives automatically.
+Three bits (a + b + carry in) → sum + carry out. Reuses HalfAdder as a composite, and the simulator expands it to primitives automatically.
 
 export const FullAdder = circuit('FullAdder', {
   inputs:  { a: bit, b: bit, cin: bit },
@@ -50,7 +50,7 @@ export const FullAdder = circuit('FullAdder', {
   circuit={FullAdder}
   showControls
   title="Full Adder"
-  description="Toggle switches — notice how carry-in affects the output"
+  description="Toggle switches, and notice how carry-in affects the output"
 />
 
 ## Counter
@@ -100,10 +100,10 @@ export const Fibonacci = circuit('Fibonacci', {
 
 ## Design Patterns
 
-**Combinational** — no state, no clock. Outputs computed directly from inputs. Examples: gates, adders, muxes, ALUs.
+**Combinational**: no state, no clock. Outputs computed directly from inputs. Examples: gates, adders, muxes, ALUs.
 
-**Sequential** — has state and clock. State updates on rising clock edge, outputs reflect current state. Examples: counters, registers, shift registers.
+**Sequential**: has state and clock. State updates on rising clock edge, outputs reflect current state. Examples: counters, registers, shift registers.
 
-**Hierarchical composition** — build complex circuits from simpler ones. FullAdder from HalfAdder, ALU from Adder+Mux, CPU from ALU+RegisterFile+Memory.
+**Hierarchical composition**: build complex circuits from simpler ones. FullAdder from HalfAdder, ALU from Adder+Mux, CPU from ALU+RegisterFile+Memory.
 
-**Feedback loops** — connect a node's output back to its input through a register. The register breaks the combinational loop by introducing a one-cycle delay. This is how counters, state machines, and CPUs work.
+**Feedback loops**: connect a node's output back to its input through a register. The register breaks the combinational loop by introducing a one-cycle delay. This is how counters, state machines, and CPUs work.

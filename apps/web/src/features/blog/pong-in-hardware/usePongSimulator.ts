@@ -52,7 +52,7 @@ export function usePongSimulator() {
     [nodeIds, sim.setNodeValue],
   );
 
-  // Keyboard listener — W/S drive the left paddle, arrows the right
+  // Keyboard listener: W/S drive the left paddle, arrows the right
   useEffect(() => {
     if (!sim.ready) return;
 
@@ -100,7 +100,7 @@ export function usePongSimulator() {
     };
   }, [sim.ready, sendLeftDirection, sendRightDirection]);
 
-  // Auto-run interval — run a complete 14-phase game frame each time.
+  // Auto-run interval: run a complete 14-phase game frame each time.
   // Speed controls how often frames run (higher = slower ball + paddles).
   // tickN batches all 14 cycles into one sandbox round-trip and one React
   // update, so React renders only at end-of-frame (no mid-cycle flicker).

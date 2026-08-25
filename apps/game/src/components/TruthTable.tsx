@@ -1,7 +1,7 @@
 /**
  * The level's vectors, laid out horizontally.
  *
- * Signals run down the left and each vector is a column — the transpose of how
+ * Signals run down the left and each vector is a column, the transpose of how
  * a truth table is usually written. It suits where this now lives, a wide and
  * short sheet, where the conventional layout would be a tall narrow strip with
  * dead space either side.
@@ -16,7 +16,7 @@
  * It doubles as the scoreboard. The column being driven through the circuit is
  * highlighted, columns already shown correct go green, and a failing column
  * goes red. The colour lands on the numbers themselves rather than on a row of
- * ticks above them — one less row to align against, and the verdict reads on
+ * ticks above them: one less row to align against, and the verdict reads on
  * the thing it is a verdict about.
  */
 
@@ -32,7 +32,7 @@ interface TruthTableProps {
    * The vector that failed, if one did.
    *
    * The grader stops at the first wrong row, so everything left of this is
-   * known good and everything right of it is simply untested — which is why
+   * known good and everything right of it is simply untested, which is why
    * only this one column goes red.
    */
   failed?: number | null;
@@ -43,7 +43,7 @@ interface TruthTableProps {
  * is testable without a DOM.
  *
  * `level.inputs` is a list of signal names. It used to be a map, and this was
- * `Object.keys(level.inputs)` — which on an array returns its indices, so the
+ * `Object.keys(level.inputs)`, which on an array returns its indices, so the
  * table silently rendered headers `0`, `1` and then looked up `v.inputs['0']`
  * for every cell and found nothing. `Object.keys` on an array is legal
  * TypeScript, so nothing failed; the table just went blank.

@@ -2,7 +2,7 @@
  * The surface the grader needs from a simulator, and the sandbox adapter for it.
  *
  * The grader is written against this rather than `SandboxHandle` directly so it
- * can be run host-side in tests — which is what proves a level is solvable
+ * can be run host-side in tests, which is what proves a level is solvable
  * before anyone is asked to solve it. The browser passes `sandboxRuntime`; the
  * test suite passes a local one built on `executeCircuitCode`.
  */
@@ -40,7 +40,7 @@ export interface GradeRuntime {
    * Keys in and out are the level's BARE signal names. The contract has to say
    * so: the sandbox reports top-level ports namespaced under `__top__` while
    * `@simten/core/sim` returns them bare, and leaving that unstated let the two
-   * implementations disagree silently — grading read `undefined` for every
+   * implementations disagree silently: grading read `undefined` for every
    * output and scored it 0, which passes any row that expects 0.
    *
    * A name resolves against either circuit shape; see `resolveOutput`.
@@ -55,7 +55,7 @@ const TOP_LEVEL_PREFIX = '__top__.';
  * Find one output signal in a bag of port values.
  *
  * A signal named `out` is either a top-level output port (`__top__.out`) or the
- * input of a display node of that name (`out.in`) — the two shapes a level can
+ * input of a display node of that name (`out.in`), the two shapes a level can
  * take. Ports win, so a circuit with both is unambiguous.
  *
  * Driving inputs needs no equivalent: the simulator's `setNode` already tries a

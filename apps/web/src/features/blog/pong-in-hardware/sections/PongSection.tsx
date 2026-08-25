@@ -19,11 +19,10 @@ export function PongSection() {
     <section className="py-12">
       <div className="prose-invert space-y-6">
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
-          This is a complete Pong game running on a 16&times;16 screen &mdash; no CPU, no software,
-          just digital circuits. Click{' '}
-          <strong className="text-gray-900 dark:text-white">Run</strong> and use <kbd>W</kbd>/
-          <kbd>S</kbd> for the left paddle and <kbd>&uarr;</kbd>/<kbd>&darr;</kbd> for the right.
-          Scroll down to see how each piece works.
+          This is a complete Pong game running on a 16&times;16 screen: no CPU, no software, just
+          digital circuits. Click <strong className="text-gray-900 dark:text-white">Run</strong> and
+          use <kbd>W</kbd>/<kbd>S</kbd> for the left paddle and <kbd>&uarr;</kbd>/<kbd>&darr;</kbd>{' '}
+          for the right. Scroll down to see how each piece works.
         </p>
       </div>
 
@@ -39,8 +38,8 @@ export function PongSection() {
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
           There is no software executing instructions here. The keyboard scan codes flow through
           comparators, the mux trees select deltas, the adders compute new positions, and the phase
-          counter orchestrates memory writes &mdash; all in parallel combinational logic, driven
-          forward by the clock.
+          counter orchestrates memory writes, all in parallel combinational logic, driven forward by
+          the clock.
         </p>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
           This is the same principle behind dedicated hardware accelerators: instead of a

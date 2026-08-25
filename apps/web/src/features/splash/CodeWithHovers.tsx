@@ -1,5 +1,5 @@
 /**
- * CodeWithHovers — sugar-high–tokenised code rendered as proper React
+ * CodeWithHovers: sugar-high–tokenised code rendered as proper React
  * JSX, with VS Code–style hover popups (Radix Tooltip) on a small
  * dictionary of known identifiers.
  *
@@ -11,12 +11,12 @@
  *   Radix Tooltip directly hands all of that lifecycle to Radix.
  *
  * Tokenisation: sugar-high exposes `tokenize(code)` which returns
- *   Array<[typeId, text]> — we map each token to a styled <span> and
+ *   Array<[typeId, text]>. We map each token to a styled <span> and
  *   wrap identifiers that match HOVER_DICT in a Radix Tooltip. The
  *   typeId → CSS-var-color map is hardcoded against sugar-high 1.1.0's
  *   TokenTypes ordering (identifier=0, keyword=1, string=2, class=3,
  *   property=4, entity=5, jsxliterals=6, sign=7, comment=8, break=9,
- *   space=10) — see node_modules/sugar-high/lib/index.js if it changes.
+ *   space=10); see node_modules/sugar-high/lib/index.js if it changes.
  *
  * Theme: same --sh-* CSS variables HighlightedCode uses (set on a
  *   wrapper class string) so light/dark themes pick up the right
@@ -29,7 +29,7 @@ import { tokenize } from 'sugar-high';
 import { cn } from '@/lib/utils';
 
 type HoverEntry = {
-  /** Mono-styled top line — a short signature or type form. */
+  /** Mono-styled top line: a short signature or type form. */
   signature?: string;
   /** Plain-text description below. One sentence. */
   description: string;
@@ -48,11 +48,11 @@ const HOVER_DICT: Record<string, HoverEntry> = {
   inputs: {
     signature: 'inputs?: Record<string, PortType>',
     description:
-      'Input ports — a map of port names to types (bit, bus(n)). Port names autocomplete in connect.',
+      'Input ports: a map of port names to types (bit, bus(n)). Port names autocomplete in connect.',
   },
   outputs: {
     signature: 'outputs?: Record<string, PortType>',
-    description: 'Output ports — same shape as inputs.',
+    description: 'Output ports, same shape as inputs.',
   },
   nodes: {
     signature: 'nodes?: Record<string, BuiltCircuit>',
@@ -113,7 +113,7 @@ const TYPE_TO_COLOR: Record<number, string | undefined> = {
   10: undefined,
 };
 
-// GitHub light/dark palette as Tailwind arbitrary CSS properties —
+// GitHub light/dark palette as Tailwind arbitrary CSS properties,
 // identical to HighlightedCode so themes match across both renderers.
 const SH_THEME_CLASSES = [
   '[--sh-keyword:#d73a49]',
@@ -156,7 +156,7 @@ export function CodeWithHovers({ code, className, enabled = true }: CodeWithHove
         <code>
           {tokens.map(([type, text], i) => {
             const color = TYPE_TO_COLOR[type];
-            // Hoverable purely on text match — the dictionary is the
+            // Hoverable purely on text match; the dictionary is the
             // source of truth, regardless of how sugar-high classified
             // the token (so capitalised gates like `Xor` / `And` which
             // come back as `class`, and methods like `to` which come
