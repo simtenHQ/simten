@@ -20,7 +20,7 @@ export function useSystolicSimulator() {
   }, [sim.circuit]);
 
   // Monitor the circuit's formal `done` output port (was previously a
-  // substring scan over portValues looking for a node named "done_led" —
+  // substring scan over portValues looking for a node named "done_led",
   // replaced with a declared top-level port).
   useEffect(() => {
     const done = sim.portValues?.get('__top__.done');

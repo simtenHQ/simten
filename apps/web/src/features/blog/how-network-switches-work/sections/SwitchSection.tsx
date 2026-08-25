@@ -22,8 +22,8 @@ export function SwitchSection() {
       </h2>
       <div className="prose-invert space-y-6">
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
-          Everything we&rsquo;ve built &mdash; frame detection, packet buffering, fair arbitration,
-          crossbar routing, and byte serialization &mdash; comes together in one circuit. The full{' '}
+          Everything we&rsquo;ve built (frame detection, packet buffering, fair arbitration,
+          crossbar routing, and byte serialization) comes together in one circuit. The full{' '}
           <strong className="text-gray-900 dark:text-white">MiniSwitch2Port</strong> has two
           complete data paths, each with its own parser, ingress controller, and egress controller,
           connected through a shared arbiter and forwarder.
@@ -52,15 +52,15 @@ export function SwitchSection() {
       <div className="mt-8 prose-invert space-y-6">
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
           This is a simplified but structurally accurate model of how real network switches work.
-          Production switches use wider buses, deeper buffers, and more sophisticated routing tables
-          &mdash; but the architecture is the same: parse, buffer, arbitrate, route, serialize.
+          Production switches use wider buses, deeper buffers, and more sophisticated routing
+          tables, but the architecture is the same: parse, buffer, arbitrate, route, serialize.
         </p>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
           The key insight is that a switch is not a computer running networking software. It&rsquo;s
           a <em>circuit</em> that performs packet forwarding in hardware. Every stage runs
           concurrently: while one packet is being serialized out of port 0, another can be parsed
           and buffered on port 1. This pipeline parallelism is why hardware switches can forward
-          millions of packets per second &mdash; far faster than any software router.
+          millions of packets per second, far faster than any software router.
         </p>
       </div>
     </section>

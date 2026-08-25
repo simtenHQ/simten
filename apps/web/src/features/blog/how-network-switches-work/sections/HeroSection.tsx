@@ -7,8 +7,8 @@ export function HeroSection() {
         </h1>
         <p className="mt-6 text-xl text-gray-500 dark:text-gray-300 leading-relaxed">
           Every time you open a web page, packets race through network switches that parse Ethernet
-          frames, buffer data, arbitrate between ports, and route bytes to their destination &mdash;
-          all in hardware, billions of times per second. Here we build one from scratch.
+          frames, buffer data, arbitrate between ports, and route bytes to their destination, all in
+          hardware, billions of times per second. Here we build one from scratch.
         </p>
         <div className="mt-8 flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
           <span>Interactive tutorial</span>

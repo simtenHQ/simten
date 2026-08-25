@@ -34,20 +34,20 @@ export function NetworkSection() {
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
           Each pair notation <em>(i, j)</em> means &ldquo;compare elements at positions <em>i</em>{' '}
           and <em>j</em>; put the smaller at <em>i</em>.&rdquo; Pairs in the same stage have no data
-          dependencies so they run simultaneously &mdash; the hardware evaluates all of Stage
-          1&rsquo;s comparators at once, then all of Stage 2&rsquo;s, then Stage 3.
+          dependencies so they run simultaneously: the hardware evaluates all of Stage 1&rsquo;s
+          comparators at once, then all of Stage 2&rsquo;s, then Stage 3.
         </p>
 
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
           The intuition behind why it works: Stage 1 sorts each pair independently (the two
-          &ldquo;halves&rdquo;). Stage 2 merges the minimums together and the maximums together
-          &mdash; after it, positions 0 and 3 already hold the global minimum and maximum. Stage 3
-          fixes the only remaining disorder: positions 1 and 2.
+          &ldquo;halves&rdquo;). Stage 2 merges the minimums together and the maximums together, and
+          after it positions 0 and 3 already hold the global minimum and maximum. Stage 3 fixes the
+          only remaining disorder: positions 1 and 2.
         </p>
 
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
-          Change any of the four input values below. The outputs update instantly &mdash; this
-          circuit has no clock, no loop, and no conditional logic anywhere.
+          Change any of the four input values below. The outputs update instantly, and this circuit
+          has no clock, no loop, and no conditional logic anywhere.
         </p>
       </div>
 

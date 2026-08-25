@@ -14,7 +14,7 @@ export function useBreakoutSimulator() {
   const [pixels, setPixels] = useState<number[]>(new Array(PIXELS).fill(0));
 
   // Refresh the screen after every tick: sweep scan_addr 0..511 and read
-  // pixel_out combinationally (one sandbox round-trip, clock not advanced) —
+  // pixel_out combinationally (one sandbox round-trip, clock not advanced),
   // the same read path snake uses.
   useEffect(() => {
     if (!sim.ready) return;
@@ -29,7 +29,7 @@ export function useBreakoutSimulator() {
 
   // Hold the game-clock enable high: in the browser the game advances one step
   // per tick (we throttle the tick rate). On the FPGA this input is pulsed at
-  // ~30 Hz instead, while the clock — and the wall-fill FSM — run at full speed.
+  // ~30 Hz instead, while the clock and the wall-fill FSM run at full speed.
   useEffect(() => {
     if (sim.ready) sim.setNode('game_en', 1);
   }, [sim.ready, sim.setNode]);
@@ -62,7 +62,7 @@ export function useBreakoutSimulator() {
   // refresh is driven by the cycleCount effect above. If a game step lands the
   // circuit in a wall redraw (the fill FSM, high on `is_filling`, after a death
   // or at power-on), burst through its ~128 clocks in one shot so the wall snaps
-  // back full instantly — as it does on the FPGA at MHz. A recursive timeout
+  // back full instantly, as it does on the FPGA at MHz. A recursive timeout
   // (not setInterval) keeps the async tick/scan/burst from overlapping.
   useEffect(() => {
     if (!isRunning || !sim.ready) return;

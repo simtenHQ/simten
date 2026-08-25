@@ -7,8 +7,8 @@ export function HeroSection() {
         </h1>
         <p className="mt-6 text-xl text-gray-500 dark:text-gray-300 leading-relaxed">
           A 5-stage pipelined processor, simulated in your browser. Write C, compile it with GCC,
-          and watch every instruction flow through fetch, decode, execute, memory, and writeback
-          &mdash; one clock cycle at a time.
+          and watch every instruction flow through fetch, decode, execute, memory, and writeback,
+          one clock cycle at a time.
         </p>
         <div className="mt-8 flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
           <span>Interactive tutorial</span>

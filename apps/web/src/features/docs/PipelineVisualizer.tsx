@@ -103,7 +103,7 @@ export function PipelineVisualizer() {
         const circuitMap = new Map(allCircuits.map((c) => [c.name, c]));
         const resolveCircuit = (name: string) => circuitMap.get(name);
 
-        // Build primitive name list from stdlib (safe — no new Function())
+        // Build primitive name list from stdlib (safe: no new Function())
         const prims = STDLIB_CIRCUITS.map((c) => c.circuit) as Circuit[];
         const primNames = prims.map((p) => p.name);
 
@@ -180,8 +180,8 @@ export function PipelineVisualizer() {
             <p className="text-sm text-gray-400 mb-3">
               The TypeScript source defines two components.{' '}
               <code className="text-blue-400">HalfAdder</code> is a composite used inside{' '}
-              <code className="text-blue-400">FullAdder</code>. This is just text — no compilation
-              has happened yet.
+              <code className="text-blue-400">FullAdder</code>. This is just text, with no
+              compilation has happened yet.
             </p>
             <pre className="text-xs font-mono text-gray-300 bg-gray-950 rounded-lg p-4 overflow-x-auto leading-relaxed max-h-80 overflow-y-auto">
               {FULL_ADDER_SOURCE}
@@ -193,8 +193,8 @@ export function PipelineVisualizer() {
           <div>
             <p className="text-sm text-gray-400 mb-3">
               The <code className="text-blue-400">executeCircuitCode()</code> call produces{' '}
-              <code className="text-blue-400">Circuit</code> objects. The FullAdder has 3 nodes —
-              two HalfAdders and one Or gate. The HalfAdders are still composites at this stage.
+              <code className="text-blue-400">Circuit</code> objects. The FullAdder has 3 nodes, two
+              HalfAdders and one Or gate. The HalfAdders are still composites at this stage.
             </p>
             <div className="space-y-3">
               <div className="text-xs text-gray-500 font-mono">
@@ -415,8 +415,8 @@ export function PipelineVisualizer() {
         {activeTab === 'live' && (
           <div>
             <p className="text-sm text-gray-400 mb-3">
-              The simulator runs the numeric circuit. Toggle the switches to change inputs — values
-              propagate through the event queue until the circuit stabilizes.
+              The simulator runs the numeric circuit. Toggle the switches to change inputs, and
+              values propagate through the event queue until the circuit stabilizes.
             </p>
             <CircuitEmbed
               circuit={buildFromIR(compiled.fullAdder, compiled.circuits)}

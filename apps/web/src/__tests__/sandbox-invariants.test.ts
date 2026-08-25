@@ -5,7 +5,7 @@
  * All arbitrary JS execution must go through the sandbox (iframe + Web Worker).
  *
  * new Function() is the underlying primitive used by executeCircuitCode and
- * executeJsCode — banning it here covers both and any future variants.
+ * executeJsCode; banning it here covers both and any future variants.
  */
 
 import { readdirSync, readFileSync, statSync } from 'fs';
@@ -14,7 +14,7 @@ import { join } from 'path';
 const APP_SRC = join(__dirname, '..');
 const EMBED_SRC = join(__dirname, '../../../../packages/embed/src');
 // packages/ui is where useSandbox itself lives, so it is the package most
-// likely to grow a violation — and it was not being scanned.
+// likely to grow a violation, and it was not being scanned.
 const UI_SRC = join(__dirname, '../../../../packages/ui/src');
 
 function collectSourceFiles(dir: string): string[] {
@@ -40,7 +40,7 @@ function collectSourceFiles(dir: string): string[] {
   return files;
 }
 
-// Patterns that execute arbitrary JS — all must go through the sandbox
+// Patterns that execute arbitrary JS; all must go through the sandbox
 const BANNED: Array<{ pattern: RegExp; reason: string }> = [
   {
     pattern: /new Function\(/,
@@ -48,7 +48,7 @@ const BANNED: Array<{ pattern: RegExp; reason: string }> = [
   },
   {
     pattern: /import[^'"]*\b(executeCircuitCode|executeJsCode)\b/,
-    reason: 'executeCircuitCode/executeJsCode call new Function() — use sandbox.compile() instead',
+    reason: 'executeCircuitCode/executeJsCode call new Function(); use sandbox.compile() instead',
   },
 ];
 

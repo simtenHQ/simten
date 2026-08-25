@@ -36,14 +36,14 @@ export function BreakoutSection() {
         </p>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
           Press <strong className="text-gray-900 dark:text-white">Run</strong> and use the arrow
-          keys to move the paddle. The ball moves every 4th clock &mdash; a hardware clock divider
+          keys to move the paddle. The ball moves every 4th clock, using a hardware clock divider
           that gives you time to react. When the ball hits a brick, it disappears and the ball
           bounces back. Lose the ball and the wall redraws itself, then a fresh ball launches.
         </p>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
           Everything you see is running on the same simulator that powers all the circuits in this
-          blog. No CPU, no software &mdash; just gates, registers, and one DualPortRAM for the wall.
-          And it&rsquo;s all synthesizable: the exact same circuit exports to Verilog and runs on an
+          blog. No CPU, no software, just gates, registers, and one DualPortRAM for the wall. And
+          it&rsquo;s all synthesizable: the exact same circuit exports to Verilog and runs on an
           FPGA.
         </p>
       </div>
@@ -61,8 +61,8 @@ export function BreakoutSection() {
           The circuit uses the same fundamental building blocks as everything else on this site:
           registers for state, comparators for collision detection, muxes for selecting between
           values, and adders for position arithmetic. The raster scan is just a counter and a bank
-          of comparators &mdash; the same on-the-fly pixel generation a VGA controller uses, scaled
-          to a 32&times;16 screen.
+          of comparators, the same on-the-fly pixel generation a VGA controller uses, scaled to a
+          32&times;16 screen.
         </p>
       </div>
     </section>

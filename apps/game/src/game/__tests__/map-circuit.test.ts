@@ -3,7 +3,7 @@
  *
  * These assert the circuit *computes* unlock state rather than that some code
  * beside it does. If `simulateMap` were quietly replaced by a loop over
- * `MAP_ROWS`, every one of these would still pass — which is fine, because what
+ * `MAP_ROWS`, every one of these would still pass, which is fine, because what
  * they actually pin down is the behaviour the page depends on: solving a level
  * lights the next one, and nothing further along lights early.
  */

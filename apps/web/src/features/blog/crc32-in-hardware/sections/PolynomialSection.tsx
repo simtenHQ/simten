@@ -14,8 +14,8 @@ export function PolynomialSection() {
           <code className="text-sm bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded font-mono">
             0xEDB88320
           </code>{' '}
-          in reflected (bit-reversed) form. Both represent the same mathematical object &mdash; a
-          degree-32 polynomial over GF(2):
+          in reflected (bit-reversed) form. Both represent the same mathematical object, a degree-32
+          polynomial over GF(2):
         </p>
 
         <div className="rounded-lg bg-gray-100 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 p-4 font-mono text-sm overflow-x-auto">
@@ -87,9 +87,9 @@ export function PolynomialSection() {
 
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
           In a real NIC running at 25 Gbps, the CRC-32 engine is unrolled to process multiple bits
-          per clock cycle &mdash; but the mathematics is identical. The hardware is fixed at
-          tape-out; there are no microcode decisions, no branch predictions, no cache misses. Just
-          wires and XOR gates, computing the polynomial remainder at the speed of light.
+          per clock cycle, but the mathematics is identical. The hardware is fixed at tape-out;
+          there are no microcode decisions, no branch predictions, no cache misses. Just wires and
+          XOR gates, computing the polynomial remainder at the speed of light.
         </p>
 
         <div className="rounded-lg border border-amber-800/40 bg-amber-950/20 p-4">

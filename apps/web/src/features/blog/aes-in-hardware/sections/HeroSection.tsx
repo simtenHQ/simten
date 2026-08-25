@@ -20,8 +20,8 @@ export function HeroSection() {
 
       <p className="text-lg text-gray-500 dark:text-gray-300 leading-relaxed mb-4">
         AES-GCM encrypts roughly 80% of HTTPS traffic today. It&rsquo;s so ubiquitous that Intel,
-        AMD, and ARM all built dedicated silicon to accelerate it — <strong>AES-NI</strong>, a set
-        of CPU instructions that do one full round in a single clock cycle.
+        AMD, and ARM all built dedicated silicon to accelerate it: <strong>AES-NI</strong>, a set of
+        CPU instructions that do one full round in a single clock cycle.
       </p>
       <p className="text-gray-500 dark:text-gray-400 leading-relaxed mb-4">
         Why does AES need hardware help when something like{' '}
@@ -37,9 +37,9 @@ export function HeroSection() {
         attacks.
       </p>
       <p className="text-gray-500 dark:text-gray-400 leading-relaxed">
-        In this post, you&rsquo;ll build the three hardware operations that make up one AES round —
-        SubBytes, XTime (the GF(2<sup>8</sup>) multiply at the heart of MixColumns), and the full
-        MixColumns step — and verify each against the FIPS 197 test vectors.
+        In this post, you&rsquo;ll build the three hardware operations that make up one AES round
+        (SubBytes, XTime, the GF(2<sup>8</sup>) multiply at the heart of MixColumns, and the full
+        MixColumns step), and verify each against the FIPS 197 test vectors.
       </p>
     </section>
   );

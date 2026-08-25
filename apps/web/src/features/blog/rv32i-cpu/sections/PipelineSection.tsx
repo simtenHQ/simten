@@ -18,14 +18,14 @@ const STAGES = [
     description:
       'The 32-bit instruction is split apart: opcode, source registers, destination register, immediate value, and function codes. The register file reads out the source values.',
     detail:
-      'This is where the CPU figures out what operation to perform. A RISC-V instruction packs all of this into a fixed 32-bit format — the decode logic is just wire slicing.',
+      'This is where the CPU figures out what operation to perform. A RISC-V instruction packs all of this into a fixed 32-bit format, so the decode logic is just wire slicing.',
   },
   {
     name: 'Execute',
     color: 'cyan',
     abbr: 'EX',
     description:
-      'The ALU performs the operation — add, subtract, shift, compare, or compute a branch target address. This is where the actual computation happens.',
+      'The ALU performs the operation: add, subtract, shift, compare, or compute a branch target address. This is where the actual computation happens.',
     detail:
       "The forwarding unit also lives here. If the previous instruction's result hasn't been written back yet, the forwarding mux grabs it directly instead of reading a stale value from the register file.",
   },
@@ -43,7 +43,7 @@ const STAGES = [
     color: 'green',
     abbr: 'WB',
     description:
-      'The result — whether from the ALU or a memory load — is written back to the destination register in the register file. The instruction is now complete.',
+      'The result, whether from the ALU or a memory load, is written back to the destination register in the register file. The instruction is now complete.',
     detail:
       'Five stages means five instructions are in flight simultaneously. While one instruction writes back, the next is accessing memory, the next is computing, the next is decoding, and the next is being fetched.',
   },
@@ -73,10 +73,9 @@ export function PipelineSection() {
       </h2>
       <div className="prose-invert space-y-6">
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
-          A single-cycle CPU executes one instruction per clock cycle &mdash; fetch, decode,
-          execute, memory, writeback, all at once. Simple, but slow. The clock can only tick as fast
-          as the <strong className="text-gray-900 dark:text-white">slowest instruction</strong>{' '}
-          allows.
+          A single-cycle CPU executes one instruction per clock cycle: fetch, decode, execute,
+          memory, writeback, all at once. Simple, but slow. The clock can only tick as fast as the{' '}
+          <strong className="text-gray-900 dark:text-white">slowest instruction</strong> allows.
         </p>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
           A pipelined CPU splits execution into{' '}
@@ -124,7 +123,7 @@ export function PipelineSection() {
         </h3>
         <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
           The simplest piece of the pipeline: a register that counts up by 4 each cycle. Toggle the
-          stall switch to freeze it &mdash; that&rsquo;s what happens when a hazard is detected.
+          stall switch to freeze it, which is what happens when a hazard is detected.
         </p>
         <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
           In the full CPU, the PC doesn&rsquo;t always increment by 4. A mux selects between three
@@ -169,7 +168,7 @@ export function PipelineSection() {
         <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
           Between every stage sits a pipeline register. It latches the output of one stage on the
           clock edge, holding it stable for the next stage to read. The flush input zeros the
-          register &mdash; used when a branch is taken and the partially-fetched instruction must be
+          register, used when a branch is taken and the partially-fetched instruction must be
           discarded.
         </p>
         <CircuitEmbed

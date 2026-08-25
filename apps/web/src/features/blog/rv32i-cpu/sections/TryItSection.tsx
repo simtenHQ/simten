@@ -4,8 +4,8 @@ export function TryItSection() {
       <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">Things to Try</h2>
       <div className="prose-invert space-y-6">
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
-          The debugger above isn&rsquo;t a recording &mdash; it&rsquo;s a live simulation. Here are
-          some experiments that reveal how the pipeline actually works:
+          The debugger above isn&rsquo;t a recording. It&rsquo;s a live simulation. Here are some
+          experiments that reveal how the pipeline actually works:
         </p>
       </div>
 
@@ -16,8 +16,8 @@ export function TryItSection() {
           </h3>
           <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">
             Write two instructions where the second uses the result of the first. Step through and
-            watch the forwarding mux kick in &mdash; the EX or MEM result gets bypassed directly
-            instead of waiting for writeback.
+            watch the forwarding mux kick in: the EX or MEM result gets bypassed directly instead of
+            waiting for writeback.
           </p>
           <pre className="mt-3 rounded-lg bg-gray-100 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-3 font-mono text-xs text-gray-500 dark:text-gray-300">
             {`int x = 5;
@@ -34,8 +34,8 @@ int y = x + 3; // needs x immediately`}
             <code className="text-gray-900 dark:text-white bg-gray-200 dark:bg-gray-800 px-1 py-0.5 rounded text-xs">
               if
             </code>{' '}
-            statement. When the branch is taken, watch the pipeline badges &mdash; instructions that
-            were already fetched get flushed and replaced with NOPs.
+            statement. When the branch is taken, watch the pipeline badges: instructions that were
+            already fetched get flushed and replaced with NOPs.
           </p>
           <pre className="mt-3 rounded-lg bg-gray-100 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-3 font-mono text-xs text-gray-500 dark:text-gray-300">
             {`int x = 10;
@@ -64,9 +64,9 @@ int result = (3 + 4) * 2;`}
             4. Try a different language
           </h3>
           <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">
-            Switch to Rust and compile the same Fibonacci. The disassembly will look different
-            &mdash; different compilers make different choices &mdash; but the pipeline
-            doesn&rsquo;t care. Same stages, same forwarding, same hazards.
+            Switch to Rust and compile the same Fibonacci. The disassembly will look different,
+            because different compilers make different choices, but the pipeline doesn&rsquo;t care.
+            Same stages, same forwarding, same hazards.
           </p>
         </div>
       </div>

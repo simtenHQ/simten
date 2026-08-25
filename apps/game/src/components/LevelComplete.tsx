@@ -1,8 +1,8 @@
 /**
  * The moment a level is finished.
  *
- * Deliberately arrives *after* the victory run, not instead of it. The run —
- * switches flipping, lamp following the truth table — is the proof; this is the
+ * Deliberately arrives *after* the victory run, not instead of it. The run
+ * (switches flipping, lamp following the truth table) is the proof; this is the
  * receipt. Opening a dialog over a circuit still demonstrating itself would
  * step on the better of the two.
  *
@@ -38,7 +38,7 @@ export function LevelComplete({ open, onOpenChange, level, next }: LevelComplete
    * joins.
    *
    * Both derived, so the card can only ever name something the grader accepts
-   * and the editor offers — a hardcoded "unlocked!" would be a promise the game
+   * and the editor offers; a hardcoded "unlocked!" would be a promise the game
    * does not keep.
    */
   const unlocked = gatesGainedAfter(level, next);
@@ -61,19 +61,19 @@ export function LevelComplete({ open, onOpenChange, level, next }: LevelComplete
 
         {/* The body doubles as the dialog's accessible description. Radix warns
             when a DialogContent has none, and this is the text that describes
-            it — a separate sr-only line would say the same thing twice. */}
+            it, since a separate sr-only line would say the same thing twice. */}
         <DialogDescription className="mt-4 text-sm leading-relaxed text-muted-foreground">
           {level.outro.body}
         </DialogDescription>
 
         {/* What you leave with, as things rather than a sentence about things.
             The row grows by one on each of the first seven levels, so the
-            reward is watching the set fill up — which a line of prose saying
+            reward is watching the set fill up, which a line of prose saying
             "Xor unlocked" cannot do.
 
             Only when a gate actually changed hands. Levels that add none used
             to show `level.target` here to keep every card the same shape, which
-            meant printing "You built Toggle1" — a variable name, and no answer
+            meant printing "You built Toggle1", a variable name, and no answer
             to a question anyone was asking. A missing block is better than a
             block with nothing in it. */}
         {gained && (
@@ -98,8 +98,8 @@ export function LevelComplete({ open, onOpenChange, level, next }: LevelComplete
           </div>
         )}
 
-        {/* One action. Going back to the circuit to beat par is still there —
-            the dialog closes on its X, on Escape and on a click outside — but
+        {/* One action. Going back to the circuit to beat par is still there,
+            the dialog closes on its X, on Escape and on a click outside, but
             it does not need a button competing with the only thing most people
             want at this point, which is the next level. */}
         <DialogFooter className="mt-6 gap-2">
@@ -114,8 +114,8 @@ export function LevelComplete({ open, onOpenChange, level, next }: LevelComplete
           ) : (
             /* End of the campaign, and the highest-intent moment the game
                gets. Sending them back to a map of levels they have already
-               solved wastes it. `/circuit` opens on the example catalog —
-               Snake, a RISC-V computer, npm output baked into a ROM — so the
+               solved wastes it. `/circuit` opens on the example catalog:
+               Snake, a RISC-V computer, npm output baked into a ROM, so the
                next thing they see is the range, and they pick. */
             <a
               href="https://simten.dev/circuit"

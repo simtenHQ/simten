@@ -25,8 +25,8 @@ export function PESection() {
           <li>
             A <strong className="text-gray-900 dark:text-white">registered adder</strong> that
             computes <code className="text-blue-300">partialSumIn + product</code> and latches the
-            result into a register &mdash; <code className="text-blue-300">partialSumOut</code>{' '}
-            appears one clock cycle later.
+            result into a register, so <code className="text-blue-300">partialSumOut</code> appears
+            one clock cycle later.
           </li>
           <li>
             A <strong className="text-gray-900 dark:text-white">data pipeline register</strong> that
@@ -36,17 +36,17 @@ export function PESection() {
         </ol>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
           Both <code className="text-blue-300">partialSumOut</code> and{' '}
-          <code className="text-blue-300">dataOut</code> are <em>registered</em> &mdash; each takes
-          one clock cycle. Data moves right one PE per cycle, and partial sums move down one PE per
+          <code className="text-blue-300">dataOut</code> are <em>registered</em>, and each takes one
+          clock cycle. Data moves right one PE per cycle, and partial sums move down one PE per
           cycle. This symmetry is what makes the systolic array&rsquo;s timing work: both directions
           have the same latency per hop.
         </p>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
           Load a weight: toggle <code className="text-blue-300">weightValid</code> on and tick once.
           Then turn valid off and tick again. Watch{' '}
-          <code className="text-blue-300">partialSumOut</code> update after the tick &mdash;
-          it&rsquo;s registered, not instant. The <code className="text-blue-300">dataOut</code>{' '}
-          display shows the data value delayed by one cycle, ready to feed the next PE.
+          <code className="text-blue-300">partialSumOut</code> update after the tick: it&rsquo;s
+          registered, not instant. The <code className="text-blue-300">dataOut</code> display shows
+          the data value delayed by one cycle, ready to feed the next PE.
         </p>
       </div>
 

@@ -28,7 +28,7 @@ export const posts: BlogPost[] = [
     slug: 'synth-in-hardware',
     title: 'A Synthesiser Made of Logic Gates',
     description:
-      'A 16-bit counter, a table of numbers and one multiplier. Every sample is computed by a circuit you can open up — and the same netlist runs on an FPGA.',
+      'A 16-bit counter, a table of numbers and one multiplier. Every sample is computed by a circuit you can open up, and the same netlist runs on an FPGA.',
     category: 'interactive',
     nodes: '16 nodes',
   },
@@ -36,7 +36,7 @@ export const posts: BlogPost[] = [
     slug: 'pong-in-hardware',
     title: 'Pong in Hardware',
     description:
-      'A complete Pong game built from logic gates, registers, and memory — two paddles, a bouncing ball, and a 14-phase rendering pipeline, all without a CPU.',
+      'A complete Pong game built from logic gates, registers, and memory. Two paddles, a bouncing ball, and a 14-phase rendering pipeline, all without a CPU.',
     category: 'game',
     nodes: '~80 nodes',
   },
@@ -44,7 +44,7 @@ export const posts: BlogPost[] = [
     slug: 'snake-in-hardware',
     title: 'Snake in Hardware',
     description:
-      'A complete Snake game built entirely from logic gates, registers, and memory — no CPU, no software, just digital circuits.',
+      'A complete Snake game built entirely from logic gates, registers, and memory. No CPU, no software, just digital circuits.',
     category: 'game',
     nodes: '~100 nodes',
   },
@@ -52,7 +52,7 @@ export const posts: BlogPost[] = [
     slug: 'building-a-cpu',
     title: 'Building a CPU from Scratch',
     description:
-      'From NAND gates to a working processor — fetch, decode, execute, all built from logic gates you can click.',
+      'From NAND gates to a working processor: fetch, decode, execute, all built from logic gates you can click.',
     category: 'cpu',
     nodes: '~300 nodes',
   },
@@ -68,7 +68,7 @@ export const posts: BlogPost[] = [
     slug: 'computing-trig-in-hardware',
     title: 'Computing Trig in Hardware',
     description:
-      'How calculators and GPUs compute sine and cosine using only bit shifts and addition — the CORDIC algorithm, built from logic gates.',
+      'How calculators and GPUs compute sine and cosine using only bit shifts and addition. The CORDIC algorithm, built from logic gates.',
     category: 'accelerator',
     nodes: '~40 nodes',
   },
@@ -76,7 +76,7 @@ export const posts: BlogPost[] = [
     slug: 'sorting-networks',
     title: 'Sorting Networks',
     description:
-      'A fixed wiring of comparators that sorts any input in the same number of steps — no branches, no loops. The algorithm behind network switch fabrics, GPU sort, and median filters.',
+      'A fixed wiring of comparators that sorts any input in the same number of steps, with no branches and no loops. The algorithm behind network switch fabrics, GPU sort, and median filters.',
     category: 'accelerator',
     nodes: '~25 nodes',
   },
@@ -84,7 +84,7 @@ export const posts: BlogPost[] = [
     slug: 'how-network-switches-work',
     title: 'How Network Switches Work',
     description:
-      'Packet buffering, MAC address lookup, and forwarding — built from the same primitives as everything else.',
+      'Packet buffering, MAC address lookup, and forwarding, all built from the same primitives as everything else.',
     category: 'networking',
     nodes: '~50 nodes',
   },
@@ -92,7 +92,7 @@ export const posts: BlogPost[] = [
     slug: 'breakout-in-hardware',
     title: 'Breakout in Hardware',
     description:
-      'A classic brick-breaking game built entirely from logic gates — ball physics, paddle control, brick collision detection, and score tracking, all without a CPU.',
+      'A classic brick-breaking game built entirely from logic gates: ball physics, paddle control, brick collision detection, and score tracking, all without a CPU.',
     category: 'game',
     nodes: '~90 nodes',
   },
@@ -100,7 +100,7 @@ export const posts: BlogPost[] = [
     slug: 'aes-in-hardware',
     title: 'AES in Hardware',
     description:
-      "Why Intel built AES into the CPU. SubBytes, XTime, and MixColumns — the operations behind the world's most deployed cipher, verified against FIPS 197.",
+      "Why Intel built AES into the CPU. SubBytes, XTime, and MixColumns are the operations behind the world's most deployed cipher, verified against FIPS 197.",
     category: 'accelerator',
     nodes: '~60 nodes',
   },
@@ -116,7 +116,7 @@ export const posts: BlogPost[] = [
     slug: 'crc32-in-hardware',
     title: 'CRC-32 in Hardware',
     description:
-      'The checksum at the end of every Ethernet frame and ZIP file — a 32-bit shift register with XOR feedback, running in the NIC on your machine right now.',
+      'The checksum at the end of every Ethernet frame and ZIP file: a 32-bit shift register with XOR feedback, running in the NIC on your machine right now.',
     category: 'networking',
     nodes: '~15 nodes',
   },
@@ -124,7 +124,7 @@ export const posts: BlogPost[] = [
     slug: 'rv32i-cpu',
     title: 'A RISC-V CPU That Runs C',
     description:
-      'A 5-stage pipelined RISC-V processor with data forwarding and hazard detection — write C, compile it, and step through execution cycle by cycle.',
+      'A 5-stage pipelined RISC-V processor with data forwarding and hazard detection. Write C, compile it, and step through execution cycle by cycle.',
     category: 'cpu',
     nodes: '~200 nodes',
   },

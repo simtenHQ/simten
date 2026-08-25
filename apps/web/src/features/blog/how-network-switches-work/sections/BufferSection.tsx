@@ -19,7 +19,7 @@ export function BufferSection() {
         </p>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
           Port A handles writes (the ingress side), while port B lets us read back any stored byte
-          by address &mdash; this is how the forwarder will later fetch packet data for routing.
+          by address, which is how the forwarder will later fetch packet data for routing.
         </p>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
           Set <strong>dataIn</strong> to any value, toggle <strong>writeCmd</strong>, and tick. The

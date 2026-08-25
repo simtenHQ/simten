@@ -1,7 +1,7 @@
 /**
  * The editor, the canvas and the grader must permit exactly the same set.
  *
- * They used to compose `allowed ∪ STRUCTURAL` separately — the editor built its
+ * They used to compose `allowed ∪ STRUCTURAL` separately; the editor built its
  * ambient globals from one copy, the grader checked the netlist against another.
  * Two copies of a rule is how you get a level that autocompletes a gate and then
  * rejects it on Submit. `permittedFor` is now the only definition; this pins it.
@@ -29,7 +29,7 @@ describe('permittedFor', () => {
   /**
    * The property that matters: anything the editor puts in scope must survive
    * the grader. If these drift, a player writes something the editor offered
-   * and Submit refuses it — with no way to tell which is right.
+   * and Submit refuses it, with no way to tell which is right.
    */
   it('accepts every primitive the editor puts in scope', () => {
     for (const level of LEVELS) {

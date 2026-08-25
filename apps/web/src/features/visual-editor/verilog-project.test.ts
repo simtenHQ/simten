@@ -1,7 +1,7 @@
 /**
  * The import sheet reads a Verilog project with regexes rather than a second
  * yosys round trip, so these are the cases that decide whether it asks the user
- * the right question — or the wrong one.
+ * the right question, or the wrong one.
  */
 
 import { describe, expect, it } from 'vitest';

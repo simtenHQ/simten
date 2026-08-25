@@ -41,7 +41,7 @@ const SYSTOLIC_LAYOUT: Record<string, { x: number; y: number }> = {
   display_c20: { x: 780, y: 300 },
   display_c21: { x: 910, y: 300 },
   display_c22: { x: 1040, y: 300 },
-  // Done LED (bottom) — start switch is hidden, controlled by UI button
+  // Done LED (bottom); start switch is hidden, controlled by UI button
   done_led: { x: 780, y: 560 },
 };
 

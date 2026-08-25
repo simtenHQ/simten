@@ -5,12 +5,12 @@
  * storage layer can be swapped for D1 later without every caller learning
  * about it. Three things every caller would otherwise get wrong:
  *
- *   SSR      — this app server-renders, so `window` is not always there.
+ *   SSR      : this app server-renders, so `window` is not always there.
  *              Reads return the fallback rather than throwing.
- *   parsing  — stored JSON is user-editable and survives deploys, so a parse
+ *   parsing  : stored JSON is user-editable and survives deploys, so a parse
  *              failure is expected input, not an exception. Bad data reads as
  *              absent.
- *   version  — every record carries one, so a future format change can be
+ *   version  : every record carries one, so a future format change can be
  *              detected instead of silently misread as the current shape.
  *
  * Keys are namespaced `simten:game:*` because this origin is shared with the
@@ -67,7 +67,7 @@ export const INTRO_SEEN_KEY = 'simten:game:intro-seen';
  *
  * Separate from `INTRO_SEEN_KEY`, which is the whole game's front door. This is
  * per level and per concept: a band that introduces something the player has
- * never met — a clock, say — says so once and then stops.
+ * never met (a clock, say) says so once and then stops.
  */
 export const LEVEL_INTROS_KEY = 'simten:game:level-intros-seen';
 
@@ -88,12 +88,12 @@ export type Progress = Record<string, LevelProgress>;
 /**
  * Two records, not one, because they are different kinds of data.
  *
- * A draft is whatever is in the editor — mid-thought, broken, or finished. It
+ * A draft is whatever is in the editor: mid-thought, broken, or finished. It
  * exists so a refresh does not cost you your work. Progress is a flag and a
  * score: it is what the map's green nodes, the lit wires, `ENFORCE_LOCKING`
  * and the completion card read, and none of them need a line of source.
  *
- * Progress deliberately holds no source yet. Nothing would read it — no level
+ * Progress deliberately holds no source yet. Nothing would read it; no level
  * imports another level's circuit today, since the full adder's half adder
  * lives in its own stub. When composition lands, `LevelProgress` gains the
  * source that last *passed*, and downstream levels read that rather than the
@@ -138,7 +138,7 @@ export function readProgress(): Progress {
 }
 
 /**
- * Record a pass. The latest one wins rather than the cheapest — the score
+ * Record a pass. The latest one wins rather than the cheapest; the score
  * describes the circuit you have, and a player who refactors to something
  * slower should see that rather than a number they can no longer reproduce.
  */

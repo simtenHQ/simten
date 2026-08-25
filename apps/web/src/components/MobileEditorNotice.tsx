@@ -21,7 +21,7 @@ export function MobileEditorNotice() {
           </div>
           <h1 className="mb-2 text-xl font-semibold tracking-tight">The editor needs a desktop</h1>
           <p className="mb-6 text-sm text-muted-foreground leading-relaxed">
-            Building circuits relies on hover, drag, and a wide canvas — it isn&apos;t comfortable
+            Building circuits relies on hover, drag, and a wide canvas, so it isn&apos;t comfortable
             on a small touchscreen yet. Please open this page on a laptop or desktop browser.
           </p>
           <div className="flex flex-col gap-2">

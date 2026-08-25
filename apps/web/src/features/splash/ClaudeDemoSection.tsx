@@ -26,7 +26,7 @@ import { CodeWithHovers } from './CodeWithHovers';
 import { FIGLET_DEMO_CODE, FigletDemo } from './Hero';
 
 // ============================================================================
-// Demo circuits (self-contained — the gallery has its own copies of shared ones)
+// Demo circuits (self-contained: the gallery has its own copies of shared ones)
 // ============================================================================
 
 const HalfAdder = circuit('HalfAdder', {
@@ -136,7 +136,7 @@ const DEMO_SCRIPT: TermLine[] = [
   {
     type: 'text',
     content:
-      'Your half adder is live. Toggle the switches to try all four input combinations — sum is XOR(a,b), carry is AND(a,b).',
+      'Your half adder is live. Toggle the switches to try all four input combinations: sum is XOR(a,b), carry is AND(a,b).',
     delay: 300,
     typewriter: true,
     typeSpeed: 12,
@@ -192,7 +192,7 @@ const FullAdder = circuit('FullAdder', {
       {
         type: 'text',
         content:
-          'A full adder adds three bits — a, b, and carry-in — producing sum and carry-outputs. Chain four of these and you have the ALU inside a CPU.',
+          'A full adder adds three bits (a, b, and carry-in), producing sum and carry-outputs. Chain four of these and you have the ALU inside a CPU.',
         delay: 300,
         typewriter: true,
         typeSpeed: 12,
@@ -224,7 +224,7 @@ const FullAdder = circuit('FullAdder', {
       {
         type: 'text',
         content:
-          'Your full adder is live. Toggle switches to try all eight input combinations — carry-out lights when two or more inputs are high.',
+          'Your full adder is live. Toggle switches to try all eight input combinations: carry-out lights when two or more inputs are high.',
         delay: 300,
         typewriter: true,
         typeSpeed: 12,
@@ -265,7 +265,7 @@ const Counter2Bit = circuit('Counter2Bit', {
       {
         type: 'text',
         content:
-          'A synchronous 2-bit counter — two D flip-flops with toggle logic. Bit 0 flips every cycle, bit 1 flips when bit 0 is high. Counts 0, 1, 2, 3, repeat.',
+          'A synchronous 2-bit counter: two D flip-flops with toggle logic. Bit 0 flips every cycle, bit 1 flips when bit 0 is high. Counts 0, 1, 2, 3, repeat.',
         delay: 300,
         typewriter: true,
         typeSpeed: 12,
@@ -293,7 +293,7 @@ const Counter2Bit = circuit('Counter2Bit', {
       {
         type: 'text',
         content:
-          'Your counter is live. Click Tick to advance — the LEDs count in binary: 00 → 01 → 10 → 11 → 00.',
+          'Your counter is live. Click Tick to advance, and the LEDs count in binary: 00 → 01 → 10 → 11 → 00.',
         delay: 300,
         typewriter: true,
         typeSpeed: 12,
@@ -327,7 +327,7 @@ const Toggle = circuit('Toggle', {
       { type: 'blank', content: '', delay: 400 },
       {
         type: 'text',
-        content: 'A DFlipFlop with inverted feedback — Q toggles on every rising clock edge.',
+        content: 'A DFlipFlop with inverted feedback, so Q toggles on every rising clock edge.',
         delay: 300,
         typewriter: true,
         typeSpeed: 12,
@@ -355,7 +355,7 @@ const Toggle = circuit('Toggle', {
       {
         type: 'text',
         content:
-          'Your toggle is live. Click the Tick button to advance the clock — Q flips on every rising edge.',
+          'Your toggle is live. Click the Tick button to advance the clock, and Q flips on every rising edge.',
         delay: 300,
         typewriter: true,
         typeSpeed: 12,
@@ -751,7 +751,7 @@ function ScriptedTerminal({
     if (visibleCount === 0) return;
 
     // Walk up to find the nearest scrollable ancestor (the terminal's own
-    // overflow-y container) and scroll only it — never the page. Using
+    // overflow-y container) and scroll only it, never the page. Using
     // scrollIntoView would cascade through every scrollable ancestor and
     // drag the viewport along when this section is off-screen.
     const el = bottomRef.current;
@@ -824,9 +824,9 @@ const HERO_DEMOS: HeroDemo[] = [
   },
   // Figlet → ROM: the showcase from further down the page, lifted up so users
   // see the "npm packages compile straight into hardware" pitch right in the
-  // hero. Self-driving (auto-runs once selected — see effect in HeroBrowserWindow).
+  // hero. Self-driving (auto-runs once selected; see effect in HeroBrowserWindow).
   // Code is intentionally wider than the 340px panel so the wider definitions
-  // (factory calls + the npm imports) read naturally — the panel scrolls.
+  // (factory calls + the npm imports) read naturally; the panel scrolls.
   {
     key: 'figlet',
     label: 'Figlet → ROM',
@@ -973,7 +973,7 @@ export interface ClaudeDemoSectionProps {
   onComplete?: () => void;
   /**
    * When true, the scripted demo auto-plays immediately on mount regardless
-   * of scroll position. Defaults to false — the demo waits until its desktop
+   * of scroll position. Defaults to false; the demo waits until its desktop
    * container scrolls into view before starting. Useful for placing the
    * component further down the page without triggering a hidden animation.
    */
@@ -1003,7 +1003,7 @@ export function ClaudeDemoSection({ onComplete, autoPlay = false }: ClaudeDemoSe
   // the CSS transition duration on the grid columns and as the timeout
   // between expanded=true firing and canvasReady=true firing. Decoupled
   // from the terminal's text fade-out (duration-500 on TerminalWindow's
-  // opacity transition) — the text fades quickly while the column itself
+  // opacity transition); the text fades quickly while the column itself
   // slides more deliberately, so the reader's attention is freed from
   // the transcript before the column finishes giving its space to the
   // canvas.
@@ -1057,7 +1057,7 @@ export function ClaudeDemoSection({ onComplete, autoPlay = false }: ClaudeDemoSe
 
   const heroRef = useRef<HeroBrowserWindowHandle>(null);
 
-  // Index into HERO_DEMOS — HalfAdder (index 0) is what the scripted intro
+  // Index into HERO_DEMOS; HalfAdder (index 0) is what the scripted intro
   // builds, so we start there. Cycling fires swapCircuit on the hero handle.
   const [demoIndex, setDemoIndex] = useState(0);
   const cycleDemo = useCallback((delta: number) => {
@@ -1133,7 +1133,7 @@ export function ClaudeDemoSection({ onComplete, autoPlay = false }: ClaudeDemoSe
             firmware, watch them run cycle-by-cycle, and synthesize to Verilog.
           </p>
           <div className="mt-6 flex items-center gap-3 flex-wrap">
-            {/* Primary action — keeps the hero framed around "this is a
+            {/* Primary action, keeps the hero framed around "this is a
                 hardware framework", not "this is an MCP install". The editor
                 is a secondary, zero-friction "try it now" path; the MCP
                 CopyCommand sits last so power users still see it without it
@@ -1164,7 +1164,7 @@ export function ClaudeDemoSection({ onComplete, autoPlay = false }: ClaudeDemoSe
               // interpolate. Mixing units (% on one side, fr on the other)
               // makes the browser snap-to instead of animate.
               gridTemplateColumns: expanded ? '0fr 100fr' : '38fr 62fr',
-              // Gap also collapses to 0 in expanded state — otherwise the
+              // Gap also collapses to 0 in expanded state; otherwise the
               // canvas column sits 16px right of where the rest of the
               // hero content's left edge is, misaligning with the rest of
               // the page after the terminal slides away.
@@ -1192,7 +1192,7 @@ export function ClaudeDemoSection({ onComplete, autoPlay = false }: ClaudeDemoSe
 
             <HeroBrowserWindow ref={heroRef} canvasReady={canvasReady} />
 
-            {/* Side cycle arrows — pinned to the canvas's vertical centre and
+            {/* Side cycle arrows, pinned to the canvas's vertical centre and
               tucked against the left/right edges. Hero is full-width post-
               collapse, so the arrows naturally land far apart, hinting at
               side-to-side navigation. Pointer-events stay off the wrapper
@@ -1241,7 +1241,7 @@ export function ClaudeDemoSection({ onComplete, autoPlay = false }: ClaudeDemoSe
           </div>
         </div>
 
-        {/* Demo picker pills — animates in below the hero once the canvas
+        {/* Demo picker pills, animates in below the hero once the canvas
             is live, mirroring the figlet demo's picker further down. */}
         {canvasReady && (
           <div className="mt-6 flex items-center justify-center gap-2 flex-wrap animate-in fade-in slide-in-from-bottom-2 duration-500">

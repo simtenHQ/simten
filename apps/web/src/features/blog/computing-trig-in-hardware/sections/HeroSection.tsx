@@ -6,9 +6,9 @@ export function HeroSection() {
           Computing Trig in Hardware
         </h1>
         <p className="mt-6 text-xl text-gray-500 dark:text-gray-300 leading-relaxed">
-          Every calculator, GPU, and DSP chip computes sine and cosine without a multiplier &mdash;
-          using an algorithm called CORDIC that needs nothing more than bit shifts and addition.
-          Build one from logic gates and watch it converge in your browser.
+          Every calculator, GPU, and DSP chip computes sine and cosine without a multiplier, using
+          an algorithm called CORDIC that needs nothing more than bit shifts and addition. Build one
+          from logic gates and watch it converge in your browser.
         </p>
         <div className="mt-8 flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
           <span>Interactive tutorial</span>

@@ -90,7 +90,7 @@ function CopyCommand({ command }: { command: string }) {
 }
 
 /**
- * Claude AI CTA section — "Ask Claude to build..." with cycling typewriter
+ * Claude AI CTA section: "Ask Claude to build..." with cycling typewriter
  * and MCP install command. Reusable across landing page sections.
  */
 export function ClaudeCTA() {

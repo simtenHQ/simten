@@ -17,7 +17,7 @@ import { TruthTable } from './TruthTable';
 
 interface SpecPanelProps {
   level: Level;
-  /** Read for the failing column only — the table is the whole verdict now. */
+  /** Read for the failing column only; the table is the whole verdict now. */
   result: GradeResult | null;
   /** Row currently being driven through the circuit by the victory run. */
   activeRow: number | null;
@@ -34,7 +34,7 @@ function Heading({ children }: { children: React.ReactNode }) {
 }
 
 /**
- * What went wrong, in a sentence — for the failures a truth table cannot say.
+ * What went wrong, in a sentence, for the failures a truth table cannot say.
  *
  * A red column expresses "your circuit computes the wrong thing" better than
  * prose does, so `vector` returns null and the table keeps that job. The other
@@ -42,7 +42,7 @@ function Heading({ children }: { children: React.ReactNode }) {
  * the level forbids, or never ran. Those used to submit in silence, which read
  * as a broken button.
  *
- * Everything here comes off the failure itself — `GradeFailure` was written to
+ * Everything here comes off the failure itself; `GradeFailure` was written to
  * carry what the player needs to fix it, and then nothing displayed it.
  */
 function explain(result: GradeResult | null): string | null {

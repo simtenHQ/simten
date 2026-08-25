@@ -1,5 +1,5 @@
 /**
- * cc65 WASM Compiler — compiles C source to 6502 binary in the browser.
+ * cc65 WASM Compiler: compiles C source to 6502 binary in the browser.
  *
  * Pipeline: cc65 (C → asm) → ca65 (asm → .o) → ld65 (.o → .bin)
  *
@@ -113,7 +113,7 @@ function callMain(mod: EmscriptenModule, args: string[], stderr: string[]): numb
   try {
     return mod.callMain(args);
   } catch (e: unknown) {
-    // Emscripten throws on exit() — extract status code if available
+    // Emscripten throws on exit(); extract status code if available
     if (e && typeof e === 'object' && 'status' in e) {
       return (e as { status: number }).status;
     }

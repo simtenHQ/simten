@@ -1,7 +1,7 @@
 /**
  * Telling the player, immediately, that their circuit is not the one being graded.
  *
- * A level grades a circuit with a specific name — the same contract LeetCode
+ * A level grades a circuit with a specific name, the same contract LeetCode
  * and Codewars use, where the signature is fixed and the body is yours. The
  * problem was never the rule, it was the silence: renaming the circuit emptied
  * the canvas and said nothing until Submit, so the only way to learn the rule
@@ -28,7 +28,7 @@ export interface NameDiagnostic {
  * Deliberately a warning, not an error: the code is valid and the circuit may
  * be perfectly correct. It just is not the one that will be marked.
  *
- * Silent when the source declares no circuit at all — that is someone
+ * Silent when the source declares no circuit at all; that is someone
  * mid-keystroke, and nagging them about a name is not help.
  */
 export function nameDiagnostics(source: string, target: string): NameDiagnostic[] {
@@ -40,7 +40,7 @@ export function nameDiagnostics(source: string, target: string): NameDiagnostic[
   return sites.map((s) => ({
     message:
       `This level grades a circuit called \`${target}\`, and this one is called \`${s.name}\`. ` +
-      `Rename it to \`${target}\` — the rest is yours. (Found: ${found}.)`,
+      `Rename it to \`${target}\`. The rest is yours. (Found: ${found}.)`,
     line: s.line,
     column: s.column,
     endColumn: s.endColumn,

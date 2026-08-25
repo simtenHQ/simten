@@ -7,7 +7,7 @@ export function PipelineSection() {
           There&rsquo;s no framebuffer. Storing all 512 pixels and rewriting them every frame would
           burn memory and cycles on a picture the logic can regenerate for free. Instead the screen
           is drawn the way a real display is: a scan counter walks every pixel address in turn, and
-          for each one, combinational logic answers a single question &mdash; is this pixel lit?
+          for each one, combinational logic answers a single question: is this pixel lit?
         </p>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
           The <code className="text-sm">scan_addr</code> input splits into X (the low 5 bits,
@@ -49,10 +49,10 @@ export function PipelineSection() {
         </p>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
           The one thing that <em>does</em> need memory writes is the wall itself, and RAM has no
-          reset line. So at power-on &mdash; and again each time you lose a ball &mdash; a small
-          fill counter walks the 128 brick cells and writes them alive, one per clock. At the
-          FPGA&rsquo;s clock rate that whole redraw is a few microseconds: instant. The demo just
-          fast-forwards those clocks so you see the same thing in the browser.
+          reset line. So at power-on, and again each time you lose a ball, a small fill counter
+          walks the 128 brick cells and writes them alive, one per clock. At the FPGA&rsquo;s clock
+          rate that whole redraw is a few microseconds: instant. The demo just fast-forwards those
+          clocks so you see the same thing in the browser.
         </p>
       </div>
     </section>

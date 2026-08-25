@@ -10,10 +10,9 @@ export function MemorySection() {
       <div className="prose-invert space-y-6">
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
           Everything so far has been{' '}
-          <strong className="text-gray-900 dark:text-white">combinational</strong> &mdash; the
-          outputs depend only on the current inputs. But a computer needs to <em>remember</em>{' '}
-          things. To store a bit, we need feedback: a circuit whose output connects back to its own
-          input.
+          <strong className="text-gray-900 dark:text-white">combinational</strong>: the outputs
+          depend only on the current inputs. But a computer needs to <em>remember</em> things. To
+          store a bit, we need feedback: a circuit whose output connects back to its own input.
         </p>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
           This is where the <strong className="text-gray-900 dark:text-white">clock</strong> enters
@@ -29,7 +28,7 @@ export function MemorySection() {
           <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
             The simplest memory cell: two NOR gates cross-coupled. Toggle <strong>S</strong> (Set)
             to store a 1, toggle <strong>R</strong> (Reset) to clear it. Notice how the output{' '}
-            <em>stays</em> after you release the input &mdash; that&rsquo;s memory!
+            <em>stays</em> after you release the input. That&rsquo;s memory!
           </p>
           <CircuitEmbed
             circuit={BLOG_CIRCUITS.srLatch.circuit}
@@ -62,7 +61,7 @@ export function MemorySection() {
           <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
             Four D flip-flops in parallel, sharing a clock. Set some switches, click{' '}
             <strong>Tick</strong>, and the register captures all four bits at once. This is exactly
-            how CPU registers work &mdash; just wider (8, 16, 32, or 64 bits).
+            how CPU registers work, just wider (8, 16, 32, or 64 bits).
           </p>
           <CircuitEmbed
             circuit={BLOG_CIRCUITS.register4bit.circuit}

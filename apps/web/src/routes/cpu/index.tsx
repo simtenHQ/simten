@@ -37,8 +37,8 @@ function CPUIndexPage() {
                   RV32I
                 </h2>
                 <p className="mt-2 text-gray-400 leading-relaxed">
-                  Write C, C++, Rust, or assembly — compile it and watch it execute instruction by
-                  instruction on a real 5-stage pipelined RISC-V CPU. See every pipeline stage,
+                  Write C, C++, Rust, or assembly, then compile it and watch it execute instruction
+                  by instruction on a real 5-stage pipelined RISC-V CPU. See every pipeline stage,
                   register, and clock cycle.
                 </p>
               </div>

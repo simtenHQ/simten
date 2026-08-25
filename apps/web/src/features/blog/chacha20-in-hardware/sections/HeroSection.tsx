@@ -7,8 +7,8 @@ export function HeroSection() {
         </h1>
         <p className="mt-6 text-xl text-gray-500 dark:text-gray-300 leading-relaxed">
           AES needs dedicated CPU instructions to run fast. ChaCha20 was designed to need nothing
-          special &mdash; just addition, XOR, and bit rotation, repeated 80 times, on any hardware
-          that exists. The irony: that simplicity makes it unusually elegant in silicon too.
+          special: just addition, XOR, and bit rotation, repeated 80 times, on any hardware that
+          exists. The irony: that simplicity makes it unusually elegant in silicon too.
         </p>
         <p className="mt-4 text-gray-500 dark:text-gray-400 leading-relaxed">
           Build the core quarter-round from logic gates, verify it against the RFC 7539 test vector,

@@ -25,7 +25,7 @@
    Fumadocs's row offsets cascade from --fd-banner-height (see its
    container.js: --fd-docs-row-1 = var(--fd-banner-height, 0px)), so
    redefining it shifts the whole layout. We're not using fumadocs's
-   banner — this just hijacks the slot. See lib/layout.shared.tsx. */
+   banner; this just hijacks the slot. See lib/layout.shared.tsx. */
 :root {
 	--fd-banner-height: 48px;
 }
@@ -33,7 +33,7 @@
 @source "../../../packages/ui/src/**/*.tsx";
 @source "../../../packages/embed/src/**/*.tsx";
 /* Explicit so the standalone viewer build (vite.viewer.config.ts, root: viewer)
-   scans the app's own components too — its content auto-detection is rooted at
+   scans the app's own components too; its content auto-detection is rooted at
    viewer/, not apps/web/src, so app-only classes (h-screen, w-screen, …) would
    otherwise be dropped. Redundant but harmless in the main build. */
 @source "./**/*.{ts,tsx}";
@@ -118,7 +118,7 @@
   animation: shimmer 2s ease-in-out infinite;
 }
 
-/* Disable Geist Mono's programming ligatures in code blocks — `...` was
+/* Disable Geist Mono's programming ligatures in code blocks, since `...` was
    collapsing into `…` and visually fusing with `[` in spread expressions
    like `[...banner]`. Source still copy-pastes correctly either way. */
 .font-mono,

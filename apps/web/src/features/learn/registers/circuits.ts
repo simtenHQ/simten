@@ -1,7 +1,7 @@
 /**
  * Circuit definitions for the "Registers" learn page.
  *
- * DFlipFlop and Register come straight from the stdlib — they're already
+ * DFlipFlop and Register come straight from the stdlib; they're already
  * the primitives the page is teaching, so we use them directly via the
  * embed's auto-harness rather than wrapping them. The Counter circuit
  * does need a definition because it's a feedback composition (Register

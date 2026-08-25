@@ -3,7 +3,7 @@
  * tier 2 (CircuitEmbed + onPortValuesChange) and tier 4 (full composition
  * via useCircuitSimulator + CircuitCanvas).
  *
- * Self-contained — defines its own HalfAdder, doesn't rely on any
+ * Self-contained: defines its own HalfAdder, doesn't rely on any
  * /learn-page modules. Keeps the docs page reproducible in isolation.
  */
 
@@ -56,7 +56,7 @@ export function Tier2EmbedWithCallback() {
         <CircuitEmbed
           circuit={HalfAdder}
           title="Half adder"
-          description="Toggle the switches — the truth table row follows."
+          description="Toggle the switches, and the truth table row follows."
           onPortValuesChange={setPortValues}
         />
       </div>
@@ -76,7 +76,7 @@ export function Tier2EmbedWithCallback() {
  * Tier 4 demo: deliberately *no* CircuitCanvas. Renders the same
  * HalfAdder circuit, but the frontend is custom toggle buttons +
  * styled LED indicators + the truth table. Same sim, completely
- * different UI — shows that the canvas is optional; the simulator
+ * different UI: shows that the canvas is optional; the simulator
  * is just an engine you can build any visualization on top of.
  *
  * Mirrors the Snake demo in miniature: circuit = engine, React =

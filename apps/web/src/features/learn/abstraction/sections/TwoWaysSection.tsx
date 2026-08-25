@@ -13,28 +13,26 @@ export function TwoWaysSection() {
       </h2>
       <div className="prose-invert space-y-6">
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
-          A half adder is two gates &mdash; an XOR for the sum, an AND for the carry. The version
-          below collapses those two gates into a single labeled <code>HalfAdder</code> node with the
-          same external ports. Both produce identical outputs because they <em>are</em> the same
-          circuit.
+          A half adder is two gates: an XOR for the sum, an AND for the carry. The version below
+          collapses those two gates into a single labeled <code>HalfAdder</code> node with the same
+          external ports. Both produce identical outputs because they <em>are</em> the same circuit.
         </p>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
-          That collapse is abstraction. Nothing is hidden &mdash; the gates are still there, doing
-          the same work &mdash; but once a structure has a name, you can stop thinking about its
-          parts.
+          That collapse is abstraction. Nothing is hidden, since the gates are still there doing the
+          same work, but once a structure has a name, you can stop thinking about its parts.
         </p>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
           In code, the rule is: declaring <code>inputs</code> and/or <code>outputs</code> on a{' '}
           <code>circuit()</code> is what turns it into a block you can drop into another circuit as
-          a node. Without either, you have a self-contained simulation &mdash; runnable on its own
-          but not composable.
+          a node. Without either, you have a self-contained simulation, runnable on its own but not
+          composable.
         </p>
       </div>
 
       <div className="mt-6 grid gap-4 md:grid-cols-2">
         <div className="rounded-lg border border-border bg-card overflow-hidden">
           <div className="px-3 py-1.5 border-b border-border text-[10px] text-muted-foreground font-mono">
-            FlatDemo.ts &mdash; no ports
+            FlatDemo.ts, no ports
           </div>
           <HighlightedCode
             className="px-4 py-3 text-[12px] leading-relaxed overflow-x-auto"
@@ -55,7 +53,7 @@ export function TwoWaysSection() {
         </div>
         <div className="rounded-lg border border-border bg-card overflow-hidden">
           <div className="px-3 py-1.5 border-b border-border text-[10px] text-muted-foreground font-mono">
-            HalfAdder.ts &mdash; composable
+            HalfAdder.ts, composable
           </div>
           <HighlightedCode
             className="px-4 py-3 text-[12px] leading-relaxed overflow-x-auto"

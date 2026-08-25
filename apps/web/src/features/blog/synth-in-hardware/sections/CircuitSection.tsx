@@ -1,6 +1,6 @@
 /**
  * Explains the circuit shown live in PlayerSection. Deliberately has no canvas
- * of its own — a second, static copy of the same diagram would compete with the
+ * of its own: a second, static copy of the same diagram would compete with the
  * running one, and the running one is the point.
  */
 export function CircuitSection() {
@@ -12,7 +12,7 @@ export function CircuitSection() {
           Sixteen nodes. A register and an adder make the phase accumulator: every tick it adds{' '}
           <code>inc</code> to itself and wraps at 2<sup>16</sup>, so <code>inc</code> is the pitch.
           The top twelve bits index the wavetable, and the four discarded bits are the fractional
-          part &mdash; a zero-order hold, exactly the shortcut the era took.
+          part. That is a zero-order hold, exactly the shortcut the era took.
         </p>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
           The table holds 0&ndash;255, so a subtractor recentres it to two&rsquo;s complement before
@@ -28,10 +28,9 @@ export function CircuitSection() {
         </p>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
           Nothing above is a setting in the page. <code>wave</code> and <code>decay</code> are input
-          ports, so changing one drives a signal into the circuit on the next tick &mdash; the same
-          way a knob on a real synth does. Had they been <code>Constant</code> nodes they would have
-          been hardwired the moment this was synthesised, and the knobs would exist only in the
-          browser.
+          ports, so changing one drives a signal into the circuit on the next tick, the same way a
+          knob on a real synth does. Had they been <code>Constant</code> nodes they would have been
+          hardwired the moment this was synthesised, and the knobs would exist only in the browser.
         </p>
       </div>
     </section>

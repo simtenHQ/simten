@@ -179,7 +179,7 @@ export function useRV32IDebugger() {
     sim.reset();
   }, [sim.reset]);
 
-  // Pipeline-stage PCs read from RV32I_Core's debug outputs (top-level ports) —
+  // Pipeline-stage PCs read from RV32I_Core's debug outputs (top-level ports),
   // the pipeline registers now live inside the `cpu` sub-node, so we no longer
   // reach internal node labels. MEM/WB outputs are PC+4 of the in-flight
   // instruction; subtract 4 to recover the stage PC.
@@ -199,7 +199,7 @@ export function useRV32IDebugger() {
 
   // Scan the regfile via the JTAG-style debug port in one sandbox round-trip.
   // The sandbox loops debug_addr 0..31 internally and returns all values at
-  // once — avoids a 32× round-trip race during Run mode. Models how real
+  // once, which avoids a 32× round-trip race during Run mode. Models how real
   // debug hardware (RV Debug Abstract Commands, ARM CoreSight) reads
   // architectural state while the core is halted.
   const [registers, setRegisters] = useState<Map<number, number>>(new Map());

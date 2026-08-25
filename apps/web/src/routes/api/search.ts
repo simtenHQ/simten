@@ -4,7 +4,7 @@ import { blogSource, source } from '@/lib/source';
 
 // Unified index across both collections. Each page is tagged 'docs' or 'blog'
 // so the client can scope results (?tag=…) while a single search still spans
-// everything — a reader on a blog post can find the relevant doc and vice versa.
+// everything: a reader on a blog post can find the relevant doc and vice versa.
 const server = createSearchAPI('advanced', {
   language: 'english',
   indexes: [...source.getPages(), ...blogSource.getPages()].map((page) => ({
