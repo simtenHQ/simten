@@ -14,10 +14,10 @@ export function PaddleSection() {
           the boundaries, and two muxes override the result if it would go out of bounds.
         </p>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
-          This is the same pattern used in every hardware input system &mdash; a comparator bank
-          decodes the input code, combinational logic computes the new position, and boundary
-          clamping prevents invalid state. No if-statements, no software &mdash; just gates
-          selecting between values.
+          This is the same pattern used in every hardware input system: a comparator bank decodes
+          the input code, combinational logic computes the new position, and boundary clamping
+          prevents invalid state. No if-statements, no software, just gates selecting between
+          values.
         </p>
       </div>
     </section>

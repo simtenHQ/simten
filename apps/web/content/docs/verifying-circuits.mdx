@@ -1,31 +1,31 @@
 ---
 title: Verifying circuits
-description: How to prove a circuit is correct — the tier ladder, the npm-as-oracle pattern, and the verify_circuit tool.
+description: How to prove a circuit is correct: the tier ladder, the npm-as-oracle pattern, and the verify_circuit tool.
 ---
 
 A simulator tells you what a circuit *does*. Verification tells you whether what it does is *what it should*. Those are different questions, and the second one rests on something the first can't supply: an **independent reference** for what the right answer is.
 
-This is where most homegrown test suites go wrong. The same author who writes `Adder8`'s gates writes the test, and the test happens to encode the same blind spots as the implementation — they fail in lockstep, or worse, agree on a wrong answer. The further apart the reference and the implementation, the more the test actually buys you. Simten makes that distance explicit by **requiring you to declare it**.
+This is where most homegrown test suites go wrong. The same author who writes `Adder8`'s gates writes the test, and the test happens to encode the same blind spots as the implementation: they fail in lockstep, or worse, agree on a wrong answer. The further apart the reference and the implementation, the more the test actually buys you. Simten makes that distance explicit by **requiring you to declare it**.
 
 ## The gate
 
-`verify_circuit` refuses to report a passing result unless you've called `declareOracle({ tier, type, independence_basis })`. The structural test of "is this passing" is gated behind an authorial assertion of "this is what I'm comparing against, and here's why it isn't a restatement of the implementation." You can lie to the gate — nothing checks the prose. But the act of writing it forces you to look at the question, which is the part that matters.
+`verify_circuit` refuses to report a passing result unless you've called `declareOracle({ tier, type, independence_basis })`. The structural test of "is this passing" is gated behind an authorial assertion of "this is what I'm comparing against, and here's why it isn't a restatement of the implementation." You can lie to the gate, and nothing checks the prose. But the act of writing it forces you to look at the question, which is the part that matters.
 
 ## The tier ladder
 
 Independence isn't binary. Some references are genuinely external; others are restatements of the implementation in disguise. The ladder is the shorthand for that gradient, highest independence first:
 
-- **A — External ground truth.** Expected outputs come from a source *other than this circuit*: compiled programs with known results, captured real-world data, spec/RFC reference vectors, or an npm reference implementation. **What makes it Tier A is the externality of the expected values, not the execution path.** A SHA-256 circuit checked against `@noble/hashes`. A CRC-8 against the `crc` npm package. A RISC-V program whose output is known.
-- **B — Paradigm-diverse reference.** A behavioural model written in a different style than the implementation: a structural ripple-carry adder vs `(a + b) & 0xff`, a pipelined CPU vs a single-cycle reference. The reference and the implementation can both be wrong, but they're unlikely to be wrong the *same* way. This is classic golden-model differential testing.
-- **C — Domain invariants.** Properties the spec implies regardless of implementation: commutativity (`a + b == b + a`), identity (`a XOR 0 == a`), monotonicity, bit-width bounds. Doesn't pin behaviour to a specific value but constrains it usefully.
-- **D — Property tests against your own understanding.** "When the input is X, the output should be Y, because that's what I want." Low independence — you're testing the implementation against the same mental model that produced it.
-- **E — Round-trip / smoke.** No independent oracle at all. "Did it crash?" "Does the output have the right shape?" Useful as a sanity check, not as evidence of correctness.
+- **A, external ground truth.** Expected outputs come from a source *other than this circuit*: compiled programs with known results, captured real-world data, spec/RFC reference vectors, or an npm reference implementation. **What makes it Tier A is the externality of the expected values, not the execution path.** A SHA-256 circuit checked against `@noble/hashes`. A CRC-8 against the `crc` npm package. A RISC-V program whose output is known.
+- **B, paradigm-diverse reference.** A behavioural model written in a different style than the implementation: a structural ripple-carry adder vs `(a + b) & 0xff`, a pipelined CPU vs a single-cycle reference. The reference and the implementation can both be wrong, but they're unlikely to be wrong the *same* way. This is classic golden-model differential testing.
+- **C, domain invariants.** Properties the spec implies regardless of implementation: commutativity (`a + b == b + a`), identity (`a XOR 0 == a`), monotonicity, bit-width bounds. Doesn't pin behaviour to a specific value but constrains it usefully.
+- **D, property tests against your own understanding.** "When the input is X, the output should be Y, because that's what I want." Low independence: you're testing the implementation against the same mental model that produced it.
+- **E, round-trip / smoke.** No independent oracle at all. "Did it crash?" "Does the output have the right shape?" Useful as a sanity check, not as evidence of correctness.
 
 The rule the tool encodes: **"done" means verified at the highest tier the problem makes feasible.** Tier C and below are warnings, not certifications.
 
 ## The flagship pattern: an npm package as the oracle
 
-The whole reason `verify` runs on the host via `tsx` rather than in a sandbox is this one capability: your testbench can `import` any npm package directly, and use it as the trusted reference. This collapses the most expensive part of a Tier-A test — finding or building an external ground truth — into a single import line.
+The whole reason `verify` runs on the host via `tsx` rather than in a sandbox is this one capability: your testbench can `import` any npm package directly, and use it as the trusted reference. This collapses the most expensive part of a Tier-A test (finding or building an external ground truth) into a single import line.
 
 The canonical example, lifted verbatim from `packages/core/src/verify/__fixtures__/flagship-npm-oracle.verify.ts`:
 
@@ -57,7 +57,7 @@ verify.run();
 
 The flow:
 
-1. Import the npm package as if it were any other module — it resolves from `node_modules` exactly like it would in a regular Node program.
+1. Import the npm package as if it were any other module: it resolves from `node_modules` exactly like it would in a regular Node program.
 2. Compute the expected value *outside* the circuit. `sha256(...)` runs once, in JavaScript, against an authoritative crypto library.
 3. Declare the oracle. `tier: 'A'` because the expected bytes come from an external implementation; `independence_basis` says *why* in one line.
 4. Run a check that compares the circuit's output to the npm-computed expected value across every relevant input.
@@ -93,12 +93,12 @@ verify.exhaustive('truth table', [2, 2], (a, b) => {
 verify.run();   // the gate
 ```
 
-The DUT must be `export`-ed from its circuit file so the testbench can import it. The injected-scope contract that the browser sandbox uses is not in play here — this file runs as real Node ESM under `tsx`.
+The DUT must be `export`-ed from its circuit file so the testbench can import it. The injected-scope contract that the browser sandbox uses is not in play here, because this file runs as real Node ESM under `tsx`.
 
 ### `verify.exhaustive` vs `verify.check`
 
-- **`verify.exhaustive(name, spaces, predicate)`** — sweeps every combination in the given input spaces. `[256]` means "0..255." `[2, 2]` means "all 4 (a, b) pairs." Use when the input space is small enough to enumerate (the harness caps at 2²⁰ to prevent runaway costs).
-- **`verify.check(name, fc.property(...))`** — samples with `fast-check`. Use for larger input spaces. The shrinker gives you a small repro on failure.
+- **`verify.exhaustive(name, spaces, predicate)`** sweeps every combination in the given input spaces. `[256]` means "0..255." `[2, 2]` means "all 4 (a, b) pairs." Use when the input space is small enough to enumerate (the harness caps at 2²⁰ to prevent runaway costs).
+- **`verify.check(name, fc.property(...))`** samples with `fast-check`. Use for larger input spaces. The shrinker gives you a small repro on failure.
 
 ### `declareOracle` lives at module top level
 
@@ -108,9 +108,9 @@ One declaration per testbench. The tool reads it at the gate; the harness record
 
 Three paths, all run the same testbench file unchanged:
 
-- **From an agent**, via `verify_circuit`. The MCP tool takes the testbench path and an oracle (which the tool re-injects via `SIMTEN_VERIFY_ORACLE` so the gate is the *tool's* oracle, not whichever the file declares — letting an agent run a circuit at a tougher tier than the author originally intended). Returns the structured JSON result inline.
+- **From an agent**, via `verify_circuit`. The MCP tool takes the testbench path and an oracle (which the tool re-injects via `SIMTEN_VERIFY_ORACLE` so the gate is the *tool's* oracle, not whichever the file declares, letting an agent run a circuit at a tougher tier than the author originally intended). Returns the structured JSON result inline.
 - **From the CLI**, via `tsx <testbench>.verify.ts`. The harness prints the result as a delimited `--- BEGIN JSON --- … --- END JSON ---` block and sets `process.exitCode`.
-- **In CI**, as a vitest test. The same file runs under `vitest run` — the harness detects vitest mode and throws on failure instead of printing, so the test goes red.
+- **In CI**, as a vitest test. The same file runs under `vitest run`, and the harness detects vitest mode and throws on failure instead of printing, so the test goes red.
 
 The "same file in three places" property is deliberate. A verify file doubles as a CI test the moment you wrap it: no separate test infrastructure, no parallel implementations, no drift.
 
@@ -135,7 +135,7 @@ A passing result looks like this:
 }
 ```
 
-The shape worth pointing at: **the oracle is the lede, not the pass/fail.** "Tier A, exhaustive 4, passed" tells you *how strong the claim is*, not just whether it landed. "Tier D, sampled 100, passed" is also a passing result — but it earns far less trust, and the JSON makes that visible. Lead with the tier when you report a verify result; the gate exists so this distinction can't be erased.
+The shape worth pointing at: **the oracle is the lede, not the pass/fail.** "Tier A, exhaustive 4, passed" tells you *how strong the claim is*, not just whether it landed. "Tier D, sampled 100, passed" is also a passing result, but it earns far less trust, and the JSON makes that visible. Lead with the tier when you report a verify result; the gate exists so this distinction can't be erased.
 
 A failure includes the counter-example (the input that broke the check), shrunk where applicable:
 
@@ -148,4 +148,4 @@ A failure includes the counter-example (the input that broke the check), shrunk 
 }
 ```
 
-Reading the report and reading the *oracle* are the same job. A green result against a Tier-D oracle is a weaker statement than a red result against a Tier-A oracle — the latter at least found a real bug.
+Reading the report and reading the *oracle* are the same job. A green result against a Tier-D oracle is a weaker statement than a red result against a Tier-A oracle, because the latter at least found a real bug.

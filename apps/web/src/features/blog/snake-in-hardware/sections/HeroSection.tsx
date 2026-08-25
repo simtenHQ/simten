@@ -9,7 +9,7 @@ export function HeroSection() {
       <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-gray-900 dark:text-white leading-tight mb-2">
         Snake in Hardware
       </h1>
-      {/* Playable Snake — immediately after the title */}
+      {/* Playable Snake, immediately after the title */}
       <ClientOnly>
         <Suspense
           fallback={

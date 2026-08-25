@@ -2,7 +2,7 @@
  * The truth table has to read the level shape correctly.
  *
  * When levels moved from `Record<string, PortSpec>` to a list of signal names,
- * the table kept doing `Object.keys(level.inputs)` — which on an array returns
+ * the table kept doing `Object.keys(level.inputs)`, which on an array returns
  * indices. It rendered headers `0`, `1`, `0` and blank cells, and neither
  * TypeScript nor the suite noticed, because `Object.keys` on an array is
  * perfectly legal and nothing rendered the component.

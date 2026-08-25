@@ -6,8 +6,8 @@ export function HeroSection() {
           Registers
         </h1>
         <p className="mt-6 text-xl text-gray-500 dark:text-gray-300 leading-relaxed">
-          How a circuit remembers. Everything sequential &mdash; counters, state machines, CPUs
-          &mdash; is registers underneath.
+          How a circuit remembers. Everything sequential (counters, state machines, CPUs) is
+          registers underneath.
         </p>
       </div>
     </section>

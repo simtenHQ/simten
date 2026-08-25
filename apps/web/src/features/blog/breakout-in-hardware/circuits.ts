@@ -4,10 +4,10 @@
  *
  * Synthesizable, snake-style I/O with a combinational raster render (like a real
  * raster display): the browser drives `scan_addr`, which splits into
- * `scanX`/`scanY` and feeds the pixel logic straight to `pixel_out` — no
+ * `scanX`/`scanY` and feeds the pixel logic straight to `pixel_out`, with no
  * framebuffer, so a render is one combinational sweep and never advances the
  * clock. Game state advances one step per clock tick (throttled by the ball/
- * paddle speed counters), so a game step is a single tick — the browser ticks a
+ * paddle speed counters), so a game step is a single tick: the browser ticks a
  * handful of times per animation frame, exactly like snake. Paddle input arrives
  * on the top-level `keyboard` bus.
  */
@@ -565,7 +565,7 @@ export const Breakout = circuit('Breakout', {
     actualDY.out.to(ballDY.data),
     // A miss is handled on the ball's move pulse: onMissVblank = ballUpdate AND
     // ballMissed, so the reset and the wall refill fire together on the same
-    // step — for both game_en=1 (browser) and a pulsed game_en (FPGA). The ball
+    // step, for both game_en=1 (browser) and a pulsed game_en (FPGA). The ball
     // is reset via ballAndFill on that pulse (before the fill's hold engages).
     ballUpdate.out.to(ballAndFill.a, onMissVblank.a),
     notFilling.out.to(ballAndFill.b),

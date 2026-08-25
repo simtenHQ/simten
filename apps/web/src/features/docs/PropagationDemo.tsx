@@ -54,19 +54,19 @@ function describeStep(step: PropagationStep): string {
   }
 
   if (id.includes('switch')) {
-    return `Source node — outputs initial value. No inputs to read.`;
+    return `Source node: outputs initial value. No inputs to read.`;
   }
   if (id.includes('led')) {
-    return `Reads input value and updates display.${!step.changed ? ' Output unchanged — no dependents enqueued.' : ''}`;
+    return `Reads input value and updates display.${!step.changed ? ' Output unchanged, no dependents enqueued.' : ''}`;
   }
   if (id.includes('xor')) {
-    return `Reads two inputs, computes XOR.${step.changed ? ' Output changed — enqueuing dependents.' : ' Output unchanged.'}`;
+    return `Reads two inputs, computes XOR.${step.changed ? ' Output changed, enqueuing dependents.' : ' Output unchanged.'}`;
   }
   if (id.includes('and')) {
-    return `Reads two inputs, computes AND.${step.changed ? ' Output changed — enqueuing dependents.' : ' Output unchanged.'}`;
+    return `Reads two inputs, computes AND.${step.changed ? ' Output changed, enqueuing dependents.' : ' Output unchanged.'}`;
   }
   if (id.includes('or')) {
-    return `Reads two inputs, computes OR.${step.changed ? ' Output changed — enqueuing dependents.' : ' Output unchanged.'}`;
+    return `Reads two inputs, computes OR.${step.changed ? ' Output changed, enqueuing dependents.' : ' Output unchanged.'}`;
   }
   return `Evaluating node.${step.changed ? ' Output changed.' : ' Output unchanged.'}`;
 }
@@ -197,9 +197,7 @@ export function PropagationDemo() {
               </span>
             ))
           ) : (
-            <span className="text-[10px] text-gray-600 font-mono">
-              empty — propagation complete
-            </span>
+            <span className="text-[10px] text-gray-600 font-mono">empty, propagation complete</span>
           )}
           {currentStep && currentStep.changed && currentStep.enqueued.length > 0 && (
             <>

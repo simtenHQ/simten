@@ -71,8 +71,8 @@ export default function ThemeToggle() {
    * appeared to need two clicks. Choosing from `resolved` rather than `mode`
    * guarantees every press changes the thing the button is depicting.
    *
-   * `auto` is still honoured when it is already stored — the media listener
-   * above keeps following the system — but the toggle only ever writes an
+   * `auto` is still honoured when it is already stored; the media listener
+   * above keeps following the system, but the toggle only ever writes an
    * explicit choice, because that is the only thing it can show.
    */
   function toggleMode() {
@@ -95,7 +95,7 @@ export default function ThemeToggle() {
       {/*
         The same signal mark simten.dev uses: a line held low for dark, a pulse
         held high for light. Drawn from the *resolved* appearance rather than
-        the mode, so it always depicts what you are looking at — `auto` has no
+        the mode, so it always depicts what you are looking at; `auto` has no
         third waveform, and the mode is on the tooltip where it belongs.
       */}
       <svg

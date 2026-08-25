@@ -16,7 +16,7 @@ export function ArbiterSection() {
           port is ready, it gets the grant immediately.
         </p>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
-          This is a purely combinational circuit &mdash; no clock needed. The{' '}
+          This is a purely combinational circuit, with no clock needed. The{' '}
           <strong>lastPort</strong> input represents the last-granted port (0 or 1). Toggle{' '}
           <strong>port0_ready</strong> and <strong>port1_ready</strong> to see how the{' '}
           <strong>portDisplay</strong> and <strong>validLed</strong> respond.

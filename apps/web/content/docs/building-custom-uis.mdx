@@ -1,13 +1,13 @@
 ---
 title: Building custom UIs
-description: Four tiers — from drop-in <CircuitEmbed /> to full composition with useCircuitSimulator + CircuitCanvas.
+description: Four tiers, from drop-in <CircuitEmbed /> to full composition with useCircuitSimulator + CircuitCanvas.
 ---
 
 import { Tier2EmbedWithCallback, Tier4FullComposition } from '../../src/features/docs/CustomCompositionDemo'
 
 `<CircuitEmbed />` is the default for putting an interactive circuit
-on a page. When you need more — a sibling that reacts to switch
-toggles, a custom HUD, a debugger driving the sim — the same
+on a page. When you need more (a sibling that reacts to switch
+toggles, a custom HUD, a debugger driving the sim), the same
 primitives are available; you compose them yourself.
 
 The simulator runs in pure JavaScript inside the sandbox iframe,
@@ -16,11 +16,11 @@ your React UI to subscribe to its state and write inputs back. Pick
 the highest one that gives you what you need.
 
 These tiers all take a circuit you already have. If instead you want
-users to *edit source* and watch it simulate live — an editor beside a
-canvas — see [Code Editor](/docs/code-editor), which pairs
+users to *edit source* and watch it simulate live, an editor beside a
+canvas, see [Code Editor](/docs/code-editor), which pairs
 `SimtenCodeEditor` with `useCompiledCircuit`.
 
-## Tier 1 — Drop-in `<CircuitEmbed />`
+## Tier 1: Drop-in `<CircuitEmbed />`
 
 The default. One component, sensible defaults, identical look across
 every page on simten.dev. Use this unless you need something it
@@ -36,13 +36,13 @@ import { CircuitEmbed } from '@simten/embed'
 />
 ```
 
-No state out, no imperative control — just a self-contained
+No state out, no imperative control, just a self-contained
 interactive embed.
 
 Every page in [Examples](/docs/examples) uses this pattern, as do
 most inline circuits across the `/blog/*` posts.
 
-## Tier 2 — Read sim state with `onPortValuesChange`
+## Tier 2: Read sim state with `onPortValuesChange`
 
 When you want a sibling component to react to the embed's live state
 (e.g. a truth-table highlight that follows the user's switch toggles,
@@ -73,38 +73,38 @@ function HalfAdderWithLiveTable() {
 }
 ```
 
-**Live demo** — toggle the switches:
+**Live demo**: toggle the switches:
 
 <Tier2EmbedWithCallback />
 
 The callback is captured in a ref inside the embed, so inline
-functions like `onPortValuesChange={(pv) => setX(pv)}` are safe — they
+functions like `onPortValuesChange={(pv) => setX(pv)}` are safe, since they
 won't cause spurious re-fires across parent renders.
 
 ### Firing semantics
 
 A few things worth knowing about *when* the callback fires:
 
-- **First fire** — once the embed's internal simulator becomes ready
+- **First fire**: once the embed's internal simulator becomes ready
   and port values have first settled. Before that, the callback
   doesn't fire and your `useState<FlatPortValueMap | null>(null)`
   stays at `null` for one paint. Plan for that initial frame in your
   rendering (e.g. `computeActiveRow` returns `undefined` cleanly when
   port values are absent).
-- **Subsequent fires** — only on settled (post-propagation) states.
+- **Subsequent fires**: only on settled (post-propagation) states.
   The simulator never exposes intermediate propagation states, so
   there's no risk of flicker from mid-propagation values.
-- **Reference identity** — the port-values `Map` is *not* guaranteed
+- **Reference identity**: the port-values `Map` is *not* guaranteed
   to be a stable reference across no-op ticks. Sequential auto-run
   loops can emit new `Map` instances with unchanged contents. If
   you're doing expensive derived work, memoize on the actual values
   you care about rather than on the `Map` reference itself.
 
 The [`/learn/adders`](/learn/adders) page uses this for its live truth
-tables — toggle switches on the half-adder or full-adder, watch the
+tables: toggle switches on the half-adder or full-adder, watch the
 matching row in the table light up.
 
-## Tier 3 — Write into the sim with the imperative handle
+## Tier 3: Write into the sim with the imperative handle
 
 When a sibling needs to *drive* the embed (e.g. clicking a row in a
 truth table should set the canvas switches to that combination), use
@@ -135,12 +135,12 @@ function HalfAdderDrivenByTable() {
 Pair tier 2 (read out) and tier 3 (write in) to get bidirectional
 binding between the embed and any sibling UI you write.
 
-No page on simten.dev currently needs tier 3 — the API is available
+No page on simten.dev currently needs tier 3, but the API is available
 but nothing's using it yet. The most likely first consumer would be a
 clickable truth table that drives the embed's switches from the table
 side.
 
-## Tier 4 — Full composition
+## Tier 4: Full composition
 
 When you want to break out of the embed's chrome entirely and build
 your own frontend on top of the simulator, drop down to the underlying
@@ -179,7 +179,7 @@ function HalfAdderWithCustomControls() {
 }
 ```
 
-**Live demo** — same `HalfAdder` circuit as tier 2, but rendered as
+**Live demo**: same `HalfAdder` circuit as tier 2, but rendered as
 custom toggle buttons and LED indicators instead of a schematic. No
 `CircuitCanvas` anywhere in this tree:
 
@@ -190,7 +190,7 @@ instance. Custom UI reads from `sim.portValues` and writes via
 `sim.setNodeValue`; the truth table reads from the same map. One sim,
 many consumers, all of them yours.
 
-The simulator is still doing real work — compiling, propagating,
+The simulator is still doing real work: compiling, propagating,
 exposing port values through the sandbox iframe like every other
 tier. You could equally render nothing at all and use it purely as a
 background computation engine (a headless test harness, a checksum
@@ -200,10 +200,10 @@ Tier 4 is the right choice when:
 
 - The schematic isn't what you want to show. A game frontend, a
   calculator UI, a hex memory editor, an animated state-machine
-  diagram — anything where the canvas would be the wrong artifact.
+  diagram, anything where the canvas would be the wrong artifact.
 - You want chrome that's meaningfully different from `CircuitEmbed`'s
   card and you'd rather render `<CircuitCanvas>` directly with no
-  wrapping (it's also a public export — same composition, with the
+  wrapping (it's also a public export, same composition, with the
   canvas).
 - You're rendering multiple circuits in a single composed panel where
   layout coordination matters.
@@ -214,13 +214,13 @@ For most pages, tier 2 is enough.
 
 Two examples of tier 4 on simten.dev itself:
 
-- [Snake](/blog/snake-in-hardware) — the circuit *is* the game
+- [Snake](/blog/snake-in-hardware): the circuit *is* the game
   engine (`DualPortRAM` framebuffer, 4-phase pipeline, collision
   detection); the React component renders a custom 8×8 pixel grid +
   D-pad + speed slider on top of the sim. No `CircuitCanvas` shown
-  at all — the schematic is invisible to the player. Pure proof that
+  at all, and the schematic is invisible to the player. Pure proof that
   the simulator can drive any frontend.
-- [RV32I CPU debugger](/cpu/rv32i) — a 5-stage pipelined RISC-V
+- [RV32I CPU debugger](/cpu/rv32i): a 5-stage pipelined RISC-V
   processor on the engine side, with a bespoke debugger UI on top:
   register file, memory view, pipeline-stage indicators, instruction
   stream. Compile C / Rust / asm in-browser and step through
@@ -228,7 +228,7 @@ Two examples of tier 4 on simten.dev itself:
 
 ## Security
 
-Composing the primitives directly doesn't bypass anything —
+Composing the primitives directly doesn't bypass anything;
 `useCircuitSimulator` routes every tier's simulation work through
 the same cross-origin sandbox iframe that `<CircuitEmbed />` uses
 internally. See [Security architecture](/docs/security) for the
@@ -247,4 +247,4 @@ postMessage boundary).
 Most production simten.dev pages use tier 1. The `/learn/adders` half-
 and full-adder sections use tier 2 (live truth tables). Tier 3 isn't
 currently used in the public site but the API is there. Tier 4 is the
-escape hatch — keep it in mind for when you outgrow the canned embed.
+escape hatch; keep it in mind for when you outgrow the canned embed.

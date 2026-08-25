@@ -6,9 +6,9 @@ export function HeroSection() {
           Sorting Networks
         </h1>
         <p className="mt-6 text-xl text-gray-500 dark:text-gray-300 leading-relaxed">
-          A fixed wiring of comparators that sorts any input in the same number of steps &mdash; no
-          branches, no loops, just parallel hardware. The algorithm behind network switch fabrics,
-          GPU sort, and median filters.
+          A fixed wiring of comparators that sorts any input in the same number of steps, with no
+          branches and no loops, just parallel hardware. The algorithm behind network switch
+          fabrics, GPU sort, and median filters.
         </p>
         <div className="mt-8 flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
           <span>Interactive tutorial</span>

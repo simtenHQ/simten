@@ -17,8 +17,8 @@ export function DirectionSection() {
         </p>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
           A <code>SignedComparator</code> checks whether z &ge; 0 and drives a <code>Mux</code> that
-          selects between addition and subtraction. Try setting the angle input to different values
-          &mdash; values above 127 are treated as negative in signed 8-bit arithmetic.
+          selects between addition and subtraction. Try setting the angle input to different values:
+          values above 127 are treated as negative in signed 8-bit arithmetic.
         </p>
       </div>
 

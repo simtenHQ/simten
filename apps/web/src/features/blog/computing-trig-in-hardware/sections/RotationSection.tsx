@@ -18,7 +18,7 @@ export function RotationSection() {
 y_next = y + (x >> iteration)`}
         </pre>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
-          That&rsquo;s it &mdash; a shift and an add for each coordinate. Subtraction is done in
+          That&rsquo;s it: a shift and an add for each coordinate. Subtraction is done in
           two&rsquo;s complement: invert all bits with a <code>BusNot</code>, then add 1 via the
           carry input of a <code>SignedAdder</code>. The circuit below computes both{' '}
           <strong>x &minus; (y &gt;&gt; shift)</strong> and <strong>x + (y &gt;&gt; shift)</strong>{' '}

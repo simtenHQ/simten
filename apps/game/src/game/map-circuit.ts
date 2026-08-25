@@ -1,7 +1,7 @@
 /**
  * The campaign map, as an actual circuit.
  *
- * Not a drawing of one. `buildMapCircuit` returns a real `circuit()` — a
+ * Not a drawing of one. `buildMapCircuit` returns a real `circuit()`, a
  * `Switch` per level carrying whether you solved it, `And` gates wherever a
  * row depends on more than one level below it, and an `Led` per level whose
  * value *is* that level's unlock state. `simulateMap` then runs it on the same
@@ -11,7 +11,7 @@
  * So unlock logic is not code that mimics a circuit; it is a circuit. The
  * consequence that matters: when the campaign grows branches, "level 7 needs
  * both 5 and 6" stops being a rule someone has to implement and becomes an
- * `And` — one representation, which cannot disagree with itself.
+ * `And`, one representation, which cannot disagree with itself.
  *
  * This runs in the main frame, which is safe precisely because nothing here is
  * player source. The circuit is assembled through the typed API from `MAP_ROWS`;
@@ -37,7 +37,7 @@ const ALWAYS_ON = 'always_on';
  *
  * Row 0 is unlocked unconditionally, so it is driven by a `Constant`; every
  * later row is driven by the AND of the row beneath it, chained pairwise
- * because gates take two inputs. A row of one level needs no gate at all — the
+ * because gates take two inputs. A row of one level needs no gate at all; the
  * switch below drives the lamp directly.
  */
 export function buildMapCircuit() {
@@ -92,7 +92,7 @@ export function buildMapCircuit() {
 export interface MapState {
   /** Levels whose unlock lamp is lit. */
   unlocked: Set<string>;
-  /** Levels whose switch is on — the signal leaving them is live. */
+  /** Levels whose switch is on; the signal leaving them is live. */
   live: Set<string>;
 }
 

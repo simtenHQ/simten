@@ -61,7 +61,7 @@ circuit(name, {
 
 ## Connections
 
-The `connect` function receives a single object with `inputs`, `outputs`, and `nodes` — the same shape as the config. Destructure node names inline for terseness, or access them as `nodes.xor1` etc. Call `.to()` to wire ports:
+The `connect` function receives a single object with `inputs`, `outputs`, and `nodes`, the same shape as the config. Destructure node names inline for terseness, or access them as `nodes.xor1` etc. Call `.to()` to wire ports:
 
 ```typescript
 connect: ({ inputs, outputs, nodes: { xor1, and1 } }) => [
@@ -76,7 +76,7 @@ Connections are directional: source (left) drives target(s) (right). A port can 
 
 ## Node Parameters
 
-Parameterized components are factories — call them inline to specialize per-instance args:
+Parameterized components are factories: call them inline to specialize per-instance args:
 
 ```typescript
 nodes: {
@@ -87,9 +87,9 @@ nodes: {
 },
 ```
 
-A bare `Adder()` with no args is allowed and uses the factory's defaults; bare `Adder` (without parens) is a TS error — parameterized components must always be called. Singletons (logic gates, `Led`, all `RV32I_*`, etc.) are not parameterized and stay as bare references.
+A bare `Adder()` with no args is allowed and uses the factory's defaults; bare `Adder` (without parens) is a TS error, because parameterized components must always be called. Singletons (logic gates, `Led`, all `RV32I_*`, etc.) are not parameterized and stay as bare references.
 
-**The option name always matches what the component's `state:` or `eval:` destructure uses.** That's the only rule — there's no separate `initial`/`init` keyword to memorize. Examples:
+**The option name always matches what the component's `state:` or `eval:` destructure uses.** That's the only rule; there's no separate `initial`/`init` keyword to memorize. Examples:
 
 | Component | State / eval declares | Factory option |
 |-----------|----------------------|----------------|
@@ -103,7 +103,7 @@ Common parameters across the stdlib:
 | Parameter | Used by | Description |
 |-----------|---------|-------------|
 | `width` | Adder, Subtractor, Comparator, Mux, BusAnd/Or/Xor, LeftShifter, RightShifter, Register | Bus width (default: 8) |
-| `value` | Constant, Input, Switch, Button, Register, DFlipFlop | Fixed or initial state value (matches state/eval field). For Register and DFlipFlop this is also the reset target — when the exporter's auto-plumbed `rst_n` goes low, the register snaps back to `value`. |
+| `value` | Constant, Input, Switch, Button, Register, DFlipFlop | Fixed or initial state value (matches state/eval field). For Register and DFlipFlop this is also the reset target: when the exporter's auto-plumbed `rst_n` goes low, the register snaps back to `value`. |
 | `memory` | RAM, DualPortRAM, ROM, DualPortROM | Memory initialization map `{ addr: value, ... }` |
 | `low`, `high` | BitSlice | Bit range to extract (inclusive) |
 | `baseAddress` | ROM | Memory-mapped base address |
@@ -131,7 +131,7 @@ const FullAdder = circuit('FullAdder', {
 })
 ```
 
-The simulator **elaborates** composites by recursively flattening them to primitives. A `FullAdder` node becomes two `Xor`, two `And`, and one `Or` node internally — composites have zero runtime overhead.
+The simulator **elaborates** composites by recursively flattening them to primitives. A `FullAdder` node becomes two `Xor`, two `And`, and one `Or` node internally, so composites have zero runtime overhead.
 
 ## Self-contained Demos
 
@@ -161,7 +161,7 @@ Circuits can have executable behavior instead of (or in addition to) structural 
 
 ### 1. Composite (structural only)
 
-Uses `nodes` + `connect` — the simulator elaborates these into primitives at compile time. No JS runs at simulation time; all behavior comes from the leaf primitives.
+Uses `nodes` + `connect`; the simulator elaborates these into primitives at compile time. No JS runs at simulation time; all behavior comes from the leaf primitives.
 
 ```typescript
 const HalfAdder = circuit('HalfAdder', {
@@ -177,9 +177,9 @@ const HalfAdder = circuit('HalfAdder', {
 })
 ```
 
-### 2. Behavioral (eval — combinational)
+### 2. Behavioral (eval, combinational)
 
-Uses `eval` — a pure function from inputs to outputs. Runs on every propagation step. No state, no clock.
+Uses `eval`, a pure function from inputs to outputs. Runs on every propagation step. No state, no clock.
 
 ```typescript
 const Xor = circuit('Xor', {
@@ -192,7 +192,7 @@ const Xor = circuit('Xor', {
 `eval` receives named input values as numbers (`0` or `1` for `bit`, integers for `bus(N)`).
 It returns an object with named output values.
 
-### 3. Stateful (state + onTick + eval — sequential)
+### 3. Stateful (state + onTick + eval, sequential)
 
 Uses `state`, `onTick`, and `eval`. The circuit has internal state that updates on the rising clock edge.
 
@@ -208,9 +208,9 @@ const Accumulator = circuit('Accumulator', {
 })
 ```
 
-- `state` — the initial state object (shape defines what state exists)
-- `eval` receives current state fields merged with inputs — return output values
-- `onTick` receives inputs merged with current state — return next state object
+- `state`: the initial state object (shape defines what state exists)
+- `eval` receives current state fields merged with inputs; return output values
+- `onTick` receives inputs merged with current state; return next state object
 
 The stdlib's `Register` follows this same pattern but is wrapped in a factory function so callers can specialize the width and reset value: `circuit('Register', ({ width = 8 } = {}) => ({ ... }))`. See [Node Parameters](#node-parameters) for how factory args flow into per-instance state.
 
@@ -218,13 +218,13 @@ The tick cycle calls `eval` first (combinational output from current state), the
 
 ---
 
-The three patterns are not mutually exclusive — a circuit can have both `nodes`/`connect` and `eval`, though in practice you use one or the other.
+The three patterns are not mutually exclusive: a circuit can have both `nodes`/`connect` and `eval`, though in practice you use one or the other.
 
 ## Type Rules
 
-- `bit → bit` — valid
-- `bus(N) → bus(N)` — valid (same width)
-- `bit → bus(N)` — invalid (needs explicit conversion)
-- `bus(8) → bus(16)` — invalid (width mismatch)
+- `bit → bit`: valid
+- `bus(N) → bus(N)`: valid (same width)
+- `bit → bus(N)`: invalid (needs explicit conversion)
+- `bus(8) → bus(16)`: invalid (width mismatch)
 
 Use `Splitter`, `BitSlice`, or `Concat` for type conversions.

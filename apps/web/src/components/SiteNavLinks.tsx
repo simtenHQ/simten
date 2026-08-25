@@ -6,7 +6,7 @@ import { createPortal } from 'react-dom';
 /**
  * Standard nav rendered on the right of SiteHeader for content pages.
  *
- * Desktop (sm+): inline links — Blog | Learn | Docs | [GitHub icon].
+ * Desktop (sm+): inline links: Blog | Learn | Docs | [GitHub icon].
  * Mobile (< sm): a hamburger button that opens a dropdown panel with the same
  * links, so they don't get squished against the ThemeToggle on narrow screens.
  *
@@ -77,7 +77,7 @@ export function SiteNavLinks() {
       </nav>
 
       {/* Mobile hamburger. order-last pushes it past the ThemeToggle (rendered
-          after {right} in SiteHeader) so it sits on the far-right edge — the
+          after {right} in SiteHeader) so it sits on the far-right edge; the
           conventional, thumb-reachable spot. Hidden on desktop, so order is moot
           there. */}
       <button
@@ -90,7 +90,7 @@ export function SiteNavLinks() {
         {open ? <X className="size-5" /> : <Menu className="size-5" />}
       </button>
 
-      {/* Mobile dropdown — portalled to body, sits just below the h-14 header */}
+      {/* Mobile dropdown, portalled to body, sits just below the h-14 header */}
       {mounted &&
         open &&
         createPortal(

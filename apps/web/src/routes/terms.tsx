@@ -79,7 +79,7 @@ function TermsPage() {
           long as the link remains active. You retain all other rights.
         </p>
         <p>
-          We may remove shared content at our discretion — for example, if it&apos;s reported as
+          We may remove shared content at our discretion, for example if it&apos;s reported as
           illegal or abusive, or if it appears to be used to circumvent acceptable-use rules. Email{' '}
           <a
             href="mailto:security@simten.dev"
@@ -108,7 +108,7 @@ function TermsPage() {
           <strong>
             &ldquo;as is&rdquo; and &ldquo;as available,&rdquo; without warranty of any kind
           </strong>
-          , express or implied — including without limitation any warranty of merchantability,
+          , express or implied, including without limitation any warranty of merchantability,
           fitness for a particular purpose, accuracy, non-infringement, or availability.
         </p>
         <p>In particular, and without limiting the generality of the above:</p>
@@ -135,14 +135,14 @@ function TermsPage() {
         <H2>7. Limitation of liability</H2>
         <p>
           To the maximum extent permitted by law, Simten and its contributors shall not be liable
-          for any indirect, incidental, special, consequential, exemplary, or punitive damages —
-          including loss of profits, data, use, goodwill, or other intangible losses — arising out
-          of or relating to your use of (or inability to use) the Service, even if advised of the
+          for any indirect, incidental, special, consequential, exemplary, or punitive damages,
+          including loss of profits, data, use, goodwill, or other intangible losses, arising out of
+          or relating to your use of (or inability to use) the Service, even if advised of the
           possibility of such damages.
         </p>
         <p>
           Where law prohibits exclusion of liability, our aggregate liability is limited to the
-          amount you have paid us for the Service in the twelve months preceding the claim — which,
+          amount you have paid us for the Service in the twelve months preceding the claim, which,
           for a free Service, is zero.
         </p>
 

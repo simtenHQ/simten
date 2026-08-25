@@ -307,7 +307,7 @@ export const PONG_CIRCUITS: Record<string, BlogCircuit> = {
   pixelAddress: {
     name: 'Pixel Address Calculation',
     description:
-      'Converts (X, Y) coordinates to a linear framebuffer address using (Y << 4) + X. In real hardware a left shift by 4 is just wiring — each bit of Y connects to a position 4 places higher — so the only real gate is the final adder.',
+      'Converts (X, Y) coordinates to a linear framebuffer address using (Y << 4) + X. In real hardware a left shift by 4 is just wiring (each bit of Y connects to a position 4 places higher), so the only real gate is the final adder.',
     layout: {
       x: { x: 0, y: 120 },
       y: { x: 0, y: 0 },
@@ -321,7 +321,7 @@ export const PONG_CIRCUITS: Record<string, BlogCircuit> = {
 };
 
 /**
- * Full PongSimple — a complete Pong game on a 16x16 screen.
+ * Full PongSimple: a complete Pong game on a 16x16 screen.
  * Two paddles (W/S and Up/Down), a bouncing ball, 14-phase rendering pipeline.
  */
 export const PongSimple = circuit('PongSimple', {

@@ -10,7 +10,7 @@ import { Comparator, Constant, HexDisplay, Input, Mux, Register } from '@simten/
 import type { BlogCircuit } from '../types';
 
 // ── Compare-and-swap subcircuit ──
-// Outputs min on `lo`, max on `hi` — unconditionally, no branching.
+// Outputs min on `lo`, max on `hi`, unconditionally and with no branching.
 // cmp.lt=1 means a < b, so lo=a (in1), hi=b (in1).
 const CompareSwap = circuit('CompareSwap', {
   inputs: { a: bus(8), b: bus(8) },
@@ -110,7 +110,7 @@ export const SortDemo = circuit('SortDemo', {
 
 // ── Pipelined 4-element sort network ──
 // Same 5 comparators as SortNet4, but register banks between each stage
-// make inputs and outputs independent — a new result emerges every clock cycle
+// make inputs and outputs independent, so a new result emerges every clock cycle
 // after 3 cycles of initial latency.
 export const PipelinedSortNet4 = circuit('PipelinedSortNet4', {
   inputs: { v0: bus(8), v1: bus(8), v2: bus(8), v3: bus(8) },
@@ -204,7 +204,7 @@ export const SORTING_CIRCUITS: Record<string, BlogCircuit> = {
   compareSwapDemo: {
     name: 'Compare-and-Swap',
     description:
-      'Two inputs enter, the smaller exits on `lo` and the larger on `hi`. No branches — a Comparator drives two Muxes.',
+      'Two inputs enter, the smaller exits on `lo` and the larger on `hi`. No branches: a Comparator drives two Muxes.',
     circuit: CompareSwapDemo,
   },
 

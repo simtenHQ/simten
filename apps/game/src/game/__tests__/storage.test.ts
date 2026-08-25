@@ -1,7 +1,7 @@
 /**
  * The storage layer, driven through a fake `window`.
  *
- * The suite runs in the node environment — see `vitest.config.ts` — so there is
+ * The suite runs in the node environment (see `vitest.config.ts`) so there is
  * no `localStorage` and, more usefully, no `window` at all. That is exactly the
  * condition the module's SSR guard exists for, so the absent case is tested by
  * simply not installing the stub.
@@ -117,7 +117,7 @@ describe('progress', () => {
     expect(PROGRESS_KEY).toBe('simten:game:progress');
   });
 
-  it('carries no source — the map needs a flag and a score, nothing more', () => {
+  it('carries no source; the map needs a flag and a score, nothing more', () => {
     installStorage();
     writeProgress('first-wire', { gates: 1 });
     expect(Object.keys(readProgress()['first-wire'])).toEqual(['gates']);

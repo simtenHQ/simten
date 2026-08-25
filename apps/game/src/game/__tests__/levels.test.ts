@@ -4,10 +4,10 @@
  * A level is only shippable if two things hold, and neither is obvious from
  * reading it:
  *
- *   solvable    — a reference solution passes. Catches a level whose stated
+ *   solvable    : a reference solution passes. Catches a level whose stated
  *                 signals, allowed primitives and truth table cannot all be
  *                 satisfied at once.
- *   not vacuous — degenerate answers fail. Catches the tautological grader,
+ *   not vacuous : degenerate answers fail. Catches the tautological grader,
  *                 where a truth table is so thin that returning a constant
  *                 passes it. That bug is invisible in the "solvable" direction,
  *                 which is exactly why it needs its own test.
@@ -30,7 +30,7 @@ import { localRuntime } from './local-runtime';
 
 /**
  * A degenerate answer: the right signals, no real logic. Wires a Constant
- * straight to the output, so it also exercises the forbidden-primitive path —
+ * straight to the output, so it also exercises the forbidden-primitive path,
  * no level allows a Constant.
  */
 function constantSolution(level: Level, value: 0 | 1): string {
@@ -66,7 +66,7 @@ describe('every level has a reference solution', () => {
 });
 
 describe.each(LEVELS.map((l) => [l.id, l] as const))('%s', (id, level) => {
-  it('is solvable — the reference solution passes', async () => {
+  it('is solvable, and the reference solution passes', async () => {
     const result = await grade(localRuntime(), level, SOLUTIONS[id]);
     // Surface the actual failure rather than a bare `false`.
     expect(result.status === 'pass' ? 'pass' : JSON.stringify(result)).toBe('pass');
@@ -76,7 +76,7 @@ describe.each(LEVELS.map((l) => [l.id, l] as const))('%s', (id, level) => {
    * Equality, not `<=`. A par looser than the reference solution passes a `<=`
    * check while quietly promising the player a target they beat by default,
    * which is how four levels ended up carrying pars from before gates unlocked
-   * progressively — `xnor` advertised 5 when XOR plus a NOT does it in 2. If
+   * progressively; `xnor` advertised 5 when XOR plus a NOT does it in 2. If
    * this fails, either the reference solution got cheaper and par should follow,
    * or par moved and the reference solution has not caught up.
    */
@@ -87,7 +87,7 @@ describe.each(LEVELS.map((l) => [l.id, l] as const))('%s', (id, level) => {
     if (level.par !== undefined) expect(result.gates).toBe(level.par);
   });
 
-  it.each([0, 1] as const)('is not vacuous — a constant %i answer fails', async (value) => {
+  it.each([0, 1] as const)('is not vacuous, so a constant %i answer fails', async (value) => {
     const result = await grade(localRuntime(), level, constantSolution(level, value));
     expect(result.status).toBe('fail');
   });
@@ -141,7 +141,7 @@ describe('the score counts only permitted primitives', () => {
     if (!level) throw new Error('level missing');
     const result = await grade(localRuntime(), level, SOLUTIONS['first-wire']);
     if (result.status !== 'pass') throw new Error(JSON.stringify(result));
-    // Two switches, one lamp, one gate — the score is 1.
+    // Two switches, one lamp, one gate, so the score is 1.
     expect(result.gates).toBe(1);
   });
 });
@@ -173,7 +173,7 @@ describe('level definitions', () => {
      * A combinational level lists every input combination, so no circuit
      * without memory can fake it. A sequential level lists a chosen handful,
      * and a short enough sequence can be satisfied by some function of the
-     * inputs alone — which would make a level about memory passable without
+     * inputs alone, which would make a level about memory passable without
      * any. The proof it is not: the same inputs appear twice expecting
      * different answers. No function of the inputs can do that.
      */
@@ -201,7 +201,7 @@ describe('level definitions', () => {
 
   it('all carry completion copy', () => {
     // The dialog reads straight from this, so a level without it finishes on
-    // an empty headline — and the failure would only show on a solve.
+    // an empty headline, and the failure would only show on a solve.
     for (const level of LEVELS) {
       expect(level.outro.headline.trim().length).toBeGreaterThan(0);
       expect(level.outro.body.trim().length).toBeGreaterThan(0);

@@ -1,11 +1,11 @@
 /**
- * Simten logo — variants.
+ * Simten logo variants.
  *
  * To swap the active logo, change which one is exported as `Logo` at the bottom.
  * All variants:
  *   - 32×32 viewBox, scalable via the `size` prop
  *   - Use `currentColor` so they inherit foreground via CSS / parent text color
- *   - Single-mark, no text — meant to be paired with the wordmark separately
+ *   - Single-mark, no text, meant to be paired with the wordmark separately
  *   - Designed to read at 16×16 (favicon scale)
  */
 
@@ -15,7 +15,7 @@ interface LogoProps {
 }
 
 // ──────────────────────────────────────────────────────────
-// A) NAND gate — universal symbol of digital logic.
+// A) NAND gate: universal symbol of digital logic.
 //    D-shape body with a negation bubble on the output.
 //    Reads as "we do digital." Filled body gives it weight.
 // ──────────────────────────────────────────────────────────
@@ -60,7 +60,7 @@ export function LogoNand({ size = 28, className }: LogoProps) {
 }
 
 // ──────────────────────────────────────────────────────────
-// B) Orthogonal trace — two nodes connected by a right-angle wire.
+// B) Orthogonal trace: two nodes connected by a right-angle wire.
 //    Echoes the visual language of the actual circuits (orthogonal
 //    edge routing). Reads as "graph / circuit topology."
 // ──────────────────────────────────────────────────────────
@@ -85,7 +85,7 @@ export function LogoTrace({ size = 28, className }: LogoProps) {
 }
 
 // ──────────────────────────────────────────────────────────
-// C) Square wave — a clock signal. Universal hardware/timing icon.
+// C) Square wave: a clock signal. Universal hardware/timing icon.
 //    Stark, recognizable, no ambiguity about the domain.
 // ──────────────────────────────────────────────────────────
 export function LogoSquareWave({ size = 28, className }: LogoProps) {
@@ -104,7 +104,7 @@ export function LogoSquareWave({ size = 28, className }: LogoProps) {
 }
 
 // ──────────────────────────────────────────────────────────
-// D) Hex die — hexagonal chip die outline with a centred port.
+// D) Hex die: hexagonal chip die outline with a centred port.
 //    Hexagons are tech-canonical (Cloudflare, Linear, Hex).
 //    The inner dot suggests a CPU core / central node.
 // ──────────────────────────────────────────────────────────
@@ -124,13 +124,13 @@ export function LogoHex({ size = 28, className }: LogoProps) {
 }
 
 // ──────────────────────────────────────────────────────────
-// E) SIM wordmark — one continuous square-wave trace that forms S, I, M.
+// E) SIM wordmark: one continuous square-wave trace that forms S, I, M.
 //    Single SVG path, never lifts, only horizontal/vertical strokes,
-//    only 90° corners. The letters emerge from the path's shape — S is
+//    only 90° corners. The letters emerge from the path's shape; S is
 //    the rectangular zigzag, I is a tall narrow pulse, M is two pulses
 //    sharing a valley. All drawn as one wave moving left to right.
 //
-//    Wider than the icon variants (~2.5:1). Use a larger `size` —
+//    Wider than the icon variants (~2.5:1). Use a larger `size`,
 //    for header use try `size={32}` or higher; the SVG will scale.
 // ──────────────────────────────────────────────────────────
 export function LogoSimWordmark({ size = 32, className }: LogoProps) {
@@ -139,7 +139,7 @@ export function LogoSimWordmark({ size = 32, className }: LogoProps) {
     <svg width={size * 2.5} height={size} viewBox="0 0 80 32" fill="none" className={className}>
       {/* ONE continuous square-wave path traversing left-to-right.
           Reads as S then I then M as the wave rises and falls.
-          No serifs, no separate strokes, no curves — every joint is 90°. */}
+          No serifs, no separate strokes, no curves; every joint is 90°. */}
       <path
         d="
           M 0 28
@@ -159,7 +159,7 @@ export function LogoSimWordmark({ size = 32, className }: LogoProps) {
 }
 
 // ──────────────────────────────────────────────────────────
-// F) sim10 wordmark — hand-drawn waveform from Excalidraw, themed.
+// F) sim10 wordmark: hand-drawn waveform from Excalidraw, themed.
 //    The brand "simten" rendered as "sim10" so it reads as both a
 //    decimal ten and a binary nod. Sketchy/hand-drawn aesthetic with
 //    every stroke doubled (Excalidraw's signature look).
@@ -172,7 +172,7 @@ export function LogoSim10({ size = 32, className }: LogoProps) {
   // Cropped viewBox: tightens around the actual wave content (which lives at
   // x=10..33.75, y=10..25.69 in the original Excalidraw export). Strips the
   // surrounding padding so the logo doesn't have giant whitespace when placed
-  // next to a wordmark. Background rect from the export is dropped — stroke
+  // next to a wordmark. Background rect from the export is dropped; stroke
   // uses currentColor so the mark follows the host's text color (theme-aware).
   return (
     <svg width={size * 1.4} height={size} viewBox="8 8 28 20" fill="none" className={className}>
@@ -190,14 +190,14 @@ export function LogoSim10({ size = 32, className }: LogoProps) {
 }
 
 // ──────────────────────────────────────────────────────────
-// G) Sim10 favicon mark — square, single-stroke variant of the full wordmark.
+// G) Sim10 favicon mark: square, single-stroke variant of the full wordmark.
 //    Same hand-drawn "sim10" path as LogoSim10, but:
 //      - Drop Excalidraw's doubled strokes (every line drawn twice in the
-//        wordmark; at favicon sizes the duplicates blur into mush — single
+//        wordmark; at favicon sizes the duplicates blur into mush, so single
 //        renders cleaner without losing the wobble)
 //      - Bump strokeWidth from 1 to 2.5 (so it survives 16x16)
 //      - Center in a 32x32 square viewBox
-//    Used in apps/web/public/favicon.svg — the static file the browser
+//    Used in apps/web/public/favicon.svg, the static file the browser
 //    actually fetches. Keep the React variant and the static SVG in sync.
 // ──────────────────────────────────────────────────────────
 export function LogoSim10Mark({ size = 32, className }: LogoProps) {
@@ -217,7 +217,7 @@ export function LogoSim10Mark({ size = 32, className }: LogoProps) {
 }
 
 // ──────────────────────────────────────────────────────────
-// Original — kept for reference / fallback. Friendly mascot face.
+// Original: kept for reference / fallback. Friendly mascot face.
 // ──────────────────────────────────────────────────────────
 export function LogoOriginal({ size = 28, className }: LogoProps) {
   return (
@@ -249,12 +249,12 @@ export function LogoOriginal({ size = 28, className }: LogoProps) {
 }
 
 // ──────────────────────────────────────────────────────────
-// Active export — swap which variant is `Logo` to preview different marks.
+// Active export: swap which variant is `Logo` to preview different marks.
 // Options:
 //   LogoNand · LogoTrace · LogoSquareWave · LogoHex
-//   LogoSimWordmark — 2.5:1 ortho-stroke wordmark (S/I/M)
-//   LogoSim10       — hand-drawn waveform "sim10" (~1.37:1, header use)
-//   LogoSim10Mark   — square favicon variant of LogoSim10 (mirrored in public/favicon.svg)
-//   LogoOriginal    — friendly triangle mascot
+//   LogoSimWordmark - 2.5:1 ortho-stroke wordmark (S/I/M)
+//   LogoSim10       - hand-drawn waveform "sim10" (~1.37:1, header use)
+//   LogoSim10Mark   - square favicon variant of LogoSim10 (mirrored in public/favicon.svg)
+//   LogoOriginal    - friendly triangle mascot
 // ──────────────────────────────────────────────────────────
 export const Logo = LogoSim10;

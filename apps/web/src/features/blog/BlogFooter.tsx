@@ -9,7 +9,7 @@ interface BlogFooterProps {
  * Per-post footer rendered at the bottom of every blog post body.
  * Holds post-specific CTAs (open the editor, go to the next post, back to
  * the index). The site-wide brand + nav footer is SiteFooter, mounted in
- * __root.tsx — this component sits ABOVE it.
+ * __root.tsx; this component sits ABOVE it.
  */
 export function BlogFooter({ slug }: BlogFooterProps) {
   const currentIndex = posts.findIndex((p) => p.slug === slug);

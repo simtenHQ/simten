@@ -40,7 +40,7 @@ type HeroLayout = Record<string, { x: number; y: number }>;
 // Hero demo circuits
 // ============================================================================
 
-// figlet — a real npm package — renders ASCII-art text at module-load time.
+// figlet, a real npm package, renders ASCII-art text at module-load time.
 // We bake the resulting bytes into a hardware ROM and stream them through a
 // hardware Console, character by character, like a typewriter.
 //
@@ -85,7 +85,7 @@ export const FigletDemo = circuit('FigletDemo', {
   connect: ({ nodes: { src, term } }) => [src.byte.to(term.data), src.strobe.to(term.we)],
 });
 
-// Source string used by the splash hero picker — same content as DEMOS[0].code
+// Source string used by the splash hero picker; same content as DEMOS[0].code
 // below, exported so ClaudeDemoSection can render it without duplicating the
 // figlet ROM-generation logic. Kept as a free const rather than read out of
 // DEMOS at runtime to avoid a circular-feeling self-reference.
@@ -95,7 +95,7 @@ import smallFont from 'figlet/fonts/Small.js';
 figlet.parseFont('Small', smallFont);
 
 // Render ASCII-art at compile time with a real npm package,
-// then stream the bytes through hardware — letter by letter.
+// then stream the bytes through hardware, letter by letter.
 const banner = figlet.textSync('Simten', { font: 'Small' });
 const ascii = [...banner].map(c => c.charCodeAt(0));
 const bannerBytes = Array.from({ length: 256 }, (_, i) =>
@@ -210,7 +210,7 @@ import smallFont from 'figlet/fonts/Small.js';
 figlet.parseFont('Small', smallFont);
 
 // Render ASCII-art at compile time with a real npm package,
-// then stream the bytes through hardware — letter by letter.
+// then stream the bytes through hardware, letter by letter.
 const banner = figlet.textSync('Simten', { font: 'Small' });
 const ascii = [...banner].map(c => c.charCodeAt(0));
 const bannerBytes = Array.from({ length: 256 }, (_, i) =>
@@ -356,7 +356,7 @@ const Mux2to1 = circuit('Mux2to1', {
 ];
 
 // ============================================================================
-// Window chrome (simpler than ClaudeDemoSection's — no tabs, no MCP badge)
+// Window chrome (simpler than ClaudeDemoSection's: no tabs, no MCP badge)
 // ============================================================================
 
 function HeroWindow({ children }: { children: ReactNode }) {
@@ -392,7 +392,7 @@ export function Hero() {
 
   // Auto-start the figlet demo by handing off to the simulator's own auto-run
   // engine. This way the play/pause button (which talks to the same engine)
-  // can stop it normally — we're not running a competing timer in user-land.
+  // can stop it normally; we're not running a competing timer in user-land.
   // Other demos stay user-driven; switching demos clears any in-flight run.
   const desktopEmbedRef = useRef<CircuitEmbedHandle>(null);
   const mobileEmbedRef = useRef<CircuitEmbedHandle>(null);

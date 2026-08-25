@@ -52,9 +52,9 @@ function PrivacyPage() {
           shared circuit, we increment two counters in Cloudflare&apos;s first-party analytics
           product: <code>share_create</code> (with the hash and source byte length) and{' '}
           <code>share_read</code> (with the hash). No IP, no user agent, no personal data is logged
-          here — we use it to size capacity and spot abuse patterns. There is no tracker on any
-          page, no Google Analytics, no PostHog, no Sentry, no Plausible. We considered them and
-          chose not to ship them.
+          here; we use it to size capacity and spot abuse patterns. There is no tracker on any page,
+          no Google Analytics, no PostHog, no Sentry, no Plausible. We considered them and chose not
+          to ship them.
         </p>
         <p>
           <strong>Shared circuit source (Cloudflare KV).</strong> If you press the
@@ -72,13 +72,13 @@ function PrivacyPage() {
             No third-party analytics, tracking pixels, advertising scripts, or session replay.
           </li>
           <li>
-            No telemetry from the MCP server (<code>@simten/mcp</code>) — it runs entirely on your
+            No telemetry from the MCP server (<code>@simten/mcp</code>); it runs entirely on your
             machine and does not phone home.
           </li>
           <li>
             No telemetry from the embed library (<code>@simten/embed</code> /{' '}
-            <code>&lt;CircuitEmbed /&gt;</code>) — it does not call back to simten.dev when loaded
-            on third-party sites.
+            <code>&lt;CircuitEmbed /&gt;</code>); it does not call back to simten.dev when loaded on
+            third-party sites.
           </li>
           <li>
             No telemetry from the FPGA pipeline (<code>apps/synth</code>, <code>apps/verifier</code>
@@ -93,15 +93,15 @@ function PrivacyPage() {
         </p>
         <ul>
           <li>
-            <code>theme</code> — light/dark preference.
+            <code>theme</code>: light/dark preference.
           </li>
           <li>
-            <code>simten:mcp-connection</code> — the connection token + port for reconnecting to
-            your local MCP server. Local-only; never leaves your machine.
+            <code>simten:mcp-connection</code>: the connection token + port for reconnecting to your
+            local MCP server. Local-only; never leaves your machine.
           </li>
           <li>
-            <code>simten-ts-code</code> (and similar editor keys) — your current editor buffer, so
-            it survives page reload.
+            <code>simten-ts-code</code> (and similar editor keys): your current editor buffer, so it
+            survives page reload.
           </li>
         </ul>
         <p>No cookies of any kind.</p>
@@ -109,7 +109,7 @@ function PrivacyPage() {
         <H2>Third parties that may see your IP</H2>
         <ul>
           <li>
-            <strong>Cloudflare</strong> — hosts simten.dev and serves every request. See{' '}
+            <strong>Cloudflare</strong>: hosts simten.dev and serves every request. See{' '}
             <ExternalLink href="https://www.cloudflare.com/privacypolicy/">
               Cloudflare&apos;s privacy policy
             </ExternalLink>
@@ -119,15 +119,15 @@ function PrivacyPage() {
             <strong>
               jsDelivr (<code>cdn.jsdelivr.net</code>)
             </strong>{' '}
-            — the editor loads the TypeScript compiler from jsDelivr for in-browser type checking.
-            Loaded only when you open the editor. See{' '}
+            loads the TypeScript compiler from jsDelivr for in-browser type checking. Loaded only
+            when you open the editor. See{' '}
             <ExternalLink href="https://www.jsdelivr.com/privacy-policy-jsdelivr-net">
               jsDelivr&apos;s privacy policy
             </ExternalLink>
             .
           </li>
           <li>
-            <strong>esm.sh</strong> — the in-browser sandbox loads any npm packages your circuit
+            <strong>esm.sh</strong>: the in-browser sandbox loads any npm packages your circuit
             imports from esm.sh. Loaded only if your circuit has <code>import</code> statements. See{' '}
             <ExternalLink href="https://esm.sh">esm.sh</ExternalLink>.
           </li>
@@ -170,7 +170,7 @@ function PrivacyPage() {
         <H2>Your rights (GDPR / CCPA)</H2>
         <p>
           Because we collect no personal identifiers tied to you, most data-subject requests
-          don&apos;t apply meaningfully. The exception is shared circuits — if you shared a circuit
+          don&apos;t apply meaningfully. The exception is shared circuits: if you shared a circuit
           and want it deleted, email{' '}
           <a
             href="mailto:privacy@simten.dev"

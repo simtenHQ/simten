@@ -11,8 +11,8 @@ export function DataFlowSection() {
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
           The word &ldquo;systolic&rdquo; comes from the Greek word for the heart&rsquo;s rhythmic
           contraction. In a systolic array, data pulses through a grid of processing elements like
-          blood through arteries &mdash; each element receives data, processes it, and passes it
-          along in lockstep with the clock.
+          blood through arteries: each element receives data, processes it, and passes it along in
+          lockstep with the clock.
         </p>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
           Here we connect two PEs{' '}
@@ -30,7 +30,7 @@ export function DataFlowSection() {
           (toggle <code className="text-blue-300">weightValid</code> on, tick, then toggle off). Now
           tick repeatedly to watch data flow from left to right. PE0 shows{' '}
           <code className="text-blue-300">data &times; weight0</code>, while PE1 shows{' '}
-          <code className="text-blue-300">data &times; weight1</code> &mdash; one cycle behind.
+          <code className="text-blue-300">data &times; weight1</code>, one cycle behind.
         </p>
       </div>
 

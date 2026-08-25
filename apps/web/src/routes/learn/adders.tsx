@@ -101,7 +101,7 @@ export const Route = createFileRoute('/learn/adders')({
     ...pageHead({
       title: 'How adders work (and why ripple-carry is slow)',
       description:
-        'Adders are how digital circuits do addition. The naive design — chaining single-bit adders together — has a problem that gets worse as inputs widen. This is a concept-level walkthrough of why, with live editable circuits.',
+        'Adders are how digital circuits do addition. The naive design (chaining single-bit adders together) has a problem that gets worse as inputs widen. This is a concept-level walkthrough of why, with live editable circuits.',
       path: '/learn/adders',
     }),
     scripts: [

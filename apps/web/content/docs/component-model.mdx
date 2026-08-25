@@ -15,18 +15,18 @@ Search for any primitive, see its ports and parameters, and interact with a live
 
 ## The Core Invariant
 
-**Circuits are either structural (nodes + connections) or behavioral (eval/onTick functions). Structural circuits have zero runtime overhead — they're elaborated away before simulation.**
+**Circuits are either structural (nodes + connections) or behavioral (eval/onTick functions). Structural circuits have zero runtime overhead: they're elaborated away before simulation.**
 
-When you write a composite like `HalfAdder` using `nodes` and `connect`, you're defining structure. The simulator expands it to primitives before running — this is called **elaboration**. All runtime behavior ultimately comes from circuits with `eval` or `onTick` functions.
+When you write a composite like `HalfAdder` using `nodes` and `connect`, you're defining structure. The simulator expands it to primitives before running. This is called **elaboration**. All runtime behavior ultimately comes from circuits with `eval` or `onTick` functions.
 
 You can also write your own behavioral circuits using `eval` (combinational) or `state` + `onTick` (sequential). See the [API Reference](/docs/api-reference#behavioral-circuits) for details.
 
 ## Component Resolution
 
 When the system encounters a node:
-1. Check for `eval` / `onTick` on the circuit — if found, treat as a behavioral leaf
-2. Check for `nodes` / `connect` — if found, elaborate (expand recursively)
-3. Error — circuit has neither
+1. Check for `eval` / `onTick` on the circuit; if found, treat as a behavioral leaf
+2. Check for `nodes` / `connect`; if found, elaborate (expand recursively)
+3. Error: circuit has neither
 
 ---
 
@@ -36,13 +36,13 @@ When the system encounters a node:
 
 | Primitive | Inputs | Outputs | Description |
 |-----------|--------|---------|-------------|
-| <PrimitiveLink name="And" /> | `a: Bit`, `b: Bit` | `out: Bit` | AND — true when both inputs are true |
-| <PrimitiveLink name="Or" /> | `a: Bit`, `b: Bit` | `out: Bit` | OR — true when at least one input is true |
-| <PrimitiveLink name="Not" /> | `in: Bit` | `out: Bit` | NOT — inverts the input |
-| <PrimitiveLink name="Nand" /> | `a: Bit`, `b: Bit` | `out: Bit` | NAND — false only when both inputs are true |
-| <PrimitiveLink name="Nor" /> | `a: Bit`, `b: Bit` | `out: Bit` | NOR — true only when both inputs are false |
-| <PrimitiveLink name="Xor" /> | `a: Bit`, `b: Bit` | `out: Bit` | XOR — true when inputs differ |
-| <PrimitiveLink name="Xnor" /> | `a: Bit`, `b: Bit` | `out: Bit` | XNOR — true when inputs match |
+| <PrimitiveLink name="And" /> | `a: Bit`, `b: Bit` | `out: Bit` | AND: true when both inputs are true |
+| <PrimitiveLink name="Or" /> | `a: Bit`, `b: Bit` | `out: Bit` | OR: true when at least one input is true |
+| <PrimitiveLink name="Not" /> | `in: Bit` | `out: Bit` | NOT: inverts the input |
+| <PrimitiveLink name="Nand" /> | `a: Bit`, `b: Bit` | `out: Bit` | NAND: false only when both inputs are true |
+| <PrimitiveLink name="Nor" /> | `a: Bit`, `b: Bit` | `out: Bit` | NOR: true only when both inputs are false |
+| <PrimitiveLink name="Xor" /> | `a: Bit`, `b: Bit` | `out: Bit` | XOR: true when inputs differ |
+| <PrimitiveLink name="Xnor" /> | `a: Bit`, `b: Bit` | `out: Bit` | XNOR: true when inputs match |
 | <PrimitiveLink name="Buffer" /> | `in: Bit` | `out: Bit` | Passes input through unchanged |
 
 ### I/O
@@ -102,16 +102,16 @@ All support `width` parameter (default: 8).
 
 These components have **clocked state** that updates on the rising edge of `clk`.
 
-"Sequential" isn't a flag you set: a primitive is sequential exactly when it declares `state` (these two do), and a composite is sequential when it contains one. That same `state` declaration is what gives the circuit its single implicit clock, which is why you never wire `clk` yourself — see [How it works](/docs/how-it-works#3-sequential-vs-combinational).
+"Sequential" isn't a flag you set: a primitive is sequential exactly when it declares `state` (these two do), and a composite is sequential when it contains one. That same `state` declaration is what gives the circuit its single implicit clock, which is why you never wire `clk` yourself. See [How it works](/docs/how-it-works#3-sequential-vs-combinational).
 
 | Primitive | Inputs | Outputs | Parameters | Description |
 |-----------|--------|---------|------------|-------------|
 | <PrimitiveLink name="DFlipFlop" /> | `d: Bit` | `q: Bit`, `q_bar: Bit` | — | 1-bit register, captures `d` on clock edge |
 | <PrimitiveLink name="Register" /> | `data: Bus[N]`, `we: Bit` | `q: Bus[N]` | `width` (8), `value` (0) | N-bit register, writes when `we` is high |
 
-**Key difference:** DFlipFlop always captures its input on every clock edge. Register only writes when `we` (write enable) is high — this lets you hold a value across multiple cycles.
+**Key difference:** DFlipFlop always captures its input on every clock edge. Register only writes when `we` (write enable) is high, which lets you hold a value across multiple cycles.
 
-**Reset behavior (Verilog export):** when the exporter's auto-plumbed `rst_n` is low, both DFlipFlop and Register snap back to their `value` arg. In simulation, `sim.reset()` produces the same effect. Memory primitives (RAM, DualPortRAM) preserve their contents during reset — only writes are suppressed.
+**Reset behavior (Verilog export):** when the exporter's auto-plumbed `rst_n` is low, both DFlipFlop and Register snap back to their `value` arg. In simulation, `sim.reset()` produces the same effect. Memory primitives (RAM, DualPortRAM) preserve their contents during reset; only writes are suppressed.
 
 ### Memory
 

@@ -196,7 +196,7 @@ export function CRC32Section() {
           sequentially, the hardware precomputes the effect of all 8 polynomial shifts in parallel
           and produces the result in a single clock cycle. At 100 Gbps, a NIC must compute CRC-32
           over roughly 12.5 billion bytes per second. The unrolled hardware does exactly that with a
-          fixed amount of combinational logic &mdash; no loops, no branches.
+          fixed amount of combinational logic, with no loops and no branches.
         </p>
       </div>
     </section>

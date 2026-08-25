@@ -5,7 +5,7 @@ import type { ReactNode } from 'react';
  *
  * CSS-gated, not JS-gated: both branches are present in the SSR markup and the
  * browser picks which to display via Tailwind's `md:` breakpoint. No hydration
- * flicker, and it works before JS arrives — which matters here, because the
+ * flicker, and it works before JS arrives, which matters here, because the
  * thing being gated is a code editor that will not load on the device anyway.
  *
  * Deliberately a copy of the web app's component rather than a shared one. It

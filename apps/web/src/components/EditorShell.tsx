@@ -15,7 +15,7 @@ export default function EditorShell({ initialSource, standalone }: EditorShellPr
     <EditorWorkspace theme={theme} initialSource={initialSource} standalone={standalone} />
   );
   // The standalone local MCP viewer is a desktop dev tool and has no router, so
-  // skip the mobile gate — its MobileEditorNotice renders router <Link>s, which
+  // skip the mobile gate; its MobileEditorNotice renders router <Link>s, which
   // DesktopOnly mounts (CSS-hidden) even on desktop and would crash here.
   if (standalone) return editor;
   return <DesktopOnly fallback={<MobileEditorNotice />}>{editor}</DesktopOnly>;

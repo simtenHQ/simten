@@ -3,9 +3,9 @@ title: Known issues
 description: What doesn't work yet, how to recognize it, and what to do about it.
 ---
 
-This page is the **open** list — things that may still affect you. Fixed bugs live on closed GitHub issues; pull the latest `main` to pick them up.
+This page is the **open** list: things that may still affect you. Fixed bugs live on closed GitHub issues; pull the latest `main` to pick them up.
 
-If you hit something not listed here, please file an issue at [simtenHQ/simten](https://github.com/simtenHQ/simten/issues) — concrete repros are gold.
+If you hit something not listed here, please file an issue at [simtenHQ/simten](https://github.com/simtenHQ/simten/issues). Concrete repros are gold.
 
 ## Correctness
 
@@ -17,38 +17,38 @@ A focused audit of `elaboration.ts` (after fixing [#138](https://github.com/simt
 
 The multi-driver check runs per-circuit at `circuit()` definition time, not on the flattened netlist. If two primitives end up driving the same target through a feedthrough boundary, the conflict surfaces only after stitching and isn't caught.
 
-**How to recognize it:** wrong outputs in a circuit that drives a composite's output port from outside the composite (e.g. `inputs.B.to(p.y)` where `y` is `p`'s output). **Workaround:** don't drive a composite output port externally — the convention is that composite outputs are produced by the composite, not consumed as targets. The TS port-direction guard and the per-circuit multi-driver check together steer you away from this shape; the runtime gap only matters at API edge cases.
+**How to recognize it:** wrong outputs in a circuit that drives a composite's output port from outside the composite (e.g. `inputs.B.to(p.y)` where `y` is `p`'s output). **Workaround:** don't drive a composite output port externally; the convention is that composite outputs are produced by the composite, not consumed as targets. The TS port-direction guard and the per-circuit multi-driver check together steer you away from this shape; the runtime gap only matters at API edge cases.
 
 #### Width mismatches silently accepted at elaboration ([#144](https://github.com/simtenHQ/simten/issues/144), [#145](https://github.com/simtenHQ/simten/issues/145))
 
 Elaboration never validates port-type or width compatibility between source and target. A `bit` source driving a `bus(N)` target (#144) or a `bus(M)` source driving a `bus(N)` target with M ≠ N (#145) passes silently; downstream evaluators coerce inconsistently.
 
-**How to recognize it:** wrong values when a `Constant({ value: 1 })` (default width 1) drives a wider bus, or a narrower bus drives a wider one. **Workaround:** the TypeScript port-direction types reject these mismatches at compile time in typical use — the runtime gap mostly bites hand-constructed IR or `as any` escapes. Use the `width` argument on `Constant` (e.g. `Constant({ value: 1, width: 8 })`) and prefer width-matching primitives so the source and target agree.
+**How to recognize it:** wrong values when a `Constant({ value: 1 })` (default width 1) drives a wider bus, or a narrower bus drives a wider one. **Workaround:** the TypeScript port-direction types reject these mismatches at compile time in typical use, and the runtime gap mostly bites hand-constructed IR or `as any` escapes. Use the `width` argument on `Constant` (e.g. `Constant({ value: 1, width: 8 })`) and prefer width-matching primitives so the source and target agree.
 
 #### Deeply nested feedthrough composites produce a malformed netlist ([#146](https://github.com/simtenHQ/simten/issues/146))
 
-At three or more levels of composites whose *only* output mechanism is a feedthrough (`inputs.x.to(outputs.y)`, no gate at any level), elaboration produces a flat netlist where an internal primitive *input* port appears as a connection source and the top output has two drivers. Silent wrong values at simulation. Sibling class to [#138](https://github.com/simtenHQ/simten/issues/138) — depth-2 was fixed; depth ≥ 3 wasn't covered.
+At three or more levels of composites whose *only* output mechanism is a feedthrough (`inputs.x.to(outputs.y)`, no gate at any level), elaboration produces a flat netlist where an internal primitive *input* port appears as a connection source and the top output has two drivers. Silent wrong values at simulation. Sibling class to [#138](https://github.com/simtenHQ/simten/issues/138): depth-2 was fixed; depth ≥ 3 wasn't covered.
 
 **How to recognize it:** wrong outputs in a circuit that stacks ≥ 3 levels of pure-feedthrough composites (board-of-board-of-board layering, repeated abstraction wrappers without internal logic). **Workaround:** include at least one gate (`Not` → `Not`, `Buffer`, anything non-trivial) at one of the inner levels, or flatten the wrapping to ≤ 2 nested levels. Gated nesting at any depth elaborates correctly.
 
 #### Node-less composite with only a passthrough drops the signal ([#147](https://github.com/simtenHQ/simten/issues/147))
 
-A composite with `nodes: {}` and only an `inputs.x.to(outputs.y)` connection — essentially a "labeled wire" composite — elaborates without error but the simulator returns 0 instead of the input value.
+A composite with `nodes: {}` and only an `inputs.x.to(outputs.y)` connection, essentially a "labeled wire" composite, elaborates without error but the simulator returns 0 instead of the input value.
 
-**How to recognize it:** a passthrough composite with no internal nodes produces 0 at its output regardless of input. **Workaround:** add at least one internal node to any composite, even a dummy gate wired off to one side. The `Passthrough` fixture in `chained-passthrough.test.ts` uses the canonical workaround pattern — `inputs.x.to(d.in)` against a `Not` whose output is unused.
+**How to recognize it:** a passthrough composite with no internal nodes produces 0 at its output regardless of input. **Workaround:** add at least one internal node to any composite, even a dummy gate wired off to one side. The `Passthrough` fixture in `chained-passthrough.test.ts` uses the canonical workaround pattern: `inputs.x.to(d.in)` against a `Not` whose output is unused.
 
 ## Verilog export
 
 ### Hierarchical mode not yet implemented
 
-`verilog_export` currently emits a single flat module. The `mode: 'hierarchical'` option is accepted but not yet implemented (see `packages/core/src/verilog/exporter.ts`) — composite circuits are inlined into the top module rather than emitted as separate `module` declarations.
+`verilog_export` currently emits a single flat module. The `mode: 'hierarchical'` option is accepted but not yet implemented (see `packages/core/src/verilog/exporter.ts`); composite circuits are inlined into the top module rather than emitted as separate `module` declarations.
 
 **How to recognize it:** the exported Verilog contains a single top-level module regardless of how deeply nested the source circuit is. **Workaround:** flat export is fully functional for synthesis (Yosys and nextpnr accept it); use it as-is. If you need hierarchical Verilog for readability or third-party tool consumption, post-process the output or open an issue.
 
 ## Verilog import
 
 Import runs your RTL through Yosys and lifts the resulting netlist into simten source. The whole
-project goes in — every `.v` under a folder, plus parameters and any `$readmemh` data — and Yosys
+project goes in (every `.v` under a folder, plus parameters and any `$readmemh` data) and Yosys
 prunes whatever the top module doesn't reach. What follows is what the result can and can't do
 once it's in the simulator.
 
@@ -56,13 +56,13 @@ once it's in the simulator.
 
 If you are importing your own RTL to debug it, simten is strictly worse than the tool you already
 have: roughly a thousand times slower, two-state, and single-clock. The value here is *seeing* a
-design — clicking into a running CPU down to the gates, on a canvas, in a browser — not verifying
+design (clicking into a running CPU down to the gates, on a canvas, in a browser), not verifying
 one. Verify in Verilator or Icarus; import to look at it.
 
 ### Two-state: `x` and `z` both read as 0
 
 The engine has no unknown value. An uninitialised register reads 0 rather than `x`, so the
-X-propagation that catches missing resets in a conventional simulator finds nothing here — simten
+X-propagation that catches missing resets in a conventional simulator finds nothing here; simten
 will confidently agree with a wrong 0.
 
 **How to recognize it:** a design that fails on hardware over a missing reset simulates cleanly.
@@ -78,18 +78,18 @@ CDC, async FIFOs, DDR interfaces and multi-clock SoCs.
 
 **How to recognize it:** an import fails with a derived-clock error. **Workaround:** rewrite clock
 dividers and clock gating as clock enables, which is better practice anyway. Genuine multi-clock
-plumbing belongs in a hand-written wrapper around the imported design — the precedent is
+plumbing belongs in a hand-written wrapper around the imported design; the precedent is
 `hardware/ulx3s/projects/snake/snake_top.v`, which wraps an `EHXPLLL` around a single-clock simten
 core.
 
 ### A bare CPU core can't run a program
 
 `serv_rf_top` asserts `o_ibus_cyc` and waits forever for an ack that nothing produces. This is not
-a simten limitation — Verilator users hit the same wall, which is why these projects ship SoC
+a simten limitation; Verilator users hit the same wall, which is why these projects ship SoC
 wrappers.
 
 **How to recognize it:** the imported core's outputs settle and never change again.
-**Workaround:** import the *system*, not the core — `servant` rather than `serv_rf_top`,
+**Workaround:** import the *system*, not the core: `servant` rather than `serv_rf_top`,
 `picosoc` rather than `picorv32`. Wire its serial pin to `UART_RX({ cyclesPerBit })` and on to a
 `Console` to read what the program prints.
 
@@ -97,10 +97,10 @@ wrappers.
 
 Yosys lifts `$display`/`$write` to `$print` cells, which have no hardware meaning. They are skipped
 with a warning naming the module and source line rather than failing the import, so a debug
-statement doesn't take a whole design down — but the output is gone.
+statement doesn't take a whole design down, but the output is gone.
 
 **How to recognize it:** an import warning like `servant_ram: dropped 1 $display/$write
-statement(s)`. **Workaround:** none — read the design's real outputs instead.
+statement(s)`. **Workaround:** none; read the design's real outputs instead.
 
 ### Imported designs usually can't be exported back to Verilog
 
@@ -109,7 +109,7 @@ that the Verilog exporter has no mapping for. Export refuses rather than emittin
 parses and does the wrong thing.
 
 **How to recognize it:** the Verilog button reads `Can't export: N unsupported nodes (…)`.
-**Workaround:** none — the original RTL is the thing to synthesize. Round-tripping through import
+**Workaround:** none; the original RTL is the thing to synthesize. Round-tripping through import
 was never the point.
 
 Buses wider than 32 bits are the other thing worth knowing about before you import; see
@@ -128,11 +128,11 @@ The MCP VCD parser (`packages/mcp/src/lib/vcd-parser.ts`) does not yet drive all
 
 Some stdlib primitives exist for visualisation/debugging and are not part of the Verilog export. They simulate fine, but they will be excluded from any synthesized output. They are marked `meta: { synthesizable: false }` in `@simten/core/std`:
 
-- `Console` — text output (display)
-- `UART_RX` — serial pin to bytes (pairs with `Console` for imported SoCs)
-- `HexDisplay`, `SevenSegment` — numeric readouts
-- `Screen`, `RasterDisplay` — framebuffer surfaces
-- `Probe` — debug observation
+- `Console`: text output (display)
+- `UART_RX`: serial pin to bytes (pairs with `Console` for imported SoCs)
+- `HexDisplay`, `SevenSegment`: numeric readouts
+- `Screen`, `RasterDisplay`: framebuffer surfaces
+- `Probe`: debug observation
 
 **How to recognize it:** the circuit simulates and renders, but `verilog_export` (or the FPGA build) either omits the node or errors. **Workaround:** wrap simulation-only display logic behind a top-level signal you can leave unwired on synthesis, or mark the wrapper circuit `meta: { synthesizable: false }` so it's expected.
 
@@ -146,17 +146,17 @@ The `/circuit` page (and the `show_circuit` MCP canvas) runs your code inside a 
 
 **How to recognize it:** ReferenceError on the imported binding. **Workaround:** check the package on esm.sh directly (e.g. `https://esm.sh/<pkg>`); use a known-good version pin (`'pkg@4.3.2'`); for Node-only packages, fall back to baking the data into a `Constant`/`ROM` outside the browser path.
 
-### Cross-file (multi-file) imports aren't resolved — only `@simten/core/*`
+### Cross-file (multi-file) imports aren't resolved, only `@simten/core/*`
 
-Circuit code submitted to the `/circuit` editor and `show_circuit` is executed by **stripping its `import` statements** and injecting the `@simten/core` stdlib into scope (browser: `apps/sandbox/src/rewrite-imports.ts`). So a circuit may import from `@simten/core/*` (resolved from injected scope) and — in the browser — bare npm specifiers (resolved via esm.sh), but it **cannot** import another local file (`./helper.ts`, `../shared.circuit.ts`): the relative specifier passes through and resolves to nothing (no filesystem in the sandbox), so the binding is `undefined`. The host tools `check_circuit` and `simulate_circuit` share this limitation — they run the same import-stripping executor (`executeCircuitCode` in `packages/core/src/circuit/execute.ts`).
+Circuit code submitted to the `/circuit` editor and `show_circuit` is executed by **stripping its `import` statements** and injecting the `@simten/core` stdlib into scope (browser: `apps/sandbox/src/rewrite-imports.ts`). So a circuit may import from `@simten/core/*` (resolved from injected scope) and, in the browser, bare npm specifiers (resolved via esm.sh), but it **cannot** import another local file (`./helper.ts`, `../shared.circuit.ts`): the relative specifier passes through and resolves to nothing (no filesystem in the sandbox), so the binding is `undefined`. The host tools `check_circuit` and `simulate_circuit` share this limitation; they run the same import-stripping executor (`executeCircuitCode` in `packages/core/src/circuit/execute.ts`).
 
 `verify_circuit` is the exception: it runs the file under real `tsx` with full Node module resolution, so multi-file testbenches (relative imports, workspace packages, npm) work there exactly like `npm test`.
 
-**How to recognize it:** `X is not defined` / `undefined` for a binding imported from a relative path, in the `/circuit` editor or via `check_circuit` / `simulate_circuit` — while the same file runs fine under `verify_circuit`. **Workaround:** keep canvas/simulate circuits single-file, importing only from `@simten/core/*`; promote shared circuits into `@simten/core/std` so they resolve via injected scope. For genuinely multi-file work, use `verify_circuit`. A real fix would add a bundling/module-resolution step before execution — esbuild-bundling the entry plus its local files on the host, and a virtual-FS (or bundling) step in the sandbox — so `/circuit` and the host tools could accept multi-file circuits; tracked as a future enhancement.
+**How to recognize it:** `X is not defined` / `undefined` for a binding imported from a relative path, in the `/circuit` editor or via `check_circuit` / `simulate_circuit`, while the same file runs fine under `verify_circuit`. **Workaround:** keep canvas/simulate circuits single-file, importing only from `@simten/core/*`; promote shared circuits into `@simten/core/std` so they resolve via injected scope. For genuinely multi-file work, use `verify_circuit`. A real fix would add a bundling/module-resolution step before execution (esbuild-bundling the entry plus its local files on the host, and a virtual-FS (or bundling) step in the sandbox) so `/circuit` and the host tools could accept multi-file circuits; tracked as a future enhancement.
 
 ### `Buffer` is Node-only
 
-A common gotcha when porting a verify testbench to a browser demo: `Buffer.from([...])` works under `tsx`/`node` but is not defined in the browser sandbox. Use `Uint8Array.of(...)` / `new Uint8Array([...])` instead — most npm crypto/hash packages accept it at runtime even when their TypeScript types only declare `Buffer`.
+A common gotcha when porting a verify testbench to a browser demo: `Buffer.from([...])` works under `tsx`/`node` but is not defined in the browser sandbox. Use `Uint8Array.of(...)` / `new Uint8Array([...])` instead; most npm crypto/hash packages accept it at runtime even when their TypeScript types only declare `Buffer`.
 
 ### Worker compile timeout (5s)
 
@@ -166,17 +166,17 @@ Every circuit compile/elaborate runs inside a worker that the sandbox will kill 
 
 ### `postMessage … could not be cloned` console warning
 
-You may see a `postMessage` warning in the browser console — something the iframe sandbox tried to post wasn't structured-cloneable. It's benign: it appears on both the hosted `/circuit` page and the local MCP viewer (it isn't introduced by either), and it doesn't affect compilation, simulation, or rendering.
+You may see a `postMessage` warning in the browser console: something the iframe sandbox tried to post wasn't structured-cloneable. It's benign: it appears on both the hosted `/circuit` page and the local MCP viewer (it isn't introduced by either), and it doesn't affect compilation, simulation, or rendering.
 
 **How to recognize it:** a one-off `… could not be cloned` warning in DevTools, with no visible effect on the canvas. **Workaround:** none needed; safe to ignore. Tracked as low-priority.
 
 ## Editor type checking
 
-### `Screen` squiggles — lib.dom's `Screen` shadows the stdlib component
+### `Screen` squiggles: lib.dom's `Screen` shadows the stdlib component
 
-The `/circuit` editor type-checks with TypeScript's full default lib, which includes `lib.dom` — and lib.dom declares a global `var Screen` (the `window.Screen` constructor). That shadows the stdlib `Screen` component's global typing, so `Screen` in a node list shows a type error even though the circuit compiles and simulates fine (execution strips types and injects the real component; the editor's diagnostics are cosmetic here). `Screen` is the only stdlib name with this value-level collision — `Console`, `Input`, etc. only collide with DOM *interfaces*, which is harmless.
+The `/circuit` editor type-checks with TypeScript's full default lib, which includes `lib.dom`, and lib.dom declares a global `var Screen` (the `window.Screen` constructor). That shadows the stdlib `Screen` component's global typing, so `Screen` in a node list shows a type error even though the circuit compiles and simulates fine (execution strips types and injects the real component; the editor's diagnostics are cosmetic here). `Screen` is the only stdlib name with this value-level collision; `Console`, `Input`, etc. only collide with DOM *interfaces*, which is harmless.
 
-**How to recognize it:** a squiggle on `Screen` while the circuit runs normally. **Workaround:** ignore it — runtime is unaffected. Don't try to fix it by dropping `lib.dom` from the editor's compiler options: Monaco's worker fails to load replacement libs and you lose `Array`/string typing entirely, which is far worse.
+**How to recognize it:** a squiggle on `Screen` while the circuit runs normally. **Workaround:** ignore it; runtime is unaffected. Don't try to fix it by dropping `lib.dom` from the editor's compiler options: Monaco's worker fails to load replacement libs and you lose `Array`/string typing entirely, which is far worse.
 
 ## Simulator limits
 
@@ -188,19 +188,19 @@ Each `set()` / clock tick drives an event-driven propagation queue. After 10 000
 Propagation did not stabilize after 10000 iterations. Possible unstable feedback loop in circuit.
 ```
 
-This is a safety net for **combinational feedback loops with no register breaking them** (an inverter whose output feeds its own input, etc.). It is not a depth/size limit — feed-forward circuits of any practical size settle well below the cap.
+This is a safety net for **combinational feedback loops with no register breaking them** (an inverter whose output feeds its own input, etc.). It is not a depth/size limit; feed-forward circuits of any practical size settle well below the cap.
 
 **How to recognize it:** the error message above. **Workaround:** find the combinational loop; break it with a `Register` or `DFlipFlop`.
 
 ### `get()` only reads top-level output ports
 
-`simulate(C).get('foo')` reads top-level outputs of `C` reliably. Reading an *internal node's* port (`'subModule.out'`) returns 0 / uninitialised values regardless of the actual signal — it is not a supported observation API.
+`simulate(C).get('foo')` reads top-level outputs of `C` reliably. Reading an *internal node's* port (`'subModule.out'`) returns 0 / uninitialised values regardless of the actual signal; it is not a supported observation API.
 
 **How to recognize it:** an internal port reads 0 even when wiring and logic say otherwise. **Workaround:** expose the value you need as a top-level output of the circuit under test (wrap it in a probe harness with the signal piped out).
 
 ### Buses wider than 32 bits don't simulate
 
-The numeric engine stores every net in an `Int32Array` and evaluates with JavaScript bitwise operators — both 32-bit. A bus wider than 32 bits simulates to wrong values with no error: inputs truncate to their low 32 bits, a `Slice` at offset ≥ 32 aliases back to the low bits (JS shift counts wrap mod 32), and wide `Concat`/arithmetic overflow to 0. Export, import, and FPGA synthesis are unaffected — they carry the full width; only the in-engine simulator has the ceiling.
+The numeric engine stores every net in an `Int32Array` and evaluates with JavaScript bitwise operators, both 32-bit. A bus wider than 32 bits simulates to wrong values with no error: inputs truncate to their low 32 bits, a `Slice` at offset ≥ 32 aliases back to the low bits (JS shift counts wrap mod 32), and wide `Concat`/arithmetic overflow to 0. Export, import, and FPGA synthesis are unaffected: they carry the full width; only the in-engine simulator has the ceiling.
 
-**How to recognize it:** a circuit with a port or internal net wider than 32 bits (a 512-bit input, a 64-bit datapath) reads plausible-but-wrong values — or 0 — from `simulate()` / `verify_circuit`, while its exported Verilog checks out. Quick tell: a `Slice` at offset 32 returns the same bits as the same slice at offset 0. This is why imports of wide-bus designs (e.g. a matrix-vector unit) lift and export fine but can't be run through the TS simulator. **Workaround:** none in-engine — keep simulated buses ≤ 32 bits (split wide datapaths into ≤ 32-bit lanes), or verify wide designs through the Verilog path (export and cross-check against Icarus Verilog) instead of the TS simulator. A real fix means representing wide nets as `BigInt` or word arrays through the engine and evaluators.
+**How to recognize it:** a circuit with a port or internal net wider than 32 bits (a 512-bit input, a 64-bit datapath) reads plausible-but-wrong values (or 0) from `simulate()` / `verify_circuit`, while its exported Verilog checks out. Quick tell: a `Slice` at offset 32 returns the same bits as the same slice at offset 0. This is why imports of wide-bus designs (e.g. a matrix-vector unit) lift and export fine but can't be run through the TS simulator. **Workaround:** none in-engine; keep simulated buses ≤ 32 bits (split wide datapaths into ≤ 32-bit lanes), or verify wide designs through the Verilog path (export and cross-check against Icarus Verilog) instead of the TS simulator. A real fix means representing wide nets as `BigInt` or word arrays through the engine and evaluators.
 

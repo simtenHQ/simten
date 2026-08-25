@@ -120,7 +120,7 @@ export function BreakoutDemo() {
         </svg>
       </div>
 
-      {/* Touch controls — mobile only */}
+      {/* Touch controls, mobile only */}
       <div className="sm:hidden py-4 border-t border-gray-700/50 bg-gray-100 dark:bg-gray-900/90">
         <LRPad onDirection={sendDirection} />
       </div>

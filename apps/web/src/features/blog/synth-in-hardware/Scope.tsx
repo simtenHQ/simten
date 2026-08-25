@@ -4,7 +4,7 @@ import { useEffect, useRef } from 'react';
  * Draws the circuit's output port as a waveform.
  *
  * This is the same `audio` net the speakers are fed from, so the shape on
- * screen is literally the sound — not a visualisation of it.
+ * screen is literally the sound, not a visualisation of it.
  */
 export function Scope({ samples, className }: { samples: Float32Array; className?: string }) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);

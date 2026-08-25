@@ -53,7 +53,7 @@ export const Route = createRootRoute({
 });
 
 /**
- * The level page is a tool screen — full viewport, its own top bar, no site
+ * The level page is a tool screen: full viewport, its own top bar, no site
  * nav. It opts out with `staticData: { skipDefaultChrome: true }`, the same
  * mechanism apps/web uses for /circuit.
  */

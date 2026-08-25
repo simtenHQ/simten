@@ -5,9 +5,9 @@ description: How circuits go from text to simulation
 
 ## Why there's a sandbox
 
-User-defined circuit code is arbitrary TypeScript — `circuit('Foo', { eval: ({ a, b }) => ... })`. Running it in the main React frame would let a malicious circuit read auth cookies, hijack the chat session, or escape into the editor's tab. Instead, every circuit you compile or simulate runs inside a cross-origin iframe (`sandbox.simten.dev`) with `sandbox="allow-scripts"` — the browser kernel blocks all network access and origin isolation prevents cookie/DOM reach.
+User-defined circuit code is arbitrary TypeScript, such as `circuit('Foo', { eval: ({ a, b }) => ... })`. Running it in the main React frame would let a malicious circuit read auth cookies, hijack the chat session, or escape into the editor's tab. Instead, every circuit you compile or simulate runs inside a cross-origin iframe (`sandbox.simten.dev`) with `sandbox="allow-scripts"`: the browser kernel blocks all network access and origin isolation prevents cookie/DOM reach.
 
-This is the same pattern [CodePen](https://codepen.io) uses to isolate user-authored snippets from their editor app — preview runs on a separate origin (`cdpn.io`) inside a sandboxed iframe, talking to the host page via postMessage only. Everything you'll see called "sandbox" in the Simten codebase is one side of that bridge or the other.
+This is the same pattern [CodePen](https://codepen.io) uses to isolate user-authored snippets from their editor app: preview runs on a separate origin (`cdpn.io`) inside a sandboxed iframe, talking to the host page via postMessage only. Everything you'll see called "sandbox" in the Simten codebase is one side of that bridge or the other.
 
 ## Runtime topology
 
@@ -18,7 +18,7 @@ The four layers a circuit flows through in the browser:
 | **Public hook** | `packages/embed/src/hooks/useCircuitSimulator.ts` | What every embed/blog/editor consumer calls. `tick()`, `setNode()`, `stepBack()`, time-travel, auto-run. |
 | **Sandbox bridge** (host) | `packages/ui/src/sandbox/useSandbox.ts` | postMessage transport + slot lifecycle. Used internally by `useCircuitSimulator`; only advanced consumers (editor, web component) touch it directly. |
 | **Sandbox iframe** | `apps/sandbox/src/main.ts` | The other side of the bridge. Runs *inside* the iframe (cross-origin). Receives postMessage commands, evaluates user code in a Web Worker, drives the engine. |
-| **Simulator engine** | `packages/core/src/simulator/` | Pure computation — no iframe, no React. Used by the iframe app for browser sims; used directly by `@simten/core/sim` for Node/CI scripts. |
+| **Simulator engine** | `packages/core/src/simulator/` | Pure computation, with no iframe and no React. Used by the iframe app for browser sims; used directly by `@simten/core/sim` for Node/CI scripts. |
 
 Direction of calls (browser path):
 
@@ -26,7 +26,7 @@ Direction of calls (browser path):
 useCircuitSimulator → useSandbox → [postMessage / iframe boundary] → apps/sandbox/main.ts → core/simulator
 ```
 
-If you're writing a `vitest` property test or a CI fuzzer, you skip the bridge entirely — just import from `@simten/core/sim` and drive the engine directly. See "Two ways to run a circuit" below.
+If you're writing a `vitest` property test or a CI fuzzer, you skip the bridge entirely and just import from `@simten/core/sim` and drive the engine directly. See "Two ways to run a circuit" below.
 
 ## From TypeScript to Simulation
 
@@ -52,7 +52,7 @@ export function PipelineStage({ number, title, subtitle, children }) {
 
 <div className="my-8">
 <PipelineStage number={1} title="Build" subtitle="circuit() calls → Circuit IR">
-  The TypeScript `circuit()` builder collects node types, port declarations, and connection calls. The `.to()` wiring calls produce a declarative connection list. The result is a `BuiltCircuit` — a plain data structure describing the circuit's structure.
+  The TypeScript `circuit()` builder collects node types, port declarations, and connection calls. The `.to()` wiring calls produce a declarative connection list. The result is a `BuiltCircuit`, a plain data structure describing the circuit's structure.
 </PipelineStage>
 
 <PipelineStage number={2} title="Validate" subtitle="Check for errors before running">
@@ -60,15 +60,15 @@ export function PipelineStage({ number, title, subtitle, children }) {
 </PipelineStage>
 
 <PipelineStage number={3} title="Compile to IR" subtitle="AST → Circuit objects">
-  The AST is compiled into `Circuit` objects — the system's universal representation. Both primitives and composites share the same interface: ports, connections, nodes, parameters.
+  The AST is compiled into `Circuit` objects, the system's universal representation. Both primitives and composites share the same interface: ports, connections, nodes, parameters.
 </PipelineStage>
 
 <PipelineStage number={4} title="Elaborate" subtitle="Flatten composites to primitives">
-  Composite circuits are recursively expanded. A `FullAdder` becomes two `Xor`, two `And`, and one `Or`. Connections are stitched through composite boundaries. The result is a `FlatCircuit` — only primitives, no hierarchy.
+  Composite circuits are recursively expanded. A `FullAdder` becomes two `Xor`, two `And`, and one `Or`. Connections are stitched through composite boundaries. The result is a `FlatCircuit`: only primitives, no hierarchy.
 </PipelineStage>
 
 <PipelineStage number={5} title="Compile to numeric" subtitle="Typed arrays for fast simulation">
-  Node IDs become array indices. Port connections become index lookups. Each primitive gets mapped to an evaluator function via a dispatch table. The result is a `NumericCircuit` — zero string operations in the hot path.
+  Node IDs become array indices. Port connections become index lookups. Each primitive gets mapped to an evaluator function via a dispatch table. The result is a `NumericCircuit`, with zero string operations in the hot path.
 </PipelineStage>
 
 <PipelineStage number={6} title="Simulate" subtitle="Event-driven propagation">
@@ -80,7 +80,7 @@ See the [Simulator Engine](/docs/simulator-engine) page for deep details on the 
 
 ## Circuit IR
 
-Everything in the system — primitives, user circuits, elaborated results — uses the same `Circuit` interface:
+Everything in the system (primitives, user circuits, elaborated results) uses the same `Circuit` interface:
 
 ```typescript
 interface Circuit {
@@ -95,7 +95,7 @@ interface Circuit {
 }
 ```
 
-Primitives have evaluator functions registered against them. Composites are purely structural — they define what to connect, not how to compute. The elaboration step removes all composites, leaving only primitives.
+Primitives have evaluator functions registered against them. Composites are purely structural: they define what to connect, not how to compute. The elaboration step removes all composites, leaving only primitives.
 
 ## Simulation Model
 
@@ -130,7 +130,7 @@ Each clock tick executes five phases:
 
 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2 my-6">
 <PhaseStep phase={1} title="Propagate">
-  Evaluate all combinational logic with current state. Capture port values — this is what the API returns.
+  Evaluate all combinational logic with current state. Capture port values; this is what the API returns.
 </PhaseStep>
 <PhaseStep phase={2} title="Clock">
   Set all clocks to rising edge.
@@ -146,7 +146,7 @@ Each clock tick executes five phases:
 </PhaseStep>
 </div>
 
-The atomic commit in Phase 4 is what makes this match real hardware — all flip-flops and registers update at the same instant, just like a physical clock edge.
+The atomic commit in Phase 4 is what makes this match real hardware: all flip-flops and registers update at the same instant, just like a physical clock edge.
 
 ## Simulation Session
 
@@ -172,15 +172,15 @@ The `SimulationSession` is the orchestration layer between the UI and the engine
 
 Every `tick()` records a snapshot. Users can step back and forward through the history to inspect any clock cycle. The session maintains a ring buffer of snapshots (default 1000) with index-based navigation:
 
-- `stepBack()` / `stepForward()` — move one cycle
-- `seek(index)` — jump to any recorded cycle
+- `stepBack()` / `stepForward()`: move one cycle
+- `seek(index)`: jump to any recorded cycle
 - Ticking while viewing the past truncates forward history (linear, no branching)
 
 Environmental state (switch positions, input values) is captured as opaque metadata in each snapshot and restored via callbacks when time-travelling.
 
 ### Auto-run
 
-For continuous execution, `startAutoRun(ticksPerSecond, { displayRate })` runs the engine in a tight loop and only notifies React at the display rate. The RISC-V CPU can run at ~20,000 ticks/sec while the UI updates at 30fps — the engine does ~667 ticks per display frame.
+For continuous execution, `startAutoRun(ticksPerSecond, { displayRate })` runs the engine in a tight loop and only notifies React at the display rate. The RISC-V CPU can run at ~20,000 ticks/sec while the UI updates at 30fps, so the engine does ~667 ticks per display frame.
 
 ### setNode
 
@@ -189,7 +189,7 @@ For continuous execution, `startAutoRun(ticksPerSecond, { displayRate })` runs t
 - **Switch/Input/Button** → sets `arguments.value` (combinational)
 - **ROM/RAM/Register** → sets sequential state directly
 
-This means loading a binary into ROM works the same as flipping a switch — one API call, no session reset. ROM data persists across reset (like real hardware — flash survives power cycle).
+This means loading a binary into ROM works the same as flipping a switch: one API call, no session reset. ROM data persists across reset (like real hardware, where flash survives a power cycle).
 
 ## Packages
 
@@ -204,7 +204,7 @@ This means loading a binary into ROM works the same as flipping a switch — one
 | Package | Description |
 |---------|-------------|
 | `@simten/core` | TypeScript builder, compiler, validator, simulator engine, `SimulationSession`, environmental state, Verilog export. No UI dependencies. |
-| `@simten/ui` | React components — canonical node renderers, shared canvas, ELK layout, sandbox context (`useSandbox`), `ClockControls`, editor UI. |
+| `@simten/ui` | React components: canonical node renderers, shared canvas, ELK layout, sandbox context (`useSandbox`), `ClockControls`, editor UI. |
 | `@simten/embed` | `CircuitViewer` (simulation + canvas), `CircuitEmbed` (viewer + auto-harness + info bar), `<circuit-embed>` web component. Depends on core + ui. |
 | `@simten/mcp` | MCP server for Claude Code integration |
 
@@ -215,12 +215,12 @@ A single hook, `useCircuitSimulator`, handles the simulation lifecycle for every
 | Hook | Input | Purpose | Used by |
 |------|-------|---------|---------|
 | `useCircuitSimulator(builtCircuit)` | `BuiltCircuit` | Builds library from dependencies, optional auto-harness, compiles + ticks via sandbox | `EditorWorkspace`, `CircuitViewer` → `CircuitEmbed` → landing page, blog demos, drill-down |
-| `useCircuitCompiler(source)` | source string | Compile mechanics only — debounce, `sandbox.compile`, retry, error extraction, `library` lookup. Takes no opinion about the result. | `EditorWorkspace` (feeds its selection stores) |
-| `useCompiledCircuit(source)` | source string | `useCircuitCompiler` + `builtFromIR` + `useCircuitSimulator` — source straight to a running sim. | External editors/playgrounds; see [Code Editor](/docs/code-editor) |
+| `useCircuitCompiler(source)` | source string | Compile mechanics only: debounce, `sandbox.compile`, retry, error extraction, `library` lookup. Takes no opinion about the result. | `EditorWorkspace` (feeds its selection stores) |
+| `useCompiledCircuit(source)` | source string | `useCircuitCompiler` + `builtFromIR` + `useCircuitSimulator`, taking source straight to a running sim. | External editors/playgrounds; see [Code Editor](/docs/code-editor) |
 
 Each consumer gets an isolated sandbox slot (`Map<slotId, SlotState>`) so simulation state never leaks across embeds or between the editor and a preview.
 
-Data flows one direction — from the compiled circuit to the sandbox to the UI:
+Data flows one direction, from the compiled circuit to the sandbox to the UI:
 
 ```
 circuit() or TS Editor compile → BuiltCircuit
@@ -259,22 +259,22 @@ useCircuitStore         (the active circuit)
      └──→ MCP callbacks (reads circuit for state responses)
 ```
 
-**Why stores instead of props?** The editor page has multiple sibling consumers — Monaco, the circuit canvas, the AI chat panel, the Verilog export button, and MCP callbacks all need the current circuit and library. Threading this through props would mean `EditorWorkspace` becomes a giant prop-drilling intermediary. Zustand gives each consumer direct access with fine-grained subscriptions (a store update only re-renders components that read the changed slice).
+**Why stores instead of props?** The editor page has multiple sibling consumers: Monaco, the circuit canvas, the AI chat panel, the Verilog export button, and MCP callbacks all need the current circuit and library. Threading this through props would mean `EditorWorkspace` becomes a giant prop-drilling intermediary. Zustand gives each consumer direct access with fine-grained subscriptions (a store update only re-renders components that read the changed slice).
 
-**Why not stores in embeds?** Embeds (`CircuitEmbed`, `CircuitViewer`) are props-driven — they receive a `BuiltCircuit` and manage simulation internally. They don't need shared state because there's only one consumer (the canvas). This keeps embeds self-contained and avoids leaking store state between multiple `<CircuitEmbed>` instances on the same page.
+**Why not stores in embeds?** Embeds (`CircuitEmbed`, `CircuitViewer`) are props-driven: they receive a `BuiltCircuit` and manage simulation internally. They don't need shared state because there's only one consumer (the canvas). This keeps embeds self-contained and avoids leaking store state between multiple `<CircuitEmbed>` instances on the same page.
 
 ### Import paths
 
 | Import | Contents |
 |--------|----------|
 | `@simten/core/simulator` | `SimulationSession`, `SimulatorEngine`, `PRIMITIVE_DEFINITIONS`, `PRIMITIVES`, `createSimulatorFromCircuit`, `captureEnvironmentalState`, `restoreEnvironmentalState` |
-| `@simten/embed` | `CircuitViewer`, `CircuitEmbed`, `<circuit-embed>` web component — everything needed to embed a circuit |
-| `@simten/ui/canvas` | `CircuitCanvas`, `ClockControls` — shared simulation UI |
-| `@simten/ui/sandbox` | `useSandbox`, `SandboxProvider` — sandbox iframe context used by `useCircuitSimulator` |
-| `@simten/ui/nodes` | `BaseNode`, `InputNode`, `OutputNode`, `LogicGateNode`, `NodeData` — canonical node components (props-driven, store-free) |
-| `@simten/ui/monaco` | `SimtenCodeEditor`, `setupSimtenIntellisense`, `useTypeAcquisition`, `registerSimtenThemes` — Monaco editor with circuit IntelliSense. See [Code Editor](/docs/code-editor) |
+| `@simten/embed` | `CircuitViewer`, `CircuitEmbed`, `<circuit-embed>` web component: everything needed to embed a circuit |
+| `@simten/ui/canvas` | `CircuitCanvas`, `ClockControls`: shared simulation UI |
+| `@simten/ui/sandbox` | `useSandbox`, `SandboxProvider`: sandbox iframe context used by `useCircuitSimulator` |
+| `@simten/ui/nodes` | `BaseNode`, `InputNode`, `OutputNode`, `LogicGateNode`, `NodeData`: canonical node components (props-driven, store-free) |
+| `@simten/ui/monaco` | `SimtenCodeEditor`, `setupSimtenIntellisense`, `useTypeAcquisition`, `registerSimtenThemes`: Monaco editor with circuit IntelliSense. See [Code Editor](/docs/code-editor) |
 
-Node components live in `@simten/ui/nodes` and are the single source of truth — both the embed and the editor use them.
+Node components live in `@simten/ui/nodes` and are the single source of truth; both the embed and the editor use them.
 
 ## Two ways to run a circuit
 
@@ -283,11 +283,11 @@ The same engine powers two distinct consumption paths. The split is **interactiv
 | Path | Where it runs | Has a canvas? | Drives the canvas? | Typical use |
 |------|---------------|---------------|--------------------|-------------|
 | **Sandbox** | Browser worker (editor, `<circuit-embed>`, web component) | yes | only via human clicks or MCP actions | live editing, interactive embeds, LLM-driven design |
-| **Script** | Node (`tsx`, `vitest`, CI) | no | n/a — there is none | property tests, fuzzers, batch sweeps, CI verification |
+| **Script** | Node (`tsx`, `vitest`, CI) | no | n/a, there is none | property tests, fuzzers, batch sweeps, CI verification |
 
 ### Sandbox path
 
-When user code runs inside the editor or an embed, it goes through the sandbox iframe + worker (see [Security](/docs/security)). Code in this path *defines* circuits; *something else* drives them — a human flipping a switch, or Claude calling MCP actions like `RUN_SIMULATION` / `SET_INPUT`. User code itself currently has no API to drive the canvas simulator. That's intentional: the canvas sim and any user-code sim run on different threads, so a user-code `simulate(...)` call would create a parallel-universe instance instead of moving the canvas. (Tracked in issue #51 as a prereq for self-animating embeds.)
+When user code runs inside the editor or an embed, it goes through the sandbox iframe + worker (see [Security](/docs/security)). Code in this path *defines* circuits; *something else* drives them: a human flipping a switch, or Claude calling MCP actions like `RUN_SIMULATION` / `SET_INPUT`. User code itself currently has no API to drive the canvas simulator. That's intentional: the canvas sim and any user-code sim run on different threads, so a user-code `simulate(...)` call would create a parallel-universe instance instead of moving the canvas. (Tracked in issue #51 as a prereq for self-animating embeds.)
 
 ### Script path
 
@@ -301,16 +301,16 @@ const Counter = circuit('Counter', { ... });
 const sim = createSimulator(Counter);
 sim.setNode('reset', 1);
 sim.tick();
-// run property tests, fuzzers, sweeps — full engine speed
+// run property tests, fuzzers, sweeps at full engine speed
 ```
 
-This is the path for any code that needs to drive simulation programmatically — whether that's a `vitest` property test you're writing during prototyping or a CI fuzzer comparing the TS sim to iverilog. There's nothing for it to be out of sync with, so the constraints that apply in the browser don't apply here.
+This is the path for any code that needs to drive simulation programmatically, whether that's a `vitest` property test you're writing during prototyping or a CI fuzzer comparing the TS sim to iverilog. There's nothing for it to be out of sync with, so the constraints that apply in the browser don't apply here.
 
-A blog-post `<circuit-embed>` is "production" but uses the sandbox path. A throwaway `vitest` exploration is "prototyping" but uses the script path. The axis that matters is whether there's a canvas and whether human/LLM input drives it — not how finished the code is.
+A blog-post `<circuit-embed>` is "production" but uses the sandbox path. A throwaway `vitest` exploration is "prototyping" but uses the script path. The axis that matters is whether there's a canvas and whether human/LLM input drives it, not how finished the code is.
 
 ## MCP Integration
 
-The MCP server drives a viewer in the browser: Claude Code calls MCP tools, and the server pushes the results over a WebSocket for display and in-browser simulation. The browser is display-only — it sends back nothing but a render acknowledgment.
+The MCP server drives a viewer in the browser: Claude Code calls MCP tools, and the server pushes the results over a WebSocket for display and in-browser simulation. The browser is display-only: it sends back nothing but a render acknowledgment.
 
 export function FlowDiagram() {
   return (
@@ -337,6 +337,6 @@ export function FlowDiagram() {
 | Claude → Browser | WebSocket push | Circuit updates, waveforms, test results |
 | Browser → Claude | Render acknowledgment | Boolean ack that a pushed circuit rendered |
 
-The browser viewer is intentionally one-way: it accepts nothing actionable back, so a rendered page can't drive Claude or read its state. The MCP server provides tools, not inference — users bring their own Claude subscription. Zero AI API cost for the app developer.
+The browser viewer is intentionally one-way: it accepts nothing actionable back, so a rendered page can't drive Claude or read its state. The MCP server provides tools, not inference; users bring their own Claude subscription. Zero AI API cost for the app developer.
 
 See the [MCP Integration](/docs/mcp-integration) guide for setup and available tools.

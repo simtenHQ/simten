@@ -5,7 +5,7 @@
  * top-level ports under `__top__.` while `@simten/core/sim` returns them bare,
  * and because the interface never said which, the sandbox adapter shipped the
  * prefixed keys straight through. Grading then read `undefined` for every
- * output and, thanks to a `?? 0` fallback, scored it 0 — which silently passes
+ * output and, thanks to a `?? 0` fallback, scored it 0, which silently passes
  * every truth-table row that expects 0. Three of the four rows in a two-input
  * AND expect 0, so it looked like one stubborn failing case rather than a
  * grader that never read anything.

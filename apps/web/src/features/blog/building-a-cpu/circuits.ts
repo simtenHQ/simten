@@ -40,7 +40,7 @@ export const SRLatch = circuit('SRLatch', {
   ],
 });
 
-// D Flip-Flop is a primitive — use it directly; auto-harness handles Switch/Led
+// D Flip-Flop is a primitive, so use it directly; auto-harness handles Switch/Led
 // For display, we just show the DFlipFlop itself
 
 export const Reg4 = circuit('Reg4', {
@@ -144,7 +144,7 @@ export const ALU1 = circuit('ALU1', {
   ],
 });
 
-// RAM demo is self-contained (no ports) — auto-harness skips it
+// RAM demo is self-contained (no ports), so auto-harness skips it
 export const DemoRAM = circuit('DemoRAM', {
   nodes: {
     addr: Input(),

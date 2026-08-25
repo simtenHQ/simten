@@ -8,7 +8,7 @@
  *
  * It goes to the engine rather than the friendlier `simulate()` handle because
  * that handle's `get(name)` resolves a top-level port and otherwise falls back
- * to *any* port key ending in `.name` — which is ambiguous the moment gates
+ * to *any* port key ending in `.name`, which is ambiguous the moment gates
  * have their own `a`/`b`/`in` ports. Reading an `Led` named `out` means reading
  * exactly `out.in`, so the raw port map is what is needed.
  *
@@ -55,7 +55,7 @@ export function localRuntime(): GradeRuntime {
       for (const [name, value] of Object.entries(inputs)) engine.setNode(name, value);
       // A clock cycle, because that is what the browser does: `sandboxRuntime`
       // grades through `sandbox.tick`. This used `runCombinational`, which
-      // settles the logic without advancing a clock — the two agreed on every
+      // settles the logic without advancing a clock; the two agreed on every
       // combinational level and silently disagreed on anything clocked, so a
       // level that graded correctly in the browser could never pass CI. A
       // latch hides the difference, being combinational feedback; a flip-flop

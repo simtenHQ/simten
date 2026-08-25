@@ -60,7 +60,7 @@ const FullAdder = circuit('FullAdder', {
 });
 
 // ── Section 2: same circuit, two ways ──────────────────────────────────
-// Flat half-adder — XOR and AND wired directly. No subcircuit.
+// Flat half-adder: XOR and AND wired directly. No subcircuit.
 
 const FlatHalfAdderDemo = circuit('FlatHalfAdderDemo', {
   nodes: {
@@ -79,7 +79,7 @@ const FlatHalfAdderDemo = circuit('FlatHalfAdderDemo', {
   ],
 });
 
-// Encapsulated half-adder — uses the named HalfAdder subcircuit.
+// Encapsulated half-adder: uses the named HalfAdder subcircuit.
 
 const EncapsulatedHalfAdderDemo = circuit('EncapsulatedHalfAdderDemo', {
   nodes: {
@@ -97,8 +97,8 @@ const EncapsulatedHalfAdderDemo = circuit('EncapsulatedHalfAdderDemo', {
   ],
 });
 
-// ── Section 3: building up — full adder, two ways ──────────────────────
-// Flat full adder — all five gates exposed (two XOR, two AND, one OR).
+// ── Section 3: building up, full adder two ways ──────────────────────
+// Flat full adder: all five gates exposed (two XOR, two AND, one OR).
 
 const FlatFullAdderDemo = circuit('FlatFullAdderDemo', {
   nodes: {
@@ -129,7 +129,7 @@ const FlatFullAdderDemo = circuit('FlatFullAdderDemo', {
   ],
 });
 
-// Composed full adder — two HalfAdder subcircuits + an OR. Same behavior.
+// Composed full adder: two HalfAdder subcircuits + an OR. Same behavior.
 
 const ComposedFullAdderDemo = circuit('ComposedFullAdderDemo', {
   nodes: {
@@ -149,9 +149,9 @@ const ComposedFullAdderDemo = circuit('ComposedFullAdderDemo', {
   ],
 });
 
-// ── Section 4: scaling — an 8-bit adder built from FullAdders ──────────
+// ── Section 4: scaling, an 8-bit adder built from FullAdders ──────────
 // A real composed multi-bit adder. The "flat" version would have 40+
-// gates with criss-crossing carry wires — we don't render that; the
+// gates with criss-crossing carry wires, and we don't render that; the
 // prose makes the legibility argument, and the composed version below
 // is the proof. Uses Splitter8to8/Combiner8to8 to bridge the bus(8)
 // external ports to/from the bit-level full-adder chain inside.
@@ -244,22 +244,22 @@ const EightBitAdderDemo = circuit('EightBitAdderDemo', {
 
 export const ABSTRACTION_CIRCUITS = {
   flatHalfAdder: {
-    name: 'Half adder — gates exposed',
+    name: 'Half adder, gates exposed',
     description: 'XOR and AND wired directly. Same behavior as the encapsulated version below.',
     circuit: FlatHalfAdderDemo,
   },
   encapsulatedHalfAdder: {
-    name: 'Half adder — encapsulated',
+    name: 'Half adder, encapsulated',
     description: "Same circuit, named as a single 'HalfAdder' node. Behavior identical.",
     circuit: EncapsulatedHalfAdderDemo,
   },
   flatFullAdder: {
-    name: 'Full adder — five gates exposed',
+    name: 'Full adder, five gates exposed',
     description: 'Two XORs, two ANDs, one OR. The whole structure visible at once.',
     circuit: FlatFullAdderDemo,
   },
   composedFullAdder: {
-    name: 'Full adder — composed from half adders',
+    name: 'Full adder, composed from half adders',
     description:
       'Two HalfAdder subcircuits and one OR gate. Same five gates inside, organized into three named pieces.',
     circuit: ComposedFullAdderDemo,

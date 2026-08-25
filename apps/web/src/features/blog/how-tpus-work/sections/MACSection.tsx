@@ -11,11 +11,11 @@ export function MACSection() {
           <strong className="text-gray-900 dark:text-white">multiply and add</strong>. Take an
           incoming partial sum, multiply a data value by a weight, and add the product to the
           partial sum. That&rsquo;s one step of a dot product. Do it across millions of weights and
-          activations, and you get a matrix multiply &mdash; the heartbeat of deep learning.
+          activations, and you get a matrix multiply, the heartbeat of deep learning.
         </p>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
-          The circuit below is purely combinational &mdash; no clock, no registers, no state. Three
-          inputs feed the calculation: <code className="text-blue-300">data</code>,{' '}
+          The circuit below is purely combinational: no clock, no registers, no state. Three inputs
+          feed the calculation: <code className="text-blue-300">data</code>,{' '}
           <code className="text-blue-300">weight</code>, and{' '}
           <code className="text-blue-300">partialSumIn</code>. The multiplier computes{' '}
           <code className="text-blue-300">data &times; weight</code>, and the adder produces{' '}
@@ -25,7 +25,7 @@ export function MACSection() {
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
           Try changing the input values and watch the result update. This single multiply-add is the
           atom from which we&rsquo;ll build a full systolic array. Accumulation doesn&rsquo;t happen
-          inside a single unit &mdash; it happens by <em>chaining</em> units together, passing each
+          inside a single unit. It happens by <em>chaining</em> units together, passing each
           one&rsquo;s partial sum output into the next one&rsquo;s input.
         </p>
       </div>
@@ -36,7 +36,7 @@ export function MACSection() {
           layout={TPU_CIRCUITS.multiplyAdd.layout}
           showControls
           title="Multiply-Add Unit"
-          description="partialSumIn + (data × weight) = result. Purely combinational — no clock needed."
+          description="partialSumIn + (data × weight) = result. Purely combinational, with no clock needed."
         />
       </div>
     </section>

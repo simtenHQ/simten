@@ -10,7 +10,7 @@ export function useCORDICSimulator() {
   const [isDone, setIsDone] = useState(false);
 
   // Monitor the circuit's formal `done` output port (was previously a
-  // substring scan over portValues looking for a node named "doneLed" —
+  // substring scan over portValues looking for a node named "doneLed",
   // replaced with a declared top-level port).
   useEffect(() => {
     const done = sim.portValues?.get('__top__.done');

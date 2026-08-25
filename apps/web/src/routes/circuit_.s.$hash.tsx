@@ -7,7 +7,7 @@ import { pageHead } from '@/lib/seo';
 export const Route = createFileRoute('/circuit_/s/$hash')({
   staticData: { skipDefaultChrome: true },
   loader: async ({ params }) => {
-    // See circuit_.$encoded.tsx — same defense against crawled route-ID
+    // See circuit_.$encoded.tsx for the same defense against crawled route-ID
     // placeholder strings ($hash etc.). Real share hashes never start with $.
     if (params.hash.startsWith('$')) {
       throw new Response(null, {

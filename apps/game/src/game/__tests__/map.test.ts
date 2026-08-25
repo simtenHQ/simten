@@ -4,7 +4,7 @@
  * `MAP_ROWS` names levels by id in a separate file from `LEVELS`, which buys
  * layout freedom and costs the possibility of the two disagreeing. A level
  * added to the campaign but not the map would simply never appear on the map,
- * and nothing at runtime would say so — `buildMapGraph` skips unknown ids
+ * and nothing at runtime would say so; `buildMapGraph` skips unknown ids
  * rather than crashing the page, which is right for a player and useless for
  * an author. This is where that gets caught instead.
  */
@@ -31,7 +31,7 @@ describe('the graph it builds', () => {
     expect(nodes.map((n) => n.id).sort()).toEqual(LEVELS.map((l) => l.id).sort());
   });
 
-  it('reads bottom to top — the first level sits lowest', () => {
+  it('reads bottom to top, and the first level sits lowest', () => {
     const { nodes } = buildMapGraph();
     const byId = new Map(nodes.map((n) => [n.id, n]));
     const first = byId.get(MAP_ROWS[0][0]);

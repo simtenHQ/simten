@@ -12,8 +12,8 @@ export function RouterSection() {
           A real switch looks at the destination MAC address to decide where to forward each packet.
           Our simplified 2-port switch uses a{' '}
           <strong className="text-gray-900 dark:text-white">static cross-over</strong>: anything
-          from port 0 goes to port 1, and vice versa. This is the minimal useful routing &mdash; a
-          2-port crossbar.
+          from port 0 goes to port 1, and vice versa. This is the minimal useful routing: a 2-port
+          crossbar.
         </p>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
           The routing logic is just a comparator and a mux. If the source port equals 0, the{' '}
@@ -22,7 +22,7 @@ export function RouterSection() {
         </p>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
           Change <strong>sourcePort</strong> between 0 and 1 to see the <strong>destDisplay</strong>{' '}
-          flip to the opposite port. This is instant &mdash; pure combinational logic.
+          flip to the opposite port. This is instant, because it is pure combinational logic.
         </p>
       </div>
 

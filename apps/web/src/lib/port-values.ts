@@ -4,7 +4,7 @@
  * Shared between TruthTable's row-highlight logic (which only ever
  * reads input bits) and the docs/CustomCompositionDemo (which reads
  * both inputs and outputs). Lives here so the candidate-key list stays
- * a single source of truth — historically the two consumers had
+ * a single source of truth; historically the two consumers had
  * separate copies that drifted (the truth-table version was missing
  * the output-side candidates, which broke when anyone tried to read
  * outputs through it).
