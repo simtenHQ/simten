@@ -1,13 +1,14 @@
 /**
  * The campaign as a map.
  *
- * `MAP_ROWS` is the campaign's shape, listed bottom to top; row 0 is where a
- * player starts and the last row is the end of the act. A row holds more than
- * one level when those levels are siblings rather than a sequence: Turing
- * Complete puts AND, NOR and OR side by side precisely so three levels read as
- * one beat instead of a vertical grind. Nothing today branches, but the shape
- * is here so that adding a cluster is an edit to this list rather than a
- * rewrite of the layout.
+ * Two structures, deliberately separate. `MAP_ROWS` is layout: which rank and
+ * column a level is drawn at, bottom to top. `MAP_REQUIRES` is the graph: what
+ * actually gates what. Rows carried both until the campaign branched, at which
+ * point they could not, because two branches of different lengths put unrelated
+ * levels on the same rank.
+ *
+ * The campaign runs as a trunk of gate levels, forks into arithmetic and memory
+ * once every gate is earned, and rejoins at a counter that needs both.
  *
  * Order lives here rather than in `levels.ts` because it is presentation: a
  * level stays pure data that could be fetched as JSON, and the map decides how
@@ -28,12 +29,56 @@ export const MAP_ROWS: string[][] = [
   ['xor'],
   ['xnor'],
   ['making-a-component'],
-  ['half-adder'],
-  ['full-adder'],
-  ['latch'],
-  ['d-latch'],
+  // The fork: arithmetic on the left, memory on the right. Rows are ranks, so
+  // the shorter branch simply stops and `toggle` sits alone on the last one.
+  ['half-adder', 'latch'],
+  ['full-adder', 'd-latch'],
   ['toggle'],
+  ['counter'],
 ];
+
+/**
+ * What each level needs finished before it opens.
+ *
+ * Rows used to carry this implicitly: everything on a row fed everything on the
+ * row above. That reads a straight campaign correctly and cannot describe a
+ * branching one, because two branches of different lengths put unrelated levels
+ * on the same rank and the adjacency rule then invents a dependency between
+ * them. Arithmetic and memory are genuinely independent — an adder needs no
+ * flip-flop and a latch needs no carry — so the line the map drew through them
+ * was never real.
+ *
+ * Rows are now layout only. This is the graph. A level absent from here opens
+ * from the start.
+ */
+export const MAP_REQUIRES: Record<string, string[]> = {
+  not: ['first-wire'],
+  and: ['not'],
+  or: ['and'],
+  nor: ['or'],
+  xor: ['nor'],
+  xnor: ['xor'],
+  'making-a-component': ['xnor'],
+
+  // The fork. Both branches need every gate, so it splits after the last one:
+  // nothing downstream can reach for a gate the player skipped.
+  'half-adder': ['making-a-component'],
+  latch: ['making-a-component'],
+
+  'full-adder': ['half-adder'],
+  'd-latch': ['latch'],
+  toggle: ['d-latch'],
+
+  // Where the branches rejoin. The AND is honest: a counter is memory holding
+  // the number and logic working out the next one, so it needs both halves.
+  counter: ['full-adder', 'toggle'],
+};
+
+export interface MapSection {
+  label: string;
+  /** Index into `MAP_ROWS` where this band begins, counting from the bottom. */
+  startRow: number;
+}
 
 /**
  * Bands, labelled where they begin.
@@ -41,19 +86,11 @@ export const MAP_ROWS: string[][] = [
  * Turing Complete rules its map into `BOOLEAN LOGIC`, `ARITHMETIC`, `CPU
  * ARCHITECTURE` and so on, and the labels do more than decorate: they turn a
  * column of nodes into a structure, and they say that what you can see is a
- * *section* rather than the whole game. That second part matters here, because
- * eight levels presented as the entire campaign reads as thin, while eight
- * presented as its first band reads as a start.
+ * *section* rather than the whole game.
  *
  * Declared by the row a band opens on rather than by a range, so adding a level
  * to the middle of a band does not require renumbering the one above it.
  */
-export interface MapSection {
-  label: string;
-  /** Index into `MAP_ROWS` where this band begins, counting from the bottom. */
-  startRow: number;
-}
-
 export const MAP_SECTIONS: MapSection[] = [
   // One band from the first wire to the last gate. It was two: a short
   // "First circuits" and then "Every gate from one", which split a single
@@ -61,8 +98,10 @@ export const MAP_SECTIONS: MapSection[] = [
   // player had done anything worth dividing.
   { label: 'Logic gates', startRow: 0 },
   { label: 'Components', startRow: 7 },
-  { label: 'Arithmetic', startRow: 8 },
-  { label: 'Memory', startRow: 10 },
+  // Arithmetic and memory used to be two bands stacked one above the other.
+  // They run side by side now, and a band is a horizontal strip, so two labels
+  // would sit on the same rows and fight. One band covers the fork instead.
+  { label: 'Arithmetic and memory', startRow: 8 },
 ];
 
 /**
@@ -133,8 +172,10 @@ const SECTION_PAD_BOTTOM = 30;
  * Build the graph.
  *
  * Y is inverted because React Flow's axis grows downward and the map reads
- * upward: the first row gets the largest Y so it sits at the bottom. Edges run
- * from a row to the one above it, which is the direction of progress.
+ * upward: the first row gets the largest Y so it sits at the bottom. Rows place
+ * the nodes; `MAP_REQUIRES` draws the edges. Keeping those apart is what lets a
+ * branch be shorter than its sibling without acquiring a link to whatever
+ * happens to sit on the same rank.
  *
  * `solved` is the set of completed level ids, read from stored progress by the
  * map page. It is empty for the first frame after mount, because storage can
@@ -173,17 +214,15 @@ export function buildMapGraph(solved: ReadonlySet<string> = new Set()): {
         },
       });
     });
-
-    // Join every level in this row to every level in the row above. With one
-    // level per row that is a plain chain; with a cluster it fans out.
-    const above = MAP_ROWS[rowIndex + 1];
-    if (!above) return;
-    for (const source of row) {
-      for (const target of above) {
-        edges.push({ id: `${source}->${target}`, source, target });
-      }
-    }
   });
+
+  // Edges come from the dependency graph, not from row adjacency, so two
+  // branches of different lengths do not acquire a link they never had.
+  for (const [levelId, requires] of Object.entries(MAP_REQUIRES)) {
+    for (const source of requires) {
+      edges.push({ id: `${source}->${levelId}`, source, target: levelId });
+    }
+  }
 
   /**
    * Each band spans from the row it opens on up to the row below the next

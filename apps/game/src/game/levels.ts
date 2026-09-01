@@ -652,7 +652,47 @@ export default circuit('Toggle1', {
     par: 1,
     outro: {
       headline: 'A clock, and something that counts it',
-      body: "Nothing drives this but time. Flip a second one every time the first falls and you are counting in binary. That's the last level for now. More to come.",
+      body: 'Nothing drives this but time. Flip a second one every time the first falls and you are counting in binary.',
+    },
+  },
+  {
+    id: 'counter',
+    title: 'Counter',
+    tagline: 'Count 0, 1, 2, 3, and back to 0.',
+    brief:
+      'Two lamps, no switches. Read them as a binary number and they should count up once per tick, then wrap. `bit0` alternates every tick, exactly as your toggle did. `bit1` is the harder half: it flips only on the ticks where `bit0` is already on.',
+    target: 'Counter2',
+    inputs: [],
+    outputs: ['bit0', 'bit1'],
+    allowed: ['Nand', 'DFlipFlop'],
+    sequential: true,
+    stub: `// One clock drives every flip-flop, so bit1 cannot be clocked off
+// bit0. Both tick together, and the logic decides which one changes.
+// Work out what each \`d\` should be from what the two of them hold now.
+const Counter2 = circuit('Counter2', {
+  nodes: {
+    dff0: DFlipFlop(),
+    dff1: DFlipFlop(),
+    bit0: Led,
+    bit1: Led,
+  },
+  connect: ({ nodes: { dff0, dff1, bit0, bit1 } }) => [
+    dff0.q.to(bit0.in),
+    dff1.q.to(bit1.in),
+  ],
+});
+`,
+    vectors: [
+      { inputs: {}, expect: { bit0: 1, bit1: 0 } },
+      { inputs: {}, expect: { bit0: 0, bit1: 1 } },
+      { inputs: {}, expect: { bit0: 1, bit1: 1 } },
+      { inputs: {}, expect: { bit0: 0, bit1: 0 } },
+      { inputs: {}, expect: { bit0: 1, bit1: 0 } },
+    ],
+    par: 6,
+    outro: {
+      headline: 'It counts',
+      body: 'Memory holds the number and logic works out the next one. Widen it and that is every counter in every clock, every program counter in every CPU.',
     },
   },
 ];
