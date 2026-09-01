@@ -21,7 +21,7 @@ import {
   DialogTitle,
 } from '@simten/ui/primitives/dialog';
 import { Link } from '@tanstack/react-router';
-import { gatesGainedAfter } from '../game/levels';
+import { ALL_GATES, gatesGainedAfter } from '../game/levels';
 import type { Level } from '../game/types';
 
 interface LevelCompleteProps {
@@ -82,18 +82,35 @@ export function LevelComplete({ open, onOpenChange, level, next }: LevelComplete
               Your gates
             </p>
             <ul className="flex flex-wrap gap-1.5">
-              {owned.map((name) => (
-                <li
-                  key={name}
-                  className={
-                    unlocked.includes(name)
-                      ? 'rounded border border-emerald-600/40 bg-emerald-500/10 px-2 py-1 font-mono text-xs font-medium text-emerald-600 dark:text-emerald-400'
-                      : 'rounded border border-border px-2 py-1 font-mono text-xs text-muted-foreground'
-                  }
-                >
-                  {name}
-                </li>
-              ))}
+              {ALL_GATES.map((name) => {
+                const isNew = unlocked.includes(name);
+                const isOwned = owned.includes(name);
+                return (
+                  <li
+                    key={name}
+                    // Green means "yours", so every earned gate is green and the
+                    // row reads as a collection filling up. The newest is the
+                    // filled one: same hue, more of it. A second accent colour
+                    // was tried and read as a warning rather than a reward,
+                    // which is what amber means everywhere else in a UI.
+                    //
+                    // Locked gates are dashed and dimmed. The contrast floor
+                    // does not apply to them (WCAG exempts inactive components,
+                    // and these are not actionable), but they stay readable on
+                    // purpose: wanting `Xor` before you have it is the reason to
+                    // show the whole row rather than just what you own.
+                    className={
+                      isNew
+                        ? 'motion-safe:animate-in motion-safe:zoom-in-95 motion-safe:duration-300 rounded border border-emerald-700 bg-emerald-700 px-2 py-1 font-mono text-xs font-medium text-white dark:border-emerald-400 dark:bg-emerald-400 dark:text-emerald-950'
+                        : isOwned
+                          ? 'rounded border border-emerald-600/40 bg-emerald-500/10 px-2 py-1 font-mono text-xs font-medium text-emerald-600 dark:text-emerald-400'
+                          : 'rounded border border-dashed border-border px-2 py-1 font-mono text-xs text-muted-foreground opacity-60'
+                    }
+                  >
+                    {name}
+                  </li>
+                );
+              })}
             </ul>
           </div>
         )}

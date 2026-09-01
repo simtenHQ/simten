@@ -132,7 +132,7 @@ export default circuit('Not1', {
     par: 1,
     outro: {
       headline: 'One gate down',
-      body: 'You built NOT out of nothing but NAND. Every other gate works the same way. AND is next.',
+      body: 'You built NOT out of nothing but NAND. AND is next.',
     },
   },
 
@@ -179,7 +179,7 @@ export default circuit('And2', {
     par: 2,
     outro: {
       headline: 'AND, rebuilt',
-      body: 'A NAND and the NOT you worked out last level. The gate you were handed in level one, this time made of parts. OR will not come this directly.',
+      body: "OR is next. It's a bit tougher.",
     },
   },
 
@@ -678,6 +678,22 @@ export function nextLevel(id: string): Level | undefined {
  * have unlocked NAND while showing no unlock at all, which is the one card
  * every player sees.
  */
+/**
+ * Every gate the campaign hands over, in unlock order.
+ *
+ * Walked out of LEVELS rather than written down, so it cannot drift from what
+ * the grader actually permits. The completion card shows the whole list with
+ * the unearned ones dimmed: a row that only grows tells you what you have, but
+ * a row with gaps in it tells you there is more to come.
+ */
+export const ALL_GATES: string[] = (() => {
+  const seen: string[] = [];
+  for (const level of LEVELS) {
+    for (const name of level.allowed) if (!seen.includes(name)) seen.push(name);
+  }
+  return seen;
+})();
+
 export function gatesGainedAfter(level: Level, next: Level | undefined): string[] {
   if (levelIndex(level.id) === 0) return level.allowed;
   return next ? next.allowed.filter((name) => !level.allowed.includes(name)) : [];
