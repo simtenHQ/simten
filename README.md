@@ -4,7 +4,7 @@
 
 # Simten
 
-**A TypeScript HDL. Simulates in the browser, synthesizes to Verilog.**
+**Write hardware in TypeScript. Test it with npm. Run it on an FPGA.**
 
 Write circuits as typed TypeScript, from a single NAND gate up to a RISC-V core.
 Simulate them in the browser, export Verilog, run the result on an FPGA.
