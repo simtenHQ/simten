@@ -36,7 +36,7 @@ export function MobileNotice({ level }: { level: Level }) {
           </h1>
           <p className="mb-6 text-sm leading-relaxed text-muted-foreground">
             You solve these by writing code, next to a circuit diagram wide enough to read. Neither
-            fits on a phone yet. Open this on a laptop and it will be waiting.
+            fits on a phone yet.
           </p>
 
           <div className="flex flex-col gap-2">
@@ -47,7 +47,7 @@ export function MobileNotice({ level }: { level: Level }) {
               See the map
             </Link>
             <div className="mt-2 text-xs text-muted-foreground">
-              Or read what this is about at{' '}
+              Read more at{' '}
               <a
                 href="https://simten.dev"
                 className="text-foreground underline-offset-2 hover:underline"
