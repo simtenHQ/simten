@@ -605,7 +605,10 @@ function PlayLevel({ level }: { level: Level }) {
           showOverlay={false}
           onInteractOutside={(e) => e.preventDefault()}
           onOpenAutoFocus={(e) => e.preventDefault()}
-          className="max-h-[45vh] gap-0 overflow-y-auto"
+          // Portalled to document.body, so <DesktopOnly>'s `hidden md:contents`
+          // wrapper never applies. Without this the spec sheet opens over the
+          // mobile notice on every level, since `specOpen` starts true.
+          className="hidden md:flex max-h-[45vh] gap-0 overflow-y-auto"
         >
           <SheetTitle className="sr-only">Level spec</SheetTitle>
           <SpecPanel

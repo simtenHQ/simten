@@ -57,7 +57,10 @@ export function LevelIntro({
 
   return (
     <Dialog open={open} onOpenChange={(next) => !next && onDismiss()}>
-      <DialogContent className="gap-0 sm:max-w-lg">
+      {/* `hidden md:grid` for the same reason the spec sheet needs it: the
+          portal escapes <DesktopOnly>, and the open effect does not check
+          the viewport. */}
+      <DialogContent className="hidden md:grid gap-0 sm:max-w-lg">
         <DialogHeader className="space-y-2">
           <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
             Something new
