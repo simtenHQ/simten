@@ -13,7 +13,7 @@ import { Logo } from '@/components/Logo';
  * /cpu/rv32i) suppress this just like they suppress the default SiteHeader.
  */
 
-const headingClass = 'text-xs font-medium uppercase tracking-[0.15em] text-muted-foreground/70';
+const headingClass = 'text-xs font-medium uppercase tracking-[0.15em] text-muted-foreground';
 const linkClass =
   'text-base text-muted-foreground transition-colors hover:text-foreground sm:text-[15px]';
 
@@ -137,7 +137,7 @@ export function SiteFooter() {
         </div>
 
         {/* Bottom: © / legal */}
-        <div className="mt-16 flex flex-col gap-4 border-t border-border pt-8 text-[13px] text-muted-foreground/70 sm:flex-row sm:items-center sm:justify-between">
+        <div className="mt-16 flex flex-col gap-4 border-t border-border pt-8 text-[13px] text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
           <p>
             © {year} Simten · Open source, licensed under{' '}
             <a

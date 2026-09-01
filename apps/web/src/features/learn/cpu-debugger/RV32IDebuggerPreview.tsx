@@ -186,7 +186,7 @@ export function RV32IDebuggerPreview() {
       <div ref={rootRef} className="select-none flex flex-col h-full bg-card text-foreground">
         {/* ---- Desktop pipeline badges ---- */}
         <div className="hidden sm:block px-4 pt-4 pb-2">
-          <div className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground/60 mb-2">
+          <div className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground mb-2">
             Pipeline
           </div>
           <div className="flex gap-2">
@@ -215,7 +215,7 @@ export function RV32IDebuggerPreview() {
             ))}
           </div>
           {/* Narration line: plain English, what's happening right now */}
-          <p className="mt-3 flex items-center gap-2 text-[13px] text-muted-foreground/90 leading-snug">
+          <p className="mt-3 flex items-center gap-2 text-[13px] text-muted-foreground leading-snug">
             {narration.node}
             <span>{narration.text}</span>
           </p>
@@ -223,7 +223,7 @@ export function RV32IDebuggerPreview() {
 
         {/* ---- Mobile pipeline chips + narration ---- */}
         <div className="sm:hidden px-4 pt-4 pb-3">
-          <div className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground/60 mb-2">
+          <div className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground mb-2">
             Pipeline
           </div>
           <div className="flex gap-1.5">
@@ -236,7 +236,7 @@ export function RV32IDebuggerPreview() {
               </span>
             ))}
           </div>
-          <p className="mt-2.5 flex items-center gap-2 text-[12px] text-muted-foreground/90">
+          <p className="mt-2.5 flex items-center gap-2 text-[12px] text-muted-foreground">
             {narration.node}
             <span>{narration.text}</span>
           </p>
@@ -261,11 +261,11 @@ export function RV32IDebuggerPreview() {
 
           {/* Disassembly, or the compile spinner during act 1 */}
           <div className="bg-card overflow-hidden min-h-[180px]">
-            <div className="px-4 pt-2 pb-1.5 text-[10px] font-mono uppercase tracking-wider text-muted-foreground/60">
+            <div className="px-4 pt-2 pb-1.5 text-[10px] font-mono uppercase tracking-wider text-muted-foreground">
               Disassembly
             </div>
             {phase === 'compiling' ? (
-              <div className="flex flex-col items-center justify-center gap-3 py-12 text-muted-foreground/70">
+              <div className="flex flex-col items-center justify-center gap-3 py-12 text-muted-foreground">
                 <Spinner />
                 <span className="text-[12px] font-mono">Compiling to RISC-V…</span>
               </div>
@@ -286,7 +286,7 @@ export function RV32IDebuggerPreview() {
                       className={`flex items-center gap-2 px-4 whitespace-nowrap transition-colors ${isActive ? 'bg-blue-500/10' : ''}`}
                     >
                       <span
-                        className={`tabular-nums shrink-0 ${isActive ? 'text-blue-600 dark:text-blue-400' : 'text-muted-foreground/50'}`}
+                        className={`tabular-nums shrink-0 ${isActive ? 'text-blue-600 dark:text-blue-400' : 'text-muted-foreground'}`}
                       >
                         {isActive ? '▸' : ' '} {row.addr}
                       </span>
