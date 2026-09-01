@@ -26,7 +26,7 @@ const SITE_URL = 'https://simten.dev';
 const SITE_NAME = 'Simten';
 const DEFAULT_TITLE = 'Simten | Hardware design in TypeScript';
 const DEFAULT_DESCRIPTION =
-  'Design and simulate digital hardware in TypeScript. From single gates to RISC-V CPUs, synthesizable to Verilog, running live in your browser.';
+  'Write hardware in TypeScript. Test it with npm. Run it on an FPGA. From single gates to RISC-V CPUs, simulated live in your browser.';
 const DEFAULT_OG_IMAGE = `${SITE_URL}/og-default.png`;
 
 export const Route = createRootRoute({

@@ -23,7 +23,7 @@ import {
 import { Container } from '@/components/Container';
 import { HighlightedCode } from '@/components/HighlightedCode';
 import { CodeWithHovers } from './CodeWithHovers';
-import { FIGLET_DEMO_CODE, FigletDemo } from './Hero';
+import { FIGLET_DEMO_CODE, FigletDemo } from './figlet-demo';
 
 // ============================================================================
 // Demo circuits (self-contained: the gallery has its own copies of shared ones)
@@ -555,58 +555,6 @@ function BrowserWindow({
 }
 
 // ============================================================================
-// Copy-to-clipboard command line
-// ============================================================================
-
-function CopyCommand({ command }: { command: string }) {
-  const [copied, setCopied] = useState(false);
-
-  const copy = useCallback(() => {
-    navigator.clipboard.writeText(command);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  }, [command]);
-
-  return (
-    <div className="inline-flex items-center gap-3 bg-muted rounded-lg border border-border px-4 py-3 group max-w-full overflow-x-auto">
-      <span className="text-muted-foreground/60 font-mono text-sm select-none">$</span>
-      <span className="font-mono text-sm text-foreground">{command}</span>
-      <button
-        onClick={copy}
-        className="ml-2 text-muted-foreground/60 hover:text-foreground/80 transition-colors shrink-0"
-        aria-label="Copy to clipboard"
-      >
-        {copied ? (
-          <svg
-            className="w-4 h-4 text-green-400"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth={2}
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-          </svg>
-        ) : (
-          <svg
-            className="w-4 h-4"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth={2}
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
-            />
-          </svg>
-        )}
-      </button>
-    </div>
-  );
-}
-
-// ============================================================================
 // Terminal line
 // ============================================================================
 
@@ -930,7 +878,7 @@ const HeroBrowserWindow = forwardRef<HeroBrowserWindowHandle, { canvasReady?: bo
               />
             ) : (
               <div className="text-[12px] font-mono py-3 px-4">
-                <span className="text-muted-foreground/40 italic text-[11px]">
+                <span className="text-muted-foreground italic text-[11px]">
                   Waiting for circuit...
                 </span>
               </div>
@@ -952,7 +900,7 @@ const HeroBrowserWindow = forwardRef<HeroBrowserWindowHandle, { canvasReady?: bo
                   />
                 </div>
               ) : (
-                <div className="h-full flex items-center justify-center text-muted-foreground/40 text-sm font-mono">
+                <div className="h-full flex items-center justify-center text-muted-foreground text-sm font-mono">
                   {codeTyping || showCircuit ? 'Compiling...' : ''}
                 </div>
               )}
@@ -1121,37 +1069,29 @@ export function ClaudeDemoSection({ onComplete, autoPlay = false }: ClaudeDemoSe
   }, [demoComplete]);
 
   return (
-    <section className="hidden md:block pt-10 pb-16">
+    <section className="hidden md:block pt-6 pb-16">
       <Container>
-        {/* Section label */}
         <div className="mb-6">
-          <h1 className="text-3xl md:text-4xl font-semibold tracking-tight leading-[1.1] text-foreground">
-            Describe hardware. Claude builds it. Test it like software.
-          </h1>
-          <p className="mt-4 text-base text-muted-foreground max-w-2xl">
-            A TypeScript HDL where any npm package is your testbench. Drive circuits with real
-            firmware, watch them run cycle-by-cycle, and synthesize to Verilog.
-          </p>
-          <div className="mt-6 flex items-center gap-3 flex-wrap">
-            {/* Primary action, keeps the hero framed around "this is a
-                hardware framework", not "this is an MCP install". The editor
-                is a secondary, zero-friction "try it now" path; the MCP
-                CopyCommand sits last so power users still see it without it
-                visually dominating. */}
-            <Link
-              to="/docs/$"
-              params={{ _splat: '' }}
-              className="inline-flex items-center rounded-lg bg-foreground text-background hover:bg-foreground/90 transition-colors px-4 py-3 text-sm font-medium"
-            >
-              Learn more →
-            </Link>
+          {/* Two actions, not three. The editor leads because it is the
+              zero-friction path: one click and you are running a circuit.
+              The `claude mcp add` command left the hero: it is a power-user
+              detail and it was the widest thing in the row. It needs a home
+              further down the page — see ClaudeCTA, which is written but not
+              currently rendered. */}
+          <div className="flex items-center gap-3 flex-wrap">
             <Link
               to="/circuit"
-              className="inline-flex items-center rounded-lg border border-border hover:bg-muted transition-colors px-4 py-3 text-sm font-medium text-foreground"
+              className="inline-flex items-center rounded-full bg-foreground text-background hover:bg-foreground/90 transition-colors px-5 py-3 text-sm font-medium"
             >
               Open the editor →
             </Link>
-            <CopyCommand command="claude mcp add simten npx @simten/mcp" />
+            <Link
+              to="/docs/$"
+              params={{ _splat: '' }}
+              className="inline-flex items-center rounded-full border border-border hover:bg-muted transition-colors px-5 py-3 text-sm font-medium text-foreground"
+            >
+              Learn more →
+            </Link>
           </div>
         </div>
 

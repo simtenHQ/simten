@@ -5,7 +5,7 @@ import { createFileRoute, Link } from '@tanstack/react-router';
 import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Container } from '@/components/Container';
 import { HighlightedCode } from '@/components/HighlightedCode';
-import { Section } from '@/components/SectionHeading';
+import { Section, SectionHeading } from '@/components/SectionHeading';
 import { usePongSimulator } from '@/features/blog/pong-in-hardware/usePongSimulator';
 import { useSnakeSimulator } from '@/features/blog/snake-in-hardware/useSnakeSimulator';
 import { RV32IDebuggerPreview } from '@/features/learn/cpu-debugger/RV32IDebuggerPreview';
@@ -15,47 +15,6 @@ import { CodeWithHovers } from '@/features/splash/CodeWithHovers';
 // ============================================================================
 // Demo circuits
 // ============================================================================
-
-const HalfAdder = circuit('HalfAdder', {
-  inputs: { a: bit, b: bit },
-  outputs: { sum: bit, carry: bit },
-  nodes: { xor1: Xor, and1: And },
-  connect: ({ inputs, outputs, nodes: { xor1, and1 } }) => [
-    inputs.a.to(xor1.a, and1.a),
-    inputs.b.to(xor1.b, and1.b),
-    xor1.out.to(outputs.sum),
-    and1.out.to(outputs.carry),
-  ],
-});
-
-const DrilldownFullAdder = circuit('FullAdder', {
-  inputs: { a: bit, b: bit, cin: bit },
-  outputs: { sum: bit, cout: bit },
-  nodes: { ha1: HalfAdder, ha2: HalfAdder, or1: Or },
-  connect: ({ inputs, outputs, nodes: { ha1, ha2, or1 } }) => [
-    inputs.a.to(ha1.a),
-    inputs.b.to(ha1.b),
-    ha1.sum.to(ha2.a),
-    inputs.cin.to(ha2.b),
-    ha2.sum.to(outputs.sum),
-    ha1.carry.to(or1.a),
-    ha2.carry.to(or1.b),
-    or1.out.to(outputs.cout),
-  ],
-});
-
-const ShiftRegister4 = circuit('ShiftRegister4', {
-  inputs: { din: bit },
-  outputs: { q0: bit, q1: bit, q2: bit, q3: bit },
-  nodes: { ff0: DFlipFlop(), ff1: DFlipFlop(), ff2: DFlipFlop(), ff3: DFlipFlop() },
-  connect: ({ inputs, outputs, nodes: { ff0, ff1, ff2, ff3 } }) => [
-    inputs.din.to(ff0.d),
-    ff0.q.to(ff1.d, outputs.q0),
-    ff1.q.to(ff2.d, outputs.q1),
-    ff2.q.to(ff3.d, outputs.q2),
-    ff3.q.to(outputs.q3),
-  ],
-});
 
 // ============================================================================
 // Route + Page
@@ -74,13 +33,28 @@ export const Route = createFileRoute('/')({
     }),
     scripts: [softwareApplicationLd()],
   }),
-  component: Splash5Page,
+  component: LandingPage,
 });
 
-function Splash5Page() {
+function LandingPage() {
   return (
     <div className="bg-background text-foreground">
-      <MobileAIHero />
+      <Container className="pt-10">
+        <div className="md:hidden inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1 text-[10px] text-muted-foreground mb-4">
+          <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+          Works with Claude + MCP
+        </div>
+        <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight leading-[1.05] md:leading-[1.1] text-foreground">
+          Write hardware in TypeScript. Test it with npm. Run it on an FPGA.
+        </h1>
+        {/* Only carries what the headline cannot: the h1 ends on "FPGA", which
+            reads as "do I need hardware to try this?". Everything else the old
+            subhead said (TypeScript, npm, Verilog) the headline already says. */}
+        <p className="mt-4 text-sm md:text-base text-muted-foreground max-w-2xl">
+          Runs in your browser. No toolchain to install.
+        </p>
+      </Container>
+      <MobileHeroActions />
       <ClaudeDemoSection autoPlay />
       <BentoFeatures />
       <DemoGallery />
@@ -103,7 +77,7 @@ function BentoFeatures() {
   return (
     <section className="py-12 md:py-20 lg:py-28">
       <Container>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-px bg-border rounded-lg overflow-hidden border border-border">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-px bg-border rounded-lg overflow-hidden border border-border">
           <BentoCell
             title="Type-safe end to end"
             description="Circuits are TypeScript. Runs natively in Node, Bun, or browser: no testbench language, no codegen step."
@@ -123,22 +97,10 @@ function BentoFeatures() {
             href="/docs/building-custom-uis"
           />
           <BentoCell
-            title="Composable to the gate"
-            description="Double-click any composite to see its internals. CPU → decoder → multiplexer → NAND, all the way down."
-            visual={<DrilldownBentoVisual />}
-            href="/cpu/rv32i"
-          />
-          <BentoCell
             title="Wire it to your assistant"
             description="An MCP server lets Claude, Codex, Gemini, or Cursor write, simulate, and debug circuits live in your browser: describe, generate, fix, ship."
             visual={<MCPBentoVisual />}
             href="/docs/mcp-integration"
-          />
-          <BentoCell
-            title="Rewind any cycle"
-            description="Sequential circuits record every state. Step forward, spot the bug, jump back to the exact cycle it happened."
-            visual={<TimeTravelBentoVisual />}
-            href="/circuit"
           />
         </div>
       </Container>
@@ -182,7 +144,7 @@ function BentoCell({
             </svg>
           </Link>
         ) : (
-          <span className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-border text-muted-foreground/60">
+          <span className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-border text-muted-foreground">
             <svg
               className="h-4 w-4"
               viewBox="0 0 24 24"
@@ -403,78 +365,6 @@ function EmbedsBentoVisual() {
 // THAT to see an Xor; open Xor to see the underlying Nand gate. Each
 // layer carries the same pulsing inspect badge used on real composite
 // nodes in the editor, so the visual reuses the page's vocabulary.
-function DrilldownBentoVisual() {
-  return (
-    <div className="absolute inset-0 flex items-center justify-center p-4">
-      <DrilldownLayer name="FullAdder" depth={0}>
-        <DrilldownLayer name="HalfAdder" depth={1}>
-          <DrilldownLayer name="Xor" depth={2} />
-        </DrilldownLayer>
-      </DrilldownLayer>
-    </div>
-  );
-}
-
-function DrilldownLayer({
-  name,
-  depth,
-  leaf,
-  children,
-}: {
-  name: string;
-  depth: number;
-  leaf?: boolean;
-  children?: ReactNode;
-}) {
-  // Outer layers are larger and more muted; the innermost gate is the
-  // saturated focus point so the eye lands on the primitive at the bottom
-  // of the drilldown.
-  const muting = `${100 - depth * 18}%`;
-
-  return (
-    <div
-      className="relative rounded-lg border border-border bg-card shadow-sm w-full"
-      style={{
-        padding: depth === 3 ? '10px 14px' : depth === 2 ? 12 : depth === 1 ? 14 : 16,
-        opacity: muting,
-      }}
-    >
-      <div className="flex items-center justify-between mb-2">
-        <span
-          className={`font-mono ${
-            leaf ? 'text-[12px] text-foreground font-semibold' : 'text-[11px] text-foreground/80'
-          }`}
-        >
-          {name}
-        </span>
-        {children && (
-          <span className="relative inline-flex h-4 w-4 items-center justify-center">
-            <span className="absolute inset-0 rounded-full bg-blue-400/30 animate-[ping_2s_cubic-bezier(0,0,0.2,1)_infinite]" />
-            <span className="relative flex h-3 w-3 items-center justify-center rounded-full bg-blue-500">
-              <svg
-                className="h-2 w-2 text-white"
-                viewBox="0 0 16 16"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth={2}
-                strokeLinecap="round"
-              >
-                <circle cx="6.5" cy="6.5" r="4.5" />
-                <line x1="10" y1="10" x2="14" y2="14" />
-              </svg>
-            </span>
-          </span>
-        )}
-      </div>
-      {children}
-      {leaf && (
-        <div className="mt-1 text-[9px] font-mono uppercase tracking-wider text-muted-foreground">
-          primitive · NAND gate
-        </div>
-      )}
-    </div>
-  );
-}
 
 // "Wire it to Claude": dark terminal card snapshotting the MCP install +
 // a tiny scripted Claude exchange (one prompt, two tool calls, a result).
@@ -528,160 +418,6 @@ function MCPBentoVisual() {
   );
 }
 
-// "Rewind any cycle": mini waveform viewer with a scrubbing playhead.
-// Four signals (clk, count[0], count[1], q) drawn as SVG polylines over
-// 16 cycles. The playhead is an absolute vertical line that slides with
-// the cycle state, and the cycle counter above updates in sync.
-const WAVEFORM_CYCLES = 16;
-const CYCLE_WIDTH = 20;
-const ROW_HEIGHT = 22;
-const TRACE_TOP = 5;
-const TRACE_BOT = 17;
-const WAVEFORM_W = WAVEFORM_CYCLES * CYCLE_WIDTH; // 320
-
-function squareTrace(period: number): string {
-  // Build a proper square-wave polyline: horizontal segment for each
-  // half-period, with a vertical transition at each boundary. Yields
-  // pairs of (x,y) describing the alternating high/low corners.
-  const pts: string[] = [];
-  let high = true;
-  let y = TRACE_TOP;
-  pts.push(`0,${y}`);
-  for (let c = 1; c <= WAVEFORM_CYCLES; c++) {
-    const x = c * CYCLE_WIDTH;
-    // Walk to the end of this cycle at the current level.
-    pts.push(`${x},${y}`);
-    // Transition at boundaries that are multiples of `period`.
-    if (c % period === 0 && c < WAVEFORM_CYCLES) {
-      high = !high;
-      y = high ? TRACE_TOP : TRACE_BOT;
-      pts.push(`${x},${y}`);
-    }
-  }
-  return pts.join(' ');
-}
-
-const WAVEFORM_SIGNALS = [
-  { name: 'clk', points: squareTrace(1) },
-  { name: 'count[0]', points: squareTrace(2) },
-  { name: 'count[1]', points: squareTrace(4) },
-  { name: 'q', points: squareTrace(8) },
-];
-
-function TimeTravelBentoVisual() {
-  const [cycle, setCycle] = useState(8);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
-    let dir = 1;
-    const id = window.setInterval(() => {
-      setCycle((c) => {
-        if (c >= 13) dir = -1;
-        else if (c <= 3) dir = 1;
-        return c + dir;
-      });
-    }, 320);
-    return () => window.clearInterval(id);
-  }, []);
-
-  const LABEL_W = 52;
-  const GAP = 12;
-  const PAD = 12;
-
-  return (
-    <div className="absolute inset-0 flex items-center justify-center p-4">
-      <div className="w-[420px] rounded-md border border-border bg-card shadow-md overflow-hidden">
-        <div className="flex items-center justify-between h-7 px-3 border-b border-border bg-muted/60">
-          <span className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">
-            Waveform
-          </span>
-          <span className="text-[10px] font-mono text-muted-foreground tabular-nums">
-            Cycle <span className="text-foreground">{cycle}</span> / {WAVEFORM_CYCLES}
-          </span>
-        </div>
-
-        <div className="relative" style={{ padding: PAD }}>
-          {/* Signal traces */}
-          {WAVEFORM_SIGNALS.map((sig) => (
-            <div
-              key={sig.name}
-              className="flex items-center"
-              style={{ gap: GAP, height: ROW_HEIGHT }}
-            >
-              <span
-                className="shrink-0 text-[10px] font-mono text-muted-foreground tabular-nums"
-                style={{ width: LABEL_W }}
-              >
-                {sig.name}
-              </span>
-              <svg width={WAVEFORM_W} height={ROW_HEIGHT} className="block">
-                {/* Faint cycle gridlines */}
-                {Array.from({ length: WAVEFORM_CYCLES + 1 }).map((_, i) => (
-                  <line
-                    key={i}
-                    x1={i * CYCLE_WIDTH}
-                    y1={0}
-                    x2={i * CYCLE_WIDTH}
-                    y2={ROW_HEIGHT}
-                    stroke="currentColor"
-                    strokeWidth={0.5}
-                    className="text-border/50"
-                  />
-                ))}
-                <polyline
-                  points={sig.points}
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth={1.5}
-                  className="text-blue-500 dark:text-blue-400"
-                  strokeLinejoin="miter"
-                />
-              </svg>
-            </div>
-          ))}
-
-          {/* Playhead, absolutely positioned relative to this container.
-              `left` is computed: container padding + label width + gap +
-              cycle offset. Animates with `transition: left`. */}
-          <div
-            className="absolute pointer-events-none transition-[left] duration-200 ease-linear"
-            style={{
-              left: PAD + LABEL_W + GAP + cycle * CYCLE_WIDTH,
-              top: PAD - 2,
-              height: WAVEFORM_SIGNALS.length * ROW_HEIGHT + 4,
-              width: 1,
-            }}
-          >
-            <div className="w-px h-full bg-foreground/80" />
-            <span className="absolute -top-1 left-1/2 -translate-x-1/2 h-1.5 w-1.5 rounded-full bg-foreground" />
-          </div>
-        </div>
-
-        <div className="flex items-center justify-between h-7 px-3 border-t border-border bg-muted/60">
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <ScrubberBtn>{'⏮'}</ScrubberBtn>
-            <ScrubberBtn>{'◀'}</ScrubberBtn>
-            <ScrubberBtn>{'▶'}</ScrubberBtn>
-            <ScrubberBtn>{'⏭'}</ScrubberBtn>
-          </div>
-          <span className="text-[9px] font-mono uppercase tracking-wider text-muted-foreground/70">
-            time-travel
-          </span>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function ScrubberBtn({ children }: { children: ReactNode }) {
-  return (
-    <span className="inline-flex items-center justify-center h-4 w-4 rounded text-[9px] hover:bg-muted hover:text-foreground transition-colors">
-      {children}
-    </span>
-  );
-}
-
 function TypesafeBentoVisual() {
   return (
     <div className="absolute inset-0 flex items-start p-4">
@@ -708,70 +444,109 @@ function TypesafeBentoVisual() {
   );
 }
 
-function MobileAIHero() {
+function MobileHeroActions() {
   return (
-    <section className="md:hidden px-5 pt-10 pb-2">
-      <div className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1 text-[10px] text-muted-foreground mb-4">
-        <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-        Works with Claude + MCP
+    <Container className="md:hidden pb-2">
+      {/* Desktop gets the live demo in ClaudeDemoSection; mobile can't run it,
+          so Snake stands in. Same job: proof, above the fold, in one tap. The
+          `claude mcp add` command that used to sit here is unusable on a phone. */}
+      <div className="mt-5">
+        <SnakeCard />
       </div>
-      <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight leading-[1.05] text-foreground">
-        Describe hardware. Claude builds it. Test it like software.
-      </h1>
-      <p className="mt-4 text-sm text-muted-foreground">
-        A TypeScript HDL where the whole npm ecosystem is your testbench. Drive a circuit with real
-        firmware, any library you can <code>npm install</code>, and watch it run cycle-by-cycle.
-        Synthesizable to Verilog.
-      </p>
       <Link
         to="/docs/$"
         params={{ _splat: '' }}
-        className="mt-5 flex w-fit items-center rounded-lg bg-foreground text-background hover:bg-foreground/90 transition-colors px-4 py-3 text-sm font-medium"
+        className="mt-4 flex w-fit items-center rounded-full bg-foreground text-background hover:bg-foreground/90 transition-colors px-5 py-3 text-sm font-medium"
       >
         Learn more →
       </Link>
-      <div className="mt-3 rounded-lg border border-border bg-muted px-4 py-3">
-        <code className="font-mono text-[12px] text-foreground/80">
-          <span className="text-muted-foreground/60 select-none">$ </span>
-          claude mcp add simten npx @simten/mcp
-        </code>
-      </div>
-    </section>
+    </Container>
   );
 }
 
+const HalfAdder = circuit('HalfAdder', {
+  inputs: { a: bit, b: bit },
+  outputs: { sum: bit, carry: bit },
+  nodes: { xor1: Xor, and1: And },
+  connect: ({ inputs, outputs, nodes: { xor1, and1 } }) => [
+    inputs.a.to(xor1.a, and1.a),
+    inputs.b.to(xor1.b, and1.b),
+    xor1.out.to(outputs.sum),
+    and1.out.to(outputs.carry),
+  ],
+});
+
+const DrilldownFullAdder = circuit('FullAdder', {
+  inputs: { a: bit, b: bit, cin: bit },
+  outputs: { sum: bit, cout: bit },
+  nodes: { ha1: HalfAdder, ha2: HalfAdder, or1: Or },
+  connect: ({ inputs, outputs, nodes: { ha1, ha2, or1 } }) => [
+    inputs.a.to(ha1.a),
+    inputs.b.to(ha1.b),
+    ha1.sum.to(ha2.a),
+    inputs.cin.to(ha2.b),
+    ha2.sum.to(outputs.sum),
+    ha1.carry.to(or1.a),
+    ha2.carry.to(or1.b),
+    or1.out.to(outputs.cout),
+  ],
+});
+
+const ShiftRegister4 = circuit('ShiftRegister4', {
+  inputs: { din: bit },
+  outputs: { q0: bit, q1: bit, q2: bit, q3: bit },
+  nodes: { ff0: DFlipFlop(), ff1: DFlipFlop(), ff2: DFlipFlop(), ff3: DFlipFlop() },
+  connect: ({ inputs, outputs, nodes: { ff0, ff1, ff2, ff3 } }) => [
+    inputs.din.to(ff0.d),
+    ff0.q.to(ff1.d, outputs.q0),
+    ff1.q.to(ff2.d, outputs.q1),
+    ff2.q.to(ff3.d, outputs.q2),
+    ff3.q.to(outputs.q3),
+  ],
+});
+
 // ============================================================================
-// Gallery
+// Demo gallery
 // ============================================================================
 
 function DemoGallery() {
   return (
-    <div className="relative pb-16 md:pb-24 md:animate-in md:fade-in md:duration-700 overflow-hidden">
+    <div className="relative md:animate-in md:fade-in md:duration-700 overflow-hidden">
       <Container className="relative">
-        {/* Lead with the heavy proof, the RV32I CPU, to show the
-            framework's range up front. Lighter playable demos follow.
-            First Section overrides the default top margin since the
-            DemoGallery wrapper already provides top padding. */}
-        <Section className="mt-0">
-          <div className="max-w-2xl mb-10 lg:mb-12">
-            <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight leading-[1.1]">
-              Scale to real-world complexity
-            </h2>
-            <p className="mt-4 text-base lg:text-lg text-muted-foreground">
-              The framework already runs heavy systems in the browser: for example, a 5-stage
-              pipelined RISC-V CPU executing GCC-compiled C, C++, and Rust.
-            </p>
-            <Link
-              to="/cpu/rv32i"
-              className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline"
-            >
-              Open the RV32I debugger →
-            </Link>
+        {/* Open with the playable ones: they need no explanation and they
+            make the claim in one tap. The heavy RV32I proof follows. */}
+        <Section>
+          <SectionHeading title="No CPU. No code. Just gates." />
+
+          {/* Featured games: Pong on the left, Snake on the right */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <PongCard />
+            {/* Mobile plays Snake in the hero, so only one instance mounts. */}
+            <div className="hidden md:block">
+              <SnakeCard />
+            </div>
           </div>
+        </Section>
+
+        {/* Then the heavy proof, the RV32I CPU, for the range: the games
+            show it is real, this shows how far it goes. */}
+        <Section>
+          <SectionHeading
+            title="Scale to real-world complexity"
+            description="The framework already runs heavy systems in the browser: for example, a 5-stage pipelined RISC-V CPU executing GCC-compiled C, C++, and Rust."
+            cta={
+              <Link
+                to="/cpu/rv32i"
+                className="inline-flex items-center gap-1 text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline"
+              >
+                Open the RV32I debugger →
+              </Link>
+            }
+          />
 
           {/* RV32I CPU debugger demo */}
           <div>
-            <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden h-auto sm:h-[520px]">
+            <div className="rounded-lg border border-border bg-card shadow-sm overflow-hidden h-auto sm:h-[520px]">
               <RV32IDebuggerPreview />
             </div>
 
@@ -784,7 +559,7 @@ function DemoGallery() {
               className="mt-3 inline-flex items-center gap-2 rounded-full border border-border bg-card px-3.5 py-1.5 text-[13px] font-medium text-foreground/90 shadow-sm transition-colors hover:border-emerald-500/40 hover:text-foreground"
             >
               <svg
-                className="h-3.5 w-3.5 shrink-0 text-emerald-500"
+                className="h-3.5 w-3.5 shrink-0 text-emerald-600 dark:text-emerald-400"
                 viewBox="0 0 12 12"
                 fill="none"
                 stroke="currentColor"
@@ -803,32 +578,12 @@ function DemoGallery() {
             </a>
           </div>
         </Section>
+      </Container>
 
-        {/* And the lighter side: same engine, more fun. Wrapped in
-            Section so it picks up the standard inter-section margin
-            (mt-28 md:mt-36) below the Scale block. */}
+      <Container className="relative">
+        {/* Drilldown: the claim the whole project rests on, shown rather than stated. */}
         <Section>
-          <div className="mb-10 max-w-2xl">
-            <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight leading-[1.1]">
-              No CPU. No code. Just gates.
-            </h2>
-            <p className="mt-3 text-sm text-muted-foreground">
-              Pong and Snake, built entirely from logic gates with no processor and no software.
-              Play them here, then watch Snake run on a real ULX3S FPGA.
-            </p>
-          </div>
-
-          {/* Featured games: Pong on the left, Snake on the right */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-            <PongCard />
-            <SnakeCard />
-          </div>
-        </Section>
-
-        {/* Row 1.5: removed, drilldown showcase relocated below for tightness */}
-        <div className="hidden">
-          {/* placeholder kept so the diff stays small */}
-          <div className="mt-32 rounded-lg border border-border overflow-hidden bg-card">
+          <div className="rounded-lg border border-border overflow-hidden bg-card">
             <div className="grid grid-cols-1 sm:grid-cols-[1fr_1.5fr]">
               {/* Left: explanation */}
               <div className="flex flex-col justify-center px-6 py-8 sm:px-8 sm:border-r border-border">
@@ -912,9 +667,11 @@ function DemoGallery() {
               </div>
             </div>
           </div>
+        </Section>
 
-          {/* Row 1.6: Time-travel showcase */}
-          <div className="mt-24 rounded-lg border border-border overflow-hidden bg-card">
+        {/* Time travel is temporal, so prose cannot carry it. */}
+        <Section>
+          <div className="rounded-lg border border-border overflow-hidden bg-card">
             <div className="grid grid-cols-1 sm:grid-cols-[1.5fr_1fr]">
               {/* Left: live circuit with full clock controls + time-travel */}
               <CircuitEmbed
@@ -981,30 +738,23 @@ function DemoGallery() {
               </div>
             </div>
           </div>
-        </div>
-        {/* end hidden wrapper */}
-      </Container>
+        </Section>
 
-      <Container className="relative">
         {/* Verilog Export, honest framing */}
         <Section>
-          <div className="max-w-2xl mb-10 lg:mb-12">
-            <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight leading-[1.1]">
-              Export to Verilog
-            </h2>
-            <p className="mt-4 text-base lg:text-lg text-muted-foreground">
-              Synthesizable primitives export to structural Verilog. The RV32I CPU and Snake both
-              run on a real ULX3S FPGA, with the CPU cross-validated against Icarus Verilog
-              cycle-by-cycle.
-            </p>
-            <Link
-              to="/docs/$"
-              params={{ _splat: 'hardware' }}
-              className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline"
-            >
-              Setup & how it works →
-            </Link>
-          </div>
+          <SectionHeading
+            title="Export to Verilog"
+            description="Synthesizable primitives export to structural Verilog. The RV32I CPU and Snake both run on a real ULX3S FPGA, with the CPU cross-validated against Icarus Verilog cycle-by-cycle."
+            cta={
+              <Link
+                to="/docs/$"
+                params={{ _splat: 'hardware' }}
+                className="inline-flex items-center gap-1 text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline"
+              >
+                Setup &amp; how it works →
+              </Link>
+            }
+          />
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* TypeScript side */}
             <div className="rounded-lg border border-border bg-card overflow-hidden">
@@ -1030,12 +780,12 @@ function DemoGallery() {
             <div className="rounded-lg border border-border bg-card overflow-hidden">
               <div className="px-3 py-1.5 border-b border-border flex items-center justify-between">
                 <span className="text-[10px] text-muted-foreground font-mono">HalfAdder.v</span>
-                <span className="text-[9px] text-emerald-500 font-medium">
+                <span className="text-[9px] text-emerald-600 dark:text-emerald-400 font-medium">
                   ✓ verified against Icarus Verilog
                 </span>
               </div>
               <pre className="px-4 py-3 text-[11px] font-mono text-muted-foreground leading-relaxed overflow-x-auto">
-                <span className="text-muted-foreground/60">{'`timescale 1ns / 1ps\n\n'}</span>
+                <span className="text-muted-foreground">{'`timescale 1ns / 1ps\n\n'}</span>
                 <span className="text-violet-400">{'module'}</span>
                 {' HalfAdder (\n'}
                 {'  '}
@@ -1058,16 +808,16 @@ function DemoGallery() {
                 <span className="text-violet-400">{'wire'}</span>
                 {' w_and1_out;\n\n'}
                 {'  '}
-                <span className="text-blue-400">{'assign'}</span>
+                <span className="text-blue-600 dark:text-blue-400">{'assign'}</span>
                 {' w_xor1_out = a ^ b;\n'}
                 {'  '}
-                <span className="text-blue-400">{'assign'}</span>
+                <span className="text-blue-600 dark:text-blue-400">{'assign'}</span>
                 {' w_and1_out = a & b;\n\n'}
                 {'  '}
-                <span className="text-blue-400">{'assign'}</span>
+                <span className="text-blue-600 dark:text-blue-400">{'assign'}</span>
                 {' sum = w_xor1_out;\n'}
                 {'  '}
-                <span className="text-blue-400">{'assign'}</span>
+                <span className="text-blue-600 dark:text-blue-400">{'assign'}</span>
                 {' carry = w_and1_out;\n\n'}
                 <span className="text-violet-400">{'endmodule'}</span>
               </pre>
@@ -1160,14 +910,14 @@ function PongCard() {
             ))}
           </svg>
         ) : (
-          <div className="text-muted-foreground/40 text-[11px] font-mono">Compiling…</div>
+          <div className="text-muted-foreground text-[11px] font-mono">Compiling…</div>
         )}
       </div>
 
       <div className="border-t border-border px-4 py-3 flex items-end justify-between gap-4">
         <div>
           <div className="text-[13px] font-semibold text-foreground">Pong</div>
-          <div className="text-[11px] text-muted-foreground/60 font-mono mt-0.5">
+          <div className="text-[11px] text-muted-foreground font-mono mt-0.5">
             ~80 nodes · zero software
           </div>
           <div className="flex items-center gap-1.5 mt-2">
@@ -1246,7 +996,7 @@ function SnakeCard() {
             ))}
           </svg>
         ) : (
-          <div className="text-muted-foreground/40 text-[11px] font-mono">Compiling…</div>
+          <div className="text-muted-foreground text-[11px] font-mono">Compiling…</div>
         )}
       </div>
 
@@ -1254,7 +1004,7 @@ function SnakeCard() {
       <div className="border-t border-border px-4 py-3 flex items-end justify-between gap-4">
         <div>
           <div className="text-[13px] font-semibold text-foreground">Snake</div>
-          <div className="text-[11px] text-muted-foreground/60 font-mono mt-0.5">
+          <div className="text-[11px] text-muted-foreground font-mono mt-0.5">
             ~100 nodes · zero software
           </div>
           <div className="flex items-center gap-1.5 mt-2">
