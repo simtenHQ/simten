@@ -29,6 +29,7 @@
  */
 
 import andGate from './and.ts?raw';
+import counter from './counter.ts?raw';
 import dLatch from './d-latch.ts?raw';
 import firstWire from './first-wire.ts?raw';
 import fullAdder from './full-adder.ts?raw';
@@ -55,5 +56,6 @@ export const SOLUTIONS: Record<string, string> = {
   'd-latch': dLatch,
   latch,
   toggle,
+  counter,
   'full-adder': fullAdder,
 };

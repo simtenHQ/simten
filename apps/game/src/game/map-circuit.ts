@@ -20,7 +20,7 @@
 
 import type { Circuit } from '@simten/core';
 import { And, Constant, circuit, createSimulatorFromCircuit, Led, Switch } from '@simten/core';
-import { MAP_ROWS } from './map';
+import { MAP_REQUIRES, MAP_ROWS } from './map';
 
 /** Node ids must be identifier-safe; level ids contain hyphens. */
 function sane(levelId: string): string {
@@ -51,12 +51,12 @@ export function buildMapCircuit() {
     }
   }
 
-  // One AND per extra prerequisite: a row of k levels needs k-1 gates to
-  // reduce to a single "all of these are done" signal.
-  MAP_ROWS.forEach((row, rowIndex) => {
-    if (rowIndex === MAP_ROWS.length - 1) return;
-    for (let i = 0; i < row.length - 1; i++) nodes[`gate_${rowIndex}_${i}`] = And;
-  });
+  // One AND per extra prerequisite: a level with k of them needs k-1 gates to
+  // reduce to a single "all of these are done" signal. Most have one and need
+  // none; the gate is there for wherever two branches rejoin.
+  for (const [levelId, requires] of Object.entries(MAP_REQUIRES)) {
+    for (let i = 0; i < requires.length - 1; i++) nodes[`gate_${levelId}_${i}`] = And;
+  }
 
   return circuit('CampaignMap', {
     nodes,
@@ -65,24 +65,25 @@ export function buildMapCircuit() {
       // biome-ignore lint/suspicious/noExplicitAny: connection defs.
       const wires: any[] = [];
 
-      for (const levelId of MAP_ROWS[0] ?? []) {
-        wires.push(n[ALWAYS_ON].out.to(n[unlockId(levelId)].in));
-      }
+      for (const levelId of MAP_ROWS.flat()) {
+        const requires = MAP_REQUIRES[levelId] ?? [];
 
-      MAP_ROWS.forEach((row, rowIndex) => {
-        const above = MAP_ROWS[rowIndex + 1];
-        if (!above) return;
+        // No prerequisites means the level is open from the start.
+        if (requires.length === 0) {
+          wires.push(n[ALWAYS_ON].out.to(n[unlockId(levelId)].in));
+          continue;
+        }
 
-        // Reduce this row to one signal, then fan it out to every level above.
-        let signal = n[switchId(row[0])].out;
-        for (let i = 1; i < row.length; i++) {
-          const gate = n[`gate_${rowIndex}_${i - 1}`];
-          wires.push(signal.to(gate.a), n[switchId(row[i])].out.to(gate.b));
+        // Reduce this level's prerequisites to one "all done" signal.
+        let signal = n[switchId(requires[0])].out;
+        for (let i = 1; i < requires.length; i++) {
+          const gate = n[`gate_${levelId}_${i - 1}`];
+          wires.push(signal.to(gate.a), n[switchId(requires[i])].out.to(gate.b));
           signal = gate.out;
         }
 
-        wires.push(signal.to(...above.map((levelId) => n[unlockId(levelId)].in)));
-      });
+        wires.push(signal.to(n[unlockId(levelId)].in));
+      }
 
       return wires;
     },
