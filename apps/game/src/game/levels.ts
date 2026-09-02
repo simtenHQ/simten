@@ -218,7 +218,7 @@ export default circuit('Or1', {
     par: 3,
     outro: {
       headline: 'You just used De Morgan',
-      body: 'Not-a and not-b are both true only when everything is off, so denying that gives you OR. Swapping a gate for its opposite with the inputs flipped is a trick that keeps working, and the next level is the easy version of it.',
+      body: 'Not-a and not-b are both true only when everything is off. Deny that and you have OR.',
     },
   },
 
@@ -255,7 +255,7 @@ export default circuit('Nor1', {
     par: 2,
     outro: {
       headline: 'Four gates deep',
-      body: 'Every gate you finish makes the next one cheaper, because you stop solving it from scratch and start bolting a NOT onto something that already works. XOR does not give you that. It needs a shape you have not built yet.',
+      body: 'Each gate makes the next one cheaper. XOR will not: it needs a shape you have not built yet.',
     },
   },
 
@@ -263,15 +263,12 @@ export default circuit('Nor1', {
     id: 'xor',
     title: 'XOR',
     tagline: 'Light the lamp when the switches disagree.',
-    brief:
-      'Light the lamp when the two switches disagree. This is the one that takes a minute, and it is the gate an adder is built from, so it pays off twice.',
+    brief: 'Light the lamp when the two switches disagree. This is the one that takes a minute.',
     target: 'Xor1',
     inputs: ['a', 'b'],
     outputs: ['result'],
     allowed: ['Nand', 'Not', 'And', 'Or', 'Nor'],
-    stub: `// Work out how many NANDs this needs. Fewer is better.
-//
-// A signal can drive more than one port:
+    stub: `// A signal can drive more than one port:
 //   a.out.to(n1.a, n2.a)
 
 export default circuit('Xor1', {
@@ -294,7 +291,7 @@ export default circuit('Xor1', {
     par: 3,
     outro: {
       headline: 'Three gates, one XOR',
-      body: "Three if you used what you have earned, four if you stuck to NAND alone. Either way it's the gate an adder is built from, so you'll be reaching for it again. One left in the set, and it is XOR with the answer flipped.",
+      body: "XNOR is next. It's XOR flipped.",
     },
   },
 
@@ -332,7 +329,7 @@ export default circuit('Xnor1', {
     par: 2,
     outro: {
       headline: 'Every gate, from one gate',
-      body: 'NOT, AND, OR, NOR, XOR, XNOR. Six gates out of the only one you were given, and each one stayed with you as you went. What none of them can do yet is leave: a circuit made of switches and a lamp is something you look at, not something another circuit can use. That is what the next level fixes.',
+      body: 'Six gates out of the one you were given. None of them can leave this screen yet.',
     },
   },
 
@@ -412,7 +409,7 @@ export default circuit('HalfAdder', {
     par: 2,
     outro: {
       headline: 'That is addition',
-      body: 'Sum is XOR, carry is AND, and together they add. It is called half an adder because it cannot take a carry coming in, which is the next problem, and the reason one of these is never enough.',
+      body: 'Sum is XOR, carry is AND. Half an adder, because it cannot take a carry coming in.',
     },
   },
 
@@ -584,7 +581,7 @@ export default circuit('DLatch1', {
     par: 4,
     outro: {
       headline: 'One bit, on demand',
-      body: 'One input to store, one to decide when. A flip-flop is this with an edge instead of a level: it looks at `d` the instant the clock rises rather than the whole time it is high. You get one next level.',
+      body: 'One input to store, one to decide when. You get a flip-flop next level.',
     },
   },
 
