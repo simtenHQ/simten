@@ -13,9 +13,8 @@ describe('containsSequentialCircuit', () => {
     const library: Record<string, Circuit> = {
       // Primitive sequential component (DFlipFlop)
       DFlipFlop: {
-        id: 'dff',
+        version: 1,
         name: 'DFlipFlop',
-        parameters: [],
         inputs: [
           { name: 'd', portType: { kind: 'bit' } },
           { name: 'clk', portType: { kind: 'bit' } },
@@ -32,9 +31,8 @@ describe('containsSequentialCircuit', () => {
       },
       // Primitive combinational component (AndGate)
       AndGate: {
-        id: 'and',
+        version: 1,
         name: 'AndGate',
-        parameters: [],
         inputs: [
           { name: 'a', portType: { kind: 'bit' } },
           { name: 'b', portType: { kind: 'bit' } },
@@ -48,9 +46,8 @@ describe('containsSequentialCircuit', () => {
       },
       // Composite component containing a DFlipFlop
       DFlipFlopTest: {
-        id: 'dff-test',
+        version: 1,
         name: 'DFlipFlopTest',
-        parameters: [],
         inputs: [
           { name: 'd', portType: { kind: 'bit' } },
           { name: 'clk', portType: { kind: 'bit' } },
@@ -76,9 +73,8 @@ describe('containsSequentialCircuit', () => {
       },
       // Composite component containing only combinational logic
       MyAndGate: {
-        id: 'my-and',
+        version: 1,
         name: 'MyAndGate',
-        parameters: [],
         inputs: [
           { name: 'a', portType: { kind: 'bit' } },
           { name: 'b', portType: { kind: 'bit' } },
@@ -101,9 +97,8 @@ describe('containsSequentialCircuit', () => {
       },
       // Deeply nested composite (contains DFlipFlopTest which contains DFlipFlop)
       DeepNested: {
-        id: 'deep',
+        version: 1,
         name: 'DeepNested',
-        parameters: [],
         inputs: [],
         outputs: [],
         clocks: [],
@@ -162,9 +157,8 @@ describe('containsSequentialCircuit', () => {
     const circularResolve = (name: string): Circuit | undefined => {
       if (name === 'CircularA') {
         return {
-          id: 'circular-a',
+          version: 1,
           name: 'CircularA',
-          parameters: [],
           inputs: [],
           outputs: [],
           clocks: [],
@@ -184,9 +178,8 @@ describe('containsSequentialCircuit', () => {
         };
       } else if (name === 'CircularB') {
         return {
-          id: 'circular-b',
+          version: 1,
           name: 'CircularB',
-          parameters: [],
           inputs: [],
           outputs: [],
           clocks: [],
@@ -218,9 +211,8 @@ describe('hasSequentialCircuits', () => {
   const mockResolveCircuit = (name: string): Circuit | undefined => {
     const library: Record<string, Circuit> = {
       DFlipFlop: {
-        id: 'dff',
+        version: 1,
         name: 'DFlipFlop',
-        parameters: [],
         inputs: [],
         outputs: [],
         clocks: [],
@@ -230,9 +222,8 @@ describe('hasSequentialCircuits', () => {
         implementation: { kind: 'primitive' },
       },
       AndGate: {
-        id: 'and',
+        version: 1,
         name: 'AndGate',
-        parameters: [],
         inputs: [],
         outputs: [],
         clocks: [],
@@ -242,9 +233,8 @@ describe('hasSequentialCircuits', () => {
         implementation: { kind: 'primitive' },
       },
       DFlipFlopTest: {
-        id: 'dff-test',
+        version: 1,
         name: 'DFlipFlopTest',
-        parameters: [],
         inputs: [],
         outputs: [],
         clocks: [],

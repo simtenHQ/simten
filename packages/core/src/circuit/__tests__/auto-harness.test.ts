@@ -34,7 +34,7 @@ function makeLibrary() {
 }
 
 /** The same circuit name, built with a varying input set — an editor session. */
-function build(inputs: Record<string, ReturnType<typeof bit> | typeof bit>) {
+function build(inputs: Record<string, typeof bit>) {
   return circuit('Editable', {
     inputs: inputs as { a: typeof bit; b: typeof bit },
     outputs: { out: bit },

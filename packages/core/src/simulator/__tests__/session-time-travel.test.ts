@@ -87,9 +87,9 @@ describe('session time-travel — stateful display components', () => {
     for (let i = 0; i < 8; i++) {
       session.setNode('addr', i);
       session.setNode('data_in', i + 1);
-      session.setNode('we', true);
+      session.setNode('we', 1);
       session.setNode('ch', 65 + i); // 'A'..'H'
-      session.setNode('ch_we', true);
+      session.setNode('ch_we', 1);
       session.tick();
       ramFrames.push(ramFrame(session));
       texts.push(consoleText(session));
@@ -118,7 +118,7 @@ describe('session time-travel — stateful display components', () => {
     for (let i = 0; i < 6; i++) {
       session.setNode('addr', i);
       session.setNode('data_in', i + 10);
-      session.setNode('we', true);
+      session.setNode('we', 1);
       session.tick();
       frames.push(ramFrame(session));
     }

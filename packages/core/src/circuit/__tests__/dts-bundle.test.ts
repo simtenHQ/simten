@@ -49,7 +49,7 @@ describe('dist/bundle.d.ts', () => {
     expect(bundle).toContain('_dependencies');
   });
 
-  it('stays under the 116 KB headroom budget', () => {
+  it('stays under the 118 KB headroom budget', () => {
     // Guard on the Monaco type-payload size (affects editor cold-load). Bump
     // deliberately when the public stdlib grows: raised 100 → 110 KB for the
     // four import-reconstruction components (Slice/Concat/SignExtend/ZeroExtend),
@@ -58,8 +58,14 @@ describe('dist/bundle.d.ts', () => {
     // JSDoc that came with it and with `registerCircuitEval`, which together
     // pushed past 112 and, having landed in separate PRs, were each measured
     // against a base without the other. Trim JSDoc before bumping further.
+    //
+    // 116 → 118 KB when `HexDisplay` became width-parameterized: it turned from
+    // a bare `BuiltCircuit` into a factory carrying an options type, which the
+    // width check required (a fixed bus(8) sink cannot accept a 16-bit
+    // accumulator without silently truncating it). Trimming its JSDoc first got
+    // the bundle to 5 bytes under the old cap, which is not a real margin.
     const { size } = statSync(bundlePath);
-    expect(size).toBeLessThan(116 * 1024);
+    expect(size).toBeLessThan(118 * 1024);
   });
 });
 

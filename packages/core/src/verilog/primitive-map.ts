@@ -329,6 +329,37 @@ export function emitPrimitive(ctx: PrimitiveContext): { lines: string[]; declara
     case 'Concat': {
       return { lines: [`assign ${o('out')} = {${i('high')}, ${i('low')}};`], declarations: [] };
     }
+    // Width adaptation. Bus width validation rejects an implicit bus(M) -> bus(N)
+    // connection, so designs state the intent with one of these instead — which
+    // means both have to survive export. Each is pure wiring: zero-extension
+    // pads with constant 0s, sign-extension replicates the top bit, and yosys
+    // folds either into the net with no logic.
+    case 'ZeroExtend': {
+      const inWidth = typeof args.inWidth === 'number' ? args.inWidth : 8;
+      const outWidth = typeof args.outWidth === 'number' ? args.outWidth : 16;
+      const pad = outWidth - inWidth;
+      return {
+        lines: [
+          pad > 0
+            ? `assign ${o('out')} = {${pad}'b0, ${i('in')}};`
+            : `assign ${o('out')} = ${i('in')}[${outWidth - 1}:0];`,
+        ],
+        declarations: [],
+      };
+    }
+    case 'SignExtend': {
+      const inWidth = typeof args.inWidth === 'number' ? args.inWidth : 8;
+      const outWidth = typeof args.outWidth === 'number' ? args.outWidth : 16;
+      const pad = outWidth - inWidth;
+      return {
+        lines: [
+          pad > 0
+            ? `assign ${o('out')} = {{${pad}{${i('in')}[${inWidth - 1}]}}, ${i('in')}};`
+            : `assign ${o('out')} = ${i('in')}[${outWidth - 1}:0];`,
+        ],
+        declarations: [],
+      };
+    }
     case 'Splitter':
       return {
         lines: [`assign ${o('out0')} = ${i('in')}[3:0];`, `assign ${o('out1')} = ${i('in')}[7:4];`],

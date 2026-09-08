@@ -161,7 +161,7 @@ function runPipeline(
   const s = simulate(Pipeline);
   try {
     s.setNode('fi', frameMemory);
-    s.set({ enable: true, reset: false } as any);
+    s.set({ enable: 1, reset: 0 });
 
     const out: Record<string, (number | boolean)[]> = {};
     for (const port of Pipeline.circuit.outputs) out[port.name] = [];

@@ -37,10 +37,12 @@ const SEQUENCE: Step[] = [
 ];
 
 function buildRam() {
+  // RAM is a factory — it must be called (see ROM.verify.test.ts).
+  const Ram = RAM();
   const RamWrapper = circuit('RamWrapper', {
     inputs: { addr: bus(8), data_in: bus(8), we: bit },
     outputs: { data_out: bus(8) },
-    nodes: { r: RAM },
+    nodes: { r: Ram },
     connect: ({ inputs, outputs, nodes: { r } }) => [
       inputs.addr.to(r.addr),
       inputs.data_in.to(r.data_in),
@@ -51,11 +53,7 @@ function buildRam() {
 
   const lib: CircuitLibrary = {
     resolveCircuit: (name) =>
-      name === 'RamWrapper'
-        ? RamWrapper.circuit
-        : name === 'RAM'
-          ? (RAM.circuit as Circuit)
-          : undefined,
+      name === 'RamWrapper' ? RamWrapper.circuit : name === 'RAM' ? Ram.circuit : undefined,
     getAllPrimitiveNames: () => ['RAM'],
   };
 

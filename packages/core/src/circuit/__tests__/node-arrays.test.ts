@@ -10,6 +10,7 @@
 
 import { describe, expect, it } from 'vitest';
 import { Led, Nand, Switch } from '../../std/index.js';
+import type { Circuit } from '../../types/circuit.js';
 import { circuit } from '../circuit.js';
 
 const BITS = [0, 1, 2, 3];
@@ -43,7 +44,7 @@ const WithArrays = circuit('ByteNotLonghand', {
 
 describe('an array entry is exactly its longhand', () => {
   it('produces the same node ids and component references', () => {
-    const ids = (c: typeof Longhand) =>
+    const ids = (c: { circuit: Circuit }) =>
       c.circuit.nodes.map((n) => `${n.id}:${n.componentRef}`).sort();
     expect(ids(WithArrays)).toEqual(ids(Longhand));
   });
@@ -51,7 +52,7 @@ describe('an array entry is exactly its longhand', () => {
   it('produces the same connections', () => {
     // The IR flattens `.to(a, b)` into one Connection per target, so this
     // compares source→target pairs rather than fan-out groups.
-    const wires = (c: typeof Longhand) =>
+    const wires = (c: { circuit: Circuit }) =>
       c.circuit.connections
         .map(
           (conn) =>

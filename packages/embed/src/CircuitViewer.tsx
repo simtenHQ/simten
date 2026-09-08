@@ -49,7 +49,7 @@ export interface CircuitViewerProps<C extends BuiltCircuit = BuiltCircuit> {
   /** Auto-wrap with Switch/Led nodes for bare circuits */
   autoHarness?: boolean;
   /** Initial values for auto-harnessed input nodes */
-  initialInputs?: Record<string, number | boolean>;
+  initialInputs?: Record<string, number>;
   /**
    * Pre-computed node positions. Keys are constrained at compile time.
    * Accepts either the raw circuit's layout shape (when autoHarness is
@@ -98,7 +98,7 @@ export interface CircuitViewerProps<C extends BuiltCircuit = BuiltCircuit> {
 export interface CircuitViewerHandle {
   tick: () => void;
   reset: () => void;
-  setNodeValue: (nodeId: string, value: number | boolean | Map<number, number>) => void;
+  setNodeValue: (nodeId: string, value: number | Map<number, number>) => void;
   /** Start the simulator's internal auto-run loop. Equivalent to clicking the
    *  in-canvas play button — the play/pause control will stop it normally. */
   startAutoRun: (ticksPerSecond: number) => void;

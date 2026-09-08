@@ -228,7 +228,7 @@ const EightBitAdderDemo = circuit('EightBitAdderDemo', {
     b: Input({ value: 0b00000101 }),
     cin: Constant({ value: 0 }),
     adder: EightBitAdder,
-    sumDisplay: HexDisplay,
+    sumDisplay: HexDisplay(),
     coutLed: Led,
   },
   connect: ({ nodes: { a, b, cin, adder, sumDisplay, coutLed } }) => [

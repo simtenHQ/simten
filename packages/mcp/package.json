@@ -51,7 +51,8 @@
     "prepack": "node scripts/copy-editor.mjs --require",
     "dev": "tsc -b --watch",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "typecheck:tests": "tsc --noEmit -p tsconfig.check.json"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.12.0",

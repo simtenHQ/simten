@@ -25,13 +25,17 @@ const parity = (a: number) => {
   return p;
 };
 
+/** The wrapper's ports must match the part under test, not a fixed 32 bits. */
+const portOf = (prim: BuiltCircuit, name: string) =>
+  prim.circuit.inputs.find((p) => p.name === name)?.portType ?? bus(32);
+
 function unary(prim: BuiltCircuit, v: number): number {
   const w = circuit(`U${uid++}`, {
-    inputs: { a: bus(32) } as any,
+    inputs: { a: portOf(prim, 'a') } as any,
     outputs: { out: bit } as any,
     nodes: { p: prim } as any,
     connect: ({ inputs: i, outputs: o, nodes: { p } }: any) => [i.a.to(p.a), p.out.to(o.out)],
-  } as any);
+  });
   const sim = simulate(w);
   sim.set({ a: v });
   const out = sim.get('out');
@@ -41,7 +45,7 @@ function unary(prim: BuiltCircuit, v: number): number {
 
 function binary(prim: BuiltCircuit, a: number, b: number): number {
   const w = circuit(`B${uid++}`, {
-    inputs: { a: bus(32), b: bus(32) } as any,
+    inputs: { a: portOf(prim, 'a'), b: portOf(prim, 'b') } as any,
     outputs: { out: bit } as any,
     nodes: { p: prim } as any,
     connect: ({ inputs: i, outputs: o, nodes: { p } }: any) => [
@@ -49,7 +53,7 @@ function binary(prim: BuiltCircuit, a: number, b: number): number {
       i.b.to(p.b),
       p.out.to(o.out),
     ],
-  } as any);
+  });
   const sim = simulate(w);
   sim.set({ a, b });
   const out = sim.get('out');

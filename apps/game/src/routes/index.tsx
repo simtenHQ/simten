@@ -13,6 +13,7 @@
 
 import { createFileRoute } from '@tanstack/react-router';
 import { useCallback, useEffect, useState } from 'react';
+import { GitHubLink } from '../components/GitHubLink';
 import { HeaderBar } from '../components/HeaderBar';
 import { IntroDialog } from '../components/IntroDialog';
 import { LevelDrilldown } from '../components/LevelDrilldown';
@@ -93,6 +94,7 @@ function MapPage() {
           >
             What is this?
           </button>
+          <GitHubLink />
           <ThemeToggle />
         </div>
       </HeaderBar>

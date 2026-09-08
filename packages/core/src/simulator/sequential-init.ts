@@ -143,11 +143,19 @@ function resolveBlockInitial(
   }
 
   // Scalar (bit | bus). Default from block, override from node.arguments.
+  // Booleans are accepted from user-authored arguments and coerced to 0/1.
   if (override !== undefined && (typeof override === 'number' || typeof override === 'boolean')) {
-    return override;
+    return typeof override === 'boolean' ? (override ? 1 : 0) : override;
   }
   const declared = block.initialValue;
   if (typeof declared === 'string') return declared; // text-buffer state (Console)
+  // `StateValue` excludes boolean, but a Circuit IR is not always produced by
+  // circuit(): it can be deserialized JSON (buildFromIR, imported netlists, the
+  // sandbox postMessage boundary) or hand-constructed, where the declared type
+  // is not enforced at runtime. This used to be a bare `as` cast, which let a
+  // boolean initialValue through and left bit state as `false` while every port
+  // value was numeric. Coerce instead of asserting.
+  if (typeof declared === 'boolean') return declared ? 1 : 0;
   return declared as BitValue | BusValue;
 }
 

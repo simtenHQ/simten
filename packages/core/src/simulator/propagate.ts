@@ -416,12 +416,11 @@ export function toFlatPortValueMap(
     }
   }
 
-  // Convert numeric values to map
-  // Return booleans for bit ports to maintain API compatibility
+  // Convert numeric values to map. Values are numeric for every port width;
+  // bit-ness lives in the port type, not in the JS type of the value.
   for (let i = 0; i < circuit.portCount; i++) {
     const key = circuit.indexToPortKey[i];
     const isOutput = circuit.portIsOutput[i] === 1;
-    const isBit = circuit.portIsBus[i] === 0;
 
     let numVal: number;
     let initialized: boolean;
@@ -449,10 +448,10 @@ export function toFlatPortValueMap(
       numVal = 0;
     }
 
-    // Return boolean for true 1-bit values, number for multi-bit values
-    // If value > 1 or < 0, it needs more than 1 bit, so return as number
-    const needsMultiBit = numVal > 1 || numVal < 0;
-    result.set(key, isBit && !needsMultiBit ? numVal !== 0 : numVal);
+    // Values are numeric regardless of width; the port type carries bit-ness,
+    // not the value. (Bits used to be reported as booleans here, which made
+    // callers infer width from the JS type — see api/vcd.ts inferWidth.)
+    result.set(key, numVal);
   }
 
   return result;
@@ -492,9 +491,7 @@ export function propagateToTopLevelOutputs(
       const sourcePortIdx = circuit.portKeyToIndex.get(sourceKey);
       if (sourcePortIdx !== undefined) {
         const targetKey = `${conn.target.nodeId || TOP_LEVEL_NODE}.${conn.target.portName}`;
-        const isBit = circuit.portIsBus[sourcePortIdx] === 0;
-        const numVal = values.values[sourcePortIdx];
-        result.set(targetKey, isBit ? numVal !== 0 : numVal);
+        result.set(targetKey, values.values[sourcePortIdx]);
       }
     }
   }

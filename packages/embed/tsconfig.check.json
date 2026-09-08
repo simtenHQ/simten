@@ -1,0 +1,22 @@
+// Typecheck-only config: the same sources as the build, PLUS the tests.
+//
+// tsconfig.json excludes tests because `tsc -b` would otherwise emit them into
+// dist. Vitest does not typecheck — it strips types with esbuild — so without
+// this config no test file in the package is ever type-checked at all.
+//
+// `composite`/`declaration` are off because they are incompatible with --noEmit.
+// e2e stays excluded: it is Playwright, built and run separately.
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "composite": false,
+    "declaration": false,
+    "declarationMap": false,
+    "noEmit": true,
+    // The library ships with `"types": []` (browser target, no ambient Node).
+    // Its tests run in Node and use node: builtins, so they need them back.
+    "types": ["node"]
+  },
+  "include": ["src/**/*.ts", "src/**/*.tsx"],
+  "exclude": ["node_modules", "dist", "e2e"]
+}

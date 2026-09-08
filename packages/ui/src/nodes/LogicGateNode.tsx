@@ -29,7 +29,7 @@ export function LogicGateNode({ data, selected }: LogicGateNodeProps) {
     name,
     index,
     type: 'output',
-    value,
+    value: value ? 1 : 0,
   }));
 
   const renderGateSymbol = () => {

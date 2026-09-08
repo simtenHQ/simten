@@ -37,7 +37,7 @@ const bareAdder = circuit('BareAdderTop', {
     add.sum.to(outputs.sum),
     add.carry_out.to(outputs.carry_out),
   ],
-} as any);
+});
 
 const bareSubtractor = circuit('BareSubtractorTop', {
   inputs: { a: bus(8), b: bus(8) },
@@ -49,7 +49,7 @@ const bareSubtractor = circuit('BareSubtractorTop', {
     sub.difference.to(outputs.difference),
     sub.borrow_out.to(outputs.borrow_out),
   ],
-} as any);
+});
 
 const bareConcat = circuit('BareConcatTop', {
   inputs: { high: bus(4), low: bus(4) },
@@ -60,7 +60,7 @@ const bareConcat = circuit('BareConcatTop', {
     inputs.low.to(cat.low),
     cat.out.to(outputs.out),
   ],
-} as any);
+});
 
 // The last write for each name — what importing the stdlib does to a bundle.
 Adder({ width: 32 });

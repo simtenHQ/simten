@@ -75,12 +75,12 @@ export type SandboxStatus = 'loading' | 'ready' | 'unavailable';
 export interface CompileResult {
   circuits: Circuit[];
   libraryCircuits: Circuit[];
-  portValues: Record<string, number | boolean>;
+  portValues: Record<string, number>;
   peripheralState?: PeripheralState;
 }
 
 export interface TickResult {
-  portValues: Record<string, number | boolean>;
+  portValues: Record<string, number>;
   cycle: number;
   peripheralState?: PeripheralState;
   /** Snapshot id returned when the tick was requested with `{ snapshot: true }`. */
@@ -96,12 +96,12 @@ export interface SimulateResult {
 }
 
 export interface ResetResult {
-  portValues: Record<string, number | boolean>;
+  portValues: Record<string, number>;
   peripheralState?: PeripheralState;
 }
 
 export interface SetNodeResult {
-  portValues: Record<string, number | boolean>;
+  portValues: Record<string, number>;
   peripheralState?: PeripheralState;
   /** Snapshot id returned when `{ snapshot: true }` was passed. */
   snapshotId?: number;
@@ -113,7 +113,7 @@ export interface SnapshotResult {
 }
 
 export interface RestoreResult {
-  portValues: Record<string, number | boolean>;
+  portValues: Record<string, number>;
   cycle: number;
   peripheralState?: PeripheralState;
 }
@@ -126,7 +126,7 @@ export interface SandboxError {
 export type SandboxResult =
   | ({ type: 'compiled' } & CompileResult)
   | ({ type: 'compiled-ir' } & {
-      portValues: Record<string, number | boolean>;
+      portValues: Record<string, number>;
       peripheralState?: PeripheralState;
       snapshotId?: number;
     })
@@ -212,12 +212,32 @@ function nextId(_state: SandboxState): string {
   return `sb-${++globalIdCounter}`;
 }
 
+/**
+ * Normalise port values arriving from the sandbox to numbers.
+ *
+ * Port values are numeric (`BitValue = 0 | 1`), but the sandbox is a separately
+ * deployed artifact: until sandbox.simten.dev is redeployed against a core with
+ * the numeric BitValue, it still reports booleans for bits. Coercing once here —
+ * at the single point every response passes through — means no consumer
+ * downstream (canvas, inspector, embed) has to know that.
+ *
+ * Mutates in place: the object is a fresh structured clone from postMessage.
+ */
+function normalizePortValues(data: unknown): void {
+  const pv = (data as { portValues?: Record<string, number | boolean> })?.portValues;
+  if (!pv) return;
+  for (const key of Object.keys(pv)) {
+    const v = pv[key];
+    if (typeof v === 'boolean') pv[key] = v ? 1 : 0;
+  }
+}
+
 // ============================================================================
 // Hook
 // ============================================================================
 
 export interface CompileIRResult {
-  portValues: Record<string, number | boolean>;
+  portValues: Record<string, number>;
   peripheralState?: PeripheralState;
   /** Snapshot of the initial state, returned when `{ snapshot: true }` was requested. */
   snapshotId?: number;
@@ -304,7 +324,7 @@ export interface SandboxHandle {
   reset(slot?: SimSlot): Promise<ResetResult | SandboxError>;
   setNode(
     nodeId: string,
-    value: number | boolean | Map<number, number>,
+    value: number | Map<number, number>,
     slot?: SimSlot,
     options?: { snapshot?: boolean },
   ): Promise<SetNodeResult | SandboxError>;
@@ -426,6 +446,7 @@ export function useSandbox(): SandboxHandle {
     if (!resolve) return;
 
     state.pending.delete(data.id);
+    normalizePortValues(data);
     resolve(data as SandboxResult);
   }, []);
 
@@ -666,7 +687,7 @@ export function useSandbox(): SandboxHandle {
   const setNode = useCallback(
     async (
       nodeId: string,
-      value: number | boolean | Map<number, number>,
+      value: number | Map<number, number>,
       slot: SimSlot = 'default',
       options?: { snapshot?: boolean },
     ): Promise<SetNodeResult | SandboxError> => {

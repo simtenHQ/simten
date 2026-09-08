@@ -17,7 +17,7 @@ const uOf = (w: number) => fc.integer({ min: 0, max: mask(w) }).map((n) => n >>>
 
 function mul(width: number, a: number, b: number): number {
   const w = circuit(`M${uid++}`, {
-    inputs: { a: bus(32), b: bus(32) } as any,
+    inputs: { a: bus(width), b: bus(width) } as any,
     outputs: { out: bus(width) } as any,
     nodes: { p: WrappingMultiplier({ width }) } as any,
     connect: ({ inputs: i, outputs: o, nodes: { p } }: any) => [
@@ -25,7 +25,7 @@ function mul(width: number, a: number, b: number): number {
       i.b.to(p.b),
       p.out.to(o.out),
     ],
-  } as any);
+  });
   const sim = simulate(w);
   sim.set({ a, b });
   const out = sim.get('out') >>> 0;
@@ -49,7 +49,7 @@ function dslice(
       i.shift.to(p.shift),
       p.out.to(o.out),
     ],
-  } as any);
+  });
   const sim = simulate(w);
   sim.set({ in: v, shift: s });
   const out = sim.get('out') >>> 0;

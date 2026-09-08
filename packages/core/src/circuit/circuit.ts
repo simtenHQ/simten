@@ -208,7 +208,12 @@ export function circuit(name: string, configOrFactory: any = {} as any): any {
       // here we normalize the IR's state initials to type defaults.
       for (const sb of built.circuit.state) {
         if (sb.stateType.kind === 'bit') {
-          sb.initialValue = false;
+          // 0, not `false`: this writes into the serialized IR, which crosses
+          // the sandbox boundary and feeds the Verilog exporter. Every
+          // factory-built primitive with bit state — DFlipFlop among them —
+          // carried `initialValue: false` here, which is what made
+          // sequential-init's defensive coercion load-bearing.
+          sb.initialValue = 0;
         } else if (sb.stateType.kind === 'bus') {
           // Preserve string state (e.g. Console buffers) — only numeric
           // bus initials get reset to 0.
@@ -385,6 +390,62 @@ export function circuit(name: string, configOrFactory: any = {} as any): any {
   }
   connectionDefs = dedupedDefs;
 
+  // Bus width validation, split by direction because the two directions are not
+  // the same kind of event.
+  //
+  // Truncation (bus(16) -> bus(8)) is an error: elaboration propagates the
+  // *source* type, so the high bits are simply gone with nothing recording that
+  // they were dropped. Every width bug this check was written for was one of
+  // these.
+  //
+  // Widening (bus(3) -> bus(8)) is a warning, not an error. A port here is
+  // uninterpreted `Bits` — `PortType` is bit | bus(n), with signedness carried
+  // by the *component* (SignedAdder, SignedComparator, ...) rather than the
+  // type. With no sign in the type there is only one meaning a widening can
+  // have, so requiring the author to spell it out states nothing the type does
+  // not already fix. It stays a warning because the widths still disagree and
+  // that is worth seeing. (SpinalHDL's `Bits.resize` zero-extends for exactly
+  // this reason; Verilog and Amaranth widen implicitly off declared signedness.)
+  //
+  // If signedness moves into PortType, a widening starts carrying a real choice
+  // and this warning should become an error — or disappear, resolved by type.
+  //
+  // Scoped to bus->bus. Crossing bit<->bus is a *kind* change, not a width
+  // mismatch, and stays a documented affordance (see SourcePortRef, #144) —
+  // `bit` is its own PortType kind here, not `bus(1)`.
+  //
+  // Runs after the multi-driver dedupe so a duplicated identical connection is
+  // reported once, and re-resolves both endpoints because ConnectionDef carries
+  // only the source's type.
+  const wideningWarnings: string[] = [];
+  for (const conn of connectionDefs) {
+    const sourceType = resolvePortRef(conn.source, inputs, outputs, nodes);
+    if (sourceType?.kind !== 'bus') continue;
+    for (const target of conn.targets) {
+      const targetType = resolvePortRef(target, inputs, outputs, nodes);
+      if (targetType?.kind !== 'bus') continue;
+      if (targetType.width === sourceType.width) continue;
+      const describe =
+        `${formatPath(conn.source)} bus(${sourceType.width}) ` +
+        `into ${formatPath(target)} bus(${targetType.width})`;
+      if (sourceType.width > targetType.width) {
+        errors.push(`truncates ${describe}`);
+      } else {
+        wideningWarnings.push(`widens ${describe}`);
+      }
+    }
+  }
+  if (wideningWarnings.length > 0) {
+    // Deduped by message: circuit() runs in hot loops (the property-test
+    // harnesses build thousands of wrappers per run), so warning per
+    // construction would bury the output it is trying to surface.
+    const warning = `Circuit '${name}' widens bus connections:\n  - ${wideningWarnings.join('\n  - ')}`;
+    if (!reportedWideningWarnings.has(warning)) {
+      reportedWideningWarnings.add(warning);
+      console.warn(warning);
+    }
+  }
+
   // Sort conflict keys for deterministic error ordering across runs.
   const sortedConflictKeys = [...conflictsByTarget.keys()].sort();
   for (const key of sortedConflictKeys) {
@@ -469,12 +530,15 @@ export function circuit(name: string, configOrFactory: any = {} as any): any {
           edge: 'rising',
         });
       } else if (typeof value === 'boolean') {
-        // Bit state
+        // Defensive only: `StateFieldValue` no longer permits boolean, so this
+        // is unreachable from typed code. Kept for untyped (plain JS) callers —
+        // without it a boolean would fall through to the bus branch below and
+        // land in the IR verbatim, which is worse than coercing.
         stateBlocks.push({
           id: `${name}-${key}`,
           name: key,
           stateType: { kind: 'bit' },
-          initialValue: value,
+          initialValue: value ? 1 : 0,
           clockRef: 'clk',
           edge: 'rising',
         });
@@ -635,6 +699,31 @@ export function circuit(name: string, configOrFactory: any = {} as any): any {
 // Helpers
 // ============================================================================
 
+/**
+ * Resolves a port reference to its declared type, or undefined when the node or
+ * port does not exist. Pure — `validatePortRef` wraps it to report the misses.
+ */
+/** Widening warnings already emitted, so repeated construction of the same
+ *  circuit reports once rather than once per instantiation. */
+const reportedWideningWarnings = new Set<string>();
+
+function resolvePortRef(
+  ref: { nodeId: string; portName: string },
+  inputs: Map<string, PortType>,
+  outputs: Map<string, PortType>,
+  nodes: Record<string, BuiltCircuit>,
+): PortType | undefined {
+  if (ref.nodeId === '') {
+    return inputs.get(ref.portName) ?? outputs.get(ref.portName);
+  }
+  const comp = nodes[ref.nodeId];
+  if (!comp) return undefined;
+  return (
+    comp.circuit.inputs.find((p) => p.name === ref.portName) ??
+    comp.circuit.outputs.find((p) => p.name === ref.portName)
+  )?.portType;
+}
+
 function validatePortRef(
   ref: { nodeId: string; portName: string },
   inputs: Map<string, PortType>,
@@ -646,20 +735,17 @@ function validatePortRef(
     if (!inputs.has(ref.portName) && !outputs.has(ref.portName)) {
       errors.push(`Circuit port '${ref.portName}' does not exist`);
     }
-  } else {
-    const comp = nodes[ref.nodeId];
-    if (!comp) {
-      errors.push(`Node '${ref.nodeId}' does not exist`);
-      return;
-    }
-    const hasPort =
-      comp.circuit.inputs.some((p) => p.name === ref.portName) ||
-      comp.circuit.outputs.some((p) => p.name === ref.portName);
-    if (!hasPort) {
-      errors.push(
-        `Port '${ref.portName}' does not exist on node '${ref.nodeId}' (${comp.circuit.name})`,
-      );
-    }
+    return;
+  }
+  const comp = nodes[ref.nodeId];
+  if (!comp) {
+    errors.push(`Node '${ref.nodeId}' does not exist`);
+    return;
+  }
+  if (resolvePortRef(ref, inputs, outputs, nodes) === undefined) {
+    errors.push(
+      `Port '${ref.portName}' does not exist on node '${ref.nodeId}' (${comp.circuit.name})`,
+    );
   }
 }
 

@@ -122,7 +122,7 @@ export function InputNode({ data, selected }: InputNodeProps) {
     name,
     index,
     type: 'output' as const,
-    value: isNumericInput ? (data.numericValue ?? 0) !== 0 : value,
+    value: (isNumericInput ? (data.numericValue ?? 0) !== 0 : value) ? 1 : 0,
   }));
 
   return (
