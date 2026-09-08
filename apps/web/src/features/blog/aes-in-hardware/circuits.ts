@@ -72,12 +72,12 @@ export const XTime = circuit('XTime', {
 
 // Self-contained demos
 export const SubByteDemo = circuit('SubByteDemo', {
-  nodes: { s: Input({ value: 83 }), rom: ROM({ memory: AES_SBOX_INIT }), disp: HexDisplay },
+  nodes: { s: Input({ value: 83 }), rom: ROM({ memory: AES_SBOX_INIT }), disp: HexDisplay() },
   connect: ({ nodes: { s, rom, disp } }) => [s.out.to(rom.addr), rom.data_out.to(disp.in)],
 });
 
 export const XTimeDemo = circuit('XTimeDemo', {
-  nodes: { val: Input({ value: 87 }), xt: XTime, disp: HexDisplay },
+  nodes: { val: Input({ value: 87 }), xt: XTime, disp: HexDisplay() },
   connect: ({ nodes: { val, xt, disp } }) => [val.out.to(xt.x), xt.out.to(disp.in)],
 });
 
@@ -168,10 +168,10 @@ export const MixColumnDemo = circuit('MixColumnDemo', {
     s2: Input({ value: 83 }),
     s3: Input({ value: 69 }),
     mc: MixColumn,
-    r0: HexDisplay,
-    r1: HexDisplay,
-    r2: HexDisplay,
-    r3: HexDisplay,
+    r0: HexDisplay(),
+    r1: HexDisplay(),
+    r2: HexDisplay(),
+    r3: HexDisplay(),
   },
   connect: ({ nodes: { s0, s1, s2, s3, mc, r0, r1, r2, r3 } }) => [
     s0.out.to(mc.s0),

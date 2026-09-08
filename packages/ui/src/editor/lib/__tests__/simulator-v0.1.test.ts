@@ -36,9 +36,8 @@ describe('Simulator', () => {
     it('should simulate a simple Switch → LED circuit', () => {
       // This test would have caught the Switch → LED bug!
       const circuit: Circuit = {
-        id: 'test',
+        version: 1,
         name: 'SwitchLED',
-        parameters: [],
         inputs: [],
         outputs: [],
         clocks: [],
@@ -77,22 +76,21 @@ describe('Simulator', () => {
       const sim = createSimulatorFromCircuit(circuit, getLibrary());
       const result = sim.runCombinational();
 
-      // Check that Switch outputs true
+      // Check that Switch outputs 1
       const switchOut = result.portValues.get('switch1.out');
-      expect(switchOut).toBe(true);
+      expect(switchOut).toBe(1);
 
-      // Check that LED receives true (this was the bug!)
+      // Check that LED receives 1 (this was the bug!)
       const ledIn = result.portValues.get('led1.in');
-      expect(ledIn).toBe(true);
+      expect(ledIn).toBe(1);
 
       expect(result.error).toBeUndefined();
     });
 
     it('should simulate Switch (OFF) → LED circuit', () => {
       const circuit: Circuit = {
-        id: 'test',
+        version: 1,
         name: 'SwitchLED',
-        parameters: [],
         inputs: [],
         outputs: [],
         clocks: [],
@@ -131,16 +129,15 @@ describe('Simulator', () => {
       const sim = createSimulatorFromCircuit(circuit, getLibrary());
       const result = sim.runCombinational();
 
-      expect(result.portValues.get('switch1.out')).toBe(false);
-      expect(result.portValues.get('led1.in')).toBe(false);
+      expect(result.portValues.get('switch1.out')).toBe(0);
+      expect(result.portValues.get('led1.in')).toBe(0);
       expect(result.error).toBeUndefined();
     });
 
     it('should simulate Switch → AND → LED circuit', () => {
       const circuit: Circuit = {
-        id: 'test',
+        version: 1,
         name: 'AndGate',
-        parameters: [],
         inputs: [],
         outputs: [],
         clocks: [],
@@ -213,16 +210,15 @@ describe('Simulator', () => {
       const result = sim.runCombinational();
 
       // true AND true = true
-      expect(result.portValues.get('and1.out')).toBe(true);
-      expect(result.portValues.get('led1.in')).toBe(true);
+      expect(result.portValues.get('and1.out')).toBe(1);
+      expect(result.portValues.get('led1.in')).toBe(1);
       expect(result.error).toBeUndefined();
     });
 
     it('should handle OR gate logic correctly', () => {
       const circuit: Circuit = {
-        id: 'test',
+        version: 1,
         name: 'OrGate',
-        parameters: [],
         inputs: [],
         outputs: [],
         clocks: [],
@@ -280,15 +276,14 @@ describe('Simulator', () => {
       const result = sim.runCombinational();
 
       // true OR false = true
-      expect(result.portValues.get('or1.out')).toBe(true);
+      expect(result.portValues.get('or1.out')).toBe(1);
       expect(result.error).toBeUndefined();
     });
 
     it('should handle NOT gate logic correctly', () => {
       const circuit: Circuit = {
-        id: 'test',
+        version: 1,
         name: 'NotGate',
-        parameters: [],
         inputs: [],
         outputs: [],
         clocks: [],
@@ -328,16 +323,15 @@ describe('Simulator', () => {
       const result = sim.runCombinational();
 
       // NOT true = false
-      expect(result.portValues.get('not1.out')).toBe(false);
+      expect(result.portValues.get('not1.out')).toBe(0);
       expect(result.error).toBeUndefined();
     });
 
     it('should handle multi-level logic (chained gates)', () => {
       // (A AND B) OR (C AND D)
       const circuit: Circuit = {
-        id: 'test',
+        version: 1,
         name: 'ChainedGates',
-        parameters: [],
         inputs: [],
         outputs: [],
         clocks: [],
@@ -461,9 +455,9 @@ describe('Simulator', () => {
       const result = sim.runCombinational();
 
       // (true AND false) OR (true AND true) = false OR true = true
-      expect(result.portValues.get('and1.out')).toBe(false);
-      expect(result.portValues.get('and2.out')).toBe(true);
-      expect(result.portValues.get('or1.out')).toBe(true);
+      expect(result.portValues.get('and1.out')).toBe(0);
+      expect(result.portValues.get('and2.out')).toBe(1);
+      expect(result.portValues.get('or1.out')).toBe(1);
       expect(result.error).toBeUndefined();
     });
   });
@@ -471,9 +465,8 @@ describe('Simulator', () => {
   describe('Edge Cases', () => {
     it('should handle empty circuit', () => {
       const circuit: Circuit = {
-        id: 'test',
+        version: 1,
         name: 'Empty',
-        parameters: [],
         inputs: [],
         outputs: [],
         clocks: [],
@@ -492,9 +485,8 @@ describe('Simulator', () => {
 
     it('should handle circuit with only switches (no gates)', () => {
       const circuit: Circuit = {
-        id: 'test',
+        version: 1,
         name: 'OnlySwitches',
-        parameters: [],
         inputs: [],
         outputs: [],
         clocks: [],
@@ -526,17 +518,16 @@ describe('Simulator', () => {
       const sim = createSimulatorFromCircuit(circuit, getLibrary());
       const result = sim.runCombinational();
 
-      expect(result.portValues.get('switch1.out')).toBe(true);
-      expect(result.portValues.get('switch2.out')).toBe(false);
+      expect(result.portValues.get('switch1.out')).toBe(1);
+      expect(result.portValues.get('switch2.out')).toBe(0);
       expect(result.error).toBeUndefined();
     });
 
     it('should handle unconnected gate inputs (default to false)', () => {
       // AND gate with no inputs connected - should default to false
       const circuit: Circuit = {
-        id: 'test',
+        version: 1,
         name: 'UnconnectedInputs',
-        parameters: [],
         inputs: [],
         outputs: [],
         clocks: [],
@@ -563,16 +554,15 @@ describe('Simulator', () => {
       const result = sim.runCombinational();
 
       // Unconnected inputs should default to false, so false AND false = false
-      expect(result.portValues.get('and1.out')).toBe(false);
+      expect(result.portValues.get('and1.out')).toBe(0);
       expect(result.error).toBeUndefined();
     });
 
     it('should handle disconnected components', () => {
       // Two separate circuits: switch1→led1 and switch2→led2 (no connection between them)
       const circuit: Circuit = {
-        id: 'test',
+        version: 1,
         name: 'Disconnected',
-        parameters: [],
         inputs: [],
         outputs: [],
         clocks: [],
@@ -636,8 +626,8 @@ describe('Simulator', () => {
       const result = sim.runCombinational();
 
       // Both circuits should work independently
-      expect(result.portValues.get('led1.in')).toBe(true);
-      expect(result.portValues.get('led2.in')).toBe(false);
+      expect(result.portValues.get('led1.in')).toBe(1);
+      expect(result.portValues.get('led2.in')).toBe(0);
       expect(result.error).toBeUndefined();
     });
   });
@@ -645,9 +635,8 @@ describe('Simulator', () => {
   describe('Sequential Simulation', () => {
     it('should initialize sequential state for DFlipFlop', () => {
       const circuit: Circuit = {
-        id: 'test',
+        version: 1,
         name: 'DFFTest',
-        parameters: [],
         inputs: [],
         outputs: [],
         clocks: [],
@@ -679,15 +668,14 @@ describe('Simulator', () => {
       expect(seqState?.clocks.has('dff1.clk')).toBe(true);
       expect(seqState?.cycleCount).toBe(0);
 
-      // Initial state should be false
-      expect(seqState?.currentState.get('dff1')).toBe(false);
+      // Initial state should be 0
+      expect(seqState?.currentState.get('dff1')).toBe(0);
     });
 
     it('should initialize sequential state for Register', () => {
       const circuit: Circuit = {
-        id: 'test',
+        version: 1,
         name: 'RegisterTest',
-        parameters: [],
         inputs: [],
         outputs: [],
         clocks: [],
@@ -725,9 +713,8 @@ describe('Simulator', () => {
     it('should run a full simulation tick', () => {
       // Simple circuit with a DFF: Switch → DFF → LED
       const circuit: Circuit = {
-        id: 'test',
+        version: 1,
         name: 'DFFCircuit',
-        parameters: [],
         inputs: [],
         outputs: [],
         clocks: [],
@@ -809,9 +796,8 @@ describe('Simulator', () => {
     it('should store both input and output port values', () => {
       // This is critical for visualization - LED needs its input value stored
       const circuit: Circuit = {
-        id: 'test',
+        version: 1,
         name: 'PortStorage',
-        parameters: [],
         inputs: [],
         outputs: [],
         clocks: [],
@@ -884,20 +870,19 @@ describe('Simulator', () => {
       expect(result.portValues.has('led1.in')).toBe(true);
 
       // Verify values
-      expect(result.portValues.get('switch1.out')).toBe(true);
-      expect(result.portValues.get('and1.a')).toBe(true);
-      expect(result.portValues.get('and1.b')).toBe(true);
-      expect(result.portValues.get('and1.out')).toBe(true);
-      expect(result.portValues.get('led1.in')).toBe(true);
+      expect(result.portValues.get('switch1.out')).toBe(1);
+      expect(result.portValues.get('and1.a')).toBe(1);
+      expect(result.portValues.get('and1.b')).toBe(1);
+      expect(result.portValues.get('and1.out')).toBe(1);
+      expect(result.portValues.get('led1.in')).toBe(1);
     });
   });
 
   describe('Initialization Support', () => {
     it('should initialize Register with custom initial value', () => {
       const circuit: Circuit = {
-        id: 'test',
+        version: 1,
         name: 'RegisterInitTest',
-        parameters: [],
         inputs: [],
         outputs: [],
         clocks: [],
@@ -950,9 +935,8 @@ describe('Simulator', () => {
 
     it('should initialize RAM with object-based init data', () => {
       const circuit: Circuit = {
-        id: 'test',
+        version: 1,
         name: 'RAMInitTest',
-        parameters: [],
         inputs: [],
         outputs: [],
         clocks: [],
@@ -1012,9 +996,8 @@ describe('Simulator', () => {
 
     it('should initialize RAM with array-based init data', () => {
       const circuit: Circuit = {
-        id: 'test',
+        version: 1,
         name: 'RAMInitArrayTest',
-        parameters: [],
         inputs: [],
         outputs: [],
         clocks: [],
@@ -1075,9 +1058,8 @@ describe('Simulator', () => {
 
     it('should use default initialization when no init argument provided', () => {
       const circuit: Circuit = {
-        id: 'test',
+        version: 1,
         name: 'RAMDefaultInitTest',
-        parameters: [],
         inputs: [],
         outputs: [],
         clocks: [],

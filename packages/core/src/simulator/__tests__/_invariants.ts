@@ -55,9 +55,11 @@ import { elaborate } from '../elaboration.js';
  */
 // Loose type — BuiltCircuit lives in circuit.ts as a structural shape; we only
 // need .circuit and (optionally) ._dependencies here.
+// `_dependencies` is a ReadonlyMap on the real `BuiltCircuit`; declaring it
+// mutable here made every genuine BuiltCircuit unassignable to this helper.
 type BuiltCircuitLike = {
   circuit: Circuit;
-  _dependencies?: Map<string, { circuit: Circuit }>;
+  _dependencies?: ReadonlyMap<string, { circuit: Circuit }>;
 };
 
 export function elaborateBuilt(built: BuiltCircuitLike): FlatCircuit {

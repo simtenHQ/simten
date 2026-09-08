@@ -28,9 +28,13 @@ export function registerSimulateTool(server: McpServer): void {
         .default(10)
         .describe('Number of clock ticks to simulate (default: 10)'),
       inputs: z
-        .record(z.union([z.number(), z.boolean()]))
+        // Numeric, including for bit ports: a bit is 0 or 1. Booleans used to
+        // be accepted here and reached `topLevelInputs` uncoerced, which
+        // propagate.ts reads raw when building onTick's inputs — so a `true`
+        // landed in sequential state verbatim.
+        .record(z.number())
         .optional()
-        .describe('Initial input values as { portName: value }'),
+        .describe('Initial input values as { portName: value }. Bits are 0 or 1.'),
       memoryData: z
         .record(z.record(z.number()))
         .optional()

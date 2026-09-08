@@ -21,7 +21,11 @@
   },
   "references": [{ "path": "../core" }],
   "include": ["src/**/*.ts", "src/**/*.tsx"],
-  // Tests are excluded from the build surface; vitest typechecks them at
-  // run time. See follow-up issue for resolving pre-existing test type debt.
+  // Tests are excluded from the BUILD surface only — `tsc -b` would otherwise
+  // emit them into dist. They are NOT unchecked: `tsconfig.check.json` includes
+  // them, and `pnpm typecheck` runs it via the `typecheck:tests` script.
+  //
+  // (Vitest does not typecheck. It strips types with esbuild, so excluding a
+  // file here used to mean nothing ever checked it.)
   "exclude": ["node_modules", "dist", "**/__tests__/**", "**/*.test.ts", "**/*.test.tsx"]
 }

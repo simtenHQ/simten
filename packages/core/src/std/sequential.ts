@@ -2,7 +2,7 @@
  * Standard Library — Sequential Components
  */
 
-import { bit, bus } from '../circuit/bit-bus.js';
+import { bit, bus, reg } from '../circuit/bit-bus.js';
 import { circuit } from '../circuit/circuit.js';
 
 /**
@@ -34,17 +34,27 @@ import { circuit } from '../circuit/circuit.js';
  */
 export const DFlipFlop = circuit(
   'DFlipFlop',
-  ({ value = false }: { value?: boolean | number } = {}) => ({
+  // A bit is 0 or 1, not a boolean — including here, in the option. This used
+  // to be `value?: boolean | number` defaulting to `false`, with
+  // `onTick: ({ d }) => ({ value: Boolean(d) })`, which made DFlipFlop — the
+  // most-used sequential primitive in the stdlib — the one place boolean state
+  // survived. Nothing caught it, because tests were not type-checked.
+  //
+  // The width is declared with `reg(1)` rather than left to inference.
+  // `circuit()` classifies bare state values by their JS type — boolean → bit,
+  // number → bus — so simply swapping `false` for `0` turned this into a
+  // 32-bit bus, and the Verilog exporter emits `reg` widths from that.
+  ({ value = 0 }: { value?: number } = {}) => ({
     inputs: { d: bit },
     outputs: { q: bit, q_bar: bit },
-    state: { value: value as boolean | number },
+    state: { value: reg(1, value) },
     meta: {
       category: 'sequential',
       icon: 'D',
       description: 'D Flip-Flop — stores 1 bit on rising clock edge',
     },
     eval: ({ value }) => ({ q: value ? 1 : 0, q_bar: value ? 0 : 1 }),
-    onTick: ({ d }) => ({ value: Boolean(d) }),
+    onTick: ({ d }) => ({ value: d ? 1 : 0 }),
   }),
 );
 
@@ -83,7 +93,12 @@ export const Register = circuit(
   ({ width = 8, value = 0 }: { width?: number; value?: number } = {}) => ({
     inputs: { data: bus(width), we: bit, rst: bit },
     outputs: { q: bus(width) },
-    state: { value },
+    // Declared, not inferred. `circuit()` classifies a bare state value by its
+    // JS type — a number becomes bus(32) regardless of the register's actual
+    // width — so `state: { value }` recorded `bus(32)` for a `Register({width:8})`.
+    // The exporter derives `reg` widths from the port, so the emitted Verilog
+    // was always correct; the wrong width lived only in the IR's stateType.
+    state: { value: reg(width, value) },
     meta: {
       category: 'sequential',
       icon: 'REG',

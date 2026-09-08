@@ -29,6 +29,28 @@ not a `--write`:
 Do **not** regenerate the golden just to make CI green — that throws away the one
 thing it certifies. A red guard with no hardware re-verify behind it stays red.
 
+## ⚠ Outstanding: the guard is currently non-blocking
+
+The golden is **stale as of the bus-width-validation change**, and CI's netlist
+step carries `continue-on-error: true` so it reports without failing the build.
+It was not regenerated, because that is the one thing this file forbids.
+
+What drifted: six `BitSlice` nodes in the CPU gained an explicit `width`
+argument, and six connections now declare their true width (`bus(1)` / `bus(2)`)
+instead of a fictitious `bus(8)`. Same 118 nodes, same 271 connections, same
+order — the widths were always wrong, the slice just claimed 8 bits regardless
+of what it covered.
+
+What has been checked without a board: `fpga:test` 69/69, and the exported
+Verilog cross-checked against the TS simulator under Icarus Verilog
+(`pnpm fpga:verify --suite`) at 69/69 match, 0 divergent, 0 Verilog errors.
+That exercises the changed wire widths but says nothing about synthesis or
+timing, which is the whole point of the board run.
+
+**To close this out:** run the ritual above, then in the same commit regenerate
+the golden, add the log row, and delete `continue-on-error` from the
+"FPGA netlist byte-identity guard" step in `.github/workflows/ci.yml`.
+
 ## Hardware-verification log
 
 | Date | Commit | What ran on the board | Result |

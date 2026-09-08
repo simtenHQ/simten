@@ -23,7 +23,13 @@ export interface BusType {
 
 export type PortType = BitType | BusType;
 
-export type BitValue = boolean;
+/**
+ * A single-bit value. Bits are 0 or 1, matching the simulator's numeric
+ * storage (`Int32Array`) and what stdlib `eval` functions already return
+ * (`out: a && b ? 1 : 0`). Booleans are accepted at API boundaries and
+ * coerced, but are not part of the value domain.
+ */
+export type BitValue = 0 | 1;
 export type BusValue = number;
 
 // ============================================================================
@@ -301,13 +307,12 @@ export function isPortTypeCompatible(a: PortType, b: PortType): boolean {
 
 /**
  * Get default value for a port type.
+ *
+ * Bits and buses both rest at 0. The parameter is kept so callers do not
+ * have to change, and so a future port type can differ.
  */
-export function getDefaultValue(portType: PortType): BitValue | BusValue {
-  if (portType.kind === 'bit') {
-    return false;
-  } else {
-    return 0;
-  }
+export function getDefaultValue(_portType: PortType): BitValue | BusValue {
+  return 0;
 }
 
 /**

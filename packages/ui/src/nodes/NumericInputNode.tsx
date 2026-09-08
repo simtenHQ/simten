@@ -58,7 +58,7 @@ export function NumericInputNode({ data, selected }: NumericInputNodeProps) {
     name,
     index,
     type: 'output',
-    value: true,
+    value: 1,
   }));
 
   const displayValue =

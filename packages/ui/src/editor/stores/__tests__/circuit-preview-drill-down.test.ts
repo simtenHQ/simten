@@ -15,9 +15,8 @@ const getState = () => useCircuitPreviewStore.getState();
 // Helper: create a primitive component definition
 function makePrimitive(name: string, inputs: string[], outputs: string[]): Circuit {
   return {
-    id: `${name}-def`,
+    version: 1,
     name,
-    parameters: [],
     inputs: inputs.map((n) => ({ name: n, portType: { kind: 'bit' as const } })),
     outputs: outputs.map((n) => ({ name: n, portType: { kind: 'bit' as const } })),
     clocks: [],
@@ -31,9 +30,8 @@ function makePrimitive(name: string, inputs: string[], outputs: string[]): Circu
 // Helper: create a composite HalfAdder definition
 function makeHalfAdderDef(): Circuit {
   return {
-    id: 'half-adder-def',
+    version: 1,
     name: 'HalfAdder',
-    parameters: [],
     inputs: [
       { name: 'a', portType: { kind: 'bit' } },
       { name: 'b', portType: { kind: 'bit' } },
@@ -115,9 +113,8 @@ function makeHalfAdderDef(): Circuit {
 // Helper: create a top-level FullAdder circuit that uses HalfAdder
 function makeFullAdder(): Circuit {
   return {
-    id: 'full-adder',
+    version: 1,
     name: 'FullAdder',
-    parameters: [],
     inputs: [
       { name: 'a', portType: { kind: 'bit' } },
       { name: 'b', portType: { kind: 'bit' } },

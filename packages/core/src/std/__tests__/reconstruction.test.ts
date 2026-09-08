@@ -31,7 +31,7 @@ function run1(prim: BuiltCircuit, inW: number, outW: number, v: number): number 
     outputs: { out: port(outW) } as any,
     nodes: { p: prim } as any,
     connect: ({ inputs: i, outputs, nodes: { p } }: any) => [i.in.to(p.in), p.out.to(outputs.out)],
-  } as any);
+  });
   const sim = simulate(w);
   sim.set({ in: v });
   const out = sim.get('out') >>> 0;
@@ -50,7 +50,7 @@ function run2(prim: BuiltCircuit, hiW: number, loW: number, hi: number, lo: numb
       i.low.to(p.low),
       p.out.to(outputs.out),
     ],
-  } as any);
+  });
   const sim = simulate(w);
   sim.set({ high: hi, low: lo });
   const out = sim.get('out') >>> 0;

@@ -22,7 +22,7 @@ const describe = _describe.skip;
 describe('Time Travel - State Consistency Properties', () => {
   /**
    * Test that Register + HexDisplay state is properly captured/restored
-   * This replicates the bug: HexDisplay not showing value after time travel
+   * This replicates the bug: HexDisplay() not showing value after time travel
    */
   it('should restore Register and display state correctly during time travel', () => {
     fc.assert(

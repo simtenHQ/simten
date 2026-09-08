@@ -152,11 +152,12 @@ export function simulate<Ins extends PortMap, Outs extends PortMap>(
     set(values) {
       for (const [name, value] of Object.entries(values)) {
         if (value !== undefined) {
-          // Convert number to boolean for bit ports
-          const portDef = circuit.inputs.find((p) => p.name === name);
-          const isBit = portDef?.portType.kind === 'bit';
-          const converted = isBit ? Boolean(value) : value;
-          session.setNode(name, converted as BitValue | BusValue);
+          // Values are numeric for every port width. This used to convert bit
+          // ports with `Boolean(value)`, from when `BitValue` was `boolean` —
+          // which fed a raw boolean into `topLevelInputs`, and from there
+          // straight into `onTick` (propagate.ts reads that map directly for
+          // top-level-driven inputs), so sequential state came out boolean.
+          session.setNode(name, value as BitValue | BusValue);
         }
       }
       // For combinational circuits, auto-propagate

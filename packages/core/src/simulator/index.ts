@@ -191,7 +191,7 @@ export { tracePropagation } from './trace.js';
 // ============================================================================
 
 import type { BitValue, BusValue, Circuit, CircuitLibrary } from '../types/circuit.js';
-import { TOP_LEVEL_NODE } from '../types/circuit.js';
+import { getDefaultValue, TOP_LEVEL_NODE } from '../types/circuit.js';
 import type {
   CombinationalResult,
   FlatCircuit,
@@ -281,8 +281,7 @@ class SimulatorEngineImpl implements SimulatorEngine {
     this.topLevelInputs = new Map();
     for (const input of circuit.topLevelInputs) {
       const key = `${TOP_LEVEL_NODE}.${input.name}`;
-      const defaultValue = input.portType.kind === 'bit' ? false : 0;
-      this.topLevelInputs.set(key, defaultValue);
+      this.topLevelInputs.set(key, getDefaultValue(input.portType));
     }
 
     // Run initial propagation
@@ -341,8 +340,9 @@ class SimulatorEngineImpl implements SimulatorEngine {
       return;
     }
 
-    // Otherwise → write arguments (Switch, Input)
-    if (typeof value === 'boolean' || typeof value === 'number' || typeof value === 'string') {
+    // Otherwise → write arguments (Switch, Input). `PrimitiveState` excludes
+    // boolean, so callers pass 0/1; there is no coercion here on purpose.
+    if (typeof value === 'number' || typeof value === 'string') {
       node.arguments = { ...node.arguments, value };
       this.cacheValid = false;
     }

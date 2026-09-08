@@ -41,9 +41,8 @@ describe('Hierarchical Cycle Detection - Real World Scenarios', () => {
 
   // Minimal Add circuit (8-bit adder, no carry) for tests that reference 'Add'
   const Add: import('../../types/circuit').Circuit = {
-    id: 'add',
+    version: 1,
     name: 'Add',
-    parameters: [],
     inputs: [
       { name: 'a', portType: busType(8) },
       { name: 'b', portType: busType(8) },
@@ -66,9 +65,8 @@ describe('Hierarchical Cycle Detection - Real World Scenarios', () => {
   it('should compile a multi-level hierarchy with state machines', () => {
     // Create a simple FSM (Finite State Machine) with register
     const fsm: Circuit = {
-      id: 'fsm',
+      version: 1,
       name: 'SimpleFSM',
-      parameters: [],
       inputs: [{ name: 'trigger', portType: bitType() }],
       outputs: [{ name: 'state', portType: busType(8) }],
       clocks: [{ name: 'clk' }],
@@ -158,9 +156,8 @@ describe('Hierarchical Cycle Detection - Real World Scenarios', () => {
 
     // Create a Controller that contains the FSM
     const controller: Circuit = {
-      id: 'ctrl',
+      version: 1,
       name: 'Controller',
-      parameters: [],
       inputs: [{ name: 'enable', portType: bitType() }],
       outputs: [{ name: 'status', portType: busType(8) }],
       clocks: [{ name: 'clk' }],
@@ -197,9 +194,8 @@ describe('Hierarchical Cycle Detection - Real World Scenarios', () => {
 
     // Create a top-level system with multiple controllers
     const system: Circuit = {
-      id: 'sys',
+      version: 1,
       name: 'System',
-      parameters: [],
       inputs: [],
       outputs: [],
       clocks: [],
@@ -256,7 +252,7 @@ describe('Hierarchical Cycle Detection - Real World Scenarios', () => {
     const result = sim.runCombinational();
 
     expect(result.error).toBeUndefined();
-    expect(result.portValues.get('sw.out')).toBe(true);
+    expect(result.portValues.get('sw.out')).toBe(1);
   });
 
   it('should demonstrate the false positive scenario from the plan', () => {
@@ -266,9 +262,8 @@ describe('Hierarchical Cycle Detection - Real World Scenarios', () => {
 
     // Create a minimal controller with register
     const ingressController: Circuit = {
-      id: 'ingress',
+      version: 1,
       name: 'IngressController',
-      parameters: [],
       inputs: [{ name: 'data_in', portType: busType(8) }],
       outputs: [{ name: 'data_out', portType: busType(8) }],
       clocks: [{ name: 'clk' }],
@@ -320,9 +315,8 @@ describe('Hierarchical Cycle Detection - Real World Scenarios', () => {
     };
 
     const arbiter: Circuit = {
-      id: 'arb',
+      version: 1,
       name: 'SimpleArbiter',
-      parameters: [],
       inputs: [{ name: 'req', portType: busType(8) }],
       outputs: [{ name: 'grant', portType: busType(8) }],
       clocks: [{ name: 'clk' }],
@@ -374,9 +368,8 @@ describe('Hierarchical Cycle Detection - Real World Scenarios', () => {
     };
 
     const packetForwarder: Circuit = {
-      id: 'fwd',
+      version: 1,
       name: 'PacketForwarder',
-      parameters: [],
       inputs: [{ name: 'pkt_in', portType: busType(8) }],
       outputs: [{ name: 'pkt_out', portType: busType(8) }],
       clocks: [{ name: 'clk' }],
@@ -434,9 +427,8 @@ describe('Hierarchical Cycle Detection - Real World Scenarios', () => {
     // Create the network with apparent cycle:
     // IngressController → Arbiter → PacketForwarder → IngressController
     const network: Circuit = {
-      id: 'net',
+      version: 1,
       name: 'Network',
-      parameters: [],
       inputs: [],
       outputs: [],
       clocks: [],

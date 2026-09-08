@@ -40,8 +40,8 @@ const DEFAULT_DISPLAY_RATE = 30;
 const TOP_LEVEL_NODE = '__top__';
 
 export interface SimulatorState {
-  outputs: Record<string, boolean | number>;
-  inputs: Record<string, boolean | number>;
+  outputs: Record<string, number>;
+  inputs: Record<string, number>;
   cycleCount: number;
   ready: boolean;
   error: string | null;
@@ -69,9 +69,9 @@ export interface SimulatorActions {
   renderSamples: (
     portName: string,
     count: number,
-    inputs?: Record<string, number | boolean>,
+    inputs?: Record<string, number>,
   ) => Promise<number[]>;
-  setNode: (name: string, value: boolean | number) => void;
+  setNode: (name: string, value: number) => void;
   toggleInput: (name: string) => void;
   toggleNode: (nodeId: string) => void;
   /**
@@ -81,8 +81,8 @@ export interface SimulatorActions {
    */
   setNodeValue: (
     nodeId: string,
-    value: number | boolean | Map<number, number>,
-  ) => Promise<ReadonlyMap<string, boolean | number> | null>;
+    value: number | Map<number, number>,
+  ) => Promise<ReadonlyMap<string, number> | null>;
   tick: () => void;
   /** Advance N ticks in a single sandbox round-trip; one React update. */
   tickN: (n: number) => Promise<void>;
@@ -110,7 +110,7 @@ export interface UseCircuitSimulatorOptions {
   /** Wrap the circuit with auto-generated Switch/Led nodes */
   autoHarness?: boolean;
   /** Initial values for input ports (only used when autoHarness is true) */
-  initialInputs?: Record<string, number | boolean>;
+  initialInputs?: Record<string, number>;
 }
 
 /**
@@ -220,7 +220,7 @@ export function useCircuitSimulator(
         circuitMap.set(c.name, c);
       },
     };
-    for (const c of [Switch, Led, Input(), Output, HexDisplay]) {
+    for (const c of [Switch, Led, Input(), Output, HexDisplay()]) {
       lib.addCircuit(c.circuit);
     }
     if (circuit) {
@@ -280,7 +280,7 @@ export function useCircuitSimulator(
   type HistoryEntry = {
     snapshotId: number;
     cycle: number;
-    inputs: Record<string, boolean | number>;
+    inputs: Record<string, number>;
   };
   const historyRef = useRef<HistoryEntry[]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
@@ -289,16 +289,17 @@ export function useCircuitSimulator(
 
   // Default inputs from the harnessed circuit's top-level inputs
   const defaultInputs = useMemo(() => {
-    const result: Record<string, boolean | number> = {};
+    const result: Record<string, number> = {};
     if (!harnessedCircuit) return result;
     for (const input of harnessedCircuit.inputs) {
-      result[input.name] = input.portType.kind === 'bit' ? false : 0;
+      // Bits and buses both rest at 0 — this used to default bits to `false`.
+      result[input.name] = 0;
     }
     return result;
   }, [harnessedCircuit]);
 
-  const [outputs, setOutputs] = useState<Record<string, boolean | number>>({});
-  const [inputs, setInputs] = useState<Record<string, boolean | number>>(defaultInputs);
+  const [outputs, setOutputs] = useState<Record<string, number>>({});
+  const [inputs, setInputs] = useState<Record<string, number>>(defaultInputs);
   // Mirror of inputs in a ref so tick/tickN can snapshot the latest value
   // synchronously without waiting for setState → re-render.
   const inputsRef = useRef(inputs);
@@ -348,7 +349,7 @@ export function useCircuitSimulator(
         if (dep?.circuit) addCircuit(dep.circuit);
       }
       // Harness components (Switch, Led, etc.)
-      for (const c of [Switch, Led, Input(), Output, HexDisplay]) {
+      for (const c of [Switch, Led, Input(), Output, HexDisplay()]) {
         addCircuit(c.circuit);
       }
       // Anything else in the library
@@ -410,12 +411,15 @@ export function useCircuitSimulator(
   // Extract outputs from portValues
   useEffect(() => {
     if (!ready || portValues.size === 0 || !harnessedCircuit) return;
-    const newOutputs: Record<string, boolean | number> = {};
+    const newOutputs: Record<string, number> = {};
     for (const output of harnessedCircuit.outputs) {
       const key = `${TOP_LEVEL_NODE}.${output.name}`;
       const value = portValues.get(key);
       if (value !== undefined) {
-        newOutputs[output.name] = typeof value === 'number' ? value : Boolean(value);
+        // Another wrong-direction conversion: this used to be
+        // `typeof value === 'number' ? value : Boolean(value)`, so a bit port
+        // was surfaced to consumers as a boolean.
+        newOutputs[output.name] = typeof value === 'number' ? value : value ? 1 : 0;
       }
     }
     setOutputs(newOutputs);
@@ -431,11 +435,7 @@ export function useCircuitSimulator(
   // etc.) looked like at this moment — used on rewind so the UI restores not
   // just the simulator state but the user inputs too.
   const recordSnapshot = useCallback(
-    (
-      snapshotId: number | undefined,
-      newCycle: number,
-      inputsSnapshot: Record<string, boolean | number>,
-    ) => {
+    (snapshotId: number | undefined, newCycle: number, inputsSnapshot: Record<string, number>) => {
       if (snapshotId === undefined) return; // combinational circuit — nothing to record
 
       const hist = historyRef.current;
@@ -478,7 +478,7 @@ export function useCircuitSimulator(
   // ── Actions ──
 
   const setNode = useCallback(
-    async (name: string, value: boolean | number) => {
+    async (name: string, value: number) => {
       // Input changes (switch toggles, button presses) don't create a new
       // history entry — history tracks CYCLES (post-tick states), not every
       // input edit. The current cycle's "inputs" stay live: the next tick
@@ -501,7 +501,9 @@ export function useCircuitSimulator(
   const toggleInput = useCallback(
     (name: string) => {
       const current = inputs[name];
-      const newValue = typeof current === 'boolean' ? !current : current === 0 ? 1 : 0;
+      // Values are numeric. Unchanged semantics: only 0 toggles up; anything
+      // else (including undefined) toggles down.
+      const newValue = current === 0 ? 1 : 0;
       setNode(name, newValue);
     },
     [inputs, setNode],
@@ -512,7 +514,9 @@ export function useCircuitSimulator(
       if (!ready) return;
       const outKey = `${nodeId}.out`;
       const current = portValues.get(outKey);
-      const newValue = typeof current === 'boolean' ? !current : current === 1 ? 0 : 1;
+      // Values are numeric. Unchanged semantics: only 1 toggles down; anything
+      // else (including undefined) toggles up.
+      const newValue = current === 1 ? 0 : 1;
       // Same reasoning as setNode: no new history entry on input edit.
       const result = await sandbox.setNode(nodeId, newValue, slotId);
       if ('error' in result) return;
@@ -525,7 +529,7 @@ export function useCircuitSimulator(
   );
 
   const setNodeValue = useCallback(
-    async (nodeId: string, value: number | boolean | Map<number, number>) => {
+    async (nodeId: string, value: number | Map<number, number>) => {
       if (!ready) return null;
       // Map values (for ROM/RAM loading) are supported via structured clone in postMessage.
       // Same reasoning as setNode: no history entry on this path.
@@ -535,7 +539,7 @@ export function useCircuitSimulator(
       for (const [k, v] of Object.entries(result.portValues)) pvMap.set(k, v);
       setPortValues(pvMap);
       if (result.peripheralState) setPeripheralState(result.peripheralState);
-      return pvMap as ReadonlyMap<string, boolean | number>;
+      return pvMap as ReadonlyMap<string, number>;
     },
     [ready, sandbox, slotId],
   );
@@ -790,11 +794,7 @@ export function useCircuitSimulator(
    * reader-supplied source is no more trusted than it ever was.
    */
   const renderSamples = useCallback(
-    async (
-      portName: string,
-      count: number,
-      inputs?: Record<string, number | boolean>,
-    ): Promise<number[]> => {
+    async (portName: string, count: number, inputs?: Record<string, number>): Promise<number[]> => {
       if (!ready) return [];
       // Callers name a top-level output port; the flat port map keys those under
       // the top-level node, the same way `outputs` above resolves them.

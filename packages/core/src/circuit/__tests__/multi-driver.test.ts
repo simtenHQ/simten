@@ -49,15 +49,18 @@ describe('multi-driver detection', () => {
   it('reports multiple distinct conflicts in one throw, sorted lexicographically', () => {
     let caught: Error | null = null;
     try {
+      // Hoisted out of the `nodes` literal: inline `circuit()` there widened
+      // the mapped type to `never`, so `nodes.xor1.a` had no properties.
+      const Xor1 = circuit('Xor', {
+        inputs: { a: bit, b: bit },
+        outputs: { out: bit },
+        eval: ({ a, b }) => ({ out: a !== b ? 1 : 0 }),
+      });
       circuit('Bad', {
         inputs: { x: bit, y: bit },
         outputs: { s: bit, c: bit },
         nodes: {
-          xor1: circuit('Xor', {
-            inputs: { a: bit, b: bit },
-            outputs: { out: bit },
-            eval: ({ a, b }) => ({ out: a !== b ? 1 : 0 }),
-          }),
+          xor1: Xor1,
           and1: And,
         },
         connect: ({ inputs, outputs, nodes: { xor1, and1 } }) => [

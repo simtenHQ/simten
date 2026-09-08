@@ -24,7 +24,9 @@ import { hasSynth, synthesizeVerilog } from './synth.js';
 function makeLib<
   T extends {
     circuit: import('../../types/circuit.js').Circuit;
-    _dependencies: Map<string, { circuit: import('../../types/circuit.js').Circuit }>;
+    // ReadonlyMap: that is what BuiltCircuit exposes. Declaring it mutable made
+    // every real BuiltCircuit unassignable here.
+    _dependencies: ReadonlyMap<string, { circuit: import('../../types/circuit.js').Circuit }>;
   },
 >(top: T, name: string): CircuitLibrary {
   return {

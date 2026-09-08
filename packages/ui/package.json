@@ -119,7 +119,8 @@
     "build": "rm -rf dist *.tsbuildinfo && node scripts/build-core-types.mjs && tsc -b && mkdir -p dist/styles && cp src/styles/theme.css dist/styles/theme.css",
     "test": "vitest run",
     "test:watch": "vitest",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "typecheck:tests": "tsc --noEmit -p tsconfig.check.json"
   },
   "dependencies": {
     "@dagrejs/dagre": "^3.0.0",

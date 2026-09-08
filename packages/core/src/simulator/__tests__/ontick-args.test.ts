@@ -36,7 +36,7 @@ describe('onTick receives node arguments', () => {
         i.tick.to(p.tick),
         p.out.to(o.out),
       ],
-    } as any);
+    });
 
     const sim = simulate(W);
     sim.set({ tick: 0 });
@@ -62,7 +62,7 @@ describe('onTick receives node arguments', () => {
       outputs: { out: bus(8) },
       nodes: { p: P({ width: 8, d: 200 }) }, // arg d=200 (should be shadowed by the port)
       connect: ({ inputs: i, outputs: o, nodes: { p } }: any) => [i.d.to(p.d), p.out.to(o.out)],
-    } as any);
+    });
 
     const sim = simulate(W);
     sim.set({ d: 42 }); // drive the port to 42

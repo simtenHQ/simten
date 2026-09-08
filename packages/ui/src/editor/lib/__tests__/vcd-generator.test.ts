@@ -61,10 +61,10 @@ describe('VCD Generator', () => {
             'reset',
             {
               signal: { nodeId: '', portName: 'reset', displayName: 'reset', width: 1 },
-              values: [true, false],
+              values: [1, 0],
               changes: [
-                { cycle: 0, value: true },
-                { cycle: 1, value: false },
+                { cycle: 0, value: 1 },
+                { cycle: 1, value: 0 },
               ],
             },
           ],
@@ -119,10 +119,10 @@ describe('VCD Generator', () => {
             'a',
             {
               signal: { nodeId: '', portName: 'a', displayName: 'a', width: 1 },
-              values: [false, true],
+              values: [0, 1],
               changes: [
-                { cycle: 0, value: false },
-                { cycle: 5, value: true },
+                { cycle: 0, value: 0 },
+                { cycle: 5, value: 1 },
               ],
             },
           ],
@@ -130,10 +130,10 @@ describe('VCD Generator', () => {
             'b',
             {
               signal: { nodeId: '', portName: 'b', displayName: 'b', width: 1 },
-              values: [true, false],
+              values: [1, 0],
               changes: [
-                { cycle: 0, value: true },
-                { cycle: 5, value: false },
+                { cycle: 0, value: 1 },
+                { cycle: 5, value: 0 },
               ],
             },
           ],
@@ -173,8 +173,8 @@ describe('VCD Generator', () => {
             sig.portName,
             {
               signal: sig,
-              values: [false],
-              changes: [{ cycle: 0, value: false }],
+              values: [0],
+              changes: [{ cycle: 0, value: 0 }],
             },
           ]),
         ),
@@ -256,7 +256,7 @@ describe('VCD Generator', () => {
             'static',
             {
               signal: { nodeId: '', portName: 'static', displayName: 'static', width: 1 },
-              values: [true],
+              values: [1],
               changes: [], // No changes
             },
           ],
@@ -308,14 +308,14 @@ describe('VCD Generator', () => {
             'clk',
             {
               signal: { nodeId: '', portName: 'clk', displayName: 'clk', width: 1 },
-              values: [false, true, false, true, false, true],
+              values: [0, 1, 0, 1, 0, 1],
               changes: [
-                { cycle: 0, value: false },
-                { cycle: 1, value: true },
-                { cycle: 2, value: false },
-                { cycle: 3, value: true },
-                { cycle: 4, value: false },
-                { cycle: 5, value: true },
+                { cycle: 0, value: 0 },
+                { cycle: 1, value: 1 },
+                { cycle: 2, value: 0 },
+                { cycle: 3, value: 1 },
+                { cycle: 4, value: 0 },
+                { cycle: 5, value: 1 },
               ],
             },
           ],
@@ -323,10 +323,10 @@ describe('VCD Generator', () => {
             'reset',
             {
               signal: { nodeId: '', portName: 'reset', displayName: 'reset', width: 1 },
-              values: [true, false, false, false, false, false],
+              values: [1, 0, 0, 0, 0, 0],
               changes: [
-                { cycle: 0, value: true },
-                { cycle: 1, value: false },
+                { cycle: 0, value: 1 },
+                { cycle: 1, value: 0 },
               ],
             },
           ],
@@ -387,11 +387,11 @@ function createSimpleCaptureData(): CaptureData {
         'clk',
         {
           signal: { nodeId: '', portName: 'clk', displayName: 'clk', width: 1 },
-          values: [false, true, false],
+          values: [0, 1, 0],
           changes: [
-            { cycle: 0, value: false },
-            { cycle: 1, value: true },
-            { cycle: 2, value: false },
+            { cycle: 0, value: 0 },
+            { cycle: 1, value: 1 },
+            { cycle: 2, value: 0 },
           ],
         },
       ],
